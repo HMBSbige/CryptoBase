@@ -27,7 +27,6 @@ namespace UnitTest
 		public void MD5DigestTest(string str, string md5Str)
 		{
 			MD5DigestTest(new NormalMD5Digest(), str, md5Str);
-			MD5DigestTest(new NormalMD5Digest2(), str, md5Str);
 			MD5DigestTest(new BcMD5Digest(), str, md5Str);
 		}
 	}
