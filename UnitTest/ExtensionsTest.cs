@@ -6,7 +6,7 @@ using System.Linq;
 namespace UnitTest
 {
 	[TestClass]
-	public class UnitTest
+	public class ExtensionsTest
 	{
 		[TestMethod]
 		[DataRow(0)]
