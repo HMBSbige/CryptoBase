@@ -11,6 +11,8 @@ namespace UnitTest
 	{
 		private static void MD5DigestTest(IHash md5, string str, string md5Str)
 		{
+			Assert.AreEqual(@"MD5", md5.Name);
+
 			var origin = Encoding.UTF8.GetBytes(str);
 
 			var hash = md5.Compute(origin);
