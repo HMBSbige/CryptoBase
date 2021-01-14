@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Threading;
 
 namespace CryptoBase.Digests.MD5
 {
@@ -8,12 +9,7 @@ namespace CryptoBase.Digests.MD5
 		public string Name { get; } = @"MD5";
 
 		public const byte Md5Len = 16;
-		private readonly System.Security.Cryptography.MD5 _hasher;
-
-		public NormalMD5Digest()
-		{
-			_hasher = System.Security.Cryptography.MD5.Create();
-		}
+		private static readonly ThreadLocal<System.Security.Cryptography.MD5> Hasher = new(System.Security.Cryptography.MD5.Create);
 
 		public Span<byte> Compute(in ReadOnlySpan<byte> origin)
 		{
@@ -22,7 +18,7 @@ namespace CryptoBase.Digests.MD5
 			{
 				var span = buffer.AsSpan(0, Md5Len);
 
-				_hasher.TryComputeHash(origin, span, out _);
+				Hasher.Value!.TryComputeHash(origin, span, out _);
 
 				return span;
 			}
