@@ -1,10 +1,9 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase;
 using CryptoBase.Digests;
 using CryptoBase.Digests.MD5;
 using System;
 
-namespace UnitTest.Benchmarks
+namespace CryptoBase.Benchmark
 {
 	[MemoryDiagnoser]
 	public class MD5Benchmark

@@ -1,6 +1,6 @@
 using BenchmarkDotNet.Running;
+using CryptoBase.Benchmark;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using UnitTest.Benchmarks;
 
 namespace UnitTest
 {
@@ -8,9 +8,15 @@ namespace UnitTest
 	public class BenchmarkTest
 	{
 		[TestMethod]
-		public void MD5Test()
+		public void MD5Benchmark()
 		{
 			var _ = BenchmarkRunner.Run<MD5Benchmark>();
+		}
+
+		[TestMethod]
+		public void SodiumIncrementBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<SodiumIncrementBenchmark>();
 		}
 	}
 }

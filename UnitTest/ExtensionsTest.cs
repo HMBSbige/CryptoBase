@@ -1,5 +1,6 @@
 using CryptoBase;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Buffers.Binary;
 using System.Linq;
 
@@ -8,6 +9,20 @@ namespace UnitTest
 	[TestClass]
 	public class ExtensionsTest
 	{
+		private static void SodiumIncrementTest(Action<byte[]> func, int i)
+		{
+			const int size = sizeof(int);
+			var a = new byte[size];
+			var b = new byte[size];
+
+			BinaryPrimitives.WriteInt32LittleEndian(a, i);
+			BinaryPrimitives.WriteInt32LittleEndian(b, i + 1);
+
+			func(a);
+
+			Assert.IsTrue(a.SequenceEqual(b));
+		}
+
 		[TestMethod]
 		[DataRow(0)]
 		[DataRow(1)]
@@ -17,16 +32,9 @@ namespace UnitTest
 		[DataRow(114514)]
 		public void SodiumIncrementTest(int i)
 		{
-			const int size = sizeof(int);
-			var a = new byte[size];
-			var b = new byte[size];
-
-			BinaryPrimitives.WriteInt32LittleEndian(a, i);
-			BinaryPrimitives.WriteInt32LittleEndian(b, i + 1);
-
-			a.Increment();
-
-			Assert.IsTrue(a.SequenceEqual(b));
+			SodiumIncrementTest(Extensions.Increment_Int, i);
+			SodiumIncrementTest(Extensions.Increment_Int2, i);
+			SodiumIncrementTest(Extensions.Increment, i);
 		}
 
 		[TestMethod]
