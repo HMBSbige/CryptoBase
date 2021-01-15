@@ -1,17 +1,15 @@
+using CryptoBase.Abstractions.Digests;
 using System;
 using System.Buffers;
 using System.Threading;
 
 namespace CryptoBase.Digests.MD5
 {
-	public class NormalMD5Digest : IHash
+	public class NormalMD5Digest : MD5DigestBase
 	{
-		public string Name { get; } = @"MD5";
-
-		public const byte Md5Len = 16;
 		private static readonly ThreadLocal<System.Security.Cryptography.MD5> Hasher = new(System.Security.Cryptography.MD5.Create);
 
-		public Span<byte> Compute(in ReadOnlySpan<byte> origin)
+		public override Span<byte> Compute(in ReadOnlySpan<byte> origin)
 		{
 			var buffer = ArrayPool<byte>.Shared.Rent(Md5Len);
 			try

@@ -1,6 +1,6 @@
 using System;
 
-namespace CryptoBase.Digests
+namespace CryptoBase.Abstractions.Digests
 {
 	/// <summary>
 	/// 摘要算法接口

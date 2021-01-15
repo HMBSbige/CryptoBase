@@ -1,5 +1,5 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase.Digests;
+using CryptoBase.Abstractions.Digests;
 using CryptoBase.Digests.MD5;
 using System;
 

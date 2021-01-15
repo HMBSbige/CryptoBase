@@ -1,4 +1,4 @@
-using CryptoBase.Digests.MD5;
+using CryptoBase.Abstractions.Digests;
 using System;
 
 namespace CryptoBase
@@ -60,7 +60,7 @@ namespace CryptoBase
 
 		public static string ToHex(this in Span<byte> bytes)
 		{
-			Span<char> c = stackalloc char[NormalMD5Digest.Md5Len * 2];
+			Span<char> c = stackalloc char[MD5DigestBase.Md5Len * 2];
 
 			var i = 0;
 			var j = 0;

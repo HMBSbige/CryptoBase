@@ -10,4 +10,8 @@
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.9" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>

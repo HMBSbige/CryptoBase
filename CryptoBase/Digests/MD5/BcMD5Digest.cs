@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions.Digests;
 using Org.BouncyCastle.Crypto.Digests;
 using System;
 using System.Buffers;
@@ -5,14 +6,11 @@ using System.Threading;
 
 namespace CryptoBase.Digests.MD5
 {
-	public class BcMD5Digest : IHash
+	public class BcMD5Digest : MD5DigestBase
 	{
-		public string Name { get; } = @"MD5";
-
-		private const byte Md5Len = NormalMD5Digest.Md5Len;
 		private static readonly ThreadLocal<MD5Digest> Hasher = new(() => new MD5Digest());
 
-		public Span<byte> Compute(in ReadOnlySpan<byte> origin)
+		public override Span<byte> Compute(in ReadOnlySpan<byte> origin)
 		{
 			var buffer = ArrayPool<byte>.Shared.Rent(origin.Length);
 			var outBuffer = ArrayPool<byte>.Shared.Rent(Md5Len);

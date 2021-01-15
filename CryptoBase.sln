@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTest", "UnitTest\UnitTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoBase.Benchmark", "CryptoBase.Benchmark\CryptoBase.Benchmark.csproj", "{431E25D2-1A9A-400E-8B22-25CA24A7AC04}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoBase.Abstractions", "CryptoBase.Abstractions\CryptoBase.Abstractions.csproj", "{E3AA00BF-629E-4274-A7B5-002EC7348B98}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{431E25D2-1A9A-400E-8B22-25CA24A7AC04}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{431E25D2-1A9A-400E-8B22-25CA24A7AC04}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{431E25D2-1A9A-400E-8B22-25CA24A7AC04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3AA00BF-629E-4274-A7B5-002EC7348B98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3AA00BF-629E-4274-A7B5-002EC7348B98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3AA00BF-629E-4274-A7B5-002EC7348B98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3AA00BF-629E-4274-A7B5-002EC7348B98}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
