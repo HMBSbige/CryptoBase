@@ -8,7 +8,9 @@ namespace CryptoBase.Benchmark
 	public class SodiumIncrementBenchmark
 	{
 		private byte[] _randombytes = Array.Empty<byte>();
-		private const int Max = 1000000;
+
+		[Params(1, 100, 10000, 1000000)]
+		public int Max { get; set; }
 
 		[GlobalSetup]
 		public void Setup()
@@ -33,16 +35,6 @@ namespace CryptoBase.Benchmark
 			for (var i = 0; i < Max; ++i)
 			{
 				a.Increment_Int();
-			}
-		}
-
-		[Benchmark]
-		public void Increment_Int2()
-		{
-			var a = _randombytes.ToArray();
-			for (var i = 0; i < Max; ++i)
-			{
-				a.Increment_Int2();
 			}
 		}
 	}

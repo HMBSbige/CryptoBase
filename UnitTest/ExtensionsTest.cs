@@ -33,7 +33,6 @@ namespace UnitTest
 		public void SodiumIncrementTest(int i)
 		{
 			SodiumIncrementTest(Extensions.Increment_Int, i);
-			SodiumIncrementTest(Extensions.Increment_Int2, i);
 			SodiumIncrementTest(Extensions.Increment, i);
 		}
 

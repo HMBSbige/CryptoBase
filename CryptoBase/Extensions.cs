@@ -9,33 +9,24 @@ namespace CryptoBase
 
 		#region SodiumIncrement
 
-		public static unsafe void Increment_Int(this byte[] nonce)
+		public static void Increment_Int(this byte[] nonce)
 		{
-			fixed (byte* pNonce = nonce)
-			{
-				var value = (int*)pNonce;
-				++*value;
-			}
-		}
-
-		public static void Increment_Int2(this byte[] data)
-		{
-			if (++data[0] != 0)
+			if (++nonce[0] != 0)
 			{
 				return;
 			}
 
-			if (++data[1] != 0)
+			if (++nonce[1] != 0)
 			{
 				return;
 			}
 
-			if (++data[2] != 0)
+			if (++nonce[2] != 0)
 			{
 				return;
 			}
 
-			++data[3];
+			++nonce[3];
 		}
 
 		public static void Increment(this byte[] nonce)
@@ -51,7 +42,7 @@ namespace CryptoBase
 
 		public static void FastIntIncrement(this byte[] nonce)
 		{
-			nonce.Increment_Int2();
+			nonce.Increment_Int();
 		}
 
 		#endregion
