@@ -35,5 +35,11 @@ namespace CryptoBase.Benchmark
 		{
 			MD5DigestTest(new BcMD5Digest());
 		}
+
+		[Benchmark]
+		public void SlowMD5()
+		{
+			MD5DigestTest(new SlowMD5Digest());
+		}
 	}
 }
