@@ -10,9 +10,7 @@ namespace CryptoBase.Digests.MD5
 
 		public override Span<byte> Compute(in ReadOnlySpan<byte> origin)
 		{
-			var buffer = new byte[Md5Len];
-
-			var span = buffer.AsSpan();
+			Span<byte> span = new byte[Md5Len];
 
 			Hasher.Value!.TryComputeHash(origin, span, out _);
 
