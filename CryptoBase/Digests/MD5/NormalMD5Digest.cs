@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.Digests;
 using System;
-using System.Buffers;
 using System.Threading;
 
 namespace CryptoBase.Digests.MD5
@@ -11,19 +10,13 @@ namespace CryptoBase.Digests.MD5
 
 		public override Span<byte> Compute(in ReadOnlySpan<byte> origin)
 		{
-			var buffer = ArrayPool<byte>.Shared.Rent(Md5Len);
-			try
-			{
-				var span = buffer.AsSpan(0, Md5Len);
+			var buffer = new byte[Md5Len];
 
-				Hasher.Value!.TryComputeHash(origin, span, out _);
+			var span = buffer.AsSpan();
 
-				return span;
-			}
-			finally
-			{
-				ArrayPool<byte>.Shared.Return(buffer);
-			}
+			Hasher.Value!.TryComputeHash(origin, span, out _);
+
+			return span;
 		}
 	}
 }
