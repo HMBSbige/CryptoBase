@@ -24,5 +24,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<SHA1Benchmark>();
 		}
+
+		[TestMethod]
+		public void SM3Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<SM3Benchmark>();
+		}
 	}
 }

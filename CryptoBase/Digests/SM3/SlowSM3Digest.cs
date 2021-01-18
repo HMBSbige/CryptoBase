@@ -2,11 +2,11 @@ using CryptoBase.Abstractions.Digests;
 using System;
 using System.Threading;
 
-namespace CryptoBase.Digests.MD5
+namespace CryptoBase.Digests.SM3
 {
-	public class SlowMD5Digest : MD5DigestBase
+	public class SlowSM3Digest : SM3DigestBase
 	{
-		private static readonly ThreadLocal<IHash> Hasher = new(() => new SlowMD5DigestInternal());
+		private static readonly ThreadLocal<IHash> Hasher = new(() => new SlowSM3DigestInternal());
 
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{

@@ -1,12 +1,12 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.Digests;
-using CryptoBase.Digests.SHA1;
+using CryptoBase.Digests.SM3;
 using System;
 
 namespace CryptoBase.Benchmark
 {
 	[MemoryDiagnoser]
-	public class SHA1Benchmark
+	public class SM3Benchmark
 	{
 		[Params(32, 114514)]
 		public int ByteLength { get; set; }
@@ -19,22 +19,22 @@ namespace CryptoBase.Benchmark
 			_randombytes = Utils.RandBytes(ByteLength).ToArray();
 		}
 
-		private void SHADigestTest(IHash sha1)
+		private void SM3DigestTest(IHash sm3)
 		{
-			Span<byte> hash = stackalloc byte[sha1.Length];
-			sha1.ComputeHash(_randombytes.Span, hash);
-		}
-
-		[Benchmark(Baseline = true)]
-		public void Normal()
-		{
-			SHADigestTest(new NormalSHA1Digest());
+			Span<byte> hash = stackalloc byte[sm3.Length];
+			sm3.ComputeHash(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
+		public void SlowSM3()
+		{
+			SM3DigestTest(new SlowSM3Digest());
+		}
+
+		[Benchmark(Baseline = true)]
 		public void BouncyCastle()
 		{
-			SHADigestTest(new BcSHA1Digest());
+			SM3DigestTest(new BcSM3Digest());
 		}
 	}
 }

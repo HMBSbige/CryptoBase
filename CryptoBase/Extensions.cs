@@ -1,4 +1,6 @@
 using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase
 {
@@ -76,5 +78,10 @@ namespace CryptoBase
 			return result;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static uint RotateLeft(this uint value, int offset)
+		{
+			return BitOperations.RotateLeft(value, offset);
+		}
 	}
 }

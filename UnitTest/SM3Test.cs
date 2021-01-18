@@ -31,6 +31,7 @@ namespace UnitTest
 		public void SM3DigestTest(string str, string sha1Str)
 		{
 			SM3DigestTest(new BcSM3Digest(), str, sha1Str);
+			SM3DigestTest(new SlowSM3Digest(), str, sha1Str);
 		}
 	}
 }
