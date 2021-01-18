@@ -101,75 +101,81 @@ namespace CryptoBase.Digests.MD5
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		public override Span<byte> Compute(in ReadOnlySpan<byte> origin)
+		public override void Compute(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			const int blockSizeOfByte = 64;
 			const int blockSizeOfInt = 16;
 			const int sizeOfInt = sizeof(uint);
 
-			var bytes = ArrayPool<uint>.Shared.Rent(blockSizeOfInt);
 			try
 			{
-				var span = bytes.AsSpan(0, blockSizeOfInt);
-				var t = origin;
-				while (t.Length >= blockSizeOfByte)
+				var bytes = ArrayPool<uint>.Shared.Rent(blockSizeOfInt);
+				try
 				{
-					for (var i = 0; i < blockSizeOfInt; ++i)
+					var span = bytes.AsSpan(0, blockSizeOfInt);
+					var t = origin;
+					while (t.Length >= blockSizeOfByte)
 					{
-						span[i] = BinaryPrimitives.ReadUInt32LittleEndian(t);
-						t = t.Slice(4);
+						for (var i = 0; i < blockSizeOfInt; ++i)
+						{
+							span[i] = BinaryPrimitives.ReadUInt32LittleEndian(t);
+							t = t.Slice(4);
+						}
+						Process(span);
 					}
-					Process(span);
-				}
 
-				var index = 0;
-				while (t.Length >= sizeOfInt)
-				{
-					span[index++] = BinaryPrimitives.ReadUInt32LittleEndian(t);
-					t = t.Slice(sizeOfInt);
-				}
+					var index = 0;
+					while (t.Length >= sizeOfInt)
+					{
+						span[index++] = BinaryPrimitives.ReadUInt32LittleEndian(t);
+						t = t.Slice(sizeOfInt);
+					}
 
-				const uint padding = 0b10000000;
-				span[index++] = t.Length switch
-				{
-					0 => padding,
-					1 => t[0] | padding << 8,
-					2 => t[0] | (uint)t[1] << 8 | padding << 16,
-					3 => t[0] | (uint)t[1] << 8 | (uint)t[2] << 16 | padding << 24,
-					_ => 0 // unreachable
-				};
-				if (index == 15)
-				{
+					const uint padding = 0b10000000;
+					span[index++] = t.Length switch
+					{
+						0 => padding,
+						1 => t[0] | padding << 8,
+						2 => t[0] | (uint)t[1] << 8 | padding << 16,
+						3 => t[0] | (uint)t[1] << 8 | (uint)t[2] << 16 | padding << 24,
+						_ => 0 // unreachable
+					};
+					if (index == 15)
+					{
+						span[15] = 0;
+					}
+					if (index > 14)
+					{
+						Process(span);
+						index = 0;
+					}
+
+					//final
+
+					for (var i = index; i < 14; ++i)
+					{
+						span[i] = 0;
+					}
+
+					span[14] = (uint)origin.Length << 3;
 					span[15] = 0;
-				}
-				if (index > 14)
-				{
+
 					Process(span);
-					index = 0;
 				}
-
-				//final
-
-				for (var i = index; i < 14; ++i)
+				finally
 				{
-					span[i] = 0;
+					ArrayPool<uint>.Shared.Return(bytes);
 				}
 
-				span[14] = (uint)origin.Length << 3;
-				span[15] = 0;
-
-				Process(span);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination, A);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(4), B);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(8), C);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(12), D);
 			}
 			finally
 			{
-				ArrayPool<uint>.Shared.Return(bytes);
+				Init();
 			}
-
-			Span<byte> res = Return();
-
-			Init();
-
-			return res;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -261,19 +267,6 @@ namespace CryptoBase.Digests.MD5
 			B += b;
 			C += c;
 			D += d;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private Span<byte> Return()
-		{
-			Span<byte> res = new byte[Md5Len];
-
-			BinaryPrimitives.WriteUInt32LittleEndian(res, A);
-			BinaryPrimitives.WriteUInt32LittleEndian(res.Slice(4), B);
-			BinaryPrimitives.WriteUInt32LittleEndian(res.Slice(8), C);
-			BinaryPrimitives.WriteUInt32LittleEndian(res.Slice(12), D);
-
-			return res;
 		}
 	}
 }

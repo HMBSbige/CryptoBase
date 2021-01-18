@@ -13,8 +13,13 @@ namespace CryptoBase.Abstractions.Digests
 		string Name { get; }
 
 		/// <summary>
+		/// Hash 长度
+		/// </summary>
+		int Length { get; }
+
+		/// <summary>
 		/// 计算 Hash
 		/// </summary>
-		Span<byte> Compute(in ReadOnlySpan<byte> origin);
+		void Compute(in ReadOnlySpan<byte> origin, Span<byte> destination);
 	}
 }

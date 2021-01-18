@@ -60,7 +60,7 @@ namespace CryptoBase
 
 		public static string ToHex(this in Span<byte> bytes)
 		{
-			Span<char> c = stackalloc char[MD5DigestBase.Md5Len * 2];
+			Span<char> c = stackalloc char[MD5DigestBase.Md5Len << 1];
 
 			var i = 0;
 			var j = 0;

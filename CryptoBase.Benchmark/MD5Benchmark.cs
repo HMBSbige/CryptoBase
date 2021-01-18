@@ -19,9 +19,10 @@ namespace CryptoBase.Benchmark
 			_randombytes = Utils.RandBytes(ByteLength).ToArray();
 		}
 
-		private Span<byte> MD5DigestTest(IHash md5)
+		private void MD5DigestTest(IHash md5)
 		{
-			return md5.Compute(_randombytes.Span);
+			Span<byte> hash = stackalloc byte[md5.Length];
+			md5.Compute(_randombytes.Span, hash);
 		}
 
 		[Benchmark(Baseline = true)]

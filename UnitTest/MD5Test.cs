@@ -2,6 +2,7 @@ using CryptoBase;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.Digests.MD5;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Text;
 
 namespace UnitTest
@@ -12,11 +13,13 @@ namespace UnitTest
 		private static void MD5DigestTest(IHash md5, string str, string md5Str)
 		{
 			Assert.AreEqual(@"MD5", md5.Name);
+			Assert.AreEqual(16, md5.Length);
 
 			var origin = Encoding.UTF8.GetBytes(str);
+			Span<byte> hash = stackalloc byte[md5.Length];
 
-			md5.Compute(origin);
-			var hash = md5.Compute(origin);
+			md5.Compute(origin, hash);
+			md5.Compute(origin, hash);
 
 			Assert.AreEqual(md5Str, hash.ToHex());
 		}

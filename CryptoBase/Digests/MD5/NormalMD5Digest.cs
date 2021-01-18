@@ -8,13 +8,9 @@ namespace CryptoBase.Digests.MD5
 	{
 		private static readonly ThreadLocal<System.Security.Cryptography.MD5> Hasher = new(System.Security.Cryptography.MD5.Create);
 
-		public override Span<byte> Compute(in ReadOnlySpan<byte> origin)
+		public override void Compute(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
-			Span<byte> span = new byte[Md5Len];
-
-			Hasher.Value!.TryComputeHash(origin, span, out _);
-
-			return span;
+			Hasher.Value!.TryComputeHash(origin, destination, out _);
 		}
 	}
 }
