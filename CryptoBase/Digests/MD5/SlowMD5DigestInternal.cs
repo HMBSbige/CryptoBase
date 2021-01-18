@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Digests;
 using System;
 using System.Buffers.Binary;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Digests.MD5
@@ -73,28 +72,28 @@ namespace CryptoBase.Digests.MD5
 		private static uint FF(uint a, uint b, uint c, uint d, uint mj, int s, uint ti)
 		{
 			a += F(b, c, d) + mj + ti;
-			return BitOperations.RotateLeft(a, s) + b;
+			return a.RotateLeft(s) + b;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static uint GG(uint a, uint b, uint c, uint d, uint mj, int s, uint ti)
 		{
 			a += G(b, c, d) + mj + ti;
-			return BitOperations.RotateLeft(a, s) + b;
+			return a.RotateLeft(s) + b;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static uint HH(uint a, uint b, uint c, uint d, uint mj, int s, uint ti)
 		{
 			a += H(b, c, d) + mj + ti;
-			return BitOperations.RotateLeft(a, s) + b;
+			return a.RotateLeft(s) + b;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static uint II(uint a, uint b, uint c, uint d, uint mj, int s, uint ti)
 		{
 			a += I(b, c, d) + mj + ti;
-			return BitOperations.RotateLeft(a, s) + b;
+			return a.RotateLeft(s) + b;
 		}
 
 		#endregion
