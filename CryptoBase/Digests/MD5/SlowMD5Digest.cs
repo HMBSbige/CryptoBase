@@ -40,13 +40,13 @@ namespace CryptoBase.Digests.MD5
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static uint F(uint x, uint y, uint z)
 		{
-			return x & y | ~x & z;
+			return (y ^ z) & x ^ z;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static uint G(uint x, uint y, uint z)
 		{
-			return x & z | y & ~z;
+			return (x ^ y) & z ^ y;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
