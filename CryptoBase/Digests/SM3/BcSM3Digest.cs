@@ -4,11 +4,11 @@ using Org.BouncyCastle.Crypto.Digests;
 using System;
 using System.Threading;
 
-namespace CryptoBase.Digests.SHA1
+namespace CryptoBase.Digests.SM3
 {
-	public class BcSHA1Digest : SHA1DigestBase
+	public class BcSM3Digest : SM3DigestBase
 	{
-		private static readonly ThreadLocal<IDigest> Hasher = new(() => new Sha1Digest());
+		private static readonly ThreadLocal<IDigest> Hasher = new(() => new SM3Digest());
 
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
