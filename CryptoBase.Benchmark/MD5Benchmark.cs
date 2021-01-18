@@ -22,7 +22,7 @@ namespace CryptoBase.Benchmark
 		private void MD5DigestTest(IHash md5)
 		{
 			Span<byte> hash = stackalloc byte[md5.Length];
-			md5.Compute(_randombytes.Span, hash);
+			md5.ComputeHash(_randombytes.Span, hash);
 		}
 
 		[Benchmark(Baseline = true)]

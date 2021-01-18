@@ -20,6 +20,6 @@ namespace CryptoBase.Abstractions.Digests
 		/// <summary>
 		/// 计算 Hash
 		/// </summary>
-		void Compute(in ReadOnlySpan<byte> origin, Span<byte> destination);
+		void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination);
 	}
 }

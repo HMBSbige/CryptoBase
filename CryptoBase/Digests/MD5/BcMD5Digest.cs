@@ -10,7 +10,7 @@ namespace CryptoBase.Digests.MD5
 	{
 		private static readonly ThreadLocal<MD5Digest> Hasher = new(() => new MD5Digest());
 
-		public override void Compute(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			var buffer = ArrayPool<byte>.Shared.Rent(origin.Length);
 			var outBuffer = ArrayPool<byte>.Shared.Rent(Length);

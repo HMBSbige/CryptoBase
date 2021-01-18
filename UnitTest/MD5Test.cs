@@ -18,8 +18,8 @@ namespace UnitTest
 			var origin = Encoding.UTF8.GetBytes(str);
 			Span<byte> hash = stackalloc byte[md5.Length];
 
-			md5.Compute(origin, hash);
-			md5.Compute(origin, hash);
+			md5.ComputeHash(origin, hash);
+			md5.ComputeHash(origin, hash);
 
 			Assert.AreEqual(md5Str, hash.ToHex());
 		}
