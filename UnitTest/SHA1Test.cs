@@ -12,7 +12,7 @@ namespace UnitTest
 	{
 		private static void SHA1DigestTest(IHash sha1, string str, string sha1Str)
 		{
-			Assert.AreEqual(@"SHA1", sha1.Name);
+			Assert.AreEqual(@"SHA-1", sha1.Name);
 			Assert.AreEqual(20, sha1.Length);
 
 			var origin = Encoding.UTF8.GetBytes(str);

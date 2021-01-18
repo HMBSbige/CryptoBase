@@ -12,7 +12,7 @@ namespace CryptoBase.Digests.MD5
 	internal class SlowMD5DigestInternal : MD5DigestBase
 	{
 		private const int BlockSizeOfInt = 16;
-		private const int BlockSizeOfByte = 64;
+		private const int BlockSizeOfByte = BlockSizeOfInt * SizeOfInt;
 		private const int SizeOfInt = sizeof(uint);
 
 		private uint A, B, C, D;
