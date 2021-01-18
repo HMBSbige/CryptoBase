@@ -18,5 +18,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<SodiumIncrementBenchmark>();
 		}
+
+		[TestMethod]
+		public void SHA1Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<SHA1Benchmark>();
+		}
 	}
 }
