@@ -214,9 +214,9 @@ namespace CryptoBase.Digests.SM3
 				e = P0(tt2);
 			}
 
-			var t = Vector256.Create(a, b, c, d, e, f, g, h);
 			if (Avx2.IsSupported)
 			{
+				var t = Vector256.Create(a, b, c, d, e, f, g, h);
 				V = Avx2.Xor(V, t);
 			}
 			else
