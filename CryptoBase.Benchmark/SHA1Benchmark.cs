@@ -19,22 +19,18 @@ namespace CryptoBase.Benchmark
 			_randombytes = Utils.RandBytes(ByteLength).ToArray();
 		}
 
-		private void SHADigestTest(IHash sha1)
-		{
-			Span<byte> hash = stackalloc byte[sha1.Length];
-			sha1.ComputeHash(_randombytes.Span, hash);
-		}
-
 		[Benchmark(Baseline = true)]
 		public void Normal()
 		{
-			SHADigestTest(new NormalSHA1Digest());
+			Span<byte> hash = stackalloc byte[SHA1DigestBase.Sha1Length];
+			SHA1Utils.Default(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
 		public void BouncyCastle()
 		{
-			SHADigestTest(new BcSHA1Digest());
+			Span<byte> hash = stackalloc byte[SHA1DigestBase.Sha1Length];
+			SHA1Utils.BouncyCastle(_randombytes.Span, hash);
 		}
 	}
 }

@@ -19,28 +19,25 @@ namespace CryptoBase.Benchmark
 			_randombytes = Utils.RandBytes(ByteLength).ToArray();
 		}
 
-		private void MD5DigestTest(IHash md5)
-		{
-			Span<byte> hash = stackalloc byte[md5.Length];
-			md5.ComputeHash(_randombytes.Span, hash);
-		}
-
 		[Benchmark(Baseline = true)]
 		public void Normal()
 		{
-			MD5DigestTest(new NormalMD5Digest());
+			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
+			MD5Utils.Default(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
 		public void BouncyCastle()
 		{
-			MD5DigestTest(new BcMD5Digest());
+			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
+			MD5Utils.BouncyCastle(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
 		public void SlowMD5()
 		{
-			MD5DigestTest(new SlowMD5Digest());
+			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
+			MD5Utils.MayFast(_randombytes.Span, hash);
 		}
 	}
 }

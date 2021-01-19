@@ -19,22 +19,18 @@ namespace CryptoBase.Benchmark
 			_randombytes = Utils.RandBytes(ByteLength).ToArray();
 		}
 
-		private void SM3DigestTest(IHash sm3)
-		{
-			Span<byte> hash = stackalloc byte[sm3.Length];
-			sm3.ComputeHash(_randombytes.Span, hash);
-		}
-
-		[Benchmark]
-		public void SlowSM3()
-		{
-			SM3DigestTest(new SlowSM3Digest());
-		}
-
 		[Benchmark(Baseline = true)]
 		public void BouncyCastle()
 		{
-			SM3DigestTest(new BcSM3Digest());
+			Span<byte> hash = stackalloc byte[SM3DigestBase.SM3Length];
+			SM3Utils.BouncyCastle(_randombytes.Span, hash);
+		}
+
+		[Benchmark]
+		public void SlowMD5()
+		{
+			Span<byte> hash = stackalloc byte[SM3DigestBase.SM3Length];
+			SM3Utils.MayFast(_randombytes.Span, hash);
 		}
 	}
 }
