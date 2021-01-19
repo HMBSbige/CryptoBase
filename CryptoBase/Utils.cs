@@ -1,6 +1,7 @@
 using Org.BouncyCastle.Crypto;
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace CryptoBase
@@ -39,6 +40,14 @@ namespace CryptoBase
 				ArrayPool<byte>.Shared.Return(buffer);
 				ArrayPool<byte>.Shared.Return(outBuffer);
 			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static void Swap<T>(ref T a, ref T b)
+		{
+			var t = a;
+			a = b;
+			b = t;
 		}
 	}
 }

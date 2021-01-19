@@ -34,6 +34,9 @@ namespace UnitTest
 			Assert.IsTrue(o.SequenceEqual(i));
 		}
 
+		/// <summary>
+		/// https://tools.ietf.org/html/rfc6229
+		/// </summary>
 		[TestMethod]
 		[DataRow(@"0102030405", 16, @"b2396305f03dc027ccc3524a0a1118a8", @"6982944f18fc82d589c403a47a0d0919")]
 		[DataRow(@"01020304050607", 16, @"293f02d47f37c9b633f2af5285feb46b", @"e620f1390d19bd84e2e0fd752031afc1")]
@@ -46,6 +49,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			Test(new BcRC4Crypto(key), originSize, hex, hex2);
+			Test(new SlowRC4Crypto(key), originSize, hex, hex2);
 		}
 	}
 }

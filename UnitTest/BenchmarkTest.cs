@@ -30,5 +30,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<SM3Benchmark>();
 		}
+
+		[TestMethod]
+		public void RC4Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<RC4Benchmark>();
+		}
 	}
 }
