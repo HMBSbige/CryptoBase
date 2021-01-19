@@ -72,7 +72,6 @@ namespace CryptoBase.Digests.SM3
 
 			for (var i = 16; i < 64; ++i)
 			{
-
 				T[i] = 0x7A879D8AU.RotateLeft(i);
 			}
 		}
@@ -159,7 +158,7 @@ namespace CryptoBase.Digests.SM3
 			V = Vector256.Create(0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A0600U, 0xA96F30BCU, 0x163138AAU, 0xE38DEE4DU, 0xB0FB0E4EU);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private void Process()
 		{
 			for (var j = 16; j < 68; ++j)
@@ -176,34 +175,24 @@ namespace CryptoBase.Digests.SM3
 			var g = V.GetElement(6);
 			var h = V.GetElement(7);
 
-			for (var j = 0; j < 16; ++j)
+			for (var j = 0; j < 64; ++j)
 			{
 				var a12 = a.RotateLeft(12);
 				var ss1 = (a12 + e + T[j]).RotateLeft(7);
 				var ss2 = ss1 ^ a12;
 
 				var w1 = _w[j] ^ _w[j + 4];
-				var tt1 = FF0(a, b, c) + d + ss2 + w1;
-				var tt2 = GG0(e, f, g) + h + ss1 + _w[j];
-				d = c;
-				c = b.RotateLeft(9);
-				b = a;
-				a = tt1;
-				h = g;
-				g = f.RotateLeft(19);
-				f = e;
-				e = P0(tt2);
-			}
-
-			for (var j = 16; j < 64; ++j)
-			{
-				var a12 = a.RotateLeft(12);
-				var ss1 = (a12 + e + T[j]).RotateLeft(7);
-				var ss2 = ss1 ^ a12;
-
-				var w1 = _w[j] ^ _w[j + 4];
-				var tt1 = FF1(a, b, c) + d + ss2 + w1;
-				var tt2 = GG1(e, f, g) + h + ss1 + _w[j];
+				uint tt1, tt2;
+				if (j < 16)
+				{
+					tt1 = FF0(a, b, c) + d + ss2 + w1;
+					tt2 = GG0(e, f, g) + h + ss1 + _w[j];
+				}
+				else
+				{
+					tt1 = FF1(a, b, c) + d + ss2 + w1;
+					tt2 = GG1(e, f, g) + h + ss1 + _w[j];
+				}
 				d = c;
 				c = b.RotateLeft(9);
 				b = a;
