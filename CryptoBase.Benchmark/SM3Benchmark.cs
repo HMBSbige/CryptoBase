@@ -27,7 +27,7 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void SlowMD5()
+		public void Slow()
 		{
 			Span<byte> hash = stackalloc byte[SM3DigestBase.SM3Length];
 			SM3Utils.MayFast(_randombytes.Span, hash);
