@@ -17,13 +17,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 
 		protected override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
-			var i = source.ToArray();
-			var length = i.Length;
-			var o = new byte[length];
-
-			_rc4.ProcessBytes(i, 0, length, o, 0);
-
-			o.CopyTo(destination);
+			for (var i = 0; i < source.Length; ++i)
+			{
+				destination[i] = _rc4.ReturnByte(source[i]);
+			}
 		}
 
 		public override void Reset()
