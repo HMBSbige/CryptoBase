@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -76,6 +77,15 @@ namespace CryptoBase
 			var result = new string(c);
 
 			return result;
+		}
+
+		public static byte[] FromHex(this string hex)
+		{
+			hex = hex.Replace(@"0x", string.Empty).Replace(@"-", string.Empty);
+			return Enumerable.Range(0, hex.Length)
+					.Where(x => (x & 1) == 0)
+					.Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+					.ToArray();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
