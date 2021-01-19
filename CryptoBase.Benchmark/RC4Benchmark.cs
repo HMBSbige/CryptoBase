@@ -25,6 +25,8 @@ namespace CryptoBase.Benchmark
 		{
 			Span<byte> o = stackalloc byte[origin.Length];
 			crypto.Encrypt(origin, o);
+
+			crypto.Dispose();
 		}
 
 		[Benchmark(Baseline = true)]

@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
+using System.Buffers;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 {
@@ -26,7 +27,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		};
 
 		private readonly byte[] _key;
-		private readonly byte[] _state = new byte[BoxLength];
+		private readonly byte[] _state;
 		private const int BoxLength = 256;
 
 		private int x, y;
@@ -34,6 +35,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		public SlowRC4Crypto(byte[] key) : base(key)
 		{
 			_key = key;
+			_state = ArrayPool<byte>.Shared.Rent(BoxLength);
 			Init();
 		}
 
@@ -67,6 +69,12 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		public override void Reset()
 		{
 			Init();
+		}
+
+		public override void Dispose()
+		{
+			base.Dispose();
+			ArrayPool<byte>.Shared.Return(_state);
 		}
 	}
 }

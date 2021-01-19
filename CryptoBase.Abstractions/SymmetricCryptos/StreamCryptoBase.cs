@@ -19,5 +19,7 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 		}
 
 		public abstract void Reset();
+
+		public virtual void Dispose() { }
 	}
 }

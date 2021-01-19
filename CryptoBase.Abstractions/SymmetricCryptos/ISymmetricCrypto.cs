@@ -2,7 +2,7 @@ using System;
 
 namespace CryptoBase.Abstractions.SymmetricCryptos
 {
-	public interface ISymmetricCrypto
+	public interface ISymmetricCrypto : IDisposable
 	{
 		string Name { get; }
 		void Encrypt(ReadOnlySpan<byte> plain, Span<byte> cipher);

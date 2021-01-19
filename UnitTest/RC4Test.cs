@@ -32,6 +32,8 @@ namespace UnitTest
 
 			crypto.Decrypt(h2, o);
 			Assert.IsTrue(o.SequenceEqual(i));
+
+			crypto.Dispose();
 		}
 
 		/// <summary>
