@@ -36,5 +36,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<RC4Benchmark>();
 		}
+
+		[TestMethod]
+		public void Salsa20Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<Salsa20Benchmark>();
+		}
 	}
 }
