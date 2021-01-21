@@ -8,7 +8,7 @@ namespace CryptoBase.Benchmark
 	[MemoryDiagnoser]
 	public class Salsa20Benchmark
 	{
-		[Params(32, 114514)]
+		[Params(32, 1000000)]
 		public int ByteLength { get; set; }
 
 		private Memory<byte> _randombytes;
@@ -41,6 +41,12 @@ namespace CryptoBase.Benchmark
 		public void Slow()
 		{
 			Test(new SlowSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
+		}
+
+		[Benchmark]
+		public void Fast()
+		{
+			Test(new IntrinsicsSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
 		}
 	}
 }
