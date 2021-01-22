@@ -11,7 +11,7 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static void SalsaCore(int rounds, uint[] state, byte[] keyStream)
 		{
-			var x = ArrayPool<uint>.Shared.Rent(ChachaCryptoBase.StateSize);
+			var x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
 			try
 			{
 				state.AsSpan().CopyTo(x);
@@ -28,7 +28,7 @@ namespace CryptoBase
 					SalsaQuarterRound(x, 12, 15, 14, 13);
 				}
 
-				for (var i = 0; i < ChachaCryptoBase.StateSize; ++i)
+				for (var i = 0; i < SnuffleCryptoBase.StateSize; ++i)
 				{
 					x[i] += state[i];
 				}
@@ -39,7 +39,7 @@ namespace CryptoBase
 			}
 
 			var span = keyStream.AsSpan();
-			for (var j = 0; j < ChachaCryptoBase.StateSize; j++)
+			for (var j = 0; j < SnuffleCryptoBase.StateSize; j++)
 			{
 				BinaryPrimitives.WriteUInt32LittleEndian(span, x[j]);
 				span = span.Slice(4);

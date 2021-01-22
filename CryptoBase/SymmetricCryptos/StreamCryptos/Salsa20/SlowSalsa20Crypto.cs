@@ -1,6 +1,6 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 {
-	public class SlowSalsa20Crypto : IntrinsicsSalsa20Crypto
+	public class SlowSalsa20Crypto : FastSalsa20Crypto
 	{
 		public SlowSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv) { }
 

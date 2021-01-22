@@ -46,7 +46,7 @@ namespace CryptoBase.Benchmark
 		[Benchmark]
 		public void Fast()
 		{
-			Test(new IntrinsicsSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
+			Test(new FastSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
 		}
 	}
 }

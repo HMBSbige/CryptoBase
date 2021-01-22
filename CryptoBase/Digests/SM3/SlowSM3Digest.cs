@@ -45,8 +45,8 @@ namespace CryptoBase.Digests.SM3
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static uint GG1(uint x, uint y, uint z)
 		{
-			//return (y ^ z) & x ^ z;
-			return (x & y) | IntrinsicsUtils.AndNot(x, z);
+			return (y ^ z) & x ^ z;
+			//return (x & y) | IntrinsicsUtils.AndNot(x, z);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

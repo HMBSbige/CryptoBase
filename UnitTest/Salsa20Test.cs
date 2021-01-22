@@ -58,7 +58,7 @@ namespace UnitTest
 			var iv = ivHex.FromHex();
 			Test(new BcSalsa20Crypto(key, iv), originSize, hex, hex2);
 			Test(new SlowSalsa20Crypto(key, iv), originSize, hex, hex2);
-			Test(new IntrinsicsSalsa20Crypto(key, iv), originSize, hex, hex2);
+			Test(new FastSalsa20Crypto(key, iv), originSize, hex, hex2);
 		}
 	}
 }
