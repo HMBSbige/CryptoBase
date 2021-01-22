@@ -36,6 +36,14 @@ namespace CryptoBase
 			}
 		}
 
+		internal static void BcUpdateStream(this IStreamCipher cipher, ReadOnlySpan<byte> source, Span<byte> destination)
+		{
+			for (var i = 0; i < source.Length; ++i)
+			{
+				destination[i] = cipher.ReturnByte(source[i]);
+			}
+		}
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static void Swap<T>(ref T a, ref T b)
 		{

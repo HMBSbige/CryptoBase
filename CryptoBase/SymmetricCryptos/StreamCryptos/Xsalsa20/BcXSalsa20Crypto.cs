@@ -3,15 +3,19 @@ using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
 
-namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
+namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 {
-	public class BcSalsa20Crypto : Salsa20CryptoBase
+	public class BcXSalsa20Crypto : Salsa20CryptoBase
 	{
-		private readonly Salsa20Engine _engine;
+		public override string Name { get; } = @"XSalsa20";
 
-		public BcSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)
+		public override int IvSize { get; } = 24;
+
+		private readonly XSalsa20Engine _engine;
+
+		public BcXSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)
 		{
-			_engine = new Salsa20Engine();
+			_engine = new XSalsa20Engine();
 			_engine.Init(default, new ParametersWithIV(new KeyParameter(key), iv));
 		}
 
