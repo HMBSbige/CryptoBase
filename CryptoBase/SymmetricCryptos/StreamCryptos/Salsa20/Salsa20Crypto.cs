@@ -44,31 +44,35 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 				throw new ArgumentException(string.Empty, nameof(destination));
 			}
 
-			while (source.Length > 0)
+			var length = source.Length;
+			fixed (byte* pStream = _keyStream)
+			fixed (byte* pSource = source)
+			fixed (byte* pDestination = destination)
 			{
-				if (Index == 0)
+				var s = pSource;
+				var d = pDestination;
+				while (length > 0)
 				{
-					UpdateKeyStream(State, _keyStream);
+					if (Index == 0)
+					{
+						UpdateKeyStream(State, _keyStream);
+					}
+
+					var r = 64 - Index;
+
+					IntrinsicsUtils.Xor(pStream + Index, s, d, Math.Min(r, length));
+
+					if (length < r)
+					{
+						Index += length;
+						return;
+					}
+
+					Index = 0;
+					length -= r;
+					s += r;
+					d += r;
 				}
-
-				var r = _keyStream.AsSpan(Index);
-
-				fixed (byte* pStream = r)
-				fixed (byte* pSource = source)
-				fixed (byte* pDestination = destination)
-				{
-					IntrinsicsUtils.Xor(pStream, pSource, pDestination, Math.Min(r.Length, source.Length));
-				}
-
-				if (source.Length < r.Length)
-				{
-					Index += source.Length;
-					return;
-				}
-
-				Index = 0;
-				source = source.Slice(r.Length);
-				destination = destination.Slice(r.Length);
 			}
 		}
 
