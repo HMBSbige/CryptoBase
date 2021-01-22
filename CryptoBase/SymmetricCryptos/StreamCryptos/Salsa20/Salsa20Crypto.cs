@@ -68,6 +68,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 
 				Index = 0;
 				source = source.Slice(r.Length);
+				destination = destination.Slice(r.Length);
 			}
 		}
 
