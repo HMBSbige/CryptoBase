@@ -1,10 +1,11 @@
+using CryptoBase.Abstractions;
 using System;
-using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 {
-	public class FastSalsa20Crypto : Salsa20Crypto
+	public class FastSalsa20Crypto : Salsa20Crypto, IIntrinsics
 	{
 		public bool IsSupport => Sse2.IsSupported;
 
@@ -19,16 +20,16 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			fixed (byte* s = keyStream)
 			{
 				IntrinsicsUtils.SalsaCore(x, s, Rounds);
+				if (++*(x + 8) == 0)
+				{
+					++*(x + 9);
+				}
 			}
 		}
 
 		public sealed override void Reset()
 		{
-			Index = 0;
-			State[8] = State[9] = 0;
-
 			var keyLength = Key.Length;
-
 			switch (keyLength)
 			{
 				case 16:
@@ -53,25 +54,33 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 				}
 			}
 
-			var key = Key.Span;
-			State[1] = BinaryPrimitives.ReadUInt32LittleEndian(key);
-			State[2] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(4));
-			State[3] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(8));
-			State[4] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(12));
+			var key = MemoryMarshal.Cast<byte, uint>(Key.Span);
+			State[1] = key[0];
+			State[2] = key[1];
+			State[3] = key[2];
+			State[4] = key[3];
 
 			if (keyLength == 32)
 			{
-				key = key.Slice(16);
+				State[11] = key[4];
+				State[12] = key[5];
+				State[13] = key[6];
+				State[14] = key[7];
+			}
+			else
+			{
+				State[11] = key[0];
+				State[12] = key[1];
+				State[13] = key[2];
+				State[14] = key[3];
 			}
 
-			State[11] = BinaryPrimitives.ReadUInt32LittleEndian(key);
-			State[12] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(4));
-			State[13] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(8));
-			State[14] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(12));
+			var iv = MemoryMarshal.Cast<byte, uint>(Iv.Span);
+			State[6] = iv[0];
+			State[7] = iv[1];
 
-			var iv = Iv.Span;
-			State[6] = BinaryPrimitives.ReadUInt32LittleEndian(iv);
-			State[7] = BinaryPrimitives.ReadUInt32LittleEndian(iv.Slice(4));
+			Index = 0;
+			State[8] = State[9] = 0;
 		}
 	}
 }

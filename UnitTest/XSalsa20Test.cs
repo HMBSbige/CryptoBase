@@ -9,9 +9,10 @@ namespace UnitTest
 	[TestClass]
 	public class XSalsa20Test
 	{
-		private static void Test(ISymmetricCrypto crypto, string i1, string o1, string i2, string o2)
+		private static void Test(SnuffleCryptoBase crypto, string i1, string o1, string i2, string o2)
 		{
 			Assert.AreEqual(@"XSalsa20", crypto.Name);
+			Assert.AreEqual(24, crypto.IvSize);
 
 			Span<byte> h1 = i1.FromHex();
 			Span<byte> g1 = o1.FromHex();
@@ -75,6 +76,8 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
 			Test(new BcXSalsa20Crypto(key, iv), i1, o1, i2, o2);
+			Test(new FastXSalsa20Crypto(key, iv), i1, o1, i2, o2);
+			Test(new SlowXSalsa20Crypto(key, iv), i1, o1, i2, o2);
 		}
 	}
 }

@@ -9,9 +9,10 @@ namespace UnitTest
 	[TestClass]
 	public class Salsa20Test
 	{
-		private static void Test(ISymmetricCrypto crypto, int originSize, string hex, int originSize2, string hex2)
+		private static void Test(SnuffleCryptoBase crypto, int originSize, string hex, int originSize2, string hex2)
 		{
 			Assert.AreEqual(@"Salsa20", crypto.Name);
+			Assert.AreEqual(8, crypto.IvSize);
 
 			Span<byte> h1 = hex.FromHex();
 			Span<byte> h2 = hex2.FromHex();

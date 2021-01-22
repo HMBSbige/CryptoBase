@@ -148,11 +148,6 @@ namespace CryptoBase
 			Sse2.Store(stream + 16, x1.AsByte());
 			Sse2.Store(stream + 32, x2.AsByte());
 			Sse2.Store(stream + 48, x3.AsByte());
-
-			if (++*(state + 8) == 0)
-			{
-				++*(state + 9);
-			}
 		}
 
 		/// <summary>
@@ -234,11 +229,6 @@ namespace CryptoBase
 
 			Avx.Store(stream, a.AsByte());
 			Avx.Store(stream + 32, b.AsByte());
-
-			if (++*(state + 8) == 0)
-			{
-				++*(state + 9);
-			}
 		}
 
 		private static readonly Vector256<uint> Permute0 = Vector256.Create(4, 3, 1, 6, 0, 5, 2, 7).AsUInt32();

@@ -8,7 +8,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 	public abstract class Salsa20Crypto : Salsa20CryptoBase
 	{
 		protected readonly uint[] State;
-		private readonly byte[] _keyStream;
+		protected readonly byte[] KeyStream;
 
 		protected readonly ReadOnlyMemory<byte> Key;
 		protected readonly ReadOnlyMemory<byte> Iv;
@@ -33,7 +33,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			Iv = iv;
 
 			State = ArrayPool<uint>.Shared.Rent(StateSize);
-			_keyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
+			KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -45,7 +45,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			}
 
 			var length = source.Length;
-			fixed (byte* pStream = _keyStream)
+			fixed (byte* pStream = KeyStream)
 			fixed (byte* pSource = source)
 			fixed (byte* pDestination = destination)
 			{
@@ -55,7 +55,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 				{
 					if (Index == 0)
 					{
-						UpdateKeyStream(State, _keyStream);
+						UpdateKeyStream(State, KeyStream);
 					}
 
 					var r = 64 - Index;
@@ -83,7 +83,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			base.Dispose();
 
 			ArrayPool<uint>.Shared.Return(State);
-			ArrayPool<byte>.Shared.Return(_keyStream);
+			ArrayPool<byte>.Shared.Return(KeyStream);
 		}
 	}
 }
