@@ -11,8 +11,6 @@ namespace CryptoBase
 		private readonly static Vector128<byte> Rot8_128 = Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
 		private readonly static Vector128<byte> Rot16_128 = Vector128.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13);
 
-		private static readonly Vector256<uint> Permute0 = Vector256.Create(5, 6, 7, 4, 3, 0, 1, 2).AsUInt32();
-
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static uint AndNot(uint left, uint right)
 		{
@@ -60,15 +58,6 @@ namespace CryptoBase
 		}
 
 		/// <summary>
-		/// a+=b
-		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void Add(this ref Vector128<uint> a, Vector128<uint> b)
-		{
-			a = Sse2.Add(a, b);
-		}
-
-		/// <summary>
 		/// destination = source ^ stream
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -110,6 +99,8 @@ namespace CryptoBase
 			}
 		}
 
+		#region Salsa
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static void SalsaQuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 		{
@@ -122,6 +113,11 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void SalsaCore(uint* state, byte* stream, byte rounds)
 		{
+			if (Avx.IsSupported && Avx2.IsSupported)
+			{
+				SalsaCoreAvx(state, stream, rounds);
+				return;
+			}
 			var s0 = Sse2.LoadVector128(state);
 			var s1 = Sse2.LoadVector128(state + 4);
 			var s2 = Sse2.LoadVector128(state + 8);
@@ -135,22 +131,18 @@ namespace CryptoBase
 			for (var i = 0; i < rounds; i += 2)
 			{
 				SalsaQuarterRound(ref x0, ref x1, ref x2, ref x3);
-
-				SalsaShuffle(ref x0, ref x2);
-				x3 = Sse2.Shuffle(x3, 0b01_00_11_10); // 8 13 2 7 => 2 7 8 13
+				SalsaShuffle(ref x0, ref x2, ref x3);
 
 				SalsaQuarterRound(ref x0, ref x1, ref x2, ref x3);
-
-				SalsaShuffle(ref x0, ref x2);
-				x3 = Sse2.Shuffle(x3, 0b01_00_11_10); // 2 7 8 13 => 8 13 2 7
+				SalsaShuffle(ref x0, ref x2, ref x3);
 			}
 
 			SalsaShuffle(ref x0, ref x1, ref x2, ref x3);
 
-			x0.Add(s0);
-			x1.Add(s1);
-			x2.Add(s2);
-			x3.Add(s3);
+			x0 = Sse2.Add(x0, s0);
+			x1 = Sse2.Add(x1, s1);
+			x2 = Sse2.Add(x2, s2);
+			x3 = Sse2.Add(x3, s3);
 
 			Sse2.Store(stream, x0.AsByte());
 			Sse2.Store(stream + 16, x1.AsByte());
@@ -166,16 +158,19 @@ namespace CryptoBase
 		/// <summary>
 		/// 0 1 2 3
 		/// 4 5 6 7
+		/// 8 9 10 11
 		/// =>
 		/// 5 6 7 4
 		/// 3 0 1 2
+		/// 10 11 8 9
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void SalsaShuffle(ref Vector128<uint> a, ref Vector128<uint> b)
+		public static void SalsaShuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 		{
 			Utils.Swap(ref a, ref b);
-			a = Sse2.Shuffle(a, 0b00_11_10_01); // 12 1 6 11 => 1 6 11 12
-			b = Sse2.Shuffle(b, 0b10_01_00_11); // 4 9 14 3 => 3 4 9 14
+			a = Sse2.Shuffle(a, 0b00_11_10_01);
+			b = Sse2.Shuffle(b, 0b10_01_00_11);
+			c = Sse2.Shuffle(c, 0b01_00_11_10);
 		}
 
 		/// <summary>
@@ -207,5 +202,77 @@ namespace CryptoBase
 			c = Sse2.Shuffle(Sse2.UnpackLow(t2, t3), 0b01_10_00_11); // 9 11 10 8 => 8 9 10 11
 			d = Sse2.Shuffle(Sse2.UnpackHigh(t2, t3), 0b10_00_11_01); // 14 12 15 13 => 12 13 14 15
 		}
+
+		#endregion
+
+		#region SalsaAvx
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void SalsaCoreAvx(uint* state, byte* stream, byte rounds)
+		{
+			var s0 = Avx.LoadVector256(state);
+			var s1 = Avx.LoadVector256(state + 8);
+
+			var x0 = Vector128.Create(*(state + 4), *(state + 9), *(state + 14), *(state + 3)); // 4 9 14 3
+			var x1 = Vector128.Create(*(state + 0), *(state + 5), *(state + 10), *(state + 15)); // 0 5 10 15
+			var x2 = Vector128.Create(*(state + 12), *(state + 1), *(state + 6), *(state + 11)); // 12 1 6 11
+			var x3 = Vector128.Create(*(state + 8), *(state + 13), *(state + 2), *(state + 7)); // 8 13 2 7
+
+			for (var i = 0; i < rounds; i += 2)
+			{
+				SalsaQuarterRound(ref x0, ref x1, ref x2, ref x3);
+				SalsaShuffle(ref x0, ref x2, ref x3);
+
+				SalsaQuarterRound(ref x0, ref x1, ref x2, ref x3);
+				SalsaShuffle(ref x0, ref x2, ref x3);
+			}
+
+			SalsaShuffleAvx(ref x0, ref x1, ref x2, ref x3, out var a, out var b);
+
+			a = Avx2.Add(a, s0);
+			b = Avx2.Add(b, s1);
+
+			Avx.Store(stream, a.AsByte());
+			Avx.Store(stream + 32, b.AsByte());
+
+			if (++*(state + 8) == 0)
+			{
+				++*(state + 9);
+			}
+		}
+
+		private static readonly Vector256<uint> Permute0 = Vector256.Create(4, 3, 1, 6, 0, 5, 2, 7).AsUInt32();
+		private static readonly Vector256<uint> Permute1 = Vector256.Create(1, 6, 4, 3, 2, 7, 0, 5).AsUInt32();
+		private static readonly Vector256<uint> Permute2 = Vector256.Create(0, 1, 3, 2, 4, 6, 5, 7).AsUInt32();
+		private static readonly Vector256<uint> Permute3 = Vector256.Create(1, 0, 2, 3, 5, 7, 4, 6).AsUInt32();
+
+		/// <summary>
+		/// 4 9 14 3
+		/// 0 5 10 15
+		/// 12 1 6 11
+		/// 8 13 2 7
+		/// =>
+		/// 0 1 2 3 4 5 6 7
+		/// 8 9 10 11 12 13 14 15
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static void SalsaShuffleAvx(
+			ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d,
+			out Vector256<uint> x0, out Vector256<uint> x1)
+		{
+			x0 = Vector256.Create(a, b); // 4 9 14 3 0 5 10 15
+			x1 = Vector256.Create(c, d); // 12 1 6 11 8 13 2 7
+
+			x0 = Avx2.PermuteVar8x32(x0, Permute0); // 0 3 9 10 4 5 14 15
+			x1 = Avx2.PermuteVar8x32(x1, Permute1); // 1 2 8 11 6 7 12 13
+
+			var t = Avx2.UnpackLow(x0, x1); // 0 1 3 2 4 6 5 7
+			x1 = Avx2.UnpackHigh(x0, x1); // 9 8 10 11 14 12 15 13
+
+			x0 = Avx2.PermuteVar8x32(t, Permute2); // 0 1 2 3 4 5 6 7
+			x1 = Avx2.PermuteVar8x32(x1, Permute3); // 8 9 10 11 12 13 14 15
+		}
+
+		#endregion
 	}
 }
