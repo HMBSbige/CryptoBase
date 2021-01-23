@@ -9,28 +9,6 @@ namespace CryptoBase
 	{
 		private const string Alphabet = @"0123456789abcdef";
 
-		#region SodiumIncrement
-
-		public static void Increment_Int(this byte[] nonce)
-		{
-			if (++nonce[0] != 0)
-			{
-				return;
-			}
-
-			if (++nonce[1] != 0)
-			{
-				return;
-			}
-
-			if (++nonce[2] != 0)
-			{
-				return;
-			}
-
-			++nonce[3];
-		}
-
 		public static void Increment(this byte[] nonce)
 		{
 			for (var i = 0; i < nonce.Length; ++i)
@@ -42,23 +20,12 @@ namespace CryptoBase
 			}
 		}
 
-		public static void FastIntIncrement(this byte[] nonce)
-		{
-			nonce.Increment_Int();
-		}
-
-		#endregion
-
-		#region SodiumIncrementBE
-
 		public static void IncrementBe(this byte[] counter)
 		{
 			var j = counter.Length;
 			while (--j >= 0 && ++counter[j] == 0)
 			{ }
 		}
-
-		#endregion
 
 		public static string ToHex(this in Span<byte> bytes)
 		{

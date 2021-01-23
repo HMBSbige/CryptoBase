@@ -14,12 +14,6 @@ namespace UnitTest
 		}
 
 		[TestMethod]
-		public void SodiumIncrementBenchmark()
-		{
-			var _ = BenchmarkRunner.Run<SodiumIncrementBenchmark>();
-		}
-
-		[TestMethod]
 		public void SHA1Benchmark()
 		{
 			var _ = BenchmarkRunner.Run<SHA1Benchmark>();

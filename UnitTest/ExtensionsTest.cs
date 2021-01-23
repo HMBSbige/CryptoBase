@@ -32,7 +32,6 @@ namespace UnitTest
 		[DataRow(114514)]
 		public void SodiumIncrementTest(int i)
 		{
-			SodiumIncrementTest(Extensions.Increment_Int, i);
 			SodiumIncrementTest(Extensions.Increment, i);
 		}
 
