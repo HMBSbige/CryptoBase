@@ -17,14 +17,13 @@ namespace CryptoBase
 			try
 			{
 				SalsaCore(rounds, state, x);
+				var span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
+				x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 			}
 			finally
 			{
 				ArrayPool<uint>.Shared.Return(x);
 			}
-
-			var span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
-			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 
 			if (++state[8] == 0)
 			{
