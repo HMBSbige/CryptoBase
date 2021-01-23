@@ -6,7 +6,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 
 		protected override void UpdateKeyStream(uint[] state, byte[] keyStream)
 		{
-			ChaCha20Utils.SalsaCore(Rounds, state, keyStream);
+			Salsa20Utils.SalsaCore(Rounds, state, keyStream);
 		}
 	}
 }

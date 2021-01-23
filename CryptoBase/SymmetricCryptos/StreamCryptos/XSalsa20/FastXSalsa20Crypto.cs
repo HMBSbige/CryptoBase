@@ -24,7 +24,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			fixed (uint* x = state)
 			fixed (byte* s = keyStream)
 			{
-				IntrinsicsUtils.SalsaCore(x, s, Rounds);
+				Salsa20Utils.SalsaCore(x, s, Rounds);
 				if (++*(x + 8) == 0)
 				{
 					++*(x + 9);
@@ -64,7 +64,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			fixed (uint* x = State)
 			fixed (byte* s = KeyStream)
 			{
-				IntrinsicsUtils.SalsaCore(x, s, Rounds);
+				Salsa20Utils.SalsaCore(x, s, Rounds);
 			}
 			var stream = MemoryMarshal.Cast<byte, uint>(KeyStream.AsSpan(0, 64));
 

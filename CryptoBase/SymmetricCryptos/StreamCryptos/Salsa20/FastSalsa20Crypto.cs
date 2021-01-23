@@ -19,7 +19,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			fixed (uint* x = state)
 			fixed (byte* s = keyStream)
 			{
-				IntrinsicsUtils.SalsaCore(x, s, Rounds);
+				Salsa20Utils.SalsaCore(x, s, Rounds);
 				if (++*(x + 8) == 0)
 				{
 					++*(x + 9);
