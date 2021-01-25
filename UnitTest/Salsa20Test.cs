@@ -74,18 +74,13 @@ namespace UnitTest
 		{
 			Span<byte> h1 = hex.FromHex();
 			Span<byte> h2 = hex2.FromHex();
-			Span<byte> i1 = stackalloc byte[64];
-			Span<byte> o1 = stackalloc byte[64];
-
-			Span<byte> i2 = stackalloc byte[65472];
-			Span<byte> o2 = stackalloc byte[65472];
+			Span<byte> i1 = stackalloc byte[65536];
+			Span<byte> o1 = stackalloc byte[65536];
 
 			crypto.Encrypt(i1, o1);
 
-			Assert.IsTrue(o1.SequenceEqual(h1));
-
-			crypto.Encrypt(i2, o2);
-			Assert.IsTrue(o2.Slice(65408, 64).SequenceEqual(h2));
+			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
+			Assert.IsTrue(o1.Slice(65472, 64).SequenceEqual(h2));
 
 			crypto.Dispose();
 		}
