@@ -58,26 +58,30 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private unsafe void Update(int length, uint* state, byte* stream, byte* source, byte* destination)
 		{
 			while (length > 0)
 			{
 				if (Index == 0)
 				{
-					if (Sse2.IsSupported)
+					if (IsSupport)
 					{
-						while (length > 64)
+						if (Sse2.IsSupported)
 						{
-							Salsa20Utils.SalsaCore64(Rounds, state, source, destination);
+							while (length >= 64)
+							{
+								Salsa20Utils.SalsaCore64(Rounds, state, source, destination);
 
-							source += 64;
-							destination += 64;
-							length -= 64;
+								source += 64;
+								destination += 64;
+								length -= 64;
+							}
 						}
-					}
-					if (length == 0)
-					{
-						break;
+						if (length == 0)
+						{
+							break;
+						}
 					}
 					UpdateKeyStream();
 					if (++*(state + 8) == 0)
@@ -88,7 +92,14 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 
 				var r = 64 - Index;
 
-				IntrinsicsUtils.Xor(stream + Index, source, destination, Math.Min(r, length));
+				if (IsSupport)
+				{
+					IntrinsicsUtils.Xor(stream + Index, source, destination, Math.Min(r, length));
+				}
+				else
+				{
+					IntrinsicsUtils.XorSoftwareFallback(stream + Index, source, destination, Math.Min(r, length));
+				}
 
 				if (length < r)
 				{

@@ -93,6 +93,15 @@ namespace CryptoBase
 				}
 			}
 
+			XorSoftwareFallback(stream, source, destination, length);
+		}
+
+		/// <summary>
+		/// destination = source ^ stream
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void XorSoftwareFallback(byte* stream, byte* source, byte* destination, int length)
+		{
 			for (var i = 0; i < length; ++i)
 			{
 				*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
