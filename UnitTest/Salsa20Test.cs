@@ -17,8 +17,8 @@ namespace UnitTest
 			Span<byte> h1 = hex.FromHex();
 			Span<byte> h2 = hex2.FromHex();
 
-			Span<byte> i1 = new byte[originSize];
-			Span<byte> i2 = new byte[originSize2];
+			Span<byte> i1 = stackalloc byte[originSize];
+			Span<byte> i2 = stackalloc byte[originSize2];
 			Span<byte> o1 = stackalloc byte[i1.Length];
 			Span<byte> o2 = stackalloc byte[i2.Length];
 
@@ -35,6 +35,30 @@ namespace UnitTest
 
 			crypto.Decrypt(h2, o2);
 			Assert.IsTrue(o2.SequenceEqual(i2));
+
+			crypto.Dispose();
+		}
+
+		private static void Test64(SnuffleCryptoBase crypto, string hex, string hex2)
+		{
+			Span<byte> h1 = hex.FromHex();
+			Span<byte> h2 = hex2.FromHex();
+			Span<byte> i1 = stackalloc byte[64];
+			Span<byte> o1 = stackalloc byte[64];
+
+			Span<byte> i2 = stackalloc byte[128];
+			Span<byte> o2 = stackalloc byte[128];
+
+			crypto.Encrypt(i1, o1);
+			Assert.IsTrue(o1.SequenceEqual(h1));
+
+			crypto.Encrypt(i2, o2);
+
+			crypto.Encrypt(i1, o1);
+			Assert.IsTrue(o1.SequenceEqual(h2));
+
+			crypto.Reset();
+			
 
 			crypto.Dispose();
 		}
@@ -56,6 +80,19 @@ namespace UnitTest
 			Test(new BcSalsa20Crypto(key, iv), originSize, hex, originSize2, hex2);
 			Test(new SlowSalsa20Crypto(key, iv), originSize, hex, originSize2, hex2);
 			Test(new FastSalsa20Crypto(key, iv), originSize, hex, originSize2, hex2);
+		}
+
+		[TestMethod]
+		[DataRow(@"80000000000000000000000000000000", @"0000000000000000",
+			@"4DFA5E481DA23EA09A31022050859936DA52FCEE218005164F267CB65F5CFD7F2B4F97E0FF16924A52DF269515110A07F9E460BC65EF95DA58F740B7D1DBB0AA",
+			@"DA9C1581F429E0A00F7D67E23B730676783B262E8EB43A25F55FB90B3E753AEF8C6713EC66C51881111593CCB3E8CB8F8DE124080501EEEB389C4BCB6977CF95")]
+		public void Test64(string keyHex, string ivHex, string hex, string hex2)
+		{
+			var key = keyHex.FromHex();
+			var iv = ivHex.FromHex();
+			Test64(new BcSalsa20Crypto(key, iv), hex, hex2);
+			Test64(new SlowSalsa20Crypto(key, iv), hex, hex2);
+			Test64(new FastSalsa20Crypto(key, iv), hex, hex2);
 		}
 	}
 }

@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions;
 using CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
 using System;
 using System.Runtime.InteropServices;
@@ -6,9 +5,9 @@ using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 {
-	public class FastXSalsa20Crypto : Salsa20Crypto, IIntrinsics
+	public class FastXSalsa20Crypto : Salsa20Crypto
 	{
-		public bool IsSupport => Sse2.IsSupported;
+		public override bool IsSupport => Sse2.IsSupported;
 
 		public override string Name { get; } = @"XSalsa20";
 
@@ -17,19 +16,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 		public FastXSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)
 		{
 			Reset();
-		}
-
-		protected override unsafe void UpdateKeyStream(uint[] state, byte[] keyStream)
-		{
-			fixed (uint* x = state)
-			fixed (byte* s = keyStream)
-			{
-				Salsa20Utils.SalsaCore(x, s, Rounds);
-				if (++*(x + 8) == 0)
-				{
-					++*(x + 9);
-				}
-			}
 		}
 
 		public sealed override unsafe void Reset()
@@ -61,11 +47,19 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			State[8] = iv[2];
 			State[9] = iv[3];
 
-			fixed (uint* x = State)
-			fixed (byte* s = KeyStream)
+			if (IsSupport)
 			{
-				Salsa20Utils.SalsaCore(x, s, Rounds);
+				fixed (uint* x = State)
+				fixed (byte* s = KeyStream)
+				{
+					Salsa20Utils.UpdateKeyStream(x, s, Rounds);
+				}
 			}
+			else
+			{
+				Salsa20Utils.UpdateKeyStream(Rounds, State, KeyStream);
+			}
+
 			var stream = MemoryMarshal.Cast<byte, uint>(KeyStream.AsSpan(0, 64));
 
 			State[1] = stream[0] - State[0];

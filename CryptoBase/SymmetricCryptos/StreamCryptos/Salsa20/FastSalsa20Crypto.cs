@@ -1,30 +1,16 @@
-using CryptoBase.Abstractions;
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 {
-	public class FastSalsa20Crypto : Salsa20Crypto, IIntrinsics
+	public class FastSalsa20Crypto : Salsa20Crypto
 	{
-		public bool IsSupport => Sse2.IsSupported;
+		public override bool IsSupport => Sse2.IsSupported;
 
 		public FastSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)
 		{
 			Reset();
-		}
-
-		protected override unsafe void UpdateKeyStream(uint[] state, byte[] keyStream)
-		{
-			fixed (uint* x = state)
-			fixed (byte* s = keyStream)
-			{
-				Salsa20Utils.SalsaCore(x, s, Rounds);
-				if (++*(x + 8) == 0)
-				{
-					++*(x + 9);
-				}
-			}
 		}
 
 		public sealed override void Reset()

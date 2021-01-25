@@ -11,12 +11,12 @@ namespace CryptoBase
 	public static class Salsa20Utils
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void SalsaCore(int rounds, uint[] state, byte[] keyStream)
+		public static void UpdateKeyStream(int rounds, uint[] state, byte[] keyStream)
 		{
 			var x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
 			try
 			{
-				SalsaCore(rounds, state, x);
+				UpdateKeyStream(rounds, state, x);
 				var span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
 				x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 			}
@@ -24,15 +24,10 @@ namespace CryptoBase
 			{
 				ArrayPool<uint>.Shared.Return(x);
 			}
-
-			if (++state[8] == 0)
-			{
-				++state[9];
-			}
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void SalsaCore(int rounds, uint[] state, uint[] x)
+		public static void UpdateKeyStream(int rounds, uint[] state, uint[] x)
 		{
 			state.AsSpan().CopyTo(x);
 			for (var i = 0; i < rounds; i += 2)
@@ -82,7 +77,7 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static unsafe void SalsaCore(uint* state, byte* stream, byte rounds)
+		public static unsafe void UpdateKeyStream(uint* state, byte* stream, byte rounds)
 		{
 			if (Avx.IsSupported && Avx2.IsSupported)
 			{
@@ -233,5 +228,49 @@ namespace CryptoBase
 		}
 
 		#endregion
+
+		public static unsafe void SalsaCore64(byte rounds, uint* state, byte* source, byte* destination)
+		{
+			var s0 = Sse2.LoadVector128(state);
+			var s1 = Sse2.LoadVector128(state + 4);
+			var s2 = Sse2.LoadVector128(state + 8);
+			var s3 = Sse2.LoadVector128(state + 12);
+
+			var x0 = Vector128.Create(*(state + 4), *(state + 9), *(state + 14), *(state + 3)); // 4 9 14 3
+			var x1 = Vector128.Create(*(state + 0), *(state + 5), *(state + 10), *(state + 15)); // 0 5 10 15
+			var x2 = Vector128.Create(*(state + 12), *(state + 1), *(state + 6), *(state + 11)); // 12 1 6 11
+			var x3 = Vector128.Create(*(state + 8), *(state + 13), *(state + 2), *(state + 7)); // 8 13 2 7
+
+			for (var i = 0; i < rounds; i += 2)
+			{
+				SalsaQuarterRound(ref x0, ref x1, ref x2, ref x3);
+				SalsaShuffle(ref x0, ref x2, ref x3);
+
+				SalsaQuarterRound(ref x0, ref x1, ref x2, ref x3);
+				SalsaShuffle(ref x0, ref x2, ref x3);
+			}
+
+			SalsaShuffle(ref x0, ref x1, ref x2, ref x3);
+
+			x0 = Sse2.Add(x0, s0);
+			x1 = Sse2.Add(x1, s1);
+			x2 = Sse2.Add(x2, s2);
+			x3 = Sse2.Add(x3, s3);
+
+			var v0 = Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source));
+			var v1 = Sse2.Xor(x1.AsByte(), Sse2.LoadVector128(source + 16));
+			var v2 = Sse2.Xor(x2.AsByte(), Sse2.LoadVector128(source + 32));
+			var v3 = Sse2.Xor(x3.AsByte(), Sse2.LoadVector128(source + 48));
+
+			Sse2.Store(destination, v0);
+			Sse2.Store(destination + 16, v1);
+			Sse2.Store(destination + 32, v2);
+			Sse2.Store(destination + 48, v3);
+
+			if (++*(state + 8) == 0)
+			{
+				++*(state + 9);
+			}
+		}
 	}
 }

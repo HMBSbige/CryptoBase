@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Buffers;
@@ -5,8 +6,10 @@ using System.Runtime.CompilerServices;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 {
-	public abstract class Salsa20Crypto : Salsa20CryptoBase
+	public abstract class Salsa20Crypto : Salsa20CryptoBase, IIntrinsics
 	{
+		public abstract bool IsSupport { get; }
+
 		protected readonly uint[] State;
 		protected readonly byte[] KeyStream;
 
@@ -45,38 +48,79 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			}
 
 			var length = source.Length;
+			fixed (uint* pState = State)
 			fixed (byte* pStream = KeyStream)
 			fixed (byte* pSource = source)
 			fixed (byte* pDestination = destination)
 			{
-				var s = pSource;
-				var d = pDestination;
-				while (length > 0)
-				{
-					if (Index == 0)
-					{
-						UpdateKeyStream(State, KeyStream);
-					}
-
-					var r = 64 - Index;
-
-					IntrinsicsUtils.Xor(pStream + Index, s, d, Math.Min(r, length));
-
-					if (length < r)
-					{
-						Index += length;
-						return;
-					}
-
-					Index = 0;
-					length -= r;
-					s += r;
-					d += r;
-				}
+				Update(length, pState, pStream, pSource, pDestination);
 			}
 		}
 
-		protected abstract void UpdateKeyStream(uint[] state, byte[] keyStream);
+		private unsafe void Update(int length, uint* state, byte* stream, byte* source, byte* destination)
+		{
+			while (length > 0)
+			{
+				if (Index == 0)
+				{
+					if (IsSupport)
+					{
+						while (length > 64)
+						{
+							Salsa20Utils.SalsaCore64(Rounds, state, source, destination);
+
+							source += 64;
+							destination += 64;
+							length -= 64;
+						}
+					}
+					if (length == 0)
+					{
+						break;
+					}
+					UpdateKeyStream(State, KeyStream);
+				}
+
+				var r = 64 - Index;
+
+				IntrinsicsUtils.Xor(stream + Index, source, destination, Math.Min(r, length));
+
+				if (length < r)
+				{
+					Index += length;
+					return;
+				}
+
+				Index = 0;
+				length -= r;
+				source += r;
+				destination += r;
+			}
+		}
+
+		private unsafe void UpdateKeyStream(uint[] state, byte[] keyStream)
+		{
+			if (IsSupport)
+			{
+				fixed (uint* x = state)
+				fixed (byte* s = keyStream)
+				{
+					Salsa20Utils.UpdateKeyStream(x, s, Rounds);
+					if (++*(x + 8) == 0)
+					{
+						++*(x + 9);
+					}
+				}
+			}
+			else
+			{
+				Salsa20Utils.UpdateKeyStream(Rounds, state, keyStream);
+				if (++state[8] == 0)
+				{
+					++state[9];
+				}
+			}
+		}
 
 		public override void Dispose()
 		{
