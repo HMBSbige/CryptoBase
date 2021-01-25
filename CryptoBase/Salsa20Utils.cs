@@ -229,6 +229,10 @@ namespace CryptoBase
 
 		#endregion
 
+		/// <summary>
+		/// 处理 64 bytes
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void SalsaCore64(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			var s0 = Sse2.LoadVector128(state);
@@ -271,6 +275,138 @@ namespace CryptoBase
 			{
 				++*(state + 9);
 			}
+		}
+
+		private static readonly Vector128<ulong> Add01 = Vector128.Create(0ul, 1);
+		private static readonly Vector128<ulong> Add23 = Vector128.Create(2ul, 3);
+
+		/// <summary>
+		/// 处理 256*n bytes
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void SalsaCore256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			#region s
+
+			var s0 = Vector128.Create(state[0]);
+			var s1 = Vector128.Create(state[1]);
+			var s2 = Vector128.Create(state[2]);
+			var s3 = Vector128.Create(state[3]);
+			var s4 = Vector128.Create(state[4]);
+			var s5 = Vector128.Create(state[5]);
+			var s6 = Vector128.Create(state[6]);
+			var s7 = Vector128.Create(state[7]);
+			// s8
+			// s9
+			var s10 = Vector128.Create(state[10]);
+			var s11 = Vector128.Create(state[11]);
+			var s12 = Vector128.Create(state[12]);
+			var s13 = Vector128.Create(state[13]);
+			var s14 = Vector128.Create(state[14]);
+			var s15 = Vector128.Create(state[15]);
+
+			#endregion
+
+			while (length >= 256)
+			{
+				#region x
+
+				var x0 = s0;
+				var x1 = s1;
+				var x2 = s2;
+				var x3 = s3;
+				var x4 = s4;
+				var x5 = s5;
+				var x6 = s6;
+				var x7 = s7;
+				var x10 = s10;
+				var x11 = s11;
+				var x12 = s12;
+				var x13 = s13;
+				var x14 = s14;
+				var x15 = s15;
+
+				#endregion
+
+				#region 8 9 位分别加 0 1 2 3
+
+				var o = state[8] | (ulong)state[9] << 32;
+				var vo = Vector128.Create(o);
+
+				var x8 = Sse2.Add(Add01, vo).AsUInt32();
+				var x9 = Sse2.Add(Add23, vo).AsUInt32();
+
+				var t8 = Sse2.UnpackLow(x8, x9);
+				var t9 = Sse2.UnpackHigh(x8, x9);
+
+				x8 = Sse2.UnpackLow(t8, t9);
+				x9 = Sse2.UnpackHigh(t8, t9);
+
+				var s8 = x8;
+				var s9 = x9;
+
+				o += 4;
+				state[8] = (uint)(o & 0xFFFFFFFF);
+				state[9] = (uint)(o >> 32 & 0xFFFFFFFF);
+
+				#endregion
+
+				for (var i = 0; i < rounds; i += 2)
+				{
+					SalsaQuarterRound(ref x4, ref x0, ref x12, ref x8);
+					SalsaQuarterRound(ref x9, ref x5, ref x1, ref x13);
+					SalsaQuarterRound(ref x14, ref x10, ref x6, ref x2);
+					SalsaQuarterRound(ref x3, ref x15, ref x11, ref x7);
+
+					SalsaQuarterRound(ref x1, ref x0, ref x3, ref x2);
+					SalsaQuarterRound(ref x6, ref x5, ref x4, ref x7);
+					SalsaQuarterRound(ref x11, ref x10, ref x9, ref x8);
+					SalsaQuarterRound(ref x12, ref x15, ref x14, ref x13);
+				}
+
+				AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref s0, ref s1, ref s2, ref s3, source, destination);
+				AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref s4, ref s5, ref s6, ref s7, source + 16, destination + 16);
+				AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref s8, ref s9, ref s10, ref s11, source + 32, destination + 32);
+				AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref s12, ref s13, ref s14, ref s15, source + 48, destination + 48);
+
+				source += 256;
+				destination += 256;
+				length -= 256;
+			}
+		}
+
+		/// <summary>
+		/// destination = (x+s) ^ source
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void AddTransposeXor(
+			ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3,
+			ref Vector128<uint> s0, ref Vector128<uint> s1, ref Vector128<uint> s2, ref Vector128<uint> s3,
+			byte* source, byte* destination
+			)
+		{
+			// x=x+s
+			x0 = Sse2.Add(x0, s0);
+			x1 = Sse2.Add(x1, s1);
+			x2 = Sse2.Add(x2, s2);
+			x3 = Sse2.Add(x3, s3);
+
+			// Transpose
+			var t0 = Sse2.UnpackLow(x0, x1);
+			var t1 = Sse2.UnpackLow(x2, x3);
+			var t2 = Sse2.UnpackHigh(x0, x1);
+			var t3 = Sse2.UnpackHigh(x2, x3);
+
+			x0 = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+			x1 = Sse2.UnpackHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+			x2 = Sse2.UnpackLow(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+			x3 = Sse2.UnpackHigh(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+
+			// Xor
+			Sse2.Store(destination, Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source)));
+			Sse2.Store(destination + 64, Sse2.Xor(x1.AsByte(), Sse2.LoadVector128(source + 64)));
+			Sse2.Store(destination + 128, Sse2.Xor(x2.AsByte(), Sse2.LoadVector128(source + 128)));
+			Sse2.Store(destination + 192, Sse2.Xor(x3.AsByte(), Sse2.LoadVector128(source + 192)));
 		}
 	}
 }

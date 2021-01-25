@@ -39,7 +39,7 @@ namespace UnitTest
 			crypto.Dispose();
 		}
 
-		private static void Test64(SnuffleCryptoBase crypto, string hex, string hex2)
+		private static void Test255(ISymmetricCrypto crypto, string hex, string hex2)
 		{
 			Span<byte> h1 = hex.FromHex();
 			Span<byte> h2 = hex2.FromHex();
@@ -58,7 +58,34 @@ namespace UnitTest
 			Assert.IsTrue(o1.SequenceEqual(h2));
 
 			crypto.Reset();
-			
+
+			crypto.Decrypt(h1, o1);
+			Assert.IsTrue(o1.SequenceEqual(i1));
+
+			crypto.Encrypt(i2, o2);
+
+			crypto.Encrypt(h2, o1);
+			Assert.IsTrue(o1.SequenceEqual(i1));
+
+			crypto.Dispose();
+		}
+
+		private static void Test65535(ISymmetricCrypto crypto, string hex, string hex2)
+		{
+			Span<byte> h1 = hex.FromHex();
+			Span<byte> h2 = hex2.FromHex();
+			Span<byte> i1 = stackalloc byte[64];
+			Span<byte> o1 = stackalloc byte[64];
+
+			Span<byte> i2 = stackalloc byte[65472];
+			Span<byte> o2 = stackalloc byte[65472];
+
+			crypto.Encrypt(i1, o1);
+
+			Assert.IsTrue(o1.SequenceEqual(h1));
+
+			crypto.Encrypt(i2, o2);
+			Assert.IsTrue(o2.Slice(65408, 64).SequenceEqual(h2));
 
 			crypto.Dispose();
 		}
@@ -86,13 +113,26 @@ namespace UnitTest
 		[DataRow(@"80000000000000000000000000000000", @"0000000000000000",
 			@"4DFA5E481DA23EA09A31022050859936DA52FCEE218005164F267CB65F5CFD7F2B4F97E0FF16924A52DF269515110A07F9E460BC65EF95DA58F740B7D1DBB0AA",
 			@"DA9C1581F429E0A00F7D67E23B730676783B262E8EB43A25F55FB90B3E753AEF8C6713EC66C51881111593CCB3E8CB8F8DE124080501EEEB389C4BCB6977CF95")]
-		public void Test64(string keyHex, string ivHex, string hex, string hex2)
+		public void Test255(string keyHex, string ivHex, string hex, string hex2)
 		{
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
-			Test64(new BcSalsa20Crypto(key, iv), hex, hex2);
-			Test64(new SlowSalsa20Crypto(key, iv), hex, hex2);
-			Test64(new FastSalsa20Crypto(key, iv), hex, hex2);
+			Test255(new BcSalsa20Crypto(key, iv), hex, hex2);
+			Test255(new SlowSalsa20Crypto(key, iv), hex, hex2);
+			Test255(new FastSalsa20Crypto(key, iv), hex, hex2);
+		}
+
+		[TestMethod]
+		[DataRow(@"0F62B5085BAE0154A7FA4DA0F34699EC3F92E5388BDE3184D72A7DD02376C91C", @"288FF65DC42B92F9",
+				@"5E5E71F90199340304ABB22A37B6625BF883FB89CE3B21F54A10B81066EF87DA30B77699AA7379DA595C77DD59542DA208E5954F89E40EB7AA80A84A6176663F",
+				@"2DA2174BD150A1DFEC1796E921E9D6E24ECF0209BCBEA4F98370FCE629056F64917283436E2D3F45556225307D5CC5A565325D8993B37F1654195C240BF75B16")]
+		public void Test65535(string keyHex, string ivHex, string hex, string hex2)
+		{
+			var key = keyHex.FromHex();
+			var iv = ivHex.FromHex();
+			Test65535(new BcSalsa20Crypto(key, iv), hex, hex2);
+			Test65535(new SlowSalsa20Crypto(key, iv), hex, hex2);
+			Test65535(new FastSalsa20Crypto(key, iv), hex, hex2);
 		}
 	}
 }
