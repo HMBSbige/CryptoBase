@@ -18,7 +18,16 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			Reset();
 		}
 
-		public sealed override unsafe void Reset()
+		protected override unsafe void UpdateKeyStream()
+		{
+			fixed (uint* x = State)
+			fixed (byte* s = KeyStream)
+			{
+				Salsa20Utils.UpdateKeyStream(x, s, Rounds);
+			}
+		}
+
+		public sealed override void Reset()
 		{
 			if (Key.Length != 32)
 			{
@@ -47,18 +56,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			State[8] = iv[2];
 			State[9] = iv[3];
 
-			if (IsSupport)
-			{
-				fixed (uint* x = State)
-				fixed (byte* s = KeyStream)
-				{
-					Salsa20Utils.UpdateKeyStream(x, s, Rounds);
-				}
-			}
-			else
-			{
-				Salsa20Utils.UpdateKeyStream(Rounds, State, KeyStream);
-			}
+			UpdateKeyStream();
 
 			var stream = MemoryMarshal.Cast<byte, uint>(KeyStream.AsSpan(0, 64));
 

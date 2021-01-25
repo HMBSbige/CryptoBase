@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 {
@@ -63,7 +64,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			{
 				if (Index == 0)
 				{
-					if (IsSupport)
+					if (Sse2.IsSupported)
 					{
 						while (length > 64)
 						{
@@ -78,7 +79,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 					{
 						break;
 					}
-					UpdateKeyStream(State, KeyStream);
+					UpdateKeyStream();
+					if (++*(state + 8) == 0)
+					{
+						++*(state + 9);
+					}
 				}
 
 				var r = 64 - Index;
@@ -98,29 +103,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			}
 		}
 
-		private unsafe void UpdateKeyStream(uint[] state, byte[] keyStream)
-		{
-			if (IsSupport)
-			{
-				fixed (uint* x = state)
-				fixed (byte* s = keyStream)
-				{
-					Salsa20Utils.UpdateKeyStream(x, s, Rounds);
-					if (++*(x + 8) == 0)
-					{
-						++*(x + 9);
-					}
-				}
-			}
-			else
-			{
-				Salsa20Utils.UpdateKeyStream(Rounds, state, keyStream);
-				if (++state[8] == 0)
-				{
-					++state[9];
-				}
-			}
-		}
+		protected abstract void UpdateKeyStream();
 
 		public override void Dispose()
 		{

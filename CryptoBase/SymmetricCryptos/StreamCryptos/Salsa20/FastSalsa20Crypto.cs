@@ -13,6 +13,15 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			Reset();
 		}
 
+		protected override unsafe void UpdateKeyStream()
+		{
+			fixed (uint* x = State)
+			fixed (byte* s = KeyStream)
+			{
+				Salsa20Utils.UpdateKeyStream(x, s, Rounds);
+			}
+		}
+
 		public sealed override void Reset()
 		{
 			var keyLength = Key.Length;
