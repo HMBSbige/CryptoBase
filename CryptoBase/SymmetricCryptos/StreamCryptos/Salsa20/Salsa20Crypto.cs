@@ -43,11 +43,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		protected override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
-			if (destination.Length < source.Length)
-			{
-				throw new ArgumentException(string.Empty, nameof(destination));
-			}
-
 			var length = source.Length;
 			fixed (uint* pState = State)
 			fixed (byte* pStream = KeyStream)
