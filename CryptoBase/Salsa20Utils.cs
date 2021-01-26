@@ -354,20 +354,15 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void SalsaCore128(byte rounds, uint* state, byte* source, byte* destination)
 		{
-			var s0 = Avx.LoadVector256(state); // 0 1 2 3 4 5 6 7
-
 			var t8 = *(state + 8);
 			var t9 = *(state + 9);
 
-			// 8 9 10 11 12 13 14 15
-			var s1 = Vector256.Create(*(state + 8), *(state + 9), *(state + 10), *(state + 11), *(state + 12), *(state + 13), *(state + 14), *(state + 15));
-			//var s1 = Avx.LoadVector256(state + 8); // Bug when Release...
+			var s1 = Avx.LoadVector256(state + 8); // 8 9 10 11 12 13 14 15
 
 			if (++*(state + 8) == 0)
 			{
 				++*(state + 9);
 			}
-			var s3 = Avx.LoadVector256(state + 8); // 8 9 10 11 12 13 14 15
 
 			// 4 9 14 3
 			var x0 = Vector256.Create(
@@ -398,10 +393,12 @@ namespace CryptoBase
 
 			SalsaShuffle(ref x0, ref x1, ref x2, ref x3);
 
+			var s0 = Avx.LoadVector256(state); // 0 1 2 3 4 5 6 7
+
 			x0 = Avx2.Add(x0, s0);
 			x1 = Avx2.Add(x1, s1);
 			x2 = Avx2.Add(x2, s0);
-			x3 = Avx2.Add(x3, s3);
+			x3 = Avx2.Add(x3, Avx.LoadVector256(state + 8));
 
 			var v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
 			var v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
