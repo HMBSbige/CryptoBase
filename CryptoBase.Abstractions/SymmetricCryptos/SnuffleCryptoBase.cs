@@ -4,7 +4,7 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 	{
 		public const int StateSize = 16; // 64 bytes
 
-		public abstract int IvSize { get; }
+		public virtual int IvSize { get; } = 8;
 
 		protected SnuffleCryptoBase(byte[] key, byte[] iv) { }
 	}

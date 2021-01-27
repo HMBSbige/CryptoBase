@@ -13,12 +13,12 @@ C# 密码库抽象接口与默认实现
 
 ### 对称加密
 #### 流加密
-* Chacha20
+* ChaCha20
     * Original
     * IETF 7539
 * RC4
 * Salsa20
-* XChacha20
+* XChaCha20
 * XSalsa20
 
 #### 块加密
@@ -31,6 +31,6 @@ C# 密码库抽象接口与默认实现
 * CTR
 
 #### 认证加密
-* Chacha20Poly1305
+* ChaCha20Poly1305
 * AES-GCM
 * SM4-GCM
