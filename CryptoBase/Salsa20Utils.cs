@@ -68,7 +68,7 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void QuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
+		private static void QuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 		{
 			a = Sse2.Xor(a, Sse2.Add(b, c).RotateLeft(7));
 			d = Sse2.Xor(d, Sse2.Add(a, b).RotateLeft(9));
@@ -77,7 +77,7 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void QuarterRound(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
+		private static void QuarterRound(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 		{
 			a = Avx2.Xor(a, Avx2.Add(b, c).RotateLeft(7));
 			d = Avx2.Xor(d, Avx2.Add(a, b).RotateLeft(9));
@@ -90,7 +90,7 @@ namespace CryptoBase
 		{
 			if (Avx.IsSupported && Avx2.IsSupported)
 			{
-				SalsaCoreAvx(state, stream, rounds);
+				UpdateKeyStreamAvx(state, stream, rounds);
 				return;
 			}
 			var s0 = Sse2.LoadVector128(state);
@@ -106,13 +106,13 @@ namespace CryptoBase
 			for (var i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x1, ref x2, ref x3);
-				SalsaShuffle(ref x0, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
 
 				QuarterRound(ref x0, ref x1, ref x2, ref x3);
-				SalsaShuffle(ref x0, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
 			}
 
-			SalsaShuffle(ref x0, ref x1, ref x2, ref x3);
+			Shuffle(ref x0, ref x1, ref x2, ref x3);
 
 			x0 = Sse2.Add(x0, s0);
 			x1 = Sse2.Add(x1, s1);
@@ -135,7 +135,7 @@ namespace CryptoBase
 		/// 10 11 8 9
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void SalsaShuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
+		private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 		{
 			Utils.Swap(ref a, ref b);
 			a = Sse2.Shuffle(a, 0b00_11_10_01);
@@ -155,7 +155,7 @@ namespace CryptoBase
 		/// 12 13 14 15
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void SalsaShuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
+		private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 		{
 			a = Sse2.Shuffle(a, 0b10_01_00_11); // 4 9 14 3 => 3 4 9 14
 												// 0 5 10 15
@@ -176,7 +176,7 @@ namespace CryptoBase
 		#region Avx
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static unsafe void SalsaCoreAvx(uint* state, byte* stream, byte rounds)
+		private static unsafe void UpdateKeyStreamAvx(uint* state, byte* stream, byte rounds)
 		{
 			var s0 = Avx.LoadVector256(state);
 			var s1 = Avx.LoadVector256(state + 8);
@@ -189,13 +189,13 @@ namespace CryptoBase
 			for (var i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x1, ref x2, ref x3);
-				SalsaShuffle(ref x0, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
 
 				QuarterRound(ref x0, ref x1, ref x2, ref x3);
-				SalsaShuffle(ref x0, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
 			}
 
-			SalsaShuffleAvx(ref x0, ref x1, ref x2, ref x3, out var a, out var b);
+			Shuffle(ref x0, ref x1, ref x2, ref x3, out var a, out var b);
 
 			a = Avx2.Add(a, s0);
 			b = Avx2.Add(b, s1);
@@ -228,7 +228,7 @@ namespace CryptoBase
 		/// 8 9 10 11 12 13 14 15
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void SalsaShuffleAvx(
+		private static void Shuffle(
 			ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d,
 			out Vector256<uint> x0, out Vector256<uint> x1)
 		{
@@ -255,7 +255,7 @@ namespace CryptoBase
 		/// 10 11 8 9 22 23 20 21
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void SalsaShuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
+		private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
 		{
 			Utils.Swap(ref a, ref b);
 			a = Avx2.PermuteVar8x32(a, Permute4);
@@ -275,7 +275,7 @@ namespace CryptoBase
 		/// 24 25 26 27 28 29 30 31
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void SalsaShuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
+		private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 		{
 			a = Avx2.PermuteVar8x32(a, Permute7); // 3 19 9 25 4 20 14 30
 			b = Avx2.PermuteVar8x32(b, Permute8); // 0 16 10 26 5 21 15 31
@@ -319,13 +319,13 @@ namespace CryptoBase
 			for (var i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x1, ref x2, ref x3);
-				SalsaShuffle(ref x0, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
 
 				QuarterRound(ref x0, ref x1, ref x2, ref x3);
-				SalsaShuffle(ref x0, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
 			}
 
-			SalsaShuffle(ref x0, ref x1, ref x2, ref x3);
+			Shuffle(ref x0, ref x1, ref x2, ref x3);
 
 			x0 = Sse2.Add(x0, s0);
 			x1 = Sse2.Add(x1, s1);
@@ -385,13 +385,13 @@ namespace CryptoBase
 			for (var i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x1, ref x2, ref x3);
-				SalsaShuffle(ref x0, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
 
 				QuarterRound(ref x0, ref x1, ref x2, ref x3);
-				SalsaShuffle(ref x0, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
 			}
 
-			SalsaShuffle(ref x0, ref x1, ref x2, ref x3);
+			Shuffle(ref x0, ref x1, ref x2, ref x3);
 
 			var s0 = Avx.LoadVector256(state); // 0 1 2 3 4 5 6 7
 
@@ -520,7 +520,7 @@ namespace CryptoBase
 		/// destination = (x+s) ^ source
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static unsafe void AddTransposeXor(
+		private static unsafe void AddTransposeXor(
 			ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3,
 			ref Vector128<uint> s0, ref Vector128<uint> s1, ref Vector128<uint> s2, ref Vector128<uint> s3,
 			byte* source, byte* destination
