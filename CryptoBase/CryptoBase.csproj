@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
-    <ProjectReference Include="..\CryptoBase.Shared\CryptoBase.Shared.csproj" />
   </ItemGroup>
 
 </Project>
