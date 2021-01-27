@@ -8,6 +8,7 @@ namespace CryptoBase.Digests.MD5
 	{
 		private static readonly ThreadLocal<MD5DigestBase> Normal = new(() => new NormalMD5Digest());
 		private static readonly ThreadLocal<MD5DigestBase> Slow = new(() => new SlowMD5Digest());
+		private static readonly ThreadLocal<MD5DigestBase> Fast = new(() => new Fast440MD5Digest());
 
 		public static void Default(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
@@ -17,6 +18,11 @@ namespace CryptoBase.Digests.MD5
 		public static void MayFast(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			Slow.Value!.ComputeHash(origin, destination);
+		}
+
+		public static void Fast440(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		{
+			Fast.Value!.ComputeHash(origin, destination);
 		}
 	}
 }

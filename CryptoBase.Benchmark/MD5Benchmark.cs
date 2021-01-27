@@ -40,5 +40,12 @@ namespace CryptoBase.Benchmark
 			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
 			MD5Utils.MayFast(_randombytes.Span, hash);
 		}
+
+		[Benchmark]
+		public void Fast440MD5()
+		{
+			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
+			MD5Utils.Fast440(_randombytes.Span, hash);
+		}
 	}
 }

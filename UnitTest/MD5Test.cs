@@ -34,11 +34,23 @@ namespace UnitTest
 		[DataRow(@"abc", @"900150983cd24fb0d6963f7d28e17f72")]
 		[DataRow(@"message digest", @"f96b697d7cb7938d525a2f31aaf161d0")]
 		[DataRow(@"abcdefghijklmnopqrstuvwxyz", @"c3fcd3d76192e4007dfb496cca67e13b")]
+		[DataRow(@"中文测试14", @"0958d88b4122b0f1cf13f19ee461b339")]
+		[DataRow(@"1234567890123456789012", @"aad9dc90c98e6472bd0b67067b5b11c9")]
+		[DataRow(@"32323232323232323232323232323232", @"b9cfdc1fb63d34054bbfebff4e99795a")]
+		[DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012", @"b76972fe0dff4baac395b531646f738e")]
+		public void MD5DigestTest(string str, string md5Str)
+		{
+			MD5DigestTest(new NormalMD5Digest(), str, md5Str);
+			MD5DigestTest(new BcMD5Digest(), str, md5Str);
+			MD5DigestTest(new SlowMD5Digest(), str, md5Str);
+			MD5DigestTest(new Fast440MD5Digest(), str, md5Str);
+		}
+
+		[TestMethod]
 		[DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", @"d174ab98d277d9f5a5611c2c9f419d9f")]
 		[DataRow(@"12345678901234567890123456789012345678901234567890123456789012345678901234567890", @"57edf4a22be3c955ac49da2e2107b67a")]
 		[DataRow(@"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", @"268c7919189d85e276d74b8c60b2f84f")]
-		[DataRow(@"中文测试14", @"0958d88b4122b0f1cf13f19ee461b339")]
-		public void MD5DigestTest(string str, string md5Str)
+		public void LongMessageTest(string str, string md5Str)
 		{
 			MD5DigestTest(new NormalMD5Digest(), str, md5Str);
 			MD5DigestTest(new BcMD5Digest(), str, md5Str);

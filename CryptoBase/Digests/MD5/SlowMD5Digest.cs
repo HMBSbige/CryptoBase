@@ -12,10 +12,10 @@ namespace CryptoBase.Digests.MD5
 	{
 		private const int BlockSizeOfInt = 16;
 		private const int BlockSizeOfByte = BlockSizeOfInt * SizeOfInt;
-		private const int SizeOfInt = sizeof(uint);
+		protected const int SizeOfInt = sizeof(uint);
 
-		private uint A, B, C, D;
-		private readonly uint[] _x = new uint[BlockSizeOfInt];
+		protected uint A, B, C, D;
+		protected readonly uint[] _x = new uint[BlockSizeOfInt];
 
 		#region S
 
@@ -105,7 +105,7 @@ namespace CryptoBase.Digests.MD5
 			Init();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			try
@@ -170,8 +170,8 @@ namespace CryptoBase.Digests.MD5
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void Init()
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		protected void Init()
 		{
 			A = 0x67452301;
 			B = 0xefcdab89;
@@ -179,8 +179,8 @@ namespace CryptoBase.Digests.MD5
 			D = 0x10325476;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void Process()
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		protected void Process()
 		{
 			var a = A;
 			var b = B;
