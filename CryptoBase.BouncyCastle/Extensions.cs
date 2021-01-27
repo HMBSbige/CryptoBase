@@ -1,21 +1,12 @@
 using Org.BouncyCastle.Crypto;
 using System;
 using System.Buffers;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 
-namespace CryptoBase
+namespace CryptoBase.BouncyCastle
 {
-	public static class Utils
+	public static class Extensions
 	{
-		public static Span<byte> RandBytes(int size)
-		{
-			Span<byte> bytes = new byte[size];
-			RandomNumberGenerator.Fill(bytes);
-			return bytes;
-		}
-
-		internal static void BcComputeHash(IDigest hash, int length, in ReadOnlySpan<byte> origin, Span<byte> destination)
+		internal static void BcComputeHash(this IDigest hash, int length, in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			var buffer = ArrayPool<byte>.Shared.Rent(origin.Length);
 			var outBuffer = ArrayPool<byte>.Shared.Rent(length);
@@ -42,14 +33,6 @@ namespace CryptoBase
 			{
 				destination[i] = cipher.ReturnByte(source[i]);
 			}
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void Swap<T>(ref T a, ref T b)
-		{
-			var t = a;
-			a = b;
-			b = t;
 		}
 	}
 }

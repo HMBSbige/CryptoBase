@@ -3,7 +3,7 @@ using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
 
-namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
+namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 {
 	public class BcSalsa20Crypto : Salsa20CryptoBase
 	{

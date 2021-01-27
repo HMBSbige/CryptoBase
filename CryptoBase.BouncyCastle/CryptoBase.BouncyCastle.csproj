@@ -4,8 +4,11 @@
     <TargetFramework>net5.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.9" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />

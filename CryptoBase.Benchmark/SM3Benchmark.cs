@@ -1,5 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.Digests;
+using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.Digests.SM3;
 using System;
 
@@ -23,7 +24,7 @@ namespace CryptoBase.Benchmark
 		public void BouncyCastle()
 		{
 			Span<byte> hash = stackalloc byte[SM3DigestBase.SM3Length];
-			SM3Utils.BouncyCastle(_randombytes.Span, hash);
+			BcDigestsUtils.SM3(_randombytes.Span, hash);
 		}
 
 		[Benchmark]

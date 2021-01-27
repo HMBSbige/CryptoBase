@@ -3,7 +3,7 @@ using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
 
-namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
+namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 {
 	public class BcRC4Crypto : RC4CryptoBase
 	{

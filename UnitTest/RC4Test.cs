@@ -1,5 +1,6 @@
 using CryptoBase;
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;

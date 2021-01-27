@@ -1,5 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.Digests;
+using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.Digests.SHA1;
 using System;
 
@@ -30,7 +31,7 @@ namespace CryptoBase.Benchmark
 		public void BouncyCastle()
 		{
 			Span<byte> hash = stackalloc byte[SHA1DigestBase.Sha1Length];
-			SHA1Utils.BouncyCastle(_randombytes.Span, hash);
+			BcDigestsUtils.SHA1(_randombytes.Span, hash);
 		}
 	}
 }
