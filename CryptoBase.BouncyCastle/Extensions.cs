@@ -1,6 +1,8 @@
 using Org.BouncyCastle.Crypto;
 using System;
 using System.Buffers;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase.BouncyCastle
 {
@@ -33,6 +35,12 @@ namespace CryptoBase.BouncyCastle
 			{
 				destination[i] = cipher.ReturnByte(source[i]);
 			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static uint RotateLeft(this uint value, int offset)
+		{
+			return BitOperations.RotateLeft(value, offset);
 		}
 	}
 }
