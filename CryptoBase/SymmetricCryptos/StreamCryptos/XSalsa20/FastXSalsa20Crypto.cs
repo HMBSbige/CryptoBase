@@ -9,9 +9,9 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 	{
 		public override bool IsSupport => Sse2.IsSupported;
 
-		public override string Name { get; } = @"XSalsa20";
+		public override string Name => @"XSalsa20";
 
-		public override int IvSize { get; } = 24;
+		public override int IvSize => 24;
 
 		public FastXSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)
 		{

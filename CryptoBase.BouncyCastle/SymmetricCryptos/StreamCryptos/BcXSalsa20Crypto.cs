@@ -7,9 +7,9 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 {
 	public class BcXSalsa20Crypto : Salsa20CryptoBase
 	{
-		public override string Name { get; } = @"XSalsa20";
+		public override string Name => @"XSalsa20";
 
-		public override int IvSize { get; } = 24;
+		public override int IvSize => 24;
 
 		private readonly XSalsa20Engine _engine;
 
