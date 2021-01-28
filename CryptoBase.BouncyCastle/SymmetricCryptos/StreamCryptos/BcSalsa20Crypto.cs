@@ -5,8 +5,10 @@ using System;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 {
-	public class BcSalsa20Crypto : Salsa20CryptoBase
+	public class BcSalsa20Crypto : SnuffleCryptoBase
 	{
+		public override string Name => @"Salsa20";
+
 		private readonly Salsa20Engine _engine;
 
 		public BcSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)

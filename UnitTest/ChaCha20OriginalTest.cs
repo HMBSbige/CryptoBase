@@ -9,8 +9,11 @@ namespace UnitTest
 	[TestClass]
 	public class ChaCha20OriginalTest
 	{
-		private static void Test(ISymmetricCrypto crypto, string hex)
+		private static void Test(SnuffleCryptoBase crypto, string hex)
 		{
+			Assert.AreEqual(@"ChaCha20Original", crypto.Name);
+			Assert.AreEqual(8, crypto.IvSize);
+
 			Span<byte> h1 = hex.FromHex();
 			Span<byte> i1 = stackalloc byte[255];
 			Span<byte> o1 = stackalloc byte[255];

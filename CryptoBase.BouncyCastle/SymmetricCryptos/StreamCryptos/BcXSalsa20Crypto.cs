@@ -5,7 +5,7 @@ using System;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 {
-	public class BcXSalsa20Crypto : Salsa20CryptoBase
+	public class BcXSalsa20Crypto : SnuffleCryptoBase
 	{
 		public override string Name => @"XSalsa20";
 

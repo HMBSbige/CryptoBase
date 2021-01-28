@@ -5,8 +5,10 @@ using System;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 {
-	public class BcChaCha20OriginalCrypto : ChaCha20CryptoBase
+	public class BcChaCha20OriginalCrypto : SnuffleCryptoBase
 	{
+		public override string Name => @"ChaCha20Original";
+
 		private readonly ChaChaEngine _engine;
 
 		public BcChaCha20OriginalCrypto(byte[] key, byte[] iv) : base(key, iv)
