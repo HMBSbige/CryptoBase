@@ -8,12 +8,12 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 
 		protected override unsafe void SnuffleCore64(uint* state, byte* source, byte* destination)
 		{
-			//TODO
+			ChaCha20Utils.ChaChaCore64(Rounds, state, source, destination);
 		}
 
 		protected override unsafe void SnuffleCore128(uint* state, byte* source, byte* destination)
 		{
-			//TODO
+			ChaCha20Utils.ChaChaCore128(Rounds, state, source, destination);
 		}
 
 		protected override unsafe void IncrementCounter(uint* state)

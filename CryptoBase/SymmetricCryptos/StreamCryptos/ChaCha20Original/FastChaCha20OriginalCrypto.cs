@@ -1,8 +1,10 @@
+using System.Runtime.Intrinsics.X86;
+
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 {
 	public class FastChaCha20OriginalCrypto : SlowChaCha20OriginalCrypto
 	{
-		//TODO public override bool IsSupport => Sse2.IsSupported;
+		public override bool IsSupport => Sse2.IsSupported;
 
 		public FastChaCha20OriginalCrypto(byte[] key, byte[] iv) : base(key, iv) { }
 
