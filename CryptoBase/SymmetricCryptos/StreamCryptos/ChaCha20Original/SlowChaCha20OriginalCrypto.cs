@@ -15,6 +15,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 
 		private void Init()
 		{
+			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
 			var keyLength = Key.Length;
 			switch (keyLength)
 			{
@@ -24,6 +25,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 					State[1] = Sigma16[1];
 					State[2] = Sigma16[2];
 					State[3] = Sigma16[3];
+					State[8] = keySpan[0];
+					State[9] = keySpan[1];
+					State[10] = keySpan[2];
+					State[11] = keySpan[3];
 					break;
 				}
 				case 32:
@@ -32,6 +37,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 					State[1] = Sigma32[1];
 					State[2] = Sigma32[2];
 					State[3] = Sigma32[3];
+					State[8] = keySpan[4];
+					State[9] = keySpan[5];
+					State[10] = keySpan[6];
+					State[11] = keySpan[7];
 					break;
 				}
 				default:
@@ -40,26 +49,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 				}
 			}
 
-			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
 			State[4] = keySpan[0];
 			State[5] = keySpan[1];
 			State[6] = keySpan[2];
 			State[7] = keySpan[3];
-
-			if (keyLength == 32)
-			{
-				State[8] = keySpan[4];
-				State[9] = keySpan[5];
-				State[10] = keySpan[6];
-				State[11] = keySpan[7];
-			}
-			else
-			{
-				State[8] = keySpan[0];
-				State[9] = keySpan[1];
-				State[10] = keySpan[2];
-				State[11] = keySpan[3];
-			}
 
 			var ivSpan = MemoryMarshal.Cast<byte, uint>(Iv.Span);
 			State[14] = ivSpan[0];
