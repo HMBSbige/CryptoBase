@@ -27,14 +27,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 
 			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
 			keySpan.CopyTo(State.AsSpan(4));
-			//State[4] = keySpan[0];
-			//State[5] = keySpan[1];
-			//State[6] = keySpan[2];
-			//State[7] = keySpan[3];
-			//State[8] = keySpan[4];
-			//State[9] = keySpan[5];
-			//State[10] = keySpan[6];
-			//State[11] = keySpan[7];
 
 			var ivSpan = MemoryMarshal.Cast<byte, uint>(Iv.Span);
 			State[13] = ivSpan[0];
