@@ -48,5 +48,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<ChaCha20OriginalBenchmark>();
 		}
+
+		[TestMethod]
+		public void ChaCha20Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<ChaCha20Benchmark>();
+		}
 	}
 }
