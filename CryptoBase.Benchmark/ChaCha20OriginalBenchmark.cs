@@ -43,5 +43,11 @@ namespace CryptoBase.Benchmark
 		{
 			Test(new SlowChaCha20OriginalCrypto(_randomKey, _randomIv), _randombytes.Span);
 		}
+
+		[Benchmark]
+		public void Fast()
+		{
+			Test(new FastChaCha20OriginalCrypto(_randomKey, _randomIv), _randombytes.Span);
+		}
 	}
 }

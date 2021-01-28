@@ -3,6 +3,8 @@ using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase
 {
@@ -65,6 +67,89 @@ namespace CryptoBase
 		{
 			a += b;
 			c = (a ^ c).RotateLeft(i);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		private static void QuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
+		{
+			a = Sse2.Add(a, b);
+			d = Sse2.Xor(a, d).RotateLeft16();
+
+			c = Sse2.Add(c, d);
+			b = Sse2.Xor(b, c).RotateLeft(12);
+
+			a = Sse2.Add(a, b);
+			d = Sse2.Xor(a, d).RotateLeft8();
+
+			c = Sse2.Add(c, d);
+			b = Sse2.Xor(b, c).RotateLeft(7);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void UpdateKeyStream(uint* state, byte* stream, byte rounds)
+		{
+			var s0 = Sse2.LoadVector128(state);
+			var s1 = Sse2.LoadVector128(state + 4);
+			var s2 = Sse2.LoadVector128(state + 8);
+			var s3 = Sse2.LoadVector128(state + 12);
+
+			var x0 = s0;
+			var x1 = s1;
+			var x2 = s2;
+			var x3 = s3;
+
+			for (var i = 0; i < rounds; i += 2)
+			{
+				QuarterRound(ref x0, ref x1, ref x2, ref x3);
+				Shuffle(ref x1, ref x2, ref x3);
+
+				QuarterRound(ref x0, ref x1, ref x2, ref x3);
+				Shuffle1(ref x1, ref x2, ref x3);
+			}
+
+			x0 = Sse2.Add(x0, s0);
+			x1 = Sse2.Add(x1, s1);
+			x2 = Sse2.Add(x2, s2);
+			x3 = Sse2.Add(x3, s3);
+
+			Sse2.Store(stream, x0.AsByte());
+			Sse2.Store(stream + 16, x1.AsByte());
+			Sse2.Store(stream + 32, x2.AsByte());
+			Sse2.Store(stream + 48, x3.AsByte());
+		}
+
+		/// <summary>
+		/// 4 5 6 7
+		/// 8 9 10 11
+		/// 12 13 14 15
+		/// =>
+		/// 5 6 7 4
+		/// 10 11 8 9
+		/// 15 12 13 14
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
+		{
+			a = Sse2.Shuffle(a, 0b00_11_10_01);
+			b = Sse2.Shuffle(b, 0b01_00_11_10);
+			c = Sse2.Shuffle(c, 0b10_01_00_11);
+		}
+
+		/// <summary>
+		/// 5 6 7 4
+		/// 10 11 8 9
+		/// 15 12 13 14
+		/// =>
+		/// 4 5 6 7
+		/// 8 9 10 11
+		/// 12 13 14 15
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		private static void Shuffle1(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
+		{
+			a = Sse2.Shuffle(a, 0b10_01_00_11);
+			b = Sse2.Shuffle(b, 0b01_00_11_10);
+			c = Sse2.Shuffle(c, 0b00_11_10_01);
 		}
 	}
 }

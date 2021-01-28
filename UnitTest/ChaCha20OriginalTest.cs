@@ -43,6 +43,7 @@ namespace UnitTest
 			var iv = ivHex.FromHex();
 			Test(new BcChaCha20OriginalCrypto(key, iv), hex);
 			Test(new SlowChaCha20OriginalCrypto(key, iv), hex);
+			Test(new FastChaCha20OriginalCrypto(key, iv), hex);
 		}
 	}
 }
