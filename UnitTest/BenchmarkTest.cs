@@ -42,5 +42,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<XSalsa20Benchmark>();
 		}
+
+		[TestMethod]
+		public void ChaCha20OriginalBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<ChaCha20OriginalBenchmark>();
+		}
 	}
 }

@@ -31,15 +31,15 @@ namespace CryptoBase
 
 			for (var i = 0; i < rounds; i += 2)
 			{
-				QuarterRound(x, 0, 4, 8, 12);
-				QuarterRound(x, 1, 5, 9, 13);
-				QuarterRound(x, 2, 6, 10, 14);
-				QuarterRound(x, 3, 7, 11, 15);
+				QuarterRound(ref x[0], ref x[4], ref x[8], ref x[12]);
+				QuarterRound(ref x[1], ref x[5], ref x[9], ref x[13]);
+				QuarterRound(ref x[2], ref x[6], ref x[10], ref x[14]);
+				QuarterRound(ref x[3], ref x[7], ref x[11], ref x[15]);
 
-				QuarterRound(x, 0, 5, 10, 15);
-				QuarterRound(x, 1, 6, 11, 12);
-				QuarterRound(x, 2, 7, 8, 13);
-				QuarterRound(x, 3, 4, 9, 14);
+				QuarterRound(ref x[0], ref x[5], ref x[10], ref x[15]);
+				QuarterRound(ref x[1], ref x[6], ref x[11], ref x[12]);
+				QuarterRound(ref x[2], ref x[7], ref x[8], ref x[13]);
+				QuarterRound(ref x[3], ref x[4], ref x[9], ref x[14]);
 			}
 
 			for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
@@ -52,16 +52,16 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		private static void QuarterRound(uint[] x, int a, int b, int c, int d)
+		private static void QuarterRound(ref uint a, ref uint b, ref uint c, ref uint d)
 		{
-			Step(ref x[a], x[b], ref x[d], 16);
-			Step(ref x[c], x[d], ref x[b], 12);
-			Step(ref x[a], x[b], ref x[d], 8);
-			Step(ref x[c], x[d], ref x[b], 7);
+			Step(ref a, ref b, ref d, 16);
+			Step(ref c, ref d, ref b, 12);
+			Step(ref a, ref b, ref d, 8);
+			Step(ref c, ref d, ref b, 7);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		private static void Step(ref uint a, uint b, ref uint c, byte i)
+		private static void Step(ref uint a, ref uint b, ref uint c, byte i)
 		{
 			a += b;
 			c = (a ^ c).RotateLeft(i);
