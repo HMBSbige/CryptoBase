@@ -15,5 +15,13 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 		{
 			Salsa20Utils.SalsaCore128(Rounds, state, source, destination);
 		}
+
+		protected override unsafe void IncrementCounter(uint* state)
+		{
+			if (++*(state + 8) == 0)
+			{
+				++*(state + 9);
+			}
+		}
 	}
 }

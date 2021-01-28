@@ -93,10 +93,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 					}
 
 					UpdateKeyStream();
-					if (++*(state + 8) == 0)
-					{
-						++*(state + 9);
-					}
+					IncrementCounter(state);
 				}
 
 				var r = 64 - Index;
@@ -126,6 +123,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 		protected abstract void UpdateKeyStream();
 		protected abstract unsafe void SnuffleCore64(uint* state, byte* source, byte* destination);
 		protected abstract unsafe void SnuffleCore128(uint* state, byte* source, byte* destination);
+		protected abstract unsafe void IncrementCounter(uint* state);
 
 		public override void Dispose()
 		{

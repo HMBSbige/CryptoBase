@@ -10,19 +10,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 
 		public FastSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)
 		{
+			Init();
 			Reset();
 		}
 
-		protected override unsafe void UpdateKeyStream()
-		{
-			fixed (uint* x = State)
-			fixed (byte* s = KeyStream)
-			{
-				Salsa20Utils.UpdateKeyStream(x, s, Rounds);
-			}
-		}
-
-		public sealed override void Reset()
+		private void Init()
 		{
 			var keyLength = Key.Length;
 			switch (keyLength)
@@ -49,31 +41,43 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 				}
 			}
 
-			var key = MemoryMarshal.Cast<byte, uint>(Key.Span);
-			State[1] = key[0];
-			State[2] = key[1];
-			State[3] = key[2];
-			State[4] = key[3];
+			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
+			State[1] = keySpan[0];
+			State[2] = keySpan[1];
+			State[3] = keySpan[2];
+			State[4] = keySpan[3];
 
 			if (keyLength == 32)
 			{
-				State[11] = key[4];
-				State[12] = key[5];
-				State[13] = key[6];
-				State[14] = key[7];
+				State[11] = keySpan[4];
+				State[12] = keySpan[5];
+				State[13] = keySpan[6];
+				State[14] = keySpan[7];
 			}
 			else
 			{
-				State[11] = key[0];
-				State[12] = key[1];
-				State[13] = key[2];
-				State[14] = key[3];
+				State[11] = keySpan[0];
+				State[12] = keySpan[1];
+				State[13] = keySpan[2];
+				State[14] = keySpan[3];
 			}
 
-			var iv = MemoryMarshal.Cast<byte, uint>(Iv.Span);
-			State[6] = iv[0];
-			State[7] = iv[1];
+			var ivSpan = MemoryMarshal.Cast<byte, uint>(Iv.Span);
+			State[6] = ivSpan[0];
+			State[7] = ivSpan[1];
+		}
 
+		protected override unsafe void UpdateKeyStream()
+		{
+			fixed (uint* x = State)
+			fixed (byte* s = KeyStream)
+			{
+				Salsa20Utils.UpdateKeyStream(x, s, Rounds);
+			}
+		}
+
+		public sealed override void Reset()
+		{
 			Index = 0;
 			State[8] = State[9] = 0;
 		}

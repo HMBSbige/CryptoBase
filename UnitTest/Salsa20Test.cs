@@ -51,6 +51,12 @@ namespace UnitTest
 			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
 			Assert.IsTrue(o1.Slice(192, 63).SequenceEqual(h2.Slice(0, 63)));
 
+			crypto.Reset();
+
+			crypto.Encrypt(i1, o1);
+			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
+			Assert.IsTrue(o1.Slice(192, 63).SequenceEqual(h2.Slice(0, 63)));
+
 			crypto.Dispose();
 		}
 

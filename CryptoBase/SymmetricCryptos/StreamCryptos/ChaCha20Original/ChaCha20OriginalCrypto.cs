@@ -15,5 +15,13 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 		{
 			//TODO
 		}
+
+		protected override unsafe void IncrementCounter(uint* state)
+		{
+			if (++*(state + 12) == 0)
+			{
+				++*(state + 13);
+			}
+		}
 	}
 }
