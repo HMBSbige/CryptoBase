@@ -16,29 +16,24 @@ namespace CryptoBase
 			var x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
 			try
 			{
-				UpdateKeyStream(rounds, state, x);
+				state.AsSpan().CopyTo(x);
+
+				ChaChaRound(rounds, x);
+
+				for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
+				{
+					x[i] += state[i];
+					x[i + 1] += state[i + 1];
+					x[i + 2] += state[i + 2];
+					x[i + 3] += state[i + 3];
+				}
+
 				var span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
 				x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 			}
 			finally
 			{
 				ArrayPool<uint>.Shared.Return(x);
-			}
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void UpdateKeyStream(int rounds, uint[] state, uint[] x)
-		{
-			state.AsSpan().CopyTo(x);
-
-			ChaChaRound(rounds, x);
-
-			for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
-			{
-				x[i] += state[i];
-				x[i + 1] += state[i + 1];
-				x[i + 2] += state[i + 2];
-				x[i + 3] += state[i + 3];
 			}
 		}
 
@@ -138,6 +133,29 @@ namespace CryptoBase
 			Sse2.Store(stream + 16, x1.AsByte());
 			Sse2.Store(stream + 32, x2.AsByte());
 			Sse2.Store(stream + 48, x3.AsByte());
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void ChaChaRound(uint* state, byte rounds)
+		{
+			var x0 = Sse2.LoadVector128(state);
+			var x1 = Sse2.LoadVector128(state + 4);
+			var x2 = Sse2.LoadVector128(state + 8);
+			var x3 = Sse2.LoadVector128(state + 12);
+
+			for (var i = 0; i < rounds; i += 2)
+			{
+				QuarterRound(ref x0, ref x1, ref x2, ref x3);
+				Shuffle(ref x1, ref x2, ref x3);
+
+				QuarterRound(ref x0, ref x1, ref x2, ref x3);
+				Shuffle1(ref x1, ref x2, ref x3);
+			}
+
+			Sse2.Store(state, x0);
+			Sse2.Store(state + 4, x1);
+			Sse2.Store(state + 8, x2);
+			Sse2.Store(state + 12, x3);
 		}
 
 		/// <summary>

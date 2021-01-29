@@ -69,6 +69,7 @@ namespace UnitTest
 			var iv = ivHex.FromHex();
 			TestCounter1(new BcXChaCha20Crypto(key, iv), hex, hex2);
 			TestCounter1(new SlowXChaCha20Crypto(key, iv), hex, hex2);
+			TestCounter1(new FastXChaCha20Crypto(key, iv), hex, hex2);
 		}
 
 		[TestMethod]
@@ -82,6 +83,7 @@ namespace UnitTest
 			var iv = ivHex.FromHex();
 			TestCounter0(new BcXChaCha20Crypto(key, iv), hex, hex2);
 			TestCounter0(new SlowXChaCha20Crypto(key, iv), hex, hex2);
+			TestCounter0(new FastXChaCha20Crypto(key, iv), hex, hex2);
 		}
 	}
 }
