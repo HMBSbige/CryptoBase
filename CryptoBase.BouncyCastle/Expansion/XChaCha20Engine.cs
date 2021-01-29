@@ -31,7 +31,6 @@ namespace CryptoBase.BouncyCastle.Expansion
 			var nonceInt = Pack.LE_To_UInt32(ivBytes, 0, 6);
 
 			var chachaKey = HChaCha20Internal(keyBytes, nonceInt);
-			SetSigma(engineState);
 			SetKey(engineState, chachaKey);
 			engineState[12] = 1; // Counter
 			engineState[13] = 0;

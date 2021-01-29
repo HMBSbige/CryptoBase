@@ -1,6 +1,7 @@
 using CryptoBase;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
+using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 
@@ -67,6 +68,7 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
 			TestCounter1(new BcXChaCha20Crypto(key, iv), hex, hex2);
+			TestCounter1(new SlowXChaCha20Crypto(key, iv), hex, hex2);
 		}
 
 		[TestMethod]
@@ -79,6 +81,7 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
 			TestCounter0(new BcXChaCha20Crypto(key, iv), hex, hex2);
+			TestCounter0(new SlowXChaCha20Crypto(key, iv), hex, hex2);
 		}
 	}
 }

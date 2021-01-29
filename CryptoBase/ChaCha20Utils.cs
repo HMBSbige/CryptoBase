@@ -31,6 +31,20 @@ namespace CryptoBase
 		{
 			state.AsSpan().CopyTo(x);
 
+			ChaChaRound(rounds, x);
+
+			for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
+			{
+				x[i] += state[i];
+				x[i + 1] += state[i + 1];
+				x[i + 2] += state[i + 2];
+				x[i + 3] += state[i + 3];
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static void ChaChaRound(int rounds, uint[] x)
+		{
 			for (var i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x[0], ref x[4], ref x[8], ref x[12]);
@@ -42,14 +56,6 @@ namespace CryptoBase
 				QuarterRound(ref x[1], ref x[6], ref x[11], ref x[12]);
 				QuarterRound(ref x[2], ref x[7], ref x[8], ref x[13]);
 				QuarterRound(ref x[3], ref x[4], ref x[9], ref x[14]);
-			}
-
-			for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
-			{
-				x[i] += state[i];
-				x[i + 1] += state[i + 1];
-				x[i + 2] += state[i + 2];
-				x[i + 3] += state[i + 3];
 			}
 		}
 
