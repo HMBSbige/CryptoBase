@@ -16,7 +16,18 @@ namespace CryptoBase
 			var x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
 			try
 			{
-				UpdateKeyStream(rounds, state, x);
+				state.AsSpan().CopyTo(x);
+
+				SalsaRound(rounds, x);
+
+				for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
+				{
+					x[i] += state[i];
+					x[i + 1] += state[i + 1];
+					x[i + 2] += state[i + 2];
+					x[i + 3] += state[i + 3];
+				}
+
 				var span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
 				x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 			}
@@ -27,9 +38,8 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static void UpdateKeyStream(int rounds, uint[] state, uint[] x)
+		public static void SalsaRound(int rounds, uint[] x)
 		{
-			state.AsSpan().CopyTo(x);
 			for (var i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(x, 4, 0, 12, 8);
@@ -41,14 +51,6 @@ namespace CryptoBase
 				QuarterRound(x, 6, 5, 4, 7);
 				QuarterRound(x, 11, 10, 9, 8);
 				QuarterRound(x, 12, 15, 14, 13);
-			}
-
-			for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
-			{
-				x[i] += state[i];
-				x[i + 1] += state[i + 1];
-				x[i + 2] += state[i + 2];
-				x[i + 3] += state[i + 3];
 			}
 		}
 
@@ -123,6 +125,41 @@ namespace CryptoBase
 			Sse2.Store(stream + 16, x1.AsByte());
 			Sse2.Store(stream + 32, x2.AsByte());
 			Sse2.Store(stream + 48, x3.AsByte());
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void SalsaRound(uint* state, byte rounds)
+		{
+			var x0 = Vector128.Create(*(state + 4), *(state + 9), *(state + 14), *(state + 3)); // 4 9 14 3
+			var x1 = Vector128.Create(*(state + 0), *(state + 5), *(state + 10), *(state + 15)); // 0 5 10 15
+			var x2 = Vector128.Create(*(state + 12), *(state + 1), *(state + 6), *(state + 11)); // 12 1 6 11
+			var x3 = Vector128.Create(*(state + 8), *(state + 13), *(state + 2), *(state + 7)); // 8 13 2 7
+
+			for (var i = 0; i < rounds; i += 2)
+			{
+				QuarterRound(ref x0, ref x1, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
+
+				QuarterRound(ref x0, ref x1, ref x2, ref x3);
+				Shuffle(ref x0, ref x2, ref x3);
+			}
+
+			if (Avx.IsSupported)
+			{
+				Shuffle(ref x0, ref x1, ref x2, ref x3, out var a, out var b);
+
+				Avx.Store(state, a);
+				Avx.Store(state + 8, b);
+			}
+			else
+			{
+				Shuffle(ref x0, ref x1, ref x2, ref x3);
+
+				Sse2.Store(state, x0);
+				Sse2.Store(state + 4, x1);
+				Sse2.Store(state + 8, x2);
+				Sse2.Store(state + 12, x3);
+			}
 		}
 
 		/// <summary>
