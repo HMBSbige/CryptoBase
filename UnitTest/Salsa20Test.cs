@@ -23,18 +23,18 @@ namespace UnitTest
 			Span<byte> o1 = stackalloc byte[i1.Length];
 			Span<byte> o2 = stackalloc byte[i2.Length];
 
-			crypto.Encrypt(i1, o1);
+			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.SequenceEqual(h1));
 
-			crypto.Encrypt(i2, o2);
+			crypto.Update(i2, o2);
 			Assert.IsTrue(o2.SequenceEqual(h2));
 
 			crypto.Reset();
 
-			crypto.Decrypt(h1, o1);
+			crypto.Update(h1, o1);
 			Assert.IsTrue(o1.SequenceEqual(i1));
 
-			crypto.Decrypt(h2, o2);
+			crypto.Update(h2, o2);
 			Assert.IsTrue(o2.SequenceEqual(i2));
 
 			crypto.Dispose();
@@ -47,13 +47,13 @@ namespace UnitTest
 			Span<byte> i1 = stackalloc byte[255];
 			Span<byte> o1 = stackalloc byte[255];
 
-			crypto.Encrypt(i1, o1);
+			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
 			Assert.IsTrue(o1.Slice(192, 63).SequenceEqual(h2.Slice(0, 63)));
 
 			crypto.Reset();
 
-			crypto.Encrypt(i1, o1);
+			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
 			Assert.IsTrue(o1.Slice(192, 63).SequenceEqual(h2.Slice(0, 63)));
 
@@ -67,7 +67,7 @@ namespace UnitTest
 			Span<byte> i1 = stackalloc byte[65536];
 			Span<byte> o1 = stackalloc byte[65536];
 
-			crypto.Encrypt(i1, o1);
+			crypto.Update(i1, o1);
 
 			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
 			Assert.IsTrue(o1.Slice(65472, 64).SequenceEqual(h2));

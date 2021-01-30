@@ -41,8 +41,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		protected override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+		public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
+			base.Update(source, destination);
+
 			var length = source.Length;
 			fixed (uint* pState = State)
 			fixed (byte* pStream = KeyStream)

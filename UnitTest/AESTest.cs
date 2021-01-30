@@ -9,7 +9,7 @@ namespace UnitTest
 	[TestClass]
 	public class AESTest
 	{
-		private static void Test(BlockCryptoBase crypto, string inputHex, string hex)
+		private static void Test(IBlockCrypto crypto, string inputHex, string hex)
 		{
 			Assert.AreEqual(@"AES", crypto.Name);
 			Assert.AreEqual(16, crypto.BlockSize);
@@ -18,10 +18,10 @@ namespace UnitTest
 			Span<byte> h1 = hex.FromHex();
 			Span<byte> o1 = stackalloc byte[crypto.BlockSize];
 
-			crypto.UpdateBlock(input, o1);
+			crypto.Update(input, o1);
 			Assert.IsTrue(o1.SequenceEqual(h1));
 
-			crypto.UpdateBlock(input, o1);
+			crypto.Update(input, o1);
 			Assert.IsTrue(o1.SequenceEqual(h1));
 
 			crypto.Dispose();

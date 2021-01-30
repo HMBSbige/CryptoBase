@@ -22,14 +22,14 @@ namespace UnitTest
 
 			h1.CopyTo(i1.Slice(64));
 
-			crypto.Encrypt(i1, o1);
+			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.Slice(64, 114).SequenceEqual(h2));
 
 			crypto.Reset();
 
 			h1.CopyTo(i1.Slice(64));
 
-			crypto.Encrypt(i1, o1);
+			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.Slice(64, 114).SequenceEqual(h2));
 
 			crypto.Dispose();

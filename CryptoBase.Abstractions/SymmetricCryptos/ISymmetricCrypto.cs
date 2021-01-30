@@ -10,18 +10,13 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 		string Name { get; }
 
 		/// <summary>
-		/// 加密
-		/// </summary>
-		void Encrypt(ReadOnlySpan<byte> plain, Span<byte> cipher);
-
-		/// <summary>
-		/// 解密
-		/// </summary>
-		void Decrypt(ReadOnlySpan<byte> cipher, Span<byte> plain);
-
-		/// <summary>
 		/// 重置状态
 		/// </summary>
 		void Reset();
+
+		/// <summary>
+		/// 加密/解密
+		/// </summary>
+		void Update(ReadOnlySpan<byte> source, Span<byte> destination);
 	}
 }

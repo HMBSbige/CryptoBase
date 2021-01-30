@@ -19,7 +19,7 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 			_engine.Init(default, new ParametersWithIV(new KeyParameter(key), iv));
 		}
 
-		protected override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+		public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			_engine.BcUpdateStream(source, destination);
 		}

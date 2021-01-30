@@ -24,10 +24,10 @@ namespace CryptoBase.Benchmark
 			_randomIv = Utils.RandBytes(8).ToArray();
 		}
 
-		private static void Test(ISymmetricCrypto crypto, Span<byte> origin)
+		private static void Test(IStreamCrypto crypto, Span<byte> origin)
 		{
 			Span<byte> o = stackalloc byte[origin.Length];
-			crypto.Encrypt(origin, o);
+			crypto.Update(origin, o);
 
 			crypto.Dispose();
 		}

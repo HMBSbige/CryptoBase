@@ -2,28 +2,16 @@ using System;
 
 namespace CryptoBase.Abstractions.SymmetricCryptos
 {
-	public abstract class StreamCryptoBase : ISymmetricCrypto
+	public abstract class StreamCryptoBase : IStreamCrypto
 	{
 		public abstract string Name { get; }
 
-		protected abstract void Update(ReadOnlySpan<byte> source, Span<byte> destination);
-
-		public void Encrypt(ReadOnlySpan<byte> plain, Span<byte> cipher)
+		public virtual void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
-			if (cipher.Length < plain.Length)
+			if (destination.Length < source.Length)
 			{
-				throw new ArgumentException(string.Empty, nameof(cipher));
+				throw new ArgumentException(string.Empty, nameof(destination));
 			}
-			Update(plain, cipher);
-		}
-
-		public void Decrypt(ReadOnlySpan<byte> cipher, Span<byte> plain)
-		{
-			if (plain.Length < cipher.Length)
-			{
-				throw new ArgumentException(string.Empty, nameof(plain));
-			}
-			Update(cipher, plain);
 		}
 
 		public abstract void Reset();

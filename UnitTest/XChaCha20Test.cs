@@ -22,14 +22,14 @@ namespace UnitTest
 
 			h1.CopyTo(i1.Slice(64));
 
-			crypto.Encrypt(i1, o1);
+			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.Slice(64, 304).SequenceEqual(h2));
 
 			crypto.Reset();
 
 			h1.CopyTo(i1.Slice(64));
 
-			crypto.Encrypt(i1, o1);
+			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.Slice(64, 304).SequenceEqual(h2));
 
 			crypto.Dispose();
@@ -44,12 +44,12 @@ namespace UnitTest
 			Span<byte> h2 = hex2.FromHex();
 			Span<byte> o1 = stackalloc byte[h1.Length];
 
-			crypto.Encrypt(h1, o1);
+			crypto.Update(h1, o1);
 			Assert.IsTrue(o1.SequenceEqual(h2));
 
 			crypto.Reset();
 
-			crypto.Encrypt(h1, o1);
+			crypto.Update(h1, o1);
 			Assert.IsTrue(o1.SequenceEqual(h2));
 
 			crypto.Dispose();

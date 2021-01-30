@@ -24,18 +24,18 @@ namespace UnitTest
 			Span<byte> x1 = stackalloc byte[h1.Length];
 			Span<byte> x2 = stackalloc byte[h2.Length];
 
-			crypto.Encrypt(h1, x1);
+			crypto.Update(h1, x1);
 			Assert.IsTrue(x1.SequenceEqual(g1));
 
-			crypto.Encrypt(h2, x2);
+			crypto.Update(h2, x2);
 			Assert.IsTrue(x2.SequenceEqual(g2));
 
 			crypto.Reset();
 
-			crypto.Decrypt(g1, x1);
+			crypto.Update(g1, x1);
 			Assert.IsTrue(x1.SequenceEqual(h1));
 
-			crypto.Decrypt(g2, x2);
+			crypto.Update(g2, x2);
 			Assert.IsTrue(x2.SequenceEqual(h2));
 
 			crypto.Dispose();

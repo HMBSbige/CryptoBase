@@ -39,8 +39,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 			Init();
 		}
 
-		protected override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+		public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
+			base.Update(source, destination);
+
 			for (var i = 0; i < source.Length; ++i)
 			{
 				x = (x + 1) & 0xFF;

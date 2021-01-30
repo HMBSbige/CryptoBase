@@ -15,7 +15,7 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 			_rc4.Init(default, new KeyParameter(key));
 		}
 
-		protected override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+		public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			_rc4.BcUpdateStream(source, destination);
 		}

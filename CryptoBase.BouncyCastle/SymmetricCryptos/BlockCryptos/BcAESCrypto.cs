@@ -29,7 +29,7 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos
 			_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);
 		}
 
-		public override void UpdateBlock(ReadOnlySpan<byte> source, Span<byte> destination)
+		public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			source.Slice(0, BlockSize).CopyTo(_buffer);
 			_engine.ProcessBlock(_buffer, 0, _outBuffer, 0);
