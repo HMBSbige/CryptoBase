@@ -10,9 +10,18 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 
 		public abstract int BlockSize { get; }
 
-		public abstract void Update(ReadOnlySpan<byte> source, Span<byte> destination);
+		public virtual void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+		{
+			if (source.Length < BlockSize)
+			{
+				throw new ArgumentException(string.Empty, nameof(source));
+			}
 
-		public abstract void Reset();
+			if (destination.Length < BlockSize)
+			{
+				throw new ArgumentException(string.Empty, nameof(destination));
+			}
+		}
 
 		public virtual void Dispose() { }
 	}

@@ -10,11 +10,6 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 		string Name { get; }
 
 		/// <summary>
-		/// 重置状态
-		/// </summary>
-		void Reset();
-
-		/// <summary>
 		/// 加密/解密
 		/// </summary>
 		void Update(ReadOnlySpan<byte> source, Span<byte> destination);

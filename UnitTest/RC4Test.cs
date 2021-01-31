@@ -10,7 +10,7 @@ namespace UnitTest
 	[TestClass]
 	public class RC4Test
 	{
-		private static void Test(ISymmetricCrypto crypto, int originSize, string hex, string hex2)
+		private static void Test(IStreamCrypto crypto, int originSize, string hex, string hex2)
 		{
 			Assert.AreEqual(@"RC4", crypto.Name);
 

@@ -31,12 +31,12 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos
 
 		public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
+			base.Update(source, destination);
+
 			source.Slice(0, BlockSize).CopyTo(_buffer);
 			_engine.ProcessBlock(_buffer, 0, _outBuffer, 0);
 			_outBuffer.CopyTo(destination);
 		}
-
-		public override void Reset() { }
 
 		public override void Dispose()
 		{
