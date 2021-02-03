@@ -60,5 +60,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<XChaCha20Benchmark>();
 		}
+
+		[TestMethod]
+		public void AESBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<AESBenchmark>();
+		}
 	}
 }

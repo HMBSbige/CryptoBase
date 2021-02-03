@@ -60,7 +60,7 @@ namespace UnitTest
 			crypto.Dispose();
 		}
 
-		private static void Test65535(ISymmetricCrypto crypto, string hex, string hex2)
+		private static void Test65535(IStreamCrypto crypto, string hex, string hex2)
 		{
 			Span<byte> h1 = hex.FromHex();
 			Span<byte> h2 = hex2.FromHex();

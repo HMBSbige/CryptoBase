@@ -8,10 +8,5 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 		/// 算法名
 		/// </summary>
 		string Name { get; }
-
-		/// <summary>
-		/// 加密/解密
-		/// </summary>
-		void Update(ReadOnlySpan<byte> source, Span<byte> destination);
 	}
 }
