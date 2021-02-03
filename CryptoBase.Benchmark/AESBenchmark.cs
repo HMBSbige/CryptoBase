@@ -49,7 +49,7 @@ namespace CryptoBase.Benchmark
 			crypto.Dispose();
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
 		public void BouncyCastleEncrypt()
 		{
 			TestEncrypt(new BcAESCrypto(true, _randomKey), _randombytes.Span);
@@ -65,6 +65,12 @@ namespace CryptoBase.Benchmark
 		public void FastEncrypt()
 		{
 			TestEncrypt(AESUtils.Create(_randomKey), _randombytes.Span);
+		}
+
+		[Benchmark(Baseline = true)]
+		public void NormalEncrypt()
+		{
+			TestEncrypt(new NormalAES(_randomKey), _randombytes.Span);
 		}
 
 		[Benchmark]
@@ -83,6 +89,12 @@ namespace CryptoBase.Benchmark
 		public void FastDecrypt()
 		{
 			TestDecrypt(AESUtils.Create(_randomKey), _randombytes.Span);
+		}
+
+		[Benchmark]
+		public void NormalDecrypt()
+		{
+			TestDecrypt(new NormalAES(_randomKey), _randombytes.Span);
 		}
 	}
 }

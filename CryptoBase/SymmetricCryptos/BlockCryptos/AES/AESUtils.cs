@@ -20,7 +20,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 				};
 			}
 
-			return new SlowAESCrypto(key);
+			return new NormalAES(key);
 		}
 	}
 }

@@ -51,7 +51,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		protected sealed override unsafe void Init()
+		private unsafe void Init()
 		{
 			Vector128<byte> t0;
 			Vector128<byte> t1;

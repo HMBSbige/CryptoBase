@@ -28,7 +28,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		protected sealed override unsafe void Init()
+		private unsafe void Init()
 		{
 			fixed (byte* p = Key.Span)
 			{

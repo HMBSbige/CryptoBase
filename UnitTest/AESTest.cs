@@ -50,6 +50,7 @@ namespace UnitTest
 			Test(new BcAESCrypto(default, key), hex1, hex2);
 			Test(new SlowAESCrypto(key), hex1, hex2);
 			Test(AESUtils.Create(key), hex1, hex2);
+			Test(new NormalAES(key), hex1, hex2);
 		}
 	}
 }

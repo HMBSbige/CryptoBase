@@ -186,7 +186,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		protected override void Init()
+		private void Init()
 		{
 			Key.CopyTo(_exKey);
 			var k = Key.Length >> 2;

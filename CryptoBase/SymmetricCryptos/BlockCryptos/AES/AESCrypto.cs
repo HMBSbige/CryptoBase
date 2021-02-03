@@ -28,7 +28,5 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 
 			Key = key;
 		}
-
-		protected abstract void Init();
 	}
 }
