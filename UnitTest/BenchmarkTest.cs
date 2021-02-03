@@ -66,5 +66,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<AESBenchmark>();
 		}
+
+		[TestMethod]
+		public void SM4Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<SM4Benchmark>();
+		}
 	}
 }

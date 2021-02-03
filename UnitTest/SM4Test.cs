@@ -1,6 +1,7 @@
 using CryptoBase;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
+using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 
@@ -57,6 +58,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			Test(new BcSM4Crypto(default, key), hex1, hex2, hex3);
+			Test(new SlowSM4Crypto(key), hex1, hex2, hex3);
 		}
 	}
 }
