@@ -74,32 +74,32 @@ namespace CryptoBase
 		private static void QuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 		{
 			a = Sse2.Add(a, b);
-			d = Sse2.Xor(a, d).RotateLeft16();
+			d = Sse2.Xor(a, d).RotateLeftUInt32_16();
 
 			c = Sse2.Add(c, d);
-			b = Sse2.Xor(b, c).RotateLeft(12);
+			b = Sse2.Xor(b, c).RotateLeftUInt32(12);
 
 			a = Sse2.Add(a, b);
-			d = Sse2.Xor(a, d).RotateLeft8();
+			d = Sse2.Xor(a, d).RotateLeftUInt32_8();
 
 			c = Sse2.Add(c, d);
-			b = Sse2.Xor(b, c).RotateLeft(7);
+			b = Sse2.Xor(b, c).RotateLeftUInt32(7);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static void QuarterRound(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 		{
 			a = Avx2.Add(a, b);
-			d = Avx2.Xor(a, d).RotateLeft16();
+			d = Avx2.Xor(a, d).RotateLeftUInt32_16();
 
 			c = Avx2.Add(c, d);
-			b = Avx2.Xor(b, c).RotateLeft(12);
+			b = Avx2.Xor(b, c).RotateLeftUInt32(12);
 
 			a = Avx2.Add(a, b);
-			d = Avx2.Xor(a, d).RotateLeft8();
+			d = Avx2.Xor(a, d).RotateLeftUInt32_8();
 
 			c = Avx2.Add(c, d);
-			b = Avx2.Xor(b, c).RotateLeft(7);
+			b = Avx2.Xor(b, c).RotateLeftUInt32(7);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

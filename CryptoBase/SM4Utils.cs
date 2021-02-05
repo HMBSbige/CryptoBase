@@ -14,9 +14,6 @@ namespace CryptoBase
 		private readonly static Vector128<byte> m1h = Vector128.Create(0xE240AB09EB49A200, 0xF052B91BF95BB012).AsByte();
 		private readonly static Vector128<byte> m2l = Vector128.Create(0x5B67F2CEA19D0834, 0xEDD14478172BBE82).AsByte();
 		private readonly static Vector128<byte> m2h = Vector128.Create(0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF).AsByte();
-		private readonly static Vector128<byte> r08 = IntrinsicsUtils.Rot8_128;
-		private readonly static Vector128<byte> r16 = IntrinsicsUtils.Rot16_128;
-		private readonly static Vector128<byte> r24 = IntrinsicsUtils.Rot24_128;
 
 		/// <summary>
 		/// https://github.com/mjosaarinen/sm4ni/blob/master/sm4ni.c
@@ -50,9 +47,9 @@ namespace CryptoBase
 				x = Ssse3.Shuffle(m2h, x).Xor(y);
 
 				// 4 parallel L1 linear transforms
-				y = x.Xor(Ssse3.Shuffle(x, r08)).Xor(Ssse3.Shuffle(x, r16));
-				y = y.AsUInt32().RotateLeft(2).AsByte();
-				x = x.Xor(y).Xor(Ssse3.Shuffle(x, r24));
+				y = x.Xor(x.RotateLeftUInt32_8()).Xor(x.RotateLeftUInt32_16());
+				y = y.AsUInt32().RotateLeftUInt32(2).AsByte();
+				x = x.Xor(y).Xor(x.RotateLeftUInt32_24());
 
 				// rotate registers
 				x = x.Xor(t0);
