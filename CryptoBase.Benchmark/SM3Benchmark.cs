@@ -20,14 +20,14 @@ namespace CryptoBase.Benchmark
 			_randombytes = Utils.RandBytes(ByteLength).ToArray();
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
 		public void BouncyCastle()
 		{
 			Span<byte> hash = stackalloc byte[SM3DigestBase.SM3Length];
 			BcDigestsUtils.SM3(_randombytes.Span, hash);
 		}
 
-		[Benchmark]
+		[Benchmark(Baseline = true)]
 		public void Slow()
 		{
 			Span<byte> hash = stackalloc byte[SM3DigestBase.SM3Length];

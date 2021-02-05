@@ -32,7 +32,7 @@ namespace CryptoBase.Benchmark
 			crypto.Dispose();
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
 		public void BouncyCastle()
 		{
 			Test(new BcChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
@@ -44,7 +44,7 @@ namespace CryptoBase.Benchmark
 			Test(new SlowChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
 		}
 
-		[Benchmark]
+		[Benchmark(Baseline = true)]
 		public void Fast()
 		{
 			Test(new FastChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);

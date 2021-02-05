@@ -32,7 +32,7 @@ namespace CryptoBase.Benchmark
 			crypto.Dispose();
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
 		public void BouncyCastle()
 		{
 			Test(new BcXSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
@@ -44,7 +44,7 @@ namespace CryptoBase.Benchmark
 			Test(new SlowXSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
 		}
 
-		[Benchmark]
+		[Benchmark(Baseline = true)]
 		public void Fast()
 		{
 			Test(new FastXSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);

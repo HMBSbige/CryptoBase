@@ -20,7 +20,7 @@ namespace CryptoBase.Benchmark
 			_randombytes = Utils.RandBytes(ByteLength).ToArray();
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
 		public void Normal()
 		{
 			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
@@ -41,7 +41,7 @@ namespace CryptoBase.Benchmark
 			MD5Utils.MayFast(_randombytes.Span, hash);
 		}
 
-		[Benchmark]
+		[Benchmark(Baseline = true)]
 		public void Fast440MD5()
 		{
 			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];

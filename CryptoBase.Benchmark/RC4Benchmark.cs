@@ -30,13 +30,13 @@ namespace CryptoBase.Benchmark
 			crypto.Dispose();
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
 		public void BouncyCastle()
 		{
 			Test(new BcRC4Crypto(_randomKey), _randombytes.Span);
 		}
 
-		[Benchmark]
+		[Benchmark(Baseline = true)]
 		public void Slow()
 		{
 			Test(new SlowRC4Crypto(_randomKey), _randombytes.Span);

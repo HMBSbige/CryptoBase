@@ -61,13 +61,13 @@ namespace CryptoBase.Benchmark
 			TestEncrypt(new SlowAESCrypto(_randomKey), _randombytes.Span);
 		}
 
-		[Benchmark]
+		[Benchmark(Baseline = true)]
 		public void FastEncrypt()
 		{
 			TestEncrypt(AESUtils.Create(_randomKey), _randombytes.Span);
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
 		public void NormalEncrypt()
 		{
 			TestEncrypt(new NormalAES(_randomKey), _randombytes.Span);

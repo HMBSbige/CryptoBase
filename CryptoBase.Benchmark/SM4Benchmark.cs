@@ -60,13 +60,13 @@ namespace CryptoBase.Benchmark
 			crypto.Dispose();
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
 		public void BouncyCastleEncrypt()
 		{
 			TestEncrypt(new BcSM4Crypto(true, _randomKey), _randombytes16.Span);
 		}
 
-		[Benchmark]
+		[Benchmark(Baseline = true)]
 		public void Encrypt()
 		{
 			TestEncrypt(new SM4Crypto(_randomKey), _randombytes16.Span);
