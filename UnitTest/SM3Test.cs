@@ -25,6 +25,9 @@ namespace UnitTest
 			Assert.AreEqual(sm3Str, hash.ToHex());
 		}
 
+		/// <summary>
+		/// https://gchq.github.io/CyberChef/#recipe=SM3(256,64)
+		/// </summary>
 		[TestMethod]
 		[DataRow(@"", @"1ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747ed035eb5082aa2b")]
 		[DataRow(@"abc", @"66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0")]

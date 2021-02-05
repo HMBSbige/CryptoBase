@@ -18,5 +18,10 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 		/// 解密
 		/// </summary>
 		void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination);
+
+		/// <summary>
+		/// 同时加密 4 块
+		/// </summary>
+		void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination);
 	}
 }

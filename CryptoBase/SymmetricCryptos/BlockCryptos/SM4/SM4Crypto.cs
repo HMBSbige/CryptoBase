@@ -3,10 +3,11 @@ using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 {
-	public class SlowSM4Crypto : BlockCryptoBase
+	public class SM4Crypto : BlockCryptoBase
 	{
 		public override string Name => @"SM4";
 
@@ -46,6 +47,8 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 
 		private readonly uint[] _rk;
 
+		#region Base
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static uint T(uint b)
 		{
@@ -70,7 +73,9 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			return (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
 		}
 
-		public SlowSM4Crypto(byte[] key)
+		#endregion
+
+		public SM4Crypto(byte[] key)
 		{
 			if (key.Length is not 16)
 			{
@@ -147,6 +152,28 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), x2);
 			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), x1);
 			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), x0);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
+		{
+			if (Aes.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
+			{
+				if (source.Length < BlockSize << 2)
+				{
+					throw new ArgumentException(string.Empty, nameof(source));
+				}
+
+				if (destination.Length < BlockSize << 2)
+				{
+					throw new ArgumentException(string.Empty, nameof(destination));
+				}
+
+				SM4Utils.Encrypt4(_rk, source, destination);
+				return;
+			}
+
+			base.Encrypt4(source, destination);
 		}
 
 		public override void Dispose()

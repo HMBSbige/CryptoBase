@@ -34,6 +34,24 @@ namespace UnitTest
 			crypto.Dispose();
 		}
 
+		private static void Test4(IBlockCrypto crypto, string hex1, string hex2)
+		{
+			Assert.AreEqual(@"AES", crypto.Name);
+			Assert.AreEqual(16, crypto.BlockSize);
+
+			Span<byte> h1 = hex1.FromHex();
+			Span<byte> h2 = hex2.FromHex();
+			Span<byte> o1 = stackalloc byte[crypto.BlockSize * 4];
+
+			crypto.Encrypt4(h1, o1);
+			Assert.IsTrue(o1.SequenceEqual(h2));
+
+			crypto.Encrypt4(h1, o1);
+			Assert.IsTrue(o1.SequenceEqual(h2));
+
+			crypto.Dispose();
+		}
+
 		/// <summary>
 		/// https://csrc.nist.gov/csrc/media/publications/fips/197/final/documents/fips-197.pdf
 		/// </summary>
@@ -51,6 +69,17 @@ namespace UnitTest
 			Test(new SlowAESCrypto(key), hex1, hex2);
 			Test(AESUtils.Create(key), hex1, hex2);
 			Test(new NormalAES(key), hex1, hex2);
+		}
+
+		[TestMethod]
+		[DataRow(@"000102030405060708090a0b0c0d0e0f", @"000102030405060708090a0b0c0d0e0f00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff80000000000000000000000000000000", @"0a940bb5416ef045f1c39458c653ea5a69c4e0d86a7b0430d8cdb78070b4c55a69c4e0d86a7b0430d8cdb78070b4c55a4399572cd6ea5341b8d35876a7098af7")]
+		public void Test4(string keyHex, string hex1, string hex2)
+		{
+			var key = keyHex.FromHex();
+			Test4(new BcAESCrypto(default, key), hex1, hex2);
+			Test4(new SlowAESCrypto(key), hex1, hex2);
+			Test4(AESUtils.Create(key), hex1, hex2);
+			Test4(new NormalAES(key), hex1, hex2);
 		}
 	}
 }
