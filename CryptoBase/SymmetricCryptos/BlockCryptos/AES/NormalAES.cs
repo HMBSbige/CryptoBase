@@ -9,7 +9,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 	{
 		public override bool IsSupport => false;
 
-		private readonly static Aes Aes;
+		private static readonly Aes Aes;
 
 		static NormalAES()
 		{

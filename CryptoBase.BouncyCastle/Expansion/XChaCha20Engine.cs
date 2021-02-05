@@ -12,7 +12,7 @@ namespace CryptoBase.BouncyCastle.Expansion
 
 		public override string AlgorithmName => @"XChaCha20";
 
-		private readonly static uint[] Sigma = { 0x61707865, 0x3320646e, 0x79622d32, 0x6b206574 };
+		private static readonly uint[] Sigma = { 0x61707865, 0x3320646e, 0x79622d32, 0x6b206574 };
 
 		protected override void SetKey(byte[]? keyBytes, byte[] ivBytes)
 		{
