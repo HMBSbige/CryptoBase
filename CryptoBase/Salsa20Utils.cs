@@ -199,15 +199,15 @@ namespace CryptoBase
 			c = Sse2.Shuffle(c, 0b00_11_10_01); // 12 1 6 11 => 1 6 11 12
 			d = Sse2.Shuffle(d, 0b01_00_11_10); // 8 13 2 7 => 2 7 8 13
 
-			var t0 = Sse2.UnpackLow(a, b); // 3 0 4 5
-			var t1 = Sse2.UnpackLow(c, d); // 1 2 6 7
-			var t2 = Sse2.UnpackHigh(a, b); // 9 10 14 15
-			var t3 = Sse2.UnpackHigh(c, d); // 11 8 12 13
+			var t0 = Sse2.UnpackLow(b, c); // 0 1 5 6
+			var t1 = Sse2.UnpackLow(d, a); // 2 3 7 4
+			var t2 = Sse2.UnpackHigh(b, c); // 10 11 15 12
+			var t3 = Sse2.UnpackHigh(d, a); // 8 9 13 14
 
-			a = Sse2.Shuffle(Sse2.UnpackLow(t0, t1), 0b00_11_01_10); // 3 1 0 2 => 0 1 2 3
-			b = Sse2.Shuffle(Sse2.UnpackHigh(t0, t1), 0b11_01_10_00); // 4 6 5 7 => 4 5 6 7
-			c = Sse2.Shuffle(Sse2.UnpackLow(t2, t3), 0b01_10_00_11); // 9 11 10 8 => 8 9 10 11
-			d = Sse2.Shuffle(Sse2.UnpackHigh(t2, t3), 0b10_00_11_01); // 14 12 15 13 => 12 13 14 15
+			a = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32(); // 0 1 2 3
+			b = Sse2.Shuffle(Sse2.UnpackHigh(t0, t1), 0b01_10_00_11); // 5 7 6 4 => 4 5 6 7
+			c = Sse2.UnpackLow(t3.AsUInt64(), t2.AsUInt64()).AsUInt32(); // 8 9 10 11
+			d = Sse2.Shuffle(Sse2.UnpackHigh(t2, t3), 0b00_11_01_10); // 15 13 12 14 => 12 13 14 15
 		}
 
 		#region Avx
