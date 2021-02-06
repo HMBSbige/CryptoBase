@@ -50,13 +50,13 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static Vector128<uint> RotateLeftUInt32_8(this Vector128<uint> value)
 		{
-			return Ssse3.Shuffle(value.AsByte(), Rot8_128).AsUInt32();
+			return Ssse3.IsSupported ? Ssse3.Shuffle(value.AsByte(), Rot8_128).AsUInt32() : value.RotateLeftUInt32(8);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static Vector128<uint> RotateLeftUInt32_16(this Vector128<uint> value)
 		{
-			return Ssse3.Shuffle(value.AsByte(), Rot16_128).AsUInt32();
+			return Ssse3.IsSupported ? Ssse3.Shuffle(value.AsByte(), Rot16_128).AsUInt32() : value.RotateLeftUInt32(16);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

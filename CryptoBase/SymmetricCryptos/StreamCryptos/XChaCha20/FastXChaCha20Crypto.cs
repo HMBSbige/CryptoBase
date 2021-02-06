@@ -4,7 +4,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 {
 	public class FastXChaCha20Crypto : SlowXChaCha20Crypto
 	{
-		public override bool IsSupport => Sse2.IsSupported && Ssse3.IsSupported;
+		public override bool IsSupport => Sse2.IsSupported;
 
 		public FastXChaCha20Crypto(byte[] key, byte[] iv) : base(key, iv) { }
 
