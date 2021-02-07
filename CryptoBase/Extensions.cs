@@ -9,6 +9,7 @@ namespace CryptoBase
 	{
 		private const string Alphabet = @"0123456789abcdef";
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static void Increment(this byte[] nonce)
 		{
 			for (var i = 0; i < nonce.Length; ++i)
@@ -20,11 +21,34 @@ namespace CryptoBase
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static void IncrementBe(this byte[] counter)
 		{
 			var j = counter.Length;
 			while (--j >= 0 && ++counter[j] == 0)
-			{ }
+			{
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static void IncrementBe(this Span<byte> counter)
+		{
+			var j = counter.Length;
+			while (--j >= 0 && ++counter[j] == 0)
+			{
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static void IncrementBe4(this byte[] counter, int start, int end)
+		{
+			var j = end;
+			if ((counter[--j] += 4) < 4)
+			{
+				while (--j >= start && ++counter[j] == 0)
+				{
+				}
+			}
 		}
 
 		public static string ToHex(this in Span<byte> bytes)

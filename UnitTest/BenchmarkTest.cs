@@ -72,5 +72,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<SM4Benchmark>();
 		}
+
+		[TestMethod]
+		public void CTRBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<CTRBenchmark>();
+		}
 	}
 }

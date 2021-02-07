@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Abstractions.SymmetricCryptos
 {
@@ -34,6 +35,7 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public virtual void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			if (source.Length < BlockSize << 2)

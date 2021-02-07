@@ -55,5 +55,26 @@ namespace UnitTest
 
 			Assert.IsTrue(a.SequenceEqual(b));
 		}
+
+		[TestMethod]
+		[DataRow(0)]
+		[DataRow(1)]
+		[DataRow(-1)]
+		[DataRow(int.MaxValue)]
+		[DataRow(int.MinValue)]
+		[DataRow(114514)]
+		public void SodiumIncrementBe4Test(int i)
+		{
+			const int size = sizeof(int);
+			var a = new byte[size];
+			var b = new byte[size];
+
+			BinaryPrimitives.WriteInt32BigEndian(a, i);
+			BinaryPrimitives.WriteInt32BigEndian(b, i + 4);
+
+			a.IncrementBe4(0, size);
+
+			Assert.IsTrue(a.SequenceEqual(b));
+		}
 	}
 }
