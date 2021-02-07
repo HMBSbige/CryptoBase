@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace CryptoBase.SymmetricCryptos.StreamBlockCryptoModes
+namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 {
 	public class CTRStreamMode : IStreamBlockCryptoMode
 	{

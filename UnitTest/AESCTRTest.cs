@@ -1,7 +1,7 @@
 using CryptoBase;
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
-using CryptoBase.SymmetricCryptos.StreamBlockCryptoModes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 

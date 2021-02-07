@@ -1,8 +1,8 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
-using CryptoBase.SymmetricCryptos.StreamBlockCryptoModes;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using System;
 
