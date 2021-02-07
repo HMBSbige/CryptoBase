@@ -5,30 +5,18 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 {
-	public sealed class NormalAES : AESCrypto
+	public abstract class NormalAESCrypto : AESCrypto
 	{
 		public override bool IsSupport => false;
 
-		private static readonly Aes Aes;
-
-		static NormalAES()
-		{
-			Aes = Aes.Create();
-			Aes.Mode = CipherMode.ECB;
-			Aes.Padding = PaddingMode.None;
-		}
-
-		private readonly ICryptoTransform _encryptor;
-		private readonly ICryptoTransform _decryptor;
+		protected abstract ICryptoTransform Encryptor { get; }
+		protected abstract ICryptoTransform Decryptor { get; }
 
 		private readonly byte[] _buffer;
 		private readonly byte[] _outBuffer;
 
-		public NormalAES(byte[] key) : base(key)
+		protected NormalAESCrypto(byte[] key) : base(key)
 		{
-			_encryptor = Aes.CreateEncryptor(key, null);
-			_decryptor = Aes.CreateDecryptor(key, null);
-
 			_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
 			_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);
 		}
@@ -39,7 +27,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			base.Encrypt(source, destination);
 
 			source.Slice(0, BlockSize).CopyTo(_buffer);
-			_encryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
+			Encryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
 			_outBuffer.CopyTo(destination);
 		}
 
@@ -49,13 +37,24 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			base.Decrypt(source, destination);
 
 			source.Slice(0, BlockSize).CopyTo(_buffer);
-			_decryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
+			Decryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
 			_outBuffer.CopyTo(destination);
+		}
+
+		public override void Reset()
+		{
+			base.Reset();
+
+			Encryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+			Decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 		}
 
 		public override void Dispose()
 		{
 			base.Dispose();
+
+			Encryptor.Dispose();
+			Decryptor.Dispose();
 
 			ArrayPool<byte>.Shared.Return(_buffer);
 			ArrayPool<byte>.Shared.Return(_outBuffer);

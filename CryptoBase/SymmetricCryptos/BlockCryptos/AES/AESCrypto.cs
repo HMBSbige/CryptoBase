@@ -10,7 +10,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 
 		public override string Name => @"AES";
 
-		public override int BlockSize => 16;
+		public sealed override int BlockSize => 16;
 
 		protected readonly ReadOnlyMemory<byte> Key;
 

@@ -63,6 +63,8 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 			Encrypt(source, destination);
 		}
 
+		public virtual void Reset() { }
+
 		public virtual void Dispose() { }
 	}
 }

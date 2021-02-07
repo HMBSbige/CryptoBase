@@ -67,8 +67,8 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			Test(new BcAESCrypto(default, key), hex1, hex2);
 			Test(new SlowAESCrypto(key), hex1, hex2);
-			Test(AESUtils.Create(key), hex1, hex2);
-			Test(new NormalAES(key), hex1, hex2);
+			Test(AESUtils.CreateECB(key), hex1, hex2);
+			Test(new AESECBCrypto(key), hex1, hex2);
 		}
 
 		[TestMethod]
@@ -78,8 +78,8 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			Test4(new BcAESCrypto(default, key), hex1, hex2);
 			Test4(new SlowAESCrypto(key), hex1, hex2);
-			Test4(AESUtils.Create(key), hex1, hex2);
-			Test4(new NormalAES(key), hex1, hex2);
+			Test4(AESUtils.CreateECB(key), hex1, hex2);
+			Test4(new AESECBCrypto(key), hex1, hex2);
 		}
 	}
 }

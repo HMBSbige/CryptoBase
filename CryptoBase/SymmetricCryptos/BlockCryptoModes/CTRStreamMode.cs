@@ -107,6 +107,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public void Reset()
 		{
+			InternalBlockCrypto.Reset();
 			_index = 0;
 
 			for (var i = Iv.Length; i < _blockSize; ++i)

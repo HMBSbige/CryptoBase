@@ -64,13 +64,13 @@ namespace CryptoBase.Benchmark
 		[Benchmark(Baseline = true)]
 		public void FastEncrypt()
 		{
-			TestEncrypt(AESUtils.Create(_randomKey), _randombytes.Span);
+			TestEncrypt(AESUtils.CreateECB(_randomKey), _randombytes.Span);
 		}
 
 		[Benchmark]
 		public void NormalEncrypt()
 		{
-			TestEncrypt(new NormalAES(_randomKey), _randombytes.Span);
+			TestEncrypt(new AESECBCrypto(_randomKey), _randombytes.Span);
 		}
 
 		[Benchmark]
@@ -88,13 +88,13 @@ namespace CryptoBase.Benchmark
 		[Benchmark]
 		public void FastDecrypt()
 		{
-			TestDecrypt(AESUtils.Create(_randomKey), _randombytes.Span);
+			TestDecrypt(AESUtils.CreateECB(_randomKey), _randombytes.Span);
 		}
 
 		[Benchmark]
 		public void NormalDecrypt()
 		{
-			TestDecrypt(new NormalAES(_randomKey), _randombytes.Span);
+			TestDecrypt(new AESECBCrypto(_randomKey), _randombytes.Span);
 		}
 	}
 }

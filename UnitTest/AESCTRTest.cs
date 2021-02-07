@@ -1,7 +1,5 @@
 using CryptoBase;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes;
-using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 
@@ -47,7 +45,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
-			Test(new CTRStreamMode(AESUtils.Create(key), iv), hex, hex2);
+			Test(AESUtils.CreateCTR(key, iv), hex, hex2);
 		}
 	}
 }
