@@ -2,8 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 {
@@ -111,22 +109,9 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 		{
 			_index = 0;
 
-			if (Sse2.IsSupported && _blockSize == 16)
+			for (var i = Iv.Length; i < _blockSize; ++i)
 			{
-				unsafe
-				{
-					fixed (byte* p = _counter)
-					{
-						Sse2.Store(p, Vector128<byte>.Zero);
-					}
-				}
-			}
-			else
-			{
-				for (var i = Iv.Length; i < _blockSize; ++i)
-				{
-					_counter[i] = 0;
-				}
+				_counter[i] = 0;
 			}
 
 			var c = _counter.AsSpan();
