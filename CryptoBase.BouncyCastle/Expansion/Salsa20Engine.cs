@@ -131,7 +131,7 @@ namespace CryptoBase.BouncyCastle.Expansion
 			}
 
 			var output = (byte)(keyStream[index] ^ input);
-			index = (index + 1) & 63;
+			index = index + 1 & 63;
 
 			return output;
 		}
@@ -172,7 +172,7 @@ namespace CryptoBase.BouncyCastle.Expansion
 					AdvanceCounter();
 				}
 				outBytes[i + outOff] = (byte)(keyStream[index] ^ inBytes[i + inOff]);
-				index = (index + 1) & 63;
+				index = index + 1 & 63;
 			}
 		}
 

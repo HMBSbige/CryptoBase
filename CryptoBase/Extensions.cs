@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -8,6 +9,8 @@ namespace CryptoBase
 	public static class Extensions
 	{
 		private const string Alphabet = @"0123456789abcdef";
+
+		#region SodiumIncrement
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static void Increment(this byte[] nonce)
@@ -20,6 +23,41 @@ namespace CryptoBase
 				}
 			}
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static void IncrementUInt(this byte[] nonce)
+		{
+			var i = BinaryPrimitives.ReadUInt32LittleEndian(nonce);
+			++i;
+			BinaryPrimitives.WriteUInt32LittleEndian(nonce, i);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void IncrementIntUnsafe(this byte[] nonce)
+		{
+			fixed (byte* p = nonce)
+			{
+				++*(uint*)p;
+			}
+		}
+
+		/// <summary>
+		/// https://github.com/jedisct1/libsodium/blob/master/src/libsodium/sodium/utils.c#L263
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static void IncrementSource(this byte[] nonce)
+		{
+			var i = 0U;
+			ushort c = 1;
+			for (; i < nonce.Length; i++)
+			{
+				c += nonce[i];
+				nonce[i] = (byte)c;
+				c >>= 8;
+			}
+		}
+
+		#endregion
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static void IncrementBe(this byte[] counter)

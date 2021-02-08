@@ -190,10 +190,10 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		{
 			Key.CopyTo(_exKey);
 			var k = Key.Length >> 2;
-			var count = (_rounds + 1) << 2;
+			var count = _rounds + 1 << 2;
 			for (var i = k; i < count; ++i)
 			{
-				var index = (i - 1) << 2;
+				var index = i - 1 << 2;
 				var a = _exKey[index];
 				var b = _exKey[index + 1];
 				var c = _exKey[index + 2];
@@ -216,7 +216,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 					d = S[d];
 				}
 
-				var x = (i - k) << 2;
+				var x = i - k << 2;
 
 				var t0 = _exKey[x];
 				var t1 = _exKey[x + 1];

@@ -45,11 +45,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 
 			for (var i = 0; i < source.Length; ++i)
 			{
-				x = (x + 1) & 0xFF;
-				y = (_state[x] + y) & 0xFF;
+				x = x + 1 & 0xFF;
+				y = _state[x] + y & 0xFF;
 
 				Utils.Swap(ref _state[x], ref _state[y]);
-				destination[i] = (byte)(source[i] ^ _state[(_state[x] + _state[y]) & 0xFF]);
+				destination[i] = (byte)(source[i] ^ _state[_state[x] + _state[y] & 0xFF]);
 			}
 		}
 
@@ -63,7 +63,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 			var j = 0;
 			for (var i = 0; i < BoxLength; ++i)
 			{
-				j = (_key[i % _key.Length] + _state[i] + j) & 0xFF;
+				j = _key[i % _key.Length] + _state[i] + j & 0xFF;
 				Utils.Swap(ref _state[i], ref _state[j]);
 			}
 		}

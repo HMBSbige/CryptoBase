@@ -66,11 +66,11 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 		private static uint SubByte(uint a)
 		{
 			uint b0 = S[(byte)(a >> 24)];
-			uint b1 = S[(byte)((a >> 16) & 0xFF)];
-			uint b2 = S[(byte)((a >> 8) & 0xFF)];
+			uint b1 = S[(byte)(a >> 16 & 0xFF)];
+			uint b2 = S[(byte)(a >> 8 & 0xFF)];
 			var b3 = S[(byte)(a & 0xFF)];
 
-			return (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
+			return b0 << 24 | b1 << 16 | b2 << 8 | b3;
 		}
 
 		#endregion

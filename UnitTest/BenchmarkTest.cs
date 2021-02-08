@@ -8,6 +8,12 @@ namespace UnitTest
 	public class BenchmarkTest
 	{
 		[TestMethod]
+		public void SodiumIncrementBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<SodiumIncrementBenchmark>();
+		}
+
+		[TestMethod]
 		public void MD5Benchmark()
 		{
 			var _ = BenchmarkRunner.Run<MD5Benchmark>();

@@ -21,6 +21,7 @@ namespace CryptoBase
 			b = t;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void FastCopy(byte* source, byte* destination, int count)
 		{
 			while (count >= 8)
