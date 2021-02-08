@@ -129,7 +129,12 @@ namespace CryptoBase.BouncyCastle.Expansion
 
 		public int ProcessBlock(byte[] inBuf, int inOff, byte[] outBuf, int outOff)
 		{
-			using var m = new MemoryStream(inBuf, inOff, inBuf.Length);
+			return ProcessBlock(inBuf, inOff, outBuf, outOff, true);
+		}
+
+		public void ProcessBytes(byte[] inBuf, int inOff, int length, byte[] outBuf, int outOff)
+		{
+			using var m = new MemoryStream(inBuf, inOff, length);
 			var tmp = new byte[blockSize];
 			var o = new byte[outBuf.Length - outOff + blockSize * 8];
 			using var outStream = new MemoryStream(o);
@@ -154,9 +159,7 @@ namespace CryptoBase.BouncyCastle.Expansion
 			}
 
 			outStream.Seek(ptr, SeekOrigin.Begin);
-			var res = inBuf.Length;
-			outStream.Read(outBuf, outOff, res);
-			return res;
+			outStream.Read(outBuf, outOff, length);
 		}
 
 		/**

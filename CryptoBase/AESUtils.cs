@@ -56,5 +56,10 @@ namespace CryptoBase
 
 			return new AESCBCCrypto(key, iv);
 		}
+
+		public static IStreamBlockCryptoMode CreateCFB(bool isEncrypt, byte[] key, byte[] iv)
+		{
+			return new CFB128StreamMode(isEncrypt, CreateECB(key), iv);
+		}
 	}
 }

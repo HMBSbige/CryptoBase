@@ -84,5 +84,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<CBCBenchmark>();
 		}
+
+		[TestMethod]
+		public void CFBBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<CFBBenchmark>();
+		}
 	}
 }
