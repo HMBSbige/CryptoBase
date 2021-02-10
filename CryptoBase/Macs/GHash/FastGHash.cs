@@ -78,6 +78,7 @@ namespace CryptoBase.Macs.GHash
 			Buffer = tmp6.AsByte();
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public override unsafe void GetMac(Span<byte> destination)
 		{
 			fixed (byte* p = destination)
