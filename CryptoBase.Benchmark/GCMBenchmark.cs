@@ -47,7 +47,7 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void Slow()
+		public void SlowEncrypt()
 		{
 			TestEncrypt(new GcmCryptoMode(AESUtils.CreateECB(_randomKey)));
 		}

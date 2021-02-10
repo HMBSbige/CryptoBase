@@ -61,11 +61,10 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			var counter2 = counterBlock.Slice(44, 4);
 			var counter3 = counterBlock.Slice(60, 4);
 
-			var iv = nonce.Slice(0, 12);
-			iv.CopyTo(counterBlock);
-			iv.CopyTo(counterBlock.Slice(16));
-			iv.CopyTo(counterBlock.Slice(32));
-			iv.CopyTo(counterBlock.Slice(48));
+			nonce.CopyTo(counterBlock);
+			nonce.CopyTo(counterBlock.Slice(16));
+			nonce.CopyTo(counterBlock.Slice(32));
+			nonce.CopyTo(counterBlock.Slice(48));
 
 			counter0[0] = 0;
 			counter0[1] = 0;
@@ -149,11 +148,10 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			var counter2 = counterBlock.Slice(44, 4);
 			var counter3 = counterBlock.Slice(60, 4);
 
-			var iv = nonce.Slice(0, 12);
-			iv.CopyTo(counterBlock);
-			iv.CopyTo(counterBlock.Slice(16));
-			iv.CopyTo(counterBlock.Slice(32));
-			iv.CopyTo(counterBlock.Slice(48));
+			nonce.CopyTo(counterBlock);
+			nonce.CopyTo(counterBlock.Slice(16));
+			nonce.CopyTo(counterBlock.Slice(32));
+			nonce.CopyTo(counterBlock.Slice(48));
 
 			counter0[0] = 0;
 			counter0[1] = 0;
