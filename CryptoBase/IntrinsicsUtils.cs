@@ -12,6 +12,7 @@ namespace CryptoBase
 		private static readonly Vector128<byte> Rot16_128 = Vector128.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13);
 		private static readonly Vector128<byte> Rot24_128 = Vector128.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12);
 		private static readonly Vector128<byte> Reverse32 = Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+		private static readonly Vector128<byte> Reverse_128 = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static uint AndNot(uint left, uint right)
@@ -120,6 +121,33 @@ namespace CryptoBase
 		/// destination = source ^ stream
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void Xor16(byte* stream, byte* source, byte* destination)
+		{
+			if (Sse2.IsSupported)
+			{
+				var v0 = Sse2.LoadVector128(stream);
+				var v1 = Sse2.LoadVector128(source);
+				Sse2.Store(destination, Sse2.Xor(v0, v1));
+			}
+			else
+			{
+				for (var i = 0; i < 16; ++i)
+				{
+					*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
+					++i;
+					*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
+					++i;
+					*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
+					++i;
+					*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
+				}
+			}
+		}
+
+		/// <summary>
+		/// destination = source ^ stream
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void XorSoftwareFallback(byte* stream, byte* source, byte* destination, int length)
 		{
 			for (var i = 0; i < length; ++i)
@@ -144,6 +172,12 @@ namespace CryptoBase
 		public static Vector128<byte> Xor(this Vector128<byte> a, Vector128<byte> b)
 		{
 			return Sse2.Xor(a, b);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static Vector128<byte> Reverse(this Vector128<byte> a)
+		{
+			return Ssse3.Shuffle(a, Reverse_128);
 		}
 	}
 }

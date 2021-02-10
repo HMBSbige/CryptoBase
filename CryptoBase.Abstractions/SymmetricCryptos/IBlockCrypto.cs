@@ -2,7 +2,7 @@ using System;
 
 namespace CryptoBase.Abstractions.SymmetricCryptos
 {
-	public interface IBlockCrypto : ISymmetricCrypto
+	public interface IBlockCrypto : ISymmetricCrypto, ICanReset
 	{
 		/// <summary>
 		/// 块大小，单位字节

@@ -89,6 +89,18 @@ namespace CryptoBase
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static void IncrementBe4(this Span<byte> counter)
+		{
+			var j = counter.Length;
+			if ((counter[--j] += 4) < 4)
+			{
+				while (--j >= 0 && ++counter[j] == 0)
+				{
+				}
+			}
+		}
+
 		public static string ToHex(this in Span<byte> bytes)
 		{
 			Span<char> c = stackalloc char[bytes.Length << 1];

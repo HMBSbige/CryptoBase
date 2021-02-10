@@ -2,7 +2,7 @@ using System;
 
 namespace CryptoBase.Abstractions.SymmetricCryptos
 {
-	public interface IStreamCrypto : ISymmetricCrypto
+	public interface IStreamCrypto : ISymmetricCrypto, ICanReset
 	{
 		/// <summary>
 		/// 加密/解密

@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System;
@@ -60,6 +61,11 @@ namespace CryptoBase
 		public static IStreamBlockCryptoMode CreateCFB(bool isEncrypt, byte[] key, byte[] iv)
 		{
 			return new CFB128StreamMode(isEncrypt, CreateECB(key), iv);
+		}
+
+		public static IAEADCrypto CreateGCM(byte[] key)
+		{
+			return new NormalAesGcmCrypto(key);
 		}
 	}
 }

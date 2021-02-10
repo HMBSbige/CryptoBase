@@ -96,5 +96,17 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<CFBBenchmark>();
 		}
+
+		[TestMethod]
+		public void GCMBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<GCMBenchmark>();
+		}
+
+		[TestMethod]
+		public void GHashBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<GHashBenchmark>();
+		}
 	}
 }

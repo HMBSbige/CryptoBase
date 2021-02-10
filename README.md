@@ -31,3 +31,4 @@ C# 密码库抽象接口与默认实现
 * ChaCha20Poly1305
 * AES-GCM
 * SM4-GCM
+* XChaCha20Poly1305
