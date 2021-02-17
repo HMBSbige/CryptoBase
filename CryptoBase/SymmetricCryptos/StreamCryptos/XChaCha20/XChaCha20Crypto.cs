@@ -1,4 +1,5 @@
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
+using System;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 {
@@ -9,5 +10,8 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 		public override int IvSize => 24;
 
 		protected XChaCha20Crypto(byte[] key, byte[] iv) : base(key, iv) { }
+
+		public abstract void SetIV(ReadOnlySpan<byte> iv);
+		public abstract void SetCounter(uint counter);
 	}
 }

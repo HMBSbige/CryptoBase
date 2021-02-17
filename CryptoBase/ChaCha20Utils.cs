@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
+using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
@@ -12,6 +13,7 @@ namespace CryptoBase
 	public static class ChaCha20Utils
 	{
 		private static readonly byte[] EmptyIv12 = new byte[12];
+		private static readonly byte[] EmptyIv24 = new byte[24];
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static void UpdateKeyStream(int rounds, uint[] state, byte[] keyStream)
@@ -379,6 +381,11 @@ namespace CryptoBase
 		public static ChaCha20Crypto CreateIETF(byte[] key)
 		{
 			return Sse2.IsSupported ? new FastChaCha20Crypto(key, EmptyIv12) : new SlowChaCha20Crypto(key, EmptyIv12);
+		}
+
+		public static XChaCha20Crypto CreateXChaCha20(byte[] key)
+		{
+			return Sse2.IsSupported ? new FastXChaCha20Crypto(key, EmptyIv24) : new SlowXChaCha20Crypto(key, EmptyIv24);
 		}
 	}
 }

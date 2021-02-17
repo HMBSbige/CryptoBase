@@ -1,35 +1,35 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Macs.Poly1305;
-using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
+using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
-namespace CryptoBase.SymmetricCryptos.AEADCryptos.ChaCha20Poly1305
+namespace CryptoBase.SymmetricCryptos.AEADCryptos
 {
-	public class ChaCha20Poly1305Crypto : IAEADCrypto
+	public class XChaCha20Poly1305Crypto : IAEADCrypto
 	{
-		public string Name => @"ChaCha20-Poly1305";
+		public string Name => @"XChaCha20-Poly1305";
 
-		private readonly ChaCha20Crypto _chacha20;
+		private readonly XChaCha20Crypto _chacha20;
 
 		public const int KeySize = 32;
-		public const int NonceSize = 12;
+		public const int NonceSize = 24;
 		public const int TagSize = 16;
 
 		private static ReadOnlySpan<byte> Init => new byte[Poly1305.KeySize];
 
 		private readonly byte[] _buffer;
 
-		public ChaCha20Poly1305Crypto(byte[] key)
+		public XChaCha20Poly1305Crypto(byte[] key)
 		{
 			if (key.Length < KeySize)
 			{
 				throw new ArgumentException(@"Key length must be 32 bytes.", nameof(key));
 			}
 
-			_chacha20 = ChaCha20Utils.CreateIETF(key);
+			_chacha20 = ChaCha20Utils.CreateXChaCha20(key);
 
 			_buffer = ArrayPool<byte>.Shared.Rent(32);
 		}
@@ -40,7 +40,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.ChaCha20Poly1305
 		{
 			if (nonce.Length != NonceSize)
 			{
-				throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
+				throw new ArgumentException(@"Nonce size must be 24 bytes", nameof(nonce));
 			}
 
 			if (destination.Length != source.Length)
@@ -75,7 +75,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.ChaCha20Poly1305
 		{
 			if (nonce.Length != NonceSize)
 			{
-				throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
+				throw new ArgumentException(@"Nonce size must be 24 bytes", nameof(nonce));
 			}
 
 			if (destination.Length != source.Length)

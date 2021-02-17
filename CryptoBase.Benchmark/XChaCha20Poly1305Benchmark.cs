@@ -7,7 +7,7 @@ using System;
 namespace CryptoBase.Benchmark
 {
 	[MemoryDiagnoser]
-	public class ChaCha20Poly1305Benchmark
+	public class XChaCha20Poly1305Benchmark
 	{
 		[Params(1000000)]
 		public int Length { get; set; }
@@ -21,7 +21,7 @@ namespace CryptoBase.Benchmark
 		{
 			_randombytes = Utils.RandBytes(Length).ToArray();
 			_randomKey = Utils.RandBytes(32).ToArray();
-			_randomIv = Utils.RandBytes(12).ToArray();
+			_randomIv = Utils.RandBytes(24).ToArray();
 		}
 
 		private void TestEncrypt(IAEADCrypto crypto)
@@ -37,13 +37,13 @@ namespace CryptoBase.Benchmark
 		[Benchmark]
 		public void BouncyCastleEncrypt()
 		{
-			TestEncrypt(new BcChaCha20Poly1305Crypto(_randomKey));
+			TestEncrypt(new BcXChaCha20Poly1305Crypto(_randomKey));
 		}
 
 		[Benchmark(Baseline = true)]
 		public void SlowEncrypt()
 		{
-			TestEncrypt(new ChaCha20Poly1305Crypto(_randomKey));
+			TestEncrypt(new XChaCha20Poly1305Crypto(_randomKey));
 		}
 	}
 }
