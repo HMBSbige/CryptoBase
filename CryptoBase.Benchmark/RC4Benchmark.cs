@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark
 	[MemoryDiagnoser]
 	public class RC4Benchmark
 	{
-		[Params(32, 114514)]
+		[Params(1000000)]
 		public int ByteLength { get; set; }
 
 		private Memory<byte> _randombytes;

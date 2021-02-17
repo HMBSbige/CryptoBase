@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark
 	[MemoryDiagnoser]
 	public class SM4Benchmark
 	{
-		[Params(1, 10000)]
+		[Params(1000000)]
 		public int Max { get; set; }
 
 		private Memory<byte> _randombytes16;

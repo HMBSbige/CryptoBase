@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Macs.GHash
 {
@@ -21,6 +22,7 @@ namespace CryptoBase.Macs.GHash
 
 		protected abstract void GFMul(ReadOnlySpan<byte> x);
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public void Update(ReadOnlySpan<byte> source)
 		{
 			while (source.Length >= BlockSize)
