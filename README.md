@@ -1,4 +1,10 @@
 # CryptoBase
+Channel | Status
+-|-
+CI | [![CI](https://github.com/HMBSbige/CryptoBase/workflows/CI/badge.svg)](https://github.com/HMBSbige/CryptoBase/actions)
+CryptoBase | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.svg)](https://www.nuget.org/packages/CryptoBase/)
+CryptoBase.Abstractions | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.Abstractions.svg)](https://www.nuget.org/packages/CryptoBase.Abstractions/)
+CryptoBase.BouncyCastle | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.BouncyCastle.svg)](https://www.nuget.org/packages/CryptoBase.BouncyCastle/)
 
 C# 密码库抽象接口与默认实现
 
