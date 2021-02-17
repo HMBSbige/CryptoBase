@@ -7,12 +7,13 @@ namespace CryptoBase.Macs.GHash
 	{
 		public string Name => @"GHash";
 
+		public const int KeySize = 16;
 		public const int BlockSize = 16;
 		public const int TagSize = 16;
 
 		protected GHash(byte[] key)
 		{
-			if (key.Length < BlockSize)
+			if (key.Length < KeySize)
 			{
 				throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
 			}

@@ -1,6 +1,7 @@
 using CryptoBase;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
+using CryptoBase.SymmetricCryptos.AEADCryptos.ChaCha20Poly1305;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 
@@ -54,6 +55,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			Test(new BcChaCha20Poly1305Crypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
+			Test(new ChaCha20Poly1305Crypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 		}
 	}
 }

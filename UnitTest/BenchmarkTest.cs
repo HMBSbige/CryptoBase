@@ -108,5 +108,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<GHashBenchmark>();
 		}
+
+		[TestMethod]
+		public void ChaCha20Poly1305Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<ChaCha20Poly1305Benchmark>();
+		}
 	}
 }

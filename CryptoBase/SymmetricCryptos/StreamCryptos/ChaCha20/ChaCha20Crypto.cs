@@ -18,5 +18,8 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 				throw new InvalidOperationException(@"Data maximum length reached.");
 			}
 		}
+
+		public abstract void SetIV(ReadOnlySpan<byte> iv);
+		public abstract void SetCounter(uint counter);
 	}
 }

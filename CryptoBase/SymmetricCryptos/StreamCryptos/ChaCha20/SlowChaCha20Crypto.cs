@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
@@ -28,21 +29,33 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
 			keySpan.CopyTo(State.AsSpan(4));
 
-			var ivSpan = MemoryMarshal.Cast<byte, uint>(Iv.Span);
-			State[13] = ivSpan[0];
-			State[14] = ivSpan[1];
-			State[15] = ivSpan[2];
+			SetIV(Iv.Span);
 		}
 
 		public sealed override void Reset()
 		{
-			Index = 0;
-			State[12] = 0;
+			SetCounter(0);
 		}
 
 		protected override void UpdateKeyStream()
 		{
 			ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public override void SetIV(ReadOnlySpan<byte> iv)
+		{
+			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
+			State[13] = ivSpan[0];
+			State[14] = ivSpan[1];
+			State[15] = ivSpan[2];
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public override void SetCounter(uint counter)
+		{
+			Index = 0;
+			State[12] = counter;
 		}
 	}
 }
