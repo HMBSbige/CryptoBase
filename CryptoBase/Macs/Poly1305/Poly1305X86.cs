@@ -19,7 +19,7 @@ namespace CryptoBase.Macs.Poly1305
 		public const int TagSize = 16;
 
 		private readonly uint _x0, _x1, _x2, _x3;
-		protected uint H0, H1, H2, H3, H4;
+		private uint _h0, _h1, _h2, _h3, _h4;
 
 		private readonly Vector128<uint> _r0s4, _s3s2, _r1r0, _s4s3, _s1s2, _r2r1, _r3r2, _s3s4, _r4r3, _r0;
 
@@ -62,9 +62,9 @@ namespace CryptoBase.Macs.Poly1305
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private void Block(ReadOnlySpan<byte> m)
 		{
-			var h01 = IntrinsicsUtils.CreateTwoUInt(H0, H1);
-			var h23 = IntrinsicsUtils.CreateTwoUInt(H2, H3);
-			var h44 = IntrinsicsUtils.CreateTwoUInt(H4, H4);
+			var h01 = IntrinsicsUtils.CreateTwoUInt(_h0, _h1);
+			var h23 = IntrinsicsUtils.CreateTwoUInt(_h2, _h3);
+			var h44 = IntrinsicsUtils.CreateTwoUInt(_h4, _h4);
 
 			var m06 = IntrinsicsUtils.CreateTwoUInt(BinaryPrimitives.ReadUInt32LittleEndian(m) & 0x3ffffff, BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(3)) >> 2 & 0x3ffffff);
 			h01 = Sse2.Add(h01, m06);
@@ -121,18 +121,18 @@ namespace CryptoBase.Macs.Poly1305
 			// d4 = t1[0] + t1[1] + t3[0]
 			var d4 = t1.Add(Sse2.ShiftRightLogical128BitLane(t1, 8)).Add(t3).ToScalar();
 
-			H0 = (uint)d0 & 0x3ffffff;
+			_h0 = (uint)d0 & 0x3ffffff;
 			d1 += (uint)(d0 >> 26);
-			H1 = (uint)d1 & 0x3ffffff;
+			_h1 = (uint)d1 & 0x3ffffff;
 			d2 += (uint)(d1 >> 26);
-			H2 = (uint)d2 & 0x3ffffff;
+			_h2 = (uint)d2 & 0x3ffffff;
 			d3 += (uint)(d2 >> 26);
-			H3 = (uint)d3 & 0x3ffffff;
+			_h3 = (uint)d3 & 0x3ffffff;
 			d4 += (uint)(d3 >> 26);
-			H4 = (uint)d4 & 0x3ffffff;
-			H0 += (uint)(d4 >> 26) * 5;
-			H1 += H0 >> 26;
-			H0 &= 0x3ffffff;
+			_h4 = (uint)d4 & 0x3ffffff;
+			_h0 += (uint)(d4 >> 26) * 5;
+			_h1 += _h0 >> 26;
+			_h0 &= 0x3ffffff;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -158,25 +158,25 @@ namespace CryptoBase.Macs.Poly1305
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public void GetMac(Span<byte> destination)
 		{
-			H2 += H1 >> 26;
-			H1 &= 0x3ffffff;
-			H3 += H2 >> 26;
-			H2 &= 0x3ffffff;
-			H4 += H3 >> 26;
-			H3 &= 0x3ffffff;
-			H0 += (H4 >> 26) * 5;
-			H4 &= 0x3ffffff;
-			H1 += H0 >> 26;
-			H0 &= 0x3ffffff;
+			_h2 += _h1 >> 26;
+			_h1 &= 0x3ffffff;
+			_h3 += _h2 >> 26;
+			_h2 &= 0x3ffffff;
+			_h4 += _h3 >> 26;
+			_h3 &= 0x3ffffff;
+			_h0 += (_h4 >> 26) * 5;
+			_h4 &= 0x3ffffff;
+			_h1 += _h0 >> 26;
+			_h0 &= 0x3ffffff;
 
-			var g0 = H0 + 5;
-			var g1 = H1 + (g0 >> 26);
+			var g0 = _h0 + 5;
+			var g1 = _h1 + (g0 >> 26);
 			g0 &= 0x3ffffff;
-			var g2 = H2 + (g1 >> 26);
+			var g2 = _h2 + (g1 >> 26);
 			g1 &= 0x3ffffff;
-			var g3 = H3 + (g2 >> 26);
+			var g3 = _h3 + (g2 >> 26);
 			g2 &= 0x3ffffff;
-			var g4 = H4 + (g3 >> 26) - (1u << 26);
+			var g4 = _h4 + (g3 >> 26) - (1u << 26);
 			g3 &= 0x3ffffff;
 
 			var mask = (g4 >> 31) - 1;
@@ -186,16 +186,16 @@ namespace CryptoBase.Macs.Poly1305
 			g3 &= mask;
 			g4 &= mask;
 			mask = ~mask;
-			H0 = H0 & mask | g0;
-			H1 = H1 & mask | g1;
-			H2 = H2 & mask | g2;
-			H3 = H3 & mask | g3;
-			H4 = H4 & mask | g4;
+			_h0 = _h0 & mask | g0;
+			_h1 = _h1 & mask | g1;
+			_h2 = _h2 & mask | g2;
+			_h3 = _h3 & mask | g3;
+			_h4 = _h4 & mask | g4;
 
-			var f0 = (H0 | H1 << 26) + (ulong)_x0;
-			var f1 = (H1 >> 6 | H2 << 20) + (ulong)_x1;
-			var f2 = (H2 >> 12 | H3 << 14) + (ulong)_x2;
-			var f3 = (H3 >> 18 | H4 << 8) + (ulong)_x3;
+			var f0 = (_h0 | _h1 << 26) + (ulong)_x0;
+			var f1 = (_h1 >> 6 | _h2 << 20) + (ulong)_x1;
+			var f2 = (_h2 >> 12 | _h3 << 14) + (ulong)_x2;
+			var f3 = (_h3 >> 18 | _h4 << 8) + (ulong)_x3;
 
 			f1 += f0 >> 32;
 			f2 += f1 >> 32;
@@ -212,7 +212,7 @@ namespace CryptoBase.Macs.Poly1305
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public void Reset()
 		{
-			H0 = H1 = H2 = H3 = H4 = 0;
+			_h0 = _h1 = _h2 = _h3 = _h4 = 0;
 		}
 
 		public void Dispose() { }
