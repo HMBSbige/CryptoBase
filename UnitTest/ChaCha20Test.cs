@@ -50,6 +50,7 @@ namespace UnitTest
 			Test(new BcChaCha20Crypto(key, iv), hex, hex2);
 			Test(new ChaCha20CryptoSF(key, iv), hex, hex2);
 			Test(new ChaCha20CryptoX86(key, iv), hex, hex2);
+			Test(StreamCryptoCreate.ChaCha20(key, iv), hex, hex2);
 		}
 	}
 }

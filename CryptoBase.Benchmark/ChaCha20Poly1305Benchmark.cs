@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
-using CryptoBase.SymmetricCryptos.AEADCryptos;
 using System;
 
 namespace CryptoBase.Benchmark
@@ -43,7 +42,7 @@ namespace CryptoBase.Benchmark
 		[Benchmark(Baseline = true)]
 		public void Encrypt()
 		{
-			TestEncrypt(new ChaCha20Poly1305Crypto(_randomKey));
+			TestEncrypt(AEADCryptoCreate.ChaCha20Poly1305(_randomKey));
 		}
 	}
 }

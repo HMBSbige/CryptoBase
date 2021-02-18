@@ -1,7 +1,6 @@
 using CryptoBase;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 
@@ -50,8 +49,8 @@ namespace UnitTest
 			var iv = ivHex.FromHex();
 			Test(new BcAESCFBStreamCrypto(true, key, iv), hex, hex2);
 			Test(new BcAESCFBStreamCrypto(false, key, iv), hex2, hex);
-			Test(new CFB128StreamMode(true, AESUtils.CreateECB(key), iv), hex, hex2);
-			Test(new CFB128StreamMode(false, AESUtils.CreateECB(key), iv), hex2, hex);
+			Test(StreamCryptoCreate.AesCfb(true, key, iv), hex, hex2);
+			Test(StreamCryptoCreate.AesCfb(false, key, iv), hex2, hex);
 		}
 	}
 }

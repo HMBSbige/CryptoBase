@@ -102,6 +102,7 @@ namespace UnitTest
 			Test(new DefaultAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 			Test(new BcAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 			Test(new GcmCryptoMode(AESUtils.CreateECB(key)), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
+			Test(AEADCryptoCreate.AesGcm(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 		}
 	}
 }

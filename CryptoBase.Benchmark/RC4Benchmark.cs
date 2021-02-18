@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;
 using System;
 
 namespace CryptoBase.Benchmark
@@ -37,9 +36,9 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark(Baseline = true)]
-		public void SoftwareFallback()
+		public void RC4()
 		{
-			Test(new RC4Crypto(_randomKey), _randombytes.Span);
+			Test(StreamCryptoCreate.Rc4(_randomKey), _randombytes.Span);
 		}
 	}
 }

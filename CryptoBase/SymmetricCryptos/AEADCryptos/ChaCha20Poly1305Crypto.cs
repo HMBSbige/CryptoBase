@@ -29,7 +29,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 				throw new ArgumentException(@"Key length must be 32 bytes.", nameof(key));
 			}
 
-			_chacha20 = ChaCha20Utils.CreateIETF(key);
+			_chacha20 = StreamCryptoCreate.ChaCha20(key);
 
 			_buffer = ArrayPool<byte>.Shared.Rent(32);
 		}

@@ -92,6 +92,7 @@ namespace UnitTest
 			Test(new BcSalsa20Crypto(key, iv), originSize, hex, originSize2, hex2);
 			Test(new Salsa20CryptoSF(key, iv), originSize, hex, originSize2, hex2);
 			Test(new Salsa20CryptoX86(key, iv), originSize, hex, originSize2, hex2);
+			Test(StreamCryptoCreate.Salsa20(key, iv), originSize, hex, originSize2, hex2);
 		}
 
 		[TestMethod]
@@ -105,6 +106,7 @@ namespace UnitTest
 			Test255(new BcSalsa20Crypto(key, iv), hex, hex2);
 			Test255(new Salsa20CryptoSF(key, iv), hex, hex2);
 			Test255(new Salsa20CryptoX86(key, iv), hex, hex2);
+			Test255(StreamCryptoCreate.Salsa20(key, iv), hex, hex2);
 		}
 
 		[TestMethod]
@@ -118,6 +120,7 @@ namespace UnitTest
 			Test65535(new BcSalsa20Crypto(key, iv), hex, hex2);
 			Test65535(new Salsa20CryptoSF(key, iv), hex, hex2);
 			Test65535(new Salsa20CryptoX86(key, iv), hex, hex2);
+			Test65535(StreamCryptoCreate.Salsa20(key, iv), hex, hex2);
 		}
 	}
 }

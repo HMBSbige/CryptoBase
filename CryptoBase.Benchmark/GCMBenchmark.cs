@@ -51,5 +51,11 @@ namespace CryptoBase.Benchmark
 		{
 			TestEncrypt(new GcmCryptoMode(AESUtils.CreateECB(_randomKey)));
 		}
+
+		[Benchmark]
+		public void SM4GCMEncrypt()
+		{
+			TestEncrypt(AEADCryptoCreate.Sm4Gcm(_randomKey));
+		}
 	}
 }

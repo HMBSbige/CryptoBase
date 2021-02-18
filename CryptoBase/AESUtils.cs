@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System;
@@ -43,11 +42,6 @@ namespace CryptoBase
 			return new AESECBCrypto(key);
 		}
 
-		public static IStreamBlockCryptoMode CreateCTR(byte[] key, byte[] iv)
-		{
-			return new CTRStreamMode(CreateECB(key), iv);
-		}
-
 		public static IBlockCrypto CreateCBC(byte[] key, byte[] iv)
 		{
 			if (IsSupportX86)
@@ -56,16 +50,6 @@ namespace CryptoBase
 			}
 
 			return new AESCBCCrypto(key, iv);
-		}
-
-		public static IStreamBlockCryptoMode CreateCFB(bool isEncrypt, byte[] key, byte[] iv)
-		{
-			return new CFB128StreamMode(isEncrypt, CreateECB(key), iv);
-		}
-
-		public static IAEADCrypto CreateGCM(byte[] key)
-		{
-			return new DefaultAesGcmCrypto(key);
 		}
 	}
 }

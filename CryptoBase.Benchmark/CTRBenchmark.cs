@@ -1,7 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes;
-using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using System;
 
@@ -44,13 +42,13 @@ namespace CryptoBase.Benchmark
 		[Benchmark]
 		public void AESCTR()
 		{
-			Test(AESUtils.CreateCTR(_randomKey16, _randomIv16), _randombytes.Span);
+			Test(StreamCryptoCreate.AesCtr(_randomKey16, _randomIv16), _randombytes.Span);
 		}
 
 		[Benchmark]
 		public void SM4CTR()
 		{
-			Test(new CTRStreamMode(new SM4Crypto(_randomKey16), _randomIv16), _randombytes.Span);
+			Test(StreamCryptoCreate.Sm4Ctr(_randomKey16, _randomIv16), _randombytes.Span);
 		}
 	}
 }

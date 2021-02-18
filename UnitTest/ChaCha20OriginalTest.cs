@@ -44,6 +44,7 @@ namespace UnitTest
 			Test(new BcChaCha20OriginalCrypto(key, iv), hex);
 			Test(new ChaCha20OriginalCryptoSF(key, iv), hex);
 			Test(new ChaCha20OriginalCryptoX86(key, iv), hex);
+			Test(StreamCryptoCreate.ChaCha20Original(key, iv), hex);
 		}
 	}
 }

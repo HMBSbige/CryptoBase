@@ -1,7 +1,6 @@
 using CryptoBase;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 
@@ -52,7 +51,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			Test(new BcRC4Crypto(key), originSize, hex, hex2);
-			Test(new RC4Crypto(key), originSize, hex, hex2);
+			Test(StreamCryptoCreate.Rc4(key), originSize, hex, hex2);
 		}
 	}
 }

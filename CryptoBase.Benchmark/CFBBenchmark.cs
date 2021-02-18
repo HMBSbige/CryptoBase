@@ -43,7 +43,7 @@ namespace CryptoBase.Benchmark
 		[Benchmark]
 		public void AESCFB()
 		{
-			Test(AESUtils.CreateCFB(true, _randomKey16, _randomIv16), _randombytes.Span);
+			Test(StreamCryptoCreate.AesCfb(true, _randomKey16, _randomIv16), _randombytes.Span);
 		}
 
 		[Benchmark]

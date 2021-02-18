@@ -46,7 +46,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
-			Test(AESUtils.CreateCTR(key, iv), hex, hex2);
+			Test(StreamCryptoCreate.AesCtr(key, iv), hex, hex2);
 		}
 	}
 }

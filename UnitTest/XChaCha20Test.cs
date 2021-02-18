@@ -70,6 +70,7 @@ namespace UnitTest
 			TestCounter1(new BcXChaCha20Crypto(key, iv), hex, hex2);
 			TestCounter1(new XChaCha20CryptoSF(key, iv), hex, hex2);
 			TestCounter1(new XChaCha20CryptoX86(key, iv), hex, hex2);
+			TestCounter1(StreamCryptoCreate.XChaCha20(key, iv), hex, hex2);
 		}
 
 		[TestMethod]
@@ -84,6 +85,7 @@ namespace UnitTest
 			TestCounter0(new BcXChaCha20Crypto(key, iv), hex, hex2);
 			TestCounter0(new XChaCha20CryptoSF(key, iv), hex, hex2);
 			TestCounter0(new XChaCha20CryptoX86(key, iv), hex, hex2);
+			TestCounter0(StreamCryptoCreate.XChaCha20(key, iv), hex, hex2);
 		}
 	}
 }
