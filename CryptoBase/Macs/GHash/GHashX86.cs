@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions;
+using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -6,27 +7,38 @@ using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Macs.GHash
 {
-	public class GHashX86 : GHash, IIntrinsics
+	public class GHashX86 : IMac, IIntrinsics
 	{
 		public bool IsSupport => GHashUtils.IsSupportX86;
 
-		protected readonly Vector128<byte> Key;
-		protected Vector128<byte> Buffer;
+		public string Name => @"GHash";
 
-		public unsafe GHashX86(byte[] key) : base(key)
+		public const int KeySize = 16;
+		public const int BlockSize = 16;
+		public const int TagSize = 16;
+
+		private readonly Vector128<byte> _key;
+		private Vector128<byte> _buffer;
+
+		public unsafe GHashX86(byte[] key)
 		{
+			if (key.Length < KeySize)
+			{
+				throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
+			}
+
 			fixed (byte* p = key)
 			{
-				Key = Sse2.LoadVector128(p).Reverse();
+				_key = Sse2.LoadVector128(p).Reverse();
 			}
 
 			Reset();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		protected override unsafe void GFMul(ReadOnlySpan<byte> x)
+		private unsafe void GFMul(ReadOnlySpan<byte> x)
 		{
-			var a = Key.AsUInt64();
+			var a = _key.AsUInt64();
 			Vector128<ulong> b;
 
 			fixed (byte* p = x)
@@ -35,7 +47,7 @@ namespace CryptoBase.Macs.GHash
 				b = t.Reverse().AsUInt64();
 			}
 
-			b = Sse2.Xor(b.AsByte(), Buffer).AsUInt64();
+			b = Sse2.Xor(b.AsByte(), _buffer).AsUInt64();
 
 			var tmp3 = Pclmulqdq.CarrylessMultiply(a, b, 0x00).AsUInt32();
 			var tmp4 = Pclmulqdq.CarrylessMultiply(a, b, 0x10).AsUInt32();
@@ -75,23 +87,44 @@ namespace CryptoBase.Macs.GHash
 			tmp3 = Sse2.Xor(tmp3, tmp2);
 			tmp6 = Sse2.Xor(tmp6, tmp3);
 
-			Buffer = tmp6.AsByte();
+			_buffer = tmp6.AsByte();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public override unsafe void GetMac(Span<byte> destination)
+		public void Update(ReadOnlySpan<byte> source)
+		{
+			while (source.Length >= BlockSize)
+			{
+				GFMul(source);
+				source = source.Slice(BlockSize);
+			}
+
+			if (source.IsEmpty)
+			{
+				return;
+			}
+
+			Span<byte> block = stackalloc byte[BlockSize];
+			source.CopyTo(block);
+			GFMul(block);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public unsafe void GetMac(Span<byte> destination)
 		{
 			fixed (byte* p = destination)
 			{
-				Sse2.Store(p, Buffer.Reverse());
+				Sse2.Store(p, _buffer.Reverse());
 			}
 
 			Reset();
 		}
 
-		public sealed override void Reset()
+		public void Reset()
 		{
-			Buffer = default;
+			_buffer = default;
 		}
+
+		public void Dispose() { }
 	}
 }

@@ -1,11 +1,19 @@
+using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Macs.GHash
 {
-	public class GHashSF : GHash
+	public class GHashSF : IMac
 	{
+		public string Name => @"GHash";
+
+		public const int KeySize = 16;
+		public const int BlockSize = 16;
+		public const int TagSize = 16;
+
 		private static readonly ulong[] Last4 =
 		{
 			0x0000, 0x1c20, 0x3840, 0x2460,
@@ -20,8 +28,13 @@ namespace CryptoBase.Macs.GHash
 
 		private readonly ReadOnlyMemory<byte> _key;
 
-		public GHashSF(byte[] key) : base(key)
+		public GHashSF(byte[] key)
 		{
+			if (key.Length < KeySize)
+			{
+				throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
+			}
+
 			_key = key;
 
 			_hl = ArrayPool<ulong>.Shared.Rent(BlockSize);
@@ -31,7 +44,8 @@ namespace CryptoBase.Macs.GHash
 			Reset();
 		}
 
-		protected override void GFMul(ReadOnlySpan<byte> x)
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		private void GFMul(ReadOnlySpan<byte> x)
 		{
 			for (var i = 0; i < BlockSize; ++i)
 			{
@@ -71,14 +85,35 @@ namespace CryptoBase.Macs.GHash
 			BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(8), zl);
 		}
 
-		public override void GetMac(Span<byte> destination)
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public void Update(ReadOnlySpan<byte> source)
+		{
+			while (source.Length >= BlockSize)
+			{
+				GFMul(source);
+				source = source.Slice(BlockSize);
+			}
+
+			if (source.IsEmpty)
+			{
+				return;
+			}
+
+			Span<byte> block = stackalloc byte[BlockSize];
+			source.CopyTo(block);
+			GFMul(block);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public void GetMac(Span<byte> destination)
 		{
 			_buffer.AsSpan(0, TagSize).CopyTo(destination);
 
 			Reset();
 		}
 
-		public sealed override void Reset()
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public void Reset()
 		{
 			_buffer.AsSpan(0, BlockSize).Clear();
 
@@ -118,10 +153,8 @@ namespace CryptoBase.Macs.GHash
 			}
 		}
 
-		public override void Dispose()
+		public void Dispose()
 		{
-			base.Dispose();
-
 			ArrayPool<ulong>.Shared.Return(_hl);
 			ArrayPool<ulong>.Shared.Return(_hh);
 			ArrayPool<byte>.Shared.Return(_buffer);

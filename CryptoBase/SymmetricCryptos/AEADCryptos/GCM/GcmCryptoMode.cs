@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.Macs.GHash;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
@@ -23,7 +22,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 		private readonly byte[] _buffer;
 		private readonly byte[] _tagBuffer;
 		private readonly byte[] _counterBlock;
-		private readonly GHash _gHash;
+		private readonly IMac _gHash;
 
 		public GcmCryptoMode(IBlockCrypto crypto)
 		{
