@@ -120,5 +120,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<XChaCha20Poly1305Benchmark>();
 		}
+
+		[TestMethod]
+		public void Poly1305Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<Poly1305Benchmark>();
+		}
 	}
 }

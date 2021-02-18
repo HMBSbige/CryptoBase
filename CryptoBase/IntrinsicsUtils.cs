@@ -179,5 +179,44 @@ namespace CryptoBase
 		{
 			return Ssse3.Shuffle(a, Reverse_128);
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static Vector128<ulong> Add(this Vector128<ulong> a, Vector128<ulong> b)
+		{
+			return Sse2.Add(a, b);
+		}
+
+		/// <summary>
+		/// Vector128.Create(a, 0, b, 0)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static Vector128<uint> CreateTwoUInt(uint a, uint b)
+		{
+			if (Sse2.IsSupported)
+			{
+				var t1 = Sse2.ConvertScalarToVector128UInt32(a);
+				var t2 = Sse2.ConvertScalarToVector128UInt32(b);
+
+				return Sse2.UnpackLow(t1.AsUInt64(), t2.AsUInt64()).AsUInt32();
+			}
+
+			return Vector128.Create(a, 0, b, 0);
+		}
+
+		/// <summary>
+		/// Vector128.Create(a, 0, a, 0)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static Vector128<uint> CreateTwoUInt(uint a)
+		{
+			if (Sse2.IsSupported)
+			{
+				var t1 = Sse2.ConvertScalarToVector128UInt32(a).AsUInt64();
+
+				return Sse2.UnpackLow(t1, t1).AsUInt32();
+			}
+
+			return Vector128.Create(a, 0, a, 0);
+		}
 	}
 }

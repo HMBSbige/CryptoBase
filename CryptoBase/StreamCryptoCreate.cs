@@ -7,6 +7,7 @@ using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;
 using CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase
@@ -16,31 +17,37 @@ namespace CryptoBase
 		private static readonly byte[] EmptyIv12 = new byte[12];
 		private static readonly byte[] EmptyIv24 = new byte[24];
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static IStreamCrypto AesCtr(byte[] key, byte[] iv)
 		{
 			return new CTRStreamMode(AESUtils.CreateECB(key), iv);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static IStreamCrypto Sm4Ctr(byte[] key, byte[] iv)
 		{
 			return new CTRStreamMode(new SM4Crypto(key), iv);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static IStreamCrypto AesCfb(bool isEncrypt, byte[] key, byte[] iv)
 		{
 			return new CFB128StreamMode(isEncrypt, AESUtils.CreateECB(key), iv);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static IStreamCrypto Sm4Cfb(bool isEncrypt, byte[] key, byte[] iv)
 		{
 			return new CFB128StreamMode(isEncrypt, new SM4Crypto(key), iv);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static IStreamCrypto Rc4(byte[] key)
 		{
 			return new RC4Crypto(key);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static ChaCha20OriginalCrypto ChaCha20Original(byte[] key, byte[] iv)
 		{
 			if (Sse2.IsSupported)
@@ -51,6 +58,7 @@ namespace CryptoBase
 			return new ChaCha20OriginalCryptoSF(key, iv);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static ChaCha20Crypto ChaCha20(byte[] key, byte[] iv)
 		{
 			if (Sse2.IsSupported)
@@ -61,11 +69,13 @@ namespace CryptoBase
 			return new ChaCha20CryptoSF(key, iv);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static ChaCha20Crypto ChaCha20(byte[] key)
 		{
 			return ChaCha20(key, EmptyIv12);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static XChaCha20Crypto XChaCha20(byte[] key, byte[] iv)
 		{
 			if (Sse2.IsSupported)
@@ -76,11 +86,13 @@ namespace CryptoBase
 			return new XChaCha20CryptoSF(key, iv);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static XChaCha20Crypto XChaCha20(byte[] key)
 		{
 			return XChaCha20(key, EmptyIv24);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static Salsa20Crypto Salsa20(byte[] key, byte[] iv)
 		{
 			if (Sse2.IsSupported)
@@ -91,6 +103,7 @@ namespace CryptoBase
 			return new Salsa20CryptoSF(key, iv);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static Salsa20Crypto XSalsa20(byte[] key, byte[] iv)
 		{
 			if (Sse2.IsSupported)

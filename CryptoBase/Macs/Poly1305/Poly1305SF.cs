@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Macs.Poly1305
 {
-	public class Poly1305 : IMac
+	public class Poly1305SF : IMac
 	{
 		public string Name => @"Poly1305";
 
@@ -19,7 +19,7 @@ namespace CryptoBase.Macs.Poly1305
 
 		private uint _h0, _h1, _h2, _h3, _h4;
 
-		public Poly1305(Span<byte> key)
+		public Poly1305SF(ReadOnlySpan<byte> key)
 		{
 			if (key.Length < KeySize)
 			{

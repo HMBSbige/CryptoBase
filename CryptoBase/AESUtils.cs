@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 using Aes = System.Security.Cryptography.Aes;
@@ -26,6 +27,7 @@ namespace CryptoBase
 			AesCbc.Padding = PaddingMode.None;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static AESCrypto CreateECB(byte[] key)
 		{
 			if (IsSupportX86)
@@ -42,6 +44,7 @@ namespace CryptoBase
 			return new AESECBCrypto(key);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static IBlockCrypto CreateCBC(byte[] key, byte[] iv)
 		{
 			if (IsSupportX86)

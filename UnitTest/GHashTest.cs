@@ -51,6 +51,7 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			Test(new GHashSF(key), plainHex, cipherHex);
 			Test(new GHashX86(key), plainHex, cipherHex);
+			Test(GHashUtils.Create(key), plainHex, cipherHex);
 		}
 	}
 }

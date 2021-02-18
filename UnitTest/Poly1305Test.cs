@@ -47,7 +47,9 @@ namespace UnitTest
 		public void Test(string keyHex, string plainHex, string cipherHex)
 		{
 			var key = keyHex.FromHex();
-			Test(new Poly1305(key), plainHex, cipherHex);
+			Test(new Poly1305SF(key), plainHex, cipherHex);
+			Test(new Poly1305X86(key), plainHex, cipherHex);
+			Test(Poly1305Utils.Create(key), plainHex, cipherHex);
 		}
 	}
 }

@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.Macs.Poly1305;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
 using System;
 using System.Buffers;
@@ -18,7 +17,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 		public const int NonceSize = 12;
 		public const int TagSize = 16;
 
-		private static ReadOnlySpan<byte> Init => new byte[Poly1305.KeySize];
+		private static ReadOnlySpan<byte> Init => new byte[Poly1305Utils.KeySize];
 
 		private readonly byte[] _buffer;
 
@@ -53,15 +52,15 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 			_chacha20.SetCounter(1);
 			_chacha20.Update(source, destination);
 
-			var buffer = _buffer.AsSpan(0, Poly1305.KeySize);
+			var buffer = _buffer.AsSpan(0, Poly1305Utils.KeySize);
 			_chacha20.SetCounter(0);
 			_chacha20.Update(Init, buffer);
-			using var poly1305 = new Poly1305(buffer);
+			using var poly1305 = Poly1305Utils.Create(buffer);
 
 			poly1305.Update(associatedData);
 			poly1305.Update(destination);
 
-			Span<byte> block = _buffer.AsSpan(Poly1305.BlockSize);
+			Span<byte> block = _buffer.AsSpan(Poly1305Utils.BlockSize);
 			BinaryPrimitives.WriteUInt64LittleEndian(block, (ulong)associatedData.Length);
 			BinaryPrimitives.WriteUInt64LittleEndian(block.Slice(8), (ulong)source.Length);
 			poly1305.Update(block);
@@ -85,10 +84,10 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 
 			_chacha20.SetIV(nonce);
 
-			var buffer = _buffer.AsSpan(0, Poly1305.KeySize);
+			var buffer = _buffer.AsSpan(0, Poly1305Utils.KeySize);
 			_chacha20.SetCounter(0);
 			_chacha20.Update(Init, buffer);
-			using var poly1305 = new Poly1305(buffer);
+			using var poly1305 = Poly1305Utils.Create(buffer);
 
 			poly1305.Update(associatedData);
 			poly1305.Update(source);
