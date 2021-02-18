@@ -48,8 +48,8 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
 			Test(new BcChaCha20Crypto(key, iv), hex, hex2);
-			Test(new SlowChaCha20Crypto(key, iv), hex, hex2);
-			Test(new FastChaCha20Crypto(key, iv), hex, hex2);
+			Test(new ChaCha20CryptoSF(key, iv), hex, hex2);
+			Test(new ChaCha20CryptoX86(key, iv), hex, hex2);
 		}
 	}
 }

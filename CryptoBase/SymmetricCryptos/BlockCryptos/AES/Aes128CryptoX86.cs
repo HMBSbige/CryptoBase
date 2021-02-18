@@ -5,12 +5,12 @@ using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 {
-	public class FastAESCrypto128 : FastAESCrypto
+	public class Aes128CryptoX86 : AESCryptoX86
 	{
 		private Vector128<byte> _k0, _k1, _k2, _k3, _k4, _k5, _k6, _k7, _k8, _k9, _k10,
 			_k11, _k12, _k13, _k14, _k15, _k16, _k17, _k18, _k19;
 
-		public FastAESCrypto128(byte[] key) : base(key)
+		public Aes128CryptoX86(byte[] key) : base(key)
 		{
 			Init();
 		}

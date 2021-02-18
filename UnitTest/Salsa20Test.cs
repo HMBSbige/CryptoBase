@@ -90,8 +90,8 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
 			Test(new BcSalsa20Crypto(key, iv), originSize, hex, originSize2, hex2);
-			Test(new SlowSalsa20Crypto(key, iv), originSize, hex, originSize2, hex2);
-			Test(new FastSalsa20Crypto(key, iv), originSize, hex, originSize2, hex2);
+			Test(new Salsa20CryptoSF(key, iv), originSize, hex, originSize2, hex2);
+			Test(new Salsa20CryptoX86(key, iv), originSize, hex, originSize2, hex2);
 		}
 
 		[TestMethod]
@@ -103,8 +103,8 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
 			Test255(new BcSalsa20Crypto(key, iv), hex, hex2);
-			Test255(new SlowSalsa20Crypto(key, iv), hex, hex2);
-			Test255(new FastSalsa20Crypto(key, iv), hex, hex2);
+			Test255(new Salsa20CryptoSF(key, iv), hex, hex2);
+			Test255(new Salsa20CryptoX86(key, iv), hex, hex2);
 		}
 
 		[TestMethod]
@@ -116,8 +116,8 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
 			Test65535(new BcSalsa20Crypto(key, iv), hex, hex2);
-			Test65535(new SlowSalsa20Crypto(key, iv), hex, hex2);
-			Test65535(new FastSalsa20Crypto(key, iv), hex, hex2);
+			Test65535(new Salsa20CryptoSF(key, iv), hex, hex2);
+			Test65535(new Salsa20CryptoX86(key, iv), hex, hex2);
 		}
 	}
 }

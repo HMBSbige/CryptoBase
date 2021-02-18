@@ -5,7 +5,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 {
-	public class FastXSalsa20Crypto : Salsa20Crypto
+	public class XSalsa20CryptoX86 : Salsa20Crypto
 	{
 		public override bool IsSupport => Sse2.IsSupported;
 
@@ -13,7 +13,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 
 		public override int IvSize => 24;
 
-		public FastXSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)
+		public XSalsa20CryptoX86(byte[] key, byte[] iv) : base(key, iv)
 		{
 			Init();
 			Reset();

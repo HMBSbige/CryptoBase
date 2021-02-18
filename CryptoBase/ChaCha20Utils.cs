@@ -380,12 +380,12 @@ namespace CryptoBase
 
 		public static ChaCha20Crypto CreateIETF(byte[] key)
 		{
-			return Sse2.IsSupported ? new FastChaCha20Crypto(key, EmptyIv12) : new SlowChaCha20Crypto(key, EmptyIv12);
+			return Sse2.IsSupported ? new ChaCha20CryptoX86(key, EmptyIv12) : new ChaCha20CryptoSF(key, EmptyIv12);
 		}
 
 		public static XChaCha20Crypto CreateXChaCha20(byte[] key)
 		{
-			return Sse2.IsSupported ? new FastXChaCha20Crypto(key, EmptyIv24) : new SlowXChaCha20Crypto(key, EmptyIv24);
+			return Sse2.IsSupported ? new XChaCha20CryptoX86(key, EmptyIv24) : new XChaCha20CryptoSF(key, EmptyIv24);
 		}
 	}
 }

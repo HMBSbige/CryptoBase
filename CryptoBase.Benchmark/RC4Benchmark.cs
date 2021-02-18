@@ -37,9 +37,9 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark(Baseline = true)]
-		public void Slow()
+		public void SoftwareFallback()
 		{
-			Test(new SlowRC4Crypto(_randomKey), _randombytes.Span);
+			Test(new RC4Crypto(_randomKey), _randombytes.Span);
 		}
 	}
 }

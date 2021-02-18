@@ -33,9 +33,9 @@ namespace CryptoBase
 			{
 				return key.Length switch
 				{
-					16 => new FastAESCrypto128(key),
-					24 => new FastAESCrypto192(key),
-					32 => new FastAESCrypto256(key),
+					16 => new Aes128CryptoX86(key),
+					24 => new Aes192CryptoX86(key),
+					32 => new Aes256CryptoX86(key),
 					_ => throw new ArgumentOutOfRangeException(nameof(key))
 				};
 			}
@@ -65,7 +65,7 @@ namespace CryptoBase
 
 		public static IAEADCrypto CreateGCM(byte[] key)
 		{
-			return new NormalAesGcmCrypto(key);
+			return new DefaultAesGcmCrypto(key);
 		}
 	}
 }

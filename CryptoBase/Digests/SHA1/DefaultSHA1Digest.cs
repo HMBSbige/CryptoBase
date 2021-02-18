@@ -3,7 +3,7 @@ using System;
 
 namespace CryptoBase.Digests.SHA1
 {
-	public class NormalSHA1Digest : SHA1DigestBase
+	public class DefaultSHA1Digest : SHA1DigestBase
 	{
 		private readonly System.Security.Cryptography.SHA1 _hasher = System.Security.Cryptography.SHA1.Create();
 

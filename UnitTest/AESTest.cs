@@ -66,7 +66,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			Test(new BcAESCrypto(default, key), hex1, hex2);
-			Test(new SlowAESCrypto(key), hex1, hex2);
+			Test(new AESCryptoSF(key), hex1, hex2);
 			Test(AESUtils.CreateECB(key), hex1, hex2);
 			Test(new AESECBCrypto(key), hex1, hex2);
 		}
@@ -77,7 +77,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			Test4(new BcAESCrypto(default, key), hex1, hex2);
-			Test4(new SlowAESCrypto(key), hex1, hex2);
+			Test4(new AESCryptoSF(key), hex1, hex2);
 			Test4(AESUtils.CreateECB(key), hex1, hex2);
 			Test4(new AESECBCrypto(key), hex1, hex2);
 		}

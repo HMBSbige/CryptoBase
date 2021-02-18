@@ -36,7 +36,7 @@ namespace UnitTest
 		public void SM3DigestTest(string str, string sm3Str)
 		{
 			SM3DigestTest(new BcSM3Digest(), str, sm3Str);
-			SM3DigestTest(new SlowSM3Digest(), str, sm3Str);
+			SM3DigestTest(new SM3Digest(), str, sm3Str);
 		}
 	}
 }

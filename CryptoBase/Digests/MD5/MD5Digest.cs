@@ -8,7 +8,7 @@ namespace CryptoBase.Digests.MD5
 	/// <summary>
 	/// https://tools.ietf.org/html/rfc1321
 	/// </summary>
-	public class SlowMD5Digest : MD5DigestBase
+	public class MD5Digest : MD5DigestBase
 	{
 		private const int BlockSizeOfInt = 16;
 		private const int BlockSizeOfByte = BlockSizeOfInt * SizeOfInt;
@@ -100,7 +100,7 @@ namespace CryptoBase.Digests.MD5
 
 		#endregion
 
-		public SlowMD5Digest()
+		public MD5Digest()
 		{
 			Init();
 		}

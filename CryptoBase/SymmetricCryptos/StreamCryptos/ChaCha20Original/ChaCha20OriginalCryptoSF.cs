@@ -3,11 +3,11 @@ using System.Runtime.InteropServices;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 {
-	public class SlowChaCha20OriginalCrypto : ChaCha20OriginalCrypto
+	public class ChaCha20OriginalCryptoSF : ChaCha20OriginalCrypto
 	{
 		public override bool IsSupport => false;
 
-		public SlowChaCha20OriginalCrypto(byte[] key, byte[] iv) : base(key, iv)
+		public ChaCha20OriginalCryptoSF(byte[] key, byte[] iv) : base(key, iv)
 		{
 			Init();
 			Reset();

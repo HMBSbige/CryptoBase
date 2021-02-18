@@ -40,9 +40,9 @@ namespace UnitTest
 		[DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012", @"b76972fe0dff4baac395b531646f738e")]
 		public void MD5DigestTest(string str, string md5Str)
 		{
-			MD5DigestTest(new NormalMD5Digest(), str, md5Str);
+			MD5DigestTest(new DefaultMD5Digest(), str, md5Str);
 			MD5DigestTest(new BcMD5Digest(), str, md5Str);
-			MD5DigestTest(new SlowMD5Digest(), str, md5Str);
+			MD5DigestTest(new MD5Digest(), str, md5Str);
 			MD5DigestTest(new Fast440MD5Digest(), str, md5Str);
 		}
 
@@ -52,9 +52,9 @@ namespace UnitTest
 		[DataRow(@"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", @"268c7919189d85e276d74b8c60b2f84f")]
 		public void LongMessageTest(string str, string md5Str)
 		{
-			MD5DigestTest(new NormalMD5Digest(), str, md5Str);
+			MD5DigestTest(new DefaultMD5Digest(), str, md5Str);
 			MD5DigestTest(new BcMD5Digest(), str, md5Str);
-			MD5DigestTest(new SlowMD5Digest(), str, md5Str);
+			MD5DigestTest(new MD5Digest(), str, md5Str);
 		}
 	}
 }

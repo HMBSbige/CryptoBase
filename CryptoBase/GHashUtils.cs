@@ -11,10 +11,10 @@ namespace CryptoBase
 		{
 			if (IsSupportX86)
 			{
-				return new FastGHash(key);
+				return new GHashX86(key);
 			}
 
-			return new SlowGHash(key);
+			return new GHashSF(key);
 		}
 	}
 }

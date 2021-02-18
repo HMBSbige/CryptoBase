@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Digests.MD5
 {
-	public class Fast440MD5Digest : SlowMD5Digest
+	public class Fast440MD5Digest : MD5Digest
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)

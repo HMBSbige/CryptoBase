@@ -1,10 +1,10 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 {
-	public class SlowXSalsa20Crypto : FastXSalsa20Crypto
+	public class XSalsa20CryptoSF : XSalsa20CryptoX86
 	{
 		public override bool IsSupport => false;
 
-		public SlowXSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv) { }
+		public XSalsa20CryptoSF(byte[] key, byte[] iv) : base(key, iv) { }
 
 		protected override void UpdateKeyStream()
 		{

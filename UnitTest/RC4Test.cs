@@ -52,7 +52,7 @@ namespace UnitTest
 		{
 			var key = keyHex.FromHex();
 			Test(new BcRC4Crypto(key), originSize, hex, hex2);
-			Test(new SlowRC4Crypto(key), originSize, hex, hex2);
+			Test(new RC4Crypto(key), originSize, hex, hex2);
 		}
 	}
 }

@@ -39,15 +39,15 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void Slow()
+		public void SoftwareFallback()
 		{
-			Test(new SlowChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
+			Test(new ChaCha20CryptoSF(_randomKey, _randomIv), _randombytes.Span);
 		}
 
 		[Benchmark(Baseline = true)]
-		public void Fast()
+		public void X86()
 		{
-			Test(new FastChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
+			Test(new ChaCha20CryptoX86(_randomKey, _randomIv), _randombytes.Span);
 		}
 	}
 }

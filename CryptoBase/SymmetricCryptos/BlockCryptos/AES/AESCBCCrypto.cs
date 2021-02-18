@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 {
-	public sealed class AESCBCCrypto : NormalAESCrypto
+	public sealed class AESCBCCrypto : DefaultAESCrypto
 	{
 		public override string Name => @"AES-CBC";
 

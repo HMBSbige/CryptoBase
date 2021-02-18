@@ -4,7 +4,7 @@ using System.Buffers;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 {
-	public class SlowRC4Crypto : RC4CryptoBase
+	public class RC4Crypto : RC4CryptoBase
 	{
 		private static ReadOnlySpan<byte> S => new byte[]
 		{
@@ -32,7 +32,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 
 		private int x, y;
 
-		public SlowRC4Crypto(byte[] key) : base(key)
+		public RC4Crypto(byte[] key) : base(key)
 		{
 			_key = key;
 			_state = ArrayPool<byte>.Shared.Rent(BoxLength);

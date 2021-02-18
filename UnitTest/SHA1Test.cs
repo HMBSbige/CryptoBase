@@ -35,7 +35,7 @@ namespace UnitTest
 		[DataRow(@"01234567012345670123456701234567", @"c729c8996ee0a6f74f4f3248e8957edf704fb624")]
 		public void SHA1DigestTest(string str, string sha1Str)
 		{
-			SHA1DigestTest(new NormalSHA1Digest(), str, sha1Str);
+			SHA1DigestTest(new DefaultSHA1Digest(), str, sha1Str);
 			SHA1DigestTest(new BcSHA1Digest(), str, sha1Str);
 		}
 	}

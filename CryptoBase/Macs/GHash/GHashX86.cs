@@ -6,14 +6,14 @@ using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Macs.GHash
 {
-	public class FastGHash : GHash, IIntrinsics
+	public class GHashX86 : GHash, IIntrinsics
 	{
 		public bool IsSupport => GHashUtils.IsSupportX86;
 
 		protected readonly Vector128<byte> Key;
 		protected Vector128<byte> Buffer;
 
-		public unsafe FastGHash(byte[] key) : base(key)
+		public unsafe GHashX86(byte[] key) : base(key)
 		{
 			fixed (byte* p = key)
 			{

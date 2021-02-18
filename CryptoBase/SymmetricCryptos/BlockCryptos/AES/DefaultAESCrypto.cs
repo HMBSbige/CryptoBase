@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 {
-	public abstract class NormalAESCrypto : AESCrypto
+	public abstract class DefaultAESCrypto : AESCrypto
 	{
 		public override bool IsSupport => false;
 
@@ -15,7 +15,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		private readonly byte[] _buffer;
 		private readonly byte[] _outBuffer;
 
-		protected NormalAESCrypto(byte[] key) : base(key)
+		protected DefaultAESCrypto(byte[] key) : base(key)
 		{
 			_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
 			_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);

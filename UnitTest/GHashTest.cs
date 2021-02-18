@@ -49,8 +49,8 @@ namespace UnitTest
 		public void Test(string keyHex, string plainHex, string cipherHex)
 		{
 			var key = keyHex.FromHex();
-			Test(new SlowGHash(key), plainHex, cipherHex);
-			Test(new FastGHash(key), plainHex, cipherHex);
+			Test(new GHashSF(key), plainHex, cipherHex);
+			Test(new GHashX86(key), plainHex, cipherHex);
 		}
 	}
 }

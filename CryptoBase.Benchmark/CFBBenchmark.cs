@@ -37,7 +37,7 @@ namespace CryptoBase.Benchmark
 		[Benchmark(Baseline = true)]
 		public void ChaCha20()
 		{
-			Test(new FastChaCha20OriginalCrypto(_randomKey16, _randomIv8), _randombytes.Span);
+			Test(new ChaCha20OriginalCryptoX86(_randomKey16, _randomIv8), _randombytes.Span);
 		}
 
 		[Benchmark]

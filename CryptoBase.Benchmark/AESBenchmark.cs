@@ -56,19 +56,19 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void SlowEncrypt()
+		public void SoftwareFallbackEncrypt()
 		{
-			TestEncrypt(new SlowAESCrypto(_randomKey), _randombytes.Span);
+			TestEncrypt(new AESCryptoSF(_randomKey), _randombytes.Span);
 		}
 
 		[Benchmark(Baseline = true)]
-		public void FastEncrypt()
+		public void X86Encrypt()
 		{
 			TestEncrypt(AESUtils.CreateECB(_randomKey), _randombytes.Span);
 		}
 
 		[Benchmark]
-		public void NormalEncrypt()
+		public void DefaultEncrypt()
 		{
 			TestEncrypt(new AESECBCrypto(_randomKey), _randombytes.Span);
 		}
@@ -80,19 +80,19 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void SlowDecrypt()
+		public void SoftwareFallbackDecrypt()
 		{
-			TestDecrypt(new SlowAESCrypto(_randomKey), _randombytes.Span);
+			TestDecrypt(new AESCryptoSF(_randomKey), _randombytes.Span);
 		}
 
 		[Benchmark]
-		public void FastDecrypt()
+		public void X86Decrypt()
 		{
 			TestDecrypt(AESUtils.CreateECB(_randomKey), _randombytes.Span);
 		}
 
 		[Benchmark]
-		public void NormalDecrypt()
+		public void DefaultDecrypt()
 		{
 			TestDecrypt(new AESECBCrypto(_randomKey), _randombytes.Span);
 		}

@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 {
-	public class NormalAesGcmCrypto : IAEADCrypto
+	public class DefaultAesGcmCrypto : IAEADCrypto
 	{
 		public string Name => @"AES-GCM";
 
@@ -13,7 +13,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 
 		public const int NonceSize = 12;
 
-		public NormalAesGcmCrypto(ReadOnlySpan<byte> key)
+		public DefaultAesGcmCrypto(ReadOnlySpan<byte> key)
 		{
 			_internalCrypto = new AesGcm(key);
 		}

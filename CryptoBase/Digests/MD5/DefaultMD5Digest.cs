@@ -3,7 +3,7 @@ using System;
 
 namespace CryptoBase.Digests.MD5
 {
-	public class NormalMD5Digest : MD5DigestBase
+	public class DefaultMD5Digest : MD5DigestBase
 	{
 		private readonly System.Security.Cryptography.MD5 _hasher = System.Security.Cryptography.MD5.Create();
 

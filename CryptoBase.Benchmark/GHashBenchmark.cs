@@ -32,15 +32,15 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void Slow()
+		public void SoftwareFallback()
 		{
-			Test(new SlowGHash(_randomKey));
+			Test(new GHashSF(_randomKey));
 		}
 
 		[Benchmark(Baseline = true)]
-		public void Fast()
+		public void X86()
 		{
-			Test(new FastGHash(_randomKey));
+			Test(new GHashX86(_randomKey));
 		}
 	}
 }

@@ -21,7 +21,7 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark(Baseline = true)]
-		public void Normal()
+		public void Default()
 		{
 			Span<byte> hash = stackalloc byte[SHA1DigestBase.Sha1Length];
 			SHA1Utils.Default(_randombytes.Span, hash);

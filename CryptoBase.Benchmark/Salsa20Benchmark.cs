@@ -39,15 +39,15 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void Slow()
+		public void SoftwareFallback()
 		{
-			Test(new SlowSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
+			Test(new Salsa20CryptoSF(_randomKey, _randomIv), _randombytes.Span);
 		}
 
 		[Benchmark(Baseline = true)]
-		public void Fast()
+		public void X86()
 		{
-			Test(new FastSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
+			Test(new Salsa20CryptoX86(_randomKey, _randomIv), _randombytes.Span);
 		}
 	}
 }

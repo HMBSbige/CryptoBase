@@ -10,7 +10,7 @@ namespace CryptoBase.Digests.SM3
 	/// <summary>
 	/// https://www.oscca.gov.cn/sca/xxgk/2010-12/17/1002389/files/302a3ada057c4a73830536d03e683110.pdf
 	/// </summary>
-	public class SlowSM3Digest : SM3DigestBase
+	public class SM3Digest : SM3DigestBase
 	{
 		private const int BlockSizeOfInt = 16;
 		private const int BlockSizeOfByte = BlockSizeOfInt * SizeOfInt;
@@ -63,7 +63,7 @@ namespace CryptoBase.Digests.SM3
 
 		#endregion
 
-		static SlowSM3Digest()
+		static SM3Digest()
 		{
 			for (var i = 0; i < 16; ++i)
 			{
@@ -76,7 +76,7 @@ namespace CryptoBase.Digests.SM3
 			}
 		}
 
-		public SlowSM3Digest()
+		public SM3Digest()
 		{
 			Init();
 		}

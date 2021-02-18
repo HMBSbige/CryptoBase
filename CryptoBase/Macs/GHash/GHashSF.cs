@@ -4,7 +4,7 @@ using System.Buffers.Binary;
 
 namespace CryptoBase.Macs.GHash
 {
-	public class SlowGHash : GHash
+	public class GHashSF : GHash
 	{
 		private static readonly ulong[] Last4 =
 		{
@@ -20,7 +20,7 @@ namespace CryptoBase.Macs.GHash
 
 		private readonly ReadOnlyMemory<byte> _key;
 
-		public SlowGHash(byte[] key) : base(key)
+		public GHashSF(byte[] key) : base(key)
 		{
 			_key = key;
 

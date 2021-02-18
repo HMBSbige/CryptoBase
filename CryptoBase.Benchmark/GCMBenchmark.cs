@@ -35,9 +35,9 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark(Baseline = true)]
-		public void NormalEncrypt()
+		public void DefaultEncrypt()
 		{
-			TestEncrypt(new NormalAesGcmCrypto(_randomKey));
+			TestEncrypt(new DefaultAesGcmCrypto(_randomKey));
 		}
 
 		[Benchmark]
@@ -47,7 +47,7 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void SlowEncrypt()
+		public void Encrypt()
 		{
 			TestEncrypt(new GcmCryptoMode(AESUtils.CreateECB(_randomKey)));
 		}

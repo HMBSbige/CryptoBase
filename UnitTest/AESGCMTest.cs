@@ -99,7 +99,7 @@ namespace UnitTest
 		public void Test(string keyHex, string nonceHex, string associatedDataHex, string tagHex, string plainHex, string cipherHex)
 		{
 			var key = keyHex.FromHex();
-			Test(new NormalAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
+			Test(new DefaultAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 			Test(new BcAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 			Test(new GcmCryptoMode(AESUtils.CreateECB(key)), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 		}

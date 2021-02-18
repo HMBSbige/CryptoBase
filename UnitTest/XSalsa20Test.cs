@@ -77,8 +77,8 @@ namespace UnitTest
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
 			Test(new BcXSalsa20Crypto(key, iv), i1, o1, i2, o2);
-			Test(new FastXSalsa20Crypto(key, iv), i1, o1, i2, o2);
-			Test(new SlowXSalsa20Crypto(key, iv), i1, o1, i2, o2);
+			Test(new XSalsa20CryptoX86(key, iv), i1, o1, i2, o2);
+			Test(new XSalsa20CryptoSF(key, iv), i1, o1, i2, o2);
 		}
 	}
 }

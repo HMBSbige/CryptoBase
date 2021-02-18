@@ -41,7 +41,7 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark(Baseline = true)]
-		public void SlowEncrypt()
+		public void Encrypt()
 		{
 			TestEncrypt(new ChaCha20Poly1305Crypto(_randomKey));
 		}
