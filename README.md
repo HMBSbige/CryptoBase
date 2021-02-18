@@ -6,16 +6,18 @@ CryptoBase | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.svg)](https
 CryptoBase.Abstractions | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.Abstractions.svg)](https://www.nuget.org/packages/CryptoBase.Abstractions/)
 CryptoBase.BouncyCastle | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.BouncyCastle.svg)](https://www.nuget.org/packages/CryptoBase.BouncyCastle/)
 
-C# 密码库抽象接口与默认实现
+A fast crypto library for .NET
 
-## 目标
-### 消息摘要算法
+[Wiki & Benchmark](https://github.com/HMBSbige/CryptoBase/wiki)
+
+## Supported
+### Digest algorithms
 * MD5
 * SHA1
 * SM3
 
-### 对称加密
-#### 流加密
+### Symmetric-key algorithms
+#### Stream ciphers
 * ChaCha20
     * Original
     * IETF 7539
@@ -24,16 +26,16 @@ C# 密码库抽象接口与默认实现
 * XChaCha20
 * XSalsa20
 
-#### 块加密
+#### Block ciphers
 * AES
 * SM4
 
-##### 加密模式
+##### Block cipher modes
 * CBC
 * CFB
 * CTR
 
-#### 认证加密
+#### Authenticated encryption algorithms
 * ChaCha20Poly1305
 * AES-GCM
 * SM4-GCM
