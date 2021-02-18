@@ -46,7 +46,6 @@ jobs:
       run: dotnet build -c Release ${{ matrix.ProjectName }}\${{ matrix.ProjectName }}.csproj
 
     - name: Push nuget packages
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
       shell: pwsh
       run: |
         dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
