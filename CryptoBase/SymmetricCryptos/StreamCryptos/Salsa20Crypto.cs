@@ -48,6 +48,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 
 						if (Sse2.IsSupported)
 						{
+							if (length >= 256)
+							{
+								Salsa20Utils.SalsaCore256(Rounds, state, ref source, ref destination, ref length);
+							}
+
 							while (length >= 64)
 							{
 								Salsa20Utils.SalsaCore64(Rounds, state, source, destination);
