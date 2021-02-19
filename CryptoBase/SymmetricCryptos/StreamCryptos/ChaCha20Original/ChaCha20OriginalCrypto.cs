@@ -20,5 +20,15 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 		{
 			ChaCha20Utils.ChaChaCoreOriginal128(Rounds, state, source, destination);
 		}
+
+		protected override unsafe void ChaChaCore256(uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			ChaCha20Utils.ChaChaCoreOriginal256(Rounds, state, ref source, ref destination, ref length);
+		}
+
+		protected override unsafe void ChaChaCore512(uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			ChaCha20Utils.ChaChaCoreOriginal512(Rounds, state, ref source, ref destination, ref length);
+		}
 	}
 }

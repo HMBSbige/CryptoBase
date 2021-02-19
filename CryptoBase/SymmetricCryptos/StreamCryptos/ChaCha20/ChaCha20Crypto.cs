@@ -25,6 +25,16 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 			ChaCha20Utils.ChaChaCore128(Rounds, state, source, destination);
 		}
 
+		protected override unsafe void ChaChaCore256(uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			ChaCha20Utils.ChaChaCore256(Rounds, state, ref source, ref destination, ref length);
+		}
+
+		protected override unsafe void ChaChaCore512(uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			ChaCha20Utils.ChaChaCore512(Rounds, state, ref source, ref destination, ref length);
+		}
+
 		public abstract void SetIV(ReadOnlySpan<byte> iv);
 		public abstract void SetCounter(uint counter);
 	}

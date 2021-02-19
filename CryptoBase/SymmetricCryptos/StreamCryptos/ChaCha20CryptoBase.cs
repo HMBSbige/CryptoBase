@@ -34,6 +34,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 					{
 						if (Avx.IsSupported && Avx2.IsSupported)
 						{
+							if (length >= 512)
+							{
+								ChaChaCore512(state, ref source, ref destination, ref length);
+							}
+
 							while (length >= 128)
 							{
 								ChaChaCore128(state, source, destination);
@@ -46,6 +51,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 
 						if (Sse2.IsSupported)
 						{
+							if (length >= 256)
+							{
+								ChaChaCore256(state, ref source, ref destination, ref length);
+							}
+
 							while (length >= 64)
 							{
 								ChaChaCore64(state, source, destination);
@@ -111,6 +121,8 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 
 		protected abstract unsafe void ChaChaCore64(uint* state, byte* source, byte* destination);
 		protected abstract unsafe void ChaChaCore128(uint* state, byte* source, byte* destination);
+		protected abstract unsafe void ChaChaCore256(uint* state, ref byte* source, ref byte* destination, ref int length);
+		protected abstract unsafe void ChaChaCore512(uint* state, ref byte* source, ref byte* destination, ref int length);
 
 		protected abstract unsafe void IncrementCounter(uint* state);
 	}

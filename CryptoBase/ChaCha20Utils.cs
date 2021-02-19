@@ -359,6 +359,422 @@ namespace CryptoBase
 
 		#endregion
 
+		#region 处理 256*n bytes
+
+		private static readonly Vector128<ulong> IncCounter01 = Vector128.Create(0ul, 1);
+		private static readonly Vector128<ulong> IncCounter23 = Vector128.Create(2ul, 3);
+		private static readonly Vector128<uint> IncCounter0123_128 = Vector128.Create(0u, 1, 2, 3);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void ChaChaCoreOriginal256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			var o0 = Vector128.Create(*(state + 0));
+			var o1 = Vector128.Create(*(state + 1));
+			var o2 = Vector128.Create(*(state + 2));
+			var o3 = Vector128.Create(*(state + 3));
+			var o4 = Vector128.Create(*(state + 4));
+			var o5 = Vector128.Create(*(state + 5));
+			var o6 = Vector128.Create(*(state + 6));
+			var o7 = Vector128.Create(*(state + 7));
+			var o8 = Vector128.Create(*(state + 8));
+			var o9 = Vector128.Create(*(state + 9));
+			var o10 = Vector128.Create(*(state + 10));
+			var o11 = Vector128.Create(*(state + 11));
+			// 12
+			// 13
+			var o14 = Vector128.Create(*(state + 14));
+			var o15 = Vector128.Create(*(state + 15));
+
+			while (length >= 256)
+			{
+				var x0 = o0;
+				var x1 = o1;
+				var x2 = o2;
+				var x3 = o3;
+				var x4 = o4;
+				var x5 = o5;
+				var x6 = o6;
+				var x7 = o7;
+				var x8 = o8;
+				var x9 = o9;
+				var x10 = o10;
+				var x11 = o11;
+				// 12
+				// 13
+				var x14 = o14;
+				var x15 = o15;
+
+				var counter = *(state + 12) | (ulong)*(state + 13) << 32;
+				var t0 = Vector128.Create(counter).AsUInt32();
+				var t1 = t0;
+
+				var x12 = Sse2.Add(IncCounter01, t0.AsUInt64()).AsUInt32();
+				var x13 = Sse2.Add(IncCounter23, t1.AsUInt64()).AsUInt32();
+
+				t0 = Sse2.UnpackLow(x12, x13);
+				t1 = Sse2.UnpackHigh(x12, x13);
+
+				x12 = Sse2.UnpackLow(t0, t1);
+				x13 = Sse2.UnpackHigh(t0, t1);
+
+				var o12 = x12;
+				var o13 = x13;
+
+				counter += 4;
+
+				*(state + 12) = (uint)(counter & 0xFFFFFFFF);
+				*(state + 13) = (uint)(counter >> 32 & 0xFFFFFFFF);
+
+				for (var i = 0; i < rounds; i += 2)
+				{
+					QuarterRound(ref x0, ref x4, ref x8, ref x12);
+					QuarterRound(ref x1, ref x5, ref x9, ref x13);
+					QuarterRound(ref x2, ref x6, ref x10, ref x14);
+					QuarterRound(ref x3, ref x7, ref x11, ref x15);
+					QuarterRound(ref x0, ref x5, ref x10, ref x15);
+					QuarterRound(ref x1, ref x6, ref x11, ref x12);
+					QuarterRound(ref x2, ref x7, ref x8, ref x13);
+					QuarterRound(ref x3, ref x4, ref x9, ref x14);
+				}
+
+				AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source, destination);
+				AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source + 16, destination + 16);
+				AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source + 32, destination + 32);
+				AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source + 48, destination + 48);
+
+				length -= 256;
+				destination += 256;
+				source += 256;
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void ChaChaCore256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			var o0 = Vector128.Create(*(state + 0));
+			var o1 = Vector128.Create(*(state + 1));
+			var o2 = Vector128.Create(*(state + 2));
+			var o3 = Vector128.Create(*(state + 3));
+			var o4 = Vector128.Create(*(state + 4));
+			var o5 = Vector128.Create(*(state + 5));
+			var o6 = Vector128.Create(*(state + 6));
+			var o7 = Vector128.Create(*(state + 7));
+			var o8 = Vector128.Create(*(state + 8));
+			var o9 = Vector128.Create(*(state + 9));
+			var o10 = Vector128.Create(*(state + 10));
+			var o11 = Vector128.Create(*(state + 11));
+			// 12
+			var o13 = Vector128.Create(*(state + 13));
+			var o14 = Vector128.Create(*(state + 14));
+			var o15 = Vector128.Create(*(state + 15));
+
+			while (length >= 256)
+			{
+				var x0 = o0;
+				var x1 = o1;
+				var x2 = o2;
+				var x3 = o3;
+				var x4 = o4;
+				var x5 = o5;
+				var x6 = o6;
+				var x7 = o7;
+				var x8 = o8;
+				var x9 = o9;
+				var x10 = o10;
+				var x11 = o11;
+				// 12
+				var x13 = o13;
+				var x14 = o14;
+				var x15 = o15;
+
+				var x12 = Sse2.Add(IncCounter0123_128, Vector128.Create(*(state + 12)));
+				var o12 = x12;
+
+				*(state + 12) += 4;
+
+				for (var i = 0; i < rounds; i += 2)
+				{
+					QuarterRound(ref x0, ref x4, ref x8, ref x12);
+					QuarterRound(ref x1, ref x5, ref x9, ref x13);
+					QuarterRound(ref x2, ref x6, ref x10, ref x14);
+					QuarterRound(ref x3, ref x7, ref x11, ref x15);
+					QuarterRound(ref x0, ref x5, ref x10, ref x15);
+					QuarterRound(ref x1, ref x6, ref x11, ref x12);
+					QuarterRound(ref x2, ref x7, ref x8, ref x13);
+					QuarterRound(ref x3, ref x4, ref x9, ref x14);
+				}
+
+				AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source, destination);
+				AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source + 16, destination + 16);
+				AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source + 32, destination + 32);
+				AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source + 48, destination + 48);
+
+				length -= 256;
+				destination += 256;
+				source += 256;
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		private static unsafe void AddTransposeXor(
+			ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3,
+			ref Vector128<uint> o0, ref Vector128<uint> o1, ref Vector128<uint> o2, ref Vector128<uint> o3,
+			byte* source, byte* destination)
+		{
+			// x+=o
+			x0 = Sse2.Add(x0, o0);
+			x1 = Sse2.Add(x1, o1);
+			x2 = Sse2.Add(x2, o2);
+			x3 = Sse2.Add(x3, o3);
+
+			// Transpose
+			var t0 = Sse2.UnpackLow(x0, x1);
+			var t1 = Sse2.UnpackLow(x2, x3);
+			var t2 = Sse2.UnpackHigh(x0, x1);
+			var t3 = Sse2.UnpackHigh(x2, x3);
+
+			x0 = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+			x1 = Sse2.UnpackHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+			x2 = Sse2.UnpackLow(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+			x3 = Sse2.UnpackHigh(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+
+			// Xor
+			Sse2.Store(destination, Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source)));
+			Sse2.Store(destination + 64, Sse2.Xor(x1.AsByte(), Sse2.LoadVector128(source + 64)));
+			Sse2.Store(destination + 128, Sse2.Xor(x2.AsByte(), Sse2.LoadVector128(source + 128)));
+			Sse2.Store(destination + 192, Sse2.Xor(x3.AsByte(), Sse2.LoadVector128(source + 192)));
+		}
+
+		#endregion
+
+		#region 处理 512*n bytes
+
+		private static readonly Vector256<ulong> IncCounter0123 = Vector256.Create(0ul, 1, 2, 3);
+		private static readonly Vector256<ulong> IncCounter4567 = Vector256.Create(4ul, 5, 6, 7);
+		private static readonly Vector256<uint> IncCounter01234567 = Vector256.Create(0u, 1, 2, 3, 4, 5, 6, 7);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void ChaChaCoreOriginal512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			var o0 = Vector256.Create(*(state + 0));
+			var o1 = Vector256.Create(*(state + 1));
+			var o2 = Vector256.Create(*(state + 2));
+			var o3 = Vector256.Create(*(state + 3));
+			var o4 = Vector256.Create(*(state + 4));
+			var o5 = Vector256.Create(*(state + 5));
+			var o6 = Vector256.Create(*(state + 6));
+			var o7 = Vector256.Create(*(state + 7));
+			var o8 = Vector256.Create(*(state + 8));
+			var o9 = Vector256.Create(*(state + 9));
+			var o10 = Vector256.Create(*(state + 10));
+			var o11 = Vector256.Create(*(state + 11));
+			var o14 = Vector256.Create(*(state + 14));
+			var o15 = Vector256.Create(*(state + 15));
+
+			while (length >= 512)
+			{
+				var x0 = o0;
+				var x1 = o1;
+				var x2 = o2;
+				var x3 = o3;
+				var x4 = o4;
+				var x5 = o5;
+				var x6 = o6;
+				var x7 = o7;
+				var x8 = o8;
+				var x9 = o9;
+				var x10 = o10;
+				var x11 = o11;
+				var x14 = o14;
+				var x15 = o15;
+
+				var counter = *(state + 12) | (ulong)*(state + 13) << 32;
+				var x12 = Vector256.Create(counter).AsUInt32();
+				var x13 = x12;
+
+				var t0 = Avx2.Add(IncCounter0123, x12.AsUInt64()).AsUInt32();
+				var t1 = Avx2.Add(IncCounter4567, x13.AsUInt64()).AsUInt32();
+
+				x12 = Avx2.UnpackLow(t0, t1);
+				x13 = Avx2.UnpackHigh(t0, t1);
+
+				t0 = Avx2.UnpackLow(x12, x13);
+				t1 = Avx2.UnpackHigh(x12, x13);
+
+				x12 = Avx2.PermuteVar8x32(t0, Permute3);
+				x13 = Avx2.PermuteVar8x32(t1, Permute3);
+
+				var o12 = x12;
+				var o13 = x13;
+
+				counter += 8;
+
+				*(state + 12) = (uint)(counter & 0xFFFFFFFF);
+				*(state + 13) = (uint)(counter >> 32 & 0xFFFFFFFF);
+
+				for (var i = 0; i < rounds; i += 2)
+				{
+					QuarterRound(ref x0, ref x4, ref x8, ref x12);
+					QuarterRound(ref x1, ref x5, ref x9, ref x13);
+					QuarterRound(ref x2, ref x6, ref x10, ref x14);
+					QuarterRound(ref x3, ref x7, ref x11, ref x15);
+					QuarterRound(ref x0, ref x5, ref x10, ref x15);
+					QuarterRound(ref x1, ref x6, ref x11, ref x12);
+					QuarterRound(ref x2, ref x7, ref x8, ref x13);
+					QuarterRound(ref x3, ref x4, ref x9, ref x14);
+				}
+
+				AddTransposeXor(
+					ref x0, ref x1, ref x2, ref x3,
+					ref x4, ref x5, ref x6, ref x7,
+					ref o0, ref o1, ref o2, ref o3,
+					ref o4, ref o5, ref o6, ref o7,
+					source, destination);
+				AddTransposeXor(
+					ref x8, ref x9, ref x10, ref x11,
+					ref x12, ref x13, ref x14, ref x15,
+					ref o8, ref o9, ref o10, ref o11,
+					ref o12, ref o13, ref o14, ref o15,
+					source + 32, destination + 32);
+
+				length -= 512;
+				destination += 512;
+				source += 512;
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void ChaChaCore512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			var o0 = Vector256.Create(*(state + 0));
+			var o1 = Vector256.Create(*(state + 1));
+			var o2 = Vector256.Create(*(state + 2));
+			var o3 = Vector256.Create(*(state + 3));
+			var o4 = Vector256.Create(*(state + 4));
+			var o5 = Vector256.Create(*(state + 5));
+			var o6 = Vector256.Create(*(state + 6));
+			var o7 = Vector256.Create(*(state + 7));
+			var o8 = Vector256.Create(*(state + 8));
+			var o9 = Vector256.Create(*(state + 9));
+			var o10 = Vector256.Create(*(state + 10));
+			var o11 = Vector256.Create(*(state + 11));
+			var o13 = Vector256.Create(*(state + 13));
+			var o14 = Vector256.Create(*(state + 14));
+			var o15 = Vector256.Create(*(state + 15));
+
+			while (length >= 512)
+			{
+				var x0 = o0;
+				var x1 = o1;
+				var x2 = o2;
+				var x3 = o3;
+				var x4 = o4;
+				var x5 = o5;
+				var x6 = o6;
+				var x7 = o7;
+				var x8 = o8;
+				var x9 = o9;
+				var x10 = o10;
+				var x11 = o11;
+				var x13 = o13;
+				var x14 = o14;
+				var x15 = o15;
+
+				var x12 = Avx2.Add(IncCounter01234567, Vector256.Create(*(state + 12)));
+				var o12 = x12;
+
+				*(state + 12) += 8;
+
+				for (var i = 0; i < rounds; i += 2)
+				{
+					QuarterRound(ref x0, ref x4, ref x8, ref x12);
+					QuarterRound(ref x1, ref x5, ref x9, ref x13);
+					QuarterRound(ref x2, ref x6, ref x10, ref x14);
+					QuarterRound(ref x3, ref x7, ref x11, ref x15);
+					QuarterRound(ref x0, ref x5, ref x10, ref x15);
+					QuarterRound(ref x1, ref x6, ref x11, ref x12);
+					QuarterRound(ref x2, ref x7, ref x8, ref x13);
+					QuarterRound(ref x3, ref x4, ref x9, ref x14);
+				}
+
+				AddTransposeXor(
+					ref x0, ref x1, ref x2, ref x3,
+					ref x4, ref x5, ref x6, ref x7,
+					ref o0, ref o1, ref o2, ref o3,
+					ref o4, ref o5, ref o6, ref o7,
+					source, destination);
+				AddTransposeXor(
+					ref x8, ref x9, ref x10, ref x11,
+					ref x12, ref x13, ref x14, ref x15,
+					ref o8, ref o9, ref o10, ref o11,
+					ref o12, ref o13, ref o14, ref o15,
+					source + 32, destination + 32);
+
+				length -= 512;
+				destination += 512;
+				source += 512;
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		private static unsafe void AddTransposeXor(
+			ref Vector256<uint> x0, ref Vector256<uint> x1, ref Vector256<uint> x2, ref Vector256<uint> x3,
+			ref Vector256<uint> x4, ref Vector256<uint> x5, ref Vector256<uint> x6, ref Vector256<uint> x7,
+			ref Vector256<uint> o0, ref Vector256<uint> o1, ref Vector256<uint> o2, ref Vector256<uint> o3,
+			ref Vector256<uint> o4, ref Vector256<uint> o5, ref Vector256<uint> o6, ref Vector256<uint> o7,
+			byte* source, byte* destination)
+		{
+			// x += o
+			x0 = Avx2.Add(x0, o0);
+			x1 = Avx2.Add(x1, o1);
+			x2 = Avx2.Add(x2, o2);
+			x3 = Avx2.Add(x3, o3);
+			x4 = Avx2.Add(x4, o4);
+			x5 = Avx2.Add(x5, o5);
+			x6 = Avx2.Add(x6, o6);
+			x7 = Avx2.Add(x7, o7);
+
+			// Transpose
+			var t0 = Avx2.UnpackLow(x0, x1);
+			var t1 = Avx2.UnpackLow(x2, x3);
+			var t2 = Avx2.UnpackHigh(x0, x1);
+			var t3 = Avx2.UnpackHigh(x2, x3);
+			var t4 = Avx2.UnpackLow(x4, x5);
+			var t5 = Avx2.UnpackLow(x6, x7);
+			var t6 = Avx2.UnpackHigh(x4, x5);
+			var t7 = Avx2.UnpackHigh(x6, x7);
+
+			x0 = Avx2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+			x1 = Avx2.UnpackHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+			x2 = Avx2.UnpackLow(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+			x3 = Avx2.UnpackHigh(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+			x4 = Avx2.UnpackLow(t4.AsUInt64(), t5.AsUInt64()).AsUInt32();
+			x5 = Avx2.UnpackHigh(t4.AsUInt64(), t5.AsUInt64()).AsUInt32();
+			x6 = Avx2.UnpackLow(t6.AsUInt64(), t7.AsUInt64()).AsUInt32();
+			x7 = Avx2.UnpackHigh(t6.AsUInt64(), t7.AsUInt64()).AsUInt32();
+
+			t0 = Avx2.Permute2x128(x0, x4, 0x20);
+			t4 = Avx2.Permute2x128(x0, x4, 0x31);
+			t1 = Avx2.Permute2x128(x1, x5, 0x20);
+			t5 = Avx2.Permute2x128(x1, x5, 0x31);
+			t2 = Avx2.Permute2x128(x2, x6, 0x20);
+			t6 = Avx2.Permute2x128(x2, x6, 0x31);
+			t3 = Avx2.Permute2x128(x3, x7, 0x20);
+			t7 = Avx2.Permute2x128(x3, x7, 0x31);
+
+			// Xor
+			Avx.Store(destination, Avx2.Xor(t0.AsByte(), Avx.LoadVector256(source)));
+			Avx.Store(destination + 64, Avx2.Xor(t1.AsByte(), Avx.LoadVector256(source + 64)));
+			Avx.Store(destination + 128, Avx2.Xor(t2.AsByte(), Avx.LoadVector256(source + 128)));
+			Avx.Store(destination + 192, Avx2.Xor(t3.AsByte(), Avx.LoadVector256(source + 192)));
+			Avx.Store(destination + 256, Avx2.Xor(t4.AsByte(), Avx.LoadVector256(source + 256)));
+			Avx.Store(destination + 320, Avx2.Xor(t5.AsByte(), Avx.LoadVector256(source + 320)));
+			Avx.Store(destination + 384, Avx2.Xor(t6.AsByte(), Avx.LoadVector256(source + 384)));
+			Avx.Store(destination + 448, Avx2.Xor(t7.AsByte(), Avx.LoadVector256(source + 448)));
+		}
+
+		#endregion
+
 		#region Avx
 
 		private static readonly Vector256<uint> Permute0 = Vector256.Create(1, 2, 3, 0, 5, 6, 7, 4).AsUInt32();
