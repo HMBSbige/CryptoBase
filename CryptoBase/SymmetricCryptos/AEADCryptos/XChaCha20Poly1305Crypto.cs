@@ -17,7 +17,11 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 		public const int NonceSize = 24;
 		public const int TagSize = 16;
 
-		private static ReadOnlySpan<byte> Init => new byte[Poly1305Utils.KeySize];
+		private static ReadOnlySpan<byte> Init => new byte[]
+		{
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		};
 
 		private readonly byte[] _buffer;
 

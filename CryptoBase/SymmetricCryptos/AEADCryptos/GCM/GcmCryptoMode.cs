@@ -15,7 +15,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 		public const int NonceSize = 12;
 		public const int TagSize = 16;
 
-		private static ReadOnlySpan<byte> Init => new byte[BlockSize];
+		private static ReadOnlySpan<byte> Init => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 		private readonly IBlockCrypto _crypto;
 
