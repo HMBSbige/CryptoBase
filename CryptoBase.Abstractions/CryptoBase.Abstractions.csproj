@@ -14,6 +14,7 @@
     <PackageProjectUrl>https://github.com/HMBSbige/CryptoBase</PackageProjectUrl>
     <RepositoryUrl>https://github.com/HMBSbige/CryptoBase</RepositoryUrl>
     <PackageTags>crypto</PackageTags>
+    <Description>Abstractions for CryptoBase.</Description>
     <Version>1.0.0</Version>
   </PropertyGroup>
 
