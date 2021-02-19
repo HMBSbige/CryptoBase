@@ -74,6 +74,8 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 		{
 			base.Dispose();
 
+			InternalBlockCrypto.Dispose();
+
 			ArrayPool<byte>.Shared.Return(_block);
 		}
 	}

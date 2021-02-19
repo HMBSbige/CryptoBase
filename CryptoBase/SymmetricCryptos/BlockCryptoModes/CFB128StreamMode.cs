@@ -104,6 +104,8 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 
 		public void Dispose()
 		{
+			InternalBlockCrypto.Dispose();
+
 			ArrayPool<byte>.Shared.Return(_block);
 			ArrayPool<byte>.Shared.Return(_keyStream);
 		}
