@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
+using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;

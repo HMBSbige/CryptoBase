@@ -5,10 +5,5 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 		public override bool IsSupport => false;
 
 		public Salsa20CryptoSF(byte[] key, byte[] iv) : base(key, iv) { }
-
-		protected override void UpdateKeyStream()
-		{
-			Salsa20Utils.UpdateKeyStream(Rounds, State, KeyStream);
-		}
 	}
 }

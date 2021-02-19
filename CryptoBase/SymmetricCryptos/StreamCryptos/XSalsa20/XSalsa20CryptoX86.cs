@@ -1,4 +1,3 @@
-using CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
@@ -59,15 +58,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			State[5] = Sigma32[1];
 			State[10] = Sigma32[2];
 			State[15] = Sigma32[3];
-		}
-
-		protected override unsafe void UpdateKeyStream()
-		{
-			fixed (uint* x = State)
-			fixed (byte* s = KeyStream)
-			{
-				Salsa20Utils.UpdateKeyStream(x, s, Rounds);
-			}
 		}
 
 		public sealed override void Reset()

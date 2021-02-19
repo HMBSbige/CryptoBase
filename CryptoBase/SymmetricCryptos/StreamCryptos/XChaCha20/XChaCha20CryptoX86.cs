@@ -8,15 +8,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 
 		public XChaCha20CryptoX86(byte[] key, byte[] iv) : base(key, iv) { }
 
-		protected override unsafe void UpdateKeyStream()
-		{
-			fixed (uint* x = State)
-			fixed (byte* s = KeyStream)
-			{
-				ChaCha20Utils.UpdateKeyStream(x, s, Rounds);
-			}
-		}
-
 		protected override unsafe void ChaChaRound(uint[] x)
 		{
 			fixed (uint* p = x)

@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark
 	[MemoryDiagnoser]
 	public class ChaCha20OriginalBenchmark
 	{
-		[Params(32, 1000000)]
+		[Params(1000000)]
 		public int ByteLength { get; set; }
 
 		private Memory<byte> _randombytes;

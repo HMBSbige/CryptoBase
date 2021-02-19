@@ -1,9 +1,8 @@
-using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using System;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 {
-	public abstract class ChaCha20Crypto : ChaCha20OriginalCrypto
+	public abstract class ChaCha20Crypto : ChaCha20CryptoBase
 	{
 		public override string Name => @"ChaCha20";
 
@@ -13,10 +12,17 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 
 		protected override unsafe void IncrementCounter(uint* state)
 		{
-			if (++*(state + 12) == 0)
-			{
-				throw new InvalidOperationException(@"Data maximum length reached.");
-			}
+			ChaCha20Utils.IncrementCounter(state);
+		}
+
+		protected override unsafe void ChaChaCore64(uint* state, byte* source, byte* destination)
+		{
+			ChaCha20Utils.ChaChaCore64(Rounds, state, source, destination);
+		}
+
+		protected override unsafe void ChaChaCore128(uint* state, byte* source, byte* destination)
+		{
+			ChaCha20Utils.ChaChaCore128(Rounds, state, source, destination);
 		}
 
 		public abstract void SetIV(ReadOnlySpan<byte> iv);

@@ -29,11 +29,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 			SetCounter(0);
 		}
 
-		protected override void UpdateKeyStream()
-		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
-		}
-
 		protected virtual void ChaChaRound(uint[] x)
 		{
 			ChaCha20Utils.ChaChaRound(Rounds, x);

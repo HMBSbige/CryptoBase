@@ -136,6 +136,24 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void IncrementCounterOriginal(uint* state)
+		{
+			if (++*(state + 12) == 0)
+			{
+				++*(state + 13);
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void IncrementCounter(uint* state)
+		{
+			if (++*(state + 12) == 0)
+			{
+				throw new InvalidOperationException(@"Data maximum length reached.");
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void ChaChaRound(uint* state, byte rounds)
 		{
 			var x0 = Sse2.LoadVector128(state);
@@ -192,11 +210,10 @@ namespace CryptoBase
 			c = Sse2.Shuffle(c, 0b00_11_10_01);
 		}
 
-		/// <summary>
-		/// 处理 64 bytes
-		/// </summary>
+		#region 处理 64 bytes
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static unsafe void ChaChaCore64(byte rounds, uint* state, byte* source, byte* destination)
+		private static unsafe void ChaChaCore64Internal(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			var s0 = Sse2.LoadVector128(state);
 			var s1 = Sse2.LoadVector128(state + 4);
@@ -231,40 +248,39 @@ namespace CryptoBase
 			Sse2.Store(destination + 16, v1);
 			Sse2.Store(destination + 32, v2);
 			Sse2.Store(destination + 48, v3);
-
-			if (++*(state + 12) == 0)
-			{
-				++*(state + 13);
-			}
 		}
 
-		/// <summary>
-		/// 处理 128 bytes
-		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static unsafe void ChaChaCore128(byte rounds, uint* state, byte* source, byte* destination)
+		public static unsafe void ChaChaCoreOriginal64(byte rounds, uint* state, byte* source, byte* destination)
 		{
-			var t12 = *(state + 12);
-			var t13 = *(state + 13);
-			var s1 = Avx.LoadVector256(state + 8); // 8 9 10 11 12 13 14 15
+			ChaChaCore64Internal(rounds, state, source, destination);
 
-			if (++*(state + 12) == 0)
-			{
-				++*(state + 13);
-			}
+			IncrementCounterOriginal(state);
+		}
 
-			var x0 = Vector256.Create(
-				*(state + 0), *(state + 1), *(state + 2), *(state + 3),
-				*(state + 0), *(state + 1), *(state + 2), *(state + 3));
-			var x1 = Vector256.Create(
-					*(state + 4), *(state + 5), *(state + 6), *(state + 7),
-					*(state + 4), *(state + 5), *(state + 6), *(state + 7));
-			var x2 = Vector256.Create(
-					*(state + 8), *(state + 9), *(state + 10), *(state + 11),
-					*(state + 8), *(state + 9), *(state + 10), *(state + 11));
-			var x3 = Vector256.Create(
-					t12, t13, *(state + 14), *(state + 15),
-					*(state + 12), *(state + 13), *(state + 14), *(state + 15));
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void ChaChaCore64(byte rounds, uint* state, byte* source, byte* destination)
+		{
+			ChaChaCore64Internal(rounds, state, source, destination);
+
+			IncrementCounter(state);
+		}
+
+		#endregion
+
+		#region 处理 128 bytes
+
+		private static readonly Vector256<uint> IncCounter128 = Vector256.Create(0, 0, 0, 0, 1, 0, 0, 0).AsUInt32();
+		private static readonly Vector256<ulong> IncCounterOriginal128 = Vector256.Create(0, 0, 1, 0).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void ChaChaCoreOriginal128(byte rounds, uint* state, byte* source, byte* destination)
+		{
+			var x0 = Avx2.BroadcastVector128ToVector256(state);
+			var x1 = Avx2.BroadcastVector128ToVector256(state + 4);
+			var x2 = Avx2.BroadcastVector128ToVector256(state + 8);
+			var x3 = Avx2.BroadcastVector128ToVector256(state + 12);
+			x3 = Avx2.Add(x3.AsUInt64(), IncCounterOriginal128).AsUInt32();
 
 			for (var i = 0; i < rounds; i += 2)
 			{
@@ -278,6 +294,8 @@ namespace CryptoBase
 			Shuffle(ref x0, ref x1, ref x2, ref x3);
 
 			var s0 = Avx.LoadVector256(state); // 0 1 2 3 4 5 6 7
+			var s1 = Avx.LoadVector256(state + 8); // 8 9 10 11 12 13 14 15
+			IncrementCounterOriginal(state);
 
 			x0 = Avx2.Add(x0, s0);
 			x1 = Avx2.Add(x1, s1);
@@ -294,11 +312,52 @@ namespace CryptoBase
 			Avx.Store(destination + 64, v2);
 			Avx.Store(destination + 96, v3);
 
-			if (++*(state + 12) == 0)
-			{
-				++*(state + 13);
-			}
+			IncrementCounterOriginal(state);
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void ChaChaCore128(byte rounds, uint* state, byte* source, byte* destination)
+		{
+			var x0 = Avx2.BroadcastVector128ToVector256(state);
+			var x1 = Avx2.BroadcastVector128ToVector256(state + 4);
+			var x2 = Avx2.BroadcastVector128ToVector256(state + 8);
+			var x3 = Avx2.BroadcastVector128ToVector256(state + 12);
+			x3 = Avx2.Add(x3, IncCounter128);
+
+			for (var i = 0; i < rounds; i += 2)
+			{
+				QuarterRound(ref x0, ref x1, ref x2, ref x3);
+				Shuffle(ref x1, ref x2, ref x3);
+
+				QuarterRound(ref x0, ref x1, ref x2, ref x3);
+				Shuffle1(ref x1, ref x2, ref x3);
+			}
+
+			Shuffle(ref x0, ref x1, ref x2, ref x3);
+
+			var s0 = Avx.LoadVector256(state); // 0 1 2 3 4 5 6 7
+			var s1 = Avx.LoadVector256(state + 8); // 8 9 10 11 12 13 14 15
+			IncrementCounter(state);
+
+			x0 = Avx2.Add(x0, s0);
+			x1 = Avx2.Add(x1, s1);
+			x2 = Avx2.Add(x2, s0);
+			x3 = Avx2.Add(x3, Avx.LoadVector256(state + 8));
+
+			var v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
+			var v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
+			var v2 = Avx2.Xor(x2.AsByte(), Avx.LoadVector256(source + 64));
+			var v3 = Avx2.Xor(x3.AsByte(), Avx.LoadVector256(source + 96));
+
+			Avx.Store(destination, v0);
+			Avx.Store(destination + 32, v1);
+			Avx.Store(destination + 64, v2);
+			Avx.Store(destination + 96, v3);
+
+			IncrementCounter(state);
+		}
+
+		#endregion
 
 		#region Avx
 

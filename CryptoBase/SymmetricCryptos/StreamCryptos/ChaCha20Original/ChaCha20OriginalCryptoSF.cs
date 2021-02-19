@@ -64,10 +64,5 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 			Index = 0;
 			State[12] = State[13] = 0;
 		}
-
-		protected override void UpdateKeyStream()
-		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
-		}
 	}
 }

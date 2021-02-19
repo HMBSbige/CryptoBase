@@ -60,15 +60,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			State[7] = ivSpan[1];
 		}
 
-		protected override unsafe void UpdateKeyStream()
-		{
-			fixed (uint* x = State)
-			fixed (byte* s = KeyStream)
-			{
-				Salsa20Utils.UpdateKeyStream(x, s, Rounds);
-			}
-		}
-
 		public sealed override void Reset()
 		{
 			Index = 0;

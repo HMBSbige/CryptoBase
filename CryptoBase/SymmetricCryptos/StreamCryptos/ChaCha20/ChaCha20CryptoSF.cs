@@ -37,11 +37,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 			SetCounter(0);
 		}
 
-		protected override void UpdateKeyStream()
-		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
-		}
-
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public override void SetIV(ReadOnlySpan<byte> iv)
 		{

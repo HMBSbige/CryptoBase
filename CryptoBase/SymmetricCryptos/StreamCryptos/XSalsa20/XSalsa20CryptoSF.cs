@@ -6,11 +6,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 
 		public XSalsa20CryptoSF(byte[] key, byte[] iv) : base(key, iv) { }
 
-		protected override void UpdateKeyStream()
-		{
-			Salsa20Utils.UpdateKeyStream(Rounds, State, KeyStream);
-		}
-
 		protected override void SalsaRound(uint[] x)
 		{
 			Salsa20Utils.SalsaRound(Rounds, x);
