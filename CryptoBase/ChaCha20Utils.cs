@@ -552,6 +552,7 @@ namespace CryptoBase
 		private static readonly Vector256<ulong> IncCounter0123 = Vector256.Create(0ul, 1, 2, 3);
 		private static readonly Vector256<ulong> IncCounter4567 = Vector256.Create(4ul, 5, 6, 7);
 		private static readonly Vector256<uint> IncCounter01234567 = Vector256.Create(0u, 1, 2, 3, 4, 5, 6, 7);
+		private static readonly Vector256<uint> Permute3 = Vector256.Create(0, 1, 4, 5, 2, 3, 6, 7).AsUInt32();
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void ChaChaCoreOriginal512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
@@ -780,7 +781,6 @@ namespace CryptoBase
 		private static readonly Vector256<uint> Permute0 = Vector256.Create(1, 2, 3, 0, 5, 6, 7, 4).AsUInt32();
 		private static readonly Vector256<uint> Permute1 = Vector256.Create(2, 3, 0, 1, 6, 7, 4, 5).AsUInt32();
 		private static readonly Vector256<uint> Permute2 = Vector256.Create(3, 0, 1, 2, 7, 4, 5, 6).AsUInt32();
-		private static readonly Vector256<uint> Permute3 = Vector256.Create(0, 1, 4, 5, 2, 3, 6, 7).AsUInt32();
 
 		/// <summary>
 		/// 4 5 6 7
@@ -830,19 +830,14 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 		{
-			a = Avx2.PermuteVar8x32(a, Permute3);
-			b = Avx2.PermuteVar8x32(b, Permute3);
-			c = Avx2.PermuteVar8x32(c, Permute3);
-			d = Avx2.PermuteVar8x32(d, Permute3);
-
-			var t0 = Avx2.PermuteVar8x32(Avx2.UnpackLow(a.AsUInt64(), b.AsUInt64()).AsUInt32(), Permute3);
-			var t1 = Avx2.PermuteVar8x32(Avx2.UnpackHigh(a.AsUInt64(), b.AsUInt64()).AsUInt32(), Permute3);
-			var t2 = Avx2.PermuteVar8x32(Avx2.UnpackLow(c.AsUInt64(), d.AsUInt64()).AsUInt32(), Permute3);
-			var t3 = Avx2.PermuteVar8x32(Avx2.UnpackHigh(c.AsUInt64(), d.AsUInt64()).AsUInt32(), Permute3);
+			var t0 = Avx2.Permute2x128(a, b, 0x20);
+			var t1 = Avx2.Permute2x128(c, d, 0x20);
+			var t2 = Avx2.Permute2x128(a, b, 0x31);
+			var t3 = Avx2.Permute2x128(c, d, 0x31);
 
 			a = t0;
-			b = t2;
-			c = t1;
+			b = t1;
+			c = t2;
 			d = t3;
 		}
 
