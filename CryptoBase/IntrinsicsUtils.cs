@@ -187,15 +187,15 @@ namespace CryptoBase
 		}
 
 		/// <summary>
-		/// Vector128.Create(a, 0, b, 0)
+		/// Vector128.Create(a, x, b, x)
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static Vector128<uint> CreateTwoUInt(uint a, uint b)
 		{
 			if (Sse2.IsSupported)
 			{
-				var t1 = Sse2.ConvertScalarToVector128UInt32(a);
-				var t2 = Sse2.ConvertScalarToVector128UInt32(b);
+				var t1 = Vector128.CreateScalarUnsafe(a);
+				var t2 = Vector128.CreateScalarUnsafe(b);
 
 				return Sse2.UnpackLow(t1.AsUInt64(), t2.AsUInt64()).AsUInt32();
 			}
@@ -204,19 +204,62 @@ namespace CryptoBase
 		}
 
 		/// <summary>
-		/// Vector128.Create(a, 0, a, 0)
+		/// Vector128.Create(a, x, a, x)
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static Vector128<uint> CreateTwoUInt(uint a)
 		{
 			if (Sse2.IsSupported)
 			{
-				var t1 = Sse2.ConvertScalarToVector128UInt32(a).AsUInt64();
+				var t1 = Vector128.CreateScalarUnsafe(a).AsUInt64();
 
 				return Sse2.UnpackLow(t1, t1).AsUInt32();
 			}
 
 			return Vector128.Create(a, 0, a, 0);
+		}
+
+		/// <summary>
+		/// Vector256.Create(a, x, b, x, c, x, d, x);
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static Vector256<uint> Create4UInt(uint a, uint b, uint c, uint d)
+		{
+			if (Avx2.IsSupported)
+			{
+				var t0 = Avx2.UnpackLow(Vector256.CreateScalarUnsafe(a).AsUInt64(), Vector256.CreateScalarUnsafe(b).AsUInt64()).AsUInt32();
+				var t1 = Avx2.UnpackLow(Vector256.CreateScalarUnsafe(c).AsUInt64(), Vector256.CreateScalarUnsafe(d).AsUInt64()).AsUInt32();
+
+				return Avx2.Permute2x128(t0, t1, 0x20);
+			}
+
+			return Vector256.Create(a, 0, b, 0, c, 0, d, 0);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static Vector128<uint> Multiply5(this Vector128<uint> a)
+		{
+			return Sse2.Add(Sse2.ShiftLeftLogical(a, 2), a);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static Vector256<uint> Multiply5(this Vector256<uint> a)
+		{
+			return Avx2.Add(Avx2.ShiftLeftLogical(a, 2), a);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static ulong Add2UInt64(this Vector128<ulong> v)
+		{
+			return v.Add(Sse2.ShiftRightLogical128BitLane(v, 8)).ToScalar();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static ulong Add4UInt64(this Vector256<ulong> v)
+		{
+			v = Avx2.Add(v, Avx2.Permute4x64(v, 0b11_10_11_10));
+			v = Avx2.Add(v, Avx2.ShiftRightLogical128BitLane(v, 8));
+			return v.ToScalar();
 		}
 	}
 }

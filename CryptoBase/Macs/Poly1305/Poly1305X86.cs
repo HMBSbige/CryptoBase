@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -17,7 +18,13 @@ namespace CryptoBase.Macs.Poly1305
 		public const int KeySize = 32;
 		public const int BlockSize = 16;
 		public const int BlockSize2 = BlockSize * 2;
+		public const int BlockSize4 = BlockSize * 4;
 		public const int TagSize = 16;
+
+		private static readonly Vector128<uint> And128 = Vector128.Create(0x3ffffff, 0, 0x3ffffff, 0).AsUInt32();
+		private static readonly Vector128<uint> Or128 = Vector128.Create(0x01000000, 0, 0x01000000, 0).AsUInt32();
+		private static readonly Vector256<uint> And256 = Vector256.Create(0x3ffffff, 0, 0x3ffffff, 0, 0x3ffffff, 0, 0x3ffffff, 0).AsUInt32();
+		private static readonly Vector256<uint> Or256 = Vector256.Create(0x01000000, 0, 0x01000000, 0, 0x01000000, 0, 0x01000000, 0).AsUInt32();
 
 		private readonly uint _x0, _x1, _x2, _x3;
 		private uint _h0, _h1, _h2, _h3, _h4;
@@ -26,6 +33,9 @@ namespace CryptoBase.Macs.Poly1305
 
 		private readonly Vector128<uint> _ru0, _ru1, _ru2, _ru3, _ru4;
 		private readonly Vector128<uint> _sv1, _sv2, _sv3, _sv4;
+
+		private readonly Vector256<uint> _ruwy0, _ruwy1, _ruwy2, _ruwy3, _ruwy4;
+		private readonly Vector256<uint> _svxz1, _svxz2, _svxz3, _svxz4;
 
 		public Poly1305X86(ReadOnlySpan<byte> key)
 		{
@@ -75,23 +85,44 @@ namespace CryptoBase.Macs.Poly1305
 			_ru3 = IntrinsicsUtils.CreateTwoUInt(u3, r3);
 			_ru4 = IntrinsicsUtils.CreateTwoUInt(u4, r4);
 
-			_sv1 = Multiply5(ref _ru1);
-			_sv2 = Multiply5(ref _ru2);
-			_sv3 = Multiply5(ref _ru3);
-			_sv4 = Multiply5(ref _ru4);
-		}
+			_sv1 = _ru1.Multiply5();
+			_sv2 = _ru2.Multiply5();
+			_sv3 = _ru3.Multiply5();
+			_sv4 = _ru4.Multiply5();
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		private static Vector128<uint> Multiply5(ref Vector128<uint> a)
-		{
-			var t = Sse2.ShiftLeftLogical(a, 2);
-			return Sse2.Add(t, a);
+			if (Avx2.IsSupported)
+			{
+				var w0 = u0;
+				var w1 = u1;
+				var w2 = u2;
+				var w3 = u3;
+				var w4 = u4;
+				MultiplyR(ref w0, ref w1, ref w2, ref w3, ref w4);
+
+				var y0 = w0;
+				var y1 = w1;
+				var y2 = w2;
+				var y3 = w3;
+				var y4 = w4;
+				MultiplyR(ref y0, ref y1, ref y2, ref y3, ref y4);
+
+				_ruwy0 = IntrinsicsUtils.Create4UInt(y0, w0, u0, r0);
+				_ruwy1 = IntrinsicsUtils.Create4UInt(y1, w1, u1, r1);
+				_ruwy2 = IntrinsicsUtils.Create4UInt(y2, w2, u2, r2);
+				_ruwy3 = IntrinsicsUtils.Create4UInt(y3, w3, u3, r3);
+				_ruwy4 = IntrinsicsUtils.Create4UInt(y4, w4, u4, r4);
+
+				_svxz1 = _ruwy1.Multiply5();
+				_svxz2 = _ruwy2.Multiply5();
+				_svxz3 = _ruwy3.Multiply5();
+				_svxz4 = _ruwy4.Multiply5();
+			}
 		}
 
 		/// <summary>
 		///  a *= r
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private void MultiplyR(ref uint a0, ref uint a1, ref uint a2, ref uint a3, ref uint a4)
 		{
 			var h01 = IntrinsicsUtils.CreateTwoUInt(a0, a1);
@@ -208,72 +239,185 @@ namespace CryptoBase.Macs.Poly1305
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private void Block2(ReadOnlySpan<byte> m)
 		{
-			var hc0 = IntrinsicsUtils.CreateTwoUInt(_h0 + (BinaryPrimitives.ReadUInt32LittleEndian(m) & 0x3ffffff), BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(16)) & 0x3ffffff);
-			var hc1 = IntrinsicsUtils.CreateTwoUInt(_h1 + (BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(3)) >> 2 & 0x3ffffff), BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(19)) >> 2 & 0x3ffffff);
-			var hc2 = IntrinsicsUtils.CreateTwoUInt(_h2 + (BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(6)) >> 4 & 0x3ffffff), BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(22)) >> 4 & 0x3ffffff);
-			var hc3 = IntrinsicsUtils.CreateTwoUInt(_h3 + (BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(9)) >> 6 & 0x3ffffff), BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(25)) >> 6 & 0x3ffffff);
-			var hc4 = IntrinsicsUtils.CreateTwoUInt(_h4 + (BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(12)) >> 8 | 1u << 24), BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(28)) >> 8 | 1u << 24);
+			var n0 = MemoryMarshal.Cast<byte, uint>(m);
+			var hc0 = IntrinsicsUtils.CreateTwoUInt(n0[0], n0[4]);
+			hc0 = Sse2.And(hc0, And128);
+			hc0 = Sse2.Add(hc0, Sse2.ConvertScalarToVector128UInt32(_h0));
+
+			var n1 = MemoryMarshal.Cast<byte, uint>(m.Slice(3));
+			var hc1 = IntrinsicsUtils.CreateTwoUInt(n1[0], n1[4]);
+			hc1 = Sse2.ShiftRightLogical(hc1, 2);
+			hc1 = Sse2.And(hc1, And128);
+			hc1 = Sse2.Add(hc1, Sse2.ConvertScalarToVector128UInt32(_h1));
+
+			var n2 = MemoryMarshal.Cast<byte, uint>(m.Slice(6));
+			var hc2 = IntrinsicsUtils.CreateTwoUInt(n2[0], n2[4]);
+			hc2 = Sse2.ShiftRightLogical(hc2, 4);
+			hc2 = Sse2.And(hc2, And128);
+			hc2 = Sse2.Add(hc2, Sse2.ConvertScalarToVector128UInt32(_h2));
+
+			var n3 = MemoryMarshal.Cast<byte, uint>(m.Slice(9));
+			var hc3 = IntrinsicsUtils.CreateTwoUInt(n3[0], n3[4]);
+			hc3 = Sse2.ShiftRightLogical(hc3, 6);
+			hc3 = Sse2.And(hc3, And128);
+			hc3 = Sse2.Add(hc3, Sse2.ConvertScalarToVector128UInt32(_h3));
+
+			var n4 = MemoryMarshal.Cast<byte, uint>(m.Slice(12));
+			var hc4 = IntrinsicsUtils.CreateTwoUInt(n4[0], n4[4]);
+			hc4 = Sse2.ShiftRightLogical(hc4, 8);
+			hc4 = Sse2.Xor(hc4, Or128);
+			hc4 = Sse2.Add(hc4, Sse2.ConvertScalarToVector128UInt32(_h4));
 
 			var t1 = Sse2.Multiply(_ru0, hc0);
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv4, hc1));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv3, hc2));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv2, hc3));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv1, hc4));
-			var d0 = t1.ToScalar() + Sse2.ShiftRightLogical128BitLane(t1, 8).ToScalar();
+			var d0 = t1.Add2UInt64();
 
 			t1 = Sse2.Multiply(_ru1, hc0);
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru0, hc1));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv4, hc2));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv3, hc3));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv2, hc4));
-			var d1 = t1.ToScalar() + Sse2.ShiftRightLogical128BitLane(t1, 8).ToScalar();
+			var d1 = t1.Add2UInt64();
 
 			t1 = Sse2.Multiply(_ru2, hc0);
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru1, hc1));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru0, hc2));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv4, hc3));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv3, hc4));
-			var d2 = t1.ToScalar() + Sse2.ShiftRightLogical128BitLane(t1, 8).ToScalar();
+			var d2 = t1.Add2UInt64();
 
 			t1 = Sse2.Multiply(_ru3, hc0);
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru2, hc1));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru1, hc2));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru0, hc3));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_sv4, hc4));
-			var d3 = t1.ToScalar() + Sse2.ShiftRightLogical128BitLane(t1, 8).ToScalar();
+			var d3 = t1.Add2UInt64();
 
 			t1 = Sse2.Multiply(_ru4, hc0);
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru3, hc1));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru2, hc2));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru1, hc3));
 			t1 = Sse2.Add(t1, Sse2.Multiply(_ru0, hc4));
-			var d4 = t1.ToScalar() + Sse2.ShiftRightLogical128BitLane(t1, 8).ToScalar();
+			var d4 = t1.Add2UInt64();
 
 			_h0 = (uint)d0 & 0x3ffffff;
-			d1 += (uint)(d0 >> 26);
+			d1 += d0 >> 26;
 			_h1 = (uint)d1 & 0x3ffffff;
-			d2 += (uint)(d1 >> 26);
+			d2 += d1 >> 26;
 			_h2 = (uint)d2 & 0x3ffffff;
-			d3 += (uint)(d2 >> 26);
+			d3 += d2 >> 26;
 			_h3 = (uint)d3 & 0x3ffffff;
-			d4 += (uint)(d3 >> 26);
+			d4 += d3 >> 26;
 			_h4 = (uint)d4 & 0x3ffffff;
-			_h0 += (uint)(d4 >> 26) * 5;
+			_h0 += (uint)((d4 >> 26) * 5);
+			_h1 += _h0 >> 26;
+			_h0 &= 0x3ffffff;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		private void Block4(ReadOnlySpan<byte> m)
+		{
+			var n0 = MemoryMarshal.Cast<byte, uint>(m);
+			var hc0 = IntrinsicsUtils.Create4UInt(n0[0], n0[4], n0[8], n0[12]);
+			hc0 = Avx2.And(hc0, And256);
+			hc0 = Avx2.Add(hc0, Vector256.CreateScalar(_h0));
+
+			var n1 = MemoryMarshal.Cast<byte, uint>(m.Slice(3));
+			var hc1 = IntrinsicsUtils.Create4UInt(n1[0], n1[4], n1[8], n1[12]);
+			hc1 = Avx2.ShiftRightLogical(hc1, 2);
+			hc1 = Avx2.And(hc1, And256);
+			hc1 = Avx2.Add(hc1, Vector256.CreateScalar(_h1));
+
+			var n2 = MemoryMarshal.Cast<byte, uint>(m.Slice(6));
+			var hc2 = IntrinsicsUtils.Create4UInt(n2[0], n2[4], n2[8], n2[12]);
+			hc2 = Avx2.ShiftRightLogical(hc2, 4);
+			hc2 = Avx2.And(hc2, And256);
+			hc2 = Avx2.Add(hc2, Vector256.CreateScalar(_h2));
+
+			var n3 = MemoryMarshal.Cast<byte, uint>(m.Slice(9));
+			var hc3 = IntrinsicsUtils.Create4UInt(n3[0], n3[4], n3[8], n3[12]);
+			hc3 = Avx2.ShiftRightLogical(hc3, 6);
+			hc3 = Avx2.And(hc3, And256);
+			hc3 = Avx2.Add(hc3, Vector256.CreateScalar(_h3));
+
+			var n4 = MemoryMarshal.Cast<byte, uint>(m.Slice(12));
+			var hc4 = IntrinsicsUtils.Create4UInt(n4[0], n4[4], n4[8], n4[12]);
+			hc4 = Avx2.ShiftRightLogical(hc4, 8);
+			hc4 = Avx2.Or(hc4, Or256);
+			hc4 = Avx2.Add(hc4, Vector256.CreateScalar(_h4));
+
+			var t1 = Avx2.Multiply(_ruwy0, hc0);
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz4, hc1));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz3, hc2));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz2, hc3));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz1, hc4));
+			var d0 = t1.Add4UInt64();
+
+			t1 = Avx2.Multiply(_ruwy1, hc0);
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy0, hc1));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz4, hc2));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz3, hc3));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz2, hc4));
+			var d1 = t1.Add4UInt64();
+
+			t1 = Avx2.Multiply(_ruwy2, hc0);
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy1, hc1));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy0, hc2));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz4, hc3));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz3, hc4));
+			var d2 = t1.Add4UInt64();
+
+			t1 = Avx2.Multiply(_ruwy3, hc0);
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy2, hc1));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy1, hc2));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy0, hc3));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_svxz4, hc4));
+			var d3 = t1.Add4UInt64();
+
+			t1 = Avx2.Multiply(_ruwy4, hc0);
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy3, hc1));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy2, hc2));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy1, hc3));
+			t1 = Avx2.Add(t1, Avx2.Multiply(_ruwy0, hc4));
+			var d4 = t1.Add4UInt64();
+
+			_h0 = (uint)d0 & 0x3ffffff;
+			d1 += d0 >> 26;
+			_h1 = (uint)d1 & 0x3ffffff;
+			d2 += d1 >> 26;
+			_h2 = (uint)d2 & 0x3ffffff;
+			d3 += d2 >> 26;
+			_h3 = (uint)d3 & 0x3ffffff;
+			d4 += d3 >> 26;
+			_h4 = (uint)d4 & 0x3ffffff;
+			_h0 += (uint)((d4 >> 26) * 5);
 			_h1 += _h0 >> 26;
 			_h0 &= 0x3ffffff;
 		}
 
 		public void Update(ReadOnlySpan<byte> source)
 		{
+			if (Avx2.IsSupported)
+			{
+				while (source.Length >= BlockSize4)
+				{
+					Block4(source.Slice(0, BlockSize4));
+					source = source.Slice(BlockSize4);
+				}
+			}
+
 			while (source.Length >= BlockSize2)
 			{
-				Block2(source);
+				Block2(source.Slice(0, BlockSize2));
 				source = source.Slice(BlockSize2);
 			}
 
-			while (source.Length >= BlockSize)
+			if (source.Length >= BlockSize)
 			{
-				Block(source);
+				Block(source.Slice(0, BlockSize));
 				source = source.Slice(BlockSize);
 			}
 
