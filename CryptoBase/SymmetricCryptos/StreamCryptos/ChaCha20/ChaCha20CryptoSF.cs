@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
@@ -37,7 +36,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 			SetCounter(0);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void SetIV(ReadOnlySpan<byte> iv)
 		{
 			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
@@ -46,7 +44,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 			State[15] = ivSpan[2];
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void SetCounter(uint counter)
 		{
 			Index = 0;

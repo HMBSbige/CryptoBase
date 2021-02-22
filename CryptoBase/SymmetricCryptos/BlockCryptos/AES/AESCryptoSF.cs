@@ -231,7 +231,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -253,7 +252,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			AddRoundKey(destination, _rounds);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);

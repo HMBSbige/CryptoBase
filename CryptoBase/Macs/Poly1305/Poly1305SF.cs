@@ -94,7 +94,6 @@ namespace CryptoBase.Macs.Poly1305
 			Block(block);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetMac(Span<byte> destination)
 		{
 			_h2 += _h1 >> 26;
@@ -148,7 +147,6 @@ namespace CryptoBase.Macs.Poly1305
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Reset()
 		{
 			_h0 = _h1 = _h2 = _h3 = _h4 = 0;

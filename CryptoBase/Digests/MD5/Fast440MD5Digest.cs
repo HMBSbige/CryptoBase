@@ -1,12 +1,10 @@
 using System;
 using System.Buffers.Binary;
-using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Digests.MD5
 {
 	public class Fast440MD5Digest : MD5Digest
 	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			if (origin.Length > 55)

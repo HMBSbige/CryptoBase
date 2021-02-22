@@ -8,7 +8,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 	{
 		protected ChaCha20CryptoBase(byte[] key, byte[] iv) : base(key, iv) { }
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Update(source, destination);

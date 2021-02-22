@@ -481,7 +481,6 @@ namespace CryptoBase.Macs.Poly1305
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Reset()
 		{
 			_h0 = _h1 = _h2 = _h3 = _h4 = 0;

@@ -44,7 +44,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			if (destination.Length < source.Length)
@@ -104,7 +103,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			_counter.IncrementBe4(_blockSize3, _blockSize4);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Reset()
 		{
 			InternalBlockCrypto.Reset();

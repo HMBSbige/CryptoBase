@@ -106,7 +106,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -130,7 +129,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), x0);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);
@@ -154,7 +152,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), x0);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			if (Aes.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)

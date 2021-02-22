@@ -81,7 +81,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			_k23 = Aes.InverseMixColumns(_k1);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -113,7 +112,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);

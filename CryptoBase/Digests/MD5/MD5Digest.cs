@@ -105,7 +105,6 @@ namespace CryptoBase.Digests.MD5
 			Init();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			try

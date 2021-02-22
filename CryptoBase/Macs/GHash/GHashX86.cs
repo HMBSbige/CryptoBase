@@ -90,7 +90,6 @@ namespace CryptoBase.Macs.GHash
 			_buffer = tmp6.AsByte();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Update(ReadOnlySpan<byte> source)
 		{
 			while (source.Length >= BlockSize)
@@ -109,7 +108,6 @@ namespace CryptoBase.Macs.GHash
 			GFMul(block);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public unsafe void GetMac(Span<byte> destination)
 		{
 			fixed (byte* p = destination)

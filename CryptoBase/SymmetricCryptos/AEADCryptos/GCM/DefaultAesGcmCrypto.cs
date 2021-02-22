@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
@@ -18,14 +17,12 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			_internalCrypto = new AesGcm(key);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
 			Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 		{
 			_internalCrypto.Encrypt(nonce, source, destination, tag, associatedData);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
 			Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 		{
