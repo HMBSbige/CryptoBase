@@ -206,7 +206,7 @@ namespace CryptoBase.Macs.Poly1305
 		/// h += m
 		/// h *= r
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private void Block(ReadOnlySpan<byte> m)
 		{
 			var h01 = IntrinsicsUtils.CreateTwoUInt(_h0, _h1);
@@ -317,7 +317,7 @@ namespace CryptoBase.Macs.Poly1305
 			_h0 &= 0x3ffffff;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private void Block4(ReadOnlySpan<byte> m)
 		{
 			var n0 = MemoryMarshal.Cast<byte, uint>(m);
