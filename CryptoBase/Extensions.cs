@@ -12,7 +12,7 @@ namespace CryptoBase
 
 		#region SodiumIncrement
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void Increment(this byte[] nonce)
 		{
 			for (var i = 0; i < nonce.Length; ++i)
@@ -24,7 +24,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void IncrementUInt(this byte[] nonce)
 		{
 			var i = BinaryPrimitives.ReadUInt32LittleEndian(nonce);
@@ -32,7 +32,7 @@ namespace CryptoBase
 			BinaryPrimitives.WriteUInt32LittleEndian(nonce, i);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void IncrementIntUnsafe(this byte[] nonce)
 		{
 			fixed (byte* p = nonce)
@@ -44,7 +44,7 @@ namespace CryptoBase
 		/// <summary>
 		/// https://github.com/jedisct1/libsodium/blob/master/src/libsodium/sodium/utils.c#L263
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void IncrementSource(this byte[] nonce)
 		{
 			var i = 0U;
@@ -59,7 +59,7 @@ namespace CryptoBase
 
 		#endregion
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void IncrementBe(this byte[] counter)
 		{
 			var j = counter.Length;
@@ -68,7 +68,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void IncrementBe(this Span<byte> counter)
 		{
 			var j = counter.Length;
@@ -77,7 +77,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void IncrementBe4(this byte[] counter, int start, int end)
 		{
 			var j = end;
@@ -89,7 +89,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void IncrementBe4(this Span<byte> counter)
 		{
 			var j = counter.Length;

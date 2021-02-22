@@ -35,7 +35,7 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public virtual void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			if (source.Length < BlockSize << 2)

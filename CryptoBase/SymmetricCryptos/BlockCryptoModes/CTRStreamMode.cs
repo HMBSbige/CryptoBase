@@ -44,7 +44,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			if (destination.Length < source.Length)
@@ -61,7 +61,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void Update(int length, byte* stream, byte* source, byte* destination)
 		{
 			while (length > 0)
@@ -87,7 +87,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void UpdateKeyStream()
 		{
 			InternalBlockCrypto.Encrypt4(_counter, _keyStream);
@@ -95,7 +95,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			UpdateCounter();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void UpdateCounter()
 		{
 			_counter.IncrementBe4(0, _blockSize);
@@ -104,7 +104,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			_counter.IncrementBe4(_blockSize3, _blockSize4);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Reset()
 		{
 			InternalBlockCrypto.Reset();

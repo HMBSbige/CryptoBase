@@ -6,7 +6,7 @@ namespace CryptoBase.Digests.MD5
 {
 	public class Fast440MD5Digest : MD5Digest
 	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			if (origin.Length > 55)

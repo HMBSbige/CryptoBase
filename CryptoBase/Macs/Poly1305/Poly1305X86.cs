@@ -122,7 +122,6 @@ namespace CryptoBase.Macs.Poly1305
 		/// <summary>
 		///  a *= r
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private void MultiplyR(ref uint a0, ref uint a1, ref uint a2, ref uint a3, ref uint a4)
 		{
 			var h01 = IntrinsicsUtils.CreateTwoUInt(a0, a1);
@@ -148,7 +147,6 @@ namespace CryptoBase.Macs.Poly1305
 		/// <summary>
 		/// d = h * r
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private void MultiplyR(
 			ref Vector128<uint> h01, ref Vector128<uint> h23, ref Vector128<uint> h44,
 			out ulong d0, out ulong d1, out ulong d2, out ulong d3, out ulong d4)
@@ -206,7 +204,6 @@ namespace CryptoBase.Macs.Poly1305
 		/// h += m
 		/// h *= r
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private void Block(ReadOnlySpan<byte> m)
 		{
 			var h01 = IntrinsicsUtils.CreateTwoUInt(_h0, _h1);
@@ -236,7 +233,7 @@ namespace CryptoBase.Macs.Poly1305
 			_h0 &= 0x3ffffff;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Block2(ReadOnlySpan<byte> m)
 		{
 			var n0 = MemoryMarshal.Cast<byte, uint>(m);
@@ -317,7 +314,7 @@ namespace CryptoBase.Macs.Poly1305
 			_h0 &= 0x3ffffff;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Block4(ReadOnlySpan<byte> m)
 		{
 			var n0 = MemoryMarshal.Cast<byte, uint>(m);
@@ -484,7 +481,7 @@ namespace CryptoBase.Macs.Poly1305
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Reset()
 		{
 			_h0 = _h1 = _h2 = _h3 = _h4 = 0;

@@ -21,7 +21,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -31,7 +31,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			_outBuffer.CopyTo(destination);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);

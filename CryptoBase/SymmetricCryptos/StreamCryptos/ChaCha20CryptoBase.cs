@@ -8,7 +8,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 	{
 		protected ChaCha20CryptoBase(byte[] key, byte[] iv) : base(key, iv) { }
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Update(source, destination);
@@ -23,7 +23,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void Update(int length, uint* state, byte* stream, byte* source, byte* destination)
 		{
 			while (length > 0)
@@ -100,7 +100,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void UpdateKeyStream()
 		{
 			if (IsSupport)

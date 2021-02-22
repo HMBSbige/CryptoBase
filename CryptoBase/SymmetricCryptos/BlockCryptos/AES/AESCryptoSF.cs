@@ -185,7 +185,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			Init();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Init()
 		{
 			Key.CopyTo(_exKey);
@@ -231,7 +231,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -253,7 +253,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			AddRoundKey(destination, _rounds);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);
@@ -278,7 +278,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		/// <summary>
 		/// 轮密钥加
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void AddRoundKey(Span<byte> destination, byte round)
 		{
 			var i = round * BlockSize;
@@ -303,7 +303,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		/// <summary>
 		/// 字节代换
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void SubByte(Span<byte> destination)
 		{
 			destination[0] = S[destination[0]];
@@ -324,7 +324,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			destination[15] = S[destination[15]];
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void InverseSubByte(Span<byte> destination)
 		{
 			destination[0] = RS[destination[0]];
@@ -348,7 +348,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		/// <summary>
 		/// 行位移
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void ShiftRows(Span<byte> d)
 		{
 			// 0 4 8 12
@@ -379,7 +379,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			d[3] = t0;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void InverseShiftRows(Span<byte> d)
 		{
 			// 0 4 8 12
@@ -414,7 +414,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		/// <summary>
 		/// 列混淆
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void MixColumn(Span<byte> d)
 		{
 			var t0 = (byte)(GFMul2[d[0]] ^ GFMul3[d[1]] ^ d[2] ^ d[3]);
@@ -455,7 +455,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			d[15] = t15;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void InverseMixColumn(Span<byte> d)
 		{
 			var t0 = (byte)(GFMul14[d[0]] ^ GFMul11[d[1]] ^ GFMul13[d[2]] ^ GFMul9[d[3]]);

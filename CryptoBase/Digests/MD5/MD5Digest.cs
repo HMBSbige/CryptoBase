@@ -40,27 +40,27 @@ namespace CryptoBase.Digests.MD5
 
 		#region Basic
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint F(uint x, uint y, uint z)
 		{
 			return (y ^ z) & x ^ z;
 			//return (x & y) | IntrinsicsUtils.AndNot(x, z);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint G(uint x, uint y, uint z)
 		{
 			return (x ^ y) & z ^ y;
 			//return (z & x) | IntrinsicsUtils.AndNot(z, y);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint H(uint x, uint y, uint z)
 		{
 			return x ^ y ^ z;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint I(uint x, uint y, uint z)
 		{
 			return y ^ (x | ~z);
@@ -70,28 +70,28 @@ namespace CryptoBase.Digests.MD5
 
 		#region Transformations
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint FF(uint a, uint b, uint c, uint d, uint mj, int s, uint ti)
 		{
 			a += F(b, c, d) + mj + ti;
 			return a.RotateLeft(s) + b;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint GG(uint a, uint b, uint c, uint d, uint mj, int s, uint ti)
 		{
 			a += G(b, c, d) + mj + ti;
 			return a.RotateLeft(s) + b;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint HH(uint a, uint b, uint c, uint d, uint mj, int s, uint ti)
 		{
 			a += H(b, c, d) + mj + ti;
 			return a.RotateLeft(s) + b;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint II(uint a, uint b, uint c, uint d, uint mj, int s, uint ti)
 		{
 			a += I(b, c, d) + mj + ti;
@@ -105,7 +105,7 @@ namespace CryptoBase.Digests.MD5
 			Init();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			try
@@ -170,7 +170,7 @@ namespace CryptoBase.Digests.MD5
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		protected void Init()
 		{
 			A = 0x67452301;
@@ -179,7 +179,7 @@ namespace CryptoBase.Digests.MD5
 			D = 0x10325476;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		protected void Process()
 		{
 			var a = A;

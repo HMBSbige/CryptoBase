@@ -14,7 +14,7 @@ namespace CryptoBase
 		public const int BlockSize = 16;
 		public const int TagSize = 16;
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IMac Create(ReadOnlySpan<byte> key)
 		{
 			if (IsSupportX86)

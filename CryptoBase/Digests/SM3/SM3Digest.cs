@@ -24,38 +24,38 @@ namespace CryptoBase.Digests.SM3
 
 		#region Transformations
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint FF0(uint x, uint y, uint z)
 		{
 			return x ^ y ^ z;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint FF1(uint x, uint y, uint z)
 		{
 			return x & y | x & z | y & z;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint GG0(uint x, uint y, uint z)
 		{
 			return x ^ y ^ z;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint GG1(uint x, uint y, uint z)
 		{
 			return (y ^ z) & x ^ z;
 			//return (x & y) | IntrinsicsUtils.AndNot(x, z);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint P0(uint x)
 		{
 			return x ^ x.RotateLeft(9) ^ x.RotateLeft(17);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint P1(uint x)
 		{
 			return x ^ x.RotateLeft(15) ^ x.RotateLeft(23);
@@ -81,7 +81,6 @@ namespace CryptoBase.Digests.SM3
 			Init();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			try
@@ -158,7 +157,7 @@ namespace CryptoBase.Digests.SM3
 			V = Vector256.Create(0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A0600U, 0xA96F30BCU, 0x163138AAU, 0xE38DEE4DU, 0xB0FB0E4EU);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Process()
 		{
 			for (var j = 16; j < 68; ++j)

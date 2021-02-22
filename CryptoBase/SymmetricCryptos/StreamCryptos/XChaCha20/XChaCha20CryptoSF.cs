@@ -34,7 +34,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 			ChaCha20Utils.ChaChaRound(Rounds, x);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void SetIV(ReadOnlySpan<byte> iv)
 		{
 			var span = State.AsSpan();
@@ -59,7 +59,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 			State[15] = ivSpan[5];
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void SetCounter(uint counter)
 		{
 			Index = 0;

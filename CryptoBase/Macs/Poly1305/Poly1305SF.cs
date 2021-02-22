@@ -46,7 +46,7 @@ namespace CryptoBase.Macs.Poly1305
 			_x3 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(28));
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Block(ReadOnlySpan<byte> m)
 		{
 			_h0 += BinaryPrimitives.ReadUInt32LittleEndian(m) & 0x3ffffff;
@@ -75,7 +75,6 @@ namespace CryptoBase.Macs.Poly1305
 			_h0 &= 0x3ffffff;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public void Update(ReadOnlySpan<byte> source)
 		{
 			while (source.Length >= BlockSize)
@@ -95,7 +94,7 @@ namespace CryptoBase.Macs.Poly1305
 			Block(block);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetMac(Span<byte> destination)
 		{
 			_h2 += _h1 >> 26;
@@ -149,7 +148,7 @@ namespace CryptoBase.Macs.Poly1305
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Reset()
 		{
 			_h0 = _h1 = _h2 = _h3 = _h4 = 0;

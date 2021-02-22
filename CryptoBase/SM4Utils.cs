@@ -18,7 +18,7 @@ namespace CryptoBase
 		/// <summary>
 		/// https://github.com/mjosaarinen/sm4ni/blob/master/sm4ni.c
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void Encrypt4(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			var p32 = MemoryMarshal.Cast<byte, uint>(source);

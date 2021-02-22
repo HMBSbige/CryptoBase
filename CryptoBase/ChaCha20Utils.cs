@@ -10,7 +10,7 @@ namespace CryptoBase
 {
 	public static class ChaCha20Utils
 	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void UpdateKeyStream(int rounds, uint[] state, byte[] keyStream)
 		{
 			var x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
@@ -37,7 +37,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void ChaChaRound(int rounds, uint[] x)
 		{
 			for (var i = 0; i < rounds; i += 2)
@@ -54,7 +54,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void QuarterRound(ref uint a, ref uint b, ref uint c, ref uint d)
 		{
 			Step(ref a, ref b, ref d, 16);
@@ -63,14 +63,14 @@ namespace CryptoBase
 			Step(ref c, ref d, ref b, 7);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Step(ref uint a, ref uint b, ref uint c, byte i)
 		{
 			a += b;
 			c = (a ^ c).RotateLeft(i);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void QuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 		{
 			a = Sse2.Add(a, b);
@@ -86,7 +86,7 @@ namespace CryptoBase
 			b = Sse2.Xor(b, c).RotateLeftUInt32(7);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void QuarterRound(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 		{
 			a = Avx2.Add(a, b);
@@ -102,7 +102,7 @@ namespace CryptoBase
 			b = Avx2.Xor(b, c).RotateLeftUInt32(7);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void UpdateKeyStream(uint* state, byte* stream, byte rounds)
 		{
 			var s0 = Sse2.LoadVector128(state);
@@ -135,7 +135,7 @@ namespace CryptoBase
 			Sse2.Store(stream + 48, x3.AsByte());
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void IncrementCounterOriginal(uint* state)
 		{
 			if (++*(state + 12) == 0)
@@ -144,7 +144,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void IncrementCounter(uint* state)
 		{
 			if (++*(state + 12) == 0)
@@ -153,7 +153,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaRound(uint* state, byte rounds)
 		{
 			var x0 = Sse2.LoadVector128(state);
@@ -185,7 +185,7 @@ namespace CryptoBase
 		/// 10 11 8 9
 		/// 15 12 13 14
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 		{
 			a = Sse2.Shuffle(a, 0b00_11_10_01);
@@ -202,7 +202,7 @@ namespace CryptoBase
 		/// 8 9 10 11
 		/// 12 13 14 15
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle1(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 		{
 			a = Sse2.Shuffle(a, 0b10_01_00_11);
@@ -212,7 +212,7 @@ namespace CryptoBase
 
 		#region 处理 64 bytes
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static unsafe void ChaChaCore64Internal(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			var s0 = Sse2.LoadVector128(state);
@@ -250,7 +250,7 @@ namespace CryptoBase
 			Sse2.Store(destination + 48, v3);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCoreOriginal64(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			ChaChaCore64Internal(rounds, state, source, destination);
@@ -258,7 +258,7 @@ namespace CryptoBase
 			IncrementCounterOriginal(state);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCore64(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			ChaChaCore64Internal(rounds, state, source, destination);
@@ -273,7 +273,7 @@ namespace CryptoBase
 		private static readonly Vector256<uint> IncCounter128 = Vector256.Create(0, 0, 0, 0, 1, 0, 0, 0).AsUInt32();
 		private static readonly Vector256<ulong> IncCounterOriginal128 = Vector256.Create(0, 0, 1, 0).AsUInt64();
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCoreOriginal128(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			var x0 = Avx2.BroadcastVector128ToVector256(state);
@@ -315,7 +315,7 @@ namespace CryptoBase
 			IncrementCounterOriginal(state);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCore128(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			var x0 = Avx2.BroadcastVector128ToVector256(state);
@@ -365,7 +365,7 @@ namespace CryptoBase
 		private static readonly Vector128<ulong> IncCounter23 = Vector128.Create(2ul, 3);
 		private static readonly Vector128<uint> IncCounter0123_128 = Vector128.Create(0u, 1, 2, 3);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCoreOriginal256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 		{
 			var o0 = Vector128.Create(*(state + 0));
@@ -448,7 +448,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCore256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 		{
 			var o0 = Vector128.Create(*(state + 0));
@@ -515,7 +515,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static unsafe void AddTransposeXor(
 			ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3,
 			ref Vector128<uint> o0, ref Vector128<uint> o1, ref Vector128<uint> o2, ref Vector128<uint> o3,
@@ -554,7 +554,7 @@ namespace CryptoBase
 		private static readonly Vector256<uint> IncCounter01234567 = Vector256.Create(0u, 1, 2, 3, 4, 5, 6, 7);
 		private static readonly Vector256<uint> Permute3 = Vector256.Create(0, 1, 4, 5, 2, 3, 6, 7).AsUInt32();
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCoreOriginal512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 		{
 			var o0 = Vector256.Create(*(state + 0));
@@ -644,7 +644,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCore512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 		{
 			var o0 = Vector256.Create(*(state + 0));
@@ -717,7 +717,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static unsafe void AddTransposeXor(
 			ref Vector256<uint> x0, ref Vector256<uint> x1, ref Vector256<uint> x2, ref Vector256<uint> x3,
 			ref Vector256<uint> x4, ref Vector256<uint> x5, ref Vector256<uint> x6, ref Vector256<uint> x7,
@@ -791,7 +791,7 @@ namespace CryptoBase
 		/// 10 11 8 9
 		/// 15 12 13 14
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
 		{
 			a = Avx2.PermuteVar8x32(a, Permute0);
@@ -808,7 +808,7 @@ namespace CryptoBase
 		/// 8 9 10 11
 		/// 12 13 14 15
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle1(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
 		{
 			a = Avx2.PermuteVar8x32(a, Permute2);
@@ -827,7 +827,7 @@ namespace CryptoBase
 		/// 16 17 18 19 20 21 22 23
 		/// 24 25 26 27 28 29 30 31
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 		{
 			var t0 = Avx2.Permute2x128(a, b, 0x20);

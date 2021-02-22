@@ -49,20 +49,20 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 
 		#region Base
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint T(uint b)
 		{
 			b = SubByte(b);
 			return b ^ b.RotateLeft(2) ^ b.RotateLeft(10) ^ b.RotateLeft(18) ^ b.RotateLeft(24);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint L1(uint b)
 		{
 			return b ^ b.RotateLeft(13) ^ b.RotateLeft(23);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static uint SubByte(uint a)
 		{
 			uint b0 = S[(byte)(a >> 24)];
@@ -106,7 +106,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -130,7 +130,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), x0);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);
@@ -154,7 +154,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), x0);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			if (Aes.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)

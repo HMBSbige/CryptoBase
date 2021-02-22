@@ -10,7 +10,7 @@ namespace CryptoBase
 {
 	public static class Salsa20Utils
 	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void UpdateKeyStream(int rounds, uint[] state, byte[] keyStream)
 		{
 			var x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
@@ -37,7 +37,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void SalsaRound(int rounds, uint[] x)
 		{
 			for (var i = 0; i < rounds; i += 2)
@@ -54,7 +54,7 @@ namespace CryptoBase
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void QuarterRound(uint[] x, int a, int b, int c, int d)
 		{
 			Step(ref x[a], x[b], x[c], 7);
@@ -63,13 +63,13 @@ namespace CryptoBase
 			Step(ref x[b], x[c], x[d], 18);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Step(ref uint a, uint b, uint c, byte i)
 		{
 			a ^= (b + c).RotateLeft(i);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void QuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 		{
 			a = Sse2.Xor(a, Sse2.Add(b, c).RotateLeftUInt32(7));
@@ -78,7 +78,7 @@ namespace CryptoBase
 			b = Sse2.Xor(b, Sse2.Add(c, d).RotateLeftUInt32(18));
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void QuarterRound(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 		{
 			a = Avx2.Xor(a, Avx2.Add(b, c).RotateLeftUInt32(7));
@@ -87,7 +87,7 @@ namespace CryptoBase
 			b = Avx2.Xor(b, Avx2.Add(c, d).RotateLeftUInt32(18));
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void UpdateKeyStream(uint* state, byte* stream, byte rounds)
 		{
 			if (Avx.IsSupported && Avx2.IsSupported)
@@ -127,7 +127,7 @@ namespace CryptoBase
 			Sse2.Store(stream + 48, x3.AsByte());
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void SalsaRound(uint* state, byte rounds)
 		{
 			var x0 = Vector128.Create(*(state + 4), *(state + 9), *(state + 14), *(state + 3)); // 4 9 14 3
@@ -171,7 +171,7 @@ namespace CryptoBase
 		/// 3 0 1 2
 		/// 10 11 8 9
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 		{
 			Utils.Swap(ref a, ref b);
@@ -191,7 +191,7 @@ namespace CryptoBase
 		/// 8 9 10 11
 		/// 12 13 14 15
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 		{
 			a = Sse2.Shuffle(a, 0b10_01_00_11); // 4 9 14 3 => 3 4 9 14
@@ -212,7 +212,7 @@ namespace CryptoBase
 
 		#region Avx
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static unsafe void UpdateKeyStreamAvx(uint* state, byte* stream, byte rounds)
 		{
 			var s0 = Avx.LoadVector256(state);
@@ -264,7 +264,7 @@ namespace CryptoBase
 		/// 0 1 2 3 4 5 6 7
 		/// 8 9 10 11 12 13 14 15
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle(
 			ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d,
 			out Vector256<uint> x0, out Vector256<uint> x1)
@@ -291,7 +291,7 @@ namespace CryptoBase
 		/// 3 0 1 2 15 12 13 14
 		/// 10 11 8 9 22 23 20 21
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
 		{
 			Utils.Swap(ref a, ref b);
@@ -311,7 +311,7 @@ namespace CryptoBase
 		/// 16 17 18 19 20 21 22 23
 		/// 24 25 26 27 28 29 30 31
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 		{
 			a = Avx2.PermuteVar8x32(a, Permute7); // 3 19 9 25 4 20 14 30
@@ -340,7 +340,7 @@ namespace CryptoBase
 		/// <summary>
 		/// 处理 64 bytes
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void SalsaCore64(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			var s0 = Sse2.LoadVector128(state);
@@ -388,7 +388,7 @@ namespace CryptoBase
 		/// <summary>
 		/// 处理 128 bytes
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void SalsaCore128(byte rounds, uint* state, byte* source, byte* destination)
 		{
 			var t8 = *(state + 8);
@@ -461,7 +461,7 @@ namespace CryptoBase
 		/// <summary>
 		/// 处理 256*n bytes
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void SalsaCore256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 		{
 			#region s
@@ -556,7 +556,7 @@ namespace CryptoBase
 		/// <summary>
 		/// destination = (x+s) ^ source
 		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static unsafe void AddTransposeXor(
 			ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3,
 			ref Vector128<uint> s0, ref Vector128<uint> s1, ref Vector128<uint> s2, ref Vector128<uint> s3,

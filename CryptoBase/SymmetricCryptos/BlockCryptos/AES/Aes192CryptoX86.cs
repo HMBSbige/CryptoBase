@@ -16,7 +16,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			Init();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void KeyRound(ref Vector128<byte> a, ref Vector128<byte> b, ref Vector128<byte> c)
 		{
 			var t = Sse2.ShiftLeftLogical128BitLane(a, 4);
@@ -33,7 +33,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			c = Sse2.Xor(c, b);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void KeyRound(
 			out Vector128<byte> a, out Vector128<byte> b, out Vector128<byte> c,
 			ref Vector128<byte> t0, ref Vector128<byte> t1,
@@ -50,7 +50,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			KeyRound(ref t0, ref t2, ref t1);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void Init()
 		{
 			Vector128<byte> t0;
@@ -81,7 +81,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			_k23 = Aes.InverseMixColumns(_k1);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -113,7 +113,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);

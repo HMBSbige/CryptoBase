@@ -13,7 +13,7 @@ namespace CryptoBase
 			return bytes;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void Swap<T>(ref T a, ref T b)
 		{
 			var t = a;
@@ -21,7 +21,7 @@ namespace CryptoBase
 			b = t;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void FastCopy(byte* source, byte* destination, int count)
 		{
 			while (count >= 8)

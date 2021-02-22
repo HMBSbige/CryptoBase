@@ -17,7 +17,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			Init();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void KeyRound1(ref Vector128<byte> a, ref Vector128<byte> b)
 		{
 			var t = Sse2.ShiftLeftLogical128BitLane(a, 4);
@@ -30,7 +30,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			a = Sse2.Xor(a, b);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void KeyRound2(ref Vector128<byte> a, ref Vector128<byte> b)
 		{
 			var t0 = Aes.KeygenAssist(a, Rcon[0]);
@@ -45,7 +45,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			b = Sse2.Xor(b, t1);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void KeyRound(out Vector128<byte> a, out Vector128<byte> b,
 			ref Vector128<byte> t0, ref Vector128<byte> t1, byte rcon)
 		{
@@ -56,7 +56,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			KeyRound2(ref t0, ref t1);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void Init()
 		{
 			Vector128<byte> t0;
@@ -97,7 +97,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			_k27 = Aes.InverseMixColumns(_k1);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -131,7 +131,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);

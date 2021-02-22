@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.Runtime.CompilerServices;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 {
@@ -40,7 +39,6 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			_gHash = GHashUtils.Create(_buffer);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
 			Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 		{
@@ -128,7 +126,6 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
 			Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 		{

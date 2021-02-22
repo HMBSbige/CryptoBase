@@ -35,7 +35,7 @@ namespace CryptoBase.Macs.GHash
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void GFMul(ReadOnlySpan<byte> x)
 		{
 			var a = _key.AsUInt64();
@@ -90,7 +90,7 @@ namespace CryptoBase.Macs.GHash
 			_buffer = tmp6.AsByte();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Update(ReadOnlySpan<byte> source)
 		{
 			while (source.Length >= BlockSize)
@@ -109,7 +109,7 @@ namespace CryptoBase.Macs.GHash
 			GFMul(block);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public unsafe void GetMac(Span<byte> destination)
 		{
 			fixed (byte* p = destination)

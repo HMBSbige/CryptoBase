@@ -44,7 +44,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			if (destination.Length < source.Length)
@@ -61,7 +61,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void Update(int length, byte* stream, byte* source, byte* destination)
 		{
 			while (length > 0)

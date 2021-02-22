@@ -9,7 +9,7 @@ namespace CryptoBase
 	{
 		public static bool IsSupportX86 => Sse2.IsSupported && Ssse3.IsSupported && Pclmulqdq.IsSupported;
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IMac Create(byte[] key)
 		{
 			if (IsSupportX86)

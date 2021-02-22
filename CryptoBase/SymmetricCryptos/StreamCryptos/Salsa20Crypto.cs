@@ -10,7 +10,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 
 		protected Salsa20Crypto(byte[] key, byte[] iv) : base(key, iv) { }
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Update(source, destination);
@@ -25,7 +25,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void Update(int length, uint* state, byte* stream, byte* source, byte* destination)
 		{
 			while (length > 0)
@@ -97,7 +97,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void UpdateKeyStream()
 		{
 			if (IsSupport)
@@ -116,7 +116,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 			Salsa20Utils.UpdateKeyStream(Rounds, State, KeyStream);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static unsafe void IncrementCounter(uint* state)
 		{
 			if (++*(state + 8) == 0)

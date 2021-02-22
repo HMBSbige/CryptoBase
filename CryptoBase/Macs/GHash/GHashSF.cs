@@ -44,7 +44,7 @@ namespace CryptoBase.Macs.GHash
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void GFMul(ReadOnlySpan<byte> x)
 		{
 			for (var i = 0; i < BlockSize; ++i)
@@ -85,7 +85,7 @@ namespace CryptoBase.Macs.GHash
 			BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(8), zl);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Update(ReadOnlySpan<byte> source)
 		{
 			while (source.Length >= BlockSize)
@@ -104,7 +104,7 @@ namespace CryptoBase.Macs.GHash
 			GFMul(block);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetMac(Span<byte> destination)
 		{
 			_buffer.AsSpan(0, TagSize).CopyTo(destination);
@@ -112,7 +112,7 @@ namespace CryptoBase.Macs.GHash
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Reset()
 		{
 			_buffer.AsSpan(0, BlockSize).Clear();

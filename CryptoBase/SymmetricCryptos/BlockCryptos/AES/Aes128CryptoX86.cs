@@ -15,7 +15,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			Init();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<byte> KeyRound(Vector128<byte> key, byte rcon)
 		{
 			var t = Aes.KeygenAssist(key, rcon);
@@ -27,7 +27,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			return Sse2.Xor(key, t);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe void Init()
 		{
 			fixed (byte* p = Key.Span)
@@ -57,7 +57,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			_k19 = Aes.InverseMixColumns(_k1);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Encrypt(source, destination);
@@ -87,7 +87,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Decrypt(source, destination);

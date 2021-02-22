@@ -27,7 +27,7 @@ namespace CryptoBase
 			AesCbc.Padding = PaddingMode.None;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static AESCrypto CreateECB(byte[] key)
 		{
 			if (IsSupportX86)
@@ -44,7 +44,7 @@ namespace CryptoBase
 			return new AESECBCrypto(key);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IBlockCrypto CreateCBC(byte[] key, byte[] iv)
 		{
 			if (IsSupportX86)
