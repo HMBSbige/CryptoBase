@@ -10,117 +10,118 @@ namespace UnitTest
 	[TestClass]
 	public class Salsa20Test
 	{
-		private static void Test(SnuffleCryptoBase crypto, int originSize, string hex, int originSize2, string hex2)
+		private static void Test(SnuffleCryptoBase crypto, string hex0, string hex1, string hex2, string hex3)
 		{
 			Assert.AreEqual(@"Salsa20", crypto.Name);
 			Assert.AreEqual(8, crypto.IvSize);
 
-			Span<byte> h1 = hex.FromHex();
+			Span<byte> h0 = hex0.FromHex();
+			Span<byte> h1 = hex1.FromHex();
 			Span<byte> h2 = hex2.FromHex();
+			Span<byte> h3 = hex3.FromHex();
 
-			Span<byte> i1 = stackalloc byte[originSize];
-			Span<byte> i2 = stackalloc byte[originSize2];
-			Span<byte> o1 = stackalloc byte[i1.Length];
-			Span<byte> o2 = stackalloc byte[i2.Length];
+			Span<byte> i = stackalloc byte[512];
+			Span<byte> o = stackalloc byte[512];
 
-			crypto.Update(i1, o1);
-			Assert.IsTrue(o1.SequenceEqual(h1));
+			crypto.Update(i.Slice(0, 63), o); // 0 - 62
+			Assert.IsTrue(o.Slice(0, 63).SequenceEqual(h0.Slice(0, 63)));
+			crypto.Update(i.Slice(0, 63), o); // 63 - 125
+			Assert.AreEqual(h0[63], o[0]);
 
-			crypto.Update(i2, o2);
-			Assert.IsTrue(o2.SequenceEqual(h2));
+			// 126 - 65456
+			for (var j = 0; j < 1037; j++)
+			{
+				crypto.Update(i.Slice(0, 63), o);
+			}
+
+			crypto.Update(i.Slice(0, 63), o); // 65457 - 65519
+			Assert.IsTrue(o.Slice(15, 63 - 15).SequenceEqual(h1.Slice(0, 48)));
+			crypto.Update(i.Slice(0, 63), o); // 65520 - 65582
+			Assert.IsTrue(o.Slice(0, 16).SequenceEqual(h1.Slice(48)));
+			Assert.IsTrue(o.Slice(16, 47).SequenceEqual(h2.Slice(0, 47)));
+
+			crypto.Update(i.Slice(0, 64), o); // 65583 - 65646
+			Assert.IsTrue(o.Slice(0, 17).SequenceEqual(h2.Slice(47)));
+
+			// 65647 - 130990
+			for (var j = 0; j < 1021; j++)
+			{
+				crypto.Update(i.Slice(0, 64), o);
+			}
+			crypto.Update(i.Slice(0, 64), o); // 130991 - 131054
+			Assert.IsTrue(o.Slice(17, 64 - 17).SequenceEqual(h3.Slice(0, 47)));
+			crypto.Update(i.Slice(0, 64), o); // 131055 - 131118
+			Assert.IsTrue(o.Slice(0, 17).SequenceEqual(h3.Slice(47)));
 
 			crypto.Reset();
 
-			crypto.Update(h1, o1);
-			Assert.IsTrue(o1.SequenceEqual(i1));
+			crypto.Update(i.Slice(0, 128), o); // 0 - 127
+			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h0));
+			crypto.Update(i.Slice(0, 64), o); // 128 - 191
 
-			crypto.Update(h2, o2);
-			Assert.IsTrue(o2.SequenceEqual(i2));
+			// 192 - 65471
+			for (var j = 0; j < 510; j++)
+			{
+				crypto.Update(i.Slice(0, 128), o);
+			}
+			crypto.Update(i.Slice(0, 128), o); // 65472 - 65599
+			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h1));
+			Assert.IsTrue(o.Slice(64, 64).SequenceEqual(h2));
 
-			crypto.Dispose();
-		}
-
-		private static void Test255(IStreamCrypto crypto, string hex, string hex2)
-		{
-			Span<byte> h1 = hex.FromHex();
-			Span<byte> h2 = hex2.FromHex();
-			Span<byte> i1 = stackalloc byte[255];
-			Span<byte> o1 = stackalloc byte[255];
-
-			crypto.Update(i1, o1);
-			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
-			Assert.IsTrue(o1.Slice(192, 63).SequenceEqual(h2.Slice(0, 63)));
+			// 65600 - 130879
+			for (var j = 0; j < 255; j++)
+			{
+				crypto.Update(i.Slice(0, 256), o);
+			}
+			crypto.Update(i.Slice(0, 256), o); // 130880 - 131135
+			Assert.IsTrue(o.Slice(128, 64).SequenceEqual(h3));
 
 			crypto.Reset();
+			crypto.Update(i.Slice(0, 512), o); // 0 - 511
+			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h0));
 
-			crypto.Update(i1, o1);
-			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
-			Assert.IsTrue(o1.Slice(192, 63).SequenceEqual(h2.Slice(0, 63)));
+			// 512 - 65535
+			for (var j = 0; j < 127; j++)
+			{
+				crypto.Update(i.Slice(0, 512), o);
+			}
+			Assert.IsTrue(o.Slice(448, 64).SequenceEqual(h1));
+			crypto.Update(i.Slice(0, 512), o); // 65536 - 66047
+			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h2));
 
-			crypto.Dispose();
-		}
-
-		private static void Test65535(IStreamCrypto crypto, string hex, string hex2)
-		{
-			Span<byte> h1 = hex.FromHex();
-			Span<byte> h2 = hex2.FromHex();
-			Span<byte> i1 = stackalloc byte[65536];
-			Span<byte> o1 = stackalloc byte[65536];
-
-			crypto.Update(i1, o1);
-
-			Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h1));
-			Assert.IsTrue(o1.Slice(65472, 64).SequenceEqual(h2));
-
+			// 66048 - 131071
+			for (var j = 0; j < 127; j++)
+			{
+				crypto.Update(i.Slice(0, 512), o);
+			}
+			Assert.IsTrue(o.Slice(448, 64).SequenceEqual(h3));
 			crypto.Dispose();
 		}
 
 		/// <summary>
-		/// https://github.com/das-labor/legacy/blob/master/microcontroller-2/crypto-lib/testvectors/salsa20-full-verified.test-vectors
+		/// https://github.com/das-labor/legacy/blob/master/microcontroller-2/crypto-lib/testvectors/salsa20-full-verified.test-vectors#L2068
+		/// https://github.com/das-labor/legacy/blob/master/microcontroller-2/crypto-lib/testvectors/salsa20-full-verified.test-vectors#L4669
 		/// </summary>
 		[TestMethod]
-		[DataRow(@"80000000000000000000000000000000", @"0000000000000000", 7, @"4DFA5E481DA23E", 11, @"A09A31022050859936DA52")]
-		[DataRow(@"6363636363636363636363636363636363636363636363636363636363636363", @"0000000000000000", 33, @"D417644E8A37FF8840772A55960C4B064DA371869EA07FD02D7F8EFEF0BDB7CE30", 17, @"8173B8BAFDCA6064CEBE09609377B6542C")]
-		[DataRow(@"0053A6F94C9FF24598EB3E91E4378ADD3083D6297CCF2275C81B6EC11467BA0D", @"0D74DB42A91077DE", 5, @"F5FAD53F79", 37, @"F9DF58C4AEA0D0ED9A9601F278112CA7180D565B420A48019670EAF24CE493A86263F677B4")]
-		[DataRow(@"0558ABFE51A4F74A9DF04396E93C8FE23588DB2E81D4277ACD2073C6196CBF12", @"167DE44BB21980E7", 16, @"3944F6DC9F85B128083879FDF190F7DE", 16, @"E4053A07BC09896D51D0690BD4DA4AC1")]
-		[DataRow(@"0A5DB00356A9FC4FA2F5489BEE4194E73A8DE03386D92C7FD22578CB1E71C417", @"1F86ED54BB2289F0", 30, @"3FE85D5BB1960A82480B5E6F4E965A4460D7A54501664F7D60B54B06100A", 30, @"37FFDCF6BDE5CE3F4886BA77DD5B44E95644E40A8AC65801155DB90F0252")]
-		[DataRow(@"0F62B5085BAE0154A7FA4DA0F34699EC3F92E5388BDE3184D72A7DD02376C91C", @"288FF65DC42B92F9", 37, @"5E5E71F90199340304ABB22A37B6625BF883FB89CE3B21F54A10B81066EF87DA30B77699AA", 37, @"7379DA595C77DD59542DA208E5954F89E40EB7AA80A84A6176663FD910CDE567CF1FF60F70")]
-		public void Test(string keyHex, string ivHex, int originSize, string hex, int originSize2, string hex2)
+		[DataRow(@"0053A6F94C9FF24598EB3E91E4378ADD", @"0D74DB42A91077DE",
+				@"05E1E7BEB697D999656BF37C1B978806735D0B903A6007BD329927EFBE1B0E2A8137C1AE291493AA83A821755BEE0B06CD14855A67E46703EBF8F3114B584CBA",
+				@"1A70A37B1C9CA11CD3BF988D3EE4612D15F1A08D683FCCC6558ECF2089388B8E555E7619BF82EE71348F4F8D0D2AE464339D66BFC3A003BF229C0FC0AB6AE1C6",
+				@"4ED220425F7DDB0C843232FB03A7B1C7616A50076FB056D3580DB13D2C295973D289CC335C8BC75DD87F121E85BB998166C2EF415F3F7A297E9E1BEE767F84E2",
+				@"E121F8377E5146BFAE5AEC9F422F474FD3E9C685D32744A76D8B307A682FCA1B6BF790B5B51073E114732D3786B985FD4F45162488FEEB04C8F26E27E0F6B5CD")]
+		[DataRow(@"0053A6F94C9FF24598EB3E91E4378ADD3083D6297CCF2275C81B6EC11467BA0D", @"0D74DB42A91077DE",
+				@"F5FAD53F79F9DF58C4AEA0D0ED9A9601F278112CA7180D565B420A48019670EAF24CE493A86263F677B46ACE1924773D2BB25571E1AA8593758FC382B1280B71",
+				@"B70C50139C63332EF6E77AC54338A4079B82BEC9F9A403DFEA821B83F7860791650EF1B2489D0590B1DE772EEDA4E3BCD60FA7CE9CD623D9D2FD5758B8653E70",
+				@"81582C65D7562B80AEC2F1A673A9D01C9F892A23D4919F6AB47B9154E08E699B4117D7C666477B60F8391481682F5D95D96623DBC489D88DAA6956B9F0646B6E",
+				@"A13FFA1208F8BF50900886FAAB40FD10E8CAA306E63DF39536A1564FB760B242A9D6A4628CDC878762834E27A541DA2A5E3B3445989C76F611E0FEC6D91ACACC")]
+		public void Test(string keyHex, string ivHex, string hex0, string hex1, string hex2, string hex3)
 		{
 			var key = keyHex.FromHex();
 			var iv = ivHex.FromHex();
-			Test(new BcSalsa20Crypto(key, iv), originSize, hex, originSize2, hex2);
-			Test(new Salsa20CryptoSF(key, iv), originSize, hex, originSize2, hex2);
-			Test(new Salsa20CryptoX86(key, iv), originSize, hex, originSize2, hex2);
-			Test(StreamCryptoCreate.Salsa20(key, iv), originSize, hex, originSize2, hex2);
+			Test(new BcSalsa20Crypto(key, iv), hex0, hex1, hex2, hex3);
+			Test(new Salsa20CryptoSF(key, iv), hex0, hex1, hex2, hex3);
+			Test(new Salsa20CryptoX86(key, iv), hex0, hex1, hex2, hex3);
+			Test(StreamCryptoCreate.Salsa20(key, iv), hex0, hex1, hex2, hex3);
 		}
 
-		[TestMethod]
-		[DataRow(@"80000000000000000000000000000000", @"0000000000000000",
-			@"4DFA5E481DA23EA09A31022050859936DA52FCEE218005164F267CB65F5CFD7F2B4F97E0FF16924A52DF269515110A07F9E460BC65EF95DA58F740B7D1DBB0AA",
-			@"DA9C1581F429E0A00F7D67E23B730676783B262E8EB43A25F55FB90B3E753AEF8C6713EC66C51881111593CCB3E8CB8F8DE124080501EEEB389C4BCB6977CF95")]
-		public void Test255(string keyHex, string ivHex, string hex, string hex2)
-		{
-			var key = keyHex.FromHex();
-			var iv = ivHex.FromHex();
-			Test255(new BcSalsa20Crypto(key, iv), hex, hex2);
-			Test255(new Salsa20CryptoSF(key, iv), hex, hex2);
-			Test255(new Salsa20CryptoX86(key, iv), hex, hex2);
-			Test255(StreamCryptoCreate.Salsa20(key, iv), hex, hex2);
-		}
-
-		[TestMethod]
-		[DataRow(@"0F62B5085BAE0154A7FA4DA0F34699EC3F92E5388BDE3184D72A7DD02376C91C", @"288FF65DC42B92F9",
-				@"5E5E71F90199340304ABB22A37B6625BF883FB89CE3B21F54A10B81066EF87DA30B77699AA7379DA595C77DD59542DA208E5954F89E40EB7AA80A84A6176663F",
-				@"2DA2174BD150A1DFEC1796E921E9D6E24ECF0209BCBEA4F98370FCE629056F64917283436E2D3F45556225307D5CC5A565325D8993B37F1654195C240BF75B16")]
-		public void Test65535(string keyHex, string ivHex, string hex, string hex2)
-		{
-			var key = keyHex.FromHex();
-			var iv = ivHex.FromHex();
-			Test65535(new BcSalsa20Crypto(key, iv), hex, hex2);
-			Test65535(new Salsa20CryptoSF(key, iv), hex, hex2);
-			Test65535(new Salsa20CryptoX86(key, iv), hex, hex2);
-			Test65535(StreamCryptoCreate.Salsa20(key, iv), hex, hex2);
-		}
 	}
 }

@@ -403,7 +403,7 @@ namespace CryptoBase
 
 			// 4 9 14 3
 			var x0 = Vector256.Create(
-				*(state + 4), t8, *(state + 14), *(state + 3),
+				*(state + 4), t9, *(state + 14), *(state + 3),
 				*(state + 4), *(state + 9), *(state + 14), *(state + 3));
 			// 0 5 10 15
 			var x1 = Vector256.Create(
@@ -415,7 +415,7 @@ namespace CryptoBase
 				*(state + 12), *(state + 1), *(state + 6), *(state + 11));
 			// 8 13 2 7
 			var x3 = Vector256.Create(
-				t9, *(state + 13), *(state + 2), *(state + 7),
+				t8, *(state + 13), *(state + 2), *(state + 7),
 				*(state + 8), *(state + 13), *(state + 2), *(state + 7)
 				);
 
