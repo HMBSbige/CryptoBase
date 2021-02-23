@@ -35,6 +35,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 					{
 						if (Avx.IsSupported && Avx2.IsSupported)
 						{
+							if (length >= 512)
+							{
+								Salsa20Utils.SalsaCore512(Rounds, state, ref source, ref destination, ref length);
+							}
+
 							while (length >= 128)
 							{
 								Salsa20Utils.SalsaCore128(Rounds, state, source, destination);

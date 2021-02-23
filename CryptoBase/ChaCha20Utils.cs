@@ -361,8 +361,8 @@ namespace CryptoBase
 
 		#region 处理 256*n bytes
 
-		private static readonly Vector128<ulong> IncCounter01 = Vector128.Create(0ul, 1);
-		private static readonly Vector128<ulong> IncCounter23 = Vector128.Create(2ul, 3);
+		public static readonly Vector128<ulong> IncCounter01 = Vector128.Create(0ul, 1);
+		public static readonly Vector128<ulong> IncCounter23 = Vector128.Create(2ul, 3);
 		private static readonly Vector128<uint> IncCounter0123_128 = Vector128.Create(0u, 1, 2, 3);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -515,8 +515,11 @@ namespace CryptoBase
 			}
 		}
 
+		/// <summary>
+		/// destination = (x+s) ^ source
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static unsafe void AddTransposeXor(
+		public static unsafe void AddTransposeXor(
 			ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3,
 			ref Vector128<uint> o0, ref Vector128<uint> o1, ref Vector128<uint> o2, ref Vector128<uint> o3,
 			byte* source, byte* destination)
@@ -549,10 +552,10 @@ namespace CryptoBase
 
 		#region 处理 512*n bytes
 
-		private static readonly Vector256<ulong> IncCounter0123 = Vector256.Create(0ul, 1, 2, 3);
-		private static readonly Vector256<ulong> IncCounter4567 = Vector256.Create(4ul, 5, 6, 7);
+		public static readonly Vector256<ulong> IncCounter0123 = Vector256.Create(0ul, 1, 2, 3);
+		public static readonly Vector256<ulong> IncCounter4567 = Vector256.Create(4ul, 5, 6, 7);
 		private static readonly Vector256<uint> IncCounter01234567 = Vector256.Create(0u, 1, 2, 3, 4, 5, 6, 7);
-		private static readonly Vector256<uint> Permute3 = Vector256.Create(0, 1, 4, 5, 2, 3, 6, 7).AsUInt32();
+		public static readonly Vector256<uint> Permute3 = Vector256.Create(0, 1, 4, 5, 2, 3, 6, 7).AsUInt32();
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void ChaChaCoreOriginal512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
@@ -718,7 +721,7 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static unsafe void AddTransposeXor(
+		public static unsafe void AddTransposeXor(
 			ref Vector256<uint> x0, ref Vector256<uint> x1, ref Vector256<uint> x2, ref Vector256<uint> x3,
 			ref Vector256<uint> x4, ref Vector256<uint> x5, ref Vector256<uint> x6, ref Vector256<uint> x7,
 			ref Vector256<uint> o0, ref Vector256<uint> o1, ref Vector256<uint> o2, ref Vector256<uint> o3,

@@ -95,6 +95,26 @@ namespace UnitTest
 				crypto.Update(i.Slice(0, 512), o);
 			}
 			Assert.IsTrue(o.Slice(448, 64).SequenceEqual(h3));
+
+			crypto.Reset();
+
+			crypto.Update(i.Slice(0, 64), o); // 0 - 63
+			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h0));
+
+			for (var j = 0; j < 1023; j++)
+			{
+				crypto.Update(i.Slice(0, 64), o);
+			}
+			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h1));
+			crypto.Update(i.Slice(0, 64), o);
+			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h2));
+
+			for (var j = 0; j < 1023; j++)
+			{
+				crypto.Update(i.Slice(0, 64), o);
+			}
+			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h3));
+
 			crypto.Dispose();
 		}
 
