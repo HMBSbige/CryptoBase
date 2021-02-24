@@ -23,6 +23,12 @@ jobs:
       shell: pwsh
       run: dotnet test -c Release --filter ClassName!~Benchmark
 
+    - name: Test (Disable AVX)
+      shell: pwsh
+      run: |
+        $env:COMPlus_EnableAVX="0"
+        dotnet test -c Release --filter ClassName!~Benchmark
+
   build:
     name: Build
     needs: test
