@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBase.Abstractions", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBase.BouncyCastle", "CryptoBase.BouncyCastle\CryptoBase.BouncyCastle.csproj", "{89A56980-AA48-4C06-A188-7425488B0A3F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoBase.SpeedTest", "CryptoBase.SpeedTest\CryptoBase.SpeedTest.csproj", "{9E8B4E3F-F8DC-458F-9642-C03B18996DE1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{89A56980-AA48-4C06-A188-7425488B0A3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{89A56980-AA48-4C06-A188-7425488B0A3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{89A56980-AA48-4C06-A188-7425488B0A3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E8B4E3F-F8DC-458F-9642-C03B18996DE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E8B4E3F-F8DC-458F-9642-C03B18996DE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E8B4E3F-F8DC-458F-9642-C03B18996DE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E8B4E3F-F8DC-458F-9642-C03B18996DE1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
