@@ -11,22 +11,22 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 			ChaCha20Utils.IncrementCounterOriginal(state);
 		}
 
-		protected override unsafe void ChaChaCore64(uint* state, byte* source, byte* destination)
+		protected override unsafe void SnuffleCore64(uint* state, byte* source, byte* destination)
 		{
 			ChaCha20Utils.ChaChaCoreOriginal64(Rounds, state, source, destination);
 		}
 
-		protected override unsafe void ChaChaCore128(uint* state, byte* source, byte* destination)
+		protected override unsafe void SnuffleCore128(uint* state, byte* source, byte* destination)
 		{
 			ChaCha20Utils.ChaChaCoreOriginal128(Rounds, state, source, destination);
 		}
 
-		protected override unsafe void ChaChaCore256(uint* state, ref byte* source, ref byte* destination, ref int length)
+		protected override unsafe void SnuffleCore256(uint* state, ref byte* source, ref byte* destination, ref int length)
 		{
 			ChaCha20Utils.ChaChaCoreOriginal256(Rounds, state, ref source, ref destination, ref length);
 		}
 
-		protected override unsafe void ChaChaCore512(uint* state, ref byte* source, ref byte* destination, ref int length)
+		protected override unsafe void SnuffleCore512(uint* state, ref byte* source, ref byte* destination, ref int length)
 		{
 			ChaCha20Utils.ChaChaCoreOriginal512(Rounds, state, ref source, ref destination, ref length);
 		}
