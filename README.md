@@ -21,8 +21,8 @@ Icon | Description
 
 ### Digest algorithms
 
-Digests | Software Fallback | X86 | Arm |
-- | - |- | -
+| Digests | Software Fallback | X86 | Arm |
+| - | - |- | - |
 MD5 | ✅ | 💔 | 💔
 SHA1 | ✅ | ⏳ | ⏳
 SHA256 | ⏳ | ⏳ | ⏳
@@ -32,8 +32,8 @@ SM3 | ✅ | 💔 | ⏳
 ### Symmetric-key algorithms
 #### Stream ciphers
 
-Ciphers | Software Fallback | X86 | Arm |
-- | - |- | -
+| Ciphers | Software Fallback | X86 | Arm |
+| - | - |- | - |
 ChaCha20(IETF 7539) | ✅ | ✅ | ⏳
 ChaCha20(Original) | ✅ | ✅ | ⏳
 RC4 | ✅ | 💔 | 💔
@@ -43,8 +43,8 @@ XSalsa20 | ✅ | ✅ | ⏳
 
 #### Block ciphers
 
-Ciphers | Software Fallback | X86 | Arm |
-- | - |- | -
+| Ciphers | Software Fallback | X86 | Arm |
+| - | - |- | - |
 AES | ✅ | ✅ | ⏳
 SM4 | ✅ | ✅ | ⏳
 
@@ -56,8 +56,8 @@ SM4 | ✅ | ✅ | ⏳
 
 #### Authenticated encryption algorithms
 
-Ciphers | Software Fallback | X86 | Arm |
-- | - |- | -
+| Ciphers | Software Fallback | X86 | Arm |
+| - | - |- | - |
 AES-GCM | ✅ | ✅ | ⏳
 ChaCha20Poly1305 | ✅ | ✅ | ⏳
 SM4-GCM | ✅ | ✅ | ⏳
@@ -65,8 +65,8 @@ XChaCha20Poly1305 | ✅ | ✅ | ⏳
 
 ### Asymmetric cryptography
 
-Ciphers | Software Fallback | X86 | Arm |
-- | - |- | -
+| Ciphers | Software Fallback | X86 | Arm |
+| - | - |- | - |
 Curve25519 | ⏳ | ⏳ | ⏳
 Ed25519 | ⏳ | ⏳ | ⏳
 SM2 | ⏳ | ⏳ | ⏳
