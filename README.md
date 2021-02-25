@@ -10,33 +10,54 @@ A fast crypto library for .NET
 
 [Wiki & Benchmark](https://github.com/HMBSbige/CryptoBase/wiki)
 
-## Supported
+## Status
+
+Icon | Description
+-- | --
+⚠️ | Pending
+⏳ | Underway
+✅ | Done
+💔 | Never implemented
+
+### Hardware Acceleration
+* ✅ x86
+* ⚠️ Arm
+
 ### Digest algorithms
-* MD5
-* SHA1
-* SM3
+* ✅ MD5
+* ⏳ SHA1
+* ⏳ SHA256
+* ⏳ SHA512
+* ✅ SM3
 
 ### Symmetric-key algorithms
 #### Stream ciphers
-* ChaCha20
-    * Original
-    * IETF 7539
-* RC4
-* Salsa20
-* XChaCha20
-* XSalsa20
+* ✅ ChaCha20
+    * ✅ Original
+    * ✅ IETF 7539
+* ✅ RC4
+* ✅ Salsa20
+* ✅ XChaCha20
+* ✅ XSalsa20
 
 #### Block ciphers
-* AES
-* SM4
+* ✅ AES
+* ✅ SM4
 
 ##### Block cipher modes
-* CBC
-* CFB
-* CTR
+* ✅ CBC
+* ✅ CFB128 Stream
+* ✅ CTR128 Stream
 
 #### Authenticated encryption algorithms
-* ChaCha20Poly1305
-* AES-GCM
-* SM4-GCM
-* XChaCha20Poly1305
+* ✅ AES-GCM
+* ✅ ChaCha20Poly1305
+* ✅ SM4-GCM
+* ✅ XChaCha20Poly1305
+
+### Asymmetric cryptography
+* ⚠️ Curve25519
+* ⚠️ Ed25519
+* 💔 RSA
+* ⚠️ SM2
+* ⚠️ SM9
