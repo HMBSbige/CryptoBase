@@ -17,47 +17,57 @@ Icon | Description
 ⚠️ | Pending
 ⏳ | Underway
 ✅ | Done
-💔 | Never implemented
-
-### Hardware Acceleration
-* ✅ x86
-* ⚠️ Arm
+💔 | Never implemented or help welcomed
 
 ### Digest algorithms
-* ✅ MD5
-* ⏳ SHA1
-* ⏳ SHA256
-* ⏳ SHA512
-* ✅ SM3
+
+Digests | Software Fallback | X86 | Arm |
+- | - |- | -
+MD5 | ✅ | 💔 | 💔
+SHA1 | ✅ | ⏳ | ⏳
+SHA256 | ⏳ | ⏳ | ⏳
+SHA512 | ⏳ | ⏳ | ⏳
+SM3 | ✅ | 💔 | ⏳
 
 ### Symmetric-key algorithms
 #### Stream ciphers
-* ✅ ChaCha20
-    * ✅ Original
-    * ✅ IETF 7539
-* ✅ RC4
-* ✅ Salsa20
-* ✅ XChaCha20
-* ✅ XSalsa20
+
+Ciphers | Software Fallback | X86 | Arm |
+- | - |- | -
+ChaCha20(IETF 7539) | ✅ | ✅ | ⏳
+ChaCha20(Original) | ✅ | ✅ | ⏳
+RC4 | ✅ | 💔 | 💔
+Salsa20 | ✅ | ✅ | ⏳
+XChaCha20 | ✅ | ✅ | ⏳
+XSalsa20 | ✅ | ✅ | ⏳
 
 #### Block ciphers
-* ✅ AES
-* ✅ SM4
+
+Ciphers | Software Fallback | X86 | Arm |
+- | - |- | -
+AES | ✅ | ✅ | ⏳
+SM4 | ✅ | ✅ | ⏳
 
 ##### Block cipher modes
+
 * ✅ CBC
-* ✅ CFB128 Stream
-* ✅ CTR128 Stream
+* ✅ CFB128(Stream)
+* ✅ CTR128(Stream)
 
 #### Authenticated encryption algorithms
-* ✅ AES-GCM
-* ✅ ChaCha20Poly1305
-* ✅ SM4-GCM
-* ✅ XChaCha20Poly1305
+
+Ciphers | Software Fallback | X86 | Arm |
+- | - |- | -
+AES-GCM | ✅ | ✅ | ⏳
+ChaCha20Poly1305 | ✅ | ✅ | ⏳
+SM4-GCM | ✅ | ✅ | ⏳
+XChaCha20Poly1305 | ✅ | ✅ | ⏳
 
 ### Asymmetric cryptography
-* ⚠️ Curve25519
-* ⚠️ Ed25519
-* 💔 RSA
-* ⚠️ SM2
-* ⚠️ SM9
+
+Ciphers | Software Fallback | X86 | Arm |
+- | - |- | -
+Curve25519 | ⏳ | ⏳ | ⏳
+Ed25519 | ⏳ | ⏳ | ⏳
+SM2 | ⏳ | ⏳ | ⏳
+SM9 | ⏳ | ⏳ | ⏳
