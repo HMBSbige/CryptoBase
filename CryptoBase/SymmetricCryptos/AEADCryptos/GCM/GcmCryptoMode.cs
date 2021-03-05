@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 {
@@ -213,7 +214,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 				IntrinsicsUtils.Xor16(pTag, pBuffer, pTag);
 			}
 
-			if (!_tagBuffer.AsSpan(0, TagSize).SequenceEqual(tag))
+			if (!CryptographicOperations.FixedTimeEquals(_tagBuffer.AsSpan(0, TagSize), tag))
 			{
 				throw new ArgumentException(@"Unable to decrypt input with these parameters.");
 			}

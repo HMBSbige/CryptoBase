@@ -3,6 +3,7 @@ using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos
 {
@@ -100,7 +101,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 
 			poly1305.GetMac(block);
 
-			if (!block.SequenceEqual(tag))
+			if (!CryptographicOperations.FixedTimeEquals(block, tag))
 			{
 				throw new ArgumentException(@"Unable to decrypt input with these parameters.");
 			}

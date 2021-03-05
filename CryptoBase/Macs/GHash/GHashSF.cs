@@ -3,6 +3,7 @@ using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Macs.GHash
 {
@@ -112,7 +113,7 @@ namespace CryptoBase.Macs.GHash
 
 		public void Reset()
 		{
-			_buffer.AsSpan(0, BlockSize).Clear();
+			CryptographicOperations.ZeroMemory(_buffer.AsSpan(0, BlockSize));
 
 			var vh = BinaryPrimitives.ReadUInt64BigEndian(_key.Span);
 			var vl = BinaryPrimitives.ReadUInt64BigEndian(_key.Span.Slice(8));
