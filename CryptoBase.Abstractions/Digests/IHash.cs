@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 
 namespace CryptoBase.Abstractions.Digests
@@ -5,7 +6,7 @@ namespace CryptoBase.Abstractions.Digests
 	/// <summary>
 	/// 摘要算法接口
 	/// </summary>
-	public interface IHash
+	public interface IHash : IDisposable, ICanReset
 	{
 		/// <summary>
 		/// 算法名
@@ -17,9 +18,10 @@ namespace CryptoBase.Abstractions.Digests
 		/// </summary>
 		int Length { get; }
 
-		/// <summary>
-		/// 计算 Hash
-		/// </summary>
-		void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination);
+		void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination);
+
+		void Update(ReadOnlySpan<byte> source);
+
+		void GetHash(Span<byte> destination);
 	}
 }

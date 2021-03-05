@@ -6,11 +6,11 @@ namespace CryptoBase.Digests.SM3
 {
 	public static class SM3Utils
 	{
-		private static readonly ThreadLocal<SM3DigestBase> Slow = new(() => new SM3Digest());
+		private static readonly ThreadLocal<IHash> Slow = new(() => new SM3Digest());
 
 		public static void MayFast(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
-			Slow.Value!.ComputeHash(origin, destination);
+			Slow.Value!.UpdateFinal(origin, destination);
 		}
 	}
 }

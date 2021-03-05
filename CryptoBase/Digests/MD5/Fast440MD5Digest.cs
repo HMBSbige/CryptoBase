@@ -3,9 +3,9 @@ using System.Buffers.Binary;
 
 namespace CryptoBase.Digests.MD5
 {
-	public class Fast440MD5Digest : MD5Digest
+	internal class Fast440MD5Digest : MD5Digest
 	{
-		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public override void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			if (origin.Length > 55)
 			{
@@ -18,12 +18,12 @@ namespace CryptoBase.Digests.MD5
 				var index = 0;
 				while (t.Length >= SizeOfInt)
 				{
-					_x[index++] = BinaryPrimitives.ReadUInt32LittleEndian(t);
+					X[index++] = BinaryPrimitives.ReadUInt32LittleEndian(t);
 					t = t.Slice(SizeOfInt);
 				}
 
 				const uint padding = 0b10000000;
-				_x[index++] = t.Length switch
+				X[index++] = t.Length switch
 				{
 					0 => padding,
 					1 => t[0] | padding << 8,
@@ -36,11 +36,11 @@ namespace CryptoBase.Digests.MD5
 
 				for (var i = index; i < 14; ++i)
 				{
-					_x[i] = 0;
+					X[i] = 0;
 				}
 
-				_x[14] = (uint)origin.Length << 3;
-				_x[15] = 0;
+				X[14] = (uint)origin.Length << 3;
+				X[15] = 0;
 
 				Process();
 
@@ -51,8 +51,18 @@ namespace CryptoBase.Digests.MD5
 			}
 			finally
 			{
-				Init();
+				Reset();
 			}
+		}
+
+		public override void Update(ReadOnlySpan<byte> source)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override void GetHash(Span<byte> destination)
+		{
+			throw new NotSupportedException();
 		}
 	}
 }

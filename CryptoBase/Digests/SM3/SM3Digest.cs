@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.Digests;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -10,17 +11,22 @@ namespace CryptoBase.Digests.SM3
 	/// <summary>
 	/// https://www.oscca.gov.cn/sca/xxgk/2010-12/17/1002389/files/302a3ada057c4a73830536d03e683110.pdf
 	/// </summary>
-	public class SM3Digest : SM3DigestBase
+	public class SM3Digest : IHash
 	{
 		private const int BlockSizeOfInt = 16;
-		private const int BlockSizeOfByte = BlockSizeOfInt * SizeOfInt;
 		private const int SizeOfInt = sizeof(uint);
 
 		private static readonly uint[] T = new uint[64];
 
-		private Vector256<uint> V;
+		private static readonly Vector256<uint> Init = Vector256.Create(0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A0600U, 0xA96F30BCU, 0x163138AAU, 0xE38DEE4DU, 0xB0FB0E4EU);
 
-		private readonly uint[] _w = new uint[68];
+		private Vector256<uint> V;
+		private ulong _byteCount;
+		private int _index;
+		private int _bufferIndex;
+
+		private readonly uint[] _w;
+		private readonly byte[] _buffer;
 
 		#region Transformations
 
@@ -78,83 +84,138 @@ namespace CryptoBase.Digests.SM3
 
 		public SM3Digest()
 		{
-			Init();
+			_w = ArrayPool<uint>.Shared.Rent(68);
+			_buffer = ArrayPool<byte>.Shared.Rent(SizeOfInt);
+			Reset();
 		}
 
-		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public string Name => @"SM3";
+
+		public int Length => HashConstants.SM3Length;
+
+		public void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		{
+			Update(origin);
+			GetHash(destination);
+		}
+
+		public void Update(ReadOnlySpan<byte> source)
+		{
+			_byteCount += (uint)source.Length;
+
+			if (_bufferIndex != 0)
+			{
+				var remain = 4 - _bufferIndex;
+				if (source.Length < remain)
+				{
+					source.CopyTo(_buffer.AsSpan(_bufferIndex));
+					_bufferIndex += source.Length;
+					return;
+				}
+
+				source.Slice(0, remain).CopyTo(_buffer.AsSpan(_bufferIndex));
+				source = source.Slice(remain);
+				_w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(_buffer);
+				_bufferIndex = 0;
+			}
+
+			while (source.Length >= SizeOfInt)
+			{
+				if (_index == BlockSizeOfInt)
+				{
+					Process();
+					_index = 0;
+				}
+
+				_w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(source);
+				source = source.Slice(SizeOfInt);
+			}
+			if (_index == BlockSizeOfInt)
+			{
+				Process();
+				_index = 0;
+			}
+
+			if (!source.IsEmpty)
+			{
+				source.CopyTo(_buffer);
+				_bufferIndex += source.Length;
+			}
+		}
+
+		public unsafe void GetHash(Span<byte> destination)
 		{
 			try
 			{
-				var t = origin;
-				while (t.Length >= BlockSizeOfByte)
-				{
-					for (var i = 0; i < BlockSizeOfInt; ++i)
-					{
-						_w[i] = BinaryPrimitives.ReadUInt32BigEndian(t);
-						t = t.Slice(4);
-					}
-
-					Process();
-				}
-
-				var index = 0;
-				while (t.Length >= SizeOfInt)
-				{
-					_w[index++] = BinaryPrimitives.ReadUInt32BigEndian(t);
-					t = t.Slice(SizeOfInt);
-				}
-
 				const uint padding = 0b10000000;
-				_w[index++] = t.Length switch
+				_w[_index++] = _bufferIndex switch
 				{
 					0 => padding << 24,
-					1 => (uint)t[0] << 24 | padding << 16,
-					2 => (uint)t[0] << 24 | (uint)t[1] << 16 | padding << 8,
-					3 => (uint)t[0] << 24 | (uint)t[1] << 16 | (uint)t[2] << 8 | padding,
-					_ => 0 // unreachable
+					1 => (uint)_buffer[0] << 24 | padding << 16,
+					2 => (uint)_buffer[0] << 24 | (uint)_buffer[1] << 16 | padding << 8,
+					3 => (uint)_buffer[0] << 24 | (uint)_buffer[1] << 16 | (uint)_buffer[2] << 8 | padding,
+					_ => throw new InvalidOperationException(@"unreachable code!!!")
 				};
-				if (index == 15)
+
+				if (_index == 15)
 				{
 					_w[15] = 0;
 				}
 
-				if (index > 14)
+				if (_index > 14) // 15 or 16
 				{
 					Process();
-					index = 0;
+					_index = 0;
 				}
 
-				//final
-
-				for (var i = index; i < 14; ++i)
+				for (var i = _index; i < 14; ++i)
 				{
 					_w[i] = 0;
 				}
 
-				_w[14] = 0;
-				_w[15] = (uint)origin.Length << 3;
+				_w[14] = (uint)(_byteCount >> (32 - 3) & 0xFFFFFFFF);
+				_w[15] = (uint)(_byteCount << 3 & 0xFFFFFFFF);
 
 				Process();
 
-				BinaryPrimitives.WriteUInt32BigEndian(destination, V.GetElement(0));
-				BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), V.GetElement(1));
-				BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), V.GetElement(2));
-				BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), V.GetElement(3));
-				BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(16), V.GetElement(4));
-				BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(20), V.GetElement(5));
-				BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(24), V.GetElement(6));
-				BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(28), V.GetElement(7));
+				if (Avx.IsSupported)
+				{
+					var v = V.ReverseEndianness32();
+					fixed (byte* p = destination)
+					{
+						Avx.Store(p, v);
+					}
+				}
+				else
+				{
+					BinaryPrimitives.WriteUInt32BigEndian(destination, V.GetElement(0));
+					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), V.GetElement(1));
+					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), V.GetElement(2));
+					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), V.GetElement(3));
+					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(16), V.GetElement(4));
+					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(20), V.GetElement(5));
+					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(24), V.GetElement(6));
+					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(28), V.GetElement(7));
+				}
 			}
 			finally
 			{
-				Init();
+				Reset();
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void Init()
+		public void Dispose()
 		{
-			V = Vector256.Create(0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A0600U, 0xA96F30BCU, 0x163138AAU, 0xE38DEE4DU, 0xB0FB0E4EU);
+			ArrayPool<uint>.Shared.Return(_w);
+			ArrayPool<byte>.Shared.Return(_buffer);
+		}
+
+		public void Reset()
+		{
+			V = Init;
+			_byteCount = 0;
+			_index = 0;
+			_bufferIndex = 0;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

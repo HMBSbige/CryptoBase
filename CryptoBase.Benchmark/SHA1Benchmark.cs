@@ -23,14 +23,14 @@ namespace CryptoBase.Benchmark
 		[Benchmark(Baseline = true)]
 		public void Default()
 		{
-			Span<byte> hash = stackalloc byte[SHA1DigestBase.Sha1Length];
+			Span<byte> hash = stackalloc byte[HashConstants.Sha1Length];
 			SHA1Utils.Default(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
 		public void BouncyCastle()
 		{
-			Span<byte> hash = stackalloc byte[SHA1DigestBase.Sha1Length];
+			Span<byte> hash = stackalloc byte[HashConstants.Sha1Length];
 			BcDigestsUtils.SHA1(_randombytes.Span, hash);
 		}
 	}

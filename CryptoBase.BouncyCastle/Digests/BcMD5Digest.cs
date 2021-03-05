@@ -5,13 +5,36 @@ using System;
 
 namespace CryptoBase.BouncyCastle.Digests
 {
-	public class BcMD5Digest : MD5DigestBase
+	public class BcMD5Digest : IHash
 	{
 		private readonly IDigest _hasher = new MD5Digest();
 
-		public override void ComputeHash(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public string Name => @"MD5";
+
+		public int Length => HashConstants.Md5Length;
+
+		public void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
-			_hasher.BcComputeHash(Length, origin, destination);
+			_hasher.BcHashUpdateFinal(Length, origin, destination);
+		}
+
+		public void Update(ReadOnlySpan<byte> source)
+		{
+			_hasher.BcHashUpdate(source);
+		}
+
+		public void GetHash(Span<byte> destination)
+		{
+			_hasher.BcGetHash(Length, destination);
+		}
+
+		public void Dispose()
+		{
+		}
+
+		public void Reset()
+		{
+			_hasher.Reset();
 		}
 	}
 }

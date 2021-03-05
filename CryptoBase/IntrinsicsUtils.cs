@@ -13,6 +13,7 @@ namespace CryptoBase
 		private static readonly Vector128<byte> Rot24_128 = Vector128.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12);
 		private static readonly Vector128<byte> Reverse32 = Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
 		private static readonly Vector128<byte> Reverse_128 = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+		private static readonly Vector256<byte> Reverse32_256 = Vector256.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static uint AndNot(uint left, uint right)
@@ -166,6 +167,12 @@ namespace CryptoBase
 		public static Vector128<byte> ReverseEndianness32(this Vector128<uint> value)
 		{
 			return Ssse3.Shuffle(value.AsByte(), Reverse32);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector256<byte> ReverseEndianness32(this Vector256<uint> value)
+		{
+			return Avx2.Shuffle(value.AsByte(), Reverse32_256);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

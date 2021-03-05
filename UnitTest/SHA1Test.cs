@@ -16,13 +16,34 @@ namespace UnitTest
 			Assert.AreEqual(@"SHA-1", sha1.Name);
 			Assert.AreEqual(20, sha1.Length);
 
-			var origin = Encoding.UTF8.GetBytes(str);
+			Span<byte> origin = Encoding.UTF8.GetBytes(str);
 			Span<byte> hash = stackalloc byte[sha1.Length];
 
-			sha1.ComputeHash(origin, hash);
-			sha1.ComputeHash(origin, hash);
+			sha1.UpdateFinal(origin, hash);
+			sha1.UpdateFinal(origin, hash);
 
 			Assert.AreEqual(sha1Str, hash.ToHex());
+
+			sha1.Update(origin);
+			sha1.GetHash(hash);
+
+			Assert.AreEqual(sha1Str, hash.ToHex());
+
+			sha1.Update(origin);
+			sha1.Reset();
+
+			sha1.Update(origin.Slice(0, origin.Length / 2));
+			sha1.Update(origin.Slice(origin.Length / 2));
+			sha1.GetHash(hash);
+
+			Assert.AreEqual(sha1Str, hash.ToHex());
+
+			sha1.Update(origin.Slice(0, origin.Length / 2));
+			sha1.UpdateFinal(origin.Slice(origin.Length / 2), hash);
+
+			Assert.AreEqual(sha1Str, hash.ToHex());
+
+			sha1.Dispose();
 		}
 
 		[TestMethod]

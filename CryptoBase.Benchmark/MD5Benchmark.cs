@@ -23,28 +23,28 @@ namespace CryptoBase.Benchmark
 		[Benchmark]
 		public void Default()
 		{
-			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
+			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
 			MD5Utils.Default(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
 		public void BouncyCastle()
 		{
-			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
+			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
 			BcDigestsUtils.MD5(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
 		public void MayFast()
 		{
-			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
+			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
 			MD5Utils.MayFast(_randombytes.Span, hash);
 		}
 
 		[Benchmark(Baseline = true)]
 		public void Fast440()
 		{
-			Span<byte> hash = stackalloc byte[MD5DigestBase.Md5Len];
+			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
 			MD5Utils.Fast440(_randombytes.Span, hash);
 		}
 	}
