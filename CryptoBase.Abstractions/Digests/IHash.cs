@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 
 namespace CryptoBase.Abstractions.Digests

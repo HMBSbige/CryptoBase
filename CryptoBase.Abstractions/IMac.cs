@@ -1,6 +1,6 @@
 using System;
 
-namespace CryptoBase.Abstractions.SymmetricCryptos
+namespace CryptoBase.Abstractions
 {
 	public interface IMac : IDisposable, ICanReset
 	{

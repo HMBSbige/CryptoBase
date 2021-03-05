@@ -1,5 +1,5 @@
 using CryptoBase;
-using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions;
 using CryptoBase.Macs.Poly1305;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;

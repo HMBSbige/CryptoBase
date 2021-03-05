@@ -1,4 +1,4 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions;
 using CryptoBase.Macs.Poly1305;
 using System;
 using System.Runtime.CompilerServices;

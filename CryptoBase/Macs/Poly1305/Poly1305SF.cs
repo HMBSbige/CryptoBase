@@ -1,4 +1,4 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions;
 using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;

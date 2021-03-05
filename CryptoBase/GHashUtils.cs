@@ -1,4 +1,4 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions;
 using CryptoBase.Macs.GHash;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;

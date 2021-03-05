@@ -1,5 +1,5 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions;
 using CryptoBase.Macs.GHash;
 using System;
 

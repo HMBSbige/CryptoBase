@@ -1,4 +1,4 @@
-namespace CryptoBase.Abstractions.SymmetricCryptos
+namespace CryptoBase.Abstractions
 {
 	public interface ICanReset
 	{
