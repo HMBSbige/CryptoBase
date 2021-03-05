@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.Digests;
 using System;
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -84,8 +83,8 @@ namespace CryptoBase.Digests.SM3
 
 		public SM3Digest()
 		{
-			_w = ArrayPool<uint>.Shared.Rent(68);
-			_buffer = ArrayPool<byte>.Shared.Rent(SizeOfInt);
+			_w = new uint[68];
+			_buffer = new byte[SizeOfInt];
 			Reset();
 		}
 
@@ -202,12 +201,6 @@ namespace CryptoBase.Digests.SM3
 			{
 				Reset();
 			}
-		}
-
-		public void Dispose()
-		{
-			ArrayPool<uint>.Shared.Return(_w);
-			ArrayPool<byte>.Shared.Return(_buffer);
 		}
 
 		public void Reset()

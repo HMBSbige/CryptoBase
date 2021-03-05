@@ -28,10 +28,6 @@ namespace CryptoBase.BouncyCastle.Digests
 			_hasher.BcGetHash(Length, destination);
 		}
 
-		public void Dispose()
-		{
-		}
-
 		public void Reset()
 		{
 			_hasher.Reset();

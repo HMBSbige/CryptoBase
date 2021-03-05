@@ -42,8 +42,6 @@ namespace UnitTest
 			sm3.UpdateFinal(origin.Slice(origin.Length / 2), hash);
 
 			Assert.AreEqual(sm3Str, hash.ToHex());
-
-			sm3.Dispose();
 		}
 
 		/// <summary>

@@ -36,11 +36,6 @@ namespace CryptoBase.Digests.MD5
 			UpdateFinal(Array.Empty<byte>(), destination);
 		}
 
-		public void Dispose()
-		{
-			_hasher.Dispose();
-		}
-
 		public void Reset()
 		{
 			_hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);

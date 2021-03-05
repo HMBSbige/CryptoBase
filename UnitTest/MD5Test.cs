@@ -41,8 +41,6 @@ namespace UnitTest
 			md5.UpdateFinal(origin.Slice(origin.Length / 2), hash);
 
 			Assert.AreEqual(md5Str, hash.ToHex());
-
-			md5.Dispose();
 		}
 
 		/// <summary>

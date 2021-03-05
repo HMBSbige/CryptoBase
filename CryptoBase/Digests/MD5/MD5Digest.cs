@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.Digests;
 using System;
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
@@ -107,8 +106,8 @@ namespace CryptoBase.Digests.MD5
 
 		public MD5Digest()
 		{
-			X = ArrayPool<uint>.Shared.Rent(BlockSizeOfInt);
-			_buffer = ArrayPool<byte>.Shared.Rent(SizeOfInt);
+			X = new uint[BlockSizeOfInt];
+			_buffer = new byte[SizeOfInt];
 			Reset();
 		}
 
@@ -213,12 +212,6 @@ namespace CryptoBase.Digests.MD5
 			{
 				Reset();
 			}
-		}
-
-		public void Dispose()
-		{
-			ArrayPool<uint>.Shared.Return(X);
-			ArrayPool<byte>.Shared.Return(_buffer);
 		}
 
 		public void Reset()
