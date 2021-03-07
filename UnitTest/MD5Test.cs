@@ -5,6 +5,7 @@ using CryptoBase.Digests.MD5;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace UnitTest
 {
@@ -56,26 +57,44 @@ namespace UnitTest
 		[DataRow(@"1234567890123456789012", @"aad9dc90c98e6472bd0b67067b5b11c9")]
 		[DataRow(@"32323232323232323232323232323232", @"b9cfdc1fb63d34054bbfebff4e99795a")]
 		[DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012", @"b76972fe0dff4baac395b531646f738e")]
-		public void MD5DigestTest(string str, string md5Str)
+		public void Fast440Test(string str, string md5Str)
 		{
-			MD5DigestTest(new DefaultMD5Digest(), str, md5Str);
-			MD5DigestTest(new BcMD5Digest(), str, md5Str);
-			MD5DigestTest(new MD5Digest(), str, md5Str);
-
 			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
 			MD5Utils.Fast440(Encoding.UTF8.GetBytes(str), hash);
 			Assert.AreEqual(md5Str, hash.ToHex());
 		}
 
 		[TestMethod]
+		[DataRow(@"", @"d41d8cd98f00b204e9800998ecf8427e")]
+		[DataRow(@"a", @"0cc175b9c0f1b6a831c399e269772661")]
+		[DataRow(@"abc", @"900150983cd24fb0d6963f7d28e17f72")]
+		[DataRow(@"message digest", @"f96b697d7cb7938d525a2f31aaf161d0")]
+		[DataRow(@"abcdefghijklmnopqrstuvwxyz", @"c3fcd3d76192e4007dfb496cca67e13b")]
+		[DataRow(@"中文测试14", @"0958d88b4122b0f1cf13f19ee461b339")]
+		[DataRow(@"1234567890123456789012", @"aad9dc90c98e6472bd0b67067b5b11c9")]
+		[DataRow(@"32323232323232323232323232323232", @"b9cfdc1fb63d34054bbfebff4e99795a")]
+		[DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012", @"b76972fe0dff4baac395b531646f738e")]
 		[DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", @"d174ab98d277d9f5a5611c2c9f419d9f")]
 		[DataRow(@"12345678901234567890123456789012345678901234567890123456789012345678901234567890", @"57edf4a22be3c955ac49da2e2107b67a")]
 		[DataRow(@"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", @"268c7919189d85e276d74b8c60b2f84f")]
-		public void LongMessageTest(string str, string md5Str)
+		public async Task LongMessageTest(string str, string md5Str)
 		{
 			MD5DigestTest(new DefaultMD5Digest(), str, md5Str);
 			MD5DigestTest(new BcMD5Digest(), str, md5Str);
 			MD5DigestTest(new MD5Digest(), str, md5Str);
+
+			await TestUtils.TestStreamAsync(new DefaultMD5Digest(), str, md5Str);
+			await TestUtils.TestStreamAsync(new BcMD5Digest(), str, md5Str);
+			await TestUtils.TestStreamAsync(new MD5Digest(), str, md5Str);
+		}
+
+		[TestMethod]
+		[DataRow(@"euasxpm", @"cb9c2e659941f68ab669d33418d798fa")]
+		public void LargeMessageTest(string str, string result)
+		{
+			TestUtils.LargeMessageTest(new DefaultMD5Digest(), str, result);
+			TestUtils.LargeMessageTest(new BcMD5Digest(), str, result);
+			TestUtils.LargeMessageTest(new MD5Digest(), str, result);
 		}
 	}
 }

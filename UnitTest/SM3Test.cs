@@ -5,6 +5,7 @@ using CryptoBase.Digests.SM3;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace UnitTest
 {
@@ -56,10 +57,21 @@ namespace UnitTest
 		[DataRow(@"d60e1c2860a249ddb96ddfebbb618a53daa635b1c504409c935ffab41a0d", @"2b9bdd2ffbe3f293744af51b181cdb36a6bf0d5065306a56a7b8c5a5cb2e03d1")]
 		[DataRow(@"abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd", @"debe9ff92275b8a138604889c18e5a4d6fdb70e5387e5765293dcba39c0c5732")]
 		[DataRow(@"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", @"f07b76f62b616de94e6ef9733db1953b8e3fa55014c3f4667abf2ea60aa44250")]
-		public void SM3DigestTest(string str, string sm3Str)
+		public async Task SM3DigestTest(string str, string sm3Str)
 		{
 			SM3DigestTest(new BcSM3Digest(), str, sm3Str);
 			SM3DigestTest(new SM3Digest(), str, sm3Str);
+
+			await TestUtils.TestStreamAsync(new BcSM3Digest(), str, sm3Str);
+			await TestUtils.TestStreamAsync(new SM3Digest(), str, sm3Str);
+		}
+
+		[TestMethod]
+		[DataRow(@"euasxpm", @"de27a8b04cf2bde6c963fc0d8df4fdceee26f03a9f0d1ff80e5773817444f172")]
+		public void LargeMessageTest(string str, string result)
+		{
+			TestUtils.LargeMessageTest(new BcSM3Digest(), str, result);
+			TestUtils.LargeMessageTest(new SM3Digest(), str, result);
 		}
 	}
 }
