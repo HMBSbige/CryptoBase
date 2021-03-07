@@ -1,5 +1,8 @@
 using System;
 using System.Buffers.Binary;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CryptoBase.Digests.MD5
 {
@@ -52,6 +55,26 @@ namespace CryptoBase.Digests.MD5
 		}
 
 		public override void GetHash(Span<byte> destination)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override void Update(Stream inputStream)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override void UpdateFinal(Stream inputStream, Span<byte> destination)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override Task UpdateAsync(Stream inputStream, CancellationToken token = default)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override Task UpdateFinalAsync(Stream inputStream, Memory<byte> destination, CancellationToken token = default)
 		{
 			throw new NotSupportedException();
 		}

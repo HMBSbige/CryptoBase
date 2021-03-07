@@ -1,36 +1,16 @@
 using CryptoBase.Abstractions.Digests;
-using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
-using System;
 
 namespace CryptoBase.BouncyCastle.Digests
 {
-	public class BcSM3Digest : IHash
+	public class BcSM3Digest : BcDigest
 	{
-		private readonly IDigest _hasher = new SM3Digest();
+		public override string Name => @"SM3";
 
-		public string Name => @"SM3";
+		public override int Length => HashConstants.SM3Length;
 
-		public int Length => HashConstants.SM3Length;
-
-		public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
+		public BcSM3Digest() : base(new SM3Digest())
 		{
-			_hasher.BcHashUpdateFinal(Length, origin, destination);
-		}
-
-		public void Update(ReadOnlySpan<byte> source)
-		{
-			_hasher.BcHashUpdate(source);
-		}
-
-		public void GetHash(Span<byte> destination)
-		{
-			_hasher.BcGetHash(Length, destination);
-		}
-
-		public void Reset()
-		{
-			_hasher.Reset();
 		}
 	}
 }

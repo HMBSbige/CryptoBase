@@ -1,4 +1,7 @@
 using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CryptoBase.Abstractions.Digests
 {
@@ -22,5 +25,13 @@ namespace CryptoBase.Abstractions.Digests
 		void Update(ReadOnlySpan<byte> source);
 
 		void GetHash(Span<byte> destination);
+
+		void Update(Stream inputStream);
+
+		void UpdateFinal(Stream inputStream, Span<byte> destination);
+
+		Task UpdateAsync(Stream inputStream, CancellationToken token = default);
+
+		Task UpdateFinalAsync(Stream inputStream, Memory<byte> destination, CancellationToken token = default);
 	}
 }
