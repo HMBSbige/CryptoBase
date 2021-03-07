@@ -5,7 +5,7 @@ namespace CryptoBase.Digests.MD5
 {
 	internal class Fast440MD5Digest : MD5Digest
 	{
-		public override void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public override void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			if (origin.Length > 55)
 			{
@@ -13,34 +13,25 @@ namespace CryptoBase.Digests.MD5
 			}
 			try
 			{
-				var t = origin;
+				X.AsSpan(0, BlockSizeOfInt).Clear();
+				X[14] = (uint)origin.Length << 3;
 
 				var index = 0;
-				while (t.Length >= SizeOfInt)
+				while (origin.Length >= SizeOfInt)
 				{
-					X[index++] = BinaryPrimitives.ReadUInt32LittleEndian(t);
-					t = t.Slice(SizeOfInt);
+					X[index++] = BinaryPrimitives.ReadUInt32LittleEndian(origin);
+					origin = origin.Slice(SizeOfInt);
 				}
 
 				const uint padding = 0b10000000;
-				X[index++] = t.Length switch
+				X[index] = origin.Length switch
 				{
 					0 => padding,
-					1 => t[0] | padding << 8,
-					2 => t[0] | (uint)t[1] << 8 | padding << 16,
-					3 => t[0] | (uint)t[1] << 8 | (uint)t[2] << 16 | padding << 24,
-					_ => 0 // unreachable
+					1 => origin[0] | padding << 8,
+					2 => origin[0] | (uint)origin[1] << 8 | padding << 16,
+					3 => origin[0] | (uint)origin[1] << 8 | (uint)origin[2] << 16 | padding << 24,
+					_ => throw new InvalidOperationException(@"unreachable code!!!")
 				};
-
-				//final
-
-				for (var i = index; i < 14; ++i)
-				{
-					X[i] = 0;
-				}
-
-				X[14] = (uint)origin.Length << 3;
-				X[15] = 0;
 
 				Process();
 

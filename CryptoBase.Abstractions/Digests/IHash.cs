@@ -17,7 +17,7 @@ namespace CryptoBase.Abstractions.Digests
 		/// </summary>
 		int Length { get; }
 
-		void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination);
+		void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination);
 
 		void Update(ReadOnlySpan<byte> source);
 

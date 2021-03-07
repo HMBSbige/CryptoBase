@@ -12,7 +12,7 @@ namespace CryptoBase.Digests.SHA1
 
 		public int Length => HashConstants.Sha1Length;
 
-		public void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			_hasher.TryComputeHash(origin, destination, out _);
 		}

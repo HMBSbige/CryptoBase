@@ -12,7 +12,7 @@ namespace CryptoBase.Digests.MD5
 
 		public int Length => HashConstants.Md5Length;
 
-		public void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			_hasher.TryComputeHash(origin, destination, out _);
 		}

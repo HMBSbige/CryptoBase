@@ -92,7 +92,7 @@ namespace CryptoBase.Digests.SM3
 
 		public int Length => HashConstants.SM3Length;
 
-		public void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			Update(origin);
 			GetHash(destination);

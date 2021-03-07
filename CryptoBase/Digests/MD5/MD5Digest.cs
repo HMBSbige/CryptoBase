@@ -10,7 +10,7 @@ namespace CryptoBase.Digests.MD5
 	/// </summary>
 	public class MD5Digest : IHash
 	{
-		private const int BlockSizeOfInt = 16;
+		protected const int BlockSizeOfInt = 16;
 		protected const int SizeOfInt = sizeof(uint);
 
 		protected uint A, B, C, D;
@@ -115,7 +115,7 @@ namespace CryptoBase.Digests.MD5
 
 		public int Length => HashConstants.Md5Length;
 
-		public virtual void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public virtual void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			Update(origin);
 			GetHash(destination);

@@ -13,7 +13,7 @@ namespace CryptoBase.BouncyCastle.Digests
 
 		public int Length => HashConstants.Sha1Length;
 
-		public void UpdateFinal(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			_hasher.BcHashUpdateFinal(Length, origin, destination);
 		}
