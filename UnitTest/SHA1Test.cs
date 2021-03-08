@@ -62,7 +62,9 @@ namespace UnitTest
 			await TestUtils.TestStreamAsync(new BcSHA1Digest(), str, sha1Str);
 		}
 
+#if LongTimeTest
 		[TestMethod]
+#endif
 		[DataRow(@"euasxpm", @"1c0f98811d531bc03fe0f660f2fb432ae90a0207")]
 		public void LargeMessageTest(string str, string result)
 		{

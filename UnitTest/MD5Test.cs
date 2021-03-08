@@ -88,7 +88,9 @@ namespace UnitTest
 			await TestUtils.TestStreamAsync(new MD5Digest(), str, md5Str);
 		}
 
+#if LongTimeTest
 		[TestMethod]
+#endif
 		[DataRow(@"euasxpm", @"cb9c2e659941f68ab669d33418d798fa")]
 		public void LargeMessageTest(string str, string result)
 		{

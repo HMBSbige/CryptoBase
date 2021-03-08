@@ -66,7 +66,9 @@ namespace UnitTest
 			await TestUtils.TestStreamAsync(new SM3Digest(), str, sm3Str);
 		}
 
+#if LongTimeTest
 		[TestMethod]
+#endif
 		[DataRow(@"euasxpm", @"de27a8b04cf2bde6c963fc0d8df4fdceee26f03a9f0d1ff80e5773817444f172")]
 		public void LargeMessageTest(string str, string result)
 		{
