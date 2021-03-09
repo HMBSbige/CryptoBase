@@ -90,15 +90,21 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			_crypto.Encrypt(counterBlock, tag);
 			counter0[3] = 2;
 
+			uint c3 = 5;
+
 			_gHash.Update(associatedData);
 
 			while (!source.IsEmpty)
 			{
 				_crypto.Encrypt4(counterBlock, _buffer);
-				counter0.IncrementBe4();
-				counter1.IncrementBe4();
-				counter2.IncrementBe4();
-				counter3.IncrementBe4();
+				var c0 = c3 + 1;
+				var c1 = c0 + 1;
+				var c2 = c1 + 1;
+				c3 = c2 + 1;
+				BinaryPrimitives.WriteUInt32BigEndian(counter0, c0);
+				BinaryPrimitives.WriteUInt32BigEndian(counter1, c1);
+				BinaryPrimitives.WriteUInt32BigEndian(counter2, c2);
+				BinaryPrimitives.WriteUInt32BigEndian(counter3, c3);
 
 				var n = Math.Min(source.Length, BlockSize4);
 
@@ -177,15 +183,21 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			_crypto.Encrypt(counterBlock, _tagBuffer);
 			counter0[3] = 2;
 
+			uint c3 = 5;
+
 			_gHash.Update(associatedData);
 
 			while (!source.IsEmpty)
 			{
 				_crypto.Encrypt4(counterBlock, _buffer);
-				counter0.IncrementBe4();
-				counter1.IncrementBe4();
-				counter2.IncrementBe4();
-				counter3.IncrementBe4();
+				var c0 = c3 + 1;
+				var c1 = c0 + 1;
+				var c2 = c1 + 1;
+				c3 = c2 + 1;
+				BinaryPrimitives.WriteUInt32BigEndian(counter0, c0);
+				BinaryPrimitives.WriteUInt32BigEndian(counter1, c1);
+				BinaryPrimitives.WriteUInt32BigEndian(counter2, c2);
+				BinaryPrimitives.WriteUInt32BigEndian(counter3, c3);
 
 				var n = Math.Min(source.Length, BlockSize4);
 

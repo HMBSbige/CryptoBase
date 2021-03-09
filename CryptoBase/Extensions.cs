@@ -72,7 +72,7 @@ namespace CryptoBase
 		#endregion
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void IncrementBe(this byte[] counter)
+		private static void IncrementBeInternal(this Span<byte> counter)
 		{
 			var j = counter.Length;
 			while (--j >= 0 && ++counter[j] == 0)
@@ -81,12 +81,15 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void IncrementBe(this byte[] counter)
+		{
+			IncrementBeInternal(counter);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void IncrementBe(this Span<byte> counter)
 		{
-			var j = counter.Length;
-			while (--j >= 0 && ++counter[j] == 0)
-			{
-			}
+			counter.IncrementBeInternal();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -96,18 +99,6 @@ namespace CryptoBase
 			if ((counter[--j] += 4) < 4)
 			{
 				while (--j >= start && ++counter[j] == 0)
-				{
-				}
-			}
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void IncrementBe4(this Span<byte> counter)
-		{
-			var j = counter.Length;
-			if ((counter[--j] += 4) < 4)
-			{
-				while (--j >= 0 && ++counter[j] == 0)
 				{
 				}
 			}
