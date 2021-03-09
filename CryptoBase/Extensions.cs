@@ -13,7 +13,7 @@ namespace CryptoBase
 		#region SodiumIncrement
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void Increment(this byte[] nonce)
+		private static void IncrementInternal(this Span<byte> nonce)
 		{
 			for (var i = 0; i < nonce.Length; ++i)
 			{
@@ -22,6 +22,18 @@ namespace CryptoBase
 					break;
 				}
 			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Increment(this Span<byte> nonce)
+		{
+			nonce.IncrementInternal();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Increment(this byte[] nonce)
+		{
+			IncrementInternal(nonce);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
