@@ -6,10 +6,8 @@ using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Macs.GHash
 {
-	public class GHashX86 : IMac, IIntrinsics
+	public class GHashX86 : IMac
 	{
-		public bool IsSupport => GHashUtils.IsSupportX86;
-
 		public string Name => @"GHash";
 
 		public const int KeySize = 16;

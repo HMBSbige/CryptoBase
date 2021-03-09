@@ -6,8 +6,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 {
 	public class XSalsa20CryptoX86 : Salsa20Crypto
 	{
-		public override bool IsSupport => Sse2.IsSupported;
-
 		public override string Name => @"XSalsa20";
 
 		public override int IvSize => 24;
@@ -72,6 +70,57 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			{
 				Salsa20Utils.SalsaRound(p, Rounds);
 			}
+		}
+
+		protected override unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length)
+		{
+			if (Avx.IsSupported && Avx2.IsSupported)
+			{
+				if (length >= 512)
+				{
+					Salsa20Utils.SalsaCore512(Rounds, state, ref source, ref destination, ref length);
+				}
+
+				while (length >= 128)
+				{
+					Salsa20Utils.SalsaCore128(Rounds, state, source, destination);
+
+					source += 128;
+					destination += 128;
+					length -= 128;
+				}
+			}
+
+			if (Sse2.IsSupported)
+			{
+				if (length >= 256)
+				{
+					Salsa20Utils.SalsaCore256(Rounds, state, ref source, ref destination, ref length);
+				}
+
+				while (length >= 64)
+				{
+					Salsa20Utils.SalsaCore64(Rounds, state, source, destination);
+
+					source += 64;
+					destination += 64;
+					length -= 64;
+				}
+			}
+		}
+
+		protected override unsafe void UpdateKeyStream()
+		{
+			fixed (uint* x = State)
+			fixed (byte* s = KeyStream)
+			{
+				Salsa20Utils.UpdateKeyStream(x, s, Rounds);
+			}
+		}
+
+		protected override unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
+		{
+			IntrinsicsUtils.Xor(stream, source, destination, length);
 		}
 	}
 }

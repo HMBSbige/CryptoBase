@@ -6,8 +6,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 {
 	public abstract class DefaultAESCrypto : AESCrypto
 	{
-		public override bool IsSupport => false;
-
 		protected abstract ICryptoTransform Encryptor { get; }
 		protected abstract ICryptoTransform Decryptor { get; }
 

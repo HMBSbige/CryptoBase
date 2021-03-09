@@ -8,10 +8,8 @@ using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Macs.Poly1305
 {
-	public class Poly1305X86 : IMac, IIntrinsics
+	public class Poly1305X86 : IMac
 	{
-		public bool IsSupport => Poly1305Utils.IsSupportX86;
-
 		public string Name => @"Poly1305";
 
 		public const int KeySize = 32;

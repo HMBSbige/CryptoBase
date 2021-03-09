@@ -7,12 +7,10 @@ namespace CryptoBase
 {
 	public static class GHashUtils
 	{
-		public static bool IsSupportX86 => Sse2.IsSupported && Ssse3.IsSupported && Pclmulqdq.IsSupported;
-
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IMac Create(byte[] key)
 		{
-			if (IsSupportX86)
+			if (Sse2.IsSupported && Ssse3.IsSupported && Pclmulqdq.IsSupported)
 			{
 				return new GHashX86(key);
 			}

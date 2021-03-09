@@ -1,13 +1,10 @@
-using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 {
-	public abstract class AESCrypto : BlockCryptoBase, IIntrinsics
+	public abstract class AESCrypto : BlockCryptoBase
 	{
-		public abstract bool IsSupport { get; }
-
 		public override string Name => @"AES";
 
 		public sealed override int BlockSize => 16;

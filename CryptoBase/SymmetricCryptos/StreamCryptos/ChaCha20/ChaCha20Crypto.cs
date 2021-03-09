@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 {
@@ -8,34 +9,52 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 
 		public override int IvSize => 12;
 
-		protected ChaCha20Crypto(byte[] key, byte[] iv) : base(key, iv) { }
+		protected ChaCha20Crypto(byte[] key, byte[] iv) : base(key, iv)
+		{
+			Init();
+			Reset();
+		}
+
+		private void Init()
+		{
+			if (Key.Length != 32)
+			{
+				throw new ArgumentException(@"Key length requires 32 bytes");
+			}
+
+			State[0] = Sigma32[0];
+			State[1] = Sigma32[1];
+			State[2] = Sigma32[2];
+			State[3] = Sigma32[3];
+
+			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
+			keySpan.CopyTo(State.AsSpan(4));
+
+			SetIV(Iv.Span);
+		}
+
+		public sealed override void Reset()
+		{
+			SetCounter(0);
+		}
 
 		protected override unsafe void IncrementCounter(uint* state)
 		{
 			ChaCha20Utils.IncrementCounter(state);
 		}
 
-		protected override unsafe void SnuffleCore64(uint* state, byte* source, byte* destination)
+		public void SetIV(ReadOnlySpan<byte> iv)
 		{
-			ChaCha20Utils.ChaChaCore64(Rounds, state, source, destination);
+			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
+			State[13] = ivSpan[0];
+			State[14] = ivSpan[1];
+			State[15] = ivSpan[2];
 		}
 
-		protected override unsafe void SnuffleCore128(uint* state, byte* source, byte* destination)
+		public void SetCounter(uint counter)
 		{
-			ChaCha20Utils.ChaChaCore128(Rounds, state, source, destination);
+			Index = 0;
+			State[12] = counter;
 		}
-
-		protected override unsafe void SnuffleCore256(uint* state, ref byte* source, ref byte* destination, ref int length)
-		{
-			ChaCha20Utils.ChaChaCore256(Rounds, state, ref source, ref destination, ref length);
-		}
-
-		protected override unsafe void SnuffleCore512(uint* state, ref byte* source, ref byte* destination, ref int length)
-		{
-			ChaCha20Utils.ChaChaCore512(Rounds, state, ref source, ref destination, ref length);
-		}
-
-		public abstract void SetIV(ReadOnlySpan<byte> iv);
-		public abstract void SetCounter(uint counter);
 	}
 }

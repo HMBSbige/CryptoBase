@@ -8,8 +8,6 @@ namespace CryptoBase
 {
 	public static class Poly1305Utils
 	{
-		public static bool IsSupportX86 => Sse2.IsSupported;
-
 		public const int KeySize = 32;
 		public const int BlockSize = 16;
 		public const int TagSize = 16;
@@ -17,7 +15,7 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IMac Create(ReadOnlySpan<byte> key)
 		{
-			if (IsSupportX86)
+			if (Sse2.IsSupported)
 			{
 				return new Poly1305X86(key);
 			}

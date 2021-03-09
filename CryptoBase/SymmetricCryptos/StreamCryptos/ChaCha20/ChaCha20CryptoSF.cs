@@ -1,53 +1,21 @@
-using System;
-using System.Runtime.InteropServices;
-
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 {
 	public class ChaCha20CryptoSF : ChaCha20Crypto
 	{
-		public override bool IsSupport => false;
+		public ChaCha20CryptoSF(byte[] key, byte[] iv) : base(key, iv) { }
 
-		public ChaCha20CryptoSF(byte[] key, byte[] iv) : base(key, iv)
+		protected override unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length)
 		{
-			Init();
-			Reset();
 		}
 
-		private void Init()
+		protected override void UpdateKeyStream()
 		{
-			if (Key.Length != 32)
-			{
-				throw new ArgumentException(@"Key length requires 32 bytes");
-			}
-
-			State[0] = Sigma32[0];
-			State[1] = Sigma32[1];
-			State[2] = Sigma32[2];
-			State[3] = Sigma32[3];
-
-			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
-			keySpan.CopyTo(State.AsSpan(4));
-
-			SetIV(Iv.Span);
+			ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
 		}
 
-		public sealed override void Reset()
+		protected override unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
 		{
-			SetCounter(0);
-		}
-
-		public override void SetIV(ReadOnlySpan<byte> iv)
-		{
-			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-			State[13] = ivSpan[0];
-			State[14] = ivSpan[1];
-			State[15] = ivSpan[2];
-		}
-
-		public override void SetCounter(uint counter)
-		{
-			Index = 0;
-			State[12] = counter;
+			IntrinsicsUtils.XorSoftwareFallback(stream, source, destination, length);
 		}
 	}
 }

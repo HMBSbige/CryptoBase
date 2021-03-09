@@ -11,8 +11,6 @@ namespace CryptoBase
 {
 	public static class AESUtils
 	{
-		public static bool IsSupportX86 => System.Runtime.Intrinsics.X86.Aes.IsSupported && Sse2.IsSupported;
-
 		public static readonly Aes AesEcb;
 		public static readonly Aes AesCbc;
 
@@ -30,7 +28,7 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static AESCrypto CreateECB(byte[] key)
 		{
-			if (IsSupportX86)
+			if (System.Runtime.Intrinsics.X86.Aes.IsSupported && Sse2.IsSupported)
 			{
 				return key.Length switch
 				{
@@ -47,7 +45,7 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IBlockCrypto CreateCBC(byte[] key, byte[] iv)
 		{
-			if (IsSupportX86)
+			if (System.Runtime.Intrinsics.X86.Aes.IsSupported && Sse2.IsSupported)
 			{
 				return new CBCBlockMode(CreateECB(key), iv);
 			}
