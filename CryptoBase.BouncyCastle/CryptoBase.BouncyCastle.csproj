@@ -14,7 +14,7 @@
     <RepositoryUrl>https://github.com/HMBSbige/CryptoBase</RepositoryUrl>
     <PackageTags>crypto</PackageTags>
     <Description>BouncyCastle extensions and wrapper for CryptoBase.</Description>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

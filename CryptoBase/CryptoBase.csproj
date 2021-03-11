@@ -15,7 +15,7 @@
     <RepositoryUrl>https://github.com/HMBSbige/CryptoBase</RepositoryUrl>
     <PackageTags>crypto</PackageTags>
     <Description>A fast crypto library for .NET.</Description>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
