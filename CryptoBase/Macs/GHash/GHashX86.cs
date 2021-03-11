@@ -17,7 +17,7 @@ namespace CryptoBase.Macs.GHash
 		private readonly Vector128<byte> _key;
 		private Vector128<byte> _buffer;
 
-		public unsafe GHashX86(byte[] key)
+		public unsafe GHashX86(ReadOnlySpan<byte> key)
 		{
 			if (key.Length < KeySize)
 			{

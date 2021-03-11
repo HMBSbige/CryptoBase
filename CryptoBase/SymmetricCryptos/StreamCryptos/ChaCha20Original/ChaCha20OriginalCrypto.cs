@@ -7,16 +7,16 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 	{
 		public override string Name => @"ChaCha20Original";
 
-		protected ChaCha20OriginalCrypto(byte[] key, byte[] iv) : base(key, iv)
+		protected ChaCha20OriginalCrypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 		{
-			Init();
+			Init(key, iv);
 			Reset();
 		}
 
-		private void Init()
+		private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
-			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
-			var keyLength = Key.Length;
+			var keySpan = MemoryMarshal.Cast<byte, uint>(key);
+			var keyLength = key.Length;
 			switch (keyLength)
 			{
 				case 16:
@@ -54,7 +54,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 			State[6] = keySpan[2];
 			State[7] = keySpan[3];
 
-			var ivSpan = MemoryMarshal.Cast<byte, uint>(Iv.Span);
+			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 			State[14] = ivSpan[0];
 			State[15] = ivSpan[1];
 		}

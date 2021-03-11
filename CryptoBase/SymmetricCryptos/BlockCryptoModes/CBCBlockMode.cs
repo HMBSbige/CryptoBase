@@ -16,7 +16,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 
 		private readonly byte[] _block;
 
-		public CBCBlockMode(IBlockCrypto crypto, byte[] iv)
+		public CBCBlockMode(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 		{
 			if (iv.Length != crypto.BlockSize)
 			{
@@ -24,7 +24,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			}
 
 			InternalBlockCrypto = crypto;
-			Iv = iv;
+			Iv = iv.ToArray();
 
 			_block = ArrayPool<byte>.Shared.Rent(BlockSize);
 

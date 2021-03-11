@@ -75,7 +75,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 
 		#endregion
 
-		public SM4Crypto(byte[] key)
+		public SM4Crypto(ReadOnlySpan<byte> key)
 		{
 			if (key.Length is not 16)
 			{
@@ -84,11 +84,10 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 
 			_rk = ArrayPool<uint>.Shared.Rent(32);
 
-			var span = key.AsSpan();
-			var k0 = BinaryPrimitives.ReadUInt32BigEndian(span) ^ 0xa3b1bac6;
-			var k1 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(4)) ^ 0x56aa3350;
-			var k2 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(8)) ^ 0x677d9197;
-			var k3 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(12)) ^ 0xb27022dc;
+			var k0 = BinaryPrimitives.ReadUInt32BigEndian(key) ^ 0xa3b1bac6;
+			var k1 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(4)) ^ 0x56aa3350;
+			var k2 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(8)) ^ 0x677d9197;
+			var k3 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(12)) ^ 0xb27022dc;
 
 			for (var i = 0; i < 32; i += 4)
 			{

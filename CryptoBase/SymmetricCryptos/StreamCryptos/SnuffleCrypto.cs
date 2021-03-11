@@ -21,17 +21,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 
 		protected readonly uint[] State;
 		protected readonly byte[] KeyStream;
-
-		protected readonly ReadOnlyMemory<byte> Key;
-		protected readonly ReadOnlyMemory<byte> Iv;
-
+		
 		protected int Index;
 
-		protected SnuffleCrypto(byte[] key, byte[] iv) : base(key, iv)
+		protected SnuffleCrypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 		{
-			Key = key;
-			Iv = iv;
-
 			State = ArrayPool<uint>.Shared.Rent(StateSize);
 			KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
 		}

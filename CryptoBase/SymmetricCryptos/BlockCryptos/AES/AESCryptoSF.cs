@@ -169,7 +169,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 
 		private readonly byte _rounds;
 
-		public AESCryptoSF(byte[] key) : base(key)
+		public AESCryptoSF(ReadOnlySpan<byte> key) : base(key)
 		{
 			_rounds = key.Length switch
 			{
@@ -180,14 +180,14 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			};
 
 			_exKey = ArrayPool<byte>.Shared.Rent((_rounds + 1) * BlockSize);
-			Init();
+			Init(key);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void Init()
+		private void Init(ReadOnlySpan<byte> key)
 		{
-			Key.CopyTo(_exKey);
-			var k = Key.Length >> 2;
+			key.CopyTo(_exKey);
+			var k = key.Length >> 2;
 			var count = _rounds + 1 << 2;
 			for (var i = k; i < count; ++i)
 			{

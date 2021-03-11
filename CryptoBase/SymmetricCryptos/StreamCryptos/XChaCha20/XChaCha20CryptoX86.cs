@@ -1,10 +1,11 @@
+using System;
 using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 {
 	public class XChaCha20CryptoX86 : XChaCha20CryptoSF
 	{
-		public XChaCha20CryptoX86(byte[] key, byte[] iv) : base(key, iv) { }
+		public XChaCha20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv) { }
 
 		protected override unsafe void ChaChaRound(uint[] x)
 		{

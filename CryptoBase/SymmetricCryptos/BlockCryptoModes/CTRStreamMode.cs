@@ -23,10 +23,10 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 		private readonly int _blockSize3;
 		private readonly int _blockSize4;
 
-		public CTRStreamMode(IBlockCrypto crypto, byte[] iv)
+		public CTRStreamMode(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 		{
 			InternalBlockCrypto = crypto;
-			Iv = iv;
+			Iv = iv.ToArray();
 
 			_blockSize = InternalBlockCrypto.BlockSize;
 			_blockSize2 = _blockSize << 1;

@@ -1,10 +1,11 @@
+using System;
 using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 {
 	public class ChaCha20OriginalCryptoX86 : ChaCha20OriginalCryptoSF
 	{
-		public ChaCha20OriginalCryptoX86(byte[] key, byte[] iv) : base(key, iv) { }
+		public ChaCha20OriginalCryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv) { }
 
 		protected override unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length)
 		{

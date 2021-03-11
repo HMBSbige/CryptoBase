@@ -25,7 +25,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 
 		private readonly byte[] _buffer;
 
-		public XChaCha20Poly1305Crypto(byte[] key)
+		public XChaCha20Poly1305Crypto(ReadOnlySpan<byte> key)
 		{
 			if (key.Length < KeySize)
 			{

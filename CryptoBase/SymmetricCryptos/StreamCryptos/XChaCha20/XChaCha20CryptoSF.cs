@@ -1,8 +1,10 @@
+using System;
+
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 {
 	public class XChaCha20CryptoSF : XChaCha20Crypto
 	{
-		public XChaCha20CryptoSF(byte[] key, byte[] iv) : base(key, iv) { }
+		public XChaCha20CryptoSF(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv) { }
 
 		protected override void ChaChaRound(uint[] x)
 		{

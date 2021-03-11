@@ -1,3 +1,5 @@
+using System;
+
 namespace CryptoBase.Abstractions.SymmetricCryptos
 {
 	public abstract class SnuffleCryptoBase : StreamCryptoBase
@@ -6,6 +8,6 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 
 		public virtual int IvSize => 8;
 
-		protected SnuffleCryptoBase(byte[] key, byte[] iv) { }
+		protected SnuffleCryptoBase(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) { }
 	}
 }

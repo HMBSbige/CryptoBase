@@ -5,11 +5,13 @@ using System;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 {
-	public class BcRC4Crypto : RC4CryptoBase
+	public class BcRC4Crypto : StreamCryptoBase
 	{
+		public override string Name => @"RC4";
+
 		private readonly RC4Engine _rc4;
 
-		public BcRC4Crypto(byte[] key) : base(key)
+		public BcRC4Crypto(byte[] key)
 		{
 			_rc4 = new RC4Engine();
 			_rc4.Init(default, new KeyParameter(key));

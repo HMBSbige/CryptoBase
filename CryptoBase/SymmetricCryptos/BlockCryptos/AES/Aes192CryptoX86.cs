@@ -11,9 +11,9 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 			_k11, _k12, _k13, _k14, _k15, _k16, _k17, _k18, _k19,
 			_k20, _k21, _k22, _k23;
 
-		public Aes192CryptoX86(byte[] key) : base(key)
+		public Aes192CryptoX86(ReadOnlySpan<byte> key) : base(key)
 		{
-			Init();
+			Init(key);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,12 +51,12 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private unsafe void Init()
+		private unsafe void Init(ReadOnlySpan<byte> key)
 		{
 			Vector128<byte> t0;
 			Vector128<byte> t1;
 
-			fixed (byte* p = Key.Span) // 24
+			fixed (byte* p = key) // 24
 			{
 				t0 = Sse2.LoadVector128(p); // 0,15
 				t1 = Vector128.Create(*(p + 16), *(p + 17), *(p + 18), *(p + 19), *(p + 20), *(p + 21), *(p + 22), *(p + 23), 0, 0, 0, 0, 0, 0, 0, 0);

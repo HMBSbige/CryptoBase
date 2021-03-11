@@ -12,7 +12,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		private readonly byte[] _buffer;
 		private readonly byte[] _outBuffer;
 
-		protected DefaultAESCrypto(byte[] key) : base(key)
+		protected DefaultAESCrypto(ReadOnlySpan<byte> key) : base(key)
 		{
 			_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
 			_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);

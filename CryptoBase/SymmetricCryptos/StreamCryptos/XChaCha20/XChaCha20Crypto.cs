@@ -9,20 +9,19 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 
 		public override int IvSize => 24;
 
-		protected XChaCha20Crypto(byte[] key, byte[] iv) : base(key, iv)
-		{
-			Init();
-			Reset();
-		}
+		private readonly ReadOnlyMemory<byte> Key;
 
-		private void Init()
+		protected XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 		{
-			if (Key.Length != 32)
+			if (key.Length != 32)
 			{
 				throw new ArgumentException(@"Key length requires 32 bytes");
 			}
 
-			SetIV(Iv.Span);
+			Key = key.ToArray();
+
+			SetIV(iv);
+			Reset();
 		}
 
 		public sealed override void Reset()

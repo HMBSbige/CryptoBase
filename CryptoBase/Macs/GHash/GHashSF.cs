@@ -27,16 +27,18 @@ namespace CryptoBase.Macs.GHash
 		private readonly ulong[] _hl;
 		private readonly byte[] _buffer;
 
-		private readonly ReadOnlyMemory<byte> _key;
+		private readonly ulong Initvh;
+		private readonly ulong Initvl;
 
-		public GHashSF(byte[] key)
+		public GHashSF(ReadOnlySpan<byte> key)
 		{
 			if (key.Length < KeySize)
 			{
 				throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
 			}
 
-			_key = key;
+			Initvh = BinaryPrimitives.ReadUInt64BigEndian(key);
+			Initvl = BinaryPrimitives.ReadUInt64BigEndian(key.Slice(8));
 
 			_hl = ArrayPool<ulong>.Shared.Rent(BlockSize);
 			_hh = ArrayPool<ulong>.Shared.Rent(BlockSize);
@@ -115,8 +117,8 @@ namespace CryptoBase.Macs.GHash
 		{
 			CryptographicOperations.ZeroMemory(_buffer.AsSpan(0, BlockSize));
 
-			var vh = BinaryPrimitives.ReadUInt64BigEndian(_key.Span);
-			var vl = BinaryPrimitives.ReadUInt64BigEndian(_key.Span.Slice(8));
+			var vh = Initvh;
+			var vl = Initvl;
 
 			_hl[8] = vl;
 			_hh[8] = vh;

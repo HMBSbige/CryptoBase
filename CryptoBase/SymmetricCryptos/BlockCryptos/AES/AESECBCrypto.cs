@@ -1,3 +1,4 @@
+using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
@@ -7,10 +8,10 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		protected override ICryptoTransform Encryptor { get; }
 		protected override ICryptoTransform Decryptor { get; }
 
-		public AESECBCrypto(byte[] key) : base(key)
+		public AESECBCrypto(ReadOnlySpan<byte> key) : base(key)
 		{
-			Encryptor = AESUtils.AesEcb.CreateEncryptor(key, null);
-			Decryptor = AESUtils.AesEcb.CreateDecryptor(key, null);
+			Encryptor = AESUtils.AesEcb.CreateEncryptor(key.ToArray(), null);
+			Decryptor = AESUtils.AesEcb.CreateDecryptor(key.ToArray(), null);
 		}
 	}
 }

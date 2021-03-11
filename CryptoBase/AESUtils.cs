@@ -26,7 +26,7 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static AESCrypto CreateECB(byte[] key)
+		public static AESCrypto CreateECB(ReadOnlySpan<byte> key)
 		{
 			if (System.Runtime.Intrinsics.X86.Aes.IsSupported && Sse2.IsSupported)
 			{
@@ -43,7 +43,7 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static IBlockCrypto CreateCBC(byte[] key, byte[] iv)
+		public static IBlockCrypto CreateCBC(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
 			if (System.Runtime.Intrinsics.X86.Aes.IsSupported && Sse2.IsSupported)
 			{

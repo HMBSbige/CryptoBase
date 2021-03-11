@@ -22,7 +22,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 
 		private const int BlockSize = 16;
 
-		public CFB128StreamMode(bool isEncrypt, IBlockCrypto crypto, byte[] iv)
+		public CFB128StreamMode(bool isEncrypt, IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 		{
 			if (crypto.BlockSize is not 16)
 			{
@@ -36,7 +36,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 
 			_isEncrypt = isEncrypt;
 			InternalBlockCrypto = crypto;
-			Iv = iv;
+			Iv = iv.ToArray();
 
 			_block = ArrayPool<byte>.Shared.Rent(BlockSize);
 			_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize);

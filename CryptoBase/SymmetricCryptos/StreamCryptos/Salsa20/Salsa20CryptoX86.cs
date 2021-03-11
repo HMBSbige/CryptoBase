@@ -6,16 +6,16 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 {
 	public class Salsa20CryptoX86 : Salsa20Crypto
 	{
-		public Salsa20CryptoX86(byte[] key, byte[] iv) : base(key, iv)
+		public Salsa20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 		{
-			Init();
+			Init(key, iv);
 			Reset();
 		}
 
-		private void Init()
+		private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
-			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
-			var keyLength = Key.Length;
+			var keySpan = MemoryMarshal.Cast<byte, uint>(key);
+			var keyLength = key.Length;
 			switch (keyLength)
 			{
 				case 16:
@@ -53,7 +53,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 			State[3] = keySpan[2];
 			State[4] = keySpan[3];
 
-			var ivSpan = MemoryMarshal.Cast<byte, uint>(Iv.Span);
+			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 			State[6] = ivSpan[0];
 			State[7] = ivSpan[1];
 		}

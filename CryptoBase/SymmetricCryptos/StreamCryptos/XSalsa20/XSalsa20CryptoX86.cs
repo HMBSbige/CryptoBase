@@ -10,15 +10,15 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 
 		public override int IvSize => 24;
 
-		public XSalsa20CryptoX86(byte[] key, byte[] iv) : base(key, iv)
+		public XSalsa20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 		{
-			Init();
+			Init(key, iv);
 			Reset();
 		}
 
-		private void Init()
+		private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
-			if (Key.Length != 32)
+			if (key.Length != 32)
 			{
 				throw new ArgumentException(@"Key length requires 32 bytes");
 			}
@@ -30,11 +30,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			State[10] = Sigma32[2];
 			State[15] = Sigma32[3];
 
-			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
+			var keySpan = MemoryMarshal.Cast<byte, uint>(key);
 			keySpan.Slice(0, 4).CopyTo(span.Slice(1));
 			keySpan.Slice(4).CopyTo(span.Slice(11));
 
-			var ivSpan = MemoryMarshal.Cast<byte, uint>(Iv.Span);
+			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 			ivSpan.Slice(0, 4).CopyTo(span.Slice(6));
 
 			SalsaRound(State);

@@ -9,15 +9,15 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 
 		public override int IvSize => 12;
 
-		protected ChaCha20Crypto(byte[] key, byte[] iv) : base(key, iv)
+		protected ChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 		{
-			Init();
+			Init(key, iv);
 			Reset();
 		}
 
-		private void Init()
+		private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
-			if (Key.Length != 32)
+			if (key.Length != 32)
 			{
 				throw new ArgumentException(@"Key length requires 32 bytes");
 			}
@@ -27,10 +27,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 			State[2] = Sigma32[2];
 			State[3] = Sigma32[3];
 
-			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
+			var keySpan = MemoryMarshal.Cast<byte, uint>(key);
 			keySpan.CopyTo(State.AsSpan(4));
 
-			SetIV(Iv.Span);
+			SetIV(iv);
 		}
 
 		public sealed override void Reset()
