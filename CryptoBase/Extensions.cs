@@ -106,7 +106,12 @@ namespace CryptoBase
 
 		public static string ToHex(this in Span<byte> bytes)
 		{
-			Span<char> c = stackalloc char[bytes.Length << 1];
+			var length = bytes.Length << 1;
+			Span<char> c = length switch
+			{
+				< 3 * 1024 / sizeof(char) => stackalloc char[length],
+				_ => GC.AllocateUninitializedArray<char>(length)
+			};
 
 			var i = 0;
 			var j = 0;
