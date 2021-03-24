@@ -1,5 +1,6 @@
 using CryptoBase;
 using CryptoBase.Abstractions.Digests;
+using CryptoBase.Abstractions.SymmetricCryptos;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
@@ -83,5 +84,35 @@ namespace UnitTest
 
 			Assert.AreEqual(result, outBuffer.ToHex());
 		}
+
+		public static void AEADTest(this IAEADCrypto crypto,
+			string nonceHex, string associatedDataHex, string tagHex,
+			string plainHex, string cipherHex)
+		{
+			ReadOnlySpan<byte> nonce = nonceHex.FromHex();
+			ReadOnlySpan<byte> associatedData = associatedDataHex.FromHex();
+			ReadOnlySpan<byte> tag = tagHex.FromHex();
+			ReadOnlySpan<byte> plain = plainHex.FromHex();
+			ReadOnlySpan<byte> cipher = cipherHex.FromHex();
+			Span<byte> o1 = stackalloc byte[plain.Length];
+			Span<byte> o2 = stackalloc byte[tag.Length];
+
+			crypto.Encrypt(nonce, plain, o1, o2, associatedData);
+			Assert.IsTrue(o1.SequenceEqual(cipher));
+			Assert.IsTrue(o2.SequenceEqual(tag));
+
+			crypto.Encrypt(nonce, plain, o1, o2, associatedData);
+			Assert.IsTrue(o1.SequenceEqual(cipher));
+			Assert.IsTrue(o2.SequenceEqual(tag));
+
+			crypto.Decrypt(nonce, cipher, tag, o1, associatedData);
+			Assert.IsTrue(o1.SequenceEqual(plain));
+
+			crypto.Decrypt(nonce, cipher, tag, o1, associatedData);
+			Assert.IsTrue(o1.SequenceEqual(plain));
+
+			crypto.Dispose();
+		}
+
 	}
 }
