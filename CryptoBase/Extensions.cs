@@ -142,5 +142,44 @@ namespace CryptoBase
 		{
 			return BitOperations.RotateLeft(value, offset);
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int GetDeterministicHashCode(this string str)
+		{
+			unchecked
+			{
+				var hash1 = (5381 << 16) + 5381;
+				var hash2 = hash1;
+
+				for (var i = 0; i < str.Length; i += 2)
+				{
+					hash1 = ((hash1 << 5) + hash1) ^ str[i];
+					if (i == str.Length - 1)
+					{
+						break;
+					}
+
+					hash2 = ((hash2 << 5) + hash2) ^ str[i + 1];
+				}
+
+				return hash1 + hash2 * 1566083941;
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int GetDeterministicHashCode<T>(this ReadOnlySpan<T> span) where T : notnull
+		{
+			unchecked
+			{
+				var hash = 5381;
+
+				foreach (var t in span)
+				{
+					hash = ((hash << 5) + hash) ^ t.GetHashCode();
+				}
+
+				return hash;
+			}
+		}
 	}
 }
