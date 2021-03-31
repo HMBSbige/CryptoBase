@@ -144,7 +144,7 @@ namespace CryptoBase
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static int GetDeterministicHashCode(this string str)
+		public static int GetClassicHashCode(this string str)
 		{
 			unchecked
 			{
@@ -164,6 +164,12 @@ namespace CryptoBase
 
 				return hash1 + hash2 * 1566083941;
 			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int GetDeterministicHashCode(this string str)
+		{
+			return str.AsSpan().GetDeterministicHashCode();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
