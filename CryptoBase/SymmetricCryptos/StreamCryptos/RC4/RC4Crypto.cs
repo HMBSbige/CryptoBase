@@ -48,13 +48,8 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		{
 			x = x + 1 & 0xFF;
 			y = stateSpan[x] + y & 0xFF;
-
-			var x0 = stateSpan[x];
-			var y0 = stateSpan[y];
-			stateSpan[x] = y0;
-			stateSpan[y] = x0;
-
-			return stateSpan[(byte)(x0 + y0)];
+			Utils.Swap(ref stateSpan[x], ref stateSpan[y]);
+			return stateSpan[stateSpan[x] + stateSpan[y] & 0xFF];
 		}
 
 		public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
