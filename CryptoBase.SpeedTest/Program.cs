@@ -41,7 +41,7 @@ CryptoTest.Test(StreamCryptoCreate.Salsa20(key32, iv16));
 Console.Write(@"Testing XSalsa20: ");
 CryptoTest.Test(StreamCryptoCreate.XSalsa20(key32, iv24));
 
-Console.Write(@"Testing AES-GCM: ");
+Console.Write(@"Testing AES-128-GCM: ");
 CryptoTest.Test(AEADCryptoCreate.AesGcm(key16));
 Console.Write(@"Testing SM4-GCM: ");
 CryptoTest.Test(AEADCryptoCreate.Sm4Gcm(key16));

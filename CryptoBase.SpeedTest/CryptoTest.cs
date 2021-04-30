@@ -22,7 +22,7 @@ namespace CryptoBase.SpeedTest
 			24, 25, 26, 27, 28, 29, 30, 31
 		};
 
-		private const int Step = 1 * 1024 * 1024; // 1 MB
+		private const int Step = 4 * 1024; // 4 KB
 
 		public static void Test(IStreamCrypto crypto)
 		{
