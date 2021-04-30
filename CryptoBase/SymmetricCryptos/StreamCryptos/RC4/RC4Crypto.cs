@@ -66,7 +66,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		private unsafe void Update(byte* source, byte* destination, int length)
 		{
 			var stateSpan = _state.AsSpan();
-			var v32 = stackalloc byte[32];
+			var temp = stackalloc byte[32];
 
 			if (Avx.IsSupported && Avx2.IsSupported)
 			{
@@ -74,10 +74,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 				{
 					for (var i = 0; i < 32; ++i)
 					{
-						*(v32 + i) = GetByte(stateSpan);
+						*(temp + i) = GetByte(stateSpan);
 					}
 
-					var v0 = Avx.LoadVector256(v32);
+					var v0 = Avx.LoadVector256(temp);
 					var v1 = Avx.LoadVector256(source);
 					Avx.Store(destination, Avx2.Xor(v0, v1));
 
@@ -93,10 +93,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 				{
 					for (var i = 0; i < 16; ++i)
 					{
-						*(v32 + i) = GetByte(stateSpan);
+						*(temp + i) = GetByte(stateSpan);
 					}
 
-					var v0 = Sse2.LoadVector128(v32);
+					var v0 = Sse2.LoadVector128(temp);
 					var v1 = Sse2.LoadVector128(source);
 					Sse2.Store(destination, Sse2.Xor(v0, v1));
 

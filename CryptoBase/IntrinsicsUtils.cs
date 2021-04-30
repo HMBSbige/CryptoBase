@@ -15,6 +15,9 @@ namespace CryptoBase
 		private static readonly Vector128<byte> Reverse_128 = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
 		private static readonly Vector256<byte> Reverse32_256 = Vector256.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28);
 
+		/// <summary>
+		/// But AMD is slow...
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static uint AndNot(uint left, uint right)
 		{
@@ -115,7 +118,7 @@ namespace CryptoBase
 				}
 			}
 
-			XorSoftwareFallback(stream, source, destination, length);
+			FastUtils.Xor(stream, source, destination, length);
 		}
 
 		/// <summary>
@@ -132,28 +135,7 @@ namespace CryptoBase
 			}
 			else
 			{
-				for (var i = 0; i < 16; ++i)
-				{
-					*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
-					++i;
-					*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
-					++i;
-					*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
-					++i;
-					*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
-				}
-			}
-		}
-
-		/// <summary>
-		/// destination = source ^ stream
-		/// </summary>
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static unsafe void XorSoftwareFallback(byte* stream, byte* source, byte* destination, int length)
-		{
-			for (var i = 0; i < length; ++i)
-			{
-				*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
+				FastUtils.Xor16(stream, source, destination);
 			}
 		}
 

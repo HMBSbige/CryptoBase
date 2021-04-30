@@ -15,7 +15,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 
 		protected override unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
 		{
-			IntrinsicsUtils.XorSoftwareFallback(stream, source, destination, length);
+			FastUtils.Xor(stream, source, destination, length);
 		}
 	}
 }
