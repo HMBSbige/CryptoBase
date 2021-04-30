@@ -20,38 +20,5 @@ namespace CryptoBase
 			a = b;
 			b = t;
 		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static unsafe void FastCopy(byte* source, byte* destination, int count)
-		{
-			while (count >= 8)
-			{
-				*(ulong*)destination = *(ulong*)source;
-				destination += 8;
-				source += 8;
-				count -= 8;
-			}
-
-			if (count >= 4)
-			{
-				*(uint*)destination = *(uint*)source;
-				destination += 4;
-				source += 4;
-				count -= 4;
-			}
-
-			if (count >= 2)
-			{
-				*(ushort*)destination = *(ushort*)source;
-				destination += 2;
-				source += 2;
-				count -= 2;
-			}
-
-			if (count >= 1)
-			{
-				*destination = *source;
-			}
-		}
 	}
 }

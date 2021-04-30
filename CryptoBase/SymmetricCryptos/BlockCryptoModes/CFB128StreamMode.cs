@@ -77,7 +77,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 
 				fixed (byte* block = _block)
 				{
-					Utils.FastCopy(_isEncrypt ? destination : source, block + _index, len);
+					FastUtils.Copy(_isEncrypt ? destination : source, block + _index, len);
 				}
 
 				if (length < r)

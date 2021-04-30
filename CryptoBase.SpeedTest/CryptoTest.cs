@@ -36,7 +36,7 @@ namespace CryptoBase.SpeedTest
 			{
 				crypto.Update(i, o);
 				++length;
-			} while (sw.ElapsedMilliseconds < 2000);
+			} while (sw.ElapsedMilliseconds < 3000);
 
 			sw.Stop();
 			crypto.Dispose();

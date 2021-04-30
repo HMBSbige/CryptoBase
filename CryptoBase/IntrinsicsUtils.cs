@@ -85,7 +85,7 @@ namespace CryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
 		{
-			if (Avx.IsSupported)
+			if (Avx.IsSupported && Avx2.IsSupported)
 			{
 				while (length >= 32)
 				{

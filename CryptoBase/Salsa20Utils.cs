@@ -139,7 +139,7 @@ namespace CryptoBase
 				Shuffle(ref x0, ref x2, ref x3);
 			}
 
-			if (Avx.IsSupported)
+			if (Avx.IsSupported && Avx2.IsSupported)
 			{
 				Shuffle(ref x0, ref x1, ref x2, ref x3, out var a, out var b);
 

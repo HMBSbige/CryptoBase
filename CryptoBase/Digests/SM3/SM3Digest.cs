@@ -182,7 +182,7 @@ namespace CryptoBase.Digests.SM3
 
 				Process();
 
-				if (Avx.IsSupported)
+				if (Avx.IsSupported && Avx2.IsSupported)
 				{
 					var v = V.ReverseEndianness32();
 					fixed (byte* p = destination)

@@ -1,6 +1,8 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 {
@@ -41,17 +43,72 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 			Init();
 		}
 
-		public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private byte GetByte(Span<byte> stateSpan)
+		{
+			x = x + 1 & 0xFF;
+			y = stateSpan[x] + y & 0xFF;
+			Utils.Swap(ref stateSpan[x], ref stateSpan[y]);
+			return stateSpan[stateSpan[x] + stateSpan[y] & 0xFF];
+		}
+
+		public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			base.Update(source, destination);
 
-			for (var i = 0; i < source.Length; ++i)
+			fixed (byte* pSource = source)
+			fixed (byte* pDestination = destination)
 			{
-				x = x + 1 & 0xFF;
-				y = _state[x] + y & 0xFF;
+				Update(pSource, pDestination, source.Length);
+			}
+		}
 
-				Utils.Swap(ref _state[x], ref _state[y]);
-				destination[i] = (byte)(source[i] ^ _state[_state[x] + _state[y] & 0xFF]);
+		private unsafe void Update(byte* source, byte* destination, int length)
+		{
+			var stateSpan = _state.AsSpan();
+			var v32 = stackalloc byte[32];
+
+			if (Avx.IsSupported && Avx2.IsSupported)
+			{
+				while (length >= 32)
+				{
+					for (var i = 0; i < 32; ++i)
+					{
+						*(v32 + i) = GetByte(stateSpan);
+					}
+
+					var v0 = Avx.LoadVector256(v32);
+					var v1 = Avx.LoadVector256(source);
+					Avx.Store(destination, Avx2.Xor(v0, v1));
+
+					source += 32;
+					destination += 32;
+					length -= 32;
+				}
+			}
+
+			if (Sse2.IsSupported)
+			{
+				while (length >= 16)
+				{
+					for (var i = 0; i < 16; ++i)
+					{
+						*(v32 + i) = GetByte(stateSpan);
+					}
+
+					var v0 = Sse2.LoadVector128(v32);
+					var v1 = Sse2.LoadVector128(source);
+					Sse2.Store(destination, Sse2.Xor(v0, v1));
+
+					source += 16;
+					destination += 16;
+					length -= 16;
+				}
+			}
+
+			for (var i = 0; i < length; ++i)
+			{
+				*(destination + i) = (byte)(*(source + i) ^ GetByte(stateSpan));
 			}
 		}
 
@@ -60,13 +117,16 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 			x = default;
 			y = default;
 
-			S.CopyTo(_state);
+			var stateSpan = _state.AsSpan();
+			var keySpan = _key.AsSpan();
+
+			S.CopyTo(stateSpan);
 
 			var j = 0;
 			for (var i = 0; i < BoxLength; ++i)
 			{
-				j = _key[i % _key.Length] + _state[i] + j & 0xFF;
-				Utils.Swap(ref _state[i], ref _state[j]);
+				j = keySpan[i % _key.Length] + stateSpan[i] + j & 0xFF;
+				Utils.Swap(ref stateSpan[i], ref stateSpan[j]);
 			}
 		}
 
