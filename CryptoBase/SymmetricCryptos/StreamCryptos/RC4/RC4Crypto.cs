@@ -48,8 +48,13 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		{
 			x = x + 1 & 0xFF;
 			y = stateSpan[x] + y & 0xFF;
-			Utils.Swap(ref stateSpan[x], ref stateSpan[y]);
-			return stateSpan[stateSpan[x] + stateSpan[y] & 0xFF];
+
+			var x0 = stateSpan[x];
+			var y0 = stateSpan[y];
+			stateSpan[x] = y0;
+			stateSpan[y] = x0;
+
+			return stateSpan[(byte)(x0 + y0)];
 		}
 
 		public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -66,7 +71,6 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		private unsafe void Update(byte* source, byte* destination, int length)
 		{
 			var stateSpan = _state.AsSpan();
-			var temp = stackalloc byte[32];
 
 			if (Avx.IsSupported && Avx2.IsSupported)
 			{
@@ -74,10 +78,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 				{
 					for (var i = 0; i < 32; ++i)
 					{
-						*(temp + i) = GetByte(stateSpan);
+						*(destination + i) = GetByte(stateSpan);
 					}
 
-					var v0 = Avx.LoadVector256(temp);
+					var v0 = Avx.LoadVector256(destination);
 					var v1 = Avx.LoadVector256(source);
 					Avx.Store(destination, Avx2.Xor(v0, v1));
 
@@ -93,10 +97,10 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 				{
 					for (var i = 0; i < 16; ++i)
 					{
-						*(temp + i) = GetByte(stateSpan);
+						*(destination + i) = GetByte(stateSpan);
 					}
 
-					var v0 = Sse2.LoadVector128(temp);
+					var v0 = Sse2.LoadVector128(destination);
 					var v1 = Sse2.LoadVector128(source);
 					Sse2.Store(destination, Sse2.Xor(v0, v1));
 
