@@ -23,6 +23,7 @@ namespace CryptoBase.SpeedTest
 		};
 
 		private const int Step = 4 * 1024; // 4 KB
+		private const int Duration = 3 * 1000; // 3s
 
 		public static void Test(IStreamCrypto crypto)
 		{
@@ -36,7 +37,7 @@ namespace CryptoBase.SpeedTest
 			{
 				crypto.Update(i, o);
 				++length;
-			} while (sw.ElapsedMilliseconds < 3000);
+			} while (sw.ElapsedMilliseconds < Duration);
 
 			sw.Stop();
 			crypto.Dispose();
@@ -59,7 +60,7 @@ namespace CryptoBase.SpeedTest
 			{
 				crypto.Encrypt(nonce, i, o, tag);
 				++length;
-			} while (sw.ElapsedMilliseconds < 2000);
+			} while (sw.ElapsedMilliseconds < Duration);
 
 			sw.Stop();
 			crypto.Dispose();
