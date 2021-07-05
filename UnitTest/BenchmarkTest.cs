@@ -126,5 +126,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<Poly1305Benchmark>();
 		}
+
+		[TestMethod]
+		public void HexExtensionsBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<HexExtensionsBenchmark>();
+		}
 	}
 }
