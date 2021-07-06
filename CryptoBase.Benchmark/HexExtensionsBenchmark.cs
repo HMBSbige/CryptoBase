@@ -20,7 +20,17 @@ namespace CryptoBase.Benchmark
 			Span<byte> span = Encoding.UTF8.GetBytes(RawStr);
 			for (var i = 0; i < Max; ++i)
 			{
-				span.ToHex();
+				_ = span.ToHex();
+			}
+		}
+
+		[Benchmark]
+		public void ToHex_NET5()
+		{
+			Span<byte> span = Encoding.UTF8.GetBytes(RawStr);
+			for (var i = 0; i < Max; ++i)
+			{
+				_ = span.ToHexString().ToLower();
 			}
 		}
 
@@ -29,7 +39,16 @@ namespace CryptoBase.Benchmark
 		{
 			for (var i = 0; i < Max; ++i)
 			{
-				RawHex.FromHex();
+				_ = RawHex.FromHex();
+			}
+		}
+
+		[Benchmark]
+		public void FromHex_NET5()
+		{
+			for (var i = 0; i < Max; ++i)
+			{
+				_ = Convert.FromHexString(RawHex);
 			}
 		}
 	}
