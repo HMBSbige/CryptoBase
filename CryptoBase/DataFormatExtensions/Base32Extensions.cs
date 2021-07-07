@@ -16,12 +16,13 @@ namespace CryptoBase.DataFormatExtensions
 		private static int[] BuildTable()
 		{
 			var res = new int[sbyte.MaxValue];
-			Array.Fill(res, -1);
+			var span = res.AsSpan();
+			span.Fill(-1);
 
 			var i = 0;
 			foreach (var c in Alphabet)
 			{
-				res[c] = i++;
+				span[c] = i++;
 			}
 
 			return res;
