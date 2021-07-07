@@ -21,7 +21,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 
 		protected readonly uint[] State;
 		protected readonly byte[] KeyStream;
-		
+
 		protected int Index;
 
 		protected SnuffleCrypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
