@@ -132,5 +132,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<HexExtensionsBenchmark>();
 		}
+
+		[TestMethod]
+		public void Base32Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<Base32Benchmark>();
+		}
 	}
 }

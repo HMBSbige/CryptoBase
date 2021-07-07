@@ -44,6 +44,10 @@ namespace CryptoBase.Benchmark
 		[Benchmark(Baseline = true)]
 		public void Fast440()
 		{
+			if (_randombytes.Length > 55)
+			{
+				return;
+			}
 			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
 			MD5Utils.Fast440(_randombytes.Span, hash);
 		}

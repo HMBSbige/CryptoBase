@@ -1,7 +1,6 @@
 using CryptoBase;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace UnitTest
@@ -32,11 +31,10 @@ namespace UnitTest
 		[TestMethod]
 		public void LargeInputTest()
 		{
-			Span<byte> span = new byte[10 * 1024 * 1024];
-			RandomNumberGenerator.Fill(span);
-
-			var hex = span.ToHex();
-			hex.FromHex();
+			var expected = Utils.RandBytes(10 * 1024 * 1024);
+			var hex = expected.ToHex();
+			Span<byte> actual = hex.FromHex();
+			Assert.IsTrue(actual.SequenceEqual(expected));
 		}
 	}
 }
