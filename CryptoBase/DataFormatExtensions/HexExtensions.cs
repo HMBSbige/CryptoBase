@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
+// ReSharper disable CheckNamespace
 namespace CryptoBase
 {
 	public static class HexExtensions
