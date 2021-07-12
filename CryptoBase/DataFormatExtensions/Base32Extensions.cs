@@ -34,38 +34,9 @@ namespace CryptoBase.DataFormatExtensions
 
 		#endregion
 
-		public static byte[] FromBase32String(this ReadOnlySpan<char> encoded)
+		public static string ToBase32String(this Span<byte> data)
 		{
-			encoded = encoded.TrimEnd(PaddingChar);
-			if (encoded.IsEmpty)
-			{
-				return Array.Empty<byte>();
-			}
-
-			var outLength = encoded.Length * Shift >> 3;
-			var result = new byte[outLength];
-			var buffer = 0;
-			var i = 0;
-			var bitsLeft = 0;
-			foreach (var c in encoded)
-			{
-				var value = Table[c];
-				if (value < 0)
-				{
-					throw new FormatException($@"Illegal character: '{c}'");
-				}
-
-				buffer <<= Shift;
-				buffer |= value;
-				bitsLeft += Shift;
-				if (bitsLeft >= BitsPerByte)
-				{
-					bitsLeft -= BitsPerByte;
-					result[i++] = (byte)(buffer >> bitsLeft);
-				}
-			}
-
-			return result;
+			return ((ReadOnlySpan<byte>)data).ToBase32String();
 		}
 
 		public static string ToBase32String(this ReadOnlySpan<byte> data)
@@ -115,6 +86,45 @@ namespace CryptoBase.DataFormatExtensions
 			for (; i < outLength; ++i)
 			{
 				Unsafe.Add(ref firstCh, i) = PaddingChar;
+			}
+
+			return result;
+		}
+
+		public static byte[] FromBase32String(this string encoded)
+		{
+			return encoded.AsSpan().FromBase32String();
+		}
+
+		public static byte[] FromBase32String(this ReadOnlySpan<char> encoded)
+		{
+			encoded = encoded.TrimEnd(PaddingChar);
+			if (encoded.IsEmpty)
+			{
+				return Array.Empty<byte>();
+			}
+
+			var outLength = encoded.Length * Shift >> 3;
+			var result = new byte[outLength];
+			var buffer = 0;
+			var i = 0;
+			var bitsLeft = 0;
+			foreach (var c in encoded)
+			{
+				var value = Table[c];
+				if (value < 0)
+				{
+					throw new FormatException($@"Illegal character: '{c}'");
+				}
+
+				buffer <<= Shift;
+				buffer |= value;
+				bitsLeft += Shift;
+				if (bitsLeft >= BitsPerByte)
+				{
+					bitsLeft -= BitsPerByte;
+					result[i++] = (byte)(buffer >> bitsLeft);
+				}
 			}
 
 			return result;
