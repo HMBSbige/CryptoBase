@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase
 {
@@ -17,6 +18,7 @@ namespace CryptoBase
 		/// <summary>
 		/// Converts a span of 8-bit unsigned integers to its equivalent string representation that is encoded with lowercase hex characters.
 		/// </summary>
+		[SkipLocalsInit]
 		public static string ToHex(this ReadOnlySpan<byte> bytes)
 		{
 			var length = bytes.Length << 1;
