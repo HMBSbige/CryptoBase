@@ -14,8 +14,9 @@ namespace UnitTest
 	{
 		private static void SHA512DigestTest(IHash sha512, string str, string sha512Str)
 		{
-			Assert.AreEqual(@"SHA512", sha512.Name);
+			Assert.AreEqual(@"SHA-512", sha512.Name);
 			Assert.AreEqual(64, sha512.Length);
+			Assert.AreEqual(128, sha512.BlockSize);
 
 			Span<byte> origin = Encoding.UTF8.GetBytes(str);
 			Span<byte> hash = stackalloc byte[sha512.Length];

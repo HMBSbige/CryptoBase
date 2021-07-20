@@ -9,6 +9,8 @@ namespace CryptoBase.BouncyCastle.Digests
 
 		public override int Length => HashConstants.Md5Length;
 
+		public override int BlockSize => HashConstants.Md5BlockSize;
+
 		public BcMD5Digest() : base(new MD5Digest())
 		{
 		}

@@ -14,8 +14,9 @@ namespace UnitTest
 	{
 		private static void SHA256DigestTest(IHash sha256, string str, string sha256Str)
 		{
-			Assert.AreEqual(@"SHA256", sha256.Name);
+			Assert.AreEqual(@"SHA-256", sha256.Name);
 			Assert.AreEqual(32, sha256.Length);
+			Assert.AreEqual(64, sha256.BlockSize);
 
 			Span<byte> origin = Encoding.UTF8.GetBytes(str);
 			Span<byte> hash = stackalloc byte[sha256.Length];

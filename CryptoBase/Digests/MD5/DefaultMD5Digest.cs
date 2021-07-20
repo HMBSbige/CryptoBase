@@ -8,6 +8,8 @@ namespace CryptoBase.Digests.MD5
 
 		public override int Length => HashConstants.Md5Length;
 
+		public override int BlockSize => HashConstants.Md5BlockSize;
+
 		public DefaultMD5Digest() : base(System.Security.Cryptography.MD5.Create())
 		{
 		}

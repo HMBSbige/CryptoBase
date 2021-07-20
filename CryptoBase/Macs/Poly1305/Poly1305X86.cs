@@ -12,11 +12,12 @@ namespace CryptoBase.Macs.Poly1305
 	{
 		public string Name => @"Poly1305";
 
+		public int Length => 16;
+
 		public const int KeySize = 32;
 		public const int BlockSize = 16;
 		public const int BlockSize2 = BlockSize * 2;
 		public const int BlockSize4 = BlockSize * 4;
-		public const int TagSize = 16;
 
 		private static readonly Vector128<uint> And128 = Vector128.Create(0x3ffffff, 0, 0x3ffffff, 0).AsUInt32();
 		private static readonly Vector128<uint> Or128 = Vector128.Create(0x01000000, 0, 0x01000000, 0).AsUInt32();

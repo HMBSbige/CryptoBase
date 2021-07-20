@@ -11,9 +11,10 @@ namespace CryptoBase.Macs.GHash
 	{
 		public string Name => @"GHash";
 
+		public int Length => 16;
+
 		public const int KeySize = 16;
 		public const int BlockSize = 16;
-		public const int TagSize = 16;
 
 		private static readonly ulong[] Last4 =
 		{
@@ -108,7 +109,7 @@ namespace CryptoBase.Macs.GHash
 
 		public void GetMac(Span<byte> destination)
 		{
-			_buffer.AsSpan(0, TagSize).CopyTo(destination);
+			_buffer.AsSpan(0, Length).CopyTo(destination);
 
 			Reset();
 		}

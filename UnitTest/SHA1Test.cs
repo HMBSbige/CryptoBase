@@ -16,6 +16,7 @@ namespace UnitTest
 		{
 			Assert.AreEqual(@"SHA-1", sha1.Name);
 			Assert.AreEqual(20, sha1.Length);
+			Assert.AreEqual(64, sha1.BlockSize);
 
 			Span<byte> origin = Encoding.UTF8.GetBytes(str);
 			Span<byte> hash = stackalloc byte[sha1.Length];

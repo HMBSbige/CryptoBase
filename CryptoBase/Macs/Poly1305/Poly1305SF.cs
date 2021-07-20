@@ -9,9 +9,10 @@ namespace CryptoBase.Macs.Poly1305
 	{
 		public string Name => @"Poly1305";
 
+		public int Length => 16;
+
 		public const int KeySize = 32;
 		public const int BlockSize = 16;
-		public const int TagSize = 16;
 
 		private readonly uint _r0, _r1, _r2, _r3, _r4;
 		private readonly uint _s1, _s2, _s3, _s4;

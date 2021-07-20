@@ -10,9 +10,10 @@ namespace CryptoBase.Macs.GHash
 	{
 		public string Name => @"GHash";
 
+		public int Length => 16;
+
 		public const int KeySize = 16;
 		public const int BlockSize = 16;
-		public const int TagSize = 16;
 
 		private readonly Vector128<byte> _key;
 		private Vector128<byte> _buffer;

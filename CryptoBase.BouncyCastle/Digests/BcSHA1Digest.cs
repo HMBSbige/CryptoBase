@@ -9,6 +9,8 @@ namespace CryptoBase.BouncyCastle.Digests
 
 		public override int Length => HashConstants.Sha1Length;
 
+		public override int BlockSize => HashConstants.Sha1BlockSize;
+
 		public BcSHA1Digest() : base(new Sha1Digest())
 		{
 		}

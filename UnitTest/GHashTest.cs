@@ -13,9 +13,10 @@ namespace UnitTest
 		{
 			Span<byte> plain = plainHex.FromHex();
 			Span<byte> cipher = cipherHex.FromHex();
-			Span<byte> o = stackalloc byte[16];
+			Span<byte> o = stackalloc byte[mac.Length];
 
 			Assert.AreEqual(@"GHash", mac.Name);
+			Assert.AreEqual(16, mac.Length);
 
 			mac.Update(plain);
 			mac.GetMac(o);

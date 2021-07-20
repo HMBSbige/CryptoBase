@@ -16,6 +16,7 @@ namespace UnitTest
 		{
 			Assert.AreEqual(@"SM3", sm3.Name);
 			Assert.AreEqual(32, sm3.Length);
+			Assert.AreEqual(64, sm3.BlockSize);
 
 			Span<byte> origin = Encoding.UTF8.GetBytes(str);
 			Span<byte> hash = stackalloc byte[sm3.Length];

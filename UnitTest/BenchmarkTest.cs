@@ -156,5 +156,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<SHA512Benchmark>();
 		}
+
+		[TestMethod]
+		public void HMACBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<HMACBenchmark>();
+		}
 	}
 }

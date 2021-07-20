@@ -12,6 +12,7 @@ namespace CryptoBase.BouncyCastle.Digests
 	{
 		public abstract string Name { get; }
 		public abstract int Length { get; }
+		public abstract int BlockSize { get; }
 
 		private readonly IDigest _hasher;
 		private const int BufferSize = 4096;

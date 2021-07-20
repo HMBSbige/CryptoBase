@@ -9,6 +9,8 @@ namespace CryptoBase.BouncyCastle.Digests
 
 		public override int Length => HashConstants.SM3Length;
 
+		public override int BlockSize => HashConstants.SM3BlockSize;
+
 		public BcSM3Digest() : base(new SM3Digest())
 		{
 		}

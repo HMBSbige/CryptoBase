@@ -97,6 +97,8 @@ namespace CryptoBase.Digests.SM3
 
 		public int Length => HashConstants.SM3Length;
 
+		public int BlockSize => HashConstants.SM3BlockSize;
+
 		public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			Update(origin);

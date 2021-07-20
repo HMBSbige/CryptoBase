@@ -14,8 +14,9 @@ namespace UnitTest
 	{
 		private static void SHA384DigestTest(IHash sha384, string str, string sha384Str)
 		{
-			Assert.AreEqual(@"SHA384", sha384.Name);
+			Assert.AreEqual(@"SHA-384", sha384.Name);
 			Assert.AreEqual(48, sha384.Length);
+			Assert.AreEqual(128, sha384.BlockSize);
 
 			Span<byte> origin = Encoding.UTF8.GetBytes(str);
 			Span<byte> hash = stackalloc byte[sha384.Length];

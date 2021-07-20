@@ -12,6 +12,7 @@ namespace CryptoBase.Digests
 	{
 		public abstract string Name { get; }
 		public abstract int Length { get; }
+		public abstract int BlockSize { get; }
 
 		private readonly HashAlgorithm _hasher;
 		private const int BufferSize = 4096;

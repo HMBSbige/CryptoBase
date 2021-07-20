@@ -16,9 +16,14 @@ namespace CryptoBase.Abstractions.Digests
 		string Name { get; }
 
 		/// <summary>
-		/// Hash 长度
+		/// Hash 输出长度
 		/// </summary>
 		int Length { get; }
+
+		/// <summary>
+		/// 块大小
+		/// </summary>
+		int BlockSize { get; }
 
 		void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination);
 

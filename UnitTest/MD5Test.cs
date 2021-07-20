@@ -16,6 +16,7 @@ namespace UnitTest
 		{
 			Assert.AreEqual(@"MD5", md5.Name);
 			Assert.AreEqual(16, md5.Length);
+			Assert.AreEqual(64, md5.BlockSize);
 
 			Span<byte> origin = Encoding.UTF8.GetBytes(str);
 			Span<byte> hash = stackalloc byte[md5.Length];

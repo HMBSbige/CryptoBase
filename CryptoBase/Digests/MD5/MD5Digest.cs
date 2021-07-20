@@ -120,6 +120,8 @@ namespace CryptoBase.Digests.MD5
 
 		public int Length => HashConstants.Md5Length;
 
+		public int BlockSize => HashConstants.Md5BlockSize;
+
 		public virtual void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			Update(origin);

@@ -1,4 +1,5 @@
 using CryptoBase;
+using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -137,6 +138,15 @@ namespace UnitTest
 			Assert.AreEqual(result, outBuffer.ToHex());
 
 			hash.Dispose();
+		}
+
+		public static void MacTest(IMac mac, ReadOnlySpan<byte> message, string expected)
+		{
+			mac.Update(message);
+
+			Span<byte> digest = new byte[mac.Length];
+			mac.GetMac(digest);
+			Assert.AreEqual(expected, digest.ToHex());
 		}
 	}
 }
