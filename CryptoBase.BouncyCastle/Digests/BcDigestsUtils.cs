@@ -9,6 +9,7 @@ namespace CryptoBase.BouncyCastle.Digests
 		private static readonly ThreadLocal<IHash> Md5 = new(() => new BcMD5Digest());
 		private static readonly ThreadLocal<IHash> Sha1 = new(() => new BcSHA1Digest());
 		private static readonly ThreadLocal<IHash> Sm3 = new(() => new BcSM3Digest());
+		private static readonly ThreadLocal<IHash> Sha256 = new(() => new BcSHA256Digest());
 
 		public static void MD5(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
@@ -23,6 +24,11 @@ namespace CryptoBase.BouncyCastle.Digests
 		public static void SM3(in ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
 			Sm3.Value!.UpdateFinal(origin, destination);
+		}
+
+		public static void SHA256(in ReadOnlySpan<byte> origin, Span<byte> destination)
+		{
+			Sha256.Value!.UpdateFinal(origin, destination);
 		}
 	}
 }

@@ -138,5 +138,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<Base32Benchmark>();
 		}
+
+		[TestMethod]
+		public void SHA256Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<SHA256Benchmark>();
+		}
 	}
 }
