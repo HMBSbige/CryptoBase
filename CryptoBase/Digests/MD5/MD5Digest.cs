@@ -359,5 +359,10 @@ namespace CryptoBase.Digests.MD5
 			C += c;
 			D += d;
 		}
+
+		public void Dispose()
+		{
+			GC.SuppressFinalize(this);
+		}
 	}
 }

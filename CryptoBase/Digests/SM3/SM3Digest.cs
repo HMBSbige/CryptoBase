@@ -327,5 +327,10 @@ namespace CryptoBase.Digests.SM3
 					V.GetElement(7) ^ h);
 			}
 		}
+
+		public void Dispose()
+		{
+			GC.SuppressFinalize(this);
+		}
 	}
 }

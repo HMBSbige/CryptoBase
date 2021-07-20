@@ -43,6 +43,8 @@ namespace UnitTest
 			sha256.UpdateFinal(origin.Slice(origin.Length / 2), hash);
 
 			Assert.AreEqual(sha256Str, hash.ToHex());
+
+			sha256.Dispose();
 		}
 
 		[TestMethod]

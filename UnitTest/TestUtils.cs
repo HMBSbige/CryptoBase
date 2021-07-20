@@ -24,6 +24,8 @@ namespace UnitTest
 			stream.Seek(0, SeekOrigin.Begin);
 			hash.UpdateFinal(stream, outBuffer);
 			Assert.AreEqual(str.ToLower(), outBuffer.ToHex());
+
+			hash.Dispose();
 		}
 
 		public static async Task TestFileStreamAsync(IHash hash, string path, string str)
@@ -39,6 +41,8 @@ namespace UnitTest
 			stream.Seek(0, SeekOrigin.Begin);
 			await hash.UpdateFinalAsync(stream, outBuffer);
 			Assert.AreEqual(str.ToLower(), outBuffer.Span.ToHex());
+
+			hash.Dispose();
 		}
 
 		public static async Task TestStreamAsync(IHash hash, string str, string result)
@@ -66,6 +70,8 @@ namespace UnitTest
 			stream.Seek(0, SeekOrigin.Begin);
 			await hash.UpdateFinalAsync(stream, outBuffer);
 			Assert.AreEqual(result, outBuffer.Span.ToHex());
+
+			hash.Dispose();
 		}
 
 		public static void LargeMessageTest(IHash hash, string str, string result)
@@ -83,6 +89,8 @@ namespace UnitTest
 			hash.GetHash(outBuffer);
 
 			Assert.AreEqual(result, outBuffer.ToHex());
+
+			hash.Dispose();
 		}
 
 		public static void AEADTest(this IAEADCrypto crypto,
@@ -127,6 +135,8 @@ namespace UnitTest
 			hash.GetHash(outBuffer);
 
 			Assert.AreEqual(result, outBuffer.ToHex());
+
+			hash.Dispose();
 		}
 	}
 }

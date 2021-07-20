@@ -107,5 +107,10 @@ namespace CryptoBase.BouncyCastle.Digests
 		{
 			_hasher.Reset();
 		}
+
+		public void Dispose()
+		{
+			GC.SuppressFinalize(this);
+		}
 	}
 }

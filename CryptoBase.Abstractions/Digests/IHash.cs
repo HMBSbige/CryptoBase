@@ -8,7 +8,7 @@ namespace CryptoBase.Abstractions.Digests
 	/// <summary>
 	/// 摘要算法接口
 	/// </summary>
-	public interface IHash : ICanReset
+	public interface IHash : ICanReset, IDisposable
 	{
 		/// <summary>
 		/// 算法名

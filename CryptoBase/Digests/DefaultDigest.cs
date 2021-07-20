@@ -96,5 +96,11 @@ namespace CryptoBase.Digests
 		{
 			_hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 		}
+
+		public void Dispose()
+		{
+			_hasher.Dispose();
+			GC.SuppressFinalize(this);
+		}
 	}
 }
