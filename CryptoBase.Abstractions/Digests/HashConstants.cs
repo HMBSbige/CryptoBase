@@ -5,5 +5,6 @@ namespace CryptoBase.Abstractions.Digests
 		public const int Md5Length = 16;
 		public const int Sha1Length = 20;
 		public const int SM3Length = 32;
+		public const int Sha256Length = 32;
 	}
 }

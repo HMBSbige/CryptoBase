@@ -62,14 +62,13 @@ namespace UnitTest
 			await TestUtils.TestStreamAsync(new BcSHA1Digest(), str, sha1Str);
 		}
 
-#if LongTimeTest
 		[TestMethod]
-#endif
-		[DataRow(@"euasxpm", @"1c0f98811d531bc03fe0f660f2fb432ae90a0207")]
-		public void LargeMessageTest(string str, string result)
+		[DataRow(@"a", 1000000, @"34aa973cd4c4daa4f61eeb2bdbad27316534016f")]
+		[DataRow(@"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno", 16777216, @"7789f0c9ef7bfc40d93311143dfbe69e2017f592")]
+		public void LargeMessageTest(string raw, int times, string expected)
 		{
-			TestUtils.LargeMessageTest(new DefaultSHA1Digest(), str, result);
-			TestUtils.LargeMessageTest(new BcSHA1Digest(), str, result);
+			TestUtils.LargeMessageTest(new DefaultSHA1Digest(), raw, times, expected);
+			TestUtils.LargeMessageTest(new BcSHA1Digest(), raw, times, expected);
 		}
 	}
 }

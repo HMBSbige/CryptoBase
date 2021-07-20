@@ -114,5 +114,19 @@ namespace UnitTest
 			crypto.Dispose();
 		}
 
+		public static void LargeMessageTest(IHash hash, string str, int times, string result)
+		{
+			Span<byte> origin = Encoding.UTF8.GetBytes(str);
+			Span<byte> outBuffer = stackalloc byte[hash.Length];
+
+			for (var i = 0; i < times; ++i)
+			{
+				hash.Update(origin);
+			}
+
+			hash.GetHash(outBuffer);
+
+			Assert.AreEqual(result, outBuffer.ToHex());
+		}
 	}
 }
