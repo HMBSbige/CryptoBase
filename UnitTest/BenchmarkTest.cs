@@ -144,5 +144,17 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<SHA256Benchmark>();
 		}
+
+		[TestMethod]
+		public void SHA384Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<SHA384Benchmark>();
+		}
+
+		[TestMethod]
+		public void SHA512Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<SHA512Benchmark>();
+		}
 	}
 }

@@ -26,8 +26,8 @@ A fast crypto library for .NET
 MD5 | ✅ | 💔 | 💔
 SHA1 | ✅ | ⏳ | ⏳
 SHA256 | ✅ | ⏳ | ⏳
-SHA384 | ⏳ | 💔 | ⏳
-SHA512 | ⏳ | ⏳ | ⏳
+SHA384 | ✅ | 💔 | ⏳
+SHA512 | ✅ | ⏳ | ⏳
 SM3 | ✅ | 💔 | ⏳
 
 ### Symmetric-key algorithms
