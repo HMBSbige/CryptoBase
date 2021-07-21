@@ -1,13 +1,12 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
-using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 using Aes = System.Security.Cryptography.Aes;
 
-namespace CryptoBase
+namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 {
 	public static class AESUtils
 	{

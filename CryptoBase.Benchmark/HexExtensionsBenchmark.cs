@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.DataFormatExtensions;
 using System;
 using System.Text;
 

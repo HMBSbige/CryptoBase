@@ -1,6 +1,6 @@
-using CryptoBase;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
+using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests.SHA512;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;

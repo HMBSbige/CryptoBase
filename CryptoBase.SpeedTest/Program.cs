@@ -1,5 +1,7 @@
 using CryptoBase;
 using CryptoBase.SpeedTest;
+using CryptoBase.SymmetricCryptos.AEADCryptos;
+using CryptoBase.SymmetricCryptos.StreamCryptos;
 using System;
 using System.Diagnostics;
 

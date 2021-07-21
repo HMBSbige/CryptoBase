@@ -1,7 +1,7 @@
-using CryptoBase;
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.DataFormatExtensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;

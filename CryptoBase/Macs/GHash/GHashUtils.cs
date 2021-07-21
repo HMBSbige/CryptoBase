@@ -1,10 +1,9 @@
 using CryptoBase.Abstractions;
-using CryptoBase.Macs.GHash;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 
-namespace CryptoBase
+namespace CryptoBase.Macs.GHash
 {
 	public static class GHashUtils
 	{

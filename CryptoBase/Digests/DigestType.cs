@@ -1,6 +1,6 @@
-namespace CryptoBase.Macs.Hmac
+namespace CryptoBase.Digests
 {
-	public enum HmacType
+	public enum DigestType
 	{
 		Sm3,
 		Md5,

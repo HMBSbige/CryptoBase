@@ -1,11 +1,10 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using System;
 using System.Runtime.CompilerServices;
 
-namespace CryptoBase
+namespace CryptoBase.SymmetricCryptos.AEADCryptos
 {
 	public static class AEADCryptoCreate
 	{

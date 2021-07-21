@@ -1,7 +1,7 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
+using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
-using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;
@@ -12,7 +12,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 
-namespace CryptoBase
+namespace CryptoBase.SymmetricCryptos.StreamCryptos
 {
 	public static class StreamCryptoCreate
 	{

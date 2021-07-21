@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Macs.GHash;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;

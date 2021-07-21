@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
 using System;
 
@@ -23,7 +24,7 @@ namespace CryptoBase.Benchmark
 		[Benchmark]
 		public void HMAC()
 		{
-			using var mac = HmacUtils.Create(HmacType.Sha1, _randomKey);
+			using var mac = HmacUtils.Create(DigestType.Sha1, _randomKey);
 			mac.Update(_randombytes);
 
 			Span<byte> temp = stackalloc byte[mac.Length];

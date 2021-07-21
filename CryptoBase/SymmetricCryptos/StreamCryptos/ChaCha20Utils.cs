@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace CryptoBase
+namespace CryptoBase.SymmetricCryptos.StreamCryptos
 {
-	public static class ChaCha20Utils
+	internal static class ChaCha20Utils
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void UpdateKeyStream(int rounds, uint[] state, byte[] keyStream)

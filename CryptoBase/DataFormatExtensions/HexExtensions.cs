@@ -1,8 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-// ReSharper disable CheckNamespace
-namespace CryptoBase
+namespace CryptoBase.DataFormatExtensions
 {
 	public static class HexExtensions
 	{

@@ -1,4 +1,6 @@
 using CryptoBase.Abstractions;
+using CryptoBase.Abstractions.Digests;
+using CryptoBase.Digests;
 using CryptoBase.Digests.MD5;
 using CryptoBase.Digests.SHA1;
 using CryptoBase.Digests.SHA256;
@@ -11,16 +13,21 @@ namespace CryptoBase.Macs.Hmac
 {
 	public static class HmacUtils
 	{
-		public static IMac Create(HmacType type, ReadOnlySpan<byte> key)
+		public static IMac Create(ReadOnlySpan<byte> key, IHash hash)
+		{
+			return new HmacSF(key, hash);
+		}
+
+		public static IMac Create(DigestType type, ReadOnlySpan<byte> key)
 		{
 			return type switch
 			{
-				HmacType.Sm3 => new HmacSF(key, new SM3Digest()),
-				HmacType.Md5 => new HmacSF(key, new DefaultMD5Digest()),
-				HmacType.Sha1 => new HmacSF(key, new DefaultSHA1Digest()),
-				HmacType.Sha256 => new HmacSF(key, new DefaultSHA256Digest()),
-				HmacType.Sha384 => new HmacSF(key, new DefaultSHA384Digest()),
-				HmacType.Sha512 => new HmacSF(key, new DefaultSHA512Digest()),
+				DigestType.Sm3 => Create(key, new SM3Digest()),
+				DigestType.Md5 => Create(key, new DefaultMD5Digest()),
+				DigestType.Sha1 => Create(key, new DefaultSHA1Digest()),
+				DigestType.Sha256 => Create(key, new DefaultSHA256Digest()),
+				DigestType.Sha384 => Create(key, new DefaultSHA384Digest()),
+				DigestType.Sha512 => Create(key, new DefaultSHA512Digest()),
 				_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
 			};
 		}
