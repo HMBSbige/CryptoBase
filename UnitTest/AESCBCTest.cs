@@ -60,9 +60,9 @@ namespace UnitTest
 			crypto.Reset();
 
 			crypto.Decrypt(h2, o1);
-			crypto.Decrypt(h2.Slice(16), o1.Slice(16));
-			crypto.Decrypt(h2.Slice(32), o1.Slice(32));
-			crypto.Decrypt(h2.Slice(48), o1.Slice(48));
+			crypto.Decrypt(h2[16..], o1[16..]);
+			crypto.Decrypt(h2[32..], o1[32..]);
+			crypto.Decrypt(h2[48..], o1[48..]);
 
 			Assert.IsTrue(o1.SequenceEqual(h1));
 

@@ -50,7 +50,7 @@ namespace CryptoBase.SpeedTest
 		{
 			ReadOnlySpan<byte> i = new byte[Step];
 			Span<byte> o = new byte[Step];
-			ReadOnlySpan<byte> nonce = IV.Slice(0, nonceLength);
+			ReadOnlySpan<byte> nonce = IV[..nonceLength];
 			Span<byte> tag = stackalloc byte[16];
 
 			var sw = Stopwatch.StartNew();

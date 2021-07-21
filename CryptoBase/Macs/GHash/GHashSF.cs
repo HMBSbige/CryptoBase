@@ -39,7 +39,7 @@ namespace CryptoBase.Macs.GHash
 			}
 
 			Initvh = BinaryPrimitives.ReadUInt64BigEndian(key);
-			Initvl = BinaryPrimitives.ReadUInt64BigEndian(key.Slice(8));
+			Initvl = BinaryPrimitives.ReadUInt64BigEndian(key[8..]);
 
 			_hl = ArrayPool<ulong>.Shared.Rent(BlockSize);
 			_hh = ArrayPool<ulong>.Shared.Rent(BlockSize);
@@ -94,7 +94,7 @@ namespace CryptoBase.Macs.GHash
 			while (source.Length >= BlockSize)
 			{
 				GFMul(source);
-				source = source.Slice(BlockSize);
+				source = source[BlockSize..];
 			}
 
 			if (source.IsEmpty)

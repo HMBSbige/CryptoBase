@@ -67,7 +67,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 
 			Span<byte> block = _buffer.AsSpan(Poly1305Utils.BlockSize);
 			BinaryPrimitives.WriteUInt64LittleEndian(block, (ulong)associatedData.Length);
-			BinaryPrimitives.WriteUInt64LittleEndian(block.Slice(8), (ulong)source.Length);
+			BinaryPrimitives.WriteUInt64LittleEndian(block[8..], (ulong)source.Length);
 			poly1305.Update(block);
 
 			poly1305.GetMac(tag);
@@ -98,7 +98,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos
 
 			Span<byte> block = _buffer.AsSpan(TagSize);
 			BinaryPrimitives.WriteUInt64LittleEndian(block, (ulong)associatedData.Length);
-			BinaryPrimitives.WriteUInt64LittleEndian(block.Slice(8), (ulong)source.Length);
+			BinaryPrimitives.WriteUInt64LittleEndian(block[8..], (ulong)source.Length);
 			poly1305.Update(block);
 
 			poly1305.GetMac(block);

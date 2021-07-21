@@ -22,7 +22,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		{
 			base.Encrypt(source, destination);
 
-			source.Slice(0, BlockSize).CopyTo(_buffer);
+			source[..BlockSize].CopyTo(_buffer);
 			Encryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
 			_outBuffer.CopyTo(destination);
 		}
@@ -31,7 +31,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
 		{
 			base.Decrypt(source, destination);
 
-			source.Slice(0, BlockSize).CopyTo(_buffer);
+			source[..BlockSize].CopyTo(_buffer);
 			Decryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
 			_outBuffer.CopyTo(destination);
 		}

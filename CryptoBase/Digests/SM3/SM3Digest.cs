@@ -119,8 +119,8 @@ namespace CryptoBase.Digests.SM3
 					return;
 				}
 
-				source.Slice(0, remain).CopyTo(_buffer.AsSpan(_bufferIndex));
-				source = source.Slice(remain);
+				source[..remain].CopyTo(_buffer.AsSpan(_bufferIndex));
+				source = source[remain..];
 				_w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(_buffer);
 				_bufferIndex = 0;
 			}
@@ -134,7 +134,7 @@ namespace CryptoBase.Digests.SM3
 				}
 
 				_w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(source);
-				source = source.Slice(SizeOfInt);
+				source = source[SizeOfInt..];
 			}
 			if (_index == BlockSizeOfInt)
 			{
@@ -195,13 +195,13 @@ namespace CryptoBase.Digests.SM3
 				else
 				{
 					BinaryPrimitives.WriteUInt32BigEndian(destination, V.GetElement(0));
-					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), V.GetElement(1));
-					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), V.GetElement(2));
-					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), V.GetElement(3));
-					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(16), V.GetElement(4));
-					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(20), V.GetElement(5));
-					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(24), V.GetElement(6));
-					BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(28), V.GetElement(7));
+					BinaryPrimitives.WriteUInt32BigEndian(destination[4..], V.GetElement(1));
+					BinaryPrimitives.WriteUInt32BigEndian(destination[8..], V.GetElement(2));
+					BinaryPrimitives.WriteUInt32BigEndian(destination[12..], V.GetElement(3));
+					BinaryPrimitives.WriteUInt32BigEndian(destination[16..], V.GetElement(4));
+					BinaryPrimitives.WriteUInt32BigEndian(destination[20..], V.GetElement(5));
+					BinaryPrimitives.WriteUInt32BigEndian(destination[24..], V.GetElement(6));
+					BinaryPrimitives.WriteUInt32BigEndian(destination[28..], V.GetElement(7));
 				}
 			}
 			finally

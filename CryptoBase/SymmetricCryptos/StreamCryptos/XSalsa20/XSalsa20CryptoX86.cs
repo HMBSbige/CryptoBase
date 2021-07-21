@@ -31,11 +31,11 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			State[15] = Sigma32[3];
 
 			var keySpan = MemoryMarshal.Cast<byte, uint>(key);
-			keySpan.Slice(0, 4).CopyTo(span.Slice(1));
-			keySpan.Slice(4).CopyTo(span.Slice(11));
+			keySpan[..4].CopyTo(span[1..]);
+			keySpan[4..].CopyTo(span[11..]);
 
 			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-			ivSpan.Slice(0, 4).CopyTo(span.Slice(6));
+			ivSpan[..4].CopyTo(span[6..]);
 
 			SalsaRound(State);
 
@@ -44,7 +44,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 			State[3] = State[10];
 			State[4] = State[15];
 
-			span.Slice(6, 4).CopyTo(span.Slice(11));
+			span.Slice(6, 4).CopyTo(span[11..]);
 
 			State[6] = ivSpan[4];
 			State[7] = ivSpan[5];

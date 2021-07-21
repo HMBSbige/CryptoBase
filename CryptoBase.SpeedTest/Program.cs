@@ -20,10 +20,10 @@ Console.WriteLine($@"CPU Vendor: {CpuIdUtils.GetVendor()}");
 Console.WriteLine($@"CPU Brand: {CpuIdUtils.GetBrand()}");
 Console.WriteLine($@"Intel SHA extensions: {CpuIdUtils.IsSupportX86ShaEx()}");
 
-var key32 = CryptoTest.Key.Slice(0, 32).ToArray();
-var key16 = CryptoTest.Key.Slice(0, 16).ToArray();
-var iv16 = CryptoTest.IV.Slice(0, 16).ToArray();
-var iv24 = CryptoTest.IV.Slice(0, 24).ToArray();
+var key32 = CryptoTest.Key[..32].ToArray();
+var key16 = CryptoTest.Key[..16].ToArray();
+var iv16 = CryptoTest.IV[..16].ToArray();
+var iv24 = CryptoTest.IV[..24].ToArray();
 
 Console.Write(@"Testing Aes-128-Ctr: ");
 CryptoTest.Test(StreamCryptoCreate.AesCtr(key16, iv16));

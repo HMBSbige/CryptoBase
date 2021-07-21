@@ -34,14 +34,14 @@ namespace UnitTest
 			sha512.Update(origin);
 			sha512.Reset();
 
-			sha512.Update(origin.Slice(0, origin.Length / 2));
-			sha512.Update(origin.Slice(origin.Length / 2));
+			sha512.Update(origin[..(origin.Length / 2)]);
+			sha512.Update(origin[(origin.Length / 2)..]);
 			sha512.GetHash(hash);
 
 			Assert.AreEqual(sha512Str, hash.ToHex());
 
-			sha512.Update(origin.Slice(0, origin.Length / 2));
-			sha512.UpdateFinal(origin.Slice(origin.Length / 2), hash);
+			sha512.Update(origin[..(origin.Length / 2)]);
+			sha512.UpdateFinal(origin[(origin.Length / 2)..], hash);
 
 			Assert.AreEqual(sha512Str, hash.ToHex());
 

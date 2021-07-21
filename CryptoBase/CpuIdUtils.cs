@@ -22,8 +22,8 @@ namespace CryptoBase
 
 				Debug.WriteLine(id);
 				BinaryPrimitives.WriteInt32LittleEndian(buffer, id.Ebx);
-				BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(4), id.Edx);
-				BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(8), id.Ecx);
+				BinaryPrimitives.WriteInt32LittleEndian(buffer[4..], id.Edx);
+				BinaryPrimitives.WriteInt32LittleEndian(buffer[8..], id.Ecx);
 
 				return Encoding.ASCII.GetString(buffer);
 			}
@@ -47,10 +47,10 @@ namespace CryptoBase
 					{
 						var id2 = X86Base.CpuId(unchecked((int)i), 0);
 						BinaryPrimitives.WriteInt32LittleEndian(t, id2.Eax);
-						BinaryPrimitives.WriteInt32LittleEndian(t.Slice(4), id2.Ebx);
-						BinaryPrimitives.WriteInt32LittleEndian(t.Slice(8), id2.Ecx);
-						BinaryPrimitives.WriteInt32LittleEndian(t.Slice(12), id2.Edx);
-						t = t.Slice(16);
+						BinaryPrimitives.WriteInt32LittleEndian(t[4..], id2.Ebx);
+						BinaryPrimitives.WriteInt32LittleEndian(t[8..], id2.Ecx);
+						BinaryPrimitives.WriteInt32LittleEndian(t[12..], id2.Edx);
+						t = t[16..];
 					}
 
 					return Encoding.ASCII.GetString(buffer);

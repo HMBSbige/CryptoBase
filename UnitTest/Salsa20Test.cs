@@ -24,97 +24,97 @@ namespace UnitTest
 			Span<byte> i = stackalloc byte[512];
 			Span<byte> o = stackalloc byte[512];
 
-			crypto.Update(i.Slice(0, 63), o); // 0 - 62
-			Assert.IsTrue(o.Slice(0, 63).SequenceEqual(h0.Slice(0, 63)));
-			crypto.Update(i.Slice(0, 63), o); // 63 - 125
+			crypto.Update(i[..63], o); // 0 - 62
+			Assert.IsTrue(o[..63].SequenceEqual(h0[..63]));
+			crypto.Update(i[..63], o); // 63 - 125
 			Assert.AreEqual(h0[63], o[0]);
 
 			// 126 - 65456
 			for (var j = 0; j < 1037; j++)
 			{
-				crypto.Update(i.Slice(0, 63), o);
+				crypto.Update(i[..63], o);
 			}
 
-			crypto.Update(i.Slice(0, 63), o); // 65457 - 65519
-			Assert.IsTrue(o.Slice(15, 63 - 15).SequenceEqual(h1.Slice(0, 48)));
-			crypto.Update(i.Slice(0, 63), o); // 65520 - 65582
-			Assert.IsTrue(o.Slice(0, 16).SequenceEqual(h1.Slice(48)));
-			Assert.IsTrue(o.Slice(16, 47).SequenceEqual(h2.Slice(0, 47)));
+			crypto.Update(i[..63], o); // 65457 - 65519
+			Assert.IsTrue(o.Slice(15, 63 - 15).SequenceEqual(h1[..48]));
+			crypto.Update(i[..63], o); // 65520 - 65582
+			Assert.IsTrue(o[..16].SequenceEqual(h1[48..]));
+			Assert.IsTrue(o.Slice(16, 47).SequenceEqual(h2[..47]));
 
-			crypto.Update(i.Slice(0, 64), o); // 65583 - 65646
-			Assert.IsTrue(o.Slice(0, 17).SequenceEqual(h2.Slice(47)));
+			crypto.Update(i[..64], o); // 65583 - 65646
+			Assert.IsTrue(o[..17].SequenceEqual(h2[47..]));
 
 			// 65647 - 130990
 			for (var j = 0; j < 1021; j++)
 			{
-				crypto.Update(i.Slice(0, 64), o);
+				crypto.Update(i[..64], o);
 			}
-			crypto.Update(i.Slice(0, 64), o); // 130991 - 131054
-			Assert.IsTrue(o.Slice(17, 64 - 17).SequenceEqual(h3.Slice(0, 47)));
-			crypto.Update(i.Slice(0, 64), o); // 131055 - 131118
-			Assert.IsTrue(o.Slice(0, 17).SequenceEqual(h3.Slice(47)));
+			crypto.Update(i[..64], o); // 130991 - 131054
+			Assert.IsTrue(o.Slice(17, 64 - 17).SequenceEqual(h3[..47]));
+			crypto.Update(i[..64], o); // 131055 - 131118
+			Assert.IsTrue(o[..17].SequenceEqual(h3[47..]));
 
 			crypto.Reset();
 
-			crypto.Update(i.Slice(0, 128), o); // 0 - 127
-			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h0));
-			crypto.Update(i.Slice(0, 64), o); // 128 - 191
+			crypto.Update(i[..128], o); // 0 - 127
+			Assert.IsTrue(o[..64].SequenceEqual(h0));
+			crypto.Update(i[..64], o); // 128 - 191
 
 			// 192 - 65471
 			for (var j = 0; j < 510; j++)
 			{
-				crypto.Update(i.Slice(0, 128), o);
+				crypto.Update(i[..128], o);
 			}
-			crypto.Update(i.Slice(0, 128), o); // 65472 - 65599
-			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h1));
+			crypto.Update(i[..128], o); // 65472 - 65599
+			Assert.IsTrue(o[..64].SequenceEqual(h1));
 			Assert.IsTrue(o.Slice(64, 64).SequenceEqual(h2));
 
 			// 65600 - 130879
 			for (var j = 0; j < 255; j++)
 			{
-				crypto.Update(i.Slice(0, 256), o);
+				crypto.Update(i[..256], o);
 			}
-			crypto.Update(i.Slice(0, 256), o); // 130880 - 131135
+			crypto.Update(i[..256], o); // 130880 - 131135
 			Assert.IsTrue(o.Slice(128, 64).SequenceEqual(h3));
 
 			crypto.Reset();
-			crypto.Update(i.Slice(0, 512), o); // 0 - 511
-			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h0));
+			crypto.Update(i[..512], o); // 0 - 511
+			Assert.IsTrue(o[..64].SequenceEqual(h0));
 
 			// 512 - 65535
 			for (var j = 0; j < 127; j++)
 			{
-				crypto.Update(i.Slice(0, 512), o);
+				crypto.Update(i[..512], o);
 			}
 			Assert.IsTrue(o.Slice(448, 64).SequenceEqual(h1));
-			crypto.Update(i.Slice(0, 512), o); // 65536 - 66047
-			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h2));
+			crypto.Update(i[..512], o); // 65536 - 66047
+			Assert.IsTrue(o[..64].SequenceEqual(h2));
 
 			// 66048 - 131071
 			for (var j = 0; j < 127; j++)
 			{
-				crypto.Update(i.Slice(0, 512), o);
+				crypto.Update(i[..512], o);
 			}
 			Assert.IsTrue(o.Slice(448, 64).SequenceEqual(h3));
 
 			crypto.Reset();
 
-			crypto.Update(i.Slice(0, 64), o); // 0 - 63
-			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h0));
+			crypto.Update(i[..64], o); // 0 - 63
+			Assert.IsTrue(o[..64].SequenceEqual(h0));
 
 			for (var j = 0; j < 1023; j++)
 			{
-				crypto.Update(i.Slice(0, 64), o);
+				crypto.Update(i[..64], o);
 			}
-			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h1));
-			crypto.Update(i.Slice(0, 64), o);
-			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h2));
+			Assert.IsTrue(o[..64].SequenceEqual(h1));
+			crypto.Update(i[..64], o);
+			Assert.IsTrue(o[..64].SequenceEqual(h2));
 
 			for (var j = 0; j < 1023; j++)
 			{
-				crypto.Update(i.Slice(0, 64), o);
+				crypto.Update(i[..64], o);
 			}
-			Assert.IsTrue(o.Slice(0, 64).SequenceEqual(h3));
+			Assert.IsTrue(o[..64].SequenceEqual(h3));
 
 			crypto.Dispose();
 		}

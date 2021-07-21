@@ -60,7 +60,7 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos
 
 		private void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 		{
-			source.Slice(0, BlockSize).CopyTo(_buffer);
+			source[..BlockSize].CopyTo(_buffer);
 			_engine.ProcessBlock(_buffer, 0, _outBuffer, 0);
 			_outBuffer.CopyTo(destination);
 		}

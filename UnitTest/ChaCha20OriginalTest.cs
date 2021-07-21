@@ -44,20 +44,20 @@ namespace UnitTest
 			// 63
 			for (var j = 0; j < 1040; j++)
 			{
-				crypto.Update(i.Slice(0, 63), o1);
-				Assert.IsTrue(o1.Slice(0, 63).SequenceEqual(h.Slice(63 * j, 63)));
+				crypto.Update(i[..63], o1);
+				Assert.IsTrue(o1[..63].SequenceEqual(h.Slice(63 * j, 63)));
 			}
 
-			crypto.Update(i.Slice(0, 63), o1);
-			Assert.IsTrue(o1.Slice(0, 16).SequenceEqual(h.Slice(63 * 1040, 16)));
+			crypto.Update(i[..63], o1);
+			Assert.IsTrue(o1[..16].SequenceEqual(h.Slice(63 * 1040, 16)));
 
 			crypto.Reset();
 
 			// 64
 			for (var j = 0; j < 1024; j++)
 			{
-				crypto.Update(i.Slice(0, 64), o1);
-				Assert.IsTrue(o1.Slice(0, 64).SequenceEqual(h.Slice(64 * j, 64)));
+				crypto.Update(i[..64], o1);
+				Assert.IsTrue(o1[..64].SequenceEqual(h.Slice(64 * j, 64)));
 			}
 
 			crypto.Reset();
@@ -65,8 +65,8 @@ namespace UnitTest
 			// 128
 			for (var j = 0; j < 512; j++)
 			{
-				crypto.Update(i.Slice(0, 128), o1);
-				Assert.IsTrue(o1.Slice(0, 128).SequenceEqual(h.Slice(128 * j, 128)));
+				crypto.Update(i[..128], o1);
+				Assert.IsTrue(o1[..128].SequenceEqual(h.Slice(128 * j, 128)));
 			}
 
 			crypto.Reset();
@@ -74,8 +74,8 @@ namespace UnitTest
 			// 256
 			for (var j = 0; j < 256; j++)
 			{
-				crypto.Update(i.Slice(0, 256), o1);
-				Assert.IsTrue(o1.Slice(0, 256).SequenceEqual(h.Slice(256 * j, 256)));
+				crypto.Update(i[..256], o1);
+				Assert.IsTrue(o1[..256].SequenceEqual(h.Slice(256 * j, 256)));
 			}
 
 			crypto.Reset();
@@ -83,8 +83,8 @@ namespace UnitTest
 			// 512
 			for (var j = 0; j < 128; j++)
 			{
-				crypto.Update(i.Slice(0, 512), o1);
-				Assert.IsTrue(o1.Slice(0, 512).SequenceEqual(h.Slice(512 * j, 512)));
+				crypto.Update(i[..512], o1);
+				Assert.IsTrue(o1[..512].SequenceEqual(h.Slice(512 * j, 512)));
 			}
 
 			crypto.Dispose();

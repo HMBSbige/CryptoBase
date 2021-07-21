@@ -44,15 +44,15 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 			sigma.CopyTo(span);
 
 			var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
-			keySpan.CopyTo(span.Slice(4));
+			keySpan.CopyTo(span[4..]);
 
 			var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-			ivSpan.Slice(0, 4).CopyTo(span.Slice(12));
+			ivSpan[..4].CopyTo(span[12..]);
 
 			ChaChaRound(State);
 
-			span.Slice(12).CopyTo(span.Slice(8));
-			span.Slice(0, 4).CopyTo(span.Slice(4));
+			span[12..].CopyTo(span[8..]);
+			span[..4].CopyTo(span[4..]);
 
 			sigma.CopyTo(span);
 

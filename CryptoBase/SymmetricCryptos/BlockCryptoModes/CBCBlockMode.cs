@@ -44,7 +44,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 
 			InternalBlockCrypto.Encrypt(destination, destination);
 
-			destination.Slice(0, BlockSize).CopyTo(_block);
+			destination[..BlockSize].CopyTo(_block);
 		}
 
 		public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -59,7 +59,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 				IntrinsicsUtils.Xor(pBlock, pDestination, pDestination, BlockSize);
 			}
 
-			source.Slice(0, BlockSize).CopyTo(_block);
+			source[..BlockSize].CopyTo(_block);
 		}
 
 		public sealed override void Reset()

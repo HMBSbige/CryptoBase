@@ -23,8 +23,8 @@ namespace UnitTest
 
 			crypto.Reset();
 
-			crypto.Update(h2.Slice(0, 73), o);
-			crypto.Update(h2.Slice(73), o.Slice(73));
+			crypto.Update(h2[..73], o);
+			crypto.Update(h2[73..], o[73..]);
 			Assert.IsTrue(o.SequenceEqual(h1));
 
 			crypto.Dispose();

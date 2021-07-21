@@ -34,14 +34,14 @@ namespace UnitTest
 			sm3.Update(origin);
 			sm3.Reset();
 
-			sm3.Update(origin.Slice(0, origin.Length / 2));
-			sm3.Update(origin.Slice(origin.Length / 2));
+			sm3.Update(origin[..(origin.Length / 2)]);
+			sm3.Update(origin[(origin.Length / 2)..]);
 			sm3.GetHash(hash);
 
 			Assert.AreEqual(sm3Str, hash.ToHex());
 
-			sm3.Update(origin.Slice(0, origin.Length / 2));
-			sm3.UpdateFinal(origin.Slice(origin.Length / 2), hash);
+			sm3.Update(origin[..(origin.Length / 2)]);
+			sm3.UpdateFinal(origin[(origin.Length / 2)..], hash);
 
 			Assert.AreEqual(sm3Str, hash.ToHex());
 

@@ -31,30 +31,30 @@ namespace CryptoBase.Macs.Poly1305
 
 			// r &= 0xFFFFFFC0FFFFFFC0FFFFFFC0FFFFFFF
 			_r0 = BinaryPrimitives.ReadUInt32LittleEndian(key) & 0x3FFFFFF;
-			_r1 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(3)) >> 2 & 0x3FFFF03;
-			_r2 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(6)) >> 4 & 0x3FFC0FF;
-			_r3 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(9)) >> 6 & 0x3F03FFF;
-			_r4 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(12)) >> 8 & 0x00FFFFF;
+			_r1 = BinaryPrimitives.ReadUInt32LittleEndian(key[3..]) >> 2 & 0x3FFFF03;
+			_r2 = BinaryPrimitives.ReadUInt32LittleEndian(key[6..]) >> 4 & 0x3FFC0FF;
+			_r3 = BinaryPrimitives.ReadUInt32LittleEndian(key[9..]) >> 6 & 0x3F03FFF;
+			_r4 = BinaryPrimitives.ReadUInt32LittleEndian(key[12..]) >> 8 & 0x00FFFFF;
 
 			_s1 = _r1 * 5;
 			_s2 = _r2 * 5;
 			_s3 = _r3 * 5;
 			_s4 = _r4 * 5;
 
-			_x0 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(16));
-			_x1 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(20));
-			_x2 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(24));
-			_x3 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(28));
+			_x0 = BinaryPrimitives.ReadUInt32LittleEndian(key[16..]);
+			_x1 = BinaryPrimitives.ReadUInt32LittleEndian(key[20..]);
+			_x2 = BinaryPrimitives.ReadUInt32LittleEndian(key[24..]);
+			_x3 = BinaryPrimitives.ReadUInt32LittleEndian(key[28..]);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Block(ReadOnlySpan<byte> m)
 		{
 			_h0 += BinaryPrimitives.ReadUInt32LittleEndian(m) & 0x3ffffff;
-			_h1 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(3)) >> 2 & 0x3ffffff;
-			_h2 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(6)) >> 4 & 0x3ffffff;
-			_h3 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(9)) >> 6 & 0x3ffffff;
-			_h4 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(12)) >> 8 | 1u << 24;
+			_h1 += BinaryPrimitives.ReadUInt32LittleEndian(m[3..]) >> 2 & 0x3ffffff;
+			_h2 += BinaryPrimitives.ReadUInt32LittleEndian(m[6..]) >> 4 & 0x3ffffff;
+			_h3 += BinaryPrimitives.ReadUInt32LittleEndian(m[9..]) >> 6 & 0x3ffffff;
+			_h4 += BinaryPrimitives.ReadUInt32LittleEndian(m[12..]) >> 8 | 1u << 24;
 
 			var p0 = (ulong)_h0 * _r0 + (ulong)_h1 * _s4 + (ulong)_h2 * _s3 + (ulong)_h3 * _s2 + (ulong)_h4 * _s1;
 			var p1 = (ulong)_h0 * _r1 + (ulong)_h1 * _r0 + (ulong)_h2 * _s4 + (ulong)_h3 * _s3 + (ulong)_h4 * _s2;
@@ -81,7 +81,7 @@ namespace CryptoBase.Macs.Poly1305
 			while (source.Length >= BlockSize)
 			{
 				Block(source);
-				source = source.Slice(BlockSize);
+				source = source[BlockSize..];
 			}
 
 			if (source.IsEmpty)
@@ -141,9 +141,9 @@ namespace CryptoBase.Macs.Poly1305
 			f3 += f2 >> 32;
 
 			BinaryPrimitives.WriteUInt32LittleEndian(destination, (uint)f0);
-			BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(4), (uint)f1);
-			BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(8), (uint)f2);
-			BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(12), (uint)f3);
+			BinaryPrimitives.WriteUInt32LittleEndian(destination[4..], (uint)f1);
+			BinaryPrimitives.WriteUInt32LittleEndian(destination[8..], (uint)f2);
+			BinaryPrimitives.WriteUInt32LittleEndian(destination[12..], (uint)f3);
 
 			Reset();
 		}

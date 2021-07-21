@@ -34,14 +34,14 @@ namespace UnitTest
 			sha384.Update(origin);
 			sha384.Reset();
 
-			sha384.Update(origin.Slice(0, origin.Length / 2));
-			sha384.Update(origin.Slice(origin.Length / 2));
+			sha384.Update(origin[..(origin.Length / 2)]);
+			sha384.Update(origin[(origin.Length / 2)..]);
 			sha384.GetHash(hash);
 
 			Assert.AreEqual(sha384Str, hash.ToHex());
 
-			sha384.Update(origin.Slice(0, origin.Length / 2));
-			sha384.UpdateFinal(origin.Slice(origin.Length / 2), hash);
+			sha384.Update(origin[..(origin.Length / 2)]);
+			sha384.UpdateFinal(origin[(origin.Length / 2)..], hash);
 
 			Assert.AreEqual(sha384Str, hash.ToHex());
 

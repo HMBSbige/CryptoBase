@@ -23,7 +23,7 @@ namespace CryptoBase.Digests.MD5
 				while (origin.Length >= SizeOfInt)
 				{
 					X[index++] = BinaryPrimitives.ReadUInt32LittleEndian(origin);
-					origin = origin.Slice(SizeOfInt);
+					origin = origin[SizeOfInt..];
 				}
 
 				const uint padding = 0b10000000;
@@ -39,9 +39,9 @@ namespace CryptoBase.Digests.MD5
 				Process();
 
 				BinaryPrimitives.WriteUInt32LittleEndian(destination, A);
-				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(4), B);
-				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(8), C);
-				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(12), D);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination[4..], B);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination[8..], C);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination[12..], D);
 			}
 			finally
 			{

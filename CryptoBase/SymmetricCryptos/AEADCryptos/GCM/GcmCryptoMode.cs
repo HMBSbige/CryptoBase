@@ -64,9 +64,9 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			var counter3 = counterBlock.Slice(60, 4);
 
 			nonce.CopyTo(counterBlock);
-			nonce.CopyTo(counterBlock.Slice(16));
-			nonce.CopyTo(counterBlock.Slice(32));
-			nonce.CopyTo(counterBlock.Slice(48));
+			nonce.CopyTo(counterBlock[16..]);
+			nonce.CopyTo(counterBlock[32..]);
+			nonce.CopyTo(counterBlock[48..]);
 
 			counter0[0] = 0;
 			counter0[1] = 0;
@@ -116,10 +116,10 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 					IntrinsicsUtils.Xor(pSource, pBuffer, pOut, n);
 				}
 
-				_gHash.Update(destination.Slice(0, n));
+				_gHash.Update(destination[..n]);
 
-				source = source.Slice(n);
-				destination = destination.Slice(n);
+				source = source[n..];
+				destination = destination[n..];
 			}
 
 			BinaryPrimitives.WriteUInt64BigEndian(_buffer, (ulong)associatedData.Length << 3);
@@ -157,9 +157,9 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 			var counter3 = counterBlock.Slice(60, 4);
 
 			nonce.CopyTo(counterBlock);
-			nonce.CopyTo(counterBlock.Slice(16));
-			nonce.CopyTo(counterBlock.Slice(32));
-			nonce.CopyTo(counterBlock.Slice(48));
+			nonce.CopyTo(counterBlock[16..]);
+			nonce.CopyTo(counterBlock[32..]);
+			nonce.CopyTo(counterBlock[48..]);
 
 			counter0[0] = 0;
 			counter0[1] = 0;
@@ -202,7 +202,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 
 				var n = Math.Min(source.Length, BlockSize4);
 
-				_gHash.Update(source.Slice(0, n));
+				_gHash.Update(source[..n]);
 
 				fixed (byte* pOut = destination)
 				fixed (byte* pSource = source)
@@ -211,8 +211,8 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 					IntrinsicsUtils.Xor(pSource, pBuffer, pOut, n);
 				}
 
-				source = source.Slice(n);
-				destination = destination.Slice(n);
+				source = source[n..];
+				destination = destination[n..];
 			}
 
 			BinaryPrimitives.WriteUInt64BigEndian(_buffer, (ulong)associatedData.Length << 3);

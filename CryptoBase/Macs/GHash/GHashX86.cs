@@ -93,7 +93,7 @@ namespace CryptoBase.Macs.GHash
 			while (source.Length >= BlockSize)
 			{
 				GFMul(source);
-				source = source.Slice(BlockSize);
+				source = source[BlockSize..];
 			}
 
 			if (source.IsEmpty)

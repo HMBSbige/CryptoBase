@@ -47,16 +47,16 @@ namespace CryptoBase.Abstractions.SymmetricCryptos
 			}
 
 			Encrypt(source, destination);
-			source = source.Slice(BlockSize);
-			destination = destination.Slice(BlockSize);
+			source = source[BlockSize..];
+			destination = destination[BlockSize..];
 
 			Encrypt(source, destination);
-			source = source.Slice(BlockSize);
-			destination = destination.Slice(BlockSize);
+			source = source[BlockSize..];
+			destination = destination[BlockSize..];
 
 			Encrypt(source, destination);
-			source = source.Slice(BlockSize);
-			destination = destination.Slice(BlockSize);
+			source = source[BlockSize..];
+			destination = destination[BlockSize..];
 
 			Encrypt(source, destination);
 		}

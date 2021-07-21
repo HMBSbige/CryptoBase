@@ -21,14 +21,14 @@ namespace UnitTest
 			Span<byte> i1 = stackalloc byte[368];
 			Span<byte> o1 = stackalloc byte[i1.Length];
 
-			h1.CopyTo(i1.Slice(64));
+			h1.CopyTo(i1[64..]);
 
 			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.Slice(64, 304).SequenceEqual(h2));
 
 			crypto.Reset();
 
-			h1.CopyTo(i1.Slice(64));
+			h1.CopyTo(i1[64..]);
 
 			crypto.Update(i1, o1);
 			Assert.IsTrue(o1.Slice(64, 304).SequenceEqual(h2));

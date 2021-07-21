@@ -142,8 +142,8 @@ namespace CryptoBase.Digests.MD5
 					return;
 				}
 
-				source.Slice(0, remain).CopyTo(_buffer.AsSpan(_bufferIndex));
-				source = source.Slice(remain);
+				source[..remain].CopyTo(_buffer.AsSpan(_bufferIndex));
+				source = source[remain..];
 				X[_index++] = BinaryPrimitives.ReadUInt32LittleEndian(_buffer);
 				_bufferIndex = 0;
 			}
@@ -157,7 +157,7 @@ namespace CryptoBase.Digests.MD5
 				}
 
 				X[_index++] = BinaryPrimitives.ReadUInt32LittleEndian(source);
-				source = source.Slice(SizeOfInt);
+				source = source[SizeOfInt..];
 			}
 
 			if (_index == BlockSizeOfInt)
@@ -211,9 +211,9 @@ namespace CryptoBase.Digests.MD5
 				Process();
 
 				BinaryPrimitives.WriteUInt32LittleEndian(destination, A);
-				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(4), B);
-				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(8), C);
-				BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(12), D);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination[4..], B);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination[8..], C);
+				BinaryPrimitives.WriteUInt32LittleEndian(destination[12..], D);
 			}
 			finally
 			{

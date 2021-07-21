@@ -85,9 +85,9 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			_rk = ArrayPool<uint>.Shared.Rent(32);
 
 			var k0 = BinaryPrimitives.ReadUInt32BigEndian(key) ^ 0xa3b1bac6;
-			var k1 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(4)) ^ 0x56aa3350;
-			var k2 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(8)) ^ 0x677d9197;
-			var k3 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(12)) ^ 0xb27022dc;
+			var k1 = BinaryPrimitives.ReadUInt32BigEndian(key[4..]) ^ 0x56aa3350;
+			var k2 = BinaryPrimitives.ReadUInt32BigEndian(key[8..]) ^ 0x677d9197;
+			var k3 = BinaryPrimitives.ReadUInt32BigEndian(key[12..]) ^ 0xb27022dc;
 
 			for (var i = 0; i < 32; i += 4)
 			{
@@ -110,9 +110,9 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			base.Encrypt(source, destination);
 
 			var x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
-			var x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(4));
-			var x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(8));
-			var x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(12));
+			var x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
+			var x2 = BinaryPrimitives.ReadUInt32BigEndian(source[8..]);
+			var x3 = BinaryPrimitives.ReadUInt32BigEndian(source[12..]);
 
 			for (var i = 0; i < 32; i += 4)
 			{
@@ -123,9 +123,9 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			}
 
 			BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
-			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), x2);
-			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), x1);
-			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), x0);
+			BinaryPrimitives.WriteUInt32BigEndian(destination[4..], x2);
+			BinaryPrimitives.WriteUInt32BigEndian(destination[8..], x1);
+			BinaryPrimitives.WriteUInt32BigEndian(destination[12..], x0);
 		}
 
 		public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -133,9 +133,9 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			base.Decrypt(source, destination);
 
 			var x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
-			var x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(4));
-			var x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(8));
-			var x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(12));
+			var x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
+			var x2 = BinaryPrimitives.ReadUInt32BigEndian(source[8..]);
+			var x3 = BinaryPrimitives.ReadUInt32BigEndian(source[12..]);
 
 			for (var i = 28; i >= 0; i -= 4)
 			{
@@ -146,9 +146,9 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4
 			}
 
 			BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
-			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), x2);
-			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), x1);
-			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), x0);
+			BinaryPrimitives.WriteUInt32BigEndian(destination[4..], x2);
+			BinaryPrimitives.WriteUInt32BigEndian(destination[8..], x1);
+			BinaryPrimitives.WriteUInt32BigEndian(destination[12..], x0);
 		}
 
 		public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)

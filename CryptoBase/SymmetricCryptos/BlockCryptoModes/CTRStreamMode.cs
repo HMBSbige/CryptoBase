@@ -116,7 +116,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes
 			var c = _counter.AsSpan();
 			Iv.Span.CopyTo(c);
 
-			var c0 = c.Slice(0, _blockSize);
+			var c0 = c[.._blockSize];
 
 			var c1 = c.Slice(_blockSize, _blockSize);
 			c0.CopyTo(c1);

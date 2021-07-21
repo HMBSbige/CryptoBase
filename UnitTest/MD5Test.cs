@@ -33,14 +33,14 @@ namespace UnitTest
 			md5.Update(origin);
 			md5.Reset();
 
-			md5.Update(origin.Slice(0, origin.Length / 2));
-			md5.Update(origin.Slice(origin.Length / 2));
+			md5.Update(origin[..(origin.Length / 2)]);
+			md5.Update(origin[(origin.Length / 2)..]);
 			md5.GetHash(hash);
 
 			Assert.AreEqual(md5Str, hash.ToHex());
 
-			md5.Update(origin.Slice(0, origin.Length / 2));
-			md5.UpdateFinal(origin.Slice(origin.Length / 2), hash);
+			md5.Update(origin[..(origin.Length / 2)]);
+			md5.UpdateFinal(origin[(origin.Length / 2)..], hash);
 
 			Assert.AreEqual(md5Str, hash.ToHex());
 		}
