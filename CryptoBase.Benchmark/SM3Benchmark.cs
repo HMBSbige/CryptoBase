@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
-using CryptoBase.Digests.SM3;
+using CryptoBase.Digests;
 using System;
 
 namespace CryptoBase.Benchmark
@@ -24,14 +24,16 @@ namespace CryptoBase.Benchmark
 		public void BouncyCastle()
 		{
 			Span<byte> hash = stackalloc byte[HashConstants.SM3Length];
-			BcDigestsUtils.SM3(_randombytes.Span, hash);
+			using var sm3 = new BcSM3Digest();
+			sm3.UpdateFinal(_randombytes.Span, hash);
 		}
 
 		[Benchmark(Baseline = true)]
 		public void MayFast()
 		{
 			Span<byte> hash = stackalloc byte[HashConstants.SM3Length];
-			SM3Utils.MayFast(_randombytes.Span, hash);
+			using var sm3 = DigestUtils.Create(DigestType.Sm3);
+			sm3.UpdateFinal(_randombytes.Span, hash);
 		}
 	}
 }

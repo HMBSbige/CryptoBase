@@ -24,21 +24,24 @@ namespace CryptoBase.Benchmark
 		public void Default()
 		{
 			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-			MD5Utils.Default(_randombytes.Span, hash);
+			using var md5 = new DefaultMD5Digest();
+			md5.UpdateFinal(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
 		public void BouncyCastle()
 		{
 			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-			BcDigestsUtils.MD5(_randombytes.Span, hash);
+			using var md5 = new BcMD5Digest();
+			md5.UpdateFinal(_randombytes.Span, hash);
 		}
 
 		[Benchmark]
 		public void MayFast()
 		{
 			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-			MD5Utils.MayFast(_randombytes.Span, hash);
+			using var md5 = new MD5Digest();
+			md5.UpdateFinal(_randombytes.Span, hash);
 		}
 
 		[Benchmark(Baseline = true)]
@@ -49,7 +52,8 @@ namespace CryptoBase.Benchmark
 				return;
 			}
 			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-			MD5Utils.Fast440(_randombytes.Span, hash);
+			using var md5 = new Fast440MD5Digest();
+			md5.UpdateFinal(_randombytes.Span, hash);
 		}
 	}
 }

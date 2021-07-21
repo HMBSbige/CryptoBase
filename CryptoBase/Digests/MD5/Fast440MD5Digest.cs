@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CryptoBase.Digests.MD5
 {
-	internal class Fast440MD5Digest : MD5Digest
+	public class Fast440MD5Digest : MD5Digest
 	{
 		public override void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{

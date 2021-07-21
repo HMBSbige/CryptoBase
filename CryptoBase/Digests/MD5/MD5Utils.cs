@@ -4,6 +4,7 @@ using System.Threading;
 
 namespace CryptoBase.Digests.MD5
 {
+	[Obsolete(@"Use DigestUtils.Create(DigestType.Md5)")]
 	public static class MD5Utils
 	{
 		private static readonly ThreadLocal<IHash> Normal = new(() => new DefaultMD5Digest());

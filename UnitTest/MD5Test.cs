@@ -61,7 +61,8 @@ namespace UnitTest
 		public void Fast440Test(string str, string md5Str)
 		{
 			Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-			MD5Utils.Fast440(Encoding.UTF8.GetBytes(str), hash);
+			using var md5 = new Fast440MD5Digest();
+			md5.UpdateFinal(Encoding.UTF8.GetBytes(str), hash);
 			Assert.AreEqual(md5Str, hash.ToHex());
 		}
 
