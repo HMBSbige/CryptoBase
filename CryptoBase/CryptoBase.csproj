@@ -3,7 +3,6 @@
   <Import Project="..\common.props" />
   
   <PropertyGroup>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Description>A fast crypto library for .NET.</Description>
   </PropertyGroup>
 
