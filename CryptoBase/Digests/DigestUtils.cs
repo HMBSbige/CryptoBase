@@ -6,11 +6,13 @@ using CryptoBase.Digests.SHA384;
 using CryptoBase.Digests.SHA512;
 using CryptoBase.Digests.SM3;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Digests
 {
 	public static class DigestUtils
 	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IHash Create(DigestType type)
 		{
 			return type switch

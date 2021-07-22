@@ -2,13 +2,14 @@ using BenchmarkDotNet.Attributes;
 using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark
 {
 	[MemoryDiagnoser]
 	public class HMACBenchmark
 	{
-		[Params(32)]
+		[Params(32, 114514)]
 		public int ByteLength { get; set; }
 
 		private byte[] _randombytes = null!;
@@ -22,7 +23,7 @@ namespace CryptoBase.Benchmark
 		}
 
 		[Benchmark]
-		public void HMAC()
+		public void Managed()
 		{
 			using var mac = HmacUtils.Create(DigestType.Sha1, _randomKey);
 			mac.Update(_randombytes);
@@ -34,10 +35,11 @@ namespace CryptoBase.Benchmark
 		[Benchmark(Baseline = true)]
 		public void Default()
 		{
-			using var mac = System.Security.Cryptography.HMAC.Create(@"HMACSHA1")!;
-			mac.Key = _randomKey;
-			Span<byte> temp = stackalloc byte[mac.HashSize >> 3];
-			mac.TryComputeHash(_randombytes, temp, out _);
+			using var mac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _randomKey);
+			mac.AppendData(_randombytes);
+
+			Span<byte> temp = stackalloc byte[mac.HashLengthInBytes];
+			mac.GetHashAndReset(temp);
 		}
 	}
 }

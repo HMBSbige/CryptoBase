@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions.Digests;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Digests.SHA384
 {
@@ -6,11 +7,9 @@ namespace CryptoBase.Digests.SHA384
 	{
 		public override string Name => @"SHA-384";
 
-		public override int Length => HashConstants.Sha384Length;
-
 		public override int BlockSize => HashConstants.Sha384BlockSize;
 
-		public DefaultSHA384Digest() : base(System.Security.Cryptography.SHA384.Create())
+		public DefaultSHA384Digest() : base(HashAlgorithmName.SHA384)
 		{
 		}
 	}

@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions.Digests;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Digests.SHA1
 {
@@ -6,11 +7,9 @@ namespace CryptoBase.Digests.SHA1
 	{
 		public override string Name => @"SHA-1";
 
-		public override int Length => HashConstants.Sha1Length;
-
 		public override int BlockSize => HashConstants.Sha1BlockSize;
 
-		public DefaultSHA1Digest() : base(System.Security.Cryptography.SHA1.Create())
+		public DefaultSHA1Digest() : base(HashAlgorithmName.SHA1)
 		{
 		}
 	}

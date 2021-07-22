@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions.Digests;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Digests.MD5
 {
@@ -6,11 +7,9 @@ namespace CryptoBase.Digests.MD5
 	{
 		public override string Name => @"MD5";
 
-		public override int Length => HashConstants.Md5Length;
-
 		public override int BlockSize => HashConstants.Md5BlockSize;
 
-		public DefaultMD5Digest() : base(System.Security.Cryptography.MD5.Create())
+		public DefaultMD5Digest() : base(HashAlgorithmName.MD5)
 		{
 		}
 	}

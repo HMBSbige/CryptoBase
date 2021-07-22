@@ -11,39 +11,31 @@ namespace CryptoBase.Digests
 	public abstract class DefaultDigest : IHash
 	{
 		public abstract string Name { get; }
-		public abstract int Length { get; }
+		public int Length => _hasher.HashLengthInBytes;
 		public abstract int BlockSize { get; }
 
-		private readonly HashAlgorithm _hasher;
+		private readonly IncrementalHash _hasher;
 		private const int BufferSize = 4096;
 
-		protected DefaultDigest(HashAlgorithm hasher)
+		protected DefaultDigest(HashAlgorithmName name)
 		{
-			_hasher = hasher;
+			_hasher = IncrementalHash.CreateHash(name);
 		}
 
 		public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 		{
-			_hasher.TryComputeHash(origin, destination, out _);
+			_hasher.AppendData(origin);
+			_hasher.GetHashAndReset(destination);
 		}
 
 		public void Update(ReadOnlySpan<byte> source)
 		{
-			var buffer = ArrayPool<byte>.Shared.Rent(source.Length);
-			try
-			{
-				source.CopyTo(buffer);
-				_hasher.TransformBlock(buffer, 0, source.Length, default, default);
-			}
-			finally
-			{
-				ArrayPool<byte>.Shared.Return(buffer);
-			}
+			_hasher.AppendData(source);
 		}
 
 		public void GetHash(Span<byte> destination)
 		{
-			UpdateFinal(Array.Empty<byte>(), destination);
+			_hasher.GetHashAndReset(destination);
 		}
 
 		public void Update(Stream inputStream)
@@ -54,7 +46,7 @@ namespace CryptoBase.Digests
 				int bytesRead;
 				while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
 				{
-					_hasher.TransformBlock(buffer, 0, bytesRead, default, default);
+					_hasher.AppendData(buffer.AsSpan(0, bytesRead));
 				}
 			}
 			finally
@@ -65,7 +57,8 @@ namespace CryptoBase.Digests
 
 		public void UpdateFinal(Stream inputStream, Span<byte> destination)
 		{
-			_hasher.ComputeHash(inputStream).CopyTo(destination);
+			Update(inputStream);
+			GetHash(destination);
 		}
 
 		public async Task UpdateAsync(Stream inputStream, CancellationToken token = default)
@@ -78,7 +71,7 @@ namespace CryptoBase.Digests
 				int bytesRead;
 				while ((bytesRead = await inputStream.ReadAsync(buffer, token).ConfigureAwait(false)) > 0)
 				{
-					_hasher.TransformBlock(rented, 0, bytesRead, default, default);
+					_hasher.AppendData(rented.AsSpan(0, bytesRead));
 				}
 			}
 			finally
@@ -89,13 +82,14 @@ namespace CryptoBase.Digests
 
 		public async Task UpdateFinalAsync(Stream inputStream, Memory<byte> destination, CancellationToken token = default)
 		{
-			var buffer = await _hasher.ComputeHashAsync(inputStream, token).ConfigureAwait(false);
-			buffer.CopyTo(destination);
+			await UpdateAsync(inputStream, token).ConfigureAwait(false);
+			GetHash(destination.Span);
 		}
 
 		public void Reset()
 		{
-			_hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+			Span<byte> destination = stackalloc byte[Length];
+			GetHash(destination);
 		}
 
 		public void Dispose()
