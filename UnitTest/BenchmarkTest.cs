@@ -162,5 +162,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<HMACBenchmark>();
 		}
+
+		[TestMethod]
+		public void HKDFBenchmark()
+		{
+			var _ = BenchmarkRunner.Run<HKDFBenchmark>();
+		}
 	}
 }
