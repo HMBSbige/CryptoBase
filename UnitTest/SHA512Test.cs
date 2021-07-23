@@ -5,7 +5,6 @@ using CryptoBase.Digests.SHA512;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace UnitTest
 {
@@ -56,13 +55,10 @@ namespace UnitTest
 		[DataRow(@"abcdbcdecdefdefgefghfghighijhi", @"6b22632a618b07bc6f18072e60648086a0c3f4220724f737f322606cbacee8ea510dc2970735072ca8e59f185f3a770a8948beb95dfe3bbbe18572ae6ec91f20")]
 		[DataRow(@"jkijkljklmklmnlmnomnopnopq", @"f02d8e6b2649207bbfa0ca8fa9a667fc7673f9d23821ae59ac25c3939db9766b301cb61d0b6f56664d3b225b966dedfbf62281f4da7ebda8f13a2e2470a21a76")]
 		[DataRow(@"01234567012345670123456701234567", @"f8c0085901bb2e5fc290921c7b08cf9c2e4c305ca417bd18d37fc8e6d5b08c05acedbce6a92c4bc3098c324bf1930ab76aa1dbb3336129006d991ffc8d4a9d09")]
-		public async Task SHA512DigestTest(string str, string expected)
+		public void SHA512DigestTest(string str, string expected)
 		{
 			SHA512DigestTest(new DefaultSHA512Digest(), str, expected);
 			SHA512DigestTest(new BcSHA512Digest(), str, expected);
-
-			await TestUtils.TestStreamAsync(new DefaultSHA512Digest(), str, expected);
-			await TestUtils.TestStreamAsync(new BcSHA512Digest(), str, expected);
 		}
 
 		/// <summary>

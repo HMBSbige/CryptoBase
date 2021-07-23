@@ -5,7 +5,6 @@ using CryptoBase.Digests.SHA384;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace UnitTest
 {
@@ -56,13 +55,10 @@ namespace UnitTest
 		[DataRow(@"abcdbcdecdefdefgefghfghighijhi", @"0eb6af2176a0934e1177b9ac961fb6ad62abbd301db9027f3a627c276ad7d6a028343233863a25e01e1b80ffb2d1f2a4")]
 		[DataRow(@"jkijkljklmklmnlmnomnopnopq", @"4bd7b05260ddb6a61e55b8db2034af1c1e0c30c67cd26ccd61df3452f15b1a7a0b0702f06c922fd2eca30022685f6232")]
 		[DataRow(@"01234567012345670123456701234567", @"15065855b8e2dffac1d56d0661b7673e0df684096d81b3ca2f1e7c25872a0a6488d7d029a4be1473032934707f412127")]
-		public async Task SHA384DigestTest(string str, string expected)
+		public void SHA384DigestTest(string str, string expected)
 		{
 			SHA384DigestTest(new DefaultSHA384Digest(), str, expected);
 			SHA384DigestTest(new BcSHA384Digest(), str, expected);
-
-			await TestUtils.TestStreamAsync(new DefaultSHA384Digest(), str, expected);
-			await TestUtils.TestStreamAsync(new BcSHA384Digest(), str, expected);
 		}
 
 		/// <summary>

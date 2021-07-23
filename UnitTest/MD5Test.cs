@@ -5,7 +5,6 @@ using CryptoBase.Digests.MD5;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace UnitTest
 {
@@ -79,15 +78,11 @@ namespace UnitTest
 		[DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", @"d174ab98d277d9f5a5611c2c9f419d9f")]
 		[DataRow(@"12345678901234567890123456789012345678901234567890123456789012345678901234567890", @"57edf4a22be3c955ac49da2e2107b67a")]
 		[DataRow(@"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", @"268c7919189d85e276d74b8c60b2f84f")]
-		public async Task LongMessageTest(string str, string md5Str)
+		public void LongMessageTest(string str, string md5Str)
 		{
 			MD5DigestTest(new DefaultMD5Digest(), str, md5Str);
 			MD5DigestTest(new BcMD5Digest(), str, md5Str);
 			MD5DigestTest(new MD5Digest(), str, md5Str);
-
-			await TestUtils.TestStreamAsync(new DefaultMD5Digest(), str, md5Str);
-			await TestUtils.TestStreamAsync(new BcMD5Digest(), str, md5Str);
-			await TestUtils.TestStreamAsync(new MD5Digest(), str, md5Str);
 		}
 
 #if LongTimeTest

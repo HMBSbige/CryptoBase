@@ -5,7 +5,6 @@ using CryptoBase.Digests.SHA1;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace UnitTest
 {
@@ -56,13 +55,10 @@ namespace UnitTest
 		[DataRow(@"abcdbcdecdefdefgefghfghighijhi", @"f9537c23893d2014f365adf8ffe33b8eb0297ed1")]
 		[DataRow(@"jkijkljklmklmnlmnomnopnopq", @"346fb528a24b48f563cb061470bcfd23740427ad")]
 		[DataRow(@"01234567012345670123456701234567", @"c729c8996ee0a6f74f4f3248e8957edf704fb624")]
-		public async Task SHA1DigestTest(string str, string sha1Str)
+		public void SHA1DigestTest(string str, string sha1Str)
 		{
 			SHA1DigestTest(new DefaultSHA1Digest(), str, sha1Str);
 			SHA1DigestTest(new BcSHA1Digest(), str, sha1Str);
-
-			await TestUtils.TestStreamAsync(new DefaultSHA1Digest(), str, sha1Str);
-			await TestUtils.TestStreamAsync(new BcSHA1Digest(), str, sha1Str);
 		}
 
 		[TestMethod]

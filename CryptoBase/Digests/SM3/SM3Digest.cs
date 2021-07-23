@@ -1,13 +1,9 @@
 using CryptoBase.Abstractions.Digests;
 using System;
-using System.Buffers;
 using System.Buffers.Binary;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace CryptoBase.Digests.SM3
 {
@@ -18,7 +14,6 @@ namespace CryptoBase.Digests.SM3
 	{
 		private const int BlockSizeOfInt = 16;
 		private const int SizeOfInt = sizeof(uint);
-		private const int BufferSize = 4096;
 
 		private static readonly uint[] T = new uint[64];
 
@@ -208,54 +203,6 @@ namespace CryptoBase.Digests.SM3
 			{
 				Reset();
 			}
-		}
-
-		public void Update(Stream inputStream)
-		{
-			var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-			try
-			{
-				int bytesRead;
-				while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
-				{
-					Update(buffer.AsSpan(0, bytesRead));
-				}
-			}
-			finally
-			{
-				ArrayPool<byte>.Shared.Return(buffer);
-			}
-		}
-
-		public void UpdateFinal(Stream inputStream, Span<byte> destination)
-		{
-			Update(inputStream);
-			GetHash(destination);
-		}
-
-		public async Task UpdateAsync(Stream inputStream, CancellationToken token = default)
-		{
-			var rented = ArrayPool<byte>.Shared.Rent(BufferSize);
-			try
-			{
-				Memory<byte> buffer = rented;
-
-				int bytesRead;
-				while ((bytesRead = await inputStream.ReadAsync(buffer, token).ConfigureAwait(false)) > 0)
-				{
-					Update(rented.AsSpan(0, bytesRead));
-				}
-			}
-			finally
-			{
-				ArrayPool<byte>.Shared.Return(rented);
-			}
-		}
-
-		public async Task UpdateFinalAsync(Stream inputStream, Memory<byte> destination, CancellationToken token = default)
-		{
-			await UpdateAsync(inputStream, token).ConfigureAwait(false);
-			GetHash(destination.Span);
 		}
 
 		public void Reset()
