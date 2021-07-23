@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.Digests;
-using CryptoBase.Digests.SM3;
 using System;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -25,13 +24,12 @@ namespace CryptoBase.Macs.Hmac
 		{
 			return type switch
 			{
-				DigestType.Sm3 => Create(key, new SM3Digest()),
 				DigestType.Md5 => Create(key, HashAlgorithmName.MD5),
 				DigestType.Sha1 => Create(key, HashAlgorithmName.SHA1),
 				DigestType.Sha256 => Create(key, HashAlgorithmName.SHA256),
 				DigestType.Sha384 => Create(key, HashAlgorithmName.SHA384),
 				DigestType.Sha512 => Create(key, HashAlgorithmName.SHA512),
-				_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+				_ => Create(key, DigestUtils.Create(type))
 			};
 		}
 	}

@@ -7,6 +7,8 @@ namespace CryptoBase.Digests
 		Sha1,
 		Sha256,
 		Sha384,
-		Sha512
+		Sha512,
+		Crc32,
+		Crc32C
 	}
 }

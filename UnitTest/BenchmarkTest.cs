@@ -168,5 +168,11 @@ namespace UnitTest
 		{
 			var _ = BenchmarkRunner.Run<HKDFBenchmark>();
 		}
+
+		[TestMethod]
+		public void CRC32Benchmark()
+		{
+			var _ = BenchmarkRunner.Run<CRC32Benchmark>();
+		}
 	}
 }

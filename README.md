@@ -23,6 +23,8 @@ A fast crypto library for .NET
 
 | Digests | Software Fallback | X86 | Arm |
 | ------- |:-----------------:|:---:|:---:|
+CRC-32 | ✅ | ⏳ | ⏳
+CRC-32C | ✅ | ✅ | ⏳
 MD5 | ✅ | 💔 | 💔
 SHA1 | ✅ | ⏳ | ⏳
 SHA256 | ✅ | ⏳ | ⏳

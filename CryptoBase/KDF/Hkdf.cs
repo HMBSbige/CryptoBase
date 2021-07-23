@@ -131,6 +131,8 @@ namespace CryptoBase.KDF
 				DigestType.Sha256 => HashConstants.Sha256Length,
 				DigestType.Sha384 => HashConstants.Sha384Length,
 				DigestType.Sha512 => HashConstants.Sha512Length,
+				DigestType.Crc32 => HashConstants.Crc32Length,
+				DigestType.Crc32C => HashConstants.Crc32Length,
 				_ => throw new ArgumentOutOfRangeException(nameof(type))
 			};
 		}

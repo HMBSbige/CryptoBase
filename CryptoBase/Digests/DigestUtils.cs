@@ -1,4 +1,6 @@
 using CryptoBase.Abstractions.Digests;
+using CryptoBase.Digests.CRC32;
+using CryptoBase.Digests.CRC32C;
 using CryptoBase.Digests.MD5;
 using CryptoBase.Digests.SHA1;
 using CryptoBase.Digests.SHA256;
@@ -23,8 +25,27 @@ namespace CryptoBase.Digests
 				DigestType.Sha256 => new DefaultSHA256Digest(),
 				DigestType.Sha384 => new DefaultSHA384Digest(),
 				DigestType.Sha512 => new DefaultSHA512Digest(),
+				DigestType.Crc32 => CreateCrc32(),
+				DigestType.Crc32C => CreateCrc32C(),
 				_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
 			};
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static IHash CreateCrc32()
+		{
+			return new Crc32SF();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static IHash CreateCrc32C()
+		{
+			if (Crc32CX86.IsSupport)
+			{
+				return new Crc32CX86();
+			}
+
+			return new Crc32CSF();
 		}
 	}
 }
