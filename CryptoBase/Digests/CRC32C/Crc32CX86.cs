@@ -53,18 +53,17 @@ namespace CryptoBase.Digests.CRC32C
 				fixed (byte* p = source)
 				{
 					_state = Update(p, source.Length, _state);
+					source = source[^(source.Length % 0x10)..];
 				}
+			}
+
+			if (Sse42.IsSupported)
+			{
+				UpdateSse42(source);
 			}
 			else
 			{
-				if (Sse42.IsSupported)
-				{
-					UpdateSse42(source);
-				}
-				else
-				{
-					_state = ~Crc32Table.Crc32C.Append(~_state, source);
-				}
+				_state = ~Crc32Table.Crc32C.Append(~_state, source);
 			}
 		}
 

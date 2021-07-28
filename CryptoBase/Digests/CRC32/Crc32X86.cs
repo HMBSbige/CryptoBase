@@ -50,12 +50,11 @@ namespace CryptoBase.Digests.CRC32
 				fixed (byte* p = source)
 				{
 					_state = Update(p, source.Length, _state);
+					source = source[^(source.Length % 0x10)..];
 				}
 			}
-			else
-			{
-				_state = ~Crc32Table.Crc32.Append(~_state, source);
-			}
+
+			_state = ~Crc32Table.Crc32.Append(~_state, source);
 		}
 
 		public void GetHash(Span<byte> destination)
