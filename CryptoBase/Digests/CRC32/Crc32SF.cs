@@ -29,10 +29,7 @@ namespace CryptoBase.Digests.CRC32
 
 		public void Update(ReadOnlySpan<byte> source)
 		{
-			if (!source.IsEmpty)
-			{
-				_state = Table.Append(_state, source);
-			}
+			_state = Table.Append(_state, source);
 		}
 
 		public void GetHash(Span<byte> destination)

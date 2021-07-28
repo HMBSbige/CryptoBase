@@ -34,6 +34,11 @@ namespace CryptoBase.Digests
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static IHash CreateCrc32()
 		{
+			if (Crc32X86.IsSupport)
+			{
+				return new Crc32X86();
+			}
+
 			return new Crc32SF();
 		}
 

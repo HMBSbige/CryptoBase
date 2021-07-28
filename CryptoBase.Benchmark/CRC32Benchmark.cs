@@ -19,7 +19,7 @@ namespace CryptoBase.Benchmark
 			_randombytes = Utils.RandBytes(ByteLength).ToArray();
 		}
 
-		[Benchmark]
+		[Benchmark(Baseline = true)]
 		public void Crc32SF()
 		{
 			using var hasher = new Crc32SF();
@@ -27,7 +27,15 @@ namespace CryptoBase.Benchmark
 			hasher.UpdateFinal(_randombytes, hash);
 		}
 
-		[Benchmark(Baseline = true)]
+		[Benchmark]
+		public void Crc32X86()
+		{
+			using var hasher = new Crc32X86();
+			Span<byte> hash = stackalloc byte[hasher.Length];
+			hasher.UpdateFinal(_randombytes, hash);
+		}
+
+		[Benchmark]
 		public void Crc32CSF()
 		{
 			using var hasher = new Crc32CSF();

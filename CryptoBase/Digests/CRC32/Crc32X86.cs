@@ -1,41 +1,38 @@
 using CryptoBase.Abstractions.Digests;
-using CryptoBase.Digests.CRC32;
 using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace CryptoBase.Digests.CRC32C
+namespace CryptoBase.Digests.CRC32
 {
 	/// <summary>
-	/// Same as <see cref="Crc32X86"/> , but different constants.
-	/// Abstraction will cause performance issue!
-	/// WTF.NET
+	/// https://www.intel.com/content/dam/www/public/us/en/documents/white-papers/fast-crc-computation-generic-polynomials-pclmulqdq-paper.pdf
 	/// </summary>
-	public class Crc32CX86 : IHash
+	public class Crc32X86 : IHash
 	{
-		public string Name => @"CRC-32C";
+		public string Name => @"CRC-32";
 
 		public int Length => HashConstants.Crc32Length;
 
 		public int BlockSize => HashConstants.Crc32BlockSize;
 
-		public static bool IsSupport => Sse42.IsSupported || Sse2.IsSupported && Pclmulqdq.IsSupported;
+		public static bool IsSupport => Sse2.IsSupported && Pclmulqdq.IsSupported;
 
 		private uint _state;
 
 		#region Constants
 
-		private static readonly Vector128<ulong> K1K2 = Crc32Table.K1K2C;
-		private static readonly Vector128<ulong> K3K4 = Crc32Table.K3K4C;
-		private static readonly Vector128<ulong> K5 = Crc32Table.K5C;
-		private static readonly Vector128<ulong> RU = Crc32Table.RUC;
+		private static readonly Vector128<ulong> K1K2 = Crc32Table.K1K2;
+		private static readonly Vector128<ulong> K3K4 = Crc32Table.K3K4;
+		private static readonly Vector128<ulong> K5 = Crc32Table.K5;
+		private static readonly Vector128<ulong> RU = Crc32Table.RU;
 		private static readonly Vector128<ulong> Mask32 = Crc32Table.Mask32;
 
 		#endregion
 
-		public Crc32CX86()
+		public Crc32X86()
 		{
 			Reset();
 		}
@@ -48,7 +45,7 @@ namespace CryptoBase.Digests.CRC32C
 
 		public unsafe void Update(ReadOnlySpan<byte> source)
 		{
-			if (Sse2.IsSupported && Pclmulqdq.IsSupported && source.Length >= 64)
+			if (source.Length >= 64)
 			{
 				fixed (byte* p = source)
 				{
@@ -57,14 +54,7 @@ namespace CryptoBase.Digests.CRC32C
 			}
 			else
 			{
-				if (Sse42.IsSupported)
-				{
-					UpdateSse42(source);
-				}
-				else
-				{
-					_state = ~Crc32Table.Crc32C.Append(~_state, source);
-				}
+				_state = ~Crc32Table.Crc32.Append(~_state, source);
 			}
 		}
 
@@ -160,48 +150,6 @@ namespace CryptoBase.Digests.CRC32C
 			x1 = Pclmulqdq.CarrylessMultiply(x1, RU, 0x00);
 			x1 = Sse2.Xor(x1, t);
 			return Sse41.IsSupported ? Sse41.Extract(x1.AsUInt32(), 0x01) : x1.AsUInt32().GetElement(1);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void UpdateSse42(ReadOnlySpan<byte> source)
-		{
-			if (Sse42.X64.IsSupported)
-			{
-				while (source.Length >= 8)
-				{
-					var data = BinaryPrimitives.ReadUInt64LittleEndian(source);
-					_state = (uint)Sse42.X64.Crc32(_state, data);
-					source = source[8..];
-				}
-
-				if (source.Length >= 4)
-				{
-					var data = BinaryPrimitives.ReadUInt32LittleEndian(source);
-					_state = Sse42.Crc32(_state, data);
-					source = source[4..];
-				}
-			}
-			else
-			{
-				while (source.Length >= 4)
-				{
-					var data = BinaryPrimitives.ReadUInt32LittleEndian(source);
-					_state = Sse42.Crc32(_state, data);
-					source = source[4..];
-				}
-			}
-
-			if (source.Length >= 2)
-			{
-				var data = BinaryPrimitives.ReadUInt16LittleEndian(source);
-				_state = Sse42.Crc32(_state, data);
-				source = source[2..];
-			}
-
-			foreach (var b in source)
-			{
-				_state = Sse42.Crc32(_state, b);
-			}
 		}
 
 		public void Dispose()

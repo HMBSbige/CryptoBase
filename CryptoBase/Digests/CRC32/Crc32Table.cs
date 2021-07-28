@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Intrinsics;
 
 namespace CryptoBase.Digests.CRC32
 {
@@ -72,5 +73,35 @@ namespace CryptoBase.Digests.CRC32
 
 		public static readonly Crc32Table Crc32 = new(Polynomial);
 		public static readonly Crc32Table Crc32C = new(PolynomialC);
+
+		public static readonly Vector128<ulong> Mask32 = Vector128.Create(0x00000000ffffffff, 0x0000000000000000).AsUInt64();
+
+		#region Constants_CRC32
+
+		// [x**(4*128+32) mod P(x) << 32)]'  << 1   = 0x154442bd4
+		// [(x**(4*128-32) mod P(x) << 32)]' << 1   = 0x1c6e41596
+		public static readonly Vector128<ulong> K1K2 = Vector128.Create(0x0000000154442bd4, 0x00000001c6e41596).AsUInt64();
+
+		// [(x**(128+32) mod P(x) << 32)]'   << 1   = 0x1751997d0
+		// [(x**(128-32) mod P(x) << 32)]'   << 1   = 0x0ccaa009e
+		public static readonly Vector128<ulong> K3K4 = Vector128.Create(0x00000001751997d0, 0x00000000ccaa009e).AsUInt64();
+
+		// [(x**64 mod P(x) << 32)]'         << 1   = 0x163cd6124
+		public static readonly Vector128<ulong> K5 = Vector128.Create(0x0000000163cd6124, 0x0000000000000000).AsUInt64();
+
+		// P(x)' = 0x1db710641
+		// u' = (x**64 / P(x))' = 0x1F7011641
+		public static readonly Vector128<ulong> RU = Vector128.Create(0x00000001db710641, 0x00000001f7011641).AsUInt64();
+
+		#endregion
+
+		#region Constants_CRC32C
+
+		public static readonly Vector128<ulong> K1K2C = Vector128.Create(0x00000000740eef02, 0x000000009e4addf8).AsUInt64();
+		public static readonly Vector128<ulong> K3K4C = Vector128.Create(0x00000000f20c0dfe, 0x000000014cd00bd6).AsUInt64();
+		public static readonly Vector128<ulong> K5C = Vector128.Create(0x00000000dd45aab8, 0x0000000000000000).AsUInt64();
+		public static readonly Vector128<ulong> RUC = Vector128.Create(0x0000000105ec76f1, 0x00000000dea713f1).AsUInt64();
+
+		#endregion
 	}
 }
