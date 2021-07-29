@@ -158,7 +158,7 @@ namespace CryptoBase.Digests.CRC32C
 			x1 = Sse2.And(x1, Mask32);
 			x1 = Pclmulqdq.CarrylessMultiply(x1, RU, 0x00);
 			x1 = Sse2.Xor(x1, t);
-			return Sse41.IsSupported ? Sse41.Extract(x1.AsUInt32(), 0x01) : x1.AsUInt32().GetElement(1);
+			return x1.AsUInt32().GetElement(1); // pextrd eax, x1, 1
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
