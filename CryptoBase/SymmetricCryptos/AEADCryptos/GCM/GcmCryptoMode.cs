@@ -52,7 +52,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 
 			if (destination.Length != source.Length)
 			{
-				throw new ArgumentException(string.Empty, nameof(destination));
+				throw new ArgumentException(@"Plaintext and ciphertext must have the same length.", nameof(destination));
 			}
 
 			var length = (ulong)source.Length << 3;
@@ -145,7 +145,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM
 
 			if (destination.Length != source.Length)
 			{
-				throw new ArgumentException(string.Empty, nameof(destination));
+				throw new ArgumentException(@"Plaintext and ciphertext must have the same length.", nameof(destination));
 			}
 
 			var length = (ulong)source.Length << 3;
