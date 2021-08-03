@@ -31,6 +31,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		};
 
 		private readonly byte[] _key;
+		private readonly int _keyLength;
 		private readonly byte[] _state;
 		private const int BoxLength = 256;
 
@@ -38,8 +39,12 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 
 		public RC4Crypto(ReadOnlySpan<byte> key)
 		{
-			_key = key.ToArray();
+			_keyLength = key.Length;
+
+			_key = ArrayPool<byte>.Shared.Rent(key.Length);
 			_state = ArrayPool<byte>.Shared.Rent(BoxLength);
+
+			key.CopyTo(_key);
 			Init();
 		}
 
@@ -47,9 +52,9 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		private byte GetByte(Span<byte> stateSpan)
 		{
 			x = x + 1 & 0xFF;
-			y = stateSpan[x] + y & 0xFF;
-			Utils.Swap(ref stateSpan[x], ref stateSpan[y]);
-			return stateSpan[stateSpan[x] + stateSpan[y] & 0xFF];
+			y = stateSpan.GetRef(x) + y & 0xFF;
+			Utils.Swap(ref stateSpan.GetRef(x), ref stateSpan.GetRef(y));
+			return stateSpan.GetRef(stateSpan.GetRef(x) + stateSpan.GetRef(y) & 0xFF);
 		}
 
 		public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -117,15 +122,15 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 			y = default;
 
 			var stateSpan = _state.AsSpan();
-			var keySpan = _key.AsSpan();
+			var keySpan = _key.AsSpan(0, _keyLength);
 
 			S.CopyTo(stateSpan);
 
 			var j = 0;
 			for (var i = 0; i < BoxLength; ++i)
 			{
-				j = keySpan[i % _key.Length] + stateSpan[i] + j & 0xFF;
-				Utils.Swap(ref stateSpan[i], ref stateSpan[j]);
+				j = keySpan.GetRef(i % _keyLength) + stateSpan.GetRef(i) + j & 0xFF;
+				Utils.Swap(ref stateSpan.GetRef(i), ref stateSpan.GetRef(j));
 			}
 		}
 
@@ -137,6 +142,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.RC4
 		public override void Dispose()
 		{
 			base.Dispose();
+			ArrayPool<byte>.Shared.Return(_key);
 			ArrayPool<byte>.Shared.Return(_state);
 		}
 	}

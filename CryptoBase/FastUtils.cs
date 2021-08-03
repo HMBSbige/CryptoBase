@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -5,6 +6,15 @@ namespace CryptoBase
 {
 	public static class FastUtils
 	{
+		/// <summary>
+		/// Get span ref without bounds checking
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ref T GetRef<T>(this Span<T> span, int index)
+		{
+			return ref Unsafe.Add(ref MemoryMarshal.GetReference(span), index);
+		}
+
 		/// <summary>
 		/// Get array ref without bounds checking
 		/// </summary>
