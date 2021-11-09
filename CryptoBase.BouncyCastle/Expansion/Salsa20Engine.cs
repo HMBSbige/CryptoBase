@@ -32,11 +32,11 @@ namespace CryptoBase.BouncyCastle.Expansion
 		 * variables to hold the state of the engine
 		 * during encryption and decryption
 		 */
-		private int index = 0;
+		private int index;
 		internal uint[] engineState = new uint[StateSize]; // state
 		internal uint[] x = new uint[StateSize]; // internal buffer
 		private byte[] keyStream = new byte[StateSize * 4]; // expanded state, 64 bytes
-		private bool initialised = false;
+		private bool initialised;
 
 		/*
 		 * internal counter

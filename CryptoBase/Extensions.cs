@@ -93,6 +93,7 @@ namespace CryptoBase
 		public static void IncrementBe4(this byte[] counter, int start, int end)
 		{
 			var j = end;
+			// ReSharper disable once ConditionIsAlwaysTrueOrFalse
 			if ((counter[--j] += 4) < 4)
 			{
 				while (--j >= start && ++counter[j] == 0)
