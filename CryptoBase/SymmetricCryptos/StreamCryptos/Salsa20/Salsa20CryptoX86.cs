@@ -6,7 +6,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20
 {
 	public class Salsa20CryptoX86 : Salsa20Crypto
 	{
-		public Salsa20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
+		public Salsa20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
 			Init(key, iv);
 			Reset();

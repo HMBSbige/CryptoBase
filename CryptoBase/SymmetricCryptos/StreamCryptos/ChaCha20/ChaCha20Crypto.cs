@@ -9,7 +9,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20
 
 		public override int IvSize => 12;
 
-		protected ChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
+		protected ChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
 			Init(key, iv);
 			Reset();

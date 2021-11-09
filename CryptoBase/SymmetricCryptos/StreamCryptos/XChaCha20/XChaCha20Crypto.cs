@@ -11,7 +11,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20
 
 		private readonly ReadOnlyMemory<byte> Key;
 
-		protected XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
+		protected XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
 			if (key.Length != 32)
 			{

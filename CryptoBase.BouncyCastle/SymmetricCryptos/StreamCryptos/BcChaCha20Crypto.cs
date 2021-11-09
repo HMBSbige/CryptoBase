@@ -13,7 +13,7 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 
 		private readonly ChaCha7539Engine _engine;
 
-		public BcChaCha20Crypto(byte[] key, byte[] iv) : base(key, iv)
+		public BcChaCha20Crypto(byte[] key, byte[] iv)
 		{
 			_engine = new ChaCha7539Engine();
 			_engine.Init(default, new ParametersWithIV(new KeyParameter(key), iv));

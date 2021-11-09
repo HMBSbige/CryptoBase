@@ -13,7 +13,7 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
 
 		private readonly XSalsa20Engine _engine;
 
-		public BcXSalsa20Crypto(byte[] key, byte[] iv) : base(key, iv)
+		public BcXSalsa20Crypto(byte[] key, byte[] iv)
 		{
 			_engine = new XSalsa20Engine();
 			_engine.Init(default, new ParametersWithIV(new KeyParameter(key), iv));

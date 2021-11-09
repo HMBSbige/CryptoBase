@@ -7,7 +7,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original
 	{
 		public override string Name => @"ChaCha20Original";
 
-		protected ChaCha20OriginalCrypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
+		protected ChaCha20OriginalCrypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
 			Init(key, iv);
 			Reset();

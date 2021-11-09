@@ -24,7 +24,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos
 
 		protected int Index;
 
-		protected SnuffleCrypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
+		protected SnuffleCrypto()
 		{
 			State = ArrayPool<uint>.Shared.Rent(StateSize);
 			KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));

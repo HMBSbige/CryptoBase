@@ -10,7 +10,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20
 
 		public override int IvSize => 24;
 
-		public XSalsa20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
+		public XSalsa20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 		{
 			Init(key, iv);
 			Reset();
