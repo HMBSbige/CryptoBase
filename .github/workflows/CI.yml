@@ -11,16 +11,16 @@ jobs:
     name: Check format
     runs-on: windows-latest
     steps:
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
 
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Run dotnet format check
-      run: dotnet format -v diag --verify-no-changes
+      - name: Run dotnet format check
+        run: dotnet format -v diag --verify-no-changes
 
   test:
     name: Test
@@ -30,28 +30,23 @@ jobs:
         os: [ubuntu-latest, windows-latest]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 5.0.x
+      - name: Test
+        shell: pwsh
+        run: dotnet test -c Release --filter ClassName!~Benchmark
 
-    - name: Test
-      shell: pwsh
-      run: dotnet test -c Release --filter ClassName!~Benchmark
-
-    - name: Test (Disable AVX)
-      shell: pwsh
-      run: |
-        $env:COMPlus_EnableAVX="0"
-        dotnet test -c Release --filter ClassName!~Benchmark
+      - name: Test (Disable AVX)
+        shell: pwsh
+        run: |
+          $env:COMPlus_EnableAVX="0"
+          dotnet test -c Release --filter ClassName!~Benchmark
 
   build:
     name: Build
@@ -60,26 +55,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ProjectName: [ CryptoBase, CryptoBase.Abstractions, CryptoBase.BouncyCastle ]
+        ProjectName:
+          [CryptoBase, CryptoBase.Abstractions, CryptoBase.BouncyCastle]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
 
-    - name: Build
-      shell: pwsh
-      run: dotnet build -c Release ${{ matrix.ProjectName }}\${{ matrix.ProjectName }}.csproj
+      - name: Build
+        shell: pwsh
+        run: dotnet build -c Release ${{ matrix.ProjectName }}\${{ matrix.ProjectName }}.csproj
 
-    - name: Push nuget packages
-      shell: pwsh
-      run: |
-        dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
-        dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
+      - name: Push nuget packages
+        shell: pwsh
+        run: |
+          dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+          dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
 
   release:
     name: Release
@@ -87,18 +83,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get tag
-      id: tag
-      uses: dawidd6/action-get-tag@v1
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
 
-    - name: Changelog
-      uses: glennawatson/ChangeLog@v1
-      id: changelog
+      - name: Changelog
+        uses: glennawatson/ChangeLog@v1
+        id: changelog
 
-    - name: Create Release
-      uses: ncipollo/release-action@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        body: ${{ steps.changelog.outputs.commitLog }}
-        draft: false
-        prerelease: false
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: ${{ steps.changelog.outputs.commitLog }}
+          draft: false
+          prerelease: false
