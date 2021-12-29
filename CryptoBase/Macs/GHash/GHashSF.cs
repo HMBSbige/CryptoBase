@@ -5,160 +5,159 @@ using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
-namespace CryptoBase.Macs.GHash
+namespace CryptoBase.Macs.GHash;
+
+public class GHashSF : IMac
 {
-	public class GHashSF : IMac
+	public string Name => @"GHash";
+
+	public int Length => 16;
+
+	public const int KeySize = 16;
+	public const int BlockSize = 16;
+
+	private static readonly ulong[] Last4 =
 	{
-		public string Name => @"GHash";
+		0x0000, 0x1c20, 0x3840, 0x2460,
+		0x7080, 0x6ca0, 0x48c0, 0x54e0,
+		0xe100, 0xfd20, 0xd940, 0xc560,
+		0x9180, 0x8da0, 0xa9c0, 0xb5e0
+	};
 
-		public int Length => 16;
+	private readonly ulong[] _hh;
+	private readonly ulong[] _hl;
+	private readonly byte[] _buffer;
 
-		public const int KeySize = 16;
-		public const int BlockSize = 16;
+	private readonly ulong Initvh;
+	private readonly ulong Initvl;
 
-		private static readonly ulong[] Last4 =
+	public GHashSF(ReadOnlySpan<byte> key)
+	{
+		if (key.Length < KeySize)
 		{
-			0x0000, 0x1c20, 0x3840, 0x2460,
-			0x7080, 0x6ca0, 0x48c0, 0x54e0,
-			0xe100, 0xfd20, 0xd940, 0xc560,
-			0x9180, 0x8da0, 0xa9c0, 0xb5e0
-		};
-
-		private readonly ulong[] _hh;
-		private readonly ulong[] _hl;
-		private readonly byte[] _buffer;
-
-		private readonly ulong Initvh;
-		private readonly ulong Initvl;
-
-		public GHashSF(ReadOnlySpan<byte> key)
-		{
-			if (key.Length < KeySize)
-			{
-				throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
-			}
-
-			Initvh = BinaryPrimitives.ReadUInt64BigEndian(key);
-			Initvl = BinaryPrimitives.ReadUInt64BigEndian(key[8..]);
-
-			_hl = ArrayPool<ulong>.Shared.Rent(BlockSize);
-			_hh = ArrayPool<ulong>.Shared.Rent(BlockSize);
-			_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
-
-			Reset();
+			throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private void GFMul(ReadOnlySpan<byte> x)
+		Initvh = BinaryPrimitives.ReadUInt64BigEndian(key);
+		Initvl = BinaryPrimitives.ReadUInt64BigEndian(key[8..]);
+
+		_hl = ArrayPool<ulong>.Shared.Rent(BlockSize);
+		_hh = ArrayPool<ulong>.Shared.Rent(BlockSize);
+		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
+
+		Reset();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void GFMul(ReadOnlySpan<byte> x)
+	{
+		for (var i = 0; i < BlockSize; ++i)
 		{
-			for (var i = 0; i < BlockSize; ++i)
+			_buffer[i] ^= x[i];
+		}
+
+		var lo = (byte)(_buffer[15] & 0xF);
+		var zh = _hh[lo];
+		var zl = _hl[lo];
+
+		for (var i = 0; i < BlockSize; ++i)
+		{
+			lo = (byte)(_buffer[16 - 1 - i] & 0xf);
+			var hi = (byte)((_buffer[16 - 1 - i] >> 4) & 0xf);
+
+			byte rem;
+			if (i != 0)
 			{
-				_buffer[i] ^= x[i];
-			}
-
-			var lo = (byte)(_buffer[15] & 0xF);
-			var zh = _hh[lo];
-			var zl = _hl[lo];
-
-			for (var i = 0; i < BlockSize; ++i)
-			{
-				lo = (byte)(_buffer[16 - 1 - i] & 0xf);
-				var hi = (byte)((_buffer[16 - 1 - i] >> 4) & 0xf);
-
-				byte rem;
-				if (i != 0)
-				{
-					rem = (byte)(zl & 0xf);
-					zl = (zh << 60) | (zl >> 4);
-					zh >>= 4;
-					zh ^= Last4[rem] << 48;
-					zh ^= _hh[lo];
-					zl ^= _hl[lo];
-				}
-
 				rem = (byte)(zl & 0xf);
 				zl = (zh << 60) | (zl >> 4);
 				zh >>= 4;
-
 				zh ^= Last4[rem] << 48;
-				zh ^= _hh[hi];
-				zl ^= _hl[hi];
+				zh ^= _hh[lo];
+				zl ^= _hl[lo];
 			}
 
-			BinaryPrimitives.WriteUInt64BigEndian(_buffer, zh);
-			BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(8), zl);
+			rem = (byte)(zl & 0xf);
+			zl = (zh << 60) | (zl >> 4);
+			zh >>= 4;
+
+			zh ^= Last4[rem] << 48;
+			zh ^= _hh[hi];
+			zl ^= _hl[hi];
 		}
 
-		public void Update(ReadOnlySpan<byte> source)
+		BinaryPrimitives.WriteUInt64BigEndian(_buffer, zh);
+		BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(8), zl);
+	}
+
+	public void Update(ReadOnlySpan<byte> source)
+	{
+		while (source.Length >= BlockSize)
 		{
-			while (source.Length >= BlockSize)
-			{
-				GFMul(source);
-				source = source[BlockSize..];
-			}
-
-			if (source.IsEmpty)
-			{
-				return;
-			}
-
-			Span<byte> block = stackalloc byte[BlockSize];
-			source.CopyTo(block);
-			GFMul(block);
+			GFMul(source);
+			source = source[BlockSize..];
 		}
 
-		public void GetMac(Span<byte> destination)
+		if (source.IsEmpty)
 		{
-			_buffer.AsSpan(0, Length).CopyTo(destination);
-
-			Reset();
+			return;
 		}
 
-		public void Reset()
+		Span<byte> block = stackalloc byte[BlockSize];
+		source.CopyTo(block);
+		GFMul(block);
+	}
+
+	public void GetMac(Span<byte> destination)
+	{
+		_buffer.AsSpan(0, Length).CopyTo(destination);
+
+		Reset();
+	}
+
+	public void Reset()
+	{
+		CryptographicOperations.ZeroMemory(_buffer.AsSpan(0, BlockSize));
+
+		var vh = Initvh;
+		var vl = Initvl;
+
+		_hl[8] = vl;
+		_hh[8] = vh;
+
+		var i = 4u;
+
+		while (i > 0)
 		{
-			CryptographicOperations.ZeroMemory(_buffer.AsSpan(0, BlockSize));
+			var t = (vl & 1) * 0xe1000000;
+			vl = (vh << 63) | (vl >> 1);
+			vh = (vh >> 1) ^ (t << 32);
 
-			var vh = Initvh;
-			var vl = Initvl;
+			_hl[i] = vl;
+			_hh[i] = vh;
 
-			_hl[8] = vl;
-			_hh[8] = vh;
+			i >>= 1;
+		}
 
-			var i = 4u;
+		i = 2u;
+		while (i <= 8)
+		{
+			vh = _hh[i];
+			vl = _hl[i];
 
-			while (i > 0)
+			for (var j = 1u; j < i; ++j)
 			{
-				var t = (vl & 1) * 0xe1000000;
-				vl = (vh << 63) | (vl >> 1);
-				vh = (vh >> 1) ^ (t << 32);
-
-				_hl[i] = vl;
-				_hh[i] = vh;
-
-				i >>= 1;
+				_hh[i + j] = vh ^ _hh[j];
+				_hl[i + j] = vl ^ _hl[j];
 			}
 
-			i = 2u;
-			while (i <= 8)
-			{
-				vh = _hh[i];
-				vl = _hl[i];
-
-				for (var j = 1u; j < i; ++j)
-				{
-					_hh[i + j] = vh ^ _hh[j];
-					_hl[i + j] = vl ^ _hl[j];
-				}
-
-				i <<= 1;
-			}
+			i <<= 1;
 		}
+	}
 
-		public void Dispose()
-		{
-			ArrayPool<ulong>.Shared.Return(_hl);
-			ArrayPool<ulong>.Shared.Return(_hh);
-			ArrayPool<byte>.Shared.Return(_buffer);
-		}
+	public void Dispose()
+	{
+		ArrayPool<ulong>.Shared.Return(_hl);
+		ArrayPool<ulong>.Shared.Return(_hh);
+		ArrayPool<byte>.Shared.Return(_buffer);
 	}
 }

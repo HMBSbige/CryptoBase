@@ -1,16 +1,15 @@
 using CryptoBase.Abstractions.Digests;
 using System.Security.Cryptography;
 
-namespace CryptoBase.Digests.MD5
+namespace CryptoBase.Digests.MD5;
+
+public class DefaultMD5Digest : DefaultDigest
 {
-	public class DefaultMD5Digest : DefaultDigest
+	public override string Name => @"MD5";
+
+	public override int BlockSize => HashConstants.Md5BlockSize;
+
+	public DefaultMD5Digest() : base(HashAlgorithmName.MD5)
 	{
-		public override string Name => @"MD5";
-
-		public override int BlockSize => HashConstants.Md5BlockSize;
-
-		public DefaultMD5Digest() : base(HashAlgorithmName.MD5)
-		{
-		}
 	}
 }

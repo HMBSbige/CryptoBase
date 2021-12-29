@@ -4,36 +4,35 @@ using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.Digests;
 using System;
 
-namespace CryptoBase.Benchmark
+namespace CryptoBase.Benchmark;
+
+[MemoryDiagnoser]
+public class SHA384Benchmark
 {
-	[MemoryDiagnoser]
-	public class SHA384Benchmark
+	[Params(32, 114514)]
+	public int ByteLength { get; set; }
+
+	private Memory<byte> _randombytes;
+
+	[GlobalSetup]
+	public void Setup()
 	{
-		[Params(32, 114514)]
-		public int ByteLength { get; set; }
+		_randombytes = Utils.RandBytes(ByteLength).ToArray();
+	}
 
-		private Memory<byte> _randombytes;
+	[Benchmark(Baseline = true)]
+	public void Default()
+	{
+		Span<byte> hash = stackalloc byte[HashConstants.Sha384Length];
+		using var sha384 = DigestUtils.Create(DigestType.Sha384);
+		sha384.UpdateFinal(_randombytes.Span, hash);
+	}
 
-		[GlobalSetup]
-		public void Setup()
-		{
-			_randombytes = Utils.RandBytes(ByteLength).ToArray();
-		}
-
-		[Benchmark(Baseline = true)]
-		public void Default()
-		{
-			Span<byte> hash = stackalloc byte[HashConstants.Sha384Length];
-			using var sha384 = DigestUtils.Create(DigestType.Sha384);
-			sha384.UpdateFinal(_randombytes.Span, hash);
-		}
-
-		[Benchmark]
-		public void BouncyCastle()
-		{
-			Span<byte> hash = stackalloc byte[HashConstants.Sha384Length];
-			using var sha384 = new BcSHA384Digest();
-			sha384.UpdateFinal(_randombytes.Span, hash);
-		}
+	[Benchmark]
+	public void BouncyCastle()
+	{
+		Span<byte> hash = stackalloc byte[HashConstants.Sha384Length];
+		using var sha384 = new BcSHA384Digest();
+		sha384.UpdateFinal(_randombytes.Span, hash);
 	}
 }

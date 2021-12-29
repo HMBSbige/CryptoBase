@@ -1,18 +1,17 @@
 using CryptoBase.Abstractions.Digests;
 using Org.BouncyCastle.Crypto.Digests;
 
-namespace CryptoBase.BouncyCastle.Digests
+namespace CryptoBase.BouncyCastle.Digests;
+
+public class BcSM3Digest : BcDigest
 {
-	public class BcSM3Digest : BcDigest
+	public override string Name => @"SM3";
+
+	public override int Length => HashConstants.SM3Length;
+
+	public override int BlockSize => HashConstants.SM3BlockSize;
+
+	public BcSM3Digest() : base(new SM3Digest())
 	{
-		public override string Name => @"SM3";
-
-		public override int Length => HashConstants.SM3Length;
-
-		public override int BlockSize => HashConstants.SM3BlockSize;
-
-		public BcSM3Digest() : base(new SM3Digest())
-		{
-		}
 	}
 }

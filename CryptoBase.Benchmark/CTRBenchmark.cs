@@ -4,52 +4,51 @@ using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using System;
 
-namespace CryptoBase.Benchmark
+namespace CryptoBase.Benchmark;
+
+[MemoryDiagnoser]
+public class CTRBenchmark
 {
-	[MemoryDiagnoser]
-	public class CTRBenchmark
+	[Params(1000000)]
+	public int ByteLength { get; set; }
+
+	private Memory<byte> _randombytes;
+	private byte[] _randomKey16 = null!;
+	private byte[] _randomIv8 = null!;
+	private byte[] _randomIv16 = null!;
+
+	[GlobalSetup]
+	public void Setup()
 	{
-		[Params(1000000)]
-		public int ByteLength { get; set; }
+		_randombytes = Utils.RandBytes(ByteLength).ToArray();
+		_randomKey16 = Utils.RandBytes(16).ToArray();
+		_randomIv8 = Utils.RandBytes(8).ToArray();
+		_randomIv16 = Utils.RandBytes(16).ToArray();
+	}
 
-		private Memory<byte> _randombytes;
-		private byte[] _randomKey16 = null!;
-		private byte[] _randomIv8 = null!;
-		private byte[] _randomIv16 = null!;
+	private static void Test(IStreamCrypto crypto, Span<byte> origin)
+	{
+		Span<byte> o = stackalloc byte[origin.Length];
+		crypto.Update(origin, o);
 
-		[GlobalSetup]
-		public void Setup()
-		{
-			_randombytes = Utils.RandBytes(ByteLength).ToArray();
-			_randomKey16 = Utils.RandBytes(16).ToArray();
-			_randomIv8 = Utils.RandBytes(8).ToArray();
-			_randomIv16 = Utils.RandBytes(16).ToArray();
-		}
+		crypto.Dispose();
+	}
 
-		private static void Test(IStreamCrypto crypto, Span<byte> origin)
-		{
-			Span<byte> o = stackalloc byte[origin.Length];
-			crypto.Update(origin, o);
+	[Benchmark(Baseline = true)]
+	public void ChaCha20()
+	{
+		Test(new ChaCha20OriginalCryptoX86(_randomKey16, _randomIv8), _randombytes.Span);
+	}
 
-			crypto.Dispose();
-		}
+	[Benchmark]
+	public void AESCTR()
+	{
+		Test(StreamCryptoCreate.AesCtr(_randomKey16, _randomIv16), _randombytes.Span);
+	}
 
-		[Benchmark(Baseline = true)]
-		public void ChaCha20()
-		{
-			Test(new ChaCha20OriginalCryptoX86(_randomKey16, _randomIv8), _randombytes.Span);
-		}
-
-		[Benchmark]
-		public void AESCTR()
-		{
-			Test(StreamCryptoCreate.AesCtr(_randomKey16, _randomIv16), _randombytes.Span);
-		}
-
-		[Benchmark]
-		public void SM4CTR()
-		{
-			Test(StreamCryptoCreate.Sm4Ctr(_randomKey16, _randomIv16), _randombytes.Span);
-		}
+	[Benchmark]
+	public void SM4CTR()
+	{
+		Test(StreamCryptoCreate.Sm4Ctr(_randomKey16, _randomIv16), _randombytes.Span);
 	}
 }

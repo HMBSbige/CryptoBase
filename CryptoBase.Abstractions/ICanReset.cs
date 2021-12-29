@@ -1,10 +1,9 @@
-namespace CryptoBase.Abstractions
+namespace CryptoBase.Abstractions;
+
+public interface ICanReset
 {
-	public interface ICanReset
-	{
-		/// <summary>
-		/// 重置状态
-		/// </summary>
-		void Reset();
-	}
+	/// <summary>
+	/// 重置状态
+	/// </summary>
+	void Reset();
 }

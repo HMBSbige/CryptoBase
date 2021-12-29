@@ -1,12 +1,11 @@
 using System;
 
-namespace CryptoBase.Abstractions.SymmetricCryptos
+namespace CryptoBase.Abstractions.SymmetricCryptos;
+
+public interface ISymmetricCrypto : IDisposable
 {
-	public interface ISymmetricCrypto : IDisposable
-	{
-		/// <summary>
-		/// 算法名
-		/// </summary>
-		string Name { get; }
-	}
+	/// <summary>
+	/// 算法名
+	/// </summary>
+	string Name { get; }
 }

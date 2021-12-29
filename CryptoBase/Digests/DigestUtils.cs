@@ -10,47 +10,46 @@ using CryptoBase.Digests.SM3;
 using System;
 using System.Runtime.CompilerServices;
 
-namespace CryptoBase.Digests
+namespace CryptoBase.Digests;
+
+public static class DigestUtils
 {
-	public static class DigestUtils
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static IHash Create(DigestType type)
 	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static IHash Create(DigestType type)
+		return type switch
 		{
-			return type switch
-			{
-				DigestType.Sm3 => new SM3Digest(),
-				DigestType.Md5 => new DefaultMD5Digest(),
-				DigestType.Sha1 => new DefaultSHA1Digest(),
-				DigestType.Sha256 => new DefaultSHA256Digest(),
-				DigestType.Sha384 => new DefaultSHA384Digest(),
-				DigestType.Sha512 => new DefaultSHA512Digest(),
-				DigestType.Crc32 => CreateCrc32(),
-				DigestType.Crc32C => CreateCrc32C(),
-				_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
-			};
+			DigestType.Sm3 => new SM3Digest(),
+			DigestType.Md5 => new DefaultMD5Digest(),
+			DigestType.Sha1 => new DefaultSHA1Digest(),
+			DigestType.Sha256 => new DefaultSHA256Digest(),
+			DigestType.Sha384 => new DefaultSHA384Digest(),
+			DigestType.Sha512 => new DefaultSHA512Digest(),
+			DigestType.Crc32 => CreateCrc32(),
+			DigestType.Crc32C => CreateCrc32C(),
+			_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+		};
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateCrc32()
+	{
+		if (Crc32X86.IsSupport)
+		{
+			return new Crc32X86();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static IHash CreateCrc32()
-		{
-			if (Crc32X86.IsSupport)
-			{
-				return new Crc32X86();
-			}
+		return new Crc32SF();
+	}
 
-			return new Crc32SF();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateCrc32C()
+	{
+		if (Crc32CX86.IsSupport)
+		{
+			return new Crc32CX86();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static IHash CreateCrc32C()
-		{
-			if (Crc32CX86.IsSupport)
-			{
-				return new Crc32CX86();
-			}
-
-			return new Crc32CSF();
-		}
+		return new Crc32CSF();
 	}
 }

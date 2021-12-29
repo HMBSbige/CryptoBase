@@ -5,72 +5,71 @@ using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using System.Buffers;
 
-namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos
+namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
+
+public class BcAESCrypto : BlockCryptoBase
 {
-	public class BcAESCrypto : BlockCryptoBase
+	public override string Name => @"AES";
+
+	public sealed override int BlockSize => 16;
+
+	private bool _isEncrypt;
+
+	private readonly IBlockCipher _engine;
+	private readonly KeyParameter _key;
+	private readonly byte[] _buffer;
+	private readonly byte[] _outBuffer;
+
+	public BcAESCrypto(bool isEncrypt, byte[] key)
 	{
-		public override string Name => @"AES";
-
-		public sealed override int BlockSize => 16;
-
-		private bool _isEncrypt;
-
-		private readonly IBlockCipher _engine;
-		private readonly KeyParameter _key;
-		private readonly byte[] _buffer;
-		private readonly byte[] _outBuffer;
-
-		public BcAESCrypto(bool isEncrypt, byte[] key)
-		{
 #pragma warning disable 618
-			_engine = new AesFastEngine();
+		_engine = new AesFastEngine();
 #pragma warning restore 618
-			_key = new KeyParameter(key);
+		_key = new KeyParameter(key);
 
-			_isEncrypt = isEncrypt;
-			_engine.Init(_isEncrypt, _key);
+		_isEncrypt = isEncrypt;
+		_engine.Init(_isEncrypt, _key);
 
-			_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
-			_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);
-		}
+		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
+		_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);
+	}
 
-		public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		base.Encrypt(source, destination);
+		if (!_isEncrypt)
 		{
-			base.Encrypt(source, destination);
-			if (!_isEncrypt)
-			{
-				_engine.Init(true, _key);
-				_isEncrypt = true;
-			}
-
-			Update(source, destination);
+			_engine.Init(true, _key);
+			_isEncrypt = true;
 		}
 
-		public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+		Update(source, destination);
+	}
+
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		base.Decrypt(source, destination);
+		if (_isEncrypt)
 		{
-			base.Decrypt(source, destination);
-			if (_isEncrypt)
-			{
-				_engine.Init(false, _key);
-				_isEncrypt = false;
-			}
-
-			Update(source, destination);
+			_engine.Init(false, _key);
+			_isEncrypt = false;
 		}
 
-		private void Update(ReadOnlySpan<byte> source, Span<byte> destination)
-		{
-			source[..BlockSize].CopyTo(_buffer);
-			_engine.ProcessBlock(_buffer, 0, _outBuffer, 0);
-			_outBuffer.CopyTo(destination);
-		}
+		Update(source, destination);
+	}
 
-		public override void Dispose()
-		{
-			base.Dispose();
+	private void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		source[..BlockSize].CopyTo(_buffer);
+		_engine.ProcessBlock(_buffer, 0, _outBuffer, 0);
+		_outBuffer.CopyTo(destination);
+	}
 
-			ArrayPool<byte>.Shared.Return(_buffer);
-			ArrayPool<byte>.Shared.Return(_outBuffer);
-		}
+	public override void Dispose()
+	{
+		base.Dispose();
+
+		ArrayPool<byte>.Shared.Return(_buffer);
+		ArrayPool<byte>.Shared.Return(_outBuffer);
 	}
 }

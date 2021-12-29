@@ -3,138 +3,137 @@ using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
 using System;
 
-namespace CryptoBase.KDF
+namespace CryptoBase.KDF;
+
+/// <summary>
+/// https://datatracker.ietf.org/doc/html/rfc5869
+/// </summary>
+public static class Hkdf
 {
-	/// <summary>
-	/// https://datatracker.ietf.org/doc/html/rfc5869
-	/// </summary>
-	public static class Hkdf
+	public static int Extract(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
 	{
-		public static int Extract(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
+		var hashLength = HashLength(type);
+		if (prk.Length < hashLength)
 		{
-			var hashLength = HashLength(type);
-			if (prk.Length < hashLength)
-			{
-				throw new ArgumentException(@"prk too small", nameof(prk));
-			}
-
-			if (prk.Length > hashLength)
-			{
-				prk = prk[..hashLength];
-			}
-
-			ExtractInternal(type, ikm, salt, prk);
-
-			return hashLength;
+			throw new ArgumentException(@"prk too small", nameof(prk));
 		}
 
-		private static void ExtractInternal(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
+		if (prk.Length > hashLength)
 		{
-			using var hmac = HmacUtils.Create(type, salt);
-
-			hmac.Update(ikm);
-			hmac.GetMac(prk);
+			prk = prk[..hashLength];
 		}
 
-		public static void Expand(DigestType type, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
+		ExtractInternal(type, ikm, salt, prk);
+
+		return hashLength;
+	}
+
+	private static void ExtractInternal(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
+	{
+		using var hmac = HmacUtils.Create(type, salt);
+
+		hmac.Update(ikm);
+		hmac.GetMac(prk);
+	}
+
+	public static void Expand(DigestType type, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
+	{
+		var hashLength = HashLength(type);
+
+		if (output.IsEmpty)
 		{
-			var hashLength = HashLength(type);
-
-			if (output.IsEmpty)
-			{
-				throw new ArgumentException(@"Destination too short", nameof(output));
-			}
-
-			var maxOkmLength = 255 * hashLength;
-			if (output.Length > maxOkmLength)
-			{
-				throw new ArgumentException(@"Okm too large", nameof(output));
-			}
-
-			ExpandInternal(type, hashLength, prk, output, info);
+			throw new ArgumentException(@"Destination too short", nameof(output));
 		}
 
-		private static void ExpandInternal(DigestType type, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
+		var maxOkmLength = 255 * hashLength;
+		if (output.Length > maxOkmLength)
 		{
-			if (prk.Length < hashLength)
+			throw new ArgumentException(@"Okm too large", nameof(output));
+		}
+
+		ExpandInternal(type, hashLength, prk, output, info);
+	}
+
+	private static void ExpandInternal(DigestType type, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
+	{
+		if (prk.Length < hashLength)
+		{
+			throw new ArgumentException(@"prk too small", nameof(prk));
+		}
+
+		if (output.Overlaps(info))
+		{
+			throw new InvalidOperationException(@"the info input overlaps with the output destination");
+		}
+
+		Span<byte> counterSpan = stackalloc byte[1];
+		ref var counter = ref counterSpan[0];
+		Span<byte> t = Span<byte>.Empty;
+		Span<byte> remainingOutput = output;
+
+		using var hmac = HmacUtils.Create(type, prk);
+		for (var i = 1; ; ++i)
+		{
+			hmac.Update(t);
+			hmac.Update(info);
+			counter = (byte)i;
+			hmac.Update(counterSpan);
+
+			if (remainingOutput.Length >= hashLength)
 			{
-				throw new ArgumentException(@"prk too small", nameof(prk));
+				t = remainingOutput[..hashLength];
+				remainingOutput = remainingOutput[hashLength..];
+				hmac.GetMac(t);
 			}
-
-			if (output.Overlaps(info))
+			else
 			{
-				throw new InvalidOperationException(@"the info input overlaps with the output destination");
-			}
-
-			Span<byte> counterSpan = stackalloc byte[1];
-			ref var counter = ref counterSpan[0];
-			Span<byte> t = Span<byte>.Empty;
-			Span<byte> remainingOutput = output;
-
-			using var hmac = HmacUtils.Create(type, prk);
-			for (var i = 1; ; ++i)
-			{
-				hmac.Update(t);
-				hmac.Update(info);
-				counter = (byte)i;
-				hmac.Update(counterSpan);
-
-				if (remainingOutput.Length >= hashLength)
+				if (remainingOutput.Length > 0)
 				{
-					t = remainingOutput[..hashLength];
-					remainingOutput = remainingOutput[hashLength..];
-					hmac.GetMac(t);
+					// ReSharper disable once StackAllocInsideLoop
+					Span<byte> lastChunk = stackalloc byte[hashLength];
+					hmac.GetMac(lastChunk);
+					lastChunk[..remainingOutput.Length].CopyTo(remainingOutput);
 				}
-				else
-				{
-					if (remainingOutput.Length > 0)
-					{
-						// ReSharper disable once StackAllocInsideLoop
-						Span<byte> lastChunk = stackalloc byte[hashLength];
-						hmac.GetMac(lastChunk);
-						lastChunk[..remainingOutput.Length].CopyTo(remainingOutput);
-					}
 
-					break;
-				}
+				break;
 			}
 		}
+	}
 
-		public static void DeriveKey(DigestType type, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
+	public static void DeriveKey(DigestType type, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
+	{
+		var hashLength = HashLength(type);
+
+		if (output.IsEmpty)
 		{
-			var hashLength = HashLength(type);
-
-			if (output.IsEmpty)
-			{
-				throw new ArgumentException(@"Destination too short", nameof(output));
-			}
-
-			var maxOkmLength = 255 * hashLength;
-			if (output.Length > maxOkmLength)
-			{
-				throw new ArgumentException(@"Okm too large", nameof(output));
-			}
-
-			Span<byte> prk = stackalloc byte[hashLength];
-
-			ExtractInternal(type, ikm, salt, prk);
-			ExpandInternal(type, hashLength, prk, output, info);
+			throw new ArgumentException(@"Destination too short", nameof(output));
 		}
 
-		private static int HashLength(DigestType type)
+		var maxOkmLength = 255 * hashLength;
+		if (output.Length > maxOkmLength)
 		{
-			return type switch
-			{
-				DigestType.Sm3 => HashConstants.SM3Length,
-				DigestType.Md5 => HashConstants.Md5Length,
-				DigestType.Sha1 => HashConstants.Sha1Length,
-				DigestType.Sha256 => HashConstants.Sha256Length,
-				DigestType.Sha384 => HashConstants.Sha384Length,
-				DigestType.Sha512 => HashConstants.Sha512Length,
-				DigestType.Crc32 => HashConstants.Crc32Length,
-				DigestType.Crc32C => HashConstants.Crc32Length,
-				_ => throw new ArgumentOutOfRangeException(nameof(type))
-			};
+			throw new ArgumentException(@"Okm too large", nameof(output));
 		}
+
+		Span<byte> prk = stackalloc byte[hashLength];
+
+		ExtractInternal(type, ikm, salt, prk);
+		ExpandInternal(type, hashLength, prk, output, info);
+	}
+
+	private static int HashLength(DigestType type)
+	{
+		return type switch
+		{
+			DigestType.Sm3 => HashConstants.SM3Length,
+			DigestType.Md5 => HashConstants.Md5Length,
+			DigestType.Sha1 => HashConstants.Sha1Length,
+			DigestType.Sha256 => HashConstants.Sha256Length,
+			DigestType.Sha384 => HashConstants.Sha384Length,
+			DigestType.Sha512 => HashConstants.Sha512Length,
+			DigestType.Crc32 => HashConstants.Crc32Length,
+			DigestType.Crc32C => HashConstants.Crc32Length,
+			_ => throw new ArgumentOutOfRangeException(nameof(type))
+		};
 	}
 }

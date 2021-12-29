@@ -4,46 +4,45 @@ using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
 using System;
 
-namespace CryptoBase.Benchmark
+namespace CryptoBase.Benchmark;
+
+[MemoryDiagnoser]
+public class ChaCha20Poly1305Benchmark
 {
-	[MemoryDiagnoser]
-	public class ChaCha20Poly1305Benchmark
+	[Params(1000000)]
+	public int Length { get; set; }
+
+	private Memory<byte> _randombytes;
+	private byte[] _randomKey = null!;
+	private Memory<byte> _randomIv = null!;
+
+	[GlobalSetup]
+	public void Setup()
 	{
-		[Params(1000000)]
-		public int Length { get; set; }
+		_randombytes = Utils.RandBytes(Length).ToArray();
+		_randomKey = Utils.RandBytes(32).ToArray();
+		_randomIv = Utils.RandBytes(12).ToArray();
+	}
 
-		private Memory<byte> _randombytes;
-		private byte[] _randomKey = null!;
-		private Memory<byte> _randomIv = null!;
+	private void TestEncrypt(IAEADCrypto crypto)
+	{
+		Span<byte> o = stackalloc byte[Length];
+		Span<byte> tag = stackalloc byte[16];
 
-		[GlobalSetup]
-		public void Setup()
-		{
-			_randombytes = Utils.RandBytes(Length).ToArray();
-			_randomKey = Utils.RandBytes(32).ToArray();
-			_randomIv = Utils.RandBytes(12).ToArray();
-		}
+		crypto.Encrypt(_randomIv.Span, _randombytes.Span, o, tag);
 
-		private void TestEncrypt(IAEADCrypto crypto)
-		{
-			Span<byte> o = stackalloc byte[Length];
-			Span<byte> tag = stackalloc byte[16];
+		crypto.Dispose();
+	}
 
-			crypto.Encrypt(_randomIv.Span, _randombytes.Span, o, tag);
+	[Benchmark]
+	public void BouncyCastleEncrypt()
+	{
+		TestEncrypt(new BcChaCha20Poly1305Crypto(_randomKey));
+	}
 
-			crypto.Dispose();
-		}
-
-		[Benchmark]
-		public void BouncyCastleEncrypt()
-		{
-			TestEncrypt(new BcChaCha20Poly1305Crypto(_randomKey));
-		}
-
-		[Benchmark(Baseline = true)]
-		public void Encrypt()
-		{
-			TestEncrypt(AEADCryptoCreate.ChaCha20Poly1305(_randomKey));
-		}
+	[Benchmark(Baseline = true)]
+	public void Encrypt()
+	{
+		TestEncrypt(AEADCryptoCreate.ChaCha20Poly1305(_randomKey));
 	}
 }

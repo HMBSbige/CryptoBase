@@ -1,12 +1,11 @@
 using System;
 
-namespace CryptoBase.Abstractions.SymmetricCryptos
+namespace CryptoBase.Abstractions.SymmetricCryptos;
+
+public interface IStreamCrypto : ISymmetricCrypto, ICanReset
 {
-	public interface IStreamCrypto : ISymmetricCrypto, ICanReset
-	{
-		/// <summary>
-		/// 加密/解密
-		/// </summary>
-		void Update(ReadOnlySpan<byte> source, Span<byte> destination);
-	}
+	/// <summary>
+	/// 加密/解密
+	/// </summary>
+	void Update(ReadOnlySpan<byte> source, Span<byte> destination);
 }

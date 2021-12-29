@@ -2,57 +2,56 @@ using System;
 using System.Buffers;
 using System.Security.Cryptography;
 
-namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES
+namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
+
+public abstract class DefaultAESCrypto : AESCrypto
 {
-	public abstract class DefaultAESCrypto : AESCrypto
+	protected abstract ICryptoTransform Encryptor { get; }
+	protected abstract ICryptoTransform Decryptor { get; }
+
+	private readonly byte[] _buffer;
+	private readonly byte[] _outBuffer;
+
+	protected DefaultAESCrypto(ReadOnlySpan<byte> key) : base(key)
 	{
-		protected abstract ICryptoTransform Encryptor { get; }
-		protected abstract ICryptoTransform Decryptor { get; }
+		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
+		_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);
+	}
 
-		private readonly byte[] _buffer;
-		private readonly byte[] _outBuffer;
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		base.Encrypt(source, destination);
 
-		protected DefaultAESCrypto(ReadOnlySpan<byte> key) : base(key)
-		{
-			_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
-			_outBuffer = ArrayPool<byte>.Shared.Rent(BlockSize);
-		}
+		source[..BlockSize].CopyTo(_buffer);
+		Encryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
+		_outBuffer.CopyTo(destination);
+	}
 
-		public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
-		{
-			base.Encrypt(source, destination);
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		base.Decrypt(source, destination);
 
-			source[..BlockSize].CopyTo(_buffer);
-			Encryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
-			_outBuffer.CopyTo(destination);
-		}
+		source[..BlockSize].CopyTo(_buffer);
+		Decryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
+		_outBuffer.CopyTo(destination);
+	}
 
-		public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
-		{
-			base.Decrypt(source, destination);
+	public override void Reset()
+	{
+		base.Reset();
 
-			source[..BlockSize].CopyTo(_buffer);
-			Decryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
-			_outBuffer.CopyTo(destination);
-		}
+		Encryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+		Decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+	}
 
-		public override void Reset()
-		{
-			base.Reset();
+	public override void Dispose()
+	{
+		base.Dispose();
 
-			Encryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-			Decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-		}
+		Encryptor.Dispose();
+		Decryptor.Dispose();
 
-		public override void Dispose()
-		{
-			base.Dispose();
-
-			Encryptor.Dispose();
-			Decryptor.Dispose();
-
-			ArrayPool<byte>.Shared.Return(_buffer);
-			ArrayPool<byte>.Shared.Return(_outBuffer);
-		}
+		ArrayPool<byte>.Shared.Return(_buffer);
+		ArrayPool<byte>.Shared.Return(_outBuffer);
 	}
 }

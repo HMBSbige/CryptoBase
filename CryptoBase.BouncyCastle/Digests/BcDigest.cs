@@ -3,63 +3,62 @@ using Org.BouncyCastle.Crypto;
 using System;
 using System.Buffers;
 
-namespace CryptoBase.BouncyCastle.Digests
+namespace CryptoBase.BouncyCastle.Digests;
+
+public abstract class BcDigest : IHash
 {
-	public abstract class BcDigest : IHash
+	public abstract string Name { get; }
+	public abstract int Length { get; }
+	public abstract int BlockSize { get; }
+
+	private readonly IDigest _hasher;
+
+	protected BcDigest(IDigest hasher)
 	{
-		public abstract string Name { get; }
-		public abstract int Length { get; }
-		public abstract int BlockSize { get; }
+		_hasher = hasher;
+	}
 
-		private readonly IDigest _hasher;
+	public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
+	{
+		Update(origin);
+		GetHash(destination);
+	}
 
-		protected BcDigest(IDigest hasher)
+	public void Update(ReadOnlySpan<byte> source)
+	{
+		var buffer = ArrayPool<byte>.Shared.Rent(source.Length);
+		try
 		{
-			_hasher = hasher;
+			source.CopyTo(buffer);
+			_hasher.BlockUpdate(buffer, 0, source.Length);
 		}
-
-		public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
+		finally
 		{
-			Update(origin);
-			GetHash(destination);
+			ArrayPool<byte>.Shared.Return(buffer);
 		}
+	}
 
-		public void Update(ReadOnlySpan<byte> source)
+	public void GetHash(Span<byte> destination)
+	{
+		var outBuffer = ArrayPool<byte>.Shared.Rent(Length);
+		try
 		{
-			var buffer = ArrayPool<byte>.Shared.Rent(source.Length);
-			try
-			{
-				source.CopyTo(buffer);
-				_hasher.BlockUpdate(buffer, 0, source.Length);
-			}
-			finally
-			{
-				ArrayPool<byte>.Shared.Return(buffer);
-			}
+			_hasher.DoFinal(outBuffer, 0);
+			outBuffer.AsSpan(0, Length).CopyTo(destination);
 		}
+		finally
+		{
+			ArrayPool<byte>.Shared.Return(outBuffer);
+		}
+	}
 
-		public void GetHash(Span<byte> destination)
-		{
-			var outBuffer = ArrayPool<byte>.Shared.Rent(Length);
-			try
-			{
-				_hasher.DoFinal(outBuffer, 0);
-				outBuffer.AsSpan(0, Length).CopyTo(destination);
-			}
-			finally
-			{
-				ArrayPool<byte>.Shared.Return(outBuffer);
-			}
-		}
+	public void Reset()
+	{
+		_hasher.Reset();
+	}
 
-		public void Reset()
-		{
-			_hasher.Reset();
-		}
-
-		public void Dispose()
-		{
-			GC.SuppressFinalize(this);
-		}
+	public void Dispose()
+	{
+		GC.SuppressFinalize(this);
 	}
 }

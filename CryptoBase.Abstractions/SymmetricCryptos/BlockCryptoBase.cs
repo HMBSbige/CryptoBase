@@ -1,68 +1,67 @@
 using System;
 
-namespace CryptoBase.Abstractions.SymmetricCryptos
+namespace CryptoBase.Abstractions.SymmetricCryptos;
+
+public abstract class BlockCryptoBase : IBlockCrypto
 {
-	public abstract class BlockCryptoBase : IBlockCrypto
+	public abstract string Name { get; }
+
+	public abstract int BlockSize { get; }
+
+	public virtual void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		public abstract string Name { get; }
-
-		public abstract int BlockSize { get; }
-
-		public virtual void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+		if (source.Length < BlockSize)
 		{
-			if (source.Length < BlockSize)
-			{
-				throw new ArgumentException(string.Empty, nameof(source));
-			}
-
-			if (destination.Length < BlockSize)
-			{
-				throw new ArgumentException(string.Empty, nameof(destination));
-			}
+			throw new ArgumentException(string.Empty, nameof(source));
 		}
 
-		public virtual void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+		if (destination.Length < BlockSize)
 		{
-			if (source.Length < BlockSize)
-			{
-				throw new ArgumentException(string.Empty, nameof(source));
-			}
-
-			if (destination.Length < BlockSize)
-			{
-				throw new ArgumentException(string.Empty, nameof(destination));
-			}
+			throw new ArgumentException(string.Empty, nameof(destination));
 		}
-
-		public virtual void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
-		{
-			if (source.Length < BlockSize << 2)
-			{
-				throw new ArgumentException(string.Empty, nameof(source));
-			}
-
-			if (destination.Length < BlockSize << 2)
-			{
-				throw new ArgumentException(string.Empty, nameof(destination));
-			}
-
-			Encrypt(source, destination);
-			source = source[BlockSize..];
-			destination = destination[BlockSize..];
-
-			Encrypt(source, destination);
-			source = source[BlockSize..];
-			destination = destination[BlockSize..];
-
-			Encrypt(source, destination);
-			source = source[BlockSize..];
-			destination = destination[BlockSize..];
-
-			Encrypt(source, destination);
-		}
-
-		public virtual void Reset() { }
-
-		public virtual void Dispose() { }
 	}
+
+	public virtual void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (source.Length < BlockSize)
+		{
+			throw new ArgumentException(string.Empty, nameof(source));
+		}
+
+		if (destination.Length < BlockSize)
+		{
+			throw new ArgumentException(string.Empty, nameof(destination));
+		}
+	}
+
+	public virtual void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (source.Length < BlockSize << 2)
+		{
+			throw new ArgumentException(string.Empty, nameof(source));
+		}
+
+		if (destination.Length < BlockSize << 2)
+		{
+			throw new ArgumentException(string.Empty, nameof(destination));
+		}
+
+		Encrypt(source, destination);
+		source = source[BlockSize..];
+		destination = destination[BlockSize..];
+
+		Encrypt(source, destination);
+		source = source[BlockSize..];
+		destination = destination[BlockSize..];
+
+		Encrypt(source, destination);
+		source = source[BlockSize..];
+		destination = destination[BlockSize..];
+
+		Encrypt(source, destination);
+	}
+
+	public virtual void Reset() { }
+
+	public virtual void Dispose() { }
 }

@@ -3,28 +3,27 @@ using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
 
-namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos
+namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
+
+public class BcSalsa20Crypto : SnuffleCryptoBase
 {
-	public class BcSalsa20Crypto : SnuffleCryptoBase
+	public override string Name => @"Salsa20";
+
+	private readonly Salsa20Engine _engine;
+
+	public BcSalsa20Crypto(byte[] key, byte[] iv)
 	{
-		public override string Name => @"Salsa20";
+		_engine = new Salsa20Engine();
+		_engine.Init(default, new ParametersWithIV(new KeyParameter(key), iv));
+	}
 
-		private readonly Salsa20Engine _engine;
+	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		_engine.BcUpdateStream(source, destination);
+	}
 
-		public BcSalsa20Crypto(byte[] key, byte[] iv)
-		{
-			_engine = new Salsa20Engine();
-			_engine.Init(default, new ParametersWithIV(new KeyParameter(key), iv));
-		}
-
-		public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
-		{
-			_engine.BcUpdateStream(source, destination);
-		}
-
-		public override void Reset()
-		{
-			_engine.Reset();
-		}
+	public override void Reset()
+	{
+		_engine.Reset();
 	}
 }
