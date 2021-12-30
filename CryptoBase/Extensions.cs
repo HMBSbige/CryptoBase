@@ -12,9 +12,9 @@ public static class Extensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void IncrementInternal(this Span<byte> nonce)
 	{
-		for (var i = 0; i < nonce.Length; ++i)
+		for (int i = 0; i < nonce.Length; ++i)
 		{
-			if (++nonce[i] != 0)
+			if (++nonce[i] is not 0)
 			{
 				break;
 			}
@@ -36,7 +36,7 @@ public static class Extensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementUInt(this byte[] nonce)
 	{
-		var i = BinaryPrimitives.ReadUInt32LittleEndian(nonce);
+		uint i = BinaryPrimitives.ReadUInt32LittleEndian(nonce);
 		++i;
 		BinaryPrimitives.WriteUInt32LittleEndian(nonce, i);
 	}
@@ -56,7 +56,7 @@ public static class Extensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementSource(this byte[] nonce)
 	{
-		var i = 0U;
+		uint i = 0;
 		ushort c = 1;
 		for (; i < nonce.Length; i++)
 		{
@@ -71,7 +71,7 @@ public static class Extensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void IncrementBeInternal(this Span<byte> counter)
 	{
-		var j = counter.Length;
+		int j = counter.Length;
 		while (--j >= 0 && ++counter[j] == 0)
 		{
 		}
@@ -92,7 +92,7 @@ public static class Extensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementBe4(this byte[] counter, int start, int end)
 	{
-		var j = end;
+		int j = end;
 		// ReSharper disable once ConditionIsAlwaysTrueOrFalse
 		if ((counter[--j] += 4) < 4)
 		{
@@ -113,10 +113,10 @@ public static class Extensions
 	{
 		unchecked
 		{
-			var hash1 = (5381 << 16) + 5381;
-			var hash2 = hash1;
+			int hash1 = (5381 << 16) + 5381;
+			int hash2 = hash1;
 
-			for (var i = 0; i < str.Length; i += 2)
+			for (int i = 0; i < str.Length; i += 2)
 			{
 				hash1 = ((hash1 << 5) + hash1) ^ str[i];
 				if (i == str.Length - 1)
@@ -142,9 +142,9 @@ public static class Extensions
 	{
 		unchecked
 		{
-			var hash = 5381;
+			int hash = 5381;
 
-			foreach (var t in span)
+			foreach (T t in span)
 			{
 				hash = ((hash << 5) + hash) ^ t.GetHashCode();
 			}

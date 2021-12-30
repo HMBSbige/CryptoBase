@@ -14,6 +14,7 @@ internal static class IntrinsicsUtils
 	private static readonly Vector128<byte> Reverse32 = Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
 	private static readonly Vector128<byte> Reverse_128 = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
 	private static readonly Vector256<byte> Reverse32_256 = Vector256.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28);
+	private static readonly Vector128<long> MinusOne64Le = Vector128.Create(-1, 0);
 
 	/// <summary>
 	/// But AMD is slow...
@@ -249,5 +250,15 @@ internal static class IntrinsicsUtils
 		v = Avx2.Add(v, Avx2.Permute4x64(v, 0b11_10_11_10));
 		v = Avx2.Add(v, Avx2.ShiftRightLogical128BitLane(v, 8));
 		return v.ToScalar();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector128<byte> Inc128Le(this Vector128<byte> nonce)
+	{
+		Vector128<long> v = nonce.AsInt64();
+		Vector128<long> t = Sse41.CompareEqual(v, MinusOne64Le);
+		v = Sse2.Subtract(v, MinusOne64Le);
+		t = Sse2.ShiftLeftLogical128BitLane(t, 8);
+		return Sse2.Subtract(v, t).AsByte();
 	}
 }
