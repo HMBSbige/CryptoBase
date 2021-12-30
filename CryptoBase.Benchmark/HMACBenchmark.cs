@@ -18,8 +18,8 @@ public class HMACBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(ByteLength).ToArray();
-		_randomKey = Utils.RandBytes(64).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
+		_randomKey = RandomNumberGenerator.GetBytes(64);
 	}
 
 	[Benchmark]

@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -19,9 +20,9 @@ public class SM4Benchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes16 = Utils.RandBytes(16).ToArray();
-		_randombytes64 = Utils.RandBytes(64).ToArray();
-		_randomKey = Utils.RandBytes(16).ToArray();
+		_randombytes16 = RandomNumberGenerator.GetBytes(16);
+		_randombytes64 = RandomNumberGenerator.GetBytes(64);
+		_randomKey = RandomNumberGenerator.GetBytes(16);
 	}
 
 	private void TestEncrypt(IBlockCrypto crypto, Span<byte> origin)

@@ -2,6 +2,8 @@ using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System;
+using System.Linq;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -23,12 +25,12 @@ public class SodiumIncrementBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		var random = Utils.RandBytes(4);
+		byte[] random = RandomNumberGenerator.GetBytes(4);
 		_randombytes = random.ToArray();
 		_randombytes2 = random.ToArray();
 		_randombytes3 = random.ToArray();
 		_randombytes4 = random.ToArray();
-		_randombytes16 = Utils.RandBytes(16).ToArray();
+		_randombytes16 = RandomNumberGenerator.GetBytes(16);
 		_aes = AESUtils.CreateECB(_randombytes16);
 	}
 

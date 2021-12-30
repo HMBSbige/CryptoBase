@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 using CryptoBase.Digests.CRC32;
 using CryptoBase.Digests.CRC32C;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -16,7 +17,7 @@ public class CRC32Benchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(ByteLength).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
 	}
 
 	[Benchmark(Baseline = true)]

@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -18,8 +19,8 @@ public class CBCBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(16).ToArray();
-		_randomKey16 = Utils.RandBytes(16).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(16);
+		_randomKey16 = RandomNumberGenerator.GetBytes(16);
 		_randomIv16 = new byte[16];
 	}
 

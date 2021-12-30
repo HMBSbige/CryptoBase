@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -19,9 +20,9 @@ public class XChaCha20Poly1305Benchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(Length).ToArray();
-		_randomKey = Utils.RandBytes(32).ToArray();
-		_randomIv = Utils.RandBytes(24).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(Length);
+		_randomKey = RandomNumberGenerator.GetBytes(32);
+		_randomIv = RandomNumberGenerator.GetBytes(24);
 	}
 
 	private void TestEncrypt(IAEADCrypto crypto)

@@ -19,9 +19,9 @@ public class HKDFBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_ikm = Utils.RandBytes(80).ToArray();
-		_salt = Utils.RandBytes(80).ToArray();
-		_info = Utils.RandBytes(80).ToArray();
+		_ikm = RandomNumberGenerator.GetBytes(80);
+		_salt = RandomNumberGenerator.GetBytes(80);
+		_info = RandomNumberGenerator.GetBytes(80);
 	}
 
 	[Benchmark]

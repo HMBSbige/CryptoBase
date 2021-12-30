@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -18,8 +19,8 @@ public class RC4Benchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(ByteLength).ToArray();
-		_randomKey = Utils.RandBytes(16).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
+		_randomKey = RandomNumberGenerator.GetBytes(16);
 	}
 
 	private static void Test(IStreamCrypto crypto, Span<byte> origin)

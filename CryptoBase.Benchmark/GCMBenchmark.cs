@@ -5,6 +5,7 @@ using CryptoBase.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -21,9 +22,9 @@ public class GCMBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(Length).ToArray();
-		_randomKey = Utils.RandBytes(16).ToArray();
-		_randomIv = Utils.RandBytes(12).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(Length);
+		_randomKey = RandomNumberGenerator.GetBytes(16);
+		_randomIv = RandomNumberGenerator.GetBytes(12);
 	}
 
 	private void TestEncrypt(IAEADCrypto crypto)

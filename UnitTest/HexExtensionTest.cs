@@ -1,7 +1,7 @@
-using CryptoBase;
 using CryptoBase.DataFormatExtensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace UnitTest;
@@ -32,8 +32,8 @@ public class HexExtensionTest
 	[TestMethod]
 	public void LargeInputTest()
 	{
-		var expected = Utils.RandBytes(10 * 1024 * 1024);
-		var hex = expected.ToHex();
+		byte[] expected = RandomNumberGenerator.GetBytes(10 * 1024 * 1024);
+		string hex = expected.AsSpan().ToHex();
 		Span<byte> actual = hex.FromHex();
 		Assert.IsTrue(actual.SequenceEqual(expected));
 	}

@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.Digests;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -17,7 +18,7 @@ public class SHA384Benchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(ByteLength).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
 	}
 
 	[Benchmark(Baseline = true)]

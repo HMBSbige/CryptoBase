@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -19,9 +20,9 @@ public class Salsa20Benchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(ByteLength).ToArray();
-		_randomKey = Utils.RandBytes(32).ToArray();
-		_randomIv = Utils.RandBytes(8).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
+		_randomKey = RandomNumberGenerator.GetBytes(32);
+		_randomIv = RandomNumberGenerator.GetBytes(8);
 	}
 
 	private static void Test(IStreamCrypto crypto, Span<byte> origin)

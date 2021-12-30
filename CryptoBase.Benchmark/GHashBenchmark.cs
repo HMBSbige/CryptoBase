@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions;
 using CryptoBase.Macs.GHash;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -17,8 +18,8 @@ public class GHashBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(Length).ToArray();
-		_randomKey = Utils.RandBytes(16).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(Length);
+		_randomKey = RandomNumberGenerator.GetBytes(16);
 	}
 
 	private void Test(IMac mac)

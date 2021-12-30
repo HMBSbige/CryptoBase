@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -21,8 +22,8 @@ public class AESBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(16).ToArray();
-		_randomKey = Utils.RandBytes(KeyLength).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(16);
+		_randomKey = RandomNumberGenerator.GetBytes(KeyLength);
 	}
 
 	private void TestEncrypt(IBlockCrypto crypto, Span<byte> origin)

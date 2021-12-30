@@ -4,6 +4,7 @@ using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using System;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
@@ -21,10 +22,10 @@ public class CFBBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = Utils.RandBytes(ByteLength).ToArray();
-		_randomKey16 = Utils.RandBytes(16).ToArray();
-		_randomIv8 = Utils.RandBytes(8).ToArray();
-		_randomIv16 = Utils.RandBytes(16).ToArray();
+		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
+		_randomKey16 = RandomNumberGenerator.GetBytes(16);
+		_randomIv8 = RandomNumberGenerator.GetBytes(8);
+		_randomIv16 = RandomNumberGenerator.GetBytes(16);
 	}
 
 	private static void Test(IStreamCrypto crypto, Span<byte> origin)
