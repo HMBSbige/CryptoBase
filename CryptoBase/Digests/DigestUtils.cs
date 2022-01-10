@@ -8,7 +8,11 @@ using CryptoBase.Digests.SHA384;
 using CryptoBase.Digests.SHA512;
 using CryptoBase.Digests.SM3;
 using System;
+using System.Buffers;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CryptoBase.Digests;
 
@@ -51,5 +55,31 @@ public static class DigestUtils
 		}
 
 		return new Crc32CSF();
+	}
+
+	public static async Task<byte[]> ComputeHashAsync(this IHash hasher, Stream inputStream, CancellationToken cancellationToken = default)
+	{
+		const int bufferSize = 81920;
+		byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+		try
+		{
+			while (true)
+			{
+				int length = await inputStream.ReadAsync(buffer, cancellationToken);
+				if (length <= 0)
+				{
+					break;
+				}
+				hasher.Update(buffer.AsSpan(0, length));
+			}
+
+			byte[] result = new byte[hasher.Length];
+			hasher.GetHash(result);
+			return result;
+		}
+		finally
+		{
+			ArrayPool<byte>.Shared.Return(buffer);
+		}
 	}
 }
