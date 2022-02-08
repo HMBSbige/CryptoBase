@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -15,71 +14,97 @@ public static class SM4Utils
 	private static readonly Vector128<byte> m2l = Vector128.Create(0x5B67F2CEA19D0834, 0xEDD14478172BBE82).AsByte();
 	private static readonly Vector128<byte> m2h = Vector128.Create(0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF).AsByte();
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Transpose(ref Vector128<byte> x0, ref Vector128<byte> x1, ref Vector128<byte> x2, ref Vector128<byte> x3)
+	{
+		Vector128<ulong> t0 = Sse2.UnpackHigh(x0.AsUInt32(), x1.AsUInt32()).AsUInt64();
+		x0 = Sse2.UnpackLow(x0.AsUInt32(), x1.AsUInt32()).AsByte();
+
+		Vector128<ulong> t1 = Sse2.UnpackLow(x2.AsUInt32(), x3.AsUInt32()).AsUInt64();
+		x2 = Sse2.UnpackHigh(x2.AsUInt32(), x3.AsUInt32()).AsByte();
+
+		x1 = Sse2.UnpackHigh(x0.AsUInt64(), t1).AsByte();
+		x0 = Sse2.UnpackLow(x0.AsUInt64(), t1).AsByte();
+
+		x3 = Sse2.UnpackHigh(t0, x2.AsUInt64()).AsByte();
+		x2 = Sse2.UnpackLow(t0, x2.AsUInt64()).AsByte();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void PreTransform(this ref Vector128<byte> x)
+	{
+		Vector128<byte> t = Sse2.And(x, c0f);
+		x = Sse2.AndNot(c0f, x);
+		x = Sse2.ShiftRightLogical(x.AsUInt32(), 4).AsByte();
+
+		t = Ssse3.Shuffle(m1l, t);
+		x = Ssse3.Shuffle(m1h, x).Xor(t);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void PostTransform(this ref Vector128<byte> x)
+	{
+		Vector128<byte> t = Sse2.AndNot(x, c0f);
+		x = Sse2.ShiftRightLogical(x.AsUInt32(), 4).AsByte();
+		x = Sse2.And(x, c0f);
+
+		t = Ssse3.Shuffle(m2l, t);
+		x = Ssse3.Shuffle(m2h, x).Xor(t);
+	}
+
 	/// <summary>
 	/// https://github.com/mjosaarinen/sm4ni/blob/master/sm4ni.c
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void Encrypt4(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		var p32 = MemoryMarshal.Cast<byte, uint>(source);
-		var t3 = Vector128.Create(p32[3], p32[7], p32[11], p32[15]).ReverseEndianness32();
-		var t2 = Vector128.Create(p32[2], p32[6], p32[10], p32[14]).ReverseEndianness32();
-		var t1 = Vector128.Create(p32[1], p32[5], p32[9], p32[13]).ReverseEndianness32();
-		var t0 = Vector128.Create(p32[0], p32[4], p32[8], p32[12]).ReverseEndianness32();
+		Vector128<byte> t0;
+		Vector128<byte> t1;
+		Vector128<byte> t2;
+		Vector128<byte> t3;
 
-		for (var i = 0; i < 32; ++i)
+		fixed (byte* p = source)
 		{
-			var x = t1.Xor(t2).Xor(t3).Xor(Vector128.Create(rk[i]).AsByte());
+			t0 = Sse2.LoadVector128(p + 0 * 16).ReverseEndianness32();
+			t1 = Sse2.LoadVector128(p + 1 * 16).ReverseEndianness32();
+			t2 = Sse2.LoadVector128(p + 2 * 16).ReverseEndianness32();
+			t3 = Sse2.LoadVector128(p + 3 * 16).ReverseEndianness32();
+		}
 
-			var y = Sse2.And(x, c0f); // inner affine
-			y = Ssse3.Shuffle(m1l, y);
-			x = Sse2.ShiftRightLogical(x.AsUInt64(), 4).AsByte();
-			x = Sse2.And(x, c0f);
-			x = Ssse3.Shuffle(m1h, x).Xor(y);
+		Transpose(ref t0, ref t1, ref t2, ref t3);
 
-			x = Ssse3.Shuffle(x, shr);   // inverse MixColumns
+		for (int i = 0; i < 32; ++i)
+		{
+			Vector128<byte> x = t1.Xor(t2).Xor(t3).Xor(Vector128.Create(rk[i]).AsByte());
+
+			x.PreTransform();
 			x = Aes.EncryptLast(x, c0f); // AES-NI
+			x.PostTransform();
 
-			y = Sse2.AndNot(x, c0f); // outer affine
-			y = Ssse3.Shuffle(m2l, y);
-			x = Sse2.ShiftRightLogical(x.AsUInt64(), 4).AsByte();
-			x = Sse2.And(x, c0f);
-			x = Ssse3.Shuffle(m2h, x).Xor(y);
+			// inverse MixColumns
+			x = Ssse3.Shuffle(x, shr);
 
 			// 4 parallel L1 linear transforms
-			y = x.Xor(x.RotateLeftUInt32_8()).Xor(x.RotateLeftUInt32_16());
-			y = y.AsUInt32().RotateLeftUInt32(2).AsByte();
-			x = x.Xor(y).Xor(x.RotateLeftUInt32_24());
+			Vector128<byte> t = x.Xor(x.RotateLeftUInt32_8()).Xor(x.RotateLeftUInt32_16());
+			t = t.AsUInt32().RotateLeftUInt32(2).AsByte();
+			x = x.Xor(t).Xor(x.RotateLeftUInt32_24());
+			x = x.Xor(t0);
 
 			// rotate registers
-			x = x.Xor(t0);
 			t0 = t1;
 			t1 = t2;
 			t2 = t3;
 			t3 = x;
 		}
 
-		var a = t3.ReverseEndianness32().AsUInt32();
-		var b = t2.ReverseEndianness32().AsUInt32();
-		var c = t1.ReverseEndianness32().AsUInt32();
-		var d = t0.ReverseEndianness32().AsUInt32();
-
-		var x0 = Sse2.UnpackLow(a, b);
-		var x1 = Sse2.UnpackLow(c, d);
-		var x2 = Sse2.UnpackHigh(a, b);
-		var x3 = Sse2.UnpackHigh(c, d);
-
-		t0 = Sse2.UnpackLow(x0.AsUInt64(), x1.AsUInt64()).AsByte();
-		t1 = Sse2.UnpackHigh(x0.AsUInt64(), x1.AsUInt64()).AsByte();
-		t2 = Sse2.UnpackLow(x2.AsUInt64(), x3.AsUInt64()).AsByte();
-		t3 = Sse2.UnpackHigh(x2.AsUInt64(), x3.AsUInt64()).AsByte();
+		Transpose(ref t0, ref t1, ref t2, ref t3);
 
 		fixed (byte* p = destination)
 		{
-			Sse2.Store(p, t0);
-			Sse2.Store(p + 16, t1);
-			Sse2.Store(p + 32, t2);
-			Sse2.Store(p + 48, t3);
+			Sse2.Store(p + 0 * 16, t0.Reverse());
+			Sse2.Store(p + 1 * 16, t1.Reverse());
+			Sse2.Store(p + 2 * 16, t2.Reverse());
+			Sse2.Store(p + 3 * 16, t3.Reverse());
 		}
 	}
 }
