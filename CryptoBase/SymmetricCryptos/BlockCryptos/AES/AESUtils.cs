@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
-using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;

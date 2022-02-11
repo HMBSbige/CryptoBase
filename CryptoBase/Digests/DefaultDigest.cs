@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.Digests;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Digests;

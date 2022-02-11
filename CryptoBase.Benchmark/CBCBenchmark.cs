@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

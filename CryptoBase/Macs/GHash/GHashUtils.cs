@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions;
-using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 

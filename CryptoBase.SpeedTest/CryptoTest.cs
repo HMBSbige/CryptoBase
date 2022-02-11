@@ -1,10 +1,6 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-using System;
-using System.Diagnostics;
-
 namespace CryptoBase.SpeedTest;
 
-public static class CryptoTest
+internal class CryptoTest
 {
 	public static ReadOnlySpan<byte> Key => new byte[]
 	{
@@ -22,50 +18,58 @@ public static class CryptoTest
 		24, 25, 26, 27, 28, 29, 30, 31
 	};
 
-	private const int Step = 4 * 1024;     // 4 KB
-	private const int Duration = 3 * 1000; // 3s
+	private readonly int _step;
+	private readonly double _duration;
 
-	public static void Test(IStreamCrypto crypto)
+	public CryptoTest(int step, double duration)
 	{
-		ReadOnlySpan<byte> i = new byte[Step];
-		Span<byte> o = new byte[Step];
+		_step = step;
+		_duration = duration;
+	}
 
-		var sw = Stopwatch.StartNew();
-		var length = 0ul;
+	public void Test(IStreamCrypto crypto)
+	{
+		Span<byte> o = new byte[_step];
+		ulong length = 0ul;
+		double totalSeconds = 0.0;
 
 		do
 		{
+			ReadOnlySpan<byte> i = RandomNumberGenerator.GetBytes(_step);
+			Stopwatch sw = Stopwatch.StartNew();
 			crypto.Update(i, o);
+			sw.Stop();
+			totalSeconds += sw.Elapsed.TotalSeconds;
 			++length;
-		} while (sw.ElapsedMilliseconds < Duration);
+		} while (totalSeconds < _duration);
 
-		sw.Stop();
 		crypto.Dispose();
 
-		var result = length * Step / sw.Elapsed.TotalSeconds / 1024.0 / 1024.0;
+		double result = length * (ulong)_step / totalSeconds / 1024.0 / 1024.0;
 		Console.WriteLine($@"{result:F2} MB/s");
 	}
 
-	public static void Test(IAEADCrypto crypto, int nonceLength = 12)
+	public void Test(IAEADCrypto crypto, int nonceLength = 12)
 	{
-		ReadOnlySpan<byte> i = new byte[Step];
-		Span<byte> o = new byte[Step];
+		Span<byte> o = new byte[_step];
 		ReadOnlySpan<byte> nonce = IV[..nonceLength];
 		Span<byte> tag = stackalloc byte[16];
-
-		var sw = Stopwatch.StartNew();
-		var length = 0ul;
+		ulong length = 0ul;
+		double totalSeconds = 0.0;
 
 		do
 		{
+			ReadOnlySpan<byte> i = RandomNumberGenerator.GetBytes(_step);
+			Stopwatch sw = Stopwatch.StartNew();
 			crypto.Encrypt(nonce, i, o, tag);
+			sw.Stop();
+			totalSeconds += sw.Elapsed.TotalSeconds;
 			++length;
-		} while (sw.ElapsedMilliseconds < Duration);
+		} while (totalSeconds < _duration);
 
-		sw.Stop();
 		crypto.Dispose();
 
-		var result = length * Step / sw.Elapsed.TotalSeconds / 1024.0 / 1024.0;
+		double result = length * (ulong)_step / totalSeconds / 1024.0 / 1024.0;
 		Console.WriteLine($@"{result:F2} MB/s");
 	}
 }

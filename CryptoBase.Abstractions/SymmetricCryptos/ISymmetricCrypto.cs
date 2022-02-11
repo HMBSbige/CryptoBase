@@ -1,5 +1,3 @@
-using System;
-
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
 public interface ISymmetricCrypto : IDisposable

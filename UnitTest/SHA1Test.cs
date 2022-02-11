@@ -3,7 +3,6 @@ using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests.SHA1;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Text;
 
 namespace UnitTest;

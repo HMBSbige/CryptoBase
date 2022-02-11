@@ -4,7 +4,6 @@ using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 
 namespace UnitTest;
 

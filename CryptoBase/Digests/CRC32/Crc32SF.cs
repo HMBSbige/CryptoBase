@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.Digests;
-using System;
 using System.Buffers.Binary;
 
 namespace CryptoBase.Digests.CRC32;

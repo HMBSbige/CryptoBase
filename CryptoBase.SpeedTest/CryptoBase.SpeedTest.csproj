@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22106.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CryptoBase\CryptoBase.csproj" />
   </ItemGroup>
 

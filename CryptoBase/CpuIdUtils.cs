@@ -1,4 +1,3 @@
-using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.Intrinsics.X86;
@@ -17,7 +16,7 @@ public static class CpuIdUtils
 	{
 		if (X86Base.IsSupported)
 		{
-			var id = X86Base.CpuId(0, 0);
+			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(0, 0);
 			Span<byte> buffer = stackalloc byte[12];
 
 			Debug.WriteLine(id);
@@ -35,17 +34,17 @@ public static class CpuIdUtils
 	{
 		if (X86Base.IsSupported)
 		{
-			var id = X86Base.CpuId(unchecked((int)0x80000000), 0);
-			var highestExtendedFunctionImplemented = (uint)id.Eax;
+			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(unchecked((int)0x80000000), 0);
+			uint highestExtendedFunctionImplemented = (uint)id.Eax;
 
 			if (highestExtendedFunctionImplemented >= 0x80000004)
 			{
 				Span<byte> buffer = stackalloc byte[48];
 
-				var t = buffer;
-				for (var i = 0x80000002; i <= 0x80000004; ++i)
+				Span<byte> t = buffer;
+				for (uint i = 0x80000002; i <= 0x80000004; ++i)
 				{
-					var id2 = X86Base.CpuId(unchecked((int)i), 0);
+					(int Eax, int Ebx, int Ecx, int Edx) id2 = X86Base.CpuId(unchecked((int)i), 0);
 					BinaryPrimitives.WriteInt32LittleEndian(t, id2.Eax);
 					BinaryPrimitives.WriteInt32LittleEndian(t[4..], id2.Ebx);
 					BinaryPrimitives.WriteInt32LittleEndian(t[8..], id2.Ecx);
@@ -64,10 +63,23 @@ public static class CpuIdUtils
 	{
 		if (X86Base.IsSupported)
 		{
-			var id = X86Base.CpuId(7, 0);
+			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(7, 0);
 			Debug.WriteLine(id);
 
 			return ((uint)id.Ebx >> 29 & 1) == 1;
+		}
+
+		return false;
+	}
+
+	public static bool IsSupportX86VAes()
+	{
+		if (X86Base.IsSupported)
+		{
+			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(7, 0);
+			Debug.WriteLine(id);
+
+			return ((uint)id.Ecx >> 9 & 1) == 1;
 		}
 
 		return false;

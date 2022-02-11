@@ -1,5 +1,3 @@
-using System;
-
 namespace CryptoBase.Abstractions.Digests;
 
 /// <summary>

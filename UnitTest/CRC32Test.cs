@@ -4,7 +4,6 @@ using CryptoBase.Digests;
 using CryptoBase.Digests.CRC32;
 using CryptoBase.Digests.CRC32C;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Text;
 
 namespace UnitTest;

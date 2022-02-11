@@ -3,7 +3,6 @@ using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Utilities;
-using System;
 
 namespace CryptoBase.BouncyCastle.Expansion;
 

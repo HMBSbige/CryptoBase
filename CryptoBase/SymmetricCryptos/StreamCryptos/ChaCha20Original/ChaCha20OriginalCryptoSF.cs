@@ -1,5 +1,3 @@
-using System;
-
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 
 public class ChaCha20OriginalCryptoSF : ChaCha20OriginalCrypto

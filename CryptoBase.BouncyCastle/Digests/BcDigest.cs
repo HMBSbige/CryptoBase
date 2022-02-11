@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.Digests;
 using Org.BouncyCastle.Crypto;
-using System;
 using System.Buffers;
 
 namespace CryptoBase.BouncyCastle.Digests;

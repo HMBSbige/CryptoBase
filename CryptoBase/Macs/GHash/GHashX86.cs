@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions;
-using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -27,7 +26,7 @@ public class GHashX86 : IMac
 
 		fixed (byte* p = key)
 		{
-			_key = Sse2.LoadVector128(p).Reverse();
+			_key = Sse2.LoadVector128(p).ReverseEndianness128();
 		}
 
 		Reset();
@@ -42,7 +41,7 @@ public class GHashX86 : IMac
 		fixed (byte* p = x)
 		{
 			var t = Sse2.LoadVector128(p);
-			b = t.Reverse().AsUInt64();
+			b = t.ReverseEndianness128().AsUInt64();
 		}
 
 		b = Sse2.Xor(b.AsByte(), _buffer).AsUInt64();
@@ -110,7 +109,7 @@ public class GHashX86 : IMac
 	{
 		fixed (byte* p = destination)
 		{
-			Sse2.Store(p, _buffer.Reverse());
+			Sse2.Store(p, _buffer.ReverseEndianness128());
 		}
 
 		Reset();

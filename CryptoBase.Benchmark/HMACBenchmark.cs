@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

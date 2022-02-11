@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions;
-using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;

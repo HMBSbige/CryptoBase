@@ -1,7 +1,5 @@
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Parameters;
-using System;
-using System.IO;
 
 namespace CryptoBase.BouncyCastle.Expansion;
 
@@ -159,7 +157,7 @@ public class CfbStreamCipher : IBlockCipher
 		}
 
 		outStream.Seek(ptr, SeekOrigin.Begin);
-		outStream.Read(outBuf, outOff, length);
+		_ = outStream.Read(outBuf, outOff, length);
 	}
 
 	/**

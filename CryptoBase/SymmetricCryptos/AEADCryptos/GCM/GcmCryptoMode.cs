@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Macs.GHash;
-using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
@@ -13,7 +12,6 @@ public class GcmCryptoMode : IAEADCrypto
 	public string Name => _crypto.Name + @"-GCM";
 
 	public const int BlockSize = 16;
-	private const int BlockSize4 = BlockSize * 4;
 	public const int NonceSize = 12;
 	public const int TagSize = 16;
 
@@ -28,15 +26,15 @@ public class GcmCryptoMode : IAEADCrypto
 
 	public GcmCryptoMode(IBlockCrypto crypto)
 	{
-		if (crypto.BlockSize != BlockSize)
+		if (crypto.BlockSize is not BlockSize)
 		{
-			throw new ArgumentException(@"Crypto block size must be 16 bytes.", nameof(crypto));
+			throw new ArgumentException($@"Crypto block size must be {BlockSize} bytes.", nameof(crypto));
 		}
 		_crypto = crypto;
 
-		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize4);
+		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
 		_tagBuffer = ArrayPool<byte>.Shared.Rent(TagSize);
-		_counterBlock = ArrayPool<byte>.Shared.Rent(BlockSize4);
+		_counterBlock = ArrayPool<byte>.Shared.Rent(BlockSize);
 
 		_crypto.Encrypt(Init, _buffer);
 		_gHash = GHashUtils.Create(_buffer);
@@ -45,69 +43,32 @@ public class GcmCryptoMode : IAEADCrypto
 	public unsafe void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
 		Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
-		if (nonce.Length != NonceSize)
-		{
-			throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
-		}
+		CheckInput(nonce, source, destination);
 
-		if (destination.Length != source.Length)
-		{
-			throw new ArgumentException(@"Plaintext and ciphertext must have the same length.", nameof(destination));
-		}
+		ulong length = (ulong)source.Length << 3;
 
-		var length = (ulong)source.Length << 3;
-
-		var counterBlock = _counterBlock.AsSpan(0, BlockSize4);
-		var counter0 = counterBlock.Slice(12, 4);
-		var counter1 = counterBlock.Slice(28, 4);
-		var counter2 = counterBlock.Slice(44, 4);
-		var counter3 = counterBlock.Slice(60, 4);
+		Span<byte> counterBlock = _counterBlock.AsSpan(0, BlockSize);
+		Span<byte> counter = counterBlock.Slice(12, 4);
 
 		nonce.CopyTo(counterBlock);
-		nonce.CopyTo(counterBlock[16..]);
-		nonce.CopyTo(counterBlock[32..]);
-		nonce.CopyTo(counterBlock[48..]);
 
-		counter0[0] = 0;
-		counter0[1] = 0;
-		counter0[2] = 0;
-		counter0[3] = 1;
-
-		counter1[0] = 0;
-		counter1[1] = 0;
-		counter1[2] = 0;
-		counter1[3] = 3;
-
-		counter2[0] = 0;
-		counter2[1] = 0;
-		counter2[2] = 0;
-		counter2[3] = 4;
-
-		counter3[0] = 0;
-		counter3[1] = 0;
-		counter3[2] = 0;
-		counter3[3] = 5;
+		counter[0] = 0;
+		counter[1] = 0;
+		counter[2] = 0;
+		counter[3] = 1;
 
 		_crypto.Encrypt(counterBlock, tag);
-		counter0[3] = 2;
-
-		uint c3 = 5;
-
+		counter[3] = 2;
+		uint c = 2;
 		_gHash.Update(associatedData);
 
 		while (!source.IsEmpty)
 		{
-			_crypto.Encrypt4(counterBlock, _buffer);
-			var c0 = c3 + 1;
-			var c1 = c0 + 1;
-			var c2 = c1 + 1;
-			c3 = c2 + 1;
-			BinaryPrimitives.WriteUInt32BigEndian(counter0, c0);
-			BinaryPrimitives.WriteUInt32BigEndian(counter1, c1);
-			BinaryPrimitives.WriteUInt32BigEndian(counter2, c2);
-			BinaryPrimitives.WriteUInt32BigEndian(counter3, c3);
+			_crypto.Encrypt(counterBlock, _buffer);
+			++c;
+			BinaryPrimitives.WriteUInt32BigEndian(counter, c);
 
-			var n = Math.Min(source.Length, BlockSize4);
+			int n = Math.Min(source.Length, BlockSize);
 
 			fixed (byte* pOut = destination)
 			fixed (byte* pSource = source)
@@ -138,69 +99,32 @@ public class GcmCryptoMode : IAEADCrypto
 	public unsafe void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
 		Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
-		if (nonce.Length != NonceSize)
-		{
-			throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
-		}
+		CheckInput(nonce, source, destination);
 
-		if (destination.Length != source.Length)
-		{
-			throw new ArgumentException(@"Plaintext and ciphertext must have the same length.", nameof(destination));
-		}
+		ulong length = (ulong)source.Length << 3;
 
-		var length = (ulong)source.Length << 3;
-
-		var counterBlock = _counterBlock.AsSpan(0, BlockSize4);
-		var counter0 = counterBlock.Slice(12, 4);
-		var counter1 = counterBlock.Slice(28, 4);
-		var counter2 = counterBlock.Slice(44, 4);
-		var counter3 = counterBlock.Slice(60, 4);
+		Span<byte> counterBlock = _counterBlock.AsSpan(0, BlockSize);
+		Span<byte> counter0 = counterBlock.Slice(12, 4);
 
 		nonce.CopyTo(counterBlock);
-		nonce.CopyTo(counterBlock[16..]);
-		nonce.CopyTo(counterBlock[32..]);
-		nonce.CopyTo(counterBlock[48..]);
 
 		counter0[0] = 0;
 		counter0[1] = 0;
 		counter0[2] = 0;
 		counter0[3] = 1;
 
-		counter1[0] = 0;
-		counter1[1] = 0;
-		counter1[2] = 0;
-		counter1[3] = 3;
-
-		counter2[0] = 0;
-		counter2[1] = 0;
-		counter2[2] = 0;
-		counter2[3] = 4;
-
-		counter3[0] = 0;
-		counter3[1] = 0;
-		counter3[2] = 0;
-		counter3[3] = 5;
-
 		_crypto.Encrypt(counterBlock, _tagBuffer);
 		counter0[3] = 2;
-
-		uint c3 = 5;
-
+		uint c = 2;
 		_gHash.Update(associatedData);
 
 		while (!source.IsEmpty)
 		{
-			_crypto.Encrypt4(counterBlock, _buffer);
-			var c0 = c3 + 1;
-			var c1 = c0 + 1;
-			var c2 = c1 + 1;
-			c3 = c2 + 1;
-			BinaryPrimitives.WriteUInt32BigEndian(counter0, c0);
-			BinaryPrimitives.WriteUInt32BigEndian(counter1, c1);
-			BinaryPrimitives.WriteUInt32BigEndian(counter2, c2);
-			BinaryPrimitives.WriteUInt32BigEndian(counter3, c3);
+			_crypto.Encrypt(counterBlock, _buffer);
+			++c;
+			BinaryPrimitives.WriteUInt32BigEndian(counter0, c);
 
-			var n = Math.Min(source.Length, BlockSize4);
+			int n = Math.Min(source.Length, BlockSize);
 
 			_gHash.Update(source[..n]);
 
@@ -233,6 +157,19 @@ public class GcmCryptoMode : IAEADCrypto
 		}
 	}
 
+	private static void CheckInput(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination)
+	{
+		if (nonce.Length is not NonceSize)
+		{
+			throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
+		}
+
+		if (destination.Length != source.Length)
+		{
+			throw new ArgumentException(@"Plaintext and ciphertext must have the same length.", nameof(destination));
+		}
+	}
+
 	public void Dispose()
 	{
 		_crypto.Dispose();
@@ -241,5 +178,7 @@ public class GcmCryptoMode : IAEADCrypto
 		ArrayPool<byte>.Shared.Return(_buffer);
 		ArrayPool<byte>.Shared.Return(_tagBuffer);
 		ArrayPool<byte>.Shared.Return(_counterBlock);
+
+		GC.SuppressFinalize(this);
 	}
 }

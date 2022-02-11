@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Digests;
 using CryptoBase.KDF;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

@@ -3,7 +3,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

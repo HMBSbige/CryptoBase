@@ -1,8 +1,8 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
-using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
 
@@ -17,6 +17,11 @@ public static class AEADCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IAEADCrypto Sm4Gcm(ReadOnlySpan<byte> key)
 	{
+		if (Aes.IsSupported && Avx.IsSupported && Avx2.IsSupported)
+		{
+			return new GcmCryptoModeBlock16X86(new SM4Crypto(key), new SM4CryptoBlock16X86(key));
+		}
+
 		return new GcmCryptoMode(new SM4Crypto(key));
 	}
 

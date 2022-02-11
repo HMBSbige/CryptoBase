@@ -1,56 +1,95 @@
-using CryptoBase;
-using CryptoBase.SpeedTest;
-using CryptoBase.SymmetricCryptos.AEADCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos;
-using System;
-using System.Diagnostics;
+global using CryptoBase;
+global using CryptoBase.Abstractions.SymmetricCryptos;
+global using CryptoBase.SpeedTest;
+global using CryptoBase.SymmetricCryptos.AEADCryptos;
+global using CryptoBase.SymmetricCryptos.StreamCryptos;
+global using System.Collections.Immutable;
+global using System.CommandLine;
+global using System.Diagnostics;
+global using System.Runtime.Intrinsics.X86;
+global using System.Security.Cryptography;
+global using Aes = System.Runtime.Intrinsics.X86.Aes;
 
-Console.WriteLine("Start CryptoBase.SpeedTest...");
+Console.WriteLine(@"Start CryptoBase.SpeedTest...");
 #if DEBUG
-Console.WriteLine("On Debug mode");
+Console.WriteLine(@"On Debug mode");
 #endif
 if (Debugger.IsAttached)
 {
-	Console.WriteLine("Debugger attached!");
+	Console.WriteLine(@"Debugger attached!");
 }
 
-Console.WriteLine($@"OS Version: {Environment.OSVersion}");
-Console.WriteLine($@".NET Version: {Environment.Version}");
-Console.WriteLine($@"CPU Vendor: {CpuIdUtils.GetVendor()}");
-Console.WriteLine($@"CPU Brand: {CpuIdUtils.GetBrand()}");
-Console.WriteLine($@"Intel SHA extensions: {CpuIdUtils.IsSupportX86ShaEx()}");
+Console.WriteLine($@"OS Version:                    {Environment.OSVersion}");
+Console.WriteLine($@".NET Version:                  {Environment.Version}");
+Console.WriteLine($@"CPU Vendor:                    {CpuIdUtils.GetVendor()}");
+Console.WriteLine($@"CPU Brand:                     {CpuIdUtils.GetBrand()}");
+Console.WriteLine($@"SSE2 instructions:             {Sse2.IsSupported}");
+Console.WriteLine($@"Advanced Vector Extensions 2:  {Avx2.IsSupported}");
+Console.WriteLine($@"Intel SHA extensions:          {CpuIdUtils.IsSupportX86ShaEx()}");
+Console.WriteLine($@"AES instruction set:           {Aes.IsSupported}");
+Console.WriteLine($@"Vector AES instruction set:    {CpuIdUtils.IsSupportX86VAes()}");
 
-var key32 = CryptoTest.Key[..32].ToArray();
-var key16 = CryptoTest.Key[..16].ToArray();
-var iv16 = CryptoTest.IV[..16].ToArray();
-var iv24 = CryptoTest.IV[..24].ToArray();
+Argument<string> methodsArgument = new(@"method(s)", () => @"all", @"Methods separated by commas.");
+methodsArgument.AddCompletions(CryptoList.All);
+foreach (string method in CryptoList.Methods)
+{
+	methodsArgument.AddCompletions(method);
+}
+Option<double> secondsOption = new(@"--seconds", () => 3.0, @"Run benchmarks for num seconds.");
+secondsOption.AddAlias(@"-s");
+Option<int> bytesOption = new(@"--bytes", () => 8 * 1024, @"Run benchmarks on num-byte buffers.");
+bytesOption.AddAlias(@"-b");
 
-Console.Write(@"Testing Aes-128-Ctr: ");
-CryptoTest.Test(StreamCryptoCreate.AesCtr(key16, iv16));
-Console.Write(@"Testing Sm4-Ctr: ");
-CryptoTest.Test(StreamCryptoCreate.Sm4Ctr(key16, iv16));
-Console.Write(@"Testing Aes-128-Cfb: ");
-CryptoTest.Test(StreamCryptoCreate.AesCfb(true, key16, iv16));
-Console.Write(@"Testing Sm4-Cfb: ");
-CryptoTest.Test(StreamCryptoCreate.Sm4Cfb(true, key16, iv16));
-Console.Write(@"Testing RC4: ");
-CryptoTest.Test(StreamCryptoCreate.Rc4(key16));
-Console.Write(@"Testing ChaCha20: ");
-CryptoTest.Test(StreamCryptoCreate.ChaCha20(key32, iv16));
-Console.Write(@"Testing ChaCha20Original: ");
-CryptoTest.Test(StreamCryptoCreate.ChaCha20Original(key32, iv16));
-Console.Write(@"Testing XChaCha20: ");
-CryptoTest.Test(StreamCryptoCreate.XChaCha20(key32, iv24));
-Console.Write(@"Testing Salsa20: ");
-CryptoTest.Test(StreamCryptoCreate.Salsa20(key32, iv16));
-Console.Write(@"Testing XSalsa20: ");
-CryptoTest.Test(StreamCryptoCreate.XSalsa20(key32, iv24));
+RootCommand cmd = new()
+{
+	methodsArgument,
+	secondsOption,
+	bytesOption
+};
 
-Console.Write(@"Testing AES-128-GCM: ");
-CryptoTest.Test(AEADCryptoCreate.AesGcm(key16));
-Console.Write(@"Testing SM4-GCM: ");
-CryptoTest.Test(AEADCryptoCreate.Sm4Gcm(key16));
-Console.Write(@"Testing ChaCha20Poly1305: ");
-CryptoTest.Test(AEADCryptoCreate.ChaCha20Poly1305(key32));
-Console.Write(@"Testing XChaCha20Poly1305: ");
-CryptoTest.Test(AEADCryptoCreate.XChaCha20Poly1305(key32), 24);
+cmd.SetHandler((string methods, double seconds, int bytes) =>
+{
+	Console.WriteLine($@"Seconds: {seconds}s");
+	Console.WriteLine($@"Buffer size: {bytes} bytes");
+	Console.WriteLine();
+
+	IEnumerable<string> methodList = methods.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+	if (methodList.Contains(CryptoList.All, StringComparer.OrdinalIgnoreCase))
+	{
+		methodList = CryptoList.Methods;
+	}
+
+	foreach (string method in methodList)
+	{
+		string realMethod = method.ToLower();
+		ISymmetricCrypto? crypto = CryptoList.GetSymmetricCrypto(realMethod);
+		if (crypto is null)
+		{
+			throw new NotSupportedException($@"{realMethod} is not supported.");
+		}
+
+		Console.Write($@"Testing {realMethod}: ");
+
+		CryptoTest t = new(bytes, seconds);
+		switch (crypto)
+		{
+			case XChaCha20Poly1305Crypto xc20P1305:
+			{
+				t.Test(xc20P1305, 24);
+				break;
+			}
+			case IStreamCrypto streamCrypto:
+			{
+				t.Test(streamCrypto);
+				break;
+			}
+			case IAEADCrypto aeadCrypto:
+			{
+				t.Test(aeadCrypto);
+				break;
+			}
+		}
+	}
+}, methodsArgument, secondsOption, bytesOption);
+
+return cmd.Invoke(args);

@@ -1,5 +1,3 @@
-using System;
-
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
 public abstract class BlockCryptoBase : IBlockCrypto
@@ -32,33 +30,6 @@ public abstract class BlockCryptoBase : IBlockCrypto
 		{
 			throw new ArgumentException(string.Empty, nameof(destination));
 		}
-	}
-
-	public virtual void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		if (source.Length < BlockSize << 2)
-		{
-			throw new ArgumentException(string.Empty, nameof(source));
-		}
-
-		if (destination.Length < BlockSize << 2)
-		{
-			throw new ArgumentException(string.Empty, nameof(destination));
-		}
-
-		Encrypt(source, destination);
-		source = source[BlockSize..];
-		destination = destination[BlockSize..];
-
-		Encrypt(source, destination);
-		source = source[BlockSize..];
-		destination = destination[BlockSize..];
-
-		Encrypt(source, destination);
-		source = source[BlockSize..];
-		destination = destination[BlockSize..];
-
-		Encrypt(source, destination);
 	}
 
 	public virtual void Reset() { }

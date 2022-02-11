@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.Expansion;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
-using System;
 using System.Buffers;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;

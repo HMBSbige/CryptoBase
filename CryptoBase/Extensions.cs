@@ -1,4 +1,3 @@
-using System;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -87,19 +86,6 @@ public static class Extensions
 	public static void IncrementBe(this Span<byte> counter)
 	{
 		counter.IncrementBeInternal();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void IncrementBe4(this byte[] counter, int start, int end)
-	{
-		int j = end;
-		// ReSharper disable once ConditionIsAlwaysTrueOrFalse
-		if ((counter[--j] += 4) < 4)
-		{
-			while (--j >= start && ++counter[j] == 0)
-			{
-			}
-		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

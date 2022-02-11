@@ -4,6 +4,7 @@
     <LangVersion>latest</LangVersion>
     <Version>1.6.0</Version>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Authors>HMBSbige</Authors>
     <Copyright>Copyright © 2020-2022 HMBSbige</Copyright>

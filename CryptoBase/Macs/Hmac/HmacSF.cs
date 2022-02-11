@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Digests;
-using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 

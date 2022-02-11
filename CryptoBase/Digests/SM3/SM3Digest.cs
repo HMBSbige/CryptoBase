@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.Digests;
-using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -70,12 +69,12 @@ public class SM3Digest : IHash
 
 	static SM3Digest()
 	{
-		for (var i = 0; i < 16; ++i)
+		for (int i = 0; i < 16; ++i)
 		{
 			T[i] = 0x79CC4519U.RotateLeft(i);
 		}
 
-		for (var i = 16; i < 64; ++i)
+		for (int i = 16; i < 64; ++i)
 		{
 			T[i] = 0x7A879D8AU.RotateLeft(i);
 		}
@@ -106,7 +105,7 @@ public class SM3Digest : IHash
 
 		if (_bufferIndex != 0)
 		{
-			var remain = 4 - _bufferIndex;
+			int remain = 4 - _bufferIndex;
 			if (source.Length < remain)
 			{
 				source.CopyTo(_buffer.AsSpan(_bufferIndex));
@@ -169,7 +168,7 @@ public class SM3Digest : IHash
 				_index = 0;
 			}
 
-			for (var i = _index; i < 14; ++i)
+			for (int i = _index; i < 14; ++i)
 			{
 				_w[i] = 0;
 			}
@@ -181,7 +180,7 @@ public class SM3Digest : IHash
 
 			if (Avx.IsSupported && Avx2.IsSupported)
 			{
-				var v = V.ReverseEndianness32();
+				Vector256<byte> v = V.ReverseEndianness32().AsByte();
 				fixed (byte* p = destination)
 				{
 					Avx.Store(p, v);
@@ -216,27 +215,27 @@ public class SM3Digest : IHash
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Process()
 	{
-		for (var j = 16; j < 68; ++j)
+		for (int j = 16; j < 68; ++j)
 		{
 			_w[j] = P1(_w[j - 16] ^ _w[j - 9] ^ _w[j - 3].RotateLeft(15)) ^ _w[j - 13].RotateLeft(7) ^ _w[j - 6];
 		}
 
-		var a = V.GetElement(0);
-		var b = V.GetElement(1);
-		var c = V.GetElement(2);
-		var d = V.GetElement(3);
-		var e = V.GetElement(4);
-		var f = V.GetElement(5);
-		var g = V.GetElement(6);
-		var h = V.GetElement(7);
+		uint a = V.GetElement(0);
+		uint b = V.GetElement(1);
+		uint c = V.GetElement(2);
+		uint d = V.GetElement(3);
+		uint e = V.GetElement(4);
+		uint f = V.GetElement(5);
+		uint g = V.GetElement(6);
+		uint h = V.GetElement(7);
 
-		for (var j = 0; j < 64; ++j)
+		for (int j = 0; j < 64; ++j)
 		{
-			var a12 = a.RotateLeft(12);
-			var ss1 = (a12 + e + T[j]).RotateLeft(7);
-			var ss2 = ss1 ^ a12;
+			uint a12 = a.RotateLeft(12);
+			uint ss1 = (a12 + e + T[j]).RotateLeft(7);
+			uint ss2 = ss1 ^ a12;
 
-			var w1 = _w[j] ^ _w[j + 4];
+			uint w1 = _w[j] ^ _w[j + 4];
 			uint tt1, tt2;
 			if (j < 16)
 			{
@@ -260,7 +259,7 @@ public class SM3Digest : IHash
 
 		if (Avx2.IsSupported)
 		{
-			var t = Vector256.Create(a, b, c, d, e, f, g, h);
+			Vector256<uint> t = Vector256.Create(a, b, c, d, e, f, g, h);
 			V = Avx2.Xor(V, t);
 		}
 		else

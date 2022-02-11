@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions;
 using CryptoBase.Macs.GHash;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

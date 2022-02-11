@@ -3,7 +3,6 @@ using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 
 namespace UnitTest;
 

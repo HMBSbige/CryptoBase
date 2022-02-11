@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
+using CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
@@ -8,7 +9,6 @@ using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;
 using CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20;
-using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 
@@ -23,13 +23,23 @@ public static class StreamCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto AesCtr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CTRStreamMode(AESUtils.CreateECB(key), iv);
+		return BlockCryptoModeCreate.Ctr(AESUtils.CreateECB(key), iv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto Sm4Ctr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CTRStreamMode(new SM4Crypto(key), iv);
+		if (Aes.IsSupported && Avx.IsSupported && Avx2.IsSupported)
+		{
+			return new CTR128StreamModeBlock16X86(new SM4CryptoBlock16X86(key), iv);
+		}
+
+		if (Aes.IsSupported && Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
+		{
+			return new CTR128StreamModeBlock8X86(new SM4CryptoBlock8X86(key), iv);
+		}
+
+		return BlockCryptoModeCreate.Ctr(new SM4Crypto(key), iv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

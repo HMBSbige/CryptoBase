@@ -1,8 +1,6 @@
 using CryptoBase;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Buffers.Binary;
-using System.Linq;
 
 namespace UnitTest;
 
@@ -59,30 +57,6 @@ public class ExtensionsTest
 		BinaryPrimitives.WriteInt32BigEndian(b, i + 1);
 
 		a.IncrementBe();
-
-		Assert.IsTrue(a.SequenceEqual(b));
-	}
-
-	[TestMethod]
-	[DataRow(0)]
-	[DataRow(255)]
-	[DataRow(65535)]
-	[DataRow(16711935)]
-	[DataRow(1)]
-	[DataRow(-1)]
-	[DataRow(int.MaxValue)]
-	[DataRow(int.MinValue)]
-	[DataRow(114514)]
-	public void SodiumIncrementBe4Test(int i)
-	{
-		const int size = sizeof(int);
-		var a = new byte[size];
-		var b = new byte[size];
-
-		BinaryPrimitives.WriteInt32BigEndian(a, i);
-		BinaryPrimitives.WriteInt32BigEndian(b, i + 4);
-
-		a.IncrementBe4(0, size);
 
 		Assert.IsTrue(a.SequenceEqual(b));
 	}

@@ -2,7 +2,6 @@ using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

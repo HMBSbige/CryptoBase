@@ -1,9 +1,7 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
@@ -11,7 +9,7 @@ public class SM4Crypto : BlockCryptoBase
 {
 	public override string Name => @"SM4";
 
-	public sealed override int BlockSize => 16;
+	public override int BlockSize => 16;
 
 	private static ReadOnlySpan<byte> S => new byte[]
 	{
@@ -45,7 +43,7 @@ public class SM4Crypto : BlockCryptoBase
 		0x10171e25, 0x2c333a41, 0x484f565d, 0x646b7279
 	};
 
-	private readonly uint[] _rk;
+	protected readonly uint[] Rk;
 
 	#region Base
 
@@ -68,7 +66,7 @@ public class SM4Crypto : BlockCryptoBase
 		uint b0 = S[(byte)(a >> 24)];
 		uint b1 = S[(byte)(a >> 16 & 0xFF)];
 		uint b2 = S[(byte)(a >> 8 & 0xFF)];
-		var b3 = S[(byte)(a & 0xFF)];
+		byte b3 = S[(byte)(a & 0xFF)];
 
 		return b0 << 24 | b1 << 16 | b2 << 8 | b3;
 	}
@@ -82,26 +80,26 @@ public class SM4Crypto : BlockCryptoBase
 			throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
 		}
 
-		_rk = ArrayPool<uint>.Shared.Rent(32);
+		Rk = ArrayPool<uint>.Shared.Rent(32);
 
-		var k0 = BinaryPrimitives.ReadUInt32BigEndian(key) ^ 0xa3b1bac6;
-		var k1 = BinaryPrimitives.ReadUInt32BigEndian(key[4..]) ^ 0x56aa3350;
-		var k2 = BinaryPrimitives.ReadUInt32BigEndian(key[8..]) ^ 0x677d9197;
-		var k3 = BinaryPrimitives.ReadUInt32BigEndian(key[12..]) ^ 0xb27022dc;
+		uint k0 = BinaryPrimitives.ReadUInt32BigEndian(key) ^ 0xa3b1bac6;
+		uint k1 = BinaryPrimitives.ReadUInt32BigEndian(key[4..]) ^ 0x56aa3350;
+		uint k2 = BinaryPrimitives.ReadUInt32BigEndian(key[8..]) ^ 0x677d9197;
+		uint k3 = BinaryPrimitives.ReadUInt32BigEndian(key[12..]) ^ 0xb27022dc;
 
-		for (var i = 0; i < 32; i += 4)
+		for (int i = 0; i < 32; i += 4)
 		{
 			k0 ^= L1(SubByte(k1 ^ k2 ^ k3 ^ Ck[i + 0]));
-			_rk[i + 0] = k0;
+			Rk[i + 0] = k0;
 
 			k1 ^= L1(SubByte(k2 ^ k3 ^ k0 ^ Ck[i + 1]));
-			_rk[i + 1] = k1;
+			Rk[i + 1] = k1;
 
 			k2 ^= L1(SubByte(k3 ^ k0 ^ k1 ^ Ck[i + 2]));
-			_rk[i + 2] = k2;
+			Rk[i + 2] = k2;
 
 			k3 ^= L1(SubByte(k0 ^ k1 ^ k2 ^ Ck[i + 3]));
-			_rk[i + 3] = k3;
+			Rk[i + 3] = k3;
 		}
 	}
 
@@ -109,17 +107,17 @@ public class SM4Crypto : BlockCryptoBase
 	{
 		base.Encrypt(source, destination);
 
-		var x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
-		var x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
-		var x2 = BinaryPrimitives.ReadUInt32BigEndian(source[8..]);
-		var x3 = BinaryPrimitives.ReadUInt32BigEndian(source[12..]);
+		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
+		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
+		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source[8..]);
+		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source[12..]);
 
-		for (var i = 0; i < 32; i += 4)
+		for (int i = 0; i < 32; i += 4)
 		{
-			x0 ^= T(x1 ^ x2 ^ x3 ^ _rk[i + 0]);
-			x1 ^= T(x0 ^ x2 ^ x3 ^ _rk[i + 1]);
-			x2 ^= T(x0 ^ x1 ^ x3 ^ _rk[i + 2]);
-			x3 ^= T(x0 ^ x1 ^ x2 ^ _rk[i + 3]);
+			x0 ^= T(x1 ^ x2 ^ x3 ^ Rk[i + 0]);
+			x1 ^= T(x0 ^ x2 ^ x3 ^ Rk[i + 1]);
+			x2 ^= T(x0 ^ x1 ^ x3 ^ Rk[i + 2]);
+			x3 ^= T(x0 ^ x1 ^ x2 ^ Rk[i + 3]);
 		}
 
 		BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
@@ -132,17 +130,17 @@ public class SM4Crypto : BlockCryptoBase
 	{
 		base.Decrypt(source, destination);
 
-		var x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
-		var x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
-		var x2 = BinaryPrimitives.ReadUInt32BigEndian(source[8..]);
-		var x3 = BinaryPrimitives.ReadUInt32BigEndian(source[12..]);
+		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
+		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
+		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source[8..]);
+		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source[12..]);
 
-		for (var i = 28; i >= 0; i -= 4)
+		for (int i = 28; i >= 0; i -= 4)
 		{
-			x0 ^= T(x1 ^ x2 ^ x3 ^ _rk[i + 3]);
-			x1 ^= T(x0 ^ x2 ^ x3 ^ _rk[i + 2]);
-			x2 ^= T(x0 ^ x1 ^ x3 ^ _rk[i + 1]);
-			x3 ^= T(x0 ^ x1 ^ x2 ^ _rk[i + 0]);
+			x0 ^= T(x1 ^ x2 ^ x3 ^ Rk[i + 3]);
+			x1 ^= T(x0 ^ x2 ^ x3 ^ Rk[i + 2]);
+			x2 ^= T(x0 ^ x1 ^ x3 ^ Rk[i + 1]);
+			x3 ^= T(x0 ^ x1 ^ x2 ^ Rk[i + 0]);
 		}
 
 		BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
@@ -151,31 +149,12 @@ public class SM4Crypto : BlockCryptoBase
 		BinaryPrimitives.WriteUInt32BigEndian(destination[12..], x0);
 	}
 
-	public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		if (Aes.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
-		{
-			if (source.Length < BlockSize << 2)
-			{
-				throw new ArgumentException(string.Empty, nameof(source));
-			}
-
-			if (destination.Length < BlockSize << 2)
-			{
-				throw new ArgumentException(string.Empty, nameof(destination));
-			}
-
-			SM4Utils.Encrypt4(_rk, source, destination);
-			return;
-		}
-
-		base.Encrypt4(source, destination);
-	}
-
 	public override void Dispose()
 	{
 		base.Dispose();
 
-		ArrayPool<uint>.Shared.Return(_rk);
+		ArrayPool<uint>.Shared.Return(Rk);
+
+		GC.SuppressFinalize(this);
 	}
 }

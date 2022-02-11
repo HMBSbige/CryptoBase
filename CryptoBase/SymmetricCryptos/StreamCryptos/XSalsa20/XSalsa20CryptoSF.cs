@@ -1,5 +1,3 @@
-using System;
-
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20;
 
 public class XSalsa20CryptoSF : XSalsa20CryptoX86

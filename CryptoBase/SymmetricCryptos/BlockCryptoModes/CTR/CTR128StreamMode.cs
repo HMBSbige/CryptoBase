@@ -1,11 +1,10 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 
-namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
+namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 
-public class CTRStreamMode : IStreamBlockCryptoMode
+public class CTR128StreamMode : IStreamBlockCryptoMode
 {
 	public string Name => InternalBlockCrypto.Name + @"-CTR";
 
@@ -18,28 +17,25 @@ public class CTRStreamMode : IStreamBlockCryptoMode
 
 	private int _index;
 
-	private readonly int _blockSize;
-	private readonly int _blockSize2;
-	private readonly int _blockSize3;
-	private readonly int _blockSize4;
+	private const int BlockSize = 16;
 
-	public CTRStreamMode(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
+	public CTR128StreamMode(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
 		InternalBlockCrypto = crypto;
 		Iv = iv.ToArray();
 
-		_blockSize = InternalBlockCrypto.BlockSize;
-		_blockSize2 = _blockSize << 1;
-		_blockSize3 = _blockSize2 + _blockSize;
-		_blockSize4 = _blockSize2 << 1;
-
-		if (Iv.Length > _blockSize)
+		if (InternalBlockCrypto.BlockSize is not BlockSize)
 		{
-			throw new ArgumentException($@"IV length > {_blockSize} bytes", nameof(iv));
+			throw new InvalidOperationException($@"Support {BlockSize} bytes block size only");
 		}
 
-		_counter = ArrayPool<byte>.Shared.Rent(_blockSize4);
-		_keyStream = ArrayPool<byte>.Shared.Rent(_blockSize4);
+		if (Iv.Length > BlockSize)
+		{
+			throw new ArgumentException($@"IV length > {BlockSize} bytes", nameof(iv));
+		}
+
+		_counter = ArrayPool<byte>.Shared.Rent(BlockSize);
+		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize);
 
 		Reset();
 	}
@@ -51,7 +47,7 @@ public class CTRStreamMode : IStreamBlockCryptoMode
 			throw new ArgumentException(string.Empty, nameof(destination));
 		}
 
-		var length = source.Length;
+		int length = source.Length;
 		fixed (byte* pStream = _keyStream)
 		fixed (byte* pSource = source)
 		fixed (byte* pDestination = destination)
@@ -65,12 +61,12 @@ public class CTRStreamMode : IStreamBlockCryptoMode
 	{
 		while (length > 0)
 		{
-			if (_index == 0)
+			if (_index is 0)
 			{
 				UpdateKeyStream();
 			}
 
-			var r = _blockSize4 - _index;
+			int r = BlockSize - _index;
 			IntrinsicsUtils.Xor(stream + _index, source, destination, Math.Min(r, length));
 
 			if (length < r)
@@ -89,7 +85,7 @@ public class CTRStreamMode : IStreamBlockCryptoMode
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void UpdateKeyStream()
 	{
-		InternalBlockCrypto.Encrypt4(_counter, _keyStream);
+		InternalBlockCrypto.Encrypt(_counter, _keyStream);
 
 		UpdateCounter();
 	}
@@ -97,10 +93,7 @@ public class CTRStreamMode : IStreamBlockCryptoMode
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void UpdateCounter()
 	{
-		_counter.IncrementBe4(0, _blockSize);
-		_counter.IncrementBe4(_blockSize, _blockSize2);
-		_counter.IncrementBe4(_blockSize2, _blockSize3);
-		_counter.IncrementBe4(_blockSize3, _blockSize4);
+		_counter.AsSpan(0, BlockSize).IncrementBe();
 	}
 
 	public void Reset()
@@ -108,27 +101,9 @@ public class CTRStreamMode : IStreamBlockCryptoMode
 		InternalBlockCrypto.Reset();
 		_index = 0;
 
-		for (var i = Iv.Length; i < _blockSize; ++i)
-		{
-			_counter[i] = 0;
-		}
-
-		var c = _counter.AsSpan();
+		Span<byte> c = _counter.AsSpan(0, BlockSize);
+		c[Iv.Length..].Clear();
 		Iv.Span.CopyTo(c);
-
-		var c0 = c[.._blockSize];
-
-		var c1 = c.Slice(_blockSize, _blockSize);
-		c0.CopyTo(c1);
-		c1.IncrementBe();
-
-		var c2 = c.Slice(_blockSize2, _blockSize);
-		c1.CopyTo(c2);
-		c2.IncrementBe();
-
-		var c3 = c.Slice(_blockSize3, _blockSize);
-		c2.CopyTo(c3);
-		c3.IncrementBe();
 	}
 
 	public void Dispose()
@@ -137,5 +112,7 @@ public class CTRStreamMode : IStreamBlockCryptoMode
 
 		ArrayPool<byte>.Shared.Return(_counter);
 		ArrayPool<byte>.Shared.Return(_keyStream);
+
+		GC.SuppressFinalize(this);
 	}
 }

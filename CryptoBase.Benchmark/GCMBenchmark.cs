@@ -4,7 +4,6 @@ using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

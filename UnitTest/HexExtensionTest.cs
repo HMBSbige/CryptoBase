@@ -1,6 +1,5 @@
 using CryptoBase.DataFormatExtensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Security.Cryptography;
 using System.Text;
 

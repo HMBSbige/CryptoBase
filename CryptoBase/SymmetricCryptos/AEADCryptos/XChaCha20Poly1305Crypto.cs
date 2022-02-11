@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Macs.Poly1305;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
-using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Security.Cryptography;

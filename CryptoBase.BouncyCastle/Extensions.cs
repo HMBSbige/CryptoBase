@@ -1,5 +1,4 @@
 using Org.BouncyCastle.Crypto;
-using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 

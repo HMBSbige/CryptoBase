@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 
 namespace UnitTest;
 

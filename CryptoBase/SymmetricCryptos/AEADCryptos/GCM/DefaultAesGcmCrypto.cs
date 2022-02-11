@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;

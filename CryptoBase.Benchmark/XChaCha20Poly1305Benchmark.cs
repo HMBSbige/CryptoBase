@@ -2,7 +2,6 @@ using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

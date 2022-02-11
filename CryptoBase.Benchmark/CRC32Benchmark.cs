@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Digests.CRC32;
 using CryptoBase.Digests.CRC32C;
-using System;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;

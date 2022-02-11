@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.DataFormatExtensions;
-using System;
 using System.Text;
 
 namespace CryptoBase.Benchmark;

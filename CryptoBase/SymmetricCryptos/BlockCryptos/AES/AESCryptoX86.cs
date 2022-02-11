@@ -1,5 +1,3 @@
-using System;
-
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 public abstract class AESCryptoX86 : AESCrypto

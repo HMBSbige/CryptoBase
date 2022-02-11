@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.Intrinsics;
 
 namespace CryptoBase.Digests.CRC32;

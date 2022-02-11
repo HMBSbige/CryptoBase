@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
-using System;
 using System.Buffers;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;

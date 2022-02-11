@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
