@@ -9,45 +9,45 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 
-public class GcmCryptoModeBlock16X86 : IAEADCrypto
+public class GcmCryptoModeBlock8X86 : IAEADCrypto
 {
-	public string Name => _crypto16.Name + @"-GCM";
+	public string Name => _crypto8.Name + @"-GCM";
 
 	public const int BlockSize = 16;
-	public const int BlockSize16 = 16 * BlockSize;
+	public const int BlockSize8 = 8 * BlockSize;
 	public const int NonceSize = 12;
 	public const int TagSize = 16;
 
 	private static ReadOnlySpan<byte> Init => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	private static readonly Vector256<uint> VCounter1 = Vector256.Create(10u, 11, 12, 13, 14, 15, 16, 17);
-	private static readonly Vector256<uint> VAdd8 = Vector256.Create(8u);
+	private static readonly Vector128<uint> VCounter1 = Vector128.Create(6u, 7, 8, 9);
+	private static readonly Vector128<uint> VAdd4 = Vector128.Create(4u);
 
 	private readonly IBlockCrypto _crypto;
-	private readonly IBlockCrypto _crypto16;
+	private readonly IBlockCrypto _crypto8;
 
 	private readonly byte[] _buffer;
 	private readonly byte[] _tagBuffer;
 	private readonly byte[] _counterBlock;
 	private readonly IMac _gHash;
 
-	public GcmCryptoModeBlock16X86(IBlockCrypto crypto, IBlockCrypto crypto16)
+	public GcmCryptoModeBlock8X86(IBlockCrypto crypto, IBlockCrypto crypto8)
 	{
 		if (crypto.BlockSize is not BlockSize)
 		{
 			throw new ArgumentException($@"Crypto block size must be {BlockSize} bytes.", nameof(crypto));
 		}
 
-		if (crypto16.BlockSize is not BlockSize16)
+		if (crypto8.BlockSize is not BlockSize8)
 		{
-			throw new ArgumentException($@"Crypto block size must be {BlockSize16} bytes.", nameof(crypto16));
+			throw new ArgumentException($@"Crypto block size must be {BlockSize8} bytes.", nameof(crypto8));
 		}
 
 		_crypto = crypto;
-		_crypto16 = crypto16;
+		_crypto8 = crypto8;
 
-		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize16);
+		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize8);
 		_tagBuffer = ArrayPool<byte>.Shared.Rent(TagSize);
-		_counterBlock = ArrayPool<byte>.Shared.Rent(BlockSize16);
+		_counterBlock = ArrayPool<byte>.Shared.Rent(BlockSize8);
 
 		Span<byte> key = _buffer.AsSpan(0, 16);
 		_crypto.Encrypt(Init, key);
@@ -61,7 +61,7 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 
 		ulong length = (ulong)source.Length << 3;
 
-		Span<byte> counterBlock = _counterBlock.AsSpan(0, BlockSize16);
+		Span<byte> counterBlock = _counterBlock.AsSpan(0, BlockSize8);
 		counterBlock.Clear();
 
 		Span<byte> counter0 = counterBlock.Slice(12 + 0 * BlockSize, 4);
@@ -72,14 +72,6 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		Span<byte> counter5 = counterBlock.Slice(12 + 5 * BlockSize, 4);
 		Span<byte> counter6 = counterBlock.Slice(12 + 6 * BlockSize, 4);
 		Span<byte> counter7 = counterBlock.Slice(12 + 7 * BlockSize, 4);
-		Span<byte> counter8 = counterBlock.Slice(12 + 8 * BlockSize, 4);
-		Span<byte> counter9 = counterBlock.Slice(12 + 9 * BlockSize, 4);
-		Span<byte> counter10 = counterBlock.Slice(12 + 10 * BlockSize, 4);
-		Span<byte> counter11 = counterBlock.Slice(12 + 11 * BlockSize, 4);
-		Span<byte> counter12 = counterBlock.Slice(12 + 12 * BlockSize, 4);
-		Span<byte> counter13 = counterBlock.Slice(12 + 13 * BlockSize, 4);
-		Span<byte> counter14 = counterBlock.Slice(12 + 14 * BlockSize, 4);
-		Span<byte> counter15 = counterBlock.Slice(12 + 15 * BlockSize, 4);
 
 		nonce.CopyTo(counterBlock);
 		nonce.CopyTo(counterBlock[(1 * BlockSize)..]);
@@ -89,14 +81,6 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		nonce.CopyTo(counterBlock[(5 * BlockSize)..]);
 		nonce.CopyTo(counterBlock[(6 * BlockSize)..]);
 		nonce.CopyTo(counterBlock[(7 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(8 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(9 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(10 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(11 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(12 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(13 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(14 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(15 * BlockSize)..]);
 
 		counter0[3] = 1;
 		counter1[3] = 3;
@@ -106,46 +90,30 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		counter5[3] = 7;
 		counter6[3] = 8;
 		counter7[3] = 9;
-		counter8[3] = 10;
-		counter9[3] = 11;
-		counter10[3] = 12;
-		counter11[3] = 13;
-		counter12[3] = 14;
-		counter13[3] = 15;
-		counter14[3] = 16;
-		counter15[3] = 17;
 
 		_crypto.Encrypt(counterBlock[..BlockSize], tag);
 		counter0[3] = 2;
 		_gHash.Update(associatedData);
 
-		Vector256<uint> v1 = VCounter1;
+		Vector128<uint> v1 = VCounter1;
 
 		while (!source.IsEmpty)
 		{
-			_crypto16.Encrypt(counterBlock, _buffer);
+			_crypto8.Encrypt(counterBlock, _buffer);
 
-			Vector256<uint> v0 = Avx2.Add(v1, VAdd8);
-			v1 = Avx2.Add(v0, VAdd8);
+			Vector128<uint> v0 = Sse2.Add(v1, VAdd4);
+			v1 = Sse2.Add(v0, VAdd4);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
 			BinaryPrimitives.WriteUInt32BigEndian(counter2, v0.GetElement(2));
 			BinaryPrimitives.WriteUInt32BigEndian(counter3, v0.GetElement(3));
-			BinaryPrimitives.WriteUInt32BigEndian(counter4, v0.GetElement(4));
-			BinaryPrimitives.WriteUInt32BigEndian(counter5, v0.GetElement(5));
-			BinaryPrimitives.WriteUInt32BigEndian(counter6, v0.GetElement(6));
-			BinaryPrimitives.WriteUInt32BigEndian(counter7, v0.GetElement(7));
-			BinaryPrimitives.WriteUInt32BigEndian(counter8, v1.GetElement(0));
-			BinaryPrimitives.WriteUInt32BigEndian(counter9, v1.GetElement(1));
-			BinaryPrimitives.WriteUInt32BigEndian(counter10, v1.GetElement(2));
-			BinaryPrimitives.WriteUInt32BigEndian(counter11, v1.GetElement(3));
-			BinaryPrimitives.WriteUInt32BigEndian(counter12, v1.GetElement(4));
-			BinaryPrimitives.WriteUInt32BigEndian(counter13, v1.GetElement(5));
-			BinaryPrimitives.WriteUInt32BigEndian(counter14, v1.GetElement(6));
-			BinaryPrimitives.WriteUInt32BigEndian(counter15, v1.GetElement(7));
+			BinaryPrimitives.WriteUInt32BigEndian(counter4, v1.GetElement(0));
+			BinaryPrimitives.WriteUInt32BigEndian(counter5, v1.GetElement(1));
+			BinaryPrimitives.WriteUInt32BigEndian(counter6, v1.GetElement(2));
+			BinaryPrimitives.WriteUInt32BigEndian(counter7, v1.GetElement(3));
 
-			int n = Math.Min(source.Length, BlockSize16);
+			int n = Math.Min(source.Length, BlockSize8);
 
 			fixed (byte* pOut = destination)
 			fixed (byte* pSource = source)
@@ -180,7 +148,7 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 
 		ulong length = (ulong)source.Length << 3;
 
-		Span<byte> counterBlock = _counterBlock.AsSpan(0, BlockSize16);
+		Span<byte> counterBlock = _counterBlock.AsSpan(0, BlockSize8);
 		counterBlock.Clear();
 
 		Span<byte> counter0 = counterBlock.Slice(12 + 0 * BlockSize, 4);
@@ -191,14 +159,6 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		Span<byte> counter5 = counterBlock.Slice(12 + 5 * BlockSize, 4);
 		Span<byte> counter6 = counterBlock.Slice(12 + 6 * BlockSize, 4);
 		Span<byte> counter7 = counterBlock.Slice(12 + 7 * BlockSize, 4);
-		Span<byte> counter8 = counterBlock.Slice(12 + 8 * BlockSize, 4);
-		Span<byte> counter9 = counterBlock.Slice(12 + 9 * BlockSize, 4);
-		Span<byte> counter10 = counterBlock.Slice(12 + 10 * BlockSize, 4);
-		Span<byte> counter11 = counterBlock.Slice(12 + 11 * BlockSize, 4);
-		Span<byte> counter12 = counterBlock.Slice(12 + 12 * BlockSize, 4);
-		Span<byte> counter13 = counterBlock.Slice(12 + 13 * BlockSize, 4);
-		Span<byte> counter14 = counterBlock.Slice(12 + 14 * BlockSize, 4);
-		Span<byte> counter15 = counterBlock.Slice(12 + 15 * BlockSize, 4);
 
 		nonce.CopyTo(counterBlock);
 		nonce.CopyTo(counterBlock[(1 * BlockSize)..]);
@@ -208,14 +168,6 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		nonce.CopyTo(counterBlock[(5 * BlockSize)..]);
 		nonce.CopyTo(counterBlock[(6 * BlockSize)..]);
 		nonce.CopyTo(counterBlock[(7 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(8 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(9 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(10 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(11 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(12 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(13 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(14 * BlockSize)..]);
-		nonce.CopyTo(counterBlock[(15 * BlockSize)..]);
 
 		counter0[3] = 1;
 		counter1[3] = 3;
@@ -225,46 +177,30 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		counter5[3] = 7;
 		counter6[3] = 8;
 		counter7[3] = 9;
-		counter8[3] = 10;
-		counter9[3] = 11;
-		counter10[3] = 12;
-		counter11[3] = 13;
-		counter12[3] = 14;
-		counter13[3] = 15;
-		counter14[3] = 16;
-		counter15[3] = 17;
 
 		_crypto.Encrypt(counterBlock, _tagBuffer);
 		counter0[3] = 2;
 		_gHash.Update(associatedData);
 
-		Vector256<uint> v1 = VCounter1;
+		Vector128<uint> v1 = VCounter1;
 
 		while (!source.IsEmpty)
 		{
-			_crypto16.Encrypt(counterBlock, _buffer);
+			_crypto8.Encrypt(counterBlock, _buffer);
 
-			Vector256<uint> v0 = Avx2.Add(v1, VAdd8);
-			v1 = Avx2.Add(v0, VAdd8);
+			Vector128<uint> v0 = Sse2.Add(v1, VAdd4);
+			v1 = Sse2.Add(v0, VAdd4);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
 			BinaryPrimitives.WriteUInt32BigEndian(counter2, v0.GetElement(2));
 			BinaryPrimitives.WriteUInt32BigEndian(counter3, v0.GetElement(3));
-			BinaryPrimitives.WriteUInt32BigEndian(counter4, v0.GetElement(4));
-			BinaryPrimitives.WriteUInt32BigEndian(counter5, v0.GetElement(5));
-			BinaryPrimitives.WriteUInt32BigEndian(counter6, v0.GetElement(6));
-			BinaryPrimitives.WriteUInt32BigEndian(counter7, v0.GetElement(7));
-			BinaryPrimitives.WriteUInt32BigEndian(counter8, v1.GetElement(0));
-			BinaryPrimitives.WriteUInt32BigEndian(counter9, v1.GetElement(1));
-			BinaryPrimitives.WriteUInt32BigEndian(counter10, v1.GetElement(2));
-			BinaryPrimitives.WriteUInt32BigEndian(counter11, v1.GetElement(3));
-			BinaryPrimitives.WriteUInt32BigEndian(counter12, v1.GetElement(4));
-			BinaryPrimitives.WriteUInt32BigEndian(counter13, v1.GetElement(5));
-			BinaryPrimitives.WriteUInt32BigEndian(counter14, v1.GetElement(6));
-			BinaryPrimitives.WriteUInt32BigEndian(counter15, v1.GetElement(7));
+			BinaryPrimitives.WriteUInt32BigEndian(counter4, v1.GetElement(0));
+			BinaryPrimitives.WriteUInt32BigEndian(counter5, v1.GetElement(1));
+			BinaryPrimitives.WriteUInt32BigEndian(counter6, v1.GetElement(2));
+			BinaryPrimitives.WriteUInt32BigEndian(counter7, v1.GetElement(3));
 
-			int n = Math.Min(source.Length, BlockSize16);
+			int n = Math.Min(source.Length, BlockSize8);
 
 			_gHash.Update(source[..n]);
 
@@ -313,7 +249,7 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 	public void Dispose()
 	{
 		_crypto.Dispose();
-		_crypto16.Dispose();
+		_crypto8.Dispose();
 		_gHash.Dispose();
 
 		ArrayPool<byte>.Shared.Return(_buffer);
