@@ -6,11 +6,11 @@ global using CryptoBase.SymmetricCryptos.StreamCryptos;
 global using System.Collections.Immutable;
 global using System.CommandLine;
 global using System.Diagnostics;
+global using System.Reflection;
 global using System.Runtime.Intrinsics.X86;
 global using System.Security.Cryptography;
 global using Aes = System.Runtime.Intrinsics.X86.Aes;
 
-Console.WriteLine(@"Start CryptoBase.SpeedTest...");
 #if DEBUG
 Console.WriteLine(@"On Debug mode");
 #endif
@@ -18,16 +18,6 @@ if (Debugger.IsAttached)
 {
 	Console.WriteLine(@"Debugger attached!");
 }
-
-Console.WriteLine($@"OS Version:                    {Environment.OSVersion}");
-Console.WriteLine($@".NET Version:                  {Environment.Version}");
-Console.WriteLine($@"CPU Vendor:                    {CpuIdUtils.GetVendor()}");
-Console.WriteLine($@"CPU Brand:                     {CpuIdUtils.GetBrand()}");
-Console.WriteLine($@"SSE2 instructions:             {Sse2.IsSupported}");
-Console.WriteLine($@"Advanced Vector Extensions 2:  {Avx2.IsSupported}");
-Console.WriteLine($@"Intel SHA extensions:          {CpuIdUtils.IsSupportX86ShaEx()}");
-Console.WriteLine($@"AES instruction set:           {Aes.IsSupported}");
-Console.WriteLine($@"Vector AES instruction set:    {CpuIdUtils.IsSupportX86VAes()}");
 
 Argument<string> methodsArgument = new(@"method(s)", () => @"all", @"Methods separated by commas.");
 methodsArgument.AddCompletions(CryptoList.All);
@@ -49,6 +39,16 @@ RootCommand cmd = new()
 
 cmd.SetHandler((string methods, double seconds, int bytes) =>
 {
+	Console.WriteLine($@"OS Version:                    {Environment.OSVersion}");
+	Console.WriteLine($@".NET Version:                  {Environment.Version}");
+	Console.WriteLine($@"App Version:                   {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}");
+	Console.WriteLine($@"CPU Vendor:                    {CpuIdUtils.GetVendor()}");
+	Console.WriteLine($@"CPU Brand:                     {CpuIdUtils.GetBrand()}");
+	Console.WriteLine($@"SSE2 instructions:             {Sse2.IsSupported}");
+	Console.WriteLine($@"Advanced Vector Extensions 2:  {Avx2.IsSupported}");
+	Console.WriteLine($@"Intel SHA extensions:          {CpuIdUtils.IsSupportX86ShaEx()}");
+	Console.WriteLine($@"AES instruction set:           {Aes.IsSupported}");
+	Console.WriteLine($@"Vector AES instruction set:    {CpuIdUtils.IsSupportX86VAes()}");
 	Console.WriteLine($@"Seconds: {seconds}s");
 	Console.WriteLine($@"Buffer size: {bytes} bytes");
 	Console.WriteLine();
