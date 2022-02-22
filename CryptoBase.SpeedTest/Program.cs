@@ -19,7 +19,7 @@ if (Debugger.IsAttached)
 	Console.WriteLine(@"Debugger attached!");
 }
 
-Argument<string> methodsArgument = new(@"method(s)", () => @"all", @"Methods separated by commas.");
+Argument<string> methodsArgument = new(@"method(s)", () => CryptoList.All, @"Methods separated by commas.");
 methodsArgument.AddCompletions(CryptoList.All);
 foreach (string method in CryptoList.Methods)
 {
