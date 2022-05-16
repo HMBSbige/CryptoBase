@@ -1,14 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - master
-      - develop
-      - 'renovate/**'
-    tags:
-      - "*"
-  pull_request:
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   check_format:
