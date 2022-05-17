@@ -71,6 +71,7 @@ jobs:
         run: |
           dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
           dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
+          dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
 
   release:
     name: Release
