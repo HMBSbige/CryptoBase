@@ -16,8 +16,8 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Check .NET format
-        run: dotnet format -v diag --verify-no-changes
         working-directory: src
+        run: dotnet format -v diag --verify-no-changes
 
   test:
     runs-on: ${{ matrix.os }}
@@ -37,8 +37,8 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Run tests
-        run: dotnet test -c Release
         working-directory: src/${{ env.ProjectName }}.Tests
+        run: dotnet test -c Release
 
   build:
     needs: [check_format, test]
@@ -61,14 +61,15 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Build
-        run: dotnet build -c Release
         working-directory: src/${{ matrix.NugetProjectName }}
+        run: dotnet build -c Release
 
       - name: Push nuget packages
+        working-directory: src/${{ matrix.NugetProjectName }}/bin/Release
         run: |
-          dotnet nuget push ${{ matrix.NugetProjectName }}\bin\Release\*.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
-          dotnet nuget push ${{ matrix.NugetProjectName }}\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
-          dotnet nuget push ${{ matrix.NugetProjectName }}\bin\Release\*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
+          dotnet nuget push *.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+          dotnet nuget push *.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
+          dotnet nuget push *.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
 
   release:
     needs: build
