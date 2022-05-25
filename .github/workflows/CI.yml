@@ -1,28 +1,31 @@
 name: CI
 on: [push, pull_request, workflow_dispatch]
+env:
+  ProjectName: ${{ github.event.repository.name }}
 
 jobs:
   check_format:
-    name: Check format
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 6.0.x
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Run dotnet format check
+      - name: Check .NET format
         run: dotnet format -v diag --verify-no-changes
+        working-directory: src
 
   test:
-    name: Test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os:
+          - windows-latest
+          - ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -33,25 +36,20 @@ jobs:
         with:
           dotnet-version: 6.0.x
 
-      - name: Test
-        shell: pwsh
-        run: dotnet test -c Release --filter ClassName!~Benchmark
-
-      - name: Test (Disable AVX)
-        shell: pwsh
-        run: |
-          $env:COMPlus_EnableAVX="0"
-          dotnet test -c Release --filter ClassName!~Benchmark
+      - name: Run tests
+        run: dotnet test -c Release
+        working-directory: src/${{ env.ProjectName }}.Tests
 
   build:
-    name: Build
-    needs: [test, check_format]
+    needs: [check_format, test]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ProjectName:
-          [CryptoBase, CryptoBase.Abstractions, CryptoBase.BouncyCastle]
+        NugetProjectName:
+          - CryptoBase
+          - CryptoBase.Abstractions
+          - CryptoBase.BouncyCastle
 
     steps:
       - name: Checkout code
@@ -63,26 +61,20 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Build
-        shell: pwsh
-        run: dotnet build -c Release ${{ matrix.ProjectName }}\${{ matrix.ProjectName }}.csproj
+        run: dotnet build -c Release
+        working-directory: src/${{ matrix.NugetProjectName }}
 
       - name: Push nuget packages
-        shell: pwsh
         run: |
-          dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
-          dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
-          dotnet nuget push ${{ matrix.ProjectName }}\bin\Release\*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
+          dotnet nuget push ${{ matrix.NugetProjectName }}\bin\Release\*.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+          dotnet nuget push ${{ matrix.NugetProjectName }}\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
+          dotnet nuget push ${{ matrix.NugetProjectName }}\bin\Release\*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
 
   release:
-    name: Release
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get tag
-        id: tag
-        uses: dawidd6/action-get-tag@v1
-
       - name: Changelog
         uses: glennawatson/ChangeLog@v1
         id: changelog

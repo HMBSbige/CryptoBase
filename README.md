@@ -13,43 +13,42 @@ A fast crypto library for .NET
 ## Status
 
 | Icon | Description |
-|:----:|-----------|
+|:----:|-------------|
 ⚠️ | Pending
 ⏳ | Underway
 ✅ | Done
-💔 | Never implemented or help welcomed
 
 ### Digest algorithms
 
-| Digests | Software Fallback | X86 | Arm |
-| ------- |:-----------------:|:---:|:---:|
-CRC-32 | ✅ | ✅ | ⏳
-CRC-32C | ✅ | ✅ | ⏳
-MD5 | ✅ | 💔 | 💔
-SHA1 | ✅ | ⚠️ | ⚠️
-SHA256 | ✅ | ⚠️ | ⚠️
-SHA384 | ✅ | 💔 | ⚠️
-SHA512 | ✅ | ⚠️ | ⚠️
-SM3 | ✅ | 💔 | ⚠️
+| Digests | Status |
+| ------- |:------:|
+CRC-32 | ✅ |
+CRC-32C | ✅ |
+MD5 | ✅ |
+SHA1 | ✅ |
+SHA256 | ✅ |
+SHA384 | ✅ |
+SHA512 | ✅ |
+SM3 | ✅ |
 
 ### Symmetric-key algorithms
 #### Stream ciphers
 
-| Ciphers | Software Fallback | X86 | Arm |
-| ------- |:-----------------:|:---:|:---:|
-ChaCha20(IETF 7539) | ✅ | ✅ | ⏳
-ChaCha20(Original) | ✅ | ✅ | ⏳
-RC4 | ✅ | 💔 | 💔
-Salsa20 | ✅ | ✅ | ⏳
-XChaCha20 | ✅ | ✅ | ⏳
-XSalsa20 | ✅ | ✅ | ⏳
+| Ciphers | Status |
+| ------- |:------:|
+ChaCha20(IETF 7539) | ✅ |
+ChaCha20(Original) | ✅ |
+RC4 | ✅ |
+Salsa20 | ✅ |
+XChaCha20 | ✅ |
+XSalsa20 | ✅ |
 
 #### Block ciphers
 
-| Ciphers | Software Fallback | X86 | Arm |
-| ------- |:-----------------:|:---:|:---:|
-AES | ✅ | ✅ | ⏳
-SM4 | ✅ | ✅ | ⏳
+| Ciphers | Status |
+| ------- |:------:|
+AES | ✅ |
+SM4 | ✅ |
 
 ##### Block cipher modes
 
@@ -59,19 +58,19 @@ SM4 | ✅ | ✅ | ⏳
 
 #### Authenticated encryption algorithms
 
-| Ciphers | Software Fallback | X86 | Arm |
-| ------- |:-----------------:|:---:|:---:|
-AES-GCM | ✅ | ✅ | ⏳
-ChaCha20Poly1305 | ✅ | ✅ | ⏳
-SM4-GCM | ✅ | ✅ | ⏳
-XChaCha20Poly1305 | ✅ | ✅ | ⏳
+| Ciphers | Status |
+| ------- |:------:|
+AES-GCM | ✅ |
+ChaCha20Poly1305 | ✅ |
+SM4-GCM | ✅ |
+XChaCha20Poly1305 | ✅ |
 
 ### Asymmetric cryptography
 
-| Ciphers | Software Fallback | X86 | Arm |
-| ------- |:-----------------:|:---:|:---:|
-RSA | ⏳ | 💔 | 💔
-Curve25519 | ⏳ | ⏳ | ⏳
-Ed25519 | ⏳ | ⏳ | ⏳
-SM2 | ⏳ | ⏳ | ⏳
-SM9 | ⏳ | ⏳ | ⏳
+| Ciphers | Status |
+| ------- |:------:|
+RSA | ⏳ |
+Curve25519 | ⏳ |
+Ed25519 | ⏳ |
+SM2 | ⏳ |
+SM9 | ⏳ |
