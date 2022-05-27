@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions.Digests;
 using CryptoBase.Digests.CRC32;
 using CryptoBase.Digests.CRC32C;
 using CryptoBase.Digests.MD5;
@@ -20,7 +19,7 @@ public static class DigestUtils
 		return type switch
 		{
 			DigestType.Sm3 => new SM3Digest(),
-			DigestType.Md5 => new DefaultMD5Digest(),
+			DigestType.Md5 => new NativeMD5Digest(),
 			DigestType.Sha1 => new DefaultSHA1Digest(),
 			DigestType.Sha256 => new DefaultSHA256Digest(),
 			DigestType.Sha384 => new DefaultSHA384Digest(),

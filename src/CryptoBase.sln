@@ -15,7 +15,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBase.SpeedTest", "Cry
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBase.Tests", "CryptoBase.Tests\CryptoBase.Tests.csproj", "{B9C584BE-C91E-4FF9-A76E-0E1606A30562}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoBase.Benchmark.Tests", "CryptoBase.Benchmark.Tests\CryptoBase.Benchmark.Tests.csproj", "{DD365A88-9CFB-4574-8306-D5C2945C0800}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoBase.Benchmark.Tests", "CryptoBase.Benchmark.Tests\CryptoBase.Benchmark.Tests.csproj", "{DD365A88-9CFB-4574-8306-D5C2945C0800}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EE6B30C6-5E91-4492-85FC-AE5449FD5C07}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		common.props = common.props
+		NuGet.Config = NuGet.Config
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

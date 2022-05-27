@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions.Digests;
 using CryptoBase.Digests.CRC32;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;

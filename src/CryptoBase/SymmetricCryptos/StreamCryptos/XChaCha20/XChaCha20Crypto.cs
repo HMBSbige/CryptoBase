@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 
 public abstract class XChaCha20Crypto : ChaCha20CryptoBase
