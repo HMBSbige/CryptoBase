@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace CryptoBase;
 
 public static class FastUtils

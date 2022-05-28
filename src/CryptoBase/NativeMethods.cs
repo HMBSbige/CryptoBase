@@ -31,4 +31,32 @@ internal static class NativeMethods
 	public static extern void md5_get_hash(nuint ptr, nuint output, nuint outputSize);
 
 	#endregion
+
+	#region SM3
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern nuint sm3_new();
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sm3_dispose(nuint ptr);
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sm3_reset(nuint ptr);
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sm3_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sm3_update(nuint ptr, nuint input, nuint inputSize);
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sm3_get_hash(nuint ptr, nuint output, nuint outputSize);
+
+	#endregion
 }

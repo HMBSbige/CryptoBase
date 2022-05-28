@@ -34,6 +34,7 @@ dependencies = [
  "digest",
  "libc",
  "md-5",
+ "sm3",
 ]
 
 [[package]]
@@ -79,6 +80,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73b9a6f25ec11ea27e22d7fc8beafda909da44ece95f63e94f1eeb23d19bb5c7"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "sm3"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f943a7c5e3089f2bd046221d1e9f4fa59396bf0fe966360983649683086215da"
+dependencies = [
+ "digest",
 ]
 
 [[package]]

@@ -1,6 +1,3 @@
-using System.Buffers.Binary;
-using System.Runtime.CompilerServices;
-
 namespace CryptoBase.Digests.MD5;
 
 /// <summary>

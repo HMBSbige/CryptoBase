@@ -1,14 +1,3 @@
-using CryptoBase.Digests.CRC32;
-using CryptoBase.Digests.CRC32C;
-using CryptoBase.Digests.MD5;
-using CryptoBase.Digests.SHA1;
-using CryptoBase.Digests.SHA256;
-using CryptoBase.Digests.SHA384;
-using CryptoBase.Digests.SHA512;
-using CryptoBase.Digests.SM3;
-using System.Buffers;
-using System.Runtime.CompilerServices;
-
 namespace CryptoBase.Digests;
 
 public static class DigestUtils
@@ -18,7 +7,7 @@ public static class DigestUtils
 	{
 		return type switch
 		{
-			DigestType.Sm3 => new SM3Digest(),
+			DigestType.Sm3 => new NativeSM3Digest(),
 			DigestType.Md5 => new NativeMD5Digest(),
 			DigestType.Sha1 => new DefaultSHA1Digest(),
 			DigestType.Sha256 => new DefaultSHA256Digest(),

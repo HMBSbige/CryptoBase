@@ -1,6 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using System.Buffers;
-using System.Runtime.CompilerServices;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
