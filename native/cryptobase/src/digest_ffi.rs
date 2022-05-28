@@ -1,5 +1,5 @@
-use digest::*;
-use libc::*;
+use digest::{Digest, FixedOutputReset, Reset};
+use libc::size_t;
 
 /// # Safety
 pub unsafe fn new<T: Digest>() -> *mut T {

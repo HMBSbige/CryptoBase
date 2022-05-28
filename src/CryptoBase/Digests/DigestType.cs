@@ -5,6 +5,7 @@ public enum DigestType
 	Sm3,
 	Md5,
 	Sha1,
+	Sha224,
 	Sha256,
 	Sha384,
 	Sha512,

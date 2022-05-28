@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
-using CryptoBase.Digests;
+using CryptoBase.Digests.SHA512;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class SHA512Benchmark
 {
-	[Params(32, 114514)]
+	[Params(32, 1024, 1024 * 1024)]
 	public int ByteLength { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -20,11 +20,11 @@ public class SHA512Benchmark
 		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
 	}
 
-	[Benchmark(Baseline = true)]
-	public void Default()
+	[Benchmark]
+	public void BCrypt()
 	{
 		Span<byte> hash = stackalloc byte[HashConstants.Sha512Length];
-		using var sha512 = DigestUtils.Create(DigestType.Sha512);
+		using DefaultSHA512Digest sha512 = new();
 		sha512.UpdateFinal(_randombytes.Span, hash);
 	}
 
@@ -32,7 +32,15 @@ public class SHA512Benchmark
 	public void BouncyCastle()
 	{
 		Span<byte> hash = stackalloc byte[HashConstants.Sha512Length];
-		using var sha512 = new BcSHA512Digest();
+		using BcSHA512Digest sha512 = new();
+		sha512.UpdateFinal(_randombytes.Span, hash);
+	}
+
+	[Benchmark(Baseline = true)]
+	public void Native()
+	{
+		Span<byte> hash = stackalloc byte[HashConstants.Sha512Length];
+		using NativeSHA512Digest sha512 = new();
 		sha512.UpdateFinal(_randombytes.Span, hash);
 	}
 }

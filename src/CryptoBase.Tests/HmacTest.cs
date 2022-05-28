@@ -57,6 +57,21 @@ public class HmacTest
 	}
 
 	[TestMethod]
+	[DataRow(@"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b", @"4869205468657265", @"896fb1128abbdf196832107cd49df33f47b4b1169912ba4f53684b22")]
+	[DataRow(@"4a656665", @"7768617420646f2079612077616e7420666f72206e6f7468696e673f", @"a30e01098bc6dbbf45690f3a7e9e6d0f8bbea2a39e6148008fd05e44")]
+	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", @"7fb3cb3588c6c1f6ffa9694d7d6ad2649365b0c1f65d69d1ec8333ea")]
+	[DataRow(@"0102030405060708090a0b0c0d0e0f10111213141516171819", @"cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd", @"6c11506874013cac6a2abc1bb382627cec6a90d86efc012de7afec5a")]
+	[DataRow(@"0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c", @"546573742057697468205472756e636174696f6e", @"0e2aea68a90c8d37c988bcdb9fca6fa8099cd857c7ec4a1815cac54c")]
+	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374", @"95e9a0db962095adaebe9b2d6f0dbce2d499f112f2d2b7273fa6870e")]
+	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"3a854166ac5d9f023f54d517d0b39dbd946770db9c2b95c9f6f565d1")]
+	public void TestSha224(string keyStr, string messageHex, string expected)
+	{
+		using var hmac = HmacUtils.Create(DigestType.Sha224, keyStr.FromHex());
+		Assert.AreEqual(@"HMAC-SHA-224", hmac.Name);
+		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
+	}
+
+	[TestMethod]
 	[DataRow(@"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b", @"4869205468657265", @"b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7")]
 	[DataRow(@"4a656665", @"7768617420646f2079612077616e7420666f72206e6f7468696e673f", @"5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843")]
 	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", @"773ea91e36800e46854db8ebd09181a72959098b3ef8c122d9635514ced565fe")]

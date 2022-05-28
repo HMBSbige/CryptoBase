@@ -21,7 +21,7 @@ public class SHA1Benchmark
 	}
 
 	[Benchmark]
-	public void Bcrypt()
+	public void BCrypt()
 	{
 		Span<byte> hash = stackalloc byte[HashConstants.Sha1Length];
 		using DefaultSHA1Digest sha1 = new();

@@ -1,5 +1,5 @@
-use libc::*;
-use md5::*;
+use libc::size_t;
+use md5::Md5;
 
 use crate::digest_ffi;
 

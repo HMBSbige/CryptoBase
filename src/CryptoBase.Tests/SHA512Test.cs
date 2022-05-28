@@ -58,6 +58,7 @@ public class SHA512Test
 	{
 		SHA512DigestTest(new DefaultSHA512Digest(), str, expected);
 		SHA512DigestTest(new BcSHA512Digest(), str, expected);
+		SHA512DigestTest(new NativeSHA512Digest(), str, expected);
 	}
 
 	/// <summary>
@@ -70,5 +71,6 @@ public class SHA512Test
 	{
 		TestUtils.LargeMessageTest(new DefaultSHA512Digest(), raw, times, expected);
 		TestUtils.LargeMessageTest(new BcSHA512Digest(), raw, times, expected);
+		TestUtils.LargeMessageTest(new NativeSHA512Digest(), raw, times, expected);
 	}
 }

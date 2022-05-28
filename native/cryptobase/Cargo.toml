@@ -5,17 +5,21 @@ edition = "2021"
 
 [dependencies]
 libc = "0.2"
+ring = { version = "0.16", optional = true }
 digest = { version = "0.10", optional = true }
 md-5 = { version = "0.10", optional = true }
 sm3 = { version = "0.4", optional = true }
 sha1 = { version = "0.10", optional = true }
+sha2 = { version = "0.10", optional = true }
 
 [target.'cfg(all(unix, any(target_arch = "x86", target_arch = "x86_64")))'.dependencies]
 md-5 = { version = "0.10", features = ["asm"], optional = true }
 sha1 = { version = "0.10", features = ["asm"], optional = true }
+sha2 = { version = "0.10", features = ["asm"], optional = true }
 
-[target.'cfg(all(unix, target_arch = "aarch64", any(target_os = "linux", target_os = "macos")))'.dependencies]
+[target.'cfg(all(unix, target_arch = "aarch64"))'.dependencies]
 sha1 = { version = "0.10", features = ["asm"], optional = true }
+sha2 = { version = "0.10", features = ["asm"], optional = true }
 
 [profile.release]
 lto = true
@@ -27,7 +31,13 @@ crate-type = ["cdylib"]
 
 [features]
 default = ["hash"]
-hash = ["digest", "md5", "sm3", "sha1"]
+hash = ["digest", "md5", "sm3", "sha1", "sha224","sha256","sha384","sha512"]
 md5 = ["md-5"]
 sm3 = ["dep:sm3"]
 sha1 = ["dep:sha1"]
+sha224 = ["dep:sha2"]
+sha256 = ["dep:sha2"]
+sha384 = ["dep:sha2"]
+sha512 = ["dep:sha2"]
+sha1_ring = ["ring"]
+sha256_ring = ["ring"]

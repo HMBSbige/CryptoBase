@@ -58,6 +58,7 @@ public class SHA384Test
 	{
 		SHA384DigestTest(new DefaultSHA384Digest(), str, expected);
 		SHA384DigestTest(new BcSHA384Digest(), str, expected);
+		SHA384DigestTest(new NativeSHA384Digest(), str, expected);
 	}
 
 	/// <summary>
@@ -70,5 +71,6 @@ public class SHA384Test
 	{
 		TestUtils.LargeMessageTest(new DefaultSHA384Digest(), raw, times, expected);
 		TestUtils.LargeMessageTest(new BcSHA384Digest(), raw, times, expected);
+		TestUtils.LargeMessageTest(new NativeSHA384Digest(), raw, times, expected);
 	}
 }

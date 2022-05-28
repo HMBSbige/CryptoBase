@@ -1,5 +1,5 @@
-use libc::*;
-use sm3::*;
+use libc::size_t;
+use sm3::Sm3;
 
 use crate::digest_ffi;
 

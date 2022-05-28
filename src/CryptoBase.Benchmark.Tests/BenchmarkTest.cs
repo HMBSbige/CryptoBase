@@ -136,6 +136,12 @@ public class BenchmarkTest
 	}
 
 	[TestMethod]
+	public void SHA224Benchmark()
+	{
+		BenchmarkRunner.Run<SHA224Benchmark>();
+	}
+
+	[TestMethod]
 	public void SHA256Benchmark()
 	{
 		BenchmarkRunner.Run<SHA256Benchmark>();
