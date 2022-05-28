@@ -1,5 +1,3 @@
-using System.Runtime.Intrinsics;
-
 namespace CryptoBase.Digests.CRC32;
 
 public class Crc32Table

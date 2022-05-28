@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
-using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 

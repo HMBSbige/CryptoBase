@@ -1,5 +1,3 @@
-using System.Runtime.Intrinsics.X86;
-
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
 
 public class Salsa20CryptoX86 : Salsa20Crypto

@@ -1,6 +1,3 @@
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
-
 namespace CryptoBase.Digests.SM3;
 
 /// <summary>

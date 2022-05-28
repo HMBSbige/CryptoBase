@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions;
-using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Macs.GHash;
 

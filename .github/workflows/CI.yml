@@ -90,6 +90,8 @@ jobs:
   test:
     needs: [build-native]
     runs-on: ${{ matrix.os }}
+    env:
+      RUST_BACKTRACE: full
     strategy:
       matrix:
         os:
