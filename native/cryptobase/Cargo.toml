@@ -4,13 +4,18 @@ version = "1.0.0"
 edition = "2021"
 
 [dependencies]
-libc = "0.2.126"
-digest = { version = "0.10.3", optional = true }
-md-5 = { version = "0.10.1", optional = true }
-sm3 = { version = "0.4.1", optional = true }
+libc = "0.2"
+digest = { version = "0.10", optional = true }
+md-5 = { version = "0.10", optional = true }
+sm3 = { version = "0.4", optional = true }
+sha1 = { version = "0.10", optional = true }
 
 [target.'cfg(all(unix, any(target_arch = "x86", target_arch = "x86_64")))'.dependencies]
-md-5 = { version = "0.10.1", features = ["asm"], optional = true }
+md-5 = { version = "0.10", features = ["asm"], optional = true }
+sha1 = { version = "0.10", features = ["asm"], optional = true }
+
+[target.'cfg(all(unix, target_arch = "aarch64", any(target_os = "linux", target_os = "macos")))'.dependencies]
+sha1 = { version = "0.10", features = ["asm"], optional = true }
 
 [profile.release]
 lto = true
@@ -22,6 +27,7 @@ crate-type = ["cdylib"]
 
 [features]
 default = ["hash"]
-hash = ["digest", "md5", "sm3"]
+hash = ["digest", "md5", "sm3", "sha1"]
 md5 = ["md-5"]
 sm3 = ["dep:sm3"]
+sha1 = ["dep:sha1"]

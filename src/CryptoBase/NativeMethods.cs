@@ -59,4 +59,32 @@ internal static class NativeMethods
 	public static extern void sm3_get_hash(nuint ptr, nuint output, nuint outputSize);
 
 	#endregion
+
+	#region SHA1
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern nuint sha1_new();
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sha1_dispose(nuint ptr);
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sha1_reset(nuint ptr);
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sha1_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sha1_update(nuint ptr, nuint input, nuint inputSize);
+
+	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+	[SuppressGCTransition]
+	public static extern void sha1_get_hash(nuint ptr, nuint output, nuint outputSize);
+
+	#endregion
 }
