@@ -22,10 +22,12 @@ A fast crypto library for .NET
 
 | Digests | Status |
 | ------- |:------:|
+Blake3 | ⏳ |
 CRC-32 | ✅ |
 CRC-32C | ✅ |
 MD5 | ✅ |
 SHA1 | ✅ |
+SHA224 | ✅ |
 SHA256 | ✅ |
 SHA384 | ✅ |
 SHA512 | ✅ |
