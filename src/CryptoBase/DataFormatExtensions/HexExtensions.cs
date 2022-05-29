@@ -15,27 +15,22 @@ public static class HexExtensions
 	/// <summary>
 	/// Converts a span of 8-bit unsigned integers to its equivalent string representation that is encoded with lowercase hex characters.
 	/// </summary>
-	[SkipLocalsInit]
 	public static string ToHex(this ReadOnlySpan<byte> bytes)
 	{
-		var length = bytes.Length << 1;
-		var c = length switch
-		{
-			< 3 * 1024 / sizeof(char) => stackalloc char[length],
-			_ => GC.AllocateUninitializedArray<char>(length)
-		};
+		int length = bytes.Length << 1;
+		string result = new('\0', length);
 
-		var i = 0;
-		var j = 0;
+		ref char firstCh = ref Unsafe.AsRef(result.GetPinnableReference());
+
+		int i = 0;
+		int j = 0;
 
 		while (i < bytes.Length)
 		{
-			var b = bytes[i++];
-			c[j++] = Alphabet[b >> 4];
-			c[j++] = Alphabet[b & 0xF];
+			byte b = bytes[i++];
+			Unsafe.Add(ref firstCh, j++) = Alphabet[b >> 4];
+			Unsafe.Add(ref firstCh, j++) = Alphabet[b & 0xF];
 		}
-
-		var result = new string(c);
 
 		return result;
 	}
@@ -74,13 +69,13 @@ public static class HexExtensions
 			throw new ArgumentException($@"{nameof(hex)} length must be even");
 		}
 
-		var length = hex.Length >> 1;
-		var buffer = GC.AllocateUninitializedArray<byte>(length);
+		int length = hex.Length >> 1;
+		byte[] buffer = GC.AllocateUninitializedArray<byte>(length);
 
 		for (int i = 0, j = 0; i < length; ++i, ++j)
 		{
 			// Convert first half of byte
-			var c = hex[j];
+			char c = hex[j];
 			buffer[i] = (byte)((c > '9' ? (c > 'Z' ? (c - 'a' + 10) : (c - 'A' + 10)) : (c - '0')) << 4);
 
 			// Convert second half of byte
