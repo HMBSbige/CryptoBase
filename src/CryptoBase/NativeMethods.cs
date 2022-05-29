@@ -44,11 +44,9 @@ public static class NativeMethods
 	internal static extern void md5_reset(nuint ptr);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void md5_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void md5_update(nuint ptr, nuint input, nuint inputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -72,11 +70,9 @@ public static class NativeMethods
 	internal static extern void sm3_reset(nuint ptr);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sm3_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sm3_update(nuint ptr, nuint input, nuint inputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -100,11 +96,9 @@ public static class NativeMethods
 	internal static extern void sha1_reset(nuint ptr);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha1_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha1_update(nuint ptr, nuint input, nuint inputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -128,11 +122,9 @@ public static class NativeMethods
 	internal static extern void sha224_reset(nuint ptr);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha224_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha224_update(nuint ptr, nuint input, nuint inputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -156,11 +148,9 @@ public static class NativeMethods
 	internal static extern void sha256_reset(nuint ptr);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha256_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha256_update(nuint ptr, nuint input, nuint inputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -184,11 +174,9 @@ public static class NativeMethods
 	internal static extern void sha384_reset(nuint ptr);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha384_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha384_update(nuint ptr, nuint input, nuint inputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -212,11 +200,9 @@ public static class NativeMethods
 	internal static extern void sha512_reset(nuint ptr);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha512_update_final(nuint ptr, nuint input, nuint inputSize, nuint output, nuint outputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-	[SuppressGCTransition]
 	internal static extern void sha512_update(nuint ptr, nuint input, nuint inputSize);
 
 	[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
