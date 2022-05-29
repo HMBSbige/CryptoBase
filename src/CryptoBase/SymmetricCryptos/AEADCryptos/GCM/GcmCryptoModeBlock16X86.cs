@@ -1,10 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Macs.GHash;
-using System.Buffers;
-using System.Buffers.Binary;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;

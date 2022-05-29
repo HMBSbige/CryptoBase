@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class MD5Benchmark
 {
-	[Params(16 + 6, 16 + 16, 114514)]
+	[Params(32, 1024, 1024 * 1024)]
 	public int ByteLength { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -21,38 +21,34 @@ public class MD5Benchmark
 	}
 
 	[Benchmark]
-	public void Default()
+	public void BCrypt()
 	{
-		Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-		using var md5 = new DefaultMD5Digest();
-		md5.UpdateFinal(_randombytes.Span, hash);
+		Span<byte> buffer = stackalloc byte[HashConstants.Md5Length];
+		using DefaultMD5Digest md5 = new();
+		md5.UpdateFinal(_randombytes.Span, buffer);
 	}
 
 	[Benchmark]
 	public void BouncyCastle()
 	{
-		Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-		using var md5 = new BcMD5Digest();
-		md5.UpdateFinal(_randombytes.Span, hash);
+		Span<byte> buffer = stackalloc byte[HashConstants.Md5Length];
+		using BcMD5Digest md5 = new();
+		md5.UpdateFinal(_randombytes.Span, buffer);
 	}
 
 	[Benchmark]
-	public void MayFast()
+	public void Manage()
 	{
-		Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-		using var md5 = new MD5Digest();
-		md5.UpdateFinal(_randombytes.Span, hash);
+		Span<byte> buffer = stackalloc byte[HashConstants.Md5Length];
+		using MD5Digest md5 = new();
+		md5.UpdateFinal(_randombytes.Span, buffer);
 	}
 
 	[Benchmark(Baseline = true)]
-	public void Fast440()
+	public void Rust()
 	{
-		if (_randombytes.Length > 55)
-		{
-			return;
-		}
-		Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-		using var md5 = new Fast440MD5Digest();
-		md5.UpdateFinal(_randombytes.Span, hash);
+		Span<byte> buffer = stackalloc byte[HashConstants.Md5Length];
+		using NativeMD5Digest md5 = new();
+		md5.UpdateFinal(_randombytes.Span, buffer);
 	}
 }

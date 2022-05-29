@@ -58,6 +58,7 @@ public class SHA1Test
 	{
 		SHA1DigestTest(new DefaultSHA1Digest(), str, sha1Str);
 		SHA1DigestTest(new BcSHA1Digest(), str, sha1Str);
+		SHA1DigestTest(new NativeSHA1Digest(), str, sha1Str);
 	}
 
 	[TestMethod]
@@ -67,5 +68,6 @@ public class SHA1Test
 	{
 		TestUtils.LargeMessageTest(new DefaultSHA1Digest(), raw, times, expected);
 		TestUtils.LargeMessageTest(new BcSHA1Digest(), raw, times, expected);
+		TestUtils.LargeMessageTest(new NativeSHA1Digest(), raw, times, expected);
 	}
 }

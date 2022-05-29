@@ -9,8 +9,6 @@ using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;
 using CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20;
-using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 

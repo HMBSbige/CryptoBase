@@ -1,7 +1,4 @@
 using CryptoBase.Abstractions;
-using CryptoBase.Abstractions.Digests;
-using System.Buffers;
-using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Macs.Hmac;
 
@@ -33,7 +30,7 @@ internal class HmacSF : IMac
 
 		if (key.Length > KeyLength)
 		{
-			hasher.UpdateFinal(key, iSpan);
+			hasher.UpdateFinal(key, iSpan[..Length]);
 			iSpan[hasher.Length..].Fill(0);
 		}
 		else

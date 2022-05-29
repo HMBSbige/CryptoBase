@@ -41,29 +41,12 @@ public class MD5Test
 		md5.UpdateFinal(origin[(origin.Length / 2)..], hash);
 
 		Assert.AreEqual(md5Str, hash.ToHex());
+		md5.Dispose();
 	}
 
 	/// <summary>
 	/// https://tools.ietf.org/html/rfc1321#appendix-A.5
 	/// </summary>
-	[TestMethod]
-	[DataRow(@"", @"d41d8cd98f00b204e9800998ecf8427e")]
-	[DataRow(@"a", @"0cc175b9c0f1b6a831c399e269772661")]
-	[DataRow(@"abc", @"900150983cd24fb0d6963f7d28e17f72")]
-	[DataRow(@"message digest", @"f96b697d7cb7938d525a2f31aaf161d0")]
-	[DataRow(@"abcdefghijklmnopqrstuvwxyz", @"c3fcd3d76192e4007dfb496cca67e13b")]
-	[DataRow(@"中文测试14", @"0958d88b4122b0f1cf13f19ee461b339")]
-	[DataRow(@"1234567890123456789012", @"aad9dc90c98e6472bd0b67067b5b11c9")]
-	[DataRow(@"32323232323232323232323232323232", @"b9cfdc1fb63d34054bbfebff4e99795a")]
-	[DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012", @"b76972fe0dff4baac395b531646f738e")]
-	public void Fast440Test(string str, string md5Str)
-	{
-		Span<byte> hash = stackalloc byte[HashConstants.Md5Length];
-		using var md5 = new Fast440MD5Digest();
-		md5.UpdateFinal(Encoding.UTF8.GetBytes(str), hash);
-		Assert.AreEqual(md5Str, hash.ToHex());
-	}
-
 	[TestMethod]
 	[DataRow(@"", @"d41d8cd98f00b204e9800998ecf8427e")]
 	[DataRow(@"a", @"0cc175b9c0f1b6a831c399e269772661")]
@@ -82,10 +65,11 @@ public class MD5Test
 		MD5DigestTest(new DefaultMD5Digest(), str, md5Str);
 		MD5DigestTest(new BcMD5Digest(), str, md5Str);
 		MD5DigestTest(new MD5Digest(), str, md5Str);
+		MD5DigestTest(new NativeMD5Digest(), str, md5Str);
 	}
 
 #if LongTimeTest
-		[TestMethod]
+	[TestMethod]
 #endif
 	[DataRow(@"euasxpm", @"cb9c2e659941f68ab669d33418d798fa")]
 	public void LargeMessageTest(string str, string result)
@@ -93,5 +77,6 @@ public class MD5Test
 		TestUtils.LargeMessageTest(new DefaultMD5Digest(), str, result);
 		TestUtils.LargeMessageTest(new BcMD5Digest(), str, result);
 		TestUtils.LargeMessageTest(new MD5Digest(), str, result);
+		TestUtils.LargeMessageTest(new NativeMD5Digest(), str, result);
 	}
 }

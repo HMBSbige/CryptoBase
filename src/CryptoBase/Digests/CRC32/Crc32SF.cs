@@ -1,6 +1,3 @@
-using CryptoBase.Abstractions.Digests;
-using System.Buffers.Binary;
-
 namespace CryptoBase.Digests.CRC32;
 
 public class Crc32SF : IHash

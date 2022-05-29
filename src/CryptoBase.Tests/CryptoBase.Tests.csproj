@@ -18,4 +18,10 @@
     <ProjectReference Include="..\CryptoBase\CryptoBase.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\CryptoBase\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

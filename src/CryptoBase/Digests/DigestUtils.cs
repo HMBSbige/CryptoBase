@@ -1,15 +1,3 @@
-using CryptoBase.Abstractions.Digests;
-using CryptoBase.Digests.CRC32;
-using CryptoBase.Digests.CRC32C;
-using CryptoBase.Digests.MD5;
-using CryptoBase.Digests.SHA1;
-using CryptoBase.Digests.SHA256;
-using CryptoBase.Digests.SHA384;
-using CryptoBase.Digests.SHA512;
-using CryptoBase.Digests.SM3;
-using System.Buffers;
-using System.Runtime.CompilerServices;
-
 namespace CryptoBase.Digests;
 
 public static class DigestUtils
@@ -19,12 +7,13 @@ public static class DigestUtils
 	{
 		return type switch
 		{
-			DigestType.Sm3 => new SM3Digest(),
-			DigestType.Md5 => new DefaultMD5Digest(),
-			DigestType.Sha1 => new DefaultSHA1Digest(),
-			DigestType.Sha256 => new DefaultSHA256Digest(),
-			DigestType.Sha384 => new DefaultSHA384Digest(),
-			DigestType.Sha512 => new DefaultSHA512Digest(),
+			DigestType.Sm3 => CreateSm3(),
+			DigestType.Md5 => CreateMd5(),
+			DigestType.Sha1 => CreateSha1(),
+			DigestType.Sha224 => CreateSha224(),
+			DigestType.Sha256 => CreateSha256(),
+			DigestType.Sha384 => CreateSha384(),
+			DigestType.Sha512 => CreateSha512(),
 			DigestType.Crc32 => CreateCrc32(),
 			DigestType.Crc32C => CreateCrc32C(),
 			_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
@@ -51,6 +40,83 @@ public static class DigestUtils
 		}
 
 		return new Crc32CSF();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateSm3()
+	{
+		if (NativeMethods.IsSupportRustNative)
+		{
+			return new NativeSM3Digest();
+		}
+
+		return new SM3Digest();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateMd5()
+	{
+		if (NativeMethods.IsSupportRustNative)
+		{
+			return new NativeMD5Digest();
+		}
+
+		return new DefaultMD5Digest();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateSha1()
+	{
+		if (NativeMethods.IsSupportRustNative)
+		{
+			return new NativeSHA1Digest();
+		}
+
+		return new DefaultSHA1Digest();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateSha224()
+	{
+		if (NativeMethods.IsSupportRustNative)
+		{
+			return new NativeSHA224Digest();
+		}
+
+		throw new NotSupportedException();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateSha256()
+	{
+		if (NativeMethods.IsSupportRustNative)
+		{
+			return new NativeSHA256Digest();
+		}
+
+		return new DefaultSHA256Digest();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateSha384()
+	{
+		if (NativeMethods.IsSupportRustNative)
+		{
+			return new NativeSHA384Digest();
+		}
+
+		return new DefaultSHA384Digest();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static IHash CreateSha512()
+	{
+		if (NativeMethods.IsSupportRustNative)
+		{
+			return new NativeSHA512Digest();
+		}
+
+		return new DefaultSHA512Digest();
 	}
 
 	public static async Task<byte[]> ComputeHashAsync(this IHash hasher, Stream inputStream, CancellationToken cancellationToken = default)

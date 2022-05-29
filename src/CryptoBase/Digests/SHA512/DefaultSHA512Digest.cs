@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions.Digests;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Digests.SHA512;

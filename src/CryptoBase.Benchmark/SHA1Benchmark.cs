@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
-using CryptoBase.Digests;
+using CryptoBase.Digests.SHA1;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class SHA1Benchmark
 {
-	[Params(32, 114514)]
+	[Params(32, 1024, 1024 * 1024)]
 	public int ByteLength { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -20,11 +20,11 @@ public class SHA1Benchmark
 		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
 	}
 
-	[Benchmark(Baseline = true)]
-	public void Default()
+	[Benchmark]
+	public void BCrypt()
 	{
 		Span<byte> hash = stackalloc byte[HashConstants.Sha1Length];
-		using var sha1 = DigestUtils.Create(DigestType.Sha1);
+		using DefaultSHA1Digest sha1 = new();
 		sha1.UpdateFinal(_randombytes.Span, hash);
 	}
 
@@ -32,7 +32,15 @@ public class SHA1Benchmark
 	public void BouncyCastle()
 	{
 		Span<byte> hash = stackalloc byte[HashConstants.Sha1Length];
-		using var sha1 = new BcSHA1Digest();
+		using BcSHA1Digest sha1 = new();
+		sha1.UpdateFinal(_randombytes.Span, hash);
+	}
+
+	[Benchmark(Baseline = true)]
+	public void Native()
+	{
+		Span<byte> hash = stackalloc byte[HashConstants.Sha1Length];
+		using NativeSHA1Digest sha1 = new();
 		sha1.UpdateFinal(_randombytes.Span, hash);
 	}
 }

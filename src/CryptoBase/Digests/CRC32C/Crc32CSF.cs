@@ -1,5 +1,3 @@
-using CryptoBase.Digests.CRC32;
-
 namespace CryptoBase.Digests.CRC32C;
 
 public class Crc32CSF : Crc32SF

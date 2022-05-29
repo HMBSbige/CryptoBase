@@ -1,6 +1,4 @@
 using CryptoBase.Abstractions;
-using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Macs.Poly1305;
 

@@ -1,4 +1,4 @@
-using CryptoBase.Abstractions.Digests;
+using CryptoBase.Abstractions;
 using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
 
@@ -11,7 +11,7 @@ public static class Hkdf
 {
 	public static int Extract(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
 	{
-		var hashLength = HashLength(type);
+		int hashLength = HashLength(type);
 		if (prk.Length < hashLength)
 		{
 			throw new ArgumentException(@"prk too small", nameof(prk));
@@ -29,7 +29,7 @@ public static class Hkdf
 
 	private static void ExtractInternal(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
 	{
-		using var hmac = HmacUtils.Create(type, salt);
+		using IMac hmac = HmacUtils.Create(type, salt);
 
 		hmac.Update(ikm);
 		hmac.GetMac(prk);
@@ -37,14 +37,14 @@ public static class Hkdf
 
 	public static void Expand(DigestType type, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
-		var hashLength = HashLength(type);
+		int hashLength = HashLength(type);
 
 		if (output.IsEmpty)
 		{
 			throw new ArgumentException(@"Destination too short", nameof(output));
 		}
 
-		var maxOkmLength = 255 * hashLength;
+		int maxOkmLength = 255 * hashLength;
 		if (output.Length > maxOkmLength)
 		{
 			throw new ArgumentException(@"Okm too large", nameof(output));
@@ -66,12 +66,12 @@ public static class Hkdf
 		}
 
 		Span<byte> counterSpan = stackalloc byte[1];
-		ref var counter = ref counterSpan[0];
+		ref byte counter = ref counterSpan[0];
 		Span<byte> t = Span<byte>.Empty;
 		Span<byte> remainingOutput = output;
 
-		using var hmac = HmacUtils.Create(type, prk);
-		for (var i = 1; ; ++i)
+		using IMac hmac = HmacUtils.Create(type, prk);
+		for (int i = 1; ; ++i)
 		{
 			hmac.Update(t);
 			hmac.Update(info);
@@ -101,14 +101,14 @@ public static class Hkdf
 
 	public static void DeriveKey(DigestType type, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
 	{
-		var hashLength = HashLength(type);
+		int hashLength = HashLength(type);
 
 		if (output.IsEmpty)
 		{
 			throw new ArgumentException(@"Destination too short", nameof(output));
 		}
 
-		var maxOkmLength = 255 * hashLength;
+		int maxOkmLength = 255 * hashLength;
 		if (output.Length > maxOkmLength)
 		{
 			throw new ArgumentException(@"Okm too large", nameof(output));
@@ -127,6 +127,7 @@ public static class Hkdf
 			DigestType.Sm3 => HashConstants.SM3Length,
 			DigestType.Md5 => HashConstants.Md5Length,
 			DigestType.Sha1 => HashConstants.Sha1Length,
+			DigestType.Sha224 => HashConstants.Sha224Length,
 			DigestType.Sha256 => HashConstants.Sha256Length,
 			DigestType.Sha384 => HashConstants.Sha384Length,
 			DigestType.Sha512 => HashConstants.Sha512Length,
