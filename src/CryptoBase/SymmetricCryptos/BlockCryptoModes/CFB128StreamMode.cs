@@ -48,7 +48,7 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 			throw new ArgumentException(string.Empty, nameof(destination));
 		}
 
-		var length = source.Length;
+		int length = source.Length;
 		fixed (byte* pStream = _keyStream)
 		fixed (byte* pSource = source)
 		fixed (byte* pDestination = destination)
@@ -67,14 +67,14 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 				InternalBlockCrypto.Encrypt(_block, _keyStream);
 			}
 
-			var r = BlockSize - _index;
+			int r = BlockSize - _index;
 
-			var len = Math.Min(length, r);
+			int len = Math.Min(length, r);
 			IntrinsicsUtils.Xor(stream + _index, source, destination, len);
 
 			fixed (byte* block = _block)
 			{
-				FastUtils.Copy(_isEncrypt ? destination : source, block + _index, len);
+				Unsafe.CopyBlockUnaligned(block + _index, _isEncrypt ? destination : source, (uint)len);
 			}
 
 			if (length < r)

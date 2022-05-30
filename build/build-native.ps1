@@ -4,16 +4,16 @@ $ErrorActionPreference = 'Stop'
 rustup show
 
 $rids = @{
-	"x86_64-pc-windows-msvc"       = "win-x64" ;
-	"i686-pc-windows-msvc"         = "win-x86" ;
-	"aarch64-pc-windows-msvc"      = "win-arm64" ;
-	"x86_64-apple-darwin"          = "osx-x64" ;
-	"aarch64-apple-darwin"         = "osx-arm64" ;
-	"x86_64-unknown-linux-gnu"     = "linux-x64" ;
-	"aarch64-unknown-linux-gnu"    = "linux-arm64" ;
+	"x86_64-pc-windows-msvc"         = "win-x64" ;
+	"i686-pc-windows-msvc"           = "win-x86" ;
+	"aarch64-pc-windows-msvc"        = "win-arm64" ;
+	"x86_64-apple-darwin"            = "osx-x64" ;
+	"aarch64-apple-darwin"           = "osx-arm64" ;
+	"x86_64-unknown-linux-gnu"       = "linux-x64" ;
+	"aarch64-unknown-linux-gnu"      = "linux-arm64" ;
 	"armv7-unknown-linux-gnueabihf"  = "linux-arm" ;
-	"x86_64-unknown-linux-musl"    = "linux-musl-x64" ;
-	"aarch64-unknown-linux-musl"   = "linux-musl-arm64" ;
+	"x86_64-unknown-linux-musl"      = "linux-musl-x64" ;
+	"aarch64-unknown-linux-musl"     = "linux-musl-arm64" ;
 	"armv7-unknown-linux-musleabihf" = "linux-musl-arm" ;
 }
 $rid = $rids[$target]
