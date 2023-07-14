@@ -62,11 +62,7 @@ cmd.SetHandler((string methods, double seconds, int bytes) =>
 	foreach (string method in methodList)
 	{
 		string realMethod = method.ToLower();
-		ISymmetricCrypto? crypto = CryptoList.GetSymmetricCrypto(realMethod);
-		if (crypto is null)
-		{
-			throw new NotSupportedException($@"{realMethod} is not supported.");
-		}
+		ISymmetricCrypto? crypto = CryptoList.GetSymmetricCrypto(realMethod) ?? throw new NotSupportedException($@"{realMethod} is not supported.");
 
 		Console.Write($@"Testing {realMethod}: ");
 
