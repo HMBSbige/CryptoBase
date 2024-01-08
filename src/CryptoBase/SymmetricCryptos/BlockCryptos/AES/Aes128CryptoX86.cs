@@ -11,9 +11,9 @@ public class Aes128CryptoX86 : AESCryptoX86
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> KeyRound(Vector128<byte> key, byte rcon)
+	private static Vector128<byte> KeyRound(Vector128<byte> key, [ConstantExpected] byte rcon)
 	{
-		var t = Aes.KeygenAssist(key, rcon);
+		Vector128<byte> t = Aes.KeygenAssist(key, rcon);
 		t = Sse2.Shuffle(t.AsUInt32(), 0b11_11_11_11).AsByte();
 
 		key = Sse2.Xor(key, Sse2.ShiftLeftLogical128BitLane(key, 4));
@@ -30,16 +30,16 @@ public class Aes128CryptoX86 : AESCryptoX86
 			_k0 = Sse2.LoadVector128(p);
 		}
 
-		_k1 = KeyRound(_k0, Rcon[1]);
-		_k2 = KeyRound(_k1, Rcon[2]);
-		_k3 = KeyRound(_k2, Rcon[3]);
-		_k4 = KeyRound(_k3, Rcon[4]);
-		_k5 = KeyRound(_k4, Rcon[5]);
-		_k6 = KeyRound(_k5, Rcon[6]);
-		_k7 = KeyRound(_k6, Rcon[7]);
-		_k8 = KeyRound(_k7, Rcon[8]);
-		_k9 = KeyRound(_k8, Rcon[9]);
-		_k10 = KeyRound(_k9, Rcon[10]);
+		_k1 = KeyRound(_k0, Rcon1);
+		_k2 = KeyRound(_k1, Rcon2);
+		_k3 = KeyRound(_k2, Rcon3);
+		_k4 = KeyRound(_k3, Rcon4);
+		_k5 = KeyRound(_k4, Rcon5);
+		_k6 = KeyRound(_k5, Rcon6);
+		_k7 = KeyRound(_k6, Rcon7);
+		_k8 = KeyRound(_k7, Rcon8);
+		_k9 = KeyRound(_k8, Rcon9);
+		_k10 = KeyRound(_k9, Rcon10);
 
 		_k11 = Aes.InverseMixColumns(_k9);
 		_k12 = Aes.InverseMixColumns(_k8);

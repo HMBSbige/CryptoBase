@@ -14,7 +14,7 @@ public class Aes192CryptoX86 : AESCryptoX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void KeyRound(ref Vector128<byte> a, ref Vector128<byte> b, ref Vector128<byte> c)
 	{
-		var t = Sse2.ShiftLeftLogical128BitLane(a, 4);
+		Vector128<byte> t = Sse2.ShiftLeftLogical128BitLane(a, 4);
 		b = Sse2.Shuffle(b.AsUInt32(), 0b01_01_01_01).AsByte();
 		a = Sse2.Xor(a, t);
 		t = Sse2.ShiftLeftLogical128BitLane(t, 4);
@@ -32,11 +32,11 @@ public class Aes192CryptoX86 : AESCryptoX86
 	private static void KeyRound(
 		out Vector128<byte> a, out Vector128<byte> b, out Vector128<byte> c,
 		ref Vector128<byte> t0, ref Vector128<byte> t1,
-		byte rcon0, byte rcon1)
+		[ConstantExpected] byte rcon0, [ConstantExpected] byte rcon1)
 	{
 		a = t0;
 		b = t1;
-		var t2 = Aes.KeygenAssist(t1, rcon0);
+		Vector128<byte> t2 = Aes.KeygenAssist(t1, rcon0);
 		KeyRound(ref t0, ref t2, ref t1);
 
 		b = Sse2.Shuffle(b.AsDouble(), t0.AsDouble(), 0).AsByte();
@@ -57,10 +57,10 @@ public class Aes192CryptoX86 : AESCryptoX86
 			t1 = Vector128.Create(*(p + 16), *(p + 17), *(p + 18), *(p + 19), *(p + 20), *(p + 21), *(p + 22), *(p + 23), 0, 0, 0, 0, 0, 0, 0, 0);
 		}
 
-		KeyRound(out _k0, out _k1, out _k2, ref t0, ref t1, Rcon[1], Rcon[2]);
-		KeyRound(out _k3, out _k4, out _k5, ref t0, ref t1, Rcon[3], Rcon[4]);
-		KeyRound(out _k6, out _k7, out _k8, ref t0, ref t1, Rcon[5], Rcon[6]);
-		KeyRound(out _k9, out _k10, out _k11, ref t0, ref t1, Rcon[7], Rcon[8]);
+		KeyRound(out _k0, out _k1, out _k2, ref t0, ref t1, Rcon1, Rcon2);
+		KeyRound(out _k3, out _k4, out _k5, ref t0, ref t1, Rcon3, Rcon4);
+		KeyRound(out _k6, out _k7, out _k8, ref t0, ref t1, Rcon5, Rcon6);
+		KeyRound(out _k9, out _k10, out _k11, ref t0, ref t1, Rcon7, Rcon8);
 		_k12 = t0;
 
 		_k13 = Aes.InverseMixColumns(_k11);

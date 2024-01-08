@@ -15,7 +15,7 @@ public class Aes256CryptoX86 : AESCryptoX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void KeyRound1(ref Vector128<byte> a, ref Vector128<byte> b)
 	{
-		var t = Sse2.ShiftLeftLogical128BitLane(a, 4);
+		Vector128<byte> t = Sse2.ShiftLeftLogical128BitLane(a, 4);
 		b = Sse2.Shuffle(b.AsUInt32(), 0b11_11_11_11).AsByte();
 		a = Sse2.Xor(a, t);
 		t = Sse2.ShiftLeftLogical128BitLane(t, 4);
@@ -28,8 +28,8 @@ public class Aes256CryptoX86 : AESCryptoX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void KeyRound2(ref Vector128<byte> a, ref Vector128<byte> b)
 	{
-		var t0 = Aes.KeygenAssist(a, Rcon[0]);
-		var t1 = Sse2.Shuffle(t0.AsUInt32(), 0b10_10_10_10).AsByte();
+		Vector128<byte> t0 = Aes.KeygenAssist(a, Rcon0);
+		Vector128<byte> t1 = Sse2.Shuffle(t0.AsUInt32(), 0b10_10_10_10).AsByte();
 
 		t0 = Sse2.ShiftLeftLogical128BitLane(b, 4);
 		b = Sse2.Xor(b, t0);
@@ -42,10 +42,10 @@ public class Aes256CryptoX86 : AESCryptoX86
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void KeyRound(out Vector128<byte> a, out Vector128<byte> b,
-		ref Vector128<byte> t0, ref Vector128<byte> t1, byte rcon)
+		ref Vector128<byte> t0, ref Vector128<byte> t1, [ConstantExpected] byte rcon)
 	{
 		a = t1;
-		var t2 = Aes.KeygenAssist(t1, rcon);
+		Vector128<byte> t2 = Aes.KeygenAssist(t1, rcon);
 		KeyRound1(ref t0, ref t2);
 		b = t0;
 		KeyRound2(ref t0, ref t1);
@@ -65,15 +65,15 @@ public class Aes256CryptoX86 : AESCryptoX86
 
 		_k0 = t0;
 
-		KeyRound(out _k1, out _k2, ref t0, ref t1, Rcon[1]);
-		KeyRound(out _k3, out _k4, ref t0, ref t1, Rcon[2]);
-		KeyRound(out _k5, out _k6, ref t0, ref t1, Rcon[3]);
-		KeyRound(out _k7, out _k8, ref t0, ref t1, Rcon[4]);
-		KeyRound(out _k9, out _k10, ref t0, ref t1, Rcon[5]);
-		KeyRound(out _k11, out _k12, ref t0, ref t1, Rcon[6]);
+		KeyRound(out _k1, out _k2, ref t0, ref t1, Rcon1);
+		KeyRound(out _k3, out _k4, ref t0, ref t1, Rcon2);
+		KeyRound(out _k5, out _k6, ref t0, ref t1, Rcon3);
+		KeyRound(out _k7, out _k8, ref t0, ref t1, Rcon4);
+		KeyRound(out _k9, out _k10, ref t0, ref t1, Rcon5);
+		KeyRound(out _k11, out _k12, ref t0, ref t1, Rcon6);
 
 		_k13 = t1;
-		var t2 = Aes.KeygenAssist(t1, Rcon[7]);
+		Vector128<byte> t2 = Aes.KeygenAssist(t1, Rcon7);
 		KeyRound1(ref t0, ref t2);
 		_k14 = t0;
 
