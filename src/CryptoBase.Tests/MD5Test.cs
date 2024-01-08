@@ -68,9 +68,8 @@ public class MD5Test
 		MD5DigestTest(new NativeMD5Digest(), str, md5Str);
 	}
 
-#if LongTimeTest
+	[Ignore]
 	[TestMethod]
-#endif
 	[DataRow(@"euasxpm", @"cb9c2e659941f68ab669d33418d798fa")]
 	public void LargeMessageTest(string str, string result)
 	{

@@ -10,7 +10,7 @@ pub unsafe fn new(algorithm: &'static Algorithm) -> *mut Context {
 
 /// # Safety
 pub unsafe fn dispose(hash: *mut Context) {
-    Box::from_raw(hash);
+    drop(Box::from_raw(hash));
 }
 
 /// # Safety

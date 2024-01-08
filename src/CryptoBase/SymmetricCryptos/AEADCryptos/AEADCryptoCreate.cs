@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
+using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
@@ -9,7 +10,12 @@ public static class AEADCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IAEADCrypto AesGcm(ReadOnlySpan<byte> key)
 	{
-		return new DefaultAesGcmCrypto(key);
+		if (DefaultAesGcmCrypto.IsSupport)
+		{
+			return new DefaultAesGcmCrypto(key);
+		}
+
+		return new GcmCryptoMode(AESUtils.CreateECB(key));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

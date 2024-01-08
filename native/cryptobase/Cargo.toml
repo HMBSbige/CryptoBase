@@ -12,15 +12,6 @@ sm3 = { version = "0.4", optional = true }
 sha1 = { version = "0.10", optional = true }
 sha2 = { version = "0.10", optional = true }
 
-[target.'cfg(all(unix, any(target_arch = "x86", target_arch = "x86_64")))'.dependencies]
-md-5 = { version = "0.10", features = ["asm"], optional = true }
-sha1 = { version = "0.10", features = ["asm"], optional = true }
-sha2 = { version = "0.10", features = ["asm"], optional = true }
-
-[target.'cfg(all(unix, target_arch = "aarch64"))'.dependencies]
-sha1 = { version = "0.10", features = ["asm"], optional = true }
-sha2 = { version = "0.10", features = ["asm"], optional = true }
-
 [profile.release]
 lto = true
 strip = true

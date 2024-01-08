@@ -1,13 +1,13 @@
 <Project>
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Version>1.7.2</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Authors>HMBSbige</Authors>
-    <Copyright>Copyright © 2020-2022 HMBSbige</Copyright>
+    <Copyright>Copyright © 2020-2024 HMBSbige</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/HMBSbige/CryptoBase</PackageProjectUrl>
     <RepositoryUrl>https://github.com/HMBSbige/CryptoBase</RepositoryUrl>

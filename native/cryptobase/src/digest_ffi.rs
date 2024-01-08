@@ -8,7 +8,7 @@ pub unsafe fn new<T: Digest>() -> *mut T {
 
 /// # Safety
 pub unsafe fn dispose<T>(raw: *mut T) {
-    Box::from_raw(raw);
+    drop(Box::from_raw(raw));
 }
 
 /// # Safety

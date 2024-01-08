@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 
 dotnet --info
 
-$net_tfm = 'net6.0'
+$net_tfm = 'net8.0'
 $configuration = 'Release'
 $output_dir = "$PSScriptRoot\..\src\CryptoBase.SpeedTest\bin\$configuration"
 $proj_path = "$PSScriptRoot\..\src\CryptoBase.SpeedTest\CryptoBase.SpeedTest.csproj"

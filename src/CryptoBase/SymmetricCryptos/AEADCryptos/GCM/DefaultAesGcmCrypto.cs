@@ -3,18 +3,15 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 
-public class DefaultAesGcmCrypto : IAEADCrypto
+public class DefaultAesGcmCrypto(ReadOnlySpan<byte> key) : IAEADCrypto
 {
 	public string Name => @"AES-GCM";
 
-	private readonly AesGcm _internalCrypto;
+	private readonly AesGcm _internalCrypto = new(key, GcmCryptoMode.TagSize);
 
 	public const int NonceSize = 12;
 
-	public DefaultAesGcmCrypto(ReadOnlySpan<byte> key)
-	{
-		_internalCrypto = new AesGcm(key);
-	}
+	public static bool IsSupport => AesGcm.IsSupported;
 
 	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
 		Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)

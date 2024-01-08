@@ -1,5 +1,3 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
-public interface IStreamBlockCryptoMode : IStreamCrypto, IBlockCryptoMode
-{
-}
+public interface IStreamBlockCryptoMode : IStreamCrypto, IBlockCryptoMode;

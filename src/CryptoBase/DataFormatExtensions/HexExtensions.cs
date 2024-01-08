@@ -20,7 +20,7 @@ public static class HexExtensions
 		int length = bytes.Length << 1;
 		string result = new('\0', length);
 
-		ref char firstCh = ref Unsafe.AsRef(result.GetPinnableReference());
+		ref char firstCh = ref Unsafe.AsRef(in result.GetPinnableReference());
 
 		int i = 0;
 		int j = 0;

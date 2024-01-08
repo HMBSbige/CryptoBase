@@ -37,7 +37,7 @@ RootCommand cmd = new()
 	bytesOption
 };
 
-cmd.SetHandler((string methods, double seconds, int bytes) =>
+cmd.SetHandler((methods, seconds, bytes) =>
 {
 	Console.WriteLine($@"OS Version:                    {Environment.OSVersion}");
 	Console.WriteLine($@".NET Version:                  {Environment.Version}");
@@ -62,7 +62,7 @@ cmd.SetHandler((string methods, double seconds, int bytes) =>
 	foreach (string method in methodList)
 	{
 		string realMethod = method.ToLower();
-		ISymmetricCrypto? crypto = CryptoList.GetSymmetricCrypto(realMethod) ?? throw new NotSupportedException($@"{realMethod} is not supported.");
+		ISymmetricCrypto crypto = CryptoList.GetSymmetricCrypto(realMethod) ?? throw new NotSupportedException($@"{realMethod} is not supported.");
 
 		Console.Write($@"Testing {realMethod}: ");
 

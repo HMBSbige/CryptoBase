@@ -52,7 +52,7 @@ public static class Base32Extensions
 
 		var outLength = ((length - 1) / Shift + 1) << 3;
 		var result = new string('\0', outLength);
-		ref var firstCh = ref Unsafe.AsRef(result.GetPinnableReference());
+		ref var firstCh = ref Unsafe.AsRef(in result.GetPinnableReference());
 
 		var offset = 0;
 		var i = 0;

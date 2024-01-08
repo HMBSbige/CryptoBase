@@ -9,24 +9,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.0.x
 
       - name: Check .NET format
         working-directory: src
         run: dotnet format -v diag --verify-no-changes
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          default: true
-          components: clippy
+        run: |
+          rustup set profile minimal
+          rustup toolchain install stable --component clippy
+          rustup default stable
+          rustup override set stable
 
       - name: Check Rust format
         working-directory: native/${{ env.RustProjectName }}
@@ -63,15 +64,17 @@ jobs:
       RUST_BACKTRACE: full
     steps:
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          target: ${{ matrix.target }}
-          toolchain: stable
-          default: true
+        run: |
+          rustup set profile minimal
+          rustup toolchain install stable
+          rustup default stable
+          rustup override set stable
+          rustup target add --toolchain stable ${{ matrix.target }}
 
       - name: Install cross
         if: matrix.os == 'ubuntu-latest'
@@ -97,11 +100,11 @@ jobs:
         os:
           - windows-latest
           - ubuntu-latest
-          # - macos-latest
+          - macos-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v3
         with:
@@ -111,7 +114,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.0.x
 
       - name: Run tests
         working-directory: src/${{ env.ProjectName }}.Tests
@@ -130,12 +133,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.0.x
 
       - name: Build
         working-directory: src/${{ matrix.NugetProjectName }}
@@ -153,14 +156,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Changelog
-        uses: glennawatson/ChangeLog@v1
-        id: changelog
-
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          body: ${{ steps.changelog.outputs.commitLog }}
           draft: false
           prerelease: false
