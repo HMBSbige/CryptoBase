@@ -33,9 +33,8 @@ internal static partial class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32<T>(this Vector256<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset) where T : struct
 	{
-#pragma warning disable CA1857
-		return Avx2.Or(Avx2.ShiftLeftLogical(value.AsUInt32(), offset), Avx2.ShiftRightLogical(value.AsUInt32(), (byte)(32 - offset))).As<uint, T>();
-#pragma warning restore CA1857
+		// return value << offset | value >> 32 - offset;
+		return Avx2.ShiftLeftLogical(value.AsUInt32(), offset).As<uint, T>() | value >> 32 - offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -59,9 +58,8 @@ internal static partial class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32<T>(this Vector128<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset) where T : struct
 	{
-#pragma warning disable CA1857
-		return Sse2.Or(Sse2.ShiftLeftLogical(value.AsUInt32(), offset), Sse2.ShiftRightLogical(value.AsUInt32(), (byte)(32 - offset))).As<uint, T>();
-#pragma warning restore CA1857
+		// return value << offset | value >> 32 - offset;
+		return Sse2.ShiftLeftLogical(value.AsUInt32(), offset).As<uint, T>() | value >> 32 - offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
