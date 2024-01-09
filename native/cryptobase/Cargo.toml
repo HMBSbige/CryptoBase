@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 libc = "0.2"
-ring = { version = "0.17", optional = true }
 digest = { version = "0.10", optional = true }
 md-5 = { version = "0.10", optional = true }
 sm3 = { version = "0.4", optional = true }
@@ -30,5 +29,3 @@ sha224 = ["dep:sha2"]
 sha256 = ["dep:sha2"]
 sha384 = ["dep:sha2"]
 sha512 = ["dep:sha2"]
-sha1_ring = ["ring"]
-sha256_ring = ["ring"]
