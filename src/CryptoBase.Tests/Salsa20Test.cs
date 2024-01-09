@@ -169,7 +169,10 @@ public class Salsa20Test
 		var iv = ivHex.FromHex();
 		Test(new BcSalsa20Crypto(key, iv), hex0, hex1, hex2, hex3);
 		Test(new Salsa20CryptoSF(key, iv), hex0, hex1, hex2, hex3);
-		Test(new Salsa20CryptoX86(key, iv), hex0, hex1, hex2, hex3);
+		for (int i = 0; i < 100; ++i)
+		{
+			Test(new Salsa20CryptoX86(key, iv), hex0, hex1, hex2, hex3);
+		}
 		Test(StreamCryptoCreate.Salsa20(key, iv), hex0, hex1, hex2, hex3);
 	}
 
