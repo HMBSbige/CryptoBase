@@ -15,6 +15,7 @@ $rids = @{
 	"x86_64-unknown-linux-musl"      = "linux-musl-x64" ;
 	"aarch64-unknown-linux-musl"     = "linux-musl-arm64" ;
 	"armv7-unknown-linux-musleabihf" = "linux-musl-arm" ;
+	"loongarch64-unknown-linux-gnu"  = "linux-loongarch64" ;
 }
 $rid = $rids[$target]
 $native_name = 'cryptobase_native'
