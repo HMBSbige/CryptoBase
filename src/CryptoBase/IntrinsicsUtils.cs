@@ -33,12 +33,7 @@ internal static partial class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32<T>(this Vector256<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset) where T : struct
 	{
-		if (Avx2.IsSupported)
-		{
-			return (Avx2.ShiftLeftLogical(value.AsUInt32(), offset) | value.AsUInt32() >> 32 - offset).As<uint, T>();
-		}
-
-		return (value.AsUInt32() << offset | value.AsUInt32() >> 32 - offset).As<uint, T>();
+		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,12 +57,7 @@ internal static partial class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32<T>(this Vector128<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset) where T : struct
 	{
-		if (Sse2.IsSupported)
-		{
-			return (Sse2.ShiftLeftLogical(value.AsUInt32(), offset) | value.AsUInt32() >> 32 - offset).As<uint, T>();
-		}
-
-		return (value.AsUInt32() << offset | value.AsUInt32() >> 32 - offset).As<uint, T>();
+		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
