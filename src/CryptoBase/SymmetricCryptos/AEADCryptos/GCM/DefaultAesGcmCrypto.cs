@@ -28,5 +28,6 @@ public class DefaultAesGcmCrypto(ReadOnlySpan<byte> key) : IAEADCrypto
 	public void Dispose()
 	{
 		_internalCrypto.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

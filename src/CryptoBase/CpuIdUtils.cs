@@ -22,7 +22,7 @@ public static class CpuIdUtils
 			BinaryPrimitives.WriteInt32LittleEndian(buffer[4..], id.Edx);
 			BinaryPrimitives.WriteInt32LittleEndian(buffer[8..], id.Ecx);
 
-			return Encoding.ASCII.GetString(buffer);
+			return Encoding.ASCII.GetString(buffer.TrimEnd(byte.MinValue));
 		}
 
 		return Unknown;
@@ -50,7 +50,7 @@ public static class CpuIdUtils
 					t = t[16..];
 				}
 
-				return Encoding.ASCII.GetString(buffer);
+				return Encoding.ASCII.GetString(buffer.TrimEnd(byte.MinValue));
 			}
 		}
 

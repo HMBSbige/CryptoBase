@@ -25,7 +25,8 @@ internal static class CryptoList
 	public const string ChaCha20Poly1305 = @"chacha20-ietf-poly1305";
 	public const string XChaCha20Poly1305 = @"xchacha20-ietf-poly1305";
 
-	public static readonly ImmutableList<string> Methods = ImmutableList.Create(
+	public static readonly ImmutableList<string> Methods =
+	[
 		Aes128Ctr,
 		Aes192Ctr,
 		Aes256Ctr,
@@ -46,7 +47,8 @@ internal static class CryptoList
 		Sm4Gcm,
 		ChaCha20Poly1305,
 		XChaCha20Poly1305
-	);
+,
+	];
 
 	public static ISymmetricCrypto? GetSymmetricCrypto(string name)
 	{

@@ -30,25 +30,32 @@ secondsOption.AddAlias(@"-s");
 Option<int> bytesOption = new(@"--bytes", () => 8 * 1024, @"Run benchmarks on num-byte buffers.");
 bytesOption.AddAlias(@"-b");
 
-RootCommand cmd = new()
-{
+RootCommand cmd =
+[
 	methodsArgument,
 	secondsOption,
 	bytesOption
-};
+];
 
 cmd.SetHandler((methods, seconds, bytes) =>
 {
-	Console.WriteLine($@"OS Version:                    {Environment.OSVersion}");
-	Console.WriteLine($@".NET Version:                  {Environment.Version}");
-	Console.WriteLine($@"App Version:                   {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}");
-	Console.WriteLine($@"CPU Vendor:                    {CpuIdUtils.GetVendor()}");
-	Console.WriteLine($@"CPU Brand:                     {CpuIdUtils.GetBrand()}");
-	Console.WriteLine($@"SSE2 instructions:             {Sse2.IsSupported}");
-	Console.WriteLine($@"Advanced Vector Extensions 2:  {Avx2.IsSupported}");
-	Console.WriteLine($@"Intel SHA extensions:          {CpuIdUtils.IsSupportX86ShaEx()}");
-	Console.WriteLine($@"AES instruction set:           {Aes.IsSupported}");
-	Console.WriteLine($@"Vector AES instruction set:    {CpuIdUtils.IsSupportX86VAes()}");
+	Console.WriteLine($@"OS Version:                                     {Environment.OSVersion}");
+	Console.WriteLine($@".NET Version:                                   {Environment.Version}");
+	Console.WriteLine($@"App Version:                                    {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}");
+	Console.WriteLine($@"CPU Vendor:                                     {CpuIdUtils.GetVendor()}");
+	Console.WriteLine($@"CPU Brand:                                      {CpuIdUtils.GetBrand()}");
+	Console.WriteLine($@"SSE2 instructions:                              {Sse2.IsSupported}");
+	Console.WriteLine($@"Advanced Vector Extensions 2:                   {Avx2.IsSupported}");
+	Console.WriteLine($@"Intel SHA extensions:                           {CpuIdUtils.IsSupportX86ShaEx()}");
+	Console.WriteLine($@"AES instruction set:                            {Aes.IsSupported}");
+	Console.WriteLine($@"Vector AES instruction:                         {CpuIdUtils.IsSupportX86VAes()}");
+
+	Console.WriteLine($@"AVX-512 Foundation:                             {Avx512F.IsSupported}");
+	Console.WriteLine($@"AVX-512 Conflict Detection Instructions:        {Avx512CD.IsSupported}");
+	Console.WriteLine($@"AVX-512 Byte and Word Instructions:             {Avx512BW.IsSupported}");
+	Console.WriteLine($@"AVX-512 Doubleword and Quadword Instructions:   {Avx512DQ.IsSupported}");
+	Console.WriteLine($@"AVX-512 Vector Byte Manipulation Instructions:  {Avx512Vbmi.IsSupported}");
+
 	Console.WriteLine($@"Seconds: {seconds}s");
 	Console.WriteLine($@"Buffer size: {bytes} bytes");
 	Console.WriteLine();

@@ -114,5 +114,7 @@ public class XChaCha20Poly1305Crypto : IAEADCrypto
 		_chacha20.Dispose();
 
 		ArrayPool<byte>.Shared.Return(_buffer);
+
+		GC.SuppressFinalize(this);
 	}
 }

@@ -37,6 +37,16 @@ public static class AEADCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IAEADCrypto ChaCha20Poly1305(ReadOnlySpan<byte> key)
 	{
+		if (OperatingSystem.IsWindows())
+		{
+			return new ChaCha20Poly1305Crypto(key);
+		}
+
+		if (DefaultChaCha20Poly1305Crypto.IsSupport)
+		{
+			return new DefaultChaCha20Poly1305Crypto(key);
+		}
+
 		return new ChaCha20Poly1305Crypto(key);
 	}
 

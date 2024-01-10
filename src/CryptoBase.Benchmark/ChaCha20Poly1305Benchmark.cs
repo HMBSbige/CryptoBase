@@ -34,15 +34,21 @@ public class ChaCha20Poly1305Benchmark
 		crypto.Dispose();
 	}
 
+	[Benchmark(Baseline = true)]
+	public void DefaultEncrypt()
+	{
+		TestEncrypt(new DefaultChaCha20Poly1305Crypto(_randomKey));
+	}
+
 	[Benchmark]
 	public void BouncyCastleEncrypt()
 	{
 		TestEncrypt(new BcChaCha20Poly1305Crypto(_randomKey));
 	}
 
-	[Benchmark(Baseline = true)]
+	[Benchmark]
 	public void Encrypt()
 	{
-		TestEncrypt(AEADCryptoCreate.ChaCha20Poly1305(_randomKey));
+		TestEncrypt(new ChaCha20Poly1305Crypto(_randomKey));
 	}
 }
