@@ -16,16 +16,16 @@ public class Aes192CryptoX86 : AESCryptoX86
 	{
 		Vector128<byte> t = Sse2.ShiftLeftLogical128BitLane(a, 4);
 		b = Sse2.Shuffle(b.AsUInt32(), 0b01_01_01_01).AsByte();
-		a = Sse2.Xor(a, t);
+		a ^= t;
 		t = Sse2.ShiftLeftLogical128BitLane(t, 4);
-		a = Sse2.Xor(a, t);
+		a ^= t;
 		t = Sse2.ShiftLeftLogical128BitLane(t, 4);
-		a = Sse2.Xor(a, t);
-		a = Sse2.Xor(a, b);
+		a ^= t;
+		a ^= b;
 		b = Sse2.Shuffle(a.AsUInt32(), 0b11_11_11_11).AsByte();
 		t = Sse2.ShiftLeftLogical128BitLane(c, 4);
-		c = Sse2.Xor(c, t);
-		c = Sse2.Xor(c, b);
+		c ^= t;
+		c ^= b;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,16 +46,10 @@ public class Aes192CryptoX86 : AESCryptoX86
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Init(ReadOnlySpan<byte> key)
+	private void Init(ReadOnlySpan<byte> key)
 	{
-		Vector128<byte> t0;
-		Vector128<byte> t1;
-
-		fixed (byte* p = key) // 24
-		{
-			t0 = Sse2.LoadVector128(p); // 0,15
-			t1 = Vector128.Create(*(p + 16), *(p + 17), *(p + 18), *(p + 19), *(p + 20), *(p + 21), *(p + 22), *(p + 23), 0, 0, 0, 0, 0, 0, 0, 0);
-		}
+		Vector128<byte> t0 = Vector128.Create(key); // 0,15
+		Vector128<byte> t1 = Vector128.Create(Vector64.Create(key[16..]), Vector64<byte>.Zero); // 16,23
 
 		KeyRound(out _k0, out _k1, out _k2, ref t0, ref t1, Rcon1, Rcon2);
 		KeyRound(out _k3, out _k4, out _k5, ref t0, ref t1, Rcon3, Rcon4);
@@ -76,18 +70,13 @@ public class Aes192CryptoX86 : AESCryptoX86
 		_k23 = Aes.InverseMixColumns(_k1);
 	}
 
-	public override unsafe void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Encrypt(source, destination);
 
-		Vector128<byte> t;
+		Vector128<byte> t = Vector128.Create(source);
 
-		fixed (byte* s = source)
-		{
-			t = Sse2.LoadVector128(s);
-		}
-
-		t = Sse2.Xor(t, _k0);
+		t ^= _k0;
 		t = Aes.Encrypt(t, _k1);
 		t = Aes.Encrypt(t, _k2);
 		t = Aes.Encrypt(t, _k3);
@@ -101,24 +90,16 @@ public class Aes192CryptoX86 : AESCryptoX86
 		t = Aes.Encrypt(t, _k11);
 		t = Aes.EncryptLast(t, _k12);
 
-		fixed (byte* d = destination)
-		{
-			Sse2.Store(d, t);
-		}
+		t.CopyTo(destination);
 	}
 
-	public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
 
-		Vector128<byte> t;
+		Vector128<byte> t = Vector128.Create(source);
 
-		fixed (byte* s = source)
-		{
-			t = Sse2.LoadVector128(s);
-		}
-
-		t = Sse2.Xor(t, _k12);
+		t ^= _k12;
 		t = Aes.Decrypt(t, _k13);
 		t = Aes.Decrypt(t, _k14);
 		t = Aes.Decrypt(t, _k15);
@@ -132,9 +113,6 @@ public class Aes192CryptoX86 : AESCryptoX86
 		t = Aes.Decrypt(t, _k23);
 		t = Aes.DecryptLast(t, _k0);
 
-		fixed (byte* d = destination)
-		{
-			Sse2.Store(d, t);
-		}
+		t.CopyTo(destination);
 	}
 }

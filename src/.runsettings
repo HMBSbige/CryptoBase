@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <COMPlus_EnableHWIntrinsic>1</COMPlus_EnableHWIntrinsic>
+      <COMPlus_EnableSSE>1</COMPlus_EnableSSE>
+      <COMPlus_EnableAVX>1</COMPlus_EnableAVX>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

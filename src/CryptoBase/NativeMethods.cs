@@ -4,7 +4,7 @@ public static partial class NativeMethods
 {
 	private const string DllName = @"cryptobase_native";
 
-	public static bool IsSupportRustNative
+	public static bool RustNativeIsSupported
 	{
 		get
 		{

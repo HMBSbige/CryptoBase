@@ -31,7 +31,7 @@ public class RC4Crypto : StreamCryptoBase
 	private readonly byte[] _state;
 	private const int BoxLength = 256;
 
-	private int x, y;
+	private int _x, _y;
 
 	public RC4Crypto(ReadOnlySpan<byte> key)
 	{
@@ -44,89 +44,49 @@ public class RC4Crypto : StreamCryptoBase
 		Init();
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private byte GetByte(Span<byte> stateSpan)
-	{
-		x = x + 1 & 0xFF;
-		y = stateSpan.GetRef(x) + y & 0xFF;
-		Utils.Swap(ref stateSpan.GetRef(x), ref stateSpan.GetRef(y));
-		return stateSpan.GetRef(stateSpan.GetRef(x) + stateSpan.GetRef(y) & 0xFF);
-	}
-
-	public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
 
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
+		Span<byte> stateSpan = _state;
+		int x = _x;
+		int y = _y;
+
+		for (int i = 0; i < source.Length; ++i)
 		{
-			Update(pSource, pDestination, source.Length);
-		}
-	}
-
-	private unsafe void Update(byte* source, byte* destination, int length)
-	{
-		var stateSpan = _state.AsSpan();
-
-		if (Avx.IsSupported && Avx2.IsSupported)
-		{
-			while (length >= 32)
-			{
-				for (var i = 0; i < 32; ++i)
-				{
-					*(destination + i) = GetByte(stateSpan);
-				}
-
-				var v0 = Avx.LoadVector256(destination);
-				var v1 = Avx.LoadVector256(source);
-				Avx.Store(destination, Avx2.Xor(v0, v1));
-
-				source += 32;
-				destination += 32;
-				length -= 32;
-			}
+			destination.GetRef(i) = (byte)(source.GetRef(i) ^ GetByte(stateSpan));
 		}
 
-		if (Sse2.IsSupported)
+		_x = x;
+		_y = y;
+
+		return;
+
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		byte GetByte(in Span<byte> stateSpan)
 		{
-			while (length >= 16)
-			{
-				for (var i = 0; i < 16; ++i)
-				{
-					*(destination + i) = GetByte(stateSpan);
-				}
-
-				var v0 = Sse2.LoadVector128(destination);
-				var v1 = Sse2.LoadVector128(source);
-				Sse2.Store(destination, Sse2.Xor(v0, v1));
-
-				source += 16;
-				destination += 16;
-				length -= 16;
-			}
-		}
-
-		for (var i = 0; i < length; ++i)
-		{
-			*(destination + i) = (byte)(*(source + i) ^ GetByte(stateSpan));
+			x = (byte)++x;
+			y = (byte)(stateSpan.GetRef(x) + y);
+			(stateSpan.GetRef(x), stateSpan.GetRef(y)) = (stateSpan.GetRef(y), stateSpan.GetRef(x));
+			return stateSpan.GetRef((byte)(stateSpan.GetRef(x) + stateSpan.GetRef(y)));
 		}
 	}
 
 	private void Init()
 	{
-		x = default;
-		y = default;
+		_x = default;
+		_y = default;
 
-		var stateSpan = _state.AsSpan();
-		var keySpan = _key.AsSpan(0, _keyLength);
+		Span<byte> stateSpan = _state.AsSpan();
+		Span<byte> keySpan = _key.AsSpan(0, _keyLength);
 
 		S.CopyTo(stateSpan);
 
-		var j = 0;
-		for (var i = 0; i < BoxLength; ++i)
+		int j = 0;
+		for (int i = 0; i < BoxLength; ++i)
 		{
 			j = keySpan.GetRef(i % _keyLength) + stateSpan.GetRef(i) + j & 0xFF;
-			Utils.Swap(ref stateSpan.GetRef(i), ref stateSpan.GetRef(j));
+			(stateSpan.GetRef(i), stateSpan.GetRef(j)) = (stateSpan.GetRef(j), stateSpan.GetRef(i));
 		}
 	}
 
@@ -138,7 +98,10 @@ public class RC4Crypto : StreamCryptoBase
 	public override void Dispose()
 	{
 		base.Dispose();
+
 		ArrayPool<byte>.Shared.Return(_key);
 		ArrayPool<byte>.Shared.Return(_state);
+
+		GC.SuppressFinalize(this);
 	}
 }

@@ -163,7 +163,7 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 	{
-		Utils.Swap(ref a, ref b);
+		(a, b) = (b, a);
 		a = Sse2.Shuffle(a, 0b00_11_10_01);
 		b = Sse2.Shuffle(b, 0b10_01_00_11);
 		c = Sse2.Shuffle(c, 0b01_00_11_10);
@@ -254,7 +254,7 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
 	{
-		Utils.Swap(ref a, ref b);
+		(a, b) = (b, a);
 		a = Avx2.PermuteVar8x32(a, Permute4);
 		b = Avx2.PermuteVar8x32(b, Permute5);
 		c = Avx2.PermuteVar8x32(c, Permute6);

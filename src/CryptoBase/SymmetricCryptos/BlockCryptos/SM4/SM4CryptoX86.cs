@@ -1,10 +1,10 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
-public class SM4CryptoX86 : SM4Crypto
+public class SM4CryptoX86(ReadOnlySpan<byte> key) : SM4Crypto(key)
 {
-	public override int BlockSize => 64;
+	public static bool IsSupported => Aes.IsSupported && Sse2.IsSupported && Ssse3.IsSupported;
 
-	public SM4CryptoX86(ReadOnlySpan<byte> key) : base(key) { }
+	public override int BlockSize => 64;
 
 	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
@@ -18,7 +18,6 @@ public class SM4CryptoX86 : SM4Crypto
 			throw new ArgumentException(string.Empty, nameof(destination));
 		}
 
-		//Aes.IsSupported && Sse2.IsSupported && Ssse3.IsSupported
 		SM4Utils.Encrypt4(Rk, source, destination);
 	}
 

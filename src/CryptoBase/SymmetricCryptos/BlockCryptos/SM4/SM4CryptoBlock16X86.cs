@@ -1,10 +1,10 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
-public class SM4CryptoBlock16X86 : SM4Crypto
+public class SM4CryptoBlock16X86(ReadOnlySpan<byte> key) : SM4Crypto(key)
 {
-	public override int BlockSize => 256;
+	public static bool IsSupported => Aes.IsSupported && Avx.IsSupported && Avx2.IsSupported;
 
-	public SM4CryptoBlock16X86(ReadOnlySpan<byte> key) : base(key) { }
+	public override int BlockSize => 256;
 
 	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
@@ -18,7 +18,6 @@ public class SM4CryptoBlock16X86 : SM4Crypto
 			throw new ArgumentException(string.Empty, nameof(destination));
 		}
 
-		//Aes.IsSupported && Avx.IsSupported && Avx2.IsSupported
 		SM4Utils.Encrypt16(Rk, source, destination);
 	}
 

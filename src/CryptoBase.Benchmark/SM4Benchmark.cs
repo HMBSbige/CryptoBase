@@ -9,9 +9,6 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class SM4Benchmark
 {
-	[Params(1000000)]
-	public int Max { get; set; }
-
 	private Memory<byte> _randombytes16;
 	private Memory<byte> _randombytes64;
 	private Memory<byte> _randombytes128;
@@ -28,11 +25,11 @@ public class SM4Benchmark
 		_randomKey = RandomNumberGenerator.GetBytes(16);
 	}
 
-	private void TestEncrypt(IBlockCrypto crypto, Span<byte> origin)
+	private void TestEncrypt(IBlockCrypto crypto, Span<byte> origin, int times)
 	{
 		Span<byte> o = stackalloc byte[origin.Length];
 
-		for (int i = 0; i < Max; ++i)
+		for (int i = 0; i < times; ++i)
 		{
 			crypto.Encrypt(origin, o);
 		}
@@ -40,11 +37,11 @@ public class SM4Benchmark
 		crypto.Dispose();
 	}
 
-	private void TestDecrypt(IBlockCrypto crypto, Span<byte> origin)
+	private void TestDecrypt(IBlockCrypto crypto, Span<byte> origin, int times)
 	{
 		Span<byte> o = stackalloc byte[origin.Length];
 
-		for (int i = 0; i < Max; ++i)
+		for (int i = 0; i < times; ++i)
 		{
 			crypto.Decrypt(origin, o);
 		}
@@ -55,42 +52,42 @@ public class SM4Benchmark
 	[Benchmark]
 	public void BouncyCastleEncrypt()
 	{
-		TestEncrypt(new BcSM4Crypto(true, _randomKey), _randombytes16.Span);
+		TestEncrypt(new BcSM4Crypto(true, _randomKey), _randombytes16.Span, 16);
 	}
 
-	[Benchmark(Baseline = true)]
+	[Benchmark]
 	public void Encrypt()
 	{
-		TestEncrypt(new SM4Crypto(_randomKey), _randombytes16.Span);
+		TestEncrypt(new SM4Crypto(_randomKey), _randombytes16.Span, 16);
 	}
 
 	[Benchmark]
 	public void BouncyCastleDecrypt()
 	{
-		TestDecrypt(new BcSM4Crypto(false, _randomKey), _randombytes16.Span);
+		TestDecrypt(new BcSM4Crypto(false, _randomKey), _randombytes16.Span, 16);
 	}
 
 	[Benchmark]
 	public void Decrypt()
 	{
-		TestDecrypt(new SM4Crypto(_randomKey), _randombytes16.Span);
+		TestDecrypt(new SM4Crypto(_randomKey), _randombytes16.Span, 16);
 	}
 
 	[Benchmark]
 	public void Encrypt4()
 	{
-		TestEncrypt(new SM4CryptoX86(_randomKey), _randombytes64.Span);
+		TestEncrypt(new SM4CryptoX86(_randomKey), _randombytes64.Span, 4);
 	}
 
 	[Benchmark]
 	public void Encrypt8()
 	{
-		TestEncrypt(new SM4CryptoBlock8X86(_randomKey), _randombytes128.Span);
+		TestEncrypt(new SM4CryptoBlock8X86(_randomKey), _randombytes128.Span, 2);
 	}
 
-	[Benchmark]
+	[Benchmark(Baseline = true)]
 	public void Encrypt16()
 	{
-		TestEncrypt(new SM4CryptoBlock16X86(_randomKey), _randombytes256.Span);
+		TestEncrypt(new SM4CryptoBlock16X86(_randomKey), _randombytes256.Span, 1);
 	}
 }

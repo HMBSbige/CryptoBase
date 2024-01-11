@@ -1,6 +1,6 @@
 namespace CryptoBase;
 
-internal static partial class IntrinsicsUtils
+internal static class IntrinsicsUtils
 {
 	private static readonly Vector128<byte> Rot8 = Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
 	private static readonly Vector128<byte> Rot16 = Vector128.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13);
@@ -16,19 +16,6 @@ internal static partial class IntrinsicsUtils
 	private static readonly Vector256<byte> VReverse128 = Vector256.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16);
 	private static readonly Vector256<long> VMinusTwo128Le = Vector256.Create(-2, 0, -2, 0);
 	private static readonly Vector256<long> VMinusUpper128Le = Vector256.Create(0, 0, -1, 0);
-
-	/// <summary>
-	/// But AMD is slow...
-	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static uint AndNot(uint left, uint right)
-	{
-		if (Bmi1.IsSupported)
-		{
-			return Bmi1.AndNot(left, right);
-		}
-		return ~left & right;
-	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32<T>(this Vector256<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset) where T : struct
@@ -121,18 +108,25 @@ internal static partial class IntrinsicsUtils
 	/// destination = source ^ stream
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void Xor16(byte* stream, byte* source, byte* destination)
+	public static void Xor(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
-		if (Sse2.IsSupported)
+		// TODO Vector
+
+		for (int i = 0; i < length; ++i)
 		{
-			Vector128<byte> v0 = Sse2.LoadVector128(stream);
-			Vector128<byte> v1 = Sse2.LoadVector128(source);
-			Sse2.Store(destination, Sse2.Xor(v0, v1));
+			destination.GetRef(i) = (byte)(source.GetRef(i) ^ stream.GetRef(i));
 		}
-		else
-		{
-			FastUtils.Xor16(stream, source, destination);
-		}
+	}
+
+	/// <summary>
+	/// a ^= b
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Xor16(Span<byte> a, Span<byte> b)
+	{
+		Vector128<byte> va = FastUtils.CreateVector128Unsafe((ReadOnlySpan<byte>)a);
+		Vector128<byte> vb = FastUtils.CreateVector128Unsafe((ReadOnlySpan<byte>)b);
+		(va ^ vb).CopyTo(a);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -210,21 +204,9 @@ internal static partial class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<uint> Multiply5(this Vector128<uint> a)
-	{
-		return Sse2.Add(Sse2.ShiftLeftLogical(a, 2), a);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<uint> Multiply5(this Vector256<uint> a)
-	{
-		return Avx2.Add(Avx2.ShiftLeftLogical(a, 2), a);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ulong Add2UInt64(this Vector128<ulong> v)
 	{
-		return v.Add(Sse2.ShiftRightLogical128BitLane(v, 8)).ToScalar();
+		return (v + Sse2.ShiftRightLogical128BitLane(v, 8)).ToScalar();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

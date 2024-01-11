@@ -11,7 +11,7 @@ public class DefaultAesGcmCrypto(ReadOnlySpan<byte> key) : IAEADCrypto
 
 	public const int NonceSize = 12;
 
-	public static bool IsSupport => AesGcm.IsSupported;
+	public static bool IsSupported => AesGcm.IsSupported;
 
 	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
 		Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)

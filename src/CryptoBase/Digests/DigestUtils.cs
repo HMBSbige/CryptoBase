@@ -45,7 +45,7 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSm3()
 	{
-		if (NativeMethods.IsSupportRustNative)
+		if (NativeMethods.RustNativeIsSupported)
 		{
 			return new NativeSM3Digest();
 		}
@@ -56,7 +56,7 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateMd5()
 	{
-		if (NativeMethods.IsSupportRustNative)
+		if (NativeMethods.RustNativeIsSupported)
 		{
 			return new NativeMD5Digest();
 		}
@@ -67,7 +67,7 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha1()
 	{
-		if (NativeMethods.IsSupportRustNative)
+		if (NativeMethods.RustNativeIsSupported)
 		{
 			return new NativeSHA1Digest();
 		}
@@ -78,7 +78,7 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha224()
 	{
-		if (NativeMethods.IsSupportRustNative)
+		if (NativeMethods.RustNativeIsSupported)
 		{
 			return new NativeSHA224Digest();
 		}
@@ -89,7 +89,7 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha256()
 	{
-		if (NativeMethods.IsSupportRustNative)
+		if (NativeMethods.RustNativeIsSupported)
 		{
 			return new NativeSHA256Digest();
 		}
@@ -100,7 +100,7 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha384()
 	{
-		if (NativeMethods.IsSupportRustNative)
+		if (NativeMethods.RustNativeIsSupported)
 		{
 			return new NativeSHA384Digest();
 		}
@@ -111,7 +111,7 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha512()
 	{
-		if (NativeMethods.IsSupportRustNative)
+		if (NativeMethods.RustNativeIsSupported)
 		{
 			return new NativeSHA512Digest();
 		}

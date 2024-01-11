@@ -10,7 +10,7 @@ public static class AEADCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IAEADCrypto AesGcm(ReadOnlySpan<byte> key)
 	{
-		if (DefaultAesGcmCrypto.IsSupport)
+		if (DefaultAesGcmCrypto.IsSupported)
 		{
 			return new DefaultAesGcmCrypto(key);
 		}
@@ -42,7 +42,7 @@ public static class AEADCryptoCreate
 			return new ChaCha20Poly1305Crypto(key);
 		}
 
-		if (DefaultChaCha20Poly1305Crypto.IsSupport)
+		if (DefaultChaCha20Poly1305Crypto.IsSupported)
 		{
 			return new DefaultChaCha20Poly1305Crypto(key);
 		}

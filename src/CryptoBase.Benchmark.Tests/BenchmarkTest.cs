@@ -176,4 +176,16 @@ public class BenchmarkTest
 	{
 		BenchmarkRunner.Run<CRC32Benchmark>();
 	}
+
+	[TestMethod]
+	public void Xor16Benchmark()
+	{
+		BenchmarkRunner.Run<Xor16Benchmark>();
+	}
+
+	[TestMethod]
+	public void Xor64Benchmark()
+	{
+		BenchmarkRunner.Run<Xor64Benchmark>();
+	}
 }

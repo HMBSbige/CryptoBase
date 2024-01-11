@@ -5,7 +5,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos;
 
 public class DefaultChaCha20Poly1305Crypto(ReadOnlySpan<byte> key) : IAEADCrypto
 {
-	public static bool IsSupport => ChaCha20Poly1305.IsSupported;
+	public static bool IsSupported => ChaCha20Poly1305.IsSupported;
 
 	public string Name => @"ChaCha20-Poly1305";
 

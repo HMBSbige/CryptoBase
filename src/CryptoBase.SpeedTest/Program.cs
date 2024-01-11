@@ -7,9 +7,10 @@ global using System.Collections.Immutable;
 global using System.CommandLine;
 global using System.Diagnostics;
 global using System.Reflection;
-global using System.Runtime.Intrinsics.X86;
+global using System.Runtime.Intrinsics;
 global using System.Security.Cryptography;
-global using Aes = System.Runtime.Intrinsics.X86.Aes;
+global using X86Aes = System.Runtime.Intrinsics.X86.Aes;
+using System.Runtime.Intrinsics.X86;
 
 #if DEBUG
 Console.WriteLine(@"On Debug mode");
@@ -44,10 +45,16 @@ cmd.SetHandler((methods, seconds, bytes) =>
 	Console.WriteLine($@"App Version:                                    {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}");
 	Console.WriteLine($@"CPU Vendor:                                     {CpuIdUtils.GetVendor()}");
 	Console.WriteLine($@"CPU Brand:                                      {CpuIdUtils.GetBrand()}");
+
+	Console.WriteLine($@"Vector64.IsHardwareAccelerated:                 {Vector64.IsHardwareAccelerated}");
+	Console.WriteLine($@"Vector128.IsHardwareAccelerated:                {Vector128.IsHardwareAccelerated}");
+	Console.WriteLine($@"Vector256.IsHardwareAccelerated:                {Vector256.IsHardwareAccelerated}");
+	Console.WriteLine($@"Vector512.IsHardwareAccelerated:                {Vector512.IsHardwareAccelerated}");
+
 	Console.WriteLine($@"SSE2 instructions:                              {Sse2.IsSupported}");
 	Console.WriteLine($@"Advanced Vector Extensions 2:                   {Avx2.IsSupported}");
 	Console.WriteLine($@"Intel SHA extensions:                           {CpuIdUtils.IsSupportX86ShaEx()}");
-	Console.WriteLine($@"AES instruction set:                            {Aes.IsSupported}");
+	Console.WriteLine($@"AES instruction set:                            {X86Aes.IsSupported}");
 	Console.WriteLine($@"Vector AES instruction:                         {CpuIdUtils.IsSupportX86VAes()}");
 
 	Console.WriteLine($@"AVX-512 Foundation:                             {Avx512F.IsSupported}");

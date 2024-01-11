@@ -16,20 +16,16 @@ public class Aes128CryptoX86 : AESCryptoX86
 		Vector128<byte> t = Aes.KeygenAssist(key, rcon);
 		t = Sse2.Shuffle(t.AsUInt32(), 0b11_11_11_11).AsByte();
 
-		key = Sse2.Xor(key, Sse2.ShiftLeftLogical128BitLane(key, 4));
-		key = Sse2.Xor(key, Sse2.ShiftLeftLogical128BitLane(key, 8));
+		key ^= Sse2.ShiftLeftLogical128BitLane(key, 4);
+		key ^= Sse2.ShiftLeftLogical128BitLane(key, 8);
 
-		return Sse2.Xor(key, t);
+		return key ^ t;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Init(ReadOnlySpan<byte> key)
+	private void Init(ReadOnlySpan<byte> key)
 	{
-		fixed (byte* p = key)
-		{
-			_k0 = Sse2.LoadVector128(p);
-		}
-
+		_k0 = Vector128.Create(key);
 		_k1 = KeyRound(_k0, Rcon1);
 		_k2 = KeyRound(_k1, Rcon2);
 		_k3 = KeyRound(_k2, Rcon3);
@@ -52,18 +48,13 @@ public class Aes128CryptoX86 : AESCryptoX86
 		_k19 = Aes.InverseMixColumns(_k1);
 	}
 
-	public override unsafe void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Encrypt(source, destination);
 
-		Vector128<byte> t;
+		Vector128<byte> t = Vector128.Create(source);
 
-		fixed (byte* s = source)
-		{
-			t = Sse2.LoadVector128(s);
-		}
-
-		t = Sse2.Xor(t, _k0);
+		t ^= _k0;
 		t = Aes.Encrypt(t, _k1);
 		t = Aes.Encrypt(t, _k2);
 		t = Aes.Encrypt(t, _k3);
@@ -75,24 +66,16 @@ public class Aes128CryptoX86 : AESCryptoX86
 		t = Aes.Encrypt(t, _k9);
 		t = Aes.EncryptLast(t, _k10);
 
-		fixed (byte* d = destination)
-		{
-			Sse2.Store(d, t);
-		}
+		t.CopyTo(destination);
 	}
 
-	public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
 
-		Vector128<byte> t;
+		Vector128<byte> t = Vector128.Create(source);
 
-		fixed (byte* s = source)
-		{
-			t = Sse2.LoadVector128(s);
-		}
-
-		t = Sse2.Xor(t, _k10);
+		t ^= _k10;
 		t = Aes.Decrypt(t, _k11);
 		t = Aes.Decrypt(t, _k12);
 		t = Aes.Decrypt(t, _k13);
@@ -104,9 +87,6 @@ public class Aes128CryptoX86 : AESCryptoX86
 		t = Aes.Decrypt(t, _k19);
 		t = Aes.DecryptLast(t, _k0);
 
-		fixed (byte* d = destination)
-		{
-			Sse2.Store(d, t);
-		}
+		t.CopyTo(destination);
 	}
 }

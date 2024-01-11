@@ -17,12 +17,12 @@ public class Aes256CryptoX86 : AESCryptoX86
 	{
 		Vector128<byte> t = Sse2.ShiftLeftLogical128BitLane(a, 4);
 		b = Sse2.Shuffle(b.AsUInt32(), 0b11_11_11_11).AsByte();
-		a = Sse2.Xor(a, t);
+		a ^= t;
 		t = Sse2.ShiftLeftLogical128BitLane(t, 4);
-		a = Sse2.Xor(a, t);
+		a ^= t;
 		t = Sse2.ShiftLeftLogical128BitLane(t, 4);
-		a = Sse2.Xor(a, t);
-		a = Sse2.Xor(a, b);
+		a ^= t;
+		a ^= b;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,12 +32,12 @@ public class Aes256CryptoX86 : AESCryptoX86
 		Vector128<byte> t1 = Sse2.Shuffle(t0.AsUInt32(), 0b10_10_10_10).AsByte();
 
 		t0 = Sse2.ShiftLeftLogical128BitLane(b, 4);
-		b = Sse2.Xor(b, t0);
+		b ^= t0;
 		t0 = Sse2.ShiftLeftLogical128BitLane(t0, 4);
-		b = Sse2.Xor(b, t0);
+		b ^= t0;
 		t0 = Sse2.ShiftLeftLogical128BitLane(t0, 4);
-		b = Sse2.Xor(b, t0);
-		b = Sse2.Xor(b, t1);
+		b ^= t0;
+		b ^= t1;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -52,16 +52,10 @@ public class Aes256CryptoX86 : AESCryptoX86
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Init(ReadOnlySpan<byte> key)
+	private void Init(ReadOnlySpan<byte> key)
 	{
-		Vector128<byte> t0;
-		Vector128<byte> t1;
-
-		fixed (byte* p = key) // 32
-		{
-			t0 = Sse2.LoadVector128(p);      // 0,15
-			t1 = Sse2.LoadVector128(p + 16); // 15,31
-		}
+		Vector128<byte> t0 = Vector128.Create(key); // 0,15
+		Vector128<byte> t1 = Vector128.Create(key[16..]); // 15,31
 
 		_k0 = t0;
 
@@ -92,18 +86,13 @@ public class Aes256CryptoX86 : AESCryptoX86
 		_k27 = Aes.InverseMixColumns(_k1);
 	}
 
-	public override unsafe void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Encrypt(source, destination);
 
-		Vector128<byte> t;
+		Vector128<byte> t = Vector128.Create(source);
 
-		fixed (byte* s = source)
-		{
-			t = Sse2.LoadVector128(s);
-		}
-
-		t = Sse2.Xor(t, _k0);
+		t ^= _k0;
 		t = Aes.Encrypt(t, _k1);
 		t = Aes.Encrypt(t, _k2);
 		t = Aes.Encrypt(t, _k3);
@@ -119,24 +108,16 @@ public class Aes256CryptoX86 : AESCryptoX86
 		t = Aes.Encrypt(t, _k13);
 		t = Aes.EncryptLast(t, _k14);
 
-		fixed (byte* d = destination)
-		{
-			Sse2.Store(d, t);
-		}
+		t.CopyTo(destination);
 	}
 
-	public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
 
-		Vector128<byte> t;
+		Vector128<byte> t = Vector128.Create(source);
 
-		fixed (byte* s = source)
-		{
-			t = Sse2.LoadVector128(s);
-		}
-
-		t = Sse2.Xor(t, _k14);
+		t ^= _k14;
 		t = Aes.Decrypt(t, _k15);
 		t = Aes.Decrypt(t, _k16);
 		t = Aes.Decrypt(t, _k17);
@@ -152,9 +133,6 @@ public class Aes256CryptoX86 : AESCryptoX86
 		t = Aes.Decrypt(t, _k27);
 		t = Aes.DecryptLast(t, _k0);
 
-		fixed (byte* d = destination)
-		{
-			Sse2.Store(d, t);
-		}
+		t.CopyTo(destination);
 	}
 }
