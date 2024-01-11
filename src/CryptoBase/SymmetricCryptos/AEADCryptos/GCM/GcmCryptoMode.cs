@@ -39,7 +39,7 @@ public class GcmCryptoMode : IAEADCrypto
 		_gHash = GHashUtils.Create(_buffer);
 	}
 
-	public unsafe void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
+	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
 		Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
 		CheckInput(nonce, source, destination);
@@ -69,17 +69,12 @@ public class GcmCryptoMode : IAEADCrypto
 
 			int n = Math.Min(source.Length, BlockSize);
 
-			fixed (byte* pOut = destination)
-			fixed (byte* pSource = source)
-			fixed (byte* pBuffer = _buffer)
-			{
-				IntrinsicsUtils.Xor(pSource, pBuffer, pOut, n);
-			}
+			FastUtils.Xor(source, _buffer, destination, n);
 
-			_gHash.Update(destination[..n]);
+			_gHash.Update(destination.Slice(0, n));
 
-			source = source[n..];
-			destination = destination[n..];
+			source = source.Slice(n);
+			destination = destination.Slice(n);
 		}
 
 		BinaryPrimitives.WriteUInt64BigEndian(_buffer, (ulong)associatedData.Length << 3);
@@ -88,10 +83,10 @@ public class GcmCryptoMode : IAEADCrypto
 		_gHash.Update(_buffer.AsSpan(0, TagSize));
 		_gHash.GetMac(_buffer);
 
-		IntrinsicsUtils.Xor16(tag, _buffer);
+		FastUtils.Xor(tag, _buffer, tag, 16);
 	}
 
-	public unsafe void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
+	public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
 		Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
 		CheckInput(nonce, source, destination);
@@ -121,17 +116,12 @@ public class GcmCryptoMode : IAEADCrypto
 
 			int n = Math.Min(source.Length, BlockSize);
 
-			_gHash.Update(source[..n]);
+			_gHash.Update(source.Slice(0, n));
 
-			fixed (byte* pOut = destination)
-			fixed (byte* pSource = source)
-			fixed (byte* pBuffer = _buffer)
-			{
-				IntrinsicsUtils.Xor(pSource, pBuffer, pOut, n);
-			}
+			FastUtils.Xor(source, _buffer, destination, n);
 
-			source = source[n..];
-			destination = destination[n..];
+			source = source.Slice(n);
+			destination = destination.Slice(n);
 		}
 
 		BinaryPrimitives.WriteUInt64BigEndian(_buffer, (ulong)associatedData.Length << 3);
@@ -140,7 +130,7 @@ public class GcmCryptoMode : IAEADCrypto
 		_gHash.Update(_buffer.AsSpan(0, TagSize));
 		_gHash.GetMac(_buffer);
 
-		IntrinsicsUtils.Xor16(_tagBuffer, _buffer);
+		FastUtils.Xor(_tagBuffer, _buffer, _tagBuffer, 16);
 
 		if (!CryptographicOperations.FixedTimeEquals(_tagBuffer.AsSpan(0, TagSize), tag))
 		{

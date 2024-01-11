@@ -162,7 +162,7 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		_gHash.Update(_buffer.AsSpan(0, TagSize));
 		_gHash.GetMac(_buffer);
 
-		IntrinsicsUtils.Xor16(tag, _buffer);
+		FastUtils.Xor(tag, _buffer, tag, 16);
 	}
 
 	public unsafe void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
@@ -277,7 +277,7 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		_gHash.Update(_buffer.AsSpan(0, TagSize));
 		_gHash.GetMac(_buffer);
 
-		IntrinsicsUtils.Xor16(_tagBuffer, _buffer);
+		FastUtils.Xor(_tagBuffer, _buffer, _tagBuffer, 16);
 
 		if (!CryptographicOperations.FixedTimeEquals(_tagBuffer.AsSpan(0, TagSize), tag))
 		{
