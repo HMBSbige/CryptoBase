@@ -27,6 +27,14 @@ public class AESCFBTest
 		crypto.Update(h1[73..], o[73..]);
 		Assert.IsTrue(o.SequenceEqual(h2));
 
+		crypto.Reset();
+
+		for (int i = 0; i < h1.Length; ++i)
+		{
+			crypto.Update(h1.Slice(i, 1), o.Slice(i, 1));
+		}
+		Assert.IsTrue(o.SequenceEqual(h2));
+
 		crypto.Dispose();
 	}
 
@@ -45,8 +53,8 @@ public class AESCFBTest
 		@"2291802d076e5ab69f2514c51b45db29e9603468b9bbf25d962785a95a051dde87d312a68ceef02717237b07ff05e6e403cfe5225c7a5053ee8c33f723e5e16996517a9ae17f8825369266237696a60ae8154955ae146168095d4edf9c457730379430bbc924eeefb2a982481eab60661b76493b0efddc3357d0f4f0363bc349de6c1a29522b00344a071b73da43c42febe5c72ec8ccfb63d1a34e1502196c60e206ee896a1cdda0d6d78307b86ac616a941f3f55cb0a47294a9e36baacebbd882b77a2666dcf1ef551acebb05b1c970d438b315e72037fe13b4bc2913fcc9fed13ea331138608689afc9b485096497abb50227780a6f0b9c678029e9443a8")]
 	public void Test(string keyHex, string ivHex, string hex, string hex2)
 	{
-		var key = keyHex.FromHex();
-		var iv = ivHex.FromHex();
+		byte[] key = keyHex.FromHex();
+		byte[] iv = ivHex.FromHex();
 		Test(new BcAESCFBStreamCrypto(true, key, iv), hex, hex2);
 		Test(new BcAESCFBStreamCrypto(false, key, iv), hex2, hex);
 		Test(StreamCryptoCreate.AesCfb(true, key, iv), hex, hex2);

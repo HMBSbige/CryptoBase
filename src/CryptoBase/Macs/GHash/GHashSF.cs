@@ -47,19 +47,19 @@ public class GHashSF : IMac
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void GFMul(ReadOnlySpan<byte> x)
 	{
-		for (var i = 0; i < BlockSize; ++i)
+		for (int i = 0; i < BlockSize; ++i)
 		{
 			_buffer[i] ^= x[i];
 		}
 
-		var lo = (byte)(_buffer[15] & 0xF);
-		var zh = _hh[lo];
-		var zl = _hl[lo];
+		byte lo = (byte)(_buffer[15] & 0xF);
+		ulong zh = _hh[lo];
+		ulong zl = _hl[lo];
 
-		for (var i = 0; i < BlockSize; ++i)
+		for (int i = 0; i < BlockSize; ++i)
 		{
 			lo = (byte)(_buffer[16 - 1 - i] & 0xf);
-			var hi = (byte)((_buffer[16 - 1 - i] >> 4) & 0xf);
+			byte hi = (byte)((_buffer[16 - 1 - i] >> 4) & 0xf);
 
 			byte rem;
 			if (i != 0)
@@ -114,17 +114,17 @@ public class GHashSF : IMac
 	{
 		CryptographicOperations.ZeroMemory(_buffer.AsSpan(0, BlockSize));
 
-		var vh = Initvh;
-		var vl = Initvl;
+		ulong vh = Initvh;
+		ulong vl = Initvl;
 
 		_hl[8] = vl;
 		_hh[8] = vh;
 
-		var i = 4u;
+		uint i = 4u;
 
 		while (i > 0)
 		{
-			var t = (vl & 1) * 0xe1000000;
+			ulong t = (vl & 1) * 0xe1000000;
 			vl = (vh << 63) | (vl >> 1);
 			vh = (vh >> 1) ^ (t << 32);
 
@@ -140,7 +140,7 @@ public class GHashSF : IMac
 			vh = _hh[i];
 			vl = _hl[i];
 
-			for (var j = 1u; j < i; ++j)
+			for (uint j = 1u; j < i; ++j)
 			{
 				_hh[i + j] = vh ^ _hh[j];
 				_hl[i + j] = vl ^ _hl[j];
@@ -155,5 +155,7 @@ public class GHashSF : IMac
 		ArrayPool<ulong>.Shared.Return(_hl);
 		ArrayPool<ulong>.Shared.Return(_hh);
 		ArrayPool<byte>.Shared.Return(_buffer);
+
+		GC.SuppressFinalize(this);
 	}
 }

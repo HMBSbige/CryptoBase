@@ -26,6 +26,14 @@ public class AESCTRTest
 		crypto.Update(h2[73..], o[73..]);
 		Assert.IsTrue(o.SequenceEqual(h1));
 
+		crypto.Reset();
+
+		for (int i = 0; i < h1.Length; ++i)
+		{
+			crypto.Update(h1.Slice(i, 1), o.Slice(i, 1));
+		}
+		Assert.IsTrue(o.SequenceEqual(h2));
+
 		crypto.Dispose();
 	}
 

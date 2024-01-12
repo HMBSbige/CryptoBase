@@ -5,7 +5,6 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 
-//TODO: performance
 public class GcmCryptoMode : IAEADCrypto
 {
 	public string Name => _crypto.Name + @"-GCM";

@@ -4,7 +4,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
 public class CFB128StreamMode : IStreamBlockCryptoMode
 {
-	public string Name => @"AES-CFB";
+	public string Name => InternalBlockCrypto.Name + @"-CFB";
 
 	public IBlockCrypto InternalBlockCrypto { get; init; }
 
@@ -41,53 +41,52 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 		Reset();
 	}
 
-	public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		if (destination.Length < source.Length)
 		{
 			throw new ArgumentException(string.Empty, nameof(destination));
 		}
 
+		int i = 0;
 		int length = source.Length;
-		fixed (byte* pStream = _keyStream)
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
+
+		Span<byte> stream = _keyStream.AsSpan(0, BlockSize);
+		Span<byte> block = _block.AsSpan(0, BlockSize);
+
+		if (_index is not 0)
 		{
-			Update(length, pStream, pSource, pDestination);
-		}
-	}
+			int len = Math.Min(length, BlockSize - _index);
+			FastUtils.Xor(stream.Slice(_index, len), source.Slice(0, len), destination.Slice(0, len), len);
+			(_isEncrypt ? destination : source).Slice(0, len).CopyTo(block.Slice(_index));
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Update(int length, byte* stream, byte* source, byte* destination)
-	{
-		while (length > 0)
-		{
-			if (_index == 0)
+			i += len;
+			length -= len;
+
+			if (length <= 0)
 			{
-				InternalBlockCrypto.Encrypt(_block, _keyStream);
-			}
-
-			int r = BlockSize - _index;
-
-			int len = Math.Min(length, r);
-			IntrinsicsUtils.Xor(stream + _index, source, destination, len);
-
-			fixed (byte* block = _block)
-			{
-				Unsafe.CopyBlockUnaligned(block + _index, _isEncrypt ? destination : source, (uint)len);
-			}
-
-			if (length < r)
-			{
-				_index += length;
+				_index += len;
 				return;
 			}
 
 			_index = 0;
-			length -= r;
-			source += r;
-			destination += r;
 		}
+
+		while (length >= BlockSize)
+		{
+			InternalBlockCrypto.Encrypt(block, stream);
+
+			FastUtils.Xor(stream, source.Slice(i, BlockSize), destination.Slice(i, BlockSize), BlockSize);
+			(_isEncrypt ? destination : source).Slice(i, BlockSize).CopyTo(block);
+
+			i += BlockSize;
+			length -= BlockSize;
+		}
+
+		_index = length;
+		InternalBlockCrypto.Encrypt(block, stream);
+		FastUtils.Xor(stream.Slice(0, length), source.Slice(i, length), destination.Slice(i, length), length);
+		(_isEncrypt ? destination : source).Slice(i, length).CopyTo(block);
 	}
 
 	public void Reset()
@@ -104,5 +103,7 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 
 		ArrayPool<byte>.Shared.Return(_block);
 		ArrayPool<byte>.Shared.Return(_keyStream);
+
+		GC.SuppressFinalize(this);
 	}
 }

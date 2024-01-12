@@ -51,7 +51,7 @@ public static class FastUtils
 	/// <summary>
 	/// destination = source ^ stream
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static void Xor(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
 		int i = 0;

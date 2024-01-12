@@ -69,7 +69,7 @@ internal static class IntrinsicsUtils
 	/// destination = source ^ stream
 	/// TODO: Remove
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
 	{
 		while (length >= 64)
