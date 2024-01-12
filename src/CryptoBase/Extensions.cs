@@ -4,58 +4,11 @@ namespace CryptoBase;
 
 public static class Extensions
 {
-	#region SodiumIncrement
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void IncrementInternal(this Span<byte> nonce)
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+	public static void FixedTimeIncrement(this Span<byte> nonce)
 	{
+		int c = 1;
 		for (int i = 0; i < nonce.Length; ++i)
-		{
-			if (++nonce[i] is not 0)
-			{
-				break;
-			}
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Increment(this Span<byte> nonce)
-	{
-		nonce.IncrementInternal();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Increment(this byte[] nonce)
-	{
-		IncrementInternal(nonce);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void IncrementUInt(this byte[] nonce)
-	{
-		uint i = BinaryPrimitives.ReadUInt32LittleEndian(nonce);
-		++i;
-		BinaryPrimitives.WriteUInt32LittleEndian(nonce, i);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void IncrementIntUnsafe(this byte[] nonce)
-	{
-		fixed (byte* p = nonce)
-		{
-			++*(uint*)p;
-		}
-	}
-
-	/// <summary>
-	/// https://github.com/jedisct1/libsodium/blob/master/src/libsodium/sodium/utils.c#L263
-	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void IncrementSource(this byte[] nonce)
-	{
-		uint i = 0;
-		ushort c = 1;
-		for (; i < nonce.Length; i++)
 		{
 			c += nonce[i];
 			nonce[i] = (byte)c;
@@ -63,27 +16,16 @@ public static class Extensions
 		}
 	}
 
-	#endregion
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void IncrementBeInternal(this Span<byte> counter)
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+	public static void FixedTimeIncrementBigEndian(this Span<byte> nonce)
 	{
-		int j = counter.Length;
-		while (--j >= 0 && ++counter[j] == 0)
+		int c = 1;
+		for (int i = nonce.Length - 1; i >= 0; --i)
 		{
+			c += nonce[i];
+			nonce[i] = (byte)c;
+			c >>= 8;
 		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void IncrementBe(this byte[] counter)
-	{
-		IncrementBeInternal(counter);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void IncrementBe(this Span<byte> counter)
-	{
-		counter.IncrementBeInternal();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -18,6 +18,6 @@ public class XChaCha20CryptoSF : XChaCha20Crypto
 
 	protected override unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
 	{
-		FastUtils.Xor(stream, source, destination, length);
+		IntrinsicsUtils.Xor(stream, source, destination, length);
 	}
 }

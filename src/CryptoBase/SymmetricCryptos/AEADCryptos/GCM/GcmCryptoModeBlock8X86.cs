@@ -50,7 +50,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 		_gHash = GHashUtils.Create(key);
 	}
 
-	public unsafe void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
+	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
 		Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
 		CheckInput(nonce, source, destination);
@@ -111,12 +111,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 
 			int n = Math.Min(source.Length, BlockSize8);
 
-			fixed (byte* pOut = destination)
-			fixed (byte* pSource = source)
-			fixed (byte* pBuffer = _buffer)
-			{
-				IntrinsicsUtils.Xor(pSource, pBuffer, pOut, n);
-			}
+			FastUtils.Xor(source, _buffer, destination, n);
 
 			_gHash.Update(destination[..n]);
 
@@ -133,7 +128,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 		FastUtils.Xor(tag, _buffer, tag, 16);
 	}
 
-	public unsafe void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
+	public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
 		Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
 		CheckInput(nonce, source, destination);
@@ -196,12 +191,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 
 			_gHash.Update(source[..n]);
 
-			fixed (byte* pOut = destination)
-			fixed (byte* pSource = source)
-			fixed (byte* pBuffer = _buffer)
-			{
-				IntrinsicsUtils.Xor(pSource, pBuffer, pOut, n);
-			}
+			FastUtils.Xor(source, _buffer, destination, n);
 
 			source = source[n..];
 			destination = destination[n..];

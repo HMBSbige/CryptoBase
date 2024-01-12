@@ -72,37 +72,46 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
 	{
-		if (Avx.IsSupported && Avx2.IsSupported)
+		while (length >= 64)
 		{
-			while (length >= 32)
-			{
-				Vector256<byte> v0 = Avx.LoadVector256(stream);
-				Vector256<byte> v1 = Avx.LoadVector256(source);
-				Avx.Store(destination, Avx2.Xor(v0, v1));
+			Vector512<byte> v0 = Vector512.Load(stream);
+			Vector512<byte> v1 = Vector512.Load(source);
+			(v0 ^ v1).Store(destination);
 
-				stream += 32;
-				source += 32;
-				destination += 32;
-				length -= 32;
-			}
+			stream += 64;
+			source += 64;
+			destination += 64;
+			length -= 64;
 		}
 
-		if (Sse2.IsSupported)
+		if (length >= 32)
 		{
-			while (length >= 16)
-			{
-				Vector128<byte> v0 = Sse2.LoadVector128(stream);
-				Vector128<byte> v1 = Sse2.LoadVector128(source);
-				Sse2.Store(destination, Sse2.Xor(v0, v1));
+			Vector256<byte> v0 = Vector256.Load(stream);
+			Vector256<byte> v1 = Vector256.Load(source);
+			(v0 ^ v1).Store(destination);
 
-				stream += 16;
-				source += 16;
-				destination += 16;
-				length -= 16;
-			}
+			stream += 32;
+			source += 32;
+			destination += 32;
+			length -= 32;
 		}
 
-		FastUtils.Xor(stream, source, destination, length);
+		if (length >= 16)
+		{
+			Vector128<byte> v0 = Vector128.Load(stream);
+			Vector128<byte> v1 = Vector128.Load(source);
+			(v0 ^ v1).Store(destination);
+
+			stream += 16;
+			source += 16;
+			destination += 16;
+			length -= 16;
+		}
+
+		for (int i = 0; i < length; ++i)
+		{
+			*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

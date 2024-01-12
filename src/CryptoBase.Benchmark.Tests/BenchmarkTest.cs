@@ -4,12 +4,6 @@ namespace CryptoBase.Benchmark.Tests;
 public class BenchmarkTest
 {
 	[TestMethod]
-	public void SodiumIncrementBenchmark()
-	{
-		BenchmarkRunner.Run<SodiumIncrementBenchmark>();
-	}
-
-	[TestMethod]
 	public void MD5Benchmark()
 	{
 		BenchmarkRunner.Run<MD5Benchmark>();

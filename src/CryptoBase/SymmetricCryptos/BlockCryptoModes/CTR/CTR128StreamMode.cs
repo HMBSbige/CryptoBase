@@ -91,7 +91,7 @@ public class CTR128StreamMode : IStreamBlockCryptoMode
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void UpdateCounter()
 	{
-		_counter.AsSpan(0, BlockSize).IncrementBe();
+		_counter.AsSpan(0, BlockSize).FixedTimeIncrementBigEndian();
 	}
 
 	public void Reset()

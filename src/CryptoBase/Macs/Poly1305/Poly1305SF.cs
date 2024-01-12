@@ -28,36 +28,36 @@ public class Poly1305SF : IMac
 
 		// r &= 0xFFFFFFC0FFFFFFC0FFFFFFC0FFFFFFF
 		_r0 = BinaryPrimitives.ReadUInt32LittleEndian(key) & 0x3FFFFFF;
-		_r1 = BinaryPrimitives.ReadUInt32LittleEndian(key[3..]) >> 2 & 0x3FFFF03;
-		_r2 = BinaryPrimitives.ReadUInt32LittleEndian(key[6..]) >> 4 & 0x3FFC0FF;
-		_r3 = BinaryPrimitives.ReadUInt32LittleEndian(key[9..]) >> 6 & 0x3F03FFF;
-		_r4 = BinaryPrimitives.ReadUInt32LittleEndian(key[12..]) >> 8 & 0x00FFFFF;
+		_r1 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(3)) >> 2 & 0x3FFFF03;
+		_r2 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(6)) >> 4 & 0x3FFC0FF;
+		_r3 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(9)) >> 6 & 0x3F03FFF;
+		_r4 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(12)) >> 8 & 0x00FFFFF;
 
 		_s1 = _r1 * 5;
 		_s2 = _r2 * 5;
 		_s3 = _r3 * 5;
 		_s4 = _r4 * 5;
 
-		_x0 = BinaryPrimitives.ReadUInt32LittleEndian(key[16..]);
-		_x1 = BinaryPrimitives.ReadUInt32LittleEndian(key[20..]);
-		_x2 = BinaryPrimitives.ReadUInt32LittleEndian(key[24..]);
-		_x3 = BinaryPrimitives.ReadUInt32LittleEndian(key[28..]);
+		_x0 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(16));
+		_x1 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(20));
+		_x2 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(24));
+		_x3 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(28));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Block(ReadOnlySpan<byte> m)
 	{
 		_h0 += BinaryPrimitives.ReadUInt32LittleEndian(m) & 0x3ffffff;
-		_h1 += BinaryPrimitives.ReadUInt32LittleEndian(m[3..]) >> 2 & 0x3ffffff;
-		_h2 += BinaryPrimitives.ReadUInt32LittleEndian(m[6..]) >> 4 & 0x3ffffff;
-		_h3 += BinaryPrimitives.ReadUInt32LittleEndian(m[9..]) >> 6 & 0x3ffffff;
-		_h4 += BinaryPrimitives.ReadUInt32LittleEndian(m[12..]) >> 8 | 1u << 24;
+		_h1 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(3)) >> 2 & 0x3ffffff;
+		_h2 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(6)) >> 4 & 0x3ffffff;
+		_h3 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(9)) >> 6 & 0x3ffffff;
+		_h4 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(12)) >> 8 | 1u << 24;
 
-		var p0 = (ulong)_h0 * _r0 + (ulong)_h1 * _s4 + (ulong)_h2 * _s3 + (ulong)_h3 * _s2 + (ulong)_h4 * _s1;
-		var p1 = (ulong)_h0 * _r1 + (ulong)_h1 * _r0 + (ulong)_h2 * _s4 + (ulong)_h3 * _s3 + (ulong)_h4 * _s2;
-		var p2 = (ulong)_h0 * _r2 + (ulong)_h1 * _r1 + (ulong)_h2 * _r0 + (ulong)_h3 * _s4 + (ulong)_h4 * _s3;
-		var p3 = (ulong)_h0 * _r3 + (ulong)_h1 * _r2 + (ulong)_h2 * _r1 + (ulong)_h3 * _r0 + (ulong)_h4 * _s4;
-		var p4 = (ulong)_h0 * _r4 + (ulong)_h1 * _r3 + (ulong)_h2 * _r2 + (ulong)_h3 * _r1 + (ulong)_h4 * _r0;
+		ulong p0 = (ulong)_h0 * _r0 + (ulong)_h1 * _s4 + (ulong)_h2 * _s3 + (ulong)_h3 * _s2 + (ulong)_h4 * _s1;
+		ulong p1 = (ulong)_h0 * _r1 + (ulong)_h1 * _r0 + (ulong)_h2 * _s4 + (ulong)_h3 * _s3 + (ulong)_h4 * _s2;
+		ulong p2 = (ulong)_h0 * _r2 + (ulong)_h1 * _r1 + (ulong)_h2 * _r0 + (ulong)_h3 * _s4 + (ulong)_h4 * _s3;
+		ulong p3 = (ulong)_h0 * _r3 + (ulong)_h1 * _r2 + (ulong)_h2 * _r1 + (ulong)_h3 * _r0 + (ulong)_h4 * _s4;
+		ulong p4 = (ulong)_h0 * _r4 + (ulong)_h1 * _r3 + (ulong)_h2 * _r2 + (ulong)_h3 * _r1 + (ulong)_h4 * _r0;
 
 		_h0 = (uint)p0 & 0x3ffffff;
 		p1 += (uint)(p0 >> 26);
@@ -78,7 +78,7 @@ public class Poly1305SF : IMac
 		while (source.Length >= BlockSize)
 		{
 			Block(source);
-			source = source[BlockSize..];
+			source = source.Slice(BlockSize);
 		}
 
 		if (source.IsEmpty)
@@ -105,17 +105,17 @@ public class Poly1305SF : IMac
 		_h1 += _h0 >> 26;
 		_h0 &= 0x3ffffff;
 
-		var g0 = _h0 + 5;
-		var g1 = _h1 + (g0 >> 26);
+		uint g0 = _h0 + 5;
+		uint g1 = _h1 + (g0 >> 26);
 		g0 &= 0x3ffffff;
-		var g2 = _h2 + (g1 >> 26);
+		uint g2 = _h2 + (g1 >> 26);
 		g1 &= 0x3ffffff;
-		var g3 = _h3 + (g2 >> 26);
+		uint g3 = _h3 + (g2 >> 26);
 		g2 &= 0x3ffffff;
-		var g4 = _h4 + (g3 >> 26) - (1u << 26);
+		uint g4 = _h4 + (g3 >> 26) - (1u << 26);
 		g3 &= 0x3ffffff;
 
-		var mask = (g4 >> 31) - 1;
+		uint mask = (g4 >> 31) - 1;
 		g0 &= mask;
 		g1 &= mask;
 		g2 &= mask;
@@ -128,19 +128,19 @@ public class Poly1305SF : IMac
 		_h3 = _h3 & mask | g3;
 		_h4 = _h4 & mask | g4;
 
-		var f0 = (_h0 | _h1 << 26) + (ulong)_x0;
-		var f1 = (_h1 >> 6 | _h2 << 20) + (ulong)_x1;
-		var f2 = (_h2 >> 12 | _h3 << 14) + (ulong)_x2;
-		var f3 = (_h3 >> 18 | _h4 << 8) + (ulong)_x3;
+		ulong f0 = (_h0 | _h1 << 26) + (ulong)_x0;
+		ulong f1 = (_h1 >> 6 | _h2 << 20) + (ulong)_x1;
+		ulong f2 = (_h2 >> 12 | _h3 << 14) + (ulong)_x2;
+		ulong f3 = (_h3 >> 18 | _h4 << 8) + (ulong)_x3;
 
 		f1 += f0 >> 32;
 		f2 += f1 >> 32;
 		f3 += f2 >> 32;
 
 		BinaryPrimitives.WriteUInt32LittleEndian(destination, (uint)f0);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination[4..], (uint)f1);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination[8..], (uint)f2);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination[12..], (uint)f3);
+		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(4), (uint)f1);
+		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(8), (uint)f2);
+		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(12), (uint)f3);
 
 		Reset();
 	}
@@ -150,5 +150,8 @@ public class Poly1305SF : IMac
 		_h0 = _h1 = _h2 = _h3 = _h4 = 0;
 	}
 
-	public void Dispose() { }
+	public void Dispose()
+	{
+		GC.SuppressFinalize(this);
+	}
 }

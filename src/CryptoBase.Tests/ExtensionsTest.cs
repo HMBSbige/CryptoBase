@@ -6,20 +6,6 @@ namespace CryptoBase.Tests;
 [TestClass]
 public class ExtensionsTest
 {
-	private static void SodiumIncrementTest(Action<byte[]> func, uint i)
-	{
-		const int size = sizeof(int);
-		var a = new byte[size];
-		var b = new byte[size];
-
-		BinaryPrimitives.WriteUInt32LittleEndian(a, i);
-		BinaryPrimitives.WriteUInt32LittleEndian(b, i + 1);
-
-		func(a);
-
-		Assert.IsTrue(a.SequenceEqual(b));
-	}
-
 	[TestMethod]
 	[DataRow(uint.MaxValue)]
 	[DataRow(uint.MinValue)]
@@ -28,12 +14,18 @@ public class ExtensionsTest
 	[DataRow(16711935U)]
 	[DataRow(1U)]
 	[DataRow(114514U)]
-	public void SodiumIncrementTest(uint i)
+	public void FixedTimeIncrementTest(uint i)
 	{
-		SodiumIncrementTest(Extensions.Increment, i);
-		SodiumIncrementTest(Extensions.IncrementUInt, i);
-		SodiumIncrementTest(Extensions.IncrementIntUnsafe, i);
-		SodiumIncrementTest(Extensions.IncrementSource, i);
+		const int size = sizeof(int);
+		Span<byte> a = new byte[size];
+		Span<byte> b = new byte[size];
+
+		BinaryPrimitives.WriteUInt32LittleEndian(a, i);
+		BinaryPrimitives.WriteUInt32LittleEndian(b, i + 1);
+
+		a.FixedTimeIncrement();
+
+		Assert.IsTrue(a.SequenceEqual(b));
 	}
 
 	[TestMethod]
@@ -46,16 +38,16 @@ public class ExtensionsTest
 	[DataRow(int.MaxValue)]
 	[DataRow(int.MinValue)]
 	[DataRow(114514)]
-	public void SodiumIncrementBeTest(int i)
+	public void FixedTimeIncrementBigEndianTest(int i)
 	{
 		const int size = sizeof(int);
-		var a = new byte[size];
-		var b = new byte[size];
+		Span<byte> a = new byte[size];
+		Span<byte> b = new byte[size];
 
 		BinaryPrimitives.WriteInt32BigEndian(a, i);
 		BinaryPrimitives.WriteInt32BigEndian(b, i + 1);
 
-		a.IncrementBe();
+		a.FixedTimeIncrementBigEndian();
 
 		Assert.IsTrue(a.SequenceEqual(b));
 	}

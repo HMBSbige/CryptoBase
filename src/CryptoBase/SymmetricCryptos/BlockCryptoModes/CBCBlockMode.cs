@@ -29,33 +29,24 @@ public class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 		Reset();
 	}
 
-	public override unsafe void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Encrypt(source, destination);
 
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
-		fixed (byte* pBlock = _block)
-		{
-			IntrinsicsUtils.Xor(pBlock, pSource, pDestination, BlockSize);
-		}
+		FastUtils.Xor(_block, source, destination, BlockSize);
 
 		InternalBlockCrypto.Encrypt(destination, destination);
 
 		destination[..BlockSize].CopyTo(_block);
 	}
 
-	public override unsafe void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
 
 		InternalBlockCrypto.Decrypt(source, destination);
 
-		fixed (byte* pDestination = destination)
-		fixed (byte* pBlock = _block)
-		{
-			IntrinsicsUtils.Xor(pBlock, pDestination, pDestination, BlockSize);
-		}
+		FastUtils.Xor(_block, destination, destination, BlockSize);
 
 		source[..BlockSize].CopyTo(_block);
 	}

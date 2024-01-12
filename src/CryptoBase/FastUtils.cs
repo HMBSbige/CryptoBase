@@ -91,17 +91,4 @@ public static class FastUtils
 			destination.GetRef(i) = (byte)(source.GetRef(i) ^ stream.GetRef(i));
 		}
 	}
-
-	/// <summary>
-	/// destination = source ^ stream
-	/// TODO: Remove
-	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
-	{
-		for (int i = 0; i < length; ++i)
-		{
-			*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
-		}
-	}
 }

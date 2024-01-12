@@ -65,10 +65,20 @@ public class RC4Crypto : StreamCryptoBase
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		byte GetByte(in Span<byte> stateSpan)
 		{
-			x = (byte)++x;
-			y = (byte)(stateSpan.GetRef(x) + y);
-			(stateSpan.GetRef(x), stateSpan.GetRef(y)) = (stateSpan.GetRef(y), stateSpan.GetRef(x));
-			return stateSpan.GetRef((byte)(stateSpan.GetRef(x) + stateSpan.GetRef(y)));
+			++x;
+			x &= 0xFF;
+			y += stateSpan.GetRef(x);
+			y &= 0xFF;
+
+#pragma warning disable IDE0180
+			// performance
+			// (stateSpan.GetRef(y), stateSpan.GetRef(x)) = (stateSpan.GetRef(x), stateSpan.GetRef(y));
+			byte t = stateSpan.GetRef(x);
+			stateSpan.GetRef(x) = stateSpan.GetRef(y);
+			stateSpan.GetRef(y) = t;
+#pragma warning restore IDE0180
+
+			return stateSpan.GetRef((stateSpan.GetRef(x) + stateSpan.GetRef(y)) & 0xFF);
 		}
 	}
 
@@ -85,7 +95,9 @@ public class RC4Crypto : StreamCryptoBase
 		int j = 0;
 		for (int i = 0; i < BoxLength; ++i)
 		{
-			j = keySpan.GetRef(i % _keyLength) + stateSpan.GetRef(i) + j & 0xFF;
+			j += keySpan.GetRef(i % _keyLength);
+			j += stateSpan.GetRef(i);
+			j &= 0xFF;
 			(stateSpan.GetRef(i), stateSpan.GetRef(j)) = (stateSpan.GetRef(j), stateSpan.GetRef(i));
 		}
 	}

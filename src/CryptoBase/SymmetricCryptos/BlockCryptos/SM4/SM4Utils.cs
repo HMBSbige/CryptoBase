@@ -10,7 +10,7 @@ public static class SM4Utils
 	private static readonly Vector128<byte> m2h = Vector128.Create(0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF).AsByte();
 
 	private static readonly Vector256<byte> vc0f = Vector256.Create((byte)0x0F);
-	private static readonly Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3);
+	private static readonly Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
 	private static readonly Vector256<byte> vm1l = Vector256.Create(0x9197E2E474720701, 0xC7C1B4B222245157, 0x9197E2E474720701, 0xC7C1B4B222245157).AsByte();
 	private static readonly Vector256<byte> vm1h = Vector256.Create(0xE240AB09EB49A200, 0xF052B91BF95BB012, 0xE240AB09EB49A200, 0xF052B91BF95BB012).AsByte();
 	private static readonly Vector256<byte> vm2l = Vector256.Create(0x5B67F2CEA19D0834, 0xEDD14478172BBE82, 0x5B67F2CEA19D0834, 0xEDD14478172BBE82).AsByte();
@@ -101,9 +101,9 @@ public static class SM4Utils
 	public static void Encrypt4(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Vector128<byte> t0 = Vector128.Create(source).ReverseEndianness32();
-		Vector128<byte> t1 = Vector128.Create(source[16..]).ReverseEndianness32();
-		Vector128<byte> t2 = Vector128.Create(source[32..]).ReverseEndianness32();
-		Vector128<byte> t3 = Vector128.Create(source[48..]).ReverseEndianness32();
+		Vector128<byte> t1 = Vector128.Create(source.Slice(16)).ReverseEndianness32();
+		Vector128<byte> t2 = Vector128.Create(source.Slice(32)).ReverseEndianness32();
+		Vector128<byte> t3 = Vector128.Create(source.Slice(48)).ReverseEndianness32();
 
 		Transpose(ref t0, ref t1, ref t2, ref t3);
 
@@ -134,22 +134,22 @@ public static class SM4Utils
 		Transpose(ref t0, ref t1, ref t2, ref t3);
 
 		t0.ReverseEndianness128().CopyTo(destination);
-		t1.ReverseEndianness128().CopyTo(destination[16..]);
-		t2.ReverseEndianness128().CopyTo(destination[32..]);
-		t3.ReverseEndianness128().CopyTo(destination[48..]);
+		t1.ReverseEndianness128().CopyTo(destination.Slice(16));
+		t2.ReverseEndianness128().CopyTo(destination.Slice(32));
+		t3.ReverseEndianness128().CopyTo(destination.Slice(48));
 	}
 
 	public static void Encrypt8(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Vector128<byte> a0 = Vector128.Create(source).ReverseEndianness32();
-		Vector128<byte> a1 = Vector128.Create(source[16..]).ReverseEndianness32();
-		Vector128<byte> a2 = Vector128.Create(source[32..]).ReverseEndianness32();
-		Vector128<byte> a3 = Vector128.Create(source[48..]).ReverseEndianness32();
+		Vector128<byte> a1 = Vector128.Create(source.Slice(16)).ReverseEndianness32();
+		Vector128<byte> a2 = Vector128.Create(source.Slice(32)).ReverseEndianness32();
+		Vector128<byte> a3 = Vector128.Create(source.Slice(48)).ReverseEndianness32();
 
-		Vector128<byte> b0 = Vector128.Create(source[64..]).ReverseEndianness32();
-		Vector128<byte> b1 = Vector128.Create(source[80..]).ReverseEndianness32();
-		Vector128<byte> b2 = Vector128.Create(source[96..]).ReverseEndianness32();
-		Vector128<byte> b3 = Vector128.Create(source[112..]).ReverseEndianness32();
+		Vector128<byte> b0 = Vector128.Create(source.Slice(64)).ReverseEndianness32();
+		Vector128<byte> b1 = Vector128.Create(source.Slice(80)).ReverseEndianness32();
+		Vector128<byte> b2 = Vector128.Create(source.Slice(96)).ReverseEndianness32();
+		Vector128<byte> b3 = Vector128.Create(source.Slice(112)).ReverseEndianness32();
 
 		Transpose(ref a0, ref a1, ref a2, ref a3);
 		Transpose(ref b0, ref b1, ref b2, ref b3);
@@ -190,26 +190,26 @@ public static class SM4Utils
 		Transpose(ref b0, ref b1, ref b2, ref b3);
 
 		a0.ReverseEndianness128().CopyTo(destination);
-		a1.ReverseEndianness128().CopyTo(destination[16..]);
-		a2.ReverseEndianness128().CopyTo(destination[32..]);
-		a3.ReverseEndianness128().CopyTo(destination[48..]);
-		b0.ReverseEndianness128().CopyTo(destination[64..]);
-		b1.ReverseEndianness128().CopyTo(destination[80..]);
-		b2.ReverseEndianness128().CopyTo(destination[96..]);
-		b3.ReverseEndianness128().CopyTo(destination[112..]);
+		a1.ReverseEndianness128().CopyTo(destination.Slice(16));
+		a2.ReverseEndianness128().CopyTo(destination.Slice(32));
+		a3.ReverseEndianness128().CopyTo(destination.Slice(48));
+		b0.ReverseEndianness128().CopyTo(destination.Slice(64));
+		b1.ReverseEndianness128().CopyTo(destination.Slice(80));
+		b2.ReverseEndianness128().CopyTo(destination.Slice(96));
+		b3.ReverseEndianness128().CopyTo(destination.Slice(112));
 	}
 
 	public static void Encrypt16(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector256<byte> a0 = Vector256.Create(source).ReverseEndianness32();
-		Vector256<byte> a1 = Vector256.Create(source[32..]).ReverseEndianness32();
-		Vector256<byte> a2 = Vector256.Create(source[64..]).ReverseEndianness32();
-		Vector256<byte> a3 = Vector256.Create(source[96..]).ReverseEndianness32();
+		Vector256<byte> a0 = FastUtils.CreateVector256Unsafe(source.Slice(0, 32)).ReverseEndianness32();
+		Vector256<byte> a1 = FastUtils.CreateVector256Unsafe(source.Slice(32, 32)).ReverseEndianness32();
+		Vector256<byte> a2 = FastUtils.CreateVector256Unsafe(source.Slice(64, 32)).ReverseEndianness32();
+		Vector256<byte> a3 = FastUtils.CreateVector256Unsafe(source.Slice(96, 32)).ReverseEndianness32();
 
-		Vector256<byte> b0 = Vector256.Create(source[128..]).ReverseEndianness32();
-		Vector256<byte> b1 = Vector256.Create(source[160..]).ReverseEndianness32();
-		Vector256<byte> b2 = Vector256.Create(source[192..]).ReverseEndianness32();
-		Vector256<byte> b3 = Vector256.Create(source[224..]).ReverseEndianness32();
+		Vector256<byte> b0 = FastUtils.CreateVector256Unsafe(source.Slice(128, 32)).ReverseEndianness32();
+		Vector256<byte> b1 = FastUtils.CreateVector256Unsafe(source.Slice(160, 32)).ReverseEndianness32();
+		Vector256<byte> b2 = FastUtils.CreateVector256Unsafe(source.Slice(192, 32)).ReverseEndianness32();
+		Vector256<byte> b3 = FastUtils.CreateVector256Unsafe(source.Slice(224, 32)).ReverseEndianness32();
 
 		Transpose(ref a0, ref a1, ref a2, ref a3);
 		Transpose(ref b0, ref b1, ref b2, ref b3);
@@ -251,13 +251,13 @@ public static class SM4Utils
 		Transpose(ref a0, ref a1, ref a2, ref a3);
 		Transpose(ref b0, ref b1, ref b2, ref b3);
 
-		a0.ReverseEndianness128().CopyTo(destination);
-		a1.ReverseEndianness128().CopyTo(destination[32..]);
-		a2.ReverseEndianness128().CopyTo(destination[64..]);
-		a3.ReverseEndianness128().CopyTo(destination[96..]);
-		b0.ReverseEndianness128().CopyTo(destination[128..]);
-		b1.ReverseEndianness128().CopyTo(destination[160..]);
-		b2.ReverseEndianness128().CopyTo(destination[192..]);
-		b3.ReverseEndianness128().CopyTo(destination[224..]);
+		a0.ReverseEndianness128().CopyTo(destination.Slice(0, 32));
+		a1.ReverseEndianness128().CopyTo(destination.Slice(32, 32));
+		a2.ReverseEndianness128().CopyTo(destination.Slice(64, 32));
+		a3.ReverseEndianness128().CopyTo(destination.Slice(96, 32));
+		b0.ReverseEndianness128().CopyTo(destination.Slice(128, 32));
+		b1.ReverseEndianness128().CopyTo(destination.Slice(160, 32));
+		b2.ReverseEndianness128().CopyTo(destination.Slice(192, 32));
+		b3.ReverseEndianness128().CopyTo(destination.Slice(224, 32));
 	}
 }

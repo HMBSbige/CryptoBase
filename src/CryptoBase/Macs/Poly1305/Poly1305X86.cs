@@ -38,10 +38,10 @@ public class Poly1305X86 : IMac
 
 		// r &= 0xFFFFFFC0FFFFFFC0FFFFFFC0FFFFFFF
 		uint r0 = BinaryPrimitives.ReadUInt32LittleEndian(key) & 0x3FFFFFF;
-		uint r1 = BinaryPrimitives.ReadUInt32LittleEndian(key[3..]) >> 2 & 0x3FFFF03;
-		uint r2 = BinaryPrimitives.ReadUInt32LittleEndian(key[6..]) >> 4 & 0x3FFC0FF;
-		uint r3 = BinaryPrimitives.ReadUInt32LittleEndian(key[9..]) >> 6 & 0x3F03FFF;
-		uint r4 = BinaryPrimitives.ReadUInt32LittleEndian(key[12..]) >> 8 & 0x00FFFFF;
+		uint r1 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(3)) >> 2 & 0x3FFFF03;
+		uint r2 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(6)) >> 4 & 0x3FFC0FF;
+		uint r3 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(9)) >> 6 & 0x3F03FFF;
+		uint r4 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(12)) >> 8 & 0x00FFFFF;
 
 		uint s1 = r1 * 5;
 		uint s2 = r2 * 5;
@@ -59,10 +59,10 @@ public class Poly1305X86 : IMac
 		_r4r3 = IntrinsicsUtils.CreateTwoUInt(r4, r3);
 		_r0 = Sse2.ConvertScalarToVector128UInt32(r0);
 
-		_x0 = BinaryPrimitives.ReadUInt32LittleEndian(key[16..]);
-		_x1 = BinaryPrimitives.ReadUInt32LittleEndian(key[20..]);
-		_x2 = BinaryPrimitives.ReadUInt32LittleEndian(key[24..]);
-		_x3 = BinaryPrimitives.ReadUInt32LittleEndian(key[28..]);
+		_x0 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(16));
+		_x1 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(20));
+		_x2 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(24));
+		_x3 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(28));
 
 		uint u0 = r0;
 		uint u1 = r1;
@@ -202,11 +202,11 @@ public class Poly1305X86 : IMac
 		Vector128<uint> h23 = IntrinsicsUtils.CreateTwoUInt(_h2, _h3);
 		Vector128<uint> h44 = IntrinsicsUtils.CreateTwoUInt(_h4, _h4);
 
-		Vector128<uint> m06 = IntrinsicsUtils.CreateTwoUInt(BinaryPrimitives.ReadUInt32LittleEndian(m) & 0x3ffffff, BinaryPrimitives.ReadUInt32LittleEndian(m[3..]) >> 2 & 0x3ffffff);
+		Vector128<uint> m06 = IntrinsicsUtils.CreateTwoUInt(BinaryPrimitives.ReadUInt32LittleEndian(m) & 0x3ffffff, BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(3)) >> 2 & 0x3ffffff);
 		h01 = Sse2.Add(h01, m06);
-		Vector128<uint> m612 = IntrinsicsUtils.CreateTwoUInt(BinaryPrimitives.ReadUInt32LittleEndian(m[6..]) >> 4 & 0x3ffffff, BinaryPrimitives.ReadUInt32LittleEndian(m[9..]) >> 6 & 0x3ffffff);
+		Vector128<uint> m612 = IntrinsicsUtils.CreateTwoUInt(BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(6)) >> 4 & 0x3ffffff, BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(9)) >> 6 & 0x3ffffff);
 		h23 = Sse2.Add(h23, m612);
-		uint m4 = BinaryPrimitives.ReadUInt32LittleEndian(m[12..]) >> 8 | 1u << 24;
+		uint m4 = BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(12)) >> 8 | 1u << 24;
 		h44 = Sse2.Add(h44, IntrinsicsUtils.CreateTwoUInt(m4));
 
 		MultiplyR(ref h01, ref h23, ref h44, out ulong d0, out ulong d1, out ulong d2, out ulong d3, out ulong d4);
@@ -233,25 +233,25 @@ public class Poly1305X86 : IMac
 		hc0 = Sse2.And(hc0, And128);
 		hc0 = Sse2.Add(hc0, Sse2.ConvertScalarToVector128UInt32(_h0));
 
-		ReadOnlySpan<uint> n1 = MemoryMarshal.Cast<byte, uint>(m[3..]);
+		ReadOnlySpan<uint> n1 = MemoryMarshal.Cast<byte, uint>(m.Slice(3));
 		Vector128<uint> hc1 = IntrinsicsUtils.CreateTwoUInt(n1[0], n1[4]);
 		hc1 = Sse2.ShiftRightLogical(hc1, 2);
 		hc1 = Sse2.And(hc1, And128);
 		hc1 = Sse2.Add(hc1, Sse2.ConvertScalarToVector128UInt32(_h1));
 
-		ReadOnlySpan<uint> n2 = MemoryMarshal.Cast<byte, uint>(m[6..]);
+		ReadOnlySpan<uint> n2 = MemoryMarshal.Cast<byte, uint>(m.Slice(6));
 		Vector128<uint> hc2 = IntrinsicsUtils.CreateTwoUInt(n2[0], n2[4]);
 		hc2 = Sse2.ShiftRightLogical(hc2, 4);
 		hc2 = Sse2.And(hc2, And128);
 		hc2 = Sse2.Add(hc2, Sse2.ConvertScalarToVector128UInt32(_h2));
 
-		ReadOnlySpan<uint> n3 = MemoryMarshal.Cast<byte, uint>(m[9..]);
+		ReadOnlySpan<uint> n3 = MemoryMarshal.Cast<byte, uint>(m.Slice(9));
 		Vector128<uint> hc3 = IntrinsicsUtils.CreateTwoUInt(n3[0], n3[4]);
 		hc3 = Sse2.ShiftRightLogical(hc3, 6);
 		hc3 = Sse2.And(hc3, And128);
 		hc3 = Sse2.Add(hc3, Sse2.ConvertScalarToVector128UInt32(_h3));
 
-		ReadOnlySpan<uint> n4 = MemoryMarshal.Cast<byte, uint>(m[12..]);
+		ReadOnlySpan<uint> n4 = MemoryMarshal.Cast<byte, uint>(m.Slice(12));
 		Vector128<uint> hc4 = IntrinsicsUtils.CreateTwoUInt(n4[0], n4[4]);
 		hc4 = Sse2.ShiftRightLogical(hc4, 8);
 		hc4 = Sse2.Xor(hc4, Or128);
@@ -314,25 +314,25 @@ public class Poly1305X86 : IMac
 		hc0 = Avx2.And(hc0, And256);
 		hc0 = Avx2.Add(hc0, Vector256.CreateScalar(_h0));
 
-		ReadOnlySpan<uint> n1 = MemoryMarshal.Cast<byte, uint>(m[3..]);
+		ReadOnlySpan<uint> n1 = MemoryMarshal.Cast<byte, uint>(m.Slice(3));
 		Vector256<uint> hc1 = IntrinsicsUtils.Create4UInt(n1[0], n1[4], n1[8], n1[12]);
 		hc1 = Avx2.ShiftRightLogical(hc1, 2);
 		hc1 = Avx2.And(hc1, And256);
 		hc1 = Avx2.Add(hc1, Vector256.CreateScalar(_h1));
 
-		ReadOnlySpan<uint> n2 = MemoryMarshal.Cast<byte, uint>(m[6..]);
+		ReadOnlySpan<uint> n2 = MemoryMarshal.Cast<byte, uint>(m.Slice(6));
 		Vector256<uint> hc2 = IntrinsicsUtils.Create4UInt(n2[0], n2[4], n2[8], n2[12]);
 		hc2 = Avx2.ShiftRightLogical(hc2, 4);
 		hc2 = Avx2.And(hc2, And256);
 		hc2 = Avx2.Add(hc2, Vector256.CreateScalar(_h2));
 
-		ReadOnlySpan<uint> n3 = MemoryMarshal.Cast<byte, uint>(m[9..]);
+		ReadOnlySpan<uint> n3 = MemoryMarshal.Cast<byte, uint>(m.Slice(9));
 		Vector256<uint> hc3 = IntrinsicsUtils.Create4UInt(n3[0], n3[4], n3[8], n3[12]);
 		hc3 = Avx2.ShiftRightLogical(hc3, 6);
 		hc3 = Avx2.And(hc3, And256);
 		hc3 = Avx2.Add(hc3, Vector256.CreateScalar(_h3));
 
-		ReadOnlySpan<uint> n4 = MemoryMarshal.Cast<byte, uint>(m[12..]);
+		ReadOnlySpan<uint> n4 = MemoryMarshal.Cast<byte, uint>(m.Slice(12));
 		Vector256<uint> hc4 = IntrinsicsUtils.Create4UInt(n4[0], n4[4], n4[8], n4[12]);
 		hc4 = Avx2.ShiftRightLogical(hc4, 8);
 		hc4 = Avx2.Or(hc4, Or256);
@@ -393,21 +393,21 @@ public class Poly1305X86 : IMac
 		{
 			while (source.Length >= BlockSize4)
 			{
-				Block4(source[..BlockSize4]);
-				source = source[BlockSize4..];
+				Block4(source.Slice(0, BlockSize4));
+				source = source.Slice(BlockSize4);
 			}
 		}
 
 		while (source.Length >= BlockSize2)
 		{
-			Block2(source[..BlockSize2]);
-			source = source[BlockSize2..];
+			Block2(source.Slice(0, BlockSize2));
+			source = source.Slice(BlockSize2);
 		}
 
 		if (source.Length >= BlockSize)
 		{
-			Block(source[..BlockSize]);
-			source = source[BlockSize..];
+			Block(source.Slice(0, BlockSize));
+			source = source.Slice(BlockSize);
 		}
 
 		if (source.IsEmpty)
@@ -466,9 +466,9 @@ public class Poly1305X86 : IMac
 		f3 += f2 >> 32;
 
 		BinaryPrimitives.WriteUInt32LittleEndian(destination, (uint)f0);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination[4..], (uint)f1);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination[8..], (uint)f2);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination[12..], (uint)f3);
+		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(4), (uint)f1);
+		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(8), (uint)f2);
+		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(12), (uint)f3);
 
 		Reset();
 	}
