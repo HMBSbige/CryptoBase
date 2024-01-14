@@ -4,7 +4,6 @@ using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Tests;
@@ -90,10 +89,17 @@ public class SM4Test
 	public void TestN()
 	{
 		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(16);
-		TestN(4, new SM4CryptoX86(key), key);
-		if (Avx.IsSupported)
+
+		if (SM4CryptoX86.IsSupported)
+		{
+			TestN(4, new SM4CryptoX86(key), key);
+		}
+		if (SM4CryptoBlock8X86.IsSupported)
 		{
 			TestN(8, new SM4CryptoBlock8X86(key), key);
+		}
+		if (SM4CryptoBlock16X86.IsSupported)
+		{
 			TestN(16, new SM4CryptoBlock16X86(key), key);
 		}
 	}
