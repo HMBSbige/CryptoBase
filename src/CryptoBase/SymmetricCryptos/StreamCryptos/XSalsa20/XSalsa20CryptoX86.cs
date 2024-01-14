@@ -113,9 +113,4 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 			Salsa20Utils.UpdateKeyStream(x, s, Rounds);
 		}
 	}
-
-	protected override unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
-	{
-		IntrinsicsUtils.Xor(stream, source, destination, length);
-	}
 }

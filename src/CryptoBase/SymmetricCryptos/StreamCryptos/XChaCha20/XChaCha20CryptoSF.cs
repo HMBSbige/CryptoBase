@@ -15,9 +15,4 @@ public class XChaCha20CryptoSF : XChaCha20Crypto
 	{
 		ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
 	}
-
-	protected override unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
-	{
-		IntrinsicsUtils.Xor(stream, source, destination, length);
-	}
 }

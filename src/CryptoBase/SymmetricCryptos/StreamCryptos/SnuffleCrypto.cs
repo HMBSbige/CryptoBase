@@ -60,7 +60,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 			}
 
 			var r = 64 - Index;
-			Xor(stream + Index, source, destination, Math.Min(r, length));
+			IntrinsicsUtils.Xor(stream + Index, source, destination, Math.Min(r, length));
 
 			if (length < r)
 			{
@@ -78,7 +78,6 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	protected abstract unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length);
 	protected abstract void UpdateKeyStream();
 	protected abstract unsafe void IncrementCounter(uint* state);
-	protected abstract unsafe void Xor(byte* stream, byte* source, byte* destination, int length);
 
 	public override void Dispose()
 	{
