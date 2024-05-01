@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 libc = "0.2"
-digest = { version = "0.10", optional = true }
+digest = { version = "0.10.7", optional = true }
 md-5 = { version = "0.10", optional = true }
 sm3 = { version = "0.4", optional = true }
 sha1 = { version = "0.10", optional = true }
