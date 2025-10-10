@@ -20,26 +20,37 @@ if (Debugger.IsAttached)
 	Console.WriteLine(@"Debugger attached!");
 }
 
-Argument<string> methodsArgument = new(@"method(s)", () => CryptoList.All, @"Methods separated by commas.");
-methodsArgument.AddCompletions(CryptoList.All);
-foreach (string method in CryptoList.Methods)
+Argument<string> methodsArgument = new(@"method(s)")
 {
-	methodsArgument.AddCompletions(method);
-}
-Option<double> secondsOption = new(@"--seconds", () => 3.0, @"Run benchmarks for num seconds.");
-secondsOption.AddAlias(@"-s");
-Option<int> bytesOption = new(@"--bytes", () => 8 * 1024, @"Run benchmarks on num-byte buffers.");
-bytesOption.AddAlias(@"-b");
+	Description = @"Methods separated by commas.",
+	DefaultValueFactory = _ => CryptoList.All
+};
+methodsArgument.CompletionSources.Add(new[] { CryptoList.All });
+methodsArgument.CompletionSources.Add(CryptoList.Methods.ToArray());
 
-RootCommand cmd =
-[
-	methodsArgument,
-	secondsOption,
-	bytesOption
-];
-
-cmd.SetHandler((methods, seconds, bytes) =>
+Option<double> secondsOption = new(@"--seconds", [@"-s"])
 {
+	Description = @"Run benchmarks for num seconds.",
+	DefaultValueFactory = _ => 3.0
+};
+
+Option<int> bytesOption = new(@"--bytes", [@"-b"])
+{
+	Description = @"Run benchmarks on num-byte buffers.",
+	DefaultValueFactory = _ => 8 * 1024
+};
+
+RootCommand cmd = new(@"CryptoBase Speed Test");
+cmd.Add(methodsArgument);
+cmd.Add(secondsOption);
+cmd.Add(bytesOption);
+
+cmd.SetAction((parseResult) =>
+{
+	string methods = parseResult.GetValue(methodsArgument)!;
+	double seconds = parseResult.GetValue(secondsOption);
+	int bytes = parseResult.GetValue(bytesOption);
+
 	Console.WriteLine($@"OS Version:                                     {Environment.OSVersion}");
 	Console.WriteLine($@".NET Version:                                   {Environment.Version}");
 	Console.WriteLine($@"App Version:                                    {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}");
@@ -100,6 +111,6 @@ cmd.SetHandler((methods, seconds, bytes) =>
 			}
 		}
 	}
-}, methodsArgument, secondsOption, bytesOption);
+});
 
-return cmd.Invoke(args);
+return cmd.Parse(args).Invoke();
