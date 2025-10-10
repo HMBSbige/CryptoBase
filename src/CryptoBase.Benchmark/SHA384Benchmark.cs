@@ -35,12 +35,4 @@ public class SHA384Benchmark
 		using BcSHA384Digest sha384 = new();
 		sha384.UpdateFinal(_randombytes.Span, hash);
 	}
-
-	[Benchmark(Baseline = true)]
-	public void Native()
-	{
-		Span<byte> hash = stackalloc byte[HashConstants.Sha384Length];
-		using NativeSHA384Digest sha384 = new();
-		sha384.UpdateFinal(_randombytes.Span, hash);
-	}
 }

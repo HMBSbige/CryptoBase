@@ -35,12 +35,4 @@ public class SM3Benchmark
 		using SM3Digest sm3 = new();
 		sm3.UpdateFinal(_randombytes.Span, hash);
 	}
-
-	[Benchmark(Baseline = true)]
-	public void Native()
-	{
-		Span<byte> hash = stackalloc byte[HashConstants.SM3Length];
-		using NativeSM3Digest sm3 = new();
-		sm3.UpdateFinal(_randombytes.Span, hash);
-	}
 }

@@ -1,4 +1,3 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Buffers.Binary;
 
 namespace CryptoBase.Tests;

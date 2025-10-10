@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests.SHA384;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
 
 namespace CryptoBase.Tests;
@@ -58,7 +57,6 @@ public class SHA384Test
 	{
 		SHA384DigestTest(new DefaultSHA384Digest(), str, expected);
 		SHA384DigestTest(new BcSHA384Digest(), str, expected);
-		SHA384DigestTest(new NativeSHA384Digest(), str, expected);
 	}
 
 	/// <summary>
@@ -71,6 +69,5 @@ public class SHA384Test
 	{
 		TestUtils.LargeMessageTest(new DefaultSHA384Digest(), raw, times, expected);
 		TestUtils.LargeMessageTest(new BcSHA384Digest(), raw, times, expected);
-		TestUtils.LargeMessageTest(new NativeSHA384Digest(), raw, times, expected);
 	}
 }

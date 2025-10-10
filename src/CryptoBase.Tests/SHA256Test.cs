@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests.SHA256;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
 
 namespace CryptoBase.Tests;
@@ -58,7 +57,6 @@ public class SHA256Test
 	{
 		SHA256DigestTest(new DefaultSHA256Digest(), str, sha256Str);
 		SHA256DigestTest(new BcSHA256Digest(), str, sha256Str);
-		SHA256DigestTest(new NativeSHA256Digest(), str, sha256Str);
 	}
 
 	/// <summary>
@@ -71,6 +69,5 @@ public class SHA256Test
 	{
 		TestUtils.LargeMessageTest(new DefaultSHA256Digest(), raw, times, expected);
 		TestUtils.LargeMessageTest(new BcSHA256Digest(), raw, times, expected);
-		TestUtils.LargeMessageTest(new NativeSHA256Digest(), raw, times, expected);
 	}
 }

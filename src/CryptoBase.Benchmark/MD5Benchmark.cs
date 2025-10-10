@@ -43,12 +43,4 @@ public class MD5Benchmark
 		using MD5Digest md5 = new();
 		md5.UpdateFinal(_randombytes.Span, buffer);
 	}
-
-	[Benchmark(Baseline = true)]
-	public void Rust()
-	{
-		Span<byte> buffer = stackalloc byte[HashConstants.Md5Length];
-		using NativeMD5Digest md5 = new();
-		md5.UpdateFinal(_randombytes.Span, buffer);
-	}
 }

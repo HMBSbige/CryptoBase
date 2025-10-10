@@ -35,12 +35,4 @@ public class SHA1Benchmark
 		using BcSHA1Digest sha1 = new();
 		sha1.UpdateFinal(_randombytes.Span, hash);
 	}
-
-	[Benchmark(Baseline = true)]
-	public void Native()
-	{
-		Span<byte> hash = stackalloc byte[HashConstants.Sha1Length];
-		using NativeSHA1Digest sha1 = new();
-		sha1.UpdateFinal(_randombytes.Span, hash);
-	}
 }

@@ -3,7 +3,6 @@ using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CryptoBase.Tests;
 

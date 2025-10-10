@@ -1,7 +1,6 @@
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests;
 using CryptoBase.KDF;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CryptoBase.Tests;
 

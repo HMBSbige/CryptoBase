@@ -3,7 +3,6 @@ using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Tests;

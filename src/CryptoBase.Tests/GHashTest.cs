@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Macs.GHash;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CryptoBase.Tests;
 

@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CryptoBase.Tests;
 

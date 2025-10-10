@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Macs.Poly1305;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CryptoBase.Tests;
 

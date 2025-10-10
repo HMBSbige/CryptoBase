@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests.MD5;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
 
 namespace CryptoBase.Tests;
@@ -65,7 +64,6 @@ public class MD5Test
 		MD5DigestTest(new DefaultMD5Digest(), str, md5Str);
 		MD5DigestTest(new BcMD5Digest(), str, md5Str);
 		MD5DigestTest(new MD5Digest(), str, md5Str);
-		MD5DigestTest(new NativeMD5Digest(), str, md5Str);
 	}
 
 	[Ignore]
@@ -76,6 +74,5 @@ public class MD5Test
 		TestUtils.LargeMessageTest(new DefaultMD5Digest(), str, result);
 		TestUtils.LargeMessageTest(new BcMD5Digest(), str, result);
 		TestUtils.LargeMessageTest(new MD5Digest(), str, result);
-		TestUtils.LargeMessageTest(new NativeMD5Digest(), str, result);
 	}
 }

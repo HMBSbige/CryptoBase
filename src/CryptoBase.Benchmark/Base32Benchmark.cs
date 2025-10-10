@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.DataFormatExtensions;
-using System.Text;
 
 namespace CryptoBase.Benchmark;
 
@@ -12,14 +11,14 @@ public class Base32Benchmark
 
 	private const string BaseStr = @"HEZDKMZWG4YDILJRMYYDOLJUHA2TMLJYHFQTILLCGBRDKOJSMZSWCMBRMM======";
 
-	private readonly byte[] _originBuffer = Encoding.UTF8.GetBytes(@"92536704-1f07-4856-89a4-b0b592fea01c").ToArray();
+	private static ReadOnlySpan<byte> OriginBuffer => @"92536704-1f07-4856-89a4-b0b592fea01c"u8;
 
 	[Benchmark]
 	public void ToBase32String()
 	{
-		for (var i = 0; i < Max; ++i)
+		for (int i = 0; i < Max; ++i)
 		{
-			ReadOnlySpan<byte> span = _originBuffer;
+			ReadOnlySpan<byte> span = OriginBuffer;
 			_ = span.ToBase32String();
 		}
 	}
@@ -27,9 +26,9 @@ public class Base32Benchmark
 	[Benchmark]
 	public void FromBase32String()
 	{
-		for (var i = 0; i < Max; ++i)
+		for (int i = 0; i < Max; ++i)
 		{
-			var span = BaseStr.AsSpan();
+			ReadOnlySpan<char> span = BaseStr.AsSpan();
 			_ = span.FromBase32String();
 		}
 	}

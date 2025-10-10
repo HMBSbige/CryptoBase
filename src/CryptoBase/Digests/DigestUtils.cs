@@ -45,77 +45,42 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSm3()
 	{
-		if (NativeMethods.RustNativeIsSupported)
-		{
-			return new NativeSM3Digest();
-		}
-
 		return new SM3Digest();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateMd5()
 	{
-		if (NativeMethods.RustNativeIsSupported)
-		{
-			return new NativeMD5Digest();
-		}
-
 		return new DefaultMD5Digest();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha1()
 	{
-		if (NativeMethods.RustNativeIsSupported)
-		{
-			return new NativeSHA1Digest();
-		}
-
 		return new DefaultSHA1Digest();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha224()
 	{
-		if (NativeMethods.RustNativeIsSupported)
-		{
-			return new NativeSHA224Digest();
-		}
-
-		throw new NotSupportedException();
+		throw new NotImplementedException();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha256()
 	{
-		if (NativeMethods.RustNativeIsSupported)
-		{
-			return new NativeSHA256Digest();
-		}
-
 		return new DefaultSHA256Digest();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha384()
 	{
-		if (NativeMethods.RustNativeIsSupported)
-		{
-			return new NativeSHA384Digest();
-		}
-
 		return new DefaultSHA384Digest();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateSha512()
 	{
-		if (NativeMethods.RustNativeIsSupported)
-		{
-			return new NativeSHA512Digest();
-		}
-
 		return new DefaultSHA512Digest();
 	}
 
@@ -132,6 +97,7 @@ public static class DigestUtils
 				{
 					break;
 				}
+
 				hasher.Update(buffer.AsSpan(0, length));
 			}
 

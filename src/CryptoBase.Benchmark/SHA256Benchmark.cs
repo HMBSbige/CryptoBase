@@ -35,12 +35,4 @@ public class SHA256Benchmark
 		using BcSHA256Digest sha256 = new();
 		sha256.UpdateFinal(_randombytes.Span, hash);
 	}
-
-	[Benchmark(Baseline = true)]
-	public void Native()
-	{
-		Span<byte> hash = stackalloc byte[HashConstants.Sha256Length];
-		using NativeSHA256Digest sha256 = new();
-		sha256.UpdateFinal(_randombytes.Span, hash);
-	}
 }

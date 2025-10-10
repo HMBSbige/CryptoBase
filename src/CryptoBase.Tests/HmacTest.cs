@@ -1,7 +1,7 @@
+using CryptoBase.Abstractions;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CryptoBase.Tests;
 
@@ -21,7 +21,7 @@ public class HmacTest
 	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"5acbdeb0c8c1ef3a99088fe51c0a1d5f4e1c175935f016aee74eb8056db18acb")]
 	public void TestSm3(string keyStr, string messageHex, string expected)
 	{
-		using var hmac = HmacUtils.Create(DigestType.Sm3, keyStr.FromHex());
+		using IMac hmac = HmacUtils.Create(DigestType.Sm3, keyStr.FromHex());
 		Assert.AreEqual(@"HMAC-SM3", hmac.Name);
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
 	}
@@ -36,7 +36,7 @@ public class HmacTest
 	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"09b8ae7b15adbbb243aca3491b51512b")]
 	public void TestMd5(string keyStr, string messageHex, string expected)
 	{
-		using var hmac = HmacUtils.Create(DigestType.Md5, keyStr.FromHex());
+		using IMac hmac = HmacUtils.Create(DigestType.Md5, keyStr.FromHex());
 		Assert.AreEqual(@"HMAC-MD5", hmac.Name);
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
 	}
@@ -51,11 +51,12 @@ public class HmacTest
 	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"217e44bb08b6e06a2d6c30f3cb9f537f97c63356")]
 	public void TestSha1(string keyStr, string messageHex, string expected)
 	{
-		using var hmac = HmacUtils.Create(DigestType.Sha1, keyStr.FromHex());
+		using IMac hmac = HmacUtils.Create(DigestType.Sha1, keyStr.FromHex());
 		Assert.AreEqual(@"HMAC-SHA-1", hmac.Name);
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
 	}
 
+	[Ignore]
 	[TestMethod]
 	[DataRow(@"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b", @"4869205468657265", @"896fb1128abbdf196832107cd49df33f47b4b1169912ba4f53684b22")]
 	[DataRow(@"4a656665", @"7768617420646f2079612077616e7420666f72206e6f7468696e673f", @"a30e01098bc6dbbf45690f3a7e9e6d0f8bbea2a39e6148008fd05e44")]
@@ -66,7 +67,7 @@ public class HmacTest
 	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"3a854166ac5d9f023f54d517d0b39dbd946770db9c2b95c9f6f565d1")]
 	public void TestSha224(string keyStr, string messageHex, string expected)
 	{
-		using var hmac = HmacUtils.Create(DigestType.Sha224, keyStr.FromHex());
+		using IMac hmac = HmacUtils.Create(DigestType.Sha224, keyStr.FromHex());
 		Assert.AreEqual(@"HMAC-SHA-224", hmac.Name);
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
 	}
@@ -81,7 +82,7 @@ public class HmacTest
 	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"9b09ffa71b942fcb27635fbcd5b0e944bfdc63644f0713938a7f51535c3a35e2")]
 	public void TestSha256(string keyStr, string messageHex, string expected)
 	{
-		using var hmac = HmacUtils.Create(DigestType.Sha256, keyStr.FromHex());
+		using IMac hmac = HmacUtils.Create(DigestType.Sha256, keyStr.FromHex());
 		Assert.AreEqual(@"HMAC-SHA-256", hmac.Name);
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
 	}
@@ -96,7 +97,7 @@ public class HmacTest
 	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"6617178e941f020d351e2f254e8fd32c602420feb0b8fb9adccebb82461e99c5a678cc31e799176d3860e6110c46523e")]
 	public void TestSha384(string keyStr, string messageHex, string expected)
 	{
-		using var hmac = HmacUtils.Create(DigestType.Sha384, keyStr.FromHex());
+		using IMac hmac = HmacUtils.Create(DigestType.Sha384, keyStr.FromHex());
 		Assert.AreEqual(@"HMAC-SHA-384", hmac.Name);
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
 	}
@@ -111,7 +112,7 @@ public class HmacTest
 	[DataRow(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"e37b6a775dc87dbaa4dfa9f96e5e3ffddebd71f8867289865df5a32d20cdc944b6022cac3c4982b10d5eeb55c3e4de15134676fb6de0446065c97440fa8c6a58")]
 	public void TestSha512(string keyStr, string messageHex, string expected)
 	{
-		using var hmac = HmacUtils.Create(DigestType.Sha512, keyStr.FromHex());
+		using IMac hmac = HmacUtils.Create(DigestType.Sha512, keyStr.FromHex());
 		Assert.AreEqual(@"HMAC-SHA-512", hmac.Name);
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
 	}

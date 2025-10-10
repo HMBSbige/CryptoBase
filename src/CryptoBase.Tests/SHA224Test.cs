@@ -1,8 +1,6 @@
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.DataFormatExtensions;
-using CryptoBase.Digests.SHA224;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
 
 namespace CryptoBase.Tests;
@@ -57,7 +55,6 @@ public class SHA224Test
 	public void SHA224DigestTest(string str, string expected)
 	{
 		SHA224DigestTest(new BcSHA224Digest(), str, expected);
-		SHA224DigestTest(new NativeSHA224Digest(), str, expected);
 	}
 
 	/// <summary>
@@ -69,6 +66,5 @@ public class SHA224Test
 	public void LargeMessageTest(string raw, int times, string expected)
 	{
 		TestUtils.LargeMessageTest(new BcSHA224Digest(), raw, times, expected);
-		TestUtils.LargeMessageTest(new NativeSHA224Digest(), raw, times, expected);
 	}
 }

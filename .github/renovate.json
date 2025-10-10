@@ -3,10 +3,10 @@
 	"assignees": [
 		"HMBSbige"
 	],
-	"commitMessagePrefix": "dep:",
 	"dependencyDashboard": false,
 	"extends": [
-		"config:base",
+		"config:recommended",
+		":configMigration",
 		":automergeBranch",
 		":automergeDigest",
 		":automergeMinor",

@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Digests;
 using CryptoBase.BouncyCastle.Digests;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests.SM3;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
 
 namespace CryptoBase.Tests;
@@ -62,7 +61,6 @@ public class SM3Test
 	{
 		SM3DigestTest(new BcSM3Digest(), str, sm3Str);
 		SM3DigestTest(new SM3Digest(), str, sm3Str);
-		SM3DigestTest(new NativeSM3Digest(), str, sm3Str);
 	}
 
 	[Ignore]
@@ -72,6 +70,5 @@ public class SM3Test
 	{
 		TestUtils.LargeMessageTest(new BcSM3Digest(), str, result);
 		TestUtils.LargeMessageTest(new SM3Digest(), str, result);
-		TestUtils.LargeMessageTest(new NativeSM3Digest(), str, result);
 	}
 }

@@ -35,12 +35,4 @@ public class SHA512Benchmark
 		using BcSHA512Digest sha512 = new();
 		sha512.UpdateFinal(_randombytes.Span, hash);
 	}
-
-	[Benchmark(Baseline = true)]
-	public void Native()
-	{
-		Span<byte> hash = stackalloc byte[HashConstants.Sha512Length];
-		using NativeSHA512Digest sha512 = new();
-		sha512.UpdateFinal(_randombytes.Span, hash);
-	}
 }
