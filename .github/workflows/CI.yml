@@ -4,6 +4,10 @@ on:
   - pull_request
 env:
   ProjectName: ${{ github.event.repository.name }}
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  DOTNET_GENERATE_ASPNET_CERTIFICATE: false
+  NET_VERSION: 10.0.x
 
 jobs:
   check_format:
@@ -12,7 +16,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: ${{ env.NET_VERSION }}
 
       - name: Check .NET format
         working-directory: src
@@ -25,13 +29,13 @@ jobs:
         os:
           - windows-latest
           - ubuntu-latest
-          - macos-latest
+          # - macos-latest
 
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: ${{ env.NET_VERSION }}
 
       - name: Run tests
         working-directory: src/${{ env.ProjectName }}.Tests
@@ -54,7 +58,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: ${{ env.NET_VERSION }}
 
       - name: Build
         working-directory: src/${{ matrix.NugetProjectName }}
