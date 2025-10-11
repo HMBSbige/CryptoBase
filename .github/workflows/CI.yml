@@ -37,6 +37,10 @@ jobs:
         with:
           dotnet-version: ${{ env.NET_VERSION }}
 
+      - name: Test build
+        working-directory: src
+        run: dotnet test -c Release
+
       - name: Run tests
         working-directory: src/${{ env.ProjectName }}.Tests
         run: dotnet test -c Release
