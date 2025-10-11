@@ -39,7 +39,7 @@ jobs:
 
       - name: Test build
         working-directory: src
-        run: dotnet test -c Release
+        run: dotnet build -c Release
 
       - name: Run tests
         working-directory: src/${{ env.ProjectName }}.Tests
