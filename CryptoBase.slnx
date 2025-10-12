@@ -2,7 +2,6 @@
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
-    <File Path=".runsettings" />
     <File Path="Directory.Build.props" />
     <File Path="LICENSE" />
     <File Path="NuGet.Config" />
@@ -21,5 +20,6 @@
     <Project Path="test\CryptoBase.Benchmark\CryptoBase.Benchmark.csproj" />
     <Project Path="test\CryptoBase.SpeedTest\CryptoBase.SpeedTest.csproj" />
     <Project Path="test\CryptoBase.Tests\CryptoBase.Tests.csproj" />
+    <File Path="test\.runsettings" />
   </Folder>
 </Solution>
