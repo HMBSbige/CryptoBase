@@ -1,0 +1,25 @@
+﻿<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path=".runsettings" />
+    <File Path="Directory.Build.props" />
+    <File Path="LICENSE" />
+    <File Path="NuGet.Config" />
+    <File Path="README.md" />
+    <File Path=".github\renovate.json" />
+    <File Path=".github\workflows\CI.yml" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
+    <Project Path="src\CryptoBase.BouncyCastle\CryptoBase.BouncyCastle.csproj" />
+    <Project Path="src\CryptoBase\CryptoBase.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test\CryptoBase.Benchmark.Tests\CryptoBase.Benchmark.Tests.csproj" />
+    <Project Path="test\CryptoBase.Benchmark\CryptoBase.Benchmark.csproj" />
+    <Project Path="test\CryptoBase.SpeedTest\CryptoBase.SpeedTest.csproj" />
+    <Project Path="test\CryptoBase.Tests\CryptoBase.Tests.csproj" />
+  </Folder>
+</Solution>

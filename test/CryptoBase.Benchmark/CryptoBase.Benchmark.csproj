@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CryptoBase.BouncyCastle\CryptoBase.BouncyCastle.csproj" />
+    <ProjectReference Include="..\..\src\CryptoBase\CryptoBase.csproj" />
+  </ItemGroup>
+
+</Project>

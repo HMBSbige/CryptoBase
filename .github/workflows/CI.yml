@@ -1,7 +1,12 @@
 name: CI
 on:
-  - push
-  - pull_request
+  push:
+      tags:
+        - '*'
+      branches:
+        - master
+        - renovate/**
+  pull_request:
 env:
   ProjectName: ${{ github.event.repository.name }}
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
@@ -19,7 +24,6 @@ jobs:
           dotnet-version: ${{ env.NET_VERSION }}
 
       - name: Check .NET format
-        working-directory: src
         run: dotnet format -v diag --verify-no-changes
 
   test:
@@ -38,11 +42,10 @@ jobs:
           dotnet-version: ${{ env.NET_VERSION }}
 
       - name: Test build
-        working-directory: src
         run: dotnet build -c Release
 
       - name: Run tests
-        working-directory: src/${{ env.ProjectName }}.Tests
+        working-directory: test/${{ env.ProjectName }}.Tests
         run: dotnet test -c Release
 
   build:
