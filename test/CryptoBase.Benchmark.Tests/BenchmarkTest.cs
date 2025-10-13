@@ -1,183 +1,182 @@
 namespace CryptoBase.Benchmark.Tests;
 
-[TestClass]
 public class BenchmarkTest
 {
-	[TestMethod]
+	[Fact]
 	public void MD5Benchmark()
 	{
 		BenchmarkRunner.Run<MD5Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void SHA1Benchmark()
 	{
 		BenchmarkRunner.Run<SHA1Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void SM3Benchmark()
 	{
 		BenchmarkRunner.Run<SM3Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void RC4Benchmark()
 	{
 		BenchmarkRunner.Run<RC4Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void Salsa20Benchmark()
 	{
 		BenchmarkRunner.Run<Salsa20Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void XSalsa20Benchmark()
 	{
 		BenchmarkRunner.Run<XSalsa20Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void ChaCha20OriginalBenchmark()
 	{
 		BenchmarkRunner.Run<ChaCha20OriginalBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void ChaCha20Benchmark()
 	{
 		BenchmarkRunner.Run<ChaCha20Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void XChaCha20Benchmark()
 	{
 		BenchmarkRunner.Run<XChaCha20Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void AESBenchmark()
 	{
 		BenchmarkRunner.Run<AESBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void SM4Benchmark()
 	{
 		BenchmarkRunner.Run<SM4Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void CTRBenchmark()
 	{
 		BenchmarkRunner.Run<CTRBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void CBCBenchmark()
 	{
 		BenchmarkRunner.Run<CBCBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void CFBBenchmark()
 	{
 		BenchmarkRunner.Run<CFBBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void GCMBenchmark()
 	{
 		BenchmarkRunner.Run<GCMBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void GHashBenchmark()
 	{
 		BenchmarkRunner.Run<GHashBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void ChaCha20Poly1305Benchmark()
 	{
 		BenchmarkRunner.Run<ChaCha20Poly1305Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void XChaCha20Poly1305Benchmark()
 	{
 		BenchmarkRunner.Run<XChaCha20Poly1305Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void Poly1305Benchmark()
 	{
 		BenchmarkRunner.Run<Poly1305Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void HexExtensionsBenchmark()
 	{
 		BenchmarkRunner.Run<HexExtensionsBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void Base32Benchmark()
 	{
 		BenchmarkRunner.Run<Base32Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void SHA224Benchmark()
 	{
 		BenchmarkRunner.Run<SHA224Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void SHA256Benchmark()
 	{
 		BenchmarkRunner.Run<SHA256Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void SHA384Benchmark()
 	{
 		BenchmarkRunner.Run<SHA384Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void SHA512Benchmark()
 	{
 		BenchmarkRunner.Run<SHA512Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void HMACBenchmark()
 	{
 		BenchmarkRunner.Run<HMACBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void HKDFBenchmark()
 	{
 		BenchmarkRunner.Run<HKDFBenchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void CRC32Benchmark()
 	{
 		BenchmarkRunner.Run<CRC32Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void Xor16Benchmark()
 	{
 		BenchmarkRunner.Run<Xor16Benchmark>();
 	}
 
-	[TestMethod]
+	[Fact]
 	public void Xor64Benchmark()
 	{
 		BenchmarkRunner.Run<Xor64Benchmark>();
