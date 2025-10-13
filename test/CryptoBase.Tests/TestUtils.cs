@@ -13,16 +13,16 @@ public static class TestUtils
 		Span<byte> origin = Encoding.UTF8.GetBytes(str);
 		Span<byte> outBuffer = stackalloc byte[hash.Length];
 
-		var times = (uint)((uint.MaxValue + 10ul) / (double)origin.Length) + 10;
+		uint times = (uint)((uint.MaxValue + 10ul) / (double)origin.Length) + 10;
 
-		for (var i = 0; i < times; ++i)
+		for (int i = 0; i < times; ++i)
 		{
 			hash.Update(origin);
 		}
 
 		hash.GetHash(outBuffer);
 
-		Assert.AreEqual(result, outBuffer.ToHex());
+		Assert.Equal(result, outBuffer.ToHex());
 
 		hash.Dispose();
 	}
@@ -40,18 +40,18 @@ public static class TestUtils
 		Span<byte> o2 = stackalloc byte[tag.Length];
 
 		crypto.Encrypt(nonce, plain, o1, o2, associatedData);
-		Assert.IsTrue(o1.SequenceEqual(cipher));
-		Assert.IsTrue(o2.SequenceEqual(tag));
+		Assert.True(o1.SequenceEqual(cipher));
+		Assert.True(o2.SequenceEqual(tag));
 
 		crypto.Encrypt(nonce, plain, o1, o2, associatedData);
-		Assert.IsTrue(o1.SequenceEqual(cipher));
-		Assert.IsTrue(o2.SequenceEqual(tag));
+		Assert.True(o1.SequenceEqual(cipher));
+		Assert.True(o2.SequenceEqual(tag));
 
 		crypto.Decrypt(nonce, cipher, tag, o1, associatedData);
-		Assert.IsTrue(o1.SequenceEqual(plain));
+		Assert.True(o1.SequenceEqual(plain));
 
 		crypto.Decrypt(nonce, cipher, tag, o1, associatedData);
-		Assert.IsTrue(o1.SequenceEqual(plain));
+		Assert.True(o1.SequenceEqual(plain));
 
 		crypto.Dispose();
 	}
@@ -61,14 +61,14 @@ public static class TestUtils
 		Span<byte> origin = Encoding.UTF8.GetBytes(str);
 		Span<byte> outBuffer = stackalloc byte[hash.Length];
 
-		for (var i = 0; i < times; ++i)
+		for (int i = 0; i < times; ++i)
 		{
 			hash.Update(origin);
 		}
 
 		hash.GetHash(outBuffer);
 
-		Assert.AreEqual(result, outBuffer.ToHex());
+		Assert.Equal(result, outBuffer.ToHex());
 
 		hash.Dispose();
 	}
@@ -79,6 +79,6 @@ public static class TestUtils
 
 		Span<byte> digest = new byte[mac.Length];
 		mac.GetMac(digest);
-		Assert.AreEqual(expected, digest.ToHex());
+		Assert.Equal(expected, digest.ToHex());
 	}
 }
