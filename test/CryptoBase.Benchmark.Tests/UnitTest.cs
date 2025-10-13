@@ -2,10 +2,9 @@ using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Benchmark.Tests;
 
-[TestClass]
 public class UnitTest
 {
-	[TestMethod]
+	[Fact]
 	public void EnvironmentTest()
 	{
 		Console.WriteLine($@"OS Version:                                     {Environment.OSVersion}");
