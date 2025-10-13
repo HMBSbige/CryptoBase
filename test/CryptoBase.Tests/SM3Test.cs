@@ -62,7 +62,7 @@ public class SM3Test
 		SM3DigestTest_Internal(new SM3Digest(), str, sm3Str);
 	}
 
-	[Theory(Skip = "Long running test")]
+	[Theory(Skip = "Skip LargeMessage", SkipUnless = nameof(TestEnvironment.TestLargeMessage), SkipType = typeof(TestEnvironment))]
 	[InlineData(@"euasxpm", @"de27a8b04cf2bde6c963fc0d8df4fdceee26f03a9f0d1ff80e5773817444f172")]
 	public void LargeMessageTest(string str, string result)
 	{

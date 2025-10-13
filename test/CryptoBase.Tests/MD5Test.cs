@@ -65,7 +65,7 @@ public class MD5Test
 		MD5DigestTest(new MD5Digest(), str, md5Str);
 	}
 
-	[Theory(Skip = "Long running test")]
+	[Theory(Skip = "Skip LargeMessage", SkipUnless = nameof(TestEnvironment.TestLargeMessage), SkipType = typeof(TestEnvironment))]
 	[InlineData(@"euasxpm", @"cb9c2e659941f68ab669d33418d798fa")]
 	public void LargeMessageTest(string str, string result)
 	{
