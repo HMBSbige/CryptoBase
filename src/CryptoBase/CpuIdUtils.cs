@@ -50,7 +50,7 @@ public static class CpuIdUtils
 					t = t[16..];
 				}
 
-				return Encoding.ASCII.GetString(buffer.TrimEnd(byte.MinValue));
+				return Encoding.ASCII.GetString(buffer.TrimEnd("\0 "u8));
 			}
 		}
 
