@@ -13,9 +13,9 @@ public static class TestUtils
 		Span<byte> origin = Encoding.UTF8.GetBytes(str);
 		Span<byte> outBuffer = stackalloc byte[hash.Length];
 
-		var times = (uint)((uint.MaxValue + 10ul) / (double)origin.Length) + 10;
+		uint times = (uint)((uint.MaxValue + 10ul) / (double)origin.Length) + 10;
 
-		for (var i = 0; i < times; ++i)
+		for (int i = 0; i < times; ++i)
 		{
 			hash.Update(origin);
 		}
@@ -61,7 +61,7 @@ public static class TestUtils
 		Span<byte> origin = Encoding.UTF8.GetBytes(str);
 		Span<byte> outBuffer = stackalloc byte[hash.Length];
 
-		for (var i = 0; i < times; ++i)
+		for (int i = 0; i < times; ++i)
 		{
 			hash.Update(origin);
 		}

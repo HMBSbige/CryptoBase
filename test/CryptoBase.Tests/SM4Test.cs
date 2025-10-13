@@ -26,6 +26,7 @@ public class SM4Test
 		Assert.True(o1.SequenceEqual(h2));
 
 		Span<byte> t = h1;
+
 		for (int i = 0; i < 1000000; ++i)
 		{
 			crypto.Encrypt(t, o1);
@@ -41,11 +42,13 @@ public class SM4Test
 		Assert.True(o1.SequenceEqual(h1));
 
 		t = h3;
+
 		for (int i = 0; i < 1000000; ++i)
 		{
 			crypto.Decrypt(t, o1);
 			t = o1;
 		}
+
 		Assert.True(t.SequenceEqual(h1));
 
 		crypto.Dispose();
@@ -92,10 +95,12 @@ public class SM4Test
 		{
 			TestN_Internal(4, new SM4CryptoX86(key), key);
 		}
+
 		if (SM4CryptoBlock8X86.IsSupported)
 		{
 			TestN_Internal(8, new SM4CryptoBlock8X86(key), key);
 		}
+
 		if (SM4CryptoBlock16X86.IsSupported)
 		{
 			TestN_Internal(16, new SM4CryptoBlock16X86(key), key);

@@ -21,7 +21,7 @@ public class HkdfTest
 	{
 		Span<byte> prk = stackalloc byte[255];
 
-		var length = Hkdf.Extract(type, ikmHex.FromHex(), saltHex.FromHex(), prk);
+		int length = Hkdf.Extract(type, ikmHex.FromHex(), saltHex.FromHex(), prk);
 		Assert.Equal(prkHex, prk[..length].ToHex());
 
 		Span<byte> okm = stackalloc byte[okmHex.FromHex().Length];

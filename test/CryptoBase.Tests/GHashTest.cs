@@ -47,7 +47,7 @@ public class GHashTest
 	[InlineData(@"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe7ad2c55bb64f", @"c1d3b69b62c9a392687aaf55d95a1df6")]
 	public void Test(string keyHex, string plainHex, string cipherHex)
 	{
-		var key = keyHex.FromHex();
+		byte[] key = keyHex.FromHex();
 		Test_Internal(new GHashSF(key), plainHex, cipherHex);
 		Test_Internal(new GHashX86(key), plainHex, cipherHex);
 		Test_Internal(GHashUtils.Create(key), plainHex, cipherHex);

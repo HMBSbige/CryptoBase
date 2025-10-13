@@ -55,7 +55,7 @@ public class HmacTest
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);
 	}
 
-	[Theory(Skip = "Long running test")]
+	[Theory]
 	[InlineData(@"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b", @"4869205468657265", @"896fb1128abbdf196832107cd49df33f47b4b1169912ba4f53684b22")]
 	[InlineData(@"4a656665", @"7768617420646f2079612077616e7420666f72206e6f7468696e673f", @"a30e01098bc6dbbf45690f3a7e9e6d0f8bbea2a39e6148008fd05e44")]
 	[InlineData(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", @"7fb3cb3588c6c1f6ffa9694d7d6ad2649365b0c1f65d69d1ec8333ea")]
@@ -65,6 +65,7 @@ public class HmacTest
 	[InlineData(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"3a854166ac5d9f023f54d517d0b39dbd946770db9c2b95c9f6f565d1")]
 	public void TestSha224(string keyStr, string messageHex, string expected)
 	{
+		Assert.Skip("Not Impl SHA-224");// TODO: Impl SHA-224
 		using IMac hmac = HmacUtils.Create(DigestType.Sha224, keyStr.FromHex());
 		Assert.Equal(@"HMAC-SHA-224", hmac.Name);
 		TestUtils.MacTest(hmac, messageHex.FromHex(), expected);

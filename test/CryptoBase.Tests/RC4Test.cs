@@ -47,7 +47,7 @@ public class RC4Test
 	[InlineData(@"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20", 8, @"eaa6bd25880bf93d", @"3f5d1e4ca2611d91")]
 	public void Test(string keyHex, int originSize, string hex, string hex2)
 	{
-		var key = keyHex.FromHex();
+		byte[] key = keyHex.FromHex();
 		Test_Internal(new BcRC4Crypto(key), originSize, hex, hex2);
 		Test_Internal(StreamCryptoCreate.Rc4(key), originSize, hex, hex2);
 	}

@@ -43,7 +43,7 @@ public class AESTest
 	[InlineData(@"0000000000000000000000000000000000000000000000000000000000000000", @"80000000000000000000000000000000", @"DDC6BF790C15760D8D9AEB6F9A75FD4E")]
 	public void Test(string keyHex, string hex1, string hex2)
 	{
-		var key = keyHex.FromHex();
+		byte[] key = keyHex.FromHex();
 		Test_Internal(new BcAESCrypto(default, key), hex1, hex2);
 		Test_Internal(new AESCryptoSF(key), hex1, hex2);
 		Test_Internal(AESUtils.CreateECB(key), hex1, hex2);

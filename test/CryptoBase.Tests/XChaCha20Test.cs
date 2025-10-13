@@ -63,8 +63,8 @@ public class XChaCha20Test
 		@"7d0a2e6b7f7c65a236542630294e063b7ab9b555a5d5149aa21e4ae1e4fbce87ecc8e08a8b5e350abe622b2ffa617b202cfad72032a3037e76ffdcdc4376ee053a190d7e46ca1de04144850381b9cb29f051915386b8a710b8ac4d027b8b050f7cba5854e028d564e453b8a968824173fc16488b8970cac828f11ae53cabd20112f87107df24ee6183d2274fe4c8b1485534ef2c5fbc1ec24bfc3663efaa08bc047d29d25043532db8391a8a3d776bf4372a6955827ccb0cdd4af403a7ce4c63d595c75a43e045f0cce1f29c8b93bd65afc5974922f214a40b7c402cdb91ae73c0b63615cdad0480680f16515a7ace9d39236464328a37743ffc28f4ddb324f4d0f5bbdc270c65b1749a6efff1fbaa09536175ccd29fb9e6057b307320d316838a9c71f70b5b5907a66f7ea49aadc409")]
 	public void TestCounter1(string keyHex, string ivHex, string hex, string hex2)
 	{
-		var key = keyHex.FromHex();
-		var iv = ivHex.FromHex();
+		byte[] key = keyHex.FromHex();
+		byte[] iv = ivHex.FromHex();
 		TestCounter1_Internal(new BcXChaCha20Crypto(key, iv), hex, hex2);
 		TestCounter1_Internal(new XChaCha20CryptoSF(key, iv), hex, hex2);
 		TestCounter1_Internal(new XChaCha20CryptoX86(key, iv), hex, hex2);
@@ -78,8 +78,8 @@ public class XChaCha20Test
 		@"4559abba4e48c16102e8bb2c05e6947f50a786de162f9b0b7e592a9b53d0d4e98d8d6410d540a1a6375b26d80dace4fab52384c731acbf16a5923c0c48d3575d4d0d2c673b666faa731061277701093a6bf7a158a8864292a41c48e3a9b4c0daece0f8d98d0d7e05b37a307bbb66333164ec9e1b24ea0d6c3ffddcec4f68e7443056193a03c810e11344ca06d8ed8a2bfb1e8d48cfa6bc0eb4e2464b748142407c9f431aee769960e15ba8b96890466ef2457599852385c661f752ce20f9da0c09ab6b19df74e76a95967446f8d0fd415e7bee2a12a114c20eb5292ae7a349ae577820d5520a1f3fb62a17ce6a7e68fa7c79111d8860920bc048ef43fe84486ccb87c25f0ae045f0cce1e7989a9aa220a28bdd4827e751a24a6d5c62d790a66393b93111c1a55dd7421a10184974c7c5")]
 	public void TestCounter0(string keyHex, string ivHex, string hex, string hex2)
 	{
-		var key = keyHex.FromHex();
-		var iv = ivHex.FromHex();
+		byte[] key = keyHex.FromHex();
+		byte[] iv = ivHex.FromHex();
 		TestCounter0_Internal(new BcXChaCha20Crypto(key, iv), hex, hex2);
 		TestCounter0_Internal(new XChaCha20CryptoSF(key, iv), hex, hex2);
 		TestCounter0_Internal(new XChaCha20CryptoX86(key, iv), hex, hex2);
