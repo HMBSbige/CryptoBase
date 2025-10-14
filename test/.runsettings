@@ -2,9 +2,9 @@
 <RunSettings>
   <RunConfiguration>
     <EnvironmentVariables>
-      <COMPlus_EnableHWIntrinsic>1</COMPlus_EnableHWIntrinsic>
-      <COMPlus_EnableSSE>1</COMPlus_EnableSSE>
-      <COMPlus_EnableAVX>1</COMPlus_EnableAVX>
+      <DOTNET_EnableHWIntrinsic>1</DOTNET_EnableHWIntrinsic>
+      <DOTNET_EnableSSE>1</DOTNET_EnableSSE>
+      <DOTNET_EnableAVX>1</DOTNET_EnableAVX>
     </EnvironmentVariables>
   </RunConfiguration>
 </RunSettings>
