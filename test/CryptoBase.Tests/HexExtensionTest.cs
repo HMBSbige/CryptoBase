@@ -13,6 +13,9 @@ public class HexExtensionTest
 	{
 		Span<byte> span = Encoding.UTF8.GetBytes(input);
 		Assert.Equal(expected, span.ToHex());
+		Assert.Equal(expected, ((ReadOnlySpan<byte>)span).ToHex());
+		Assert.Equal(expected.ToUpperInvariant(), span.ToHexString());
+		Assert.Equal(expected.ToUpperInvariant(), ((ReadOnlySpan<byte>)span).ToHexString());
 	}
 
 	[Theory]
@@ -24,14 +27,16 @@ public class HexExtensionTest
 	{
 		Span<byte> span = Encoding.UTF8.GetBytes(expected);
 		Assert.True(span.SequenceEqual(input.FromHex()));
+		Assert.True(span.SequenceEqual(input.AsSpan().FromHex()));
 	}
 
 	[Fact]
 	public void LargeInputTest()
 	{
 		byte[] expected = RandomNumberGenerator.GetBytes(10 * 1024 * 1024);
-		string hex = expected.AsSpan().ToHex();
-		Span<byte> actual = hex.FromHex();
-		Assert.True(actual.SequenceEqual(expected));
+		Assert.True(expected.AsSpan().ToHex().FromHex().SequenceEqual(expected));
+		Assert.True(expected.AsSpan().ToHex().AsSpan().FromHex().SequenceEqual(expected));
+		Assert.True(expected.AsSpan().ToHexString().FromHex().SequenceEqual(expected));
+		Assert.True(expected.AsSpan().ToHexString().AsSpan().FromHex().SequenceEqual(expected));
 	}
 }

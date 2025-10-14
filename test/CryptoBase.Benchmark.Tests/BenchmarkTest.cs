@@ -117,12 +117,6 @@ public class BenchmarkTest
 	}
 
 	[Fact]
-	public void HexExtensionsBenchmark()
-	{
-		BenchmarkRunner.Run<HexExtensionsBenchmark>();
-	}
-
-	[Fact]
 	public void Base32Benchmark()
 	{
 		BenchmarkRunner.Run<Base32Benchmark>();
