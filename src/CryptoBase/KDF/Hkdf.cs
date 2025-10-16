@@ -12,10 +12,7 @@ public static class Hkdf
 	public static int Extract(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
 	{
 		int hashLength = HashLength(type);
-		if (prk.Length < hashLength)
-		{
-			throw new ArgumentException(@"prk too small", nameof(prk));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
 
 		if (prk.Length > hashLength)
 		{
@@ -39,26 +36,17 @@ public static class Hkdf
 	{
 		int hashLength = HashLength(type);
 
-		if (output.IsEmpty)
-		{
-			throw new ArgumentException(@"Destination too short", nameof(output));
-		}
+		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
 		int maxOkmLength = 255 * hashLength;
-		if (output.Length > maxOkmLength)
-		{
-			throw new ArgumentException(@"Okm too large", nameof(output));
-		}
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 
 		ExpandInternal(type, hashLength, prk, output, info);
 	}
 
 	private static void ExpandInternal(DigestType type, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
-		if (prk.Length < hashLength)
-		{
-			throw new ArgumentException(@"prk too small", nameof(prk));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
 
 		if (output.Overlaps(info))
 		{
@@ -103,16 +91,10 @@ public static class Hkdf
 	{
 		int hashLength = HashLength(type);
 
-		if (output.IsEmpty)
-		{
-			throw new ArgumentException(@"Destination too short", nameof(output));
-		}
+		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
 		int maxOkmLength = 255 * hashLength;
-		if (output.Length > maxOkmLength)
-		{
-			throw new ArgumentException(@"Okm too large", nameof(output));
-		}
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 
 		Span<byte> prk = stackalloc byte[hashLength];
 

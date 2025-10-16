@@ -96,10 +96,7 @@ public class SM4Crypto : BlockCryptoBase
 
 	public SM4Crypto(ReadOnlySpan<byte> key)
 	{
-		if (key.Length is not 16)
-		{
-			throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 16, nameof(key));
 
 		Rk = ArrayPool<uint>.Shared.Rent(32);
 

@@ -45,10 +45,7 @@ public static class Base32Extensions
 
 		var length = data.Length;
 
-		if (length >= 1 << 28)
-		{
-			throw new ArgumentOutOfRangeException(nameof(data));
-		}
+		ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(length, 1 << 28, nameof(data));
 
 		var outLength = ((length - 1) / Shift + 1) << 3;
 		var result = new string('\0', outLength);
