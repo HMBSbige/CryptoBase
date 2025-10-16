@@ -57,6 +57,7 @@ SM4 | ✅ |
 * ✅ CBC
 * ✅ CFB128(Stream)
 * ✅ CTR128(Stream)
+* ⏳ XTS
 
 #### Authenticated encryption algorithms
 
