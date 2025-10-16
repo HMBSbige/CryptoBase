@@ -14,10 +14,7 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		if (key.Length != 32)
-		{
-			throw new ArgumentException(@"Key length requires 32 bytes");
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
 		var span = State.AsSpan();
 

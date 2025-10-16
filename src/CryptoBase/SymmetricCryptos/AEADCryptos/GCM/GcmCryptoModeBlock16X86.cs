@@ -28,15 +28,9 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 
 	public GcmCryptoModeBlock16X86(IBlockCrypto crypto, IBlockCrypto crypto16)
 	{
-		if (crypto.BlockSize is not BlockSize)
-		{
-			throw new ArgumentException($@"Crypto block size must be {BlockSize} bytes.", nameof(crypto));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
 
-		if (crypto16.BlockSize is not BlockSize16)
-		{
-			throw new ArgumentException($@"Crypto block size must be {BlockSize16} bytes.", nameof(crypto16));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto16.BlockSize, BlockSize16, nameof(crypto16));
 
 		_crypto = crypto;
 		_crypto16 = crypto16;
@@ -269,23 +263,14 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 
 		FastUtils.Xor(_tagBuffer, _buffer, _tagBuffer, 16);
 
-		if (!CryptographicOperations.FixedTimeEquals(_tagBuffer.AsSpan(0, TagSize), tag))
-		{
-			throw new ArgumentException(@"Unable to decrypt input with these parameters.");
-		}
+		ThrowHelper.ThrowIfAuthenticationTagMismatch(_tagBuffer.AsSpan(0, TagSize), tag);
 	}
 
 	private static void CheckInput(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination)
 	{
-		if (nonce.Length is not NonceSize)
-		{
-			throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
 
-		if (destination.Length != source.Length)
-		{
-			throw new ArgumentException(@"Plaintext and ciphertext must have the same length.", nameof(destination));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, source.Length, nameof(destination));
 	}
 
 	public void Dispose()

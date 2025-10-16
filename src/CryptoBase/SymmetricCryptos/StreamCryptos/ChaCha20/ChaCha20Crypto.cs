@@ -14,10 +14,7 @@ public abstract class ChaCha20Crypto : ChaCha20CryptoBase
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		if (key.Length != 32)
-		{
-			throw new ArgumentException(@"Key length requires 32 bytes");
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
 		State[0] = Sigma32[0];
 		State[1] = Sigma32[1];

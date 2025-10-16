@@ -23,10 +23,7 @@ public sealed class GHashSF : IMac
 
 	public GHashSF(scoped ReadOnlySpan<byte> key)
 	{
-		if (key.Length < KeySize)
-		{
-			throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(key.Length, KeySize, nameof(key));
 
 		Initvh = BinaryPrimitives.ReadUInt64BigEndian(key);
 		Initvl = BinaryPrimitives.ReadUInt64BigEndian(key[8..]);

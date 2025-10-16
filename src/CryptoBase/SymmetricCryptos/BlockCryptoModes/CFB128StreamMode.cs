@@ -21,15 +21,9 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 
 	public CFB128StreamMode(bool isEncrypt, IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
-		if (crypto.BlockSize is not 16)
-		{
-			throw new ArgumentException(@"Block size must be 16 bytes", nameof(crypto));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, 16, nameof(crypto));
 
-		if (iv.Length is not 16)
-		{
-			throw new ArgumentException(@"IV length must be 16 bytes", nameof(iv));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, 16, nameof(iv));
 
 		_isEncrypt = isEncrypt;
 		InternalBlockCrypto = crypto;
@@ -43,10 +37,7 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 
 	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (destination.Length < source.Length)
-		{
-			throw new ArgumentException(string.Empty, nameof(destination));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
 		int i = 0;
 		int length = source.Length;

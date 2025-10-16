@@ -16,10 +16,7 @@ public class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 
 	public CBCBlockMode(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
-		if (iv.Length != crypto.BlockSize)
-		{
-			throw new ArgumentException(@"IV length must as the same as the block size.", nameof(iv));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, crypto.BlockSize, nameof(iv));
 
 		InternalBlockCrypto = crypto;
 		Iv = iv.ToArray();
