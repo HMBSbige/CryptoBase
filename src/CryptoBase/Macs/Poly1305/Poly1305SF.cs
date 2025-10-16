@@ -17,7 +17,7 @@ public ref struct Poly1305SF : IMac
 
 	private uint _h0, _h1, _h2, _h3, _h4;
 
-	public Poly1305SF(ReadOnlySpan<byte> key)
+	public Poly1305SF(scoped ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 

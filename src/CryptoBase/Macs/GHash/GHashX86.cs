@@ -2,7 +2,7 @@ using CryptoBase.Abstractions;
 
 namespace CryptoBase.Macs.GHash;
 
-public class GHashX86 : IMac
+public sealed class GHashX86 : IMac
 {
 	public string Name => @"GHash";
 
@@ -14,7 +14,7 @@ public class GHashX86 : IMac
 	private readonly Vector128<byte> _key;
 	private Vector128<byte> _buffer;
 
-	public GHashX86(ReadOnlySpan<byte> key)
+	public GHashX86(scoped ReadOnlySpan<byte> key)
 	{
 		if (key.Length < KeySize)
 		{
@@ -27,7 +27,7 @@ public class GHashX86 : IMac
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void GFMul(ReadOnlySpan<byte> x)
+	private void GFMul(scoped ReadOnlySpan<byte> x)
 	{
 		Vector128<ulong> a = _key.AsUInt64();
 		Vector128<ulong> b = (FastUtils.CreateVector128Unsafe(x).ReverseEndianness128() ^ _buffer).AsUInt64();
@@ -73,7 +73,7 @@ public class GHashX86 : IMac
 		_buffer = tmp6.AsByte();
 	}
 
-	public void Update(ReadOnlySpan<byte> source)
+	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		while (source.Length >= BlockSize)
 		{
@@ -91,7 +91,7 @@ public class GHashX86 : IMac
 		GFMul(block);
 	}
 
-	public void GetMac(Span<byte> destination)
+	public void GetMac(scoped Span<byte> destination)
 	{
 		_buffer.ReverseEndianness128().CopyTo(destination);
 		Reset();
@@ -104,6 +104,5 @@ public class GHashX86 : IMac
 
 	public void Dispose()
 	{
-		GC.SuppressFinalize(this);
 	}
 }

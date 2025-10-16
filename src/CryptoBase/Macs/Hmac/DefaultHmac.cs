@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Macs.Hmac;
 
-internal class DefaultHmac : IMac
+internal sealed class DefaultHmac : IMac
 {
 	public string Name { get; }
 
@@ -11,7 +11,7 @@ internal class DefaultHmac : IMac
 
 	private readonly IncrementalHash _hasher;
 
-	public DefaultHmac(ReadOnlySpan<byte> key, HashAlgorithmName name)
+	public DefaultHmac(scoped ReadOnlySpan<byte> key, HashAlgorithmName name)
 	{
 		_hasher = IncrementalHash.CreateHMAC(name, key);
 		Name = name.ToString() switch
@@ -25,12 +25,12 @@ internal class DefaultHmac : IMac
 		};
 	}
 
-	public void Update(ReadOnlySpan<byte> source)
+	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		_hasher.AppendData(source);
 	}
 
-	public void GetMac(Span<byte> destination)
+	public void GetMac(scoped Span<byte> destination)
 	{
 		_hasher.GetHashAndReset(destination);
 	}

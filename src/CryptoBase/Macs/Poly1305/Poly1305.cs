@@ -15,7 +15,7 @@ public ref struct Poly1305 : IMac
 	private Poly1305X86 _x86;
 	private Poly1305SF _sf;
 
-	public Poly1305(ReadOnlySpan<byte> key)
+	public Poly1305(scoped ReadOnlySpan<byte> key)
 	{
 		if (Poly1305X86.IsSupported)
 		{
@@ -27,7 +27,7 @@ public ref struct Poly1305 : IMac
 		}
 	}
 
-	public void Update(ReadOnlySpan<byte> source)
+	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		if (Poly1305X86.IsSupported)
 		{
@@ -39,7 +39,7 @@ public ref struct Poly1305 : IMac
 		}
 	}
 
-	public void GetMac(Span<byte> destination)
+	public void GetMac(scoped Span<byte> destination)
 	{
 		if (Poly1305X86.IsSupported)
 		{

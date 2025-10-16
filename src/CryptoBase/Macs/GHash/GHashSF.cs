@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Macs.GHash;
 
-public class GHashSF : IMac
+public sealed class GHashSF : IMac
 {
 	public string Name => @"GHash";
 
@@ -12,13 +12,7 @@ public class GHashSF : IMac
 	public const int KeySize = 16;
 	public const int BlockSize = 16;
 
-	private static readonly ulong[] Last4 =
-	{
-		0x0000, 0x1c20, 0x3840, 0x2460,
-		0x7080, 0x6ca0, 0x48c0, 0x54e0,
-		0xe100, 0xfd20, 0xd940, 0xc560,
-		0x9180, 0x8da0, 0xa9c0, 0xb5e0
-	};
+	private static readonly ulong[] Last4 = [0x0000, 0x1c20, 0x3840, 0x2460, 0x7080, 0x6ca0, 0x48c0, 0x54e0, 0xe100, 0xfd20, 0xd940, 0xc560, 0x9180, 0x8da0, 0xa9c0, 0xb5e0];
 
 	private readonly ulong[] _hh;
 	private readonly ulong[] _hl;
@@ -27,7 +21,7 @@ public class GHashSF : IMac
 	private readonly ulong Initvh;
 	private readonly ulong Initvl;
 
-	public GHashSF(ReadOnlySpan<byte> key)
+	public GHashSF(scoped ReadOnlySpan<byte> key)
 	{
 		if (key.Length < KeySize)
 		{
@@ -45,7 +39,7 @@ public class GHashSF : IMac
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void GFMul(ReadOnlySpan<byte> x)
+	private void GFMul(scoped ReadOnlySpan<byte> x)
 	{
 		for (int i = 0; i < BlockSize; ++i)
 		{
@@ -59,13 +53,14 @@ public class GHashSF : IMac
 		for (int i = 0; i < BlockSize; ++i)
 		{
 			lo = (byte)(_buffer[16 - 1 - i] & 0xf);
-			byte hi = (byte)((_buffer[16 - 1 - i] >> 4) & 0xf);
+			byte hi = (byte)(_buffer[16 - 1 - i] >> 4 & 0xf);
 
 			byte rem;
+
 			if (i != 0)
 			{
 				rem = (byte)(zl & 0xf);
-				zl = (zh << 60) | (zl >> 4);
+				zl = zh << 60 | zl >> 4;
 				zh >>= 4;
 				zh ^= Last4[rem] << 48;
 				zh ^= _hh[lo];
@@ -73,7 +68,7 @@ public class GHashSF : IMac
 			}
 
 			rem = (byte)(zl & 0xf);
-			zl = (zh << 60) | (zl >> 4);
+			zl = zh << 60 | zl >> 4;
 			zh >>= 4;
 
 			zh ^= Last4[rem] << 48;
@@ -85,7 +80,7 @@ public class GHashSF : IMac
 		BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(8), zl);
 	}
 
-	public void Update(ReadOnlySpan<byte> source)
+	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		while (source.Length >= BlockSize)
 		{
@@ -103,7 +98,7 @@ public class GHashSF : IMac
 		GFMul(block);
 	}
 
-	public void GetMac(Span<byte> destination)
+	public void GetMac(scoped Span<byte> destination)
 	{
 		_buffer.AsSpan(0, Length).CopyTo(destination);
 
@@ -125,8 +120,8 @@ public class GHashSF : IMac
 		while (i > 0)
 		{
 			ulong t = (vl & 1) * 0xe1000000;
-			vl = (vh << 63) | (vl >> 1);
-			vh = (vh >> 1) ^ (t << 32);
+			vl = vh << 63 | vl >> 1;
+			vh = vh >> 1 ^ t << 32;
 
 			_hl[i] = vl;
 			_hh[i] = vh;
@@ -135,6 +130,7 @@ public class GHashSF : IMac
 		}
 
 		i = 2u;
+
 		while (i <= 8)
 		{
 			vh = _hh[i];
@@ -155,7 +151,5 @@ public class GHashSF : IMac
 		ArrayPool<ulong>.Shared.Return(_hl);
 		ArrayPool<ulong>.Shared.Return(_hh);
 		ArrayPool<byte>.Shared.Return(_buffer);
-
-		GC.SuppressFinalize(this);
 	}
 }

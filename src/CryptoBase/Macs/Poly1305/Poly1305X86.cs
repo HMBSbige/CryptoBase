@@ -31,7 +31,7 @@ public ref struct Poly1305X86 : IMac
 	private readonly Vector256<uint> _ruwy0, _ruwy1, _ruwy2, _ruwy3, _ruwy4;
 	private readonly Vector256<uint> _svxz1, _svxz2, _svxz3, _svxz4;
 
-	public Poly1305X86(ReadOnlySpan<byte> key)
+	public Poly1305X86(scoped ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
