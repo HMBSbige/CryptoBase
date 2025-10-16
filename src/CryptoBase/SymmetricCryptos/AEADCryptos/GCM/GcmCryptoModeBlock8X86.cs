@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Macs.GHash;
-using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 
@@ -15,6 +14,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 	public const int TagSize = 16;
 
 	private static ReadOnlySpan<byte> Init => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
 	private static readonly Vector128<uint> VCounter1 = Vector128.Create(6u, 7, 8, 9);
 	private static readonly Vector128<uint> VAdd4 = Vector128.Create(4u);
 
