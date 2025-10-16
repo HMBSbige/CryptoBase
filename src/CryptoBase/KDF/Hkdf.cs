@@ -60,7 +60,7 @@ public static class Hkdf
 
 		using IMac hmac = HmacUtils.Create(type, prk);
 
-		for (int i = 1;; ++i)
+		for (int i = 1; ; ++i)
 		{
 			hmac.Update(t);
 			hmac.Update(info);
