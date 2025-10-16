@@ -95,7 +95,7 @@ public static class Base32Extensions
 		encoded = encoded.TrimEnd(PaddingChar);
 		if (encoded.IsEmpty)
 		{
-			return Array.Empty<byte>();
+			return [];
 		}
 
 		var outLength = encoded.Length * Shift >> 3;

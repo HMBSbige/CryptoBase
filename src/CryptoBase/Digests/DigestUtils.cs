@@ -16,7 +16,7 @@ public static class DigestUtils
 			DigestType.Sha512 => CreateSha512(),
 			DigestType.Crc32 => CreateCrc32(),
 			DigestType.Crc32C => CreateCrc32C(),
-			_ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+			_ => throw new ArgumentOutOfRangeException(nameof(type), type, default)
 		};
 	}
 
@@ -88,11 +88,13 @@ public static class DigestUtils
 	{
 		const int bufferSize = 81920;
 		byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+
 		try
 		{
 			while (true)
 			{
 				int length = await inputStream.ReadAsync(buffer, cancellationToken);
+
 				if (length <= 0)
 				{
 					break;

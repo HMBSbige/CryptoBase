@@ -38,8 +38,8 @@ public abstract class DefaultAESCrypto : AESCrypto
 	{
 		base.Reset();
 
-		Encryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-		Decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+		Encryptor.TransformFinalBlock([], 0, 0);
+		Decryptor.TransformFinalBlock([], 0, 0);
 	}
 
 	public override void Dispose()

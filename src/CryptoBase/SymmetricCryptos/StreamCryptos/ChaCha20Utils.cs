@@ -7,14 +7,15 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(int rounds, uint[] state, byte[] keyStream)
 	{
-		var x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
+		uint[] x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
+
 		try
 		{
 			state.AsSpan().CopyTo(x);
 
 			ChaChaRound(rounds, x);
 
-			for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
+			for (int i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
 			{
 				x[i] += state[i];
 				x[i + 1] += state[i + 1];
@@ -22,7 +23,7 @@ internal static class ChaCha20Utils
 				x[i + 3] += state[i + 3];
 			}
 
-			var span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
+			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
 			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 		}
 		finally
@@ -34,7 +35,7 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ChaChaRound(int rounds, uint[] x)
 	{
-		for (var i = 0; i < rounds; i += 2)
+		for (int i = 0; i < rounds; i += 2)
 		{
 			QuarterRound(ref x[0], ref x[4], ref x[8], ref x[12]);
 			QuarterRound(ref x[1], ref x[5], ref x[9], ref x[13]);
@@ -99,17 +100,17 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void UpdateKeyStream(uint* state, byte* stream, byte rounds)
 	{
-		var s0 = Sse2.LoadVector128(state);
-		var s1 = Sse2.LoadVector128(state + 4);
-		var s2 = Sse2.LoadVector128(state + 8);
-		var s3 = Sse2.LoadVector128(state + 12);
+		Vector128<uint> s0 = Sse2.LoadVector128(state);
+		Vector128<uint> s1 = Sse2.LoadVector128(state + 4);
+		Vector128<uint> s2 = Sse2.LoadVector128(state + 8);
+		Vector128<uint> s3 = Sse2.LoadVector128(state + 12);
 
-		var x0 = s0;
-		var x1 = s1;
-		var x2 = s2;
-		var x3 = s3;
+		Vector128<uint> x0 = s0;
+		Vector128<uint> x1 = s1;
+		Vector128<uint> x2 = s2;
+		Vector128<uint> x3 = s3;
 
-		for (var i = 0; i < rounds; i += 2)
+		for (int i = 0; i < rounds; i += 2)
 		{
 			QuarterRound(ref x0, ref x1, ref x2, ref x3);
 			Shuffle(ref x1, ref x2, ref x3);
@@ -143,6 +144,14 @@ internal static class ChaCha20Utils
 	{
 		if (++*(state + 12) == 0)
 		{
+			Throw();
+		}
+
+		return;
+
+		[DoesNotReturn]
+		void Throw()
+		{
 			throw new InvalidOperationException(@"Data maximum length reached.");
 		}
 	}
@@ -150,12 +159,12 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void ChaChaRound(uint* state, byte rounds)
 	{
-		var x0 = Sse2.LoadVector128(state);
-		var x1 = Sse2.LoadVector128(state + 4);
-		var x2 = Sse2.LoadVector128(state + 8);
-		var x3 = Sse2.LoadVector128(state + 12);
+		Vector128<uint> x0 = Sse2.LoadVector128(state);
+		Vector128<uint> x1 = Sse2.LoadVector128(state + 4);
+		Vector128<uint> x2 = Sse2.LoadVector128(state + 8);
+		Vector128<uint> x3 = Sse2.LoadVector128(state + 12);
 
-		for (var i = 0; i < rounds; i += 2)
+		for (int i = 0; i < rounds; i += 2)
 		{
 			QuarterRound(ref x0, ref x1, ref x2, ref x3);
 			Shuffle(ref x1, ref x2, ref x3);
@@ -209,17 +218,17 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe void ChaChaCore64Internal(byte rounds, uint* state, byte* source, byte* destination)
 	{
-		var s0 = Sse2.LoadVector128(state);
-		var s1 = Sse2.LoadVector128(state + 4);
-		var s2 = Sse2.LoadVector128(state + 8);
-		var s3 = Sse2.LoadVector128(state + 12);
+		Vector128<uint> s0 = Sse2.LoadVector128(state);
+		Vector128<uint> s1 = Sse2.LoadVector128(state + 4);
+		Vector128<uint> s2 = Sse2.LoadVector128(state + 8);
+		Vector128<uint> s3 = Sse2.LoadVector128(state + 12);
 
-		var x0 = s0;
-		var x1 = s1;
-		var x2 = s2;
-		var x3 = s3;
+		Vector128<uint> x0 = s0;
+		Vector128<uint> x1 = s1;
+		Vector128<uint> x2 = s2;
+		Vector128<uint> x3 = s3;
 
-		for (var i = 0; i < rounds; i += 2)
+		for (int i = 0; i < rounds; i += 2)
 		{
 			QuarterRound(ref x0, ref x1, ref x2, ref x3);
 			Shuffle(ref x1, ref x2, ref x3);
@@ -233,10 +242,10 @@ internal static class ChaCha20Utils
 		x2 = Sse2.Add(x2, s2);
 		x3 = Sse2.Add(x3, s3);
 
-		var v0 = Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source));
-		var v1 = Sse2.Xor(x1.AsByte(), Sse2.LoadVector128(source + 16));
-		var v2 = Sse2.Xor(x2.AsByte(), Sse2.LoadVector128(source + 32));
-		var v3 = Sse2.Xor(x3.AsByte(), Sse2.LoadVector128(source + 48));
+		Vector128<byte> v0 = Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source));
+		Vector128<byte> v1 = Sse2.Xor(x1.AsByte(), Sse2.LoadVector128(source + 16));
+		Vector128<byte> v2 = Sse2.Xor(x2.AsByte(), Sse2.LoadVector128(source + 32));
+		Vector128<byte> v3 = Sse2.Xor(x3.AsByte(), Sse2.LoadVector128(source + 48));
 
 		Sse2.Store(destination, v0);
 		Sse2.Store(destination + 16, v1);
@@ -270,13 +279,13 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void ChaChaCoreOriginal128(byte rounds, uint* state, byte* source, byte* destination)
 	{
-		var x0 = Avx2.BroadcastVector128ToVector256(state);
-		var x1 = Avx2.BroadcastVector128ToVector256(state + 4);
-		var x2 = Avx2.BroadcastVector128ToVector256(state + 8);
-		var x3 = Avx2.BroadcastVector128ToVector256(state + 12);
+		Vector256<uint> x0 = Avx2.BroadcastVector128ToVector256(state);
+		Vector256<uint> x1 = Avx2.BroadcastVector128ToVector256(state + 4);
+		Vector256<uint> x2 = Avx2.BroadcastVector128ToVector256(state + 8);
+		Vector256<uint> x3 = Avx2.BroadcastVector128ToVector256(state + 12);
 		x3 = Avx2.Add(x3.AsUInt64(), IncCounterOriginal128).AsUInt32();
 
-		for (var i = 0; i < rounds; i += 2)
+		for (int i = 0; i < rounds; i += 2)
 		{
 			QuarterRound(ref x0, ref x1, ref x2, ref x3);
 			Shuffle(ref x1, ref x2, ref x3);
@@ -287,8 +296,8 @@ internal static class ChaCha20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		var s0 = Avx.LoadVector256(state);     // 0 1 2 3 4 5 6 7
-		var s1 = Avx.LoadVector256(state + 8); // 8 9 10 11 12 13 14 15
+		Vector256<uint> s0 = Avx.LoadVector256(state);// 0 1 2 3 4 5 6 7
+		Vector256<uint> s1 = Avx.LoadVector256(state + 8);// 8 9 10 11 12 13 14 15
 		IncrementCounterOriginal(state);
 
 		x0 = Avx2.Add(x0, s0);
@@ -296,10 +305,10 @@ internal static class ChaCha20Utils
 		x2 = Avx2.Add(x2, s0);
 		x3 = Avx2.Add(x3, Avx.LoadVector256(state + 8));
 
-		var v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
-		var v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
-		var v2 = Avx2.Xor(x2.AsByte(), Avx.LoadVector256(source + 64));
-		var v3 = Avx2.Xor(x3.AsByte(), Avx.LoadVector256(source + 96));
+		Vector256<byte> v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
+		Vector256<byte> v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
+		Vector256<byte> v2 = Avx2.Xor(x2.AsByte(), Avx.LoadVector256(source + 64));
+		Vector256<byte> v3 = Avx2.Xor(x3.AsByte(), Avx.LoadVector256(source + 96));
 
 		Avx.Store(destination, v0);
 		Avx.Store(destination + 32, v1);
@@ -312,13 +321,13 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void ChaChaCore128(byte rounds, uint* state, byte* source, byte* destination)
 	{
-		var x0 = Avx2.BroadcastVector128ToVector256(state);
-		var x1 = Avx2.BroadcastVector128ToVector256(state + 4);
-		var x2 = Avx2.BroadcastVector128ToVector256(state + 8);
-		var x3 = Avx2.BroadcastVector128ToVector256(state + 12);
+		Vector256<uint> x0 = Avx2.BroadcastVector128ToVector256(state);
+		Vector256<uint> x1 = Avx2.BroadcastVector128ToVector256(state + 4);
+		Vector256<uint> x2 = Avx2.BroadcastVector128ToVector256(state + 8);
+		Vector256<uint> x3 = Avx2.BroadcastVector128ToVector256(state + 12);
 		x3 = Avx2.Add(x3, IncCounter128);
 
-		for (var i = 0; i < rounds; i += 2)
+		for (int i = 0; i < rounds; i += 2)
 		{
 			QuarterRound(ref x0, ref x1, ref x2, ref x3);
 			Shuffle(ref x1, ref x2, ref x3);
@@ -329,8 +338,8 @@ internal static class ChaCha20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		var s0 = Avx.LoadVector256(state);     // 0 1 2 3 4 5 6 7
-		var s1 = Avx.LoadVector256(state + 8); // 8 9 10 11 12 13 14 15
+		Vector256<uint> s0 = Avx.LoadVector256(state);// 0 1 2 3 4 5 6 7
+		Vector256<uint> s1 = Avx.LoadVector256(state + 8);// 8 9 10 11 12 13 14 15
 		IncrementCounter(state);
 
 		x0 = Avx2.Add(x0, s0);
@@ -338,10 +347,10 @@ internal static class ChaCha20Utils
 		x2 = Avx2.Add(x2, s0);
 		x3 = Avx2.Add(x3, Avx.LoadVector256(state + 8));
 
-		var v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
-		var v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
-		var v2 = Avx2.Xor(x2.AsByte(), Avx.LoadVector256(source + 64));
-		var v3 = Avx2.Xor(x3.AsByte(), Avx.LoadVector256(source + 96));
+		Vector256<byte> v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
+		Vector256<byte> v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
+		Vector256<byte> v2 = Avx2.Xor(x2.AsByte(), Avx.LoadVector256(source + 64));
+		Vector256<byte> v3 = Avx2.Xor(x3.AsByte(), Avx.LoadVector256(source + 96));
 
 		Avx.Store(destination, v0);
 		Avx.Store(destination + 32, v1);
@@ -362,48 +371,48 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void ChaChaCoreOriginal256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 	{
-		var o0 = Vector128.Create(*(state + 0));
-		var o1 = Vector128.Create(*(state + 1));
-		var o2 = Vector128.Create(*(state + 2));
-		var o3 = Vector128.Create(*(state + 3));
-		var o4 = Vector128.Create(*(state + 4));
-		var o5 = Vector128.Create(*(state + 5));
-		var o6 = Vector128.Create(*(state + 6));
-		var o7 = Vector128.Create(*(state + 7));
-		var o8 = Vector128.Create(*(state + 8));
-		var o9 = Vector128.Create(*(state + 9));
-		var o10 = Vector128.Create(*(state + 10));
-		var o11 = Vector128.Create(*(state + 11));
+		Vector128<uint> o0 = Vector128.Create(*(state + 0));
+		Vector128<uint> o1 = Vector128.Create(*(state + 1));
+		Vector128<uint> o2 = Vector128.Create(*(state + 2));
+		Vector128<uint> o3 = Vector128.Create(*(state + 3));
+		Vector128<uint> o4 = Vector128.Create(*(state + 4));
+		Vector128<uint> o5 = Vector128.Create(*(state + 5));
+		Vector128<uint> o6 = Vector128.Create(*(state + 6));
+		Vector128<uint> o7 = Vector128.Create(*(state + 7));
+		Vector128<uint> o8 = Vector128.Create(*(state + 8));
+		Vector128<uint> o9 = Vector128.Create(*(state + 9));
+		Vector128<uint> o10 = Vector128.Create(*(state + 10));
+		Vector128<uint> o11 = Vector128.Create(*(state + 11));
 		// 12
 		// 13
-		var o14 = Vector128.Create(*(state + 14));
-		var o15 = Vector128.Create(*(state + 15));
+		Vector128<uint> o14 = Vector128.Create(*(state + 14));
+		Vector128<uint> o15 = Vector128.Create(*(state + 15));
 
 		while (length >= 256)
 		{
-			var x0 = o0;
-			var x1 = o1;
-			var x2 = o2;
-			var x3 = o3;
-			var x4 = o4;
-			var x5 = o5;
-			var x6 = o6;
-			var x7 = o7;
-			var x8 = o8;
-			var x9 = o9;
-			var x10 = o10;
-			var x11 = o11;
+			Vector128<uint> x0 = o0;
+			Vector128<uint> x1 = o1;
+			Vector128<uint> x2 = o2;
+			Vector128<uint> x3 = o3;
+			Vector128<uint> x4 = o4;
+			Vector128<uint> x5 = o5;
+			Vector128<uint> x6 = o6;
+			Vector128<uint> x7 = o7;
+			Vector128<uint> x8 = o8;
+			Vector128<uint> x9 = o9;
+			Vector128<uint> x10 = o10;
+			Vector128<uint> x11 = o11;
 			// 12
 			// 13
-			var x14 = o14;
-			var x15 = o15;
+			Vector128<uint> x14 = o14;
+			Vector128<uint> x15 = o15;
 
-			var counter = *(state + 12) | (ulong)*(state + 13) << 32;
-			var t0 = Vector128.Create(counter).AsUInt32();
-			var t1 = t0;
+			ulong counter = *(state + 12) | (ulong)*(state + 13) << 32;
+			Vector128<uint> t0 = Vector128.Create(counter).AsUInt32();
+			Vector128<uint> t1 = t0;
 
-			var x12 = Sse2.Add(IncCounter01, t0.AsUInt64()).AsUInt32();
-			var x13 = Sse2.Add(IncCounter23, t1.AsUInt64()).AsUInt32();
+			Vector128<uint> x12 = Sse2.Add(IncCounter01, t0.AsUInt64()).AsUInt32();
+			Vector128<uint> x13 = Sse2.Add(IncCounter23, t1.AsUInt64()).AsUInt32();
 
 			t0 = Sse2.UnpackLow(x12, x13);
 			t1 = Sse2.UnpackHigh(x12, x13);
@@ -411,15 +420,15 @@ internal static class ChaCha20Utils
 			x12 = Sse2.UnpackLow(t0, t1);
 			x13 = Sse2.UnpackHigh(t0, t1);
 
-			var o12 = x12;
-			var o13 = x13;
+			Vector128<uint> o12 = x12;
+			Vector128<uint> o13 = x13;
 
 			counter += 4;
 
 			*(state + 12) = (uint)(counter & 0xFFFFFFFF);
 			*(state + 13) = (uint)(counter >> 32 & 0xFFFFFFFF);
 
-			for (var i = 0; i < rounds; i += 2)
+			for (int i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x4, ref x8, ref x12);
 				QuarterRound(ref x1, ref x5, ref x9, ref x13);
@@ -445,48 +454,48 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void ChaChaCore256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 	{
-		var o0 = Vector128.Create(*(state + 0));
-		var o1 = Vector128.Create(*(state + 1));
-		var o2 = Vector128.Create(*(state + 2));
-		var o3 = Vector128.Create(*(state + 3));
-		var o4 = Vector128.Create(*(state + 4));
-		var o5 = Vector128.Create(*(state + 5));
-		var o6 = Vector128.Create(*(state + 6));
-		var o7 = Vector128.Create(*(state + 7));
-		var o8 = Vector128.Create(*(state + 8));
-		var o9 = Vector128.Create(*(state + 9));
-		var o10 = Vector128.Create(*(state + 10));
-		var o11 = Vector128.Create(*(state + 11));
+		Vector128<uint> o0 = Vector128.Create(*(state + 0));
+		Vector128<uint> o1 = Vector128.Create(*(state + 1));
+		Vector128<uint> o2 = Vector128.Create(*(state + 2));
+		Vector128<uint> o3 = Vector128.Create(*(state + 3));
+		Vector128<uint> o4 = Vector128.Create(*(state + 4));
+		Vector128<uint> o5 = Vector128.Create(*(state + 5));
+		Vector128<uint> o6 = Vector128.Create(*(state + 6));
+		Vector128<uint> o7 = Vector128.Create(*(state + 7));
+		Vector128<uint> o8 = Vector128.Create(*(state + 8));
+		Vector128<uint> o9 = Vector128.Create(*(state + 9));
+		Vector128<uint> o10 = Vector128.Create(*(state + 10));
+		Vector128<uint> o11 = Vector128.Create(*(state + 11));
 		// 12
-		var o13 = Vector128.Create(*(state + 13));
-		var o14 = Vector128.Create(*(state + 14));
-		var o15 = Vector128.Create(*(state + 15));
+		Vector128<uint> o13 = Vector128.Create(*(state + 13));
+		Vector128<uint> o14 = Vector128.Create(*(state + 14));
+		Vector128<uint> o15 = Vector128.Create(*(state + 15));
 
 		while (length >= 256)
 		{
-			var x0 = o0;
-			var x1 = o1;
-			var x2 = o2;
-			var x3 = o3;
-			var x4 = o4;
-			var x5 = o5;
-			var x6 = o6;
-			var x7 = o7;
-			var x8 = o8;
-			var x9 = o9;
-			var x10 = o10;
-			var x11 = o11;
+			Vector128<uint> x0 = o0;
+			Vector128<uint> x1 = o1;
+			Vector128<uint> x2 = o2;
+			Vector128<uint> x3 = o3;
+			Vector128<uint> x4 = o4;
+			Vector128<uint> x5 = o5;
+			Vector128<uint> x6 = o6;
+			Vector128<uint> x7 = o7;
+			Vector128<uint> x8 = o8;
+			Vector128<uint> x9 = o9;
+			Vector128<uint> x10 = o10;
+			Vector128<uint> x11 = o11;
 			// 12
-			var x13 = o13;
-			var x14 = o14;
-			var x15 = o15;
+			Vector128<uint> x13 = o13;
+			Vector128<uint> x14 = o14;
+			Vector128<uint> x15 = o15;
 
-			var x12 = Sse2.Add(IncCounter0123_128, Vector128.Create(*(state + 12)));
-			var o12 = x12;
+			Vector128<uint> x12 = Sse2.Add(IncCounter0123_128, Vector128.Create(*(state + 12)));
+			Vector128<uint> o12 = x12;
 
 			*(state + 12) += 4;
 
-			for (var i = 0; i < rounds; i += 2)
+			for (int i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x4, ref x8, ref x12);
 				QuarterRound(ref x1, ref x5, ref x9, ref x13);
@@ -525,10 +534,10 @@ internal static class ChaCha20Utils
 		x3 = Sse2.Add(x3, o3);
 
 		// Transpose
-		var t0 = Sse2.UnpackLow(x0, x1);
-		var t1 = Sse2.UnpackLow(x2, x3);
-		var t2 = Sse2.UnpackHigh(x0, x1);
-		var t3 = Sse2.UnpackHigh(x2, x3);
+		Vector128<uint> t0 = Sse2.UnpackLow(x0, x1);
+		Vector128<uint> t1 = Sse2.UnpackLow(x2, x3);
+		Vector128<uint> t2 = Sse2.UnpackHigh(x0, x1);
+		Vector128<uint> t3 = Sse2.UnpackHigh(x2, x3);
 
 		x0 = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
 		x1 = Sse2.UnpackHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
@@ -554,44 +563,44 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void ChaChaCoreOriginal512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 	{
-		var o0 = Vector256.Create(*(state + 0));
-		var o1 = Vector256.Create(*(state + 1));
-		var o2 = Vector256.Create(*(state + 2));
-		var o3 = Vector256.Create(*(state + 3));
-		var o4 = Vector256.Create(*(state + 4));
-		var o5 = Vector256.Create(*(state + 5));
-		var o6 = Vector256.Create(*(state + 6));
-		var o7 = Vector256.Create(*(state + 7));
-		var o8 = Vector256.Create(*(state + 8));
-		var o9 = Vector256.Create(*(state + 9));
-		var o10 = Vector256.Create(*(state + 10));
-		var o11 = Vector256.Create(*(state + 11));
-		var o14 = Vector256.Create(*(state + 14));
-		var o15 = Vector256.Create(*(state + 15));
+		Vector256<uint> o0 = Vector256.Create(*(state + 0));
+		Vector256<uint> o1 = Vector256.Create(*(state + 1));
+		Vector256<uint> o2 = Vector256.Create(*(state + 2));
+		Vector256<uint> o3 = Vector256.Create(*(state + 3));
+		Vector256<uint> o4 = Vector256.Create(*(state + 4));
+		Vector256<uint> o5 = Vector256.Create(*(state + 5));
+		Vector256<uint> o6 = Vector256.Create(*(state + 6));
+		Vector256<uint> o7 = Vector256.Create(*(state + 7));
+		Vector256<uint> o8 = Vector256.Create(*(state + 8));
+		Vector256<uint> o9 = Vector256.Create(*(state + 9));
+		Vector256<uint> o10 = Vector256.Create(*(state + 10));
+		Vector256<uint> o11 = Vector256.Create(*(state + 11));
+		Vector256<uint> o14 = Vector256.Create(*(state + 14));
+		Vector256<uint> o15 = Vector256.Create(*(state + 15));
 
 		while (length >= 512)
 		{
-			var x0 = o0;
-			var x1 = o1;
-			var x2 = o2;
-			var x3 = o3;
-			var x4 = o4;
-			var x5 = o5;
-			var x6 = o6;
-			var x7 = o7;
-			var x8 = o8;
-			var x9 = o9;
-			var x10 = o10;
-			var x11 = o11;
-			var x14 = o14;
-			var x15 = o15;
+			Vector256<uint> x0 = o0;
+			Vector256<uint> x1 = o1;
+			Vector256<uint> x2 = o2;
+			Vector256<uint> x3 = o3;
+			Vector256<uint> x4 = o4;
+			Vector256<uint> x5 = o5;
+			Vector256<uint> x6 = o6;
+			Vector256<uint> x7 = o7;
+			Vector256<uint> x8 = o8;
+			Vector256<uint> x9 = o9;
+			Vector256<uint> x10 = o10;
+			Vector256<uint> x11 = o11;
+			Vector256<uint> x14 = o14;
+			Vector256<uint> x15 = o15;
 
-			var counter = *(state + 12) | (ulong)*(state + 13) << 32;
-			var x12 = Vector256.Create(counter).AsUInt32();
-			var x13 = x12;
+			ulong counter = *(state + 12) | (ulong)*(state + 13) << 32;
+			Vector256<uint> x12 = Vector256.Create(counter).AsUInt32();
+			Vector256<uint> x13 = x12;
 
-			var t0 = Avx2.Add(IncCounter0123, x12.AsUInt64()).AsUInt32();
-			var t1 = Avx2.Add(IncCounter4567, x13.AsUInt64()).AsUInt32();
+			Vector256<uint> t0 = Avx2.Add(IncCounter0123, x12.AsUInt64()).AsUInt32();
+			Vector256<uint> t1 = Avx2.Add(IncCounter4567, x13.AsUInt64()).AsUInt32();
 
 			x12 = Avx2.UnpackLow(t0, t1);
 			x13 = Avx2.UnpackHigh(t0, t1);
@@ -602,15 +611,15 @@ internal static class ChaCha20Utils
 			x12 = Avx2.PermuteVar8x32(t0, Permute3);
 			x13 = Avx2.PermuteVar8x32(t1, Permute3);
 
-			var o12 = x12;
-			var o13 = x13;
+			Vector256<uint> o12 = x12;
+			Vector256<uint> o13 = x13;
 
 			counter += 8;
 
 			*(state + 12) = (uint)(counter & 0xFFFFFFFF);
 			*(state + 13) = (uint)(counter >> 32 & 0xFFFFFFFF);
 
-			for (var i = 0; i < rounds; i += 2)
+			for (int i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x4, ref x8, ref x12);
 				QuarterRound(ref x1, ref x5, ref x9, ref x13);
@@ -623,17 +632,43 @@ internal static class ChaCha20Utils
 			}
 
 			AddTransposeXor(
-				ref x0, ref x1, ref x2, ref x3,
-				ref x4, ref x5, ref x6, ref x7,
-				ref o0, ref o1, ref o2, ref o3,
-				ref o4, ref o5, ref o6, ref o7,
-				source, destination);
+				ref x0,
+				ref x1,
+				ref x2,
+				ref x3,
+				ref x4,
+				ref x5,
+				ref x6,
+				ref x7,
+				ref o0,
+				ref o1,
+				ref o2,
+				ref o3,
+				ref o4,
+				ref o5,
+				ref o6,
+				ref o7,
+				source,
+				destination);
 			AddTransposeXor(
-				ref x8, ref x9, ref x10, ref x11,
-				ref x12, ref x13, ref x14, ref x15,
-				ref o8, ref o9, ref o10, ref o11,
-				ref o12, ref o13, ref o14, ref o15,
-				source + 32, destination + 32);
+				ref x8,
+				ref x9,
+				ref x10,
+				ref x11,
+				ref x12,
+				ref x13,
+				ref x14,
+				ref x15,
+				ref o8,
+				ref o9,
+				ref o10,
+				ref o11,
+				ref o12,
+				ref o13,
+				ref o14,
+				ref o15,
+				source + 32,
+				destination + 32);
 
 			length -= 512;
 			destination += 512;
@@ -644,46 +679,46 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void ChaChaCore512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
 	{
-		var o0 = Vector256.Create(*(state + 0));
-		var o1 = Vector256.Create(*(state + 1));
-		var o2 = Vector256.Create(*(state + 2));
-		var o3 = Vector256.Create(*(state + 3));
-		var o4 = Vector256.Create(*(state + 4));
-		var o5 = Vector256.Create(*(state + 5));
-		var o6 = Vector256.Create(*(state + 6));
-		var o7 = Vector256.Create(*(state + 7));
-		var o8 = Vector256.Create(*(state + 8));
-		var o9 = Vector256.Create(*(state + 9));
-		var o10 = Vector256.Create(*(state + 10));
-		var o11 = Vector256.Create(*(state + 11));
-		var o13 = Vector256.Create(*(state + 13));
-		var o14 = Vector256.Create(*(state + 14));
-		var o15 = Vector256.Create(*(state + 15));
+		Vector256<uint> o0 = Vector256.Create(*(state + 0));
+		Vector256<uint> o1 = Vector256.Create(*(state + 1));
+		Vector256<uint> o2 = Vector256.Create(*(state + 2));
+		Vector256<uint> o3 = Vector256.Create(*(state + 3));
+		Vector256<uint> o4 = Vector256.Create(*(state + 4));
+		Vector256<uint> o5 = Vector256.Create(*(state + 5));
+		Vector256<uint> o6 = Vector256.Create(*(state + 6));
+		Vector256<uint> o7 = Vector256.Create(*(state + 7));
+		Vector256<uint> o8 = Vector256.Create(*(state + 8));
+		Vector256<uint> o9 = Vector256.Create(*(state + 9));
+		Vector256<uint> o10 = Vector256.Create(*(state + 10));
+		Vector256<uint> o11 = Vector256.Create(*(state + 11));
+		Vector256<uint> o13 = Vector256.Create(*(state + 13));
+		Vector256<uint> o14 = Vector256.Create(*(state + 14));
+		Vector256<uint> o15 = Vector256.Create(*(state + 15));
 
 		while (length >= 512)
 		{
-			var x0 = o0;
-			var x1 = o1;
-			var x2 = o2;
-			var x3 = o3;
-			var x4 = o4;
-			var x5 = o5;
-			var x6 = o6;
-			var x7 = o7;
-			var x8 = o8;
-			var x9 = o9;
-			var x10 = o10;
-			var x11 = o11;
-			var x13 = o13;
-			var x14 = o14;
-			var x15 = o15;
+			Vector256<uint> x0 = o0;
+			Vector256<uint> x1 = o1;
+			Vector256<uint> x2 = o2;
+			Vector256<uint> x3 = o3;
+			Vector256<uint> x4 = o4;
+			Vector256<uint> x5 = o5;
+			Vector256<uint> x6 = o6;
+			Vector256<uint> x7 = o7;
+			Vector256<uint> x8 = o8;
+			Vector256<uint> x9 = o9;
+			Vector256<uint> x10 = o10;
+			Vector256<uint> x11 = o11;
+			Vector256<uint> x13 = o13;
+			Vector256<uint> x14 = o14;
+			Vector256<uint> x15 = o15;
 
-			var x12 = Avx2.Add(IncCounter01234567, Vector256.Create(*(state + 12)));
-			var o12 = x12;
+			Vector256<uint> x12 = Avx2.Add(IncCounter01234567, Vector256.Create(*(state + 12)));
+			Vector256<uint> o12 = x12;
 
 			*(state + 12) += 8;
 
-			for (var i = 0; i < rounds; i += 2)
+			for (int i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x4, ref x8, ref x12);
 				QuarterRound(ref x1, ref x5, ref x9, ref x13);
@@ -696,17 +731,43 @@ internal static class ChaCha20Utils
 			}
 
 			AddTransposeXor(
-				ref x0, ref x1, ref x2, ref x3,
-				ref x4, ref x5, ref x6, ref x7,
-				ref o0, ref o1, ref o2, ref o3,
-				ref o4, ref o5, ref o6, ref o7,
-				source, destination);
+				ref x0,
+				ref x1,
+				ref x2,
+				ref x3,
+				ref x4,
+				ref x5,
+				ref x6,
+				ref x7,
+				ref o0,
+				ref o1,
+				ref o2,
+				ref o3,
+				ref o4,
+				ref o5,
+				ref o6,
+				ref o7,
+				source,
+				destination);
 			AddTransposeXor(
-				ref x8, ref x9, ref x10, ref x11,
-				ref x12, ref x13, ref x14, ref x15,
-				ref o8, ref o9, ref o10, ref o11,
-				ref o12, ref o13, ref o14, ref o15,
-				source + 32, destination + 32);
+				ref x8,
+				ref x9,
+				ref x10,
+				ref x11,
+				ref x12,
+				ref x13,
+				ref x14,
+				ref x15,
+				ref o8,
+				ref o9,
+				ref o10,
+				ref o11,
+				ref o12,
+				ref o13,
+				ref o14,
+				ref o15,
+				source + 32,
+				destination + 32);
 
 			length -= 512;
 			destination += 512;
@@ -733,14 +794,14 @@ internal static class ChaCha20Utils
 		x7 = Avx2.Add(x7, o7);
 
 		// Transpose
-		var t0 = Avx2.UnpackLow(x0, x1);
-		var t1 = Avx2.UnpackLow(x2, x3);
-		var t2 = Avx2.UnpackHigh(x0, x1);
-		var t3 = Avx2.UnpackHigh(x2, x3);
-		var t4 = Avx2.UnpackLow(x4, x5);
-		var t5 = Avx2.UnpackLow(x6, x7);
-		var t6 = Avx2.UnpackHigh(x4, x5);
-		var t7 = Avx2.UnpackHigh(x6, x7);
+		Vector256<uint> t0 = Avx2.UnpackLow(x0, x1);
+		Vector256<uint> t1 = Avx2.UnpackLow(x2, x3);
+		Vector256<uint> t2 = Avx2.UnpackHigh(x0, x1);
+		Vector256<uint> t3 = Avx2.UnpackHigh(x2, x3);
+		Vector256<uint> t4 = Avx2.UnpackLow(x4, x5);
+		Vector256<uint> t5 = Avx2.UnpackLow(x6, x7);
+		Vector256<uint> t6 = Avx2.UnpackHigh(x4, x5);
+		Vector256<uint> t7 = Avx2.UnpackHigh(x6, x7);
 
 		x0 = Avx2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
 		x1 = Avx2.UnpackHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
@@ -827,10 +888,10 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 	{
-		var t0 = Avx2.Permute2x128(a, b, 0x20);
-		var t1 = Avx2.Permute2x128(c, d, 0x20);
-		var t2 = Avx2.Permute2x128(a, b, 0x31);
-		var t3 = Avx2.Permute2x128(c, d, 0x31);
+		Vector256<uint> t0 = Avx2.Permute2x128(a, b, 0x20);
+		Vector256<uint> t1 = Avx2.Permute2x128(c, d, 0x20);
+		Vector256<uint> t2 = Avx2.Permute2x128(a, b, 0x31);
+		Vector256<uint> t3 = Avx2.Permute2x128(c, d, 0x31);
 
 		a = t0;
 		b = t1;

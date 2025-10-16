@@ -124,7 +124,8 @@ public class MD5Digest : IHash
 
 		if (_bufferIndex != 0)
 		{
-			var remain = 4 - _bufferIndex;
+			int remain = 4 - _bufferIndex;
+
 			if (source.Length < remain)
 			{
 				source.CopyTo(_buffer.AsSpan(_bufferIndex));
@@ -174,7 +175,7 @@ public class MD5Digest : IHash
 				1 => _buffer[0] | padding << 8,
 				2 => _buffer[0] | (uint)_buffer[1] << 8 | padding << 16,
 				3 => _buffer[0] | (uint)_buffer[1] << 8 | (uint)_buffer[2] << 16 | padding << 24,
-				_ => throw new InvalidOperationException(@"unreachable code!!!")
+				_ => ThrowHelper.ThrowUnreachable<uint>()
 			};
 
 			if (_index == 15)
@@ -182,7 +183,7 @@ public class MD5Digest : IHash
 				X[15] = 0;
 			}
 
-			if (_index > 14) // 15 or 16
+			if (_index > 14)// 15 or 16
 			{
 				Process();
 				_index = 0;
@@ -190,13 +191,13 @@ public class MD5Digest : IHash
 
 			//final
 
-			for (var i = _index; i < 14; ++i)
+			for (int i = _index; i < 14; ++i)
 			{
 				X[i] = 0;
 			}
 
 			X[14] = (uint)(_byteCount << 3 & 0xFFFFFFFF);
-			X[15] = (uint)(_byteCount >> (32 - 3) & 0xFFFFFFFF);
+			X[15] = (uint)(_byteCount >> 32 - 3 & 0xFFFFFFFF);
 
 			Process();
 
@@ -225,10 +226,10 @@ public class MD5Digest : IHash
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected void Process()
 	{
-		var a = A;
-		var b = B;
-		var c = C;
-		var d = D;
+		uint a = A;
+		uint b = B;
+		uint c = C;
+		uint d = D;
 
 		a = FF(a, b, c, d, X[0], S11, 3614090360);
 		d = FF(d, a, b, c, X[1], S12, 3905402710);

@@ -59,7 +59,8 @@ public static class Hkdf
 		Span<byte> remainingOutput = output;
 
 		using IMac hmac = HmacUtils.Create(type, prk);
-		for (int i = 1; ; ++i)
+
+		for (int i = 1;; ++i)
 		{
 			hmac.Update(t);
 			hmac.Update(info);
@@ -113,7 +114,7 @@ public static class Hkdf
 			DigestType.Sha256 => HashConstants.Sha256Length,
 			DigestType.Sha384 => HashConstants.Sha384Length,
 			DigestType.Sha512 => HashConstants.Sha512Length,
-			_ => throw new ArgumentOutOfRangeException(nameof(type))
+			_ => throw new ArgumentOutOfRangeException(nameof(type), type, default)
 		};
 	}
 }

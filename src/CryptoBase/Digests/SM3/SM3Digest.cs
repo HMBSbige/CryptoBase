@@ -100,6 +100,7 @@ public class SM3Digest : IHash
 		if (_bufferIndex != 0)
 		{
 			int remain = 4 - _bufferIndex;
+
 			if (source.Length < remain)
 			{
 				source.CopyTo(_buffer.AsSpan(_bufferIndex));
@@ -124,6 +125,7 @@ public class SM3Digest : IHash
 			_w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(source);
 			source = source[SizeOfInt..];
 		}
+
 		if (_index == BlockSizeOfInt)
 		{
 			Process();
@@ -148,7 +150,7 @@ public class SM3Digest : IHash
 				1 => (uint)_buffer[0] << 24 | padding << 16,
 				2 => (uint)_buffer[0] << 24 | (uint)_buffer[1] << 16 | padding << 8,
 				3 => (uint)_buffer[0] << 24 | (uint)_buffer[1] << 16 | (uint)_buffer[2] << 8 | padding,
-				_ => throw new InvalidOperationException(@"unreachable code!!!")
+				_ => ThrowHelper.ThrowUnreachable<uint>()
 			};
 
 			if (_index == 15)
@@ -156,7 +158,7 @@ public class SM3Digest : IHash
 				_w[15] = 0;
 			}
 
-			if (_index > 14) // 15 or 16
+			if (_index > 14)// 15 or 16
 			{
 				Process();
 				_index = 0;
@@ -167,7 +169,7 @@ public class SM3Digest : IHash
 				_w[i] = 0;
 			}
 
-			_w[14] = (uint)(_byteCount >> (32 - 3) & 0xFFFFFFFF);
+			_w[14] = (uint)(_byteCount >> 32 - 3 & 0xFFFFFFFF);
 			_w[15] = (uint)(_byteCount << 3 & 0xFFFFFFFF);
 
 			Process();
@@ -175,6 +177,7 @@ public class SM3Digest : IHash
 			if (Avx.IsSupported && Avx2.IsSupported)
 			{
 				Vector256<byte> v = V.ReverseEndianness32().AsByte();
+
 				fixed (byte* p = destination)
 				{
 					Avx.Store(p, v);
@@ -231,6 +234,7 @@ public class SM3Digest : IHash
 
 			uint w1 = _w[j] ^ _w[j + 4];
 			uint tt1, tt2;
+
 			if (j < 16)
 			{
 				tt1 = FF0(a, b, c) + d + ss2 + w1;
@@ -241,6 +245,7 @@ public class SM3Digest : IHash
 				tt1 = FF1(a, b, c) + d + ss2 + w1;
 				tt2 = GG1(e, f, g) + h + ss1 + _w[j];
 			}
+
 			d = c;
 			c = b.RotateLeft(9);
 			b = a;
