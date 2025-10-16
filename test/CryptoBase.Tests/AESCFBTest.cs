@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 
@@ -57,8 +56,6 @@ public class AESCFBTest
 	{
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
-		Test_Internal(new BcAESCFBStreamCrypto(true, key, iv), hex, hex2);
-		Test_Internal(new BcAESCFBStreamCrypto(false, key, iv), hex2, hex);
 		Test_Internal(StreamCryptoCreate.AesCfb(true, key, iv), hex, hex2);
 		Test_Internal(StreamCryptoCreate.AesCfb(false, key, iv), hex2, hex);
 	}

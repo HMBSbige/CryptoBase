@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 using System.Security.Cryptography;
 
@@ -30,12 +29,6 @@ public class XChaCha20Benchmark
 		crypto.Update(origin, o);
 
 		crypto.Dispose();
-	}
-
-	[Benchmark]
-	public void BouncyCastle()
-	{
-		Test(new BcXChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
 	}
 
 	[Benchmark]

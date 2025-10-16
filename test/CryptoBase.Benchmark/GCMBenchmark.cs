@@ -11,7 +11,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class GCMBenchmark
 {
-	[Params(1000000)]
+	[Params(1024, 8192, 1000000)]
 	public int Length { get; set; }
 
 	private Memory<byte> _randombytes;

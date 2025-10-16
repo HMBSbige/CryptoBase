@@ -44,7 +44,7 @@ public class AESTest
 	public void Test(string keyHex, string hex1, string hex2)
 	{
 		byte[] key = keyHex.FromHex();
-		Test_Internal(new BcAESCrypto(default, key), hex1, hex2);
+		Test_Internal(new BcAESCrypto(key), hex1, hex2);
 		Test_Internal(new AESCryptoSF(key), hex1, hex2);
 		Test_Internal(AESUtils.CreateECB(key), hex1, hex2);
 		Test_Internal(new AESECBCrypto(key), hex1, hex2);

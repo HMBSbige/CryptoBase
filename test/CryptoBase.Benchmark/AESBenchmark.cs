@@ -29,7 +29,7 @@ public class AESBenchmark
 	{
 		Span<byte> o = stackalloc byte[origin.Length];
 
-		for (var i = 0; i < Max; ++i)
+		for (int i = 0; i < Max; ++i)
 		{
 			crypto.Encrypt(origin, o);
 		}
@@ -41,7 +41,7 @@ public class AESBenchmark
 	{
 		Span<byte> o = stackalloc byte[origin.Length];
 
-		for (var i = 0; i < Max; ++i)
+		for (int i = 0; i < Max; ++i)
 		{
 			crypto.Decrypt(origin, o);
 		}
@@ -52,7 +52,7 @@ public class AESBenchmark
 	[Benchmark]
 	public void BouncyCastleEncrypt()
 	{
-		TestEncrypt(new BcAESCrypto(true, _randomKey), _randombytes.Span);
+		TestEncrypt(new BcAESCrypto(_randomKey), _randombytes.Span);
 	}
 
 	[Benchmark]
@@ -76,7 +76,7 @@ public class AESBenchmark
 	[Benchmark]
 	public void BouncyCastleDecrypt()
 	{
-		TestDecrypt(new BcAESCrypto(false, _randomKey), _randombytes.Span);
+		TestDecrypt(new BcAESCrypto(_randomKey), _randombytes.Span);
 	}
 
 	[Benchmark]

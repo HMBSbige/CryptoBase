@@ -10,7 +10,7 @@ public class BcChaCha20OriginalCrypto : SnuffleCryptoBase
 
 	private readonly ChaChaEngine _engine;
 
-	public BcChaCha20OriginalCrypto(byte[] key, byte[] iv)
+	public BcChaCha20OriginalCrypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		_engine = new ChaChaEngine();
 		_engine.Init(default, new ParametersWithIV(new KeyParameter(key), iv));
@@ -18,7 +18,7 @@ public class BcChaCha20OriginalCrypto : SnuffleCryptoBase
 
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		_engine.BcUpdateStream(source, destination);
+		_engine.ProcessBytes(source, destination);
 	}
 
 	public override void Reset()

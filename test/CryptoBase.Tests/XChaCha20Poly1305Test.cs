@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
 
@@ -49,7 +48,6 @@ public class XChaCha20Poly1305Test
 	public void Test(string keyHex, string nonceHex, string associatedDataHex, string tagHex, string plainHex, string cipherHex)
 	{
 		byte[] key = keyHex.FromHex();
-		Test_Internal(new BcXChaCha20Poly1305Crypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 		Test_Internal(AEADCryptoCreate.XChaCha20Poly1305(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 	}
 }

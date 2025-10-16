@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using System.Security.Cryptography;
@@ -45,11 +44,5 @@ public class CFBBenchmark
 	public void AESCFB()
 	{
 		Test(StreamCryptoCreate.AesCfb(true, _randomKey16, _randomIv16), _randombytes.Span);
-	}
-
-	[Benchmark]
-	public void BouncyCastle()
-	{
-		Test(new BcAESCFBStreamCrypto(true, _randomKey16, _randomIv16), _randombytes.Span);
 	}
 }

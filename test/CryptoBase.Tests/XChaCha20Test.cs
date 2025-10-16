@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
@@ -66,7 +65,6 @@ public class XChaCha20Test
 	{
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
-		TestCounter1_Internal(new BcXChaCha20Crypto(key, iv), hex, hex2);
 		TestCounter1_Internal(new XChaCha20CryptoSF(key, iv), hex, hex2);
 		TestCounter1_Internal(StreamCryptoCreate.XChaCha20(key, iv), hex, hex2);
 	}
@@ -86,7 +84,6 @@ public class XChaCha20Test
 	{
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
-		TestCounter0_Internal(new BcXChaCha20Crypto(key, iv), hex, hex2);
 		TestCounter0_Internal(new XChaCha20CryptoSF(key, iv), hex, hex2);
 		TestCounter0_Internal(StreamCryptoCreate.XChaCha20(key, iv), hex, hex2);
 	}

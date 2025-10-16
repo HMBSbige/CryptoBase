@@ -1,21 +1,15 @@
 using CryptoBase.Abstractions.Digests;
 using Org.BouncyCastle.Crypto;
-using System.Buffers;
 
 namespace CryptoBase.BouncyCastle.Digests;
 
-public abstract class BcDigest : IHash
+public abstract class BcDigest(IDigest hasher) : IHash
 {
 	public abstract string Name { get; }
-	public abstract int Length { get; }
-	public abstract int BlockSize { get; }
 
-	private readonly IDigest _hasher;
+	public int Length => hasher.GetDigestSize();
 
-	protected BcDigest(IDigest hasher)
-	{
-		_hasher = hasher;
-	}
+	public int BlockSize => hasher.GetByteLength();
 
 	public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 	{
@@ -25,35 +19,17 @@ public abstract class BcDigest : IHash
 
 	public void Update(ReadOnlySpan<byte> source)
 	{
-		var buffer = ArrayPool<byte>.Shared.Rent(source.Length);
-		try
-		{
-			source.CopyTo(buffer);
-			_hasher.BlockUpdate(buffer, 0, source.Length);
-		}
-		finally
-		{
-			ArrayPool<byte>.Shared.Return(buffer);
-		}
+		hasher.BlockUpdate(source);
 	}
 
 	public void GetHash(Span<byte> destination)
 	{
-		var outBuffer = ArrayPool<byte>.Shared.Rent(Length);
-		try
-		{
-			_hasher.DoFinal(outBuffer, 0);
-			outBuffer.AsSpan(0, Length).CopyTo(destination);
-		}
-		finally
-		{
-			ArrayPool<byte>.Shared.Return(outBuffer);
-		}
+		hasher.DoFinal(destination);
 	}
 
 	public void Reset()
 	{
-		_hasher.Reset();
+		hasher.Reset();
 	}
 
 	public void Dispose()

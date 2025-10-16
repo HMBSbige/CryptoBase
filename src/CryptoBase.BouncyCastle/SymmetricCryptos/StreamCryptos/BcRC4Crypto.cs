@@ -8,21 +8,21 @@ public class BcRC4Crypto : StreamCryptoBase
 {
 	public override string Name => @"RC4";
 
-	private readonly RC4Engine _rc4;
+	private readonly RC4Engine _engine;
 
-	public BcRC4Crypto(byte[] key)
+	public BcRC4Crypto(ReadOnlySpan<byte> key)
 	{
-		_rc4 = new RC4Engine();
-		_rc4.Init(default, new KeyParameter(key));
+		_engine = new RC4Engine();
+		_engine.Init(default, new KeyParameter(key));
 	}
 
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		_rc4.BcUpdateStream(source, destination);
+		_engine.ProcessBytes(source, destination);
 	}
 
 	public override void Reset()
 	{
-		_rc4.Reset();
+		_engine.Reset();
 	}
 }

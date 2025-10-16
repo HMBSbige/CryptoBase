@@ -4,3 +4,4 @@ global using System.Runtime.Intrinsics;
 global using Xunit;
 
 [assembly: CaptureConsole]
+[assembly: CollectionBehavior(DisableTestParallelization = true)]

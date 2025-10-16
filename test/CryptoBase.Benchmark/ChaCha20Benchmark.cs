@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class ChaCha20Benchmark
 {
-	[Params(1000000)]
+	[Params(1024, 8192, 1000000)]
 	public int ByteLength { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -27,7 +27,11 @@ public class ChaCha20Benchmark
 	private static void Test(IStreamCrypto crypto, Span<byte> origin)
 	{
 		Span<byte> o = stackalloc byte[origin.Length];
-		crypto.Update(origin, o);
+
+		for (int i = 0; i < 1000; ++i)
+		{
+			crypto.Update(origin, o);
+		}
 
 		crypto.Dispose();
 	}

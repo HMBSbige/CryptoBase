@@ -12,7 +12,7 @@ public class BcXSalsa20Crypto : SnuffleCryptoBase
 
 	private readonly XSalsa20Engine _engine;
 
-	public BcXSalsa20Crypto(byte[] key, byte[] iv)
+	public BcXSalsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		_engine = new XSalsa20Engine();
 		_engine.Init(default, new ParametersWithIV(new KeyParameter(key), iv));
@@ -20,7 +20,7 @@ public class BcXSalsa20Crypto : SnuffleCryptoBase
 
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		_engine.BcUpdateStream(source, destination);
+		_engine.ProcessBytes(source, destination);
 	}
 
 	public override void Reset()

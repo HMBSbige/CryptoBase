@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
 using System.Security.Cryptography;
 
@@ -32,12 +31,6 @@ public class XChaCha20Poly1305Benchmark
 		crypto.Encrypt(_randomIv.Span, _randombytes.Span, o, tag);
 
 		crypto.Dispose();
-	}
-
-	[Benchmark]
-	public void BouncyCastleEncrypt()
-	{
-		TestEncrypt(new BcXChaCha20Poly1305Crypto(_randomKey));
 	}
 
 	[Benchmark(Baseline = true)]

@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
-    <PackageReference Include="Portable.BouncyCastle" />
   </ItemGroup>
 
   <ItemGroup>

@@ -52,7 +52,7 @@ public class SM4Benchmark
 	[Benchmark]
 	public void BouncyCastleEncrypt()
 	{
-		TestEncrypt(new BcSM4Crypto(true, _randomKey), _randombytes16.Span, 16);
+		TestEncrypt(new BcSM4Crypto(_randomKey), _randombytes16.Span, 16);
 	}
 
 	[Benchmark]
@@ -64,7 +64,7 @@ public class SM4Benchmark
 	[Benchmark]
 	public void BouncyCastleDecrypt()
 	{
-		TestDecrypt(new BcSM4Crypto(false, _randomKey), _randombytes16.Span, 16);
+		TestDecrypt(new BcSM4Crypto(_randomKey), _randombytes16.Span, 16);
 	}
 
 	[Benchmark]
