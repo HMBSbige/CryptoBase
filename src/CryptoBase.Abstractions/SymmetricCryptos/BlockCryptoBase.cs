@@ -8,28 +8,16 @@ public abstract class BlockCryptoBase : IBlockCrypto
 
 	public virtual void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (source.Length < BlockSize)
-		{
-			throw new ArgumentException(string.Empty, nameof(source));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
 
-		if (destination.Length < BlockSize)
-		{
-			throw new ArgumentException(string.Empty, nameof(destination));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
 	}
 
 	public virtual void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (source.Length < BlockSize)
-		{
-			throw new ArgumentException(string.Empty, nameof(source));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
 
-		if (destination.Length < BlockSize)
-		{
-			throw new ArgumentException(string.Empty, nameof(destination));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
 	}
 
 	public virtual void Reset() { }

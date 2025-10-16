@@ -17,4 +17,10 @@ internal static class ThrowHelper
 			ThrowAuthenticationTagMismatch();
 		}
 	}
+
+	[DoesNotReturn]
+	public static T ThrowUnreachable<T>()
+	{
+		throw new InvalidOperationException(@"unreachable code!!!");
+	}
 }

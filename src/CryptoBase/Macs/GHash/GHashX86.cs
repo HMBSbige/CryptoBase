@@ -16,10 +16,7 @@ public sealed class GHashX86 : IMac
 
 	public GHashX86(scoped ReadOnlySpan<byte> key)
 	{
-		if (key.Length < KeySize)
-		{
-			throw new ArgumentException(@"Key length must be 16 bytes", nameof(key));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(key.Length, KeySize, nameof(key));
 
 		_key = FastUtils.CreateVector128Unsafe(key).ReverseEndianness128();
 

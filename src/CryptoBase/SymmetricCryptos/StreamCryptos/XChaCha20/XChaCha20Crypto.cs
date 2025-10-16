@@ -10,10 +10,7 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 
 	protected XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		if (key.Length != 32)
-		{
-			throw new ArgumentException(@"Key length requires 32 bytes");
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
 		Key = key.ToArray();
 

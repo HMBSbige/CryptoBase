@@ -12,10 +12,7 @@ public static class Hkdf
 	public static int Extract(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
 	{
 		int hashLength = HashLength(type);
-		if (prk.Length < hashLength)
-		{
-			throw new ArgumentException(@"prk too small", nameof(prk));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
 
 		if (prk.Length > hashLength)
 		{
@@ -39,26 +36,17 @@ public static class Hkdf
 	{
 		int hashLength = HashLength(type);
 
-		if (output.IsEmpty)
-		{
-			throw new ArgumentException(@"Destination too short", nameof(output));
-		}
+		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
 		int maxOkmLength = 255 * hashLength;
-		if (output.Length > maxOkmLength)
-		{
-			throw new ArgumentException(@"Okm too large", nameof(output));
-		}
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 
 		ExpandInternal(type, hashLength, prk, output, info);
 	}
 
 	private static void ExpandInternal(DigestType type, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
-		if (prk.Length < hashLength)
-		{
-			throw new ArgumentException(@"prk too small", nameof(prk));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
 
 		if (output.Overlaps(info))
 		{
@@ -71,6 +59,7 @@ public static class Hkdf
 		Span<byte> remainingOutput = output;
 
 		using IMac hmac = HmacUtils.Create(type, prk);
+
 		for (int i = 1; ; ++i)
 		{
 			hmac.Update(t);
@@ -103,16 +92,10 @@ public static class Hkdf
 	{
 		int hashLength = HashLength(type);
 
-		if (output.IsEmpty)
-		{
-			throw new ArgumentException(@"Destination too short", nameof(output));
-		}
+		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
 		int maxOkmLength = 255 * hashLength;
-		if (output.Length > maxOkmLength)
-		{
-			throw new ArgumentException(@"Okm too large", nameof(output));
-		}
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 
 		Span<byte> prk = stackalloc byte[hashLength];
 
@@ -131,9 +114,7 @@ public static class Hkdf
 			DigestType.Sha256 => HashConstants.Sha256Length,
 			DigestType.Sha384 => HashConstants.Sha384Length,
 			DigestType.Sha512 => HashConstants.Sha512Length,
-			DigestType.Crc32 => HashConstants.Crc32Length,
-			DigestType.Crc32C => HashConstants.Crc32Length,
-			_ => throw new ArgumentOutOfRangeException(nameof(type))
+			_ => throw new ArgumentOutOfRangeException(nameof(type), type, default)
 		};
 	}
 }

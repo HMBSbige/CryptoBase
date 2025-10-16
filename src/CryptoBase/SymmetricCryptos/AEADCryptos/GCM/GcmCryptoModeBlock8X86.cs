@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Macs.GHash;
-using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 
@@ -15,6 +14,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 	public const int TagSize = 16;
 
 	private static ReadOnlySpan<byte> Init => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
 	private static readonly Vector128<uint> VCounter1 = Vector128.Create(6u, 7, 8, 9);
 	private static readonly Vector128<uint> VAdd4 = Vector128.Create(4u);
 
@@ -28,15 +28,9 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 
 	public GcmCryptoModeBlock8X86(IBlockCrypto crypto, IBlockCrypto crypto8)
 	{
-		if (crypto.BlockSize is not BlockSize)
-		{
-			throw new ArgumentException($@"Crypto block size must be {BlockSize} bytes.", nameof(crypto));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
 
-		if (crypto8.BlockSize is not BlockSize8)
-		{
-			throw new ArgumentException($@"Crypto block size must be {BlockSize8} bytes.", nameof(crypto8));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto8.BlockSize, BlockSize8, nameof(crypto8));
 
 		_crypto = crypto;
 		_crypto8 = crypto8;
@@ -205,23 +199,14 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 
 		FastUtils.Xor(_tagBuffer, _buffer, _tagBuffer, 16);
 
-		if (!CryptographicOperations.FixedTimeEquals(_tagBuffer.AsSpan(0, TagSize), tag))
-		{
-			throw new ArgumentException(@"Unable to decrypt input with these parameters.");
-		}
+		ThrowHelper.ThrowIfAuthenticationTagMismatch(_tagBuffer.AsSpan(0, TagSize), tag);
 	}
 
 	private static void CheckInput(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination)
 	{
-		if (nonce.Length is not NonceSize)
-		{
-			throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
 
-		if (destination.Length != source.Length)
-		{
-			throw new ArgumentException(@"Plaintext and ciphertext must have the same length.", nameof(destination));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, source.Length, nameof(destination));
 	}
 
 	public void Dispose()

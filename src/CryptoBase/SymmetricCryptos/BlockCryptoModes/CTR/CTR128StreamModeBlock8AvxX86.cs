@@ -28,15 +28,9 @@ public class CTR128StreamModeBlock8AvxX86 : IStreamBlockCryptoMode
 		InternalBlockCrypto = crypto;
 		Iv = iv.ToArray();
 
-		if (InternalBlockCrypto.BlockSize is not BlockSize8)
-		{
-			throw new InvalidOperationException($@"Support {BlockSize8} bytes block size only");
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(InternalBlockCrypto.BlockSize, BlockSize8);
 
-		if (Iv.Length > BlockSize)
-		{
-			throw new ArgumentException($@"IV length > {BlockSize} bytes", nameof(iv));
-		}
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(Iv.Length, BlockSize, nameof(iv));
 
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize8);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize8);
@@ -53,10 +47,7 @@ public class CTR128StreamModeBlock8AvxX86 : IStreamBlockCryptoMode
 
 	public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (destination.Length < source.Length)
-		{
-			throw new ArgumentException(string.Empty, nameof(destination));
-		}
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
 		int length = source.Length;
 		fixed (byte* pStream = _keyStream)
