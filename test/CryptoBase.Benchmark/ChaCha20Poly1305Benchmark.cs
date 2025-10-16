@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class ChaCha20Poly1305Benchmark
 {
-	[Params(1000000)]
+	[Params(1024, 8192, 1000000)]
 	public int Length { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -29,7 +29,10 @@ public class ChaCha20Poly1305Benchmark
 		Span<byte> o = stackalloc byte[Length];
 		Span<byte> tag = stackalloc byte[16];
 
-		crypto.Encrypt(_randomIv.Span, _randombytes.Span, o, tag);
+		for (int i = 0; i < 1000; i++)
+		{
+			crypto.Encrypt(_randomIv.Span, _randombytes.Span, o, tag);
+		}
 
 		crypto.Dispose();
 	}

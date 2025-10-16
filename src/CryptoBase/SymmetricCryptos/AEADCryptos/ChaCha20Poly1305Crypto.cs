@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Macs.Poly1305;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
-using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
 
@@ -16,20 +15,13 @@ public class ChaCha20Poly1305Crypto : IAEADCrypto
 	public const int NonceSize = 12;
 	public const int TagSize = 16;
 
-	private static ReadOnlySpan<byte> Init => new byte[]
-	{
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	};
+	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
 	private readonly byte[] _buffer;
 
 	public ChaCha20Poly1305Crypto(ReadOnlySpan<byte> key)
 	{
-		if (key.Length < KeySize)
-		{
-			throw new ArgumentException(@"Key length must be 32 bytes.", nameof(key));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
 		_chacha20 = StreamCryptoCreate.ChaCha20(key);
 
@@ -39,30 +31,23 @@ public class ChaCha20Poly1305Crypto : IAEADCrypto
 	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
 		Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
-		if (nonce.Length != NonceSize)
-		{
-			throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
-		}
-
-		if (destination.Length != source.Length)
-		{
-			throw new ArgumentException(string.Empty, nameof(destination));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, source.Length, nameof(destination));
 
 		_chacha20.SetIV(nonce);
 
 		_chacha20.SetCounter(1);
 		_chacha20.Update(source, destination);
 
-		var buffer = _buffer.AsSpan(0, Poly1305Utils.KeySize);
+		Span<byte> buffer = _buffer.AsSpan(0, Poly1305.KeySize);
 		_chacha20.SetCounter(0);
 		_chacha20.Update(Init, buffer);
-		using var poly1305 = Poly1305Utils.Create(buffer);
+		using Poly1305 poly1305 = new(buffer);
 
 		poly1305.Update(associatedData);
 		poly1305.Update(destination);
 
-		Span<byte> block = _buffer.AsSpan(Poly1305Utils.BlockSize);
+		Span<byte> block = _buffer.AsSpan(Poly1305.BlockSize);
 		BinaryPrimitives.WriteUInt64LittleEndian(block, (ulong)associatedData.Length);
 		BinaryPrimitives.WriteUInt64LittleEndian(block[8..], (ulong)source.Length);
 		poly1305.Update(block);
@@ -73,22 +58,15 @@ public class ChaCha20Poly1305Crypto : IAEADCrypto
 	public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
 		Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
-		if (nonce.Length != NonceSize)
-		{
-			throw new ArgumentException(@"Nonce size must be 12 bytes", nameof(nonce));
-		}
-
-		if (destination.Length != source.Length)
-		{
-			throw new ArgumentException(string.Empty, nameof(destination));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, source.Length, nameof(destination));
 
 		_chacha20.SetIV(nonce);
 
-		var buffer = _buffer.AsSpan(0, Poly1305Utils.KeySize);
+		Span<byte> buffer = _buffer.AsSpan(0, Poly1305.KeySize);
 		_chacha20.SetCounter(0);
 		_chacha20.Update(Init, buffer);
-		using var poly1305 = Poly1305Utils.Create(buffer);
+		using Poly1305 poly1305 = new(buffer);
 
 		poly1305.Update(associatedData);
 		poly1305.Update(source);
@@ -100,10 +78,7 @@ public class ChaCha20Poly1305Crypto : IAEADCrypto
 
 		poly1305.GetMac(block);
 
-		if (!CryptographicOperations.FixedTimeEquals(block, tag))
-		{
-			throw new ArgumentException(@"Unable to decrypt input with these parameters.");
-		}
+		ThrowHelper.ThrowIfAuthenticationTagMismatch(block, tag);
 
 		_chacha20.SetCounter(1);
 		_chacha20.Update(source, destination);

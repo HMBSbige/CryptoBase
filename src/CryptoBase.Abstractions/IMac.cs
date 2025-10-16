@@ -12,7 +12,7 @@ public interface IMac : IDisposable, ICanReset
 	/// </summary>
 	int Length { get; }
 
-	void Update(ReadOnlySpan<byte> source);
+	void Update(scoped ReadOnlySpan<byte> source);
 
-	void GetMac(Span<byte> destination);
+	void GetMac(scoped Span<byte> destination);
 }

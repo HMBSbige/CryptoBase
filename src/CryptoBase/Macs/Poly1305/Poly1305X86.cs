@@ -2,8 +2,10 @@ using CryptoBase.Abstractions;
 
 namespace CryptoBase.Macs.Poly1305;
 
-public class Poly1305X86 : IMac
+public ref struct Poly1305X86 : IMac
 {
+	public static bool IsSupported => Sse2.IsSupported;
+
 	public string Name => @"Poly1305";
 
 	public int Length => 16;
@@ -31,10 +33,7 @@ public class Poly1305X86 : IMac
 
 	public Poly1305X86(ReadOnlySpan<byte> key)
 	{
-		if (key.Length < KeySize)
-		{
-			throw new ArgumentException(@"Key length must be 32 bytes", nameof(key));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
 		// r &= 0xFFFFFFC0FFFFFFC0FFFFFFC0FFFFFFF
 		uint r0 = BinaryPrimitives.ReadUInt32LittleEndian(key) & 0x3FFFFFF;
@@ -112,7 +111,7 @@ public class Poly1305X86 : IMac
 	}
 
 	/// <summary>
-	///  a *= r
+	/// a *= r
 	/// </summary>
 	private void MultiplyR(ref uint a0, ref uint a1, ref uint a2, ref uint a3, ref uint a4)
 	{
@@ -196,7 +195,7 @@ public class Poly1305X86 : IMac
 	/// h += m
 	/// h *= r
 	/// </summary>
-	private void Block(ReadOnlySpan<byte> m)
+	private void Block(scoped ReadOnlySpan<byte> m)
 	{
 		Vector128<uint> h01 = IntrinsicsUtils.CreateTwoUInt(_h0, _h1);
 		Vector128<uint> h23 = IntrinsicsUtils.CreateTwoUInt(_h2, _h3);
@@ -226,7 +225,7 @@ public class Poly1305X86 : IMac
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void Block2(ReadOnlySpan<byte> m)
+	private void Block2(scoped ReadOnlySpan<byte> m)
 	{
 		ReadOnlySpan<uint> n0 = MemoryMarshal.Cast<byte, uint>(m);
 		Vector128<uint> hc0 = IntrinsicsUtils.CreateTwoUInt(n0[0], n0[4]);
@@ -307,7 +306,7 @@ public class Poly1305X86 : IMac
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void Block4(ReadOnlySpan<byte> m)
+	private void Block4(scoped ReadOnlySpan<byte> m)
 	{
 		ReadOnlySpan<uint> n0 = MemoryMarshal.Cast<byte, uint>(m);
 		Vector256<uint> hc0 = IntrinsicsUtils.Create4UInt(n0[0], n0[4], n0[8], n0[12]);
@@ -387,7 +386,7 @@ public class Poly1305X86 : IMac
 		_h0 &= 0x3ffffff;
 	}
 
-	public void Update(ReadOnlySpan<byte> source)
+	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		if (Avx2.IsSupported)
 		{
@@ -420,7 +419,7 @@ public class Poly1305X86 : IMac
 		Block(block);
 	}
 
-	public void GetMac(Span<byte> destination)
+	public void GetMac(scoped Span<byte> destination)
 	{
 		_h2 += _h1 >> 26;
 		_h1 &= 0x3ffffff;
@@ -478,8 +477,7 @@ public class Poly1305X86 : IMac
 		_h0 = _h1 = _h2 = _h3 = _h4 = 0;
 	}
 
-	public void Dispose()
+	public readonly void Dispose()
 	{
-		GC.SuppressFinalize(this);
 	}
 }

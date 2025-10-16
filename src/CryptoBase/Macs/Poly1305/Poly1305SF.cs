@@ -2,7 +2,7 @@ using CryptoBase.Abstractions;
 
 namespace CryptoBase.Macs.Poly1305;
 
-public class Poly1305SF : IMac
+public ref struct Poly1305SF : IMac
 {
 	public string Name => @"Poly1305";
 
@@ -19,10 +19,7 @@ public class Poly1305SF : IMac
 
 	public Poly1305SF(ReadOnlySpan<byte> key)
 	{
-		if (key.Length < KeySize)
-		{
-			throw new ArgumentException(@"Key length must be 32 bytes", nameof(key));
-		}
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
 		// Init
 
@@ -45,7 +42,7 @@ public class Poly1305SF : IMac
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void Block(ReadOnlySpan<byte> m)
+	private void Block(scoped ReadOnlySpan<byte> m)
 	{
 		_h0 += BinaryPrimitives.ReadUInt32LittleEndian(m) & 0x3ffffff;
 		_h1 += BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(3)) >> 2 & 0x3ffffff;
@@ -73,7 +70,7 @@ public class Poly1305SF : IMac
 		_h0 &= 0x3ffffff;
 	}
 
-	public void Update(ReadOnlySpan<byte> source)
+	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		while (source.Length >= BlockSize)
 		{
@@ -92,7 +89,7 @@ public class Poly1305SF : IMac
 		Block(block);
 	}
 
-	public void GetMac(Span<byte> destination)
+	public void GetMac(scoped Span<byte> destination)
 	{
 		_h2 += _h1 >> 26;
 		_h1 &= 0x3ffffff;
@@ -150,8 +147,7 @@ public class Poly1305SF : IMac
 		_h0 = _h1 = _h2 = _h3 = _h4 = 0;
 	}
 
-	public void Dispose()
+	public readonly void Dispose()
 	{
-		GC.SuppressFinalize(this);
 	}
 }

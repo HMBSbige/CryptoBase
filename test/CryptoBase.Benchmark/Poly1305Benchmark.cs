@@ -8,7 +8,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class Poly1305Benchmark
 {
-	[Params(32, 1000000)]
+	[Params(16, 1024, 8192)]
 	public int Length { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -21,7 +21,7 @@ public class Poly1305Benchmark
 		_randomKey = RandomNumberGenerator.GetBytes(32);
 	}
 
-	private void Test(IMac mac)
+	private void Test<T>(T mac) where T : IMac, allows ref struct
 	{
 		Span<byte> o = stackalloc byte[16];
 
