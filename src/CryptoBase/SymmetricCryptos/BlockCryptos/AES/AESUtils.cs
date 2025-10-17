@@ -7,18 +7,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 public static class AESUtils
 {
-	public const byte Rcon0 = 0x00;
-	public const byte Rcon1 = 0x01;
-	public const byte Rcon2 = 0x02;
-	public const byte Rcon3 = 0x04;
-	public const byte Rcon4 = 0x08;
-	public const byte Rcon5 = 0x10;
-	public const byte Rcon6 = 0x20;
-	public const byte Rcon7 = 0x40;
-	public const byte Rcon8 = 0x80;
-	public const byte Rcon9 = 0x1b;
-	public const byte Rcon10 = 0x36;
-
 	public static readonly Aes AesEcb;
 	public static readonly Aes AesCbc;
 
@@ -34,7 +22,7 @@ public static class AESUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static IBlockCrypto CreateECB(ReadOnlySpan<byte> key)
+	public static AESCrypto CreateECB(ReadOnlySpan<byte> key)
 	{
 		if (System.Runtime.Intrinsics.X86.Aes.IsSupported && Sse2.IsSupported)
 		{

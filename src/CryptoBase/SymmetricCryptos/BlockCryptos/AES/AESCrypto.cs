@@ -8,7 +8,19 @@ public abstract class AESCrypto : BlockCryptoBase
 
 	public sealed override int BlockSize => 16;
 
-	protected static ReadOnlySpan<byte> Rcon => [AESUtils.Rcon0, AESUtils.Rcon1, AESUtils.Rcon2, AESUtils.Rcon3, AESUtils.Rcon4, AESUtils.Rcon5, AESUtils.Rcon6, AESUtils.Rcon7, AESUtils.Rcon8, AESUtils.Rcon9, AESUtils.Rcon10];
+	protected static ReadOnlySpan<byte> Rcon => [Rcon0, Rcon1, Rcon2, Rcon3, Rcon4, Rcon5, Rcon6, Rcon7, Rcon8, Rcon9, Rcon10];
+
+	protected const byte Rcon0 = 0x00;
+	protected const byte Rcon1 = 0x01;
+	protected const byte Rcon2 = 0x02;
+	protected const byte Rcon3 = 0x04;
+	protected const byte Rcon4 = 0x08;
+	protected const byte Rcon5 = 0x10;
+	protected const byte Rcon6 = 0x20;
+	protected const byte Rcon7 = 0x40;
+	protected const byte Rcon8 = 0x80;
+	protected const byte Rcon9 = 0x1b;
+	protected const byte Rcon10 = 0x36;
 
 	protected AESCrypto(ReadOnlySpan<byte> key)
 	{
