@@ -2,10 +2,34 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 public class Aes256CryptoX86 : AESCryptoX86
 {
-	private Vector128<byte> _k0, _k1, _k2, _k3, _k4, _k5, _k6, _k7, _k8, _k9, _k10,
-		_k11, _k12, _k13, _k14, _k15, _k16, _k17, _k18, _k19,
-		_k20, _k21, _k22, _k23,
-		_k24, _k25, _k26, _k27;
+	private Vector128<byte> _k0,
+		_k1,
+		_k2,
+		_k3,
+		_k4,
+		_k5,
+		_k6,
+		_k7,
+		_k8,
+		_k9,
+		_k10,
+		_k11,
+		_k12,
+		_k13,
+		_k14,
+		_k15,
+		_k16,
+		_k17,
+		_k18,
+		_k19,
+		_k20,
+		_k21,
+		_k22,
+		_k23,
+		_k24,
+		_k25,
+		_k26,
+		_k27;
 
 	public Aes256CryptoX86(ReadOnlySpan<byte> key) : base(key)
 	{
@@ -28,7 +52,7 @@ public class Aes256CryptoX86 : AESCryptoX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void KeyRound2(ref Vector128<byte> a, ref Vector128<byte> b)
 	{
-		Vector128<byte> t0 = Aes.KeygenAssist(a, Rcon0);
+		Vector128<byte> t0 = Aes.KeygenAssist(a, AESUtils.Rcon0);
 		Vector128<byte> t1 = Sse2.Shuffle(t0.AsUInt32(), 0b10_10_10_10).AsByte();
 
 		t0 = Sse2.ShiftLeftLogical128BitLane(b, 4);
@@ -54,20 +78,20 @@ public class Aes256CryptoX86 : AESCryptoX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Init(ReadOnlySpan<byte> key)
 	{
-		Vector128<byte> t0 = Vector128.Create(key); // 0,15
-		Vector128<byte> t1 = Vector128.Create(key[16..]); // 15,31
+		Vector128<byte> t0 = Vector128.Create(key);// 0,15
+		Vector128<byte> t1 = Vector128.Create(key[16..]);// 15,31
 
 		_k0 = t0;
 
-		KeyRound(out _k1, out _k2, ref t0, ref t1, Rcon1);
-		KeyRound(out _k3, out _k4, ref t0, ref t1, Rcon2);
-		KeyRound(out _k5, out _k6, ref t0, ref t1, Rcon3);
-		KeyRound(out _k7, out _k8, ref t0, ref t1, Rcon4);
-		KeyRound(out _k9, out _k10, ref t0, ref t1, Rcon5);
-		KeyRound(out _k11, out _k12, ref t0, ref t1, Rcon6);
+		KeyRound(out _k1, out _k2, ref t0, ref t1, AESUtils.Rcon1);
+		KeyRound(out _k3, out _k4, ref t0, ref t1, AESUtils.Rcon2);
+		KeyRound(out _k5, out _k6, ref t0, ref t1, AESUtils.Rcon3);
+		KeyRound(out _k7, out _k8, ref t0, ref t1, AESUtils.Rcon4);
+		KeyRound(out _k9, out _k10, ref t0, ref t1, AESUtils.Rcon5);
+		KeyRound(out _k11, out _k12, ref t0, ref t1, AESUtils.Rcon6);
 
 		_k13 = t1;
-		Vector128<byte> t2 = Aes.KeygenAssist(t1, Rcon7);
+		Vector128<byte> t2 = Aes.KeygenAssist(t1, AESUtils.Rcon7);
 		KeyRound1(ref t0, ref t2);
 		_k14 = t0;
 

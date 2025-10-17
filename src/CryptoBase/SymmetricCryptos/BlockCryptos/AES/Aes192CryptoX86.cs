@@ -2,9 +2,30 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 public class Aes192CryptoX86 : AESCryptoX86
 {
-	private Vector128<byte> _k0, _k1, _k2, _k3, _k4, _k5, _k6, _k7, _k8, _k9, _k10,
-		_k11, _k12, _k13, _k14, _k15, _k16, _k17, _k18, _k19,
-		_k20, _k21, _k22, _k23;
+	private Vector128<byte> _k0,
+		_k1,
+		_k2,
+		_k3,
+		_k4,
+		_k5,
+		_k6,
+		_k7,
+		_k8,
+		_k9,
+		_k10,
+		_k11,
+		_k12,
+		_k13,
+		_k14,
+		_k15,
+		_k16,
+		_k17,
+		_k18,
+		_k19,
+		_k20,
+		_k21,
+		_k22,
+		_k23;
 
 	public Aes192CryptoX86(ReadOnlySpan<byte> key) : base(key)
 	{
@@ -48,13 +69,13 @@ public class Aes192CryptoX86 : AESCryptoX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Init(ReadOnlySpan<byte> key)
 	{
-		Vector128<byte> t0 = Vector128.Create(key); // 0,15
-		Vector128<byte> t1 = Vector128.Create(Vector64.Create(key[16..]), Vector64<byte>.Zero); // 16,23
+		Vector128<byte> t0 = Vector128.Create(key);// 0,15
+		Vector128<byte> t1 = Vector128.Create(Vector64.Create(key[16..]), Vector64<byte>.Zero);// 16,23
 
-		KeyRound(out _k0, out _k1, out _k2, ref t0, ref t1, Rcon1, Rcon2);
-		KeyRound(out _k3, out _k4, out _k5, ref t0, ref t1, Rcon3, Rcon4);
-		KeyRound(out _k6, out _k7, out _k8, ref t0, ref t1, Rcon5, Rcon6);
-		KeyRound(out _k9, out _k10, out _k11, ref t0, ref t1, Rcon7, Rcon8);
+		KeyRound(out _k0, out _k1, out _k2, ref t0, ref t1, AESUtils.Rcon1, AESUtils.Rcon2);
+		KeyRound(out _k3, out _k4, out _k5, ref t0, ref t1, AESUtils.Rcon3, AESUtils.Rcon4);
+		KeyRound(out _k6, out _k7, out _k8, ref t0, ref t1, AESUtils.Rcon5, AESUtils.Rcon6);
+		KeyRound(out _k9, out _k10, out _k11, ref t0, ref t1, AESUtils.Rcon7, AESUtils.Rcon8);
 		_k12 = t0;
 
 		_k13 = Aes.InverseMixColumns(_k11);
