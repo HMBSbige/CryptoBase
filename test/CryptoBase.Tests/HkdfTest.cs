@@ -20,14 +20,18 @@ public class HkdfTest
 	public void Test(DigestType type, string ikmHex, string saltHex, string infoHex, string prkHex, string okmHex)
 	{
 		Span<byte> prk = stackalloc byte[255];
+		Span<byte> info = infoHex.FromHex();
 
 		int length = Hkdf.Extract(type, ikmHex.FromHex(), saltHex.FromHex(), prk);
-		Assert.Equal(prkHex, prk[..length].ToHex());
+		Assert.Equal(prkHex, prk.Slice(0, length).ToHex());
 
 		Span<byte> okm = stackalloc byte[okmHex.FromHex().Length];
-		Hkdf.Expand(type, prkHex.FromHex(), okm, infoHex.FromHex());
+		Hkdf.Expand(type, prkHex.FromHex(), okm, info);
 		Assert.Equal(okmHex, okm.ToHex());
 
-		Hkdf.DeriveKey(type, ikmHex.FromHex(), okm, saltHex.FromHex(), infoHex.FromHex());
+		Hkdf.DeriveKey(type, ikmHex.FromHex(), okm, saltHex.FromHex(), info);
+
+		info.CopyTo(okm);
+		Hkdf.DeriveKey(type, ikmHex.FromHex(), okm, saltHex.FromHex(), okm.Slice(0, info.Length));
 	}
 }

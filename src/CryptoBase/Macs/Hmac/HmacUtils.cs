@@ -16,7 +16,6 @@ public static class HmacUtils
 		return new DefaultHmac(key, name);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IMac Create(DigestType type, ReadOnlySpan<byte> key)
 	{
 		return type switch

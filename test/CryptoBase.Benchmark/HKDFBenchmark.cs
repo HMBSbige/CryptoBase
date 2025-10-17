@@ -8,7 +8,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class HKDFBenchmark
 {
-	[Params(1)]
+	[Params(10)]
 	public int Max { get; set; }
 
 	private byte[] _ikm = null!;
@@ -23,23 +23,25 @@ public class HKDFBenchmark
 		_info = RandomNumberGenerator.GetBytes(80);
 	}
 
-	[Benchmark]
-	public void Default()
-	{
-		Span<byte> output = stackalloc byte[82];
-		for (var i = 0; i < Max; ++i)
-		{
-			Hkdf.DeriveKey(DigestType.Sha256, _ikm, output, _salt, _info);
-		}
-	}
-
 	[Benchmark(Baseline = true)]
 	public void NET()
 	{
 		Span<byte> output = stackalloc byte[82];
-		for (var i = 0; i < Max; ++i)
+
+		for (int i = 0; i < Max; ++i)
 		{
 			HKDF.DeriveKey(HashAlgorithmName.SHA256, _ikm, output, _salt, _info);
+		}
+	}
+
+	[Benchmark]
+	public void Default()
+	{
+		Span<byte> output = stackalloc byte[82];
+
+		for (int i = 0; i < Max; ++i)
+		{
+			Hkdf.DeriveKey(DigestType.Sha256, _ikm, output, _salt, _info);
 		}
 	}
 }

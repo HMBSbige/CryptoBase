@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
+using System.Security.Cryptography;
 
 namespace CryptoBase.KDF;
 
@@ -13,11 +14,6 @@ public static class Hkdf
 	{
 		int hashLength = HashLength(type);
 		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
-
-		if (prk.Length > hashLength)
-		{
-			prk = prk[..hashLength];
-		}
 
 		ExtractInternal(type, ikm, salt, prk);
 
@@ -38,6 +34,8 @@ public static class Hkdf
 
 		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
+		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
+
 		int maxOkmLength = 255 * hashLength;
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 
@@ -46,45 +44,67 @@ public static class Hkdf
 
 	private static void ExpandInternal(DigestType type, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
-
-		if (output.Overlaps(info))
-		{
-			throw new InvalidOperationException(@"the info input overlaps with the output destination");
-		}
-
-		Span<byte> counterSpan = stackalloc byte[1];
-		ref byte counter = ref counterSpan[0];
+		byte counter = 0;
+		Span<byte> counterSpan = new(ref counter);
 		Span<byte> t = Span<byte>.Empty;
 		Span<byte> remainingOutput = output;
 
-		using IMac hmac = HmacUtils.Create(type, prk);
+		const int maxStackInfoBuffer = 64;
+		Span<byte> tempInfoBuffer = stackalloc byte[maxStackInfoBuffer];
+		scoped ReadOnlySpan<byte> infoBuffer;
+		byte[]? rentedTempInfoBuffer = null;
 
-		for (int i = 1; ; ++i)
+		if (output.Overlaps(info))
 		{
-			hmac.Update(t);
-			hmac.Update(info);
-			counter = (byte)i;
-			hmac.Update(counterSpan);
-
-			if (remainingOutput.Length >= hashLength)
+			if (info.Length > maxStackInfoBuffer)
 			{
-				t = remainingOutput[..hashLength];
-				remainingOutput = remainingOutput[hashLength..];
-				hmac.GetMac(t);
+				rentedTempInfoBuffer = ArrayPool<byte>.Shared.Rent(info.Length);
+				tempInfoBuffer = rentedTempInfoBuffer;
 			}
-			else
+
+			tempInfoBuffer = tempInfoBuffer.Slice(0, info.Length);
+			info.CopyTo(tempInfoBuffer);
+			infoBuffer = tempInfoBuffer;
+		}
+		else
+		{
+			infoBuffer = info;
+		}
+
+		using (IMac hmac = HmacUtils.Create(type, prk))
+		{
+			for (int i = 1; ; ++i)
 			{
-				if (remainingOutput.Length > 0)
+				hmac.Update(t);
+				hmac.Update(infoBuffer);
+				counter = (byte)i;
+				hmac.Update(counterSpan);
+
+				if (remainingOutput.Length >= hashLength)
 				{
-					// ReSharper disable once StackAllocInsideLoop
-					Span<byte> lastChunk = stackalloc byte[hashLength];
-					hmac.GetMac(lastChunk);
-					lastChunk[..remainingOutput.Length].CopyTo(remainingOutput);
+					t = remainingOutput.Slice(0, hashLength);
+					remainingOutput = remainingOutput.Slice(hashLength);
+					hmac.GetMac(t);
 				}
+				else
+				{
+					if (remainingOutput.Length > 0)
+					{
+						// ReSharper disable once StackAllocInsideLoop
+						Span<byte> lastChunk = stackalloc byte[hashLength];
+						hmac.GetMac(lastChunk);
+						lastChunk.Slice(0, remainingOutput.Length).CopyTo(remainingOutput);
+					}
 
-				break;
+					break;
+				}
 			}
+		}
+
+		if (rentedTempInfoBuffer is not null)
+		{
+			CryptographicOperations.ZeroMemory(rentedTempInfoBuffer.AsSpan(0, info.Length));
+			ArrayPool<byte>.Shared.Return(rentedTempInfoBuffer);
 		}
 	}
 
@@ -97,10 +117,16 @@ public static class Hkdf
 		int maxOkmLength = 255 * hashLength;
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 
+		DeriveKeyInternal(type, hashLength, ikm, output, salt, info);
+	}
+
+	private static void DeriveKeyInternal(DigestType type, int hashLength, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
+	{
 		Span<byte> prk = stackalloc byte[hashLength];
 
 		ExtractInternal(type, ikm, salt, prk);
 		ExpandInternal(type, hashLength, prk, output, info);
+		CryptographicOperations.ZeroMemory(prk);
 	}
 
 	private static int HashLength(DigestType type)
