@@ -1,38 +1,20 @@
+using CryptoBase.Abstractions.SymmetricCryptos;
+
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
-public class Aes256CryptoX86 : AESCryptoX86
+[StructLayout(LayoutKind.Sequential, Size = RoundKeyCount * RoundKeySize)]
+public struct Aes256CryptoX86 : IBlockCrypto
 {
-	private Vector128<byte> _k0,
-		_k1,
-		_k2,
-		_k3,
-		_k4,
-		_k5,
-		_k6,
-		_k7,
-		_k8,
-		_k9,
-		_k10,
-		_k11,
-		_k12,
-		_k13,
-		_k14,
-		_k15,
-		_k16,
-		_k17,
-		_k18,
-		_k19,
-		_k20,
-		_k21,
-		_k22,
-		_k23,
-		_k24,
-		_k25,
-		_k26,
-		_k27;
+	private const int RoundKeyCount = 28;
+	private const int RoundKeySize = 0x10;
 
-	public Aes256CryptoX86(ReadOnlySpan<byte> key) : base(key)
+	private Vector128<byte> _roundKeys;
+
+	private readonly ReadOnlySpan<Vector128<byte>> RoundKeys => MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in _roundKeys), RoundKeyCount);
+
+	public Aes256CryptoX86(ReadOnlySpan<byte> key)
 	{
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 		Init(key);
 	}
 
@@ -75,88 +57,113 @@ public class Aes256CryptoX86 : AESCryptoX86
 		KeyRound2(ref t0, ref t1);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Init(ReadOnlySpan<byte> key)
 	{
+		Span<Vector128<byte>> roundKeys = MemoryMarshal.CreateSpan(ref _roundKeys, RoundKeyCount);
+
 		Vector128<byte> t0 = Vector128.Create(key);// 0,15
 		Vector128<byte> t1 = Vector128.Create(key[16..]);// 15,31
 
-		_k0 = t0;
+		roundKeys[0] = t0;
 
-		KeyRound(out _k1, out _k2, ref t0, ref t1, AESUtils.Rcon1);
-		KeyRound(out _k3, out _k4, ref t0, ref t1, AESUtils.Rcon2);
-		KeyRound(out _k5, out _k6, ref t0, ref t1, AESUtils.Rcon3);
-		KeyRound(out _k7, out _k8, ref t0, ref t1, AESUtils.Rcon4);
-		KeyRound(out _k9, out _k10, ref t0, ref t1, AESUtils.Rcon5);
-		KeyRound(out _k11, out _k12, ref t0, ref t1, AESUtils.Rcon6);
+		KeyRound(out roundKeys[1], out roundKeys[2], ref t0, ref t1, AESUtils.Rcon1);
+		KeyRound(out roundKeys[3], out roundKeys[4], ref t0, ref t1, AESUtils.Rcon2);
+		KeyRound(out roundKeys[5], out roundKeys[6], ref t0, ref t1, AESUtils.Rcon3);
+		KeyRound(out roundKeys[7], out roundKeys[8], ref t0, ref t1, AESUtils.Rcon4);
+		KeyRound(out roundKeys[9], out roundKeys[10], ref t0, ref t1, AESUtils.Rcon5);
+		KeyRound(out roundKeys[11], out roundKeys[12], ref t0, ref t1, AESUtils.Rcon6);
 
-		_k13 = t1;
+		roundKeys[13] = t1;
 		Vector128<byte> t2 = Aes.KeygenAssist(t1, AESUtils.Rcon7);
 		KeyRound1(ref t0, ref t2);
-		_k14 = t0;
+		roundKeys[14] = t0;
 
-		_k15 = Aes.InverseMixColumns(_k13);
-		_k16 = Aes.InverseMixColumns(_k12);
-		_k17 = Aes.InverseMixColumns(_k11);
-		_k18 = Aes.InverseMixColumns(_k10);
-		_k19 = Aes.InverseMixColumns(_k9);
-		_k20 = Aes.InverseMixColumns(_k8);
-		_k21 = Aes.InverseMixColumns(_k7);
-		_k22 = Aes.InverseMixColumns(_k6);
-		_k23 = Aes.InverseMixColumns(_k5);
-		_k24 = Aes.InverseMixColumns(_k4);
-		_k25 = Aes.InverseMixColumns(_k3);
-		_k26 = Aes.InverseMixColumns(_k2);
-		_k27 = Aes.InverseMixColumns(_k1);
+		roundKeys[15] = Aes.InverseMixColumns(roundKeys[13]);
+		roundKeys[16] = Aes.InverseMixColumns(roundKeys[12]);
+		roundKeys[17] = Aes.InverseMixColumns(roundKeys[11]);
+		roundKeys[18] = Aes.InverseMixColumns(roundKeys[10]);
+		roundKeys[19] = Aes.InverseMixColumns(roundKeys[9]);
+		roundKeys[20] = Aes.InverseMixColumns(roundKeys[8]);
+		roundKeys[21] = Aes.InverseMixColumns(roundKeys[7]);
+		roundKeys[22] = Aes.InverseMixColumns(roundKeys[6]);
+		roundKeys[23] = Aes.InverseMixColumns(roundKeys[5]);
+		roundKeys[24] = Aes.InverseMixColumns(roundKeys[4]);
+		roundKeys[25] = Aes.InverseMixColumns(roundKeys[3]);
+		roundKeys[26] = Aes.InverseMixColumns(roundKeys[2]);
+		roundKeys[27] = Aes.InverseMixColumns(roundKeys[1]);
 	}
 
-	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public readonly void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		base.Encrypt(source, destination);
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
 
 		Vector128<byte> t = Vector128.Create(source);
-
-		t ^= _k0;
-		t = Aes.Encrypt(t, _k1);
-		t = Aes.Encrypt(t, _k2);
-		t = Aes.Encrypt(t, _k3);
-		t = Aes.Encrypt(t, _k4);
-		t = Aes.Encrypt(t, _k5);
-		t = Aes.Encrypt(t, _k6);
-		t = Aes.Encrypt(t, _k7);
-		t = Aes.Encrypt(t, _k8);
-		t = Aes.Encrypt(t, _k9);
-		t = Aes.Encrypt(t, _k10);
-		t = Aes.Encrypt(t, _k11);
-		t = Aes.Encrypt(t, _k12);
-		t = Aes.Encrypt(t, _k13);
-		t = Aes.EncryptLast(t, _k14);
-
-		t.CopyTo(destination);
+		EncryptBlock(t).CopyTo(destination);
 	}
 
-	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private readonly Vector128<byte> EncryptBlock(Vector128<byte> input)
 	{
-		base.Decrypt(source, destination);
+		ReadOnlySpan<Vector128<byte>> keys = RoundKeys;
+
+		Vector128<byte> b = input ^ keys[0];
+		b = Aes.Encrypt(b, keys[1]);
+		b = Aes.Encrypt(b, keys[2]);
+		b = Aes.Encrypt(b, keys[3]);
+		b = Aes.Encrypt(b, keys[4]);
+		b = Aes.Encrypt(b, keys[5]);
+		b = Aes.Encrypt(b, keys[6]);
+		b = Aes.Encrypt(b, keys[7]);
+		b = Aes.Encrypt(b, keys[8]);
+		b = Aes.Encrypt(b, keys[9]);
+		b = Aes.Encrypt(b, keys[10]);
+		b = Aes.Encrypt(b, keys[11]);
+		b = Aes.Encrypt(b, keys[12]);
+		b = Aes.Encrypt(b, keys[13]);
+		return Aes.EncryptLast(b, keys[14]);
+	}
+
+	public readonly void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
 
 		Vector128<byte> t = Vector128.Create(source);
+		DecryptBlock(t).CopyTo(destination);
+	}
 
-		t ^= _k14;
-		t = Aes.Decrypt(t, _k15);
-		t = Aes.Decrypt(t, _k16);
-		t = Aes.Decrypt(t, _k17);
-		t = Aes.Decrypt(t, _k18);
-		t = Aes.Decrypt(t, _k19);
-		t = Aes.Decrypt(t, _k20);
-		t = Aes.Decrypt(t, _k21);
-		t = Aes.Decrypt(t, _k22);
-		t = Aes.Decrypt(t, _k23);
-		t = Aes.Decrypt(t, _k24);
-		t = Aes.Decrypt(t, _k25);
-		t = Aes.Decrypt(t, _k26);
-		t = Aes.Decrypt(t, _k27);
-		t = Aes.DecryptLast(t, _k0);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private readonly Vector128<byte> DecryptBlock(Vector128<byte> input)
+	{
+		ReadOnlySpan<Vector128<byte>> keys = RoundKeys;
 
-		t.CopyTo(destination);
+		Vector128<byte> b = input ^ keys[14];
+		b = Aes.Decrypt(b, keys[15]);
+		b = Aes.Decrypt(b, keys[16]);
+		b = Aes.Decrypt(b, keys[17]);
+		b = Aes.Decrypt(b, keys[18]);
+		b = Aes.Decrypt(b, keys[19]);
+		b = Aes.Decrypt(b, keys[20]);
+		b = Aes.Decrypt(b, keys[21]);
+		b = Aes.Decrypt(b, keys[22]);
+		b = Aes.Decrypt(b, keys[23]);
+		b = Aes.Decrypt(b, keys[24]);
+		b = Aes.Decrypt(b, keys[25]);
+		b = Aes.Decrypt(b, keys[26]);
+		b = Aes.Decrypt(b, keys[27]);
+		return Aes.DecryptLast(b, keys[0]);
+	}
+
+	public readonly int BlockSize => 16;
+
+	public readonly string Name => "AES";
+
+	public void Reset()
+	{
+	}
+
+	public void Dispose()
+	{
 	}
 }
