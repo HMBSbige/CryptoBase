@@ -15,6 +15,7 @@ global using X86Aes = System.Runtime.Intrinsics.X86.Aes;
 #if DEBUG
 Console.WriteLine(@"On Debug mode");
 #endif
+
 if (Debugger.IsAttached)
 {
 	Console.WriteLine(@"Debugger attached!");
@@ -73,12 +74,19 @@ cmd.SetAction(parseResult =>
 	Console.WriteLine($@"Intel SHA extensions:                           {CpuIdUtils.IsSupportX86ShaEx()}");
 	Console.WriteLine($@"AES instruction set:                            {X86Aes.IsSupported}");
 	Console.WriteLine($@"Vector AES instruction:                         {CpuIdUtils.IsSupportX86VAes()}");
+	// TODO: Gfni
 
 	Console.WriteLine($@"AVX-512 Foundation:                             {Avx512F.IsSupported}");
 	Console.WriteLine($@"AVX-512 Conflict Detection Instructions:        {Avx512CD.IsSupported}");
 	Console.WriteLine($@"AVX-512 Byte and Word Instructions:             {Avx512BW.IsSupported}");
 	Console.WriteLine($@"AVX-512 Doubleword and Quadword Instructions:   {Avx512DQ.IsSupported}");
-	Console.WriteLine($@"AVX-512 Vector Byte Manipulation Instructions:  {Avx512Vbmi.IsSupported}");
+	Console.WriteLine($@"AVX-512 Vector Bit  Manipulation Instructions:  {Avx512Vbmi.IsSupported}");
+	// TODO: Console.WriteLine($@"AVX-512 Vector Bit Manipulation Instructions 2:  {Avx512Vbmi2.IsSupported}");
+
+	Console.WriteLine($@"AVX10.1:  {Avx10v1.IsSupported}");
+	Console.WriteLine($@"AVX10.1/512:  {Avx10v1.V512.IsSupported}");
+	// TODO: Console.WriteLine($@"AVX10.2:  {Avx10v2.IsSupported}");
+	// TODO: Console.WriteLine($@"AVX10.2/512:  {Avx10v2.V512.IsSupported}");
 
 	Console.WriteLine($@"Seconds: {seconds}s");
 	Console.WriteLine($@"Buffer size: {bytes} bytes");
