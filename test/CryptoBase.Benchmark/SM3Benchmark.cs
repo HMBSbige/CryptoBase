@@ -20,7 +20,7 @@ public class SM3Benchmark
 		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
 	}
 
-	[Benchmark]
+	[Benchmark(Baseline = true)]
 	public void BouncyCastle()
 	{
 		Span<byte> hash = stackalloc byte[HashConstants.SM3Length];

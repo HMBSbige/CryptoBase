@@ -3,20 +3,20 @@ namespace CryptoBase.Digests.SM3;
 /// <summary>
 /// https://www.oscca.gov.cn/sca/xxgk/2010-12/17/1002389/files/302a3ada057c4a73830536d03e683110.pdf
 /// </summary>
-public class SM3Digest : IHash
+public sealed class SM3Digest : IHash
 {
 	private const int BlockSizeOfInt = 16;
 	private const int SizeOfInt = sizeof(uint);
 
 	private static readonly uint[] T = new uint[64];
 
-	private static readonly Vector256<uint> Init = Vector256.Create(0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A0600U, 0xA96F30BCU, 0x163138AAU, 0xE38DEE4DU, 0xB0FB0E4EU);
+	private static readonly uint[] Init = [0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A0600U, 0xA96F30BCU, 0x163138AAU, 0xE38DEE4DU, 0xB0FB0E4EU];
 
-	private Vector256<uint> V;
 	private ulong _byteCount;
 	private int _index;
 	private int _bufferIndex;
 
+	private readonly uint[] _v;
 	private readonly uint[] _w;
 	private readonly byte[] _buffer;
 
@@ -44,7 +44,6 @@ public class SM3Digest : IHash
 	private static uint GG1(uint x, uint y, uint z)
 	{
 		return (y ^ z) & x ^ z;
-		//return (x & y) | IntrinsicsUtils.AndNot(x, z);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -78,6 +77,7 @@ public class SM3Digest : IHash
 	{
 		_w = new uint[68];
 		_buffer = new byte[SizeOfInt];
+		_v = new uint[8];
 		Reset();
 	}
 
@@ -96,6 +96,7 @@ public class SM3Digest : IHash
 	public void Update(ReadOnlySpan<byte> source)
 	{
 		_byteCount += (uint)source.Length;
+		uint[] w = _w;
 
 		if (_bufferIndex != 0)
 		{
@@ -108,22 +109,22 @@ public class SM3Digest : IHash
 				return;
 			}
 
-			source[..remain].CopyTo(_buffer.AsSpan(_bufferIndex));
-			source = source[remain..];
-			_w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(_buffer);
+			source.Slice(0, remain).CopyTo(_buffer.AsSpan(_bufferIndex));
+			source = source.Slice(remain);
+			w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(_buffer);
 			_bufferIndex = 0;
 		}
 
 		while (source.Length >= SizeOfInt)
 		{
-			if (_index == BlockSizeOfInt)
+			if (_index is BlockSizeOfInt)
 			{
 				Process();
 				_index = 0;
 			}
 
-			_w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(source);
-			source = source[SizeOfInt..];
+			w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(source);
+			source = source.Slice(SizeOfInt);
 		}
 
 		if (_index == BlockSizeOfInt)
@@ -139,7 +140,7 @@ public class SM3Digest : IHash
 		}
 	}
 
-	public unsafe void GetHash(Span<byte> destination)
+	public void GetHash(Span<byte> destination)
 	{
 		try
 		{
@@ -173,27 +174,14 @@ public class SM3Digest : IHash
 			_w[15] = (uint)(_byteCount << 3 & 0xFFFFFFFF);
 
 			Process();
-
-			if (Avx.IsSupported && Avx2.IsSupported)
-			{
-				Vector256<byte> v = V.ReverseEndianness32().AsByte();
-
-				fixed (byte* p = destination)
-				{
-					Avx.Store(p, v);
-				}
-			}
-			else
-			{
-				BinaryPrimitives.WriteUInt32BigEndian(destination, V.GetElement(0));
-				BinaryPrimitives.WriteUInt32BigEndian(destination[4..], V.GetElement(1));
-				BinaryPrimitives.WriteUInt32BigEndian(destination[8..], V.GetElement(2));
-				BinaryPrimitives.WriteUInt32BigEndian(destination[12..], V.GetElement(3));
-				BinaryPrimitives.WriteUInt32BigEndian(destination[16..], V.GetElement(4));
-				BinaryPrimitives.WriteUInt32BigEndian(destination[20..], V.GetElement(5));
-				BinaryPrimitives.WriteUInt32BigEndian(destination[24..], V.GetElement(6));
-				BinaryPrimitives.WriteUInt32BigEndian(destination[28..], V.GetElement(7));
-			}
+			BinaryPrimitives.WriteUInt32BigEndian(destination, _v[0]);
+			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), _v[1]);
+			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), _v[2]);
+			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), _v[3]);
+			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(16), _v[4]);
+			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(20), _v[5]);
+			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(24), _v[6]);
+			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(28), _v[7]);
 		}
 		finally
 		{
@@ -203,28 +191,30 @@ public class SM3Digest : IHash
 
 	public void Reset()
 	{
-		V = Init;
+		Init.AsSpan().CopyTo(_v);
 		_byteCount = 0;
 		_index = 0;
 		_bufferIndex = 0;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Process()
 	{
+		uint[] w = _w;
+		uint[] v = _v;
+
 		for (int j = 16; j < 68; ++j)
 		{
-			_w[j] = P1(_w[j - 16] ^ _w[j - 9] ^ _w[j - 3].RotateLeft(15)) ^ _w[j - 13].RotateLeft(7) ^ _w[j - 6];
+			w[j] = P1(w[j - 16] ^ w[j - 9] ^ w[j - 3].RotateLeft(15)) ^ w[j - 13].RotateLeft(7) ^ w[j - 6];
 		}
 
-		uint a = V.GetElement(0);
-		uint b = V.GetElement(1);
-		uint c = V.GetElement(2);
-		uint d = V.GetElement(3);
-		uint e = V.GetElement(4);
-		uint f = V.GetElement(5);
-		uint g = V.GetElement(6);
-		uint h = V.GetElement(7);
+		uint a = v[0];
+		uint b = v[1];
+		uint c = v[2];
+		uint d = v[3];
+		uint e = v[4];
+		uint f = v[5];
+		uint g = v[6];
+		uint h = v[7];
 
 		for (int j = 0; j < 64; ++j)
 		{
@@ -232,18 +222,18 @@ public class SM3Digest : IHash
 			uint ss1 = (a12 + e + T[j]).RotateLeft(7);
 			uint ss2 = ss1 ^ a12;
 
-			uint w1 = _w[j] ^ _w[j + 4];
+			uint w1 = w[j] ^ w[j + 4];
 			uint tt1, tt2;
 
 			if (j < 16)
 			{
 				tt1 = FF0(a, b, c) + d + ss2 + w1;
-				tt2 = GG0(e, f, g) + h + ss1 + _w[j];
+				tt2 = GG0(e, f, g) + h + ss1 + w[j];
 			}
 			else
 			{
 				tt1 = FF1(a, b, c) + d + ss2 + w1;
-				tt2 = GG1(e, f, g) + h + ss1 + _w[j];
+				tt2 = GG1(e, f, g) + h + ss1 + w[j];
 			}
 
 			d = c;
@@ -256,27 +246,17 @@ public class SM3Digest : IHash
 			e = P0(tt2);
 		}
 
-		if (Avx2.IsSupported)
-		{
-			Vector256<uint> t = Vector256.Create(a, b, c, d, e, f, g, h);
-			V = Avx2.Xor(V, t);
-		}
-		else
-		{
-			V = Vector256.Create(
-				V.GetElement(0) ^ a,
-				V.GetElement(1) ^ b,
-				V.GetElement(2) ^ c,
-				V.GetElement(3) ^ d,
-				V.GetElement(4) ^ e,
-				V.GetElement(5) ^ f,
-				V.GetElement(6) ^ g,
-				V.GetElement(7) ^ h);
-		}
+		v[0] ^= a;
+		v[1] ^= b;
+		v[2] ^= c;
+		v[3] ^= d;
+		v[4] ^= e;
+		v[5] ^= f;
+		v[6] ^= g;
+		v[7] ^= h;
 	}
 
 	public void Dispose()
 	{
-		GC.SuppressFinalize(this);
 	}
 }
