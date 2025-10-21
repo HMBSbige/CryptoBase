@@ -58,35 +58,7 @@ cmd.SetAction(parseResult =>
 	double seconds = parseResult.GetRequiredValue(secondsOption);
 	int bytes = parseResult.GetRequiredValue(bytesOption);
 
-	Console.WriteLine($@"OS Version:                                     {Environment.OSVersion}");
-	Console.WriteLine($@".NET Version:                                   {Environment.Version}");
-	Console.WriteLine($@"App Version:                                    {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}");
-	Console.WriteLine($@"CPU Vendor:                                     {CpuIdUtils.GetVendor()}");
-	Console.WriteLine($@"CPU Brand:                                      {CpuIdUtils.GetBrand()}");
-
-	Console.WriteLine($@"Vector64.IsHardwareAccelerated:                 {Vector64.IsHardwareAccelerated}");
-	Console.WriteLine($@"Vector128.IsHardwareAccelerated:                {Vector128.IsHardwareAccelerated}");
-	Console.WriteLine($@"Vector256.IsHardwareAccelerated:                {Vector256.IsHardwareAccelerated}");
-	Console.WriteLine($@"Vector512.IsHardwareAccelerated:                {Vector512.IsHardwareAccelerated}");
-
-	Console.WriteLine($@"SSE2 instructions:                              {Sse2.IsSupported}");
-	Console.WriteLine($@"Advanced Vector Extensions 2:                   {Avx2.IsSupported}");
-	Console.WriteLine($@"Intel SHA extensions:                           {CpuIdUtils.IsSupportX86ShaEx()}");
-	Console.WriteLine($@"AES instruction set:                            {X86Aes.IsSupported}");
-	Console.WriteLine($@"Vector AES instruction:                         {CpuIdUtils.IsSupportX86VAes()}");
-	// TODO: Gfni
-
-	Console.WriteLine($@"AVX-512 Foundation:                             {Avx512F.IsSupported}");
-	Console.WriteLine($@"AVX-512 Conflict Detection Instructions:        {Avx512CD.IsSupported}");
-	Console.WriteLine($@"AVX-512 Byte and Word Instructions:             {Avx512BW.IsSupported}");
-	Console.WriteLine($@"AVX-512 Doubleword and Quadword Instructions:   {Avx512DQ.IsSupported}");
-	Console.WriteLine($@"AVX-512 Vector Bit  Manipulation Instructions:  {Avx512Vbmi.IsSupported}");
-	// TODO: Console.WriteLine($@"AVX-512 Vector Bit Manipulation Instructions 2:  {Avx512Vbmi2.IsSupported}");
-
-	Console.WriteLine($@"AVX10.1:  {Avx10v1.IsSupported}");
-	Console.WriteLine($@"AVX10.1/512:  {Avx10v1.V512.IsSupported}");
-	// TODO: Console.WriteLine($@"AVX10.2:  {Avx10v2.IsSupported}");
-	// TODO: Console.WriteLine($@"AVX10.2/512:  {Avx10v2.V512.IsSupported}");
+	Console.WriteLine(SystemEnvironmentUtils.GetEnvironmentInfo());
 
 	Console.WriteLine($@"Seconds: {seconds}s");
 	Console.WriteLine($@"Buffer size: {bytes} bytes");
