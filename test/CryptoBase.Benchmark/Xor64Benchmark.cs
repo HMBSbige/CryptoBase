@@ -22,83 +22,74 @@ public class Xor64Benchmark
 	[Benchmark(Baseline = true, Description = @"Normal")]
 	public void A()
 	{
-		Xor(_a.Span, _b.Span);
+		Span<byte> a = _a.Span;
+		Span<byte> b = _b.Span;
 
-		return;
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void Xor(Span<byte> a, Span<byte> b)
+		for (int i = 0; i < 64; ++i)
 		{
-			for (int i = 0; i < 64; ++i)
-			{
-				a[i] ^= b[i];
-			}
+			a[i] ^= b[i];
 		}
 	}
 
 	[Benchmark(Description = @"Without bounds checking")]
 	public void B()
 	{
-		Xor(_a.Span, _b.Span);
+		Span<byte> a = _a.Span;
+		Span<byte> b = _b.Span;
 
-		return;
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void Xor(Span<byte> a, Span<byte> b)
+		for (int i = 0; i < 64; ++i)
 		{
-			for (int i = 0; i < 64; ++i)
-			{
-				a.GetRef(i) ^= b.GetRef(i);
-			}
+			a.GetRef(i) ^= b.GetRef(i);
 		}
 	}
 
 	[Benchmark(Description = @"Vector512")]
 	public void C()
 	{
-		Xor(_a.Span, _b.Span);
+		Span<byte> a = _a.Span;
+		Span<byte> b = _b.Span;
 
-		return;
+		ref Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref MemoryMarshal.GetReference(a));
+		ref Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref MemoryMarshal.GetReference(b));
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void Xor(Span<byte> a, Span<byte> b)
-		{
-			Vector512<byte> v0 = Unsafe.ReadUnaligned<Vector512<byte>>(ref MemoryMarshal.GetReference(a));
-			Vector512<byte> v1 = Unsafe.ReadUnaligned<Vector512<byte>>(ref MemoryMarshal.GetReference(b));
-			(v0 ^ v1).CopyTo(a);
-		}
+		v0 ^= v1;
 	}
-
 
 	[Benchmark(Description = @"Vector256")]
 	public void D()
 	{
-		Xor(_a.Span, _b.Span);
+		Span<byte> a = _a.Span;
+		Span<byte> b = _b.Span;
 
-		return;
+		Span<Vector256<byte>> xa = MemoryMarshal.Cast<byte, Vector256<byte>>(a);
+		ReadOnlySpan<Vector256<byte>> xb = MemoryMarshal.Cast<byte, Vector256<byte>>(b);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void Xor(Span<byte> a, Span<byte> b)
-		{
-			Vector256<byte> va0 = Unsafe.ReadUnaligned<Vector256<byte>>(ref MemoryMarshal.GetReference(a));
-			Vector256<byte> va1 = Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref MemoryMarshal.GetReference(a), 32));
-			Vector256<byte> vb0 = Unsafe.ReadUnaligned<Vector256<byte>>(ref MemoryMarshal.GetReference(b));
-			Vector256<byte> vb1 = Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref MemoryMarshal.GetReference(b), 32));
+		xa.GetRef(0) ^= xb.GetRef(0);
+		xa.GetRef(1) ^= xb.GetRef(1);
+	}
 
-			(va0 ^ vb0).CopyTo(a);
-			(va1 ^ vb1).CopyTo(a[32..]);
-		}
+	[Benchmark(Description = @"Vector128")]
+	public void D1()
+	{
+		Span<byte> a = _a.Span;
+		Span<byte> b = _b.Span;
+
+		Span<Vector128<byte>> xa = MemoryMarshal.Cast<byte, Vector128<byte>>(a);
+		ReadOnlySpan<Vector128<byte>> xb = MemoryMarshal.Cast<byte, Vector128<byte>>(b);
+
+		xa.GetRef(0) ^= xb.GetRef(0);
+		xa.GetRef(1) ^= xb.GetRef(1);
+		xa.GetRef(2) ^= xb.GetRef(2);
+		xa.GetRef(3) ^= xb.GetRef(3);
 	}
 
 	[Benchmark(Description = @"Unsafe")]
 	public void E()
 	{
-		Xor(_a.Span, _b.Span);
+		Span<byte> a = _a.Span;
+		Span<byte> b = _b.Span;
 
-		return;
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static unsafe void Xor(Span<byte> a, Span<byte> b)
+		unsafe
 		{
 			fixed (byte* pa = &MemoryMarshal.GetReference(a))
 			fixed (byte* pb = &MemoryMarshal.GetReference(b))
@@ -109,5 +100,39 @@ public class Xor64Benchmark
 				}
 			}
 		}
+	}
+
+	[Benchmark(Description = @"UInt128")]
+	public void F()
+	{
+		Span<byte> a = _a.Span;
+		Span<byte> b = _b.Span;
+
+		Span<UInt128> xa = MemoryMarshal.Cast<byte, UInt128>(a);
+		ReadOnlySpan<UInt128> xb = MemoryMarshal.Cast<byte, UInt128>(b);
+
+		xa.GetRef(0) ^= xb.GetRef(0);
+		xa.GetRef(1) ^= xb.GetRef(1);
+		xa.GetRef(2) ^= xb.GetRef(2);
+		xa.GetRef(3) ^= xb.GetRef(3);
+	}
+
+	[Benchmark(Description = @"ulong")]
+	public void G()
+	{
+		Span<byte> a = _a.Span;
+		Span<byte> b = _b.Span;
+
+		Span<ulong> xa = MemoryMarshal.Cast<byte, ulong>(a);
+		ReadOnlySpan<ulong> xb = MemoryMarshal.Cast<byte, ulong>(b);
+
+		xa.GetRef(0) ^= xb.GetRef(0);
+		xa.GetRef(1) ^= xb.GetRef(1);
+		xa.GetRef(2) ^= xb.GetRef(2);
+		xa.GetRef(3) ^= xb.GetRef(3);
+		xa.GetRef(4) ^= xb.GetRef(4);
+		xa.GetRef(5) ^= xb.GetRef(5);
+		xa.GetRef(6) ^= xb.GetRef(6);
+		xa.GetRef(7) ^= xb.GetRef(7);
 	}
 }

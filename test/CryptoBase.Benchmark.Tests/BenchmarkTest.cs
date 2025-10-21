@@ -175,4 +175,10 @@ public class BenchmarkTest
 	{
 		BenchmarkRunner.Run<Xor64Benchmark>();
 	}
+
+	[Fact]
+	public void XorBenchmark()
+	{
+		BenchmarkRunner.Run<XorBenchmark>();
+	}
 }
