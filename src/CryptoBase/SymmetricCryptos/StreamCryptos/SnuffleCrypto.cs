@@ -31,7 +31,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	{
 		base.Update(source, destination);
 
-		var length = source.Length;
+		int length = source.Length;
+
 		fixed (uint* pState = State)
 		fixed (byte* pStream = KeyStream)
 		fixed (byte* pSource = source)
@@ -59,7 +60,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 				IncrementCounter(state);
 			}
 
-			var r = 64 - Index;
+			int r = 64 - Index;
 			IntrinsicsUtils.Xor(stream + Index, source, destination, Math.Min(r, length));
 
 			if (length < r)
@@ -85,5 +86,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 		ArrayPool<uint>.Shared.Return(State);
 		ArrayPool<byte>.Shared.Return(KeyStream);
+
+		GC.SuppressFinalize(this);
 	}
 }

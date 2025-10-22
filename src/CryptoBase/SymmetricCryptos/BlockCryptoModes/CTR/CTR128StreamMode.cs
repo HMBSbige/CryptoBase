@@ -19,12 +19,11 @@ public class CTR128StreamMode : IStreamBlockCryptoMode
 
 	public CTR128StreamMode(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize);
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
+
 		InternalBlockCrypto = crypto;
 		Iv = iv.ToArray();
-
-		ArgumentOutOfRangeException.ThrowIfNotEqual(InternalBlockCrypto.BlockSize, BlockSize);
-
-		ArgumentOutOfRangeException.ThrowIfGreaterThan(Iv.Length, BlockSize, nameof(iv));
 
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize);
@@ -32,57 +31,57 @@ public class CTR128StreamMode : IStreamBlockCryptoMode
 		Reset();
 	}
 
-	public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		int length = source.Length;
-		fixed (byte* pStream = _keyStream)
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
-		{
-			Update(length, pStream, pSource, pDestination);
-		}
+		UpdateCore(source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Update(int length, byte* stream, byte* source, byte* destination)
+	private void UpdateCore(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		while (length > 0)
+		int i = 0;
+		int left = source.Length;
+
+		IBlockCrypto crypto = InternalBlockCrypto;
+		Span<byte> counter = _counter.AsSpan(0, BlockSize);
+		Span<byte> stream = _keyStream.AsSpan(0, BlockSize);
+
+		while (left > 0)
 		{
 			if (_index is 0)
 			{
-				UpdateKeyStream();
+				crypto.Encrypt(counter, stream);
+
+				ref UInt128 c = ref Unsafe.As<byte, UInt128>(ref MemoryMarshal.GetReference(counter));
+				c = BinaryPrimitives.ReverseEndianness(BinaryPrimitives.ReverseEndianness(c) + 1);
 			}
 
-			int r = BlockSize - _index;
-			IntrinsicsUtils.Xor(stream + _index, source, destination, Math.Min(r, length));
-
-			if (length < r)
+			if (left >= BlockSize && _index is 0)
 			{
-				_index += length;
-				return;
+				FastUtils.Xor16(stream, source.Slice(i), destination.Slice(i));
+
+				left -= BlockSize;
+				i += BlockSize;
 			}
+			else
+			{
+				int r = BlockSize - _index;
 
-			_index = 0;
-			length -= r;
-			source += r;
-			destination += r;
+				FastUtils.XorLess16(stream.Slice(_index), source.Slice(i), destination.Slice(i), Math.Min(r, left));
+
+				if (left < r)
+				{
+					_index += left;
+					return;
+				}
+
+				_index = 0;
+				left -= r;
+				i += r;
+			}
 		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void UpdateKeyStream()
-	{
-		InternalBlockCrypto.Encrypt(_counter, _keyStream);
-
-		UpdateCounter();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void UpdateCounter()
-	{
-		_counter.AsSpan(0, BlockSize).FixedTimeIncrementBigEndian();
 	}
 
 	public void Reset()
@@ -91,7 +90,7 @@ public class CTR128StreamMode : IStreamBlockCryptoMode
 		_index = 0;
 
 		Span<byte> c = _counter.AsSpan(0, BlockSize);
-		c[Iv.Length..].Clear();
+		c.Clear();
 		Iv.Span.CopyTo(c);
 	}
 

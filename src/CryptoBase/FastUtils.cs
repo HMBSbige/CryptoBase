@@ -125,4 +125,64 @@ public static class FastUtils
 			destination.GetRef(i) = (byte)(source.GetRef(i) ^ stream.GetRef(i));
 		}
 	}
+
+	/// <summary>
+	/// destination = source ^ stream
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+	public static void Xor16(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (Vector128.IsHardwareAccelerated)
+		{
+			ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(stream));
+			ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(source));
+			ref Vector128<byte> dst = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(destination));
+
+			dst = v0 ^ v1;
+		}
+		else
+		{
+			ref UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref MemoryMarshal.GetReference(stream));
+			ref UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref MemoryMarshal.GetReference(source));
+			ref UInt128 dst = ref Unsafe.As<byte, UInt128>(ref MemoryMarshal.GetReference(destination));
+
+			dst = v0 ^ v1;
+		}
+	}
+
+	/// <summary>
+	/// destination = source ^ stream
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	public static void XorLess16(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
+	{
+		int i = 0;
+		int left = length;
+
+		if (left >= sizeof(ulong))
+		{
+			ref ulong v0 = ref Unsafe.As<byte, ulong>(ref stream.GetRef(i));
+			ref ulong v1 = ref Unsafe.As<byte, ulong>(ref source.GetRef(i));
+			ref ulong dst = ref Unsafe.As<byte, ulong>(ref destination.GetRef(i));
+
+			dst = v0 ^ v1;
+			i += sizeof(ulong);
+			left -= sizeof(ulong);
+		}
+
+		if (left >= sizeof(uint))
+		{
+			ref uint v0 = ref Unsafe.As<byte, uint>(ref stream.GetRef(i));
+			ref uint v1 = ref Unsafe.As<byte, uint>(ref source.GetRef(i));
+			ref uint dst = ref Unsafe.As<byte, uint>(ref destination.GetRef(i));
+
+			dst = v0 ^ v1;
+			i += sizeof(uint);
+		}
+
+		for (; i < length; ++i)
+		{
+			destination.GetRef(i) = (byte)(source.GetRef(i) ^ stream.GetRef(i));
+		}
+	}
 }

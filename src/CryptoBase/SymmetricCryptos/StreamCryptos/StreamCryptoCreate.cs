@@ -14,9 +14,9 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
 public static class StreamCryptoCreate
 {
-	private static ReadOnlySpan<byte> EmptyIv12 => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	private static ReadOnlySpan<byte> EmptyIv12 => "\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
-	private static ReadOnlySpan<byte> EmptyIv24 => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	private static ReadOnlySpan<byte> EmptyIv24 => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto AesCtr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
