@@ -67,51 +67,11 @@ internal static class IntrinsicsUtils
 
 	/// <summary>
 	/// destination = source ^ stream
-	/// TODO: Remove
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
 	{
-		while (length >= 64)
-		{
-			Vector512<byte> v0 = Vector512.Load(stream);
-			Vector512<byte> v1 = Vector512.Load(source);
-			(v0 ^ v1).Store(destination);
-
-			stream += 64;
-			source += 64;
-			destination += 64;
-			length -= 64;
-		}
-
-		if (length >= 32)
-		{
-			Vector256<byte> v0 = Vector256.Load(stream);
-			Vector256<byte> v1 = Vector256.Load(source);
-			(v0 ^ v1).Store(destination);
-
-			stream += 32;
-			source += 32;
-			destination += 32;
-			length -= 32;
-		}
-
-		if (length >= 16)
-		{
-			Vector128<byte> v0 = Vector128.Load(stream);
-			Vector128<byte> v1 = Vector128.Load(source);
-			(v0 ^ v1).Store(destination);
-
-			stream += 16;
-			source += 16;
-			destination += 16;
-			length -= 16;
-		}
-
-		for (int i = 0; i < length; ++i)
-		{
-			*(destination + i) = (byte)(*(source + i) ^ *(stream + i));
-		}
+		FastUtils.Xor(new ReadOnlySpan<byte>(stream, length), new ReadOnlySpan<byte>(source, length), new Span<byte>(destination, length), length);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
