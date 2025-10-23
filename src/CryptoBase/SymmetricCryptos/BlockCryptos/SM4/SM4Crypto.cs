@@ -123,7 +123,8 @@ public class SM4Crypto : BlockCryptoBase
 
 	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		base.Encrypt(source, destination);
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
 
 		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
 		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
