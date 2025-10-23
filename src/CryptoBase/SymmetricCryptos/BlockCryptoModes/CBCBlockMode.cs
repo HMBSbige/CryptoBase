@@ -2,11 +2,11 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
+public sealed class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 {
 	public override string Name => InternalBlockCrypto.Name + @"-CBC";
 
-	public sealed override int BlockSize => InternalBlockCrypto.BlockSize;
+	public override int BlockSize => InternalBlockCrypto.BlockSize;
 
 	public IBlockCrypto InternalBlockCrypto { get; init; }
 
@@ -34,7 +34,7 @@ public class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 
 		InternalBlockCrypto.Encrypt(destination, destination);
 
-		destination[..BlockSize].CopyTo(_block);
+		destination.Slice(0, BlockSize).CopyTo(_block);
 	}
 
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -43,17 +43,17 @@ public class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 
 		InternalBlockCrypto.Decrypt(source, destination);
 
-		FastUtils.Xor(_block, destination, destination, BlockSize);
+		FastUtils.Xor(destination, _block, BlockSize);
 
-		source[..BlockSize].CopyTo(_block);
+		source.Slice(0, BlockSize).CopyTo(_block);
 	}
 
-	public sealed override void Reset()
+	public override void Reset()
 	{
 		base.Reset();
 		InternalBlockCrypto.Reset();
 
-		Iv.CopyTo(_block);
+		Iv.Span.CopyTo(_block);
 	}
 
 	public override void Dispose()

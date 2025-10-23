@@ -78,7 +78,7 @@ public class GcmCryptoMode : IAEADCrypto
 		_gHash.Update(_buffer.AsSpan(0, TagSize));
 		_gHash.GetMac(_buffer);
 
-		FastUtils.Xor(tag, _buffer, tag, 16);
+		FastUtils.Xor16(tag, _buffer);
 	}
 
 	public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
@@ -125,7 +125,7 @@ public class GcmCryptoMode : IAEADCrypto
 		_gHash.Update(_buffer.AsSpan(0, TagSize));
 		_gHash.GetMac(_buffer);
 
-		FastUtils.Xor(_tagBuffer, _buffer, _tagBuffer, 16);
+		FastUtils.Xor16(_tagBuffer, _buffer);
 
 		ThrowHelper.ThrowIfAuthenticationTagMismatch(_tagBuffer.AsSpan(0, TagSize), tag);
 	}

@@ -67,7 +67,7 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 		{
 			InternalBlockCrypto.Encrypt(block, stream);
 
-			FastUtils.Xor(stream, source.Slice(i, BlockSize), destination.Slice(i, BlockSize), BlockSize);
+			FastUtils.Xor16(stream, source.Slice(i, BlockSize), destination.Slice(i, BlockSize));
 			(_isEncrypt ? destination : source).Slice(i, BlockSize).CopyTo(block);
 
 			i += BlockSize;

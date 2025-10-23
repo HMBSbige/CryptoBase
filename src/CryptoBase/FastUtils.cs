@@ -127,6 +127,79 @@ public static class FastUtils
 	}
 
 	/// <summary>
+	/// source ^= stream
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	public static void Xor(Span<byte> source, ReadOnlySpan<byte> stream, int length)
+	{
+		int i = 0;
+		int left = length;
+
+		if (Vector512.IsHardwareAccelerated)
+		{
+			while (left >= Vector512<byte>.Count)
+			{
+				ref Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref source.GetRef(i));
+				ref Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref stream.GetRef(i));
+
+				v0 ^= v1;
+				i += Vector512<byte>.Count;
+				left -= Vector512<byte>.Count;
+			}
+		}
+
+		if (Vector256.IsHardwareAccelerated)
+		{
+			while (left >= Vector256<byte>.Count)
+			{
+				ref Vector256<byte> v0 = ref Unsafe.As<byte, Vector256<byte>>(ref source.GetRef(i));
+				ref Vector256<byte> v1 = ref Unsafe.As<byte, Vector256<byte>>(ref stream.GetRef(i));
+
+				v0 ^= v1;
+				i += Vector256<byte>.Count;
+				left -= Vector256<byte>.Count;
+			}
+		}
+
+		if (Vector128.IsHardwareAccelerated)
+		{
+			while (left >= Vector128<byte>.Count)
+			{
+				ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref source.GetRef(i));
+				ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref stream.GetRef(i));
+
+				v0 ^= v1;
+				i += Vector128<byte>.Count;
+				left -= Vector128<byte>.Count;
+			}
+		}
+
+		while (left >= sizeof(ulong))
+		{
+			ref ulong v0 = ref Unsafe.As<byte, ulong>(ref source.GetRef(i));
+			ref ulong v1 = ref Unsafe.As<byte, ulong>(ref stream.GetRef(i));
+
+			v0 ^= v1;
+			i += sizeof(ulong);
+			left -= sizeof(ulong);
+		}
+
+		if (left >= sizeof(uint))
+		{
+			ref uint v0 = ref Unsafe.As<byte, uint>(ref source.GetRef(i));
+			ref uint v1 = ref Unsafe.As<byte, uint>(ref stream.GetRef(i));
+
+			v0 ^= v1;
+			i += sizeof(uint);
+		}
+
+		for (; i < length; ++i)
+		{
+			source.GetRef(i) ^= stream.GetRef(i);
+		}
+	}
+
+	/// <summary>
 	/// destination = source ^ stream
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -147,6 +220,28 @@ public static class FastUtils
 			ref UInt128 dst = ref Unsafe.As<byte, UInt128>(ref MemoryMarshal.GetReference(destination));
 
 			dst = v0 ^ v1;
+		}
+	}
+
+	/// <summary>
+	/// source ^= stream
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+	public static void Xor16(Span<byte> source, ReadOnlySpan<byte> stream)
+	{
+		if (Vector128.IsHardwareAccelerated)
+		{
+			ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(source));
+			ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(stream));
+
+			v0 ^= v1;
+		}
+		else
+		{
+			ref UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref MemoryMarshal.GetReference(source));
+			ref UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref MemoryMarshal.GetReference(stream));
+
+			v0 ^= v1;
 		}
 	}
 
