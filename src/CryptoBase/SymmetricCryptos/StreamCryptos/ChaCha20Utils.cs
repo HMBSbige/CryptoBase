@@ -801,6 +801,9 @@ internal static class ChaCha20Utils
 				source.Slice(sourceOffset + 32),
 				destination.Slice(destOffset + 32));
 
+			length -= 512;
+			sourceOffset += 512;
+			destOffset += 512;
 		}
 	}
 
