@@ -11,20 +11,31 @@ internal static class ChaCha20Utils
 
 		try
 		{
-			state.AsSpan().CopyTo(x);
+			ref uint xRef = ref MemoryMarshal.GetArrayDataReference(x);
+			ref uint stateRef = ref MemoryMarshal.GetArrayDataReference(state);
+			
+			// Zero-copy: directly access state memory via Unsafe
+			for (int i = 0; i < SnuffleCryptoBase.StateSize; ++i)
+			{
+				Unsafe.Add(ref xRef, i) = Unsafe.Add(ref stateRef, i);
+			}
 
 			ChaChaRound(rounds, x);
 
 			for (int i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
 			{
-				x[i] += state[i];
-				x[i + 1] += state[i + 1];
-				x[i + 2] += state[i + 2];
-				x[i + 3] += state[i + 3];
+				Unsafe.Add(ref xRef, i) += Unsafe.Add(ref stateRef, i);
+				Unsafe.Add(ref xRef, i + 1) += Unsafe.Add(ref stateRef, i + 1);
+				Unsafe.Add(ref xRef, i + 2) += Unsafe.Add(ref stateRef, i + 2);
+				Unsafe.Add(ref xRef, i + 3) += Unsafe.Add(ref stateRef, i + 3);
 			}
 
-			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
-			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
+			// Zero-copy: cast keyStream bytes to uint view and write directly
+			ref uint keyStreamRef = ref Unsafe.As<byte, uint>(ref MemoryMarshal.GetArrayDataReference(keyStream));
+			for (int i = 0; i < SnuffleCryptoBase.StateSize; ++i)
+			{
+				Unsafe.Add(ref keyStreamRef, i) = Unsafe.Add(ref xRef, i);
+			}
 		}
 		finally
 		{
