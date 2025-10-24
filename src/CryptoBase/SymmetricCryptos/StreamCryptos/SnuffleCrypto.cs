@@ -39,7 +39,10 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		{
 			if (Index == 0)
 			{
-				UpdateBlocks(source[sourceOffset..], destination[destOffset..], ref length, ref sourceOffset, ref destOffset);
+				int processed = UpdateBlocks(source[sourceOffset..], destination[destOffset..]);
+				length -= processed;
+				sourceOffset += processed;
+				destOffset += processed;
 
 				if (length == 0)
 				{
@@ -71,7 +74,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		}
 	}
 
-	protected abstract void UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset);
+	protected abstract int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination);
 	protected abstract void UpdateKeyStream();
 	protected abstract void IncrementCounter();
 

@@ -4,23 +4,29 @@ public class ChaCha20CryptoX86 : ChaCha20CryptoSF
 {
 	public ChaCha20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv) { }
 
-	protected override void UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
+	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		int processed = 0;
+		int length = source.Length;
 		Span<uint> stateSpan = State.AsSpan(0, 16);
 
 		if (Avx.IsSupported && Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				ChaCha20Utils.ChaChaCore512(Rounds, stateSpan, source, destination, ref length, ref sourceOffset, ref destOffset);
+				int tempLength = length;
+				int tempSourceOffset = 0;
+				int tempDestOffset = 0;
+				ChaCha20Utils.ChaChaCore512(Rounds, stateSpan, source, destination, ref tempLength, ref tempSourceOffset, ref tempDestOffset);
+				processed += tempSourceOffset;
+				length = tempLength;
 			}
 
 			while (length >= 128)
 			{
-				ChaCha20Utils.ChaChaCore128(Rounds, stateSpan, source.Slice(sourceOffset, 128), destination.Slice(destOffset, 128));
+				ChaCha20Utils.ChaChaCore128(Rounds, stateSpan, source.Slice(processed, 128), destination.Slice(processed, 128));
 
-				sourceOffset += 128;
-				destOffset += 128;
+				processed += 128;
 				length -= 128;
 			}
 		}
@@ -29,18 +35,24 @@ public class ChaCha20CryptoX86 : ChaCha20CryptoSF
 		{
 			if (length >= 256)
 			{
-				ChaCha20Utils.ChaChaCore256(Rounds, stateSpan, source, destination, ref length, ref sourceOffset, ref destOffset);
+				int tempLength = length;
+				int tempSourceOffset = 0;
+				int tempDestOffset = 0;
+				ChaCha20Utils.ChaChaCore256(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed), ref tempLength, ref tempSourceOffset, ref tempDestOffset);
+				processed += tempSourceOffset;
+				length = tempLength;
 			}
 
 			while (length >= 64)
 			{
-				ChaCha20Utils.ChaChaCore64(Rounds, stateSpan, source.Slice(sourceOffset, 64), destination.Slice(destOffset, 64));
+				ChaCha20Utils.ChaChaCore64(Rounds, stateSpan, source.Slice(processed, 64), destination.Slice(processed, 64));
 
-				sourceOffset += 64;
-				destOffset += 64;
+				processed += 64;
 				length -= 64;
 			}
 		}
+
+		return processed;
 	}
 
 	protected override void UpdateKeyStream()

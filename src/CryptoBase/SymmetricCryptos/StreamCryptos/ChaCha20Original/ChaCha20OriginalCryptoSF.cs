@@ -4,7 +4,7 @@ public class ChaCha20OriginalCryptoSF : ChaCha20OriginalCrypto
 {
 	public ChaCha20OriginalCryptoSF(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv) { }
 
-	protected override void UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset) { }
+	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination) => 0;
 
 	protected override void UpdateKeyStream()
 	{
