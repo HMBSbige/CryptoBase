@@ -9,7 +9,10 @@ public class XChaCha20CryptoSF : XChaCha20Crypto
 		ChaCha20Utils.ChaChaRound(Rounds, x);
 	}
 
-	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination) => 0;
+	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		return 0;
+	}
 
 	protected override void UpdateKeyStream()
 	{

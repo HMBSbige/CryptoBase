@@ -9,7 +9,10 @@ public class XSalsa20CryptoSF : XSalsa20CryptoX86
 		Salsa20Utils.SalsaRound(Rounds, x);
 	}
 
-	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination) => 0;
+	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		return 0;
+	}
 
 	protected override void UpdateKeyStream()
 	{
