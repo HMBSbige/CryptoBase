@@ -21,7 +21,7 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 	private const int BlockSize = 16;
 	private const int BlockSize4 = 4 * BlockSize;
 
-	public unsafe CTR128StreamModeBlock4X86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
+	public CTR128StreamModeBlock4X86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize4);
 
@@ -35,31 +35,19 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 		Span<byte> c = stackalloc byte[BlockSize];
 		iv.CopyTo(c);
 
-		fixed (byte* p = c)
-		{
-			_iCounter = Sse2.LoadVector128(p).ReverseEndianness128();
-		}
+		_iCounter = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(c)).ReverseEndianness128();
 
 		Reset();
 	}
 
-	public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
 		int length = source.Length;
+		int sourceOffset = 0;
+		int destOffset = 0;
 
-		fixed (byte* pStream = _keyStream)
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
-		{
-			Update(length, pStream, pSource, pDestination);
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Update(int length, byte* stream, byte* source, byte* destination)
-	{
 		while (length > 0)
 		{
 			if (_index is 0)
@@ -70,9 +58,9 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 			int r = BlockSize4 - _index;
 			int xorLen = Math.Min(r, length);
 			IntrinsicsUtils.Xor(
-				new ReadOnlySpan<byte>(stream + _index, xorLen),
-				new ReadOnlySpan<byte>(source, xorLen),
-				new Span<byte>(destination, xorLen),
+				_keyStream.AsSpan(_index, xorLen),
+				source.Slice(sourceOffset, xorLen),
+				destination.Slice(destOffset, xorLen),
 				xorLen);
 
 			if (length < r)
@@ -83,23 +71,23 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 
 			_index = 0;
 			length -= r;
-			source += r;
-			destination += r;
+			sourceOffset += r;
+			destOffset += r;
 		}
 	}
 
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void UpdateKeyStream()
+	private void UpdateKeyStream()
 	{
 		Span<byte> c = _counter.AsSpan(0, BlockSize4);
+		ref byte cRef = ref MemoryMarshal.GetReference(c);
 
-		fixed (byte* p = c)
-		{
-			Sse2.Store(p + 0 * BlockSize, _counterV0.ReverseEndianness128());
-			Sse2.Store(p + 1 * BlockSize, _counterV1.ReverseEndianness128());
-			Sse2.Store(p + 2 * BlockSize, _counterV2.ReverseEndianness128());
-			Sse2.Store(p + 3 * BlockSize, _counterV3.ReverseEndianness128());
-		}
+		Unsafe.WriteUnaligned(ref cRef, _counterV0.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 1 * BlockSize), _counterV1.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 2 * BlockSize), _counterV2.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 3 * BlockSize), _counterV3.ReverseEndianness128());
 
 		_internalBlockCrypto.Encrypt(c, _keyStream);
 

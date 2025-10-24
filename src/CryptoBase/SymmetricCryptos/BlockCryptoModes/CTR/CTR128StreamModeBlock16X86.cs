@@ -25,7 +25,7 @@ public class CTR128StreamModeBlock16X86 : IStreamCrypto
 	private const int BlockSize = 16;
 	private const int BlockSize16 = 16 * BlockSize;
 
-	public unsafe CTR128StreamModeBlock16X86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
+	public CTR128StreamModeBlock16X86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize16);
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
@@ -38,31 +38,20 @@ public class CTR128StreamModeBlock16X86 : IStreamCrypto
 		Span<byte> c = stackalloc byte[BlockSize];
 		iv.CopyTo(c);
 
-		fixed (byte* p = c)
-		{
-			_iCounter = Avx2.BroadcastVector128ToVector256(p).ReverseEndianness128().IncUpper128Le();
-		}
+		var vec = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(c));
+		_iCounter = Vector256.Create(vec, vec).ReverseEndianness128().IncUpper128Le();
 
 		Reset();
 	}
 
-	public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
 		int length = source.Length;
+		int sourceOffset = 0;
+		int destOffset = 0;
 
-		fixed (byte* pStream = _keyStream)
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
-		{
-			Update(length, pStream, pSource, pDestination);
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Update(int length, byte* stream, byte* source, byte* destination)
-	{
 		while (length > 0)
 		{
 			if (_index is 0)
@@ -73,9 +62,9 @@ public class CTR128StreamModeBlock16X86 : IStreamCrypto
 			int r = BlockSize16 - _index;
 			int xorLen = Math.Min(r, length);
 			IntrinsicsUtils.Xor(
-				new ReadOnlySpan<byte>(stream + _index, xorLen),
-				new ReadOnlySpan<byte>(source, xorLen),
-				new Span<byte>(destination, xorLen),
+				_keyStream.AsSpan(_index, xorLen),
+				source.Slice(sourceOffset, xorLen),
+				destination.Slice(destOffset, xorLen),
 				xorLen);
 
 			if (length < r)
@@ -86,27 +75,25 @@ public class CTR128StreamModeBlock16X86 : IStreamCrypto
 
 			_index = 0;
 			length -= r;
-			source += r;
-			destination += r;
+			sourceOffset += r;
+			destOffset += r;
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void UpdateKeyStream()
+	private void UpdateKeyStream()
 	{
 		Span<byte> c = _counter.AsSpan(0, BlockSize16);
+		ref byte cRef = ref MemoryMarshal.GetReference(c);
 
-		fixed (byte* p = c)
-		{
-			Avx.Store(p + 0 * 2 * BlockSize, _counterV0.ReverseEndianness128());
-			Avx.Store(p + 1 * 2 * BlockSize, _counterV1.ReverseEndianness128());
-			Avx.Store(p + 2 * 2 * BlockSize, _counterV2.ReverseEndianness128());
-			Avx.Store(p + 3 * 2 * BlockSize, _counterV3.ReverseEndianness128());
-			Avx.Store(p + 4 * 2 * BlockSize, _counterV4.ReverseEndianness128());
-			Avx.Store(p + 5 * 2 * BlockSize, _counterV5.ReverseEndianness128());
-			Avx.Store(p + 6 * 2 * BlockSize, _counterV6.ReverseEndianness128());
-			Avx.Store(p + 7 * 2 * BlockSize, _counterV7.ReverseEndianness128());
-		}
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 0 * 2 * BlockSize), _counterV0.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 1 * 2 * BlockSize), _counterV1.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 2 * 2 * BlockSize), _counterV2.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 3 * 2 * BlockSize), _counterV3.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 4 * 2 * BlockSize), _counterV4.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 5 * 2 * BlockSize), _counterV5.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 6 * 2 * BlockSize), _counterV6.ReverseEndianness128());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 7 * 2 * BlockSize), _counterV7.ReverseEndianness128());
 
 		_internalBlockCrypto.Encrypt(c, _keyStream);
 
