@@ -4,29 +4,28 @@ public class XChaCha20CryptoX86 : XChaCha20CryptoSF
 {
 	public XChaCha20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv) { }
 
-	protected override unsafe void ChaChaRound(uint[] x)
+	protected override void ChaChaRound(uint[] x)
 	{
-		fixed (uint* p = x)
-		{
-			ChaCha20Utils.ChaChaRound(p, Rounds);
-		}
+		ChaCha20Utils.ChaChaRound(x.AsSpan(), Rounds);
 	}
 
-	protected override unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length)
+	protected override void UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
 	{
+		Span<uint> stateSpan = State.AsSpan(0, 16);
+
 		if (Avx.IsSupported && Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				ChaCha20Utils.ChaChaCoreOriginal512(Rounds, state, ref source, ref destination, ref length);
+				ChaCha20Utils.ChaChaCoreOriginal512(Rounds, stateSpan, source, destination, ref length, ref sourceOffset, ref destOffset);
 			}
 
 			while (length >= 128)
 			{
-				ChaCha20Utils.ChaChaCoreOriginal128(Rounds, state, source, destination);
+				ChaCha20Utils.ChaChaCoreOriginal128(Rounds, stateSpan, source.Slice(sourceOffset, 128), destination.Slice(destOffset, 128));
 
-				source += 128;
-				destination += 128;
+				sourceOffset += 128;
+				destOffset += 128;
 				length -= 128;
 			}
 		}
@@ -35,26 +34,22 @@ public class XChaCha20CryptoX86 : XChaCha20CryptoSF
 		{
 			if (length >= 256)
 			{
-				ChaCha20Utils.ChaChaCoreOriginal256(Rounds, state, ref source, ref destination, ref length);
+				ChaCha20Utils.ChaChaCoreOriginal256(Rounds, stateSpan, source, destination, ref length, ref sourceOffset, ref destOffset);
 			}
 
 			while (length >= 64)
 			{
-				ChaCha20Utils.ChaChaCoreOriginal64(Rounds, state, source, destination);
+				ChaCha20Utils.ChaChaCoreOriginal64(Rounds, stateSpan, source.Slice(sourceOffset, 64), destination.Slice(destOffset, 64));
 
-				source += 64;
-				destination += 64;
+				sourceOffset += 64;
+				destOffset += 64;
 				length -= 64;
 			}
 		}
 	}
 
-	protected override unsafe void UpdateKeyStream()
+	protected override void UpdateKeyStream()
 	{
-		fixed (uint* x = State)
-		fixed (byte* s = KeyStream)
-		{
-			ChaCha20Utils.UpdateKeyStream(x, s, Rounds);
-		}
+		ChaCha20Utils.UpdateKeyStream(State.AsSpan(0, 16), KeyStream.AsSpan(0, 64), Rounds);
 	}
 }

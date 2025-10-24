@@ -27,29 +27,19 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
 	}
 
-	public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
 
 		int length = source.Length;
+		int sourceOffset = 0;
+		int destOffset = 0;
 
-		fixed (uint* pState = State)
-		fixed (byte* pStream = KeyStream)
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
-		{
-			Update(length, pState, pStream, pSource, pDestination);
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Update(int length, uint* state, byte* stream, byte* source, byte* destination)
-	{
 		while (length > 0)
 		{
 			if (Index == 0)
 			{
-				UpdateBlocks(ref state, ref source, ref destination, ref length);
+				UpdateBlocks(source[sourceOffset..], destination[destOffset..], ref length, ref sourceOffset, ref destOffset);
 
 				if (length == 0)
 				{
@@ -57,15 +47,15 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 				}
 
 				UpdateKeyStream();
-				IncrementCounter(state);
+				IncrementCounter();
 			}
 
 			int r = 64 - Index;
 			int xorLen = Math.Min(r, length);
 			IntrinsicsUtils.Xor(
-				new ReadOnlySpan<byte>(stream + Index, xorLen),
-				new ReadOnlySpan<byte>(source, xorLen),
-				new Span<byte>(destination, xorLen),
+				KeyStream.AsSpan(Index, xorLen),
+				source.Slice(sourceOffset, xorLen),
+				destination.Slice(destOffset, xorLen),
 				xorLen);
 
 			if (length < r)
@@ -76,14 +66,14 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 			Index = 0;
 			length -= r;
-			source += r;
-			destination += r;
+			sourceOffset += r;
+			destOffset += r;
 		}
 	}
 
-	protected abstract unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length);
+	protected abstract void UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset);
 	protected abstract void UpdateKeyStream();
-	protected abstract unsafe void IncrementCounter(uint* state);
+	protected abstract void IncrementCounter();
 
 	public override void Dispose()
 	{

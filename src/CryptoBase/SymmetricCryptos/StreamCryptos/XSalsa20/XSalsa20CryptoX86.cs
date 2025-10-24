@@ -65,7 +65,7 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 		}
 	}
 
-	protected override unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length)
+	protected override void UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
 	{
 		if (Avx.IsSupported && Avx2.IsSupported)
 		{

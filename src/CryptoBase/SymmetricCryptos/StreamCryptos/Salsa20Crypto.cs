@@ -4,11 +4,12 @@ public abstract class Salsa20Crypto : SnuffleCrypto
 {
 	public override string Name => @"Salsa20";
 
-	protected override unsafe void IncrementCounter(uint* state)
+	protected override void IncrementCounter()
 	{
-		if (++*(state + 8) == 0)
+		ref uint counter = ref Unsafe.Add(ref MemoryMarshal.GetReference(State.AsSpan()), 8);
+		if (++counter == 0)
 		{
-			++*(state + 9);
+			++Unsafe.Add(ref MemoryMarshal.GetReference(State.AsSpan()), 9);
 		}
 	}
 }

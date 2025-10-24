@@ -23,9 +23,9 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 		SetCounter(0);
 	}
 
-	protected override unsafe void IncrementCounter(uint* state)
+	protected override void IncrementCounter()
 	{
-		ChaCha20Utils.IncrementCounterOriginal(state);
+		ChaCha20Utils.IncrementCounterOriginal(State.AsSpan(0, 16));
 	}
 
 	protected abstract void ChaChaRound(uint[] x);

@@ -32,9 +32,9 @@ public abstract class ChaCha20Crypto : ChaCha20CryptoBase
 		SetCounter(0);
 	}
 
-	protected override unsafe void IncrementCounter(uint* state)
+	protected override void IncrementCounter()
 	{
-		ChaCha20Utils.IncrementCounter(state);
+		ChaCha20Utils.IncrementCounter(State.AsSpan(0, 16));
 	}
 
 	public void SetIV(ReadOnlySpan<byte> iv)
