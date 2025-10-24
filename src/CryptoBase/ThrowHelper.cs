@@ -23,4 +23,10 @@ internal static class ThrowHelper
 	{
 		throw new InvalidOperationException(@"unreachable code!!!");
 	}
+
+	[DoesNotReturn]
+	public static T ThrowArgumentOutOfRangeException<T>(string? paramName = default)
+	{
+		throw new ArgumentOutOfRangeException(paramName);
+	}
 }

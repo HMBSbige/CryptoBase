@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
+using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
 
@@ -61,6 +62,7 @@ public sealed class XtsMode : BlockCryptoBase
 		}
 		finally
 		{
+			CryptographicOperations.ZeroMemory(rentedArray.AsSpan(0, size));
 			ArrayPool<byte>.Shared.Return(rentedArray);
 		}
 
@@ -75,13 +77,75 @@ public sealed class XtsMode : BlockCryptoBase
 			crypto.Encrypt(lastDSt, lastDSt);
 			FastUtils.Xor16(lastDSt, tweak);
 		}
+
+		CryptographicOperations.ZeroMemory(tweak);
 	}
 
+	[SkipLocalsInit]
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
 
-		throw new NotImplementedException();
+		ReadOnlySpan<byte> iv = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<Vector128<byte>, byte>(ref Unsafe.AsRef(in _iv)), BlockSize);
+		Span<byte> tweak = stackalloc byte[BlockSize];
+		_tweakCrypto.Encrypt(iv, tweak);
+		IBlockCrypto crypto = _dataCrypto;
+
+		int left = source.Length % BlockSize;
+		int size = source.Length - left - (BlockSize & (left | -left) >> 31);
+
+		byte[] rentedArray = ArrayPool<byte>.Shared.Rent(size);
+
+		try
+		{
+			Span<byte> tweakBuffer = rentedArray.AsSpan(0, size);
+
+			for (int i = 0; i < size; i += BlockSize)
+			{
+				tweak.CopyTo(tweakBuffer.Slice(i));
+				Gf128Mul(ref tweak);
+			}
+
+			FastUtils.Xor(source, tweakBuffer, destination, size);
+
+			for (int i = 0; i < size; i += BlockSize)
+			{
+				Span<byte> block = destination.Slice(i, BlockSize);
+				crypto.Decrypt(block, block);
+			}
+
+			FastUtils.Xor(destination, tweakBuffer, size);
+		}
+		finally
+		{
+			CryptographicOperations.ZeroMemory(rentedArray.AsSpan(0, size));
+			ArrayPool<byte>.Shared.Return(rentedArray);
+		}
+
+		if (left is not 0)
+		{
+			Span<byte> finalTweak = stackalloc byte[BlockSize];
+			tweak.CopyTo(finalTweak);
+			Gf128Mul(ref finalTweak);
+
+			ReadOnlySpan<byte> lastSrc = source.Slice(size);
+			Span<byte> lastDst = destination.Slice(size);
+
+			FastUtils.Xor16(lastSrc, finalTweak, lastDst);
+			_dataCrypto.Decrypt(lastDst, lastDst);
+			FastUtils.Xor16(lastDst, finalTweak);
+
+			lastDst.Slice(0, left).CopyTo(lastDst.Slice(BlockSize));
+			lastSrc.Slice(BlockSize, left).CopyTo(lastDst);
+
+			FastUtils.Xor16(lastDst, tweak);
+			_dataCrypto.Decrypt(lastDst, lastDst);
+			FastUtils.Xor16(lastDst, tweak);
+
+			CryptographicOperations.ZeroMemory(finalTweak);
+		}
+
+		CryptographicOperations.ZeroMemory(tweak);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

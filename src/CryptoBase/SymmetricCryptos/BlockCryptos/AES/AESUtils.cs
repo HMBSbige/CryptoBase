@@ -31,7 +31,7 @@ public static class AESUtils
 				16 => new Aes128CryptoX86(key),
 				24 => new Aes192CryptoX86(key),
 				32 => new Aes256CryptoX86(key),
-				_ => throw new ArgumentOutOfRangeException(nameof(key))
+				_ => ThrowHelper.ThrowArgumentOutOfRangeException<AESCrypto>(nameof(key))
 			};
 		}
 
