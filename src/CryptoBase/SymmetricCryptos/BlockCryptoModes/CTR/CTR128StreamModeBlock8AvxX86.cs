@@ -68,7 +68,12 @@ public class CTR128StreamModeBlock8AvxX86 : IStreamCrypto
 			}
 
 			int r = BlockSize8 - _index;
-			IntrinsicsUtils.Xor(stream + _index, source, destination, Math.Min(r, length));
+			int xorLen = Math.Min(r, length);
+			IntrinsicsUtils.Xor(
+				new ReadOnlySpan<byte>(stream + _index, xorLen),
+				new ReadOnlySpan<byte>(source, xorLen),
+				new Span<byte>(destination, xorLen),
+				xorLen);
 
 			if (length < r)
 			{

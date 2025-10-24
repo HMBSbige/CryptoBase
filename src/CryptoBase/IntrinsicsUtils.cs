@@ -69,9 +69,9 @@ internal static class IntrinsicsUtils
 	/// destination = source ^ stream
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	public static unsafe void Xor(byte* stream, byte* source, byte* destination, int length)
+	public static void Xor(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
-		FastUtils.Xor(new ReadOnlySpan<byte>(stream, length), new ReadOnlySpan<byte>(source, length), new Span<byte>(destination, length), length);
+		FastUtils.Xor(stream, source, destination, length);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -38,15 +38,12 @@ public class Crc32CX86 : IHash
 		GetHash(destination);
 	}
 
-	public unsafe void Update(ReadOnlySpan<byte> source)
+	public void Update(ReadOnlySpan<byte> source)
 	{
 		if (Sse2.IsSupported && Pclmulqdq.IsSupported && source.Length >= 64)
 		{
-			fixed (byte* p = source)
-			{
-				_state = Update(p, source.Length, _state);
-				source = source[^(source.Length % 0x10)..];
-			}
+			_state = Update(source, source.Length, _state);
+			source = source[^(source.Length % 0x10)..];
 		}
 
 		if (Sse42.IsSupported)
@@ -71,17 +68,19 @@ public class Crc32CX86 : IHash
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe uint Update(byte* buffer, int length, uint crc)
+	private static uint Update(ReadOnlySpan<byte> buffer, int length, uint crc)
 	{
-		var x1 = Sse2.LoadVector128(buffer).AsUInt64();
-		var x2 = Sse2.LoadVector128(buffer + 0x10).AsUInt64();
-		var x3 = Sse2.LoadVector128(buffer + 0x20).AsUInt64();
-		var x4 = Sse2.LoadVector128(buffer + 0x30).AsUInt64();
+		ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
+		
+		var x1 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref bufferRef).AsUInt64();
+		var x2 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x10)).AsUInt64();
+		var x3 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x20)).AsUInt64();
+		var x4 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x30)).AsUInt64();
 		var vCrc = Vector128.CreateScalar(crc).AsUInt64();
 		x1 = Sse2.Xor(x1, vCrc);
 
 		length -= 0x40;
-		buffer += 0x40;
+		int offset = 0x40;
 
 		while (length >= 0x40)
 		{
@@ -100,13 +99,13 @@ public class Crc32CX86 : IHash
 			x3 = Sse2.Xor(x3, t3);
 			x4 = Sse2.Xor(x4, t4);
 
-			x1 = Sse2.Xor(x1, Sse2.LoadVector128(buffer).AsUInt64());
-			x2 = Sse2.Xor(x2, Sse2.LoadVector128(buffer + 0x10).AsUInt64());
-			x3 = Sse2.Xor(x3, Sse2.LoadVector128(buffer + 0x20).AsUInt64());
-			x4 = Sse2.Xor(x4, Sse2.LoadVector128(buffer + 0x30).AsUInt64());
+			x1 = Sse2.Xor(x1, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset)).AsUInt64());
+			x2 = Sse2.Xor(x2, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x10)).AsUInt64());
+			x3 = Sse2.Xor(x3, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x20)).AsUInt64());
+			x4 = Sse2.Xor(x4, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x30)).AsUInt64());
 
 			length -= 0x40;
-			buffer += 0x40;
+			offset += 0x40;
 		}
 
 		var t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
@@ -129,10 +128,10 @@ public class Crc32CX86 : IHash
 			t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
 			x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
 			x1 = Sse2.Xor(x1, t);
-			x1 = Sse2.Xor(x1, Sse2.LoadVector128(buffer).AsUInt64());
+			x1 = Sse2.Xor(x1, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset)).AsUInt64());
 
 			length -= 0x10;
-			buffer += 0x10;
+			offset += 0x10;
 		}
 
 		var r4 = Pclmulqdq.CarrylessMultiply(K3K4, x1, 0x01);

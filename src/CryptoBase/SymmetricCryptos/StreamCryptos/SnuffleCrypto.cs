@@ -61,7 +61,12 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 			}
 
 			int r = 64 - Index;
-			IntrinsicsUtils.Xor(stream + Index, source, destination, Math.Min(r, length));
+			int xorLen = Math.Min(r, length);
+			IntrinsicsUtils.Xor(
+				new ReadOnlySpan<byte>(stream + Index, xorLen),
+				new ReadOnlySpan<byte>(source, xorLen),
+				new Span<byte>(destination, xorLen),
+				xorLen);
 
 			if (length < r)
 			{
