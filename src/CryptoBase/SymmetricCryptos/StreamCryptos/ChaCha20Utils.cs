@@ -475,6 +475,8 @@ internal static class ChaCha20Utils
 			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source.Slice(sourceOffset + 48), destination.Slice(destOffset + 48));
 
 			length -= 256;
+			sourceOffset += 256;
+			destOffset += 256;
 			destOffset += 256;
 			sourceOffset += 256;
 		}
@@ -537,13 +539,11 @@ internal static class ChaCha20Utils
 			}
 
 			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source, destination);
-			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source + 16, destination + 16);
-			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source + 32, destination + 32);
-			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source + 48, destination + 48);
+			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source.Slice(sourceOffset + 16), destination.Slice(destOffset + 16));
+			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source.Slice(sourceOffset + 32), destination.Slice(destOffset + 32));
+			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source.Slice(sourceOffset + 48), destination.Slice(destOffset + 48));
 
 			length -= 256;
-			destination += 256;
-			source += 256;
 		}
 	}
 
@@ -574,10 +574,13 @@ internal static class ChaCha20Utils
 		x3 = Sse2.UnpackHigh(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
 
 		// Xor
-		Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source)));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), 64), Sse2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), 64))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), 128), Sse2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), 128))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), 192), Sse2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), 192))));
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+
+		Unsafe.WriteUnaligned(ref destRef, Sse2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref sourceRef)));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 64), Sse2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 64))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 128), Sse2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 128))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 192), Sse2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 192))));
 	}
 
 	#endregion
@@ -677,8 +680,8 @@ internal static class ChaCha20Utils
 				ref o5,
 				ref o6,
 				ref o7,
-				source,
-				destination);
+				source.Slice(sourceOffset),
+				destination.Slice(destOffset));
 			AddTransposeXor(
 				ref x8,
 				ref x9,
@@ -696,12 +699,12 @@ internal static class ChaCha20Utils
 				ref o13,
 				ref o14,
 				ref o15,
-				source + 32,
-				destination + 32);
+				source.Slice(sourceOffset + 32),
+				destination.Slice(destOffset + 32));
 
 			length -= 512;
-			destination += 512;
-			source += 512;
+			sourceOffset += 512;
+			destOffset += 512;
 		}
 	}
 
@@ -776,8 +779,8 @@ internal static class ChaCha20Utils
 				ref o5,
 				ref o6,
 				ref o7,
-				source,
-				destination);
+				source.Slice(sourceOffset),
+				destination.Slice(destOffset));
 			AddTransposeXor(
 				ref x8,
 				ref x9,
@@ -795,12 +798,9 @@ internal static class ChaCha20Utils
 				ref o13,
 				ref o14,
 				ref o15,
-				source + 32,
-				destination + 32);
+				source.Slice(sourceOffset + 32),
+				destination.Slice(destOffset + 32));
 
-			length -= 512;
-			destination += 512;
-			source += 512;
 		}
 	}
 
@@ -851,14 +851,17 @@ internal static class ChaCha20Utils
 		t7 = Avx2.Permute2x128(x3, x7, 0x31);
 
 		// Xor
-		Avx.Store(destination, Avx2.Xor(t0.AsByte(), Avx.LoadVector256(source)));
-		Avx.Store(destination + 64, Avx2.Xor(t1.AsByte(), Avx.LoadVector256(source + 64)));
-		Avx.Store(destination + 128, Avx2.Xor(t2.AsByte(), Avx.LoadVector256(source + 128)));
-		Avx.Store(destination + 192, Avx2.Xor(t3.AsByte(), Avx.LoadVector256(source + 192)));
-		Avx.Store(destination + 256, Avx2.Xor(t4.AsByte(), Avx.LoadVector256(source + 256)));
-		Avx.Store(destination + 320, Avx2.Xor(t5.AsByte(), Avx.LoadVector256(source + 320)));
-		Avx.Store(destination + 384, Avx2.Xor(t6.AsByte(), Avx.LoadVector256(source + 384)));
-		Avx.Store(destination + 448, Avx2.Xor(t7.AsByte(), Avx.LoadVector256(source + 448)));
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+
+		Unsafe.WriteUnaligned(ref destRef, Avx2.Xor(t0.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref sourceRef)));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 64), Avx2.Xor(t1.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 128), Avx2.Xor(t2.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 128))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 192), Avx2.Xor(t3.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 192))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 256), Avx2.Xor(t4.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 256))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 320), Avx2.Xor(t5.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 320))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 384), Avx2.Xor(t6.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 384))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 448), Avx2.Xor(t7.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 448))));
 	}
 
 	#endregion

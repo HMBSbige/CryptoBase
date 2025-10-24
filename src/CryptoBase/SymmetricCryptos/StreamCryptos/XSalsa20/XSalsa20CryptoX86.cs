@@ -57,29 +57,28 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 		State[8] = State[9] = 0;
 	}
 
-	protected virtual unsafe void SalsaRound(uint[] x)
+	protected virtual void SalsaRound(uint[] x)
 	{
-		fixed (uint* p = x)
-		{
-			Salsa20Utils.SalsaRound(p, Rounds);
-		}
+		Salsa20Utils.SalsaRound(x.AsSpan(), Rounds);
 	}
 
 	protected override void UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
 	{
+		Span<uint> stateSpan = State.AsSpan(0, 16);
+
 		if (Avx.IsSupported && Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				Salsa20Utils.SalsaCore512(Rounds, state, ref source, ref destination, ref length);
+				Salsa20Utils.SalsaCore512(Rounds, stateSpan, source, destination, ref length, ref sourceOffset, ref destOffset);
 			}
 
 			while (length >= 128)
 			{
-				Salsa20Utils.SalsaCore128(Rounds, state, source, destination);
+				Salsa20Utils.SalsaCore128(Rounds, stateSpan, source.Slice(sourceOffset, 128), destination.Slice(destOffset, 128));
 
-				source += 128;
-				destination += 128;
+				sourceOffset += 128;
+				destOffset += 128;
 				length -= 128;
 			}
 		}
@@ -88,26 +87,22 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 		{
 			if (length >= 256)
 			{
-				Salsa20Utils.SalsaCore256(Rounds, state, ref source, ref destination, ref length);
+				Salsa20Utils.SalsaCore256(Rounds, stateSpan, source, destination, ref length, ref sourceOffset, ref destOffset);
 			}
 
 			while (length >= 64)
 			{
-				Salsa20Utils.SalsaCore64(Rounds, state, source, destination);
+				Salsa20Utils.SalsaCore64(Rounds, stateSpan, source.Slice(sourceOffset, 64), destination.Slice(destOffset, 64));
 
-				source += 64;
-				destination += 64;
+				sourceOffset += 64;
+				destOffset += 64;
 				length -= 64;
 			}
 		}
 	}
 
-	protected override unsafe void UpdateKeyStream()
+	protected override void UpdateKeyStream()
 	{
-		fixed (uint* x = State)
-		fixed (byte* s = KeyStream)
-		{
-			Salsa20Utils.UpdateKeyStream(x, s, Rounds);
-		}
+		Salsa20Utils.UpdateKeyStream(State.AsSpan(0, 16), KeyStream.AsSpan(0, 64), Rounds);
 	}
 }

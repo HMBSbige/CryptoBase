@@ -82,17 +82,20 @@ public static class Salsa20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void UpdateKeyStream(uint* state, byte* stream, byte rounds)
+	public static void UpdateKeyStream(Span<uint> state, Span<byte> stream, byte rounds)
 	{
-		var s0 = Sse2.LoadVector128(state);
-		var s1 = Sse2.LoadVector128(state + 4);
-		var s2 = Sse2.LoadVector128(state + 8);
-		var s3 = Sse2.LoadVector128(state + 12);
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte streamRef = ref MemoryMarshal.GetReference(stream);
 
-		var x0 = Vector128.Create(*(state + 4), *(state + 9), *(state + 14), *(state + 3));  // 4 9 14 3
-		var x1 = Vector128.Create(*(state + 0), *(state + 5), *(state + 10), *(state + 15)); // 0 5 10 15
-		var x2 = Vector128.Create(*(state + 12), *(state + 1), *(state + 6), *(state + 11)); // 12 1 6 11
-		var x3 = Vector128.Create(*(state + 8), *(state + 13), *(state + 2), *(state + 7));  // 8 13 2 7
+		var s0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
+		var s1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
+		var s2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
+		var s3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+
+		var x0 = Vector128.Create(state[4], state[9], state[14], state[3]);  // 4 9 14 3
+		var x1 = Vector128.Create(state[0], state[5], state[10], state[15]); // 0 5 10 15
+		var x2 = Vector128.Create(state[12], state[1], state[6], state[11]); // 12 1 6 11
+		var x3 = Vector128.Create(state[8], state[13], state[2], state[7]);  // 8 13 2 7
 
 		for (var i = 0; i < rounds; i += 2)
 		{
@@ -110,19 +113,21 @@ public static class Salsa20Utils
 		x2 = Sse2.Add(x2, s2);
 		x3 = Sse2.Add(x3, s3);
 
-		Sse2.Store(stream, x0.AsByte());
-		Sse2.Store(stream + 16, x1.AsByte());
-		Sse2.Store(stream + 32, x2.AsByte());
-		Sse2.Store(stream + 48, x3.AsByte());
+		Unsafe.WriteUnaligned(ref streamRef, x0.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 16), x1.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 32), x2.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 48), x3.AsByte());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void SalsaRound(uint* state, byte rounds)
+	public static void SalsaRound(Span<uint> state, byte rounds)
 	{
-		var x0 = Vector128.Create(*(state + 4), *(state + 9), *(state + 14), *(state + 3));  // 4 9 14 3
-		var x1 = Vector128.Create(*(state + 0), *(state + 5), *(state + 10), *(state + 15)); // 0 5 10 15
-		var x2 = Vector128.Create(*(state + 12), *(state + 1), *(state + 6), *(state + 11)); // 12 1 6 11
-		var x3 = Vector128.Create(*(state + 8), *(state + 13), *(state + 2), *(state + 7));  // 8 13 2 7
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+
+		var x0 = Vector128.Create(state[4], state[9], state[14], state[3]);  // 4 9 14 3
+		var x1 = Vector128.Create(state[0], state[5], state[10], state[15]); // 0 5 10 15
+		var x2 = Vector128.Create(state[12], state[1], state[6], state[11]); // 12 1 6 11
+		var x3 = Vector128.Create(state[8], state[13], state[2], state[7]);  // 8 13 2 7
 
 		for (var i = 0; i < rounds; i += 2)
 		{
@@ -137,17 +142,17 @@ public static class Salsa20Utils
 		{
 			Shuffle(ref x0, ref x1, ref x2, ref x3, out var a, out var b);
 
-			Avx.Store(state, a);
-			Avx.Store(state + 8, b);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref stateRef), a);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)), b);
 		}
 		else
 		{
 			Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-			Sse2.Store(state, x0);
-			Sse2.Store(state + 4, x1);
-			Sse2.Store(state + 8, x2);
-			Sse2.Store(state + 12, x3);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref stateRef), x0);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)), x1);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)), x2);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)), x3);
 		}
 	}
 
@@ -301,17 +306,21 @@ public static class Salsa20Utils
 	/// 处理 64 bytes
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void SalsaCore64(byte rounds, uint* state, byte* source, byte* destination)
+	public static void SalsaCore64(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		var s0 = Sse2.LoadVector128(state);
-		var s1 = Sse2.LoadVector128(state + 4);
-		var s2 = Sse2.LoadVector128(state + 8);
-		var s3 = Sse2.LoadVector128(state + 12);
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		var x0 = Vector128.Create(*(state + 4), *(state + 9), *(state + 14), *(state + 3));  // 4 9 14 3
-		var x1 = Vector128.Create(*(state + 0), *(state + 5), *(state + 10), *(state + 15)); // 0 5 10 15
-		var x2 = Vector128.Create(*(state + 12), *(state + 1), *(state + 6), *(state + 11)); // 12 1 6 11
-		var x3 = Vector128.Create(*(state + 8), *(state + 13), *(state + 2), *(state + 7));  // 8 13 2 7
+		var s0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
+		var s1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
+		var s2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
+		var s3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+
+		var x0 = Vector128.Create(state[4], state[9], state[14], state[3]);  // 4 9 14 3
+		var x1 = Vector128.Create(state[0], state[5], state[10], state[15]); // 0 5 10 15
+		var x2 = Vector128.Create(state[12], state[1], state[6], state[11]); // 12 1 6 11
+		var x3 = Vector128.Create(state[8], state[13], state[2], state[7]);  // 8 13 2 7
 
 		for (var i = 0; i < rounds; i += 2)
 		{
@@ -329,19 +338,20 @@ public static class Salsa20Utils
 		x2 = Sse2.Add(x2, s2);
 		x3 = Sse2.Add(x3, s3);
 
-		var v0 = Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source));
-		var v1 = Sse2.Xor(x1.AsByte(), Sse2.LoadVector128(source + 16));
-		var v2 = Sse2.Xor(x2.AsByte(), Sse2.LoadVector128(source + 32));
-		var v3 = Sse2.Xor(x3.AsByte(), Sse2.LoadVector128(source + 48));
+		var v0 = Sse2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref sourceRef));
+		var v1 = Sse2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 16)));
+		var v2 = Sse2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
+		var v3 = Sse2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 48)));
 
-		Sse2.Store(destination, v0);
-		Sse2.Store(destination + 16, v1);
-		Sse2.Store(destination + 32, v2);
-		Sse2.Store(destination + 48, v3);
+		Unsafe.WriteUnaligned(ref destRef, v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 16), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 32), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 48), v3);
 
-		if (++*(state + 8) == 0)
+		ref uint counter = ref Unsafe.Add(ref stateRef, 8);
+		if (++counter == 0)
 		{
-			++*(state + 9);
+			++Unsafe.Add(ref stateRef, 9);
 		}
 	}
 
@@ -349,34 +359,39 @@ public static class Salsa20Utils
 	/// 处理 128 bytes
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void SalsaCore128(byte rounds, uint* state, byte* source, byte* destination)
+	public static void SalsaCore128(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		var t8 = *(state + 8);
-		var t9 = *(state + 9);
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		var s1 = Avx.LoadVector256(state + 8); // 8 9 10 11 12 13 14 15
+		var t8 = state[8];
+		var t9 = state[9];
 
-		if (++*(state + 8) == 0)
+		var s1 = Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8))); // 8 9 10 11 12 13 14 15
+
+		ref uint counter = ref Unsafe.Add(ref stateRef, 8);
+		if (++counter == 0)
 		{
-			++*(state + 9);
+			++Unsafe.Add(ref stateRef, 9);
 		}
 
 		// 4 9 14 3
 		var x0 = Vector256.Create(
-			*(state + 4), t9, *(state + 14), *(state + 3),
-			*(state + 4), *(state + 9), *(state + 14), *(state + 3));
+			state[4], t9, state[14], state[3],
+			state[4], state[9], state[14], state[3]);
 		// 0 5 10 15
 		var x1 = Vector256.Create(
-			*(state + 0), *(state + 5), *(state + 10), *(state + 15),
-			*(state + 0), *(state + 5), *(state + 10), *(state + 15));
+			state[0], state[5], state[10], state[15],
+			state[0], state[5], state[10], state[15]);
 		// 12 1 6 11
 		var x2 = Vector256.Create(
-			*(state + 12), *(state + 1), *(state + 6), *(state + 11),
-			*(state + 12), *(state + 1), *(state + 6), *(state + 11));
+			state[12], state[1], state[6], state[11],
+			state[12], state[1], state[6], state[11]);
 		// 8 13 2 7
 		var x3 = Vector256.Create(
-			t8, *(state + 13), *(state + 2), *(state + 7),
-			*(state + 8), *(state + 13), *(state + 2), *(state + 7)
+			t8, state[13], state[2], state[7],
+			state[8], state[13], state[2], state[7]
 		);
 
 		for (var i = 0; i < rounds; i += 2)
@@ -390,52 +405,53 @@ public static class Salsa20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		var s0 = Avx.LoadVector256(state); // 0 1 2 3 4 5 6 7
+		var s0 = Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref stateRef)); // 0 1 2 3 4 5 6 7
 
 		x0 = Avx2.Add(x0, s0);
 		x1 = Avx2.Add(x1, s1);
 		x2 = Avx2.Add(x2, s0);
-		x3 = Avx2.Add(x3, Avx.LoadVector256(state + 8));
+		x3 = Avx2.Add(x3, Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8))));
 
-		var v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
-		var v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
-		var v2 = Avx2.Xor(x2.AsByte(), Avx.LoadVector256(source + 64));
-		var v3 = Avx2.Xor(x3.AsByte(), Avx.LoadVector256(source + 96));
+		var v0 = Avx2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref sourceRef));
+		var v1 = Avx2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
+		var v2 = Avx2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64)));
+		var v3 = Avx2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 96)));
 
-		Avx.Store(destination, v0);
-		Avx.Store(destination + 32, v1);
-		Avx.Store(destination + 64, v2);
-		Avx.Store(destination + 96, v3);
+		Unsafe.WriteUnaligned(ref destRef, v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 32), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 64), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 96), v3);
 
-		if (++*(state + 8) == 0)
+		counter = ref Unsafe.Add(ref stateRef, 8);
+		if (++counter == 0)
 		{
-			++*(state + 9);
+			++Unsafe.Add(ref stateRef, 9);
 		}
 	}
 
 	#region 处理 256*n bytes
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void SalsaCore256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+	public static void SalsaCore256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
 	{
 		#region s
 
-		var s0 = Vector128.Create(*(state + 0));
-		var s1 = Vector128.Create(*(state + 1));
-		var s2 = Vector128.Create(*(state + 2));
-		var s3 = Vector128.Create(*(state + 3));
-		var s4 = Vector128.Create(*(state + 4));
-		var s5 = Vector128.Create(*(state + 5));
-		var s6 = Vector128.Create(*(state + 6));
-		var s7 = Vector128.Create(*(state + 7));
+		var s0 = Vector128.Create(state[0]);
+		var s1 = Vector128.Create(state[1]);
+		var s2 = Vector128.Create(state[2]);
+		var s3 = Vector128.Create(state[3]);
+		var s4 = Vector128.Create(state[4]);
+		var s5 = Vector128.Create(state[5]);
+		var s6 = Vector128.Create(state[6]);
+		var s7 = Vector128.Create(state[7]);
 		// s8
 		// s9
-		var s10 = Vector128.Create(*(state + 10));
-		var s11 = Vector128.Create(*(state + 11));
-		var s12 = Vector128.Create(*(state + 12));
-		var s13 = Vector128.Create(*(state + 13));
-		var s14 = Vector128.Create(*(state + 14));
-		var s15 = Vector128.Create(*(state + 15));
+		var s10 = Vector128.Create(state[10]);
+		var s11 = Vector128.Create(state[11]);
+		var s12 = Vector128.Create(state[12]);
+		var s13 = Vector128.Create(state[13]);
+		var s14 = Vector128.Create(state[14]);
+		var s15 = Vector128.Create(state[15]);
 
 		#endregion
 
@@ -462,7 +478,7 @@ public static class Salsa20Utils
 
 			#region 8 9 位分别加 0 1 2 3
 
-			var o = *(state + 8) | (ulong)*(state + 9) << 32;
+			var o = state[8] | (ulong)state[9] << 32;
 			var vo = Vector128.Create(o);
 
 			var x8 = Sse2.Add(ChaCha20Utils.IncCounter01, vo).AsUInt32();
@@ -478,8 +494,8 @@ public static class Salsa20Utils
 			var s9 = x9;
 
 			o += 4;
-			*(state + 8) = (uint)(o & 0xFFFFFFFF);
-			*(state + 9) = (uint)(o >> 32 & 0xFFFFFFFF);
+			state[8] = (uint)(o & 0xFFFFFFFF);
+			state[9] = (uint)(o >> 32 & 0xFFFFFFFF);
 
 			#endregion
 
@@ -496,13 +512,13 @@ public static class Salsa20Utils
 				QuarterRound(ref x12, ref x15, ref x14, ref x13);
 			}
 
-			ChaCha20Utils.AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref s0, ref s1, ref s2, ref s3, source, destination);
-			ChaCha20Utils.AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref s4, ref s5, ref s6, ref s7, source + 16, destination + 16);
-			ChaCha20Utils.AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref s8, ref s9, ref s10, ref s11, source + 32, destination + 32);
-			ChaCha20Utils.AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref s12, ref s13, ref s14, ref s15, source + 48, destination + 48);
+			ChaCha20Utils.AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref s0, ref s1, ref s2, ref s3, source.Slice(sourceOffset), destination.Slice(destOffset));
+			ChaCha20Utils.AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref s4, ref s5, ref s6, ref s7, source.Slice(sourceOffset + 16), destination.Slice(destOffset + 16));
+			ChaCha20Utils.AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref s8, ref s9, ref s10, ref s11, source.Slice(sourceOffset + 32), destination.Slice(destOffset + 32));
+			ChaCha20Utils.AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref s12, ref s13, ref s14, ref s15, source.Slice(sourceOffset + 48), destination.Slice(destOffset + 48));
 
-			source += 256;
-			destination += 256;
+			sourceOffset += 256;
+			destOffset += 256;
 			length -= 256;
 		}
 	}
@@ -512,22 +528,22 @@ public static class Salsa20Utils
 	#region 处理 512*n bytes
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void SalsaCore512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+	public static void SalsaCore512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
 	{
-		var o0 = Vector256.Create(*(state + 0));
-		var o1 = Vector256.Create(*(state + 1));
-		var o2 = Vector256.Create(*(state + 2));
-		var o3 = Vector256.Create(*(state + 3));
-		var o4 = Vector256.Create(*(state + 4));
-		var o5 = Vector256.Create(*(state + 5));
-		var o6 = Vector256.Create(*(state + 6));
-		var o7 = Vector256.Create(*(state + 7));
-		var o10 = Vector256.Create(*(state + 10));
-		var o11 = Vector256.Create(*(state + 11));
-		var o12 = Vector256.Create(*(state + 12));
-		var o13 = Vector256.Create(*(state + 13));
-		var o14 = Vector256.Create(*(state + 14));
-		var o15 = Vector256.Create(*(state + 15));
+		var o0 = Vector256.Create(state[0]);
+		var o1 = Vector256.Create(state[1]);
+		var o2 = Vector256.Create(state[2]);
+		var o3 = Vector256.Create(state[3]);
+		var o4 = Vector256.Create(state[4]);
+		var o5 = Vector256.Create(state[5]);
+		var o6 = Vector256.Create(state[6]);
+		var o7 = Vector256.Create(state[7]);
+		var o10 = Vector256.Create(state[10]);
+		var o11 = Vector256.Create(state[11]);
+		var o12 = Vector256.Create(state[12]);
+		var o13 = Vector256.Create(state[13]);
+		var o14 = Vector256.Create(state[14]);
+		var o15 = Vector256.Create(state[15]);
 
 		while (length >= 512)
 		{
@@ -546,7 +562,7 @@ public static class Salsa20Utils
 			var x14 = o14;
 			var x15 = o15;
 
-			var counter = *(state + 8) | (ulong)*(state + 9) << 32;
+			var counter = state[8] | (ulong)state[9] << 32;
 			var x8 = Vector256.Create(counter).AsUInt32();
 			var x9 = x8;
 
@@ -567,8 +583,8 @@ public static class Salsa20Utils
 
 			counter += 8;
 
-			*(state + 8) = (uint)(counter & 0xFFFFFFFF);
-			*(state + 9) = (uint)(counter >> 32 & 0xFFFFFFFF);
+			state[8] = (uint)(counter & 0xFFFFFFFF);
+			state[9] = (uint)(counter >> 32 & 0xFFFFFFFF);
 
 			for (var i = 0; i < rounds; i += 2)
 			{
@@ -588,18 +604,18 @@ public static class Salsa20Utils
 				ref x4, ref x5, ref x6, ref x7,
 				ref o0, ref o1, ref o2, ref o3,
 				ref o4, ref o5, ref o6, ref o7,
-				source, destination);
+				source.Slice(sourceOffset), destination.Slice(destOffset));
 
 			ChaCha20Utils.AddTransposeXor(
 				ref x8, ref x9, ref x10, ref x11,
 				ref x12, ref x13, ref x14, ref x15,
 				ref o8, ref o9, ref o10, ref o11,
 				ref o12, ref o13, ref o14, ref o15,
-				source + 32, destination + 32);
+				source.Slice(sourceOffset + 32), destination.Slice(destOffset + 32));
 
 			length -= 512;
-			destination += 512;
-			source += 512;
+			destOffset += 512;
+			sourceOffset += 512;
 		}
 	}
 
