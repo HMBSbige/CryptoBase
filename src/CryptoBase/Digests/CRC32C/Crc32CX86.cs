@@ -71,7 +71,6 @@ public class Crc32CX86 : IHash
 	private static uint Update(ReadOnlySpan<byte> buffer, int length, uint crc)
 	{
 		ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-		
 		var x1 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref bufferRef).AsUInt64();
 		var x2 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x10)).AsUInt64();
 		var x3 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x20)).AsUInt64();
