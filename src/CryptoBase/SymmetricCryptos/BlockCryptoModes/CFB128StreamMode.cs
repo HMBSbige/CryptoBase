@@ -2,13 +2,13 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public class CFB128StreamMode : IStreamBlockCryptoMode
+public class CFB128StreamMode : IStreamCrypto
 {
-	public string Name => InternalBlockCrypto.Name + @"-CFB";
+	public string Name => _internalBlockCrypto.Name + @"-CFB";
 
-	public IBlockCrypto InternalBlockCrypto { get; init; }
+	private readonly IBlockCrypto _internalBlockCrypto;
 
-	public ReadOnlyMemory<byte> Iv { get; init; }
+	private readonly ReadOnlyMemory<byte> _iv;
 
 	private readonly bool _isEncrypt;
 
@@ -21,13 +21,12 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 
 	public CFB128StreamMode(bool isEncrypt, IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, 16, nameof(crypto));
-
-		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, 16, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
 
 		_isEncrypt = isEncrypt;
-		InternalBlockCrypto = crypto;
-		Iv = iv.ToArray();
+		_internalBlockCrypto = crypto;
+		_iv = iv.ToArray();
 
 		_block = ArrayPool<byte>.Shared.Rent(BlockSize);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize);
@@ -65,7 +64,7 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 
 		while (length >= BlockSize)
 		{
-			InternalBlockCrypto.Encrypt(block, stream);
+			_internalBlockCrypto.Encrypt(block, stream);
 
 			FastUtils.Xor16(stream, source.Slice(i, BlockSize), destination.Slice(i, BlockSize));
 			(_isEncrypt ? destination : source).Slice(i, BlockSize).CopyTo(block);
@@ -75,22 +74,22 @@ public class CFB128StreamMode : IStreamBlockCryptoMode
 		}
 
 		_index = length;
-		InternalBlockCrypto.Encrypt(block, stream);
+		_internalBlockCrypto.Encrypt(block, stream);
 		FastUtils.Xor(stream.Slice(0, length), source.Slice(i, length), destination.Slice(i, length), length);
 		(_isEncrypt ? destination : source).Slice(i, length).CopyTo(block);
 	}
 
 	public void Reset()
 	{
-		InternalBlockCrypto.Reset();
+		_internalBlockCrypto.Reset();
 		_index = 0;
 
-		Iv.CopyTo(_block);
+		_iv.CopyTo(_block);
 	}
 
 	public void Dispose()
 	{
-		InternalBlockCrypto.Dispose();
+		_internalBlockCrypto.Dispose();
 
 		ArrayPool<byte>.Shared.Return(_block);
 		ArrayPool<byte>.Shared.Return(_keyStream);

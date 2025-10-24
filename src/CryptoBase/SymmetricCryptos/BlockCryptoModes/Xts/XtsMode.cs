@@ -2,16 +2,15 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
 
-public sealed class XtsMode : BlockCryptoBase, IBlockCryptoMode
+public sealed class XtsMode : BlockCryptoBase
 {
-	public IBlockCrypto InternalBlockCrypto { get; init; }
+	private readonly Vector128<byte> _iv;
 
-	public ReadOnlyMemory<byte> Iv { get; init; }
-
-	public override string Name => InternalBlockCrypto.Name + @"-XTS";
+	public override string Name => _dataCrypto.Name + @"-XTS";
 
 	public override int BlockSize => 16;
 
+	private readonly IBlockCrypto _dataCrypto;
 	private readonly IBlockCrypto _tweakCrypto;
 
 	public XtsMode(IBlockCrypto dataCrypto, IBlockCrypto tweakCrypto, ReadOnlySpan<byte> iv)
@@ -20,9 +19,9 @@ public sealed class XtsMode : BlockCryptoBase, IBlockCryptoMode
 		ArgumentOutOfRangeException.ThrowIfNotEqual(tweakCrypto.BlockSize, BlockSize, nameof(tweakCrypto));
 		ArgumentOutOfRangeException.ThrowIfLessThan(iv.Length, BlockSize, nameof(iv));
 
-		InternalBlockCrypto = dataCrypto;
+		_dataCrypto = dataCrypto;
 		_tweakCrypto = tweakCrypto;
-		Iv = iv.Slice(0, BlockSize).ToArray();
+		_iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
 	}
 
 	[SkipLocalsInit]
@@ -30,10 +29,10 @@ public sealed class XtsMode : BlockCryptoBase, IBlockCryptoMode
 	{
 		base.Encrypt(source, destination);
 
-		ReadOnlySpan<byte> iv = Iv.Span;
+		ReadOnlySpan<byte> iv = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<Vector128<byte>, byte>(ref Unsafe.AsRef(in _iv)), BlockSize);
 		Span<byte> tweak = stackalloc byte[BlockSize];
 		_tweakCrypto.Encrypt(iv, tweak);
-		IBlockCrypto crypto = InternalBlockCrypto;
+		IBlockCrypto crypto = _dataCrypto;
 
 		int left = source.Length % BlockSize;
 		int size = source.Length - left;
@@ -99,13 +98,13 @@ public sealed class XtsMode : BlockCryptoBase, IBlockCryptoMode
 
 	public override void Reset()
 	{
-		InternalBlockCrypto.Reset();
+		_dataCrypto.Reset();
 		_tweakCrypto.Reset();
 	}
 
 	public override void Dispose()
 	{
-		InternalBlockCrypto.Dispose();
+		_dataCrypto.Dispose();
 		_tweakCrypto.Dispose();
 	}
 }

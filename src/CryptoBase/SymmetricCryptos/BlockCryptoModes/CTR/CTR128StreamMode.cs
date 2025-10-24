@@ -2,13 +2,13 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 
-public class CTR128StreamMode : IStreamBlockCryptoMode
+public class CTR128StreamMode : IStreamCrypto
 {
-	public string Name => InternalBlockCrypto.Name + @"-CTR";
+	public string Name => _internalBlockCrypto.Name + @"-CTR";
 
-	public IBlockCrypto InternalBlockCrypto { get; init; }
+	private readonly IBlockCrypto _internalBlockCrypto;
 
-	public ReadOnlyMemory<byte> Iv { get; init; }
+	private readonly ReadOnlyMemory<byte> _iv;
 
 	private readonly byte[] _counter;
 	private readonly byte[] _keyStream;
@@ -22,8 +22,8 @@ public class CTR128StreamMode : IStreamBlockCryptoMode
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize);
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
 
-		InternalBlockCrypto = crypto;
-		Iv = iv.ToArray();
+		_internalBlockCrypto = crypto;
+		_iv = iv.ToArray();
 
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize);
@@ -44,7 +44,7 @@ public class CTR128StreamMode : IStreamBlockCryptoMode
 		int i = 0;
 		int left = source.Length;
 
-		IBlockCrypto crypto = InternalBlockCrypto;
+		IBlockCrypto crypto = _internalBlockCrypto;
 		Span<byte> counter = _counter.AsSpan(0, BlockSize);
 		Span<byte> stream = _keyStream.AsSpan(0, BlockSize);
 
@@ -86,17 +86,17 @@ public class CTR128StreamMode : IStreamBlockCryptoMode
 
 	public void Reset()
 	{
-		InternalBlockCrypto.Reset();
+		_internalBlockCrypto.Reset();
 		_index = 0;
 
 		Span<byte> c = _counter.AsSpan(0, BlockSize);
 		c.Clear();
-		Iv.Span.CopyTo(c);
+		_iv.Span.CopyTo(c);
 	}
 
 	public void Dispose()
 	{
-		InternalBlockCrypto.Dispose();
+		_internalBlockCrypto.Dispose();
 
 		ArrayPool<byte>.Shared.Return(_counter);
 		ArrayPool<byte>.Shared.Return(_keyStream);

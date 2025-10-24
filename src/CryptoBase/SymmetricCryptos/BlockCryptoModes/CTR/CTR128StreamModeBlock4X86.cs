@@ -2,13 +2,11 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 
-public class CTR128StreamModeBlock4X86 : IStreamBlockCryptoMode
+public class CTR128StreamModeBlock4X86 : IStreamCrypto
 {
-	public string Name => InternalBlockCrypto.Name + @"-CTR";
+	public string Name => _internalBlockCrypto.Name + @"-CTR";
 
-	public IBlockCrypto InternalBlockCrypto { get; init; }
-
-	public ReadOnlyMemory<byte> Iv { get; init; }
+	private readonly IBlockCrypto _internalBlockCrypto;
 
 	private readonly byte[] _counter;
 	private readonly byte[] _keyStream;
@@ -25,18 +23,18 @@ public class CTR128StreamModeBlock4X86 : IStreamBlockCryptoMode
 
 	public unsafe CTR128StreamModeBlock4X86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
-		InternalBlockCrypto = crypto;
-		Iv = iv.ToArray();
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize4);
 
-		ArgumentOutOfRangeException.ThrowIfNotEqual(InternalBlockCrypto.BlockSize, BlockSize4);
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
 
-		ArgumentOutOfRangeException.ThrowIfGreaterThan(Iv.Length, BlockSize, nameof(iv));
+		_internalBlockCrypto = crypto;
 
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize4);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize4);
 
 		Span<byte> c = stackalloc byte[BlockSize];
 		iv.CopyTo(c);
+
 		fixed (byte* p = c)
 		{
 			_iCounter = Sse2.LoadVector128(p).ReverseEndianness128();
@@ -50,6 +48,7 @@ public class CTR128StreamModeBlock4X86 : IStreamBlockCryptoMode
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
 		int length = source.Length;
+
 		fixed (byte* pStream = _keyStream)
 		fixed (byte* pSource = source)
 		fixed (byte* pDestination = destination)
@@ -97,7 +96,7 @@ public class CTR128StreamModeBlock4X86 : IStreamBlockCryptoMode
 			Sse2.Store(p + 3 * BlockSize, _counterV3.ReverseEndianness128());
 		}
 
-		InternalBlockCrypto.Encrypt(c, _keyStream);
+		_internalBlockCrypto.Encrypt(c, _keyStream);
 
 		_counterV0 = _counterV3.Inc128Le();
 		_counterV1 = _counterV0.Inc128Le();
@@ -107,7 +106,7 @@ public class CTR128StreamModeBlock4X86 : IStreamBlockCryptoMode
 
 	public void Reset()
 	{
-		InternalBlockCrypto.Reset();
+		_internalBlockCrypto.Reset();
 		_index = 0;
 		_counterV0 = _iCounter;
 		_counterV1 = _counterV0.Inc128Le();
@@ -117,7 +116,7 @@ public class CTR128StreamModeBlock4X86 : IStreamBlockCryptoMode
 
 	public void Dispose()
 	{
-		InternalBlockCrypto.Dispose();
+		_internalBlockCrypto.Dispose();
 
 		ArrayPool<byte>.Shared.Return(_counter);
 		ArrayPool<byte>.Shared.Return(_keyStream);

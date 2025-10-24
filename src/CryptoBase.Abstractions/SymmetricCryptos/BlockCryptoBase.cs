@@ -20,5 +20,8 @@ public abstract class BlockCryptoBase : IBlockCrypto
 
 	public virtual void Reset() { }
 
-	public virtual void Dispose() { }
+	public virtual void Dispose()
+	{
+		GC.SuppressFinalize(this);
+	}
 }

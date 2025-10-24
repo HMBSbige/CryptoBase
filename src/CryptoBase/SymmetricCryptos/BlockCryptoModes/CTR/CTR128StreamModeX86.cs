@@ -2,13 +2,11 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 
-public class CTR128StreamModeX86 : IStreamBlockCryptoMode
+public class CTR128StreamModeX86 : IStreamCrypto
 {
-	public string Name => InternalBlockCrypto.Name + @"-CTR";
+	public string Name => _internalBlockCrypto.Name + @"-CTR";
 
-	public IBlockCrypto InternalBlockCrypto { get; init; }
-
-	public ReadOnlyMemory<byte> Iv { get; init; }
+	private readonly IBlockCrypto _internalBlockCrypto;
 
 	private readonly Vector128<byte> _iCounter;
 	private Vector128<byte> _counterV;
@@ -19,12 +17,10 @@ public class CTR128StreamModeX86 : IStreamBlockCryptoMode
 
 	public CTR128StreamModeX86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
-		InternalBlockCrypto = crypto;
-		Iv = iv.ToArray();
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize);
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
 
-		ArgumentOutOfRangeException.ThrowIfNotEqual(InternalBlockCrypto.BlockSize, BlockSize);
-
-		ArgumentOutOfRangeException.ThrowIfGreaterThan(Iv.Length, BlockSize, nameof(iv));
+		_internalBlockCrypto = crypto;
 
 		_iCounter = FastUtils.CreateVector128Unsafe(iv).ReverseEndianness128();
 
@@ -44,7 +40,7 @@ public class CTR128StreamModeX86 : IStreamBlockCryptoMode
 		if (_index is not 0)
 		{
 			_counterV.ReverseEndianness128().CopyTo(c);
-			InternalBlockCrypto.Encrypt(c, stream);
+			_internalBlockCrypto.Encrypt(c, stream);
 
 			int l = Math.Min(length, BlockSize - _index);
 			FastUtils.Xor(stream.Slice(_index, l), source.Slice(0, l), destination.Slice(0, l), l);
@@ -65,7 +61,7 @@ public class CTR128StreamModeX86 : IStreamBlockCryptoMode
 		while (length >= BlockSize)
 		{
 			_counterV.ReverseEndianness128().CopyTo(c);
-			InternalBlockCrypto.Encrypt(c, stream);
+			_internalBlockCrypto.Encrypt(c, stream);
 			_counterV = _counterV.Inc128Le();
 
 			FastUtils.Xor(stream, source.Slice(i, BlockSize), destination.Slice(i, BlockSize), BlockSize);
@@ -76,20 +72,20 @@ public class CTR128StreamModeX86 : IStreamBlockCryptoMode
 
 		_index = length;
 		_counterV.ReverseEndianness128().CopyTo(c);
-		InternalBlockCrypto.Encrypt(c, stream);
+		_internalBlockCrypto.Encrypt(c, stream);
 		FastUtils.Xor(stream.Slice(0, length), source.Slice(i, length), destination.Slice(i, length), length);
 	}
 
 	public void Reset()
 	{
-		InternalBlockCrypto.Reset();
+		_internalBlockCrypto.Reset();
 		_index = 0;
 		_counterV = _iCounter;
 	}
 
 	public void Dispose()
 	{
-		InternalBlockCrypto.Dispose();
+		_internalBlockCrypto.Dispose();
 
 		GC.SuppressFinalize(this);
 	}

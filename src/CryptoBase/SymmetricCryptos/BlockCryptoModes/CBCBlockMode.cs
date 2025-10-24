@@ -2,15 +2,15 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public sealed class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
+public sealed class CBCBlockMode : BlockCryptoBase
 {
-	public override string Name => InternalBlockCrypto.Name + @"-CBC";
+	public override string Name => _internalBlockCrypto.Name + @"-CBC";
 
-	public override int BlockSize => InternalBlockCrypto.BlockSize;
+	public override int BlockSize => _internalBlockCrypto.BlockSize;
 
-	public IBlockCrypto InternalBlockCrypto { get; init; }
+	private readonly IBlockCrypto _internalBlockCrypto;
 
-	public ReadOnlyMemory<byte> Iv { get; init; }
+	private readonly ReadOnlyMemory<byte> _iv;
 
 	private readonly byte[] _block;
 
@@ -18,8 +18,8 @@ public sealed class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, crypto.BlockSize, nameof(iv));
 
-		InternalBlockCrypto = crypto;
-		Iv = iv.ToArray();
+		_internalBlockCrypto = crypto;
+		_iv = iv.ToArray();
 
 		_block = ArrayPool<byte>.Shared.Rent(BlockSize);
 
@@ -32,7 +32,7 @@ public sealed class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 
 		FastUtils.Xor(_block, source, destination, BlockSize);
 
-		InternalBlockCrypto.Encrypt(destination, destination);
+		_internalBlockCrypto.Encrypt(destination, destination);
 
 		destination.Slice(0, BlockSize).CopyTo(_block);
 	}
@@ -41,7 +41,7 @@ public sealed class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 	{
 		base.Decrypt(source, destination);
 
-		InternalBlockCrypto.Decrypt(source, destination);
+		_internalBlockCrypto.Decrypt(source, destination);
 
 		FastUtils.Xor(destination, _block, BlockSize);
 
@@ -51,16 +51,16 @@ public sealed class CBCBlockMode : BlockCryptoBase, IBlockCryptoMode
 	public override void Reset()
 	{
 		base.Reset();
-		InternalBlockCrypto.Reset();
+		_internalBlockCrypto.Reset();
 
-		Iv.Span.CopyTo(_block);
+		_iv.Span.CopyTo(_block);
 	}
 
 	public override void Dispose()
 	{
 		base.Dispose();
 
-		InternalBlockCrypto.Dispose();
+		_internalBlockCrypto.Dispose();
 
 		ArrayPool<byte>.Shared.Return(_block);
 	}
