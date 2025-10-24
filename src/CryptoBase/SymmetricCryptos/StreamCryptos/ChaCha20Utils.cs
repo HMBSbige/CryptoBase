@@ -477,8 +477,6 @@ internal static class ChaCha20Utils
 			length -= 256;
 			sourceOffset += 256;
 			destOffset += 256;
-			destOffset += 256;
-			sourceOffset += 256;
 		}
 	}
 
@@ -538,12 +536,14 @@ internal static class ChaCha20Utils
 				QuarterRound(ref x3, ref x4, ref x9, ref x14);
 			}
 
-			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source, destination);
+			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source.Slice(sourceOffset), destination.Slice(destOffset));
 			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source.Slice(sourceOffset + 16), destination.Slice(destOffset + 16));
 			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source.Slice(sourceOffset + 32), destination.Slice(destOffset + 32));
 			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source.Slice(sourceOffset + 48), destination.Slice(destOffset + 48));
 
 			length -= 256;
+			sourceOffset += 256;
+			destOffset += 256;
 		}
 	}
 
