@@ -11,31 +11,20 @@ internal static class ChaCha20Utils
 
 		try
 		{
-			ref uint xRef = ref MemoryMarshal.GetArrayDataReference(x);
-			ref uint stateRef = ref MemoryMarshal.GetArrayDataReference(state);
-			
-			// Zero-copy: directly access state memory via Unsafe
-			for (int i = 0; i < SnuffleCryptoBase.StateSize; ++i)
-			{
-				Unsafe.Add(ref xRef, i) = Unsafe.Add(ref stateRef, i);
-			}
+			state.AsSpan().CopyTo(x);
 
 			ChaChaRound(rounds, x);
 
 			for (int i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
 			{
-				Unsafe.Add(ref xRef, i) += Unsafe.Add(ref stateRef, i);
-				Unsafe.Add(ref xRef, i + 1) += Unsafe.Add(ref stateRef, i + 1);
-				Unsafe.Add(ref xRef, i + 2) += Unsafe.Add(ref stateRef, i + 2);
-				Unsafe.Add(ref xRef, i + 3) += Unsafe.Add(ref stateRef, i + 3);
+				x[i] += state[i];
+				x[i + 1] += state[i + 1];
+				x[i + 2] += state[i + 2];
+				x[i + 3] += state[i + 3];
 			}
 
-			// Zero-copy: cast keyStream bytes to uint view and write directly
-			ref uint keyStreamRef = ref Unsafe.As<byte, uint>(ref MemoryMarshal.GetArrayDataReference(keyStream));
-			for (int i = 0; i < SnuffleCryptoBase.StateSize; ++i)
-			{
-				Unsafe.Add(ref keyStreamRef, i) = Unsafe.Add(ref xRef, i);
-			}
+			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
+			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 		}
 		finally
 		{
@@ -114,10 +103,10 @@ internal static class ChaCha20Utils
 		ref uint stateRef = ref MemoryMarshal.GetReference(state);
 		ref byte streamRef = ref MemoryMarshal.GetReference(stream);
 
-		Vector128<uint> s0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		Vector128<uint> s1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
-		Vector128<uint> s2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
-		Vector128<uint> s3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+		Vector128<uint> s0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		Vector128<uint> s1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		Vector128<uint> s2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		Vector128<uint> s3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		Vector128<uint> x0 = s0;
 		Vector128<uint> x1 = s1;
@@ -177,10 +166,10 @@ internal static class ChaCha20Utils
 	{
 		ref uint stateRef = ref MemoryMarshal.GetReference(state);
 
-		Vector128<uint> x0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		Vector128<uint> x1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
-		Vector128<uint> x2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
-		Vector128<uint> x3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+		Vector128<uint> x0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		Vector128<uint> x1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		Vector128<uint> x2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		Vector128<uint> x3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -240,10 +229,10 @@ internal static class ChaCha20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		Vector128<uint> s0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		Vector128<uint> s1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
-		Vector128<uint> s2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
-		Vector128<uint> s3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+		Vector128<uint> s0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		Vector128<uint> s1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		Vector128<uint> s2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		Vector128<uint> s3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		Vector128<uint> x0 = s0;
 		Vector128<uint> x1 = s1;
@@ -264,10 +253,10 @@ internal static class ChaCha20Utils
 		x2 = Sse2.Add(x2, s2);
 		x3 = Sse2.Add(x3, s3);
 
-		Vector128<byte> v0 = Sse2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref sourceRef));
-		Vector128<byte> v1 = Sse2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 16)));
-		Vector128<byte> v2 = Sse2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
-		Vector128<byte> v3 = Sse2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 48)));
+		Vector128<byte> v0 = Sse2.Xor(x0.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref sourceRef));
+		Vector128<byte> v1 = Sse2.Xor(x1.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 16)));
+		Vector128<byte> v2 = Sse2.Xor(x2.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
+		Vector128<byte> v3 = Sse2.Xor(x3.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 48)));
 
 		Unsafe.WriteUnaligned(ref destRef, v0);
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 16), v1);
@@ -305,10 +294,10 @@ internal static class ChaCha20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		var v0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		var v1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
-		var v2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
-		var v3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+		var v0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		var v1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		var v2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		var v3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		Vector256<uint> x0 = Vector256.Create(v0, v0);
 		Vector256<uint> x1 = Vector256.Create(v1, v1);
@@ -327,19 +316,19 @@ internal static class ChaCha20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		Vector256<uint> s0 = Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		Vector256<uint> s1 = Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
+		Vector256<uint> s0 = Unsafe.As<uint, Vector256<uint>>(ref stateRef);
+		Vector256<uint> s1 = Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8));
 		IncrementCounterOriginal(state);
 
 		x0 = Avx2.Add(x0, s0);
 		x1 = Avx2.Add(x1, s1);
 		x2 = Avx2.Add(x2, s0);
-		x3 = Avx2.Add(x3, Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8))));
+		x3 = Avx2.Add(x3, Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8)));
 
-		Vector256<byte> vx0 = Avx2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref sourceRef));
-		Vector256<byte> vx1 = Avx2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
-		Vector256<byte> vx2 = Avx2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64)));
-		Vector256<byte> vx3 = Avx2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 96)));
+		Vector256<byte> vx0 = Avx2.Xor(x0.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref sourceRef));
+		Vector256<byte> vx1 = Avx2.Xor(x1.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
+		Vector256<byte> vx2 = Avx2.Xor(x2.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64)));
+		Vector256<byte> vx3 = Avx2.Xor(x3.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 96)));
 
 		Unsafe.WriteUnaligned(ref destRef, vx0);
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 32), vx1);
@@ -356,10 +345,10 @@ internal static class ChaCha20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		var v0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		var v1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
-		var v2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
-		var v3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+		var v0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		var v1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		var v2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		var v3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		Vector256<uint> x0 = Vector256.Create(v0, v0);
 		Vector256<uint> x1 = Vector256.Create(v1, v1);
@@ -378,19 +367,19 @@ internal static class ChaCha20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		Vector256<uint> s0 = Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		Vector256<uint> s1 = Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
+		Vector256<uint> s0 = Unsafe.As<uint, Vector256<uint>>(ref stateRef);
+		Vector256<uint> s1 = Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8));
 		IncrementCounter(state);
 
 		x0 = Avx2.Add(x0, s0);
 		x1 = Avx2.Add(x1, s1);
 		x2 = Avx2.Add(x2, s0);
-		x3 = Avx2.Add(x3, Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8))));
+		x3 = Avx2.Add(x3, Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8)));
 
-		Vector256<byte> vx0 = Avx2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref sourceRef));
-		Vector256<byte> vx1 = Avx2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
-		Vector256<byte> vx2 = Avx2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64)));
-		Vector256<byte> vx3 = Avx2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 96)));
+		Vector256<byte> vx0 = Avx2.Xor(x0.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref sourceRef));
+		Vector256<byte> vx1 = Avx2.Xor(x1.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
+		Vector256<byte> vx2 = Avx2.Xor(x2.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64)));
+		Vector256<byte> vx3 = Avx2.Xor(x3.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 96)));
 
 		Unsafe.WriteUnaligned(ref destRef, vx0);
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 32), vx1);
@@ -588,10 +577,10 @@ internal static class ChaCha20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		Unsafe.WriteUnaligned(ref destRef, Sse2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref sourceRef)));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 64), Sse2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 64))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 128), Sse2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 128))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 192), Sse2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 192))));
+		Unsafe.WriteUnaligned(ref destRef, Sse2.Xor(x0.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref sourceRef)));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 64), Sse2.Xor(x1.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 64))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 128), Sse2.Xor(x2.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 128))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 192), Sse2.Xor(x3.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 192))));
 	}
 
 	#endregion
@@ -868,14 +857,14 @@ internal static class ChaCha20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		Unsafe.WriteUnaligned(ref destRef, Avx2.Xor(t0.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref sourceRef)));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 64), Avx2.Xor(t1.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 128), Avx2.Xor(t2.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 128))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 192), Avx2.Xor(t3.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 192))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 256), Avx2.Xor(t4.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 256))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 320), Avx2.Xor(t5.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 320))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 384), Avx2.Xor(t6.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 384))));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 448), Avx2.Xor(t7.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 448))));
+		Unsafe.WriteUnaligned(ref destRef, Avx2.Xor(t0.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref sourceRef)));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 64), Avx2.Xor(t1.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 128), Avx2.Xor(t2.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 128))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 192), Avx2.Xor(t3.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 192))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 256), Avx2.Xor(t4.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 256))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 320), Avx2.Xor(t5.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 320))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 384), Avx2.Xor(t6.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 384))));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 448), Avx2.Xor(t7.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 448))));
 	}
 
 	#endregion

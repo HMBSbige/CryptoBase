@@ -71,10 +71,10 @@ public class Crc32CX86 : IHash
 	private static uint Update(ReadOnlySpan<byte> buffer, int length, uint crc)
 	{
 		ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-		var x1 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref bufferRef).AsUInt64();
-		var x2 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x10)).AsUInt64();
-		var x3 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x20)).AsUInt64();
-		var x4 = Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x30)).AsUInt64();
+		var x1 = Unsafe.As<byte, Vector128<ulong>>(ref bufferRef).AsUInt64();
+		var x2 = Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x10)).AsUInt64();
+		var x3 = Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x20)).AsUInt64();
+		var x4 = Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x30)).AsUInt64();
 		var vCrc = Vector128.CreateScalar(crc).AsUInt64();
 		x1 = Sse2.Xor(x1, vCrc);
 
@@ -98,10 +98,10 @@ public class Crc32CX86 : IHash
 			x3 = Sse2.Xor(x3, t3);
 			x4 = Sse2.Xor(x4, t4);
 
-			x1 = Sse2.Xor(x1, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset)).AsUInt64());
-			x2 = Sse2.Xor(x2, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x10)).AsUInt64());
-			x3 = Sse2.Xor(x3, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x20)).AsUInt64());
-			x4 = Sse2.Xor(x4, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x30)).AsUInt64());
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset)).AsUInt64());
+			x2 = Sse2.Xor(x2, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x10)).AsUInt64());
+			x3 = Sse2.Xor(x3, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x20)).AsUInt64());
+			x4 = Sse2.Xor(x4, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x30)).AsUInt64());
 
 			length -= 0x40;
 			offset += 0x40;
@@ -127,7 +127,7 @@ public class Crc32CX86 : IHash
 			t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
 			x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
 			x1 = Sse2.Xor(x1, t);
-			x1 = Sse2.Xor(x1, Unsafe.ReadUnaligned<Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset)).AsUInt64());
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset)).AsUInt64());
 
 			length -= 0x10;
 			offset += 0x10;

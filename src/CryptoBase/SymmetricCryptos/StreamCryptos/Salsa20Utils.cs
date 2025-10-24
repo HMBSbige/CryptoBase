@@ -10,31 +10,20 @@ public static class Salsa20Utils
 		var x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
 		try
 		{
-			ref uint xRef = ref MemoryMarshal.GetArrayDataReference(x);
-			ref uint stateRef = ref MemoryMarshal.GetArrayDataReference(state);
-			
-			// Zero-copy: directly access state memory via Unsafe
-			for (var i = 0; i < SnuffleCryptoBase.StateSize; ++i)
-			{
-				Unsafe.Add(ref xRef, i) = Unsafe.Add(ref stateRef, i);
-			}
+			state.AsSpan().CopyTo(x);
 
 			SalsaRound(rounds, x);
 
 			for (var i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
 			{
-				Unsafe.Add(ref xRef, i) += Unsafe.Add(ref stateRef, i);
-				Unsafe.Add(ref xRef, i + 1) += Unsafe.Add(ref stateRef, i + 1);
-				Unsafe.Add(ref xRef, i + 2) += Unsafe.Add(ref stateRef, i + 2);
-				Unsafe.Add(ref xRef, i + 3) += Unsafe.Add(ref stateRef, i + 3);
+				x[i] += state[i];
+				x[i + 1] += state[i + 1];
+				x[i + 2] += state[i + 2];
+				x[i + 3] += state[i + 3];
 			}
 
-			// Zero-copy: cast keyStream bytes to uint view and write directly
-			ref uint keyStreamRef = ref Unsafe.As<byte, uint>(ref MemoryMarshal.GetArrayDataReference(keyStream));
-			for (var i = 0; i < SnuffleCryptoBase.StateSize; ++i)
-			{
-				Unsafe.Add(ref keyStreamRef, i) = Unsafe.Add(ref xRef, i);
-			}
+			var span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
+			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 		}
 		finally
 		{
@@ -98,10 +87,10 @@ public static class Salsa20Utils
 		ref uint stateRef = ref MemoryMarshal.GetReference(state);
 		ref byte streamRef = ref MemoryMarshal.GetReference(stream);
 
-		var s0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		var s1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
-		var s2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
-		var s3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+		var s0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		var s1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		var s2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		var s3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		var x0 = Vector128.Create(state[4], state[9], state[14], state[3]);  // 4 9 14 3
 		var x1 = Vector128.Create(state[0], state[5], state[10], state[15]); // 0 5 10 15
@@ -323,10 +312,10 @@ public static class Salsa20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		var s0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref stateRef));
-		var s1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)));
-		var s2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)));
-		var s3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)));
+		var s0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		var s1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		var s2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		var s3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		var x0 = Vector128.Create(state[4], state[9], state[14], state[3]);  // 4 9 14 3
 		var x1 = Vector128.Create(state[0], state[5], state[10], state[15]); // 0 5 10 15
@@ -349,10 +338,10 @@ public static class Salsa20Utils
 		x2 = Sse2.Add(x2, s2);
 		x3 = Sse2.Add(x3, s3);
 
-		var v0 = Sse2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref sourceRef));
-		var v1 = Sse2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 16)));
-		var v2 = Sse2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
-		var v3 = Sse2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 48)));
+		var v0 = Sse2.Xor(x0.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref sourceRef));
+		var v1 = Sse2.Xor(x1.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 16)));
+		var v2 = Sse2.Xor(x2.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
+		var v3 = Sse2.Xor(x3.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 48)));
 
 		Unsafe.WriteUnaligned(ref destRef, v0);
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 16), v1);
@@ -379,7 +368,7 @@ public static class Salsa20Utils
 		var t8 = state[8];
 		var t9 = state[9];
 
-		var s1 = Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8))); // 8 9 10 11 12 13 14 15
+		var s1 = Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8)); // 8 9 10 11 12 13 14 15
 
 		ref uint counter = ref Unsafe.Add(ref stateRef, 8);
 		if (++counter == 0)
@@ -416,17 +405,17 @@ public static class Salsa20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		var s0 = Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref stateRef)); // 0 1 2 3 4 5 6 7
+		var s0 = Unsafe.As<uint, Vector256<uint>>(ref stateRef); // 0 1 2 3 4 5 6 7
 
 		x0 = Avx2.Add(x0, s0);
 		x1 = Avx2.Add(x1, s1);
 		x2 = Avx2.Add(x2, s0);
-		x3 = Avx2.Add(x3, Unsafe.ReadUnaligned<Vector256<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8))));
+		x3 = Avx2.Add(x3, Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8)));
 
-		var v0 = Avx2.Xor(x0.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref sourceRef));
-		var v1 = Avx2.Xor(x1.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
-		var v2 = Avx2.Xor(x2.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64)));
-		var v3 = Avx2.Xor(x3.AsByte(), Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 96)));
+		var v0 = Avx2.Xor(x0.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref sourceRef));
+		var v1 = Avx2.Xor(x1.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
+		var v2 = Avx2.Xor(x2.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64)));
+		var v3 = Avx2.Xor(x3.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 96)));
 
 		Unsafe.WriteUnaligned(ref destRef, v0);
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 32), v1);

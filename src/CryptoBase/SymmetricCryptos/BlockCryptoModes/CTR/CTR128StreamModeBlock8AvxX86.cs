@@ -35,7 +35,7 @@ public class CTR128StreamModeBlock8AvxX86 : IStreamCrypto
 		Span<byte> c = stackalloc byte[BlockSize];
 		iv.CopyTo(c);
 
-		var vec = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(c));
+		var vec = Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(c));
 		_iCounter = Vector256.Create(vec, vec).ReverseEndianness128().IncUpper128Le();
 
 		Reset();
