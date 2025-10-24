@@ -6,13 +6,13 @@ public class XChaCha20CryptoSF : XChaCha20Crypto
 
 	protected override void ChaChaRound(uint[] x)
 	{
-		ChaCha20Utils.ChaChaRound(x.AsSpan(), Rounds);
+		ChaCha20Utils.ChaChaRound(Rounds, x);
 	}
 
 	protected override void UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset) { }
 
 	protected override void UpdateKeyStream()
 	{
-		ChaCha20Utils.UpdateKeyStream(State.AsSpan(0, 16), KeyStream.AsSpan(0, 64), Rounds);
+		ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
 	}
 }

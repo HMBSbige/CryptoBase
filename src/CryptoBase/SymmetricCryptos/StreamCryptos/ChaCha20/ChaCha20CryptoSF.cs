@@ -10,6 +10,6 @@ public class ChaCha20CryptoSF : ChaCha20Crypto
 
 	protected override void UpdateKeyStream()
 	{
-		ChaCha20Utils.UpdateKeyStream(State.AsSpan(0, 16), KeyStream.AsSpan(0, 64), Rounds);
+		ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
 	}
 }
