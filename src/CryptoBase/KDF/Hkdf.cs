@@ -90,7 +90,6 @@ public static class Hkdf
 				{
 					if (remainingOutput.Length > 0)
 					{
-						// ReSharper disable once StackAllocInsideLoop
 						Span<byte> lastChunk = stackalloc byte[hashLength];
 						hmac.GetMac(lastChunk);
 						lastChunk.Slice(0, remainingOutput.Length).CopyTo(remainingOutput);
@@ -122,11 +121,11 @@ public static class Hkdf
 
 	private static void DeriveKeyInternal(DigestType type, int hashLength, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
 	{
-		Span<byte> prk = stackalloc byte[hashLength];
+		using CryptoBuffer buffer = new(stackalloc byte[hashLength]);
+		Span<byte> prk = buffer.Span;
 
 		ExtractInternal(type, ikm, salt, prk);
 		ExpandInternal(type, hashLength, prk, output, info);
-		CryptographicOperations.ZeroMemory(prk);
 	}
 
 	private static int HashLength(DigestType type)

@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using System.Security.Cryptography;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
 
@@ -31,18 +30,18 @@ public sealed class XtsMode : BlockCryptoBase
 		base.Encrypt(source, destination);
 
 		ReadOnlySpan<byte> iv = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<Vector128<byte>, byte>(ref Unsafe.AsRef(in _iv)), BlockSize);
-		Span<byte> tweak = stackalloc byte[BlockSize];
+
+		using CryptoBuffer cryptoBuffer = new(stackalloc byte[BlockSize]);
+		Span<byte> tweak = cryptoBuffer.Span;
 		_tweakCrypto.Encrypt(iv, tweak);
 		IBlockCrypto crypto = _dataCrypto;
 
 		int left = source.Length % BlockSize;
 		int size = source.Length - left;
 
-		byte[] rentedArray = ArrayPool<byte>.Shared.Rent(size);
-
-		try
+		using (CryptoBuffer buffer = new(size))
 		{
-			Span<byte> tweakBuffer = rentedArray.AsSpan(0, size);
+			Span<byte> tweakBuffer = buffer.Span;
 
 			for (int i = 0; i < size; i += BlockSize)
 			{
@@ -60,11 +59,6 @@ public sealed class XtsMode : BlockCryptoBase
 
 			FastUtils.Xor(destination, tweakBuffer, size);
 		}
-		finally
-		{
-			CryptographicOperations.ZeroMemory(rentedArray.AsSpan(0, size));
-			ArrayPool<byte>.Shared.Return(rentedArray);
-		}
 
 		if (left is not 0)
 		{
@@ -77,8 +71,6 @@ public sealed class XtsMode : BlockCryptoBase
 			crypto.Encrypt(lastDSt, lastDSt);
 			FastUtils.Xor16(lastDSt, tweak);
 		}
-
-		CryptographicOperations.ZeroMemory(tweak);
 	}
 
 	[SkipLocalsInit]
@@ -87,18 +79,17 @@ public sealed class XtsMode : BlockCryptoBase
 		base.Decrypt(source, destination);
 
 		ReadOnlySpan<byte> iv = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<Vector128<byte>, byte>(ref Unsafe.AsRef(in _iv)), BlockSize);
-		Span<byte> tweak = stackalloc byte[BlockSize];
+		using CryptoBuffer cryptoBuffer = new(stackalloc byte[BlockSize]);
+		Span<byte> tweak = cryptoBuffer.Span;
 		_tweakCrypto.Encrypt(iv, tweak);
 		IBlockCrypto crypto = _dataCrypto;
 
 		int left = source.Length % BlockSize;
 		int size = source.Length - left - (BlockSize & (left | -left) >> 31);
 
-		byte[] rentedArray = ArrayPool<byte>.Shared.Rent(size);
-
-		try
+		using (CryptoBuffer buffer = new(size))
 		{
-			Span<byte> tweakBuffer = rentedArray.AsSpan(0, size);
+			Span<byte> tweakBuffer = buffer.Span;
 
 			for (int i = 0; i < size; i += BlockSize)
 			{
@@ -116,15 +107,11 @@ public sealed class XtsMode : BlockCryptoBase
 
 			FastUtils.Xor(destination, tweakBuffer, size);
 		}
-		finally
-		{
-			CryptographicOperations.ZeroMemory(rentedArray.AsSpan(0, size));
-			ArrayPool<byte>.Shared.Return(rentedArray);
-		}
 
 		if (left is not 0)
 		{
-			Span<byte> finalTweak = stackalloc byte[BlockSize];
+			using CryptoBuffer buffer = new(stackalloc byte[BlockSize]);
+			Span<byte> finalTweak = buffer.Span;
 			tweak.CopyTo(finalTweak);
 			Gf128Mul(ref finalTweak);
 
@@ -141,11 +128,7 @@ public sealed class XtsMode : BlockCryptoBase
 			FastUtils.Xor16(lastDst, tweak);
 			_dataCrypto.Decrypt(lastDst, lastDst);
 			FastUtils.Xor16(lastDst, tweak);
-
-			CryptographicOperations.ZeroMemory(finalTweak);
 		}
-
-		CryptographicOperations.ZeroMemory(tweak);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,5 +1,4 @@
 using CryptoBase.Abstractions;
-using System.Security.Cryptography;
 
 namespace CryptoBase.Macs.GHash;
 
@@ -104,7 +103,7 @@ public sealed class GHashSF : IMac
 
 	public void Reset()
 	{
-		CryptographicOperations.ZeroMemory(_buffer.AsSpan(0, BlockSize));
+		_buffer.AsSpan(0, BlockSize).Clear();
 
 		ulong vh = Initvh;
 		ulong vl = Initvl;
