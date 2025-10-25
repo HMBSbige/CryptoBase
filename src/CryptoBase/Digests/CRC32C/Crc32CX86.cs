@@ -70,10 +70,10 @@ public class Crc32CX86 : IHash
 	{
 		int length = buffer.Length;
 
-		Vector128<ulong> x1 = Unsafe.As<byte, Vector128<ulong>>(ref MemoryMarshal.GetReference(buffer));
-		Vector128<ulong> x2 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x10));
-		Vector128<ulong> x3 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x20));
-		Vector128<ulong> x4 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x30));
+		ref Vector128<ulong> x1 = ref Unsafe.As<byte, Vector128<ulong>>(ref MemoryMarshal.GetReference(buffer));
+		ref Vector128<ulong> x2 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x10));
+		ref Vector128<ulong> x3 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x20));
+		ref Vector128<ulong> x4 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x30));
 		Vector128<ulong> vCrc = Vector128.CreateScalar(crc).AsUInt64();
 		x1 = Sse2.Xor(x1, vCrc);
 
@@ -160,14 +160,14 @@ public class Crc32CX86 : IHash
 		{
 			while (source.Length >= 8)
 			{
-				ulong data = Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(source));
+				ref ulong data = ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(source));
 				_state = (uint)Sse42.X64.Crc32(_state, data);
 				source = source.Slice(8);
 			}
 
 			if (source.Length >= 4)
 			{
-				uint data = Unsafe.As<byte, uint>(ref MemoryMarshal.GetReference(source));
+				ref uint data = ref Unsafe.As<byte, uint>(ref MemoryMarshal.GetReference(source));
 				_state = Sse42.Crc32(_state, data);
 				source = source.Slice(4);
 			}
@@ -176,7 +176,7 @@ public class Crc32CX86 : IHash
 		{
 			while (source.Length >= 4)
 			{
-				uint data = Unsafe.As<byte, uint>(ref MemoryMarshal.GetReference(source));
+				ref uint data = ref Unsafe.As<byte, uint>(ref MemoryMarshal.GetReference(source));
 				_state = Sse42.Crc32(_state, data);
 				source = source.Slice(4);
 			}
@@ -184,7 +184,7 @@ public class Crc32CX86 : IHash
 
 		if (source.Length >= 2)
 		{
-			ushort data = Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(source));
+			ref ushort data = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(source));
 			_state = Sse42.Crc32(_state, data);
 			source = source.Slice(2);
 		}

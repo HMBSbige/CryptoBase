@@ -63,10 +63,10 @@ public class Crc32X86 : IHash
 	{
 		int length = buffer.Length;
 
-		Vector128<ulong> x1 = Unsafe.As<byte, Vector128<ulong>>(ref MemoryMarshal.GetReference(buffer));
-		Vector128<ulong> x2 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x10));
-		Vector128<ulong> x3 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x20));
-		Vector128<ulong> x4 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x30));
+		ref Vector128<ulong> x1 = ref Unsafe.As<byte, Vector128<ulong>>(ref MemoryMarshal.GetReference(buffer));
+		ref Vector128<ulong> x2 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x10));
+		ref Vector128<ulong> x3 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x20));
+		ref Vector128<ulong> x4 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x30));
 		Vector128<ulong> vCrc = Vector128.CreateScalar(crc).AsUInt64();
 		x1 = Sse2.Xor(x1, vCrc);
 

@@ -16,35 +16,28 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 	protected byte Rounds { get; init; } = 20;
 
-	protected readonly uint[] State;
-	protected readonly byte[] KeyStream;
+	protected readonly uint[] State = ArrayPool<uint>.Shared.Rent(StateSize);
+	protected readonly byte[] KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
 
 	protected int Index;
-
-	protected SnuffleCrypto()
-	{
-		State = ArrayPool<uint>.Shared.Rent(StateSize);
-		KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
-	}
 
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
 
 		int length = source.Length;
-		int sourceOffset = 0;
-		int destOffset = 0;
+		int offset = 0;
+		ReadOnlySpan<byte> keyStream = KeyStream;
 
 		while (length > 0)
 		{
-			if (Index == 0)
+			if (Index is 0)
 			{
-				int processed = UpdateBlocks(source[sourceOffset..], destination[destOffset..]);
+				int processed = UpdateBlocks(source.Slice(offset), destination.Slice(offset));
 				length -= processed;
-				sourceOffset += processed;
-				destOffset += processed;
+				offset += processed;
 
-				if (length == 0)
+				if (length is 0)
 				{
 					break;
 				}
@@ -53,13 +46,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 				IncrementCounter();
 			}
 
-			int r = 64 - Index;
-			int xorLen = Math.Min(r, length);
-			FastUtils.Xor(
-				KeyStream.AsSpan(Index, xorLen),
-				source.Slice(sourceOffset, xorLen),
-				destination.Slice(destOffset, xorLen),
-				xorLen);
+			int r = StateSize * sizeof(uint) - Index;
+			FastUtils.Xor(keyStream.Slice(Index), source.Slice(offset), destination.Slice(offset), Math.Min(r, length));
 
 			if (length < r)
 			{
@@ -69,8 +57,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 			Index = 0;
 			length -= r;
-			sourceOffset += r;
-			destOffset += r;
+			offset += r;
 		}
 	}
 

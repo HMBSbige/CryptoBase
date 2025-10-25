@@ -2,7 +2,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 
-public class CTR128StreamModeBlock8X86 : IStreamCrypto
+public sealed class CTR128StreamModeBlock8X86 : IStreamCrypto
 {
 	public string Name => _internalBlockCrypto.Name + @"-CTR";
 
@@ -35,10 +35,7 @@ public class CTR128StreamModeBlock8X86 : IStreamCrypto
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize8);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize8);
 
-		Span<byte> c = stackalloc byte[BlockSize];
-		iv.CopyTo(c);
-
-		_iCounter = Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(c)).ReverseEndianness128();
+		_iCounter = Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(iv)).ReverseEndianness128();
 
 		Reset();
 	}
@@ -48,8 +45,8 @@ public class CTR128StreamModeBlock8X86 : IStreamCrypto
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
 		int length = source.Length;
-		int sourceOffset = 0;
-		int destOffset = 0;
+		int offset = 0;
+		ReadOnlySpan<byte> keyStream = _keyStream;
 
 		while (length > 0)
 		{
@@ -59,12 +56,7 @@ public class CTR128StreamModeBlock8X86 : IStreamCrypto
 			}
 
 			int r = BlockSize8 - _index;
-			int xorLen = Math.Min(r, length);
-			FastUtils.Xor(
-				_keyStream.AsSpan(_index, xorLen),
-				source.Slice(sourceOffset, xorLen),
-				destination.Slice(destOffset, xorLen),
-				xorLen);
+			FastUtils.Xor(keyStream.Slice(_index), source.Slice(offset), destination.Slice(offset), Math.Min(r, length));
 
 			if (length < r)
 			{
@@ -74,8 +66,7 @@ public class CTR128StreamModeBlock8X86 : IStreamCrypto
 
 			_index = 0;
 			length -= r;
-			sourceOffset += r;
-			destOffset += r;
+			offset += r;
 		}
 	}
 
@@ -83,16 +74,25 @@ public class CTR128StreamModeBlock8X86 : IStreamCrypto
 	private void UpdateKeyStream()
 	{
 		Span<byte> c = _counter.AsSpan(0, BlockSize8);
-		ref byte cRef = ref MemoryMarshal.GetReference(c);
 
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 0 * BlockSize), _counterV0.ReverseEndianness128());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 1 * BlockSize), _counterV1.ReverseEndianness128());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 2 * BlockSize), _counterV2.ReverseEndianness128());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 3 * BlockSize), _counterV3.ReverseEndianness128());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 4 * BlockSize), _counterV4.ReverseEndianness128());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 5 * BlockSize), _counterV5.ReverseEndianness128());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 6 * BlockSize), _counterV6.ReverseEndianness128());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 7 * BlockSize), _counterV7.ReverseEndianness128());
+		Vector128<byte> v0 = _counterV0.ReverseEndianness128();
+		Vector128<byte> v1 = _counterV1.ReverseEndianness128();
+		Vector128<byte> v2 = _counterV2.ReverseEndianness128();
+		Vector128<byte> v3 = _counterV3.ReverseEndianness128();
+		Vector128<byte> v4 = _counterV4.ReverseEndianness128();
+		Vector128<byte> v5 = _counterV5.ReverseEndianness128();
+		Vector128<byte> v6 = _counterV6.ReverseEndianness128();
+		Vector128<byte> v7 = _counterV7.ReverseEndianness128();
+
+		ref byte cRef = ref MemoryMarshal.GetReference(c);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 0 * BlockSize), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 1 * BlockSize), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 2 * BlockSize), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 3 * BlockSize), v3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 4 * BlockSize), v4);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 5 * BlockSize), v5);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 6 * BlockSize), v6);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 7 * BlockSize), v7);
 
 		_internalBlockCrypto.Encrypt(c, _keyStream);
 
@@ -126,7 +126,5 @@ public class CTR128StreamModeBlock8X86 : IStreamCrypto
 
 		ArrayPool<byte>.Shared.Return(_counter);
 		ArrayPool<byte>.Shared.Return(_keyStream);
-
-		GC.SuppressFinalize(this);
 	}
 }

@@ -16,18 +16,18 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
-		var span = State.AsSpan();
+		Span<uint> span = State.AsSpan();
 
 		State[0] = Sigma32[0];
 		State[5] = Sigma32[1];
 		State[10] = Sigma32[2];
 		State[15] = Sigma32[3];
 
-		var keySpan = MemoryMarshal.Cast<byte, uint>(key);
+		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
 		keySpan[..4].CopyTo(span[1..]);
 		keySpan[4..].CopyTo(span[11..]);
 
-		var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
+		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		ivSpan[..4].CopyTo(span[6..]);
 
 		SalsaRound(State);
@@ -68,7 +68,7 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 		int length = source.Length;
 		Span<uint> stateSpan = State.AsSpan(0, 16);
 
-		if (Avx.IsSupported && Avx2.IsSupported)
+		if (Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{

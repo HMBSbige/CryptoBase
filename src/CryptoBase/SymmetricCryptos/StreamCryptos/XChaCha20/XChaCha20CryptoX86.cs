@@ -15,7 +15,7 @@ public class XChaCha20CryptoX86 : XChaCha20CryptoSF
 		int length = source.Length;
 		Span<uint> stateSpan = State.AsSpan(0, 16);
 
-		if (Avx.IsSupported && Avx2.IsSupported)
+		if (Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{

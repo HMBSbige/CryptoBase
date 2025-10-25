@@ -25,6 +25,7 @@ public sealed class XtsMode : BlockCryptoBase
 		_iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
 	}
 
+	[SkipLocalsInit]
 	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Encrypt(source, destination);
@@ -80,6 +81,7 @@ public sealed class XtsMode : BlockCryptoBase
 		CryptographicOperations.ZeroMemory(tweak);
 	}
 
+	[SkipLocalsInit]
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
