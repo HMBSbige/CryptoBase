@@ -35,7 +35,7 @@ public class CTR128StreamModeBlock8AvxX86 : IStreamCrypto
 		Span<byte> c = stackalloc byte[BlockSize];
 		iv.CopyTo(c);
 
-		var vec = Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(c));
+		Vector128<byte> vec = Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(c));
 		_iCounter = Vector256.Create(vec, vec).ReverseEndianness128().IncUpper128Le();
 
 		Reset();
@@ -58,7 +58,7 @@ public class CTR128StreamModeBlock8AvxX86 : IStreamCrypto
 
 			int r = BlockSize8 - _index;
 			int xorLen = Math.Min(r, length);
-			IntrinsicsUtils.Xor(
+			FastUtils.Xor(
 				_keyStream.AsSpan(_index, xorLen),
 				source.Slice(sourceOffset, xorLen),
 				destination.Slice(destOffset, xorLen),

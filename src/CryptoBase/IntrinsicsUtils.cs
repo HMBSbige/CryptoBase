@@ -65,15 +65,6 @@ internal static class IntrinsicsUtils
 		return Ssse3.IsSupported ? Ssse3.Shuffle(value.AsByte(), Rot24).As<byte, T>() : value.RotateLeftUInt32(24);
 	}
 
-	/// <summary>
-	/// destination = source ^ stream
-	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	public static void Xor(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
-	{
-		FastUtils.Xor(stream, source, destination, length);
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> ReverseEndianness128<T>(this Vector128<T> a) where T : struct
 	{

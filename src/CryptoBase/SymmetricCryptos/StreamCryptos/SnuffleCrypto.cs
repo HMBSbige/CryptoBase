@@ -55,7 +55,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 			int r = 64 - Index;
 			int xorLen = Math.Min(r, length);
-			IntrinsicsUtils.Xor(
+			FastUtils.Xor(
 				KeyStream.AsSpan(Index, xorLen),
 				source.Slice(sourceOffset, xorLen),
 				destination.Slice(destOffset, xorLen),

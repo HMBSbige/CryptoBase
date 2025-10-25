@@ -1,9 +1,7 @@
 namespace CryptoBase.Digests.CRC32C;
 
 /// <summary>
-/// Same as <see cref="Crc32X86"/> , but different constants.
-/// Abstraction will cause performance issue!
-/// WTF.NET
+/// Same as <see cref="Crc32X86" /> , but different constants.
 /// </summary>
 public class Crc32CX86 : IHash
 {
@@ -42,8 +40,8 @@ public class Crc32CX86 : IHash
 	{
 		if (Sse2.IsSupported && Pclmulqdq.IsSupported && source.Length >= 64)
 		{
-			_state = Update(source, source.Length, _state);
-			source = source[^(source.Length % 0x10)..];
+			_state = Update(source, _state);
+			source = source.Slice(source.Length - source.Length % 0x10);
 		}
 
 		if (Sse42.IsSupported)
@@ -68,14 +66,15 @@ public class Crc32CX86 : IHash
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint Update(ReadOnlySpan<byte> buffer, int length, uint crc)
+	private static uint Update(ReadOnlySpan<byte> buffer, uint crc)
 	{
-		ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-		var x1 = Unsafe.As<byte, Vector128<ulong>>(ref bufferRef).AsUInt64();
-		var x2 = Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x10)).AsUInt64();
-		var x3 = Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x20)).AsUInt64();
-		var x4 = Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, 0x30)).AsUInt64();
-		var vCrc = Vector128.CreateScalar(crc).AsUInt64();
+		int length = buffer.Length;
+
+		Vector128<ulong> x1 = Unsafe.As<byte, Vector128<ulong>>(ref MemoryMarshal.GetReference(buffer));
+		Vector128<ulong> x2 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x10));
+		Vector128<ulong> x3 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x20));
+		Vector128<ulong> x4 = Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x30));
+		Vector128<ulong> vCrc = Vector128.CreateScalar(crc).AsUInt64();
 		x1 = Sse2.Xor(x1, vCrc);
 
 		length -= 0x40;
@@ -83,10 +82,10 @@ public class Crc32CX86 : IHash
 
 		while (length >= 0x40)
 		{
-			var t1 = Pclmulqdq.CarrylessMultiply(x1, K1K2, 0x11);
-			var t2 = Pclmulqdq.CarrylessMultiply(x2, K1K2, 0x11);
-			var t3 = Pclmulqdq.CarrylessMultiply(x3, K1K2, 0x11);
-			var t4 = Pclmulqdq.CarrylessMultiply(x4, K1K2, 0x11);
+			Vector128<ulong> t1 = Pclmulqdq.CarrylessMultiply(x1, K1K2, 0x11);
+			Vector128<ulong> t2 = Pclmulqdq.CarrylessMultiply(x2, K1K2, 0x11);
+			Vector128<ulong> t3 = Pclmulqdq.CarrylessMultiply(x3, K1K2, 0x11);
+			Vector128<ulong> t4 = Pclmulqdq.CarrylessMultiply(x4, K1K2, 0x11);
 
 			x1 = Pclmulqdq.CarrylessMultiply(x1, K1K2, 0x00);
 			x2 = Pclmulqdq.CarrylessMultiply(x2, K1K2, 0x00);
@@ -98,16 +97,19 @@ public class Crc32CX86 : IHash
 			x3 = Sse2.Xor(x3, t3);
 			x4 = Sse2.Xor(x4, t4);
 
-			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset)).AsUInt64());
-			x2 = Sse2.Xor(x2, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x10)).AsUInt64());
-			x3 = Sse2.Xor(x3, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x20)).AsUInt64());
-			x4 = Sse2.Xor(x4, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset + 0x30)).AsUInt64());
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			offset += 0x10;
+			x2 = Sse2.Xor(x2, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			offset += 0x10;
+			x3 = Sse2.Xor(x3, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			offset += 0x10;
+			x4 = Sse2.Xor(x4, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			offset += 0x10;
 
 			length -= 0x40;
-			offset += 0x40;
 		}
 
-		var t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
+		Vector128<ulong> t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
 		x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
 		x1 = Sse2.Xor(x1, t);
 		x1 = Sse2.Xor(x1, x2);
@@ -127,13 +129,13 @@ public class Crc32CX86 : IHash
 			t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
 			x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
 			x1 = Sse2.Xor(x1, t);
-			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref bufferRef, offset)).AsUInt64());
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
 
 			length -= 0x10;
 			offset += 0x10;
 		}
 
-		var r4 = Pclmulqdq.CarrylessMultiply(K3K4, x1, 0x01);
+		Vector128<ulong> r4 = Pclmulqdq.CarrylessMultiply(K3K4, x1, 0x01);
 		x1 = Sse2.ShiftRightLogical128BitLane(x1, 0x08);
 		x1 = Sse2.Xor(x1, r4);
 
@@ -148,7 +150,7 @@ public class Crc32CX86 : IHash
 		x1 = Sse2.And(x1, Mask32);
 		x1 = Pclmulqdq.CarrylessMultiply(x1, RU, 0x00);
 		x1 = Sse2.Xor(x1, t);
-		return x1.AsUInt32().GetElement(1); // pextrd eax, x1, 1
+		return x1.AsUInt32().GetElement(1);// pextrd eax, x1, 1
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -158,36 +160,36 @@ public class Crc32CX86 : IHash
 		{
 			while (source.Length >= 8)
 			{
-				var data = BinaryPrimitives.ReadUInt64LittleEndian(source);
+				ulong data = Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(source));
 				_state = (uint)Sse42.X64.Crc32(_state, data);
-				source = source[8..];
+				source = source.Slice(8);
 			}
 
 			if (source.Length >= 4)
 			{
-				var data = BinaryPrimitives.ReadUInt32LittleEndian(source);
+				uint data = Unsafe.As<byte, uint>(ref MemoryMarshal.GetReference(source));
 				_state = Sse42.Crc32(_state, data);
-				source = source[4..];
+				source = source.Slice(4);
 			}
 		}
 		else
 		{
 			while (source.Length >= 4)
 			{
-				var data = BinaryPrimitives.ReadUInt32LittleEndian(source);
+				uint data = Unsafe.As<byte, uint>(ref MemoryMarshal.GetReference(source));
 				_state = Sse42.Crc32(_state, data);
-				source = source[4..];
+				source = source.Slice(4);
 			}
 		}
 
 		if (source.Length >= 2)
 		{
-			var data = BinaryPrimitives.ReadUInt16LittleEndian(source);
+			ushort data = Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(source));
 			_state = Sse42.Crc32(_state, data);
-			source = source[2..];
+			source = source.Slice(2);
 		}
 
-		foreach (var b in source)
+		foreach (ref readonly byte b in source)
 		{
 			_state = Sse42.Crc32(_state, b);
 		}

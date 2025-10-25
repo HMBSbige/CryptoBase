@@ -57,7 +57,7 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 
 			int r = BlockSize4 - _index;
 			int xorLen = Math.Min(r, length);
-			IntrinsicsUtils.Xor(
+			FastUtils.Xor(
 				_keyStream.AsSpan(_index, xorLen),
 				source.Slice(sourceOffset, xorLen),
 				destination.Slice(destOffset, xorLen),
@@ -75,7 +75,6 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 			destOffset += r;
 		}
 	}
-
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

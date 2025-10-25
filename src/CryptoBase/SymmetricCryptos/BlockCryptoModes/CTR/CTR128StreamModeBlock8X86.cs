@@ -60,7 +60,7 @@ public class CTR128StreamModeBlock8X86 : IStreamCrypto
 
 			int r = BlockSize8 - _index;
 			int xorLen = Math.Min(r, length);
-			IntrinsicsUtils.Xor(
+			FastUtils.Xor(
 				_keyStream.AsSpan(_index, xorLen),
 				source.Slice(sourceOffset, xorLen),
 				destination.Slice(destOffset, xorLen),
