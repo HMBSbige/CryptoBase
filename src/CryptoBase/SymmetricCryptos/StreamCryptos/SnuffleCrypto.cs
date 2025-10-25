@@ -28,6 +28,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		int length = source.Length;
 		int offset = 0;
 		ReadOnlySpan<byte> keyStream = KeyStream;
+		Span<uint> state = State.AsSpan(0, StateSize);
 
 		while (length > 0)
 		{
@@ -43,7 +44,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 				}
 
 				UpdateKeyStream();
-				IncrementCounter();
+				IncrementCounter(state);
 			}
 
 			int r = StateSize * sizeof(uint) - Index;
@@ -63,7 +64,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 	protected abstract int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination);
 	protected abstract void UpdateKeyStream();
-	protected abstract void IncrementCounter();
+	protected abstract void IncrementCounter(Span<uint> state);
 
 	public override void Dispose()
 	{

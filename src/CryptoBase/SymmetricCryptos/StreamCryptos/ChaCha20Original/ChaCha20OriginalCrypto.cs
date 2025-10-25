@@ -12,8 +12,9 @@ public abstract class ChaCha20OriginalCrypto : ChaCha20CryptoBase
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		var keySpan = MemoryMarshal.Cast<byte, uint>(key);
-		var keyLength = key.Length;
+		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
+		int keyLength = key.Length;
+
 		switch (keyLength)
 		{
 			case 16:
@@ -51,7 +52,7 @@ public abstract class ChaCha20OriginalCrypto : ChaCha20CryptoBase
 		State[6] = keySpan[2];
 		State[7] = keySpan[3];
 
-		var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
+		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		State[14] = ivSpan[0];
 		State[15] = ivSpan[1];
 	}
@@ -62,8 +63,8 @@ public abstract class ChaCha20OriginalCrypto : ChaCha20CryptoBase
 		State[12] = State[13] = 0;
 	}
 
-	protected override void IncrementCounter()
+	protected override void IncrementCounter(Span<uint> state)
 	{
-		ChaCha20Utils.IncrementCounterOriginal(State.AsSpan(0, 16));
+		ChaCha20Utils.IncrementCounterOriginal(state);
 	}
 }

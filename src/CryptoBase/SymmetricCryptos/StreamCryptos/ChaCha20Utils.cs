@@ -136,17 +136,15 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementCounterOriginal(Span<uint> state)
 	{
-		ref uint counter = ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12);
-		if (++counter == 0)
-		{
-			++Unsafe.Add(ref MemoryMarshal.GetReference(state), 13);
-		}
+		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12));
+		++counter;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementCounter(Span<uint> state)
 	{
 		ref uint counter = ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12);
+
 		if (++counter == 0)
 		{
 			Throw();
@@ -294,10 +292,10 @@ internal static class ChaCha20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		var v0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
-		var v1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
-		var v2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
-		var v3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
+		Vector128<uint> v0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		Vector128<uint> v1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		Vector128<uint> v2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		Vector128<uint> v3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		Vector256<uint> x0 = Vector256.Create(v0, v0);
 		Vector256<uint> x1 = Vector256.Create(v1, v1);
@@ -345,10 +343,10 @@ internal static class ChaCha20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		var v0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
-		var v1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
-		var v2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
-		var v3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
+		Vector128<uint> v0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
+		Vector128<uint> v1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
+		Vector128<uint> v2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
+		Vector128<uint> v3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
 
 		Vector256<uint> x0 = Vector256.Create(v0, v0);
 		Vector256<uint> x1 = Vector256.Create(v1, v1);
