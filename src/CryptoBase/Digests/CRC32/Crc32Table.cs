@@ -13,10 +13,11 @@ public class Crc32Table
 
 		for (uint i = 0; i < 256; ++i)
 		{
-			var res = i;
-			for (var j = 0; j < 16; ++j)
+			uint res = i;
+
+			for (int j = 0; j < 16; ++j)
 			{
-				for (var k = 0; k < 8; ++k)
+				for (int k = 0; k < 8; ++k)
 				{
 					res = (res & 1) == 1 ? poly ^ res >> 1 : res >> 1;
 				}
@@ -28,32 +29,33 @@ public class Crc32Table
 
 	public uint Append(uint crc, ReadOnlySpan<byte> source)
 	{
-		var offset = 0;
-		var length = source.Length;
-		var crcLocal = uint.MaxValue ^ crc;
+		int offset = 0;
+		int length = source.Length;
+		uint crcLocal = uint.MaxValue ^ crc;
 
-		var table = _table;
+		uint[] table = _table;
+
 		while (length >= 16)
 		{
-			var a = table[3 * 256 + source[offset + 12]]
-				^ table[2 * 256 + source[offset + 13]]
-				^ table[1 * 256 + source[offset + 14]]
-				^ table[0 * 256 + source[offset + 15]];
+			uint a = table[3 * 256 + source[offset + 12]]
+					^ table[2 * 256 + source[offset + 13]]
+					^ table[1 * 256 + source[offset + 14]]
+					^ table[0 * 256 + source[offset + 15]];
 
-			var b = table[7 * 256 + source[offset + 8]]
-				^ table[6 * 256 + source[offset + 9]]
-				^ table[5 * 256 + source[offset + 10]]
-				^ table[4 * 256 + source[offset + 11]];
+			uint b = table[7 * 256 + source[offset + 8]]
+					^ table[6 * 256 + source[offset + 9]]
+					^ table[5 * 256 + source[offset + 10]]
+					^ table[4 * 256 + source[offset + 11]];
 
-			var c = table[11 * 256 + source[offset + 4]]
-				^ table[10 * 256 + source[offset + 5]]
-				^ table[9 * 256 + source[offset + 6]]
-				^ table[8 * 256 + source[offset + 7]];
+			uint c = table[11 * 256 + source[offset + 4]]
+					^ table[10 * 256 + source[offset + 5]]
+					^ table[9 * 256 + source[offset + 6]]
+					^ table[8 * 256 + source[offset + 7]];
 
-			var d = table[15 * 256 + ((byte)crcLocal ^ source[offset])]
-				^ table[14 * 256 + ((byte)(crcLocal >> 8) ^ source[offset + 1])]
-				^ table[13 * 256 + ((byte)(crcLocal >> 16) ^ source[offset + 2])]
-				^ table[12 * 256 + (crcLocal >> 24 ^ source[offset + 3])];
+			uint d = table[15 * 256 + ((byte)crcLocal ^ source[offset])]
+					^ table[14 * 256 + ((byte)(crcLocal >> 8) ^ source[offset + 1])]
+					^ table[13 * 256 + ((byte)(crcLocal >> 16) ^ source[offset + 2])]
+					^ table[12 * 256 + (crcLocal >> 24 ^ source[offset + 3])];
 
 			crcLocal = d ^ c ^ b ^ a;
 			offset += 16;

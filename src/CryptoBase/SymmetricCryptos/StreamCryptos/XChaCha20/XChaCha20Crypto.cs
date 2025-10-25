@@ -23,7 +23,7 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 		SetCounter(0);
 	}
 
-	protected override unsafe void IncrementCounter(uint* state)
+	protected override void IncrementCounter(Span<uint> state)
 	{
 		ChaCha20Utils.IncrementCounterOriginal(state);
 	}
@@ -32,15 +32,15 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 
 	public void SetIV(ReadOnlySpan<byte> iv)
 	{
-		var span = State.AsSpan();
-		var sigma = Sigma32.AsSpan();
+		Span<uint> span = State.AsSpan();
+		Span<uint> sigma = Sigma32.AsSpan();
 
 		sigma.CopyTo(span);
 
-		var keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
+		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
 		keySpan.CopyTo(span[4..]);
 
-		var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
+		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		ivSpan[..4].CopyTo(span[12..]);
 
 		ChaChaRound(State);

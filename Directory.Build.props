@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Authors>HMBSbige</Authors>
     <Copyright>Copyright © HMBSbige</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

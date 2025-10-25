@@ -21,7 +21,7 @@ public static class AEADCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IAEADCrypto Sm4Gcm(ReadOnlySpan<byte> key)
 	{
-		if (Aes.IsSupported && Avx.IsSupported && Avx2.IsSupported)
+		if (Aes.IsSupported && Avx2.IsSupported)
 		{
 			return new GcmCryptoModeBlock16X86(new SM4Crypto(key), new SM4CryptoBlock16X86(key));
 		}

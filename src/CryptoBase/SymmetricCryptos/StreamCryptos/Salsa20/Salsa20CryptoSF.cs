@@ -4,7 +4,10 @@ public class Salsa20CryptoSF : Salsa20CryptoX86
 {
 	public Salsa20CryptoSF(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv) { }
 
-	protected override unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length) { }
+	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		return 0;
+	}
 
 	protected override void UpdateKeyStream()
 	{

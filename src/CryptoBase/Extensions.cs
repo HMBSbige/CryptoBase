@@ -4,6 +4,7 @@ namespace CryptoBase;
 
 public static class Extensions
 {
+	/// <inheritdoc cref="BitOperations.RotateLeft(uint,int)" />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static uint RotateLeft(this uint value, int offset)
 	{
@@ -23,7 +24,7 @@ public static class Extensions
 		{
 			int hash = 5381;
 
-			foreach (T t in span)
+			foreach (ref readonly T t in span)
 			{
 				hash = (hash << 5) + hash ^ t.GetHashCode();
 			}
