@@ -78,7 +78,7 @@ public class RC4Crypto : StreamCryptoBase
 			stateSpan.GetRef(y) = t;
 #pragma warning restore IDE0180
 
-			return stateSpan.GetRef((stateSpan.GetRef(x) + stateSpan.GetRef(y)) & 0xFF);
+			return stateSpan.GetRef(stateSpan.GetRef(x) + stateSpan.GetRef(y) & 0xFF);
 		}
 	}
 
@@ -87,12 +87,13 @@ public class RC4Crypto : StreamCryptoBase
 		_x = default;
 		_y = default;
 
-		Span<byte> stateSpan = _state.AsSpan(BoxLength);
+		Span<byte> stateSpan = _state.AsSpan(0, BoxLength);
 		Span<byte> keySpan = _key.AsSpan(0, _keyLength);
 
 		S.CopyTo(stateSpan);
 
 		int j = 0;
+
 		for (int i = 0; i < BoxLength; ++i)
 		{
 			j += keySpan.GetRef(i % _keyLength);
