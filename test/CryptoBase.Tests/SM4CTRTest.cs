@@ -3,6 +3,7 @@ using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
+using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Tests;
 
@@ -61,7 +62,11 @@ public class SM4CTRTest
 		T(new CTR128StreamModeX86(new SM4Crypto(key), iv), source, expected);
 		T(new CTR128StreamModeBlock4X86(new SM4CryptoX86(key), iv), source, expected);
 		T(new CTR128StreamModeBlock8X86(new SM4CryptoBlock8X86(key), iv), source, expected);
-		T(new CTR128StreamModeBlock8AvxX86(new SM4CryptoBlock8X86(key), iv), source, expected);
-		T(new CTR128StreamModeBlock16X86(new SM4CryptoBlock16X86(key), iv), source, expected);
+
+		if (Avx2.IsSupported)
+		{
+			T(new CTR128StreamModeBlock8AvxX86(new SM4CryptoBlock8X86(key), iv), source, expected);
+			T(new CTR128StreamModeBlock16X86(new SM4CryptoBlock16X86(key), iv), source, expected);
+		}
 	}
 }
