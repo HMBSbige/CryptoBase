@@ -43,7 +43,8 @@ public abstract class ChaCha20OriginalCrypto : ChaCha20CryptoBase
 			}
 			default:
 			{
-				throw new ArgumentException(@"Key length requires 16 or 32 bytes");
+				ThrowHelper.ThrowArgumentOutOfRangeException<int>(nameof(key));
+				return;
 			}
 		}
 

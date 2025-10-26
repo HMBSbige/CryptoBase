@@ -11,7 +11,7 @@ public static class Salsa20Utils
 
 		try
 		{
-			state.AsSpan().CopyTo(x);
+			state.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(x);
 
 			SalsaRound(rounds, x);
 
@@ -23,7 +23,7 @@ public static class Salsa20Utils
 				x[i + 3] += state[i + 3];
 			}
 
-			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
+			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, SnuffleCryptoBase.StateSize * sizeof(uint)));
 			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 		}
 		finally

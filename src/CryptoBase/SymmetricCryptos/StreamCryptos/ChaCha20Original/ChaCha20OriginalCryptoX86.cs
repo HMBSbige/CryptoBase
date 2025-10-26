@@ -6,7 +6,7 @@ public class ChaCha20OriginalCryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte
 	{
 		int processed = 0;
 		int length = source.Length;
-		Span<uint> stateSpan = State.AsSpan();
+		Span<uint> stateSpan = State.AsSpan(0, StateSize);
 
 		if (Avx2.IsSupported)
 		{

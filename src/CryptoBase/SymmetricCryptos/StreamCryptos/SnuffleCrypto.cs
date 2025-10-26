@@ -27,7 +27,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 		int length = source.Length;
 		int offset = 0;
-		ReadOnlySpan<byte> keyStream = KeyStream;
+		ReadOnlySpan<byte> keyStream = KeyStream.AsSpan(0, StateSize * sizeof(uint));
 		Span<uint> state = State.AsSpan(0, StateSize);
 
 		while (length > 0)

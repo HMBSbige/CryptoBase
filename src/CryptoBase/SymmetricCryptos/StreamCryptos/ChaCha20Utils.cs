@@ -11,7 +11,7 @@ internal static class ChaCha20Utils
 
 		try
 		{
-			state.AsSpan().CopyTo(x);
+			state.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(x);
 
 			ChaChaRound(rounds, x);
 
@@ -23,7 +23,7 @@ internal static class ChaCha20Utils
 				x[i + 3] += state[i + 3];
 			}
 
-			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
+			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, SnuffleCryptoBase.StateSize * sizeof(uint)));
 			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 		}
 		finally

@@ -41,7 +41,8 @@ public class Salsa20CryptoX86 : Salsa20Crypto
 			}
 			default:
 			{
-				throw new ArgumentException(@"Key length requires 16 or 32 bytes");
+				ThrowHelper.ThrowArgumentOutOfRangeException<int>(nameof(key));
+				return;
 			}
 		}
 
@@ -58,14 +59,14 @@ public class Salsa20CryptoX86 : Salsa20Crypto
 	public sealed override void Reset()
 	{
 		Index = 0;
-		State[8] = State[9] = 0;
+		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(State), 8)) = 0;
 	}
 
 	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int processed = 0;
 		int length = source.Length;
-		Span<uint> stateSpan = State.AsSpan();
+		Span<uint> stateSpan = State.AsSpan(0, StateSize);
 
 		if (Avx2.IsSupported)
 		{

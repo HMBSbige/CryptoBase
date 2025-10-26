@@ -32,7 +32,7 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 
 	public void SetIV(ReadOnlySpan<byte> iv)
 	{
-		Span<uint> span = State.AsSpan();
+		Span<uint> span = State.AsSpan(0, StateSize);
 		Span<uint> sigma = Sigma32.AsSpan();
 
 		sigma.CopyTo(span);

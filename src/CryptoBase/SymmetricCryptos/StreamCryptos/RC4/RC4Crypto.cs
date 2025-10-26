@@ -87,7 +87,7 @@ public class RC4Crypto : StreamCryptoBase
 		_x = default;
 		_y = default;
 
-		Span<byte> stateSpan = _state.AsSpan();
+		Span<byte> stateSpan = _state.AsSpan(BoxLength);
 		Span<byte> keySpan = _key.AsSpan(0, _keyLength);
 
 		S.CopyTo(stateSpan);
