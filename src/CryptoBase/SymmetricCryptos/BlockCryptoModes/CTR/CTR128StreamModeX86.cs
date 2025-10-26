@@ -22,7 +22,8 @@ public class CTR128StreamModeX86 : IStreamCrypto
 
 		_internalBlockCrypto = crypto;
 
-		_iCounter = FastUtils.CreateVector128Unsafe(iv).ReverseEndianness128();
+		ref Vector128<byte> v = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
+		_iCounter = v.ReverseEndianness128();
 
 		Reset();
 	}

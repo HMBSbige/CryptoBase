@@ -69,6 +69,12 @@ public class BenchmarkTest
 	}
 
 	[Fact]
+	public void SM4CTRBenchmark()
+	{
+		BenchmarkRunner.Run<SM4CTRBenchmark>();
+	}
+
+	[Fact]
 	public void CTRBenchmark()
 	{
 		BenchmarkRunner.Run<CTRBenchmark>();

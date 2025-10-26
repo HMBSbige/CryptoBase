@@ -11,7 +11,7 @@ internal static class ChaCha20Utils
 
 		try
 		{
-			state.AsSpan().CopyTo(x);
+			state.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(x);
 
 			ChaChaRound(rounds, x);
 
@@ -23,7 +23,7 @@ internal static class ChaCha20Utils
 				x[i + 3] += state[i + 3];
 			}
 
-			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, 64));
+			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, SnuffleCryptoBase.StateSize * sizeof(uint)));
 			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
 		}
 		finally
@@ -98,12 +98,15 @@ internal static class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void UpdateKeyStream(uint* state, byte* stream, byte rounds)
+	public static void UpdateKeyStream(Span<uint> state, Span<byte> stream, byte rounds)
 	{
-		Vector128<uint> s0 = Sse2.LoadVector128(state);
-		Vector128<uint> s1 = Sse2.LoadVector128(state + 4);
-		Vector128<uint> s2 = Sse2.LoadVector128(state + 8);
-		Vector128<uint> s3 = Sse2.LoadVector128(state + 12);
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte streamRef = ref MemoryMarshal.GetReference(stream);
+
+		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
+		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
+		ref Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
+		ref Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
 
 		Vector128<uint> x0 = s0;
 		Vector128<uint> x1 = s1;
@@ -119,30 +122,29 @@ internal static class ChaCha20Utils
 			Shuffle1(ref x1, ref x2, ref x3);
 		}
 
-		x0 = Sse2.Add(x0, s0);
-		x1 = Sse2.Add(x1, s1);
-		x2 = Sse2.Add(x2, s2);
-		x3 = Sse2.Add(x3, s3);
+		x0 += s0;
+		x1 += s1;
+		x2 += s2;
+		x3 += s3;
 
-		Sse2.Store(stream, x0.AsByte());
-		Sse2.Store(stream + 16, x1.AsByte());
-		Sse2.Store(stream + 32, x2.AsByte());
-		Sse2.Store(stream + 48, x3.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 0 * 16), x0.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 1 * 16), x1.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 2 * 16), x2.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 3 * 16), x3.AsByte());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void IncrementCounterOriginal(uint* state)
+	public static void IncrementCounterOriginal(Span<uint> state)
 	{
-		if (++*(state + 12) == 0)
-		{
-			++*(state + 13);
-		}
+		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void IncrementCounter(uint* state)
+	public static void IncrementCounter(Span<uint> state)
 	{
-		if (++*(state + 12) == 0)
+		ref uint counter = ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12);
+
+		if (++counter is 0)
 		{
 			Throw();
 		}
@@ -157,12 +159,14 @@ internal static class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaRound(uint* state, byte rounds)
+	public static void ChaChaRound(Span<uint> state, byte rounds)
 	{
-		Vector128<uint> x0 = Sse2.LoadVector128(state);
-		Vector128<uint> x1 = Sse2.LoadVector128(state + 4);
-		Vector128<uint> x2 = Sse2.LoadVector128(state + 8);
-		Vector128<uint> x3 = Sse2.LoadVector128(state + 12);
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+
+		ref Vector128<uint> x0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
+		ref Vector128<uint> x1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
+		ref Vector128<uint> x2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
+		ref Vector128<uint> x3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -172,11 +176,6 @@ internal static class ChaCha20Utils
 			QuarterRound(ref x0, ref x1, ref x2, ref x3);
 			Shuffle1(ref x1, ref x2, ref x3);
 		}
-
-		Sse2.Store(state, x0);
-		Sse2.Store(state + 4, x1);
-		Sse2.Store(state + 8, x2);
-		Sse2.Store(state + 12, x3);
 	}
 
 	/// <summary>
@@ -216,12 +215,20 @@ internal static class ChaCha20Utils
 	#region 处理 64 bytes
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe void ChaChaCore64Internal(byte rounds, uint* state, byte* source, byte* destination)
+	private static void ChaChaCore64Internal(byte rounds, ReadOnlySpan<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector128<uint> s0 = Sse2.LoadVector128(state);
-		Vector128<uint> s1 = Sse2.LoadVector128(state + 4);
-		Vector128<uint> s2 = Sse2.LoadVector128(state + 8);
-		Vector128<uint> s3 = Sse2.LoadVector128(state + 12);
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+
+		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
+		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
+		ref Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
+		ref Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
+		ref Vector128<byte> src0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 16));
+		ref Vector128<byte> src1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 16));
+		ref Vector128<byte> src2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 16));
+		ref Vector128<byte> src3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 16));
 
 		Vector128<uint> x0 = s0;
 		Vector128<uint> x1 = s1;
@@ -237,24 +244,24 @@ internal static class ChaCha20Utils
 			Shuffle1(ref x1, ref x2, ref x3);
 		}
 
-		x0 = Sse2.Add(x0, s0);
-		x1 = Sse2.Add(x1, s1);
-		x2 = Sse2.Add(x2, s2);
-		x3 = Sse2.Add(x3, s3);
+		x0 += s0;
+		x1 += s1;
+		x2 += s2;
+		x3 += s3;
 
-		Vector128<byte> v0 = Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source));
-		Vector128<byte> v1 = Sse2.Xor(x1.AsByte(), Sse2.LoadVector128(source + 16));
-		Vector128<byte> v2 = Sse2.Xor(x2.AsByte(), Sse2.LoadVector128(source + 32));
-		Vector128<byte> v3 = Sse2.Xor(x3.AsByte(), Sse2.LoadVector128(source + 48));
+		Vector128<byte> v0 = src0 ^ x0.AsByte();
+		Vector128<byte> v1 = src1 ^ x1.AsByte();
+		Vector128<byte> v2 = src2 ^ x2.AsByte();
+		Vector128<byte> v3 = src3 ^ x3.AsByte();
 
-		Sse2.Store(destination, v0);
-		Sse2.Store(destination + 16, v1);
-		Sse2.Store(destination + 32, v2);
-		Sse2.Store(destination + 48, v3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 0 * 16), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 1 * 16), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 16), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 16), v3);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaCoreOriginal64(byte rounds, uint* state, byte* source, byte* destination)
+	public static void ChaChaCoreOriginal64(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ChaChaCore64Internal(rounds, state, source, destination);
 
@@ -262,7 +269,7 @@ internal static class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaCore64(byte rounds, uint* state, byte* source, byte* destination)
+	public static void ChaChaCore64(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ChaChaCore64Internal(rounds, state, source, destination);
 
@@ -277,13 +284,26 @@ internal static class ChaCha20Utils
 	private static readonly Vector256<ulong> IncCounterOriginal128 = Vector256.Create(0, 0, 1, 0).AsUInt64();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaCoreOriginal128(byte rounds, uint* state, byte* source, byte* destination)
+	public static void ChaChaCoreOriginal128(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector256<uint> x0 = Avx2.BroadcastVector128ToVector256(state);
-		Vector256<uint> x1 = Avx2.BroadcastVector128ToVector256(state + 4);
-		Vector256<uint> x2 = Avx2.BroadcastVector128ToVector256(state + 8);
-		Vector256<uint> x3 = Avx2.BroadcastVector128ToVector256(state + 12);
-		x3 = Avx2.Add(x3.AsUInt64(), IncCounterOriginal128).AsUInt32();
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+
+		ref Vector256<byte> src0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
+		ref Vector256<byte> src1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
+		ref Vector256<byte> src2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 32));
+		ref Vector256<byte> src3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 32));
+
+		ref Vector256<uint> s0 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 0));// 0 1 2 3 4 5 6 7
+		ref Vector256<uint> s1 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8));// 8 9 10 11 12 13 14 15
+		Vector256<uint> t = s1;
+
+		Vector256<uint> x0 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 0));
+		Vector256<uint> x1 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 4));
+		Vector256<uint> x2 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 8));
+		Vector256<uint> x3 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 12));
+		x3 = (x3.AsUInt64() + IncCounterOriginal128).AsUInt32();
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -295,37 +315,47 @@ internal static class ChaCha20Utils
 		}
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
-
-		Vector256<uint> s0 = Avx.LoadVector256(state);// 0 1 2 3 4 5 6 7
-		Vector256<uint> s1 = Avx.LoadVector256(state + 8);// 8 9 10 11 12 13 14 15
 		IncrementCounterOriginal(state);
 
-		x0 = Avx2.Add(x0, s0);
-		x1 = Avx2.Add(x1, s1);
-		x2 = Avx2.Add(x2, s0);
-		x3 = Avx2.Add(x3, Avx.LoadVector256(state + 8));
+		x0 += s0;
+		x1 += t;
+		x2 += s0;
+		x3 += s1;
 
-		Vector256<byte> v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
-		Vector256<byte> v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
-		Vector256<byte> v2 = Avx2.Xor(x2.AsByte(), Avx.LoadVector256(source + 64));
-		Vector256<byte> v3 = Avx2.Xor(x3.AsByte(), Avx.LoadVector256(source + 96));
+		Vector256<byte> v0 = x0.AsByte() ^ src0;
+		Vector256<byte> v1 = x1.AsByte() ^ src1;
+		Vector256<byte> v2 = x2.AsByte() ^ src2;
+		Vector256<byte> v3 = x3.AsByte() ^ src3;
 
-		Avx.Store(destination, v0);
-		Avx.Store(destination + 32, v1);
-		Avx.Store(destination + 64, v2);
-		Avx.Store(destination + 96, v3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 0 * 32), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 1 * 32), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 32), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 32), v3);
 
 		IncrementCounterOriginal(state);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaCore128(byte rounds, uint* state, byte* source, byte* destination)
+	public static void ChaChaCore128(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector256<uint> x0 = Avx2.BroadcastVector128ToVector256(state);
-		Vector256<uint> x1 = Avx2.BroadcastVector128ToVector256(state + 4);
-		Vector256<uint> x2 = Avx2.BroadcastVector128ToVector256(state + 8);
-		Vector256<uint> x3 = Avx2.BroadcastVector128ToVector256(state + 12);
-		x3 = Avx2.Add(x3, IncCounter128);
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+
+		ref Vector256<byte> src0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
+		ref Vector256<byte> src1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
+		ref Vector256<byte> src2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 32));
+		ref Vector256<byte> src3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 32));
+
+		ref Vector256<uint> s0 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 0));// 0 1 2 3 4 5 6 7
+		ref Vector256<uint> s1 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8));// 8 9 10 11 12 13 14 15
+		Vector256<uint> t = s1;
+
+		Vector256<uint> x0 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 0));
+		Vector256<uint> x1 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 4));
+		Vector256<uint> x2 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 8));
+		Vector256<uint> x3 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 12));
+		x3 += IncCounter128;
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -337,25 +367,22 @@ internal static class ChaCha20Utils
 		}
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
-
-		Vector256<uint> s0 = Avx.LoadVector256(state);// 0 1 2 3 4 5 6 7
-		Vector256<uint> s1 = Avx.LoadVector256(state + 8);// 8 9 10 11 12 13 14 15
 		IncrementCounter(state);
 
-		x0 = Avx2.Add(x0, s0);
-		x1 = Avx2.Add(x1, s1);
-		x2 = Avx2.Add(x2, s0);
-		x3 = Avx2.Add(x3, Avx.LoadVector256(state + 8));
+		x0 += s0;
+		x1 += t;
+		x2 += s0;
+		x3 += s1;
 
-		Vector256<byte> v0 = Avx2.Xor(x0.AsByte(), Avx.LoadVector256(source));
-		Vector256<byte> v1 = Avx2.Xor(x1.AsByte(), Avx.LoadVector256(source + 32));
-		Vector256<byte> v2 = Avx2.Xor(x2.AsByte(), Avx.LoadVector256(source + 64));
-		Vector256<byte> v3 = Avx2.Xor(x3.AsByte(), Avx.LoadVector256(source + 96));
+		Vector256<byte> v0 = x0.AsByte() ^ src0;
+		Vector256<byte> v1 = x1.AsByte() ^ src1;
+		Vector256<byte> v2 = x2.AsByte() ^ src2;
+		Vector256<byte> v3 = x3.AsByte() ^ src3;
 
-		Avx.Store(destination, v0);
-		Avx.Store(destination + 32, v1);
-		Avx.Store(destination + 64, v2);
-		Avx.Store(destination + 96, v3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 0 * 32), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 1 * 32), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 32), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 32), v3);
 
 		IncrementCounter(state);
 	}
@@ -369,24 +396,32 @@ internal static class ChaCha20Utils
 	private static readonly Vector128<uint> IncCounter0123_128 = Vector128.Create(0u, 1, 2, 3);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaCoreOriginal256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+	public static int ChaChaCoreOriginal256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector128<uint> o0 = Vector128.Create(*(state + 0));
-		Vector128<uint> o1 = Vector128.Create(*(state + 1));
-		Vector128<uint> o2 = Vector128.Create(*(state + 2));
-		Vector128<uint> o3 = Vector128.Create(*(state + 3));
-		Vector128<uint> o4 = Vector128.Create(*(state + 4));
-		Vector128<uint> o5 = Vector128.Create(*(state + 5));
-		Vector128<uint> o6 = Vector128.Create(*(state + 6));
-		Vector128<uint> o7 = Vector128.Create(*(state + 7));
-		Vector128<uint> o8 = Vector128.Create(*(state + 8));
-		Vector128<uint> o9 = Vector128.Create(*(state + 9));
-		Vector128<uint> o10 = Vector128.Create(*(state + 10));
-		Vector128<uint> o11 = Vector128.Create(*(state + 11));
+		int length = source.Length;
+		int offset = 0;
+
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+
+		Vector128<uint> o0 = Vector128.Create(Unsafe.Add(ref stateRef, 0));
+		Vector128<uint> o1 = Vector128.Create(Unsafe.Add(ref stateRef, 1));
+		Vector128<uint> o2 = Vector128.Create(Unsafe.Add(ref stateRef, 2));
+		Vector128<uint> o3 = Vector128.Create(Unsafe.Add(ref stateRef, 3));
+		Vector128<uint> o4 = Vector128.Create(Unsafe.Add(ref stateRef, 4));
+		Vector128<uint> o5 = Vector128.Create(Unsafe.Add(ref stateRef, 5));
+		Vector128<uint> o6 = Vector128.Create(Unsafe.Add(ref stateRef, 6));
+		Vector128<uint> o7 = Vector128.Create(Unsafe.Add(ref stateRef, 7));
+		Vector128<uint> o8 = Vector128.Create(Unsafe.Add(ref stateRef, 8));
+		Vector128<uint> o9 = Vector128.Create(Unsafe.Add(ref stateRef, 9));
+		Vector128<uint> o10 = Vector128.Create(Unsafe.Add(ref stateRef, 10));
+		Vector128<uint> o11 = Vector128.Create(Unsafe.Add(ref stateRef, 11));
 		// 12
 		// 13
-		Vector128<uint> o14 = Vector128.Create(*(state + 14));
-		Vector128<uint> o15 = Vector128.Create(*(state + 15));
+		Vector128<uint> o14 = Vector128.Create(Unsafe.Add(ref stateRef, 14));
+		Vector128<uint> o15 = Vector128.Create(Unsafe.Add(ref stateRef, 15));
+		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 12));
 
 		while (length >= 256)
 		{
@@ -407,7 +442,6 @@ internal static class ChaCha20Utils
 			Vector128<uint> x14 = o14;
 			Vector128<uint> x15 = o15;
 
-			ulong counter = *(state + 12) | (ulong)*(state + 13) << 32;
 			Vector128<uint> t0 = Vector128.Create(counter).AsUInt32();
 			Vector128<uint> t1 = t0;
 
@@ -425,9 +459,6 @@ internal static class ChaCha20Utils
 
 			counter += 4;
 
-			*(state + 12) = (uint)(counter & 0xFFFFFFFF);
-			*(state + 13) = (uint)(counter >> 32 & 0xFFFFFFFF);
-
 			for (int i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x4, ref x8, ref x12);
@@ -440,36 +471,45 @@ internal static class ChaCha20Utils
 				QuarterRound(ref x3, ref x4, ref x9, ref x14);
 			}
 
-			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source, destination);
-			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source + 16, destination + 16);
-			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source + 32, destination + 32);
-			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source + 48, destination + 48);
+			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, ref Unsafe.Add(ref sourceRef, offset + 0 * 16), ref Unsafe.Add(ref dstRef, offset + 0 * 16));
+			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, ref Unsafe.Add(ref sourceRef, offset + 1 * 16), ref Unsafe.Add(ref dstRef, offset + 1 * 16));
+			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, ref Unsafe.Add(ref sourceRef, offset + 2 * 16), ref Unsafe.Add(ref dstRef, offset + 2 * 16));
+			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, ref Unsafe.Add(ref sourceRef, offset + 3 * 16), ref Unsafe.Add(ref dstRef, offset + 3 * 16));
 
 			length -= 256;
-			destination += 256;
-			source += 256;
+			offset += 256;
 		}
+
+		return offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaCore256(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+	public static int ChaChaCore256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector128<uint> o0 = Vector128.Create(*(state + 0));
-		Vector128<uint> o1 = Vector128.Create(*(state + 1));
-		Vector128<uint> o2 = Vector128.Create(*(state + 2));
-		Vector128<uint> o3 = Vector128.Create(*(state + 3));
-		Vector128<uint> o4 = Vector128.Create(*(state + 4));
-		Vector128<uint> o5 = Vector128.Create(*(state + 5));
-		Vector128<uint> o6 = Vector128.Create(*(state + 6));
-		Vector128<uint> o7 = Vector128.Create(*(state + 7));
-		Vector128<uint> o8 = Vector128.Create(*(state + 8));
-		Vector128<uint> o9 = Vector128.Create(*(state + 9));
-		Vector128<uint> o10 = Vector128.Create(*(state + 10));
-		Vector128<uint> o11 = Vector128.Create(*(state + 11));
+		int length = source.Length;
+		int offset = 0;
+
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+
+		Vector128<uint> o0 = Vector128.Create(Unsafe.Add(ref stateRef, 0));
+		Vector128<uint> o1 = Vector128.Create(Unsafe.Add(ref stateRef, 1));
+		Vector128<uint> o2 = Vector128.Create(Unsafe.Add(ref stateRef, 2));
+		Vector128<uint> o3 = Vector128.Create(Unsafe.Add(ref stateRef, 3));
+		Vector128<uint> o4 = Vector128.Create(Unsafe.Add(ref stateRef, 4));
+		Vector128<uint> o5 = Vector128.Create(Unsafe.Add(ref stateRef, 5));
+		Vector128<uint> o6 = Vector128.Create(Unsafe.Add(ref stateRef, 6));
+		Vector128<uint> o7 = Vector128.Create(Unsafe.Add(ref stateRef, 7));
+		Vector128<uint> o8 = Vector128.Create(Unsafe.Add(ref stateRef, 8));
+		Vector128<uint> o9 = Vector128.Create(Unsafe.Add(ref stateRef, 9));
+		Vector128<uint> o10 = Vector128.Create(Unsafe.Add(ref stateRef, 10));
+		Vector128<uint> o11 = Vector128.Create(Unsafe.Add(ref stateRef, 11));
 		// 12
-		Vector128<uint> o13 = Vector128.Create(*(state + 13));
-		Vector128<uint> o14 = Vector128.Create(*(state + 14));
-		Vector128<uint> o15 = Vector128.Create(*(state + 15));
+		Vector128<uint> o13 = Vector128.Create(Unsafe.Add(ref stateRef, 13));
+		Vector128<uint> o14 = Vector128.Create(Unsafe.Add(ref stateRef, 14));
+		Vector128<uint> o15 = Vector128.Create(Unsafe.Add(ref stateRef, 15));
+		ref uint counter = ref Unsafe.Add(ref stateRef, 12);
 
 		while (length >= 256)
 		{
@@ -490,10 +530,10 @@ internal static class ChaCha20Utils
 			Vector128<uint> x14 = o14;
 			Vector128<uint> x15 = o15;
 
-			Vector128<uint> x12 = Sse2.Add(IncCounter0123_128, Vector128.Create(*(state + 12)));
+			Vector128<uint> x12 = IncCounter0123_128 + Vector128.Create(Unsafe.Add(ref stateRef, 12));
 			Vector128<uint> o12 = x12;
 
-			*(state + 12) += 4;
+			counter += 4;
 
 			for (int i = 0; i < rounds; i += 2)
 			{
@@ -507,31 +547,37 @@ internal static class ChaCha20Utils
 				QuarterRound(ref x3, ref x4, ref x9, ref x14);
 			}
 
-			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source, destination);
-			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source + 16, destination + 16);
-			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source + 32, destination + 32);
-			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source + 48, destination + 48);
+			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, ref Unsafe.Add(ref sourceRef, offset + 0 * 16), ref Unsafe.Add(ref dstRef, offset + 0 * 16));
+			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, ref Unsafe.Add(ref sourceRef, offset + 1 * 16), ref Unsafe.Add(ref dstRef, offset + 1 * 16));
+			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, ref Unsafe.Add(ref sourceRef, offset + 2 * 16), ref Unsafe.Add(ref dstRef, offset + 2 * 16));
+			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, ref Unsafe.Add(ref sourceRef, offset + 3 * 16), ref Unsafe.Add(ref dstRef, offset + 3 * 16));
 
 			length -= 256;
-			destination += 256;
-			source += 256;
+			offset += 256;
 		}
+
+		return offset;
 	}
 
 	/// <summary>
 	/// destination = (x+s) ^ source
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void AddTransposeXor(
+	public static void AddTransposeXor(
 		ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3,
 		ref Vector128<uint> o0, ref Vector128<uint> o1, ref Vector128<uint> o2, ref Vector128<uint> o3,
-		byte* source, byte* destination)
+		ref byte source, ref byte destination)
 	{
+		ref Vector128<byte> s0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref source, 0 * 64));
+		ref Vector128<byte> s1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref source, 1 * 64));
+		ref Vector128<byte> s2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref source, 2 * 64));
+		ref Vector128<byte> s3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref source, 3 * 64));
+
 		// x+=o
-		x0 = Sse2.Add(x0, o0);
-		x1 = Sse2.Add(x1, o1);
-		x2 = Sse2.Add(x2, o2);
-		x3 = Sse2.Add(x3, o3);
+		x0 += o0;
+		x1 += o1;
+		x2 += o2;
+		x3 += o3;
 
 		// Transpose
 		Vector128<uint> t0 = Sse2.UnpackLow(x0, x1);
@@ -545,10 +591,15 @@ internal static class ChaCha20Utils
 		x3 = Sse2.UnpackHigh(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
 
 		// Xor
-		Sse2.Store(destination, Sse2.Xor(x0.AsByte(), Sse2.LoadVector128(source)));
-		Sse2.Store(destination + 64, Sse2.Xor(x1.AsByte(), Sse2.LoadVector128(source + 64)));
-		Sse2.Store(destination + 128, Sse2.Xor(x2.AsByte(), Sse2.LoadVector128(source + 128)));
-		Sse2.Store(destination + 192, Sse2.Xor(x3.AsByte(), Sse2.LoadVector128(source + 192)));
+		Vector128<byte> v0 = x0.AsByte() ^ s0;
+		Vector128<byte> v1 = x1.AsByte() ^ s1;
+		Vector128<byte> v2 = x2.AsByte() ^ s2;
+		Vector128<byte> v3 = x3.AsByte() ^ s3;
+
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 0 * 64), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 1 * 64), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 2 * 64), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 3 * 64), v3);
 	}
 
 	#endregion
@@ -561,22 +612,32 @@ internal static class ChaCha20Utils
 	public static readonly Vector256<uint> Permute3 = Vector256.Create(0, 1, 4, 5, 2, 3, 6, 7).AsUInt32();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaCoreOriginal512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+	public static int ChaChaCoreOriginal512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector256<uint> o0 = Vector256.Create(*(state + 0));
-		Vector256<uint> o1 = Vector256.Create(*(state + 1));
-		Vector256<uint> o2 = Vector256.Create(*(state + 2));
-		Vector256<uint> o3 = Vector256.Create(*(state + 3));
-		Vector256<uint> o4 = Vector256.Create(*(state + 4));
-		Vector256<uint> o5 = Vector256.Create(*(state + 5));
-		Vector256<uint> o6 = Vector256.Create(*(state + 6));
-		Vector256<uint> o7 = Vector256.Create(*(state + 7));
-		Vector256<uint> o8 = Vector256.Create(*(state + 8));
-		Vector256<uint> o9 = Vector256.Create(*(state + 9));
-		Vector256<uint> o10 = Vector256.Create(*(state + 10));
-		Vector256<uint> o11 = Vector256.Create(*(state + 11));
-		Vector256<uint> o14 = Vector256.Create(*(state + 14));
-		Vector256<uint> o15 = Vector256.Create(*(state + 15));
+		int length = source.Length;
+		int offset = 0;
+
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+
+		Vector256<uint> o0 = Vector256.Create(Unsafe.Add(ref stateRef, 0));
+		Vector256<uint> o1 = Vector256.Create(Unsafe.Add(ref stateRef, 1));
+		Vector256<uint> o2 = Vector256.Create(Unsafe.Add(ref stateRef, 2));
+		Vector256<uint> o3 = Vector256.Create(Unsafe.Add(ref stateRef, 3));
+		Vector256<uint> o4 = Vector256.Create(Unsafe.Add(ref stateRef, 4));
+		Vector256<uint> o5 = Vector256.Create(Unsafe.Add(ref stateRef, 5));
+		Vector256<uint> o6 = Vector256.Create(Unsafe.Add(ref stateRef, 6));
+		Vector256<uint> o7 = Vector256.Create(Unsafe.Add(ref stateRef, 7));
+		Vector256<uint> o8 = Vector256.Create(Unsafe.Add(ref stateRef, 8));
+		Vector256<uint> o9 = Vector256.Create(Unsafe.Add(ref stateRef, 9));
+		Vector256<uint> o10 = Vector256.Create(Unsafe.Add(ref stateRef, 10));
+		Vector256<uint> o11 = Vector256.Create(Unsafe.Add(ref stateRef, 11));
+		// 12
+		// 13
+		Vector256<uint> o14 = Vector256.Create(Unsafe.Add(ref stateRef, 14));
+		Vector256<uint> o15 = Vector256.Create(Unsafe.Add(ref stateRef, 15));
+		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 12));
 
 		while (length >= 512)
 		{
@@ -595,7 +656,6 @@ internal static class ChaCha20Utils
 			Vector256<uint> x14 = o14;
 			Vector256<uint> x15 = o15;
 
-			ulong counter = *(state + 12) | (ulong)*(state + 13) << 32;
 			Vector256<uint> x12 = Vector256.Create(counter).AsUInt32();
 			Vector256<uint> x13 = x12;
 
@@ -616,9 +676,6 @@ internal static class ChaCha20Utils
 
 			counter += 8;
 
-			*(state + 12) = (uint)(counter & 0xFFFFFFFF);
-			*(state + 13) = (uint)(counter >> 32 & 0xFFFFFFFF);
-
 			for (int i = 0; i < rounds; i += 2)
 			{
 				QuarterRound(ref x0, ref x4, ref x8, ref x12);
@@ -648,8 +705,8 @@ internal static class ChaCha20Utils
 				ref o5,
 				ref o6,
 				ref o7,
-				source,
-				destination);
+				ref Unsafe.Add(ref sourceRef, offset),
+				ref Unsafe.Add(ref dstRef, offset));
 			AddTransposeXor(
 				ref x8,
 				ref x9,
@@ -667,33 +724,43 @@ internal static class ChaCha20Utils
 				ref o13,
 				ref o14,
 				ref o15,
-				source + 32,
-				destination + 32);
+				ref Unsafe.Add(ref sourceRef, offset + 32),
+				ref Unsafe.Add(ref dstRef, offset + 32));
 
 			length -= 512;
-			destination += 512;
-			source += 512;
+			offset += 512;
 		}
+
+		return offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void ChaChaCore512(byte rounds, uint* state, ref byte* source, ref byte* destination, ref int length)
+	public static int ChaChaCore512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector256<uint> o0 = Vector256.Create(*(state + 0));
-		Vector256<uint> o1 = Vector256.Create(*(state + 1));
-		Vector256<uint> o2 = Vector256.Create(*(state + 2));
-		Vector256<uint> o3 = Vector256.Create(*(state + 3));
-		Vector256<uint> o4 = Vector256.Create(*(state + 4));
-		Vector256<uint> o5 = Vector256.Create(*(state + 5));
-		Vector256<uint> o6 = Vector256.Create(*(state + 6));
-		Vector256<uint> o7 = Vector256.Create(*(state + 7));
-		Vector256<uint> o8 = Vector256.Create(*(state + 8));
-		Vector256<uint> o9 = Vector256.Create(*(state + 9));
-		Vector256<uint> o10 = Vector256.Create(*(state + 10));
-		Vector256<uint> o11 = Vector256.Create(*(state + 11));
-		Vector256<uint> o13 = Vector256.Create(*(state + 13));
-		Vector256<uint> o14 = Vector256.Create(*(state + 14));
-		Vector256<uint> o15 = Vector256.Create(*(state + 15));
+		int length = source.Length;
+		int offset = 0;
+
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+
+		Vector256<uint> o0 = Vector256.Create(Unsafe.Add(ref stateRef, 0));
+		Vector256<uint> o1 = Vector256.Create(Unsafe.Add(ref stateRef, 1));
+		Vector256<uint> o2 = Vector256.Create(Unsafe.Add(ref stateRef, 2));
+		Vector256<uint> o3 = Vector256.Create(Unsafe.Add(ref stateRef, 3));
+		Vector256<uint> o4 = Vector256.Create(Unsafe.Add(ref stateRef, 4));
+		Vector256<uint> o5 = Vector256.Create(Unsafe.Add(ref stateRef, 5));
+		Vector256<uint> o6 = Vector256.Create(Unsafe.Add(ref stateRef, 6));
+		Vector256<uint> o7 = Vector256.Create(Unsafe.Add(ref stateRef, 7));
+		Vector256<uint> o8 = Vector256.Create(Unsafe.Add(ref stateRef, 8));
+		Vector256<uint> o9 = Vector256.Create(Unsafe.Add(ref stateRef, 9));
+		Vector256<uint> o10 = Vector256.Create(Unsafe.Add(ref stateRef, 10));
+		Vector256<uint> o11 = Vector256.Create(Unsafe.Add(ref stateRef, 11));
+		// 12
+		Vector256<uint> o13 = Vector256.Create(Unsafe.Add(ref stateRef, 13));
+		Vector256<uint> o14 = Vector256.Create(Unsafe.Add(ref stateRef, 14));
+		Vector256<uint> o15 = Vector256.Create(Unsafe.Add(ref stateRef, 15));
+		ref uint counter = ref Unsafe.Add(ref stateRef, 12);
 
 		while (length >= 512)
 		{
@@ -713,10 +780,10 @@ internal static class ChaCha20Utils
 			Vector256<uint> x14 = o14;
 			Vector256<uint> x15 = o15;
 
-			Vector256<uint> x12 = Avx2.Add(IncCounter01234567, Vector256.Create(*(state + 12)));
+			Vector256<uint> x12 = IncCounter01234567 + Vector256.Create(counter);
 			Vector256<uint> o12 = x12;
 
-			*(state + 12) += 8;
+			counter += 8;
 
 			for (int i = 0; i < rounds; i += 2)
 			{
@@ -747,8 +814,8 @@ internal static class ChaCha20Utils
 				ref o5,
 				ref o6,
 				ref o7,
-				source,
-				destination);
+				ref Unsafe.Add(ref sourceRef, offset),
+				ref Unsafe.Add(ref dstRef, offset));
 			AddTransposeXor(
 				ref x8,
 				ref x9,
@@ -766,32 +833,42 @@ internal static class ChaCha20Utils
 				ref o13,
 				ref o14,
 				ref o15,
-				source + 32,
-				destination + 32);
+				ref Unsafe.Add(ref sourceRef, offset + 32),
+				ref Unsafe.Add(ref dstRef, offset + 32));
 
 			length -= 512;
-			destination += 512;
-			source += 512;
+			offset += 512;
 		}
+
+		return offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void AddTransposeXor(
+	public static void AddTransposeXor(
 		ref Vector256<uint> x0, ref Vector256<uint> x1, ref Vector256<uint> x2, ref Vector256<uint> x3,
 		ref Vector256<uint> x4, ref Vector256<uint> x5, ref Vector256<uint> x6, ref Vector256<uint> x7,
 		ref Vector256<uint> o0, ref Vector256<uint> o1, ref Vector256<uint> o2, ref Vector256<uint> o3,
 		ref Vector256<uint> o4, ref Vector256<uint> o5, ref Vector256<uint> o6, ref Vector256<uint> o7,
-		byte* source, byte* destination)
+		ref byte source, ref byte destination)
 	{
+		ref Vector256<byte> s0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref source, 0 * 64));
+		ref Vector256<byte> s1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref source, 1 * 64));
+		ref Vector256<byte> s2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref source, 2 * 64));
+		ref Vector256<byte> s3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref source, 3 * 64));
+		ref Vector256<byte> s4 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref source, 4 * 64));
+		ref Vector256<byte> s5 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref source, 5 * 64));
+		ref Vector256<byte> s6 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref source, 6 * 64));
+		ref Vector256<byte> s7 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref source, 7 * 64));
+
 		// x += o
-		x0 = Avx2.Add(x0, o0);
-		x1 = Avx2.Add(x1, o1);
-		x2 = Avx2.Add(x2, o2);
-		x3 = Avx2.Add(x3, o3);
-		x4 = Avx2.Add(x4, o4);
-		x5 = Avx2.Add(x5, o5);
-		x6 = Avx2.Add(x6, o6);
-		x7 = Avx2.Add(x7, o7);
+		x0 += o0;
+		x1 += o1;
+		x2 += o2;
+		x3 += o3;
+		x4 += o4;
+		x5 += o5;
+		x6 += o6;
+		x7 += o7;
 
 		// Transpose
 		Vector256<uint> t0 = Avx2.UnpackLow(x0, x1);
@@ -822,14 +899,23 @@ internal static class ChaCha20Utils
 		t7 = Avx2.Permute2x128(x3, x7, 0x31);
 
 		// Xor
-		Avx.Store(destination, Avx2.Xor(t0.AsByte(), Avx.LoadVector256(source)));
-		Avx.Store(destination + 64, Avx2.Xor(t1.AsByte(), Avx.LoadVector256(source + 64)));
-		Avx.Store(destination + 128, Avx2.Xor(t2.AsByte(), Avx.LoadVector256(source + 128)));
-		Avx.Store(destination + 192, Avx2.Xor(t3.AsByte(), Avx.LoadVector256(source + 192)));
-		Avx.Store(destination + 256, Avx2.Xor(t4.AsByte(), Avx.LoadVector256(source + 256)));
-		Avx.Store(destination + 320, Avx2.Xor(t5.AsByte(), Avx.LoadVector256(source + 320)));
-		Avx.Store(destination + 384, Avx2.Xor(t6.AsByte(), Avx.LoadVector256(source + 384)));
-		Avx.Store(destination + 448, Avx2.Xor(t7.AsByte(), Avx.LoadVector256(source + 448)));
+		Vector256<byte> v0 = t0.AsByte() ^ s0;
+		Vector256<byte> v1 = t1.AsByte() ^ s1;
+		Vector256<byte> v2 = t2.AsByte() ^ s2;
+		Vector256<byte> v3 = t3.AsByte() ^ s3;
+		Vector256<byte> v4 = t4.AsByte() ^ s4;
+		Vector256<byte> v5 = t5.AsByte() ^ s5;
+		Vector256<byte> v6 = t6.AsByte() ^ s6;
+		Vector256<byte> v7 = t7.AsByte() ^ s7;
+
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 0 * 64), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 1 * 64), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 2 * 64), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 3 * 64), v3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 4 * 64), v4);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 5 * 64), v5);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 6 * 64), v6);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 7 * 64), v7);
 	}
 
 	#endregion

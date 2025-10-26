@@ -48,7 +48,6 @@ public class AESCTRTest
 		crypto.Dispose();
 	}
 
-
 	[Theory]
 	[MemberData(nameof(Data), MemberType = typeof(AESCTRTest))]
 	public void Test(string keyHex, string ivHex, string hex, string hex2)

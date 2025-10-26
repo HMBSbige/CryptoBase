@@ -36,15 +36,12 @@ public class Crc32X86 : IHash
 		GetHash(destination);
 	}
 
-	public unsafe void Update(ReadOnlySpan<byte> source)
+	public void Update(ReadOnlySpan<byte> source)
 	{
 		if (source.Length >= 64)
 		{
-			fixed (byte* p = source)
-			{
-				_state = Update(p, source.Length, _state);
-				source = source[^(source.Length % 0x10)..];
-			}
+			_state = Update(source, _state);
+			source = source.Slice(source.Length - source.Length % 0x10);
 		}
 
 		_state = ~Crc32Table.Crc32.Append(~_state, source);
@@ -62,24 +59,26 @@ public class Crc32X86 : IHash
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe uint Update(byte* buffer, int length, uint crc)
+	private static uint Update(ReadOnlySpan<byte> buffer, uint crc)
 	{
-		var x1 = Sse2.LoadVector128(buffer).AsUInt64();
-		var x2 = Sse2.LoadVector128(buffer + 0x10).AsUInt64();
-		var x3 = Sse2.LoadVector128(buffer + 0x20).AsUInt64();
-		var x4 = Sse2.LoadVector128(buffer + 0x30).AsUInt64();
-		var vCrc = Vector128.CreateScalar(crc).AsUInt64();
+		int length = buffer.Length;
+
+		ref Vector128<ulong> x1 = ref Unsafe.As<byte, Vector128<ulong>>(ref MemoryMarshal.GetReference(buffer));
+		ref Vector128<ulong> x2 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x10));
+		ref Vector128<ulong> x3 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x20));
+		ref Vector128<ulong> x4 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x30));
+		Vector128<ulong> vCrc = Vector128.CreateScalar(crc).AsUInt64();
 		x1 = Sse2.Xor(x1, vCrc);
 
 		length -= 0x40;
-		buffer += 0x40;
+		int offset = 0x40;
 
 		while (length >= 0x40)
 		{
-			var t1 = Pclmulqdq.CarrylessMultiply(x1, K1K2, 0x11);
-			var t2 = Pclmulqdq.CarrylessMultiply(x2, K1K2, 0x11);
-			var t3 = Pclmulqdq.CarrylessMultiply(x3, K1K2, 0x11);
-			var t4 = Pclmulqdq.CarrylessMultiply(x4, K1K2, 0x11);
+			Vector128<ulong> t1 = Pclmulqdq.CarrylessMultiply(x1, K1K2, 0x11);
+			Vector128<ulong> t2 = Pclmulqdq.CarrylessMultiply(x2, K1K2, 0x11);
+			Vector128<ulong> t3 = Pclmulqdq.CarrylessMultiply(x3, K1K2, 0x11);
+			Vector128<ulong> t4 = Pclmulqdq.CarrylessMultiply(x4, K1K2, 0x11);
 
 			x1 = Pclmulqdq.CarrylessMultiply(x1, K1K2, 0x00);
 			x2 = Pclmulqdq.CarrylessMultiply(x2, K1K2, 0x00);
@@ -91,16 +90,19 @@ public class Crc32X86 : IHash
 			x3 = Sse2.Xor(x3, t3);
 			x4 = Sse2.Xor(x4, t4);
 
-			x1 = Sse2.Xor(x1, Sse2.LoadVector128(buffer).AsUInt64());
-			x2 = Sse2.Xor(x2, Sse2.LoadVector128(buffer + 0x10).AsUInt64());
-			x3 = Sse2.Xor(x3, Sse2.LoadVector128(buffer + 0x20).AsUInt64());
-			x4 = Sse2.Xor(x4, Sse2.LoadVector128(buffer + 0x30).AsUInt64());
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			offset += 0x10;
+			x2 = Sse2.Xor(x2, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			offset += 0x10;
+			x3 = Sse2.Xor(x3, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			offset += 0x10;
+			x4 = Sse2.Xor(x4, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			offset += 0x10;
 
 			length -= 0x40;
-			buffer += 0x40;
 		}
 
-		var t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
+		Vector128<ulong> t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
 		x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
 		x1 = Sse2.Xor(x1, t);
 		x1 = Sse2.Xor(x1, x2);
@@ -120,13 +122,13 @@ public class Crc32X86 : IHash
 			t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
 			x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
 			x1 = Sse2.Xor(x1, t);
-			x1 = Sse2.Xor(x1, Sse2.LoadVector128(buffer).AsUInt64());
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
 
 			length -= 0x10;
-			buffer += 0x10;
+			offset += 0x10;
 		}
 
-		var r4 = Pclmulqdq.CarrylessMultiply(K3K4, x1, 0x01);
+		Vector128<ulong> r4 = Pclmulqdq.CarrylessMultiply(K3K4, x1, 0x01);
 		x1 = Sse2.ShiftRightLogical128BitLane(x1, 0x08);
 		x1 = Sse2.Xor(x1, r4);
 
@@ -141,7 +143,7 @@ public class Crc32X86 : IHash
 		x1 = Sse2.And(x1, Mask32);
 		x1 = Pclmulqdq.CarrylessMultiply(x1, RU, 0x00);
 		x1 = Sse2.Xor(x1, t);
-		return x1.AsUInt32().GetElement(1); // pextrd eax, x1, 1
+		return x1.AsUInt32().GetElement(1);// pextrd eax, x1, 1
 	}
 
 	public void Dispose()

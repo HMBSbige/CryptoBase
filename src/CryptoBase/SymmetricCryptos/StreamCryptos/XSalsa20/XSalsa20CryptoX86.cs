@@ -16,19 +16,19 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
-		var span = State.AsSpan();
+		Span<uint> span = State.AsSpan(0, StateSize);
 
 		State[0] = Sigma32[0];
 		State[5] = Sigma32[1];
 		State[10] = Sigma32[2];
 		State[15] = Sigma32[3];
 
-		var keySpan = MemoryMarshal.Cast<byte, uint>(key);
-		keySpan[..4].CopyTo(span[1..]);
-		keySpan[4..].CopyTo(span[11..]);
+		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
+		keySpan.Slice(0, 4).CopyTo(span.Slice(1));
+		keySpan.Slice(4).CopyTo(span.Slice(11));
 
-		var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		ivSpan[..4].CopyTo(span[6..]);
+		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
+		ivSpan.Slice(0, 4).CopyTo(span.Slice(6));
 
 		SalsaRound(State);
 
@@ -37,7 +37,7 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 		State[3] = State[10];
 		State[4] = State[15];
 
-		span.Slice(6, 4).CopyTo(span[11..]);
+		span.Slice(6, 4).CopyTo(span.Slice(11));
 
 		State[6] = ivSpan[4];
 		State[7] = ivSpan[5];
@@ -54,32 +54,34 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 	public sealed override void Reset()
 	{
 		Index = 0;
-		State[8] = State[9] = 0;
+		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(State), 8)) = 0;
 	}
 
-	protected virtual unsafe void SalsaRound(uint[] x)
+	protected virtual void SalsaRound(uint[] x)
 	{
-		fixed (uint* p = x)
-		{
-			Salsa20Utils.SalsaRound(p, Rounds);
-		}
+		Salsa20Utils.SalsaRound(x, Rounds);
 	}
 
-	protected override unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length)
+	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (Avx.IsSupported && Avx2.IsSupported)
+		int processed = 0;
+		int length = source.Length;
+		Span<uint> stateSpan = State.AsSpan(0, StateSize);
+
+		if (Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				Salsa20Utils.SalsaCore512(Rounds, state, ref source, ref destination, ref length);
+				int offset = Salsa20Utils.SalsaCore512(Rounds, stateSpan, source, destination);
+				processed += offset;
+				length -= offset;
 			}
 
 			while (length >= 128)
 			{
-				Salsa20Utils.SalsaCore128(Rounds, state, source, destination);
+				Salsa20Utils.SalsaCore128(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 
-				source += 128;
-				destination += 128;
+				processed += 128;
 				length -= 128;
 			}
 		}
@@ -88,26 +90,25 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 		{
 			if (length >= 256)
 			{
-				Salsa20Utils.SalsaCore256(Rounds, state, ref source, ref destination, ref length);
+				int offset = Salsa20Utils.SalsaCore256(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				processed += offset;
+				length -= offset;
 			}
 
 			while (length >= 64)
 			{
-				Salsa20Utils.SalsaCore64(Rounds, state, source, destination);
+				Salsa20Utils.SalsaCore64(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 
-				source += 64;
-				destination += 64;
+				processed += 64;
 				length -= 64;
 			}
 		}
+
+		return processed;
 	}
 
-	protected override unsafe void UpdateKeyStream()
+	protected override void UpdateKeyStream()
 	{
-		fixed (uint* x = State)
-		fixed (byte* s = KeyStream)
-		{
-			Salsa20Utils.UpdateKeyStream(x, s, Rounds);
-		}
+		Salsa20Utils.UpdateKeyStream(State, KeyStream, Rounds);
 	}
 }

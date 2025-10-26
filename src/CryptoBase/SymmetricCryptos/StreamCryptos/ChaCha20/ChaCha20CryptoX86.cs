@@ -1,24 +1,27 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
 
-public class ChaCha20CryptoX86 : ChaCha20CryptoSF
+public class ChaCha20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : ChaCha20CryptoSF(key, iv)
 {
-	public ChaCha20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv) { }
-
-	protected override unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length)
+	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (Avx.IsSupported && Avx2.IsSupported)
+		int processed = 0;
+		int length = source.Length;
+		Span<uint> stateSpan = State.AsSpan(0, StateSize);
+
+		if (Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				ChaCha20Utils.ChaChaCore512(Rounds, state, ref source, ref destination, ref length);
+				int offset = ChaCha20Utils.ChaChaCore512(Rounds, stateSpan, source, destination);
+				processed += offset;
+				length -= offset;
 			}
 
 			while (length >= 128)
 			{
-				ChaCha20Utils.ChaChaCore128(Rounds, state, source, destination);
+				ChaCha20Utils.ChaChaCore128(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 
-				source += 128;
-				destination += 128;
+				processed += 128;
 				length -= 128;
 			}
 		}
@@ -27,26 +30,25 @@ public class ChaCha20CryptoX86 : ChaCha20CryptoSF
 		{
 			if (length >= 256)
 			{
-				ChaCha20Utils.ChaChaCore256(Rounds, state, ref source, ref destination, ref length);
+				int offset = ChaCha20Utils.ChaChaCore256(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				processed += offset;
+				length -= offset;
 			}
 
 			while (length >= 64)
 			{
-				ChaCha20Utils.ChaChaCore64(Rounds, state, source, destination);
+				ChaCha20Utils.ChaChaCore64(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 
-				source += 64;
-				destination += 64;
+				processed += 64;
 				length -= 64;
 			}
 		}
+
+		return processed;
 	}
 
-	protected override unsafe void UpdateKeyStream()
+	protected override void UpdateKeyStream()
 	{
-		fixed (uint* x = State)
-		fixed (byte* s = KeyStream)
-		{
-			ChaCha20Utils.UpdateKeyStream(x, s, Rounds);
-		}
+		ChaCha20Utils.UpdateKeyStream(State, KeyStream, Rounds);
 	}
 }

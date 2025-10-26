@@ -2,7 +2,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 
-public class CTR128StreamModeBlock4X86 : IStreamCrypto
+public sealed class CTR128StreamModeBlock4X86 : IStreamCrypto
 {
 	public string Name => _internalBlockCrypto.Name + @"-CTR";
 
@@ -21,7 +21,7 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 	private const int BlockSize = 16;
 	private const int BlockSize4 = 4 * BlockSize;
 
-	public unsafe CTR128StreamModeBlock4X86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
+	public CTR128StreamModeBlock4X86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize4);
 
@@ -32,34 +32,20 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize4);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize4);
 
-		Span<byte> c = stackalloc byte[BlockSize];
-		iv.CopyTo(c);
-
-		fixed (byte* p = c)
-		{
-			_iCounter = Sse2.LoadVector128(p).ReverseEndianness128();
-		}
+		ref Vector128<byte> v = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
+		_iCounter = v.ReverseEndianness128();
 
 		Reset();
 	}
 
-	public unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
 		int length = source.Length;
+		int offset = 0;
+		ReadOnlySpan<byte> keyStream = _keyStream;
 
-		fixed (byte* pStream = _keyStream)
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
-		{
-			Update(length, pStream, pSource, pDestination);
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Update(int length, byte* stream, byte* source, byte* destination)
-	{
 		while (length > 0)
 		{
 			if (_index is 0)
@@ -68,7 +54,7 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 			}
 
 			int r = BlockSize4 - _index;
-			IntrinsicsUtils.Xor(stream + _index, source, destination, Math.Min(r, length));
+			FastUtils.Xor(keyStream.Slice(_index), source.Slice(offset), destination.Slice(offset), Math.Min(r, length));
 
 			if (length < r)
 			{
@@ -78,23 +64,26 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 
 			_index = 0;
 			length -= r;
-			source += r;
-			destination += r;
+			offset += r;
 		}
 	}
 
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void UpdateKeyStream()
+	private void UpdateKeyStream()
 	{
 		Span<byte> c = _counter.AsSpan(0, BlockSize4);
 
-		fixed (byte* p = c)
-		{
-			Sse2.Store(p + 0 * BlockSize, _counterV0.ReverseEndianness128());
-			Sse2.Store(p + 1 * BlockSize, _counterV1.ReverseEndianness128());
-			Sse2.Store(p + 2 * BlockSize, _counterV2.ReverseEndianness128());
-			Sse2.Store(p + 3 * BlockSize, _counterV3.ReverseEndianness128());
-		}
+		Vector128<byte> v0 = _counterV0.ReverseEndianness128();
+		Vector128<byte> v1 = _counterV1.ReverseEndianness128();
+		Vector128<byte> v2 = _counterV2.ReverseEndianness128();
+		Vector128<byte> v3 = _counterV3.ReverseEndianness128();
+
+		ref byte cRef = ref MemoryMarshal.GetReference(c);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 0 * BlockSize), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 1 * BlockSize), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 2 * BlockSize), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 3 * BlockSize), v3);
 
 		_internalBlockCrypto.Encrypt(c, _keyStream);
 
@@ -120,7 +109,5 @@ public class CTR128StreamModeBlock4X86 : IStreamCrypto
 
 		ArrayPool<byte>.Shared.Return(_counter);
 		ArrayPool<byte>.Shared.Return(_keyStream);
-
-		GC.SuppressFinalize(this);
 	}
 }

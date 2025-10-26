@@ -16,42 +16,29 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 	protected byte Rounds { get; init; } = 20;
 
-	protected readonly uint[] State;
-	protected readonly byte[] KeyStream;
+	protected readonly uint[] State = ArrayPool<uint>.Shared.Rent(StateSize);
+	protected readonly byte[] KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
 
 	protected int Index;
 
-	protected SnuffleCrypto()
-	{
-		State = ArrayPool<uint>.Shared.Rent(StateSize);
-		KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
-	}
-
-	public override unsafe void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
 
 		int length = source.Length;
+		int offset = 0;
+		ReadOnlySpan<byte> keyStream = KeyStream.AsSpan(0, StateSize * sizeof(uint));
+		Span<uint> state = State.AsSpan(0, StateSize);
 
-		fixed (uint* pState = State)
-		fixed (byte* pStream = KeyStream)
-		fixed (byte* pSource = source)
-		fixed (byte* pDestination = destination)
-		{
-			Update(length, pState, pStream, pSource, pDestination);
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private unsafe void Update(int length, uint* state, byte* stream, byte* source, byte* destination)
-	{
 		while (length > 0)
 		{
-			if (Index == 0)
+			if (Index is 0)
 			{
-				UpdateBlocks(ref state, ref source, ref destination, ref length);
+				int processed = UpdateBlocks(source.Slice(offset), destination.Slice(offset));
+				length -= processed;
+				offset += processed;
 
-				if (length == 0)
+				if (length is 0)
 				{
 					break;
 				}
@@ -60,8 +47,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 				IncrementCounter(state);
 			}
 
-			int r = 64 - Index;
-			IntrinsicsUtils.Xor(stream + Index, source, destination, Math.Min(r, length));
+			int r = StateSize * sizeof(uint) - Index;
+			FastUtils.Xor(keyStream.Slice(Index), source.Slice(offset), destination.Slice(offset), Math.Min(r, length));
 
 			if (length < r)
 			{
@@ -71,14 +58,13 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 			Index = 0;
 			length -= r;
-			source += r;
-			destination += r;
+			offset += r;
 		}
 	}
 
-	protected abstract unsafe void UpdateBlocks(ref uint* state, ref byte* source, ref byte* destination, ref int length);
+	protected abstract int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination);
 	protected abstract void UpdateKeyStream();
-	protected abstract unsafe void IncrementCounter(uint* state);
+	protected abstract void IncrementCounter(Span<uint> state);
 
 	public override void Dispose()
 	{
