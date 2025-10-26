@@ -136,8 +136,7 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementCounterOriginal(Span<uint> state)
 	{
-		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12));
-		++counter;
+		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -396,8 +395,11 @@ internal static class ChaCha20Utils
 	private static readonly Vector128<uint> IncCounter0123_128 = Vector128.Create(0u, 1, 2, 3);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void ChaChaCoreOriginal256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
+	public static int ChaChaCoreOriginal256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		int length = source.Length;
+		int offset = 0;
+
 		Vector128<uint> o0 = Vector128.Create(state[0]);
 		Vector128<uint> o1 = Vector128.Create(state[1]);
 		Vector128<uint> o2 = Vector128.Create(state[2]);
@@ -467,20 +469,24 @@ internal static class ChaCha20Utils
 				QuarterRound(ref x3, ref x4, ref x9, ref x14);
 			}
 
-			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source.Slice(sourceOffset), destination.Slice(destOffset));
-			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source.Slice(sourceOffset + 16), destination.Slice(destOffset + 16));
-			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source.Slice(sourceOffset + 32), destination.Slice(destOffset + 32));
-			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source.Slice(sourceOffset + 48), destination.Slice(destOffset + 48));
+			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source.Slice(offset), destination.Slice(offset));
+			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source.Slice(offset + 16), destination.Slice(offset + 16));
+			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source.Slice(offset + 32), destination.Slice(offset + 32));
+			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source.Slice(offset + 48), destination.Slice(offset + 48));
 
 			length -= 256;
-			sourceOffset += 256;
-			destOffset += 256;
+			offset += 256;
 		}
+
+		return offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void ChaChaCore256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
+	public static int ChaChaCore256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		int length = source.Length;
+		int offset = 0;
+
 		Vector128<uint> o0 = Vector128.Create(state[0]);
 		Vector128<uint> o1 = Vector128.Create(state[1]);
 		Vector128<uint> o2 = Vector128.Create(state[2]);
@@ -534,15 +540,16 @@ internal static class ChaCha20Utils
 				QuarterRound(ref x3, ref x4, ref x9, ref x14);
 			}
 
-			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source.Slice(sourceOffset), destination.Slice(destOffset));
-			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source.Slice(sourceOffset + 16), destination.Slice(destOffset + 16));
-			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source.Slice(sourceOffset + 32), destination.Slice(destOffset + 32));
-			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source.Slice(sourceOffset + 48), destination.Slice(destOffset + 48));
+			AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref o0, ref o1, ref o2, ref o3, source.Slice(offset), destination.Slice(offset));
+			AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref o4, ref o5, ref o6, ref o7, source.Slice(offset + 16), destination.Slice(offset + 16));
+			AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref o8, ref o9, ref o10, ref o11, source.Slice(offset + 32), destination.Slice(offset + 32));
+			AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref o12, ref o13, ref o14, ref o15, source.Slice(offset + 48), destination.Slice(offset + 48));
 
 			length -= 256;
-			sourceOffset += 256;
-			destOffset += 256;
+			offset += 256;
 		}
+
+		return offset;
 	}
 
 	/// <summary>
@@ -591,8 +598,11 @@ internal static class ChaCha20Utils
 	public static readonly Vector256<uint> Permute3 = Vector256.Create(0, 1, 4, 5, 2, 3, 6, 7).AsUInt32();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void ChaChaCoreOriginal512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
+	public static int ChaChaCoreOriginal512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		int length = source.Length;
+		int offset = 0;
+
 		Vector256<uint> o0 = Vector256.Create(state[0]);
 		Vector256<uint> o1 = Vector256.Create(state[1]);
 		Vector256<uint> o2 = Vector256.Create(state[2]);
@@ -678,8 +688,8 @@ internal static class ChaCha20Utils
 				ref o5,
 				ref o6,
 				ref o7,
-				source.Slice(sourceOffset),
-				destination.Slice(destOffset));
+				source.Slice(offset),
+				destination.Slice(offset));
 			AddTransposeXor(
 				ref x8,
 				ref x9,
@@ -697,18 +707,22 @@ internal static class ChaCha20Utils
 				ref o13,
 				ref o14,
 				ref o15,
-				source.Slice(sourceOffset + 32),
-				destination.Slice(destOffset + 32));
+				source.Slice(offset + 32),
+				destination.Slice(offset + 32));
 
 			length -= 512;
-			sourceOffset += 512;
-			destOffset += 512;
+			offset += 512;
 		}
+
+		return offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void ChaChaCore512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination, ref int length, ref int sourceOffset, ref int destOffset)
+	public static int ChaChaCore512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		int length = source.Length;
+		int offset = 0;
+
 		Vector256<uint> o0 = Vector256.Create(state[0]);
 		Vector256<uint> o1 = Vector256.Create(state[1]);
 		Vector256<uint> o2 = Vector256.Create(state[2]);
@@ -777,8 +791,8 @@ internal static class ChaCha20Utils
 				ref o5,
 				ref o6,
 				ref o7,
-				source.Slice(sourceOffset),
-				destination.Slice(destOffset));
+				source.Slice(offset),
+				destination.Slice(offset));
 			AddTransposeXor(
 				ref x8,
 				ref x9,
@@ -796,13 +810,14 @@ internal static class ChaCha20Utils
 				ref o13,
 				ref o14,
 				ref o15,
-				source.Slice(sourceOffset + 32),
-				destination.Slice(destOffset + 32));
+				source.Slice(offset + 32),
+				destination.Slice(offset + 32));
 
 			length -= 512;
-			sourceOffset += 512;
-			destOffset += 512;
+			offset += 512;
 		}
+
+		return offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

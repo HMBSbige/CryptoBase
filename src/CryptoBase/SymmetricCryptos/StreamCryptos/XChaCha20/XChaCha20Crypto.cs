@@ -6,13 +6,13 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 
 	public override int IvSize => 24;
 
-	private readonly ReadOnlyMemory<byte> Key;
+	private readonly ReadOnlyMemory<byte> _key;
 
 	protected XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
-		Key = key.ToArray();
+		_key = key.ToArray();
 
 		SetIV(iv);
 		Reset();
@@ -37,16 +37,16 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 
 		sigma.CopyTo(span);
 
-		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(Key.Span);
-		keySpan.CopyTo(span[4..]);
+		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.Span);
+		keySpan.CopyTo(span.Slice(4));
 
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		ivSpan[..4].CopyTo(span[12..]);
+		ivSpan.Slice(0, 4).CopyTo(span.Slice(12));
 
 		ChaChaRound(State);
 
-		span[12..].CopyTo(span[8..]);
-		span[..4].CopyTo(span[4..]);
+		span.Slice(12).CopyTo(span.Slice(8));
+		span.Slice(0, 4).CopyTo(span.Slice(4));
 
 		sigma.CopyTo(span);
 
@@ -54,10 +54,9 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 		State[15] = ivSpan[5];
 	}
 
-	public void SetCounter(uint counter)
+	public void SetCounter(ulong counter)
 	{
 		Index = 0;
-		State[12] = counter;
-		State[13] = 0;
+		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(State), 12)) = counter;
 	}
 }

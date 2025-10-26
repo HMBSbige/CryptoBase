@@ -10,8 +10,9 @@ public class Salsa20CryptoX86 : Salsa20Crypto
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		var keySpan = MemoryMarshal.Cast<byte, uint>(key);
-		var keyLength = key.Length;
+		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
+		int keyLength = key.Length;
+
 		switch (keyLength)
 		{
 			case 16:
@@ -49,7 +50,7 @@ public class Salsa20CryptoX86 : Salsa20Crypto
 		State[3] = keySpan[2];
 		State[4] = keySpan[3];
 
-		var ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
+		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		State[6] = ivSpan[0];
 		State[7] = ivSpan[1];
 	}
@@ -64,23 +65,20 @@ public class Salsa20CryptoX86 : Salsa20Crypto
 	{
 		int processed = 0;
 		int length = source.Length;
-		Span<uint> stateSpan = State.AsSpan(0, 16);
+		Span<uint> stateSpan = State.AsSpan();
 
 		if (Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				int tempLength = length;
-				int tempSourceOffset = 0;
-				int tempDestOffset = 0;
-				Salsa20Utils.SalsaCore512(Rounds, stateSpan, source, destination, ref tempLength, ref tempSourceOffset, ref tempDestOffset);
-				processed += tempSourceOffset;
-				length = tempLength;
+				int offset = Salsa20Utils.SalsaCore512(Rounds, stateSpan, source, destination);
+				processed += offset;
+				length -= offset;
 			}
 
 			while (length >= 128)
 			{
-				Salsa20Utils.SalsaCore128(Rounds, stateSpan, source.Slice(processed, 128), destination.Slice(processed, 128));
+				Salsa20Utils.SalsaCore128(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 
 				processed += 128;
 				length -= 128;
@@ -91,17 +89,14 @@ public class Salsa20CryptoX86 : Salsa20Crypto
 		{
 			if (length >= 256)
 			{
-				int tempLength = length;
-				int tempSourceOffset = 0;
-				int tempDestOffset = 0;
-				Salsa20Utils.SalsaCore256(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed), ref tempLength, ref tempSourceOffset, ref tempDestOffset);
-				processed += tempSourceOffset;
-				length = tempLength;
+				int offset = Salsa20Utils.SalsaCore256(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				processed += offset;
+				length -= offset;
 			}
 
 			while (length >= 64)
 			{
-				Salsa20Utils.SalsaCore64(Rounds, stateSpan, source.Slice(processed, 64), destination.Slice(processed, 64));
+				Salsa20Utils.SalsaCore64(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 
 				processed += 64;
 				length -= 64;
@@ -113,6 +108,6 @@ public class Salsa20CryptoX86 : Salsa20Crypto
 
 	protected override void UpdateKeyStream()
 	{
-		Salsa20Utils.UpdateKeyStream(State.AsSpan(0, 16), KeyStream.AsSpan(0, 64), Rounds);
+		Salsa20Utils.UpdateKeyStream(State, KeyStream, Rounds);
 	}
 }
