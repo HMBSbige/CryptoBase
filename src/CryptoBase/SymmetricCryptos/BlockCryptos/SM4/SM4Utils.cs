@@ -112,7 +112,7 @@ public static class SM4Utils
 			Vector128<byte> x = t1 ^ t2 ^ t3 ^ Vector128.Create(rk[i]).AsByte();
 
 			x.PreTransform();
-			x = Aes.EncryptLast(x, c0f); // AES-NI
+			x = Aes.EncryptLast(x, c0f);// AES-NI
 			x.PostTransform();
 
 			// inverse MixColumns
@@ -201,15 +201,26 @@ public static class SM4Utils
 
 	public static void Encrypt16(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector256<byte> a0 = FastUtils.CreateVector256Unsafe(source.Slice(0, 32)).ReverseEndianness32();
-		Vector256<byte> a1 = FastUtils.CreateVector256Unsafe(source.Slice(32, 32)).ReverseEndianness32();
-		Vector256<byte> a2 = FastUtils.CreateVector256Unsafe(source.Slice(64, 32)).ReverseEndianness32();
-		Vector256<byte> a3 = FastUtils.CreateVector256Unsafe(source.Slice(96, 32)).ReverseEndianness32();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
 
-		Vector256<byte> b0 = FastUtils.CreateVector256Unsafe(source.Slice(128, 32)).ReverseEndianness32();
-		Vector256<byte> b1 = FastUtils.CreateVector256Unsafe(source.Slice(160, 32)).ReverseEndianness32();
-		Vector256<byte> b2 = FastUtils.CreateVector256Unsafe(source.Slice(192, 32)).ReverseEndianness32();
-		Vector256<byte> b3 = FastUtils.CreateVector256Unsafe(source.Slice(224, 32)).ReverseEndianness32();
+		ref Vector256<byte> s0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
+		ref Vector256<byte> s1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
+		ref Vector256<byte> s2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 32));
+		ref Vector256<byte> s3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 32));
+		ref Vector256<byte> s4 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 4 * 32));
+		ref Vector256<byte> s5 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 5 * 32));
+		ref Vector256<byte> s6 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 6 * 32));
+		ref Vector256<byte> s7 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 7 * 32));
+
+		Vector256<byte> a0 = s0.ReverseEndianness32();
+		Vector256<byte> a1 = s1.ReverseEndianness32();
+		Vector256<byte> a2 = s2.ReverseEndianness32();
+		Vector256<byte> a3 = s3.ReverseEndianness32();
+		Vector256<byte> b0 = s4.ReverseEndianness32();
+		Vector256<byte> b1 = s5.ReverseEndianness32();
+		Vector256<byte> b2 = s6.ReverseEndianness32();
+		Vector256<byte> b3 = s7.ReverseEndianness32();
 
 		Transpose(ref a0, ref a1, ref a2, ref a3);
 		Transpose(ref b0, ref b1, ref b2, ref b3);
@@ -251,13 +262,22 @@ public static class SM4Utils
 		Transpose(ref a0, ref a1, ref a2, ref a3);
 		Transpose(ref b0, ref b1, ref b2, ref b3);
 
-		a0.ReverseEndianness128().CopyTo(destination.Slice(0, 32));
-		a1.ReverseEndianness128().CopyTo(destination.Slice(32, 32));
-		a2.ReverseEndianness128().CopyTo(destination.Slice(64, 32));
-		a3.ReverseEndianness128().CopyTo(destination.Slice(96, 32));
-		b0.ReverseEndianness128().CopyTo(destination.Slice(128, 32));
-		b1.ReverseEndianness128().CopyTo(destination.Slice(160, 32));
-		b2.ReverseEndianness128().CopyTo(destination.Slice(192, 32));
-		b3.ReverseEndianness128().CopyTo(destination.Slice(224, 32));
+		a0 = a0.ReverseEndianness128();
+		a1 = a1.ReverseEndianness128();
+		a2 = a2.ReverseEndianness128();
+		a3 = a3.ReverseEndianness128();
+		b0 = b0.ReverseEndianness128();
+		b1 = b1.ReverseEndianness128();
+		b2 = b2.ReverseEndianness128();
+		b3 = b3.ReverseEndianness128();
+
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 0 * 32), a0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 1 * 32), a1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 2 * 32), a2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 3 * 32), a3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 4 * 32), b0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 5 * 32), b1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 6 * 32), b2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 7 * 32), b3);
 	}
 }

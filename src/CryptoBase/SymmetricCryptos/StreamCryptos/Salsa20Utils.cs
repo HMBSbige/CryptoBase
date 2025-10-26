@@ -190,7 +190,7 @@ public static class Salsa20Utils
 	private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 	{
 		a = Sse2.Shuffle(a, 0b10_01_00_11);// 4 9 14 3 => 3 4 9 14
-		// 0 5 10 15
+										   // 0 5 10 15
 		c = Sse2.Shuffle(c, 0b00_11_10_01);// 12 1 6 11 => 1 6 11 12
 		d = Sse2.Shuffle(d, 0b01_00_11_10);// 8 13 2 7 => 2 7 8 13
 

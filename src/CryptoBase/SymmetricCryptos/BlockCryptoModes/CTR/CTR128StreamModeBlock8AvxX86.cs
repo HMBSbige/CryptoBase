@@ -32,10 +32,7 @@ public sealed class CTR128StreamModeBlock8AvxX86 : IStreamCrypto
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize8);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize8);
 
-		unsafe
-		{
-			_iCounter = Avx2.BroadcastVector128ToVector256((byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(iv))).ReverseEndianness128().IncUpper128Le();
-		}
+		_iCounter = FastUtils.BroadcastVector128ToVector256(ref MemoryMarshal.GetReference(iv)).ReverseEndianness128().IncUpper128Le();
 
 		Reset();
 	}

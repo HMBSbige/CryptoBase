@@ -30,22 +30,20 @@ public static class FastUtils
 		return ref Unsafe.Add(ref data, index);
 	}
 
+	/// <inheritdoc cref="Vector256.Create{T}(Vector128{T})" />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<T> CreateVector128Unsafe<T>(ReadOnlySpan<T> values)
+	public static Vector256<T> BroadcastVector128ToVector256<T>(ref T source)
 	{
-		return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
-	}
+		if (Avx2.IsSupported)
+		{
+			unsafe
+			{
+				return Avx2.BroadcastVector128ToVector256((byte*)Unsafe.AsPointer(ref source)).As<byte, T>();
+			}
+		}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> CreateVector256Unsafe<T>(ReadOnlySpan<T> values)
-	{
-		return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<T> CreateVector512Unsafe<T>(ReadOnlySpan<T> values)
-	{
-		return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+		ref Vector128<T> v = ref Unsafe.As<T, Vector128<T>>(ref source);
+		return Vector256.Create(v);
 	}
 
 	/// <summary>
