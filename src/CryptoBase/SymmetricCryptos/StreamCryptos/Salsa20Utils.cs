@@ -88,15 +88,15 @@ public static class Salsa20Utils
 		ref uint stateRef = ref MemoryMarshal.GetReference(state);
 		ref byte streamRef = ref MemoryMarshal.GetReference(stream);
 
-		Vector128<uint> s0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
-		Vector128<uint> s1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
-		Vector128<uint> s2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
-		Vector128<uint> s3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
+		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
+		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
+		Vector128<uint> x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));// 12 1 6 11
+		Vector128<uint> x3 = Vector128.Create(Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));// 8 13 2 7
 
-		Vector128<uint> x0 = Vector128.Create(state[4], state[9], state[14], state[3]);// 4 9 14 3
-		Vector128<uint> x1 = Vector128.Create(state[0], state[5], state[10], state[15]);// 0 5 10 15
-		Vector128<uint> x2 = Vector128.Create(state[12], state[1], state[6], state[11]);// 12 1 6 11
-		Vector128<uint> x3 = Vector128.Create(state[8], state[13], state[2], state[7]);// 8 13 2 7
+		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
+		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
+		ref Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
+		ref Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -109,15 +109,15 @@ public static class Salsa20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		x0 = Sse2.Add(x0, s0);
-		x1 = Sse2.Add(x1, s1);
-		x2 = Sse2.Add(x2, s2);
-		x3 = Sse2.Add(x3, s3);
+		x0 += s0;
+		x1 += s1;
+		x2 += s2;
+		x3 += s3;
 
-		Unsafe.WriteUnaligned(ref streamRef, x0.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 16), x1.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 32), x2.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 48), x3.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 0 * 16), x0.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 1 * 16), x1.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 2 * 16), x2.AsByte());
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 3 * 16), x3.AsByte());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -125,10 +125,10 @@ public static class Salsa20Utils
 	{
 		ref uint stateRef = ref MemoryMarshal.GetReference(state);
 
-		Vector128<uint> x0 = Vector128.Create(state[4], state[9], state[14], state[3]);// 4 9 14 3
-		Vector128<uint> x1 = Vector128.Create(state[0], state[5], state[10], state[15]);// 0 5 10 15
-		Vector128<uint> x2 = Vector128.Create(state[12], state[1], state[6], state[11]);// 12 1 6 11
-		Vector128<uint> x3 = Vector128.Create(state[8], state[13], state[2], state[7]);// 8 13 2 7
+		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
+		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
+		Vector128<uint> x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));// 12 1 6 11
+		Vector128<uint> x3 = Vector128.Create(Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));// 8 13 2 7
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -143,17 +143,17 @@ public static class Salsa20Utils
 		{
 			Shuffle(ref x0, ref x1, ref x2, ref x3, out Vector256<uint> a, out Vector256<uint> b);
 
-			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref stateRef), a);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 0)), a);
 			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)), b);
 		}
 		else
 		{
 			Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref stateRef), x0);
-			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 4)), x1);
-			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 8)), x2);
-			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 12)), x3);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 0 * 4)), x0);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 1 * 4)), x1);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 2 * 4)), x2);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 3 * 4)), x3);
 		}
 	}
 
@@ -313,15 +313,19 @@ public static class Salsa20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		Vector128<uint> s0 = Unsafe.As<uint, Vector128<uint>>(ref stateRef);
-		Vector128<uint> s1 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));
-		Vector128<uint> s2 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));
-		Vector128<uint> s3 = Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));
+		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
+		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
+		ref Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
+		ref Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
+		ref Vector128<byte> src0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 16));
+		ref Vector128<byte> src1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 16));
+		ref Vector128<byte> src2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 16));
+		ref Vector128<byte> src3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 16));
 
-		Vector128<uint> x0 = Vector128.Create(state[4], state[9], state[14], state[3]);// 4 9 14 3
-		Vector128<uint> x1 = Vector128.Create(state[0], state[5], state[10], state[15]);// 0 5 10 15
-		Vector128<uint> x2 = Vector128.Create(state[12], state[1], state[6], state[11]);// 12 1 6 11
-		Vector128<uint> x3 = Vector128.Create(state[8], state[13], state[2], state[7]);// 8 13 2 7
+		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
+		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
+		Vector128<uint> x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));// 12 1 6 11
+		Vector128<uint> x3 = Vector128.Create(Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));// 8 13 2 7
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -334,27 +338,23 @@ public static class Salsa20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		x0 = Sse2.Add(x0, s0);
-		x1 = Sse2.Add(x1, s1);
-		x2 = Sse2.Add(x2, s2);
-		x3 = Sse2.Add(x3, s3);
+		x0 += s0;
+		x1 += s1;
+		x2 += s2;
+		x3 += s3;
 
-		Vector128<byte> v0 = Sse2.Xor(x0.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref sourceRef));
-		Vector128<byte> v1 = Sse2.Xor(x1.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 16)));
-		Vector128<byte> v2 = Sse2.Xor(x2.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
-		Vector128<byte> v3 = Sse2.Xor(x3.AsByte(), Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 48)));
+		Vector128<byte> v0 = src0 ^ x0.AsByte();
+		Vector128<byte> v1 = src1 ^ x1.AsByte();
+		Vector128<byte> v2 = src2 ^ x2.AsByte();
+		Vector128<byte> v3 = src3 ^ x3.AsByte();
 
-		Unsafe.WriteUnaligned(ref destRef, v0);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 16), v1);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 32), v2);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 48), v3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 0 * 16), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 1 * 16), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 16), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 16), v3);
 
-		ref uint counter = ref Unsafe.Add(ref stateRef, 8);
-
-		if (++counter == 0)
-		{
-			++Unsafe.Add(ref stateRef, 9);
-		}
+		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 8));
+		++counter;
 	}
 
 	/// <summary>
@@ -367,58 +367,61 @@ public static class Salsa20Utils
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
-		uint t8 = state[8];
-		uint t9 = state[9];
+		ref Vector256<byte> src0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
+		ref Vector256<byte> src1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
+		ref Vector256<byte> src2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 32));
+		ref Vector256<byte> src3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 32));
 
-		Vector256<uint> s1 = Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8));// 8 9 10 11 12 13 14 15
+		ref Vector256<uint> s0 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 0));// 0 1 2 3 4 5 6 7
+		ref Vector256<uint> s1 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8));// 8 9 10 11 12 13 14 15
+		Vector256<uint> t = s1;
 
-		ref uint counter = ref Unsafe.Add(ref stateRef, 8);
+		uint t8 = Unsafe.Add(ref stateRef, 8);
+		uint t9 = Unsafe.Add(ref stateRef, 9);
 
-		if (++counter == 0)
-		{
-			++Unsafe.Add(ref stateRef, 9);
-		}
+		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 8));
+		++counter;
 
 		// 4 9 14 3
 		Vector256<uint> x0 = Vector256.Create(
-			state[4],
+			Unsafe.Add(ref stateRef, 4),
 			t9,
-			state[14],
-			state[3],
-			state[4],
-			state[9],
-			state[14],
-			state[3]);
+			Unsafe.Add(ref stateRef, 14),
+			Unsafe.Add(ref stateRef, 3),
+			Unsafe.Add(ref stateRef, 4),
+			Unsafe.Add(ref stateRef, 9),
+			Unsafe.Add(ref stateRef, 14),
+			Unsafe.Add(ref stateRef, 3));
 		// 0 5 10 15
 		Vector256<uint> x1 = Vector256.Create(
-			state[0],
-			state[5],
-			state[10],
-			state[15],
-			state[0],
-			state[5],
-			state[10],
-			state[15]);
+			Unsafe.Add(ref stateRef, 0),
+			Unsafe.Add(ref stateRef, 5),
+			Unsafe.Add(ref stateRef, 10),
+			Unsafe.Add(ref stateRef, 15),
+			Unsafe.Add(ref stateRef, 0),
+			Unsafe.Add(ref stateRef, 5),
+			Unsafe.Add(ref stateRef, 10),
+			Unsafe.Add(ref stateRef, 15));
 		// 12 1 6 11
 		Vector256<uint> x2 = Vector256.Create(
-			state[12],
-			state[1],
-			state[6],
-			state[11],
-			state[12],
-			state[1],
-			state[6],
-			state[11]);
+			Unsafe.Add(ref stateRef, 12),
+			Unsafe.Add(ref stateRef, 1),
+			Unsafe.Add(ref stateRef, 6),
+			Unsafe.Add(ref stateRef, 11),
+			Unsafe.Add(ref stateRef, 12),
+			Unsafe.Add(ref stateRef, 1),
+			Unsafe.Add(ref stateRef, 6),
+			Unsafe.Add(ref stateRef, 11));
 		// 8 13 2 7
 		Vector256<uint> x3 = Vector256.Create(
 			t8,
-			state[13],
-			state[2],
-			state[7],
-			state[8],
-			state[13],
-			state[2],
-			state[7]
+			Unsafe.Add(ref stateRef, 13),
+			Unsafe.Add(ref stateRef, 2),
+			Unsafe.Add(ref stateRef, 7),
+			Unsafe.Add(ref stateRef, 8),
+			Unsafe.Add(ref stateRef, 13),
+			Unsafe.Add(ref stateRef, 2),
+			Unsafe.Add(ref stateRef, 7)
 		);
 
 		for (int i = 0; i < rounds; i += 2)
@@ -432,29 +435,22 @@ public static class Salsa20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		Vector256<uint> s0 = Unsafe.As<uint, Vector256<uint>>(ref stateRef);// 0 1 2 3 4 5 6 7
+		x0 += s0;
+		x1 += t;
+		x2 += s0;
+		x3 += s1;
 
-		x0 = Avx2.Add(x0, s0);
-		x1 = Avx2.Add(x1, s1);
-		x2 = Avx2.Add(x2, s0);
-		x3 = Avx2.Add(x3, Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8)));
+		Vector256<byte> v0 = x0.AsByte() ^ src0;
+		Vector256<byte> v1 = x1.AsByte() ^ src1;
+		Vector256<byte> v2 = x2.AsByte() ^ src2;
+		Vector256<byte> v3 = x3.AsByte() ^ src3;
 
-		Vector256<byte> v0 = Avx2.Xor(x0.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref sourceRef));
-		Vector256<byte> v1 = Avx2.Xor(x1.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 32)));
-		Vector256<byte> v2 = Avx2.Xor(x2.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 64)));
-		Vector256<byte> v3 = Avx2.Xor(x3.AsByte(), Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 96)));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 0 * 32), v0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 1 * 32), v1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 32), v2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 32), v3);
 
-		Unsafe.WriteUnaligned(ref destRef, v0);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 32), v1);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 64), v2);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 96), v3);
-
-		counter = ref Unsafe.Add(ref stateRef, 8);
-
-		if (++counter == 0)
-		{
-			++Unsafe.Add(ref stateRef, 9);
-		}
+		++counter;
 	}
 
 	#region 处理 256*n bytes
@@ -465,24 +461,29 @@ public static class Salsa20Utils
 		int length = source.Length;
 		int offset = 0;
 
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+
 		#region s
 
-		Vector128<uint> s0 = Vector128.Create(state[0]);
-		Vector128<uint> s1 = Vector128.Create(state[1]);
-		Vector128<uint> s2 = Vector128.Create(state[2]);
-		Vector128<uint> s3 = Vector128.Create(state[3]);
-		Vector128<uint> s4 = Vector128.Create(state[4]);
-		Vector128<uint> s5 = Vector128.Create(state[5]);
-		Vector128<uint> s6 = Vector128.Create(state[6]);
-		Vector128<uint> s7 = Vector128.Create(state[7]);
+		Vector128<uint> s0 = Vector128.Create(Unsafe.Add(ref stateRef, 0));
+		Vector128<uint> s1 = Vector128.Create(Unsafe.Add(ref stateRef, 1));
+		Vector128<uint> s2 = Vector128.Create(Unsafe.Add(ref stateRef, 2));
+		Vector128<uint> s3 = Vector128.Create(Unsafe.Add(ref stateRef, 3));
+		Vector128<uint> s4 = Vector128.Create(Unsafe.Add(ref stateRef, 4));
+		Vector128<uint> s5 = Vector128.Create(Unsafe.Add(ref stateRef, 5));
+		Vector128<uint> s6 = Vector128.Create(Unsafe.Add(ref stateRef, 6));
+		Vector128<uint> s7 = Vector128.Create(Unsafe.Add(ref stateRef, 7));
 		// s8
 		// s9
-		Vector128<uint> s10 = Vector128.Create(state[10]);
-		Vector128<uint> s11 = Vector128.Create(state[11]);
-		Vector128<uint> s12 = Vector128.Create(state[12]);
-		Vector128<uint> s13 = Vector128.Create(state[13]);
-		Vector128<uint> s14 = Vector128.Create(state[14]);
-		Vector128<uint> s15 = Vector128.Create(state[15]);
+		Vector128<uint> s10 = Vector128.Create(Unsafe.Add(ref stateRef, 10));
+		Vector128<uint> s11 = Vector128.Create(Unsafe.Add(ref stateRef, 11));
+		Vector128<uint> s12 = Vector128.Create(Unsafe.Add(ref stateRef, 12));
+		Vector128<uint> s13 = Vector128.Create(Unsafe.Add(ref stateRef, 13));
+		Vector128<uint> s14 = Vector128.Create(Unsafe.Add(ref stateRef, 14));
+		Vector128<uint> s15 = Vector128.Create(Unsafe.Add(ref stateRef, 15));
+		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 8));
 
 		#endregion
 
@@ -509,8 +510,7 @@ public static class Salsa20Utils
 
 			#region 8 9 位分别加 0 1 2 3
 
-			ulong o = state[8] | (ulong)state[9] << 32;
-			Vector128<ulong> vo = Vector128.Create(o);
+			Vector128<ulong> vo = Vector128.Create(counter);
 
 			Vector128<uint> x8 = Sse2.Add(ChaCha20Utils.IncCounter01, vo).AsUInt32();
 			Vector128<uint> x9 = Sse2.Add(ChaCha20Utils.IncCounter23, vo).AsUInt32();
@@ -524,9 +524,7 @@ public static class Salsa20Utils
 			Vector128<uint> s8 = x8;
 			Vector128<uint> s9 = x9;
 
-			o += 4;
-			state[8] = (uint)(o & 0xFFFFFFFF);
-			state[9] = (uint)(o >> 32 & 0xFFFFFFFF);
+			counter += 4;
 
 			#endregion
 
@@ -543,10 +541,10 @@ public static class Salsa20Utils
 				QuarterRound(ref x12, ref x15, ref x14, ref x13);
 			}
 
-			ChaCha20Utils.AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref s0, ref s1, ref s2, ref s3, source.Slice(offset), destination.Slice(offset));
-			ChaCha20Utils.AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref s4, ref s5, ref s6, ref s7, source.Slice(offset + 16), destination.Slice(offset + 16));
-			ChaCha20Utils.AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref s8, ref s9, ref s10, ref s11, source.Slice(offset + 32), destination.Slice(offset + 32));
-			ChaCha20Utils.AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref s12, ref s13, ref s14, ref s15, source.Slice(offset + 48), destination.Slice(offset + 48));
+			ChaCha20Utils.AddTransposeXor(ref x0, ref x1, ref x2, ref x3, ref s0, ref s1, ref s2, ref s3, ref Unsafe.Add(ref sourceRef, offset + 0 * 16), ref Unsafe.Add(ref dstRef, offset + 0 * 16));
+			ChaCha20Utils.AddTransposeXor(ref x4, ref x5, ref x6, ref x7, ref s4, ref s5, ref s6, ref s7, ref Unsafe.Add(ref sourceRef, offset + 1 * 16), ref Unsafe.Add(ref dstRef, offset + 1 * 16));
+			ChaCha20Utils.AddTransposeXor(ref x8, ref x9, ref x10, ref x11, ref s8, ref s9, ref s10, ref s11, ref Unsafe.Add(ref sourceRef, offset + 2 * 16), ref Unsafe.Add(ref dstRef, offset + 2 * 16));
+			ChaCha20Utils.AddTransposeXor(ref x12, ref x13, ref x14, ref x15, ref s12, ref s13, ref s14, ref s15, ref Unsafe.Add(ref sourceRef, offset + 3 * 16), ref Unsafe.Add(ref dstRef, offset + 3 * 16));
 
 			offset += 256;
 			length -= 256;
@@ -565,20 +563,27 @@ public static class Salsa20Utils
 		int length = source.Length;
 		int offset = 0;
 
-		Vector256<uint> o0 = Vector256.Create(state[0]);
-		Vector256<uint> o1 = Vector256.Create(state[1]);
-		Vector256<uint> o2 = Vector256.Create(state[2]);
-		Vector256<uint> o3 = Vector256.Create(state[3]);
-		Vector256<uint> o4 = Vector256.Create(state[4]);
-		Vector256<uint> o5 = Vector256.Create(state[5]);
-		Vector256<uint> o6 = Vector256.Create(state[6]);
-		Vector256<uint> o7 = Vector256.Create(state[7]);
-		Vector256<uint> o10 = Vector256.Create(state[10]);
-		Vector256<uint> o11 = Vector256.Create(state[11]);
-		Vector256<uint> o12 = Vector256.Create(state[12]);
-		Vector256<uint> o13 = Vector256.Create(state[13]);
-		Vector256<uint> o14 = Vector256.Create(state[14]);
-		Vector256<uint> o15 = Vector256.Create(state[15]);
+		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+
+		Vector256<uint> o0 = Vector256.Create(Unsafe.Add(ref stateRef, 0));
+		Vector256<uint> o1 = Vector256.Create(Unsafe.Add(ref stateRef, 1));
+		Vector256<uint> o2 = Vector256.Create(Unsafe.Add(ref stateRef, 2));
+		Vector256<uint> o3 = Vector256.Create(Unsafe.Add(ref stateRef, 3));
+		Vector256<uint> o4 = Vector256.Create(Unsafe.Add(ref stateRef, 4));
+		Vector256<uint> o5 = Vector256.Create(Unsafe.Add(ref stateRef, 5));
+		Vector256<uint> o6 = Vector256.Create(Unsafe.Add(ref stateRef, 6));
+		Vector256<uint> o7 = Vector256.Create(Unsafe.Add(ref stateRef, 7));
+		// 8
+		// 9
+		Vector256<uint> o10 = Vector256.Create(Unsafe.Add(ref stateRef, 10));
+		Vector256<uint> o11 = Vector256.Create(Unsafe.Add(ref stateRef, 11));
+		Vector256<uint> o12 = Vector256.Create(Unsafe.Add(ref stateRef, 12));
+		Vector256<uint> o13 = Vector256.Create(Unsafe.Add(ref stateRef, 13));
+		Vector256<uint> o14 = Vector256.Create(Unsafe.Add(ref stateRef, 14));
+		Vector256<uint> o15 = Vector256.Create(Unsafe.Add(ref stateRef, 15));
+		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 8));
 
 		while (length >= 512)
 		{
@@ -597,7 +602,6 @@ public static class Salsa20Utils
 			Vector256<uint> x14 = o14;
 			Vector256<uint> x15 = o15;
 
-			ulong counter = state[8] | (ulong)state[9] << 32;
 			Vector256<uint> x8 = Vector256.Create(counter).AsUInt32();
 			Vector256<uint> x9 = x8;
 
@@ -617,9 +621,6 @@ public static class Salsa20Utils
 			Vector256<uint> o9 = x9;
 
 			counter += 8;
-
-			state[8] = (uint)(counter & 0xFFFFFFFF);
-			state[9] = (uint)(counter >> 32 & 0xFFFFFFFF);
 
 			for (int i = 0; i < rounds; i += 2)
 			{
@@ -651,8 +652,8 @@ public static class Salsa20Utils
 				ref o5,
 				ref o6,
 				ref o7,
-				source.Slice(offset),
-				destination.Slice(offset));
+				ref Unsafe.Add(ref sourceRef, offset),
+				ref Unsafe.Add(ref dstRef, offset));
 
 			ChaCha20Utils.AddTransposeXor(
 				ref x8,
@@ -671,8 +672,8 @@ public static class Salsa20Utils
 				ref o13,
 				ref o14,
 				ref o15,
-				source.Slice(offset + 32),
-				destination.Slice(offset + 32));
+				ref Unsafe.Add(ref sourceRef, offset + 32),
+				ref Unsafe.Add(ref dstRef, offset + 32));
 
 			length -= 512;
 			offset += 512;

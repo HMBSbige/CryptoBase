@@ -48,6 +48,27 @@ jobs:
         working-directory: test/${{ env.ProjectName }}.Tests
         run: dotnet test -c Release
 
+      - name: Run tests (Disable AVX)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/${{ env.ProjectName }}.Tests
+        run: dotnet test -c Release
+        env:
+          DOTNET_EnableAVX: 0
+
+      - name: Run tests (Disable SSE)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/${{ env.ProjectName }}.Tests
+        run: dotnet test -c Release
+        env:
+          DOTNET_EnableSSE: 0
+
+      - name: Run tests (Disable HWIntrinsic)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/${{ env.ProjectName }}.Tests
+        run: dotnet test -c Release
+        env:
+          DOTNET_EnableHWIntrinsic: 0
+
   build:
     needs: [check_format, test]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
