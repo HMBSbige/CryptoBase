@@ -55,12 +55,6 @@ public class AESBenchmark
 		TestEncrypt(new BcAESCrypto(_randomKey), _randombytes.Span);
 	}
 
-	[Benchmark]
-	public void SoftwareFallbackEncrypt()
-	{
-		TestEncrypt(new AESCryptoSF(_randomKey), _randombytes.Span);
-	}
-
 	[Benchmark(Baseline = true)]
 	public void X86Encrypt()
 	{
@@ -77,12 +71,6 @@ public class AESBenchmark
 	public void BouncyCastleDecrypt()
 	{
 		TestDecrypt(new BcAESCrypto(_randomKey), _randombytes.Span);
-	}
-
-	[Benchmark]
-	public void SoftwareFallbackDecrypt()
-	{
-		TestDecrypt(new AESCryptoSF(_randomKey), _randombytes.Span);
 	}
 
 	[Benchmark]
