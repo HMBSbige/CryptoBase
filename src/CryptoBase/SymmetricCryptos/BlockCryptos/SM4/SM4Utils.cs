@@ -112,7 +112,7 @@ public static class SM4Utils
 			Vector128<byte> x = t1 ^ t2 ^ t3 ^ Vector128.Create(rk[i]).AsByte();
 
 			x.PreTransform();
-			x = Aes.EncryptLast(x, c0f);// AES-NI
+			x = AesX86.EncryptLast(x, c0f);// AES-NI
 			x.PostTransform();
 
 			// inverse MixColumns
@@ -161,7 +161,7 @@ public static class SM4Utils
 
 			x0 = x0 ^ a1 ^ a2 ^ a3;
 			x0.PreTransform();
-			x0 = Aes.EncryptLast(x0, c0f);
+			x0 = AesX86.EncryptLast(x0, c0f);
 			x0.PostTransform();
 			x0 = Ssse3.Shuffle(x0, shr);
 			Vector128<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
@@ -174,7 +174,7 @@ public static class SM4Utils
 
 			x1 = x1 ^ b1 ^ b2 ^ b3;
 			x1.PreTransform();
-			x1 = Aes.EncryptLast(x1, c0f);
+			x1 = AesX86.EncryptLast(x1, c0f);
 			x1.PostTransform();
 			x1 = Ssse3.Shuffle(x1, shr);
 			Vector128<byte> t1 = x1 ^ x1.RotateLeftUInt32_8() ^ x1.RotateLeftUInt32_16();
@@ -232,8 +232,8 @@ public static class SM4Utils
 
 			x0 = x0 ^ a1 ^ a2 ^ a3;
 			x0.PreTransform();
-			Vector128<byte> u0 = Aes.EncryptLast(x0.GetUpper(), c0f);
-			x0 = Aes.EncryptLast(x0.GetLower(), c0f).ToVector256Unsafe().WithUpper(u0);
+			Vector128<byte> u0 = AesX86.EncryptLast(x0.GetUpper(), c0f);
+			x0 = AesX86.EncryptLast(x0.GetLower(), c0f).ToVector256Unsafe().WithUpper(u0);
 			x0.PostTransform();
 			x0 = Avx2.Shuffle(x0, vshr);
 			Vector256<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
@@ -246,8 +246,8 @@ public static class SM4Utils
 
 			x1 = x1 ^ b1 ^ b2 ^ b3;
 			x1.PreTransform();
-			Vector128<byte> u1 = Aes.EncryptLast(x1.GetUpper(), c0f);
-			x1 = Aes.EncryptLast(x1.GetLower(), c0f).ToVector256Unsafe().WithUpper(u1);
+			Vector128<byte> u1 = AesX86.EncryptLast(x1.GetUpper(), c0f);
+			x1 = AesX86.EncryptLast(x1.GetLower(), c0f).ToVector256Unsafe().WithUpper(u1);
 			x1.PostTransform();
 			x1 = Avx2.Shuffle(x1, vshr);
 			Vector256<byte> t1 = x1 ^ x1.RotateLeftUInt32_8() ^ x1.RotateLeftUInt32_16();

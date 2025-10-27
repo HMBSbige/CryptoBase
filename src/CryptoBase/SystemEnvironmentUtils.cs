@@ -22,7 +22,7 @@ public static class SystemEnvironmentUtils
 				SSE2 instructions:                              {Sse2.IsSupported}
 				Advanced Vector Extensions 2:                   {Avx2.IsSupported}
 				Intel SHA extensions:                           {CpuIdUtils.IsSupportX86ShaEx()}
-				AES instruction set:                            {Aes.IsSupported}
+				AES instruction set:                            {AesX86.IsSupported}
 				Vector AES instruction:                         {CpuIdUtils.IsSupportX86VAes()}
 				AVX-512 Foundation:                             {Avx512F.IsSupported}
 				AVX-512 Conflict Detection Instructions:        {Avx512CD.IsSupported}

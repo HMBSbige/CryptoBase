@@ -27,12 +27,12 @@ public static class StreamCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto Sm4Ctr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		if (Aes.IsSupported && Avx2.IsSupported)
+		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
 			return new CTR128StreamModeBlock16X86(new SM4CryptoBlock16X86(key), iv);
 		}
 
-		if (Aes.IsSupported && Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
+		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
 		{
 			return new CTR128StreamModeBlock8X86(new SM4CryptoBlock8X86(key), iv);
 		}

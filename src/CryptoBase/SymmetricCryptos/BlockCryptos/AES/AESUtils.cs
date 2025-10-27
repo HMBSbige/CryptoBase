@@ -24,7 +24,7 @@ public static class AESUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static AESCrypto CreateECB(ReadOnlySpan<byte> key)
 	{
-		if (System.Runtime.Intrinsics.X86.Aes.IsSupported && Sse2.IsSupported)
+		if (AesX86.IsSupported && Sse2.IsSupported)
 		{
 			return key.Length switch
 			{
@@ -41,7 +41,7 @@ public static class AESUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IBlockCrypto CreateCBC(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		if (System.Runtime.Intrinsics.X86.Aes.IsSupported && Sse2.IsSupported)
+		if (AesX86.IsSupported && Sse2.IsSupported)
 		{
 			return new CBCBlockMode(CreateECB(key), iv);
 		}
