@@ -1,6 +1,5 @@
 using BenchmarkDotNet.Attributes;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Security.Cryptography;
 
@@ -37,9 +36,12 @@ public class Xor64Benchmark
 		Span<byte> a = _a.Span;
 		Span<byte> b = _b.Span;
 
+		ref byte refA = ref a.GetReference();
+		ref byte refB = ref b.GetReference();
+
 		for (int i = 0; i < 64; ++i)
 		{
-			a.GetRef(i) ^= b.GetRef(i);
+			Unsafe.Add(ref refA, i) ^= Unsafe.Add(ref refB, i);
 		}
 	}
 
@@ -49,8 +51,8 @@ public class Xor64Benchmark
 		Span<byte> a = _a.Span;
 		Span<byte> b = _b.Span;
 
-		ref Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref MemoryMarshal.GetReference(a));
-		ref Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref MemoryMarshal.GetReference(b));
+		ref Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref a.GetReference());
+		ref Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref b.GetReference());
 
 		v0 ^= v1;
 	}
@@ -61,11 +63,16 @@ public class Xor64Benchmark
 		Span<byte> a = _a.Span;
 		Span<byte> b = _b.Span;
 
-		Span<Vector256<byte>> xa = MemoryMarshal.Cast<byte, Vector256<byte>>(a);
-		ReadOnlySpan<Vector256<byte>> xb = MemoryMarshal.Cast<byte, Vector256<byte>>(b);
+		ref byte refA = ref a.GetReference();
+		ref byte refB = ref b.GetReference();
 
-		xa.GetRef(0) ^= xb.GetRef(0);
-		xa.GetRef(1) ^= xb.GetRef(1);
+		ref Vector256<byte> a0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref refA, 0 * Vector256<byte>.Count));
+		ref Vector256<byte> a1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref refA, 1 * Vector256<byte>.Count));
+		ref Vector256<byte> b0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref refB, 0 * Vector256<byte>.Count));
+		ref Vector256<byte> b1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref refB, 1 * Vector256<byte>.Count));
+
+		a0 ^= b0;
+		a1 ^= b1;
 	}
 
 	[Benchmark(Description = @"Vector128")]
@@ -74,13 +81,22 @@ public class Xor64Benchmark
 		Span<byte> a = _a.Span;
 		Span<byte> b = _b.Span;
 
-		Span<Vector128<byte>> xa = MemoryMarshal.Cast<byte, Vector128<byte>>(a);
-		ReadOnlySpan<Vector128<byte>> xb = MemoryMarshal.Cast<byte, Vector128<byte>>(b);
+		ref byte refA = ref a.GetReference();
+		ref byte refB = ref b.GetReference();
 
-		xa.GetRef(0) ^= xb.GetRef(0);
-		xa.GetRef(1) ^= xb.GetRef(1);
-		xa.GetRef(2) ^= xb.GetRef(2);
-		xa.GetRef(3) ^= xb.GetRef(3);
+		ref Vector128<byte> a0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref refA, 0 * Vector128<byte>.Count));
+		ref Vector128<byte> a1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref refA, 1 * Vector128<byte>.Count));
+		ref Vector128<byte> a2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref refA, 2 * Vector128<byte>.Count));
+		ref Vector128<byte> a3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref refA, 3 * Vector128<byte>.Count));
+		ref Vector128<byte> b0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref refB, 0 * Vector128<byte>.Count));
+		ref Vector128<byte> b1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref refB, 1 * Vector128<byte>.Count));
+		ref Vector128<byte> b2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref refB, 2 * Vector128<byte>.Count));
+		ref Vector128<byte> b3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref refB, 3 * Vector128<byte>.Count));
+
+		a0 ^= b0;
+		a1 ^= b1;
+		a2 ^= b2;
+		a3 ^= b3;
 	}
 
 	[Benchmark(Description = @"Unsafe")]
@@ -91,8 +107,8 @@ public class Xor64Benchmark
 
 		unsafe
 		{
-			fixed (byte* pa = &MemoryMarshal.GetReference(a))
-			fixed (byte* pb = &MemoryMarshal.GetReference(b))
+			fixed (byte* pa = &a.GetReference())
+			fixed (byte* pb = &b.GetReference())
 			{
 				for (int i = 0; i < 64; ++i)
 				{
@@ -108,13 +124,22 @@ public class Xor64Benchmark
 		Span<byte> a = _a.Span;
 		Span<byte> b = _b.Span;
 
-		Span<UInt128> xa = MemoryMarshal.Cast<byte, UInt128>(a);
-		ReadOnlySpan<UInt128> xb = MemoryMarshal.Cast<byte, UInt128>(b);
+		ref byte refA = ref a.GetReference();
+		ref byte refB = ref b.GetReference();
 
-		xa.GetRef(0) ^= xb.GetRef(0);
-		xa.GetRef(1) ^= xb.GetRef(1);
-		xa.GetRef(2) ^= xb.GetRef(2);
-		xa.GetRef(3) ^= xb.GetRef(3);
+		ref UInt128 a0 = ref Unsafe.As<byte, UInt128>(ref Unsafe.Add(ref refA, 0 * 16));
+		ref UInt128 a1 = ref Unsafe.As<byte, UInt128>(ref Unsafe.Add(ref refA, 1 * 16));
+		ref UInt128 a2 = ref Unsafe.As<byte, UInt128>(ref Unsafe.Add(ref refA, 2 * 16));
+		ref UInt128 a3 = ref Unsafe.As<byte, UInt128>(ref Unsafe.Add(ref refA, 3 * 16));
+		ref UInt128 b0 = ref Unsafe.As<byte, UInt128>(ref Unsafe.Add(ref refB, 0 * 16));
+		ref UInt128 b1 = ref Unsafe.As<byte, UInt128>(ref Unsafe.Add(ref refB, 1 * 16));
+		ref UInt128 b2 = ref Unsafe.As<byte, UInt128>(ref Unsafe.Add(ref refB, 2 * 16));
+		ref UInt128 b3 = ref Unsafe.As<byte, UInt128>(ref Unsafe.Add(ref refB, 3 * 16));
+
+		a0 ^= b0;
+		a1 ^= b1;
+		a2 ^= b2;
+		a3 ^= b3;
 	}
 
 	[Benchmark(Description = @"ulong")]
@@ -123,16 +148,16 @@ public class Xor64Benchmark
 		Span<byte> a = _a.Span;
 		Span<byte> b = _b.Span;
 
-		Span<ulong> xa = MemoryMarshal.Cast<byte, ulong>(a);
-		ReadOnlySpan<ulong> xb = MemoryMarshal.Cast<byte, ulong>(b);
+		ref byte refA = ref a.GetReference();
+		ref byte refB = ref b.GetReference();
 
-		xa.GetRef(0) ^= xb.GetRef(0);
-		xa.GetRef(1) ^= xb.GetRef(1);
-		xa.GetRef(2) ^= xb.GetRef(2);
-		xa.GetRef(3) ^= xb.GetRef(3);
-		xa.GetRef(4) ^= xb.GetRef(4);
-		xa.GetRef(5) ^= xb.GetRef(5);
-		xa.GetRef(6) ^= xb.GetRef(6);
-		xa.GetRef(7) ^= xb.GetRef(7);
+		Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refA, 0 * sizeof(ulong))) ^= Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refB, 0 * sizeof(ulong)));
+		Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refA, 1 * sizeof(ulong))) ^= Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refB, 1 * sizeof(ulong)));
+		Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refA, 2 * sizeof(ulong))) ^= Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refB, 2 * sizeof(ulong)));
+		Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refA, 3 * sizeof(ulong))) ^= Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refB, 3 * sizeof(ulong)));
+		Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refA, 4 * sizeof(ulong))) ^= Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refB, 4 * sizeof(ulong)));
+		Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refA, 5 * sizeof(ulong))) ^= Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refB, 5 * sizeof(ulong)));
+		Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refA, 6 * sizeof(ulong))) ^= Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refB, 6 * sizeof(ulong)));
+		Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refA, 7 * sizeof(ulong))) ^= Unsafe.As<byte, ulong>(ref Unsafe.Add(ref refB, 7 * sizeof(ulong)));
 	}
 }

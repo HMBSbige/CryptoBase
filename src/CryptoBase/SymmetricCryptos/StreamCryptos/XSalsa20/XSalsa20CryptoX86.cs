@@ -54,7 +54,7 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 	public sealed override void Reset()
 	{
 		Index = 0;
-		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(State), 8)) = 0;
+		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 8)) = 0;
 	}
 
 	protected virtual void SalsaRound(uint[] x)

@@ -62,11 +62,12 @@ public class Crc32X86 : IHash
 	private static uint Update(ReadOnlySpan<byte> buffer, uint crc)
 	{
 		int length = buffer.Length;
+		ref byte ptr = ref buffer.GetReference();
 
-		ref Vector128<ulong> x1 = ref Unsafe.As<byte, Vector128<ulong>>(ref MemoryMarshal.GetReference(buffer));
-		ref Vector128<ulong> x2 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x10));
-		ref Vector128<ulong> x3 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x20));
-		ref Vector128<ulong> x4 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x30));
+		ref Vector128<ulong> x1 = ref Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, 0 * 0x10));
+		ref Vector128<ulong> x2 = ref Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, 1 * 0x10));
+		ref Vector128<ulong> x3 = ref Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, 2 * 0x10));
+		ref Vector128<ulong> x4 = ref Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, 3 * 0x10));
 		Vector128<ulong> vCrc = Vector128.CreateScalar(crc).AsUInt64();
 		x1 = Sse2.Xor(x1, vCrc);
 
@@ -90,13 +91,13 @@ public class Crc32X86 : IHash
 			x3 = Sse2.Xor(x3, t3);
 			x4 = Sse2.Xor(x4, t4);
 
-			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 			offset += 0x10;
-			x2 = Sse2.Xor(x2, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x2 = Sse2.Xor(x2, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 			offset += 0x10;
-			x3 = Sse2.Xor(x3, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x3 = Sse2.Xor(x3, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 			offset += 0x10;
-			x4 = Sse2.Xor(x4, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x4 = Sse2.Xor(x4, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 			offset += 0x10;
 
 			length -= 0x40;
@@ -122,7 +123,7 @@ public class Crc32X86 : IHash
 			t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
 			x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
 			x1 = Sse2.Xor(x1, t);
-			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 
 			length -= 0x10;
 			offset += 0x10;

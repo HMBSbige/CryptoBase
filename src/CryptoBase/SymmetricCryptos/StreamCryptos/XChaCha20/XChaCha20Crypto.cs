@@ -57,6 +57,6 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 	public void SetCounter(ulong counter)
 	{
 		Index = 0;
-		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(State), 12)) = counter;
+		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 12)) = counter;
 	}
 }

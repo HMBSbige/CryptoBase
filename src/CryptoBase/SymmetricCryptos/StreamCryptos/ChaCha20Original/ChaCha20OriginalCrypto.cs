@@ -61,7 +61,7 @@ public abstract class ChaCha20OriginalCrypto : ChaCha20CryptoBase
 	public sealed override void Reset()
 	{
 		Index = 0;
-		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(State), 12)) = 0;
+		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 12)) = 0;
 	}
 
 	protected override void IncrementCounter(Span<uint> state)

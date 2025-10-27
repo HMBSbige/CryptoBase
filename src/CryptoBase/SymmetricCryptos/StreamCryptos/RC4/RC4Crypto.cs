@@ -48,13 +48,19 @@ public class RC4Crypto : StreamCryptoBase
 	{
 		base.Update(source, destination);
 
-		Span<byte> stateSpan = _state;
+		ref readonly byte sourceRef = ref source.GetReference();
+		ref byte destinationRef = ref destination.GetReference();
+		ref byte stateRef = ref _state.GetReference();
+
 		int x = _x;
 		int y = _y;
 
+		Unsafe.CopyBlockUnaligned(ref destinationRef, in sourceRef, (uint)source.Length);
+
 		for (int i = 0; i < source.Length; ++i)
 		{
-			destination.GetRef(i) = (byte)(source.GetRef(i) ^ GetByte(stateSpan));
+			ref byte v = ref GetByte(ref stateRef);
+			Unsafe.Add(ref destinationRef, i) ^= v;
 		}
 
 		_x = x;
@@ -62,23 +68,16 @@ public class RC4Crypto : StreamCryptoBase
 
 		return;
 
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		byte GetByte(in Span<byte> stateSpan)
+		ref byte GetByte(ref byte stateRef)
 		{
 			++x;
 			x &= 0xFF;
-			y += stateSpan.GetRef(x);
+			y += Unsafe.Add(ref stateRef, x);
 			y &= 0xFF;
 
-#pragma warning disable IDE0180
-			// performance
-			// (stateSpan.GetRef(y), stateSpan.GetRef(x)) = (stateSpan.GetRef(x), stateSpan.GetRef(y));
-			byte t = stateSpan.GetRef(x);
-			stateSpan.GetRef(x) = stateSpan.GetRef(y);
-			stateSpan.GetRef(y) = t;
-#pragma warning restore IDE0180
+			(Unsafe.Add(ref stateRef, y), Unsafe.Add(ref stateRef, x)) = (Unsafe.Add(ref stateRef, x), Unsafe.Add(ref stateRef, y));
 
-			return stateSpan.GetRef(stateSpan.GetRef(x) + stateSpan.GetRef(y) & 0xFF);
+			return ref Unsafe.Add(ref stateRef, Unsafe.Add(ref stateRef, x) + Unsafe.Add(ref stateRef, y) & 0xFF);
 		}
 	}
 
@@ -87,19 +86,19 @@ public class RC4Crypto : StreamCryptoBase
 		_x = default;
 		_y = default;
 
-		Span<byte> stateSpan = _state.AsSpan(0, BoxLength);
-		Span<byte> keySpan = _key.AsSpan(0, _keyLength);
+		ref byte stateRef = ref _state.GetReference();
+		ref byte keyRef = ref _key.GetReference();
 
-		S.CopyTo(stateSpan);
+		S.CopyTo(_state);
 
 		int j = 0;
 
 		for (int i = 0; i < BoxLength; ++i)
 		{
-			j += keySpan.GetRef(i % _keyLength);
-			j += stateSpan.GetRef(i);
+			j += Unsafe.Add(ref keyRef, i % _keyLength);
+			j += Unsafe.Add(ref stateRef, i);
 			j &= 0xFF;
-			(stateSpan.GetRef(i), stateSpan.GetRef(j)) = (stateSpan.GetRef(j), stateSpan.GetRef(i));
+			(Unsafe.Add(ref stateRef, i), Unsafe.Add(ref stateRef, j)) = (Unsafe.Add(ref stateRef, j), Unsafe.Add(ref stateRef, i));
 		}
 	}
 

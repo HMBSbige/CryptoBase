@@ -69,11 +69,12 @@ public class Crc32CX86 : IHash
 	private static uint Update(ReadOnlySpan<byte> buffer, uint crc)
 	{
 		int length = buffer.Length;
+		ref byte ptr = ref buffer.GetReference();
 
-		ref Vector128<ulong> x1 = ref Unsafe.As<byte, Vector128<ulong>>(ref MemoryMarshal.GetReference(buffer));
-		ref Vector128<ulong> x2 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x10));
-		ref Vector128<ulong> x3 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x20));
-		ref Vector128<ulong> x4 = ref Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(0x30));
+		ref Vector128<ulong> x1 = ref Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, 0 * 0x10));
+		ref Vector128<ulong> x2 = ref Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, 1 * 0x10));
+		ref Vector128<ulong> x3 = ref Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, 2 * 0x10));
+		ref Vector128<ulong> x4 = ref Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, 3 * 0x10));
 		Vector128<ulong> vCrc = Vector128.CreateScalar(crc).AsUInt64();
 		x1 = Sse2.Xor(x1, vCrc);
 
@@ -97,13 +98,13 @@ public class Crc32CX86 : IHash
 			x3 = Sse2.Xor(x3, t3);
 			x4 = Sse2.Xor(x4, t4);
 
-			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 			offset += 0x10;
-			x2 = Sse2.Xor(x2, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x2 = Sse2.Xor(x2, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 			offset += 0x10;
-			x3 = Sse2.Xor(x3, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x3 = Sse2.Xor(x3, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 			offset += 0x10;
-			x4 = Sse2.Xor(x4, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x4 = Sse2.Xor(x4, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 			offset += 0x10;
 
 			length -= 0x40;
@@ -129,7 +130,7 @@ public class Crc32CX86 : IHash
 			t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
 			x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
 			x1 = Sse2.Xor(x1, t);
-			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref buffer.GetRef(offset)));
+			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 
 			length -= 0x10;
 			offset += 0x10;
@@ -156,42 +157,51 @@ public class Crc32CX86 : IHash
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void UpdateSse42(ReadOnlySpan<byte> source)
 	{
+		int length = source.Length;
+		int offset = 0;
+		ref byte sourceRef = ref source.GetReference();
+		ref uint state = ref _state;
+
 		if (Sse42.X64.IsSupported)
 		{
-			while (source.Length >= 8)
+			while (length >= 8)
 			{
-				ref ulong data = ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(source));
-				_state = (uint)Sse42.X64.Crc32(_state, data);
-				source = source.Slice(8);
+				ref ulong data = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, offset));
+				state = (uint)Sse42.X64.Crc32(state, data);
+				offset += 8;
+				length -= 8;
 			}
 
-			if (source.Length >= 4)
+			if (length >= 4)
 			{
-				ref uint data = ref Unsafe.As<byte, uint>(ref MemoryMarshal.GetReference(source));
-				_state = Sse42.Crc32(_state, data);
-				source = source.Slice(4);
+				ref uint data = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, offset));
+				state = Sse42.Crc32(state, data);
+				offset += 4;
+				length -= 4;
 			}
 		}
 		else
 		{
-			while (source.Length >= 4)
+			while (length >= 4)
 			{
-				ref uint data = ref Unsafe.As<byte, uint>(ref MemoryMarshal.GetReference(source));
-				_state = Sse42.Crc32(_state, data);
-				source = source.Slice(4);
+				ref uint data = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, offset));
+				state = Sse42.Crc32(state, data);
+				offset += 4;
+				length -= 4;
 			}
 		}
 
-		if (source.Length >= 2)
+		if (length >= 2)
 		{
-			ref ushort data = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(source));
-			_state = Sse42.Crc32(_state, data);
-			source = source.Slice(2);
+			ref ushort data = ref Unsafe.As<byte, ushort>(ref Unsafe.Add(ref sourceRef, offset));
+			state = Sse42.Crc32(state, data);
+			offset += 2;
+			length -= 2;
 		}
 
-		foreach (ref readonly byte b in source)
+		if (length > 0)
 		{
-			_state = Sse42.Crc32(_state, b);
+			state = Sse42.Crc32(state, Unsafe.Add(ref sourceRef, offset));
 		}
 	}
 

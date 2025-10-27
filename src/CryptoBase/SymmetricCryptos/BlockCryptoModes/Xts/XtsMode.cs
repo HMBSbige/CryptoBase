@@ -134,8 +134,9 @@ public sealed class XtsMode : BlockCryptoBase
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Gf128Mul(ref Span<byte> buffer)
 	{
-		ref ulong v0 = ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(buffer));
-		ref ulong v1 = ref Unsafe.As<byte, ulong>(ref buffer.GetRef(8));
+		ref byte ptr = ref buffer.GetReference();
+		ref ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref ptr, 0 * sizeof(ulong)));
+		ref ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref ptr, 1 * sizeof(ulong)));
 
 		ulong t = (ulong)((long)v1 >> 63 & 0x87);
 
