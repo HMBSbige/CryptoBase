@@ -42,7 +42,6 @@ public static class FastUtils
 	/// <summary>
 	/// destination = source ^ stream
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static void Xor(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
 		int i = 0;
@@ -124,7 +123,6 @@ public static class FastUtils
 	/// <summary>
 	/// source ^= stream
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static void Xor(Span<byte> source, ReadOnlySpan<byte> stream, int length)
 	{
 		int i = 0;
@@ -200,7 +198,7 @@ public static class FastUtils
 	/// <summary>
 	/// destination = source ^ stream
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Xor16(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		if (Vector128.IsHardwareAccelerated)
@@ -224,7 +222,7 @@ public static class FastUtils
 	/// <summary>
 	/// source ^= stream
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Xor16(Span<byte> source, ReadOnlySpan<byte> stream)
 	{
 		if (Vector128.IsHardwareAccelerated)
@@ -246,7 +244,7 @@ public static class FastUtils
 	/// <summary>
 	/// destination = source ^ stream
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void XorLess16(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
 		int i = 0;

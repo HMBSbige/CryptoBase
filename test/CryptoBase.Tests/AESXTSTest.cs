@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System.Buffers.Binary;
@@ -63,7 +62,7 @@ public class AESXTSTest
 		ReadOnlySpan<byte> key1 = key.Slice(0, key.Length >> 1);
 		ReadOnlySpan<byte> key2 = key.Slice(key.Length >> 1);
 
-		TestInternal(BlockCryptoModeCreate.AesXts(key1, key2, iv), plain, cipher);
+		TestInternal(AESUtils.CreateXts(key1, key2, iv), plain, cipher);
 		TestInternal(new XtsMode(AESUtils.CreateECB(key1), AESUtils.CreateECB(key2), iv), plain, cipher);
 	}
 
@@ -79,7 +78,7 @@ public class AESXTSTest
 		ReadOnlySpan<byte> key1 = key.Slice(0, key.Length >> 1);
 		ReadOnlySpan<byte> key2 = key.Slice(key.Length >> 1);
 
-		TestInternal(BlockCryptoModeCreate.AesXts(key1, key2, iv), plain, cipher);
+		TestInternal(AESUtils.CreateXts(key1, key2, iv), plain, cipher);
 		TestInternal(new XtsMode(AESUtils.CreateECB(key1), AESUtils.CreateECB(key2), iv), plain, cipher);
 	}
 }
