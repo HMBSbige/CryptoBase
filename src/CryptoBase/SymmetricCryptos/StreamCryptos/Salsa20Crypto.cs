@@ -6,6 +6,6 @@ public abstract class Salsa20Crypto : SnuffleCrypto
 
 	protected override void IncrementCounter(Span<uint> state)
 	{
-		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 8));
+		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref state.GetReference(), 8));
 	}
 }

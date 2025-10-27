@@ -85,8 +85,8 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(Span<uint> state, Span<byte> stream, byte rounds)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte streamRef = ref MemoryMarshal.GetReference(stream);
+		ref uint stateRef = ref state.GetReference();
+		ref byte streamRef = ref stream.GetReference();
 
 		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
 		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
@@ -123,7 +123,7 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void SalsaRound(Span<uint> state, byte rounds)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref uint stateRef = ref state.GetReference();
 
 		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
 		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
@@ -309,9 +309,9 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void SalsaCore64(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte destRef = ref destination.GetReference();
 
 		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
 		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
@@ -363,9 +363,9 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void SalsaCore128(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte destRef = ref destination.GetReference();
 
 		ref Vector256<byte> src0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
 		ref Vector256<byte> src1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
@@ -461,9 +461,9 @@ public static class Salsa20Utils
 		int length = source.Length;
 		int offset = 0;
 
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte dstRef = ref destination.GetReference();
 
 		#region s
 
@@ -563,9 +563,9 @@ public static class Salsa20Utils
 		int length = source.Length;
 		int offset = 0;
 
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte dstRef = ref destination.GetReference();
 
 		Vector256<uint> o0 = Vector256.Create(Unsafe.Add(ref stateRef, 0));
 		Vector256<uint> o1 = Vector256.Create(Unsafe.Add(ref stateRef, 1));

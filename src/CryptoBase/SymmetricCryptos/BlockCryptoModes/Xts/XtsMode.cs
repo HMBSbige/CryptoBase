@@ -21,7 +21,7 @@ public sealed class XtsMode : BlockCryptoBase
 
 		_dataCrypto = dataCrypto;
 		_tweakCrypto = tweakCrypto;
-		_iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
+		_iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref iv.GetReference());
 	}
 
 	[SkipLocalsInit]

@@ -100,8 +100,8 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(Span<uint> state, Span<byte> stream, byte rounds)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte streamRef = ref MemoryMarshal.GetReference(stream);
+		ref uint stateRef = ref state.GetReference();
+		ref byte streamRef = ref stream.GetReference();
 
 		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
 		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
@@ -136,13 +136,13 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementCounterOriginal(Span<uint> state)
 	{
-		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12));
+		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref state.GetReference(), 12));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementCounter(Span<uint> state)
 	{
-		ref uint counter = ref Unsafe.Add(ref MemoryMarshal.GetReference(state), 12);
+		ref uint counter = ref Unsafe.Add(ref state.GetReference(), 12);
 
 		if (++counter is 0)
 		{
@@ -161,7 +161,7 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ChaChaRound(Span<uint> state, byte rounds)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
+		ref uint stateRef = ref state.GetReference();
 
 		ref Vector128<uint> x0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
 		ref Vector128<uint> x1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
@@ -217,9 +217,9 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ChaChaCore64Internal(byte rounds, ReadOnlySpan<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte destRef = ref destination.GetReference();
 
 		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
 		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
@@ -286,9 +286,9 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ChaChaCoreOriginal128(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte destRef = ref destination.GetReference();
 
 		ref Vector256<byte> src0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
 		ref Vector256<byte> src1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
@@ -338,9 +338,9 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ChaChaCore128(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte destRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte destRef = ref destination.GetReference();
 
 		ref Vector256<byte> src0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
 		ref Vector256<byte> src1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
@@ -401,9 +401,9 @@ internal static class ChaCha20Utils
 		int length = source.Length;
 		int offset = 0;
 
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte dstRef = ref destination.GetReference();
 
 		Vector128<uint> o0 = Vector128.Create(Unsafe.Add(ref stateRef, 0));
 		Vector128<uint> o1 = Vector128.Create(Unsafe.Add(ref stateRef, 1));
@@ -489,9 +489,9 @@ internal static class ChaCha20Utils
 		int length = source.Length;
 		int offset = 0;
 
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte dstRef = ref destination.GetReference();
 
 		Vector128<uint> o0 = Vector128.Create(Unsafe.Add(ref stateRef, 0));
 		Vector128<uint> o1 = Vector128.Create(Unsafe.Add(ref stateRef, 1));
@@ -617,9 +617,9 @@ internal static class ChaCha20Utils
 		int length = source.Length;
 		int offset = 0;
 
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte dstRef = ref destination.GetReference();
 
 		Vector256<uint> o0 = Vector256.Create(Unsafe.Add(ref stateRef, 0));
 		Vector256<uint> o1 = Vector256.Create(Unsafe.Add(ref stateRef, 1));
@@ -740,9 +740,9 @@ internal static class ChaCha20Utils
 		int length = source.Length;
 		int offset = 0;
 
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+		ref uint stateRef = ref state.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+		ref byte dstRef = ref destination.GetReference();
 
 		Vector256<uint> o0 = Vector256.Create(Unsafe.Add(ref stateRef, 0));
 		Vector256<uint> o1 = Vector256.Create(Unsafe.Add(ref stateRef, 1));

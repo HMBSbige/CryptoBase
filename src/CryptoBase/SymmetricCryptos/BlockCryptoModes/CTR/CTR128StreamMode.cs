@@ -54,7 +54,7 @@ public class CTR128StreamMode : IStreamCrypto
 			{
 				crypto.Encrypt(counter, stream);
 
-				ref UInt128 c = ref Unsafe.As<byte, UInt128>(ref MemoryMarshal.GetReference(counter));
+				ref UInt128 c = ref Unsafe.As<byte, UInt128>(ref counter.GetReference());
 				c = BinaryPrimitives.ReverseEndianness(BinaryPrimitives.ReverseEndianness(c) + 1);
 			}
 

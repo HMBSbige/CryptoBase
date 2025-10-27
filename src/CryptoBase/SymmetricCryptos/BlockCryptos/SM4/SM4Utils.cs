@@ -201,8 +201,8 @@ public static class SM4Utils
 
 	public static void Encrypt16(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-		ref byte dstRef = ref MemoryMarshal.GetReference(destination);
+		ref byte sourceRef = ref source.GetReference();
+		ref byte dstRef = ref destination.GetReference();
 
 		ref Vector256<byte> s0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
 		ref Vector256<byte> s1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
