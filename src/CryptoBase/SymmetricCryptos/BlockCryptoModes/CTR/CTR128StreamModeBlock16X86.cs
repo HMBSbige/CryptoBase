@@ -35,8 +35,7 @@ public sealed class CTR128StreamModeBlock16X86 : IStreamCrypto
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize16);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize16);
 
-		ref byte ivRef = ref iv.GetReference();
-		_iCounter = FastUtils.BroadcastVector128ToVector256(ref ivRef).ReverseEndianness128().IncUpper128Le();
+		_iCounter = FastUtils.BroadcastVector128ToVector256(ref iv.GetReference()).ReverseEndianness128().IncUpper128Le();
 
 		Reset();
 	}

@@ -136,8 +136,7 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncrementCounterOriginal(Span<uint> state)
 	{
-		ref uint stateRef = ref state.GetReference();
-		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 12));
+		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref state.GetReference(), 12));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

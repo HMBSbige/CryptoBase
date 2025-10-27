@@ -35,8 +35,7 @@ public sealed class CTR128StreamModeBlock8X86 : IStreamCrypto
 		_counter = ArrayPool<byte>.Shared.Rent(BlockSize8);
 		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize8);
 
-		ref byte ivRef = ref iv.GetReference();
-		ref Vector128<byte> v = ref Unsafe.As<byte, Vector128<byte>>(ref ivRef);
+		ref Vector128<byte> v = ref Unsafe.As<byte, Vector128<byte>>(ref iv.GetReference());
 		_iCounter = v.ReverseEndianness128();
 
 		Reset();

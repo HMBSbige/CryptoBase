@@ -18,8 +18,7 @@ public sealed class GHashX86 : IMac
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(key.Length, KeySize, nameof(key));
 
-		ref byte keyRef = ref key.GetReference();
-		ref Vector128<byte> v = ref Unsafe.As<byte, Vector128<byte>>(ref keyRef);
+		ref Vector128<byte> v = ref Unsafe.As<byte, Vector128<byte>>(ref key.GetReference());
 		_key = v.ReverseEndianness128();
 
 		Reset();
@@ -29,8 +28,7 @@ public sealed class GHashX86 : IMac
 	private void GFMul(scoped ReadOnlySpan<byte> x)
 	{
 		Vector128<ulong> a = _key.AsUInt64();
-		ref byte xRef = ref x.GetReference();
-		Vector128<ulong> b = (Unsafe.As<byte, Vector128<byte>>(ref xRef).ReverseEndianness128() ^ _buffer).AsUInt64();
+		Vector128<ulong> b = (Unsafe.As<byte, Vector128<byte>>(ref x.GetReference()).ReverseEndianness128() ^ _buffer).AsUInt64();
 
 		Vector128<uint> tmp3 = Pclmulqdq.CarrylessMultiply(a, b, 0x00).AsUInt32();
 		Vector128<uint> tmp4 = Pclmulqdq.CarrylessMultiply(a, b, 0x10).AsUInt32();

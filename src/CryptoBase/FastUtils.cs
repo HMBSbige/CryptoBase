@@ -205,25 +205,17 @@ public static class FastUtils
 	{
 		if (Vector128.IsHardwareAccelerated)
 		{
-			ref byte streamRef = ref stream.GetReference();
-			ref byte sourceRef = ref source.GetReference();
-			ref byte destRef = ref destination.GetReference();
-
-			ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref streamRef);
-			ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref sourceRef);
-			ref Vector128<byte> dst = ref Unsafe.As<byte, Vector128<byte>>(ref destRef);
+			ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref stream.GetReference());
+			ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref source.GetReference());
+			ref Vector128<byte> dst = ref Unsafe.As<byte, Vector128<byte>>(ref destination.GetReference());
 
 			dst = v0 ^ v1;
 		}
 		else
 		{
-			ref byte streamRef = ref stream.GetReference();
-			ref byte sourceRef = ref source.GetReference();
-			ref byte destRef = ref destination.GetReference();
-
-			ref UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref streamRef);
-			ref UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref sourceRef);
-			ref UInt128 dst = ref Unsafe.As<byte, UInt128>(ref destRef);
+			ref UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref stream.GetReference());
+			ref UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref source.GetReference());
+			ref UInt128 dst = ref Unsafe.As<byte, UInt128>(ref destination.GetReference());
 
 			dst = v0 ^ v1;
 		}
@@ -237,21 +229,15 @@ public static class FastUtils
 	{
 		if (Vector128.IsHardwareAccelerated)
 		{
-			ref byte sourceRef = ref source.GetReference();
-			ref byte streamRef = ref stream.GetReference();
-
-			ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref sourceRef);
-			ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref streamRef);
+			ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref source.GetReference());
+			ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref stream.GetReference());
 
 			v0 ^= v1;
 		}
 		else
 		{
-			ref byte sourceRef = ref source.GetReference();
-			ref byte streamRef = ref stream.GetReference();
-
-			ref UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref sourceRef);
-			ref UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref streamRef);
+			ref UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref source.GetReference());
+			ref UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref stream.GetReference());
 
 			v0 ^= v1;
 		}
