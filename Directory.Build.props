@@ -2,9 +2,13 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <Version>1.7.2</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>1.7.2</Version>
     <IsPackable>false</IsPackable>
     <Authors>HMBSbige</Authors>
     <Copyright>Copyright © HMBSbige</Copyright>
@@ -18,4 +22,5 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
 </Project>
