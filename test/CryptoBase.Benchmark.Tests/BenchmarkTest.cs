@@ -187,4 +187,10 @@ public class BenchmarkTest
 	{
 		BenchmarkRunner.Run<XorBenchmark>();
 	}
+
+	[Fact]
+	public void VectorConstBench()
+	{
+		BenchmarkRunner.Run<VectorConstBench>();
+	}
 }
