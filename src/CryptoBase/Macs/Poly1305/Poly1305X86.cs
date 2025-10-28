@@ -139,7 +139,7 @@ public ref struct Poly1305X86 : IMac
 	/// d = h * r
 	/// </summary>
 	private void MultiplyR(
-		ref Vector128<uint> h01, ref Vector128<uint> h23, ref Vector128<uint> h44,
+		ref readonly Vector128<uint> h01, ref readonly Vector128<uint> h23, ref readonly Vector128<uint> h44,
 		out ulong d0, out ulong d1, out ulong d2, out ulong d3, out ulong d4)
 	{
 		// h0 * r0 + h2 * s3

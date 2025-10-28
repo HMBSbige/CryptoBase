@@ -59,7 +59,7 @@ internal static class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Step(ref uint a, ref uint b, ref uint c, byte i)
+	private static void Step(ref uint a, ref readonly uint b, ref uint c, byte i)
 	{
 		a += b;
 		c = (a ^ c).RotateLeft(i);
