@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace CryptoBase.Digests.SHA512;
 
 public class DefaultSHA512Digest : DefaultDigest

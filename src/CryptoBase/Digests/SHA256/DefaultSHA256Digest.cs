@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace CryptoBase.Digests.SHA256;
 
 public class DefaultSHA256Digest : DefaultDigest

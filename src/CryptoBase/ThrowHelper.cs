@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace CryptoBase;
 
 internal static class ThrowHelper

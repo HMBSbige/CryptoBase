@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
-using System.Security.Cryptography;
 using Aes = System.Security.Cryptography.Aes;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;

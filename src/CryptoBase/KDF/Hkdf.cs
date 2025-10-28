@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
-using System.Security.Cryptography;
 
 namespace CryptoBase.KDF;
 

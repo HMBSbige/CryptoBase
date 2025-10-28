@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace CryptoBase.Digests.MD5;
 
 public class DefaultMD5Digest : DefaultDigest

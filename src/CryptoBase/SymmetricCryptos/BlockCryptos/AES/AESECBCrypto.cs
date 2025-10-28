@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 public sealed class AESECBCrypto : DefaultAESCrypto

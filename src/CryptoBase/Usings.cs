@@ -14,5 +14,6 @@ global using System.Runtime.CompilerServices;
 global using System.Runtime.InteropServices;
 global using System.Runtime.Intrinsics;
 global using System.Runtime.Intrinsics.X86;
+global using System.Security.Cryptography;
 global using AesArm = System.Runtime.Intrinsics.Arm.Aes;
 global using AesX86 = System.Runtime.Intrinsics.X86.Aes;

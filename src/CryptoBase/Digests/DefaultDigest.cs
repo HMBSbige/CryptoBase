@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace CryptoBase.Digests;
 
 public abstract class DefaultDigest : IHash

@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace CryptoBase;
 
 public readonly ref struct CryptoBuffer : IDisposable

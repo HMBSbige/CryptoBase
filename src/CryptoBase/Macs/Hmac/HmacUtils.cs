@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Digests;
-using System.Security.Cryptography;
 
 namespace CryptoBase.Macs.Hmac;
 
