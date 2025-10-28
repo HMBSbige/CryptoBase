@@ -4,15 +4,15 @@ public sealed class CryptoArrayPool<T>(int length) : IDisposable where T : struc
 {
 	public readonly T[] Array = ArrayPool<T>.Shared.Rent(length);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Span<T> GetSpan()
+	public Span<T> Span
 	{
-		return Array.AsSpan(0, length);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Array.AsSpan(0, length);
 	}
 
 	public void Dispose()
 	{
-		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(GetSpan()));
+		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(Span));
 		ArrayPool<T>.Shared.Return(Array);
 	}
 }

@@ -25,7 +25,7 @@ public sealed class XtsMode : IBlockModeOneShot
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		using CryptoBuffer cryptoBuffer = new(stackalloc byte[BlockSize]);
+		using CryptoBuffer<byte> cryptoBuffer = new(stackalloc byte[BlockSize]);
 		Span<byte> tweak = cryptoBuffer.Span;
 		_tweakCrypto.Encrypt(iv, tweak);
 		IBlockCrypto crypto = _dataCrypto;
@@ -33,7 +33,7 @@ public sealed class XtsMode : IBlockModeOneShot
 		int left = source.Length % BlockSize;
 		int size = source.Length - left;
 
-		using (CryptoBuffer buffer = new(size))
+		using (CryptoBuffer<byte> buffer = new(size))
 		{
 			Span<byte> tweakBuffer = buffer.Span;
 
@@ -74,7 +74,7 @@ public sealed class XtsMode : IBlockModeOneShot
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		using CryptoBuffer cryptoBuffer = new(stackalloc byte[BlockSize]);
+		using CryptoBuffer<byte> cryptoBuffer = new(stackalloc byte[BlockSize]);
 		Span<byte> tweak = cryptoBuffer.Span;
 		_tweakCrypto.Encrypt(iv, tweak);
 		IBlockCrypto crypto = _dataCrypto;
@@ -82,7 +82,7 @@ public sealed class XtsMode : IBlockModeOneShot
 		int left = source.Length % BlockSize;
 		int size = source.Length - left - (BlockSize & (left | -left) >> 31);
 
-		using (CryptoBuffer buffer = new(size))
+		using (CryptoBuffer<byte> buffer = new(size))
 		{
 			Span<byte> tweakBuffer = buffer.Span;
 
@@ -105,7 +105,7 @@ public sealed class XtsMode : IBlockModeOneShot
 
 		if (left is not 0)
 		{
-			using CryptoBuffer buffer = new(stackalloc byte[BlockSize]);
+			using CryptoBuffer<byte> buffer = new(stackalloc byte[BlockSize]);
 			Span<byte> finalTweak = buffer.Span;
 			tweak.CopyTo(finalTweak);
 			Gf128Mul(ref finalTweak);

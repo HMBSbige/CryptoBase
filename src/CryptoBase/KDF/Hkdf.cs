@@ -120,7 +120,7 @@ public static class Hkdf
 
 	private static void DeriveKeyInternal(DigestType type, int hashLength, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
 	{
-		using CryptoBuffer buffer = new(stackalloc byte[hashLength]);
+		using CryptoBuffer<byte> buffer = new(stackalloc byte[hashLength]);
 		Span<byte> prk = buffer.Span;
 
 		ExtractInternal(type, ikm, salt, prk);
