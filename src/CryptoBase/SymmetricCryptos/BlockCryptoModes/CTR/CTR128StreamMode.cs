@@ -86,7 +86,6 @@ public class CTR128StreamMode : IStreamCrypto
 
 	public void Reset()
 	{
-		_internalBlockCrypto.Reset();
 		_index = 0;
 
 		Span<byte> c = _counter.AsSpan(0, BlockSize);

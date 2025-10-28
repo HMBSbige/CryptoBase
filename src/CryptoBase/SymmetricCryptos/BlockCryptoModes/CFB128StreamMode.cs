@@ -81,7 +81,6 @@ public class CFB128StreamMode : IStreamCrypto
 
 	public void Reset()
 	{
-		_internalBlockCrypto.Reset();
 		_index = 0;
 
 		_iv.CopyTo(_block);

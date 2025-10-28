@@ -1,6 +1,6 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
-public interface IBlockCrypto : ISymmetricCrypto, ICanReset
+public interface IBlockCrypto : ISymmetricCrypto
 {
 	/// <summary>
 	/// 块大小，单位字节

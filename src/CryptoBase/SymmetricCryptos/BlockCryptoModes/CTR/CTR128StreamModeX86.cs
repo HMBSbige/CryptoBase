@@ -79,7 +79,6 @@ public class CTR128StreamModeX86 : IStreamCrypto
 
 	public void Reset()
 	{
-		_internalBlockCrypto.Reset();
 		_index = 0;
 		_counterV = _iCounter;
 	}

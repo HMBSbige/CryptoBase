@@ -5,6 +5,7 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 public abstract class DefaultAESCrypto : AESCrypto
 {
 	protected abstract ICryptoTransform Encryptor { get; }
+
 	protected abstract ICryptoTransform Decryptor { get; }
 
 	private readonly byte[] _buffer;
@@ -20,7 +21,7 @@ public abstract class DefaultAESCrypto : AESCrypto
 	{
 		base.Encrypt(source, destination);
 
-		source[..BlockSize].CopyTo(_buffer);
+		source.Slice(0, BlockSize).CopyTo(_buffer);
 		Encryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
 		_outBuffer.CopyTo(destination);
 	}
@@ -29,17 +30,9 @@ public abstract class DefaultAESCrypto : AESCrypto
 	{
 		base.Decrypt(source, destination);
 
-		source[..BlockSize].CopyTo(_buffer);
+		source.Slice(0, BlockSize).CopyTo(_buffer);
 		Decryptor.TransformBlock(_buffer, 0, BlockSize, _outBuffer, 0);
 		_outBuffer.CopyTo(destination);
-	}
-
-	public override void Reset()
-	{
-		base.Reset();
-
-		Encryptor.TransformFinalBlock([], 0, 0);
-		Decryptor.TransformFinalBlock([], 0, 0);
 	}
 
 	public override void Dispose()
@@ -51,5 +44,7 @@ public abstract class DefaultAESCrypto : AESCrypto
 
 		ArrayPool<byte>.Shared.Return(_buffer);
 		ArrayPool<byte>.Shared.Return(_outBuffer);
+
+		GC.SuppressFinalize(this);
 	}
 }

@@ -7,38 +7,24 @@ namespace CryptoBase.Tests;
 
 public class AESCBCTest
 {
-	private static void Test_Internal(IBlockCrypto crypto, string hex1, string hex2)
+	private static void Test_Internal(IBlockCrypto crypto, ReadOnlySpan<byte> plain, ReadOnlySpan<byte> ciper)
 	{
 		Assert.Equal(@"AES-CBC", crypto.Name);
 		Assert.Equal(16, crypto.BlockSize);
 
-		Span<byte> h1 = hex1.FromHex();
-		Span<byte> h2 = hex2.FromHex();
-		Span<byte> o1 = stackalloc byte[crypto.BlockSize];
+		Span<byte> o = stackalloc byte[ciper.Length];
 
-		crypto.Encrypt(h1, o1);
-		Assert.True(o1.SequenceEqual(h2));
+		crypto.Encrypt(plain, o);
+		Assert.True(o.SequenceEqual(ciper));
 
-		crypto.Reset();
-
-		crypto.Encrypt(h1, o1);
-		Assert.True(o1.SequenceEqual(h2));
-
-		crypto.Reset();
-
-		crypto.Decrypt(h2, o1);
-		Assert.True(o1.SequenceEqual(h1));
-
-		crypto.Reset();
-
-		crypto.Decrypt(h2, o1);
-		Assert.True(o1.SequenceEqual(h1));
+		crypto.Decrypt(ciper, o);
+		Assert.True(o.SequenceEqual(plain));
 
 		crypto.Dispose();
 	}
 
 	/// <summary>
-	/// https://gchq.github.io/CyberChef/#recipe=AES_Encrypt(%7B'option':'Hex','string':''%7D,%7B'option':'Hex','string':''%7D,'CBC','Hex','Hex','')
+	/// https://gchq.github.io/CyberChef/#recipe=AES_Encrypt(%7B'option':'Hex','string':''%7D,%7B'option':'Hex','string':''%7D,'CBC/NoPadding','Hex','Hex',%7B'option':'Hex','string':''%7D)
 	/// </summary>
 	[Theory]
 	[InlineData(@"000102030405060708090a0b0c0d0e0f",
@@ -55,9 +41,12 @@ public class AESCBCTest
 		@"93010f33350c4e774778bea533e18cf2")]
 	public void Test(string keyHex, string ivHex, string hex1, string hex2)
 	{
-		byte[] key = keyHex.FromHex();
-		byte[] iv = ivHex.FromHex();
-		Test_Internal(new AESCBCCrypto(key, iv), hex1, hex2);
-		Test_Internal(new CBCBlockMode(AESUtils.CreateECB(key), iv), hex1, hex2);
+		ReadOnlySpan<byte> key = keyHex.FromHex();
+		ReadOnlySpan<byte> iv = ivHex.FromHex();
+		ReadOnlySpan<byte> plain = hex1.FromHex();
+		ReadOnlySpan<byte> cipher = hex2.FromHex();
+
+		Test_Internal(new AESCBCCrypto(key, iv), plain, cipher);
+		Test_Internal(new CBCBlockMode(AESUtils.CreateECB(key), iv), plain, cipher);
 	}
 }

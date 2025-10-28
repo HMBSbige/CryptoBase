@@ -29,6 +29,7 @@ public sealed class CBCBlockMode : BlockCryptoBase
 	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Encrypt(source, destination);
+		Reset();
 
 		FastUtils.Xor(_block, source, destination, BlockSize);
 
@@ -40,6 +41,7 @@ public sealed class CBCBlockMode : BlockCryptoBase
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
+		Reset();
 
 		_internalBlockCrypto.Decrypt(source, destination);
 
@@ -48,11 +50,9 @@ public sealed class CBCBlockMode : BlockCryptoBase
 		source.Slice(0, BlockSize).CopyTo(_block);
 	}
 
-	public override void Reset()
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void Reset()
 	{
-		base.Reset();
-		_internalBlockCrypto.Reset();
-
 		_iv.Span.CopyTo(_block);
 	}
 

@@ -108,7 +108,6 @@ public sealed class CTR128StreamModeBlock16X86 : IStreamCrypto
 
 	public void Reset()
 	{
-		_internalBlockCrypto.Reset();
 		_index = 0;
 		_counterV0 = _iCounter;
 		_counterV1 = _counterV0.AddTwo128Le();

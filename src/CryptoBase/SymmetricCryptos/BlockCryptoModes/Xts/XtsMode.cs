@@ -144,12 +144,6 @@ public sealed class XtsMode : BlockCryptoBase
 		v0 = v0 << 1 ^ t;
 	}
 
-	public override void Reset()
-	{
-		_dataCrypto.Reset();
-		_tweakCrypto.Reset();
-	}
-
 	public override void Dispose()
 	{
 		_dataCrypto.Dispose();

@@ -18,8 +18,6 @@ public abstract class BlockCryptoBase : IBlockCrypto
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 	}
 
-	public virtual void Reset() { }
-
 	public virtual void Dispose()
 	{
 		GC.SuppressFinalize(this);
