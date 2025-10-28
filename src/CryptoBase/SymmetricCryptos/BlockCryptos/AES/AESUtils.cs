@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
 using Aes = System.Security.Cryptography.Aes;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
@@ -47,11 +46,5 @@ public static class AESUtils
 		}
 
 		return new AESCBCCrypto(key, iv);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static IBlockCrypto CreateXts(ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv)
-	{
-		return new XtsMode(CreateECB(key1), CreateECB(key2), iv);
 	}
 }

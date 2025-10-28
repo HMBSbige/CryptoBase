@@ -2,34 +2,28 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
 
-public sealed class XtsMode : BlockCryptoBase
+public sealed class XtsMode : IBlockModeOneShot
 {
-	private readonly Vector128<byte> _iv;
-
-	public override string Name => _dataCrypto.Name + @"-XTS";
-
-	public override int BlockSize => 16;
+	public int BlockSize => 16;
 
 	private readonly IBlockCrypto _dataCrypto;
 	private readonly IBlockCrypto _tweakCrypto;
 
-	public XtsMode(IBlockCrypto dataCrypto, IBlockCrypto tweakCrypto, ReadOnlySpan<byte> iv)
+	public XtsMode(IBlockCrypto dataCrypto, IBlockCrypto tweakCrypto)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(dataCrypto.BlockSize, BlockSize, nameof(dataCrypto));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(tweakCrypto.BlockSize, BlockSize, nameof(tweakCrypto));
-		ArgumentOutOfRangeException.ThrowIfLessThan(iv.Length, BlockSize, nameof(iv));
 
 		_dataCrypto = dataCrypto;
 		_tweakCrypto = tweakCrypto;
-		_iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref iv.GetReference());
 	}
 
 	[SkipLocalsInit]
-	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Encrypt(ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		base.Encrypt(source, destination);
-
-		ReadOnlySpan<byte> iv = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<Vector128<byte>, byte>(ref Unsafe.AsRef(in _iv)), BlockSize);
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
 		using CryptoBuffer cryptoBuffer = new(stackalloc byte[BlockSize]);
 		Span<byte> tweak = cryptoBuffer.Span;
@@ -74,11 +68,12 @@ public sealed class XtsMode : BlockCryptoBase
 	}
 
 	[SkipLocalsInit]
-	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Decrypt(ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		base.Decrypt(source, destination);
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		ReadOnlySpan<byte> iv = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<Vector128<byte>, byte>(ref Unsafe.AsRef(in _iv)), BlockSize);
 		using CryptoBuffer cryptoBuffer = new(stackalloc byte[BlockSize]);
 		Span<byte> tweak = cryptoBuffer.Span;
 		_tweakCrypto.Encrypt(iv, tweak);
@@ -144,9 +139,8 @@ public sealed class XtsMode : BlockCryptoBase
 		v0 = v0 << 1 ^ t;
 	}
 
-	public override void Dispose()
+	public static void GetIv(Span<byte> iv, UInt128 dataUnitSeqNumber)
 	{
-		_dataCrypto.Dispose();
-		_tweakCrypto.Dispose();
+		BinaryPrimitives.WriteUInt128LittleEndian(iv, dataUnitSeqNumber);
 	}
 }
