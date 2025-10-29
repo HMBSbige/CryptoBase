@@ -440,13 +440,12 @@ internal static class ChaCha20Utils
 			Vector128<uint> x15 = o15;
 
 			Vector128<uint> t0 = Vector128.Create(counter).AsUInt32();
-			Vector128<uint> t1 = t0;
 
 			Vector128<uint> x12 = Sse2.Add(incCounter01, t0.AsUInt64()).AsUInt32();
 			Vector128<uint> x13 = Sse2.Add(incCounter23, t0.AsUInt64()).AsUInt32();
 
 			t0 = Sse2.UnpackLow(x12, x13);
-			t1 = Sse2.UnpackHigh(x12, x13);
+			Vector128<uint> t1 = Sse2.UnpackHigh(x12, x13);
 
 			x12 = Sse2.UnpackLow(t0, t1);
 			x13 = Sse2.UnpackHigh(t0, t1);
@@ -652,13 +651,12 @@ internal static class ChaCha20Utils
 			Vector256<uint> x15 = o15;
 
 			Vector256<uint> x12 = Vector256.Create(counter).AsUInt32();
-			Vector256<uint> x13 = x12;
 
 			Vector256<uint> t0 = Avx2.Add(incCounter0123, x12.AsUInt64()).AsUInt32();
 			Vector256<uint> t1 = Avx2.Add(incCounter4567, x12.AsUInt64()).AsUInt32();
 
 			x12 = Avx2.UnpackLow(t0, t1);
-			x13 = Avx2.UnpackHigh(t0, t1);
+			Vector256<uint> x13 = Avx2.UnpackHigh(t0, t1);
 
 			t0 = Avx2.UnpackLow(x12, x13);
 			t1 = Avx2.UnpackHigh(x12, x13);
@@ -684,41 +682,17 @@ internal static class ChaCha20Utils
 			}
 
 			AddTransposeXor(
-				ref x0,
-				ref x1,
-				ref x2,
-				ref x3,
-				ref x4,
-				ref x5,
-				ref x6,
-				ref x7,
-				ref o0,
-				ref o1,
-				ref o2,
-				ref o3,
-				ref o4,
-				ref o5,
-				ref o6,
-				ref o7,
+				ref x0, ref x1, ref x2, ref x3,
+				ref x4, ref x5, ref x6, ref x7,
+				ref o0, ref o1, ref o2, ref o3,
+				ref o4, ref o5, ref o6, ref o7,
 				ref Unsafe.Add(ref sourceRef, offset),
 				ref Unsafe.Add(ref dstRef, offset));
 			AddTransposeXor(
-				ref x8,
-				ref x9,
-				ref x10,
-				ref x11,
-				ref x12,
-				ref x13,
-				ref x14,
-				ref x15,
-				ref o8,
-				ref o9,
-				ref o10,
-				ref o11,
-				ref o12,
-				ref o13,
-				ref o14,
-				ref o15,
+				ref x8, ref x9, ref x10, ref x11,
+				ref x12, ref x13, ref x14, ref x15,
+				ref o8, ref o9, ref o10, ref o11,
+				ref o12, ref o13, ref o14, ref o15,
 				ref Unsafe.Add(ref sourceRef, offset + 32),
 				ref Unsafe.Add(ref dstRef, offset + 32));
 
@@ -794,41 +768,17 @@ internal static class ChaCha20Utils
 			}
 
 			AddTransposeXor(
-				ref x0,
-				ref x1,
-				ref x2,
-				ref x3,
-				ref x4,
-				ref x5,
-				ref x6,
-				ref x7,
-				ref o0,
-				ref o1,
-				ref o2,
-				ref o3,
-				ref o4,
-				ref o5,
-				ref o6,
-				ref o7,
+				ref x0, ref x1, ref x2, ref x3,
+				ref x4, ref x5, ref x6, ref x7,
+				ref o0, ref o1, ref o2, ref o3,
+				ref o4, ref o5, ref o6, ref o7,
 				ref Unsafe.Add(ref sourceRef, offset),
 				ref Unsafe.Add(ref dstRef, offset));
 			AddTransposeXor(
-				ref x8,
-				ref x9,
-				ref x10,
-				ref x11,
-				ref x12,
-				ref x13,
-				ref x14,
-				ref x15,
-				ref o8,
-				ref o9,
-				ref o10,
-				ref o11,
-				ref o12,
-				ref o13,
-				ref o14,
-				ref o15,
+				ref x8, ref x9, ref x10, ref x11,
+				ref x12, ref x13, ref x14, ref x15,
+				ref o8, ref o9, ref o10, ref o11,
+				ref o12, ref o13, ref o14, ref o15,
 				ref Unsafe.Add(ref sourceRef, offset + 32),
 				ref Unsafe.Add(ref dstRef, offset + 32));
 

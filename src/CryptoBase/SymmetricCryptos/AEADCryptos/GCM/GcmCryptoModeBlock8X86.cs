@@ -13,7 +13,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 	public const int NonceSize = 12;
 	public const int TagSize = 16;
 
-	private static ReadOnlySpan<byte> Init => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
 	private readonly IBlockCrypto _crypto;
 	private readonly IBlockCrypto _crypto8;
@@ -82,24 +82,24 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 		counter0[3] = 2;
 		_gHash.Update(associatedData);
 
-		Vector128<uint> vCounter1 = Vector128.Create(6u, 7, 8, 9);
+		Vector128<uint> v1 = Vector128.Create(6u, 7, 8, 9);
 		Vector128<uint> vAdd4 = Vector128.Create(4u);
 
 		while (!source.IsEmpty)
 		{
 			_crypto8.Encrypt(counterBlock, _buffer);
 
-			Vector128<uint> v0 = Sse2.Add(vCounter1, vAdd4);
-			vCounter1 = Sse2.Add(v0, vAdd4);
+			Vector128<uint> v0 = Sse2.Add(v1, vAdd4);
+			v1 = Sse2.Add(v0, vAdd4);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
 			BinaryPrimitives.WriteUInt32BigEndian(counter2, v0.GetElement(2));
 			BinaryPrimitives.WriteUInt32BigEndian(counter3, v0.GetElement(3));
-			BinaryPrimitives.WriteUInt32BigEndian(counter4, vCounter1.GetElement(0));
-			BinaryPrimitives.WriteUInt32BigEndian(counter5, vCounter1.GetElement(1));
-			BinaryPrimitives.WriteUInt32BigEndian(counter6, vCounter1.GetElement(2));
-			BinaryPrimitives.WriteUInt32BigEndian(counter7, vCounter1.GetElement(3));
+			BinaryPrimitives.WriteUInt32BigEndian(counter4, v1.GetElement(0));
+			BinaryPrimitives.WriteUInt32BigEndian(counter5, v1.GetElement(1));
+			BinaryPrimitives.WriteUInt32BigEndian(counter6, v1.GetElement(2));
+			BinaryPrimitives.WriteUInt32BigEndian(counter7, v1.GetElement(3));
 
 			int n = Math.Min(source.Length, BlockSize8);
 
@@ -161,24 +161,24 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 		counter0[3] = 2;
 		_gHash.Update(associatedData);
 
-		Vector128<uint> vCounter1 = Vector128.Create(6u, 7, 8, 9);
+		Vector128<uint> v1 = Vector128.Create(6u, 7, 8, 9);
 		Vector128<uint> vAdd4 = Vector128.Create(4u);
 
 		while (!source.IsEmpty)
 		{
 			_crypto8.Encrypt(counterBlock, _buffer);
 
-			Vector128<uint> v0 = Sse2.Add(vCounter1, vAdd4);
-			vCounter1 = Sse2.Add(v0, vAdd4);
+			Vector128<uint> v0 = Sse2.Add(v1, vAdd4);
+			v1 = Sse2.Add(v0, vAdd4);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
 			BinaryPrimitives.WriteUInt32BigEndian(counter2, v0.GetElement(2));
 			BinaryPrimitives.WriteUInt32BigEndian(counter3, v0.GetElement(3));
-			BinaryPrimitives.WriteUInt32BigEndian(counter4, vCounter1.GetElement(0));
-			BinaryPrimitives.WriteUInt32BigEndian(counter5, vCounter1.GetElement(1));
-			BinaryPrimitives.WriteUInt32BigEndian(counter6, vCounter1.GetElement(2));
-			BinaryPrimitives.WriteUInt32BigEndian(counter7, vCounter1.GetElement(3));
+			BinaryPrimitives.WriteUInt32BigEndian(counter4, v1.GetElement(0));
+			BinaryPrimitives.WriteUInt32BigEndian(counter5, v1.GetElement(1));
+			BinaryPrimitives.WriteUInt32BigEndian(counter6, v1.GetElement(2));
+			BinaryPrimitives.WriteUInt32BigEndian(counter7, v1.GetElement(3));
 
 			int n = Math.Min(source.Length, BlockSize8);
 

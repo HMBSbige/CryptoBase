@@ -606,13 +606,12 @@ public static class Salsa20Utils
 			Vector256<uint> x15 = o15;
 
 			Vector256<uint> x8 = Vector256.Create(counter).AsUInt32();
-			Vector256<uint> x9 = x8;
 
 			Vector256<uint> t0 = Avx2.Add(incCounter0123, x8.AsUInt64()).AsUInt32();
 			Vector256<uint> t1 = Avx2.Add(incCounter4567, x8.AsUInt64()).AsUInt32();
 
 			x8 = Avx2.UnpackLow(t0, t1);
-			x9 = Avx2.UnpackHigh(t0, t1);
+			Vector256<uint> x9 = Avx2.UnpackHigh(t0, t1);
 
 			t0 = Avx2.UnpackLow(x8, x9);
 			t1 = Avx2.UnpackHigh(x8, x9);
@@ -639,42 +638,18 @@ public static class Salsa20Utils
 			}
 
 			ChaCha20Utils.AddTransposeXor(
-				ref x0,
-				ref x1,
-				ref x2,
-				ref x3,
-				ref x4,
-				ref x5,
-				ref x6,
-				ref x7,
-				ref o0,
-				ref o1,
-				ref o2,
-				ref o3,
-				ref o4,
-				ref o5,
-				ref o6,
-				ref o7,
+				ref x0, ref x1, ref x2, ref x3,
+				ref x4, ref x5, ref x6, ref x7,
+				ref o0, ref o1, ref o2, ref o3,
+				ref o4, ref o5, ref o6, ref o7,
 				ref Unsafe.Add(ref sourceRef, offset),
 				ref Unsafe.Add(ref dstRef, offset));
 
 			ChaCha20Utils.AddTransposeXor(
-				ref x8,
-				ref x9,
-				ref x10,
-				ref x11,
-				ref x12,
-				ref x13,
-				ref x14,
-				ref x15,
-				ref o8,
-				ref o9,
-				ref o10,
-				ref o11,
-				ref o12,
-				ref o13,
-				ref o14,
-				ref o15,
+				ref x8, ref x9, ref x10, ref x11,
+				ref x12, ref x13, ref x14, ref x15,
+				ref o8, ref o9, ref o10, ref o11,
+				ref o12, ref o13, ref o14, ref o15,
 				ref Unsafe.Add(ref sourceRef, offset + 32),
 				ref Unsafe.Add(ref dstRef, offset + 32));
 
