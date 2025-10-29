@@ -140,6 +140,49 @@ public static class SM4Utils
 		t3.ReverseEndianness128().CopyTo(destination.Slice(48));
 	}
 
+	public static void Decrypt4(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector128<byte> shr = Vector128.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3);
+		Vector128<byte> t0 = Vector128.Create(source).ReverseEndianness32();
+		Vector128<byte> t1 = Vector128.Create(source.Slice(16)).ReverseEndianness32();
+		Vector128<byte> t2 = Vector128.Create(source.Slice(32)).ReverseEndianness32();
+		Vector128<byte> t3 = Vector128.Create(source.Slice(48)).ReverseEndianness32();
+
+		Transpose(ref t0, ref t1, ref t2, ref t3);
+
+		for (int i = 31; i >= 0; --i)
+		{
+			Vector128<byte> x = t1 ^ t2 ^ t3 ^ Vector128.Create(rk[i]).AsByte();
+
+			x.PreTransform();
+			x = AesX86.EncryptLast(x, c0f);// AES-NI
+			x.PostTransform();
+
+			// inverse MixColumns
+			x = Ssse3.Shuffle(x, shr);
+
+			// 4 parallel L1 linear transforms
+			Vector128<byte> t = x ^ x.RotateLeftUInt32_8() ^ x.RotateLeftUInt32_16();
+			t = t.RotateLeftUInt32(2);
+			x = x ^ t ^ x.RotateLeftUInt32_24();
+
+			// rotate registers
+			x ^= t0;
+			t0 = t1;
+			t1 = t2;
+			t2 = t3;
+			t3 = x;
+		}
+
+		Transpose(ref t0, ref t1, ref t2, ref t3);
+
+		t0.ReverseEndianness128().CopyTo(destination);
+		t1.ReverseEndianness128().CopyTo(destination.Slice(16));
+		t2.ReverseEndianness128().CopyTo(destination.Slice(32));
+		t3.ReverseEndianness128().CopyTo(destination.Slice(48));
+	}
+
 	public static void Encrypt8(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Vector128<byte> c0f = Vector128.Create((byte)0x0F);

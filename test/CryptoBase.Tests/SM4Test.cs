@@ -105,4 +105,45 @@ public class SM4Test
 			TestN_Internal(16, new SM4CryptoBlock16X86(key), key);
 		}
 	}
+
+	[Fact]
+	public void TestEncryptDecrypt4()
+	{
+		if (!SM4CryptoX86.IsSupported)
+		{
+			return;
+		}
+
+		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(16);
+		using SM4Crypto singleBlockCrypto = new(key);
+		using SM4CryptoX86 fourBlockCrypto = new(key);
+
+		// Generate random source data for 4 blocks (64 bytes)
+		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(64);
+		Span<byte> encrypted = stackalloc byte[64];
+		Span<byte> decrypted = stackalloc byte[64];
+		Span<byte> expected = stackalloc byte[64];
+
+		// Use single-block implementation to generate expected encrypted data
+		for (int i = 0; i < 4; ++i)
+		{
+			singleBlockCrypto.Encrypt(source.Slice(i * 16, 16), expected.Slice(i * 16, 16));
+		}
+
+		// Test Encrypt4 via SM4CryptoX86
+		fourBlockCrypto.Encrypt(source, encrypted);
+		Assert.True(expected.SequenceEqual(encrypted), "Encrypt4 should match single-block encryption");
+
+		// Test Decrypt4 via SM4CryptoX86
+		fourBlockCrypto.Decrypt(encrypted, decrypted);
+		Assert.True(source.SequenceEqual(decrypted), "Decrypt4 should recover the original plaintext");
+
+		// Test round-trip with single-block decryption as reference
+		Span<byte> expectedDecrypted = stackalloc byte[64];
+		for (int i = 0; i < 4; ++i)
+		{
+			singleBlockCrypto.Decrypt(encrypted.Slice(i * 16, 16), expectedDecrypted.Slice(i * 16, 16));
+		}
+		Assert.True(expectedDecrypted.SequenceEqual(decrypted), "Decrypt4 should match single-block decryption");
+	}
 }
