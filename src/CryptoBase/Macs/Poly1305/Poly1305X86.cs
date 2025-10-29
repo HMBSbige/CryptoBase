@@ -222,8 +222,8 @@ public ref struct Poly1305X86 : IMac
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Block2(scoped ReadOnlySpan<byte> m)
 	{
-		Vector128<uint> and128 = Vector128.Create(0x3ffffffu, 0, 0x3ffffff, 0);
-		Vector128<uint> or128 = Vector128.Create(0x01000000u, 0, 0x01000000, 0);
+		Vector128<uint> and128 = Vector128.Create(0x3ffffffu, 0u, 0x3ffffffu, 0u);
+		Vector128<uint> or128 = Vector128.Create(0x01000000u, 0u, 0x01000000u, 0u);
 		ReadOnlySpan<uint> n0 = MemoryMarshal.Cast<byte, uint>(m);
 		Vector128<uint> hc0 = IntrinsicsUtils.CreateTwoUInt(n0[0], n0[4]);
 		hc0 = Sse2.And(hc0, and128);
@@ -305,8 +305,8 @@ public ref struct Poly1305X86 : IMac
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Block4(scoped ReadOnlySpan<byte> m)
 	{
-		Vector256<uint> and256 = Vector256.Create(0x3ffffffu, 0, 0x3ffffff, 0, 0x3ffffff, 0, 0x3ffffff, 0);
-		Vector256<uint> or256 = Vector256.Create(0x01000000u, 0, 0x01000000, 0, 0x01000000, 0, 0x01000000, 0);
+		Vector256<uint> and256 = Vector256.Create(0x3ffffffu, 0u, 0x3ffffffu, 0u, 0x3ffffffu, 0u, 0x3ffffffu, 0u);
+		Vector256<uint> or256 = Vector256.Create(0x01000000u, 0u, 0x01000000u, 0u, 0x01000000u, 0u, 0x01000000u, 0u);
 		ReadOnlySpan<uint> n0 = MemoryMarshal.Cast<byte, uint>(m);
 		Vector256<uint> hc0 = IntrinsicsUtils.Create4UInt(n0[0], n0[4], n0[8], n0[12]);
 		hc0 = Avx2.And(hc0, and256);
