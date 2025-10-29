@@ -57,11 +57,11 @@ public class SM4Test
 	{
 		using SM4Crypto sf = new(key);
 		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(n * sf.BlockSize);
-		Span<byte> expected = stackalloc byte[source.Length];
+		Span<byte> expectedCipher = stackalloc byte[source.Length];
 
 		for (int i = 0; i < n; ++i)
 		{
-			sf.Encrypt(source.Slice(i * sf.BlockSize, sf.BlockSize), expected.Slice(i * sf.BlockSize, sf.BlockSize));
+			sf.Encrypt(source.Slice(i * sf.BlockSize, sf.BlockSize), expectedCipher.Slice(i * sf.BlockSize, sf.BlockSize));
 		}
 
 		Assert.Equal(@"SM4", crypto.Name);
@@ -71,7 +71,11 @@ public class SM4Test
 
 		crypto.Encrypt(source, destination);
 
-		Assert.True(expected.SequenceEqual(destination));
+		Assert.True(expectedCipher.SequenceEqual(destination));
+
+		crypto.Decrypt(expectedCipher, destination);
+
+		Assert.True(destination.SequenceEqual(source));
 
 		crypto.Dispose();
 	}

@@ -16,6 +16,9 @@ public class SM4CryptoX86(ReadOnlySpan<byte> key) : SM4Crypto(key)
 
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		throw new NotImplementedException();
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
+
+		SM4Utils.Decrypt4(Rk, source, destination);
 	}
 }
