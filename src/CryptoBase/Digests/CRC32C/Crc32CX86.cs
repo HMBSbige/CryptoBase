@@ -15,16 +15,6 @@ public class Crc32CX86 : IHash
 
 	private uint _state;
 
-	#region Constants
-
-	private static readonly Vector128<ulong> K1K2 = Crc32Table.K1K2C;
-	private static readonly Vector128<ulong> K3K4 = Crc32Table.K3K4C;
-	private static readonly Vector128<ulong> K5 = Crc32Table.K5C;
-	private static readonly Vector128<ulong> RU = Crc32Table.RUC;
-	private static readonly Vector128<ulong> Mask32 = Crc32Table.Mask32;
-
-	#endregion
-
 	public Crc32CX86()
 	{
 		Reset();
@@ -68,6 +58,11 @@ public class Crc32CX86 : IHash
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint Update(ReadOnlySpan<byte> buffer, uint crc)
 	{
+		Vector128<ulong> k1k2 = Crc32Table.K1K2C;
+		Vector128<ulong> k3k4 = Crc32Table.K3K4C;
+		Vector128<ulong> k5 = Crc32Table.K5C;
+		Vector128<ulong> ru = Crc32Table.RUC;
+		Vector128<ulong> mask32 = Crc32Table.Mask32;
 		int length = buffer.Length;
 		ref byte ptr = ref buffer.GetReference();
 
@@ -83,15 +78,15 @@ public class Crc32CX86 : IHash
 
 		while (length >= 0x40)
 		{
-			Vector128<ulong> t1 = Pclmulqdq.CarrylessMultiply(x1, K1K2, 0x11);
-			Vector128<ulong> t2 = Pclmulqdq.CarrylessMultiply(x2, K1K2, 0x11);
-			Vector128<ulong> t3 = Pclmulqdq.CarrylessMultiply(x3, K1K2, 0x11);
-			Vector128<ulong> t4 = Pclmulqdq.CarrylessMultiply(x4, K1K2, 0x11);
+			Vector128<ulong> t1 = Pclmulqdq.CarrylessMultiply(x1, k1k2, 0x11);
+			Vector128<ulong> t2 = Pclmulqdq.CarrylessMultiply(x2, k1k2, 0x11);
+			Vector128<ulong> t3 = Pclmulqdq.CarrylessMultiply(x3, k1k2, 0x11);
+			Vector128<ulong> t4 = Pclmulqdq.CarrylessMultiply(x4, k1k2, 0x11);
 
-			x1 = Pclmulqdq.CarrylessMultiply(x1, K1K2, 0x00);
-			x2 = Pclmulqdq.CarrylessMultiply(x2, K1K2, 0x00);
-			x3 = Pclmulqdq.CarrylessMultiply(x3, K1K2, 0x00);
-			x4 = Pclmulqdq.CarrylessMultiply(x4, K1K2, 0x00);
+			x1 = Pclmulqdq.CarrylessMultiply(x1, k1k2, 0x00);
+			x2 = Pclmulqdq.CarrylessMultiply(x2, k1k2, 0x00);
+			x3 = Pclmulqdq.CarrylessMultiply(x3, k1k2, 0x00);
+			x4 = Pclmulqdq.CarrylessMultiply(x4, k1k2, 0x00);
 
 			x1 = Sse2.Xor(x1, t1);
 			x2 = Sse2.Xor(x2, t2);
@@ -110,25 +105,25 @@ public class Crc32CX86 : IHash
 			length -= 0x40;
 		}
 
-		Vector128<ulong> t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
-		x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
+		Vector128<ulong> t = Pclmulqdq.CarrylessMultiply(x1, k3k4, 0x11);
+		x1 = Pclmulqdq.CarrylessMultiply(x1, k3k4, 0x00);
 		x1 = Sse2.Xor(x1, t);
 		x1 = Sse2.Xor(x1, x2);
 
-		t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
-		x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
+		t = Pclmulqdq.CarrylessMultiply(x1, k3k4, 0x11);
+		x1 = Pclmulqdq.CarrylessMultiply(x1, k3k4, 0x00);
 		x1 = Sse2.Xor(x1, t);
 		x1 = Sse2.Xor(x1, x3);
 
-		t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
-		x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
+		t = Pclmulqdq.CarrylessMultiply(x1, k3k4, 0x11);
+		x1 = Pclmulqdq.CarrylessMultiply(x1, k3k4, 0x00);
 		x1 = Sse2.Xor(x1, t);
 		x1 = Sse2.Xor(x1, x4);
 
 		while (length >= 0x10)
 		{
-			t = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x11);
-			x1 = Pclmulqdq.CarrylessMultiply(x1, K3K4, 0x00);
+			t = Pclmulqdq.CarrylessMultiply(x1, k3k4, 0x11);
+			x1 = Pclmulqdq.CarrylessMultiply(x1, k3k4, 0x00);
 			x1 = Sse2.Xor(x1, t);
 			x1 = Sse2.Xor(x1, Unsafe.As<byte, Vector128<ulong>>(ref Unsafe.Add(ref ptr, offset)));
 
@@ -136,20 +131,20 @@ public class Crc32CX86 : IHash
 			offset += 0x10;
 		}
 
-		Vector128<ulong> r4 = Pclmulqdq.CarrylessMultiply(K3K4, x1, 0x01);
+		Vector128<ulong> r4 = Pclmulqdq.CarrylessMultiply(k3k4, x1, 0x01);
 		x1 = Sse2.ShiftRightLogical128BitLane(x1, 0x08);
 		x1 = Sse2.Xor(x1, r4);
 
 		t = Sse2.ShiftRightLogical128BitLane(x1, 0x04);
-		x1 = Sse2.And(x1, Mask32);
-		x1 = Pclmulqdq.CarrylessMultiply(x1, K5, 0x00);
+		x1 = Sse2.And(x1, mask32);
+		x1 = Pclmulqdq.CarrylessMultiply(x1, k5, 0x00);
 		x1 = Sse2.Xor(x1, t);
 
 		t = x1;
-		x1 = Sse2.And(x1, Mask32);
-		x1 = Pclmulqdq.CarrylessMultiply(x1, RU, 0x10);
-		x1 = Sse2.And(x1, Mask32);
-		x1 = Pclmulqdq.CarrylessMultiply(x1, RU, 0x00);
+		x1 = Sse2.And(x1, mask32);
+		x1 = Pclmulqdq.CarrylessMultiply(x1, ru, 0x10);
+		x1 = Sse2.And(x1, mask32);
+		x1 = Pclmulqdq.CarrylessMultiply(x1, ru, 0x00);
 		x1 = Sse2.Xor(x1, t);
 		return x1.AsUInt32().GetElement(1);// pextrd eax, x1, 1
 	}

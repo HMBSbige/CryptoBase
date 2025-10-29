@@ -15,9 +15,6 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 
 	private static ReadOnlySpan<byte> Init => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-	private static readonly Vector128<uint> VCounter1 = Vector128.Create(6u, 7, 8, 9);
-	private static readonly Vector128<uint> VAdd4 = Vector128.Create(4u);
-
 	private readonly IBlockCrypto _crypto;
 	private readonly IBlockCrypto _crypto8;
 
@@ -85,14 +82,16 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 		counter0[3] = 2;
 		_gHash.Update(associatedData);
 
-		Vector128<uint> v1 = VCounter1;
+		Vector128<uint> vCounter1 = Vector128.Create(6u, 7, 8, 9);
+		Vector128<uint> vAdd4 = Vector128.Create(4u);
+		Vector128<uint> v1 = vCounter1;
 
 		while (!source.IsEmpty)
 		{
 			_crypto8.Encrypt(counterBlock, _buffer);
 
-			Vector128<uint> v0 = Sse2.Add(v1, VAdd4);
-			v1 = Sse2.Add(v0, VAdd4);
+			Vector128<uint> v0 = Sse2.Add(v1, vAdd4);
+			v1 = Sse2.Add(v0, vAdd4);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
@@ -163,14 +162,16 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 		counter0[3] = 2;
 		_gHash.Update(associatedData);
 
-		Vector128<uint> v1 = VCounter1;
+		Vector128<uint> vCounter1 = Vector128.Create(6u, 7, 8, 9);
+		Vector128<uint> vAdd4 = Vector128.Create(4u);
+		Vector128<uint> v1 = vCounter1;
 
 		while (!source.IsEmpty)
 		{
 			_crypto8.Encrypt(counterBlock, _buffer);
 
-			Vector128<uint> v0 = Sse2.Add(v1, VAdd4);
-			v1 = Sse2.Add(v0, VAdd4);
+			Vector128<uint> v0 = Sse2.Add(v1, vAdd4);
+			v1 = Sse2.Add(v0, vAdd4);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
