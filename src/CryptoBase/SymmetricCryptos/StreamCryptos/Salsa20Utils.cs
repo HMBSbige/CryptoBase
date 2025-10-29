@@ -207,20 +207,6 @@ public static class Salsa20Utils
 
 	#region Avx
 
-	private static readonly Vector256<uint> Permute0 = Vector256.Create(4, 3, 1, 6, 0, 5, 2, 7).AsUInt32();
-	private static readonly Vector256<uint> Permute1 = Vector256.Create(1, 6, 4, 3, 2, 7, 0, 5).AsUInt32();
-	private static readonly Vector256<uint> Permute2 = Vector256.Create(0, 1, 3, 2, 4, 6, 5, 7).AsUInt32();
-	private static readonly Vector256<uint> Permute3 = Vector256.Create(1, 0, 2, 3, 5, 7, 4, 6).AsUInt32();
-	private static readonly Vector256<uint> Permute4 = Vector256.Create(1, 2, 3, 0, 5, 6, 7, 4).AsUInt32();
-	private static readonly Vector256<uint> Permute5 = Vector256.Create(3, 0, 1, 2, 7, 4, 5, 6).AsUInt32();
-	private static readonly Vector256<uint> Permute6 = Vector256.Create(2, 3, 0, 1, 6, 7, 4, 5).AsUInt32();
-	private static readonly Vector256<uint> Permute7 = Vector256.Create(3, 7, 1, 5, 0, 4, 2, 6).AsUInt32();
-	private static readonly Vector256<uint> Permute8 = Vector256.Create(0, 4, 2, 6, 1, 5, 3, 7).AsUInt32();
-	private static readonly Vector256<uint> Permute9 = Vector256.Create(1, 5, 3, 7, 2, 6, 0, 4).AsUInt32();
-	private static readonly Vector256<uint> Permute10 = Vector256.Create(2, 6, 0, 4, 3, 7, 1, 5).AsUInt32();
-	private static readonly Vector256<uint> Permute11 = Vector256.Create(2, 1, 3, 0, 4, 6, 5, 7).AsUInt32();
-	private static readonly Vector256<uint> Permute12 = Vector256.Create(3, 0, 2, 1, 5, 7, 4, 6).AsUInt32();
-
 	/// <summary>
 	/// 4 9 14 3
 	/// 0 5 10 15
@@ -235,17 +221,21 @@ public static class Salsa20Utils
 		ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d,
 		out Vector256<uint> x0, out Vector256<uint> x1)
 	{
+		Vector256<uint> permute0 = Vector256.Create(4u, 3, 1, 6, 0, 5, 2, 7);
+		Vector256<uint> permute1 = Vector256.Create(1u, 6, 4, 3, 2, 7, 0, 5);
+		Vector256<uint> permute2 = Vector256.Create(0u, 1, 3, 2, 4, 6, 5, 7);
+		Vector256<uint> permute3 = Vector256.Create(1u, 0, 2, 3, 5, 7, 4, 6);
 		x0 = Vector256.Create(a, b);// 4 9 14 3 0 5 10 15
 		x1 = Vector256.Create(c, d);// 12 1 6 11 8 13 2 7
 
-		x0 = Avx2.PermuteVar8x32(x0, Permute0);// 0 3 9 10 4 5 14 15
-		x1 = Avx2.PermuteVar8x32(x1, Permute1);// 1 2 8 11 6 7 12 13
+		x0 = Avx2.PermuteVar8x32(x0, permute0);// 0 3 9 10 4 5 14 15
+		x1 = Avx2.PermuteVar8x32(x1, permute1);// 1 2 8 11 6 7 12 13
 
 		Vector256<uint> t = Avx2.UnpackLow(x0, x1);// 0 1 3 2 4 6 5 7
 		x1 = Avx2.UnpackHigh(x0, x1);// 9 8 10 11 14 12 15 13
 
-		x0 = Avx2.PermuteVar8x32(t, Permute2);// 0 1 2 3 4 5 6 7
-		x1 = Avx2.PermuteVar8x32(x1, Permute3);// 8 9 10 11 12 13 14 15
+		x0 = Avx2.PermuteVar8x32(t, permute2);// 0 1 2 3 4 5 6 7
+		x1 = Avx2.PermuteVar8x32(x1, permute3);// 8 9 10 11 12 13 14 15
 	}
 
 	/// <summary>
@@ -260,10 +250,13 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
 	{
+		Vector256<uint> permute4 = Vector256.Create(1u, 2, 3, 0, 5, 6, 7, 4);
+		Vector256<uint> permute5 = Vector256.Create(3u, 0, 1, 2, 7, 4, 5, 6);
+		Vector256<uint> permute6 = Vector256.Create(2u, 3, 0, 1, 6, 7, 4, 5);
 		(a, b) = (b, a);
-		a = Avx2.PermuteVar8x32(a, Permute4);
-		b = Avx2.PermuteVar8x32(b, Permute5);
-		c = Avx2.PermuteVar8x32(c, Permute6);
+		a = Avx2.PermuteVar8x32(a, permute4);
+		b = Avx2.PermuteVar8x32(b, permute5);
+		c = Avx2.PermuteVar8x32(c, permute6);
 	}
 
 	/// <summary>
@@ -280,10 +273,16 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 	{
-		a = Avx2.PermuteVar8x32(a, Permute7);// 3 19 9 25 4 20 14 30
-		b = Avx2.PermuteVar8x32(b, Permute8);// 0 16 10 26 5 21 15 31
-		c = Avx2.PermuteVar8x32(c, Permute9);// 1 17 11 27 6 22 12 28
-		d = Avx2.PermuteVar8x32(d, Permute10);// 2 18 8 24 7 23 13 29
+		Vector256<uint> permute7 = Vector256.Create(3u, 7, 1, 5, 0, 4, 2, 6);
+		Vector256<uint> permute8 = Vector256.Create(0u, 4, 2, 6, 1, 5, 3, 7);
+		Vector256<uint> permute9 = Vector256.Create(1u, 5, 3, 7, 2, 6, 0, 4);
+		Vector256<uint> permute10 = Vector256.Create(2u, 6, 0, 4, 3, 7, 1, 5);
+		Vector256<uint> permute11 = Vector256.Create(2u, 1, 3, 0, 4, 6, 5, 7);
+		Vector256<uint> permute12 = Vector256.Create(3u, 0, 2, 1, 5, 7, 4, 6);
+		a = Avx2.PermuteVar8x32(a, permute7);// 3 19 9 25 4 20 14 30
+		b = Avx2.PermuteVar8x32(b, permute8);// 0 16 10 26 5 21 15 31
+		c = Avx2.PermuteVar8x32(c, permute9);// 1 17 11 27 6 22 12 28
+		d = Avx2.PermuteVar8x32(d, permute10);// 2 18 8 24 7 23 13 29
 
 		Vector256<uint> t0 = Avx2.UnpackLow(a, b);// 3 0 19 16 4 5 20 21
 		Vector256<uint> t1 = Avx2.UnpackLow(c, d);// 1 2 17 18 6 7 22 23
@@ -295,10 +294,10 @@ public static class Salsa20Utils
 		c = Avx2.UnpackHigh(t0, t1);// 19 17 16 18 20 22 21 23
 		d = Avx2.UnpackHigh(t2, t3);// 25 27 26 24 30 28 31 29
 
-		a = Avx2.PermuteVar8x32(a, Permute11);// 0 1 2 3 4 5 6 7
-		b = Avx2.PermuteVar8x32(b, Permute12);// 8 9 10 11 12 13 14 15
-		c = Avx2.PermuteVar8x32(c, Permute11);// 16 17 18 19 20 21 22 23
-		d = Avx2.PermuteVar8x32(d, Permute12);// 24 25 26 27 28 29 30 31
+		a = Avx2.PermuteVar8x32(a, permute11);// 0 1 2 3 4 5 6 7
+		b = Avx2.PermuteVar8x32(b, permute12);// 8 9 10 11 12 13 14 15
+		c = Avx2.PermuteVar8x32(c, permute11);// 16 17 18 19 20 21 22 23
+		d = Avx2.PermuteVar8x32(d, permute12);// 24 25 26 27 28 29 30 31
 	}
 
 	#endregion
@@ -614,8 +613,8 @@ public static class Salsa20Utils
 			t0 = Avx2.UnpackLow(x8, x9);
 			t1 = Avx2.UnpackHigh(x8, x9);
 
-			x8 = Avx2.PermuteVar8x32(t0, ChaCha20Utils.Permute3);
-			x9 = Avx2.PermuteVar8x32(t1, ChaCha20Utils.Permute3);
+			x8 = Avx2.PermuteVar8x32(t0, Vector256.Create(0u, 1, 4, 5, 2, 3, 6, 7));
+			x9 = Avx2.PermuteVar8x32(t1, Vector256.Create(0u, 1, 4, 5, 2, 3, 6, 7));
 
 			Vector256<uint> o8 = x8;
 			Vector256<uint> o9 = x9;

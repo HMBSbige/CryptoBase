@@ -609,7 +609,6 @@ internal static class ChaCha20Utils
 	public static readonly Vector256<ulong> IncCounter0123 = Vector256.Create(0ul, 1, 2, 3);
 	public static readonly Vector256<ulong> IncCounter4567 = Vector256.Create(4ul, 5, 6, 7);
 	private static readonly Vector256<uint> IncCounter01234567 = Vector256.Create(0u, 1, 2, 3, 4, 5, 6, 7);
-	public static readonly Vector256<uint> Permute3 = Vector256.Create(0, 1, 4, 5, 2, 3, 6, 7).AsUInt32();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ChaChaCoreOriginal512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
@@ -668,8 +667,8 @@ internal static class ChaCha20Utils
 			t0 = Avx2.UnpackLow(x12, x13);
 			t1 = Avx2.UnpackHigh(x12, x13);
 
-			x12 = Avx2.PermuteVar8x32(t0, Permute3);
-			x13 = Avx2.PermuteVar8x32(t1, Permute3);
+			x12 = Avx2.PermuteVar8x32(t0, Vector256.Create(0u, 1, 4, 5, 2, 3, 6, 7));
+			x13 = Avx2.PermuteVar8x32(t1, Vector256.Create(0u, 1, 4, 5, 2, 3, 6, 7));
 
 			Vector256<uint> o12 = x12;
 			Vector256<uint> o13 = x13;
@@ -922,10 +921,6 @@ internal static class ChaCha20Utils
 
 	#region Avx
 
-	private static readonly Vector256<uint> Permute0 = Vector256.Create(1, 2, 3, 0, 5, 6, 7, 4).AsUInt32();
-	private static readonly Vector256<uint> Permute1 = Vector256.Create(2, 3, 0, 1, 6, 7, 4, 5).AsUInt32();
-	private static readonly Vector256<uint> Permute2 = Vector256.Create(3, 0, 1, 2, 7, 4, 5, 6).AsUInt32();
-
 	/// <summary>
 	/// 4 5 6 7
 	/// 8 9 10 11
@@ -938,9 +933,12 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
 	{
-		a = Avx2.PermuteVar8x32(a, Permute0);
-		b = Avx2.PermuteVar8x32(b, Permute1);
-		c = Avx2.PermuteVar8x32(c, Permute2);
+		Vector256<uint> permute0 = Vector256.Create(1u, 2, 3, 0, 5, 6, 7, 4);
+		Vector256<uint> permute1 = Vector256.Create(2u, 3, 0, 1, 6, 7, 4, 5);
+		Vector256<uint> permute2 = Vector256.Create(3u, 0, 1, 2, 7, 4, 5, 6);
+		a = Avx2.PermuteVar8x32(a, permute0);
+		b = Avx2.PermuteVar8x32(b, permute1);
+		c = Avx2.PermuteVar8x32(c, permute2);
 	}
 
 	/// <summary>
@@ -955,9 +953,12 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle1(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c)
 	{
-		a = Avx2.PermuteVar8x32(a, Permute2);
-		b = Avx2.PermuteVar8x32(b, Permute1);
-		c = Avx2.PermuteVar8x32(c, Permute0);
+		Vector256<uint> permute0 = Vector256.Create(1u, 2, 3, 0, 5, 6, 7, 4);
+		Vector256<uint> permute1 = Vector256.Create(2u, 3, 0, 1, 6, 7, 4, 5);
+		Vector256<uint> permute2 = Vector256.Create(3u, 0, 1, 2, 7, 4, 5, 6);
+		a = Avx2.PermuteVar8x32(a, permute2);
+		b = Avx2.PermuteVar8x32(b, permute1);
+		c = Avx2.PermuteVar8x32(c, permute0);
 	}
 
 	/// <summary>
