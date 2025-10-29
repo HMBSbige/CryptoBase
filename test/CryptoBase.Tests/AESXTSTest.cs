@@ -41,6 +41,8 @@ public class AESXTSTest
 		Span<byte> buffer = stackalloc byte[plain.Length + 1];
 		RandomNumberGenerator.Fill(buffer);
 
+		Assert.Equal(cipher.Length, crypto.GetMaxByteCount(plain.Length));
+
 		crypto.Encrypt(iv, plain, buffer);
 		Assert.True(buffer.Slice(0, plain.Length).SequenceEqual(cipher));
 
