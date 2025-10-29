@@ -280,12 +280,10 @@ internal static class ChaCha20Utils
 
 	#region 处理 128 bytes
 
-	private static readonly Vector256<uint> IncCounter128 = Vector256.Create(0, 0, 0, 0, 1, 0, 0, 0).AsUInt32();
-	private static readonly Vector256<ulong> IncCounterOriginal128 = Vector256.Create(0, 0, 1, 0).AsUInt64();
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ChaChaCoreOriginal128(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector256<ulong> incCounterOriginal128 = Vector256.Create(0ul, 0, 1, 0);
 		ref uint stateRef = ref state.GetReference();
 		ref byte sourceRef = ref source.GetReference();
 		ref byte destRef = ref destination.GetReference();
@@ -303,7 +301,7 @@ internal static class ChaCha20Utils
 		Vector256<uint> x1 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 4));
 		Vector256<uint> x2 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 8));
 		Vector256<uint> x3 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 12));
-		x3 = (x3.AsUInt64() + IncCounterOriginal128).AsUInt32();
+		x3 = (x3.AsUInt64() + incCounterOriginal128).AsUInt32();
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -338,6 +336,7 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ChaChaCore128(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector256<uint> incCounter128 = Vector256.Create(0u, 0, 0, 0, 1, 0, 0, 0);
 		ref uint stateRef = ref state.GetReference();
 		ref byte sourceRef = ref source.GetReference();
 		ref byte destRef = ref destination.GetReference();
@@ -355,7 +354,7 @@ internal static class ChaCha20Utils
 		Vector256<uint> x1 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 4));
 		Vector256<uint> x2 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 8));
 		Vector256<uint> x3 = FastUtils.BroadcastVector128ToVector256(ref Unsafe.Add(ref stateRef, 12));
-		x3 += IncCounter128;
+		x3 += incCounter128;
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -391,13 +390,11 @@ internal static class ChaCha20Utils
 
 	#region 处理 256*n bytes
 
-	public static readonly Vector128<ulong> IncCounter01 = Vector128.Create(0ul, 1);
-	public static readonly Vector128<ulong> IncCounter23 = Vector128.Create(2ul, 3);
-	private static readonly Vector128<uint> IncCounter0123_128 = Vector128.Create(0u, 1, 2, 3);
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ChaChaCoreOriginal256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector128<ulong> incCounter01 = Vector128.Create(0ul, 1);
+		Vector128<ulong> incCounter23 = Vector128.Create(2ul, 3);
 		int length = source.Length;
 		int offset = 0;
 
@@ -445,8 +442,8 @@ internal static class ChaCha20Utils
 			Vector128<uint> t0 = Vector128.Create(counter).AsUInt32();
 			Vector128<uint> t1 = t0;
 
-			Vector128<uint> x12 = Sse2.Add(IncCounter01, t0.AsUInt64()).AsUInt32();
-			Vector128<uint> x13 = Sse2.Add(IncCounter23, t1.AsUInt64()).AsUInt32();
+			Vector128<uint> x12 = Sse2.Add(incCounter01, t0.AsUInt64()).AsUInt32();
+			Vector128<uint> x13 = Sse2.Add(incCounter23, t0.AsUInt64()).AsUInt32();
 
 			t0 = Sse2.UnpackLow(x12, x13);
 			t1 = Sse2.UnpackHigh(x12, x13);
@@ -486,6 +483,7 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ChaChaCore256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector128<uint> incCounter0123_128 = Vector128.Create(0u, 1, 2, 3);
 		int length = source.Length;
 		int offset = 0;
 
@@ -530,7 +528,7 @@ internal static class ChaCha20Utils
 			Vector128<uint> x14 = o14;
 			Vector128<uint> x15 = o15;
 
-			Vector128<uint> x12 = IncCounter0123_128 + Vector128.Create(Unsafe.Add(ref stateRef, 12));
+			Vector128<uint> x12 = incCounter0123_128 + Vector128.Create(Unsafe.Add(ref stateRef, 12));
 			Vector128<uint> o12 = x12;
 
 			counter += 4;
@@ -606,13 +604,11 @@ internal static class ChaCha20Utils
 
 	#region 处理 512*n bytes
 
-	public static readonly Vector256<ulong> IncCounter0123 = Vector256.Create(0ul, 1, 2, 3);
-	public static readonly Vector256<ulong> IncCounter4567 = Vector256.Create(4ul, 5, 6, 7);
-	private static readonly Vector256<uint> IncCounter01234567 = Vector256.Create(0u, 1, 2, 3, 4, 5, 6, 7);
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ChaChaCoreOriginal512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector256<ulong> incCounter0123 = Vector256.Create(0ul, 1, 2, 3);
+		Vector256<ulong> incCounter4567 = Vector256.Create(4ul, 5, 6, 7);
 		int length = source.Length;
 		int offset = 0;
 
@@ -658,8 +654,8 @@ internal static class ChaCha20Utils
 			Vector256<uint> x12 = Vector256.Create(counter).AsUInt32();
 			Vector256<uint> x13 = x12;
 
-			Vector256<uint> t0 = Avx2.Add(IncCounter0123, x12.AsUInt64()).AsUInt32();
-			Vector256<uint> t1 = Avx2.Add(IncCounter4567, x13.AsUInt64()).AsUInt32();
+			Vector256<uint> t0 = Avx2.Add(incCounter0123, x12.AsUInt64()).AsUInt32();
+			Vector256<uint> t1 = Avx2.Add(incCounter4567, x12.AsUInt64()).AsUInt32();
 
 			x12 = Avx2.UnpackLow(t0, t1);
 			x13 = Avx2.UnpackHigh(t0, t1);
@@ -736,6 +732,7 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ChaChaCore512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector256<uint> incCounter01234567 = Vector256.Create(0u, 1, 2, 3, 4, 5, 6, 7);
 		int length = source.Length;
 		int offset = 0;
 
@@ -779,7 +776,7 @@ internal static class ChaCha20Utils
 			Vector256<uint> x14 = o14;
 			Vector256<uint> x15 = o15;
 
-			Vector256<uint> x12 = IncCounter01234567 + Vector256.Create(counter);
+			Vector256<uint> x12 = incCounter01234567 + Vector256.Create(counter);
 			Vector256<uint> o12 = x12;
 
 			counter += 8;

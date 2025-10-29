@@ -58,11 +58,12 @@ public class Crc32CX86 : IHash
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint Update(ReadOnlySpan<byte> buffer, uint crc)
 	{
-		Vector128<ulong> k1k2 = Crc32Table.K1K2C;
-		Vector128<ulong> k3k4 = Crc32Table.K3K4C;
-		Vector128<ulong> k5 = Crc32Table.K5C;
-		Vector128<ulong> ru = Crc32Table.RUC;
-		Vector128<ulong> mask32 = Crc32Table.Mask32;
+		// Constants for CRC32C
+		Vector128<ulong> k1k2 = Vector128.Create(0x00000000740eef02, 0x000000009e4addf8).AsUInt64();
+		Vector128<ulong> k3k4 = Vector128.Create(0x00000000f20c0dfe, 0x000000014cd00bd6).AsUInt64();
+		Vector128<ulong> k5 = Vector128.Create(0x00000000dd45aab8, 0x0000000000000000).AsUInt64();
+		Vector128<ulong> ru = Vector128.Create(0x0000000105ec76f1, 0x00000000dea713f1).AsUInt64();
+		Vector128<ulong> mask32 = Vector128.Create(0x00000000ffffffff, 0x0000000000000000).AsUInt64();
 		int length = buffer.Length;
 		ref byte ptr = ref buffer.GetReference();
 

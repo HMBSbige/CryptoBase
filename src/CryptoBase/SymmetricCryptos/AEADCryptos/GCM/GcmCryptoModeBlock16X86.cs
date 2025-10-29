@@ -108,14 +108,13 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 
 		Vector256<uint> vCounter1 = Vector256.Create(10u, 11, 12, 13, 14, 15, 16, 17);
 		Vector256<uint> vAdd8 = Vector256.Create(8u);
-		Vector256<uint> v1 = vCounter1;
 
 		while (!source.IsEmpty)
 		{
 			_crypto16.Encrypt(counterBlock, _buffer);
 
-			Vector256<uint> v0 = Avx2.Add(v1, vAdd8);
-			v1 = Avx2.Add(v0, vAdd8);
+			Vector256<uint> v0 = Avx2.Add(vCounter1, vAdd8);
+			vCounter1 = Avx2.Add(v0, vAdd8);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
@@ -125,14 +124,14 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 			BinaryPrimitives.WriteUInt32BigEndian(counter5, v0.GetElement(5));
 			BinaryPrimitives.WriteUInt32BigEndian(counter6, v0.GetElement(6));
 			BinaryPrimitives.WriteUInt32BigEndian(counter7, v0.GetElement(7));
-			BinaryPrimitives.WriteUInt32BigEndian(counter8, v1.GetElement(0));
-			BinaryPrimitives.WriteUInt32BigEndian(counter9, v1.GetElement(1));
-			BinaryPrimitives.WriteUInt32BigEndian(counter10, v1.GetElement(2));
-			BinaryPrimitives.WriteUInt32BigEndian(counter11, v1.GetElement(3));
-			BinaryPrimitives.WriteUInt32BigEndian(counter12, v1.GetElement(4));
-			BinaryPrimitives.WriteUInt32BigEndian(counter13, v1.GetElement(5));
-			BinaryPrimitives.WriteUInt32BigEndian(counter14, v1.GetElement(6));
-			BinaryPrimitives.WriteUInt32BigEndian(counter15, v1.GetElement(7));
+			BinaryPrimitives.WriteUInt32BigEndian(counter8, vCounter1.GetElement(0));
+			BinaryPrimitives.WriteUInt32BigEndian(counter9, vCounter1.GetElement(1));
+			BinaryPrimitives.WriteUInt32BigEndian(counter10, vCounter1.GetElement(2));
+			BinaryPrimitives.WriteUInt32BigEndian(counter11, vCounter1.GetElement(3));
+			BinaryPrimitives.WriteUInt32BigEndian(counter12, vCounter1.GetElement(4));
+			BinaryPrimitives.WriteUInt32BigEndian(counter13, vCounter1.GetElement(5));
+			BinaryPrimitives.WriteUInt32BigEndian(counter14, vCounter1.GetElement(6));
+			BinaryPrimitives.WriteUInt32BigEndian(counter15, vCounter1.GetElement(7));
 
 			int n = Math.Min(source.Length, BlockSize16);
 
@@ -220,14 +219,13 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 
 		Vector256<uint> vCounter1 = Vector256.Create(10u, 11, 12, 13, 14, 15, 16, 17);
 		Vector256<uint> vAdd8 = Vector256.Create(8u);
-		Vector256<uint> v1 = vCounter1;
 
 		while (!source.IsEmpty)
 		{
 			_crypto16.Encrypt(counterBlock, _buffer);
 
-			Vector256<uint> v0 = Avx2.Add(v1, vAdd8);
-			v1 = Avx2.Add(v0, vAdd8);
+			Vector256<uint> v0 = Avx2.Add(vCounter1, vAdd8);
+			vCounter1 = Avx2.Add(v0, vAdd8);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
@@ -237,14 +235,14 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 			BinaryPrimitives.WriteUInt32BigEndian(counter5, v0.GetElement(5));
 			BinaryPrimitives.WriteUInt32BigEndian(counter6, v0.GetElement(6));
 			BinaryPrimitives.WriteUInt32BigEndian(counter7, v0.GetElement(7));
-			BinaryPrimitives.WriteUInt32BigEndian(counter8, v1.GetElement(0));
-			BinaryPrimitives.WriteUInt32BigEndian(counter9, v1.GetElement(1));
-			BinaryPrimitives.WriteUInt32BigEndian(counter10, v1.GetElement(2));
-			BinaryPrimitives.WriteUInt32BigEndian(counter11, v1.GetElement(3));
-			BinaryPrimitives.WriteUInt32BigEndian(counter12, v1.GetElement(4));
-			BinaryPrimitives.WriteUInt32BigEndian(counter13, v1.GetElement(5));
-			BinaryPrimitives.WriteUInt32BigEndian(counter14, v1.GetElement(6));
-			BinaryPrimitives.WriteUInt32BigEndian(counter15, v1.GetElement(7));
+			BinaryPrimitives.WriteUInt32BigEndian(counter8, vCounter1.GetElement(0));
+			BinaryPrimitives.WriteUInt32BigEndian(counter9, vCounter1.GetElement(1));
+			BinaryPrimitives.WriteUInt32BigEndian(counter10, vCounter1.GetElement(2));
+			BinaryPrimitives.WriteUInt32BigEndian(counter11, vCounter1.GetElement(3));
+			BinaryPrimitives.WriteUInt32BigEndian(counter12, vCounter1.GetElement(4));
+			BinaryPrimitives.WriteUInt32BigEndian(counter13, vCounter1.GetElement(5));
+			BinaryPrimitives.WriteUInt32BigEndian(counter14, vCounter1.GetElement(6));
+			BinaryPrimitives.WriteUInt32BigEndian(counter15, vCounter1.GetElement(7));
 
 			int n = Math.Min(source.Length, BlockSize16);
 

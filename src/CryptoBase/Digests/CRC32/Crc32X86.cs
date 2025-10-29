@@ -51,11 +51,18 @@ public class Crc32X86 : IHash
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint Update(ReadOnlySpan<byte> buffer, uint crc)
 	{
-		Vector128<ulong> k1k2 = Crc32Table.K1K2;
-		Vector128<ulong> k3k4 = Crc32Table.K3K4;
-		Vector128<ulong> k5 = Crc32Table.K5;
-		Vector128<ulong> ru = Crc32Table.RU;
-		Vector128<ulong> mask32 = Crc32Table.Mask32;
+		// [x**(4*128+32) mod P(x) << 32)]'  << 1   = 0x154442bd4
+		// [(x**(4*128-32) mod P(x) << 32)]' << 1   = 0x1c6e41596
+		Vector128<ulong> k1k2 = Vector128.Create(0x0000000154442bd4, 0x00000001c6e41596).AsUInt64();
+		// [(x**(128+32) mod P(x) << 32)]'   << 1   = 0x1751997d0
+		// [(x**(128-32) mod P(x) << 32)]'   << 1   = 0x0ccaa009e
+		Vector128<ulong> k3k4 = Vector128.Create(0x00000001751997d0, 0x00000000ccaa009e).AsUInt64();
+		// [(x**64 mod P(x) << 32)]'         << 1   = 0x163cd6124
+		Vector128<ulong> k5 = Vector128.Create(0x0000000163cd6124, 0x0000000000000000).AsUInt64();
+		// P(x)' = 0x1db710641
+		// u' = (x**64 / P(x))' = 0x1F7011641
+		Vector128<ulong> ru = Vector128.Create(0x00000001db710641, 0x00000001f7011641).AsUInt64();
+		Vector128<ulong> mask32 = Vector128.Create(0x00000000ffffffff, 0x0000000000000000).AsUInt64();
 		int length = buffer.Length;
 		ref byte ptr = ref buffer.GetReference();
 

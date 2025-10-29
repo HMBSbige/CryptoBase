@@ -457,6 +457,8 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int SalsaCore256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector128<ulong> incCounter01 = Vector128.Create(0ul, 1);
+		Vector128<ulong> incCounter23 = Vector128.Create(2ul, 3);
 		int length = source.Length;
 		int offset = 0;
 
@@ -511,8 +513,8 @@ public static class Salsa20Utils
 
 			Vector128<ulong> vo = Vector128.Create(counter);
 
-			Vector128<uint> x8 = Sse2.Add(ChaCha20Utils.IncCounter01, vo).AsUInt32();
-			Vector128<uint> x9 = Sse2.Add(ChaCha20Utils.IncCounter23, vo).AsUInt32();
+			Vector128<uint> x8 = Sse2.Add(incCounter01, vo).AsUInt32();
+			Vector128<uint> x9 = Sse2.Add(incCounter23, vo).AsUInt32();
 
 			Vector128<uint> t8 = Sse2.UnpackLow(x8, x9);
 			Vector128<uint> t9 = Sse2.UnpackHigh(x8, x9);
@@ -559,6 +561,8 @@ public static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int SalsaCore512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector256<ulong> incCounter0123 = Vector256.Create(0ul, 1, 2, 3);
+		Vector256<ulong> incCounter4567 = Vector256.Create(4ul, 5, 6, 7);
 		int length = source.Length;
 		int offset = 0;
 
@@ -604,8 +608,8 @@ public static class Salsa20Utils
 			Vector256<uint> x8 = Vector256.Create(counter).AsUInt32();
 			Vector256<uint> x9 = x8;
 
-			Vector256<uint> t0 = Avx2.Add(ChaCha20Utils.IncCounter0123, x8.AsUInt64()).AsUInt32();
-			Vector256<uint> t1 = Avx2.Add(ChaCha20Utils.IncCounter4567, x9.AsUInt64()).AsUInt32();
+			Vector256<uint> t0 = Avx2.Add(incCounter0123, x8.AsUInt64()).AsUInt32();
+			Vector256<uint> t1 = Avx2.Add(incCounter4567, x8.AsUInt64()).AsUInt32();
 
 			x8 = Avx2.UnpackLow(t0, t1);
 			x9 = Avx2.UnpackHigh(t0, t1);
