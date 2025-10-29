@@ -73,12 +73,9 @@ public class SM4Test
 
 		Assert.True(expectedCipher.SequenceEqual(destination));
 
-		if (n is 4) //TODO
-		{
-			crypto.Decrypt(expectedCipher, destination);
+		crypto.Decrypt(expectedCipher, destination);
 
-			Assert.True(destination.SequenceEqual(source));
-		}
+		Assert.True(destination.SequenceEqual(source));
 
 		crypto.Dispose();
 	}

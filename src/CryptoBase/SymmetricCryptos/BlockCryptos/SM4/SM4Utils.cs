@@ -293,6 +293,89 @@ public static class SM4Utils
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 7 * 16), b3);
 	}
 
+	public static void Decrypt8(uint[] rk, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	{
+		ref byte dstRef = ref destination.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+
+		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector128<byte> shr = Vector128.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3);
+
+		ref readonly Vector128<byte> s0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 16));
+		ref readonly Vector128<byte> s1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 16));
+		ref readonly Vector128<byte> s2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 16));
+		ref readonly Vector128<byte> s3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 16));
+		ref readonly Vector128<byte> s4 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 4 * 16));
+		ref readonly Vector128<byte> s5 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 5 * 16));
+		ref readonly Vector128<byte> s6 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 6 * 16));
+		ref readonly Vector128<byte> s7 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 7 * 16));
+
+		Vector128<byte> a0 = s0.ReverseEndianness32();
+		Vector128<byte> a1 = s1.ReverseEndianness32();
+		Vector128<byte> a2 = s2.ReverseEndianness32();
+		Vector128<byte> a3 = s3.ReverseEndianness32();
+		Vector128<byte> b0 = s4.ReverseEndianness32();
+		Vector128<byte> b1 = s5.ReverseEndianness32();
+		Vector128<byte> b2 = s6.ReverseEndianness32();
+		Vector128<byte> b3 = s7.ReverseEndianness32();
+
+		Transpose(ref a0, ref a1, ref a2, ref a3);
+		Transpose(ref b0, ref b1, ref b2, ref b3);
+
+		for (int i = 31; i >= 0; --i)
+		{
+			Vector128<byte> x0 = Vector128.Create(rk[i]).AsByte();
+			Vector128<byte> x1 = x0;
+
+			x0 = x0 ^ a1 ^ a2 ^ a3;
+			x0.PreTransform();
+			x0 = AesX86.EncryptLast(x0, c0f);
+			x0.PostTransform();
+			x0 = Ssse3.Shuffle(x0, shr);
+			Vector128<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
+			t0 = t0.RotateLeftUInt32(2);
+			x0 = x0 ^ t0 ^ x0.RotateLeftUInt32_24() ^ a0;
+			a0 = a1;
+			a1 = a2;
+			a2 = a3;
+			a3 = x0;
+
+			x1 = x1 ^ b1 ^ b2 ^ b3;
+			x1.PreTransform();
+			x1 = AesX86.EncryptLast(x1, c0f);
+			x1.PostTransform();
+			x1 = Ssse3.Shuffle(x1, shr);
+			Vector128<byte> t1 = x1 ^ x1.RotateLeftUInt32_8() ^ x1.RotateLeftUInt32_16();
+			t1 = t1.RotateLeftUInt32(2);
+			x1 = x1 ^ t1 ^ x1.RotateLeftUInt32_24() ^ b0;
+			b0 = b1;
+			b1 = b2;
+			b2 = b3;
+			b3 = x1;
+		}
+
+		Transpose(ref a0, ref a1, ref a2, ref a3);
+		Transpose(ref b0, ref b1, ref b2, ref b3);
+
+		a0 = a0.ReverseEndianness128();
+		a1 = a1.ReverseEndianness128();
+		a2 = a2.ReverseEndianness128();
+		a3 = a3.ReverseEndianness128();
+		b0 = b0.ReverseEndianness128();
+		b1 = b1.ReverseEndianness128();
+		b2 = b2.ReverseEndianness128();
+		b3 = b3.ReverseEndianness128();
+
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 0 * 16), a0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 1 * 16), a1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 2 * 16), a2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 3 * 16), a3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 4 * 16), b0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 5 * 16), b1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 6 * 16), b2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 7 * 16), b3);
+	}
+
 	public static void Encrypt16(uint[] rk, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		ref byte dstRef = ref destination.GetReference();
@@ -323,6 +406,91 @@ public static class SM4Utils
 		Transpose(ref b0, ref b1, ref b2, ref b3);
 
 		for (int i = 0; i < 32; ++i)
+		{
+			Vector256<byte> x0 = Vector256.Create(rk[i]).AsByte();
+			Vector256<byte> x1 = x0;
+
+			x0 = x0 ^ a1 ^ a2 ^ a3;
+			x0.PreTransform();
+			Vector128<byte> u0 = AesX86.EncryptLast(x0.GetUpper(), c0f);
+			x0 = AesX86.EncryptLast(x0.GetLower(), c0f).ToVector256Unsafe().WithUpper(u0);
+			x0.PostTransform();
+			x0 = Avx2.Shuffle(x0, vshr);
+			Vector256<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
+			t0 = t0.RotateLeftUInt32(2);
+			x0 = x0 ^ t0 ^ x0.RotateLeftUInt32_24() ^ a0;
+			a0 = a1;
+			a1 = a2;
+			a2 = a3;
+			a3 = x0;
+
+			x1 = x1 ^ b1 ^ b2 ^ b3;
+			x1.PreTransform();
+			Vector128<byte> u1 = AesX86.EncryptLast(x1.GetUpper(), c0f);
+			x1 = AesX86.EncryptLast(x1.GetLower(), c0f).ToVector256Unsafe().WithUpper(u1);
+			x1.PostTransform();
+			x1 = Avx2.Shuffle(x1, vshr);
+			Vector256<byte> t1 = x1 ^ x1.RotateLeftUInt32_8() ^ x1.RotateLeftUInt32_16();
+			t1 = t1.RotateLeftUInt32(2);
+			x1 = x1 ^ t1 ^ x1.RotateLeftUInt32_24() ^ b0;
+			b0 = b1;
+			b1 = b2;
+			b2 = b3;
+			b3 = x1;
+		}
+
+		Transpose(ref a0, ref a1, ref a2, ref a3);
+		Transpose(ref b0, ref b1, ref b2, ref b3);
+
+		a0 = a0.ReverseEndianness128();
+		a1 = a1.ReverseEndianness128();
+		a2 = a2.ReverseEndianness128();
+		a3 = a3.ReverseEndianness128();
+		b0 = b0.ReverseEndianness128();
+		b1 = b1.ReverseEndianness128();
+		b2 = b2.ReverseEndianness128();
+		b3 = b3.ReverseEndianness128();
+
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 0 * 32), a0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 1 * 32), a1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 2 * 32), a2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 3 * 32), a3);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 4 * 32), b0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 5 * 32), b1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 6 * 32), b2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 7 * 32), b3);
+	}
+
+	public static void Decrypt16(uint[] rk, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	{
+		ref byte dstRef = ref destination.GetReference();
+		ref byte sourceRef = ref source.GetReference();
+
+		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
+
+		ref readonly Vector256<byte> s0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
+		ref readonly Vector256<byte> s1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
+		ref readonly Vector256<byte> s2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 32));
+		ref readonly Vector256<byte> s3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 32));
+		ref readonly Vector256<byte> s4 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 4 * 32));
+		ref readonly Vector256<byte> s5 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 5 * 32));
+		ref readonly Vector256<byte> s6 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 6 * 32));
+		ref readonly Vector256<byte> s7 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 7 * 32));
+
+		Vector256<byte> a0 = s0.ReverseEndianness32();
+		Vector256<byte> a1 = s1.ReverseEndianness32();
+		Vector256<byte> a2 = s2.ReverseEndianness32();
+		Vector256<byte> a3 = s3.ReverseEndianness32();
+		Vector256<byte> b0 = s4.ReverseEndianness32();
+		Vector256<byte> b1 = s5.ReverseEndianness32();
+		Vector256<byte> b2 = s6.ReverseEndianness32();
+		Vector256<byte> b3 = s7.ReverseEndianness32();
+
+		Transpose(ref a0, ref a1, ref a2, ref a3);
+		Transpose(ref b0, ref b1, ref b2, ref b3);
+
+		for (int i = 31; i >= 0; --i)
 		{
 			Vector256<byte> x0 = Vector256.Create(rk[i]).AsByte();
 			Vector256<byte> x1 = x0;
