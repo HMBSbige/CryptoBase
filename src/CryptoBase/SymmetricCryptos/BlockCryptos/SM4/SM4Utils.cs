@@ -210,7 +210,7 @@ public static class SM4Utils
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, 3 * 16), t3);
 	}
 
-	public static void Encrypt8(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
+	public static void Encrypt8(uint[] rk, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		ref byte dstRef = ref destination.GetReference();
 		ref byte sourceRef = ref source.GetReference();
