@@ -57,9 +57,9 @@ public class BenchmarkTest
 	}
 
 	[Fact]
-	public void AESBenchmark()
+	public void AesBenchmark()
 	{
-		BenchmarkRunner.Run<AESBenchmark>();
+		BenchmarkRunner.Run<AesBenchmark>();
 	}
 
 	[Fact]
@@ -78,12 +78,6 @@ public class BenchmarkTest
 	public void CTRBenchmark()
 	{
 		BenchmarkRunner.Run<CTRBenchmark>();
-	}
-
-	[Fact]
-	public void CBCBenchmark()
-	{
-		BenchmarkRunner.Run<CBCBenchmark>();
 	}
 
 	[Fact]

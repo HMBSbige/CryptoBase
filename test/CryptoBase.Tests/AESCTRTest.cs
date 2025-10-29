@@ -55,7 +55,7 @@ public class AESCTRTest
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
 		Test_Internal(StreamCryptoCreate.AesCtr(key, iv), hex, hex2);
-		Test_Internal(new CTR128StreamMode(AESUtils.CreateECB(key), iv), hex, hex2);
+		Test_Internal(new CTR128StreamMode(AesCrypto.CreateCore(key), iv), hex, hex2);
 	}
 
 	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
@@ -64,6 +64,6 @@ public class AESCTRTest
 	{
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
-		Test_Internal(new CTR128StreamModeX86(AESUtils.CreateECB(key), iv), hex, hex2);
+		Test_Internal(new CTR128StreamModeX86(AesCrypto.CreateCore(key), iv), hex, hex2);
 	}
 }

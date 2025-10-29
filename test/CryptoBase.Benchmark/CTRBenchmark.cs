@@ -33,7 +33,7 @@ public class CTRBenchmark
 		ReadOnlySpan<byte> iv = _randomIv16.AsSpan();
 		ReadOnlySpan<byte> data = _randombytes.Span;
 
-		using CTR128StreamModeX86 crypto = new(AESUtils.CreateECB(key), iv);
+		using CTR128StreamModeX86 crypto = new(AesCrypto.CreateCore(key), iv);
 
 		Span<byte> o = stackalloc byte[data.Length];
 
@@ -50,7 +50,7 @@ public class CTRBenchmark
 		ReadOnlySpan<byte> iv = _randomIv16.AsSpan();
 		ReadOnlySpan<byte> data = _randombytes.Span;
 
-		using CTR128StreamMode crypto = new(AESUtils.CreateECB(key), iv);
+		using CTR128StreamMode crypto = new(AesCrypto.CreateCore(key), iv);
 
 		Span<byte> o = stackalloc byte[data.Length];
 

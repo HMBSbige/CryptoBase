@@ -54,7 +54,6 @@ SM4 | ✅ |
 
 ##### Block cipher modes
 
-* ✅ CBC
 * ✅ CFB128(Stream)
 * ✅ CTR128(Stream)
 * ✅ XTS

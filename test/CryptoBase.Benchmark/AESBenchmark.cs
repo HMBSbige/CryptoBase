@@ -7,12 +7,12 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark;
 
 [MemoryDiagnoser]
-public class AESBenchmark
+public class AesBenchmark
 {
 	[Params(16, 24, 32)]
 	public int KeyLength { get; set; }
 
-	[Params(10000)]
+	[Params(1, 100, 10000)]
 	public int Max { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -37,51 +37,21 @@ public class AESBenchmark
 		crypto.Dispose();
 	}
 
-	private void TestDecrypt(IBlockCrypto crypto, Span<byte> origin)
-	{
-		Span<byte> o = stackalloc byte[origin.Length];
-
-		for (int i = 0; i < Max; ++i)
-		{
-			crypto.Decrypt(origin, o);
-		}
-
-		crypto.Dispose();
-	}
-
 	[Benchmark]
 	public void BouncyCastleEncrypt()
 	{
-		TestEncrypt(new BcAESCrypto(_randomKey), _randombytes.Span);
+		TestEncrypt(new BcAesCrypto(_randomKey), _randombytes.Span);
 	}
 
 	[Benchmark(Baseline = true)]
 	public void X86Encrypt()
 	{
-		TestEncrypt(AESUtils.CreateECB(_randomKey), _randombytes.Span);
+		TestEncrypt(AesCrypto.CreateCore(_randomKey), _randombytes.Span);
 	}
 
 	[Benchmark]
 	public void DefaultEncrypt()
 	{
-		TestEncrypt(new AESECBCrypto(_randomKey), _randombytes.Span);
-	}
-
-	[Benchmark]
-	public void BouncyCastleDecrypt()
-	{
-		TestDecrypt(new BcAESCrypto(_randomKey), _randombytes.Span);
-	}
-
-	[Benchmark]
-	public void X86Decrypt()
-	{
-		TestDecrypt(AESUtils.CreateECB(_randomKey), _randombytes.Span);
-	}
-
-	[Benchmark]
-	public void DefaultDecrypt()
-	{
-		TestDecrypt(new AESECBCrypto(_randomKey), _randombytes.Span);
+		TestEncrypt(new DefaultAesCrypto(_randomKey), _randombytes.Span);
 	}
 }

@@ -23,8 +23,8 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
-	public static T ThrowArgumentOutOfRangeException<T>(string? paramName = default)
+	public static T ThrowArgumentOutOfRangeException<T>(string? paramName = default, string? message = default)
 	{
-		throw new ArgumentOutOfRangeException(paramName);
+		throw new ArgumentOutOfRangeException(paramName, message);
 	}
 }

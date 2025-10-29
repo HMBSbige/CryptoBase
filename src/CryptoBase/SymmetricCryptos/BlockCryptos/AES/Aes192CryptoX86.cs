@@ -1,6 +1,6 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
-public class Aes192CryptoX86 : AESCryptoX86
+public class Aes192CryptoX86 : AesCrypto
 {
 	private Vector128<byte> _k0, _k1, _k2, _k3, _k4, _k5, _k6, _k7, _k8, _k9, _k10,
 		_k11, _k12, _k13, _k14, _k15, _k16, _k17, _k18, _k19,
@@ -48,8 +48,12 @@ public class Aes192CryptoX86 : AESCryptoX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Init(ReadOnlySpan<byte> key)
 	{
-		Vector128<byte> t0 = Vector128.Create(key); // 0,15
-		Vector128<byte> t1 = Vector128.Create(Vector64.Create(key[16..]), Vector64<byte>.Zero); // 16,23
+		ref byte keyRef = ref key.GetReference();
+
+		Vector128<byte> t0 = Unsafe.ReadUnaligned<Vector128<byte>>(in keyRef);// 0,15
+
+		ref readonly ulong t = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref keyRef, 16));
+		Vector128<byte> t1 = Vector128.Create(t, 0).AsByte();// 16,23
 
 		KeyRound(out _k0, out _k1, out _k2, ref t0, ref t1, Rcon1, Rcon2);
 		KeyRound(out _k3, out _k4, out _k5, ref t0, ref t1, Rcon3, Rcon4);
@@ -74,7 +78,7 @@ public class Aes192CryptoX86 : AESCryptoX86
 	{
 		base.Encrypt(source, destination);
 
-		Vector128<byte> t = Vector128.Create(source);
+		Vector128<byte> t = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
 
 		t ^= _k0;
 		t = AesX86.Encrypt(t, _k1);
@@ -90,14 +94,14 @@ public class Aes192CryptoX86 : AESCryptoX86
 		t = AesX86.Encrypt(t, _k11);
 		t = AesX86.EncryptLast(t, _k12);
 
-		t.CopyTo(destination);
+		Unsafe.WriteUnaligned(ref destination.GetReference(), t);
 	}
 
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
 
-		Vector128<byte> t = Vector128.Create(source);
+		Vector128<byte> t = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
 
 		t ^= _k12;
 		t = AesX86.Decrypt(t, _k13);
@@ -113,6 +117,6 @@ public class Aes192CryptoX86 : AESCryptoX86
 		t = AesX86.Decrypt(t, _k23);
 		t = AesX86.DecryptLast(t, _k0);
 
-		t.CopyTo(destination);
+		Unsafe.WriteUnaligned(ref destination.GetReference(), t);
 	}
 }

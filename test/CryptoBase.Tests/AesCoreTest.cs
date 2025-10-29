@@ -5,7 +5,7 @@ using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 namespace CryptoBase.Tests;
 
-public class AESTest
+public class AesCoreTest
 {
 	private static void Test_Internal(IBlockCrypto crypto, string hex1, string hex2)
 	{
@@ -44,8 +44,8 @@ public class AESTest
 	public void Test(string keyHex, string hex1, string hex2)
 	{
 		byte[] key = keyHex.FromHex();
-		Test_Internal(new BcAESCrypto(key), hex1, hex2);
-		Test_Internal(AESUtils.CreateECB(key), hex1, hex2);
-		Test_Internal(new AESECBCrypto(key), hex1, hex2);
+		Test_Internal(new BcAesCrypto(key), hex1, hex2);
+		Test_Internal(AesCrypto.CreateCore(key), hex1, hex2);
+		Test_Internal(new DefaultAesCrypto(key), hex1, hex2);
 	}
 }

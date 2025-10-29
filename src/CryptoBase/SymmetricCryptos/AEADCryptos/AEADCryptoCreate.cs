@@ -15,7 +15,7 @@ public static class AEADCryptoCreate
 			return new DefaultAesGcmCrypto(key);
 		}
 
-		return new GcmCryptoMode(AESUtils.CreateECB(key));
+		return new GcmCryptoMode(AesCrypto.CreateCore(key));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

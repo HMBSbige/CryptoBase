@@ -9,13 +9,13 @@ public abstract class BlockCryptoBase : IBlockCrypto
 	public virtual void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
 	}
 
 	public virtual void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
 	}
 
 	public virtual void Dispose()

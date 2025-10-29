@@ -81,7 +81,7 @@ public class SM4Test
 	public void Test(string keyHex, string hex1, string hex2, string hex3)
 	{
 		byte[] key = keyHex.FromHex();
-		Test_Internal(new BcSM4Crypto(key), hex1, hex2, hex3);
+		Test_Internal(new BcSm4Crypto(key), hex1, hex2, hex3);
 		Test_Internal(new SM4Crypto(key), hex1, hex2, hex3);
 	}
 

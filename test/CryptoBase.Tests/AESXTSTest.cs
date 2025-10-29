@@ -63,8 +63,8 @@ public class AESXTSTest
 		ReadOnlySpan<byte> key1 = key.Slice(0, key.Length >> 1);
 		ReadOnlySpan<byte> key2 = key.Slice(key.Length >> 1);
 
-		using IBlockCrypto dataCrypto = AESUtils.CreateECB(key1);
-		using IBlockCrypto tweakCrypto = AESUtils.CreateECB(key2);
+		using IBlockCrypto dataCrypto = AesCrypto.CreateCore(key1);
+		using IBlockCrypto tweakCrypto = AesCrypto.CreateCore(key2);
 
 		TestInternal(new XtsMode(dataCrypto, tweakCrypto), iv, plain, cipher);
 	}
@@ -81,8 +81,8 @@ public class AESXTSTest
 		ReadOnlySpan<byte> key1 = key.Slice(0, key.Length >> 1);
 		ReadOnlySpan<byte> key2 = key.Slice(key.Length >> 1);
 
-		using IBlockCrypto dataCrypto = AESUtils.CreateECB(key1);
-		using IBlockCrypto tweakCrypto = AESUtils.CreateECB(key2);
+		using IBlockCrypto dataCrypto = AesCrypto.CreateCore(key1);
+		using IBlockCrypto tweakCrypto = AesCrypto.CreateCore(key2);
 
 		TestInternal(new XtsMode(dataCrypto, tweakCrypto), iv, plain, cipher);
 	}

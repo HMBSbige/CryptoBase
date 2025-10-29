@@ -1,24 +1,24 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
-public sealed class BcAESCrypto : BlockCryptoBase
+public sealed class BcSm4Crypto : BlockCryptoBase
 {
-	public override string Name => @"AES";
+	public override string Name => @"SM4";
 
 	public override int BlockSize => 16;
 
-	private readonly IBlockCipher _encryptionEngine;
-	private readonly IBlockCipher _decryptionEngine;
+	private readonly SM4Engine _encryptionEngine;
+	private readonly SM4Engine _decryptionEngine;
 
-	public BcAESCrypto(ReadOnlySpan<byte> key)
+	public BcSm4Crypto(ReadOnlySpan<byte> key)
 	{
 		KeyParameter keyParameter = new(key);
 
-		_encryptionEngine = AesUtilities.CreateEngine();
-		_decryptionEngine = AesUtilities.CreateEngine();
+		_encryptionEngine = new SM4Engine();
+		_decryptionEngine = new SM4Engine();
 		_encryptionEngine.Init(true, keyParameter);
 		_decryptionEngine.Init(false, keyParameter);
 	}

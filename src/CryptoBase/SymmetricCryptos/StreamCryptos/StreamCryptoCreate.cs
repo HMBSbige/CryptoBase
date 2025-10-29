@@ -21,7 +21,7 @@ public static class StreamCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto AesCtr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return BlockCryptoModeCreate.Ctr(AESUtils.CreateECB(key), iv);
+		return BlockCryptoModeCreate.Ctr(AesCrypto.CreateCore(key), iv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,7 +43,7 @@ public static class StreamCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto AesCfb(bool isEncrypt, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CFB128StreamMode(isEncrypt, AESUtils.CreateECB(key), iv);
+		return new CFB128StreamMode(isEncrypt, AesCrypto.CreateCore(key), iv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,6 +1,6 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
-public class Aes256CryptoX86 : AESCryptoX86
+public class Aes256CryptoX86 : AesCrypto
 {
 	private Vector128<byte> _k0, _k1, _k2, _k3, _k4, _k5, _k6, _k7, _k8, _k9, _k10,
 		_k11, _k12, _k13, _k14, _k15, _k16, _k17, _k18, _k19,
@@ -41,8 +41,7 @@ public class Aes256CryptoX86 : AESCryptoX86
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void KeyRound(out Vector128<byte> a, out Vector128<byte> b,
-		ref Vector128<byte> t0, ref Vector128<byte> t1, [ConstantExpected] byte rcon)
+	private static void KeyRound(out Vector128<byte> a, out Vector128<byte> b, ref Vector128<byte> t0, ref Vector128<byte> t1, [ConstantExpected] byte rcon)
 	{
 		a = t1;
 		Vector128<byte> t2 = AesX86.KeygenAssist(t1, rcon);
@@ -54,8 +53,10 @@ public class Aes256CryptoX86 : AESCryptoX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Init(ReadOnlySpan<byte> key)
 	{
-		Vector128<byte> t0 = Vector128.Create(key); // 0,15
-		Vector128<byte> t1 = Vector128.Create(key[16..]); // 15,31
+		ref byte keyRef = ref key.GetReference();
+
+		Vector128<byte> t0 = Unsafe.ReadUnaligned<Vector128<byte>>(in keyRef);// 0,15
+		Vector128<byte> t1 = Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref keyRef, 16));// 15,31
 
 		_k0 = t0;
 
@@ -90,7 +91,7 @@ public class Aes256CryptoX86 : AESCryptoX86
 	{
 		base.Encrypt(source, destination);
 
-		Vector128<byte> t = Vector128.Create(source);
+		Vector128<byte> t = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
 
 		t ^= _k0;
 		t = AesX86.Encrypt(t, _k1);
@@ -108,14 +109,14 @@ public class Aes256CryptoX86 : AESCryptoX86
 		t = AesX86.Encrypt(t, _k13);
 		t = AesX86.EncryptLast(t, _k14);
 
-		t.CopyTo(destination);
+		Unsafe.WriteUnaligned(ref destination.GetReference(), t);
 	}
 
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
 
-		Vector128<byte> t = Vector128.Create(source);
+		Vector128<byte> t = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
 
 		t ^= _k14;
 		t = AesX86.Decrypt(t, _k15);
@@ -133,6 +134,6 @@ public class Aes256CryptoX86 : AESCryptoX86
 		t = AesX86.Decrypt(t, _k27);
 		t = AesX86.DecryptLast(t, _k0);
 
-		t.CopyTo(destination);
+		Unsafe.WriteUnaligned(ref destination.GetReference(), t);
 	}
 }

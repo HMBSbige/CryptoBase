@@ -104,7 +104,7 @@ public class AESGCMTest
 		byte[] key = keyHex.FromHex();
 		Test_Internal(new DefaultAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 		Test_Internal(new BcAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
-		Test_Internal(new GcmCryptoMode(AESUtils.CreateECB(key)), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
+		Test_Internal(new GcmCryptoMode(AesCrypto.CreateCore(key)), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 		Test_Internal(AEADCryptoCreate.AesGcm(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 	}
 }
