@@ -2,19 +2,6 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
 public static class SM4Utils
 {
-	private static readonly Vector128<byte> c0f = Vector128.Create((byte)0x0F);
-	private static readonly Vector128<byte> shr = Vector128.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3);
-	private static readonly Vector128<byte> m1l = Vector128.Create(0x9197E2E474720701, 0xC7C1B4B222245157).AsByte();
-	private static readonly Vector128<byte> m1h = Vector128.Create(0xE240AB09EB49A200, 0xF052B91BF95BB012).AsByte();
-	private static readonly Vector128<byte> m2l = Vector128.Create(0x5B67F2CEA19D0834, 0xEDD14478172BBE82).AsByte();
-	private static readonly Vector128<byte> m2h = Vector128.Create(0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF).AsByte();
-
-	private static readonly Vector256<byte> vc0f = Vector256.Create((byte)0x0F);
-	private static readonly Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
-	private static readonly Vector256<byte> vm1l = Vector256.Create(0x9197E2E474720701, 0xC7C1B4B222245157, 0x9197E2E474720701, 0xC7C1B4B222245157).AsByte();
-	private static readonly Vector256<byte> vm1h = Vector256.Create(0xE240AB09EB49A200, 0xF052B91BF95BB012, 0xE240AB09EB49A200, 0xF052B91BF95BB012).AsByte();
-	private static readonly Vector256<byte> vm2l = Vector256.Create(0x5B67F2CEA19D0834, 0xEDD14478172BBE82, 0x5B67F2CEA19D0834, 0xEDD14478172BBE82).AsByte();
-	private static readonly Vector256<byte> vm2h = Vector256.Create(0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF, 0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF).AsByte();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Transpose(ref Vector128<byte> x0, ref Vector128<byte> x1, ref Vector128<byte> x2, ref Vector128<byte> x3)
@@ -51,6 +38,9 @@ public static class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PreTransform(this ref Vector128<byte> x)
 	{
+		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector128<byte> m1l = Vector128.Create(0x9197E2E474720701, 0xC7C1B4B222245157).AsByte();
+		Vector128<byte> m1h = Vector128.Create(0xE240AB09EB49A200, 0xF052B91BF95BB012).AsByte();
 		Vector128<byte> t = x & c0f;
 		x &= ~c0f;
 		x = (x.AsUInt32() >>> 4).AsByte();
@@ -62,6 +52,9 @@ public static class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PreTransform(this ref Vector256<byte> x)
 	{
+		Vector256<byte> vc0f = Vector256.Create((byte)0x0F);
+		Vector256<byte> vm1l = Vector256.Create(0x9197E2E474720701, 0xC7C1B4B222245157, 0x9197E2E474720701, 0xC7C1B4B222245157).AsByte();
+		Vector256<byte> vm1h = Vector256.Create(0xE240AB09EB49A200, 0xF052B91BF95BB012, 0xE240AB09EB49A200, 0xF052B91BF95BB012).AsByte();
 		Vector256<byte> t = x & vc0f;
 		x &= ~vc0f;
 		x = (x.AsUInt32() >>> 4).AsByte();
@@ -74,6 +67,9 @@ public static class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PostTransform(this ref Vector128<byte> x)
 	{
+		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector128<byte> m2l = Vector128.Create(0x5B67F2CEA19D0834, 0xEDD14478172BBE82).AsByte();
+		Vector128<byte> m2h = Vector128.Create(0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF).AsByte();
 		Vector128<byte> t = ~x & c0f;
 		x = (x.AsUInt32() >>> 4).AsByte();
 		x &= c0f;
@@ -86,6 +82,9 @@ public static class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PostTransform(this ref Vector256<byte> x)
 	{
+		Vector256<byte> vc0f = Vector256.Create((byte)0x0F);
+		Vector256<byte> vm2l = Vector256.Create(0x5B67F2CEA19D0834, 0xEDD14478172BBE82, 0x5B67F2CEA19D0834, 0xEDD14478172BBE82).AsByte();
+		Vector256<byte> vm2h = Vector256.Create(0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF, 0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF).AsByte();
 		Vector256<byte> t = ~x & vc0f;
 		x = (x.AsUInt32() >>> 4).AsByte();
 		x &= vc0f;
@@ -100,6 +99,8 @@ public static class SM4Utils
 	/// </summary>
 	public static void Encrypt4(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector128<byte> shr = Vector128.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3);
 		Vector128<byte> t0 = Vector128.Create(source).ReverseEndianness32();
 		Vector128<byte> t1 = Vector128.Create(source.Slice(16)).ReverseEndianness32();
 		Vector128<byte> t2 = Vector128.Create(source.Slice(32)).ReverseEndianness32();
@@ -141,6 +142,8 @@ public static class SM4Utils
 
 	public static void Encrypt8(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector128<byte> shr = Vector128.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3);
 		Vector128<byte> a0 = Vector128.Create(source).ReverseEndianness32();
 		Vector128<byte> a1 = Vector128.Create(source.Slice(16)).ReverseEndianness32();
 		Vector128<byte> a2 = Vector128.Create(source.Slice(32)).ReverseEndianness32();
@@ -201,6 +204,8 @@ public static class SM4Utils
 
 	public static void Encrypt16(uint[] rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
 		ref byte sourceRef = ref source.GetReference();
 		ref byte dstRef = ref destination.GetReference();
 

@@ -15,11 +15,6 @@ public ref struct Poly1305X86 : IMac
 	public const int BlockSize2 = BlockSize * 2;
 	public const int BlockSize4 = BlockSize * 4;
 
-	private static readonly Vector128<uint> And128 = Vector128.Create(0x3ffffff, 0, 0x3ffffff, 0).AsUInt32();
-	private static readonly Vector128<uint> Or128 = Vector128.Create(0x01000000, 0, 0x01000000, 0).AsUInt32();
-	private static readonly Vector256<uint> And256 = Vector256.Create(0x3ffffff, 0, 0x3ffffff, 0, 0x3ffffff, 0, 0x3ffffff, 0).AsUInt32();
-	private static readonly Vector256<uint> Or256 = Vector256.Create(0x01000000, 0, 0x01000000, 0, 0x01000000, 0, 0x01000000, 0).AsUInt32();
-
 	private readonly uint _x0, _x1, _x2, _x3;
 	private uint _h0, _h1, _h2, _h3, _h4;
 
@@ -227,33 +222,35 @@ public ref struct Poly1305X86 : IMac
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Block2(scoped ReadOnlySpan<byte> m)
 	{
+		Vector128<uint> and128 = Vector128.Create(0x3ffffffu, 0u, 0x3ffffffu, 0u);
+		Vector128<uint> or128 = Vector128.Create(0x01000000u, 0u, 0x01000000u, 0u);
 		ReadOnlySpan<uint> n0 = MemoryMarshal.Cast<byte, uint>(m);
 		Vector128<uint> hc0 = IntrinsicsUtils.CreateTwoUInt(n0[0], n0[4]);
-		hc0 = Sse2.And(hc0, And128);
+		hc0 = Sse2.And(hc0, and128);
 		hc0 = Sse2.Add(hc0, Sse2.ConvertScalarToVector128UInt32(_h0));
 
 		ReadOnlySpan<uint> n1 = MemoryMarshal.Cast<byte, uint>(m.Slice(3));
 		Vector128<uint> hc1 = IntrinsicsUtils.CreateTwoUInt(n1[0], n1[4]);
 		hc1 = Sse2.ShiftRightLogical(hc1, 2);
-		hc1 = Sse2.And(hc1, And128);
+		hc1 = Sse2.And(hc1, and128);
 		hc1 = Sse2.Add(hc1, Sse2.ConvertScalarToVector128UInt32(_h1));
 
 		ReadOnlySpan<uint> n2 = MemoryMarshal.Cast<byte, uint>(m.Slice(6));
 		Vector128<uint> hc2 = IntrinsicsUtils.CreateTwoUInt(n2[0], n2[4]);
 		hc2 = Sse2.ShiftRightLogical(hc2, 4);
-		hc2 = Sse2.And(hc2, And128);
+		hc2 = Sse2.And(hc2, and128);
 		hc2 = Sse2.Add(hc2, Sse2.ConvertScalarToVector128UInt32(_h2));
 
 		ReadOnlySpan<uint> n3 = MemoryMarshal.Cast<byte, uint>(m.Slice(9));
 		Vector128<uint> hc3 = IntrinsicsUtils.CreateTwoUInt(n3[0], n3[4]);
 		hc3 = Sse2.ShiftRightLogical(hc3, 6);
-		hc3 = Sse2.And(hc3, And128);
+		hc3 = Sse2.And(hc3, and128);
 		hc3 = Sse2.Add(hc3, Sse2.ConvertScalarToVector128UInt32(_h3));
 
 		ReadOnlySpan<uint> n4 = MemoryMarshal.Cast<byte, uint>(m.Slice(12));
 		Vector128<uint> hc4 = IntrinsicsUtils.CreateTwoUInt(n4[0], n4[4]);
 		hc4 = Sse2.ShiftRightLogical(hc4, 8);
-		hc4 = Sse2.Xor(hc4, Or128);
+		hc4 = Sse2.Xor(hc4, or128);
 		hc4 = Sse2.Add(hc4, Sse2.ConvertScalarToVector128UInt32(_h4));
 
 		Vector128<ulong> t1 = Sse2.Multiply(_ru0, hc0);
@@ -308,33 +305,35 @@ public ref struct Poly1305X86 : IMac
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Block4(scoped ReadOnlySpan<byte> m)
 	{
+		Vector256<uint> and256 = Vector256.Create(0x3ffffffu, 0u, 0x3ffffffu, 0u, 0x3ffffffu, 0u, 0x3ffffffu, 0u);
+		Vector256<uint> or256 = Vector256.Create(0x01000000u, 0u, 0x01000000u, 0u, 0x01000000u, 0u, 0x01000000u, 0u);
 		ReadOnlySpan<uint> n0 = MemoryMarshal.Cast<byte, uint>(m);
 		Vector256<uint> hc0 = IntrinsicsUtils.Create4UInt(n0[0], n0[4], n0[8], n0[12]);
-		hc0 = Avx2.And(hc0, And256);
+		hc0 = Avx2.And(hc0, and256);
 		hc0 = Avx2.Add(hc0, Vector256.CreateScalar(_h0));
 
 		ReadOnlySpan<uint> n1 = MemoryMarshal.Cast<byte, uint>(m.Slice(3));
 		Vector256<uint> hc1 = IntrinsicsUtils.Create4UInt(n1[0], n1[4], n1[8], n1[12]);
 		hc1 = Avx2.ShiftRightLogical(hc1, 2);
-		hc1 = Avx2.And(hc1, And256);
+		hc1 = Avx2.And(hc1, and256);
 		hc1 = Avx2.Add(hc1, Vector256.CreateScalar(_h1));
 
 		ReadOnlySpan<uint> n2 = MemoryMarshal.Cast<byte, uint>(m.Slice(6));
 		Vector256<uint> hc2 = IntrinsicsUtils.Create4UInt(n2[0], n2[4], n2[8], n2[12]);
 		hc2 = Avx2.ShiftRightLogical(hc2, 4);
-		hc2 = Avx2.And(hc2, And256);
+		hc2 = Avx2.And(hc2, and256);
 		hc2 = Avx2.Add(hc2, Vector256.CreateScalar(_h2));
 
 		ReadOnlySpan<uint> n3 = MemoryMarshal.Cast<byte, uint>(m.Slice(9));
 		Vector256<uint> hc3 = IntrinsicsUtils.Create4UInt(n3[0], n3[4], n3[8], n3[12]);
 		hc3 = Avx2.ShiftRightLogical(hc3, 6);
-		hc3 = Avx2.And(hc3, And256);
+		hc3 = Avx2.And(hc3, and256);
 		hc3 = Avx2.Add(hc3, Vector256.CreateScalar(_h3));
 
 		ReadOnlySpan<uint> n4 = MemoryMarshal.Cast<byte, uint>(m.Slice(12));
 		Vector256<uint> hc4 = IntrinsicsUtils.Create4UInt(n4[0], n4[4], n4[8], n4[12]);
 		hc4 = Avx2.ShiftRightLogical(hc4, 8);
-		hc4 = Avx2.Or(hc4, Or256);
+		hc4 = Avx2.Or(hc4, or256);
 		hc4 = Avx2.Add(hc4, Vector256.CreateScalar(_h4));
 
 		Vector256<ulong> t1 = Avx2.Multiply(_ruwy0, hc0);

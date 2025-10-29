@@ -13,10 +13,7 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 	public const int NonceSize = 12;
 	public const int TagSize = 16;
 
-	private static ReadOnlySpan<byte> Init => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-	private static readonly Vector256<uint> VCounter1 = Vector256.Create(10u, 11, 12, 13, 14, 15, 16, 17);
-	private static readonly Vector256<uint> VAdd8 = Vector256.Create(8u);
+	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
 	private readonly IBlockCrypto _crypto;
 	private readonly IBlockCrypto _crypto16;
@@ -109,14 +106,15 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		counter0[3] = 2;
 		_gHash.Update(associatedData);
 
-		Vector256<uint> v1 = VCounter1;
+		Vector256<uint> v1 = Vector256.Create(10u, 11, 12, 13, 14, 15, 16, 17);
+		Vector256<uint> vAdd8 = Vector256.Create(8u);
 
 		while (!source.IsEmpty)
 		{
 			_crypto16.Encrypt(counterBlock, _buffer);
 
-			Vector256<uint> v0 = Avx2.Add(v1, VAdd8);
-			v1 = Avx2.Add(v0, VAdd8);
+			Vector256<uint> v0 = Avx2.Add(v1, vAdd8);
+			v1 = Avx2.Add(v0, vAdd8);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
@@ -219,14 +217,15 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 		counter0[3] = 2;
 		_gHash.Update(associatedData);
 
-		Vector256<uint> v1 = VCounter1;
+		Vector256<uint> v1 = Vector256.Create(10u, 11, 12, 13, 14, 15, 16, 17);
+		Vector256<uint> vAdd8 = Vector256.Create(8u);
 
 		while (!source.IsEmpty)
 		{
 			_crypto16.Encrypt(counterBlock, _buffer);
 
-			Vector256<uint> v0 = Avx2.Add(v1, VAdd8);
-			v1 = Avx2.Add(v0, VAdd8);
+			Vector256<uint> v0 = Avx2.Add(v1, vAdd8);
+			v1 = Avx2.Add(v0, vAdd8);
 
 			BinaryPrimitives.WriteUInt32BigEndian(counter0, v0.GetElement(0));
 			BinaryPrimitives.WriteUInt32BigEndian(counter1, v0.GetElement(1));
