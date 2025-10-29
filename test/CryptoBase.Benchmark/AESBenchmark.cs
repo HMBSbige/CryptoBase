@@ -12,7 +12,7 @@ public class AesBenchmark
 	[Params(16, 24, 32)]
 	public int KeyLength { get; set; }
 
-	[Params(1, 100, 10000)]
+	[Params(1000)]
 	public int Max { get; set; }
 
 	private Memory<byte> _randombytes;

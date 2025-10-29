@@ -12,7 +12,7 @@ public interface IBlockModeOneShot
 		return inputLength;
 	}
 
-	void Encrypt(ReadOnlySpan<byte> iv, ReadOnlySpan<byte> input, Span<byte> output);
+	void Encrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> input, in Span<byte> output);
 
-	void Decrypt(ReadOnlySpan<byte> iv, ReadOnlySpan<byte> input, Span<byte> output);
+	void Decrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> input, in Span<byte> output);
 }

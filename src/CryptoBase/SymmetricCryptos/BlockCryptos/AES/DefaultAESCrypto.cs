@@ -15,13 +15,13 @@ public sealed class DefaultAesCrypto : AesCrypto
 	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Encrypt(source, destination);
-		_aes.EncryptEcb(source, destination, PaddingMode.None);
+		_aes.EncryptEcb(source.Slice(0, BlockSize), destination, PaddingMode.None);
 	}
 
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
-		_aes.DecryptEcb(source, destination, PaddingMode.None);
+		_aes.DecryptEcb(source.Slice(0, BlockSize), destination, PaddingMode.None);
 	}
 
 	public override void Dispose()

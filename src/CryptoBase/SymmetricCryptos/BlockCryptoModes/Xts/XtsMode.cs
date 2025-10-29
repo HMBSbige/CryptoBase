@@ -19,7 +19,7 @@ public sealed class XtsMode : IBlockModeOneShot
 	}
 
 	[SkipLocalsInit]
-	public void Encrypt(ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Encrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
@@ -68,7 +68,7 @@ public sealed class XtsMode : IBlockModeOneShot
 	}
 
 	[SkipLocalsInit]
-	public void Decrypt(ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source, Span<byte> destination)
+	public void Decrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));

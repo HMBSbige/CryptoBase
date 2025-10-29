@@ -14,19 +14,19 @@ public class AesCoreTest
 
 		Span<byte> h1 = hex1.FromHex();
 		Span<byte> h2 = hex2.FromHex();
-		Span<byte> o1 = stackalloc byte[crypto.BlockSize];
+		Span<byte> o1 = stackalloc byte[crypto.BlockSize + 1];
 
 		crypto.Encrypt(h1, o1);
-		Assert.True(o1.SequenceEqual(h2));
+		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h2));
 
 		crypto.Encrypt(h1, o1);
-		Assert.True(o1.SequenceEqual(h2));
+		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h2));
 
 		crypto.Decrypt(h2, o1);
-		Assert.True(o1.SequenceEqual(h1));
+		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h1));
 
 		crypto.Decrypt(h2, o1);
-		Assert.True(o1.SequenceEqual(h1));
+		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h1));
 
 		crypto.Dispose();
 	}
