@@ -5,7 +5,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 internal static class ChaCha20Utils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void UpdateKeyStream(int rounds, uint[] state, byte[] keyStream)
+	public static void UpdateKeyStream(in int rounds, in uint[] state, in byte[] keyStream)
 	{
 		uint[] x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
 
@@ -33,7 +33,7 @@ internal static class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void ChaChaRound(int rounds, uint[] x)
+	public static void ChaChaRound(in int rounds, in uint[] x)
 	{
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -59,7 +59,7 @@ internal static class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Step(ref uint a, ref readonly uint b, ref uint c, byte i)
+	private static void Step(ref uint a, ref readonly uint b, ref uint c, in int i)
 	{
 		a += b;
 		c = (a ^ c).RotateLeft(i);

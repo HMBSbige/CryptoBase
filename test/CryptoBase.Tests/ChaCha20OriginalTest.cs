@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 
 namespace CryptoBase.Tests;
 
@@ -103,17 +102,7 @@ public class ChaCha20OriginalTest
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
 		Test_Internal(new BcChaCha20OriginalCrypto(key, iv), hex, hex2);
-		Test_Internal(new ChaCha20OriginalCryptoSF(key, iv), hex, hex2);
-		Test_Internal(StreamCryptoCreate.ChaCha20Original(key, iv), hex, hex2);
-	}
-
-	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
-	[MemberData(nameof(Data), MemberType = typeof(ChaCha20OriginalTest))]
-	public void TestX86(string keyHex, string ivHex, string hex, string hex2)
-	{
-		byte[] key = keyHex.FromHex();
-		byte[] iv = ivHex.FromHex();
-		Test_Internal(new ChaCha20OriginalCryptoX86(key, iv), hex, hex2);
+		Test_Internal(new ChaCha20OriginalCrypto(key, iv), hex, hex2);
 	}
 
 	[Theory]
@@ -123,16 +112,6 @@ public class ChaCha20OriginalTest
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
 		Test_Internal(new BcChaCha20OriginalCrypto(key, iv), hex);
-		Test_Internal(new ChaCha20OriginalCryptoSF(key, iv), hex);
-		Test_Internal(StreamCryptoCreate.ChaCha20Original(key, iv), hex);
-	}
-
-	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
-	[MemberData(nameof(Data65536), MemberType = typeof(ChaCha20OriginalTest))]
-	public void Test65536X86(string keyHex, string ivHex, string hex)
-	{
-		byte[] key = keyHex.FromHex();
-		byte[] iv = ivHex.FromHex();
-		Test_Internal(new ChaCha20OriginalCryptoX86(key, iv), hex);
+		Test_Internal(new ChaCha20OriginalCrypto(key, iv), hex);
 	}
 }

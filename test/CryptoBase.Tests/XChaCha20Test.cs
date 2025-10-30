@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
 
 namespace CryptoBase.Tests;
 
@@ -65,17 +64,7 @@ public class XChaCha20Test
 	{
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
-		TestCounter1_Internal(new XChaCha20CryptoSF(key, iv), hex, hex2);
-		TestCounter1_Internal(StreamCryptoCreate.XChaCha20(key, iv), hex, hex2);
-	}
-
-	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
-	[MemberData(nameof(DataCounter1), MemberType = typeof(XChaCha20Test))]
-	public void TestCounter1X86(string keyHex, string ivHex, string hex, string hex2)
-	{
-		byte[] key = keyHex.FromHex();
-		byte[] iv = ivHex.FromHex();
-		TestCounter1_Internal(new XChaCha20CryptoX86(key, iv), hex, hex2);
+		TestCounter1_Internal(new XChaCha20Crypto(key, iv), hex, hex2);
 	}
 
 	[Theory]
@@ -84,16 +73,6 @@ public class XChaCha20Test
 	{
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
-		TestCounter0_Internal(new XChaCha20CryptoSF(key, iv), hex, hex2);
-		TestCounter0_Internal(StreamCryptoCreate.XChaCha20(key, iv), hex, hex2);
-	}
-
-	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
-	[MemberData(nameof(DataCounter0), MemberType = typeof(XChaCha20Test))]
-	public void TestCounter0X86(string keyHex, string ivHex, string hex, string hex2)
-	{
-		byte[] key = keyHex.FromHex();
-		byte[] iv = ivHex.FromHex();
-		TestCounter0_Internal(new XChaCha20CryptoX86(key, iv), hex, hex2);
+		TestCounter0_Internal(new XChaCha20Crypto(key, iv), hex, hex2);
 	}
 }

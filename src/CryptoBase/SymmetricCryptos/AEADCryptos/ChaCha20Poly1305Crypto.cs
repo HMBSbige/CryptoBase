@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Macs.Poly1305;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
 
@@ -17,11 +16,13 @@ public sealed class ChaCha20Poly1305Crypto : IAEADCrypto
 
 	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
+	private static ReadOnlySpan<byte> EmptyIv12 => "\0\0\0\0\0\0\0\0\0\0\0\0"u8;
+
 	public ChaCha20Poly1305Crypto(ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
-		_chacha20 = StreamCryptoCreate.ChaCha20(key);
+		_chacha20 = new ChaCha20Crypto(key, EmptyIv12);
 	}
 
 	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,

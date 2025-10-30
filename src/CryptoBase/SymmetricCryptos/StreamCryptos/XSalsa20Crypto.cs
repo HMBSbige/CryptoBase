@@ -1,12 +1,12 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
-public sealed class XSalsa20Crypto : Salsa20Crypto
+public class XSalsa20Crypto : Salsa20Crypto
 {
 	public override string Name => @"XSalsa20";
 
 	public override int IvSize => 24;
 
-	public XSalsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+	public XSalsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 	{
 		Init(key, iv);
 		Reset();
@@ -30,7 +30,14 @@ public sealed class XSalsa20Crypto : Salsa20Crypto
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		ivSpan.Slice(0, 4).CopyTo(span.Slice(6));
 
-		SalsaRound(State);
+		if (Sse2.IsSupported)
+		{
+			Salsa20Utils.SalsaRound(State, Rounds);
+		}
+		else
+		{
+			Salsa20Utils.SalsaRound(Rounds, State);
+		}
 
 		State[1] = State[0];
 		State[2] = State[5];
@@ -49,80 +56,5 @@ public sealed class XSalsa20Crypto : Salsa20Crypto
 		State[5] = Sigma32[1];
 		State[10] = Sigma32[2];
 		State[15] = Sigma32[3];
-	}
-
-	public override void Reset()
-	{
-		Index = 0;
-		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 8)) = 0;
-	}
-
-	private void SalsaRound(uint[] x)
-	{
-		if (Sse2.IsSupported)
-		{
-			Salsa20Utils.SalsaRound(x, Rounds);
-		}
-		else
-		{
-			Salsa20Utils.SalsaRound(Rounds, x);
-		}
-	}
-
-	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		int processed = 0;
-		int length = source.Length;
-		Span<uint> stateSpan = State.AsSpan(0, StateSize);
-
-		if (Avx2.IsSupported)
-		{
-			if (length >= 512)
-			{
-				int offset = Salsa20Utils.SalsaCore512(Rounds, stateSpan, source, destination);
-				processed += offset;
-				length -= offset;
-			}
-
-			while (length >= 128)
-			{
-				Salsa20Utils.SalsaCore128(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-
-				processed += 128;
-				length -= 128;
-			}
-		}
-
-		if (Sse2.IsSupported)
-		{
-			if (length >= 256)
-			{
-				int offset = Salsa20Utils.SalsaCore256(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-				processed += offset;
-				length -= offset;
-			}
-
-			while (length >= 64)
-			{
-				Salsa20Utils.SalsaCore64(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-
-				processed += 64;
-				length -= 64;
-			}
-		}
-
-		return processed;
-	}
-
-	protected override void UpdateKeyStream()
-	{
-		if (Sse2.IsSupported)
-		{
-			Salsa20Utils.UpdateKeyStream(State, KeyStream, Rounds);
-		}
-		else
-		{
-			Salsa20Utils.UpdateKeyStream(Rounds, State, KeyStream);
-		}
 	}
 }

@@ -1,6 +1,6 @@
-namespace CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
+namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
-public abstract class XChaCha20Crypto : ChaCha20CryptoBase
+public class XChaCha20Crypto : ChaCha20OriginalCrypto
 {
 	public override string Name => @"XChaCha20";
 
@@ -8,7 +8,7 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 
 	private readonly ReadOnlyMemory<byte> _key;
 
-	protected XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+	public XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
@@ -18,17 +18,17 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 		Reset();
 	}
 
-	public sealed override void Reset()
+	private void ChaChaRound(in uint[] x)
 	{
-		SetCounter(0);
+		if (Sse2.IsSupported)
+		{
+			ChaCha20Utils.ChaChaRound(x, Rounds);
+		}
+		else
+		{
+			ChaCha20Utils.ChaChaRound(Rounds, x);
+		}
 	}
-
-	protected override void IncrementCounter(Span<uint> state)
-	{
-		ChaCha20Utils.IncrementCounterOriginal(state);
-	}
-
-	protected abstract void ChaChaRound(uint[] x);
 
 	public void SetIV(ReadOnlySpan<byte> iv)
 	{
@@ -52,11 +52,5 @@ public abstract class XChaCha20Crypto : ChaCha20CryptoBase
 
 		State[14] = ivSpan[4];
 		State[15] = ivSpan[5];
-	}
-
-	public void SetCounter(ulong counter)
-	{
-		Index = 0;
-		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 12)) = counter;
 	}
 }

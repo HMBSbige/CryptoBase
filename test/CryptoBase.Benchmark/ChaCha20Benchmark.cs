@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20;
+using CryptoBase.SymmetricCryptos.StreamCryptos;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class ChaCha20Benchmark
 {
-	[Params(1024, 8192, 1000000)]
+	[Params(1024, 8192)]
 	public int ByteLength { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -42,15 +42,9 @@ public class ChaCha20Benchmark
 		Test(new BcChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
 	}
 
-	[Benchmark]
-	public void SoftwareFallback()
-	{
-		Test(new ChaCha20CryptoSF(_randomKey, _randomIv), _randombytes.Span);
-	}
-
 	[Benchmark(Baseline = true)]
-	public void X86()
+	public void Default()
 	{
-		Test(new ChaCha20CryptoX86(_randomKey, _randomIv), _randombytes.Span);
+		Test(new ChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
 	}
 }

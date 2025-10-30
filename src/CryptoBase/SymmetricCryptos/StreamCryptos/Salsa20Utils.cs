@@ -5,7 +5,7 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 public static class Salsa20Utils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void UpdateKeyStream(int rounds, uint[] state, byte[] keyStream)
+	public static void UpdateKeyStream(in int rounds, in uint[] state, in byte[] keyStream)
 	{
 		uint[] x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
 
@@ -33,7 +33,7 @@ public static class Salsa20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void SalsaRound(int rounds, uint[] x)
+	public static void SalsaRound(in int rounds, in uint[] x)
 	{
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -50,7 +50,7 @@ public static class Salsa20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void QuarterRound(uint[] x, int a, int b, int c, int d)
+	private static void QuarterRound(in uint[] x, in int a, in int b, in int c, in int d)
 	{
 		Step(ref x[a], x[b], x[c], 7);
 		Step(ref x[d], x[a], x[b], 9);
@@ -59,7 +59,7 @@ public static class Salsa20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Step(ref uint a, uint b, uint c, byte i)
+	private static void Step(ref uint a, in uint b, in uint c, in int i)
 	{
 		a ^= (b + c).RotateLeft(i);
 	}

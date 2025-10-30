@@ -1,6 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
+using CryptoBase.SymmetricCryptos.StreamCryptos;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -8,7 +8,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class XChaCha20Benchmark
 {
-	[Params(32, 1000000)]
+	[Params(1024, 8192)]
 	public int ByteLength { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -26,20 +26,18 @@ public class XChaCha20Benchmark
 	private static void Test(IStreamCrypto crypto, Span<byte> origin)
 	{
 		Span<byte> o = stackalloc byte[origin.Length];
-		crypto.Update(origin, o);
+
+		for (int i = 0; i < 1000; ++i)
+		{
+			crypto.Update(origin, o);
+		}
 
 		crypto.Dispose();
 	}
 
-	[Benchmark]
-	public void SoftwareFallback()
-	{
-		Test(new XChaCha20CryptoSF(_randomKey, _randomIv), _randombytes.Span);
-	}
-
 	[Benchmark(Baseline = true)]
-	public void X86()
+	public void Default()
 	{
-		Test(new XChaCha20CryptoX86(_randomKey, _randomIv), _randombytes.Span);
+		Test(new XChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
 	}
 }

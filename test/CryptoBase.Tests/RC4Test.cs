@@ -49,6 +49,6 @@ public class RC4Test
 	{
 		byte[] key = keyHex.FromHex();
 		Test_Internal(new BcRC4Crypto(key), originSize, hex, hex2);
-		Test_Internal(StreamCryptoCreate.Rc4(key), originSize, hex, hex2);
+		Test_Internal(new RC4Crypto(key), originSize, hex, hex2);
 	}
 }
