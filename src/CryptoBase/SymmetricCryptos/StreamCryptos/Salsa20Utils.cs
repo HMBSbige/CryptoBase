@@ -71,16 +71,137 @@ internal static class Salsa20Utils
 		b = Avx2.Xor(b, Avx2.Add(c, d).RotateLeftUInt32(18));
 	}
 
+	/// <summary>
+	/// Initialize vectors for Salsa20 using optimized Blend instructions when available
+	/// State layout: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+	/// Target: x0=[4,9,14,3], x1=[0,5,10,15], x2=[12,1,6,11], x3=[8,13,2,7]
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void InitializeSalsaVectors(
+		ref uint stateRef,
+		out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3)
+	{
+		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0));   // [0,1,2,3]
+		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));   // [4,5,6,7]
+		ref Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));   // [8,9,10,11]
+		ref Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));  // [12,13,14,15]
+
+		if (Sse41.IsSupported)
+		{
+			// Use Blend for efficient vector initialization
+			// x0 = [4, 9, 14, 3] = [s1[0], s2[1], s3[2], s0[3]]
+			Vector128<uint> t0 = Sse2.Shuffle(s1, 0b11_11_11_00);  // [4,4,4,4]
+			Vector128<uint> t1 = Sse2.Shuffle(s2, 0b11_11_01_11);  // [*,9,*,*]
+			Vector128<uint> t2 = Sse2.Shuffle(s3, 0b11_10_11_11);  // [*,*,14,*]
+			Vector128<uint> t3 = Sse2.Shuffle(s0, 0b11_11_11_11);  // [3,3,3,3]
+			x0 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();                      // [4,9,*,*]
+			x0 = Sse41.Blend(x0.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();                      // [4,9,14,*]
+			x0 = Sse41.Blend(x0.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();                      // [4,9,14,3]
+
+			// x1 = [0, 5, 10, 15] = [s0[0], s1[1], s2[2], s3[3]]
+			t0 = Sse2.Shuffle(s0, 0b11_11_11_00);
+			t1 = Sse2.Shuffle(s1, 0b11_11_01_11);
+			t2 = Sse2.Shuffle(s2, 0b11_10_11_11);
+			t3 = Sse2.Shuffle(s3, 0b11_11_11_11);
+			x1 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
+			x1 = Sse41.Blend(x1.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
+			x1 = Sse41.Blend(x1.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
+
+			// x2 = [12, 1, 6, 11] = [s3[0], s0[1], s1[2], s2[3]]
+			t0 = Sse2.Shuffle(s3, 0b11_11_11_00);
+			t1 = Sse2.Shuffle(s0, 0b11_11_01_11);
+			t2 = Sse2.Shuffle(s1, 0b11_10_11_11);
+			t3 = Sse2.Shuffle(s2, 0b11_11_11_11);
+			x2 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
+			x2 = Sse41.Blend(x2.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
+			x2 = Sse41.Blend(x2.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
+
+			// x3 = [8, 13, 2, 7] = [s2[0], s3[1], s0[2], s1[3]]
+			t0 = Sse2.Shuffle(s2, 0b11_11_11_00);
+			t1 = Sse2.Shuffle(s3, 0b11_11_01_11);
+			t2 = Sse2.Shuffle(s0, 0b11_10_11_11);
+			t3 = Sse2.Shuffle(s1, 0b11_11_11_11);
+			x3 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
+			x3 = Sse41.Blend(x3.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
+			x3 = Sse41.Blend(x3.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
+		}
+		else
+		{
+			// Fallback for SSE2-only systems
+			x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));
+			x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));
+			x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));
+			x3 = Vector128.Create(Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));
+		}
+	}
+
+	/// <summary>
+	/// Initialize vectors for Salsa20 (AVX2 version for 128-byte processing)
+	/// Creates duplicated patterns for parallel processing
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void InitializeSalsaVectors256(
+		ref uint stateRef, uint t8, uint t9,
+		out Vector256<uint> x0, out Vector256<uint> x1, out Vector256<uint> x2, out Vector256<uint> x3)
+	{
+		// Fallback - use scalar creation (the existing implementation is already efficient)
+		x0 = Vector256.Create(
+			Unsafe.Add(ref stateRef, 4), t9, Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3),
+			Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));
+		x1 = Vector256.Create(
+			Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15),
+			Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));
+		x2 = Vector256.Create(
+			Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11),
+			Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));
+		x3 = Vector256.Create(
+			t8, Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7),
+			Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));
+	}
+
+	/// <summary>
+	/// Helper to initialize two Salsa vectors from state vectors using Blend
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void InitializeSalsaVectorsFromState(
+		Vector128<uint> s0, Vector128<uint> s1, Vector128<uint> s2, Vector128<uint> s3,
+		out Vector128<uint> x0, out Vector128<uint> x1)
+	{
+		if (Sse41.IsSupported)
+		{
+			// x0 = [s1[0], s2[1], s3[2], s0[3]]
+			Vector128<uint> t0 = Sse2.Shuffle(s1, 0b11_11_11_00);
+			Vector128<uint> t1 = Sse2.Shuffle(s2, 0b11_11_01_11);
+			Vector128<uint> t2 = Sse2.Shuffle(s3, 0b11_10_11_11);
+			Vector128<uint> t3 = Sse2.Shuffle(s0, 0b11_11_11_11);
+			x0 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
+			x0 = Sse41.Blend(x0.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
+			x0 = Sse41.Blend(x0.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
+
+			// x1 = [s0[0], s1[1], s2[2], s3[3]]
+			t0 = Sse2.Shuffle(s0, 0b11_11_11_00);
+			t1 = Sse2.Shuffle(s1, 0b11_11_01_11);
+			t2 = Sse2.Shuffle(s2, 0b11_10_11_11);
+			t3 = Sse2.Shuffle(s3, 0b11_11_11_11);
+			x1 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
+			x1 = Sse41.Blend(x1.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
+			x1 = Sse41.Blend(x1.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
+		}
+		else
+		{
+			// Fallback - extract and create
+			x0 = Vector128.Create(s1.GetElement(0), s2.GetElement(1), s3.GetElement(2), s0.GetElement(3));
+			x1 = Vector128.Create(s0.GetElement(0), s1.GetElement(1), s2.GetElement(2), s3.GetElement(3));
+		}
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(Span<uint> state, Span<byte> stream, byte rounds)
 	{
 		ref uint stateRef = ref state.GetReference();
 		ref byte streamRef = ref stream.GetReference();
 
-		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
-		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
-		Vector128<uint> x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));// 12 1 6 11
-		Vector128<uint> x3 = Vector128.Create(Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));// 8 13 2 7
+		InitializeSalsaVectors(ref stateRef, out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3);
 
 		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
 		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
@@ -114,10 +235,7 @@ internal static class Salsa20Utils
 	{
 		ref uint stateRef = ref state.GetReference();
 
-		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
-		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
-		Vector128<uint> x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));// 12 1 6 11
-		Vector128<uint> x3 = Vector128.Create(Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));// 8 13 2 7
+		InitializeSalsaVectors(ref stateRef, out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3);
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -310,10 +428,7 @@ internal static class Salsa20Utils
 		ref Vector128<byte> src2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 16));
 		ref Vector128<byte> src3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 16));
 
-		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
-		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
-		Vector128<uint> x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));// 12 1 6 11
-		Vector128<uint> x3 = Vector128.Create(Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));// 8 13 2 7
+		InitializeSalsaVectors(ref stateRef, out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3);
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -370,47 +485,7 @@ internal static class Salsa20Utils
 		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 8));
 		++counter;
 
-		// 4 9 14 3
-		Vector256<uint> x0 = Vector256.Create(
-			Unsafe.Add(ref stateRef, 4),
-			t9,
-			Unsafe.Add(ref stateRef, 14),
-			Unsafe.Add(ref stateRef, 3),
-			Unsafe.Add(ref stateRef, 4),
-			Unsafe.Add(ref stateRef, 9),
-			Unsafe.Add(ref stateRef, 14),
-			Unsafe.Add(ref stateRef, 3));
-		// 0 5 10 15
-		Vector256<uint> x1 = Vector256.Create(
-			Unsafe.Add(ref stateRef, 0),
-			Unsafe.Add(ref stateRef, 5),
-			Unsafe.Add(ref stateRef, 10),
-			Unsafe.Add(ref stateRef, 15),
-			Unsafe.Add(ref stateRef, 0),
-			Unsafe.Add(ref stateRef, 5),
-			Unsafe.Add(ref stateRef, 10),
-			Unsafe.Add(ref stateRef, 15));
-		// 12 1 6 11
-		Vector256<uint> x2 = Vector256.Create(
-			Unsafe.Add(ref stateRef, 12),
-			Unsafe.Add(ref stateRef, 1),
-			Unsafe.Add(ref stateRef, 6),
-			Unsafe.Add(ref stateRef, 11),
-			Unsafe.Add(ref stateRef, 12),
-			Unsafe.Add(ref stateRef, 1),
-			Unsafe.Add(ref stateRef, 6),
-			Unsafe.Add(ref stateRef, 11));
-		// 8 13 2 7
-		Vector256<uint> x3 = Vector256.Create(
-			t8,
-			Unsafe.Add(ref stateRef, 13),
-			Unsafe.Add(ref stateRef, 2),
-			Unsafe.Add(ref stateRef, 7),
-			Unsafe.Add(ref stateRef, 8),
-			Unsafe.Add(ref stateRef, 13),
-			Unsafe.Add(ref stateRef, 2),
-			Unsafe.Add(ref stateRef, 7)
-		);
+		InitializeSalsaVectors256(ref stateRef, t8, t9, out Vector256<uint> x0, out Vector256<uint> x1, out Vector256<uint> x2, out Vector256<uint> x3);
 
 		for (int i = 0; i < rounds; i += 2)
 		{
