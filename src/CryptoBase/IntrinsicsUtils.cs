@@ -2,7 +2,6 @@ namespace CryptoBase;
 
 internal static class IntrinsicsUtils
 {
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32<T>(this Vector256<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset) where T : struct
 	{

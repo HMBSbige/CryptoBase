@@ -16,7 +16,7 @@ env:
 
 jobs:
   check_format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
@@ -35,6 +35,8 @@ jobs:
           - windows-latest
           - ubuntu-latest
           - macos-latest
+          - windows-11-arm
+          - ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@v5

@@ -93,6 +93,13 @@ public static class SM4Utils
 		x ^= t;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector256<byte> AesX86EncryptLast(in Vector256<byte> x, in Vector256<byte> roundKey)
+	{
+		Vector128<byte> t = AesX86.EncryptLast(x.GetUpper(), roundKey.GetUpper());
+		return AesX86.EncryptLast(x.GetLower(), roundKey.GetLower()).ToVector256Unsafe().WithUpper(t);
+	}
+
 	/// <summary>
 	/// https://github.com/mjosaarinen/sm4ni/blob/master/sm4ni.c
 	/// </summary>
@@ -381,7 +388,7 @@ public static class SM4Utils
 		ref byte dstRef = ref destination.GetReference();
 		ref byte sourceRef = ref source.GetReference();
 
-		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector256<byte> c0f = Vector256.Create((byte)0x0F);
 		Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
 
 		ref readonly Vector256<byte> s0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
@@ -412,8 +419,7 @@ public static class SM4Utils
 
 			x0 = x0 ^ a1 ^ a2 ^ a3;
 			x0.PreTransform();
-			Vector128<byte> u0 = AesX86.EncryptLast(x0.GetUpper(), c0f);
-			x0 = AesX86.EncryptLast(x0.GetLower(), c0f).ToVector256Unsafe().WithUpper(u0);
+			x0 = AesX86EncryptLast(x0, c0f);
 			x0.PostTransform();
 			x0 = Avx2.Shuffle(x0, vshr);
 			Vector256<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
@@ -426,8 +432,7 @@ public static class SM4Utils
 
 			x1 = x1 ^ b1 ^ b2 ^ b3;
 			x1.PreTransform();
-			Vector128<byte> u1 = AesX86.EncryptLast(x1.GetUpper(), c0f);
-			x1 = AesX86.EncryptLast(x1.GetLower(), c0f).ToVector256Unsafe().WithUpper(u1);
+			x1 = AesX86EncryptLast(x1, c0f);
 			x1.PostTransform();
 			x1 = Avx2.Shuffle(x1, vshr);
 			Vector256<byte> t1 = x1 ^ x1.RotateLeftUInt32_8() ^ x1.RotateLeftUInt32_16();
@@ -466,7 +471,7 @@ public static class SM4Utils
 		ref byte dstRef = ref destination.GetReference();
 		ref byte sourceRef = ref source.GetReference();
 
-		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
+		Vector256<byte> c0f = Vector256.Create((byte)0x0F);
 		Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
 
 		ref readonly Vector256<byte> s0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
@@ -497,8 +502,7 @@ public static class SM4Utils
 
 			x0 = x0 ^ a1 ^ a2 ^ a3;
 			x0.PreTransform();
-			Vector128<byte> u0 = AesX86.EncryptLast(x0.GetUpper(), c0f);
-			x0 = AesX86.EncryptLast(x0.GetLower(), c0f).ToVector256Unsafe().WithUpper(u0);
+			x0 = AesX86EncryptLast(x0, c0f);
 			x0.PostTransform();
 			x0 = Avx2.Shuffle(x0, vshr);
 			Vector256<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
@@ -511,8 +515,7 @@ public static class SM4Utils
 
 			x1 = x1 ^ b1 ^ b2 ^ b3;
 			x1.PreTransform();
-			Vector128<byte> u1 = AesX86.EncryptLast(x1.GetUpper(), c0f);
-			x1 = AesX86.EncryptLast(x1.GetLower(), c0f).ToVector256Unsafe().WithUpper(u1);
+			x1 = AesX86EncryptLast(x1, c0f);
 			x1.PostTransform();
 			x1 = Avx2.Shuffle(x1, vshr);
 			Vector256<byte> t1 = x1 ^ x1.RotateLeftUInt32_8() ^ x1.RotateLeftUInt32_16();
