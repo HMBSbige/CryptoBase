@@ -82,10 +82,10 @@ internal static class Salsa20Utils
 		Vector128<uint> x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));// 12 1 6 11
 		Vector128<uint> x3 = Vector128.Create(Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));// 8 13 2 7
 
-		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
-		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
-		ref Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
-		ref Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
+		ref readonly Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
+		ref readonly Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
+		ref readonly Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
+		ref readonly Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -301,14 +301,14 @@ internal static class Salsa20Utils
 		ref byte sourceRef = ref source.GetReference();
 		ref byte destRef = ref destination.GetReference();
 
-		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
-		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
-		ref Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
-		ref Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
-		ref Vector128<byte> src0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 16));
-		ref Vector128<byte> src1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 16));
-		ref Vector128<byte> src2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 16));
-		ref Vector128<byte> src3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 16));
+		ref readonly Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0 * 4));
+		ref readonly Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 1 * 4));
+		ref readonly Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 2 * 4));
+		ref readonly Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 3 * 4));
+		ref readonly Vector128<byte> src0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 16));
+		ref readonly Vector128<byte> src1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 16));
+		ref readonly Vector128<byte> src2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 16));
+		ref readonly Vector128<byte> src3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 16));
 
 		Vector128<uint> x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));// 4 9 14 3
 		Vector128<uint> x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));// 0 5 10 15
@@ -355,13 +355,13 @@ internal static class Salsa20Utils
 		ref byte sourceRef = ref source.GetReference();
 		ref byte destRef = ref destination.GetReference();
 
-		ref Vector256<byte> src0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
-		ref Vector256<byte> src1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
-		ref Vector256<byte> src2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 32));
-		ref Vector256<byte> src3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 32));
+		ref readonly Vector256<byte> src0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 0 * 32));
+		ref readonly Vector256<byte> src1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 1 * 32));
+		ref readonly Vector256<byte> src2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 2 * 32));
+		ref readonly Vector256<byte> src3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, 3 * 32));
 
-		ref Vector256<uint> s0 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 0));// 0 1 2 3 4 5 6 7
-		ref Vector256<uint> s1 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8));// 8 9 10 11 12 13 14 15
+		ref readonly Vector256<uint> s0 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 0));// 0 1 2 3 4 5 6 7
+		ref readonly Vector256<uint> s1 = ref Unsafe.As<uint, Vector256<uint>>(ref Unsafe.Add(ref stateRef, 8));// 8 9 10 11 12 13 14 15
 		Vector256<uint> t = s1;
 
 		uint t8 = Unsafe.Add(ref stateRef, 8);
@@ -371,7 +371,8 @@ internal static class Salsa20Utils
 		++counter;
 
 		// 4 9 14 3
-		Vector256<uint> x0 = Vector256.Create(
+		Vector256<uint> x0 = Vector256.Create
+		(
 			Unsafe.Add(ref stateRef, 4),
 			t9,
 			Unsafe.Add(ref stateRef, 14),
@@ -379,9 +380,11 @@ internal static class Salsa20Utils
 			Unsafe.Add(ref stateRef, 4),
 			Unsafe.Add(ref stateRef, 9),
 			Unsafe.Add(ref stateRef, 14),
-			Unsafe.Add(ref stateRef, 3));
+			Unsafe.Add(ref stateRef, 3)
+		);
 		// 0 5 10 15
-		Vector256<uint> x1 = Vector256.Create(
+		Vector256<uint> x1 = Vector256.Create
+		(
 			Unsafe.Add(ref stateRef, 0),
 			Unsafe.Add(ref stateRef, 5),
 			Unsafe.Add(ref stateRef, 10),
@@ -389,9 +392,11 @@ internal static class Salsa20Utils
 			Unsafe.Add(ref stateRef, 0),
 			Unsafe.Add(ref stateRef, 5),
 			Unsafe.Add(ref stateRef, 10),
-			Unsafe.Add(ref stateRef, 15));
+			Unsafe.Add(ref stateRef, 15)
+		);
 		// 12 1 6 11
-		Vector256<uint> x2 = Vector256.Create(
+		Vector256<uint> x2 = Vector256.Create
+		(
 			Unsafe.Add(ref stateRef, 12),
 			Unsafe.Add(ref stateRef, 1),
 			Unsafe.Add(ref stateRef, 6),
@@ -399,9 +404,11 @@ internal static class Salsa20Utils
 			Unsafe.Add(ref stateRef, 12),
 			Unsafe.Add(ref stateRef, 1),
 			Unsafe.Add(ref stateRef, 6),
-			Unsafe.Add(ref stateRef, 11));
+			Unsafe.Add(ref stateRef, 11)
+		);
 		// 8 13 2 7
-		Vector256<uint> x3 = Vector256.Create(
+		Vector256<uint> x3 = Vector256.Create
+		(
 			t8,
 			Unsafe.Add(ref stateRef, 13),
 			Unsafe.Add(ref stateRef, 2),
@@ -626,21 +633,25 @@ internal static class Salsa20Utils
 				QuarterRound(ref x12, ref x15, ref x14, ref x13);
 			}
 
-			ChaCha20Utils.AddTransposeXor(
+			ChaCha20Utils.AddTransposeXor
+			(
 				ref x0, ref x1, ref x2, ref x3,
 				ref x4, ref x5, ref x6, ref x7,
 				ref o0, ref o1, ref o2, ref o3,
 				ref o4, ref o5, ref o6, ref o7,
 				ref Unsafe.Add(ref sourceRef, offset),
-				ref Unsafe.Add(ref dstRef, offset));
+				ref Unsafe.Add(ref dstRef, offset)
+			);
 
-			ChaCha20Utils.AddTransposeXor(
+			ChaCha20Utils.AddTransposeXor
+			(
 				ref x8, ref x9, ref x10, ref x11,
 				ref x12, ref x13, ref x14, ref x15,
 				ref o8, ref o9, ref o10, ref o11,
 				ref o12, ref o13, ref o14, ref o15,
 				ref Unsafe.Add(ref sourceRef, offset + 32),
-				ref Unsafe.Add(ref dstRef, offset + 32));
+				ref Unsafe.Add(ref dstRef, offset + 32)
+			);
 
 			length -= 512;
 			offset += 512;
