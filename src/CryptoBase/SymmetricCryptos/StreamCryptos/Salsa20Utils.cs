@@ -81,53 +81,43 @@ internal static class Salsa20Utils
 		ref uint stateRef,
 		out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3)
 	{
-		ref Vector128<uint> s0 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 0));   // [0,1,2,3]
-		ref Vector128<uint> s1 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 4));   // [4,5,6,7]
-		ref Vector128<uint> s2 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 8));   // [8,9,10,11]
-		ref Vector128<uint> s3 = ref Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref stateRef, 12));  // [12,13,14,15]
+		ref readonly Vector128<ushort> t0 = ref Unsafe.As<uint, Vector128<ushort>>(ref Unsafe.Add(ref stateRef, 0));   // [0,1,2,3]
+		ref readonly Vector128<ushort> t1 = ref Unsafe.As<uint, Vector128<ushort>>(ref Unsafe.Add(ref stateRef, 4));   // [4,5,6,7]
+		ref readonly Vector128<ushort> t2 = ref Unsafe.As<uint, Vector128<ushort>>(ref Unsafe.Add(ref stateRef, 8));   // [8,9,10,11]
+		ref readonly Vector128<ushort> t3 = ref Unsafe.As<uint, Vector128<ushort>>(ref Unsafe.Add(ref stateRef, 12));  // [12,13,14,15]
 
 		if (Sse41.IsSupported)
 		{
-			// Use Blend for efficient vector initialization
-			// x0 = [4, 9, 14, 3] = [s1[0], s2[1], s3[2], s0[3]]
-			Vector128<uint> t0 = Sse2.Shuffle(s1, 0b11_11_11_00);  // [4,4,4,4]
-			Vector128<uint> t1 = Sse2.Shuffle(s2, 0b11_11_01_11);  // [*,9,*,*]
-			Vector128<uint> t2 = Sse2.Shuffle(s3, 0b11_10_11_11);  // [*,*,14,*]
-			Vector128<uint> t3 = Sse2.Shuffle(s0, 0b11_11_11_11);  // [3,3,3,3]
-			x0 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();                      // [4,9,*,*]
-			x0 = Sse41.Blend(x0.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();                      // [4,9,14,*]
-			x0 = Sse41.Blend(x0.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();                      // [4,9,14,3]
+			// x0 = [4, 9, 14, 3]
+			// 低半: [4,9] = t1:0,1 + t2:2,3  -> 0x0C 选取 lane2,3 来自右操作数
+			// 高半: [14,3] = t3:4,5 + t0:6,7 -> 0xC0 选取 lane6,7 来自右操作数
+			Vector128<ushort> x0_lo = Sse41.Blend(t1, t2, 0x0C);
+			Vector128<ushort> x0_hi = Sse41.Blend(t3, t0, 0xC0);
+			x0 = Sse41.Blend(x0_lo, x0_hi, 0xF0).AsUInt32();
 
-			// x1 = [0, 5, 10, 15] = [s0[0], s1[1], s2[2], s3[3]]
-			t0 = Sse2.Shuffle(s0, 0b11_11_11_00);
-			t1 = Sse2.Shuffle(s1, 0b11_11_01_11);
-			t2 = Sse2.Shuffle(s2, 0b11_10_11_11);
-			t3 = Sse2.Shuffle(s3, 0b11_11_11_11);
-			x1 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
-			x1 = Sse41.Blend(x1.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
-			x1 = Sse41.Blend(x1.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
+			// x1 = [0, 5, 10, 15]
+			// 低半: [0,5]   = t0:0,1 + t1:2,3
+			// 高半: [10,15] = t2:4,5 + t3:6,7
+			Vector128<ushort> x1_lo = Sse41.Blend(t0, t1, 0x0C);
+			Vector128<ushort> x1_hi = Sse41.Blend(t2, t3, 0xC0);
+			x1 = Sse41.Blend(x1_lo, x1_hi, 0xF0).AsUInt32();
 
-			// x2 = [12, 1, 6, 11] = [s3[0], s0[1], s1[2], s2[3]]
-			t0 = Sse2.Shuffle(s3, 0b11_11_11_00);
-			t1 = Sse2.Shuffle(s0, 0b11_11_01_11);
-			t2 = Sse2.Shuffle(s1, 0b11_10_11_11);
-			t3 = Sse2.Shuffle(s2, 0b11_11_11_11);
-			x2 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
-			x2 = Sse41.Blend(x2.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
-			x2 = Sse41.Blend(x2.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
+			// x2 = [12, 1, 6, 11]
+			// 低半: [12,1] = t3:0,1 + t0:2,3
+			// 高半: [6,11] = t1:4,5 + t2:6,7
+			Vector128<ushort> x2_lo = Sse41.Blend(t3, t0, 0x0C);
+			Vector128<ushort> x2_hi = Sse41.Blend(t1, t2, 0xC0);
+			x2 = Sse41.Blend(x2_lo, x2_hi, 0xF0).AsUInt32();
 
-			// x3 = [8, 13, 2, 7] = [s2[0], s3[1], s0[2], s1[3]]
-			t0 = Sse2.Shuffle(s2, 0b11_11_11_00);
-			t1 = Sse2.Shuffle(s3, 0b11_11_01_11);
-			t2 = Sse2.Shuffle(s0, 0b11_10_11_11);
-			t3 = Sse2.Shuffle(s1, 0b11_11_11_11);
-			x3 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
-			x3 = Sse41.Blend(x3.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
-			x3 = Sse41.Blend(x3.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
+			// x3 = [8, 13, 2, 7]
+			// 低半: [8,13] = t2:0,1 + t3:2,3
+			// 高半: [2,7]  = t0:4,5 + t1:6,7
+			Vector128<ushort> x3_lo = Sse41.Blend(t2, t3, 0x0C);
+			Vector128<ushort> x3_hi = Sse41.Blend(t0, t1, 0xC0);
+			x3 = Sse41.Blend(x3_lo, x3_hi, 0xF0).AsUInt32();
 		}
 		else
 		{
-			// Fallback for SSE2-only systems
 			x0 = Vector128.Create(Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));
 			x1 = Vector128.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));
 			x2 = Vector128.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));
@@ -135,16 +125,12 @@ internal static class Salsa20Utils
 		}
 	}
 
-	/// <summary>
-	/// Initialize vectors for Salsa20 (AVX2 version for 128-byte processing)
-	/// Creates duplicated patterns for parallel processing
-	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void InitializeSalsaVectors256(
 		ref uint stateRef, uint t8, uint t9,
 		out Vector256<uint> x0, out Vector256<uint> x1, out Vector256<uint> x2, out Vector256<uint> x3)
 	{
-		// Fallback - use scalar creation (the existing implementation is already efficient)
+		// TODO
 		x0 = Vector256.Create(
 			Unsafe.Add(ref stateRef, 4), t9, Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3),
 			Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));
@@ -157,42 +143,6 @@ internal static class Salsa20Utils
 		x3 = Vector256.Create(
 			t8, Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7),
 			Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));
-	}
-
-	/// <summary>
-	/// Helper to initialize two Salsa vectors from state vectors using Blend
-	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void InitializeSalsaVectorsFromState(
-		Vector128<uint> s0, Vector128<uint> s1, Vector128<uint> s2, Vector128<uint> s3,
-		out Vector128<uint> x0, out Vector128<uint> x1)
-	{
-		if (Sse41.IsSupported)
-		{
-			// x0 = [s1[0], s2[1], s3[2], s0[3]]
-			Vector128<uint> t0 = Sse2.Shuffle(s1, 0b11_11_11_00);
-			Vector128<uint> t1 = Sse2.Shuffle(s2, 0b11_11_01_11);
-			Vector128<uint> t2 = Sse2.Shuffle(s3, 0b11_10_11_11);
-			Vector128<uint> t3 = Sse2.Shuffle(s0, 0b11_11_11_11);
-			x0 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
-			x0 = Sse41.Blend(x0.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
-			x0 = Sse41.Blend(x0.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
-
-			// x1 = [s0[0], s1[1], s2[2], s3[3]]
-			t0 = Sse2.Shuffle(s0, 0b11_11_11_00);
-			t1 = Sse2.Shuffle(s1, 0b11_11_01_11);
-			t2 = Sse2.Shuffle(s2, 0b11_10_11_11);
-			t3 = Sse2.Shuffle(s3, 0b11_11_11_11);
-			x1 = Sse41.Blend(t0.AsSingle(), t1.AsSingle(), 0b0010).AsUInt32();
-			x1 = Sse41.Blend(x1.AsSingle(), t2.AsSingle(), 0b0100).AsUInt32();
-			x1 = Sse41.Blend(x1.AsSingle(), t3.AsSingle(), 0b1000).AsUInt32();
-		}
-		else
-		{
-			// Fallback - extract and create
-			x0 = Vector128.Create(s1.GetElement(0), s2.GetElement(1), s3.GetElement(2), s0.GetElement(3));
-			x1 = Vector128.Create(s0.GetElement(0), s1.GetElement(1), s2.GetElement(2), s3.GetElement(3));
-		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
