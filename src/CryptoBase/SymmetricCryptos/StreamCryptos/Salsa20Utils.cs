@@ -126,26 +126,6 @@ internal static class Salsa20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void InitializeSalsaVectors256(
-		ref uint stateRef, uint t8, uint t9,
-		out Vector256<uint> x0, out Vector256<uint> x1, out Vector256<uint> x2, out Vector256<uint> x3)
-	{
-		// TODO
-		x0 = Vector256.Create(
-			Unsafe.Add(ref stateRef, 4), t9, Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3),
-			Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));
-		x1 = Vector256.Create(
-			Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15),
-			Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));
-		x2 = Vector256.Create(
-			Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11),
-			Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));
-		x3 = Vector256.Create(
-			t8, Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7),
-			Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(Span<uint> state, Span<byte> stream, byte rounds)
 	{
 		ref uint stateRef = ref state.GetReference();
@@ -435,7 +415,11 @@ internal static class Salsa20Utils
 		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 8));
 		++counter;
 
-		InitializeSalsaVectors256(ref stateRef, t8, t9, out Vector256<uint> x0, out Vector256<uint> x1, out Vector256<uint> x2, out Vector256<uint> x3);
+		//TODO
+		Vector256<uint> x0 = Vector256.Create(Unsafe.Add(ref stateRef, 4), t9, Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3), Unsafe.Add(ref stateRef, 4), Unsafe.Add(ref stateRef, 9), Unsafe.Add(ref stateRef, 14), Unsafe.Add(ref stateRef, 3));
+		Vector256<uint> x1 = Vector256.Create(Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15), Unsafe.Add(ref stateRef, 0), Unsafe.Add(ref stateRef, 5), Unsafe.Add(ref stateRef, 10), Unsafe.Add(ref stateRef, 15));
+		Vector256<uint> x2 = Vector256.Create(Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11), Unsafe.Add(ref stateRef, 12), Unsafe.Add(ref stateRef, 1), Unsafe.Add(ref stateRef, 6), Unsafe.Add(ref stateRef, 11));
+		Vector256<uint> x3 = Vector256.Create(t8, Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7), Unsafe.Add(ref stateRef, 8), Unsafe.Add(ref stateRef, 13), Unsafe.Add(ref stateRef, 2), Unsafe.Add(ref stateRef, 7));
 
 		for (int i = 0; i < rounds; i += 2)
 		{
