@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
 internal static class ChaCha20Utils
@@ -12,30 +10,61 @@ internal static class ChaCha20Utils
 
 		ChaChaRound(rounds, x);
 
-		for (int i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
-		{
-			x[i] += state[i];
-			x[i + 1] += state[i + 1];
-			x[i + 2] += state[i + 2];
-			x[i + 3] += state[i + 3];
-		}
+		x[15] += state[15];
+		x[14] += state[14];
+		x[13] += state[13];
+		x[12] += state[12];
+		x[11] += state[11];
+		x[10] += state[10];
+		x[9] += state[9];
+		x[8] += state[8];
+		x[7] += state[7];
+		x[6] += state[6];
+		x[5] += state[5];
+		x[4] += state[4];
+		x[3] += state[3];
+		x[2] += state[2];
+		x[1] += state[1];
+		x[0] += state[0];
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ChaChaRound(in int rounds, in Span<uint> x)
 	{
+		uint x15 = x[15], x14 = x[14], x13 = x[13], x12 = x[12];
+		uint x11 = x[11], x10 = x[10], x09 = x[ 9], x08 = x[ 8];
+		uint x07 = x[ 7], x06 = x[ 6], x05 = x[ 5], x04 = x[ 4];
+		uint x03 = x[ 3], x02 = x[ 2], x01 = x[ 1], x00 = x[ 0];
+
 		for (int i = 0; i < rounds; i += 2)
 		{
-			QuarterRound(ref x[0], ref x[4], ref x[8], ref x[12]);
-			QuarterRound(ref x[1], ref x[5], ref x[9], ref x[13]);
-			QuarterRound(ref x[2], ref x[6], ref x[10], ref x[14]);
-			QuarterRound(ref x[3], ref x[7], ref x[11], ref x[15]);
+			QuarterRound(ref x00, ref x04, ref x08, ref x12);
+			QuarterRound(ref x01, ref x05, ref x09, ref x13);
+			QuarterRound(ref x02, ref x06, ref x10, ref x14);
+			QuarterRound(ref x03, ref x07, ref x11, ref x15);
 
-			QuarterRound(ref x[0], ref x[5], ref x[10], ref x[15]);
-			QuarterRound(ref x[1], ref x[6], ref x[11], ref x[12]);
-			QuarterRound(ref x[2], ref x[7], ref x[8], ref x[13]);
-			QuarterRound(ref x[3], ref x[4], ref x[9], ref x[14]);
+			QuarterRound(ref x00, ref x05, ref x10, ref x15);
+			QuarterRound(ref x01, ref x06, ref x11, ref x12);
+			QuarterRound(ref x02, ref x07, ref x08, ref x13);
+			QuarterRound(ref x03, ref x04, ref x09, ref x14);
 		}
+
+		x[15] = x15;
+		x[14] = x14;
+		x[13] = x13;
+		x[12] = x12;
+		x[11] = x11;
+		x[10] = x10;
+		x[ 9] = x09;
+		x[ 8] = x08;
+		x[ 7] = x07;
+		x[ 6] = x06;
+		x[ 5] = x05;
+		x[ 4] = x04;
+		x[ 3] = x03;
+		x[ 2] = x02;
+		x[ 1] = x01;
+		x[ 0] = x00;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
 internal static class Salsa20Utils
@@ -12,39 +10,70 @@ internal static class Salsa20Utils
 
 		SalsaRound(rounds, x);
 
-		for (int i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
-		{
-			x[i] += state[i];
-			x[i + 1] += state[i + 1];
-			x[i + 2] += state[i + 2];
-			x[i + 3] += state[i + 3];
-		}
+		x[15] += state[15];
+		x[14] += state[14];
+		x[13] += state[13];
+		x[12] += state[12];
+		x[11] += state[11];
+		x[10] += state[10];
+		x[9] += state[9];
+		x[8] += state[8];
+		x[7] += state[7];
+		x[6] += state[6];
+		x[5] += state[5];
+		x[4] += state[4];
+		x[3] += state[3];
+		x[2] += state[2];
+		x[1] += state[1];
+		x[0] += state[0];
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void SalsaRound(in int rounds, in Span<uint> x)
 	{
+		uint x15 = x[15], x14 = x[14], x13 = x[13], x12 = x[12];
+		uint x11 = x[11], x10 = x[10], x09 = x[ 9], x08 = x[ 8];
+		uint x07 = x[ 7], x06 = x[ 6], x05 = x[ 5], x04 = x[ 4];
+		uint x03 = x[ 3], x02 = x[ 2], x01 = x[ 1], x00 = x[ 0];
+
 		for (int i = 0; i < rounds; i += 2)
 		{
-			QuarterRound(x, 4, 0, 12, 8);
-			QuarterRound(x, 9, 5, 1, 13);
-			QuarterRound(x, 14, 10, 6, 2);
-			QuarterRound(x, 3, 15, 11, 7);
+			QuarterRound(ref x04, ref x00, ref x12, ref x08);
+			QuarterRound(ref x09, ref x05, ref x01, ref x13);
+			QuarterRound(ref x14, ref x10, ref x06, ref x02);
+			QuarterRound(ref x03, ref x15, ref x11, ref x07);
 
-			QuarterRound(x, 1, 0, 3, 2);
-			QuarterRound(x, 6, 5, 4, 7);
-			QuarterRound(x, 11, 10, 9, 8);
-			QuarterRound(x, 12, 15, 14, 13);
+			QuarterRound(ref x01, ref x00, ref x03, ref x02);
+			QuarterRound(ref x06 , ref x05, ref x04, ref x07);
+			QuarterRound(ref x11, ref x10, ref x09, ref x08);
+			QuarterRound(ref x12, ref x15, ref x14, ref x13);
 		}
+
+		x[15] = x15;
+		x[14] = x14;
+		x[13] = x13;
+		x[12] = x12;
+		x[11] = x11;
+		x[10] = x10;
+		x[ 9] = x09;
+		x[ 8] = x08;
+		x[ 7] = x07;
+		x[ 6] = x06;
+		x[ 5] = x05;
+		x[ 4] = x04;
+		x[ 3] = x03;
+		x[ 2] = x02;
+		x[ 1] = x01;
+		x[ 0] = x00;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void QuarterRound(in Span<uint> x, in int a, in int b, in int c, in int d)
+	private static void QuarterRound(ref uint a, ref uint b, ref uint c, ref uint d)
 	{
-		Step(ref x[a], x[b], x[c], 7);
-		Step(ref x[d], x[a], x[b], 9);
-		Step(ref x[c], x[d], x[a], 13);
-		Step(ref x[b], x[c], x[d], 18);
+		Step(ref a, b, c, 7);
+		Step(ref d, a, b, 9);
+		Step(ref c, d, a, 13);
+		Step(ref b, c, d, 18);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
