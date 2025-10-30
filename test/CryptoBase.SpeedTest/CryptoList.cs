@@ -47,16 +47,15 @@ internal static class CryptoList
 		Sm4Gcm,
 		ChaCha20Poly1305,
 		XChaCha20Poly1305
-,
 	];
 
 	public static ISymmetricCrypto? GetSymmetricCrypto(string name)
 	{
-		ReadOnlySpan<byte> key32 = CryptoTest.Key[..32];
-		ReadOnlySpan<byte> key24 = CryptoTest.Key[..24];
-		ReadOnlySpan<byte> key16 = CryptoTest.Key[..16];
-		ReadOnlySpan<byte> iv16 = CryptoTest.IV[..16];
-		ReadOnlySpan<byte> iv24 = CryptoTest.IV[..24];
+		ReadOnlySpan<byte> key32 = CryptoTest.Key.Slice(0, 32);
+		ReadOnlySpan<byte> key24 = CryptoTest.Key.Slice(0, 24);
+		ReadOnlySpan<byte> key16 = CryptoTest.Key.Slice(0, 16);
+		ReadOnlySpan<byte> iv16 = CryptoTest.IV.Slice(0, 16);
+		ReadOnlySpan<byte> iv24 = CryptoTest.IV.Slice(0, 24);
 
 		return name switch
 		{
@@ -73,7 +72,7 @@ internal static class CryptoList
 			ChaCha20 => StreamCryptoCreate.ChaCha20(key32, iv16),
 			XChaCha20 => StreamCryptoCreate.XChaCha20(key32, iv24),
 			Salsa20 => StreamCryptoCreate.Salsa20(key32, iv16),
-			XSalsa20 => StreamCryptoCreate.XSalsa20(key32, iv24),
+			XSalsa20 => new XSalsa20Crypto(key32, iv24),
 			Aes128Gcm => AEADCryptoCreate.AesGcm(key16),
 			Aes192Gcm => AEADCryptoCreate.AesGcm(key24),
 			Aes256Gcm => AEADCryptoCreate.AesGcm(key32),

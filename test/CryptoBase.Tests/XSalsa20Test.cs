@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20;
 
 namespace CryptoBase.Tests;
 
@@ -56,16 +55,6 @@ public class XSalsa20Test
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
 		Test_Internal(new BcXSalsa20Crypto(key, iv), i1, o1, i2, o2);
-		Test_Internal(new XSalsa20CryptoSF(key, iv), i1, o1, i2, o2);
-		Test_Internal(StreamCryptoCreate.XSalsa20(key, iv), i1, o1, i2, o2);
-	}
-
-	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
-	[MemberData(nameof(Data), MemberType = typeof(XSalsa20Test))]
-	public void TestX86(string keyHex, string ivHex, string i1, string o1, string i2, string o2)
-	{
-		byte[] key = keyHex.FromHex();
-		byte[] iv = ivHex.FromHex();
-		Test_Internal(new XSalsa20CryptoX86(key, iv), i1, o1, i2, o2);
+		Test_Internal(new XSalsa20Crypto(key, iv), i1, o1, i2, o2);
 	}
 }

@@ -1,12 +1,12 @@
-namespace CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20;
+namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
-public class XSalsa20CryptoX86 : Salsa20Crypto
+public sealed class XSalsa20Crypto : Salsa20Crypto
 {
 	public override string Name => @"XSalsa20";
 
 	public override int IvSize => 24;
 
-	public XSalsa20CryptoX86(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+	public XSalsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		Init(key, iv);
 		Reset();
@@ -51,15 +51,22 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 		State[15] = Sigma32[3];
 	}
 
-	public sealed override void Reset()
+	public override void Reset()
 	{
 		Index = 0;
 		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 8)) = 0;
 	}
 
-	protected virtual void SalsaRound(uint[] x)
+	private void SalsaRound(uint[] x)
 	{
-		Salsa20Utils.SalsaRound(x, Rounds);
+		if (Sse2.IsSupported)
+		{
+			Salsa20Utils.SalsaRound(x, Rounds);
+		}
+		else
+		{
+			Salsa20Utils.SalsaRound(Rounds, x);
+		}
 	}
 
 	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -109,6 +116,13 @@ public class XSalsa20CryptoX86 : Salsa20Crypto
 
 	protected override void UpdateKeyStream()
 	{
-		Salsa20Utils.UpdateKeyStream(State, KeyStream, Rounds);
+		if (Sse2.IsSupported)
+		{
+			Salsa20Utils.UpdateKeyStream(State, KeyStream, Rounds);
+		}
+		else
+		{
+			Salsa20Utils.UpdateKeyStream(Rounds, State, KeyStream);
+		}
 	}
 }

@@ -8,7 +8,6 @@ using CryptoBase.SymmetricCryptos.StreamCryptos.ChaCha20Original;
 using CryptoBase.SymmetricCryptos.StreamCryptos.RC4;
 using CryptoBase.SymmetricCryptos.StreamCryptos.Salsa20;
 using CryptoBase.SymmetricCryptos.StreamCryptos.XChaCha20;
-using CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
@@ -112,16 +111,5 @@ public static class StreamCryptoCreate
 		}
 
 		return new Salsa20CryptoSF(key, iv);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Salsa20Crypto XSalsa20(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
-	{
-		if (Sse2.IsSupported)
-		{
-			return new XSalsa20CryptoX86(key, iv);
-		}
-
-		return new XSalsa20CryptoSF(key, iv);
 	}
 }

@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
-using CryptoBase.SymmetricCryptos.StreamCryptos.XSalsa20;
+using CryptoBase.SymmetricCryptos.StreamCryptos;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -38,15 +38,9 @@ public class XSalsa20Benchmark
 		Test(new BcXSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
 	}
 
-	[Benchmark]
-	public void SoftwareFallback()
-	{
-		Test(new XSalsa20CryptoSF(_randomKey, _randomIv), _randombytes.Span);
-	}
-
 	[Benchmark(Baseline = true)]
-	public void X86()
+	public void Default()
 	{
-		Test(new XSalsa20CryptoX86(_randomKey, _randomIv), _randombytes.Span);
+		Test(new XSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
 	}
 }
