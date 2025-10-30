@@ -5,35 +5,24 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 internal static class ChaCha20Utils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void UpdateKeyStream(in int rounds, in uint[] state, in byte[] keyStream)
+	public static void UpdateKeyStream(in int rounds, in ReadOnlySpan<uint> state, in Span<byte> keyStream)
 	{
-		uint[] x = ArrayPool<uint>.Shared.Rent(SnuffleCryptoBase.StateSize);
+		Span<uint> x = MemoryMarshal.Cast<byte, uint>(keyStream);
+		state.CopyTo(x);
 
-		try
+		ChaChaRound(rounds, x);
+
+		for (int i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
 		{
-			state.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(x);
-
-			ChaChaRound(rounds, x);
-
-			for (int i = 0; i < SnuffleCryptoBase.StateSize; i += 4)
-			{
-				x[i] += state[i];
-				x[i + 1] += state[i + 1];
-				x[i + 2] += state[i + 2];
-				x[i + 3] += state[i + 3];
-			}
-
-			Span<uint> span = MemoryMarshal.Cast<byte, uint>(keyStream.AsSpan(0, SnuffleCryptoBase.StateSize * sizeof(uint)));
-			x.AsSpan(0, SnuffleCryptoBase.StateSize).CopyTo(span);
-		}
-		finally
-		{
-			ArrayPool<uint>.Shared.Return(x);
+			x[i] += state[i];
+			x[i + 1] += state[i + 1];
+			x[i + 2] += state[i + 2];
+			x[i + 3] += state[i + 3];
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void ChaChaRound(in int rounds, in uint[] x)
+	public static void ChaChaRound(in int rounds, in Span<uint> x)
 	{
 		for (int i = 0; i < rounds; i += 2)
 		{

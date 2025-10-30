@@ -58,11 +58,10 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		State[15] = ivSpan[1];
 	}
 
-	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
+	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		int processed = 0;
 		int length = source.Length;
-		Span<uint> stateSpan = State.AsSpan(0, StateSize);
 
 		if (Avx2.IsSupported)
 		{
@@ -100,6 +99,11 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 			}
 		}
 
+		if (length >= BlockSize)
+		{
+			processed += base.UpdateBlocks(stateSpan, keyStream, source.Slice(processed), destination.Slice(processed));
+		}
+
 		return processed;
 	}
 
@@ -107,11 +111,11 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 	{
 		if (Sse2.IsSupported)
 		{
-			ChaCha20Utils.UpdateKeyStream(State, KeyStream, Rounds);
+			ChaCha20Utils.UpdateKeyStream(State.Span, KeyStream.Span, Rounds);
 		}
 		else
 		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
+			ChaCha20Utils.UpdateKeyStream(Rounds, State.Span, KeyStream.Span);
 		}
 	}
 

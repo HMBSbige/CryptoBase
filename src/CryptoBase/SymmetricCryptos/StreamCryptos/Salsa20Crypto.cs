@@ -69,11 +69,10 @@ public class Salsa20Crypto : SnuffleCrypto
 		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 8)) = 0;
 	}
 
-	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
+	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		int processed = 0;
 		int length = source.Length;
-		Span<uint> stateSpan = State.AsSpan(0, StateSize);
 
 		if (Avx2.IsSupported)
 		{
@@ -111,6 +110,11 @@ public class Salsa20Crypto : SnuffleCrypto
 			}
 		}
 
+		if (length >= BlockSize)
+		{
+			processed += base.UpdateBlocks(stateSpan, keyStream, source.Slice(processed), destination.Slice(processed));
+		}
+
 		return processed;
 	}
 
@@ -118,11 +122,11 @@ public class Salsa20Crypto : SnuffleCrypto
 	{
 		if (Sse2.IsSupported)
 		{
-			Salsa20Utils.UpdateKeyStream(State, KeyStream, Rounds);
+			Salsa20Utils.UpdateKeyStream(State.Span, KeyStream.Span, Rounds);
 		}
 		else
 		{
-			Salsa20Utils.UpdateKeyStream(Rounds, State, KeyStream);
+			Salsa20Utils.UpdateKeyStream(Rounds, State.Span, KeyStream.Span);
 		}
 	}
 }

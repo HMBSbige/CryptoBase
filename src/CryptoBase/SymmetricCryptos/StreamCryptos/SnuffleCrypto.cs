@@ -16,8 +16,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 	protected byte Rounds { get; init; } = 20;
 
-	protected readonly uint[] State = ArrayPool<uint>.Shared.Rent(StateSize);
-	protected readonly byte[] KeyStream = ArrayPool<byte>.Shared.Rent(StateSize * sizeof(uint));
+	protected readonly CryptoArrayPool<uint> State = new(StateSize);
+	protected readonly CryptoArrayPool<byte> KeyStream = new(BlockSize);
 
 	protected int Index;
 
@@ -25,54 +25,76 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	{
 		base.Update(source, destination);
 
-		int length = source.Length;
-		int offset = 0;
-		ReadOnlySpan<byte> keyStream = KeyStream.AsSpan(0, StateSize * sizeof(uint));
-		Span<uint> state = State.AsSpan(0, StateSize);
+		int i = 0;
+		int left = source.Length;
 
-		while (length > 0)
+		Span<uint> state = State.Span;
+		Span<byte> keyStream = KeyStream.Span;
+
+		if (Index is not 0 && left > 0)
+		{
+			int r = BlockSize - Index;
+			int n = Math.Min(r, left);
+
+			FastUtils.Xor(keyStream.Slice(Index), source, destination, n);
+
+			Index += n;
+			Index &= BlockSize - 1;
+			i += n;
+			left -= n;
+		}
+
+		if (left >= BlockSize)
+		{
+			int processed = UpdateBlocks(state, keyStream, source.Slice(i), destination.Slice(i));
+
+			i += processed;
+			left -= processed;
+		}
+
+		if (left > 0)
 		{
 			if (Index is 0)
 			{
-				int processed = UpdateBlocks(source.Slice(offset), destination.Slice(offset));
-				length -= processed;
-				offset += processed;
-
-				if (length is 0)
-				{
-					break;
-				}
-
 				UpdateKeyStream();
 				IncrementCounter(state);
 			}
 
-			int r = StateSize * sizeof(uint) - Index;
-			FastUtils.Xor(keyStream.Slice(Index), source.Slice(offset), destination.Slice(offset), Math.Min(r, length));
+			FastUtils.Xor(keyStream.Slice(Index), source.Slice(i), destination.Slice(i), left);
 
-			if (length < r)
-			{
-				Index += length;
-				return;
-			}
-
-			Index = 0;
-			length -= r;
-			offset += r;
+			Index += left;
+			Index &= BlockSize - 1;
 		}
 	}
 
-	protected abstract int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination);
+	protected virtual int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	{
+		int i = 0;
+		int left = source.Length;
+
+		while (left >= BlockSize)
+		{
+			UpdateKeyStream();
+			IncrementCounter(stateSpan);
+
+			FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), BlockSize);
+
+			i += BlockSize;
+			left -= BlockSize;
+		}
+
+		return source.Length - left;
+	}
+
 	protected abstract void UpdateKeyStream();
 	protected abstract void IncrementCounter(Span<uint> state);
 
 	public override void Dispose()
 	{
+		State.Dispose();
+		KeyStream.Dispose();
+
 		base.Dispose();
-
-		ArrayPool<uint>.Shared.Return(State);
-		ArrayPool<byte>.Shared.Return(KeyStream);
-
 		GC.SuppressFinalize(this);
 	}
 }

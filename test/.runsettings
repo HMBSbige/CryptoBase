@@ -5,6 +5,7 @@
       <DOTNET_EnableHWIntrinsic>1</DOTNET_EnableHWIntrinsic>
       <DOTNET_EnableSSE>1</DOTNET_EnableSSE>
       <DOTNET_EnableAVX>1</DOTNET_EnableAVX>
+      <DOTNET_EnableAVX512F>1</DOTNET_EnableAVX512F>
     </EnvironmentVariables>
   </RunConfiguration>
 </RunSettings>

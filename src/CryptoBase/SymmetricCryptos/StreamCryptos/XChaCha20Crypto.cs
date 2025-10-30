@@ -18,7 +18,7 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 		Reset();
 	}
 
-	private void ChaChaRound(in uint[] x)
+	private void ChaChaRound(in Span<uint> x)
 	{
 		if (Sse2.IsSupported)
 		{
@@ -32,25 +32,25 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 
 	public void SetIV(ReadOnlySpan<byte> iv)
 	{
-		Span<uint> span = State.AsSpan(0, StateSize);
+		Span<uint> state = State.Span;
 		Span<uint> sigma = Sigma32.AsSpan();
 
-		sigma.CopyTo(span);
+		sigma.CopyTo(state);
 
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.Span);
-		keySpan.CopyTo(span.Slice(4));
+		keySpan.CopyTo(state.Slice(4));
 
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		ivSpan.Slice(0, 4).CopyTo(span.Slice(12));
+		ivSpan.Slice(0, 4).CopyTo(state.Slice(12));
 
-		ChaChaRound(State);
+		ChaChaRound(state);
 
-		span.Slice(12).CopyTo(span.Slice(8));
-		span.Slice(0, 4).CopyTo(span.Slice(4));
+		state.Slice(12).CopyTo(state.Slice(8));
+		state.Slice(0, 4).CopyTo(state.Slice(4));
 
-		sigma.CopyTo(span);
+		sigma.CopyTo(state);
 
-		State[14] = ivSpan[4];
-		State[15] = ivSpan[5];
+		state[14] = ivSpan[4];
+		state[15] = ivSpan[5];
 	}
 }

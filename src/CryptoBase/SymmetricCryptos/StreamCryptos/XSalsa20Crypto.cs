@@ -16,45 +16,45 @@ public class XSalsa20Crypto : Salsa20Crypto
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
-		Span<uint> span = State.AsSpan(0, StateSize);
+		Span<uint> state = State.Span;
 
-		State[0] = Sigma32[0];
-		State[5] = Sigma32[1];
-		State[10] = Sigma32[2];
-		State[15] = Sigma32[3];
+		state[0] = Sigma32[0];
+		state[5] = Sigma32[1];
+		state[10] = Sigma32[2];
+		state[15] = Sigma32[3];
 
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
-		keySpan.Slice(0, 4).CopyTo(span.Slice(1));
-		keySpan.Slice(4).CopyTo(span.Slice(11));
+		keySpan.Slice(0, 4).CopyTo(state.Slice(1));
+		keySpan.Slice(4).CopyTo(state.Slice(11));
 
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		ivSpan.Slice(0, 4).CopyTo(span.Slice(6));
+		ivSpan.Slice(0, 4).CopyTo(state.Slice(6));
 
 		if (Sse2.IsSupported)
 		{
-			Salsa20Utils.SalsaRound(State, Rounds);
+			Salsa20Utils.SalsaRound(State.Span, Rounds);
 		}
 		else
 		{
-			Salsa20Utils.SalsaRound(Rounds, State);
+			Salsa20Utils.SalsaRound(Rounds, State.Span);
 		}
 
-		State[1] = State[0];
-		State[2] = State[5];
-		State[3] = State[10];
-		State[4] = State[15];
+		state[1] = state[0];
+		state[2] = state[5];
+		state[3] = state[10];
+		state[4] = state[15];
 
-		span.Slice(6, 4).CopyTo(span.Slice(11));
+		state.Slice(6, 4).CopyTo(state.Slice(11));
 
-		State[6] = ivSpan[4];
-		State[7] = ivSpan[5];
+		state[6] = ivSpan[4];
+		state[7] = ivSpan[5];
 
-		State[8] = ivSpan[2];
-		State[9] = ivSpan[3];
+		state[8] = ivSpan[2];
+		state[9] = ivSpan[3];
 
-		State[0] = Sigma32[0];
-		State[5] = Sigma32[1];
-		State[10] = Sigma32[2];
-		State[15] = Sigma32[3];
+		state[0] = Sigma32[0];
+		state[5] = Sigma32[1];
+		state[10] = Sigma32[2];
+		state[15] = Sigma32[3];
 	}
 }

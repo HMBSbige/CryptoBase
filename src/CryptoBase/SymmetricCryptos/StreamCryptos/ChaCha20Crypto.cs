@@ -16,22 +16,22 @@ public class ChaCha20Crypto : SnuffleCrypto
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
 
-		State[0] = Sigma32[0];
-		State[1] = Sigma32[1];
-		State[2] = Sigma32[2];
-		State[3] = Sigma32[3];
+		Span<uint> state = State.Span;
+		state[0] = Sigma32[0];
+		state[1] = Sigma32[1];
+		state[2] = Sigma32[2];
+		state[3] = Sigma32[3];
 
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
-		keySpan.CopyTo(State.AsSpan(4));
+		keySpan.CopyTo(state.Slice(4));
 
 		SetIV(iv);
 	}
 
-	protected override int UpdateBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
+	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		int processed = 0;
 		int length = source.Length;
-		Span<uint> stateSpan = State.AsSpan(0, StateSize);
 
 		if (Avx2.IsSupported)
 		{
@@ -69,6 +69,11 @@ public class ChaCha20Crypto : SnuffleCrypto
 			}
 		}
 
+		if (length >= BlockSize)
+		{
+			processed += base.UpdateBlocks(stateSpan, keyStream, source.Slice(processed), destination.Slice(processed));
+		}
+
 		return processed;
 	}
 
@@ -76,11 +81,11 @@ public class ChaCha20Crypto : SnuffleCrypto
 	{
 		if (Sse2.IsSupported)
 		{
-			ChaCha20Utils.UpdateKeyStream(State, KeyStream, Rounds);
+			ChaCha20Utils.UpdateKeyStream(State.Span, KeyStream.Span, Rounds);
 		}
 		else
 		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, State, KeyStream);
+			ChaCha20Utils.UpdateKeyStream(Rounds, State.Span, KeyStream.Span);
 		}
 	}
 
