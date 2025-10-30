@@ -32,9 +32,9 @@ internal static class ChaCha20Utils
 	public static void ChaChaRound(in int rounds, in Span<uint> x)
 	{
 		uint x15 = x[15], x14 = x[14], x13 = x[13], x12 = x[12];
-		uint x11 = x[11], x10 = x[10], x09 = x[ 9], x08 = x[ 8];
-		uint x07 = x[ 7], x06 = x[ 6], x05 = x[ 5], x04 = x[ 4];
-		uint x03 = x[ 3], x02 = x[ 2], x01 = x[ 1], x00 = x[ 0];
+		uint x11 = x[11], x10 = x[10], x09 = x[9], x08 = x[8];
+		uint x07 = x[7], x06 = x[6], x05 = x[5], x04 = x[4];
+		uint x03 = x[3], x02 = x[2], x01 = x[1], x00 = x[0];
 
 		for (int i = 0; i < rounds; i += 2)
 		{
@@ -55,16 +55,16 @@ internal static class ChaCha20Utils
 		x[12] = x12;
 		x[11] = x11;
 		x[10] = x10;
-		x[ 9] = x09;
-		x[ 8] = x08;
-		x[ 7] = x07;
-		x[ 6] = x06;
-		x[ 5] = x05;
-		x[ 4] = x04;
-		x[ 3] = x03;
-		x[ 2] = x02;
-		x[ 1] = x01;
-		x[ 0] = x00;
+		x[9] = x09;
+		x[8] = x08;
+		x[7] = x07;
+		x[6] = x06;
+		x[5] = x05;
+		x[4] = x04;
+		x[3] = x03;
+		x[2] = x02;
+		x[1] = x01;
+		x[0] = x00;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
