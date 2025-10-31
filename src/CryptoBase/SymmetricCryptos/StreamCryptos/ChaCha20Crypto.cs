@@ -9,6 +9,11 @@ public class ChaCha20Crypto : SnuffleCrypto
 
 	public override int IvSize => 12;
 
+	/// <summary>
+	/// ChaCha20 uses a 32-bit counter, max blocks = 2^32, max bytes = 2^32 * 64
+	/// </summary>
+	protected override ulong MaxBytesLimit => (1UL << 32) * BlockSize;
+
 	public ChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		Init(key, iv);
@@ -94,6 +99,7 @@ public class ChaCha20Crypto : SnuffleCrypto
 
 	public sealed override void Reset()
 	{
+		BytesProcessed = 0;
 		SetCounter(0);
 	}
 
@@ -112,6 +118,7 @@ public class ChaCha20Crypto : SnuffleCrypto
 
 	public void SetCounter(uint counter)
 	{
+		BytesProcessed = (ulong)counter * BlockSize;
 		Index = 0;
 		ChaCha20Utils.GetCounter(ref State.GetReference()) = counter;
 	}
