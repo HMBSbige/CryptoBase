@@ -32,7 +32,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		base.Update(source, destination);
 
 		// Check if processing this data would cause counter reuse
-		if (MaxBytesLimit - BytesProcessed < (ulong)source.Length)
+		ulong sourceLength = (ulong)source.Length;
+		if (sourceLength > MaxBytesLimit || BytesProcessed > MaxBytesLimit - sourceLength)
 		{
 			ThrowHelper.ThrowDataLimitExceeded();
 		}

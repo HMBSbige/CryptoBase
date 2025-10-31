@@ -8,7 +8,7 @@ public class SnuffleCryptoDataLimitTest
 	[Fact]
 	public void ChaCha20_ThrowsWhenDataLimitExceeded()
 	{
-		// ChaCha20 has a 32-bit counter, max = 2^32 * 64 bytes = 274,877,906,944 bytes
+		// ChaCha20 has a 32-bit counter, max = (1UL << 32) * 64 bytes = 274,877,906,944 bytes
 		byte[] key = new byte[32];
 		byte[] iv = new byte[12];
 		using var crypto = new ChaCha20Crypto(key, iv);
