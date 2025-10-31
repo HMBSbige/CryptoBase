@@ -61,7 +61,7 @@ public class SM4CTRBenchmark
 		ReadOnlySpan<byte> key = _randomKey;
 		ReadOnlySpan<byte> iv = _randomIv;
 		ReadOnlySpan<byte> data = _randombytes.Span;
-		using CTR128StreamModeBlock4X86 crypto = new(new SM4CryptoX86(key), iv);
+		using CTR128StreamModeBlock4X86 crypto = new(new SM4Crypto(key), iv);
 		Test(crypto, data);
 	}
 
@@ -71,7 +71,7 @@ public class SM4CTRBenchmark
 		ReadOnlySpan<byte> key = _randomKey;
 		ReadOnlySpan<byte> iv = _randomIv;
 		ReadOnlySpan<byte> data = _randombytes.Span;
-		using CTR128StreamModeBlock8X86 crypto = new(new SM4CryptoBlock8X86(key), iv);
+		using CTR128StreamModeBlock8X86 crypto = new(new SM4Crypto(key), iv);
 		Test(crypto, data);
 	}
 
@@ -81,7 +81,7 @@ public class SM4CTRBenchmark
 		ReadOnlySpan<byte> key = _randomKey;
 		ReadOnlySpan<byte> iv = _randomIv;
 		ReadOnlySpan<byte> data = _randombytes.Span;
-		using CTR128StreamModeBlock8AvxX86 crypto = new(new SM4CryptoBlock8X86(key), iv);
+		using CTR128StreamModeBlock8AvxX86 crypto = new(new SM4Crypto(key), iv);
 		Test(crypto, data);
 	}
 
@@ -91,7 +91,7 @@ public class SM4CTRBenchmark
 		ReadOnlySpan<byte> key = _randomKey;
 		ReadOnlySpan<byte> iv = _randomIv;
 		ReadOnlySpan<byte> data = _randombytes.Span;
-		using CTR128StreamModeBlock16X86 crypto = new(new SM4CryptoBlock16X86(key), iv);
+		using CTR128StreamModeBlock16X86 crypto = new(new SM4Crypto(key), iv);
 		Test(crypto, data);
 	}
 }

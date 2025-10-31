@@ -11,6 +11,16 @@ public static class StreamCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto AesCtr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
+		if (Avx2.IsSupported)
+		{
+			return new CTR128StreamModeBlock16X86(AesCrypto.CreateCore(key), iv);
+		}
+
+		if (Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
+		{
+			return new CTR128StreamModeBlock8X86(AesCrypto.CreateCore(key), iv);
+		}
+
 		return BlockCryptoModeCreate.Ctr(AesCrypto.CreateCore(key), iv);
 	}
 
@@ -19,12 +29,12 @@ public static class StreamCryptoCreate
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
-			return new CTR128StreamModeBlock16X86(new SM4CryptoBlock16X86(key), iv);
+			return new CTR128StreamModeBlock16X86(new SM4Crypto(key), iv);
 		}
 
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
 		{
-			return new CTR128StreamModeBlock8X86(new SM4CryptoBlock8X86(key), iv);
+			return new CTR128StreamModeBlock8X86(new SM4Crypto(key), iv);
 		}
 
 		return BlockCryptoModeCreate.Ctr(new SM4Crypto(key), iv);

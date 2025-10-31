@@ -6,7 +6,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 
 public class GcmCryptoModeBlock16X86 : IAEADCrypto
 {
-	public string Name => _crypto16.Name + @"-GCM";
+	public string Name => _crypto.Name + @"-GCM";
 
 	public const int BlockSize = 16;
 	public const int BlockSize16 = 16 * BlockSize;
@@ -16,21 +16,17 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
 	private readonly IBlockCrypto _crypto;
-	private readonly IBlockCrypto _crypto16;
 
 	private readonly byte[] _buffer;
 	private readonly byte[] _tagBuffer;
 	private readonly byte[] _counterBlock;
 	private readonly IMac _gHash;
 
-	public GcmCryptoModeBlock16X86(IBlockCrypto crypto, IBlockCrypto crypto16)
+	public GcmCryptoModeBlock16X86(IBlockCrypto crypto)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
 
-		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto16.BlockSize, BlockSize16, nameof(crypto16));
-
 		_crypto = crypto;
-		_crypto16 = crypto16;
 
 		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize16);
 		_tagBuffer = ArrayPool<byte>.Shared.Rent(TagSize);
@@ -111,7 +107,7 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 
 		while (!source.IsEmpty)
 		{
-			_crypto16.Encrypt(counterBlock, _buffer);
+			_crypto.Encrypt16(counterBlock, _buffer);
 
 			Vector256<uint> v0 = Avx2.Add(v1, vAdd8);
 			v1 = Avx2.Add(v0, vAdd8);
@@ -222,7 +218,7 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 
 		while (!source.IsEmpty)
 		{
-			_crypto16.Encrypt(counterBlock, _buffer);
+			_crypto.Encrypt16(counterBlock, _buffer);
 
 			Vector256<uint> v0 = Avx2.Add(v1, vAdd8);
 			v1 = Avx2.Add(v0, vAdd8);
@@ -275,7 +271,6 @@ public class GcmCryptoModeBlock16X86 : IAEADCrypto
 	public void Dispose()
 	{
 		_crypto.Dispose();
-		_crypto16.Dispose();
 		_gHash.Dispose();
 
 		ArrayPool<byte>.Shared.Return(_buffer);

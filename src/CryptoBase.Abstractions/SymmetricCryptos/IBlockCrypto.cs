@@ -7,13 +7,23 @@ public interface IBlockCrypto : ISymmetricCrypto
 	/// </summary>
 	int BlockSize { get; }
 
-	/// <summary>
-	/// 加密
-	/// </summary>
 	void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination);
 
-	/// <summary>
-	/// 解密
-	/// </summary>
 	void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Encrypt2(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Decrypt2(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Decrypt4(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Encrypt8(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Decrypt8(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Encrypt16(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Decrypt16(ReadOnlySpan<byte> source, Span<byte> destination);
 }

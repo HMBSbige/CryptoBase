@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
@@ -31,5 +32,29 @@ public sealed class BcAesCrypto : BlockCryptoBase
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		_decryptionEngine.ProcessBlock(source, destination);
+	}
+
+	public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (_encryptionEngine is AesEngine_X86 engineX86)
+		{
+			engineX86.ProcessFourBlocks(source, destination);
+		}
+		else
+		{
+			base.Encrypt4(source, destination);
+		}
+	}
+
+	public override void Decrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (_decryptionEngine is AesEngine_X86 engineX86)
+		{
+			engineX86.ProcessFourBlocks(source, destination);
+		}
+		else
+		{
+			base.Decrypt4(source, destination);
+		}
 	}
 }

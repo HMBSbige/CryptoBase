@@ -6,7 +6,7 @@ namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 
 public class GcmCryptoModeBlock8X86 : IAEADCrypto
 {
-	public string Name => _crypto8.Name + @"-GCM";
+	public string Name => _crypto.Name + @"-GCM";
 
 	public const int BlockSize = 16;
 	public const int BlockSize8 = 8 * BlockSize;
@@ -16,21 +16,17 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
 	private readonly IBlockCrypto _crypto;
-	private readonly IBlockCrypto _crypto8;
 
 	private readonly byte[] _buffer;
 	private readonly byte[] _tagBuffer;
 	private readonly byte[] _counterBlock;
 	private readonly IMac _gHash;
 
-	public GcmCryptoModeBlock8X86(IBlockCrypto crypto, IBlockCrypto crypto8)
+	public GcmCryptoModeBlock8X86(IBlockCrypto crypto)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
 
-		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto8.BlockSize, BlockSize8, nameof(crypto8));
-
 		_crypto = crypto;
-		_crypto8 = crypto8;
 
 		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize8);
 		_tagBuffer = ArrayPool<byte>.Shared.Rent(TagSize);
@@ -87,7 +83,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 
 		while (!source.IsEmpty)
 		{
-			_crypto8.Encrypt(counterBlock, _buffer);
+			_crypto.Encrypt8(counterBlock, _buffer);
 
 			Vector128<uint> v0 = Sse2.Add(v1, vAdd4);
 			v1 = Sse2.Add(v0, vAdd4);
@@ -166,7 +162,7 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 
 		while (!source.IsEmpty)
 		{
-			_crypto8.Encrypt(counterBlock, _buffer);
+			_crypto.Encrypt8(counterBlock, _buffer);
 
 			Vector128<uint> v0 = Sse2.Add(v1, vAdd4);
 			v1 = Sse2.Add(v0, vAdd4);
@@ -211,7 +207,6 @@ public class GcmCryptoModeBlock8X86 : IAEADCrypto
 	public void Dispose()
 	{
 		_crypto.Dispose();
-		_crypto8.Dispose();
 		_gHash.Dispose();
 
 		ArrayPool<byte>.Shared.Return(_buffer);

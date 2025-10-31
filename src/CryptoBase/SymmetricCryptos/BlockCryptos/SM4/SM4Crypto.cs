@@ -2,7 +2,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
-public class SM4Crypto : BlockCryptoBase
+public sealed class SM4Crypto : BlockCryptoBase
 {
 	public override string Name => @"SM4";
 
@@ -64,7 +64,7 @@ public class SM4Crypto : BlockCryptoBase
 		0x646b7279
 	];
 
-	protected readonly uint[] Rk;
+	private readonly uint[] _rk;
 
 	#region Base
 
@@ -98,82 +98,152 @@ public class SM4Crypto : BlockCryptoBase
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 16, nameof(key));
 
-		Rk = ArrayPool<uint>.Shared.Rent(32);
+		_rk = ArrayPool<uint>.Shared.Rent(32);
 
-		uint k0 = BinaryPrimitives.ReadUInt32BigEndian(key) ^ 0xa3b1bac6;
-		uint k1 = BinaryPrimitives.ReadUInt32BigEndian(key[4..]) ^ 0x56aa3350;
-		uint k2 = BinaryPrimitives.ReadUInt32BigEndian(key[8..]) ^ 0x677d9197;
-		uint k3 = BinaryPrimitives.ReadUInt32BigEndian(key[12..]) ^ 0xb27022dc;
+		uint k0 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(0 * 4)) ^ 0xa3b1bac6;
+		uint k1 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(1 * 4)) ^ 0x56aa3350;
+		uint k2 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(2 * 4)) ^ 0x677d9197;
+		uint k3 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(3 * 4)) ^ 0xb27022dc;
 
 		for (int i = 0; i < 32; i += 4)
 		{
 			k0 ^= L1(SubByte(k1 ^ k2 ^ k3 ^ Ck[i + 0]));
-			Rk[i + 0] = k0;
+			_rk[i + 0] = k0;
 
 			k1 ^= L1(SubByte(k2 ^ k3 ^ k0 ^ Ck[i + 1]));
-			Rk[i + 1] = k1;
+			_rk[i + 1] = k1;
 
 			k2 ^= L1(SubByte(k3 ^ k0 ^ k1 ^ Ck[i + 2]));
-			Rk[i + 2] = k2;
+			_rk[i + 2] = k2;
 
 			k3 ^= L1(SubByte(k0 ^ k1 ^ k2 ^ Ck[i + 3]));
-			Rk[i + 3] = k3;
+			_rk[i + 3] = k3;
 		}
 	}
 
 	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
+		base.Encrypt(source, destination);
 
-		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
-		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
-		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source[8..]);
-		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source[12..]);
+		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(0 * 4));
+		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(1 * 4));
+		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(2 * 4));
+		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(3 * 4));
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			x0 ^= T(x1 ^ x2 ^ x3 ^ Rk[i + 0]);
-			x1 ^= T(x0 ^ x2 ^ x3 ^ Rk[i + 1]);
-			x2 ^= T(x0 ^ x1 ^ x3 ^ Rk[i + 2]);
-			x3 ^= T(x0 ^ x1 ^ x2 ^ Rk[i + 3]);
+			x0 ^= T(x1 ^ x2 ^ x3 ^ _rk[i + 0]);
+			x1 ^= T(x0 ^ x2 ^ x3 ^ _rk[i + 1]);
+			x2 ^= T(x0 ^ x1 ^ x3 ^ _rk[i + 2]);
+			x3 ^= T(x0 ^ x1 ^ x2 ^ _rk[i + 3]);
 		}
 
-		BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
-		BinaryPrimitives.WriteUInt32BigEndian(destination[4..], x2);
-		BinaryPrimitives.WriteUInt32BigEndian(destination[8..], x1);
-		BinaryPrimitives.WriteUInt32BigEndian(destination[12..], x0);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(0 * 4), x3);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(1 * 4), x2);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(2 * 4), x1);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(3 * 4), x0);
 	}
 
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Decrypt(source, destination);
 
-		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
-		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source[4..]);
-		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source[8..]);
-		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source[12..]);
+		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(0 * 4));
+		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(1 * 4));
+		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(2 * 4));
+		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(3 * 4));
 
 		for (int i = 28; i >= 0; i -= 4)
 		{
-			x0 ^= T(x1 ^ x2 ^ x3 ^ Rk[i + 3]);
-			x1 ^= T(x0 ^ x2 ^ x3 ^ Rk[i + 2]);
-			x2 ^= T(x0 ^ x1 ^ x3 ^ Rk[i + 1]);
-			x3 ^= T(x0 ^ x1 ^ x2 ^ Rk[i + 0]);
+			x0 ^= T(x1 ^ x2 ^ x3 ^ _rk[i + 3]);
+			x1 ^= T(x0 ^ x2 ^ x3 ^ _rk[i + 2]);
+			x2 ^= T(x0 ^ x1 ^ x3 ^ _rk[i + 1]);
+			x3 ^= T(x0 ^ x1 ^ x2 ^ _rk[i + 0]);
 		}
 
-		BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
-		BinaryPrimitives.WriteUInt32BigEndian(destination[4..], x2);
-		BinaryPrimitives.WriteUInt32BigEndian(destination[8..], x1);
-		BinaryPrimitives.WriteUInt32BigEndian(destination[12..], x0);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(0 * 4), x3);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(1 * 4), x2);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(2 * 4), x1);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(3 * 4), x0);
+	}
+
+	public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
+		{
+			SM4Utils.Encrypt4(_rk, source, destination);
+		}
+		else
+		{
+			base.Encrypt4(source, destination);
+		}
+	}
+
+	public override void Decrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
+		{
+			SM4Utils.Decrypt4(_rk, source, destination);
+		}
+		else
+		{
+			base.Decrypt4(source, destination);
+		}
+	}
+
+	public override void Encrypt8(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
+		{
+			SM4Utils.Encrypt8(_rk, source, destination);
+		}
+		else
+		{
+			base.Encrypt8(source, destination);
+		}
+	}
+
+	public override void Decrypt8(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
+		{
+			SM4Utils.Decrypt8(_rk, source, destination);
+		}
+		else
+		{
+			base.Decrypt8(source, destination);
+		}
+	}
+
+	public override void Encrypt16(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (AesX86.IsSupported && Avx2.IsSupported)
+		{
+			SM4Utils.Encrypt16(_rk, source, destination);
+		}
+		else
+		{
+			base.Encrypt16(source, destination);
+		}
+	}
+
+	public override void Decrypt16(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (AesX86.IsSupported && Avx2.IsSupported)
+		{
+			SM4Utils.Decrypt16(_rk, source, destination);
+		}
+		else
+		{
+			base.Decrypt16(source, destination);
+		}
 	}
 
 	public override void Dispose()
 	{
+		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(_rk.AsSpan(0, 32)));
+		ArrayPool<uint>.Shared.Return(_rk);
+
 		base.Dispose();
-
-		ArrayPool<uint>.Shared.Return(Rk);
-
-		GC.SuppressFinalize(this);
 	}
 }

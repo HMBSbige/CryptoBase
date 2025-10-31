@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Tests;
 
@@ -31,6 +32,76 @@ public class AesCoreTest
 		crypto.Dispose();
 	}
 
+	private static void TestN_Internal(IBlockCrypto crypto)
+	{
+		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(64 * crypto.BlockSize);
+		Span<byte> expectedCipher = stackalloc byte[source.Length];
+		Span<byte> destination = stackalloc byte[source.Length];
+
+		for (int i = 0; i < source.Length / crypto.BlockSize; ++i)
+		{
+			crypto.Encrypt(source.Slice(i * crypto.BlockSize), expectedCipher.Slice(i * crypto.BlockSize));
+		}
+
+		for (int i = 0; i < source.Length / crypto.BlockSize / 2; ++i)
+		{
+			crypto.Encrypt2(source.Slice(i * 2 * crypto.BlockSize), destination.Slice(i * 2 * crypto.BlockSize));
+		}
+
+		Assert.True(expectedCipher.SequenceEqual(destination));
+
+		for (int i = 0; i < source.Length / crypto.BlockSize / 2; ++i)
+		{
+			crypto.Decrypt2(expectedCipher.Slice(i * 2 * crypto.BlockSize), destination.Slice(i * 2 * crypto.BlockSize));
+		}
+
+		Assert.True(source.SequenceEqual(destination));
+
+		for (int i = 0; i < source.Length / crypto.BlockSize / 4; ++i)
+		{
+			crypto.Encrypt4(source.Slice(i * 4 * crypto.BlockSize), destination.Slice(i * 4 * crypto.BlockSize));
+		}
+
+		Assert.True(expectedCipher.SequenceEqual(destination));
+
+		for (int i = 0; i < source.Length / crypto.BlockSize / 4; ++i)
+		{
+			crypto.Decrypt4(expectedCipher.Slice(i * 4 * crypto.BlockSize), destination.Slice(i * 4 * crypto.BlockSize));
+		}
+
+		Assert.True(source.SequenceEqual(destination));
+
+		for (int i = 0; i < source.Length / crypto.BlockSize / 8; ++i)
+		{
+			crypto.Encrypt8(source.Slice(i * 8 * crypto.BlockSize), destination.Slice(i * 8 * crypto.BlockSize));
+		}
+
+		Assert.True(expectedCipher.SequenceEqual(destination));
+
+		for (int i = 0; i < source.Length / crypto.BlockSize / 8; ++i)
+		{
+			crypto.Decrypt8(expectedCipher.Slice(i * 8 * crypto.BlockSize), destination.Slice(i * 8 * crypto.BlockSize));
+		}
+
+		Assert.True(source.SequenceEqual(destination));
+
+		for (int i = 0; i < source.Length / crypto.BlockSize / 16; ++i)
+		{
+			crypto.Encrypt16(source.Slice(i * 16 * crypto.BlockSize), destination.Slice(i * 16 * crypto.BlockSize));
+		}
+
+		Assert.True(expectedCipher.SequenceEqual(destination));
+
+		for (int i = 0; i < source.Length / crypto.BlockSize / 16; ++i)
+		{
+			crypto.Decrypt16(expectedCipher.Slice(i * 16 * crypto.BlockSize), destination.Slice(i * 16 * crypto.BlockSize));
+		}
+
+		Assert.True(source.SequenceEqual(destination));
+
+		crypto.Dispose();
+	}
+
 	/// <summary>
 	/// https://csrc.nist.gov/csrc/media/publications/fips/197/final/documents/fips-197.pdf
 	/// </summary>
@@ -47,5 +118,18 @@ public class AesCoreTest
 		Test_Internal(new BcAesCrypto(key), hex1, hex2);
 		Test_Internal(AesCrypto.CreateCore(key), hex1, hex2);
 		Test_Internal(new DefaultAesCrypto(key), hex1, hex2);
+	}
+
+	[Theory]
+	[InlineData(16)]
+	[InlineData(24)]
+	[InlineData(32)]
+	public void TestN(int keyLength)
+	{
+		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(keyLength);
+
+		TestN_Internal(new BcAesCrypto(key));
+		TestN_Internal(AesCrypto.CreateCore(key));
+		TestN_Internal(new DefaultAesCrypto(key));
 	}
 }

@@ -53,28 +53,62 @@ public class SM4Test
 		crypto.Dispose();
 	}
 
-	private static void TestN_Internal(int n, IBlockCrypto crypto, ReadOnlySpan<byte> key)
+	private static void TestN_Internal(IBlockCrypto crypto)
 	{
-		using SM4Crypto sf = new(key);
-		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(n * sf.BlockSize);
+		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(16 * crypto.BlockSize);
 		Span<byte> expectedCipher = stackalloc byte[source.Length];
-
-		for (int i = 0; i < n; ++i)
-		{
-			sf.Encrypt(source.Slice(i * sf.BlockSize, sf.BlockSize), expectedCipher.Slice(i * sf.BlockSize, sf.BlockSize));
-		}
-
-		Assert.Equal(@"SM4", crypto.Name);
-		Assert.Equal(n * sf.BlockSize, crypto.BlockSize);
-
 		Span<byte> destination = stackalloc byte[source.Length];
 
-		crypto.Encrypt(source, destination);
+		for (int i = 0; i < 16; ++i)
+		{
+			crypto.Encrypt(source.Slice(i * crypto.BlockSize), expectedCipher.Slice(i * crypto.BlockSize));
+		}
+
+		for (int i = 0; i < 8; ++i)
+		{
+			crypto.Encrypt2(source.Slice(i * 2 * crypto.BlockSize), destination.Slice(i * 2 * crypto.BlockSize));
+		}
 
 		Assert.True(expectedCipher.SequenceEqual(destination));
 
-		crypto.Decrypt(expectedCipher, destination);
+		for (int i = 0; i < 8; ++i)
+		{
+			crypto.Decrypt2(expectedCipher.Slice(i * 2 * crypto.BlockSize), destination.Slice(i * 2 * crypto.BlockSize));
+		}
 
+		Assert.True(destination.SequenceEqual(source));
+
+		for (int i = 0; i < 4; ++i)
+		{
+			crypto.Encrypt4(source.Slice(i * 4 * crypto.BlockSize), destination.Slice(i * 4 * crypto.BlockSize));
+		}
+
+		Assert.True(expectedCipher.SequenceEqual(destination));
+
+		for (int i = 0; i < 4; ++i)
+		{
+			crypto.Decrypt4(expectedCipher.Slice(i * 4 * crypto.BlockSize), destination.Slice(i * 4 * crypto.BlockSize));
+		}
+
+		Assert.True(destination.SequenceEqual(source));
+
+		for (int i = 0; i < 2; ++i)
+		{
+			crypto.Encrypt8(source.Slice(i * 8 * crypto.BlockSize), destination.Slice(i * 8 * crypto.BlockSize));
+		}
+
+		Assert.True(expectedCipher.SequenceEqual(destination));
+
+		for (int i = 0; i < 2; ++i)
+		{
+			crypto.Decrypt8(expectedCipher.Slice(i * 8 * crypto.BlockSize), destination.Slice(i * 8 * crypto.BlockSize));
+		}
+
+		Assert.True(destination.SequenceEqual(source));
+
+		crypto.Encrypt16(source, destination);
+		Assert.True(expectedCipher.SequenceEqual(destination));
+		crypto.Decrypt16(expectedCipher, destination);
 		Assert.True(destination.SequenceEqual(source));
 
 		crypto.Dispose();
@@ -94,19 +128,7 @@ public class SM4Test
 	{
 		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(16);
 
-		if (SM4CryptoX86.IsSupported)
-		{
-			TestN_Internal(4, new SM4CryptoX86(key), key);
-		}
-
-		if (SM4CryptoBlock8X86.IsSupported)
-		{
-			TestN_Internal(8, new SM4CryptoBlock8X86(key), key);
-		}
-
-		if (SM4CryptoBlock16X86.IsSupported)
-		{
-			TestN_Internal(16, new SM4CryptoBlock16X86(key), key);
-		}
+		TestN_Internal(new BcSm4Crypto(key));
+		TestN_Internal(new SM4Crypto(key));
 	}
 }

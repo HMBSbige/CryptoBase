@@ -23,8 +23,7 @@ public sealed class CTR128StreamModeBlock4X86 : IStreamCrypto
 
 	public CTR128StreamModeBlock4X86(IBlockCrypto crypto, ReadOnlySpan<byte> iv)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize4);
-
+		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize);
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
 
 		_internalBlockCrypto = crypto;
@@ -85,7 +84,7 @@ public sealed class CTR128StreamModeBlock4X86 : IStreamCrypto
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 2 * BlockSize), v2);
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref cRef, 3 * BlockSize), v3);
 
-		_internalBlockCrypto.Encrypt(c, _keyStream);
+		_internalBlockCrypto.Encrypt4(c, _keyStream);
 
 		_counterV0 = _counterV3.Inc128Le();
 		_counterV1 = _counterV0.Inc128Le();
