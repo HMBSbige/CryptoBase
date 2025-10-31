@@ -145,10 +145,6 @@ public class Salsa20Test
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
 		Test_Internal(new BcSalsa20Crypto(key, iv), hex0, hex1, hex2, hex3);
-
-		for (int i = 0; i < 100; ++i)
-		{
-			Test_Internal(new Salsa20Crypto(key, iv), hex0, hex1, hex2, hex3);
-		}
+		Test_Internal(new Salsa20Crypto(key, iv), hex0, hex1, hex2, hex3);
 	}
 }

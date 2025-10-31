@@ -134,10 +134,4 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 	{
 		++ChaCha20Utils.GetCounterOriginal(ref state.GetReference());
 	}
-
-	protected override void CheckCounterLeft(int inputLength)
-	{
-		ref readonly ulong counter = ref ChaCha20Utils.GetCounterOriginal(ref State.GetReference());
-		CheckCounterLeft(counter, inputLength, Index);
-	}
 }

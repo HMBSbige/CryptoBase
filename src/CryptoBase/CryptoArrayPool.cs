@@ -2,29 +2,29 @@ namespace CryptoBase;
 
 public sealed class CryptoArrayPool<T>(int length) : IDisposable where T : struct
 {
-	public readonly T[] Array = ArrayPool<T>.Shared.Rent(length);
+	private readonly T[] _array = ArrayPool<T>.Shared.Rent(length);
 
 	public Span<T> Span
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Array.AsSpan(0, length);
+		get => _array.AsSpan(0, length);
 	}
 
 	public ref T this[int index]
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => ref Array[index];
+		get => ref _array[index];
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ref T GetReference()
 	{
-		return ref Array.GetReference();
+		return ref _array.GetReference();
 	}
 
 	public void Dispose()
 	{
 		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(Span));
-		ArrayPool<T>.Shared.Return(Array);
+		ArrayPool<T>.Shared.Return(_array);
 	}
 }

@@ -24,7 +24,6 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
-		CheckCounterLeft(source.Length);
 
 		int i = 0;
 		int left = source.Length;
@@ -89,18 +88,6 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 	protected abstract void UpdateKeyStream();
 	protected abstract void IncrementCounter(Span<uint> state);
-	protected abstract void CheckCounterLeft(int inputLength);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void CheckCounterLeft(in ulong counter, in int inputLength, in int index, in ulong max = ulong.MaxValue)
-	{
-		int blocksNeeded = (inputLength + index + BlockSize - 1) / BlockSize - ((index | -index) >> 31 & 1);
-
-		if (max - counter < (uint)blocksNeeded)
-		{
-			ThrowHelper.ThrowDataLimitExceeded();
-		}
-	}
 
 	public override void Dispose()
 	{

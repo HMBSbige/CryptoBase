@@ -63,12 +63,6 @@ public class Salsa20Crypto : SnuffleCrypto
 		++Salsa20Utils.GetCounter(ref state.GetReference());
 	}
 
-	protected override void CheckCounterLeft(int inputLength)
-	{
-		ref readonly ulong counter = ref Salsa20Utils.GetCounter(ref State.GetReference());
-		CheckCounterLeft(counter, inputLength, Index);
-	}
-
 	public sealed override void Reset()
 	{
 		Index = 0;

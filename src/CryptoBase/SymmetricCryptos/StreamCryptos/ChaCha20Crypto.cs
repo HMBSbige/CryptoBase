@@ -102,12 +102,6 @@ public class ChaCha20Crypto : SnuffleCrypto
 		++ChaCha20Utils.GetCounter(ref state.GetReference());
 	}
 
-	protected override void CheckCounterLeft(int inputLength)
-	{
-		ref readonly uint counter = ref ChaCha20Utils.GetCounter(ref State.GetReference());
-		CheckCounterLeft(counter, inputLength, Index, uint.MaxValue);
-	}
-
 	public void SetIV(ReadOnlySpan<byte> iv)
 	{
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);

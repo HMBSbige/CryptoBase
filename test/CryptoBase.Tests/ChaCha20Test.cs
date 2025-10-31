@@ -148,31 +148,4 @@ public class ChaCha20Test
 		Test65536_Internal(new BcChaCha20Crypto(key, iv), hex);
 		Test65536_Internal(new ChaCha20Crypto(key, iv), hex);
 	}
-
-	[Theory]
-	[InlineData(0, 0, 0, uint.MaxValue, true)]
-	[InlineData(uint.MaxValue, 1, 63, uint.MaxValue, true)]
-	[InlineData(uint.MaxValue, 2, 63, uint.MaxValue, false)]
-	[InlineData(uint.MaxValue, 63, 1, uint.MaxValue, true)]
-	[InlineData(uint.MaxValue, 64, 1, uint.MaxValue, false)]
-	[InlineData(uint.MaxValue, 0, 0, uint.MaxValue, true)]
-	[InlineData(uint.MaxValue, 1, 0, uint.MaxValue, false)]
-	[InlineData(0, 0, 0, ulong.MaxValue, true)]
-	[InlineData(ulong.MaxValue, 1, 63, ulong.MaxValue, true)]
-	[InlineData(ulong.MaxValue, 2, 63, ulong.MaxValue, false)]
-	[InlineData(ulong.MaxValue, 63, 1, ulong.MaxValue, true)]
-	[InlineData(ulong.MaxValue, 64, 1, ulong.MaxValue, false)]
-	[InlineData(ulong.MaxValue, 0, 0, ulong.MaxValue, true)]
-	[InlineData(ulong.MaxValue, 1, 0, ulong.MaxValue, false)]
-	public void TestCheckCounterLeft(ulong counter, int inputLength, int index, ulong max, bool expectedSuccess)
-	{
-		if (expectedSuccess)
-		{
-			SnuffleCrypto.CheckCounterLeft(counter, inputLength, index, max);
-		}
-		else
-		{
-			Assert.Throws<ArgumentOutOfRangeException>(() => SnuffleCrypto.CheckCounterLeft(counter, inputLength, index, max));
-		}
-	}
 }
