@@ -1,4 +1,5 @@
 using CryptoBase.SymmetricCryptos.StreamCryptos;
+using CryptoBase.BouncyCastle.SymmetricCryptos.StreamCryptos;
 
 namespace CryptoBase.Tests;
 
@@ -187,5 +188,20 @@ public class SnuffleCryptoDataLimitTest
 
 		// Try one more - should fail
 		Assert.Throws<ArgumentOutOfRangeException>(() => crypto.Update(input, output));
+	}
+
+	[Fact]
+	public void BcChaCha20_ProcessesLargeDataWithoutError()
+	{
+		// BouncyCastle implementation should delegate to the underlying engine
+		// which may have its own limit handling
+		byte[] key = new byte[32];
+		byte[] iv = new byte[12];
+		using var crypto = new BcChaCha20Crypto(key, iv);
+
+		// Process multiple blocks without issues
+		byte[] input = new byte[64 * 1000];
+		byte[] output = new byte[64 * 1000];
+		crypto.Update(input, output); // Should not throw
 	}
 }
