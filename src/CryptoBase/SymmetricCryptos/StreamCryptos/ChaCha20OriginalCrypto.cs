@@ -121,7 +121,7 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 
 	public void SetCounter(ulong counter)
 	{
-		BytesProcessed = counter * BlockSize;
+		BytesProcessed = (UInt128)counter * BlockSize;
 		Index = 0;
 		ChaCha20Utils.GetCounterOriginal(ref State.GetReference()) = counter;
 	}

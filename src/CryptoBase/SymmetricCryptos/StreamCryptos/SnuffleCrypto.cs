@@ -20,19 +20,19 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	protected readonly CryptoArrayPool<byte> KeyStream = new(BlockSize);
 
 	protected int Index;
-	protected ulong BytesProcessed;
+	protected UInt128 BytesProcessed;
 
 	/// <summary>
 	/// Maximum number of bytes that can be processed before counter reuse
 	/// </summary>
-	protected virtual ulong MaxBytesLimit => ulong.MaxValue;
+	protected virtual UInt128 MaxBytesLimit => (UInt128)ulong.MaxValue * BlockSize;
 
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
 
 		// Check if processing this data would cause counter reuse
-		ulong sourceLength = (ulong)source.Length;
+		UInt128 sourceLength = (UInt128)source.Length;
 		if (sourceLength > MaxBytesLimit || BytesProcessed > MaxBytesLimit - sourceLength)
 		{
 			ThrowHelper.ThrowDataLimitExceeded();
@@ -79,7 +79,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 			Index &= BlockSize - 1;
 		}
 
-		BytesProcessed += (ulong)source.Length;
+		BytesProcessed += (UInt128)source.Length;
 	}
 
 	protected virtual int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
