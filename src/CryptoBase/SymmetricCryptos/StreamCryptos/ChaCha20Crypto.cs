@@ -1,5 +1,8 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
+/// <summary>
+/// https://datatracker.ietf.org/doc/html/rfc8439
+/// </summary>
 public class ChaCha20Crypto : SnuffleCrypto
 {
 	public override string Name => @"ChaCha20";
@@ -96,7 +99,13 @@ public class ChaCha20Crypto : SnuffleCrypto
 
 	protected override void IncrementCounter(Span<uint> state)
 	{
-		ChaCha20Utils.IncrementCounter(state);
+		++ChaCha20Utils.GetCounter(ref state.GetReference());
+	}
+
+	protected override void CheckCounterLeft(int inputLength)
+	{
+		ref readonly uint counter = ref ChaCha20Utils.GetCounter(ref State.GetReference());
+		CheckCounterLeft(counter, inputLength, Index, uint.MaxValue);
 	}
 
 	public void SetIV(ReadOnlySpan<byte> iv)
@@ -110,6 +119,6 @@ public class ChaCha20Crypto : SnuffleCrypto
 	public void SetCounter(uint counter)
 	{
 		Index = 0;
-		State[12] = counter;
+		ChaCha20Utils.GetCounter(ref State.GetReference()) = counter;
 	}
 }

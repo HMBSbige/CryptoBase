@@ -3,6 +3,18 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 internal static class ChaCha20Utils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ref ulong GetCounterOriginal(ref uint state)
+	{
+		return ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref state, 12));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ref uint GetCounter(ref uint state)
+	{
+		return ref Unsafe.Add(ref state, 12);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(in int rounds, in ReadOnlySpan<uint> state, in Span<byte> keyStream)
 	{
 		Span<uint> x = MemoryMarshal.Cast<byte, uint>(keyStream);
@@ -152,31 +164,6 @@ internal static class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void IncrementCounterOriginal(Span<uint> state)
-	{
-		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref state.GetReference(), 12));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void IncrementCounter(Span<uint> state)
-	{
-		ref uint counter = ref Unsafe.Add(ref state.GetReference(), 12);
-
-		if (++counter is 0)
-		{
-			Throw();
-		}
-
-		return;
-
-		[DoesNotReturn]
-		void Throw()
-		{
-			throw new InvalidOperationException(@"Data maximum length reached.");
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ChaChaRound(Span<uint> state, byte rounds)
 	{
 		ref uint stateRef = ref state.GetReference();
@@ -283,7 +270,7 @@ internal static class ChaCha20Utils
 	{
 		ChaChaCore64Internal(rounds, state, source, destination);
 
-		IncrementCounterOriginal(state);
+		++GetCounterOriginal(ref state.GetReference());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -291,7 +278,7 @@ internal static class ChaCha20Utils
 	{
 		ChaChaCore64Internal(rounds, state, source, destination);
 
-		IncrementCounter(state);
+		++GetCounter(ref state.GetReference());
 	}
 
 	#endregion
@@ -331,7 +318,7 @@ internal static class ChaCha20Utils
 		}
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
-		IncrementCounterOriginal(state);
+		++GetCounterOriginal(ref stateRef);
 
 		x0 += s0;
 		x1 += t;
@@ -348,7 +335,7 @@ internal static class ChaCha20Utils
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 32), v2);
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 32), v3);
 
-		IncrementCounterOriginal(state);
+		++GetCounterOriginal(ref stateRef);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -384,7 +371,7 @@ internal static class ChaCha20Utils
 		}
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
-		IncrementCounter(state);
+		++GetCounter(ref stateRef);
 
 		x0 += s0;
 		x1 += t;
@@ -401,7 +388,7 @@ internal static class ChaCha20Utils
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 32), v2);
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 32), v3);
 
-		IncrementCounter(state);
+		++GetCounter(ref stateRef);
 	}
 
 	#endregion

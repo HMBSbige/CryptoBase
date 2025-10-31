@@ -122,7 +122,7 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 	public void SetCounter(ulong counter)
 	{
 		Index = 0;
-		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 12)) = counter;
+		ChaCha20Utils.GetCounterOriginal(ref State.GetReference()) = counter;
 	}
 
 	public sealed override void Reset()
@@ -132,6 +132,12 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 
 	protected override void IncrementCounter(Span<uint> state)
 	{
-		ChaCha20Utils.IncrementCounterOriginal(state);
+		++ChaCha20Utils.GetCounterOriginal(ref state.GetReference());
+	}
+
+	protected override void CheckCounterLeft(int inputLength)
+	{
+		ref readonly ulong counter = ref ChaCha20Utils.GetCounterOriginal(ref State.GetReference());
+		CheckCounterLeft(counter, inputLength, Index);
 	}
 }

@@ -3,6 +3,12 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 internal static class Salsa20Utils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ref ulong GetCounter(ref uint state)
+	{
+		return ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref state, 8));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(in int rounds, in ReadOnlySpan<uint> state, in Span<byte> keyStream)
 	{
 		Span<uint> x = MemoryMarshal.Cast<byte, uint>(keyStream);

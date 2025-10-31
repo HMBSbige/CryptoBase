@@ -60,13 +60,19 @@ public class Salsa20Crypto : SnuffleCrypto
 
 	protected override void IncrementCounter(Span<uint> state)
 	{
-		++Unsafe.As<uint, ulong>(ref Unsafe.Add(ref state.GetReference(), 8));
+		++Salsa20Utils.GetCounter(ref state.GetReference());
+	}
+
+	protected override void CheckCounterLeft(int inputLength)
+	{
+		ref readonly ulong counter = ref Salsa20Utils.GetCounter(ref State.GetReference());
+		CheckCounterLeft(counter, inputLength, Index);
 	}
 
 	public sealed override void Reset()
 	{
 		Index = 0;
-		Unsafe.As<uint, ulong>(ref Unsafe.Add(ref State.GetReference(), 8)) = 0;
+		Salsa20Utils.GetCounter(ref State.GetReference()) = 0;
 	}
 
 	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
