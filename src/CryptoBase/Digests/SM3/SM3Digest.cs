@@ -10,7 +10,7 @@ public sealed class SM3Digest : IHash
 
 	private static readonly uint[] T = new uint[64];
 
-	private static readonly uint[] Init = [0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A0600U, 0xA96F30BCU, 0x163138AAU, 0xE38DEE4DU, 0xB0FB0E4EU];
+	private static ReadOnlySpan<uint> Init => [0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A0600U, 0xA96F30BCU, 0x163138AAU, 0xE38DEE4DU, 0xB0FB0E4EU];
 
 	private ulong _byteCount;
 	private int _index;
@@ -191,7 +191,7 @@ public sealed class SM3Digest : IHash
 
 	public void Reset()
 	{
-		Init.AsSpan().CopyTo(_v);
+		Init.CopyTo(_v);
 		_byteCount = 0;
 		_index = 0;
 		_bufferIndex = 0;

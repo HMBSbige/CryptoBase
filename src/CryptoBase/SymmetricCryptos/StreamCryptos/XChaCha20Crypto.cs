@@ -37,11 +37,10 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
 
 		Span<uint> state = State.Span;
-		ReadOnlySpan<uint> sigma = Sigma32.AsSpan();
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.Span);
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 
-		sigma.CopyTo(state);
+		Sigma32.CopyTo(state);
 		keySpan.CopyTo(state.Slice(4));
 		ivSpan.Slice(0, 4).CopyTo(state.Slice(12));
 
@@ -49,7 +48,7 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 
 		state.Slice(12).CopyTo(state.Slice(8));
 		state.Slice(0, 4).CopyTo(state.Slice(4));
-		sigma.CopyTo(state);
+		Sigma32.CopyTo(state);
 
 		state[14] = ivSpan[4];
 		state[15] = ivSpan[5];
