@@ -68,17 +68,13 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 		if (left > 0)
 		{
-			if (Index is 0)
-			{
-				UpdateKeyStream();
-				IncrementCounter(state);
-				--CounterRemaining;
-			}
+			UpdateKeyStream();
+			IncrementCounter(state);
+			--CounterRemaining;
 
-			FastUtils.Xor(keyStream.Slice(Index), source.Slice(i), destination.Slice(i), left);
+			FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), left);
 
-			Index += left;
-			Index &= BlockSize - 1;
+			Index = left;
 		}
 	}
 
