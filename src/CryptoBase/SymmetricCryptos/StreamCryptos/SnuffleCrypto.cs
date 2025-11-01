@@ -31,16 +31,11 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	{
 		base.Update(source, destination);
 
-		// Calculate how many blocks will be consumed
-		// If Index > 0, we may use part of current block without consuming a new one
-		// Then we consume full blocks, and possibly one more partial block
-		int totalBytes = Index + source.Length;
-		int blocksNeeded = (totalBytes + BlockSize - 1) / BlockSize - (Index > 0 ? 1 : 0);
-		
-		// Check if processing this data would cause counter reuse
+		long blocksNeeded = ((uint)source.Length + Index + BlockSize - 1) / BlockSize - ((Index | -Index) >> 31 & 1);
+
 		if ((ulong)blocksNeeded > CounterRemaining)
 		{
-			ThrowHelper.ThrowDataLimitExceeded();
+			ThrowHelper.ThrowDataLimitExceeded(nameof(source));
 		}
 
 		int i = 0;
@@ -65,8 +60,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		if (left >= BlockSize)
 		{
 			int processed = UpdateBlocks(state, keyStream, source.Slice(i), destination.Slice(i));
-			int blocksConsumed = processed / BlockSize;
-			CounterRemaining -= (ulong)blocksConsumed;
+			CounterRemaining -= (uint)processed / BlockSize;
 
 			i += processed;
 			left -= processed;
@@ -78,7 +72,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 			{
 				UpdateKeyStream();
 				IncrementCounter(state);
-				CounterRemaining--;
+				--CounterRemaining;
 			}
 
 			FastUtils.Xor(keyStream.Slice(Index), source.Slice(i), destination.Slice(i), left);

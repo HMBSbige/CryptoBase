@@ -6,16 +6,18 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 
 	public override int IvSize => 24;
 
-	private readonly ReadOnlyMemory<byte> _key;
+	public const int KeySize = 32;
+
+	private readonly CryptoArrayPool<byte> _key = new(KeySize);
 
 	public XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
-		_key = key.ToArray();
+		key.CopyTo(_key.Span);
 
 		SetIV(iv);
-		Reset();
+		SetCounter(0);
 	}
 
 	private void ChaChaRound(in Span<uint> x)
@@ -30,27 +32,33 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 		}
 	}
 
-	public void SetIV(ReadOnlySpan<byte> iv)
+	public sealed override void SetIV(ReadOnlySpan<byte> iv)
 	{
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
+
 		Span<uint> state = State.Span;
-		Span<uint> sigma = Sigma32.AsSpan();
+		ReadOnlySpan<uint> sigma = Sigma32.AsSpan();
+		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.Span);
+		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 
 		sigma.CopyTo(state);
-
-		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.Span);
 		keySpan.CopyTo(state.Slice(4));
-
-		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		ivSpan.Slice(0, 4).CopyTo(state.Slice(12));
 
 		ChaChaRound(state);
 
 		state.Slice(12).CopyTo(state.Slice(8));
 		state.Slice(0, 4).CopyTo(state.Slice(4));
-
 		sigma.CopyTo(state);
 
 		state[14] = ivSpan[4];
 		state[15] = ivSpan[5];
+	}
+
+	public override void Dispose()
+	{
+		_key.Dispose();
+		base.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }
