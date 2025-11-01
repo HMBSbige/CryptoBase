@@ -12,6 +12,8 @@ public class Salsa20Crypto : SnuffleCrypto
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
+
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
 		int keyLength = key.Length;
 
@@ -65,8 +67,7 @@ public class Salsa20Crypto : SnuffleCrypto
 
 	public sealed override void Reset()
 	{
-		Index = 0;
-		Salsa20Utils.GetCounter(ref State.GetReference()) = 0;
+		SetCounter(0);
 	}
 
 	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
@@ -128,5 +129,12 @@ public class Salsa20Crypto : SnuffleCrypto
 		{
 			Salsa20Utils.UpdateKeyStream(Rounds, State.Span, KeyStream.Span);
 		}
+	}
+
+	public void SetCounter(ulong counter)
+	{
+		CounterRemaining = MaxCounter - counter;
+		Index = 0;
+		Salsa20Utils.GetCounter(ref State.GetReference()) = counter;
 	}
 }

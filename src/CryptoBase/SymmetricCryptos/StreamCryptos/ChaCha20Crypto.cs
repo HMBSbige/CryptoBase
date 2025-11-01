@@ -9,15 +9,19 @@ public class ChaCha20Crypto : SnuffleCrypto
 
 	public override int IvSize => 12;
 
+	protected override ulong MaxCounter => uint.MaxValue;
+
+	public const int KeySize = 32;
+
 	public ChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		Init(key, iv);
-		Reset();
+		SetCounter(0);
 	}
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
 		Span<uint> state = State.Span;
 		state[0] = Sigma32[0];
@@ -92,7 +96,7 @@ public class ChaCha20Crypto : SnuffleCrypto
 		}
 	}
 
-	public sealed override void Reset()
+	public override void Reset()
 	{
 		SetCounter(0);
 	}
@@ -104,6 +108,8 @@ public class ChaCha20Crypto : SnuffleCrypto
 
 	public void SetIV(ReadOnlySpan<byte> iv)
 	{
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
+
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		State[13] = ivSpan[0];
 		State[14] = ivSpan[1];
@@ -112,6 +118,7 @@ public class ChaCha20Crypto : SnuffleCrypto
 
 	public void SetCounter(uint counter)
 	{
+		CounterRemaining = MaxCounter - counter;
 		Index = 0;
 		ChaCha20Utils.GetCounter(ref State.GetReference()) = counter;
 	}

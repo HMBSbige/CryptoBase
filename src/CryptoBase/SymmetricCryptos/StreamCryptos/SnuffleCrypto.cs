@@ -20,10 +20,23 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	protected readonly CryptoArrayPool<byte> KeyStream = new(BlockSize);
 
 	protected int Index;
+	protected ulong CounterRemaining;
+
+	/// <summary>
+	/// Maximum counter value (number of blocks that can be processed)
+	/// </summary>
+	protected virtual ulong MaxCounter => ulong.MaxValue;
 
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
+
+		long blocksNeeded = ((uint)source.Length + Index + BlockSize - 1) / BlockSize - ((Index | -Index) >> 31 & 1);
+
+		if ((ulong)blocksNeeded > CounterRemaining)
+		{
+			ThrowHelper.ThrowDataLimitExceeded(nameof(source));
+		}
 
 		int i = 0;
 		int left = source.Length;
@@ -47,6 +60,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		if (left >= BlockSize)
 		{
 			int processed = UpdateBlocks(state, keyStream, source.Slice(i), destination.Slice(i));
+			CounterRemaining -= (uint)processed / BlockSize;
 
 			i += processed;
 			left -= processed;
@@ -58,6 +72,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 			{
 				UpdateKeyStream();
 				IncrementCounter(state);
+				--CounterRemaining;
 			}
 
 			FastUtils.Xor(keyStream.Slice(Index), source.Slice(i), destination.Slice(i), left);

@@ -6,6 +6,8 @@ public class XSalsa20Crypto : Salsa20Crypto
 
 	public override int IvSize => 24;
 
+	public const int KeySize = 32;
+
 	public XSalsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
 	{
 		Init(key, iv);
@@ -14,7 +16,8 @@ public class XSalsa20Crypto : Salsa20Crypto
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 32, nameof(key));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
 
 		Span<uint> state = State.Span;
 
