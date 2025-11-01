@@ -65,7 +65,7 @@ public class Salsa20Crypto : SnuffleCrypto
 
 	public sealed override void Reset()
 	{
-		BytesProcessed = 0;
+		CounterRemaining = MaxCounter;
 		Index = 0;
 		Salsa20Utils.GetCounter(ref State.GetReference()) = 0;
 	}

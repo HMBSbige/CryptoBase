@@ -20,20 +20,25 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	protected readonly CryptoArrayPool<byte> KeyStream = new(BlockSize);
 
 	protected int Index;
-	protected UInt128 BytesProcessed;
+	protected ulong CounterRemaining;
 
 	/// <summary>
-	/// Maximum number of bytes that can be processed before counter reuse
+	/// Maximum counter value (number of blocks that can be processed)
 	/// </summary>
-	protected virtual UInt128 MaxBytesLimit => (UInt128)ulong.MaxValue * BlockSize;
+	protected virtual ulong MaxCounter => ulong.MaxValue;
 
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
 
+		// Calculate how many blocks will be consumed
+		// If Index > 0, we may use part of current block without consuming a new one
+		// Then we consume full blocks, and possibly one more partial block
+		int totalBytes = Index + source.Length;
+		int blocksNeeded = (totalBytes + BlockSize - 1) / BlockSize - (Index > 0 ? 1 : 0);
+		
 		// Check if processing this data would cause counter reuse
-		UInt128 sourceLength = (UInt128)source.Length;
-		if (sourceLength > MaxBytesLimit || BytesProcessed > MaxBytesLimit - sourceLength)
+		if ((ulong)blocksNeeded > CounterRemaining)
 		{
 			ThrowHelper.ThrowDataLimitExceeded();
 		}
@@ -60,6 +65,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		if (left >= BlockSize)
 		{
 			int processed = UpdateBlocks(state, keyStream, source.Slice(i), destination.Slice(i));
+			int blocksConsumed = processed / BlockSize;
+			CounterRemaining -= (ulong)blocksConsumed;
 
 			i += processed;
 			left -= processed;
@@ -71,6 +78,7 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 			{
 				UpdateKeyStream();
 				IncrementCounter(state);
+				CounterRemaining--;
 			}
 
 			FastUtils.Xor(keyStream.Slice(Index), source.Slice(i), destination.Slice(i), left);
@@ -78,8 +86,6 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 			Index += left;
 			Index &= BlockSize - 1;
 		}
-
-		BytesProcessed += (UInt128)source.Length;
 	}
 
 	protected virtual int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
