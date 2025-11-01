@@ -1,6 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
+using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System.Security.Cryptography;
 

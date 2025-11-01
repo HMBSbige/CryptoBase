@@ -1,6 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 
-namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.Xts;
+namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
 public sealed class XtsMode : IBlockModeOneShot
 {
