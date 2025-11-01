@@ -59,8 +59,19 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> ReverseEndianness128<T>(this Vector128<T> a) where T : struct
 	{
-		Vector128<byte> reverse128 = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-		return Ssse3.Shuffle(a.AsByte(), reverse128).As<byte, T>();
+		if (Ssse3.IsSupported)
+		{
+			Vector128<byte> reverse128 = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+			return Ssse3.Shuffle(a.AsByte(), reverse128).As<byte, T>();
+		}
+
+		Vector128<ushort> v = a.AsUInt16();
+		v = v << 8 | v >>> 8;
+
+		v = Sse2.ShuffleLow(v, 0b00_01_10_11);
+		v = Sse2.ShuffleHigh(v, 0b00_01_10_11);
+
+		return Sse2.Shuffle(v.AsUInt32(), 0b01_00_11_10).As<uint, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -73,8 +84,19 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> ReverseEndianness32<T>(this Vector128<T> value) where T : struct
 	{
-		Vector128<byte> reverse32 = Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
-		return Ssse3.Shuffle(value.AsByte(), reverse32).As<byte, T>();
+		if (Ssse3.IsSupported)
+		{
+			Vector128<byte> reverse32 = Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+			return Ssse3.Shuffle(value.AsByte(), reverse32).As<byte, T>();
+		}
+
+		Vector128<ushort> v = value.AsUInt16();
+		v = v << 8 | v >>> 8;
+
+		v = Sse2.ShuffleLow(v, 0b10_11_00_01);
+		v = Sse2.ShuffleHigh(v, 0b10_11_00_01);
+
+		return v.As<ushort, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,12 +173,28 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> Inc128Le<T>(this Vector128<T> nonce) where T : struct
 	{
-		Vector128<long> minusOne128Le = Vector128.Create(-1, 0);
 		Vector128<long> v = nonce.AsInt64();
-		Vector128<long> t = Sse41.CompareEqual(v, minusOne128Le);
-		v = Sse2.Subtract(v, minusOne128Le);
-		t = Sse2.ShiftLeftLogical128BitLane(t, 8);
-		return Sse2.Subtract(v, t).As<long, T>();
+		// v += [1, 0]
+		v += Vector128.CreateScalar(1L);
+
+		Vector128<long> carry;
+
+		if (Sse41.IsSupported)
+		{
+			carry = Sse41.CompareEqual(v, Vector128<long>.Zero);
+		}
+		else
+		{
+			Vector128<int> eqZero32 = Sse2.CompareEqual(v.AsInt32(), Vector128<int>.Zero);
+			Vector128<int> lane0 = Sse2.Shuffle(eqZero32, 0x00);
+			Vector128<int> lane1 = Sse2.Shuffle(eqZero32, 0x55);
+			carry = Sse2.And(lane0, lane1).AsInt64();
+		}
+
+		carry = Sse2.ShiftLeftLogical128BitLane(carry, 8);
+		v = Sse2.Subtract(v, carry);
+
+		return v.As<long, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
