@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 
 public class DefaultAesGcmCrypto(ReadOnlySpan<byte> key) : IAEADCrypto

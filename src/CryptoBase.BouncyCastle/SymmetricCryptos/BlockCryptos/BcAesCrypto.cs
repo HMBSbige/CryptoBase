@@ -11,6 +11,19 @@ public sealed class BcAesCrypto : BlockCryptoBase
 
 	public override int BlockSize => 16;
 
+	public override BlockCryptoHardwareAcceleration HardwareAcceleration
+	{
+		get
+		{
+			if (AesUtilities.IsHardwareAccelerated)
+			{
+				return BlockCryptoHardwareAcceleration.Block1 | BlockCryptoHardwareAcceleration.Block4;
+			}
+
+			return BlockCryptoHardwareAcceleration.Unknown;
+		}
+	}
+
 	private readonly IBlockCipher _encryptionEngine;
 	private readonly IBlockCipher _decryptionEngine;
 

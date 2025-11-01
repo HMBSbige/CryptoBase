@@ -6,6 +6,8 @@ public abstract class BlockCryptoBase : IBlockCrypto
 
 	public abstract int BlockSize { get; }
 
+	public virtual BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Unknown;
+
 	public virtual void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));

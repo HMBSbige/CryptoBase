@@ -7,6 +7,8 @@ public interface IBlockCrypto : ISymmetricCrypto
 	/// </summary>
 	int BlockSize { get; }
 
+	BlockCryptoHardwareAcceleration HardwareAcceleration { get; }
+
 	void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination);
 
 	void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination);

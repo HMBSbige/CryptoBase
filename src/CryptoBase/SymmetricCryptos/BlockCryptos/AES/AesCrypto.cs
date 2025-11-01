@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 public abstract class AesCrypto : BlockCryptoBase

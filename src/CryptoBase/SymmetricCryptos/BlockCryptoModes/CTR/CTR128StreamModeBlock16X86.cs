@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 
 public sealed class CTR128StreamModeBlock16X86 : IStreamCrypto

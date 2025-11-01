@@ -1,4 +1,5 @@
 global using CryptoBase.Abstractions.Digests;
+global using CryptoBase.Abstractions.SymmetricCryptos;
 global using CryptoBase.Digests.CRC32;
 global using CryptoBase.Digests.CRC32C;
 global using CryptoBase.Digests.MD5;

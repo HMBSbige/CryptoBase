@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
 
 public class DefaultChaCha20Poly1305Crypto(ReadOnlySpan<byte> key) : IAEADCrypto

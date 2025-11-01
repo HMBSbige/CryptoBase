@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
 public class CFB128StreamMode : IStreamCrypto

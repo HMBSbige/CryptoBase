@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
 public sealed class SM4Crypto : BlockCryptoBase
@@ -7,6 +5,29 @@ public sealed class SM4Crypto : BlockCryptoBase
 	public override string Name => @"SM4";
 
 	public override int BlockSize => 16;
+
+	public override BlockCryptoHardwareAcceleration HardwareAcceleration
+	{
+		get
+		{
+			BlockCryptoHardwareAcceleration result = BlockCryptoHardwareAcceleration.Unknown;
+
+			if (AesX86.IsSupported)
+			{
+				if (Sse2.IsSupported && Ssse3.IsSupported)
+				{
+					result |= BlockCryptoHardwareAcceleration.Block4 | BlockCryptoHardwareAcceleration.Block8;
+				}
+
+				if (Avx2.IsSupported)
+				{
+					result |= BlockCryptoHardwareAcceleration.Block16;
+				}
+			}
+
+			return result;
+		}
+	}
 
 	private static ReadOnlySpan<byte> S =>
 	[

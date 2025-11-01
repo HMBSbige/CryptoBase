@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
@@ -26,7 +25,7 @@ public static class AEADCryptoCreate
 			return new GcmCryptoModeBlock16X86(new SM4Crypto(key));
 		}
 
-		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
+		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
 			return new GcmCryptoModeBlock8X86(new SM4Crypto(key));
 		}

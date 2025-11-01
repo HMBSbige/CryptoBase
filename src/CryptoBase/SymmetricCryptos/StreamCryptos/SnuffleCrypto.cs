@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
-
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
 public abstract class SnuffleCrypto : SnuffleCryptoBase

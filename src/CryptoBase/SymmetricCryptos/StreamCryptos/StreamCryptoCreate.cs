@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
@@ -16,7 +15,7 @@ public static class StreamCryptoCreate
 			return new CTR128StreamModeBlock16X86(AesCrypto.CreateCore(key), iv);
 		}
 
-		if (Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
+		if (Sse2.IsSupported && Ssse3.IsSupported)
 		{
 			return new CTR128StreamModeBlock8X86(AesCrypto.CreateCore(key), iv);
 		}
@@ -32,7 +31,7 @@ public static class StreamCryptoCreate
 			return new CTR128StreamModeBlock16X86(new SM4Crypto(key), iv);
 		}
 
-		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
+		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
 			return new CTR128StreamModeBlock8X86(new SM4Crypto(key), iv);
 		}
