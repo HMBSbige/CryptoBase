@@ -9,7 +9,7 @@ public class SnuffleCryptoDataLimitTest
 	{
 		byte[] key = new byte[32];
 		byte[] iv = new byte[12];
-		using ChaCha20Crypto crypto = new (key, iv);
+		using ChaCha20Crypto crypto = new(key, iv);
 
 		crypto.SetCounter(uint.MaxValue);
 		Assert.Throws<ArgumentOutOfRangeException>(() => crypto.Update(new byte[1], new byte[1]));
@@ -33,7 +33,7 @@ public class SnuffleCryptoDataLimitTest
 	{
 		byte[] key = new byte[32];
 		byte[] iv = new byte[8];
-		using Salsa20Crypto crypto = new (key, iv);
+		using Salsa20Crypto crypto = new(key, iv);
 
 		crypto.SetCounter(ulong.MaxValue);
 		Assert.Throws<ArgumentOutOfRangeException>(() => crypto.Update(new byte[1], new byte[1]));
@@ -57,7 +57,7 @@ public class SnuffleCryptoDataLimitTest
 	{
 		byte[] key = new byte[32];
 		byte[] iv = new byte[8];
-		using ChaCha20OriginalCrypto crypto = new (key, iv);
+		using ChaCha20OriginalCrypto crypto = new(key, iv);
 
 		crypto.SetCounter(ulong.MaxValue);
 		Assert.Throws<ArgumentOutOfRangeException>(() => crypto.Update(new byte[1], new byte[1]));
@@ -81,7 +81,7 @@ public class SnuffleCryptoDataLimitTest
 	{
 		byte[] key = new byte[32];
 		byte[] iv = new byte[24];
-		using XChaCha20Crypto crypto = new (key, iv);
+		using XChaCha20Crypto crypto = new(key, iv);
 
 		crypto.SetCounter(ulong.MaxValue);
 		Assert.Throws<ArgumentOutOfRangeException>(() => crypto.Update(new byte[1], new byte[1]));
@@ -105,7 +105,7 @@ public class SnuffleCryptoDataLimitTest
 	{
 		byte[] key = new byte[32];
 		byte[] iv = new byte[24];
-		using XSalsa20Crypto crypto = new (key, iv);
+		using XSalsa20Crypto crypto = new(key, iv);
 
 		crypto.SetCounter(ulong.MaxValue);
 		Assert.Throws<ArgumentOutOfRangeException>(() => crypto.Update(new byte[1], new byte[1]));
