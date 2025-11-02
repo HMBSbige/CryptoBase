@@ -189,25 +189,25 @@ internal static class IntrinsicsUtils
 	public static Vector128<T> Inc128Le<T>(this Vector128<T> nonce) where T : struct
 	{
 		Vector128<long> v = nonce.AsInt64();
-		// v += [1, 0]
-		v += Vector128.CreateScalar(1L);
+		Vector128<long> m1 = Vector128.Create(-1L, 0L);
 
 		Vector128<long> carry;
 
 		if (Sse41.IsSupported)
 		{
-			carry = Sse41.CompareEqual(v, Vector128<long>.Zero);
+			carry = Sse41.CompareEqual(v, m1);
 		}
 		else
 		{
-			Vector128<int> eqZero32 = Sse2.CompareEqual(v.AsInt32(), Vector128<int>.Zero);
-			Vector128<int> lane0 = Sse2.Shuffle(eqZero32, 0x00);
-			Vector128<int> lane1 = Sse2.Shuffle(eqZero32, 0x55);
-			carry = Sse2.And(lane0, lane1).AsInt64();
+			Vector128<int> eqFF32 = Sse2.CompareEqual(v.AsInt32(), Vector128<int>.AllBitsSet);
+			Vector128<int> lowD0  = Sse2.Shuffle(eqFF32, 0x00);
+			Vector128<int> lowD1  = Sse2.Shuffle(eqFF32, 0x55);
+			carry = (lowD0 & lowD1).AsInt64();
 		}
 
 		carry = Sse2.ShiftLeftLogical128BitLane(carry, 8);
-		v = Sse2.Subtract(v, carry);
+		v -= m1;
+		v -= carry;
 
 		return v.As<long, T>();
 	}
@@ -215,17 +215,28 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> AddTwo128Le<T>(this Vector256<T> nonce) where T : struct
 	{
-		Vector256<long> v = nonce.AsInt64();
+		Vector256<ulong> v = nonce.AsUInt64();
+		Vector256<long> signBit = Vector256.Create(0x8000_0000_0000_0000UL).AsInt64();
+		Vector256<ulong> thrX = Vector256.Create
+		(
+			ulong.MaxValue - 2UL ^ 0x8000_0000_0000_0000UL,
+			ulong.MaxValue ^ 0x8000_0000_0000_0000UL,
+			ulong.MaxValue - 2UL ^ 0x8000_0000_0000_0000UL,
+			ulong.MaxValue ^ 0x8000_0000_0000_0000UL
+		);
 
-		Vector256<long> isMinus2 = Avx2.CompareEqual(v, Vector256.Create(-2, 0, -2, 0));
-		Vector256<long> isMinus1 = Avx2.CompareEqual(v, Vector256.Create(-1, 0, -1, 0));
-		Vector256<long> carry = isMinus2 | isMinus1;
-		carry = Avx2.ShiftLeftLogical128BitLane(carry, 8);
+		Vector256<long> vX = v.AsInt64() ^ signBit;
+		Vector256<long> carry = Avx2.CompareGreaterThan(vX, thrX.AsInt64());
+		carry = Avx2.ShiftLeftLogical128BitLane(carry.AsByte(), 8).AsInt64();
 
-		v -= Vector256.Create(-2, 0, -2, 0);
-		return (v - carry).As<long, T>();
+		v += Vector256.Create(2UL, 0UL, 2UL, 0UL);
+		return (v - carry.AsUInt64()).As<ulong, T>();
 	}
 
+	/// <summary>
+	/// 高位 128-bit 小端整数加 1，注意仅适用于进位时低位不为0的情况
+	/// 如果需要通用的：var carry = Avx2.CompareEqual(v, Vector256.Create(-1L)); carry &= vMinusUpper128Le
+	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> IncUpper128Le<T>(this Vector256<T> nonce) where T : struct
 	{
