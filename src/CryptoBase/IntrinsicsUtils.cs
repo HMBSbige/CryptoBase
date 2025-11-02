@@ -38,22 +38,37 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32_8<T>(this Vector128<T> value) where T : struct
 	{
-		Vector128<byte> rot8 = Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
-		return Ssse3.IsSupported ? Ssse3.Shuffle(value.AsByte(), rot8).As<byte, T>() : value.RotateLeftUInt32(8);
+		if (Ssse3.IsSupported)
+		{
+			Vector128<byte> rot8 = Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
+			return Ssse3.Shuffle(value.AsByte(), rot8).As<byte, T>();
+		}
+
+		return value.RotateLeftUInt32(8);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32_16<T>(this Vector128<T> value) where T : struct
 	{
-		Vector128<byte> rot16 = Vector128.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13);
-		return Ssse3.IsSupported ? Ssse3.Shuffle(value.AsByte(), rot16).As<byte, T>() : value.RotateLeftUInt32(16);
+		if (Ssse3.IsSupported)
+		{
+			Vector128<byte> rot16 = Vector128.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13);
+			return Ssse3.Shuffle(value.AsByte(), rot16).As<byte, T>();
+		}
+
+		return value.RotateLeftUInt32(16);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32_24<T>(this Vector128<T> value) where T : struct
 	{
-		Vector128<byte> rot24 = Vector128.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12);
-		return Ssse3.IsSupported ? Ssse3.Shuffle(value.AsByte(), rot24).As<byte, T>() : value.RotateLeftUInt32(24);
+		if (Ssse3.IsSupported)
+		{
+			Vector128<byte> rot24 = Vector128.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12);
+			return Ssse3.Shuffle(value.AsByte(), rot24).As<byte, T>();
+		}
+
+		return value.RotateLeftUInt32(24);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
