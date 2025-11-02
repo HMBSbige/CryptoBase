@@ -235,7 +235,8 @@ internal static class IntrinsicsUtils
 
 	/// <summary>
 	/// 高位 128-bit 小端整数加 1，注意仅适用于进位时低位不为0的情况
-	/// 如果需要通用的：var carry = Avx2.CompareEqual(v, Vector256.Create(-1L)); carry &= vMinusUpper128Le
+	/// 如果需要通用的：
+	/// var carry = Avx2.CompareEqual(v, Vector256.Create(-1L)); carry &amp;= vMinusUpper128Le;
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> IncUpper128Le<T>(this Vector256<T> nonce)
