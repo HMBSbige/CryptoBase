@@ -1,5 +1,6 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
+using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System.Security.Cryptography;
 
@@ -27,30 +28,13 @@ public class CTRBenchmark
 	}
 
 	[Benchmark(Baseline = true)]
-	public void X86()
-	{
-		ReadOnlySpan<byte> key = _randomKey16.AsSpan();
-		ReadOnlySpan<byte> iv = _randomIv16.AsSpan();
-		ReadOnlySpan<byte> data = _randombytes.Span;
-
-		using CTR128StreamModeX86 crypto = new(AesCrypto.CreateCore(key), iv);
-
-		Span<byte> o = stackalloc byte[data.Length];
-
-		for (int i = 0; i < Max; ++i)
-		{
-			crypto.Update(data, o);
-		}
-	}
-
-	[Benchmark]
 	public void Default()
 	{
 		ReadOnlySpan<byte> key = _randomKey16.AsSpan();
 		ReadOnlySpan<byte> iv = _randomIv16.AsSpan();
 		ReadOnlySpan<byte> data = _randombytes.Span;
 
-		using CTR128StreamMode crypto = new(AesCrypto.CreateCore(key), iv);
+		using IStreamCrypto crypto = new CtrMode128(AesCrypto.CreateCore(key), iv);
 
 		Span<byte> o = stackalloc byte[data.Length];
 

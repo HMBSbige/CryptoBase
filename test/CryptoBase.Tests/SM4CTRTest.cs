@@ -1,9 +1,6 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes.CTR;
-using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
-using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Tests;
 
@@ -47,26 +44,5 @@ public class SM4CTRTest
 		ReadOnlySpan<byte> expected = expectedHex.FromHex();
 
 		T(StreamCryptoCreate.Sm4Ctr(key, iv), source, expected);
-		T(new CTR128StreamMode(new SM4Crypto(key), iv), source, expected);
-	}
-
-	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
-	[MemberData(nameof(Data), MemberType = typeof(SM4CTRTest))]
-	public void TestX86(string keyHex, string ivHex, string sourceHex, string expectedHex)
-	{
-		ReadOnlySpan<byte> key = keyHex.FromHex();
-		ReadOnlySpan<byte> iv = ivHex.FromHex();
-		ReadOnlySpan<byte> source = sourceHex.FromHex();
-		ReadOnlySpan<byte> expected = expectedHex.FromHex();
-
-		T(new CTR128StreamModeX86(new SM4Crypto(key), iv), source, expected);
-		T(new CTR128StreamModeBlock4X86(new SM4Crypto(key), iv), source, expected);
-		T(new CTR128StreamModeBlock8X86(new SM4Crypto(key), iv), source, expected);
-
-		if (Avx2.IsSupported)
-		{
-			T(new CTR128StreamModeBlock8AvxX86(new SM4Crypto(key), iv), source, expected);
-			T(new CTR128StreamModeBlock16X86(new SM4Crypto(key), iv), source, expected);
-		}
 	}
 }
