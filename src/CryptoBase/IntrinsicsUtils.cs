@@ -200,22 +200,27 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> AddTwo128Le<T>(this Vector256<T> nonce) where T : struct
 	{
-		Vector256<long> vMinusTwo128Le = Vector256.Create(-2, 0, -2, 0);
 		Vector256<long> v = nonce.AsInt64();
-		Vector256<long> t = Avx2.CompareEqual(v, vMinusTwo128Le);
-		v = Avx2.Subtract(v, vMinusTwo128Le);
-		t = Avx2.ShiftLeftLogical128BitLane(t, 8);
-		return Avx2.Subtract(v, t).As<long, T>();
+
+		Vector256<long> isMinus2 = Avx2.CompareEqual(v, Vector256.Create(-2, 0, -2, 0));
+		Vector256<long> isMinus1 = Avx2.CompareEqual(v, Vector256.Create(-1, 0, -1, 0));
+		Vector256<long> carry = isMinus2 | isMinus1;
+		carry = Avx2.ShiftLeftLogical128BitLane(carry, 8);
+
+		v -= Vector256.Create(-2, 0, -2, 0);
+		return (v - carry).As<long, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> IncUpper128Le<T>(this Vector256<T> nonce) where T : struct
 	{
-		Vector256<long> vMinusUpper128Le = Vector256.Create(0, 0, -1, 0);
 		Vector256<long> v = nonce.AsInt64();
-		Vector256<long> t = Avx2.CompareEqual(v, vMinusUpper128Le);
-		v = Avx2.Subtract(v, vMinusUpper128Le);
-		t = Avx2.ShiftLeftLogical128BitLane(t, 8);
-		return Avx2.Subtract(v, t).As<long, T>();
+
+		Vector256<long> vMinusUpper128Le = Vector256.Create(0, 0, -1, 0);
+		Vector256<long> carry = Avx2.CompareEqual(v, vMinusUpper128Le);
+		carry = Avx2.ShiftLeftLogical128BitLane(carry, 8);
+
+		v -= vMinusUpper128Le;
+		return (v - carry).As<long, T>();
 	}
 }
