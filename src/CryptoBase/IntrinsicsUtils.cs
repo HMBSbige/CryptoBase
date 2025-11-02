@@ -3,40 +3,40 @@ namespace CryptoBase;
 internal static class IntrinsicsUtils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> RotateLeftUInt32<T>(this Vector256<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset) where T : struct
+	public static Vector256<T> RotateLeftUInt32<T>(this Vector256<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset)
 	{
 		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> RotateLeftUInt32_8<T>(this Vector256<T> value) where T : struct
+	public static Vector256<T> RotateLeftUInt32_8<T>(this Vector256<T> value)
 	{
 		Vector256<byte> vRot8 = Vector256.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14, 3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
 		return Avx2.Shuffle(value.AsByte(), vRot8).As<byte, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> RotateLeftUInt32_16<T>(this Vector256<T> value) where T : struct
+	public static Vector256<T> RotateLeftUInt32_16<T>(this Vector256<T> value)
 	{
 		Vector256<byte> vRot16 = Vector256.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13, 2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13);
 		return Avx2.Shuffle(value.AsByte(), vRot16).As<byte, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> RotateLeftUInt32_24<T>(this Vector256<T> value) where T : struct
+	public static Vector256<T> RotateLeftUInt32_24<T>(this Vector256<T> value)
 	{
 		Vector256<byte> vRot24 = Vector256.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12, 1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12);
 		return Avx2.Shuffle(value.AsByte(), vRot24).As<byte, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<T> RotateLeftUInt32<T>(this Vector128<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset) where T : struct
+	public static Vector128<T> RotateLeftUInt32<T>(this Vector128<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset)
 	{
 		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<T> RotateLeftUInt32_8<T>(this Vector128<T> value) where T : struct
+	public static Vector128<T> RotateLeftUInt32_8<T>(this Vector128<T> value)
 	{
 		if (Ssse3.IsSupported)
 		{
@@ -48,7 +48,7 @@ internal static class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<T> RotateLeftUInt32_16<T>(this Vector128<T> value) where T : struct
+	public static Vector128<T> RotateLeftUInt32_16<T>(this Vector128<T> value)
 	{
 		if (Ssse3.IsSupported)
 		{
@@ -60,7 +60,7 @@ internal static class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<T> RotateLeftUInt32_24<T>(this Vector128<T> value) where T : struct
+	public static Vector128<T> RotateLeftUInt32_24<T>(this Vector128<T> value)
 	{
 		if (Ssse3.IsSupported)
 		{
@@ -72,7 +72,7 @@ internal static class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<T> ReverseEndianness128<T>(this Vector128<T> a) where T : struct
+	public static Vector128<T> ReverseEndianness128<T>(this Vector128<T> a)
 	{
 		if (Ssse3.IsSupported)
 		{
@@ -90,14 +90,14 @@ internal static class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> ReverseEndianness128<T>(this Vector256<T> a) where T : struct
+	public static Vector256<T> ReverseEndianness128<T>(this Vector256<T> a)
 	{
 		Vector256<byte> vReverse128 = Vector256.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16);
 		return Avx2.Shuffle(a.AsByte(), vReverse128).As<byte, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<T> ReverseEndianness32<T>(this Vector128<T> value) where T : struct
+	public static Vector128<T> ReverseEndianness32<T>(this Vector128<T> value)
 	{
 		if (Ssse3.IsSupported)
 		{
@@ -115,7 +115,7 @@ internal static class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> ReverseEndianness32<T>(this Vector256<T> value) where T : struct
+	public static Vector256<T> ReverseEndianness32<T>(this Vector256<T> value)
 	{
 		Vector256<byte> vReverse32 = Vector256.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28);
 		return Avx2.Shuffle(value.AsByte(), vReverse32).As<byte, T>();
@@ -186,7 +186,7 @@ internal static class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<T> Inc128Le<T>(this Vector128<T> nonce) where T : struct
+	public static Vector128<T> Inc128Le<T>(this Vector128<T> nonce)
 	{
 		Vector128<long> v = nonce.AsInt64();
 		Vector128<long> m1 = Vector128.Create(-1L, 0L);
@@ -200,12 +200,13 @@ internal static class IntrinsicsUtils
 		else
 		{
 			Vector128<int> eqFF32 = Sse2.CompareEqual(v.AsInt32(), Vector128<int>.AllBitsSet);
-			Vector128<int> lowD0  = Sse2.Shuffle(eqFF32, 0x00);
-			Vector128<int> lowD1  = Sse2.Shuffle(eqFF32, 0x55);
+			Vector128<int> lowD0 = Sse2.Shuffle(eqFF32, 0x00);
+			Vector128<int> lowD1 = Sse2.Shuffle(eqFF32, 0x55);
 			carry = (lowD0 & lowD1).AsInt64();
 		}
 
 		carry = Sse2.ShiftLeftLogical128BitLane(carry, 8);
+
 		v -= m1;
 		v -= carry;
 
@@ -213,24 +214,23 @@ internal static class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> AddTwo128Le<T>(this Vector256<T> nonce) where T : struct
+	public static Vector256<T> AddTwo128Le<T>(this Vector256<T> nonce)
 	{
-		Vector256<ulong> v = nonce.AsUInt64();
+		Vector256<long> v = nonce.AsInt64();
 		Vector256<long> signBit = Vector256.Create(0x8000_0000_0000_0000UL).AsInt64();
-		Vector256<ulong> thrX = Vector256.Create
+		Vector256<long> thrX = Vector256.Create
 		(
-			ulong.MaxValue - 2UL ^ 0x8000_0000_0000_0000UL,
-			ulong.MaxValue ^ 0x8000_0000_0000_0000UL,
-			ulong.MaxValue - 2UL ^ 0x8000_0000_0000_0000UL,
-			ulong.MaxValue ^ 0x8000_0000_0000_0000UL
-		);
+			ulong.MaxValue - 2UL ^ 0x8000_0000_0000_0000UL, ulong.MaxValue ^ 0x8000_0000_0000_0000UL,
+			ulong.MaxValue - 2UL ^ 0x8000_0000_0000_0000UL, ulong.MaxValue ^ 0x8000_0000_0000_0000UL
+		).AsInt64();
 
-		Vector256<long> vX = v.AsInt64() ^ signBit;
-		Vector256<long> carry = Avx2.CompareGreaterThan(vX, thrX.AsInt64());
+		Vector256<long> sum = v + Vector256.Create(2, 0, 2, 0);
+
+		Vector256<long> vX = v ^ signBit;
+		Vector256<long> carry = Avx2.CompareGreaterThan(vX, thrX);
 		carry = Avx2.ShiftLeftLogical128BitLane(carry.AsByte(), 8).AsInt64();
 
-		v += Vector256.Create(2UL, 0UL, 2UL, 0UL);
-		return (v - carry.AsUInt64()).As<ulong, T>();
+		return (sum - carry).As<long, T>();
 	}
 
 	/// <summary>
@@ -238,7 +238,7 @@ internal static class IntrinsicsUtils
 	/// 如果需要通用的：var carry = Avx2.CompareEqual(v, Vector256.Create(-1L)); carry &= vMinusUpper128Le
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> IncUpper128Le<T>(this Vector256<T> nonce) where T : struct
+	public static Vector256<T> IncUpper128Le<T>(this Vector256<T> nonce)
 	{
 		Vector256<long> v = nonce.AsInt64();
 
@@ -248,5 +248,51 @@ internal static class IntrinsicsUtils
 
 		v -= vMinusUpper128Le;
 		return (v - carry).As<long, T>();
+	}
+
+	/// <summary>
+	/// [v0,v1,v2,v3] => [v0+4,v1+4,v2+4,v3+4]
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> AddFour128Le<T>(this Vector512<T> nonce)
+	{
+		Vector512<ulong> v = nonce.AsUInt64();
+		Vector512<ulong> thr = Vector512.Create
+		(
+			ulong.MaxValue - 4UL, 0xFFFF_FFFF_FFFF_FFFFUL,
+			ulong.MaxValue - 4UL, 0xFFFF_FFFF_FFFF_FFFFUL,
+			ulong.MaxValue - 4UL, 0xFFFF_FFFF_FFFF_FFFFUL,
+			ulong.MaxValue - 4UL, 0xFFFF_FFFF_FFFF_FFFFUL
+		);
+
+		Vector512<ulong> sum = v + Vector512.Create(4, 0, 4, 0, 4, 0, 4, 0).AsUInt64();
+
+		Vector512<ulong> carry = Vector512.GreaterThan(v, thr);
+		carry = Avx512BW.ShiftLeftLogical128BitLane(carry.AsByte(), 8).AsUInt64();
+
+		return (sum - carry).As<ulong, T>();
+	}
+
+	/// <summary>
+	/// [v0,v1,v2,v3] => [v0+0,v1+1,v2+2,v3+3]
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> Add128Le0123<T>(this Vector512<T> nonce)
+	{
+		Vector512<ulong> v = nonce.AsUInt64();
+		Vector512<ulong> thr = Vector512.Create
+		(
+			ulong.MaxValue - 0UL, 0xFFFF_FFFF_FFFF_FFFFUL,
+			ulong.MaxValue - 1UL, 0xFFFF_FFFF_FFFF_FFFFUL,
+			ulong.MaxValue - 2UL, 0xFFFF_FFFF_FFFF_FFFFUL,
+			ulong.MaxValue - 3UL, 0xFFFF_FFFF_FFFF_FFFFUL
+		);
+
+		Vector512<ulong> sum = v + Vector512.Create(0, 0, 1, 0, 2, 0, 3, 0).AsUInt64();
+
+		Vector512<ulong> carry = Vector512.GreaterThan(v, thr);
+		carry = Avx512BW.ShiftLeftLogical128BitLane(carry.AsByte(), 8).AsUInt64();
+
+		return (sum - carry).As<ulong, T>();
 	}
 }
