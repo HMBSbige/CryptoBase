@@ -37,7 +37,7 @@ internal class CryptoTest(int step, double duration)
 		crypto.Dispose();
 
 		double result = length * (ulong)step / totalSeconds / 1024.0 / 1024.0;
-		Console.WriteLine($@"{result:F2} MB/s");
+		Console.WriteLine($@"{result:F2} MiB/s");
 	}
 
 	public void Test(IAEADCrypto crypto, int nonceLength = 12)
@@ -61,6 +61,6 @@ internal class CryptoTest(int step, double duration)
 		crypto.Dispose();
 
 		double result = length * (ulong)step / totalSeconds / 1024.0 / 1024.0;
-		Console.WriteLine($@"{result:F2} MB/s");
+		Console.WriteLine($@"{result:F2} MiB/s");
 	}
 }
