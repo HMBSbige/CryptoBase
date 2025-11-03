@@ -39,6 +39,22 @@ public static class FastUtils
 		return Vector256.Create(v);
 	}
 
+	/// <inheritdoc cref="Avx512F.BroadcastVector128ToVector512(uint*)" />
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> BroadcastVector128ToVector512<T>(ref T source)
+	{
+		if (Avx512F.IsSupported)
+		{
+			unsafe
+			{
+				return Avx512F.BroadcastVector128ToVector512((uint*)Unsafe.AsPointer(ref source)).As<uint, T>();
+			}
+		}
+
+		Vector256<T> v256 = BroadcastVector128ToVector256(ref source);
+		return Vector512.Create(v256);
+	}
+
 	/// <summary>
 	/// destination = source ^ stream
 	/// </summary>

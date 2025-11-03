@@ -97,6 +97,20 @@ internal static class IntrinsicsUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> ReverseEndianness128<T>(this Vector512<T> a)
+	{
+		Vector512<byte> vReverse128 = Vector512.Create
+		(
+			(byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+			31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+			47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32,
+			63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48
+		);
+
+		return Avx512BW.Shuffle(a.AsByte(), vReverse128).As<byte, T>();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> ReverseEndianness32<T>(this Vector128<T> value)
 	{
 		if (Ssse3.IsSupported)

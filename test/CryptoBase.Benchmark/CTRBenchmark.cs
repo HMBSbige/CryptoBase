@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.SymmetricCryptos.BlockCryptoModes;
-using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
+using CryptoBase.SymmetricCryptos.StreamCryptos;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -12,7 +11,7 @@ public class CTRBenchmark
 	[Params(1000)]
 	public int Max { get; set; }
 
-	[Params(1024, 8192, 1000000)]
+	[Params(1024, 8192)]
 	public int ByteLength { get; set; }
 
 	private Memory<byte> _randombytes;
@@ -34,7 +33,7 @@ public class CTRBenchmark
 		ReadOnlySpan<byte> iv = _randomIv16.AsSpan();
 		ReadOnlySpan<byte> data = _randombytes.Span;
 
-		using IStreamCrypto crypto = new CtrMode128(AesCrypto.CreateCore(key), iv);
+		using IStreamCrypto crypto = StreamCryptoCreate.AesCtr(key, iv);
 
 		Span<byte> o = stackalloc byte[data.Length];
 

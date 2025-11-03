@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Tests;
 
@@ -44,5 +45,34 @@ public class SM4CTRTest
 		ReadOnlySpan<byte> expected = expectedHex.FromHex();
 
 		T(StreamCryptoCreate.Sm4Ctr(key, iv), source, expected);
+	}
+
+	[Theory]
+	[InlineData(2 * 16 - 1)]
+	[InlineData(4 * 16 - 1)]
+	[InlineData(8 * 16 - 1)]
+	[InlineData(16 * 16 - 1)]
+	[InlineData(32 * 16 - 1)]
+	[InlineData(64 * 16 - 1)]
+	[InlineData(128 * 16 - 1)]
+	[InlineData(256 * 16 - 1)]
+	[InlineData(512 * 16 - 1)]
+	public void TestBlocks(int length)
+	{
+		using IStreamCrypto crypto = StreamCryptoCreate.Sm4Ctr(RandomNumberGenerator.GetBytes(16), RandomNumberGenerator.GetBytes(16));
+		ReadOnlySpan<byte> data = RandomNumberGenerator.GetBytes(length);
+		Span<byte> expected = stackalloc byte[length];
+		Span<byte> cipher = stackalloc byte[length];
+
+		for (int i = 0; i < length; ++i)
+		{
+			crypto.Update(data.Slice(i, 1), expected.Slice(i, 1));
+		}
+
+		crypto.Reset();
+
+		crypto.Update(data, cipher);
+
+		Assert.True(cipher.SequenceEqual(expected));
 	}
 }
