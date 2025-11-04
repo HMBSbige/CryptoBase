@@ -98,33 +98,49 @@ internal static class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void QuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 	{
-		a = Sse2.Add(a, b);
-		d = Sse2.Xor(a, d).RotateLeftUInt32_16();
+		a += b;
+		d = (a ^ d).RotateLeftUInt32_16();
 
-		c = Sse2.Add(c, d);
-		b = Sse2.Xor(b, c).RotateLeftUInt32(12);
+		c += d;
+		b = (b ^ c).RotateLeftUInt32(12);
 
-		a = Sse2.Add(a, b);
-		d = Sse2.Xor(a, d).RotateLeftUInt32_8();
+		a += b;
+		d = (a ^ d).RotateLeftUInt32_8();
 
-		c = Sse2.Add(c, d);
-		b = Sse2.Xor(b, c).RotateLeftUInt32(7);
+		c += d;
+		b = (b ^ c).RotateLeftUInt32(7);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void QuarterRound(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
 	{
-		a = Avx2.Add(a, b);
-		d = Avx2.Xor(a, d).RotateLeftUInt32_16();
+		a += b;
+		d = (a ^ d).RotateLeftUInt32_16();
 
-		c = Avx2.Add(c, d);
-		b = Avx2.Xor(b, c).RotateLeftUInt32(12);
+		c += d;
+		b = (b ^ c).RotateLeftUInt32(12);
 
-		a = Avx2.Add(a, b);
-		d = Avx2.Xor(a, d).RotateLeftUInt32_8();
+		a += b;
+		d = (a ^ d).RotateLeftUInt32_8();
 
-		c = Avx2.Add(c, d);
-		b = Avx2.Xor(b, c).RotateLeftUInt32(7);
+		c += d;
+		b = (b ^ c).RotateLeftUInt32(7);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void QuarterRound(ref Vector512<uint> a, ref Vector512<uint> b, ref Vector512<uint> c, ref Vector512<uint> d)
+	{
+		a += b;
+		d = (a ^ d).RotateLeftUInt32_16();
+
+		c += d;
+		b = (b ^ c).RotateLeftUInt32(12);
+
+		a += b;
+		d = (a ^ d).RotateLeftUInt32_8();
+
+		c += d;
+		b = (b ^ c).RotateLeftUInt32(7);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

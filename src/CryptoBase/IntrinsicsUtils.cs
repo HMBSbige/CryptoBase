@@ -3,6 +3,51 @@ namespace CryptoBase;
 internal static class IntrinsicsUtils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> RotateLeftUInt32<T>(this Vector512<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset)
+	{
+		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> RotateLeftUInt32_8<T>(this Vector512<T> value)
+	{
+		Vector512<byte> vRot8 = Vector512.Create(
+			(byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14,
+			3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14,
+			3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14,
+			3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14
+		);
+
+		return Avx512BW.Shuffle(value.AsByte(), vRot8).As<byte, T>();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> RotateLeftUInt32_16<T>(this Vector512<T> value)
+	{
+		Vector512<byte> vRot16 = Vector512.Create(
+			(byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13,
+			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13,
+			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13,
+			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13
+		);
+
+		return Avx512BW.Shuffle(value.AsByte(), vRot16).As<byte, T>();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> RotateLeftUInt32_24<T>(this Vector512<T> value)
+	{
+		Vector512<byte> vRot24 = Vector512.Create(
+			(byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12,
+			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12,
+			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12,
+			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12
+		);
+
+		return Avx512BW.Shuffle(value.AsByte(), vRot24).As<byte, T>();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32<T>(this Vector256<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset)
 	{
 		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
@@ -11,21 +56,30 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32_8<T>(this Vector256<T> value)
 	{
-		Vector256<byte> vRot8 = Vector256.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14, 3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
+		Vector256<byte> vRot8 = Vector256.Create(
+			(byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14,
+			3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14
+		);
 		return Avx2.Shuffle(value.AsByte(), vRot8).As<byte, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32_16<T>(this Vector256<T> value)
 	{
-		Vector256<byte> vRot16 = Vector256.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13, 2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13);
+		Vector256<byte> vRot16 = Vector256.Create(
+			(byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13,
+			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13
+		);
 		return Avx2.Shuffle(value.AsByte(), vRot16).As<byte, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32_24<T>(this Vector256<T> value)
 	{
-		Vector256<byte> vRot24 = Vector256.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12, 1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12);
+		Vector256<byte> vRot24 = Vector256.Create(
+			(byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12,
+			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12
+		);
 		return Avx2.Shuffle(value.AsByte(), vRot24).As<byte, T>();
 	}
 
@@ -92,7 +146,10 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> ReverseEndianness128<T>(this Vector256<T> a)
 	{
-		Vector256<byte> vReverse128 = Vector256.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16);
+		Vector256<byte> vReverse128 = Vector256.Create(
+			(byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+			15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+		);
 		return Avx2.Shuffle(a.AsByte(), vReverse128).As<byte, T>();
 	}
 
@@ -102,9 +159,9 @@ internal static class IntrinsicsUtils
 		Vector512<byte> vReverse128 = Vector512.Create
 		(
 			(byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
-			31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
-			47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32,
-			63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48
+			15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+			15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+			15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 		);
 
 		return Avx512BW.Shuffle(a.AsByte(), vReverse128).As<byte, T>();
@@ -131,8 +188,24 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> ReverseEndianness32<T>(this Vector256<T> value)
 	{
-		Vector256<byte> vReverse32 = Vector256.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28);
+		Vector256<byte> vReverse32 = Vector256.Create(
+			(byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
+			3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
+		);
 		return Avx2.Shuffle(value.AsByte(), vReverse32).As<byte, T>();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<T> ReverseEndianness32<T>(this Vector512<T> value)
+	{
+		Vector512<byte> vReverse32 = Vector512.Create(
+			(byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
+			3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
+			3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
+			3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
+		);
+
+		return Avx512BW.Shuffle(value.AsByte(), vReverse32).As<byte, T>();
 	}
 
 	/// <summary>
