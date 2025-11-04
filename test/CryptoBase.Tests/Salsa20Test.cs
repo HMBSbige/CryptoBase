@@ -139,7 +139,7 @@ public class Salsa20Test
 	}
 
 	[Theory]
-	[MemberData(nameof(Data), MemberType = typeof(Salsa20Test))]
+	[MemberData(nameof(Data))]
 	public void Test(string keyHex, string ivHex, string hex0, string hex1, string hex2, string hex3)
 	{
 		byte[] key = keyHex.FromHex();

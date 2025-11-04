@@ -2,6 +2,7 @@ using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace CryptoBase.Tests;
@@ -80,5 +81,23 @@ public static class TestUtils
 		Span<byte> digest = new byte[mac.Length];
 		mac.GetMac(digest);
 		Assert.Equal(expected, digest.ToHex());
+	}
+
+	public static void TestBlocks(IStreamCrypto crypto, int length)
+	{
+		ReadOnlySpan<byte> data = RandomNumberGenerator.GetBytes(length);
+		Span<byte> expected = stackalloc byte[length];
+		Span<byte> cipher = stackalloc byte[length];
+
+		for (int i = 0; i < length; ++i)
+		{
+			crypto.Update(data.Slice(i, 1), expected.Slice(i, 1));
+		}
+
+		crypto.Reset();
+
+		crypto.Update(data, cipher);
+
+		Assert.True(cipher.SequenceEqual(expected));
 	}
 }

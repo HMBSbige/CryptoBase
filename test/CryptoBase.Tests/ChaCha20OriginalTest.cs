@@ -96,7 +96,7 @@ public class ChaCha20OriginalTest
 	}
 
 	[Theory]
-	[MemberData(nameof(Data), MemberType = typeof(ChaCha20OriginalTest))]
+	[MemberData(nameof(Data))]
 	public void Test(string keyHex, string ivHex, string hex, string hex2)
 	{
 		byte[] key = keyHex.FromHex();
@@ -106,7 +106,7 @@ public class ChaCha20OriginalTest
 	}
 
 	[Theory]
-	[MemberData(nameof(Data65536), MemberType = typeof(ChaCha20OriginalTest))]
+	[MemberData(nameof(Data65536))]
 	public void Test65536(string keyHex, string ivHex, string hex)
 	{
 		byte[] key = keyHex.FromHex();

@@ -48,7 +48,7 @@ public class AESCTRTest
 	}
 
 	[Theory]
-	[MemberData(nameof(Data), MemberType = typeof(AESCTRTest))]
+	[MemberData(nameof(Data))]
 	public void Test(string keyHex, string ivHex, string hex, string hex2)
 	{
 		byte[] key = keyHex.FromHex();
@@ -69,19 +69,6 @@ public class AESCTRTest
 	public void TestBlocks(int length)
 	{
 		using IStreamCrypto crypto = StreamCryptoCreate.AesCtr(RandomNumberGenerator.GetBytes(16), RandomNumberGenerator.GetBytes(16));
-		ReadOnlySpan<byte> data = RandomNumberGenerator.GetBytes(length);
-		Span<byte> expected = stackalloc byte[length];
-		Span<byte> cipher = stackalloc byte[length];
-
-		for (int i = 0; i < length; ++i)
-		{
-			crypto.Update(data.Slice(i, 1), expected.Slice(i, 1));
-		}
-
-		crypto.Reset();
-
-		crypto.Update(data, cipher);
-
-		Assert.True(cipher.SequenceEqual(expected));
+		TestUtils.TestBlocks(crypto, length);
 	}
 }

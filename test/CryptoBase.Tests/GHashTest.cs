@@ -49,7 +49,7 @@ public class GHashTest
 	}
 
 	[Theory]
-	[MemberData(nameof(Data), MemberType = typeof(GHashTest))]
+	[MemberData(nameof(Data))]
 	public void Test(string keyHex, string plainHex, string cipherHex)
 	{
 		byte[] key = keyHex.FromHex();
@@ -58,7 +58,7 @@ public class GHashTest
 	}
 
 	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
-	[MemberData(nameof(Data), MemberType = typeof(GHashTest))]
+	[MemberData(nameof(Data))]
 	public void TestX86(string keyHex, string plainHex, string cipherHex)
 	{
 		byte[] key = keyHex.FromHex();

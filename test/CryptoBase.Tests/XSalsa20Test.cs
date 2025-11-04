@@ -49,7 +49,7 @@ public class XSalsa20Test
 	}
 
 	[Theory]
-	[MemberData(nameof(Data), MemberType = typeof(XSalsa20Test))]
+	[MemberData(nameof(Data))]
 	public void Test(string keyHex, string ivHex, string i1, string o1, string i2, string o2)
 	{
 		byte[] key = keyHex.FromHex();

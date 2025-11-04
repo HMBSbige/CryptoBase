@@ -52,7 +52,7 @@ public class AESXTSTest
 	}
 
 	[Theory]
-	[MemberData(nameof(Data), MemberType = typeof(AESXTSTest))]
+	[MemberData(nameof(Data))]
 	public void TestDataUnitSeqNumber(string keyHex, UInt128 dataUnitSeqNumber, string plainHex, string cipherHex)
 	{
 		ReadOnlySpan<byte> key = keyHex.FromHex();
@@ -71,7 +71,7 @@ public class AESXTSTest
 	}
 
 	[Theory]
-	[MemberData(nameof(Data2), MemberType = typeof(AESXTSTest))]
+	[MemberData(nameof(Data2))]
 	public void Test(string keyHex, string ivHex, string plainHex, string cipherHex)
 	{
 		ReadOnlySpan<byte> key = keyHex.FromHex();

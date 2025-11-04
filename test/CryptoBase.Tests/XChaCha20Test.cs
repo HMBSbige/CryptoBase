@@ -59,7 +59,7 @@ public class XChaCha20Test
 	}
 
 	[Theory]
-	[MemberData(nameof(DataCounter1), MemberType = typeof(XChaCha20Test))]
+	[MemberData(nameof(DataCounter1))]
 	public void TestCounter1(string keyHex, string ivHex, string hex, string hex2)
 	{
 		byte[] key = keyHex.FromHex();
@@ -68,7 +68,7 @@ public class XChaCha20Test
 	}
 
 	[Theory]
-	[MemberData(nameof(DataCounter0), MemberType = typeof(XChaCha20Test))]
+	[MemberData(nameof(DataCounter0))]
 	public void TestCounter0(string keyHex, string ivHex, string hex, string hex2)
 	{
 		byte[] key = keyHex.FromHex();
