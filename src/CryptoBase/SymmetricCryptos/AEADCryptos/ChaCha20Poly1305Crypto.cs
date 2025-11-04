@@ -24,8 +24,7 @@ public sealed class ChaCha20Poly1305Crypto : IAEADCrypto
 		_chacha20 = new ChaCha20Crypto(key, EmptyIv12);
 	}
 
-	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source,
-		Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
+	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, source.Length, nameof(destination));
@@ -51,8 +50,7 @@ public sealed class ChaCha20Poly1305Crypto : IAEADCrypto
 		poly1305.GetMac(tag);
 	}
 
-	public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag,
-		Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
+	public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, source.Length, nameof(destination));

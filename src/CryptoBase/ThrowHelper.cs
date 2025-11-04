@@ -8,9 +8,9 @@ internal static class ThrowHelper
 		throw new AuthenticationTagMismatchException();
 	}
 
-	public static void ThrowIfAuthenticationTagMismatch(ReadOnlySpan<byte> mac, ReadOnlySpan<byte> tag)
+	public static void ThrowIfAuthenticationTagMismatch(ReadOnlySpan<byte> expectedTag, ReadOnlySpan<byte> tag)
 	{
-		if (!CryptographicOperations.FixedTimeEquals(mac, tag))
+		if (!CryptographicOperations.FixedTimeEquals(expectedTag, tag))
 		{
 			ThrowAuthenticationTagMismatch();
 		}

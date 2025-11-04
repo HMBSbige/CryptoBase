@@ -1,4 +1,4 @@
-using CryptoBase.SymmetricCryptos.AEADCryptos.GCM;
+using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
@@ -14,29 +14,19 @@ public static class AEADCryptoCreate
 			return new DefaultAesGcmCrypto(key);
 		}
 
-		return new GcmCryptoMode(AesCrypto.CreateCore(key));
+		return new GcmMode128(AesCrypto.CreateCore(key));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IAEADCrypto Sm4Gcm(ReadOnlySpan<byte> key)
 	{
-		if (AesX86.IsSupported && Avx2.IsSupported)
-		{
-			return new GcmCryptoModeBlock16X86(new SM4Crypto(key));
-		}
-
-		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
-		{
-			return new GcmCryptoModeBlock8X86(new SM4Crypto(key));
-		}
-
-		return new GcmCryptoMode(new SM4Crypto(key));
+		return new GcmMode128(new SM4Crypto(key));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IAEADCrypto ChaCha20Poly1305(ReadOnlySpan<byte> key)
 	{
-		if (OperatingSystem.IsWindows())
+		if (OperatingSystem.IsWindows() && Sse2.IsSupported)
 		{
 			return new ChaCha20Poly1305Crypto(key);
 		}
