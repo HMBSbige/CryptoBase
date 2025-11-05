@@ -110,8 +110,8 @@ public sealed class GHashX86 : IMac
 			Vector128<byte> x1 = Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref ptr, offset + 1 * BlockSize)).ReverseEndianness128();
 			x0 ^= _buffer;
 
-			GHashUtils.GfMultiply(_key4, x0, out Vector128<uint> lo0, out Vector128<uint> hi0);
-			GHashUtils.GfMultiply(_key3, x1, out Vector128<uint> lo1, out Vector128<uint> hi1);
+			GHashUtils.GfMultiply(_key2, x0, out Vector128<uint> lo0, out Vector128<uint> hi0);
+			GHashUtils.GfMultiply(_key1, x1, out Vector128<uint> lo1, out Vector128<uint> hi1);
 			Vector128<byte> y0 = GHashUtils.Reduce(lo0, hi0);
 			Vector128<byte> y1 = GHashUtils.Reduce(lo1, hi1);
 
