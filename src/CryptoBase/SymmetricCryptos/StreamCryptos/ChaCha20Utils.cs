@@ -128,22 +128,6 @@ internal static class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void QuarterRound(ref Vector512<uint> a, ref Vector512<uint> b, ref Vector512<uint> c, ref Vector512<uint> d)
-	{
-		a += b;
-		d = (a ^ d).RotateLeftUInt32_16();
-
-		c += d;
-		b = (b ^ c).RotateLeftUInt32(12);
-
-		a += b;
-		d = (a ^ d).RotateLeftUInt32_8();
-
-		c += d;
-		b = (b ^ c).RotateLeftUInt32(7);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(Span<uint> state, Span<byte> stream, byte rounds)
 	{
 		ref uint stateRef = ref state.GetReference();

@@ -24,12 +24,16 @@ internal class CryptoTest(int step, double duration)
 		ulong length = 0ul;
 		double totalSeconds = 0.0;
 
-		ReadOnlySpan<byte> i = RandomNumberGenerator.GetBytes(step);
+		ReadOnlySpan<byte> random = RandomNumberGenerator.GetBytes(step);
 
 		do
 		{
+			Span<byte> i = GC.AllocateUninitializedArray<byte>(random.Length);
+			random.CopyTo(i);
 			Stopwatch sw = Stopwatch.StartNew();
+
 			crypto.Update(i, o);
+
 			sw.Stop();
 			totalSeconds += sw.Elapsed.TotalSeconds;
 			++length;
@@ -49,12 +53,16 @@ internal class CryptoTest(int step, double duration)
 		ulong length = 0ul;
 		double totalSeconds = 0.0;
 
-		ReadOnlySpan<byte> i = RandomNumberGenerator.GetBytes(step);
+		ReadOnlySpan<byte> random = RandomNumberGenerator.GetBytes(step);
 
 		do
 		{
+			Span<byte> i = GC.AllocateUninitializedArray<byte>(random.Length);
+			random.CopyTo(i);
 			Stopwatch sw = Stopwatch.StartNew();
+
 			crypto.Encrypt(nonce, i, o, tag);
+
 			sw.Stop();
 			totalSeconds += sw.Elapsed.TotalSeconds;
 			++length;

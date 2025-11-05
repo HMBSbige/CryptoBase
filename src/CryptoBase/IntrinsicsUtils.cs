@@ -3,59 +3,24 @@ namespace CryptoBase;
 internal static class IntrinsicsUtils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<T> RotateLeftUInt32<T>(this Vector512<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset)
-	{
-		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<T> RotateLeftUInt32_8<T>(this Vector512<T> value)
-	{
-		Vector512<byte> vRot8 = Vector512.Create(
-			(byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14,
-			3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14,
-			3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14,
-			3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14
-		);
-
-		return Avx512BW.Shuffle(value.AsByte(), vRot8).As<byte, T>();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<T> RotateLeftUInt32_16<T>(this Vector512<T> value)
-	{
-		Vector512<byte> vRot16 = Vector512.Create(
-			(byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13,
-			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13,
-			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13,
-			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13
-		);
-
-		return Avx512BW.Shuffle(value.AsByte(), vRot16).As<byte, T>();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<T> RotateLeftUInt32_24<T>(this Vector512<T> value)
-	{
-		Vector512<byte> vRot24 = Vector512.Create(
-			(byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12,
-			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12,
-			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12,
-			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12
-		);
-
-		return Avx512BW.Shuffle(value.AsByte(), vRot24).As<byte, T>();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32<T>(this Vector256<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.RotateLeft(value.AsUInt32(), offset).As<uint, T>();
+		}
+
 		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32_8<T>(this Vector256<T> value)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.RotateLeft(value.AsUInt32(), 8).As<uint, T>();
+		}
+
 		Vector256<byte> vRot8 = Vector256.Create(
 			(byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14,
 			3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14
@@ -66,6 +31,11 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32_16<T>(this Vector256<T> value)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.RotateLeft(value.AsUInt32(), 16).As<uint, T>();
+		}
+
 		Vector256<byte> vRot16 = Vector256.Create(
 			(byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13,
 			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13
@@ -76,6 +46,11 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<T> RotateLeftUInt32_24<T>(this Vector256<T> value)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.RotateLeft(value.AsUInt32(), 24).As<uint, T>();
+		}
+
 		Vector256<byte> vRot24 = Vector256.Create(
 			(byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12,
 			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12
@@ -86,12 +61,22 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32<T>(this Vector128<T> value, [ConstantExpected(Min = 0, Max = 32)] byte offset)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.RotateLeft(value.AsUInt32(), offset).As<uint, T>();
+		}
+
 		return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32_8<T>(this Vector128<T> value)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.RotateLeft(value.AsUInt32(), 8).As<uint, T>();
+		}
+
 		if (Ssse3.IsSupported)
 		{
 			Vector128<byte> rot8 = Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
@@ -104,6 +89,11 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32_16<T>(this Vector128<T> value)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.RotateLeft(value.AsUInt32(), 16).As<uint, T>();
+		}
+
 		if (Ssse3.IsSupported)
 		{
 			Vector128<byte> rot16 = Vector128.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13);
@@ -116,6 +106,11 @@ internal static class IntrinsicsUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<T> RotateLeftUInt32_24<T>(this Vector128<T> value)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.RotateLeft(value.AsUInt32(), 24).As<uint, T>();
+		}
+
 		if (Ssse3.IsSupported)
 		{
 			Vector128<byte> rot24 = Vector128.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12);
@@ -193,19 +188,6 @@ internal static class IntrinsicsUtils
 			3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
 		);
 		return Avx2.Shuffle(value.AsByte(), vReverse32).As<byte, T>();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<T> ReverseEndianness32<T>(this Vector512<T> value)
-	{
-		Vector512<byte> vReverse32 = Vector512.Create(
-			(byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
-			3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
-			3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
-			3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
-		);
-
-		return Avx512BW.Shuffle(value.AsByte(), vReverse32).As<byte, T>();
 	}
 
 	/// <summary>
