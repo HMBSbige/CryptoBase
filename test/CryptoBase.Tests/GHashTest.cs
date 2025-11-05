@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Macs.GHash;
+using System.Security.Cryptography;
 
 namespace CryptoBase.Tests;
 
@@ -13,6 +14,7 @@ public class GHashTest
 	public static readonly TheoryData<string, string, string> Data = new()
 	{
 		{ @"dfa6bf4ded81db03ffcaff95f830f061", @"952b2a56a5604ac0b32b6656a05b40b6", @"da53eb0ad2c55bb64fc4802cc3feda60" },
+		{ @"66e94bd4ef8a2c3b884cfa59ca342b2e", @"", @"00000000000000000000000000000000" },
 		{ @"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe78", @"5e2ec746917062882c85b0685353deb7" },
 		{ @"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe7800000000000000000000000000000080", @"f38cbb1ad69223dcc3457ae5b6b0f885" },
 		{ @"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe7ad2c55bb64f", @"c1d3b69b62c9a392687aaf55d95a1df6" }
@@ -63,5 +65,35 @@ public class GHashTest
 	{
 		byte[] key = keyHex.FromHex();
 		Test_Internal(new GHashX86(key), plainHex, cipherHex);
+	}
+
+	[Theory]
+	[InlineData(4 - 1)]
+	[InlineData(8 - 1)]
+	[InlineData(16 - 1)]
+	[InlineData(32 - 1)]
+	[InlineData(64 - 1)]
+	public void TestBlocks(int n)
+	{
+		const int blockSize = 16;
+		using IMac mac = GHashUtils.Create(RandomNumberGenerator.GetBytes(16));
+		Span<byte> expected = stackalloc byte[blockSize];
+		ReadOnlySpan<byte> blocks = RandomNumberGenerator.GetBytes(n * blockSize + 1);
+
+		for (int i = 0; i < n; ++i)
+		{
+			mac.Update(blocks.Slice(i * blockSize, blockSize));
+		}
+
+		mac.Update(blocks.Slice(n * blockSize));
+
+		mac.GetMac(expected);
+
+		mac.Update(blocks);
+
+		Span<byte> actual = stackalloc byte[blockSize];
+		mac.GetMac(actual);
+
+		Assert.True(expected.SequenceEqual(actual));
 	}
 }
