@@ -28,14 +28,15 @@ public static class SystemEnvironmentUtils
 				AVX-512 Conflict Detection Instructions:        {Avx512CD.IsSupported}
 				AVX-512 Byte and Word Instructions:             {Avx512BW.IsSupported}
 				AVX-512 Doubleword and Quadword Instructions:   {Avx512DQ.IsSupported}
-				AVX-512 Vector Byte Manipulation Instructions:  {Avx512Vbmi.IsSupported}
+				AVX-512 Vector Bit Manipulation Instructions:   {Avx512Vbmi.IsSupported}
+				AVX-512 Vector Bit Manipulation Instructions 2: {Avx512Vbmi2.IsSupported}
+				GFNI:                                           {Gfni.IsSupported}
+				GFNI/256:                                       {Gfni.V256.IsSupported}
+				GFNI/512:                                       {Gfni.V512.IsSupported}
 				AVX10.1:                                        {Avx10v1.IsSupported}
 				AVX10.1/512:                                    {Avx10v1.V512.IsSupported}
+				AVX10.2:                                        {Avx10v2.IsSupported}
+				AVX10.2/512:                                    {Avx10v2.V512.IsSupported}
 				""";
-
-		// TODO: Gfni
-		// TODO: AVX-512 Vector Bit Manipulation Instructions 2:  {Avx512Vbmi2.IsSupported};
-		// TODO: AVX10.2:  {Avx10v2.IsSupported};
-		// TODO: AVX10.2/512:  {Avx10v2.V512.IsSupported};
 	}
 }
