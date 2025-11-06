@@ -40,11 +40,22 @@ public class ChaCha20Crypto : SnuffleCrypto
 		int processed = 0;
 		int length = source.Length;
 
+		if (Avx512F.IsSupported)
+		{
+			while (length >= 1024)
+			{
+				ChaCha20Utils.ChaChaCoreAoS1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+
+				processed += 1024;
+				length -= 1024;
+			}
+		}
+
 		if (Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				int offset = ChaCha20Utils.ChaChaCore512(Rounds, stateSpan, source, destination);
+				int offset = ChaCha20Utils.ChaChaCore512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 				processed += offset;
 				length -= offset;
 			}
