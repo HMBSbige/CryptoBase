@@ -42,6 +42,14 @@ public class ChaCha20Crypto : SnuffleCrypto
 
 		if (Avx512F.IsSupported)
 		{
+			while (length >= 2048)
+			{
+				ChaCha20Utils.ChaChaCoreAoS2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+
+				processed += 2048;
+				length -= 2048;
+			}
+
 			while (length >= 1024)
 			{
 				ChaCha20Utils.ChaChaCoreAoS1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
