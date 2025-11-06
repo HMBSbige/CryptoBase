@@ -8,7 +8,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class GHashBenchmark
 {
-	[Params(32, 1000000)]
+	[Params(1024, 8192)]
 	public int Length { get; set; }
 
 	private Memory<byte> _randombytes;

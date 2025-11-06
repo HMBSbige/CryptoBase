@@ -62,26 +62,23 @@ public sealed class GHashX86 : IMac
 			GHashUtils.GfMultiply(_key7, x1, out Vector128<uint> lo1, out Vector128<uint> hi1);
 			GHashUtils.GfMultiply(_key6, x2, out Vector128<uint> lo2, out Vector128<uint> hi2);
 			GHashUtils.GfMultiply(_key5, x3, out Vector128<uint> lo3, out Vector128<uint> hi3);
+			Vector128<uint> lo = lo0 ^ lo1 ^ lo2 ^ lo3;
+			Vector128<uint> hi = hi0 ^ hi1 ^ hi2 ^ hi3;
+
 			GHashUtils.GfMultiply(_key4, x4, out Vector128<uint> lo4, out Vector128<uint> hi4);
 			GHashUtils.GfMultiply(_key3, x5, out Vector128<uint> lo5, out Vector128<uint> hi5);
 			GHashUtils.GfMultiply(_key2, x6, out Vector128<uint> lo6, out Vector128<uint> hi6);
 			GHashUtils.GfMultiply(_key1, x7, out Vector128<uint> lo7, out Vector128<uint> hi7);
-			Vector128<byte> y0 = GHashUtils.Reduce(lo0, hi0);
-			Vector128<byte> y1 = GHashUtils.Reduce(lo1, hi1);
-			Vector128<byte> y2 = GHashUtils.Reduce(lo2, hi2);
-			Vector128<byte> y3 = GHashUtils.Reduce(lo3, hi3);
-			Vector128<byte> y4 = GHashUtils.Reduce(lo4, hi4);
-			Vector128<byte> y5 = GHashUtils.Reduce(lo5, hi5);
-			Vector128<byte> y6 = GHashUtils.Reduce(lo6, hi6);
-			Vector128<byte> y7 = GHashUtils.Reduce(lo7, hi7);
+			lo ^= lo4 ^ lo5 ^ lo6 ^ lo7;
+			hi ^= hi4 ^ hi5 ^ hi6 ^ hi7;
 
-			_buffer = y0 ^ y1 ^ y2 ^ y3 ^ y4 ^ y5 ^ y6 ^ y7;
+			_buffer = GHashUtils.Reduce(lo, hi);
 
 			offset += 8 * BlockSize;
 			length -= 8 * BlockSize;
 		}
 
-		while (length >= 4 * BlockSize)
+		if (length >= 4 * BlockSize)
 		{
 			Vector128<byte> x0 = Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref ptr, offset + 0 * BlockSize)).ReverseEndianness128();
 			Vector128<byte> x1 = Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref ptr, offset + 1 * BlockSize)).ReverseEndianness128();
@@ -93,12 +90,10 @@ public sealed class GHashX86 : IMac
 			GHashUtils.GfMultiply(_key3, x1, out Vector128<uint> lo1, out Vector128<uint> hi1);
 			GHashUtils.GfMultiply(_key2, x2, out Vector128<uint> lo2, out Vector128<uint> hi2);
 			GHashUtils.GfMultiply(_key1, x3, out Vector128<uint> lo3, out Vector128<uint> hi3);
-			Vector128<byte> y0 = GHashUtils.Reduce(lo0, hi0);
-			Vector128<byte> y1 = GHashUtils.Reduce(lo1, hi1);
-			Vector128<byte> y2 = GHashUtils.Reduce(lo2, hi2);
-			Vector128<byte> y3 = GHashUtils.Reduce(lo3, hi3);
+			Vector128<uint> lo = lo0 ^ lo1 ^ lo2 ^ lo3;
+			Vector128<uint> hi = hi0 ^ hi1 ^ hi2 ^ hi3;
 
-			_buffer = y0 ^ y1 ^ y2 ^ y3;
+			_buffer = GHashUtils.Reduce(lo, hi);
 
 			offset += 4 * BlockSize;
 			length -= 4 * BlockSize;
@@ -112,10 +107,10 @@ public sealed class GHashX86 : IMac
 
 			GHashUtils.GfMultiply(_key2, x0, out Vector128<uint> lo0, out Vector128<uint> hi0);
 			GHashUtils.GfMultiply(_key1, x1, out Vector128<uint> lo1, out Vector128<uint> hi1);
-			Vector128<byte> y0 = GHashUtils.Reduce(lo0, hi0);
-			Vector128<byte> y1 = GHashUtils.Reduce(lo1, hi1);
+			Vector128<uint> lo = lo0 ^ lo1;
+			Vector128<uint> hi = hi0 ^ hi1;
 
-			_buffer = y0 ^ y1;
+			_buffer = GHashUtils.Reduce(lo, hi);
 
 			offset += 2 * BlockSize;
 			length -= 2 * BlockSize;
