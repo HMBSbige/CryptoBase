@@ -83,14 +83,6 @@ public class Salsa20Crypto : SnuffleCrypto
 				processed += offset;
 				length -= offset;
 			}
-
-			while (length >= 128)
-			{
-				Salsa20Utils.SalsaCore128(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-
-				processed += 128;
-				length -= 128;
-			}
 		}
 
 		if (Sse2.IsSupported)
