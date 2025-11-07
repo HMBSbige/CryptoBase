@@ -427,14 +427,14 @@ internal static class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int SalsaCore512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector256<ulong> incCounter0123 = Vector256.Create(0ul, 1, 2, 3);
-		Vector256<ulong> incCounter4567 = Vector256.Create(4ul, 5, 6, 7);
 		int length = source.Length;
 		int offset = 0;
 
 		ref uint stateRef = ref state.GetReference();
 		ref byte sourceRef = ref source.GetReference();
 		ref byte dstRef = ref destination.GetReference();
+
+		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 8));
 
 		Vector256<uint> o0 = Vector256.Create(Unsafe.Add(ref stateRef, 0));
 		Vector256<uint> o1 = Vector256.Create(Unsafe.Add(ref stateRef, 1));
@@ -452,10 +452,10 @@ internal static class Salsa20Utils
 		Vector256<uint> o13 = Vector256.Create(Unsafe.Add(ref stateRef, 13));
 		Vector256<uint> o14 = Vector256.Create(Unsafe.Add(ref stateRef, 14));
 		Vector256<uint> o15 = Vector256.Create(Unsafe.Add(ref stateRef, 15));
-		ref ulong counter = ref Unsafe.As<uint, ulong>(ref Unsafe.Add(ref stateRef, 8));
 
 		while (length >= 512)
 		{
+			ChaCha20Utils.AddAndTranpose(counter, out Vector256<uint> o8, out Vector256<uint> o9);
 			Vector256<uint> x0 = o0;
 			Vector256<uint> x1 = o1;
 			Vector256<uint> x2 = o2;
@@ -464,31 +464,14 @@ internal static class Salsa20Utils
 			Vector256<uint> x5 = o5;
 			Vector256<uint> x6 = o6;
 			Vector256<uint> x7 = o7;
+			Vector256<uint> x8 = o8;
+			Vector256<uint> x9 = o9;
 			Vector256<uint> x10 = o10;
 			Vector256<uint> x11 = o11;
 			Vector256<uint> x12 = o12;
 			Vector256<uint> x13 = o13;
 			Vector256<uint> x14 = o14;
 			Vector256<uint> x15 = o15;
-
-			Vector256<uint> x8 = Vector256.Create(counter).AsUInt32();
-
-			Vector256<uint> t0 = Avx2.Add(incCounter0123, x8.AsUInt64()).AsUInt32();
-			Vector256<uint> t1 = Avx2.Add(incCounter4567, x8.AsUInt64()).AsUInt32();
-
-			x8 = Avx2.UnpackLow(t0, t1);
-			Vector256<uint> x9 = Avx2.UnpackHigh(t0, t1);
-
-			t0 = Avx2.UnpackLow(x8, x9);
-			t1 = Avx2.UnpackHigh(x8, x9);
-
-			x8 = Avx2.PermuteVar8x32(t0, Vector256.Create(0u, 1, 4, 5, 2, 3, 6, 7));
-			x9 = Avx2.PermuteVar8x32(t1, Vector256.Create(0u, 1, 4, 5, 2, 3, 6, 7));
-
-			Vector256<uint> o8 = x8;
-			Vector256<uint> o9 = x9;
-
-			counter += 8;
 
 			for (int i = 0; i < rounds; i += 2)
 			{
@@ -523,6 +506,7 @@ internal static class Salsa20Utils
 				ref Unsafe.Add(ref dstRef, offset + 32)
 			);
 
+			counter += 8;
 			length -= 512;
 			offset += 512;
 		}
