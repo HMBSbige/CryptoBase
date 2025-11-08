@@ -49,7 +49,7 @@ internal static partial class ChaCha20Utils
 
 		while (length >= 1024)
 		{
-			ref readonly Vector512X16<byte> s = ref Unsafe.As<byte, Vector512X16<byte>>(ref Unsafe.Add(ref sourceRef, sourceRef));
+			ref readonly Vector512X16<byte> s = ref Unsafe.As<byte, Vector512X16<byte>>(ref Unsafe.Add(ref sourceRef, offset));
 
 			o.V12 = Vector512.Create(counter) + Vector512.CreateSequence<uint>(0, 1);
 			Vector512X16<uint> x = o;
