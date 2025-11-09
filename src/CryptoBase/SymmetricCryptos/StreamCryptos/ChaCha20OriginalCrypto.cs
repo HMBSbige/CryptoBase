@@ -61,11 +61,28 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		int processed = 0;
 		int length = source.Length;
 
+		if (Avx512F.IsSupported)
+		{
+			if (length >= 2048)
+			{
+				int offset = ChaCha20Utils.ChaChaCoreOriginalSoA2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				processed += offset;
+				length -= offset;
+			}
+
+			if (length >= 1024)
+			{
+				int offset = ChaCha20Utils.ChaChaCoreOriginalSoA1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				processed += offset;
+				length -= offset;
+			}
+		}
+
 		if (Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				int offset = ChaCha20Utils.ChaChaCoreOriginal512(Rounds, stateSpan, source, destination);
+				int offset = ChaCha20Utils.ChaChaCoreOriginal512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 				processed += offset;
 				length -= offset;
 			}

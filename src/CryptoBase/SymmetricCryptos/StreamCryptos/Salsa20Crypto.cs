@@ -75,11 +75,28 @@ public class Salsa20Crypto : SnuffleCrypto
 		int processed = 0;
 		int length = source.Length;
 
+		if (Avx512F.IsSupported)
+		{
+			if (length >= 2048)
+			{
+				int offset = Salsa20Utils.SalsaCoreSoA2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				processed += offset;
+				length -= offset;
+			}
+
+			if (length >= 1024)
+			{
+				int offset = Salsa20Utils.SalsaCoreSoA1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				processed += offset;
+				length -= offset;
+			}
+		}
+
 		if (Avx2.IsSupported)
 		{
 			if (length >= 512)
 			{
-				int offset = Salsa20Utils.SalsaCore512(Rounds, stateSpan, source, destination);
+				int offset = Salsa20Utils.SalsaCore512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 				processed += offset;
 				length -= offset;
 			}
