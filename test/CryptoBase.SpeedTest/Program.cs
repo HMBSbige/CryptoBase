@@ -2,15 +2,13 @@ global using CryptoBase;
 global using CryptoBase.Abstractions.SymmetricCryptos;
 global using CryptoBase.SpeedTest;
 global using CryptoBase.SymmetricCryptos.AEADCryptos;
+global using CryptoBase.SymmetricCryptos.BlockCryptoModes;
+global using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 global using CryptoBase.SymmetricCryptos.StreamCryptos;
 global using System.Collections.Immutable;
 global using System.CommandLine;
 global using System.Diagnostics;
-global using System.Reflection;
-global using System.Runtime.Intrinsics;
-global using System.Runtime.Intrinsics.X86;
 global using System.Security.Cryptography;
-global using X86Aes = System.Runtime.Intrinsics.X86.Aes;
 
 #if DEBUG
 Console.WriteLine(@"On Debug mode");
@@ -74,7 +72,7 @@ cmd.SetAction(parseResult =>
 	foreach (string method in methodList)
 	{
 		string realMethod = method.ToLower();
-		ISymmetricCrypto crypto = CryptoList.GetSymmetricCrypto(realMethod) ?? throw new NotSupportedException($@"{realMethod} is not supported.");
+		using ISymmetricCrypto crypto = CryptoList.GetSymmetricCrypto(realMethod) ?? throw new NotSupportedException($@"{realMethod} is not supported.");
 
 		Console.Write($@"Testing {realMethod}: ");
 
@@ -96,6 +94,15 @@ cmd.SetAction(parseResult =>
 			{
 				t.Test(aeadCrypto);
 				break;
+			}
+			case IBlockModeOneShot blockModeCrypto:
+			{
+				t.Test(blockModeCrypto);
+				break;
+			}
+			default:
+			{
+				throw new NotSupportedException($@"{realMethod} is not supported.");
 			}
 		}
 	}

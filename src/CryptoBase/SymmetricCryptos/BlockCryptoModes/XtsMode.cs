@@ -2,18 +2,22 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
 public sealed class XtsMode : IBlockModeOneShot
 {
+	public string Name => _dataCrypto.Name + @"-XTS";
+
 	public int BlockSize => 16;
 
 	private readonly IBlockCrypto _dataCrypto;
 	private readonly IBlockCrypto _tweakCrypto;
+	private readonly bool _disposeCrypto;
 
-	public XtsMode(IBlockCrypto dataCrypto, IBlockCrypto tweakCrypto)
+	public XtsMode(IBlockCrypto dataCrypto, IBlockCrypto tweakCrypto, bool disposeCrypto = true)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(dataCrypto.BlockSize, BlockSize, nameof(dataCrypto));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(tweakCrypto.BlockSize, BlockSize, nameof(tweakCrypto));
 
 		_dataCrypto = dataCrypto;
 		_tweakCrypto = tweakCrypto;
+		_disposeCrypto = disposeCrypto;
 	}
 
 	[SkipLocalsInit]
@@ -128,17 +132,36 @@ public sealed class XtsMode : IBlockModeOneShot
 	private static void Gf128Mul(ref Span<byte> buffer)
 	{
 		ref byte ptr = ref buffer.GetReference();
-		ref ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref ptr, 0 * sizeof(ulong)));
-		ref ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref ptr, 1 * sizeof(ulong)));
 
-		ulong t = (ulong)((long)v1 >> 63 & 0x87);
+		if (Sse2.IsSupported)
+		{
+			ref Vector128<byte> tweak = ref Unsafe.As<byte, Vector128<byte>>(ref ptr);
 
-		v1 = v1 << 1 | v0 >> 63;
-		v0 = v0 << 1 ^ t;
+			Vector128<int> mask = Sse2.Shuffle(tweak.AsInt32(), 0b00_01_00_11) >> 31 & Vector128.Create(0x87, 1).AsInt32();
+
+			Vector128<ulong> t = tweak.AsUInt64() << 1;
+
+			tweak = t.AsByte() ^ mask.AsByte();
+		}
+		else
+		{
+			ref Int128 i = ref Unsafe.As<byte, Int128>(ref ptr);
+
+			i = i << 1 ^ i >> 127 & 0x87;
+		}
 	}
 
-	public static void GetIv(Span<byte> iv, UInt128 dataUnitSeqNumber)
+	public static void GetIv(in Span<byte> iv, in UInt128 dataUnitSeqNumber)
 	{
 		BinaryPrimitives.WriteUInt128LittleEndian(iv, dataUnitSeqNumber);
+	}
+
+	public void Dispose()
+	{
+		if (_disposeCrypto)
+		{
+			_dataCrypto.Dispose();
+			_tweakCrypto.Dispose();
+		}
 	}
 }

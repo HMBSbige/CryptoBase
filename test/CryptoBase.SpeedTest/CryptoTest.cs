@@ -39,8 +39,6 @@ internal class CryptoTest(int step, double duration)
 			++length;
 		} while (totalSeconds < duration);
 
-		crypto.Dispose();
-
 		double result = length * (ulong)step / totalSeconds / 1024.0 / 1024.0;
 		Console.WriteLine($@"{result:F2} MiB/s");
 	}
@@ -68,7 +66,31 @@ internal class CryptoTest(int step, double duration)
 			++length;
 		} while (totalSeconds < duration);
 
-		crypto.Dispose();
+		double result = length * (ulong)step / totalSeconds / 1024.0 / 1024.0;
+		Console.WriteLine($@"{result:F2} MiB/s");
+	}
+
+	public void Test(IBlockModeOneShot crypto)
+	{
+		Span<byte> o = new byte[crypto.GetMaxByteCount(step)];
+		ReadOnlySpan<byte> iv = IV.Slice(0, crypto.BlockSize);
+		ulong length = 0ul;
+		double totalSeconds = 0.0;
+
+		ReadOnlySpan<byte> random = RandomNumberGenerator.GetBytes(step);
+
+		do
+		{
+			Span<byte> i = GC.AllocateUninitializedArray<byte>(random.Length);
+			random.CopyTo(i);
+			Stopwatch sw = Stopwatch.StartNew();
+
+			crypto.Encrypt(iv, i, o);
+
+			sw.Stop();
+			totalSeconds += sw.Elapsed.TotalSeconds;
+			++length;
+		} while (totalSeconds < duration);
 
 		double result = length * (ulong)step / totalSeconds / 1024.0 / 1024.0;
 		Console.WriteLine($@"{result:F2} MiB/s");

@@ -1,6 +1,6 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
-public interface IBlockModeOneShot
+public interface IBlockModeOneShot : ISymmetricCrypto
 {
 	/// <summary>
 	/// 块大小，单位字节

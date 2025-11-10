@@ -24,6 +24,8 @@ internal static class CryptoList
 	public const string Sm4Gcm = @"sm4-gcm";
 	public const string ChaCha20Poly1305 = @"chacha20-ietf-poly1305";
 	public const string XChaCha20Poly1305 = @"xchacha20-ietf-poly1305";
+	public const string Aes128Xts = @"aes-128-xts";
+	public const string Aes256Xts = @"aes-256-xts";
 
 	public static readonly ImmutableList<string> Methods =
 	[
@@ -46,7 +48,9 @@ internal static class CryptoList
 		Aes256Gcm,
 		Sm4Gcm,
 		ChaCha20Poly1305,
-		XChaCha20Poly1305
+		XChaCha20Poly1305,
+		Aes128Xts,
+		Aes256Xts
 	];
 
 	public static ISymmetricCrypto? GetSymmetricCrypto(string name)
@@ -79,6 +83,8 @@ internal static class CryptoList
 			Sm4Gcm => AEADCryptoCreate.Sm4Gcm(key16),
 			ChaCha20Poly1305 => AEADCryptoCreate.ChaCha20Poly1305(key32),
 			XChaCha20Poly1305 => AEADCryptoCreate.XChaCha20Poly1305(key32),
+			Aes128Xts => new XtsMode(AesCrypto.CreateCore(key16), AesCrypto.CreateCore(key16)),
+			Aes256Xts => new XtsMode(AesCrypto.CreateCore(key32), AesCrypto.CreateCore(key32)),
 			_ => default
 		};
 	}
