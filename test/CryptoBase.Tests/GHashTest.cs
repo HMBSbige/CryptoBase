@@ -73,6 +73,8 @@ public class GHashTest
 	[InlineData(16 - 1)]
 	[InlineData(32 - 1)]
 	[InlineData(64 - 1)]
+	[InlineData(128 - 1)]
+	[InlineData(256 - 1)]
 	public void TestBlocks(int n)
 	{
 		const int blockSize = 16;
