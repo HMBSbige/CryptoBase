@@ -13,8 +13,8 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 		}
 		else
 		{
-			uint c = BinaryPrimitives.ReadUInt32LittleEndian(counter.Slice(12));
-			BinaryPrimitives.WriteUInt32LittleEndian(counter, ++c);
+			uint c = BinaryPrimitives.ReadUInt32BigEndian(counter.Slice(12));
+			BinaryPrimitives.WriteUInt32BigEndian(counter.Slice(12), ++c);
 		}
 	}
 
