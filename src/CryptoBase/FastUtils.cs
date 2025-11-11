@@ -71,8 +71,8 @@ public static class FastUtils
 		{
 			while (left >= Vector512<byte>.Count)
 			{
-				ref Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref streamRef, i));
-				ref Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref sourceRef, i));
+				ref readonly Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref streamRef, i));
+				ref readonly Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref sourceRef, i));
 				ref Vector512<byte> dst = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref destinationRef, i));
 
 				dst = v0 ^ v1;
@@ -85,8 +85,8 @@ public static class FastUtils
 		{
 			while (left >= Vector256<byte>.Count)
 			{
-				ref Vector256<byte> v0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref streamRef, i));
-				ref Vector256<byte> v1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, i));
+				ref readonly Vector256<byte> v0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref streamRef, i));
+				ref readonly Vector256<byte> v1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, i));
 				ref Vector256<byte> dst = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref destinationRef, i));
 
 				dst = v0 ^ v1;
@@ -99,8 +99,8 @@ public static class FastUtils
 		{
 			while (left >= Vector128<byte>.Count)
 			{
-				ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref streamRef, i));
-				ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, i));
+				ref readonly Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref streamRef, i));
+				ref readonly Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, i));
 				ref Vector128<byte> dst = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref destinationRef, i));
 
 				dst = v0 ^ v1;
@@ -111,8 +111,8 @@ public static class FastUtils
 
 		while (left >= sizeof(ulong))
 		{
-			ref ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
-			ref ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, i));
+			ref readonly ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
+			ref readonly ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, i));
 			ref ulong dst = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref destinationRef, i));
 
 			dst = v0 ^ v1;
@@ -122,8 +122,8 @@ public static class FastUtils
 
 		if (left >= sizeof(uint))
 		{
-			ref uint v0 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref streamRef, i));
-			ref uint v1 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, i));
+			ref readonly uint v0 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref streamRef, i));
+			ref readonly uint v1 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, i));
 			ref uint dst = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref destinationRef, i));
 
 			dst = v0 ^ v1;
@@ -152,7 +152,7 @@ public static class FastUtils
 			while (left >= Vector512<byte>.Count)
 			{
 				ref Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref sourceRef, i));
-				ref Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref streamRef, i));
+				ref readonly Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref streamRef, i));
 
 				v0 ^= v1;
 				i += Vector512<byte>.Count;
@@ -165,7 +165,7 @@ public static class FastUtils
 			while (left >= Vector256<byte>.Count)
 			{
 				ref Vector256<byte> v0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, i));
-				ref Vector256<byte> v1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref streamRef, i));
+				ref readonly Vector256<byte> v1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref streamRef, i));
 
 				v0 ^= v1;
 				i += Vector256<byte>.Count;
@@ -178,7 +178,7 @@ public static class FastUtils
 			while (left >= Vector128<byte>.Count)
 			{
 				ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, i));
-				ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref streamRef, i));
+				ref readonly Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref streamRef, i));
 
 				v0 ^= v1;
 				i += Vector128<byte>.Count;
@@ -189,7 +189,7 @@ public static class FastUtils
 		while (left >= sizeof(ulong))
 		{
 			ref ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, i));
-			ref ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
+			ref readonly ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
 
 			v0 ^= v1;
 			i += sizeof(ulong);
@@ -199,7 +199,7 @@ public static class FastUtils
 		if (left >= sizeof(uint))
 		{
 			ref uint v0 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, i));
-			ref uint v1 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref streamRef, i));
+			ref readonly uint v1 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref streamRef, i));
 
 			v0 ^= v1;
 			i += sizeof(uint);
@@ -219,16 +219,16 @@ public static class FastUtils
 	{
 		if (Vector128.IsHardwareAccelerated)
 		{
-			ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref stream.GetReference());
-			ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref source.GetReference());
+			ref readonly Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref stream.GetReference());
+			ref readonly Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref source.GetReference());
 			ref Vector128<byte> dst = ref Unsafe.As<byte, Vector128<byte>>(ref destination.GetReference());
 
 			dst = v0 ^ v1;
 		}
 		else
 		{
-			ref UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref stream.GetReference());
-			ref UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref source.GetReference());
+			ref readonly UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref stream.GetReference());
+			ref readonly UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref source.GetReference());
 			ref UInt128 dst = ref Unsafe.As<byte, UInt128>(ref destination.GetReference());
 
 			dst = v0 ^ v1;
@@ -244,14 +244,14 @@ public static class FastUtils
 		if (Vector128.IsHardwareAccelerated)
 		{
 			ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref source.GetReference());
-			ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref stream.GetReference());
+			ref readonly Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref stream.GetReference());
 
 			v0 ^= v1;
 		}
 		else
 		{
 			ref UInt128 v0 = ref Unsafe.As<byte, UInt128>(ref source.GetReference());
-			ref UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref stream.GetReference());
+			ref readonly UInt128 v1 = ref Unsafe.As<byte, UInt128>(ref stream.GetReference());
 
 			v0 ^= v1;
 		}
@@ -272,8 +272,8 @@ public static class FastUtils
 
 		if (left >= sizeof(ulong))
 		{
-			ref ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
-			ref ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, i));
+			ref readonly ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
+			ref readonly ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, i));
 			ref ulong dst = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref destinationRef, i));
 
 			dst = v0 ^ v1;
@@ -283,8 +283,8 @@ public static class FastUtils
 
 		if (left >= sizeof(uint))
 		{
-			ref uint v0 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref streamRef, i));
-			ref uint v1 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, i));
+			ref readonly uint v0 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref streamRef, i));
+			ref readonly uint v1 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, i));
 			ref uint dst = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref destinationRef, i));
 
 			dst = v0 ^ v1;
