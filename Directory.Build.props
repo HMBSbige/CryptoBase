@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.7.2</Version>
+    <Version>2.0.0</Version>
     <IsPackable>false</IsPackable>
     <Authors>HMBSbige</Authors>
     <Copyright>Copyright © HMBSbige</Copyright>
