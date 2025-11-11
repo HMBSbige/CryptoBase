@@ -1,5 +1,7 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
+using CryptoBase.SymmetricCryptos.BlockCryptoModes;
+using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 using System.Security.Cryptography;
 
@@ -45,6 +47,7 @@ public class SM4CTRTest
 		ReadOnlySpan<byte> expected = expectedHex.FromHex();
 
 		T(StreamCryptoCreate.Sm4Ctr(key, iv), source, expected);
+		T(new CtrMode128Ctr32(new SM4Crypto(key), iv), source, expected);
 	}
 
 	[Theory]

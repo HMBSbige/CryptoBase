@@ -44,7 +44,7 @@ public class GcmMode128 : IAEADCrypto
 		_gHash.Update(associatedData);
 
 		buffer[15] = 2;
-		using CtrMode128 ctr = new(_crypto, buffer, false);
+		using CtrMode128Ctr32 ctr = new(_crypto, buffer, false);
 
 		ctr.Update(source, destination);
 		_gHash.Update(destination);
@@ -75,7 +75,7 @@ public class GcmMode128 : IAEADCrypto
 		_gHash.Update(associatedData);
 
 		buffer[15] = 2;
-		using CtrMode128 ctr = new(_crypto, buffer, false);
+		using CtrMode128Ctr32 ctr = new(_crypto, buffer, false);
 
 		ctr.Update(source, destination);
 		_gHash.Update(source);
