@@ -2,32 +2,38 @@ namespace CryptoBase.DataFormatExtensions;
 
 public static class HexExtensions
 {
-	/// <inheritdoc cref="Convert.ToHexStringLower(ReadOnlySpan{byte})" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static string ToHex(this Span<byte> bytes)
+	extension(Span<byte> bytes)
 	{
-		return Convert.ToHexStringLower(bytes);
+		/// <inheritdoc cref="Convert.ToHexStringLower(ReadOnlySpan{byte})" />
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public string ToHex()
+		{
+			return Convert.ToHexStringLower(bytes);
+		}
+
+		/// <inheritdoc cref="Convert.ToHexString(ReadOnlySpan{byte})" />
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public string ToHexString()
+		{
+			return Convert.ToHexString(bytes);
+		}
 	}
 
-	/// <inheritdoc cref="Convert.ToHexStringLower(ReadOnlySpan{byte})" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static string ToHex(this ReadOnlySpan<byte> bytes)
+	extension(ReadOnlySpan<byte> bytes)
 	{
-		return Convert.ToHexStringLower(bytes);
-	}
+		/// <inheritdoc cref="Convert.ToHexStringLower(ReadOnlySpan{byte})" />
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public string ToHex()
+		{
+			return Convert.ToHexStringLower(bytes);
+		}
 
-	/// <inheritdoc cref="Convert.ToHexString(ReadOnlySpan{byte})" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static string ToHexString(this Span<byte> bytes)
-	{
-		return Convert.ToHexString(bytes);
-	}
-
-	/// <inheritdoc cref="Convert.ToHexString(ReadOnlySpan{byte})" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static string ToHexString(this ReadOnlySpan<byte> bytes)
-	{
-		return Convert.ToHexString(bytes);
+		/// <inheritdoc cref="Convert.ToHexString(ReadOnlySpan{byte})" />
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public string ToHexString()
+		{
+			return Convert.ToHexString(bytes);
+		}
 	}
 
 	/// <inheritdoc cref="Convert.FromHexString(string)" />

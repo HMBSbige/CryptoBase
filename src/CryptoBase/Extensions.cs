@@ -4,32 +4,42 @@ namespace CryptoBase;
 
 public static class Extensions
 {
-	/// <inheritdoc cref="BitOperations.RotateLeft(uint,int)" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static uint RotateLeft(this uint value, int offset)
+	extension(uint value)
 	{
-		return BitOperations.RotateLeft(value, offset);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static int GetDeterministicHashCode(this string str)
-	{
-		return str.AsSpan().GetDeterministicHashCode();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static int GetDeterministicHashCode<T>(this ReadOnlySpan<T> span) where T : notnull
-	{
-		unchecked
+		/// <inheritdoc cref="BitOperations.RotateLeft(uint,int)" />
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public uint RotateLeft(int offset)
 		{
-			int hash = 5381;
+			return BitOperations.RotateLeft(value, offset);
+		}
+	}
 
-			foreach (ref readonly T t in span)
+	extension(string str)
+	{
+		/// <inheritdoc cref="GetDeterministicHashCode(string)" />
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public int GetDeterministicHashCode()
+		{
+			return str.AsSpan().GetDeterministicHashCode();
+		}
+	}
+
+	extension<T>(ReadOnlySpan<T> span) where T : notnull
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public int GetDeterministicHashCode()
+		{
+			unchecked
 			{
-				hash = (hash << 5) + hash ^ t.GetHashCode();
-			}
+				int hash = 5381;
 
-			return hash;
+				foreach (ref readonly T t in span)
+				{
+					hash = (hash << 5) + hash ^ t.GetHashCode();
+				}
+
+				return hash;
+			}
 		}
 	}
 }
