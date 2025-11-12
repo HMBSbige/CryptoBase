@@ -10,9 +10,9 @@ public sealed class GHashX86 : IMac
 
 	public static bool IsSupported => Sse2.IsSupported && Pclmulqdq.IsSupported;
 
-	public static bool IsSupported256 => Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
+	public static bool IsSupported256 => IsSupported && Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
 
-	public static bool IsSupported512 => Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
+	public static bool IsSupported512 => IsSupported256 && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
 
 	public const int KeySize = 16;
 	public const int BlockSize = 16;
