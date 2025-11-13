@@ -1,5 +1,6 @@
 namespace CryptoBase;
 
+[StackTraceHidden]
 internal static class ThrowHelper
 {
 	[DoesNotReturn]
