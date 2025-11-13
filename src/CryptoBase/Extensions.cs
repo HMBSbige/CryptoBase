@@ -14,16 +14,6 @@ public static class Extensions
 		}
 	}
 
-	extension(string str)
-	{
-		/// <inheritdoc cref="GetDeterministicHashCode(string)" />
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public int GetDeterministicHashCode()
-		{
-			return str.AsSpan().GetDeterministicHashCode();
-		}
-	}
-
 	extension<T>(ReadOnlySpan<T> span) where T : notnull
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

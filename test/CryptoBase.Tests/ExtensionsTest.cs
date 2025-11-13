@@ -13,6 +13,6 @@ public class ExtensionsTest
 	[InlineData(@"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", -1610044155)]
 	public void GetDeterministicHashCodeTest(string str, int hash)
 	{
-		Assert.Equal(hash, str.GetDeterministicHashCode());
+		Assert.Equal(hash, str.GetDeterministicHashCode<char>());
 	}
 }

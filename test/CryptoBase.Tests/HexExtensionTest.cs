@@ -13,9 +13,7 @@ public class HexExtensionTest
 	{
 		Span<byte> span = Encoding.UTF8.GetBytes(input);
 		Assert.Equal(expected, span.ToHex());
-		Assert.Equal(expected, ((ReadOnlySpan<byte>)span).ToHex());
 		Assert.Equal(expected.ToUpperInvariant(), span.ToHexString());
-		Assert.Equal(expected.ToUpperInvariant(), ((ReadOnlySpan<byte>)span).ToHexString());
 	}
 
 	[Theory]
