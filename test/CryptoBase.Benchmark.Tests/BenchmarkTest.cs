@@ -187,4 +187,16 @@ public class BenchmarkTest
 	{
 		BenchmarkRunner.Run<VectorConstBench>();
 	}
+
+	[Fact]
+	public void CryptoBufferBench()
+	{
+		BenchmarkRunner.Run<CryptoBufferBench>();
+	}
+
+	[Fact]
+	public void LocalCopyBench()
+	{
+		BenchmarkRunner.Run<LocalCopyBench>();
+	}
 }
