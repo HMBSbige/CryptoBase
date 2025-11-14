@@ -30,7 +30,6 @@ public sealed class XtsMode : IBlockModeOneShot
 		using CryptoBuffer<byte> cryptoBuffer = new(stackalloc byte[BlockSize]);
 		Span<byte> tweak = cryptoBuffer.Span;
 		_tweakCrypto.Encrypt(iv, tweak);
-		IBlockCrypto crypto = _dataCrypto;
 
 		int left = source.Length % BlockSize;
 		int size = source.Length - left;
@@ -50,7 +49,7 @@ public sealed class XtsMode : IBlockModeOneShot
 			for (int i = 0; i < size; i += BlockSize)
 			{
 				Span<byte> block = destination.Slice(i, BlockSize);
-				crypto.Encrypt(block, block);
+				_dataCrypto.Encrypt(block, block);
 			}
 
 			FastUtils.Xor(destination, tweakBuffer, size);
@@ -64,7 +63,7 @@ public sealed class XtsMode : IBlockModeOneShot
 			source.Slice(size).CopyTo(lastDSt);
 
 			FastUtils.Xor16(lastDSt, tweak);
-			crypto.Encrypt(lastDSt, lastDSt);
+			_dataCrypto.Encrypt(lastDSt, lastDSt);
 			FastUtils.Xor16(lastDSt, tweak);
 		}
 	}
@@ -79,7 +78,6 @@ public sealed class XtsMode : IBlockModeOneShot
 		using CryptoBuffer<byte> cryptoBuffer = new(stackalloc byte[BlockSize]);
 		Span<byte> tweak = cryptoBuffer.Span;
 		_tweakCrypto.Encrypt(iv, tweak);
-		IBlockCrypto crypto = _dataCrypto;
 
 		int left = source.Length % BlockSize;
 		int size = source.Length - left - (BlockSize & (left | -left) >> 31);
@@ -99,7 +97,7 @@ public sealed class XtsMode : IBlockModeOneShot
 			for (int i = 0; i < size; i += BlockSize)
 			{
 				Span<byte> block = destination.Slice(i, BlockSize);
-				crypto.Decrypt(block, block);
+				_dataCrypto.Decrypt(block, block);
 			}
 
 			FastUtils.Xor(destination, tweakBuffer, size);
