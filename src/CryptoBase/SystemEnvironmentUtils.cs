@@ -7,18 +7,30 @@ public static class SystemEnvironmentUtils
 {
 	public static string GetEnvironmentInfo()
 	{
-		return $"""
-				OS Version:                                     {Environment.OSVersion}
-				.NET Version:                                   {Environment.Version}
-				App Version:                                    {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}
+		DefaultInterpolatedStringHandler handler = new();
+		handler.AppendLiteral
+		(
+			$"""
+			OS Version:                                     {Environment.OSVersion}
+			.NET Version:                                   {Environment.Version}
+			App Version:                                    {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}
+			Vector<byte>.Count:                             {Vector<byte>.Count}
+			Vector.IsHardwareAccelerated:                   {Vector.IsHardwareAccelerated}
+			Vector64.IsHardwareAccelerated:                 {Vector64.IsHardwareAccelerated}
+			Vector128.IsHardwareAccelerated:                {Vector128.IsHardwareAccelerated}
+			Vector256.IsHardwareAccelerated:                {Vector256.IsHardwareAccelerated}
+			Vector512.IsHardwareAccelerated:                {Vector512.IsHardwareAccelerated}
+			"""
+		);
+		handler.AppendLiteral(Environment.NewLine);
+
+		if (X86Base.IsSupported)
+		{
+			handler.AppendLiteral
+			(
+				$"""
 				CPU Vendor:                                     {CpuIdUtils.GetVendor()}
 				CPU Brand:                                      {CpuIdUtils.GetBrand()}
-				Vector<byte>.Count:                             {Vector<byte>.Count}
-				Vector.IsHardwareAccelerated:                   {Vector.IsHardwareAccelerated}
-				Vector64.IsHardwareAccelerated:                 {Vector64.IsHardwareAccelerated}
-				Vector128.IsHardwareAccelerated:                {Vector128.IsHardwareAccelerated}
-				Vector256.IsHardwareAccelerated:                {Vector256.IsHardwareAccelerated}
-				Vector512.IsHardwareAccelerated:                {Vector512.IsHardwareAccelerated}
 				SSE2 instructions:                              {Sse2.IsSupported}
 				Advanced Vector Extensions 2:                   {Avx2.IsSupported}
 				Intel SHA extensions:                           {CpuIdUtils.IsSupportX86ShaEx()}
@@ -37,6 +49,26 @@ public static class SystemEnvironmentUtils
 				AVX10.1/512:                                    {Avx10v1.V512.IsSupported}
 				AVX10.2:                                        {Avx10v2.IsSupported}
 				AVX10.2/512:                                    {Avx10v2.V512.IsSupported}
-				""";
+				"""
+			);
+			handler.AppendLiteral(Environment.NewLine);
+		}
+
+		if (ArmBase.IsSupported)
+		{
+			handler.AppendLiteral(
+				$"""
+				AES hardware instructions:                      {AesArm.IsSupported}
+				Crc32 hardware instructions:                    {Crc32.IsSupported}
+				ARMv8.1-RDMA hardware instructions:             {Rdm.IsSupported}
+				ARMv8.2-DotProd hardware instructions:          {Dp.IsSupported}
+				SHA1 hardware instructions:                     {Sha1.IsSupported}
+				SHA256 hardware instructions:                   {Sha256.IsSupported}
+				"""
+			);
+			handler.AppendLiteral(Environment.NewLine);
+		}
+
+		return handler.ToStringAndClear();
 	}
 }
