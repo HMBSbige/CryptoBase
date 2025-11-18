@@ -62,13 +62,12 @@ public sealed class AesCryptoArm : AesCrypto
 		Debug.Assert(roundKeys.Length is 11 or 13 or 15 && inverseKey.Length == roundKeys.Length);
 
 		inverseKey[0] = roundKeys[^1];
+		inverseKey[^1] = roundKeys[0];
 
 		for (int i = 1; i < roundKeys.Length - 1; ++i)
 		{
 			inverseKey[i] = AesArm.InverseMixColumns(roundKeys[^(1 + i)]);
 		}
-
-		inverseKey[roundKeys.Length - 1] = roundKeys[0];
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
