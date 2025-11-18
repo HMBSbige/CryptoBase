@@ -26,6 +26,8 @@ public abstract class AesCrypto : BlockCryptoBase
 		}
 	}
 
+	protected static ReadOnlySpan<byte> Rcon => [Rcon0, Rcon1, Rcon2, Rcon3, Rcon4, Rcon5, Rcon6, Rcon7, Rcon8, Rcon9, Rcon10];
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static AesCrypto CreateCore(ReadOnlySpan<byte> key)
 	{
@@ -38,6 +40,11 @@ public abstract class AesCrypto : BlockCryptoBase
 				32 => new Aes256CryptoX86(key),
 				_ => ThrowHelper.ThrowArgumentOutOfRangeException<AesCrypto>(nameof(key), "Key length must be 16/24/32 bytes")
 			};
+		}
+
+		if (AesArm.IsSupported)
+		{
+			return new AesCryptoArm(key);
 		}
 
 		return new DefaultAesCrypto(key);

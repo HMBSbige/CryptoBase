@@ -12,6 +12,13 @@ public static class Extensions
 		{
 			return BitOperations.RotateLeft(value, offset);
 		}
+
+		/// <inheritdoc cref="BitOperations.RotateRight(uint,int)" />
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public uint RotateRight(int offset)
+		{
+			return BitOperations.RotateRight(value, offset);
+		}
 	}
 
 	extension<T>(ReadOnlySpan<T> span) where T : notnull
