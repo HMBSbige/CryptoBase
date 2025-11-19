@@ -96,7 +96,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128<byte> value = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			EncryptPart(ref value, key);
 		}
@@ -115,7 +115,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128<byte> value = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			DecryptPart(ref value, key);
 		}
@@ -135,7 +135,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128X2<byte> v = Unsafe.ReadUnaligned<Vector128X2<byte>>(ref source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			EncryptPart(ref v.V0, key);
 			EncryptPart(ref v.V1, key);
@@ -158,7 +158,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128X2<byte> v = Unsafe.ReadUnaligned<Vector128X2<byte>>(ref source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			DecryptPart(ref v.V0, key);
 			DecryptPart(ref v.V1, key);
@@ -181,7 +181,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128X4<byte> v = Unsafe.ReadUnaligned<Vector128X4<byte>>(ref source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			EncryptPart(ref v.V0, key);
 			EncryptPart(ref v.V1, key);
@@ -210,7 +210,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128X4<byte> v = Unsafe.ReadUnaligned<Vector128X4<byte>>(ref source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			DecryptPart(ref v.V0, key);
 			DecryptPart(ref v.V1, key);
@@ -239,7 +239,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128X8<byte> v = Unsafe.ReadUnaligned<Vector128X8<byte>>(ref source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			EncryptPart(ref v.V0, key);
 			EncryptPart(ref v.V1, key);
@@ -280,7 +280,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128X8<byte> v = Unsafe.ReadUnaligned<Vector128X8<byte>>(ref source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			DecryptPart(ref v.V0, key);
 			DecryptPart(ref v.V1, key);
@@ -321,7 +321,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128X16<byte> v = Unsafe.ReadUnaligned<Vector128X16<byte>>(ref source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			EncryptPart(ref v.V0, key);
 			EncryptPart(ref v.V1, key);
@@ -387,7 +387,7 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Vector128X16<byte> v = Unsafe.ReadUnaligned<Vector128X16<byte>>(ref source.GetReference());
 
-		foreach (ref readonly Vector128<byte> key in keys.Slice(0, keys.Length - 2))
+		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			DecryptPart(ref v.V0, key);
 			DecryptPart(ref v.V1, key);
