@@ -495,4 +495,22 @@ internal static class IntrinsicsUtils
 		x3 = Avx2.Permute2x128(b3, b7, 0x20);
 		x7 = Avx2.Permute2x128(b3, b7, 0x31);
 	}
+
+	extension(Gfni)
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<byte> AesInverseMixColumns(Vector128<byte> s0)
+		{
+			Vector128<byte> s1 = s0.RotateLeftUInt32_24();
+			Vector128<byte> s2 = s0.RotateLeftUInt32_16();
+			Vector128<byte> s3 = s0.RotateLeftUInt32_8();
+
+			Vector128<byte> m0 = Gfni.GaloisFieldMultiply(s0, Vector128.Create<byte>(14));
+			Vector128<byte> m1 = Gfni.GaloisFieldMultiply(s1, Vector128.Create<byte>(11));
+			Vector128<byte> m2 = Gfni.GaloisFieldMultiply(s2, Vector128.Create<byte>(13));
+			Vector128<byte> m3 = Gfni.GaloisFieldMultiply(s3, Vector128.Create<byte>(9));
+
+			return m0 ^ m1 ^ m2 ^ m3;
+		}
+	}
 }

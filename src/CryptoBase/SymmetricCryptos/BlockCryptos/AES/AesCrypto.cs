@@ -18,6 +18,8 @@ public abstract class AesCrypto : BlockCryptoBase
 	protected const byte Rcon9 = 0x1b;
 	protected const byte Rcon10 = 0x36;
 
+	protected static ReadOnlySpan<byte> Rcon => [Rcon0, Rcon1, Rcon2, Rcon3, Rcon4, Rcon5, Rcon6, Rcon7, Rcon8, Rcon9, Rcon10];
+
 	protected AesCrypto(ReadOnlySpan<byte> key)
 	{
 		if (key.Length is not 16 and not 24 and not 32)
@@ -26,7 +28,33 @@ public abstract class AesCrypto : BlockCryptoBase
 		}
 	}
 
-	protected static ReadOnlySpan<byte> Rcon => [Rcon0, Rcon1, Rcon2, Rcon3, Rcon4, Rcon5, Rcon6, Rcon7, Rcon8, Rcon9, Rcon10];
+	protected static void InverseExpandedKey(ReadOnlySpan<Vector128<byte>> roundKeys, Span<Vector128<byte>> inverseKey)
+	{
+		Debug.Assert(roundKeys.Length is 11 or 13 or 15 && inverseKey.Length == roundKeys.Length);
+
+		inverseKey[0] = roundKeys[^1];
+		inverseKey[^1] = roundKeys[0];
+
+		for (int i = 1; i < roundKeys.Length - 1; ++i)
+		{
+			if (AesArm.IsSupported)
+			{
+				inverseKey[i] = AesArm.InverseMixColumns(roundKeys[^(1 + i)]);
+			}
+			else if (AesX86.IsSupported)
+			{
+				inverseKey[i] = AesX86.InverseMixColumns(roundKeys[^(1 + i)]);
+			}
+			else if (Gfni.IsSupported)
+			{
+				inverseKey[i] = Gfni.AesInverseMixColumns(roundKeys[^(1 + i)]);
+			}
+			else
+			{
+				ThrowHelper.ThrowUnreachable<uint>();
+			}
+		}
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static AesCrypto CreateCore(ReadOnlySpan<byte> key)
