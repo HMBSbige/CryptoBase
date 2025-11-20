@@ -157,6 +157,36 @@ public sealed partial class XtsMode : IBlockModeOneShot
 		int length = size;
 		int offset = 0;
 
+		if (Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported)
+		{
+			if (length >= 32 * BlockSize)
+			{
+				int o = Decrypt32Avx512(tweak, source.Slice(offset), destination.Slice(offset));
+
+				offset += o;
+				length -= o;
+			}
+
+			if (length >= 16 * BlockSize)
+			{
+				int o = Decrypt16Avx512(tweak, source.Slice(offset), destination.Slice(offset));
+
+				offset += o;
+				length -= o;
+			}
+		}
+
+		if (Avx2.IsSupported && Pclmulqdq.V256.IsSupported)
+		{
+			if (length >= 8 * BlockSize)
+			{
+				int o = Decrypt8Avx2(tweak, source.Slice(offset), destination.Slice(offset));
+
+				offset += o;
+				length -= o;
+			}
+		}
+
 		if (length >= 8 * BlockSize)
 		{
 			const int blockSize = 8 * 16;

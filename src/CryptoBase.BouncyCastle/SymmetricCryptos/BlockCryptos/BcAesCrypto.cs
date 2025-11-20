@@ -5,11 +5,9 @@ using Org.BouncyCastle.Crypto.Parameters;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
-public sealed class BcAesCrypto : BlockCryptoBase
+public sealed class BcAesCrypto : BlockCrypto16
 {
 	public override string Name => @"AES";
-
-	public override int BlockSize => 16;
 
 	public override BlockCryptoHardwareAcceleration HardwareAcceleration
 	{

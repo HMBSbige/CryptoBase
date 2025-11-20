@@ -1,10 +1,8 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
-public abstract class AesCrypto : BlockCryptoBase
+public abstract class AesCrypto : BlockCrypto16
 {
 	public override string Name => @"AES";
-
-	public sealed override int BlockSize => 16;
 
 	protected const byte Rcon0 = 0x00;
 	protected const byte Rcon1 = 0x01;

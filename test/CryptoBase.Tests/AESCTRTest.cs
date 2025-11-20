@@ -71,7 +71,10 @@ public class AESCTRTest
 	[InlineData(512 * 16 - 1)]
 	public void TestBlocks(int length)
 	{
-		using IStreamCrypto crypto = StreamCryptoCreate.AesCtr(RandomNumberGenerator.GetBytes(16), RandomNumberGenerator.GetBytes(16));
+		using IStreamCrypto crypto = new CtrMode128(AesCrypto.CreateCore(RandomNumberGenerator.GetBytes(16)), RandomNumberGenerator.GetBytes(16));
 		TestUtils.TestBlocks(crypto, length);
+
+		using IStreamCrypto crypto2 = new CtrMode128Ctr32(AesCrypto.CreateCore(RandomNumberGenerator.GetBytes(16)), RandomNumberGenerator.GetBytes(16));
+		TestUtils.TestBlocks(crypto2, length);
 	}
 }

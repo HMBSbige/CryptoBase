@@ -1,10 +1,8 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
-public sealed class SM4Crypto : BlockCryptoBase
+public sealed class SM4Crypto : BlockCrypto16
 {
 	public override string Name => @"SM4";
-
-	public override int BlockSize => 16;
 
 	public override BlockCryptoHardwareAcceleration HardwareAcceleration
 	{

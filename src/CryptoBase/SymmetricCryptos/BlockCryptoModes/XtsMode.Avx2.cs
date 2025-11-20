@@ -78,4 +78,36 @@ public sealed partial class XtsMode
 
 		return offset;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private int Decrypt8Avx2(in Span<byte> tweak, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	{
+		int length = source.Length;
+		int offset = 0;
+
+		const int blockSize = 8 * 16;
+		using CryptoBuffer<byte> buffer = new(blockSize);
+		Span<byte> tweakBuffer = buffer.Span;
+
+		GetInitTweak8Avx2(tweak, tweakBuffer);
+
+		while (length >= 8 * BlockSize)
+		{
+			ReadOnlySpan<byte> src = source.Slice(offset, blockSize);
+			Span<byte> dst = destination.Slice(offset, blockSize);
+
+			FastUtils.Xor(src, tweakBuffer, dst, blockSize);
+			_dataCrypto.Decrypt8(dst, dst);
+			FastUtils.Xor(dst, tweakBuffer, blockSize);
+
+			Gf128Mul8Avx2(tweakBuffer);
+
+			offset += blockSize;
+			length -= blockSize;
+		}
+
+		tweakBuffer.Slice(0, BlockSize).CopyTo(tweak);
+
+		return offset;
+	}
 }

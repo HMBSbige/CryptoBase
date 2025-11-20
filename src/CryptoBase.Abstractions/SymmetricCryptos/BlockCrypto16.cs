@@ -1,10 +1,10 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
-public abstract class BlockCryptoBase : IBlockCrypto
+public abstract class BlockCrypto16 : IBlockCrypto
 {
 	public abstract string Name { get; }
 
-	public abstract int BlockSize { get; }
+	public int BlockSize => 16;
 
 	public virtual BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Unknown;
 
@@ -66,6 +66,30 @@ public abstract class BlockCryptoBase : IBlockCrypto
 	{
 		Decrypt8(source.Slice(0 * 8 * BlockSize), destination.Slice(0 * 8 * BlockSize));
 		Decrypt8(source.Slice(1 * 8 * BlockSize), destination.Slice(1 * 8 * BlockSize));
+	}
+
+	public virtual void Encrypt32(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		Encrypt16(source.Slice(0 * 16 * BlockSize), destination.Slice(0 * 16 * BlockSize));
+		Encrypt16(source.Slice(1 * 16 * BlockSize), destination.Slice(1 * 16 * BlockSize));
+	}
+
+	public virtual void Decrypt32(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		Decrypt16(source.Slice(0 * 16 * BlockSize), destination.Slice(0 * 16 * BlockSize));
+		Decrypt16(source.Slice(1 * 16 * BlockSize), destination.Slice(1 * 16 * BlockSize));
+	}
+
+	public virtual void Encrypt64(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		Encrypt32(source.Slice(0 * 32 * BlockSize), destination.Slice(0 * 32 * BlockSize));
+		Encrypt32(source.Slice(1 * 32 * BlockSize), destination.Slice(1 * 32 * BlockSize));
+	}
+
+	public virtual void Decrypt64(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		Decrypt32(source.Slice(0 * 32 * BlockSize), destination.Slice(0 * 32 * BlockSize));
+		Decrypt32(source.Slice(1 * 32 * BlockSize), destination.Slice(1 * 32 * BlockSize));
 	}
 
 	public virtual void Dispose()

@@ -129,15 +129,7 @@ public sealed partial class XtsMode
 
 			FastUtils.Xor(src, tweakBuffer, dst, blockSize);
 
-			if (_dataCrypto.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block16))
-			{
-				_dataCrypto.Encrypt16(dst, dst);
-			}
-			else
-			{
-				_dataCrypto.Encrypt8(dst, dst);
-				_dataCrypto.Encrypt8(dst.Slice(8 * 16), dst.Slice(8 * 16));
-			}
+			_dataCrypto.Encrypt16(dst, dst);
 
 			FastUtils.Xor(dst, tweakBuffer, blockSize);
 
@@ -171,18 +163,75 @@ public sealed partial class XtsMode
 
 			FastUtils.Xor(src, tweakBuffer, dst, blockSize);
 
-			if (_dataCrypto.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block16))
-			{
-				_dataCrypto.Encrypt16(dst, dst);
-				_dataCrypto.Encrypt16(dst.Slice(16 * 16), dst.Slice(16 * 16));
-			}
-			else
-			{
-				_dataCrypto.Encrypt8(dst.Slice(0 * 8 * 16), dst.Slice(0 * 8 * 16));
-				_dataCrypto.Encrypt8(dst.Slice(1 * 8 * 16), dst.Slice(1 * 8 * 16));
-				_dataCrypto.Encrypt8(dst.Slice(2 * 8 * 16), dst.Slice(2 * 8 * 16));
-				_dataCrypto.Encrypt8(dst.Slice(3 * 8 * 16), dst.Slice(3 * 8 * 16));
-			}
+			_dataCrypto.Encrypt32(dst, dst);
+
+			FastUtils.Xor(dst, tweakBuffer, blockSize);
+
+			Gf128Mul32Avx512(tweakBuffer);
+
+			offset += blockSize;
+			length -= blockSize;
+		}
+
+		tweakBuffer.Slice(0, BlockSize).CopyTo(tweak);
+
+		return offset;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private int Decrypt16Avx512(in Span<byte> tweak, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	{
+		int length = source.Length;
+		int offset = 0;
+
+		const int blockSize = 16 * 16;
+		using CryptoBuffer<byte> buffer = new(blockSize);
+		Span<byte> tweakBuffer = buffer.Span;
+
+		GetInitTweak16Avx512(tweak, tweakBuffer);
+
+		while (length >= 16 * BlockSize)
+		{
+			ReadOnlySpan<byte> src = source.Slice(offset, blockSize);
+			Span<byte> dst = destination.Slice(offset, blockSize);
+
+			FastUtils.Xor(src, tweakBuffer, dst, blockSize);
+
+			_dataCrypto.Decrypt16(dst, dst);
+
+			FastUtils.Xor(dst, tweakBuffer, blockSize);
+
+			Gf128Mul16Avx512(tweakBuffer);
+
+			offset += blockSize;
+			length -= blockSize;
+		}
+
+		tweakBuffer.Slice(0, BlockSize).CopyTo(tweak);
+
+		return offset;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private int Decrypt32Avx512(in Span<byte> tweak, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	{
+		int length = source.Length;
+		int offset = 0;
+
+		const int blockSize = 32 * 16;
+		using CryptoBuffer<byte> buffer = new(blockSize);
+		Span<byte> tweakBuffer = buffer.Span;
+
+		GetInitTweak32Avx512(tweak, tweakBuffer);
+
+		while (length >= 32 * BlockSize)
+		{
+			ReadOnlySpan<byte> src = source.Slice(offset, blockSize);
+			Span<byte> dst = destination.Slice(offset, blockSize);
+
+			FastUtils.Xor(src, tweakBuffer, dst, blockSize);
+
+			_dataCrypto.Decrypt32(dst, dst);
 
 			FastUtils.Xor(dst, tweakBuffer, blockSize);
 

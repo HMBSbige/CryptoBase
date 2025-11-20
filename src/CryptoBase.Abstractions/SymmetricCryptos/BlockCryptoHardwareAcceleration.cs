@@ -8,5 +8,7 @@ public enum BlockCryptoHardwareAcceleration
 	Block2 = 1 << 1,
 	Block4 = 1 << 2,
 	Block8 = 1 << 3,
-	Block16 = 1 << 4
+	Block16 = 1 << 4,
+	Block32 = 1 << 5,
+	Block64 = 1 << 6
 }

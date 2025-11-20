@@ -4,11 +4,9 @@ using Org.BouncyCastle.Crypto.Parameters;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
-public sealed class BcSm4Crypto : BlockCryptoBase
+public sealed class BcSm4Crypto : BlockCrypto16
 {
 	public override string Name => @"SM4";
-
-	public override int BlockSize => 16;
 
 	private readonly SM4Engine _encryptionEngine;
 	private readonly SM4Engine _decryptionEngine;

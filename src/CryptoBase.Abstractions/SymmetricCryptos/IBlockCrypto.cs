@@ -28,4 +28,12 @@ public interface IBlockCrypto : ISymmetricCrypto
 	void Encrypt16(ReadOnlySpan<byte> source, Span<byte> destination);
 
 	void Decrypt16(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Encrypt32(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Decrypt32(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Encrypt64(ReadOnlySpan<byte> source, Span<byte> destination);
+
+	void Decrypt64(ReadOnlySpan<byte> source, Span<byte> destination);
 }
