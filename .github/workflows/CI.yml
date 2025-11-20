@@ -54,7 +54,7 @@ jobs:
         working-directory: test/${{ env.ProjectName }}.Tests
         run: dotnet test -c Release
         env:
-          DOTNET_EnableAVX512F: 0
+          DOTNET_EnableAVX512: 0
 
       - name: Run tests (Disable AVX)
         if: matrix.os != 'macos-latest'
