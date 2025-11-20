@@ -7,10 +7,7 @@ public interface IBlockModeOneShot : ISymmetricCrypto
 	/// </summary>
 	int BlockSize { get; }
 
-	int GetMaxByteCount(int inputLength)
-	{
-		return inputLength;
-	}
+	int GetMaxByteCount(int inputLength);
 
 	void Encrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> input, in Span<byte> output);
 
