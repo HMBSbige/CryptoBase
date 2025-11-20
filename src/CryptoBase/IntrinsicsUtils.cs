@@ -228,22 +228,6 @@ internal static class IntrinsicsUtils
 	}
 
 	/// <summary>
-	/// Vector128.Create(a, x, a, x)
-	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<uint> CreateTwoUInt(uint a)
-	{
-		if (Sse2.IsSupported)
-		{
-			Vector128<ulong> t1 = Vector128.CreateScalarUnsafe(a).AsUInt64();
-
-			return Sse2.UnpackLow(t1, t1).AsUInt32();
-		}
-
-		return Vector128.Create(a, 0, a, 0);
-	}
-
-	/// <summary>
 	/// Vector256.Create(a, x, b, x, c, x, d, x);
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

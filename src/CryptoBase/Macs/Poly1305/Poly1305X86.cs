@@ -201,7 +201,7 @@ public ref struct Poly1305X86 : IMac
 		Vector128<uint> m612 = IntrinsicsUtils.CreateTwoUInt(BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(6)) >> 4 & 0x3ffffff, BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(9)) >> 6 & 0x3ffffff);
 		h23 = Sse2.Add(h23, m612);
 		uint m4 = BinaryPrimitives.ReadUInt32LittleEndian(m.Slice(12)) >> 8 | 1u << 24;
-		h44 = Sse2.Add(h44, IntrinsicsUtils.CreateTwoUInt(m4));
+		h44 = Sse2.Add(h44, Vector128.Create(m4));
 
 		MultiplyR(ref h01, ref h23, ref h44, out ulong d0, out ulong d1, out ulong d2, out ulong d3, out ulong d4);
 
