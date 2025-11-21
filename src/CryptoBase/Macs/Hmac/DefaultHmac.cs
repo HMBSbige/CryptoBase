@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions;
-
 namespace CryptoBase.Macs.Hmac;
 
 internal sealed class DefaultHmac : IMac

@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions;
-
 namespace CryptoBase.Macs.Poly1305;
 
 public ref struct Poly1305SF : IMac

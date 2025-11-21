@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions;
 using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
 

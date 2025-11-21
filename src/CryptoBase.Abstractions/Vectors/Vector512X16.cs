@@ -1,7 +1,7 @@
-namespace CryptoBase;
+namespace CryptoBase.Abstractions.Vectors;
 
 [StructLayout(LayoutKind.Sequential)]
-internal ref struct Vector512X16<T>
+public ref struct Vector512X16<T>
 {
 	public Vector512<T> V0;
 	public Vector512<T> V1;

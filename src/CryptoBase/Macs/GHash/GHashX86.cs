@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions;
-
 namespace CryptoBase.Macs.GHash;
 
 public sealed class GHashX86 : IMac

@@ -1,5 +1,3 @@
-using CryptoBase.Abstractions;
-
 namespace CryptoBase.Macs.GHash;
 
 public static class GHashUtils

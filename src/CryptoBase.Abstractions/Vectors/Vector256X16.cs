@@ -1,7 +1,7 @@
-namespace CryptoBase;
+namespace CryptoBase.Abstractions.Vectors;
 
 [StructLayout(LayoutKind.Sequential)]
-internal ref struct Vector256X16<T>
+public ref struct Vector256X16<T>
 {
 	public Vector256<T> V0;
 	public Vector256<T> V1;
