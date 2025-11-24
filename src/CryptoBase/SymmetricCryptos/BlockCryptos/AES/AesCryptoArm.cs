@@ -81,15 +81,15 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _roundKeys.Span;
 
-		Vector128<byte> value = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
+		VectorBuffer16 value = Unsafe.ReadUnaligned<VectorBuffer16>(in source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			EncryptPart(ref value, key);
+			EncryptPart(ref value.V128, key);
 		}
 
-		value = AesArm.Encrypt(value, keys[^2]);
-		value ^= keys[^1];
+		value.V128 = AesArm.Encrypt(value.V128, keys[^2]);
+		value.V128 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), value);
 	}
@@ -100,15 +100,15 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _inverseRoundKeys.Span;
 
-		Vector128<byte> value = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
+		VectorBuffer16 value = Unsafe.ReadUnaligned<VectorBuffer16>(in source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			DecryptPart(ref value, key);
+			DecryptPart(ref value.V128, key);
 		}
 
-		value = AesArm.Decrypt(value, keys[^2]);
-		value ^= keys[^1];
+		value.V128 = AesArm.Decrypt(value.V128, keys[^2]);
+		value.V128 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), value);
 	}
@@ -120,18 +120,18 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _roundKeys.Span;
 
-		Vector128X2<byte> v = Unsafe.ReadUnaligned<Vector128X2<byte>>(ref source.GetReference());
+		VectorBuffer32 v = Unsafe.ReadUnaligned<VectorBuffer32>(ref source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			EncryptPart(ref v.V0, key);
-			EncryptPart(ref v.V1, key);
+			EncryptPart(ref v.V128_0, key);
+			EncryptPart(ref v.V128_0, key);
 		}
 
-		v.V0 = AesArm.Encrypt(v.V0, keys[^2]);
-		v.V1 = AesArm.Encrypt(v.V1, keys[^2]);
-		v.V0 ^= keys[^1];
-		v.V1 ^= keys[^1];
+		v.V128_0 = AesArm.Encrypt(v.V128_0, keys[^2]);
+		v.V128_1 = AesArm.Encrypt(v.V128_1, keys[^2]);
+		v.V128_0 ^= keys[^1];
+		v.V128_1 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), v);
 	}
@@ -143,18 +143,18 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _inverseRoundKeys.Span;
 
-		Vector128X2<byte> v = Unsafe.ReadUnaligned<Vector128X2<byte>>(ref source.GetReference());
+		VectorBuffer32 v = Unsafe.ReadUnaligned<VectorBuffer32>(ref source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			DecryptPart(ref v.V0, key);
-			DecryptPart(ref v.V1, key);
+			DecryptPart(ref v.V128_0, key);
+			DecryptPart(ref v.V128_1, key);
 		}
 
-		v.V0 = AesArm.Decrypt(v.V0, keys[^2]);
-		v.V1 = AesArm.Decrypt(v.V1, keys[^2]);
-		v.V0 ^= keys[^1];
-		v.V1 ^= keys[^1];
+		v.V128_0 = AesArm.Decrypt(v.V128_0, keys[^2]);
+		v.V128_1 = AesArm.Decrypt(v.V128_1, keys[^2]);
+		v.V128_0 ^= keys[^1];
+		v.V128_1 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), v);
 	}
@@ -166,24 +166,24 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _roundKeys.Span;
 
-		Vector128X4<byte> v = Unsafe.ReadUnaligned<Vector128X4<byte>>(ref source.GetReference());
+		VectorBuffer64 v = Unsafe.ReadUnaligned<VectorBuffer64>(ref source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			EncryptPart(ref v.V0, key);
-			EncryptPart(ref v.V1, key);
-			EncryptPart(ref v.V2, key);
-			EncryptPart(ref v.V3, key);
+			EncryptPart(ref v.V128_0, key);
+			EncryptPart(ref v.V128_1, key);
+			EncryptPart(ref v.V128_2, key);
+			EncryptPart(ref v.V128_3, key);
 		}
 
-		v.V0 = AesArm.Encrypt(v.V0, keys[^2]);
-		v.V1 = AesArm.Encrypt(v.V1, keys[^2]);
-		v.V2 = AesArm.Encrypt(v.V2, keys[^2]);
-		v.V3 = AesArm.Encrypt(v.V3, keys[^2]);
-		v.V0 ^= keys[^1];
-		v.V1 ^= keys[^1];
-		v.V2 ^= keys[^1];
-		v.V3 ^= keys[^1];
+		v.V128_0 = AesArm.Encrypt(v.V128_0, keys[^2]);
+		v.V128_1 = AesArm.Encrypt(v.V128_1, keys[^2]);
+		v.V128_2 = AesArm.Encrypt(v.V128_2, keys[^2]);
+		v.V128_3 = AesArm.Encrypt(v.V128_3, keys[^2]);
+		v.V128_0 ^= keys[^1];
+		v.V128_1 ^= keys[^1];
+		v.V128_2 ^= keys[^1];
+		v.V128_3 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), v);
 	}
@@ -195,24 +195,24 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _inverseRoundKeys.Span;
 
-		Vector128X4<byte> v = Unsafe.ReadUnaligned<Vector128X4<byte>>(ref source.GetReference());
+		VectorBuffer64 v = Unsafe.ReadUnaligned<VectorBuffer64>(ref source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			DecryptPart(ref v.V0, key);
-			DecryptPart(ref v.V1, key);
-			DecryptPart(ref v.V2, key);
-			DecryptPart(ref v.V3, key);
+			DecryptPart(ref v.V128_0, key);
+			DecryptPart(ref v.V128_1, key);
+			DecryptPart(ref v.V128_2, key);
+			DecryptPart(ref v.V128_3, key);
 		}
 
-		v.V0 = AesArm.Decrypt(v.V0, keys[^2]);
-		v.V1 = AesArm.Decrypt(v.V1, keys[^2]);
-		v.V2 = AesArm.Decrypt(v.V2, keys[^2]);
-		v.V3 = AesArm.Decrypt(v.V3, keys[^2]);
-		v.V0 ^= keys[^1];
-		v.V1 ^= keys[^1];
-		v.V2 ^= keys[^1];
-		v.V3 ^= keys[^1];
+		v.V128_0 = AesArm.Decrypt(v.V128_0, keys[^2]);
+		v.V128_1 = AesArm.Decrypt(v.V128_1, keys[^2]);
+		v.V128_2 = AesArm.Decrypt(v.V128_2, keys[^2]);
+		v.V128_3 = AesArm.Decrypt(v.V128_3, keys[^2]);
+		v.V128_0 ^= keys[^1];
+		v.V128_1 ^= keys[^1];
+		v.V128_2 ^= keys[^1];
+		v.V128_3 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), v);
 	}
@@ -224,36 +224,36 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _roundKeys.Span;
 
-		Vector128X8<byte> v = Unsafe.ReadUnaligned<Vector128X8<byte>>(ref source.GetReference());
+		VectorBuffer128 v = Unsafe.ReadUnaligned<VectorBuffer128>(ref source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			EncryptPart(ref v.V0, key);
-			EncryptPart(ref v.V1, key);
-			EncryptPart(ref v.V2, key);
-			EncryptPart(ref v.V3, key);
-			EncryptPart(ref v.V4, key);
-			EncryptPart(ref v.V5, key);
-			EncryptPart(ref v.V6, key);
-			EncryptPart(ref v.V7, key);
+			EncryptPart(ref v.V128_0, key);
+			EncryptPart(ref v.V128_1, key);
+			EncryptPart(ref v.V128_2, key);
+			EncryptPart(ref v.V128_3, key);
+			EncryptPart(ref v.V128_4, key);
+			EncryptPart(ref v.V128_5, key);
+			EncryptPart(ref v.V128_6, key);
+			EncryptPart(ref v.V128_7, key);
 		}
 
-		v.V0 = AesArm.Encrypt(v.V0, keys[^2]);
-		v.V1 = AesArm.Encrypt(v.V1, keys[^2]);
-		v.V2 = AesArm.Encrypt(v.V2, keys[^2]);
-		v.V3 = AesArm.Encrypt(v.V3, keys[^2]);
-		v.V4 = AesArm.Encrypt(v.V4, keys[^2]);
-		v.V5 = AesArm.Encrypt(v.V5, keys[^2]);
-		v.V6 = AesArm.Encrypt(v.V6, keys[^2]);
-		v.V7 = AesArm.Encrypt(v.V7, keys[^2]);
-		v.V0 ^= keys[^1];
-		v.V1 ^= keys[^1];
-		v.V2 ^= keys[^1];
-		v.V3 ^= keys[^1];
-		v.V4 ^= keys[^1];
-		v.V5 ^= keys[^1];
-		v.V6 ^= keys[^1];
-		v.V7 ^= keys[^1];
+		v.V128_0 = AesArm.Encrypt(v.V128_0, keys[^2]);
+		v.V128_1 = AesArm.Encrypt(v.V128_1, keys[^2]);
+		v.V128_2 = AesArm.Encrypt(v.V128_2, keys[^2]);
+		v.V128_3 = AesArm.Encrypt(v.V128_3, keys[^2]);
+		v.V128_4 = AesArm.Encrypt(v.V128_4, keys[^2]);
+		v.V128_5 = AesArm.Encrypt(v.V128_5, keys[^2]);
+		v.V128_6 = AesArm.Encrypt(v.V128_6, keys[^2]);
+		v.V128_7 = AesArm.Encrypt(v.V128_7, keys[^2]);
+		v.V128_0 ^= keys[^1];
+		v.V128_1 ^= keys[^1];
+		v.V128_2 ^= keys[^1];
+		v.V128_3 ^= keys[^1];
+		v.V128_4 ^= keys[^1];
+		v.V128_5 ^= keys[^1];
+		v.V128_6 ^= keys[^1];
+		v.V128_7 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), v);
 	}
@@ -265,36 +265,36 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _inverseRoundKeys.Span;
 
-		Vector128X8<byte> v = Unsafe.ReadUnaligned<Vector128X8<byte>>(ref source.GetReference());
+		VectorBuffer128 v = Unsafe.ReadUnaligned<VectorBuffer128>(ref source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			DecryptPart(ref v.V0, key);
-			DecryptPart(ref v.V1, key);
-			DecryptPart(ref v.V2, key);
-			DecryptPart(ref v.V3, key);
-			DecryptPart(ref v.V4, key);
-			DecryptPart(ref v.V5, key);
-			DecryptPart(ref v.V6, key);
-			DecryptPart(ref v.V7, key);
+			DecryptPart(ref v.V128_0, key);
+			DecryptPart(ref v.V128_1, key);
+			DecryptPart(ref v.V128_2, key);
+			DecryptPart(ref v.V128_3, key);
+			DecryptPart(ref v.V128_4, key);
+			DecryptPart(ref v.V128_5, key);
+			DecryptPart(ref v.V128_6, key);
+			DecryptPart(ref v.V128_7, key);
 		}
 
-		v.V0 = AesArm.Decrypt(v.V0, keys[^2]);
-		v.V1 = AesArm.Decrypt(v.V1, keys[^2]);
-		v.V2 = AesArm.Decrypt(v.V2, keys[^2]);
-		v.V3 = AesArm.Decrypt(v.V3, keys[^2]);
-		v.V4 = AesArm.Decrypt(v.V4, keys[^2]);
-		v.V5 = AesArm.Decrypt(v.V5, keys[^2]);
-		v.V6 = AesArm.Decrypt(v.V6, keys[^2]);
-		v.V7 = AesArm.Decrypt(v.V7, keys[^2]);
-		v.V0 ^= keys[^1];
-		v.V1 ^= keys[^1];
-		v.V2 ^= keys[^1];
-		v.V3 ^= keys[^1];
-		v.V4 ^= keys[^1];
-		v.V5 ^= keys[^1];
-		v.V6 ^= keys[^1];
-		v.V7 ^= keys[^1];
+		v.V128_0 = AesArm.Decrypt(v.V128_0, keys[^2]);
+		v.V128_1 = AesArm.Decrypt(v.V128_1, keys[^2]);
+		v.V128_2 = AesArm.Decrypt(v.V128_2, keys[^2]);
+		v.V128_3 = AesArm.Decrypt(v.V128_3, keys[^2]);
+		v.V128_4 = AesArm.Decrypt(v.V128_4, keys[^2]);
+		v.V128_5 = AesArm.Decrypt(v.V128_5, keys[^2]);
+		v.V128_6 = AesArm.Decrypt(v.V128_6, keys[^2]);
+		v.V128_7 = AesArm.Decrypt(v.V128_7, keys[^2]);
+		v.V128_0 ^= keys[^1];
+		v.V128_1 ^= keys[^1];
+		v.V128_2 ^= keys[^1];
+		v.V128_3 ^= keys[^1];
+		v.V128_4 ^= keys[^1];
+		v.V128_5 ^= keys[^1];
+		v.V128_6 ^= keys[^1];
+		v.V128_7 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), v);
 	}
@@ -306,61 +306,61 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _roundKeys.Span;
 
-		Vector128X16<byte> v = Unsafe.ReadUnaligned<Vector128X16<byte>>(ref source.GetReference());
+		VectorBuffer256 v = Unsafe.ReadUnaligned<VectorBuffer256>(ref source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			EncryptPart(ref v.V0, key);
-			EncryptPart(ref v.V1, key);
-			EncryptPart(ref v.V2, key);
-			EncryptPart(ref v.V3, key);
-			EncryptPart(ref v.V4, key);
-			EncryptPart(ref v.V5, key);
-			EncryptPart(ref v.V6, key);
-			EncryptPart(ref v.V7, key);
-			EncryptPart(ref v.V8, key);
-			EncryptPart(ref v.V9, key);
-			EncryptPart(ref v.V10, key);
-			EncryptPart(ref v.V11, key);
-			EncryptPart(ref v.V12, key);
-			EncryptPart(ref v.V13, key);
-			EncryptPart(ref v.V14, key);
-			EncryptPart(ref v.V15, key);
+			EncryptPart(ref v.V128_0, key);
+			EncryptPart(ref v.V128_1, key);
+			EncryptPart(ref v.V128_2, key);
+			EncryptPart(ref v.V128_3, key);
+			EncryptPart(ref v.V128_4, key);
+			EncryptPart(ref v.V128_5, key);
+			EncryptPart(ref v.V128_6, key);
+			EncryptPart(ref v.V128_7, key);
+			EncryptPart(ref v.V128_8, key);
+			EncryptPart(ref v.V128_9, key);
+			EncryptPart(ref v.V128_10, key);
+			EncryptPart(ref v.V128_11, key);
+			EncryptPart(ref v.V128_12, key);
+			EncryptPart(ref v.V128_13, key);
+			EncryptPart(ref v.V128_14, key);
+			EncryptPart(ref v.V128_15, key);
 		}
 
-		v.V0 = AesArm.Encrypt(v.V0, keys[^2]);
-		v.V1 = AesArm.Encrypt(v.V1, keys[^2]);
-		v.V2 = AesArm.Encrypt(v.V2, keys[^2]);
-		v.V3 = AesArm.Encrypt(v.V3, keys[^2]);
-		v.V4 = AesArm.Encrypt(v.V4, keys[^2]);
-		v.V5 = AesArm.Encrypt(v.V5, keys[^2]);
-		v.V6 = AesArm.Encrypt(v.V6, keys[^2]);
-		v.V7 = AesArm.Encrypt(v.V7, keys[^2]);
-		v.V8 = AesArm.Encrypt(v.V8, keys[^2]);
-		v.V9 = AesArm.Encrypt(v.V9, keys[^2]);
-		v.V10 = AesArm.Encrypt(v.V10, keys[^2]);
-		v.V11 = AesArm.Encrypt(v.V11, keys[^2]);
-		v.V12 = AesArm.Encrypt(v.V12, keys[^2]);
-		v.V13 = AesArm.Encrypt(v.V13, keys[^2]);
-		v.V14 = AesArm.Encrypt(v.V14, keys[^2]);
-		v.V15 = AesArm.Encrypt(v.V15, keys[^2]);
+		v.V128_0 = AesArm.Encrypt(v.V128_0, keys[^2]);
+		v.V128_1 = AesArm.Encrypt(v.V128_1, keys[^2]);
+		v.V128_2 = AesArm.Encrypt(v.V128_2, keys[^2]);
+		v.V128_3 = AesArm.Encrypt(v.V128_3, keys[^2]);
+		v.V128_4 = AesArm.Encrypt(v.V128_4, keys[^2]);
+		v.V128_5 = AesArm.Encrypt(v.V128_5, keys[^2]);
+		v.V128_6 = AesArm.Encrypt(v.V128_6, keys[^2]);
+		v.V128_7 = AesArm.Encrypt(v.V128_7, keys[^2]);
+		v.V128_8 = AesArm.Encrypt(v.V128_8, keys[^2]);
+		v.V128_9 = AesArm.Encrypt(v.V128_9, keys[^2]);
+		v.V128_10 = AesArm.Encrypt(v.V128_10, keys[^2]);
+		v.V128_11 = AesArm.Encrypt(v.V128_11, keys[^2]);
+		v.V128_12 = AesArm.Encrypt(v.V128_12, keys[^2]);
+		v.V128_13 = AesArm.Encrypt(v.V128_13, keys[^2]);
+		v.V128_14 = AesArm.Encrypt(v.V128_14, keys[^2]);
+		v.V128_15 = AesArm.Encrypt(v.V128_15, keys[^2]);
 
-		v.V0 ^= keys[^1];
-		v.V1 ^= keys[^1];
-		v.V2 ^= keys[^1];
-		v.V3 ^= keys[^1];
-		v.V4 ^= keys[^1];
-		v.V5 ^= keys[^1];
-		v.V6 ^= keys[^1];
-		v.V7 ^= keys[^1];
-		v.V8 ^= keys[^1];
-		v.V9 ^= keys[^1];
-		v.V10 ^= keys[^1];
-		v.V11 ^= keys[^1];
-		v.V12 ^= keys[^1];
-		v.V13 ^= keys[^1];
-		v.V14 ^= keys[^1];
-		v.V15 ^= keys[^1];
+		v.V128_0 ^= keys[^1];
+		v.V128_1 ^= keys[^1];
+		v.V128_2 ^= keys[^1];
+		v.V128_3 ^= keys[^1];
+		v.V128_4 ^= keys[^1];
+		v.V128_5 ^= keys[^1];
+		v.V128_6 ^= keys[^1];
+		v.V128_7 ^= keys[^1];
+		v.V128_8 ^= keys[^1];
+		v.V128_9 ^= keys[^1];
+		v.V128_10 ^= keys[^1];
+		v.V128_11 ^= keys[^1];
+		v.V128_12 ^= keys[^1];
+		v.V128_13 ^= keys[^1];
+		v.V128_14 ^= keys[^1];
+		v.V128_15 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), v);
 	}
@@ -372,61 +372,61 @@ public sealed class AesCryptoArm : AesCrypto
 
 		Span<Vector128<byte>> keys = _inverseRoundKeys.Span;
 
-		Vector128X16<byte> v = Unsafe.ReadUnaligned<Vector128X16<byte>>(ref source.GetReference());
+		VectorBuffer256 v = Unsafe.ReadUnaligned<VectorBuffer256>(ref source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
-			DecryptPart(ref v.V0, key);
-			DecryptPart(ref v.V1, key);
-			DecryptPart(ref v.V2, key);
-			DecryptPart(ref v.V3, key);
-			DecryptPart(ref v.V4, key);
-			DecryptPart(ref v.V5, key);
-			DecryptPart(ref v.V6, key);
-			DecryptPart(ref v.V7, key);
-			DecryptPart(ref v.V8, key);
-			DecryptPart(ref v.V9, key);
-			DecryptPart(ref v.V10, key);
-			DecryptPart(ref v.V11, key);
-			DecryptPart(ref v.V12, key);
-			DecryptPart(ref v.V13, key);
-			DecryptPart(ref v.V14, key);
-			DecryptPart(ref v.V15, key);
+			DecryptPart(ref v.V128_0, key);
+			DecryptPart(ref v.V128_1, key);
+			DecryptPart(ref v.V128_2, key);
+			DecryptPart(ref v.V128_3, key);
+			DecryptPart(ref v.V128_4, key);
+			DecryptPart(ref v.V128_5, key);
+			DecryptPart(ref v.V128_6, key);
+			DecryptPart(ref v.V128_7, key);
+			DecryptPart(ref v.V128_8, key);
+			DecryptPart(ref v.V128_9, key);
+			DecryptPart(ref v.V128_10, key);
+			DecryptPart(ref v.V128_11, key);
+			DecryptPart(ref v.V128_12, key);
+			DecryptPart(ref v.V128_13, key);
+			DecryptPart(ref v.V128_14, key);
+			DecryptPart(ref v.V128_15, key);
 		}
 
-		v.V0 = AesArm.Decrypt(v.V0, keys[^2]);
-		v.V1 = AesArm.Decrypt(v.V1, keys[^2]);
-		v.V2 = AesArm.Decrypt(v.V2, keys[^2]);
-		v.V3 = AesArm.Decrypt(v.V3, keys[^2]);
-		v.V4 = AesArm.Decrypt(v.V4, keys[^2]);
-		v.V5 = AesArm.Decrypt(v.V5, keys[^2]);
-		v.V6 = AesArm.Decrypt(v.V6, keys[^2]);
-		v.V7 = AesArm.Decrypt(v.V7, keys[^2]);
-		v.V8 = AesArm.Decrypt(v.V8, keys[^2]);
-		v.V9 = AesArm.Decrypt(v.V9, keys[^2]);
-		v.V10 = AesArm.Decrypt(v.V10, keys[^2]);
-		v.V11 = AesArm.Decrypt(v.V11, keys[^2]);
-		v.V12 = AesArm.Decrypt(v.V12, keys[^2]);
-		v.V13 = AesArm.Decrypt(v.V13, keys[^2]);
-		v.V14 = AesArm.Decrypt(v.V14, keys[^2]);
-		v.V15 = AesArm.Decrypt(v.V15, keys[^2]);
+		v.V128_0 = AesArm.Decrypt(v.V128_0, keys[^2]);
+		v.V128_1 = AesArm.Decrypt(v.V128_1, keys[^2]);
+		v.V128_2 = AesArm.Decrypt(v.V128_2, keys[^2]);
+		v.V128_3 = AesArm.Decrypt(v.V128_3, keys[^2]);
+		v.V128_4 = AesArm.Decrypt(v.V128_4, keys[^2]);
+		v.V128_5 = AesArm.Decrypt(v.V128_5, keys[^2]);
+		v.V128_6 = AesArm.Decrypt(v.V128_6, keys[^2]);
+		v.V128_7 = AesArm.Decrypt(v.V128_7, keys[^2]);
+		v.V128_8 = AesArm.Decrypt(v.V128_8, keys[^2]);
+		v.V128_9 = AesArm.Decrypt(v.V128_9, keys[^2]);
+		v.V128_10 = AesArm.Decrypt(v.V128_10, keys[^2]);
+		v.V128_11 = AesArm.Decrypt(v.V128_11, keys[^2]);
+		v.V128_12 = AesArm.Decrypt(v.V128_12, keys[^2]);
+		v.V128_13 = AesArm.Decrypt(v.V128_13, keys[^2]);
+		v.V128_14 = AesArm.Decrypt(v.V128_14, keys[^2]);
+		v.V128_15 = AesArm.Decrypt(v.V128_15, keys[^2]);
 
-		v.V0 ^= keys[^1];
-		v.V1 ^= keys[^1];
-		v.V2 ^= keys[^1];
-		v.V3 ^= keys[^1];
-		v.V4 ^= keys[^1];
-		v.V5 ^= keys[^1];
-		v.V6 ^= keys[^1];
-		v.V7 ^= keys[^1];
-		v.V8 ^= keys[^1];
-		v.V9 ^= keys[^1];
-		v.V10 ^= keys[^1];
-		v.V11 ^= keys[^1];
-		v.V12 ^= keys[^1];
-		v.V13 ^= keys[^1];
-		v.V14 ^= keys[^1];
-		v.V15 ^= keys[^1];
+		v.V128_0 ^= keys[^1];
+		v.V128_1 ^= keys[^1];
+		v.V128_2 ^= keys[^1];
+		v.V128_3 ^= keys[^1];
+		v.V128_4 ^= keys[^1];
+		v.V128_5 ^= keys[^1];
+		v.V128_6 ^= keys[^1];
+		v.V128_7 ^= keys[^1];
+		v.V128_8 ^= keys[^1];
+		v.V128_9 ^= keys[^1];
+		v.V128_10 ^= keys[^1];
+		v.V128_11 ^= keys[^1];
+		v.V128_12 ^= keys[^1];
+		v.V128_13 ^= keys[^1];
+		v.V128_14 ^= keys[^1];
+		v.V128_15 ^= keys[^1];
 
 		Unsafe.WriteUnaligned(ref destination.GetReference(), v);
 	}

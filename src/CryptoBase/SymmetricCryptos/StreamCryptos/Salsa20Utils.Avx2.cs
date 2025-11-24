@@ -3,12 +3,12 @@ namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 internal static partial class Salsa20Utils
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void QuarterRound(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d)
+	private static void QuarterRound(ref Vector256<byte> a, ref Vector256<byte> b, ref Vector256<byte> c, ref Vector256<byte> d)
 	{
-		a ^= (b + c).RotateLeftUInt32(7);
-		d ^= (a + b).RotateLeftUInt32(9);
-		c ^= (d + a).RotateLeftUInt32(13);
-		b ^= (c + d).RotateLeftUInt32(18);
+		a ^= (b.AsUInt32() + c.AsUInt32()).RotateLeftUInt32(7).AsByte();
+		d ^= (a.AsUInt32() + b.AsUInt32()).RotateLeftUInt32(9).AsByte();
+		c ^= (d.AsUInt32() + a.AsUInt32()).RotateLeftUInt32(13).AsByte();
+		b ^= (c.AsUInt32() + d.AsUInt32()).RotateLeftUInt32(18).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -23,48 +23,80 @@ internal static partial class Salsa20Utils
 
 		ref ulong counter = ref GetCounter(ref stateRef);
 
-		Unsafe.SkipInit(out Vector256X16<uint> o);
-		o.V0 = Vector256.Create(Unsafe.Add(ref stateRef, 0));
-		o.V1 = Vector256.Create(Unsafe.Add(ref stateRef, 1));
-		o.V2 = Vector256.Create(Unsafe.Add(ref stateRef, 2));
-		o.V3 = Vector256.Create(Unsafe.Add(ref stateRef, 3));
-		o.V4 = Vector256.Create(Unsafe.Add(ref stateRef, 4));
-		o.V5 = Vector256.Create(Unsafe.Add(ref stateRef, 5));
-		o.V6 = Vector256.Create(Unsafe.Add(ref stateRef, 6));
-		o.V7 = Vector256.Create(Unsafe.Add(ref stateRef, 7));
+		Unsafe.SkipInit(out VectorBuffer512 o);
+		o.V256_0 = Vector256.Create(Unsafe.Add(ref stateRef, 0)).AsByte();
+		o.V256_1 = Vector256.Create(Unsafe.Add(ref stateRef, 1)).AsByte();
+		o.V256_2 = Vector256.Create(Unsafe.Add(ref stateRef, 2)).AsByte();
+		o.V256_3 = Vector256.Create(Unsafe.Add(ref stateRef, 3)).AsByte();
+		o.V256_4 = Vector256.Create(Unsafe.Add(ref stateRef, 4)).AsByte();
+		o.V256_5 = Vector256.Create(Unsafe.Add(ref stateRef, 5)).AsByte();
+		o.V256_6 = Vector256.Create(Unsafe.Add(ref stateRef, 6)).AsByte();
+		o.V256_7 = Vector256.Create(Unsafe.Add(ref stateRef, 7)).AsByte();
 		// 8
 		// 9
-		o.V10 = Vector256.Create(Unsafe.Add(ref stateRef, 10));
-		o.V11 = Vector256.Create(Unsafe.Add(ref stateRef, 11));
-		o.V12 = Vector256.Create(Unsafe.Add(ref stateRef, 12));
-		o.V13 = Vector256.Create(Unsafe.Add(ref stateRef, 13));
-		o.V14 = Vector256.Create(Unsafe.Add(ref stateRef, 14));
-		o.V15 = Vector256.Create(Unsafe.Add(ref stateRef, 15));
+		o.V256_10 = Vector256.Create(Unsafe.Add(ref stateRef, 10)).AsByte();
+		o.V256_11 = Vector256.Create(Unsafe.Add(ref stateRef, 11)).AsByte();
+		o.V256_12 = Vector256.Create(Unsafe.Add(ref stateRef, 12)).AsByte();
+		o.V256_13 = Vector256.Create(Unsafe.Add(ref stateRef, 13)).AsByte();
+		o.V256_14 = Vector256.Create(Unsafe.Add(ref stateRef, 14)).AsByte();
+		o.V256_15 = Vector256.Create(Unsafe.Add(ref stateRef, 15)).AsByte();
 
 		while (length >= 512)
 		{
-			ref readonly Vector256X16<byte> s = ref Unsafe.As<byte, Vector256X16<byte>>(ref Unsafe.Add(ref sourceRef, offset));
+			ref readonly VectorBuffer512 s = ref Unsafe.As<byte, VectorBuffer512>(ref Unsafe.Add(ref sourceRef, offset));
 
-			ChaCha20Utils.AddAndTranspose(counter, out o.V8, out o.V9);
+			ChaCha20Utils.AddAndTranspose(counter, out o.V256_8, out o.V256_9);
 
-			Vector256X16<uint> x = o;
+			VectorBuffer512 x = o;
 
 			for (int i = 0; i < rounds; i += 2)
 			{
-				QuarterRound(ref x.V4, ref x.V0, ref x.V12, ref x.V8);
-				QuarterRound(ref x.V9, ref x.V5, ref x.V1, ref x.V13);
-				QuarterRound(ref x.V14, ref x.V10, ref x.V6, ref x.V2);
-				QuarterRound(ref x.V3, ref x.V15, ref x.V11, ref x.V7);
+				QuarterRound(ref x.V256_4, ref x.V256_0, ref x.V256_12, ref x.V256_8);
+				QuarterRound(ref x.V256_9, ref x.V256_5, ref x.V256_1, ref x.V256_13);
+				QuarterRound(ref x.V256_14, ref x.V256_10, ref x.V256_6, ref x.V256_2);
+				QuarterRound(ref x.V256_3, ref x.V256_15, ref x.V256_11, ref x.V256_7);
 
-				QuarterRound(ref x.V1, ref x.V0, ref x.V3, ref x.V2);
-				QuarterRound(ref x.V6, ref x.V5, ref x.V4, ref x.V7);
-				QuarterRound(ref x.V11, ref x.V10, ref x.V9, ref x.V8);
-				QuarterRound(ref x.V12, ref x.V15, ref x.V14, ref x.V13);
+				QuarterRound(ref x.V256_1, ref x.V256_0, ref x.V256_3, ref x.V256_2);
+				QuarterRound(ref x.V256_6, ref x.V256_5, ref x.V256_4, ref x.V256_7);
+				QuarterRound(ref x.V256_11, ref x.V256_10, ref x.V256_9, ref x.V256_8);
+				QuarterRound(ref x.V256_12, ref x.V256_15, ref x.V256_14, ref x.V256_13);
 			}
 
-			x.Add(o);
+			x.V256_0 = (x.V256_0.AsUInt32() + o.V256_0.AsUInt32()).AsByte();
+			x.V256_1 = (x.V256_1.AsUInt32() + o.V256_1.AsUInt32()).AsByte();
+			x.V256_2 = (x.V256_2.AsUInt32() + o.V256_2.AsUInt32()).AsByte();
+			x.V256_3 = (x.V256_3.AsUInt32() + o.V256_3.AsUInt32()).AsByte();
+			x.V256_4 = (x.V256_4.AsUInt32() + o.V256_4.AsUInt32()).AsByte();
+			x.V256_5 = (x.V256_5.AsUInt32() + o.V256_5.AsUInt32()).AsByte();
+			x.V256_6 = (x.V256_6.AsUInt32() + o.V256_6.AsUInt32()).AsByte();
+			x.V256_7 = (x.V256_7.AsUInt32() + o.V256_7.AsUInt32()).AsByte();
+			x.V256_8 = (x.V256_8.AsUInt32() + o.V256_8.AsUInt32()).AsByte();
+			x.V256_9 = (x.V256_9.AsUInt32() + o.V256_9.AsUInt32()).AsByte();
+			x.V256_10 = (x.V256_10.AsUInt32() + o.V256_10.AsUInt32()).AsByte();
+			x.V256_11 = (x.V256_11.AsUInt32() + o.V256_11.AsUInt32()).AsByte();
+			x.V256_12 = (x.V256_12.AsUInt32() + o.V256_12.AsUInt32()).AsByte();
+			x.V256_13 = (x.V256_13.AsUInt32() + o.V256_13.AsUInt32()).AsByte();
+			x.V256_14 = (x.V256_14.AsUInt32() + o.V256_14.AsUInt32()).AsByte();
+			x.V256_15 = (x.V256_15.AsUInt32() + o.V256_15.AsUInt32()).AsByte();
+
 			x.Transpose();
-			x.Xor(s);
+
+			x.V256_0 ^= s.V256_0;
+			x.V256_1 ^= s.V256_1;
+			x.V256_2 ^= s.V256_2;
+			x.V256_3 ^= s.V256_3;
+			x.V256_4 ^= s.V256_4;
+			x.V256_5 ^= s.V256_5;
+			x.V256_6 ^= s.V256_6;
+			x.V256_7 ^= s.V256_7;
+			x.V256_8 ^= s.V256_8;
+			x.V256_9 ^= s.V256_9;
+			x.V256_10 ^= s.V256_10;
+			x.V256_11 ^= s.V256_11;
+			x.V256_12 ^= s.V256_12;
+			x.V256_13 ^= s.V256_13;
+			x.V256_14 ^= s.V256_14;
+			x.V256_15 ^= s.V256_15;
 
 			Unsafe.WriteUnaligned(ref Unsafe.Add(ref dstRef, offset), x);
 
