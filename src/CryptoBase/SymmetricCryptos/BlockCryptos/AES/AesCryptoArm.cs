@@ -125,7 +125,7 @@ public sealed class AesCryptoArm : AesCrypto
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
 			EncryptPart(ref v.V128_0, key);
-			EncryptPart(ref v.V128_0, key);
+			EncryptPart(ref v.V128_1, key);
 		}
 
 		v.V128_0 = AesArm.Encrypt(v.V128_0, keys[^2]);
