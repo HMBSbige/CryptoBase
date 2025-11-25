@@ -29,13 +29,13 @@ public class AESCTRTest
 		Span<byte> o = stackalloc byte[h1.Length];
 
 		crypto.Update(h1, o);
-		Assert.True(o.SequenceEqual(h2));
+		Assert.Equal(h2, o);
 
 		crypto.Reset();
 
 		crypto.Update(h2[..73], o);
 		crypto.Update(h2[73..], o[73..]);
-		Assert.True(o.SequenceEqual(h1));
+		Assert.Equal(h1, o);
 
 		crypto.Reset();
 
@@ -44,7 +44,7 @@ public class AESCTRTest
 			crypto.Update(h1.Slice(i, 1), o.Slice(i, 1));
 		}
 
-		Assert.True(o.SequenceEqual(h2));
+		Assert.Equal(h2, o);
 
 		crypto.Dispose();
 	}
