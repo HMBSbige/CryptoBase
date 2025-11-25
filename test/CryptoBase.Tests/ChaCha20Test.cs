@@ -28,14 +28,14 @@ public class ChaCha20Test
 		h1.CopyTo(i1[64..]);
 
 		crypto.Update(i1, o1);
-		Assert.True(o1.Slice(64, 114).SequenceEqual(h2));
+		Assert.Equal(h2, o1.Slice(64, 114));
 
 		crypto.Reset();
 
 		h1.CopyTo(i1[64..]);
 
 		crypto.Update(i1, o1);
-		Assert.True(o1.Slice(64, 114).SequenceEqual(h2));
+		Assert.Equal(h2, o1.Slice(64, 114));
 
 		crypto.Dispose();
 	}
@@ -50,12 +50,12 @@ public class ChaCha20Test
 		Span<byte> o1 = stackalloc byte[i.Length];
 
 		crypto.Update(i, o1);
-		Assert.True(o1.SequenceEqual(o));
+		Assert.Equal(o, o1);
 
 		crypto.Reset();
 
 		crypto.Update(i, o1);
-		Assert.True(o1.SequenceEqual(o));
+		Assert.Equal(o, o1);
 
 		crypto.Dispose();
 	}
@@ -74,11 +74,11 @@ public class ChaCha20Test
 		for (int j = 0; j < 1040; j++)
 		{
 			crypto.Update(i[..63], o1);
-			Assert.True(o1[..63].SequenceEqual(h.Slice(63 * j, 63)));
+			Assert.Equal(h.Slice(63 * j, 63), o1[..63]);
 		}
 
 		crypto.Update(i[..63], o1);
-		Assert.True(o1[..16].SequenceEqual(h.Slice(63 * 1040, 16)));
+		Assert.Equal(h.Slice(63 * 1040, 16), o1[..16]);
 
 		crypto.Reset();
 
@@ -86,7 +86,7 @@ public class ChaCha20Test
 		for (int j = 0; j < 1024; j++)
 		{
 			crypto.Update(i[..64], o1);
-			Assert.True(o1[..64].SequenceEqual(h.Slice(64 * j, 64)));
+			Assert.Equal(h.Slice(64 * j, 64), o1[..64]);
 		}
 
 		crypto.Reset();
@@ -95,7 +95,7 @@ public class ChaCha20Test
 		for (int j = 0; j < 512; j++)
 		{
 			crypto.Update(i[..128], o1);
-			Assert.True(o1[..128].SequenceEqual(h.Slice(128 * j, 128)));
+			Assert.Equal(h.Slice(128 * j, 128), o1[..128]);
 		}
 
 		crypto.Reset();
@@ -104,7 +104,7 @@ public class ChaCha20Test
 		for (int j = 0; j < 256; j++)
 		{
 			crypto.Update(i[..256], o1);
-			Assert.True(o1[..256].SequenceEqual(h.Slice(256 * j, 256)));
+			Assert.Equal(h.Slice(256 * j, 256), o1[..256]);
 		}
 
 		crypto.Reset();
@@ -113,7 +113,7 @@ public class ChaCha20Test
 		for (int j = 0; j < 128; j++)
 		{
 			crypto.Update(i[..512], o1);
-			Assert.True(o1[..512].SequenceEqual(h.Slice(512 * j, 512)));
+			Assert.Equal(h.Slice(512 * j, 512), o1[..512]);
 		}
 
 		crypto.Dispose();

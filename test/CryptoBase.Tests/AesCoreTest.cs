@@ -18,16 +18,16 @@ public class AesCoreTest
 		Span<byte> o1 = stackalloc byte[crypto.BlockSize + 1];
 
 		crypto.Encrypt(h1, o1);
-		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h2));
+		Assert.Equal(h2, o1.Slice(0, crypto.BlockSize));
 
 		crypto.Encrypt(h1, o1);
-		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h2));
+		Assert.Equal(h2, o1.Slice(0, crypto.BlockSize));
 
 		crypto.Decrypt(h2, o1);
-		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h1));
+		Assert.Equal(h1, o1.Slice(0, crypto.BlockSize));
 
 		crypto.Decrypt(h2, o1);
-		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h1));
+		Assert.Equal(h1, o1.Slice(0, crypto.BlockSize));
 
 		crypto.Dispose();
 	}

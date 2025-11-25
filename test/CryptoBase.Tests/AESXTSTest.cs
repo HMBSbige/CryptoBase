@@ -52,10 +52,10 @@ public class AESXTSTest
 		RandomNumberGenerator.Fill(buffer);
 
 		crypto.Encrypt(iv, plain, buffer);
-		Assert.True(buffer.Slice(0, plain.Length).SequenceEqual(cipher));
+		Assert.Equal(cipher, buffer.Slice(0, plain.Length));
 
 		crypto.Decrypt(iv, cipher, buffer);
-		Assert.True(buffer.Slice(0, cipher.Length).SequenceEqual(plain));
+		Assert.Equal(plain, buffer.Slice(0, cipher.Length));
 
 		crypto.Dispose();
 	}

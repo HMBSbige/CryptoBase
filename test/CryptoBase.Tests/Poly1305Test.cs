@@ -29,12 +29,12 @@ public class Poly1305Test
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.True(o.SequenceEqual(cipher));
+		Assert.Equal(cipher, o);
 
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.True(o.SequenceEqual(cipher));
+		Assert.Equal(cipher, o);
 
 		mac.Update(plain);
 		mac.Reset();
@@ -42,7 +42,7 @@ public class Poly1305Test
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.True(o.SequenceEqual(cipher));
+		Assert.Equal(cipher, o);
 
 		mac.Dispose();
 	}

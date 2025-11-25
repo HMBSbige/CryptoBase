@@ -18,18 +18,18 @@ public class RC4Test
 		Span<byte> o = stackalloc byte[i.Length];
 
 		crypto.Update(i, o);
-		Assert.True(o.SequenceEqual(h1));
+		Assert.Equal(h1, o);
 
 		crypto.Update(i, o);
-		Assert.True(o.SequenceEqual(h2));
+		Assert.Equal(h2, o);
 
 		crypto.Reset();
 
 		crypto.Update(h1, o);
-		Assert.True(o.SequenceEqual(i));
+		Assert.Equal(i, o);
 
 		crypto.Update(h2, o);
-		Assert.True(o.SequenceEqual(i));
+		Assert.Equal(i, o);
 
 		crypto.Dispose();
 	}

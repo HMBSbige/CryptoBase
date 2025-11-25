@@ -42,18 +42,18 @@ public static class TestUtils
 		Span<byte> o2 = stackalloc byte[tag.Length];
 
 		crypto.Encrypt(nonce, plain, o1, o2, associatedData);
-		Assert.True(o1.SequenceEqual(cipher));
-		Assert.True(o2.SequenceEqual(tag));
+		Assert.Equal(cipher, o1);
+		Assert.Equal(tag, o2);
 
 		crypto.Encrypt(nonce, plain, o1, o2, associatedData);
-		Assert.True(o1.SequenceEqual(cipher));
-		Assert.True(o2.SequenceEqual(tag));
+		Assert.Equal(cipher, o1);
+		Assert.Equal(tag, o2);
 
 		crypto.Decrypt(nonce, cipher, tag, o1, associatedData);
-		Assert.True(o1.SequenceEqual(plain));
+		Assert.Equal(plain, o1);
 
 		crypto.Decrypt(nonce, cipher, tag, o1, associatedData);
-		Assert.True(o1.SequenceEqual(plain));
+		Assert.Equal(plain, o1);
 
 		crypto.Dispose();
 	}
@@ -99,7 +99,7 @@ public static class TestUtils
 
 		crypto.Update(data, cipher);
 
-		Assert.True(cipher.SequenceEqual(expected));
+		Assert.Equal(expected, cipher);
 	}
 
 	public static void TestNBlock16(IBlockCrypto16 crypto)

@@ -26,13 +26,13 @@ public class SM4CTRTest
 
 		crypto.Update(source, destination);
 
-		Assert.True(destination.Slice(0, source.Length).SequenceEqual(expected));
+		Assert.Equal(expected, destination.Slice(0, source.Length));
 
 		crypto.Reset();
 
 		crypto.Update(source, destination);
 
-		Assert.True(destination.Slice(0, source.Length).SequenceEqual(expected));
+		Assert.Equal(expected, destination.Slice(0, source.Length));
 
 		crypto.Dispose();
 	}
