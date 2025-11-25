@@ -32,18 +32,18 @@ public class XSalsa20Test
 		Span<byte> x2 = stackalloc byte[h2.Length];
 
 		crypto.Update(h1, x1);
-		Assert.True(x1.SequenceEqual(g1));
+		Assert.Equal(g1, x1);
 
 		crypto.Update(h2, x2);
-		Assert.True(x2.SequenceEqual(g2));
+		Assert.Equal(g2, x2);
 
 		crypto.Reset();
 
 		crypto.Update(g1, x1);
-		Assert.True(x1.SequenceEqual(h1));
+		Assert.Equal(h1, x1);
 
 		crypto.Update(g2, x2);
-		Assert.True(x2.SequenceEqual(h2));
+		Assert.Equal(h2, x2);
 
 		crypto.Dispose();
 	}

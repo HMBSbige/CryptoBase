@@ -26,14 +26,14 @@ public class XChaCha20Test
 		h1.CopyTo(i1[64..]);
 
 		crypto.Update(i1, o1);
-		Assert.True(o1.Slice(64, 304).SequenceEqual(h2));
+		Assert.Equal(h2, o1.Slice(64, 304));
 
 		crypto.Reset();
 
 		h1.CopyTo(i1[64..]);
 
 		crypto.Update(i1, o1);
-		Assert.True(o1.Slice(64, 304).SequenceEqual(h2));
+		Assert.Equal(h2, o1.Slice(64, 304));
 
 		crypto.Dispose();
 	}
@@ -48,12 +48,12 @@ public class XChaCha20Test
 		Span<byte> o1 = stackalloc byte[h1.Length];
 
 		crypto.Update(h1, o1);
-		Assert.True(o1.SequenceEqual(h2));
+		Assert.Equal(h2, o1);
 
 		crypto.Reset();
 
 		crypto.Update(h1, o1);
-		Assert.True(o1.SequenceEqual(h2));
+		Assert.Equal(h2, o1);
 
 		crypto.Dispose();
 	}

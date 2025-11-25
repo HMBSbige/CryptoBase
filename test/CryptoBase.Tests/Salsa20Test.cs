@@ -37,7 +37,7 @@ public class Salsa20Test
 		Span<byte> o = stackalloc byte[512];
 
 		crypto.Update(i[..63], o);// 0 - 62
-		Assert.True(o[..63].SequenceEqual(h0[..63]));
+		Assert.Equal(h0[..63], o[..63]);
 		crypto.Update(i[..63], o);// 63 - 125
 		Assert.Equal(h0[63], o[0]);
 
@@ -48,13 +48,13 @@ public class Salsa20Test
 		}
 
 		crypto.Update(i[..63], o);// 65457 - 65519
-		Assert.True(o[15..63].SequenceEqual(h1[..48]));
+		Assert.Equal(h1[..48], o[15..63]);
 		crypto.Update(i[..63], o);// 65520 - 65582
-		Assert.True(o[..16].SequenceEqual(h1[48..]));
-		Assert.True(o.Slice(16, 47).SequenceEqual(h2[..47]));
+		Assert.Equal(h1[48..], o[..16]);
+		Assert.Equal(h2[..47], o.Slice(16, 47));
 
 		crypto.Update(i[..64], o);// 65583 - 65646
-		Assert.True(o[..17].SequenceEqual(h2[47..]));
+		Assert.Equal(h2[47..], o[..17]);
 
 		// 65647 - 130990
 		for (int j = 0; j < 1021; j++)
@@ -63,14 +63,14 @@ public class Salsa20Test
 		}
 
 		crypto.Update(i[..64], o);// 130991 - 131054
-		Assert.True(o[17..64].SequenceEqual(h3[..47]));
+		Assert.Equal(h3[..47], o[17..64]);
 		crypto.Update(i[..64], o);// 131055 - 131118
-		Assert.True(o[..17].SequenceEqual(h3[47..]));
+		Assert.Equal(h3[47..], o[..17]);
 
 		crypto.Reset();
 
 		crypto.Update(i[..128], o);// 0 - 127
-		Assert.True(o[..64].SequenceEqual(h0));
+		Assert.Equal(h0, o[..64]);
 		crypto.Update(i[..64], o);// 128 - 191
 
 		// 192 - 65471
@@ -80,8 +80,8 @@ public class Salsa20Test
 		}
 
 		crypto.Update(i[..128], o);// 65472 - 65599
-		Assert.True(o[..64].SequenceEqual(h1));
-		Assert.True(o.Slice(64, 64).SequenceEqual(h2));
+		Assert.Equal(h1, o[..64]);
+		Assert.Equal(h2, o.Slice(64, 64));
 
 		// 65600 - 130879
 		for (int j = 0; j < 255; j++)
@@ -90,11 +90,11 @@ public class Salsa20Test
 		}
 
 		crypto.Update(i[..256], o);// 130880 - 131135
-		Assert.True(o.Slice(128, 64).SequenceEqual(h3));
+		Assert.Equal(h3, o.Slice(128, 64));
 
 		crypto.Reset();
 		crypto.Update(i[..512], o);// 0 - 511
-		Assert.True(o[..64].SequenceEqual(h0));
+		Assert.Equal(h0, o[..64]);
 
 		// 512 - 65535
 		for (int j = 0; j < 127; j++)
@@ -102,9 +102,9 @@ public class Salsa20Test
 			crypto.Update(i[..512], o);
 		}
 
-		Assert.True(o.Slice(448, 64).SequenceEqual(h1));
+		Assert.Equal(h1, o.Slice(448, 64));
 		crypto.Update(i[..512], o);// 65536 - 66047
-		Assert.True(o[..64].SequenceEqual(h2));
+		Assert.Equal(h2, o[..64]);
 
 		// 66048 - 131071
 		for (int j = 0; j < 127; j++)
@@ -112,28 +112,28 @@ public class Salsa20Test
 			crypto.Update(i[..512], o);
 		}
 
-		Assert.True(o.Slice(448, 64).SequenceEqual(h3));
+		Assert.Equal(h3, o.Slice(448, 64));
 
 		crypto.Reset();
 
 		crypto.Update(i[..64], o);// 0 - 63
-		Assert.True(o[..64].SequenceEqual(h0));
+		Assert.Equal(h0, o[..64]);
 
 		for (int j = 0; j < 1023; j++)
 		{
 			crypto.Update(i[..64], o);
 		}
 
-		Assert.True(o[..64].SequenceEqual(h1));
+		Assert.Equal(h1, o[..64]);
 		crypto.Update(i[..64], o);
-		Assert.True(o[..64].SequenceEqual(h2));
+		Assert.Equal(h2, o[..64]);
 
 		for (int j = 0; j < 1023; j++)
 		{
 			crypto.Update(i[..64], o);
 		}
 
-		Assert.True(o[..64].SequenceEqual(h3));
+		Assert.Equal(h3, o[..64]);
 
 		crypto.Dispose();
 	}

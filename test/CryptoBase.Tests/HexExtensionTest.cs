@@ -24,17 +24,17 @@ public class HexExtensionTest
 	public void FromHexTest(string input, string expected)
 	{
 		Span<byte> span = Encoding.UTF8.GetBytes(expected);
-		Assert.True(span.SequenceEqual(input.FromHex()));
-		Assert.True(span.SequenceEqual(input.AsSpan().FromHex()));
+		Assert.Equal((ReadOnlySpan<byte>)span, input.FromHex());
+		Assert.Equal((ReadOnlySpan<byte>)span, input.AsSpan().FromHex());
 	}
 
 	[Fact]
 	public void LargeInputTest()
 	{
 		byte[] expected = RandomNumberGenerator.GetBytes(10 * 1024 * 1024);
-		Assert.True(expected.AsSpan().ToHex().FromHex().SequenceEqual(expected));
-		Assert.True(expected.AsSpan().ToHex().AsSpan().FromHex().SequenceEqual(expected));
-		Assert.True(expected.AsSpan().ToHexString().FromHex().SequenceEqual(expected));
-		Assert.True(expected.AsSpan().ToHexString().AsSpan().FromHex().SequenceEqual(expected));
+		Assert.Equal(expected, expected.AsSpan().ToHex().FromHex());
+		Assert.Equal(expected, expected.AsSpan().ToHex().AsSpan().FromHex());
+		Assert.Equal(expected, expected.AsSpan().ToHexString().FromHex());
+		Assert.Equal(expected, expected.AsSpan().ToHexString().AsSpan().FromHex());
 	}
 }

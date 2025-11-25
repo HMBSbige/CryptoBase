@@ -32,12 +32,12 @@ public class GHashTest
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.True(o.SequenceEqual(cipher));
+		Assert.Equal(cipher, o);
 
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.True(o.SequenceEqual(cipher));
+		Assert.Equal(cipher, o);
 
 		mac.Update(plain);
 		mac.Reset();
@@ -45,7 +45,7 @@ public class GHashTest
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.True(o.SequenceEqual(cipher));
+		Assert.Equal(cipher, o);
 
 		mac.Dispose();
 	}
@@ -96,6 +96,6 @@ public class GHashTest
 		Span<byte> actual = stackalloc byte[blockSize];
 		mac.GetMac(actual);
 
-		Assert.True(expected.SequenceEqual(actual));
+		Assert.Equal(expected, actual);
 	}
 }

@@ -28,6 +28,6 @@ public class Base32Test
 		Assert.Equal(base32Expected, originBuffer.ToBase32String());
 
 		Span<byte> b = base32Expected.AsSpan().FromBase32String();
-		Assert.True(b.SequenceEqual(originBuffer));
+		Assert.Equal(originBuffer, b);
 	}
 }
