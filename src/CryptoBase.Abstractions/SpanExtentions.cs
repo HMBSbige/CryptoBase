@@ -125,4 +125,62 @@ public static class SpanExtentions
 			return ref As<T, VectorBuffer1024>(span);
 		}
 	}
+
+	extension<T>(Span<T> span)
+	{
+		/// <inheritdoc cref="MemoryMarshal.GetReference{T}(ReadOnlySpan{T})" />
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref T GetReference()
+		{
+			return ref MemoryMarshal.GetReference(span);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref TTo As<TTo>() where TTo : allows ref struct
+		{
+			return ref Unsafe.As<T, TTo>(ref GetReference(span));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref VectorBuffer16 AsVectorBuffer16()
+		{
+			return ref As<T, VectorBuffer16>(span);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref VectorBuffer32 AsVectorBuffer32()
+		{
+			return ref As<T, VectorBuffer32>(span);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref VectorBuffer64 AsVectorBuffer64()
+		{
+			return ref As<T, VectorBuffer64>(span);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref VectorBuffer128 AsVectorBuffer128()
+		{
+			return ref As<T, VectorBuffer128>(span);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref VectorBuffer256 AsVectorBuffer256()
+		{
+			return ref As<T, VectorBuffer256>(span);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref VectorBuffer512 AsVectorBuffer512()
+		{
+			return ref As<T, VectorBuffer512>(span);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref VectorBuffer1024 AsVectorBuffer1024()
+		{
+			return ref As<T, VectorBuffer1024>(span);
+		}
+	}
 }
