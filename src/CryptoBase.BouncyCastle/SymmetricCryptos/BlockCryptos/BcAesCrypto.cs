@@ -1,7 +1,9 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions.Vectors;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
@@ -35,37 +37,45 @@ public sealed class BcAesCrypto : BlockCrypto16
 		_decryptionEngine.Init(false, keyParameter);
 	}
 
-	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
 	{
-		_encryptionEngine.ProcessBlock(source, destination);
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		_encryptionEngine.ProcessBlock(source, r);
+
+		return r;
 	}
 
-	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
 	{
-		_decryptionEngine.ProcessBlock(source, destination);
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		_decryptionEngine.ProcessBlock(source, r);
+
+		return r;
 	}
 
-	public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer64 Encrypt(VectorBuffer64 source)
 	{
 		if (_encryptionEngine is AesEngine_X86 engineX86)
 		{
-			engineX86.ProcessFourBlocks(source, destination);
+			Unsafe.SkipInit(out VectorBuffer64 r);
+			engineX86.ProcessFourBlocks(source, r);
+
+			return r;
 		}
-		else
-		{
-			base.Encrypt4(source, destination);
-		}
+
+		return base.Encrypt(source);
 	}
 
-	public override void Decrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer64 Decrypt(VectorBuffer64 source)
 	{
 		if (_decryptionEngine is AesEngine_X86 engineX86)
 		{
-			engineX86.ProcessFourBlocks(source, destination);
+			Unsafe.SkipInit(out VectorBuffer64 r);
+			engineX86.ProcessFourBlocks(source, r);
+
+			return r;
 		}
-		else
-		{
-			base.Decrypt4(source, destination);
-		}
+
+		return base.Decrypt(source);
 	}
 }

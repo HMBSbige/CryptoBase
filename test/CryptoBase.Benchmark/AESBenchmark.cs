@@ -26,7 +26,7 @@ public class AesBenchmark
 		_randomKey = RandomNumberGenerator.GetBytes(KeyLength);
 	}
 
-	private void Encrypt(IBlockCrypto crypto)
+	private void Encrypt(IBlockCrypto16 crypto)
 	{
 		ReadOnlySpan<byte> origin = _randombytes.Span;
 		Span<byte> o = stackalloc byte[16 * 16];

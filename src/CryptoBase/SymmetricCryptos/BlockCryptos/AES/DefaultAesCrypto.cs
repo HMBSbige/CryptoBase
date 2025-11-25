@@ -12,16 +12,20 @@ public sealed class DefaultAesCrypto : AesCrypto
 		_aes.Key = key.ToArray();
 	}
 
-	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
 	{
-		base.Encrypt(source, destination);
-		_aes.EncryptEcb(source.Slice(0, BlockSize), destination, PaddingMode.None);
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		_aes.EncryptEcb(source, r, PaddingMode.None);
+
+		return r;
 	}
 
-	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
 	{
-		base.Decrypt(source, destination);
-		_aes.DecryptEcb(source.Slice(0, BlockSize), destination, PaddingMode.None);
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		_aes.DecryptEcb(source, r, PaddingMode.None);
+
+		return r;
 	}
 
 	public override void Encrypt2(ReadOnlySpan<byte> source, Span<byte> destination)

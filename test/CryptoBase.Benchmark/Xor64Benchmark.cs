@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.Abstractions;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Security.Cryptography;

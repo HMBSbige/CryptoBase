@@ -6,11 +6,11 @@ public sealed partial class XtsMode : IBlockModeOneShot
 
 	public int BlockSize => 16;
 
-	private readonly IBlockCrypto _dataCrypto;
-	private readonly IBlockCrypto _tweakCrypto;
+	private readonly IBlockCrypto16 _dataCrypto;
+	private readonly IBlockCrypto16 _tweakCrypto;
 	private readonly bool _disposeCrypto;
 
-	public XtsMode(IBlockCrypto dataCrypto, IBlockCrypto tweakCrypto, bool disposeCrypto = true)
+	public XtsMode(IBlockCrypto16 dataCrypto, IBlockCrypto16 tweakCrypto, bool disposeCrypto = true)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(dataCrypto.BlockSize, BlockSize, nameof(dataCrypto));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(tweakCrypto.BlockSize, BlockSize, nameof(tweakCrypto));

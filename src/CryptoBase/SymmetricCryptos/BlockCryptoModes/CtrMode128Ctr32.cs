@@ -1,6 +1,6 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool disposeCrypto = true) : CtrMode128(crypto, iv, disposeCrypto)
+public class CtrMode128Ctr32(IBlockCrypto16 crypto, ReadOnlySpan<byte> iv, bool disposeCrypto = true) : CtrMode128(crypto, iv, disposeCrypto)
 {
 	protected override void UpdateKeyStream(in Span<byte> counter, in Span<byte> keyStream)
 	{

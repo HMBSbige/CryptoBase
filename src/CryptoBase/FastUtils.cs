@@ -2,20 +2,6 @@ namespace CryptoBase;
 
 public static class FastUtils
 {
-	/// <inheritdoc cref="MemoryMarshal.GetReference{T}(Span{T})" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ref T GetReference<T>(this Span<T> span)
-	{
-		return ref MemoryMarshal.GetReference(span);
-	}
-
-	/// <inheritdoc cref="MemoryMarshal.GetReference{T}(ReadOnlySpan{T})" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ref T GetReference<T>(this ReadOnlySpan<T> span)
-	{
-		return ref MemoryMarshal.GetReference(span);
-	}
-
 	/// <inheritdoc cref="MemoryMarshal.GetArrayDataReference{T}" />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ref T GetReference<T>(this T[] array)

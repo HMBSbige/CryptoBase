@@ -8,7 +8,7 @@ namespace CryptoBase.Tests;
 
 public class AesCoreTest
 {
-	private static void Test_Internal(IBlockCrypto crypto, string hex1, string hex2)
+	private static void Test_Internal(IBlockCrypto16 crypto, string hex1, string hex2)
 	{
 		Assert.Equal(@"AES", crypto.Name);
 		Assert.Equal(16, crypto.BlockSize);
@@ -28,76 +28,6 @@ public class AesCoreTest
 
 		crypto.Decrypt(h2, o1);
 		Assert.True(o1.Slice(0, crypto.BlockSize).SequenceEqual(h1));
-
-		crypto.Dispose();
-	}
-
-	private static void TestN_Internal(IBlockCrypto crypto)
-	{
-		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(64 * crypto.BlockSize);
-		Span<byte> expectedCipher = stackalloc byte[source.Length];
-		Span<byte> destination = stackalloc byte[source.Length];
-
-		for (int i = 0; i < source.Length / crypto.BlockSize; ++i)
-		{
-			crypto.Encrypt(source.Slice(i * crypto.BlockSize), expectedCipher.Slice(i * crypto.BlockSize));
-		}
-
-		for (int i = 0; i < source.Length / crypto.BlockSize / 2; ++i)
-		{
-			crypto.Encrypt2(source.Slice(i * 2 * crypto.BlockSize), destination.Slice(i * 2 * crypto.BlockSize));
-		}
-
-		Assert.True(expectedCipher.SequenceEqual(destination));
-
-		for (int i = 0; i < source.Length / crypto.BlockSize / 2; ++i)
-		{
-			crypto.Decrypt2(expectedCipher.Slice(i * 2 * crypto.BlockSize), destination.Slice(i * 2 * crypto.BlockSize));
-		}
-
-		Assert.True(source.SequenceEqual(destination));
-
-		for (int i = 0; i < source.Length / crypto.BlockSize / 4; ++i)
-		{
-			crypto.Encrypt4(source.Slice(i * 4 * crypto.BlockSize), destination.Slice(i * 4 * crypto.BlockSize));
-		}
-
-		Assert.True(expectedCipher.SequenceEqual(destination));
-
-		for (int i = 0; i < source.Length / crypto.BlockSize / 4; ++i)
-		{
-			crypto.Decrypt4(expectedCipher.Slice(i * 4 * crypto.BlockSize), destination.Slice(i * 4 * crypto.BlockSize));
-		}
-
-		Assert.True(source.SequenceEqual(destination));
-
-		for (int i = 0; i < source.Length / crypto.BlockSize / 8; ++i)
-		{
-			crypto.Encrypt8(source.Slice(i * 8 * crypto.BlockSize), destination.Slice(i * 8 * crypto.BlockSize));
-		}
-
-		Assert.True(expectedCipher.SequenceEqual(destination));
-
-		for (int i = 0; i < source.Length / crypto.BlockSize / 8; ++i)
-		{
-			crypto.Decrypt8(expectedCipher.Slice(i * 8 * crypto.BlockSize), destination.Slice(i * 8 * crypto.BlockSize));
-		}
-
-		Assert.True(source.SequenceEqual(destination));
-
-		for (int i = 0; i < source.Length / crypto.BlockSize / 16; ++i)
-		{
-			crypto.Encrypt16(source.Slice(i * 16 * crypto.BlockSize), destination.Slice(i * 16 * crypto.BlockSize));
-		}
-
-		Assert.True(expectedCipher.SequenceEqual(destination));
-
-		for (int i = 0; i < source.Length / crypto.BlockSize / 16; ++i)
-		{
-			crypto.Decrypt16(expectedCipher.Slice(i * 16 * crypto.BlockSize), destination.Slice(i * 16 * crypto.BlockSize));
-		}
-
-		Assert.True(source.SequenceEqual(destination));
 
 		crypto.Dispose();
 	}
@@ -128,8 +58,8 @@ public class AesCoreTest
 	{
 		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(keyLength);
 
-		TestN_Internal(new BcAesCrypto(key));
-		TestN_Internal(AesCrypto.CreateCore(key));
-		TestN_Internal(new DefaultAesCrypto(key));
+		TestUtils.TestNBlock16(new BcAesCrypto(key));
+		TestUtils.TestNBlock16(AesCrypto.CreateCore(key));
+		TestUtils.TestNBlock16(new DefaultAesCrypto(key));
 	}
 }

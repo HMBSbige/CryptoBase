@@ -20,6 +20,9 @@ public ref struct VectorBuffer128
 	[FieldOffset(0 * 64)] public Vector512<byte> V512_0;
 	[FieldOffset(1 * 64)] public Vector512<byte> V512_1;
 
+	[FieldOffset(0 * 64)] public VectorBuffer64 Lower;
+	[FieldOffset(1 * 64)] public VectorBuffer64 Upper;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator Span<byte>(in VectorBuffer128 value)
 	{

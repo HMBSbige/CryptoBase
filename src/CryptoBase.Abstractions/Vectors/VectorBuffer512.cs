@@ -29,6 +29,9 @@ public ref struct VectorBuffer512
 	[FieldOffset(6 * 64)] public Vector512<byte> V512_6;
 	[FieldOffset(7 * 64)] public Vector512<byte> V512_7;
 
+	[FieldOffset(0 * 256)] public VectorBuffer256 Lower;
+	[FieldOffset(1 * 256)] public VectorBuffer256 Upper;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator Span<byte>(in VectorBuffer512 value)
 	{

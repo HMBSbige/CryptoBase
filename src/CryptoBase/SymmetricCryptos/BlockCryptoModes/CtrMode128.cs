@@ -7,7 +7,7 @@ public class CtrMode128 : IStreamCrypto
 
 	public string Name => InternalBlockCrypto.Name + @"-CTR";
 
-	protected readonly IBlockCrypto InternalBlockCrypto;
+	protected readonly IBlockCrypto16 InternalBlockCrypto;
 	private readonly bool _disposeCrypto;
 
 	private int _index;
@@ -16,7 +16,7 @@ public class CtrMode128 : IStreamCrypto
 	private readonly CryptoArrayPool<byte> _counter = new(BlockSize * MaxBlocks);
 	private readonly CryptoArrayPool<byte> _keyStream = new(BlockSize * MaxBlocks);
 
-	public CtrMode128(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool disposeCrypto = true)
+	public CtrMode128(IBlockCrypto16 crypto, ReadOnlySpan<byte> iv, bool disposeCrypto = true)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize);
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));

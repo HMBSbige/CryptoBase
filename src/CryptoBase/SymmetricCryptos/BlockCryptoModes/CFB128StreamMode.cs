@@ -4,7 +4,7 @@ public class CFB128StreamMode : IStreamCrypto
 {
 	public string Name => _internalBlockCrypto.Name + @"-CFB";
 
-	private readonly IBlockCrypto _internalBlockCrypto;
+	private readonly IBlockCrypto16 _internalBlockCrypto;
 
 	private readonly ReadOnlyMemory<byte> _iv;
 
@@ -17,7 +17,7 @@ public class CFB128StreamMode : IStreamCrypto
 
 	private const int BlockSize = 16;
 
-	public CFB128StreamMode(bool isEncrypt, IBlockCrypto crypto, ReadOnlySpan<byte> iv)
+	public CFB128StreamMode(bool isEncrypt, IBlockCrypto16 crypto, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));

@@ -1,6 +1,8 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions.Vectors;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
@@ -21,13 +23,19 @@ public sealed class BcSm4Crypto : BlockCrypto16
 		_decryptionEngine.Init(false, keyParameter);
 	}
 
-	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
 	{
-		_encryptionEngine.ProcessBlock(source, destination);
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		_encryptionEngine.ProcessBlock(source, r);
+
+		return r;
 	}
 
-	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
 	{
-		_decryptionEngine.ProcessBlock(source, destination);
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		_decryptionEngine.ProcessBlock(source, r);
+
+		return r;
 	}
 }

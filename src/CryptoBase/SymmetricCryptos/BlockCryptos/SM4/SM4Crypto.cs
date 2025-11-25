@@ -54,22 +54,24 @@ public sealed class SM4Crypto : BlockCrypto16
 		base.Dispose();
 	}
 
-	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
 	{
-		base.Encrypt(source, destination);
-
 		Span<uint> rk = _roundKeys.Span;
 
-		SM4Utils.Encrypt(rk, source, destination);
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		SM4Utils.Encrypt(rk, source, r);
+
+		return r;
 	}
 
-	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
 	{
-		base.Decrypt(source, destination);
-
 		Span<uint> rk = _reverseRoundKeys.Span;
 
-		SM4Utils.Encrypt(rk, source, destination);
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		SM4Utils.Encrypt(rk, source, r);
+
+		return r;
 	}
 
 	public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
