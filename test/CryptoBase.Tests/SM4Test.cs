@@ -19,10 +19,10 @@ public class SM4Test
 		Span<byte> o1 = new byte[crypto.BlockSize];
 
 		crypto.Encrypt(h1, o1);
-		Assert.True(o1.SequenceEqual(h2));
+		Assert.Equal(h2, o1);
 
 		crypto.Encrypt(h1, o1);
-		Assert.True(o1.SequenceEqual(h2));
+		Assert.Equal(h2, o1);
 
 		Span<byte> t = h1;
 
@@ -32,13 +32,13 @@ public class SM4Test
 			t = o1;
 		}
 
-		Assert.True(t.SequenceEqual(h3));
+		Assert.Equal(h3, t);
 
 		crypto.Decrypt(h2, o1);
-		Assert.True(o1.SequenceEqual(h1));
+		Assert.Equal(h1, o1);
 
 		crypto.Decrypt(h2, o1);
-		Assert.True(o1.SequenceEqual(h1));
+		Assert.Equal(h1, o1);
 
 		t = h3;
 
@@ -48,7 +48,7 @@ public class SM4Test
 			t = o1;
 		}
 
-		Assert.True(t.SequenceEqual(h1));
+		Assert.Equal(h1, t);
 
 		crypto.Dispose();
 	}
