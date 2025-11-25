@@ -103,7 +103,7 @@ public sealed class AesCryptoArm : AesCrypto
 			DecryptPart(ref value.V128, key);
 		}
 
-		value.V128 = AesArm.Encrypt(value.V128, keys[^2]);
+		value.V128 = AesArm.Decrypt(value.V128, keys[^2]);
 		value.V128 ^= keys[^1];
 
 		return value;
