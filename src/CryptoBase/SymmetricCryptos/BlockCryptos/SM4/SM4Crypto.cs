@@ -58,20 +58,14 @@ public sealed class SM4Crypto : BlockCrypto16
 	{
 		Span<uint> rk = _roundKeys.Span;
 
-		Unsafe.SkipInit(out VectorBuffer16 r);
-		SM4Utils.Encrypt(rk, source, r);
-
-		return r;
+		return SM4Utils.Encrypt(rk, source);
 	}
 
 	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
 	{
 		Span<uint> rk = _reverseRoundKeys.Span;
 
-		Unsafe.SkipInit(out VectorBuffer16 r);
-		SM4Utils.Encrypt(rk, source, r);
-
-		return r;
+		return SM4Utils.Encrypt(rk, source);
 	}
 
 	public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)

@@ -204,6 +204,26 @@ public static class SM4Utils
 		return AesX86.EncryptLast(x.GetLower(), roundKey.GetLower()).ToVector256Unsafe().WithUpper(t);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static VectorBuffer16 Encrypt(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer16 source)
+	{
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		r.U0 = source.U0;
+		r.U1 = source.U1;
+		r.U2 = source.U2;
+		r.U3 = source.U3;
+
+		for (int i = 0; i < 32; i += 4)
+		{
+			r.U0 ^= T(r.U1 ^ r.U2 ^ r.U3 ^ rk[i + 0]);
+			r.U1 ^= T(r.U0 ^ r.U2 ^ r.U3 ^ rk[i + 1]);
+			r.U2 ^= T(r.U0 ^ r.U1 ^ r.U3 ^ rk[i + 2]);
+			r.U3 ^= T(r.U0 ^ r.U1 ^ r.U2 ^ rk[i + 3]);
+		}
+
+		return r;
+	}
+
 	public static void Encrypt(ReadOnlySpan<uint> rk, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(0 * 4));
