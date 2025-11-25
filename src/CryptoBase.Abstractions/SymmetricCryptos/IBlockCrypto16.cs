@@ -1,7 +1,14 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
-public interface IBlockCrypto16 : IBlockCrypto
+public interface IBlockCrypto16 : IBlockCrypto, ISymmetricCrypto
 {
+	/// <summary>
+	/// 块大小，单位字节
+	/// </summary>
+	int BlockSize { get; }
+
+	BlockCryptoHardwareAcceleration HardwareAcceleration { get; }
+
 	VectorBuffer16 Encrypt(scoped in VectorBuffer16 source);
 	VectorBuffer16 Decrypt(scoped in VectorBuffer16 source);
 	VectorBuffer32 Encrypt(scoped in VectorBuffer32 source);
