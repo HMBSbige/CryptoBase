@@ -83,7 +83,7 @@ public static class SM4Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void InitRounkeys(ReadOnlySpan<byte> key, Span<uint> rk)
+	public static void InitRoundKeys(ReadOnlySpan<byte> key, Span<uint> rk)
 	{
 		uint k0 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(0 * 4)) ^ 0xa3b1bac6;
 		uint k1 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(1 * 4)) ^ 0x56aa3350;

@@ -40,7 +40,7 @@ public sealed class SM4Crypto : BlockCrypto16
 		Span<uint> rk = _roundKeys.Span;
 		Span<uint> rrk = _reverseRoundKeys.Span;
 
-		SM4Utils.InitRounkeys(key, rk);
+		SM4Utils.InitRoundKeys(key, rk);
 
 		rk.CopyTo(rrk);
 		rrk.Reverse();
