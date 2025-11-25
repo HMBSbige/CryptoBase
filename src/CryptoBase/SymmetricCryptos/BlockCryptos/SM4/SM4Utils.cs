@@ -207,24 +207,44 @@ public static class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static VectorBuffer16 Encrypt(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer16 source)
 	{
-		uint u0 = BinaryPrimitives.ReverseEndianness(source.U0);
-		uint u1 = BinaryPrimitives.ReverseEndianness(source.U1);
-		uint u2 = BinaryPrimitives.ReverseEndianness(source.U2);
-		uint u3 = BinaryPrimitives.ReverseEndianness(source.U3);
+		Unsafe.SkipInit(out VectorBuffer16 tmp);
+
+		if (BitConverter.IsLittleEndian)
+		{
+			tmp.U0 = BinaryPrimitives.ReverseEndianness(source.U0);
+			tmp.U1 = BinaryPrimitives.ReverseEndianness(source.U1);
+			tmp.U2 = BinaryPrimitives.ReverseEndianness(source.U2);
+			tmp.U3 = BinaryPrimitives.ReverseEndianness(source.U3);
+		}
+		else
+		{
+			tmp = source;
+		}
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			u0 ^= T(u1 ^ u2 ^ u3 ^ rk[i + 0]);
-			u1 ^= T(u0 ^ u2 ^ u3 ^ rk[i + 1]);
-			u2 ^= T(u0 ^ u1 ^ u3 ^ rk[i + 2]);
-			u3 ^= T(u0 ^ u1 ^ u2 ^ rk[i + 3]);
+			tmp.U0 ^= T(tmp.U1 ^ tmp.U2 ^ tmp.U3 ^ rk[i + 0]);
+			tmp.U1 ^= T(tmp.U0 ^ tmp.U2 ^ tmp.U3 ^ rk[i + 1]);
+			tmp.U2 ^= T(tmp.U0 ^ tmp.U1 ^ tmp.U3 ^ rk[i + 2]);
+			tmp.U3 ^= T(tmp.U0 ^ tmp.U1 ^ tmp.U2 ^ rk[i + 3]);
 		}
 
 		Unsafe.SkipInit(out VectorBuffer16 r);
-		r.U0 = BinaryPrimitives.ReverseEndianness(u3);
-		r.U1 = BinaryPrimitives.ReverseEndianness(u2);
-		r.U2 = BinaryPrimitives.ReverseEndianness(u1);
-		r.U3 = BinaryPrimitives.ReverseEndianness(u0);
+
+		if (BitConverter.IsLittleEndian)
+		{
+			r.U0 = BinaryPrimitives.ReverseEndianness(tmp.U3);
+			r.U1 = BinaryPrimitives.ReverseEndianness(tmp.U2);
+			r.U2 = BinaryPrimitives.ReverseEndianness(tmp.U1);
+			r.U3 = BinaryPrimitives.ReverseEndianness(tmp.U0);
+		}
+		else
+		{
+			r.U0 = tmp.U3;
+			r.U1 = tmp.U2;
+			r.U2 = tmp.U1;
+			r.U3 = tmp.U0;
+		}
 
 		return r;
 	}
