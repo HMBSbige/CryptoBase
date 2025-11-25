@@ -89,7 +89,7 @@ public class Aes256CryptoX86 : AesCrypto
 		_k27 = AesX86.InverseMixColumns(_k1);
 	}
 
-	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
 	{
 		VectorBuffer16 t = source;
 
@@ -112,7 +112,7 @@ public class Aes256CryptoX86 : AesCrypto
 		return t;
 	}
 
-	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
 	{
 		VectorBuffer16 t = source;
 

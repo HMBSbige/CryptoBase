@@ -40,7 +40,7 @@ public sealed class SM4Crypto : BlockCrypto16
 		Span<uint> rk = _roundKeys.Span;
 		Span<uint> rrk = _reverseRoundKeys.Span;
 
-		SM4Utils.InitRounkeys(key, rk);
+		SM4Utils.InitRoundKeys(key, rk);
 
 		rk.CopyTo(rrk);
 		rrk.Reverse();
@@ -54,14 +54,14 @@ public sealed class SM4Crypto : BlockCrypto16
 		base.Dispose();
 	}
 
-	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
 	{
 		Span<uint> rk = _roundKeys.Span;
 
 		return SM4Utils.Encrypt(rk, source);
 	}
 
-	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
 	{
 		Span<uint> rk = _reverseRoundKeys.Span;
 

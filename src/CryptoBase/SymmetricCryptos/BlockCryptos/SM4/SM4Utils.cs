@@ -83,7 +83,7 @@ public static class SM4Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void InitRounkeys(ReadOnlySpan<byte> key, Span<uint> rk)
+	public static void InitRoundKeys(ReadOnlySpan<byte> key, Span<uint> rk)
 	{
 		uint k0 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(0 * 4)) ^ 0xa3b1bac6;
 		uint k1 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(1 * 4)) ^ 0x56aa3350;
@@ -207,42 +207,46 @@ public static class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static VectorBuffer16 Encrypt(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer16 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer16 r);
-		r.U0 = source.U0;
-		r.U1 = source.U1;
-		r.U2 = source.U2;
-		r.U3 = source.U3;
+		Unsafe.SkipInit(out VectorBuffer16 tmp);
+
+		if (BitConverter.IsLittleEndian)
+		{
+			tmp.U0 = BinaryPrimitives.ReverseEndianness(source.U0);
+			tmp.U1 = BinaryPrimitives.ReverseEndianness(source.U1);
+			tmp.U2 = BinaryPrimitives.ReverseEndianness(source.U2);
+			tmp.U3 = BinaryPrimitives.ReverseEndianness(source.U3);
+		}
+		else
+		{
+			tmp = source;
+		}
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			r.U0 ^= T(r.U1 ^ r.U2 ^ r.U3 ^ rk[i + 0]);
-			r.U1 ^= T(r.U0 ^ r.U2 ^ r.U3 ^ rk[i + 1]);
-			r.U2 ^= T(r.U0 ^ r.U1 ^ r.U3 ^ rk[i + 2]);
-			r.U3 ^= T(r.U0 ^ r.U1 ^ r.U2 ^ rk[i + 3]);
+			tmp.U0 ^= T(tmp.U1 ^ tmp.U2 ^ tmp.U3 ^ rk[i + 0]);
+			tmp.U1 ^= T(tmp.U0 ^ tmp.U2 ^ tmp.U3 ^ rk[i + 1]);
+			tmp.U2 ^= T(tmp.U0 ^ tmp.U1 ^ tmp.U3 ^ rk[i + 2]);
+			tmp.U3 ^= T(tmp.U0 ^ tmp.U1 ^ tmp.U2 ^ rk[i + 3]);
+		}
+
+		Unsafe.SkipInit(out VectorBuffer16 r);
+
+		if (BitConverter.IsLittleEndian)
+		{
+			r.U0 = BinaryPrimitives.ReverseEndianness(tmp.U3);
+			r.U1 = BinaryPrimitives.ReverseEndianness(tmp.U2);
+			r.U2 = BinaryPrimitives.ReverseEndianness(tmp.U1);
+			r.U3 = BinaryPrimitives.ReverseEndianness(tmp.U0);
+		}
+		else
+		{
+			r.U0 = tmp.U3;
+			r.U1 = tmp.U2;
+			r.U2 = tmp.U1;
+			r.U3 = tmp.U0;
 		}
 
 		return r;
-	}
-
-	public static void Encrypt(ReadOnlySpan<uint> rk, in ReadOnlySpan<byte> source, in Span<byte> destination)
-	{
-		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(0 * 4));
-		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(1 * 4));
-		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(2 * 4));
-		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(3 * 4));
-
-		for (int i = 0; i < 32; i += 4)
-		{
-			x0 ^= T(x1 ^ x2 ^ x3 ^ rk[i + 0]);
-			x1 ^= T(x0 ^ x2 ^ x3 ^ rk[i + 1]);
-			x2 ^= T(x0 ^ x1 ^ x3 ^ rk[i + 2]);
-			x3 ^= T(x0 ^ x1 ^ x2 ^ rk[i + 3]);
-		}
-
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(0 * 4), x3);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(1 * 4), x2);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(2 * 4), x1);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(3 * 4), x0);
 	}
 
 	/// <summary>
