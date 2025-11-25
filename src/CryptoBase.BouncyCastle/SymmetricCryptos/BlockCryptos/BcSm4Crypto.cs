@@ -23,7 +23,7 @@ public sealed class BcSm4Crypto : BlockCrypto16
 		_decryptionEngine.Init(false, keyParameter);
 	}
 
-	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer16 r);
 		_encryptionEngine.ProcessBlock(source, r);
@@ -31,7 +31,7 @@ public sealed class BcSm4Crypto : BlockCrypto16
 		return r;
 	}
 
-	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer16 r);
 		_decryptionEngine.ProcessBlock(source, r);

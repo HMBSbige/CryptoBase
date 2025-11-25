@@ -207,42 +207,26 @@ public static class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static VectorBuffer16 Encrypt(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer16 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer16 r);
-		r.U0 = source.U0;
-		r.U1 = source.U1;
-		r.U2 = source.U2;
-		r.U3 = source.U3;
+		uint u0 = BinaryPrimitives.ReverseEndianness(source.U0);
+		uint u1 = BinaryPrimitives.ReverseEndianness(source.U1);
+		uint u2 = BinaryPrimitives.ReverseEndianness(source.U2);
+		uint u3 = BinaryPrimitives.ReverseEndianness(source.U3);
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			r.U0 ^= T(r.U1 ^ r.U2 ^ r.U3 ^ rk[i + 0]);
-			r.U1 ^= T(r.U0 ^ r.U2 ^ r.U3 ^ rk[i + 1]);
-			r.U2 ^= T(r.U0 ^ r.U1 ^ r.U3 ^ rk[i + 2]);
-			r.U3 ^= T(r.U0 ^ r.U1 ^ r.U2 ^ rk[i + 3]);
+			u0 ^= T(u1 ^ u2 ^ u3 ^ rk[i + 0]);
+			u1 ^= T(u0 ^ u2 ^ u3 ^ rk[i + 1]);
+			u2 ^= T(u0 ^ u1 ^ u3 ^ rk[i + 2]);
+			u3 ^= T(u0 ^ u1 ^ u2 ^ rk[i + 3]);
 		}
+
+		Unsafe.SkipInit(out VectorBuffer16 r);
+		r.U0 = BinaryPrimitives.ReverseEndianness(u3);
+		r.U1 = BinaryPrimitives.ReverseEndianness(u2);
+		r.U2 = BinaryPrimitives.ReverseEndianness(u1);
+		r.U3 = BinaryPrimitives.ReverseEndianness(u0);
 
 		return r;
-	}
-
-	public static void Encrypt(ReadOnlySpan<uint> rk, in ReadOnlySpan<byte> source, in Span<byte> destination)
-	{
-		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(0 * 4));
-		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(1 * 4));
-		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(2 * 4));
-		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(3 * 4));
-
-		for (int i = 0; i < 32; i += 4)
-		{
-			x0 ^= T(x1 ^ x2 ^ x3 ^ rk[i + 0]);
-			x1 ^= T(x0 ^ x2 ^ x3 ^ rk[i + 1]);
-			x2 ^= T(x0 ^ x1 ^ x3 ^ rk[i + 2]);
-			x3 ^= T(x0 ^ x1 ^ x2 ^ rk[i + 3]);
-		}
-
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(0 * 4), x3);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(1 * 4), x2);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(2 * 4), x1);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(3 * 4), x0);
 	}
 
 	/// <summary>

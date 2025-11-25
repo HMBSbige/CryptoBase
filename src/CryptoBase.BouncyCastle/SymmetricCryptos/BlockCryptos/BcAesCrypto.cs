@@ -37,7 +37,7 @@ public sealed class BcAesCrypto : BlockCrypto16
 		_decryptionEngine.Init(false, keyParameter);
 	}
 
-	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer16 r);
 		_encryptionEngine.ProcessBlock(source, r);
@@ -45,7 +45,7 @@ public sealed class BcAesCrypto : BlockCrypto16
 		return r;
 	}
 
-	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer16 r);
 		_decryptionEngine.ProcessBlock(source, r);
@@ -53,7 +53,7 @@ public sealed class BcAesCrypto : BlockCrypto16
 		return r;
 	}
 
-	public override VectorBuffer64 Encrypt(VectorBuffer64 source)
+	public override VectorBuffer64 Encrypt(scoped in VectorBuffer64 source)
 	{
 		if (_encryptionEngine is AesEngine_X86 engineX86)
 		{
@@ -66,7 +66,7 @@ public sealed class BcAesCrypto : BlockCrypto16
 		return base.Encrypt(source);
 	}
 
-	public override VectorBuffer64 Decrypt(VectorBuffer64 source)
+	public override VectorBuffer64 Decrypt(scoped in VectorBuffer64 source)
 	{
 		if (_decryptionEngine is AesEngine_X86 engineX86)
 		{

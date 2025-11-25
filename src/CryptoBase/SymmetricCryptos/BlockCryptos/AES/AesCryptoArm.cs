@@ -75,7 +75,7 @@ public sealed class AesCryptoArm : AesCrypto
 		state = AesArm.InverseMixColumns(AesArm.Decrypt(state, key));
 	}
 
-	public override VectorBuffer16 Encrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
 	{
 		Span<Vector128<byte>> keys = _roundKeys.Span;
 
@@ -92,7 +92,7 @@ public sealed class AesCryptoArm : AesCrypto
 		return value;
 	}
 
-	public override VectorBuffer16 Decrypt(VectorBuffer16 source)
+	public override VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
 	{
 		Span<Vector128<byte>> keys = _inverseRoundKeys.Span;
 
