@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Digests;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.Digests;
 using CryptoBase.Digests.CRC32;
-using CryptoBase.Digests.CRC32C;
 using System.Text;
 
 namespace CryptoBase.Tests;
@@ -73,7 +72,6 @@ public class CRC32Test
 	[InlineData(@"5c6f1913817f054beaa45c911b141120ad3822a5d1d27c38362b0b0498bc1e82d7806444f7d25b2ac8581626b6c4c37811c3e5a85e6007fc4dce60e9ab257349281db35eeef273ce326942deec8f9f046240e61072b32733e4be09e8753e53a2294b7bd7b3b1474fcd4bafa88ab0c8fc36ce4696ee093e4a3300064303430eff32d41657783a660fe72086f94db23b194b1d96f44283323a67e80e475c1afe08b910a1e2e5c242a5ed33c9a26135a66ecb766e514f20bd4a631d80f886408d7507238f5b505b2cc1df4092f4c400955de89dfc2136bad7e292ba6091c19c64d86cfa6870bb35af7930a730362b0c0deace27b46f48cdccd02231c1f22f8029", @"83c1318e")]
 	public void CRC32C(string message, string expected)
 	{
-		TestC(new Crc32CSF(), message, expected);
 		TestC(DigestUtils.Create(DigestType.Crc32C), message, expected);
 	}
 }

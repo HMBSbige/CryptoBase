@@ -34,12 +34,7 @@ public static class DigestUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static IHash CreateCrc32C()
 	{
-		if (Crc32CX86.IsSupport)
-		{
-			return new Crc32CX86();
-		}
-
-		return new Crc32CSF();
+		return new Crc32C();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

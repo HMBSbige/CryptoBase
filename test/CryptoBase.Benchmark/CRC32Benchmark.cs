@@ -20,9 +20,17 @@ public class CRC32Benchmark
 	}
 
 	[Benchmark(Baseline = true)]
+	public void Crc32C()
+	{
+		using Crc32C hasher = new();
+		Span<byte> hash = stackalloc byte[hasher.Length];
+		hasher.UpdateFinal(_randombytes, hash);
+	}
+
+	[Benchmark]
 	public void Crc32SF()
 	{
-		using var hasher = new Crc32SF();
+		using Crc32SF hasher = new();
 		Span<byte> hash = stackalloc byte[hasher.Length];
 		hasher.UpdateFinal(_randombytes, hash);
 	}
@@ -30,23 +38,7 @@ public class CRC32Benchmark
 	[Benchmark]
 	public void Crc32X86()
 	{
-		using var hasher = new Crc32X86();
-		Span<byte> hash = stackalloc byte[hasher.Length];
-		hasher.UpdateFinal(_randombytes, hash);
-	}
-
-	[Benchmark]
-	public void Crc32CSF()
-	{
-		using var hasher = new Crc32CSF();
-		Span<byte> hash = stackalloc byte[hasher.Length];
-		hasher.UpdateFinal(_randombytes, hash);
-	}
-
-	[Benchmark]
-	public void Crc32CX86()
-	{
-		using var hasher = new Crc32CX86();
+		using Crc32X86 hasher = new();
 		Span<byte> hash = stackalloc byte[hasher.Length];
 		hasher.UpdateFinal(_randombytes, hash);
 	}

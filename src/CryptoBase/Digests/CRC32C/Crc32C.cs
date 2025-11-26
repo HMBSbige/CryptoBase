@@ -1,9 +1,8 @@
+using System.Numerics;
+
 namespace CryptoBase.Digests.CRC32C;
 
-/// <summary>
-/// Same as <see cref="Crc32X86" /> , but different constants.
-/// </summary>
-public class Crc32CX86 : IHash
+public class Crc32C : IHash
 {
 	public string Name => @"CRC-32C";
 
@@ -11,11 +10,9 @@ public class Crc32CX86 : IHash
 
 	public int BlockSize => HashConstants.Crc32BlockSize;
 
-	public static bool IsSupport => Sse42.IsSupported || Sse2.IsSupported && Pclmulqdq.IsSupported;
-
 	private uint _state;
 
-	public Crc32CX86()
+	public Crc32C()
 	{
 		Reset();
 	}
@@ -28,20 +25,19 @@ public class Crc32CX86 : IHash
 
 	public void Update(ReadOnlySpan<byte> source)
 	{
+		if (Sse42.X64.IsSupported || Crc32.Arm64.IsSupported)
+		{
+			UpdateDefault(source);
+			return;
+		}
+
 		if (Sse2.IsSupported && Pclmulqdq.IsSupported && source.Length >= 64)
 		{
 			_state = Update(source, _state);
 			source = source.Slice(source.Length - source.Length % 0x10);
 		}
 
-		if (Sse42.IsSupported)
-		{
-			UpdateSse42(source);
-		}
-		else
-		{
-			_state = ~Crc32Table.Crc32C.Append(~_state, source);
-		}
+		UpdateDefault(source);
 	}
 
 	public void GetHash(Span<byte> destination)
@@ -151,53 +147,42 @@ public class Crc32CX86 : IHash
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void UpdateSse42(ReadOnlySpan<byte> source)
+	private void UpdateDefault(ReadOnlySpan<byte> source)
 	{
 		int length = source.Length;
 		int offset = 0;
 		ref byte sourceRef = ref source.GetReference();
-		ref uint state = ref _state;
 
-		if (Sse42.X64.IsSupported)
+		if (Sse42.X64.IsSupported || Crc32.Arm64.IsSupported)
 		{
 			while (length >= 8)
 			{
 				ref ulong data = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, offset));
-				state = (uint)Sse42.X64.Crc32(state, data);
+				_state = BitOperations.Crc32C(_state, data);
 				offset += 8;
 				length -= 8;
 			}
-
-			if (length >= 4)
-			{
-				ref uint data = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, offset));
-				state = Sse42.Crc32(state, data);
-				offset += 4;
-				length -= 4;
-			}
 		}
-		else
+
+		while (length >= 4)
 		{
-			while (length >= 4)
-			{
-				ref uint data = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, offset));
-				state = Sse42.Crc32(state, data);
-				offset += 4;
-				length -= 4;
-			}
+			ref uint data = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, offset));
+			_state = BitOperations.Crc32C(_state, data);
+			offset += 4;
+			length -= 4;
 		}
 
 		if (length >= 2)
 		{
 			ref ushort data = ref Unsafe.As<byte, ushort>(ref Unsafe.Add(ref sourceRef, offset));
-			state = Sse42.Crc32(state, data);
+			_state = BitOperations.Crc32C(_state, data);
 			offset += 2;
 			length -= 2;
 		}
 
 		if (length > 0)
 		{
-			state = Sse42.Crc32(state, Unsafe.Add(ref sourceRef, offset));
+			_state = BitOperations.Crc32C(_state, Unsafe.Add(ref sourceRef, offset));
 		}
 	}
 
