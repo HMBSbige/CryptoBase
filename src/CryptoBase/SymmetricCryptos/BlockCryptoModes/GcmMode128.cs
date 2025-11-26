@@ -13,10 +13,10 @@ public class GcmMode128 : IAEADCrypto
 	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
 	private readonly bool _disposeCrypto;
-	private readonly IBlockCrypto16 _crypto;
+	private readonly IBlockCrypto _crypto;
 	private readonly IMac _gHash;
 
-	public GcmMode128(IBlockCrypto16 crypto, bool disposeCrypto = true)
+	public GcmMode128(IBlockCrypto crypto, bool disposeCrypto = true)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
 		_crypto = crypto;

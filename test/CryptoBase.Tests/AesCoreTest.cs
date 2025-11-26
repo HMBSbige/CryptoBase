@@ -8,7 +8,7 @@ namespace CryptoBase.Tests;
 
 public class AesCoreTest
 {
-	private static void Test_Internal(IBlockCrypto16 crypto, string hex1, string hex2)
+	private static void Test_Internal(IBlockCrypto crypto, string hex1, string hex2)
 	{
 		Assert.Equal(@"AES", crypto.Name);
 		Assert.Equal(16, crypto.BlockSize);

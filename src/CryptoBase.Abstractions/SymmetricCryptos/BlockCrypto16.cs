@@ -1,234 +1,87 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
-public abstract class BlockCrypto16 : IBlockCrypto16
+public abstract class BlockCrypto16 : IBlockCrypto
 {
+	public virtual void Dispose()
+	{
+		GC.SuppressFinalize(this);
+	}
+
 	public abstract string Name { get; }
 
 	public int BlockSize => 16;
 
 	public virtual BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Unknown;
 
-	public abstract VectorBuffer16 Encrypt(scoped in VectorBuffer16 source);
-	public abstract VectorBuffer16 Decrypt(scoped in VectorBuffer16 source);
-
-	public virtual VectorBuffer32 Encrypt(scoped in VectorBuffer32 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer32 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer32 Decrypt(scoped in VectorBuffer32 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer32 r);
-
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer64 Encrypt(scoped in VectorBuffer64 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer64 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer64 Decrypt(scoped in VectorBuffer64 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer64 r);
-
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer128 Encrypt(scoped in VectorBuffer128 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer128 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer128 Decrypt(scoped in VectorBuffer128 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer128 r);
-
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer256 Encrypt(scoped in VectorBuffer256 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer256 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer256 Decrypt(scoped in VectorBuffer256 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer256 r);
-
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer512 Encrypt(scoped in VectorBuffer512 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer512 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer512 Decrypt(scoped in VectorBuffer512 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer512 r);
-
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer1024 Encrypt(scoped in VectorBuffer1024 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer1024 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
-	}
-
-	public virtual VectorBuffer1024 Decrypt(scoped in VectorBuffer1024 source)
-	{
-		Unsafe.SkipInit(out VectorBuffer1024 r);
-
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
-
-		return r;
-	}
-
-	public void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public virtual void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Encrypt(source.AsVectorBuffer16()));
 	}
 
-	public void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
+	public virtual void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Decrypt(source.AsVectorBuffer16()));
 	}
 
 	public virtual void Encrypt2(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 2 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 2 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Encrypt(source.AsVectorBuffer32()));
+		Encrypt(source.Slice(0 * 1 * BlockSize), destination.Slice(0 * 1 * BlockSize));
+		Encrypt(source.Slice(1 * 1 * BlockSize), destination.Slice(1 * 1 * BlockSize));
 	}
 
 	public virtual void Decrypt2(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 2 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 2 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Decrypt(source.AsVectorBuffer32()));
+		Decrypt(source.Slice(0 * 1 * BlockSize), destination.Slice(0 * 1 * BlockSize));
+		Decrypt(source.Slice(1 * 1 * BlockSize), destination.Slice(1 * 1 * BlockSize));
 	}
 
 	public virtual void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 4 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 4 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Encrypt(source.AsVectorBuffer64()));
+		Encrypt2(source.Slice(0 * 2 * BlockSize), destination.Slice(0 * 2 * BlockSize));
+		Encrypt2(source.Slice(1 * 2 * BlockSize), destination.Slice(1 * 2 * BlockSize));
 	}
 
 	public virtual void Decrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 4 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 4 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Decrypt(source.AsVectorBuffer64()));
+		Decrypt2(source.Slice(0 * 2 * BlockSize), destination.Slice(0 * 2 * BlockSize));
+		Decrypt2(source.Slice(1 * 2 * BlockSize), destination.Slice(1 * 2 * BlockSize));
 	}
 
 	public virtual void Encrypt8(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 8 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 8 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Encrypt(source.AsVectorBuffer128()));
+		Encrypt4(source.Slice(0 * 4 * BlockSize), destination.Slice(0 * 4 * BlockSize));
+		Encrypt4(source.Slice(1 * 4 * BlockSize), destination.Slice(1 * 4 * BlockSize));
 	}
 
 	public virtual void Decrypt8(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 8 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 8 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Decrypt(source.AsVectorBuffer128()));
+		Decrypt4(source.Slice(0 * 4 * BlockSize), destination.Slice(0 * 4 * BlockSize));
+		Decrypt4(source.Slice(1 * 4 * BlockSize), destination.Slice(1 * 4 * BlockSize));
 	}
 
 	public virtual void Encrypt16(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 16 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 16 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Encrypt(source.AsVectorBuffer256()));
+		Encrypt8(source.Slice(0 * 8 * BlockSize), destination.Slice(0 * 8 * BlockSize));
+		Encrypt8(source.Slice(1 * 8 * BlockSize), destination.Slice(1 * 8 * BlockSize));
 	}
 
 	public virtual void Decrypt16(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 16 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 16 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Decrypt(source.AsVectorBuffer256()));
+		Decrypt8(source.Slice(0 * 8 * BlockSize), destination.Slice(0 * 8 * BlockSize));
+		Decrypt8(source.Slice(1 * 8 * BlockSize), destination.Slice(1 * 8 * BlockSize));
 	}
 
 	public virtual void Encrypt32(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 32 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 32 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Encrypt(source.AsVectorBuffer512()));
+		Encrypt16(source.Slice(0 * 16 * BlockSize), destination.Slice(0 * 16 * BlockSize));
+		Encrypt16(source.Slice(1 * 16 * BlockSize), destination.Slice(1 * 16 * BlockSize));
 	}
 
 	public virtual void Decrypt32(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, 32 * BlockSize, nameof(source));
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 32 * BlockSize, nameof(destination));
-
-		Unsafe.WriteUnaligned(ref destination.GetReference(), Decrypt(source.AsVectorBuffer512()));
-	}
-
-	public virtual void Dispose()
-	{
-		GC.SuppressFinalize(this);
+		Decrypt16(source.Slice(0 * 16 * BlockSize), destination.Slice(0 * 16 * BlockSize));
+		Decrypt16(source.Slice(1 * 16 * BlockSize), destination.Slice(1 * 16 * BlockSize));
 	}
 }

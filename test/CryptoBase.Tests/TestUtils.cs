@@ -2,7 +2,6 @@ using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -102,17 +101,17 @@ public static class TestUtils
 		Assert.Equal(expected, cipher);
 	}
 
-	public static void TestNBlock16(IBlockCrypto16 crypto)
+	public static void TestNBlock16(IBlockCrypto crypto)
 	{
 		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(2 * 64 * crypto.BlockSize);
-		ReadOnlySpan<byte> expectedCipher = stackalloc byte[source.Length];
+		Span<byte> expectedCipher = stackalloc byte[source.Length];
 
 		for (int i = 0; i < source.Length / crypto.BlockSize; ++i)
 		{
-			Unsafe.WriteUnaligned(ref Unsafe.Add(ref expectedCipher.GetReference(), i * crypto.BlockSize), crypto.Encrypt(source.Slice(i * crypto.BlockSize).AsVectorBuffer16()));
+			crypto.Encrypt(source.Slice(i * crypto.BlockSize), expectedCipher.Slice(i * crypto.BlockSize));
 		}
 
-		foreach (int multiplier in Enumerable.Range(0, 6).Select(x => 1 << x))
+		foreach (int multiplier in Enumerable.Range(0, 5).Select(x => 1 << x))
 		{
 			int chunkSize = multiplier * crypto.BlockSize;
 
@@ -120,49 +119,66 @@ public static class TestUtils
 			{
 				ReadOnlySpan<byte> plainSlice = source.Slice(i * chunkSize, chunkSize);
 				ReadOnlySpan<byte> expectedCipherSlice = expectedCipher.Slice(i * chunkSize, chunkSize);
+				Span<byte> tmp = new byte[chunkSize];
 
 				switch (multiplier)
 				{
 					case 1:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer16()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer16()));
+						crypto.Encrypt(plainSlice, tmp);
+						Assert.Equal(expectedCipherSlice, tmp);
+
+						crypto.Decrypt(expectedCipherSlice, tmp);
+						Assert.Equal(plainSlice, tmp);
+
 						break;
 					}
 					case 2:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer32()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer32()));
+						crypto.Encrypt2(plainSlice, tmp);
+						Assert.Equal(expectedCipherSlice, tmp);
+
+						crypto.Decrypt2(expectedCipherSlice, tmp);
+						Assert.Equal(plainSlice, tmp);
+
 						break;
 					}
 					case 4:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer64()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer64()));
+						crypto.Encrypt4(plainSlice, tmp);
+						Assert.Equal(expectedCipherSlice, tmp);
+
+						crypto.Decrypt4(expectedCipherSlice, tmp);
+						Assert.Equal(plainSlice, tmp);
+
 						break;
 					}
 					case 8:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer128()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer128()));
+						crypto.Encrypt8(plainSlice, tmp);
+						Assert.Equal(expectedCipherSlice, tmp);
+
+						crypto.Decrypt8(expectedCipherSlice, tmp);
+						Assert.Equal(plainSlice, tmp);
+
 						break;
 					}
 					case 16:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer256()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer256()));
+						crypto.Encrypt16(plainSlice, tmp);
+						Assert.Equal(expectedCipherSlice, tmp);
+
+						crypto.Decrypt16(expectedCipherSlice, tmp);
+						Assert.Equal(plainSlice, tmp);
 						break;
 					}
 					case 32:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer512()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer512()));
-						break;
-					}
-					case 64:
-					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer1024()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer1024()));
+						crypto.Encrypt32(plainSlice, tmp);
+						Assert.Equal(expectedCipherSlice, tmp);
+
+						crypto.Decrypt32(expectedCipherSlice, tmp);
+						Assert.Equal(plainSlice, tmp);
 						break;
 					}
 					default:

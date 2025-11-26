@@ -1,8 +1,14 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
-[Obsolete]
 public interface IBlockCrypto : ISymmetricCrypto
 {
+	/// <summary>
+	/// 块大小，单位字节
+	/// </summary>
+	int BlockSize { get; }
+
+	BlockCryptoHardwareAcceleration HardwareAcceleration { get; }
+
 	void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination);
 
 	void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination);

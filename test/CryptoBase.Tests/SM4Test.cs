@@ -1,6 +1,4 @@
-using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.Abstractions.Vectors;
 using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
@@ -10,7 +8,7 @@ namespace CryptoBase.Tests;
 
 public class SM4Test
 {
-	private static void Test_Internal(IBlockCrypto16 crypto, string hex1, string hex2, string hex3)
+	private static void Test_Internal(IBlockCrypto crypto, string hex1, string hex2, string hex3)
 	{
 		Assert.Equal(@"SM4", crypto.Name);
 		Assert.Equal(16, crypto.BlockSize);
@@ -18,30 +16,39 @@ public class SM4Test
 		Span<byte> h1 = hex1.FromHex();
 		Span<byte> h2 = hex2.FromHex();
 		Span<byte> h3 = hex3.FromHex();
+		Span<byte> o1 = new byte[crypto.BlockSize];
 
-		Assert.Equal(h2, crypto.Encrypt(h1.AsVectorBuffer16()));
-		Assert.Equal(h2, crypto.Encrypt(h1.AsVectorBuffer16()));
+		crypto.Encrypt(h1, o1);
+		Assert.True(o1.SequenceEqual(h2));
 
-		VectorBuffer16 t = h1.AsVectorBuffer16();
+		crypto.Encrypt(h1, o1);
+		Assert.True(o1.SequenceEqual(h2));
 
-		for (int i = 0; i < 1000000; ++i)
-		{
-			t = crypto.Encrypt(t);
-		}
-
-		Assert.Equal(h3, t);
-
-		Assert.Equal(h1, crypto.Decrypt(h2.AsVectorBuffer16()));
-		Assert.Equal(h1, crypto.Decrypt(h2.AsVectorBuffer16()));
-
-		t = h3.AsVectorBuffer16();
+		Span<byte> t = h1;
 
 		for (int i = 0; i < 1000000; ++i)
 		{
-			t = crypto.Decrypt(t);
+			crypto.Encrypt(t, o1);
+			t = o1;
 		}
 
-		Assert.Equal(h1, t);
+		Assert.True(t.SequenceEqual(h3));
+
+		crypto.Decrypt(h2, o1);
+		Assert.True(o1.SequenceEqual(h1));
+
+		crypto.Decrypt(h2, o1);
+		Assert.True(o1.SequenceEqual(h1));
+
+		t = h3;
+
+		for (int i = 0; i < 1000000; ++i)
+		{
+			crypto.Decrypt(t, o1);
+			t = o1;
+		}
+
+		Assert.True(t.SequenceEqual(h1));
 
 		crypto.Dispose();
 	}

@@ -76,46 +76,50 @@ public class Aes192CryptoX86 : AesCrypto
 		_k23 = AesX86.InverseMixColumns(_k1);
 	}
 
-	public override VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		VectorBuffer16 t = source;
+		base.Encrypt(source, destination);
 
-		t.V128 ^= _k0;
-		t.V128 = AesX86.Encrypt(t.V128, _k1);
-		t.V128 = AesX86.Encrypt(t.V128, _k2);
-		t.V128 = AesX86.Encrypt(t.V128, _k3);
-		t.V128 = AesX86.Encrypt(t.V128, _k4);
-		t.V128 = AesX86.Encrypt(t.V128, _k5);
-		t.V128 = AesX86.Encrypt(t.V128, _k6);
-		t.V128 = AesX86.Encrypt(t.V128, _k7);
-		t.V128 = AesX86.Encrypt(t.V128, _k8);
-		t.V128 = AesX86.Encrypt(t.V128, _k9);
-		t.V128 = AesX86.Encrypt(t.V128, _k10);
-		t.V128 = AesX86.Encrypt(t.V128, _k11);
-		t.V128 = AesX86.EncryptLast(t.V128, _k12);
+		Vector128<byte> t = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
 
-		return t;
+		t ^= _k0;
+		t = AesX86.Encrypt(t, _k1);
+		t = AesX86.Encrypt(t, _k2);
+		t = AesX86.Encrypt(t, _k3);
+		t = AesX86.Encrypt(t, _k4);
+		t = AesX86.Encrypt(t, _k5);
+		t = AesX86.Encrypt(t, _k6);
+		t = AesX86.Encrypt(t, _k7);
+		t = AesX86.Encrypt(t, _k8);
+		t = AesX86.Encrypt(t, _k9);
+		t = AesX86.Encrypt(t, _k10);
+		t = AesX86.Encrypt(t, _k11);
+		t = AesX86.EncryptLast(t, _k12);
+
+		Unsafe.WriteUnaligned(ref destination.GetReference(), t);
 	}
 
-	public override VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		VectorBuffer16 t = source;
+		base.Decrypt(source, destination);
 
-		t.V128 ^= _k12;
-		t.V128 = AesX86.Decrypt(t.V128, _k13);
-		t.V128 = AesX86.Decrypt(t.V128, _k14);
-		t.V128 = AesX86.Decrypt(t.V128, _k15);
-		t.V128 = AesX86.Decrypt(t.V128, _k16);
-		t.V128 = AesX86.Decrypt(t.V128, _k17);
-		t.V128 = AesX86.Decrypt(t.V128, _k18);
-		t.V128 = AesX86.Decrypt(t.V128, _k19);
-		t.V128 = AesX86.Decrypt(t.V128, _k20);
-		t.V128 = AesX86.Decrypt(t.V128, _k21);
-		t.V128 = AesX86.Decrypt(t.V128, _k22);
-		t.V128 = AesX86.Decrypt(t.V128, _k23);
-		t.V128 = AesX86.DecryptLast(t.V128, _k0);
+		Vector128<byte> t = Unsafe.ReadUnaligned<Vector128<byte>>(in source.GetReference());
 
-		return t;
+		t ^= _k12;
+		t = AesX86.Decrypt(t, _k13);
+		t = AesX86.Decrypt(t, _k14);
+		t = AesX86.Decrypt(t, _k15);
+		t = AesX86.Decrypt(t, _k16);
+		t = AesX86.Decrypt(t, _k17);
+		t = AesX86.Decrypt(t, _k18);
+		t = AesX86.Decrypt(t, _k19);
+		t = AesX86.Decrypt(t, _k20);
+		t = AesX86.Decrypt(t, _k21);
+		t = AesX86.Decrypt(t, _k22);
+		t = AesX86.Decrypt(t, _k23);
+		t = AesX86.DecryptLast(t, _k0);
+
+		Unsafe.WriteUnaligned(ref destination.GetReference(), t);
 	}
 
 	public override void Encrypt2(ReadOnlySpan<byte> source, Span<byte> destination)

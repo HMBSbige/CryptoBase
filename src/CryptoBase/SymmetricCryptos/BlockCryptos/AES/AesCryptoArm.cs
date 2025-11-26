@@ -75,11 +75,13 @@ public sealed class AesCryptoArm : AesCrypto
 		state = AesArm.InverseMixColumns(AesArm.Decrypt(state, key));
 	}
 
-	public override VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		base.Encrypt(source, destination);
+
 		Span<Vector128<byte>> keys = _roundKeys.Span;
 
-		VectorBuffer16 value = source;
+		VectorBuffer16 value = Unsafe.ReadUnaligned<VectorBuffer16>(in source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
@@ -89,14 +91,16 @@ public sealed class AesCryptoArm : AesCrypto
 		value.V128 = AesArm.Encrypt(value.V128, keys[^2]);
 		value.V128 ^= keys[^1];
 
-		return value;
+		Unsafe.WriteUnaligned(ref destination.GetReference(), value);
 	}
 
-	public override VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		base.Decrypt(source, destination);
+
 		Span<Vector128<byte>> keys = _inverseRoundKeys.Span;
 
-		VectorBuffer16 value = source;
+		VectorBuffer16 value = Unsafe.ReadUnaligned<VectorBuffer16>(in source.GetReference());
 
 		foreach (Vector128<byte> key in keys.Slice(0, keys.Length - 2))
 		{
@@ -106,7 +110,7 @@ public sealed class AesCryptoArm : AesCrypto
 		value.V128 = AesArm.Decrypt(value.V128, keys[^2]);
 		value.V128 ^= keys[^1];
 
-		return value;
+		Unsafe.WriteUnaligned(ref destination.GetReference(), value);
 	}
 
 	public override void Encrypt2(ReadOnlySpan<byte> source, Span<byte> destination)

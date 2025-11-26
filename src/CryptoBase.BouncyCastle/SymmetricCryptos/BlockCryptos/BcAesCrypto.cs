@@ -1,9 +1,7 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.Abstractions.Vectors;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
-using System.Runtime.CompilerServices;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
@@ -37,45 +35,37 @@ public sealed class BcAesCrypto : BlockCrypto16
 		_decryptionEngine.Init(false, keyParameter);
 	}
 
-	public override VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
+	public override void Encrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Unsafe.SkipInit(out VectorBuffer16 r);
-		_encryptionEngine.ProcessBlock(source, r);
-
-		return r;
+		_encryptionEngine.ProcessBlock(source, destination);
 	}
 
-	public override VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
+	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Unsafe.SkipInit(out VectorBuffer16 r);
-		_decryptionEngine.ProcessBlock(source, r);
-
-		return r;
+		_decryptionEngine.ProcessBlock(source, destination);
 	}
 
-	public override VectorBuffer64 Encrypt(scoped in VectorBuffer64 source)
+	public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		if (_encryptionEngine is AesEngine_X86 engineX86)
 		{
-			Unsafe.SkipInit(out VectorBuffer64 r);
-			engineX86.ProcessFourBlocks(source, r);
-
-			return r;
+			engineX86.ProcessFourBlocks(source, destination);
 		}
-
-		return base.Encrypt(source);
+		else
+		{
+			base.Encrypt4(source, destination);
+		}
 	}
 
-	public override VectorBuffer64 Decrypt(scoped in VectorBuffer64 source)
+	public override void Decrypt4(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		if (_decryptionEngine is AesEngine_X86 engineX86)
 		{
-			Unsafe.SkipInit(out VectorBuffer64 r);
-			engineX86.ProcessFourBlocks(source, r);
-
-			return r;
+			engineX86.ProcessFourBlocks(source, destination);
 		}
-
-		return base.Decrypt(source);
+		else
+		{
+			base.Decrypt4(source, destination);
+		}
 	}
 }
