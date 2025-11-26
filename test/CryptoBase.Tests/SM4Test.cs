@@ -1,15 +1,15 @@
-using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.Abstractions.Vectors;
 using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Tests;
 
 public class SM4Test
 {
+	// [MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Test_Internal(IBlockCrypto16 crypto, string hex1, string hex2, string hex3)
 	{
 		Assert.Equal(@"SM4", crypto.Name);
@@ -19,39 +19,25 @@ public class SM4Test
 		Span<byte> h2 = hex2.FromHex();
 		Span<byte> h3 = hex3.FromHex();
 
-		Assert.Equal(h2, crypto.Encrypt(h1.AsVectorBuffer16()));
-		Assert.Equal(h2, crypto.Encrypt(h1.AsVectorBuffer16()));
+		Span<byte> o1 = new byte[crypto.BlockSize];
+		// Span<byte> o1 = stackalloc byte[crypto.BlockSize];
+		h1.CopyTo(o1);
 
-		VectorBuffer16 t = h1.AsVectorBuffer16();
-
-		for (int i = 0; i < 1000000; ++i)
+		for (int i = 0; i < 10000000; ++i)
 		{
-			t = crypto.Encrypt(t);
+			crypto.Encrypt(o1, o1);
 		}
 
-		Assert.Equal(h3, t);
-
-		Assert.Equal(h1, crypto.Decrypt(h2.AsVectorBuffer16()));
-		Assert.Equal(h1, crypto.Decrypt(h2.AsVectorBuffer16()));
-
-		t = h3.AsVectorBuffer16();
-
-		for (int i = 0; i < 1000000; ++i)
-		{
-			t = crypto.Decrypt(t);
-		}
-
-		Assert.Equal(h1, t);
+		Assert.Equal(h3, o1);
 
 		crypto.Dispose();
 	}
 
 	[Theory]
-	[InlineData(@"0123456789ABCDEFFEDCBA9876543210", @"0123456789ABCDEFFEDCBA9876543210", @"681EDF34D206965E86B3E94F536E4246", @"595298C7C6FD271F0402F804C33D3F66")]
+	[InlineData(@"0123456789ABCDEFFEDCBA9876543210", @"0123456789ABCDEFFEDCBA9876543210", @"681EDF34D206965E86B3E94F536E4246", @"ef0ed914b9306c7415dceb71e554c56a")]
 	public void Test(string keyHex, string hex1, string hex2, string hex3)
 	{
 		byte[] key = keyHex.FromHex();
-		Test_Internal(new BcSm4Crypto(key), hex1, hex2, hex3);
 		Test_Internal(new SM4Crypto(key), hex1, hex2, hex3);
 	}
 

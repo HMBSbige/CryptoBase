@@ -14,6 +14,8 @@ public class TestEnvironment
 	[Fact]
 	public void IntrinsicDisableEnvironmentTest()
 	{
+		Assert.False(System.Runtime.GCSettings.IsServerGC);
+
 		if (X86Base.IsSupported)
 		{
 			if (Environment.GetEnvironmentVariable("DOTNET_EnableHWIntrinsic") is "0")

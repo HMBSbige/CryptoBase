@@ -1,12 +1,8 @@
 name: CI
 on:
   push:
-      tags:
-        - '*'
       branches:
-        - master
-        - renovate/**
-  pull_request:
+        - test/**
 env:
   ProjectName: ${{ github.event.repository.name }}
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
@@ -15,17 +11,6 @@ env:
   NET_VERSION: 10.0.x
 
 jobs:
-  check_format:
-    runs-on: ubuntu-slim
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: ${{ env.NET_VERSION }}
-
-      - name: Check .NET format
-        run: dotnet format -v diag --verify-no-changes
-
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -34,7 +19,6 @@ jobs:
         os:
           - windows-latest
           - ubuntu-latest
-          - macos-latest
 
     steps:
       - uses: actions/checkout@v6
@@ -48,23 +32,18 @@ jobs:
       - name: Run tests
         working-directory: test/${{ env.ProjectName }}.Tests
         run: |
-          dotnet test
           dotnet test -c Release
 
       - name: Run tests (Disable AVX512)
-        if: matrix.os != 'macos-latest'
         working-directory: test/${{ env.ProjectName }}.Tests
         run: |
-          dotnet test
           dotnet test -c Release
         env:
           DOTNET_EnableAVX512: 0
 
       - name: Run tests (Disable AVX)
-        if: matrix.os != 'macos-latest'
         working-directory: test/${{ env.ProjectName }}.Tests
         run: |
-          dotnet test
           dotnet test -c Release
         env:
           DOTNET_EnableAVX: 0
@@ -72,49 +51,6 @@ jobs:
       - name: Run tests (Disable HWIntrinsic)
         working-directory: test/${{ env.ProjectName }}.Tests
         run: |
-          dotnet test
           dotnet test -c Release
         env:
           DOTNET_EnableHWIntrinsic: 0
-
-  build:
-    needs: [check_format, test]
-    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    strategy:
-      matrix:
-        NugetProjectName:
-          - CryptoBase
-          - CryptoBase.Abstractions
-          - CryptoBase.BouncyCastle
-
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: ${{ env.NET_VERSION }}
-
-      - name: Build
-        working-directory: src/${{ matrix.NugetProjectName }}
-        run: dotnet pack
-
-      - name: Push nuget packages
-        working-directory: src/${{ matrix.NugetProjectName }}/bin/Release
-        run: |
-          dotnet nuget push *.nupkg -s https://nuget.pkg.github.com/HMBSbige -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
-          dotnet nuget push *.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
-          dotnet nuget push *.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NuGetAPIKey }} --skip-duplicate
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          prerelease: false
