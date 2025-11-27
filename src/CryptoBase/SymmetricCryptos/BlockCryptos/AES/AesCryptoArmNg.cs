@@ -90,6 +90,7 @@ internal readonly struct AesCryptoArmNg : IBlock16Crypto<AesCryptoArmNg>
 		return new AesCryptoArmNg(key);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
 	{
 		VectorBuffer16 value = source;
@@ -135,6 +136,7 @@ internal readonly struct AesCryptoArmNg : IBlock16Crypto<AesCryptoArmNg>
 		return value;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
 	{
 		VectorBuffer16 value = source;
