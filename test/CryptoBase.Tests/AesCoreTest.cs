@@ -44,10 +44,15 @@ public class AesCoreTest
 	[InlineData(@"0000000000000000000000000000000000000000000000000000000000000000", @"80000000000000000000000000000000", @"DDC6BF790C15760D8D9AEB6F9A75FD4E")]
 	public void Test(string keyHex, string hex1, string hex2)
 	{
-		byte[] key = keyHex.FromHex();
+		ReadOnlySpan<byte> key = keyHex.FromHex();
+		ReadOnlySpan<byte> plain = hex1.FromHex();
+		ReadOnlySpan<byte> cipher = hex2.FromHex();
+
 		Test_Internal(new BcAesCrypto(key), hex1, hex2);
 		Test_Internal(AesCrypto.CreateCore(key), hex1, hex2);
 		Test_Internal(new DefaultAesCrypto(key), hex1, hex2);
+
+		TestUtils.TestBlock16<AesCryptoNg>(key, plain, cipher);
 	}
 
 	[Theory]
