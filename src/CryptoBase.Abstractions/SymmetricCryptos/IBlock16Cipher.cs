@@ -1,6 +1,6 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
-public interface IBlock16Crypto<out TSelf> : IDisposable where TSelf : IBlock16Crypto<TSelf>
+public interface IBlock16Cipher<out TSelf> : IDisposable where TSelf : IBlock16Cipher<TSelf>
 {
 	static abstract bool IsSupported { get; }
 

@@ -193,7 +193,7 @@ public static class TestUtils
 		crypto.Dispose();
 	}
 
-	public static void TestBlock16<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> plain, ReadOnlySpan<byte> cipher) where T : IBlock16Crypto<T>
+	public static void TestBlock16<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> plain, ReadOnlySpan<byte> cipher) where T : IBlock16Cipher<T>
 	{
 		Assert.True(T.IsSupported);
 		using T crypto = T.Create(key);

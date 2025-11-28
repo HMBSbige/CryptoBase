@@ -1,6 +1,6 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
-internal readonly struct AesCryptoArmNg : IBlock16Crypto<AesCryptoArmNg>
+internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 {
 	public static bool IsSupported => AesArm.IsSupported;
 
@@ -14,7 +14,7 @@ internal readonly struct AesCryptoArmNg : IBlock16Crypto<AesCryptoArmNg>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private AesCryptoArmNg(in ReadOnlySpan<byte> key)
+	private AesCipherArm(in ReadOnlySpan<byte> key)
 	{
 		_keyLength = key.Length switch
 		{
@@ -36,7 +36,7 @@ internal readonly struct AesCryptoArmNg : IBlock16Crypto<AesCryptoArmNg>
 
 			if (i % nk is 0)
 			{
-				t = SubWord(t).RotateRight(8) ^ AesCryptoNg.Rcon[i / nk];
+				t = SubWord(t).RotateRight(8) ^ AesCipher.Rcon[i / nk];
 			}
 			else if (nk > 6 && i % nk is 4)
 			{
@@ -85,9 +85,9 @@ internal readonly struct AesCryptoArmNg : IBlock16Crypto<AesCryptoArmNg>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static AesCryptoArmNg Create(in ReadOnlySpan<byte> key)
+	public static AesCipherArm Create(in ReadOnlySpan<byte> key)
 	{
-		return new AesCryptoArmNg(key);
+		return new AesCipherArm(key);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

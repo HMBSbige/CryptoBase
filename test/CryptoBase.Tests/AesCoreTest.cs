@@ -52,7 +52,7 @@ public class AesCoreTest
 		Test_Internal(AesCrypto.CreateCore(key), hex1, hex2);
 		Test_Internal(new DefaultAesCrypto(key), hex1, hex2);
 
-		TestUtils.TestBlock16<AesCryptoNg>(key, plain, cipher);
+		TestUtils.TestBlock16<AesCipher>(key, plain, cipher);
 	}
 
 	[Theory]

@@ -2,11 +2,11 @@ using Aes = System.Security.Cryptography.Aes;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
-internal readonly struct DefaultAesCryptoNg : IBlock16Crypto<DefaultAesCryptoNg>
+internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 {
 	private readonly Aes _aes;
 
-	private DefaultAesCryptoNg(in ReadOnlySpan<byte> key)
+	private DefaultAesCipher(in ReadOnlySpan<byte> key)
 	{
 		_aes = Aes.Create();
 		_aes.Key = key.ToArray();
@@ -19,9 +19,9 @@ internal readonly struct DefaultAesCryptoNg : IBlock16Crypto<DefaultAesCryptoNg>
 
 	public static bool IsSupported => true;
 
-	public static DefaultAesCryptoNg Create(in ReadOnlySpan<byte> key)
+	public static DefaultAesCipher Create(in ReadOnlySpan<byte> key)
 	{
-		return new DefaultAesCryptoNg(key);
+		return new DefaultAesCipher(key);
 	}
 
 	[SkipLocalsInit]

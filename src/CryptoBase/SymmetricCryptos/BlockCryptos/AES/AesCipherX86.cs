@@ -1,6 +1,6 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
-internal readonly struct AesCryptoX86Ng : IBlock16Crypto<AesCryptoX86Ng>
+internal readonly struct AesCipherX86 : IBlock16Cipher<AesCipherX86>
 {
 	public static bool IsSupported => AesX86.IsSupported && Sse2.IsSupported;
 
@@ -14,7 +14,7 @@ internal readonly struct AesCryptoX86Ng : IBlock16Crypto<AesCryptoX86Ng>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private AesCryptoX86Ng(in ReadOnlySpan<byte> key)
+	private AesCipherX86(in ReadOnlySpan<byte> key)
 	{
 		switch (key.Length)
 		{
@@ -52,16 +52,16 @@ internal readonly struct AesCryptoX86Ng : IBlock16Crypto<AesCryptoX86Ng>
 	{
 		roundKeys.K0 = Unsafe.ReadUnaligned<Vector128<byte>>(in key.GetReference());
 
-		roundKeys.K1 = KeyRound(roundKeys.K0, AesCryptoNg.Rcon1);
-		roundKeys.K2 = KeyRound(roundKeys.K1, AesCryptoNg.Rcon2);
-		roundKeys.K3 = KeyRound(roundKeys.K2, AesCryptoNg.Rcon3);
-		roundKeys.K4 = KeyRound(roundKeys.K3, AesCryptoNg.Rcon4);
-		roundKeys.K5 = KeyRound(roundKeys.K4, AesCryptoNg.Rcon5);
-		roundKeys.K6 = KeyRound(roundKeys.K5, AesCryptoNg.Rcon6);
-		roundKeys.K7 = KeyRound(roundKeys.K6, AesCryptoNg.Rcon7);
-		roundKeys.K8 = KeyRound(roundKeys.K7, AesCryptoNg.Rcon8);
-		roundKeys.K9 = KeyRound(roundKeys.K8, AesCryptoNg.Rcon9);
-		roundKeys.K10 = KeyRound(roundKeys.K9, AesCryptoNg.Rcon10);
+		roundKeys.K1 = KeyRound(roundKeys.K0, AesCipher.Rcon1);
+		roundKeys.K2 = KeyRound(roundKeys.K1, AesCipher.Rcon2);
+		roundKeys.K3 = KeyRound(roundKeys.K2, AesCipher.Rcon3);
+		roundKeys.K4 = KeyRound(roundKeys.K3, AesCipher.Rcon4);
+		roundKeys.K5 = KeyRound(roundKeys.K4, AesCipher.Rcon5);
+		roundKeys.K6 = KeyRound(roundKeys.K5, AesCipher.Rcon6);
+		roundKeys.K7 = KeyRound(roundKeys.K6, AesCipher.Rcon7);
+		roundKeys.K8 = KeyRound(roundKeys.K7, AesCipher.Rcon8);
+		roundKeys.K9 = KeyRound(roundKeys.K8, AesCipher.Rcon9);
+		roundKeys.K10 = KeyRound(roundKeys.K9, AesCipher.Rcon10);
 
 		return;
 
@@ -88,10 +88,10 @@ internal readonly struct AesCryptoX86Ng : IBlock16Crypto<AesCryptoX86Ng>
 		ref readonly ulong t = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref keyRef, 16));
 		Vector128<byte> t1 = Vector128.CreateScalar(t).AsByte();// 16,23
 
-		KeyRound(out roundKeys.K0, out roundKeys.K1, out roundKeys.K2, ref roundKeys.K12, ref t1, AesCryptoNg.Rcon1, AesCryptoNg.Rcon2);
-		KeyRound(out roundKeys.K3, out roundKeys.K4, out roundKeys.K5, ref roundKeys.K12, ref t1, AesCryptoNg.Rcon3, AesCryptoNg.Rcon4);
-		KeyRound(out roundKeys.K6, out roundKeys.K7, out roundKeys.K8, ref roundKeys.K12, ref t1, AesCryptoNg.Rcon5, AesCryptoNg.Rcon6);
-		KeyRound(out roundKeys.K9, out roundKeys.K10, out roundKeys.K11, ref roundKeys.K12, ref t1, AesCryptoNg.Rcon7, AesCryptoNg.Rcon8);
+		KeyRound(out roundKeys.K0, out roundKeys.K1, out roundKeys.K2, ref roundKeys.K12, ref t1, AesCipher.Rcon1, AesCipher.Rcon2);
+		KeyRound(out roundKeys.K3, out roundKeys.K4, out roundKeys.K5, ref roundKeys.K12, ref t1, AesCipher.Rcon3, AesCipher.Rcon4);
+		KeyRound(out roundKeys.K6, out roundKeys.K7, out roundKeys.K8, ref roundKeys.K12, ref t1, AesCipher.Rcon5, AesCipher.Rcon6);
+		KeyRound(out roundKeys.K9, out roundKeys.K10, out roundKeys.K11, ref roundKeys.K12, ref t1, AesCipher.Rcon7, AesCipher.Rcon8);
 
 		return;
 
@@ -138,14 +138,14 @@ internal readonly struct AesCryptoX86Ng : IBlock16Crypto<AesCryptoX86Ng>
 		roundKeys.K0 = roundKeys.K14 = Unsafe.ReadUnaligned<Vector128<byte>>(in keyRef);// 0,15
 		roundKeys.K13 = Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref keyRef, 16));// 15,31
 
-		KeyRound(out roundKeys.K1, out roundKeys.K2, ref roundKeys.K14, ref roundKeys.K13, AesCryptoNg.Rcon1);
-		KeyRound(out roundKeys.K3, out roundKeys.K4, ref roundKeys.K14, ref roundKeys.K13, AesCryptoNg.Rcon2);
-		KeyRound(out roundKeys.K5, out roundKeys.K6, ref roundKeys.K14, ref roundKeys.K13, AesCryptoNg.Rcon3);
-		KeyRound(out roundKeys.K7, out roundKeys.K8, ref roundKeys.K14, ref roundKeys.K13, AesCryptoNg.Rcon4);
-		KeyRound(out roundKeys.K9, out roundKeys.K10, ref roundKeys.K14, ref roundKeys.K13, AesCryptoNg.Rcon5);
-		KeyRound(out roundKeys.K11, out roundKeys.K12, ref roundKeys.K14, ref roundKeys.K13, AesCryptoNg.Rcon6);
+		KeyRound(out roundKeys.K1, out roundKeys.K2, ref roundKeys.K14, ref roundKeys.K13, AesCipher.Rcon1);
+		KeyRound(out roundKeys.K3, out roundKeys.K4, ref roundKeys.K14, ref roundKeys.K13, AesCipher.Rcon2);
+		KeyRound(out roundKeys.K5, out roundKeys.K6, ref roundKeys.K14, ref roundKeys.K13, AesCipher.Rcon3);
+		KeyRound(out roundKeys.K7, out roundKeys.K8, ref roundKeys.K14, ref roundKeys.K13, AesCipher.Rcon4);
+		KeyRound(out roundKeys.K9, out roundKeys.K10, ref roundKeys.K14, ref roundKeys.K13, AesCipher.Rcon5);
+		KeyRound(out roundKeys.K11, out roundKeys.K12, ref roundKeys.K14, ref roundKeys.K13, AesCipher.Rcon6);
 
-		Vector128<byte> t2 = AesX86.KeygenAssist(roundKeys.K13, AesCryptoNg.Rcon7);
+		Vector128<byte> t2 = AesX86.KeygenAssist(roundKeys.K13, AesCipher.Rcon7);
 		KeyRound1(ref roundKeys.K14, ref t2);
 
 		return;
@@ -166,7 +166,7 @@ internal readonly struct AesCryptoX86Ng : IBlock16Crypto<AesCryptoX86Ng>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static void KeyRound2(ref Vector128<byte> a, ref Vector128<byte> b)
 		{
-			Vector128<byte> t0 = AesX86.KeygenAssist(a, AesCryptoNg.Rcon0);
+			Vector128<byte> t0 = AesX86.KeygenAssist(a, AesCipher.Rcon0);
 			Vector128<byte> t1 = Sse2.Shuffle(t0.AsUInt32(), 0b10_10_10_10).AsByte();
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(b, 4);
@@ -244,9 +244,9 @@ internal readonly struct AesCryptoX86Ng : IBlock16Crypto<AesCryptoX86Ng>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static AesCryptoX86Ng Create(in ReadOnlySpan<byte> key)
+	public static AesCipherX86 Create(in ReadOnlySpan<byte> key)
 	{
-		return new AesCryptoX86Ng(key);
+		return new AesCipherX86(key);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

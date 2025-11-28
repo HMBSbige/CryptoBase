@@ -1,10 +1,10 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
-public sealed class AesCryptoNg : IBlock16Crypto<AesCryptoNg>
+public sealed class AesCipher : IBlock16Cipher<AesCipher>
 {
-	private readonly AesCryptoX86Ng _x86;
-	private readonly AesCryptoArmNg _arm;
-	private readonly DefaultAesCryptoNg _soft;
+	private readonly AesCipherX86 _x86;
+	private readonly AesCipherArm _arm;
+	private readonly DefaultAesCipher _soft;
 
 	public static bool IsSupported => true;
 
@@ -22,21 +22,21 @@ public sealed class AesCryptoNg : IBlock16Crypto<AesCryptoNg>
 
 	internal static ReadOnlySpan<byte> Rcon => [Rcon0, Rcon1, Rcon2, Rcon3, Rcon4, Rcon5, Rcon6, Rcon7, Rcon8, Rcon9, Rcon10];
 
-	private AesCryptoNg(AesCryptoX86Ng x86)
+	private AesCipher(AesCipherX86 x86)
 	{
 		_x86 = x86;
 		_arm = default!;
 		_soft = default!;
 	}
 
-	private AesCryptoNg(AesCryptoArmNg arm)
+	private AesCipher(AesCipherArm arm)
 	{
 		_x86 = default!;
 		_arm = arm;
 		_soft = default!;
 	}
 
-	private AesCryptoNg(DefaultAesCryptoNg soft)
+	private AesCipher(DefaultAesCipher soft)
 	{
 		_x86 = default!;
 		_arm = default!;
@@ -46,11 +46,11 @@ public sealed class AesCryptoNg : IBlock16Crypto<AesCryptoNg>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose()
 	{
-		if (AesCryptoX86Ng.IsSupported)
+		if (AesCipherX86.IsSupported)
 		{
 			_x86.Dispose();
 		}
-		else if (AesCryptoArmNg.IsSupported)
+		else if (AesCipherArm.IsSupported)
 		{
 			_arm.Dispose();
 		}
@@ -61,30 +61,30 @@ public sealed class AesCryptoNg : IBlock16Crypto<AesCryptoNg>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static AesCryptoNg Create(in ReadOnlySpan<byte> key)
+	public static AesCipher Create(in ReadOnlySpan<byte> key)
 	{
-		if (AesCryptoX86Ng.IsSupported)
+		if (AesCipherX86.IsSupported)
 		{
-			return new AesCryptoNg(AesCryptoX86Ng.Create(key));
+			return new AesCipher(AesCipherX86.Create(key));
 		}
 
-		if (AesCryptoArmNg.IsSupported)
+		if (AesCipherArm.IsSupported)
 		{
-			return new AesCryptoNg(AesCryptoArmNg.Create(key));
+			return new AesCipher(AesCipherArm.Create(key));
 		}
 
-		return new AesCryptoNg(DefaultAesCryptoNg.Create(key));
+		return new AesCipher(DefaultAesCipher.Create(key));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
 	{
-		if (AesCryptoX86Ng.IsSupported)
+		if (AesCipherX86.IsSupported)
 		{
 			return _x86.Encrypt(source);
 		}
 
-		if (AesCryptoArmNg.IsSupported)
+		if (AesCipherArm.IsSupported)
 		{
 			return _arm.Encrypt(source);
 		}
@@ -95,12 +95,12 @@ public sealed class AesCryptoNg : IBlock16Crypto<AesCryptoNg>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
 	{
-		if (AesCryptoX86Ng.IsSupported)
+		if (AesCipherX86.IsSupported)
 		{
 			return _x86.Decrypt(source);
 		}
 
-		if (AesCryptoArmNg.IsSupported)
+		if (AesCipherArm.IsSupported)
 		{
 			return _arm.Decrypt(source);
 		}
