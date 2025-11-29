@@ -29,7 +29,7 @@ public class AesBenchmark
 		_randomKey = RandomNumberGenerator.GetBytes(KeyLength);
 	}
 
-	private void Encrypt<T>() where  T : IBlock16Cipher<T>
+	private void Encrypt<T>() where T : IBlock16Cipher<T>
 	{
 		using T cipher = T.Create(_randomKey);
 		ReadOnlySpan<byte> origin = _randombytes.Span;
