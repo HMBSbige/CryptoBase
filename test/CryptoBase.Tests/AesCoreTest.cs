@@ -48,10 +48,10 @@ public class AesCoreTest
 		ReadOnlySpan<byte> plain = hex1.FromHex();
 		ReadOnlySpan<byte> cipher = hex2.FromHex();
 
-		Test_Internal(new BcAesCrypto(key), hex1, hex2);
 		Test_Internal(AesCrypto.CreateCore(key), hex1, hex2);
 		Test_Internal(new DefaultAesCrypto(key), hex1, hex2);
 
+		TestUtils.TestBlock16<BcAesCipher>(key, plain, cipher);
 		TestUtils.TestBlock16<AesCipher>(key, plain, cipher);
 	}
 
@@ -63,8 +63,10 @@ public class AesCoreTest
 	{
 		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(keyLength);
 
-		TestUtils.TestNBlock16(new BcAesCrypto(key));
 		TestUtils.TestNBlock16(AesCrypto.CreateCore(key));
 		TestUtils.TestNBlock16(new DefaultAesCrypto(key));
+
+		TestUtils.TestNBlock16<BcAesCipher>(key);
+		TestUtils.TestNBlock16<AesCipher>(key);
 	}
 }

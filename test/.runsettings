@@ -2,6 +2,7 @@
 <RunSettings>
   <RunConfiguration>
     <EnvironmentVariables>
+      <DOTNET_TieredCompilation>1</DOTNET_TieredCompilation>
       <DOTNET_EnableHWIntrinsic>1</DOTNET_EnableHWIntrinsic>
       <DOTNET_EnableAVX>1</DOTNET_EnableAVX>
       <DOTNET_EnableAVX512>1</DOTNET_EnableAVX512>

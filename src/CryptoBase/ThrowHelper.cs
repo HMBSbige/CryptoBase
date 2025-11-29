@@ -18,7 +18,7 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
-	public static T ThrowUnreachable<T>()
+	public static T ThrowUnreachable<T>() where T : allows ref struct
 	{
 		throw new InvalidOperationException(@"unreachable code!!!");
 	}

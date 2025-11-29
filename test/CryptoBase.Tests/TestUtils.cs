@@ -2,6 +2,7 @@ using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.DataFormatExtensions;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -203,5 +204,81 @@ public static class TestUtils
 
 		Assert.Equal(plain, crypto.Decrypt(cipher.AsVectorBuffer16()));
 		Assert.Equal(plain, crypto.Decrypt(cipher.AsVectorBuffer16()));
+	}
+
+	public static void TestNBlock16<T>(ReadOnlySpan<byte> key) where T : IBlock16Cipher<T>
+	{
+		Assert.True(T.IsSupported);
+		using T crypto = T.Create(key);
+
+		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(2 * 64 * 16);
+		Span<byte> expectedCipher = stackalloc byte[source.Length];
+
+		for (int i = 0; i < source.Length / 16; ++i)
+		{
+			Unsafe.WriteUnaligned(ref expectedCipher.Slice(i * 16).GetReference(), crypto.Encrypt(source.Slice(i * 16).AsVectorBuffer16()));
+		}
+
+		foreach (int multiplier in Enumerable.Range(0, 5).Select(x => 1 << x))
+		{
+			int chunkSize = multiplier * 16;
+
+			for (int i = 0; i < source.Length / chunkSize; ++i)
+			{
+				ReadOnlySpan<byte> plainSlice = source.Slice(i * chunkSize, chunkSize);
+				ReadOnlySpan<byte> expectedCipherSlice = expectedCipher.Slice(i * chunkSize, chunkSize);
+
+				switch (multiplier)
+				{
+					case 1:
+					{
+						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer16()));
+						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer16()));
+
+						break;
+					}
+					case 2:
+					{
+						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer32()));
+						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer32()));
+
+						break;
+					}
+					case 4:
+					{
+						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer64()));
+						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer64()));
+
+						break;
+					}
+					case 8:
+					{
+						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer128()));
+						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer128()));
+
+						break;
+					}
+					case 16:
+					{
+						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer256()));
+						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer256()));
+
+						break;
+					}
+					case 32:
+					{
+						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer512()));
+						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer512()));
+
+						break;
+					}
+					default:
+					{
+						Assert.Fail("not implemented");
+						break;
+					}
+				}
+			}
+		}
 	}
 }

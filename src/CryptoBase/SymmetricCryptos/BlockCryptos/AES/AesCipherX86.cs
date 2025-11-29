@@ -271,11 +271,8 @@ internal readonly struct AesCipherX86 : IBlock16Cipher<AesCipherX86>
 			return r;
 		}
 
-		if (_keyLength >= 13)
-		{
-			r.V128 = AesX86.Encrypt(r.V128, _roundKeys.K10);
-			r.V128 = AesX86.Encrypt(r.V128, _roundKeys.K11);
-		}
+		r.V128 = AesX86.Encrypt(r.V128, _roundKeys.K10);
+		r.V128 = AesX86.Encrypt(r.V128, _roundKeys.K11);
 
 		if (_keyLength is 13)
 		{
@@ -312,11 +309,8 @@ internal readonly struct AesCipherX86 : IBlock16Cipher<AesCipherX86>
 			return r;
 		}
 
-		if (_keyLength >= 13)
-		{
-			r.V128 = AesX86.Decrypt(r.V128, _reverseRoundKeys.K10);
-			r.V128 = AesX86.Decrypt(r.V128, _reverseRoundKeys.K11);
-		}
+		r.V128 = AesX86.Decrypt(r.V128, _reverseRoundKeys.K10);
+		r.V128 = AesX86.Decrypt(r.V128, _reverseRoundKeys.K11);
 
 		if (_keyLength is 13)
 		{
@@ -327,6 +321,426 @@ internal readonly struct AesCipherX86 : IBlock16Cipher<AesCipherX86>
 		r.V128 = AesX86.Decrypt(r.V128, _reverseRoundKeys.K12);
 		r.V128 = AesX86.Decrypt(r.V128, _reverseRoundKeys.K13);
 		r.V128 = AesX86.DecryptLast(r.V128, _reverseRoundKeys.K14);
+
+		return r;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer32 Encrypt(scoped in VectorBuffer32 source)
+	{
+		VectorBuffer32 destination = source;
+
+		destination.V128_0 ^= _roundKeys.K0;
+		destination.V128_1 ^= _roundKeys.K0;
+
+		ProcessBlocks(ref destination, _roundKeys.K1);
+		ProcessBlocks(ref destination, _roundKeys.K2);
+		ProcessBlocks(ref destination, _roundKeys.K3);
+		ProcessBlocks(ref destination, _roundKeys.K4);
+		ProcessBlocks(ref destination, _roundKeys.K5);
+		ProcessBlocks(ref destination, _roundKeys.K6);
+		ProcessBlocks(ref destination, _roundKeys.K7);
+		ProcessBlocks(ref destination, _roundKeys.K8);
+		ProcessBlocks(ref destination, _roundKeys.K9);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref destination, _roundKeys.K10);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _roundKeys.K10);
+		ProcessBlocks(ref destination, _roundKeys.K11);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref destination, _roundKeys.K12);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _roundKeys.K12);
+		ProcessBlocks(ref destination, _roundKeys.K13);
+		ProcessLastBlocks(ref destination, _roundKeys.K14);
+
+		return destination;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer32 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.Encrypt(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.Encrypt(buffer.V128_1, key);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer32 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.EncryptLast(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.EncryptLast(buffer.V128_1, key);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer32 Decrypt(scoped in VectorBuffer32 source)
+	{
+		VectorBuffer32 destination = source;
+
+		destination.V128_0 ^= _reverseRoundKeys.K0;
+		destination.V128_1 ^= _reverseRoundKeys.K0;
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K1);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K2);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K3);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K4);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K5);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K6);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K7);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K8);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K9);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref destination, _reverseRoundKeys.K10);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K10);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K11);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref destination, _reverseRoundKeys.K12);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K12);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K13);
+		ProcessLastBlocks(ref destination, _reverseRoundKeys.K14);
+
+		return destination;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer32 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.Decrypt(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.Decrypt(buffer.V128_1, key);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer32 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.DecryptLast(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.DecryptLast(buffer.V128_1, key);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer64 Encrypt(scoped in VectorBuffer64 source)
+	{
+		VectorBuffer64 destination = source;
+
+		destination.V128_0 ^= _roundKeys.K0;
+		destination.V128_1 ^= _roundKeys.K0;
+		destination.V128_2 ^= _roundKeys.K0;
+		destination.V128_3 ^= _roundKeys.K0;
+
+		ProcessBlocks(ref destination, _roundKeys.K1);
+		ProcessBlocks(ref destination, _roundKeys.K2);
+		ProcessBlocks(ref destination, _roundKeys.K3);
+		ProcessBlocks(ref destination, _roundKeys.K4);
+		ProcessBlocks(ref destination, _roundKeys.K5);
+		ProcessBlocks(ref destination, _roundKeys.K6);
+		ProcessBlocks(ref destination, _roundKeys.K7);
+		ProcessBlocks(ref destination, _roundKeys.K8);
+		ProcessBlocks(ref destination, _roundKeys.K9);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref destination, _roundKeys.K10);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _roundKeys.K10);
+		ProcessBlocks(ref destination, _roundKeys.K11);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref destination, _roundKeys.K12);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _roundKeys.K12);
+		ProcessBlocks(ref destination, _roundKeys.K13);
+		ProcessLastBlocks(ref destination, _roundKeys.K14);
+
+		return destination;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer64 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.Encrypt(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.Encrypt(buffer.V128_1, key);
+			buffer.V128_2 = AesX86.Encrypt(buffer.V128_2, key);
+			buffer.V128_3 = AesX86.Encrypt(buffer.V128_3, key);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer64 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.EncryptLast(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.EncryptLast(buffer.V128_1, key);
+			buffer.V128_2 = AesX86.EncryptLast(buffer.V128_2, key);
+			buffer.V128_3 = AesX86.EncryptLast(buffer.V128_3, key);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer64 Decrypt(scoped in VectorBuffer64 source)
+	{
+		VectorBuffer64 destination = source;
+
+		destination.V128_0 ^= _reverseRoundKeys.K0;
+		destination.V128_1 ^= _reverseRoundKeys.K0;
+		destination.V128_2 ^= _reverseRoundKeys.K0;
+		destination.V128_3 ^= _reverseRoundKeys.K0;
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K1);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K2);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K3);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K4);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K5);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K6);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K7);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K8);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K9);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref destination, _reverseRoundKeys.K10);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K10);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K11);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref destination, _reverseRoundKeys.K12);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K12);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K13);
+		ProcessLastBlocks(ref destination, _reverseRoundKeys.K14);
+
+		return destination;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer64 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.Decrypt(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.Decrypt(buffer.V128_1, key);
+			buffer.V128_2 = AesX86.Decrypt(buffer.V128_2, key);
+			buffer.V128_3 = AesX86.Decrypt(buffer.V128_3, key);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer64 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.DecryptLast(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.DecryptLast(buffer.V128_1, key);
+			buffer.V128_2 = AesX86.DecryptLast(buffer.V128_2, key);
+			buffer.V128_3 = AesX86.DecryptLast(buffer.V128_3, key);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer128 Encrypt(scoped in VectorBuffer128 source)
+	{
+		VectorBuffer128 destination = source;
+
+		destination.V128_0 ^= _roundKeys.K0;
+		destination.V128_1 ^= _roundKeys.K0;
+		destination.V128_2 ^= _roundKeys.K0;
+		destination.V128_3 ^= _roundKeys.K0;
+		destination.V128_4 ^= _roundKeys.K0;
+		destination.V128_5 ^= _roundKeys.K0;
+		destination.V128_6 ^= _roundKeys.K0;
+		destination.V128_7 ^= _roundKeys.K0;
+
+		ProcessBlocks(ref destination, _roundKeys.K1);
+		ProcessBlocks(ref destination, _roundKeys.K2);
+		ProcessBlocks(ref destination, _roundKeys.K3);
+		ProcessBlocks(ref destination, _roundKeys.K4);
+		ProcessBlocks(ref destination, _roundKeys.K5);
+		ProcessBlocks(ref destination, _roundKeys.K6);
+		ProcessBlocks(ref destination, _roundKeys.K7);
+		ProcessBlocks(ref destination, _roundKeys.K8);
+		ProcessBlocks(ref destination, _roundKeys.K9);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref destination, _roundKeys.K10);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _roundKeys.K10);
+		ProcessBlocks(ref destination, _roundKeys.K11);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref destination, _roundKeys.K12);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _roundKeys.K12);
+		ProcessBlocks(ref destination, _roundKeys.K13);
+		ProcessLastBlocks(ref destination, _roundKeys.K14);
+
+		return destination;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer128 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.Encrypt(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.Encrypt(buffer.V128_1, key);
+			buffer.V128_2 = AesX86.Encrypt(buffer.V128_2, key);
+			buffer.V128_3 = AesX86.Encrypt(buffer.V128_3, key);
+			buffer.V128_4 = AesX86.Encrypt(buffer.V128_4, key);
+			buffer.V128_5 = AesX86.Encrypt(buffer.V128_5, key);
+			buffer.V128_6 = AesX86.Encrypt(buffer.V128_6, key);
+			buffer.V128_7 = AesX86.Encrypt(buffer.V128_7, key);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer128 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.EncryptLast(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.EncryptLast(buffer.V128_1, key);
+			buffer.V128_2 = AesX86.EncryptLast(buffer.V128_2, key);
+			buffer.V128_3 = AesX86.EncryptLast(buffer.V128_3, key);
+			buffer.V128_4 = AesX86.EncryptLast(buffer.V128_4, key);
+			buffer.V128_5 = AesX86.EncryptLast(buffer.V128_5, key);
+			buffer.V128_6 = AesX86.EncryptLast(buffer.V128_6, key);
+			buffer.V128_7 = AesX86.EncryptLast(buffer.V128_7, key);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer128 Decrypt(scoped in VectorBuffer128 source)
+	{
+		VectorBuffer128 destination = source;
+
+		destination.V128_0 ^= _reverseRoundKeys.K0;
+		destination.V128_1 ^= _reverseRoundKeys.K0;
+		destination.V128_2 ^= _reverseRoundKeys.K0;
+		destination.V128_3 ^= _reverseRoundKeys.K0;
+		destination.V128_4 ^= _reverseRoundKeys.K0;
+		destination.V128_5 ^= _reverseRoundKeys.K0;
+		destination.V128_6 ^= _reverseRoundKeys.K0;
+		destination.V128_7 ^= _reverseRoundKeys.K0;
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K1);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K2);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K3);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K4);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K5);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K6);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K7);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K8);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K9);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref destination, _reverseRoundKeys.K10);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K10);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K11);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref destination, _reverseRoundKeys.K12);
+			return destination;
+		}
+
+		ProcessBlocks(ref destination, _reverseRoundKeys.K12);
+		ProcessBlocks(ref destination, _reverseRoundKeys.K13);
+		ProcessLastBlocks(ref destination, _reverseRoundKeys.K14);
+
+		return destination;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer128 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.Decrypt(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.Decrypt(buffer.V128_1, key);
+			buffer.V128_2 = AesX86.Decrypt(buffer.V128_2, key);
+			buffer.V128_3 = AesX86.Decrypt(buffer.V128_3, key);
+			buffer.V128_4 = AesX86.Decrypt(buffer.V128_4, key);
+			buffer.V128_5 = AesX86.Decrypt(buffer.V128_5, key);
+			buffer.V128_6 = AesX86.Decrypt(buffer.V128_6, key);
+			buffer.V128_7 = AesX86.Decrypt(buffer.V128_7, key);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer128 buffer, Vector128<byte> key)
+		{
+			buffer.V128_0 = AesX86.DecryptLast(buffer.V128_0, key);
+			buffer.V128_1 = AesX86.DecryptLast(buffer.V128_1, key);
+			buffer.V128_2 = AesX86.DecryptLast(buffer.V128_2, key);
+			buffer.V128_3 = AesX86.DecryptLast(buffer.V128_3, key);
+			buffer.V128_4 = AesX86.DecryptLast(buffer.V128_4, key);
+			buffer.V128_5 = AesX86.DecryptLast(buffer.V128_5, key);
+			buffer.V128_6 = AesX86.DecryptLast(buffer.V128_6, key);
+			buffer.V128_7 = AesX86.DecryptLast(buffer.V128_7, key);
+		}
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer256 Encrypt(scoped in VectorBuffer256 source)
+	{
+		Unsafe.SkipInit(out VectorBuffer256 r);
+
+		r.Lower = Encrypt(source.Lower);
+		r.Upper = Encrypt(source.Upper);
+
+		return r;
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer256 Decrypt(scoped in VectorBuffer256 source)
+	{
+		Unsafe.SkipInit(out VectorBuffer256 r);
+
+		r.Lower = Decrypt(source.Lower);
+		r.Upper = Decrypt(source.Upper);
+
+		return r;
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer512 Encrypt(scoped in VectorBuffer512 source)
+	{
+		Unsafe.SkipInit(out VectorBuffer512 r);
+
+		r.Lower = Encrypt(source.Lower);
+		r.Upper = Encrypt(source.Upper);
+
+		return r;
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer512 Decrypt(scoped in VectorBuffer512 source)
+	{
+		Unsafe.SkipInit(out VectorBuffer512 r);
+
+		r.Lower = Decrypt(source.Lower);
+		r.Upper = Decrypt(source.Upper);
 
 		return r;
 	}

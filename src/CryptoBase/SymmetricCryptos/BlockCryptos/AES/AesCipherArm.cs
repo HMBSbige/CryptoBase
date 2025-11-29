@@ -46,7 +46,8 @@ internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 			keys[i] = keys[i - nk] ^ t;
 		}
 
-		InverseExpandedKey(
+		InverseExpandedKey
+		(
 			MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<AesKeys, Vector128<byte>>(ref _roundKeys), _keyLength),
 			MemoryMarshal.CreateSpan(ref Unsafe.As<AesKeys, Vector128<byte>>(ref _reverseRoundKeys), _keyLength)
 		);
@@ -73,18 +74,6 @@ internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void EncryptPart(ref Vector128<byte> state, in Vector128<byte> key)
-	{
-		state = AesArm.MixColumns(AesArm.Encrypt(state, key));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void DecryptPart(ref Vector128<byte> state, in Vector128<byte> key)
-	{
-		state = AesArm.InverseMixColumns(AesArm.Decrypt(state, key));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static AesCipherArm Create(in ReadOnlySpan<byte> key)
 	{
 		return new AesCipherArm(key);
@@ -97,15 +86,15 @@ internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 
 		ref readonly AesKeys keys = ref _roundKeys;
 
-		EncryptPart(ref value.V128, keys.K0);
-		EncryptPart(ref value.V128, keys.K1);
-		EncryptPart(ref value.V128, keys.K2);
-		EncryptPart(ref value.V128, keys.K3);
-		EncryptPart(ref value.V128, keys.K4);
-		EncryptPart(ref value.V128, keys.K5);
-		EncryptPart(ref value.V128, keys.K6);
-		EncryptPart(ref value.V128, keys.K7);
-		EncryptPart(ref value.V128, keys.K8);
+		ProcessBlocks(ref value.V128, keys.K0);
+		ProcessBlocks(ref value.V128, keys.K1);
+		ProcessBlocks(ref value.V128, keys.K2);
+		ProcessBlocks(ref value.V128, keys.K3);
+		ProcessBlocks(ref value.V128, keys.K4);
+		ProcessBlocks(ref value.V128, keys.K5);
+		ProcessBlocks(ref value.V128, keys.K6);
+		ProcessBlocks(ref value.V128, keys.K7);
+		ProcessBlocks(ref value.V128, keys.K8);
 
 		if (_keyLength is 11)
 		{
@@ -114,11 +103,8 @@ internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 			return value;
 		}
 
-		if (_keyLength >= 13)
-		{
-			EncryptPart(ref value.V128, keys.K9);
-			EncryptPart(ref value.V128, keys.K10);
-		}
+		ProcessBlocks(ref value.V128, keys.K9);
+		ProcessBlocks(ref value.V128, keys.K10);
 
 		if (_keyLength is 13)
 		{
@@ -127,13 +113,19 @@ internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 			return value;
 		}
 
-		EncryptPart(ref value.V128, keys.K11);
-		EncryptPart(ref value.V128, keys.K12);
+		ProcessBlocks(ref value.V128, keys.K11);
+		ProcessBlocks(ref value.V128, keys.K12);
 
 		value.V128 = AesArm.Encrypt(value.V128, keys.K13);
 		value.V128 ^= keys.K14;
 
 		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref Vector128<byte> state, Vector128<byte> key)
+		{
+			state = AesArm.MixColumns(AesArm.Encrypt(state, key));
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -143,15 +135,15 @@ internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 
 		ref readonly AesKeys keys = ref _reverseRoundKeys;
 
-		DecryptPart(ref value.V128, keys.K0);
-		DecryptPart(ref value.V128, keys.K1);
-		DecryptPart(ref value.V128, keys.K2);
-		DecryptPart(ref value.V128, keys.K3);
-		DecryptPart(ref value.V128, keys.K4);
-		DecryptPart(ref value.V128, keys.K5);
-		DecryptPart(ref value.V128, keys.K6);
-		DecryptPart(ref value.V128, keys.K7);
-		DecryptPart(ref value.V128, keys.K8);
+		ProcessBlocks(ref value.V128, keys.K0);
+		ProcessBlocks(ref value.V128, keys.K1);
+		ProcessBlocks(ref value.V128, keys.K2);
+		ProcessBlocks(ref value.V128, keys.K3);
+		ProcessBlocks(ref value.V128, keys.K4);
+		ProcessBlocks(ref value.V128, keys.K5);
+		ProcessBlocks(ref value.V128, keys.K6);
+		ProcessBlocks(ref value.V128, keys.K7);
+		ProcessBlocks(ref value.V128, keys.K8);
 
 		if (_keyLength is 11)
 		{
@@ -160,11 +152,8 @@ internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 			return value;
 		}
 
-		if (_keyLength >= 13)
-		{
-			DecryptPart(ref value.V128, keys.K9);
-			DecryptPart(ref value.V128, keys.K10);
-		}
+		ProcessBlocks(ref value.V128, keys.K9);
+		ProcessBlocks(ref value.V128, keys.K10);
 
 		if (_keyLength is 13)
 		{
@@ -173,11 +162,617 @@ internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 			return value;
 		}
 
-		DecryptPart(ref value.V128, keys.K11);
-		DecryptPart(ref value.V128, keys.K12);
+		ProcessBlocks(ref value.V128, keys.K11);
+		ProcessBlocks(ref value.V128, keys.K12);
 		value.V128 = AesArm.Decrypt(value.V128, keys.K13);
 		value.V128 ^= keys.K14;
 
 		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref Vector128<byte> state, Vector128<byte> key)
+		{
+			state = AesArm.InverseMixColumns(AesArm.Decrypt(state, key));
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer32 Encrypt(scoped in VectorBuffer32 source)
+	{
+		VectorBuffer32 value = source;
+
+		ref readonly AesKeys keys = ref _roundKeys;
+
+		ProcessBlocks(ref value, keys.K0);
+		ProcessBlocks(ref value, keys.K1);
+		ProcessBlocks(ref value, keys.K2);
+		ProcessBlocks(ref value, keys.K3);
+		ProcessBlocks(ref value, keys.K4);
+		ProcessBlocks(ref value, keys.K5);
+		ProcessBlocks(ref value, keys.K6);
+		ProcessBlocks(ref value, keys.K7);
+		ProcessBlocks(ref value, keys.K8);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref value, keys.K9, keys.K10);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K9);
+		ProcessBlocks(ref value, keys.K10);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref value, keys.K11, keys.K12);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K11);
+		ProcessBlocks(ref value, keys.K12);
+
+		ProcessLastBlocks(ref value, keys.K13, keys.K14);
+
+		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer32 state, Vector128<byte> key)
+		{
+			state.V128_0 = AesArm.MixColumns(AesArm.Encrypt(state.V128_0, key));
+			state.V128_1 = AesArm.MixColumns(AesArm.Encrypt(state.V128_1, key));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer32 state, Vector128<byte> key, Vector128<byte> lastKey)
+		{
+			state.V128_0 = AesArm.Encrypt(state.V128_0, key);
+			state.V128_1 = AesArm.Encrypt(state.V128_1, key);
+
+			state.V128_0 ^= lastKey;
+			state.V128_1 ^= lastKey;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer32 Decrypt(scoped in VectorBuffer32 source)
+	{
+		VectorBuffer32 value = source;
+		ref readonly AesKeys keys = ref _reverseRoundKeys;
+
+		ProcessBlocks(ref value, keys.K0);
+		ProcessBlocks(ref value, keys.K1);
+		ProcessBlocks(ref value, keys.K2);
+		ProcessBlocks(ref value, keys.K3);
+		ProcessBlocks(ref value, keys.K4);
+		ProcessBlocks(ref value, keys.K5);
+		ProcessBlocks(ref value, keys.K6);
+		ProcessBlocks(ref value, keys.K7);
+		ProcessBlocks(ref value, keys.K8);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref value, keys.K9, keys.K10);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K9);
+		ProcessBlocks(ref value, keys.K10);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref value, keys.K11, keys.K12);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K11);
+		ProcessBlocks(ref value, keys.K12);
+		ProcessLastBlocks(ref value, keys.K13, keys.K14);
+
+		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer32 state, Vector128<byte> key)
+		{
+			state.V128_0 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_0, key));
+			state.V128_1 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_1, key));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer32 state, Vector128<byte> key, Vector128<byte> lastKey)
+		{
+			state.V128_0 = AesArm.Decrypt(state.V128_0, key);
+			state.V128_1 = AesArm.Decrypt(state.V128_1, key);
+
+			state.V128_0 ^= lastKey;
+			state.V128_1 ^= lastKey;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer64 Encrypt(scoped in VectorBuffer64 source)
+	{
+		VectorBuffer64 value = source;
+
+		ref readonly AesKeys keys = ref _roundKeys;
+
+		ProcessBlocks(ref value, keys.K0);
+		ProcessBlocks(ref value, keys.K1);
+		ProcessBlocks(ref value, keys.K2);
+		ProcessBlocks(ref value, keys.K3);
+		ProcessBlocks(ref value, keys.K4);
+		ProcessBlocks(ref value, keys.K5);
+		ProcessBlocks(ref value, keys.K6);
+		ProcessBlocks(ref value, keys.K7);
+		ProcessBlocks(ref value, keys.K8);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref value, keys.K9, keys.K10);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K9);
+		ProcessBlocks(ref value, keys.K10);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref value, keys.K11, keys.K12);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K11);
+		ProcessBlocks(ref value, keys.K12);
+
+		ProcessLastBlocks(ref value, keys.K13, keys.K14);
+
+		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer64 state, Vector128<byte> key)
+		{
+			state.V128_0 = AesArm.MixColumns(AesArm.Encrypt(state.V128_0, key));
+			state.V128_1 = AesArm.MixColumns(AesArm.Encrypt(state.V128_1, key));
+			state.V128_2 = AesArm.MixColumns(AesArm.Encrypt(state.V128_2, key));
+			state.V128_3 = AesArm.MixColumns(AesArm.Encrypt(state.V128_3, key));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer64 state, Vector128<byte> key, Vector128<byte> lastKey)
+		{
+			state.V128_0 = AesArm.Encrypt(state.V128_0, key);
+			state.V128_1 = AesArm.Encrypt(state.V128_1, key);
+			state.V128_2 = AesArm.Encrypt(state.V128_2, key);
+			state.V128_3 = AesArm.Encrypt(state.V128_3, key);
+
+			state.V128_0 ^= lastKey;
+			state.V128_1 ^= lastKey;
+			state.V128_2 ^= lastKey;
+			state.V128_3 ^= lastKey;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer64 Decrypt(scoped in VectorBuffer64 source)
+	{
+		VectorBuffer64 value = source;
+		ref readonly AesKeys keys = ref _reverseRoundKeys;
+
+		ProcessBlocks(ref value, keys.K0);
+		ProcessBlocks(ref value, keys.K1);
+		ProcessBlocks(ref value, keys.K2);
+		ProcessBlocks(ref value, keys.K3);
+		ProcessBlocks(ref value, keys.K4);
+		ProcessBlocks(ref value, keys.K5);
+		ProcessBlocks(ref value, keys.K6);
+		ProcessBlocks(ref value, keys.K7);
+		ProcessBlocks(ref value, keys.K8);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref value, keys.K9, keys.K10);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K9);
+		ProcessBlocks(ref value, keys.K10);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref value, keys.K11, keys.K12);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K11);
+		ProcessBlocks(ref value, keys.K12);
+		ProcessLastBlocks(ref value, keys.K13, keys.K14);
+
+		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer64 state, Vector128<byte> key)
+		{
+			state.V128_0 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_0, key));
+			state.V128_1 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_1, key));
+			state.V128_2 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_2, key));
+			state.V128_3 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_3, key));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer64 state, Vector128<byte> key, Vector128<byte> lastKey)
+		{
+			state.V128_0 = AesArm.Decrypt(state.V128_0, key);
+			state.V128_1 = AesArm.Decrypt(state.V128_1, key);
+			state.V128_2 = AesArm.Decrypt(state.V128_2, key);
+			state.V128_3 = AesArm.Decrypt(state.V128_3, key);
+
+			state.V128_0 ^= lastKey;
+			state.V128_1 ^= lastKey;
+			state.V128_2 ^= lastKey;
+			state.V128_3 ^= lastKey;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer128 Encrypt(scoped in VectorBuffer128 source)
+	{
+		VectorBuffer128 value = source;
+
+		ref readonly AesKeys keys = ref _roundKeys;
+
+		ProcessBlocks(ref value, keys.K0);
+		ProcessBlocks(ref value, keys.K1);
+		ProcessBlocks(ref value, keys.K2);
+		ProcessBlocks(ref value, keys.K3);
+		ProcessBlocks(ref value, keys.K4);
+		ProcessBlocks(ref value, keys.K5);
+		ProcessBlocks(ref value, keys.K6);
+		ProcessBlocks(ref value, keys.K7);
+		ProcessBlocks(ref value, keys.K8);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref value, keys.K9, keys.K10);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K9);
+		ProcessBlocks(ref value, keys.K10);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref value, keys.K11, keys.K12);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K11);
+		ProcessBlocks(ref value, keys.K12);
+
+		ProcessLastBlocks(ref value, keys.K13, keys.K14);
+
+		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer128 state, Vector128<byte> key)
+		{
+			state.V128_0 = AesArm.MixColumns(AesArm.Encrypt(state.V128_0, key));
+			state.V128_1 = AesArm.MixColumns(AesArm.Encrypt(state.V128_1, key));
+			state.V128_2 = AesArm.MixColumns(AesArm.Encrypt(state.V128_2, key));
+			state.V128_3 = AesArm.MixColumns(AesArm.Encrypt(state.V128_3, key));
+			state.V128_4 = AesArm.MixColumns(AesArm.Encrypt(state.V128_4, key));
+			state.V128_5 = AesArm.MixColumns(AesArm.Encrypt(state.V128_5, key));
+			state.V128_6 = AesArm.MixColumns(AesArm.Encrypt(state.V128_6, key));
+			state.V128_7 = AesArm.MixColumns(AesArm.Encrypt(state.V128_7, key));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer128 state, Vector128<byte> key, Vector128<byte> lastKey)
+		{
+			state.V128_0 = AesArm.Encrypt(state.V128_0, key);
+			state.V128_1 = AesArm.Encrypt(state.V128_1, key);
+			state.V128_2 = AesArm.Encrypt(state.V128_2, key);
+			state.V128_3 = AesArm.Encrypt(state.V128_3, key);
+			state.V128_4 = AesArm.Encrypt(state.V128_4, key);
+			state.V128_5 = AesArm.Encrypt(state.V128_5, key);
+			state.V128_6 = AesArm.Encrypt(state.V128_6, key);
+			state.V128_7 = AesArm.Encrypt(state.V128_7, key);
+
+			state.V128_0 ^= lastKey;
+			state.V128_1 ^= lastKey;
+			state.V128_2 ^= lastKey;
+			state.V128_3 ^= lastKey;
+			state.V128_4 ^= lastKey;
+			state.V128_5 ^= lastKey;
+			state.V128_6 ^= lastKey;
+			state.V128_7 ^= lastKey;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer128 Decrypt(scoped in VectorBuffer128 source)
+	{
+		VectorBuffer128 value = source;
+		ref readonly AesKeys keys = ref _reverseRoundKeys;
+
+		ProcessBlocks(ref value, keys.K0);
+		ProcessBlocks(ref value, keys.K1);
+		ProcessBlocks(ref value, keys.K2);
+		ProcessBlocks(ref value, keys.K3);
+		ProcessBlocks(ref value, keys.K4);
+		ProcessBlocks(ref value, keys.K5);
+		ProcessBlocks(ref value, keys.K6);
+		ProcessBlocks(ref value, keys.K7);
+		ProcessBlocks(ref value, keys.K8);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref value, keys.K9, keys.K10);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K9);
+		ProcessBlocks(ref value, keys.K10);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref value, keys.K11, keys.K12);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K11);
+		ProcessBlocks(ref value, keys.K12);
+		ProcessLastBlocks(ref value, keys.K13, keys.K14);
+
+		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer128 state, Vector128<byte> key)
+		{
+			state.V128_0 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_0, key));
+			state.V128_1 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_1, key));
+			state.V128_2 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_2, key));
+			state.V128_3 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_3, key));
+			state.V128_4 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_4, key));
+			state.V128_5 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_5, key));
+			state.V128_6 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_6, key));
+			state.V128_7 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_7, key));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer128 state, Vector128<byte> key, Vector128<byte> lastKey)
+		{
+			state.V128_0 = AesArm.Decrypt(state.V128_0, key);
+			state.V128_1 = AesArm.Decrypt(state.V128_1, key);
+			state.V128_2 = AesArm.Decrypt(state.V128_2, key);
+			state.V128_3 = AesArm.Decrypt(state.V128_3, key);
+			state.V128_4 = AesArm.Decrypt(state.V128_4, key);
+			state.V128_5 = AesArm.Decrypt(state.V128_5, key);
+			state.V128_6 = AesArm.Decrypt(state.V128_6, key);
+			state.V128_7 = AesArm.Decrypt(state.V128_7, key);
+
+			state.V128_0 ^= lastKey;
+			state.V128_1 ^= lastKey;
+			state.V128_2 ^= lastKey;
+			state.V128_3 ^= lastKey;
+			state.V128_4 ^= lastKey;
+			state.V128_5 ^= lastKey;
+			state.V128_6 ^= lastKey;
+			state.V128_7 ^= lastKey;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer256 Encrypt(scoped in VectorBuffer256 source)
+	{
+		VectorBuffer256 value = source;
+
+		ref readonly AesKeys keys = ref _roundKeys;
+
+		ProcessBlocks(ref value, keys.K0);
+		ProcessBlocks(ref value, keys.K1);
+		ProcessBlocks(ref value, keys.K2);
+		ProcessBlocks(ref value, keys.K3);
+		ProcessBlocks(ref value, keys.K4);
+		ProcessBlocks(ref value, keys.K5);
+		ProcessBlocks(ref value, keys.K6);
+		ProcessBlocks(ref value, keys.K7);
+		ProcessBlocks(ref value, keys.K8);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref value, keys.K9, keys.K10);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K9);
+		ProcessBlocks(ref value, keys.K10);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref value, keys.K11, keys.K12);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K11);
+		ProcessBlocks(ref value, keys.K12);
+
+		ProcessLastBlocks(ref value, keys.K13, keys.K14);
+
+		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer256 state, Vector128<byte> key)
+		{
+			state.V128_0 = AesArm.MixColumns(AesArm.Encrypt(state.V128_0, key));
+			state.V128_1 = AesArm.MixColumns(AesArm.Encrypt(state.V128_1, key));
+			state.V128_2 = AesArm.MixColumns(AesArm.Encrypt(state.V128_2, key));
+			state.V128_3 = AesArm.MixColumns(AesArm.Encrypt(state.V128_3, key));
+			state.V128_4 = AesArm.MixColumns(AesArm.Encrypt(state.V128_4, key));
+			state.V128_5 = AesArm.MixColumns(AesArm.Encrypt(state.V128_5, key));
+			state.V128_6 = AesArm.MixColumns(AesArm.Encrypt(state.V128_6, key));
+			state.V128_7 = AesArm.MixColumns(AesArm.Encrypt(state.V128_7, key));
+			state.V128_8 = AesArm.MixColumns(AesArm.Encrypt(state.V128_8, key));
+			state.V128_9 = AesArm.MixColumns(AesArm.Encrypt(state.V128_9, key));
+			state.V128_10 = AesArm.MixColumns(AesArm.Encrypt(state.V128_10, key));
+			state.V128_11 = AesArm.MixColumns(AesArm.Encrypt(state.V128_11, key));
+			state.V128_12 = AesArm.MixColumns(AesArm.Encrypt(state.V128_12, key));
+			state.V128_13 = AesArm.MixColumns(AesArm.Encrypt(state.V128_13, key));
+			state.V128_14 = AesArm.MixColumns(AesArm.Encrypt(state.V128_14, key));
+			state.V128_15 = AesArm.MixColumns(AesArm.Encrypt(state.V128_15, key));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer256 state, Vector128<byte> key, Vector128<byte> lastKey)
+		{
+			state.V128_0 = AesArm.Encrypt(state.V128_0, key);
+			state.V128_1 = AesArm.Encrypt(state.V128_1, key);
+			state.V128_2 = AesArm.Encrypt(state.V128_2, key);
+			state.V128_3 = AesArm.Encrypt(state.V128_3, key);
+			state.V128_4 = AesArm.Encrypt(state.V128_4, key);
+			state.V128_5 = AesArm.Encrypt(state.V128_5, key);
+			state.V128_6 = AesArm.Encrypt(state.V128_6, key);
+			state.V128_7 = AesArm.Encrypt(state.V128_7, key);
+			state.V128_8 = AesArm.Encrypt(state.V128_8, key);
+			state.V128_9 = AesArm.Encrypt(state.V128_9, key);
+			state.V128_10 = AesArm.Encrypt(state.V128_10, key);
+			state.V128_11 = AesArm.Encrypt(state.V128_11, key);
+			state.V128_12 = AesArm.Encrypt(state.V128_12, key);
+			state.V128_13 = AesArm.Encrypt(state.V128_13, key);
+			state.V128_14 = AesArm.Encrypt(state.V128_14, key);
+			state.V128_15 = AesArm.Encrypt(state.V128_15, key);
+
+			state.V128_0 ^= lastKey;
+			state.V128_1 ^= lastKey;
+			state.V128_2 ^= lastKey;
+			state.V128_3 ^= lastKey;
+			state.V128_4 ^= lastKey;
+			state.V128_5 ^= lastKey;
+			state.V128_6 ^= lastKey;
+			state.V128_7 ^= lastKey;
+			state.V128_8 ^= lastKey;
+			state.V128_9 ^= lastKey;
+			state.V128_10 ^= lastKey;
+			state.V128_11 ^= lastKey;
+			state.V128_12 ^= lastKey;
+			state.V128_13 ^= lastKey;
+			state.V128_14 ^= lastKey;
+			state.V128_15 ^= lastKey;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer256 Decrypt(scoped in VectorBuffer256 source)
+	{
+		VectorBuffer256 value = source;
+		ref readonly AesKeys keys = ref _reverseRoundKeys;
+
+		ProcessBlocks(ref value, keys.K0);
+		ProcessBlocks(ref value, keys.K1);
+		ProcessBlocks(ref value, keys.K2);
+		ProcessBlocks(ref value, keys.K3);
+		ProcessBlocks(ref value, keys.K4);
+		ProcessBlocks(ref value, keys.K5);
+		ProcessBlocks(ref value, keys.K6);
+		ProcessBlocks(ref value, keys.K7);
+		ProcessBlocks(ref value, keys.K8);
+
+		if (_keyLength is 11)
+		{
+			ProcessLastBlocks(ref value, keys.K9, keys.K10);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K9);
+		ProcessBlocks(ref value, keys.K10);
+
+		if (_keyLength is 13)
+		{
+			ProcessLastBlocks(ref value, keys.K11, keys.K12);
+			return value;
+		}
+
+		ProcessBlocks(ref value, keys.K11);
+		ProcessBlocks(ref value, keys.K12);
+		ProcessLastBlocks(ref value, keys.K13, keys.K14);
+
+		return value;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessBlocks(ref VectorBuffer256 state, Vector128<byte> key)
+		{
+			state.V128_0 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_0, key));
+			state.V128_1 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_1, key));
+			state.V128_2 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_2, key));
+			state.V128_3 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_3, key));
+			state.V128_4 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_4, key));
+			state.V128_5 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_5, key));
+			state.V128_6 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_6, key));
+			state.V128_7 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_7, key));
+			state.V128_8 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_8, key));
+			state.V128_9 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_9, key));
+			state.V128_10 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_10, key));
+			state.V128_11 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_11, key));
+			state.V128_12 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_12, key));
+			state.V128_13 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_13, key));
+			state.V128_14 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_14, key));
+			state.V128_15 = AesArm.InverseMixColumns(AesArm.Decrypt(state.V128_15, key));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void ProcessLastBlocks(ref VectorBuffer256 state, Vector128<byte> key, Vector128<byte> lastKey)
+		{
+			state.V128_0 = AesArm.Decrypt(state.V128_0, key);
+			state.V128_1 = AesArm.Decrypt(state.V128_1, key);
+			state.V128_2 = AesArm.Decrypt(state.V128_2, key);
+			state.V128_3 = AesArm.Decrypt(state.V128_3, key);
+			state.V128_4 = AesArm.Decrypt(state.V128_4, key);
+			state.V128_5 = AesArm.Decrypt(state.V128_5, key);
+			state.V128_6 = AesArm.Decrypt(state.V128_6, key);
+			state.V128_7 = AesArm.Decrypt(state.V128_7, key);
+			state.V128_8 = AesArm.Decrypt(state.V128_8, key);
+			state.V128_9 = AesArm.Decrypt(state.V128_9, key);
+			state.V128_10 = AesArm.Decrypt(state.V128_10, key);
+			state.V128_11 = AesArm.Decrypt(state.V128_11, key);
+			state.V128_12 = AesArm.Decrypt(state.V128_12, key);
+			state.V128_13 = AesArm.Decrypt(state.V128_13, key);
+			state.V128_14 = AesArm.Decrypt(state.V128_14, key);
+			state.V128_15 = AesArm.Decrypt(state.V128_15, key);
+
+			state.V128_0 ^= lastKey;
+			state.V128_1 ^= lastKey;
+			state.V128_2 ^= lastKey;
+			state.V128_3 ^= lastKey;
+			state.V128_4 ^= lastKey;
+			state.V128_5 ^= lastKey;
+			state.V128_6 ^= lastKey;
+			state.V128_7 ^= lastKey;
+			state.V128_8 ^= lastKey;
+			state.V128_9 ^= lastKey;
+			state.V128_10 ^= lastKey;
+			state.V128_11 ^= lastKey;
+			state.V128_12 ^= lastKey;
+			state.V128_13 ^= lastKey;
+			state.V128_14 ^= lastKey;
+			state.V128_15 ^= lastKey;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer512 Encrypt(scoped in VectorBuffer512 source)
+	{
+		Unsafe.SkipInit(out VectorBuffer512 r);
+
+		r.Lower = Encrypt(source.Lower);
+		r.Upper = Encrypt(source.Upper);
+
+		return r;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer512 Decrypt(scoped in VectorBuffer512 source)
+	{
+		Unsafe.SkipInit(out VectorBuffer512 r);
+		r.Lower = Decrypt(source.Lower);
+		r.Upper = Decrypt(source.Upper);
+		return r;
 	}
 }

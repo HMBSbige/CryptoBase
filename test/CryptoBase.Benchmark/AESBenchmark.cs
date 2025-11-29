@@ -1,7 +1,10 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions.Vectors;
 using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -26,37 +29,33 @@ public class AesBenchmark
 		_randomKey = RandomNumberGenerator.GetBytes(KeyLength);
 	}
 
-	private void Encrypt(IBlockCrypto crypto)
+	private void Encrypt<T>() where  T : IBlock16Cipher<T>
 	{
+		using T cipher = T.Create(_randomKey);
 		ReadOnlySpan<byte> origin = _randombytes.Span;
-		Span<byte> o = stackalloc byte[16 * 16];
+		Span<byte> output = new byte[origin.Length];
 
 		int count = origin.Length / (16 * 16);
 
+		ref byte ptr = ref output.GetReference();
+
 		for (int i = 0; i < count; ++i)
 		{
-			crypto.Encrypt16(origin.Slice(i * 16 * 16), o);
+			int offset = i * 16 * 16;
+			VectorBuffer256 r = cipher.Encrypt(origin.Slice(offset).AsVectorBuffer256());
+			Unsafe.WriteUnaligned(ref Unsafe.Add(ref ptr, offset), r);
 		}
 	}
 
-	[Benchmark]
-	public void BouncyCastleEncrypt()
-	{
-		using BcAesCrypto crypto = new(_randomKey);
-		Encrypt(crypto);
-	}
-
-	[Benchmark]
-	public void DefaultEncrypt()
-	{
-		using DefaultAesCrypto crypto = new(_randomKey);
-		Encrypt(crypto);
-	}
-
 	[Benchmark(Baseline = true)]
-	public void Encrypt()
+	public void AesCipher()
 	{
-		using AesCrypto crypto = AesCrypto.CreateCore(_randomKey);
-		Encrypt(crypto);
+		Encrypt<AesCipher>();
+	}
+
+	[Benchmark]
+	public void BcAesCipher()
+	{
+		Encrypt<BcAesCipher>();
 	}
 }

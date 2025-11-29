@@ -199,4 +199,10 @@ public class BenchmarkTest
 	{
 		BenchmarkRunner.Run<LocalCopyBench>();
 	}
+
+	[Fact]
+	public void AesCipherBenchmark()
+	{
+		BenchmarkRunner.Run<AesCipherBenchmark>();
+	}
 }
