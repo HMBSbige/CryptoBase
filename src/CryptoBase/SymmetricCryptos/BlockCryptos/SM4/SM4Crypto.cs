@@ -60,7 +60,7 @@ public sealed class SM4Crypto : BlockCrypto16
 
 		Span<uint> rk = _roundKeys.Span;
 
-		Unsafe.WriteUnaligned(ref destination.GetReference(), SM4Utils.Encrypt(rk, source.AsVectorBuffer16()));
+		Unsafe.WriteUnaligned(ref destination.GetReference(), SM4Utils.ProcessBlock(rk, source.AsVectorBuffer16()));
 	}
 
 	public override void Decrypt(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -69,7 +69,7 @@ public sealed class SM4Crypto : BlockCrypto16
 
 		Span<uint> rk = _reverseRoundKeys.Span;
 
-		Unsafe.WriteUnaligned(ref destination.GetReference(), SM4Utils.Encrypt(rk, source.AsVectorBuffer16()));
+		Unsafe.WriteUnaligned(ref destination.GetReference(), SM4Utils.ProcessBlock(rk, source.AsVectorBuffer16()));
 	}
 
 	public override void Encrypt4(ReadOnlySpan<byte> source, Span<byte> destination)

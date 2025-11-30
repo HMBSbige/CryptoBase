@@ -63,12 +63,6 @@ public class BenchmarkTest
 	}
 
 	[Fact]
-	public void SM4Benchmark()
-	{
-		BenchmarkRunner.Run<SM4Benchmark>();
-	}
-
-	[Fact]
 	public void SM4CTRBenchmark()
 	{
 		BenchmarkRunner.Run<SM4CTRBenchmark>();
@@ -204,5 +198,11 @@ public class BenchmarkTest
 	public void AesCipherBenchmark()
 	{
 		BenchmarkRunner.Run<AesCipherBenchmark>();
+	}
+
+	[Fact]
+	public void Sm4CipherBenchmark()
+	{
+		BenchmarkRunner.Run<Sm4CipherBenchmark>();
 	}
 }

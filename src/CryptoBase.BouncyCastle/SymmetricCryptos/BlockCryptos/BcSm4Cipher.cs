@@ -1,16 +1,16 @@
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.Abstractions.Vectors;
-using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using System.Runtime.CompilerServices;
 
 namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
-public sealed class BcAesCipher : IBlock16Cipher<BcAesCipher>
+public sealed class BcSm4Cipher : IBlock16Cipher<BcSm4Cipher>
 {
-	private readonly IBlockCipher _encryptionEngine;
-	private readonly IBlockCipher _decryptionEngine;
+	private readonly SM4Engine _encryptionEngine;
+
+	private readonly SM4Engine _decryptionEngine;
 
 	public void Dispose()
 	{
@@ -18,19 +18,19 @@ public sealed class BcAesCipher : IBlock16Cipher<BcAesCipher>
 
 	public static bool IsSupported => true;
 
-	private BcAesCipher(in ReadOnlySpan<byte> key)
+	private BcSm4Cipher(in ReadOnlySpan<byte> key)
 	{
 		KeyParameter keyParameter = new(key);
 
-		_encryptionEngine = AesUtilities.CreateEngine();
-		_decryptionEngine = AesUtilities.CreateEngine();
+		_encryptionEngine = new SM4Engine();
+		_decryptionEngine = new SM4Engine();
 		_encryptionEngine.Init(true, keyParameter);
 		_decryptionEngine.Init(false, keyParameter);
 	}
 
-	public static BcAesCipher Create(in ReadOnlySpan<byte> key)
+	public static BcSm4Cipher Create(in ReadOnlySpan<byte> key)
 	{
-		return new BcAesCipher(key);
+		return new BcSm4Cipher(key);
 	}
 
 	public VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
@@ -73,12 +73,6 @@ public sealed class BcAesCipher : IBlock16Cipher<BcAesCipher>
 	{
 		Unsafe.SkipInit(out VectorBuffer64 r);
 
-		if (_encryptionEngine is AesEngine_X86 engineX86)
-		{
-			engineX86.ProcessFourBlocks(source, r);
-			return r;
-		}
-
 		r.Lower = Encrypt(source.Lower);
 		r.Upper = Encrypt(source.Upper);
 
@@ -88,12 +82,6 @@ public sealed class BcAesCipher : IBlock16Cipher<BcAesCipher>
 	public VectorBuffer64 Decrypt(scoped in VectorBuffer64 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer64 r);
-
-		if (_decryptionEngine is AesEngine_X86 engineX86)
-		{
-			engineX86.ProcessFourBlocks(source, r);
-			return r;
-		}
 
 		r.Lower = Decrypt(source.Lower);
 		r.Upper = Decrypt(source.Upper);
