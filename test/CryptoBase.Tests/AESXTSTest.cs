@@ -91,4 +91,36 @@ public class AESXTSTest
 
 		TestInternal(new XtsMode(AesCrypto.CreateCore(key1), AesCrypto.CreateCore(key2)), iv, plain, cipher);
 	}
+
+	[Theory]
+	[MemberData(nameof(Data))]
+	public void TestDataUnitSeqNumber128(string keyHex, UInt128 dataUnitSeqNumber, string plainHex, string cipherHex)
+	{
+		ReadOnlySpan<byte> key = keyHex.FromHex();
+		Span<byte> iv = stackalloc byte[16];
+		XtsMode128<AesCipher, AesCipher>.GetIv(iv, dataUnitSeqNumber);
+		ReadOnlySpan<byte> plain = plainHex.FromHex();
+		ReadOnlySpan<byte> cipher = cipherHex.FromHex();
+
+		ReadOnlySpan<byte> key1 = key.Slice(0, key.Length >> 1);
+		ReadOnlySpan<byte> key2 = key.Slice(key.Length >> 1);
+
+		TestInternal(new XtsMode128<AesCipher, AesCipher>(AesCipher.Create(key1), AesCipher.Create(key2)), iv, plain, cipher);
+	}
+
+	[Theory]
+	[MemberData(nameof(Data2))]
+	[MemberData(nameof(Data3))]
+	public void Test128(string keyHex, string ivHex, string plainHex, string cipherHex)
+	{
+		ReadOnlySpan<byte> key = keyHex.FromHex();
+		ReadOnlySpan<byte> iv = ivHex.FromHex();
+		ReadOnlySpan<byte> plain = plainHex.FromHex();
+		ReadOnlySpan<byte> cipher = cipherHex.FromHex();
+
+		ReadOnlySpan<byte> key1 = key.Slice(0, key.Length >> 1);
+		ReadOnlySpan<byte> key2 = key.Slice(key.Length >> 1);
+
+		TestInternal(new XtsMode128<AesCipher, AesCipher>(AesCipher.Create(key1), AesCipher.Create(key2)), iv, plain, cipher);
+	}
 }
