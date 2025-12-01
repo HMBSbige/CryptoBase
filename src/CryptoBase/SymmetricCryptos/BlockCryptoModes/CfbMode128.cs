@@ -1,35 +1,51 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public class CFB128StreamMode : IStreamCrypto
+public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
-	public string Name => _internalBlockCrypto.Name + @"-CFB";
-
-	private readonly IBlockCrypto _internalBlockCrypto;
-
-	private readonly ReadOnlyMemory<byte> _iv;
+	public string Name => _blockCipher.Name + @"-CFB";
 
 	private readonly bool _isEncrypt;
-
-	private readonly byte[] _block;
-	private readonly byte[] _keyStream;
+	private readonly TBlockCipher _blockCipher;
+	private readonly bool _disposeCipher;
 
 	private int _index;
+	private readonly CryptoArrayPool<byte> _iv = new(BlockSize);
+	private readonly CryptoArrayPool<byte> _block = new(BlockSize);
+	private readonly CryptoArrayPool<byte> _keyStream = new(BlockSize);
 
 	private const int BlockSize = 16;
 
-	public CFB128StreamMode(bool isEncrypt, IBlockCrypto crypto, ReadOnlySpan<byte> iv)
+	public CfbMode128(bool isEncrypt, TBlockCipher blockCipher, ReadOnlySpan<byte> iv, bool disposeCipher = true)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
 
 		_isEncrypt = isEncrypt;
-		_internalBlockCrypto = crypto;
-		_iv = iv.ToArray();
+		_blockCipher = blockCipher;
+		_disposeCipher = disposeCipher;
 
-		_block = ArrayPool<byte>.Shared.Rent(BlockSize);
-		_keyStream = ArrayPool<byte>.Shared.Rent(BlockSize);
+		Span<byte> ivSpan = _iv.Span;
+		ivSpan.Clear();
+		iv.CopyTo(_iv.Span);
 
 		Reset();
+	}
+
+	public void Dispose()
+	{
+		_iv.Dispose();
+		_block.Dispose();
+		_keyStream.Dispose();
+
+		if (_disposeCipher)
+		{
+			_blockCipher.Dispose();
+		}
+	}
+
+	public void Reset()
+	{
+		_index = 0;
+		_iv.Span.CopyTo(_block.Span);
 	}
 
 	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -39,8 +55,10 @@ public class CFB128StreamMode : IStreamCrypto
 		int i = 0;
 		int length = source.Length;
 
-		Span<byte> stream = _keyStream.AsSpan(0, BlockSize);
-		Span<byte> block = _block.AsSpan(0, BlockSize);
+		Span<byte> block = _block.Span;
+		Span<byte> stream = _keyStream.Span;
+		ref VectorBuffer16 c = ref block.AsVectorBuffer16();
+		ref VectorBuffer16 ks = ref stream.AsVectorBuffer16();
 
 		if (_index is not 0)
 		{
@@ -62,7 +80,7 @@ public class CFB128StreamMode : IStreamCrypto
 
 		while (length >= BlockSize)
 		{
-			_internalBlockCrypto.Encrypt(block, stream);
+			ks = _blockCipher.Encrypt(c);
 
 			FastUtils.Xor16(stream, source.Slice(i, BlockSize), destination.Slice(i, BlockSize));
 			(_isEncrypt ? destination : source).Slice(i, BlockSize).CopyTo(block);
@@ -72,25 +90,8 @@ public class CFB128StreamMode : IStreamCrypto
 		}
 
 		_index = length;
-		_internalBlockCrypto.Encrypt(block, stream);
+		ks = _blockCipher.Encrypt(c);
 		FastUtils.Xor(stream.Slice(0, length), source.Slice(i, length), destination.Slice(i, length), length);
 		(_isEncrypt ? destination : source).Slice(i, length).CopyTo(block);
-	}
-
-	public void Reset()
-	{
-		_index = 0;
-
-		_iv.CopyTo(_block);
-	}
-
-	public void Dispose()
-	{
-		_internalBlockCrypto.Dispose();
-
-		ArrayPool<byte>.Shared.Return(_block);
-		ArrayPool<byte>.Shared.Return(_keyStream);
-
-		GC.SuppressFinalize(this);
 	}
 }

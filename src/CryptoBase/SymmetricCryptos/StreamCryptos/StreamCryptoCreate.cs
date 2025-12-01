@@ -21,12 +21,12 @@ public static class StreamCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto AesCfb(bool isEncrypt, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CFB128StreamMode(isEncrypt, AesCrypto.CreateCore(key), iv);
+		return new CfbMode128<AesCipher>(isEncrypt, AesCipher.Create(key), iv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto Sm4Cfb(bool isEncrypt, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CFB128StreamMode(isEncrypt, new SM4Crypto(key), iv);
+		return new CfbMode128<Sm4Cipher>(isEncrypt, Sm4Cipher.Create(key), iv);
 	}
 }
