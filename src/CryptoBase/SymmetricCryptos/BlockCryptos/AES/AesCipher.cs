@@ -2,11 +2,31 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 public sealed class AesCipher : IBlock16Cipher<AesCipher>
 {
+	public string Name => @"AES";
+
 	private readonly AesCipherX86 _x86;
 	private readonly AesCipherArm _arm;
 	private readonly DefaultAesCipher _soft;
 
 	public static bool IsSupported => true;
+
+	public static BlockCryptoHardwareAcceleration HardwareAcceleration
+	{
+		get
+		{
+			if (AesCipherX86.IsSupported)
+			{
+				return AesCipherX86.HardwareAcceleration;
+			}
+
+			if (AesCipherArm.IsSupported)
+			{
+				return AesCipherArm.HardwareAcceleration;
+			}
+
+			return BlockCryptoHardwareAcceleration.Unknown;
+		}
+	}
 
 	internal const byte Rcon0 = 0x00;
 	internal const byte Rcon1 = 0x01;

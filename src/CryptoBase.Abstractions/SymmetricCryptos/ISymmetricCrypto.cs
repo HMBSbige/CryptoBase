@@ -3,7 +3,7 @@ namespace CryptoBase.Abstractions.SymmetricCryptos;
 public interface ISymmetricCrypto : IDisposable
 {
 	/// <summary>
-	/// 算法名
+	/// Gets the name of the symmetric crypto algorithm.
 	/// </summary>
 	string Name { get; }
 }

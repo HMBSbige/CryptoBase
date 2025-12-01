@@ -56,7 +56,7 @@ public class AESCTRTest
 		byte[] key = keyHex.FromHex();
 		byte[] iv = ivHex.FromHex();
 		Test_Internal(StreamCryptoCreate.AesCtr(key, iv), hex, hex2);
-		Test_Internal(new CtrMode128Ctr32(AesCrypto.CreateCore(key), iv), hex, hex2);
+		Test_Internal(new CtrMode128Ctr32<AesCipher>(AesCipher.Create(key), iv), hex, hex2);
 	}
 
 	[Theory]
@@ -71,10 +71,10 @@ public class AESCTRTest
 	[InlineData(512 * 16 - 1)]
 	public void TestBlocks(int length)
 	{
-		using IStreamCrypto crypto = new CtrMode128(AesCrypto.CreateCore(RandomNumberGenerator.GetBytes(16)), RandomNumberGenerator.GetBytes(16));
-		TestUtils.TestBlocks(crypto, length);
+		using IStreamCrypto aesctr = new CtrMode128<AesCipher>(AesCipher.Create(RandomNumberGenerator.GetBytes(16)), RandomNumberGenerator.GetBytes(16));
+		TestUtils.TestBlocks(aesctr, length);
 
-		using IStreamCrypto crypto2 = new CtrMode128Ctr32(AesCrypto.CreateCore(RandomNumberGenerator.GetBytes(16)), RandomNumberGenerator.GetBytes(16));
-		TestUtils.TestBlocks(crypto2, length);
+		using IStreamCrypto aesctr32 = new CtrMode128Ctr32<AesCipher>(AesCipher.Create(RandomNumberGenerator.GetBytes(16)), RandomNumberGenerator.GetBytes(16));
+		TestUtils.TestBlocks(aesctr32, length);
 	}
 }

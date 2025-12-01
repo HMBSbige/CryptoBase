@@ -47,7 +47,7 @@ public class SM4CTRTest
 		ReadOnlySpan<byte> expected = expectedHex.FromHex();
 
 		T(StreamCryptoCreate.Sm4Ctr(key, iv), source, expected);
-		T(new CtrMode128Ctr32(new SM4Crypto(key), iv), source, expected);
+		T(new CtrMode128Ctr32<Sm4Cipher>(Sm4Cipher.Create(key), iv), source, expected);
 	}
 
 	[Theory]
@@ -62,7 +62,10 @@ public class SM4CTRTest
 	[InlineData(512 * 16 - 1)]
 	public void TestBlocks(int length)
 	{
-		using IStreamCrypto crypto = StreamCryptoCreate.Sm4Ctr(RandomNumberGenerator.GetBytes(16), RandomNumberGenerator.GetBytes(16));
-		TestUtils.TestBlocks(crypto, length);
+		using IStreamCrypto aesctr = new CtrMode128<Sm4Cipher>(Sm4Cipher.Create(RandomNumberGenerator.GetBytes(16)), RandomNumberGenerator.GetBytes(16));
+		TestUtils.TestBlocks(aesctr, length);
+
+		using IStreamCrypto aesctr32 = new CtrMode128Ctr32<Sm4Cipher>(Sm4Cipher.Create(RandomNumberGenerator.GetBytes(16)), RandomNumberGenerator.GetBytes(16));
+		TestUtils.TestBlocks(aesctr32, length);
 	}
 }

@@ -1,4 +1,5 @@
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
+using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
 
@@ -6,7 +7,7 @@ public class DefaultAesGcmCrypto(ReadOnlySpan<byte> key) : IAEADCrypto
 {
 	public string Name => @"AES-GCM";
 
-	private readonly AesGcm _internalCrypto = new(key, GcmMode128.TagSize);
+	private readonly AesGcm _internalCrypto = new(key, GcmMode128<AesCipher>.TagSize);
 
 	public const int NonceSize = 12;
 

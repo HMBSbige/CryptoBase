@@ -2,6 +2,8 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
 public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 {
+	public string Name => @"SM4";
+
 	private readonly CryptoArrayPool<uint> _roundKeys;
 	private readonly CryptoArrayPool<uint> _reverseRoundKeys;
 
@@ -12,6 +14,29 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	}
 
 	public static bool IsSupported => true;
+
+	public static BlockCryptoHardwareAcceleration HardwareAcceleration
+	{
+		get
+		{
+			BlockCryptoHardwareAcceleration result = BlockCryptoHardwareAcceleration.Unknown;
+
+			if (AesX86.IsSupported)
+			{
+				if (Sse2.IsSupported && Ssse3.IsSupported)
+				{
+					result |= BlockCryptoHardwareAcceleration.Block4 | BlockCryptoHardwareAcceleration.Block8;
+				}
+
+				if (Avx2.IsSupported)
+				{
+					result |= BlockCryptoHardwareAcceleration.Block16;
+				}
+			}
+
+			return result;
+		}
+	}
 
 	private Sm4Cipher(in ReadOnlySpan<byte> key)
 	{

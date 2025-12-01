@@ -8,6 +8,8 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
 public sealed class BcSm4Cipher : IBlock16Cipher<BcSm4Cipher>
 {
+	public string Name => @"SM4";
+
 	private readonly SM4Engine _encryptionEngine;
 
 	private readonly SM4Engine _decryptionEngine;
@@ -17,6 +19,8 @@ public sealed class BcSm4Cipher : IBlock16Cipher<BcSm4Cipher>
 	}
 
 	public static bool IsSupported => true;
+
+	public static BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Unknown;
 
 	private BcSm4Cipher(in ReadOnlySpan<byte> key)
 	{

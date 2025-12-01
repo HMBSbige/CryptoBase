@@ -28,4 +28,28 @@ public ref struct VectorBuffer1024
 	{
 		return Unsafe.AsRef(in value).AsSpan();
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static VectorBuffer1024 operator ^(scoped in VectorBuffer1024 left, scoped in VectorBuffer1024 right)
+	{
+		return new VectorBuffer1024
+		{
+			V512_0 = left.V512_0 ^ right.V512_0,
+			V512_1 = left.V512_1 ^ right.V512_1,
+			V512_2 = left.V512_2 ^ right.V512_2,
+			V512_3 = left.V512_3 ^ right.V512_3,
+			V512_4 = left.V512_4 ^ right.V512_4,
+			V512_5 = left.V512_5 ^ right.V512_5,
+			V512_6 = left.V512_6 ^ right.V512_6,
+			V512_7 = left.V512_7 ^ right.V512_7,
+			V512_8 = left.V512_8 ^ right.V512_8,
+			V512_9 = left.V512_9 ^ right.V512_9,
+			V512_10 = left.V512_10 ^ right.V512_10,
+			V512_11 = left.V512_11 ^ right.V512_11,
+			V512_12 = left.V512_12 ^ right.V512_12,
+			V512_13 = left.V512_13 ^ right.V512_13,
+			V512_14 = left.V512_14 ^ right.V512_14,
+			V512_15 = left.V512_15 ^ right.V512_15
+		};
+	}
 }

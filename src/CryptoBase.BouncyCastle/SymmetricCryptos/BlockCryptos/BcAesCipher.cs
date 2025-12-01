@@ -9,6 +9,8 @@ namespace CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 
 public sealed class BcAesCipher : IBlock16Cipher<BcAesCipher>
 {
+	public string Name => @"AES";
+
 	private readonly IBlockCipher _encryptionEngine;
 	private readonly IBlockCipher _decryptionEngine;
 
@@ -17,6 +19,19 @@ public sealed class BcAesCipher : IBlock16Cipher<BcAesCipher>
 	}
 
 	public static bool IsSupported => true;
+
+	public static BlockCryptoHardwareAcceleration HardwareAcceleration
+	{
+		get
+		{
+			if (AesUtilities.IsHardwareAccelerated)
+			{
+				return BlockCryptoHardwareAcceleration.Block1 | BlockCryptoHardwareAcceleration.Block4;
+			}
+
+			return BlockCryptoHardwareAcceleration.Unknown;
+		}
+	}
 
 	private BcAesCipher(in ReadOnlySpan<byte> key)
 	{

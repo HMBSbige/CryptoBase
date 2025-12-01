@@ -9,13 +9,13 @@ public static class StreamCryptoCreate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto AesCtr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CtrMode128(AesCrypto.CreateCore(key), iv);
+		return new CtrMode128<AesCipher>(AesCipher.Create(key), iv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IStreamCrypto Sm4Ctr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CtrMode128(new SM4Crypto(key), iv);
+		return new CtrMode128<Sm4Cipher>(Sm4Cipher.Create(key), iv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

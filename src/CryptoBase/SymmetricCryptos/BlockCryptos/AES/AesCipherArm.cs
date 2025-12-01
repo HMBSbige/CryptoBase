@@ -2,7 +2,11 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 internal readonly struct AesCipherArm : IBlock16Cipher<AesCipherArm>
 {
+	public string Name => @"AES";
+
 	public static bool IsSupported => AesArm.IsSupported;
+
+	public static BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Block1 | BlockCryptoHardwareAcceleration.Block2 | BlockCryptoHardwareAcceleration.Block4 | BlockCryptoHardwareAcceleration.Block8 | BlockCryptoHardwareAcceleration.Block16;
 
 	private readonly int _keyLength;
 

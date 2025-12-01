@@ -2,29 +2,26 @@ using CryptoBase.Macs.GHash;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public class GcmMode128 : IAEADCrypto
+public class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
-	public string Name => _crypto.Name + @"-GCM";
+	public string Name => _blockCipher.Name + @"-GCM";
 
 	public const int BlockSize = 16;
 	public const int NonceSize = 12;
 	public const int TagSize = 16;
 
-	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
-
+	private readonly TBlockCipher _blockCipher;
 	private readonly bool _disposeCrypto;
-	private readonly IBlockCrypto _crypto;
 	private readonly IMac _gHash;
 
-	public GcmMode128(IBlockCrypto crypto, bool disposeCrypto = true)
+	public GcmMode128(TBlockCipher blockCipher, bool disposeCrypto = true)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(crypto.BlockSize, BlockSize, nameof(crypto));
-		_crypto = crypto;
+		_blockCipher = blockCipher;
 		_disposeCrypto = disposeCrypto;
 
-		Span<byte> buffer = stackalloc byte[BlockSize];
-		crypto.Encrypt(Init, buffer);
-		_gHash = GHashUtils.Create(buffer);
+		VectorBuffer16 buffer16 = default;
+		buffer16 = blockCipher.Encrypt(buffer16);
+		_gHash = GHashUtils.Create(buffer16);
 	}
 
 	[SkipLocalsInit]
@@ -32,18 +29,19 @@ public class GcmMode128 : IAEADCrypto
 	{
 		CheckInput(nonce, source, destination);
 
-		Span<byte> buffer = stackalloc byte[BlockSize];
+		Unsafe.SkipInit(out VectorBuffer16 buffer16);
+		Span<byte> buffer = buffer16.AsSpan();
 		nonce.CopyTo(buffer);
 		buffer[12] = 0;
 		buffer[13] = 0;
 		buffer[14] = 0;
 		buffer[15] = 1;
 
-		_crypto.Encrypt(buffer, tag);
+		VectorBuffer16 tagBuffer = _blockCipher.Encrypt(buffer16);
 		_gHash.Update(associatedData);
 
 		buffer[15] = 2;
-		using CtrMode128Ctr32 ctr = new(_crypto, buffer, false);
+		using CtrMode128Ctr32<TBlockCipher> ctr = new(_blockCipher, buffer, false);
 
 		ctr.Update(source, destination);
 		_gHash.Update(destination);
@@ -54,7 +52,8 @@ public class GcmMode128 : IAEADCrypto
 		_gHash.Update(buffer.Slice(0, TagSize));
 		_gHash.GetMac(buffer);
 
-		FastUtils.Xor16(tag, buffer);
+		tagBuffer ^= buffer16;
+		Unsafe.WriteUnaligned(ref tag.GetReference(), tagBuffer);
 	}
 
 	[SkipLocalsInit]
@@ -62,19 +61,19 @@ public class GcmMode128 : IAEADCrypto
 	{
 		CheckInput(nonce, source, destination);
 
-		Span<byte> tagBuffer = stackalloc byte[TagSize];
-		Span<byte> buffer = stackalloc byte[BlockSize];
+		Unsafe.SkipInit(out VectorBuffer16 buffer16);
+		Span<byte> buffer = buffer16.AsSpan();
 		nonce.CopyTo(buffer);
 		buffer[12] = 0;
 		buffer[13] = 0;
 		buffer[14] = 0;
 		buffer[15] = 1;
 
-		_crypto.Encrypt(buffer, tagBuffer);
+		VectorBuffer16 tagBuffer = _blockCipher.Encrypt(buffer16);
 		_gHash.Update(associatedData);
 
 		buffer[15] = 2;
-		using CtrMode128Ctr32 ctr = new(_crypto, buffer, false);
+		using CtrMode128Ctr32<TBlockCipher> ctr = new(_blockCipher, buffer, false);
 
 		ctr.Update(source, destination);
 		_gHash.Update(source);
@@ -85,11 +84,12 @@ public class GcmMode128 : IAEADCrypto
 		_gHash.Update(buffer.Slice(0, TagSize));
 		_gHash.GetMac(buffer);
 
-		FastUtils.Xor16(tagBuffer, buffer);
+		tagBuffer ^= buffer16;
 
 		ThrowHelper.ThrowIfAuthenticationTagMismatch(tagBuffer, tag);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void CheckInput(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
@@ -101,7 +101,7 @@ public class GcmMode128 : IAEADCrypto
 	{
 		if (_disposeCrypto)
 		{
-			_crypto.Dispose();
+			_blockCipher.Dispose();
 		}
 
 		_gHash.Dispose();

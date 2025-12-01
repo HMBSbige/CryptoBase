@@ -14,13 +14,13 @@ public static class AEADCryptoCreate
 			return new DefaultAesGcmCrypto(key);
 		}
 
-		return new GcmMode128(AesCrypto.CreateCore(key));
+		return new GcmMode128<AesCipher>(AesCipher.Create(key));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IAEADCrypto Sm4Gcm(ReadOnlySpan<byte> key)
 	{
-		return new GcmMode128(new SM4Crypto(key));
+		return new GcmMode128<Sm4Cipher>(Sm4Cipher.Create(key));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

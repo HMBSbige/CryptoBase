@@ -144,6 +144,6 @@ public class AESGCMTest
 		Test_Internal(new DefaultAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 		Test_Internal(new BcAesGcmCrypto(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 		Test_Internal(AEADCryptoCreate.AesGcm(key), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
-		Test_Internal(new GcmMode128(AesCrypto.CreateCore(key)), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
+		Test_Internal(new GcmMode128<AesCipher>(AesCipher.Create(key)), nonceHex, associatedDataHex, tagHex, plainHex, cipherHex);
 	}
 }

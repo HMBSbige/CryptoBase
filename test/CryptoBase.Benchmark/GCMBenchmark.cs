@@ -51,6 +51,6 @@ public class GCMBenchmark
 	[Benchmark]
 	public void Encrypt()
 	{
-		TestEncrypt(new GcmMode128(AesCrypto.CreateCore(_randomKey)));
+		TestEncrypt(new GcmMode128<AesCipher>(AesCipher.Create(_randomKey)));
 	}
 }

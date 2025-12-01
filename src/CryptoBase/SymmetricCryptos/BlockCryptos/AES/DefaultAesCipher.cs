@@ -4,6 +4,8 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 {
+	public string Name => @"AES";
+
 	private readonly Aes _aes;
 
 	private DefaultAesCipher(in ReadOnlySpan<byte> key)
@@ -18,6 +20,8 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	public static bool IsSupported => true;
+
+	public static BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Unknown;
 
 	public static DefaultAesCipher Create(in ReadOnlySpan<byte> key)
 	{

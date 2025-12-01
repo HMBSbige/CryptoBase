@@ -37,4 +37,43 @@ public ref struct VectorBuffer512
 	{
 		return Unsafe.AsRef(in value).AsSpan();
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static VectorBuffer512 operator ^(scoped in VectorBuffer512 left, scoped in VectorBuffer512 right)
+	{
+		if (Vector512.IsHardwareAccelerated)
+		{
+			return new VectorBuffer512
+			{
+				V512_0 = left.V512_0 ^ right.V512_0,
+				V512_1 = left.V512_1 ^ right.V512_1,
+				V512_2 = left.V512_2 ^ right.V512_2,
+				V512_3 = left.V512_3 ^ right.V512_3,
+				V512_4 = left.V512_4 ^ right.V512_4,
+				V512_5 = left.V512_5 ^ right.V512_5,
+				V512_6 = left.V512_6 ^ right.V512_6,
+				V512_7 = left.V512_7 ^ right.V512_7
+			};
+		}
+
+		return new VectorBuffer512
+		{
+			V256_0 = left.V256_0 ^ right.V256_0,
+			V256_1 = left.V256_1 ^ right.V256_1,
+			V256_2 = left.V256_2 ^ right.V256_2,
+			V256_3 = left.V256_3 ^ right.V256_3,
+			V256_4 = left.V256_4 ^ right.V256_4,
+			V256_5 = left.V256_5 ^ right.V256_5,
+			V256_6 = left.V256_6 ^ right.V256_6,
+			V256_7 = left.V256_7 ^ right.V256_7,
+			V256_8 = left.V256_8 ^ right.V256_8,
+			V256_9 = left.V256_9 ^ right.V256_9,
+			V256_10 = left.V256_10 ^ right.V256_10,
+			V256_11 = left.V256_11 ^ right.V256_11,
+			V256_12 = left.V256_12 ^ right.V256_12,
+			V256_13 = left.V256_13 ^ right.V256_13,
+			V256_14 = left.V256_14 ^ right.V256_14,
+			V256_15 = left.V256_15 ^ right.V256_15
+		};
+	}
 }

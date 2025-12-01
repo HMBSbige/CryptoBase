@@ -1,45 +1,139 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool disposeCrypto = true) : CtrMode128(crypto, iv, disposeCrypto)
+public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
-	protected override void UpdateKeyStream(in Span<byte> counter, in Span<byte> keyStream)
-	{
-		InternalBlockCrypto.Encrypt(counter, keyStream);
+	public string Name => _blockCipher.Name + "-CTR";
 
-		if (Sse2.IsSupported)
+	private const int BlockSize = 16;
+
+	private readonly TBlockCipher _blockCipher;
+	private readonly bool _disposeCipher;
+
+	private int _index;
+	private readonly CryptoArrayPool<byte> _iv = new(BlockSize);
+	private readonly CryptoArrayPool<byte> _counter = new(BlockSize);
+	private readonly CryptoArrayPool<byte> _keyStream = new(BlockSize);
+
+	public CtrMode128Ctr32(TBlockCipher blockCipher, ReadOnlySpan<byte> iv, bool disposeCipher = true)
+	{
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
+
+		_blockCipher = blockCipher;
+		_disposeCipher = disposeCipher;
+
+		Span<byte> ivSpan = _iv.Span;
+		ivSpan.Clear();
+		iv.CopyTo(_iv.Span);
+
+		Reset();
+	}
+
+	public void Dispose()
+	{
+		_iv.Dispose();
+		_counter.Dispose();
+		_keyStream.Dispose();
+
+		if (_disposeCipher)
 		{
-			ref Vector128<byte> v = ref Unsafe.As<byte, Vector128<byte>>(ref counter.GetReference());
-			v = v.ReverseEndianness128().IncUInt32Le().ReverseEndianness128();
-		}
-		else
-		{
-			uint c = BinaryPrimitives.ReadUInt32BigEndian(counter.Slice(12));
-			BinaryPrimitives.WriteUInt32BigEndian(counter.Slice(12), ++c);
+			_blockCipher.Dispose();
 		}
 	}
 
-	protected override int UpdateBlock(in Span<byte> counter, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	public void Reset()
+	{
+		_index = 0;
+		_iv.Span.CopyTo(_counter.Span);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
+
+		int offset = 0;
+		int left = source.Length;
+		Span<byte> counter = _counter.Span;
+		Span<byte> keyStream = _keyStream.Span;
+		ref VectorBuffer16 c = ref counter.AsVectorBuffer16();
+		ref VectorBuffer16 ks = ref keyStream.AsVectorBuffer16();
+
+		VectorBuffer16 tmpc = c;
+		VectorBuffer16 tmpks = ks;
+
+		if (_index is not 0 && left > 0)
+		{
+			int r = BlockSize - _index;
+			int n = Math.Min(r, left);
+
+			FastUtils.XorLess16(tmpks.AsSpan().Slice(_index), source, destination, n);
+
+			_index += n;
+			_index &= BlockSize - 1;
+			offset += n;
+			left -= n;
+		}
+
+		if (left >= BlockSize)
+		{
+			int processed = UpdateBlock(ref tmpc, source.Slice(offset), destination.Slice(offset));
+			offset += processed;
+			left -= processed;
+		}
+
+		if (left > 0)
+		{
+			tmpks = UpdateKeyStream(ref tmpc);
+
+			FastUtils.XorLess16(tmpks.AsSpan().Slice(_index), source.Slice(offset), destination.Slice(offset), left);
+
+			_index = left;
+		}
+
+		c = tmpc;
+		ks = tmpks;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private VectorBuffer16 UpdateKeyStream(scoped ref VectorBuffer16 counter)
+	{
+		VectorBuffer16 ks = _blockCipher.Encrypt(counter);
+
+		if (Sse2.IsSupported)
+		{
+			counter.V128 = counter.V128.ReverseEndianness128().IncUInt32Le().ReverseEndianness128();
+		}
+		else
+		{
+			if (BitConverter.IsLittleEndian)
+			{
+				counter.U3 = BinaryPrimitives.ReverseEndianness(counter.U3) + 1;
+				counter.U3 = BinaryPrimitives.ReverseEndianness(counter.U3);
+			}
+			else
+			{
+				++counter.U3;
+			}
+		}
+
+		return ks;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private int UpdateBlock(scoped ref VectorBuffer16 counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int i = 0;
 		int left = source.Length;
-		ref byte countRef = ref counter.GetReference();
+		ref readonly byte sourceRef = ref source.GetReference();
+		ref byte destinationRef = ref destination.GetReference();
 
-		if (left >= 32 * BlockSize
-			&& InternalBlockCrypto.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block32)
-			)
+		if (left >= 32 * BlockSize)
 		{
-			if (Avx512BW.IsSupported)
+			if (Avx512BW.IsSupported
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block32)
+				)
 			{
-				ref Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref countRef, 0 * 4 * BlockSize));
-				ref Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref countRef, 1 * 4 * BlockSize));
-				ref Vector512<byte> v2 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref countRef, 2 * 4 * BlockSize));
-				ref Vector512<byte> v3 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref countRef, 3 * 4 * BlockSize));
-				ref Vector512<byte> v4 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref countRef, 4 * 4 * BlockSize));
-				ref Vector512<byte> v5 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref countRef, 5 * 4 * BlockSize));
-				ref Vector512<byte> v6 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref countRef, 6 * 4 * BlockSize));
-				ref Vector512<byte> v7 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref countRef, 7 * 4 * BlockSize));
-
-				Vector512<byte> t0 = FastUtils.BroadcastVector128ToVector512(ref countRef);
+				Vector512<byte> t0 = Vector512.Create(counter.V128);
 				t0 = t0.ReverseEndianness128().AddUInt32Le0123();
 				Vector512<byte> t1 = t0.AddUInt32Le4444();
 				Vector512<byte> t2 = t1.AddUInt32Le4444();
@@ -49,18 +143,21 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 				Vector512<byte> t6 = t5.AddUInt32Le4444();
 				Vector512<byte> t7 = t6.AddUInt32Le4444();
 
-				v0 = t0.ReverseEndianness128();
-				v1 = t1.ReverseEndianness128();
-				v2 = t2.ReverseEndianness128();
-				v3 = t3.ReverseEndianness128();
-				v4 = t4.ReverseEndianness128();
-				v5 = t5.ReverseEndianness128();
-				v6 = t6.ReverseEndianness128();
-				v7 = t7.ReverseEndianness128();
+				VectorBuffer512 tmp = new()
+				{
+					V512_0 = t0.ReverseEndianness128(),
+					V512_1 = t1.ReverseEndianness128(),
+					V512_2 = t2.ReverseEndianness128(),
+					V512_3 = t3.ReverseEndianness128(),
+					V512_4 = t4.ReverseEndianness128(),
+					V512_5 = t5.ReverseEndianness128(),
+					V512_6 = t6.ReverseEndianness128(),
+					V512_7 = t7.ReverseEndianness128()
+				};
 
 				while (left >= 32 * BlockSize)
 				{
-					InternalBlockCrypto.Encrypt32(counter, keyStream);
+					VectorBuffer512 ks = _blockCipher.Encrypt(tmp);
 
 					t0 = t7.AddUInt32Le4444();
 					t1 = t0.AddUInt32Le4444();
@@ -71,20 +168,24 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 					t6 = t5.AddUInt32Le4444();
 					t7 = t6.AddUInt32Le4444();
 
-					v0 = t0.ReverseEndianness128();
-					v1 = t1.ReverseEndianness128();
-					v2 = t2.ReverseEndianness128();
-					v3 = t3.ReverseEndianness128();
-					v4 = t4.ReverseEndianness128();
-					v5 = t5.ReverseEndianness128();
-					v6 = t6.ReverseEndianness128();
-					v7 = t7.ReverseEndianness128();
+					tmp.V512_0 = t0.ReverseEndianness128();
+					tmp.V512_1 = t1.ReverseEndianness128();
+					tmp.V512_2 = t2.ReverseEndianness128();
+					tmp.V512_3 = t3.ReverseEndianness128();
+					tmp.V512_4 = t4.ReverseEndianness128();
+					tmp.V512_5 = t5.ReverseEndianness128();
+					tmp.V512_6 = t6.ReverseEndianness128();
+					tmp.V512_7 = t7.ReverseEndianness128();
 
-					FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), 32 * BlockSize);
+					VectorBuffer512 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer512();
+					ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer512();
+					dst = src ^ ks;
 
 					i += 32 * BlockSize;
 					left -= 32 * BlockSize;
 				}
+
+				counter.V128 = tmp.Lower.V128_0;
 			}
 		}
 
@@ -92,16 +193,7 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 		{
 			if (Avx2.IsSupported)
 			{
-				ref Vector256<byte> v0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 0 * 2 * BlockSize));
-				ref Vector256<byte> v1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 1 * 2 * BlockSize));
-				ref Vector256<byte> v2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 2 * 2 * BlockSize));
-				ref Vector256<byte> v3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 3 * 2 * BlockSize));
-				ref Vector256<byte> v4 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 4 * 2 * BlockSize));
-				ref Vector256<byte> v5 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 5 * 2 * BlockSize));
-				ref Vector256<byte> v6 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 6 * 2 * BlockSize));
-				ref Vector256<byte> v7 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 7 * 2 * BlockSize));
-
-				Vector256<byte> t0 = FastUtils.BroadcastVector128ToVector256(ref countRef);
+				Vector256<byte> t0 = Vector256.Create(counter.V128);
 				t0 = t0.ReverseEndianness128().AddUInt32Le01();
 				Vector256<byte> t1 = t0.AddUInt32Le22();
 				Vector256<byte> t2 = t1.AddUInt32Le22();
@@ -111,18 +203,21 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 				Vector256<byte> t6 = t5.AddUInt32Le22();
 				Vector256<byte> t7 = t6.AddUInt32Le22();
 
-				v0 = t0.ReverseEndianness128();
-				v1 = t1.ReverseEndianness128();
-				v2 = t2.ReverseEndianness128();
-				v3 = t3.ReverseEndianness128();
-				v4 = t4.ReverseEndianness128();
-				v5 = t5.ReverseEndianness128();
-				v6 = t6.ReverseEndianness128();
-				v7 = t7.ReverseEndianness128();
+				VectorBuffer256 tmp = new()
+				{
+					V256_0 = t0.ReverseEndianness128(),
+					V256_1 = t1.ReverseEndianness128(),
+					V256_2 = t2.ReverseEndianness128(),
+					V256_3 = t3.ReverseEndianness128(),
+					V256_4 = t4.ReverseEndianness128(),
+					V256_5 = t5.ReverseEndianness128(),
+					V256_6 = t6.ReverseEndianness128(),
+					V256_7 = t7.ReverseEndianness128()
+				};
 
 				while (left >= 16 * BlockSize)
 				{
-					InternalBlockCrypto.Encrypt16(counter, keyStream);
+					VectorBuffer256 ks = _blockCipher.Encrypt(tmp);
 
 					t0 = t7.AddUInt32Le22();
 					t1 = t0.AddUInt32Le22();
@@ -133,20 +228,24 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 					t6 = t5.AddUInt32Le22();
 					t7 = t6.AddUInt32Le22();
 
-					v0 = t0.ReverseEndianness128();
-					v1 = t1.ReverseEndianness128();
-					v2 = t2.ReverseEndianness128();
-					v3 = t3.ReverseEndianness128();
-					v4 = t4.ReverseEndianness128();
-					v5 = t5.ReverseEndianness128();
-					v6 = t6.ReverseEndianness128();
-					v7 = t7.ReverseEndianness128();
+					tmp.V256_0 = t0.ReverseEndianness128();
+					tmp.V256_1 = t1.ReverseEndianness128();
+					tmp.V256_2 = t2.ReverseEndianness128();
+					tmp.V256_3 = t3.ReverseEndianness128();
+					tmp.V256_4 = t4.ReverseEndianness128();
+					tmp.V256_5 = t5.ReverseEndianness128();
+					tmp.V256_6 = t6.ReverseEndianness128();
+					tmp.V256_7 = t7.ReverseEndianness128();
 
-					FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), 16 * BlockSize);
+					VectorBuffer256 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer256();
+					ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer256();
+					dst = src ^ ks;
 
 					i += 16 * BlockSize;
 					left -= 16 * BlockSize;
 				}
+
+				counter.V128 = tmp.V128_0;
 			}
 		}
 
@@ -154,37 +253,37 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 		{
 			if (Avx2.IsSupported)
 			{
-				ref Vector256<byte> v0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 0 * 2 * BlockSize));
-				ref Vector256<byte> v1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 1 * 2 * BlockSize));
-				ref Vector256<byte> v2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 2 * 2 * BlockSize));
-				ref Vector256<byte> v3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref countRef, 3 * 2 * BlockSize));
-
-				Vector256<byte> t0 = FastUtils.BroadcastVector128ToVector256(ref countRef);
+				Vector256<byte> t0 = Vector256.Create(counter.V128);
 				t0 = t0.ReverseEndianness128().AddUInt32Le01();
 				Vector256<byte> t1 = t0.AddUInt32Le22();
 				Vector256<byte> t2 = t1.AddUInt32Le22();
 				Vector256<byte> t3 = t2.AddUInt32Le22();
 
-				v0 = t0.ReverseEndianness128();
-				v1 = t1.ReverseEndianness128();
-				v2 = t2.ReverseEndianness128();
-				v3 = t3.ReverseEndianness128();
+				VectorBuffer128 tmp = new()
+				{
+					V256_0 = t0.ReverseEndianness128(),
+					V256_1 = t1.ReverseEndianness128(),
+					V256_2 = t2.ReverseEndianness128(),
+					V256_3 = t3.ReverseEndianness128()
+				};
 
 				while (left >= 8 * BlockSize)
 				{
-					InternalBlockCrypto.Encrypt8(counter, keyStream);
+					VectorBuffer128 ks = _blockCipher.Encrypt(tmp);
 
 					t0 = t3.AddUInt32Le22();
 					t1 = t0.AddUInt32Le22();
 					t2 = t1.AddUInt32Le22();
 					t3 = t2.AddUInt32Le22();
 
-					v0 = t0.ReverseEndianness128();
-					v1 = t1.ReverseEndianness128();
-					v2 = t2.ReverseEndianness128();
-					v3 = t3.ReverseEndianness128();
+					tmp.V256_0 = t0.ReverseEndianness128();
+					tmp.V256_1 = t1.ReverseEndianness128();
+					tmp.V256_2 = t2.ReverseEndianness128();
+					tmp.V256_3 = t3.ReverseEndianness128();
 
-					FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), 8 * BlockSize);
+					VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer128();
+					ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer128();
+					dst = src ^ ks;
 
 					i += 8 * BlockSize;
 					left -= 8 * BlockSize;
@@ -192,12 +291,14 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 
 				if (left >= 4 * BlockSize)
 				{
-					InternalBlockCrypto.Encrypt4(counter, keyStream);
+					VectorBuffer64 ks = _blockCipher.Encrypt(tmp.Lower);
 
 					t0 = t1.AddUInt32Le22();
-					v0 = t0.ReverseEndianness128();
+					tmp.V256_0 = t0.ReverseEndianness128();
 
-					FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), 4 * BlockSize);
+					VectorBuffer64 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer64();
+					ref VectorBuffer64 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer64();
+					dst = src ^ ks;
 
 					i += 4 * BlockSize;
 					left -= 4 * BlockSize;
@@ -207,28 +308,23 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 				{
 					t0 = t0.AddUInt32Le22();
 
-					InternalBlockCrypto.Encrypt2(counter, keyStream);
+					VectorBuffer32 ks = _blockCipher.Encrypt(tmp.Lower.Lower);
 
-					v0 = t0.ReverseEndianness128();
+					tmp.V256_0 = t0.ReverseEndianness128();
 
-					FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), 2 * BlockSize);
+					VectorBuffer32 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer32();
+					ref VectorBuffer32 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer32();
+					dst = src ^ ks;
 
 					i += 2 * BlockSize;
 					left -= 2 * BlockSize;
 				}
+
+				counter.V128 = tmp.V128_0;
 			}
 			else if (Sse2.IsSupported)
 			{
-				ref Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref countRef, 0 * BlockSize));
-				ref Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref countRef, 1 * BlockSize));
-				ref Vector128<byte> v2 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref countRef, 2 * BlockSize));
-				ref Vector128<byte> v3 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref countRef, 3 * BlockSize));
-				ref Vector128<byte> v4 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref countRef, 4 * BlockSize));
-				ref Vector128<byte> v5 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref countRef, 5 * BlockSize));
-				ref Vector128<byte> v6 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref countRef, 6 * BlockSize));
-				ref Vector128<byte> v7 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref countRef, 7 * BlockSize));
-
-				Vector128<byte> t1 = v0.ReverseEndianness128().IncUInt32Le();
+				Vector128<byte> t1 = counter.V128.ReverseEndianness128().IncUInt32Le();
 				Vector128<byte> t2 = t1.IncUInt32Le();
 				Vector128<byte> t3 = t2.IncUInt32Le();
 				Vector128<byte> t4 = t3.IncUInt32Le();
@@ -236,17 +332,21 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 				Vector128<byte> t6 = t5.IncUInt32Le();
 				Vector128<byte> t7 = t6.IncUInt32Le();
 
-				v1 = t1.ReverseEndianness128();
-				v2 = t2.ReverseEndianness128();
-				v3 = t3.ReverseEndianness128();
-				v4 = t4.ReverseEndianness128();
-				v5 = t5.ReverseEndianness128();
-				v6 = t6.ReverseEndianness128();
-				v7 = t7.ReverseEndianness128();
+				VectorBuffer128 tmp = new()
+				{
+					V128_0 = counter.V128,
+					V128_1 = t1.ReverseEndianness128(),
+					V128_2 = t2.ReverseEndianness128(),
+					V128_3 = t3.ReverseEndianness128(),
+					V128_4 = t4.ReverseEndianness128(),
+					V128_5 = t5.ReverseEndianness128(),
+					V128_6 = t6.ReverseEndianness128(),
+					V128_7 = t7.ReverseEndianness128()
+				};
 
 				while (left >= 8 * BlockSize)
 				{
-					InternalBlockCrypto.Encrypt8(counter, keyStream);
+					VectorBuffer128 ks = _blockCipher.Encrypt(tmp);
 
 					Vector128<byte> t0 = t7.IncUInt32Le();
 					t1 = t0.IncUInt32Le();
@@ -257,31 +357,36 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 					t6 = t5.IncUInt32Le();
 					t7 = t6.IncUInt32Le();
 
-					v0 = t0.ReverseEndianness128();
-					v1 = t1.ReverseEndianness128();
-					v2 = t2.ReverseEndianness128();
-					v3 = t3.ReverseEndianness128();
-					v4 = t4.ReverseEndianness128();
-					v5 = t5.ReverseEndianness128();
-					v6 = t6.ReverseEndianness128();
-					v7 = t7.ReverseEndianness128();
+					tmp.V128_0 = t0.ReverseEndianness128();
+					tmp.V128_1 = t1.ReverseEndianness128();
+					tmp.V128_2 = t2.ReverseEndianness128();
+					tmp.V128_3 = t3.ReverseEndianness128();
+					tmp.V128_4 = t4.ReverseEndianness128();
+					tmp.V128_5 = t5.ReverseEndianness128();
+					tmp.V128_6 = t6.ReverseEndianness128();
+					tmp.V128_7 = t7.ReverseEndianness128();
 
-					FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), 8 * BlockSize);
+					VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer128();
+					ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer128();
+					dst = src ^ ks;
+
 					i += 8 * BlockSize;
 					left -= 8 * BlockSize;
 				}
 
 				if (left >= 4 * BlockSize)
 				{
-					InternalBlockCrypto.Encrypt4(counter, keyStream);
+					VectorBuffer64 ks = _blockCipher.Encrypt(tmp.Lower);
 
 					Vector128<byte> t0 = t3.IncUInt32Le();
 					t1 = t0.IncUInt32Le();
 
-					v0 = t0.ReverseEndianness128();
-					v1 = t1.ReverseEndianness128();
+					tmp.V128_0 = t0.ReverseEndianness128();
+					tmp.V128_1 = t1.ReverseEndianness128();
 
-					FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), 4 * BlockSize);
+					VectorBuffer64 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer64();
+					ref VectorBuffer64 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer64();
+					dst = src ^ ks;
 
 					i += 4 * BlockSize;
 					left -= 4 * BlockSize;
@@ -291,23 +396,30 @@ public class CtrMode128Ctr32(IBlockCrypto crypto, ReadOnlySpan<byte> iv, bool di
 				{
 					Vector128<byte> t0 = t1.IncUInt32Le();
 
-					InternalBlockCrypto.Encrypt2(counter, keyStream);
+					VectorBuffer32 ks = _blockCipher.Encrypt(tmp.Lower.Lower);
 
-					v0 = t0.ReverseEndianness128();
+					tmp.V128_0 = t0.ReverseEndianness128();
 
-					FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), 2 * BlockSize);
+					VectorBuffer32 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer32();
+					ref VectorBuffer32 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer32();
+					dst = src ^ ks;
 
 					i += 2 * BlockSize;
 					left -= 2 * BlockSize;
 				}
+
+				counter.V128 = tmp.V128_0;
 			}
 		}
 
 		while (left >= BlockSize)
 		{
-			UpdateKeyStream(counter, keyStream);
+			VectorBuffer16 ks = UpdateKeyStream(ref counter);
 
-			FastUtils.Xor16(keyStream, source.Slice(i), destination.Slice(i));
+			VectorBuffer16 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer16();
+			ref VectorBuffer16 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer16();
+
+			dst = src ^ ks;
 
 			i += BlockSize;
 			left -= BlockSize;
