@@ -1,9 +1,9 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public sealed partial class XtsMode
+public sealed partial class XtsMode<TBlockCipher>
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<byte> Gf128Mul(in Vector256<byte> tweak, [ConstantExpected(Min = 1, Max = 64)] int x)
+	private static Vector256<byte> Gf128MulAvx2(Vector256<byte> tweak, [ConstantExpected(Min = 1, Max = 64)] int x)
 	{
 		Vector256<ulong> tmp1 = tweak.AsUInt64() >>> 64 - x;
 
@@ -14,99 +14,88 @@ public sealed partial class XtsMode
 		return (tweak.AsUInt64() << x ^ tmp1 ^ tmp2).AsByte();
 	}
 
+	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void GetInitTweak8Avx2(in ReadOnlySpan<byte> tweakBuffer, in Span<byte> buffer)
+	private static VectorBuffer128 GetInitTweak8Avx2(Vector128<byte> tweak)
 	{
-		ref byte ptr = ref buffer.GetReference();
-		ref readonly Vector128<byte> x0 = ref Unsafe.As<byte, Vector128<byte>>(ref tweakBuffer.GetReference());
-		ref Vector256<byte> tweak0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref ptr, 0 * 32));
-		ref Vector256<byte> tweak1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref ptr, 1 * 32));
-		ref Vector256<byte> tweak2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref ptr, 2 * 32));
-		ref Vector256<byte> tweak3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref ptr, 3 * 32));
+		Unsafe.SkipInit(out VectorBuffer128 r);
+		r.V128_0 = tweak;
+		r.V128_1 = Gf128MulSse2(tweak, 1);
 
-		Vector128<byte> x1 = Gf128Mul(x0);
-		tweak0 = Vector256.Create(x0, x1);
+		r.V256_1 = Gf128MulAvx2(r.V256_0, 2);
+		r.V256_2 = Gf128MulAvx2(r.V256_0, 4);
+		r.V256_3 = Gf128MulAvx2(r.V256_0, 6);
 
-		tweak1 = Gf128Mul(tweak0, 2);
-		tweak2 = Gf128Mul(tweak0, 4);
-		tweak3 = Gf128Mul(tweak0, 6);
+		return r;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Gf128Mul8Avx2(in Span<byte> buffer)
+	private static void Gf128Mul8Avx2(ref VectorBuffer128 tweak)
 	{
-		ref byte ptr = ref buffer.GetReference();
-		ref Vector256<byte> tweak0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref ptr, 0 * 32));
-		ref Vector256<byte> tweak1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref ptr, 1 * 32));
-		ref Vector256<byte> tweak2 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref ptr, 2 * 32));
-		ref Vector256<byte> tweak3 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref ptr, 3 * 32));
-
-		tweak0 = Gf128Mul(tweak0, 8);
-		tweak1 = Gf128Mul(tweak1, 8);
-		tweak2 = Gf128Mul(tweak2, 8);
-		tweak3 = Gf128Mul(tweak3, 8);
+		tweak.V256_0 = Gf128MulAvx2(tweak.V256_0, 8);
+		tweak.V256_1 = Gf128MulAvx2(tweak.V256_1, 8);
+		tweak.V256_2 = Gf128MulAvx2(tweak.V256_2, 8);
+		tweak.V256_3 = Gf128MulAvx2(tweak.V256_3, 8);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private int Encrypt8Avx2(in Span<byte> tweak, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	private int Encrypt8Avx2(ref Vector128<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int length = source.Length;
 		int offset = 0;
 
-		const int blockSize = 8 * 16;
-		using CryptoBuffer<byte> buffer = new(blockSize);
-		Span<byte> tweakBuffer = buffer.Span;
+		ref readonly byte sourceRef = ref source.GetReference();
+		ref byte destinationRef = ref destination.GetReference();
 
-		GetInitTweak8Avx2(tweak, tweakBuffer);
+		VectorBuffer128 tweakBuffer = GetInitTweak8Avx2(tweak);
 
-		while (length >= 8 * BlockSize)
+		while (length >= 8 * BlockBytesSize)
 		{
-			ReadOnlySpan<byte> src = source.Slice(offset, blockSize);
-			Span<byte> dst = destination.Slice(offset, blockSize);
+			VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
+			ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer128();
 
-			FastUtils.Xor(src, tweakBuffer, dst, blockSize);
-			_dataCrypto.Encrypt8(dst, dst);
-			FastUtils.Xor(dst, tweakBuffer, blockSize);
+			VectorBuffer128 tmp = src ^ tweakBuffer;
+			tmp = _dataCipher.Encrypt(tmp);
+			dst = tmp ^ tweakBuffer;
 
-			Gf128Mul8Avx2(tweakBuffer);
+			Gf128Mul8Avx2(ref tweakBuffer);
 
-			offset += blockSize;
-			length -= blockSize;
+			offset += 8 * BlockBytesSize;
+			length -= 8 * BlockBytesSize;
 		}
 
-		tweakBuffer.Slice(0, BlockSize).CopyTo(tweak);
+		tweak = tweakBuffer.V128_0;
 
 		return offset;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private int Decrypt8Avx2(in Span<byte> tweak, in ReadOnlySpan<byte> source, in Span<byte> destination)
+	private int Decrypt8Avx2(ref Vector128<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int length = source.Length;
 		int offset = 0;
 
-		const int blockSize = 8 * 16;
-		using CryptoBuffer<byte> buffer = new(blockSize);
-		Span<byte> tweakBuffer = buffer.Span;
+		ref readonly byte sourceRef = ref source.GetReference();
+		ref byte destinationRef = ref destination.GetReference();
 
-		GetInitTweak8Avx2(tweak, tweakBuffer);
+		VectorBuffer128 tweakBuffer = GetInitTweak8Avx2(tweak);
 
-		while (length >= 8 * BlockSize)
+		while (length >= 8 * BlockBytesSize)
 		{
-			ReadOnlySpan<byte> src = source.Slice(offset, blockSize);
-			Span<byte> dst = destination.Slice(offset, blockSize);
+			VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
+			ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer128();
 
-			FastUtils.Xor(src, tweakBuffer, dst, blockSize);
-			_dataCrypto.Decrypt8(dst, dst);
-			FastUtils.Xor(dst, tweakBuffer, blockSize);
+			VectorBuffer128 tmp = src ^ tweakBuffer;
+			tmp = _dataCipher.Decrypt(tmp);
+			dst = tmp ^ tweakBuffer;
 
-			Gf128Mul8Avx2(tweakBuffer);
+			Gf128Mul8Avx2(ref tweakBuffer);
 
-			offset += blockSize;
-			length -= blockSize;
+			offset += 8 * BlockBytesSize;
+			length -= 8 * BlockBytesSize;
 		}
 
-		tweakBuffer.Slice(0, BlockSize).CopyTo(tweak);
+		tweak = tweakBuffer.V128_0;
 
 		return offset;
 	}
