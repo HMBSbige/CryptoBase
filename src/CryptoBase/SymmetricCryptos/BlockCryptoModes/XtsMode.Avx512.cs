@@ -91,7 +91,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer256();
 
 			VectorBuffer256 tmp = src ^ tweakBuffer;
-			tmp = _dataCipher.Encrypt(tmp);
+			tmp = dataCipher.Encrypt(tmp);
 			dst = tmp ^ tweakBuffer;
 
 			Gf128Mul16Avx512(ref tweakBuffer);
@@ -122,7 +122,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer512();
 
 			VectorBuffer512 tmp = src ^ tweakBuffer;
-			tmp = _dataCipher.Encrypt(tmp);
+			tmp = dataCipher.Encrypt(tmp);
 			dst = tmp ^ tweakBuffer;
 
 			Gf128Mul32Avx512(ref tweakBuffer);
@@ -153,7 +153,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer256();
 
 			VectorBuffer256 tmp = src ^ tweakBuffer;
-			tmp = _dataCipher.Decrypt(tmp);
+			tmp = dataCipher.Decrypt(tmp);
 			dst = tmp ^ tweakBuffer;
 
 			Gf128Mul16Avx512(ref tweakBuffer);
@@ -184,7 +184,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer512();
 
 			VectorBuffer512 tmp = src ^ tweakBuffer;
-			tmp = _dataCipher.Decrypt(tmp);
+			tmp = dataCipher.Decrypt(tmp);
 			dst = tmp ^ tweakBuffer;
 
 			Gf128Mul32Avx512(ref tweakBuffer);

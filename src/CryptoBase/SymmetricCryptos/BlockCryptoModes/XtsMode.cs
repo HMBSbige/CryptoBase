@@ -3,21 +3,18 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBlockCipher tweakCipher, bool disposeCipher = true) : IBlockModeOneShot
 	where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
-	public string Name => _dataCipher.Name + @"-XTS";
+	public string Name => dataCipher.Name + @"-XTS";
 
 	public int BlockSize => BlockBytesSize;
 
 	private const int BlockBytesSize = 16;
 
-	private readonly TBlockCipher _dataCipher = dataCipher;
-	private readonly TBlockCipher _tweakCipher = tweakCipher;
-
 	public void Dispose()
 	{
 		if (disposeCipher)
 		{
-			_dataCipher.Dispose();
-			_tweakCipher.Dispose();
+			dataCipher.Dispose();
+			tweakCipher.Dispose();
 		}
 	}
 
@@ -26,14 +23,13 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 		return inputLength;
 	}
 
-	[SkipLocalsInit]
 	public void Encrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockBytesSize, nameof(iv));
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockBytesSize, nameof(source));
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		VectorBuffer16 tweak = _tweakCipher.Encrypt(iv.AsVectorBuffer16());
+		VectorBuffer16 tweak = tweakCipher.Encrypt(iv.AsVectorBuffer16());
 
 		int left = source.Length % BlockBytesSize;
 		int size = source.Length - left;
@@ -84,7 +80,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			ref VectorBuffer16 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer16();
 
 			VectorBuffer16 tmp = src ^ tweak;
-			tmp = _dataCipher.Encrypt(tmp);
+			tmp = dataCipher.Encrypt(tmp);
 			dst = tmp ^ tweak;
 
 			Gf128Mul(ref tweak);
@@ -102,19 +98,18 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 
 			VectorBuffer16 tmp = lastDst.AsVectorBuffer16();
 			tmp ^= tweak;
-			tmp = _dataCipher.Encrypt(tmp);
+			tmp = dataCipher.Encrypt(tmp);
 			lastDst.AsVectorBuffer16() = tmp ^ tweak;
 		}
 	}
 
-	[SkipLocalsInit]
 	public void Decrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockBytesSize, nameof(iv));
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockBytesSize, nameof(source));
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		VectorBuffer16 tweak = _tweakCipher.Encrypt(iv.AsVectorBuffer16());
+		VectorBuffer16 tweak = tweakCipher.Encrypt(iv.AsVectorBuffer16());
 
 		int left = source.Length % BlockBytesSize;
 		int size = source.Length - left - (BlockBytesSize & (left | -left) >> 31);
@@ -161,7 +156,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			ref VectorBuffer16 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer16();
 
 			VectorBuffer16 tmp = src ^ tweak;
-			tmp = _dataCipher.Decrypt(tmp);
+			tmp = dataCipher.Decrypt(tmp);
 			dst = tmp ^ tweak;
 
 			Gf128Mul(ref tweak);
@@ -179,14 +174,14 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			Span<byte> lastDst = destination.Slice(size);
 
 			VectorBuffer16 tmp = lastSrc.AsVectorBuffer16() ^ finalTweak;
-			tmp = _dataCipher.Decrypt(tmp);
+			tmp = dataCipher.Decrypt(tmp);
 			lastDst.AsVectorBuffer16() = tmp ^ finalTweak;
 
 			lastDst.Slice(0, left).CopyTo(lastDst.Slice(BlockSize));
 			lastSrc.Slice(BlockSize, left).CopyTo(lastDst);
 
 			tmp = lastDst.AsVectorBuffer16() ^ tweak;
-			tmp = _dataCipher.Decrypt(tmp);
+			tmp = dataCipher.Decrypt(tmp);
 			lastDst.AsVectorBuffer16() = tmp ^ tweak;
 		}
 	}
