@@ -82,7 +82,7 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 		{
 			ks = _blockCipher.Encrypt(c);
 
-			FastUtils.Xor16(stream, source.Slice(i, BlockSize), destination.Slice(i, BlockSize));
+			destination.Slice(i).AsVectorBuffer16() = source.Slice(i).AsVectorBuffer16() ^ stream.AsVectorBuffer16();
 			(_isEncrypt ? destination : source).Slice(i, BlockSize).CopyTo(block);
 
 			i += BlockSize;
