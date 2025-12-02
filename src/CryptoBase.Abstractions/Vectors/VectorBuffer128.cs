@@ -17,9 +17,6 @@ public ref struct VectorBuffer128
 	[FieldOffset(2 * 32)] public Vector256<byte> V256_2;
 	[FieldOffset(3 * 32)] public Vector256<byte> V256_3;
 
-	[FieldOffset(0 * 64)] public Vector512<byte> V512_0;
-	[FieldOffset(1 * 64)] public Vector512<byte> V512_1;
-
 	[FieldOffset(0 * 64)] public VectorBuffer64 Lower;
 	[FieldOffset(1 * 64)] public VectorBuffer64 Upper;
 
@@ -32,15 +29,6 @@ public ref struct VectorBuffer128
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static VectorBuffer128 operator ^(scoped in VectorBuffer128 left, scoped in VectorBuffer128 right)
 	{
-		if (Vector512.IsHardwareAccelerated)
-		{
-			return new VectorBuffer128
-			{
-				V512_0 = left.V512_0 ^ right.V512_0,
-				V512_1 = left.V512_1 ^ right.V512_1
-			};
-		}
-
 		if (Vector256.IsHardwareAccelerated)
 		{
 			return new VectorBuffer128

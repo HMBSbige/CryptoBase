@@ -1,31 +1,23 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public sealed partial class XtsMode : IBlockModeOneShot
+public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBlockCipher tweakCipher, bool disposeCipher = true) : IBlockModeOneShot
+	where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
-	public string Name => _dataCrypto.Name + @"-XTS";
+	public string Name => _dataCipher.Name + @"-XTS";
 
-	public int BlockSize => 16;
+	public int BlockSize => BlockBytesSize;
 
-	private readonly IBlockCrypto _dataCrypto;
-	private readonly IBlockCrypto _tweakCrypto;
-	private readonly bool _disposeCrypto;
+	private const int BlockBytesSize = 16;
 
-	public XtsMode(IBlockCrypto dataCrypto, IBlockCrypto tweakCrypto, bool disposeCrypto = true)
-	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(dataCrypto.BlockSize, BlockSize, nameof(dataCrypto));
-		ArgumentOutOfRangeException.ThrowIfNotEqual(tweakCrypto.BlockSize, BlockSize, nameof(tweakCrypto));
-
-		_dataCrypto = dataCrypto;
-		_tweakCrypto = tweakCrypto;
-		_disposeCrypto = disposeCrypto;
-	}
+	private readonly TBlockCipher _dataCipher = dataCipher;
+	private readonly TBlockCipher _tweakCipher = tweakCipher;
 
 	public void Dispose()
 	{
-		if (_disposeCrypto)
+		if (disposeCipher)
 		{
-			_dataCrypto.Dispose();
-			_tweakCrypto.Dispose();
+			_dataCipher.Dispose();
+			_tweakCipher.Dispose();
 		}
 	}
 
@@ -34,23 +26,16 @@ public sealed partial class XtsMode : IBlockModeOneShot
 		return inputLength;
 	}
 
-	public static void GetIv(in Span<byte> iv, in UInt128 dataUnitSeqNumber)
-	{
-		BinaryPrimitives.WriteUInt128LittleEndian(iv, dataUnitSeqNumber);
-	}
-
 	[SkipLocalsInit]
 	public void Encrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockBytesSize, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockBytesSize, nameof(source));
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		using CryptoBuffer<byte> cryptoBuffer = new(stackalloc byte[BlockSize]);
-		Span<byte> tweak = cryptoBuffer.Span;
-		_tweakCrypto.Encrypt(iv, tweak);
+		VectorBuffer16 tweak = _tweakCipher.Encrypt(iv.AsVectorBuffer16());
 
-		int left = source.Length % BlockSize;
+		int left = source.Length % BlockBytesSize;
 		int size = source.Length - left;
 
 		int length = size;
@@ -58,17 +43,21 @@ public sealed partial class XtsMode : IBlockModeOneShot
 
 		if (Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported)
 		{
-			if (length >= 32 * BlockSize)
+			if (length >= 32 * BlockBytesSize
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block32)
+				)
 			{
-				int o = Encrypt32Avx512(tweak, source.Slice(offset), destination.Slice(offset));
+				int o = Encrypt32Avx512(ref tweak.V128, source, destination);
 
 				offset += o;
 				length -= o;
 			}
 
-			if (length >= 16 * BlockSize)
+			if (length >= 16 * BlockBytesSize
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block16)
+				)
 			{
-				int o = Encrypt16Avx512(tweak, source.Slice(offset), destination.Slice(offset));
+				int o = Encrypt16Avx512(ref tweak.V128, source.Slice(offset), destination.Slice(offset));
 
 				offset += o;
 				length -= o;
@@ -77,99 +66,75 @@ public sealed partial class XtsMode : IBlockModeOneShot
 
 		if (Avx2.IsSupported && Pclmulqdq.V256.IsSupported)
 		{
-			if (length >= 8 * BlockSize)
+			if (length >= 8 * BlockBytesSize)
 			{
-				int o = Encrypt8Avx2(tweak, source.Slice(offset), destination.Slice(offset));
+				int o = Encrypt8Avx2(ref tweak.V128, source.Slice(offset), destination.Slice(offset));
 
 				offset += o;
 				length -= o;
 			}
 		}
 
-		if (length >= 8 * BlockSize)
-		{
-			const int blockSize = 8 * 16;
-			using CryptoBuffer<byte> buffer = new(blockSize);
-			Span<byte> tweakBuffer = buffer.Span;
-
-			while (length >= 8 * BlockSize)
-			{
-				ReadOnlySpan<byte> src = source.Slice(offset, blockSize);
-				Span<byte> dst = destination.Slice(offset, blockSize);
-
-				for (int i = 0; i < blockSize; i += BlockSize)
-				{
-					tweak.CopyTo(tweakBuffer.Slice(i));
-					Gf128Mul(tweak);
-				}
-
-				FastUtils.Xor(src, tweakBuffer, dst, blockSize);
-				_dataCrypto.Encrypt8(dst, dst);
-				FastUtils.Xor(dst, tweakBuffer, blockSize);
-
-				offset += blockSize;
-				length -= blockSize;
-			}
-		}
-
 		while (length > 0)
 		{
-			ReadOnlySpan<byte> src = source.Slice(offset, BlockSize);
-			Span<byte> dst = destination.Slice(offset, BlockSize);
+			ref readonly byte sourceRef = ref source.GetReference();
+			ref byte destinationRef = ref destination.GetReference();
 
-			FastUtils.Xor16(src, tweak, dst);
-			_dataCrypto.Encrypt(dst, dst);
-			FastUtils.Xor16(dst, tweak);
+			VectorBuffer16 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer16();
+			ref VectorBuffer16 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer16();
 
-			Gf128Mul(tweak);
+			VectorBuffer16 tmp = src ^ tweak;
+			tmp = _dataCipher.Encrypt(tmp);
+			dst = tmp ^ tweak;
 
-			offset += BlockSize;
-			length -= BlockSize;
+			Gf128Mul(ref tweak);
+
+			offset += BlockBytesSize;
+			length -= BlockBytesSize;
 		}
 
 		if (left is not 0)
 		{
-			Span<byte> lastDSt = destination.Slice(size - BlockSize, BlockSize);
+			Span<byte> lastDst = destination.Slice(size - BlockBytesSize, BlockBytesSize);
 
-			lastDSt.Slice(0, left).CopyTo(destination.Slice(size));
-			source.Slice(size).CopyTo(lastDSt);
+			lastDst.Slice(0, left).CopyTo(destination.Slice(size));
+			source.Slice(size).CopyTo(lastDst);
 
-			FastUtils.Xor16(lastDSt, tweak);
-			_dataCrypto.Encrypt(lastDSt, lastDSt);
-			FastUtils.Xor16(lastDSt, tweak);
+			VectorBuffer16 tmp = lastDst.AsVectorBuffer16();
+			tmp ^= tweak;
+			tmp = _dataCipher.Encrypt(tmp);
+			lastDst.AsVectorBuffer16() = tmp ^ tweak;
 		}
 	}
 
 	[SkipLocalsInit]
 	public void Decrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
-		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockBytesSize, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockBytesSize, nameof(source));
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		using CryptoBuffer<byte> cryptoBuffer = new(stackalloc byte[BlockSize]);
-		Span<byte> tweak = cryptoBuffer.Span;
-		_tweakCrypto.Encrypt(iv, tweak);
+		VectorBuffer16 tweak = _tweakCipher.Encrypt(iv.AsVectorBuffer16());
 
-		int left = source.Length % BlockSize;
-		int size = source.Length - left - (BlockSize & (left | -left) >> 31);
+		int left = source.Length % BlockBytesSize;
+		int size = source.Length - left - (BlockBytesSize & (left | -left) >> 31);
 
 		int length = size;
 		int offset = 0;
 
 		if (Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported)
 		{
-			if (length >= 32 * BlockSize)
+			if (length >= 32 * BlockBytesSize)
 			{
-				int o = Decrypt32Avx512(tweak, source.Slice(offset), destination.Slice(offset));
+				int o = Decrypt32Avx512(ref tweak.V128, source, destination);
 
 				offset += o;
 				length -= o;
 			}
 
-			if (length >= 16 * BlockSize)
+			if (length >= 16 * BlockBytesSize)
 			{
-				int o = Decrypt16Avx512(tweak, source.Slice(offset), destination.Slice(offset));
+				int o = Decrypt16Avx512(ref tweak.V128, source.Slice(offset), destination.Slice(offset));
 
 				offset += o;
 				length -= o;
@@ -178,100 +143,71 @@ public sealed partial class XtsMode : IBlockModeOneShot
 
 		if (Avx2.IsSupported && Pclmulqdq.V256.IsSupported)
 		{
-			if (length >= 8 * BlockSize)
+			if (length >= 8 * BlockBytesSize)
 			{
-				int o = Decrypt8Avx2(tweak, source.Slice(offset), destination.Slice(offset));
+				int o = Decrypt8Avx2(ref tweak.V128, source.Slice(offset), destination.Slice(offset));
 
 				offset += o;
 				length -= o;
 			}
 		}
 
-		if (length >= 8 * BlockSize)
-		{
-			const int blockSize = 8 * 16;
-			using CryptoBuffer<byte> buffer = new(blockSize);
-			Span<byte> tweakBuffer = buffer.Span;
-
-			while (length >= 8 * BlockSize)
-			{
-				ReadOnlySpan<byte> src = source.Slice(offset, blockSize);
-				Span<byte> dst = destination.Slice(offset, blockSize);
-
-				for (int i = 0; i < blockSize; i += BlockSize)
-				{
-					tweak.CopyTo(tweakBuffer.Slice(i));
-					Gf128Mul(tweak);
-				}
-
-				FastUtils.Xor(src, tweakBuffer, dst, blockSize);
-				_dataCrypto.Decrypt8(dst, dst);
-				FastUtils.Xor(dst, tweakBuffer, blockSize);
-
-				offset += blockSize;
-				length -= blockSize;
-			}
-		}
-
 		while (length > 0)
 		{
-			ReadOnlySpan<byte> src = source.Slice(offset, BlockSize);
-			Span<byte> dst = destination.Slice(offset, BlockSize);
+			ref readonly byte sourceRef = ref source.GetReference();
+			ref byte destinationRef = ref destination.GetReference();
 
-			FastUtils.Xor16(src, tweak, dst);
-			_dataCrypto.Decrypt(dst, dst);
-			FastUtils.Xor16(dst, tweak);
+			VectorBuffer16 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer16();
+			ref VectorBuffer16 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer16();
 
-			Gf128Mul(tweak);
+			VectorBuffer16 tmp = src ^ tweak;
+			tmp = _dataCipher.Decrypt(tmp);
+			dst = tmp ^ tweak;
 
-			offset += BlockSize;
-			length -= BlockSize;
+			Gf128Mul(ref tweak);
+
+			offset += BlockBytesSize;
+			length -= BlockBytesSize;
 		}
 
 		if (left is not 0)
 		{
-			using CryptoBuffer<byte> buffer = new(stackalloc byte[BlockSize]);
-			Span<byte> finalTweak = buffer.Span;
-			tweak.CopyTo(finalTweak);
-			Gf128Mul(finalTweak);
+			VectorBuffer16 finalTweak = tweak;
+			Gf128Mul(ref finalTweak);
 
 			ReadOnlySpan<byte> lastSrc = source.Slice(size);
 			Span<byte> lastDst = destination.Slice(size);
 
-			FastUtils.Xor16(lastSrc, finalTweak, lastDst);
-			_dataCrypto.Decrypt(lastDst, lastDst);
-			FastUtils.Xor16(lastDst, finalTweak);
+			VectorBuffer16 tmp = lastSrc.AsVectorBuffer16() ^ finalTweak;
+			tmp = _dataCipher.Decrypt(tmp);
+			lastDst.AsVectorBuffer16() = tmp ^ finalTweak;
 
 			lastDst.Slice(0, left).CopyTo(lastDst.Slice(BlockSize));
 			lastSrc.Slice(BlockSize, left).CopyTo(lastDst);
 
-			FastUtils.Xor16(lastDst, tweak);
-			_dataCrypto.Decrypt(lastDst, lastDst);
-			FastUtils.Xor16(lastDst, tweak);
+			tmp = lastDst.AsVectorBuffer16() ^ tweak;
+			tmp = _dataCipher.Decrypt(tmp);
+			lastDst.AsVectorBuffer16() = tmp ^ tweak;
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Gf128Mul(in Span<byte> buffer)
+	private static void Gf128Mul(ref VectorBuffer16 tweak)
 	{
-		ref byte ptr = ref buffer.GetReference();
-
 		if (Sse2.IsSupported)
 		{
-			ref Vector128<byte> tweak = ref Unsafe.As<byte, Vector128<byte>>(ref ptr);
-
-			tweak = Gf128Mul(tweak);
+			tweak.V128 = Gf128MulSse2(tweak.V128, 1);
 		}
 		else
 		{
-			ref Int128 i = ref Unsafe.As<byte, Int128>(ref ptr);
+			ref Int128 i = ref tweak.I128;
 
 			i = i << 1 ^ i >> 127 & 0x87;
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> Gf128Mul(in Vector128<byte> tweak, [ConstantExpected(Min = 1, Max = 64)] int x = 1)
+	private static Vector128<byte> Gf128MulSse2(Vector128<byte> tweak, [ConstantExpected(Min = 1, Max = 64)] int x)
 	{
 		if (x is 1)
 		{
@@ -287,5 +223,13 @@ public sealed partial class XtsMode : IBlockModeOneShot
 		tmp1 = Sse2.ShiftLeftLogical128BitLane(tmp1.AsByte(), 8).AsUInt64();
 
 		return (tweak.AsUInt64() << x ^ tmp1 ^ tmp2).AsByte();
+	}
+}
+
+public static class XtsMode
+{
+	public static void GetIv(in Span<byte> iv, in UInt128 dataUnitSeqNumber)
+	{
+		BinaryPrimitives.WriteUInt128LittleEndian(iv, dataUnitSeqNumber);
 	}
 }

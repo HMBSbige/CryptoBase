@@ -83,8 +83,8 @@ internal static class CryptoList
 			Sm4Gcm => AEADCryptoCreate.Sm4Gcm(key16),
 			ChaCha20Poly1305 => AEADCryptoCreate.ChaCha20Poly1305(key32),
 			XChaCha20Poly1305 => AEADCryptoCreate.XChaCha20Poly1305(key32),
-			Aes128Xts => new XtsMode(AesCrypto.CreateCore(key16), AesCrypto.CreateCore(key16)),
-			Aes256Xts => new XtsMode(AesCrypto.CreateCore(key32), AesCrypto.CreateCore(key32)),
+			Aes128Xts => new XtsMode<AesCipher>(AesCipher.Create(key16), AesCipher.Create(key16)),
+			Aes256Xts => new XtsMode<AesCipher>(AesCipher.Create(key32), AesCipher.Create(key32)),
 			_ => default
 		};
 	}
