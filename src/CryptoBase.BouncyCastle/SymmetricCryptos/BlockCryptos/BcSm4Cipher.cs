@@ -20,7 +20,7 @@ public sealed class BcSm4Cipher : IBlock16Cipher<BcSm4Cipher>
 
 	public static bool IsSupported => true;
 
-	public static BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Unknown;
+	public static BlockCipherHardwareAcceleration HardwareAcceleration => BlockCipherHardwareAcceleration.Unknown;
 
 	private BcSm4Cipher(in ReadOnlySpan<byte> key)
 	{

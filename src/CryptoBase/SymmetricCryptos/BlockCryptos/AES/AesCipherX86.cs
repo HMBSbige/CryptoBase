@@ -6,7 +6,7 @@ internal readonly struct AesCipherX86 : IBlock16Cipher<AesCipherX86>
 
 	public static bool IsSupported => AesX86.IsSupported && Sse2.IsSupported;
 
-	public static BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Block1 | BlockCryptoHardwareAcceleration.Block2 | BlockCryptoHardwareAcceleration.Block4 | BlockCryptoHardwareAcceleration.Block8;
+	public static BlockCipherHardwareAcceleration HardwareAcceleration => BlockCipherHardwareAcceleration.Block1 | BlockCipherHardwareAcceleration.Block2 | BlockCipherHardwareAcceleration.Block4 | BlockCipherHardwareAcceleration.Block8;
 
 	private readonly int _keyLength;
 

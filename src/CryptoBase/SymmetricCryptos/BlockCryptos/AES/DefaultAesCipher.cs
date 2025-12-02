@@ -21,7 +21,7 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 
 	public static bool IsSupported => true;
 
-	public static BlockCryptoHardwareAcceleration HardwareAcceleration => BlockCryptoHardwareAcceleration.Unknown;
+	public static BlockCipherHardwareAcceleration HardwareAcceleration => BlockCipherHardwareAcceleration.Unknown;
 
 	public static DefaultAesCipher Create(in ReadOnlySpan<byte> key)
 	{

@@ -44,7 +44,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 		if (Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported)
 		{
 			if (length >= 32 * BlockBytesSize
-				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block32)
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32)
 				)
 			{
 				int o = Encrypt32Avx512(ref tweak.V128, source, destination);
@@ -54,7 +54,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			}
 
 			if (length >= 16 * BlockBytesSize
-				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block16)
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16)
 				)
 			{
 				int o = Encrypt16Avx512(ref tweak.V128, source.Slice(offset), destination.Slice(offset));

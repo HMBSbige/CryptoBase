@@ -130,7 +130,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 		if (left >= 32 * BlockSize)
 		{
 			if (Avx512BW.IsSupported
-				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCryptoHardwareAcceleration.Block32)
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32)
 				)
 			{
 				Vector512<byte> t0 = Vector512.Create(counter.V128);

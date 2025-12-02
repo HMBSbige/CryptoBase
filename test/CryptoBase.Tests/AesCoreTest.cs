@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.DataFormatExtensions;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
@@ -8,30 +7,6 @@ namespace CryptoBase.Tests;
 
 public class AesCoreTest
 {
-	private static void Test_Internal(IBlockCrypto crypto, string hex1, string hex2)
-	{
-		Assert.Equal(@"AES", crypto.Name);
-		Assert.Equal(16, crypto.BlockSize);
-
-		Span<byte> h1 = hex1.FromHex();
-		Span<byte> h2 = hex2.FromHex();
-		Span<byte> o1 = stackalloc byte[crypto.BlockSize + 1];
-
-		crypto.Encrypt(h1, o1);
-		Assert.Equal(h2, o1.Slice(0, crypto.BlockSize));
-
-		crypto.Encrypt(h1, o1);
-		Assert.Equal(h2, o1.Slice(0, crypto.BlockSize));
-
-		crypto.Decrypt(h2, o1);
-		Assert.Equal(h1, o1.Slice(0, crypto.BlockSize));
-
-		crypto.Decrypt(h2, o1);
-		Assert.Equal(h1, o1.Slice(0, crypto.BlockSize));
-
-		crypto.Dispose();
-	}
-
 	/// <summary>
 	/// https://csrc.nist.gov/csrc/media/publications/fips/197/final/documents/fips-197.pdf
 	/// </summary>
@@ -48,9 +23,6 @@ public class AesCoreTest
 		ReadOnlySpan<byte> plain = hex1.FromHex();
 		ReadOnlySpan<byte> cipher = hex2.FromHex();
 
-		Test_Internal(AesCrypto.CreateCore(key), hex1, hex2);
-		Test_Internal(new DefaultAesCrypto(key), hex1, hex2);
-
 		TestUtils.TestBlock16<BcAesCipher>(key, plain, cipher);
 		TestUtils.TestBlock16<AesCipher>(key, plain, cipher);
 	}
@@ -62,9 +34,6 @@ public class AesCoreTest
 	public void TestN(int keyLength)
 	{
 		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(keyLength);
-
-		TestUtils.TestNBlock16(AesCrypto.CreateCore(key));
-		TestUtils.TestNBlock16(new DefaultAesCrypto(key));
 
 		TestUtils.TestNBlock16<BcAesCipher>(key);
 		TestUtils.TestNBlock16<AesCipher>(key);

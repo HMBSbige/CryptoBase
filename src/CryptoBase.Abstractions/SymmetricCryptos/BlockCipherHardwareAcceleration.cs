@@ -1,7 +1,7 @@
 namespace CryptoBase.Abstractions.SymmetricCryptos;
 
 [Flags]
-public enum BlockCryptoHardwareAcceleration
+public enum BlockCipherHardwareAcceleration
 {
 	Unknown = 0,
 	Block1 = 1 << 0,

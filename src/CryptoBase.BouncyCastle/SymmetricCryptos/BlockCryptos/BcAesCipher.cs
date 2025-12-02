@@ -20,16 +20,16 @@ public sealed class BcAesCipher : IBlock16Cipher<BcAesCipher>
 
 	public static bool IsSupported => true;
 
-	public static BlockCryptoHardwareAcceleration HardwareAcceleration
+	public static BlockCipherHardwareAcceleration HardwareAcceleration
 	{
 		get
 		{
 			if (AesUtilities.IsHardwareAccelerated)
 			{
-				return BlockCryptoHardwareAcceleration.Block1 | BlockCryptoHardwareAcceleration.Block4;
+				return BlockCipherHardwareAcceleration.Block1 | BlockCipherHardwareAcceleration.Block4;
 			}
 
-			return BlockCryptoHardwareAcceleration.Unknown;
+			return BlockCipherHardwareAcceleration.Unknown;
 		}
 	}
 

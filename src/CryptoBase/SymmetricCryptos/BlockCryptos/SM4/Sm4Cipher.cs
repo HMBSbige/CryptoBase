@@ -15,22 +15,22 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 
 	public static bool IsSupported => true;
 
-	public static BlockCryptoHardwareAcceleration HardwareAcceleration
+	public static BlockCipherHardwareAcceleration HardwareAcceleration
 	{
 		get
 		{
-			BlockCryptoHardwareAcceleration result = BlockCryptoHardwareAcceleration.Unknown;
+			BlockCipherHardwareAcceleration result = BlockCipherHardwareAcceleration.Unknown;
 
 			if (AesX86.IsSupported)
 			{
 				if (Sse2.IsSupported && Ssse3.IsSupported)
 				{
-					result |= BlockCryptoHardwareAcceleration.Block4 | BlockCryptoHardwareAcceleration.Block8;
+					result |= BlockCipherHardwareAcceleration.Block4 | BlockCipherHardwareAcceleration.Block8;
 				}
 
 				if (Avx2.IsSupported)
 				{
-					result |= BlockCryptoHardwareAcceleration.Block16;
+					result |= BlockCipherHardwareAcceleration.Block16;
 				}
 			}
 

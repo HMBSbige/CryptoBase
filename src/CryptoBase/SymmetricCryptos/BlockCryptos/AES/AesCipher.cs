@@ -10,7 +10,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 
 	public static bool IsSupported => true;
 
-	public static BlockCryptoHardwareAcceleration HardwareAcceleration
+	public static BlockCipherHardwareAcceleration HardwareAcceleration
 	{
 		get
 		{
@@ -24,7 +24,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 				return AesCipherArm.HardwareAcceleration;
 			}
 
-			return BlockCryptoHardwareAcceleration.Unknown;
+			return BlockCipherHardwareAcceleration.Unknown;
 		}
 	}
 

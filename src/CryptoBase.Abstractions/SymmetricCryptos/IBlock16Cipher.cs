@@ -4,7 +4,7 @@ public interface IBlock16Cipher<out TSelf> : ISymmetricCrypto where TSelf : IBlo
 {
 	static abstract bool IsSupported { get; }
 
-	static abstract BlockCryptoHardwareAcceleration HardwareAcceleration { get; }
+	static abstract BlockCipherHardwareAcceleration HardwareAcceleration { get; }
 
 	static abstract TSelf Create(in ReadOnlySpan<byte> key);
 
