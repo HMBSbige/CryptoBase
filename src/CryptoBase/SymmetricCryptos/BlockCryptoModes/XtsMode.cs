@@ -71,9 +71,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			}
 		}
 
-		if (length >= 8 * BlockBytesSize
-			&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8)
-			)
+		if (length >= 8 * BlockBytesSize)
 		{
 			int o = Encrypt8(ref tweak, source.Slice(offset), destination.Slice(offset));
 
@@ -161,9 +159,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			}
 		}
 
-		if (length >= 8 * BlockBytesSize
-			&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8)
-			)
+		if (length >= 8 * BlockBytesSize)
 		{
 			int o = Decrypt8(ref tweak, source.Slice(offset), destination.Slice(offset));
 
