@@ -225,66 +225,130 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer256 Encrypt(scoped in VectorBuffer256 source)
+	public VectorBuffer128 EncryptV256(scoped in VectorBuffer128 source)
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			return _x86.Encrypt(source);
+			return _x86.EncryptV256(source);
 		}
 
 		if (AesCipherArm.IsSupported)
 		{
-			return _arm.Encrypt(source);
+			return _arm.EncryptV256(source);
 		}
 
-		return _soft.Encrypt(source);
+		return _soft.EncryptV256(source);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer256 Decrypt(scoped in VectorBuffer256 source)
+	public VectorBuffer128 DecryptV256(scoped in VectorBuffer128 source)
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			return _x86.Decrypt(source);
+			return _x86.DecryptV256(source);
 		}
 
 		if (AesCipherArm.IsSupported)
 		{
-			return _arm.Decrypt(source);
+			return _arm.DecryptV256(source);
 		}
 
-		return _soft.Decrypt(source);
+		return _soft.DecryptV256(source);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer512 Encrypt(scoped in VectorBuffer512 source)
+	public VectorBuffer256 EncryptV256(scoped in VectorBuffer256 source)
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			return _x86.Encrypt(source);
+			return _x86.EncryptV256(source);
 		}
 
 		if (AesCipherArm.IsSupported)
 		{
-			return _arm.Encrypt(source);
+			return _arm.EncryptV256(source);
 		}
 
-		return _soft.Encrypt(source);
+		return _soft.EncryptV256(source);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer512 Decrypt(scoped in VectorBuffer512 source)
+	public VectorBuffer256 DecryptV256(scoped in VectorBuffer256 source)
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			return _x86.Decrypt(source);
+			return _x86.DecryptV256(source);
 		}
 
 		if (AesCipherArm.IsSupported)
 		{
-			return _arm.Decrypt(source);
+			return _arm.DecryptV256(source);
 		}
 
-		return _soft.Decrypt(source);
+		return _soft.DecryptV256(source);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer256 EncryptV512(scoped in VectorBuffer256 source)
+	{
+		if (AesCipherX86.IsSupported)
+		{
+			return _x86.EncryptV512(source);
+		}
+
+		if (AesCipherArm.IsSupported)
+		{
+			return _arm.EncryptV512(source);
+		}
+
+		return _soft.EncryptV512(source);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer256 DecryptV512(scoped in VectorBuffer256 source)
+	{
+		if (AesCipherX86.IsSupported)
+		{
+			return _x86.DecryptV512(source);
+		}
+
+		if (AesCipherArm.IsSupported)
+		{
+			return _arm.DecryptV512(source);
+		}
+
+		return _soft.DecryptV512(source);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer512 EncryptV512(scoped in VectorBuffer512 source)
+	{
+		if (AesCipherX86.IsSupported)
+		{
+			return _x86.EncryptV512(source);
+		}
+
+		if (AesCipherArm.IsSupported)
+		{
+			return _arm.EncryptV512(source);
+		}
+
+		return _soft.EncryptV512(source);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer512 DecryptV512(scoped in VectorBuffer512 source)
+	{
+		if (AesCipherX86.IsSupported)
+		{
+			return _x86.DecryptV512(source);
+		}
+
+		if (AesCipherArm.IsSupported)
+		{
+			return _arm.DecryptV512(source);
+		}
+
+		return _soft.DecryptV512(source);
 	}
 }

@@ -60,6 +60,50 @@ internal static partial class SM4Utils
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static VectorBuffer128 ProcessBlockAvx2(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer128 source)
+	{
+		Vector256<byte> c0f = Vector256.Create((byte)0x0F);
+		Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
+
+		Unsafe.SkipInit(out VectorBuffer128 r);
+
+		r.V256_0 = source.V256_0.ReverseEndianness32();
+		r.V256_1 = source.V256_1.ReverseEndianness32();
+		r.V256_2 = source.V256_2.ReverseEndianness32();
+		r.V256_3 = source.V256_3.ReverseEndianness32();
+
+		Transpose(ref r.V256_0, ref r.V256_1, ref r.V256_2, ref r.V256_3);
+
+		foreach (uint key in rk)
+		{
+			Vector256<byte> x0 = Vector256.Create(key).AsByte();
+
+			x0 = x0 ^ r.V256_1 ^ r.V256_2 ^ r.V256_3;
+			x0.PreTransform();
+			x0 = AesX86EncryptLast(x0, c0f);
+			x0.PostTransform();
+			x0 = Avx2.Shuffle(x0, vshr);
+			Vector256<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
+			t0 = t0.RotateLeftUInt32(2);
+			x0 = x0 ^ t0 ^ x0.RotateLeftUInt32_24() ^ r.V256_0;
+			r.V256_0 = r.V256_1;
+			r.V256_1 = r.V256_2;
+			r.V256_2 = r.V256_3;
+			r.V256_3 = x0;
+		}
+
+		Transpose(ref r.V256_0, ref r.V256_1, ref r.V256_2, ref r.V256_3);
+
+		r.V256_0 = r.V256_0.ReverseEndianness128();
+		r.V256_1 = r.V256_1.ReverseEndianness128();
+		r.V256_2 = r.V256_2.ReverseEndianness128();
+		r.V256_3 = r.V256_3.ReverseEndianness128();
+
+		return r;
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static VectorBuffer256 ProcessBlock(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer256 source)
 	{
 		Vector256<byte> c0f = Vector256.Create((byte)0x0F);

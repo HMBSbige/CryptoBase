@@ -51,12 +51,20 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 8 * BlockBytesSize)
 		{
-			VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
+			VectorBuffer128 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
 			ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer128();
 
-			VectorBuffer128 tmp = src ^ tweakBuffer;
-			tmp = dataCipher.Encrypt(tmp);
-			dst = tmp ^ tweakBuffer;
+			tmp.V256_0 ^= tweakBuffer.V256_0;
+			tmp.V256_1 ^= tweakBuffer.V256_1;
+			tmp.V256_2 ^= tweakBuffer.V256_2;
+			tmp.V256_3 ^= tweakBuffer.V256_3;
+
+			tmp = dataCipher.EncryptV256(tmp);
+
+			dst.V256_0 = tmp.V256_0 ^ tweakBuffer.V256_0;
+			dst.V256_1 = tmp.V256_1 ^ tweakBuffer.V256_1;
+			dst.V256_2 = tmp.V256_2 ^ tweakBuffer.V256_2;
+			dst.V256_3 = tmp.V256_3 ^ tweakBuffer.V256_3;
 
 			Gf128Mul8Avx2(ref tweakBuffer);
 
@@ -82,12 +90,20 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 8 * BlockBytesSize)
 		{
-			VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
+			VectorBuffer128 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
 			ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer128();
 
-			VectorBuffer128 tmp = src ^ tweakBuffer;
-			tmp = dataCipher.Decrypt(tmp);
-			dst = tmp ^ tweakBuffer;
+			tmp.V256_0 ^= tweakBuffer.V256_0;
+			tmp.V256_1 ^= tweakBuffer.V256_1;
+			tmp.V256_2 ^= tweakBuffer.V256_2;
+			tmp.V256_3 ^= tweakBuffer.V256_3;
+
+			tmp = dataCipher.DecryptV256(tmp);
+
+			dst.V256_0 = tmp.V256_0 ^ tweakBuffer.V256_0;
+			dst.V256_1 = tmp.V256_1 ^ tweakBuffer.V256_1;
+			dst.V256_2 = tmp.V256_2 ^ tweakBuffer.V256_2;
+			dst.V256_3 = tmp.V256_3 ^ tweakBuffer.V256_3;
 
 			Gf128Mul8Avx2(ref tweakBuffer);
 

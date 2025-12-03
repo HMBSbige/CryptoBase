@@ -92,35 +92,51 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 		return r;
 	}
 
-	[SkipLocalsInit]
-	public VectorBuffer256 Encrypt(scoped in VectorBuffer256 source)
+	public VectorBuffer128 EncryptV256(scoped in VectorBuffer128 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer256 r);
-		_aes.EncryptEcb(source, r, PaddingMode.None);
-		return r;
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
-	[SkipLocalsInit]
-	public VectorBuffer256 Decrypt(scoped in VectorBuffer256 source)
+	public VectorBuffer128 DecryptV256(scoped in VectorBuffer128 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer256 r);
-		_aes.DecryptEcb(source, r, PaddingMode.None);
-		return r;
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
-	[SkipLocalsInit]
-	public VectorBuffer512 Encrypt(scoped in VectorBuffer512 source)
+	public VectorBuffer256 EncryptV256(scoped in VectorBuffer256 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer512 r);
-		_aes.EncryptEcb(source, r, PaddingMode.None);
-		return r;
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
-	[SkipLocalsInit]
-	public VectorBuffer512 Decrypt(scoped in VectorBuffer512 source)
+	public VectorBuffer256 DecryptV256(scoped in VectorBuffer256 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer512 r);
-		_aes.DecryptEcb(source, r, PaddingMode.None);
-		return r;
+		ThrowHelper.ThrowNotSupported();
+		return default;
+	}
+
+	public VectorBuffer256 EncryptV512(scoped in VectorBuffer256 source)
+	{
+		ThrowHelper.ThrowNotSupported();
+		return default;
+	}
+
+	public VectorBuffer256 DecryptV512(scoped in VectorBuffer256 source)
+	{
+		ThrowHelper.ThrowNotSupported();
+		return default;
+	}
+
+	public VectorBuffer512 EncryptV512(scoped in VectorBuffer512 source)
+	{
+		ThrowHelper.ThrowNotSupported();
+		return default;
+	}
+
+	public VectorBuffer512 DecryptV512(scoped in VectorBuffer512 source)
+	{
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 }

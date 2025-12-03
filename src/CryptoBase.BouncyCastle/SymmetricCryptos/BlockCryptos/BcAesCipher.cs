@@ -136,43 +136,43 @@ public sealed class BcAesCipher : IBlock16Cipher<BcAesCipher>
 		return r;
 	}
 
-	public VectorBuffer256 Encrypt(scoped in VectorBuffer256 source)
+	public VectorBuffer128 EncryptV256(scoped in VectorBuffer128 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer256 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
+		throw new NotSupportedException();
 	}
 
-	public VectorBuffer256 Decrypt(scoped in VectorBuffer256 source)
+	public VectorBuffer128 DecryptV256(scoped in VectorBuffer128 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer256 r);
-
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
-
-		return r;
+		throw new NotSupportedException();
 	}
 
-	public VectorBuffer512 Encrypt(scoped in VectorBuffer512 source)
+	public VectorBuffer256 EncryptV256(scoped in VectorBuffer256 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer512 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
+		throw new NotSupportedException();
 	}
 
-	public VectorBuffer512 Decrypt(scoped in VectorBuffer512 source)
+	public VectorBuffer256 DecryptV256(scoped in VectorBuffer256 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer512 r);
+		throw new NotSupportedException();
+	}
 
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
+	public VectorBuffer256 EncryptV512(scoped in VectorBuffer256 source)
+	{
+		throw new NotSupportedException();
+	}
 
-		return r;
+	public VectorBuffer256 DecryptV512(scoped in VectorBuffer256 source)
+	{
+		throw new NotSupportedException();
+	}
+
+	public VectorBuffer512 EncryptV512(scoped in VectorBuffer512 source)
+	{
+		throw new NotSupportedException();
+	}
+
+	public VectorBuffer512 DecryptV512(scoped in VectorBuffer512 source)
+	{
+		throw new NotSupportedException();
 	}
 }

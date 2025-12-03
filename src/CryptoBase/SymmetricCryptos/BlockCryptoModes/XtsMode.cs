@@ -40,7 +40,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 		if (Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported)
 		{
 			if (length >= 32 * BlockBytesSize
-				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32)
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32V512)
 				)
 			{
 				int o = Encrypt32Avx512(ref tweak.V128, source, destination);
@@ -50,7 +50,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			}
 
 			if (length >= 16 * BlockBytesSize
-				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16)
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16V512)
 				)
 			{
 				int o = Encrypt16Avx512(ref tweak.V128, source.Slice(offset), destination.Slice(offset));
@@ -60,7 +60,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			}
 		}
 
-		if (Avx2.IsSupported && Pclmulqdq.V256.IsSupported)
+		if (Avx2.IsSupported && Pclmulqdq.V256.IsSupported && TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8V256))
 		{
 			if (length >= 8 * BlockBytesSize)
 			{
@@ -69,6 +69,16 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 				offset += o;
 				length -= o;
 			}
+		}
+
+		if (length >= 8 * BlockBytesSize
+			&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8)
+			)
+		{
+			int o = Encrypt8(ref tweak, source.Slice(offset), destination.Slice(offset));
+
+			offset += o;
+			length -= o;
 		}
 
 		while (length > 0)
@@ -119,7 +129,9 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 
 		if (Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported)
 		{
-			if (length >= 32 * BlockBytesSize)
+			if (length >= 32 * BlockBytesSize
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32V512)
+				)
 			{
 				int o = Decrypt32Avx512(ref tweak.V128, source, destination);
 
@@ -127,7 +139,9 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 				length -= o;
 			}
 
-			if (length >= 16 * BlockBytesSize)
+			if (length >= 16 * BlockBytesSize
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16V512)
+				)
 			{
 				int o = Decrypt16Avx512(ref tweak.V128, source.Slice(offset), destination.Slice(offset));
 
@@ -136,7 +150,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			}
 		}
 
-		if (Avx2.IsSupported && Pclmulqdq.V256.IsSupported)
+		if (Avx2.IsSupported && Pclmulqdq.V256.IsSupported && TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8V256))
 		{
 			if (length >= 8 * BlockBytesSize)
 			{
@@ -145,6 +159,16 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 				offset += o;
 				length -= o;
 			}
+		}
+
+		if (length >= 8 * BlockBytesSize
+			&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8)
+			)
+		{
+			int o = Decrypt8(ref tweak, source.Slice(offset), destination.Slice(offset));
+
+			offset += o;
+			length -= o;
 		}
 
 		while (length > 0)
@@ -218,6 +242,136 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 		tmp1 = Sse2.ShiftLeftLogical128BitLane(tmp1.AsByte(), 8).AsUInt64();
 
 		return (tweak.AsUInt64() << x ^ tmp1 ^ tmp2).AsByte();
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private int Encrypt8(ref VectorBuffer16 tweak, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		int length = source.Length;
+		int offset = 0;
+
+		ref readonly byte sourceRef = ref source.GetReference();
+		ref byte destinationRef = ref destination.GetReference();
+
+		Unsafe.SkipInit(out VectorBuffer128 tweakBuffer);
+
+		while (length >= 8 * BlockBytesSize)
+		{
+			tweakBuffer.V128_0 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_1 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_2 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_3 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_4 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_5 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_6 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_7 = tweak.V128;
+			Gf128Mul(ref tweak);
+
+			VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
+			ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer128();
+
+			VectorBuffer128 tmp = new()
+			{
+				V128_0 = src.V128_0 ^ tweakBuffer.V128_0,
+				V128_1 = src.V128_1 ^ tweakBuffer.V128_1,
+				V128_2 = src.V128_2 ^ tweakBuffer.V128_2,
+				V128_3 = src.V128_3 ^ tweakBuffer.V128_3,
+				V128_4 = src.V128_4 ^ tweakBuffer.V128_4,
+				V128_5 = src.V128_5 ^ tweakBuffer.V128_5,
+				V128_6 = src.V128_6 ^ tweakBuffer.V128_6,
+				V128_7 = src.V128_7 ^ tweakBuffer.V128_7
+			};
+			tmp = dataCipher.Encrypt(tmp);
+			dst = new VectorBuffer128
+			{
+				V128_0 = tmp.V128_0 ^ tweakBuffer.V128_0,
+				V128_1 = tmp.V128_1 ^ tweakBuffer.V128_1,
+				V128_2 = tmp.V128_2 ^ tweakBuffer.V128_2,
+				V128_3 = tmp.V128_3 ^ tweakBuffer.V128_3,
+				V128_4 = tmp.V128_4 ^ tweakBuffer.V128_4,
+				V128_5 = tmp.V128_5 ^ tweakBuffer.V128_5,
+				V128_6 = tmp.V128_6 ^ tweakBuffer.V128_6,
+				V128_7 = tmp.V128_7 ^ tweakBuffer.V128_7
+			};
+
+			offset += 8 * BlockBytesSize;
+			length -= 8 * BlockBytesSize;
+		}
+
+		return offset;
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private int Decrypt8(ref VectorBuffer16 tweak, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		int length = source.Length;
+		int offset = 0;
+
+		ref readonly byte sourceRef = ref source.GetReference();
+		ref byte destinationRef = ref destination.GetReference();
+
+		Unsafe.SkipInit(out VectorBuffer128 tweakBuffer);
+
+		while (length >= 8 * BlockBytesSize)
+		{
+			tweakBuffer.V128_0 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_1 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_2 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_3 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_4 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_5 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_6 = tweak.V128;
+			Gf128Mul(ref tweak);
+			tweakBuffer.V128_7 = tweak.V128;
+			Gf128Mul(ref tweak);
+
+			VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
+			ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer128();
+
+			VectorBuffer128 tmp = new()
+			{
+				V128_0 = src.V128_0 ^ tweakBuffer.V128_0,
+				V128_1 = src.V128_1 ^ tweakBuffer.V128_1,
+				V128_2 = src.V128_2 ^ tweakBuffer.V128_2,
+				V128_3 = src.V128_3 ^ tweakBuffer.V128_3,
+				V128_4 = src.V128_4 ^ tweakBuffer.V128_4,
+				V128_5 = src.V128_5 ^ tweakBuffer.V128_5,
+				V128_6 = src.V128_6 ^ tweakBuffer.V128_6,
+				V128_7 = src.V128_7 ^ tweakBuffer.V128_7
+			};
+			tmp = dataCipher.Decrypt(tmp);
+			dst = new VectorBuffer128
+			{
+				V128_0 = tmp.V128_0 ^ tweakBuffer.V128_0,
+				V128_1 = tmp.V128_1 ^ tweakBuffer.V128_1,
+				V128_2 = tmp.V128_2 ^ tweakBuffer.V128_2,
+				V128_3 = tmp.V128_3 ^ tweakBuffer.V128_3,
+				V128_4 = tmp.V128_4 ^ tweakBuffer.V128_4,
+				V128_5 = tmp.V128_5 ^ tweakBuffer.V128_5,
+				V128_6 = tmp.V128_6 ^ tweakBuffer.V128_6,
+				V128_7 = tmp.V128_7 ^ tweakBuffer.V128_7
+			};
+
+			offset += 8 * BlockBytesSize;
+			length -= 8 * BlockBytesSize;
+		}
+
+		return offset;
 	}
 }
 

@@ -701,51 +701,59 @@ internal readonly struct AesCipherX86 : IBlock16Cipher<AesCipherX86>
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer256 Encrypt(scoped in VectorBuffer256 source)
+	public VectorBuffer128 EncryptV256(scoped in VectorBuffer128 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer256 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer256 Decrypt(scoped in VectorBuffer256 source)
+	public VectorBuffer128 DecryptV256(scoped in VectorBuffer128 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer256 r);
-
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
-
-		return r;
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer512 Encrypt(scoped in VectorBuffer512 source)
+	public VectorBuffer256 EncryptV256(scoped in VectorBuffer256 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer512 r);
-
-		r.Lower = Encrypt(source.Lower);
-		r.Upper = Encrypt(source.Upper);
-
-		return r;
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer512 Decrypt(scoped in VectorBuffer512 source)
+	public VectorBuffer256 DecryptV256(scoped in VectorBuffer256 source)
 	{
-		Unsafe.SkipInit(out VectorBuffer512 r);
+		ThrowHelper.ThrowNotSupported();
+		return default;
+	}
 
-		r.Lower = Decrypt(source.Lower);
-		r.Upper = Decrypt(source.Upper);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer256 EncryptV512(scoped in VectorBuffer256 source)
+	{
+		ThrowHelper.ThrowNotSupported();
+		return default;
+	}
 
-		return r;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer256 DecryptV512(scoped in VectorBuffer256 source)
+	{
+		ThrowHelper.ThrowNotSupported();
+		return default;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer512 EncryptV512(scoped in VectorBuffer512 source)
+	{
+		ThrowHelper.ThrowNotSupported();
+		return default;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public VectorBuffer512 DecryptV512(scoped in VectorBuffer512 source)
+	{
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 }

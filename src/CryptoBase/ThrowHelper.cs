@@ -34,4 +34,10 @@ internal static class ThrowHelper
 	{
 		throw new ArgumentOutOfRangeException(paramName, "Data limit exceeded!");
 	}
+
+	[DoesNotReturn]
+	public static void ThrowNotSupported(string? message = default)
+	{
+		throw new NotSupportedException(message);
+	}
 }

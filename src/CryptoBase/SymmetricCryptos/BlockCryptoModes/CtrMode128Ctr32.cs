@@ -130,7 +130,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 		if (left >= 32 * BlockSize)
 		{
 			if (Avx512BW.IsSupported
-				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32)
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32V512)
 				)
 			{
 				Vector512<byte> t0 = Vector512.Create(counter.V128);
@@ -157,7 +157,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 				while (left >= 32 * BlockSize)
 				{
-					VectorBuffer512 ks = _blockCipher.Encrypt(tmp);
+					VectorBuffer512 ks = _blockCipher.EncryptV512(tmp);
 
 					t0 = t7.AddUInt32Le4444();
 					t1 = t0.AddUInt32Le4444();
@@ -179,7 +179,15 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 					VectorBuffer512 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer512();
 					ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer512();
-					dst = src ^ ks;
+
+					dst.V512_0 = src.V512_0 ^ ks.V512_0;
+					dst.V512_1 = src.V512_1 ^ ks.V512_1;
+					dst.V512_2 = src.V512_2 ^ ks.V512_2;
+					dst.V512_3 = src.V512_3 ^ ks.V512_3;
+					dst.V512_4 = src.V512_4 ^ ks.V512_4;
+					dst.V512_5 = src.V512_5 ^ ks.V512_5;
+					dst.V512_6 = src.V512_6 ^ ks.V512_6;
+					dst.V512_7 = src.V512_7 ^ ks.V512_7;
 
 					i += 32 * BlockSize;
 					left -= 32 * BlockSize;
@@ -191,7 +199,9 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 		if (left >= 16 * BlockSize)
 		{
-			if (Avx2.IsSupported)
+			if (Avx2.IsSupported
+				&& TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16V256)
+				)
 			{
 				Vector256<byte> t0 = Vector256.Create(counter.V128);
 				t0 = t0.ReverseEndianness128().AddUInt32Le01();
@@ -217,7 +227,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 				while (left >= 16 * BlockSize)
 				{
-					VectorBuffer256 ks = _blockCipher.Encrypt(tmp);
+					VectorBuffer256 ks = _blockCipher.EncryptV256(tmp);
 
 					t0 = t7.AddUInt32Le22();
 					t1 = t0.AddUInt32Le22();
@@ -239,7 +249,15 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 					VectorBuffer256 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer256();
 					ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer256();
-					dst = src ^ ks;
+
+					dst.V256_0 = src.V256_0 ^ ks.V256_0;
+					dst.V256_1 = src.V256_1 ^ ks.V256_1;
+					dst.V256_2 = src.V256_2 ^ ks.V256_2;
+					dst.V256_3 = src.V256_3 ^ ks.V256_3;
+					dst.V256_4 = src.V256_4 ^ ks.V256_4;
+					dst.V256_5 = src.V256_5 ^ ks.V256_5;
+					dst.V256_6 = src.V256_6 ^ ks.V256_6;
+					dst.V256_7 = src.V256_7 ^ ks.V256_7;
 
 					i += 16 * BlockSize;
 					left -= 16 * BlockSize;
@@ -251,7 +269,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 		if (left >= 8 * BlockSize)
 		{
-			if (Avx2.IsSupported)
+			if (Avx2.IsSupported && TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8V256))
 			{
 				Vector256<byte> t0 = Vector256.Create(counter.V128);
 				t0 = t0.ReverseEndianness128().AddUInt32Le01();
@@ -269,7 +287,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 				while (left >= 8 * BlockSize)
 				{
-					VectorBuffer128 ks = _blockCipher.Encrypt(tmp);
+					VectorBuffer128 ks = _blockCipher.EncryptV256(tmp);
 
 					t0 = t3.AddUInt32Le22();
 					t1 = t0.AddUInt32Le22();
@@ -283,46 +301,19 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 					VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer128();
 					ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer128();
-					dst = src ^ ks;
+
+					dst.V256_0 = src.V256_0 ^ ks.V256_0;
+					dst.V256_1 = src.V256_1 ^ ks.V256_1;
+					dst.V256_2 = src.V256_2 ^ ks.V256_2;
+					dst.V256_3 = src.V256_3 ^ ks.V256_3;
 
 					i += 8 * BlockSize;
 					left -= 8 * BlockSize;
 				}
 
-				if (left >= 4 * BlockSize)
-				{
-					VectorBuffer64 ks = _blockCipher.Encrypt(tmp.Lower);
-
-					t0 = t1.AddUInt32Le22();
-					tmp.V256_0 = t0.ReverseEndianness128();
-
-					VectorBuffer64 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer64();
-					ref VectorBuffer64 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer64();
-					dst = src ^ ks;
-
-					i += 4 * BlockSize;
-					left -= 4 * BlockSize;
-				}
-
-				if (left >= 2 * BlockSize)
-				{
-					t0 = t0.AddUInt32Le22();
-
-					VectorBuffer32 ks = _blockCipher.Encrypt(tmp.Lower.Lower);
-
-					tmp.V256_0 = t0.ReverseEndianness128();
-
-					VectorBuffer32 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer32();
-					ref VectorBuffer32 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer32();
-					dst = src ^ ks;
-
-					i += 2 * BlockSize;
-					left -= 2 * BlockSize;
-				}
-
 				counter.V128 = tmp.V128_0;
 			}
-			else if (Sse2.IsSupported)
+			else if (Sse2.IsSupported && TBlockCipher.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8))
 			{
 				Vector128<byte> t1 = counter.V128.ReverseEndianness128().IncUInt32Le();
 				Vector128<byte> t2 = t1.IncUInt32Le();
@@ -368,7 +359,15 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 					VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer128();
 					ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer128();
-					dst = src ^ ks;
+
+					dst.V128_0 = src.V128_0 ^ ks.V128_0;
+					dst.V128_1 = src.V128_1 ^ ks.V128_1;
+					dst.V128_2 = src.V128_2 ^ ks.V128_2;
+					dst.V128_3 = src.V128_3 ^ ks.V128_3;
+					dst.V128_4 = src.V128_4 ^ ks.V128_4;
+					dst.V128_5 = src.V128_5 ^ ks.V128_5;
+					dst.V128_6 = src.V128_6 ^ ks.V128_6;
+					dst.V128_7 = src.V128_7 ^ ks.V128_7;
 
 					i += 8 * BlockSize;
 					left -= 8 * BlockSize;
@@ -386,7 +385,11 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 					VectorBuffer64 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer64();
 					ref VectorBuffer64 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer64();
-					dst = src ^ ks;
+
+					dst.V128_0 = src.V128_0 ^ ks.V128_0;
+					dst.V128_1 = src.V128_1 ^ ks.V128_1;
+					dst.V128_2 = src.V128_2 ^ ks.V128_2;
+					dst.V128_3 = src.V128_3 ^ ks.V128_3;
 
 					i += 4 * BlockSize;
 					left -= 4 * BlockSize;
@@ -402,7 +405,9 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 					VectorBuffer32 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer32();
 					ref VectorBuffer32 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer32();
-					dst = src ^ ks;
+
+					dst.V128_0 = src.V128_0 ^ ks.V128_0;
+					dst.V128_1 = src.V128_1 ^ ks.V128_1;
 
 					i += 2 * BlockSize;
 					left -= 2 * BlockSize;

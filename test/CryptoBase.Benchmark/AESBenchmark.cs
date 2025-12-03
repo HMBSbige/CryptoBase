@@ -42,7 +42,7 @@ public class AesBenchmark
 		for (int i = 0; i < count; ++i)
 		{
 			int offset = i * 16 * 16;
-			VectorBuffer256 r = cipher.Encrypt(origin.Slice(offset).AsVectorBuffer256());
+			VectorBuffer256 r = cipher.EncryptV256(origin.Slice(offset).AsVectorBuffer256());
 			Unsafe.WriteUnaligned(ref Unsafe.Add(ref ptr, offset), r);
 		}
 	}

@@ -20,9 +20,15 @@ public interface IBlock16Cipher<out TSelf> : ISymmetricCrypto where TSelf : IBlo
 	VectorBuffer128 Encrypt(scoped in VectorBuffer128 source);
 	VectorBuffer128 Decrypt(scoped in VectorBuffer128 source);
 
-	VectorBuffer256 Encrypt(scoped in VectorBuffer256 source);
-	VectorBuffer256 Decrypt(scoped in VectorBuffer256 source);
+	VectorBuffer128 EncryptV256(scoped in VectorBuffer128 source);
+	VectorBuffer128 DecryptV256(scoped in VectorBuffer128 source);
 
-	VectorBuffer512 Encrypt(scoped in VectorBuffer512 source);
-	VectorBuffer512 Decrypt(scoped in VectorBuffer512 source);
+	VectorBuffer256 EncryptV256(scoped in VectorBuffer256 source);
+	VectorBuffer256 DecryptV256(scoped in VectorBuffer256 source);
+
+	VectorBuffer256 EncryptV512(scoped in VectorBuffer256 source);
+	VectorBuffer256 DecryptV512(scoped in VectorBuffer256 source);
+
+	VectorBuffer512 EncryptV512(scoped in VectorBuffer512 source);
+	VectorBuffer512 DecryptV512(scoped in VectorBuffer512 source);
 }

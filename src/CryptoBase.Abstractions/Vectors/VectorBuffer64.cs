@@ -19,25 +19,4 @@ public ref struct VectorBuffer64
 	{
 		return Unsafe.AsRef(in value).AsSpan();
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static VectorBuffer64 operator ^(scoped in VectorBuffer64 left, scoped in VectorBuffer64 right)
-	{
-		if (Vector256.IsHardwareAccelerated)
-		{
-			return new VectorBuffer64
-			{
-				V256_0 = left.V256_0 ^ right.V256_0,
-				V256_1 = left.V256_1 ^ right.V256_1
-			};
-		}
-
-		return new VectorBuffer64
-		{
-			V128_0 = left.V128_0 ^ right.V128_0,
-			V128_1 = left.V128_1 ^ right.V128_1,
-			V128_2 = left.V128_2 ^ right.V128_2,
-			V128_3 = left.V128_3 ^ right.V128_3
-		};
-	}
 }

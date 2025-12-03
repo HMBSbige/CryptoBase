@@ -107,7 +107,7 @@ public class AesCipherBenchmark
 		{
 			ref readonly VectorBuffer256 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer256>(ref source), i);
 			ref VectorBuffer256 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer256>(ref r), i);
-			dst = IsDecrypt ? _cipher.Decrypt(src) : _cipher.Encrypt(src);
+			dst = IsDecrypt ? _cipher.DecryptV256(src) : _cipher.EncryptV256(src);
 		}
 
 		return r;
@@ -123,7 +123,7 @@ public class AesCipherBenchmark
 		{
 			ref readonly VectorBuffer512 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer512>(ref source), i);
 			ref VectorBuffer512 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer512>(ref r), i);
-			dst = IsDecrypt ? _cipher.Decrypt(src) : _cipher.Encrypt(src);
+			dst = IsDecrypt ? _cipher.DecryptV512(src) : _cipher.EncryptV512(src);
 		}
 
 		return r;

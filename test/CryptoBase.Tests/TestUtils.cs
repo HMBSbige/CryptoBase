@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Digests;
 using CryptoBase.Abstractions.SymmetricCryptos;
+using CryptoBase.Abstractions.Vectors;
 using CryptoBase.DataFormatExtensions;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -164,19 +165,57 @@ public static class TestUtils
 						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer128()));
 						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer128()));
 
+						if (T.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8V256))
+						{
+							Assert.Equal(expectedCipherSlice, crypto.EncryptV256(plainSlice.AsVectorBuffer128()));
+							Assert.Equal(plainSlice, crypto.DecryptV256(expectedCipherSlice.AsVectorBuffer128()));
+						}
+						else
+						{
+							Assert.Throws<NotSupportedException>(() => crypto.EncryptV256(default(VectorBuffer128)));
+							Assert.Throws<NotSupportedException>(() => crypto.DecryptV256(default(VectorBuffer128)));
+						}
+
 						break;
 					}
 					case 16:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer256()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer256()));
+						if (T.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16V256))
+						{
+							Assert.Equal(expectedCipherSlice, crypto.EncryptV256(plainSlice.AsVectorBuffer256()));
+							Assert.Equal(plainSlice, crypto.DecryptV256(expectedCipherSlice.AsVectorBuffer256()));
+						}
+						else
+						{
+							Assert.Throws<NotSupportedException>(() => crypto.EncryptV256(default(VectorBuffer256)));
+							Assert.Throws<NotSupportedException>(() => crypto.DecryptV256(default(VectorBuffer256)));
+						}
+
+						if (T.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16V512))
+						{
+							Assert.Equal(expectedCipherSlice, crypto.EncryptV512(plainSlice.AsVectorBuffer256()));
+							Assert.Equal(plainSlice, crypto.DecryptV512(expectedCipherSlice.AsVectorBuffer256()));
+						}
+						else
+						{
+							Assert.Throws<NotSupportedException>(() => crypto.EncryptV512(default(VectorBuffer256)));
+							Assert.Throws<NotSupportedException>(() => crypto.DecryptV512(default(VectorBuffer256)));
+						}
 
 						break;
 					}
 					case 32:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer512()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer512()));
+						if (T.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32V512))
+						{
+							Assert.Equal(expectedCipherSlice, crypto.EncryptV512(plainSlice.AsVectorBuffer512()));
+							Assert.Equal(plainSlice, crypto.DecryptV512(expectedCipherSlice.AsVectorBuffer512()));
+						}
+						else
+						{
+							Assert.Throws<NotSupportedException>(() => crypto.EncryptV512(default(VectorBuffer512)));
+							Assert.Throws<NotSupportedException>(() => crypto.DecryptV512(default(VectorBuffer512)));
+						}
 
 						break;
 					}

@@ -87,12 +87,20 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 16 * BlockBytesSize)
 		{
-			VectorBuffer256 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer256();
+			VectorBuffer256 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer256();
 			ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer256();
 
-			VectorBuffer256 tmp = src ^ tweakBuffer;
-			tmp = dataCipher.Encrypt(tmp);
-			dst = tmp ^ tweakBuffer;
+			tmp.V512_0 ^= tweakBuffer.V512_0;
+			tmp.V512_1 ^= tweakBuffer.V512_1;
+			tmp.V512_2 ^= tweakBuffer.V512_2;
+			tmp.V512_3 ^= tweakBuffer.V512_3;
+
+			tmp = dataCipher.EncryptV512(tmp);
+
+			dst.V512_0 = tmp.V512_0 ^ tweakBuffer.V512_0;
+			dst.V512_1 = tmp.V512_1 ^ tweakBuffer.V512_1;
+			dst.V512_2 = tmp.V512_2 ^ tweakBuffer.V512_2;
+			dst.V512_3 = tmp.V512_3 ^ tweakBuffer.V512_3;
 
 			Gf128Mul16Avx512(ref tweakBuffer);
 
@@ -118,12 +126,28 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 32 * BlockBytesSize)
 		{
-			VectorBuffer512 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer512();
+			VectorBuffer512 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer512();
 			ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer512();
 
-			VectorBuffer512 tmp = src ^ tweakBuffer;
-			tmp = dataCipher.Encrypt(tmp);
-			dst = tmp ^ tweakBuffer;
+			tmp.V512_0 ^= tweakBuffer.V512_0;
+			tmp.V512_1 ^= tweakBuffer.V512_1;
+			tmp.V512_2 ^= tweakBuffer.V512_2;
+			tmp.V512_3 ^= tweakBuffer.V512_3;
+			tmp.V512_4 ^= tweakBuffer.V512_4;
+			tmp.V512_5 ^= tweakBuffer.V512_5;
+			tmp.V512_6 ^= tweakBuffer.V512_6;
+			tmp.V512_7 ^= tweakBuffer.V512_7;
+
+			tmp = dataCipher.EncryptV512(tmp);
+
+			dst.V512_0 = tmp.V512_0 ^ tweakBuffer.V512_0;
+			dst.V512_1 = tmp.V512_1 ^ tweakBuffer.V512_1;
+			dst.V512_2 = tmp.V512_2 ^ tweakBuffer.V512_2;
+			dst.V512_3 = tmp.V512_3 ^ tweakBuffer.V512_3;
+			dst.V512_4 = tmp.V512_4 ^ tweakBuffer.V512_4;
+			dst.V512_5 = tmp.V512_5 ^ tweakBuffer.V512_5;
+			dst.V512_6 = tmp.V512_6 ^ tweakBuffer.V512_6;
+			dst.V512_7 = tmp.V512_7 ^ tweakBuffer.V512_7;
 
 			Gf128Mul32Avx512(ref tweakBuffer);
 
@@ -149,12 +173,20 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 16 * BlockBytesSize)
 		{
-			VectorBuffer256 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer256();
+			VectorBuffer256 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer256();
 			ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer256();
 
-			VectorBuffer256 tmp = src ^ tweakBuffer;
-			tmp = dataCipher.Decrypt(tmp);
-			dst = tmp ^ tweakBuffer;
+			tmp.V512_0 ^= tweakBuffer.V512_0;
+			tmp.V512_1 ^= tweakBuffer.V512_1;
+			tmp.V512_2 ^= tweakBuffer.V512_2;
+			tmp.V512_3 ^= tweakBuffer.V512_3;
+
+			tmp = dataCipher.DecryptV512(tmp);
+
+			dst.V512_0 = tmp.V512_0 ^ tweakBuffer.V512_0;
+			dst.V512_1 = tmp.V512_1 ^ tweakBuffer.V512_1;
+			dst.V512_2 = tmp.V512_2 ^ tweakBuffer.V512_2;
+			dst.V512_3 = tmp.V512_3 ^ tweakBuffer.V512_3;
 
 			Gf128Mul16Avx512(ref tweakBuffer);
 
@@ -180,12 +212,28 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 32 * BlockBytesSize)
 		{
-			VectorBuffer512 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer512();
+			VectorBuffer512 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer512();
 			ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer512();
 
-			VectorBuffer512 tmp = src ^ tweakBuffer;
-			tmp = dataCipher.Decrypt(tmp);
-			dst = tmp ^ tweakBuffer;
+			tmp.V512_0 ^= tweakBuffer.V512_0;
+			tmp.V512_1 ^= tweakBuffer.V512_1;
+			tmp.V512_2 ^= tweakBuffer.V512_2;
+			tmp.V512_3 ^= tweakBuffer.V512_3;
+			tmp.V512_4 ^= tweakBuffer.V512_4;
+			tmp.V512_5 ^= tweakBuffer.V512_5;
+			tmp.V512_6 ^= tweakBuffer.V512_6;
+			tmp.V512_7 ^= tweakBuffer.V512_7;
+
+			tmp = dataCipher.DecryptV512(tmp);
+
+			dst.V512_0 = tmp.V512_0 ^ tweakBuffer.V512_0;
+			dst.V512_1 = tmp.V512_1 ^ tweakBuffer.V512_1;
+			dst.V512_2 = tmp.V512_2 ^ tweakBuffer.V512_2;
+			dst.V512_3 = tmp.V512_3 ^ tweakBuffer.V512_3;
+			dst.V512_4 = tmp.V512_4 ^ tweakBuffer.V512_4;
+			dst.V512_5 = tmp.V512_5 ^ tweakBuffer.V512_5;
+			dst.V512_6 = tmp.V512_6 ^ tweakBuffer.V512_6;
+			dst.V512_7 = tmp.V512_7 ^ tweakBuffer.V512_7;
 
 			Gf128Mul32Avx512(ref tweakBuffer);
 
