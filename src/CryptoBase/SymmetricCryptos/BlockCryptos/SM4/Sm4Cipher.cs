@@ -173,29 +173,53 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 EncryptV256(scoped in VectorBuffer128 source)
 	{
-		Span<uint> rk = _roundKeys.Span;
-		return SM4Utils.ProcessBlockAvx2(rk, source);
+		if (AesX86.IsSupported && Avx2.IsSupported)
+		{
+			Span<uint> rk = _roundKeys.Span;
+			return SM4Utils.ProcessBlockAvx2(rk, source);
+		}
+
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 DecryptV256(scoped in VectorBuffer128 source)
 	{
-		Span<uint> rk = _reverseRoundKeys.Span;
-		return SM4Utils.ProcessBlockAvx2(rk, source);
+		if (AesX86.IsSupported && Avx2.IsSupported)
+		{
+			Span<uint> rk = _reverseRoundKeys.Span;
+			return SM4Utils.ProcessBlockAvx2(rk, source);
+		}
+
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 EncryptV256(scoped in VectorBuffer256 source)
 	{
-		Span<uint> rk = _roundKeys.Span;
-		return SM4Utils.ProcessBlock(rk, source);
+		if (AesX86.IsSupported && Avx2.IsSupported)
+		{
+			Span<uint> rk = _roundKeys.Span;
+			return SM4Utils.ProcessBlock(rk, source);
+		}
+
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 DecryptV256(scoped in VectorBuffer256 source)
 	{
-		Span<uint> rk = _reverseRoundKeys.Span;
-		return SM4Utils.ProcessBlock(rk, source);
+		if (AesX86.IsSupported && Avx2.IsSupported)
+		{
+			Span<uint> rk = _reverseRoundKeys.Span;
+			return SM4Utils.ProcessBlock(rk, source);
+		}
+
+		ThrowHelper.ThrowNotSupported();
+		return default;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
