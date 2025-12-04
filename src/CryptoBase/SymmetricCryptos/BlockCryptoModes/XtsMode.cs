@@ -84,7 +84,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			ref readonly byte sourceRef = ref source.GetReference();
 			ref byte destinationRef = ref destination.GetReference();
 
-			VectorBuffer16 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer16();
+			ref readonly VectorBuffer16 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer16();
 			ref VectorBuffer16 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer16();
 
 			VectorBuffer16 tmp = src ^ tweak;
@@ -172,7 +172,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			ref readonly byte sourceRef = ref source.GetReference();
 			ref byte destinationRef = ref destination.GetReference();
 
-			VectorBuffer16 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer16();
+			ref readonly VectorBuffer16 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer16();
 			ref VectorBuffer16 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer16();
 
 			VectorBuffer16 tmp = src ^ tweak;
@@ -271,7 +271,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			tweakBuffer.V128_7 = tweak.V128;
 			Gf128Mul(ref tweak);
 
-			VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
+			ref readonly VectorBuffer128 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
 			ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer128();
 
 			VectorBuffer128 tmp = new()
@@ -285,18 +285,17 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 				V128_6 = src.V128_6 ^ tweakBuffer.V128_6,
 				V128_7 = src.V128_7 ^ tweakBuffer.V128_7
 			};
+
 			tmp = dataCipher.Encrypt(tmp);
-			dst = new VectorBuffer128
-			{
-				V128_0 = tmp.V128_0 ^ tweakBuffer.V128_0,
-				V128_1 = tmp.V128_1 ^ tweakBuffer.V128_1,
-				V128_2 = tmp.V128_2 ^ tweakBuffer.V128_2,
-				V128_3 = tmp.V128_3 ^ tweakBuffer.V128_3,
-				V128_4 = tmp.V128_4 ^ tweakBuffer.V128_4,
-				V128_5 = tmp.V128_5 ^ tweakBuffer.V128_5,
-				V128_6 = tmp.V128_6 ^ tweakBuffer.V128_6,
-				V128_7 = tmp.V128_7 ^ tweakBuffer.V128_7
-			};
+
+			dst.V128_0 = tmp.V128_0 ^ tweakBuffer.V128_0;
+			dst.V128_1 = tmp.V128_1 ^ tweakBuffer.V128_1;
+			dst.V128_2 = tmp.V128_2 ^ tweakBuffer.V128_2;
+			dst.V128_3 = tmp.V128_3 ^ tweakBuffer.V128_3;
+			dst.V128_4 = tmp.V128_4 ^ tweakBuffer.V128_4;
+			dst.V128_5 = tmp.V128_5 ^ tweakBuffer.V128_5;
+			dst.V128_6 = tmp.V128_6 ^ tweakBuffer.V128_6;
+			dst.V128_7 = tmp.V128_7 ^ tweakBuffer.V128_7;
 
 			offset += 8 * BlockBytesSize;
 			length -= 8 * BlockBytesSize;
@@ -336,7 +335,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 			tweakBuffer.V128_7 = tweak.V128;
 			Gf128Mul(ref tweak);
 
-			VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
+			ref readonly VectorBuffer128 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer128();
 			ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer128();
 
 			VectorBuffer128 tmp = new()
@@ -351,17 +350,15 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 				V128_7 = src.V128_7 ^ tweakBuffer.V128_7
 			};
 			tmp = dataCipher.Decrypt(tmp);
-			dst = new VectorBuffer128
-			{
-				V128_0 = tmp.V128_0 ^ tweakBuffer.V128_0,
-				V128_1 = tmp.V128_1 ^ tweakBuffer.V128_1,
-				V128_2 = tmp.V128_2 ^ tweakBuffer.V128_2,
-				V128_3 = tmp.V128_3 ^ tweakBuffer.V128_3,
-				V128_4 = tmp.V128_4 ^ tweakBuffer.V128_4,
-				V128_5 = tmp.V128_5 ^ tweakBuffer.V128_5,
-				V128_6 = tmp.V128_6 ^ tweakBuffer.V128_6,
-				V128_7 = tmp.V128_7 ^ tweakBuffer.V128_7
-			};
+
+			dst.V128_0 = tmp.V128_0 ^ tweakBuffer.V128_0;
+			dst.V128_1 = tmp.V128_1 ^ tweakBuffer.V128_1;
+			dst.V128_2 = tmp.V128_2 ^ tweakBuffer.V128_2;
+			dst.V128_3 = tmp.V128_3 ^ tweakBuffer.V128_3;
+			dst.V128_4 = tmp.V128_4 ^ tweakBuffer.V128_4;
+			dst.V128_5 = tmp.V128_5 ^ tweakBuffer.V128_5;
+			dst.V128_6 = tmp.V128_6 ^ tweakBuffer.V128_6;
+			dst.V128_7 = tmp.V128_7 ^ tweakBuffer.V128_7;
 
 			offset += 8 * BlockBytesSize;
 			length -= 8 * BlockBytesSize;

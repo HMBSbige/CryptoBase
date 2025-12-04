@@ -87,13 +87,16 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 16 * BlockBytesSize)
 		{
-			VectorBuffer256 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer256();
+			ref readonly VectorBuffer256 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer256();
 			ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer256();
 
-			tmp.V512_0 ^= tweakBuffer.V512_0;
-			tmp.V512_1 ^= tweakBuffer.V512_1;
-			tmp.V512_2 ^= tweakBuffer.V512_2;
-			tmp.V512_3 ^= tweakBuffer.V512_3;
+			VectorBuffer256 tmp = new()
+			{
+				V512_0 = src.V512_0 ^ tweakBuffer.V512_0,
+				V512_1 = src.V512_1 ^ tweakBuffer.V512_1,
+				V512_2 = src.V512_2 ^ tweakBuffer.V512_2,
+				V512_3 = src.V512_3 ^ tweakBuffer.V512_3
+			};
 
 			tmp = dataCipher.EncryptV512(tmp);
 
@@ -126,17 +129,20 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 32 * BlockBytesSize)
 		{
-			VectorBuffer512 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer512();
+			ref readonly VectorBuffer512 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer512();
 			ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer512();
 
-			tmp.V512_0 ^= tweakBuffer.V512_0;
-			tmp.V512_1 ^= tweakBuffer.V512_1;
-			tmp.V512_2 ^= tweakBuffer.V512_2;
-			tmp.V512_3 ^= tweakBuffer.V512_3;
-			tmp.V512_4 ^= tweakBuffer.V512_4;
-			tmp.V512_5 ^= tweakBuffer.V512_5;
-			tmp.V512_6 ^= tweakBuffer.V512_6;
-			tmp.V512_7 ^= tweakBuffer.V512_7;
+			VectorBuffer512 tmp = new()
+			{
+				V512_0 = src.V512_0 ^ tweakBuffer.V512_0,
+				V512_1 = src.V512_1 ^ tweakBuffer.V512_1,
+				V512_2 = src.V512_2 ^ tweakBuffer.V512_2,
+				V512_3 = src.V512_3 ^ tweakBuffer.V512_3,
+				V512_4 = src.V512_4 ^ tweakBuffer.V512_4,
+				V512_5 = src.V512_5 ^ tweakBuffer.V512_5,
+				V512_6 = src.V512_6 ^ tweakBuffer.V512_6,
+				V512_7 = src.V512_7 ^ tweakBuffer.V512_7
+			};
 
 			tmp = dataCipher.EncryptV512(tmp);
 
@@ -173,13 +179,16 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 16 * BlockBytesSize)
 		{
-			VectorBuffer256 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer256();
+			ref readonly VectorBuffer256 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer256();
 			ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer256();
 
-			tmp.V512_0 ^= tweakBuffer.V512_0;
-			tmp.V512_1 ^= tweakBuffer.V512_1;
-			tmp.V512_2 ^= tweakBuffer.V512_2;
-			tmp.V512_3 ^= tweakBuffer.V512_3;
+			VectorBuffer256 tmp = new()
+			{
+				V512_0 = src.V512_0 ^ tweakBuffer.V512_0,
+				V512_1 = src.V512_1 ^ tweakBuffer.V512_1,
+				V512_2 = src.V512_2 ^ tweakBuffer.V512_2,
+				V512_3 = src.V512_3 ^ tweakBuffer.V512_3
+			};
 
 			tmp = dataCipher.DecryptV512(tmp);
 
@@ -212,17 +221,20 @@ public sealed partial class XtsMode<TBlockCipher>
 
 		while (length >= 32 * BlockBytesSize)
 		{
-			VectorBuffer512 tmp = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer512();
+			ref readonly VectorBuffer512 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), offset).AsVectorBuffer512();
 			ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, offset).AsVectorBuffer512();
 
-			tmp.V512_0 ^= tweakBuffer.V512_0;
-			tmp.V512_1 ^= tweakBuffer.V512_1;
-			tmp.V512_2 ^= tweakBuffer.V512_2;
-			tmp.V512_3 ^= tweakBuffer.V512_3;
-			tmp.V512_4 ^= tweakBuffer.V512_4;
-			tmp.V512_5 ^= tweakBuffer.V512_5;
-			tmp.V512_6 ^= tweakBuffer.V512_6;
-			tmp.V512_7 ^= tweakBuffer.V512_7;
+			VectorBuffer512 tmp = new()
+			{
+				V512_0 = src.V512_0 ^ tweakBuffer.V512_0,
+				V512_1 = src.V512_1 ^ tweakBuffer.V512_1,
+				V512_2 = src.V512_2 ^ tweakBuffer.V512_2,
+				V512_3 = src.V512_3 ^ tweakBuffer.V512_3,
+				V512_4 = src.V512_4 ^ tweakBuffer.V512_4,
+				V512_5 = src.V512_5 ^ tweakBuffer.V512_5,
+				V512_6 = src.V512_6 ^ tweakBuffer.V512_6,
+				V512_7 = src.V512_7 ^ tweakBuffer.V512_7
+			};
 
 			tmp = dataCipher.DecryptV512(tmp);
 

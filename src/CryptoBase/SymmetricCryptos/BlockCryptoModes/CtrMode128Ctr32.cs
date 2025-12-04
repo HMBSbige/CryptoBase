@@ -177,7 +177,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 					tmp.V512_6 = t6.ReverseEndianness128();
 					tmp.V512_7 = t7.ReverseEndianness128();
 
-					VectorBuffer512 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer512();
+					ref readonly VectorBuffer512 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer512();
 					ref VectorBuffer512 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer512();
 
 					dst.V512_0 = src.V512_0 ^ ks.V512_0;
@@ -247,7 +247,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 					tmp.V256_6 = t6.ReverseEndianness128();
 					tmp.V256_7 = t7.ReverseEndianness128();
 
-					VectorBuffer256 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer256();
+					ref readonly VectorBuffer256 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer256();
 					ref VectorBuffer256 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer256();
 
 					dst.V256_0 = src.V256_0 ^ ks.V256_0;
@@ -299,7 +299,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 					tmp.V256_2 = t2.ReverseEndianness128();
 					tmp.V256_3 = t3.ReverseEndianness128();
 
-					VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer128();
+					ref readonly VectorBuffer128 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer128();
 					ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer128();
 
 					dst.V256_0 = src.V256_0 ^ ks.V256_0;
@@ -357,7 +357,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 					tmp.V128_6 = t6.ReverseEndianness128();
 					tmp.V128_7 = t7.ReverseEndianness128();
 
-					VectorBuffer128 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer128();
+					ref readonly VectorBuffer128 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer128();
 					ref VectorBuffer128 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer128();
 
 					dst.V128_0 = src.V128_0 ^ ks.V128_0;
@@ -383,7 +383,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 					tmp.V128_0 = t0.ReverseEndianness128();
 					tmp.V128_1 = t1.ReverseEndianness128();
 
-					VectorBuffer64 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer64();
+					ref readonly VectorBuffer64 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer64();
 					ref VectorBuffer64 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer64();
 
 					dst.V128_0 = src.V128_0 ^ ks.V128_0;
@@ -403,7 +403,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 
 					tmp.V128_0 = t0.ReverseEndianness128();
 
-					VectorBuffer32 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer32();
+					ref readonly VectorBuffer32 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer32();
 					ref VectorBuffer32 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer32();
 
 					dst.V128_0 = src.V128_0 ^ ks.V128_0;
@@ -421,7 +421,7 @@ public sealed class CtrMode128Ctr32<TBlockCipher> : IStreamCrypto where TBlockCi
 		{
 			VectorBuffer16 ks = UpdateKeyStream(ref counter);
 
-			VectorBuffer16 src = Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer16();
+			ref readonly VectorBuffer16 src = ref Unsafe.Add(ref Unsafe.AsRef(in sourceRef), i).AsVectorBuffer16();
 			ref VectorBuffer16 dst = ref Unsafe.Add(ref destinationRef, i).AsVectorBuffer16();
 
 			dst = src ^ ks;
