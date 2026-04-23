@@ -16,7 +16,6 @@
     <Project Path="src\CryptoBase\CryptoBase.csproj" />
   </Folder>
   <Folder Name="/test/">
-    <Project Path="test\CryptoBase.Benchmark.Tests\CryptoBase.Benchmark.Tests.csproj" />
     <Project Path="test\CryptoBase.Benchmark\CryptoBase.Benchmark.csproj" />
     <Project Path="test\CryptoBase.SpeedTest\CryptoBase.SpeedTest.csproj" />
     <Project Path="test\CryptoBase.Tests\CryptoBase.Tests.csproj" />
