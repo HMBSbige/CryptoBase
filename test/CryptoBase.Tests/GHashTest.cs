@@ -11,33 +11,35 @@ public class GHashTest
 	/// https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
 	/// https://www.intel.cn/content/dam/www/public/us/en/documents/white-papers/carry-less-multiplication-instruction-in-gcm-mode-paper.pdf
 	/// </summary>
-	public static readonly TheoryData<string, string, string> Data = new()
-	{
-		{ @"dfa6bf4ded81db03ffcaff95f830f061", @"952b2a56a5604ac0b32b6656a05b40b6", @"da53eb0ad2c55bb64fc4802cc3feda60" },
-		{ @"66e94bd4ef8a2c3b884cfa59ca342b2e", @"", @"00000000000000000000000000000000" },
-		{ @"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe78", @"5e2ec746917062882c85b0685353deb7" },
-		{ @"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe7800000000000000000000000000000080", @"f38cbb1ad69223dcc3457ae5b6b0f885" },
-		{ @"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe7ad2c55bb64f", @"c1d3b69b62c9a392687aaf55d95a1df6" }
-	};
+	public static IEnumerable<(string, string, string)> Data =>
+	[
+		(@"dfa6bf4ded81db03ffcaff95f830f061", @"952b2a56a5604ac0b32b6656a05b40b6", @"da53eb0ad2c55bb64fc4802cc3feda60"),
+		(@"66e94bd4ef8a2c3b884cfa59ca342b2e", @"", @"00000000000000000000000000000000"),
+		(@"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe78", @"5e2ec746917062882c85b0685353deb7"),
+		(@"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe7800000000000000000000000000000080", @"f38cbb1ad69223dcc3457ae5b6b0f885"),
+		(@"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe7ad2c55bb64f", @"c1d3b69b62c9a392687aaf55d95a1df6")
+	];
 
-	private static void Test_Internal(IMac mac, string plainHex, string cipherHex)
+	private static async Task Test_Internal(IMac mac, string plainHex, string cipherHex)
 	{
-		Span<byte> plain = plainHex.FromHex();
-		Span<byte> cipher = cipherHex.FromHex();
-		Span<byte> o = stackalloc byte[mac.Length];
+		byte[] plain = plainHex.FromHex();
 
-		Assert.Equal(@"GHash", mac.Name);
-		Assert.Equal(16, mac.Length);
+		byte[] cipher = cipherHex.FromHex();
+
+		byte[] o = new byte[mac.Length];
+
+		await Assert.That(mac.Name).IsEqualTo(@"GHash");
+		await Assert.That(mac.Length).IsEqualTo(16);
 
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.Equal(cipher, o);
+		await Assert.That(cipher.SequenceEqual(o)).IsTrue();
 
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.Equal(cipher, o);
+		await Assert.That(cipher.SequenceEqual(o)).IsTrue();
 
 		mac.Update(plain);
 		mac.Reset();
@@ -45,57 +47,60 @@ public class GHashTest
 		mac.Update(plain);
 		mac.GetMac(o);
 
-		Assert.Equal(cipher, o);
+		await Assert.That(cipher.SequenceEqual(o)).IsTrue();
 
 		mac.Dispose();
 	}
 
-	[Theory]
-	[MemberData(nameof(Data))]
-	public void Test(string keyHex, string plainHex, string cipherHex)
+	[Test]
+	[MethodDataSource(nameof(Data))]
+	public async Task Test(string keyHex, string plainHex, string cipherHex)
 	{
 		byte[] key = keyHex.FromHex();
-		Test_Internal(new GHashSF(key), plainHex, cipherHex);
-		Test_Internal(GHashUtils.Create(key), plainHex, cipherHex);
+		await Test_Internal(new GHashSF(key), plainHex, cipherHex);
+		await Test_Internal(GHashUtils.Create(key), plainHex, cipherHex);
 	}
 
-	[Theory(Skip = "X86", SkipUnless = nameof(TestEnvironment.TestX86), SkipType = typeof(TestEnvironment))]
-	[MemberData(nameof(Data))]
-	public void TestX86(string keyHex, string plainHex, string cipherHex)
+	[Test]
+	[RequiresX86]
+	[MethodDataSource(nameof(Data))]
+	public async Task TestX86(string keyHex, string plainHex, string cipherHex)
 	{
 		byte[] key = keyHex.FromHex();
-		Test_Internal(new GHashX86(key), plainHex, cipherHex);
+		await Test_Internal(new GHashX86(key), plainHex, cipherHex);
 	}
 
-	[Theory]
-	[InlineData(4 - 1)]
-	[InlineData(8 - 1)]
-	[InlineData(16 - 1)]
-	[InlineData(32 - 1)]
-	[InlineData(64 - 1)]
-	[InlineData(128 - 1)]
-	[InlineData(256 - 1)]
-	public void TestBlocks(int n)
+	[Test]
+	[Arguments(4 - 1)]
+	[Arguments(8 - 1)]
+	[Arguments(16 - 1)]
+	[Arguments(32 - 1)]
+	[Arguments(64 - 1)]
+	[Arguments(128 - 1)]
+	[Arguments(256 - 1)]
+	public async Task TestBlocks(int n)
 	{
 		const int blockSize = 16;
 		using IMac mac = GHashUtils.Create(RandomNumberGenerator.GetBytes(16));
-		Span<byte> expected = stackalloc byte[blockSize];
-		ReadOnlySpan<byte> blocks = RandomNumberGenerator.GetBytes(n * blockSize + 1);
+		byte[] expected = new byte[blockSize];
+
+		byte[] blocks = RandomNumberGenerator.GetBytes(n * blockSize + 1);
 
 		for (int i = 0; i < n; ++i)
 		{
-			mac.Update(blocks.Slice(i * blockSize, blockSize));
+			mac.Update(blocks.AsSpan().Slice(i * blockSize, blockSize));
 		}
 
-		mac.Update(blocks.Slice(n * blockSize));
+		mac.Update(blocks.AsSpan().Slice(n * blockSize));
 
 		mac.GetMac(expected);
 
 		mac.Update(blocks);
 
-		Span<byte> actual = stackalloc byte[blockSize];
+		byte[] actual = new byte[blockSize];
+
 		mac.GetMac(actual);
 
-		Assert.Equal(expected, actual);
+		await Assert.That(expected.SequenceEqual(actual)).IsTrue();
 	}
 }

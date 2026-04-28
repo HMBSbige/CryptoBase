@@ -8,62 +8,63 @@ namespace CryptoBase.Tests;
 
 public class SHA1Test
 {
-	private static void SHA1DigestTest_Internal(IHash sha1, string str, string sha1Str)
+	private static async Task SHA1DigestTest_Internal(IHash sha1, string str, string sha1Str)
 	{
-		Assert.Equal(@"SHA-1", sha1.Name);
-		Assert.Equal(20, sha1.Length);
-		Assert.Equal(64, sha1.BlockSize);
+		await Assert.That(sha1.Name).IsEqualTo(@"SHA-1");
+		await Assert.That(sha1.Length).IsEqualTo(20);
+		await Assert.That(sha1.BlockSize).IsEqualTo(64);
 
-		Span<byte> origin = Encoding.UTF8.GetBytes(str);
-		Span<byte> hash = stackalloc byte[sha1.Length];
+		byte[] origin = Encoding.UTF8.GetBytes(str);
+
+		byte[] hash = new byte[sha1.Length];
 
 		sha1.UpdateFinal(origin, hash);
 		sha1.UpdateFinal(origin, hash);
 
-		Assert.Equal(sha1Str, hash.ToHex());
+		await Assert.That(sha1Str.SequenceEqual(hash.ToHex())).IsTrue();
 
 		sha1.Update(origin);
 		sha1.GetHash(hash);
 
-		Assert.Equal(sha1Str, hash.ToHex());
+		await Assert.That(sha1Str.SequenceEqual(hash.ToHex())).IsTrue();
 
 		sha1.Update(origin);
 		sha1.Reset();
 
-		sha1.Update(origin[..(origin.Length / 2)]);
-		sha1.Update(origin[(origin.Length / 2)..]);
+		sha1.Update(origin.AsSpan().Slice(0, origin.Length / 2));
+		sha1.Update(origin.AsSpan().Slice(origin.Length / 2));
 		sha1.GetHash(hash);
 
-		Assert.Equal(sha1Str, hash.ToHex());
+		await Assert.That(sha1Str.SequenceEqual(hash.ToHex())).IsTrue();
 
-		sha1.Update(origin[..(origin.Length / 2)]);
-		sha1.UpdateFinal(origin[(origin.Length / 2)..], hash);
+		sha1.Update(origin.AsSpan().Slice(0, origin.Length / 2));
+		sha1.UpdateFinal(origin.AsSpan().Slice(origin.Length / 2), hash);
 
-		Assert.Equal(sha1Str, hash.ToHex());
+		await Assert.That(sha1Str.SequenceEqual(hash.ToHex())).IsTrue();
 
 		sha1.Dispose();
 	}
 
-	[Theory]
-	[InlineData(@"", @"da39a3ee5e6b4b0d3255bfef95601890afd80709")]
-	[InlineData(@"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", @"a49b2446a02c645bf419f995b67091253a04a259")]
-	[InlineData(@"abc", @"a9993e364706816aba3e25717850c26c9cd0d89d")]
-	[InlineData(@"a", @"86f7e437faa5a7fce15d1ddcb9eaeaea377667b8")]
-	[InlineData(@"abcdbcdecdefdefgefghfghighijhi", @"f9537c23893d2014f365adf8ffe33b8eb0297ed1")]
-	[InlineData(@"jkijkljklmklmnlmnomnopnopq", @"346fb528a24b48f563cb061470bcfd23740427ad")]
-	[InlineData(@"01234567012345670123456701234567", @"c729c8996ee0a6f74f4f3248e8957edf704fb624")]
-	public void SHA1DigestTest(string str, string sha1Str)
+	[Test]
+	[Arguments(@"", @"da39a3ee5e6b4b0d3255bfef95601890afd80709")]
+	[Arguments(@"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", @"a49b2446a02c645bf419f995b67091253a04a259")]
+	[Arguments(@"abc", @"a9993e364706816aba3e25717850c26c9cd0d89d")]
+	[Arguments(@"a", @"86f7e437faa5a7fce15d1ddcb9eaeaea377667b8")]
+	[Arguments(@"abcdbcdecdefdefgefghfghighijhi", @"f9537c23893d2014f365adf8ffe33b8eb0297ed1")]
+	[Arguments(@"jkijkljklmklmnlmnomnopnopq", @"346fb528a24b48f563cb061470bcfd23740427ad")]
+	[Arguments(@"01234567012345670123456701234567", @"c729c8996ee0a6f74f4f3248e8957edf704fb624")]
+	public async Task SHA1DigestTest(string str, string sha1Str)
 	{
-		SHA1DigestTest_Internal(new DefaultSHA1Digest(), str, sha1Str);
-		SHA1DigestTest_Internal(new BcSHA1Digest(), str, sha1Str);
+		await SHA1DigestTest_Internal(new DefaultSHA1Digest(), str, sha1Str);
+		await SHA1DigestTest_Internal(new BcSHA1Digest(), str, sha1Str);
 	}
 
-	[Theory]
-	[InlineData(@"a", 1000000, @"34aa973cd4c4daa4f61eeb2bdbad27316534016f")]
-	[InlineData(@"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno", 16777216, @"7789f0c9ef7bfc40d93311143dfbe69e2017f592")]
-	public void LargeMessageTest(string raw, int times, string expected)
+	[Test]
+	[Arguments(@"a", 1000000, @"34aa973cd4c4daa4f61eeb2bdbad27316534016f")]
+	[Arguments(@"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno", 16777216, @"7789f0c9ef7bfc40d93311143dfbe69e2017f592")]
+	public async Task LargeMessageTest(string raw, int times, string expected)
 	{
-		TestUtils.LargeMessageTest(new DefaultSHA1Digest(), raw, times, expected);
-		TestUtils.LargeMessageTest(new BcSHA1Digest(), raw, times, expected);
+		await TestUtils.LargeMessageTest(new DefaultSHA1Digest(), raw, times, expected);
+		await TestUtils.LargeMessageTest(new BcSHA1Digest(), raw, times, expected);
 	}
 }

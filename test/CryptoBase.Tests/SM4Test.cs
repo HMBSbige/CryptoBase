@@ -10,27 +10,32 @@ namespace CryptoBase.Tests;
 
 public class SM4Test
 {
-	[Theory]
-	[InlineData(@"0123456789ABCDEFFEDCBA9876543210", @"0123456789ABCDEFFEDCBA9876543210", @"681EDF34D206965E86B3E94F536E4246", @"595298C7C6FD271F0402F804C33D3F66")]
-	public void Test(string keyHex, string hex1, string hex2, string hex3)
+	[Test]
+	[Arguments(@"0123456789ABCDEFFEDCBA9876543210", @"0123456789ABCDEFFEDCBA9876543210", @"681EDF34D206965E86B3E94F536E4246", @"595298C7C6FD271F0402F804C33D3F66")]
+	public async Task Test(string keyHex, string hex1, string hex2, string hex3)
 	{
-		ReadOnlySpan<byte> key = keyHex.FromHex();
-		ReadOnlySpan<byte> plain = hex1.FromHex();
-		ReadOnlySpan<byte> cipher = hex2.FromHex();
-		ReadOnlySpan<byte> cipher1000000 = hex3.FromHex();
+		byte[] key = keyHex.FromHex();
+		byte[] plain = hex1.FromHex();
+		byte[] cipher = hex2.FromHex();
+		byte[] cipher1000000 = hex3.FromHex();
 
-		TestUtils.TestBlock16<BcSm4Cipher>(key, plain, cipher);
-		TestUtils.TestBlock16<Sm4Cipher>(key, plain, cipher);
+		await TestUtils.TestBlock16<BcSm4Cipher>(key, plain, cipher);
+		await TestUtils.TestBlock16<Sm4Cipher>(key, plain, cipher);
 
-		Test1000000<BcSm4Cipher>(key, plain, cipher1000000);
-		Test1000000<Sm4Cipher>(key, plain, cipher1000000);
+		await Test1000000<BcSm4Cipher>(key, plain, cipher1000000);
+		await Test1000000<Sm4Cipher>(key, plain, cipher1000000);
 
-		return;
 
-		static void Test1000000<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> plain, ReadOnlySpan<byte> cipher) where T : IBlock16Cipher<T>
+		static async Task Test1000000<T>(byte[] key, byte[] plain, byte[] cipher) where T : IBlock16Cipher<T>
 		{
 			using T crypto = T.Create(key);
 
+			await Assert.That(Encrypt1000000(crypto, plain, cipher)).IsTrue();
+			await Assert.That(Decrypt1000000(crypto, cipher, plain)).IsTrue();
+		}
+
+		static bool Encrypt1000000<T>(T crypto, byte[] plain, byte[] cipher) where T : IBlock16Cipher<T>
+		{
 			VectorBuffer16 t = plain.AsVectorBuffer16();
 
 			for (int i = 0; i < 1000000; ++i)
@@ -38,25 +43,29 @@ public class SM4Test
 				t = crypto.Encrypt(t);
 			}
 
-			Assert.Equal(cipher, t);
+			return cipher.AsSpan().SequenceEqual(t);
+		}
 
-			t = cipher.AsVectorBuffer16();
+		static bool Decrypt1000000<T>(T crypto, byte[] cipher, byte[] plain) where T : IBlock16Cipher<T>
+		{
+			VectorBuffer16 t = cipher.AsVectorBuffer16();
 
 			for (int i = 0; i < 1000000; ++i)
 			{
 				t = crypto.Decrypt(t);
 			}
 
-			Assert.Equal(plain, t);
+			return plain.AsSpan().SequenceEqual(t);
 		}
+
 	}
 
-	[Fact]
-	public void TestN()
+	[Test]
+	public async Task TestN()
 	{
-		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(16);
+		byte[] key = RandomNumberGenerator.GetBytes(16);
 
-		TestUtils.TestNBlock16<BcSm4Cipher>(key);
-		TestUtils.TestNBlock16<Sm4Cipher>(key);
+		await TestUtils.TestNBlock16<BcSm4Cipher>(key);
+		await TestUtils.TestNBlock16<Sm4Cipher>(key);
 	}
 }

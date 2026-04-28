@@ -11,169 +11,183 @@ namespace CryptoBase.Tests;
 
 public static class TestUtils
 {
-	public static void LargeMessageTest(IHash hash, string str, string result)
+	public static async Task LargeMessageTest(IHash hash, string str, string result)
 	{
-		Span<byte> origin = Encoding.UTF8.GetBytes(str);
-		Span<byte> outBuffer = stackalloc byte[hash.Length];
+		string actual;
 
-		uint times = (uint)((uint.MaxValue + 10ul) / (double)origin.Length) + 10;
-
-		for (int i = 0; i < times; ++i)
+		using (hash)
 		{
-			hash.Update(origin);
+			byte[] origin = Encoding.UTF8.GetBytes(str);
+			byte[] outBuffer = new byte[hash.Length];
+
+			uint times = (uint)((uint.MaxValue + 10ul) / (double)origin.Length) + 10;
+
+			for (int i = 0; i < times; ++i)
+			{
+				hash.Update(origin);
+			}
+
+			hash.GetHash(outBuffer);
+			actual = outBuffer.ToHex();
 		}
 
-		hash.GetHash(outBuffer);
-
-		Assert.Equal(result, outBuffer.ToHex());
-
-		hash.Dispose();
+		await Assert.That(actual).IsEqualTo(result);
 	}
 
-	public static void AEADTest(this IAEADCrypto crypto,
+	public static async Task AEADTest(this IAEADCrypto crypto, string expectedName,
 		string nonceHex, string associatedDataHex, string tagHex,
 		string plainHex, string cipherHex)
 	{
-		ReadOnlySpan<byte> nonce = nonceHex.FromHex();
-		ReadOnlySpan<byte> associatedData = associatedDataHex.FromHex();
-		ReadOnlySpan<byte> tag = tagHex.FromHex();
-		ReadOnlySpan<byte> plain = plainHex.FromHex();
-		ReadOnlySpan<byte> cipher = cipherHex.FromHex();
-		Span<byte> o1 = stackalloc byte[plain.Length];
-		Span<byte> o2 = stackalloc byte[tag.Length];
+		using (crypto)
+		{
+			await Assert.That(crypto.Name).IsEqualTo(expectedName);
 
-		crypto.Encrypt(nonce, plain, o1, o2, associatedData);
-		Assert.Equal(cipher, o1);
-		Assert.Equal(tag, o2);
+			byte[] nonce = nonceHex.FromHex();
+			byte[] associatedData = associatedDataHex.FromHex();
+			byte[] tag = tagHex.FromHex();
+			byte[] plain = plainHex.FromHex();
+			byte[] cipher = cipherHex.FromHex();
+			byte[] outPlain = new byte[plain.Length];
+			byte[] outTag = new byte[tag.Length];
 
-		crypto.Encrypt(nonce, plain, o1, o2, associatedData);
-		Assert.Equal(cipher, o1);
-		Assert.Equal(tag, o2);
+			crypto.Encrypt(nonce, plain, outPlain, outTag, associatedData);
+			await Assert.That(cipher.SequenceEqual(outPlain)).IsTrue();
+			await Assert.That(tag.SequenceEqual(outTag)).IsTrue();
 
-		crypto.Decrypt(nonce, cipher, tag, o1, associatedData);
-		Assert.Equal(plain, o1);
+			crypto.Encrypt(nonce, plain, outPlain, outTag, associatedData);
+			await Assert.That(cipher.SequenceEqual(outPlain)).IsTrue();
+			await Assert.That(tag.SequenceEqual(outTag)).IsTrue();
 
-		crypto.Decrypt(nonce, cipher, tag, o1, associatedData);
-		Assert.Equal(plain, o1);
+			crypto.Decrypt(nonce, cipher, tag, outPlain, associatedData);
+			await Assert.That(plain.SequenceEqual(outPlain)).IsTrue();
 
-		crypto.Dispose();
+			crypto.Decrypt(nonce, cipher, tag, outPlain, associatedData);
+			await Assert.That(plain.SequenceEqual(outPlain)).IsTrue();
+		}
 	}
 
-	public static void LargeMessageTest(IHash hash, string str, int times, string result)
+	public static async Task LargeMessageTest(IHash hash, string str, int times, string result)
 	{
-		Span<byte> origin = Encoding.UTF8.GetBytes(str);
-		Span<byte> outBuffer = stackalloc byte[hash.Length];
+		string actual;
 
-		for (int i = 0; i < times; ++i)
+		using (hash)
 		{
-			hash.Update(origin);
+			byte[] origin = Encoding.UTF8.GetBytes(str);
+			byte[] outBuffer = new byte[hash.Length];
+
+			for (int i = 0; i < times; ++i)
+			{
+				hash.Update(origin);
+			}
+
+			hash.GetHash(outBuffer);
+			actual = outBuffer.ToHex();
 		}
 
-		hash.GetHash(outBuffer);
-
-		Assert.Equal(result, outBuffer.ToHex());
-
-		hash.Dispose();
+		await Assert.That(actual).IsEqualTo(result);
 	}
 
-	public static void MacTest(IMac mac, ReadOnlySpan<byte> message, string expected)
+	public static async Task MacTest(IMac mac, byte[] message, string expected)
 	{
 		mac.Update(message);
 
-		Span<byte> digest = new byte[mac.Length];
+		byte[] digest = new byte[mac.Length];
 		mac.GetMac(digest);
-		Assert.Equal(expected, digest.ToHex());
+		await Assert.That(digest.ToHex()).IsEqualTo(expected);
 	}
 
-	public static void TestBlocks(IStreamCrypto crypto, int length)
+	public static async Task TestBlocks(IStreamCrypto crypto, int length)
 	{
-		ReadOnlySpan<byte> data = RandomNumberGenerator.GetBytes(length);
-		Span<byte> expected = stackalloc byte[length];
-		Span<byte> cipher = stackalloc byte[length];
+		byte[] data = RandomNumberGenerator.GetBytes(length);
+		byte[] expected = new byte[length];
+		byte[] cipher = new byte[length];
 
 		for (int i = 0; i < length; ++i)
 		{
-			crypto.Update(data.Slice(i, 1), expected.Slice(i, 1));
+			crypto.Update(data.AsSpan().Slice(i, 1), expected.AsSpan().Slice(i, 1));
 		}
 
 		crypto.Reset();
-
 		crypto.Update(data, cipher);
 
-		Assert.Equal(expected, cipher);
+		await Assert.That(expected.SequenceEqual(cipher)).IsTrue();
 	}
 
-	public static void TestBlock16<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> plain, ReadOnlySpan<byte> cipher) where T : IBlock16Cipher<T>
+	public static async Task TestBlock16<T>(byte[] key, byte[] plain, byte[] cipher) where T : IBlock16Cipher<T>
 	{
-		Assert.True(T.IsSupported);
+		await Assert.That(T.IsSupported).IsTrue();
 		using T crypto = T.Create(key);
 
-		Assert.Equal(cipher, crypto.Encrypt(plain.AsVectorBuffer16()));
-		Assert.Equal(cipher, crypto.Encrypt(plain.AsVectorBuffer16()));
+		await Assert.That(cipher.AsSpan().SequenceEqual(crypto.Encrypt(plain.AsVectorBuffer16()))).IsTrue();
+		await Assert.That(cipher.AsSpan().SequenceEqual(crypto.Encrypt(plain.AsVectorBuffer16()))).IsTrue();
 
-		Assert.Equal(plain, crypto.Decrypt(cipher.AsVectorBuffer16()));
-		Assert.Equal(plain, crypto.Decrypt(cipher.AsVectorBuffer16()));
+		await Assert.That(plain.AsSpan().SequenceEqual(crypto.Decrypt(cipher.AsVectorBuffer16()))).IsTrue();
+		await Assert.That(plain.AsSpan().SequenceEqual(crypto.Decrypt(cipher.AsVectorBuffer16()))).IsTrue();
 	}
 
-	public static void TestNBlock16<T>(ReadOnlySpan<byte> key) where T : IBlock16Cipher<T>
+	public static async Task TestNBlock16<T>(byte[] key) where T : IBlock16Cipher<T>
 	{
-		Assert.True(T.IsSupported);
+		await Assert.That(T.IsSupported).IsTrue();
 		using T crypto = T.Create(key);
 
-		ReadOnlySpan<byte> source = RandomNumberGenerator.GetBytes(2 * 64 * 16);
-		Span<byte> expectedCipher = stackalloc byte[source.Length];
+		byte[] source = RandomNumberGenerator.GetBytes(2 * 64 * 16);
+		byte[] expectedCipher = new byte[source.Length];
 
 		for (int i = 0; i < source.Length / 16; ++i)
 		{
-			Unsafe.WriteUnaligned(ref expectedCipher.Slice(i * 16).GetReference(), crypto.Encrypt(source.Slice(i * 16).AsVectorBuffer16()));
+			Unsafe.WriteUnaligned(ref expectedCipher.AsSpan().Slice(i * 16).GetReference(), crypto.Encrypt(source.AsSpan().Slice(i * 16).AsVectorBuffer16()));
 		}
 
-		foreach (int multiplier in Enumerable.Range(0, 5).Select(x => 1 << x))
+		foreach (int multiplier in (int[])[1, 2, 4, 8, 16, 32])
 		{
 			int chunkSize = multiplier * 16;
 
 			for (int i = 0; i < source.Length / chunkSize; ++i)
 			{
-				ReadOnlySpan<byte> plainSlice = source.Slice(i * chunkSize, chunkSize);
-				ReadOnlySpan<byte> expectedCipherSlice = expectedCipher.Slice(i * chunkSize, chunkSize);
+				int offset = i * chunkSize;
 
 				switch (multiplier)
 				{
 					case 1:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer16()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer16()));
-
+						await Assert.That(expectedCipher.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.Encrypt(source.AsSpan().Slice(offset, chunkSize).AsVectorBuffer16()))).IsTrue();
+						await Assert.That(source.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.Decrypt(expectedCipher.AsSpan().Slice(offset, chunkSize).AsVectorBuffer16()))).IsTrue();
 						break;
 					}
 					case 2:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer32()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer32()));
-
+						await Assert.That(expectedCipher.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.Encrypt(source.AsSpan().Slice(offset, chunkSize).AsVectorBuffer32()))).IsTrue();
+						await Assert.That(source.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.Decrypt(expectedCipher.AsSpan().Slice(offset, chunkSize).AsVectorBuffer32()))).IsTrue();
 						break;
 					}
 					case 4:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer64()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer64()));
-
+						await Assert.That(expectedCipher.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.Encrypt(source.AsSpan().Slice(offset, chunkSize).AsVectorBuffer64()))).IsTrue();
+						await Assert.That(source.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.Decrypt(expectedCipher.AsSpan().Slice(offset, chunkSize).AsVectorBuffer64()))).IsTrue();
 						break;
 					}
 					case 8:
 					{
-						Assert.Equal(expectedCipherSlice, crypto.Encrypt(plainSlice.AsVectorBuffer128()));
-						Assert.Equal(plainSlice, crypto.Decrypt(expectedCipherSlice.AsVectorBuffer128()));
+						await Assert.That(expectedCipher.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.Encrypt(source.AsSpan().Slice(offset, chunkSize).AsVectorBuffer128()))).IsTrue();
+						await Assert.That(source.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.Decrypt(expectedCipher.AsSpan().Slice(offset, chunkSize).AsVectorBuffer128()))).IsTrue();
 
 						if (T.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block8V256))
 						{
-							Assert.Equal(expectedCipherSlice, crypto.EncryptV256(plainSlice.AsVectorBuffer128()));
-							Assert.Equal(plainSlice, crypto.DecryptV256(expectedCipherSlice.AsVectorBuffer128()));
+							await Assert.That(expectedCipher.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.EncryptV256(source.AsSpan().Slice(offset, chunkSize).AsVectorBuffer128()))).IsTrue();
+							await Assert.That(source.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.DecryptV256(expectedCipher.AsSpan().Slice(offset, chunkSize).AsVectorBuffer128()))).IsTrue();
 						}
 						else
 						{
-							Assert.Throws<NotSupportedException>(() => crypto.EncryptV256(default(VectorBuffer128)));
-							Assert.Throws<NotSupportedException>(() => crypto.DecryptV256(default(VectorBuffer128)));
+							await Assert.ThrowsAsync<NotSupportedException>(async () =>
+							{
+								crypto.EncryptV256(default(VectorBuffer128));
+								await Task.CompletedTask;
+							});
+							await Assert.ThrowsAsync<NotSupportedException>(async () =>
+							{
+								crypto.DecryptV256(default(VectorBuffer128));
+								await Task.CompletedTask;
+							});
 						}
 
 						break;
@@ -182,24 +196,40 @@ public static class TestUtils
 					{
 						if (T.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16V256))
 						{
-							Assert.Equal(expectedCipherSlice, crypto.EncryptV256(plainSlice.AsVectorBuffer256()));
-							Assert.Equal(plainSlice, crypto.DecryptV256(expectedCipherSlice.AsVectorBuffer256()));
+							await Assert.That(expectedCipher.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.EncryptV256(source.AsSpan().Slice(offset, chunkSize).AsVectorBuffer256()))).IsTrue();
+							await Assert.That(source.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.DecryptV256(expectedCipher.AsSpan().Slice(offset, chunkSize).AsVectorBuffer256()))).IsTrue();
 						}
 						else
 						{
-							Assert.Throws<NotSupportedException>(() => crypto.EncryptV256(default(VectorBuffer256)));
-							Assert.Throws<NotSupportedException>(() => crypto.DecryptV256(default(VectorBuffer256)));
+							await Assert.ThrowsAsync<NotSupportedException>(async () =>
+							{
+								crypto.EncryptV256(default(VectorBuffer256));
+								await Task.CompletedTask;
+							});
+							await Assert.ThrowsAsync<NotSupportedException>(async () =>
+							{
+								crypto.DecryptV256(default(VectorBuffer256));
+								await Task.CompletedTask;
+							});
 						}
 
 						if (T.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block16V512))
 						{
-							Assert.Equal(expectedCipherSlice, crypto.EncryptV512(plainSlice.AsVectorBuffer256()));
-							Assert.Equal(plainSlice, crypto.DecryptV512(expectedCipherSlice.AsVectorBuffer256()));
+							await Assert.That(expectedCipher.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.EncryptV512(source.AsSpan().Slice(offset, chunkSize).AsVectorBuffer256()))).IsTrue();
+							await Assert.That(source.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.DecryptV512(expectedCipher.AsSpan().Slice(offset, chunkSize).AsVectorBuffer256()))).IsTrue();
 						}
 						else
 						{
-							Assert.Throws<NotSupportedException>(() => crypto.EncryptV512(default(VectorBuffer256)));
-							Assert.Throws<NotSupportedException>(() => crypto.DecryptV512(default(VectorBuffer256)));
+							await Assert.ThrowsAsync<NotSupportedException>(async () =>
+							{
+								crypto.EncryptV512(default(VectorBuffer256));
+								await Task.CompletedTask;
+							});
+							await Assert.ThrowsAsync<NotSupportedException>(async () =>
+							{
+								crypto.DecryptV512(default(VectorBuffer256));
+								await Task.CompletedTask;
+							});
 						}
 
 						break;
@@ -208,21 +238,28 @@ public static class TestUtils
 					{
 						if (T.HardwareAcceleration.HasFlag(BlockCipherHardwareAcceleration.Block32V512))
 						{
-							Assert.Equal(expectedCipherSlice, crypto.EncryptV512(plainSlice.AsVectorBuffer512()));
-							Assert.Equal(plainSlice, crypto.DecryptV512(expectedCipherSlice.AsVectorBuffer512()));
+							await Assert.That(expectedCipher.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.EncryptV512(source.AsSpan().Slice(offset, chunkSize).AsVectorBuffer512()))).IsTrue();
+							await Assert.That(source.AsSpan().Slice(offset, chunkSize).SequenceEqual(crypto.DecryptV512(expectedCipher.AsSpan().Slice(offset, chunkSize).AsVectorBuffer512()))).IsTrue();
 						}
 						else
 						{
-							Assert.Throws<NotSupportedException>(() => crypto.EncryptV512(default(VectorBuffer512)));
-							Assert.Throws<NotSupportedException>(() => crypto.DecryptV512(default(VectorBuffer512)));
+							await Assert.ThrowsAsync<NotSupportedException>(async () =>
+							{
+								crypto.EncryptV512(default(VectorBuffer512));
+								await Task.CompletedTask;
+							});
+							await Assert.ThrowsAsync<NotSupportedException>(async () =>
+							{
+								crypto.DecryptV512(default(VectorBuffer512));
+								await Task.CompletedTask;
+							});
 						}
 
 						break;
 					}
 					default:
 					{
-						Assert.Fail("not implemented");
-						break;
+						throw new InvalidOperationException("not implemented");
 					}
 				}
 			}

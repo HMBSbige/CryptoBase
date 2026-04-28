@@ -6,7 +6,7 @@ namespace CryptoBase.Tests;
 
 public class SnuffleCryptoBlocksTest
 {
-	public static TheoryData<int> LengthData =>
+	public static IEnumerable<int> LengthData =>
 	[
 		2 * 64 - 1,
 		4 * 64 - 1,
@@ -17,43 +17,43 @@ public class SnuffleCryptoBlocksTest
 		128 * 64 - 1
 	];
 
-	[Theory]
-	[MemberData(nameof(LengthData))]
-	public void ChaCha20(int length)
+	[Test]
+	[MethodDataSource(nameof(LengthData))]
+	public async Task ChaCha20(int length)
 	{
 		using IStreamCrypto crypto = new ChaCha20Crypto(RandomNumberGenerator.GetBytes(32), RandomNumberGenerator.GetBytes(12));
-		TestUtils.TestBlocks(crypto, length);
+		await TestUtils.TestBlocks(crypto, length);
 	}
 
-	[Theory]
-	[MemberData(nameof(LengthData))]
-	public void ChaCha20Original(int length)
+	[Test]
+	[MethodDataSource(nameof(LengthData))]
+	public async Task ChaCha20Original(int length)
 	{
 		using IStreamCrypto crypto = new ChaCha20OriginalCrypto(RandomNumberGenerator.GetBytes(32), RandomNumberGenerator.GetBytes(8));
-		TestUtils.TestBlocks(crypto, length);
+		await TestUtils.TestBlocks(crypto, length);
 	}
 
-	[Theory]
-	[MemberData(nameof(LengthData))]
-	public void XChaCha20(int length)
+	[Test]
+	[MethodDataSource(nameof(LengthData))]
+	public async Task XChaCha20(int length)
 	{
 		using IStreamCrypto crypto = new XChaCha20Crypto(RandomNumberGenerator.GetBytes(32), RandomNumberGenerator.GetBytes(24));
-		TestUtils.TestBlocks(crypto, length);
+		await TestUtils.TestBlocks(crypto, length);
 	}
 
-	[Theory]
-	[MemberData(nameof(LengthData))]
-	public void Salsa20(int length)
+	[Test]
+	[MethodDataSource(nameof(LengthData))]
+	public async Task Salsa20(int length)
 	{
 		using IStreamCrypto crypto = new Salsa20Crypto(RandomNumberGenerator.GetBytes(32), RandomNumberGenerator.GetBytes(8));
-		TestUtils.TestBlocks(crypto, length);
+		await TestUtils.TestBlocks(crypto, length);
 	}
 
-	[Theory]
-	[MemberData(nameof(LengthData))]
-	public void XSalsa20(int length)
+	[Test]
+	[MethodDataSource(nameof(LengthData))]
+	public async Task XSalsa20(int length)
 	{
 		using IStreamCrypto crypto = new XSalsa20Crypto(RandomNumberGenerator.GetBytes(32), RandomNumberGenerator.GetBytes(24));
-		TestUtils.TestBlocks(crypto, length);
+		await TestUtils.TestBlocks(crypto, length);
 	}
 }
