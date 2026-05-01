@@ -6,7 +6,7 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="BenchmarkDotNet.TestAdapter" Version="0.15.8" />
     <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageVersion Include="System.CommandLine" Version="2.0.7" />
     <PackageVersion Include="TUnit" Version="1.40.10" />
   </ItemGroup>
