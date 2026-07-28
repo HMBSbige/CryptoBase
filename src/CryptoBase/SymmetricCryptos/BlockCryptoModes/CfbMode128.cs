@@ -9,9 +9,9 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 	private readonly bool _disposeCipher;
 
 	private int _index;
-	private readonly CryptoArrayPool<byte> _iv = new(BlockSize);
-	private readonly CryptoArrayPool<byte> _block = new(BlockSize);
-	private readonly CryptoArrayPool<byte> _keyStream = new(BlockSize);
+	private VectorBuffer16 _iv;
+	private VectorBuffer16 _block;
+	private VectorBuffer16 _keyStream;
 
 	private const int BlockSize = 16;
 
@@ -23,18 +23,16 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 		_blockCipher = blockCipher;
 		_disposeCipher = disposeCipher;
 
-		Span<byte> ivSpan = _iv.Span;
-		ivSpan.Clear();
-		iv.CopyTo(_iv.Span);
+		_iv = iv.AsVectorBuffer16();
 
 		Reset();
 	}
 
 	public void Dispose()
 	{
-		_iv.Dispose();
-		_block.Dispose();
-		_keyStream.Dispose();
+		CryptographicOperations.ZeroMemory(_iv.AsSpan());
+		CryptographicOperations.ZeroMemory(_block.AsSpan());
+		CryptographicOperations.ZeroMemory(_keyStream.AsSpan());
 
 		if (_disposeCipher)
 		{
@@ -45,7 +43,7 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 	public void Reset()
 	{
 		_index = 0;
-		_iv.Span.CopyTo(_block.Span);
+		_block = _iv;
 	}
 
 	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -55,10 +53,8 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 		int i = 0;
 		int length = source.Length;
 
-		Span<byte> block = _block.Span;
-		Span<byte> stream = _keyStream.Span;
-		ref VectorBuffer16 c = ref block.AsVectorBuffer16();
-		ref VectorBuffer16 ks = ref stream.AsVectorBuffer16();
+		Span<byte> block = _block.AsSpan();
+		Span<byte> stream = _keyStream.AsSpan();
 
 		if (_index is not 0)
 		{
@@ -80,9 +76,9 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 
 		while (length >= BlockSize)
 		{
-			ks = _blockCipher.Encrypt(c);
+			_keyStream = _blockCipher.Encrypt(_block);
 
-			destination.Slice(i).AsVectorBuffer16() = source.Slice(i).AsVectorBuffer16() ^ stream.AsVectorBuffer16();
+			destination.Slice(i).AsVectorBuffer16() = source.Slice(i).AsVectorBuffer16() ^ _keyStream;
 			(_isEncrypt ? destination : source).Slice(i, BlockSize).CopyTo(block);
 
 			i += BlockSize;
@@ -90,7 +86,7 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 		}
 
 		_index = length;
-		ks = _blockCipher.Encrypt(c);
+		_keyStream = _blockCipher.Encrypt(_block);
 		FastUtils.Xor(stream.Slice(0, length), source.Slice(i, length), destination.Slice(i, length), length);
 		(_isEncrypt ? destination : source).Slice(i, length).CopyTo(block);
 	}

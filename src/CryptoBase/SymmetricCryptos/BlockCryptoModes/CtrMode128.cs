@@ -10,9 +10,9 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 	private readonly bool _disposeCipher;
 
 	private int _index;
-	private readonly CryptoArrayPool<byte> _iv = new(BlockSize);
-	private readonly CryptoArrayPool<byte> _counter = new(BlockSize);
-	private readonly CryptoArrayPool<byte> _keyStream = new(BlockSize);
+	private VectorBuffer16 _iv;
+	private VectorBuffer16 _counter;
+	private VectorBuffer16 _keyStream;
 
 	public CtrMode128(TBlockCipher blockCipher, ReadOnlySpan<byte> iv, bool disposeCipher = true)
 	{
@@ -21,18 +21,17 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 		_blockCipher = blockCipher;
 		_disposeCipher = disposeCipher;
 
-		Span<byte> ivSpan = _iv.Span;
-		ivSpan.Clear();
-		iv.CopyTo(_iv.Span);
+		_iv = default;
+		iv.CopyTo(_iv.AsSpan());
 
 		Reset();
 	}
 
 	public void Dispose()
 	{
-		_iv.Dispose();
-		_counter.Dispose();
-		_keyStream.Dispose();
+		CryptographicOperations.ZeroMemory(_iv.AsSpan());
+		CryptographicOperations.ZeroMemory(_counter.AsSpan());
+		CryptographicOperations.ZeroMemory(_keyStream.AsSpan());
 
 		if (_disposeCipher)
 		{
@@ -43,7 +42,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 	public void Reset()
 	{
 		_index = 0;
-		_iv.Span.CopyTo(_counter.Span);
+		_counter = _iv;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,20 +52,13 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 
 		int offset = 0;
 		int left = source.Length;
-		Span<byte> counter = _counter.Span;
-		Span<byte> keyStream = _keyStream.Span;
-		ref VectorBuffer16 c = ref counter.AsVectorBuffer16();
-		ref VectorBuffer16 ks = ref keyStream.AsVectorBuffer16();
-
-		VectorBuffer16 tmpc = c;
-		VectorBuffer16 tmpks = ks;
 
 		if (_index is not 0 && left > 0)
 		{
 			int r = BlockSize - _index;
 			int n = Math.Min(r, left);
 
-			FastUtils.XorLess16(tmpks.AsSpan().Slice(_index), source, destination, n);
+			FastUtils.XorLess16(_keyStream.AsSpan().Slice(_index), source, destination, n);
 
 			_index += n;
 			_index &= BlockSize - 1;
@@ -76,26 +68,23 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 
 		if (left >= BlockSize)
 		{
-			int processed = UpdateBlock(ref tmpc, source.Slice(offset), destination.Slice(offset));
+			int processed = UpdateBlock(ref _counter, source.Slice(offset), destination.Slice(offset));
 			offset += processed;
 			left -= processed;
 		}
 
 		if (left > 0)
 		{
-			tmpks = UpdateKeyStream(ref tmpc);
+			_keyStream = UpdateKeyStream(ref _counter);
 
-			FastUtils.XorLess16(tmpks.AsSpan().Slice(_index), source.Slice(offset), destination.Slice(offset), left);
+			FastUtils.XorLess16(_keyStream.AsSpan().Slice(_index), source.Slice(offset), destination.Slice(offset), left);
 
 			_index = left;
 		}
-
-		c = tmpc;
-		ks = tmpks;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private VectorBuffer16 UpdateKeyStream(scoped ref VectorBuffer16 counter)
+	private VectorBuffer16 UpdateKeyStream(ref VectorBuffer16 counter)
 	{
 		VectorBuffer16 ks = _blockCipher.Encrypt(counter);
 
@@ -120,7 +109,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private int UpdateBlock(scoped ref VectorBuffer16 counter, ReadOnlySpan<byte> source, Span<byte> destination)
+	private int UpdateBlock(ref VectorBuffer16 counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int i = 0;
 		int left = source.Length;
