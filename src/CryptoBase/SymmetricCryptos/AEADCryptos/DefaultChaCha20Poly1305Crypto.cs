@@ -1,6 +1,6 @@
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
 
-public class DefaultChaCha20Poly1305Crypto(ReadOnlySpan<byte> key) : IAEADCrypto
+public sealed class DefaultChaCha20Poly1305Crypto(ReadOnlySpan<byte> key) : IAEADCrypto
 {
 	public static bool IsSupported => ChaCha20Poly1305.IsSupported;
 
@@ -21,6 +21,5 @@ public class DefaultChaCha20Poly1305Crypto(ReadOnlySpan<byte> key) : IAEADCrypto
 	public void Dispose()
 	{
 		_internalCrypto.Dispose();
-		GC.SuppressFinalize(this);
 	}
 }

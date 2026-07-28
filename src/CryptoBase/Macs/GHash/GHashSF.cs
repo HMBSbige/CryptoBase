@@ -142,6 +142,10 @@ public sealed class GHashSF : IMac
 
 	public void Dispose()
 	{
+		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(_hl.AsSpan(0, BlockSize)));
+		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(_hh.AsSpan(0, BlockSize)));
+		CryptographicOperations.ZeroMemory(_buffer.AsSpan(0, BlockSize));
+
 		ArrayPool<ulong>.Shared.Return(_hl);
 		ArrayPool<ulong>.Shared.Return(_hh);
 		ArrayPool<byte>.Shared.Return(_buffer);

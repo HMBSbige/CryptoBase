@@ -58,6 +58,27 @@ internal static partial class SM4Utils
 		return AesX86.EncryptLast(x.GetLower(), roundKey.GetLower()).ToVector256Unsafe().WithUpper(t);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Round(ref Vector256<byte> r0, ref Vector256<byte> r1, ref Vector256<byte> r2, ref Vector256<byte> r3, Vector256<byte> key, Vector256<byte> c0f, Vector256<byte> vshr)
+	{
+		Vector256<byte> x = key ^ r1 ^ r2 ^ r3;
+
+		x.PreTransform();
+		x = AesX86EncryptLast(x, c0f);
+		x.PostTransform();
+		x = Avx2.Shuffle(x, vshr);
+
+		Vector256<byte> t = x ^ x.RotateLeftUInt32_8() ^ x.RotateLeftUInt32_16();
+		t = t.RotateLeftUInt32(2);
+		x = x ^ t ^ x.RotateLeftUInt32_24();
+
+		x ^= r0;
+		r0 = r1;
+		r1 = r2;
+		r2 = r3;
+		r3 = x;
+	}
+
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static VectorBuffer128 ProcessBlockAvx2(scoped in ReadOnlySpan<uint> rk, in VectorBuffer128 source)
@@ -76,20 +97,7 @@ internal static partial class SM4Utils
 
 		foreach (uint key in rk)
 		{
-			Vector256<byte> x0 = Vector256.Create(key).AsByte();
-
-			x0 = x0 ^ r.V256_1 ^ r.V256_2 ^ r.V256_3;
-			x0.PreTransform();
-			x0 = AesX86EncryptLast(x0, c0f);
-			x0.PostTransform();
-			x0 = Avx2.Shuffle(x0, vshr);
-			Vector256<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
-			t0 = t0.RotateLeftUInt32(2);
-			x0 = x0 ^ t0 ^ x0.RotateLeftUInt32_24() ^ r.V256_0;
-			r.V256_0 = r.V256_1;
-			r.V256_1 = r.V256_2;
-			r.V256_2 = r.V256_3;
-			r.V256_3 = x0;
+			Round(ref r.V256_0, ref r.V256_1, ref r.V256_2, ref r.V256_3, Vector256.Create(key).AsByte(), c0f, vshr);
 		}
 
 		Transpose(ref r.V256_0, ref r.V256_1, ref r.V256_2, ref r.V256_3);
@@ -125,34 +133,10 @@ internal static partial class SM4Utils
 
 		foreach (uint key in rk)
 		{
-			Vector256<byte> x0 = Vector256.Create(key).AsByte();
-			Vector256<byte> x1 = x0;
+			Vector256<byte> vKey = Vector256.Create(key).AsByte();
 
-			x0 = x0 ^ r.V256_1 ^ r.V256_2 ^ r.V256_3;
-			x0.PreTransform();
-			x0 = AesX86EncryptLast(x0, c0f);
-			x0.PostTransform();
-			x0 = Avx2.Shuffle(x0, vshr);
-			Vector256<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
-			t0 = t0.RotateLeftUInt32(2);
-			x0 = x0 ^ t0 ^ x0.RotateLeftUInt32_24() ^ r.V256_0;
-			r.V256_0 = r.V256_1;
-			r.V256_1 = r.V256_2;
-			r.V256_2 = r.V256_3;
-			r.V256_3 = x0;
-
-			x1 = x1 ^ r.V256_5 ^ r.V256_6 ^ r.V256_7;
-			x1.PreTransform();
-			x1 = AesX86EncryptLast(x1, c0f);
-			x1.PostTransform();
-			x1 = Avx2.Shuffle(x1, vshr);
-			Vector256<byte> t1 = x1 ^ x1.RotateLeftUInt32_8() ^ x1.RotateLeftUInt32_16();
-			t1 = t1.RotateLeftUInt32(2);
-			x1 = x1 ^ t1 ^ x1.RotateLeftUInt32_24() ^ r.V256_4;
-			r.V256_4 = r.V256_5;
-			r.V256_5 = r.V256_6;
-			r.V256_6 = r.V256_7;
-			r.V256_7 = x1;
+			Round(ref r.V256_0, ref r.V256_1, ref r.V256_2, ref r.V256_3, vKey, c0f, vshr);
+			Round(ref r.V256_4, ref r.V256_5, ref r.V256_6, ref r.V256_7, vKey, c0f, vshr);
 		}
 
 		Transpose(ref r.V256_0, ref r.V256_1, ref r.V256_2, ref r.V256_3);

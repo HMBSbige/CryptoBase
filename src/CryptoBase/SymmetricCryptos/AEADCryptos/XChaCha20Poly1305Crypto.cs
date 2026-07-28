@@ -1,4 +1,3 @@
-using CryptoBase.Macs.Poly1305;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
@@ -13,8 +12,6 @@ public sealed class XChaCha20Poly1305Crypto : IAEADCrypto
 	public const int NonceSize = 24;
 	public const int TagSize = 16;
 
-	private static ReadOnlySpan<byte> Init => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
-
 	private static ReadOnlySpan<byte> EmptyIv24 => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
 
 	public XChaCha20Poly1305Crypto(ReadOnlySpan<byte> key)
@@ -24,6 +21,7 @@ public sealed class XChaCha20Poly1305Crypto : IAEADCrypto
 		_chacha20 = new XChaCha20Crypto(key, EmptyIv24);
 	}
 
+	[SkipLocalsInit]
 	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
@@ -34,22 +32,11 @@ public sealed class XChaCha20Poly1305Crypto : IAEADCrypto
 		_chacha20.SetCounter(1);
 		_chacha20.Update(source, destination);
 
-		Span<byte> buffer = stackalloc byte[Poly1305.KeySize];
 		_chacha20.SetCounter(0);
-		_chacha20.Update(Init, buffer);
-		using Poly1305 poly1305 = new(buffer);
-
-		poly1305.Update(associatedData);
-		poly1305.Update(destination);
-
-		Span<byte> block = stackalloc byte[Poly1305.BlockSize];
-		BinaryPrimitives.WriteUInt64LittleEndian(block, (ulong)associatedData.Length);
-		BinaryPrimitives.WriteUInt64LittleEndian(block[8..], (ulong)source.Length);
-		poly1305.Update(block);
-
-		poly1305.GetMac(tag);
+		ChaCha20Poly1305Utils.ComputeTag(_chacha20, associatedData, destination, tag);
 	}
 
+	[SkipLocalsInit]
 	public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, NonceSize, nameof(nonce));
@@ -57,22 +44,11 @@ public sealed class XChaCha20Poly1305Crypto : IAEADCrypto
 
 		_chacha20.SetIV(nonce);
 
-		Span<byte> buffer = stackalloc byte[Poly1305.KeySize];
 		_chacha20.SetCounter(0);
-		_chacha20.Update(Init, buffer);
-		using Poly1305 poly1305 = new(buffer);
+		Span<byte> computedTag = stackalloc byte[TagSize];
+		ChaCha20Poly1305Utils.ComputeTag(_chacha20, associatedData, source, computedTag);
 
-		poly1305.Update(associatedData);
-		poly1305.Update(source);
-
-		Span<byte> block = stackalloc byte[Poly1305.TagSize];
-		BinaryPrimitives.WriteUInt64LittleEndian(block, (ulong)associatedData.Length);
-		BinaryPrimitives.WriteUInt64LittleEndian(block[8..], (ulong)source.Length);
-		poly1305.Update(block);
-
-		poly1305.GetMac(block);
-
-		ThrowHelper.ThrowIfAuthenticationTagMismatch(block, tag);
+		ThrowHelper.ThrowIfAuthenticationTagMismatch(computedTag, tag);
 
 		_chacha20.SetCounter(1);
 		_chacha20.Update(source, destination);

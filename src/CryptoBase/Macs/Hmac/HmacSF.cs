@@ -80,6 +80,9 @@ internal sealed class HmacSF : IMac
 
 	public void Dispose()
 	{
+		CryptographicOperations.ZeroMemory(_oPadBuffer.AsSpan(0, KeyLength));
+		CryptographicOperations.ZeroMemory(_iPadBuffer.AsSpan(0, KeyLength));
+
 		ArrayPool<byte>.Shared.Return(_oPadBuffer);
 		ArrayPool<byte>.Shared.Return(_iPadBuffer);
 		_hasher.Dispose();

@@ -3,7 +3,7 @@ using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
 namespace CryptoBase.SymmetricCryptos.AEADCryptos;
 
-public class DefaultAesGcmCrypto(ReadOnlySpan<byte> key) : IAEADCrypto
+public sealed class DefaultAesGcmCrypto(ReadOnlySpan<byte> key) : IAEADCrypto
 {
 	public string Name => @"AES-GCM";
 
@@ -26,6 +26,5 @@ public class DefaultAesGcmCrypto(ReadOnlySpan<byte> key) : IAEADCrypto
 	public void Dispose()
 	{
 		_internalCrypto.Dispose();
-		GC.SuppressFinalize(this);
 	}
 }

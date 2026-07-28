@@ -50,6 +50,31 @@ internal static partial class SM4Utils
 		}
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Round(ref Vector128<byte> r0, ref Vector128<byte> r1, ref Vector128<byte> r2, ref Vector128<byte> r3, Vector128<byte> key, Vector128<byte> c0f, Vector128<byte> shr)
+	{
+		Vector128<byte> x = key ^ r1 ^ r2 ^ r3;
+
+		x.PreTransform();
+		x = AesX86.EncryptLast(x, c0f);// AES-NI
+		x.PostTransform();
+
+		// inverse MixColumns
+		x = Ssse3.Shuffle(x, shr);
+
+		// 4 parallel L1 linear transforms
+		Vector128<byte> t = x ^ x.RotateLeftUInt32_8() ^ x.RotateLeftUInt32_16();
+		t = t.RotateLeftUInt32(2);
+		x = x ^ t ^ x.RotateLeftUInt32_24();
+
+		// rotate registers
+		x ^= r0;
+		r0 = r1;
+		r1 = r2;
+		r2 = r3;
+		r3 = x;
+	}
+
 	/// <summary>
 	/// https://github.com/mjosaarinen/sm4ni/blob/master/sm4ni.c
 	/// </summary>
@@ -71,26 +96,7 @@ internal static partial class SM4Utils
 
 		foreach (uint key in rk)
 		{
-			Vector128<byte> x = r.V128_1 ^ r.V128_2 ^ r.V128_3 ^ Vector128.Create(key).AsByte();
-
-			x.PreTransform();
-			x = AesX86.EncryptLast(x, c0f);// AES-NI
-			x.PostTransform();
-
-			// inverse MixColumns
-			x = Ssse3.Shuffle(x, shr);
-
-			// 4 parallel L1 linear transforms
-			Vector128<byte> t = x ^ x.RotateLeftUInt32_8() ^ x.RotateLeftUInt32_16();
-			t = t.RotateLeftUInt32(2);
-			x = x ^ t ^ x.RotateLeftUInt32_24();
-
-			// rotate registers
-			x ^= r.V128_0;
-			r.V128_0 = r.V128_1;
-			r.V128_1 = r.V128_2;
-			r.V128_2 = r.V128_3;
-			r.V128_3 = x;
+			Round(ref r.V128_0, ref r.V128_1, ref r.V128_2, ref r.V128_3, Vector128.Create(key).AsByte(), c0f, shr);
 		}
 
 		Transpose(ref r.V128_0, ref r.V128_1, ref r.V128_2, ref r.V128_3);
@@ -126,34 +132,10 @@ internal static partial class SM4Utils
 
 		foreach (uint key in rk)
 		{
-			Vector128<byte> x0 = Vector128.Create(key).AsByte();
-			Vector128<byte> x1 = x0;
+			Vector128<byte> vKey = Vector128.Create(key).AsByte();
 
-			x0 = x0 ^ r.V128_1 ^ r.V128_2 ^ r.V128_3;
-			x0.PreTransform();
-			x0 = AesX86.EncryptLast(x0, c0f);
-			x0.PostTransform();
-			x0 = Ssse3.Shuffle(x0, shr);
-			Vector128<byte> t0 = x0 ^ x0.RotateLeftUInt32_8() ^ x0.RotateLeftUInt32_16();
-			t0 = t0.RotateLeftUInt32(2);
-			x0 = x0 ^ t0 ^ x0.RotateLeftUInt32_24() ^ r.V128_0;
-			r.V128_0 = r.V128_1;
-			r.V128_1 = r.V128_2;
-			r.V128_2 = r.V128_3;
-			r.V128_3 = x0;
-
-			x1 = x1 ^ r.V128_5 ^ r.V128_6 ^ r.V128_7;
-			x1.PreTransform();
-			x1 = AesX86.EncryptLast(x1, c0f);
-			x1.PostTransform();
-			x1 = Ssse3.Shuffle(x1, shr);
-			Vector128<byte> t1 = x1 ^ x1.RotateLeftUInt32_8() ^ x1.RotateLeftUInt32_16();
-			t1 = t1.RotateLeftUInt32(2);
-			x1 = x1 ^ t1 ^ x1.RotateLeftUInt32_24() ^ r.V128_4;
-			r.V128_4 = r.V128_5;
-			r.V128_5 = r.V128_6;
-			r.V128_6 = r.V128_7;
-			r.V128_7 = x1;
+			Round(ref r.V128_0, ref r.V128_1, ref r.V128_2, ref r.V128_3, vKey, c0f, shr);
+			Round(ref r.V128_4, ref r.V128_5, ref r.V128_6, ref r.V128_7, vKey, c0f, shr);
 		}
 
 		Transpose(ref r.V128_0, ref r.V128_1, ref r.V128_2, ref r.V128_3);
