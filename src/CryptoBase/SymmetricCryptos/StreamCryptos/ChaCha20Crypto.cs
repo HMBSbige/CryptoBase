@@ -23,7 +23,7 @@ public class ChaCha20Crypto : SnuffleCrypto
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
-		Span<uint> state = State.Span;
+		Span<uint> state = StateSpan;
 		state[0] = Sigma32[0];
 		state[1] = Sigma32[1];
 		state[2] = Sigma32[2];
@@ -99,11 +99,11 @@ public class ChaCha20Crypto : SnuffleCrypto
 	{
 		if (Sse2.IsSupported)
 		{
-			ChaCha20Utils.UpdateKeyStream(State.Span, KeyStream.Span, Rounds);
+			ChaCha20Utils.UpdateKeyStream(StateSpan, KeyStreamSpan, Rounds);
 		}
 		else
 		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, State.Span, KeyStream.Span);
+			ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
 		}
 	}
 
@@ -122,15 +122,16 @@ public class ChaCha20Crypto : SnuffleCrypto
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
 
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		State[13] = ivSpan[0];
-		State[14] = ivSpan[1];
-		State[15] = ivSpan[2];
+		Span<uint> state = StateSpan;
+		state[13] = ivSpan[0];
+		state[14] = ivSpan[1];
+		state[15] = ivSpan[2];
 	}
 
 	public void SetCounter(uint counter)
 	{
 		CounterRemaining = MaxCounter - counter;
 		Index = 0;
-		ChaCha20Utils.GetCounter(ref State.GetReference()) = counter;
+		ChaCha20Utils.GetCounter(ref StateRef) = counter;
 	}
 }

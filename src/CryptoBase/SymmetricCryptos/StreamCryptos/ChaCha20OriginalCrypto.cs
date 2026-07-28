@@ -10,35 +10,41 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		SetCounter(0);
 	}
 
+	private protected ChaCha20OriginalCrypto()
+	{
+	}
+
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
 		int keyLength = key.Length;
 
+		Span<uint> state = StateSpan;
+
 		switch (keyLength)
 		{
 			case 16:
 			{
-				State[0] = Sigma16[0];
-				State[1] = Sigma16[1];
-				State[2] = Sigma16[2];
-				State[3] = Sigma16[3];
-				State[8] = keySpan[0];
-				State[9] = keySpan[1];
-				State[10] = keySpan[2];
-				State[11] = keySpan[3];
+				state[0] = Sigma16[0];
+				state[1] = Sigma16[1];
+				state[2] = Sigma16[2];
+				state[3] = Sigma16[3];
+				state[8] = keySpan[0];
+				state[9] = keySpan[1];
+				state[10] = keySpan[2];
+				state[11] = keySpan[3];
 				break;
 			}
 			case 32:
 			{
-				State[0] = Sigma32[0];
-				State[1] = Sigma32[1];
-				State[2] = Sigma32[2];
-				State[3] = Sigma32[3];
-				State[8] = keySpan[4];
-				State[9] = keySpan[5];
-				State[10] = keySpan[6];
-				State[11] = keySpan[7];
+				state[0] = Sigma32[0];
+				state[1] = Sigma32[1];
+				state[2] = Sigma32[2];
+				state[3] = Sigma32[3];
+				state[8] = keySpan[4];
+				state[9] = keySpan[5];
+				state[10] = keySpan[6];
+				state[11] = keySpan[7];
 				break;
 			}
 			default:
@@ -48,10 +54,10 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 			}
 		}
 
-		State[4] = keySpan[0];
-		State[5] = keySpan[1];
-		State[6] = keySpan[2];
-		State[7] = keySpan[3];
+		state[4] = keySpan[0];
+		state[5] = keySpan[1];
+		state[6] = keySpan[2];
+		state[7] = keySpan[3];
 
 		SetIV(iv);
 	}
@@ -118,11 +124,11 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 	{
 		if (Sse2.IsSupported)
 		{
-			ChaCha20Utils.UpdateKeyStream(State.Span, KeyStream.Span, Rounds);
+			ChaCha20Utils.UpdateKeyStream(StateSpan, KeyStreamSpan, Rounds);
 		}
 		else
 		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, State.Span, KeyStream.Span);
+			ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
 		}
 	}
 
@@ -130,7 +136,7 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 	{
 		CounterRemaining = MaxCounter - counter;
 		Index = 0;
-		ChaCha20Utils.GetCounterOriginal(ref State.GetReference()) = counter;
+		ChaCha20Utils.GetCounterOriginal(ref StateRef) = counter;
 	}
 
 	public override void Reset()
@@ -148,7 +154,8 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
 
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		State[14] = ivSpan[0];
-		State[15] = ivSpan[1];
+		Span<uint> state = StateSpan;
+		state[14] = ivSpan[0];
+		state[15] = ivSpan[1];
 	}
 }

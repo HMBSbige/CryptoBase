@@ -26,7 +26,7 @@ public class RC4Crypto : StreamCryptoBase
 
 	private readonly byte[] _key;
 	private readonly int _keyLength;
-	private readonly byte[] _state;
+	private VectorBuffer256 _state;
 	private const int BoxLength = 256;
 
 	private int _x, _y;
@@ -36,7 +36,6 @@ public class RC4Crypto : StreamCryptoBase
 		_keyLength = key.Length;
 
 		_key = ArrayPool<byte>.Shared.Rent(key.Length);
-		_state = ArrayPool<byte>.Shared.Rent(BoxLength);
 
 		key.CopyTo(_key);
 		Init();
@@ -48,7 +47,7 @@ public class RC4Crypto : StreamCryptoBase
 
 		ref readonly byte sourceRef = ref source.GetReference();
 		ref byte destinationRef = ref destination.GetReference();
-		ref byte stateRef = ref _state.GetReference();
+		ref byte stateRef = ref Unsafe.As<VectorBuffer256, byte>(ref _state);
 
 		int x = _x;
 		int y = _y;
@@ -84,10 +83,10 @@ public class RC4Crypto : StreamCryptoBase
 		_x = default;
 		_y = default;
 
-		ref byte stateRef = ref _state.GetReference();
+		ref byte stateRef = ref Unsafe.As<VectorBuffer256, byte>(ref _state);
 		ref byte keyRef = ref _key.GetReference();
 
-		S.CopyTo(_state);
+		S.CopyTo(_state.AsSpan());
 
 		int j = 0;
 
@@ -109,8 +108,10 @@ public class RC4Crypto : StreamCryptoBase
 	{
 		base.Dispose();
 
+		CryptographicOperations.ZeroMemory(_key.AsSpan(0, _keyLength));
+		CryptographicOperations.ZeroMemory(_state.AsSpan());
+
 		ArrayPool<byte>.Shared.Return(_key);
-		ArrayPool<byte>.Shared.Return(_state);
 
 		GC.SuppressFinalize(this);
 	}

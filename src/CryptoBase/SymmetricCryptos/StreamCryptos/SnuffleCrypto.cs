@@ -14,8 +14,26 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 	protected byte Rounds { get; init; } = 20;
 
-	protected readonly CryptoArrayPool<uint> State = new(StateSize);
-	protected readonly CryptoArrayPool<byte> KeyStream = new(BlockSize);
+	protected VectorBuffer64 State;
+	protected VectorBuffer64 KeyStream;
+
+	protected Span<uint> StateSpan
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => MemoryMarshal.Cast<byte, uint>(State.AsSpan());
+	}
+
+	protected Span<byte> KeyStreamSpan
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => KeyStream.AsSpan();
+	}
+
+	protected ref uint StateRef
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => ref Unsafe.As<VectorBuffer64, uint>(ref State);
+	}
 
 	protected int Index;
 	protected ulong CounterRemaining;
@@ -39,8 +57,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 		int i = 0;
 		int left = source.Length;
 
-		Span<uint> state = State.Span;
-		Span<byte> keyStream = KeyStream.Span;
+		Span<uint> state = StateSpan;
+		Span<byte> keyStream = KeyStreamSpan;
 
 		if (Index is not 0 && left > 0)
 		{
@@ -100,8 +118,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 
 	public override void Dispose()
 	{
-		State.Dispose();
-		KeyStream.Dispose();
+		CryptographicOperations.ZeroMemory(State.AsSpan());
+		CryptographicOperations.ZeroMemory(KeyStream.AsSpan());
 
 		base.Dispose();
 		GC.SuppressFinalize(this);

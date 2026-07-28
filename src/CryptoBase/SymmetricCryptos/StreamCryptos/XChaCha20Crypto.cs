@@ -8,19 +8,19 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 
 	public const int KeySize = 32;
 
-	private readonly CryptoArrayPool<byte> _key = new(KeySize);
+	private VectorBuffer32 _key;
 
-	public XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
+	public XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
-		key.CopyTo(_key.Span);
+		_key = key.AsVectorBuffer32();
 
 		SetIV(iv);
 		SetCounter(0);
 	}
 
-	private void ChaChaRound(in Span<uint> x)
+	private void ChaChaRound(Span<uint> x)
 	{
 		if (Sse2.IsSupported)
 		{
@@ -36,8 +36,8 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
 
-		Span<uint> state = State.Span;
-		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.Span);
+		Span<uint> state = StateSpan;
+		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.AsSpan());
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 
 		Sigma32.CopyTo(state);
@@ -56,7 +56,7 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 
 	public override void Dispose()
 	{
-		_key.Dispose();
+		CryptographicOperations.ZeroMemory(_key.AsSpan());
 		base.Dispose();
 		GC.SuppressFinalize(this);
 	}

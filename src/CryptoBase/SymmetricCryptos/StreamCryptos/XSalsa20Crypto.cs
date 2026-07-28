@@ -8,7 +8,7 @@ public class XSalsa20Crypto : Salsa20Crypto
 
 	public const int KeySize = 32;
 
-	public XSalsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv) : base(key, iv)
+	public XSalsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		Init(key, iv);
 		Reset();
@@ -19,7 +19,7 @@ public class XSalsa20Crypto : Salsa20Crypto
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
 
-		Span<uint> state = State.Span;
+		Span<uint> state = StateSpan;
 
 		state[0] = Sigma32[0];
 		state[5] = Sigma32[1];
@@ -35,11 +35,11 @@ public class XSalsa20Crypto : Salsa20Crypto
 
 		if (Sse2.IsSupported)
 		{
-			Salsa20Utils.SalsaRound(State.Span, Rounds);
+			Salsa20Utils.SalsaRound(state, Rounds);
 		}
 		else
 		{
-			Salsa20Utils.SalsaRound(Rounds, State.Span);
+			Salsa20Utils.SalsaRound(Rounds, state);
 		}
 
 		state[1] = state[0];

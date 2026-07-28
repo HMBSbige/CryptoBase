@@ -6,19 +6,23 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 {
 	public string Name => @"AES";
 
+	private const int MaxBufferSize = 128;
+
 	private readonly Aes _aes;
 	private readonly ICryptoTransform _encryptor;
 	private readonly ICryptoTransform _decryptor;
+	private readonly byte[] _buffer;
 
 	private DefaultAesCipher(in ReadOnlySpan<byte> key)
 	{
 		_aes = Aes.Create();
-		_aes.Key = key.ToArray();
+		_aes.SetKey(key);
 		_aes.Mode = CipherMode.ECB;
 		_aes.Padding = PaddingMode.None;
 
 		_encryptor = _aes.CreateEncryptor();
 		_decryptor = _aes.CreateDecryptor();
+		_buffer = new byte[MaxBufferSize];
 	}
 
 	public void Dispose()
@@ -26,6 +30,8 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 		_encryptor.Dispose();
 		_decryptor.Dispose();
 		_aes.Dispose();
+
+		CryptographicOperations.ZeroMemory(_buffer);
 	}
 
 	public static bool IsSupported => true;
@@ -38,12 +44,11 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Transform(ICryptoTransform cryptoTransform, ReadOnlySpan<byte> input, Span<byte> output)
+	private void Transform(ICryptoTransform cryptoTransform, ReadOnlySpan<byte> input, Span<byte> output)
 	{
-		using CryptoArrayPool<byte> buffer = new(input.Length);
-		input.CopyTo(buffer.Span);
-		int length = cryptoTransform.TransformBlock(buffer.Array, 0, input.Length, buffer.Array, 0);
-		buffer.Span.Slice(0, length).CopyTo(output);
+		input.CopyTo(_buffer);
+		int length = cryptoTransform.TransformBlock(_buffer, 0, input.Length, _buffer, 0);
+		_buffer.AsSpan(0, length).CopyTo(output);
 	}
 
 	[SkipLocalsInit]

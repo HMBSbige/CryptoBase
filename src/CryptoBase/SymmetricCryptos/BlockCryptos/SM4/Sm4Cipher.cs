@@ -4,13 +4,25 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 {
 	public string Name => @"SM4";
 
-	private readonly CryptoArrayPool<uint> _roundKeys;
-	private readonly CryptoArrayPool<uint> _reverseRoundKeys;
+	private VectorBuffer128 _roundKeys;
+	private VectorBuffer128 _reverseRoundKeys;
+
+	private Span<uint> RoundKeys
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => MemoryMarshal.Cast<byte, uint>(_roundKeys.AsSpan());
+	}
+
+	private Span<uint> ReverseRoundKeys
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => MemoryMarshal.Cast<byte, uint>(_reverseRoundKeys.AsSpan());
+	}
 
 	public void Dispose()
 	{
-		_roundKeys.Dispose();
-		_reverseRoundKeys.Dispose();
+		CryptographicOperations.ZeroMemory(_roundKeys.AsSpan());
+		CryptographicOperations.ZeroMemory(_reverseRoundKeys.AsSpan());
 	}
 
 	public static bool IsSupported => true;
@@ -42,11 +54,11 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, 16, nameof(key));
 
-		_roundKeys = new CryptoArrayPool<uint>(32);
-		_reverseRoundKeys = new CryptoArrayPool<uint>(32);
+		_roundKeys = default;
+		_reverseRoundKeys = default;
 
-		Span<uint> rk = _roundKeys.Span;
-		Span<uint> rrk = _reverseRoundKeys.Span;
+		Span<uint> rk = RoundKeys;
+		Span<uint> rrk = ReverseRoundKeys;
 
 		SM4Utils.InitRoundKeys(key, rk);
 
@@ -63,14 +75,14 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Encrypt(in VectorBuffer16 source)
 	{
-		Span<uint> rk = _roundKeys.Span;
+		Span<uint> rk = RoundKeys;
 		return SM4Utils.ProcessBlock(rk, source);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Decrypt(in VectorBuffer16 source)
 	{
-		Span<uint> rk = _reverseRoundKeys.Span;
+		Span<uint> rk = ReverseRoundKeys;
 		return SM4Utils.ProcessBlock(rk, source);
 	}
 
@@ -104,7 +116,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
-			Span<uint> rk = _roundKeys.Span;
+			Span<uint> rk = RoundKeys;
 			return SM4Utils.ProcessBlock(rk, source);
 		}
 
@@ -122,7 +134,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
-			Span<uint> rk = _reverseRoundKeys.Span;
+			Span<uint> rk = ReverseRoundKeys;
 			return SM4Utils.ProcessBlock(rk, source);
 		}
 
@@ -140,7 +152,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
-			Span<uint> rk = _roundKeys.Span;
+			Span<uint> rk = RoundKeys;
 			return SM4Utils.ProcessBlock(rk, source);
 		}
 
@@ -158,7 +170,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
-			Span<uint> rk = _reverseRoundKeys.Span;
+			Span<uint> rk = ReverseRoundKeys;
 			return SM4Utils.ProcessBlock(rk, source);
 		}
 
@@ -175,7 +187,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
-			Span<uint> rk = _roundKeys.Span;
+			Span<uint> rk = RoundKeys;
 			return SM4Utils.ProcessBlockAvx2(rk, source);
 		}
 
@@ -188,7 +200,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
-			Span<uint> rk = _reverseRoundKeys.Span;
+			Span<uint> rk = ReverseRoundKeys;
 			return SM4Utils.ProcessBlockAvx2(rk, source);
 		}
 
@@ -201,7 +213,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
-			Span<uint> rk = _roundKeys.Span;
+			Span<uint> rk = RoundKeys;
 			return SM4Utils.ProcessBlock(rk, source);
 		}
 
@@ -214,7 +226,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
-			Span<uint> rk = _reverseRoundKeys.Span;
+			Span<uint> rk = ReverseRoundKeys;
 			return SM4Utils.ProcessBlock(rk, source);
 		}
 

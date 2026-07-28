@@ -10,6 +10,10 @@ public class Salsa20Crypto : SnuffleCrypto
 		Reset();
 	}
 
+	private protected Salsa20Crypto()
+	{
+	}
+
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
@@ -17,30 +21,32 @@ public class Salsa20Crypto : SnuffleCrypto
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
 		int keyLength = key.Length;
 
+		Span<uint> state = StateSpan;
+
 		switch (keyLength)
 		{
 			case 16:
 			{
-				State[0] = Sigma16[0];
-				State[5] = Sigma16[1];
-				State[10] = Sigma16[2];
-				State[15] = Sigma16[3];
-				State[11] = keySpan[0];
-				State[12] = keySpan[1];
-				State[13] = keySpan[2];
-				State[14] = keySpan[3];
+				state[0] = Sigma16[0];
+				state[5] = Sigma16[1];
+				state[10] = Sigma16[2];
+				state[15] = Sigma16[3];
+				state[11] = keySpan[0];
+				state[12] = keySpan[1];
+				state[13] = keySpan[2];
+				state[14] = keySpan[3];
 				break;
 			}
 			case 32:
 			{
-				State[0] = Sigma32[0];
-				State[5] = Sigma32[1];
-				State[10] = Sigma32[2];
-				State[15] = Sigma32[3];
-				State[11] = keySpan[4];
-				State[12] = keySpan[5];
-				State[13] = keySpan[6];
-				State[14] = keySpan[7];
+				state[0] = Sigma32[0];
+				state[5] = Sigma32[1];
+				state[10] = Sigma32[2];
+				state[15] = Sigma32[3];
+				state[11] = keySpan[4];
+				state[12] = keySpan[5];
+				state[13] = keySpan[6];
+				state[14] = keySpan[7];
 				break;
 			}
 			default:
@@ -50,19 +56,26 @@ public class Salsa20Crypto : SnuffleCrypto
 			}
 		}
 
-		State[1] = keySpan[0];
-		State[2] = keySpan[1];
-		State[3] = keySpan[2];
-		State[4] = keySpan[3];
+		state[1] = keySpan[0];
+		state[2] = keySpan[1];
+		state[3] = keySpan[2];
+		state[4] = keySpan[3];
 
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		State[6] = ivSpan[0];
-		State[7] = ivSpan[1];
+		state[6] = ivSpan[0];
+		state[7] = ivSpan[1];
 	}
 
 	protected override void IncrementCounter(Span<uint> state)
 	{
 		++Salsa20Utils.GetCounter(ref state.GetReference());
+	}
+
+	public void SetCounter(ulong counter)
+	{
+		CounterRemaining = MaxCounter - counter;
+		Index = 0;
+		Salsa20Utils.GetCounter(ref StateRef) = counter;
 	}
 
 	public sealed override void Reset()
@@ -132,18 +145,11 @@ public class Salsa20Crypto : SnuffleCrypto
 	{
 		if (Sse2.IsSupported)
 		{
-			Salsa20Utils.UpdateKeyStream(State.Span, KeyStream.Span, Rounds);
+			Salsa20Utils.UpdateKeyStream(StateSpan, KeyStreamSpan, Rounds);
 		}
 		else
 		{
-			Salsa20Utils.UpdateKeyStream(Rounds, State.Span, KeyStream.Span);
+			Salsa20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
 		}
-	}
-
-	public void SetCounter(ulong counter)
-	{
-		CounterRemaining = MaxCounter - counter;
-		Index = 0;
-		Salsa20Utils.GetCounter(ref State.GetReference()) = counter;
 	}
 }
