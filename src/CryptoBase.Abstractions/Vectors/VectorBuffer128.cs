@@ -1,7 +1,7 @@
 namespace CryptoBase.Abstractions.Vectors;
 
 [StructLayout(LayoutKind.Explicit, Size = 128)]
-public ref struct VectorBuffer128
+public struct VectorBuffer128
 {
 	[FieldOffset(0 * 16)] public Vector128<byte> V128_0;
 	[FieldOffset(1 * 16)] public Vector128<byte> V128_1;
