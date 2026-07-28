@@ -85,6 +85,11 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 			length -= BlockSize;
 		}
 
+		if (length is 0)
+		{
+			return;
+		}
+
 		_index = length;
 		_keyStream = _blockCipher.Encrypt(_block);
 		FastUtils.Xor(stream.Slice(0, length), source.Slice(i, length), destination.Slice(i, length), length);

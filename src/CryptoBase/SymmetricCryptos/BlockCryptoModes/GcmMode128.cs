@@ -2,7 +2,7 @@ using CryptoBase.Macs.GHash;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
-public class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock16Cipher<TBlockCipher>
+public sealed class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
 	public string Name => _blockCipher.Name + @"-GCM";
 
@@ -13,6 +13,7 @@ public class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock1
 	private readonly TBlockCipher _blockCipher;
 	private readonly bool _disposeCrypto;
 	private readonly IMac _gHash;
+	private readonly CtrMode128Ctr32<TBlockCipher> _ctr;
 
 	public GcmMode128(TBlockCipher blockCipher, bool disposeCrypto = true)
 	{
@@ -22,12 +23,15 @@ public class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock1
 		VectorBuffer16 buffer16 = default;
 		buffer16 = blockCipher.Encrypt(buffer16);
 		_gHash = GHashUtils.Create(buffer16);
+
+		_ctr = new CtrMode128Ctr32<TBlockCipher>(blockCipher, default, false);
 	}
 
 	[SkipLocalsInit]
 	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
 		CheckInput(nonce, source, destination);
+		ArgumentOutOfRangeException.ThrowIfLessThan(tag.Length, TagSize, nameof(tag));
 
 		Unsafe.SkipInit(out VectorBuffer16 buffer16);
 		Span<byte> buffer = buffer16.AsSpan();
@@ -41,15 +45,15 @@ public class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock1
 		_gHash.Update(associatedData);
 
 		buffer[15] = 2;
-		using CtrMode128Ctr32<TBlockCipher> ctr = new(_blockCipher, buffer, false);
+		_ctr.SetIv(buffer);
 
-		ctr.Update(source, destination);
+		_ctr.Update(source, destination);
 		_gHash.Update(destination);
 
 		BinaryPrimitives.WriteUInt64BigEndian(buffer, (ulong)associatedData.Length << 3);
 		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(8), (ulong)source.Length << 3);
 
-		_gHash.Update(buffer.Slice(0, TagSize));
+		_gHash.Update(buffer);
 		_gHash.GetMac(buffer);
 
 		tagBuffer ^= buffer16;
@@ -73,15 +77,15 @@ public class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock1
 		_gHash.Update(associatedData);
 
 		buffer[15] = 2;
-		using CtrMode128Ctr32<TBlockCipher> ctr = new(_blockCipher, buffer, false);
+		_ctr.SetIv(buffer);
 
-		ctr.Update(source, destination);
+		_ctr.Update(source, destination);
 		_gHash.Update(source);
 
 		BinaryPrimitives.WriteUInt64BigEndian(buffer, (ulong)associatedData.Length << 3);
 		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(8), (ulong)source.Length << 3);
 
-		_gHash.Update(buffer.Slice(0, TagSize));
+		_gHash.Update(buffer);
 		_gHash.GetMac(buffer);
 
 		tagBuffer ^= buffer16;
@@ -99,13 +103,12 @@ public class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock1
 
 	public void Dispose()
 	{
+		_ctr.Dispose();
+		_gHash.Dispose();
+
 		if (_disposeCrypto)
 		{
 			_blockCipher.Dispose();
 		}
-
-		_gHash.Dispose();
-
-		GC.SuppressFinalize(this);
 	}
 }
