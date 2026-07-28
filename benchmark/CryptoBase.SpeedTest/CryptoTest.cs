@@ -46,7 +46,7 @@ internal class CryptoTest(int step, double duration)
 	public void Test(IAEADCrypto crypto, int nonceLength = 12)
 	{
 		Span<byte> o = new byte[step];
-		ReadOnlySpan<byte> nonce = IV[..nonceLength];
+		ReadOnlySpan<byte> nonce = IV.Slice(0, nonceLength);
 		Span<byte> tag = stackalloc byte[16];
 		ulong length = 0ul;
 		double totalSeconds = 0.0;

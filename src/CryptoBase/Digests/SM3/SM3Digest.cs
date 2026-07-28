@@ -16,9 +16,15 @@ public sealed class SM3Digest : IHash
 	private int _index;
 	private int _bufferIndex;
 
-	private readonly uint[] _v;
-	private readonly uint[] _w;
-	private readonly byte[] _buffer;
+	private InlineArray8<uint> _v;
+	private InlineArray68 _w;
+	private InlineArray4<byte> _buffer;
+
+	[InlineArray(68)]
+	private struct InlineArray68
+	{
+		private uint _element0;
+	}
 
 	#region Transformations
 
@@ -75,9 +81,6 @@ public sealed class SM3Digest : IHash
 
 	public SM3Digest()
 	{
-		_w = new uint[68];
-		_buffer = new byte[SizeOfInt];
-		_v = new uint[8];
 		Reset();
 	}
 
@@ -96,22 +99,23 @@ public sealed class SM3Digest : IHash
 	public void Update(ReadOnlySpan<byte> source)
 	{
 		_byteCount += (uint)source.Length;
-		uint[] w = _w;
+		Span<uint> w = _w;
 
 		if (_bufferIndex != 0)
 		{
 			int remain = 4 - _bufferIndex;
+			Span<byte> buffer = _buffer;
 
 			if (source.Length < remain)
 			{
-				source.CopyTo(_buffer.AsSpan(_bufferIndex));
+				source.CopyTo(buffer.Slice(_bufferIndex));
 				_bufferIndex += source.Length;
 				return;
 			}
 
-			source.Slice(0, remain).CopyTo(_buffer.AsSpan(_bufferIndex));
+			source.Slice(0, remain).CopyTo(buffer.Slice(_bufferIndex));
 			source = source.Slice(remain);
-			w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(_buffer);
+			w[_index++] = BinaryPrimitives.ReadUInt32BigEndian(buffer);
 			_bufferIndex = 0;
 		}
 
@@ -199,8 +203,8 @@ public sealed class SM3Digest : IHash
 
 	private void Process()
 	{
-		uint[] w = _w;
-		uint[] v = _v;
+		Span<uint> w = _w;
+		Span<uint> v = _v;
 
 		for (int j = 16; j < 68; ++j)
 		{

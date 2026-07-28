@@ -14,7 +14,7 @@ public class MD5Digest : IHash
 	private int _bufferIndex;
 
 	protected readonly uint[] X;
-	private readonly byte[] _buffer;
+	private InlineArray4<byte> _buffer;
 
 	#region S
 
@@ -102,7 +102,6 @@ public class MD5Digest : IHash
 	public MD5Digest()
 	{
 		X = new uint[BlockSizeOfInt];
-		_buffer = new byte[SizeOfInt];
 		Reset();
 	}
 
@@ -125,17 +124,18 @@ public class MD5Digest : IHash
 		if (_bufferIndex != 0)
 		{
 			int remain = 4 - _bufferIndex;
+			Span<byte> buffer = _buffer;
 
 			if (source.Length < remain)
 			{
-				source.CopyTo(_buffer.AsSpan(_bufferIndex));
+				source.CopyTo(buffer.Slice(_bufferIndex));
 				_bufferIndex += source.Length;
 				return;
 			}
 
-			source[..remain].CopyTo(_buffer.AsSpan(_bufferIndex));
-			source = source[remain..];
-			X[_index++] = BinaryPrimitives.ReadUInt32LittleEndian(_buffer);
+			source.Slice(0, remain).CopyTo(buffer.Slice(_bufferIndex));
+			source = source.Slice(remain);
+			X[_index++] = BinaryPrimitives.ReadUInt32LittleEndian(buffer);
 			_bufferIndex = 0;
 		}
 
@@ -148,7 +148,7 @@ public class MD5Digest : IHash
 			}
 
 			X[_index++] = BinaryPrimitives.ReadUInt32LittleEndian(source);
-			source = source[SizeOfInt..];
+			source = source.Slice(SizeOfInt);
 		}
 
 		if (_index == BlockSizeOfInt)
@@ -202,9 +202,9 @@ public class MD5Digest : IHash
 			Process();
 
 			BinaryPrimitives.WriteUInt32LittleEndian(destination, A);
-			BinaryPrimitives.WriteUInt32LittleEndian(destination[4..], B);
-			BinaryPrimitives.WriteUInt32LittleEndian(destination[8..], C);
-			BinaryPrimitives.WriteUInt32LittleEndian(destination[12..], D);
+			BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(4), B);
+			BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(8), C);
+			BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(12), D);
 		}
 		finally
 		{

@@ -11,9 +11,9 @@ public sealed class GHashSF : IMac
 
 	private static ReadOnlySpan<ulong> Last4 => [0x0000, 0x1c20, 0x3840, 0x2460, 0x7080, 0x6ca0, 0x48c0, 0x54e0, 0xe100, 0xfd20, 0xd940, 0xc560, 0x9180, 0x8da0, 0xa9c0, 0xb5e0];
 
-	private readonly ulong[] _hh;
-	private readonly ulong[] _hl;
-	private readonly byte[] _buffer;
+	private InlineArray16<ulong> _hh;
+	private InlineArray16<ulong> _hl;
+	private VectorBuffer16 _buffer;
 
 	private readonly ulong Initvh;
 	private readonly ulong Initvl;
@@ -23,11 +23,7 @@ public sealed class GHashSF : IMac
 		ArgumentOutOfRangeException.ThrowIfLessThan(key.Length, KeySize, nameof(key));
 
 		Initvh = BinaryPrimitives.ReadUInt64BigEndian(key);
-		Initvl = BinaryPrimitives.ReadUInt64BigEndian(key[8..]);
-
-		_hl = ArrayPool<ulong>.Shared.Rent(BlockSize);
-		_hh = ArrayPool<ulong>.Shared.Rent(BlockSize);
-		_buffer = ArrayPool<byte>.Shared.Rent(BlockSize);
+		Initvl = BinaryPrimitives.ReadUInt64BigEndian(key.Slice(8));
 
 		Reset();
 	}
@@ -35,19 +31,20 @@ public sealed class GHashSF : IMac
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void GFMul(scoped ReadOnlySpan<byte> x)
 	{
+		_buffer ^= x.AsVectorBuffer16();
+
+		Span<byte> buffer = _buffer;
+		Span<ulong> hh = _hh;
+		Span<ulong> hl = _hl;
+
+		byte lo = (byte)(buffer[15] & 0xF);
+		ulong zh = hh[lo];
+		ulong zl = hl[lo];
+
 		for (int i = 0; i < BlockSize; ++i)
 		{
-			_buffer[i] ^= x[i];
-		}
-
-		byte lo = (byte)(_buffer[15] & 0xF);
-		ulong zh = _hh[lo];
-		ulong zl = _hl[lo];
-
-		for (int i = 0; i < BlockSize; ++i)
-		{
-			lo = (byte)(_buffer[16 - 1 - i] & 0xf);
-			byte hi = (byte)(_buffer[16 - 1 - i] >> 4 & 0xf);
+			lo = (byte)(buffer[16 - 1 - i] & 0xf);
+			byte hi = (byte)(buffer[16 - 1 - i] >> 4 & 0xf);
 
 			byte rem;
 
@@ -57,8 +54,8 @@ public sealed class GHashSF : IMac
 				zl = zh << 60 | zl >> 4;
 				zh >>= 4;
 				zh ^= Last4[rem] << 48;
-				zh ^= _hh[lo];
-				zl ^= _hl[lo];
+				zh ^= hh[lo];
+				zl ^= hl[lo];
 			}
 
 			rem = (byte)(zl & 0xf);
@@ -66,12 +63,12 @@ public sealed class GHashSF : IMac
 			zh >>= 4;
 
 			zh ^= Last4[rem] << 48;
-			zh ^= _hh[hi];
-			zl ^= _hl[hi];
+			zh ^= hh[hi];
+			zl ^= hl[hi];
 		}
 
-		BinaryPrimitives.WriteUInt64BigEndian(_buffer, zh);
-		BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(8), zl);
+		BinaryPrimitives.WriteUInt64BigEndian(buffer, zh);
+		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(8), zl);
 	}
 
 	public void Update(scoped ReadOnlySpan<byte> source)
@@ -79,7 +76,7 @@ public sealed class GHashSF : IMac
 		while (source.Length >= BlockSize)
 		{
 			GFMul(source);
-			source = source[BlockSize..];
+			source = source.Slice(BlockSize);
 		}
 
 		if (source.IsEmpty)
@@ -94,22 +91,26 @@ public sealed class GHashSF : IMac
 
 	public void GetMac(scoped Span<byte> destination)
 	{
-		_buffer.AsSpan(0, Length).CopyTo(destination);
+		Span<byte> buffer = _buffer;
+		buffer.CopyTo(destination);
 
 		Reset();
 	}
 
 	public void Reset()
 	{
-		_buffer.AsSpan(0, BlockSize).Clear();
+		_buffer = default;
+
+		Span<ulong> hh = _hh;
+		Span<ulong> hl = _hl;
 
 		ulong vh = Initvh;
 		ulong vl = Initvl;
 
-		_hl[8] = vl;
-		_hh[8] = vh;
+		hl[8] = vl;
+		hh[8] = vh;
 
-		uint i = 4u;
+		int i = 4;
 
 		while (i > 0)
 		{
@@ -117,23 +118,23 @@ public sealed class GHashSF : IMac
 			vl = vh << 63 | vl >> 1;
 			vh = vh >> 1 ^ t << 32;
 
-			_hl[i] = vl;
-			_hh[i] = vh;
+			hl[i] = vl;
+			hh[i] = vh;
 
 			i >>= 1;
 		}
 
-		i = 2u;
+		i = 2;
 
 		while (i <= 8)
 		{
-			vh = _hh[i];
-			vl = _hl[i];
+			vh = hh[i];
+			vl = hl[i];
 
-			for (uint j = 1u; j < i; ++j)
+			for (int j = 1; j < i; ++j)
 			{
-				_hh[i + j] = vh ^ _hh[j];
-				_hl[i + j] = vl ^ _hl[j];
+				hh[i + j] = vh ^ hh[j];
+				hl[i + j] = vl ^ hl[j];
 			}
 
 			i <<= 1;
@@ -142,12 +143,8 @@ public sealed class GHashSF : IMac
 
 	public void Dispose()
 	{
-		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(_hl.AsSpan(0, BlockSize)));
-		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(_hh.AsSpan(0, BlockSize)));
-		CryptographicOperations.ZeroMemory(_buffer.AsSpan(0, BlockSize));
-
-		ArrayPool<ulong>.Shared.Return(_hl);
-		ArrayPool<ulong>.Shared.Return(_hh);
-		ArrayPool<byte>.Shared.Return(_buffer);
+		CryptographicOperations.ZeroMemory(_hl.AsSpan());
+		CryptographicOperations.ZeroMemory(_hh.AsSpan());
+		CryptographicOperations.ZeroMemory(_buffer);
 	}
 }

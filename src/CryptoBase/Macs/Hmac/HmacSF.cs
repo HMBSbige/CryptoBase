@@ -30,13 +30,13 @@ internal sealed class HmacSF : IMac
 
 		if (key.Length > KeyLength)
 		{
-			hasher.UpdateFinal(key, iSpan[..Length]);
-			iSpan[hasher.Length..].Fill(0);
+			hasher.UpdateFinal(key, iSpan.Slice(0, Length));
+			iSpan.Slice(hasher.Length).Fill(0);
 		}
 		else
 		{
 			key.CopyTo(iSpan);
-			iSpan[key.Length..].Fill(0);
+			iSpan.Slice(key.Length).Fill(0);
 		}
 
 		iSpan.CopyTo(oSpan);
