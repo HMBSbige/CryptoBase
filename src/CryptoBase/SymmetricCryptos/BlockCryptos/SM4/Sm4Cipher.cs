@@ -61,14 +61,14 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
+	public VectorBuffer16 Encrypt(in VectorBuffer16 source)
 	{
 		Span<uint> rk = _roundKeys.Span;
 		return SM4Utils.ProcessBlock(rk, source);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
+	public VectorBuffer16 Decrypt(in VectorBuffer16 source)
 	{
 		Span<uint> rk = _reverseRoundKeys.Span;
 		return SM4Utils.ProcessBlock(rk, source);
@@ -76,7 +76,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer32 Encrypt(scoped in VectorBuffer32 source)
+	public VectorBuffer32 Encrypt(in VectorBuffer32 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer32 r);
 
@@ -88,7 +88,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer32 Decrypt(scoped in VectorBuffer32 source)
+	public VectorBuffer32 Decrypt(in VectorBuffer32 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer32 r);
 
@@ -100,7 +100,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer64 Encrypt(scoped in VectorBuffer64 source)
+	public VectorBuffer64 Encrypt(in VectorBuffer64 source)
 	{
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
@@ -118,7 +118,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer64 Decrypt(scoped in VectorBuffer64 source)
+	public VectorBuffer64 Decrypt(in VectorBuffer64 source)
 	{
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
@@ -136,7 +136,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer128 Encrypt(scoped in VectorBuffer128 source)
+	public VectorBuffer128 Encrypt(in VectorBuffer128 source)
 	{
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
@@ -154,7 +154,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer128 Decrypt(scoped in VectorBuffer128 source)
+	public VectorBuffer128 Decrypt(in VectorBuffer128 source)
 	{
 		if (AesX86.IsSupported && Sse2.IsSupported && Ssse3.IsSupported)
 		{
@@ -171,7 +171,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer128 EncryptV256(scoped in VectorBuffer128 source)
+	public VectorBuffer128 EncryptV256(in VectorBuffer128 source)
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
@@ -184,7 +184,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer128 DecryptV256(scoped in VectorBuffer128 source)
+	public VectorBuffer128 DecryptV256(in VectorBuffer128 source)
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
@@ -197,7 +197,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer256 EncryptV256(scoped in VectorBuffer256 source)
+	public VectorBuffer256 EncryptV256(in VectorBuffer256 source)
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
@@ -210,7 +210,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer256 DecryptV256(scoped in VectorBuffer256 source)
+	public VectorBuffer256 DecryptV256(in VectorBuffer256 source)
 	{
 		if (AesX86.IsSupported && Avx2.IsSupported)
 		{
@@ -223,28 +223,28 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer256 EncryptV512(scoped in VectorBuffer256 source)
+	public VectorBuffer256 EncryptV512(in VectorBuffer256 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer256 DecryptV512(scoped in VectorBuffer256 source)
+	public VectorBuffer256 DecryptV512(in VectorBuffer256 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer512 EncryptV512(scoped in VectorBuffer512 source)
+	public VectorBuffer512 EncryptV512(in VectorBuffer512 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public VectorBuffer512 DecryptV512(scoped in VectorBuffer512 source)
+	public VectorBuffer512 DecryptV512(in VectorBuffer512 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;

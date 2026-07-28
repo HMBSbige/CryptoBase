@@ -108,7 +108,7 @@ internal static partial class SM4Utils
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static VectorBuffer16 ProcessBlock(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer16 source)
+	public static VectorBuffer16 ProcessBlock(scoped in ReadOnlySpan<uint> rk, in VectorBuffer16 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer16 r);
 

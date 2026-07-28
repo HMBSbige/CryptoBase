@@ -2,7 +2,7 @@ namespace CryptoBase.Abstractions;
 
 public static class SpanExtentions
 {
-	extension<T>(ref T reference) where T : unmanaged, allows ref struct
+	extension<T>(ref T reference) where T : unmanaged
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Span<byte> AsSpan()
@@ -20,7 +20,7 @@ public static class SpanExtentions
 	extension(ref byte reference)
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ref T As<T>() where T : allows ref struct
+		public ref T As<T>()
 		{
 			return ref Unsafe.As<byte, T>(ref reference);
 		}
@@ -78,7 +78,7 @@ public static class SpanExtentions
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ref TTo As<TTo>() where TTo : allows ref struct
+		public ref TTo As<TTo>()
 		{
 			return ref Unsafe.As<T, TTo>(ref GetReference(span));
 		}

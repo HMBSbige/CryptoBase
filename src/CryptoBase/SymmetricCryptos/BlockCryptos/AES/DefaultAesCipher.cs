@@ -47,7 +47,7 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[SkipLocalsInit]
-	public VectorBuffer16 Encrypt(scoped in VectorBuffer16 source)
+	public VectorBuffer16 Encrypt(in VectorBuffer16 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer16 r);
 		Transform(_encryptor, source, r);
@@ -55,7 +55,7 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[SkipLocalsInit]
-	public VectorBuffer16 Decrypt(scoped in VectorBuffer16 source)
+	public VectorBuffer16 Decrypt(in VectorBuffer16 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer16 r);
 		Transform(_decryptor, source, r);
@@ -63,7 +63,7 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[SkipLocalsInit]
-	public VectorBuffer32 Encrypt(scoped in VectorBuffer32 source)
+	public VectorBuffer32 Encrypt(in VectorBuffer32 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer32 r);
 		Transform(_encryptor, source, r);
@@ -71,7 +71,7 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[SkipLocalsInit]
-	public VectorBuffer32 Decrypt(scoped in VectorBuffer32 source)
+	public VectorBuffer32 Decrypt(in VectorBuffer32 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer32 r);
 		Transform(_decryptor, source, r);
@@ -79,7 +79,7 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[SkipLocalsInit]
-	public VectorBuffer64 Encrypt(scoped in VectorBuffer64 source)
+	public VectorBuffer64 Encrypt(in VectorBuffer64 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer64 r);
 		Transform(_encryptor, source, r);
@@ -87,7 +87,7 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[SkipLocalsInit]
-	public VectorBuffer64 Decrypt(scoped in VectorBuffer64 source)
+	public VectorBuffer64 Decrypt(in VectorBuffer64 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer64 r);
 		Transform(_decryptor, source, r);
@@ -95,7 +95,7 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[SkipLocalsInit]
-	public VectorBuffer128 Encrypt(scoped in VectorBuffer128 source)
+	public VectorBuffer128 Encrypt(in VectorBuffer128 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer128 r);
 		Transform(_encryptor, source, r);
@@ -103,56 +103,56 @@ internal readonly struct DefaultAesCipher : IBlock16Cipher<DefaultAesCipher>
 	}
 
 	[SkipLocalsInit]
-	public VectorBuffer128 Decrypt(scoped in VectorBuffer128 source)
+	public VectorBuffer128 Decrypt(in VectorBuffer128 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer128 r);
 		Transform(_decryptor, source, r);
 		return r;
 	}
 
-	public VectorBuffer128 EncryptV256(scoped in VectorBuffer128 source)
+	public VectorBuffer128 EncryptV256(in VectorBuffer128 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
-	public VectorBuffer128 DecryptV256(scoped in VectorBuffer128 source)
+	public VectorBuffer128 DecryptV256(in VectorBuffer128 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
-	public VectorBuffer256 EncryptV256(scoped in VectorBuffer256 source)
+	public VectorBuffer256 EncryptV256(in VectorBuffer256 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
-	public VectorBuffer256 DecryptV256(scoped in VectorBuffer256 source)
+	public VectorBuffer256 DecryptV256(in VectorBuffer256 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
-	public VectorBuffer256 EncryptV512(scoped in VectorBuffer256 source)
+	public VectorBuffer256 EncryptV512(in VectorBuffer256 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
-	public VectorBuffer256 DecryptV512(scoped in VectorBuffer256 source)
+	public VectorBuffer256 DecryptV512(in VectorBuffer256 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
-	public VectorBuffer512 EncryptV512(scoped in VectorBuffer512 source)
+	public VectorBuffer512 EncryptV512(in VectorBuffer512 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;
 	}
 
-	public VectorBuffer512 DecryptV512(scoped in VectorBuffer512 source)
+	public VectorBuffer512 DecryptV512(in VectorBuffer512 source)
 	{
 		ThrowHelper.ThrowNotSupported();
 		return default;

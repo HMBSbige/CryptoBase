@@ -30,7 +30,7 @@ public struct VectorBuffer1024
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static VectorBuffer1024 operator ^(scoped in VectorBuffer1024 left, scoped in VectorBuffer1024 right)
+	public static VectorBuffer1024 operator ^(in VectorBuffer1024 left, in VectorBuffer1024 right)
 	{
 		return new VectorBuffer1024
 		{

@@ -23,7 +23,7 @@ public struct VectorBuffer16
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static VectorBuffer16 operator ^(scoped in VectorBuffer16 left, scoped in VectorBuffer16 right)
+	public static VectorBuffer16 operator ^(in VectorBuffer16 left, in VectorBuffer16 right)
 	{
 		if (Vector128.IsHardwareAccelerated)
 		{

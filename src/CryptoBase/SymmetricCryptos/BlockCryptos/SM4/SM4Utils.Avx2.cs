@@ -60,7 +60,7 @@ internal static partial class SM4Utils
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static VectorBuffer128 ProcessBlockAvx2(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer128 source)
+	public static VectorBuffer128 ProcessBlockAvx2(scoped in ReadOnlySpan<uint> rk, in VectorBuffer128 source)
 	{
 		Vector256<byte> c0f = Vector256.Create((byte)0x0F);
 		Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
@@ -104,7 +104,7 @@ internal static partial class SM4Utils
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static VectorBuffer256 ProcessBlock(scoped in ReadOnlySpan<uint> rk, scoped in VectorBuffer256 source)
+	public static VectorBuffer256 ProcessBlock(scoped in ReadOnlySpan<uint> rk, in VectorBuffer256 source)
 	{
 		Vector256<byte> c0f = Vector256.Create((byte)0x0F);
 		Vector256<byte> vshr = Vector256.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3, 16, 29, 26, 23, 20, 17, 30, 27, 24, 21, 18, 31, 28, 25, 22, 19);
