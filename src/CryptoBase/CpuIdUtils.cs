@@ -9,6 +9,9 @@ public static class CpuIdUtils
 {
 	private const string Unknown = @"Unknown";
 
+	/// <summary>
+	/// Gets the CPU vendor identification string.
+	/// </summary>
 	public static string GetVendor()
 	{
 		if (X86Base.IsSupported)
@@ -27,6 +30,9 @@ public static class CpuIdUtils
 		return Unknown;
 	}
 
+	/// <summary>
+	/// Gets the CPU brand string.
+	/// </summary>
 	public static string GetBrand()
 	{
 		if (X86Base.IsSupported)
@@ -56,6 +62,9 @@ public static class CpuIdUtils
 		return Unknown;
 	}
 
+	/// <summary>
+	/// Gets a value indicating whether the processor supports Intel SHA extensions.
+	/// </summary>
 	public static bool IsSupportX86ShaEx()
 	{
 		if (X86Base.IsSupported)
@@ -69,6 +78,9 @@ public static class CpuIdUtils
 		return false;
 	}
 
+	/// <summary>
+	/// Gets a value indicating whether the processor supports vector AES instructions.
+	/// </summary>
 	public static bool IsSupportX86VAes()
 	{
 		if (X86Base.IsSupported)

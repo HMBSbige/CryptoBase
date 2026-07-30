@@ -125,7 +125,7 @@ internal static partial class Salsa20Utils
 	}
 
 	/// <summary>
-	/// 处理 64 bytes
+	/// Processes 64 bytes.
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void SalsaCore64(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)

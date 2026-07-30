@@ -1,14 +1,24 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
+/// <summary>
+/// Provides XTS mode with ciphertext stealing for data units of at least 16 bytes.
+/// </summary>
+/// <typeparam name="TBlockCipher">The block cipher type.</typeparam>
+/// <param name="dataCipher">The cipher used to transform data.</param>
+/// <param name="tweakCipher">The cipher used to generate tweaks.</param>
+/// <param name="disposeCipher">Whether to dispose both ciphers with this instance.</param>
 public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBlockCipher tweakCipher, bool disposeCipher = true) : IBlockModeOneShot
 	where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
+	/// <inheritdoc/>
 	public string Name => dataCipher.Name + @"-XTS";
 
+	/// <inheritdoc/>
 	public int BlockSize => BlockBytesSize;
 
 	private const int BlockBytesSize = 16;
 
+	/// <inheritdoc/>
 	public void Dispose()
 	{
 		if (disposeCipher)
@@ -18,11 +28,13 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 		}
 	}
 
+	/// <inheritdoc/>
 	public int GetMaxByteCount(int inputLength)
 	{
 		return inputLength;
 	}
 
+	/// <inheritdoc/>
 	public void Encrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockBytesSize, nameof(iv));
@@ -111,6 +123,7 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 		}
 	}
 
+	/// <inheritdoc/>
 	public void Decrypt(in ReadOnlySpan<byte> iv, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockBytesSize, nameof(iv));
@@ -368,8 +381,16 @@ public sealed partial class XtsMode<TBlockCipher>(TBlockCipher dataCipher, TBloc
 	}
 }
 
+/// <summary>
+/// Provides helpers for XTS mode.
+/// </summary>
 public static class XtsMode
 {
+	/// <summary>
+	/// Writes a data-unit sequence number as a little-endian XTS tweak input.
+	/// </summary>
+	/// <param name="iv">The destination for the 16-byte tweak input.</param>
+	/// <param name="dataUnitSeqNumber">The data-unit sequence number.</param>
 	public static void GetIv(in Span<byte> iv, in UInt128 dataUnitSeqNumber)
 	{
 		BinaryPrimitives.WriteUInt128LittleEndian(iv, dataUnitSeqNumber);

@@ -1,9 +1,15 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
+/// <summary>
+/// Provides the shared stateful implementation of CTR mode.
+/// </summary>
+/// <typeparam name="TBlockCipher">The block cipher type.</typeparam>
+/// <typeparam name="TIncrementer">The counter increment strategy.</typeparam>
 public abstract class CtrMode128Core<TBlockCipher, TIncrementer> : IStreamCrypto
 	where TBlockCipher : IBlock16Cipher<TBlockCipher>
 	where TIncrementer : struct, ICtrIncrementer
 {
+	/// <inheritdoc/>
 	public string Name => _blockCipher.Name + @"-CTR";
 
 	private const int BlockSize = 16;
@@ -24,6 +30,10 @@ public abstract class CtrMode128Core<TBlockCipher, TIncrementer> : IStreamCrypto
 		SetIv(iv);
 	}
 
+	/// <summary>
+	/// Sets the initial counter block and resets the cipher state.
+	/// </summary>
+	/// <param name="iv">The counter block, up to 16 bytes. Shorter values occupy the leading bytes and are followed by zeros.</param>
 	public void SetIv(ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
@@ -34,6 +44,7 @@ public abstract class CtrMode128Core<TBlockCipher, TIncrementer> : IStreamCrypto
 		Reset();
 	}
 
+	/// <inheritdoc/>
 	public void Dispose()
 	{
 		CryptographicOperations.ZeroMemory(_iv.AsSpan());
@@ -48,12 +59,14 @@ public abstract class CtrMode128Core<TBlockCipher, TIncrementer> : IStreamCrypto
 		GC.SuppressFinalize(this);
 	}
 
+	/// <inheritdoc/>
 	public void Reset()
 	{
 		_index = 0;
 		_counter = _iv;
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{

@@ -2,6 +2,9 @@ using System.Numerics;
 
 namespace CryptoBase;
 
+/// <summary>
+/// Provides low-level extension methods used by cryptographic implementations.
+/// </summary>
 public static class Extensions
 {
 	extension(uint value)
@@ -23,6 +26,9 @@ public static class Extensions
 
 	extension<T>(ReadOnlySpan<T> span) where T : notnull
 	{
+		/// <summary>
+		/// Computes a hash code from the span elements in order.
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public int GetDeterministicHashCode()
 		{

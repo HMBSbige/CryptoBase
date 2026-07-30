@@ -3,8 +3,14 @@ using System.Reflection;
 
 namespace CryptoBase;
 
+/// <summary>
+/// Provides runtime and hardware information.
+/// </summary>
 public static class SystemEnvironmentUtils
 {
+	/// <summary>
+	/// Gets a formatted summary of the runtime and supported hardware intrinsics.
+	/// </summary>
 	public static string GetEnvironmentInfo()
 	{
 		DefaultInterpolatedStringHandler handler = new();

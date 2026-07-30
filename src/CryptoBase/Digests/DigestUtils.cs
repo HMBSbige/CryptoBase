@@ -1,7 +1,17 @@
 namespace CryptoBase.Digests;
 
+/// <summary>
+/// Provides helpers for creating digests and hashing streams.
+/// </summary>
 public static class DigestUtils
 {
+	/// <summary>
+	/// Creates a hash implementation for the specified digest algorithm.
+	/// </summary>
+	/// <param name="type">The digest algorithm to create.</param>
+	/// <returns>A new hash implementation.</returns>
+	/// <exception cref="NotImplementedException"><paramref name="type"/> is <see cref="DigestType.Sha224"/>.</exception>
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined digest algorithm.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IHash Create(DigestType type)
 	{
@@ -79,6 +89,13 @@ public static class DigestUtils
 		return new DefaultSHA512Digest();
 	}
 
+	/// <summary>
+	/// Asynchronously appends the remaining stream data, returns the final hash, and resets the hash state.
+	/// </summary>
+	/// <param name="hasher">The hash implementation to use.</param>
+	/// <param name="inputStream">The stream to read from its current position.</param>
+	/// <param name="cancellationToken">The token used to cancel the operation.</param>
+	/// <returns>A task whose result is the computed hash.</returns>
 	public static async Task<byte[]> ComputeHashAsync(this IHash hasher, Stream inputStream, CancellationToken cancellationToken = default)
 	{
 		const int bufferSize = 81920;

@@ -31,11 +31,15 @@ public static class Base32Extensions
 
 	#endregion
 
+	/// <inheritdoc cref="ToBase32String(ReadOnlySpan{byte})" />
 	public static string ToBase32String(this Span<byte> data)
 	{
 		return ((ReadOnlySpan<byte>)data).ToBase32String();
 	}
 
+	/// <summary>
+	/// Encodes the bytes as an RFC 4648 Base32 string.
+	/// </summary>
 	public static string ToBase32String(this ReadOnlySpan<byte> data)
 	{
 		if (data.IsEmpty)
@@ -85,11 +89,15 @@ public static class Base32Extensions
 		return result;
 	}
 
+	/// <inheritdoc cref="FromBase32String(ReadOnlySpan{char})" />
 	public static byte[] FromBase32String(this string encoded)
 	{
 		return encoded.AsSpan().FromBase32String();
 	}
 
+	/// <summary>
+	/// Decodes an RFC 4648 Base32 string.
+	/// </summary>
 	public static byte[] FromBase32String(this ReadOnlySpan<char> encoded)
 	{
 		encoded = encoded.TrimEnd(PaddingChar);

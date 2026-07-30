@@ -1,7 +1,12 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
+/// <summary>
+/// Provides stateful CFB-128 encryption or decryption over a 16-byte block cipher.
+/// </summary>
+/// <typeparam name="TBlockCipher">The block cipher type.</typeparam>
 public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
+	/// <inheritdoc/>
 	public string Name => _blockCipher.Name + @"-CFB";
 
 	private readonly bool _isEncrypt;
@@ -15,6 +20,13 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 
 	private const int BlockSize = 16;
 
+	/// <summary>
+	/// Initializes a CFB-128 encryptor or decryptor.
+	/// </summary>
+	/// <param name="isEncrypt"><see langword="true"/> to encrypt; <see langword="false"/> to decrypt.</param>
+	/// <param name="blockCipher">The block cipher.</param>
+	/// <param name="iv">The 16-byte initialization vector.</param>
+	/// <param name="disposeCipher">Whether to dispose <paramref name="blockCipher"/> with this instance.</param>
 	public CfbMode128(bool isEncrypt, TBlockCipher blockCipher, ReadOnlySpan<byte> iv, bool disposeCipher = true)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, BlockSize, nameof(iv));
@@ -28,6 +40,7 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 		Reset();
 	}
 
+	/// <inheritdoc/>
 	public void Dispose()
 	{
 		CryptographicOperations.ZeroMemory(_iv.AsSpan());
@@ -40,12 +53,14 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 		}
 	}
 
+	/// <inheritdoc/>
 	public void Reset()
 	{
 		_index = 0;
 		_block = _iv;
 	}
 
+	/// <inheritdoc/>
 	public void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));

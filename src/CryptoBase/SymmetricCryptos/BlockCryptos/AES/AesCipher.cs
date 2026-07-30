@@ -1,15 +1,21 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 
+/// <summary>
+/// Provides AES block encryption and decryption using the best available implementation.
+/// </summary>
 public sealed class AesCipher : IBlock16Cipher<AesCipher>
 {
+	/// <inheritdoc />
 	public string Name => @"AES";
 
 	private readonly AesCipherX86 _x86;
 	private readonly AesCipherArm _arm;
 	private readonly DefaultAesCipher _soft;
 
+	/// <inheritdoc />
 	public static bool IsSupported => true;
 
+	/// <inheritdoc />
 	public static BlockCipherHardwareAcceleration HardwareAcceleration
 	{
 		get
@@ -63,6 +69,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		_soft = soft;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose()
 	{
@@ -80,6 +87,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		}
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static AesCipher Create(in ReadOnlySpan<byte> key)
 	{
@@ -96,6 +104,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return new AesCipher(DefaultAesCipher.Create(key));
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Encrypt(in VectorBuffer16 source)
 	{
@@ -112,6 +121,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.Encrypt(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Decrypt(in VectorBuffer16 source)
 	{
@@ -128,6 +138,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.Decrypt(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer32 Encrypt(in VectorBuffer32 source)
 	{
@@ -144,6 +155,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.Encrypt(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer32 Decrypt(in VectorBuffer32 source)
 	{
@@ -160,6 +172,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.Decrypt(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer64 Encrypt(in VectorBuffer64 source)
 	{
@@ -176,6 +189,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.Encrypt(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer64 Decrypt(in VectorBuffer64 source)
 	{
@@ -192,6 +206,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.Decrypt(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 Encrypt(in VectorBuffer128 source)
 	{
@@ -208,6 +223,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.Encrypt(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 Decrypt(in VectorBuffer128 source)
 	{
@@ -224,6 +240,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.Decrypt(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 EncryptV256(in VectorBuffer128 source)
 	{
@@ -240,6 +257,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.EncryptV256(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 DecryptV256(in VectorBuffer128 source)
 	{
@@ -256,6 +274,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.DecryptV256(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 EncryptV256(in VectorBuffer256 source)
 	{
@@ -272,6 +291,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.EncryptV256(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 DecryptV256(in VectorBuffer256 source)
 	{
@@ -288,6 +308,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.DecryptV256(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 EncryptV512(in VectorBuffer256 source)
 	{
@@ -304,6 +325,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.EncryptV512(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 DecryptV512(in VectorBuffer256 source)
 	{
@@ -320,6 +342,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.DecryptV512(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer512 EncryptV512(in VectorBuffer512 source)
 	{
@@ -336,6 +359,7 @@ public sealed class AesCipher : IBlock16Cipher<AesCipher>
 		return _soft.EncryptV512(source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer512 DecryptV512(in VectorBuffer512 source)
 	{

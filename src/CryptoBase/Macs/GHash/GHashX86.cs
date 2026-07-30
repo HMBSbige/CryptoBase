@@ -1,18 +1,39 @@
 namespace CryptoBase.Macs.GHash;
 
+/// <summary>
+/// Provides an x86 hardware-accelerated implementation of GHASH that zero-pads each input segment to a 16-byte boundary.
+/// </summary>
 public sealed class GHashX86 : IMac
 {
+	/// <inheritdoc />
 	public string Name => @"GHash";
 
+	/// <inheritdoc />
 	public int Length => 16;
 
+	/// <summary>
+	/// Gets whether this implementation is supported on the current platform.
+	/// </summary>
 	public static bool IsSupported => Sse2.IsSupported && Pclmulqdq.IsSupported;
 
+	/// <summary>
+	/// Gets whether the 256-bit accelerated path is supported on the current platform.
+	/// </summary>
 	public static bool IsSupported256 => IsSupported && Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
 
+	/// <summary>
+	/// Gets whether the 512-bit accelerated path is supported on the current platform.
+	/// </summary>
 	public static bool IsSupported512 => IsSupported256 && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
 
+	/// <summary>
+	/// The GHASH key size, in bytes.
+	/// </summary>
 	public const int KeySize = 16;
+
+	/// <summary>
+	/// The GHASH block size, in bytes.
+	/// </summary>
 	public const int BlockSize = 16;
 
 	private readonly Vector128<byte> _key1;
@@ -52,6 +73,11 @@ public sealed class GHashX86 : IMac
 
 	private Vector128<byte> _buffer;
 
+	/// <summary>
+	/// Initializes a new instance of <see cref="GHashX86"/>.
+	/// </summary>
+	/// <param name="key">The key material. The first <see cref="KeySize"/> bytes are used.</param>
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="key"/> is shorter than <see cref="KeySize"/> bytes.</exception>
 	public GHashX86(scoped ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(key.Length, KeySize, nameof(key));
@@ -109,6 +135,7 @@ public sealed class GHashX86 : IMac
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		int offset = 0;
@@ -344,17 +371,20 @@ public sealed class GHashX86 : IMac
 		}
 	}
 
+	/// <inheritdoc />
 	public void GetMac(scoped Span<byte> destination)
 	{
 		_buffer.ReverseEndianness128().CopyTo(destination);
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void Reset()
 	{
 		_buffer = default;
 	}
 
+	/// <inheritdoc />
 	public void Dispose()
 	{
 	}

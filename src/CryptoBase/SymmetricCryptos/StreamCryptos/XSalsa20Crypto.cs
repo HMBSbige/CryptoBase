@@ -1,13 +1,26 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
+/// <summary>
+/// Provides an XSalsa20 stream cipher with a 192-bit nonce.
+/// </summary>
 public class XSalsa20Crypto : Salsa20Crypto
 {
+	/// <inheritdoc />
 	public override string Name => @"XSalsa20";
 
+	/// <inheritdoc />
 	public override int IvSize => 24;
 
+	/// <summary>
+	/// The required key size, in bytes.
+	/// </summary>
 	public const int KeySize = 32;
 
+	/// <summary>
+	/// Initializes a new instance with the specified key and nonce.
+	/// </summary>
+	/// <param name="key">The 256-bit key.</param>
+	/// <param name="iv">The 192-bit nonce.</param>
 	public XSalsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		Init(key, iv);

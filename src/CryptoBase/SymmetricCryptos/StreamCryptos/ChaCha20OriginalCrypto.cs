@@ -1,9 +1,18 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
+/// <summary>
+/// Provides the original ChaCha20 stream cipher with a 64-bit nonce and counter.
+/// </summary>
 public class ChaCha20OriginalCrypto : SnuffleCrypto
 {
+	/// <inheritdoc />
 	public override string Name => @"ChaCha20Original";
 
+	/// <summary>
+	/// Initializes a new instance with the specified key and nonce.
+	/// </summary>
+	/// <param name="key">The 128- or 256-bit key.</param>
+	/// <param name="iv">The 64-bit nonce.</param>
 	public ChaCha20OriginalCrypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		Init(key, iv);
@@ -62,6 +71,7 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		SetIV(iv);
 	}
 
+	/// <inheritdoc />
 	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		int processed = 0;
@@ -120,6 +130,7 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		return processed;
 	}
 
+	/// <inheritdoc />
 	protected override void UpdateKeyStream()
 	{
 		if (Sse2.IsSupported)
@@ -132,6 +143,10 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		}
 	}
 
+	/// <summary>
+	/// Sets the 64-bit block counter.
+	/// </summary>
+	/// <param name="counter">The counter value.</param>
 	public void SetCounter(ulong counter)
 	{
 		CounterRemaining = MaxCounter - counter;
@@ -139,16 +154,22 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		ChaCha20Utils.GetCounterOriginal(ref StateRef) = counter;
 	}
 
+	/// <inheritdoc />
 	public override void Reset()
 	{
 		SetCounter(0);
 	}
 
+	/// <inheritdoc />
 	protected override void IncrementCounter(Span<uint> state)
 	{
 		++ChaCha20Utils.GetCounterOriginal(ref state.GetReference());
 	}
 
+	/// <summary>
+	/// Sets the 64-bit nonce.
+	/// </summary>
+	/// <param name="iv">The nonce.</param>
 	public virtual void SetIV(ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));

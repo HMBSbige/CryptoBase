@@ -1,12 +1,24 @@
 namespace CryptoBase.Macs.Poly1305;
 
+/// <summary>
+/// Provides a software implementation of Poly1305 that zero-pads each input segment to a 16-byte boundary.
+/// </summary>
 public ref struct Poly1305SF : IMac
 {
+	/// <inheritdoc />
 	public string Name => @"Poly1305";
 
+	/// <inheritdoc />
 	public int Length => 16;
 
+	/// <summary>
+	/// The Poly1305 key size, in bytes.
+	/// </summary>
 	public const int KeySize = 32;
+
+	/// <summary>
+	/// The Poly1305 block size, in bytes.
+	/// </summary>
 	public const int BlockSize = 16;
 
 	private readonly uint _r0, _r1, _r2, _r3, _r4;
@@ -15,6 +27,11 @@ public ref struct Poly1305SF : IMac
 
 	private uint _h0, _h1, _h2, _h3, _h4;
 
+	/// <summary>
+	/// Initializes a new instance of <see cref="Poly1305SF"/>.
+	/// </summary>
+	/// <param name="key">The <see cref="KeySize"/>-byte key.</param>
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="key"/> is not <see cref="KeySize"/> bytes long.</exception>
 	public Poly1305SF(scoped ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
@@ -68,6 +85,7 @@ public ref struct Poly1305SF : IMac
 		_h0 &= 0x3ffffff;
 	}
 
+	/// <inheritdoc />
 	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		while (source.Length >= BlockSize)
@@ -87,6 +105,7 @@ public ref struct Poly1305SF : IMac
 		Block(block);
 	}
 
+	/// <inheritdoc />
 	public void GetMac(scoped Span<byte> destination)
 	{
 		_h2 += _h1 >> 26;
@@ -140,11 +159,13 @@ public ref struct Poly1305SF : IMac
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void Reset()
 	{
 		_h0 = _h1 = _h2 = _h3 = _h4 = 0;
 	}
 
+	/// <inheritdoc />
 	public readonly void Dispose()
 	{
 	}

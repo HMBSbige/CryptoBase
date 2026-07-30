@@ -1,5 +1,8 @@
 namespace CryptoBase;
 
+/// <summary>
+/// Provides low-level helpers optimized for cryptographic operations.
+/// </summary>
 public static class FastUtils
 {
 	/// <inheritdoc cref="MemoryMarshal.GetArrayDataReference{T}" />

@@ -1,7 +1,11 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
+/// <summary>
+/// Implements the cryptographically insecure RC4 stream cipher for compatibility.
+/// </summary>
 public class RC4Crypto : StreamCryptoBase
 {
+	/// <inheritdoc />
 	public override string Name => @"RC4";
 
 	private static ReadOnlySpan<byte> S =>
@@ -31,6 +35,10 @@ public class RC4Crypto : StreamCryptoBase
 
 	private int _x, _y;
 
+	/// <summary>
+	/// Initializes an RC4 cipher with the specified key.
+	/// </summary>
+	/// <param name="key">The non-empty encryption key.</param>
 	public RC4Crypto(ReadOnlySpan<byte> key)
 	{
 		_keyLength = key.Length;
@@ -41,6 +49,7 @@ public class RC4Crypto : StreamCryptoBase
 		Init();
 	}
 
+	/// <inheritdoc />
 	public override void Update(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		base.Update(source, destination);
@@ -99,11 +108,13 @@ public class RC4Crypto : StreamCryptoBase
 		}
 	}
 
+	/// <inheritdoc />
 	public override void Reset()
 	{
 		Init();
 	}
 
+	/// <inheritdoc />
 	public override void Dispose()
 	{
 		base.Dispose();

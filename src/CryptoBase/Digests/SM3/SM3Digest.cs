@@ -1,7 +1,7 @@
 namespace CryptoBase.Digests.SM3;
 
 /// <summary>
-/// https://www.oscca.gov.cn/sca/xxgk/2010-12/17/1002389/files/302a3ada057c4a73830536d03e683110.pdf
+/// Implements the <see href="https://www.oscca.gov.cn/sca/xxgk/2010-12/17/1002389/files/302a3ada057c4a73830536d03e683110.pdf">SM3 cryptographic hash algorithm</see>.
 /// </summary>
 public sealed class SM3Digest : IHash
 {
@@ -79,23 +79,31 @@ public sealed class SM3Digest : IHash
 		}
 	}
 
+	/// <summary>
+	/// Initializes a new SM3 hash instance.
+	/// </summary>
 	public SM3Digest()
 	{
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public string Name => @"SM3";
 
+	/// <inheritdoc />
 	public int Length => HashConstants.SM3Length;
 
+	/// <inheritdoc />
 	public int BlockSize => HashConstants.SM3BlockSize;
 
+	/// <inheritdoc />
 	public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 	{
 		Update(origin);
 		GetHash(destination);
 	}
 
+	/// <inheritdoc />
 	public void Update(ReadOnlySpan<byte> source)
 	{
 		_byteCount += (uint)source.Length;
@@ -144,6 +152,7 @@ public sealed class SM3Digest : IHash
 		}
 	}
 
+	/// <inheritdoc />
 	public void GetHash(Span<byte> destination)
 	{
 		try
@@ -193,6 +202,7 @@ public sealed class SM3Digest : IHash
 		}
 	}
 
+	/// <inheritdoc />
 	public void Reset()
 	{
 		Init.CopyTo(_v);
@@ -260,6 +270,7 @@ public sealed class SM3Digest : IHash
 		v[7] ^= h;
 	}
 
+	/// <inheritdoc />
 	public void Dispose()
 	{
 	}

@@ -5,16 +5,33 @@ namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 /// </summary>
 public interface ICtrIncrementer
 {
+	/// <summary>Increments one counter by one.</summary>
+	/// <param name="counter">The byte-reversed counter.</param>
+	/// <returns>The incremented counter.</returns>
 	static abstract Vector128<byte> Inc(Vector128<byte> counter);
 
+	/// <summary>Increments one counter in place without SIMD intrinsics.</summary>
+	/// <param name="counter">The counter in block byte order.</param>
 	static abstract void IncSoftware(ref VectorBuffer16 counter);
 
+	/// <summary>Adds 0 and 1 to the two counter lanes, respectively.</summary>
+	/// <param name="counter">The byte-reversed counter lanes.</param>
+	/// <returns>The adjusted counter lanes.</returns>
 	static abstract Vector256<byte> Add01(Vector256<byte> counter);
 
+	/// <summary>Adds 2 to both counter lanes.</summary>
+	/// <param name="counter">The byte-reversed counter lanes.</param>
+	/// <returns>The adjusted counter lanes.</returns>
 	static abstract Vector256<byte> Add22(Vector256<byte> counter);
 
+	/// <summary>Adds 0, 1, 2, and 3 to the four counter lanes, respectively.</summary>
+	/// <param name="counter">The byte-reversed counter lanes.</param>
+	/// <returns>The adjusted counter lanes.</returns>
 	static abstract Vector512<byte> Add0123(Vector512<byte> counter);
 
+	/// <summary>Adds 4 to all four counter lanes.</summary>
+	/// <param name="counter">The byte-reversed counter lanes.</param>
+	/// <returns>The adjusted counter lanes.</returns>
 	static abstract Vector512<byte> Add4444(Vector512<byte> counter);
 }
 
@@ -23,12 +40,14 @@ public interface ICtrIncrementer
 /// </summary>
 public readonly struct CtrIncrementer128 : ICtrIncrementer
 {
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<byte> Inc(Vector128<byte> counter)
 	{
 		return counter.IncUInt128Le();
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncSoftware(ref VectorBuffer16 counter)
 	{
@@ -43,24 +62,28 @@ public readonly struct CtrIncrementer128 : ICtrIncrementer
 		}
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<byte> Add01(Vector256<byte> counter)
 	{
 		return counter.AddUInt128Le01();
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<byte> Add22(Vector256<byte> counter)
 	{
 		return counter.AddUInt128Le22();
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<byte> Add0123(Vector512<byte> counter)
 	{
 		return counter.AddUInt128Le0123();
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<byte> Add4444(Vector512<byte> counter)
 	{
@@ -73,12 +96,14 @@ public readonly struct CtrIncrementer128 : ICtrIncrementer
 /// </summary>
 public readonly struct CtrIncrementer32 : ICtrIncrementer
 {
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<byte> Inc(Vector128<byte> counter)
 	{
 		return counter.IncUInt32Le();
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void IncSoftware(ref VectorBuffer16 counter)
 	{
@@ -93,24 +118,28 @@ public readonly struct CtrIncrementer32 : ICtrIncrementer
 		}
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<byte> Add01(Vector256<byte> counter)
 	{
 		return counter.AddUInt32Le01();
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<byte> Add22(Vector256<byte> counter)
 	{
 		return counter.AddUInt32Le22();
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<byte> Add0123(Vector512<byte> counter)
 	{
 		return counter.AddUInt32Le0123();
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<byte> Add4444(Vector512<byte> counter)
 	{

@@ -8,6 +8,10 @@ namespace CryptoBase.KDF;
 /// </summary>
 public static class Hkdf
 {
+	/// <summary>
+	/// Extracts a pseudorandom key using HKDF.
+	/// </summary>
+	/// <returns>The number of bytes written to <paramref name="prk" />.</returns>
 	public static int Extract(DigestType type, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
 	{
 		int hashLength = HashLength(type);
@@ -26,6 +30,9 @@ public static class Hkdf
 		hmac.GetMac(prk);
 	}
 
+	/// <summary>
+	/// Expands a pseudorandom key using HKDF.
+	/// </summary>
 	public static void Expand(DigestType type, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
 		int hashLength = HashLength(type);
@@ -105,6 +112,9 @@ public static class Hkdf
 		}
 	}
 
+	/// <summary>
+	/// Derives key material using HKDF extract-and-expand.
+	/// </summary>
 	public static void DeriveKey(DigestType type, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
 	{
 		int hashLength = HashLength(type);

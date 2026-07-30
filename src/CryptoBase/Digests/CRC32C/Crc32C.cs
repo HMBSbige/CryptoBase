@@ -2,27 +2,38 @@ using System.Numerics;
 
 namespace CryptoBase.Digests.CRC32C;
 
+/// <summary>
+/// Implements incremental CRC-32C.
+/// </summary>
 public class Crc32C : IHash
 {
+	/// <inheritdoc />
 	public string Name => @"CRC-32C";
 
+	/// <inheritdoc />
 	public int Length => HashConstants.Crc32Length;
 
+	/// <inheritdoc />
 	public int BlockSize => HashConstants.Crc32BlockSize;
 
 	private uint _state;
 
+	/// <summary>
+	/// Initializes a new CRC-32C computation.
+	/// </summary>
 	public Crc32C()
 	{
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 	{
 		Update(origin);
 		GetHash(destination);
 	}
 
+	/// <inheritdoc />
 	public void Update(ReadOnlySpan<byte> source)
 	{
 		if (Sse42.X64.IsSupported || Crc32.Arm64.IsSupported)
@@ -40,12 +51,14 @@ public class Crc32C : IHash
 		UpdateDefault(source);
 	}
 
+	/// <inheritdoc />
 	public void GetHash(Span<byte> destination)
 	{
 		BinaryPrimitives.WriteUInt32BigEndian(destination, ~_state);
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void Reset()
 	{
 		_state = uint.MaxValue;
@@ -186,6 +199,7 @@ public class Crc32C : IHash
 		}
 	}
 
+	/// <inheritdoc />
 	public void Dispose()
 	{
 		GC.SuppressFinalize(this);

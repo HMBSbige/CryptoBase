@@ -5,27 +5,38 @@ namespace CryptoBase.Digests.CRC32;
 /// </summary>
 public class Crc32X86 : IHash
 {
+	/// <inheritdoc />
 	public string Name => @"CRC-32";
 
+	/// <inheritdoc />
 	public int Length => HashConstants.Crc32Length;
 
+	/// <inheritdoc />
 	public int BlockSize => HashConstants.Crc32BlockSize;
 
+	/// <summary>
+	/// Gets a value indicating whether the required x86 instructions are supported.
+	/// </summary>
 	public static bool IsSupport => Sse2.IsSupported && Pclmulqdq.IsSupported;
 
 	private uint _state;
 
+	/// <summary>
+	/// Initializes a new CRC-32 computation.
+	/// </summary>
 	public Crc32X86()
 	{
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 	{
 		Update(origin);
 		GetHash(destination);
 	}
 
+	/// <inheritdoc />
 	public void Update(ReadOnlySpan<byte> source)
 	{
 		if (source.Length >= 64)
@@ -37,12 +48,14 @@ public class Crc32X86 : IHash
 		_state = ~Crc32Table.Crc32.Append(~_state, source);
 	}
 
+	/// <inheritdoc />
 	public void GetHash(Span<byte> destination)
 	{
 		BinaryPrimitives.WriteUInt32BigEndian(destination, ~_state);
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void Reset()
 	{
 		_state = uint.MaxValue;
@@ -149,6 +162,7 @@ public class Crc32X86 : IHash
 		return x1.AsUInt32().GetElement(1);// pextrd eax, x1, 1
 	}
 
+	/// <inheritdoc />
 	public void Dispose()
 	{
 		GC.SuppressFinalize(this);

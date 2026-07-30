@@ -1,12 +1,24 @@
 namespace CryptoBase.Macs.GHash;
 
+/// <summary>
+/// Provides a software implementation of GHASH that zero-pads each input segment to a 16-byte boundary.
+/// </summary>
 public sealed class GHashSF : IMac
 {
+	/// <inheritdoc />
 	public string Name => @"GHash";
 
+	/// <inheritdoc />
 	public int Length => 16;
 
+	/// <summary>
+	/// The GHASH key size, in bytes.
+	/// </summary>
 	public const int KeySize = 16;
+
+	/// <summary>
+	/// The GHASH block size, in bytes.
+	/// </summary>
 	public const int BlockSize = 16;
 
 	private static ReadOnlySpan<ulong> Last4 => [0x0000, 0x1c20, 0x3840, 0x2460, 0x7080, 0x6ca0, 0x48c0, 0x54e0, 0xe100, 0xfd20, 0xd940, 0xc560, 0x9180, 0x8da0, 0xa9c0, 0xb5e0];
@@ -18,6 +30,11 @@ public sealed class GHashSF : IMac
 	private readonly ulong Initvh;
 	private readonly ulong Initvl;
 
+	/// <summary>
+	/// Initializes a new instance of <see cref="GHashSF"/>.
+	/// </summary>
+	/// <param name="key">The key material. The first <see cref="KeySize"/> bytes are used.</param>
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="key"/> is shorter than <see cref="KeySize"/> bytes.</exception>
 	public GHashSF(scoped ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(key.Length, KeySize, nameof(key));
@@ -71,6 +88,7 @@ public sealed class GHashSF : IMac
 		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(8), zl);
 	}
 
+	/// <inheritdoc />
 	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		while (source.Length >= BlockSize)
@@ -89,6 +107,7 @@ public sealed class GHashSF : IMac
 		GFMul(block);
 	}
 
+	/// <inheritdoc />
 	public void GetMac(scoped Span<byte> destination)
 	{
 		Span<byte> buffer = _buffer;
@@ -97,6 +116,7 @@ public sealed class GHashSF : IMac
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void Reset()
 	{
 		_buffer = default;
@@ -141,6 +161,7 @@ public sealed class GHashSF : IMac
 		}
 	}
 
+	/// <inheritdoc />
 	public void Dispose()
 	{
 		CryptographicOperations.ZeroMemory(_hl.AsSpan());

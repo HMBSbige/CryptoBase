@@ -1,7 +1,16 @@
 namespace CryptoBase.Macs.GHash;
 
+/// <summary>
+/// Provides factory methods for GHASH implementations.
+/// </summary>
 public static class GHashUtils
 {
+	/// <summary>
+	/// Creates the best available GHASH implementation, which zero-pads each input segment to a 16-byte boundary.
+	/// </summary>
+	/// <param name="key">The key material. The first <see cref="GHashSF.KeySize"/> bytes are used.</param>
+	/// <returns>A GHASH implementation.</returns>
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="key"/> is shorter than <see cref="GHashSF.KeySize"/> bytes.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static IMac Create(ReadOnlySpan<byte> key)
 	{

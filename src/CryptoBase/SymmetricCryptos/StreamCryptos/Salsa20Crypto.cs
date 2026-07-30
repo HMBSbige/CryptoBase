@@ -1,9 +1,18 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
+/// <summary>
+/// Implements the Salsa20 stream cipher.
+/// </summary>
 public class Salsa20Crypto : SnuffleCrypto
 {
+	/// <inheritdoc />
 	public override string Name => @"Salsa20";
 
+	/// <summary>
+	/// Initializes a Salsa20 cipher with the specified key and initialization vector.
+	/// </summary>
+	/// <param name="key">The 16- or 32-byte key.</param>
+	/// <param name="iv">The 8-byte initialization vector.</param>
 	public Salsa20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		Init(key, iv);
@@ -66,11 +75,16 @@ public class Salsa20Crypto : SnuffleCrypto
 		state[7] = ivSpan[1];
 	}
 
+	/// <inheritdoc />
 	protected override void IncrementCounter(Span<uint> state)
 	{
 		++Salsa20Utils.GetCounter(ref state.GetReference());
 	}
 
+	/// <summary>
+	/// Sets the block counter.
+	/// </summary>
+	/// <param name="counter">The counter value.</param>
 	public void SetCounter(ulong counter)
 	{
 		CounterRemaining = MaxCounter - counter;
@@ -78,11 +92,13 @@ public class Salsa20Crypto : SnuffleCrypto
 		Salsa20Utils.GetCounter(ref StateRef) = counter;
 	}
 
+	/// <inheritdoc />
 	public sealed override void Reset()
 	{
 		SetCounter(0);
 	}
 
+	/// <inheritdoc />
 	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
 		int processed = 0;
@@ -141,6 +157,7 @@ public class Salsa20Crypto : SnuffleCrypto
 		return processed;
 	}
 
+	/// <inheritdoc />
 	protected override void UpdateKeyStream()
 	{
 		if (Sse2.IsSupported)

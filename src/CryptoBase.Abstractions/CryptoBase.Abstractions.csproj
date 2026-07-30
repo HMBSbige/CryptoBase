@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="../Package.props" />
+
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>Abstractions for CryptoBase.</Description>

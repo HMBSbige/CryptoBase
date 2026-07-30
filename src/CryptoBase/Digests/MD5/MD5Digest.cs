@@ -5,14 +5,19 @@ namespace CryptoBase.Digests.MD5;
 /// </summary>
 public class MD5Digest : IHash
 {
+	/// <summary>The number of 32-bit words in an MD5 block.</summary>
 	protected const int BlockSizeOfInt = 16;
+
+	/// <summary>The size of a 32-bit word in bytes.</summary>
 	protected const int SizeOfInt = sizeof(uint);
 
+	/// <summary>The four 32-bit MD5 state words.</summary>
 	protected uint A, B, C, D;
 	private ulong _byteCount;
 	private int _index;
 	private int _bufferIndex;
 
+	/// <summary>The sixteen 32-bit words of the current message block.</summary>
 	protected readonly uint[] X;
 	private InlineArray4<byte> _buffer;
 
@@ -99,24 +104,32 @@ public class MD5Digest : IHash
 
 	#endregion
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MD5Digest"/> class.
+	/// </summary>
 	public MD5Digest()
 	{
 		X = new uint[BlockSizeOfInt];
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public string Name => @"MD5";
 
+	/// <inheritdoc />
 	public int Length => HashConstants.Md5Length;
 
+	/// <inheritdoc />
 	public int BlockSize => HashConstants.Md5BlockSize;
 
+	/// <inheritdoc />
 	public virtual void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 	{
 		Update(origin);
 		GetHash(destination);
 	}
 
+	/// <inheritdoc />
 	public virtual void Update(ReadOnlySpan<byte> source)
 	{
 		_byteCount += (uint)source.Length;
@@ -164,6 +177,7 @@ public class MD5Digest : IHash
 		}
 	}
 
+	/// <inheritdoc />
 	public virtual void GetHash(Span<byte> destination)
 	{
 		try
@@ -212,6 +226,7 @@ public class MD5Digest : IHash
 		}
 	}
 
+	/// <inheritdoc />
 	public void Reset()
 	{
 		A = 0x67452301;
@@ -223,6 +238,9 @@ public class MD5Digest : IHash
 		_bufferIndex = 0;
 	}
 
+	/// <summary>
+	/// Processes the current 512-bit message block.
+	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected void Process()
 	{
@@ -305,6 +323,7 @@ public class MD5Digest : IHash
 		D += d;
 	}
 
+	/// <inheritdoc />
 	public void Dispose()
 	{
 		GC.SuppressFinalize(this);

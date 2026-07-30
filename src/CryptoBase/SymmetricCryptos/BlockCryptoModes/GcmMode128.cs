@@ -2,12 +2,20 @@ using CryptoBase.Macs.GHash;
 
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
+/// <summary>
+/// Provides Galois/Counter Mode authenticated encryption for a 16-byte block cipher.
+/// </summary>
+/// <typeparam name="TBlockCipher">The block cipher type.</typeparam>
 public sealed class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : IBlock16Cipher<TBlockCipher>
 {
+	/// <inheritdoc/>
 	public string Name => _blockCipher.Name + @"-GCM";
 
+	/// <summary>The block size, in bytes.</summary>
 	public const int BlockSize = 16;
+	/// <summary>The required nonce size, in bytes.</summary>
 	public const int NonceSize = 12;
+	/// <summary>The authentication tag size, in bytes.</summary>
 	public const int TagSize = 16;
 
 	private readonly TBlockCipher _blockCipher;
@@ -15,6 +23,11 @@ public sealed class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : 
 	private readonly IMac _gHash;
 	private readonly CtrMode128Ctr32<TBlockCipher> _ctr;
 
+	/// <summary>
+	/// Initializes a GCM instance.
+	/// </summary>
+	/// <param name="blockCipher">The block cipher.</param>
+	/// <param name="disposeCrypto">Whether to dispose <paramref name="blockCipher"/> with this instance.</param>
 	public GcmMode128(TBlockCipher blockCipher, bool disposeCrypto = true)
 	{
 		_blockCipher = blockCipher;
@@ -27,6 +40,7 @@ public sealed class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : 
 		_ctr = new CtrMode128Ctr32<TBlockCipher>(blockCipher, default, false);
 	}
 
+	/// <inheritdoc/>
 	[SkipLocalsInit]
 	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
@@ -60,6 +74,7 @@ public sealed class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : 
 		Unsafe.WriteUnaligned(ref tag.GetReference(), tagBuffer);
 	}
 
+	/// <inheritdoc/>
 	[SkipLocalsInit]
 	public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
@@ -101,6 +116,7 @@ public sealed class GcmMode128<TBlockCipher> : IAEADCrypto where TBlockCipher : 
 		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, source.Length, nameof(destination));
 	}
 
+	/// <inheritdoc/>
 	public void Dispose()
 	{
 		_ctr.Dispose();

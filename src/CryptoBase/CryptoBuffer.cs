@@ -1,5 +1,8 @@
 namespace CryptoBase;
 
+/// <summary>
+/// Provides temporary storage that is cleared when disposed.
+/// </summary>
 public readonly ref struct CryptoBuffer<T> : IDisposable where T : struct
 {
 	private const int MaxSmallArrayBytes = 256;
@@ -8,8 +11,14 @@ public readonly ref struct CryptoBuffer<T> : IDisposable where T : struct
 
 	private readonly T[]? _buffer;
 
+	/// <summary>
+	/// Gets the usable buffer.
+	/// </summary>
 	public Span<T> Span { get; }
 
+	/// <summary>
+	/// Creates a buffer with the specified length.
+	/// </summary>
 	public CryptoBuffer(int length)
 	{
 		if (length <= MaxSmallArrayElements)
@@ -23,11 +32,15 @@ public readonly ref struct CryptoBuffer<T> : IDisposable where T : struct
 		}
 	}
 
+	/// <summary>
+	/// Wraps an existing buffer.
+	/// </summary>
 	public CryptoBuffer(Span<T> buffer)
 	{
 		Span = buffer;
 	}
 
+	/// <inheritdoc />
 	public void Dispose()
 	{
 		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(Span));

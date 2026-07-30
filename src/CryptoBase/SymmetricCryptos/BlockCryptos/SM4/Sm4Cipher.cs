@@ -1,7 +1,11 @@
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
+/// <summary>
+/// Implements the SM4 block cipher.
+/// </summary>
 public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 {
+	/// <inheritdoc />
 	public string Name => @"SM4";
 
 	private VectorBuffer128 _roundKeys;
@@ -19,14 +23,17 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		get => MemoryMarshal.Cast<byte, uint>(_reverseRoundKeys.AsSpan());
 	}
 
+	/// <inheritdoc />
 	public void Dispose()
 	{
 		CryptographicOperations.ZeroMemory(_roundKeys.AsSpan());
 		CryptographicOperations.ZeroMemory(_reverseRoundKeys.AsSpan());
 	}
 
+	/// <inheritdoc />
 	public static bool IsSupported => true;
 
+	/// <inheritdoc />
 	public static BlockCipherHardwareAcceleration HardwareAcceleration
 	{
 		get
@@ -66,12 +73,14 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		rrk.Reverse();
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Sm4Cipher Create(in ReadOnlySpan<byte> key)
 	{
 		return new Sm4Cipher(key);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Encrypt(in VectorBuffer16 source)
 	{
@@ -79,6 +88,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return SM4Utils.ProcessBlock(rk, source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer16 Decrypt(in VectorBuffer16 source)
 	{
@@ -86,6 +96,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return SM4Utils.ProcessBlock(rk, source);
 	}
 
+	/// <inheritdoc />
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer32 Encrypt(in VectorBuffer32 source)
@@ -98,6 +109,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return r;
 	}
 
+	/// <inheritdoc />
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer32 Decrypt(in VectorBuffer32 source)
@@ -110,6 +122,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return r;
 	}
 
+	/// <inheritdoc />
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer64 Encrypt(in VectorBuffer64 source)
@@ -128,6 +141,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return r;
 	}
 
+	/// <inheritdoc />
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer64 Decrypt(in VectorBuffer64 source)
@@ -146,6 +160,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return r;
 	}
 
+	/// <inheritdoc />
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 Encrypt(in VectorBuffer128 source)
@@ -164,6 +179,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return r;
 	}
 
+	/// <inheritdoc />
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 Decrypt(in VectorBuffer128 source)
@@ -182,6 +198,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return r;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 EncryptV256(in VectorBuffer128 source)
 	{
@@ -195,6 +212,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return default;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer128 DecryptV256(in VectorBuffer128 source)
 	{
@@ -208,6 +226,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return default;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 EncryptV256(in VectorBuffer256 source)
 	{
@@ -221,6 +240,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return default;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 DecryptV256(in VectorBuffer256 source)
 	{
@@ -234,6 +254,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return default;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 EncryptV512(in VectorBuffer256 source)
 	{
@@ -241,6 +262,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return default;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer256 DecryptV512(in VectorBuffer256 source)
 	{
@@ -248,6 +270,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return default;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer512 EncryptV512(in VectorBuffer512 source)
 	{
@@ -255,6 +278,7 @@ public sealed class Sm4Cipher : IBlock16Cipher<Sm4Cipher>
 		return default;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public VectorBuffer512 DecryptV512(in VectorBuffer512 source)
 	{

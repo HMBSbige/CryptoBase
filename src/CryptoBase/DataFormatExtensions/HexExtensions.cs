@@ -1,5 +1,8 @@
 namespace CryptoBase.DataFormatExtensions;
 
+/// <summary>
+/// Provides hexadecimal encoding and decoding extensions.
+/// </summary>
 public static class HexExtensions
 {
 	extension(ReadOnlySpan<byte> bytes)

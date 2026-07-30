@@ -1,16 +1,39 @@
 namespace CryptoBase.Macs.Poly1305;
 
+/// <summary>
+/// Provides an x86 hardware-accelerated implementation of Poly1305 that zero-pads each input segment to a 16-byte boundary.
+/// </summary>
 public ref struct Poly1305X86 : IMac
 {
+	/// <summary>
+	/// Gets whether this implementation is supported on the current platform.
+	/// </summary>
 	public static bool IsSupported => Sse2.IsSupported;
 
+	/// <inheritdoc />
 	public string Name => @"Poly1305";
 
+	/// <inheritdoc />
 	public int Length => 16;
 
+	/// <summary>
+	/// The Poly1305 key size, in bytes.
+	/// </summary>
 	public const int KeySize = 32;
+
+	/// <summary>
+	/// The Poly1305 block size, in bytes.
+	/// </summary>
 	public const int BlockSize = 16;
+
+	/// <summary>
+	/// The size of two Poly1305 blocks, in bytes.
+	/// </summary>
 	public const int BlockSize2 = BlockSize * 2;
+
+	/// <summary>
+	/// The size of four Poly1305 blocks, in bytes.
+	/// </summary>
 	public const int BlockSize4 = BlockSize * 4;
 
 	private readonly uint _x0, _x1, _x2, _x3;
@@ -24,6 +47,11 @@ public ref struct Poly1305X86 : IMac
 	private readonly Vector256<uint> _ruwy0, _ruwy1, _ruwy2, _ruwy3, _ruwy4;
 	private readonly Vector256<uint> _svxz1, _svxz2, _svxz3, _svxz4;
 
+	/// <summary>
+	/// Initializes a new instance of <see cref="Poly1305X86"/>.
+	/// </summary>
+	/// <param name="key">The <see cref="KeySize"/>-byte key.</param>
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="key"/> is not <see cref="KeySize"/> bytes long.</exception>
 	public Poly1305X86(scoped ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
@@ -383,6 +411,7 @@ public ref struct Poly1305X86 : IMac
 		_h0 &= 0x3ffffff;
 	}
 
+	/// <inheritdoc />
 	public void Update(scoped ReadOnlySpan<byte> source)
 	{
 		if (Avx2.IsSupported)
@@ -416,6 +445,7 @@ public ref struct Poly1305X86 : IMac
 		Block(block);
 	}
 
+	/// <inheritdoc />
 	public void GetMac(scoped Span<byte> destination)
 	{
 		_h2 += _h1 >> 26;
@@ -469,11 +499,13 @@ public ref struct Poly1305X86 : IMac
 		Reset();
 	}
 
+	/// <inheritdoc />
 	public void Reset()
 	{
 		_h0 = _h1 = _h2 = _h3 = _h4 = 0;
 	}
 
+	/// <inheritdoc />
 	public readonly void Dispose()
 	{
 	}

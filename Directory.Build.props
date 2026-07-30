@@ -1,26 +1,17 @@
 <Project>
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <IsAotCompatible>true</IsAotCompatible>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <Version>3.1.2</Version>
-    <IsPackable>false</IsPackable>
-    <Authors>HMBSbige</Authors>
-    <Copyright>Copyright © HMBSbige</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/HMBSbige/CryptoBase</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/HMBSbige/CryptoBase</RepositoryUrl>
-    <PackageTags>crypto</PackageTags>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <PropertyGroup>

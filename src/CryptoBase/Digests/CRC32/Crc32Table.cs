@@ -1,5 +1,8 @@
 namespace CryptoBase.Digests.CRC32;
 
+/// <summary>
+/// Provides lookup tables for CRC-32 calculations.
+/// </summary>
 public class Crc32Table
 {
 	private const uint Polynomial = 0xEDB88320;
@@ -27,6 +30,9 @@ public class Crc32Table
 		}
 	}
 
+	/// <summary>
+	/// Appends bytes to a CRC value.
+	/// </summary>
 	public uint Append(uint crc, ReadOnlySpan<byte> source)
 	{
 		int offset = 0;
@@ -70,6 +76,13 @@ public class Crc32Table
 		return crcLocal ^ uint.MaxValue;
 	}
 
+	/// <summary>
+	/// The CRC-32 (IEEE) lookup table.
+	/// </summary>
 	public static readonly Crc32Table Crc32 = new(Polynomial);
+
+	/// <summary>
+	/// The CRC-32C (Castagnoli) lookup table.
+	/// </summary>
 	public static readonly Crc32Table Crc32C = new(PolynomialC);
 }

@@ -1,15 +1,28 @@
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
+/// <summary>
+/// Provides an XChaCha20 stream cipher with a 192-bit nonce.
+/// </summary>
 public class XChaCha20Crypto : ChaCha20OriginalCrypto
 {
+	/// <inheritdoc />
 	public override string Name => @"XChaCha20";
 
+	/// <inheritdoc />
 	public override int IvSize => 24;
 
+	/// <summary>
+	/// The required key size, in bytes.
+	/// </summary>
 	public const int KeySize = 32;
 
 	private VectorBuffer32 _key;
 
+	/// <summary>
+	/// Initializes a new instance with the specified key and nonce.
+	/// </summary>
+	/// <param name="key">The 256-bit key.</param>
+	/// <param name="iv">The 192-bit nonce.</param>
 	public XChaCha20Crypto(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
@@ -32,6 +45,10 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 		}
 	}
 
+	/// <summary>
+	/// Sets the 192-bit nonce.
+	/// </summary>
+	/// <param name="iv">The nonce.</param>
 	public sealed override void SetIV(ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
@@ -54,6 +71,7 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 		state[15] = ivSpan[5];
 	}
 
+	/// <inheritdoc />
 	public override void Dispose()
 	{
 		CryptographicOperations.ZeroMemory(_key.AsSpan());

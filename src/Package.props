@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <Authors>HMBSbige</Authors>
+    <Copyright>Copyright © HMBSbige</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/HMBSbige/CryptoBase</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/HMBSbige/CryptoBase</RepositoryUrl>
+    <PackageTags>crypto</PackageTags>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <DebugType>embedded</DebugType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+</Project>
