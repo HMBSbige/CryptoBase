@@ -6,38 +6,21 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark;
 
 [MemoryDiagnoser]
-public class XChaCha20Benchmark
+public class XChaCha20Benchmark : StreamCryptoBenchmarkBase
 {
-	[Params(1024, 8192)]
-	public int ByteLength { get; set; }
+	private IStreamCrypto _crypto = null!;
 
-	private Memory<byte> _randombytes;
-	private byte[] _randomKey = null!;
-	private byte[] _randomIv = null!;
-
-	[GlobalSetup]
-	public void Setup()
+	protected override void SetupCryptos()
 	{
-		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
-		_randomKey = RandomNumberGenerator.GetBytes(32);
-		_randomIv = RandomNumberGenerator.GetBytes(24);
+		byte[] key = RandomNumberGenerator.GetBytes(32);
+		byte[] iv = RandomNumberGenerator.GetBytes(24);
+
+		_crypto = Register(new XChaCha20Crypto(key, iv));
 	}
 
-	private static void Test(IStreamCrypto crypto, Span<byte> origin)
-	{
-		Span<byte> o = stackalloc byte[origin.Length];
-
-		for (int i = 0; i < 1000; ++i)
-		{
-			crypto.Update(origin, o);
-		}
-
-		crypto.Dispose();
-	}
-
-	[Benchmark(Baseline = true)]
+	[Benchmark]
 	public void Default()
 	{
-		Test(new XChaCha20Crypto(_randomKey, _randomIv), _randombytes.Span);
+		Run(_crypto);
 	}
 }

@@ -1,17 +1,12 @@
 namespace CryptoBase.Digests;
 
-public abstract class DefaultDigest : IHash
+public abstract class DefaultDigest(HashAlgorithmName name) : IHash
 {
 	public abstract string Name { get; }
 	public int Length => _hasher.HashLengthInBytes;
 	public abstract int BlockSize { get; }
 
-	private readonly IncrementalHash _hasher;
-
-	protected DefaultDigest(HashAlgorithmName name)
-	{
-		_hasher = IncrementalHash.CreateHash(name);
-	}
+	private readonly IncrementalHash _hasher = IncrementalHash.CreateHash(name);
 
 	public void UpdateFinal(ReadOnlySpan<byte> origin, Span<byte> destination)
 	{

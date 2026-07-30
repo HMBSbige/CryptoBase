@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.Abstractions;
 using CryptoBase.Digests;
 using CryptoBase.Macs.Hmac;
 using System.Security.Cryptography;
@@ -8,36 +9,55 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class HMACBenchmark
 {
-	[Params(32, 114514)]
+	[Params(32, 1024, 8192)]
 	public int ByteLength { get; set; }
 
-	private byte[] _randombytes = null!;
-	private byte[] _randomKey = null!;
+	/// <summary>
+	/// HmacUtils.Create(DigestType, key) 对 SHA-2 家族返回的 .NET IncrementalHash 路径
+	/// </summary>
+	private IMac _default = null!;
+
+	/// <summary>
+	/// 库自研的 HmacSF 实现（生产中用于无 .NET 内置 HMAC 的摘要，如 SM3）
+	/// </summary>
+	private IMac _managed = null!;
+
+	private byte[] _input = [];
+	private byte[] _mac = [];
 
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
-		_randomKey = RandomNumberGenerator.GetBytes(64);
+		byte[] key = RandomNumberGenerator.GetBytes(64);
+
+		_default = HmacUtils.Create(DigestType.Sha256, key);
+		_managed = HmacUtils.Create(key, DigestUtils.Create(DigestType.Sha256));
+		_input = RandomNumberGenerator.GetBytes(ByteLength);
+		_mac = new byte[_default.Length];
 	}
 
-	[Benchmark]
-	public void Managed()
+	[GlobalCleanup]
+	public void Cleanup()
 	{
-		using var mac = HmacUtils.Create(DigestType.Sha1, _randomKey);
-		mac.Update(_randombytes);
+		_default.Dispose();
+		_managed.Dispose();
+	}
 
-		Span<byte> temp = stackalloc byte[mac.Length];
-		mac.GetMac(temp);
+	private void Test(IMac mac)
+	{
+		mac.Update(_input);
+		mac.GetMac(_mac);
 	}
 
 	[Benchmark(Baseline = true)]
 	public void Default()
 	{
-		using var mac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _randomKey);
-		mac.AppendData(_randombytes);
+		Test(_default);
+	}
 
-		Span<byte> temp = stackalloc byte[mac.HashLengthInBytes];
-		mac.GetHashAndReset(temp);
+	[Benchmark]
+	public void Managed()
+	{
+		Test(_managed);
 	}
 }

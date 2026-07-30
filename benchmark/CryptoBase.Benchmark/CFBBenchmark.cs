@@ -6,46 +6,29 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark;
 
 [MemoryDiagnoser]
-public class CFBBenchmark
+public class CFBBenchmark : StreamCryptoBenchmarkBase
 {
-	[Params(1024, 8192)]
-	public int ByteLength { get; set; }
+	private IStreamCrypto _aesCfb = null!;
+	private IStreamCrypto _sm4Cfb = null!;
 
-	private Memory<byte> _randombytes;
-	private byte[] _randomKey16 = null!;
-	private byte[] _randomIv8 = null!;
-	private byte[] _randomIv16 = null!;
-
-	[GlobalSetup]
-	public void Setup()
+	protected override void SetupCryptos()
 	{
-		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
-		_randomKey16 = RandomNumberGenerator.GetBytes(16);
-		_randomIv8 = RandomNumberGenerator.GetBytes(8);
-		_randomIv16 = RandomNumberGenerator.GetBytes(16);
-	}
+		byte[] key = RandomNumberGenerator.GetBytes(16);
+		byte[] iv = RandomNumberGenerator.GetBytes(16);
 
-	private static void Test(IStreamCrypto crypto, Span<byte> origin)
-	{
-		Span<byte> o = stackalloc byte[origin.Length];
-
-		for (int i = 0; i < 1000; ++i)
-		{
-			crypto.Update(origin, o);
-		}
-
-		crypto.Dispose();
+		_aesCfb = Register(StreamCryptoCreate.AesCfb(true, key, iv));
+		_sm4Cfb = Register(StreamCryptoCreate.Sm4Cfb(true, key, iv));
 	}
 
 	[Benchmark(Baseline = true)]
-	public void ChaCha20()
+	public void AesCfb()
 	{
-		Test(new ChaCha20OriginalCrypto(_randomKey16, _randomIv8), _randombytes.Span);
+		Run(_aesCfb);
 	}
 
 	[Benchmark]
-	public void AESCFB()
+	public void Sm4Cfb()
 	{
-		Test(StreamCryptoCreate.AesCfb(true, _randomKey16, _randomIv16), _randombytes.Span);
+		Run(_sm4Cfb);
 	}
 }

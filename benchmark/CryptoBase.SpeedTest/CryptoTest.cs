@@ -1,6 +1,6 @@
 namespace CryptoBase.SpeedTest;
 
-internal class CryptoTest(int step, double duration)
+internal sealed class CryptoTest(int bufferSize, double seconds)
 {
 	public static ReadOnlySpan<byte> Key =>
 	[
@@ -18,81 +18,127 @@ internal class CryptoTest(int step, double duration)
 		24, 25, 26, 27, 28, 29, 30, 31
 	];
 
+	private const double TargetBatchSeconds = 0.02;
+
+	private const int SampleCount = 10;
+
+	internal const double MinimumSeconds = SampleCount * TargetBatchSeconds;
+
 	public void Test(IStreamCrypto crypto)
 	{
-		Span<byte> o = new byte[step];
-		ulong length = 0ul;
-		double totalSeconds = 0.0;
+		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
+		byte[] output = new byte[bufferSize];
 
-		ReadOnlySpan<byte> random = RandomNumberGenerator.GetBytes(step);
-
-		do
-		{
-			Span<byte> i = GC.AllocateUninitializedArray<byte>(random.Length);
-			random.CopyTo(i);
-			Stopwatch sw = Stopwatch.StartNew();
-
-			crypto.Update(i, o);
-
-			sw.Stop();
-			totalSeconds += sw.Elapsed.TotalSeconds;
-			++length;
-		} while (totalSeconds < duration);
-
-		double result = length * (ulong)step / totalSeconds / 1024.0 / 1024.0;
-		Console.WriteLine($@"{result:F2} MiB/s");
+		Measure(() => crypto.Update(input, output), crypto.Reset);
 	}
 
 	public void Test(IAEADCrypto crypto, int nonceLength = 12)
 	{
-		Span<byte> o = new byte[step];
-		ReadOnlySpan<byte> nonce = IV.Slice(0, nonceLength);
-		Span<byte> tag = stackalloc byte[16];
-		ulong length = 0ul;
-		double totalSeconds = 0.0;
+		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
+		byte[] output = new byte[bufferSize];
+		byte[] nonce = [.. IV.Slice(0, nonceLength)];
+		byte[] tag = new byte[16];
 
-		ReadOnlySpan<byte> random = RandomNumberGenerator.GetBytes(step);
-
-		do
-		{
-			Span<byte> i = GC.AllocateUninitializedArray<byte>(random.Length);
-			random.CopyTo(i);
-			Stopwatch sw = Stopwatch.StartNew();
-
-			crypto.Encrypt(nonce, i, o, tag);
-
-			sw.Stop();
-			totalSeconds += sw.Elapsed.TotalSeconds;
-			++length;
-		} while (totalSeconds < duration);
-
-		double result = length * (ulong)step / totalSeconds / 1024.0 / 1024.0;
-		Console.WriteLine($@"{result:F2} MiB/s");
+		Measure(() => crypto.Encrypt(nonce, input, output, tag));
 	}
 
 	public void Test(IBlockModeOneShot crypto)
 	{
-		Span<byte> o = new byte[crypto.GetMaxByteCount(step)];
-		ReadOnlySpan<byte> iv = IV.Slice(0, crypto.BlockSize);
-		ulong length = 0ul;
-		double totalSeconds = 0.0;
+		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
+		byte[] output = new byte[crypto.GetMaxByteCount(bufferSize)];
+		byte[] iv = [.. IV.Slice(0, crypto.BlockSize)];
 
-		ReadOnlySpan<byte> random = RandomNumberGenerator.GetBytes(step);
+		Measure(() => crypto.Encrypt(iv, input, output));
+	}
+
+	private void Measure(Action operation, Action? resetBetweenBatches = null)
+	{
+		long opsPerBatch = WarmupAndCalibrate(operation, resetBetweenBatches);
+		long sampleTicks = (long)(seconds / SampleCount * Stopwatch.Frequency);
+		Span<double> throughputs = stackalloc double[SampleCount];
+
+		for (int i = 0; i < SampleCount; ++i)
+		{
+			long ops = 0;
+			long elapsed = 0;
+
+			do
+			{
+				resetBetweenBatches?.Invoke();
+
+				long start = Stopwatch.GetTimestamp();
+
+				for (long j = 0; j < opsPerBatch; ++j)
+				{
+					operation();
+				}
+
+				elapsed += Stopwatch.GetTimestamp() - start;
+				ops += opsPerBatch;
+			} while (elapsed < sampleTicks);
+
+			throughputs[i] = ops * (double)bufferSize * Stopwatch.Frequency / elapsed;
+		}
+
+		throughputs.Sort();
+		double median = (throughputs[(SampleCount - 1) / 2] + throughputs[SampleCount / 2]) / 2.0;
+
+		Console.WriteLine($@"{median / 1024.0 / 1024.0:F2} MiB/s (CV {CoefficientOfVariation(throughputs):P1})");
+	}
+
+	private long WarmupAndCalibrate(Action operation, Action? resetBetweenBatches)
+	{
+		double warmupSeconds = Math.Clamp(seconds / 3.0, 0.2, 1.0);
+		long warmupTicks = (long)(warmupSeconds * Stopwatch.Frequency);
+		long targetBatchTicks = (long)(TargetBatchSeconds * Stopwatch.Frequency);
+		long opsPerBatch = 1;
+		long warmupElapsed = 0;
+		bool batchCalibrated;
 
 		do
 		{
-			Span<byte> i = GC.AllocateUninitializedArray<byte>(random.Length);
-			random.CopyTo(i);
-			Stopwatch sw = Stopwatch.StartNew();
+			resetBetweenBatches?.Invoke();
 
-			crypto.Encrypt(iv, i, o);
+			long start = Stopwatch.GetTimestamp();
 
-			sw.Stop();
-			totalSeconds += sw.Elapsed.TotalSeconds;
-			++length;
-		} while (totalSeconds < duration);
+			for (long i = 0; i < opsPerBatch; ++i)
+			{
+				operation();
+			}
 
-		double result = length * (ulong)step / totalSeconds / 1024.0 / 1024.0;
-		Console.WriteLine($@"{result:F2} MiB/s");
+			long batchTicks = Stopwatch.GetTimestamp() - start;
+			warmupElapsed += batchTicks;
+			batchCalibrated = batchTicks >= targetBatchTicks || opsPerBatch > long.MaxValue / 2;
+
+			if (!batchCalibrated)
+			{
+				opsPerBatch *= 2;
+			}
+		} while (warmupElapsed < warmupTicks || !batchCalibrated);
+
+		return opsPerBatch;
+	}
+
+	private static double CoefficientOfVariation(ReadOnlySpan<double> samples)
+	{
+		double mean = 0.0;
+
+		foreach (double sample in samples)
+		{
+			mean += sample;
+		}
+
+		mean /= samples.Length;
+
+		double variance = 0.0;
+
+		foreach (double sample in samples)
+		{
+			variance += (sample - mean) * (sample - mean);
+		}
+
+		variance /= samples.Length - 1;
+
+		return Math.Sqrt(variance) / mean;
 	}
 }

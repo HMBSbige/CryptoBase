@@ -4,6 +4,7 @@ using CryptoBase.BouncyCastle.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.AEADCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
+using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -11,46 +12,70 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class GCMBenchmark
 {
-	[Params(1024, 8192)]
-	public int Length { get; set; }
+	[Params(1024, 8192, 16384)]
+	public int ByteLength { get; set; }
 
-	private Memory<byte> _randombytes;
-	private byte[] _randomKey = null!;
-	private Memory<byte> _randomIv = null!;
+	private IAEADCrypto _managedAes = null!;
+	private IAEADCrypto? _dotNetAes;
+	private IAEADCrypto _bcAes = null!;
+	private IAEADCrypto _managedSm4 = null!;
+
+	private byte[] _input = [];
+	private byte[] _output = [];
+	private byte[] _nonce = [];
+	private byte[] _tag = [];
 
 	[GlobalSetup]
 	public void Setup()
 	{
-		_randombytes = RandomNumberGenerator.GetBytes(Length);
-		_randomKey = RandomNumberGenerator.GetBytes(16);
-		_randomIv = RandomNumberGenerator.GetBytes(12);
+		byte[] key = RandomNumberGenerator.GetBytes(16);
+
+		_managedAes = new GcmMode128<AesCipher>(AesCipher.Create(key));
+		_dotNetAes = DefaultAesGcmCrypto.IsSupported ? new DefaultAesGcmCrypto(key) : default;
+		_bcAes = new BcAesGcmCrypto(key);
+		_managedSm4 = new GcmMode128<Sm4Cipher>(Sm4Cipher.Create(key));
+
+		_input = RandomNumberGenerator.GetBytes(ByteLength);
+		_output = new byte[ByteLength];
+		_nonce = RandomNumberGenerator.GetBytes(12);
+		_tag = new byte[16];
 	}
 
-	private void TestEncrypt(IAEADCrypto crypto)
+	[GlobalCleanup]
+	public void Cleanup()
 	{
-		Span<byte> o = stackalloc byte[Length];
-		Span<byte> tag = stackalloc byte[16];
+		_managedAes.Dispose();
+		_dotNetAes?.Dispose();
+		_bcAes.Dispose();
+		_managedSm4.Dispose();
+	}
 
-		crypto.Encrypt(_randomIv.Span, _randombytes.Span, o, tag);
-
-		crypto.Dispose();
+	private void Encrypt(IAEADCrypto crypto)
+	{
+		crypto.Encrypt(_nonce, _input, _output, _tag);
 	}
 
 	[Benchmark(Baseline = true)]
-	public void DefaultEncrypt()
+	public void Managed()
 	{
-		TestEncrypt(new DefaultAesGcmCrypto(_randomKey));
+		Encrypt(_managedAes);
 	}
 
 	[Benchmark]
-	public void BouncyCastleEncrypt()
+	public void DotNet()
 	{
-		TestEncrypt(new BcAesGcmCrypto(_randomKey));
+		Encrypt(_dotNetAes ?? throw new NotSupportedException());
 	}
 
 	[Benchmark]
-	public void Encrypt()
+	public void BouncyCastle()
 	{
-		TestEncrypt(new GcmMode128<AesCipher>(AesCipher.Create(_randomKey)));
+		Encrypt(_bcAes);
+	}
+
+	[Benchmark]
+	public void ManagedSm4()
+	{
+		Encrypt(_managedSm4);
 	}
 }

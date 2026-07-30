@@ -7,42 +7,28 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark;
 
 [MemoryDiagnoser]
-public class RC4Benchmark
+public class RC4Benchmark : StreamCryptoBenchmarkBase
 {
-	[Params(1024, 8192)]
-	public int ByteLength { get; set; }
+	private IStreamCrypto _crypto = null!;
+	private IStreamCrypto _bcCrypto = null!;
 
-	private Memory<byte> _randombytes;
-	private byte[] _randomKey = null!;
-
-	[GlobalSetup]
-	public void Setup()
+	protected override void SetupCryptos()
 	{
-		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
-		_randomKey = RandomNumberGenerator.GetBytes(16);
+		byte[] key = RandomNumberGenerator.GetBytes(16);
+
+		_crypto = Register(new RC4Crypto(key));
+		_bcCrypto = Register(new BcRC4Crypto(key));
 	}
 
-	private static void Test(IStreamCrypto crypto, Span<byte> origin)
+	[Benchmark(Baseline = true)]
+	public void Default()
 	{
-		Span<byte> o = stackalloc byte[origin.Length];
-
-		for (int i = 0; i < 1000; ++i)
-		{
-			crypto.Update(origin, o);
-		}
-
-		crypto.Dispose();
+		Run(_crypto);
 	}
 
 	[Benchmark]
 	public void BouncyCastle()
 	{
-		Test(new BcRC4Crypto(_randomKey), _randombytes.Span);
-	}
-
-	[Benchmark(Baseline = true)]
-	public void RC4()
-	{
-		Test(new RC4Crypto(_randomKey), _randombytes.Span);
+		Run(_bcCrypto);
 	}
 }

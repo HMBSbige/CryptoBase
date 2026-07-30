@@ -1,12 +1,17 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Abstractions;
 using CryptoBase.Abstractions.Vectors;
+using CryptoBase.BouncyCastle.SymmetricCryptos.BlockCryptos;
 using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
 
+/// <summary>
+/// 每个方法都处理同样的 1024 字节，对比不同批处理宽度与 BouncyCastle 单块实现
+/// </summary>
+[MemoryDiagnoser]
 [RankColumn]
 public class AesCipherBenchmark
 {
@@ -17,13 +22,16 @@ public class AesCipherBenchmark
 	public bool IsDecrypt { get; set; }
 
 	private AesCipher _cipher = default!;
+	private BcAesCipher _bcCipher = default!;
 	private byte[] _buffer = [];
+	private VectorBuffer1024 _output;
 
 	[GlobalSetup]
 	public void Setup()
 	{
 		ReadOnlySpan<byte> key = RandomNumberGenerator.GetBytes(KeyLength);
 		_cipher = AesCipher.Create(key);
+		_bcCipher = BcAesCipher.Create(key);
 		_buffer = RandomNumberGenerator.GetBytes(64 * 16);
 	}
 
@@ -31,101 +39,136 @@ public class AesCipherBenchmark
 	public void Cleanup()
 	{
 		_cipher.Dispose();
+		_bcCipher.Dispose();
 	}
 
 	[Benchmark(Baseline = true)]
-	public VectorBuffer1024 B1()
+	public void B1()
 	{
 		ref VectorBuffer1024 source = ref _buffer.As<byte, VectorBuffer1024>();
-		Unsafe.SkipInit(out VectorBuffer1024 r);
+		ref VectorBuffer1024 output = ref _output;
 
-		for (int i = 0; i < 64 / 1; ++i)
+		if (IsDecrypt)
 		{
-			ref readonly VectorBuffer16 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref source), i);
-			ref VectorBuffer16 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref r), i);
-			dst = IsDecrypt ? _cipher.Decrypt(src) : _cipher.Encrypt(src);
+			for (int i = 0; i < 64 / 1; ++i)
+			{
+				ref readonly VectorBuffer16 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref source), i);
+				ref VectorBuffer16 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref output), i);
+				dst = _cipher.Decrypt(src);
+			}
 		}
-
-		return r;
+		else
+		{
+			for (int i = 0; i < 64 / 1; ++i)
+			{
+				ref readonly VectorBuffer16 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref source), i);
+				ref VectorBuffer16 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref output), i);
+				dst = _cipher.Encrypt(src);
+			}
+		}
 	}
 
 	[Benchmark]
-	public VectorBuffer1024 B2()
+	public void B2()
 	{
 		ref VectorBuffer1024 source = ref _buffer.As<byte, VectorBuffer1024>();
-		Unsafe.SkipInit(out VectorBuffer1024 r);
+		ref VectorBuffer1024 output = ref _output;
 
-		for (int i = 0; i < 64 / 2; ++i)
+		if (IsDecrypt)
 		{
-			ref readonly VectorBuffer32 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer32>(ref source), i);
-			ref VectorBuffer32 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer32>(ref r), i);
-			dst = IsDecrypt ? _cipher.Decrypt(src) : _cipher.Encrypt(src);
+			for (int i = 0; i < 64 / 2; ++i)
+			{
+				ref readonly VectorBuffer32 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer32>(ref source), i);
+				ref VectorBuffer32 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer32>(ref output), i);
+				dst = _cipher.Decrypt(src);
+			}
 		}
-
-		return r;
+		else
+		{
+			for (int i = 0; i < 64 / 2; ++i)
+			{
+				ref readonly VectorBuffer32 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer32>(ref source), i);
+				ref VectorBuffer32 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer32>(ref output), i);
+				dst = _cipher.Encrypt(src);
+			}
+		}
 	}
 
 	[Benchmark]
-	public VectorBuffer1024 B4()
+	public void B4()
 	{
 		ref VectorBuffer1024 source = ref _buffer.As<byte, VectorBuffer1024>();
-		Unsafe.SkipInit(out VectorBuffer1024 r);
+		ref VectorBuffer1024 output = ref _output;
 
-		for (int i = 0; i < 64 / 4; ++i)
+		if (IsDecrypt)
 		{
-			ref readonly VectorBuffer64 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer64>(ref source), i);
-			ref VectorBuffer64 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer64>(ref r), i);
-			dst = IsDecrypt ? _cipher.Decrypt(src) : _cipher.Encrypt(src);
+			for (int i = 0; i < 64 / 4; ++i)
+			{
+				ref readonly VectorBuffer64 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer64>(ref source), i);
+				ref VectorBuffer64 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer64>(ref output), i);
+				dst = _cipher.Decrypt(src);
+			}
 		}
-
-		return r;
+		else
+		{
+			for (int i = 0; i < 64 / 4; ++i)
+			{
+				ref readonly VectorBuffer64 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer64>(ref source), i);
+				ref VectorBuffer64 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer64>(ref output), i);
+				dst = _cipher.Encrypt(src);
+			}
+		}
 	}
 
 	[Benchmark]
-	public VectorBuffer1024 B8()
+	public void B8()
 	{
 		ref VectorBuffer1024 source = ref _buffer.As<byte, VectorBuffer1024>();
-		Unsafe.SkipInit(out VectorBuffer1024 r);
+		ref VectorBuffer1024 output = ref _output;
 
-		for (int i = 0; i < 64 / 8; ++i)
+		if (IsDecrypt)
 		{
-			ref readonly VectorBuffer128 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer128>(ref source), i);
-			ref VectorBuffer128 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer128>(ref r), i);
-			dst = IsDecrypt ? _cipher.Decrypt(src) : _cipher.Encrypt(src);
+			for (int i = 0; i < 64 / 8; ++i)
+			{
+				ref readonly VectorBuffer128 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer128>(ref source), i);
+				ref VectorBuffer128 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer128>(ref output), i);
+				dst = _cipher.Decrypt(src);
+			}
 		}
-
-		return r;
+		else
+		{
+			for (int i = 0; i < 64 / 8; ++i)
+			{
+				ref readonly VectorBuffer128 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer128>(ref source), i);
+				ref VectorBuffer128 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer128>(ref output), i);
+				dst = _cipher.Encrypt(src);
+			}
+		}
 	}
 
 	[Benchmark]
-	public VectorBuffer1024 B16()
+	public void BouncyCastle()
 	{
 		ref VectorBuffer1024 source = ref _buffer.As<byte, VectorBuffer1024>();
-		Unsafe.SkipInit(out VectorBuffer1024 r);
+		ref VectorBuffer1024 output = ref _output;
 
-		for (int i = 0; i < 64 / 16; ++i)
+		if (IsDecrypt)
 		{
-			ref readonly VectorBuffer256 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer256>(ref source), i);
-			ref VectorBuffer256 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer256>(ref r), i);
-			dst = IsDecrypt ? _cipher.DecryptV256(src) : _cipher.EncryptV256(src);
+			for (int i = 0; i < 64; ++i)
+			{
+				ref readonly VectorBuffer16 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref source), i);
+				ref VectorBuffer16 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref output), i);
+				dst = _bcCipher.Decrypt(src);
+			}
 		}
-
-		return r;
-	}
-
-	[Benchmark]
-	public VectorBuffer1024 B32()
-	{
-		ref VectorBuffer1024 source = ref _buffer.As<byte, VectorBuffer1024>();
-		Unsafe.SkipInit(out VectorBuffer1024 r);
-
-		for (int i = 0; i < 64 / 32; ++i)
+		else
 		{
-			ref readonly VectorBuffer512 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer512>(ref source), i);
-			ref VectorBuffer512 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer512>(ref r), i);
-			dst = IsDecrypt ? _cipher.DecryptV512(src) : _cipher.EncryptV512(src);
+			for (int i = 0; i < 64; ++i)
+			{
+				ref readonly VectorBuffer16 src = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref source), i);
+				ref VectorBuffer16 dst = ref Unsafe.Add(ref Unsafe.As<VectorBuffer1024, VectorBuffer16>(ref output), i);
+				dst = _bcCipher.Encrypt(src);
+			}
 		}
-
-		return r;
 	}
 }

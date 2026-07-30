@@ -7,44 +7,29 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark;
 
 [MemoryDiagnoser]
-public class XSalsa20Benchmark
+public class XSalsa20Benchmark : StreamCryptoBenchmarkBase
 {
-	[Params(1024, 8192)]
-	public int ByteLength { get; set; }
+	private IStreamCrypto _crypto = null!;
+	private IStreamCrypto _bcCrypto = null!;
 
-	private Memory<byte> _randombytes;
-	private byte[] _randomKey = null!;
-	private byte[] _randomIv = null!;
-
-	[GlobalSetup]
-	public void Setup()
+	protected override void SetupCryptos()
 	{
-		_randombytes = RandomNumberGenerator.GetBytes(ByteLength);
-		_randomKey = RandomNumberGenerator.GetBytes(32);
-		_randomIv = RandomNumberGenerator.GetBytes(24);
-	}
+		byte[] key = RandomNumberGenerator.GetBytes(32);
+		byte[] iv = RandomNumberGenerator.GetBytes(24);
 
-	private static void Test(IStreamCrypto crypto, Span<byte> origin)
-	{
-		Span<byte> o = stackalloc byte[origin.Length];
-
-		for (int i = 0; i < 1000; ++i)
-		{
-			crypto.Update(origin, o);
-		}
-
-		crypto.Dispose();
-	}
-
-	[Benchmark]
-	public void BouncyCastle()
-	{
-		Test(new BcXSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
+		_crypto = Register(new XSalsa20Crypto(key, iv));
+		_bcCrypto = Register(new BcXSalsa20Crypto(key, iv));
 	}
 
 	[Benchmark(Baseline = true)]
 	public void Default()
 	{
-		Test(new XSalsa20Crypto(_randomKey, _randomIv), _randombytes.Span);
+		Run(_crypto);
+	}
+
+	[Benchmark]
+	public void BouncyCastle()
+	{
+		Run(_bcCrypto);
 	}
 }
