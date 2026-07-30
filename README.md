@@ -7,6 +7,8 @@ CryptoBase.BouncyCastle | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBas
 
 A fast crypto library for .NET
 
+See the [documentation](docs/README.md) for installation and usage guides.
+
 ## Status
 
 | Icon | Description |
