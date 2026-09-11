@@ -30,28 +30,4 @@ public static class StreamCryptoCreate
 	{
 		return new CtrMode128<SM4Cipher>(SM4Cipher.Create(key), iv);
 	}
-
-	/// <summary>
-	/// Creates an AES-CFB cipher.
-	/// </summary>
-	/// <param name="isEncrypt"><see langword="true" /> for encryption; <see langword="false" /> for decryption.</param>
-	/// <param name="key">The 16-, 24-, or 32-byte AES key.</param>
-	/// <param name="iv">The 16-byte initialization vector.</param>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static IStreamCrypto AesCfb(bool isEncrypt, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
-	{
-		return new CfbMode128<AesCipher>(isEncrypt, AesCipher.Create(key), iv);
-	}
-
-	/// <summary>
-	/// Creates an SM4-CFB cipher.
-	/// </summary>
-	/// <param name="isEncrypt"><see langword="true" /> for encryption; <see langword="false" /> for decryption.</param>
-	/// <param name="key">The 16-byte SM4 key.</param>
-	/// <param name="iv">The 16-byte initialization vector.</param>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static IStreamCrypto SM4Cfb(bool isEncrypt, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
-	{
-		return new CfbMode128<SM4Cipher>(isEncrypt, SM4Cipher.Create(key), iv);
-	}
 }

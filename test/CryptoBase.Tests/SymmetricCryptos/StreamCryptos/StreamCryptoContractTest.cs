@@ -16,8 +16,6 @@ public class StreamCryptoContractTest
 	[Arguments(StreamAlgorithm.XSalsa20)]
 	[Arguments(StreamAlgorithm.AesCtr)]
 	[Arguments(StreamAlgorithm.SM4Ctr)]
-	[Arguments(StreamAlgorithm.AesCfb)]
-	[Arguments(StreamAlgorithm.SM4Cfb)]
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 	public async Task RejectedDestinationDoesNotAdvanceStateOrWrite(StreamAlgorithm algorithm)
 	{
@@ -46,8 +44,6 @@ public class StreamCryptoContractTest
 	[Arguments(StreamAlgorithm.XSalsa20)]
 	[Arguments(StreamAlgorithm.AesCtr)]
 	[Arguments(StreamAlgorithm.SM4Ctr)]
-	[Arguments(StreamAlgorithm.AesCfb)]
-	[Arguments(StreamAlgorithm.SM4Cfb)]
 	public async Task ExactInPlaceOperationMatchesSeparateDestination(StreamAlgorithm algorithm)
 	{
 		using IStreamCrypto inPlace = Create(algorithm);
@@ -83,22 +79,6 @@ public class StreamCryptoContractTest
 		await Assert.That(CreateXSalsa20WithInvalidNonce).ThrowsExactly<ArgumentOutOfRangeException>();
 	}
 
-	[Test]
-	public async Task SM4CfbFactoryMatchesKnownFirstBlock()
-	{
-		byte[] keyAndIv = Convert.FromHexString("0123456789abcdeffedcba9876543210");
-		byte[] plaintext = new byte[16];
-		byte[] ciphertext = new byte[16];
-		using IStreamCrypto encryptor = StreamCryptoCreate.SM4Cfb(true, keyAndIv, keyAndIv);
-		using IStreamCrypto decryptor = StreamCryptoCreate.SM4Cfb(false, keyAndIv, keyAndIv);
-
-		encryptor.Update(plaintext, ciphertext);
-
-		await Assert.That(Convert.ToHexString(ciphertext)).IsEqualTo("681EDF34D206965E86B3E94F536E4246");
-		decryptor.Update(ciphertext, ciphertext);
-		await Assert.That(ciphertext).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
-	}
-
 	public enum StreamAlgorithm
 	{
 		RC4,
@@ -108,9 +88,7 @@ public class StreamCryptoContractTest
 		Salsa20,
 		XSalsa20,
 		AesCtr,
-		SM4Ctr,
-		AesCfb,
-		SM4Cfb
+		SM4Ctr
 	}
 
 	private static IStreamCrypto Create(StreamAlgorithm algorithm)
@@ -128,8 +106,6 @@ public class StreamCryptoContractTest
 			StreamAlgorithm.XSalsa20 => new XSalsa20Crypto(key32, CreateDeterministicSource(24)),
 			StreamAlgorithm.AesCtr => StreamCryptoCreate.AesCtr(key32, CreateDeterministicSource(16)),
 			StreamAlgorithm.SM4Ctr => StreamCryptoCreate.SM4Ctr(key16, CreateDeterministicSource(16)),
-			StreamAlgorithm.AesCfb => StreamCryptoCreate.AesCfb(true, key32, CreateDeterministicSource(16)),
-			StreamAlgorithm.SM4Cfb => StreamCryptoCreate.SM4Cfb(true, key16, CreateDeterministicSource(16)),
 			_ => throw new ArgumentOutOfRangeException(nameof(algorithm))
 		};
 	}

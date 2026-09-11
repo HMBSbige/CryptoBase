@@ -6,11 +6,7 @@ internal static class CryptoList
 	public const string Aes128Ctr = @"aes-128-ctr";
 	public const string Aes192Ctr = @"aes-192-ctr";
 	public const string Aes256Ctr = @"aes-256-ctr";
-	public const string Aes128Cfb = @"aes-128-cfb";
-	public const string Aes192Cfb = @"aes-192-cfb";
-	public const string Aes256Cfb = @"aes-256-cfb";
 	public const string SM4Ctr = @"sm4-ctr";
-	public const string SM4Cfb = @"sm4-cfb";
 	public const string RC4 = @"rc4";
 	public const string ChaCha20Original = @"chacha20";
 	public const string ChaCha20 = @"chacha20-ietf";
@@ -32,11 +28,7 @@ internal static class CryptoList
 		Aes128Ctr,
 		Aes192Ctr,
 		Aes256Ctr,
-		Aes128Cfb,
-		Aes192Cfb,
-		Aes256Cfb,
 		SM4Ctr,
-		SM4Cfb,
 		RC4,
 		ChaCha20Original,
 		ChaCha20,
@@ -66,11 +58,7 @@ internal static class CryptoList
 			Aes128Ctr => StreamCryptoCreate.AesCtr(key16, iv16),
 			Aes192Ctr => StreamCryptoCreate.AesCtr(key24, iv16),
 			Aes256Ctr => StreamCryptoCreate.AesCtr(key32, iv16),
-			Aes128Cfb => StreamCryptoCreate.AesCfb(true, key16, iv16),
-			Aes192Cfb => StreamCryptoCreate.AesCfb(true, key24, iv16),
-			Aes256Cfb => StreamCryptoCreate.AesCfb(true, key32, iv16),
 			SM4Ctr => StreamCryptoCreate.SM4Ctr(key16, iv16),
-			SM4Cfb => StreamCryptoCreate.SM4Cfb(true, key16, iv16),
 			RC4 => new RC4Crypto(key16),
 			ChaCha20Original => new ChaCha20OriginalCrypto(key32, iv16.Slice(0, 8)),
 			ChaCha20 => new ChaCha20Crypto(key32, iv16.Slice(0, 12)),

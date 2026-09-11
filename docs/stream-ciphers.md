@@ -36,14 +36,12 @@ crypto.Reset();
 crypto.Update(ciphertext, recovered);
 ```
 
-## CTR and CFB factories
+## CTR factories
 
 | Factory | Key | IV or counter | Direction |
 | --- | ---: | ---: | --- |
 | `AesCtr` | 16, 24, or 32 bytes | Up to 16 bytes | Same operation |
 | `SM4Ctr` | 16 bytes | Up to 16 bytes | Same operation |
-| `AesCfb` | 16, 24, or 32 bytes | 16 bytes | Set with `isEncrypt` |
-| `SM4Cfb` | 16 bytes | 16 bytes | Set with `isEncrypt` |
 
 ```csharp
 using System.Security.Cryptography;
@@ -60,18 +58,4 @@ using IStreamCrypto ctr = StreamCryptoCreate.AesCtr(key, counter);
 
 // Encrypt or decrypt with the same operation.
 ctr.Update(input, output);
-
-byte[] iv = RandomNumberGenerator.GetBytes(16);
-byte[] ciphertext = new byte[input.Length];
-byte[] recovered = new byte[input.Length];
-
-// Create separate AES-CFB instances for encryption and decryption.
-using IStreamCrypto cfbEncryptor = StreamCryptoCreate.AesCfb(isEncrypt: true, key: key, iv: iv);
-using IStreamCrypto cfbDecryptor = StreamCryptoCreate.AesCfb(isEncrypt: false, key: key, iv: iv);
-
-// Encrypt with CFB.
-cfbEncryptor.Update(input, ciphertext);
-
-// Decrypt with CFB.
-cfbDecryptor.Update(ciphertext, recovered);
 ```

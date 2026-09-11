@@ -82,7 +82,6 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| CFB128 | ✅ |
 | CTR128 | ✅ |
 | XTS | ✅ |
 
