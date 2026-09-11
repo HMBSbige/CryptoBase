@@ -5,45 +5,6 @@ namespace CryptoBase;
 /// </summary>
 public static class FastUtils
 {
-	/// <inheritdoc cref="MemoryMarshal.GetArrayDataReference{T}" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ref T GetReference<T>(this T[] array)
-	{
-		return ref MemoryMarshal.GetArrayDataReference(array);
-	}
-
-	/// <inheritdoc cref="Vector256.Create{T}(Vector128{T})" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<T> BroadcastVector128ToVector256<T>(ref T source)
-	{
-		if (Avx2.IsSupported)
-		{
-			unsafe
-			{
-				return Avx2.BroadcastVector128ToVector256((byte*)Unsafe.AsPointer(ref source)).As<byte, T>();
-			}
-		}
-
-		ref Vector128<T> v = ref Unsafe.As<T, Vector128<T>>(ref source);
-		return Vector256.Create(v);
-	}
-
-	/// <inheritdoc cref="Avx512F.BroadcastVector128ToVector512(uint*)" />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<T> BroadcastVector128ToVector512<T>(ref T source)
-	{
-		if (Avx512F.IsSupported)
-		{
-			unsafe
-			{
-				return Avx512F.BroadcastVector128ToVector512((uint*)Unsafe.AsPointer(ref source)).As<uint, T>();
-			}
-		}
-
-		Vector256<T> v256 = BroadcastVector128ToVector256(ref source);
-		return Vector512.Create(v256);
-	}
-
 	/// <summary>
 	/// destination = source ^ stream
 	/// </summary>
@@ -56,15 +17,44 @@ public static class FastUtils
 		ref byte sourceRef = ref source.GetReference();
 		ref byte destinationRef = ref destination.GetReference();
 
+		if (Vector512.IsHardwareAccelerated && left >= 4096)
+		{
+			int batchSize = Vector512<byte>.Count * 8;
+
+			while (left >= batchSize)
+			{
+				nuint offset = (nuint)i;
+				Vector512<byte> vector0 = Vector512.LoadUnsafe(ref streamRef, offset) ^ Vector512.LoadUnsafe(ref sourceRef, offset);
+				Vector512<byte> vector1 = Vector512.LoadUnsafe(ref streamRef, offset + (nuint)Vector512<byte>.Count) ^ Vector512.LoadUnsafe(ref sourceRef, offset + (nuint)Vector512<byte>.Count);
+				Vector512<byte> vector2 = Vector512.LoadUnsafe(ref streamRef, offset + (nuint)(Vector512<byte>.Count * 2)) ^ Vector512.LoadUnsafe(ref sourceRef, offset + (nuint)(Vector512<byte>.Count * 2));
+				Vector512<byte> vector3 = Vector512.LoadUnsafe(ref streamRef, offset + (nuint)(Vector512<byte>.Count * 3)) ^ Vector512.LoadUnsafe(ref sourceRef, offset + (nuint)(Vector512<byte>.Count * 3));
+
+				vector0.StoreUnsafe(ref destinationRef, offset);
+				vector1.StoreUnsafe(ref destinationRef, offset + (nuint)Vector512<byte>.Count);
+				vector2.StoreUnsafe(ref destinationRef, offset + (nuint)(Vector512<byte>.Count * 2));
+				vector3.StoreUnsafe(ref destinationRef, offset + (nuint)(Vector512<byte>.Count * 3));
+
+				vector0 = Vector512.LoadUnsafe(ref streamRef, offset + (nuint)(Vector512<byte>.Count * 4)) ^ Vector512.LoadUnsafe(ref sourceRef, offset + (nuint)(Vector512<byte>.Count * 4));
+				vector1 = Vector512.LoadUnsafe(ref streamRef, offset + (nuint)(Vector512<byte>.Count * 5)) ^ Vector512.LoadUnsafe(ref sourceRef, offset + (nuint)(Vector512<byte>.Count * 5));
+				vector2 = Vector512.LoadUnsafe(ref streamRef, offset + (nuint)(Vector512<byte>.Count * 6)) ^ Vector512.LoadUnsafe(ref sourceRef, offset + (nuint)(Vector512<byte>.Count * 6));
+				vector3 = Vector512.LoadUnsafe(ref streamRef, offset + (nuint)(Vector512<byte>.Count * 7)) ^ Vector512.LoadUnsafe(ref sourceRef, offset + (nuint)(Vector512<byte>.Count * 7));
+
+				vector0.StoreUnsafe(ref destinationRef, offset + (nuint)(Vector512<byte>.Count * 4));
+				vector1.StoreUnsafe(ref destinationRef, offset + (nuint)(Vector512<byte>.Count * 5));
+				vector2.StoreUnsafe(ref destinationRef, offset + (nuint)(Vector512<byte>.Count * 6));
+				vector3.StoreUnsafe(ref destinationRef, offset + (nuint)(Vector512<byte>.Count * 7));
+
+				i += batchSize;
+				left -= batchSize;
+			}
+		}
+
 		if (Vector512.IsHardwareAccelerated)
 		{
 			while (left >= Vector512<byte>.Count)
 			{
-				ref readonly Vector512<byte> v0 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref streamRef, i));
-				ref readonly Vector512<byte> v1 = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref sourceRef, i));
-				ref Vector512<byte> dst = ref Unsafe.As<byte, Vector512<byte>>(ref Unsafe.Add(ref destinationRef, i));
-
-				dst = v0 ^ v1;
+				nuint offset = (nuint)i;
+				(Vector512.LoadUnsafe(ref streamRef, offset) ^ Vector512.LoadUnsafe(ref sourceRef, offset)).StoreUnsafe(ref destinationRef, offset);
 				i += Vector512<byte>.Count;
 				left -= Vector512<byte>.Count;
 			}
@@ -74,11 +64,8 @@ public static class FastUtils
 		{
 			while (left >= Vector256<byte>.Count)
 			{
-				ref readonly Vector256<byte> v0 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref streamRef, i));
-				ref readonly Vector256<byte> v1 = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref sourceRef, i));
-				ref Vector256<byte> dst = ref Unsafe.As<byte, Vector256<byte>>(ref Unsafe.Add(ref destinationRef, i));
-
-				dst = v0 ^ v1;
+				nuint offset = (nuint)i;
+				(Vector256.LoadUnsafe(ref streamRef, offset) ^ Vector256.LoadUnsafe(ref sourceRef, offset)).StoreUnsafe(ref destinationRef, offset);
 				i += Vector256<byte>.Count;
 				left -= Vector256<byte>.Count;
 			}
@@ -88,11 +75,8 @@ public static class FastUtils
 		{
 			while (left >= Vector128<byte>.Count)
 			{
-				ref readonly Vector128<byte> v0 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref streamRef, i));
-				ref readonly Vector128<byte> v1 = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref sourceRef, i));
-				ref Vector128<byte> dst = ref Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref destinationRef, i));
-
-				dst = v0 ^ v1;
+				nuint offset = (nuint)i;
+				(Vector128.LoadUnsafe(ref streamRef, offset) ^ Vector128.LoadUnsafe(ref sourceRef, offset)).StoreUnsafe(ref destinationRef, offset);
 				i += Vector128<byte>.Count;
 				left -= Vector128<byte>.Count;
 			}

@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using System.Numerics.Tensors;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark;
@@ -6,7 +7,7 @@ namespace CryptoBase.Benchmark;
 [MemoryDiagnoser]
 public class XorBenchmark
 {
-	[Params(16, 64, 1024, 8191, 8192)]
+	[Params(16, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 65536, 1048576)]
 	public int ByteLength { get; set; }
 
 	private byte[] _a = [];
@@ -21,22 +22,15 @@ public class XorBenchmark
 		_destination = new byte[ByteLength];
 	}
 
-	[Benchmark]
-	public void Normal()
-	{
-		ReadOnlySpan<byte> a = _a;
-		ReadOnlySpan<byte> b = _b;
-		Span<byte> destination = _destination;
-
-		for (int i = 0; i < destination.Length; ++i)
-		{
-			destination[i] = (byte)(a[i] ^ b[i]);
-		}
-	}
-
 	[Benchmark(Baseline = true)]
-	public void FastUtilsXor()
+	public void CryptoBase()
 	{
 		FastUtils.Xor(_a, _b, _destination, ByteLength);
+	}
+
+	[Benchmark]
+	public void DotNetTensorPrimitives()
+	{
+		TensorPrimitives.Xor(_a, _b, _destination);
 	}
 }

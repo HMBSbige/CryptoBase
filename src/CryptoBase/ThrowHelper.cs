@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CryptoBase;
 
 [StackTraceHidden]
@@ -18,9 +20,15 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
-	public static T ThrowUnreachable<T>() where T : allows ref struct
+	public static void ThrowSourceDestinationOverlap(string parameterName)
 	{
-		throw new InvalidOperationException(@"unreachable code!!!");
+		throw new ArgumentException("The source and destination buffers must not overlap unless they have the same starting address.", parameterName);
+	}
+
+	[DoesNotReturn]
+	public static void ThrowTagDestinationOverlap(string parameterName)
+	{
+		throw new ArgumentException("The tag and destination buffers must not overlap.", parameterName);
 	}
 
 	[DoesNotReturn]

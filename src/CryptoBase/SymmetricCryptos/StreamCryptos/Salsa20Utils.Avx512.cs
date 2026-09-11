@@ -11,8 +11,9 @@ internal static partial class Salsa20Utils
 		b ^= (c.AsUInt32() + d.AsUInt32()).RotateLeftUInt32(18).AsByte();
 	}
 
+	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static int SalsaCoreSoA1024Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
+	public static int SalsaCoreSoa1024Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int offset = 0;
 		int length = source.Length;
@@ -107,7 +108,8 @@ internal static partial class Salsa20Utils
 		return offset;
 	}
 
-	public static int SalsaCoreSoA2048Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
+	[SkipLocalsInit]
+	public static int SalsaCoreSoa2048Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int offset = 0;
 		int length = source.Length;

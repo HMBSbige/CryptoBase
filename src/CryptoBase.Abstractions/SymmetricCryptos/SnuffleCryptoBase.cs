@@ -18,5 +18,5 @@ public abstract class SnuffleCryptoBase : StreamCryptoBase
 	/// <summary>
 	/// Gets the initialization vector size, in bytes.
 	/// </summary>
-	public virtual int IvSize => 8;
+	public virtual int IVSize => 8;
 }

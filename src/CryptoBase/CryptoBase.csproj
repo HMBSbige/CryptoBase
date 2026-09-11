@@ -9,6 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="CryptoBase.Benchmark" />
+    <InternalsVisibleTo Include="CryptoBase.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
   </ItemGroup>
 

@@ -25,7 +25,7 @@ public class Salsa20Crypto : SnuffleCrypto
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
 		int keyLength = key.Length;
@@ -108,14 +108,14 @@ public class Salsa20Crypto : SnuffleCrypto
 		{
 			if (length >= 2048)
 			{
-				int offset = Salsa20Utils.SalsaCoreSoA2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				int offset = Salsa20Utils.SalsaCoreSoa2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 				processed += offset;
 				length -= offset;
 			}
 
 			if (length >= 1024)
 			{
-				int offset = Salsa20Utils.SalsaCoreSoA1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				int offset = Salsa20Utils.SalsaCoreSoa1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 				processed += offset;
 				length -= offset;
 			}

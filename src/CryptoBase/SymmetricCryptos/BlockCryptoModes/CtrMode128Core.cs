@@ -27,14 +27,14 @@ public abstract class CtrMode128Core<TBlockCipher, TIncrementer> : IStreamCrypto
 		_blockCipher = blockCipher;
 		_disposeCipher = disposeCipher;
 
-		SetIv(iv);
+		SetIV(iv);
 	}
 
 	/// <summary>
 	/// Sets the initial counter block and resets the cipher state.
 	/// </summary>
 	/// <param name="iv">The counter block, up to 16 bytes. Shorter values occupy the leading bytes and are followed by zeros.</param>
-	public void SetIv(ReadOnlySpan<byte> iv)
+	public void SetIV(ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(iv.Length, BlockSize, nameof(iv));
 
@@ -47,9 +47,9 @@ public abstract class CtrMode128Core<TBlockCipher, TIncrementer> : IStreamCrypto
 	/// <inheritdoc/>
 	public void Dispose()
 	{
-		CryptographicOperations.ZeroMemory(_iv.AsSpan());
-		CryptographicOperations.ZeroMemory(_counter.AsSpan());
-		CryptographicOperations.ZeroMemory(_keyStream.AsSpan());
+		_iv.ZeroMemory();
+		_counter.ZeroMemory();
+		_keyStream.ZeroMemory();
 
 		if (_disposeCipher)
 		{
@@ -122,7 +122,6 @@ public abstract class CtrMode128Core<TBlockCipher, TIncrementer> : IStreamCrypto
 		return ks;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private int UpdateBlock(ref VectorBuffer16 counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int i = 0;

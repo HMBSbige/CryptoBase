@@ -9,7 +9,7 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 	public override string Name => @"XChaCha20";
 
 	/// <inheritdoc />
-	public override int IvSize => 24;
+	public override int IVSize => 24;
 
 	/// <summary>
 	/// The required key size, in bytes.
@@ -51,7 +51,7 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 	/// <param name="iv">The nonce.</param>
 	public sealed override void SetIV(ReadOnlySpan<byte> iv)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
 		Span<uint> state = StateSpan;
 		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.AsSpan());
@@ -74,7 +74,7 @@ public class XChaCha20Crypto : ChaCha20OriginalCrypto
 	/// <inheritdoc />
 	public override void Dispose()
 	{
-		CryptographicOperations.ZeroMemory(_key.AsSpan());
+		_key.ZeroMemory();
 		base.Dispose();
 		GC.SuppressFinalize(this);
 	}

@@ -6,13 +6,13 @@ internal static partial class ChaCha20Utils
 	private static void QuarterRound(ref Vector256<byte> a, ref Vector256<byte> b, ref Vector256<byte> c, ref Vector256<byte> d)
 	{
 		a = (a.AsUInt32() + b.AsUInt32()).AsByte();
-		d = (a ^ d).RotateLeftUInt32_16();
+		d = (a ^ d).RotateLeftUInt32(16);
 
 		c = (c.AsUInt32() + d.AsUInt32()).AsByte();
 		b = (b ^ c).RotateLeftUInt32(12);
 
 		a = (a.AsUInt32() + b.AsUInt32()).AsByte();
-		d = (a ^ d).RotateLeftUInt32_8();
+		d = (a ^ d).RotateLeftUInt32(8);
 
 		c = (c.AsUInt32() + d.AsUInt32()).AsByte();
 		b = (b ^ c).RotateLeftUInt32(7);
@@ -23,8 +23,8 @@ internal static partial class ChaCha20Utils
 	{
 		Vector256<uint> counterV = Vector256.Create(counter).AsUInt32();
 
-		Vector256<uint> x0 = (counterV.AsUInt64() + Vector256.Create(0UL, 1, 2, 3)).AsUInt32();
-		Vector256<uint> x1 = (counterV.AsUInt64() + Vector256.Create(4UL, 5, 6, 7)).AsUInt32();
+		Vector256<uint> x0 = (counterV.AsUInt64() + Vector256.CreateSequence(0UL, 1UL)).AsUInt32();
+		Vector256<uint> x1 = (counterV.AsUInt64() + Vector256.CreateSequence(4UL, 1UL)).AsUInt32();
 
 		// =>
 		// 0 8 1 9 4 12 5 13
@@ -42,10 +42,11 @@ internal static partial class ChaCha20Utils
 		// 0 2 4 6 8 10 12 14
 		// 1 3 5 7 9 11 13 15
 		Vector256<uint> control = Vector256.Create(0u, 1, 4, 5, 2, 3, 6, 7);
-		outCounterLow = Avx2.PermuteVar8x32(b0, control).AsByte();
-		outCounterHigh = Avx2.PermuteVar8x32(b1, control).AsByte();
+		outCounterLow = Vector256.Shuffle(b0, control).AsByte();
+		outCounterHigh = Vector256.Shuffle(b1, control).AsByte();
 	}
 
+	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ChaChaCoreOriginal512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
@@ -142,6 +143,7 @@ internal static partial class ChaCha20Utils
 		return offset;
 	}
 
+	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ChaChaCore512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
@@ -176,7 +178,7 @@ internal static partial class ChaCha20Utils
 		{
 			ref readonly VectorBuffer512 s = ref Unsafe.As<byte, VectorBuffer512>(ref Unsafe.Add(ref sourceRef, offset));
 
-			o.V256_12 = (Vector256.Create(counter) + Vector256.Create(0u, 1, 2, 3, 4, 5, 6, 7)).AsByte();
+			o.V256_12 = Vector256.CreateSequence(counter, 1u).AsByte();
 			VectorBuffer512 x = o;
 
 			for (int i = 0; i < rounds; i += 2)

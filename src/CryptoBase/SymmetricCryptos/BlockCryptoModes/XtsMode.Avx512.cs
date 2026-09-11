@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
 public sealed partial class XtsMode<TBlockCipher>
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector512<byte> Gf128MulAvx512(Vector512<byte> tweak, [ConstantExpected(Min = 1, Max = 64)] int x)
+	private static Vector512<byte> GF128MulAvx512(Vector512<byte> tweak, [ConstantExpected(Min = 1, Max = 64)] int x)
 	{
 		Vector512<ulong> tmp1 = tweak.AsUInt64() >>> 64 - x;
 
@@ -20,24 +22,24 @@ public sealed partial class XtsMode<TBlockCipher>
 	{
 		Unsafe.SkipInit(out VectorBuffer256 r);
 		r.V128_0 = tweak;
-		r.V128_1 = Gf128MulSse2(tweak, 1);
-		r.V128_2 = Gf128MulSse2(tweak, 2);
-		r.V128_3 = Gf128MulSse2(tweak, 3);
+		r.V128_1 = GF128MulSse2(tweak, 1);
+		r.V128_2 = GF128MulSse2(tweak, 2);
+		r.V128_3 = GF128MulSse2(tweak, 3);
 
-		r.V512_1 = Gf128MulAvx512(r.V512_0, 4);
-		r.V512_2 = Gf128MulAvx512(r.V512_0, 8);
-		r.V512_3 = Gf128MulAvx512(r.V512_0, 12);
+		r.V512_1 = GF128MulAvx512(r.V512_0, 4);
+		r.V512_2 = GF128MulAvx512(r.V512_0, 8);
+		r.V512_3 = GF128MulAvx512(r.V512_0, 12);
 
 		return r;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Gf128Mul16Avx512(ref VectorBuffer256 tweak)
+	private static void GF128Mul16Avx512(ref VectorBuffer256 tweak)
 	{
-		tweak.V512_0 = Gf128MulAvx512(tweak.V512_0, 16);
-		tweak.V512_1 = Gf128MulAvx512(tweak.V512_1, 16);
-		tweak.V512_2 = Gf128MulAvx512(tweak.V512_2, 16);
-		tweak.V512_3 = Gf128MulAvx512(tweak.V512_3, 16);
+		tweak.V512_0 = GF128MulAvx512(tweak.V512_0, 16);
+		tweak.V512_1 = GF128MulAvx512(tweak.V512_1, 16);
+		tweak.V512_2 = GF128MulAvx512(tweak.V512_2, 16);
+		tweak.V512_3 = GF128MulAvx512(tweak.V512_3, 16);
 	}
 
 	[SkipLocalsInit]
@@ -46,32 +48,32 @@ public sealed partial class XtsMode<TBlockCipher>
 	{
 		Unsafe.SkipInit(out VectorBuffer512 r);
 		r.Lower.V128_0 = tweak;
-		r.Lower.V128_1 = Gf128MulSse2(tweak, 1);
-		r.Lower.V128_2 = Gf128MulSse2(tweak, 2);
-		r.Lower.V128_3 = Gf128MulSse2(tweak, 3);
+		r.Lower.V128_1 = GF128MulSse2(tweak, 1);
+		r.Lower.V128_2 = GF128MulSse2(tweak, 2);
+		r.Lower.V128_3 = GF128MulSse2(tweak, 3);
 
-		r.V512_1 = Gf128MulAvx512(r.V512_0, 4);
-		r.V512_2 = Gf128MulAvx512(r.V512_0, 8);
-		r.V512_3 = Gf128MulAvx512(r.V512_0, 12);
-		r.V512_4 = Gf128MulAvx512(r.V512_0, 16);
-		r.V512_5 = Gf128MulAvx512(r.V512_0, 20);
-		r.V512_6 = Gf128MulAvx512(r.V512_0, 24);
-		r.V512_7 = Gf128MulAvx512(r.V512_0, 28);
+		r.V512_1 = GF128MulAvx512(r.V512_0, 4);
+		r.V512_2 = GF128MulAvx512(r.V512_0, 8);
+		r.V512_3 = GF128MulAvx512(r.V512_0, 12);
+		r.V512_4 = GF128MulAvx512(r.V512_0, 16);
+		r.V512_5 = GF128MulAvx512(r.V512_0, 20);
+		r.V512_6 = GF128MulAvx512(r.V512_0, 24);
+		r.V512_7 = GF128MulAvx512(r.V512_0, 28);
 
 		return r;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Gf128Mul32Avx512(ref VectorBuffer512 tweak)
+	private static void GF128Mul32Avx512(ref VectorBuffer512 tweak)
 	{
-		tweak.V512_0 = Gf128MulAvx512(tweak.V512_0, 32);
-		tweak.V512_1 = Gf128MulAvx512(tweak.V512_1, 32);
-		tweak.V512_2 = Gf128MulAvx512(tweak.V512_2, 32);
-		tweak.V512_3 = Gf128MulAvx512(tweak.V512_3, 32);
-		tweak.V512_4 = Gf128MulAvx512(tweak.V512_4, 32);
-		tweak.V512_5 = Gf128MulAvx512(tweak.V512_5, 32);
-		tweak.V512_6 = Gf128MulAvx512(tweak.V512_6, 32);
-		tweak.V512_7 = Gf128MulAvx512(tweak.V512_7, 32);
+		tweak.V512_0 = GF128MulAvx512(tweak.V512_0, 32);
+		tweak.V512_1 = GF128MulAvx512(tweak.V512_1, 32);
+		tweak.V512_2 = GF128MulAvx512(tweak.V512_2, 32);
+		tweak.V512_3 = GF128MulAvx512(tweak.V512_3, 32);
+		tweak.V512_4 = GF128MulAvx512(tweak.V512_4, 32);
+		tweak.V512_5 = GF128MulAvx512(tweak.V512_5, 32);
+		tweak.V512_6 = GF128MulAvx512(tweak.V512_6, 32);
+		tweak.V512_7 = GF128MulAvx512(tweak.V512_7, 32);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -105,7 +107,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			dst.V512_2 = tmp.V512_2 ^ tweakBuffer.V512_2;
 			dst.V512_3 = tmp.V512_3 ^ tweakBuffer.V512_3;
 
-			Gf128Mul16Avx512(ref tweakBuffer);
+			GF128Mul16Avx512(ref tweakBuffer);
 
 			offset += 16 * BlockBytesSize;
 			length -= 16 * BlockBytesSize;
@@ -155,7 +157,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			dst.V512_6 = tmp.V512_6 ^ tweakBuffer.V512_6;
 			dst.V512_7 = tmp.V512_7 ^ tweakBuffer.V512_7;
 
-			Gf128Mul32Avx512(ref tweakBuffer);
+			GF128Mul32Avx512(ref tweakBuffer);
 
 			offset += 32 * BlockBytesSize;
 			length -= 32 * BlockBytesSize;
@@ -197,7 +199,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			dst.V512_2 = tmp.V512_2 ^ tweakBuffer.V512_2;
 			dst.V512_3 = tmp.V512_3 ^ tweakBuffer.V512_3;
 
-			Gf128Mul16Avx512(ref tweakBuffer);
+			GF128Mul16Avx512(ref tweakBuffer);
 
 			offset += 16 * BlockBytesSize;
 			length -= 16 * BlockBytesSize;
@@ -247,7 +249,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			dst.V512_6 = tmp.V512_6 ^ tweakBuffer.V512_6;
 			dst.V512_7 = tmp.V512_7 ^ tweakBuffer.V512_7;
 
-			Gf128Mul32Avx512(ref tweakBuffer);
+			GF128Mul32Avx512(ref tweakBuffer);
 
 			offset += 32 * BlockBytesSize;
 			length -= 32 * BlockBytesSize;

@@ -9,7 +9,7 @@ public class XSalsa20Crypto : Salsa20Crypto
 	public override string Name => @"XSalsa20";
 
 	/// <inheritdoc />
-	public override int IvSize => 24;
+	public override int IVSize => 24;
 
 	/// <summary>
 	/// The required key size, in bytes.
@@ -30,7 +30,7 @@ public class XSalsa20Crypto : Salsa20Crypto
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
-		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
 		Span<uint> state = StateSpan;
 

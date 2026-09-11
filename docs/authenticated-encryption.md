@@ -2,35 +2,35 @@
 
 [Back to documentation](README.md)
 
-Use `AEADCryptoCreate` to create an `IAEADCrypto` implementation.
-
-## Algorithms and sizes
-
 | Factory | Key | Nonce | Tag |
 | --- | ---: | ---: | ---: |
 | `AesGcm` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
-| `Sm4Gcm` | 16 bytes | 12 bytes | 16 bytes |
+| `SM4Gcm` | 16 bytes | 12 bytes | 16 bytes |
 | `ChaCha20Poly1305` | 32 bytes | 12 bytes | 16 bytes |
 | `XChaCha20Poly1305` | 32 bytes | 24 bytes | 16 bytes |
-
-## Usage
 
 ```csharp
 using System.Security.Cryptography;
 using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.SymmetricCryptos.AEADCryptos;
+using CryptoBase.SymmetricCryptos.AeadCryptos;
 
 byte[] key = RandomNumberGenerator.GetBytes(32);
-byte[] nonce = RandomNumberGenerator.GetBytes(24);
 byte[] plaintext = "message"u8.ToArray();
-byte[] ciphertext = new byte[plaintext.Length];
-byte[] tag = new byte[16];
+byte[] associatedData = "record header"u8.ToArray();
 
-using IAEADCrypto crypto = AEADCryptoCreate.XChaCha20Poly1305(key);
-crypto.Encrypt(nonce, plaintext, ciphertext, tag, "record header"u8);
+// Create an XChaCha20-Poly1305 instance.
+using IAeadCrypto crypto = AeadCryptoCreate.XChaCha20Poly1305(key);
 
-byte[] recovered = new byte[ciphertext.Length];
-crypto.Decrypt(nonce, ciphertext, tag, recovered, "record header"u8);
+// Use a unique nonce for each encryption with the same key.
+byte[] nonce = RandomNumberGenerator.GetBytes(crypto.NonceSizeInBytes);
+byte[] ciphertext = new byte[crypto.GetCiphertextSizeInBytes(plaintext.Length)];
+byte[] tag = new byte[crypto.TagSizeInBytes];
+
+// Encrypt and write the ciphertext and tag separately.
+crypto.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
+
+byte[] recovered = new byte[crypto.GetPlaintextSizeInBytes(ciphertext.Length)];
+
+// Authenticate and decrypt; failure throws AuthenticationTagMismatchException without changing recovered.
+crypto.Decrypt(nonce, ciphertext, tag, recovered, associatedData);
 ```
-
-The plaintext and ciphertext buffers must have the same length. Associated data is optional; pass the same value to `Decrypt`. A mismatched ciphertext, nonce, tag, or associated-data value causes `Decrypt` to throw `AuthenticationTagMismatchException`.

@@ -32,12 +32,12 @@ internal sealed class CryptoTest(int bufferSize, double seconds)
 		Measure(() => crypto.Update(input, output), crypto.Reset);
 	}
 
-	public void Test(IAEADCrypto crypto, int nonceLength = 12)
+	public void Test(IAeadCrypto crypto)
 	{
 		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
-		byte[] output = new byte[bufferSize];
-		byte[] nonce = [.. IV.Slice(0, nonceLength)];
-		byte[] tag = new byte[16];
+		byte[] output = new byte[crypto.GetCiphertextSizeInBytes(input.Length)];
+		byte[] nonce = [.. IV.Slice(0, crypto.NonceSizeInBytes)];
+		byte[] tag = new byte[crypto.TagSizeInBytes];
 
 		Measure(() => crypto.Encrypt(nonce, input, output, tag));
 	}

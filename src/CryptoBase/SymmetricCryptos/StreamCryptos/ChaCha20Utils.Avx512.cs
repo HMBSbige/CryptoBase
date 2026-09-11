@@ -23,14 +23,15 @@ internal static partial class ChaCha20Utils
 	{
 		Vector512<uint> counterV = Vector512.Create(counter).AsUInt32();
 
-		Vector512<uint> x0 = (counterV.AsUInt64() + Vector512.Create(0UL, 1, 2, 3, 4, 5, 6, 7)).AsUInt32();
-		Vector512<uint> x1 = (counterV.AsUInt64() + Vector512.Create(8UL, 9, 10, 11, 12, 13, 14, 15)).AsUInt32();
+		Vector512<uint> x0 = (counterV.AsUInt64() + Vector512.CreateSequence(0UL, 1UL)).AsUInt32();
+		Vector512<uint> x1 = (counterV.AsUInt64() + Vector512.CreateSequence(8UL, 1UL)).AsUInt32();
 
 		outCounterLow = Avx512F.PermuteVar16x32x2(x0, Vector512.CreateSequence<uint>(0, 2), x1).AsByte();
 		outCounterHigh = Avx512F.PermuteVar16x32x2(x0, Vector512.CreateSequence<uint>(1, 2), x1).AsByte();
 	}
 
-	public static int ChaChaCoreOriginalSoA1024Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
+	[SkipLocalsInit]
+	public static int ChaChaCoreOriginalSoa1024Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int offset = 0;
 		int length = source.Length;
@@ -124,7 +125,8 @@ internal static partial class ChaCha20Utils
 		return offset;
 	}
 
-	public static int ChaChaCoreOriginalSoA2048Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
+	[SkipLocalsInit]
+	public static int ChaChaCoreOriginalSoa2048Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int offset = 0;
 		int length = source.Length;
@@ -269,7 +271,8 @@ internal static partial class ChaCha20Utils
 		return offset;
 	}
 
-	public static int ChaChaCoreSoA1024Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
+	[SkipLocalsInit]
+	public static int ChaChaCoreSoa1024Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int offset = 0;
 		int length = source.Length;
@@ -302,7 +305,7 @@ internal static partial class ChaCha20Utils
 		{
 			ref readonly VectorBuffer1024 s = ref Unsafe.As<byte, VectorBuffer1024>(ref Unsafe.Add(ref sourceRef, offset));
 
-			o.V512_12 = (Vector512.Create(counter) + Vector512.CreateSequence<uint>(0, 1)).AsByte();
+			o.V512_12 = Vector512.CreateSequence(counter, 1u).AsByte();
 			VectorBuffer1024 x = o;
 
 			for (int i = 0; i < rounds; i += 2)
@@ -363,7 +366,8 @@ internal static partial class ChaCha20Utils
 		return offset;
 	}
 
-	public static int ChaChaCoreSoA2048Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
+	[SkipLocalsInit]
+	public static int ChaChaCoreSoa2048Avx512(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		int offset = 0;
 		int length = source.Length;
@@ -397,9 +401,9 @@ internal static partial class ChaCha20Utils
 			ref readonly VectorBuffer1024 s0 = ref Unsafe.As<byte, VectorBuffer1024>(ref Unsafe.Add(ref sourceRef, offset));
 			ref readonly VectorBuffer1024 s1 = ref Unsafe.As<byte, VectorBuffer1024>(ref Unsafe.Add(ref sourceRef, offset + 1024));
 
-			Vector512<byte> t12 = o.V512_12 = (Vector512.Create(counter) + Vector512.CreateSequence<uint>(0, 1)).AsByte();
+			Vector512<byte> t12 = o.V512_12 = Vector512.CreateSequence(counter, 1u).AsByte();
 			VectorBuffer1024 x0 = o;
-			o.V512_12 = (Vector512.Create(counter + 16) + Vector512.CreateSequence<uint>(0, 1)).AsByte();
+			o.V512_12 = Vector512.CreateSequence(counter + 16, 1u).AsByte();
 			VectorBuffer1024 x1 = o;
 
 			for (int i = 0; i < rounds; i += 2)

@@ -1,3 +1,5 @@
+using AesX86 = System.Runtime.Intrinsics.X86.Aes;
+
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
 internal static partial class SM4Utils
@@ -24,8 +26,8 @@ internal static partial class SM4Utils
 		private void PreTransform()
 		{
 			Vector256<byte> vc0f = Vector256.Create((byte)0x0F);
-			Vector256<byte> vm1l = Vector256.Create(0x9197E2E474720701, 0xC7C1B4B222245157, 0x9197E2E474720701, 0xC7C1B4B222245157).AsByte();
-			Vector256<byte> vm1h = Vector256.Create(0xE240AB09EB49A200, 0xF052B91BF95BB012, 0xE240AB09EB49A200, 0xF052B91BF95BB012).AsByte();
+			Vector256<byte> vm1l = Vector256.Create(Vector128.Create(0x9197E2E474720701UL, 0xC7C1B4B222245157UL)).AsByte();
+			Vector256<byte> vm1h = Vector256.Create(Vector128.Create(0xE240AB09EB49A200UL, 0xF052B91BF95BB012UL)).AsByte();
 			Vector256<byte> t = x & vc0f;
 			x &= ~vc0f;
 			x = (x.AsUInt32() >>> 4).AsByte();
@@ -39,8 +41,8 @@ internal static partial class SM4Utils
 		private void PostTransform()
 		{
 			Vector256<byte> vc0f = Vector256.Create((byte)0x0F);
-			Vector256<byte> vm2l = Vector256.Create(0x5B67F2CEA19D0834, 0xEDD14478172BBE82, 0x5B67F2CEA19D0834, 0xEDD14478172BBE82).AsByte();
-			Vector256<byte> vm2h = Vector256.Create(0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF, 0xAE7201DD73AFDC00, 0x11CDBE62CC1063BF).AsByte();
+			Vector256<byte> vm2l = Vector256.Create(Vector128.Create(0x5B67F2CEA19D0834UL, 0xEDD14478172BBE82UL)).AsByte();
+			Vector256<byte> vm2h = Vector256.Create(Vector128.Create(0xAE7201DD73AFDC00UL, 0x11CDBE62CC1063BFUL)).AsByte();
 			Vector256<byte> t = ~x & vc0f;
 			x = (x.AsUInt32() >>> 4).AsByte();
 			x &= vc0f;
@@ -68,9 +70,9 @@ internal static partial class SM4Utils
 		x.PostTransform();
 		x = Avx2.Shuffle(x, vshr);
 
-		Vector256<byte> t = x ^ x.RotateLeftUInt32_8() ^ x.RotateLeftUInt32_16();
+		Vector256<byte> t = x ^ x.RotateLeftUInt32(8) ^ x.RotateLeftUInt32(16);
 		t = t.RotateLeftUInt32(2);
-		x = x ^ t ^ x.RotateLeftUInt32_24();
+		x = x ^ t ^ x.RotateLeftUInt32(24);
 
 		x ^= r0;
 		r0 = r1;

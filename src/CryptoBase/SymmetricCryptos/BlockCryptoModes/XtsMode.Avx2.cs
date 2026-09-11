@@ -1,15 +1,17 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CryptoBase.SymmetricCryptos.BlockCryptoModes;
 
 public sealed partial class XtsMode<TBlockCipher>
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<byte> Gf128MulAvx2(Vector256<byte> tweak, [ConstantExpected(Min = 1, Max = 64)] int x)
+	private static Vector256<byte> GF128MulAvx2(Vector256<byte> tweak, [ConstantExpected(Min = 1, Max = 64)] int x)
 	{
 		Vector256<ulong> tmp1 = tweak.AsUInt64() >>> 64 - x;
 
 		Vector256<ulong> tmp2 = Pclmulqdq.V256.CarrylessMultiply(tmp1, Vector256.Create(0x87UL), 0x01);
 
-		tmp1 = Avx2.ShiftLeftLogical128BitLane(tmp1.AsByte(), 8).AsUInt64();
+		tmp1 = Avx2.ShiftLeftLogical128BitLane(tmp1, 8);
 
 		return (tweak.AsUInt64() << x ^ tmp1 ^ tmp2).AsByte();
 	}
@@ -20,22 +22,22 @@ public sealed partial class XtsMode<TBlockCipher>
 	{
 		Unsafe.SkipInit(out VectorBuffer128 r);
 		r.V128_0 = tweak;
-		r.V128_1 = Gf128MulSse2(tweak, 1);
+		r.V128_1 = GF128MulSse2(tweak, 1);
 
-		r.V256_1 = Gf128MulAvx2(r.V256_0, 2);
-		r.V256_2 = Gf128MulAvx2(r.V256_0, 4);
-		r.V256_3 = Gf128MulAvx2(r.V256_0, 6);
+		r.V256_1 = GF128MulAvx2(r.V256_0, 2);
+		r.V256_2 = GF128MulAvx2(r.V256_0, 4);
+		r.V256_3 = GF128MulAvx2(r.V256_0, 6);
 
 		return r;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Gf128Mul8Avx2(ref VectorBuffer128 tweak)
+	private static void GF128Mul8Avx2(ref VectorBuffer128 tweak)
 	{
-		tweak.V256_0 = Gf128MulAvx2(tweak.V256_0, 8);
-		tweak.V256_1 = Gf128MulAvx2(tweak.V256_1, 8);
-		tweak.V256_2 = Gf128MulAvx2(tweak.V256_2, 8);
-		tweak.V256_3 = Gf128MulAvx2(tweak.V256_3, 8);
+		tweak.V256_0 = GF128MulAvx2(tweak.V256_0, 8);
+		tweak.V256_1 = GF128MulAvx2(tweak.V256_1, 8);
+		tweak.V256_2 = GF128MulAvx2(tweak.V256_2, 8);
+		tweak.V256_3 = GF128MulAvx2(tweak.V256_3, 8);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,7 +71,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			dst.V256_2 = tmp.V256_2 ^ tweakBuffer.V256_2;
 			dst.V256_3 = tmp.V256_3 ^ tweakBuffer.V256_3;
 
-			Gf128Mul8Avx2(ref tweakBuffer);
+			GF128Mul8Avx2(ref tweakBuffer);
 
 			offset += 8 * BlockBytesSize;
 			length -= 8 * BlockBytesSize;
@@ -111,7 +113,7 @@ public sealed partial class XtsMode<TBlockCipher>
 			dst.V256_2 = tmp.V256_2 ^ tweakBuffer.V256_2;
 			dst.V256_3 = tmp.V256_3 ^ tweakBuffer.V256_3;
 
-			Gf128Mul8Avx2(ref tweakBuffer);
+			GF128Mul8Avx2(ref tweakBuffer);
 
 			offset += 8 * BlockBytesSize;
 			length -= 8 * BlockBytesSize;

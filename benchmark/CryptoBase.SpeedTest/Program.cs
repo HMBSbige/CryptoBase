@@ -1,15 +1,3 @@
-global using CryptoBase;
-global using CryptoBase.Abstractions.SymmetricCryptos;
-global using CryptoBase.SpeedTest;
-global using CryptoBase.SymmetricCryptos.AEADCryptos;
-global using CryptoBase.SymmetricCryptos.BlockCryptoModes;
-global using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
-global using CryptoBase.SymmetricCryptos.StreamCryptos;
-global using System.Collections.Immutable;
-global using System.CommandLine;
-global using System.Diagnostics;
-global using System.Security.Cryptography;
-
 #if DEBUG
 await Console.Error.WriteLineAsync(@"On Debug mode");
 #endif
@@ -155,17 +143,12 @@ cmd.SetAction
 
 			switch (crypto)
 			{
-				case XChaCha20Poly1305Crypto xc20P1305:
-				{
-					t.Test(xc20P1305, 24);
-					break;
-				}
 				case IStreamCrypto streamCrypto:
 				{
 					t.Test(streamCrypto);
 					break;
 				}
-				case IAEADCrypto aeadCrypto:
+				case IAeadCrypto aeadCrypto:
 				{
 					t.Test(aeadCrypto);
 					break;

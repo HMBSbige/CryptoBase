@@ -81,14 +81,14 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 		{
 			if (length >= 2048)
 			{
-				int offset = ChaCha20Utils.ChaChaCoreOriginalSoA2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				int offset = ChaCha20Utils.ChaChaCoreOriginalSoa2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 				processed += offset;
 				length -= offset;
 			}
 
 			if (length >= 1024)
 			{
-				int offset = ChaCha20Utils.ChaChaCoreOriginalSoA1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
+				int offset = ChaCha20Utils.ChaChaCoreOriginalSoa1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
 				processed += offset;
 				length -= offset;
 			}
@@ -144,6 +144,30 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 	}
 
 	/// <summary>
+	/// Writes the Poly1305 one-time key from the current ChaCha20 block without
+	/// advancing the counter or retaining a partially consumed key-stream block.
+	/// The counter must be 0 on entry, and the caller must set it to 1 before
+	/// processing the message.
+	/// </summary>
+	internal void DerivePoly1305Key(Span<byte> destination)
+	{
+		Debug.Assert(destination.Length is 32);
+		Debug.Assert(ChaCha20Utils.GetCounterOriginal(ref StateRef) is 0);
+
+		Span<byte> keyStream = KeyStreamSpan;
+		if (Sse2.IsSupported)
+		{
+			ChaCha20Utils.UpdateKeyStream(StateSpan, keyStream, Rounds);
+		}
+		else
+		{
+			ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, keyStream);
+		}
+
+		Unsafe.CopyBlockUnaligned(ref destination.GetReference(), ref keyStream.GetReference(), 32);
+	}
+
+	/// <summary>
 	/// Sets the 64-bit block counter.
 	/// </summary>
 	/// <param name="counter">The counter value.</param>
@@ -172,7 +196,7 @@ public class ChaCha20OriginalCrypto : SnuffleCrypto
 	/// <param name="iv">The nonce.</param>
 	public virtual void SetIV(ReadOnlySpan<byte> iv)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IvSize, nameof(iv));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		Span<uint> state = StateSpan;

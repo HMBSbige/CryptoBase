@@ -1,0 +1,11 @@
+global using CryptoBase;
+global using CryptoBase.Abstractions.SymmetricCryptos;
+global using CryptoBase.SpeedTest;
+global using CryptoBase.SymmetricCryptos.AeadCryptos;
+global using CryptoBase.SymmetricCryptos.BlockCryptoModes;
+global using CryptoBase.SymmetricCryptos.BlockCryptos.Aes;
+global using CryptoBase.SymmetricCryptos.StreamCryptos;
+global using System.Collections.Immutable;
+global using System.CommandLine;
+global using System.Diagnostics;
+global using System.Security.Cryptography;

@@ -37,21 +37,22 @@ public static class CpuIdUtils
 	{
 		if (X86Base.IsSupported)
 		{
-			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(unchecked((int)0x80000000), 0);
-			uint highestExtendedFunctionImplemented = (uint)id.Eax;
+			(int eax, int _, int _, int _) = X86Base.CpuId(int.MinValue, 0);
+			uint highestExtendedFunctionImplemented = (uint)eax;
 
 			if (highestExtendedFunctionImplemented >= 0x80000004)
 			{
 				Span<byte> buffer = stackalloc byte[48];
 
 				Span<byte> t = buffer;
+
 				for (uint i = 0x80000002; i <= 0x80000004; ++i)
 				{
-					(int Eax, int Ebx, int Ecx, int Edx) id2 = X86Base.CpuId(unchecked((int)i), 0);
-					BinaryPrimitives.WriteInt32LittleEndian(t, id2.Eax);
-					BinaryPrimitives.WriteInt32LittleEndian(t.Slice(4), id2.Ebx);
-					BinaryPrimitives.WriteInt32LittleEndian(t.Slice(8), id2.Ecx);
-					BinaryPrimitives.WriteInt32LittleEndian(t.Slice(12), id2.Edx);
+					(eax, int ebx, int ecx, int edx) = X86Base.CpuId((int)i, 0);
+					BinaryPrimitives.WriteInt32LittleEndian(t, eax);
+					BinaryPrimitives.WriteInt32LittleEndian(t.Slice(4), ebx);
+					BinaryPrimitives.WriteInt32LittleEndian(t.Slice(8), ecx);
+					BinaryPrimitives.WriteInt32LittleEndian(t.Slice(12), edx);
 					t = t.Slice(16);
 				}
 
@@ -72,7 +73,7 @@ public static class CpuIdUtils
 			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(7, 0);
 			Debug.WriteLine(id);
 
-			return ((uint)id.Ebx >> 29 & 1) == 1;
+			return ((uint)id.Ebx >> 29 & 1) is 1;
 		}
 
 		return false;
@@ -88,7 +89,7 @@ public static class CpuIdUtils
 			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(7, 0);
 			Debug.WriteLine(id);
 
-			return ((uint)id.Ecx >> 9 & 1) == 1;
+			return ((uint)id.Ecx >> 9 & 1) is 1;
 		}
 
 		return false;

@@ -165,8 +165,8 @@ public abstract class SnuffleCrypto : SnuffleCryptoBase
 	/// <inheritdoc />
 	public override void Dispose()
 	{
-		CryptographicOperations.ZeroMemory(State.AsSpan());
-		CryptographicOperations.ZeroMemory(KeyStream.AsSpan());
+		State.ZeroMemory();
+		KeyStream.ZeroMemory();
 
 		base.Dispose();
 		GC.SuppressFinalize(this);

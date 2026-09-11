@@ -1,5 +1,5 @@
 using CryptoBase.SymmetricCryptos.BlockCryptoModes;
-using CryptoBase.SymmetricCryptos.BlockCryptos.AES;
+using CryptoBase.SymmetricCryptos.BlockCryptos.Aes;
 using CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
@@ -26,9 +26,9 @@ public static class StreamCryptoCreate
 	/// <param name="key">The 16-byte SM4 key.</param>
 	/// <param name="iv">The initial counter block, up to 16 bytes. Shorter values occupy the leading bytes and are followed by zeros.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static IStreamCrypto Sm4Ctr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+	public static IStreamCrypto SM4Ctr(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CtrMode128<Sm4Cipher>(Sm4Cipher.Create(key), iv);
+		return new CtrMode128<SM4Cipher>(SM4Cipher.Create(key), iv);
 	}
 
 	/// <summary>
@@ -50,8 +50,8 @@ public static class StreamCryptoCreate
 	/// <param name="key">The 16-byte SM4 key.</param>
 	/// <param name="iv">The 16-byte initialization vector.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static IStreamCrypto Sm4Cfb(bool isEncrypt, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+	public static IStreamCrypto SM4Cfb(bool isEncrypt, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		return new CfbMode128<Sm4Cipher>(isEncrypt, Sm4Cipher.Create(key), iv);
+		return new CfbMode128<SM4Cipher>(isEncrypt, SM4Cipher.Create(key), iv);
 	}
 }

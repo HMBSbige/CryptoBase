@@ -22,7 +22,7 @@ internal static partial class SM4Utils
 		0x18, 0xf0, 0x7d, 0xec, 0x3a, 0xdc, 0x4d, 0x20, 0x79, 0xee, 0x5f, 0x3e, 0xd7, 0xcb, 0x39, 0x48
 	];
 
-	private static ReadOnlySpan<uint> Ck =>
+	private static ReadOnlySpan<uint> CK =>
 	[
 		0x00070e15,
 		0x1c232a31,
@@ -92,23 +92,23 @@ internal static partial class SM4Utils
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			k0 ^= L1(SubByte(k1 ^ k2 ^ k3 ^ Ck[i + 0]));
+			k0 ^= L1(SubByte(k1 ^ k2 ^ k3 ^ CK[i + 0]));
 			rk[i + 0] = k0;
 
-			k1 ^= L1(SubByte(k2 ^ k3 ^ k0 ^ Ck[i + 1]));
+			k1 ^= L1(SubByte(k2 ^ k3 ^ k0 ^ CK[i + 1]));
 			rk[i + 1] = k1;
 
-			k2 ^= L1(SubByte(k3 ^ k0 ^ k1 ^ Ck[i + 2]));
+			k2 ^= L1(SubByte(k3 ^ k0 ^ k1 ^ CK[i + 2]));
 			rk[i + 2] = k2;
 
-			k3 ^= L1(SubByte(k0 ^ k1 ^ k2 ^ Ck[i + 3]));
+			k3 ^= L1(SubByte(k0 ^ k1 ^ k2 ^ CK[i + 3]));
 			rk[i + 3] = k3;
 		}
 	}
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static VectorBuffer16 ProcessBlock(scoped in ReadOnlySpan<uint> rk, in VectorBuffer16 source)
+	public static VectorBuffer16 ProcessBlock(scoped in ReadOnlySpan<uint> rk, VectorBuffer16 source)
 	{
 		Unsafe.SkipInit(out VectorBuffer16 r);
 

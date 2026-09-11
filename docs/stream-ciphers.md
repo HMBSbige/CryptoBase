@@ -2,11 +2,7 @@
 
 [Back to documentation](README.md)
 
-`IStreamCrypto.Update` writes the transformed input to a destination of at least the same length. Successive calls continue the current stream; `Reset` returns to its initial state.
-
-## ChaCha, Salsa, and RC4 implementations
-
-Create these algorithms directly:
+## Direct implementations
 
 | Type | Key | Nonce or IV |
 | --- | ---: | ---: |
@@ -27,37 +23,55 @@ byte[] plaintext = "message"u8.ToArray();
 byte[] ciphertext = new byte[plaintext.Length];
 byte[] recovered = new byte[ciphertext.Length];
 
-using var crypto = new XChaCha20Crypto(key, nonce);
+// Create an XChaCha20 instance.
+using XChaCha20Crypto crypto = new(key, nonce);
+
+// Transform input and advance the stream.
 crypto.Update(plaintext, ciphertext);
 
+// Return to the initial state.
 crypto.Reset();
+
+// Apply the same stream to decrypt.
 crypto.Update(ciphertext, recovered);
 ```
 
 ## CTR and CFB factories
 
-`StreamCryptoCreate` creates streaming modes over the built-in AES and SM4 block ciphers:
-
 | Factory | Key | IV or counter | Direction |
 | --- | ---: | ---: | --- |
-| `AesCtr` | 16, 24, or 32 bytes | Up to 16 bytes | Same operation for encrypt/decrypt |
-| `Sm4Ctr` | 16 bytes | Up to 16 bytes | Same operation for encrypt/decrypt |
-| `AesCfb` | 16, 24, or 32 bytes | Exactly 16 bytes | Set with `isEncrypt` |
-| `Sm4Cfb` | 16 bytes | Exactly 16 bytes | Set with `isEncrypt` |
-
-Short CTR values occupy the leading bytes of the 16-byte counter block and are followed by zeros. Both CFB factories use CFB-128.
+| `AesCtr` | 16, 24, or 32 bytes | Up to 16 bytes | Same operation |
+| `SM4Ctr` | 16 bytes | Up to 16 bytes | Same operation |
+| `AesCfb` | 16, 24, or 32 bytes | 16 bytes | Set with `isEncrypt` |
+| `SM4Cfb` | 16 bytes | 16 bytes | Set with `isEncrypt` |
 
 ```csharp
+using System.Security.Cryptography;
 using CryptoBase.Abstractions.SymmetricCryptos;
 using CryptoBase.SymmetricCryptos.StreamCryptos;
 
-byte[] key = new byte[32];
-byte[] initialCounter = new byte[16];
+byte[] key = RandomNumberGenerator.GetBytes(32);
+byte[] counter = RandomNumberGenerator.GetBytes(16);
 byte[] input = "message"u8.ToArray();
 byte[] output = new byte[input.Length];
 
-using IStreamCrypto crypto = StreamCryptoCreate.AesCtr(key, initialCounter);
-crypto.Update(input, output);
-```
+// Create an AES-CTR instance.
+using IStreamCrypto ctr = StreamCryptoCreate.AesCtr(key, counter);
 
-CTR uses the same `Update` call for encryption and decryption. For CFB, create separate instances with `isEncrypt: true` and `isEncrypt: false`.
+// Encrypt or decrypt with the same operation.
+ctr.Update(input, output);
+
+byte[] iv = RandomNumberGenerator.GetBytes(16);
+byte[] ciphertext = new byte[input.Length];
+byte[] recovered = new byte[input.Length];
+
+// Create separate AES-CFB instances for encryption and decryption.
+using IStreamCrypto cfbEncryptor = StreamCryptoCreate.AesCfb(isEncrypt: true, key: key, iv: iv);
+using IStreamCrypto cfbDecryptor = StreamCryptoCreate.AesCfb(isEncrypt: false, key: key, iv: iv);
+
+// Encrypt with CFB.
+cfbEncryptor.Update(input, ciphertext);
+
+// Decrypt with CFB.
+cfbDecryptor.Update(ciphertext, recovered);
+```

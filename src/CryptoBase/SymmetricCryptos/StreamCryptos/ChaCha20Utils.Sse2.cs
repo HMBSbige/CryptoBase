@@ -6,13 +6,13 @@ internal static partial class ChaCha20Utils
 	private static void QuarterRound(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 	{
 		a += b;
-		d = (a ^ d).RotateLeftUInt32_16();
+		d = (a ^ d).RotateLeftUInt32(16);
 
 		c += d;
 		b = (b ^ c).RotateLeftUInt32(12);
 
 		a += b;
-		d = (a ^ d).RotateLeftUInt32_8();
+		d = (a ^ d).RotateLeftUInt32(8);
 
 		c += d;
 		b = (b ^ c).RotateLeftUInt32(7);
@@ -48,10 +48,10 @@ internal static partial class ChaCha20Utils
 		x2 += s2;
 		x3 += s3;
 
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 0 * 16), x0.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 1 * 16), x1.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 2 * 16), x2.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 3 * 16), x3.AsByte());
+		x0.AsByte().StoreUnsafe(ref streamRef, 0 * 16);
+		x1.AsByte().StoreUnsafe(ref streamRef, 1 * 16);
+		x2.AsByte().StoreUnsafe(ref streamRef, 2 * 16);
+		x3.AsByte().StoreUnsafe(ref streamRef, 3 * 16);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -86,9 +86,9 @@ internal static partial class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 	{
-		a = Sse2.Shuffle(a, 0b00_11_10_01);
-		b = Sse2.Shuffle(b, 0b01_00_11_10);
-		c = Sse2.Shuffle(c, 0b10_01_00_11);
+		a = Vector128.Shuffle(a, Vector128.Create(1u, 2, 3, 0));
+		b = Vector128.Shuffle(b, Vector128.Create(2u, 3, 0, 1));
+		c = Vector128.Shuffle(c, Vector128.Create(3u, 0, 1, 2));
 	}
 
 	/// <summary>
@@ -103,9 +103,9 @@ internal static partial class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle1(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 	{
-		a = Sse2.Shuffle(a, 0b10_01_00_11);
-		b = Sse2.Shuffle(b, 0b01_00_11_10);
-		c = Sse2.Shuffle(c, 0b00_11_10_01);
+		a = Vector128.Shuffle(a, Vector128.Create(3u, 0, 1, 2));
+		b = Vector128.Shuffle(b, Vector128.Create(2u, 3, 0, 1));
+		c = Vector128.Shuffle(c, Vector128.Create(1u, 2, 3, 0));
 	}
 
 	#region 处理 64 bytes
@@ -150,10 +150,10 @@ internal static partial class ChaCha20Utils
 		Vector128<byte> v2 = src2 ^ x2.AsByte();
 		Vector128<byte> v3 = src3 ^ x3.AsByte();
 
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 0 * 16), v0);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 1 * 16), v1);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 16), v2);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 16), v3);
+		v0.StoreUnsafe(ref destRef, 0 * 16);
+		v1.StoreUnsafe(ref destRef, 1 * 16);
+		v2.StoreUnsafe(ref destRef, 2 * 16);
+		v3.StoreUnsafe(ref destRef, 3 * 16);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -179,8 +179,8 @@ internal static partial class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ChaChaCoreOriginal256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector128<ulong> incCounter01 = Vector128.Create(0ul, 1);
-		Vector128<ulong> incCounter23 = Vector128.Create(2ul, 3);
+		Vector128<ulong> incCounter01 = Vector128.CreateSequence(0UL, 1UL);
+		Vector128<ulong> incCounter23 = Vector128.CreateSequence(2UL, 1UL);
 		int length = source.Length;
 		int offset = 0;
 
@@ -227,8 +227,8 @@ internal static partial class ChaCha20Utils
 
 			Vector128<uint> t0 = Vector128.Create(counter).AsUInt32();
 
-			Vector128<uint> x12 = Sse2.Add(incCounter01, t0.AsUInt64()).AsUInt32();
-			Vector128<uint> x13 = Sse2.Add(incCounter23, t0.AsUInt64()).AsUInt32();
+			Vector128<uint> x12 = (incCounter01 + t0.AsUInt64()).AsUInt32();
+			Vector128<uint> x13 = (incCounter23 + t0.AsUInt64()).AsUInt32();
 
 			t0 = Sse2.UnpackLow(x12, x13);
 			Vector128<uint> t1 = Sse2.UnpackHigh(x12, x13);
@@ -313,7 +313,7 @@ internal static partial class ChaCha20Utils
 			Vector128<uint> x14 = o14;
 			Vector128<uint> x15 = o15;
 
-			Vector128<uint> x12 = incCounter0123_128 + Vector128.Create(Unsafe.Add(ref stateRef, 12));
+			Vector128<uint> x12 = incCounter0123_128 + Vector128.Create(counter);
 			Vector128<uint> o12 = x12;
 
 			counter += 4;
@@ -379,10 +379,10 @@ internal static partial class ChaCha20Utils
 		Vector128<byte> v2 = x2.AsByte() ^ s2;
 		Vector128<byte> v3 = x3.AsByte() ^ s3;
 
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 0 * 64), v0);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 1 * 64), v1);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 2 * 64), v2);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 3 * 64), v3);
+		v0.StoreUnsafe(ref destination, 0 * 64);
+		v1.StoreUnsafe(ref destination, 1 * 64);
+		v2.StoreUnsafe(ref destination, 2 * 64);
+		v3.StoreUnsafe(ref destination, 3 * 64);
 	}
 
 	#endregion

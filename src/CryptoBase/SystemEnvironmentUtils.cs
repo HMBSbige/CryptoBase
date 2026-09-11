@@ -1,5 +1,10 @@
 using System.Numerics;
 using System.Reflection;
+using AesArm = System.Runtime.Intrinsics.Arm.Aes;
+using AesX86 = System.Runtime.Intrinsics.X86.Aes;
+using Crc32Arm = System.Runtime.Intrinsics.Arm.Crc32;
+using Sha1Arm = System.Runtime.Intrinsics.Arm.Sha1;
+using Sha256Arm = System.Runtime.Intrinsics.Arm.Sha256;
 
 namespace CryptoBase;
 
@@ -65,11 +70,11 @@ public static class SystemEnvironmentUtils
 			handler.AppendLiteral(
 				$"""
 				AES hardware instructions:                      {AesArm.IsSupported}
-				Crc32 hardware instructions:                    {Crc32.IsSupported}
+				CRC32 hardware instructions:                    {Crc32Arm.IsSupported}
 				ARMv8.1-RDMA hardware instructions:             {Rdm.IsSupported}
 				ARMv8.2-DotProd hardware instructions:          {Dp.IsSupported}
-				SHA1 hardware instructions:                     {Sha1.IsSupported}
-				SHA256 hardware instructions:                   {Sha256.IsSupported}
+				SHA1 hardware instructions:                     {Sha1Arm.IsSupported}
+				SHA256 hardware instructions:                   {Sha256Arm.IsSupported}
 				"""
 			);
 			handler.AppendLiteral(Environment.NewLine);

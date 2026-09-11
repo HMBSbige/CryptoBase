@@ -43,37 +43,82 @@ jobs:
         with:
           dotnet-version: ${{ env.NET_VERSION }}
 
-      - name: Test build
+      - name: Build (Release)
         run: dotnet build -c Release
 
-      - name: Run tests
+      - name: Run tests (Release)
         working-directory: test/CryptoBase.Tests
-        run: |
-          dotnet test
-          dotnet test -c Release
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+
+      - name: Run tests (Debug)
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Debug --no-restore --disable-logo --minimum-expected-tests 1
 
       - name: Run tests (Disable AVX512)
         if: matrix.os != 'macos-latest'
         working-directory: test/CryptoBase.Tests
-        run: |
-          dotnet test
-          dotnet test -c Release
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
         env:
           DOTNET_EnableAVX512: 0
 
-      - name: Run tests (Disable AVX)
+      - name: Run tests (Disable VAES)
         if: matrix.os != 'macos-latest'
         working-directory: test/CryptoBase.Tests
-        run: |
-          dotnet test
-          dotnet test -c Release
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
         env:
-          DOTNET_EnableAVX: 0
+          DOTNET_EnableVAES: 0
+
+      - name: Run tests (Disable AVX2)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableAVX2: 0
+
+      - name: Run tests (Disable x86-64-v2 intrinsics)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableSSE42: 0
+
+      - name: Run tests (Disable AES)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableAES: 0
+
+      - name: Run tests (Disable ARM64 AES)
+        if: matrix.os == 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableArm64Aes: 0
+
+      - name: Run tests (Disable ARM64 CRC32)
+        if: matrix.os == 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableArm64Crc32: 0
+
+      - name: Run tests (Disable ARM64 SHA1)
+        if: matrix.os == 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableArm64Sha1: 0
+
+      - name: Run tests (Disable ARM64 SHA256)
+        if: matrix.os == 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableArm64Sha256: 0
 
       - name: Run tests (Disable HWIntrinsic)
         working-directory: test/CryptoBase.Tests
-        run: |
-          dotnet test
-          dotnet test -c Release
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
         env:
           DOTNET_EnableHWIntrinsic: 0

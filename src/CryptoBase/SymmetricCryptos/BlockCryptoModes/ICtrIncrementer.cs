@@ -44,7 +44,7 @@ public readonly struct CtrIncrementer128 : ICtrIncrementer
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<byte> Inc(Vector128<byte> counter)
 	{
-		return counter.IncUInt128Le();
+		return counter.IncUInt128LE();
 	}
 
 	/// <inheritdoc/>
@@ -66,28 +66,28 @@ public readonly struct CtrIncrementer128 : ICtrIncrementer
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<byte> Add01(Vector256<byte> counter)
 	{
-		return counter.AddUInt128Le01();
+		return counter.AddUInt128LE01();
 	}
 
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<byte> Add22(Vector256<byte> counter)
 	{
-		return counter.AddUInt128Le22();
+		return counter.AddUInt128LE22();
 	}
 
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<byte> Add0123(Vector512<byte> counter)
 	{
-		return counter.AddUInt128Le0123();
+		return counter.AddUInt128LE0123();
 	}
 
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<byte> Add4444(Vector512<byte> counter)
 	{
-		return counter.AddUInt128Le4444();
+		return counter.AddUInt128LE4444();
 	}
 }
 
@@ -100,7 +100,7 @@ public readonly struct CtrIncrementer32 : ICtrIncrementer
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<byte> Inc(Vector128<byte> counter)
 	{
-		return counter.IncUInt32Le();
+		return counter.IncUInt32LE();
 	}
 
 	/// <inheritdoc/>
@@ -122,27 +122,27 @@ public readonly struct CtrIncrementer32 : ICtrIncrementer
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<byte> Add01(Vector256<byte> counter)
 	{
-		return counter.AddUInt32Le01();
+		return counter.AddUInt32LE01();
 	}
 
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<byte> Add22(Vector256<byte> counter)
 	{
-		return counter.AddUInt32Le22();
+		return counter.AddUInt32LE22();
 	}
 
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<byte> Add0123(Vector512<byte> counter)
 	{
-		return counter.AddUInt32Le0123();
+		return counter.AddUInt32LE0123();
 	}
 
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<byte> Add4444(Vector512<byte> counter)
 	{
-		return counter.AddUInt32Le4444();
+		return counter.AddUInt32LE4444();
 	}
 }

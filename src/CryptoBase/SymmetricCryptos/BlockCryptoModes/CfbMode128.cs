@@ -43,9 +43,9 @@ public sealed class CfbMode128<TBlockCipher> : IStreamCrypto where TBlockCipher 
 	/// <inheritdoc/>
 	public void Dispose()
 	{
-		CryptographicOperations.ZeroMemory(_iv.AsSpan());
-		CryptographicOperations.ZeroMemory(_block.AsSpan());
-		CryptographicOperations.ZeroMemory(_keyStream.AsSpan());
+		_iv.ZeroMemory();
+		_block.ZeroMemory();
+		_keyStream.ZeroMemory();
 
 		if (_disposeCipher)
 		{

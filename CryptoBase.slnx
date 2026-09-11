@@ -14,14 +14,13 @@
   <Folder Name="/src/">
     <File Path="src\Package.props" />
     <Project Path="src\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
-    <Project Path="src\CryptoBase.BouncyCastle\CryptoBase.BouncyCastle.csproj" />
     <Project Path="src\CryptoBase\CryptoBase.csproj" />
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs\README.md" />
     <File Path="docs\getting-started.md" />
     <File Path="docs\data-formats.md" />
-    <File Path="docs\digests.md" />
+    <File Path="docs\hashes.md" />
     <File Path="docs\macs-and-key-derivation.md" />
     <File Path="docs\stream-ciphers.md" />
     <File Path="docs\block-ciphers-and-modes.md" />
@@ -29,7 +28,6 @@
   </Folder>
   <Folder Name="/test/">
     <Project Path="test\CryptoBase.Tests\CryptoBase.Tests.csproj" />
-    <File Path="test\.runsettings" />
   </Folder>
   <Folder Name="/benchmark/">
     <Project Path="benchmark\CryptoBase.Benchmark\CryptoBase.Benchmark.csproj" />

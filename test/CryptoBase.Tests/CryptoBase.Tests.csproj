@@ -5,7 +5,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CryptoBase.BouncyCastle\CryptoBase.BouncyCastle.csproj" />
     <ProjectReference Include="..\..\src\CryptoBase\CryptoBase.csproj" />
   </ItemGroup>
 

@@ -28,14 +28,14 @@ public interface IBlock16Cipher<out TSelf> : ISymmetricCrypto where TSelf : IBlo
 	/// </summary>
 	/// <param name="source">The plaintext buffer.</param>
 	/// <returns>The encrypted buffer.</returns>
-	VectorBuffer16 Encrypt(in VectorBuffer16 source);
+	VectorBuffer16 Encrypt(VectorBuffer16 source);
 
 	/// <summary>
 	/// Decrypts a 16-byte buffer.
 	/// </summary>
 	/// <param name="source">The ciphertext buffer.</param>
 	/// <returns>The decrypted buffer.</returns>
-	VectorBuffer16 Decrypt(in VectorBuffer16 source);
+	VectorBuffer16 Decrypt(VectorBuffer16 source);
 
 	/// <summary>
 	/// Encrypts a 32-byte buffer.

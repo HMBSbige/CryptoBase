@@ -1,3 +1,5 @@
+using AesX86 = System.Runtime.Intrinsics.X86.Aes;
+
 namespace CryptoBase.SymmetricCryptos.BlockCryptos.SM4;
 
 internal static partial class SM4Utils
@@ -29,8 +31,8 @@ internal static partial class SM4Utils
 			Vector128<byte> t = x & c0f;
 			x &= ~c0f;
 			x = (x.AsUInt32() >>> 4).AsByte();
-			t = Ssse3.Shuffle(m1l, t);
-			x = Ssse3.Shuffle(m1h, x);
+			t = Vector128.ShuffleNative(m1l, t);
+			x = Vector128.ShuffleNative(m1h, x);
 			x ^= t;
 		}
 
@@ -44,8 +46,8 @@ internal static partial class SM4Utils
 			x = (x.AsUInt32() >>> 4).AsByte();
 			x &= c0f;
 
-			t = Ssse3.Shuffle(m2l, t);
-			x = Ssse3.Shuffle(m2h, x);
+			t = Vector128.ShuffleNative(m2l, t);
+			x = Vector128.ShuffleNative(m2h, x);
 			x ^= t;
 		}
 	}
@@ -60,12 +62,12 @@ internal static partial class SM4Utils
 		x.PostTransform();
 
 		// inverse MixColumns
-		x = Ssse3.Shuffle(x, shr);
+		x = Vector128.ShuffleNative(x, shr);
 
 		// 4 parallel L1 linear transforms
-		Vector128<byte> t = x ^ x.RotateLeftUInt32_8() ^ x.RotateLeftUInt32_16();
+		Vector128<byte> t = x ^ x.RotateLeftUInt32(8) ^ x.RotateLeftUInt32(16);
 		t = t.RotateLeftUInt32(2);
-		x = x ^ t ^ x.RotateLeftUInt32_24();
+		x = x ^ t ^ x.RotateLeftUInt32(24);
 
 		// rotate registers
 		x ^= r0;

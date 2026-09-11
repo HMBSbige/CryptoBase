@@ -24,9 +24,9 @@ internal static partial class Salsa20Utils
 	private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c)
 	{
 		(a, b) = (b, a);
-		a = Sse2.Shuffle(a, 0b00_11_10_01);
-		b = Sse2.Shuffle(b, 0b10_01_00_11);
-		c = Sse2.Shuffle(c, 0b01_00_11_10);
+		a = Vector128.Shuffle(a, Vector128.Create(1u, 2, 3, 0));
+		b = Vector128.Shuffle(b, Vector128.Create(3u, 0, 1, 2));
+		c = Vector128.Shuffle(c, Vector128.Create(2u, 3, 0, 1));
 	}
 
 	/// <summary>
@@ -43,10 +43,10 @@ internal static partial class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Shuffle(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
 	{
-		a = Sse2.Shuffle(a, 0b10_01_00_11);// 4 9 14 3 => 3 4 9 14
-										   // 0 5 10 15
-		c = Sse2.Shuffle(c, 0b00_11_10_01);// 12 1 6 11 => 1 6 11 12
-		d = Sse2.Shuffle(d, 0b01_00_11_10);// 8 13 2 7 => 2 7 8 13
+		a = Vector128.Shuffle(a, Vector128.Create(3u, 0, 1, 2));// 4 9 14 3 => 3 4 9 14
+																// 0 5 10 15
+		c = Vector128.Shuffle(c, Vector128.Create(1u, 2, 3, 0));// 12 1 6 11 => 1 6 11 12
+		d = Vector128.Shuffle(d, Vector128.Create(2u, 3, 0, 1));// 8 13 2 7 => 2 7 8 13
 
 		Vector128<uint> t0 = Sse2.UnpackLow(b, c);// 0 1 5 6
 		Vector128<uint> t1 = Sse2.UnpackLow(d, a);// 2 3 7 4
@@ -54,9 +54,9 @@ internal static partial class Salsa20Utils
 		Vector128<uint> t3 = Sse2.UnpackHigh(d, a);// 8 9 13 14
 
 		a = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();// 0 1 2 3
-		b = Sse2.Shuffle(Sse2.UnpackHigh(t0, t1), 0b01_10_00_11);// 5 7 6 4 => 4 5 6 7
+		b = Vector128.Shuffle(Sse2.UnpackHigh(t0, t1), Vector128.Create(3u, 0, 2, 1));// 5 7 6 4 => 4 5 6 7
 		c = Sse2.UnpackLow(t3.AsUInt64(), t2.AsUInt64()).AsUInt32();// 8 9 10 11
-		d = Sse2.Shuffle(Sse2.UnpackHigh(t2, t3), 0b00_11_01_10);// 15 13 12 14 => 12 13 14 15
+		d = Vector128.Shuffle(Sse2.UnpackHigh(t2, t3), Vector128.Create(2u, 1, 3, 0));// 15 13 12 14 => 12 13 14 15
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -91,10 +91,10 @@ internal static partial class Salsa20Utils
 		x2 += s2;
 		x3 += s3;
 
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 0 * 16), x0.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 1 * 16), x1.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 2 * 16), x2.AsByte());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref streamRef, 3 * 16), x3.AsByte());
+		x0.AsByte().StoreUnsafe(ref streamRef, 0 * 16);
+		x1.AsByte().StoreUnsafe(ref streamRef, 1 * 16);
+		x2.AsByte().StoreUnsafe(ref streamRef, 2 * 16);
+		x3.AsByte().StoreUnsafe(ref streamRef, 3 * 16);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,10 +118,10 @@ internal static partial class Salsa20Utils
 
 		Shuffle(ref x0, ref x1, ref x2, ref x3);
 
-		Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 0 * 4)), x0);
-		Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 1 * 4)), x1);
-		Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 2 * 4)), x2);
-		Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref stateRef, 3 * 4)), x3);
+		x0.StoreUnsafe(ref stateRef, 0 * 4);
+		x1.StoreUnsafe(ref stateRef, 1 * 4);
+		x2.StoreUnsafe(ref stateRef, 2 * 4);
+		x3.StoreUnsafe(ref stateRef, 3 * 4);
 	}
 
 	/// <summary>
@@ -169,10 +169,10 @@ internal static partial class Salsa20Utils
 		Vector128<byte> v2 = src2 ^ x2.AsByte();
 		Vector128<byte> v3 = src3 ^ x3.AsByte();
 
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 0 * 16), v0);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 1 * 16), v1);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 2 * 16), v2);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, 3 * 16), v3);
+		v0.StoreUnsafe(ref destRef, 0 * 16);
+		v1.StoreUnsafe(ref destRef, 1 * 16);
+		v2.StoreUnsafe(ref destRef, 2 * 16);
+		v3.StoreUnsafe(ref destRef, 3 * 16);
 
 		++GetCounter(ref stateRef);
 	}
@@ -180,8 +180,8 @@ internal static partial class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int SalsaCore256(byte rounds, Span<uint> state, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector128<ulong> incCounter01 = Vector128.Create(0ul, 1);
-		Vector128<ulong> incCounter23 = Vector128.Create(2ul, 3);
+		Vector128<ulong> incCounter01 = Vector128.CreateSequence(0UL, 1UL);
+		Vector128<ulong> incCounter23 = Vector128.CreateSequence(2UL, 1UL);
 		int length = source.Length;
 		int offset = 0;
 
@@ -236,8 +236,8 @@ internal static partial class Salsa20Utils
 
 			Vector128<ulong> vo = Vector128.Create(counter);
 
-			Vector128<uint> x8 = Sse2.Add(incCounter01, vo).AsUInt32();
-			Vector128<uint> x9 = Sse2.Add(incCounter23, vo).AsUInt32();
+			Vector128<uint> x8 = (incCounter01 + vo).AsUInt32();
+			Vector128<uint> x9 = (incCounter23 + vo).AsUInt32();
 
 			Vector128<uint> t8 = Sse2.UnpackLow(x8, x9);
 			Vector128<uint> t9 = Sse2.UnpackHigh(x8, x9);

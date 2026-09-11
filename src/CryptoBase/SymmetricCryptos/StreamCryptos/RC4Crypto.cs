@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace CryptoBase.SymmetricCryptos.StreamCryptos;
 
 /// <summary>
@@ -41,6 +43,8 @@ public class RC4Crypto : StreamCryptoBase
 	/// <param name="key">The non-empty encryption key.</param>
 	public RC4Crypto(ReadOnlySpan<byte> key)
 	{
+		ArgumentOutOfRangeException.ThrowIfZero(key.Length, nameof(key));
+
 		_keyLength = key.Length;
 
 		_key = ArrayPool<byte>.Shared.Rent(key.Length);
@@ -93,7 +97,7 @@ public class RC4Crypto : StreamCryptoBase
 		_y = default;
 
 		ref byte stateRef = ref Unsafe.As<VectorBuffer256, byte>(ref _state);
-		ref byte keyRef = ref _key.GetReference();
+		ref byte keyRef = ref MemoryMarshal.GetArrayDataReference(_key);
 
 		S.CopyTo(_state.AsSpan());
 
@@ -119,8 +123,8 @@ public class RC4Crypto : StreamCryptoBase
 	{
 		base.Dispose();
 
-		CryptographicOperations.ZeroMemory(_key.AsSpan(0, _keyLength));
-		CryptographicOperations.ZeroMemory(_state.AsSpan());
+		_key.AsSpan(0, _keyLength).ZeroMemory();
+		_state.ZeroMemory();
 
 		ArrayPool<byte>.Shared.Return(_key);
 
