@@ -44,13 +44,11 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public void Reset()
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
-		TCore state = TCore.Create();
-		_state = state;
+		_state = TCore.Create();
 	}
 
 	/// <inheritdoc />
@@ -71,8 +69,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 		Span<byte> hash = stackalloc byte[TCore.HashLength];
 
 		currentState.Finalize(hash);
-		TCore resetState = TCore.Create();
-		_state = resetState;
+		_state = TCore.Create();
 		hash.CopyTo(destination);
 		return TCore.HashLength;
 	}
