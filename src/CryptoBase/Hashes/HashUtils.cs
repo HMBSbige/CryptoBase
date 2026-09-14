@@ -27,7 +27,7 @@ public static class HashUtils
 		public int ComputeHash<TAlgorithm>(Span<byte> destination) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
 		{
 			ArgumentNullException.ThrowIfNull(inputStream);
-			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TAlgorithm.HashLengthInBytes, nameof(destination));
+			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TAlgorithm.HashLength, nameof(destination));
 
 			ThrowIfNotReadable(inputStream);
 
@@ -47,7 +47,7 @@ public static class HashUtils
 		public ValueTask<int> ComputeHashAsync<TAlgorithm>(Memory<byte> destination, CancellationToken cancellationToken = default) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
 		{
 			ArgumentNullException.ThrowIfNull(inputStream);
-			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TAlgorithm.HashLengthInBytes, nameof(destination));
+			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TAlgorithm.HashLength, nameof(destination));
 
 			ThrowIfNotReadable(inputStream);
 

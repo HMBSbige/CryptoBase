@@ -12,7 +12,18 @@ internal static class VectorCounterExtensions
 
 			Vector128<long> carry = Vector128.Equals(v, m1);
 
-			carry = Sse2.ShiftLeftLogical128BitLane(carry, 8);
+			if (Sse2.IsSupported)
+			{
+				carry = Sse2.ShiftLeftLogical128BitLane(carry, 8);
+			}
+			else if (AdvSimd.IsSupported)
+			{
+				carry = AdvSimd.ExtractVector128(Vector128<long>.Zero, carry, 1);
+			}
+			else
+			{
+				carry = Vector128.Create(0L, carry.GetElement(0));
+			}
 
 			v -= m1;
 			v -= carry;
@@ -51,18 +62,14 @@ internal static class VectorCounterExtensions
 			return (nonce.AsUInt32() + Vector256.Create(Vector128.Create(2u, 0, 0, 0))).As<uint, T>();
 		}
 
-		/// <summary>
-		/// Increments the upper 128-bit little-endian integer. Note that this is only applicable when the lower part is nonzero during carry propagation.
-		/// For a general implementation:
-		/// var carry = Vector256.Equals(v, Vector256.Create(-1L)); carry &amp;= vMinusUpper128LE;
-		/// </summary>
+		// Increments only the upper 128-bit little-endian integer.
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector256<T> AddUInt128LE01()
 		{
 			Vector256<long> v = nonce.AsInt64();
 
 			Vector256<long> vMinusUpper128LE = Vector256.Create(0, 0, -1, 0);
-			Vector256<long> carry = Vector256.Equals(v, vMinusUpper128LE);
+			Vector256<long> carry = Vector256.Equals(v, vMinusUpper128LE) & vMinusUpper128LE;
 			carry = Avx2.ShiftLeftLogical128BitLane(carry, 8);
 
 			v -= vMinusUpper128LE;
@@ -78,9 +85,7 @@ internal static class VectorCounterExtensions
 
 	extension<T>(Vector512<T> nonce)
 	{
-		/// <summary>
-		/// [v0,v1,v2,v3] => [v0+4,v1+4,v2+4,v3+4]
-		/// </summary>
+		// [v0,v1,v2,v3] => [v0+4,v1+4,v2+4,v3+4]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector512<T> AddUInt128LE4444()
 		{
@@ -107,9 +112,7 @@ internal static class VectorCounterExtensions
 			return (nonce.AsUInt32() + Vector512.Create(4u, 0, 0, 0, 4u, 0, 0, 0, 4u, 0, 0, 0, 4u, 0, 0, 0)).As<uint, T>();
 		}
 
-		/// <summary>
-		/// [v0,v1,v2,v3] => [v0+0,v1+1,v2+2,v3+3]
-		/// </summary>
+		// [v0,v1,v2,v3] => [v0+0,v1+1,v2+2,v3+3]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector512<T> AddUInt128LE0123()
 		{

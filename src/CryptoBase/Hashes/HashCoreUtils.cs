@@ -16,12 +16,12 @@ internal static class HashCoreUtils
 	{
 		try
 		{
-			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLengthInBytes, nameof(destination));
+			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
-			using CryptoBuffer<byte> hash = new(stackalloc byte[TCore.HashLengthInBytes]);
+			using CryptoBuffer<byte> hash = new(stackalloc byte[TCore.HashLength]);
 			state.Finalize(hash.Span);
 			hash.Span.CopyTo(destination);
-			return TCore.HashLengthInBytes;
+			return TCore.HashLength;
 		}
 		finally
 		{

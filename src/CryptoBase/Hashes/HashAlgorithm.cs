@@ -12,7 +12,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	private HashAlgorithm() { }
 
 	/// <inheritdoc />
-	public static int HashLengthInBytes => TCore.HashLengthInBytes;
+	public static int HashLength => TCore.HashLength;
 
 	/// <inheritdoc />
 	public static HashAlgorithm<TCore> Create()
@@ -24,10 +24,10 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	[SkipLocalsInit]
 	public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLengthInBytes, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
 		Unsafe.SkipInit(out TCore state);
-		Span<byte> hash = stackalloc byte[TCore.HashLengthInBytes];
+		Span<byte> hash = stackalloc byte[TCore.HashLength];
 
 		try
 		{
@@ -35,7 +35,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 			state.Append(source);
 			state.Finalize(hash);
 			hash.CopyTo(destination);
-			return TCore.HashLengthInBytes;
+			return TCore.HashLength;
 		}
 		finally
 		{
@@ -84,11 +84,11 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	public int GetHashAndReset(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLengthInBytes, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
 		TCore currentState = _state;
 		Unsafe.SkipInit(out TCore resetState);
-		Span<byte> hash = stackalloc byte[TCore.HashLengthInBytes];
+		Span<byte> hash = stackalloc byte[TCore.HashLength];
 
 		try
 		{
@@ -97,7 +97,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 			_state.ZeroMemory();
 			_state = resetState;
 			hash.CopyTo(destination);
-			return TCore.HashLengthInBytes;
+			return TCore.HashLength;
 		}
 		finally
 		{

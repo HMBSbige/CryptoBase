@@ -143,8 +143,8 @@ public class HmacTest
 	{
 		byte[] key = CreateDeterministicSource(3);
 		byte[] source = CreateDeterministicSource(3);
-		byte[] expected = new byte[HmacAlgorithm<ThrowingHashAlgorithm>.MacLengthInBytes];
-		byte[] destination = new byte[HmacAlgorithm<ThrowingHashAlgorithm>.MacLengthInBytes + 1];
+		byte[] expected = new byte[HmacAlgorithm<ThrowingHashAlgorithm>.MacLength];
+		byte[] destination = new byte[HmacAlgorithm<ThrowingHashAlgorithm>.MacLength + 1];
 
 		ThrowingHashAlgorithm.DisableFailure();
 		_ = HmacAlgorithm<ThrowingHashAlgorithm>.Mac(key, source, expected);
@@ -191,7 +191,7 @@ public class HmacTest
 		const int keyLength = 64;
 		const int sourceOffset = 80;
 		const int sourceLength = 97;
-		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256HashAlgorithm.HashLengthInBytes);
+		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256HashAlgorithm.HashLength);
 		byte[] buffer = CreateDeterministicSource(bufferLength);
 		byte[] expected = HMACSHA256.HashData
 		(
@@ -203,10 +203,10 @@ public class HmacTest
 		(
 			buffer.AsSpan().Slice(keyOffset, keyLength),
 			buffer.AsSpan().Slice(sourceOffset, sourceLength),
-			buffer.AsSpan().Slice(destinationOffset, Sha256HashAlgorithm.HashLengthInBytes)
+			buffer.AsSpan().Slice(destinationOffset, Sha256HashAlgorithm.HashLength)
 		);
 
-		await Assert.That(written).IsEqualTo(Sha256HashAlgorithm.HashLengthInBytes);
+		await Assert.That(written).IsEqualTo(Sha256HashAlgorithm.HashLength);
 		await Assert.That(buffer.AsSpan().Slice(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
@@ -214,9 +214,9 @@ public class HmacTest
 	{
 		byte[] key = CreateDeterministicSource(137);
 		byte[] source = CreateDeterministicSource(173);
-		byte[] expected = new byte[TMac.MacLengthInBytes];
-		byte[] prefixExpected = new byte[TMac.MacLengthInBytes];
-		byte[] destination = new byte[TMac.MacLengthInBytes + 1];
+		byte[] expected = new byte[TMac.MacLength];
+		byte[] prefixExpected = new byte[TMac.MacLength];
+		byte[] destination = new byte[TMac.MacLength + 1];
 		_ = TMac.Mac(key, source, expected);
 		int split = source.Length / 2;
 		_ = TMac.Mac(key, source.AsSpan().Slice(0, split), prefixExpected);
@@ -255,7 +255,7 @@ public class HmacTest
 	{
 		byte[] key = CreateDeterministicSource(37);
 		byte[] source = CreateDeterministicSource(19);
-		byte[] destination = new byte[TMac.MacLengthInBytes];
+		byte[] destination = new byte[TMac.MacLength];
 
 		using TMac owner = TMac.Create(key);
 		TMac alias = owner;
@@ -272,10 +272,10 @@ public class HmacTest
 	{
 		byte[] key = CreateDeterministicSource(137);
 		byte[] source = CreateDeterministicSource(73);
-		byte[] expected = new byte[TMac.MacLengthInBytes];
+		byte[] expected = new byte[TMac.MacLength];
 		TMac.Mac(key, source, expected);
-		byte[] shortDestination = new byte[TMac.MacLengthInBytes - 1];
-		byte[] destination = new byte[TMac.MacLengthInBytes + 1];
+		byte[] shortDestination = new byte[TMac.MacLength - 1];
+		byte[] destination = new byte[TMac.MacLength + 1];
 		using TMac macAlgorithm = TMac.Create(key);
 		macAlgorithm.Append(source);
 
@@ -321,9 +321,9 @@ public class HmacTest
 			Interlocked.Exchange(ref _finalizationCount, 0);
 		}
 
-		public static int HashLengthInBytes => sizeof(uint);
+		public static int HashLength => sizeof(uint);
 
-		public static int HmacBlockSizeInBytes => 8;
+		public static int HmacBlockSize => 8;
 
 		static ThrowingHashAlgorithm IHashCore<ThrowingHashAlgorithm>.Create()
 		{

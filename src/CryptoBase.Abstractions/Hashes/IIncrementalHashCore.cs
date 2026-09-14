@@ -8,7 +8,7 @@ public interface IIncrementalHashCore
 	/// <summary>
 	/// Gets the hash length, in bytes.
 	/// </summary>
-	static abstract int HashLengthInBytes { get; }
+	static abstract int HashLength { get; }
 
 	/// <summary>
 	/// Appends <paramref name="source" /> to the current input.
@@ -19,6 +19,6 @@ public interface IIncrementalHashCore
 	/// <summary>
 	/// Finalizes the current input into <paramref name="destination" />.
 	/// </summary>
-	/// <param name="destination">The output buffer, at least <see cref="HashLengthInBytes" /> bytes long.</param>
+	/// <param name="destination">The output buffer, at least <see cref="HashLength" /> bytes long.</param>
 	void Finalize(Span<byte> destination);
 }

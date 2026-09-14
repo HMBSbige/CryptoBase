@@ -22,7 +22,7 @@ public class Poly1305Benchmark
 	{
 		_key = RandomNumberGenerator.GetBytes(Poly1305Algorithm.KeyLengthInBytes);
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
-		_mac = new byte[Poly1305Algorithm.MacLengthInBytes];
+		_mac = new byte[Poly1305Algorithm.MacLength];
 	}
 
 	[Benchmark(Baseline = true)]

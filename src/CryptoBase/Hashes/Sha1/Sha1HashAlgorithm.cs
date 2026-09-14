@@ -25,10 +25,10 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	private const int BlockSizeInBytes = 64;
 
 	/// <inheritdoc />
-	public static int HashLengthInBytes => HashSizeInBytes;
+	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSizeInBytes => BlockSizeInBytes;
+	public static int HmacBlockSize => BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static Sha1HashAlgorithm IHashCore<Sha1HashAlgorithm>.Create()
@@ -85,7 +85,7 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 
 	void IIncrementalHashCore.Finalize(Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLengthInBytes, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 		Finalize(ref this, destination);
 	}
 

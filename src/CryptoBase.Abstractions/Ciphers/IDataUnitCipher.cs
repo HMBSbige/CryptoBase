@@ -8,7 +8,7 @@ public interface IDataUnitCipher<out TSelf> : IDisposable where TSelf : IDataUni
 	/// <summary>
 	/// Gets the tweak size, in bytes.
 	/// </summary>
-	static abstract int TweakSizeInBytes { get; }
+	static abstract int TweakSize { get; }
 
 	/// <summary>
 	/// Creates an instance initialized with <paramref name="key" />.

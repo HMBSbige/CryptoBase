@@ -60,7 +60,7 @@ public class HmacBenchmark
 	{
 		_key = RandomNumberGenerator.GetBytes(MaxKeyLength);
 		_input = RandomNumberGenerator.GetBytes(MaxInputLength);
-		_mac = new byte[HmacAlgorithm<Sha512HashAlgorithm>.MacLengthInBytes];
+		_mac = new byte[HmacAlgorithm<Sha512HashAlgorithm>.MacLength];
 	}
 
 	[Benchmark(Baseline = true)]

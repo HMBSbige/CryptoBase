@@ -30,8 +30,8 @@ public partial struct SM3HashAlgorithm
 			Round4EarlyX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, q0, q0 ^ q1, 0);
 			Round2EarlyX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, q1, q1 ^ q2);
 
-			Vector128<uint> w0 = Vector128.Shuffle(q0, Vector128.Create(2u, 3, 0, 1));
-			Vector128<uint> w1 = Vector128.Shuffle(q0, Vector128.Create(1u, 2, 3, 0));
+			Vector128<uint> w0 = Sse2.Shuffle(q0, 0b01_00_11_10);
+			Vector128<uint> w1 = Sse2.Shuffle(q0, 0b00_11_10_01);
 			Vector128<uint> w2 = q1;
 			Vector128<uint> w3 = Ssse3.AlignRight(q2, q1, 12);
 			Vector128<uint> w4 = Ssse3.AlignRight(q3, q2, 8);
@@ -102,7 +102,7 @@ public partial struct SM3HashAlgorithm
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<uint> WindowX86(Vector128<uint> previous, Vector128<uint> next)
 	{
-		Vector128<uint> tail = Vector128.Shuffle(previous, Vector128.Create(3u, 3, 3, 2));
+		Vector128<uint> tail = Sse2.Shuffle(previous, 0b10_11_11_11);
 		return Ssse3.AlignRight(next, tail, 12);
 	}
 

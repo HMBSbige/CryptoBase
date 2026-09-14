@@ -91,9 +91,9 @@ public sealed partial class Base32Encoding
 	private static Vector128<byte> DecodeTwoSse2(Vector128<byte> input, Vector128<byte> deltaCheck, Vector128<byte> deltaRebase, Vector128<byte> nibbleMask, Vector128<sbyte> lowerBound, out Vector128<byte> invalidMask)
 	{
 		Vector128<byte> hashKey = (input.AsUInt32() >>> 4).AsByte() & nibbleMask;
-		Vector128<byte> check = input + Vector128.ShuffleNative(deltaCheck, hashKey);
+		Vector128<byte> check = input + Ssse3.Shuffle(deltaCheck, hashKey);
 		invalidMask = check | Vector128.GreaterThan(lowerBound, input.AsSByte()).AsByte();
-		return input + Vector128.ShuffleNative(deltaRebase, hashKey);
+		return input + Ssse3.Shuffle(deltaRebase, hashKey);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -108,7 +108,7 @@ public sealed partial class Base32Encoding
 		Vector128<short> pairs = Ssse3.MultiplyAddAdjacent(values, Vector128.Create(0x01200120).AsSByte());
 		Vector128<int> quads = Sse2.MultiplyAddAdjacent(pairs, Vector128.Create(0x00104000, 0x00010400, 0x00104000, 0x00010400).AsInt16());
 		Vector128<byte> merged = (quads.AsUInt64() | quads.AsUInt64() >>> 48).AsByte();
-		return Vector128.Shuffle(merged, Vector128.Create((byte)2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0));
+		return Ssse3.Shuffle(merged, Vector128.Create((byte)2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0));
 	}
 
 	private static int DecodeUtf8Vector128(ReadOnlySpan<byte> source, Span<byte> destination, int fullLength, byte alphabetKind)

@@ -34,7 +34,7 @@ public interface IMacAlgorithm<out TSelf> : IOneShotMacAlgorithm, IDisposable wh
 	/// </summary>
 	/// <remarks>On failure, <paramref name="destination" /> and the state remain unchanged.</remarks>
 	/// <param name="destination">The output buffer.</param>
-	/// <returns>The value of <see cref="IOneShotMacAlgorithm.MacLengthInBytes" />.</returns>
+	/// <returns>The value of <see cref="IOneShotMacAlgorithm.MacLength" />.</returns>
 	/// <exception cref="ArgumentException"><paramref name="destination" /> is too short.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	int GetCurrentMac(Span<byte> destination);
@@ -44,7 +44,7 @@ public interface IMacAlgorithm<out TSelf> : IOneShotMacAlgorithm, IDisposable wh
 	/// </summary>
 	/// <remarks>On failure, <paramref name="destination" /> and the state remain unchanged.</remarks>
 	/// <param name="destination">The output buffer.</param>
-	/// <returns>The value of <see cref="IOneShotMacAlgorithm.MacLengthInBytes" />.</returns>
+	/// <returns>The value of <see cref="IOneShotMacAlgorithm.MacLength" />.</returns>
 	/// <exception cref="ArgumentException"><paramref name="destination" /> is too short.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	int GetMacAndReset(Span<byte> destination);

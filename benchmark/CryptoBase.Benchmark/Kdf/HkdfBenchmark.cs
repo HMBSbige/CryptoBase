@@ -30,12 +30,12 @@ public class Hkdf64Benchmark
 	public void Setup()
 	{
 		_ikm = RandomNumberGenerator.GetBytes(ByteLength);
-		_salt = RandomNumberGenerator.GetBytes(Sha256HashAlgorithm.HmacBlockSizeInBytes);
+		_salt = RandomNumberGenerator.GetBytes(Sha256HashAlgorithm.HmacBlockSize);
 		_info = RandomNumberGenerator.GetBytes(80);
-		_sha1Prk = new byte[HashAlgorithm<Sha1HashAlgorithm>.HashLengthInBytes];
-		_sha1Output = new byte[2 * HashAlgorithm<Sha1HashAlgorithm>.HashLengthInBytes + 1];
-		_sha256Prk = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
-		_sha256Output = new byte[2 * HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes + 1];
+		_sha1Prk = new byte[HashAlgorithm<Sha1HashAlgorithm>.HashLength];
+		_sha1Output = new byte[2 * HashAlgorithm<Sha1HashAlgorithm>.HashLength + 1];
+		_sha256Prk = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		_sha256Output = new byte[2 * HashAlgorithm<Sha256HashAlgorithm>.HashLength + 1];
 	}
 
 	[Benchmark(Baseline = true)]
@@ -115,12 +115,12 @@ public class Hkdf128Benchmark
 	public void Setup()
 	{
 		_ikm = RandomNumberGenerator.GetBytes(ByteLength);
-		_salt = RandomNumberGenerator.GetBytes(Sha512HashAlgorithm.HmacBlockSizeInBytes);
+		_salt = RandomNumberGenerator.GetBytes(Sha512HashAlgorithm.HmacBlockSize);
 		_info = RandomNumberGenerator.GetBytes(80);
-		_sha384Prk = new byte[HashAlgorithm<Sha384HashAlgorithm>.HashLengthInBytes];
-		_sha384Output = new byte[2 * HashAlgorithm<Sha384HashAlgorithm>.HashLengthInBytes + 1];
-		_sha512Prk = new byte[HashAlgorithm<Sha512HashAlgorithm>.HashLengthInBytes];
-		_sha512Output = new byte[2 * HashAlgorithm<Sha512HashAlgorithm>.HashLengthInBytes + 1];
+		_sha384Prk = new byte[HashAlgorithm<Sha384HashAlgorithm>.HashLength];
+		_sha384Output = new byte[2 * HashAlgorithm<Sha384HashAlgorithm>.HashLength + 1];
+		_sha512Prk = new byte[HashAlgorithm<Sha512HashAlgorithm>.HashLength];
+		_sha512Output = new byte[2 * HashAlgorithm<Sha512HashAlgorithm>.HashLength + 1];
 	}
 
 	[Benchmark(Baseline = true)]
@@ -195,9 +195,9 @@ public class Hkdf64BlockCountBenchmark
 	public void Setup()
 	{
 		_ikm = RandomNumberGenerator.GetBytes(256);
-		_salt = RandomNumberGenerator.GetBytes(Sha256HashAlgorithm.HmacBlockSizeInBytes);
+		_salt = RandomNumberGenerator.GetBytes(Sha256HashAlgorithm.HmacBlockSize);
 		_info = RandomNumberGenerator.GetBytes(80);
-		_output = new byte[BlockCount * HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+		_output = new byte[BlockCount * HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 	}
 
 	[Benchmark(Baseline = true)]
@@ -231,10 +231,10 @@ public class Hkdf128BlockCountBenchmark
 	public void Setup()
 	{
 		_ikm = RandomNumberGenerator.GetBytes(256);
-		_salt = RandomNumberGenerator.GetBytes(Sha512HashAlgorithm.HmacBlockSizeInBytes);
+		_salt = RandomNumberGenerator.GetBytes(Sha512HashAlgorithm.HmacBlockSize);
 		_info = RandomNumberGenerator.GetBytes(80);
-		_sha384Output = new byte[BlockCount * HashAlgorithm<Sha384HashAlgorithm>.HashLengthInBytes];
-		_sha512Output = new byte[BlockCount * HashAlgorithm<Sha512HashAlgorithm>.HashLengthInBytes];
+		_sha384Output = new byte[BlockCount * HashAlgorithm<Sha384HashAlgorithm>.HashLength];
+		_sha512Output = new byte[BlockCount * HashAlgorithm<Sha512HashAlgorithm>.HashLength];
 	}
 
 	[Benchmark(Baseline = true)]
@@ -282,7 +282,7 @@ public class HkdfOverlapBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_prk = RandomNumberGenerator.GetBytes(HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes);
+		_prk = RandomNumberGenerator.GetBytes(HashAlgorithm<Sha256HashAlgorithm>.HashLength);
 		int bufferLength = Math.Max(InfoLength, OutputLength);
 		_cryptoBaseBuffer = new byte[bufferLength];
 		_bclBuffer = new byte[bufferLength];
@@ -319,7 +319,7 @@ public class HkdfSha512OverlapBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_prk = RandomNumberGenerator.GetBytes(HashAlgorithm<Sha512HashAlgorithm>.HashLengthInBytes);
+		_prk = RandomNumberGenerator.GetBytes(HashAlgorithm<Sha512HashAlgorithm>.HashLength);
 		int bufferLength = Math.Max(InfoLength, OutputLength);
 		_cryptoBaseBuffer = new byte[bufferLength];
 		_bclBuffer = new byte[bufferLength];

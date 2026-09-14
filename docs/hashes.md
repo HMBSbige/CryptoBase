@@ -20,7 +20,7 @@
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha256;
 
-Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 
 // Hash the complete input.
 HashAlgorithm<Sha256HashAlgorithm>.HashData("hello world"u8, hash);
@@ -39,7 +39,7 @@ using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgori
 hasher.Append("hello "u8);
 hasher.Append("world"u8);
 
-Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 
 // Get the current hash without resetting.
 hasher.GetCurrentHash(hash);
@@ -59,7 +59,7 @@ using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha256;
 
 using FileStream input = File.OpenRead(path);
-Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 
 // Hash from the current stream position.
 input.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(hash);
@@ -67,7 +67,7 @@ input.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(hash);
 
 ```csharp
 await using FileStream input = File.OpenRead(path);
-byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 
 // Hash asynchronously from the current stream position.
 await input.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(hash);

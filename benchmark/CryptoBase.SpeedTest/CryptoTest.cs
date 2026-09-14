@@ -24,36 +24,36 @@ internal sealed class CryptoTest(int bufferSize, double seconds)
 
 	internal const double MinimumSeconds = SampleCount * TargetBatchSeconds;
 
-	public void Test(IStreamCrypto crypto)
+	public void TestStream<T>(T crypto) where T : IStreamCipher
 	{
 		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
 		byte[] output = new byte[bufferSize];
 
-		Measure(() => crypto.Update(input, output), crypto.Reset);
+		Measure(() => crypto.Xor(input, output));
 	}
 
-	public void Test(IAeadCrypto crypto)
+	public void TestAead<T>(T crypto) where T : IAeadCipher<T>
 	{
 		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
-		byte[] output = new byte[crypto.GetCiphertextSizeInBytes(input.Length)];
-		byte[] nonce = [.. IV.Slice(0, crypto.NonceSizeInBytes)];
-		byte[] tag = new byte[crypto.TagSizeInBytes];
+		byte[] output = new byte[input.Length];
+		byte[] nonce = [.. IV.Slice(0, T.NonceSize)];
+		byte[] tag = new byte[T.TagSize];
 
 		Measure(() => crypto.Encrypt(nonce, input, output, tag));
 	}
 
-	public void Test(IBlockModeOneShot crypto)
+	public void TestDataUnit<T>(T crypto) where T : IDataUnitCipher<T>
 	{
 		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
-		byte[] output = new byte[crypto.GetMaxByteCount(bufferSize)];
-		byte[] iv = [.. IV.Slice(0, crypto.BlockSize)];
+		byte[] output = new byte[bufferSize];
+		byte[] iv = [.. IV.Slice(0, T.TweakSize)];
 
 		Measure(() => crypto.Encrypt(iv, input, output));
 	}
 
-	private void Measure(Action operation, Action? resetBetweenBatches = null)
+	private void Measure(Action operation)
 	{
-		long opsPerBatch = WarmupAndCalibrate(operation, resetBetweenBatches);
+		long opsPerBatch = WarmupAndCalibrate(operation);
 		long sampleTicks = (long)(seconds / SampleCount * Stopwatch.Frequency);
 		Span<double> throughputs = stackalloc double[SampleCount];
 
@@ -64,8 +64,6 @@ internal sealed class CryptoTest(int bufferSize, double seconds)
 
 			do
 			{
-				resetBetweenBatches?.Invoke();
-
 				long start = Stopwatch.GetTimestamp();
 
 				for (long j = 0; j < opsPerBatch; ++j)
@@ -86,7 +84,7 @@ internal sealed class CryptoTest(int bufferSize, double seconds)
 		Console.WriteLine($@"{median / 1024.0 / 1024.0:F2} MiB/s (CV {CoefficientOfVariation(throughputs):P1})");
 	}
 
-	private long WarmupAndCalibrate(Action operation, Action? resetBetweenBatches)
+	private long WarmupAndCalibrate(Action operation)
 	{
 		double warmupSeconds = Math.Clamp(seconds / 3.0, 0.2, 1.0);
 		long warmupTicks = (long)(warmupSeconds * Stopwatch.Frequency);
@@ -97,8 +95,6 @@ internal sealed class CryptoTest(int bufferSize, double seconds)
 
 		do
 		{
-			resetBetweenBatches?.Invoke();
-
 			long start = Stopwatch.GetTimestamp();
 
 			for (long i = 0; i < opsPerBatch; ++i)

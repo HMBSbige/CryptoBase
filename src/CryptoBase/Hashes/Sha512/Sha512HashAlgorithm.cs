@@ -18,10 +18,10 @@ public struct Sha512HashAlgorithm : IHmacHashCore<Sha512HashAlgorithm>
 	private Sha512Core _state;
 
 	/// <inheritdoc />
-	public static int HashLengthInBytes => HashSizeInBytes;
+	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSizeInBytes => Sha512Core.BlockSizeInBytes;
+	public static int HmacBlockSize => Sha512Core.BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static Sha512HashAlgorithm IHashCore<Sha512HashAlgorithm>.Create()
@@ -45,7 +45,7 @@ public struct Sha512HashAlgorithm : IHmacHashCore<Sha512HashAlgorithm>
 
 	void IIncrementalHashCore.Finalize(Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLengthInBytes, nameof(destination));
-		_state.Finalize(destination, HashLengthInBytes);
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
+		_state.Finalize(destination, HashLength);
 	}
 }

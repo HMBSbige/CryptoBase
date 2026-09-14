@@ -7,10 +7,4 @@
     <Description>Abstractions for CryptoBase.</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="CryptoBase" />
-    <InternalsVisibleTo Include="CryptoBase.Benchmark" />
-    <InternalsVisibleTo Include="CryptoBase.Tests" />
-  </ItemGroup>
-
 </Project>

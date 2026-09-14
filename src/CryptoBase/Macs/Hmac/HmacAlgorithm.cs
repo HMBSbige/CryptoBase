@@ -14,7 +14,7 @@ public sealed class HmacAlgorithm<THash> : IMacAlgorithm<HmacAlgorithm<THash>> w
 	private HmacAlgorithm() { }
 
 	/// <inheritdoc />
-	public static int MacLengthInBytes => THash.HashLengthInBytes;
+	public static int MacLength => THash.HashLength;
 
 	/// <inheritdoc />
 	public static HmacAlgorithm<THash> Create(ReadOnlySpan<byte> key)

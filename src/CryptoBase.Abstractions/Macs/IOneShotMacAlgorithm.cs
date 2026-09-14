@@ -9,7 +9,7 @@ public interface IOneShotMacAlgorithm
 	/// Gets the MAC length, in bytes.
 	/// </summary>
 	/// <remarks>The value must be positive and constant.</remarks>
-	static abstract int MacLengthInBytes { get; }
+	static abstract int MacLength { get; }
 
 	/// <summary>
 	/// Computes the MAC of <paramref name="source" /> using <paramref name="key" />.
@@ -18,7 +18,7 @@ public interface IOneShotMacAlgorithm
 	/// <param name="key">The key.</param>
 	/// <param name="source">The data to authenticate.</param>
 	/// <param name="destination">The output buffer.</param>
-	/// <returns>The value of <see cref="MacLengthInBytes" />.</returns>
+	/// <returns>The value of <see cref="MacLength" />.</returns>
 	/// <exception cref="ArgumentException"><paramref name="key" /> is invalid, or <paramref name="destination" /> is too short.</exception>
 	static abstract int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination);
 }

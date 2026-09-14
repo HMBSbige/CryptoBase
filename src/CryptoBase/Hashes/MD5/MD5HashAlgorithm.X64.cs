@@ -8,7 +8,7 @@ public partial struct MD5HashAlgorithm
 	private static uint ReadX64Message(ref byte source, int wordIndex)
 	{
 		// Keep repeated words as source loads instead of JIT common subexpressions that spill to the stack.
-		return Volatile.Read(ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref source, wordIndex * sizeof(uint))));
+		return Volatile.Read(ref Unsafe.Add(ref source, wordIndex * sizeof(uint)).As<uint>());
 	}
 
 	[SuppressMessage("ReSharper", "RedundantAssignment")]

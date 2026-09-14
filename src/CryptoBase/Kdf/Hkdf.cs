@@ -35,7 +35,7 @@ public static class Hkdf
 	{
 		ValidateOutputLength<THash>(output);
 
-		int hashLength = THash.HashLengthInBytes;
+		int hashLength = THash.HashLength;
 		using CryptoBuffer<byte> prk = new(stackalloc byte[hashLength]);
 		HmacState<THash>.MacDestructive(salt, ikm, prk.Span);
 		ExpandCore<THash>(prk.Span, output, info);
@@ -43,14 +43,14 @@ public static class Hkdf
 
 	private static void ValidateExtractArguments<THash>(Span<byte> prk) where THash : unmanaged, IHmacHashCore<THash>
 	{
-		int hashLengthInBytes = THash.HashLengthInBytes;
+		int hashLengthInBytes = THash.HashLength;
 		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLengthInBytes, nameof(prk));
 	}
 
 	private static void ValidateExpandArguments<THash>(ReadOnlySpan<byte> prk, Span<byte> output) where THash : unmanaged, IHmacHashCore<THash>
 	{
 		ValidateOutputLength<THash>(output);
-		int hashLength = THash.HashLengthInBytes;
+		int hashLength = THash.HashLength;
 		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
 	}
 
@@ -58,13 +58,13 @@ public static class Hkdf
 	{
 		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
-		int maxOkmLength = checked(255 * THash.HashLengthInBytes);
+		int maxOkmLength = checked(255 * THash.HashLength);
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 	}
 
 	private static void ExpandCore<THash>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where THash : unmanaged, IHmacHashCore<THash>
 	{
-		if (output.Length <= THash.HashLengthInBytes || !info.Overlaps(output, out int outputOffset))
+		if (output.Length <= THash.HashLength || !info.Overlaps(output, out int outputOffset))
 		{
 			ExpandBlocks<THash>(prk, output, info);
 			return;
@@ -90,7 +90,7 @@ public static class Hkdf
 	[SkipLocalsInit]
 	private static void ExpandBlocks<THash>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where THash : unmanaged, IHmacHashCore<THash>
 	{
-		int hashLength = THash.HashLengthInBytes;
+		int hashLength = THash.HashLength;
 		byte counter = 0;
 		ReadOnlySpan<byte> counterSpan = counter.AsReadOnlySpan();
 		ReadOnlySpan<byte> previous = ReadOnlySpan<byte>.Empty;
@@ -145,7 +145,7 @@ public static class Hkdf
 	[SkipLocalsInit]
 	private static void ExpandOverlappingBlocks<THash>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> infoPrefix, ReadOnlySpan<byte> overlapCopy, ReadOnlySpan<byte> infoSuffix) where THash : unmanaged, IHmacHashCore<THash>
 	{
-		int hashLength = THash.HashLengthInBytes;
+		int hashLength = THash.HashLength;
 		byte counter = 0;
 		ReadOnlySpan<byte> counterSpan = counter.AsReadOnlySpan();
 		ReadOnlySpan<byte> previous = ReadOnlySpan<byte>.Empty;

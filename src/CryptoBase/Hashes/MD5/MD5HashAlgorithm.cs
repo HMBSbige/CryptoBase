@@ -56,10 +56,10 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 	private const int BlockSizeInBytes = 64;
 
 	/// <inheritdoc />
-	public static int HashLengthInBytes => HashSizeInBytes;
+	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSizeInBytes => BlockSizeInBytes;
+	public static int HmacBlockSize => BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static MD5HashAlgorithm IHashCore<MD5HashAlgorithm>.Create()
@@ -116,7 +116,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 
 	void IIncrementalHashCore.Finalize(Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLengthInBytes, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 		Finalize(ref this, ref destination.GetReference());
 	}
 

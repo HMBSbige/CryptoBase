@@ -18,7 +18,7 @@ public class Crc32CBenchmark
 	public void Setup()
 	{
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
-		_hash = new byte[HashAlgorithm<Crc32CHashAlgorithm>.HashLengthInBytes];
+		_hash = new byte[HashAlgorithm<Crc32CHashAlgorithm>.HashLength];
 	}
 
 	[Benchmark]

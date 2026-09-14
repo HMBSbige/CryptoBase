@@ -8,7 +8,7 @@ public struct Crc32HashAlgorithm : IHashCore<Crc32HashAlgorithm>
 	private uint _state;
 
 	/// <inheritdoc />
-	public static int HashLengthInBytes => sizeof(uint);
+	public static int HashLength => sizeof(uint);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static Crc32HashAlgorithm IHashCore<Crc32HashAlgorithm>.Create()

@@ -84,9 +84,9 @@ public static class FastUtils
 
 		while (left >= sizeof(ulong))
 		{
-			ref readonly ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
-			ref readonly ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, i));
-			ref ulong dst = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref destinationRef, i));
+			ref readonly ulong v0 = ref Unsafe.Add(ref streamRef, i).As<ulong>();
+			ref readonly ulong v1 = ref Unsafe.Add(ref sourceRef, i).As<ulong>();
+			ref ulong dst = ref Unsafe.Add(ref destinationRef, i).As<ulong>();
 
 			dst = v0 ^ v1;
 			i += sizeof(ulong);
@@ -95,9 +95,9 @@ public static class FastUtils
 
 		if (left >= sizeof(uint))
 		{
-			ref readonly uint v0 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref streamRef, i));
-			ref readonly uint v1 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, i));
-			ref uint dst = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref destinationRef, i));
+			ref readonly uint v0 = ref Unsafe.Add(ref streamRef, i).As<uint>();
+			ref readonly uint v1 = ref Unsafe.Add(ref sourceRef, i).As<uint>();
+			ref uint dst = ref Unsafe.Add(ref destinationRef, i).As<uint>();
 
 			dst = v0 ^ v1;
 			i += sizeof(uint);
@@ -124,9 +124,9 @@ public static class FastUtils
 
 		if (left >= sizeof(ulong))
 		{
-			ref readonly ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
-			ref readonly ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, i));
-			ref ulong dst = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref destinationRef, i));
+			ref readonly ulong v0 = ref Unsafe.Add(ref streamRef, i).As<ulong>();
+			ref readonly ulong v1 = ref Unsafe.Add(ref sourceRef, i).As<ulong>();
+			ref ulong dst = ref Unsafe.Add(ref destinationRef, i).As<ulong>();
 
 			dst = v0 ^ v1;
 			i += sizeof(ulong);
@@ -135,9 +135,9 @@ public static class FastUtils
 
 		if (left >= sizeof(uint))
 		{
-			ref readonly uint v0 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref streamRef, i));
-			ref readonly uint v1 = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref sourceRef, i));
-			ref uint dst = ref Unsafe.As<byte, uint>(ref Unsafe.Add(ref destinationRef, i));
+			ref readonly uint v0 = ref Unsafe.Add(ref streamRef, i).As<uint>();
+			ref readonly uint v1 = ref Unsafe.Add(ref sourceRef, i).As<uint>();
+			ref uint dst = ref Unsafe.Add(ref destinationRef, i).As<uint>();
 
 			dst = v0 ^ v1;
 			i += sizeof(uint);

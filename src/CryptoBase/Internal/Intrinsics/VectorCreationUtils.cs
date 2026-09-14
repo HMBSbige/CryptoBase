@@ -2,9 +2,7 @@ namespace CryptoBase.Internal.Intrinsics;
 
 internal static class VectorCreationUtils
 {
-	/// <summary>
-	/// Vector128.Create(a, x, b, x)
-	/// </summary>
+	// Vector128.Create(a, x, b, x)
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<uint> CreateTwoUInt(uint a, uint b)
 	{
@@ -19,9 +17,7 @@ internal static class VectorCreationUtils
 		return Vector128.Create(a, 0, b, 0);
 	}
 
-	/// <summary>
-	/// Vector256.Create(a, 0, b, 0, c, 0, d, 0)
-	/// </summary>
+	// Vector256.Create(a, 0, b, 0, c, 0, d, 0)
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<uint> Create4UInt(uint a, uint b, uint c, uint d)
 	{

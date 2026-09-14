@@ -28,7 +28,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| Blake3 | ⏳ |
+| Blake3 | ⚠️ |
 | MD5 | ✅ |
 | SHA1 | ✅ |
 | SHA224 | ✅ |
@@ -66,7 +66,6 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ---------- |:------:|
 | ChaCha20 (IETF) | ✅ |
 | ChaCha20 (Original) | ✅ |
-| RC4 | ✅ |
 | Salsa20 | ✅ |
 | XChaCha20 | ✅ |
 | XSalsa20 | ✅ |
@@ -82,7 +81,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| CBC | ⚠️ |
+| CBC | ⏳ |
 | CTR128 | ✅ |
 | XTS | ✅ |
 

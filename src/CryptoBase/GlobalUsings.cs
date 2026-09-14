@@ -1,8 +1,5 @@
-global using CryptoBase.Abstractions;
+global using CryptoBase.Abstractions.Ciphers;
 global using CryptoBase.Abstractions.Hashes;
-global using CryptoBase.Abstractions.Internal.Extensions;
-global using CryptoBase.Abstractions.SymmetricCryptos;
-global using CryptoBase.Abstractions.Vectors;
 global using CryptoBase.Internal;
 global using CryptoBase.Internal.Extensions;
 global using CryptoBase.Internal.Intrinsics;

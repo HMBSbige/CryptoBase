@@ -2,35 +2,35 @@
 
 [Back to documentation](README.md)
 
-| Factory | Key | Nonce | Tag |
+| Type | Key | Nonce | Tag |
 | --- | ---: | ---: | ---: |
-| `AesGcm` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
-| `SM4Gcm` | 16 bytes | 12 bytes | 16 bytes |
-| `ChaCha20Poly1305` | 32 bytes | 12 bytes | 16 bytes |
-| `XChaCha20Poly1305` | 32 bytes | 24 bytes | 16 bytes |
+| `GcmMode128<AesCipher>` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
+| `GcmMode128<SM4Cipher>` | 16 bytes | 12 bytes | 16 bytes |
+| `ChaCha20Poly1305Cipher` | 32 bytes | 12 bytes | 16 bytes |
+| `XChaCha20Poly1305Cipher` | 32 bytes | 24 bytes | 16 bytes |
 
 ```csharp
 using System.Security.Cryptography;
-using CryptoBase.Abstractions.SymmetricCryptos;
-using CryptoBase.SymmetricCryptos.AeadCryptos;
+using CryptoBase.Ciphers.Aead;
 
-byte[] key = RandomNumberGenerator.GetBytes(32);
+byte[] key = RandomNumberGenerator.GetBytes(XChaCha20Poly1305Cipher.KeySize);
 byte[] plaintext = "message"u8.ToArray();
 byte[] associatedData = "record header"u8.ToArray();
 
-// Create an XChaCha20-Poly1305 instance.
-using IAeadCrypto crypto = AeadCryptoCreate.XChaCha20Poly1305(key);
+using XChaCha20Poly1305Cipher crypto = XChaCha20Poly1305Cipher.Create(key);
 
 // Use a unique nonce for each encryption with the same key.
-byte[] nonce = RandomNumberGenerator.GetBytes(crypto.NonceSizeInBytes);
-byte[] ciphertext = new byte[crypto.GetCiphertextSizeInBytes(plaintext.Length)];
-byte[] tag = new byte[crypto.TagSizeInBytes];
+byte[] nonce = RandomNumberGenerator.GetBytes(XChaCha20Poly1305Cipher.NonceSize);
+byte[] ciphertext = new byte[plaintext.Length];
+byte[] tag = new byte[XChaCha20Poly1305Cipher.TagSize];
 
-// Encrypt and write the ciphertext and tag separately.
 crypto.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
 
-byte[] recovered = new byte[crypto.GetPlaintextSizeInBytes(ciphertext.Length)];
+byte[] recovered = new byte[ciphertext.Length];
 
-// Authenticate and decrypt; failure throws AuthenticationTagMismatchException without changing recovered.
-crypto.Decrypt(nonce, ciphertext, tag, recovered, associatedData);
+// On authentication failure, TryDecrypt clears the output prefix and returns false.
+if (!crypto.TryDecrypt(nonce, ciphertext, tag, recovered, associatedData))
+{
+    throw new AuthenticationTagMismatchException();
+}
 ```

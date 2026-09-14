@@ -54,6 +54,13 @@ jobs:
         working-directory: test/CryptoBase.Tests
         run: dotnet test -c Debug --no-restore --disable-logo --minimum-expected-tests 1
 
+      - name: Run tests (Disable AVX512v2)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableAVX512v2: 0
+
       - name: Run tests (Disable AVX512)
         if: matrix.os != 'macos-latest'
         working-directory: test/CryptoBase.Tests

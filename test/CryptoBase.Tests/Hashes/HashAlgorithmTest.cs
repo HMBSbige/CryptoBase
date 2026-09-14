@@ -20,7 +20,7 @@ public class HashAlgorithmTest
 		byte[] emptyExpected = SHA256.HashData(ReadOnlySpan<byte>.Empty);
 		byte[] doubledExpected = SHA256.HashData(Concat(source, source));
 
-		await Assert.That(Sha256HashAlgorithm.HashLengthInBytes).IsEqualTo(expected.Length);
+		await Assert.That(Sha256HashAlgorithm.HashLength).IsEqualTo(expected.Length);
 
 		byte[] destination = CreateDestination<Sha256HashAlgorithm>();
 		using HashAlgorithm<Sha256HashAlgorithm> hashAlgorithm = HashAlgorithm<Sha256HashAlgorithm>.Create();
@@ -69,13 +69,13 @@ public class HashAlgorithmTest
 	public async Task HashDataSupportsOverlappingSourceAndDestination(int sourceOffset, int destinationOffset)
 	{
 		const int sourceLength = 97;
-		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256HashAlgorithm.HashLengthInBytes);
+		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256HashAlgorithm.HashLength);
 		byte[] buffer = CreateDeterministicSource(bufferLength);
 		byte[] expected = SHA256.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength));
 
-		int written = HashAlgorithm<Sha256HashAlgorithm>.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength), buffer.AsSpan().Slice(destinationOffset, Sha256HashAlgorithm.HashLengthInBytes));
+		int written = HashAlgorithm<Sha256HashAlgorithm>.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength), buffer.AsSpan().Slice(destinationOffset, Sha256HashAlgorithm.HashLength));
 
-		await Assert.That(written).IsEqualTo(Sha256HashAlgorithm.HashLengthInBytes);
+		await Assert.That(written).IsEqualTo(Sha256HashAlgorithm.HashLength);
 		await Assert.That(buffer.AsSpan().Slice(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
@@ -83,7 +83,7 @@ public class HashAlgorithmTest
 	public async Task OwnershipContract()
 	{
 		byte[] source = CreateDeterministicSource(19);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 
 		using HashAlgorithm<Sha256HashAlgorithm> owner = HashAlgorithm<Sha256HashAlgorithm>.Create();
 		HashAlgorithm<Sha256HashAlgorithm> alias = owner;
@@ -102,7 +102,7 @@ public class HashAlgorithmTest
 		byte[] source = CreateDeterministicSource(23);
 		byte[] expected = SHA256.HashData(source);
 		byte[] emptyExpected = SHA256.HashData(ReadOnlySpan<byte>.Empty);
-		byte[] shortDestination = new byte[Sha256HashAlgorithm.HashLengthInBytes - 1];
+		byte[] shortDestination = new byte[Sha256HashAlgorithm.HashLength - 1];
 		byte[] destination = CreateDestination<Sha256HashAlgorithm>();
 
 		using HashAlgorithm<Sha256HashAlgorithm> hashAlgorithm = HashAlgorithm<Sha256HashAlgorithm>.Create();
@@ -141,7 +141,7 @@ public class HashAlgorithmTest
 	public async Task FailedHashCoreOperationsLeaveDestinationAndStateUnchanged()
 	{
 		byte[] source = CreateDeterministicSource(23);
-		byte[] expected = new byte[HashAlgorithm<FailingHashCore>.HashLengthInBytes];
+		byte[] expected = new byte[HashAlgorithm<FailingHashCore>.HashLength];
 		byte[] emptyExpected = new byte[expected.Length];
 		byte[] destination = new byte[expected.Length + 1];
 		HashAlgorithm<FailingHashCore>.HashData(source, expected);
@@ -202,7 +202,7 @@ public class HashAlgorithmTest
 			Interlocked.Exchange(ref _failNextFinalize, 1);
 		}
 
-		public static int HashLengthInBytes => sizeof(uint);
+		public static int HashLength => sizeof(uint);
 
 		static FailingHashCore IHashCore<FailingHashCore>.Create()
 		{

@@ -15,7 +15,7 @@ public class HashUtilsTest
 		const int startOffset = 137;
 		byte[] source = CreateDeterministicSource(81920 + 257);
 		byte[] expected = SHA256.HashData(source.AsSpan(startOffset));
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes + 1];
+		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength + 1];
 		PrepareDestination(destination);
 		using MemoryStream stream = new(source, false);
 		stream.Position = startOffset;
@@ -30,7 +30,7 @@ public class HashUtilsTest
 	public async Task ComputeHashRejectsShortDestinationBeforeReading()
 	{
 		byte[] source = CreateDeterministicSource(257);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes - 1];
+		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength - 1];
 		PrepareDestination(destination);
 		using MemoryStream stream = new(source, false);
 		stream.Position = 11;
@@ -48,7 +48,7 @@ public class HashUtilsTest
 	{
 		byte[] source = CreateDeterministicSource(sourceLength);
 		byte[] expected = SHA256.HashData(source);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 		using MemoryStream stream = new ShortReadMemoryStream(source, 7);
 
 		int written = stream.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination);
@@ -65,7 +65,7 @@ public class HashUtilsTest
 		byte[] expected = SHA256.HashData(source.AsSpan(startOffset));
 		using MemoryStream stream = new(source, false);
 		stream.Position = startOffset;
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes + 1];
+		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength + 1];
 		PrepareDestination(destination);
 
 		int written = await stream.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination);
@@ -78,7 +78,7 @@ public class HashUtilsTest
 	public async Task ComputeHashAsyncRejectsShortDestinationBeforeReading()
 	{
 		byte[] source = CreateDeterministicSource(257);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes - 1];
+		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength - 1];
 		PrepareDestination(destination);
 		using MemoryStream stream = new(source, false);
 		stream.Position = 11;
@@ -92,7 +92,7 @@ public class HashUtilsTest
 	[Test]
 	public async Task ComputeHashRejectsNullAndUnreadableStreamsBeforeWriting()
 	{
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 		PrepareDestination(destination);
 
 		await Assert.That(() => HashUtils.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(null!, destination)).ThrowsExactly<ArgumentNullException>();
@@ -106,7 +106,7 @@ public class HashUtilsTest
 	public async Task ComputeHashAsyncHonorsPreCanceledTokenBeforeReading()
 	{
 		byte[] source = CreateDeterministicSource(257);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 		PrepareDestination(destination);
 		using MemoryStream stream = new(source, false);
 		using CancellationTokenSource cancellation = new();

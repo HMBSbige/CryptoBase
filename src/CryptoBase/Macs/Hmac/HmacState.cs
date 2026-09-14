@@ -12,7 +12,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[SkipLocalsInit]
 	internal void Initialize(ReadOnlySpan<byte> key)
 	{
-		using CryptoBuffer<byte> keyBlock = new(stackalloc byte[THash.HmacBlockSizeInBytes]);
+		using CryptoBuffer<byte> keyBlock = new(stackalloc byte[THash.HmacBlockSize]);
 		NormalizeKey(key, keyBlock.Span);
 		InitializeSeeds(keyBlock.Span, out _innerSeed, out _outerSeed);
 		_innerState = _innerSeed;
@@ -34,9 +34,9 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[SkipLocalsInit]
 	internal readonly int GetCurrentMac(Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLengthInBytes, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
 
-		Span<byte> mac = stackalloc byte[THash.HashLengthInBytes];
+		Span<byte> mac = stackalloc byte[THash.HashLength];
 		THash inner = _innerState;
 		THash outer = _outerSeed;
 
@@ -64,7 +64,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[SkipLocalsInit]
 	internal int GetMacAndResetDestructive(Span<byte> destination)
 	{
-		Debug.Assert(destination.Length >= THash.HashLengthInBytes);
+		Debug.Assert(destination.Length >= THash.HashLength);
 
 		THash outer = _outerSeed;
 
@@ -82,16 +82,16 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 
 	internal int GetMacDestructive(Span<byte> destination)
 	{
-		Debug.Assert(destination.Length >= THash.HashLengthInBytes);
+		Debug.Assert(destination.Length >= THash.HashLength);
 		return FinalizeMac(ref _innerState, ref _outerSeed, destination);
 	}
 
 	[SkipLocalsInit]
 	internal static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLengthInBytes, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
 
-		using CryptoBuffer<byte> mac = new(stackalloc byte[THash.HashLengthInBytes]);
+		using CryptoBuffer<byte> mac = new(stackalloc byte[THash.HashLength]);
 		int written = MacCore(key, source, mac.Span);
 		mac.Span.CopyTo(destination);
 		return written;
@@ -99,7 +99,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 
 	internal static int MacDestructive(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Debug.Assert(destination.Length >= THash.HashLengthInBytes);
+		Debug.Assert(destination.Length >= THash.HashLength);
 		return MacCore(key, source, destination);
 	}
 
@@ -108,7 +108,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	{
 		Unsafe.SkipInit(out THash inner);
 		Unsafe.SkipInit(out THash outer);
-		Span<byte> keyBlock = stackalloc byte[THash.HmacBlockSizeInBytes];
+		Span<byte> keyBlock = stackalloc byte[THash.HmacBlockSize];
 
 		try
 		{
@@ -140,9 +140,9 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	private static int FinalizeMac(ref THash inner, ref THash outer, Span<byte> destination)
 	{
 		inner.Finalize(destination);
-		outer.Append(destination.Slice(0, THash.HashLengthInBytes));
+		outer.Append(destination.Slice(0, THash.HashLength));
 		outer.Finalize(destination);
-		return THash.HashLengthInBytes;
+		return THash.HashLength;
 	}
 
 	[SkipLocalsInit]
@@ -160,7 +160,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 				hash = THash.Create();
 				hash.Append(key);
 				hash.Finalize(keyBlock);
-				normalizedKeyLength = THash.HashLengthInBytes;
+				normalizedKeyLength = THash.HashLength;
 			}
 			finally
 			{
@@ -179,7 +179,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void XorPad(Span<byte> pad, byte value)
 	{
-		int length = THash.HmacBlockSizeInBytes;
+		int length = THash.HmacBlockSize;
 		Debug.Assert(pad.Length == length);
 		ref byte padReference = ref pad.GetReference();
 		int offset = 0;

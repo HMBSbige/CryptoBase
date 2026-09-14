@@ -9,6 +9,6 @@ public interface IHmacHashCore<out TSelf> : IHashCore<TSelf> where TSelf : unman
 	/// <summary>
 	/// Gets the HMAC input block size, in bytes.
 	/// </summary>
-	/// <remarks>Must be at least <see cref="IIncrementalHashCore.HashLengthInBytes" />.</remarks>
-	static abstract int HmacBlockSizeInBytes { get; }
+	/// <remarks>Must be at least <see cref="IIncrementalHashCore.HashLength" />.</remarks>
+	static abstract int HmacBlockSize { get; }
 }

@@ -110,7 +110,7 @@ internal static class VectorBitOperationsExtensions
 	{
 		if (offset is 32)
 		{
-			return Avx2.Shuffle(value.AsUInt32(), 0xB1).As<uint, T>();
+			return Avx2.Shuffle(value.AsUInt32(), 0b10_11_00_01).As<uint, T>();
 		}
 
 		Vector128<byte> indices = CreateRotateRightUInt64ShuffleIndices(offset);

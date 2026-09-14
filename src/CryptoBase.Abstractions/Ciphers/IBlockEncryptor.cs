@@ -8,7 +8,7 @@ public interface IBlockEncryptor<out TSelf> : IDisposable where TSelf : IBlockEn
 	/// <summary>
 	/// Gets the block size, in bytes.
 	/// </summary>
-	static abstract int BlockSizeInBytes { get; }
+	static abstract int BlockSize { get; }
 
 	/// <summary>
 	/// Creates an instance initialized with <paramref name="key" />.

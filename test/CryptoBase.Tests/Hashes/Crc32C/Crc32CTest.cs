@@ -21,8 +21,8 @@ public class Crc32CTest
 	}
 
 	[Test]
-	[CombinedDataSources]
-	public Task IncrementalBlockBatches([MethodDataSource(typeof(CrcTestUtils), nameof(CrcTestUtils.SplitBoundaryLengths))] int length, [MethodDataSource(typeof(CrcTestUtils), nameof(CrcTestUtils.SplitSizes))] int splitSize)
+	[MethodDataSource(typeof(CrcTestUtils), nameof(CrcTestUtils.SplitBoundaryCases))]
+	public Task IncrementalBlockBatches(int length, int splitSize)
 	{
 		return CrcTestUtils.VerifySplitBoundary<Crc32CHashAlgorithm>(length, splitSize, 0x82f63b78);
 	}

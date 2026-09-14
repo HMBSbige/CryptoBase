@@ -8,12 +8,12 @@ public interface IAeadCipher<out TSelf> : IDisposable where TSelf : IAeadCipher<
 	/// <summary>
 	/// Gets the nonce size, in bytes.
 	/// </summary>
-	static abstract int NonceSizeInBytes { get; }
+	static abstract int NonceSize { get; }
 
 	/// <summary>
 	/// Gets the authentication tag size, in bytes.
 	/// </summary>
-	static abstract int TagSizeInBytes { get; }
+	static abstract int TagSize { get; }
 
 	/// <summary>
 	/// Creates an instance initialized with <paramref name="key" />.

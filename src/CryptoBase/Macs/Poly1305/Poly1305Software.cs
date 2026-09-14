@@ -146,7 +146,7 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 
 	public readonly void WriteMac(scoped Span<byte> destination)
 	{
-		Debug.Assert(destination.Length >= Poly1305Algorithm.MacLengthInBytes);
+		Debug.Assert(destination.Length >= Poly1305Algorithm.MacLength);
 
 		ulong g0 = _h0 + 5;
 		ulong carry = g0 < _h0 ? 1UL : 0;

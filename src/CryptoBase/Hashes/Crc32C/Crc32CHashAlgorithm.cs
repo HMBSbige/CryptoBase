@@ -10,7 +10,7 @@ public struct Crc32CHashAlgorithm : IHashCore<Crc32CHashAlgorithm>
 	private uint _state;
 
 	/// <inheritdoc />
-	public static int HashLengthInBytes => sizeof(uint);
+	public static int HashLength => sizeof(uint);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static Crc32CHashAlgorithm IHashCore<Crc32CHashAlgorithm>.Create()

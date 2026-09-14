@@ -128,7 +128,7 @@ public sealed partial class Base32Encoding
 		Vector256<int> quads = Avx2.MultiplyAddAdjacent(pairs, Vector256.Create(0x00104000, 0x00010400, 0x00104000, 0x00010400, 0x00104000, 0x00010400, 0x00104000, 0x00010400).AsInt16());
 		Vector256<byte> merged = (quads.AsUInt64() | quads.AsUInt64() >>> 48).AsByte();
 		Vector256<byte> indices = Vector256.Create((byte)2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0, 18, 17, 16, 21, 20, 26, 25, 24, 29, 28, 16, 16, 16, 16, 16, 16);
-		return Vector256.Shuffle(merged, indices);
+		return Avx2.Shuffle(merged, indices);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

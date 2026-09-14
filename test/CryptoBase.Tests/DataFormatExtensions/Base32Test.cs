@@ -8,6 +8,11 @@ namespace CryptoBase.Tests.DataFormatExtensions;
 
 public class Base32Test
 {
+	public static IEnumerable<int> SourceLengths()
+	{
+		return Enumerable.Range(0, 206).Append(1040);
+	}
+
 	[Test]
 	[Arguments(false, @"", @"")]
 	[Arguments(false, @"f", @"MY======")]
@@ -65,7 +70,7 @@ public class Base32Test
 
 	[Test]
 	[MatrixDataSource]
-	public async Task AllShortLengthsMatchIndependentEncoder([MatrixRange<int>(0, 205)] int length, [Matrix] bool hex, [Matrix] bool omitPadding)
+	public async Task LengthsMatchIndependentEncoder([MatrixMethod<Base32Test>(nameof(SourceLengths))] int length, [Matrix] bool hex, [Matrix] bool omitPadding)
 	{
 		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
 

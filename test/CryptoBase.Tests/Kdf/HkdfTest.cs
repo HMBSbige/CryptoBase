@@ -69,7 +69,7 @@ public class HkdfTest
 	[Test]
 	public async Task RejectsInvalidLengthsWithoutWriting()
 	{
-		int hashLength = HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes;
+		int hashLength = HashAlgorithm<Sha256HashAlgorithm>.HashLength;
 		byte[] ikm = CreateData(37, 3);
 		byte[] salt = CreateData(19, 5);
 		byte[] info = CreateData(11, 7);
@@ -106,9 +106,9 @@ public class HkdfTest
 	[Test]
 	public async Task SupportsMaximumBlockCount()
 	{
-		byte[] prk = CreateData(HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes, 11);
+		byte[] prk = CreateData(HashAlgorithm<Sha256HashAlgorithm>.HashLength, 11);
 		byte[] info = CreateData(23, 17);
-		byte[] expected = new byte[255 * HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+		byte[] expected = new byte[255 * HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 		byte[] actual = new byte[expected.Length];
 
 		HKDF.Expand(HashAlgorithmName.SHA256, prk, expected, info);
@@ -124,7 +124,7 @@ public class HkdfTest
 	public async Task SupportsPrkAndOutputOverlap(int prkOffset, int outputOffset)
 	{
 		const int outputLength = 73;
-		byte[] prk = CreateData(HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes, 13);
+		byte[] prk = CreateData(HashAlgorithm<Sha256HashAlgorithm>.HashLength, 13);
 		byte[] info = CreateData(23, 19);
 		byte[] expected = new byte[outputLength];
 		HKDF.Expand(HashAlgorithmName.SHA256, prk, expected, info);
@@ -141,7 +141,7 @@ public class HkdfTest
 	[Arguments(10, 0)]
 	public async Task SupportsIkmAndPrkOverlap(int ikmOffset, int prkOffset)
 	{
-		int hashLength = HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes;
+		int hashLength = HashAlgorithm<Sha256HashAlgorithm>.HashLength;
 		byte[] ikm = CreateData(73, 11);
 		byte[] salt = CreateData(37, 29);
 		byte[] expected = new byte[hashLength];
@@ -160,7 +160,7 @@ public class HkdfTest
 	[Arguments(10, 0)]
 	public async Task SupportsSaltAndPrkOverlap(int saltOffset, int prkOffset)
 	{
-		int hashLength = HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes;
+		int hashLength = HashAlgorithm<Sha256HashAlgorithm>.HashLength;
 		byte[] ikm = CreateData(73, 11);
 		byte[] salt = CreateData(37, 29);
 		byte[] expected = new byte[hashLength];
@@ -183,7 +183,7 @@ public class HkdfTest
 	[Arguments(97, 10, 0)]
 	public async Task SupportsInfoAndOutputOverlap(int outputLength, int infoOffset, int outputOffset)
 	{
-		byte[] prk = CreateData(HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes, 13);
+		byte[] prk = CreateData(HashAlgorithm<Sha256HashAlgorithm>.HashLength, 13);
 		byte[] info = CreateData(257, 19);
 		byte[] expected = new byte[outputLength];
 		HKDF.Expand(HashAlgorithmName.SHA256, prk, expected, info);
@@ -261,7 +261,7 @@ public class HkdfTest
 		byte[] ikm = CreateData(73, 11);
 		byte[] salt = CreateData(37, 29);
 		byte[] info = CreateData(infoLength, 47);
-		byte[] prk = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
+		byte[] prk = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 		HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt, prk);
 
 		byte[] expectedExpanded = new byte[outputLength];
@@ -288,8 +288,8 @@ public class HkdfTest
 		byte[] ikmCopy = (byte[])ikm.Clone();
 		byte[] saltCopy = (byte[])salt.Clone();
 		byte[] infoCopy = (byte[])info.Clone();
-		byte[] prk = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes];
-		byte[] output = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLengthInBytes + 11];
+		byte[] prk = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		byte[] output = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength + 11];
 
 		Hkdf.Extract<Sha256HashAlgorithm>(ikm, salt, prk);
 		byte[] prkCopy = (byte[])prk.Clone();
@@ -326,7 +326,7 @@ public class HkdfTest
 
 	private static async Task VerifyAgainstPlatform<THash>(HashAlgorithmName algorithmName, int outputLength) where THash : unmanaged, IHmacHashCore<THash>
 	{
-		int hashLength = THash.HashLengthInBytes;
+		int hashLength = THash.HashLength;
 		byte[] ikm = CreateData(73, 11);
 		byte[] salt = CreateData(37, 29);
 		byte[] info = CreateData(23, 47);

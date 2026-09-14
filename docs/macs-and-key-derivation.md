@@ -10,7 +10,7 @@ using CryptoBase.Hashes.Sha256;
 using CryptoBase.Macs.Hmac;
 
 byte[] key = RandomNumberGenerator.GetBytes(32);
-Span<byte> tag = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLengthInBytes];
+Span<byte> tag = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
 
 // Authenticate the complete input.
 HmacAlgorithm<Sha256HashAlgorithm>.Mac(key, "message"u8, tag);
@@ -40,7 +40,7 @@ using CryptoBase.Macs.Poly1305;
 
 // Generate a new one-time key for each message.
 byte[] key = RandomNumberGenerator.GetBytes(Poly1305Algorithm.KeyLengthInBytes);
-Span<byte> tag = stackalloc byte[Poly1305Algorithm.MacLengthInBytes];
+Span<byte> tag = stackalloc byte[Poly1305Algorithm.MacLength];
 
 // Authenticate the complete input.
 Poly1305Algorithm.Mac(key, "message"u8, tag);
@@ -62,7 +62,7 @@ byte[] outputKeyMaterial = new byte[32];
 // Extract and expand in one call.
 Hkdf.DeriveKey<Sha256HashAlgorithm>(inputKeyMaterial, outputKeyMaterial, salt, info);
 
-Span<byte> pseudorandomKey = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLengthInBytes];
+Span<byte> pseudorandomKey = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
 
 // Extract a pseudorandom key.
 Hkdf.Extract<Sha256HashAlgorithm>(inputKeyMaterial, salt, pseudorandomKey);

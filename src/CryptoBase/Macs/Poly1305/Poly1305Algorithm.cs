@@ -29,16 +29,16 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 	private const int AdvSimdMinimumParallelLength = 4 * Avx2BlockSizeInBytes;
 
 	/// <inheritdoc />
-	public static int MacLengthInBytes => 16;
+	public static int MacLength => 16;
 
 	/// <inheritdoc />
 	[SkipLocalsInit]
 	public static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MacLengthInBytes, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MacLength, nameof(destination));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeyLengthInBytes, nameof(key));
 
-		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLengthInBytes]);
+		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLength]);
 		int written = MacSelected(key, source, mac.Span);
 		mac.Span.CopyTo(destination);
 		return written;
@@ -48,9 +48,9 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 	internal static void MacPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> firstSegment, ReadOnlySpan<byte> secondSegment, ReadOnlySpan<byte> thirdSegment, Span<byte> destination)
 	{
 		Debug.Assert(key.Length is KeyLengthInBytes);
-		Debug.Assert(destination.Length >= MacLengthInBytes);
+		Debug.Assert(destination.Length >= MacLength);
 
-		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLengthInBytes]);
+		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLength]);
 		MacPaddedSegmentsSelected(key, firstSegment, secondSegment, thirdSegment, mac.Span);
 		mac.Span.CopyTo(destination);
 	}
@@ -234,7 +234,7 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 		{
 			state.AppendMessage(source);
 			state.WriteMac(destination);
-			return MacLengthInBytes;
+			return MacLength;
 		}
 		finally
 		{

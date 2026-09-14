@@ -86,7 +86,7 @@ public class Poly1305Test
 		byte[] key = Convert.FromHexString(keyHex);
 		byte[] source = Convert.FromHexString(sourceHex);
 		byte[] expected = Convert.FromHexString(expectedHex);
-		byte[] actual = new byte[Poly1305Algorithm.MacLengthInBytes];
+		byte[] actual = new byte[Poly1305Algorithm.MacLength];
 
 		ComputeState26Mac(key, source, actual);
 
@@ -106,17 +106,13 @@ public class Poly1305Test
 
 	[Test]
 	[MethodDataSource(nameof(BackendBoundaryVectors))]
-	public async Task AutomaticBackendMatchesFixedVectorsAtBoundaries(int length, string expectedHex)
+	public Task AutomaticBackendMatchesFixedVectorsAtBoundaries(int length, string expectedHex)
 	{
 		byte[] key = CreateDeterministicSource(Poly1305Algorithm.KeyLengthInBytes);
 		byte[] source = CreateDeterministicSource(length);
 		byte[] expected = Convert.FromHexString(expectedHex);
-		byte[] actual = new byte[Poly1305Algorithm.MacLengthInBytes];
 
-		int written = Poly1305Algorithm.Mac(key, source, actual);
-
-		await Assert.That(written).IsEqualTo(expected.Length);
-		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		return VerifyVector<Poly1305Algorithm>(key, source, expected);
 	}
 
 	[Test]
@@ -126,7 +122,7 @@ public class Poly1305Test
 		byte[] source = CreateDeterministicSource(73);
 		byte[] keyCopy = (byte[])key.Clone();
 		byte[] sourceCopy = (byte[])source.Clone();
-		byte[] shortDestination = new byte[Poly1305Algorithm.MacLengthInBytes - 1];
+		byte[] shortDestination = new byte[Poly1305Algorithm.MacLength - 1];
 		shortDestination.AsSpan().Fill(DestinationSentinel);
 
 		await Assert.That(() => Poly1305Algorithm.Mac(key, source, shortDestination))
@@ -144,7 +140,7 @@ public class Poly1305Test
 	{
 		byte[] source = CreateDeterministicSource(73);
 		byte[] invalidKey = new byte[keyLength];
-		byte[] destination = new byte[Poly1305Algorithm.MacLengthInBytes];
+		byte[] destination = new byte[Poly1305Algorithm.MacLength];
 		destination.AsSpan().Fill(DestinationSentinel);
 
 		await Assert.That(() => Poly1305Algorithm.Mac(invalidKey, source, destination))

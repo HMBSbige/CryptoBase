@@ -18,10 +18,10 @@ public struct Sha256HashAlgorithm : IHmacHashCore<Sha256HashAlgorithm>
 	private Sha256Core _state;
 
 	/// <inheritdoc />
-	public static int HashLengthInBytes => HashSizeInBytes;
+	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSizeInBytes => Sha256Core.BlockSizeInBytes;
+	public static int HmacBlockSize => Sha256Core.BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static Sha256HashAlgorithm IHashCore<Sha256HashAlgorithm>.Create()
@@ -45,7 +45,7 @@ public struct Sha256HashAlgorithm : IHmacHashCore<Sha256HashAlgorithm>
 
 	void IIncrementalHashCore.Finalize(Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLengthInBytes, nameof(destination));
-		_state.Finalize(destination, HashLengthInBytes);
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
+		_state.Finalize(destination, HashLength);
 	}
 }

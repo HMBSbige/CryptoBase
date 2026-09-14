@@ -14,9 +14,9 @@ internal static class MacAlgorithmTestUtils
 	{
 		byte[] keyCopy = (byte[])key.Clone();
 		byte[] sourceCopy = (byte[])source.Clone();
-		byte[] destination = new byte[TMac.MacLengthInBytes + 1];
+		byte[] destination = new byte[TMac.MacLength + 1];
 
-		await Assert.That(TMac.MacLengthInBytes).IsEqualTo(expected.Length);
+		await Assert.That(TMac.MacLength).IsEqualTo(expected.Length);
 
 		PrepareDestination(destination);
 		int written = TMac.Mac(key, source, destination);

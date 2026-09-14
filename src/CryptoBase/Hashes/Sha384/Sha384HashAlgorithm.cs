@@ -20,10 +20,10 @@ public struct Sha384HashAlgorithm : IHmacHashCore<Sha384HashAlgorithm>
 	private Sha512Core _state;
 
 	/// <inheritdoc />
-	public static int HashLengthInBytes => HashSizeInBytes;
+	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSizeInBytes => Sha512Core.BlockSizeInBytes;
+	public static int HmacBlockSize => Sha512Core.BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static Sha384HashAlgorithm IHashCore<Sha384HashAlgorithm>.Create()
@@ -47,7 +47,7 @@ public struct Sha384HashAlgorithm : IHmacHashCore<Sha384HashAlgorithm>
 
 	void IIncrementalHashCore.Finalize(Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLengthInBytes, nameof(destination));
-		_state.Finalize(destination, HashLengthInBytes);
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
+		_state.Finalize(destination, HashLength);
 	}
 }

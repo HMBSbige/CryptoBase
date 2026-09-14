@@ -35,7 +35,7 @@ public abstract class BouncyCastleHashBenchmark<TCryptoBase, TBouncyCastle>
 	{
 		_bouncyCastle = new TBouncyCastle();
 		Input = RandomNumberGenerator.GetBytes(ByteLength);
-		Hash = new byte[HashAlgorithm<TCryptoBase>.HashLengthInBytes];
+		Hash = new byte[HashAlgorithm<TCryptoBase>.HashLength];
 
 		BouncyCastle();
 		byte[] expected = (byte[])Hash.Clone();

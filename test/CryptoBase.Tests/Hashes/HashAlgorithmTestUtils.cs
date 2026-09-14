@@ -66,7 +66,7 @@ internal static class HashAlgorithmTestUtils
 
 	internal static async Task VerifyHashVector<T>(string value, string expected, int expectedHashLength) where T : unmanaged, IHashCore<T>
 	{
-		await Assert.That(T.HashLengthInBytes).IsEqualTo(expectedHashLength);
+		await Assert.That(T.HashLength).IsEqualTo(expectedHashLength);
 
 		byte[] source = Encoding.UTF8.GetBytes(value);
 		byte[] expectedHash = Convert.FromHexString(expected);
@@ -94,7 +94,7 @@ internal static class HashAlgorithmTestUtils
 
 	internal static async Task VerifyHashVector<T>(string value, string expected, int expectedHashLength, int expectedBlockSize) where T : unmanaged, IHmacHashCore<T>
 	{
-		await Assert.That(T.HmacBlockSizeInBytes).IsEqualTo(expectedBlockSize);
+		await Assert.That(T.HmacBlockSize).IsEqualTo(expectedBlockSize);
 		await VerifyHashVector<T>(value, expected, expectedHashLength);
 	}
 
@@ -156,7 +156,7 @@ internal static class HashAlgorithmTestUtils
 
 	internal static byte[] CreateDestination<T>() where T : unmanaged, IIncrementalHashCore
 	{
-		return new byte[T.HashLengthInBytes + 1];
+		return new byte[T.HashLength + 1];
 	}
 
 	internal static async Task VerifyBoundary<T>(ReadOnlyMemory<byte> source, byte[] expected) where T : unmanaged, IHashCore<T>
@@ -188,7 +188,7 @@ internal static class HashAlgorithmTestUtils
 
 	internal static async Task VerifyInputIsUnchanged<T>(int length, int offset) where T : unmanaged, IHashCore<T>
 	{
-		byte[] destination = new byte[T.HashLengthInBytes];
+		byte[] destination = new byte[T.HashLength];
 		byte[] source = CreateDeterministicSource(offset + length + 17);
 		byte[] sourceCopy = (byte[])source.Clone();
 

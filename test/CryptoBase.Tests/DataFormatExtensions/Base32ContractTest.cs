@@ -39,6 +39,67 @@ public class Base32ContractTest
 	}
 
 	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task InvalidFirstSymbolInLongInputDoesNotWrite(bool hex)
+	{
+		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		byte[] source = CreateDeterministicSource(1040);
+		char[] encoded = EncodeReference(source, hex, false);
+		encoded[0] = '!';
+		byte[] charDestination = new byte[source.Length];
+		byte[] utf8Destination = new byte[source.Length];
+		PrepareDestination(charDestination);
+		PrepareDestination(utf8Destination);
+
+		OperationStatus charStatus = encoding.DecodeFromChars(encoded, charDestination, out int charsConsumed, out int charsWritten);
+		OperationStatus utf8Status = encoding.DecodeFromUtf8(ToByteSymbols(encoded), utf8Destination, out int bytesConsumed, out int bytesWritten);
+
+		await Assert.That(charStatus).IsEqualTo(OperationStatus.InvalidData);
+		await Assert.That(utf8Status).IsEqualTo(OperationStatus.InvalidData);
+		await Assert.That(charsConsumed).IsZero();
+		await Assert.That(bytesConsumed).IsZero();
+		await AssertOutput(charDestination, [], charsWritten);
+		await AssertOutput(utf8Destination, [], bytesWritten);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task Utf8InvalidSymbolReportsProcessedPrefix([Matrix(15, 16, 31, 32, 63, 64, 127, 128, 255, 327)] int invalidOffset)
+	{
+		byte[] source = CreateDeterministicSource(205);
+		byte[] encoded = ToByteSymbols(EncodeReference(source, false, false));
+		encoded[invalidOffset] = (byte)'!';
+		byte[] destination = new byte[source.Length];
+		PrepareDestination(destination);
+
+		OperationStatus status = Base32Encoding.Rfc4648.DecodeFromUtf8(encoded, destination, out int consumed, out int written);
+
+		byte[] expected = source.AsSpan().Slice(0, invalidOffset / 8 * 5).ToArray();
+		await Assert.That(status).IsEqualTo(OperationStatus.InvalidData);
+		await Assert.That(consumed).IsEqualTo(invalidOffset / 8 * 8);
+		await AssertOutput(destination, expected, written);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task CharInvalidSymbolReportsProcessedPrefix([Matrix('!', '\u0080', '\u0100')] char invalidSymbol, [Matrix(15, 16, 31, 32, 63, 64, 127, 128, 255, 327)] int invalidOffset)
+	{
+		byte[] source = CreateDeterministicSource(205);
+		char[] encoded = EncodeReference(source, false, false);
+		encoded[invalidOffset] = invalidSymbol;
+		byte[] destination = new byte[source.Length];
+		PrepareDestination(destination);
+
+		OperationStatus status = Base32Encoding.Rfc4648.DecodeFromChars(encoded, destination, out int consumed, out int written);
+
+		byte[] expected = source.AsSpan().Slice(0, invalidOffset / 8 * 5).ToArray();
+		await Assert.That(status).IsEqualTo(OperationStatus.InvalidData);
+		await Assert.That(consumed).IsEqualTo(invalidOffset / 8 * 8);
+		await AssertOutput(destination, expected, written);
+	}
+
+	[Test]
 	public async Task DestinationTooSmallDoesNotWrite()
 	{
 		byte[] source = "foo"u8.ToArray();

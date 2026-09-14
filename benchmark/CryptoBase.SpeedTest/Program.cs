@@ -131,7 +131,6 @@ cmd.SetAction
 		foreach (string method in methodList)
 		{
 			string realMethod = method.ToLowerInvariant();
-			using ISymmetricCrypto crypto = CryptoList.GetSymmetricCrypto(realMethod) ?? throw new NotSupportedException($@"{realMethod} is not supported.");
 
 			GC.Collect();
 			GC.WaitForPendingFinalizers();
@@ -141,28 +140,7 @@ cmd.SetAction
 
 			CryptoTest t = new(bytes, seconds);
 
-			switch (crypto)
-			{
-				case IStreamCrypto streamCrypto:
-				{
-					t.Test(streamCrypto);
-					break;
-				}
-				case IAeadCrypto aeadCrypto:
-				{
-					t.Test(aeadCrypto);
-					break;
-				}
-				case IBlockModeOneShot blockModeCrypto:
-				{
-					t.Test(blockModeCrypto);
-					break;
-				}
-				default:
-				{
-					throw new NotSupportedException($@"{realMethod} is not supported.");
-				}
-			}
+			CryptoList.Run(realMethod, t);
 		}
 	}
 );

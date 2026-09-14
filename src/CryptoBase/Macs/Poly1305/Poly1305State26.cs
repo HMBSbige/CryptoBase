@@ -204,7 +204,7 @@ internal ref struct Poly1305State26
 
 	internal void WriteMac(scoped Span<byte> destination)
 	{
-		Debug.Assert(destination.Length >= Poly1305Algorithm.MacLengthInBytes);
+		Debug.Assert(destination.Length >= Poly1305Algorithm.MacLength);
 
 		H2 += H1 >> 26;
 		H1 &= LimbMask;
