@@ -54,17 +54,10 @@ internal static partial class GHashX86
 		Vector128<byte> internalAccumulator = accumulator.ReverseEndianness128();
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
-		try
-		{
-			AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, first, ref finalBlock);
-			AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, second, ref finalBlock);
-			AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, third, ref finalBlock);
-			accumulator = internalAccumulator.ReverseEndianness128();
-		}
-		finally
-		{
-			finalBlock.ZeroMemory();
-		}
+		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, first, ref finalBlock);
+		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, second, ref finalBlock);
+		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, third, ref finalBlock);
+		accumulator = internalAccumulator.ReverseEndianness128();
 	}
 
 	[SkipLocalsInit]
@@ -84,7 +77,6 @@ internal static partial class GHashX86
 		finally
 		{
 			state.ZeroMemory();
-			finalBlock.ZeroMemory();
 		}
 	}
 
@@ -105,7 +97,6 @@ internal static partial class GHashX86
 		finally
 		{
 			state.ZeroMemory();
-			finalBlock.ZeroMemory();
 		}
 	}
 
@@ -126,7 +117,6 @@ internal static partial class GHashX86
 		finally
 		{
 			state.ZeroMemory();
-			finalBlock.ZeroMemory();
 		}
 	}
 
@@ -147,7 +137,6 @@ internal static partial class GHashX86
 		finally
 		{
 			state.ZeroMemory();
-			finalBlock.ZeroMemory();
 		}
 	}
 

@@ -72,7 +72,6 @@ public static class HashUtils
 	{
 		using TAlgorithm hashAlgorithm = TAlgorithm.Create();
 		byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-		int maxRead = 0;
 
 		try
 		{
@@ -80,7 +79,6 @@ public static class HashUtils
 
 			while ((length = inputStream.Read(buffer)) > 0)
 			{
-				maxRead = Math.Max(maxRead, length);
 				hashAlgorithm.Append(buffer.AsSpan(0, length));
 			}
 
@@ -88,7 +86,7 @@ public static class HashUtils
 		}
 		finally
 		{
-			ReturnBuffer(buffer, maxRead);
+			ArrayPool<byte>.Shared.Return(buffer, true);
 		}
 	}
 
@@ -96,7 +94,6 @@ public static class HashUtils
 	{
 		using TAlgorithm hashAlgorithm = TAlgorithm.Create();
 		byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-		int maxRead = 0;
 
 		try
 		{
@@ -104,7 +101,6 @@ public static class HashUtils
 
 			while ((length = await inputStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
 			{
-				maxRead = Math.Max(maxRead, length);
 				hashAlgorithm.Append(buffer.AsSpan(0, length));
 			}
 
@@ -112,17 +108,7 @@ public static class HashUtils
 		}
 		finally
 		{
-			ReturnBuffer(buffer, maxRead);
+			ArrayPool<byte>.Shared.Return(buffer, true);
 		}
-	}
-
-	private static void ReturnBuffer(byte[] buffer, int clearSize)
-	{
-		if (clearSize > 0)
-		{
-			buffer.AsSpan(0, clearSize).ZeroMemory();
-		}
-
-		ArrayPool<byte>.Shared.Return(buffer);
 	}
 }

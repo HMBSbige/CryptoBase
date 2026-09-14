@@ -3,7 +3,7 @@ namespace CryptoBase.Abstractions.Hashes;
 /// <summary>
 /// Defines an incremental hash algorithm.
 /// </summary>
-/// <remarks>Disposal erases the hash state and is idempotent.</remarks>
+/// <remarks>Disposal is idempotent.</remarks>
 /// <typeparam name="TSelf">The implementing type.</typeparam>
 public interface IHashAlgorithm<out TSelf> : IOneShotHashAlgorithm, IDisposable where TSelf : class, IHashAlgorithm<TSelf>
 {

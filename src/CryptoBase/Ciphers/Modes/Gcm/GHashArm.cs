@@ -30,17 +30,10 @@ internal static class GHashArm
 		Vector128<byte> internalAccumulator = AdvSimd.Arm64.ReverseElementBits(accumulator);
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
-		try
-		{
-			AppendPaddedSegment(ref internalAccumulator, in internalKey, first, ref finalBlock);
-			AppendPaddedSegment(ref internalAccumulator, in internalKey, second, ref finalBlock);
-			AppendPaddedSegment(ref internalAccumulator, in internalKey, third, ref finalBlock);
-			accumulator = AdvSimd.Arm64.ReverseElementBits(internalAccumulator);
-		}
-		finally
-		{
-			finalBlock.ZeroMemory();
-		}
+		AppendPaddedSegment(ref internalAccumulator, in internalKey, first, ref finalBlock);
+		AppendPaddedSegment(ref internalAccumulator, in internalKey, second, ref finalBlock);
+		AppendPaddedSegment(ref internalAccumulator, in internalKey, third, ref finalBlock);
+		accumulator = AdvSimd.Arm64.ReverseElementBits(internalAccumulator);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -94,7 +87,6 @@ internal static class GHashArm
 		finally
 		{
 			state.ZeroMemory();
-			finalBlock.ZeroMemory();
 		}
 	}
 

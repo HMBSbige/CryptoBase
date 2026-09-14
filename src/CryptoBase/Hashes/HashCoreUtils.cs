@@ -14,18 +14,11 @@ internal static class HashCoreUtils
 	[SkipLocalsInit]
 	internal static int FinalizeCopy<TCore>(TCore state, Span<byte> destination) where TCore : unmanaged, IIncrementalHashCore
 	{
-		try
-		{
-			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
-			using CryptoBuffer<byte> hash = new(stackalloc byte[TCore.HashLength]);
-			state.Finalize(hash.Span);
-			hash.Span.CopyTo(destination);
-			return TCore.HashLength;
-		}
-		finally
-		{
-			state.ZeroMemory();
-		}
+		Span<byte> hash = stackalloc byte[TCore.HashLength];
+		state.Finalize(hash);
+		hash.CopyTo(destination);
+		return TCore.HashLength;
 	}
 }

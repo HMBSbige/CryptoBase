@@ -13,7 +13,7 @@ public interface IOneShotHashAlgorithm
 	/// <summary>
 	/// Computes the hash of <paramref name="source" />.
 	/// </summary>
-	/// <remarks>Temporary state is erased before returning or throwing. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>On failure, <paramref name="destination" /> remains unchanged.</remarks>
 	/// <param name="source">The data to hash.</param>
 	/// <param name="destination">The output buffer.</param>
 	/// <returns>The value of <see cref="HashLength" />.</returns>

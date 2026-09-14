@@ -26,22 +26,13 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
-		Unsafe.SkipInit(out TCore state);
+		TCore state = TCore.Create();
 		Span<byte> hash = stackalloc byte[TCore.HashLength];
 
-		try
-		{
-			state = TCore.Create();
-			state.Append(source);
-			state.Finalize(hash);
-			hash.CopyTo(destination);
-			return TCore.HashLength;
-		}
-		finally
-		{
-			hash.ZeroMemory();
-			state.ZeroMemory();
-		}
+		state.Append(source);
+		state.Finalize(hash);
+		hash.CopyTo(destination);
+		return TCore.HashLength;
 	}
 
 	/// <inheritdoc />
@@ -58,18 +49,8 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
-		Unsafe.SkipInit(out TCore state);
-
-		try
-		{
-			state = TCore.Create();
-			_state.ZeroMemory();
-			_state = state;
-		}
-		finally
-		{
-			state.ZeroMemory();
-		}
+		TCore state = TCore.Create();
+		_state = state;
 	}
 
 	/// <inheritdoc />
@@ -87,36 +68,19 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
 		TCore currentState = _state;
-		Unsafe.SkipInit(out TCore resetState);
 		Span<byte> hash = stackalloc byte[TCore.HashLength];
 
-		try
-		{
-			currentState.Finalize(hash);
-			resetState = TCore.Create();
-			_state.ZeroMemory();
-			_state = resetState;
-			hash.CopyTo(destination);
-			return TCore.HashLength;
-		}
-		finally
-		{
-			hash.ZeroMemory();
-			currentState.ZeroMemory();
-			resetState.ZeroMemory();
-		}
+		currentState.Finalize(hash);
+		TCore resetState = TCore.Create();
+		_state = resetState;
+		hash.CopyTo(destination);
+		return TCore.HashLength;
 	}
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose()
 	{
-		if (_disposed)
-		{
-			return;
-		}
-
-		_state.ZeroMemory();
 		_disposed = true;
 	}
 }

@@ -36,7 +36,6 @@ internal static partial class GHashSoftware
 		finally
 		{
 			state.ZeroMemory();
-			finalBlock.ZeroMemory();
 		}
 	}
 
@@ -57,7 +56,6 @@ internal static partial class GHashSoftware
 		finally
 		{
 			state.ZeroMemory();
-			finalBlock.ZeroMemory();
 		}
 	}
 }
