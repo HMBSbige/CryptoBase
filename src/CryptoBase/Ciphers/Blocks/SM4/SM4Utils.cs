@@ -106,6 +106,7 @@ internal static partial class SM4Utils
 		}
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ProcessBlock(ReadOnlySpan<uint> rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
