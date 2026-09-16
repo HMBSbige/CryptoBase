@@ -229,11 +229,10 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 	{
 		if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
 		{
-			Vector128<int> carry = Sse2.IsSupported
-				? Sse2.Shuffle(tweak.AsInt32(), 0b00_01_00_11)
-				: AdvSimd.Arm64.VectorTableLookup(tweak, Vector128.Create((byte)12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3)).AsInt32();
-			carry >>= 31;
-			return (tweak.AsUInt64() << 1).AsByte() ^ carry.AsByte() & Vector128.Create(0x87UL, 1UL).AsByte();
+			Vector128<byte> carry = Sse2.IsSupported
+				? (Sse2.Shuffle(tweak.AsInt32(), 0b00_01_00_11) >> 31).AsByte()
+				: (AdvSimd.ExtractVector128(tweak.AsInt64(), tweak.AsInt64(), 1) >> 63).AsByte();
+			return (tweak.AsUInt64() << 1).AsByte() ^ carry & Vector128.Create(0x87UL, 1UL).AsByte();
 		}
 
 		UInt128 value = BinaryPrimitives.ReadUInt128LittleEndian(tweak.AsReadOnlySpan());

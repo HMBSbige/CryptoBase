@@ -95,7 +95,6 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 	{
 		int length = source.Length & -BlockSize2;
 		ref byte input = ref source.GetReference();
-		Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
 		Vector128<ulong> h0 = Vector128.CreateScalar((ulong)_state.H0);
 		Vector128<ulong> h1 = Vector128.CreateScalar((ulong)_state.H1);
 		Vector128<ulong> h2 = Vector128.CreateScalar((ulong)_state.H2);
@@ -208,6 +207,7 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 			d3 += m3;
 			d4 += m4;
 
+			Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
 			Vector128<ulong> carry3 = d3 >>> 26;
 			h3 = d3 & mask;
 			h4 = d4 + carry3;
@@ -279,6 +279,7 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 			d2 += Sse2.Multiply(h3.AsUInt32(), coefficient);
 			d3 += Sse2.Multiply(h4.AsUInt32(), coefficient);
 
+			Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
 			Vector128<ulong> carry3 = d3 >>> 26;
 			h3 = d3 & mask;
 			h4 = d4 + carry3;
