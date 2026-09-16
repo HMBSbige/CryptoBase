@@ -76,10 +76,23 @@ internal static class VectorBitOperationsExtensions
 				return Avx512F.VL.RotateLeft(value.AsUInt32(), offset).As<uint, T>();
 			}
 
-			if (Ssse3.IsSupported && offset is 8 or 16 or 24)
+			if
+			(
+				Ssse3.IsSupported && offset is 8 or 16 or 24
+				|| AdvSimd.IsSupported && offset is 8 or 24
+			)
 			{
-				Vector128<byte> indices = CreateRotateLeftUInt32ShuffleIndices(offset);
-				return Ssse3.Shuffle(value.AsByte(), indices).As<byte, T>();
+				return Vector128.Shuffle(value.AsByte(), CreateRotateLeftUInt32ShuffleIndices(offset)).As<byte, T>();
+			}
+
+			if (AdvSimd.IsSupported && offset is 16)
+			{
+				return AdvSimd.ReverseElement16(value.AsUInt32()).As<uint, T>();
+			}
+
+			if (Sse2.IsSupported && offset is 16)
+			{
+				return Sse2.ShuffleHigh(Sse2.ShuffleLow(value.AsUInt16(), 0b10_11_00_01), 0b10_11_00_01).As<ushort, T>();
 			}
 
 			if (AdvSimd.IsSupported)
