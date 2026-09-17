@@ -42,18 +42,7 @@ internal static partial class Salsa20Utils
 		uint x07 = x[7], x06 = x[6], x05 = x[5], x04 = x[4];
 		uint x03 = x[3], x02 = x[2], x01 = x[1], x00 = x[0];
 
-		for (int i = 0; i < rounds; i += 2)
-		{
-			QuarterRound(ref x04, ref x00, ref x12, ref x08);
-			QuarterRound(ref x09, ref x05, ref x01, ref x13);
-			QuarterRound(ref x14, ref x10, ref x06, ref x02);
-			QuarterRound(ref x03, ref x15, ref x11, ref x07);
-
-			QuarterRound(ref x01, ref x00, ref x03, ref x02);
-			QuarterRound(ref x06, ref x05, ref x04, ref x07);
-			QuarterRound(ref x11, ref x10, ref x09, ref x08);
-			QuarterRound(ref x12, ref x15, ref x14, ref x13);
-		}
+		PermuteScalar(rounds, ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
 
 		x[15] = x15;
 		x[14] = x14;
@@ -76,15 +65,26 @@ internal static partial class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void QuarterRound(ref uint a, ref uint b, ref uint c, ref uint d)
 	{
-		Step(ref a, b, c, 7);
-		Step(ref d, a, b, 9);
-		Step(ref c, d, a, 13);
-		Step(ref b, c, d, 18);
+		a ^= (b + c).RotateLeft(7);
+		d ^= (a + b).RotateLeft(9);
+		c ^= (d + a).RotateLeft(13);
+		b ^= (c + d).RotateLeft(18);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Step(ref uint a, in uint b, in uint c, in int i)
+	private static void PermuteScalar(int rounds, ref uint x00, ref uint x01, ref uint x02, ref uint x03, ref uint x04, ref uint x05, ref uint x06, ref uint x07, ref uint x08, ref uint x09, ref uint x10, ref uint x11, ref uint x12, ref uint x13, ref uint x14, ref uint x15)
 	{
-		a ^= (b + c).RotateLeft(i);
+		for (int i = 0; i < rounds; i += 2)
+		{
+			QuarterRound(ref x04, ref x00, ref x12, ref x08);
+			QuarterRound(ref x09, ref x05, ref x01, ref x13);
+			QuarterRound(ref x14, ref x10, ref x06, ref x02);
+			QuarterRound(ref x03, ref x15, ref x11, ref x07);
+
+			QuarterRound(ref x01, ref x00, ref x03, ref x02);
+			QuarterRound(ref x06, ref x05, ref x04, ref x07);
+			QuarterRound(ref x11, ref x10, ref x09, ref x08);
+			QuarterRound(ref x12, ref x15, ref x14, ref x13);
+		}
 	}
 }

@@ -44,100 +44,22 @@ public class ChaCha20Cipher : SnuffleCipher
 	/// <inheritdoc />
 	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
-		int processed = 0;
-		int length = source.Length;
-
-		if (Avx512F.IsSupported)
-		{
-			if (length >= 2048)
-			{
-				int offset = ChaCha20Utils.ChaChaCoreSoa2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-
-				processed += offset;
-				length -= offset;
-			}
-
-			if (length >= 1024)
-			{
-				int offset = ChaCha20Utils.ChaChaCoreSoa1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-
-				processed += offset;
-				length -= offset;
-			}
-		}
-
-		if (Avx2.IsSupported)
-		{
-			if (length >= 512)
-			{
-				int offset = ChaCha20Utils.ChaChaCore512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-				processed += offset;
-				length -= offset;
-			}
-		}
-
-		if (Sse2.IsSupported)
-		{
-			if (length >= 256)
-			{
-				int offset = ChaCha20Utils.ChaChaCore256(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-				processed += offset;
-				length -= offset;
-			}
-
-			while (length >= 64)
-			{
-				ChaCha20Utils.ChaChaCore64(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-
-				processed += 64;
-				length -= 64;
-			}
-		}
-
-		if (length >= BlockSize)
-		{
-			processed += base.UpdateBlocks(stateSpan, keyStream, source.Slice(processed), destination.Slice(processed));
-		}
-
-		return processed;
+		return ChaCha20Utils.XorBlocks(stateSpan, source, destination);
 	}
 
 	/// <inheritdoc />
 	protected override void UpdateKeyStream()
 	{
-		if (Sse2.IsSupported)
-		{
-			ChaCha20Utils.UpdateKeyStream(StateSpan, KeyStreamSpan, Rounds);
-		}
-		else
-		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
-		}
+		ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
 	}
 
-	/// <summary>
-	/// Writes the Poly1305 one-time key from the current ChaCha20 block without
-	/// advancing the counter or retaining a partially consumed key-stream block.
-	/// The counter must be 0 on entry, and the caller must set it to 1 before
-	/// processing the message.
-	/// </summary>
+	/// <summary>Derives the Poly1305 key from block 0 without advancing stream state; the caller must set the counter to 1 before processing the message.</summary>
 	internal void DerivePoly1305Key(Span<byte> destination)
 	{
 		Debug.Assert(destination.Length is 32);
 		Debug.Assert(ChaCha20Utils.GetCounter(ref StateRef) is 0);
 
-		Span<byte> keyStream = KeyStreamSpan;
-
-		if (Sse2.IsSupported)
-		{
-			ChaCha20Utils.UpdateKeyStream(StateSpan, keyStream, Rounds);
-		}
-		else
-		{
-			ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, keyStream);
-		}
-
-		Unsafe.CopyBlockUnaligned(ref destination.GetReference(), ref keyStream.GetReference(), 32);
+		ChaCha20Utils.DerivePoly1305Key(StateSpan, KeyStreamSpan, destination);
 	}
 
 	/// <inheritdoc />

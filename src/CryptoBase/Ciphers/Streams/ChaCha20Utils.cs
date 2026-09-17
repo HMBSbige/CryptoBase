@@ -15,6 +15,13 @@ internal static partial class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void DerivePoly1305Key(Span<uint> state, Span<byte> keyStream, Span<byte> destination)
+	{
+		UpdateKeyStream(SnuffleCipher.Rounds, state, keyStream);
+		Unsafe.CopyBlockUnaligned(ref destination.GetReference(), ref keyStream.GetReference(), 32);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(in int rounds, in ReadOnlySpan<uint> state, in Span<byte> keyStream)
 	{
 		Span<uint> x = MemoryMarshal.Cast<byte, uint>(keyStream);
@@ -48,18 +55,7 @@ internal static partial class ChaCha20Utils
 		uint x07 = x[7], x06 = x[6], x05 = x[5], x04 = x[4];
 		uint x03 = x[3], x02 = x[2], x01 = x[1], x00 = x[0];
 
-		for (int i = 0; i < rounds; i += 2)
-		{
-			QuarterRound(ref x00, ref x04, ref x08, ref x12);
-			QuarterRound(ref x01, ref x05, ref x09, ref x13);
-			QuarterRound(ref x02, ref x06, ref x10, ref x14);
-			QuarterRound(ref x03, ref x07, ref x11, ref x15);
-
-			QuarterRound(ref x00, ref x05, ref x10, ref x15);
-			QuarterRound(ref x01, ref x06, ref x11, ref x12);
-			QuarterRound(ref x02, ref x07, ref x08, ref x13);
-			QuarterRound(ref x03, ref x04, ref x09, ref x14);
-		}
+		PermuteScalar(rounds, ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
 
 		x[15] = x15;
 		x[14] = x14;
@@ -80,18 +76,74 @@ internal static partial class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void QuarterRound(ref uint a, ref uint b, ref uint c, ref uint d)
+	private static void PermuteScalar(int rounds, ref uint x00, ref uint x01, ref uint x02, ref uint x03, ref uint x04, ref uint x05, ref uint x06, ref uint x07, ref uint x08, ref uint x09, ref uint x10, ref uint x11, ref uint x12, ref uint x13, ref uint x14, ref uint x15)
 	{
-		Step(ref a, ref b, ref d, 16);
-		Step(ref c, ref d, ref b, 12);
-		Step(ref a, ref b, ref d, 8);
-		Step(ref c, ref d, ref b, 7);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Step(ref uint a, ref readonly uint b, ref uint c, in int i)
-	{
-		a += b;
-		c = (a ^ c).RotateLeft(i);
+		for (int round = 0; round < rounds; round += 2)
+		{
+			x00 += x04;
+			x01 += x05;
+			x02 += x06;
+			x03 += x07;
+			x12 = (x12 ^ x00).RotateLeft(16);
+			x13 = (x13 ^ x01).RotateLeft(16);
+			x14 = (x14 ^ x02).RotateLeft(16);
+			x15 = (x15 ^ x03).RotateLeft(16);
+			x08 += x12;
+			x09 += x13;
+			x10 += x14;
+			x11 += x15;
+			x04 = (x04 ^ x08).RotateLeft(12);
+			x05 = (x05 ^ x09).RotateLeft(12);
+			x06 = (x06 ^ x10).RotateLeft(12);
+			x07 = (x07 ^ x11).RotateLeft(12);
+			x00 += x04;
+			x01 += x05;
+			x02 += x06;
+			x03 += x07;
+			x12 = (x12 ^ x00).RotateLeft(8);
+			x13 = (x13 ^ x01).RotateLeft(8);
+			x14 = (x14 ^ x02).RotateLeft(8);
+			x15 = (x15 ^ x03).RotateLeft(8);
+			x08 += x12;
+			x09 += x13;
+			x10 += x14;
+			x11 += x15;
+			x04 = (x04 ^ x08).RotateLeft(7);
+			x05 = (x05 ^ x09).RotateLeft(7);
+			x06 = (x06 ^ x10).RotateLeft(7);
+			x07 = (x07 ^ x11).RotateLeft(7);
+			x00 += x05;
+			x01 += x06;
+			x02 += x07;
+			x03 += x04;
+			x15 = (x15 ^ x00).RotateLeft(16);
+			x12 = (x12 ^ x01).RotateLeft(16);
+			x13 = (x13 ^ x02).RotateLeft(16);
+			x14 = (x14 ^ x03).RotateLeft(16);
+			x10 += x15;
+			x11 += x12;
+			x08 += x13;
+			x09 += x14;
+			x05 = (x05 ^ x10).RotateLeft(12);
+			x06 = (x06 ^ x11).RotateLeft(12);
+			x07 = (x07 ^ x08).RotateLeft(12);
+			x04 = (x04 ^ x09).RotateLeft(12);
+			x00 += x05;
+			x01 += x06;
+			x02 += x07;
+			x03 += x04;
+			x15 = (x15 ^ x00).RotateLeft(8);
+			x12 = (x12 ^ x01).RotateLeft(8);
+			x13 = (x13 ^ x02).RotateLeft(8);
+			x14 = (x14 ^ x03).RotateLeft(8);
+			x10 += x15;
+			x11 += x12;
+			x08 += x13;
+			x09 += x14;
+			x05 = (x05 ^ x10).RotateLeft(7);
+			x06 = (x06 ^ x11).RotateLeft(7);
+			x07 = (x07 ^ x08).RotateLeft(7);
+			x04 = (x04 ^ x09).RotateLeft(7);
+		}
 	}
 }

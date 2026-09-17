@@ -93,72 +93,12 @@ public class Salsa20Cipher : SnuffleCipher
 	/// <inheritdoc />
 	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
-		int processed = 0;
-		int length = source.Length;
-
-		if (Avx512F.IsSupported)
-		{
-			if (length >= 2048)
-			{
-				int offset = Salsa20Utils.SalsaCoreSoa2048Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-				processed += offset;
-				length -= offset;
-			}
-
-			if (length >= 1024)
-			{
-				int offset = Salsa20Utils.SalsaCoreSoa1024Avx512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-				processed += offset;
-				length -= offset;
-			}
-		}
-
-		if (Avx2.IsSupported)
-		{
-			if (length >= 512)
-			{
-				int offset = Salsa20Utils.SalsaCore512(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-				processed += offset;
-				length -= offset;
-			}
-		}
-
-		if (Sse2.IsSupported)
-		{
-			if (length >= 256)
-			{
-				int offset = Salsa20Utils.SalsaCore256(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-				processed += offset;
-				length -= offset;
-			}
-
-			while (length >= 64)
-			{
-				Salsa20Utils.SalsaCore64(Rounds, stateSpan, source.Slice(processed), destination.Slice(processed));
-
-				processed += 64;
-				length -= 64;
-			}
-		}
-
-		if (length >= BlockSize)
-		{
-			processed += base.UpdateBlocks(stateSpan, keyStream, source.Slice(processed), destination.Slice(processed));
-		}
-
-		return processed;
+		return Salsa20Utils.XorBlocks(stateSpan, source, destination);
 	}
 
 	/// <inheritdoc />
 	protected override void UpdateKeyStream()
 	{
-		if (Sse2.IsSupported)
-		{
-			Salsa20Utils.UpdateKeyStream(StateSpan, KeyStreamSpan, Rounds);
-		}
-		else
-		{
-			Salsa20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
-		}
+		Salsa20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
 	}
 }

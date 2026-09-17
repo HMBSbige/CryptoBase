@@ -28,18 +28,6 @@ public class XChaCha20Cipher : ChaCha20OriginalCipher
 		InitializeNonce(iv);
 	}
 
-	private static void ChaChaRound(Span<uint> x)
-	{
-		if (Sse2.IsSupported)
-		{
-			ChaCha20Utils.ChaChaRound(x, Rounds);
-		}
-		else
-		{
-			ChaCha20Utils.ChaChaRound(Rounds, x);
-		}
-	}
-
 	/// <summary>Initializes the nonce and resets the block counter to zero.</summary>
 	internal void InitializeNonce(ReadOnlySpan<byte> nonce)
 	{
@@ -53,7 +41,7 @@ public class XChaCha20Cipher : ChaCha20OriginalCipher
 		keySpan.CopyTo(state.Slice(4));
 		ivSpan.Slice(0, 4).CopyTo(state.Slice(12));
 
-		ChaChaRound(state);
+		ChaCha20Utils.ChaChaRound(Rounds, state);
 
 		state.Slice(12).CopyTo(state.Slice(8));
 		state.Slice(0, 4).CopyTo(state.Slice(4));

@@ -21,7 +21,7 @@ public abstract class SnuffleCipher : IStreamCipher
 	/// <summary>
 	/// The number of cipher rounds.
 	/// </summary>
-	protected const byte Rounds = 20;
+	protected internal const byte Rounds = 20;
 
 	/// <summary>
 	/// Stores the cipher state.

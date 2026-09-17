@@ -6,6 +6,38 @@ namespace CryptoBase.Tests.Ciphers.Streams;
 public class SnuffleCipherCounterTest
 {
 	[Test]
+	[CombinedDataSources]
+	public async Task BulkProcessingMatchesByteWiseAtLowCounterBoundary
+	(
+		[MethodDataSource(typeof(SnuffleCipherTestUtils), nameof(CipherCases))]
+		SnuffleCase cipher,
+		[Arguments(1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 20, 24, 31, 32, 64)]
+		int blocksBeforeCarry
+	)
+	{
+		byte[] source = TestUtils.CreateDeterministicSource(4097);
+		byte[] expected = new byte[source.Length];
+		byte[] actual = new byte[source.Length];
+		using SnuffleCipher byteWise = cipher.Create();
+		using SnuffleCipher bulk = cipher.Create();
+
+		// The IETF variant stops at this implementation's 32-bit counter limit.
+		// The 64-bit variants cross the low-word carry at different SIMD batch positions.
+		ulong counter = (1UL << 32) - (ulong)blocksBeforeCarry;
+		int length = cipher.MaxCounter is uint.MaxValue ? (blocksBeforeCarry - 1) * 64 : source.Length;
+		SetCounter(byteWise, counter);
+		SetCounter(bulk, counter);
+
+		for (int i = 0; i < length; ++i)
+		{
+			byteWise.Xor(source.AsSpan(i, 1), expected.AsSpan(i, 1));
+		}
+
+		bulk.Xor(source.AsSpan(0, length), actual);
+		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
+	[Test]
 	[MethodDataSource(typeof(SnuffleCipherTestUtils), nameof(CipherCases))]
 	public async Task SetCounterMatchesSequentialStreamAfterPartialBlocks(SnuffleCase cipher)
 	{
