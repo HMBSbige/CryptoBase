@@ -81,7 +81,6 @@ internal static partial class SM4Utils
 		r3 = x;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Process8V256(ReadOnlySpan<uint> rk, ref byte source, ref byte destination)
 	{
@@ -113,7 +112,6 @@ internal static partial class SM4Utils
 		v3.StoreUnsafe(ref destination, 96);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Process16V256(ReadOnlySpan<uint> rk, ref byte source, ref byte destination)
 	{

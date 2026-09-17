@@ -78,7 +78,6 @@ internal static partial class SM4Utils
 	}
 
 	// https://github.com/mjosaarinen/sm4ni/blob/master/sm4ni.c
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Process4V128(ReadOnlySpan<uint> rk, ref byte source, ref byte destination)
 	{
@@ -110,7 +109,6 @@ internal static partial class SM4Utils
 		v3.StoreUnsafe(ref destination, 48);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Process8V128(ReadOnlySpan<uint> rk, ref byte source, ref byte destination)
 	{

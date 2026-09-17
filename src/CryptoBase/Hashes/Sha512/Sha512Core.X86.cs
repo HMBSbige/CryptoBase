@@ -4,7 +4,6 @@ internal partial struct Sha512Core
 {
 	private static readonly Vector256<byte> BigEndianShuffle256 = Vector256.Create(Vector128.Create((byte)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8));
 
-	[SkipLocalsInit]
 	private void ProcessBlocksAvx2(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Avx2.IsSupported);

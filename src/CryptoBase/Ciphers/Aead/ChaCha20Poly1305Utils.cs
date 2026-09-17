@@ -5,13 +5,11 @@ namespace CryptoBase.Ciphers.Aead;
 
 internal static class ChaCha20Poly1305Utils
 {
-	[SkipLocalsInit]
 	internal static void EncryptAndComputeTag(ChaCha20Cipher chacha20, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData)
 	{
 		EncryptAndComputeTag(new ChaCha20Adapter(chacha20), source, destination, tag, associatedData);
 	}
 
-	[SkipLocalsInit]
 	internal static void EncryptAndComputeTag(XChaCha20Cipher chacha20, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData)
 	{
 		EncryptAndComputeTag(new XChaCha20Adapter(chacha20), source, destination, tag, associatedData);
@@ -80,13 +78,11 @@ internal static class ChaCha20Poly1305Utils
 		}
 	}
 
-	[SkipLocalsInit]
 	internal static void ComputeTag(ChaCha20Cipher chacha20, ReadOnlySpan<byte> associatedData, ReadOnlySpan<byte> ciphertext, Span<byte> tag)
 	{
 		ComputeTag(new ChaCha20Adapter(chacha20), associatedData, ciphertext, tag);
 	}
 
-	[SkipLocalsInit]
 	internal static void ComputeTag(XChaCha20Cipher chacha20, ReadOnlySpan<byte> associatedData, ReadOnlySpan<byte> ciphertext, Span<byte> tag)
 	{
 		ComputeTag(new XChaCha20Adapter(chacha20), associatedData, ciphertext, tag);
