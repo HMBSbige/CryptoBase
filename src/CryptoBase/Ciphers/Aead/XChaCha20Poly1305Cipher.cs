@@ -58,7 +58,7 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 		Span<byte> computedTag = stackalloc byte[TagSize];
 		ChaCha20Poly1305Utils.ComputeTag(_chacha20, associatedData, source, computedTag);
 
-		if (!CryptographicOperations.FixedTimeEquals(computedTag, tag))
+		if (!FixedTime.Equals16(computedTag, tag))
 		{
 			destination.ZeroMemory();
 			return false;

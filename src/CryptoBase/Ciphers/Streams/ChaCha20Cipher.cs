@@ -59,7 +59,7 @@ public class ChaCha20Cipher : SnuffleCipher
 		Debug.Assert(destination.Length is 32);
 		Debug.Assert(ChaCha20Utils.GetCounter(ref StateRef) is 0);
 
-		ChaCha20Utils.DerivePoly1305Key(StateSpan, KeyStreamSpan, destination);
+		ChaCha20Utils.DerivePoly1305Key(StateSpan, destination);
 	}
 
 	/// <inheritdoc />

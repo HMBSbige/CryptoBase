@@ -88,7 +88,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 			counter = counter.WithElement(15, (byte)2);
 			tagBuffer ^= ComputeHash(ref hash, associatedData, source, associatedData.Length);
 
-			if (!CryptographicOperations.FixedTimeEquals(tagBuffer.AsReadOnlySpan(), tag))
+			if (!FixedTime.Equals16(tagBuffer.AsReadOnlySpan(), tag))
 			{
 				destination.ZeroMemory();
 				return false;

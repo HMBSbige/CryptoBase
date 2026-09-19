@@ -32,27 +32,20 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 	public static int MacLength => 16;
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MacLength, nameof(destination));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeyLengthInBytes, nameof(key));
 
-		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLength]);
-		int written = MacSelected(key, source, mac.Span);
-		mac.Span.CopyTo(destination);
-		return written;
+		return MacSelected(key, source, destination);
 	}
 
-	[SkipLocalsInit]
 	internal static void MacPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> firstSegment, ReadOnlySpan<byte> secondSegment, ReadOnlySpan<byte> thirdSegment, Span<byte> destination)
 	{
 		Debug.Assert(key.Length is KeyLengthInBytes);
 		Debug.Assert(destination.Length >= MacLength);
 
-		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLength]);
-		MacPaddedSegmentsSelected(key, firstSegment, secondSegment, thirdSegment, mac.Span);
-		mac.Span.CopyTo(destination);
+		MacPaddedSegmentsSelected(key, firstSegment, secondSegment, thirdSegment, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

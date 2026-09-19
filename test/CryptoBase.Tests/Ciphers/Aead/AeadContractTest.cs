@@ -84,6 +84,36 @@ public abstract class AeadContractTest<T>(int keyLength) where T : IAeadCipher<T
 	}
 
 	[Test]
+	public async Task EveryTagBitIsAuthenticated()
+	{
+		const int length = 257;
+		using T cipher = T.Create(CreateDeterministicSource(keyLength));
+		byte[] nonce = CreateDeterministicSource(T.NonceSize);
+		byte[] aad = CreateDeterministicSource(29);
+		byte[] plaintext = CreateDeterministicSource(length);
+		byte[] ciphertext = new byte[length];
+		byte[] tag = new byte[T.TagSize];
+		byte[] output = new byte[length + 7];
+		cipher.Encrypt(nonce, plaintext, ciphertext, tag, aad);
+
+		for (int index = 0; index < tag.Length; ++index)
+		{
+			for (int bit = 0; bit < 8; ++bit)
+			{
+				tag[index] ^= (byte)(1 << bit);
+				PrepareDestination(output);
+				await Assert.That(cipher.TryDecrypt(nonce, ciphertext, tag, output, aad)).IsFalse();
+				await Assert.That(output.AsMemory(0, length)).All(static x => x is 0);
+				await Assert.That(output.AsMemory(length)).All(static x => x is DestinationSentinel);
+				tag[index] ^= (byte)(1 << bit);
+			}
+		}
+
+		await Assert.That(cipher.TryDecrypt(nonce, ciphertext, tag, output, aad)).IsTrue();
+		await AssertOutput(output, plaintext);
+	}
+
+	[Test]
 	[MatrixDataSource]
 	public async Task AuthenticationFailureClearsOnlyOutputPrefix([Matrix(0, 1, 257, 4097)] int length)
 	{

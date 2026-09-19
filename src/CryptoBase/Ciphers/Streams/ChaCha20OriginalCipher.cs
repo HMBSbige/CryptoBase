@@ -93,7 +93,7 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 		Debug.Assert(destination.Length is 32);
 		Debug.Assert(ChaCha20Utils.GetCounterOriginal(ref StateRef) is 0);
 
-		ChaCha20Utils.DerivePoly1305Key(StateSpan, KeyStreamSpan, destination);
+		ChaCha20Utils.DerivePoly1305Key(StateSpan, destination);
 	}
 
 	/// <summary>Sets the block counter and resets the byte offset within the block to zero.</summary>

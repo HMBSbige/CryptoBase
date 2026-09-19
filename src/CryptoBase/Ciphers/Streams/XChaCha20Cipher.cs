@@ -38,14 +38,7 @@ public class XChaCha20Cipher : ChaCha20OriginalCipher
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(nonce);
 
 		Sigma32.CopyTo(state);
-		keySpan.CopyTo(state.Slice(4));
-		ivSpan.Slice(0, 4).CopyTo(state.Slice(12));
-
-		ChaCha20Utils.ChaChaRound(Rounds, state);
-
-		state.Slice(12).CopyTo(state.Slice(8));
-		state.Slice(0, 4).CopyTo(state.Slice(4));
-		Sigma32.CopyTo(state);
+		ChaCha20Utils.DeriveXChaCha20Key(state, keySpan, ivSpan);
 
 		state[14] = ivSpan[4];
 		state[15] = ivSpan[5];

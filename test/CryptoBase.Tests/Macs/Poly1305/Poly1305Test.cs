@@ -1,4 +1,5 @@
 using CryptoBase.Macs.Poly1305;
+using System.Numerics;
 using System.Text;
 using static CryptoBase.Tests.Macs.MacAlgorithmTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -161,6 +162,71 @@ public class Poly1305Test
 		finally
 		{
 			state.ZeroMemory();
+		}
+	}
+
+	[Test]
+	public async Task SoftwareAndState26MatchIndependentBigIntegerOracle()
+	{
+		Random random = new(1305);
+		int[] lengths = [.. Enumerable.Range(0, 34), 63, 64, 65, 127, 128, 129, 255, 256, 257, 511, 512, 513, 1024, 4097];
+		BigInteger prime = (BigInteger.One << 130) - 5;
+		BigInteger tagMask = (BigInteger.One << 128) - 1;
+		BigInteger keyMask = new(Convert.FromHexString("FFFFFF0FFCFFFF0FFCFFFF0FFCFFFF0F"), isUnsigned: true);
+
+		for (int trial = 0; trial < 8; ++trial)
+		{
+			byte[] key = new byte[32];
+			random.NextBytes(key);
+
+			if (trial is 0)
+			{
+				Array.Fill(key, byte.MaxValue);
+			}
+
+			BigInteger r = new BigInteger(key.AsSpan(0, 16), isUnsigned: true) & keyMask;
+			BigInteger pad = new(key.AsSpan(16), isUnsigned: true);
+
+			foreach (int length in lengths)
+			{
+				byte[] source = new byte[length];
+				random.NextBytes(source);
+				BigInteger accumulator = BigInteger.Zero;
+
+				for (int offset = 0; offset < length; offset += 16)
+				{
+					int blockLength = Math.Min(16, length - offset);
+					BigInteger block = new BigInteger(source.AsSpan(offset, blockLength), isUnsigned: true) + (BigInteger.One << (blockLength * 8));
+					accumulator = (accumulator + block) * r % prime;
+				}
+
+				byte[] expected = new byte[16];
+				bool written = ((accumulator + pad) & tagMask).TryWriteBytes(expected, out _, isUnsigned: true);
+				await Assert.That(written).IsTrue();
+				byte[] actual = new byte[16];
+				ComputeSoftwareMac(key, source, actual);
+				await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+				ComputeState26Mac(key, source, actual);
+				await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+			}
+		}
+
+		return;
+
+		static void ComputeSoftwareMac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
+		{
+			Poly1305Software state = default;
+			Poly1305Software.Initialize(ref state, key);
+
+			try
+			{
+				state.AppendMessage(source);
+				state.WriteMac(destination);
+			}
+			finally
+			{
+				state.ZeroMemory();
+			}
 		}
 	}
 }
