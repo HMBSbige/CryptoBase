@@ -23,17 +23,17 @@ public class XtsModeTest
 	[GenerateGenericTest(typeof(AesCipher))]
 	[GenerateGenericTest(typeof(SM4Cipher))]
 	[MethodDataSource(nameof(BatchLengths))]
-	public async Task BatchAndStealingBoundariesMatchScalarTweaks<TCipher>(int length) where TCipher : IBlockCipher<TCipher>
+	public Task BatchAndStealingBoundariesMatchScalarTweaks<TCipher>(int length) where TCipher : IBlockCipher<TCipher>
 	{
-		await VerifyScalarTweaks<TCipher>(16, length);
+		return VerifyScalarTweaks<TCipher>(16, length);
 	}
 
 	[Test]
 	[Arguments(512)]
 	[Arguments(4097)]
-	public async Task Aes256BatchAndStealingBoundariesMatchScalarTweaks(int length)
+	public Task Aes256BatchAndStealingBoundariesMatchScalarTweaks(int length)
 	{
-		await VerifyScalarTweaks<AesCipher>(32, length);
+		return VerifyScalarTweaks<AesCipher>(32, length);
 	}
 
 	private static async Task VerifyScalarTweaks<TCipher>(int keyLength, int length) where TCipher : IBlockCipher<TCipher>

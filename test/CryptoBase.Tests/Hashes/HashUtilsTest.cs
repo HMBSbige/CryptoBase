@@ -35,10 +35,12 @@ public class HashUtilsTest
 		using MemoryStream stream = new(source, false);
 		stream.Position = 11;
 
-		await Assert.That(() => stream.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination)).ThrowsExactly<ArgumentOutOfRangeException>();
-
-		await Assert.That(stream.Position).IsEqualTo(11);
-		await Assert.That(destination).All(static value => value is DestinationSentinel);
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => stream.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+			await Assert.That(stream.Position).IsEqualTo(11);
+			await Assert.That(destination).All(static value => value is DestinationSentinel);
+		}
 	}
 
 	[Test]
@@ -83,10 +85,12 @@ public class HashUtilsTest
 		using MemoryStream stream = new(source, false);
 		stream.Position = 11;
 
-		await Assert.That(() => stream.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination).AsTask()).ThrowsExactly<ArgumentOutOfRangeException>();
-
-		await Assert.That(stream.Position).IsEqualTo(11);
-		await Assert.That(destination).All(static value => value is DestinationSentinel);
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => stream.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination).AsTask()).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+			await Assert.That(stream.Position).IsEqualTo(11);
+			await Assert.That(destination).All(static value => value is DestinationSentinel);
+		}
 	}
 
 	[Test]
@@ -95,11 +99,14 @@ public class HashUtilsTest
 		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 		PrepareDestination(destination);
 
-		await Assert.That(() => HashUtils.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(null!, destination)).ThrowsExactly<ArgumentNullException>();
-		await Assert.That(() => CreateUnreadableStream().ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination)).ThrowsExactly<ArgumentException>();
-		await Assert.That(() => HashUtils.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(null!, destination).AsTask()).ThrowsExactly<ArgumentNullException>();
-		await Assert.That(() => CreateUnreadableStream().ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination).AsTask()).ThrowsExactly<ArgumentException>();
-		await Assert.That(destination).All(static value => value is DestinationSentinel);
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => HashUtils.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(null!, destination)).ThrowsExactly<ArgumentNullException>().WithParameterName("inputStream");
+			await Assert.That(() => CreateUnreadableStream().ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination)).ThrowsExactly<ArgumentException>().WithParameterName("inputStream");
+			await Assert.That(() => HashUtils.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(null!, destination).AsTask()).ThrowsExactly<ArgumentNullException>().WithParameterName("inputStream");
+			await Assert.That(() => CreateUnreadableStream().ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination).AsTask()).ThrowsExactly<ArgumentException>().WithParameterName("inputStream");
+			await Assert.That(destination).All(static value => value is DestinationSentinel);
+		}
 	}
 
 	[Test]
@@ -113,9 +120,13 @@ public class HashUtilsTest
 		cancellation.Cancel();
 
 		OperationCanceledException exception = (await Assert.That(() => stream.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination, cancellation.Token).AsTask()).Throws<OperationCanceledException>())!;
-		await Assert.That(exception.CancellationToken).IsEqualTo(cancellation.Token);
-		await Assert.That(stream.Position).IsZero();
-		await Assert.That(destination).All(static value => value is DestinationSentinel);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(exception.CancellationToken).IsEqualTo(cancellation.Token);
+			await Assert.That(stream.Position).IsZero();
+			await Assert.That(destination).All(static value => value is DestinationSentinel);
+		}
 	}
 
 	private static MemoryStream CreateUnreadableStream()

@@ -90,10 +90,13 @@ public class HashAlgorithmTest
 		alias.Dispose();
 		alias.Dispose();
 
-		await Assert.That(() => owner.Append(source)).ThrowsExactly<ObjectDisposedException>();
-		await Assert.That(owner.Reset).ThrowsExactly<ObjectDisposedException>();
-		await Assert.That(() => owner.GetCurrentHash(destination)).ThrowsExactly<ObjectDisposedException>();
-		await Assert.That(() => owner.GetHashAndReset(destination)).ThrowsExactly<ObjectDisposedException>();
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => owner.Append(source)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(owner.Reset).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => owner.GetCurrentHash(destination)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => owner.GetHashAndReset(destination)).ThrowsExactly<ObjectDisposedException>();
+		}
 	}
 
 	[Test]
@@ -109,7 +112,7 @@ public class HashAlgorithmTest
 		hashAlgorithm.Append(source);
 		PrepareDestination(shortDestination);
 
-		await Assert.That(() => hashAlgorithm.GetCurrentHash(shortDestination)).Throws<ArgumentException>();
+		await Assert.That(() => hashAlgorithm.GetCurrentHash(shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 
 		PrepareDestination(destination);
@@ -119,7 +122,7 @@ public class HashAlgorithmTest
 		hashAlgorithm.Reset();
 		hashAlgorithm.Append(source);
 		PrepareDestination(shortDestination);
-		await Assert.That(() => hashAlgorithm.GetHashAndReset(shortDestination)).Throws<ArgumentException>();
+		await Assert.That(() => hashAlgorithm.GetHashAndReset(shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 
 		PrepareDestination(destination);
@@ -132,7 +135,7 @@ public class HashAlgorithmTest
 
 		byte[] sourceCopy = (byte[])source.Clone();
 		PrepareDestination(shortDestination);
-		await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashData(source, shortDestination)).Throws<ArgumentException>();
+		await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashData(source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
 	}
@@ -152,7 +155,7 @@ public class HashAlgorithmTest
 
 		PrepareDestination(destination);
 		FailingHashCore.FailNextFinalize();
-		await Assert.That(() => hashAlgorithm.GetCurrentHash(destination)).Throws<InvalidOperationException>();
+		await Assert.That(() => hashAlgorithm.GetCurrentHash(destination)).ThrowsExactly<InvalidOperationException>();
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 		PrepareDestination(destination);
 		int written = hashAlgorithm.GetCurrentHash(destination);
@@ -160,7 +163,7 @@ public class HashAlgorithmTest
 
 		PrepareDestination(destination);
 		FailingHashCore.FailNextCreate();
-		await Assert.That(() => hashAlgorithm.GetHashAndReset(destination)).Throws<InvalidOperationException>();
+		await Assert.That(() => hashAlgorithm.GetHashAndReset(destination)).ThrowsExactly<InvalidOperationException>();
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 		PrepareDestination(destination);
 		written = hashAlgorithm.GetHashAndReset(destination);
@@ -173,7 +176,7 @@ public class HashAlgorithmTest
 		hashAlgorithm.Append(source);
 		PrepareDestination(destination);
 		FailingHashCore.FailNextFinalize();
-		await Assert.That(() => hashAlgorithm.GetHashAndReset(destination)).Throws<InvalidOperationException>();
+		await Assert.That(() => hashAlgorithm.GetHashAndReset(destination)).ThrowsExactly<InvalidOperationException>();
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 		PrepareDestination(destination);
 		written = hashAlgorithm.GetHashAndReset(destination);
@@ -181,7 +184,7 @@ public class HashAlgorithmTest
 
 		PrepareDestination(destination);
 		FailingHashCore.FailNextFinalize();
-		await Assert.That(() => HashAlgorithm<FailingHashCore>.HashData(source, destination)).Throws<InvalidOperationException>();
+		await Assert.That(() => HashAlgorithm<FailingHashCore>.HashData(source, destination)).ThrowsExactly<InvalidOperationException>();
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 	}
 

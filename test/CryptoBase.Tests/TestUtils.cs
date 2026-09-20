@@ -33,11 +33,22 @@ public static class TestUtils
 
 	public static async Task AssertOutput(byte[] destination, byte[] expected, int written)
 	{
-		await Assert.That(written).IsEqualTo(expected.Length);
-		await AssertOutput(destination, expected);
+		using (Assert.Multiple())
+		{
+			await Assert.That(written).IsEqualTo(expected.Length);
+			await AssertOutputCore(destination, expected);
+		}
 	}
 
 	public static async Task AssertOutput(byte[] destination, byte[] expected)
+	{
+		using (Assert.Multiple())
+		{
+			await AssertOutputCore(destination, expected);
+		}
+	}
+
+	private static async Task AssertOutputCore(byte[] destination, byte[] expected)
 	{
 		await Assert.That(destination.AsMemory(0, expected.Length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 		await Assert.That(destination.AsMemory(expected.Length)).All(static value => value is DestinationSentinel);
@@ -60,15 +71,25 @@ public static class TestUtils
 			byte[] outPlain = new byte[plain.Length];
 			byte[] outTag = new byte[tag.Length];
 
-			await Assert.That(T.NonceSize).IsEqualTo(nonce.Length);
-			await Assert.That(T.TagSize).IsEqualTo(tag.Length);
+			using (Assert.Multiple())
+			{
+				await Assert.That(T.NonceSize).IsEqualTo(nonce.Length);
+				await Assert.That(T.TagSize).IsEqualTo(tag.Length);
+			}
 
 			crypto.Encrypt(nonce, plain, outPlain, outTag, associatedData);
-			await Assert.That(outPlain).IsEquivalentTo(cipher, CollectionOrdering.Matching);
-			await Assert.That(outTag).IsEquivalentTo(tag, CollectionOrdering.Matching);
 
-			await Assert.That(crypto.TryDecrypt(nonce, cipher, tag, outPlain, associatedData)).IsTrue();
-			await Assert.That(outPlain).IsEquivalentTo(plain, CollectionOrdering.Matching);
+			using (Assert.Multiple())
+			{
+				await Assert.That(outPlain).IsEquivalentTo(cipher, CollectionOrdering.Matching);
+				await Assert.That(outTag).IsEquivalentTo(tag, CollectionOrdering.Matching);
+			}
+
+			using (Assert.Multiple())
+			{
+				await Assert.That(crypto.TryDecrypt(nonce, cipher, tag, outPlain, associatedData)).IsTrue();
+				await Assert.That(outPlain).IsEquivalentTo(plain, CollectionOrdering.Matching);
+			}
 		}
 	}
 

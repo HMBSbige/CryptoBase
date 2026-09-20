@@ -30,9 +30,9 @@ public class HmacTest
 	[Arguments(@"0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c", @"546573742057697468205472756e636174696f6e", @"f68127c9f91764f5fb820d537adc8330d3aa6ccc0016575fe3975bfe8d522ecb")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374", @"b4fd844e13342002f0b2e0690ea7741f1497d993a70494cea601e657bedf67a0")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"5acbdeb0c8c1ef3a99088fe51c0a1d5f4e1c175935f016aee74eb8056db18acb")]
-	public async Task TestSM3(string keyStr, string messageHex, string expected)
+	public Task TestSM3(string keyStr, string messageHex, string expected)
 	{
-		await VerifyVector<HmacAlgorithm<SM3HashAlgorithm>>(keyStr, messageHex, expected);
+		return VerifyVector<HmacAlgorithm<SM3HashAlgorithm>>(keyStr, messageHex, expected);
 	}
 
 	[Test]
@@ -43,9 +43,9 @@ public class HmacTest
 	[Arguments(@"0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c", @"546573742057697468205472756e636174696f6e", @"951726cea438b8e106e43b3d87a19c8e")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374", @"bfecaf4efff90a3a668f3922fec3762d")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"09b8ae7b15adbbb243aca3491b51512b")]
-	public async Task TestMd5(string keyStr, string messageHex, string expected)
+	public Task TestMd5(string keyStr, string messageHex, string expected)
 	{
-		await VerifyVector<HmacAlgorithm<MD5HashAlgorithm>>(keyStr, messageHex, expected);
+		return VerifyVector<HmacAlgorithm<MD5HashAlgorithm>>(keyStr, messageHex, expected);
 	}
 
 	[Test]
@@ -56,9 +56,9 @@ public class HmacTest
 	[Arguments(@"0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c", @"546573742057697468205472756e636174696f6e", @"4c1a03424b55e07fe7f27be1d58bb9324a9a5a04")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374", @"90d0dace1c1bdc957339307803160335bde6df2b")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"217e44bb08b6e06a2d6c30f3cb9f537f97c63356")]
-	public async Task TestSha1(string keyStr, string messageHex, string expected)
+	public Task TestSha1(string keyStr, string messageHex, string expected)
 	{
-		await VerifyVector<HmacAlgorithm<Sha1HashAlgorithm>>(keyStr, messageHex, expected);
+		return VerifyVector<HmacAlgorithm<Sha1HashAlgorithm>>(keyStr, messageHex, expected);
 	}
 
 	[Test]
@@ -68,9 +68,9 @@ public class HmacTest
 	[Arguments(@"0102030405060708090a0b0c0d0e0f10111213141516171819", @"cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd", @"6c11506874013cac6a2abc1bb382627cec6a90d86efc012de7afec5a")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374", @"95e9a0db962095adaebe9b2d6f0dbce2d499f112f2d2b7273fa6870e")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"3a854166ac5d9f023f54d517d0b39dbd946770db9c2b95c9f6f565d1")]
-	public async Task TestSha224(string keyStr, string messageHex, string expected)
+	public Task TestSha224(string keyStr, string messageHex, string expected)
 	{
-		await VerifyVector<HmacAlgorithm<Sha224HashAlgorithm>>(keyStr, messageHex, expected);
+		return VerifyVector<HmacAlgorithm<Sha224HashAlgorithm>>(keyStr, messageHex, expected);
 	}
 
 	[Test]
@@ -81,9 +81,9 @@ public class HmacTest
 	[Arguments(@"0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c", @"546573742057697468205472756e636174696f6e", @"a3b6167473100ee06e0c796c2955552bfa6f7c0a6a8aef8b93f860aab0cd20c5")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374", @"60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"9b09ffa71b942fcb27635fbcd5b0e944bfdc63644f0713938a7f51535c3a35e2")]
-	public async Task TestSha256(string keyStr, string messageHex, string expected)
+	public Task TestSha256(string keyStr, string messageHex, string expected)
 	{
-		await VerifyVector<HmacAlgorithm<Sha256HashAlgorithm>>(keyStr, messageHex, expected);
+		return VerifyVector<HmacAlgorithm<Sha256HashAlgorithm>>(keyStr, messageHex, expected);
 	}
 
 	[Test]
@@ -94,9 +94,9 @@ public class HmacTest
 	[Arguments(@"0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c", @"546573742057697468205472756e636174696f6e", @"3abf34c3503b2a23a46efc619baef897f4c8e42c934ce55ccbae9740fcbc1af4ca62269e2a37cd88ba926341efe4aeea")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374", @"4ece084485813e9088d2c63a041bc5b44f9ef1012a2b588f3cd11f05033ac4c60c2ef6ab4030fe8296248df163f44952")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"6617178e941f020d351e2f254e8fd32c602420feb0b8fb9adccebb82461e99c5a678cc31e799176d3860e6110c46523e")]
-	public async Task TestSha384(string keyStr, string messageHex, string expected)
+	public Task TestSha384(string keyStr, string messageHex, string expected)
 	{
-		await VerifyVector<HmacAlgorithm<Sha384HashAlgorithm>>(keyStr, messageHex, expected);
+		return VerifyVector<HmacAlgorithm<Sha384HashAlgorithm>>(keyStr, messageHex, expected);
 	}
 
 	[Test]
@@ -107,9 +107,9 @@ public class HmacTest
 	[Arguments(@"0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c", @"546573742057697468205472756e636174696f6e", @"415fad6271580a531d4179bc891d87a650188707922a4fbb36663a1eb16da008711c5b50ddd0fc235084eb9d3364a1454fb2ef67cd1d29fe6773068ea266e96b")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"54657374205573696e67204c6172676572205468616e20426c6f636b2d53697a65204b6579202d2048617368204b6579204669727374", @"80b24263c7c1a3ebb71493c1dd7be8b49b46d1f41b4aeec1121b013783f8f3526b56d037e05f2598bd0fd2215d6a1e5295e64f73f63f0aec8b915a985d786598")]
 	[Arguments(@"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", @"5468697320697320612074657374207573696e672061206c6172676572207468616e20626c6f636b2d73697a65206b657920616e642061206c6172676572207468616e20626c6f636b2d73697a6520646174612e20546865206b6579206e6565647320746f20626520686173686564206265666f7265206265696e6720757365642062792074686520484d414320616c676f726974686d2e", @"e37b6a775dc87dbaa4dfa9f96e5e3ffddebd71f8867289865df5a32d20cdc944b6022cac3c4982b10d5eeb55c3e4de15134676fb6de0446065c97440fa8c6a58")]
-	public async Task TestSha512(string keyStr, string messageHex, string expected)
+	public Task TestSha512(string keyStr, string messageHex, string expected)
 	{
-		await VerifyVector<HmacAlgorithm<Sha512HashAlgorithm>>(keyStr, messageHex, expected);
+		return VerifyVector<HmacAlgorithm<Sha512HashAlgorithm>>(keyStr, messageHex, expected);
 	}
 
 	[Test]
@@ -125,17 +125,17 @@ public class HmacTest
 	}
 
 	[Test]
-	public async Task ShortDestinationsDoNotChangeStateOrOutput()
+	public Task ShortDestinationsDoNotChangeStateOrOutput()
 	{
-		await VerifyShortDestinations<HmacAlgorithm<Sha256HashAlgorithm>>();
+		return VerifyShortDestinations<HmacAlgorithm<Sha256HashAlgorithm>>();
 	}
 
 	[Test]
 	[Arguments(0)]
 	[Arguments(97)]
-	public async Task OneShotMacSupportsOverlappingInputsAndDestination(int destinationOffset)
+	public Task OneShotMacSupportsOverlappingInputsAndDestination(int destinationOffset)
 	{
-		await VerifyOneShotOverlap(destinationOffset);
+		return VerifyOneShotOverlap(destinationOffset);
 	}
 
 	[Test]
@@ -262,10 +262,13 @@ public class HmacTest
 		alias.Dispose();
 		alias.Dispose();
 
-		await Assert.That(() => owner.Append(source)).ThrowsExactly<ObjectDisposedException>();
-		await Assert.That(owner.Reset).ThrowsExactly<ObjectDisposedException>();
-		await Assert.That(() => owner.GetCurrentMac(destination)).ThrowsExactly<ObjectDisposedException>();
-		await Assert.That(() => owner.GetMacAndReset(destination)).ThrowsExactly<ObjectDisposedException>();
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => owner.Append(source)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(owner.Reset).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => owner.GetCurrentMac(destination)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => owner.GetMacAndReset(destination)).ThrowsExactly<ObjectDisposedException>();
+		}
 	}
 
 	private static async Task VerifyShortDestinations<TMac>() where TMac : class, IMacAlgorithm<TMac>
@@ -280,14 +283,14 @@ public class HmacTest
 		macAlgorithm.Append(source);
 
 		PrepareDestination(shortDestination);
-		await Assert.That(() => macAlgorithm.GetCurrentMac(shortDestination)).Throws<ArgumentException>();
+		await Assert.That(() => macAlgorithm.GetCurrentMac(shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 		PrepareDestination(destination);
 		int written = macAlgorithm.GetCurrentMac(destination);
 		await AssertOutput(destination, expected, written);
 
 		PrepareDestination(shortDestination);
-		await Assert.That(() => macAlgorithm.GetMacAndReset(shortDestination)).Throws<ArgumentException>();
+		await Assert.That(() => macAlgorithm.GetMacAndReset(shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 		PrepareDestination(destination);
 		written = macAlgorithm.GetMacAndReset(destination);
@@ -296,7 +299,7 @@ public class HmacTest
 		byte[] keyCopy = (byte[])key.Clone();
 		byte[] sourceCopy = (byte[])source.Clone();
 		PrepareDestination(shortDestination);
-		await Assert.That(() => TMac.Mac(key, source, shortDestination)).Throws<ArgumentException>();
+		await Assert.That(() => TMac.Mac(key, source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 		await Assert.That(key).IsEquivalentTo(keyCopy, CollectionOrdering.Matching);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
