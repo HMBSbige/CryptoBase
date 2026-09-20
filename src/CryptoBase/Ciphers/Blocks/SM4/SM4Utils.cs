@@ -74,35 +74,37 @@ internal static partial class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint SubByte(uint a)
 	{
-		uint b0 = S[(byte)(a >> 24)];
-		uint b1 = S[(byte)(a >> 16 & 0xFF)];
-		uint b2 = S[(byte)(a >> 8 & 0xFF)];
-		byte b3 = S[(byte)(a & 0xFF)];
+		ref byte s = ref MemoryMarshal.GetReference(S);
+		uint b0 = Unsafe.Add(ref s, (byte)(a >> 24));
+		uint b1 = Unsafe.Add(ref s, (byte)(a >> 16));
+		uint b2 = Unsafe.Add(ref s, (byte)(a >> 8));
+		byte b3 = Unsafe.Add(ref s, (byte)a);
 
 		return b0 << 24 | b1 << 16 | b2 << 8 | b3;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void InitRoundKeys(ReadOnlySpan<byte> key, Span<uint> rk)
+	public static void InitRoundKeys(ref byte key, ref uint rk)
 	{
-		uint k0 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(0 * 4)) ^ 0xa3b1bac6;
-		uint k1 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(1 * 4)) ^ 0x56aa3350;
-		uint k2 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(2 * 4)) ^ 0x677d9197;
-		uint k3 = BinaryPrimitives.ReadUInt32BigEndian(key.Slice(3 * 4)) ^ 0xb27022dc;
+		uint k0 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref key)) ^ 0xa3b1bac6;
+		uint k1 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 4))) ^ 0x56aa3350;
+		uint k2 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 8))) ^ 0x677d9197;
+		uint k3 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 12))) ^ 0xb27022dc;
+		ref uint ck = ref MemoryMarshal.GetReference(CK);
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			k0 ^= L1(SubByte(k1 ^ k2 ^ k3 ^ CK[i + 0]));
-			rk[i + 0] = k0;
+			k0 ^= L1(SubByte(k1 ^ k2 ^ k3 ^ Unsafe.Add(ref ck, i)));
+			Unsafe.Add(ref rk, i) = k0;
 
-			k1 ^= L1(SubByte(k2 ^ k3 ^ k0 ^ CK[i + 1]));
-			rk[i + 1] = k1;
+			k1 ^= L1(SubByte(k2 ^ k3 ^ k0 ^ Unsafe.Add(ref ck, i + 1)));
+			Unsafe.Add(ref rk, i + 1) = k1;
 
-			k2 ^= L1(SubByte(k3 ^ k0 ^ k1 ^ CK[i + 2]));
-			rk[i + 2] = k2;
+			k2 ^= L1(SubByte(k3 ^ k0 ^ k1 ^ Unsafe.Add(ref ck, i + 2)));
+			Unsafe.Add(ref rk, i + 2) = k2;
 
-			k3 ^= L1(SubByte(k0 ^ k1 ^ k2 ^ CK[i + 3]));
-			rk[i + 3] = k3;
+			k3 ^= L1(SubByte(k0 ^ k1 ^ k2 ^ Unsafe.Add(ref ck, i + 3)));
+			Unsafe.Add(ref rk, i + 3) = k3;
 		}
 	}
 
@@ -113,13 +115,14 @@ internal static partial class SM4Utils
 		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(4));
 		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(8));
 		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(12));
+		ref uint keys = ref rk.GetReference();
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			x0 ^= T(x1 ^ x2 ^ x3 ^ rk[i]);
-			x1 ^= T(x0 ^ x2 ^ x3 ^ rk[i + 1]);
-			x2 ^= T(x0 ^ x1 ^ x3 ^ rk[i + 2]);
-			x3 ^= T(x0 ^ x1 ^ x2 ^ rk[i + 3]);
+			x0 ^= T(x1 ^ x2 ^ x3 ^ Unsafe.Add(ref keys, i));
+			x1 ^= T(x0 ^ x2 ^ x3 ^ Unsafe.Add(ref keys, i + 1));
+			x2 ^= T(x0 ^ x1 ^ x3 ^ Unsafe.Add(ref keys, i + 2));
+			x3 ^= T(x0 ^ x1 ^ x2 ^ Unsafe.Add(ref keys, i + 3));
 		}
 
 		BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
