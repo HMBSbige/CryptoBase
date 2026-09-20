@@ -1,14 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <IsTestProject>false</IsTestProject>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
-    <PackageReference Include="BenchmarkDotNet.TestAdapter" />
     <PackageReference Include="BouncyCastle.Cryptography" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="System.IO.Hashing" />
     <PackageReference Include="System.Numerics.Tensors" />
   </ItemGroup>
