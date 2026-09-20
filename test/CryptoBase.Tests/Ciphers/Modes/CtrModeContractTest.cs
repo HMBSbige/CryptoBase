@@ -25,7 +25,7 @@ public class CtrModeContractTest
 	[GenerateGenericTest(typeof(AesCipher))]
 	[GenerateGenericTest(typeof(SM4Cipher))]
 	[MatrixDataSource]
-	public async Task CriticalBatchBoundariesMatchByteWiseProcessing<TCipher>([Matrix(1, 15, 16, 17, 31, 32, 33, 127, 128, 129, 255, 256, 257, 511, 512, 513, 2047, 2048, 2049, 4097)] int length) where TCipher : IBlockCipher<TCipher>
+	public async Task CriticalBatchBoundariesMatchByteWiseProcessing<TCipher>([Matrix(1, 15, 16, 17, 31, 32, 33, 48, 64, 80, 96, 112, 127, 128, 129, 255, 256, 257, 511, 512, 513, 2047, 2048, 2049, 4097)] int length) where TCipher : IBlockCipher<TCipher>
 	{
 		byte[] key = CreateDeterministicSource(16);
 		byte[] counter = CreateDeterministicSource(16);

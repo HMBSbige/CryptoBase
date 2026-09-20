@@ -335,7 +335,14 @@ internal struct AesCipherX86
 	{
 		Vector128<byte> v0 = Vector128.LoadUnsafe(ref source, 0);
 		Vector128<byte> v1 = Vector128.LoadUnsafe(ref source, 16);
+		Encrypt2(ref v0, ref v1);
+		v0.StoreUnsafe(ref destination, 0);
+		v1.StoreUnsafe(ref destination, 16);
+	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private readonly void Encrypt2(ref Vector128<byte> v0, ref Vector128<byte> v1)
+	{
 		v0 ^= _roundKeys.K0;
 		v1 ^= _roundKeys.K0;
 
@@ -352,8 +359,6 @@ internal struct AesCipherX86
 		if (_keyLength is 11)
 		{
 			ProcessLastBlocks(ref v0, ref v1, _roundKeys.K10);
-			v0.StoreUnsafe(ref destination, 0);
-			v1.StoreUnsafe(ref destination, 16);
 			return;
 		}
 
@@ -363,8 +368,6 @@ internal struct AesCipherX86
 		if (_keyLength is 13)
 		{
 			ProcessLastBlocks(ref v0, ref v1, _roundKeys.K12);
-			v0.StoreUnsafe(ref destination, 0);
-			v1.StoreUnsafe(ref destination, 16);
 			return;
 		}
 
@@ -372,8 +375,6 @@ internal struct AesCipherX86
 		ProcessBlocks(ref v0, ref v1, _roundKeys.K13);
 		ProcessLastBlocks(ref v0, ref v1, _roundKeys.K14);
 
-		v0.StoreUnsafe(ref destination, 0);
-		v1.StoreUnsafe(ref destination, 16);
 		return;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -396,7 +397,14 @@ internal struct AesCipherX86
 	{
 		Vector128<byte> v0 = Vector128.LoadUnsafe(ref source, 0);
 		Vector128<byte> v1 = Vector128.LoadUnsafe(ref source, 16);
+		Decrypt2(ref v0, ref v1);
+		v0.StoreUnsafe(ref destination, 0);
+		v1.StoreUnsafe(ref destination, 16);
+	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private readonly void Decrypt2(ref Vector128<byte> v0, ref Vector128<byte> v1)
+	{
 		v0 ^= _reverseRoundKeys.K0;
 		v1 ^= _reverseRoundKeys.K0;
 
@@ -413,8 +421,6 @@ internal struct AesCipherX86
 		if (_keyLength is 11)
 		{
 			ProcessLastBlocks(ref v0, ref v1, _reverseRoundKeys.K10);
-			v0.StoreUnsafe(ref destination, 0);
-			v1.StoreUnsafe(ref destination, 16);
 			return;
 		}
 
@@ -424,8 +430,6 @@ internal struct AesCipherX86
 		if (_keyLength is 13)
 		{
 			ProcessLastBlocks(ref v0, ref v1, _reverseRoundKeys.K12);
-			v0.StoreUnsafe(ref destination, 0);
-			v1.StoreUnsafe(ref destination, 16);
 			return;
 		}
 
@@ -433,8 +437,6 @@ internal struct AesCipherX86
 		ProcessBlocks(ref v0, ref v1, _reverseRoundKeys.K13);
 		ProcessLastBlocks(ref v0, ref v1, _reverseRoundKeys.K14);
 
-		v0.StoreUnsafe(ref destination, 0);
-		v1.StoreUnsafe(ref destination, 16);
 		return;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -459,7 +461,16 @@ internal struct AesCipherX86
 		Vector128<byte> v1 = Vector128.LoadUnsafe(ref source, 16);
 		Vector128<byte> v2 = Vector128.LoadUnsafe(ref source, 32);
 		Vector128<byte> v3 = Vector128.LoadUnsafe(ref source, 48);
+		Encrypt4(ref v0, ref v1, ref v2, ref v3);
+		v0.StoreUnsafe(ref destination, 0);
+		v1.StoreUnsafe(ref destination, 16);
+		v2.StoreUnsafe(ref destination, 32);
+		v3.StoreUnsafe(ref destination, 48);
+	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private readonly void Encrypt4(ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2, ref Vector128<byte> v3)
+	{
 		v0 ^= _roundKeys.K0;
 		v1 ^= _roundKeys.K0;
 		v2 ^= _roundKeys.K0;
@@ -478,10 +489,6 @@ internal struct AesCipherX86
 		if (_keyLength is 11)
 		{
 			ProcessLastBlocks(ref v0, ref v1, ref v2, ref v3, _roundKeys.K10);
-			v0.StoreUnsafe(ref destination, 0);
-			v1.StoreUnsafe(ref destination, 16);
-			v2.StoreUnsafe(ref destination, 32);
-			v3.StoreUnsafe(ref destination, 48);
 			return;
 		}
 
@@ -491,10 +498,6 @@ internal struct AesCipherX86
 		if (_keyLength is 13)
 		{
 			ProcessLastBlocks(ref v0, ref v1, ref v2, ref v3, _roundKeys.K12);
-			v0.StoreUnsafe(ref destination, 0);
-			v1.StoreUnsafe(ref destination, 16);
-			v2.StoreUnsafe(ref destination, 32);
-			v3.StoreUnsafe(ref destination, 48);
 			return;
 		}
 
@@ -502,10 +505,6 @@ internal struct AesCipherX86
 		ProcessBlocks(ref v0, ref v1, ref v2, ref v3, _roundKeys.K13);
 		ProcessLastBlocks(ref v0, ref v1, ref v2, ref v3, _roundKeys.K14);
 
-		v0.StoreUnsafe(ref destination, 0);
-		v1.StoreUnsafe(ref destination, 16);
-		v2.StoreUnsafe(ref destination, 32);
-		v3.StoreUnsafe(ref destination, 48);
 		return;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -534,7 +533,16 @@ internal struct AesCipherX86
 		Vector128<byte> v1 = Vector128.LoadUnsafe(ref source, 16);
 		Vector128<byte> v2 = Vector128.LoadUnsafe(ref source, 32);
 		Vector128<byte> v3 = Vector128.LoadUnsafe(ref source, 48);
+		Decrypt4(ref v0, ref v1, ref v2, ref v3);
+		v0.StoreUnsafe(ref destination, 0);
+		v1.StoreUnsafe(ref destination, 16);
+		v2.StoreUnsafe(ref destination, 32);
+		v3.StoreUnsafe(ref destination, 48);
+	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private readonly void Decrypt4(ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2, ref Vector128<byte> v3)
+	{
 		v0 ^= _reverseRoundKeys.K0;
 		v1 ^= _reverseRoundKeys.K0;
 		v2 ^= _reverseRoundKeys.K0;
@@ -553,10 +561,6 @@ internal struct AesCipherX86
 		if (_keyLength is 11)
 		{
 			ProcessLastBlocks(ref v0, ref v1, ref v2, ref v3, _reverseRoundKeys.K10);
-			v0.StoreUnsafe(ref destination, 0);
-			v1.StoreUnsafe(ref destination, 16);
-			v2.StoreUnsafe(ref destination, 32);
-			v3.StoreUnsafe(ref destination, 48);
 			return;
 		}
 
@@ -566,10 +570,6 @@ internal struct AesCipherX86
 		if (_keyLength is 13)
 		{
 			ProcessLastBlocks(ref v0, ref v1, ref v2, ref v3, _reverseRoundKeys.K12);
-			v0.StoreUnsafe(ref destination, 0);
-			v1.StoreUnsafe(ref destination, 16);
-			v2.StoreUnsafe(ref destination, 32);
-			v3.StoreUnsafe(ref destination, 48);
 			return;
 		}
 
@@ -577,10 +577,6 @@ internal struct AesCipherX86
 		ProcessBlocks(ref v0, ref v1, ref v2, ref v3, _reverseRoundKeys.K13);
 		ProcessLastBlocks(ref v0, ref v1, ref v2, ref v3, _reverseRoundKeys.K14);
 
-		v0.StoreUnsafe(ref destination, 0);
-		v1.StoreUnsafe(ref destination, 16);
-		v2.StoreUnsafe(ref destination, 32);
-		v3.StoreUnsafe(ref destination, 48);
 		return;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -894,6 +890,60 @@ internal struct AesCipherX86
 			(v5 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 80))).StoreUnsafe(ref dst, (nuint)(offset + 80));
 			(v6 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 96))).StoreUnsafe(ref dst, (nuint)(offset + 96));
 			(v7 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 112))).StoreUnsafe(ref dst, (nuint)(offset + 112));
+		}
+
+		for (; offset <= source.Length - 64; offset += 64)
+		{
+			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
+			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
+			Vector128<byte> v2 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 32));
+			Vector128<byte> v3 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 48));
+
+			if (xorInput)
+			{
+				v0 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0));
+				v1 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16));
+				v2 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 32));
+				v3 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 48));
+			}
+
+			if (decrypt)
+			{
+				Decrypt4(ref v0, ref v1, ref v2, ref v3);
+			}
+			else
+			{
+				Encrypt4(ref v0, ref v1, ref v2, ref v3);
+			}
+
+			(v0 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0))).StoreUnsafe(ref dst, (nuint)(offset + 0));
+			(v1 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16))).StoreUnsafe(ref dst, (nuint)(offset + 16));
+			(v2 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 32))).StoreUnsafe(ref dst, (nuint)(offset + 32));
+			(v3 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 48))).StoreUnsafe(ref dst, (nuint)(offset + 48));
+		}
+
+		for (; offset <= source.Length - 32; offset += 32)
+		{
+			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
+			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
+
+			if (xorInput)
+			{
+				v0 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0));
+				v1 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16));
+			}
+
+			if (decrypt)
+			{
+				Decrypt2(ref v0, ref v1);
+			}
+			else
+			{
+				Encrypt2(ref v0, ref v1);
+			}
+
+			(v0 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0))).StoreUnsafe(ref dst, (nuint)(offset + 0));
+			(v1 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16))).StoreUnsafe(ref dst, (nuint)(offset + 16));
 		}
 
 		for (; offset < source.Length; offset += 16)

@@ -11,6 +11,8 @@ namespace CryptoBase.Benchmark.Ciphers.Modes;
 [MemoryDiagnoser]
 public class AesCtrBenchmark : BlockModeStreamCipherBenchmarkBase
 {
+	public override IEnumerable<int> ByteLengths => [16, 32, 48, 64, 80, 96, 112, 128, 256, 512, 1024, 8192];
+
 	private CtrMode128<AesCipher> _cryptoBase = null!;
 	private SicBlockCipher _bouncyCastle = null!;
 
