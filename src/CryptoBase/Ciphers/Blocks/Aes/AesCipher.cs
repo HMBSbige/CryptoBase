@@ -8,6 +8,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 	private AesCipherX86 _x86;
 	private AesCipherArm _arm;
+	private AesCipherVpaes _vpaes;
 	private AesCipherSoftware _software;
 	internal const byte Rcon0 = 0x00;
 	internal const byte Rcon1 = 0x01;
@@ -33,6 +34,10 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		{
 			_arm = AesCipherArm.Create(key);
 		}
+		else if (AesCipherVpaes.IsSupported)
+		{
+			_vpaes = AesCipherVpaes.Create(key);
+		}
 		else
 		{
 			_software = AesCipherSoftware.Create(key);
@@ -55,6 +60,10 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		else if (AesCipherArm.IsSupported)
 		{
 			_arm.Dispose();
+		}
+		else if (AesCipherVpaes.IsSupported)
+		{
+			_vpaes.Dispose();
 		}
 		else
 		{
@@ -82,6 +91,10 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		{
 			_arm.EncryptBlocks(source, destination);
 		}
+		else if (AesCipherVpaes.IsSupported)
+		{
+			_vpaes.EncryptBlocks(source, destination);
+		}
 		else
 		{
 			_software.EncryptBlocks(source, destination);
@@ -108,6 +121,10 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		{
 			_arm.DecryptBlocks(source, destination);
 		}
+		else if (AesCipherVpaes.IsSupported)
+		{
+			_vpaes.DecryptBlocks(source, destination);
+		}
 		else
 		{
 			_software.DecryptBlocks(source, destination);
@@ -125,6 +142,12 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		if (AesCipherArm.IsSupported)
 		{
 			_arm.TransformWithMask(source, mask, destination, decrypt, xorInput);
+			return true;
+		}
+
+		if (AesCipherVpaes.IsSupported)
+		{
+			_vpaes.TransformWithMask(source, mask, destination, decrypt, xorInput);
 			return true;
 		}
 
