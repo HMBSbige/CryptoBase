@@ -7,39 +7,23 @@ internal partial struct AesCipherSoftware : IDisposable
 
 	private AesCipherSoftware(ReadOnlySpan<byte> key)
 	{
-		_rounds = key.Length switch
-		{
-			16 => 10,
-			24 => 12,
-			32 => 14,
-			_ => ThrowHelper.ThrowArgumentOutOfRangeException<int>(nameof(key), "Key length must be 16/24/32 bytes")
-		};
-
 		Span<uint> words = stackalloc uint[60];
-		int nk = key.Length / sizeof(uint);
-		int wordCount = (_rounds + 1) * 4;
+		_rounds = ExpandKey(key, words);
 
-		for (int i = 0; i < nk; ++i)
-		{
-			words[i] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(i * sizeof(uint)));
-		}
+		InitializeRoundKeys(words);
 
-		for (int i = nk; i < wordCount; ++i)
-		{
-			uint t = words[i - 1];
+		words.ZeroMemory();
+	}
 
-			if (i % nk is 0)
-			{
-				t = SubWord(t).RotateRight(8) ^ AesCipher.Rcon[i / nk];
-			}
-			else if (nk is 8 && i % nk is 4)
-			{
-				t = SubWord(t);
-			}
+	private AesCipherSoftware(ReadOnlySpan<uint> words, int rounds)
+	{
+		_rounds = rounds;
+		InitializeRoundKeys(words);
+	}
 
-			words[i] = words[i - nk] ^ t;
-		}
-
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void InitializeRoundKeys(ReadOnlySpan<uint> words)
+	{
 		for (int round = 0; round <= _rounds; ++round)
 		{
 			ref InlineArray8<ulong> roundKey = ref _roundKeys[round];
@@ -65,13 +49,16 @@ internal partial struct AesCipherSoftware : IDisposable
 				SubBytesNots(ref roundKey);
 			}
 		}
-
-		words.ZeroMemory();
 	}
 
 	public static AesCipherSoftware Create(ReadOnlySpan<byte> key)
 	{
 		return new AesCipherSoftware(key);
+	}
+
+	public static AesCipherSoftware Create(ReadOnlySpan<uint> words, int rounds)
+	{
+		return new AesCipherSoftware(words, rounds);
 	}
 
 	public void Dispose()
@@ -179,6 +166,43 @@ internal partial struct AesCipherSoftware : IDisposable
 		}
 
 		state.ZeroMemory();
+	}
+
+	internal static int ExpandKey(ReadOnlySpan<byte> key, Span<uint> words)
+	{
+		int rounds = key.Length switch
+		{
+			16 => 10,
+			24 => 12,
+			32 => 14,
+			_ => ThrowHelper.ThrowArgumentOutOfRangeException<int>(nameof(key), "Key length must be 16/24/32 bytes")
+		};
+
+		int nk = key.Length / sizeof(uint);
+		int wordCount = (rounds + 1) * 4;
+
+		for (int i = 0; i < nk; ++i)
+		{
+			words[i] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(i * sizeof(uint)));
+		}
+
+		for (int i = nk; i < wordCount; ++i)
+		{
+			uint t = words[i - 1];
+
+			if (i % nk is 0)
+			{
+				t = SubWord(t).RotateRight(8) ^ AesCipher.Rcon[i / nk];
+			}
+			else if (nk is 8 && i % nk is 4)
+			{
+				t = SubWord(t);
+			}
+
+			words[i] = words[i - nk] ^ t;
+		}
+
+		return rounds;
 	}
 
 	private static uint SubWord(uint value)

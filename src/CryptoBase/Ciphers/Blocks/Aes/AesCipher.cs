@@ -6,10 +6,9 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	/// <inheritdoc />
 	public static int BlockSize => 16;
 
-	private AesCipherX86 _x86;
-	private AesCipherArm _arm;
-	private AesCipherVpaes _vpaes;
-	private AesCipherSoftware _software;
+	private BackendState _state;
+	private readonly BitsliceState? _bitslice;
+	private const int BitsliceBatchSize = AesCipherBitslice.BatchSize;
 	internal const byte Rcon0 = 0x00;
 	internal const byte Rcon1 = 0x01;
 	internal const byte Rcon2 = 0x02;
@@ -28,19 +27,24 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			_x86 = AesCipherX86.Create(key);
+			_state.X86 = AesCipherX86.Create(key);
 		}
 		else if (AesCipherArm.IsSupported)
 		{
-			_arm = AesCipherArm.Create(key);
+			_state.Arm = AesCipherArm.Create(key);
 		}
 		else if (AesCipherVpaes.IsSupported)
 		{
-			_vpaes = AesCipherVpaes.Create(key);
+			_state.Vpaes = AesCipherVpaes.Create(key);
+			_bitslice = new BitsliceState(key);
+		}
+		else if (AesCipherBitslice.IsSupported)
+		{
+			_bitslice = new BitsliceState(key, out _state.Software);
 		}
 		else
 		{
-			_software = AesCipherSoftware.Create(key);
+			_state.Software = AesCipherSoftware.Create(key);
 		}
 	}
 
@@ -55,20 +59,22 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			_x86.Dispose();
+			_state.X86.Dispose();
 		}
 		else if (AesCipherArm.IsSupported)
 		{
-			_arm.Dispose();
+			_state.Arm.Dispose();
 		}
 		else if (AesCipherVpaes.IsSupported)
 		{
-			_vpaes.Dispose();
+			_state.Vpaes.Dispose();
 		}
 		else
 		{
-			_software.Dispose();
+			_state.Software.Dispose();
 		}
+
+		_bitslice?.Cipher.Dispose();
 	}
 
 	/// <inheritdoc />
@@ -85,19 +91,30 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 		if (AesCipherX86.IsSupported)
 		{
-			_x86.EncryptBlocks(source, destination);
+			_state.X86.EncryptBlocks(source, destination);
 		}
 		else if (AesCipherArm.IsSupported)
 		{
-			_arm.EncryptBlocks(source, destination);
+			_state.Arm.EncryptBlocks(source, destination);
 		}
 		else if (AesCipherVpaes.IsSupported)
 		{
-			_vpaes.EncryptBlocks(source, destination);
+			_state.Vpaes.EncryptBlocks(source, destination);
 		}
 		else
 		{
-			_software.EncryptBlocks(source, destination);
+			if (source.Length >= BitsliceBatchSize && _bitslice is { } bitslice)
+			{
+				int length = source.Length & -BitsliceBatchSize;
+				bitslice.Cipher.EncryptBlocks(source.Slice(0, length), destination);
+				source = source.Slice(length);
+				destination = destination.Slice(length);
+			}
+
+			if (!source.IsEmpty)
+			{
+				_state.Software.EncryptBlocks(source, destination);
+			}
 		}
 	}
 
@@ -115,19 +132,33 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 		if (AesCipherX86.IsSupported)
 		{
-			_x86.DecryptBlocks(source, destination);
+			_state.X86.DecryptBlocks(source, destination);
 		}
 		else if (AesCipherArm.IsSupported)
 		{
-			_arm.DecryptBlocks(source, destination);
-		}
-		else if (AesCipherVpaes.IsSupported)
-		{
-			_vpaes.DecryptBlocks(source, destination);
+			_state.Arm.DecryptBlocks(source, destination);
 		}
 		else
 		{
-			_software.DecryptBlocks(source, destination);
+			if (source.Length >= BitsliceBatchSize && _bitslice is { } bitslice)
+			{
+				int length = source.Length & -BitsliceBatchSize;
+				bitslice.Cipher.DecryptBlocks(source.Slice(0, length), destination);
+				source = source.Slice(length);
+				destination = destination.Slice(length);
+			}
+
+			if (!source.IsEmpty)
+			{
+				if (AesCipherVpaes.IsSupported)
+				{
+					_state.Vpaes.DecryptBlocks(source, destination);
+				}
+				else
+				{
+					_state.Software.DecryptBlocks(source, destination);
+				}
+			}
 		}
 	}
 
@@ -135,22 +166,115 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			_x86.TransformWithMask(source, mask, destination, decrypt, xorInput);
+			_state.X86.TransformWithMask(source, mask, destination, decrypt, xorInput);
 			return true;
 		}
 
 		if (AesCipherArm.IsSupported)
 		{
-			_arm.TransformWithMask(source, mask, destination, decrypt, xorInput);
+			_state.Arm.TransformWithMask(source, mask, destination, decrypt, xorInput);
 			return true;
 		}
 
 		if (AesCipherVpaes.IsSupported)
 		{
-			_vpaes.TransformWithMask(source, mask, destination, decrypt, xorInput);
+			if (decrypt && source.Length >= BitsliceBatchSize && _bitslice is { } bitslice)
+			{
+				int length = source.Length & -BitsliceBatchSize;
+				bitslice.Cipher.TransformWithMask(source.Slice(0, length), mask, destination, true, xorInput);
+				source = source.Slice(length);
+				mask = mask.Slice(length);
+				destination = destination.Slice(length);
+			}
+
+			if (!source.IsEmpty)
+			{
+				_state.Vpaes.TransformWithMask(source, mask, destination, decrypt, xorInput);
+			}
+
+			return true;
+		}
+
+		if (source.Length >= BitsliceBatchSize && _bitslice is { } softwareBitslice)
+		{
+			int length = source.Length & -BitsliceBatchSize;
+			softwareBitslice.Cipher.TransformWithMask(source.Slice(0, length), mask, destination, decrypt, xorInput);
+
+			if (length < source.Length)
+			{
+				TransformSoftwareTailWithMask(source.Slice(length), mask.Slice(length), destination.Slice(length), decrypt, xorInput);
+			}
+
 			return true;
 		}
 
 		return false;
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void TransformSoftwareTailWithMask(scoped ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination, bool decrypt, bool xorInput)
+	{
+		Span<byte> scratch = stackalloc byte[BitsliceBatchSize - BlockSize];
+		scratch = scratch.Slice(0, source.Length);
+
+		try
+		{
+			if (xorInput)
+			{
+				FastUtils.Xor(source, mask, scratch, source.Length);
+				source = scratch;
+			}
+
+			if (decrypt)
+			{
+				_state.Software.DecryptBlocks(source, scratch);
+			}
+			else
+			{
+				_state.Software.EncryptBlocks(source, scratch);
+			}
+
+			FastUtils.Xor(scratch, mask, destination, source.Length);
+		}
+		finally
+		{
+			scratch.ZeroMemory();
+		}
+	}
+
+	[StructLayout(LayoutKind.Explicit)]
+	private struct BackendState
+	{
+		[FieldOffset(0)]
+		public AesCipherX86 X86;
+
+		[FieldOffset(0)]
+		public AesCipherArm Arm;
+
+		[FieldOffset(0)]
+		public AesCipherVpaes Vpaes;
+
+		[FieldOffset(0)]
+		public AesCipherSoftware Software;
+	}
+
+	private sealed class BitsliceState
+	{
+		public AesCipherBitslice Cipher;
+
+		public BitsliceState(ReadOnlySpan<byte> key)
+		{
+			Cipher = AesCipherBitslice.Create(key);
+		}
+
+		public BitsliceState(ReadOnlySpan<byte> key, out AesCipherSoftware software)
+		{
+			Span<uint> words = stackalloc uint[60];
+			int rounds = AesCipherSoftware.ExpandKey(key, words);
+			software = AesCipherSoftware.Create(words, rounds);
+			Cipher = AesCipherBitslice.Create(words, rounds);
+			words.ZeroMemory();
+		}
 	}
 }

@@ -40,18 +40,24 @@ public static class TestUtils
 		}
 	}
 
-	public static async Task AssertOutput(byte[] destination, byte[] expected)
+	public static Task AssertOutput(byte[] destination, byte[] expected)
+	{
+		return AssertOutput(destination, 0, expected);
+	}
+
+	public static async Task AssertOutput(byte[] destination, int offset, byte[] expected)
 	{
 		using (Assert.Multiple())
 		{
-			await AssertOutputCore(destination, expected);
+			await AssertOutputCore(destination, expected, offset);
 		}
 	}
 
-	private static async Task AssertOutputCore(byte[] destination, byte[] expected)
+	private static async Task AssertOutputCore(byte[] destination, byte[] expected, int offset = 0)
 	{
-		await Assert.That(destination.AsMemory(0, expected.Length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
-		await Assert.That(destination.AsMemory(expected.Length)).All(static value => value is DestinationSentinel);
+		await Assert.That(destination.AsMemory(offset, expected.Length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		await Assert.That(destination.AsMemory(0, offset)).All(static value => value is DestinationSentinel);
+		await Assert.That(destination.AsMemory(offset + expected.Length)).All(static value => value is DestinationSentinel);
 	}
 
 	public static async Task AeadTest<T>
@@ -152,9 +158,7 @@ public static class TestUtils
 			byte[] unalignedOutput = new byte[source.Length + 2];
 			PrepareDestination(unalignedOutput);
 			crypto.EncryptBlocks(unalignedSource.AsSpan(1), unalignedOutput.AsSpan(1));
-			await Assert.That(unalignedOutput.AsMemory(1, source.Length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
-			await Assert.That(unalignedOutput[0]).IsEqualTo(DestinationSentinel);
-			await Assert.That(unalignedOutput[^1]).IsEqualTo(DestinationSentinel);
+			await AssertOutput(unalignedOutput, 1, expected);
 			crypto.DecryptBlocks(actual.AsSpan(0, source.Length), actual);
 			await AssertOutput(actual, source);
 			crypto.EncryptBlocks(actual.AsSpan(0, source.Length), actual);

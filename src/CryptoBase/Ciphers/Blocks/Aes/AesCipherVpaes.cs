@@ -352,7 +352,7 @@ internal struct AesCipherVpaes : IDisposable
 	{
 		Vector128<byte> doubled = (value.AsUInt64() << 1).AsByte() & Vector128.Create((byte)0xFE);
 		Vector128<byte> carry = Vector128.LessThan(value.AsSByte(), Vector128<sbyte>.Zero).AsByte();
-		return doubled ^ (carry & Vector128.Create((byte)0x1B));
+		return doubled ^ carry & Vector128.Create((byte)0x1B);
 	}
 
 	private static Vector128<byte> InverseMixColumns(Vector128<byte> value)

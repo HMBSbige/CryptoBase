@@ -196,12 +196,12 @@ public class Poly1305Test
 				for (int offset = 0; offset < length; offset += 16)
 				{
 					int blockLength = Math.Min(16, length - offset);
-					BigInteger block = new BigInteger(source.AsSpan(offset, blockLength), isUnsigned: true) + (BigInteger.One << (blockLength * 8));
+					BigInteger block = new BigInteger(source.AsSpan(offset, blockLength), isUnsigned: true) + (BigInteger.One << blockLength * 8);
 					accumulator = (accumulator + block) * r % prime;
 				}
 
 				byte[] expected = new byte[16];
-				bool written = ((accumulator + pad) & tagMask).TryWriteBytes(expected, out _, isUnsigned: true);
+				bool written = (accumulator + pad & tagMask).TryWriteBytes(expected, out _, isUnsigned: true);
 				await Assert.That(written).IsTrue();
 				byte[] actual = new byte[16];
 				ComputeSoftwareMac(key, source, actual);
