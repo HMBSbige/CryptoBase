@@ -123,7 +123,7 @@ public sealed partial class Base32Encoding
 	{
 		ArgumentOutOfRangeException.ThrowIfNegative(encodedLength);
 
-		return (int)((long)encodedLength * InputBytesPerBlock / OutputSymbolsPerBlock);
+		return GetDecodedLength(encodedLength);
 	}
 
 	/// <summary>

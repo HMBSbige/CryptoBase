@@ -11,10 +11,7 @@ internal static class AeadBufferGuard
 
 		destination = destination.Slice(0, source.Length);
 
-		if (source.Overlaps(destination, out int elementOffset) && elementOffset is not 0)
-		{
-			ThrowHelper.ThrowSourceDestinationOverlap(nameof(destination));
-		}
+		CipherBufferGuard.SourceDestinationOverlap(source, destination);
 
 		if (tag.Overlaps(destination))
 		{

@@ -155,10 +155,7 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 
 		do
 		{
-			HashCoreUtils.LoadFourBigEndianWords(out schedule0, ref block0);
-			HashCoreUtils.LoadFourBigEndianWords(out Unsafe.Add(ref schedule0, 4), ref Unsafe.Add(ref block0, 16));
-			HashCoreUtils.LoadFourBigEndianWords(out Unsafe.Add(ref schedule0, 8), ref Unsafe.Add(ref block0, 32));
-			HashCoreUtils.LoadFourBigEndianWords(out Unsafe.Add(ref schedule0, 12), ref Unsafe.Add(ref block0, 48));
+			HashCoreUtils.LoadSixteenBigEndianWords(out schedule0, ref block0);
 
 			uint a = hashAlgorithm._h0;
 			uint b = hashAlgorithm._h1;

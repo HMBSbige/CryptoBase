@@ -130,9 +130,7 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> PackTwoFast(ref byte source)
 	{
-		ulong first = Unsafe.ReadUnaligned<ulong>(ref source);
-		ulong second = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref source, 5));
-		return Vector128.Create(BinaryPrimitives.ReverseEndianness(first) >> 24, BinaryPrimitives.ReverseEndianness(second) >> 24);
+		return Vector128.Create(Pack5Fast(ref source), Pack5Fast(ref Unsafe.Add(ref source, 5)));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -108,42 +108,6 @@ internal struct GHashFourBitState
 
 	private void InitializeTable(ulong vh, ulong vl)
 	{
-		ref ulong hh = ref _hh[0];
-		ref ulong hl = ref _hl[0];
-
-		hh = 0;
-		hl = 0;
-		Unsafe.Add(ref hl, 8) = vl;
-		Unsafe.Add(ref hh, 8) = vh;
-
-		int i = 4;
-
-		while (i > 0)
-		{
-			ulong t = (vl & 1) * 0xe1000000;
-			vl = vh << 63 | vl >> 1;
-			vh = vh >> 1 ^ t << 32;
-
-			Unsafe.Add(ref hl, i) = vl;
-			Unsafe.Add(ref hh, i) = vh;
-
-			i >>= 1;
-		}
-
-		i = 2;
-
-		while (i <= 8)
-		{
-			vh = Unsafe.Add(ref hh, i);
-			vl = Unsafe.Add(ref hl, i);
-
-			for (int j = 1; j < i; ++j)
-			{
-				Unsafe.Add(ref hh, i + j) = vh ^ Unsafe.Add(ref hh, j);
-				Unsafe.Add(ref hl, i + j) = vl ^ Unsafe.Add(ref hl, j);
-			}
-
-			i <<= 1;
-		}
+		GHashSoftware.InitializeTable(ref _hh[0], ref _hl[0], vh, vl, 8);
 	}
 }

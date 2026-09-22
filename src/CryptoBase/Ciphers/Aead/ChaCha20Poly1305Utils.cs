@@ -78,14 +78,32 @@ internal static class ChaCha20Poly1305Utils
 		}
 	}
 
-	internal static void ComputeTag(ChaCha20Cipher chacha20, ReadOnlySpan<byte> associatedData, ReadOnlySpan<byte> ciphertext, Span<byte> tag)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static bool TryDecrypt(ChaCha20Cipher chacha20, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData, Span<byte> computedTag)
 	{
-		ComputeTag(new ChaCha20Adapter(chacha20), associatedData, ciphertext, tag);
+		return TryDecrypt(new ChaCha20Adapter(chacha20), source, tag, destination, associatedData, computedTag);
 	}
 
-	internal static void ComputeTag(XChaCha20Cipher chacha20, ReadOnlySpan<byte> associatedData, ReadOnlySpan<byte> ciphertext, Span<byte> tag)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static bool TryDecrypt(XChaCha20Cipher chacha20, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData, Span<byte> computedTag)
 	{
-		ComputeTag(new XChaCha20Adapter(chacha20), associatedData, ciphertext, tag);
+		return TryDecrypt(new XChaCha20Adapter(chacha20), source, tag, destination, associatedData, computedTag);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool TryDecrypt<TCipher>(TCipher cipher, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData, Span<byte> computedTag) where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
+	{
+		ComputeTag(cipher, associatedData, source, computedTag);
+
+		if (!FixedTime.Equals16(computedTag, tag))
+		{
+			destination.ZeroMemory();
+			return false;
+		}
+
+		TCipher.SetCounter(cipher, 1);
+		TCipher.Xor(cipher, source, destination);
+		return true;
 	}
 
 	[SkipLocalsInit]

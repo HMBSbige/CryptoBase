@@ -16,7 +16,13 @@ internal static class CipherBufferGuard
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));
 
-		if (source.Overlaps(destination.Slice(0, source.Length), out int offset) && offset is not 0)
+		SourceDestinationOverlap(source, destination.Slice(0, source.Length));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void SourceDestinationOverlap(ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination)
+	{
+		if (source.Overlaps(destination, out int offset) && offset is not 0)
 		{
 			ThrowHelper.ThrowSourceDestinationOverlap(nameof(destination));
 		}

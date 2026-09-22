@@ -200,27 +200,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 			loopD4 += Avx512F.Multiply(h0.AsUInt32(), r4);
 			loopD0 += Avx512F.Multiply(h1.AsUInt32(), s4);
 
-			Vector512<ulong> carry3 = loopD3 >>> 26;
-			h3 = loopD3 & mask;
-			h4 = loopD4 + carry3;
-			Vector512<ulong> carry0 = loopD0 >>> 26;
-			h0 = loopD0 & mask;
-			h1 = loopD1 + carry0;
-			Vector512<ulong> carry4 = h4 >>> 26;
-			h4 &= mask;
-			Vector512<ulong> carry1 = h1 >>> 26;
-			h1 &= mask;
-			h2 = loopD2 + carry1;
-			h0 += carry4 + (carry4 << 2);
-			Vector512<ulong> carry2 = h2 >>> 26;
-			h2 &= mask;
-			h3 += carry2;
-			carry0 = h0 >>> 26;
-			h0 &= mask;
-			h1 += carry0;
-			carry3 = h3 >>> 26;
-			h3 &= mask;
-			h4 += carry3;
+			Reduce(loopD0, loopD1, loopD2, loopD3, loopD4, mask, out h0, out h1, out h2, out h3, out h4);
 
 			input = ref Unsafe.Add(ref input, BlockSize8);
 			LoadEight(ref input, out m0, out m1, out m2, out m3, out m4);
@@ -373,27 +353,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 			loopD3 += m3;
 			loopD4 += m4;
 
-			Vector512<ulong> carry3 = loopD3 >>> 26;
-			h3 = loopD3 & mask;
-			h4 = loopD4 + carry3;
-			Vector512<ulong> carry0 = loopD0 >>> 26;
-			h0 = loopD0 & mask;
-			h1 = loopD1 + carry0;
-			Vector512<ulong> carry4 = h4 >>> 26;
-			h4 &= mask;
-			Vector512<ulong> carry1 = h1 >>> 26;
-			h1 &= mask;
-			h2 = loopD2 + carry1;
-			h0 += carry4 + (carry4 << 2);
-			Vector512<ulong> carry2 = h2 >>> 26;
-			h2 &= mask;
-			h3 += carry2;
-			carry0 = h0 >>> 26;
-			h0 &= mask;
-			h1 += carry0;
-			carry3 = h3 >>> 26;
-			h3 &= mask;
-			h4 += carry3;
+			Reduce(loopD0, loopD1, loopD2, loopD3, loopD4, mask, out h0, out h1, out h2, out h3, out h4);
 
 			input = ref Unsafe.Add(ref input, BlockSize8 * 2);
 			remaining -= BlockSize8 * 2;
@@ -428,27 +388,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 			loopD4 += Avx512F.Multiply(h0.AsUInt32(), r4);
 			loopD0 += Avx512F.Multiply(h1.AsUInt32(), s4);
 
-			Vector512<ulong> carry3 = loopD3 >>> 26;
-			h3 = loopD3 & mask;
-			h4 = loopD4 + carry3;
-			Vector512<ulong> carry0 = loopD0 >>> 26;
-			h0 = loopD0 & mask;
-			h1 = loopD1 + carry0;
-			Vector512<ulong> carry4 = h4 >>> 26;
-			h4 &= mask;
-			Vector512<ulong> carry1 = h1 >>> 26;
-			h1 &= mask;
-			h2 = loopD2 + carry1;
-			h0 += carry4 + (carry4 << 2);
-			Vector512<ulong> carry2 = h2 >>> 26;
-			h2 &= mask;
-			h3 += carry2;
-			carry0 = h0 >>> 26;
-			h0 &= mask;
-			h1 += carry0;
-			carry3 = h3 >>> 26;
-			h3 &= mask;
-			h4 += carry3;
+			Reduce(loopD0, loopD1, loopD2, loopD3, loopD4, mask, out h0, out h1, out h2, out h3, out h4);
 
 			LoadEight(ref input, out m0, out m1, out m2, out m3, out m4);
 			h0 += m0;
@@ -550,6 +490,37 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		d0 += Avx2.Multiply(h1.AsUInt32(), s4);
 
 		_state.SetAccumulator(Vector256.Sum(d0), Vector256.Sum(d1), Vector256.Sum(d2), Vector256.Sum(d3), Vector256.Sum(d4));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Reduce
+	(
+		Vector512<ulong> d0, Vector512<ulong> d1, Vector512<ulong> d2, Vector512<ulong> d3, Vector512<ulong> d4,
+		Vector512<ulong> mask,
+		out Vector512<ulong> h0, out Vector512<ulong> h1, out Vector512<ulong> h2, out Vector512<ulong> h3, out Vector512<ulong> h4
+	)
+	{
+		Vector512<ulong> carry3 = d3 >>> 26;
+		h3 = d3 & mask;
+		h4 = d4 + carry3;
+		Vector512<ulong> carry0 = d0 >>> 26;
+		h0 = d0 & mask;
+		h1 = d1 + carry0;
+		Vector512<ulong> carry4 = h4 >>> 26;
+		h4 &= mask;
+		Vector512<ulong> carry1 = h1 >>> 26;
+		h1 &= mask;
+		h2 = d2 + carry1;
+		h0 += carry4 + (carry4 << 2);
+		Vector512<ulong> carry2 = h2 >>> 26;
+		h2 &= mask;
+		h3 += carry2;
+		carry0 = h0 >>> 26;
+		h0 &= mask;
+		h1 += carry0;
+		carry3 = h3 >>> 26;
+		h3 &= mask;
+		h4 += carry3;
 	}
 
 	public void AppendMessage(scoped ReadOnlySpan<byte> source)

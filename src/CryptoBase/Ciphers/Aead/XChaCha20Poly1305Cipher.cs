@@ -56,17 +56,7 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 
 		_chacha20.InitializeNonce(nonce);
 		Span<byte> computedTag = stackalloc byte[TagSize];
-		ChaCha20Poly1305Utils.ComputeTag(_chacha20, associatedData, source, computedTag);
-
-		if (!FixedTime.Equals16(computedTag, tag))
-		{
-			destination.ZeroMemory();
-			return false;
-		}
-
-		_chacha20.SetCounter(1);
-		_chacha20.Xor(source, destination);
-		return true;
+		return ChaCha20Poly1305Utils.TryDecrypt(_chacha20, source, tag, destination, associatedData, computedTag);
 	}
 
 	/// <inheritdoc />

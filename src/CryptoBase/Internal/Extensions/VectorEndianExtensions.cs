@@ -2,6 +2,12 @@ namespace CryptoBase.Internal.Extensions;
 
 internal static class VectorEndianExtensions
 {
+	internal static Vector128<byte> ReverseEndianness64Mask128
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Vector128.Create((byte)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
+	}
+
 	extension<T>(Vector512<T> value)
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,7 +104,7 @@ internal static class VectorEndianExtensions
 				return Sse2.ShuffleHigh(v, 0b00_01_10_11).As<ushort, T>();
 			}
 
-			Vector128<byte> reverse64 = Vector128.Create((byte)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
+			Vector128<byte> reverse64 = ReverseEndianness64Mask128;
 			return Vector128.Shuffle(value.AsByte(), reverse64).As<byte, T>();
 		}
 

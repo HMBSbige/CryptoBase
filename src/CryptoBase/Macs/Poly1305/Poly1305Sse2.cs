@@ -208,27 +208,7 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 			d4 += m4;
 
 			Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
-			Vector128<ulong> carry3 = d3 >>> 26;
-			h3 = d3 & mask;
-			h4 = d4 + carry3;
-			Vector128<ulong> carry0 = d0 >>> 26;
-			h0 = d0 & mask;
-			h1 = d1 + carry0;
-			Vector128<ulong> carry4 = h4 >>> 26;
-			h4 &= mask;
-			Vector128<ulong> carry1 = h1 >>> 26;
-			h1 &= mask;
-			h2 = d2 + carry1;
-			h0 += carry4 + (carry4 << 2);
-			Vector128<ulong> carry2 = h2 >>> 26;
-			h2 &= mask;
-			h3 += carry2;
-			carry0 = h0 >>> 26;
-			h0 &= mask;
-			h1 += carry0;
-			carry3 = h3 >>> 26;
-			h3 &= mask;
-			h4 += carry3;
+			Reduce(d0, d1, d2, d3, d4, mask, out h0, out h1, out h2, out h3, out h4);
 
 			input = ref Unsafe.Add(ref input, BlockSize2 * 2);
 			remaining -= BlockSize2 * 2;
@@ -280,27 +260,7 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 			d3 += Sse2.Multiply(h4.AsUInt32(), coefficient);
 
 			Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
-			Vector128<ulong> carry3 = d3 >>> 26;
-			h3 = d3 & mask;
-			h4 = d4 + carry3;
-			Vector128<ulong> carry0 = d0 >>> 26;
-			h0 = d0 & mask;
-			h1 = d1 + carry0;
-			Vector128<ulong> carry4 = h4 >>> 26;
-			h4 &= mask;
-			Vector128<ulong> carry1 = h1 >>> 26;
-			h1 &= mask;
-			h2 = d2 + carry1;
-			h0 += carry4 + (carry4 << 2);
-			Vector128<ulong> carry2 = h2 >>> 26;
-			h2 &= mask;
-			h3 += carry2;
-			carry0 = h0 >>> 26;
-			h0 &= mask;
-			h1 += carry0;
-			carry3 = h3 >>> 26;
-			h3 &= mask;
-			h4 += carry3;
+			Reduce(d0, d1, d2, d3, d4, mask, out h0, out h1, out h2, out h3, out h4);
 
 			LoadTwo(ref input, out m0, out m1, out m2, out m3, out m4);
 			h0 += m0;
@@ -343,6 +303,37 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 		ulong sum3 = Vector128.Sum(finalD3);
 		ulong sum4 = Vector128.Sum(finalD4);
 		_state.SetAccumulator(sum0, sum1, sum2, sum3, sum4);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Reduce
+	(
+		Vector128<ulong> d0, Vector128<ulong> d1, Vector128<ulong> d2, Vector128<ulong> d3, Vector128<ulong> d4,
+		Vector128<ulong> mask,
+		out Vector128<ulong> h0, out Vector128<ulong> h1, out Vector128<ulong> h2, out Vector128<ulong> h3, out Vector128<ulong> h4
+	)
+	{
+		Vector128<ulong> carry3 = d3 >>> 26;
+		h3 = d3 & mask;
+		h4 = d4 + carry3;
+		Vector128<ulong> carry0 = d0 >>> 26;
+		h0 = d0 & mask;
+		h1 = d1 + carry0;
+		Vector128<ulong> carry4 = h4 >>> 26;
+		h4 &= mask;
+		Vector128<ulong> carry1 = h1 >>> 26;
+		h1 &= mask;
+		h2 = d2 + carry1;
+		h0 += carry4 + (carry4 << 2);
+		Vector128<ulong> carry2 = h2 >>> 26;
+		h2 &= mask;
+		h3 += carry2;
+		carry0 = h0 >>> 26;
+		h0 &= mask;
+		h1 += carry0;
+		carry3 = h3 >>> 26;
+		h3 &= mask;
+		h4 += carry3;
 	}
 
 	public void AppendMessage(scoped ReadOnlySpan<byte> source)

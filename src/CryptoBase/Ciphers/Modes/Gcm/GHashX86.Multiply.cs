@@ -120,7 +120,7 @@ internal static partial class GHashX86
 	internal static Vector128<byte> GetReductionKey(Vector128<byte> key)
 	{
 		Vector128<byte> product = Pclmulqdq.CarrylessMultiply(key.AsUInt64(), ReflectedPolynomial.AsUInt64(), 0x10).AsByte();
-		return product ^ Sse2.Shuffle(key.AsUInt32(), 0b01_00_11_10).AsByte();
+		return product ^ key.AsUInt32().RotateWordsLeft(2).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -165,7 +165,7 @@ internal static partial class GHashX86
 	internal static Vector128<byte> ReducePrepared(Vector128<byte> lo, Vector128<byte> hi)
 	{
 		Vector128<byte> folded = Pclmulqdq.CarrylessMultiply(lo.AsUInt64(), ReflectedPolynomial.AsUInt64(), 0x10).AsByte();
-		return folded ^ hi ^ Sse2.Shuffle(lo.AsUInt32(), 0b01_00_11_10).AsByte();
+		return folded ^ hi ^ lo.AsUInt32().RotateWordsLeft(2).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

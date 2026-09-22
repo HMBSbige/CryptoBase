@@ -74,7 +74,7 @@ internal static partial class SM4Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint SubByte(uint a)
 	{
-		ref byte s = ref MemoryMarshal.GetReference(S);
+		ref byte s = ref S.GetReference();
 		uint b0 = Unsafe.Add(ref s, (byte)(a >> 24));
 		uint b1 = Unsafe.Add(ref s, (byte)(a >> 16));
 		uint b2 = Unsafe.Add(ref s, (byte)(a >> 8));
@@ -90,7 +90,7 @@ internal static partial class SM4Utils
 		uint k1 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 4))) ^ 0x56aa3350;
 		uint k2 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 8))) ^ 0x677d9197;
 		uint k3 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 12))) ^ 0xb27022dc;
-		ref uint ck = ref MemoryMarshal.GetReference(CK);
+		ref uint ck = ref CK.GetReference();
 
 		for (int i = 0; i < 32; i += 4)
 		{

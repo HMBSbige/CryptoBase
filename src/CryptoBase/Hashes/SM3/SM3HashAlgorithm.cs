@@ -213,10 +213,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	private static void ProcessSoftware(ref SM3HashAlgorithm hashAlgorithm, ref byte block, ref InlineArray16<uint> schedule)
 	{
 		ref uint words = ref schedule[0];
-		HashCoreUtils.LoadFourBigEndianWords(out words, ref block);
-		HashCoreUtils.LoadFourBigEndianWords(out Unsafe.Add(ref words, 4), ref Unsafe.Add(ref block, 16));
-		HashCoreUtils.LoadFourBigEndianWords(out Unsafe.Add(ref words, 8), ref Unsafe.Add(ref block, 32));
-		HashCoreUtils.LoadFourBigEndianWords(out Unsafe.Add(ref words, 12), ref Unsafe.Add(ref block, 48));
+		HashCoreUtils.LoadSixteenBigEndianWords(out words, ref block);
 
 		uint a = hashAlgorithm._v0;
 		uint b = hashAlgorithm._v1;

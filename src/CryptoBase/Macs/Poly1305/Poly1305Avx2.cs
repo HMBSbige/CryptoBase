@@ -187,27 +187,7 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 			loopD3 += m3;
 			loopD4 += m4;
 
-			Vector256<ulong> carry3 = loopD3 >>> 26;
-			h3 = loopD3 & mask;
-			h4 = loopD4 + carry3;
-			Vector256<ulong> carry0 = loopD0 >>> 26;
-			h0 = loopD0 & mask;
-			h1 = loopD1 + carry0;
-			Vector256<ulong> carry4 = h4 >>> 26;
-			h4 &= mask;
-			Vector256<ulong> carry1 = h1 >>> 26;
-			h1 &= mask;
-			h2 = loopD2 + carry1;
-			h0 += carry4 + (carry4 << 2);
-			Vector256<ulong> carry2 = h2 >>> 26;
-			h2 &= mask;
-			h3 += carry2;
-			carry0 = h0 >>> 26;
-			h0 &= mask;
-			h1 += carry0;
-			carry3 = h3 >>> 26;
-			h3 &= mask;
-			h4 += carry3;
+			Reduce(loopD0, loopD1, loopD2, loopD3, loopD4, mask, out h0, out h1, out h2, out h3, out h4);
 
 			input = ref Unsafe.Add(ref input, BlockSize4 * 2);
 			remaining -= BlockSize4 * 2;
@@ -258,27 +238,7 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 			loopD2 += Avx2.Multiply(h3.AsUInt32(), coefficient);
 			loopD3 += Avx2.Multiply(h4.AsUInt32(), coefficient);
 
-			Vector256<ulong> carry3 = loopD3 >>> 26;
-			h3 = loopD3 & mask;
-			h4 = loopD4 + carry3;
-			Vector256<ulong> carry0 = loopD0 >>> 26;
-			h0 = loopD0 & mask;
-			h1 = loopD1 + carry0;
-			Vector256<ulong> carry4 = h4 >>> 26;
-			h4 &= mask;
-			Vector256<ulong> carry1 = h1 >>> 26;
-			h1 &= mask;
-			h2 = loopD2 + carry1;
-			h0 += carry4 + (carry4 << 2);
-			Vector256<ulong> carry2 = h2 >>> 26;
-			h2 &= mask;
-			h3 += carry2;
-			carry0 = h0 >>> 26;
-			h0 &= mask;
-			h1 += carry0;
-			carry3 = h3 >>> 26;
-			h3 &= mask;
-			h4 += carry3;
+			Reduce(loopD0, loopD1, loopD2, loopD3, loopD4, mask, out h0, out h1, out h2, out h3, out h4);
 
 			Poly1305Utils.LoadFour(ref input, out m0, out m1, out m2, out m3, out m4);
 			h0 += m0;
@@ -322,6 +282,37 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 		finalD0 += Avx2.Multiply(h1.AsUInt32(), _svxz4);
 
 		_state.SetAccumulator(Vector256.Sum(finalD0), Vector256.Sum(finalD1), Vector256.Sum(finalD2), Vector256.Sum(finalD3), Vector256.Sum(finalD4));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Reduce
+	(
+		Vector256<ulong> d0, Vector256<ulong> d1, Vector256<ulong> d2, Vector256<ulong> d3, Vector256<ulong> d4,
+		Vector256<ulong> mask,
+		out Vector256<ulong> h0, out Vector256<ulong> h1, out Vector256<ulong> h2, out Vector256<ulong> h3, out Vector256<ulong> h4
+	)
+	{
+		Vector256<ulong> carry3 = d3 >>> 26;
+		h3 = d3 & mask;
+		h4 = d4 + carry3;
+		Vector256<ulong> carry0 = d0 >>> 26;
+		h0 = d0 & mask;
+		h1 = d1 + carry0;
+		Vector256<ulong> carry4 = h4 >>> 26;
+		h4 &= mask;
+		Vector256<ulong> carry1 = h1 >>> 26;
+		h1 &= mask;
+		h2 = d2 + carry1;
+		h0 += carry4 + (carry4 << 2);
+		Vector256<ulong> carry2 = h2 >>> 26;
+		h2 &= mask;
+		h3 += carry2;
+		carry0 = h0 >>> 26;
+		h0 &= mask;
+		h1 += carry0;
+		carry3 = h3 >>> 26;
+		h3 &= mask;
+		h4 += carry3;
 	}
 
 	public void AppendMessage(scoped ReadOnlySpan<byte> source)
