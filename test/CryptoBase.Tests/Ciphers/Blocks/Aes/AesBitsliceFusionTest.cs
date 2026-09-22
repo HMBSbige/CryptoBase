@@ -1,5 +1,4 @@
 using CryptoBase.Ciphers.Blocks.Aes;
-using System.Security.Cryptography;
 using BclAes = System.Security.Cryptography.Aes;
 
 namespace CryptoBase.Tests.Ciphers.Blocks.Aes;
@@ -38,7 +37,7 @@ public class AesBitsliceFusionTest
 		byte[] originalMask = mask.ToArray();
 		byte[] input = source.AsSpan(sourceOffset, length).ToArray();
 		byte[] blockMask = mask.AsSpan(maskOffset, length).ToArray();
-		byte[] expected = TransformReference(reference, input, blockMask, decrypt, xorInput);
+		byte[] expected = AesTestUtils.TransformReference(reference, input, blockMask, decrypt, xorInput);
 		byte[] actual = CreateGuardedBuffer(destinationOffset, length);
 
 		crypto.TransformWithMask(source.AsSpan(sourceOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
@@ -55,30 +54,6 @@ public class AesBitsliceFusionTest
 		crypto.TransformWithMask(source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
 		await TestUtils.AssertOutput(actual, destinationOffset, expected);
 		await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
-	}
-
-	private static byte[] TransformReference(BclAes reference, byte[] source, byte[] mask, bool decrypt, bool xorInput)
-	{
-		byte[] input = xorInput ? source.ToArray() : source;
-
-		if (xorInput)
-		{
-			for (int i = 0; i < input.Length; ++i)
-			{
-				input[i] ^= mask[i];
-			}
-		}
-
-		byte[] output = decrypt
-			? reference.DecryptEcb(input, PaddingMode.None)
-			: reference.EncryptEcb(input, PaddingMode.None);
-
-		for (int i = 0; i < output.Length; ++i)
-		{
-			output[i] ^= mask[i];
-		}
-
-		return output;
 	}
 
 	private static byte[] CreateGuardedBuffer(int offset, int length)

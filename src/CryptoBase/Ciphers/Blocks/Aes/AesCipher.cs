@@ -36,7 +36,10 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		else if (AesCipherVpaes.IsSupported)
 		{
 			_state.Vpaes = AesCipherVpaes.Create(key);
-			_bitslice = new BitsliceState(key);
+			if (AesCipherBitslice.IsSupported)
+			{
+				_bitslice = new BitsliceState(key);
+			}
 		}
 		else if (AesCipherBitslice.IsSupported)
 		{

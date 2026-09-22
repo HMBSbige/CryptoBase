@@ -9,66 +9,57 @@ using BclAes = System.Security.Cryptography.Aes;
 namespace CryptoBase.Benchmark.Ciphers.Blocks.Aes;
 
 [MemoryDiagnoser]
-[Config(typeof(NoAvxConfig))]
+[CategoriesColumn]
+[GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
+[Config(typeof(SoftwareOnlyConfig))]
 public class AesSoftwareBackendBenchmark
 {
-	private sealed class NoAvxConfig : ManualConfig
+	private sealed class SoftwareOnlyConfig : ManualConfig
 	{
-		public NoAvxConfig()
+		public SoftwareOnlyConfig()
 		{
-			AddJob
-			(
-				Job.Default
-					.WithEnvironmentVariable("DOTNET_EnableAVX", "0")
-					.WithLaunchCount(1)
-					.WithWarmupCount(3)
-					.WithIterationCount(8)
-			);
+			AddJob(Job.Default.WithEnvironmentVariable("DOTNET_EnableAES", "0").WithEnvironmentVariable("DOTNET_EnableArm64Aes", "0").WithEnvironmentVariable("DOTNET_EnableAVX", "0").AsMutator());
 		}
 	}
 
-	[Params(16, 32)]
+	[Params(16, 24, 32)]
 	public int KeyLength { get; set; }
 
-	[Params(16, 128, 1024)]
+	[Params(16, 32, 48, 64, 128, 1024)]
 	public int ByteLength { get; set; }
 
-	[Params(false, true)]
-	public bool IsDecrypt { get; set; }
-
-	private AesCipherSoftware _software;
-	private AesCipherVpaes _vpaes;
-	private AesCipherBitslice _bitslice;
+	private AesCipherSoftware _scalar;
+	private AesCipher _autoSoftware = null!;
 	private byte[] _source = [];
 	private byte[] _destination = [];
 
 	[GlobalSetup]
 	public void Setup()
 	{
-		if (!Ssse3.IsSupported || Avx.IsSupported)
+		if (AesCipherX86.IsSupported || AesCipherArm.IsSupported || Avx.IsSupported)
 		{
-			throw new InvalidOperationException("Expected SSSE3 without AVX.");
+			throw new InvalidOperationException("Hardware AES and AVX must be disabled in the benchmark process.");
 		}
 
 		byte[] key = RandomNumberGenerator.GetBytes(KeyLength);
-		_software = AesCipherSoftware.Create(key);
-		_vpaes = AesCipherVpaes.Create(key);
-		_bitslice = AesCipherBitslice.Create(key);
+		_scalar = AesCipherSoftware.Create(key);
+		_autoSoftware = AesCipher.Create(key);
 		_source = RandomNumberGenerator.GetBytes(ByteLength);
 		_destination = new byte[ByteLength];
 
 		using BclAes reference = BclAes.Create();
 		reference.Key = key;
-		byte[] expected = IsDecrypt
-			? reference.DecryptEcb(_source, PaddingMode.None)
-			: reference.EncryptEcb(_source, PaddingMode.None);
+		byte[] encrypted = reference.EncryptEcb(_source, PaddingMode.None);
+		byte[] decrypted = reference.DecryptEcb(_source, PaddingMode.None);
 
-		Bitslice();
-		Check(expected, nameof(Bitslice));
-		Vpaes();
-		Check(expected, nameof(Vpaes));
-		SimdBitslice();
-		Check(expected, nameof(SimdBitslice));
+		ScalarEncrypt();
+		Check(encrypted, nameof(ScalarEncrypt));
+		AutoSoftwareEncrypt();
+		Check(encrypted, nameof(AutoSoftwareEncrypt));
+		ScalarDecrypt();
+		Check(decrypted, nameof(ScalarDecrypt));
+		AutoSoftwareDecrypt();
+		Check(decrypted, nameof(AutoSoftwareDecrypt));
 	}
 
 	private void Check(byte[] expected, string backend)
@@ -84,47 +75,35 @@ public class AesSoftwareBackendBenchmark
 	[GlobalCleanup]
 	public void Cleanup()
 	{
-		_software.Dispose();
-		_vpaes.Dispose();
-		_bitslice.Dispose();
+		_scalar.Dispose();
+		_autoSoftware.Dispose();
 	}
 
 	[Benchmark(Baseline = true)]
-	public void Bitslice()
+	[BenchmarkCategory("Encrypt")]
+	public void ScalarEncrypt()
 	{
-		if (IsDecrypt)
-		{
-			_software.DecryptBlocks(_source, _destination);
-		}
-		else
-		{
-			_software.EncryptBlocks(_source, _destination);
-		}
+		_scalar.EncryptBlocks(_source, _destination);
 	}
 
 	[Benchmark]
-	public void Vpaes()
+	[BenchmarkCategory("Encrypt")]
+	public void AutoSoftwareEncrypt()
 	{
-		if (IsDecrypt)
-		{
-			_vpaes.DecryptBlocks(_source, _destination);
-		}
-		else
-		{
-			_vpaes.EncryptBlocks(_source, _destination);
-		}
+		_autoSoftware.EncryptBlocks(_source, _destination);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("Decrypt")]
+	public void ScalarDecrypt()
+	{
+		_scalar.DecryptBlocks(_source, _destination);
 	}
 
 	[Benchmark]
-	public void SimdBitslice()
+	[BenchmarkCategory("Decrypt")]
+	public void AutoSoftwareDecrypt()
 	{
-		if (IsDecrypt)
-		{
-			_bitslice.DecryptBlocks(_source, _destination);
-		}
-		else
-		{
-			_bitslice.EncryptBlocks(_source, _destination);
-		}
+		_autoSoftware.DecryptBlocks(_source, _destination);
 	}
 }
