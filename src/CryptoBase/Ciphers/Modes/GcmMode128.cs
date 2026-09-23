@@ -32,13 +32,22 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 	public static int TagSize => 16;
 
 	private readonly TBlockCipher _blockCipher;
-	private Vector128<byte> _hashKey;
+	private GHashKey _hashKey;
 
 	private GcmMode128(TBlockCipher blockCipher)
 	{
 		_blockCipher = blockCipher;
-		_hashKey = default;
-		blockCipher.EncryptBlock(_hashKey.AsReadOnlySpan(), _hashKey.AsSpan());
+		Vector128<byte> hashKey = default;
+
+		try
+		{
+			blockCipher.EncryptBlock(hashKey.AsReadOnlySpan(), hashKey.AsSpan());
+			_hashKey = GHashKey.Create(hashKey.AsReadOnlySpan());
+		}
+		finally
+		{
+			hashKey.ZeroMemory();
+		}
 	}
 
 	/// <inheritdoc/>
@@ -50,7 +59,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 
 		Vector128<byte> counter = CreateCounter(nonce);
 		Vector128<byte> tagBuffer = default;
-		GHash hash = GHash.Create(_hashKey.AsReadOnlySpan());
+		GHash hash = GHash.Create(ref _hashKey);
 
 		try
 		{
@@ -68,7 +77,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		}
 		finally
 		{
-			hash.ZeroMemory();
+			hash.Dispose();
 		}
 	}
 
@@ -80,7 +89,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 
 		Vector128<byte> counter = CreateCounter(nonce);
 		Vector128<byte> tagBuffer = default;
-		GHash hash = GHash.Create(_hashKey.AsReadOnlySpan());
+		GHash hash = GHash.Create(ref _hashKey);
 
 		try
 		{
@@ -99,14 +108,14 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		}
 		finally
 		{
-			hash.ZeroMemory();
+			hash.Dispose();
 		}
 	}
 
 	/// <inheritdoc/>
 	public void Dispose()
 	{
-		_hashKey.ZeroMemory();
+		_hashKey.Dispose();
 		_blockCipher.Dispose();
 	}
 
@@ -118,7 +127,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		return counter;
 	}
 
-	private static Vector128<byte> ComputeHash(ref GHash hash, ReadOnlySpan<byte> associatedData, ReadOnlySpan<byte> ciphertext, int associatedDataLength)
+	private static Vector128<byte> ComputeHash(scoped ref GHash hash, scoped ReadOnlySpan<byte> associatedData, scoped ReadOnlySpan<byte> ciphertext, int associatedDataLength)
 	{
 		Vector128<byte> buffer = default;
 		BinaryPrimitives.WriteUInt64BigEndian(buffer.AsSpan(), (ulong)associatedDataLength << 3);

@@ -52,6 +52,7 @@ public class AeadBufferOverlapTest<T> where T : IAeadCipher<T>
 
 	[Test]
 	[Arguments(29)]
+	[Arguments(255)]
 	public async Task AssociatedDataOverlappingDestinationIsConsumedBeforeWriting(int associatedDataSizeInBytes)
 	{
 		const int destinationOffset = 7;

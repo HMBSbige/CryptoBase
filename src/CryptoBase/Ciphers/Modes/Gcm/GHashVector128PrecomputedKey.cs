@@ -2,7 +2,7 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashX86;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal struct GHashVector128State
+internal readonly struct GHashVector128PrecomputedKey
 {
 	private readonly Vector128<byte> _key1;
 	private readonly Vector128<byte> _keyK1;
@@ -21,9 +21,7 @@ internal struct GHashVector128State
 	private readonly Vector128<byte> _key8;
 	private readonly Vector128<byte> _keyK8;
 
-	private Vector128<byte> _accumulator;
-
-	internal GHashVector128State(Vector128<byte> key, Vector128<byte> accumulator)
+	internal GHashVector128PrecomputedKey(Vector128<byte> key)
 	{
 		_key1 = PrepareKey(key);
 		_keyK1 = GHashX86.GetReductionKey(_key1);
@@ -69,11 +67,11 @@ internal struct GHashVector128State
 		_keyK6 = GHashX86.GetReductionKey(_key6);
 		_keyK7 = GHashX86.GetReductionKey(_key7);
 		_keyK8 = GHashX86.GetReductionKey(_key8);
-		_accumulator = accumulator;
 	}
 
-	private void AppendBlocks(scoped ReadOnlySpan<byte> source)
+	private void AppendBlocks(ref Vector128<byte> accumulatorDestination, scoped ReadOnlySpan<byte> source)
 	{
+		Vector128<byte> accumulator = accumulatorDestination;
 		int offset = 0;
 		int length = source.Length;
 		ref byte ptr = ref source.GetReference();
@@ -88,7 +86,7 @@ internal struct GHashVector128State
 			Vector128<byte> x5 = Vector128.LoadUnsafe(ref ptr, (nuint)(offset + 5 * BlockSize)).ReverseEndianness128();
 			Vector128<byte> x6 = Vector128.LoadUnsafe(ref ptr, (nuint)(offset + 6 * BlockSize)).ReverseEndianness128();
 			Vector128<byte> x7 = Vector128.LoadUnsafe(ref ptr, (nuint)(offset + 7 * BlockSize)).ReverseEndianness128();
-			x0 ^= _accumulator;
+			x0 ^= accumulator;
 
 			GFMultiplyPreparedUnreduced(x0, _key8, _keyK8, out Vector128<byte> lo0, out Vector128<byte> hi0);
 			GFMultiplyPreparedUnreduced(x1, _key7, _keyK7, out Vector128<byte> lo1, out Vector128<byte> hi1);
@@ -104,7 +102,7 @@ internal struct GHashVector128State
 			lo ^= lo4 ^ lo5 ^ lo6 ^ lo7;
 			hi ^= hi4 ^ hi5 ^ hi6 ^ hi7;
 
-			_accumulator = ReducePrepared(lo, hi);
+			accumulator = ReducePrepared(lo, hi);
 
 			offset += 8 * BlockSize;
 			length -= 8 * BlockSize;
@@ -116,13 +114,13 @@ internal struct GHashVector128State
 			Vector128<byte> x1 = Vector128.LoadUnsafe(ref ptr, (nuint)(offset + 1 * BlockSize)).ReverseEndianness128();
 			Vector128<byte> x2 = Vector128.LoadUnsafe(ref ptr, (nuint)(offset + 2 * BlockSize)).ReverseEndianness128();
 			Vector128<byte> x3 = Vector128.LoadUnsafe(ref ptr, (nuint)(offset + 3 * BlockSize)).ReverseEndianness128();
-			x0 ^= _accumulator;
+			x0 ^= accumulator;
 
 			GFMultiplyPreparedUnreduced(x0, _key4, _keyK4, out Vector128<byte> lo0, out Vector128<byte> hi0);
 			GFMultiplyPreparedUnreduced(x1, _key3, _keyK3, out Vector128<byte> lo1, out Vector128<byte> hi1);
 			GFMultiplyPreparedUnreduced(x2, _key2, _keyK2, out Vector128<byte> lo2, out Vector128<byte> hi2);
 			GFMultiplyPreparedUnreduced(x3, _key1, _keyK1, out Vector128<byte> lo3, out Vector128<byte> hi3);
-			_accumulator = ReducePrepared(lo0 ^ lo1 ^ lo2 ^ lo3, hi0 ^ hi1 ^ hi2 ^ hi3);
+			accumulator = ReducePrepared(lo0 ^ lo1 ^ lo2 ^ lo3, hi0 ^ hi1 ^ hi2 ^ hi3);
 
 			offset += 4 * BlockSize;
 			length -= 4 * BlockSize;
@@ -132,10 +130,10 @@ internal struct GHashVector128State
 		{
 			Vector128<byte> x0 = Vector128.LoadUnsafe(ref ptr, (nuint)offset).ReverseEndianness128();
 			Vector128<byte> x1 = Vector128.LoadUnsafe(ref ptr, (nuint)(offset + BlockSize)).ReverseEndianness128();
-			x0 ^= _accumulator;
+			x0 ^= accumulator;
 			GFMultiplyPreparedUnreduced(x0, _key2, _keyK2, out Vector128<byte> lo0, out Vector128<byte> hi0);
 			GFMultiplyPreparedUnreduced(x1, _key1, _keyK1, out Vector128<byte> lo1, out Vector128<byte> hi1);
-			_accumulator = ReducePrepared(lo0 ^ lo1, hi0 ^ hi1);
+			accumulator = ReducePrepared(lo0 ^ lo1, hi0 ^ hi1);
 
 			offset += 2 * BlockSize;
 			length -= 2 * BlockSize;
@@ -144,11 +142,13 @@ internal struct GHashVector128State
 		if (length is BlockSize)
 		{
 			Vector128<byte> block = Vector128.LoadUnsafe(ref ptr, (nuint)offset).ReverseEndianness128();
-			_accumulator = GFMultiplyPrepared(block ^ _accumulator, _key1, _keyK1);
+			accumulator = GFMultiplyPrepared(block ^ accumulator, _key1, _keyK1);
 		}
+
+		accumulatorDestination = accumulator;
 	}
 
-	private void AppendFoldedRemainder(scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<byte> suffix)
+	private void AppendFoldedRemainder(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<byte> suffix)
 	{
 		int sourceBlocks = source.Length / BlockSize;
 		int blockCount = sourceBlocks + (suffix.IsEmpty ? 0 : 1);
@@ -158,7 +158,7 @@ internal struct GHashVector128State
 
 		Vector128<byte> block = sourceBlocks is 0 ? Vector128.LoadUnsafe(ref suffix.GetReference()).ReverseEndianness128() : Vector128.LoadUnsafe(ref source.GetReference()).ReverseEndianness128();
 
-		block ^= _accumulator;
+		block ^= accumulator;
 
 		GFMultiplyPreparedUnreduced(block, GetKey(blockCount), GetReductionKey(blockCount), out Vector128<byte> lo, out Vector128<byte> hi);
 
@@ -180,11 +180,11 @@ internal struct GHashVector128State
 			hi ^= nextHi;
 		}
 
-		_accumulator = ReducePrepared(lo, hi);
+		accumulator = ReducePrepared(lo, hi);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private readonly Vector128<byte> GetKey(int power)
+	private Vector128<byte> GetKey(int power)
 	{
 		return power switch
 		{
@@ -200,7 +200,7 @@ internal struct GHashVector128State
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private readonly Vector128<byte> GetReductionKey(int power)
+	private Vector128<byte> GetReductionKey(int power)
 	{
 		return power switch
 		{
@@ -215,7 +215,7 @@ internal struct GHashVector128State
 		};
 	}
 
-	internal void AppendPaddedSegment(scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	internal void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
 	{
 		int completeLength = source.Length & -BlockSize;
 		ReadOnlySpan<byte> remaining = source.Slice(completeLength);
@@ -224,7 +224,7 @@ internal struct GHashVector128State
 		{
 			if (completeLength is not 0)
 			{
-				AppendBlocks(source.Slice(0, completeLength));
+				AppendBlocks(ref accumulator, source.Slice(0, completeLength));
 			}
 
 			return;
@@ -234,17 +234,11 @@ internal struct GHashVector128State
 
 		if (bulkLength is not 0)
 		{
-			AppendBlocks(source.Slice(0, bulkLength));
+			AppendBlocks(ref accumulator, source.Slice(0, bulkLength));
 		}
 
 		finalBlock = default;
 		remaining.CopyTo(finalBlock.AsSpan());
-		AppendFoldedRemainder(source.Slice(bulkLength, completeLength - bulkLength), finalBlock.AsReadOnlySpan());
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal readonly Vector128<byte> GetAccumulator()
-	{
-		return _accumulator;
+		AppendFoldedRemainder(ref accumulator, source.Slice(bulkLength, completeLength - bulkLength), finalBlock.AsReadOnlySpan());
 	}
 }

@@ -1,11 +1,17 @@
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal struct GHash
+internal ref struct GHash : IDisposable
 {
 	internal const int BlockSizeInBytes = 16;
 
-	private Vector128<byte> _key;
+	private readonly ref GHashKey _key;
 	private Vector128<byte> _accumulator;
+
+	private GHash(ref GHashKey key)
+	{
+		_key = ref key;
+		_accumulator = default;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static long GetPaddedLength(int length)
@@ -14,10 +20,14 @@ internal struct GHash
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static GHash Create(ReadOnlySpan<byte> key)
+	internal static GHash Create(ref GHashKey key)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, BlockSizeInBytes, nameof(key));
-		return new GHash { _key = Vector128.LoadUnsafe(ref key.GetReference()) };
+		return new GHash(ref key);
+	}
+
+	public void Dispose()
+	{
+		_accumulator.ZeroMemory();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -28,16 +38,16 @@ internal struct GHash
 
 	// Appends one independently padded segment to the keyed state.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal void AppendPaddedSegment(ReadOnlySpan<byte> source)
+	internal void AppendPaddedSegment(scoped ReadOnlySpan<byte> source)
 	{
-		AppendPaddedSegments(ref _accumulator, in _key, source, default, default);
+		AppendPaddedSegments(ref _accumulator, ref _key, source, default, default);
 	}
 
 	// Hashes three independently padded segments and resets the keyed state.
-	internal int HashPaddedSegmentsAndReset(ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third, Span<byte> destination)
+	internal int HashPaddedSegmentsAndReset(scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third, scoped Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSizeInBytes, nameof(destination));
-		AppendPaddedSegments(ref _accumulator, in _key, first, second, third);
+		AppendPaddedSegments(ref _accumulator, ref _key, first, second, third);
 		WriteHash(in _accumulator, destination);
 		Reset();
 		return BlockSizeInBytes;
@@ -51,19 +61,19 @@ internal struct GHash
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void AppendPaddedSegments(ref Vector128<byte> accumulator, in Vector128<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
+	private static void AppendPaddedSegments(ref Vector128<byte> accumulator, ref GHashKey key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
 	{
 		if (GHashX86.IsSupported)
 		{
-			GHashX86.AppendPaddedSegments(ref accumulator, in key, first, second, third);
+			GHashX86.AppendPaddedSegments(ref accumulator, ref key, first, second, third);
 		}
 		else if (GHashArm.IsSupported)
 		{
-			GHashArm.AppendPaddedSegments(ref accumulator, in key, first, second, third);
+			GHashArm.AppendPaddedSegments(ref accumulator, in key.Value, first, second, third);
 		}
 		else
 		{
-			GHashSoftware.AppendPaddedSegments(ref accumulator, in key, first, second, third);
+			GHashSoftware.AppendPaddedSegments(ref accumulator, in key.Value, first, second, third);
 		}
 	}
 }

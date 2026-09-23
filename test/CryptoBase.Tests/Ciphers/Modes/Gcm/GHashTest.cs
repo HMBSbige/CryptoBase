@@ -1,5 +1,5 @@
+using CryptoBase.Ciphers.Modes.Gcm;
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 using GHashAlgorithmCore = CryptoBase.Ciphers.Modes.Gcm.GHash;
 
@@ -69,23 +69,28 @@ public class GHashTest
 		byte[] third = CreateDeterministicSource((length * 11 + 5) % 79);
 		byte[] expected = ComputeReferenceHash(key, first, second, third);
 		byte[] destination = new byte[GHashAlgorithmCore.BlockSizeInBytes + 1];
-		GHashAlgorithmCore hash = GHashAlgorithmCore.Create(key);
+		byte[] resetDestination = new byte[destination.Length];
+		GHashKey keyContext = GHashKey.Create(key);
+		int written;
+		int resetWritten;
 
 		try
 		{
+			using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref keyContext);
 			hash.AppendPaddedSegment(first);
 			PrepareDestination(destination);
-			int written = hash.HashPaddedSegmentsAndReset(second, third, default, destination);
-			await AssertOutput(destination, expected, written);
+			written = hash.HashPaddedSegmentsAndReset(second, third, default, destination);
 
-			PrepareDestination(destination);
-			written = hash.HashPaddedSegmentsAndReset(default, default, default, destination);
-			await AssertOutput(destination, new byte[GHashAlgorithmCore.BlockSizeInBytes], written);
+			PrepareDestination(resetDestination);
+			resetWritten = hash.HashPaddedSegmentsAndReset(default, default, default, resetDestination);
 		}
 		finally
 		{
-			hash.ZeroMemory();
+			keyContext.Dispose();
 		}
+
+		await AssertOutput(destination, expected, written);
+		await AssertOutput(resetDestination, new byte[GHashAlgorithmCore.BlockSizeInBytes], resetWritten);
 	}
 
 	[Test]
@@ -141,7 +146,6 @@ public class GHashTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToModifiedClosure")]
 	public async Task ShortDestinationDoesNotModifyOutputOrState()
 	{
 		byte[] key = CreateDeterministicSource(GHashAlgorithmCore.BlockSizeInBytes);
@@ -150,23 +154,37 @@ public class GHashTest
 		byte[] expected = ComputeReferenceHash(key, first, second, default);
 		byte[] shortDestination = new byte[GHashAlgorithmCore.BlockSizeInBytes - 1];
 		byte[] destination = new byte[GHashAlgorithmCore.BlockSizeInBytes + 1];
-		GHashAlgorithmCore hash = GHashAlgorithmCore.Create(key);
+		GHashKey keyContext = GHashKey.Create(key);
+		ArgumentOutOfRangeException? rejectedCall = null;
+		int written;
 
 		try
 		{
+			using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref keyContext);
 			hash.AppendPaddedSegment(first);
 			PrepareDestination(shortDestination);
-			await Assert.That(() => hash.HashPaddedSegmentsAndReset(second, default, default, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
-			await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
+
+			try
+			{
+				hash.HashPaddedSegmentsAndReset(second, default, default, shortDestination);
+			}
+			catch (ArgumentOutOfRangeException exception)
+			{
+				rejectedCall = exception;
+			}
 
 			PrepareDestination(destination);
-			int written = hash.HashPaddedSegmentsAndReset(second, default, default, destination);
-			await AssertOutput(destination, expected, written);
+			written = hash.HashPaddedSegmentsAndReset(second, default, default, destination);
 		}
 		finally
 		{
-			hash.ZeroMemory();
+			keyContext.Dispose();
 		}
+
+		await Assert.That(rejectedCall?.GetType()).IsEqualTo(typeof(ArgumentOutOfRangeException));
+		await Assert.That(rejectedCall?.ParamName).IsEqualTo("destination");
+		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
+		await AssertOutput(destination, expected, written);
 	}
 
 	[Test]
@@ -176,32 +194,59 @@ public class GHashTest
 	{
 		byte[] key = CreateDeterministicSource(keyLength);
 
-		await Assert.That(() => GHashAlgorithmCore.Create(key)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("key");
+		await Assert.That(() => GHashKey.Create(key)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("key");
 	}
 
 	[Test]
-	public async Task ZeroMemoryErasesKeyAndState()
+	public async Task SharedKeyKeepsMessageStatesIndependent()
 	{
 		byte[] key = CreateDeterministicSource(GHashAlgorithmCore.BlockSizeInBytes);
-		GHashAlgorithmCore hash = GHashAlgorithmCore.Create(key);
-		hash.AppendPaddedSegment(CreateDeterministicSource(31));
+		byte[] first = CreateDeterministicSource(513);
+		byte[] second = CreateDeterministicSource(4097);
+		byte[] prefix = CreateDeterministicSource(17);
+		byte[] firstDestination = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		byte[] secondDestination = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		GHashKey keyContext = GHashKey.Create(key);
 
-		hash.ZeroMemory();
+		try
+		{
+			using GHashAlgorithmCore secondHash = GHashAlgorithmCore.Create(ref keyContext);
 
-		await Assert.That(hash).IsDefault();
+			using (GHashAlgorithmCore discardedHash = GHashAlgorithmCore.Create(ref keyContext))
+			{
+				discardedHash.AppendPaddedSegment(prefix);
+				secondHash.AppendPaddedSegment(prefix);
+			}
+
+			using (GHashAlgorithmCore firstHash = GHashAlgorithmCore.Create(ref keyContext))
+			{
+				firstHash.AppendPaddedSegment(first);
+				firstHash.HashPaddedSegmentsAndReset(prefix, default, default, firstDestination);
+			}
+
+			secondHash.HashPaddedSegmentsAndReset(second, default, default, secondDestination);
+		}
+		finally
+		{
+			keyContext.Dispose();
+		}
+
+		await Assert.That(firstDestination).IsEquivalentTo(ComputeReferenceHash(key, first, prefix, default), CollectionOrdering.Matching);
+		await Assert.That(secondDestination).IsEquivalentTo(ComputeReferenceHash(key, prefix, second, default), CollectionOrdering.Matching);
 	}
 
 	private static int HashPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third, Span<byte> destination)
 	{
-		GHashAlgorithmCore hash = GHashAlgorithmCore.Create(key);
+		GHashKey keyContext = GHashKey.Create(key);
 
 		try
 		{
+			using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref keyContext);
 			return hash.HashPaddedSegmentsAndReset(first, second, third, destination);
 		}
 		finally
 		{
-			hash.ZeroMemory();
+			keyContext.Dispose();
 		}
 	}
 

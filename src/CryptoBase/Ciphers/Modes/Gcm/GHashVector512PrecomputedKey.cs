@@ -2,7 +2,7 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashX86;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal struct GHashVector512State
+internal readonly struct GHashVector512PrecomputedKey
 {
 	private readonly Vector128<byte> _key1;
 	private readonly Vector512<byte> _key4321;
@@ -22,9 +22,7 @@ internal struct GHashVector512State
 	private readonly Vector512<byte> _key60595857;
 	private readonly Vector512<byte> _key64636261;
 
-	private Vector128<byte> _accumulator;
-
-	internal GHashVector512State(Vector128<byte> key, Vector128<byte> accumulator)
+	internal GHashVector512PrecomputedKey(Vector128<byte> key)
 	{
 		_key1 = key;
 		GetFirstFourPowers(_key1, out Vector256<byte> key21, out Vector256<byte> key43);
@@ -55,11 +53,11 @@ internal struct GHashVector512State
 		_key56555453 = GFMultiply(_key24232221, key32323232);
 		_key60595857 = GFMultiply(_key28272625, key32323232);
 		_key64636261 = GFMultiply(_key32313029, key32323232);
-		_accumulator = accumulator;
 	}
 
-	private void AppendBlocks(scoped ReadOnlySpan<byte> source)
+	private void AppendBlocks(ref Vector128<byte> accumulatorDestination, scoped ReadOnlySpan<byte> source)
 	{
+		Vector128<byte> accumulator = accumulatorDestination;
 		int length = source.Length;
 		ref byte ptr = ref source.GetReference();
 
@@ -79,7 +77,7 @@ internal struct GHashVector512State
 				Vector512<byte> x1 = Vector512.LoadUnsafe(ref ptr, 1 * 4 * BlockSize).ReverseEndianness128();
 				Vector512<byte> x2 = Vector512.LoadUnsafe(ref ptr, 2 * 4 * BlockSize).ReverseEndianness128();
 				Vector512<byte> x3 = Vector512.LoadUnsafe(ref ptr, 3 * 4 * BlockSize).ReverseEndianness128();
-				x0 ^= Vector512.Create(Vector256.Create(_accumulator, Vector128<byte>.Zero), Vector256<byte>.Zero);
+				x0 ^= Vector512.Create(Vector256.Create(accumulator, Vector128<byte>.Zero), Vector256<byte>.Zero);
 
 				GFMultiply(_key64636261, x0, out Vector512<uint> lo0, out Vector512<uint> hi0);
 				GFMultiply(_key60595857, x1, out Vector512<uint> lo1, out Vector512<uint> hi1);
@@ -131,7 +129,7 @@ internal struct GHashVector512State
 				hi1215 = hi0 ^ hi1 ^ hi2 ^ hi3;
 			}
 
-			_accumulator = ReduceTo128(lo03 ^ lo47 ^ lo811 ^ lo1215, hi03 ^ hi47 ^ hi811 ^ hi1215);
+			accumulator = ReduceTo128(lo03 ^ lo47 ^ lo811 ^ lo1215, hi03 ^ hi47 ^ hi811 ^ hi1215);
 			ptr = ref Unsafe.Add(ref ptr, 64 * BlockSize);
 			length -= 64 * BlockSize;
 		}
@@ -147,7 +145,7 @@ internal struct GHashVector512State
 			Vector512<byte> x6 = Vector512.LoadUnsafe(ref ptr, 6 * 4 * BlockSize).ReverseEndianness128();
 			Vector512<byte> x7 = Vector512.LoadUnsafe(ref ptr, 7 * 4 * BlockSize).ReverseEndianness128();
 
-			x0 = Avx512F.InsertVector128(x0, x0.GetLower().GetLower() ^ _accumulator, 0);
+			x0 = Avx512F.InsertVector128(x0, x0.GetLower().GetLower() ^ accumulator, 0);
 
 			GFMultiply(_key32313029, x0, out Vector512<uint> lo0, out Vector512<uint> hi0);
 			GFMultiply(_key28272625, x1, out Vector512<uint> lo1, out Vector512<uint> hi1);
@@ -158,7 +156,7 @@ internal struct GHashVector512State
 			GFMultiply(_key8765, x6, out Vector512<uint> lo6, out Vector512<uint> hi6);
 			GFMultiply(_key4321, x7, out Vector512<uint> lo7, out Vector512<uint> hi7);
 
-			_accumulator = ReduceTo128(lo0 ^ lo1 ^ lo2 ^ lo3 ^ lo4 ^ lo5 ^ lo6 ^ lo7, hi0 ^ hi1 ^ hi2 ^ hi3 ^ hi4 ^ hi5 ^ hi6 ^ hi7);
+			accumulator = ReduceTo128(lo0 ^ lo1 ^ lo2 ^ lo3 ^ lo4 ^ lo5 ^ lo6 ^ lo7, hi0 ^ hi1 ^ hi2 ^ hi3 ^ hi4 ^ hi5 ^ hi6 ^ hi7);
 
 			ptr = ref Unsafe.Add(ref ptr, 32 * BlockSize);
 			length -= 32 * BlockSize;
@@ -171,13 +169,13 @@ internal struct GHashVector512State
 			Vector512<byte> x2 = Vector512.LoadUnsafe(ref ptr, 2 * 4 * BlockSize).ReverseEndianness128();
 			Vector512<byte> x3 = Vector512.LoadUnsafe(ref ptr, 3 * 4 * BlockSize).ReverseEndianness128();
 
-			x0 = Avx512F.InsertVector128(x0, x0.GetLower().GetLower() ^ _accumulator, 0);
+			x0 = Avx512F.InsertVector128(x0, x0.GetLower().GetLower() ^ accumulator, 0);
 
 			GFMultiply(_key16151413, x0, out Vector512<uint> lo0, out Vector512<uint> hi0);
 			GFMultiply(_key12111009, x1, out Vector512<uint> lo1, out Vector512<uint> hi1);
 			GFMultiply(_key8765, x2, out Vector512<uint> lo2, out Vector512<uint> hi2);
 			GFMultiply(_key4321, x3, out Vector512<uint> lo3, out Vector512<uint> hi3);
-			_accumulator = ReduceTo128(lo0 ^ lo1 ^ lo2 ^ lo3, hi0 ^ hi1 ^ hi2 ^ hi3);
+			accumulator = ReduceTo128(lo0 ^ lo1 ^ lo2 ^ lo3, hi0 ^ hi1 ^ hi2 ^ hi3);
 
 			ptr = ref Unsafe.Add(ref ptr, 16 * BlockSize);
 			length -= 16 * BlockSize;
@@ -188,11 +186,11 @@ internal struct GHashVector512State
 			Vector512<byte> x0 = Vector512.LoadUnsafe(ref ptr).ReverseEndianness128();
 			Vector512<byte> x1 = Vector512.LoadUnsafe(ref ptr, 1 * 4 * BlockSize).ReverseEndianness128();
 
-			x0 = Avx512F.InsertVector128(x0, x0.GetLower().GetLower() ^ _accumulator, 0);
+			x0 = Avx512F.InsertVector128(x0, x0.GetLower().GetLower() ^ accumulator, 0);
 
 			GFMultiply(_key8765, x0, out Vector512<uint> lo0, out Vector512<uint> hi0);
 			GFMultiply(_key4321, x1, out Vector512<uint> lo1, out Vector512<uint> hi1);
-			_accumulator = ReduceTo128(lo0 ^ lo1, hi0 ^ hi1);
+			accumulator = ReduceTo128(lo0 ^ lo1, hi0 ^ hi1);
 
 			ptr = ref Unsafe.Add(ref ptr, 8 * BlockSize);
 			length -= 8 * BlockSize;
@@ -201,26 +199,32 @@ internal struct GHashVector512State
 		if (length >= 4 * BlockSize)
 		{
 			Vector512<byte> blocks = Vector512.LoadUnsafe(ref ptr).ReverseEndianness128();
-			blocks = Avx512F.InsertVector128(blocks, blocks.GetLower().GetLower() ^ _accumulator, 0);
+			blocks = Avx512F.InsertVector128(blocks, blocks.GetLower().GetLower() ^ accumulator, 0);
 
 			GFMultiply(_key4321, blocks, out Vector512<uint> lo, out Vector512<uint> hi);
-			_accumulator = ReduceTo128(lo, hi);
+			accumulator = ReduceTo128(lo, hi);
 
 			ptr = ref Unsafe.Add(ref ptr, 4 * BlockSize);
 			length -= 4 * BlockSize;
 		}
 
-		AppendSequential(ref _accumulator, in _key1, MemoryMarshal.CreateReadOnlySpan(ref ptr, length));
+		AppendSequential(ref accumulator, in _key1, MemoryMarshal.CreateReadOnlySpan(ref ptr, length));
+
+		accumulatorDestination = accumulator;
 	}
 
-	internal void AppendPaddedSegment(scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	internal void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
 	{
 		int completeLength = source.Length & -BlockSize;
 		ReadOnlySpan<byte> remaining = source.Slice(completeLength);
 
 		if (remaining.IsEmpty)
 		{
-			AppendBlocks(source);
+			if (completeLength is not 0)
+			{
+				AppendBlocks(ref accumulator, source);
+			}
+
 			return;
 		}
 
@@ -238,24 +242,24 @@ internal struct GHashVector512State
 		if (tailBlocks is not 0)
 		{
 			int prefixLength = completeLength - (tailBlocks - 1) * BlockSize;
-			AppendBlocks(source.Slice(0, prefixLength));
-			AppendFoldedTail(source.Slice(prefixLength, (tailBlocks - 1) * BlockSize), ref finalBlock, tailBlocks);
+			AppendBlocks(ref accumulator, source.Slice(0, prefixLength));
+			AppendFoldedTail(ref accumulator, source.Slice(prefixLength, (tailBlocks - 1) * BlockSize), ref finalBlock, tailBlocks);
 			return;
 		}
 
 		if (completeLength is not 0)
 		{
-			AppendBlocks(source.Slice(0, completeLength));
+			AppendBlocks(ref accumulator, source.Slice(0, completeLength));
 		}
 
-		AppendBlocks(finalBlock.AsReadOnlySpan());
+		AppendBlocks(ref accumulator, finalBlock.AsReadOnlySpan());
 	}
 
-	private void AppendFoldedTail(scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
+	private void AppendFoldedTail(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
 	{
 		ref byte ptr = ref source.GetReference();
 		Vector512<byte> blocks = Vector512.LoadUnsafe(ref ptr).ReverseEndianness128();
-		blocks = Avx512F.InsertVector128(blocks, blocks.GetLower().GetLower() ^ _accumulator, 0);
+		blocks = Avx512F.InsertVector128(blocks, blocks.GetLower().GetLower() ^ accumulator, 0);
 		Vector512<byte> firstKey = blockCount is 64 ? _key64636261 : _key32313029;
 		GFMultiply(firstKey, blocks, out Vector512<uint> lo, out Vector512<uint> hi);
 		nuint offset = 4 * BlockSize;
@@ -297,7 +301,7 @@ internal struct GHashVector512State
 		Vector128<byte> lastSource = Vector128.LoadUnsafe(ref ptr, offset + 2 * BlockSize);
 		Vector512<byte> lastBlocks = Vector512.Create(lastTwo, Vector256.Create(lastSource, finalBlock)).ReverseEndianness128();
 		GFMultiply(_key4321, lastBlocks, out Vector512<uint> lastLo, out Vector512<uint> lastHi);
-		_accumulator = ReduceTo128(lo ^ lastLo, hi ^ lastHi);
+		accumulator = ReduceTo128(lo ^ lastLo, hi ^ lastHi);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -307,11 +311,5 @@ internal struct GHashVector512State
 		GFMultiply(key, blocks, out Vector512<uint> nextLo, out Vector512<uint> nextHi);
 		lo ^= nextLo;
 		hi ^= nextHi;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal readonly Vector128<byte> GetAccumulator()
-	{
-		return _accumulator;
 	}
 }

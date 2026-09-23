@@ -2,7 +2,7 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashX86;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal struct GHashVector256State
+internal readonly struct GHashVector256PrecomputedKey
 {
 	private readonly Vector128<byte> _key1;
 	private readonly Vector256<byte> _key21;
@@ -22,9 +22,7 @@ internal struct GHashVector256State
 	private readonly Vector256<byte> _key1615;
 	private readonly Vector256<byte> _keyK1615;
 
-	private Vector128<byte> _accumulator;
-
-	internal GHashVector256State(Vector128<byte> key, Vector128<byte> accumulator)
+	internal GHashVector256PrecomputedKey(Vector128<byte> key)
 	{
 		_key1 = key;
 		Vector128<byte> preparedKey1 = PrepareKey(key);
@@ -56,11 +54,11 @@ internal struct GHashVector256State
 		_keyK1413 = GetReductionKey(_key1413);
 		_key1615 = GFMultiplyPrepared(_key87, key88, keyK88);
 		_keyK1615 = GetReductionKey(_key1615);
-		_accumulator = accumulator;
 	}
 
-	private void AppendBlocks(scoped ReadOnlySpan<byte> source)
+	private void AppendBlocks(ref Vector128<byte> accumulatorDestination, scoped ReadOnlySpan<byte> source)
 	{
+		Vector128<byte> accumulator = accumulatorDestination;
 		int offset = 0;
 		int length = source.Length;
 		ref byte ptr = ref source.GetReference();
@@ -72,7 +70,7 @@ internal struct GHashVector256State
 			Vector256<byte> x2 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 2 * 2 * BlockSize)).ReverseEndianness128();
 			Vector256<byte> x3 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 3 * 2 * BlockSize)).ReverseEndianness128();
 			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref x0);
-			firstBlock ^= _accumulator;
+			firstBlock ^= accumulator;
 
 			GFMultiplyPreparedUnreduced(x0, _key1615, _keyK1615, out Vector256<byte> lo, out Vector256<byte> hi);
 			GFMultiplyPreparedUnreduced(x1, _key1413, _keyK1413, out Vector256<byte> nextLo, out Vector256<byte> nextHi);
@@ -99,7 +97,7 @@ internal struct GHashVector256State
 			lo ^= nextLo;
 			hi ^= nextHi;
 			GFMultiplyPreparedUnreduced(x3, _key21, _keyK21, out nextLo, out nextHi);
-			_accumulator = ReducePreparedTo128(lo ^ nextLo, hi ^ nextHi);
+			accumulator = ReducePreparedTo128(lo ^ nextLo, hi ^ nextHi);
 
 			offset += 16 * BlockSize;
 			length -= 16 * BlockSize;
@@ -113,7 +111,7 @@ internal struct GHashVector256State
 			Vector256<byte> x3 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 3 * 2 * BlockSize)).ReverseEndianness128();
 
 			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref x0);
-			firstBlock ^= _accumulator;
+			firstBlock ^= accumulator;
 
 			GFMultiplyPreparedUnreduced(x0, _key87, _keyK87, out Vector256<byte> lo, out Vector256<byte> hi);
 			GFMultiplyPreparedUnreduced(x1, _key65, _keyK65, out Vector256<byte> nextLo, out Vector256<byte> nextHi);
@@ -123,7 +121,7 @@ internal struct GHashVector256State
 			lo ^= nextLo;
 			hi ^= nextHi;
 			GFMultiplyPreparedUnreduced(x3, _key21, _keyK21, out nextLo, out nextHi);
-			_accumulator = ReducePreparedTo128(lo ^ nextLo, hi ^ nextHi);
+			accumulator = ReducePreparedTo128(lo ^ nextLo, hi ^ nextHi);
 
 			offset += 8 * BlockSize;
 			length -= 8 * BlockSize;
@@ -135,11 +133,11 @@ internal struct GHashVector256State
 			Vector256<byte> x1 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 1 * 2 * BlockSize)).ReverseEndianness128();
 
 			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref x0);
-			firstBlock ^= _accumulator;
+			firstBlock ^= accumulator;
 
 			GFMultiplyPreparedUnreduced(x0, _key43, _keyK43, out Vector256<byte> lo, out Vector256<byte> hi);
 			GFMultiplyPreparedUnreduced(x1, _key21, _keyK21, out Vector256<byte> nextLo, out Vector256<byte> nextHi);
-			_accumulator = ReducePreparedTo128(lo ^ nextLo, hi ^ nextHi);
+			accumulator = ReducePreparedTo128(lo ^ nextLo, hi ^ nextHi);
 
 			offset += 4 * BlockSize;
 			length -= 4 * BlockSize;
@@ -149,26 +147,32 @@ internal struct GHashVector256State
 		{
 			Vector256<byte> blocks = Vector256.LoadUnsafe(ref ptr, (nuint)offset).ReverseEndianness128();
 			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref blocks);
-			firstBlock ^= _accumulator;
+			firstBlock ^= accumulator;
 
 			GFMultiplyPreparedUnreduced(blocks, _key21, _keyK21, out Vector256<byte> lo, out Vector256<byte> hi);
-			_accumulator = ReducePreparedTo128(lo, hi);
+			accumulator = ReducePreparedTo128(lo, hi);
 
 			offset += 2 * BlockSize;
 			length -= 2 * BlockSize;
 		}
 
-		AppendSequential(ref _accumulator, in _key1, source.Slice(offset, length));
+		AppendSequential(ref accumulator, in _key1, source.Slice(offset, length));
+
+		accumulatorDestination = accumulator;
 	}
 
-	internal void AppendPaddedSegment(scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	internal void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
 	{
 		int completeLength = source.Length & -BlockSize;
 		ReadOnlySpan<byte> remaining = source.Slice(completeLength);
 
 		if (remaining.IsEmpty)
 		{
-			AppendBlocks(source);
+			if (completeLength is not 0)
+			{
+				AppendBlocks(ref accumulator, source);
+			}
+
 			return;
 		}
 
@@ -186,24 +190,24 @@ internal struct GHashVector256State
 		if (tailBlocks is not 0)
 		{
 			int prefixLength = completeLength - (tailBlocks - 1) * BlockSize;
-			AppendBlocks(source.Slice(0, prefixLength));
-			AppendFoldedTail(source.Slice(prefixLength, (tailBlocks - 1) * BlockSize), ref finalBlock, tailBlocks);
+			AppendBlocks(ref accumulator, source.Slice(0, prefixLength));
+			AppendFoldedTail(ref accumulator, source.Slice(prefixLength, (tailBlocks - 1) * BlockSize), ref finalBlock, tailBlocks);
 			return;
 		}
 
 		if (completeLength is not 0)
 		{
-			AppendBlocks(source.Slice(0, completeLength));
+			AppendBlocks(ref accumulator, source.Slice(0, completeLength));
 		}
 
-		AppendBlocks(finalBlock.AsReadOnlySpan());
+		AppendBlocks(ref accumulator, finalBlock.AsReadOnlySpan());
 	}
 
-	private void AppendFoldedTail(scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
+	private void AppendFoldedTail(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
 	{
 		ref byte ptr = ref source.GetReference();
 		Vector256<byte> blocks = Vector256.LoadUnsafe(ref ptr).ReverseEndianness128();
-		blocks = Vector256.Create(blocks.GetLower() ^ _accumulator, blocks.GetUpper());
+		blocks = Vector256.Create(blocks.GetLower() ^ accumulator, blocks.GetUpper());
 		Vector256<byte> firstKey = blockCount is 16 ? _key1615 : _key87;
 		Vector256<byte> firstReductionKey = blockCount is 16 ? _keyK1615 : _keyK87;
 		GFMultiplyPreparedUnreduced(blocks, firstKey, firstReductionKey, out Vector256<byte> lo, out Vector256<byte> hi);
@@ -229,7 +233,7 @@ internal struct GHashVector256State
 		Vector128<byte> lastSource = Vector128.LoadUnsafe(ref ptr, offset);
 		Vector256<byte> lastBlocks = Vector256.Create(lastSource, finalBlock).ReverseEndianness128();
 		GFMultiplyPreparedUnreduced(lastBlocks, _key21, _keyK21, out Vector256<byte> nextLo, out Vector256<byte> nextHi);
-		_accumulator = ReducePreparedTo128(lo ^ nextLo, hi ^ nextHi);
+		accumulator = ReducePreparedTo128(lo ^ nextLo, hi ^ nextHi);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -239,11 +243,5 @@ internal struct GHashVector256State
 		GFMultiplyPreparedUnreduced(blocks, key, reductionKey, out Vector256<byte> nextLo, out Vector256<byte> nextHi);
 		lo ^= nextLo;
 		hi ^= nextHi;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal readonly Vector128<byte> GetAccumulator()
-	{
-		return _accumulator;
 	}
 }

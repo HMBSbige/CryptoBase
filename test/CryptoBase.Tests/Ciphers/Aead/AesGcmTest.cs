@@ -10,35 +10,55 @@ namespace CryptoBase.Tests.Ciphers.Aead;
 public class AesGcmTest
 {
 	[Test]
-	[Arguments(16)]
-	[Arguments(24)]
-	[Arguments(32)]
-	public async Task IndependentMessagesMatchBcl(int keyLength)
+	[MatrixDataSource]
+	public async Task IndependentMessagesMatchBcl
+	(
+		[Matrix(16, 24, 32)] int keyLength,
+		[Matrix(0, 1, 15, 16, 17, 127, 128, 129, 257, 513, 2047, 2048, 2049, 4097, 16385)]
+		int messageLength,
+		[Matrix(0, 7, 15, 16, 17, 126)] int associatedDataLength
+	)
+	{
+		byte[] key = CreateDeterministicSource(keyLength);
+		using GcmMode128<AesCipher> gcm = GcmMode128<AesCipher>.Create(key);
+		using AesGcm reference = new(key, GcmMode128<AesCipher>.TagSize);
+		byte[] nonce = CreateDeterministicSource(12);
+		await AssertMessageMatchesBcl(gcm, reference, nonce, messageLength, associatedDataLength);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task ReusedInstanceMatchesBcl([Matrix(16, 24, 32)] int keyLength)
 	{
 		byte[] key = CreateDeterministicSource(keyLength);
 		using GcmMode128<AesCipher> gcm = GcmMode128<AesCipher>.Create(key);
 		using AesGcm reference = new(key, GcmMode128<AesCipher>.TagSize);
 		int messageNumber = 0;
 
-		foreach (int length in new[] { 0, 1, 15, 16, 17, 127, 128, 129, 2047, 2048, 2049, 4097, 0 })
+		foreach (int length in new[] { 0, 1, 15, 16, 17, 127, 128, 129, 257, 513, 2047, 2048, 2049, 4097, 16385, 513, 17, 0 })
 		{
 			byte[] nonce = CreateDeterministicSource(12);
 			nonce[11] = (byte)messageNumber++;
-			byte[] plaintext = CreateDeterministicSource(length);
-			byte[] associatedData = CreateDeterministicSource(messageNumber * 7);
-			byte[] expected = new byte[length];
-			byte[] actual = new byte[length];
-			byte[] expectedTag = new byte[16];
-			byte[] actualTag = new byte[16];
-			reference.Encrypt(nonce, plaintext, expected, expectedTag, associatedData);
-			gcm.Encrypt(nonce, plaintext, actual, actualTag, associatedData);
-			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
-			await Assert.That(actualTag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
-
-			byte[] recovered = new byte[length];
-			await Assert.That(gcm.TryDecrypt(nonce, actual, actualTag, recovered, associatedData)).IsTrue();
-			await Assert.That(recovered).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
+			await AssertMessageMatchesBcl(gcm, reference, nonce, length, messageNumber * 7);
 		}
+	}
+
+	private static async Task AssertMessageMatchesBcl(GcmMode128<AesCipher> gcm, AesGcm reference, byte[] nonce, int messageLength, int associatedDataLength)
+	{
+		byte[] plaintext = CreateDeterministicSource(messageLength);
+		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
+		byte[] expected = new byte[messageLength];
+		byte[] actual = new byte[messageLength];
+		byte[] expectedTag = new byte[16];
+		byte[] actualTag = new byte[16];
+		reference.Encrypt(nonce, plaintext, expected, expectedTag, associatedData);
+		gcm.Encrypt(nonce, plaintext, actual, actualTag, associatedData);
+		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		await Assert.That(actualTag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
+
+		byte[] recovered = new byte[messageLength];
+		await Assert.That(gcm.TryDecrypt(nonce, actual, actualTag, recovered, associatedData)).IsTrue();
+		await Assert.That(recovered).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
 	}
 
 	/// <summary>

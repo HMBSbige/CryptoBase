@@ -13,10 +13,10 @@ internal static partial class GHashX86
 
 	internal static bool IsSupported256 => Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
 
-	private static bool IsSupported512 => X86Base.X64.IsSupported && IsSupported256 && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
+	internal static bool IsSupported512 => X86Base.X64.IsSupported && IsSupported256 && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
 
 	[SkipLocalsInit]
-	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
+	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
 		Debug.Assert(IsSupported);
 
@@ -28,29 +28,29 @@ internal static partial class GHashX86
 
 		if (IsSupported512 && vector512ParallelLength >= Vector512Threshold)
 		{
-			AppendPaddedSegmentsVector512(ref accumulator, in key, first, second, third);
+			AppendPaddedSegmentsVector512(ref accumulator, ref key, first, second, third);
 			return;
 		}
 
 		if (IsSupported256 && totalPaddedLength >= Vector256Threshold)
 		{
-			AppendPaddedSegmentsVector256(ref accumulator, in key, first, second, third);
+			AppendPaddedSegmentsVector256(ref accumulator, ref key, first, second, third);
 			return;
 		}
 
 		if (totalPaddedLength >= Vector128Threshold)
 		{
-			AppendPaddedSegmentsVector128(ref accumulator, in key, first, second, third);
+			AppendPaddedSegmentsVector128(ref accumulator, ref key, first, second, third);
 			return;
 		}
 
 		if (totalPaddedLength >= FourBlockThreshold)
 		{
-			AppendPaddedSegmentsFourBlock(ref accumulator, in key, first, second, third);
+			AppendPaddedSegmentsFourBlock(ref accumulator, ref key, first, second, third);
 			return;
 		}
 
-		Vector128<byte> internalKey = key.ReverseEndianness128();
+		Vector128<byte> internalKey = key.Value.ReverseEndianness128();
 		Vector128<byte> internalAccumulator = accumulator.ReverseEndianness128();
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
@@ -62,81 +62,89 @@ internal static partial class GHashX86
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void AppendPaddedSegmentsVector128(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
+	private static void AppendPaddedSegmentsVector128(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
-		GHashVector128State state = new(key.ReverseEndianness128(), accumulator.ReverseEndianness128());
+		ref readonly GHashVector128PrecomputedKey powers = ref key.GetVector128().Value;
+		Vector128<byte> internalAccumulator = accumulator.ReverseEndianness128();
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
 		try
 		{
-			state.AppendPaddedSegment(first, ref finalBlock);
-			state.AppendPaddedSegment(second, ref finalBlock);
-			state.AppendPaddedSegment(third, ref finalBlock);
-			accumulator = state.GetAccumulator().ReverseEndianness128();
+			powers.AppendPaddedSegment(ref internalAccumulator, first, ref finalBlock);
+			powers.AppendPaddedSegment(ref internalAccumulator, second, ref finalBlock);
+			powers.AppendPaddedSegment(ref internalAccumulator, third, ref finalBlock);
+			accumulator = internalAccumulator.ReverseEndianness128();
 		}
 		finally
 		{
-			state.ZeroMemory();
+			internalAccumulator.ZeroMemory();
+			finalBlock.ZeroMemory();
 		}
 	}
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void AppendPaddedSegmentsFourBlock(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
+	private static void AppendPaddedSegmentsFourBlock(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
-		GHashFourBlockState state = new(key.ReverseEndianness128(), accumulator.ReverseEndianness128());
+		ref readonly GHashFourBlockPrecomputedKey powers = ref key.GetFourBlock().Value;
+		Vector128<byte> internalAccumulator = accumulator.ReverseEndianness128();
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
 		try
 		{
-			state.AppendPaddedSegment(first, ref finalBlock);
-			state.AppendPaddedSegment(second, ref finalBlock);
-			state.AppendPaddedSegment(third, ref finalBlock);
-			accumulator = state.GetAccumulator().ReverseEndianness128();
+			powers.AppendPaddedSegment(ref internalAccumulator, first, ref finalBlock);
+			powers.AppendPaddedSegment(ref internalAccumulator, second, ref finalBlock);
+			powers.AppendPaddedSegment(ref internalAccumulator, third, ref finalBlock);
+			accumulator = internalAccumulator.ReverseEndianness128();
 		}
 		finally
 		{
-			state.ZeroMemory();
+			internalAccumulator.ZeroMemory();
+			finalBlock.ZeroMemory();
 		}
 	}
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void AppendPaddedSegmentsVector256(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
+	private static void AppendPaddedSegmentsVector256(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
-		GHashVector256State state = new(key.ReverseEndianness128(), accumulator.ReverseEndianness128());
+		ref readonly GHashVector256PrecomputedKey powers = ref key.GetVector256().Value;
+		Vector128<byte> internalAccumulator = accumulator.ReverseEndianness128();
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
 		try
 		{
-			state.AppendPaddedSegment(first, ref finalBlock);
-			state.AppendPaddedSegment(second, ref finalBlock);
-			state.AppendPaddedSegment(third, ref finalBlock);
-			accumulator = state.GetAccumulator().ReverseEndianness128();
+			powers.AppendPaddedSegment(ref internalAccumulator, first, ref finalBlock);
+			powers.AppendPaddedSegment(ref internalAccumulator, second, ref finalBlock);
+			powers.AppendPaddedSegment(ref internalAccumulator, third, ref finalBlock);
+			accumulator = internalAccumulator.ReverseEndianness128();
 		}
 		finally
 		{
-			state.ZeroMemory();
+			internalAccumulator.ZeroMemory();
+			finalBlock.ZeroMemory();
 		}
 	}
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void AppendPaddedSegmentsVector512(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
+	private static void AppendPaddedSegmentsVector512(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
-		GHashVector512State state = new(key.ReverseEndianness128(), accumulator.ReverseEndianness128());
+		ref readonly GHashVector512PrecomputedKey powers = ref key.GetVector512().Value;
+		Vector128<byte> internalAccumulator = accumulator.ReverseEndianness128();
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
 		try
 		{
-			state.AppendPaddedSegment(first, ref finalBlock);
-			state.AppendPaddedSegment(second, ref finalBlock);
-			state.AppendPaddedSegment(third, ref finalBlock);
-			accumulator = state.GetAccumulator().ReverseEndianness128();
+			powers.AppendPaddedSegment(ref internalAccumulator, first, ref finalBlock);
+			powers.AppendPaddedSegment(ref internalAccumulator, second, ref finalBlock);
+			powers.AppendPaddedSegment(ref internalAccumulator, third, ref finalBlock);
+			accumulator = internalAccumulator.ReverseEndianness128();
 		}
 		finally
 		{
-			state.ZeroMemory();
+			internalAccumulator.ZeroMemory();
+			finalBlock.ZeroMemory();
 		}
 	}
 
