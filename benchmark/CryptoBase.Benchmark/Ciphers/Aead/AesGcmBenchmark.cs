@@ -1,6 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Ciphers.Blocks.Aes;
-using CryptoBase.Ciphers.Modes.Gcm;
+using CryptoBase.Ciphers.Modes;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;

@@ -1,5 +1,5 @@
 using CryptoBase.Ciphers.Blocks.SM4;
-using CryptoBase.Ciphers.Modes.Gcm;
+using CryptoBase.Ciphers.Modes;
 
 namespace CryptoBase.Tests.Ciphers.Aead;
 

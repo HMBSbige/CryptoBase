@@ -2,7 +2,7 @@ using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Aead;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
-using CryptoBase.Ciphers.Modes.Gcm;
+using CryptoBase.Ciphers.Modes;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 

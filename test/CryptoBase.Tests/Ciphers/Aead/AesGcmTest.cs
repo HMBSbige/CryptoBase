@@ -1,5 +1,5 @@
 using CryptoBase.Ciphers.Blocks.Aes;
-using CryptoBase.Ciphers.Modes.Gcm;
+using CryptoBase.Ciphers.Modes;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;

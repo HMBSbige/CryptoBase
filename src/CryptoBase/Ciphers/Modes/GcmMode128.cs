@@ -1,7 +1,8 @@
 using CryptoBase.Ciphers.Blocks.Aes;
+using CryptoBase.Ciphers.Modes.Gcm;
 using static CryptoBase.Ciphers.Modes.Gcm.Gcm;
 
-namespace CryptoBase.Ciphers.Modes.Gcm;
+namespace CryptoBase.Ciphers.Modes;
 
 /// <summary>
 /// Provides Galois/Counter Mode authenticated encryption for a 16-byte block cipher.

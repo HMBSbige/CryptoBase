@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Blocks.Aes;
+using CryptoBase.Ciphers.Modes;
 using CryptoBase.Ciphers.Modes.Gcm;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
