@@ -1,3 +1,5 @@
+using AesArm = System.Runtime.Intrinsics.Arm.Aes;
+
 namespace CryptoBase.Ciphers.Blocks.SM4;
 
 internal static partial class SM4Utils
@@ -78,6 +80,13 @@ internal static partial class SM4Utils
 		uint k1 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 4))) ^ 0x56aa3350;
 		uint k2 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 8))) ^ 0x677d9197;
 		uint k3 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 12))) ^ 0xb27022dc;
+
+		if (AdvSimd.Arm64.IsSupported && !AesArm.IsSupported)
+		{
+			InitRoundKeysNeon(k0, k1, k2, k3, ref rk);
+			return;
+		}
+
 		ref uint ck = ref CK.GetReference();
 
 		for (int i = 0; i < 32; i += 4)
