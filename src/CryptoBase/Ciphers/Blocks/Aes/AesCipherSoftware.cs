@@ -1,6 +1,6 @@
 namespace CryptoBase.Ciphers.Blocks.Aes;
 
-internal partial struct AesCipherSoftware : IDisposable
+internal partial struct AesCipherSoftware : IDisposable, IAesSubWord
 {
 	private readonly int _rounds;
 	private InlineArray15<InlineArray8<ulong>> _roundKeys;
@@ -170,42 +170,10 @@ internal partial struct AesCipherSoftware : IDisposable
 
 	internal static int ExpandKey(ReadOnlySpan<byte> key, Span<uint> words)
 	{
-		int rounds = key.Length switch
-		{
-			16 => 10,
-			24 => 12,
-			32 => 14,
-			_ => ThrowHelper.ThrowArgumentOutOfRangeException<int>(nameof(key), "Key length must be 16/24/32 bytes")
-		};
-
-		int nk = key.Length / sizeof(uint);
-		int wordCount = (rounds + 1) * 4;
-
-		for (int i = 0; i < nk; ++i)
-		{
-			words[i] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(i * sizeof(uint)));
-		}
-
-		for (int i = nk; i < wordCount; ++i)
-		{
-			uint t = words[i - 1];
-
-			if (i % nk is 0)
-			{
-				t = SubWord(t).RotateRight(8) ^ AesCipher.Rcon[i / nk];
-			}
-			else if (nk is 8 && i % nk is 4)
-			{
-				t = SubWord(t);
-			}
-
-			words[i] = words[i - nk] ^ t;
-		}
-
-		return rounds;
+		return AesKeySchedule.Expand<AesCipherSoftware>(key, words);
 	}
 
-	private static uint SubWord(uint value)
+	static uint IAesSubWord.SubWord(uint value)
 	{
 		InlineArray8<ulong> state = default;
 		((Span<ulong>)state).Fill(value | (ulong)value << 32);

@@ -153,7 +153,7 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 
 				Span<byte> buffer = destination.Slice(offset, length);
 
-				if (_dataCipher is not AesCipher aes || !aes.TryTransformWithMask(source.Slice(offset, length), tweaks, buffer, decrypt, true))
+				if (_dataCipher is not AesCipher aes || !aes.TryTransformXex(source.Slice(offset, length), tweaks, buffer, decrypt))
 				{
 					FastUtils.Xor(tweaks, source.Slice(offset), buffer, length);
 

@@ -19,9 +19,9 @@ internal struct GHashFourBitState
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void GFMultiply(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> block)
+	private void GFMultiply(ref Vector128<byte> accumulator, ref byte block)
 	{
-		accumulator ^= Vector128.LoadUnsafe(ref block.GetReference());
+		accumulator ^= Vector128.LoadUnsafe(ref block);
 
 		ref byte buffer = ref Unsafe.As<Vector128<byte>, byte>(ref accumulator);
 		ref ulong hh = ref _hh[0];
@@ -72,10 +72,12 @@ internal struct GHashFourBitState
 
 	private void AppendBlocks(scoped ReadOnlySpan<byte> source)
 	{
-		while (!source.IsEmpty)
+		ref byte input = ref source.GetReference();
+
+		for (int remaining = source.Length; remaining > 0; remaining -= GHash.BlockSizeInBytes)
 		{
-			GFMultiply(ref _accumulator, source);
-			source = source.Slice(GHash.BlockSizeInBytes);
+			GFMultiply(ref _accumulator, ref input);
+			input = ref Unsafe.Add(ref input, GHash.BlockSizeInBytes);
 		}
 	}
 

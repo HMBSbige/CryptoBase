@@ -38,7 +38,7 @@ public class AesBitsliceFusionTest
 		byte[] input = source.AsSpan(sourceOffset, length).ToArray();
 		byte[] blockMask = mask.AsSpan(maskOffset, length).ToArray();
 		byte[] expected = AesTestUtils.TransformReference(reference, input, blockMask, decrypt, xorInput);
-		byte[] actual = CreateGuardedBuffer(destinationOffset, length);
+		byte[] actual = TestUtils.CreateGuardedBuffer(destinationOffset, length, 17);
 
 		crypto.TransformWithMask(source.AsSpan(sourceOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
 		await TestUtils.AssertOutput(actual, destinationOffset, expected);
@@ -54,12 +54,5 @@ public class AesBitsliceFusionTest
 		crypto.TransformWithMask(source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
 		await TestUtils.AssertOutput(actual, destinationOffset, expected);
 		await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
-	}
-
-	private static byte[] CreateGuardedBuffer(int offset, int length)
-	{
-		byte[] buffer = new byte[offset + length + 17];
-		TestUtils.PrepareDestination(buffer);
-		return buffer;
 	}
 }

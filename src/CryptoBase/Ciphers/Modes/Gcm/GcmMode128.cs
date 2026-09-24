@@ -1,6 +1,7 @@
-using CryptoBase.Ciphers.Modes.Gcm;
+using CryptoBase.Ciphers.Blocks.Aes;
+using static CryptoBase.Ciphers.Modes.Gcm.Gcm;
 
-namespace CryptoBase.Ciphers.Modes;
+namespace CryptoBase.Ciphers.Modes.Gcm;
 
 /// <summary>
 /// Provides Galois/Counter Mode authenticated encryption for a 16-byte block cipher.
@@ -53,26 +54,36 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 	/// <inheritdoc/>
 	public void Encrypt(scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData = default)
 	{
+		if (AesGcmFusion.ShouldFuse(source.Length) && _blockCipher is AesCipher aes)
+		{
+			AesGcmFusion.Encrypt(aes, ref _hashKey, nonce, source, destination, tag, associatedData);
+			return;
+		}
+
+		EncryptSeparated(nonce, source, destination, tag, associatedData);
+	}
+
+	private void EncryptSeparated(scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData = default)
+	{
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 		bool associatedDataOverlapsDestination = associatedData.Overlaps(destination);
 
-		Vector128<byte> counter = CreateCounter(nonce);
-		Vector128<byte> tagBuffer = default;
+		Vector128<byte> counter = Begin(nonce, out Vector128<byte> tagBuffer);
 		GHash hash = GHash.Create(ref _hashKey);
 
 		try
 		{
-			_blockCipher.EncryptBlock(counter.AsReadOnlySpan(), tagBuffer.AsSpan());
-			counter = counter.WithElement(15, (byte)2);
+			_blockCipher.EncryptBlock(tagBuffer.AsReadOnlySpan(), tagBuffer.AsSpan());
 
 			if (associatedDataOverlapsDestination)
 			{
 				hash.AppendPaddedSegment(associatedData);
 			}
 
-			Transform(ref counter, source, destination);
-			tagBuffer ^= ComputeHash(ref hash, associatedDataOverlapsDestination ? ReadOnlySpan<byte>.Empty : associatedData, destination, associatedData.Length);
+			Transform(_blockCipher, ref counter, source, destination);
+			Vector128<byte> lengthBlock = CreateLengthBlock(associatedData.Length, source.Length);
+			tagBuffer ^= hash.Finish(associatedDataOverlapsDestination ? ReadOnlySpan<byte>.Empty : associatedData, destination, lengthBlock.AsReadOnlySpan());
 			MemoryMarshal.Write(tag, in tagBuffer);
 		}
 		finally
@@ -87,15 +98,14 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
-		Vector128<byte> counter = CreateCounter(nonce);
-		Vector128<byte> tagBuffer = default;
+		Vector128<byte> counter = Begin(nonce, out Vector128<byte> tagBuffer);
 		GHash hash = GHash.Create(ref _hashKey);
 
 		try
 		{
-			_blockCipher.EncryptBlock(counter.AsReadOnlySpan(), tagBuffer.AsSpan());
-			counter = counter.WithElement(15, (byte)2);
-			tagBuffer ^= ComputeHash(ref hash, associatedData, source, associatedData.Length);
+			_blockCipher.EncryptBlock(tagBuffer.AsReadOnlySpan(), tagBuffer.AsSpan());
+			Vector128<byte> lengthBlock = CreateLengthBlock(associatedData.Length, source.Length);
+			tagBuffer ^= hash.Finish(associatedData, source, lengthBlock.AsReadOnlySpan());
 
 			if (!FixedTime.Equals16(tagBuffer.AsReadOnlySpan(), tag))
 			{
@@ -103,7 +113,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 				return false;
 			}
 
-			Transform(ref counter, source, destination);
+			Transform(_blockCipher, ref counter, source, destination);
 			return true;
 		}
 		finally
@@ -119,29 +129,10 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		_blockCipher.Dispose();
 	}
 
-	private static Vector128<byte> CreateCounter(ReadOnlySpan<byte> nonce)
-	{
-		Vector128<byte> counter = default;
-		nonce.CopyTo(counter.AsSpan());
-		counter = counter.WithElement(15, (byte)1);
-		return counter;
-	}
-
-	private static Vector128<byte> ComputeHash(scoped ref GHash hash, scoped ReadOnlySpan<byte> associatedData, scoped ReadOnlySpan<byte> ciphertext, int associatedDataLength)
-	{
-		Vector128<byte> buffer = default;
-		BinaryPrimitives.WriteUInt64BigEndian(buffer.AsSpan(), (ulong)associatedDataLength << 3);
-		BinaryPrimitives.WriteUInt64BigEndian(buffer.AsSpan().Slice(8), (ulong)ciphertext.Length << 3);
-		hash.HashPaddedSegmentsAndReset(associatedData, ciphertext, buffer.AsReadOnlySpan(), buffer.AsSpan());
-		return buffer;
-	}
-
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private void Transform(ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
+	internal static void Transform(TBlockCipher cipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		int processed = source.Length >= 16
-			? CtrBlocks<TBlockCipher, CtrIncrementer32>.XorBlocks(_blockCipher, ref counter, source, destination)
-			: 0;
+		int processed = CtrBlocks<TBlockCipher, CtrIncrementer32>.XorBlocks(cipher, ref counter, source, destination);
 		int left = source.Length - processed;
 
 		if (left is 0)
@@ -149,6 +140,6 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 			return;
 		}
 
-		CtrBlocks<TBlockCipher, CtrIncrementer32>.XorFinalBlock(_blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
+		CtrBlocks<TBlockCipher, CtrIncrementer32>.XorFinalBlock(cipher, ref counter, source.Slice(processed), destination.Slice(processed));
 	}
 }

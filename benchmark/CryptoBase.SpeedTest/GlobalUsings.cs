@@ -4,6 +4,7 @@ global using CryptoBase.Ciphers.Aead;
 global using CryptoBase.Ciphers.Blocks.Aes;
 global using CryptoBase.Ciphers.Blocks.SM4;
 global using CryptoBase.Ciphers.Modes;
+global using CryptoBase.Ciphers.Modes.Gcm;
 global using CryptoBase.Ciphers.Streams;
 global using CryptoBase.SpeedTest;
 global using System.Collections.Immutable;

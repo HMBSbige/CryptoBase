@@ -104,7 +104,7 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 				counter = current.ReverseEndianness128();
 				Span<byte> batch = counters.Slice(0, length);
 
-				if (blockCipher is not AesCipher aes || !aes.TryTransformWithMask(batch, source.Slice(offset), destination.Slice(offset), false, false))
+				if (blockCipher is not AesCipher aes || !aes.TryEncryptXor(batch, source.Slice(offset), destination.Slice(offset)))
 				{
 					blockCipher.EncryptBlocks(batch, batch);
 					FastUtils.Xor(batch, source.Slice(offset), destination.Slice(offset), length);

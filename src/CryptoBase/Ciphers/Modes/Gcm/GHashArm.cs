@@ -11,7 +11,7 @@ internal static class GHashArm
 	internal static bool IsSupported => AesArm.IsSupported;
 
 	[SkipLocalsInit]
-	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
+	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
 		Debug.Assert(IsSupported);
 		long firstPaddedLength = GHash.GetPaddedLength(first.Length);
@@ -22,11 +22,11 @@ internal static class GHashArm
 
 		if (totalPaddedLength >= FoldedThreshold && maximumPaddedLength >= FoldedBlockSize)
 		{
-			AppendPaddedSegmentsFolded(ref accumulator, in key, first, second, third);
+			AppendPaddedSegmentsFolded(ref accumulator, in key.GetArm().Value, first, second, third);
 			return;
 		}
 
-		Vector128<byte> internalKey = AdvSimd.Arm64.ReverseElementBits(key);
+		Vector128<byte> internalKey = AdvSimd.Arm64.ReverseElementBits(key.Value);
 		Vector128<byte> internalAccumulator = AdvSimd.Arm64.ReverseElementBits(accumulator);
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
@@ -39,11 +39,13 @@ internal static class GHashArm
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void AppendSequential(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> source)
 	{
-		while (!source.IsEmpty)
+		ref byte input = ref source.GetReference();
+
+		for (int remaining = source.Length; remaining > 0; remaining -= BlockSize)
 		{
-			Vector128<byte> block = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source.GetReference()));
+			Vector128<byte> block = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref input));
 			accumulator = GFMultiply(block ^ accumulator, key);
-			source = source.Slice(BlockSize);
+			input = ref Unsafe.Add(ref input, BlockSize);
 		}
 	}
 
@@ -71,10 +73,9 @@ internal static class GHashArm
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
-	private static void AppendPaddedSegmentsFolded(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
+	private static void AppendPaddedSegmentsFolded(ref Vector128<byte> accumulator, in GHashArmPrecomputedKey powers, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
-		Vector128<byte> internalKey = AdvSimd.Arm64.ReverseElementBits(key);
-		GHashArmFoldedState state = new(internalKey, AdvSimd.Arm64.ReverseElementBits(accumulator));
+		GHashArmFoldedState state = new(in powers, AdvSimd.Arm64.ReverseElementBits(accumulator));
 		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
 		try
@@ -86,7 +87,7 @@ internal static class GHashArm
 		}
 		finally
 		{
-			state.ZeroMemory();
+			state.Dispose();
 		}
 	}
 
@@ -137,6 +138,15 @@ internal static class GHashArm
 		lowProduct ^= low;
 		highProduct ^= high;
 		middleProduct ^= middle;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static Vector128<byte> ReduceSchoolbookProduct(Vector128<ulong> low, Vector128<ulong> high, Vector128<ulong> cross)
+	{
+		// Reduce directly from partial products without assembling the 256-bit product.
+		Vector128<ulong> polynomial = Vector128.Create(0x87UL);
+		Vector128<ulong> folded = AdvSimd.ExtractVector128(low, high, 1) ^ cross ^ AesArm.PolynomialMultiplyWideningUpper(high, polynomial);
+		return (AdvSimd.Arm64.InsertSelectedScalar(low, 1, folded, 0) ^ AesArm.PolynomialMultiplyWideningUpper(folded, polynomial)).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

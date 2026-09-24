@@ -1,11 +1,18 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
 internal ref struct GHash : IDisposable
 {
 	internal const int BlockSizeInBytes = 16;
+	private const int Vector128ShortThreshold = 16 * BlockSizeInBytes;
+	private const int ArmShortThreshold = 8 * BlockSizeInBytes;
 
 	private readonly ref GHashKey _key;
 	private Vector128<byte> _accumulator;
+
+	[UnscopedRef]
+	internal ref Vector128<byte> Accumulator => ref _accumulator;
 
 	private GHash(ref GHashKey key)
 	{
@@ -30,12 +37,6 @@ internal ref struct GHash : IDisposable
 		_accumulator.ZeroMemory();
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void Reset()
-	{
-		_accumulator = default;
-	}
-
 	// Appends one independently padded segment to the keyed state.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal void AppendPaddedSegment(scoped ReadOnlySpan<byte> source)
@@ -43,21 +44,32 @@ internal ref struct GHash : IDisposable
 		AppendPaddedSegments(ref _accumulator, ref _key, source, default, default);
 	}
 
-	// Hashes three independently padded segments and resets the keyed state.
-	internal int HashPaddedSegmentsAndReset(scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third, scoped Span<byte> destination)
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	internal void AppendPaddedSegmentsShort(scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second = default)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, BlockSizeInBytes, nameof(destination));
-		AppendPaddedSegments(ref _accumulator, ref _key, first, second, third);
-		WriteHash(in _accumulator, destination);
-		Reset();
-		return BlockSizeInBytes;
+		if (first.IsEmpty && second.IsEmpty)
+		{
+			return;
+		}
+
+		if (GHashX86.IsSupported && GetPaddedLength(first.Length) + GetPaddedLength(second.Length) <= Vector128ShortThreshold)
+		{
+			GHashX86.AppendPaddedSegments(ref _accumulator, ref _key.GetVector128().Value, first, second, default);
+		}
+		else if (GHashArm.IsSupported && GetPaddedLength(first.Length) + GetPaddedLength(second.Length) <= ArmShortThreshold)
+		{
+			_key.GetArm().Value.AppendPaddedSegments(ref _accumulator, first, second);
+		}
+		else
+		{
+			AppendPaddedSegments(ref _accumulator, ref _key, first, second, default);
+		}
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void WriteHash(in Vector128<byte> accumulator, Span<byte> destination)
+	internal Vector128<byte> Finish(scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
-		ReadOnlySpan<byte> hash = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in accumulator, 1));
-		hash.CopyTo(destination);
+		AppendPaddedSegments(ref _accumulator, ref _key, first, second, third);
+		return _accumulator;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,7 +81,7 @@ internal ref struct GHash : IDisposable
 		}
 		else if (GHashArm.IsSupported)
 		{
-			GHashArm.AppendPaddedSegments(ref accumulator, in key.Value, first, second, third);
+			GHashArm.AppendPaddedSegments(ref accumulator, ref key, first, second, third);
 		}
 		else
 		{

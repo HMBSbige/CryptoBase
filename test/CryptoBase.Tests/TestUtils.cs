@@ -31,6 +31,13 @@ public static class TestUtils
 		destination.Fill(DestinationSentinel);
 	}
 
+	public static byte[] CreateGuardedBuffer(int offset, int length, int tailLength = 11)
+	{
+		byte[] buffer = new byte[offset + length + tailLength];
+		PrepareDestination(buffer);
+		return buffer;
+	}
+
 	public static async Task AssertOutput(byte[] destination, byte[] expected, int written)
 	{
 		using (Assert.Multiple())

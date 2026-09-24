@@ -1,6 +1,6 @@
 namespace CryptoBase.Ciphers.Blocks.Aes;
 
-internal struct AesCipherVpaes : IDisposable
+internal struct AesCipherVpaes : IDisposable, IAesSubWord
 {
 	// ShuffleNative indices are nibbles or have bit 7 set. TBL and PSHUFB agree on this domain.
 	public static bool IsSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported;
@@ -430,7 +430,7 @@ internal struct AesCipherVpaes : IDisposable
 		return Vector128.ShuffleNative(SBoxOutputTable0, lookupIndex0) ^ Vector128.ShuffleNative(SBoxOutputTable1, lookupIndex1) ^ SBoxAffineConstant;
 	}
 
-	private static uint SubstituteWord(uint value)
+	static uint IAesSubWord.SubWord(uint value)
 	{
 		return SubstituteBytes(Vector128.Create(value).AsByte()).AsUInt32().GetElement(0);
 	}
@@ -468,38 +468,8 @@ internal struct AesCipherVpaes : IDisposable
 
 	private AesCipherVpaes(ReadOnlySpan<byte> key)
 	{
-		_rounds = key.Length switch
-		{
-			16 => 10,
-			24 => 12,
-			32 => 14,
-			_ => ThrowHelper.ThrowArgumentOutOfRangeException<int>(nameof(key), "Key length must be 16/24/32 bytes")
-		};
-
 		Span<uint> words = stackalloc uint[60];
-		int nk = key.Length / sizeof(uint);
-		int wordCount = (_rounds + 1) * 4;
-
-		for (int i = 0; i < nk; ++i)
-		{
-			words[i] = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(i * sizeof(uint)));
-		}
-
-		for (int i = nk; i < wordCount; ++i)
-		{
-			uint t = words[i - 1];
-
-			if (i % nk is 0)
-			{
-				t = SubstituteWord(t).RotateRight(8) ^ AesCipher.Rcon[i / nk];
-			}
-			else if (nk is 8 && i % nk is 4)
-			{
-				t = SubstituteWord(t);
-			}
-
-			words[i] = words[i - nk] ^ t;
-		}
+		_rounds = AesKeySchedule.Expand<AesCipherVpaes>(key, words);
 
 		ref uint wordRef = ref words.GetReference();
 

@@ -7,6 +7,7 @@ internal struct GHashKey
 	private GHashKeyTable<GHashVector128PrecomputedKey>? _vector128;
 	private GHashKeyTable<GHashVector256PrecomputedKey>? _vector256;
 	private GHashKeyTable<GHashVector512PrecomputedKey>? _vector512;
+	private GHashKeyTable<GHashArmPrecomputedKey>? _arm;
 
 	internal static GHashKey Create(ReadOnlySpan<byte> key)
 	{
@@ -38,6 +39,21 @@ internal struct GHashKey
 		return _vector512 ?? InitializeVector512();
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal GHashKeyTable<GHashArmPrecomputedKey> GetArm()
+	{
+		return _arm ?? InitializeArm();
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private GHashKeyTable<GHashArmPrecomputedKey> InitializeArm()
+	{
+		GHashArmPrecomputedKey powers = new(AdvSimd.Arm64.ReverseElementBits(Value));
+
+		return CreateTable(ref _arm, ref powers);
+	}
+
 	// Keep table construction out of the warm callers' stack frames.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -45,14 +61,7 @@ internal struct GHashKey
 	{
 		GHashFourBlockPrecomputedKey powers = new(Value.ReverseEndianness128());
 
-		try
-		{
-			return _fourBlock = new(in powers);
-		}
-		finally
-		{
-			powers.ZeroMemory();
-		}
+		return CreateTable(ref _fourBlock, ref powers);
 	}
 
 	[SkipLocalsInit]
@@ -61,14 +70,7 @@ internal struct GHashKey
 	{
 		GHashVector128PrecomputedKey powers = new(Value.ReverseEndianness128());
 
-		try
-		{
-			return _vector128 = new(in powers);
-		}
-		finally
-		{
-			powers.ZeroMemory();
-		}
+		return CreateTable(ref _vector128, ref powers);
 	}
 
 	[SkipLocalsInit]
@@ -77,14 +79,7 @@ internal struct GHashKey
 	{
 		GHashVector256PrecomputedKey powers = new(Value.ReverseEndianness128());
 
-		try
-		{
-			return _vector256 = new(in powers);
-		}
-		finally
-		{
-			powers.ZeroMemory();
-		}
+		return CreateTable(ref _vector256, ref powers);
 	}
 
 	[SkipLocalsInit]
@@ -93,9 +88,15 @@ internal struct GHashKey
 	{
 		GHashVector512PrecomputedKey powers = new(Value.ReverseEndianness128());
 
+		return CreateTable(ref _vector512, ref powers);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static GHashKeyTable<T> CreateTable<T>(ref GHashKeyTable<T>? table, ref T powers) where T : unmanaged
+	{
 		try
 		{
-			return _vector512 = new(in powers);
+			return table = new GHashKeyTable<T>(in powers);
 		}
 		finally
 		{
@@ -110,9 +111,11 @@ internal struct GHashKey
 		_vector128?.Dispose();
 		_vector256?.Dispose();
 		_vector512?.Dispose();
+		_arm?.Dispose();
 		_fourBlock = null;
 		_vector128 = null;
 		_vector256 = null;
 		_vector512 = null;
+		_arm = null;
 	}
 }

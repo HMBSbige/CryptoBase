@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using System.Runtime.Intrinsics;
 using System.Security.Cryptography;
 using GHashAlgorithmCore = CryptoBase.Ciphers.Modes.Gcm.GHash;
 using GHashKeyCore = CryptoBase.Ciphers.Modes.Gcm.GHashKey;
@@ -14,7 +15,6 @@ public class GHashBenchmark
 	private GHashKeyCore _key;
 	private byte[] _keyBytes = [];
 	private byte[] _input = [];
-	private byte[] _hash = [];
 
 	[GlobalSetup]
 	public void Setup()
@@ -22,14 +22,13 @@ public class GHashBenchmark
 		_keyBytes = RandomNumberGenerator.GetBytes(GHashAlgorithmCore.BlockSizeInBytes);
 		_key = GHashKeyCore.Create(_keyBytes);
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
-		_hash = new byte[GHashAlgorithmCore.BlockSizeInBytes];
 	}
 
 	[Benchmark]
-	public int CryptoBase()
+	public Vector128<byte> CryptoBase()
 	{
 		using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref _key);
-		return hash.HashPaddedSegmentsAndReset(_input, default, default, _hash);
+		return hash.Finish(_input, default, default);
 	}
 
 	[GlobalCleanup]
@@ -40,14 +39,14 @@ public class GHashBenchmark
 	}
 
 	[Benchmark]
-	public int ColdKey()
+	public Vector128<byte> ColdKey()
 	{
 		GHashKeyCore key = GHashKeyCore.Create(_keyBytes);
 
 		try
 		{
 			using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref key);
-			return hash.HashPaddedSegmentsAndReset(_input, default, default, _hash);
+			return hash.Finish(_input, default, default);
 		}
 		finally
 		{

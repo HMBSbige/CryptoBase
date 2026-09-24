@@ -1,5 +1,7 @@
 using CryptoBase.Ciphers.Modes.Gcm;
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using static CryptoBase.Tests.TestUtils;
 using GHashAlgorithmCore = CryptoBase.Ciphers.Modes.Gcm.GHash;
 
@@ -45,52 +47,41 @@ public class GHashTest
 	{
 		byte[] key = Convert.FromHexString(keyHex);
 		byte[] source = Convert.FromHexString(sourceHex);
-		byte[] expected = Convert.FromHexString(expectedHex);
+		Vector128<byte> expected = MemoryMarshal.Read<Vector128<byte>>(Convert.FromHexString(expectedHex));
 		byte[] keyCopy = (byte[])key.Clone();
 		byte[] sourceCopy = (byte[])source.Clone();
-		byte[] destination = new byte[GHashAlgorithmCore.BlockSizeInBytes + 1];
+		Vector128<byte> actual = HashPaddedSegments(key, source, default, default);
 
-		PrepareDestination(destination);
-		int written = HashPaddedSegments(key, source, default, default, destination);
-
-		await AssertOutput(destination, expected, written);
+		await Assert.That(actual).IsEqualTo(expected);
 		await Assert.That(key).IsEquivalentTo(keyCopy, CollectionOrdering.Matching);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
-		await Assert.That(ComputeReferenceHash(key, source, default, default)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		await Assert.That(ComputeReferenceHash(key, source, default, default)).IsEqualTo(expected);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(BoundaryLengths))]
-	public async Task PaddedSegmentsMatchReferenceAndReset(int length)
+	public async Task PaddedSegmentsMatchReference(int length)
 	{
 		byte[] key = CreateDeterministicSource(GHashAlgorithmCore.BlockSizeInBytes);
 		byte[] first = CreateDeterministicSource(length);
 		byte[] second = CreateDeterministicSource((length * 7 + 3) % 67);
 		byte[] third = CreateDeterministicSource((length * 11 + 5) % 79);
-		byte[] expected = ComputeReferenceHash(key, first, second, third);
-		byte[] destination = new byte[GHashAlgorithmCore.BlockSizeInBytes + 1];
-		byte[] resetDestination = new byte[destination.Length];
+		Vector128<byte> expected = ComputeReferenceHash(key, first, second, third);
 		GHashKey keyContext = GHashKey.Create(key);
-		int written;
-		int resetWritten;
+		Vector128<byte> actual;
 
 		try
 		{
 			using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref keyContext);
 			hash.AppendPaddedSegment(first);
-			PrepareDestination(destination);
-			written = hash.HashPaddedSegmentsAndReset(second, third, default, destination);
-
-			PrepareDestination(resetDestination);
-			resetWritten = hash.HashPaddedSegmentsAndReset(default, default, default, resetDestination);
+			actual = hash.Finish(second, third, default);
 		}
 		finally
 		{
 			keyContext.Dispose();
 		}
 
-		await AssertOutput(destination, expected, written);
-		await AssertOutput(resetDestination, new byte[GHashAlgorithmCore.BlockSizeInBytes], resetWritten);
+		await Assert.That(actual).IsEqualTo(expected);
 	}
 
 	[Test]
@@ -100,15 +91,12 @@ public class GHashTest
 		byte[] first = [0x01];
 		byte[] second = [0x02];
 		byte[] combined = Concat(first, second);
-		byte[] segmentedHash = new byte[GHashAlgorithmCore.BlockSizeInBytes];
-		byte[] combinedHash = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		Vector128<byte> segmentedHash = HashPaddedSegments(key, first, second, default);
+		Vector128<byte> combinedHash = HashPaddedSegments(key, combined, default, default);
 
-		HashPaddedSegments(key, first, second, default, segmentedHash);
-		HashPaddedSegments(key, combined, default, default, combinedHash);
-
-		await Assert.That(segmentedHash).IsEquivalentTo(ComputeReferenceHash(key, first, second, default), CollectionOrdering.Matching);
-		await Assert.That(combinedHash).IsEquivalentTo(ComputeReferenceHash(key, combined, default, default), CollectionOrdering.Matching);
-		await Assert.That(segmentedHash).IsNotEquivalentTo(combinedHash, CollectionOrdering.Matching);
+		await Assert.That(segmentedHash).IsEqualTo(ComputeReferenceHash(key, first, second, default));
+		await Assert.That(combinedHash).IsEqualTo(ComputeReferenceHash(key, combined, default, default));
+		await Assert.That(segmentedHash).IsNotEqualTo(combinedHash);
 	}
 
 	[Test]
@@ -119,13 +107,10 @@ public class GHashTest
 		byte[] first = CreateDeterministicSource(firstLength);
 		byte[] second = CreateDeterministicSource(secondLength);
 		byte[] third = CreateDeterministicSource(thirdLength);
-		byte[] expected = ComputeReferenceHash(key, first, second, third);
-		byte[] destination = new byte[GHashAlgorithmCore.BlockSizeInBytes + 1];
+		Vector128<byte> expected = ComputeReferenceHash(key, first, second, third);
+		Vector128<byte> actual = HashPaddedSegments(key, first, second, third);
 
-		PrepareDestination(destination);
-		int written = HashPaddedSegments(key, first, second, third, destination);
-
-		await AssertOutput(destination, expected, written);
+		await Assert.That(actual).IsEqualTo(expected);
 	}
 
 	[Test]
@@ -137,54 +122,10 @@ public class GHashTest
 		byte[] third = CreateDeterministicSource(19);
 		byte[] source = CreateDeterministicSource(offset + length);
 		ReadOnlySpan<byte> second = source.AsSpan().Slice(offset, length);
-		byte[] expected = ComputeReferenceHash(key, first, second, third);
-		byte[] destination = new byte[GHashAlgorithmCore.BlockSizeInBytes + 1];
+		Vector128<byte> expected = ComputeReferenceHash(key, first, second, third);
+		Vector128<byte> actual = HashPaddedSegments(key, first, second, third);
 
-		PrepareDestination(destination);
-		int written = HashPaddedSegments(key, first, second, third, destination);
-		await AssertOutput(destination, expected, written);
-	}
-
-	[Test]
-	public async Task ShortDestinationDoesNotModifyOutputOrState()
-	{
-		byte[] key = CreateDeterministicSource(GHashAlgorithmCore.BlockSizeInBytes);
-		byte[] first = CreateDeterministicSource(23);
-		byte[] second = CreateDeterministicSource(38);
-		byte[] expected = ComputeReferenceHash(key, first, second, default);
-		byte[] shortDestination = new byte[GHashAlgorithmCore.BlockSizeInBytes - 1];
-		byte[] destination = new byte[GHashAlgorithmCore.BlockSizeInBytes + 1];
-		GHashKey keyContext = GHashKey.Create(key);
-		ArgumentOutOfRangeException? rejectedCall = null;
-		int written;
-
-		try
-		{
-			using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref keyContext);
-			hash.AppendPaddedSegment(first);
-			PrepareDestination(shortDestination);
-
-			try
-			{
-				hash.HashPaddedSegmentsAndReset(second, default, default, shortDestination);
-			}
-			catch (ArgumentOutOfRangeException exception)
-			{
-				rejectedCall = exception;
-			}
-
-			PrepareDestination(destination);
-			written = hash.HashPaddedSegmentsAndReset(second, default, default, destination);
-		}
-		finally
-		{
-			keyContext.Dispose();
-		}
-
-		await Assert.That(rejectedCall?.GetType()).IsEqualTo(typeof(ArgumentOutOfRangeException));
-		await Assert.That(rejectedCall?.ParamName).IsEqualTo("destination");
-		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
-		await AssertOutput(destination, expected, written);
+		await Assert.That(actual).IsEqualTo(expected);
 	}
 
 	[Test]
@@ -204,8 +145,8 @@ public class GHashTest
 		byte[] first = CreateDeterministicSource(513);
 		byte[] second = CreateDeterministicSource(4097);
 		byte[] prefix = CreateDeterministicSource(17);
-		byte[] firstDestination = new byte[GHashAlgorithmCore.BlockSizeInBytes];
-		byte[] secondDestination = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		Vector128<byte> firstResult;
+		Vector128<byte> secondResult;
 		GHashKey keyContext = GHashKey.Create(key);
 
 		try
@@ -221,28 +162,28 @@ public class GHashTest
 			using (GHashAlgorithmCore firstHash = GHashAlgorithmCore.Create(ref keyContext))
 			{
 				firstHash.AppendPaddedSegment(first);
-				firstHash.HashPaddedSegmentsAndReset(prefix, default, default, firstDestination);
+				firstResult = firstHash.Finish(prefix, default, default);
 			}
 
-			secondHash.HashPaddedSegmentsAndReset(second, default, default, secondDestination);
+			secondResult = secondHash.Finish(second, default, default);
 		}
 		finally
 		{
 			keyContext.Dispose();
 		}
 
-		await Assert.That(firstDestination).IsEquivalentTo(ComputeReferenceHash(key, first, prefix, default), CollectionOrdering.Matching);
-		await Assert.That(secondDestination).IsEquivalentTo(ComputeReferenceHash(key, prefix, second, default), CollectionOrdering.Matching);
+		await Assert.That(firstResult).IsEqualTo(ComputeReferenceHash(key, first, prefix, default));
+		await Assert.That(secondResult).IsEqualTo(ComputeReferenceHash(key, prefix, second, default));
 	}
 
-	private static int HashPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third, Span<byte> destination)
+	private static Vector128<byte> HashPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
 	{
 		GHashKey keyContext = GHashKey.Create(key);
 
 		try
 		{
 			using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref keyContext);
-			return hash.HashPaddedSegmentsAndReset(first, second, third, destination);
+			return hash.Finish(first, second, third);
 		}
 		finally
 		{
@@ -250,7 +191,7 @@ public class GHashTest
 		}
 	}
 
-	private static byte[] ComputeReferenceHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
+	private static Vector128<byte> ComputeReferenceHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, GHashAlgorithmCore.BlockSizeInBytes, nameof(key));
 
@@ -260,9 +201,9 @@ public class GHashTest
 		AppendPaddedSegment(ref accumulator, h, second);
 		AppendPaddedSegment(ref accumulator, h, third);
 
-		byte[] destination = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		Span<byte> destination = stackalloc byte[GHashAlgorithmCore.BlockSizeInBytes];
 		BinaryPrimitives.WriteUInt128BigEndian(destination, accumulator);
-		return destination;
+		return MemoryMarshal.Read<Vector128<byte>>(destination);
 	}
 
 	private static void AppendPaddedSegment(ref UInt128 accumulator, UInt128 key, ReadOnlySpan<byte> source)

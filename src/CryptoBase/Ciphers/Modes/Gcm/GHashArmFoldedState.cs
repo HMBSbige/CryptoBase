@@ -2,29 +2,20 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashArm;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal struct GHashArmFoldedState
+internal ref struct GHashArmFoldedState : IDisposable
 {
-	private readonly Vector128<byte> _key1;
-	private readonly Vector128<byte> _key2;
-	private readonly Vector128<byte> _key3;
-	private readonly Vector128<byte> _key4;
-	private readonly Vector128<byte> _key5;
-	private readonly Vector128<byte> _key6;
-	private readonly Vector128<byte> _key7;
-	private readonly Vector128<byte> _key8;
+	private readonly ref readonly GHashArmPrecomputedKey _powers;
 	private Vector128<byte> _accumulator;
 
-	internal GHashArmFoldedState(Vector128<byte> key, Vector128<byte> accumulator)
+	internal GHashArmFoldedState(in GHashArmPrecomputedKey powers, Vector128<byte> accumulator)
 	{
-		_key1 = key;
-		_key2 = GFSquare(_key1);
-		_key3 = GFMultiply(_key2, _key1);
-		_key4 = GFSquare(_key2);
-		_key5 = GFMultiply(_key4, _key1);
-		_key6 = GFMultiply(_key4, _key2);
-		_key7 = GFMultiply(_key4, _key3);
-		_key8 = GFSquare(_key4);
+		_powers = ref powers;
 		_accumulator = accumulator;
+	}
+
+	public void Dispose()
+	{
+		_accumulator.ZeroMemory();
 	}
 
 	private void AppendBlocks(scoped ReadOnlySpan<byte> source)
@@ -35,21 +26,21 @@ internal struct GHashArmFoldedState
 		while (length >= 8 * BlockSize)
 		{
 			Vector128<byte> value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 1 * BlockSize));
-			GFMultiplyUnreduced(value, _key7, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
+			GFMultiplyUnreduced(value, _powers.Key7, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 2 * BlockSize));
-			AccumulateProduct(value, _key6, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key6, ref lowProduct, ref highProduct, ref middleProduct);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 3 * BlockSize));
-			AccumulateProduct(value, _key5, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key5, ref lowProduct, ref highProduct, ref middleProduct);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 4 * BlockSize));
-			AccumulateProduct(value, _key4, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key4, ref lowProduct, ref highProduct, ref middleProduct);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 5 * BlockSize));
-			AccumulateProduct(value, _key3, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key3, ref lowProduct, ref highProduct, ref middleProduct);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 6 * BlockSize));
-			AccumulateProduct(value, _key2, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key2, ref lowProduct, ref highProduct, ref middleProduct);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 7 * BlockSize));
-			AccumulateProduct(value, _key1, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key1, ref lowProduct, ref highProduct, ref middleProduct);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef)) ^ _accumulator;
-			AccumulateProduct(value, _key8, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key8, ref lowProduct, ref highProduct, ref middleProduct);
 			FinishFold(lowProduct, highProduct, middleProduct);
 
 			sourceRef = ref Unsafe.Add(ref sourceRef, 8 * BlockSize);
@@ -64,10 +55,10 @@ internal struct GHashArmFoldedState
 			Vector128<byte> x3 = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 3 * BlockSize));
 			x0 ^= _accumulator;
 
-			GFMultiplyUnreduced(x1, _key3, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
-			AccumulateProduct(x2, _key2, ref lowProduct, ref highProduct, ref middleProduct);
-			AccumulateProduct(x3, _key1, ref lowProduct, ref highProduct, ref middleProduct);
-			AccumulateProduct(x0, _key4, ref lowProduct, ref highProduct, ref middleProduct);
+			GFMultiplyUnreduced(x1, _powers.Key3, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
+			AccumulateProduct(x2, _powers.Key2, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(x3, _powers.Key1, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(x0, _powers.Key4, ref lowProduct, ref highProduct, ref middleProduct);
 			FinishFold(lowProduct, highProduct, middleProduct);
 
 			sourceRef = ref Unsafe.Add(ref sourceRef, 4 * BlockSize);
@@ -77,7 +68,7 @@ internal struct GHashArmFoldedState
 		while (length >= BlockSize)
 		{
 			Vector128<byte> block = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef));
-			_accumulator = GFMultiply(block ^ _accumulator, _key1);
+			_accumulator = GFMultiply(block ^ _accumulator, _powers.Key1);
 			sourceRef = ref Unsafe.Add(ref sourceRef, BlockSize);
 			length -= BlockSize;
 		}
@@ -143,21 +134,21 @@ internal struct GHashArmFoldedState
 	private void AppendEight(ref byte source, ref byte lastSource)
 	{
 		Vector128<byte> value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 1 * BlockSize));
-		GFMultiplyUnreduced(value, _key7, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
+		GFMultiplyUnreduced(value, _powers.Key7, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 2 * BlockSize));
-		AccumulateProduct(value, _key6, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key6, ref lowProduct, ref highProduct, ref middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 3 * BlockSize));
-		AccumulateProduct(value, _key5, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key5, ref lowProduct, ref highProduct, ref middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 4 * BlockSize));
-		AccumulateProduct(value, _key4, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key4, ref lowProduct, ref highProduct, ref middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 5 * BlockSize));
-		AccumulateProduct(value, _key3, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key3, ref lowProduct, ref highProduct, ref middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 6 * BlockSize));
-		AccumulateProduct(value, _key2, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key2, ref lowProduct, ref highProduct, ref middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref lastSource));
-		AccumulateProduct(value, _key1, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key1, ref lowProduct, ref highProduct, ref middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source)) ^ _accumulator;
-		AccumulateProduct(value, _key8, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key8, ref lowProduct, ref highProduct, ref middleProduct);
 		FinishFold(lowProduct, highProduct, middleProduct);
 	}
 
@@ -165,13 +156,13 @@ internal struct GHashArmFoldedState
 	private void AppendFour(ref byte source, ref byte lastSource)
 	{
 		Vector128<byte> value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 1 * BlockSize));
-		GFMultiplyUnreduced(value, _key3, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
+		GFMultiplyUnreduced(value, _powers.Key3, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 2 * BlockSize));
-		AccumulateProduct(value, _key2, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key2, ref lowProduct, ref highProduct, ref middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref lastSource));
-		AccumulateProduct(value, _key1, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key1, ref lowProduct, ref highProduct, ref middleProduct);
 		value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source)) ^ _accumulator;
-		AccumulateProduct(value, _key4, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key4, ref lowProduct, ref highProduct, ref middleProduct);
 		FinishFold(lowProduct, highProduct, middleProduct);
 	}
 
@@ -179,9 +170,9 @@ internal struct GHashArmFoldedState
 	private void AppendTwo(ref byte source, ref byte lastSource)
 	{
 		Vector128<byte> last = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref lastSource));
-		GFMultiplyUnreduced(last, _key1, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
+		GFMultiplyUnreduced(last, _powers.Key1, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
 		Vector128<byte> value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source)) ^ _accumulator;
-		AccumulateProduct(value, _key2, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key2, ref lowProduct, ref highProduct, ref middleProduct);
 		FinishFold(lowProduct, highProduct, middleProduct);
 	}
 
@@ -190,47 +181,47 @@ internal struct GHashArmFoldedState
 	{
 		Debug.Assert(blockCount is 3 or 5 or 6 or 7);
 		Vector128<byte> last = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref lastSource));
-		GFMultiplyUnreduced(last, _key1, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
+		GFMultiplyUnreduced(last, _powers.Key1, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
 
 		ref byte block = ref Unsafe.Add(ref source, (blockCount - 2) * BlockSize);
 		Vector128<byte> value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref block));
-		AccumulateProduct(value, _key2, ref lowProduct, ref highProduct, ref middleProduct);
+		AccumulateProduct(value, _powers.Key2, ref lowProduct, ref highProduct, ref middleProduct);
 
 		if (blockCount > 3)
 		{
 			block = ref Unsafe.Subtract(ref block, BlockSize);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref block));
-			AccumulateProduct(value, _key3, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key3, ref lowProduct, ref highProduct, ref middleProduct);
 		}
 
 		if (blockCount > 4)
 		{
 			block = ref Unsafe.Subtract(ref block, BlockSize);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref block));
-			AccumulateProduct(value, _key4, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key4, ref lowProduct, ref highProduct, ref middleProduct);
 		}
 
 		if (blockCount > 5)
 		{
 			block = ref Unsafe.Subtract(ref block, BlockSize);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref block));
-			AccumulateProduct(value, _key5, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key5, ref lowProduct, ref highProduct, ref middleProduct);
 		}
 
 		if (blockCount > 6)
 		{
 			block = ref Unsafe.Subtract(ref block, BlockSize);
 			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref block));
-			AccumulateProduct(value, _key6, ref lowProduct, ref highProduct, ref middleProduct);
+			AccumulateProduct(value, _powers.Key6, ref lowProduct, ref highProduct, ref middleProduct);
 		}
 
 		Vector128<byte> first = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source)) ^ _accumulator;
 		Vector128<byte> firstKey = blockCount switch
 		{
-			3 => _key3,
-			5 => _key5,
-			6 => _key6,
-			_ => _key7
+			3 => _powers.Key3,
+			5 => _powers.Key5,
+			6 => _powers.Key6,
+			_ => _powers.Key7
 		};
 		AccumulateProduct(first, firstKey, ref lowProduct, ref highProduct, ref middleProduct);
 		FinishFold(lowProduct, highProduct, middleProduct);

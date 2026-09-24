@@ -2,7 +2,7 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashX86;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal readonly struct GHashVector512PrecomputedKey
+internal readonly struct GHashVector512PrecomputedKey : IGHashPowers
 {
 	private readonly Vector128<byte> _key1;
 	private readonly Vector512<byte> _key4321;
@@ -213,7 +213,7 @@ internal readonly struct GHashVector512PrecomputedKey
 		accumulatorDestination = accumulator;
 	}
 
-	internal void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	public void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
 	{
 		int completeLength = source.Length & -BlockSize;
 		ReadOnlySpan<byte> remaining = source.Slice(completeLength);

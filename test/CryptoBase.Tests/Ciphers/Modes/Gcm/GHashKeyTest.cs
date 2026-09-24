@@ -13,6 +13,7 @@ public class GHashKeyTest
 		GHashKeyTable<GHashVector128PrecomputedKey>? vector128 = null;
 		GHashKeyTable<GHashVector256PrecomputedKey>? vector256 = null;
 		GHashKeyTable<GHashVector512PrecomputedKey>? vector512 = null;
+		GHashKeyTable<GHashArmPrecomputedKey>? arm = null;
 		List<byte[]> before = [];
 
 		try
@@ -35,6 +36,12 @@ public class GHashKeyTest
 			{
 				vector512 = key.GetVector512();
 				before.Add(GetBytes(vector512));
+			}
+
+			if (GHashArm.IsSupported)
+			{
+				arm = key.GetArm();
+				before.Add(GetBytes(arm));
 			}
 		}
 		finally
@@ -62,6 +69,11 @@ public class GHashKeyTest
 		if (vector512 is not null)
 		{
 			after.Add(GetBytes(vector512));
+		}
+
+		if (arm is not null)
+		{
+			after.Add(GetBytes(arm));
 		}
 
 		foreach (byte[] bytes in before)

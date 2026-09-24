@@ -2,7 +2,7 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashX86;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal readonly struct GHashVector128PrecomputedKey
+internal readonly struct GHashVector128PrecomputedKey : IGHashPowers
 {
 	private readonly Vector128<byte> _key1;
 	private readonly Vector128<byte> _keyK1;
@@ -20,6 +20,14 @@ internal readonly struct GHashVector128PrecomputedKey
 	private readonly Vector128<byte> _keyK7;
 	private readonly Vector128<byte> _key8;
 	private readonly Vector128<byte> _keyK8;
+	private readonly Vector128<byte> _keyX1;
+	private readonly Vector128<byte> _keyX2;
+	private readonly Vector128<byte> _keyX3;
+	private readonly Vector128<byte> _keyX4;
+	private readonly Vector128<byte> _keyX5;
+	private readonly Vector128<byte> _keyX6;
+	private readonly Vector128<byte> _keyX7;
+	private readonly Vector128<byte> _keyX8;
 
 	internal GHashVector128PrecomputedKey(Vector128<byte> key)
 	{
@@ -67,6 +75,14 @@ internal readonly struct GHashVector128PrecomputedKey
 		_keyK6 = GHashX86.GetReductionKey(_key6);
 		_keyK7 = GHashX86.GetReductionKey(_key7);
 		_keyK8 = GHashX86.GetReductionKey(_key8);
+		_keyX1 = _key1 ^ Sse2.ShiftRightLogical128BitLane(_key1, 8);
+		_keyX2 = _key2 ^ Sse2.ShiftRightLogical128BitLane(_key2, 8);
+		_keyX3 = _key3 ^ Sse2.ShiftRightLogical128BitLane(_key3, 8);
+		_keyX4 = _key4 ^ Sse2.ShiftRightLogical128BitLane(_key4, 8);
+		_keyX5 = _key5 ^ Sse2.ShiftRightLogical128BitLane(_key5, 8);
+		_keyX6 = _key6 ^ Sse2.ShiftRightLogical128BitLane(_key6, 8);
+		_keyX7 = _key7 ^ Sse2.ShiftRightLogical128BitLane(_key7, 8);
+		_keyX8 = _key8 ^ Sse2.ShiftRightLogical128BitLane(_key8, 8);
 	}
 
 	private void AppendBlocks(ref Vector128<byte> accumulatorDestination, scoped ReadOnlySpan<byte> source)
@@ -184,7 +200,7 @@ internal readonly struct GHashVector128PrecomputedKey
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private Vector128<byte> GetKey(int power)
+	internal Vector128<byte> GetKey(int power)
 	{
 		return power switch
 		{
@@ -200,7 +216,23 @@ internal readonly struct GHashVector128PrecomputedKey
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private Vector128<byte> GetReductionKey(int power)
+	internal Vector128<byte> GetXorKey(int power)
+	{
+		return power switch
+		{
+			1 => _keyX1,
+			2 => _keyX2,
+			3 => _keyX3,
+			4 => _keyX4,
+			5 => _keyX5,
+			6 => _keyX6,
+			7 => _keyX7,
+			_ => _keyX8
+		};
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal Vector128<byte> GetReductionKey(int power)
 	{
 		return power switch
 		{
@@ -215,7 +247,7 @@ internal readonly struct GHashVector128PrecomputedKey
 		};
 	}
 
-	internal void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	public void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
 	{
 		int completeLength = source.Length & -BlockSize;
 		ReadOnlySpan<byte> remaining = source.Slice(completeLength);

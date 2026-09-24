@@ -161,16 +161,16 @@ public sealed partial class Base32Encoding
 	{
 		if (alphabetKind is Rfc4648HexAlphabetKind)
 		{
-			baseOffset = unchecked((byte)-'0');
-			adjustedOffset = unchecked((byte)-'A');
+			baseOffset = 256 - '0';
+			adjustedOffset = 256 - 'A';
 			baseLimit = 9;
 			adjustedLimit = 21;
-			adjustment = unchecked((byte)-7);
+			adjustment = 256 - 7;
 		}
 		else
 		{
-			baseOffset = unchecked((byte)-'A');
-			adjustedOffset = unchecked((byte)-'2');
+			baseOffset = 256 - 'A';
+			adjustedOffset = 256 - '2';
 			baseLimit = 25;
 			adjustedLimit = 5;
 			adjustment = 'A' - '2' + 26;
