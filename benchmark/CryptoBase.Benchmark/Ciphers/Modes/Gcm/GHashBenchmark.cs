@@ -3,13 +3,14 @@ using System.Runtime.Intrinsics;
 using System.Security.Cryptography;
 using GHashAlgorithmCore = CryptoBase.Ciphers.Modes.Gcm.GHash;
 using GHashKeyCore = CryptoBase.Ciphers.Modes.Gcm.GHashKey;
+using GHashSoftwareCore = CryptoBase.Ciphers.Modes.Gcm.GHashSoftware;
 
 namespace CryptoBase.Benchmark.Ciphers.Modes.Gcm;
 
 [MemoryDiagnoser]
 public class GHashBenchmark
 {
-	[Params(16, 128, 256, 512, 8192)]
+	[Params(16, 64, 1024, 16384)]
 	public int ByteLength { get; set; }
 
 	private GHashKeyCore _key;
@@ -29,6 +30,14 @@ public class GHashBenchmark
 	{
 		using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref _key);
 		return hash.Finish(_input, default, default);
+	}
+
+	[Benchmark]
+	public Vector128<byte> Software()
+	{
+		Vector128<byte> accumulator = default;
+		GHashSoftwareCore.AppendPaddedSegments(ref accumulator, in _key.Value, _input, default, default);
+		return accumulator;
 	}
 
 	[GlobalCleanup]

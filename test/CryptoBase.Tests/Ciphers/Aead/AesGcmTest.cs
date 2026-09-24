@@ -61,11 +61,20 @@ public class AesGcmTest
 		await Assert.That(recovered).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
 	}
 
-	/// <summary>
-	/// https://gchq.github.io/CyberChef/#recipe=AES_Encrypt(%7B'option':'Hex','string':''%7D,%7B'option':'Hex','string':''%7D,'GCM','Hex','Hex','')
-	/// https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
-	/// </summary>
 	[Test]
+	// NIST GCM-AES128 example 5, with partial AAD and ciphertext blocks:
+	// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_GCM.pdf
+	[Arguments
+	(
+		@"feffe9928665731c6d6a8f9467308308",
+		@"cafebabefacedbaddecaf888",
+		@"3ad77bb40d7a3660a89ecaf32466ef97f5d3d585",
+		@"f07c2528eea2fca1211f905e1b6a881b",
+		@"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+		@"42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091"
+	)]
+	// https://gchq.github.io/CyberChef/#recipe=AES_Encrypt(%7B'option':'Hex','string':''%7D,%7B'option':'Hex','string':''%7D,'GCM','Hex','Hex','')
+	// https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
 	[Arguments
 	(
 		@"00000000000000000000000000000000",

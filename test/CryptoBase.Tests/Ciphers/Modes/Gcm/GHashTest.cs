@@ -41,6 +41,17 @@ public class GHashTest
 		(@"66e94bd4ef8a2c3b884cfa59ca342b2e", @"0388dace60b6a392f328c2b971b2fe7ad2c55bb64f", @"c1d3b69b62c9a392687aaf55d95a1df6")
 	];
 
+	/// <summary>
+	/// NIST GCM-AES128 examples 2, 3 and 5, including the intermediate GHASH value S.
+	/// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_GCM.pdf
+	/// </summary>
+	public static IEnumerable<(string, string, string)> NistGcmData =>
+	[
+		("", "42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985", "7f1b32b81b820d02614f8895ac1d4eac"),
+		("3ad77bb40d7a3660a89ecaf32466ef97f5d3d58503b9699de785895a96fdbaaf43b1cd7f598ece23881b00e3ed0306887b0c785e27e8ad3f8223207104725dd4", "", "6dd6cf3a1fa0371dd4c5c1ac1c3675f1"),
+		("3ad77bb40d7a3660a89ecaf32466ef97f5d3d585", "42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091", "c23b3d63d2ed95056ca342769cd13c03")
+	];
+
 	[Test]
 	[MethodDataSource(nameof(Data))]
 	public async Task KnownVectors(string keyHex, string sourceHex, string expectedHex)
@@ -53,9 +64,185 @@ public class GHashTest
 		Vector128<byte> actual = HashPaddedSegments(key, source, default, default);
 
 		await Assert.That(actual).IsEqualTo(expected);
+		await Assert.That(HashSoftwarePaddedSegments(key, source, default, default)).IsEqualTo(expected);
+
+		if (GHashNeon.IsSupported)
+		{
+			await Assert.That(HashNeonPaddedSegments(key, source, default, default)).IsEqualTo(expected);
+		}
+
 		await Assert.That(key).IsEquivalentTo(keyCopy, CollectionOrdering.Matching);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
 		await Assert.That(ComputeReferenceHash(key, source, default, default)).IsEqualTo(expected);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(NistGcmData))]
+	public async Task NistGcmKnownAnswers(string associatedDataHex, string ciphertextHex, string expectedHex)
+	{
+		byte[] key = Convert.FromHexString("b83b533708bf535d0aa6e52980d53b78");
+		byte[] associatedData = Convert.FromHexString(associatedDataHex);
+		byte[] ciphertext = Convert.FromHexString(ciphertextHex);
+		byte[] lengths = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		BinaryPrimitives.WriteUInt64BigEndian(lengths, (ulong)associatedData.Length * 8);
+		BinaryPrimitives.WriteUInt64BigEndian(lengths.AsSpan().Slice(8), (ulong)ciphertext.Length * 8);
+		Vector128<byte> expected = MemoryMarshal.Read<Vector128<byte>>(Convert.FromHexString(expectedHex));
+
+		await Assert.That(HashSoftwarePaddedSegments(key, associatedData, ciphertext, lengths)).IsEqualTo(expected);
+		await Assert.That(HashPaddedSegments(key, associatedData, ciphertext, lengths)).IsEqualTo(expected);
+		await Assert.That(ComputeReferenceHash(key, associatedData, ciphertext, lengths)).IsEqualTo(expected);
+
+		if (GHashNeon.IsSupported)
+		{
+			await Assert.That(HashNeonPaddedSegments(key, associatedData, ciphertext, lengths)).IsEqualTo(expected);
+		}
+	}
+
+	[Test]
+	public async Task SoftwareMultipliersMatchReferenceForBoundaryValues()
+	{
+		UInt128[] values = [0, 1, uint.MaxValue, ulong.MaxValue, (UInt128)ulong.MaxValue << 64, UInt128.MaxValue];
+
+		foreach (UInt128 input in values)
+		{
+			foreach (UInt128 key in values)
+			{
+				await AssertSoftwareMultipliersMatchReference(input, key);
+			}
+		}
+
+		for (int bit = 0; bit < 128; ++bit)
+		{
+			UInt128 singleBit = (UInt128)1 << bit;
+			await AssertSoftwareMultipliersMatchReference(singleBit, UInt128.MaxValue);
+			await AssertSoftwareMultipliersMatchReference(UInt128.MaxValue, singleBit);
+		}
+	}
+
+	[Test]
+	public async Task SoftwareMultipliersMatchReferenceForRandomInputs()
+	{
+		Random random = new(0x63746d75);
+		byte[] inputBytes = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		byte[] keyBytes = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+
+		for (int i = 0; i < 256; ++i)
+		{
+			random.NextBytes(inputBytes);
+			random.NextBytes(keyBytes);
+			await AssertSoftwareMultipliersMatchReference(BinaryPrimitives.ReadUInt128BigEndian(inputBytes), BinaryPrimitives.ReadUInt128BigEndian(keyBytes));
+		}
+	}
+
+	[Test]
+	[Arguments(16)]
+	[Arguments(32)]
+	[Arguments(64)]
+	[Arguments(1024)]
+	public async Task SoftwareMaximumCarryMatchesReference(int length)
+	{
+		byte[] key = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		byte[] source = new byte[length];
+		key.AsSpan().Fill(0xff);
+		source.AsSpan().Fill(0xff);
+		Vector128<byte> expected = ComputeReferenceHash(key, source, default, default);
+
+		await Assert.That(HashSoftwarePaddedSegments(key, source, default, default)).IsEqualTo(expected);
+
+		if (GHashNeon.IsSupported)
+		{
+			await Assert.That(HashNeonPaddedSegments(key, source, default, default)).IsEqualTo(expected);
+		}
+	}
+
+	[Test]
+	public async Task SoftwareSingleBitsMatchReference()
+	{
+		byte[] allOnes = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+		allOnes.AsSpan().Fill(0xff);
+
+		for (int bit = 0; bit < 128; ++bit)
+		{
+			byte[] singleBit = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+			singleBit[bit / 8] = (byte)(1 << bit % 8);
+			Vector128<byte> expectedDataBit = ComputeReferenceHash(allOnes, singleBit, default, default);
+			Vector128<byte> expectedKeyBit = ComputeReferenceHash(singleBit, allOnes, default, default);
+
+			await Assert.That(HashSoftwarePaddedSegments(allOnes, singleBit, default, default)).IsEqualTo(expectedDataBit);
+			await Assert.That(HashSoftwarePaddedSegments(singleBit, allOnes, default, default)).IsEqualTo(expectedKeyBit);
+
+			if (GHashNeon.IsSupported)
+			{
+				await Assert.That(HashNeonPaddedSegments(allOnes, singleBit, default, default)).IsEqualTo(expectedDataBit);
+				await Assert.That(HashNeonPaddedSegments(singleBit, allOnes, default, default)).IsEqualTo(expectedKeyBit);
+			}
+		}
+	}
+
+	[Test]
+	public async Task SoftwareRandomKeysAndSegmentsMatchReference()
+	{
+		Random random = new(0x63746d75);
+
+		for (int i = 0; i < 128; ++i)
+		{
+			byte[] key = new byte[GHashAlgorithmCore.BlockSizeInBytes];
+			byte[] first = new byte[random.Next(258)];
+			byte[] second = new byte[random.Next(130)];
+			byte[] third = new byte[random.Next(34)];
+			random.NextBytes(key);
+			random.NextBytes(first);
+			random.NextBytes(second);
+			random.NextBytes(third);
+			Vector128<byte> expected = ComputeReferenceHash(key, first, second, third);
+
+			await Assert.That(HashSoftwarePaddedSegments(key, first, second, third)).IsEqualTo(expected);
+
+			if (GHashNeon.IsSupported)
+			{
+				await Assert.That(HashNeonPaddedSegments(key, first, second, third)).IsEqualTo(expected);
+			}
+		}
+	}
+
+	[Test]
+	[MethodDataSource(nameof(BoundaryLengths))]
+	public async Task SoftwareContinuationMatchesReference(int length)
+	{
+		byte[] key = CreateDeterministicSource(GHashAlgorithmCore.BlockSizeInBytes);
+		byte[] first = CreateDeterministicSource(length);
+		byte[] second = CreateDeterministicSource(17);
+		byte[] third = CreateDeterministicSource(31);
+		Vector128<byte> accumulator = HashSoftwarePaddedSegments(key, first, default, default);
+		Vector128<byte> neonAccumulator = GHashNeon.IsSupported ? HashNeonPaddedSegments(key, first, default, default) : default;
+		Vector128<byte> expectedPrefix = ComputeReferenceHash(key, first, default, default);
+		Vector128<byte> expected = ComputeReferenceHash(key, first, second, third);
+		GHashKey keyContext = GHashKey.Create(key);
+
+		try
+		{
+			GHashSoftware.AppendPaddedSegments(ref accumulator, in keyContext.Value, default, default, default);
+			await Assert.That(accumulator).IsEqualTo(expectedPrefix);
+			GHashSoftware.AppendPaddedSegments(ref accumulator, in keyContext.Value, default, second, third);
+
+			if (GHashNeon.IsSupported)
+			{
+				GHashNeon.AppendPaddedSegments(ref neonAccumulator, in keyContext.Value, default, default, default);
+				await Assert.That(neonAccumulator).IsEqualTo(expectedPrefix);
+				GHashNeon.AppendPaddedSegments(ref neonAccumulator, in keyContext.Value, default, second, third);
+			}
+		}
+		finally
+		{
+			keyContext.Dispose();
+		}
+
+		await Assert.That(accumulator).IsEqualTo(expected);
+
+		if (GHashNeon.IsSupported)
+		{
+			await Assert.That(neonAccumulator).IsEqualTo(expected);
+		}
 	}
 
 	[Test]
@@ -82,6 +269,12 @@ public class GHashTest
 		}
 
 		await Assert.That(actual).IsEqualTo(expected);
+		await Assert.That(HashSoftwarePaddedSegments(key, first, second, third)).IsEqualTo(expected);
+
+		if (GHashNeon.IsSupported)
+		{
+			await Assert.That(HashNeonPaddedSegments(key, first, second, third)).IsEqualTo(expected);
+		}
 	}
 
 	[Test]
@@ -97,6 +290,14 @@ public class GHashTest
 		await Assert.That(segmentedHash).IsEqualTo(ComputeReferenceHash(key, first, second, default));
 		await Assert.That(combinedHash).IsEqualTo(ComputeReferenceHash(key, combined, default, default));
 		await Assert.That(segmentedHash).IsNotEqualTo(combinedHash);
+		await Assert.That(HashSoftwarePaddedSegments(key, first, second, default)).IsEqualTo(segmentedHash);
+		await Assert.That(HashSoftwarePaddedSegments(key, combined, default, default)).IsEqualTo(combinedHash);
+
+		if (GHashNeon.IsSupported)
+		{
+			await Assert.That(HashNeonPaddedSegments(key, first, second, default)).IsEqualTo(segmentedHash);
+			await Assert.That(HashNeonPaddedSegments(key, combined, default, default)).IsEqualTo(combinedHash);
+		}
 	}
 
 	[Test]
@@ -124,8 +325,16 @@ public class GHashTest
 		ReadOnlySpan<byte> second = source.AsSpan().Slice(offset, length);
 		Vector128<byte> expected = ComputeReferenceHash(key, first, second, third);
 		Vector128<byte> actual = HashPaddedSegments(key, first, second, third);
+		Vector128<byte> softwareActual = HashSoftwarePaddedSegments(key, first, second, third);
+		Vector128<byte> neonActual = GHashNeon.IsSupported ? HashNeonPaddedSegments(key, first, second, third) : default;
 
 		await Assert.That(actual).IsEqualTo(expected);
+		await Assert.That(softwareActual).IsEqualTo(expected);
+
+		if (GHashNeon.IsSupported)
+		{
+			await Assert.That(neonActual).IsEqualTo(expected);
+		}
 	}
 
 	[Test]
@@ -176,6 +385,24 @@ public class GHashTest
 		await Assert.That(secondResult).IsEqualTo(ComputeReferenceHash(key, prefix, second, default));
 	}
 
+	private static async Task AssertSoftwareMultipliersMatchReference(UInt128 input, UInt128 key)
+	{
+		ulong high32 = (ulong)(input >> 64);
+		ulong low32 = (ulong)input;
+		ulong high64 = high32;
+		ulong low64 = low32;
+		ulong keyHigh = (ulong)(key >> 64);
+		ulong keyLow = (ulong)key;
+		UInt128 expected = Multiply(input, key);
+
+		GHashSoftware.Multiply32(ref high32, ref low32, keyHigh, keyLow);
+		GHashSoftware.InitializeKey64(ref keyHigh, ref keyLow);
+		GHashSoftware.Multiply64(ref high64, ref low64, keyHigh, keyLow);
+
+		await Assert.That((UInt128)high32 << 64 | low32).IsEqualTo(expected);
+		await Assert.That((UInt128)high64 << 64 | low64).IsEqualTo(expected);
+	}
+
 	private static Vector128<byte> HashPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
 	{
 		GHashKey keyContext = GHashKey.Create(key);
@@ -184,6 +411,38 @@ public class GHashTest
 		{
 			using GHashAlgorithmCore hash = GHashAlgorithmCore.Create(ref keyContext);
 			return hash.Finish(first, second, third);
+		}
+		finally
+		{
+			keyContext.Dispose();
+		}
+	}
+
+	private static Vector128<byte> HashSoftwarePaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
+	{
+		GHashKey keyContext = GHashKey.Create(key);
+
+		try
+		{
+			Vector128<byte> accumulator = default;
+			GHashSoftware.AppendPaddedSegments(ref accumulator, in keyContext.Value, first, second, third);
+			return accumulator;
+		}
+		finally
+		{
+			keyContext.Dispose();
+		}
+	}
+
+	private static Vector128<byte> HashNeonPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
+	{
+		GHashKey keyContext = GHashKey.Create(key);
+
+		try
+		{
+			Vector128<byte> accumulator = default;
+			GHashNeon.AppendPaddedSegments(ref accumulator, in keyContext.Value, first, second, third);
+			return accumulator;
 		}
 		finally
 		{

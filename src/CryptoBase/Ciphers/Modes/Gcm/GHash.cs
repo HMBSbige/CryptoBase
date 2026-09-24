@@ -83,6 +83,10 @@ internal ref struct GHash : IDisposable
 		{
 			GHashArm.AppendPaddedSegments(ref accumulator, ref key, first, second, third);
 		}
+		else if (GHashNeon.IsSupported)
+		{
+			GHashNeon.AppendPaddedSegments(ref accumulator, in key.Value, first, second, third);
+		}
 		else
 		{
 			GHashSoftware.AppendPaddedSegments(ref accumulator, in key.Value, first, second, third);

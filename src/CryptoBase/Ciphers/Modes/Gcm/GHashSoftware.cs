@@ -2,71 +2,13 @@ namespace CryptoBase.Ciphers.Modes.Gcm;
 
 internal static partial class GHashSoftware
 {
-	private static int EightBitTableThreshold => (X86Base.X64.IsSupported ? 8 : 9) * GHash.BlockSizeInBytes;
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void InitializeTable(ref ulong hh, ref ulong hl, ulong vh, ulong vl, int highBit)
-	{
-		hh = 0;
-		hl = 0;
-		Unsafe.Add(ref hl, highBit) = vl;
-		Unsafe.Add(ref hh, highBit) = vh;
-
-		int i = highBit >> 1;
-
-		while (i > 0)
-		{
-			ulong t = (vl & 1) * 0xe1000000;
-			vl = vh << 63 | vl >> 1;
-			vh = vh >> 1 ^ t << 32;
-
-			Unsafe.Add(ref hl, i) = vl;
-			Unsafe.Add(ref hh, i) = vh;
-
-			i >>= 1;
-		}
-
-		i = 2;
-
-		while (i <= highBit)
-		{
-			vh = Unsafe.Add(ref hh, i);
-			vl = Unsafe.Add(ref hl, i);
-
-			for (int j = 1; j < i; ++j)
-			{
-				Unsafe.Add(ref hh, i + j) = vh ^ Unsafe.Add(ref hh, j);
-				Unsafe.Add(ref hl, i + j) = vl ^ Unsafe.Add(ref hl, j);
-			}
-
-			i <<= 1;
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
-		long totalPaddedLength = GHash.GetPaddedLength(first.Length) + GHash.GetPaddedLength(second.Length) + GHash.GetPaddedLength(third.Length);
-
-		if (totalPaddedLength >= EightBitTableThreshold)
-		{
-			AppendPaddedSegments8(ref accumulator, in key, first, second, third);
-		}
-		else
-		{
-			AppendPaddedSegments4(ref accumulator, in key, first, second, third);
-		}
-	}
-
-	[SkipLocalsInit]
-	private static void AppendPaddedSegments4(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
-	{
-		Unsafe.SkipInit(out GHashFourBitState state);
-		Unsafe.SkipInit(out Vector128<byte> finalBlock);
+		State state = new(in key, in accumulator);
+		Vector128<byte> finalBlock = default;
 
 		try
 		{
-			state.Initialize(in key, in accumulator);
 			state.AppendPaddedSegment(first, ref finalBlock);
 			state.AppendPaddedSegment(second, ref finalBlock);
 			state.AppendPaddedSegment(third, ref finalBlock);
@@ -75,26 +17,75 @@ internal static partial class GHashSoftware
 		finally
 		{
 			state.ZeroMemory();
+			finalBlock.ZeroMemory();
 		}
 	}
 
-	[SkipLocalsInit]
-	private static void AppendPaddedSegments8(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
+	private struct State
 	{
-		Unsafe.SkipInit(out GHashEightBitState state);
-		Unsafe.SkipInit(out Vector128<byte> finalBlock);
+		private readonly ulong _keyHigh;
+		private readonly ulong _keyLow;
+		private ulong _accumulatorHigh;
+		private ulong _accumulatorLow;
 
-		try
+		internal State(in Vector128<byte> key, in Vector128<byte> accumulator)
 		{
-			state.Initialize(in key, in accumulator);
-			state.AppendPaddedSegment(first, ref finalBlock);
-			state.AppendPaddedSegment(second, ref finalBlock);
-			state.AppendPaddedSegment(third, ref finalBlock);
-			state.CopyAccumulatorTo(ref accumulator);
+			ReadOnlySpan<byte> keyBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in key, 1));
+			ReadOnlySpan<byte> accumulatorBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in accumulator, 1));
+			_keyHigh = BinaryPrimitives.ReadUInt64BigEndian(keyBytes);
+			_keyLow = BinaryPrimitives.ReadUInt64BigEndian(keyBytes.Slice(8));
+			_accumulatorHigh = BinaryPrimitives.ReadUInt64BigEndian(accumulatorBytes);
+			_accumulatorLow = BinaryPrimitives.ReadUInt64BigEndian(accumulatorBytes.Slice(8));
+
+			if (Environment.Is64BitProcess)
+			{
+				InitializeKey64(ref _keyHigh, ref _keyLow);
+			}
 		}
-		finally
+
+		private void AppendBlocks(ReadOnlySpan<byte> source)
 		{
-			state.ZeroMemory();
+			while (source.Length >= GHash.BlockSizeInBytes)
+			{
+				ReadOnlySpan<byte> block = source.Slice(0, GHash.BlockSizeInBytes);
+				_accumulatorHigh ^= BinaryPrimitives.ReadUInt64BigEndian(block);
+				_accumulatorLow ^= BinaryPrimitives.ReadUInt64BigEndian(block.Slice(8));
+
+				// Use uint multiplication on 32-bit processes to avoid variable-time ulong helpers.
+				if (Environment.Is64BitProcess)
+				{
+					Multiply64(ref _accumulatorHigh, ref _accumulatorLow, _keyHigh, _keyLow);
+				}
+				else
+				{
+					Multiply32(ref _accumulatorHigh, ref _accumulatorLow, _keyHigh, _keyLow);
+				}
+
+				source = source.Slice(GHash.BlockSizeInBytes);
+			}
+		}
+
+		internal void AppendPaddedSegment(ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+		{
+			int completeLength = source.Length & -GHash.BlockSizeInBytes;
+			AppendBlocks(source.Slice(0, completeLength));
+			ReadOnlySpan<byte> remaining = source.Slice(completeLength);
+
+			if (remaining.IsEmpty)
+			{
+				return;
+			}
+
+			finalBlock = default;
+			remaining.CopyTo(finalBlock.AsSpan());
+			AppendBlocks(finalBlock.AsReadOnlySpan());
+		}
+
+		internal readonly void CopyAccumulatorTo(ref Vector128<byte> destination)
+		{
+			Span<byte> bytes = destination.AsSpan();
+			BinaryPrimitives.WriteUInt64BigEndian(bytes, _accumulatorHigh);
+			BinaryPrimitives.WriteUInt64BigEndian(bytes.Slice(8), _accumulatorLow);
 		}
 	}
 }
