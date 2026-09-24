@@ -43,17 +43,13 @@ internal static class VectorCounterExtensions
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector256<T> AddUInt128LE22()
 		{
-			Vector256<long> v = nonce.AsInt64();
-			Vector256<long> signBit = Vector256.Create(long.MinValue);
-			Vector256<long> thrX = Vector256.Create(Vector128.Create(long.MaxValue - 2, long.MaxValue));
+			Vector256<ulong> counters = nonce.AsUInt64();
+			Vector256<ulong> sum = counters + Vector256.Create(Vector128.Create(2UL, 0UL));
 
-			Vector256<long> sum = v + Vector256.Create(Vector128.Create(2L, 0L));
-
-			Vector256<long> vX = v ^ signBit;
-			Vector256<long> carry = Vector256.GreaterThan(vX, thrX);
+			Vector256<ulong> carry = Vector256.Equals(counters >>> 1, Vector256.Create(ulong.MaxValue >> 1));
 			carry = Avx2.ShiftLeftLogical128BitLane(carry, 8);
 
-			return (sum - carry).As<long, T>();
+			return (sum - carry).As<ulong, T>();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

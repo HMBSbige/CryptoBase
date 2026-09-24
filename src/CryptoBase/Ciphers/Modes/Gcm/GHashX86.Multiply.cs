@@ -63,40 +63,24 @@ internal static partial class GHashX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static Vector128<byte> Reduce(Vector128<uint> lo, Vector128<uint> hi)
 	{
-		Vector128<uint> carryLo = lo >>> 31;
-		Vector128<uint> carryHi = hi >>> 31;
+		Vector128<uint> lowWordCarries = lo >>> 31;
+		Vector128<uint> highWordCarries = hi >>> 31;
+		Vector128<uint> shiftedLow = lo << 1;
+		Vector128<uint> shiftedHigh = hi << 1;
+		Vector128<uint> lowCarry = Sse2.ShiftLeftLogical128BitLane(lowWordCarries, 4);
+		Vector128<uint> highCarry = Sse2.ShiftRightLogical128BitLane(lowWordCarries, 12);
+		Vector128<uint> doubledLow = shiftedLow | lowCarry;
+		Vector128<uint> doubledHigh = shiftedHigh | Sse2.ShiftLeftLogical128BitLane(highWordCarries, 4) | highCarry;
 
-		Vector128<uint> loShifted1 = lo << 1;
-		Vector128<uint> hiShifted1 = hi << 1;
+		Vector128<uint> shift30 = doubledLow << 30;
+		Vector128<uint> shift25 = doubledLow << 25;
+		Vector128<uint> polynomialOverflow = doubledLow << 31 ^ shift30 ^ shift25;
+		Vector128<uint> polynomialLow = Sse2.ShiftLeftLogical128BitLane(polynomialOverflow, 12);
+		Vector128<uint> polynomialHigh = Sse2.ShiftRightLogical128BitLane(polynomialOverflow, 4);
 
-		Vector128<uint> carryIntoLo = Sse2.ShiftLeftLogical128BitLane(carryLo, 4);
-		Vector128<uint> carryIntoHiSelf = Sse2.ShiftLeftLogical128BitLane(carryHi, 4);
-		Vector128<uint> carryFromLoToHi = Sse2.ShiftRightLogical128BitLane(carryLo, 12);
-
-		Vector128<uint> loMerged = loShifted1 | carryIntoLo;
-		Vector128<uint> hiMerged = hiShifted1 | carryIntoHiSelf | carryFromLoToHi;
-
-		Vector128<uint> xL31 = loMerged << 31;
-		Vector128<uint> xL30 = loMerged << 30;
-		Vector128<uint> xL25 = loMerged << 25;
-
-		Vector128<uint> polyHi = xL31 ^ xL30 ^ xL25;
-
-		Vector128<uint> polyToLo = Sse2.ShiftLeftLogical128BitLane(polyHi, 12);
-		Vector128<uint> polyToHi = Sse2.ShiftRightLogical128BitLane(polyHi, 4);
-
-		Vector128<uint> x = loMerged ^ polyToLo;
-
-		Vector128<uint> xR1 = x >>> 1;
-		Vector128<uint> xR2 = x >>> 2;
-		Vector128<uint> xR7 = x >>> 7;
-
-		Vector128<uint> foldA = xR1 ^ xR2;
-		Vector128<uint> foldB = xR7 ^ polyToHi;
-
-		Vector128<uint> loReduced = x ^ foldA ^ foldB;
-
-		return (hiMerged ^ loReduced).AsByte();
+		Vector128<uint> foldedLow = doubledLow ^ polynomialLow;
+		Vector128<uint> reducedLow = foldedLow ^ (foldedLow >>> 1 ^ foldedLow >>> 2) ^ (foldedLow >>> 7 ^ polynomialHigh);
+		return (doubledHigh ^ reducedLow).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -215,40 +199,24 @@ internal static partial class GHashX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<byte> Reduce(Vector256<uint> lo, Vector256<uint> hi)
 	{
-		Vector256<uint> carryLo = lo >>> 31;
-		Vector256<uint> carryHi = hi >>> 31;
+		Vector256<uint> lowWordCarries = lo >>> 31;
+		Vector256<uint> highWordCarries = hi >>> 31;
+		Vector256<uint> shiftedLow = lo << 1;
+		Vector256<uint> shiftedHigh = hi << 1;
+		Vector256<uint> lowCarry = Avx2.ShiftLeftLogical128BitLane(lowWordCarries, 4);
+		Vector256<uint> highCarry = Avx2.ShiftRightLogical128BitLane(lowWordCarries, 12);
+		Vector256<uint> doubledLow = shiftedLow | lowCarry;
+		Vector256<uint> doubledHigh = shiftedHigh | Avx2.ShiftLeftLogical128BitLane(highWordCarries, 4) | highCarry;
 
-		Vector256<uint> loShifted1 = lo << 1;
-		Vector256<uint> hiShifted1 = hi << 1;
+		Vector256<uint> shift30 = doubledLow << 30;
+		Vector256<uint> shift25 = doubledLow << 25;
+		Vector256<uint> polynomialOverflow = doubledLow << 31 ^ shift30 ^ shift25;
+		Vector256<uint> polynomialLow = Avx2.ShiftLeftLogical128BitLane(polynomialOverflow, 12);
+		Vector256<uint> polynomialHigh = Avx2.ShiftRightLogical128BitLane(polynomialOverflow, 4);
 
-		Vector256<uint> carryIntoLo = Avx2.ShiftLeftLogical128BitLane(carryLo, 4);
-		Vector256<uint> carryIntoHiSelf = Avx2.ShiftLeftLogical128BitLane(carryHi, 4);
-		Vector256<uint> carryFromLoToHi = Avx2.ShiftRightLogical128BitLane(carryLo, 12);
-
-		Vector256<uint> loMerged = loShifted1 | carryIntoLo;
-		Vector256<uint> hiMerged = hiShifted1 | carryIntoHiSelf | carryFromLoToHi;
-
-		Vector256<uint> xL31 = loMerged << 31;
-		Vector256<uint> xL30 = loMerged << 30;
-		Vector256<uint> xL25 = loMerged << 25;
-
-		Vector256<uint> polyHi = xL31 ^ xL30 ^ xL25;
-
-		Vector256<uint> polyToLo = Avx2.ShiftLeftLogical128BitLane(polyHi, 12);
-		Vector256<uint> polyToHi = Avx2.ShiftRightLogical128BitLane(polyHi, 4);
-
-		Vector256<uint> x = loMerged ^ polyToLo;
-
-		Vector256<uint> xR1 = x >>> 1;
-		Vector256<uint> xR2 = x >>> 2;
-		Vector256<uint> xR7 = x >>> 7;
-
-		Vector256<uint> foldA = xR1 ^ xR2;
-		Vector256<uint> foldB = xR7 ^ polyToHi;
-
-		Vector256<uint> loReduced = x ^ foldA ^ foldB;
-
-		return (hiMerged ^ loReduced).AsByte();
+		Vector256<uint> foldedLow = doubledLow ^ polynomialLow;
+		Vector256<uint> reducedLow = foldedLow ^ (foldedLow >>> 1 ^ foldedLow >>> 2) ^ (foldedLow >>> 7 ^ polynomialHigh);
+		return (doubledHigh ^ reducedLow).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -294,39 +262,23 @@ internal static partial class GHashX86
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<byte> Reduce(Vector512<uint> lo, Vector512<uint> hi)
 	{
-		Vector512<uint> carryLo = lo >>> 31;
-		Vector512<uint> carryHi = hi >>> 31;
+		Vector512<uint> lowWordCarries = lo >>> 31;
+		Vector512<uint> highWordCarries = hi >>> 31;
+		Vector512<uint> shiftedLow = lo << 1;
+		Vector512<uint> shiftedHigh = hi << 1;
+		Vector512<uint> lowCarry = Avx512BW.ShiftLeftLogical128BitLane(lowWordCarries.AsByte(), 4).AsUInt32();
+		Vector512<uint> highCarry = Avx512BW.ShiftRightLogical128BitLane(lowWordCarries.AsByte(), 12).AsUInt32();
+		Vector512<uint> doubledLow = shiftedLow | lowCarry;
+		Vector512<uint> doubledHigh = shiftedHigh | Avx512BW.ShiftLeftLogical128BitLane(highWordCarries.AsByte(), 4).AsUInt32() | highCarry;
 
-		Vector512<uint> loShifted1 = lo << 1;
-		Vector512<uint> hiShifted1 = hi << 1;
+		Vector512<uint> shift30 = doubledLow << 30;
+		Vector512<uint> shift25 = doubledLow << 25;
+		Vector512<uint> polynomialOverflow = doubledLow << 31 ^ shift30 ^ shift25;
+		Vector512<uint> polynomialLow = Avx512BW.ShiftLeftLogical128BitLane(polynomialOverflow.AsByte(), 12).AsUInt32();
+		Vector512<uint> polynomialHigh = Avx512BW.ShiftRightLogical128BitLane(polynomialOverflow.AsByte(), 4).AsUInt32();
 
-		Vector512<uint> carryIntoLo = Avx512BW.ShiftLeftLogical128BitLane(carryLo.AsByte(), 4).AsUInt32();
-		Vector512<uint> carryIntoHiSelf = Avx512BW.ShiftLeftLogical128BitLane(carryHi.AsByte(), 4).AsUInt32();
-		Vector512<uint> carryFromLoToHi = Avx512BW.ShiftRightLogical128BitLane(carryLo.AsByte(), 12).AsUInt32();
-
-		Vector512<uint> loMerged = loShifted1 | carryIntoLo;
-		Vector512<uint> hiMerged = hiShifted1 | carryIntoHiSelf | carryFromLoToHi;
-
-		Vector512<uint> xL31 = loMerged << 31;
-		Vector512<uint> xL30 = loMerged << 30;
-		Vector512<uint> xL25 = loMerged << 25;
-
-		Vector512<uint> polyHi = xL31 ^ xL30 ^ xL25;
-
-		Vector512<uint> polyToLo = Avx512BW.ShiftLeftLogical128BitLane(polyHi.AsByte(), 12).AsUInt32();
-		Vector512<uint> polyToHi = Avx512BW.ShiftRightLogical128BitLane(polyHi.AsByte(), 4).AsUInt32();
-
-		Vector512<uint> x = loMerged ^ polyToLo;
-
-		Vector512<uint> xR1 = x >>> 1;
-		Vector512<uint> xR2 = x >>> 2;
-		Vector512<uint> xR7 = x >>> 7;
-
-		Vector512<uint> foldA = xR1 ^ xR2;
-		Vector512<uint> foldB = xR7 ^ polyToHi;
-
-		Vector512<uint> loReduced = x ^ foldA ^ foldB;
-
-		return (hiMerged ^ loReduced).AsByte();
+		Vector512<uint> foldedLow = doubledLow ^ polynomialLow;
+		Vector512<uint> reducedLow = foldedLow ^ (foldedLow >>> 1 ^ foldedLow >>> 2) ^ (foldedLow >>> 7 ^ polynomialHigh);
+		return (doubledHigh ^ reducedLow).AsByte();
 	}
 }

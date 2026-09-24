@@ -89,23 +89,16 @@ internal static partial class Crc32Vectorized
 		Vector128<ulong> foldPair = Vector128.Create(0xae689191UL, 0xccaa009eUL);
 		Vector64<ulong> foldPairLower = foldPair.GetLower();
 		x0 = FoldArm(x1, x0, foldPair, foldPairLower);
-		x1 = x2;
-		x2 = x3;
-		x3 = x4;
-		x4 = x5;
-		x5 = x6;
-		x6 = x7;
-		x7 = x8;
-		x0 = FoldArm(x1, x0, foldPair, foldPairLower);
-		x2 = FoldArm(x3, x2, foldPair, foldPairLower);
-		x4 = FoldArm(x5, x4, foldPair, foldPairLower);
-		x6 = FoldArm(x7, x6, foldPair, foldPairLower);
+		x0 = FoldArm(x2, x0, foldPair, foldPairLower);
+		x3 = FoldArm(x4, x3, foldPair, foldPairLower);
+		x5 = FoldArm(x6, x5, foldPair, foldPairLower);
+		x7 = FoldArm(x8, x7, foldPair, foldPairLower);
 		Vector128<ulong> foldPairs = Vector128.Create(0xf1da05aaUL, 0x81256527UL);
 		Vector64<ulong> foldPairsLower = foldPairs.GetLower();
-		x0 = FoldArm(x2, x0, foldPairs, foldPairsLower);
-		x4 = FoldArm(x6, x4, foldPairs, foldPairsLower);
+		x0 = FoldArm(x3, x0, foldPairs, foldPairsLower);
+		x5 = FoldArm(x7, x5, foldPairs, foldPairsLower);
 		Vector128<ulong> foldGroups = Vector128.Create(0x8f352d95UL, 0x1d9513d7UL);
-		x0 = FoldArm(x4, x0, foldGroups, foldGroups.GetLower());
+		x0 = FoldArm(x5, x0, foldGroups, foldGroups.GetLower());
 
 		UpdateScalarStripes<TMode>(ref state, ref crc1, ref crc2, ref scalar0, ref scalar1, ref scalar2);
 

@@ -268,24 +268,14 @@ internal partial struct AesCipherSoftware
 		t0 = t5 ^ t0;
 		t21 ^= t12;
 		t12 ^= t5;
-		t5 = t6 ^ t12 ^ t14;
-		state[2] = t5;
-		t5 = t1 ^ t8;
-		t21 ^= t5;
-		state[5] = t21;
-		t1 = t11 ^ t1;
-		t11 ^= t4;
-		state[0] = t11;
-		t1 ^= t3;
-		state[6] = t1;
-		t17 ^= t0;
-		state[1] = t17;
-		t0 ^= t7;
-		state[3] = t0;
-		t10 ^= t12;
-		state[7] = t10;
-		t2 ^= t12;
-		state[4] = t2;
+		state[0] = t11 ^ t4;
+		state[1] = t17 ^ t0;
+		state[2] = t6 ^ t12 ^ t14;
+		state[3] = t0 ^ t7;
+		state[4] = t2 ^ t12;
+		state[5] = t21 ^ t1 ^ t8;
+		state[6] = t11 ^ t1 ^ t3;
+		state[7] = t10 ^ t12;
 		return state;
 	}
 

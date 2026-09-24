@@ -384,29 +384,15 @@ internal partial struct AesCipherBitslice
 		x13 ^= x11;
 		x3 ^= x13;
 		x3 ^= x6;
-		x6 = x1;
-		x6 ^= x9;
-		x6 ^= x10;
-		x1 ^= x12;
-		x4 ^= x12;
-		x0 ^= x1;
-		x1 = x2;
-		x1 ^= x14;
-		x2 = x14;
-		x2 ^= x7;
-		x7 = x5;
-		x7 ^= x13;
-		x5 = x15;
-		x5 ^= x13;
 
-		q0 = x4;
-		q1 = x1;
+		q0 = x4 ^ x12;
+		q1 = x2 ^ x14;
 		q2 = x3;
-		q3 = x2;
-		q4 = x5;
-		q5 = x6;
-		q6 = x0;
-		q7 = x7;
+		q3 = x14 ^ x7;
+		q4 = x15 ^ x13;
+		q5 = x1 ^ x9 ^ x10;
+		q6 = x0 ^ x1 ^ x12;
+		q7 = x5 ^ x13;
 	}
 
 	private static void SubBytesNots(ref InlineArray8<Vector128<byte>> state)
