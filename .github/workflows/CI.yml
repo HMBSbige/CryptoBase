@@ -82,6 +82,13 @@ jobs:
         env:
           DOTNET_EnableAVX2: 0
 
+      - name: Run tests (Disable AVX)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableAVX: 0
+
       - name: Run tests (Disable x86-64-v2 intrinsics)
         if: matrix.os != 'macos-latest'
         working-directory: test/CryptoBase.Tests

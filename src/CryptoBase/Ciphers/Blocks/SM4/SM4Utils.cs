@@ -72,18 +72,6 @@ internal static partial class SM4Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint SubByte(uint a)
-	{
-		ref byte s = ref S.GetReference();
-		uint b0 = Unsafe.Add(ref s, (byte)(a >> 24));
-		uint b1 = Unsafe.Add(ref s, (byte)(a >> 16));
-		uint b2 = Unsafe.Add(ref s, (byte)(a >> 8));
-		byte b3 = Unsafe.Add(ref s, (byte)a);
-
-		return b0 << 24 | b1 << 16 | b2 << 8 | b3;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void InitRoundKeys(ref byte key, ref uint rk)
 	{
 		uint k0 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref key)) ^ 0xa3b1bac6;
@@ -94,16 +82,16 @@ internal static partial class SM4Utils
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			k0 ^= L1(SubByte(k1 ^ k2 ^ k3 ^ Unsafe.Add(ref ck, i)));
+			k0 ^= L1(SubByteKey(k1 ^ k2 ^ k3 ^ Unsafe.Add(ref ck, i)));
 			Unsafe.Add(ref rk, i) = k0;
 
-			k1 ^= L1(SubByte(k2 ^ k3 ^ k0 ^ Unsafe.Add(ref ck, i + 1)));
+			k1 ^= L1(SubByteKey(k2 ^ k3 ^ k0 ^ Unsafe.Add(ref ck, i + 1)));
 			Unsafe.Add(ref rk, i + 1) = k1;
 
-			k2 ^= L1(SubByte(k3 ^ k0 ^ k1 ^ Unsafe.Add(ref ck, i + 2)));
+			k2 ^= L1(SubByteKey(k3 ^ k0 ^ k1 ^ Unsafe.Add(ref ck, i + 2)));
 			Unsafe.Add(ref rk, i + 2) = k2;
 
-			k3 ^= L1(SubByte(k0 ^ k1 ^ k2 ^ Unsafe.Add(ref ck, i + 3)));
+			k3 ^= L1(SubByteKey(k0 ^ k1 ^ k2 ^ Unsafe.Add(ref ck, i + 3)));
 			Unsafe.Add(ref rk, i + 3) = k3;
 		}
 	}

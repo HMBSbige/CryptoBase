@@ -1,3 +1,4 @@
+using AesArm = System.Runtime.Intrinsics.Arm.Aes;
 using AesX86 = System.Runtime.Intrinsics.X86.Aes;
 
 namespace CryptoBase.Ciphers.Blocks.SM4;
@@ -46,7 +47,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, 16, nameof(source));
 		CipherBufferGuard.Output(source, destination);
-		SM4Utils.ProcessBlock(_roundKeys, source, destination);
+		ProcessBlock(_roundKeys, source, destination);
 	}
 
 	/// <inheritdoc />
@@ -61,7 +62,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, 16, nameof(source));
 		CipherBufferGuard.Output(source, destination);
-		SM4Utils.ProcessBlock(_reverseRoundKeys, source, destination);
+		ProcessBlock(_reverseRoundKeys, source, destination);
 	}
 
 	/// <inheritdoc />
@@ -71,78 +72,174 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 		ProcessBlocks(_reverseRoundKeys, source, destination);
 	}
 
+	private static bool IsVectorized => AdvSimd.Arm64.IsSupported || AesX86.IsSupported && Ssse3.IsSupported;
+
+	private static int MaxBlocks => AesX86.IsSupported && Avx2.IsSupported ? 16 : 8;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ProcessBlocks(ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination)
+	private static void ProcessBlock(ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (AesX86.IsSupported && source.Length >= 128 && (Avx2.IsSupported || Ssse3.IsSupported))
+		if (IsVectorized)
 		{
-			ProcessBlocksVector(keys, source, destination);
-			return;
+			ProcessBlocksPadded4(keys, source, destination);
 		}
-
-		ref byte src = ref source.GetReference();
-		ref byte dst = ref destination.GetReference();
-		int offset = 0;
-
-		if (AesX86.IsSupported && Ssse3.IsSupported && source.Length >= 64)
+		else
 		{
-			ProcessBlocks4(keys, ref src, ref dst);
-			offset = 64;
-		}
-
-		if (offset < source.Length)
-		{
-			ProcessBlocksScalar(ref keys.GetReference(), ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), source.Length - offset);
+			SM4Utils.ProcessBlock(keys, source, destination);
 		}
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ProcessBlocks(ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (IsVectorized)
+		{
+			if (source.Length is > 0 and < 64)
+			{
+				ProcessBlocksPadded4(keys, source, destination);
+			}
+			else
+			{
+				ProcessBlocksVector(keys, source, destination);
+			}
+		}
+		else
+		{
+			ProcessBlocksScalar(ref keys.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ProcessBlocksVector(ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ref byte src = ref source.GetReference();
 		ref byte dst = ref destination.GetReference();
 		int offset = 0;
 
-		if (AesX86.IsSupported && Avx2.IsSupported)
+		while (source.Length - offset >= MaxBlocks * 16)
 		{
-			while (source.Length - offset >= 256)
-			{
-				SM4Utils.Process16V256(keys, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset));
-				offset += 256;
-			}
-
-			while (source.Length - offset >= 128)
-			{
-				SM4Utils.Process8V256(keys, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset));
-				offset += 128;
-			}
+			ProcessKernel(MaxBlocks, keys, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset));
+			offset += MaxBlocks * 16;
 		}
 
-		if (AesX86.IsSupported && Ssse3.IsSupported)
+		if (offset < source.Length)
 		{
-			while (source.Length - offset >= 128)
-			{
-				SM4Utils.Process8V128(keys, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset));
-				offset += 128;
-			}
-
-			while (source.Length - offset >= 64)
-			{
-				SM4Utils.Process4V128(keys, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset));
-				offset += 64;
-			}
-		}
-
-		while (offset < source.Length)
-		{
-			SM4Utils.ProcessBlock(keys, source.Slice(offset, 16), destination.Slice(offset, 16));
-			offset += 16;
+			ProcessBlocksRemainder(keys, source.Slice(offset), destination.Slice(offset));
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void ProcessBlocks4(ReadOnlySpan<uint> keys, ref byte source, ref byte destination)
+	private static void ProcessBlocksRemainder(ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		SM4Utils.Process4V128(keys, ref source, ref destination);
+		Debug.Assert(source.Length > 0 && source.Length < MaxBlocks * 16);
+
+		switch (source.Length)
+		{
+			case < 64:
+			{
+				ProcessBlocksPadded4(keys, source, destination);
+				break;
+			}
+			case 64:
+			{
+				ProcessKernel(4, keys, ref source.GetReference(), ref destination.GetReference());
+				break;
+			}
+			case < 128:
+			{
+				ProcessBlocksPadded8(keys, source, destination);
+				break;
+			}
+			case 128 when MaxBlocks > 8:
+			{
+				ProcessKernel(8, keys, ref source.GetReference(), ref destination.GetReference());
+				break;
+			}
+			default:
+			{
+				ProcessBlocksPadded16(keys, source, destination);
+				break;
+			}
+		}
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ProcessBlocksPadded4(ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		using CryptoBuffer<byte> buffer = new(stackalloc byte[64]);
+		ProcessBlocksPadded(4, keys, source, destination, buffer.Span);
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ProcessBlocksPadded8(ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		using CryptoBuffer<byte> buffer = new(stackalloc byte[128]);
+		ProcessBlocksPadded(8, keys, source, destination, buffer.Span);
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ProcessBlocksPadded16(ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		using CryptoBuffer<byte> buffer = new(stackalloc byte[256]);
+		ProcessBlocksPadded(16, keys, source, destination, buffer.Span);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ProcessBlocksPadded(int blocks, ReadOnlySpan<uint> keys, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> scratch)
+	{
+		Debug.Assert(source.Length > 0 && source.Length % 16 is 0 && source.Length < scratch.Length);
+		source.CopyTo(scratch);
+		ref byte block = ref scratch.GetReference();
+		ProcessKernel(blocks, keys, ref block, ref block);
+		scratch.Slice(0, source.Length).CopyTo(destination);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ProcessKernel(int blocks, ReadOnlySpan<uint> keys, ref byte source, ref byte destination)
+	{
+		Debug.Assert(IsVectorized && (blocks is 4 or 8 || blocks is 16 && MaxBlocks is 16));
+
+		if (AdvSimd.Arm64.IsSupported)
+		{
+			if (AesArm.IsSupported)
+			{
+				if (blocks is 4)
+				{
+					SM4Utils.Process4ArmAes(keys, ref source, ref destination);
+				}
+				else
+				{
+					SM4Utils.Process8ArmAes(keys, ref source, ref destination);
+				}
+			}
+			else if (blocks is 4)
+			{
+				SM4Utils.Process4Neon(keys, ref source, ref destination);
+			}
+			else
+			{
+				SM4Utils.Process8Neon(keys, ref source, ref destination);
+			}
+		}
+		else if (blocks is 4)
+		{
+			SM4Utils.Process4V128(keys, ref source, ref destination);
+		}
+		else if (!Avx2.IsSupported)
+		{
+			SM4Utils.Process8V128(keys, ref source, ref destination);
+		}
+		else if (blocks is 8)
+		{
+			SM4Utils.Process8V256(keys, ref source, ref destination);
+		}
+		else
+		{
+			SM4Utils.Process16V256(keys, ref source, ref destination);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]

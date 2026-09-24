@@ -51,6 +51,16 @@ internal static partial class SM4Utils
 			x = Avx2.Shuffle(vm2h, x);
 			x ^= t;
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private void InverseShiftRowsAndLinearTransform(Vector256<byte> shr)
+		{
+			x = Avx2.Shuffle(x, shr);
+
+			Vector256<byte> t = x ^ x.RotateLeftUInt32(8) ^ x.RotateLeftUInt32(16);
+			t = t.RotateLeftUInt32(2);
+			x = x ^ t ^ x.RotateLeftUInt32(24);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,17 +78,51 @@ internal static partial class SM4Utils
 		x.PreTransform();
 		x = AesX86EncryptLast(x, c0f);
 		x.PostTransform();
-		x = Avx2.Shuffle(x, vshr);
-
-		Vector256<byte> t = x ^ x.RotateLeftUInt32(8) ^ x.RotateLeftUInt32(16);
-		t = t.RotateLeftUInt32(2);
-		x = x ^ t ^ x.RotateLeftUInt32(24);
+		x.InverseShiftRowsAndLinearTransform(vshr);
 
 		x ^= r0;
 		r0 = r1;
 		r1 = r2;
 		r2 = r3;
 		r3 = x;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Round2V256
+	(
+		ref Vector256<byte> x0, ref Vector256<byte> x1, ref Vector256<byte> x2, ref Vector256<byte> x3,
+		ref Vector256<byte> y0, ref Vector256<byte> y1, ref Vector256<byte> y2, ref Vector256<byte> y3,
+		Vector256<byte> key, Vector256<byte> c0f, Vector256<byte> shr
+	)
+	{
+		if (Avx512F.VL.IsSupported)
+		{
+			Round(ref x0, ref x1, ref x2, ref x3, key, c0f, shr);
+			Round(ref y0, ref y1, ref y2, ref y3, key, c0f, shr);
+			return;
+		}
+
+		Vector256<byte> x = key ^ x1 ^ x2 ^ x3;
+		Vector256<byte> y = key ^ y1 ^ y2 ^ y3;
+		x.PreTransform();
+		y.PreTransform();
+		x = AesX86EncryptLast(x, c0f);
+		y = AesX86EncryptLast(y, c0f);
+		x.PostTransform();
+		y.PostTransform();
+		x.InverseShiftRowsAndLinearTransform(shr);
+		y.InverseShiftRowsAndLinearTransform(shr);
+
+		x ^= x0;
+		y ^= y0;
+		x0 = x1;
+		y0 = y1;
+		x1 = x2;
+		y1 = y2;
+		x2 = x3;
+		y2 = y3;
+		x3 = x;
+		y3 = y;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -134,8 +178,7 @@ internal static partial class SM4Utils
 		{
 			Vector256<byte> vKey = Vector256.Create(key).AsByte();
 
-			Round(ref v0, ref v1, ref v2, ref v3, vKey, c0f, vshr);
-			Round(ref v4, ref v5, ref v6, ref v7, vKey, c0f, vshr);
+			Round2V256(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, vKey, c0f, vshr);
 		}
 
 		Transpose(ref v0, ref v1, ref v2, ref v3);

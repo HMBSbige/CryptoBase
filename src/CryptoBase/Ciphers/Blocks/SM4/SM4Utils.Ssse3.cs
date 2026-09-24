@@ -50,6 +50,16 @@ internal static partial class SM4Utils
 			x = Ssse3.Shuffle(m2h, x);
 			x ^= t;
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private void InverseShiftRowsAndLinearTransform(Vector128<byte> shr)
+		{
+			x = Ssse3.Shuffle(x, shr);
+
+			Vector128<byte> t = x ^ x.RotateLeftUInt32(8) ^ x.RotateLeftUInt32(16);
+			t = t.RotateLeftUInt32(2);
+			x = x ^ t ^ x.RotateLeftUInt32(24);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -61,13 +71,7 @@ internal static partial class SM4Utils
 		x = AesX86.EncryptLast(x, c0f);// AES-NI
 		x.PostTransform();
 
-		// inverse MixColumns
-		x = Ssse3.Shuffle(x, shr);
-
-		// 4 parallel L1 linear transforms
-		Vector128<byte> t = x ^ x.RotateLeftUInt32(8) ^ x.RotateLeftUInt32(16);
-		t = t.RotateLeftUInt32(2);
-		x = x ^ t ^ x.RotateLeftUInt32(24);
+		x.InverseShiftRowsAndLinearTransform(shr);
 
 		// rotate registers
 		x ^= r0;
@@ -75,6 +79,44 @@ internal static partial class SM4Utils
 		r1 = r2;
 		r2 = r3;
 		r3 = x;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Round2V128
+	(
+		ref Vector128<byte> x0, ref Vector128<byte> x1, ref Vector128<byte> x2, ref Vector128<byte> x3,
+		ref Vector128<byte> y0, ref Vector128<byte> y1, ref Vector128<byte> y2, ref Vector128<byte> y3,
+		Vector128<byte> key, Vector128<byte> c0f, Vector128<byte> shr
+	)
+	{
+		if (!Avx.IsSupported)
+		{
+			Round(ref x0, ref x1, ref x2, ref x3, key, c0f, shr);
+			Round(ref y0, ref y1, ref y2, ref y3, key, c0f, shr);
+			return;
+		}
+
+		Vector128<byte> x = key ^ x1 ^ x2 ^ x3;
+		Vector128<byte> y = key ^ y1 ^ y2 ^ y3;
+		x.PreTransform();
+		y.PreTransform();
+		x = AesX86.EncryptLast(x, c0f);
+		y = AesX86.EncryptLast(y, c0f);
+		x.PostTransform();
+		y.PostTransform();
+		x.InverseShiftRowsAndLinearTransform(shr);
+		y.InverseShiftRowsAndLinearTransform(shr);
+
+		x ^= x0;
+		y ^= y0;
+		x0 = x1;
+		y0 = y1;
+		x1 = x2;
+		y1 = y2;
+		x2 = x3;
+		y2 = y3;
+		x3 = x;
+		y3 = y;
 	}
 
 	// https://github.com/mjosaarinen/sm4ni/blob/master/sm4ni.c
@@ -131,8 +173,7 @@ internal static partial class SM4Utils
 		{
 			Vector128<byte> vKey = Vector128.Create(key).AsByte();
 
-			Round(ref v0, ref v1, ref v2, ref v3, vKey, c0f, shr);
-			Round(ref v4, ref v5, ref v6, ref v7, vKey, c0f, shr);
+			Round2V128(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, vKey, c0f, shr);
 		}
 
 		Transpose(ref v0, ref v1, ref v2, ref v3);
