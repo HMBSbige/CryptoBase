@@ -10,7 +10,7 @@ namespace CryptoBase.Benchmark.Ciphers.Blocks.SM4;
 [RankColumn]
 public class SM4CipherBenchmark
 {
-	[Params(16, 32, 48, 64, 80, 112, 128, 144, 176, 240, 256, 272, 512, 1024, 8192)]
+	[Params(16, 32, 48, 64, 80, 112, 128, 144, 176, 240, 256, 272, 496, 512, 528, 1008, 1024, 1040, 2032, 2064, 8192)]
 	public int ByteLength { get; set; }
 
 	[Params(false, true)]

@@ -4,6 +4,11 @@ namespace CryptoBase.Tests.Ciphers.Blocks.SM4;
 
 public class SM4Test
 {
+	public static IEnumerable<int> BlockCounts()
+	{
+		return Enumerable.Range(0, 131);
+	}
+
 	[Test]
 	[Arguments("0123456789ABCDEFFEDCBA9876543210", "0123456789ABCDEFFEDCBA9876543210", "681EDF34D206965E86B3E94F536E4246")]
 	[Arguments("FEDCBA98765432100123456789ABCDEF", "000102030405060708090A0B0C0D0E0F", "F766678F13F01ADEAC1B3EA955ADB594")]
@@ -59,7 +64,7 @@ public class SM4Test
 				uint input = background & ~(255u << lane * 8) | value << lane * 8;
 				int index = lane * 256 + (int)value;
 				expected[index] = SM4Reference.Substitute(input);
-				actual[index] = SM4Utils.SubByte(input);
+				actual[index] = SM4Scalar.SubByte(input);
 			}
 		}
 
@@ -67,30 +72,7 @@ public class SM4Test
 	}
 
 	[Test]
-	[Arguments(1)]
-	[Arguments(2)]
-	[Arguments(3)]
-	[Arguments(4)]
-	[Arguments(5)]
-	[Arguments(6)]
-	[Arguments(7)]
-	[Arguments(8)]
-	[Arguments(9)]
-	[Arguments(10)]
-	[Arguments(11)]
-	[Arguments(12)]
-	[Arguments(13)]
-	[Arguments(14)]
-	[Arguments(15)]
-	[Arguments(16)]
-	[Arguments(17)]
-	[Arguments(20)]
-	[Arguments(21)]
-	[Arguments(24)]
-	[Arguments(25)]
-	[Arguments(31)]
-	[Arguments(32)]
-	[Arguments(33)]
+	[MethodDataSource(nameof(BlockCounts))]
 	public async Task RandomizedBlocksMatchIndependentReference(int blocks)
 	{
 		Random random = new(0x534D3400 + blocks);
@@ -102,24 +84,33 @@ public class SM4Test
 			random.NextBytes(key);
 			random.NextBytes(plaintext);
 			byte[] ciphertext = SM4Reference.Transform(key, plaintext);
+			byte[] decryptedInput = SM4Reference.Transform(key, plaintext, true);
 			using SM4Cipher crypto = SM4Cipher.Create(key);
+			int sourceOffset = sample * 7 % 15 + 1;
+			int destinationOffset = 16 - sourceOffset;
 
-			byte[] source = TestUtils.CreateGuardedBuffer(1, plaintext.Length);
-			plaintext.CopyTo(source, 1);
-			byte[] destination = TestUtils.CreateGuardedBuffer(3, plaintext.Length);
-			crypto.EncryptBlocks(source.AsSpan().Slice(1, plaintext.Length), destination.AsSpan().Slice(3));
-			await TestUtils.AssertOutput(destination, 3, ciphertext);
-			await TestUtils.AssertOutput(source, 1, plaintext);
+			byte[] source = TestUtils.CreateGuardedBuffer(sourceOffset, plaintext.Length);
+			plaintext.CopyTo(source, sourceOffset);
+			byte[] destination = TestUtils.CreateGuardedBuffer(destinationOffset, plaintext.Length);
+			crypto.EncryptBlocks(source.AsSpan().Slice(sourceOffset, plaintext.Length), destination.AsSpan().Slice(destinationOffset));
+			await TestUtils.AssertOutput(destination, destinationOffset, ciphertext);
+			await TestUtils.AssertOutput(source, sourceOffset, plaintext);
 
 			byte[] decrypted = TestUtils.CreateGuardedBuffer(7, plaintext.Length);
-			crypto.DecryptBlocks(destination.AsSpan().Slice(3, ciphertext.Length), decrypted.AsSpan().Slice(7));
+			crypto.DecryptBlocks(destination.AsSpan().Slice(destinationOffset, ciphertext.Length), decrypted.AsSpan().Slice(7));
 			await TestUtils.AssertOutput(decrypted, 7, plaintext);
-			await TestUtils.AssertOutput(destination, 3, ciphertext);
+			await TestUtils.AssertOutput(destination, destinationOffset, ciphertext);
 
-			crypto.EncryptBlocks(source.AsSpan().Slice(1, plaintext.Length), source.AsSpan().Slice(1, plaintext.Length));
-			await TestUtils.AssertOutput(source, 1, ciphertext);
-			crypto.DecryptBlocks(source.AsSpan().Slice(1, plaintext.Length), source.AsSpan().Slice(1, plaintext.Length));
-			await TestUtils.AssertOutput(source, 1, plaintext);
+			crypto.DecryptBlocks(source.AsSpan().Slice(sourceOffset, plaintext.Length), destination.AsSpan().Slice(destinationOffset));
+			await TestUtils.AssertOutput(destination, destinationOffset, decryptedInput);
+			await TestUtils.AssertOutput(source, sourceOffset, plaintext);
+
+			crypto.EncryptBlocks(source.AsSpan().Slice(sourceOffset, plaintext.Length), source.AsSpan().Slice(sourceOffset, plaintext.Length));
+			await TestUtils.AssertOutput(source, sourceOffset, ciphertext);
+			crypto.DecryptBlocks(source.AsSpan().Slice(sourceOffset, plaintext.Length), source.AsSpan().Slice(sourceOffset, plaintext.Length));
+			await TestUtils.AssertOutput(source, sourceOffset, plaintext);
+			crypto.DecryptBlocks(source.AsSpan().Slice(sourceOffset, plaintext.Length), source.AsSpan().Slice(sourceOffset, plaintext.Length));
+			await TestUtils.AssertOutput(source, sourceOffset, decryptedInput);
 		}
 	}
 

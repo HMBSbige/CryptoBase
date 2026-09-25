@@ -1,6 +1,6 @@
 namespace CryptoBase.Ciphers.Blocks.SM4;
 
-internal static partial class SM4Utils
+internal static class SM4Scalar
 {
 	internal static uint SubByte(uint value)
 	{
@@ -110,5 +110,46 @@ internal static partial class SM4Utils
 				| (outputBit5 & laneMask) << 5
 				| (outputBit6 & laneMask) << 6
 				| (outputBit7 & laneMask) << 7;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static uint T(uint b)
+	{
+		b = SubByte(b);
+		return b ^ b.RotateLeft(2) ^ b.RotateLeft(10) ^ b.RotateLeft(18) ^ b.RotateLeft(24);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ProcessBlock(ReadOnlySpan<uint> rk, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
+		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(4));
+		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(8));
+		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(12));
+		ref uint keys = ref rk.GetReference();
+
+		for (int i = 0; i < 32; i += 4)
+		{
+			x0 ^= T(x1 ^ x2 ^ x3 ^ Unsafe.Add(ref keys, i));
+			x1 ^= T(x0 ^ x2 ^ x3 ^ Unsafe.Add(ref keys, i + 1));
+			x2 ^= T(x0 ^ x1 ^ x3 ^ Unsafe.Add(ref keys, i + 2));
+			x3 ^= T(x0 ^ x1 ^ x2 ^ Unsafe.Add(ref keys, i + 3));
+		}
+
+		BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), x2);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), x1);
+		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), x0);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	internal static void ProcessBlocks(ref uint rk, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		ReadOnlySpan<uint> keys = MemoryMarshal.CreateReadOnlySpan(ref rk, 32);
+
+		for (int offset = 0; offset < source.Length; offset += 16)
+		{
+			ProcessBlock(keys, source.Slice(offset, 16), destination.Slice(offset, 16));
+		}
 	}
 }
