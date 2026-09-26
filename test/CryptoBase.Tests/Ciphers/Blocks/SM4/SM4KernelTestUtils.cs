@@ -47,27 +47,41 @@ internal static class SM4KernelTestUtils
 		}
 	}
 
-	public static async Task Substitute128MatchesIndependentReference(Func<Vector128<byte>, Vector128<byte>> substitute)
+	public static Task Substitute128MatchesIndependentReference(Func<Vector128<byte>, Vector128<byte>> substitute)
 	{
-		uint[] inputs = CreateSboxInputs();
-		uint[] actual = new uint[inputs.Length];
-
-		for (int offset = 0; offset < inputs.Length; offset += Vector128<uint>.Count)
-		{
-			substitute(Vector128.LoadUnsafe(ref inputs[offset]).AsByte()).AsUInt32().StoreUnsafe(ref actual[offset]);
-		}
-
-		await Assert.That(actual).IsEquivalentTo(inputs.Select(SM4Reference.Substitute), CollectionOrdering.Matching);
+		return SubstituteMatchesIndependentReference
+		(
+			Vector128<uint>.Count, (inputs, actual, offset) =>
+				substitute(Vector128.LoadUnsafe(ref inputs[offset]).AsByte()).AsUInt32().StoreUnsafe(ref actual[offset])
+		);
 	}
 
-	public static async Task Substitute256MatchesIndependentReference(Func<Vector256<byte>, Vector256<byte>> substitute)
+	public static Task Substitute256MatchesIndependentReference(Func<Vector256<byte>, Vector256<byte>> substitute)
+	{
+		return SubstituteMatchesIndependentReference
+		(
+			Vector256<uint>.Count, (inputs, actual, offset) =>
+				substitute(Vector256.LoadUnsafe(ref inputs[offset]).AsByte()).AsUInt32().StoreUnsafe(ref actual[offset])
+		);
+	}
+
+	public static Task Substitute512MatchesIndependentReference(Func<Vector512<byte>, Vector512<byte>> substitute)
+	{
+		return SubstituteMatchesIndependentReference
+		(
+			Vector512<uint>.Count, (inputs, actual, offset) =>
+				substitute(Vector512.LoadUnsafe(ref inputs[offset]).AsByte()).AsUInt32().StoreUnsafe(ref actual[offset])
+		);
+	}
+
+	private static async Task SubstituteMatchesIndependentReference(int stride, Action<uint[], uint[], int> substitute)
 	{
 		uint[] inputs = CreateSboxInputs();
 		uint[] actual = new uint[inputs.Length];
 
-		for (int offset = 0; offset < inputs.Length; offset += Vector256<uint>.Count)
+		for (int offset = 0; offset < inputs.Length; offset += stride)
 		{
-			substitute(Vector256.LoadUnsafe(ref inputs[offset]).AsByte()).AsUInt32().StoreUnsafe(ref actual[offset]);
+			substitute(inputs, actual, offset);
 		}
 
 		await Assert.That(actual).IsEquivalentTo(inputs.Select(SM4Reference.Substitute), CollectionOrdering.Matching);

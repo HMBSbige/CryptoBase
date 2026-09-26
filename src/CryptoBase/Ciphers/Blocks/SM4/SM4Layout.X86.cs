@@ -84,6 +84,75 @@ internal static partial class SM4Layout
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void Load16X86(int count, ref byte source, nuint offset, out Vector512<byte> x0, out Vector512<byte> x1, out Vector512<byte> x2, out Vector512<byte> x3)
+	{
+		x0 = count > 0 ? LoadQuadX86(count, ref source, offset).ReverseEndianness32() : Vector512<byte>.Zero;
+		x1 = count > 4 ? LoadQuadX86(count - 4, ref source, offset + 64).ReverseEndianness32() : Vector512<byte>.Zero;
+		x2 = count > 8 ? LoadQuadX86(count - 8, ref source, offset + 128).ReverseEndianness32() : Vector512<byte>.Zero;
+		x3 = count > 12 ? LoadQuadX86(count - 12, ref source, offset + 192).ReverseEndianness32() : Vector512<byte>.Zero;
+		Transpose(ref x0, ref x1, ref x2, ref x3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void Store16X86(int count, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3)
+	{
+		Transpose(ref x0, ref x1, ref x2, ref x3);
+		x0 = x0.ReverseEndianness128();
+		x1 = x1.ReverseEndianness128();
+		x2 = x2.ReverseEndianness128();
+		x3 = x3.ReverseEndianness128();
+
+		if (count > 0)
+		{
+			StoreQuadX86(count, ref destination, offset, x0);
+		}
+
+		if (count > 4)
+		{
+			StoreQuadX86(count - 4, ref destination, offset + 64, x1);
+		}
+
+		if (count > 8)
+		{
+			StoreQuadX86(count - 8, ref destination, offset + 128, x2);
+		}
+
+		if (count > 12)
+		{
+			StoreQuadX86(count - 12, ref destination, offset + 192, x3);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector512<byte> LoadQuadX86(int count, ref byte source, nuint offset)
+	{
+		if (count >= 4)
+		{
+			return Vector512.LoadUnsafe(ref source, offset);
+		}
+
+		Vector256<byte> upper = count > 2 ? Vector256.Create(Vector128.LoadUnsafe(ref source, offset + 32), Vector128<byte>.Zero) : Vector256<byte>.Zero;
+		return Vector512.Create(LoadPairX86(count, ref source, offset), upper);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void StoreQuadX86(int count, ref byte destination, nuint offset, Vector512<byte> value)
+	{
+		if (count >= 4)
+		{
+			value.StoreUnsafe(ref destination, offset);
+			return;
+		}
+
+		StorePairX86(count, ref destination, offset, value.GetLower());
+
+		if (count > 2)
+		{
+			value.GetUpper().GetLower().StoreUnsafe(ref destination, offset + 32);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<byte> LoadPairX86(int count, ref byte source, nuint offset)
 	{
 		if (count >= 2)
@@ -136,5 +205,21 @@ internal static partial class SM4Layout
 
 		x3 = Avx2.UnpackHigh(t0, x2.AsUInt64()).AsByte();
 		x2 = Avx2.UnpackLow(t0, x2.AsUInt64()).AsByte();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Transpose(ref Vector512<byte> x0, ref Vector512<byte> x1, ref Vector512<byte> x2, ref Vector512<byte> x3)
+	{
+		Vector512<ulong> t0 = Avx512F.UnpackHigh(x0.AsUInt32(), x1.AsUInt32()).AsUInt64();
+		x0 = Avx512F.UnpackLow(x0.AsUInt32(), x1.AsUInt32()).AsByte();
+
+		Vector512<ulong> t1 = Avx512F.UnpackLow(x2.AsUInt32(), x3.AsUInt32()).AsUInt64();
+		x2 = Avx512F.UnpackHigh(x2.AsUInt32(), x3.AsUInt32()).AsByte();
+
+		x1 = Avx512F.UnpackHigh(x0.AsUInt64(), t1).AsByte();
+		x0 = Avx512F.UnpackLow(x0.AsUInt64(), t1).AsByte();
+
+		x3 = Avx512F.UnpackHigh(t0, x2.AsUInt64()).AsByte();
+		x2 = Avx512F.UnpackLow(t0, x2.AsUInt64()).AsByte();
 	}
 }

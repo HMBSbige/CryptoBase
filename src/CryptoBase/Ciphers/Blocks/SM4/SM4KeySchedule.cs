@@ -90,6 +90,11 @@ internal static class SM4KeySchedule
 			return SM4ArmAes.SubByte(x);
 		}
 
+		if (SM4Gfni.IsSupported)
+		{
+			return SM4Gfni.SubByte(x);
+		}
+
 		if (SM4AesNI.IsSupported)
 		{
 			return SM4AesNI.SubByte(x);

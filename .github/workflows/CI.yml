@@ -75,6 +75,13 @@ jobs:
         env:
           DOTNET_EnableVAES: 0
 
+      - name: Run tests (Disable GFNI)
+        if: matrix.os != 'macos-latest'
+        working-directory: test/CryptoBase.Tests
+        run: dotnet test -c Release --no-build --disable-logo --minimum-expected-tests 1
+        env:
+          DOTNET_EnableGFNI: 0
+
       - name: Run tests (Disable AVX2)
         if: matrix.os != 'macos-latest'
         working-directory: test/CryptoBase.Tests

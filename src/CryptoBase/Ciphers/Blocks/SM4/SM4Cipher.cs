@@ -80,6 +80,10 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 		{
 			SM4BlockDriver<SM4Neon>.ProcessBlocks(ref rk, source, destination, singleBlock);
 		}
+		else if (SM4Gfni.IsSupported)
+		{
+			SM4BlockDriver<SM4Gfni>.ProcessBlocks(ref rk, source, destination, singleBlock);
+		}
 		else if (SM4AesNI.IsSupported)
 		{
 			SM4BlockDriver<SM4AesNI>.ProcessBlocks(ref rk, source, destination, singleBlock);

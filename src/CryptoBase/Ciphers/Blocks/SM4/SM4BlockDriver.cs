@@ -71,12 +71,13 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ProcessFullBlocks(ref uint rk, ref byte source, ref byte destination, int length)
 	{
+		int batchLength = TKernel.MaxBlocks * 16;
 		int offset = 0;
 
-		while (length - offset >= TKernel.MaxBlocks * 16)
+		while (length - offset >= batchLength)
 		{
 			TKernel.Process(TKernel.MaxBlocks, TKernel.MaxBlocks, ref rk, ref Unsafe.Add(ref source, offset), ref Unsafe.Add(ref destination, offset));
-			offset += TKernel.MaxBlocks * 16;
+			offset += batchLength;
 		}
 
 		if (offset < length)
