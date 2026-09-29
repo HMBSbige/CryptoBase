@@ -84,6 +84,16 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | CTR128 | ✅ |
 | XTS | ✅ |
 
+##### Padding
+
+| Modes | Status |
+| ----- |:------:|
+| None | ✅ |
+| Zeros | ✅ |
+| PKCS7 | ✅ |
+| ANSIX923 | ✅ |
+| ISO10126 | ✅ |
+
 #### Authenticated encryption algorithms
 
 | Algorithms | Status |

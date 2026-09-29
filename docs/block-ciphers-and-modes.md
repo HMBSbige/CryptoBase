@@ -27,6 +27,29 @@ aes.EncryptBlock(plaintext, ciphertext);
 aes.DecryptBlock(ciphertext, recovered);
 ```
 
+## Padding
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Ciphers.Padding;
+
+byte[] plaintext = "Hello"u8.ToArray();
+const int blockSize = 16;
+const PaddingMode mode = PaddingMode.PKCS7;
+
+// Pad the input.
+byte[] padded = new byte[SymmetricPadding.GetPaddedLength(plaintext.Length, blockSize, mode)];
+int written = SymmetricPadding.Pad(plaintext, padded, blockSize, mode);
+
+// Validate and remove padding.
+if (!SymmetricPadding.TryGetUnpaddedLength(padded.AsSpan(0, written), blockSize, mode, out int length))
+{
+    throw new CryptographicException("Invalid padding.");
+}
+
+ReadOnlySpan<byte> recovered = padded.AsSpan(0, length);
+```
+
 ## XTS
 
 ```csharp
