@@ -1,3 +1,5 @@
+using CryptoBase.Ciphers.Modes.Ctr;
+
 namespace CryptoBase.Ciphers.Modes;
 
 /// <summary>
@@ -56,6 +58,13 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 			_index = _index + n & BlockSize - 1;
 			offset += n;
 			left -= n;
+		}
+
+		if (left > BlockSize)
+		{
+			int processed = BlockModeDispatch.XorCtr128(_blockCipher, ref _counter, source.Slice(offset), destination.Slice(offset));
+			offset += processed;
+			left -= processed;
 		}
 
 		if (left > BlockSize)

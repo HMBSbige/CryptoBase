@@ -1,12 +1,24 @@
-using CryptoBase.Ciphers.Blocks.Aes;
-
-namespace CryptoBase.Ciphers.Modes;
+namespace CryptoBase.Ciphers.Modes.Ctr;
 
 internal static class CtrBlocks<TBlockCipher, TIncrementer>
 	where TBlockCipher : IBlockEncryptor<TBlockCipher>
 	where TIncrementer : struct, ICtrIncrementer
 {
 	private const int BlockSize = 16;
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	internal static void Xor(TBlockCipher blockCipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		int processed = XorBlocks(blockCipher, ref counter, source, destination);
+		int left = source.Length - processed;
+
+		if (left is 0)
+		{
+			return;
+		}
+
+		XorBlock(blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
+	}
 
 	internal static Vector128<byte> EncryptCounter(TBlockCipher blockCipher, ref Vector128<byte> counter)
 	{
@@ -28,11 +40,11 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 			return 0;
 		}
 
-		XorFinalBlock(blockCipher, ref counter, source.Slice(0, BlockSize), destination);
+		XorBlock(blockCipher, ref counter, source.Slice(0, BlockSize), destination);
 		return BlockSize;
 	}
 
-	internal static void XorFinalBlock(TBlockCipher blockCipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
+	internal static void XorBlock(TBlockCipher blockCipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Vector128<byte> keyStream = default;
 
@@ -56,9 +68,11 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 	}
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int XorBatch(TBlockCipher blockCipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Span<byte> counters = stackalloc byte[2048];
+		Unsafe.SkipInit(out InlineArray2048<byte> storage);
+		Span<byte> counters = storage.AsSpan();
 
 		try
 		{
@@ -66,45 +80,11 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 
 			while (source.Length - offset >= BlockSize)
 			{
-				int length = Math.Min(2048, source.Length - offset & -BlockSize);
-				Vector128<byte> current = counter.ReverseEndianness128();
-				int i = 0;
-
-				if (Avx512BW.IsSupported)
-				{
-					Vector512<byte> lanes = TIncrementer.Add0123(Vector512.Create(Vector256.Create(current)));
-
-					for (; i <= length - 64; i += 64)
-					{
-						lanes.ReverseEndianness128().StoreUnsafe(ref counters.GetReference(), (nuint)i);
-						lanes = TIncrementer.Add4444(lanes);
-					}
-
-					current = lanes.GetLower().GetLower();
-				}
-				else if (Avx2.IsSupported)
-				{
-					Vector256<byte> lanes = TIncrementer.Add01(Vector256.Create(current));
-
-					for (; i <= length - 32; i += 32)
-					{
-						lanes.ReverseEndianness128().StoreUnsafe(ref counters.GetReference(), (nuint)i);
-						lanes = TIncrementer.Add22(lanes);
-					}
-
-					current = lanes.GetLower();
-				}
-
-				for (; i < length; i += BlockSize)
-				{
-					current.ReverseEndianness128().StoreUnsafe(ref counters.GetReference(), (nuint)i);
-					current = TIncrementer.Inc(current);
-				}
-
-				counter = current.ReverseEndianness128();
+				int length = Math.Min(counters.Length, source.Length - offset & -BlockSize);
 				Span<byte> batch = counters.Slice(0, length);
+				CtrCounters<TIncrementer>.Fill(ref counter, batch);
 
-				if (blockCipher is not AesCipher aes || !aes.TryEncryptXor(batch, source.Slice(offset), destination.Slice(offset)))
+				if (!BlockModeDispatch.TryEncryptXor(blockCipher, batch, source.Slice(offset), destination.Slice(offset)))
 				{
 					blockCipher.EncryptBlocks(batch, batch);
 					FastUtils.Xor(batch, source.Slice(offset), destination.Slice(offset), length);

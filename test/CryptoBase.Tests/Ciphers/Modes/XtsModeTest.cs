@@ -12,10 +12,11 @@ public class XtsModeTest
 	{
 		return
 		[
-			496, 512, 528, // Below the SIMD threshold, at it, and with a remaining full block.
-			529, 543, // SIMD followed by the shortest and longest stealing tails.
-			2048, 2065, // A full tweak buffer, then stealing immediately after it.
-			2560, 2561, 4097 // A second batch using SIMD, fallback, or SIMD plus a remainder.
+			17, 31, 33, 47, 127, 129, 145,
+			496, 512, 528,
+			529, 543,
+			2047, 2048, 2049, 2063, 2065,
+			2560, 2561, 4097
 		];
 	}
 

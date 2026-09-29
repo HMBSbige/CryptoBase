@@ -34,7 +34,7 @@ internal static partial class AesGcmArm
 		EncryptFirstBatch9(in aes, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7, ref tagState);
 		tagMask = tagState;
 
-		AesGcmFusion.XorStore8(ref input, ref output, 0, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7);
+		BlockXor.XorStore8(ref input, ref output, 0, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7);
 		Vector128<byte> hash = accumulator;
 		Vector128<byte> h8 = powers.Key8;
 		Vector128<byte> h7 = powers.Key7;
@@ -75,7 +75,7 @@ internal static partial class AesGcmArm
 			c5 = v5;
 			c6 = v6;
 			c7 = v7;
-			AesGcmFusion.XorStore8(ref input, ref output, (nuint)offset, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7);
+			BlockXor.XorStore8(ref input, ref output, (nuint)offset, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7);
 		}
 
 		GHashArm.GFMultiplyUnreduced(AdvSimd.Arm64.ReverseElementBits(c0) ^ hash, h8, out Vector128<ulong> finalLow, out Vector128<ulong> finalHigh, out Vector128<ulong> finalMiddle);

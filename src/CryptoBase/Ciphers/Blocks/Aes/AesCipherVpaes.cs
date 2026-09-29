@@ -204,7 +204,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		);
 	}
 
-	private readonly Vector128<byte> Encrypt(Vector128<byte> block)
+	internal readonly Vector128<byte> Encrypt(Vector128<byte> block)
 	{
 		ref readonly Vector128<byte> roundKey = ref _roundKeys[0];
 		Vector128<byte> forwardShuffle = EncryptionForwardMixColumnsShuffleMask;
@@ -223,7 +223,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		return EncryptFinalRound(value, Unsafe.Add(ref Unsafe.AsRef(in roundKey), 1), GetShiftRowsShuffleMask(_rounds));
 	}
 
-	private readonly void Encrypt2(ref Vector128<byte> block0, ref Vector128<byte> block1)
+	internal readonly void Encrypt2(ref Vector128<byte> block0, ref Vector128<byte> block1)
 	{
 		ref readonly Vector128<byte> roundKey = ref _roundKeys[0];
 		Vector128<byte> forwardShuffle = EncryptionForwardMixColumnsShuffleMask;
@@ -247,7 +247,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block1 = EncryptFinalRound(v1, finalRoundKey, shiftRowsShuffle);
 	}
 
-	private readonly void Encrypt3(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2)
+	internal readonly void Encrypt3(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2)
 	{
 		ref readonly Vector128<byte> roundKey = ref _roundKeys[0];
 		Vector128<byte> forwardShuffle = EncryptionForwardMixColumnsShuffleMask;
@@ -280,7 +280,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block2 = EncryptFinalRound(v2, finalRoundKey, shiftRowsShuffle);
 	}
 
-	private readonly void Encrypt4(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2, ref Vector128<byte> block3)
+	internal readonly void Encrypt4(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2, ref Vector128<byte> block3)
 	{
 		ref readonly Vector128<byte> roundKey = ref _roundKeys[0];
 		Vector128<byte> forwardShuffle = EncryptionForwardMixColumnsShuffleMask;
@@ -318,7 +318,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block3 = EncryptFinalRound(v3, finalRoundKey, shiftRowsShuffle);
 	}
 
-	private readonly Vector128<byte> Decrypt(Vector128<byte> block)
+	internal readonly Vector128<byte> Decrypt(Vector128<byte> block)
 	{
 		ref readonly Vector128<byte> roundKey = ref _reverseRoundKeys[0];
 		Vector128<byte> forwardShuffle = DecryptionForwardMixColumnsShuffleMask;
@@ -335,7 +335,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		return DecryptFinalRound(value, Unsafe.Add(ref Unsafe.AsRef(in roundKey), 1), GetShiftRowsShuffleMask(-_rounds));
 	}
 
-	private readonly void Decrypt2(ref Vector128<byte> block0, ref Vector128<byte> block1)
+	internal readonly void Decrypt2(ref Vector128<byte> block0, ref Vector128<byte> block1)
 	{
 		ref readonly Vector128<byte> roundKey = ref _reverseRoundKeys[0];
 		Vector128<byte> forwardShuffle = DecryptionForwardMixColumnsShuffleMask;
@@ -357,7 +357,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block1 = DecryptFinalRound(v1, finalRoundKey, shiftRowsShuffle);
 	}
 
-	private readonly void Decrypt3(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2)
+	internal readonly void Decrypt3(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2)
 	{
 		ref readonly Vector128<byte> roundKey = ref _reverseRoundKeys[0];
 		Vector128<byte> forwardShuffle = DecryptionForwardMixColumnsShuffleMask;
@@ -388,7 +388,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block2 = DecryptFinalRound(v2, finalRoundKey, shiftRowsShuffle);
 	}
 
-	private readonly void Decrypt4(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2, ref Vector128<byte> block3)
+	internal readonly void Decrypt4(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2, ref Vector128<byte> block3)
 	{
 		ref readonly Vector128<byte> roundKey = ref _reverseRoundKeys[0];
 		Vector128<byte> forwardShuffle = DecryptionForwardMixColumnsShuffleMask;
@@ -640,110 +640,43 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		}
 	}
 
-	// Fuses the mode's XOR with AES to avoid intermediate ciphertext/keystream stores.
-	public readonly void TransformWithMask(ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination, bool decrypt, bool xorInput)
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public readonly void TransformWithPolicy<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination, int offset = 0) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
 	{
 		ref byte src = ref source.GetReference();
-		ref byte xor = ref mask.GetReference();
 		ref byte dst = ref destination.GetReference();
-		int offset = 0;
 
 		while (source.Length - offset >= 64)
 		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-			Vector128<byte> v2 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 32));
-			Vector128<byte> v3 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 48));
-
-			if (xorInput)
-			{
-				v0 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0));
-				v1 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16));
-				v2 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 32));
-				v3 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 48));
-			}
-
-			if (decrypt)
-			{
-				Decrypt4(ref v0, ref v1, ref v2, ref v3);
-			}
-			else
-			{
-				Encrypt4(ref v0, ref v1, ref v2, ref v3);
-			}
-
-			(v0 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0))).StoreUnsafe(ref dst, (nuint)(offset + 0));
-			(v1 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16))).StoreUnsafe(ref dst, (nuint)(offset + 16));
-			(v2 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 32))).StoreUnsafe(ref dst, (nuint)(offset + 32));
-			(v3 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 48))).StoreUnsafe(ref dst, (nuint)(offset + 48));
+			policy.Prepare4(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3);
+			TOperation.Apply4(in this, ref v0, ref v1, ref v2, ref v3);
+			policy.Finish4(ref src, ref dst, (nuint)offset, v0, v1, v2, v3);
 			offset += 64;
 		}
 
 		if (source.Length - offset >= 48)
 		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-			Vector128<byte> v2 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 32));
-
-			if (xorInput)
-			{
-				v0 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0));
-				v1 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16));
-				v2 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 32));
-			}
-
-			if (decrypt)
-			{
-				Decrypt3(ref v0, ref v1, ref v2);
-			}
-			else
-			{
-				Encrypt3(ref v0, ref v1, ref v2);
-			}
-
-			(v0 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0))).StoreUnsafe(ref dst, (nuint)(offset + 0));
-			(v1 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16))).StoreUnsafe(ref dst, (nuint)(offset + 16));
-			(v2 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 32))).StoreUnsafe(ref dst, (nuint)(offset + 32));
+			policy.Prepare2(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1);
+			Vector128<byte> v2 = policy.Prepare1(ref src, (nuint)(offset + 32));
+			TOperation.Apply3(in this, ref v0, ref v1, ref v2);
+			policy.Finish2(ref src, ref dst, (nuint)offset, v0, v1);
+			policy.Finish1(ref src, ref dst, (nuint)(offset + 32), v2);
 			return;
 		}
 
 		if (source.Length - offset >= 32)
 		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-
-			if (xorInput)
-			{
-				v0 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0));
-				v1 ^= Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16));
-			}
-
-			if (decrypt)
-			{
-				Decrypt2(ref v0, ref v1);
-			}
-			else
-			{
-				Encrypt2(ref v0, ref v1);
-			}
-
-			(v0 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 0))).StoreUnsafe(ref dst, (nuint)(offset + 0));
-			(v1 ^ Vector128.LoadUnsafe(ref xor, (nuint)(offset + 16))).StoreUnsafe(ref dst, (nuint)(offset + 16));
+			policy.Prepare2(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1);
+			TOperation.Apply2(in this, ref v0, ref v1);
+			policy.Finish2(ref src, ref dst, (nuint)offset, v0, v1);
 			offset += 32;
 		}
 
 		if (offset < source.Length)
 		{
-			Vector128<byte> blockMask = Vector128.LoadUnsafe(ref xor, (nuint)offset);
-			Vector128<byte> value = Vector128.LoadUnsafe(ref src, (nuint)offset);
-
-			if (xorInput)
-			{
-				value ^= blockMask;
-			}
-
-			value = decrypt ? Decrypt(value) : Encrypt(value);
-			(value ^ blockMask).StoreUnsafe(ref dst, (nuint)offset);
+			Vector128<byte> value = policy.Prepare1(ref src, (nuint)offset);
+			value = TOperation.Apply1(in this, value);
+			policy.Finish1(ref src, ref dst, (nuint)offset, value);
 		}
 	}
 }

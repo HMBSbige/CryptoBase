@@ -160,91 +160,147 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal bool TryEncryptXor(ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination)
-	{
-		return TryTransformWithMask(source, mask, destination, false, false);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal bool TryTransformXex(ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination, bool decrypt)
-	{
-		return TryTransformWithMask(source, mask, destination, decrypt, true);
-	}
-
-	private bool TryTransformWithMask(ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination, bool decrypt, bool xorInput)
+	internal bool TryTransform<TPolicy, TOperation>(ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy where TOperation : struct, IAesOperation
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			AesBlockDriver<AesCipherX86>.TransformWithMask(ref _state.X86, source, mask, destination, decrypt, xorInput);
+			AesBlockDriver<AesCipherX86>.Transform<TPolicy, TOperation>(ref _state.X86, ref state, source, destination);
 			return true;
 		}
 
 		if (AesCipherArm.IsSupported)
 		{
-			AesBlockDriver<AesCipherArm>.TransformWithMask(ref _state.Arm, source, mask, destination, decrypt, xorInput);
-			return true;
-		}
-
-		if (AesCipherVpaes.IsSupported)
-		{
-			if (decrypt && source.Length >= BitsliceBatchSize && _bitslice is not null)
-			{
-				int length = source.Length & -BitsliceBatchSize;
-				_bitslice.Cipher.TransformWithMask(source.Slice(0, length), mask, destination, true, xorInput);
-				source = source.Slice(length);
-				mask = mask.Slice(length);
-				destination = destination.Slice(length);
-			}
-
-			if (!source.IsEmpty)
-			{
-				_state.Vpaes.TransformWithMask(source, mask, destination, decrypt, xorInput);
-			}
-
-			return true;
-		}
-
-		if (source.Length >= BitsliceBatchSize && _bitslice is not null)
-		{
-			int length = source.Length & -BitsliceBatchSize;
-			_bitslice.Cipher.TransformWithMask(source.Slice(0, length), mask, destination, decrypt, xorInput);
-
-			if (length < source.Length)
-			{
-				TransformSoftwareTailWithMask(source.Slice(length), mask.Slice(length), destination.Slice(length), decrypt, xorInput);
-			}
-
+			AesBlockDriver<AesCipherArm>.Transform<TPolicy, TOperation>(ref _state.Arm, ref state, source, destination);
 			return true;
 		}
 
 		return false;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal bool TryEncryptXor(ReadOnlySpan<byte> counters, ReadOnlySpan<byte> data, Span<byte> destination)
+	{
+		AesOutputMaskPolicy policy = new(data);
+		return TryEncryptWithPolicy(ref policy, counters, destination);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal bool TryEncryptXex(ReadOnlySpan<byte> source, ReadOnlySpan<byte> tweaks, Span<byte> destination)
+	{
+		AesInputOutputMaskPolicy policy = new(tweaks);
+		return TryEncryptWithPolicy(ref policy, source, destination);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal bool TryDecryptXex(ReadOnlySpan<byte> source, ReadOnlySpan<byte> tweaks, Span<byte> destination)
+	{
+		AesInputOutputMaskPolicy policy = new(tweaks);
+		return TryDecryptWithPolicy(ref policy, source, destination);
+	}
+
+	private bool TryEncryptWithPolicy<TPolicy>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct
+	{
+		if (TryTransformVector<TPolicy, AesEncrypt>(ref policy, source, destination))
+		{
+			return true;
+		}
+
+		if (AesCipherVpaes.IsSupported)
+		{
+			_state.Vpaes.TransformWithPolicy<TPolicy, AesEncrypt>(ref policy, source, destination);
+			return true;
+		}
+
+		if (source.Length >= BitsliceBatchSize && _bitslice is not null)
+		{
+			TransformBitslice<TPolicy, AesEncrypt>(ref policy, source, destination);
+			return true;
+		}
+
+		return false;
+	}
+
+	private bool TryDecryptWithPolicy<TPolicy>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct
+	{
+		if (TryTransformVector<TPolicy, AesDecrypt>(ref policy, source, destination))
+		{
+			return true;
+		}
+
+		if (source.Length >= BitsliceBatchSize && _bitslice is not null)
+		{
+			TransformBitslice<TPolicy, AesDecrypt>(ref policy, source, destination);
+			return true;
+		}
+
+		if (AesCipherVpaes.IsSupported)
+		{
+			_state.Vpaes.TransformWithPolicy<TPolicy, AesDecrypt>(ref policy, source, destination);
+			return true;
+		}
+
+		return false;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private bool TryTransformVector<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
+	{
+		if (AesCipherX86.IsSupported)
+		{
+			AesBlockDriver<AesCipherX86>.TransformWithPolicy<TPolicy, TOperation>(ref _state.X86, ref policy, source, destination);
+			return true;
+		}
+
+		if (AesCipherArm.IsSupported)
+		{
+			AesBlockDriver<AesCipherArm>.TransformWithPolicy<TPolicy, TOperation>(ref _state.Arm, ref policy, source, destination);
+			return true;
+		}
+
+		return false;
+	}
+
+	private void TransformBitslice<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
+	{
+		Debug.Assert(_bitslice is not null);
+		int length = source.Length & -BitsliceBatchSize;
+		_bitslice.Cipher.TransformWithPolicy<TPolicy, TOperation>(ref policy, source.Slice(0, length), destination);
+
+		if (length < source.Length)
+		{
+			TransformTail<TPolicy, TOperation>(ref policy, source, destination, length);
+		}
+	}
+
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private void TransformSoftwareTailWithMask(scoped ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination, bool decrypt, bool xorInput)
+	private void TransformTail<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination, int offset) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
 	{
+		if (AesCipherVpaes.IsSupported)
+		{
+			_state.Vpaes.TransformWithPolicy<TPolicy, TOperation>(ref policy, source, destination, offset);
+			return;
+		}
+
+		ref byte src = ref source.GetReference();
+		ref byte dst = ref destination.GetReference();
+		int length = source.Length - offset;
 		Span<byte> scratch = stackalloc byte[BitsliceBatchSize - BlockSize];
-		scratch = scratch.Slice(0, source.Length);
+		scratch = scratch.Slice(0, length);
 
 		try
 		{
-			if (xorInput)
+			for (int i = 0; i < length; i += BlockSize)
 			{
-				FastUtils.Xor(source, mask, scratch, source.Length);
-				source = scratch;
+				policy.Prepare1(ref src, (nuint)(offset + i)).StoreUnsafe(ref scratch.GetReference(), (nuint)i);
 			}
 
-			if (decrypt)
-			{
-				_state.Software.DecryptBlocks(source, scratch);
-			}
-			else
-			{
-				_state.Software.EncryptBlocks(source, scratch);
-			}
+			TOperation.ApplyBlocks(in _state.Software, scratch, scratch);
 
-			FastUtils.Xor(scratch, mask, destination, source.Length);
+			for (int i = 0; i < length; i += BlockSize)
+			{
+				policy.Finish1(ref src, ref dst, (nuint)(offset + i), Vector128.LoadUnsafe(ref scratch.GetReference(), (nuint)i));
+			}
 		}
 		finally
 		{

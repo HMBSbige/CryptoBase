@@ -81,6 +81,7 @@ internal readonly struct SM4ArmAes : ISM4Kernel
 		x4 ^= SM4Linear.Transform(t1);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Process4(ref uint keys, ref byte source, ref byte destination)
 	{
 		LoadConstants(out Vector128<byte> preLo, out Vector128<byte> preHi, out Vector128<byte> postLo, out Vector128<byte> postHi, out Vector128<byte> inverseShiftRows, out Vector128<byte> mask);
@@ -97,6 +98,7 @@ internal readonly struct SM4ArmAes : ISM4Kernel
 		SM4Layout.Store4Arm64(ref destination, x3, x2, x1, x0);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Process8(ref uint keys, ref byte source, ref byte destination)
 	{
 		LoadConstants(out Vector128<byte> preLo, out Vector128<byte> preHi, out Vector128<byte> postLo, out Vector128<byte> postHi, out Vector128<byte> inverseShiftRows, out Vector128<byte> mask);

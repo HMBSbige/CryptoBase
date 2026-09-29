@@ -40,7 +40,7 @@ internal static partial class AesGcmX86
 		Vector128<byte> v6 = NextCounter(ref prefix, ref value);
 		Vector128<byte> v7 = NextCounter(ref prefix, ref value);
 		aes.Encrypt8(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
-		AesGcmFusion.XorStore8(ref input, ref output, 0, ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
+		BlockXor.XorStore8(ref input, ref output, 0, ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
 		Vector128<byte> hash = accumulator;
 
 		for (nint offset = 128; offset < length; offset += 128)
@@ -74,7 +74,7 @@ internal static partial class AesGcmX86
 			hash = ReduceKaratsuba(p00, p11, pm);
 			aes.EncryptFinalRounds8(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
 
-			AesGcmFusion.XorStore8(ref input, ref output, (nuint)offset, ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
+			BlockXor.XorStore8(ref input, ref output, (nuint)offset, ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
 		}
 
 		MultiplyKaratsuba(v0.ReverseEndianness128() ^ hash, powers.GetKey(8), powers.GetXorKey(8), out Vector128<uint> lastP00, out Vector128<uint> lastP11, out Vector128<uint> lastPm);

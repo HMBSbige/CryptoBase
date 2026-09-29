@@ -15,6 +15,8 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	private RoundKeys _roundKeys;
 	private RoundKeys _reverseRoundKeys;
 
+	internal ref readonly uint EncryptionRoundKeysStart => ref _roundKeys[0];
+
 	/// <inheritdoc />
 	public static int BlockSize => 16;
 

@@ -11,10 +11,10 @@ namespace CryptoBase.Benchmark.Ciphers.Modes;
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 public class XtsBenchmark
 {
-	[Params(16, 32)]
+	[Params(16, 24, 32)]
 	public int KeyLength { get; set; }
 
-	[Params(16, 17, 128, 256, 512, 4096)]
+	[Params(16, 17, 128, 4096, 65536)]
 	public int ByteLength { get; set; }
 
 	private XtsMode<AesCipher> _xts = null!;

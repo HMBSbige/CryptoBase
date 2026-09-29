@@ -1,26 +1,34 @@
 using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Aead;
 using CryptoBase.Ciphers.Blocks.Aes;
+using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Aead;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-[GenerateGenericTest(typeof(ChaCha20Poly1305Cipher))]
-[GenerateGenericTest(typeof(XChaCha20Poly1305Cipher))]
-[GenerateGenericTest(typeof(GcmMode128<AesCipher>))]
-public class AeadBufferOverlapTest<T> where T : IAeadCipher<T>
-{
-	private const int KeySize = 32;
+[InheritsTests]
+public class AesGcmBufferOverlapTest() : AeadBufferOverlapTest<GcmMode128<AesCipher>>(32);
 
+[InheritsTests]
+public class SM4GcmBufferOverlapTest() : AeadBufferOverlapTest<GcmMode128<SM4Cipher>>(16);
+
+[InheritsTests]
+public class ChaCha20Poly1305BufferOverlapTest() : AeadBufferOverlapTest<ChaCha20Poly1305Cipher>(32);
+
+[InheritsTests]
+public class XChaCha20Poly1305BufferOverlapTest() : AeadBufferOverlapTest<XChaCha20Poly1305Cipher>(32);
+
+[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
+public abstract class AeadBufferOverlapTest<T>(int keyLength) where T : IAeadCipher<T>
+{
 	[Test]
 	[Arguments(-1)]
 	[Arguments(1)]
 	public async Task OffsetSourceDestinationOverlapsAreRejectedBeforeWriting(int destinationOffset)
 	{
-		byte[] key = CreateDeterministicSource(KeySize);
+		byte[] key = CreateDeterministicSource(keyLength);
 		using T crypto = T.Create(key);
 		byte[] nonce = CreateDeterministicSource(T.NonceSize);
 		byte[] associatedData = CreateDeterministicSource(29);
@@ -51,16 +59,15 @@ public class AeadBufferOverlapTest<T> where T : IAeadCipher<T>
 	}
 
 	[Test]
-	[Arguments(29)]
-	[Arguments(255)]
-	public async Task AssociatedDataOverlappingDestinationIsConsumedBeforeWriting(int associatedDataSizeInBytes)
+	[MatrixDataSource]
+	public async Task AssociatedDataOverlappingDestinationIsConsumedBeforeWriting([Matrix(29, 255)] int associatedDataSizeInBytes, [Matrix(257, 4097)] int plaintextLength)
 	{
 		const int destinationOffset = 7;
-		byte[] key = CreateDeterministicSource(KeySize);
+		byte[] key = CreateDeterministicSource(keyLength);
 		using T crypto = T.Create(key);
 		byte[] nonce = CreateDeterministicSource(T.NonceSize);
 		byte[] associatedData = CreateDeterministicSource(associatedDataSizeInBytes);
-		byte[] plaintext = CreateDeterministicSource(257);
+		byte[] plaintext = CreateDeterministicSource(plaintextLength);
 		byte[] expectedCiphertext = new byte[plaintext.Length];
 		byte[] expectedTag = new byte[T.TagSize];
 		crypto.Encrypt(nonce, plaintext, expectedCiphertext, expectedTag, associatedData);
@@ -84,7 +91,7 @@ public class AeadBufferOverlapTest<T> where T : IAeadCipher<T>
 	public async Task TagDestinationOverlapsAreRejectedBeforeWriting()
 	{
 		const int overlapLength = 8;
-		byte[] key = CreateDeterministicSource(KeySize);
+		byte[] key = CreateDeterministicSource(keyLength);
 		using T crypto = T.Create(key);
 		byte[] nonce = CreateDeterministicSource(T.NonceSize);
 		byte[] associatedData = CreateDeterministicSource(29);

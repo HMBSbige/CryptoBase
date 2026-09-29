@@ -198,7 +198,7 @@ public class AesGcmFusionTest
 
 			for (int i = 15; i >= 12; --i)
 			{
-				counter[i] = unchecked((byte)(counter[i] + 1));
+				counter[i] = (byte)(counter[i] + 1);
 
 				if (counter[i] is not 0)
 				{

@@ -1,5 +1,6 @@
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
+using CryptoBase.Tests.Ciphers.Blocks.SM4;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Modes;
@@ -22,5 +23,48 @@ public class SM4CtrTest
 		byte[] ciphertext = Convert.FromHexString(ciphertextHex);
 
 		await VerifyStreamVector(CtrMode128<SM4Cipher>.Create(key, counter), plaintext, ciphertext);
+	}
+
+	[Test]
+	[Arguments("000102030405060708090A0BFFFFFFE1")]
+	[Arguments("0001020304050607FFFFFFFFFFFFFFE1")]
+	[Arguments("00010203FFFFFFFFFFFFFFFFFFFFFFE1")]
+	[Arguments("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1")]
+	public async Task BatchCarriesAndContinuationMatchScalarReference(string initialCounterHex)
+	{
+		byte[] key = CreateDeterministicSource(16);
+		byte[] counter = Convert.FromHexString(initialCounterHex);
+		byte[] plaintext = CreateDeterministicSource(4097);
+		byte[] expected = CtrReference.Transform(counter, plaintext, counters => SM4Reference.Transform(key, counters));
+
+		foreach (int length in new[] { 1023, 1024, 1025, 2048, 4097 })
+		{
+			foreach (bool inPlace in new[] { false, true })
+			{
+				byte[] output = CreateGuardedBuffer(3, length);
+				plaintext.AsSpan(0, length).CopyTo(output.AsSpan(3));
+				using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
+				ReadOnlySpan<byte> source = inPlace ? output.AsSpan(3, length) : plaintext.AsSpan(0, length);
+				cipher.Xor(source, output.AsSpan(3));
+				await AssertOutput(output, 3, expected.AsSpan(0, length).ToArray());
+			}
+		}
+
+		foreach (bool inPlace in new[] { false, true })
+		{
+			byte[] output = CreateGuardedBuffer(5, plaintext.Length);
+			plaintext.CopyTo(output, 5);
+			using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
+			int offset = 0;
+
+			foreach (int length in new[] { 1, 1040, 0, 1024, 15, 2017 })
+			{
+				ReadOnlySpan<byte> source = inPlace ? output.AsSpan(5 + offset, length) : plaintext.AsSpan(offset, length);
+				cipher.Xor(source, output.AsSpan(5 + offset, length));
+				offset += length;
+			}
+
+			await AssertOutput(output, 5, expected);
+		}
 	}
 }

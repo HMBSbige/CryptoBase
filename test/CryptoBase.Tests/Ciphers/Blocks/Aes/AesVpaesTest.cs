@@ -132,18 +132,18 @@ public class AesVpaesTest
 			byte[] actual = new byte[destinationOffset + length + 17];
 			TestUtils.PrepareDestination(actual);
 
-			crypto.TransformWithMask(source.AsSpan(sourceOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
+			TransformWithMask(in crypto, source.AsSpan(sourceOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
 			await TestUtils.AssertOutput(actual, destinationOffset, expected);
 			await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
 			await Assert.That(mask).IsEquivalentTo(originalMask, CollectionOrdering.Matching);
 
 			input.CopyTo(actual, destinationOffset);
-			crypto.TransformWithMask(actual.AsSpan(destinationOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
+			TransformWithMask(in crypto, actual.AsSpan(destinationOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
 			await TestUtils.AssertOutput(actual, destinationOffset, expected);
 			await Assert.That(mask).IsEquivalentTo(originalMask, CollectionOrdering.Matching);
 
 			blockMask.CopyTo(actual, destinationOffset);
-			crypto.TransformWithMask(source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
+			TransformWithMask(in crypto, source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
 			await TestUtils.AssertOutput(actual, destinationOffset, expected);
 			await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
 		}
@@ -159,5 +159,31 @@ public class AesVpaesTest
 	{
 		byte[] key = new byte[length];
 		await Assert.That(() => AesCipherVpaes.Create(key)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("key");
+	}
+
+	private static void TransformWithMask(in AesCipherVpaes crypto, ReadOnlySpan<byte> source, ReadOnlySpan<byte> xorOperand, Span<byte> destination, bool decrypt, bool xorInput)
+	{
+		if (xorInput)
+		{
+			AesInputOutputMaskPolicy policy = new(xorOperand);
+			TransformWithPolicy(in crypto, ref policy, source, destination, decrypt);
+		}
+		else
+		{
+			AesOutputMaskPolicy policy = new(xorOperand);
+			TransformWithPolicy(in crypto, ref policy, source, destination, decrypt);
+		}
+	}
+
+	private static void TransformWithPolicy<TPolicy>(in AesCipherVpaes crypto, ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination, bool decrypt) where TPolicy : struct, IAesModePolicy, allows ref struct
+	{
+		if (decrypt)
+		{
+			crypto.TransformWithPolicy<TPolicy, AesDecrypt>(ref policy, source, destination);
+		}
+		else
+		{
+			crypto.TransformWithPolicy<TPolicy, AesEncrypt>(ref policy, source, destination);
+		}
 	}
 }

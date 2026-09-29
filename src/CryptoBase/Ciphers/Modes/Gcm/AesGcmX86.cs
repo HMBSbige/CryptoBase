@@ -52,14 +52,7 @@ internal static partial class AesGcmX86
 		Vector128<byte> c2 = CreateCounter(prefix, value + 2u);
 		Vector128<byte> c3 = CreateCounter(prefix, value + 3u);
 		aes.Encrypt4(ref c0, ref c1, ref c2, ref c3);
-		c0 ^= Vector128.LoadUnsafe(ref input, 0);
-		c0.StoreUnsafe(ref output, 0);
-		c1 ^= Vector128.LoadUnsafe(ref input, 16);
-		c1.StoreUnsafe(ref output, 16);
-		c2 ^= Vector128.LoadUnsafe(ref input, 32);
-		c2.StoreUnsafe(ref output, 32);
-		c3 ^= Vector128.LoadUnsafe(ref input, 48);
-		c3.StoreUnsafe(ref output, 48);
+		BlockXor.XorStore4(ref input, ref output, 0, ref c0, ref c1, ref c2, ref c3);
 		value += 4u;
 
 		Vector128<byte> hash = accumulator;
@@ -87,14 +80,11 @@ internal static partial class AesGcmX86
 			EncryptRound4(ref v0, ref v1, ref v2, ref v3, roundKeys.K9);
 			aes.EncryptFinalRounds4(ref v0, ref v1, ref v2, ref v3);
 
-			c0 = v0 ^ Vector128.LoadUnsafe(ref input, (nuint)offset);
-			c0.StoreUnsafe(ref output, (nuint)offset);
-			c1 = v1 ^ Vector128.LoadUnsafe(ref input, (nuint)(offset + 16));
-			c1.StoreUnsafe(ref output, (nuint)(offset + 16));
-			c2 = v2 ^ Vector128.LoadUnsafe(ref input, (nuint)(offset + 32));
-			c2.StoreUnsafe(ref output, (nuint)(offset + 32));
-			c3 = v3 ^ Vector128.LoadUnsafe(ref input, (nuint)(offset + 48));
-			c3.StoreUnsafe(ref output, (nuint)(offset + 48));
+			c0 = v0;
+			c1 = v1;
+			c2 = v2;
+			c3 = v3;
+			BlockXor.XorStore4(ref input, ref output, (nuint)offset, ref c0, ref c1, ref c2, ref c3);
 			value += 4u;
 		}
 

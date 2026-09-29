@@ -11,14 +11,17 @@ namespace CryptoBase.Benchmark.Ciphers.Modes;
 [MemoryDiagnoser]
 public class AesCtrBenchmark : BlockModeStreamCipherBenchmarkBase
 {
-	public override IEnumerable<int> ByteLengths => [16, 32, 48, 64, 80, 96, 112, 128, 256, 512, 1024, 8192];
+	[Params(16, 24, 32)]
+	public int KeyLength { get; set; }
+
+	public override IEnumerable<int> ByteLengths => [16, 32, 48, 64, 128, 4096, 65536];
 
 	private CtrMode128<AesCipher> _cryptoBase = null!;
 	private SicBlockCipher _bouncyCastle = null!;
 
 	protected override void SetupCryptos()
 	{
-		byte[] key = RandomNumberGenerator.GetBytes(16);
+		byte[] key = RandomNumberGenerator.GetBytes(KeyLength);
 		byte[] iv = RandomNumberGenerator.GetBytes(16);
 		_cryptoBase = Register(CtrMode128<AesCipher>.Create(key, iv));
 		_bouncyCastle = new SicBlockCipher(AesUtilities.CreateEngine());

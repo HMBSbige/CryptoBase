@@ -2,174 +2,118 @@ namespace CryptoBase.Ciphers.Blocks.Aes;
 
 internal partial struct AesCipherBitslice
 {
-	public readonly void TransformWithMask(ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination, bool decrypt, bool xorInput)
-	{
-		if (decrypt)
-		{
-			DecryptWithMask(source, mask, destination, xorInput);
-		}
-		else
-		{
-			EncryptWithMask(source, mask, destination, xorInput);
-		}
-	}
-
-	private readonly void EncryptWithMask(ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination, bool xorInput)
+	public readonly void TransformWithPolicy<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
 	{
 		ref byte input = ref source.GetReference();
-		ref byte xor = ref mask.GetReference();
 		ref byte output = ref destination.GetReference();
-		int remaining = source.Length;
-		int rounds = _rounds;
 
-		while (remaining > 0)
+		for (int offset = 0; offset < source.Length; offset += BatchSize)
 		{
-			int length = Math.Min(remaining, BatchSize);
-			EncryptBatchWithMask(ref input, ref xor, ref output, length, rounds, xorInput);
-			input = ref Unsafe.Add(ref input, length);
-			xor = ref Unsafe.Add(ref xor, length);
-			output = ref Unsafe.Add(ref output, length);
-			remaining -= length;
-		}
-	}
-
-	private readonly void DecryptWithMask(ReadOnlySpan<byte> source, ReadOnlySpan<byte> mask, Span<byte> destination, bool xorInput)
-	{
-		ref byte input = ref source.GetReference();
-		ref byte xor = ref mask.GetReference();
-		ref byte output = ref destination.GetReference();
-		int remaining = source.Length;
-		int rounds = _rounds;
-
-		while (remaining > 0)
-		{
-			int length = Math.Min(remaining, BatchSize);
-			DecryptBatchWithMask(ref input, ref xor, ref output, length, rounds, xorInput);
-			input = ref Unsafe.Add(ref input, length);
-			xor = ref Unsafe.Add(ref xor, length);
-			output = ref Unsafe.Add(ref output, length);
-			remaining -= length;
+			int length = Math.Min(source.Length - offset, BatchSize);
+			TOperation.ApplyBatch(in this, ref policy, ref input, ref output, (nuint)offset, length, _rounds);
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private readonly void EncryptBatchWithMask(ref byte input, ref byte xor, ref byte output, int length, int rounds, bool xorInput)
+	internal readonly void EncryptBatch<TPolicy>(ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length, int rounds) where TPolicy : struct, IAesModePolicy, allows ref struct
 	{
 		InlineArray8<Vector128<byte>> state = default;
-
-		if (xorInput)
-		{
-			LoadLayoutWithMask(ref state, ref input, ref xor, length);
-		}
-		else
-		{
-			LoadLayout(ref state, ref input, length);
-		}
-
+		LoadLayout(ref state, ref policy, ref input, offset, length);
 		Transpose(ref state);
 		EncryptState(ref state, rounds);
-		StoreWithMask(ref state, ref xor, ref output, length);
+		Store(ref state, ref policy, ref input, ref output, offset, length);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private readonly void DecryptBatchWithMask(ref byte input, ref byte xor, ref byte output, int length, int rounds, bool xorInput)
+	internal readonly void DecryptBatch<TPolicy>(ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length, int rounds) where TPolicy : struct, IAesModePolicy, allows ref struct
 	{
 		InlineArray8<Vector128<byte>> state = default;
-
-		if (xorInput)
-		{
-			LoadLayoutWithMask(ref state, ref input, ref xor, length);
-		}
-		else
-		{
-			LoadLayout(ref state, ref input, length);
-		}
-
+		LoadLayout(ref state, ref policy, ref input, offset, length);
 		Transpose(ref state);
 		DecryptState(ref state, rounds);
-		StoreWithMask(ref state, ref xor, ref output, length);
+		Store(ref state, ref policy, ref input, ref output, offset, length);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void LoadLayoutWithMask(ref InlineArray8<Vector128<byte>> state, ref byte source, ref byte mask, int length)
+	private static void LoadLayout<TPolicy>(ref InlineArray8<Vector128<byte>> state, ref TPolicy policy, ref byte input, nuint offset, int length) where TPolicy : struct, IAesModePolicy, allows ref struct
 	{
-		state[0] = TransposeBytes(Vector128.LoadUnsafe(ref source) ^ Vector128.LoadUnsafe(ref mask));
+		state[0] = TransposeBytes(policy.Prepare1(ref input, offset));
 
 		if (length >= 32)
 		{
-			state[1] = TransposeBytes(Vector128.LoadUnsafe(ref source, 16) ^ Vector128.LoadUnsafe(ref mask, 16));
+			state[1] = TransposeBytes(policy.Prepare1(ref input, offset + 16));
 		}
 
 		if (length >= 48)
 		{
-			state[2] = TransposeBytes(Vector128.LoadUnsafe(ref source, 32) ^ Vector128.LoadUnsafe(ref mask, 32));
+			state[2] = TransposeBytes(policy.Prepare1(ref input, offset + 32));
 		}
 
 		if (length >= 64)
 		{
-			state[3] = TransposeBytes(Vector128.LoadUnsafe(ref source, 48) ^ Vector128.LoadUnsafe(ref mask, 48));
+			state[3] = TransposeBytes(policy.Prepare1(ref input, offset + 48));
 		}
 
 		if (length >= 80)
 		{
-			state[4] = TransposeBytes(Vector128.LoadUnsafe(ref source, 64) ^ Vector128.LoadUnsafe(ref mask, 64));
+			state[4] = TransposeBytes(policy.Prepare1(ref input, offset + 64));
 		}
 
 		if (length >= 96)
 		{
-			state[5] = TransposeBytes(Vector128.LoadUnsafe(ref source, 80) ^ Vector128.LoadUnsafe(ref mask, 80));
+			state[5] = TransposeBytes(policy.Prepare1(ref input, offset + 80));
 		}
 
 		if (length >= 112)
 		{
-			state[6] = TransposeBytes(Vector128.LoadUnsafe(ref source, 96) ^ Vector128.LoadUnsafe(ref mask, 96));
+			state[6] = TransposeBytes(policy.Prepare1(ref input, offset + 96));
 		}
 
 		if (length >= 128)
 		{
-			state[7] = TransposeBytes(Vector128.LoadUnsafe(ref source, 112) ^ Vector128.LoadUnsafe(ref mask, 112));
+			state[7] = TransposeBytes(policy.Prepare1(ref input, offset + 112));
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StoreWithMask(ref InlineArray8<Vector128<byte>> state, ref byte mask, ref byte destination, int length)
+	private static void Store<TPolicy>(ref InlineArray8<Vector128<byte>> state, ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length) where TPolicy : struct, IAesModePolicy, allows ref struct
 	{
 		Transpose(ref state);
-		(TransposeBytes(state[0]) ^ Vector128.LoadUnsafe(ref mask)).StoreUnsafe(ref destination);
+		policy.Finish1(ref input, ref output, offset, TransposeBytes(state[0]));
 
 		if (length >= 32)
 		{
-			(TransposeBytes(state[1]) ^ Vector128.LoadUnsafe(ref mask, 16)).StoreUnsafe(ref destination, 16);
+			policy.Finish1(ref input, ref output, offset + 16, TransposeBytes(state[1]));
 		}
 
 		if (length >= 48)
 		{
-			(TransposeBytes(state[2]) ^ Vector128.LoadUnsafe(ref mask, 32)).StoreUnsafe(ref destination, 32);
+			policy.Finish1(ref input, ref output, offset + 32, TransposeBytes(state[2]));
 		}
 
 		if (length >= 64)
 		{
-			(TransposeBytes(state[3]) ^ Vector128.LoadUnsafe(ref mask, 48)).StoreUnsafe(ref destination, 48);
+			policy.Finish1(ref input, ref output, offset + 48, TransposeBytes(state[3]));
 		}
 
 		if (length >= 80)
 		{
-			(TransposeBytes(state[4]) ^ Vector128.LoadUnsafe(ref mask, 64)).StoreUnsafe(ref destination, 64);
+			policy.Finish1(ref input, ref output, offset + 64, TransposeBytes(state[4]));
 		}
 
 		if (length >= 96)
 		{
-			(TransposeBytes(state[5]) ^ Vector128.LoadUnsafe(ref mask, 80)).StoreUnsafe(ref destination, 80);
+			policy.Finish1(ref input, ref output, offset + 80, TransposeBytes(state[5]));
 		}
 
 		if (length >= 112)
 		{
-			(TransposeBytes(state[6]) ^ Vector128.LoadUnsafe(ref mask, 96)).StoreUnsafe(ref destination, 96);
+			policy.Finish1(ref input, ref output, offset + 96, TransposeBytes(state[6]));
 		}
 
 		if (length >= 128)
 		{
-			(TransposeBytes(state[7]) ^ Vector128.LoadUnsafe(ref mask, 112)).StoreUnsafe(ref destination, 112);
+			policy.Finish1(ref input, ref output, offset + 112, TransposeBytes(state[7]));
 		}
 	}
 }

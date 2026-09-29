@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
+using CryptoBase.Ciphers.Modes.Ctr;
 using System.Buffers.Binary;
 using System.Runtime.Intrinsics;
 using static CryptoBase.Tests.TestUtils;
@@ -52,7 +53,7 @@ public class CtrModeContractTest
 		{
 			BinaryPrimitives.WriteUInt32BigEndian(initial.AsSpan(12), value);
 			cipher.EncryptBlock(initial, expected.AsSpan(offset, 16));
-			value = unchecked(value + 1);
+			++value;
 		}
 
 		int processed = CtrBlocks<TCipher, CtrIncrementer32>.XorBlocks(cipher, ref counter, new byte[length], actual);
@@ -82,7 +83,7 @@ public class CtrModeContractTest
 		{
 			BinaryPrimitives.WriteUInt128BigEndian(block, counter);
 			cipher.EncryptBlock(block, expected.AsSpan(offset, 16));
-			counter = unchecked(counter + 1);
+			++counter;
 		}
 
 		ctr.Xor(new byte[actual.Length], actual);

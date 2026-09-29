@@ -2,6 +2,12 @@ namespace CryptoBase.Ciphers.Blocks.SM4;
 
 internal static partial class SM4Layout
 {
+	internal static Vector512<uint> TransposedBlockOffsets16X86
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Vector512.Create(0u, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
+	}
+
 	// Keep address formation inside count guards to avoid out-of-bounds byrefs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Load4X86(int count, ref byte source, nuint offset, out Vector128<byte> x0, out Vector128<byte> x1, out Vector128<byte> x2, out Vector128<byte> x3)
@@ -121,6 +127,16 @@ internal static partial class SM4Layout
 		{
 			StoreQuadX86(count - 12, ref destination, offset + 192, x3);
 		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void XorStore16X86(ref byte source, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3)
+	{
+		Transpose(ref x0, ref x1, ref x2, ref x3);
+		(x0.ReverseEndianness128() ^ Vector512.LoadUnsafe(ref source, offset)).StoreUnsafe(ref destination, offset);
+		(x1.ReverseEndianness128() ^ Vector512.LoadUnsafe(ref source, offset + 64)).StoreUnsafe(ref destination, offset + 64);
+		(x2.ReverseEndianness128() ^ Vector512.LoadUnsafe(ref source, offset + 128)).StoreUnsafe(ref destination, offset + 128);
+		(x3.ReverseEndianness128() ^ Vector512.LoadUnsafe(ref source, offset + 192)).StoreUnsafe(ref destination, offset + 192);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

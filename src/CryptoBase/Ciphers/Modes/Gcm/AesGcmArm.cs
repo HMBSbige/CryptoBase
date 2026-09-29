@@ -45,7 +45,7 @@ internal static partial class AesGcmArm
 		ref byte input = ref source.GetReference();
 		ref byte output = ref destination.GetReference();
 		ref readonly AesKeys roundKeys = ref aes.RoundKeys;
-		uint value = BinaryPrimitives.ReverseEndianness(counter.AsUInt32().GetElement(3));
+		uint value = BinaryPrimitives.ReadUInt32BigEndian(counter.AsReadOnlySpan().Slice(12));
 		Vector128<uint> prefix = counter.AsUInt32().WithElement(3, 0U);
 		Vector128<byte> c0 = CreateCounter(prefix, value);
 		Vector128<byte> c1 = CreateCounter(prefix, value + 1);
@@ -53,14 +53,7 @@ internal static partial class AesGcmArm
 		Vector128<byte> c3 = CreateCounter(prefix, value + 3);
 		value += 4;
 		aes.Encrypt4(ref c0, ref c1, ref c2, ref c3);
-		c0 ^= Vector128.LoadUnsafe(ref input, 0);
-		c1 ^= Vector128.LoadUnsafe(ref input, 16);
-		c2 ^= Vector128.LoadUnsafe(ref input, 32);
-		c3 ^= Vector128.LoadUnsafe(ref input, 48);
-		c0.StoreUnsafe(ref output, 0);
-		c1.StoreUnsafe(ref output, 16);
-		c2.StoreUnsafe(ref output, 32);
-		c3.StoreUnsafe(ref output, 48);
+		XorStore4Grouped(ref input, ref output, 0, ref c0, ref c1, ref c2, ref c3);
 
 		Vector128<byte> hash = accumulator;
 
@@ -88,14 +81,11 @@ internal static partial class AesGcmArm
 			hash = ReduceHash(low, high, middle);
 			aes.EncryptFinalRounds4(ref v0, ref v1, ref v2, ref v3);
 
-			c0 = v0 ^ Vector128.LoadUnsafe(ref input, (nuint)offset);
-			c1 = v1 ^ Vector128.LoadUnsafe(ref input, (nuint)(offset + 16));
-			c2 = v2 ^ Vector128.LoadUnsafe(ref input, (nuint)(offset + 32));
-			c3 = v3 ^ Vector128.LoadUnsafe(ref input, (nuint)(offset + 48));
-			c0.StoreUnsafe(ref output, (nuint)offset);
-			c1.StoreUnsafe(ref output, (nuint)(offset + 16));
-			c2.StoreUnsafe(ref output, (nuint)(offset + 32));
-			c3.StoreUnsafe(ref output, (nuint)(offset + 48));
+			c0 = v0;
+			c1 = v1;
+			c2 = v2;
+			c3 = v3;
+			XorStore4Grouped(ref input, ref output, (nuint)offset, ref c0, ref c1, ref c2, ref c3);
 		}
 
 		GHashArm.GFMultiplyUnreduced(AdvSimd.Arm64.ReverseElementBits(c0) ^ hash, powers.Key4, out Vector128<ulong> finalLow, out Vector128<ulong> finalHigh, out Vector128<ulong> finalMiddle);
@@ -111,6 +101,20 @@ internal static partial class AesGcmArm
 	private static Vector128<byte> CreateCounter(Vector128<uint> prefix, uint value)
 	{
 		return prefix.WithElement(3, BinaryPrimitives.ReverseEndianness(value)).AsByte();
+	}
+
+	// Keep stores grouped so the first batch can use paired stores.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void XorStore4Grouped(ref byte input, ref byte output, nuint offset, ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2, ref Vector128<byte> v3)
+	{
+		v0 ^= Vector128.LoadUnsafe(ref input, offset);
+		v1 ^= Vector128.LoadUnsafe(ref input, offset + 16);
+		v2 ^= Vector128.LoadUnsafe(ref input, offset + 32);
+		v3 ^= Vector128.LoadUnsafe(ref input, offset + 48);
+		v0.StoreUnsafe(ref output, offset);
+		v1.StoreUnsafe(ref output, offset + 16);
+		v2.StoreUnsafe(ref output, offset + 32);
+		v3.StoreUnsafe(ref output, offset + 48);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
