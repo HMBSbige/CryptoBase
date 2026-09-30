@@ -22,6 +22,7 @@ public sealed partial class Base32Encoding
 		return MapSymbols(result.AsByte(), threshold, first, second);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int EncodeUtf8AdvSimd(ReadOnlySpan<byte> source, Span<byte> destination, int sourceOffset, int destinationOffset, byte alphabetKind)
 	{
 		Vector128<ulong> mask0 = Vector128.Create((ulong)SymbolMask);
@@ -89,6 +90,7 @@ public sealed partial class Base32Encoding
 		return consumed;
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int EncodeCharsAdvSimd(ReadOnlySpan<byte> source, Span<char> destination, int sourceOffset, int destinationOffset, byte alphabetKind)
 	{
 		Vector128<ulong> mask0 = Vector128.Create((ulong)SymbolMask);

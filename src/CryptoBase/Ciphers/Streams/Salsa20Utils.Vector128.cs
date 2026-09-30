@@ -54,6 +54,7 @@ internal static partial class Salsa20Utils
 		d = Vector128.Shuffle(VectorTranspose.ZipHigh(t2, t3), Vector128.Create(2u, 1, 3, 0));
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int XorVector128(ref uint stateRef, ref byte input, ref byte output, int length)
 	{
 		ref ulong counter = ref GetCounter(ref stateRef);
@@ -124,6 +125,7 @@ internal static partial class Salsa20Utils
 		return processed;
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void XorVector128Two(ref uint stateRef, ref byte input, ref byte output)
 	{
 		ref ulong counter = ref GetCounter(ref stateRef);

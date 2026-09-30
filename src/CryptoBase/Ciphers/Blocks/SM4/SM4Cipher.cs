@@ -18,6 +18,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public static int BlockSize => 16;
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private SM4Cipher(ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));

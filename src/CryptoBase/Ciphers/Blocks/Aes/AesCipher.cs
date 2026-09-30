@@ -15,6 +15,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 	internal ref readonly AesCipherArm Arm => ref _state.Arm;
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private AesCipher(ReadOnlySpan<byte> key)
 	{
 		if (AesCipherX86.IsSupported)

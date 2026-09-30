@@ -14,8 +14,4 @@
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <TieredCompilation>false</TieredCompilation>
-  </PropertyGroup>
-
 </Project>

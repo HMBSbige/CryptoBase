@@ -48,6 +48,7 @@ public class ChaCha20Cipher : SnuffleCipher
 	}
 
 	/// <inheritdoc />
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	protected override void UpdateKeyStream()
 	{
 		ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);

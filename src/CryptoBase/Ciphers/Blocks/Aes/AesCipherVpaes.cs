@@ -520,6 +520,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		EncryptBlocksCore(source, destination);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private readonly void EncryptBlocksCore(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ref byte src = ref source.GetReference();
@@ -586,6 +587,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		DecryptBlocksCore(source, destination);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private readonly void DecryptBlocksCore(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ref byte src = ref source.GetReference();

@@ -4,6 +4,7 @@ namespace CryptoBase.Hashes.Sha1;
 
 public partial struct Sha1HashAlgorithm
 {
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ProcessBlocksArm64(ref Sha1HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Sha1Arm.Arm64.IsSupported);

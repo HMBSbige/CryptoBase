@@ -14,7 +14,7 @@ internal static partial class ChaCha20Utils
 		return ref Unsafe.Add(ref state, 12);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void DeriveXChaCha20Key(Span<uint> state, ReadOnlySpan<uint> key, ReadOnlySpan<uint> nonce)
 	{
 		Debug.Assert(state.Length is 16 && key.Length is 8 && nonce.Length >= 4);

@@ -4,6 +4,7 @@ namespace CryptoBase.Hashes.Sha256;
 
 internal partial struct Sha256Core
 {
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void ProcessBlocksArm64(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Sha256Arm.Arm64.IsSupported);
