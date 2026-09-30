@@ -3,6 +3,8 @@ namespace CryptoBase.Ciphers.Modes.Ctr;
 // Only the low 32 bits advance; overflow does not carry into the upper 96 bits.
 internal readonly struct CtrIncrementer32 : ICtrIncrementer
 {
+	public static bool CarriesBeyond32 => false;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<byte> Inc(Vector128<byte> counter)
 	{

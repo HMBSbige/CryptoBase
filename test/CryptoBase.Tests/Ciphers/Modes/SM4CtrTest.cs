@@ -30,6 +30,8 @@ public class SM4CtrTest
 	[Arguments("0001020304050607FFFFFFFFFFFFFFE1")]
 	[Arguments("00010203FFFFFFFFFFFFFFFFFFFFFFE1")]
 	[Arguments("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1")]
+	[Arguments("0001020304050607FFFFFFFFFFFFFFE5")]
+	[Arguments("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE5")]
 	public async Task BatchCarriesAndContinuationMatchScalarReference(string initialCounterHex)
 	{
 		byte[] key = CreateDeterministicSource(16);
@@ -37,7 +39,7 @@ public class SM4CtrTest
 		byte[] plaintext = CreateDeterministicSource(4097);
 		byte[] expected = CtrReference.Transform(counter, plaintext, counters => SM4Reference.Transform(key, counters));
 
-		foreach (int length in new[] { 1023, 1024, 1025, 2048, 4097 })
+		foreach (int length in new[] { 255, 256, 257, 1023, 1024, 1025, 2048, 4097 })
 		{
 			foreach (bool inPlace in new[] { false, true })
 			{

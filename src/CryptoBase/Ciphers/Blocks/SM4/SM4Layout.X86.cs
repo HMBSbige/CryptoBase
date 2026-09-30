@@ -2,6 +2,12 @@ namespace CryptoBase.Ciphers.Blocks.SM4;
 
 internal static partial class SM4Layout
 {
+	internal static Vector256<uint> TransposedBlockOffsets8X86
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Vector256.Create(0u, 2, 4, 6, 1, 3, 5, 7);
+	}
+
 	internal static Vector512<uint> TransposedBlockOffsets16X86
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -127,6 +133,16 @@ internal static partial class SM4Layout
 		{
 			StoreQuadX86(count - 12, ref destination, offset + 192, x3);
 		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void XorStore8X86(ref byte source, ref byte destination, nuint offset, Vector256<byte> x0, Vector256<byte> x1, Vector256<byte> x2, Vector256<byte> x3)
+	{
+		Transpose(ref x0, ref x1, ref x2, ref x3);
+		(x0.ReverseEndianness128() ^ Vector256.LoadUnsafe(ref source, offset)).StoreUnsafe(ref destination, offset);
+		(x1.ReverseEndianness128() ^ Vector256.LoadUnsafe(ref source, offset + 32)).StoreUnsafe(ref destination, offset + 32);
+		(x2.ReverseEndianness128() ^ Vector256.LoadUnsafe(ref source, offset + 64)).StoreUnsafe(ref destination, offset + 64);
+		(x3.ReverseEndianness128() ^ Vector256.LoadUnsafe(ref source, offset + 96)).StoreUnsafe(ref destination, offset + 96);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

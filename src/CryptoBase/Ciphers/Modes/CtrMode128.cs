@@ -62,7 +62,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 
 		if (left > BlockSize)
 		{
-			int processed = BlockModeDispatch.XorCtr128(_blockCipher, ref _counter, source.Slice(offset), destination.Slice(offset));
+			int processed = BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer128>(_blockCipher, ref _counter, source.Slice(offset), destination.Slice(offset));
 			offset += processed;
 			left -= processed;
 		}

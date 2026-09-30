@@ -14,7 +14,7 @@ public class AesGcmTest
 	public async Task IndependentMessagesMatchBcl
 	(
 		[Matrix(16, 24, 32)] int keyLength,
-		[Matrix(0, 1, 15, 16, 17, 127, 128, 129, 257, 513, 2047, 2048, 2049, 4097, 16385)]
+		[Matrix(0, 1, 15, 16, 17, 32, 33, 48, 49, 64, 65, 127, 128, 129, 257, 513, 2047, 2048, 2049, 4097, 16385)]
 		int messageLength,
 		[Matrix(0, 7, 15, 16, 17, 126)] int associatedDataLength
 	)

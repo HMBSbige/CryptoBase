@@ -1,4 +1,6 @@
 using CryptoBase.Ciphers.Blocks.SM4;
+using CryptoBase.Ciphers.Modes;
+using CryptoBase.Ciphers.Modes.Ctr;
 using CryptoBase.Tests.Ciphers.Modes;
 using System.Buffers.Binary;
 using System.Runtime.Intrinsics;
@@ -59,11 +61,11 @@ public class SM4GfniTest
 
 	[Test]
 	[MatrixDataSource]
-	public async Task Ctr32WrapsWithoutChangingNonce([Matrix(2u, 0xFFFFFFF1u, 0xFFFFFFC0u)] uint initialCounter, [Matrix(1024, 2048, 4096)] int length)
+	public async Task Ctr32WrapsWithoutChangingNonce([Matrix(2u, 0xFFFFFFF1u, 0xFFFFFFF5u, 0xFFFFFFC0u)] uint initialCounter, [Matrix(1024, 2048, 4096)] int length)
 	{
-		if (!SM4Gfni.SupportsCtr512)
+		if (!SM4Gfni.SupportsModePolicy)
 		{
-			Skip.Test("GFNI with 512-bit vectors is required.");
+			Skip.Test("GFNI with 256-bit vectors is required.");
 		}
 
 		byte[] key = CreateDeterministicSource(16);
@@ -79,7 +81,8 @@ public class SM4GfniTest
 			byte[] output = CreateGuardedBuffer(3, length);
 			plaintext.CopyTo(output, 3);
 			Vector128<byte> counter = Vector128.Create(initial);
-			SM4Gfni.XorCtr32(in cipher.EncryptionRoundKeysStart, ref counter, inPlace ? output.AsSpan(3, length) : plaintext, output.AsSpan(3, length));
+			int processed = BlockModeDispatch.XorCtr<SM4Cipher, CtrIncrementer32>(cipher, ref counter, inPlace ? output.AsSpan(3, length) : plaintext, output.AsSpan(3, length));
+			await Assert.That(processed).IsEqualTo(length);
 			await AssertOutput(output, 3, expected);
 			byte[] expectedCounter = (byte[])initial.Clone();
 			BinaryPrimitives.WriteUInt32BigEndian(expectedCounter.AsSpan(12), initialCounter + (uint)(length / 16));

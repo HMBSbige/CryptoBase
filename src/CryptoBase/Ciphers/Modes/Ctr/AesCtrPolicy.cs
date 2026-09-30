@@ -1,9 +1,8 @@
 using CryptoBase.Ciphers.Blocks.Aes;
-using Ctr128Lanes = CryptoBase.Ciphers.Modes.Ctr.CtrLanes<CryptoBase.Ciphers.Modes.Ctr.CtrIncrementer128>;
 
 namespace CryptoBase.Ciphers.Modes.Ctr;
 
-internal struct AesCtrPolicy : IAesModePolicy
+internal struct AesCtrPolicy<TIncrementer> : IAesModePolicy where TIncrementer : struct, ICtrIncrementer
 {
 	private Vector128<byte> _current;
 	private Vector256<byte> _lanes256;
@@ -20,11 +19,11 @@ internal struct AesCtrPolicy : IAesModePolicy
 		{
 			if (Avx512BW.IsSupported)
 			{
-				_lanes512 = Ctr128Lanes.Create4(_current);
+				_lanes512 = CtrLanes<TIncrementer>.Create4(_current);
 			}
 			else if (Avx2.IsSupported)
 			{
-				_lanes256 = Ctr128Lanes.Create2(_current);
+				_lanes256 = CtrLanes<TIncrementer>.Create2(_current);
 			}
 		}
 	}
@@ -48,14 +47,14 @@ internal struct AesCtrPolicy : IAesModePolicy
 		}
 		else
 		{
-			v0 = Ctr128Lanes.Next(ref _current);
-			v1 = Ctr128Lanes.Next(ref _current);
-			v2 = Ctr128Lanes.Next(ref _current);
-			v3 = Ctr128Lanes.Next(ref _current);
-			v4 = Ctr128Lanes.Next(ref _current);
-			v5 = Ctr128Lanes.Next(ref _current);
-			v6 = Ctr128Lanes.Next(ref _current);
-			v7 = Ctr128Lanes.Next(ref _current);
+			v0 = CtrLanes<TIncrementer>.Next(ref _current);
+			v1 = CtrLanes<TIncrementer>.Next(ref _current);
+			v2 = CtrLanes<TIncrementer>.Next(ref _current);
+			v3 = CtrLanes<TIncrementer>.Next(ref _current);
+			v4 = CtrLanes<TIncrementer>.Next(ref _current);
+			v5 = CtrLanes<TIncrementer>.Next(ref _current);
+			v6 = CtrLanes<TIncrementer>.Next(ref _current);
+			v7 = CtrLanes<TIncrementer>.Next(ref _current);
 		}
 	}
 
@@ -81,10 +80,10 @@ internal struct AesCtrPolicy : IAesModePolicy
 		}
 		else
 		{
-			v0 = Ctr128Lanes.Next(ref _current);
-			v1 = Ctr128Lanes.Next(ref _current);
-			v2 = Ctr128Lanes.Next(ref _current);
-			v3 = Ctr128Lanes.Next(ref _current);
+			v0 = CtrLanes<TIncrementer>.Next(ref _current);
+			v1 = CtrLanes<TIncrementer>.Next(ref _current);
+			v2 = CtrLanes<TIncrementer>.Next(ref _current);
+			v3 = CtrLanes<TIncrementer>.Next(ref _current);
 		}
 	}
 
@@ -97,8 +96,8 @@ internal struct AesCtrPolicy : IAesModePolicy
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Prepare2(ref byte source, nuint offset, out Vector128<byte> v0, out Vector128<byte> v1)
 	{
-		v0 = Ctr128Lanes.Next(ref _current);
-		v1 = Ctr128Lanes.Next(ref _current);
+		v0 = CtrLanes<TIncrementer>.Next(ref _current);
+		v1 = CtrLanes<TIncrementer>.Next(ref _current);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -110,7 +109,7 @@ internal struct AesCtrPolicy : IAesModePolicy
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector128<byte> Prepare1(ref byte source, nuint offset)
 	{
-		return Ctr128Lanes.Next(ref _current);
+		return CtrLanes<TIncrementer>.Next(ref _current);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -128,7 +127,7 @@ internal struct AesCtrPolicy : IAesModePolicy
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Next2(ref Vector256<byte> lanes, out Vector128<byte> v0, out Vector128<byte> v1)
 	{
-		Vector256<byte> counters = Ctr128Lanes.Next2(ref lanes);
+		Vector256<byte> counters = CtrLanes<TIncrementer>.Next2(ref lanes);
 		v0 = counters.GetLower();
 		v1 = counters.GetUpper();
 	}
@@ -136,7 +135,7 @@ internal struct AesCtrPolicy : IAesModePolicy
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Next4(ref Vector512<byte> lanes, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3)
 	{
-		Vector512<byte> counters = Ctr128Lanes.Next4(ref lanes);
+		Vector512<byte> counters = CtrLanes<TIncrementer>.Next4(ref lanes);
 		v0 = counters.GetLower().GetLower();
 		v1 = counters.GetLower().GetUpper();
 		v2 = counters.GetUpper().GetLower();

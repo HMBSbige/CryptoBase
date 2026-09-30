@@ -2,6 +2,8 @@ namespace CryptoBase.Ciphers.Modes.Ctr;
 
 internal readonly struct CtrIncrementer128 : ICtrIncrementer
 {
+	public static bool CarriesBeyond32 => true;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<byte> Inc(Vector128<byte> counter)
 	{

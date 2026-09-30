@@ -91,7 +91,12 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 			else
 			{
 				_blockCipher.EncryptBlock(j0.AsReadOnlySpan(), tagMask.AsSpan());
-				CtrBlocks<TBlockCipher, CtrIncrementer32>.Xor(_blockCipher, ref counter, source, destination);
+				int processed = BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer32>(_blockCipher, ref counter, source, destination);
+
+				if (processed < source.Length)
+				{
+					CtrBlocks<TBlockCipher, CtrIncrementer32>.Xor(_blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
+				}
 			}
 
 			Vector128<byte> lengthBlock = CreateLengthBlock(associatedData.Length, source.Length);
@@ -130,8 +135,13 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 				return false;
 			}
 
-			int processed = BlockModeDispatch.XorCtr32(_blockCipher, ref counter, source, destination);
-			CtrBlocks<TBlockCipher, CtrIncrementer32>.Xor(_blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
+			int processed = BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer32>(_blockCipher, ref counter, source, destination);
+
+			if (processed < source.Length)
+			{
+				CtrBlocks<TBlockCipher, CtrIncrementer32>.Xor(_blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
+			}
+
 			return true;
 		}
 		finally
@@ -157,7 +167,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 			tagMask = EncryptTagMaskBatch(ref counter, batch);
 			FastUtils.Xor(batch.Slice(16), source, destination, length);
 			int offset = length;
-			offset += BlockModeDispatch.XorCtr32(_blockCipher, ref counter, source, destination, offset);
+			offset += BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer32>(_blockCipher, ref counter, source.Slice(offset), destination.Slice(offset));
 
 			while (offset < source.Length)
 			{

@@ -66,7 +66,7 @@ internal readonly partial struct SM4Gfni
 	{
 		if (count is 64)
 		{
-			SM4DirectPolicy512 policy = default;
+			SM4DirectPolicy policy = default;
 			Process64FullV512(in rk, ref source, ref destination, ref policy);
 			return;
 		}
@@ -83,7 +83,7 @@ internal readonly partial struct SM4Gfni
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Process64FullV512<TPolicy>(ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy512
+	private static void Process64FullV512<TPolicy>(ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
 	{
 		policy.Prepare16(ref source, 0, out Vector512<byte> a0, out Vector512<byte> a1, out Vector512<byte> a2, out Vector512<byte> a3);
 		policy.Prepare16(ref source, 256, out Vector512<byte> b0, out Vector512<byte> b1, out Vector512<byte> b2, out Vector512<byte> b3);

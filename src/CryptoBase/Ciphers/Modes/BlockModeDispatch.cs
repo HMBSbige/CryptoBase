@@ -11,39 +11,23 @@ internal static class BlockModeDispatch
 	private const int BlockSize = 16;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static int XorCtr128<TCipher>(TCipher cipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination) where TCipher : IBlockEncryptor<TCipher>
+	internal static int XorCtr<TCipher, TIncrementer>(TCipher cipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination) where TCipher : IBlockEncryptor<TCipher> where TIncrementer : struct, ICtrIncrementer
 	{
-		if (SM4Gfni.SupportsCtr512 && source.Length >= SM4Gfni.CtrBatchSize && cipher is SM4Cipher sm4)
+		if (cipher is SM4Cipher sm4)
 		{
-			int length = source.Length & -SM4Gfni.CtrBatchSize;
-			SM4Gfni.XorCtr128(in sm4.EncryptionRoundKeysStart, ref counter, source.Slice(0, length), destination);
-			return length;
+			return sm4.TransformBatches<SM4CtrPolicy<TIncrementer>>(ref counter, source, destination);
 		}
 
 		if (source.Length >= 2 * BlockSize)
 		{
 			int length = source.Length & -BlockSize;
 
-			if (TryTransformAes<TCipher, AesCtrPolicy, AesEncrypt>(cipher, ref counter, source.Slice(0, length), destination))
+			if (TryTransformAes<TCipher, AesCtrPolicy<TIncrementer>, AesEncrypt>(cipher, ref counter, source.Slice(0, length), destination))
 			{
 				return length;
 			}
 		}
 
-		return 0;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static int XorCtr32<TCipher>(TCipher cipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, int offset = 0) where TCipher : IBlockEncryptor<TCipher>
-	{
-		if (SM4Gfni.SupportsCtr512 && source.Length - offset >= SM4Gfni.CtrBatchSize && cipher is SM4Cipher sm4)
-		{
-			int length = source.Length - offset & -SM4Gfni.CtrBatchSize;
-			SM4Gfni.XorCtr32(in sm4.EncryptionRoundKeysStart, ref counter, source.Slice(offset, length), destination.Slice(offset));
-			return length;
-		}
-
-		// AES lacks a CTR32 policy; GCM falls back to CtrBlocks with TryEncryptXor.
 		return 0;
 	}
 

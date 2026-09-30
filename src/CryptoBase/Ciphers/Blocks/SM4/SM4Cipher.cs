@@ -15,8 +15,6 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	private RoundKeys _roundKeys;
 	private RoundKeys _reverseRoundKeys;
 
-	internal ref readonly uint EncryptionRoundKeysStart => ref _roundKeys[0];
-
 	/// <inheritdoc />
 	public static int BlockSize => 16;
 
@@ -69,6 +67,12 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	{
 		CipherBufferGuard.Blocks(source, destination, 16);
 		ProcessBlocks(ref _reverseRoundKeys[0], source, destination, false);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal int TransformBatches<TPolicy>(ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, ISM4ModePolicy
+	{
+		return SM4Gfni.TransformBatches<TPolicy>(in _roundKeys[0], ref state, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

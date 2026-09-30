@@ -69,26 +69,49 @@ internal readonly partial struct SM4Gfni
 		SM4Layout.Load8X86(count, ref source, 0, out Vector256<byte> a0, out Vector256<byte> a1, out Vector256<byte> a2, out Vector256<byte> a3);
 		SM4Layout.Load8X86(count - 8, ref source, 128, out Vector256<byte> b0, out Vector256<byte> b1, out Vector256<byte> b2, out Vector256<byte> b3);
 
-		for (int i = 0; i < 32; i += 4)
-		{
-			Vector256<byte> key = Vector256.Create(Unsafe.Add(ref rk, i)).AsByte();
-			Round(ref a0, a1, a2, a3, key);
-			Round(ref b0, b1, b2, b3, key);
-
-			key = Vector256.Create(Unsafe.Add(ref rk, i + 1)).AsByte();
-			Round(ref a1, a2, a3, a0, key);
-			Round(ref b1, b2, b3, b0, key);
-
-			key = Vector256.Create(Unsafe.Add(ref rk, i + 2)).AsByte();
-			Round(ref a2, a3, a0, a1, key);
-			Round(ref b2, b3, b0, b1, key);
-
-			key = Vector256.Create(Unsafe.Add(ref rk, i + 3)).AsByte();
-			Round(ref a3, a0, a1, a2, key);
-			Round(ref b3, b0, b1, b2, key);
-		}
+		Rounds16V256(in rk, ref a0, ref a1, ref a2, ref a3, ref b0, ref b1, ref b2, ref b3);
 
 		SM4Layout.Store8X86(count, ref destination, 0, a0, a1, a2, a3);
 		SM4Layout.Store8X86(count - 8, ref destination, 128, b0, b1, b2, b3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Process16V256<TPolicy>(ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
+	{
+		policy.Prepare8(ref source, 0, out Vector256<byte> a0, out Vector256<byte> a1, out Vector256<byte> a2, out Vector256<byte> a3);
+		policy.Prepare8(ref source, 128, out Vector256<byte> b0, out Vector256<byte> b1, out Vector256<byte> b2, out Vector256<byte> b3);
+
+		Rounds16V256(in rk, ref a0, ref a1, ref a2, ref a3, ref b0, ref b1, ref b2, ref b3);
+
+		policy.Finish8(ref source, ref destination, 0, a0, a1, a2, a3);
+		policy.Finish8(ref source, ref destination, 128, b0, b1, b2, b3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Rounds16V256
+	(
+		ref readonly uint rk,
+		ref Vector256<byte> a0, ref Vector256<byte> a1, ref Vector256<byte> a2, ref Vector256<byte> a3,
+		ref Vector256<byte> b0, ref Vector256<byte> b1, ref Vector256<byte> b2, ref Vector256<byte> b3
+	)
+	{
+		for (int i = 0; i < 32; i += 4)
+		{
+			Vector256<byte> key = Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i)).AsByte();
+			Round(ref a0, a1, a2, a3, key);
+			Round(ref b0, b1, b2, b3, key);
+
+			key = Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 1)).AsByte();
+			Round(ref a1, a2, a3, a0, key);
+			Round(ref b1, b2, b3, b0, key);
+
+			key = Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 2)).AsByte();
+			Round(ref a2, a3, a0, a1, key);
+			Round(ref b2, b3, b0, b1, key);
+
+			key = Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 3)).AsByte();
+			Round(ref a3, a0, a1, a2, key);
+			Round(ref b3, b0, b1, b2, key);
+		}
 	}
 }
