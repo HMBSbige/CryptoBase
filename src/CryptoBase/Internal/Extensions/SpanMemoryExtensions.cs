@@ -23,6 +23,15 @@ internal static class SpanMemoryExtensions
 		}
 	}
 
+	extension<T>(Span<T> span)
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ReadOnlySpan<T> AsReadOnlySpan()
+		{
+			return MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(span), span.Length);
+		}
+	}
+
 	extension<T>(Span<T> span) where T : unmanaged
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

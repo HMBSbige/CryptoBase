@@ -10,7 +10,7 @@ internal static class Gcm
 		ulong low = Unsafe.ReadUnaligned<ulong>(ref source);
 		ulong high = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref source, 8));
 		high = BitConverter.IsLittleEndian ? high | 0x0100000000000000UL : high << 32 | 1UL;
-		j0 = Vector128.Create(low, high).AsByte();
+		j0 = Vector128.CreateUInt64(low, high).AsByte();
 		return j0.WithElement(15, (byte)2);
 	}
 
@@ -26,6 +26,6 @@ internal static class Gcm
 			ciphertextBits = BinaryPrimitives.ReverseEndianness(ciphertextBits);
 		}
 
-		return Vector128.Create(associatedDataBits, ciphertextBits).AsByte();
+		return Vector128.CreateUInt64(associatedDataBits, ciphertextBits).AsByte();
 	}
 }

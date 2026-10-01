@@ -19,11 +19,11 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 		_state = new Poly1305State26(key);
 		_state.GetPowers(out Poly1305Power r1, out Poly1305Power r2, out Poly1305Power r3, out Poly1305Power r4);
 
-		_ruwy0 = VectorCreationUtils.Create4UInt(r4.Limb0, r3.Limb0, r2.Limb0, r1.Limb0);
-		_ruwy1 = VectorCreationUtils.Create4UInt(r4.Limb1, r3.Limb1, r2.Limb1, r1.Limb1);
-		_ruwy2 = VectorCreationUtils.Create4UInt(r4.Limb2, r3.Limb2, r2.Limb2, r1.Limb2);
-		_ruwy3 = VectorCreationUtils.Create4UInt(r4.Limb3, r3.Limb3, r2.Limb3, r1.Limb3);
-		_ruwy4 = VectorCreationUtils.Create4UInt(r4.Limb4, r3.Limb4, r2.Limb4, r1.Limb4);
+		_ruwy0 = Vector256.CreateUInt32EvenLanes(r4.Limb0, r3.Limb0, r2.Limb0, r1.Limb0);
+		_ruwy1 = Vector256.CreateUInt32EvenLanes(r4.Limb1, r3.Limb1, r2.Limb1, r1.Limb1);
+		_ruwy2 = Vector256.CreateUInt32EvenLanes(r4.Limb2, r3.Limb2, r2.Limb2, r1.Limb2);
+		_ruwy3 = Vector256.CreateUInt32EvenLanes(r4.Limb3, r3.Limb3, r2.Limb3, r1.Limb3);
+		_ruwy4 = Vector256.CreateUInt32EvenLanes(r4.Limb4, r3.Limb4, r2.Limb4, r1.Limb4);
 		_svxz1 = _ruwy1 * 5;
 		_svxz2 = _ruwy2 * 5;
 		_svxz3 = _ruwy3 * 5;

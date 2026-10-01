@@ -20,11 +20,11 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		_state.GetPowers(out Poly1305Power r1, out Poly1305Power r2);
 		GetThirdAndFourthPowers(in r1, in r2, out Poly1305Power r3, out Poly1305Power r4);
 
-		_r0 = Vector128.Create(r4.Limb0, r3.Limb0, r2.Limb0, r1.Limb0);
-		_r1 = Vector128.Create(r4.Limb1, r3.Limb1, r2.Limb1, r1.Limb1);
-		_r2 = Vector128.Create(r4.Limb2, r3.Limb2, r2.Limb2, r1.Limb2);
-		_r3 = Vector128.Create(r4.Limb3, r3.Limb3, r2.Limb3, r1.Limb3);
-		_r4 = Vector128.Create(r4.Limb4, r3.Limb4, r2.Limb4, r1.Limb4);
+		_r0 = Vector128.CreateUInt32(r4.Limb0, r3.Limb0, r2.Limb0, r1.Limb0);
+		_r1 = Vector128.CreateUInt32(r4.Limb1, r3.Limb1, r2.Limb1, r1.Limb1);
+		_r2 = Vector128.CreateUInt32(r4.Limb2, r3.Limb2, r2.Limb2, r1.Limb2);
+		_r3 = Vector128.CreateUInt32(r4.Limb3, r3.Limb3, r2.Limb3, r1.Limb3);
+		_r4 = Vector128.CreateUInt32(r4.Limb4, r3.Limb4, r2.Limb4, r1.Limb4);
 		_s1 = _r1 * 5;
 		_s2 = _r2 * 5;
 		_s3 = _r3 * 5;
@@ -39,11 +39,11 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		Vector64<uint> h2 = Vector64.Create(r2.Limb2);
 		Vector64<uint> h3 = Vector64.Create(r2.Limb3);
 		Vector64<uint> h4 = Vector64.Create(r2.Limb4);
-		Vector64<uint> coefficient0 = Vector64.Create(r1.Limb0, r2.Limb0);
-		Vector64<uint> coefficient1 = Vector64.Create(r1.Limb1, r2.Limb1);
-		Vector64<uint> coefficient2 = Vector64.Create(r1.Limb2, r2.Limb2);
-		Vector64<uint> coefficient3 = Vector64.Create(r1.Limb3, r2.Limb3);
-		Vector64<uint> coefficient4 = Vector64.Create(r1.Limb4, r2.Limb4);
+		Vector64<uint> coefficient0 = Vector64.CreateUInt32(r1.Limb0, r2.Limb0);
+		Vector64<uint> coefficient1 = Vector64.CreateUInt32(r1.Limb1, r2.Limb1);
+		Vector64<uint> coefficient2 = Vector64.CreateUInt32(r1.Limb2, r2.Limb2);
+		Vector64<uint> coefficient3 = Vector64.CreateUInt32(r1.Limb3, r2.Limb3);
+		Vector64<uint> coefficient4 = Vector64.CreateUInt32(r1.Limb4, r2.Limb4);
 		Vector64<uint> coefficient1x5 = coefficient1 * 5;
 		Vector64<uint> coefficient2x5 = coefficient2 * 5;
 		Vector64<uint> coefficient3x5 = coefficient3 * 5;
@@ -136,7 +136,7 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 				}
 			}
 
-			block1 = Vector128.Create(low, high);
+			block1 = Vector128.CreateUInt64(low, high);
 			highBits = Vector128.Create((ulong)Poly1305State26.FullBlockHighBit, highBit);
 		}
 

@@ -106,20 +106,20 @@ internal partial struct Sha512Core
 
 		if (index > LengthOffset && X86Base.X64.IsSupported && Avx2.IsSupported)
 		{
-			FinalizeTwoBlocks(buffer, index);
+			FinalizeTwoBlocks(buffer.AsReadOnlySpan(), index);
 		}
 		else
 		{
 			if (index > LengthOffset)
 			{
 				buffer.Slice(index).Clear();
-				ProcessBlocks(buffer);
+				ProcessBlocks(buffer.AsReadOnlySpan());
 				index = 0;
 			}
 
 			buffer.Slice(index, LengthOffset - index).Clear();
 			BinaryPrimitives.WriteUInt128BigEndian(buffer.Slice(LengthOffset), _byteCount << 3);
-			ProcessBlocks(buffer);
+			ProcessBlocks(buffer.AsReadOnlySpan());
 		}
 
 		BinaryPrimitives.WriteUInt64BigEndian(destination, _h0);

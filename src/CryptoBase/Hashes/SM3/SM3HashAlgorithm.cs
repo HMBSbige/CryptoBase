@@ -162,13 +162,13 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 		if (index > LengthOffset)
 		{
 			buffer.Slice(index).Clear();
-			ProcessBlocks(ref hashAlgorithm, buffer);
+			ProcessBlocks(ref hashAlgorithm, buffer.AsReadOnlySpan());
 			index = 0;
 		}
 
 		buffer.Slice(index, LengthOffset - index).Clear();
 		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(LengthOffset), hashAlgorithm._byteCount << 3);
-		ProcessBlocks(ref hashAlgorithm, buffer);
+		ProcessBlocks(ref hashAlgorithm, buffer.AsReadOnlySpan());
 
 		BinaryPrimitives.WriteUInt32BigEndian(destination, hashAlgorithm._v0);
 		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), hashAlgorithm._v1);

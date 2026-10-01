@@ -19,11 +19,11 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 		_state = new Poly1305State26(key);
 		_state.GetPowers(out Poly1305Power r1, out Poly1305Power r2);
 
-		_ru0 = VectorCreationUtils.CreateTwoUInt(r2.Limb0, r1.Limb0);
-		_ru1 = VectorCreationUtils.CreateTwoUInt(r2.Limb1, r1.Limb1);
-		_ru2 = VectorCreationUtils.CreateTwoUInt(r2.Limb2, r1.Limb2);
-		_ru3 = VectorCreationUtils.CreateTwoUInt(r2.Limb3, r1.Limb3);
-		_ru4 = VectorCreationUtils.CreateTwoUInt(r2.Limb4, r1.Limb4);
+		_ru0 = Vector128.CreateUInt32EvenLanes(r2.Limb0, r1.Limb0);
+		_ru1 = Vector128.CreateUInt32EvenLanes(r2.Limb1, r1.Limb1);
+		_ru2 = Vector128.CreateUInt32EvenLanes(r2.Limb2, r1.Limb2);
+		_ru3 = Vector128.CreateUInt32EvenLanes(r2.Limb3, r1.Limb3);
+		_ru4 = Vector128.CreateUInt32EvenLanes(r2.Limb4, r1.Limb4);
 		_sv1 = _ru1 * 5;
 		_sv2 = _ru2 * 5;
 		_sv3 = _ru3 * 5;

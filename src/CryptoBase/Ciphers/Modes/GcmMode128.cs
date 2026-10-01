@@ -66,6 +66,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		EncryptSeparated(nonce, source, destination, tag, associatedData);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void EncryptSeparated(scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData)
 	{
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);

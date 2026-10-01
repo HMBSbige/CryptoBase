@@ -98,7 +98,7 @@ public abstract class SnuffleCipher : IStreamCipher
 			int r = BlockSize - Index;
 			int n = Math.Min(r, left);
 
-			FastUtils.Xor(keyStream.Slice(Index), source, destination, n);
+			FastUtils.Xor(KeyStream.AsReadOnlySpan().Slice(Index), source, destination, n);
 
 			Index += n;
 			Index &= BlockSize - 1;
@@ -121,7 +121,7 @@ public abstract class SnuffleCipher : IStreamCipher
 			IncrementCounter(state);
 			--CounterRemaining;
 
-			FastUtils.Xor(keyStream, source.Slice(i), destination.Slice(i), left);
+			FastUtils.Xor(KeyStream.AsReadOnlySpan(), source.Slice(i), destination.Slice(i), left);
 
 			Index = left;
 		}

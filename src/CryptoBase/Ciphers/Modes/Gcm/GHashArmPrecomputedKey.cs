@@ -67,45 +67,12 @@ internal readonly struct GHashArmPrecomputedKey
 			initial = default;
 		}
 
-		ReadOnlySpan<byte> remaining = source.Slice(completeLength);
-
-		if (!remaining.IsEmpty)
+		if (completeLength < source.Length)
 		{
-			Vector128<byte> finalBlock = LoadPaddedTail(remaining);
+			Vector128<byte> finalBlock = Vector128.LoadPartialUnsafe(ref input, (nuint)completeLength, source.Length - completeLength);
 			Vector128<byte> block = AdvSimd.Arm64.ReverseElementBits(finalBlock) ^ initial;
 			GHashArm.AccumulateProduct(block, Unsafe.Add(ref power, --remainingBlocks), ref low, ref high, ref middle);
 			initial = default;
 		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> LoadPaddedTail(scoped ReadOnlySpan<byte> source)
-	{
-		int length = source.Length;
-		Debug.Assert(length is > 0 and < GHash.BlockSizeInBytes);
-		ref byte input = ref source.GetReference();
-
-		if (length >= 8)
-		{
-			ulong low = Unsafe.ReadUnaligned<ulong>(ref input);
-			ulong high = length is 8 ? 0 : Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref input, length - 8)) >> (16 - length) * 8;
-			return Vector128.Create(low, high).AsByte();
-		}
-
-		if (length >= 4)
-		{
-			ulong first = Unsafe.ReadUnaligned<uint>(ref input);
-			ulong last = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref input, length - 4));
-			return Vector128.CreateScalar(first | last << (length - 4) * 8).AsByte();
-		}
-
-		if (length >= 2)
-		{
-			uint first = Unsafe.ReadUnaligned<ushort>(ref input);
-			uint last = Unsafe.Add(ref input, length - 1);
-			return Vector128.CreateScalar((ulong)(first | last << (length - 1) * 8)).AsByte();
-		}
-
-		return Vector128.CreateScalar(input);
 	}
 }

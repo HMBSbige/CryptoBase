@@ -20,11 +20,11 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		_state = new Poly1305State26(key);
 		_state.GetPowers(out Poly1305Power r1, out Poly1305Power r2, out Poly1305Power r3, out Poly1305Power r4);
 
-		Vector256<uint> lower0 = VectorCreationUtils.Create4UInt(r4.Limb0, r3.Limb0, r2.Limb0, r1.Limb0);
-		Vector256<uint> lower1 = VectorCreationUtils.Create4UInt(r4.Limb1, r3.Limb1, r2.Limb1, r1.Limb1);
-		Vector256<uint> lower2 = VectorCreationUtils.Create4UInt(r4.Limb2, r3.Limb2, r2.Limb2, r1.Limb2);
-		Vector256<uint> lower3 = VectorCreationUtils.Create4UInt(r4.Limb3, r3.Limb3, r2.Limb3, r1.Limb3);
-		Vector256<uint> lower4 = VectorCreationUtils.Create4UInt(r4.Limb4, r3.Limb4, r2.Limb4, r1.Limb4);
+		Vector256<uint> lower0 = Vector256.CreateUInt32EvenLanes(r4.Limb0, r3.Limb0, r2.Limb0, r1.Limb0);
+		Vector256<uint> lower1 = Vector256.CreateUInt32EvenLanes(r4.Limb1, r3.Limb1, r2.Limb1, r1.Limb1);
+		Vector256<uint> lower2 = Vector256.CreateUInt32EvenLanes(r4.Limb2, r3.Limb2, r2.Limb2, r1.Limb2);
+		Vector256<uint> lower3 = Vector256.CreateUInt32EvenLanes(r4.Limb3, r3.Limb3, r2.Limb3, r1.Limb3);
+		Vector256<uint> lower4 = Vector256.CreateUInt32EvenLanes(r4.Limb4, r3.Limb4, r2.Limb4, r1.Limb4);
 		MultiplyFourByPower4(lower0, lower1, lower2, lower3, lower4, r4.Limb0, r4.Limb1, r4.Limb2, r4.Limb3, r4.Limb4, out Vector256<uint> upper0, out Vector256<uint> upper1, out Vector256<uint> upper2, out Vector256<uint> upper3, out Vector256<uint> upper4);
 
 		_r0 = InterleavePowers(upper0, lower0);

@@ -130,13 +130,13 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> PackTwoFast(ref byte source)
 	{
-		return Vector128.Create(Pack5Fast(ref source), Pack5Fast(ref Unsafe.Add(ref source, 5)));
+		return Vector128.CreateUInt64(Pack5Fast(ref source), Pack5Fast(ref Unsafe.Add(ref source, 5)));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> PackTwo(ref byte source)
 	{
-		return Vector128.Create(Pack5(ref source), Pack5(ref Unsafe.Add(ref source, 5)));
+		return Vector128.CreateUInt64(Pack5(ref source), Pack5(ref Unsafe.Add(ref source, 5)));
 	}
 
 	// Keep the offsets in the AdvSimd call chain. On .NET 10 ARM64, forwarding the

@@ -11,18 +11,21 @@ internal static class SpanReinterpretExtensions
 		}
 	}
 
-	extension<T>(ReadOnlySpan<T> span)
+	extension<T>(Span<T> span)
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public ref T GetReference()
 		{
 			return ref MemoryMarshal.GetReference(span);
 		}
+	}
 
+	extension<T>(ReadOnlySpan<T> span)
+	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ref TTo As<TTo>()
+		public ref T GetReference()
 		{
-			return ref Unsafe.As<T, TTo>(ref span.GetReference());
+			return ref MemoryMarshal.GetReference(span);
 		}
 	}
 }
