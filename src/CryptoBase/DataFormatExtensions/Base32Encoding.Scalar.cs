@@ -55,6 +55,32 @@ public sealed partial class Base32Encoding
 		EncodePackedBlock(Pack5(ref source), ref destination, ref alphabet);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void EncodeUtf8ScalarBatches(ref byte sourceReference, ref byte destinationReference, ref byte alphabetReference, int octCount)
+	{
+		for (int i = 0; i < octCount; ++i)
+		{
+			ulong value0 = Pack5Fast(ref sourceReference);
+			ulong value1 = Pack5Fast(ref Unsafe.Add(ref sourceReference, 5));
+			ulong value2 = Pack5Fast(ref Unsafe.Add(ref sourceReference, 10));
+			ulong value3 = Pack5Fast(ref Unsafe.Add(ref sourceReference, 15));
+			ulong value4 = Pack5Fast(ref Unsafe.Add(ref sourceReference, 20));
+			ulong value5 = Pack5Fast(ref Unsafe.Add(ref sourceReference, 25));
+			ulong value6 = Pack5Fast(ref Unsafe.Add(ref sourceReference, 30));
+			ulong value7 = Pack5Fast(ref Unsafe.Add(ref sourceReference, 35));
+			EncodePackedBlock(value0, ref destinationReference, ref alphabetReference);
+			EncodePackedBlock(value1, ref Unsafe.Add(ref destinationReference, 8), ref alphabetReference);
+			EncodePackedBlock(value2, ref Unsafe.Add(ref destinationReference, 16), ref alphabetReference);
+			EncodePackedBlock(value3, ref Unsafe.Add(ref destinationReference, 24), ref alphabetReference);
+			EncodePackedBlock(value4, ref Unsafe.Add(ref destinationReference, 32), ref alphabetReference);
+			EncodePackedBlock(value5, ref Unsafe.Add(ref destinationReference, 40), ref alphabetReference);
+			EncodePackedBlock(value6, ref Unsafe.Add(ref destinationReference, 48), ref alphabetReference);
+			EncodePackedBlock(value7, ref Unsafe.Add(ref destinationReference, 56), ref alphabetReference);
+			sourceReference = ref Unsafe.Add(ref sourceReference, 40);
+			destinationReference = ref Unsafe.Add(ref destinationReference, 64);
+		}
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void EncodeTail<T>(ReadOnlySpan<byte> source, Span<T> destination) where T : unmanaged, INumberBase<T>
 	{

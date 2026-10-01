@@ -47,30 +47,36 @@ internal ref struct GHashArmFoldedState : IDisposable
 			length -= 8 * BlockSize;
 		}
 
-		while (length >= 4 * BlockSize)
+		if (length is 0)
 		{
-			Vector128<byte> x0 = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef));
-			Vector128<byte> x1 = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 1 * BlockSize));
-			Vector128<byte> x2 = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 2 * BlockSize));
-			Vector128<byte> x3 = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 3 * BlockSize));
-			x0 ^= _accumulator;
-
-			GFMultiplyUnreduced(x1, _powers.Key3, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
-			AccumulateProduct(x2, _powers.Key2, ref lowProduct, ref highProduct, ref middleProduct);
-			AccumulateProduct(x3, _powers.Key1, ref lowProduct, ref highProduct, ref middleProduct);
-			AccumulateProduct(x0, _powers.Key4, ref lowProduct, ref highProduct, ref middleProduct);
-			FinishFold(lowProduct, highProduct, middleProduct);
-
-			sourceRef = ref Unsafe.Add(ref sourceRef, 4 * BlockSize);
-			length -= 4 * BlockSize;
+			return;
 		}
 
-		while (length >= BlockSize)
+		ref byte lastSource = ref Unsafe.Add(ref sourceRef, length - BlockSize);
+
+		switch (length / BlockSize)
 		{
-			Vector128<byte> block = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef));
-			_accumulator = GFMultiply(block ^ _accumulator, _powers.Key1);
-			sourceRef = ref Unsafe.Add(ref sourceRef, BlockSize);
-			length -= BlockSize;
+			case 1:
+			{
+				Vector128<byte> block = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef));
+				_accumulator = GFMultiply(block ^ _accumulator, _powers.Key1);
+				break;
+			}
+			case 2:
+			{
+				AppendTwo(ref sourceRef, ref lastSource);
+				break;
+			}
+			case 4:
+			{
+				AppendFour(ref sourceRef, ref lastSource);
+				break;
+			}
+			default:
+			{
+				AppendFoldedTail(ref sourceRef, ref lastSource, length / BlockSize);
+				break;
+			}
 		}
 	}
 

@@ -22,6 +22,7 @@ internal readonly struct GHashVector512PrecomputedKey : IGHashPowers
 	private readonly Vector512<byte> _key60595857;
 	private readonly Vector512<byte> _key64636261;
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal GHashVector512PrecomputedKey(Vector128<byte> key)
 	{
 		_key1 = key;

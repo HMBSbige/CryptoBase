@@ -29,6 +29,7 @@ internal readonly struct GHashVector128PrecomputedKey : IGHashPowers
 	private readonly Vector128<byte> _keyX7;
 	private readonly Vector128<byte> _keyX8;
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal GHashVector128PrecomputedKey(Vector128<byte> key)
 	{
 		_key1 = PrepareKey(key);
