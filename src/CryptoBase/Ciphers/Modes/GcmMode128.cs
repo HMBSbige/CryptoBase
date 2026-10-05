@@ -123,7 +123,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		{
 			if (BlockModeDispatch.ShouldBatchGcmTagMask(_blockCipher) && source.Length is > 0 and <= MaxTagMaskBatchLength)
 			{
-				return TryDecryptWithTagMask(ref hash, j0, source, tag, destination, associatedData);
+				return TryDecryptWithTagMask(ref hash, j0, ref source.GetReference(), source.Length, ref tag.GetReference(), ref destination.GetReference(), ref associatedData.GetReference(), associatedData.Length);
 			}
 
 			Vector128<byte> tagMask = default;
@@ -166,7 +166,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		{
 			Vector128<byte> counter = j0;
 			tagMask = EncryptTagMaskBatch(ref counter, batch);
-			FastUtils.Xor(batch.Slice(16), source, destination, length);
+			FastUtils.Xor(batch.Slice(16).AsReadOnlySpan(), source, destination, length);
 			int offset = length;
 			offset += BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer32>(_blockCipher, ref counter, source.Slice(offset), destination.Slice(offset));
 
@@ -175,8 +175,8 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 				length = Math.Min(keyStream.Length, source.Length - offset);
 				Span<byte> nextBatch = keyStream.Slice(0, length + 15 & -16);
 				CtrCounters<CtrIncrementer32>.Fill(ref counter, nextBatch);
-				_blockCipher.EncryptBlocks(nextBatch, nextBatch);
-				FastUtils.Xor(nextBatch, source.Slice(offset), destination.Slice(offset), length);
+				_blockCipher.EncryptBlocks(nextBatch.AsReadOnlySpan(), nextBatch);
+				FastUtils.Xor(nextBatch.AsReadOnlySpan(), source.Slice(offset), destination.Slice(offset), length);
 				offset += length;
 			}
 		}
@@ -189,9 +189,14 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private bool TryDecryptWithTagMask(ref GHash hash, Vector128<byte> j0, scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<byte> tag, scoped Span<byte> destination, scoped ReadOnlySpan<byte> associatedData)
+	private bool TryDecryptWithTagMask(ref GHash hash, Vector128<byte> j0, ref byte sourceStart, int length, ref byte tagStart, ref byte destinationStart, ref byte associatedDataStart, int associatedDataLength)
 	{
-		Debug.Assert(source.Length is > 0 and <= MaxTagMaskBatchLength);
+		Debug.Assert(length is > 0 and <= MaxTagMaskBatchLength);
+
+		ReadOnlySpan<byte> source = MemoryMarshal.CreateReadOnlySpan(ref sourceStart, length);
+		ReadOnlySpan<byte> tag = MemoryMarshal.CreateReadOnlySpan(ref tagStart, TagSize);
+		Span<byte> destination = MemoryMarshal.CreateSpan(ref destinationStart, length);
+		ReadOnlySpan<byte> associatedData = MemoryMarshal.CreateReadOnlySpan(ref associatedDataStart, associatedDataLength);
 
 		Unsafe.SkipInit(out InlineArray2048<byte> storage);
 		Span<byte> keyStream = storage.AsSpan();
@@ -208,7 +213,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 				return false;
 			}
 
-			FastUtils.Xor(batch.Slice(16), source, destination, source.Length);
+			FastUtils.Xor(batch.Slice(16).AsReadOnlySpan(), source, destination, source.Length);
 			return true;
 		}
 		finally
@@ -221,7 +226,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 	private Vector128<byte> EncryptTagMaskBatch(ref Vector128<byte> counter, Span<byte> batch)
 	{
 		CtrCounters<CtrIncrementer32>.Fill(ref counter, batch);
-		_blockCipher.EncryptBlocks(batch, batch);
+		_blockCipher.EncryptBlocks(batch.AsReadOnlySpan(), batch);
 		return Vector128.LoadUnsafe(ref batch.GetReference());
 	}
 

@@ -20,6 +20,7 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 		XorBlock(blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static Vector128<byte> EncryptCounter(TBlockCipher blockCipher, ref Vector128<byte> counter)
 	{
 		Vector128<byte> stream = default;

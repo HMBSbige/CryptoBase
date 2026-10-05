@@ -4,7 +4,7 @@ internal static class CtrCounters<TIncrementer> where TIncrementer : struct, ICt
 {
 	private const int BlockSize = 16;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void Fill(ref Vector128<byte> counter, Span<byte> counters)
 	{
 		Debug.Assert(counters.Length % BlockSize is 0);

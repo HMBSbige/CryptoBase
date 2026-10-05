@@ -2,16 +2,18 @@ namespace CryptoBase.Internal;
 
 internal static class CipherBufferGuard
 {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Blocks(ReadOnlySpan<byte> source, Span<byte> destination, int blockSize)
 	{
 		if (source.Length % blockSize is not 0)
 		{
-			throw new ArgumentException("Source length must be a multiple of the block size.", nameof(source));
+			ThrowHelper.ThrowSourceNotBlockAligned(nameof(source));
 		}
 
 		Output(source, destination);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Output(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length, nameof(destination));

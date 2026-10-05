@@ -82,7 +82,7 @@ public static class FastUtils
 			}
 		}
 
-		while (left >= sizeof(ulong))
+		while (left >= 2 * sizeof(ulong))
 		{
 			ref readonly ulong v0 = ref Unsafe.Add(ref streamRef, i).As<ulong>();
 			ref readonly ulong v1 = ref Unsafe.Add(ref sourceRef, i).As<ulong>();
@@ -93,20 +93,7 @@ public static class FastUtils
 			left -= sizeof(ulong);
 		}
 
-		if (left >= sizeof(uint))
-		{
-			ref readonly uint v0 = ref Unsafe.Add(ref streamRef, i).As<uint>();
-			ref readonly uint v1 = ref Unsafe.Add(ref sourceRef, i).As<uint>();
-			ref uint dst = ref Unsafe.Add(ref destinationRef, i).As<uint>();
-
-			dst = v0 ^ v1;
-			i += sizeof(uint);
-		}
-
-		for (; i < length; ++i)
-		{
-			Unsafe.Add(ref destinationRef, i) = (byte)(Unsafe.Add(ref sourceRef, i) ^ Unsafe.Add(ref streamRef, i));
-		}
+		XorTail(ref Unsafe.Add(ref streamRef, i), ref Unsafe.Add(ref sourceRef, i), ref Unsafe.Add(ref destinationRef, i), left);
 	}
 
 	/// <summary>
@@ -115,37 +102,47 @@ public static class FastUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void XorLess16(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
-		int i = 0;
-		int left = length;
+		XorTail(ref stream.GetReference(), ref source.GetReference(), ref destination.GetReference(), length);
+	}
 
-		ref byte streamRef = ref stream.GetReference();
-		ref byte sourceRef = ref source.GetReference();
-		ref byte destinationRef = ref destination.GetReference();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void XorTail(ref byte stream, ref byte source, ref byte destination, int length)
+	{
+		Debug.Assert(length is >= 0 and < 2 * sizeof(ulong));
 
-		if (left >= sizeof(ulong))
+		if (length >= sizeof(ulong))
 		{
-			ref readonly ulong v0 = ref Unsafe.Add(ref streamRef, i).As<ulong>();
-			ref readonly ulong v1 = ref Unsafe.Add(ref sourceRef, i).As<ulong>();
-			ref ulong dst = ref Unsafe.Add(ref destinationRef, i).As<ulong>();
-
-			dst = v0 ^ v1;
-			i += sizeof(ulong);
-			left -= sizeof(ulong);
+			int last = length - sizeof(ulong);
+			ulong first = Unsafe.ReadUnaligned<ulong>(ref stream) ^ Unsafe.ReadUnaligned<ulong>(ref source);
+			ulong end = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref stream, last)) ^ Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref source, last));
+			Unsafe.WriteUnaligned(ref destination, first);
+			Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, last), end);
+			return;
 		}
 
-		if (left >= sizeof(uint))
+		if (length >= sizeof(uint))
 		{
-			ref readonly uint v0 = ref Unsafe.Add(ref streamRef, i).As<uint>();
-			ref readonly uint v1 = ref Unsafe.Add(ref sourceRef, i).As<uint>();
-			ref uint dst = ref Unsafe.Add(ref destinationRef, i).As<uint>();
-
-			dst = v0 ^ v1;
-			i += sizeof(uint);
+			int last = length - sizeof(uint);
+			uint first = Unsafe.ReadUnaligned<uint>(ref stream) ^ Unsafe.ReadUnaligned<uint>(ref source);
+			uint end = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref stream, last)) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref source, last));
+			Unsafe.WriteUnaligned(ref destination, first);
+			Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, last), end);
+			return;
 		}
 
-		for (; i < length; ++i)
+		if (length >= sizeof(ushort))
 		{
-			Unsafe.Add(ref destinationRef, i) = (byte)(Unsafe.Add(ref sourceRef, i) ^ Unsafe.Add(ref streamRef, i));
+			int last = length - 1;
+			ushort first = (ushort)(Unsafe.ReadUnaligned<ushort>(ref stream) ^ Unsafe.ReadUnaligned<ushort>(ref source));
+			byte end = (byte)(Unsafe.Add(ref stream, last) ^ Unsafe.Add(ref source, last));
+			Unsafe.WriteUnaligned(ref destination, first);
+			Unsafe.Add(ref destination, last) = end;
+			return;
+		}
+
+		if (length > 0)
+		{
+			destination = (byte)(stream ^ source);
 		}
 	}
 }

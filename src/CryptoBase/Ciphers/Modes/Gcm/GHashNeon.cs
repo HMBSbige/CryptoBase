@@ -37,8 +37,7 @@ internal static partial class GHashNeon
 			return;
 		}
 
-		finalBlock = default;
-		remaining.CopyTo(finalBlock.AsSpan());
+		finalBlock = GHash.PadFinalBlock(remaining);
 		AppendBlocks(ref accumulator, key, finalBlock.AsReadOnlySpan());
 	}
 

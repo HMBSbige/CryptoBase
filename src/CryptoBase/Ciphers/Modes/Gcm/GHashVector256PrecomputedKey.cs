@@ -70,8 +70,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 			Vector256<byte> x1 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 1 * 2 * BlockSize)).ReverseEndianness128();
 			Vector256<byte> x2 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 2 * 2 * BlockSize)).ReverseEndianness128();
 			Vector256<byte> x3 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 3 * 2 * BlockSize)).ReverseEndianness128();
-			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref x0);
-			firstBlock ^= accumulator;
+			x0 ^= accumulator.ToVector256();
 
 			GFMultiplyPreparedUnreduced(x0, _key1615, _keyK1615, out Vector256<byte> lo, out Vector256<byte> hi);
 			GFMultiplyPreparedUnreduced(x1, _key1413, _keyK1413, out Vector256<byte> nextLo, out Vector256<byte> nextHi);
@@ -111,8 +110,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 			Vector256<byte> x2 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 2 * 2 * BlockSize)).ReverseEndianness128();
 			Vector256<byte> x3 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 3 * 2 * BlockSize)).ReverseEndianness128();
 
-			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref x0);
-			firstBlock ^= accumulator;
+			x0 ^= accumulator.ToVector256();
 
 			GFMultiplyPreparedUnreduced(x0, _key87, _keyK87, out Vector256<byte> lo, out Vector256<byte> hi);
 			GFMultiplyPreparedUnreduced(x1, _key65, _keyK65, out Vector256<byte> nextLo, out Vector256<byte> nextHi);
@@ -133,8 +131,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 			Vector256<byte> x0 = Vector256.LoadUnsafe(ref ptr, (nuint)offset).ReverseEndianness128();
 			Vector256<byte> x1 = Vector256.LoadUnsafe(ref ptr, (nuint)(offset + 1 * 2 * BlockSize)).ReverseEndianness128();
 
-			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref x0);
-			firstBlock ^= accumulator;
+			x0 ^= accumulator.ToVector256();
 
 			GFMultiplyPreparedUnreduced(x0, _key43, _keyK43, out Vector256<byte> lo, out Vector256<byte> hi);
 			GFMultiplyPreparedUnreduced(x1, _key21, _keyK21, out Vector256<byte> nextLo, out Vector256<byte> nextHi);
@@ -147,8 +144,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 		if (length >= 2 * BlockSize)
 		{
 			Vector256<byte> blocks = Vector256.LoadUnsafe(ref ptr, (nuint)offset).ReverseEndianness128();
-			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref blocks);
-			firstBlock ^= accumulator;
+			blocks ^= accumulator.ToVector256();
 
 			GFMultiplyPreparedUnreduced(blocks, _key21, _keyK21, out Vector256<byte> lo, out Vector256<byte> hi);
 			accumulator = ReducePreparedTo128(lo, hi);
@@ -177,8 +173,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 			return;
 		}
 
-		finalBlock = default;
-		remaining.CopyTo(finalBlock.AsSpan());
+		finalBlock = GHash.PadFinalBlock(remaining);
 
 		int completeBlocks = completeLength / BlockSize;
 		int tailBlocks = (completeBlocks & 15) switch

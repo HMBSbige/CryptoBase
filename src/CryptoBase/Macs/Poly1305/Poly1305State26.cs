@@ -5,15 +5,14 @@ internal ref struct Poly1305State26
 	internal const uint LimbMask = 0x3ffffff;
 	internal const uint FullBlockHighBit = 1u << 24;
 
-	private readonly uint _r0, _r1, _r2, _r3, _r4;
-	private readonly uint _s1, _s2, _s3, _s4;
-	private readonly uint _x0, _x1, _x2, _x3;
+	private uint _r0, _r1, _r2, _r3, _r4;
+	private uint _s1, _s2, _s3, _s4;
+	private uint _x0, _x1, _x2, _x3;
 	internal uint H0, H1, H2, H3, H4;
 
-	internal Poly1305State26(scoped ReadOnlySpan<byte> key)
+	internal void Initialize(scoped ReadOnlySpan<byte> key)
 	{
 		Debug.Assert(key.Length is Poly1305Algorithm.KeyLengthInBytes);
-		Unsafe.SkipInit(out this);
 
 		_r0 = BinaryPrimitives.ReadUInt32LittleEndian(key) & LimbMask;
 		_r1 = BinaryPrimitives.ReadUInt32LittleEndian(key.Slice(3)) >> 2 & 0x3FFFF03;
@@ -248,9 +247,6 @@ internal ref struct Poly1305State26
 		f2 += f1 >> 32;
 		f3 += f2 >> 32;
 
-		BinaryPrimitives.WriteUInt32LittleEndian(destination, (uint)f0);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(4), (uint)f1);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(8), (uint)f2);
-		BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(12), (uint)f3);
+		Poly1305Utils.WriteTag(destination, (uint)f0 | (ulong)(uint)f1 << 32, (uint)f2 | (ulong)(uint)f3 << 32);
 	}
 }

@@ -152,7 +152,8 @@ public class Poly1305Test
 
 	private static void ComputeState26Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Poly1305State26 state = new(key);
+		Poly1305State26 state = default;
+		state.Initialize(key);
 
 		try
 		{

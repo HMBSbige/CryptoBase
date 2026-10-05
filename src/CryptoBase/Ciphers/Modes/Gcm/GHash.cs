@@ -27,6 +27,21 @@ internal ref struct GHash : IDisposable
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static Vector128<byte> PadFinalBlock(ReadOnlySpan<byte> remaining)
+	{
+		Debug.Assert(remaining.Length is > 0 and < BlockSizeInBytes);
+
+		if (!BitConverter.IsLittleEndian)
+		{
+			Vector128<byte> block = default;
+			remaining.CopyTo(block.AsSpan());
+			return block;
+		}
+
+		return Vector128.LoadPartialUnsafe(ref remaining.GetReference(), 0, remaining.Length);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static GHash Create(ref GHashKey key)
 	{
 		return new GHash(ref key);

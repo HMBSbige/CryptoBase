@@ -229,8 +229,7 @@ internal readonly struct GHashVector512PrecomputedKey : IGHashPowers
 			return;
 		}
 
-		finalBlock = default;
-		remaining.CopyTo(finalBlock.AsSpan());
+		finalBlock = GHash.PadFinalBlock(remaining);
 
 		int completeBlocks = completeLength / BlockSize;
 		int tailBlocks = (completeBlocks & 63) switch

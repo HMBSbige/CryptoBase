@@ -159,6 +159,28 @@ public abstract class SnuffleCipher : IStreamCipher
 	/// </summary>
 	protected abstract void UpdateKeyStream();
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static Vector128<uint> LoadStateRow(ref uint state, int index)
+	{
+		ref uint row = ref Unsafe.Add(ref state, index);
+		return Vector128.Create(row, Unsafe.Add(ref row, 1), Unsafe.Add(ref row, 2), Unsafe.Add(ref row, 3));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void WriteKeyStreamRow(ref byte destination, uint x0, uint x1, uint x2, uint x3)
+	{
+		if (Vector128.IsHardwareAccelerated)
+		{
+			Vector128.Create(x0, x1, x2, x3).AsByte().StoreUnsafe(ref destination);
+			return;
+		}
+
+		Unsafe.WriteUnaligned(ref destination, x0);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 4), x1);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 8), x2);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 12), x3);
+	}
+
 	/// <summary>
 	/// Increments the block counter in the specified cipher state.
 	/// </summary>

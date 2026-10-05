@@ -16,7 +16,7 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		Debug.Assert(IsSupported);
 		Debug.Assert(key.Length is Poly1305Algorithm.KeyLengthInBytes);
 
-		_state = new Poly1305State26(key);
+		_state.Initialize(key);
 		_state.GetPowers(out Poly1305Power r1, out Poly1305Power r2);
 		GetThirdAndFourthPowers(in r1, in r2, out Poly1305Power r3, out Poly1305Power r4);
 

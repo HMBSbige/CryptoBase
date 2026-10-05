@@ -160,7 +160,6 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 		ulong tag0 = h0 + _x0;
 		carry = tag0 < h0 ? 1UL : 0;
 		ulong tag1 = h1 + _x1 + carry;
-		BinaryPrimitives.WriteUInt64LittleEndian(destination, tag0);
-		BinaryPrimitives.WriteUInt64LittleEndian(destination.Slice(8), tag1);
+		Poly1305Utils.WriteTag(destination, tag0, tag1);
 	}
 }

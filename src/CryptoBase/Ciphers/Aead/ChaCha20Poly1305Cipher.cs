@@ -48,15 +48,13 @@ public sealed class ChaCha20Poly1305Cipher : IAeadCipher<ChaCha20Poly1305Cipher>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public bool TryDecrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
 		_chacha20.InitializeNonce(nonce);
-		Span<byte> computedTag = stackalloc byte[TagSize];
-		return ChaCha20Poly1305Utils.TryDecrypt(_chacha20, source, tag, destination, associatedData, computedTag);
+		return ChaCha20Poly1305Utils.TryDecrypt(_chacha20, source, tag, destination, associatedData);
 	}
 
 	/// <inheritdoc />

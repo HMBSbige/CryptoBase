@@ -65,8 +65,7 @@ internal static class GHashArm
 			return;
 		}
 
-		finalBlock = default;
-		remaining.CopyTo(finalBlock.AsSpan());
+		finalBlock = GHash.PadFinalBlock(remaining);
 		ReadOnlySpan<byte> block = finalBlock.AsReadOnlySpan();
 		AppendSequential(ref accumulator, in key, block);
 	}

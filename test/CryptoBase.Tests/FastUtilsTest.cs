@@ -7,8 +7,11 @@ public class FastUtilsTest
 	[Test]
 	[Arguments(0)]
 	[Arguments(1)]
+	[Arguments(2)]
 	[Arguments(3)]
 	[Arguments(4)]
+	[Arguments(5)]
+	[Arguments(6)]
 	[Arguments(7)]
 	[Arguments(8)]
 	[Arguments(15)]
@@ -49,12 +52,19 @@ public class FastUtilsTest
 	[Test]
 	[Arguments(0)]
 	[Arguments(1)]
+	[Arguments(2)]
 	[Arguments(3)]
 	[Arguments(4)]
+	[Arguments(5)]
+	[Arguments(6)]
 	[Arguments(7)]
 	[Arguments(8)]
+	[Arguments(9)]
+	[Arguments(10)]
 	[Arguments(11)]
 	[Arguments(12)]
+	[Arguments(13)]
+	[Arguments(14)]
 	[Arguments(15)]
 	public async Task XorLess16MatchesReferenceForEveryScalarTail(int length)
 	{
@@ -72,6 +82,12 @@ public class FastUtilsTest
 	}
 
 	[Test]
+	[Arguments(2)]
+	[Arguments(3)]
+	[Arguments(7)]
+	[Arguments(13)]
+	[Arguments(15)]
+	[Arguments(45)]
 	[Arguments(129)]
 	[Arguments(8193)]
 	public async Task XorSupportsStreamAsExactInPlaceDestination(int length)
@@ -88,6 +104,12 @@ public class FastUtilsTest
 	}
 
 	[Test]
+	[Arguments(2)]
+	[Arguments(3)]
+	[Arguments(7)]
+	[Arguments(13)]
+	[Arguments(15)]
+	[Arguments(45)]
 	[Arguments(129)]
 	[Arguments(8193)]
 	public async Task XorSupportsSourceAsExactInPlaceDestination(int length)
@@ -99,6 +121,36 @@ public class FastUtilsTest
 		ComputeXor(stream, source, expected);
 
 		FastUtils.Xor(stream, source, source, length);
+
+		await Assert.That(sourceBuffer.AsMemory(1, length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	[Arguments(0)]
+	[Arguments(1)]
+	[Arguments(2)]
+	[Arguments(3)]
+	[Arguments(4)]
+	[Arguments(5)]
+	[Arguments(6)]
+	[Arguments(7)]
+	[Arguments(8)]
+	[Arguments(9)]
+	[Arguments(10)]
+	[Arguments(11)]
+	[Arguments(12)]
+	[Arguments(13)]
+	[Arguments(14)]
+	[Arguments(15)]
+	public async Task XorLess16SupportsSourceAsExactInPlaceDestination(int length)
+	{
+		byte[] stream = CreateDeterministicSource(length);
+		byte[] sourceBuffer = CreateDeterministicSource(length + 1);
+		byte[] expected = new byte[length];
+		Span<byte> source = sourceBuffer.AsSpan(1, length);
+		ComputeXor(stream, source, expected);
+
+		FastUtils.XorLess16(stream, source, source, length);
 
 		await Assert.That(sourceBuffer.AsMemory(1, length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}

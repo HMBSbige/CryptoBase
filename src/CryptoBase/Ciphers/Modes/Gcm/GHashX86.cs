@@ -128,8 +128,7 @@ internal static partial class GHashX86
 			return;
 		}
 
-		finalBlock = default;
-		remaining.CopyTo(finalBlock.AsSpan());
+		finalBlock = GHash.PadFinalBlock(remaining);
 		ReadOnlySpan<byte> block = finalBlock.AsReadOnlySpan();
 		AppendSequential(ref accumulator, in key, block);
 	}

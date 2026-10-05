@@ -52,8 +52,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		{
 			Vector256<byte> blocks01 = Vector256.LoadUnsafe(ref input, (nuint)offset).ReverseEndianness128();
 			Vector256<byte> blocks23 = Vector256.LoadUnsafe(ref input, (nuint)(offset + 2 * BlockSize)).ReverseEndianness128();
-			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref blocks01);
-			firstBlock ^= accumulator;
+			blocks01 ^= accumulator.ToVector256();
 
 			GFMultiplyUnreduced(key43, blocks01, out Vector256<uint> p00, out Vector256<uint> p11, out Vector256<uint> pm);
 			GFMultiplyUnreduced(key21, blocks23, out Vector256<uint> nextP00, out Vector256<uint> nextP11, out Vector256<uint> nextPm);
@@ -70,8 +69,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		if (length is 3 * BlockSize)
 		{
 			Vector256<byte> blocks01 = Vector256.LoadUnsafe(ref input, (nuint)offset).ReverseEndianness128();
-			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref blocks01);
-			firstBlock ^= accumulator;
+			blocks01 ^= accumulator.ToVector256();
 			Vector128<byte> block2 = Vector128.LoadUnsafe(ref input, (nuint)(offset + 2 * BlockSize)).ReverseEndianness128();
 
 			GFMultiplyUnreduced(Vector256.Create(_key3, _key2), blocks01, out Vector256<uint> p00, out Vector256<uint> p11, out Vector256<uint> pm);
@@ -84,8 +82,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		if (length is 2 * BlockSize)
 		{
 			Vector256<byte> blocks = Vector256.LoadUnsafe(ref input, (nuint)offset).ReverseEndianness128();
-			ref Vector128<byte> firstBlock = ref Unsafe.As<Vector256<byte>, Vector128<byte>>(ref blocks);
-			firstBlock ^= accumulator;
+			blocks ^= accumulator.ToVector256();
 			GFMultiplyUnreduced(key21, blocks, out Vector256<uint> p00, out Vector256<uint> p11, out Vector256<uint> pm);
 			AssembleProduct(p00.GetLower() ^ p00.GetUpper(), p11.GetLower() ^ p11.GetUpper(), pm.GetLower() ^ pm.GetUpper(), out Vector128<uint> lo, out Vector128<uint> hi);
 			accumulator = Reduce(lo, hi);
@@ -239,8 +236,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 			AppendBlocks(ref accumulator, source.Slice(0, bulkLength));
 		}
 
-		finalBlock = default;
-		remaining.CopyTo(finalBlock.AsSpan());
+		finalBlock = GHash.PadFinalBlock(remaining);
 		AppendFoldedPaddedRemainder(ref accumulator, source.Slice(bulkLength, completeLength - bulkLength), in finalBlock);
 	}
 }

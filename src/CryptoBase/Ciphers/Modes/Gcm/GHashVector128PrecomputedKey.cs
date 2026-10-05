@@ -270,8 +270,7 @@ internal readonly struct GHashVector128PrecomputedKey : IGHashPowers
 			AppendBlocks(ref accumulator, source.Slice(0, bulkLength));
 		}
 
-		finalBlock = default;
-		remaining.CopyTo(finalBlock.AsSpan());
+		finalBlock = GHash.PadFinalBlock(remaining);
 		AppendFoldedRemainder(ref accumulator, source.Slice(bulkLength, completeLength - bulkLength), finalBlock.AsReadOnlySpan());
 	}
 }

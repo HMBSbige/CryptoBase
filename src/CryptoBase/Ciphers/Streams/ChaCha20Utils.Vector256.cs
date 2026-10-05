@@ -95,16 +95,16 @@ internal static partial class ChaCha20Utils
 
 	private static void XorVector256Four(ref uint stateRef, ref byte input, ref byte output)
 	{
-		Vector128<uint> row = Vector128.LoadUnsafe(ref stateRef);
+		Vector128<uint> row = SnuffleCipher.LoadStateRow(ref stateRef, 0);
 		Vector256<uint> a0 = Vector256.Create(row);
 		Vector256<uint> b0 = a0;
-		row = Vector128.LoadUnsafe(ref stateRef, 4);
+		row = SnuffleCipher.LoadStateRow(ref stateRef, 4);
 		Vector256<uint> a1 = Vector256.Create(row);
 		Vector256<uint> b1 = a1;
-		row = Vector128.LoadUnsafe(ref stateRef, 8);
+		row = SnuffleCipher.LoadStateRow(ref stateRef, 8);
 		Vector256<uint> a2 = Vector256.Create(row);
 		Vector256<uint> b2 = a2;
-		row = Vector128.LoadUnsafe(ref stateRef, 12);
+		row = SnuffleCipher.LoadStateRow(ref stateRef, 12);
 		Vector256<uint> a3 = Vector256.Create(row).AddUInt32LE01();
 		Vector256<uint> b3 = a3.AddUInt32LE22();
 

@@ -26,6 +26,12 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
+	public static void ThrowSourceNotBlockAligned(string parameterName)
+	{
+		throw new ArgumentException("Source length must be a multiple of the block size.", parameterName);
+	}
+
+	[DoesNotReturn]
 	public static void ThrowTagDestinationOverlap(string parameterName)
 	{
 		throw new ArgumentException("The tag and destination buffers must not overlap.", parameterName);

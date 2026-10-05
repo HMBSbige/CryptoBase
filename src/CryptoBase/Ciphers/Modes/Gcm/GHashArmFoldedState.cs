@@ -91,8 +91,7 @@ internal ref struct GHashArmFoldedState : IDisposable
 			return;
 		}
 
-		finalBlock = default;
-		remaining.CopyTo(finalBlock.AsSpan());
+		finalBlock = GHash.PadFinalBlock(remaining);
 		ReadOnlySpan<byte> final = finalBlock.AsReadOnlySpan();
 		ref byte finalRef = ref final.GetReference();
 
@@ -136,7 +135,7 @@ internal ref struct GHashArmFoldedState : IDisposable
 		AppendBlocks(finalBlock.AsReadOnlySpan());
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void AppendEight(ref byte source, ref byte lastSource)
 	{
 		Vector128<byte> value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 1 * BlockSize));

@@ -16,7 +16,7 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 		Debug.Assert(IsSupported);
 		Debug.Assert(key.Length is Poly1305Algorithm.KeyLengthInBytes);
 
-		_state = new Poly1305State26(key);
+		_state.Initialize(key);
 		_state.GetPowers(out Poly1305Power r1, out Poly1305Power r2, out Poly1305Power r3, out Poly1305Power r4);
 
 		_ruwy0 = Vector256.CreateUInt32EvenLanes(r4.Limb0, r3.Limb0, r2.Limb0, r1.Limb0);

@@ -59,6 +59,29 @@ internal static class Poly1305Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void WriteTag(scoped Span<byte> destination, ulong low, ulong high)
+	{
+		Debug.Assert(destination.Length >= Poly1305Algorithm.MacLength);
+
+		if (!BitConverter.IsLittleEndian)
+		{
+			low = BinaryPrimitives.ReverseEndianness(low);
+			high = BinaryPrimitives.ReverseEndianness(high);
+		}
+
+		ref byte output = ref destination.GetReference();
+
+		if (Vector128.IsHardwareAccelerated)
+		{
+			Vector128.Create(low, high).AsByte().StoreUnsafe(ref output);
+			return;
+		}
+
+		Unsafe.WriteUnaligned(ref output, low);
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, sizeof(ulong)), high);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void LoadPartialBlock(scoped ReadOnlySpan<byte> source, out ulong low, out ulong high)
 	{
 		Debug.Assert(source.Length is > 0 and < Poly1305Algorithm.BlockSizeInBytes);

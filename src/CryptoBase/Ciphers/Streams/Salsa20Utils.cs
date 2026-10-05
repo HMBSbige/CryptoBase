@@ -11,27 +11,20 @@ internal static partial class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void UpdateKeyStream(in int rounds, in ReadOnlySpan<uint> state, in Span<byte> keyStream)
 	{
-		Span<uint> x = MemoryMarshal.Cast<byte, uint>(keyStream);
-		state.CopyTo(x);
+		Debug.Assert(state.Length is 16 && keyStream.Length is 64);
 
-		SalsaRound(rounds, x);
+		ref uint stateRef = ref state.GetReference();
+		uint x00 = Unsafe.Add(ref stateRef, 0), x01 = Unsafe.Add(ref stateRef, 1), x02 = Unsafe.Add(ref stateRef, 2), x03 = Unsafe.Add(ref stateRef, 3);
+		uint x04 = Unsafe.Add(ref stateRef, 4), x05 = Unsafe.Add(ref stateRef, 5), x06 = Unsafe.Add(ref stateRef, 6), x07 = Unsafe.Add(ref stateRef, 7);
+		uint x08 = Unsafe.Add(ref stateRef, 8), x09 = Unsafe.Add(ref stateRef, 9), x10 = Unsafe.Add(ref stateRef, 10), x11 = Unsafe.Add(ref stateRef, 11);
+		uint x12 = Unsafe.Add(ref stateRef, 12), x13 = Unsafe.Add(ref stateRef, 13), x14 = Unsafe.Add(ref stateRef, 14), x15 = Unsafe.Add(ref stateRef, 15);
+		PermuteScalar(rounds, ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
 
-		x[15] += state[15];
-		x[14] += state[14];
-		x[13] += state[13];
-		x[12] += state[12];
-		x[11] += state[11];
-		x[10] += state[10];
-		x[9] += state[9];
-		x[8] += state[8];
-		x[7] += state[7];
-		x[6] += state[6];
-		x[5] += state[5];
-		x[4] += state[4];
-		x[3] += state[3];
-		x[2] += state[2];
-		x[1] += state[1];
-		x[0] += state[0];
+		ref byte destination = ref keyStream.GetReference();
+		SnuffleCipher.WriteKeyStreamRow(ref destination, x00 + Unsafe.Add(ref stateRef, 0), x01 + Unsafe.Add(ref stateRef, 1), x02 + Unsafe.Add(ref stateRef, 2), x03 + Unsafe.Add(ref stateRef, 3));
+		SnuffleCipher.WriteKeyStreamRow(ref Unsafe.Add(ref destination, 16), x04 + Unsafe.Add(ref stateRef, 4), x05 + Unsafe.Add(ref stateRef, 5), x06 + Unsafe.Add(ref stateRef, 6), x07 + Unsafe.Add(ref stateRef, 7));
+		SnuffleCipher.WriteKeyStreamRow(ref Unsafe.Add(ref destination, 32), x08 + Unsafe.Add(ref stateRef, 8), x09 + Unsafe.Add(ref stateRef, 9), x10 + Unsafe.Add(ref stateRef, 10), x11 + Unsafe.Add(ref stateRef, 11));
+		SnuffleCipher.WriteKeyStreamRow(ref Unsafe.Add(ref destination, 48), x12 + Unsafe.Add(ref stateRef, 12), x13 + Unsafe.Add(ref stateRef, 13), x14 + Unsafe.Add(ref stateRef, 14), x15 + Unsafe.Add(ref stateRef, 15));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
