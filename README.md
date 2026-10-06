@@ -28,13 +28,14 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| Blake3 | ⚠️ |
+| BLAKE2b | ⚠️ |
+| BLAKE3 | ⚠️ |
 | MD5 | ✅ |
-| SHA1 | ✅ |
-| SHA224 | ✅ |
-| SHA256 | ✅ |
-| SHA384 | ✅ |
-| SHA512 | ✅ |
+| SHA-1 | ✅ |
+| SHA-224 | ✅ |
+| SHA-256 | ✅ |
+| SHA-384 | ✅ |
+| SHA-512 | ✅ |
 | SM3 | ✅ |
 
 #### Non-cryptographic checksums
@@ -90,9 +91,9 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ----- |:------:|
 | None | ✅ |
 | Zeros | ✅ |
-| PKCS7 | ✅ |
-| ANSIX923 | ✅ |
-| ISO10126 | ✅ |
+| PKCS #7 | ✅ |
+| ANSI X9.23 | ✅ |
+| ISO 10126 | ✅ |
 
 #### Authenticated encryption algorithms
 
@@ -100,10 +101,10 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ---------- |:------:|
 | AES-CCM | ⏳ |
 | AES-GCM | ✅ |
-| ChaCha20Poly1305 | ✅ |
+| ChaCha20-Poly1305 | ✅ |
 | SM4-CCM | ⏳ |
 | SM4-GCM | ✅ |
-| XChaCha20Poly1305 | ✅ |
+| XChaCha20-Poly1305 | ✅ |
 
 ### Asymmetric cryptography
 
