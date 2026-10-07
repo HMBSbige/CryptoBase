@@ -17,6 +17,7 @@ public class SM4CcmBenchmark
 	private CcmMode128<SM4Cipher> _cryptoBase = null!;
 	private KeyParameter _bouncyCastleKey = null!;
 	private byte[] _input = [];
+	private byte[] _ciphertext = [];
 	private byte[] _output = [];
 	private byte[] _bouncyCastleOutput = [];
 	private byte[] _nonce = [];
@@ -30,11 +31,13 @@ public class SM4CcmBenchmark
 		_cryptoBase = CcmMode128<SM4Cipher>.Create(key);
 		_bouncyCastleKey = new KeyParameter(key);
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
+		_ciphertext = new byte[ByteLength];
 		_output = new byte[ByteLength];
 		_bouncyCastleOutput = new byte[checked(ByteLength + 16)];
 		_nonce = RandomNumberGenerator.GetBytes(12);
 		_tag = new byte[16];
 		_associatedData = RandomNumberGenerator.GetBytes(37);
+		_cryptoBase.Encrypt(_nonce, _input, _ciphertext, _tag, _associatedData);
 	}
 
 	[GlobalCleanup]
@@ -47,6 +50,12 @@ public class SM4CcmBenchmark
 	public void CryptoBase()
 	{
 		_cryptoBase.Encrypt(_nonce, _input, _output, _tag, _associatedData);
+	}
+
+	[Benchmark]
+	public bool CryptoBaseDecrypt()
+	{
+		return _cryptoBase.TryDecrypt(_nonce, _ciphertext, _tag, _output, _associatedData);
 	}
 
 	[Benchmark]

@@ -11,15 +11,19 @@ namespace CryptoBase.Benchmark.Ciphers.Aead;
 [MemoryDiagnoser]
 public class AesCcmBenchmark
 {
-	[Params(0, 16, 256, 1024, 8192)]
+	[Params(0, 16, 17, 256, 1024, 8192)]
 	public int ByteLength { get; set; }
+
+	[Params(16, 24, 32)]
+	public int KeyLength { get; set; }
 
 	private CcmMode128<AesCipher> _cryptoBase = null!;
 	private Ccm8Mode128<AesCipher> _cryptoBase8 = null!;
-	private AesCcm _bcl = null!;
+	private AesCcm? _bcl;
 	private IBlockCipher _bouncyCastlePrimitive = null!;
 	private KeyParameter _bouncyCastleKey = null!;
 	private byte[] _input = [];
+	private byte[] _ciphertext = [];
 	private byte[] _output = [];
 	private byte[] _bouncyCastleOutput = [];
 	private byte[] _nonce = [];
@@ -30,19 +34,22 @@ public class AesCcmBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		byte[] key = RandomNumberGenerator.GetBytes(16);
+		byte[] key = RandomNumberGenerator.GetBytes(KeyLength);
 		_cryptoBase = CcmMode128<AesCipher>.Create(key);
 		_cryptoBase8 = Ccm8Mode128<AesCipher>.Create(key);
-		_bcl = new AesCcm(key);
+		_bcl = AesCcm.IsSupported ? new AesCcm(key) : null;
 		_bouncyCastlePrimitive = AesUtilities.CreateEngine();
 		_bouncyCastleKey = new KeyParameter(key);
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
+		_ciphertext = new byte[ByteLength];
 		_output = new byte[ByteLength];
 		_bouncyCastleOutput = new byte[checked(ByteLength + 16)];
 		_nonce = RandomNumberGenerator.GetBytes(12);
 		_tag = new byte[16];
 		_tag8 = new byte[8];
 		_associatedData = RandomNumberGenerator.GetBytes(37);
+		_cryptoBase.Encrypt(_nonce, _input, _ciphertext, _tag, _associatedData);
+		_cryptoBase8.Encrypt(_nonce, _input, _ciphertext, _tag8, _associatedData);
 	}
 
 	[GlobalCleanup]
@@ -50,7 +57,7 @@ public class AesCcmBenchmark
 	{
 		_cryptoBase.Dispose();
 		_cryptoBase8.Dispose();
-		_bcl.Dispose();
+		_bcl?.Dispose();
 	}
 
 	[Benchmark(Baseline = true)]
@@ -66,9 +73,21 @@ public class AesCcmBenchmark
 	}
 
 	[Benchmark]
+	public bool CryptoBaseDecrypt()
+	{
+		return _cryptoBase.TryDecrypt(_nonce, _ciphertext, _tag, _output, _associatedData);
+	}
+
+	[Benchmark]
+	public bool CryptoBaseCcm8Decrypt()
+	{
+		return _cryptoBase8.TryDecrypt(_nonce, _ciphertext, _tag8, _output, _associatedData);
+	}
+
+	[Benchmark]
 	public void Bcl()
 	{
-		_bcl.Encrypt(_nonce, _input, _output, _tag, _associatedData);
+		(_bcl ?? throw new PlatformNotSupportedException()).Encrypt(_nonce, _input, _output, _tag, _associatedData);
 	}
 
 	[Benchmark]

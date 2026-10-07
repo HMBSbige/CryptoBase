@@ -55,9 +55,9 @@ internal static class CcmUtils
 		{
 			ref byte input = ref source.GetReference();
 			ref byte output = ref destination.GetReference();
-			nuint finalOffset = (nuint)(source.Length - 1 & -BlockSize);
+			nuint fullLength = (nuint)(source.Length & -BlockSize);
 
-			for (nuint offset = 0; offset < finalOffset; offset += BlockSize)
+			for (nuint offset = 0; offset < fullLength; offset += BlockSize)
 			{
 				Vector128<byte> block = Vector128.LoadUnsafe(ref input, offset);
 				Vector128<byte> keyStream = CtrLanes<CtrIncrementer32>.Next(ref counter);
@@ -65,11 +65,15 @@ internal static class CcmUtils
 				(block ^ keyStream).StoreUnsafe(ref output, offset);
 			}
 
-			int finalLength = source.Length - (int)finalOffset;
-			Vector128<byte> finalBlock = Vector128.LoadPartialUnsafe(ref input, finalOffset, finalLength);
-			Vector128<byte> finalKeyStream = CtrLanes<CtrIncrementer32>.Next(ref counter);
-			encryptor.Absorb(ref state, finalBlock, ref finalKeyStream);
-			(finalBlock ^ finalKeyStream).StorePartialUnsafe(ref output, finalOffset, finalLength);
+			int finalLength = source.Length - (int)fullLength;
+
+			if (finalLength is not 0)
+			{
+				Vector128<byte> finalBlock = Vector128.LoadPartialUnsafe(ref input, fullLength, finalLength);
+				Vector128<byte> finalKeyStream = CtrLanes<CtrIncrementer32>.Next(ref counter);
+				encryptor.Absorb(ref state, finalBlock, ref finalKeyStream);
+				(finalBlock ^ finalKeyStream).StorePartialUnsafe(ref output, fullLength, finalLength);
+			}
 		}
 
 		StoreTag<TTag>(encryptor.Finish(state) ^ tagMask, tag);
@@ -108,11 +112,22 @@ internal static class CcmUtils
 			}
 
 			int finalLength = source.Length - (int)finalOffset;
-			Vector128<byte> finalBlock = Vector128.LoadPartialUnsafe(ref input, finalOffset, finalLength) ^ keyStream;
-			finalBlock.StorePartialUnsafe(ref output, finalOffset, finalLength);
+			Vector128<byte> finalBlock;
 
-			// The MAC covers the zero-padded plaintext.
-			finalBlock &= Vector128.LessThan(Vector128<sbyte>.Indices, Vector128.Create((sbyte)finalLength)).AsByte();
+			if (finalLength is BlockSize)
+			{
+				finalBlock = Vector128.LoadUnsafe(ref input, finalOffset) ^ keyStream;
+				finalBlock.StoreUnsafe(ref output, finalOffset);
+			}
+			else
+			{
+				finalBlock = Vector128.LoadPartialUnsafe(ref input, finalOffset, finalLength) ^ keyStream;
+				finalBlock.StorePartialUnsafe(ref output, finalOffset, finalLength);
+
+				// The MAC covers the zero-padded plaintext.
+				finalBlock &= Vector128.LessThan(Vector128<sbyte>.Indices, Vector128.Create((sbyte)finalLength)).AsByte();
+			}
+
 			encryptor.Absorb(ref state, finalBlock, ref tagMask);
 		}
 
