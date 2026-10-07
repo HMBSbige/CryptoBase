@@ -48,7 +48,7 @@ public class AesGcmFusionTest
 		await AssertOutput(tag, 7, expectedTag);
 
 		// Exercise the internal entry point as well as public dispatch.
-		if (AesGcmFusion.IsSupported)
+		if (AesGcmFusion.ShouldFuse(length))
 		{
 			PrepareDestination(destination);
 			PrepareDestination(tag);
