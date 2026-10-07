@@ -63,6 +63,13 @@ public class ChaCha20Cipher : SnuffleCipher
 		ChaCha20Utils.DerivePoly1305Key(StateSpan, destination);
 	}
 
+	internal void DerivePoly1305KeyAndKeyStream(Span<byte> poly1305Key, Span<byte> keyStream)
+	{
+		Debug.Assert(ChaCha20Utils.GetCounter(ref StateRef) is 0);
+
+		ChaCha20Utils.DerivePoly1305KeyAndKeyStream(ref StateRef, poly1305Key, keyStream);
+	}
+
 	/// <inheritdoc />
 	protected override void IncrementCounter(Span<uint> state)
 	{

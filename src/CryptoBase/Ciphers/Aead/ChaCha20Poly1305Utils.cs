@@ -5,17 +5,32 @@ namespace CryptoBase.Ciphers.Aead;
 
 internal static class ChaCha20Poly1305Utils
 {
+	private const int KeyStreamBlockSize = 64;
+
 	internal static void EncryptAndComputeTag(ChaCha20Cipher chacha20, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData)
 	{
-		EncryptAndComputeTag(new ChaCha20Adapter(chacha20), source, destination, tag, associatedData);
+		EncryptAndComputeTagSelected(new ChaCha20Adapter(chacha20), source, destination, tag, associatedData);
 	}
 
 	internal static void EncryptAndComputeTag(XChaCha20Cipher chacha20, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData)
 	{
-		EncryptAndComputeTag(new XChaCha20Adapter(chacha20), source, destination, tag, associatedData);
+		EncryptAndComputeTagSelected(new XChaCha20Adapter(chacha20), source, destination, tag, associatedData);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void EncryptAndComputeTagSelected<TCipher>(TCipher cipher, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData) where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
+	{
+		if (ChaCha20Utils.ShouldDerivePoly1305KeyAndKeyStream(source.Length))
+		{
+			EncryptAndComputeTagWithKeyStream(cipher, source, destination, tag, associatedData);
+			return;
+		}
+
+		EncryptAndComputeTag(cipher, source, destination, tag, associatedData);
 	}
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void EncryptAndComputeTag<TCipher>(TCipher cipher, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData) where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
 	{
 		Debug.Assert(tag.Length == Poly1305Algorithm.MacLength);
@@ -56,6 +71,48 @@ internal static class ChaCha20Poly1305Utils
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void EncryptAndComputeTagWithKeyStream<TCipher>(TCipher cipher, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData)
+		where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
+	{
+		Debug.Assert(tag.Length == Poly1305Algorithm.MacLength);
+
+		Unsafe.SkipInit(out InlineArray128<byte> buffer);
+		using CryptoBuffer<byte> poly1305Key = new(GetKeyAndKeyStream(ref buffer));
+		Span<byte> lengthBlock = stackalloc byte[Poly1305Algorithm.BlockSizeInBytes];
+		BinaryPrimitives.WriteUInt64LittleEndian(lengthBlock, (ulong)associatedData.Length);
+		BinaryPrimitives.WriteUInt64LittleEndian(lengthBlock.Slice(8), (ulong)source.Length);
+
+		TCipher.DerivePoly1305KeyAndKeyStream(cipher, poly1305Key.Span.Slice(0, Poly1305Algorithm.KeyLengthInBytes), poly1305Key.Span.Slice(Poly1305Algorithm.KeyLengthInBytes));
+
+		if (Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length, lengthBlock.Length))
+		{
+			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Avx512>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			return;
+		}
+
+		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length, lengthBlock.Length))
+		{
+			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Avx2>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			return;
+		}
+
+		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length, lengthBlock.Length))
+		{
+			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Sse2>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			return;
+		}
+
+		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length, lengthBlock.Length))
+		{
+			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305AdvSimd>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			return;
+		}
+
+		EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Software>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void EncryptAndComputeTagCore<TCipher, TState>(TCipher cipher, ref byte keyStart, ref byte sourceStart, ref byte destinationStart, int length, ref byte tagStart, ref byte associatedDataStart, int associatedDataLength, ref byte lengthBlockStart)
 		where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
 		where TState : unmanaged, IPoly1305State<TState>, allows ref struct
@@ -85,16 +142,56 @@ internal static class ChaCha20Poly1305Utils
 		}
 	}
 
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void EncryptAndComputeTagFromKeyStreamCore<TCipher, TState>(TCipher cipher, ref byte keyStart, ref byte sourceStart, ref byte destinationStart, int length, ref byte tagStart, ref byte associatedDataStart, int associatedDataLength, ref byte lengthBlockStart)
+		where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
+		where TState : unmanaged, IPoly1305State<TState>, allows ref struct
+	{
+		ReadOnlySpan<byte> poly1305Key = MemoryMarshal.CreateReadOnlySpan(ref keyStart, Poly1305Algorithm.KeyLengthInBytes);
+		Span<byte> destination = MemoryMarshal.CreateSpan(ref destinationStart, length);
+		Span<byte> tag = MemoryMarshal.CreateSpan(ref tagStart, Poly1305Algorithm.MacLength);
+		ReadOnlySpan<byte> associatedData = MemoryMarshal.CreateReadOnlySpan(ref associatedDataStart, associatedDataLength);
+		ReadOnlySpan<byte> lengthBlock = MemoryMarshal.CreateReadOnlySpan(ref lengthBlockStart, Poly1305Algorithm.BlockSizeInBytes);
+
+		Unsafe.SkipInit(out TState state);
+		TState.Initialize(ref state, poly1305Key);
+
+		try
+		{
+			state.AppendPaddedSegment(associatedData);
+			XorFromKeyStream(cipher, ref Unsafe.Add(ref keyStart, Poly1305Algorithm.KeyLengthInBytes), ref sourceStart, ref destinationStart, length);
+			state.AppendPaddedSegment(destination);
+			state.AppendPaddedSegment(lengthBlock);
+			state.WriteMac(tag);
+		}
+		finally
+		{
+			state.ZeroMemory();
+		}
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryDecrypt(ChaCha20Cipher chacha20, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData)
 	{
-		return TryDecrypt(new ChaCha20Adapter(chacha20), source, tag, destination, associatedData);
+		return TryDecryptSelected(new ChaCha20Adapter(chacha20), source, tag, destination, associatedData);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryDecrypt(XChaCha20Cipher chacha20, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData)
 	{
-		return TryDecrypt(new XChaCha20Adapter(chacha20), source, tag, destination, associatedData);
+		return TryDecryptSelected(new XChaCha20Adapter(chacha20), source, tag, destination, associatedData);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool TryDecryptSelected<TCipher>(TCipher cipher, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData) where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
+	{
+		if (ChaCha20Utils.ShouldDerivePoly1305KeyAndKeyStream(source.Length))
+		{
+			return TryDecryptWithKeyStream(cipher, source, tag, destination, associatedData);
+		}
+
+		return TryDecrypt(cipher, source, tag, destination, associatedData);
 	}
 
 	[SkipLocalsInit]
@@ -124,11 +221,61 @@ internal static class ChaCha20Poly1305Utils
 		return true;
 	}
 
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static bool TryDecryptWithKeyStream<TCipher>(TCipher cipher, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData)
+		where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
+	{
+		Unsafe.SkipInit(out Vector128<byte> computedTag);
+
+		Unsafe.SkipInit(out InlineArray128<byte> buffer);
+		using CryptoBuffer<byte> poly1305Key = new(GetKeyAndKeyStream(ref buffer));
+		TCipher.DerivePoly1305KeyAndKeyStream(cipher, poly1305Key.Span.Slice(0, Poly1305Algorithm.KeyLengthInBytes), poly1305Key.Span.Slice(Poly1305Algorithm.KeyLengthInBytes));
+
+		Span<byte> lengthBlock = stackalloc byte[Poly1305Algorithm.BlockSizeInBytes];
+		BinaryPrimitives.WriteUInt64LittleEndian(lengthBlock, (ulong)associatedData.Length);
+		BinaryPrimitives.WriteUInt64LittleEndian(lengthBlock.Slice(8), (ulong)source.Length);
+		Poly1305Algorithm.MacPaddedSegments(poly1305Key.Span.Slice(0, Poly1305Algorithm.KeyLengthInBytes), associatedData, source, lengthBlock, computedTag.AsSpan());
+
+		if (!FixedTime.Equals16(computedTag.AsReadOnlySpan(), tag))
+		{
+			destination.ZeroMemory();
+			return false;
+		}
+
+		XorFromKeyStream(cipher, ref Unsafe.Add(ref poly1305Key.Span.GetReference(), Poly1305Algorithm.KeyLengthInBytes), ref source.GetReference(), ref destination.GetReference(), source.Length);
+		return true;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe Span<byte> GetKeyAndKeyStream(ref InlineArray128<byte> buffer)
+	{
+		ref byte start = ref Unsafe.As<InlineArray128<byte>, byte>(ref buffer);
+		nint offset = -(nint)Unsafe.AsPointer(ref start) & 31;
+		return MemoryMarshal.CreateSpan(ref Unsafe.Add(ref start, offset), Poly1305Algorithm.KeyLengthInBytes + KeyStreamBlockSize);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void XorFromKeyStream<TCipher>(TCipher cipher, ref byte keyStream, ref byte source, ref byte destination, int length) where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
+	{
+		int firstLength = Math.Min(length, KeyStreamBlockSize);
+		FastUtils.Xor(MemoryMarshal.CreateReadOnlySpan(ref keyStream, firstLength), MemoryMarshal.CreateReadOnlySpan(ref source, firstLength), MemoryMarshal.CreateSpan(ref destination, firstLength), firstLength);
+
+		if (length > KeyStreamBlockSize)
+		{
+			int restLength = length - KeyStreamBlockSize;
+			TCipher.SetCounter(cipher, 2);
+			TCipher.Xor(cipher, MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref source, KeyStreamBlockSize), restLength), MemoryMarshal.CreateSpan(ref Unsafe.Add(ref destination, KeyStreamBlockSize), restLength));
+		}
+	}
+
 	private interface IChaCha20Poly1305Cipher<in TSelf> where TSelf : struct, IChaCha20Poly1305Cipher<TSelf>
 	{
 		static abstract void SetCounter(TSelf cipher, uint counter);
 
 		static abstract void DerivePoly1305Key(TSelf cipher, Span<byte> destination);
+
+		static abstract void DerivePoly1305KeyAndKeyStream(TSelf cipher, Span<byte> poly1305Key, Span<byte> keyStream);
 
 		static abstract void Xor(TSelf cipher, ReadOnlySpan<byte> source, Span<byte> destination);
 	}
@@ -150,6 +297,11 @@ internal static class ChaCha20Poly1305Utils
 		public static void DerivePoly1305Key(ChaCha20Adapter cipher, Span<byte> destination)
 		{
 			cipher._cipher.DerivePoly1305Key(destination);
+		}
+
+		public static void DerivePoly1305KeyAndKeyStream(ChaCha20Adapter cipher, Span<byte> poly1305Key, Span<byte> keyStream)
+		{
+			cipher._cipher.DerivePoly1305KeyAndKeyStream(poly1305Key, keyStream);
 		}
 
 		public static void Xor(ChaCha20Adapter cipher, ReadOnlySpan<byte> source, Span<byte> destination)
@@ -175,6 +327,11 @@ internal static class ChaCha20Poly1305Utils
 		public static void DerivePoly1305Key(XChaCha20Adapter cipher, Span<byte> destination)
 		{
 			cipher._cipher.DerivePoly1305Key(destination);
+		}
+
+		public static void DerivePoly1305KeyAndKeyStream(XChaCha20Adapter cipher, Span<byte> poly1305Key, Span<byte> keyStream)
+		{
+			cipher._cipher.DerivePoly1305KeyAndKeyStream(poly1305Key, keyStream);
 		}
 
 		public static void Xor(XChaCha20Adapter cipher, ReadOnlySpan<byte> source, Span<byte> destination)
