@@ -94,18 +94,43 @@ internal readonly partial struct SM4AesNI
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void RoundLookahead(ref Vector128<byte> r0, Vector128<byte> r2, Vector128<byte> r3, ref Vector128<byte> input, Vector128<byte> nextKey, Vector128<byte> c0f, Vector128<byte> shr)
+	{
+		Vector128<uint> others = (r2 ^ r3 ^ nextKey).AsUInt32();
+		Vector128<byte> x = input;
+
+		PreTransform(ref x);
+		x = AesX86.EncryptLast(x, c0f);
+		PostTransform(ref x);
+
+		Vector128<uint> next = SM4Linear.XorTransform(r0.AsUInt32() ^ others, Ssse3.Shuffle(x, shr).AsUInt32());
+		input = next.AsByte();
+		r0 = (others ^ next).AsByte();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Rounds4V128(ref uint rk, ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2, ref Vector128<byte> v3)
 	{
 		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
 		Vector128<byte> shr = SM4AesConstants.InverseShiftRows;
+		Vector128<byte> input = Vector128.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
 
-		for (int i = 0; i < 32; i += 4)
+		for (int i = 0; i < 28; i += 4)
 		{
-			Round(ref v0, ref v1, ref v2, ref v3, Vector128.Create(Unsafe.Add(ref rk, i)).AsByte(), c0f, shr);
-			Round(ref v1, ref v2, ref v3, ref v0, Vector128.Create(Unsafe.Add(ref rk, i + 1)).AsByte(), c0f, shr);
-			Round(ref v2, ref v3, ref v0, ref v1, Vector128.Create(Unsafe.Add(ref rk, i + 2)).AsByte(), c0f, shr);
-			Round(ref v3, ref v0, ref v1, ref v2, Vector128.Create(Unsafe.Add(ref rk, i + 3)).AsByte(), c0f, shr);
+			RoundLookahead(ref v0, v2, v3, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 1)).AsByte(), c0f, shr);
+			RoundLookahead(ref v1, v3, v0, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 2)).AsByte(), c0f, shr);
+			RoundLookahead(ref v2, v0, v1, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 3)).AsByte(), c0f, shr);
+			RoundLookahead(ref v3, v1, v2, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 4)).AsByte(), c0f, shr);
 		}
+
+		RoundLookahead(ref v0, v2, v3, ref input, Vector128.Create(Unsafe.Add(ref rk, 29)).AsByte(), c0f, shr);
+		RoundLookahead(ref v1, v3, v0, ref input, Vector128.Create(Unsafe.Add(ref rk, 30)).AsByte(), c0f, shr);
+		RoundLookahead(ref v2, v0, v1, ref input, Vector128.Create(Unsafe.Add(ref rk, 31)).AsByte(), c0f, shr);
+
+		PreTransform(ref input);
+		input = AesX86.EncryptLast(input, c0f);
+		PostTransform(ref input);
+		v3 = SM4Linear.XorTransform(v3.AsUInt32(), Ssse3.Shuffle(input, shr).AsUInt32()).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

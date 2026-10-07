@@ -69,16 +69,34 @@ internal readonly struct SM4ArmAes : ISM4Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Round2
+	private static void RoundLookahead2
 	(
-		ref Vector128<uint> x0, ref Vector128<uint> x4, Vector128<uint> t0, Vector128<uint> t1,
+		ref Vector128<uint> x0, Vector128<uint> x2, Vector128<uint> x3, ref Vector128<uint> inputX,
+		ref Vector128<uint> y0, Vector128<uint> y2, Vector128<uint> y3, ref Vector128<uint> inputY,
+		Vector128<uint> nextKey,
 		Vector128<byte> preLo, Vector128<byte> preHi, Vector128<byte> postLo, Vector128<byte> postHi, Vector128<byte> inverseShiftRows, Vector128<byte> mask
 	)
 	{
-		t0 = Substitute(t0, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
-		t1 = Substitute(t1, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
-		x0 ^= SM4Linear.Transform(t0);
-		x4 ^= SM4Linear.Transform(t1);
+		Vector128<uint> othersX = x2 ^ x3 ^ nextKey;
+		Vector128<uint> othersY = y2 ^ y3 ^ nextKey;
+		Vector128<uint> valueX = Substitute(inputX, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		Vector128<uint> valueY = Substitute(inputY, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		inputX = SM4Linear.XorTransform(x0 ^ othersX, valueX);
+		inputY = SM4Linear.XorTransform(y0 ^ othersY, valueY);
+		x0 = othersX ^ inputX;
+		y0 = othersY ^ inputY;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void RoundLookahead
+	(
+		ref Vector128<uint> r0, Vector128<uint> r2, Vector128<uint> r3, ref Vector128<uint> input, Vector128<uint> nextKey,
+		Vector128<byte> preLo, Vector128<byte> preHi, Vector128<byte> postLo, Vector128<byte> postHi, Vector128<byte> inverseShiftRows, Vector128<byte> mask
+	)
+	{
+		Vector128<uint> others = r2 ^ r3 ^ nextKey;
+		input = SM4Linear.XorTransform(r0 ^ others, Substitute(input, preLo, preHi, postLo, postHi, inverseShiftRows, mask));
+		r0 = others ^ input;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -86,14 +104,20 @@ internal readonly struct SM4ArmAes : ISM4Kernel
 	{
 		LoadConstants(out Vector128<byte> preLo, out Vector128<byte> preHi, out Vector128<byte> postLo, out Vector128<byte> postHi, out Vector128<byte> inverseShiftRows, out Vector128<byte> mask);
 		SM4Layout.Load4Arm64(ref source, out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3);
+		Vector128<uint> input = x1 ^ x2 ^ x3 ^ Vector128.Create(keys);
 
-		for (int i = 0; i < 32; i += 4)
+		for (int i = 0; i < 28; i += 4)
 		{
-			x0 ^= SM4Linear.Transform(Substitute(x1 ^ x2 ^ x3 ^ Vector128.Create(Unsafe.Add(ref keys, i)), preLo, preHi, postLo, postHi, inverseShiftRows, mask));
-			x1 ^= SM4Linear.Transform(Substitute(x2 ^ x3 ^ x0 ^ Vector128.Create(Unsafe.Add(ref keys, i + 1)), preLo, preHi, postLo, postHi, inverseShiftRows, mask));
-			x2 ^= SM4Linear.Transform(Substitute(x3 ^ x0 ^ x1 ^ Vector128.Create(Unsafe.Add(ref keys, i + 2)), preLo, preHi, postLo, postHi, inverseShiftRows, mask));
-			x3 ^= SM4Linear.Transform(Substitute(x0 ^ x1 ^ x2 ^ Vector128.Create(Unsafe.Add(ref keys, i + 3)), preLo, preHi, postLo, postHi, inverseShiftRows, mask));
+			RoundLookahead(ref x0, x2, x3, ref input, Vector128.Create(Unsafe.Add(ref keys, i + 1)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+			RoundLookahead(ref x1, x3, x0, ref input, Vector128.Create(Unsafe.Add(ref keys, i + 2)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+			RoundLookahead(ref x2, x0, x1, ref input, Vector128.Create(Unsafe.Add(ref keys, i + 3)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+			RoundLookahead(ref x3, x1, x2, ref input, Vector128.Create(Unsafe.Add(ref keys, i + 4)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
 		}
+
+		RoundLookahead(ref x0, x2, x3, ref input, Vector128.Create(Unsafe.Add(ref keys, 29)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		RoundLookahead(ref x1, x3, x0, ref input, Vector128.Create(Unsafe.Add(ref keys, 30)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		RoundLookahead(ref x2, x0, x1, ref input, Vector128.Create(Unsafe.Add(ref keys, 31)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		x3 = SM4Linear.XorTransform(x3, Substitute(input, preLo, preHi, postLo, postHi, inverseShiftRows, mask));
 
 		SM4Layout.Store4Arm64(ref destination, x3, x2, x1, x0);
 	}
@@ -104,18 +128,25 @@ internal readonly struct SM4ArmAes : ISM4Kernel
 		LoadConstants(out Vector128<byte> preLo, out Vector128<byte> preHi, out Vector128<byte> postLo, out Vector128<byte> postHi, out Vector128<byte> inverseShiftRows, out Vector128<byte> mask);
 		SM4Layout.Load4Arm64(ref source, out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3);
 		SM4Layout.Load4Arm64(ref Unsafe.Add(ref source, 64), out Vector128<uint> x4, out Vector128<uint> x5, out Vector128<uint> x6, out Vector128<uint> x7);
+		Vector128<uint> key = Vector128.Create(keys);
+		Vector128<uint> inputX = x1 ^ x2 ^ x3 ^ key;
+		Vector128<uint> inputY = x5 ^ x6 ^ x7 ^ key;
 
-		for (int i = 0; i < 32; i += 4)
+		for (int i = 0; i < 28; i += 4)
 		{
-			Vector128<uint> key = Vector128.Create(Unsafe.Add(ref keys, i));
-			Round2(ref x0, ref x4, x1 ^ x2 ^ x3 ^ key, x5 ^ x6 ^ x7 ^ key, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
-			key = Vector128.Create(Unsafe.Add(ref keys, i + 1));
-			Round2(ref x1, ref x5, x2 ^ x3 ^ x0 ^ key, x6 ^ x7 ^ x4 ^ key, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
-			key = Vector128.Create(Unsafe.Add(ref keys, i + 2));
-			Round2(ref x2, ref x6, x3 ^ x0 ^ x1 ^ key, x7 ^ x4 ^ x5 ^ key, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
-			key = Vector128.Create(Unsafe.Add(ref keys, i + 3));
-			Round2(ref x3, ref x7, x0 ^ x1 ^ x2 ^ key, x4 ^ x5 ^ x6 ^ key, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+			RoundLookahead2(ref x0, x2, x3, ref inputX, ref x4, x6, x7, ref inputY, Vector128.Create(Unsafe.Add(ref keys, i + 1)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+			RoundLookahead2(ref x1, x3, x0, ref inputX, ref x5, x7, x4, ref inputY, Vector128.Create(Unsafe.Add(ref keys, i + 2)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+			RoundLookahead2(ref x2, x0, x1, ref inputX, ref x6, x4, x5, ref inputY, Vector128.Create(Unsafe.Add(ref keys, i + 3)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+			RoundLookahead2(ref x3, x1, x2, ref inputX, ref x7, x5, x6, ref inputY, Vector128.Create(Unsafe.Add(ref keys, i + 4)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
 		}
+
+		RoundLookahead2(ref x0, x2, x3, ref inputX, ref x4, x6, x7, ref inputY, Vector128.Create(Unsafe.Add(ref keys, 29)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		RoundLookahead2(ref x1, x3, x0, ref inputX, ref x5, x7, x4, ref inputY, Vector128.Create(Unsafe.Add(ref keys, 30)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		RoundLookahead2(ref x2, x0, x1, ref inputX, ref x6, x4, x5, ref inputY, Vector128.Create(Unsafe.Add(ref keys, 31)), preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		Vector128<uint> valueX = Substitute(inputX, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		Vector128<uint> valueY = Substitute(inputY, preLo, preHi, postLo, postHi, inverseShiftRows, mask);
+		x3 = SM4Linear.XorTransform(x3, valueX);
+		x7 = SM4Linear.XorTransform(x7, valueY);
 
 		SM4Layout.Store4Arm64(ref destination, x3, x2, x1, x0);
 		SM4Layout.Store4Arm64(ref Unsafe.Add(ref destination, 64), x7, x6, x5, x4);

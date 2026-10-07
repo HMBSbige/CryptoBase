@@ -85,20 +85,22 @@ internal readonly struct SM4Neon : ISM4Kernel
 		(Vector128<byte> s12, Vector128<byte> s13, Vector128<byte> s14, Vector128<byte> s15) = AdvSimd.Arm64.Load4xVector128(s + 192);
 		Vector128<byte> tableSize = Vector128.Create((byte)64);
 		SM4Layout.Load4Arm64(ref source, out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3);
+		Vector128<uint> input = x1 ^ x2 ^ x3 ^ Vector128.Create(keys);
 
-		for (int i = 0; i < 32; ++i)
+		for (int i = 1; i < 32; ++i)
 		{
-			Vector128<byte> index = (x1 ^ x2 ^ x3 ^ Vector128.Create(Unsafe.Add(ref keys, i))).AsByte();
-			Vector128<byte> value = Substitute(index, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, tableSize);
+			Vector128<uint> others = x2 ^ x3 ^ Vector128.Create(Unsafe.Add(ref keys, i));
+			Vector128<byte> value = Substitute(input.AsByte(), s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, tableSize);
 
-			Vector128<uint> next = x0 ^ SM4Linear.Transform(value.AsUInt32());
+			input = SM4Linear.XorTransform(x0 ^ others, value.AsUInt32());
 			x0 = x1;
 			x1 = x2;
 			x2 = x3;
-			x3 = next;
+			x3 = others ^ input;
 		}
 
-		SM4Layout.Store4Arm64(ref destination, x3, x2, x1, x0);
+		Vector128<byte> last = Substitute(input.AsByte(), s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, tableSize);
+		SM4Layout.Store4Arm64(ref destination, SM4Linear.XorTransform(x0, last.AsUInt32()), x3, x2, x1);
 	}
 
 	private static unsafe void Process8(ref uint keys, ref byte source, ref byte destination)
@@ -111,41 +113,65 @@ internal readonly struct SM4Neon : ISM4Kernel
 		Vector128<byte> tableSize = Vector128.Create((byte)64);
 		SM4Layout.Load4Arm64(ref source, out Vector128<uint> x0, out Vector128<uint> x1, out Vector128<uint> x2, out Vector128<uint> x3);
 		SM4Layout.Load4Arm64(ref Unsafe.Add(ref source, 64), out Vector128<uint> y0, out Vector128<uint> y1, out Vector128<uint> y2, out Vector128<uint> y3);
+		Vector128<uint> key = Vector128.Create(keys);
+		Vector128<uint> inputX = x1 ^ x2 ^ x3 ^ key;
+		Vector128<uint> inputY = y1 ^ y2 ^ y3 ^ key;
 
-		for (int i = 0; i < 32; ++i)
+		for (int i = 1; i < 32; ++i)
 		{
-			Vector128<uint> key = Vector128.Create(Unsafe.Add(ref keys, i));
-			Vector128<byte> indexX = (x1 ^ x2 ^ x3 ^ key).AsByte();
-			Vector128<byte> indexY = (y1 ^ y2 ^ y3 ^ key).AsByte();
+			key = Vector128.Create(Unsafe.Add(ref keys, i));
+			Vector128<uint> othersX = x2 ^ x3 ^ key;
+			Vector128<uint> othersY = y2 ^ y3 ^ key;
+			Vector128<byte> valueX = inputX.AsByte();
+			Vector128<byte> valueY = inputY.AsByte();
+			Substitute2(ref valueX, ref valueY, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, tableSize);
 
-			Vector128<byte> valueX = AdvSimd.Arm64.VectorTableLookup((s0, s1, s2, s3), indexX);
-			Vector128<byte> valueY = AdvSimd.Arm64.VectorTableLookup((s0, s1, s2, s3), indexY);
-			indexX -= tableSize;
-			indexY -= tableSize;
-			valueX = AdvSimd.Arm64.VectorTableLookupExtension(valueX, (s4, s5, s6, s7), indexX);
-			valueY = AdvSimd.Arm64.VectorTableLookupExtension(valueY, (s4, s5, s6, s7), indexY);
-			indexX -= tableSize;
-			indexY -= tableSize;
-			valueX = AdvSimd.Arm64.VectorTableLookupExtension(valueX, (s8, s9, s10, s11), indexX);
-			valueY = AdvSimd.Arm64.VectorTableLookupExtension(valueY, (s8, s9, s10, s11), indexY);
-			indexX -= tableSize;
-			indexY -= tableSize;
-			valueX = AdvSimd.Arm64.VectorTableLookupExtension(valueX, (s12, s13, s14, s15), indexX);
-			valueY = AdvSimd.Arm64.VectorTableLookupExtension(valueY, (s12, s13, s14, s15), indexY);
-
-			Vector128<uint> nextX = x0 ^ SM4Linear.Transform(valueX.AsUInt32());
-			Vector128<uint> nextY = y0 ^ SM4Linear.Transform(valueY.AsUInt32());
+			inputX = SM4Linear.XorTransform(x0 ^ othersX, valueX.AsUInt32());
+			inputY = SM4Linear.XorTransform(y0 ^ othersY, valueY.AsUInt32());
 			x0 = x1;
 			y0 = y1;
 			x1 = x2;
 			y1 = y2;
 			x2 = x3;
 			y2 = y3;
-			x3 = nextX;
-			y3 = nextY;
+			x3 = othersX ^ inputX;
+			y3 = othersY ^ inputY;
 		}
 
-		SM4Layout.Store4Arm64(ref destination, x3, x2, x1, x0);
-		SM4Layout.Store4Arm64(ref Unsafe.Add(ref destination, 64), y3, y2, y1, y0);
+		Vector128<byte> lastX = inputX.AsByte();
+		Vector128<byte> lastY = inputY.AsByte();
+		Substitute2(ref lastX, ref lastY, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, tableSize);
+		SM4Layout.Store4Arm64(ref destination, SM4Linear.XorTransform(x0, lastX.AsUInt32()), x3, x2, x1);
+		SM4Layout.Store4Arm64(ref Unsafe.Add(ref destination, 64), SM4Linear.XorTransform(y0, lastY.AsUInt32()), y3, y2, y1);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Substitute2
+	(
+		ref Vector128<byte> x, ref Vector128<byte> y,
+		Vector128<byte> s0, Vector128<byte> s1, Vector128<byte> s2, Vector128<byte> s3,
+		Vector128<byte> s4, Vector128<byte> s5, Vector128<byte> s6, Vector128<byte> s7,
+		Vector128<byte> s8, Vector128<byte> s9, Vector128<byte> s10, Vector128<byte> s11,
+		Vector128<byte> s12, Vector128<byte> s13, Vector128<byte> s14, Vector128<byte> s15,
+		Vector128<byte> tableSize
+	)
+	{
+		Vector128<byte> indexX = x;
+		Vector128<byte> indexY = y;
+
+		x = AdvSimd.Arm64.VectorTableLookup((s0, s1, s2, s3), indexX);
+		y = AdvSimd.Arm64.VectorTableLookup((s0, s1, s2, s3), indexY);
+		indexX -= tableSize;
+		indexY -= tableSize;
+		x = AdvSimd.Arm64.VectorTableLookupExtension(x, (s4, s5, s6, s7), indexX);
+		y = AdvSimd.Arm64.VectorTableLookupExtension(y, (s4, s5, s6, s7), indexY);
+		indexX -= tableSize;
+		indexY -= tableSize;
+		x = AdvSimd.Arm64.VectorTableLookupExtension(x, (s8, s9, s10, s11), indexX);
+		y = AdvSimd.Arm64.VectorTableLookupExtension(y, (s8, s9, s10, s11), indexY);
+		indexX -= tableSize;
+		indexY -= tableSize;
+		x = AdvSimd.Arm64.VectorTableLookupExtension(x, (s12, s13, s14, s15), indexX);
+		y = AdvSimd.Arm64.VectorTableLookupExtension(y, (s12, s13, s14, s15), indexY);
 	}
 }

@@ -19,46 +19,30 @@ internal readonly partial struct SM4Gfni
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void RoundLookahead(ref Vector128<byte> r0, Vector128<byte> r2, Vector128<byte> r3, ref Vector128<byte> input, Vector128<byte> nextKey)
 	{
-		Vector128<uint> prefix = (r0 ^ r2 ^ r3 ^ nextKey).AsUInt32();
-		Vector128<uint> x = Substitute(input).AsUInt32();
-		Vector128<uint> p = x ^ x.RotateLeftUInt32(2) ^ x.RotateLeftUInt32(10);
-		Vector128<uint> q = x.RotateLeftUInt32(18) ^ x.RotateLeftUInt32(24);
-		input = (prefix ^ p ^ q).AsByte();
-		r0 = (r0.AsUInt32() ^ p ^ q).AsByte();
+		Vector128<uint> others = (r2 ^ r3 ^ nextKey).AsUInt32();
+		Vector128<uint> next = SM4Linear.XorTransform(r0.AsUInt32() ^ others, Substitute(input).AsUInt32());
+		input = next.AsByte();
+		r0 = (others ^ next).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Process4V128(int count, ref uint rk, ref byte source, ref byte destination)
 	{
 		SM4Layout.Load4X86(count, ref source, 0, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3);
+		Vector128<byte> input = Vector128.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
 
-		if (Avx512F.VL.IsSupported)
+		for (int i = 0; i < 28; i += 4)
 		{
-			Vector128<byte> input = Vector128.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
-
-			for (int i = 0; i < 28; i += 4)
-			{
-				RoundLookahead(ref v0, v2, v3, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
-				RoundLookahead(ref v1, v3, v0, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 2)).AsByte());
-				RoundLookahead(ref v2, v0, v1, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 3)).AsByte());
-				RoundLookahead(ref v3, v1, v2, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 4)).AsByte());
-			}
-
-			RoundLookahead(ref v0, v2, v3, ref input, Vector128.Create(Unsafe.Add(ref rk, 29)).AsByte());
-			RoundLookahead(ref v1, v3, v0, ref input, Vector128.Create(Unsafe.Add(ref rk, 30)).AsByte());
-			RoundLookahead(ref v2, v0, v1, ref input, Vector128.Create(Unsafe.Add(ref rk, 31)).AsByte());
-			v3 = SM4Linear.XorTransform(v3.AsUInt32(), Substitute(input).AsUInt32()).AsByte();
+			RoundLookahead(ref v0, v2, v3, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
+			RoundLookahead(ref v1, v3, v0, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 2)).AsByte());
+			RoundLookahead(ref v2, v0, v1, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 3)).AsByte());
+			RoundLookahead(ref v3, v1, v2, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 4)).AsByte());
 		}
-		else
-		{
-			for (int i = 0; i < 32; i += 4)
-			{
-				Round(ref v0, v1, v2, v3, Vector128.Create(Unsafe.Add(ref rk, i)).AsByte());
-				Round(ref v1, v2, v3, v0, Vector128.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
-				Round(ref v2, v3, v0, v1, Vector128.Create(Unsafe.Add(ref rk, i + 2)).AsByte());
-				Round(ref v3, v0, v1, v2, Vector128.Create(Unsafe.Add(ref rk, i + 3)).AsByte());
-			}
-		}
+
+		RoundLookahead(ref v0, v2, v3, ref input, Vector128.Create(Unsafe.Add(ref rk, 29)).AsByte());
+		RoundLookahead(ref v1, v3, v0, ref input, Vector128.Create(Unsafe.Add(ref rk, 30)).AsByte());
+		RoundLookahead(ref v2, v0, v1, ref input, Vector128.Create(Unsafe.Add(ref rk, 31)).AsByte());
+		v3 = SM4Linear.XorTransform(v3.AsUInt32(), Substitute(input).AsUInt32()).AsByte();
 
 		SM4Layout.Store4X86(count, ref destination, 0, v0, v1, v2, v3);
 	}
