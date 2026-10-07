@@ -36,4 +36,40 @@ internal static class VectorMemoryExtensions
 			return Vector128.CreateScalar(input);
 		}
 	}
+
+	extension(Vector128<byte> value)
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void StorePartialUnsafe(ref byte destination, nuint elementOffset, int length)
+		{
+			Debug.Assert(length is > 0 and <= 16);
+			ref byte output = ref Unsafe.Add(ref destination, elementOffset);
+			ulong low = value.AsUInt64().ToScalar();
+
+			if (length >= 8)
+			{
+				// The second store ends at the last byte; its shuffle indices stay in range for the stored elements.
+				Vector128<byte> end = Vector128.ShuffleNative(value, Vector128<byte>.Indices + Vector128.Create((byte)(length - 8)));
+				Unsafe.WriteUnaligned(ref output, low);
+				Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, length - 8), end.AsUInt64().ToScalar());
+				return;
+			}
+
+			if (length >= 4)
+			{
+				Unsafe.WriteUnaligned(ref output, (uint)low);
+				Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, length - 4), (uint)(low >> (length - 4) * 8));
+				return;
+			}
+
+			if (length >= 2)
+			{
+				Unsafe.WriteUnaligned(ref output, (ushort)low);
+				Unsafe.Add(ref output, length - 1) = (byte)(low >> (length - 1) * 8);
+				return;
+			}
+
+			output = (byte)low;
+		}
+	}
 }
