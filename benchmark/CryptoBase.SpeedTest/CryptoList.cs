@@ -17,6 +17,12 @@ internal static class CryptoList
 	public const string Aes192Gcm = @"aes-192-gcm";
 	public const string Aes256Gcm = @"aes-256-gcm";
 	public const string SM4Gcm = @"sm4-gcm";
+	public const string Aes128Ccm = @"aes-128-ccm";
+	public const string Aes192Ccm = @"aes-192-ccm";
+	public const string Aes256Ccm = @"aes-256-ccm";
+	public const string SM4Ccm = @"sm4-ccm";
+	public const string Aes128Ccm8 = @"aes-128-ccm8";
+	public const string Aes256Ccm8 = @"aes-256-ccm8";
 	public const string ChaCha20Poly1305 = @"chacha20-ietf-poly1305";
 	public const string XChaCha20Poly1305 = @"xchacha20-ietf-poly1305";
 	public const string Aes128Xts = @"aes-128-xts";
@@ -37,6 +43,12 @@ internal static class CryptoList
 		Aes192Gcm,
 		Aes256Gcm,
 		SM4Gcm,
+		Aes128Ccm,
+		Aes192Ccm,
+		Aes256Ccm,
+		SM4Ccm,
+		Aes128Ccm8,
+		Aes256Ccm8,
 		ChaCha20Poly1305,
 		XChaCha20Poly1305,
 		Aes128Xts,
@@ -128,6 +140,42 @@ internal static class CryptoList
 			case SM4Gcm:
 			{
 				using GcmMode128<SM4Cipher> crypto = GcmMode128<SM4Cipher>.Create(key16);
+				test.TestAead(crypto);
+				break;
+			}
+			case Aes128Ccm:
+			{
+				using CcmMode128<AesCipher> crypto = CcmMode128<AesCipher>.Create(key16);
+				test.TestAead(crypto);
+				break;
+			}
+			case Aes192Ccm:
+			{
+				using CcmMode128<AesCipher> crypto = CcmMode128<AesCipher>.Create(key24);
+				test.TestAead(crypto);
+				break;
+			}
+			case Aes256Ccm:
+			{
+				using CcmMode128<AesCipher> crypto = CcmMode128<AesCipher>.Create(key32);
+				test.TestAead(crypto);
+				break;
+			}
+			case SM4Ccm:
+			{
+				using CcmMode128<SM4Cipher> crypto = CcmMode128<SM4Cipher>.Create(key16);
+				test.TestAead(crypto);
+				break;
+			}
+			case Aes128Ccm8:
+			{
+				using Ccm8Mode128<AesCipher> crypto = Ccm8Mode128<AesCipher>.Create(key16);
+				test.TestAead(crypto);
+				break;
+			}
+			case Aes256Ccm8:
+			{
+				using Ccm8Mode128<AesCipher> crypto = Ccm8Mode128<AesCipher>.Create(key32);
 				test.TestAead(crypto);
 				break;
 			}

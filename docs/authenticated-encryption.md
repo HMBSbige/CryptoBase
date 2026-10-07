@@ -6,6 +6,10 @@
 | --- | ---: | ---: | ---: |
 | `GcmMode128<AesCipher>` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
 | `GcmMode128<SM4Cipher>` | 16 bytes | 12 bytes | 16 bytes |
+| `CcmMode128<AesCipher>` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
+| `CcmMode128<SM4Cipher>` | 16 bytes | 12 bytes | 16 bytes |
+| `Ccm8Mode128<AesCipher>` | 16, 24, or 32 bytes | 12 bytes | 8 bytes |
+| `Ccm8Mode128<SM4Cipher>` | 16 bytes | 12 bytes | 8 bytes |
 | `ChaCha20Poly1305Cipher` | 32 bytes | 12 bytes | 16 bytes |
 | `XChaCha20Poly1305Cipher` | 32 bytes | 24 bytes | 16 bytes |
 

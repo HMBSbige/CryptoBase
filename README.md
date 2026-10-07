@@ -99,10 +99,10 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| AES-CCM | ⏳ |
+| AES-CCM | ✅ |
 | AES-GCM | ✅ |
 | ChaCha20-Poly1305 | ✅ |
-| SM4-CCM | ⏳ |
+| SM4-CCM | ✅ |
 | SM4-GCM | ✅ |
 | XChaCha20-Poly1305 | ✅ |
 

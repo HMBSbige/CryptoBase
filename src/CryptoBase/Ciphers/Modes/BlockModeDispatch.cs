@@ -1,5 +1,6 @@
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
+using CryptoBase.Ciphers.Modes.Ccm;
 using CryptoBase.Ciphers.Modes.Ctr;
 using CryptoBase.Ciphers.Modes.Gcm;
 using CryptoBase.Ciphers.Modes.Xts;
@@ -88,6 +89,47 @@ internal static class BlockModeDispatch
 		}
 
 		return false;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static bool TryEncryptCcm<TCipher, TTag>(TCipher cipher, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData) where TCipher : IBlockEncryptor<TCipher> where TTag : struct, ICcmTag
+	{
+		if (!IsAesVectorSupported || cipher is not AesCipher aes)
+		{
+			return false;
+		}
+
+		if (AesCipherX86.IsSupported)
+		{
+			CcmUtils.Encrypt<TTag, AesX86CcmBlockEncryptor>(new AesX86CcmBlockEncryptor(in aes.X86), nonce, source, destination, tag, associatedData);
+		}
+		else
+		{
+			CcmUtils.Encrypt<TTag, AesArmCcmBlockEncryptor>(new AesArmCcmBlockEncryptor(in aes.Arm), nonce, source, destination, tag, associatedData);
+		}
+
+		return true;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static bool TryDecryptCcm<TCipher, TTag>(TCipher cipher, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData, out bool authenticated) where TCipher : IBlockEncryptor<TCipher> where TTag : struct, ICcmTag
+	{
+		if (!IsAesVectorSupported || cipher is not AesCipher aes)
+		{
+			authenticated = false;
+			return false;
+		}
+
+		if (AesCipherX86.IsSupported)
+		{
+			authenticated = CcmUtils.TryDecrypt<TTag, AesX86CcmBlockEncryptor>(new AesX86CcmBlockEncryptor(in aes.X86), nonce, source, tag, destination, associatedData);
+		}
+		else
+		{
+			authenticated = CcmUtils.TryDecrypt<TTag, AesArmCcmBlockEncryptor>(new AesArmCcmBlockEncryptor(in aes.Arm), nonce, source, tag, destination, associatedData);
+		}
+
+		return true;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
