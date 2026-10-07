@@ -67,6 +67,37 @@ public class HkdfTest
 	}
 
 	[Test]
+	public async Task ExpandMatchesPlatformAcrossMessageBoundaries()
+	{
+		await VerifyExpandSweep<Sha1HashAlgorithm>(HashAlgorithmName.SHA1);
+		await VerifyExpandSweep<Sha256HashAlgorithm>(HashAlgorithmName.SHA256);
+		await VerifyExpandSweep<Sha384HashAlgorithm>(HashAlgorithmName.SHA384);
+		await VerifyExpandSweep<Sha512HashAlgorithm>(HashAlgorithmName.SHA512);
+	}
+
+	private static async Task VerifyExpandSweep<THash>(HashAlgorithmName name) where THash : unmanaged, IHmacHashCore<THash>
+	{
+		int hashLength = THash.HashLength;
+		byte[] prk = CreateDeterministicSource(hashLength);
+		IEnumerable<int> infoLengths = Enumerable.Range(0, 141).Append(300);
+
+		foreach (int infoLength in infoLengths)
+		{
+			byte[] info = CreateDeterministicSource(infoLength);
+
+			foreach (int outputLength in new[] { 1, hashLength - 1, hashLength, hashLength + 1, 2 * hashLength + 3 })
+			{
+				byte[] expected = new byte[outputLength];
+				byte[] actual = new byte[outputLength];
+				HKDF.Expand(name, prk, expected, info);
+				Hkdf.Expand<THash>(prk, actual, info);
+
+				await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+			}
+		}
+	}
+
+	[Test]
 	public async Task RejectsInvalidLengthsWithoutWriting()
 	{
 		int hashLength = HashAlgorithm<Sha256HashAlgorithm>.HashLength;
