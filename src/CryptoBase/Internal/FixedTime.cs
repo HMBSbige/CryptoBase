@@ -16,6 +16,15 @@ internal static class FixedTime
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool Equals16(Vector128<byte> left, Vector128<byte> right)
 	{
-		return (left ^ right) == Vector128<byte>.Zero;
+		Vector128<byte> difference = left ^ right;
+
+		// The software fallback of == returns at the first unequal element.
+		if (Vector128.IsHardwareAccelerated)
+		{
+			return difference == Vector128<byte>.Zero;
+		}
+
+		Vector128<ulong> halves = difference.AsUInt64();
+		return (halves.GetElement(0) | halves.GetElement(1)) is 0;
 	}
 }
