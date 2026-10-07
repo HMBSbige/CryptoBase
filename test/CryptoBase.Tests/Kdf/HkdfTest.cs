@@ -1,9 +1,11 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha1;
+using CryptoBase.Hashes.Sha224;
 using CryptoBase.Hashes.Sha256;
 using CryptoBase.Hashes.Sha384;
 using CryptoBase.Hashes.Sha512;
+using CryptoBase.Hashes.SM3;
 using CryptoBase.Kdf;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
@@ -12,6 +14,42 @@ namespace CryptoBase.Tests.Kdf;
 
 public class HkdfTest
 {
+	[Test]
+	[Arguments(@"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b", @"000102030405060708090a0b0c", @"f0f1f2f3f4f5f6f7f8f9", @"e0d6f7b0bd056327b7659f1f39ad850561fbcf4fb10fb58e88eafa55cf7cd01e", @"c69fe91b7aaee2dd5718d72dcaee0cce93f1b8e41f792da51261b6a517e68b36ed2c595572b01dfa359b")]
+	public Task SM3Vector(string ikmHex, string saltHex, string infoHex, string prkHex, string okmHex)
+	{
+		return VerifyVector<SM3HashAlgorithm>(ikmHex, saltHex, infoHex, prkHex, okmHex);
+	}
+
+	[Test]
+	[Arguments(@"0b2a4a6989a8c8e70726466585a4c4e30322426181a0c0dfff1e3e5d7d9cbcdbfb1a3a597998b8d7f71636557594b4d3f31232517190b0cfef0e2e4d6d8caccbeb0a2a496988a8c7e7", @"1d3c5c7b9bbadaf91938587797b6d6f51534547393b2d2f11130506f8faeceed0d2c4c6b8b", @"2f4e6e8dadccec0b2b4a6a89a9c8e80727466685a5c4e4", @"98b33a183bca36679809f07390e51baddbf14522266a80754089a581", @"3ff9d24f99fab73a1297516d7fe40f884e33b69faf98504b0746328f6331fa434eaed06972b2950b5c4facf667a155732f7d41bb14bcc628795e60a42f4b4c18c05011fc6d5650")]
+	public Task Sha224Vector(string ikmHex, string saltHex, string infoHex, string prkHex, string okmHex)
+	{
+		return VerifyVector<Sha224HashAlgorithm>(ikmHex, saltHex, infoHex, prkHex, okmHex);
+	}
+
+	private static async Task VerifyVector<THash>(string ikmHex, string saltHex, string infoHex, string prkHex, string okmHex) where THash : unmanaged, IHmacHashCore<THash>
+	{
+		byte[] ikm = Convert.FromHexString(ikmHex);
+		byte[] salt = Convert.FromHexString(saltHex);
+		byte[] info = Convert.FromHexString(infoHex);
+		byte[] expectedPrk = Convert.FromHexString(prkHex);
+		byte[] expectedOkm = Convert.FromHexString(okmHex);
+		byte[] prk = new byte[expectedPrk.Length];
+
+		int length = Hkdf.Extract<THash>(ikm, salt, prk);
+		await Assert.That(length).IsEqualTo(expectedPrk.Length);
+		await Assert.That(prk).IsEquivalentTo(expectedPrk, CollectionOrdering.Matching);
+
+		byte[] expanded = new byte[expectedOkm.Length];
+		Hkdf.Expand<THash>(prk, expanded, info);
+		await Assert.That(expanded).IsEquivalentTo(expectedOkm, CollectionOrdering.Matching);
+
+		byte[] derived = new byte[expectedOkm.Length];
+		Hkdf.DeriveKey<THash>(ikm, derived, salt, info);
+		await Assert.That(derived).IsEquivalentTo(expectedOkm, CollectionOrdering.Matching);
+	}
+
 	[Test]
 	public async Task ExpandMatchesPlatformAcrossMessageBoundaries()
 	{

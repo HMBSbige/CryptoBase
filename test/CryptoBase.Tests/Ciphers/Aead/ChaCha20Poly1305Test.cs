@@ -21,7 +21,9 @@ public class ChaCha20Poly1305Test
 		using ChaCha20Poly1305 expected = new(key);
 		using ChaCha20Poly1305Cipher crypto = new(key);
 
-		for (int length = 0; length <= 300; ++length)
+		int[] lengths = [.. Enumerable.Range(0, 301), 1031, 4097];
+
+		foreach (int length in lengths)
 		{
 			byte[] plaintext = TestUtils.CreateDeterministicSource(length);
 			byte[] expectedCiphertext = new byte[length];
