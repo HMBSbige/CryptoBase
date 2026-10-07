@@ -3,7 +3,7 @@ using CryptoBase.Ciphers.Modes.Ctr;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal static class AesGcmFusion
+internal static partial class AesGcmFusion
 {
 	internal static bool IsSupported
 	{
@@ -14,14 +14,21 @@ internal static class AesGcmFusion
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool ShouldFuse(int length)
 	{
-		return IsSupported && length >= 64 && (!GHashX86.IsSupported512 || length < GHashX86.Vector512Threshold);
+		return IsSupported && (AesCipherX86.IsSupported || length >= 64) && (!GHashX86.IsSupported512 || length < GHashX86.Vector512Threshold);
 	}
 
 	internal static void Encrypt(AesCipher aes, ref GHashKey hashKey, scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData)
 	{
-		Debug.Assert(IsSupported && source.Length >= 64);
+		Debug.Assert(ShouldFuse(source.Length));
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, GcmMode128<AesCipher>.NonceSize, GcmMode128<AesCipher>.TagSize);
 		destination = destination.Slice(0, source.Length);
+
+		if (AesCipherX86.IsSupported)
+		{
+			EncryptFinalBlocks(aes, ref hashKey, ref nonce.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length);
+			return;
+		}
+
 		Vector128<byte> counter = Gcm.Begin(nonce, out Vector128<byte> tagBuffer);
 		GHash hash = GHash.Create(ref hashKey);
 

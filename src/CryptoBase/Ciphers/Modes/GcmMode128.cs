@@ -1,3 +1,4 @@
+using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes.Ctr;
 using CryptoBase.Ciphers.Modes.Gcm;
 using static CryptoBase.Ciphers.Modes.Gcm.Gcm;
@@ -121,7 +122,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 
 		try
 		{
-			if (BlockModeDispatch.ShouldBatchGcmTagMask(_blockCipher) && source.Length is > 0 and <= MaxTagMaskBatchLength)
+			if (BlockModeDispatch.ShouldBatchGcmTagMask(_blockCipher) && source.Length is > 0 and <= MaxTagMaskBatchLength || ShouldFuseDecryption(source.Length))
 			{
 				return TryDecryptWithTagMask(ref hash, j0, ref source.GetReference(), source.Length, ref tag.GetReference(), ref destination.GetReference(), ref associatedData.GetReference(), associatedData.Length);
 			}
@@ -187,16 +188,30 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		}
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private bool ShouldFuseDecryption(int length)
+	{
+		return X86Base.X64.IsSupported && AesCipherX86.IsSupported && GHashX86.IsSupported && length <= AesGcmFusion.MaxFusedDecryptionLength && _blockCipher is AesCipher;
+	}
+
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private bool TryDecryptWithTagMask(ref GHash hash, Vector128<byte> j0, ref byte sourceStart, int length, ref byte tagStart, ref byte destinationStart, ref byte associatedDataStart, int associatedDataLength)
 	{
-		Debug.Assert(length is > 0 and <= MaxTagMaskBatchLength);
+		Debug.Assert(length is >= 0 and <= MaxTagMaskBatchLength);
 
 		ReadOnlySpan<byte> source = MemoryMarshal.CreateReadOnlySpan(ref sourceStart, length);
 		ReadOnlySpan<byte> tag = MemoryMarshal.CreateReadOnlySpan(ref tagStart, TagSize);
 		Span<byte> destination = MemoryMarshal.CreateSpan(ref destinationStart, length);
 		ReadOnlySpan<byte> associatedData = MemoryMarshal.CreateReadOnlySpan(ref associatedDataStart, associatedDataLength);
+
+		if (X86Base.X64.IsSupported && AesCipherX86.IsSupported && GHashX86.IsSupported && _blockCipher is AesCipher aes)
+		{
+			Debug.Assert(length <= AesGcmFusion.MaxFusedDecryptionLength);
+			Vector128<byte> associatedDataBlock = AesGcmFusion.HashAssociatedData(ref hash, associatedData, true);
+			Vector128<byte> lengthBlock = CreateLengthBlock(associatedDataLength, length);
+			return AesGcmX86.Decrypt(in aes.X86, j0.WithElement(15, (byte)2), j0, ref sourceStart, ref destinationStart, length, ref tagStart, ref _hashKey, hash.Accumulator, associatedDataBlock, lengthBlock);
+		}
 
 		Unsafe.SkipInit(out InlineArray2048<byte> storage);
 		Span<byte> keyStream = storage.AsSpan();

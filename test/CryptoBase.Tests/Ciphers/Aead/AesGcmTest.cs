@@ -43,6 +43,42 @@ public class AesGcmTest
 		}
 	}
 
+	[Test]
+	[Arguments(0)]
+	[Arguments(13)]
+	public async Task EveryLengthMatchesBclInPlaceAndRejectsTamperedTags(int associatedDataLength)
+	{
+		byte[] key = CreateDeterministicSource(16);
+		using GcmMode128<AesCipher> gcm = GcmMode128<AesCipher>.Create(key);
+		using AesGcm reference = new(key, GcmMode128<AesCipher>.TagSize);
+		byte[] nonce = CreateDeterministicSource(12);
+		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
+
+		for (int length = 0; length <= 300; ++length)
+		{
+			await AssertMessageMatchesBcl(gcm, reference, nonce, length, associatedDataLength);
+
+			byte[] plaintext = CreateDeterministicSource(length);
+			byte[] expected = new byte[length];
+			byte[] expectedTag = new byte[16];
+			reference.Encrypt(nonce, plaintext, expected, expectedTag, associatedData);
+
+			byte[] buffer = plaintext.ToArray();
+			byte[] tag = new byte[16];
+			gcm.Encrypt(nonce, buffer, buffer, tag, associatedData);
+			await Assert.That(buffer).IsEquivalentTo(expected, CollectionOrdering.Matching);
+			await Assert.That(tag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
+			await Assert.That(gcm.TryDecrypt(nonce, buffer, tag, buffer, associatedData)).IsTrue();
+			await Assert.That(buffer).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
+
+			tag[length % 16] ^= 1;
+			byte[] rejected = new byte[length];
+			PrepareDestination(rejected);
+			await Assert.That(gcm.TryDecrypt(nonce, expected, tag, rejected, associatedData)).IsFalse();
+			await Assert.That(rejected).All(static value => value is 0);
+		}
+	}
+
 	private static async Task AssertMessageMatchesBcl(GcmMode128<AesCipher> gcm, AesGcm reference, byte[] nonce, int messageLength, int associatedDataLength)
 	{
 		byte[] plaintext = CreateDeterministicSource(messageLength);

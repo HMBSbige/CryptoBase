@@ -14,7 +14,7 @@ public class AesGcmFusionTest
 {
 	public static IEnumerable<int> MessageLengths()
 	{
-		return [63, 64, 65, 127, 128, 129, 130, 131, 132, 136, 137, 191, 192, 193, 255, 256, 257, 511, 512, 513, 1023, 1024, 1025, 1087, 1088, 1089, 1151, 1152, 1153, 2047, 2048, 2049, 4096, 4097, 65536, 65537];
+		return [0, 1, 15, 16, 17, 47, 48, 49, 63, 64, 65, 127, 128, 129, 130, 131, 132, 136, 137, 191, 192, 193, 255, 256, 257, 511, 512, 513, 1023, 1024, 1025, 1087, 1088, 1089, 1151, 1152, 1153, 2047, 2048, 2049, 4096, 4097, 65536, 65537];
 	}
 
 	[Test]
@@ -48,7 +48,7 @@ public class AesGcmFusionTest
 		await AssertOutput(tag, 7, expectedTag);
 
 		// Exercise the internal entry point as well as public dispatch.
-		if (length >= 64 && AesGcmFusion.IsSupported)
+		if (AesGcmFusion.IsSupported)
 		{
 			PrepareDestination(destination);
 			PrepareDestination(tag);
@@ -67,7 +67,7 @@ public class AesGcmFusionTest
 
 	public static IEnumerable<(int KeyLength, int Length, int AssociatedDataLength)> OverlappingAssociatedDataCases()
 	{
-		return [(16, 65, 4097), (24, 4097, 65), (32, 16385, 4097), (16, 513, 127), (24, 513, 128), (32, 513, 129)];
+		return [(16, 17, 16), (16, 63, 1), (24, 31, 15), (24, 63, 17), (32, 16, 16), (32, 63, 16), (16, 65, 4097), (24, 4097, 65), (32, 16385, 4097), (16, 513, 127), (24, 513, 128), (32, 513, 129)];
 	}
 
 	[Test]
@@ -76,7 +76,7 @@ public class AesGcmFusionTest
 	{
 		(int keyLength, int length, int associatedDataLength) = scenario;
 		const int destinationOffset = 7;
-		const int associatedDataOffset = 3;
+		int associatedDataOffset = associatedDataLength is 1 ? destinationOffset : 3;
 		byte[] key = CreateDeterministicSource(keyLength);
 		using GcmMode128<AesCipher> cipher = GcmMode128<AesCipher>.Create(key);
 		byte[] plaintext = CreateDeterministicSource(length);
@@ -98,7 +98,7 @@ public class AesGcmFusionTest
 		await Assert.That(buffer).IsEquivalentTo(expectedBuffer, CollectionOrdering.Matching);
 		await Assert.That(actualTag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
 
-		if (AesGcmFusion.IsSupported)
+		if (AesGcmFusion.ShouldFuse(length))
 		{
 			originalBuffer.CopyTo(buffer, 0);
 			PrepareDestination(actualTag);
