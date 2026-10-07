@@ -15,5 +15,8 @@
   ],
   "labels": [
     "Automatic"
-  ]
+  ],
+  "git-submodules": {
+    "enabled": true
+  }
 }

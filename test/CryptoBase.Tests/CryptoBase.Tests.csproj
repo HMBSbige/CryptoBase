@@ -8,4 +8,8 @@
     <ProjectReference Include="..\..\src\CryptoBase\CryptoBase.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AssemblyMetadata Include="WycheproofTestVectors" Value="$(MSBuildThisFileDirectory)../wycheproof/testvectors_v1" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,4 @@
+[submodule "test/wycheproof"]
+	path = test/wycheproof
+	url = https://github.com/C2SP/wycheproof.git
+	shallow = true

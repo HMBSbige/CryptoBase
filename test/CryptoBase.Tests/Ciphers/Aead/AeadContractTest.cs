@@ -37,7 +37,7 @@ public abstract class AeadContractTest<T>(int keyLength) where T : IAeadCipher<T
 	[Test]
 	[MatrixDataSource]
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]
-	public async Task InvalidArgumentsDoNotWriteAndAllowRetry([Matrix(0, 1, 257, 4097)] int length)
+	public async Task InvalidArgumentsDoNotWriteAndAllowRetry([Matrix(0, 1, 16, 257, 4096, 4097)] int length)
 	{
 		using T cipher = T.Create(CreateDeterministicSource(keyLength));
 		byte[] nonce = CreateDeterministicSource(T.NonceSize);
@@ -68,8 +68,41 @@ public abstract class AeadContractTest<T>(int keyLength) where T : IAeadCipher<T
 	}
 
 	[Test]
+	[Arguments(-1)]
+	[Arguments(1)]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]
+	public async Task InvalidTagLengthsAreRejectedBeforeWriting(int tagLengthDelta)
+	{
+		using T cipher = T.Create(CreateDeterministicSource(keyLength));
+		byte[] nonce = CreateDeterministicSource(T.NonceSize);
+		byte[] aad = CreateDeterministicSource(19);
+		byte[] plaintext = CreateDeterministicSource(73);
+		byte[] ciphertext = new byte[plaintext.Length];
+		byte[] tag = new byte[T.TagSize];
+		cipher.Encrypt(nonce, plaintext, ciphertext, tag, aad);
+
+		byte[] invalidTag = new byte[T.TagSize + tagLengthDelta];
+		PrepareDestination(invalidTag);
+		byte[] buffer = plaintext.ToArray();
+		await Assert.That(() => cipher.Encrypt(nonce, buffer, buffer, invalidTag, aad)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("tag");
+		await Assert.That(buffer).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
+		await Assert.That(invalidTag).All(static x => x is DestinationSentinel);
+
+		// The valid tag prefix must not authenticate a truncated or extended tag.
+		tag.AsSpan().Slice(0, Math.Min(tag.Length, invalidTag.Length)).CopyTo(invalidTag);
+		byte[] invalidTagCopy = invalidTag.ToArray();
+		ciphertext.CopyTo(buffer, 0);
+		await Assert.That(() => cipher.TryDecrypt(nonce, buffer, invalidTag, buffer, aad)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("tag");
+		await Assert.That(buffer).IsEquivalentTo(ciphertext, CollectionOrdering.Matching);
+		await Assert.That(invalidTag).IsEquivalentTo(invalidTagCopy, CollectionOrdering.Matching);
+
+		await Assert.That(cipher.TryDecrypt(nonce, buffer, tag, buffer, aad)).IsTrue();
+		await Assert.That(buffer).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
+	}
+
+	[Test]
 	[MatrixDataSource]
-	public async Task SuccessfulOperationsPreserveTailAndSupportInPlace([Matrix(0, 1, 257, 4097)] int length)
+	public async Task SuccessfulOperationsPreserveTailAndSupportInPlace([Matrix(0, 1, 16, 257, 4096, 4097)] int length)
 	{
 		using T cipher = T.Create(CreateDeterministicSource(keyLength));
 		byte[] nonce = CreateDeterministicSource(T.NonceSize);
@@ -127,7 +160,7 @@ public abstract class AeadContractTest<T>(int keyLength) where T : IAeadCipher<T
 
 	[Test]
 	[MatrixDataSource]
-	public async Task AuthenticationFailureClearsOnlyOutputPrefix([Matrix(0, 1, 257, 4097)] int length)
+	public async Task AuthenticationFailureClearsOnlyOutputPrefix([Matrix(0, 1, 16, 257, 4096, 4097)] int length)
 	{
 		using T cipher = T.Create(CreateDeterministicSource(keyLength));
 		byte[] nonce = CreateDeterministicSource(T.NonceSize);

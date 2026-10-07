@@ -6,18 +6,6 @@ namespace CryptoBase.Tests.Hashes.MD5;
 
 public class MD5Test
 {
-	/// <summary>
-	/// RFC 1321, Appendix A.5.
-	/// </summary>
-	[Test]
-	[Arguments("", "d41d8cd98f00b204e9800998ecf8427e")]
-	[Arguments("abc", "900150983cd24fb0d6963f7d28e17f72")]
-	[Arguments("12345678901234567890123456789012345678901234567890123456789012345678901234567890", "57edf4a22be3c955ac49da2e2107b67a")]
-	public Task KnownVectors(string value, string expected)
-	{
-		return VerifyHashVector<MD5HashAlgorithm>(value, expected, 16, 64);
-	}
-
 	[Test]
 	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(Hash64BlockAndPaddingLengths))]
 	public Task BlockBoundaries(int length)

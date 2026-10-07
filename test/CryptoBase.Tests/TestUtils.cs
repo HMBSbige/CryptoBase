@@ -67,45 +67,6 @@ public static class TestUtils
 		await Assert.That(destination.AsMemory(offset + expected.Length)).All(static value => value is DestinationSentinel);
 	}
 
-	public static async Task AeadTest<T>
-	(
-		this T crypto,
-		string nonceHex, string associatedDataHex, string tagHex,
-		string plainHex, string cipherHex
-	) where T : IAeadCipher<T>
-	{
-		using (crypto)
-		{
-			byte[] nonce = Convert.FromHexString(nonceHex);
-			byte[] associatedData = Convert.FromHexString(associatedDataHex);
-			byte[] tag = Convert.FromHexString(tagHex);
-			byte[] plain = Convert.FromHexString(plainHex);
-			byte[] cipher = Convert.FromHexString(cipherHex);
-			byte[] outPlain = new byte[plain.Length];
-			byte[] outTag = new byte[tag.Length];
-
-			using (Assert.Multiple())
-			{
-				await Assert.That(T.NonceSize).IsEqualTo(nonce.Length);
-				await Assert.That(T.TagSize).IsEqualTo(tag.Length);
-			}
-
-			crypto.Encrypt(nonce, plain, outPlain, outTag, associatedData);
-
-			using (Assert.Multiple())
-			{
-				await Assert.That(outPlain).IsEquivalentTo(cipher, CollectionOrdering.Matching);
-				await Assert.That(outTag).IsEquivalentTo(tag, CollectionOrdering.Matching);
-			}
-
-			using (Assert.Multiple())
-			{
-				await Assert.That(crypto.TryDecrypt(nonce, cipher, tag, outPlain, associatedData)).IsTrue();
-				await Assert.That(outPlain).IsEquivalentTo(plain, CollectionOrdering.Matching);
-			}
-		}
-	}
-
 	public static async Task VerifyStreamVector(IStreamCipher crypto, byte[] source, byte[] expected)
 	{
 		using (crypto)

@@ -15,31 +15,6 @@ public class AesVpaesTest
 		}
 	}
 
-	/// <summary>
-	/// https://csrc.nist.gov/csrc/media/publications/fips/197/final/documents/fips-197.pdf
-	/// </summary>
-	[Test]
-	[Arguments("000102030405060708090a0b0c0d0e0f", "00112233445566778899aabbccddeeff", "69c4e0d86a7b0430d8cdb78070b4c55a")]
-	[Arguments("000102030405060708090a0b0c0d0e0f1011121314151617", "00112233445566778899aabbccddeeff", "dda97ca4864cdfe06eaf70a0ec0d7191")]
-	[Arguments("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "00112233445566778899aabbccddeeff", "8ea2b7ca516745bfeafc49904b496089")]
-	[Arguments("80000000000000000000000000000000", "00000000000000000000000000000000", "0EDD33D3C621E546455BD8BA1418BEC8")]
-	[Arguments("000000000000000000000000000000000000000000000000", "80000000000000000000000000000000", "6CD02513E8D4DC986B4AFE087A60BD0C")]
-	[Arguments("0000000000000000000000000000000000000000000000000000000000000000", "80000000000000000000000000000000", "DDC6BF790C15760D8D9AEB6F9A75FD4E")]
-	public async Task StandardVectorEncryptsAndDecrypts(string keyHex, string plaintextHex, string ciphertextHex)
-	{
-		byte[] plain = Convert.FromHexString(plaintextHex);
-		byte[] cipher = Convert.FromHexString(ciphertextHex);
-
-		using AesCipherVpaes crypto = AesCipherVpaes.Create(Convert.FromHexString(keyHex));
-
-		byte[] actual = new byte[16];
-		crypto.EncryptBlocks(plain, actual);
-		await Assert.That(actual).IsEquivalentTo(cipher, CollectionOrdering.Matching);
-
-		crypto.DecryptBlocks(cipher, actual);
-		await Assert.That(actual).IsEquivalentTo(plain, CollectionOrdering.Matching);
-	}
-
 	[Test]
 	[MatrixDataSource]
 	public async Task UnalignedBatchesAndInPlaceTransformsMatchBcl([Matrix(16, 24, 32)] int keyLength, [Matrix(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 63, 64, 65, 257)] int blocks)

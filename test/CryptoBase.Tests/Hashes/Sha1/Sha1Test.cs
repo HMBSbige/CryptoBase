@@ -7,15 +7,6 @@ namespace CryptoBase.Tests.Hashes.Sha1;
 public class Sha1Test
 {
 	[Test]
-	[Arguments("", "da39a3ee5e6b4b0d3255bfef95601890afd80709")]
-	[Arguments("abc", "a9993e364706816aba3e25717850c26c9cd0d89d")]
-	[Arguments("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", "a49b2446a02c645bf419f995b67091253a04a259")]
-	public Task KnownVectors(string value, string expected)
-	{
-		return VerifyHashVector<Sha1HashAlgorithm>(value, expected, 20, 64);
-	}
-
-	[Test]
 	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(Hash64BlockAndPaddingLengths))]
 	public Task BlockBoundaries(int length)
 	{

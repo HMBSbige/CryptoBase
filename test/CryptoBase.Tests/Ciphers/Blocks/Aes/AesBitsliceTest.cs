@@ -15,35 +15,6 @@ public class AesBitsliceTest
 		}
 	}
 
-	/// <summary>
-	/// https://csrc.nist.gov/csrc/media/publications/fips/197/final/documents/fips-197.pdf
-	/// </summary>
-	[Test]
-	[Arguments("000102030405060708090a0b0c0d0e0f", "69c4e0d86a7b0430d8cdb78070b4c55a")]
-	[Arguments("000102030405060708090a0b0c0d0e0f1011121314151617", "dda97ca4864cdfe06eaf70a0ec0d7191")]
-	[Arguments("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "8ea2b7ca516745bfeafc49904b496089")]
-	public async Task StandardVectorEncryptsAndDecrypts(string keyHex, string ciphertextHex)
-	{
-		byte[] plain = Convert.FromHexString("00112233445566778899aabbccddeeff");
-		byte[] cipher = Convert.FromHexString(ciphertextHex);
-		using AesCipherBitslice crypto = AesCipherBitslice.Create(Convert.FromHexString(keyHex));
-
-		byte[] source = new byte[8 * 16];
-		byte[] expected = new byte[source.Length];
-
-		for (int block = 0; block < 8; ++block)
-		{
-			plain.CopyTo(source, block * 16);
-			cipher.CopyTo(expected, block * 16);
-		}
-
-		byte[] actual = new byte[source.Length];
-		crypto.EncryptBlocks(source, actual);
-		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
-		crypto.DecryptBlocks(expected, actual);
-		await Assert.That(actual).IsEquivalentTo(source, CollectionOrdering.Matching);
-	}
-
 	[Test]
 	[MatrixDataSource]
 	public async Task UnalignedBatchesAndInPlaceTransformsMatchBcl([Matrix(16, 24, 32)] int keyLength, [Matrix(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 65)] int blocks)

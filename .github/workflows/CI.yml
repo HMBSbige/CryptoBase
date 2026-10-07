@@ -39,6 +39,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          submodules: true
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.NET_VERSION }}
