@@ -28,7 +28,7 @@ internal static class SM4KeySchedule
 		uint k2 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 8))) ^ 0x677d9197;
 		uint k3 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 12))) ^ 0xb27022dc;
 
-		if (SM4Neon.IsSupported && !SM4ArmAes.IsSupported)
+		if (SM4Neon.IsSupported)
 		{
 			InitRoundKeysNeon(k0, k1, k2, k3, ref rk);
 			return;
@@ -85,11 +85,6 @@ internal static class SM4KeySchedule
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint SubByteKey(uint x)
 	{
-		if (SM4ArmAes.IsSupported)
-		{
-			return SM4ArmAes.SubByte(x);
-		}
-
 		if (SM4Gfni.IsSupported)
 		{
 			return SM4Gfni.SubByte(x);
