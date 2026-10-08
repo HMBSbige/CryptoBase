@@ -99,7 +99,7 @@ public static class Hkdf
 
 		try
 		{
-			hmac.Initialize(prk);
+			hmac.Initialize(prk, output.Length > hashLength);
 
 			while (!remainingOutput.IsEmpty)
 			{
@@ -154,7 +154,7 @@ public static class Hkdf
 
 		try
 		{
-			hmac.Initialize(prk);
+			hmac.Initialize(prk, output.Length > hashLength);
 
 			while (!remainingOutput.IsEmpty)
 			{

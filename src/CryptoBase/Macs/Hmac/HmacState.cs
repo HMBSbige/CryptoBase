@@ -1,3 +1,4 @@
+using CryptoBase.Hashes.Blake2b;
 using CryptoBase.Hashes.MD5;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha224;
@@ -29,7 +30,8 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 		get => typeof(THash) == typeof(Sha256HashAlgorithm) || typeof(THash) == typeof(Sha224HashAlgorithm)
 				|| typeof(THash) == typeof(Sha512HashAlgorithm) || typeof(THash) == typeof(Sha384HashAlgorithm)
 				|| typeof(THash) == typeof(Sha1HashAlgorithm) || typeof(THash) == typeof(MD5HashAlgorithm)
-				|| typeof(THash) == typeof(SM3HashAlgorithm);
+				|| typeof(THash) == typeof(SM3HashAlgorithm)
+				|| typeof(THash) == typeof(Blake2b512HashAlgorithm) || typeof(THash) == typeof(Blake2b256HashAlgorithm);
 	}
 
 	private THash _innerSeed;
@@ -37,7 +39,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	private THash _innerState;
 
 	[SkipLocalsInit]
-	internal void Initialize(ReadOnlySpan<byte> key)
+	internal void Initialize(ReadOnlySpan<byte> key, bool reuseSeeds)
 	{
 		using CryptoBuffer<byte> keyBlock = new(stackalloc byte[THash.HmacBlockSize + (UseDirectKeyPads ? THash.HashLength : 0)]);
 
@@ -52,7 +54,26 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 			InitializeSeeds(keyBlock.Span, out _innerSeed, out _outerSeed);
 		}
 
+		if (reuseSeeds)
+		{
+			PrecompressKeyBlock(ref _innerSeed);
+			PrecompressKeyBlock(ref _outerSeed);
+		}
+
 		_innerState = _innerSeed;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void PrecompressKeyBlock(ref THash seed)
+	{
+		if (typeof(THash) == typeof(Blake2b512HashAlgorithm))
+		{
+			Unsafe.As<THash, Blake2b512HashAlgorithm>(ref seed).PrecompressBuffer();
+		}
+		else if (typeof(THash) == typeof(Blake2b256HashAlgorithm))
+		{
+			Unsafe.As<THash, Blake2b256HashAlgorithm>(ref seed).PrecompressBuffer();
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

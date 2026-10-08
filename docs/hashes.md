@@ -4,6 +4,8 @@
 
 | Algorithm | Type |
 | --- | --- |
+| BLAKE2b-256 | `Blake2b256HashAlgorithm` |
+| BLAKE2b-512 | `Blake2b512HashAlgorithm` |
 | MD5 | `MD5HashAlgorithm` |
 | SHA-1 | `Sha1HashAlgorithm` |
 | SHA-224 | `Sha224HashAlgorithm` |

@@ -33,6 +33,7 @@ public class VectorBitOperationsExtensionsTest
 	}
 
 	[Test]
+	[Arguments((byte)1)]
 	[Arguments((byte)8)]
 	[Arguments((byte)16)]
 	[Arguments((byte)24)]

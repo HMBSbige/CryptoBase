@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Abstractions.Macs;
+using CryptoBase.Hashes.Blake2b;
 using CryptoBase.Hashes.Sha256;
 using CryptoBase.Macs.Hmac;
 using System.Buffers.Binary;
@@ -108,6 +109,43 @@ public class HmacTest
 
 		await Assert.That(written).IsEqualTo(Sha256HashAlgorithm.HashLength);
 		await Assert.That(buffer.AsSpan().Slice(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	public async Task Blake2bPrecompressedKeyBlocksMatchOneShot()
+	{
+		await VerifyReusedInstance<Blake2b512HashAlgorithm>();
+		await VerifyReusedInstance<Blake2b256HashAlgorithm>();
+	}
+
+	private static async Task VerifyReusedInstance<THash>() where THash : unmanaged, IHmacHashCore<THash>
+	{
+		byte[] key = CreateDeterministicSource(32);
+		byte[] source = CreateDeterministicSource(300);
+		byte[] expected = new byte[HmacAlgorithm<THash>.MacLength];
+		byte[] actual = new byte[HmacAlgorithm<THash>.MacLength];
+		using HmacAlgorithm<THash> mac = HmacAlgorithm<THash>.Create(key);
+
+		foreach (int length in (int[])[0, 1, 64, 127, 128, 129, 0, 255, 256, 257, 300, 0])
+		{
+			byte[] message = source.AsSpan(0, length).ToArray();
+			HmacAlgorithm<THash>.Mac(key, message, expected);
+
+			mac.Append(message.AsSpan().Slice(0, length / 2));
+			mac.Append(message.AsSpan().Slice(length / 2));
+			mac.GetCurrentMac(actual);
+			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+
+			mac.GetMacAndReset(actual);
+			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+
+			mac.Append(message);
+			mac.Reset();
+		}
+
+		mac.GetMacAndReset(actual);
+		HmacAlgorithm<THash>.Mac(key, ReadOnlySpan<byte>.Empty, expected);
+		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
 	private static async Task VerifyLifecycleContract<TMac>() where TMac : class, IMacAlgorithm<TMac>

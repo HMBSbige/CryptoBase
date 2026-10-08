@@ -23,7 +23,7 @@ public sealed class HmacAlgorithm<THash> : IMacAlgorithm<HmacAlgorithm<THash>> w
 
 		try
 		{
-			macAlgorithm._state.Initialize(key);
+			macAlgorithm._state.Initialize(key, true);
 			return macAlgorithm;
 		}
 		catch

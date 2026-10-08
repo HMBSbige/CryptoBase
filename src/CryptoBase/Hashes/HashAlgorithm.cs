@@ -1,3 +1,5 @@
+using CryptoBase.Hashes.Blake2b;
+
 namespace CryptoBase.Hashes;
 
 /// <summary>
@@ -26,6 +28,12 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
+		if (UseBlake2bHashData())
+		{
+			Blake2bCore.HashData(source, destination, TCore.HashLength);
+			return TCore.HashLength;
+		}
+
 		TCore state = TCore.Create();
 		Span<byte> hash = stackalloc byte[TCore.HashLength];
 
@@ -33,6 +41,13 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 		state.Finalize(hash);
 		hash.CopyTo(destination);
 		return TCore.HashLength;
+	}
+
+	// Keep the type checks out of HashData's IL budget so other hash cores retain their inlined finalization.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool UseBlake2bHashData()
+	{
+		return typeof(TCore) == typeof(Blake2b256HashAlgorithm) || typeof(TCore) == typeof(Blake2b512HashAlgorithm);
 	}
 
 	/// <inheritdoc />

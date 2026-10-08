@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
+using CryptoBase.Hashes.Blake2b;
 using CryptoBase.Hashes.MD5;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha224;
@@ -33,6 +34,8 @@ public class HashFinalBlockTest
 			await Assert.That(Hash<Sha512HashAlgorithm>(message)).IsEquivalentTo(Bcl.SHA512.HashData(message), CollectionOrdering.Matching);
 			await Assert.That(Hash<Sha224HashAlgorithm>(message)).IsEquivalentTo(HashIncrementally<Sha224HashAlgorithm>(message), CollectionOrdering.Matching);
 			await Assert.That(Hash<SM3HashAlgorithm>(message)).IsEquivalentTo(HashIncrementally<SM3HashAlgorithm>(message), CollectionOrdering.Matching);
+			await Assert.That(Hash<Blake2b256HashAlgorithm>(message)).IsEquivalentTo(HashIncrementally<Blake2b256HashAlgorithm>(message), CollectionOrdering.Matching);
+			await Assert.That(Hash<Blake2b512HashAlgorithm>(message)).IsEquivalentTo(HashIncrementally<Blake2b512HashAlgorithm>(message), CollectionOrdering.Matching);
 		}
 	}
 
@@ -55,6 +58,8 @@ public class HashFinalBlockTest
 				await Assert.That(Mac<Sha512HashAlgorithm>(key, message)).IsEquivalentTo(Bcl.HMACSHA512.HashData(key, message), CollectionOrdering.Matching);
 				await Assert.That(Mac<Sha224HashAlgorithm>(key, message)).IsEquivalentTo(MacIncrementally<Sha224HashAlgorithm>(key, message), CollectionOrdering.Matching);
 				await Assert.That(Mac<SM3HashAlgorithm>(key, message)).IsEquivalentTo(MacIncrementally<SM3HashAlgorithm>(key, message), CollectionOrdering.Matching);
+				await Assert.That(Mac<Blake2b256HashAlgorithm>(key, message)).IsEquivalentTo(MacIncrementally<Blake2b256HashAlgorithm>(key, message), CollectionOrdering.Matching);
+				await Assert.That(Mac<Blake2b512HashAlgorithm>(key, message)).IsEquivalentTo(MacIncrementally<Blake2b512HashAlgorithm>(key, message), CollectionOrdering.Matching);
 			}
 		}
 	}

@@ -94,4 +94,38 @@ public static class CpuIdUtils
 
 		return false;
 	}
+
+	internal static bool IsAmdZen5()
+	{
+		if (!X86Base.IsSupported)
+		{
+			return false;
+		}
+
+		(int family, int model) = DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax);
+		return IsZen5(family, model) && GetVendor() is "AuthenticAMD";
+	}
+
+	internal static (int Family, int Model) DecodeFamilyAndModel(int signature)
+	{
+		int family = signature >> 8 & 0xF;
+		int model = signature >> 4 & 0xF;
+
+		if (family is 6 or 0xF)
+		{
+			model |= signature >> 12 & 0xF0;
+		}
+
+		if (family is 0xF)
+		{
+			family += signature >> 20 & 0xFF;
+		}
+
+		return (family, model);
+	}
+
+	internal static bool IsZen5(int family, int model)
+	{
+		return family is 0x1A && model is <= 0x2F or >= 0x40 and <= 0x4F or >= 0x60 and <= 0x7F or >= 0xD0 and <= 0xD7;
+	}
 }
