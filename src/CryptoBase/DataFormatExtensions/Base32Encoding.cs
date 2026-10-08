@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Numerics;
 
 namespace CryptoBase.DataFormatExtensions;
 

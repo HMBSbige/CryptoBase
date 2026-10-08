@@ -46,7 +46,7 @@ internal static class AesKeySchedule
 			int count = Math.Min(nk, words.Length - i);
 			ReadOnlySpan<uint> previous = words.Slice(i - nk, count);
 			Span<uint> current = words.Slice(i, count);
-			t = TSubWord.SubWord(t).RotateRight(8) ^ Rcon[round];
+			t = BitOperations.RotateRight(TSubWord.SubWord(t), 8) ^ Rcon[round];
 
 			for (int j = 0; j < current.Length; ++j)
 			{

@@ -1,4 +1,3 @@
-using System.Numerics;
 using System.Reflection;
 using AesArm = System.Runtime.Intrinsics.Arm.Aes;
 using AesX86 = System.Runtime.Intrinsics.X86.Aes;

@@ -116,7 +116,7 @@ internal static class SM4Scalar
 	private static uint T(uint b)
 	{
 		b = SubByte(b);
-		return b ^ b.RotateLeft(2) ^ b.RotateLeft(10) ^ b.RotateLeft(18) ^ b.RotateLeft(24);
+		return b ^ BitOperations.RotateLeft(b, 2) ^ BitOperations.RotateLeft(b, 10) ^ BitOperations.RotateLeft(b, 18) ^ BitOperations.RotateLeft(b, 24);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -128,7 +128,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		selected &= b;
 		selected ^= d;
 		a += selected;
-		return a.RotateLeft(s) + b;
+		return BitOperations.RotateLeft(a, s) + b;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -137,7 +137,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		a += mj + ti;
 		a += c & ~d;
 		a += b & d;
-		return a.RotateLeft(s) + b;
+		return BitOperations.RotateLeft(a, s) + b;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -147,7 +147,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		a += mj + ti;
 		selected ^= b;
 		a += selected;
-		return a.RotateLeft(s) + b;
+		return BitOperations.RotateLeft(a, s) + b;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -158,7 +158,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		selected |= b;
 		selected ^= c;
 		a += selected;
-		return a.RotateLeft(s) + b;
+		return BitOperations.RotateLeft(a, s) + b;
 	}
 
 	private static void Finalize(ref MD5HashAlgorithm hashAlgorithm, ref byte destination)

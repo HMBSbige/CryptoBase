@@ -305,42 +305,42 @@ internal partial struct Sha256Core
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint BigSigma0(uint value)
 	{
-		return value.RotateRight(2) ^ value.RotateRight(13) ^ value.RotateRight(22);
+		return BitOperations.RotateRight(value, 2) ^ BitOperations.RotateRight(value, 13) ^ BitOperations.RotateRight(value, 22);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint BigSigma0Software(uint value)
 	{
-		uint result = value.RotateRight(9) ^ value;
-		result = result.RotateRight(11) ^ value;
-		return result.RotateRight(2);
+		uint result = BitOperations.RotateRight(value, 9) ^ value;
+		result = BitOperations.RotateRight(result, 11) ^ value;
+		return BitOperations.RotateRight(result, 2);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint BigSigma1(uint value)
 	{
-		return value.RotateRight(6) ^ value.RotateRight(11) ^ value.RotateRight(25);
+		return BitOperations.RotateRight(value, 6) ^ BitOperations.RotateRight(value, 11) ^ BitOperations.RotateRight(value, 25);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint BigSigma1Software(uint value)
 	{
-		uint result = value.RotateRight(14) ^ value;
-		result = result.RotateRight(5) ^ value;
-		return result.RotateRight(6);
+		uint result = BitOperations.RotateRight(value, 14) ^ value;
+		result = BitOperations.RotateRight(result, 5) ^ value;
+		return BitOperations.RotateRight(result, 6);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint SmallSigma0Software(uint value)
 	{
-		uint result = value.RotateRight(11) ^ value;
-		return result.RotateRight(7) ^ value >> 3;
+		uint result = BitOperations.RotateRight(value, 11) ^ value;
+		return BitOperations.RotateRight(result, 7) ^ value >> 3;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint SmallSigma1Software(uint value)
 	{
-		uint result = value.RotateRight(2) ^ value;
-		return result.RotateRight(17) ^ value >> 10;
+		uint result = BitOperations.RotateRight(value, 2) ^ value;
+		return BitOperations.RotateRight(result, 17) ^ value >> 10;
 	}
 }

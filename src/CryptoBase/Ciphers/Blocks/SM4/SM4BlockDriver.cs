@@ -1,5 +1,3 @@
-using System.Numerics;
-
 namespace CryptoBase.Ciphers.Blocks.SM4;
 
 internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel

@@ -194,7 +194,7 @@ internal partial struct AesCipherSoftware
 	{
 		return columns switch
 		{
-			0 => value.RotateRight(16),
+			0 => BitOperations.RotateRight(value, 16),
 			1 => RotateRowsMasked(value, 20, 4, 0x0FFF0FFF0FFF0FFF),
 			2 => RotateRowsMasked(value, 24, 8, 0x00FF00FF00FF00FF),
 			_ => RotateRowsMasked(value, 28, 12, 0x000F000F000F000F)
@@ -204,14 +204,14 @@ internal partial struct AesCipherSoftware
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong RotateRowsTwice(ulong value, int columns)
 	{
-		return (columns & 1) is 0 ? value.RotateRight(32) : RotateRowsMasked(value, 40, 24, 0x00FF00FF00FF00FF);
+		return (columns & 1) is 0 ? BitOperations.RotateRight(value, 32) : RotateRowsMasked(value, 40, 24, 0x00FF00FF00FF00FF);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong RotateRowsMasked(ulong value, int lowRotation, int highRotation, ulong mask)
 	{
-		ulong high = value.RotateRight(highRotation);
-		return high ^ (value.RotateRight(lowRotation) ^ high) & mask;
+		ulong high = BitOperations.RotateRight(value, highRotation);
+		return high ^ (BitOperations.RotateRight(value, lowRotation) ^ high) & mask;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

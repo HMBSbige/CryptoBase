@@ -137,13 +137,13 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint P0(uint x)
 	{
-		return x ^ x.RotateLeft(9) ^ x.RotateLeft(17);
+		return x ^ BitOperations.RotateLeft(x, 9) ^ BitOperations.RotateLeft(x, 17);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint P1(uint x)
 	{
-		return x ^ x.RotateLeft(15) ^ x.RotateLeft(23);
+		return x ^ BitOperations.RotateLeft(x, 15) ^ BitOperations.RotateLeft(x, 23);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -229,26 +229,26 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 		{
 			uint word = Unsafe.Add(ref words, round & 15);
 			d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, round + 4 & 15), Unsafe.Add(ref roundConstants, round), out h);
-			b = b.RotateLeft(9);
-			f = f.RotateLeft(19);
+			b = BitOperations.RotateLeft(b, 9);
+			f = BitOperations.RotateLeft(f, 19);
 			ExpandSoftware(ref words, round + 16);
 
 			word = Unsafe.Add(ref words, round + 1 & 15);
 			c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, round + 5 & 15), Unsafe.Add(ref roundConstants, round + 1), out g);
-			a = a.RotateLeft(9);
-			e = e.RotateLeft(19);
+			a = BitOperations.RotateLeft(a, 9);
+			e = BitOperations.RotateLeft(e, 19);
 			ExpandSoftware(ref words, round + 17);
 
 			word = Unsafe.Add(ref words, round + 2 & 15);
 			b = RoundSoftwareEarly(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, round + 6 & 15), Unsafe.Add(ref roundConstants, round + 2), out f);
-			d = d.RotateLeft(9);
-			h = h.RotateLeft(19);
+			d = BitOperations.RotateLeft(d, 9);
+			h = BitOperations.RotateLeft(h, 19);
 			ExpandSoftware(ref words, round + 18);
 
 			word = Unsafe.Add(ref words, round + 3 & 15);
 			a = RoundSoftwareEarly(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, round + 7 & 15), Unsafe.Add(ref roundConstants, round + 3), out e);
-			c = c.RotateLeft(9);
-			g = g.RotateLeft(19);
+			c = BitOperations.RotateLeft(c, 9);
+			g = BitOperations.RotateLeft(g, 19);
 			ExpandSoftware(ref words, round + 19);
 		}
 
@@ -256,26 +256,26 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 		{
 			uint word = Unsafe.Add(ref words, round & 15);
 			d = RoundSoftwareLate(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, round + 4 & 15), Unsafe.Add(ref roundConstants, round), out h);
-			b = b.RotateLeft(9);
-			f = f.RotateLeft(19);
+			b = BitOperations.RotateLeft(b, 9);
+			f = BitOperations.RotateLeft(f, 19);
 			ExpandSoftware(ref words, round + 16);
 
 			word = Unsafe.Add(ref words, round + 1 & 15);
 			c = RoundSoftwareLate(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, round + 5 & 15), Unsafe.Add(ref roundConstants, round + 1), out g);
-			a = a.RotateLeft(9);
-			e = e.RotateLeft(19);
+			a = BitOperations.RotateLeft(a, 9);
+			e = BitOperations.RotateLeft(e, 19);
 			ExpandSoftware(ref words, round + 17);
 
 			word = Unsafe.Add(ref words, round + 2 & 15);
 			b = RoundSoftwareLate(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, round + 6 & 15), Unsafe.Add(ref roundConstants, round + 2), out f);
-			d = d.RotateLeft(9);
-			h = h.RotateLeft(19);
+			d = BitOperations.RotateLeft(d, 9);
+			h = BitOperations.RotateLeft(h, 19);
 			ExpandSoftware(ref words, round + 18);
 
 			word = Unsafe.Add(ref words, round + 3 & 15);
 			a = RoundSoftwareLate(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, round + 7 & 15), Unsafe.Add(ref roundConstants, round + 3), out e);
-			c = c.RotateLeft(9);
-			g = g.RotateLeft(19);
+			c = BitOperations.RotateLeft(c, 9);
+			g = BitOperations.RotateLeft(g, 19);
 			ExpandSoftware(ref words, round + 19);
 		}
 
@@ -283,23 +283,23 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 		{
 			uint word = Unsafe.Add(ref words, round & 15);
 			d = RoundSoftwareLate(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, round + 4 & 15), Unsafe.Add(ref roundConstants, round), out h);
-			b = b.RotateLeft(9);
-			f = f.RotateLeft(19);
+			b = BitOperations.RotateLeft(b, 9);
+			f = BitOperations.RotateLeft(f, 19);
 
 			word = Unsafe.Add(ref words, round + 1 & 15);
 			c = RoundSoftwareLate(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, round + 5 & 15), Unsafe.Add(ref roundConstants, round + 1), out g);
-			a = a.RotateLeft(9);
-			e = e.RotateLeft(19);
+			a = BitOperations.RotateLeft(a, 9);
+			e = BitOperations.RotateLeft(e, 19);
 
 			word = Unsafe.Add(ref words, round + 2 & 15);
 			b = RoundSoftwareLate(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, round + 6 & 15), Unsafe.Add(ref roundConstants, round + 2), out f);
-			d = d.RotateLeft(9);
-			h = h.RotateLeft(19);
+			d = BitOperations.RotateLeft(d, 9);
+			h = BitOperations.RotateLeft(h, 19);
 
 			word = Unsafe.Add(ref words, round + 3 & 15);
 			a = RoundSoftwareLate(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, round + 7 & 15), Unsafe.Add(ref roundConstants, round + 3), out e);
-			c = c.RotateLeft(9);
-			g = g.RotateLeft(19);
+			c = BitOperations.RotateLeft(c, 9);
+			g = BitOperations.RotateLeft(g, 19);
 		}
 
 		hashAlgorithm._v0 ^= a;
@@ -316,8 +316,8 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	private static uint ExpandSoftware(ref uint words, int round)
 	{
 		int index = round & 15;
-		uint word = P1(Unsafe.Add(ref words, index) ^ Unsafe.Add(ref words, round - 9 & 15) ^ Unsafe.Add(ref words, round - 3 & 15).RotateLeft(15))
-					^ Unsafe.Add(ref words, round - 13 & 15).RotateLeft(7)
+		uint word = P1(Unsafe.Add(ref words, index) ^ Unsafe.Add(ref words, round - 9 & 15) ^ BitOperations.RotateLeft(Unsafe.Add(ref words, round - 3 & 15), 15))
+					^ BitOperations.RotateLeft(Unsafe.Add(ref words, round - 13 & 15), 7)
 					^ Unsafe.Add(ref words, round - 6 & 15);
 		Unsafe.Add(ref words, index) = word;
 		return word;
@@ -326,8 +326,8 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint RoundSoftwareEarly(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, out uint nextH)
 	{
-		uint a12 = a.RotateLeft(12);
-		uint ss1 = (a12 + e + constant).RotateLeft(7);
+		uint a12 = BitOperations.RotateLeft(a, 12);
+		uint ss1 = BitOperations.RotateLeft(a12 + e + constant, 7);
 		nextH = P0(GG0(e, f, g) + h + ss1 + word);
 		return FF0(a, b, c) + d + (ss1 ^ a12) + mixed;
 	}
@@ -335,8 +335,8 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint RoundSoftwareLate(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, out uint nextH)
 	{
-		uint a12 = a.RotateLeft(12);
-		uint ss1 = (a12 + e + constant).RotateLeft(7);
+		uint a12 = BitOperations.RotateLeft(a, 12);
+		uint ss1 = BitOperations.RotateLeft(a12 + e + constant, 7);
 		nextH = P0(GG1(e, f, g) + h + ss1 + word);
 		return FF1(a, b, c) + d + (ss1 ^ a12) + mixed;
 	}

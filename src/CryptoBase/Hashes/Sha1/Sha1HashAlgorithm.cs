@@ -202,13 +202,14 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	private static uint Expand(ref uint words, int round)
 	{
 		int index = round & 15;
-		uint word =
+		uint word = BitOperations.RotateLeft
 		(
 			Unsafe.Add(ref words, round + 13 & 15)
 			^ Unsafe.Add(ref words, round + 8 & 15)
 			^ Unsafe.Add(ref words, round + 2 & 15)
-			^ Unsafe.Add(ref words, index)
-		).RotateLeft(1);
+			^ Unsafe.Add(ref words, index),
+			1
+		);
 		Unsafe.Add(ref words, index) = word;
 		return word;
 	}
@@ -248,8 +249,8 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	{
 		e += roundInput;
 		e += (c ^ d) & b ^ d;
-		e += a.RotateLeft(5);
-		b = b.RotateLeft(30);
+		e += BitOperations.RotateLeft(a, 5);
+		b = BitOperations.RotateLeft(b, 30);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -257,8 +258,8 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	{
 		e += roundInput;
 		e += b ^ c ^ d;
-		e += a.RotateLeft(5);
-		b = b.RotateLeft(30);
+		e += BitOperations.RotateLeft(a, 5);
+		b = BitOperations.RotateLeft(b, 30);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -266,7 +267,7 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	{
 		e += roundInput;
 		e += b & c | d & (b | c);
-		e += a.RotateLeft(5);
-		b = b.RotateLeft(30);
+		e += BitOperations.RotateLeft(a, 5);
+		b = BitOperations.RotateLeft(b, 30);
 	}
 }

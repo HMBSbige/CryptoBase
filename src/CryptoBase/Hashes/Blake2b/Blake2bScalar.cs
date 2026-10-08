@@ -1,4 +1,3 @@
-using System.Numerics;
 using static CryptoBase.Hashes.Blake2b.Blake2bCore;
 
 namespace CryptoBase.Hashes.Blake2b;
@@ -77,7 +76,6 @@ internal readonly struct Blake2bScalar : IBlake2bKernel
 	}
 
 	// Runs G on four lanes in lockstep, which is faster than running the lanes one after another.
-	// BitOperations is called directly rather than through the rotation extensions so all 24 steps fit within the JIT inlining limits.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Step(ref ulong a0, ref ulong a1, ref ulong a2, ref ulong a3, ref ulong b0, ref ulong b1, ref ulong b2, ref ulong b3, ref ulong c0, ref ulong c1, ref ulong c2, ref ulong c3, ref ulong d0, ref ulong d1, ref ulong d2, ref ulong d3, ref byte block, int x0, int x1, int x2, int x3, int y0, int y1, int y2, int y3)
 	{

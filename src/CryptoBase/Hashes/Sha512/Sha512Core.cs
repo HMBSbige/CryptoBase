@@ -312,42 +312,42 @@ internal partial struct Sha512Core
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong BigSigma0(ulong x)
 	{
-		return x.RotateRight(28) ^ x.RotateRight(34) ^ x.RotateRight(39);
+		return BitOperations.RotateRight(x, 28) ^ BitOperations.RotateRight(x, 34) ^ BitOperations.RotateRight(x, 39);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong BigSigma0Software(ulong x)
 	{
-		ulong result = x.RotateRight(5) ^ x;
-		result = result.RotateRight(6) ^ x;
-		return result.RotateRight(28);
+		ulong result = BitOperations.RotateRight(x, 5) ^ x;
+		result = BitOperations.RotateRight(result, 6) ^ x;
+		return BitOperations.RotateRight(result, 28);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong BigSigma1(ulong x)
 	{
-		return x.RotateRight(14) ^ x.RotateRight(18) ^ x.RotateRight(41);
+		return BitOperations.RotateRight(x, 14) ^ BitOperations.RotateRight(x, 18) ^ BitOperations.RotateRight(x, 41);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong BigSigma1Software(ulong x)
 	{
-		ulong result = x.RotateRight(23) ^ x;
-		result = result.RotateRight(4) ^ x;
-		return result.RotateRight(14);
+		ulong result = BitOperations.RotateRight(x, 23) ^ x;
+		result = BitOperations.RotateRight(result, 4) ^ x;
+		return BitOperations.RotateRight(result, 14);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong SmallSigma0Software(ulong x)
 	{
-		ulong result = x.RotateRight(7) ^ x;
-		return result.RotateRight(1) ^ x >> 7;
+		ulong result = BitOperations.RotateRight(x, 7) ^ x;
+		return BitOperations.RotateRight(result, 1) ^ x >> 7;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong SmallSigma1Software(ulong x)
 	{
-		ulong result = x.RotateRight(42) ^ x;
-		return result.RotateRight(19) ^ x >> 6;
+		ulong result = BitOperations.RotateRight(x, 42) ^ x;
+		return BitOperations.RotateRight(result, 19) ^ x >> 6;
 	}
 }

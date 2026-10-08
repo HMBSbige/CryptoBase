@@ -58,10 +58,10 @@ internal static partial class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void QuarterRound(ref uint a, ref uint b, ref uint c, ref uint d)
 	{
-		a ^= (b + c).RotateLeft(7);
-		d ^= (a + b).RotateLeft(9);
-		c ^= (d + a).RotateLeft(13);
-		b ^= (c + d).RotateLeft(18);
+		a ^= BitOperations.RotateLeft(b + c, 7);
+		d ^= BitOperations.RotateLeft(a + b, 9);
+		c ^= BitOperations.RotateLeft(d + a, 13);
+		b ^= BitOperations.RotateLeft(c + d, 18);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

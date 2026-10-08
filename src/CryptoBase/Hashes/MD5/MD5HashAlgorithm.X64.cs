@@ -37,7 +37,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 1);
 			selected ^= d;
 			a += selected;
-			a = a.RotateLeft(7);
+			a = BitOperations.RotateLeft(a, 7);
 			selected = c;
 			a += b;
 
@@ -47,7 +47,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 2);
 			selected ^= c;
 			d += selected;
-			d = d.RotateLeft(12);
+			d = BitOperations.RotateLeft(d, 12);
 			selected = b;
 			d += a;
 
@@ -57,7 +57,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 3);
 			selected ^= b;
 			c += selected;
-			c = c.RotateLeft(17);
+			c = BitOperations.RotateLeft(c, 17);
 			selected = a;
 			c += d;
 
@@ -67,7 +67,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 4);
 			selected ^= a;
 			b += selected;
-			b = b.RotateLeft(22);
+			b = BitOperations.RotateLeft(b, 22);
 			selected = d;
 			b += c;
 
@@ -77,7 +77,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 5);
 			selected ^= d;
 			a += selected;
-			a = a.RotateLeft(7);
+			a = BitOperations.RotateLeft(a, 7);
 			selected = c;
 			a += b;
 
@@ -87,7 +87,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 6);
 			selected ^= c;
 			d += selected;
-			d = d.RotateLeft(12);
+			d = BitOperations.RotateLeft(d, 12);
 			selected = b;
 			d += a;
 
@@ -97,7 +97,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 7);
 			selected ^= b;
 			c += selected;
-			c = c.RotateLeft(17);
+			c = BitOperations.RotateLeft(c, 17);
 			selected = a;
 			c += d;
 
@@ -107,7 +107,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 8);
 			selected ^= a;
 			b += selected;
-			b = b.RotateLeft(22);
+			b = BitOperations.RotateLeft(b, 22);
 			selected = d;
 			b += c;
 
@@ -117,7 +117,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 9);
 			selected ^= d;
 			a += selected;
-			a = a.RotateLeft(7);
+			a = BitOperations.RotateLeft(a, 7);
 			selected = c;
 			a += b;
 
@@ -127,7 +127,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 10);
 			selected ^= c;
 			d += selected;
-			d = d.RotateLeft(12);
+			d = BitOperations.RotateLeft(d, 12);
 			selected = b;
 			d += a;
 
@@ -137,7 +137,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 11);
 			selected ^= b;
 			c += selected;
-			c = c.RotateLeft(17);
+			c = BitOperations.RotateLeft(c, 17);
 			selected = a;
 			c += d;
 
@@ -147,7 +147,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 12);
 			selected ^= a;
 			b += selected;
-			b = b.RotateLeft(22);
+			b = BitOperations.RotateLeft(b, 22);
 			selected = d;
 			b += c;
 
@@ -157,7 +157,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 13);
 			selected ^= d;
 			a += selected;
-			a = a.RotateLeft(7);
+			a = BitOperations.RotateLeft(a, 7);
 			selected = c;
 			a += b;
 
@@ -167,7 +167,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 14);
 			selected ^= c;
 			d += selected;
-			d = d.RotateLeft(12);
+			d = BitOperations.RotateLeft(d, 12);
 			selected = b;
 			d += a;
 
@@ -177,7 +177,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 15);
 			selected ^= b;
 			c += selected;
-			c = c.RotateLeft(17);
+			c = BitOperations.RotateLeft(c, 17);
 			selected = a;
 			c += d;
 
@@ -187,7 +187,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 1);
 			selected ^= a;
 			b += selected;
-			b = b.RotateLeft(22);
+			b = BitOperations.RotateLeft(b, 22);
 			selected = d;
 			b += c;
 
@@ -198,7 +198,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 6);
 			a += selected;
 			a += selected2;
-			a = a.RotateLeft(5);
+			a = BitOperations.RotateLeft(a, 5);
 			a += b;
 
 			selected = b & ~c;
@@ -207,7 +207,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 11);
 			d += selected;
 			d += selected2;
-			d = d.RotateLeft(9);
+			d = BitOperations.RotateLeft(d, 9);
 			d += a;
 
 			selected = a & ~b;
@@ -216,7 +216,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 0);
 			c += selected;
 			c += selected2;
-			c = c.RotateLeft(14);
+			c = BitOperations.RotateLeft(c, 14);
 			c += d;
 
 			selected = d & ~a;
@@ -225,7 +225,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 5);
 			b += selected;
 			b += selected2;
-			b = b.RotateLeft(20);
+			b = BitOperations.RotateLeft(b, 20);
 			b += c;
 
 			selected = c & ~d;
@@ -234,7 +234,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 10);
 			a += selected;
 			a += selected2;
-			a = a.RotateLeft(5);
+			a = BitOperations.RotateLeft(a, 5);
 			a += b;
 
 			selected = b & ~c;
@@ -243,7 +243,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 15);
 			d += selected;
 			d += selected2;
-			d = d.RotateLeft(9);
+			d = BitOperations.RotateLeft(d, 9);
 			d += a;
 
 			selected = a & ~b;
@@ -252,7 +252,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 4);
 			c += selected;
 			c += selected2;
-			c = c.RotateLeft(14);
+			c = BitOperations.RotateLeft(c, 14);
 			c += d;
 
 			selected = d & ~a;
@@ -261,7 +261,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 9);
 			b += selected;
 			b += selected2;
-			b = b.RotateLeft(20);
+			b = BitOperations.RotateLeft(b, 20);
 			b += c;
 
 			selected = c & ~d;
@@ -270,7 +270,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 14);
 			a += selected;
 			a += selected2;
-			a = a.RotateLeft(5);
+			a = BitOperations.RotateLeft(a, 5);
 			a += b;
 
 			selected = b & ~c;
@@ -279,7 +279,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 3);
 			d += selected;
 			d += selected2;
-			d = d.RotateLeft(9);
+			d = BitOperations.RotateLeft(d, 9);
 			d += a;
 
 			selected = a & ~b;
@@ -288,7 +288,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 8);
 			c += selected;
 			c += selected2;
-			c = c.RotateLeft(14);
+			c = BitOperations.RotateLeft(c, 14);
 			c += d;
 
 			selected = d & ~a;
@@ -297,7 +297,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 13);
 			b += selected;
 			b += selected2;
-			b = b.RotateLeft(20);
+			b = BitOperations.RotateLeft(b, 20);
 			b += c;
 
 			selected = c & ~d;
@@ -306,7 +306,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 2);
 			a += selected;
 			a += selected2;
-			a = a.RotateLeft(5);
+			a = BitOperations.RotateLeft(a, 5);
 			a += b;
 
 			selected = b & ~c;
@@ -315,7 +315,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 7);
 			d += selected;
 			d += selected2;
-			d = d.RotateLeft(9);
+			d = BitOperations.RotateLeft(d, 9);
 			d += a;
 
 			selected = a & ~b;
@@ -324,7 +324,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 12);
 			c += selected;
 			c += selected2;
-			c = c.RotateLeft(14);
+			c = BitOperations.RotateLeft(c, 14);
 			c += d;
 
 			selected = d & ~a;
@@ -333,7 +333,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 5);
 			b += selected;
 			b += selected2;
-			b = b.RotateLeft(20);
+			b = BitOperations.RotateLeft(b, 20);
 			b += c;
 
 			// Round 3.
@@ -345,7 +345,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= b;
 			a += selected;
 			selected = b;
-			a = a.RotateLeft(4);
+			a = BitOperations.RotateLeft(a, 4);
 			a += b;
 
 			d += message + 0x8771F681U;
@@ -353,7 +353,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 11);
 			selected ^= a;
 			d += selected;
-			d = d.RotateLeft(11);
+			d = BitOperations.RotateLeft(d, 11);
 			selected = a;
 			d += a;
 
@@ -363,7 +363,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= d;
 			c += selected;
 			selected = d;
-			c = c.RotateLeft(16);
+			c = BitOperations.RotateLeft(c, 16);
 			c += d;
 
 			b += message + 0xFDE5380CU;
@@ -371,7 +371,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 1);
 			selected ^= c;
 			b += selected;
-			b = b.RotateLeft(23);
+			b = BitOperations.RotateLeft(b, 23);
 			selected = c;
 			b += c;
 
@@ -381,7 +381,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= b;
 			a += selected;
 			selected = b;
-			a = a.RotateLeft(4);
+			a = BitOperations.RotateLeft(a, 4);
 			a += b;
 
 			d += message + 0x4BDECFA9U;
@@ -389,7 +389,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 7);
 			selected ^= a;
 			d += selected;
-			d = d.RotateLeft(11);
+			d = BitOperations.RotateLeft(d, 11);
 			selected = a;
 			d += a;
 
@@ -399,7 +399,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= d;
 			c += selected;
 			selected = d;
-			c = c.RotateLeft(16);
+			c = BitOperations.RotateLeft(c, 16);
 			c += d;
 
 			b += message + 0xBEBFBC70U;
@@ -407,7 +407,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 13);
 			selected ^= c;
 			b += selected;
-			b = b.RotateLeft(23);
+			b = BitOperations.RotateLeft(b, 23);
 			selected = c;
 			b += c;
 
@@ -417,7 +417,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= b;
 			a += selected;
 			selected = b;
-			a = a.RotateLeft(4);
+			a = BitOperations.RotateLeft(a, 4);
 			a += b;
 
 			d += message + 0xEAA127FAU;
@@ -425,7 +425,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 3);
 			selected ^= a;
 			d += selected;
-			d = d.RotateLeft(11);
+			d = BitOperations.RotateLeft(d, 11);
 			selected = a;
 			d += a;
 
@@ -435,7 +435,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= d;
 			c += selected;
 			selected = d;
-			c = c.RotateLeft(16);
+			c = BitOperations.RotateLeft(c, 16);
 			c += d;
 
 			b += message + 0x04881D05U;
@@ -443,7 +443,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 9);
 			selected ^= c;
 			b += selected;
-			b = b.RotateLeft(23);
+			b = BitOperations.RotateLeft(b, 23);
 			selected = c;
 			b += c;
 
@@ -453,7 +453,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= b;
 			a += selected;
 			selected = b;
-			a = a.RotateLeft(4);
+			a = BitOperations.RotateLeft(a, 4);
 			a += b;
 
 			d += message + 0xE6DB99E5U;
@@ -461,7 +461,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 15);
 			selected ^= a;
 			d += selected;
-			d = d.RotateLeft(11);
+			d = BitOperations.RotateLeft(d, 11);
 			selected = a;
 			d += a;
 
@@ -471,7 +471,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= d;
 			c += selected;
 			selected = d;
-			c = c.RotateLeft(16);
+			c = BitOperations.RotateLeft(c, 16);
 			c += d;
 
 			b += message + 0xC4AC5665U;
@@ -479,7 +479,7 @@ public partial struct MD5HashAlgorithm
 			message = ReadX64Message(ref source, 0);
 			selected ^= c;
 			b += selected;
-			b = b.RotateLeft(23);
+			b = BitOperations.RotateLeft(b, 23);
 			selected = c;
 			b += c;
 
@@ -492,7 +492,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= c;
 			a += selected;
 			selected = uint.MaxValue;
-			a = a.RotateLeft(6);
+			a = BitOperations.RotateLeft(a, 6);
 			selected ^= c;
 			a += b;
 
@@ -502,7 +502,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= b;
 			d += selected;
 			selected = uint.MaxValue;
-			d = d.RotateLeft(10);
+			d = BitOperations.RotateLeft(d, 10);
 			selected ^= b;
 			d += a;
 
@@ -512,7 +512,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= a;
 			c += selected;
 			selected = uint.MaxValue;
-			c = c.RotateLeft(15);
+			c = BitOperations.RotateLeft(c, 15);
 			selected ^= a;
 			c += d;
 
@@ -522,7 +522,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= d;
 			b += selected;
 			selected = uint.MaxValue;
-			b = b.RotateLeft(21);
+			b = BitOperations.RotateLeft(b, 21);
 			selected ^= d;
 			b += c;
 
@@ -532,7 +532,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= c;
 			a += selected;
 			selected = uint.MaxValue;
-			a = a.RotateLeft(6);
+			a = BitOperations.RotateLeft(a, 6);
 			selected ^= c;
 			a += b;
 
@@ -542,7 +542,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= b;
 			d += selected;
 			selected = uint.MaxValue;
-			d = d.RotateLeft(10);
+			d = BitOperations.RotateLeft(d, 10);
 			selected ^= b;
 			d += a;
 
@@ -552,7 +552,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= a;
 			c += selected;
 			selected = uint.MaxValue;
-			c = c.RotateLeft(15);
+			c = BitOperations.RotateLeft(c, 15);
 			selected ^= a;
 			c += d;
 
@@ -562,7 +562,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= d;
 			b += selected;
 			selected = uint.MaxValue;
-			b = b.RotateLeft(21);
+			b = BitOperations.RotateLeft(b, 21);
 			selected ^= d;
 			b += c;
 
@@ -572,7 +572,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= c;
 			a += selected;
 			selected = uint.MaxValue;
-			a = a.RotateLeft(6);
+			a = BitOperations.RotateLeft(a, 6);
 			selected ^= c;
 			a += b;
 
@@ -582,7 +582,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= b;
 			d += selected;
 			selected = uint.MaxValue;
-			d = d.RotateLeft(10);
+			d = BitOperations.RotateLeft(d, 10);
 			selected ^= b;
 			d += a;
 
@@ -592,7 +592,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= a;
 			c += selected;
 			selected = uint.MaxValue;
-			c = c.RotateLeft(15);
+			c = BitOperations.RotateLeft(c, 15);
 			selected ^= a;
 			c += d;
 
@@ -602,7 +602,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= d;
 			b += selected;
 			selected = uint.MaxValue;
-			b = b.RotateLeft(21);
+			b = BitOperations.RotateLeft(b, 21);
 			selected ^= d;
 			b += c;
 
@@ -612,7 +612,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= c;
 			a += selected;
 			selected = uint.MaxValue;
-			a = a.RotateLeft(6);
+			a = BitOperations.RotateLeft(a, 6);
 			selected ^= c;
 			a += b;
 
@@ -622,7 +622,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= b;
 			d += selected;
 			selected = uint.MaxValue;
-			d = d.RotateLeft(10);
+			d = BitOperations.RotateLeft(d, 10);
 			selected ^= b;
 			d += a;
 
@@ -632,7 +632,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= a;
 			c += selected;
 			selected = uint.MaxValue;
-			c = c.RotateLeft(15);
+			c = BitOperations.RotateLeft(c, 15);
 			selected ^= a;
 			c += d;
 
@@ -642,7 +642,7 @@ public partial struct MD5HashAlgorithm
 			selected ^= d;
 			b += selected;
 			selected = uint.MaxValue;
-			b = b.RotateLeft(21);
+			b = BitOperations.RotateLeft(b, 21);
 			selected ^= d;
 			b += c;
 

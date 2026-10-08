@@ -1,5 +1,3 @@
-using System.Numerics;
-
 namespace CryptoBase.Ciphers.Blocks.SM4;
 
 internal readonly partial struct SM4Gfni : ISM4Kernel

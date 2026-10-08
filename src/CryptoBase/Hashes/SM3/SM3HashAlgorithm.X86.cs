@@ -130,19 +130,19 @@ public partial struct SM3HashAlgorithm
 		ulong packedRound = packed01.ToScalar();
 		Vector128<uint> partial = WindowX86(w0, w1);
 		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round], out h);
-		b = b.RotateLeft(9);
-		f = f.RotateLeft(19);
+		b = BitOperations.RotateLeft(b, 9);
+		f = BitOperations.RotateLeft(f, 19);
 		partial ^= w3 ^ w5.RotateLeftUInt32(15);
 		Vector128<uint> window13 = WindowX86(w1, w2);
 		packedRound = packed01.GetElement(1);
 		c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 1], out g);
-		a = a.RotateLeft(9);
-		e = e.RotateLeft(19);
+		a = BitOperations.RotateLeft(a, 9);
+		e = BitOperations.RotateLeft(e, 19);
 		Vector128<uint> next = P1X86(partial);
 		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
 		b = RoundSoftwareEarly(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 2], out f);
-		d = d.RotateLeft(9);
-		h = h.RotateLeft(19);
+		d = BitOperations.RotateLeft(d, 9);
+		h = BitOperations.RotateLeft(h, 19);
 		(a, b, c, d) = (b, c, d, a);
 		(e, f, g, h) = (f, g, h, e);
 		return next ^ window13.RotateLeftUInt32(7) ^ w4;
@@ -157,17 +157,17 @@ public partial struct SM3HashAlgorithm
 	)
 	{
 		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, words.GetElement(0), mixed.GetElement(0), RoundConstants[round], out h);
-		b = b.RotateLeft(9);
-		f = f.RotateLeft(19);
+		b = BitOperations.RotateLeft(b, 9);
+		f = BitOperations.RotateLeft(f, 19);
 		c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, words.GetElement(1), mixed.GetElement(1), RoundConstants[round + 1], out g);
-		a = a.RotateLeft(9);
-		e = e.RotateLeft(19);
+		a = BitOperations.RotateLeft(a, 9);
+		e = BitOperations.RotateLeft(e, 19);
 		b = RoundSoftwareEarly(c, d, a, b, g, h, e, f, words.GetElement(2), mixed.GetElement(2), RoundConstants[round + 2], out f);
-		d = d.RotateLeft(9);
-		h = h.RotateLeft(19);
+		d = BitOperations.RotateLeft(d, 9);
+		h = BitOperations.RotateLeft(h, 19);
 		a = RoundSoftwareEarly(b, c, d, a, f, g, h, e, words.GetElement(3), mixed.GetElement(3), RoundConstants[round + 3], out e);
-		c = c.RotateLeft(9);
-		g = g.RotateLeft(19);
+		c = BitOperations.RotateLeft(c, 9);
+		g = BitOperations.RotateLeft(g, 19);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -178,11 +178,11 @@ public partial struct SM3HashAlgorithm
 	)
 	{
 		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, words.GetElement(0), mixed.GetElement(0), RoundConstants[4], out h);
-		b = b.RotateLeft(9);
-		f = f.RotateLeft(19);
+		b = BitOperations.RotateLeft(b, 9);
+		f = BitOperations.RotateLeft(f, 19);
 		c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, words.GetElement(1), mixed.GetElement(1), RoundConstants[5], out g);
-		a = a.RotateLeft(9);
-		e = e.RotateLeft(19);
+		a = BitOperations.RotateLeft(a, 9);
+		e = BitOperations.RotateLeft(e, 19);
 		(a, b, c, d) = (c, d, a, b);
 		(e, f, g, h) = (g, h, e, f);
 	}
@@ -199,19 +199,19 @@ public partial struct SM3HashAlgorithm
 		ulong packedRound = packed01.ToScalar();
 		Vector128<uint> partial = WindowX86(w0, w1);
 		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[15], out h);
-		b = b.RotateLeft(9);
-		f = f.RotateLeft(19);
+		b = BitOperations.RotateLeft(b, 9);
+		f = BitOperations.RotateLeft(f, 19);
 		partial ^= w3 ^ w5.RotateLeftUInt32(15);
 		Vector128<uint> window13 = WindowX86(w1, w2);
 		packedRound = packed01.GetElement(1);
 		c = RoundSoftwareLate(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[16], out g);
-		a = a.RotateLeft(9);
-		e = e.RotateLeft(19);
+		a = BitOperations.RotateLeft(a, 9);
+		e = BitOperations.RotateLeft(e, 19);
 		Vector128<uint> next = P1X86(partial);
 		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
 		b = RoundSoftwareLate(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[17], out f);
-		d = d.RotateLeft(9);
-		h = h.RotateLeft(19);
+		d = BitOperations.RotateLeft(d, 9);
+		h = BitOperations.RotateLeft(h, 19);
 		(a, b, c, d) = (b, c, d, a);
 		(e, f, g, h) = (f, g, h, e);
 		return next ^ window13.RotateLeftUInt32(7) ^ w4;
@@ -230,19 +230,19 @@ public partial struct SM3HashAlgorithm
 		ulong packedRound = packed01.ToScalar();
 		Vector128<uint> partial = WindowX86(w0, w1);
 		d = RoundSoftwareLate(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), Unsafe.Add(ref roundConstants, round), out h);
-		b = b.RotateLeft(9);
-		f = f.RotateLeft(19);
+		b = BitOperations.RotateLeft(b, 9);
+		f = BitOperations.RotateLeft(f, 19);
 		partial ^= w3 ^ w5.RotateLeftUInt32(15);
 		Vector128<uint> window13 = WindowX86(w1, w2);
 		packedRound = packed01.GetElement(1);
 		c = RoundSoftwareLate(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), Unsafe.Add(ref roundConstants, round + 1), out g);
-		a = a.RotateLeft(9);
-		e = e.RotateLeft(19);
+		a = BitOperations.RotateLeft(a, 9);
+		e = BitOperations.RotateLeft(e, 19);
 		Vector128<uint> next = P1X86(partial);
 		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
 		b = RoundSoftwareLate(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), Unsafe.Add(ref roundConstants, round + 2), out f);
-		d = d.RotateLeft(9);
-		h = h.RotateLeft(19);
+		d = BitOperations.RotateLeft(d, 9);
+		h = BitOperations.RotateLeft(h, 19);
 		(a, b, c, d) = (b, c, d, a);
 		(e, f, g, h) = (f, g, h, e);
 		return next ^ window13.RotateLeftUInt32(7) ^ w4;
@@ -259,16 +259,16 @@ public partial struct SM3HashAlgorithm
 		Vector128<ulong> packed01 = Sse2.UnpackLow(words, mixed).AsUInt64();
 		ulong packedRound = packed01.ToScalar();
 		d = RoundSoftwareLate(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round], out h);
-		b = b.RotateLeft(9);
-		f = f.RotateLeft(19);
+		b = BitOperations.RotateLeft(b, 9);
+		f = BitOperations.RotateLeft(f, 19);
 		packedRound = packed01.GetElement(1);
 		c = RoundSoftwareLate(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 1], out g);
-		a = a.RotateLeft(9);
-		e = e.RotateLeft(19);
+		a = BitOperations.RotateLeft(a, 9);
+		e = BitOperations.RotateLeft(e, 19);
 		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
 		b = RoundSoftwareLate(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 2], out f);
-		d = d.RotateLeft(9);
-		h = h.RotateLeft(19);
+		d = BitOperations.RotateLeft(d, 9);
+		h = BitOperations.RotateLeft(h, 19);
 		(a, b, c, d) = (b, c, d, a);
 		(e, f, g, h) = (f, g, h, e);
 	}
@@ -281,16 +281,16 @@ public partial struct SM3HashAlgorithm
 		uint constant
 	)
 	{
-		uint a12 = a.RotateLeft(12);
-		uint ss1 = (a12 + e + constant).RotateLeft(7);
+		uint a12 = BitOperations.RotateLeft(a, 12);
+		uint ss1 = BitOperations.RotateLeft(a12 + e + constant, 7);
 		uint tt1 = FF1(a, b, c) + d + (ss1 ^ a12) + mixed;
 		uint tt2 = GG1(e, f, g) + h + ss1 + word;
 		d = c;
-		c = b.RotateLeft(9);
+		c = BitOperations.RotateLeft(b, 9);
 		b = a;
 		a = tt1;
 		h = g;
-		g = f.RotateLeft(19);
+		g = BitOperations.RotateLeft(f, 19);
 		f = e;
 		e = P0(tt2);
 	}

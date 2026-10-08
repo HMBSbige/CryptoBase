@@ -17,7 +17,7 @@ internal static class SM4KeySchedule
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint L1(uint b)
 	{
-		return b ^ b.RotateLeft(13) ^ b.RotateLeft(23);
+		return b ^ BitOperations.RotateLeft(b, 13) ^ BitOperations.RotateLeft(b, 23);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,5 +1,3 @@
-using System.Numerics;
-
 namespace CryptoBase.DataFormatExtensions;
 
 public sealed partial class Base32Encoding
