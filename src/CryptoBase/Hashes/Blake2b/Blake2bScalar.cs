@@ -16,16 +16,17 @@ internal readonly struct Blake2bScalar : IBlake2bKernel
 		ulong counterLow = (ulong)counter;
 		ulong counterHigh = (ulong)(counter >> 64);
 
+		ulong v0 = state;
+		ulong v1 = Unsafe.Add(ref state, 1);
+		ulong v2 = Unsafe.Add(ref state, 2);
+		ulong v3 = Unsafe.Add(ref state, 3);
+		ulong v4 = Unsafe.Add(ref state, 4);
+		ulong v5 = Unsafe.Add(ref state, 5);
+		ulong v6 = Unsafe.Add(ref state, 6);
+		ulong v7 = Unsafe.Add(ref state, 7);
+
 		do
 		{
-			ulong v0 = state;
-			ulong v1 = Unsafe.Add(ref state, 1);
-			ulong v2 = Unsafe.Add(ref state, 2);
-			ulong v3 = Unsafe.Add(ref state, 3);
-			ulong v4 = Unsafe.Add(ref state, 4);
-			ulong v5 = Unsafe.Add(ref state, 5);
-			ulong v6 = Unsafe.Add(ref state, 6);
-			ulong v7 = Unsafe.Add(ref state, 7);
 			ulong v8 = IV0;
 			ulong v9 = IV1;
 			ulong v10 = IV2;
@@ -60,14 +61,14 @@ internal readonly struct Blake2bScalar : IBlake2bKernel
 			Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref block, 14, 4, 9, 13, 10, 8, 15, 6);
 			Step(ref v3, ref v0, ref v1, ref v2, ref v4, ref v5, ref v6, ref v7, ref v9, ref v10, ref v11, ref v8, ref v14, ref v15, ref v12, ref v13, ref block, 5, 1, 0, 11, 3, 12, 2, 7);
 
-			state ^= v0 ^ v8;
-			Unsafe.Add(ref state, 1) ^= v1 ^ v9;
-			Unsafe.Add(ref state, 2) ^= v2 ^ v10;
-			Unsafe.Add(ref state, 3) ^= v3 ^ v11;
-			Unsafe.Add(ref state, 4) ^= v4 ^ v12;
-			Unsafe.Add(ref state, 5) ^= v5 ^ v13;
-			Unsafe.Add(ref state, 6) ^= v6 ^ v14;
-			Unsafe.Add(ref state, 7) ^= v7 ^ v15;
+			v0 = state ^= v0 ^ v8;
+			v1 = Unsafe.Add(ref state, 1) ^= v1 ^ v9;
+			v2 = Unsafe.Add(ref state, 2) ^= v2 ^ v10;
+			v3 = Unsafe.Add(ref state, 3) ^= v3 ^ v11;
+			v4 = Unsafe.Add(ref state, 4) ^= v4 ^ v12;
+			v5 = Unsafe.Add(ref state, 5) ^= v5 ^ v13;
+			v6 = Unsafe.Add(ref state, 6) ^= v6 ^ v14;
+			v7 = Unsafe.Add(ref state, 7) ^= v7 ^ v15;
 
 			counterLow += BlockSizeInBytes;
 			counterHigh += counterLow < BlockSizeInBytes ? 1UL : 0UL;
