@@ -10,10 +10,10 @@ internal static partial class ChaCha20Utils
 
 		if (useVectorizedPath)
 		{
-			return XorCounterRegion(ref state.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length);
+			return XorCounterRegion(ref MemoryMarshal.GetReference(state), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
 		}
 
-		return XorScalar(ref state.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length);
+		return XorScalar(ref MemoryMarshal.GetReference(state), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
 	}
 
 	// Keep counter-carry handling and vector-path register saves out of the scalar fast path.

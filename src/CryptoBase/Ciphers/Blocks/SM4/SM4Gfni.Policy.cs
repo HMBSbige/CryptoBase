@@ -44,8 +44,8 @@ internal readonly partial struct SM4Gfni
 	{
 		Debug.Assert(source.Length % PolicyBatchSizeV256 is 0 && destination.Length >= source.Length);
 
-		ref byte src = ref source.GetReference();
-		ref byte dst = ref destination.GetReference();
+		ref byte src = ref MemoryMarshal.GetReference(source);
+		ref byte dst = ref MemoryMarshal.GetReference(destination);
 		TPolicy policy = default;
 		policy.Initialize(state);
 
@@ -62,8 +62,8 @@ internal readonly partial struct SM4Gfni
 	{
 		Debug.Assert(source.Length % PolicyBatchSizeV512 is 0 && destination.Length >= source.Length);
 
-		ref byte src = ref source.GetReference();
-		ref byte dst = ref destination.GetReference();
+		ref byte src = ref MemoryMarshal.GetReference(source);
+		ref byte dst = ref MemoryMarshal.GetReference(destination);
 		TPolicy policy = default;
 		policy.Initialize(state);
 

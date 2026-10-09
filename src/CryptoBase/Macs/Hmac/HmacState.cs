@@ -323,7 +323,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 		}
 
 		ref byte keyReference = ref MemoryMarshal.GetReference(key);
-		ref byte blockReference = ref keyBlock.GetReference();
+		ref byte blockReference = ref MemoryMarshal.GetReference(keyBlock);
 		Vector128<byte> padding = Vector128.Create(pad);
 
 		for (int offset = 0; offset < keyBlock.Length; offset += 32)
@@ -361,7 +361,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	{
 		int length = THash.HmacBlockSize;
 		Debug.Assert(pad.Length == length);
-		ref byte padReference = ref pad.GetReference();
+		ref byte padReference = ref MemoryMarshal.GetReference(pad);
 		int offset = 0;
 
 		if (Vector256.IsHardwareAccelerated)

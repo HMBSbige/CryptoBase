@@ -38,7 +38,7 @@ internal ref struct GHash : IDisposable
 			return block;
 		}
 
-		return Vector128.LoadPartialUnsafe(ref remaining.GetReference(), 0, remaining.Length);
+		return Vector128.LoadPartialUnsafe(ref MemoryMarshal.GetReference(remaining), 0, remaining.Length);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -150,7 +150,7 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	{
 		Unsafe.SkipInit(out InlineArray16<uint> schedule);
 		ref uint schedule0 = ref schedule[0];
-		ref byte block0 = ref source.GetReference();
+		ref byte block0 = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 
 		do

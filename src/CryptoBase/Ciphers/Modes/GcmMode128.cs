@@ -124,7 +124,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 		{
 			if (BlockModeDispatch.ShouldBatchGcmTagMask(_blockCipher) && source.Length is > 0 and <= MaxTagMaskBatchLength || ShouldFuseDecryption(source.Length))
 			{
-				return TryDecryptWithTagMask(ref hash, j0, ref source.GetReference(), source.Length, ref tag.GetReference(), ref destination.GetReference(), ref associatedData.GetReference(), associatedData.Length);
+				return TryDecryptWithTagMask(ref hash, j0, ref MemoryMarshal.GetReference(source), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(destination), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 			}
 
 			Vector128<byte> tagMask = default;
@@ -242,7 +242,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 	{
 		CtrCounters<CtrIncrementer32>.Fill(ref counter, batch);
 		_blockCipher.EncryptBlocks(batch.AsReadOnlySpan(), batch);
-		return Vector128.LoadUnsafe(ref batch.GetReference());
+		return Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(batch));
 	}
 
 	[SkipLocalsInit]

@@ -111,7 +111,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 			0x00, 0x0D, 0x0A, 0x07, 0x04, 0x01, 0x0E, 0x0B, 0x08, 0x05, 0x02, 0x0F, 0x0C, 0x09, 0x06, 0x03
 		];
 
-		return Vector128.LoadUnsafe(ref masks.GetReference(), (nuint)((rows & 3) << 4));
+		return Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(masks), (nuint)((rows & 3) << 4));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -471,7 +471,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		Span<uint> words = stackalloc uint[60];
 		_rounds = AesKeySchedule.Expand<AesCipherVpaes>(key, words);
 
-		ref uint wordRef = ref words.GetReference();
+		ref uint wordRef = ref MemoryMarshal.GetReference(words);
 
 		// Round 0 is added straight after the input transform, so it only needs the basis change.
 		_roundKeys[0] = ApplyInputTransform(Vector128.LoadUnsafe(ref wordRef).AsByte(), EncryptionInputTransformLow, EncryptionInputTransformHigh);
@@ -513,7 +513,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 	{
 		if (source.Length is 16)
 		{
-			Encrypt(Vector128.LoadUnsafe(ref source.GetReference())).StoreUnsafe(ref destination.GetReference());
+			Encrypt(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source))).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
 			return;
 		}
 
@@ -523,8 +523,8 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private readonly void EncryptBlocksCore(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref byte src = ref source.GetReference();
-		ref byte dst = ref destination.GetReference();
+		ref byte src = ref MemoryMarshal.GetReference(source);
+		ref byte dst = ref MemoryMarshal.GetReference(destination);
 		int offset = 0;
 
 		while (source.Length - offset >= 64)
@@ -580,7 +580,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 	{
 		if (source.Length is 16)
 		{
-			Decrypt(Vector128.LoadUnsafe(ref source.GetReference())).StoreUnsafe(ref destination.GetReference());
+			Decrypt(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source))).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
 			return;
 		}
 
@@ -590,8 +590,8 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private readonly void DecryptBlocksCore(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref byte src = ref source.GetReference();
-		ref byte dst = ref destination.GetReference();
+		ref byte src = ref MemoryMarshal.GetReference(source);
+		ref byte dst = ref MemoryMarshal.GetReference(destination);
 		int offset = 0;
 
 		while (source.Length - offset >= 64)
@@ -645,8 +645,8 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public readonly void TransformWithPolicy<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination, int offset = 0) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
 	{
-		ref byte src = ref source.GetReference();
-		ref byte dst = ref destination.GetReference();
+		ref byte src = ref MemoryMarshal.GetReference(source);
+		ref byte dst = ref MemoryMarshal.GetReference(destination);
 
 		while (source.Length - offset >= 64)
 		{

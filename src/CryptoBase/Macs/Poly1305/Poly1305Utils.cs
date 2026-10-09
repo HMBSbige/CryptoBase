@@ -69,7 +69,7 @@ internal static class Poly1305Utils
 			high = BinaryPrimitives.ReverseEndianness(high);
 		}
 
-		ref byte output = ref destination.GetReference();
+		ref byte output = ref MemoryMarshal.GetReference(destination);
 
 		if (Vector128.IsHardwareAccelerated)
 		{

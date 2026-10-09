@@ -53,8 +53,8 @@ public sealed partial class Base32Encoding
 		int blockCount = sourceRemaining >= 20 + Pack5FastOverReadBytes
 			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 20, destinationRemaining / 32)
 			: 0;
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 
 		for (int i = 0; i < blockCount; ++i)
 		{
@@ -85,8 +85,8 @@ public sealed partial class Base32Encoding
 		int blockCount = sourceRemaining >= 20 + Pack5FastOverReadBytes
 			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 20, destinationRemaining / 32)
 			: 0;
-		ref byte sourcePointer = ref source.GetReference();
-		ref char destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 
 		for (int i = 0; i < blockCount; ++i)
 		{
@@ -153,8 +153,8 @@ public sealed partial class Base32Encoding
 		Vector256<byte> nibbleMask = Vector256.Create((byte)0x0f);
 		Vector256<sbyte> lowerBound = Vector256.Create((sbyte)mapLowerBound);
 		int blockCount = Math.Min(fullLength / 32, destination.Length / 20);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 
@@ -197,8 +197,8 @@ public sealed partial class Base32Encoding
 		Vector256<byte> nibbleMask = Vector256.Create((byte)0x0f);
 		Vector256<sbyte> lowerBound = Vector256.Create((sbyte)mapLowerBound);
 		int blockCount = Math.Min(fullLength / 32, destination.Length / 20);
-		ref char sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 

@@ -41,13 +41,13 @@ internal partial struct Sha512Core
 	private void ProcessBlockPairsAvx2(ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out Sha512Schedule schedule1);
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte sourceEnd = ref Unsafe.Add(ref sourceRef, (nuint)source.Length);
 		ref ulong schedule10 = ref schedule1[0];
 
 		do
 		{
-			ref ulong roundConstant0 = ref RoundConstants.GetReference();
+			ref ulong roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
 			Vector256<ulong> words0 = LoadWordPairAvx2(ref sourceRef, 0);
 			Vector256<ulong> words1 = LoadWordPairAvx2(ref sourceRef, 16);
 			Vector256<ulong> words2 = LoadWordPairAvx2(ref sourceRef, 32);
@@ -134,7 +134,7 @@ internal partial struct Sha512Core
 		Debug.Assert(source.Length % BlockSizeInBytes is 0);
 
 		Unsafe.SkipInit(out InlineArray16<ulong> schedule);
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte sourceEnd = ref Unsafe.Add(ref sourceRef, (nuint)source.Length);
 		ref ulong schedule0 = ref schedule[0];
 
@@ -277,7 +277,7 @@ internal partial struct Sha512Core
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void StoreRoundInputAvx2(Vector256<ulong> words, ref ulong destination, nuint destinationOffset, nuint round)
 	{
-		ref ulong roundConstant0 = ref RoundConstants.GetReference();
+		ref ulong roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
 		Vector256<ulong> roundInput = words + Vector256.LoadUnsafe(ref roundConstant0, round);
 		roundInput.StoreUnsafe(ref destination, destinationOffset);
 	}

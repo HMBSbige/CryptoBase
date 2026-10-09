@@ -9,7 +9,7 @@ internal partial struct Sha256Core
 		Debug.Assert(!source.IsEmpty);
 		Debug.Assert(source.Length % BlockSizeInBytes is 0);
 
-		ref byte block = ref source.GetReference();
+		ref byte block = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 		uint h0 = _h0;
 		uint h1 = _h1;
@@ -20,7 +20,7 @@ internal partial struct Sha256Core
 		uint h6 = _h6;
 		uint h7 = _h7;
 		Vector128<uint> zero = Vector128<uint>.Zero;
-		ref uint roundConstant0 = ref RoundConstants.GetReference();
+		ref uint roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
 		Unsafe.SkipInit(out InlineArray4<uint> roundInputBuffer);
 		ref uint roundInput0 = ref roundInputBuffer[0];
 
@@ -140,7 +140,7 @@ internal partial struct Sha256Core
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void StoreRoundInputAdvSimd(Vector128<uint> words, int round, ref uint roundInput0)
 	{
-		ref uint roundConstant0 = ref RoundConstants.GetReference();
+		ref uint roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
 		StoreRoundInputAdvSimd(words, Vector128.LoadUnsafe(ref roundConstant0, (uint)round), ref roundInput0);
 	}
 

@@ -19,7 +19,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 	private CtrMode128(TBlockCipher blockCipher, ReadOnlySpan<byte> initialCounter)
 	{
 		_blockCipher = blockCipher;
-		_counter = Vector128.LoadUnsafe(ref initialCounter.GetReference());
+		_counter = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(initialCounter));
 	}
 
 	/// <summary>Creates a keyed CTR stream with the specified initial counter.</summary>
@@ -80,7 +80,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 
 			if (left is BlockSize)
 			{
-				(Vector128.LoadUnsafe(ref source.GetReference(), (nuint)offset) ^ _keyStream).StoreUnsafe(ref destination.GetReference(), (nuint)offset);
+				(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source), (nuint)offset) ^ _keyStream).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)offset);
 			}
 			else
 			{

@@ -28,14 +28,14 @@ internal static class CcmUtils
 	internal static void Encrypt<TTag, TEncryptor>(TEncryptor encryptor, scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData) where TTag : struct, ICcmTag where TEncryptor : ICcmBlockEncryptor, allows ref struct
 	{
 		Debug.Assert(nonce.Length is NonceSize && destination.Length == source.Length && tag.Length == TTag.Size);
-		Encrypt<TTag, TEncryptor>(ref encryptor, ref nonce.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length);
+		Encrypt<TTag, TEncryptor>(ref encryptor, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryDecrypt<TTag, TEncryptor>(TEncryptor encryptor, scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<byte> tag, scoped Span<byte> destination, scoped ReadOnlySpan<byte> associatedData) where TTag : struct, ICcmTag where TEncryptor : ICcmBlockEncryptor, allows ref struct
 	{
 		Debug.Assert(nonce.Length is NonceSize && destination.Length == source.Length && tag.Length == TTag.Size);
-		return TryDecrypt<TTag, TEncryptor>(ref encryptor, ref nonce.GetReference(), ref source.GetReference(), ref tag.GetReference(), ref destination.GetReference(), source.Length, ref associatedData.GetReference(), associatedData.Length);
+		return TryDecrypt<TTag, TEncryptor>(ref encryptor, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -53,8 +53,8 @@ internal static class CcmUtils
 
 		if (!source.IsEmpty)
 		{
-			ref byte input = ref source.GetReference();
-			ref byte output = ref destination.GetReference();
+			ref byte input = ref MemoryMarshal.GetReference(source);
+			ref byte output = ref MemoryMarshal.GetReference(destination);
 			nuint fullLength = (nuint)(source.Length & -BlockSize);
 
 			for (nuint offset = 0; offset < fullLength; offset += BlockSize)
@@ -99,8 +99,8 @@ internal static class CcmUtils
 		}
 		else
 		{
-			ref byte input = ref source.GetReference();
-			ref byte output = ref destination.GetReference();
+			ref byte input = ref MemoryMarshal.GetReference(source);
+			ref byte output = ref MemoryMarshal.GetReference(destination);
 			nuint finalOffset = (nuint)(source.Length - 1 & -BlockSize);
 
 			for (nuint offset = 0; offset < finalOffset; offset += BlockSize)
@@ -146,7 +146,7 @@ internal static class CcmUtils
 		Debug.Assert(nonce.Length is NonceSize && (uint)messageLength <= MaxMessageLength);
 
 		// Both blocks are flags || nonce || 3-byte big-endian value, read as little-endian halves.
-		ref byte source = ref nonce.GetReference();
+		ref byte source = ref MemoryMarshal.GetReference(nonce);
 		ulong low = Unsafe.ReadUnaligned<ulong>(ref source) << 8;
 		ulong high = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref source, NonceSize - sizeof(ulong))) >> 24;
 		ulong length = (ulong)BinaryPrimitives.ReverseEndianness((uint)messageLength) << 32;
@@ -167,7 +167,7 @@ internal static class CcmUtils
 			return;
 		}
 
-		ref byte input = ref associatedData.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(associatedData);
 		Vector128<byte> block;
 		int offset;
 
@@ -210,11 +210,11 @@ internal static class CcmUtils
 
 		if (TTag.Size is 16)
 		{
-			value.StoreUnsafe(ref tag.GetReference());
+			value.StoreUnsafe(ref MemoryMarshal.GetReference(tag));
 		}
 		else
 		{
-			Unsafe.WriteUnaligned(ref tag.GetReference(), value.AsUInt64().ToScalar());
+			Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(tag), value.AsUInt64().ToScalar());
 		}
 	}
 
@@ -222,7 +222,7 @@ internal static class CcmUtils
 	private static bool TagEquals<TTag>(Vector128<byte> expected, ReadOnlySpan<byte> tag) where TTag : struct, ICcmTag
 	{
 		Debug.Assert(TTag.Size is 8 or 16 && tag.Length == TTag.Size);
-		ref byte actual = ref tag.GetReference();
+		ref byte actual = ref MemoryMarshal.GetReference(tag);
 
 		return TTag.Size is 16
 			? FixedTime.Equals16(expected, Vector128.LoadUnsafe(ref actual))

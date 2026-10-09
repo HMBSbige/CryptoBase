@@ -48,7 +48,7 @@ internal readonly struct SM4Neon : ISM4Kernel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static unsafe Vector128<byte> Substitute(Vector128<byte> index)
 	{
-		byte* s = (byte*)Unsafe.AsPointer(ref S.GetReference());
+		byte* s = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(S));
 		(Vector128<byte> s0, Vector128<byte> s1, Vector128<byte> s2, Vector128<byte> s3) = AdvSimd.Arm64.Load4xVector128(s);
 		(Vector128<byte> s4, Vector128<byte> s5, Vector128<byte> s6, Vector128<byte> s7) = AdvSimd.Arm64.Load4xVector128(s + 64);
 		(Vector128<byte> s8, Vector128<byte> s9, Vector128<byte> s10, Vector128<byte> s11) = AdvSimd.Arm64.Load4xVector128(s + 128);
@@ -78,7 +78,7 @@ internal readonly struct SM4Neon : ISM4Kernel
 
 	private static unsafe void Process4(ref uint keys, ref byte source, ref byte destination)
 	{
-		byte* s = (byte*)Unsafe.AsPointer(ref S.GetReference());
+		byte* s = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(S));
 		(Vector128<byte> s0, Vector128<byte> s1, Vector128<byte> s2, Vector128<byte> s3) = AdvSimd.Arm64.Load4xVector128(s);
 		(Vector128<byte> s4, Vector128<byte> s5, Vector128<byte> s6, Vector128<byte> s7) = AdvSimd.Arm64.Load4xVector128(s + 64);
 		(Vector128<byte> s8, Vector128<byte> s9, Vector128<byte> s10, Vector128<byte> s11) = AdvSimd.Arm64.Load4xVector128(s + 128);
@@ -105,7 +105,7 @@ internal readonly struct SM4Neon : ISM4Kernel
 
 	private static unsafe void Process8(ref uint keys, ref byte source, ref byte destination)
 	{
-		byte* s = (byte*)Unsafe.AsPointer(ref S.GetReference());
+		byte* s = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(S));
 		(Vector128<byte> s0, Vector128<byte> s1, Vector128<byte> s2, Vector128<byte> s3) = AdvSimd.Arm64.Load4xVector128(s);
 		(Vector128<byte> s4, Vector128<byte> s5, Vector128<byte> s6, Vector128<byte> s7) = AdvSimd.Arm64.Load4xVector128(s + 64);
 		(Vector128<byte> s8, Vector128<byte> s9, Vector128<byte> s10, Vector128<byte> s11) = AdvSimd.Arm64.Load4xVector128(s + 128);

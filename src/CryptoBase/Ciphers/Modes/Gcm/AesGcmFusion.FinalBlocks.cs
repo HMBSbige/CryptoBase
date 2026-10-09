@@ -40,7 +40,7 @@ internal static partial class AesGcmFusion
 	{
 		if (followedByRegisterBlocks && associatedData.Length <= GHash.BlockSizeInBytes)
 		{
-			return associatedData.IsEmpty ? Vector128<byte>.Zero : Vector128.LoadPartialUnsafe(ref associatedData.GetReference(), 0, associatedData.Length);
+			return associatedData.IsEmpty ? Vector128<byte>.Zero : Vector128.LoadPartialUnsafe(ref MemoryMarshal.GetReference(associatedData), 0, associatedData.Length);
 		}
 
 		hash.AppendPaddedSegmentsShort(associatedData);

@@ -17,8 +17,8 @@ internal static partial class AesGcmArm
 			return 0;
 		}
 
-		ref byte input = ref source.GetReference();
-		ref byte output = ref destination.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
 		ref readonly AesKeys roundKeys = ref aes.RoundKeys;
 		Vector128<uint> counterState = counter.ReverseEndianness32().AsUInt32();
 		Vector128<byte> c0 = NextCounter(ref counterState);

@@ -6,7 +6,7 @@ internal static class Gcm
 	internal static Vector128<byte> Begin(ReadOnlySpan<byte> nonce, out Vector128<byte> j0)
 	{
 		Debug.Assert(nonce.Length is 12);
-		ref byte source = ref nonce.GetReference();
+		ref byte source = ref MemoryMarshal.GetReference(nonce);
 		ulong low = Unsafe.ReadUnaligned<ulong>(ref source);
 		ulong high = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref source, 8));
 		high = BitConverter.IsLittleEndian ? high | 0x0100000000000000UL : high << 32 | 1UL;

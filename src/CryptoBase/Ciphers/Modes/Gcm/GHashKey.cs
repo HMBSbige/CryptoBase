@@ -12,7 +12,7 @@ internal struct GHashKey
 	internal static GHashKey Create(ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, GHash.BlockSizeInBytes, nameof(key));
-		return new GHashKey { Value = Vector128.LoadUnsafe(ref key.GetReference()) };
+		return new GHashKey { Value = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(key)) };
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

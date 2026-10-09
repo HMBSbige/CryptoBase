@@ -283,8 +283,8 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 			return;
 		}
 
-		ref byte src = ref source.GetReference();
-		ref byte dst = ref destination.GetReference();
+		ref byte src = ref MemoryMarshal.GetReference(source);
+		ref byte dst = ref MemoryMarshal.GetReference(destination);
 		int length = source.Length - offset;
 		Span<byte> scratch = stackalloc byte[BitsliceBatchSize - BlockSize];
 		scratch = scratch.Slice(0, length);
@@ -293,14 +293,14 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		{
 			for (int i = 0; i < length; i += BlockSize)
 			{
-				policy.Prepare1(ref src, (nuint)(offset + i)).StoreUnsafe(ref scratch.GetReference(), (nuint)i);
+				policy.Prepare1(ref src, (nuint)(offset + i)).StoreUnsafe(ref MemoryMarshal.GetReference(scratch), (nuint)i);
 			}
 
 			TOperation.ApplyBlocks(in _state.Software, scratch, scratch);
 
 			for (int i = 0; i < length; i += BlockSize)
 			{
-				policy.Finish1(ref src, ref dst, (nuint)(offset + i), Vector128.LoadUnsafe(ref scratch.GetReference(), (nuint)i));
+				policy.Finish1(ref src, ref dst, (nuint)(offset + i), Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(scratch), (nuint)i));
 			}
 		}
 		finally

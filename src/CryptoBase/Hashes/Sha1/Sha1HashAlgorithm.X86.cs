@@ -7,7 +7,7 @@ public partial struct Sha1HashAlgorithm
 	{
 		Debug.Assert(X86Base.X64.IsSupported && Ssse3.IsSupported);
 
-		ref byte blockRef = ref source.GetReference();
+		ref byte blockRef = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 		uint a = hashAlgorithm._h0;
 		uint b = hashAlgorithm._h1;

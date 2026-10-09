@@ -199,7 +199,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	private static void ProcessBlocksSoftware(ref SM3HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out InlineArray16<uint> schedule);
-		ref byte block = ref source.GetReference();
+		ref byte block = ref MemoryMarshal.GetReference(source);
 		int remaining = source.Length;
 
 		do
@@ -223,7 +223,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 		uint f = hashAlgorithm._v5;
 		uint g = hashAlgorithm._v6;
 		uint h = hashAlgorithm._v7;
-		ref uint roundConstants = ref RoundConstants.GetReference();
+		ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
 		for (int round = 0; round < 16; round += 4)
 		{

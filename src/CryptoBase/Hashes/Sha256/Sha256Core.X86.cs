@@ -11,7 +11,7 @@ internal partial struct Sha256Core
 
 		Unsafe.SkipInit(out InlineArray16<uint> schedule0);
 		Unsafe.SkipInit(out InlineArray64<uint> schedule1);
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 
 		// Buffer the second block's round inputs until the first block updates the hash state.
@@ -127,7 +127,7 @@ internal partial struct Sha256Core
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void StoreRoundInputAvx2(Vector256<uint> words, ref InlineArray16<uint> schedule0, ref InlineArray64<uint> schedule1, int scheduleOffset, int round)
 	{
-		ref uint roundConstant0 = ref RoundConstants.GetReference();
+		ref uint roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
 		Vector128<uint> constants128 = Vector128.LoadUnsafe(ref roundConstant0, (uint)round);
 		Vector256<uint> roundInput = words + Vector256.Create(constants128);
 		roundInput.GetLower().StoreUnsafe(ref schedule0[scheduleOffset]);

@@ -278,8 +278,8 @@ public sealed partial class Base32Encoding
 		int availableBlocks = (source.Length - sourceOffset) / InputBytesPerBlock;
 		int writableBlocks = (destination.Length - destinationOffset) / OutputSymbolsPerBlock;
 		int blockCount = Math.Min(availableBlocks, writableBlocks);
-		ref byte sourceReference = ref Unsafe.Add(ref source.GetReference(), sourceOffset);
-		ref char destinationReference = ref Unsafe.Add(ref destination.GetReference(), destinationOffset);
+		ref byte sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
+		ref char destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
 		ref byte alphabetReference = ref MemoryMarshal.GetArrayDataReference(_alphabet);
 
 		for (int block = 0; block < blockCount; ++block)
@@ -344,8 +344,8 @@ public sealed partial class Base32Encoding
 		int availableBlocks = (source.Length - sourceOffset) / InputBytesPerBlock;
 		int writableBlocks = (destination.Length - destinationOffset) / OutputSymbolsPerBlock;
 		int blockCount = Math.Min(availableBlocks, writableBlocks);
-		ref byte sourceReference = ref Unsafe.Add(ref source.GetReference(), sourceOffset);
-		ref byte destinationReference = ref Unsafe.Add(ref destination.GetReference(), destinationOffset);
+		ref byte sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
+		ref byte destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
 		ref byte alphabetReference = ref MemoryMarshal.GetArrayDataReference(_alphabet);
 		int sourceRemaining = source.Length - sourceOffset;
 		int octCount = blockCount >> 3;

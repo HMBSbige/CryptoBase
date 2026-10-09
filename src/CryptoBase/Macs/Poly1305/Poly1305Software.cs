@@ -92,7 +92,7 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 	private void Append(scoped ReadOnlySpan<byte> source, bool padPartialBlock)
 	{
 		int length = source.Length;
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 
 		if (length >= Poly1305Algorithm.BlockSizeInBytes)
 		{

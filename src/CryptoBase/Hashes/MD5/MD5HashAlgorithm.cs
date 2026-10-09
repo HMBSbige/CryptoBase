@@ -86,7 +86,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		if (bufferedLength is not 0)
 		{
 			source.Slice(0, bytesNeeded).CopyTo(buffer.Slice(bufferedLength));
-			ProcessBlocks(ref this, ref buffer.GetReference(), 1);
+			ProcessBlocks(ref this, ref MemoryMarshal.GetReference(buffer), 1);
 			source = source.Slice(bytesNeeded);
 		}
 
@@ -95,7 +95,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		if (blockCount is not 0)
 		{
 			int byteCount = blockCount * BlockSizeInBytes;
-			ProcessBlocks(ref this, ref source.GetReference(), blockCount);
+			ProcessBlocks(ref this, ref MemoryMarshal.GetReference(source), blockCount);
 			source = source.Slice(byteCount);
 		}
 
@@ -117,7 +117,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 	void IIncrementalHashCore.Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
-		Finalize(ref this, ref destination.GetReference());
+		Finalize(ref this, ref MemoryMarshal.GetReference(destination));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -170,13 +170,13 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		if (index > LengthOffset)
 		{
 			buffer.Slice(index).Clear();
-			ProcessBlocks(ref hashAlgorithm, ref buffer.GetReference(), 1);
+			ProcessBlocks(ref hashAlgorithm, ref MemoryMarshal.GetReference(buffer), 1);
 			index = 0;
 		}
 
 		buffer.Slice(index, LengthOffset - index).Clear();
 		BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(LengthOffset), hashAlgorithm._byteCount << 3);
-		ProcessBlocks(ref hashAlgorithm, ref buffer.GetReference(), 1);
+		ProcessBlocks(ref hashAlgorithm, ref MemoryMarshal.GetReference(buffer), 1);
 
 		Unsafe.As<MD5HashAlgorithm, Vector128<byte>>(ref hashAlgorithm).StoreUnsafe(ref destination);
 	}
@@ -205,11 +205,11 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 
 	private static void ProcessBlocksSoftware(ref MD5HashAlgorithm hashAlgorithm, ref byte source, int blockCount)
 	{
-		ref uint roundConstants = ref RoundConstants.GetReference();
+		ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
 		do
 		{
-			ref InlineArray16<uint> x = ref source.As<InlineArray16<uint>>();
+			ref InlineArray16<uint> x = ref Unsafe.As<byte, InlineArray16<uint>>(ref source);
 
 			uint a = hashAlgorithm._a;
 			uint b = hashAlgorithm._b;

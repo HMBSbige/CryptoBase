@@ -73,7 +73,7 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 	private void AppendFourWay(scoped ReadOnlySpan<byte> source)
 	{
 		int length = source.Length & -BlockSize4;
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector256<ulong> mask = Vector256.Create((ulong)Poly1305State26.LimbMask);
 		Vector256<ulong> h0 = Vector256.CreateScalar((ulong)_state.H0);
 		Vector256<ulong> h1 = Vector256.CreateScalar((ulong)_state.H1);

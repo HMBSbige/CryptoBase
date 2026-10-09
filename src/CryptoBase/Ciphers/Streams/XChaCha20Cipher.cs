@@ -23,7 +23,7 @@ public class XChaCha20Cipher : ChaCha20OriginalCipher
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
-		_key = Vector256.LoadUnsafe(ref key.GetReference());
+		_key = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(key));
 
 		InitializeNonce(iv);
 	}

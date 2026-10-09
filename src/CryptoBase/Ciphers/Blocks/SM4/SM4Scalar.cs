@@ -126,7 +126,7 @@ internal static class SM4Scalar
 		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(4));
 		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(8));
 		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(12));
-		ref uint keys = ref rk.GetReference();
+		ref uint keys = ref MemoryMarshal.GetReference(rk);
 
 		for (int i = 0; i < 32; i += 4)
 		{

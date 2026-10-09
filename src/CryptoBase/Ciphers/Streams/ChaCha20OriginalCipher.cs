@@ -116,6 +116,6 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 	/// <inheritdoc />
 	protected override void IncrementCounter(Span<uint> state)
 	{
-		++ChaCha20Utils.GetCounterOriginal(ref state.GetReference());
+		++ChaCha20Utils.GetCounterOriginal(ref MemoryMarshal.GetReference(state));
 	}
 }

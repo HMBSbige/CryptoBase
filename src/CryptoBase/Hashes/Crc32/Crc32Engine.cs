@@ -217,7 +217,7 @@ internal static class Crc32Engine
 	{
 		bool isIeee = IsIeee<TAlgorithm>();
 		Debug.Assert(Crc32Arm.IsSupported || !isIeee && Sse42.IsSupported);
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
 
 		if (Sse42.X64.IsSupported || Crc32Arm.Arm64.IsSupported)

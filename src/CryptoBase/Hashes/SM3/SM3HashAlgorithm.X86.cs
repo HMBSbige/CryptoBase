@@ -9,7 +9,7 @@ public partial struct SM3HashAlgorithm
 		Debug.Assert(!source.IsEmpty);
 		Debug.Assert(source.Length % BlockSizeInBytes is 0);
 
-		ref byte block0 = ref source.GetReference();
+		ref byte block0 = ref MemoryMarshal.GetReference(source);
 		int remaining = source.Length;
 		uint a = hashAlgorithm._v0;
 		uint b = hashAlgorithm._v1;
@@ -61,7 +61,7 @@ public partial struct SM3HashAlgorithm
 				w5 = next;
 			}
 
-			ref uint roundConstants = ref RoundConstants.GetReference();
+			ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
 			for (int round = 18; round < 60; round += 3)
 			{

@@ -27,7 +27,7 @@ internal static partial class Crc32Vectorized
 
 		int blockCount = source.Length / blockSize;
 		int scalarLength = blockCount * scalarStripeSize;
-		ref byte scalar0 = ref source.GetReference();
+		ref byte scalar0 = ref MemoryMarshal.GetReference(source);
 		ref byte scalar1 = ref Unsafe.Add(ref scalar0, scalarLength);
 		ref byte scalar2 = ref Unsafe.Add(ref scalar1, scalarLength);
 		ref byte vectors = ref Unsafe.Add(ref scalar2, scalarLength);

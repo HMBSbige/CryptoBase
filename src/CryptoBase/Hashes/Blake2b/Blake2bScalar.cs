@@ -11,7 +11,7 @@ internal readonly struct Blake2bScalar : IBlake2bKernel
 	{
 		Debug.Assert(!blocks.IsEmpty && blocks.Length % BlockSizeInBytes is 0);
 
-		ref byte block = ref blocks.GetReference();
+		ref byte block = ref MemoryMarshal.GetReference(blocks);
 		nuint remainingBlocks = (uint)blocks.Length / BlockSizeInBytes;
 		ulong counterLow = (ulong)counter;
 		ulong counterHigh = (ulong)(counter >> 64);

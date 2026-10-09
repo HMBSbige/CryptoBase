@@ -13,9 +13,9 @@ public static class FastUtils
 		int i = 0;
 		int left = length;
 
-		ref byte streamRef = ref stream.GetReference();
-		ref byte sourceRef = ref source.GetReference();
-		ref byte destinationRef = ref destination.GetReference();
+		ref byte streamRef = ref MemoryMarshal.GetReference(stream);
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 
 		if (Vector512.IsHardwareAccelerated && left >= 4096)
 		{
@@ -84,9 +84,9 @@ public static class FastUtils
 
 		while (left >= 2 * sizeof(ulong))
 		{
-			ref readonly ulong v0 = ref Unsafe.Add(ref streamRef, i).As<ulong>();
-			ref readonly ulong v1 = ref Unsafe.Add(ref sourceRef, i).As<ulong>();
-			ref ulong dst = ref Unsafe.Add(ref destinationRef, i).As<ulong>();
+			ref readonly ulong v0 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref streamRef, i));
+			ref readonly ulong v1 = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref sourceRef, i));
+			ref ulong dst = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref destinationRef, i));
 
 			dst = v0 ^ v1;
 			i += sizeof(ulong);
@@ -102,7 +102,7 @@ public static class FastUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void XorLess16(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
-		XorTail(ref stream.GetReference(), ref source.GetReference(), ref destination.GetReference(), length);
+		XorTail(ref MemoryMarshal.GetReference(stream), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), length);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

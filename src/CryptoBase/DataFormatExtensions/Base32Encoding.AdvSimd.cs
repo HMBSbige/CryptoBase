@@ -42,8 +42,8 @@ public sealed partial class Base32Encoding
 		int blockCount = sourceRemaining >= 10 + Pack5FastOverReadBytes
 			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 10, (destination.Length - destinationOffset) / 16)
 			: 0;
-		ref byte sourceReference = ref Unsafe.Add(ref source.GetReference(), sourceOffset);
-		ref byte destinationReference = ref Unsafe.Add(ref destination.GetReference(), destinationOffset);
+		ref byte sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
+		ref byte destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
 		int quadCount = blockCount >> 2;
 
 		for (int i = 0; i < quadCount; ++i)
@@ -110,8 +110,8 @@ public sealed partial class Base32Encoding
 		int blockCount = sourceRemaining >= 10 + Pack5FastOverReadBytes
 			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 10, (destination.Length - destinationOffset) / 16)
 			: 0;
-		ref byte sourceReference = ref Unsafe.Add(ref source.GetReference(), sourceOffset);
-		ref char destinationReference = ref Unsafe.Add(ref destination.GetReference(), destinationOffset);
+		ref byte sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
+		ref char destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
 		int quadCount = blockCount >> 2;
 
 		for (int i = 0; i < quadCount; ++i)
@@ -221,8 +221,8 @@ public sealed partial class Base32Encoding
 		Vector128<sbyte> shiftsC = Vector128.Create(0, -4, 0, -3, 0, 0, -4, 0, -3, 0, 0, 0, 0, 0, 0, 0);
 
 		int blockCount = Math.Min(fullLength / 16, destination.Length / 10);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int groupCount = blockCount >> 2;
 		int processedBlocks = 0;
 
@@ -292,8 +292,8 @@ public sealed partial class Base32Encoding
 		Vector128<sbyte> shiftsC = Vector128.Create(0, -4, 0, -3, 0, 0, -4, 0, -3, 0, 0, 0, 0, 0, 0, 0);
 
 		int blockCount = Math.Min(fullLength / 16, destination.Length / 10);
-		ref char sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int groupCount = blockCount >> 2;
 		int processedBlocks = 0;
 

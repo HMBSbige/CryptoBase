@@ -44,7 +44,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 	{
 		int offset = 0;
 		int length = source.Length;
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector256<byte> key21 = Vector256.Create(_key2, _key1);
 		Vector256<byte> key43 = Vector256.Create(_key4, _key3);
 
@@ -100,7 +100,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 	{
 		int offset = 0;
 		int length = source.Length;
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 
 		while (length >= 4 * BlockSize)
 		{
@@ -172,13 +172,13 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		Debug.Assert(source.Length % BlockSize is 0);
 		Debug.Assert(sourceBlocks is >= 0 and < 4);
 
-		Vector128<byte> block = sourceBlocks is 0 ? finalBlock.ReverseEndianness128() : Vector128.LoadUnsafe(ref source.GetReference()).ReverseEndianness128();
+		Vector128<byte> block = sourceBlocks is 0 ? finalBlock.ReverseEndianness128() : Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source)).ReverseEndianness128();
 
 		block ^= accumulator;
 
 		GFMultiplyUnreduced(GetKey(sourceBlocks + 1), block, out Vector128<uint> p00, out Vector128<uint> p11, out Vector128<uint> pm);
 
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 
 		for (int i = 1; i < sourceBlocks; ++i)
 		{

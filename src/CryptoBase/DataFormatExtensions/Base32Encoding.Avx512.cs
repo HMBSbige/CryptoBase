@@ -159,8 +159,8 @@ public sealed partial class Base32Encoding
 		int blockCount = sourceRemaining >= 40 + Pack5FastOverReadBytes
 			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 40, destinationRemaining / 64)
 			: 0;
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 
 		for (int i = 0; i < blockCount; ++i)
 		{
@@ -191,8 +191,8 @@ public sealed partial class Base32Encoding
 		int blockCount = sourceRemaining >= 40 + Pack5FastOverReadBytes
 			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 40, destinationRemaining / 64)
 			: 0;
-		ref byte sourcePointer = ref source.GetReference();
-		ref char destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 
 		for (int i = 0; i < blockCount; ++i)
 		{
@@ -217,8 +217,8 @@ public sealed partial class Base32Encoding
 		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(alphabetKind));
 		Vector512<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
 		int blockCount = Math.Min(source.Length / 40, destination.Length / 64);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -255,8 +255,8 @@ public sealed partial class Base32Encoding
 		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(alphabetKind));
 		Vector512<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
 		int blockCount = Math.Min(source.Length / 40, destination.Length / 64);
-		ref byte sourcePointer = ref source.GetReference();
-		ref char destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -289,8 +289,8 @@ public sealed partial class Base32Encoding
 		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
 		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
 		int blockCount = Math.Min(source.Length / 20, destination.Length / 32);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -319,8 +319,8 @@ public sealed partial class Base32Encoding
 		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
 		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
 		int blockCount = Math.Min(source.Length / 20, destination.Length / 32);
-		ref byte sourcePointer = ref source.GetReference();
-		ref char destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -349,8 +349,8 @@ public sealed partial class Base32Encoding
 		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(_alphabetKind));
 		Vector512<byte> alphabet = Vector512.Create(Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
 		int blockCount = Math.Min(source.Length / 40, destination.Length / 64);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -404,8 +404,8 @@ public sealed partial class Base32Encoding
 		);
 		Vector512<byte> shiftControl = Vector512.Create(Avx512EncodeShiftControl).AsByte();
 		int blockCount = Math.Min(source.Length / 40, destination.Length / 64);
-		ref byte sourcePointer = ref source.GetReference();
-		ref char destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -438,8 +438,8 @@ public sealed partial class Base32Encoding
 		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(_alphabetKind));
 		Vector256<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet));
 		int blockCount = Math.Min(source.Length / 20, destination.Length / 32);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -466,8 +466,8 @@ public sealed partial class Base32Encoding
 		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(_alphabetKind));
 		Vector256<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet));
 		int blockCount = Math.Min(source.Length / 20, destination.Length / 32);
-		ref byte sourcePointer = ref source.GetReference();
-		ref char destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -496,7 +496,7 @@ public sealed partial class Base32Encoding
 		Vector128<byte> symbolMask = Vector128.Create((byte)SymbolMask);
 		Vector256<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(alphabetBytes));
 		Vector128<byte> loadMask = Vector128.Create(ulong.MaxValue, ushort.MaxValue).AsByte();
-		Vector128<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref source.GetReference()), loadMask, Vector128<byte>.Zero);
+		Vector128<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(source)), loadMask, Vector128<byte>.Zero);
 		Vector128<byte> packIndices = Vector128.Create((byte)4, 3, 2, 1, 0, 10, 10, 10, 9, 8, 7, 6, 5, 10, 10, 10);
 		Vector128<byte> shiftControl = Vector128.Create(Avx512EncodeShiftControl).AsByte();
 		return EncodeVbmiVl128(input, packIndices, shiftControl, symbolMask, alphabet.GetLower(), alphabet.GetUpper());
@@ -504,13 +504,13 @@ public sealed partial class Base32Encoding
 
 	private static int EncodeUtf8Avx512VbmiVl128CustomSingle(ReadOnlySpan<byte> source, Span<byte> destination, byte[] alphabetBytes)
 	{
-		EncodeAvx512VbmiVl128CustomSingle(source, alphabetBytes).StoreUnsafe(ref destination.GetReference());
+		EncodeAvx512VbmiVl128CustomSingle(source, alphabetBytes).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
 		return 10;
 	}
 
 	private static int EncodeCharsAvx512VbmiVl128CustomSingle(ReadOnlySpan<byte> source, Span<char> destination, byte[] alphabetBytes)
 	{
-		StoreEncodedChars(EncodeAvx512VbmiVl128CustomSingle(source, alphabetBytes), ref destination.GetReference());
+		StoreEncodedChars(EncodeAvx512VbmiVl128CustomSingle(source, alphabetBytes), ref MemoryMarshal.GetReference(destination));
 		return 10;
 	}
 
@@ -518,8 +518,8 @@ public sealed partial class Base32Encoding
 	{
 		Vector128<byte> symbolMask = Vector128.Create((byte)SymbolMask);
 		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
-		Vector128<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref source.GetReference()), Avx512Vl128EncodeLoadMask, Vector128<byte>.Zero);
-		EncodeVbmiVl128(input, Avx512Vl128PackIndicesVector, Avx512Vl128ShiftControlVector, symbolMask, alphabet.GetLower(), alphabet.GetUpper()).StoreUnsafe(ref destination.GetReference());
+		Vector128<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(source)), Avx512Vl128EncodeLoadMask, Vector128<byte>.Zero);
+		EncodeVbmiVl128(input, Avx512Vl128PackIndicesVector, Avx512Vl128ShiftControlVector, symbolMask, alphabet.GetLower(), alphabet.GetUpper()).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
 		return 10;
 	}
 
@@ -530,8 +530,8 @@ public sealed partial class Base32Encoding
 		Vector128<byte> alphabetLow = alphabet.GetLower();
 		Vector128<byte> alphabetHigh = alphabet.GetUpper();
 		int blockCount = Math.Min(source.Length / 10, destination.Length / 16);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -557,9 +557,9 @@ public sealed partial class Base32Encoding
 	{
 		Vector128<byte> symbolMask = Vector128.Create((byte)SymbolMask);
 		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
-		Vector128<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref source.GetReference()), Avx512Vl128EncodeLoadMask, Vector128<byte>.Zero);
+		Vector128<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(source)), Avx512Vl128EncodeLoadMask, Vector128<byte>.Zero);
 		Vector128<byte> encoded = EncodeVbmiVl128(input, Avx512Vl128PackIndicesVector, Avx512Vl128ShiftControlVector, symbolMask, alphabet.GetLower(), alphabet.GetUpper());
-		StoreEncodedChars(encoded, ref destination.GetReference());
+		StoreEncodedChars(encoded, ref MemoryMarshal.GetReference(destination));
 		return 10;
 	}
 
@@ -570,8 +570,8 @@ public sealed partial class Base32Encoding
 		Vector128<byte> alphabetLow = alphabet.GetLower();
 		Vector128<byte> alphabetHigh = alphabet.GetUpper();
 		int blockCount = Math.Min(source.Length / 10, destination.Length / 16);
-		ref byte sourcePointer = ref source.GetReference();
-		ref char destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 
 		for (int i = 0; i < pairCount; ++i)
@@ -645,8 +645,8 @@ public sealed partial class Base32Encoding
 		Vector256<byte> low = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexDecodeLowVector : Avx512VlRfcDecodeLowVector;
 		Vector256<byte> high = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexDecodeHighVector : Avx512VlRfcDecodeHighVector;
 		int blockCount = Math.Min(fullLength / 32, destination.Length / 20);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 
@@ -689,8 +689,8 @@ public sealed partial class Base32Encoding
 		Vector256<byte> low = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexDecodeLowVector : Avx512VlRfcDecodeLowVector;
 		Vector256<byte> high = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexDecodeHighVector : Avx512VlRfcDecodeHighVector;
 		int blockCount = Math.Min(fullLength / 32, destination.Length / 20);
-		ref char sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 
@@ -749,8 +749,8 @@ public sealed partial class Base32Encoding
 		Vector512<sbyte> lowerBound = Vector512.Create((sbyte)mapLowerBound);
 		Vector512<byte> packIndices = Avx512DecodedPackIndicesVector;
 		int blockCount = Math.Min(fullLength / 64, destination.Length / 40);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 
@@ -794,8 +794,8 @@ public sealed partial class Base32Encoding
 		Vector512<sbyte> lowerBound = Vector512.Create((sbyte)mapLowerBound);
 		Vector512<byte> packIndices = Avx512DecodedPackIndicesVector;
 		int blockCount = Math.Min(fullLength / 64, destination.Length / 40);
-		ref char sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 
@@ -865,8 +865,8 @@ public sealed partial class Base32Encoding
 		GetAvx512DecodeTables(alphabetKind, out Vector512<byte> low, out Vector512<byte> high);
 		Vector512<byte> packIndices = Avx512DecodedPackIndicesVector;
 		int blockCount = Math.Min(fullLength / 64, destination.Length / 40);
-		ref byte sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 
@@ -909,8 +909,8 @@ public sealed partial class Base32Encoding
 		GetAvx512DecodeTables(alphabetKind, out Vector512<byte> low, out Vector512<byte> high);
 		Vector512<byte> packIndices = Avx512DecodedPackIndicesVector;
 		int blockCount = Math.Min(fullLength / 64, destination.Length / 40);
-		ref char sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 

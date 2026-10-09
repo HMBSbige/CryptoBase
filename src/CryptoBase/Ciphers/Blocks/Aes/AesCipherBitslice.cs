@@ -59,8 +59,8 @@ internal partial struct AesCipherBitslice : IDisposable
 
 	public readonly void EncryptBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref byte input = ref source.GetReference();
-		ref byte output = ref destination.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
 		int remaining = source.Length;
 		int rounds = _rounds;
 
@@ -76,8 +76,8 @@ internal partial struct AesCipherBitslice : IDisposable
 
 	public readonly void DecryptBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref byte input = ref source.GetReference();
-		ref byte output = ref destination.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
 		int remaining = source.Length;
 		int rounds = _rounds;
 

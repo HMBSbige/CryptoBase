@@ -17,7 +17,7 @@ internal static partial class Crc32Vectorized
 		Vector128<ulong> k3k4 = Vector128.Create(k3, k4);
 		Vector64<ulong> k1Lower = Vector64.Create(k1);
 		Vector64<ulong> k3Lower = Vector64.Create(k3);
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
 		Vector128<ulong> x1;
 

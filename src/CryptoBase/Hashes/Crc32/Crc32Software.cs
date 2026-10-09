@@ -51,7 +51,7 @@ internal static class Crc32Software
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint UpdateBytes(uint state, ReadOnlySpan<byte> source, ref uint lookup)
 	{
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
 
 		while (length >= sizeof(ulong))
@@ -99,7 +99,7 @@ internal static class Crc32Software
 		int braidBlockSize = useFourWayBraid ? FourWayBraidBlockSizeInBytes : FiveWayBraidBlockSizeInBytes;
 		Debug.Assert(source.Length >= braidBlockSize);
 
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref uint braidLookup1 = ref Unsafe.Add(ref braidLookup, 1 * TableSize);
 		ref uint braidLookup2 = ref Unsafe.Add(ref braidLookup, 2 * TableSize);
 		ref uint braidLookup3 = ref Unsafe.Add(ref braidLookup, 3 * TableSize);

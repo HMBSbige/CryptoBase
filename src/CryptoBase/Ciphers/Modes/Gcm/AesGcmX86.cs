@@ -37,8 +37,8 @@ internal static partial class AesGcmX86
 		}
 
 		ref readonly AesKeys roundKeys = ref aes.RoundKeys;
-		ref byte input = ref source.GetReference();
-		ref byte output = ref destination.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
 		Vector128<byte> prefix = counter;
 		uint value = BinaryPrimitives.ReadUInt32BigEndian(counter.AsReadOnlySpan().Slice(12));
 

@@ -91,7 +91,7 @@ internal readonly struct GHashVector128PrecomputedKey : IGHashPowers
 		Vector128<byte> accumulator = accumulatorDestination;
 		int offset = 0;
 		int length = source.Length;
-		ref byte ptr = ref source.GetReference();
+		ref byte ptr = ref MemoryMarshal.GetReference(source);
 
 		while (length >= 8 * BlockSize)
 		{
@@ -173,13 +173,13 @@ internal readonly struct GHashVector128PrecomputedKey : IGHashPowers
 		Debug.Assert(suffix.IsEmpty || suffix.Length is BlockSize);
 		Debug.Assert(blockCount is > 0 and <= 8);
 
-		Vector128<byte> block = sourceBlocks is 0 ? Vector128.LoadUnsafe(ref suffix.GetReference()).ReverseEndianness128() : Vector128.LoadUnsafe(ref source.GetReference()).ReverseEndianness128();
+		Vector128<byte> block = sourceBlocks is 0 ? Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(suffix)).ReverseEndianness128() : Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source)).ReverseEndianness128();
 
 		block ^= accumulator;
 
 		GFMultiplyPreparedUnreduced(block, GetKey(blockCount), GetReductionKey(blockCount), out Vector128<byte> lo, out Vector128<byte> hi);
 
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 
 		for (int i = 1; i < sourceBlocks; ++i)
 		{
@@ -191,7 +191,7 @@ internal readonly struct GHashVector128PrecomputedKey : IGHashPowers
 
 		if (!suffix.IsEmpty && sourceBlocks is not 0)
 		{
-			block = Vector128.LoadUnsafe(ref suffix.GetReference()).ReverseEndianness128();
+			block = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(suffix)).ReverseEndianness128();
 			GFMultiplyPreparedUnreduced(block, _key1, _keyK1, out Vector128<byte> nextLo, out Vector128<byte> nextHi);
 			lo ^= nextLo;
 			hi ^= nextHi;

@@ -34,7 +34,7 @@ internal static class SM4KeySchedule
 			return;
 		}
 
-		ref uint ck = ref CK.GetReference();
+		ref uint ck = ref MemoryMarshal.GetReference(CK);
 
 		for (int i = 0; i < 32; i += 4)
 		{
@@ -55,7 +55,7 @@ internal static class SM4KeySchedule
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe void InitRoundKeysNeon(uint k0, uint k1, uint k2, uint k3, ref uint rk)
 	{
-		byte* s = (byte*)Unsafe.AsPointer(ref SM4Neon.S.GetReference());
+		byte* s = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(SM4Neon.S));
 		(Vector128<byte> s0, Vector128<byte> s1, Vector128<byte> s2, Vector128<byte> s3) = AdvSimd.Arm64.Load4xVector128(s);
 		(Vector128<byte> s4, Vector128<byte> s5, Vector128<byte> s6, Vector128<byte> s7) = AdvSimd.Arm64.Load4xVector128(s + 64);
 		(Vector128<byte> s8, Vector128<byte> s9, Vector128<byte> s10, Vector128<byte> s11) = AdvSimd.Arm64.Load4xVector128(s + 128);
@@ -65,7 +65,7 @@ internal static class SM4KeySchedule
 		Vector128<uint> x1 = Vector128.Create(k1);
 		Vector128<uint> x2 = Vector128.Create(k2);
 		Vector128<uint> x3 = Vector128.Create(k3);
-		ref uint ck = ref CK.GetReference();
+		ref uint ck = ref MemoryMarshal.GetReference(CK);
 
 		for (int i = 0; i < 32; ++i)
 		{

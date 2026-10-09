@@ -55,7 +55,7 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 
 			if (source.Length is BlockSize)
 			{
-				(Vector128.LoadUnsafe(ref source.GetReference()) ^ keyStream).StoreUnsafe(ref destination.GetReference());
+				(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source)) ^ keyStream).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
 			}
 			else
 			{

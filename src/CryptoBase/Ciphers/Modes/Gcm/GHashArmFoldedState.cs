@@ -21,7 +21,7 @@ internal ref struct GHashArmFoldedState : IDisposable
 	private void AppendBlocks(scoped ReadOnlySpan<byte> source)
 	{
 		int length = source.Length;
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 
 		while (length >= 8 * BlockSize)
 		{
@@ -93,7 +93,7 @@ internal ref struct GHashArmFoldedState : IDisposable
 
 		finalBlock = GHash.PadFinalBlock(remaining);
 		ReadOnlySpan<byte> final = finalBlock.AsReadOnlySpan();
-		ref byte finalRef = ref final.GetReference();
+		ref byte finalRef = ref MemoryMarshal.GetReference(final);
 
 		int completeBlockCount = completeLength / BlockSize;
 		int foldedBlockCount = (completeBlockCount & 7) + 1;
@@ -102,7 +102,7 @@ internal ref struct GHashArmFoldedState : IDisposable
 		{
 			int prefixLength = completeLength - (foldedBlockCount - 1) * BlockSize;
 			AppendBlocks(source.Slice(0, prefixLength));
-			ref byte tailRef = ref source.Slice(prefixLength).GetReference();
+			ref byte tailRef = ref MemoryMarshal.GetReference(source.Slice(prefixLength));
 
 			switch (foldedBlockCount)
 			{

@@ -14,7 +14,7 @@ internal static partial class Crc32Vectorized
 		Debug.Assert(Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported);
 		Debug.Assert(source.Length >= 4 * Vector512<byte>.Count);
 
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
 		Vector512<ulong> x1 = Vector512.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector512.CreateScalar((ulong)state);
 		Vector512<ulong> x2 = Vector512.LoadUnsafe(ref sourceRef, 64).AsUInt64();
@@ -88,7 +88,7 @@ internal static partial class Crc32Vectorized
 		Debug.Assert(Avx2.IsSupported && Pclmulqdq.V256.IsSupported);
 		Debug.Assert(source.Length >= 4 * Vector256<byte>.Count);
 
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
 		Vector256<ulong> x1;
 		Vector256<ulong> x2;
@@ -195,7 +195,7 @@ internal static partial class Crc32Vectorized
 		Debug.Assert(Pclmulqdq.IsSupported);
 		Debug.Assert(source.Length >= Vector128<byte>.Count);
 
-		ref byte sourceRef = ref source.GetReference();
+		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
 		Vector128<ulong> fold512 = constants.Fold512Vector128;
 		Vector128<ulong> fold128 = constants.Fold128Vector128;

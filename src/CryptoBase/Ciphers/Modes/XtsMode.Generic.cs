@@ -116,8 +116,8 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 
 				if (swapLastTweak && offset + length == source.Length)
 				{
-					Vector128<byte> lastTweak = Vector128.LoadUnsafe(ref tweaks.GetReference(), (nuint)(length - BlockSize));
-					currentTweak.StoreUnsafe(ref tweaks.GetReference(), (nuint)(length - BlockSize));
+					Vector128<byte> lastTweak = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(tweaks), (nuint)(length - BlockSize));
+					currentTweak.StoreUnsafe(ref MemoryMarshal.GetReference(tweaks), (nuint)(length - BlockSize));
 					currentTweak = lastTweak;
 				}
 
@@ -183,9 +183,9 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 
 	private void TransformBlock<TDirection>(Vector128<byte> tweak, Span<byte> block) where TDirection : struct, IBlockDirection
 	{
-		Vector128<byte> value = Vector128.LoadUnsafe(ref block.GetReference()) ^ tweak;
+		Vector128<byte> value = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(block)) ^ tweak;
 
 		value = BlockModeDispatch.TransformBlock<TBlockCipher, TDirection>(_dataCipher, value);
-		(value ^ tweak).StoreUnsafe(ref block.GetReference());
+		(value ^ tweak).StoreUnsafe(ref MemoryMarshal.GetReference(block));
 	}
 }

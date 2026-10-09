@@ -11,7 +11,7 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 
 		if (singleBlock)
 		{
-			ProcessSingleBlock(ref rk, ref source.GetReference(), ref destination.GetReference());
+			ProcessSingleBlock(ref rk, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination));
 			return;
 		}
 
@@ -22,11 +22,11 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 
 		if (source.Length < 64)
 		{
-			Process4(source.Length / 16, ref rk, ref source.GetReference(), ref destination.GetReference());
+			Process4(source.Length / 16, ref rk, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination));
 			return;
 		}
 
-		ProcessFullBlocks(ref rk, ref source.GetReference(), ref destination.GetReference(), source.Length);
+		ProcessFullBlocks(ref rk, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
 	}
 
 	// Avoid duplicating the round loop at each public single-block call site.
@@ -119,7 +119,7 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 		Debug.Assert(count > 0 && count < width);
 		using CryptoBuffer<byte> buffer = new(stackalloc byte[width * 16]);
 		MemoryMarshal.CreateReadOnlySpan(ref source, count * 16).CopyTo(buffer.Span);
-		ref byte scratch = ref buffer.Span.GetReference();
+		ref byte scratch = ref MemoryMarshal.GetReference(buffer.Span);
 		TKernel.Process(width, width, ref rk, ref scratch, ref scratch);
 		buffer.Span.Slice(0, count * 16).CopyTo(MemoryMarshal.CreateSpan(ref destination, count * 16));
 	}

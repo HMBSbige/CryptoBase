@@ -39,7 +39,7 @@ internal static class GHashArm
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void AppendSequential(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> source)
 	{
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 
 		for (int remaining = source.Length; remaining > 0; remaining -= BlockSize)
 		{

@@ -43,7 +43,7 @@ internal static partial class GHashNeon
 
 	private static void AppendBlocks(ref Vector128<byte> accumulator, Vector128<byte> key, scoped ReadOnlySpan<byte> source)
 	{
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector128<byte> value = accumulator;
 
 		for (int remaining = source.Length; remaining > 0; remaining -= GHash.BlockSizeInBytes)

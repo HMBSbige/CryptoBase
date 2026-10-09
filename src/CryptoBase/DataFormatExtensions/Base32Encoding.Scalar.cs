@@ -119,8 +119,8 @@ public sealed partial class Base32Encoding
 	private int DecodeScalar<T>(ReadOnlySpan<T> source, Span<byte> destination, int fullLength) where T : unmanaged
 	{
 		int blockCount = Math.Min(fullLength / OutputSymbolsPerBlock, destination.Length / InputBytesPerBlock);
-		ref T sourcePointer = ref source.GetReference();
-		ref byte destinationPointer = ref destination.GetReference();
+		ref T sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		ref byte decodeTable = ref MemoryMarshal.GetArrayDataReference(_decodeTable);
 		int processedBlocks = 0;
 
@@ -197,8 +197,8 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private bool TryDecodeBlock<T>(ReadOnlySpan<T> source, int sourceOffset, Span<byte> destination, int destinationOffset) where T : unmanaged
 	{
-		ref T sourceReference = ref Unsafe.Add(ref source.GetReference(), sourceOffset);
-		ref byte destinationReference = ref Unsafe.Add(ref destination.GetReference(), destinationOffset);
+		ref T sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
+		ref byte destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
 		ref byte decodeTableReference = ref MemoryMarshal.GetArrayDataReference(_decodeTable);
 		return TryDecodeBlock(ref sourceReference, ref destinationReference, ref decodeTableReference);
 	}

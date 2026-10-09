@@ -78,7 +78,7 @@ public class Salsa20Cipher : SnuffleCipher
 	/// <inheritdoc />
 	protected override void IncrementCounter(Span<uint> state)
 	{
-		++Salsa20Utils.GetCounter(ref state.GetReference());
+		++Salsa20Utils.GetCounter(ref MemoryMarshal.GetReference(state));
 	}
 
 	/// <summary>Sets the block counter and resets the byte offset within the block to zero.</summary>

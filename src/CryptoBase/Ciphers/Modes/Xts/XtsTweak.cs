@@ -21,7 +21,7 @@ internal static class XtsTweak
 
 			for (; i <= destination.Length - 64; i += 64)
 			{
-				lanes.StoreUnsafe(ref destination.GetReference(), (nuint)i);
+				lanes.StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)i);
 				lanes = MultiplyByAlphaPower(lanes, 4);
 			}
 
@@ -33,10 +33,10 @@ internal static class XtsTweak
 
 			for (; i <= destination.Length - 128; i += 128)
 			{
-				t0.StoreUnsafe(ref destination.GetReference(), (nuint)i);
-				t1.StoreUnsafe(ref destination.GetReference(), (nuint)(i + 32));
-				t2.StoreUnsafe(ref destination.GetReference(), (nuint)(i + 64));
-				t3.StoreUnsafe(ref destination.GetReference(), (nuint)(i + 96));
+				t0.StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)i);
+				t1.StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 32));
+				t2.StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 64));
+				t3.StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 96));
 				AdvancePacked8(ref t0, ref t1, ref t2, ref t3);
 			}
 
@@ -46,21 +46,21 @@ internal static class XtsTweak
 		{
 			for (; i <= destination.Length - 128; i += 128)
 			{
-				currentTweak.StoreUnsafe(ref destination.GetReference(), (nuint)(i + 0));
-				MultiplyByAlphaPower(currentTweak, 1).StoreUnsafe(ref destination.GetReference(), (nuint)(i + 16));
-				MultiplyByAlphaPower(currentTweak, 2).StoreUnsafe(ref destination.GetReference(), (nuint)(i + 32));
-				MultiplyByAlphaPower(currentTweak, 3).StoreUnsafe(ref destination.GetReference(), (nuint)(i + 48));
-				MultiplyByAlphaPower(currentTweak, 4).StoreUnsafe(ref destination.GetReference(), (nuint)(i + 64));
-				MultiplyByAlphaPower(currentTweak, 5).StoreUnsafe(ref destination.GetReference(), (nuint)(i + 80));
-				MultiplyByAlphaPower(currentTweak, 6).StoreUnsafe(ref destination.GetReference(), (nuint)(i + 96));
-				MultiplyByAlphaPower(currentTweak, 7).StoreUnsafe(ref destination.GetReference(), (nuint)(i + 112));
+				currentTweak.StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 0));
+				MultiplyByAlphaPower(currentTweak, 1).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 16));
+				MultiplyByAlphaPower(currentTweak, 2).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 32));
+				MultiplyByAlphaPower(currentTweak, 3).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 48));
+				MultiplyByAlphaPower(currentTweak, 4).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 64));
+				MultiplyByAlphaPower(currentTweak, 5).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 80));
+				MultiplyByAlphaPower(currentTweak, 6).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 96));
+				MultiplyByAlphaPower(currentTweak, 7).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)(i + 112));
 				currentTweak = MultiplyByAlphaPower(currentTweak, 8);
 			}
 		}
 
 		for (; i < destination.Length; i += 16)
 		{
-			currentTweak.StoreUnsafe(ref destination.GetReference(), (nuint)i);
+			currentTweak.StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)i);
 			currentTweak = MultiplyByAlpha(currentTweak);
 		}
 

@@ -25,7 +25,7 @@ internal static partial class AesGcmFusion
 
 		if (AesCipherX86.IsSupported)
 		{
-			EncryptFinalBlocks(aes, ref hashKey, ref nonce.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length);
+			EncryptFinalBlocks(aes, ref hashKey, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 			return;
 		}
 

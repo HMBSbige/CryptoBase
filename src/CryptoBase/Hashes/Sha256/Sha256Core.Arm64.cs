@@ -12,7 +12,7 @@ internal partial struct Sha256Core
 		ref uint firstStateWord = ref _h0;
 		Vector128<uint> state0 = Vector128.LoadUnsafe(ref firstStateWord);
 		Vector128<uint> state1 = Vector128.LoadUnsafe(ref firstStateWord, 4);
-		ref byte block = ref source.GetReference();
+		ref byte block = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 
 		do
@@ -36,7 +36,7 @@ internal partial struct Sha256Core
 		Vector128<uint> words3 = block3.ReverseEndianness32().AsUInt32();
 		Vector128<uint> savedState0 = state0;
 		Vector128<uint> savedState1 = state1;
-		ref uint roundConstants = ref RoundConstants.GetReference();
+		ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
 		(Vector128<uint> roundConstants0, Vector128<uint> roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 0);
 		state0 = RoundArm64(state0, ref state1, words0, roundConstants0);

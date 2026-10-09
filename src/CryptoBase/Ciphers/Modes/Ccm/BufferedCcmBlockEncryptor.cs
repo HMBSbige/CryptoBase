@@ -25,9 +25,9 @@ internal readonly ref struct BufferedCcmBlockEncryptor<TBlockCipher> : ICcmBlock
 	public void Absorb(ref Vector128<byte> state, Vector128<byte> block)
 	{
 		Span<byte> buffer = _buffer.Slice(0, 16);
-		(state ^ block).StoreUnsafe(ref buffer.GetReference());
+		(state ^ block).StoreUnsafe(ref MemoryMarshal.GetReference(buffer));
 		_cipher.EncryptBlock(buffer, buffer);
-		state = Vector128.LoadUnsafe(ref buffer.GetReference());
+		state = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(buffer));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,7 +46,7 @@ internal readonly ref struct BufferedCcmBlockEncryptor<TBlockCipher> : ICcmBlock
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Encrypt2(ref Vector128<byte> v0, ref Vector128<byte> v1)
 	{
-		ref byte buffer = ref _buffer.GetReference();
+		ref byte buffer = ref MemoryMarshal.GetReference(_buffer);
 		v0.StoreUnsafe(ref buffer);
 		v1.StoreUnsafe(ref buffer, 16);
 		_cipher.EncryptBlocks(_buffer, _buffer);

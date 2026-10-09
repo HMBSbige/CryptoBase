@@ -6,7 +6,7 @@ internal readonly ref struct AesOutputMaskPolicy : IAesModePolicy
 
 	internal AesOutputMaskPolicy(ReadOnlySpan<byte> xorOperand)
 	{
-		_xorOperand = ref xorOperand.GetReference();
+		_xorOperand = ref MemoryMarshal.GetReference(xorOperand);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -22,7 +22,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	private SM4Cipher(ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
-		SM4KeySchedule.InitRoundKeys(ref key.GetReference(), ref _roundKeys[0]);
+		SM4KeySchedule.InitRoundKeys(ref MemoryMarshal.GetReference(key), ref _roundKeys[0]);
 		((ReadOnlySpan<uint>)_roundKeys).CopyTo(_reverseRoundKeys);
 		((Span<uint>)_reverseRoundKeys).Reverse();
 	}

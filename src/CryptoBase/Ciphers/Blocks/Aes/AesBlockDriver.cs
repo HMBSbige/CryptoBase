@@ -35,8 +35,8 @@ internal static class AesBlockDriver<TCore> where TCore : struct, IAesVectorCore
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Process<TPolicy, TOperation>(ref TCore core, ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
 	{
-		ref byte src = ref source.GetReference();
-		ref byte dst = ref destination.GetReference();
+		ref byte src = ref MemoryMarshal.GetReference(source);
+		ref byte dst = ref MemoryMarshal.GetReference(destination);
 		int offset = 0;
 
 		if (TPolicy.UseBatch8)

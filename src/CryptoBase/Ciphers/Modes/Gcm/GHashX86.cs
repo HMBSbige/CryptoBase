@@ -92,7 +92,7 @@ internal static partial class GHashX86
 	{
 		if (source.Length is BlockSize)
 		{
-			Vector128<byte> block = Vector128.LoadUnsafe(ref source.GetReference()).ReverseEndianness128();
+			Vector128<byte> block = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source)).ReverseEndianness128();
 			accumulator = GFMultiply(key, block ^ accumulator);
 			return;
 		}
@@ -100,7 +100,7 @@ internal static partial class GHashX86
 		Vector128<byte> localAccumulator = accumulator;
 		Vector128<byte> localKey = key;
 
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 
 		for (int remaining = source.Length; remaining > 0; remaining -= BlockSize)
 		{

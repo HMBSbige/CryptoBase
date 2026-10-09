@@ -44,7 +44,7 @@ public partial struct MD5HashAlgorithm
 
 		do
 		{
-			ref InlineArray16<uint> x = ref source.As<InlineArray16<uint>>();
+			ref InlineArray16<uint> x = ref Unsafe.As<byte, InlineArray16<uint>>(ref source);
 			uint x0;
 			uint x1;
 			uint x2;

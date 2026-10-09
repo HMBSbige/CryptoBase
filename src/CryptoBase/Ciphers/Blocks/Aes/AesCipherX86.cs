@@ -62,7 +62,7 @@ internal struct AesCipherX86 : IDisposable, IAesVectorCore
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ExpandKey128(ReadOnlySpan<byte> key, ref AesKeys roundKeys)
 	{
-		roundKeys.K0 = Vector128.LoadUnsafe(ref key.GetReference());
+		roundKeys.K0 = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(key));
 
 		roundKeys.K1 = KeyRound(roundKeys.K0, AesKeySchedule.Rcon1);
 		roundKeys.K2 = KeyRound(roundKeys.K1, AesKeySchedule.Rcon2);
@@ -93,11 +93,11 @@ internal struct AesCipherX86 : IDisposable, IAesVectorCore
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ExpandKey192(ReadOnlySpan<byte> key, ref AesKeys roundKeys)
 	{
-		ref byte keyRef = ref key.GetReference();
+		ref byte keyRef = ref MemoryMarshal.GetReference(key);
 
 		roundKeys.K12 = Vector128.LoadUnsafe(ref keyRef);// 0,15
 
-		ref readonly ulong t = ref Unsafe.Add(ref keyRef, 16).As<ulong>();
+		ref readonly ulong t = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref keyRef, 16));
 		Vector128<byte> t1 = Vector128.CreateScalar(t).AsByte();// 16,23
 
 		KeyRound(out roundKeys.K0, out roundKeys.K1, out roundKeys.K2, ref roundKeys.K12, ref t1, AesKeySchedule.Rcon1, AesKeySchedule.Rcon2);
@@ -145,7 +145,7 @@ internal struct AesCipherX86 : IDisposable, IAesVectorCore
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ExpandKey256(ReadOnlySpan<byte> key, ref AesKeys roundKeys)
 	{
-		ref byte keyRef = ref key.GetReference();
+		ref byte keyRef = ref MemoryMarshal.GetReference(key);
 
 		roundKeys.K0 = roundKeys.K14 = Vector128.LoadUnsafe(ref keyRef);// 0,15
 		roundKeys.K13 = Vector128.LoadUnsafe(ref keyRef, 16);// 15,31

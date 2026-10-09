@@ -18,7 +18,7 @@ internal static class CtrCounters<TIncrementer> where TIncrementer : struct, ICt
 
 			for (; i <= counters.Length - 64; i += 64)
 			{
-				CtrLanes<TIncrementer>.Next4(ref lanes).StoreUnsafe(ref counters.GetReference(), (nuint)i);
+				CtrLanes<TIncrementer>.Next4(ref lanes).StoreUnsafe(ref MemoryMarshal.GetReference(counters), (nuint)i);
 			}
 
 			current = lanes.GetLower().GetLower();
@@ -29,7 +29,7 @@ internal static class CtrCounters<TIncrementer> where TIncrementer : struct, ICt
 
 			for (; i <= counters.Length - 32; i += 32)
 			{
-				CtrLanes<TIncrementer>.Next2(ref lanes).StoreUnsafe(ref counters.GetReference(), (nuint)i);
+				CtrLanes<TIncrementer>.Next2(ref lanes).StoreUnsafe(ref MemoryMarshal.GetReference(counters), (nuint)i);
 			}
 
 			current = lanes.GetLower();
@@ -37,7 +37,7 @@ internal static class CtrCounters<TIncrementer> where TIncrementer : struct, ICt
 
 		for (; i < counters.Length; i += BlockSize)
 		{
-			CtrLanes<TIncrementer>.Next(ref current).StoreUnsafe(ref counters.GetReference(), (nuint)i);
+			CtrLanes<TIncrementer>.Next(ref current).StoreUnsafe(ref MemoryMarshal.GetReference(counters), (nuint)i);
 		}
 
 		counter = current.ReverseEndianness128();

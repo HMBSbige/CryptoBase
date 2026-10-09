@@ -4,8 +4,8 @@ internal partial struct AesCipherBitslice
 {
 	public readonly void TransformWithPolicy<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
 	{
-		ref byte input = ref source.GetReference();
-		ref byte output = ref destination.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
 
 		for (int offset = 0; offset < source.Length; offset += BatchSize)
 		{

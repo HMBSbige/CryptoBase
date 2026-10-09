@@ -62,7 +62,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 		Vector128<byte> accumulator = accumulatorDestination;
 		int offset = 0;
 		int length = source.Length;
-		ref byte ptr = ref source.GetReference();
+		ref byte ptr = ref MemoryMarshal.GetReference(source);
 
 		while (length >= 16 * BlockSize)
 		{
@@ -201,7 +201,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 
 	private void AppendFoldedTail(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
 	{
-		ref byte ptr = ref source.GetReference();
+		ref byte ptr = ref MemoryMarshal.GetReference(source);
 		Vector256<byte> blocks = Vector256.LoadUnsafe(ref ptr).ReverseEndianness128();
 		blocks = Vector256.Create(blocks.GetLower() ^ accumulator, blocks.GetUpper());
 		Vector256<byte> firstKey = blockCount is 16 ? _key1615 : _key87;

@@ -73,7 +73,7 @@ public class ChaCha20Cipher : SnuffleCipher
 	/// <inheritdoc />
 	protected override void IncrementCounter(Span<uint> state)
 	{
-		++ChaCha20Utils.GetCounter(ref state.GetReference());
+		++ChaCha20Utils.GetCounter(ref MemoryMarshal.GetReference(state));
 	}
 
 	/// <summary>Initializes the nonce and resets the block counter to zero.</summary>

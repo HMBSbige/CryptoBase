@@ -403,7 +403,7 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 	private void AppendFourWay(scoped ReadOnlySpan<byte> source)
 	{
 		int length = source.Length & -BlockSize4;
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector128<uint> h0 = Vector128.CreateScalar(_state.H0);
 		Vector128<uint> h1 = Vector128.CreateScalar(_state.H1);
 		Vector128<uint> h2 = Vector128.CreateScalar(_state.H2);
@@ -468,7 +468,7 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 	private void AppendEightWay(scoped ReadOnlySpan<byte> source)
 	{
 		int length = source.Length & -BlockSize4;
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		LoadFour(ref input, out Vector128<uint> m0, out Vector128<uint> m1, out Vector128<uint> m2, out Vector128<uint> m3, out Vector128<uint> m4);
 		Vector128<uint> h0 = m0 + Vector128.CreateScalar(_state.H0);
 		Vector128<uint> h1 = m1 + Vector128.CreateScalar(_state.H1);
@@ -546,7 +546,7 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 
 	private void AppendTwoWay(scoped ReadOnlySpan<byte> source, int secondLength, bool padPartialBlock)
 	{
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		LoadTwo(ref input, secondLength, padPartialBlock, out Vector128<uint> h0, out Vector128<uint> h1, out Vector128<uint> h2, out Vector128<uint> h3, out Vector128<uint> h4);
 
 		Vector128<ulong> d0 = MultiplyUpper(h2, _s3);

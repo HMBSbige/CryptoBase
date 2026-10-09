@@ -12,7 +12,7 @@ public partial struct Sha1HashAlgorithm
 		ref uint firstStateWord = ref hashAlgorithm._h0;
 		Vector128<uint> stateAbcd = Vector128.LoadUnsafe(ref firstStateWord);
 		Vector64<uint> stateE = Vector64.CreateScalar(hashAlgorithm._h4);
-		ref byte block = ref source.GetReference();
+		ref byte block = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 
 		do

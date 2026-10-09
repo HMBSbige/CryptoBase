@@ -48,7 +48,7 @@ internal readonly partial struct Blake2bVector128 : IBlake2bKernel
 			return;
 		}
 
-		ref byte block = ref blocks.GetReference();
+		ref byte block = ref MemoryMarshal.GetReference(blocks);
 		nuint remainingBlocks = (uint)blocks.Length / BlockSizeInBytes;
 		ulong counterLow = (ulong)counter;
 		ulong counterHigh = (ulong)(counter >> 64);

@@ -19,7 +19,7 @@ internal static partial class AesGcmX86
 			processed += Encrypt4(in aes, ref counter, source.Slice(processed), destination.Slice(processed), ref accumulator, in powers);
 		}
 
-		accumulator = EncryptFinal(in aes, counter, ref Unsafe.Add(ref source.GetReference(), processed), ref Unsafe.Add(ref destination.GetReference(), processed), source.Length - processed, associatedDataBlock, lengthBlock, accumulator, in powers);
+		accumulator = EncryptFinal(in aes, counter, ref Unsafe.Add(ref MemoryMarshal.GetReference(source), processed), ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), processed), source.Length - processed, associatedDataBlock, lengthBlock, accumulator, in powers);
 		accumulator = accumulator.ReverseEndianness128();
 	}
 

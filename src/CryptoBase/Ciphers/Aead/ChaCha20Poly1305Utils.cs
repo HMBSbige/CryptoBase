@@ -44,29 +44,29 @@ internal static class ChaCha20Poly1305Utils
 
 		if (Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length, lengthBlock.Length))
 		{
-			EncryptAndComputeTagCore<TCipher, Poly1305Avx512>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			EncryptAndComputeTagCore<TCipher, Poly1305Avx512>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
 
 		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length, lengthBlock.Length))
 		{
-			EncryptAndComputeTagCore<TCipher, Poly1305Avx2>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			EncryptAndComputeTagCore<TCipher, Poly1305Avx2>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
 
 		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length, lengthBlock.Length))
 		{
-			EncryptAndComputeTagCore<TCipher, Poly1305Sse2>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			EncryptAndComputeTagCore<TCipher, Poly1305Sse2>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
 
 		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length, lengthBlock.Length))
 		{
-			EncryptAndComputeTagCore<TCipher, Poly1305AdvSimd>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			EncryptAndComputeTagCore<TCipher, Poly1305AdvSimd>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
 
-		EncryptAndComputeTagCore<TCipher, Poly1305Software>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+		EncryptAndComputeTagCore<TCipher, Poly1305Software>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 	}
 
 	[SkipLocalsInit]
@@ -86,29 +86,29 @@ internal static class ChaCha20Poly1305Utils
 
 		if (Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length, lengthBlock.Length))
 		{
-			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Avx512>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Avx512>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
 
 		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length, lengthBlock.Length))
 		{
-			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Avx2>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Avx2>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
 
 		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length, lengthBlock.Length))
 		{
-			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Sse2>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Sse2>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
 
 		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length, lengthBlock.Length))
 		{
-			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305AdvSimd>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+			EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305AdvSimd>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
 
-		EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Software>(cipher, ref poly1305Key.Span.GetReference(), ref source.GetReference(), ref destination.GetReference(), source.Length, ref tag.GetReference(), ref associatedData.GetReference(), associatedData.Length, ref lengthBlock.GetReference());
+		EncryptAndComputeTagFromKeyStreamCore<TCipher, Poly1305Software>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 	}
 
 	[SkipLocalsInit]
@@ -243,7 +243,7 @@ internal static class ChaCha20Poly1305Utils
 			return false;
 		}
 
-		XorFromKeyStream(cipher, ref Unsafe.Add(ref poly1305Key.Span.GetReference(), Poly1305Algorithm.KeyLengthInBytes), ref source.GetReference(), ref destination.GetReference(), source.Length);
+		XorFromKeyStream(cipher, ref Unsafe.Add(ref MemoryMarshal.GetReference(poly1305Key.Span), Poly1305Algorithm.KeyLengthInBytes), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
 		return true;
 	}
 

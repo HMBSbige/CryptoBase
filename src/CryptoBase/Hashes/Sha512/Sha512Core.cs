@@ -193,7 +193,7 @@ internal partial struct Sha512Core
 	{
 		Unsafe.SkipInit(out InlineArray16<ulong> schedule);
 		ref ulong schedule0 = ref schedule[0];
-		ref byte block0 = ref source.GetReference();
+		ref byte block0 = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 
 		do
@@ -211,7 +211,7 @@ internal partial struct Sha512Core
 			ulong f = _h5;
 			ulong g = _h6;
 			ulong h = _h7;
-			ref ulong roundConstant0 = ref RoundConstants.GetReference();
+			ref ulong roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
 
 			CompressLoadedEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 0);
 			CompressLoadedEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 8);

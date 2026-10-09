@@ -26,11 +26,11 @@ internal static partial class ChaCha20Utils
 
 		if (Avx2.IsSupported)
 		{
-			FirstBlocksAvx2(row0, row1, row2, row3, ref poly1305Key.GetReference(), ref keyStream.GetReference());
+			FirstBlocksAvx2(row0, row1, row2, row3, ref MemoryMarshal.GetReference(poly1305Key), ref MemoryMarshal.GetReference(keyStream));
 			return;
 		}
 
-		FirstBlocksVector128(row0, row1, row2, row3, ref poly1305Key.GetReference(), ref keyStream.GetReference());
+		FirstBlocksVector128(row0, row1, row2, row3, ref MemoryMarshal.GetReference(poly1305Key), ref MemoryMarshal.GetReference(keyStream));
 	}
 
 	// Block 0 in the low lanes and block 1 in the high lanes.

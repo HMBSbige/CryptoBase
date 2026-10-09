@@ -145,7 +145,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	private void AppendEightWay(scoped ReadOnlySpan<byte> source)
 	{
 		int length = source.Length & -BlockSize8;
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector512<ulong> mask = Vector512.Create((ulong)Poly1305State26.LimbMask);
 		Vector512<ulong> h0 = Vector512.CreateScalar((ulong)_state.H0);
 		Vector512<ulong> h1 = Vector512.CreateScalar((ulong)_state.H1);
@@ -246,7 +246,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	private void AppendSixteenWay(scoped ReadOnlySpan<byte> source)
 	{
 		int length = source.Length & -BlockSize8;
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector512<ulong> mask = Vector512.Create((ulong)Poly1305State26.LimbMask);
 		Vector512<ulong> h0 = Vector512.CreateScalar((ulong)_state.H0);
 		Vector512<ulong> h1 = Vector512.CreateScalar((ulong)_state.H1);
@@ -445,7 +445,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	private void AppendFourWayTail(scoped ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(source.Length >= Poly1305Algorithm.BlockSizeInBytes * 4);
-		ref byte input = ref source.GetReference();
+		ref byte input = ref MemoryMarshal.GetReference(source);
 		Poly1305Utils.LoadFour(ref input, out Vector256<ulong> m0, out Vector256<ulong> m1, out Vector256<ulong> m2, out Vector256<ulong> m3, out Vector256<ulong> m4);
 		Vector256<ulong> h0 = m0 + Vector256.CreateScalar((ulong)_state.H0);
 		Vector256<ulong> h1 = m1 + Vector256.CreateScalar((ulong)_state.H1);
