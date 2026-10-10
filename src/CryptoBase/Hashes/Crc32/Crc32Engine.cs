@@ -20,6 +20,12 @@ internal static class Crc32Engine
 	private const int CastagnoliX86Vector128Threshold = 1024;
 	private const int Arm64HybridThresholdInBytes = 6 * 1024;
 
+	private static bool UseX86Vector512
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static uint Update<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
 	{
@@ -51,7 +57,7 @@ internal static class Crc32Engine
 
 		if (Pclmulqdq.IsSupported)
 		{
-			if (source.Length >= X86Avx512Threshold && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported)
+			if (source.Length >= X86Avx512Threshold && UseX86Vector512)
 			{
 				return UpdateX86512<TAlgorithm>(state, source);
 			}
@@ -109,7 +115,7 @@ internal static class Crc32Engine
 			return int.MaxValue;
 		}
 
-		if (Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported)
+		if (UseX86Vector512)
 		{
 			return X86Avx512Threshold;
 		}

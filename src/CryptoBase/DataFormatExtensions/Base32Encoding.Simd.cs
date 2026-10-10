@@ -128,6 +128,18 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool UseAvx512Vbmi()
+	{
+		return Vector512.IsHardwareAccelerated && IsAvx512VbmiSupported();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool UseAvx512Bw()
+	{
+		return Vector512.IsHardwareAccelerated && Avx512BW.IsSupported;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> PackTwoFast(ref byte source)
 	{
 		return Vector128.CreateUInt64(Pack5Fast(ref source), Pack5Fast(ref Unsafe.Add(ref source, 5)));
@@ -155,7 +167,7 @@ public sealed partial class Base32Encoding
 
 		if (IsAvx512VbmiVlSupported())
 		{
-			if (sourceRemaining >= X86EncodeVector512Threshold && IsAvx512VbmiSupported())
+			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 			{
 				return EncodeCharsAvx512Vbmi(source, destination, alphabetKind);
 			}
@@ -170,12 +182,12 @@ public sealed partial class Base32Encoding
 				: 0;
 		}
 
-		if (sourceRemaining >= X86EncodeVector512Threshold && IsAvx512VbmiSupported())
+		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 		{
 			return EncodeCharsAvx512Vbmi(source, destination, alphabetKind);
 		}
 
-		if (sourceRemaining >= X86EncodeAvx512BwThreshold && Avx512BW.IsSupported)
+		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
 		{
 			return EncodeCharsAvx512Bw(source, destination, alphabetKind);
 		}
@@ -194,7 +206,7 @@ public sealed partial class Base32Encoding
 	{
 		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
 
-		if (sourceRemaining >= X86EncodeVector512Threshold && IsAvx512VbmiSupported())
+		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 		{
 			return EncodeCharsAvx512VbmiCustom(source, destination);
 		}
@@ -250,7 +262,7 @@ public sealed partial class Base32Encoding
 
 		if (IsAvx512VbmiVlSupported())
 		{
-			if (sourceRemaining >= X86EncodeVector512Threshold && IsAvx512VbmiSupported())
+			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 			{
 				return EncodeUtf8Avx512Vbmi(source, destination, alphabetKind);
 			}
@@ -265,12 +277,12 @@ public sealed partial class Base32Encoding
 				: 0;
 		}
 
-		if (sourceRemaining >= X86EncodeVector512Threshold && IsAvx512VbmiSupported())
+		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 		{
 			return EncodeUtf8Avx512Vbmi(source, destination, alphabetKind);
 		}
 
-		if (sourceRemaining >= X86EncodeAvx512BwThreshold && Avx512BW.IsSupported)
+		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
 		{
 			return EncodeUtf8Avx512Bw(source, destination, alphabetKind);
 		}
@@ -294,7 +306,7 @@ public sealed partial class Base32Encoding
 
 		if (IsAvx512VbmiVlSupported())
 		{
-			if (sourceRemaining >= X86EncodeVector512Threshold && IsAvx512VbmiSupported())
+			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 			{
 				return EncodeUtf8Avx512Vbmi(source, destination, alphabetKind);
 			}
@@ -309,12 +321,12 @@ public sealed partial class Base32Encoding
 				: 0;
 		}
 
-		if (sourceRemaining >= X86EncodeVector512Threshold && IsAvx512VbmiSupported())
+		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 		{
 			return EncodeUtf8Avx512Vbmi(source, destination, alphabetKind);
 		}
 
-		if (sourceRemaining >= X86EncodeAvx512BwThreshold && Avx512BW.IsSupported)
+		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
 		{
 			return EncodeUtf8Avx512Bw(source, destination, alphabetKind);
 		}
@@ -336,7 +348,7 @@ public sealed partial class Base32Encoding
 	{
 		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
 
-		if (sourceRemaining >= X86EncodeVector512Threshold && IsAvx512VbmiSupported())
+		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 		{
 			return EncodeUtf8Avx512VbmiCustom(source, destination);
 		}
@@ -416,6 +428,7 @@ public sealed partial class Base32Encoding
 
 		if (alphabetKind is CustomAlphabetKind)
 		{
+			// No narrower custom-alphabet decoder exists, so this ignores Vector512.IsHardwareAccelerated.
 			return IsAvx512VbmiSupported()
 				? DecodeCharsAvx512Vbmi(source, destination, fullLength, alphabetKind)
 				: DecodeScalar(source, destination, fullLength);
@@ -428,7 +441,7 @@ public sealed partial class Base32Encoding
 
 		if (IsAvx512VbmiVlSupported())
 		{
-			if (fullRemaining >= X86DecodeVector512Threshold && IsAvx512VbmiSupported())
+			if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 			{
 				return DecodeCharsAvx512Vbmi(source, destination, fullLength, alphabetKind);
 			}
@@ -441,12 +454,12 @@ public sealed partial class Base32Encoding
 			return DecodeCharsVector128(source, destination, fullLength, alphabetKind);
 		}
 
-		if (fullRemaining >= X86DecodeVector512Threshold && IsAvx512VbmiSupported())
+		if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 		{
 			return DecodeCharsAvx512Vbmi(source, destination, fullLength, alphabetKind);
 		}
 
-		if (fullRemaining >= X86DecodeVector512Threshold && Avx512BW.IsSupported)
+		if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Bw())
 		{
 			return DecodeCharsAvx512(source, destination, fullLength, alphabetKind);
 		}
@@ -519,7 +532,7 @@ public sealed partial class Base32Encoding
 
 		if (IsAvx512VbmiVlSupported())
 		{
-			if (fullRemaining >= X86DecodeVector512Threshold && IsAvx512VbmiSupported())
+			if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 			{
 				return DecodeUtf8Avx512Vbmi(source, destination, fullLength, alphabetKind);
 			}
@@ -534,12 +547,12 @@ public sealed partial class Base32Encoding
 				: DecodeScalar(source, destination, fullLength);
 		}
 
-		if (fullRemaining >= X86DecodeVector512Threshold && IsAvx512VbmiSupported())
+		if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 		{
 			return DecodeUtf8Avx512Vbmi(source, destination, fullLength, alphabetKind);
 		}
 
-		if (fullRemaining >= X86DecodeVector512Threshold && Avx512BW.IsSupported)
+		if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Bw())
 		{
 			return DecodeUtf8Avx512(source, destination, fullLength, alphabetKind);
 		}

@@ -5,7 +5,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	private const int BlockSize8 = Poly1305Algorithm.BlockSizeInBytes * 8;
 	private const int SixteenWayMinimumInputLength = BlockSize8 * 7;
 
-	public static bool IsSupported => Avx512F.IsSupported && Avx2.IsSupported;
+	public static bool IsSupported => Vector512.IsHardwareAccelerated && Avx512F.IsSupported && Avx2.IsSupported;
 
 	private Poly1305State26 _state;
 	private Vector512<uint> _r0, _r1, _r2, _r3, _r4;

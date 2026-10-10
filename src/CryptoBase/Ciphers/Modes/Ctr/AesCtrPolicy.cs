@@ -6,7 +6,6 @@ internal struct AesCtrPolicy<TIncrementer> : IAesModePolicy where TIncrementer :
 {
 	private Vector128<byte> _current;
 	private Vector256<byte> _lanes256;
-	private Vector512<byte> _lanes512;
 
 	public static bool UseBatch8 => true;
 
@@ -15,29 +14,16 @@ internal struct AesCtrPolicy<TIncrementer> : IAesModePolicy where TIncrementer :
 	{
 		_current = counter.ReverseEndianness128();
 
-		if (length >= 64)
+		if (length >= 64 && Avx2.IsSupported)
 		{
-			if (Avx512BW.IsSupported)
-			{
-				_lanes512 = CtrLanes<TIncrementer>.Create4(_current);
-			}
-			else if (Avx2.IsSupported)
-			{
-				_lanes256 = CtrLanes<TIncrementer>.Create2(_current);
-			}
+			_lanes256 = CtrLanes<TIncrementer>.Create2(_current);
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Prepare8(ref byte source, nuint offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3, out Vector128<byte> v4, out Vector128<byte> v5, out Vector128<byte> v6, out Vector128<byte> v7)
 	{
-		if (Avx512BW.IsSupported)
-		{
-			Next4(ref _lanes512, out v0, out v1, out v2, out v3);
-			Next4(ref _lanes512, out v4, out v5, out v6, out v7);
-			_current = _lanes512.GetLower().GetLower();
-		}
-		else if (Avx2.IsSupported)
+		if (Avx2.IsSupported)
 		{
 			Next2(ref _lanes256, out v0, out v1);
 			Next2(ref _lanes256, out v2, out v3);
@@ -67,12 +53,7 @@ internal struct AesCtrPolicy<TIncrementer> : IAesModePolicy where TIncrementer :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Prepare4(ref byte source, nuint offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3)
 	{
-		if (Avx512BW.IsSupported)
-		{
-			Next4(ref _lanes512, out v0, out v1, out v2, out v3);
-			_current = _lanes512.GetLower().GetLower();
-		}
-		else if (Avx2.IsSupported)
+		if (Avx2.IsSupported)
 		{
 			Next2(ref _lanes256, out v0, out v1);
 			Next2(ref _lanes256, out v2, out v3);
@@ -130,15 +111,5 @@ internal struct AesCtrPolicy<TIncrementer> : IAesModePolicy where TIncrementer :
 		Vector256<byte> counters = CtrLanes<TIncrementer>.Next2(ref lanes);
 		v0 = counters.GetLower();
 		v1 = counters.GetUpper();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Next4(ref Vector512<byte> lanes, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3)
-	{
-		Vector512<byte> counters = CtrLanes<TIncrementer>.Next4(ref lanes);
-		v0 = counters.GetLower().GetLower();
-		v1 = counters.GetLower().GetUpper();
-		v2 = counters.GetUpper().GetLower();
-		v3 = counters.GetUpper().GetUpper();
 	}
 }

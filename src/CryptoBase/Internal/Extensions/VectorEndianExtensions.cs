@@ -21,7 +21,10 @@ internal static class VectorEndianExtensions
 				63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48
 			);
 
-			return Vector512.Shuffle(value.AsByte(), vReverse128).As<byte, T>();
+			// Without VBMI, Vector512.Shuffle on bytes falls back to scalar code; this permutation stays within 128-bit lanes.
+			return Avx512BW.IsSupported
+				? Avx512BW.Shuffle(value.AsByte(), vReverse128).As<byte, T>()
+				: Vector512.Shuffle(value.AsByte(), vReverse128).As<byte, T>();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,7 +37,10 @@ internal static class VectorEndianExtensions
 				35, 34, 33, 32, 39, 38, 37, 36, 43, 42, 41, 40, 47, 46, 45, 44,
 				51, 50, 49, 48, 55, 54, 53, 52, 59, 58, 57, 56, 63, 62, 61, 60
 			);
-			return Vector512.Shuffle(value.AsByte(), vReverse32).As<byte, T>();
+
+			return Avx512BW.IsSupported
+				? Avx512BW.Shuffle(value.AsByte(), vReverse32).As<byte, T>()
+				: Vector512.Shuffle(value.AsByte(), vReverse32).As<byte, T>();
 		}
 	}
 

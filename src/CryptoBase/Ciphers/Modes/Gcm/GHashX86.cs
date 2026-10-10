@@ -13,7 +13,7 @@ internal static partial class GHashX86
 
 	internal static bool IsSupported256 => Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
 
-	internal static bool IsSupported512 => X86Base.X64.IsSupported && IsSupported256 && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
+	internal static bool IsSupported512 => Vector512.IsHardwareAccelerated && X86Base.X64.IsSupported && IsSupported256 && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool ShouldUseVector512(long firstPaddedLength, long secondPaddedLength, long thirdPaddedLength)

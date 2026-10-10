@@ -12,7 +12,7 @@ internal static class CtrCounters<TIncrementer> where TIncrementer : struct, ICt
 		Vector128<byte> current = counter.ReverseEndianness128();
 		int i = 0;
 
-		if (Avx512BW.IsSupported && counters.Length >= 64)
+		if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && counters.Length >= 64)
 		{
 			Vector512<byte> lanes = CtrLanes<TIncrementer>.Create4(current);
 

@@ -12,7 +12,7 @@ internal static class XtsTweak
 		Vector128<byte> currentTweak = tweak;
 		int i = 0;
 
-		if (Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported && destination.Length >= 64)
+		if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported && destination.Length >= 64)
 		{
 			Vector128<byte> t1 = MultiplyByAlpha(currentTweak);
 			Vector128<byte> t2 = MultiplyByAlpha(t1);
