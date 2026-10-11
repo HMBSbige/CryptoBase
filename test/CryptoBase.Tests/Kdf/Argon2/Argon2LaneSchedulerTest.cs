@@ -33,24 +33,11 @@ public class Argon2LaneSchedulerTest
 	}
 
 	[Test]
-	public async Task FailureWaitsForHelpersToLeaveTheirLanes()
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task FailureWaitsForHelpersToLeaveTheirLanes(bool interrupt)
 	{
-		FailingScheduler scheduler = new();
-
-		await Assert.That(scheduler.Run).ThrowsExactly<InvalidOperationException>();
-
-		using (Assert.Multiple())
-		{
-			await Assert.That(scheduler.ActiveLanes).IsEqualTo(0);
-			await Assert.That(scheduler.HelpersTookPart).IsTrue();
-			await Assert.That(scheduler.JoinHelperThreads()).IsTrue();
-		}
-	}
-
-	[Test]
-	public async Task FailureWaitsForHelpersDespiteAnInterrupt()
-	{
-		FailingScheduler scheduler = new(interrupt: true);
+		using FailingScheduler scheduler = new(interrupt);
 		Exception? failure = null;
 		int activeLanes = -1;
 		bool interruptPending = false;
@@ -70,19 +57,39 @@ public class Argon2LaneSchedulerTest
 
 				interruptPending = ConsumePendingInterrupt();
 			}
-		);
+		)
+		{ IsBackground = true };
 
 		thread.Start();
-		thread.Join();
-		bool helpersLeft = scheduler.JoinHelperThreads();
+		bool waitedForHelpers;
+		int lanesWhileWaiting;
+		bool callerLeft;
+		bool helpersLeft;
+
+		try
+		{
+			bool waitingOrStopped = SpinWait.SpinUntil(() => !thread.IsAlive || scheduler.Stopping && thread.ThreadState.HasFlag(System.Threading.ThreadState.WaitSleepJoin), TimeoutMilliseconds);
+			waitedForHelpers = waitingOrStopped && thread.IsAlive;
+			lanesWhileWaiting = scheduler.ActiveLanes;
+		}
+		finally
+		{
+			scheduler.ReleaseHelpers();
+			callerLeft = thread.Join(TimeoutMilliseconds);
+			helpersLeft = scheduler.JoinHelperThreads();
+		}
 
 		using (Assert.Multiple())
 		{
+			await Assert.That(waitedForHelpers).IsTrue();
+			await Assert.That(lanesWhileWaiting).IsEqualTo(HelperThreadCount);
+			await Assert.That(callerLeft).IsTrue();
 			await Assert.That(failure).IsTypeOf<InvalidOperationException>();
 			await Assert.That(activeLanes).IsEqualTo(0);
-			await Assert.That(interruptPending).IsTrue();
+			await Assert.That(interruptPending).IsEqualTo(interrupt);
 			await Assert.That(scheduler.HelpersTookPart).IsTrue();
 			await Assert.That(helpersLeft).IsTrue();
+			await Assert.That(scheduler.HelperFailures).All(static error => error is null);
 		}
 	}
 
@@ -210,11 +217,16 @@ public class Argon2LaneSchedulerTest
 		}
 	}
 
-	private sealed class FailingScheduler(bool interrupt = false) : TestScheduler(false)
+	private sealed class FailingScheduler(bool interrupt) : TestScheduler(false), IDisposable
 	{
+		private readonly CountdownEvent _helpersEntered = new(HelperThreadCount);
+		private readonly ManualResetEventSlim _releaseHelpers = new();
 		private int _activeLanes;
+		private int _stopping;
 
 		public int ActiveLanes => Volatile.Read(ref _activeLanes);
+
+		public bool Stopping => Volatile.Read(ref _stopping) is not 0;
 
 		public void Run()
 		{
@@ -226,8 +238,26 @@ public class Argon2LaneSchedulerTest
 			}
 			finally
 			{
+				// The exception has already been thrown; no test synchronization may consume the interrupt before StopHelpers.
+				if (interrupt)
+				{
+					Thread.CurrentThread.Interrupt();
+				}
+
+				Volatile.Write(ref _stopping, 1);
 				StopHelpers();
 			}
+		}
+
+		public void ReleaseHelpers()
+		{
+			_releaseHelpers.Set();
+		}
+
+		public void Dispose()
+		{
+			_helpersEntered.Dispose();
+			_releaseHelpers.Dispose();
 		}
 
 		protected override void ProcessLane(int pass, int slice, int lane)
@@ -238,24 +268,24 @@ public class Argon2LaneSchedulerTest
 			{
 				if (Environment.CurrentManagedThreadId != CallingThread)
 				{
-					Thread.Sleep(20);
+					_helpersEntered.Signal();
+
+					if (!_releaseHelpers.Wait(TimeoutMilliseconds))
+					{
+						throw new TimeoutException("The test did not release the helper lanes.");
+					}
+
 					return;
 				}
 
-				HelpersTookPart = SpinWait.SpinUntil(() => ActiveLanes > 1, TimeoutMilliseconds);
+				HelpersTookPart = _helpersEntered.Wait(TimeoutMilliseconds);
 
-				try
+				if (!HelpersTookPart)
 				{
-					throw new InvalidOperationException();
+					throw new TimeoutException("The helper lanes did not start.");
 				}
-				finally
-				{
-					// Only once the exception is thrown: creating it takes a lock that, when contended, would consume the interrupt.
-					if (interrupt)
-					{
-						Thread.CurrentThread.Interrupt();
-					}
-				}
+
+				throw new InvalidOperationException();
 			}
 			finally
 			{
