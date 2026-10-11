@@ -37,41 +37,34 @@ public unsafe class Argon2KernelBenchmark
 	[Benchmark(OperationsPerInvoke = BlockCount - 1)]
 	public void Vector128()
 	{
-		if (Argon2Vector128.IsSupported)
-		{
-			Fill<Argon2Vector128>();
-		}
+		Fill<Argon2Vector128>();
 	}
 
 	[Benchmark(OperationsPerInvoke = BlockCount - 1)]
 	public void AdvSimd()
 	{
-		if (Argon2AdvSimd.IsSupported)
-		{
-			Fill<Argon2AdvSimd>();
-		}
+		Fill<Argon2AdvSimd>();
 	}
 
 	[Benchmark(OperationsPerInvoke = BlockCount - 1)]
 	public void Vector256()
 	{
-		if (Argon2Vector256.IsSupported)
-		{
-			Fill<Argon2Vector256>();
-		}
+		Fill<Argon2Vector256>();
 	}
 
 	[Benchmark(OperationsPerInvoke = BlockCount - 1)]
 	public void Vector512()
 	{
-		if (Argon2Vector512.IsSupported)
-		{
-			Fill<Argon2Vector512>();
-		}
+		Fill<Argon2Vector512>();
 	}
 
 	private void Fill<TKernel>() where TKernel : IArgon2Kernel
 	{
+		if (!TKernel.IsSupported)
+		{
+			throw new PlatformNotSupportedException($"{typeof(TKernel).Name} is not supported in this process.");
+		}
+
 		Argon2Block* blocks = _blocks;
 		bool xorDestination = XorDestination;
 

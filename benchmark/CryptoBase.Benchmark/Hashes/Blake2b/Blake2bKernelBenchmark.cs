@@ -21,24 +21,28 @@ public class Blake2bKernelBenchmark
 	[Benchmark(Baseline = true)]
 	public void Scalar()
 	{
-		Blake2bScalar.Compress(ref _state[0], _source, 128, 0);
+		Compress<Blake2bScalar>();
 	}
 
 	[Benchmark]
 	public void Vector128()
 	{
-		if (Blake2bVector128.IsSupported)
-		{
-			Blake2bVector128.Compress(ref _state[0], _source, 128, 0);
-		}
+		Compress<Blake2bVector128>();
 	}
 
 	[Benchmark]
 	public void Vector256()
 	{
-		if (Blake2bVector256.IsSupported)
+		Compress<Blake2bVector256>();
+	}
+
+	private void Compress<TKernel>() where TKernel : IBlake2bKernel
+	{
+		if (!TKernel.IsSupported)
 		{
-			Blake2bVector256.Compress(ref _state[0], _source, 128, 0);
+			throw new PlatformNotSupportedException($"{typeof(TKernel).Name} is not supported in this process.");
 		}
+
+		TKernel.Compress(ref _state[0], _source, 128, 0);
 	}
 }
