@@ -11,7 +11,8 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 	where TBlockCipher : IBlockEncryptor<TBlockCipher>
 {
 	private const int BlockSize = 16;
-	private readonly TBlockCipher _blockCipher;
+	// Not readonly: a readonly field would make Dispose run on a defensive copy when TBlockCipher is a struct.
+	private TBlockCipher _blockCipher;
 	private Vector128<byte> _counter;
 	private Vector128<byte> _keyStream;
 	private int _index;

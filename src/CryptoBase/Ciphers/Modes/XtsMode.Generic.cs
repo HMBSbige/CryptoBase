@@ -7,8 +7,9 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 {
 	private const int BlockSize = 16;
 
-	private readonly TBlockCipher _dataCipher;
-	private readonly TBlockCipher _tweakCipher;
+	// Not readonly: readonly fields would make Dispose run on defensive copies when TBlockCipher is a struct.
+	private TBlockCipher _dataCipher;
+	private TBlockCipher _tweakCipher;
 
 	/// <inheritdoc />
 	public static int TweakSize => BlockSize;

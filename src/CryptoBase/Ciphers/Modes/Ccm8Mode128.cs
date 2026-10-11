@@ -22,7 +22,8 @@ public sealed class Ccm8Mode128<TBlockCipher> : IAeadCipher<Ccm8Mode128<TBlockCi
 	/// <inheritdoc />
 	public static int TagSize => CcmTag8.Size;
 
-	private readonly TBlockCipher _blockCipher;
+	// Not readonly: a readonly field would make Dispose run on a defensive copy when TBlockCipher is a struct.
+	private TBlockCipher _blockCipher;
 
 	private Ccm8Mode128(TBlockCipher blockCipher)
 	{

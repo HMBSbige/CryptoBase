@@ -37,7 +37,8 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 	// The tag-mask batch reserves one block for J0 in its 2048-byte key stream buffer.
 	private const int MaxTagMaskBatchLength = 2048 - 16;
 
-	private readonly TBlockCipher _blockCipher;
+	// Not readonly: a readonly field would make Dispose run on a defensive copy when TBlockCipher is a struct.
+	private TBlockCipher _blockCipher;
 	private GHashKey _hashKey;
 
 	private GcmMode128(TBlockCipher blockCipher)
