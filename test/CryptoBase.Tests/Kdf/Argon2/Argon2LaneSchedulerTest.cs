@@ -1,5 +1,6 @@
 using CryptoBase.Kdf.Argon2;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kdf.Argon2;
@@ -35,6 +36,7 @@ public class Argon2LaneSchedulerTest
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The calling thread is joined before disposal; a timed-out join already fails the test.")]
 	public async Task FailureWaitsForHelpersToLeaveTheirLanes(bool interrupt)
 	{
 		using FailingScheduler scheduler = new(interrupt);
