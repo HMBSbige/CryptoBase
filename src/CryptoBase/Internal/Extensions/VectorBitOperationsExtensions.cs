@@ -4,15 +4,6 @@ namespace CryptoBase.Internal.Extensions;
 
 internal static class VectorBitOperationsExtensions
 {
-	extension<T>(Vector512<T> value)
-	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public Vector512<T> RotateLeftUInt32([ConstantExpected(Min = 1, Max = 31)] byte offset)
-		{
-			return Avx512F.RotateLeft(value.AsUInt32(), offset).As<uint, T>();
-		}
-	}
-
 	extension<T>(Vector256<T> value)
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

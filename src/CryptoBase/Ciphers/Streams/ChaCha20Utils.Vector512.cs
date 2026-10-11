@@ -6,13 +6,13 @@ internal static partial class ChaCha20Utils
 	private static void QuarterRound(ref Vector512<uint> a, ref Vector512<uint> b, ref Vector512<uint> c, ref Vector512<uint> d)
 	{
 		a += b;
-		d = (d ^ a).RotateLeftUInt32(16);
+		d = Avx512F.RotateLeft(d ^ a, 16);
 		c += d;
-		b = (b ^ c).RotateLeftUInt32(12);
+		b = Avx512F.RotateLeft(b ^ c, 12);
 		a += b;
-		d = (d ^ a).RotateLeftUInt32(8);
+		d = Avx512F.RotateLeft(d ^ a, 8);
 		c += d;
-		b = (b ^ c).RotateLeftUInt32(7);
+		b = Avx512F.RotateLeft(b ^ c, 7);
 	}
 
 	private static int XorVector512(ref uint stateRef, ref byte input, ref byte output, int length)

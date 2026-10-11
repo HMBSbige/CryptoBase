@@ -5,10 +5,10 @@ internal static partial class Salsa20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void QuarterRound(ref Vector512<uint> a, ref Vector512<uint> b, ref Vector512<uint> c, ref Vector512<uint> d)
 	{
-		a ^= (b + c).RotateLeftUInt32(7);
-		d ^= (a + b).RotateLeftUInt32(9);
-		c ^= (d + a).RotateLeftUInt32(13);
-		b ^= (c + d).RotateLeftUInt32(18);
+		a ^= Avx512F.RotateLeft(b + c, 7);
+		d ^= Avx512F.RotateLeft(a + b, 9);
+		c ^= Avx512F.RotateLeft(d + a, 13);
+		b ^= Avx512F.RotateLeft(c + d, 18);
 	}
 
 	private static int XorVector512(ref uint stateRef, ref byte input, ref byte output, int length)

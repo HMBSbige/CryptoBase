@@ -52,7 +52,7 @@ internal static class SM4Linear
 	internal static Vector512<uint> XorTransform(Vector512<uint> r, Vector512<uint> x)
 	{
 		Vector512<uint> left = r ^ x;
-		Vector512<uint> right = Avx512F.TernaryLogic(x.RotateLeftUInt32(2), x.RotateLeftUInt32(10), x.RotateLeftUInt32(18), Xor3);
-		return Avx512F.TernaryLogic(left, right, x.RotateLeftUInt32(24), Xor3);
+		Vector512<uint> right = Avx512F.TernaryLogic(Avx512F.RotateLeft(x, 2), Avx512F.RotateLeft(x, 10), Avx512F.RotateLeft(x, 18), Xor3);
+		return Avx512F.TernaryLogic(left, right, Avx512F.RotateLeft(x, 24), Xor3);
 	}
 }
