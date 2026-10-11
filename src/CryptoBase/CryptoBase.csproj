@@ -17,4 +17,18 @@
     <ProjectReference Include="..\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
   </ItemGroup>
 
+  <Target Name="GenerateThisAssembly" BeforeTargets="CoreCompile" DependsOnTargets="GetAssemblyAttributes">
+    <PropertyGroup>
+      <_ThisAssemblyFile>$(IntermediateOutputPath)ThisAssembly.g.cs</_ThisAssemblyFile>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(_ThisAssemblyFile)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="// &lt;auto-generated/&gt;;namespace CryptoBase%3B;internal static class ThisAssembly;{;internal const string InformationalVersion = &quot;$(InformationalVersion)&quot;%3B;}" />
+
+    <ItemGroup>
+      <Compile Include="$(_ThisAssemblyFile)" />
+      <FileWrites Include="$(_ThisAssemblyFile)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

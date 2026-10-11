@@ -1,4 +1,3 @@
-using System.Reflection;
 using AesArm = System.Runtime.Intrinsics.Arm.Aes;
 using AesX86 = System.Runtime.Intrinsics.X86.Aes;
 using Wasm = System.Runtime.Intrinsics.Wasm;
@@ -17,7 +16,7 @@ public static class SystemEnvironmentUtils
 		Append(ref handler, "OS architecture", RuntimeInformation.OSArchitecture);
 		Append(ref handler, "Process architecture", RuntimeInformation.ProcessArchitecture);
 		Append(ref handler, "Runtime", RuntimeInformation.FrameworkDescription);
-		Append(ref handler, "CryptoBase version", typeof(SystemEnvironmentUtils).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown");
+		Append(ref handler, "CryptoBase version", ThisAssembly.InformationalVersion);
 		Append(ref handler, "Processor count", Environment.ProcessorCount);
 
 		handler.AppendLiteral(Environment.NewLine);
