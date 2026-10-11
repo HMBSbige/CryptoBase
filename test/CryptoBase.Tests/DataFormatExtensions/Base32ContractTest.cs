@@ -100,6 +100,50 @@ public class Base32ContractTest
 	}
 
 	[Test]
+	[MatrixDataSource]
+	public async Task EveryInvalidAsciiSymbolIsRejectedAtVectorLengths([Matrix(32, 40, 56, 64, 72, 128)] int symbolCount, [Matrix] bool hex)
+	{
+		// The lengths reach the 256-bit and 512-bit decoders; '=' is skipped because its validity depends on its position.
+		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		string alphabet = hex ? "0123456789ABCDEFGHIJKLMNOPQRSTUV" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+		byte[] source = CreateDeterministicSource(symbolCount / 8 * 5);
+		char[] valid = EncodeReference(source, hex, false);
+		int[] positions = [0, 7, 31, symbolCount - 1];
+		char[] chars = new char[symbolCount];
+		byte[] charDestination = new byte[source.Length];
+		byte[] utf8Destination = new byte[source.Length];
+		List<string> failures = [];
+
+		for (char symbol = (char)0; symbol < (char)0x80; ++symbol)
+		{
+			if (symbol is '=' || alphabet.Contains(symbol))
+			{
+				continue;
+			}
+
+			foreach (int position in positions.Distinct())
+			{
+				valid.CopyTo(chars, 0);
+				chars[position] = symbol;
+				PrepareDestination(charDestination);
+				PrepareDestination(utf8Destination);
+				OperationStatus charStatus = encoding.DecodeFromChars(chars, charDestination, out int charsConsumed, out int charsWritten);
+				OperationStatus utf8Status = encoding.DecodeFromUtf8(ToByteSymbols(chars), utf8Destination, out int bytesConsumed, out int bytesWritten);
+				int expectedConsumed = position / 8 * 8;
+				int expectedWritten = position / 8 * 5;
+
+				if (charStatus is not OperationStatus.InvalidData || charsConsumed != expectedConsumed || charsWritten != expectedWritten || !IsPrefixFollowedBySentinel(charDestination, source, expectedWritten)
+					|| utf8Status is not OperationStatus.InvalidData || bytesConsumed != expectedConsumed || bytesWritten != expectedWritten || !IsPrefixFollowedBySentinel(utf8Destination, source, expectedWritten))
+				{
+					failures.Add($"U+{(int)symbol:X4} at {position}: chars {charStatus}/{charsConsumed}/{charsWritten}, utf8 {utf8Status}/{bytesConsumed}/{bytesWritten}");
+				}
+			}
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
+	[Test]
 	public async Task DestinationTooSmallDoesNotWrite()
 	{
 		byte[] source = "foo"u8.ToArray();
@@ -312,5 +356,10 @@ public class Base32ContractTest
 
 		await Assert.That(() => Base32Encoding.GetMaxDecodedLength(-1)).ThrowsExactly<ArgumentOutOfRangeException>();
 		await Assert.That(Base32Encoding.GetMaxDecodedLength(int.MaxValue)).IsEqualTo(1_342_177_279);
+	}
+
+	private static bool IsPrefixFollowedBySentinel(byte[] destination, byte[] source, int length)
+	{
+		return destination.AsSpan(0, length).SequenceEqual(source.AsSpan(0, length)) && !destination.AsSpan(length).ContainsAnyExcept(DestinationSentinel);
 	}
 }

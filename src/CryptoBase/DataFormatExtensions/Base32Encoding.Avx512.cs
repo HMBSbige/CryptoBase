@@ -640,6 +640,15 @@ public sealed partial class Base32Encoding
 		upper.GetUpper().StoreUnsafe(ref Unsafe.Add(ref destination, 30));
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector256<byte> LookupVbmiVl256(Vector256<byte> input, Vector256<byte> low, Vector256<byte> high)
+	{
+		// The 256-bit VPERMI2B only reads index bits 5:0, so a byte outside 0x20-0x5F would alias an entry inside that window.
+		// Clamping maps such bytes to ' ' or '_', which are invalid in both alphabets.
+		Vector256<byte> index = Vector256.Min(Vector256.Max(input, Vector256.Create((byte)' ')), Vector256.Create((byte)'_'));
+		return Avx512Vbmi.VL.PermuteVar32x8x2(low, index, high);
+	}
+
 	private static int DecodeUtf8Avx512VbmiVl256(ReadOnlySpan<byte> source, Span<byte> destination, int fullLength, byte alphabetKind)
 	{
 		Vector256<byte> low = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexDecodeLowVector : Avx512VlRfcDecodeLowVector;
@@ -654,10 +663,10 @@ public sealed partial class Base32Encoding
 		{
 			Vector256<byte> firstInput = Vector256.LoadUnsafe(ref sourcePointer);
 			Vector256<byte> secondInput = Vector256.LoadUnsafe(ref sourcePointer, 32);
-			Vector256<byte> first = Avx512Vbmi.VL.PermuteVar32x8x2(low, firstInput, high);
-			Vector256<byte> second = Avx512Vbmi.VL.PermuteVar32x8x2(low, secondInput, high);
+			Vector256<byte> first = LookupVbmiVl256(firstInput, low, high);
+			Vector256<byte> second = LookupVbmiVl256(secondInput, low, high);
 
-			if ((firstInput | first | secondInput | second).ExtractMostSignificantBits() is not 0)
+			if ((first | second).ExtractMostSignificantBits() is not 0)
 			{
 				break;
 			}
@@ -671,10 +680,9 @@ public sealed partial class Base32Encoding
 
 		if (processedBlocks == pairCount * 2 && (blockCount & 1) is not 0)
 		{
-			Vector256<byte> input = Vector256.LoadUnsafe(ref sourcePointer);
-			Vector256<byte> values = Avx512Vbmi.VL.PermuteVar32x8x2(low, input, high);
+			Vector256<byte> values = LookupVbmiVl256(Vector256.LoadUnsafe(ref sourcePointer), low, high);
 
-			if ((input | values).ExtractMostSignificantBits() is 0)
+			if (values.ExtractMostSignificantBits() is 0)
 			{
 				StoreDecoded(PackDecoded(values), ref destinationPointer);
 				++processedBlocks;
@@ -705,8 +713,8 @@ public sealed partial class Base32Encoding
 				break;
 			}
 
-			Vector256<byte> first = Avx512Vbmi.VL.PermuteVar32x8x2(low, firstInput, high);
-			Vector256<byte> second = Avx512Vbmi.VL.PermuteVar32x8x2(low, secondInput, high);
+			Vector256<byte> first = LookupVbmiVl256(firstInput, low, high);
+			Vector256<byte> second = LookupVbmiVl256(secondInput, low, high);
 
 			if ((first | second).ExtractMostSignificantBits() is not 0)
 			{
@@ -727,7 +735,7 @@ public sealed partial class Base32Encoding
 			&& TryNarrowAscii(ref sourcePointer, out Vector256<byte> input)
 		)
 		{
-			Vector256<byte> values = Avx512Vbmi.VL.PermuteVar32x8x2(low, input, high);
+			Vector256<byte> values = LookupVbmiVl256(input, low, high);
 
 			if (values.ExtractMostSignificantBits() is 0)
 			{
