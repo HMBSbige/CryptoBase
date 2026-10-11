@@ -57,7 +57,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | Algorithms | Status |
 | ---------- |:------:|
 | HKDF | ✅ |
-| Argon2id | ⚠️ |
+| Argon2id | ✅ |
 
 ### Symmetric-key algorithms
 

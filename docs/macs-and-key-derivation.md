@@ -70,3 +70,29 @@ Hkdf.Extract<Sha256HashAlgorithm>(inputKeyMaterial, salt, pseudorandomKey);
 // Expand the pseudorandom key.
 Hkdf.Expand<Sha256HashAlgorithm>(pseudorandomKey, outputKeyMaterial, info);
 ```
+
+## Argon2id
+
+```csharp
+using System.Security.Cryptography;
+using System.Text;
+using CryptoBase.Kdf;
+
+byte[] password = Encoding.UTF8.GetBytes("correct horse battery staple");
+byte[] salt = RandomNumberGenerator.GetBytes(16);
+byte[] tag = new byte[32];
+
+// Use RFC 9106's second recommended option: m = 64 MiB, t = 3, p = 4.
+Argon2id.DeriveKey(password, salt, tag, Argon2Parameters.Rfc9106SecondRecommended);
+
+// Fill the four lanes on the calling thread only. The tag is the same.
+Argon2id.DeriveKey(password, salt, tag, Argon2Parameters.Rfc9106SecondRecommended, maxDegreeOfParallelism: 1);
+
+// Choose custom costs, here OWASP's recommended minimum for Argon2id.
+Argon2Parameters parameters = new(memorySizeInKibibytes: 19 * 1024, iterations: 2, parallelism: 1);
+Argon2id.DeriveKey(password, salt, tag, parameters);
+
+// Add a secret key (pepper) and associated data.
+byte[] secret = RandomNumberGenerator.GetBytes(32);
+Argon2id.DeriveKey(password, salt, tag, parameters, secret, "user-id"u8);
+```

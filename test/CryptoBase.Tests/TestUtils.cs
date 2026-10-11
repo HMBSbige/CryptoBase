@@ -31,6 +31,19 @@ public static class TestUtils
 		destination.Fill(DestinationSentinel);
 	}
 
+	public static bool ConsumePendingInterrupt()
+	{
+		try
+		{
+			Thread.Sleep(0);
+			return false;
+		}
+		catch (ThreadInterruptedException)
+		{
+			return true;
+		}
+	}
+
 	public static byte[] CreateGuardedBuffer(int offset, int length, int tailLength = 11)
 	{
 		byte[] buffer = new byte[offset + length + tailLength];

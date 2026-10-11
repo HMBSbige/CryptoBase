@@ -3,7 +3,6 @@ using System.Numerics;
 
 namespace CryptoBase.Tests.Hashes.Blake2b;
 
-// Direct transcription of the RFC 7693 compression function F.
 internal static class Blake2bReference
 {
 	private static ReadOnlySpan<ulong> IV =>
@@ -25,6 +24,32 @@ internal static class Blake2bReference
 		6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5,
 		10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0
 	];
+
+	public static byte[] Hash(ReadOnlySpan<byte> input, int hashLength)
+	{
+		ulong[] h = IV.ToArray();
+		h[0] ^= 0x01010000UL ^ (uint)hashLength;
+		int offset = 0;
+
+		while (input.Length - offset > 128)
+		{
+			offset += 128;
+			Compress(h, input.Slice(offset - 128, 128), (UInt128)offset, 0);
+		}
+
+		byte[] last = new byte[128];
+		input.Slice(offset).CopyTo(last);
+		Compress(h, last, (UInt128)input.Length, ulong.MaxValue);
+
+		byte[] digest = new byte[h.Length * sizeof(ulong)];
+
+		for (int i = 0; i < h.Length; ++i)
+		{
+			BinaryPrimitives.WriteUInt64LittleEndian(digest.AsSpan(i * sizeof(ulong)), h[i]);
+		}
+
+		return digest.AsSpan(0, hashLength).ToArray();
+	}
 
 	public static void Compress(Span<ulong> h, ReadOnlySpan<byte> block, UInt128 counter, ulong finalFlag)
 	{
