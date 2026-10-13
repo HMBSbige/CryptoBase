@@ -88,6 +88,8 @@ internal partial struct Sha256Core
 
 	internal void Finalize(Span<byte> destination, int hashLengthInBytes)
 	{
+		Debug.Assert(destination.Length >= hashLengthInBytes);
+
 		Span<byte> buffer = _buffer;
 		int index = (int)(_byteCount & BlockSizeInBytes - 1);
 		buffer[index++] = 0x80;
@@ -110,17 +112,18 @@ internal partial struct Sha256Core
 			ProcessBlocks(buffer.AsReadOnlySpan());
 		}
 
-		BinaryPrimitives.WriteUInt32BigEndian(destination, _h0);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), _h1);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), _h2);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), _h3);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(16), _h4);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(20), _h5);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(24), _h6);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
+		Unsafe.WriteUnaligned(ref output, BinaryPrimitives.ReverseEndianness(_h0));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 4), BinaryPrimitives.ReverseEndianness(_h1));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 8), BinaryPrimitives.ReverseEndianness(_h2));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 12), BinaryPrimitives.ReverseEndianness(_h3));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 16), BinaryPrimitives.ReverseEndianness(_h4));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 20), BinaryPrimitives.ReverseEndianness(_h5));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 24), BinaryPrimitives.ReverseEndianness(_h6));
 
 		if (hashLengthInBytes is Sha256HashAlgorithm.HashSizeInBytes)
 		{
-			BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(28), _h7);
+			Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 28), BinaryPrimitives.ReverseEndianness(_h7));
 		}
 	}
 

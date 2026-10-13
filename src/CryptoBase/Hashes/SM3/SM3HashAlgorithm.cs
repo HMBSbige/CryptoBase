@@ -155,6 +155,8 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	[SkipLocalsInit]
 	private static void Finalize(ref SM3HashAlgorithm hashAlgorithm, Span<byte> destination)
 	{
+		Debug.Assert(destination.Length >= HashLength);
+
 		Span<byte> buffer = hashAlgorithm._buffer;
 		int index = (int)(hashAlgorithm._byteCount & BlockSizeInBytes - 1);
 		buffer[index++] = 0x80;
@@ -170,14 +172,15 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(LengthOffset), hashAlgorithm._byteCount << 3);
 		ProcessBlocks(ref hashAlgorithm, buffer.AsReadOnlySpan());
 
-		BinaryPrimitives.WriteUInt32BigEndian(destination, hashAlgorithm._v0);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), hashAlgorithm._v1);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), hashAlgorithm._v2);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), hashAlgorithm._v3);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(16), hashAlgorithm._v4);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(20), hashAlgorithm._v5);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(24), hashAlgorithm._v6);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(28), hashAlgorithm._v7);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
+		Unsafe.WriteUnaligned(ref output, BinaryPrimitives.ReverseEndianness(hashAlgorithm._v0));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 4), BinaryPrimitives.ReverseEndianness(hashAlgorithm._v1));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 8), BinaryPrimitives.ReverseEndianness(hashAlgorithm._v2));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 12), BinaryPrimitives.ReverseEndianness(hashAlgorithm._v3));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 16), BinaryPrimitives.ReverseEndianness(hashAlgorithm._v4));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 20), BinaryPrimitives.ReverseEndianness(hashAlgorithm._v5));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 24), BinaryPrimitives.ReverseEndianness(hashAlgorithm._v6));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 28), BinaryPrimitives.ReverseEndianness(hashAlgorithm._v7));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -91,6 +91,8 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 
 	private static void Finalize(ref Sha1HashAlgorithm hashAlgorithm, Span<byte> destination)
 	{
+		Debug.Assert(destination.Length >= HashLength);
+
 		Span<byte> buffer = hashAlgorithm._buffer;
 		int index = (int)(hashAlgorithm._byteCount & BlockSizeInBytes - 1);
 		buffer[index++] = 0x80;
@@ -106,11 +108,12 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(LengthOffset), hashAlgorithm._byteCount << 3);
 		ProcessBlocks(ref hashAlgorithm, buffer.AsReadOnlySpan());
 
-		BinaryPrimitives.WriteUInt32BigEndian(destination, hashAlgorithm._h0);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(4), hashAlgorithm._h1);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8), hashAlgorithm._h2);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(12), hashAlgorithm._h3);
-		BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(16), hashAlgorithm._h4);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
+		Unsafe.WriteUnaligned(ref output, BinaryPrimitives.ReverseEndianness(hashAlgorithm._h0));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 4), BinaryPrimitives.ReverseEndianness(hashAlgorithm._h1));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 8), BinaryPrimitives.ReverseEndianness(hashAlgorithm._h2));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 12), BinaryPrimitives.ReverseEndianness(hashAlgorithm._h3));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 16), BinaryPrimitives.ReverseEndianness(hashAlgorithm._h4));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
