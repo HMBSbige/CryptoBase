@@ -4,12 +4,12 @@ namespace CryptoBase.Kdf.Argon2;
 
 // With several lanes, pool threads queued once claim lanes alongside the calling thread and wait between phases, which costs far less than handing every slice to Parallel.For.
 // The calling thread processes every lane nobody has claimed, so progress never depends on a helper starting.
-internal abstract class Argon2LaneScheduler : IThreadPoolWorkItem
+internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelism) : IThreadPoolWorkItem
 {
 	// Threads waiting between phases spin for about 500 µs before blocking: long enough to cover the usual stagger between lanes of a phase, short enough not to hold a core while other derivations need it.
 	private static readonly long SpinTicks = Stopwatch.Frequency / 2000;
 
-	private readonly int _helpers;
+	private readonly int _helpers = HelperCount(lanes, maxDegreeOfParallelism);
 	private readonly object _gate = new();
 
 	private int _pass;
@@ -22,13 +22,7 @@ internal abstract class Argon2LaneScheduler : IThreadPoolWorkItem
 	private int _blockedThreads;
 	private int _finished;
 
-	protected Argon2LaneScheduler(int lanes, int maxDegreeOfParallelism)
-	{
-		Lanes = lanes;
-		_helpers = HelperCount(lanes, maxDegreeOfParallelism);
-	}
-
-	protected int Lanes { get; }
+	protected int Lanes { get; } = lanes;
 
 	private uint PublishedGeneration => (uint)(Volatile.Read(ref _work) >> 32);
 
