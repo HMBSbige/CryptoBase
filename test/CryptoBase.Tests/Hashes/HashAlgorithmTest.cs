@@ -1,7 +1,5 @@
-using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha256;
-using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Hashes.HashAlgorithmTestUtils;
@@ -138,106 +136,5 @@ public class HashAlgorithmTest
 		await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashData(source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
-	}
-
-	[Test]
-	public async Task FailedHashCoreOperationsLeaveDestinationAndStateUnchanged()
-	{
-		byte[] source = CreateDeterministicSource(23);
-		byte[] expected = new byte[HashAlgorithm<FailingHashCore>.HashLength];
-		byte[] emptyExpected = new byte[expected.Length];
-		byte[] destination = new byte[expected.Length + 1];
-		HashAlgorithm<FailingHashCore>.HashData(source, expected);
-		HashAlgorithm<FailingHashCore>.HashData([], emptyExpected);
-
-		using HashAlgorithm<FailingHashCore> hashAlgorithm = HashAlgorithm<FailingHashCore>.Create();
-		hashAlgorithm.Append(source);
-
-		PrepareDestination(destination);
-		FailingHashCore.FailNextFinalize();
-		await Assert.That(() => hashAlgorithm.GetCurrentHash(destination)).ThrowsExactly<InvalidOperationException>();
-		await Assert.That(destination).All(static value => value is DestinationSentinel);
-		PrepareDestination(destination);
-		int written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, expected, written);
-
-		PrepareDestination(destination);
-		FailingHashCore.FailNextCreate();
-		await Assert.That(() => hashAlgorithm.GetHashAndReset(destination)).ThrowsExactly<InvalidOperationException>();
-		await Assert.That(destination).All(static value => value is DestinationSentinel);
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetHashAndReset(destination);
-		await AssertOutput(destination, expected, written);
-
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, emptyExpected, written);
-
-		hashAlgorithm.Append(source);
-		PrepareDestination(destination);
-		FailingHashCore.FailNextFinalize();
-		await Assert.That(() => hashAlgorithm.GetHashAndReset(destination)).ThrowsExactly<InvalidOperationException>();
-		await Assert.That(destination).All(static value => value is DestinationSentinel);
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetHashAndReset(destination);
-		await AssertOutput(destination, expected, written);
-
-		PrepareDestination(destination);
-		FailingHashCore.FailNextFinalize();
-		await Assert.That(() => HashAlgorithm<FailingHashCore>.HashData(source, destination)).ThrowsExactly<InvalidOperationException>();
-		await Assert.That(destination).All(static value => value is DestinationSentinel);
-	}
-
-	private struct FailingHashCore : IHashCore<FailingHashCore>
-	{
-		private static int _failNextCreate;
-		private static int _failNextFinalize;
-
-		private uint _hash;
-
-		internal static void FailNextCreate()
-		{
-			Interlocked.Exchange(ref _failNextCreate, 1);
-		}
-
-		internal static void FailNextFinalize()
-		{
-			Interlocked.Exchange(ref _failNextFinalize, 1);
-		}
-
-		public static int HashLength => sizeof(uint);
-
-		static FailingHashCore IHashCore<FailingHashCore>.Create()
-		{
-			if (Interlocked.Exchange(ref _failNextCreate, 0) is not 0)
-			{
-				throw new InvalidOperationException();
-			}
-
-			return new FailingHashCore { _hash = 2166136261U };
-		}
-
-		void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
-		{
-			foreach (byte value in source)
-			{
-				_hash = (_hash ^ value) * 16777619U;
-			}
-		}
-
-		void IIncrementalHashCore.Finalize(Span<byte> destination)
-		{
-			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, sizeof(uint), nameof(destination));
-			uint hash = _hash;
-			_hash = ~_hash;
-			destination[0] = 0x5a;
-
-			if (Interlocked.Exchange(ref _failNextFinalize, 0) is not 0)
-			{
-				throw new InvalidOperationException();
-			}
-
-			BinaryPrimitives.WriteUInt32BigEndian(destination, hash);
-		}
 	}
 }

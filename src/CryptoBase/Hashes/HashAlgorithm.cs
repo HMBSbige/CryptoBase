@@ -24,6 +24,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 
 	/// <inheritdoc />
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
@@ -35,11 +36,8 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 		}
 
 		TCore state = TCore.Create();
-		Span<byte> hash = stackalloc byte[TCore.HashLength];
-
 		state.Append(source);
-		state.Finalize(hash);
-		hash.CopyTo(destination);
+		state.Finalize(destination);
 		return TCore.HashLength;
 	}
 
@@ -67,25 +65,28 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	}
 
 	/// <inheritdoc />
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public int GetCurrentHash(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return HashCoreUtils.FinalizeCopy(_state, destination);
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
+
+		TCore state = _state;
+		state.Finalize(destination);
+		return TCore.HashLength;
 	}
 
 	/// <inheritdoc />
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public int GetHashAndReset(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
-		TCore currentState = _state;
-		Span<byte> hash = stackalloc byte[TCore.HashLength];
-
-		currentState.Finalize(hash);
+		_state.Finalize(destination);
 		_state = TCore.Create();
-		hash.CopyTo(destination);
 		return TCore.HashLength;
 	}
 

@@ -1,11 +1,6 @@
 using CryptoBase.Hashes.Blake2b;
-using CryptoBase.Hashes.MD5;
 using CryptoBase.Hashes.Sha1;
-using CryptoBase.Hashes.Sha224;
 using CryptoBase.Hashes.Sha256;
-using CryptoBase.Hashes.Sha384;
-using CryptoBase.Hashes.Sha512;
-using CryptoBase.Hashes.SM3;
 
 namespace CryptoBase.Macs.Hmac;
 
@@ -21,17 +16,6 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 		get => Vector128.IsHardwareAccelerated
 				&& THash.HmacBlockSize % 32 is 0
 				&& (!AdvSimd.Arm64.IsSupported || typeof(THash) != typeof(Sha1HashAlgorithm) && typeof(THash) != typeof(Sha256HashAlgorithm));
-	}
-
-	// Custom cores keep the copy path so failed finalization preserves state and output.
-	private static bool CanFinalizeDirectly
-	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => typeof(THash) == typeof(Sha256HashAlgorithm) || typeof(THash) == typeof(Sha224HashAlgorithm)
-				|| typeof(THash) == typeof(Sha512HashAlgorithm) || typeof(THash) == typeof(Sha384HashAlgorithm)
-				|| typeof(THash) == typeof(Sha1HashAlgorithm) || typeof(THash) == typeof(MD5HashAlgorithm)
-				|| typeof(THash) == typeof(SM3HashAlgorithm)
-				|| typeof(THash) == typeof(Blake2b512HashAlgorithm) || typeof(THash) == typeof(Blake2b256HashAlgorithm);
 	}
 
 	private THash _innerSeed;
@@ -90,23 +74,20 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	}
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal readonly int GetCurrentMac(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
 
-		Span<byte> mac = stackalloc byte[THash.HashLength];
 		THash inner = _innerState;
 		THash outer = _outerSeed;
 
 		try
 		{
-			int written = FinalizeMac(ref inner, ref outer, mac);
-			mac.CopyTo(destination);
-			return written;
+			return FinalizeMac(ref inner, ref outer, destination);
 		}
 		finally
 		{
-			mac.ZeroMemory();
 			inner.ZeroMemory();
 			outer.ZeroMemory();
 		}
@@ -114,19 +95,10 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 
 	internal int GetMacAndReset(Span<byte> destination)
 	{
-		// Software SHA512 and SM3 keep copy finalization after measured regressions.
-		if (CanFinalizeDirectly
-			&& (Vector128.IsHardwareAccelerated || typeof(THash) != typeof(Sha512HashAlgorithm) && typeof(THash) != typeof(SM3HashAlgorithm)))
-		{
-			ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
-			return Vector128.IsHardwareAccelerated
-				? GetMacAndResetDestructive(destination)
-				: GetMacAndResetSoftware(destination);
-		}
-
-		int written = GetCurrentMac(destination);
-		Reset();
-		return written;
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
+		return Vector128.IsHardwareAccelerated
+			? GetMacAndResetDestructive(destination)
+			: GetMacAndResetSoftware(destination);
 	}
 
 	[SkipLocalsInit]
@@ -179,21 +151,6 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
 
-		using CryptoBuffer<byte> mac = new(stackalloc byte[THash.HashLength]);
-		int written = MacCore(key, source, mac.Span);
-		mac.Span.CopyTo(destination);
-		return written;
-	}
-
-	internal static int MacDestructive(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		Debug.Assert(destination.Length >= THash.HashLength);
-		return MacCore(key, source, destination);
-	}
-
-	[SkipLocalsInit]
-	private static int MacCore(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
-	{
 		Unsafe.SkipInit(out THash inner);
 		Unsafe.SkipInit(out THash outer);
 		Span<byte> keyBlock = stackalloc byte[THash.HmacBlockSize + (UseDirectKeyPads ? THash.HashLength : 0)];

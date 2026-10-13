@@ -3,7 +3,6 @@ using CryptoBase.Abstractions.Macs;
 using CryptoBase.Hashes.Blake2b;
 using CryptoBase.Hashes.Sha256;
 using CryptoBase.Macs.Hmac;
-using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
@@ -37,53 +36,6 @@ public class HmacTest
 	public Task OneShotMacSupportsOverlappingInputsAndDestination(int destinationOffset)
 	{
 		return VerifyOneShotOverlap(destinationOffset);
-	}
-
-	[Test]
-	public async Task FailedComputationDoesNotChangeOutputOrState()
-	{
-		byte[] key = CreateDeterministicSource(3);
-		byte[] source = CreateDeterministicSource(3);
-		byte[] expected = new byte[HmacAlgorithm<ThrowingHashAlgorithm>.MacLength];
-		byte[] destination = new byte[HmacAlgorithm<ThrowingHashAlgorithm>.MacLength + 1];
-
-		ThrowingHashAlgorithm.DisableFailure();
-		_ = HmacAlgorithm<ThrowingHashAlgorithm>.Mac(key, source, expected);
-
-		using HmacAlgorithm<ThrowingHashAlgorithm> macAlgorithm = HmacAlgorithm<ThrowingHashAlgorithm>.Create(key);
-		macAlgorithm.Append(source);
-
-		try
-		{
-			ThrowingHashAlgorithm.ThrowOnFinalize(2);
-			PrepareDestination(destination);
-			await Assert.That(() => HmacAlgorithm<ThrowingHashAlgorithm>.Mac(key, source, destination)).ThrowsExactly<InvalidOperationException>();
-			await Assert.That(destination).All(static value => value is DestinationSentinel);
-
-			ThrowingHashAlgorithm.ThrowOnFinalize(2);
-			PrepareDestination(destination);
-			await Assert.That(() => macAlgorithm.GetCurrentMac(destination)).ThrowsExactly<InvalidOperationException>();
-			await Assert.That(destination).All(static value => value is DestinationSentinel);
-
-			ThrowingHashAlgorithm.DisableFailure();
-			PrepareDestination(destination);
-			int written = macAlgorithm.GetCurrentMac(destination);
-			await AssertOutput(destination, expected, written);
-
-			ThrowingHashAlgorithm.ThrowOnFinalize(2);
-			PrepareDestination(destination);
-			await Assert.That(() => macAlgorithm.GetMacAndReset(destination)).ThrowsExactly<InvalidOperationException>();
-			await Assert.That(destination).All(static value => value is DestinationSentinel);
-
-			ThrowingHashAlgorithm.DisableFailure();
-			PrepareDestination(destination);
-			written = macAlgorithm.GetMacAndReset(destination);
-			await AssertOutput(destination, expected, written);
-		}
-		finally
-		{
-			ThrowingHashAlgorithm.DisableFailure();
-		}
 	}
 
 	private static async Task VerifyOneShotOverlap(int destinationOffset)
@@ -241,57 +193,5 @@ public class HmacTest
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 		await Assert.That(key).IsEquivalentTo(keyCopy, CollectionOrdering.Matching);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
-	}
-
-	private struct ThrowingHashAlgorithm : IHmacHashCore<ThrowingHashAlgorithm>
-	{
-		private static int _finalizationCount;
-		private static int _throwOnFinalization;
-
-		private uint _sum;
-
-		public static void ThrowOnFinalize(int finalizationNumber)
-		{
-			Interlocked.Exchange(ref _finalizationCount, 0);
-			Interlocked.Exchange(ref _throwOnFinalization, finalizationNumber);
-		}
-
-		public static void DisableFailure()
-		{
-			Interlocked.Exchange(ref _throwOnFinalization, 0);
-			Interlocked.Exchange(ref _finalizationCount, 0);
-		}
-
-		public static int HashLength => sizeof(uint);
-
-		public static int HmacBlockSize => 8;
-
-		static ThrowingHashAlgorithm IHashCore<ThrowingHashAlgorithm>.Create()
-		{
-			return default;
-		}
-
-		void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
-		{
-			foreach (byte value in source)
-			{
-				_sum += value;
-			}
-		}
-
-		readonly void IIncrementalHashCore.Finalize(Span<byte> destination)
-		{
-			if (destination.Length < sizeof(uint))
-			{
-				throw new ArgumentException(null, nameof(destination));
-			}
-
-			BinaryPrimitives.WriteUInt32LittleEndian(destination, _sum);
-
-			if (Interlocked.Increment(ref _finalizationCount) == Volatile.Read(ref _throwOnFinalization))
-			{
-				throw new InvalidOperationException();
-			}
-		}
 	}
 }

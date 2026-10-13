@@ -37,7 +37,7 @@ public static class Hkdf
 
 		int hashLength = THash.HashLength;
 		using CryptoBuffer<byte> prk = new(stackalloc byte[hashLength]);
-		HmacState<THash>.MacDestructive(salt, ikm, prk.Span);
+		HmacState<THash>.Mac(salt, ikm, prk.Span);
 		ExpandCore<THash>(prk.Span, output, info);
 	}
 

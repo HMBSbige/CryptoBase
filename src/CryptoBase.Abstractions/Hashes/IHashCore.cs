@@ -9,6 +9,7 @@ public interface IHashCore<out TSelf> : IIncrementalHashCore where TSelf : unman
 	/// <summary>
 	/// Creates an initialized core.
 	/// </summary>
+	/// <remarks>Must not fail.</remarks>
 	/// <returns>The initialized core.</returns>
 	static abstract TSelf Create();
 }

@@ -19,15 +19,4 @@ internal static class HashCoreUtils
 		Unsafe.Add(ref destination, 2) = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref source, 8)));
 		Unsafe.Add(ref destination, 3) = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref source, 12)));
 	}
-
-	[SkipLocalsInit]
-	internal static int FinalizeCopy<TCore>(TCore state, Span<byte> destination) where TCore : unmanaged, IIncrementalHashCore
-	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
-
-		Span<byte> hash = stackalloc byte[TCore.HashLength];
-		state.Finalize(hash);
-		hash.CopyTo(destination);
-		return TCore.HashLength;
-	}
 }
