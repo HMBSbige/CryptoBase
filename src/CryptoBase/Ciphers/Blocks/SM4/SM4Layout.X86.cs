@@ -18,6 +18,17 @@ internal static partial class SM4Layout
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Load4X86(int count, ref byte source, nuint offset, out Vector128<byte> x0, out Vector128<byte> x1, out Vector128<byte> x2, out Vector128<byte> x3)
 	{
+		if (count is 1)
+		{
+			// Only lane 0 is stored back, so each word of the lone block only has to reach lane 0.
+			Vector128<uint> block = Vector128.LoadUnsafe(ref source, offset).ReverseEndianness32().AsUInt32();
+			x0 = block.AsByte();
+			x1 = Vector128.Shuffle(block, Vector128.Create(1u)).AsByte();
+			x2 = Vector128.Shuffle(block, Vector128.Create(2u)).AsByte();
+			x3 = Vector128.Shuffle(block, Vector128.Create(3u)).AsByte();
+			return;
+		}
+
 		x0 = count > 0 ? Vector128.LoadUnsafe(ref source, offset).ReverseEndianness32() : Vector128<byte>.Zero;
 		x1 = count > 1 ? Vector128.LoadUnsafe(ref source, offset + 16).ReverseEndianness32() : Vector128<byte>.Zero;
 		x2 = count > 2 ? Vector128.LoadUnsafe(ref source, offset + 32).ReverseEndianness32() : Vector128<byte>.Zero;
