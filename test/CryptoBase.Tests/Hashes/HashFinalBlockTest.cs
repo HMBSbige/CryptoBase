@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Blake2b;
+using CryptoBase.Hashes.Blake3;
 using CryptoBase.Hashes.MD5;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha224;
@@ -36,6 +37,7 @@ public class HashFinalBlockTest
 			await Assert.That(Hash<HashAlgorithm<SM3HashAlgorithm>>(message)).IsEquivalentTo(HashIncrementally<HashAlgorithm<SM3HashAlgorithm>>(message), CollectionOrdering.Matching);
 			await Assert.That(Hash<HashAlgorithm<Blake2b256HashAlgorithm>>(message)).IsEquivalentTo(HashIncrementally<HashAlgorithm<Blake2b256HashAlgorithm>>(message), CollectionOrdering.Matching);
 			await Assert.That(Hash<HashAlgorithm<Blake2b512HashAlgorithm>>(message)).IsEquivalentTo(HashIncrementally<HashAlgorithm<Blake2b512HashAlgorithm>>(message), CollectionOrdering.Matching);
+			await Assert.That(Hash<Blake3HashAlgorithm>(message)).IsEquivalentTo(HashIncrementally<Blake3HashAlgorithm>(message), CollectionOrdering.Matching);
 		}
 	}
 

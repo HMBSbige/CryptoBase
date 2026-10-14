@@ -48,6 +48,20 @@ internal static class VectorTranspose
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Transpose(ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3)
+	{
+		Vector128<uint> t0 = ZipLow(x0, x1);
+		Vector128<uint> t1 = ZipLow(x2, x3);
+		Vector128<uint> t2 = ZipHigh(x0, x1);
+		Vector128<uint> t3 = ZipHigh(x2, x3);
+
+		x0 = ZipLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+		x1 = ZipHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+		x2 = ZipLow(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+		x3 = ZipHigh(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Transpose
 	(
 		ref Vector512<uint> v0, ref Vector512<uint> v1, ref Vector512<uint> v2, ref Vector512<uint> v3,
@@ -170,7 +184,7 @@ internal static class VectorTranspose
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Transpose
+	public static void Transpose
 	(
 		ref Vector256<uint> x0, ref Vector256<uint> x1, ref Vector256<uint> x2, ref Vector256<uint> x3,
 		ref Vector256<uint> x4, ref Vector256<uint> x5, ref Vector256<uint> x6, ref Vector256<uint> x7

@@ -46,6 +46,26 @@ Span<byte> tag = stackalloc byte[Poly1305Algorithm.MacLength];
 Poly1305Algorithm.Mac(key, "message"u8, tag);
 ```
 
+## BLAKE3 keyed hash
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Hashes.Blake3;
+
+byte[] key = RandomNumberGenerator.GetBytes(Blake3HashAlgorithm.KeyLengthInBytes);
+Span<byte> tag = stackalloc byte[Blake3HashAlgorithm.HashLength];
+
+// Authenticate the complete input.
+Blake3HashAlgorithm.KeyedHashData(key, "message"u8, tag);
+
+// Create an incremental keyed hasher.
+using Blake3HashAlgorithm mac = Blake3HashAlgorithm.CreateKeyed(key);
+mac.Append("message"u8);
+
+// Get the current tag and reset while retaining the key.
+mac.GetHashAndReset(tag);
+```
+
 ## HKDF
 
 ```csharp
@@ -69,6 +89,26 @@ Hkdf.Extract<Sha256HashAlgorithm>(inputKeyMaterial, salt, pseudorandomKey);
 
 // Expand the pseudorandom key.
 Hkdf.Expand<Sha256HashAlgorithm>(pseudorandomKey, outputKeyMaterial, info);
+```
+
+## BLAKE3 key derivation
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Hashes.Blake3;
+
+byte[] inputKeyMaterial = RandomNumberGenerator.GetBytes(32);
+byte[] outputKeyMaterial = new byte[32];
+
+// The context string should be hardcoded, globally unique and application-specific.
+ReadOnlySpan<byte> context = "example.com 2020-01-01 session tokens v1"u8;
+
+Blake3HashAlgorithm.DeriveKey(context, inputKeyMaterial, outputKeyMaterial);
+
+// Derive incrementally.
+using Blake3HashAlgorithm hasher = Blake3HashAlgorithm.CreateDeriveKey(context);
+hasher.Append(inputKeyMaterial);
+hasher.GetCurrentHash(outputKeyMaterial);
 ```
 
 ## Argon2id

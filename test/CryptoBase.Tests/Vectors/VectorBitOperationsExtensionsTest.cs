@@ -34,6 +34,33 @@ public class VectorBitOperationsExtensionsTest
 
 	[Test]
 	[Arguments((byte)1)]
+	[Arguments((byte)7)]
+	[Arguments((byte)8)]
+	[Arguments((byte)12)]
+	[Arguments((byte)16)]
+	[Arguments((byte)24)]
+	[Arguments((byte)31)]
+	public async Task ShouldRotateRightUInt32Vector128(byte offset)
+	{
+		Vector128<uint> source = Vector128.Create(0x83020100u, 0x07060504u, 0x0B0A0908u, 0xFF0E0D0Cu);
+		Vector128<uint> expected = Vector128.Create
+		(
+			BitOperations.RotateRight(source.GetElement(0), offset),
+			BitOperations.RotateRight(source.GetElement(1), offset),
+			BitOperations.RotateRight(source.GetElement(2), offset),
+			BitOperations.RotateRight(source.GetElement(3), offset)
+		);
+
+#pragma warning disable CA1857
+		// ReSharper disable once ConstantExpected
+		Vector128<uint> actual = source.RotateRightUInt32(offset);
+#pragma warning restore CA1857
+
+		await Assert.That(actual).IsEqualTo(expected);
+	}
+
+	[Test]
+	[Arguments((byte)1)]
 	[Arguments((byte)8)]
 	[Arguments((byte)16)]
 	[Arguments((byte)24)]

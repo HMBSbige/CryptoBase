@@ -6,6 +6,7 @@
 | --- | --- |
 | BLAKE2b-256 | `Blake2b256HashAlgorithm` |
 | BLAKE2b-512 | `Blake2b512HashAlgorithm` |
+| BLAKE3 | `Blake3HashAlgorithm` |
 | MD5 | `MD5HashAlgorithm` |
 | SHA-1 | `Sha1HashAlgorithm` |
 | SHA-224 | `Sha224HashAlgorithm` |
@@ -74,3 +75,50 @@ byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 // Hash asynchronously from the current stream position.
 await input.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(hash);
 ```
+
+## BLAKE3
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Hashes.Blake3;
+
+Span<byte> hash = stackalloc byte[Blake3HashAlgorithm.HashLength];
+
+// Hash the complete input.
+Blake3HashAlgorithm.HashData("hello world"u8, hash);
+
+// Any output length works; shorter outputs are prefixes of longer ones.
+byte[] extendedHash = new byte[100];
+Blake3HashAlgorithm.HashData("hello world"u8, extendedHash);
+
+// Hash on up to four threads, including the calling thread.
+byte[] largeInput = RandomNumberGenerator.GetBytes(64 * 1024 * 1024);
+Blake3HashAlgorithm.HashData(largeInput, hash, maxDegreeOfParallelism: 4);
+```
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Hashes.Blake3;
+
+// Create an incremental hasher.
+using Blake3HashAlgorithm hasher = Blake3HashAlgorithm.Create();
+
+// Append input; -1 uses all processors.
+byte[] largeInput = RandomNumberGenerator.GetBytes(64 * 1024 * 1024);
+hasher.Append("hello "u8);
+hasher.Append(largeInput, maxDegreeOfParallelism: -1);
+
+Span<byte> hash = stackalloc byte[Blake3HashAlgorithm.HashLength];
+
+// Get the current hash without resetting.
+hasher.GetCurrentHash(hash);
+
+// Read 64 output bytes starting at offset 1000.
+byte[] output = new byte[64];
+hasher.GetCurrentHash(output, position: 1000);
+
+// Get the current hash and reset.
+hasher.GetHashAndReset(hash);
+```
+
+The stream extensions take BLAKE3 through `IHashAlgorithm<TSelf>`, so they hash in the hash mode and write the standard 32-byte hash. To hash a stream in the keyed hash or key derivation mode, or to read longer output, append its contents to an instance yourself.

@@ -37,6 +37,26 @@ public class CpuIdUtilsTest
 	}
 
 	[Test]
+	[Arguments(0x1A, 0x00, true)]
+	[Arguments(0x1A, 0x1F, true)]
+	[Arguments(0x1A, 0x20, false)] // Strix Point
+	[Arguments(0x1A, 0x24, false)]
+	[Arguments(0x1A, 0x40, true)] // Granite Ridge
+	[Arguments(0x1A, 0x44, true)]
+	[Arguments(0x1A, 0x4F, true)]
+	[Arguments(0x1A, 0x60, false)] // Krackan
+	[Arguments(0x1A, 0x6F, false)]
+	[Arguments(0x1A, 0x70, true)] // Strix Halo
+	[Arguments(0x1A, 0x7F, true)]
+	[Arguments(0x1A, 0x80, false)]
+	[Arguments(0x1A, 0xD0, false)]
+	[Arguments(0x19, 0x11, false)]
+	public async Task MatchesZen5With512BitDatapathModelRanges(int family, int model, bool expected)
+	{
+		await Assert.That(CpuIdUtils.IsZen5With512BitDatapath(family, model)).IsEqualTo(expected);
+	}
+
+	[Test]
 	[Arguments("AuthenticAMD", true)]
 	[Arguments("GenuineIntel", false)]
 	[Arguments("HygonGenuine", false)]

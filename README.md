@@ -29,7 +29,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | Algorithms | Status |
 | ---------- |:------:|
 | BLAKE2b | ✅ |
-| BLAKE3 | ⚠️ |
+| BLAKE3 | ✅ |
 | MD5 | ✅ |
 | SHA-1 | ✅ |
 | SHA-224 | ✅ |

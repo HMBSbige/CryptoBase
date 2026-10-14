@@ -106,6 +106,17 @@ public static class CpuIdUtils
 		return IsZen5(family, model) && IsAuthenticAmd(X86Base.CpuId(0, 0));
 	}
 
+	internal static bool IsAmdZen5With512BitDatapath()
+	{
+		if (!X86Base.IsSupported)
+		{
+			return false;
+		}
+
+		(int family, int model) = DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax);
+		return IsZen5With512BitDatapath(family, model) && IsAuthenticAmd(X86Base.CpuId(0, 0));
+	}
+
 	internal static bool IsAuthenticAmd((int Eax, int Ebx, int Ecx, int Edx) id)
 	{
 		return id is (_, 0x68747541, 0x444D4163, 0x69746E65);
@@ -132,5 +143,11 @@ public static class CpuIdUtils
 	internal static bool IsZen5(int family, int model)
 	{
 		return family is 0x1A && model is <= 0x2F or >= 0x40 and <= 0x4F or >= 0x60 and <= 0x7F or >= 0xD0 and <= 0xD7;
+	}
+
+	// Strix Point and Krackan (20h-2Fh, 60h-6Fh) split 512-bit operations into two 256-bit halves; D0h-D7h is excluded because its datapath is unknown.
+	internal static bool IsZen5With512BitDatapath(int family, int model)
+	{
+		return family is 0x1A && model is <= 0x1F or >= 0x40 and <= 0x4F or >= 0x70 and <= 0x7F;
 	}
 }

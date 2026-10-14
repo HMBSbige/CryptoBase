@@ -26,18 +26,10 @@ internal static class VectorBitOperationsExtensions
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector256<T> RotateRightUInt32([ConstantExpected(Min = 1, Max = 31)] byte offset)
 		{
-			if (Avx512F.VL.IsSupported)
-			{
-				return Avx512F.VL.RotateRight(value.AsUInt32(), offset).As<uint, T>();
-			}
-
-			if (Avx2.IsSupported && offset is 8 or 16 or 24)
-			{
-				Vector128<byte> indices = CreateRotateLeftUInt32ShuffleIndices((byte)(32 - offset));
-				return Avx2.Shuffle(value.AsByte(), Vector256.Create(indices)).As<byte, T>();
-			}
-
-			return (value.AsUInt32() >>> offset | value.AsUInt32() << 32 - offset).As<uint, T>();
+#pragma warning disable CA1857
+			// ReSharper disable once ConstantExpected
+			return value.RotateLeftUInt32((byte)(32 - offset));
+#pragma warning restore CA1857
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -100,6 +92,15 @@ internal static class VectorBitOperationsExtensions
 			}
 
 			return (value.AsUInt32() << offset | value.AsUInt32() >>> 32 - offset).As<uint, T>();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public Vector128<T> RotateRightUInt32([ConstantExpected(Min = 1, Max = 31)] byte offset)
+		{
+#pragma warning disable CA1857
+			// ReSharper disable once ConstantExpected
+			return value.RotateLeftUInt32((byte)(32 - offset));
+#pragma warning restore CA1857
 		}
 	}
 
