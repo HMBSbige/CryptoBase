@@ -24,9 +24,15 @@ internal static partial class Crc32Vectorized
 		length -= 4 * Vector512<byte>.Count;
 
 		Vector512<ulong> fold2048 = constants.Fold2048Vector512;
+		int prefetchThreshold = StreamPrefetch.MinimumRemaining(length, 4 * Vector512<byte>.Count);
 
 		while (length >= 4 * Vector512<byte>.Count)
 		{
+			if (length >= prefetchThreshold)
+			{
+				StreamPrefetch.Bytes(ref sourceRef, 4 * Vector512<byte>.Count);
+			}
+
 			x1 = Fold512(Vector512.LoadUnsafe(ref sourceRef).AsUInt64(), x1, fold2048);
 			x2 = Fold512(Vector512.LoadUnsafe(ref sourceRef, 64).AsUInt64(), x2, fold2048);
 			x3 = Fold512(Vector512.LoadUnsafe(ref sourceRef, 128).AsUInt64(), x3, fold2048);
@@ -109,9 +115,15 @@ internal static partial class Crc32Vectorized
 			length -= 8 * Vector256<byte>.Count;
 
 			Vector256<ulong> fold2048 = constants.Fold2048Vector256;
+			int prefetchThreshold = StreamPrefetch.MinimumRemaining(length, 8 * Vector256<byte>.Count);
 
 			while (length >= 8 * Vector256<byte>.Count)
 			{
+				if (length >= prefetchThreshold)
+				{
+					StreamPrefetch.Bytes(ref sourceRef, 8 * Vector256<byte>.Count);
+				}
+
 				x1 = Fold256(Vector256.LoadUnsafe(ref sourceRef).AsUInt64(), x1, fold2048);
 				x2 = Fold256(Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64(), x2, fold2048);
 				x3 = Fold256(Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64(), x3, fold2048);

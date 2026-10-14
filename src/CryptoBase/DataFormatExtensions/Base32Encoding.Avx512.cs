@@ -220,12 +220,19 @@ public sealed partial class Base32Encoding
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 80;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			Vector512<byte> firstInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512EncodeLoadMask, Vector512<byte>.Zero);
 			Vector512<byte> secondInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 40)), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 80);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 128);
 			Vector512<byte> firstPacked = Avx512Vbmi.PermuteVar64x8(firstInput, Avx512PackIndicesVector);
 			Vector512<byte> secondPacked = Avx512Vbmi.PermuteVar64x8(secondInput, Avx512PackIndicesVector);
@@ -258,9 +265,16 @@ public sealed partial class Base32Encoding
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 80;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			Vector512<byte> firstInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512EncodeLoadMask, Vector512<byte>.Zero);
 			Vector512<byte> secondInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 40)), Avx512EncodeLoadMask, Vector512<byte>.Zero);
 			Vector512<byte> firstPacked = Avx512Vbmi.PermuteVar64x8(firstInput, Avx512PackIndicesVector);
@@ -269,7 +283,7 @@ public sealed partial class Base32Encoding
 			Vector512<byte> secondSymbols = Avx512Vbmi.MultiShift(Avx512ShiftControlVector, secondPacked.AsUInt64()) & symbolMask;
 			StoreEncodedChars(Avx512Vbmi.PermuteVar64x8(alphabet, firstSymbols), ref destinationPointer);
 			StoreEncodedChars(Avx512Vbmi.PermuteVar64x8(alphabet, secondSymbols), ref Unsafe.Add(ref destinationPointer, 64));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 80);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 128);
 		}
 
@@ -292,12 +306,19 @@ public sealed partial class Base32Encoding
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 40;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			Vector256<byte> firstInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
 			Vector256<byte> secondInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 20)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 40);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
 			Vector256<byte> firstOutput = EncodeVbmiVl256(firstInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
 			Vector256<byte> secondOutput = EncodeVbmiVl256(secondInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
@@ -322,16 +343,23 @@ public sealed partial class Base32Encoding
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 40;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			Vector256<byte> firstInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
 			Vector256<byte> secondInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 20)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
 			Vector256<byte> firstOutput = EncodeVbmiVl256(firstInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
 			Vector256<byte> secondOutput = EncodeVbmiVl256(secondInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
 			StoreEncodedChars(firstOutput, ref destinationPointer);
 			StoreEncodedChars(secondOutput, ref Unsafe.Add(ref destinationPointer, 32));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 40);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
 		}
 
@@ -352,12 +380,19 @@ public sealed partial class Base32Encoding
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 80;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			Vector512<byte> firstInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512EncodeLoadMask, Vector512<byte>.Zero);
 			Vector512<byte> secondInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 40)), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 80);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 128);
 			Vector512<byte> firstPacked = Avx512Vbmi.PermuteVar64x8(firstInput, Avx512PackIndicesVector);
 			Vector512<byte> secondPacked = Avx512Vbmi.PermuteVar64x8(secondInput, Avx512PackIndicesVector);
@@ -407,9 +442,16 @@ public sealed partial class Base32Encoding
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 80;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			Vector512<byte> firstInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), loadMask, Vector512<byte>.Zero);
 			Vector512<byte> secondInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 40)), loadMask, Vector512<byte>.Zero);
 			Vector512<byte> firstPacked = Avx512Vbmi.PermuteVar64x8(firstInput, packIndices);
@@ -418,7 +460,7 @@ public sealed partial class Base32Encoding
 			Vector512<byte> secondSymbols = Avx512Vbmi.MultiShift(shiftControl, secondPacked.AsUInt64()) & symbolMask;
 			StoreEncodedChars(Avx512Vbmi.PermuteVar64x8(alphabet, firstSymbols), ref destinationPointer);
 			StoreEncodedChars(Avx512Vbmi.PermuteVar64x8(alphabet, secondSymbols), ref Unsafe.Add(ref destinationPointer, 64));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 80);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 128);
 		}
 
@@ -441,12 +483,19 @@ public sealed partial class Base32Encoding
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 40;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			Vector256<byte> firstInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
 			Vector256<byte> secondInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 20)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 40);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
 			EncodeVbmiVl256(firstInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet).StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 64));
 			EncodeVbmiVl256(secondInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet).StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 32));
@@ -469,14 +518,21 @@ public sealed partial class Base32Encoding
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 40;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			Vector256<byte> firstInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
 			Vector256<byte> secondInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 20)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
 			StoreEncodedChars(EncodeVbmiVl256(firstInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet), ref destinationPointer);
 			StoreEncodedChars(EncodeVbmiVl256(secondInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet), ref Unsafe.Add(ref destinationPointer, 32));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 40);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
 		}
 
@@ -700,10 +756,17 @@ public sealed partial class Base32Encoding
 		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 128;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 		int processedBlocks = 0;
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			if
 			(
 				!TryNarrowAscii(ref sourcePointer, out Vector256<byte> firstInput)
@@ -805,10 +868,17 @@ public sealed partial class Base32Encoding
 		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 256;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 		int processedBlocks = 0;
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			if
 			(
 				!TryNarrowAscii(ref sourcePointer, out Vector512<byte> firstInput)
@@ -920,10 +990,17 @@ public sealed partial class Base32Encoding
 		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 256;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 		int processedBlocks = 0;
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			if
 			(
 				!TryNarrowAscii(ref sourcePointer, out Vector512<byte> firstInput)

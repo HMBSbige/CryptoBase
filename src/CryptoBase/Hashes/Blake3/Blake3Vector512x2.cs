@@ -71,10 +71,11 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 
 		do
 		{
-			// Near the end of the chunks, the prefetches run into chunks that other lanes have read; aiming them at the next batch instead, as Blake3Vector512
-			// does, measured no faster.
-			Blake3Vector512.PrefetchFull(ref input, 0);
-			Blake3Vector512.PrefetchFull(ref Unsafe.Add(ref input, 16 * ChunkLength), 0);
+			// Near the end of the chunks, prefetch the next batch, which follows in memory; a mask measured faster than a conditional.
+			const nuint nextBatch = 31 * ChunkLength;
+			nuint skip = (nuint)((nint)(blockCount - PrefetchDistance / BlockLength - 1) >> 8 * nint.Size - 1) & nextBatch;
+			Blake3Vector512.PrefetchFull(ref input, skip);
+			Blake3Vector512.PrefetchFull(ref Unsafe.Add(ref input, 16 * ChunkLength), skip);
 			Blake3Vector512.LoadMessageFull(ref input, ref message0[0]);
 			Blake3Vector512.LoadMessageFull(ref Unsafe.Add(ref input, 16 * ChunkLength), ref message1[0]);
 			Vector512<uint> laneFlags = Vector512.Create(blockCount is 1 ? blockFlags | Blake3Flags.ChunkEnd : blockFlags);

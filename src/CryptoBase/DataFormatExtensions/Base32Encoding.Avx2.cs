@@ -200,10 +200,17 @@ public sealed partial class Base32Encoding
 		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
+		const int stride = 128;
+		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
 		int processedBlocks = 0;
 
 		for (int i = 0; i < pairCount; ++i)
 		{
+			if (i < prefetchPairs)
+			{
+				StreamPrefetch.Bytes(ref sourcePointer, stride);
+			}
+
 			if
 			(
 				!TryNarrowAscii(ref sourcePointer, out Vector256<byte> firstInput)
