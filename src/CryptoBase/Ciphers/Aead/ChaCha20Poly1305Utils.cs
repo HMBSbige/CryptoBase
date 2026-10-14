@@ -44,6 +44,12 @@ internal static class ChaCha20Poly1305Utils
 
 		if (Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length, lengthBlock.Length))
 		{
+			if (ChaCha20Utils.ShouldFusePoly1305(source.Length))
+			{
+				EncryptAndComputeTagFused(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
+				return;
+			}
+
 			EncryptAndComputeTagCore<TCipher, Poly1305Avx512>(cipher, ref MemoryMarshal.GetReference(poly1305Key.Span), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length, ref MemoryMarshal.GetReference(lengthBlock));
 			return;
 		}
@@ -133,6 +139,38 @@ internal static class ChaCha20Poly1305Utils
 			TCipher.SetCounter(cipher, 1);
 			TCipher.Xor(cipher, source, destination);
 			state.AppendPaddedSegment(destination);
+			state.AppendPaddedSegment(lengthBlock);
+			state.WriteMac(tag);
+		}
+		finally
+		{
+			state.ZeroMemory();
+		}
+	}
+
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void EncryptAndComputeTagFused<TCipher>(TCipher cipher, ref byte keyStart, ref byte sourceStart, ref byte destinationStart, int length, ref byte tagStart, ref byte associatedDataStart, int associatedDataLength, ref byte lengthBlockStart)
+		where TCipher : struct, IChaCha20Poly1305Cipher<TCipher>
+	{
+		ReadOnlySpan<byte> poly1305Key = MemoryMarshal.CreateReadOnlySpan(ref keyStart, Poly1305Algorithm.KeyLengthInBytes);
+		ReadOnlySpan<byte> source = MemoryMarshal.CreateReadOnlySpan(ref sourceStart, length);
+		Span<byte> destination = MemoryMarshal.CreateSpan(ref destinationStart, length);
+		Span<byte> tag = MemoryMarshal.CreateSpan(ref tagStart, Poly1305Algorithm.MacLength);
+		ReadOnlySpan<byte> associatedData = MemoryMarshal.CreateReadOnlySpan(ref associatedDataStart, associatedDataLength);
+		ReadOnlySpan<byte> lengthBlock = MemoryMarshal.CreateReadOnlySpan(ref lengthBlockStart, Poly1305Algorithm.BlockSizeInBytes);
+
+		Unsafe.SkipInit(out Poly1305Avx512 state);
+		Poly1305Avx512.Initialize(ref state, poly1305Key);
+
+		try
+		{
+			state.AppendPaddedSegment(associatedData);
+			TCipher.SetCounter(cipher, 1);
+			int processed = TCipher.XorChunksAndAppendPoly1305(cipher, source, destination, ref state);
+			Span<byte> remaining = destination.Slice(processed);
+			TCipher.Xor(cipher, source.Slice(processed), remaining);
+			state.AppendPaddedSegment(remaining);
 			state.AppendPaddedSegment(lengthBlock);
 			state.WriteMac(tag);
 		}
@@ -278,6 +316,8 @@ internal static class ChaCha20Poly1305Utils
 		static abstract void DerivePoly1305KeyAndKeyStream(TSelf cipher, Span<byte> poly1305Key, Span<byte> keyStream);
 
 		static abstract void Xor(TSelf cipher, ReadOnlySpan<byte> source, Span<byte> destination);
+
+		static abstract int XorChunksAndAppendPoly1305(TSelf cipher, ReadOnlySpan<byte> source, Span<byte> destination, ref Poly1305Avx512 mac);
 	}
 
 	private readonly struct ChaCha20Adapter : IChaCha20Poly1305Cipher<ChaCha20Adapter>
@@ -308,6 +348,11 @@ internal static class ChaCha20Poly1305Utils
 		{
 			cipher._cipher.Xor(source, destination);
 		}
+
+		public static int XorChunksAndAppendPoly1305(ChaCha20Adapter cipher, ReadOnlySpan<byte> source, Span<byte> destination, ref Poly1305Avx512 mac)
+		{
+			return cipher._cipher.XorChunksAndAppendPoly1305(source, destination, ref mac);
+		}
 	}
 
 	private readonly struct XChaCha20Adapter : IChaCha20Poly1305Cipher<XChaCha20Adapter>
@@ -337,6 +382,11 @@ internal static class ChaCha20Poly1305Utils
 		public static void Xor(XChaCha20Adapter cipher, ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			cipher._cipher.Xor(source, destination);
+		}
+
+		public static int XorChunksAndAppendPoly1305(XChaCha20Adapter cipher, ReadOnlySpan<byte> source, Span<byte> destination, ref Poly1305Avx512 mac)
+		{
+			return cipher._cipher.XorChunksAndAppendPoly1305(source, destination, ref mac);
 		}
 	}
 }

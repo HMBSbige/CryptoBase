@@ -8,6 +8,7 @@ public class ChaCha20Poly1305Test
 	[Test]
 	[Arguments(0)]
 	[Arguments(13)]
+	[Arguments(4097)]
 	public async Task MatchesReferenceAtEveryLength(int associatedDataLength)
 	{
 		if (!ChaCha20Poly1305.IsSupported)
@@ -21,7 +22,7 @@ public class ChaCha20Poly1305Test
 		using ChaCha20Poly1305 expected = new(key);
 		using ChaCha20Poly1305Cipher crypto = new(key);
 
-		int[] lengths = [.. Enumerable.Range(0, 301), 1031, 4097];
+		int[] lengths = [.. Enumerable.Range(0, 301), 1031, 3071, 3072, 3073, 4095, 4097, 65537];
 
 		foreach (int length in lengths)
 		{

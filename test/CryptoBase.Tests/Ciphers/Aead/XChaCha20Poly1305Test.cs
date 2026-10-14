@@ -10,6 +10,7 @@ public class XChaCha20Poly1305Test
 	[Test]
 	[Arguments(0)]
 	[Arguments(13)]
+	[Arguments(4097)]
 	public async Task MatchesConstructionAtEveryLength(int associatedDataLength)
 	{
 		byte[] key = TestUtils.CreateDeterministicSource(XChaCha20Poly1305Cipher.KeySize);
@@ -17,7 +18,9 @@ public class XChaCha20Poly1305Test
 		byte[] associatedData = TestUtils.CreateDeterministicSource(associatedDataLength);
 		using XChaCha20Poly1305Cipher crypto = new(key);
 
-		for (int length = 0; length <= 300; ++length)
+		int[] lengths = [.. Enumerable.Range(0, 301), 3071, 3072, 3073, 4097];
+
+		foreach (int length in lengths)
 		{
 			byte[] plaintext = TestUtils.CreateDeterministicSource(length);
 			byte[] keyStream = new byte[64 + length];

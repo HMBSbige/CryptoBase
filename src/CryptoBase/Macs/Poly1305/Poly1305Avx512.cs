@@ -523,6 +523,132 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		h4 += carry3;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal readonly void GetEightWayAccumulator(out Vector512<ulong> h0, out Vector512<ulong> h1, out Vector512<ulong> h2, out Vector512<ulong> h3, out Vector512<ulong> h4)
+	{
+		h0 = Vector512.CreateScalar((ulong)_state.H0);
+		h1 = Vector512.CreateScalar((ulong)_state.H1);
+		h2 = Vector512.CreateScalar((ulong)_state.H2);
+		h3 = Vector512.CreateScalar((ulong)_state.H3);
+		h4 = Vector512.CreateScalar((ulong)_state.H4);
+	}
+
+	// h = (h + m) * r^8 for one 128-byte group; powers are broadcast from memory to spare registers.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void AppendEightWayGroup(ref Poly1305Avx512 state, ref byte source, ref Vector512<ulong> h0, ref Vector512<ulong> h1, ref Vector512<ulong> h2, ref Vector512<ulong> h3, ref Vector512<ulong> h4)
+	{
+		LoadEight(ref source, out Vector512<ulong> m0, out Vector512<ulong> m1, out Vector512<ulong> m2, out Vector512<ulong> m3, out Vector512<ulong> m4);
+		Vector512<uint> a0 = (h0 + m0).AsUInt32();
+		Vector512<uint> a1 = (h1 + m1).AsUInt32();
+		Vector512<uint> a2 = (h2 + m2).AsUInt32();
+		Vector512<uint> a3 = (h3 + m3).AsUInt32();
+		Vector512<uint> a4 = (h4 + m4).AsUInt32();
+
+		// Grouping by coefficient keeps only one broadcast power live at a time.
+		Vector512<uint> coefficient = BroadcastEighth(ref state._r0);
+		Vector512<ulong> d0 = Avx512F.Multiply(a0, coefficient);
+		Vector512<ulong> d1 = Avx512F.Multiply(a1, coefficient);
+		Vector512<ulong> d2 = Avx512F.Multiply(a2, coefficient);
+		Vector512<ulong> d3 = Avx512F.Multiply(a3, coefficient);
+		Vector512<ulong> d4 = Avx512F.Multiply(a4, coefficient);
+
+		coefficient = BroadcastEighth(ref state._r1);
+		d1 += Avx512F.Multiply(a0, coefficient);
+		d2 += Avx512F.Multiply(a1, coefficient);
+		d3 += Avx512F.Multiply(a2, coefficient);
+		d4 += Avx512F.Multiply(a3, coefficient);
+
+		coefficient = BroadcastEighth(ref state._r2);
+		d2 += Avx512F.Multiply(a0, coefficient);
+		d3 += Avx512F.Multiply(a1, coefficient);
+		d4 += Avx512F.Multiply(a2, coefficient);
+
+		coefficient = BroadcastEighth(ref state._r3);
+		d3 += Avx512F.Multiply(a0, coefficient);
+		d4 += Avx512F.Multiply(a1, coefficient);
+
+		d4 += Avx512F.Multiply(a0, BroadcastEighth(ref state._r4));
+		d0 += Avx512F.Multiply(a4, BroadcastEighth(ref state._s1));
+
+		coefficient = BroadcastEighth(ref state._s2);
+		d0 += Avx512F.Multiply(a3, coefficient);
+		d1 += Avx512F.Multiply(a4, coefficient);
+
+		coefficient = BroadcastEighth(ref state._s3);
+		d0 += Avx512F.Multiply(a2, coefficient);
+		d1 += Avx512F.Multiply(a3, coefficient);
+		d2 += Avx512F.Multiply(a4, coefficient);
+
+		coefficient = BroadcastEighth(ref state._s4);
+		d0 += Avx512F.Multiply(a1, coefficient);
+		d1 += Avx512F.Multiply(a2, coefficient);
+		d2 += Avx512F.Multiply(a3, coefficient);
+		d3 += Avx512F.Multiply(a4, coefficient);
+
+		// Reduce into locals so the carry chain stays in registers even when the caller's accumulator is spilled.
+		Reduce(d0, d1, d2, d3, d4, Vector512.Create((ulong)Poly1305State26.LimbMask), out Vector512<ulong> n0, out Vector512<ulong> n1, out Vector512<ulong> n2, out Vector512<ulong> n3, out Vector512<ulong> n4);
+		h0 = n0;
+		h1 = n1;
+		h2 = n2;
+		h3 = n3;
+		h4 = n4;
+	}
+
+	// Hashes the remaining groups, multiplies each lane of the last one by its remaining power, and stores the sum as the scalar accumulator.
+	// Kept out of line because the fused caller has no registers left for the accumulator.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	internal void FinishEightWay(ref byte source, int length, Vector512<ulong> h0, Vector512<ulong> h1, Vector512<ulong> h2, Vector512<ulong> h3, Vector512<ulong> h4)
+	{
+		Debug.Assert(length >= BlockSize8 && length % BlockSize8 is 0);
+
+		for (int offset = 0; offset < length - BlockSize8; offset += BlockSize8)
+		{
+			AppendEightWayGroup(ref this, ref Unsafe.Add(ref source, offset), ref h0, ref h1, ref h2, ref h3, ref h4);
+		}
+
+		LoadEight(ref Unsafe.Add(ref source, length - BlockSize8), out Vector512<ulong> m0, out Vector512<ulong> m1, out Vector512<ulong> m2, out Vector512<ulong> m3, out Vector512<ulong> m4);
+		Vector512<uint> a0 = (h0 + m0).AsUInt32();
+		Vector512<uint> a1 = (h1 + m1).AsUInt32();
+		Vector512<uint> a2 = (h2 + m2).AsUInt32();
+		Vector512<uint> a3 = (h3 + m3).AsUInt32();
+		Vector512<uint> a4 = (h4 + m4).AsUInt32();
+
+		Vector512<ulong> d2 = Avx512F.Multiply(a2, _r0);
+		Vector512<ulong> d3 = Avx512F.Multiply(a2, _r1);
+		Vector512<ulong> d4 = Avx512F.Multiply(a2, _r2);
+		Vector512<ulong> d0 = Avx512F.Multiply(a2, _s3);
+		Vector512<ulong> d1 = Avx512F.Multiply(a2, _s4);
+
+		d1 += Avx512F.Multiply(a0, _r1);
+		d2 += Avx512F.Multiply(a1, _r1);
+		d4 += Avx512F.Multiply(a3, _r1);
+		d0 += Avx512F.Multiply(a4, _s1);
+		d0 += Avx512F.Multiply(a0, _r0);
+		d1 += Avx512F.Multiply(a1, _r0);
+		d3 += Avx512F.Multiply(a3, _r0);
+		d4 += Avx512F.Multiply(a4, _r0);
+		d0 += Avx512F.Multiply(a3, _s2);
+		d1 += Avx512F.Multiply(a4, _s2);
+		d3 += Avx512F.Multiply(a1, _r2);
+		d2 += Avx512F.Multiply(a0, _r2);
+		d4 += Avx512F.Multiply(a1, _r3);
+		d3 += Avx512F.Multiply(a0, _r3);
+		d1 += Avx512F.Multiply(a3, _s3);
+		d2 += Avx512F.Multiply(a4, _s3);
+		d2 += Avx512F.Multiply(a3, _s4);
+		d3 += Avx512F.Multiply(a4, _s4);
+		d4 += Avx512F.Multiply(a0, _r4);
+		d0 += Avx512F.Multiply(a1, _s4);
+
+		_state.SetAccumulator(Vector512.Sum(d0), Vector512.Sum(d1), Vector512.Sum(d2), Vector512.Sum(d3), Vector512.Sum(d4));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector512<uint> BroadcastEighth(ref Vector512<uint> value)
+	{
+		return Vector512.Create(Unsafe.As<Vector512<uint>, ulong>(ref value)).AsUInt32();
+	}
+
 	public void AppendMessage(scoped ReadOnlySpan<byte> source)
 	{
 		Append(source, false);
