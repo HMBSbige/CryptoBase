@@ -171,15 +171,12 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 		RestoreInterrupt(interrupted);
 	}
 
-	// _pass and _slice are written before the generation is published and cannot change until every lane of it is processed, so a stale read only happens when claiming would fail anyway.
+	// A claimed lane keeps its phase current, so _pass and _slice cannot change before it is processed.
 	private void ProcessClaimedLanes(uint generation)
 	{
-		int pass = _pass;
-		int slice = _slice;
-
 		while (TryClaimLane(generation, out int lane))
 		{
-			ProcessLane(pass, slice, lane);
+			ProcessLane(_pass, _slice, lane);
 
 			if (Interlocked.Decrement(ref _pendingLanes) is 0)
 			{
