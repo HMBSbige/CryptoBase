@@ -103,7 +103,12 @@ public static class CpuIdUtils
 		}
 
 		(int family, int model) = DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax);
-		return IsZen5(family, model) && GetVendor() is "AuthenticAMD";
+		return IsZen5(family, model) && IsAuthenticAmd(X86Base.CpuId(0, 0));
+	}
+
+	internal static bool IsAuthenticAmd((int Eax, int Ebx, int Ecx, int Edx) id)
+	{
+		return id is (_, 0x68747541, 0x444D4163, 0x69746E65);
 	}
 
 	internal static (int Family, int Model) DecodeFamilyAndModel(int signature)

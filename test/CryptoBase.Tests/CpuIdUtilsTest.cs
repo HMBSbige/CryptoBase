@@ -1,3 +1,7 @@
+using System.Buffers.Binary;
+using System.Runtime.Intrinsics.X86;
+using System.Text;
+
 namespace CryptoBase.Tests;
 
 public class CpuIdUtilsTest
@@ -30,5 +34,27 @@ public class CpuIdUtilsTest
 	public async Task MatchesZen5ModelRanges(int family, int model, bool expected)
 	{
 		await Assert.That(CpuIdUtils.IsZen5(family, model)).IsEqualTo(expected);
+	}
+
+	[Test]
+	[Arguments("AuthenticAMD", true)]
+	[Arguments("GenuineIntel", false)]
+	[Arguments("HygonGenuine", false)]
+	public async Task RecognizesAmdVendorRegisters(string vendor, bool expected)
+	{
+		byte[] bytes = Encoding.ASCII.GetBytes(vendor);
+		int ebx = BinaryPrimitives.ReadInt32LittleEndian(bytes);
+		int edx = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(4));
+		int ecx = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(8));
+
+		await Assert.That(CpuIdUtils.IsAuthenticAmd((0, ebx, ecx, edx))).IsEqualTo(expected);
+	}
+
+	[Test]
+	public async Task AmdVendorRegistersAgreeWithVendorString()
+	{
+		bool amd = X86Base.IsSupported && CpuIdUtils.IsAuthenticAmd(X86Base.CpuId(0, 0));
+
+		await Assert.That(amd).IsEqualTo(CpuIdUtils.GetVendor() is "AuthenticAMD");
 	}
 }
