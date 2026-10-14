@@ -146,7 +146,7 @@ public class Argon2LaneSchedulerTest
 
 			try
 			{
-				((IThreadPoolWorkItem)this).Execute();
+				Help();
 			}
 			catch (Exception e)
 			{
