@@ -150,7 +150,13 @@ internal readonly struct Blake2bVector256 : IBlake2bKernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Step(ref Vector256<ulong> a, ref Vector256<ulong> b, ref Vector256<ulong> c, ref Vector256<ulong> d, ref byte block, int x0, int x1, int x2, int x3, int y0, int y1, int y2, int y3)
+	private static void Step
+	(
+		ref Vector256<ulong> a, ref Vector256<ulong> b, ref Vector256<ulong> c, ref Vector256<ulong> d,
+		ref byte block,
+		int x0, int x1, int x2, int x3,
+		int y0, int y1, int y2, int y3
+	)
 	{
 		Vector256<ulong> x = Vector256.Create(LoadPair(ref block, x0, x1), LoadPair(ref block, x2, x3));
 		a = a + x + b;

@@ -179,7 +179,14 @@ internal readonly partial struct Blake2bVector128
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StepSsse3(ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1, ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1, ref byte block, int x0, int x1, int x2, int x3, int y0, int y1, int y2, int y3)
+	private static void StepSsse3
+	(
+		ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1,
+		ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1,
+		ref byte block,
+		int x0, int x1, int x2, int x3,
+		int y0, int y1, int y2, int y3
+	)
 	{
 		a0 = a0 + LoadPair(ref block, x0, x1) + b0;
 		a1 = a1 + LoadPair(ref block, x2, x3) + b1;

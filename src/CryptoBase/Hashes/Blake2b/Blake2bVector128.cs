@@ -114,7 +114,12 @@ internal readonly partial struct Blake2bVector128 : IBlake2bKernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void G(ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1, ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1, Vector128<ulong> x0, Vector128<ulong> x1, Vector128<ulong> y0, Vector128<ulong> y1)
+	private static void G
+	(
+		ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1,
+		ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1,
+		Vector128<ulong> x0, Vector128<ulong> x1, Vector128<ulong> y0, Vector128<ulong> y1
+	)
 	{
 		// XOR both halves before rotating either: with only eight XMM registers, 32-bit x86 spills more and runs markedly slower when they interleave.
 		a0 = a0 + x0 + b0;

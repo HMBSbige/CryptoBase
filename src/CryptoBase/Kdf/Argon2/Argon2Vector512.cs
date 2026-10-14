@@ -70,7 +70,14 @@ internal readonly unsafe struct Argon2Vector512 : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void CompressNext(ref ulong reference, ref ulong state, bool xorDestination, ref Vector512<ulong> n0, ref Vector512<ulong> n1, ref Vector512<ulong> n2, ref Vector512<ulong> n3, ref Vector512<ulong> n4, ref Vector512<ulong> n5, ref Vector512<ulong> n6, ref Vector512<ulong> n7, ref Vector512<ulong> n8, ref Vector512<ulong> n9, ref Vector512<ulong> n10, ref Vector512<ulong> n11, ref Vector512<ulong> n12, ref Vector512<ulong> n13, ref Vector512<ulong> n14, ref Vector512<ulong> n15)
+	private static void CompressNext
+	(
+		ref ulong reference, ref ulong state, bool xorDestination,
+		ref Vector512<ulong> n0, ref Vector512<ulong> n1, ref Vector512<ulong> n2, ref Vector512<ulong> n3,
+		ref Vector512<ulong> n4, ref Vector512<ulong> n5, ref Vector512<ulong> n6, ref Vector512<ulong> n7,
+		ref Vector512<ulong> n8, ref Vector512<ulong> n9, ref Vector512<ulong> n10, ref Vector512<ulong> n11,
+		ref Vector512<ulong> n12, ref Vector512<ulong> n13, ref Vector512<ulong> n14, ref Vector512<ulong> n15
+	)
 	{
 		n0 ^= Vector512.LoadUnsafe(ref reference, 0);
 		n1 ^= Vector512.LoadUnsafe(ref reference, 8);
@@ -143,7 +150,13 @@ internal readonly unsafe struct Argon2Vector512 : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Permute(ref Vector512<ulong> n0, ref Vector512<ulong> n1, ref Vector512<ulong> n2, ref Vector512<ulong> n3, ref Vector512<ulong> n4, ref Vector512<ulong> n5, ref Vector512<ulong> n6, ref Vector512<ulong> n7, ref Vector512<ulong> n8, ref Vector512<ulong> n9, ref Vector512<ulong> n10, ref Vector512<ulong> n11, ref Vector512<ulong> n12, ref Vector512<ulong> n13, ref Vector512<ulong> n14, ref Vector512<ulong> n15)
+	private static void Permute
+	(
+		ref Vector512<ulong> n0, ref Vector512<ulong> n1, ref Vector512<ulong> n2, ref Vector512<ulong> n3,
+		ref Vector512<ulong> n4, ref Vector512<ulong> n5, ref Vector512<ulong> n6, ref Vector512<ulong> n7,
+		ref Vector512<ulong> n8, ref Vector512<ulong> n9, ref Vector512<ulong> n10, ref Vector512<ulong> n11,
+		ref Vector512<ulong> n12, ref Vector512<ulong> n13, ref Vector512<ulong> n14, ref Vector512<ulong> n15
+	)
 	{
 		// The two 256-bit halves of a row vector hold the same quarter of rows 2i and 2i + 1, so Permute4x64 diagonalizes each row within its half.
 		Vector512<ulong> a0 = Avx512F.Shuffle4x128(n0, n2, 0b01_00_01_00);
@@ -236,7 +249,13 @@ internal readonly unsafe struct Argon2Vector512 : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void G(ref Vector512<ulong> a0, ref Vector512<ulong> b0, ref Vector512<ulong> c0, ref Vector512<ulong> d0, ref Vector512<ulong> a1, ref Vector512<ulong> b1, ref Vector512<ulong> c1, ref Vector512<ulong> d1, ref Vector512<ulong> a2, ref Vector512<ulong> b2, ref Vector512<ulong> c2, ref Vector512<ulong> d2, ref Vector512<ulong> a3, ref Vector512<ulong> b3, ref Vector512<ulong> c3, ref Vector512<ulong> d3)
+	private static void G
+	(
+		ref Vector512<ulong> a0, ref Vector512<ulong> b0, ref Vector512<ulong> c0, ref Vector512<ulong> d0,
+		ref Vector512<ulong> a1, ref Vector512<ulong> b1, ref Vector512<ulong> c1, ref Vector512<ulong> d1,
+		ref Vector512<ulong> a2, ref Vector512<ulong> b2, ref Vector512<ulong> c2, ref Vector512<ulong> d2,
+		ref Vector512<ulong> a3, ref Vector512<ulong> b3, ref Vector512<ulong> c3, ref Vector512<ulong> d3
+	)
 	{
 		a0 = BlaMka(a0, b0);
 		a1 = BlaMka(a1, b1);

@@ -134,7 +134,13 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Round(ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1, ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1, ref Vector128<ulong> a2, ref Vector128<ulong> a3, ref Vector128<ulong> b2, ref Vector128<ulong> b3, ref Vector128<ulong> c2, ref Vector128<ulong> c3, ref Vector128<ulong> d2, ref Vector128<ulong> d3)
+	private static void Round
+	(
+		ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1,
+		ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1,
+		ref Vector128<ulong> a2, ref Vector128<ulong> a3, ref Vector128<ulong> b2, ref Vector128<ulong> b3,
+		ref Vector128<ulong> c2, ref Vector128<ulong> c3, ref Vector128<ulong> d2, ref Vector128<ulong> d3
+	)
 	{
 		G(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, ref a2, ref a3, ref b2, ref b3, ref c2, ref c3, ref d2, ref d3);
 
@@ -161,7 +167,13 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void G(ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1, ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1, ref Vector128<ulong> a2, ref Vector128<ulong> a3, ref Vector128<ulong> b2, ref Vector128<ulong> b3, ref Vector128<ulong> c2, ref Vector128<ulong> c3, ref Vector128<ulong> d2, ref Vector128<ulong> d3)
+	private static void G
+	(
+		ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1,
+		ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1,
+		ref Vector128<ulong> a2, ref Vector128<ulong> a3, ref Vector128<ulong> b2, ref Vector128<ulong> b3,
+		ref Vector128<ulong> c2, ref Vector128<ulong> c3, ref Vector128<ulong> d2, ref Vector128<ulong> d3
+	)
 	{
 		BlaMka(ref a0, ref a1, b0, b1);
 		BlaMka(ref a2, ref a3, b2, b3);

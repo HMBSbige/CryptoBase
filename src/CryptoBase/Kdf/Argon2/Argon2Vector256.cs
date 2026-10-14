@@ -319,7 +319,13 @@ internal readonly struct Argon2Vector256 : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void G(ref Vector256<ulong> a0, ref Vector256<ulong> a1, ref Vector256<ulong> a2, ref Vector256<ulong> a3, ref Vector256<ulong> b0, ref Vector256<ulong> b1, ref Vector256<ulong> b2, ref Vector256<ulong> b3, ref Vector256<ulong> c0, ref Vector256<ulong> c1, ref Vector256<ulong> c2, ref Vector256<ulong> c3, ref Vector256<ulong> d0, ref Vector256<ulong> d1, ref Vector256<ulong> d2, ref Vector256<ulong> d3)
+	private static void G
+	(
+		ref Vector256<ulong> a0, ref Vector256<ulong> a1, ref Vector256<ulong> a2, ref Vector256<ulong> a3,
+		ref Vector256<ulong> b0, ref Vector256<ulong> b1, ref Vector256<ulong> b2, ref Vector256<ulong> b3,
+		ref Vector256<ulong> c0, ref Vector256<ulong> c1, ref Vector256<ulong> c2, ref Vector256<ulong> c3,
+		ref Vector256<ulong> d0, ref Vector256<ulong> d1, ref Vector256<ulong> d2, ref Vector256<ulong> d3
+	)
 	{
 		a0 = BlaMka(a0, b0);
 		a1 = BlaMka(a1, b1);

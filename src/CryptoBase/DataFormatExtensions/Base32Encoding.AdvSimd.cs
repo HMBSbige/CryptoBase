@@ -3,7 +3,13 @@ namespace CryptoBase.DataFormatExtensions;
 public sealed partial class Base32Encoding
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> EncodeTwoAdvSimd(Vector128<ulong> value, Vector128<ulong> mask0, Vector128<ulong> mask1, Vector128<ulong> mask2, Vector128<ulong> mask3, Vector128<ulong> mask4, Vector128<ulong> mask5, Vector128<ulong> mask6, Vector128<ulong> mask7, Vector128<sbyte> threshold, Vector128<byte> first, Vector128<byte> second)
+	private static Vector128<byte> EncodeTwoAdvSimd
+	(
+		Vector128<ulong> value,
+		Vector128<ulong> mask0, Vector128<ulong> mask1, Vector128<ulong> mask2, Vector128<ulong> mask3,
+		Vector128<ulong> mask4, Vector128<ulong> mask5, Vector128<ulong> mask6, Vector128<ulong> mask7,
+		Vector128<sbyte> threshold, Vector128<byte> first, Vector128<byte> second
+	)
 	{
 		Vector128<ulong> result = value >>> 35 & mask0;
 		Vector128<ulong> next = value >>> 22 & mask1;

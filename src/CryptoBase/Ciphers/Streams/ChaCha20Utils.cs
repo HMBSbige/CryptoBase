@@ -81,7 +81,14 @@ internal static partial class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void PermuteScalar(int rounds, ref uint x00, ref uint x01, ref uint x02, ref uint x03, ref uint x04, ref uint x05, ref uint x06, ref uint x07, ref uint x08, ref uint x09, ref uint x10, ref uint x11, ref uint x12, ref uint x13, ref uint x14, ref uint x15)
+	private static void PermuteScalar
+	(
+		int rounds,
+		ref uint x00, ref uint x01, ref uint x02, ref uint x03,
+		ref uint x04, ref uint x05, ref uint x06, ref uint x07,
+		ref uint x08, ref uint x09, ref uint x10, ref uint x11,
+		ref uint x12, ref uint x13, ref uint x14, ref uint x15
+	)
 	{
 		for (int round = 0; round < rounds; round += 2)
 		{

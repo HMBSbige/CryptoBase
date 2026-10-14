@@ -101,14 +101,26 @@ internal readonly struct Argon2Scalar : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Round(ref ulong v0, ref ulong v1, ref ulong v2, ref ulong v3, ref ulong v4, ref ulong v5, ref ulong v6, ref ulong v7, ref ulong v8, ref ulong v9, ref ulong v10, ref ulong v11, ref ulong v12, ref ulong v13, ref ulong v14, ref ulong v15)
+	private static void Round
+	(
+		ref ulong v0, ref ulong v1, ref ulong v2, ref ulong v3,
+		ref ulong v4, ref ulong v5, ref ulong v6, ref ulong v7,
+		ref ulong v8, ref ulong v9, ref ulong v10, ref ulong v11,
+		ref ulong v12, ref ulong v13, ref ulong v14, ref ulong v15
+	)
 	{
 		Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15);
 		Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Step(ref ulong a0, ref ulong a1, ref ulong a2, ref ulong a3, ref ulong b0, ref ulong b1, ref ulong b2, ref ulong b3, ref ulong c0, ref ulong c1, ref ulong c2, ref ulong c3, ref ulong d0, ref ulong d1, ref ulong d2, ref ulong d3)
+	private static void Step
+	(
+		ref ulong a0, ref ulong a1, ref ulong a2, ref ulong a3,
+		ref ulong b0, ref ulong b1, ref ulong b2, ref ulong b3,
+		ref ulong c0, ref ulong c1, ref ulong c2, ref ulong c3,
+		ref ulong d0, ref ulong d1, ref ulong d2, ref ulong d3
+	)
 	{
 		a0 = BlaMka(a0, b0);
 		a1 = BlaMka(a1, b1);

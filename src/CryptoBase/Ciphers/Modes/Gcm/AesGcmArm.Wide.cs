@@ -100,7 +100,15 @@ internal static partial class AesGcmArm
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void EncryptHashRound8(ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2, ref Vector128<byte> v3, ref Vector128<byte> v4, ref Vector128<byte> v5, ref Vector128<byte> v6, ref Vector128<byte> v7, Vector128<byte> roundKey, Vector128<byte> value, Vector128<byte> hashKey, ref Vector128<ulong> low, ref Vector128<ulong> high, ref Vector128<ulong> middle, bool initialize)
+	private static void EncryptHashRound8
+	(
+		ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2, ref Vector128<byte> v3,
+		ref Vector128<byte> v4, ref Vector128<byte> v5, ref Vector128<byte> v6, ref Vector128<byte> v7,
+		Vector128<byte> roundKey,
+		Vector128<byte> value, Vector128<byte> hashKey,
+		ref Vector128<ulong> low, ref Vector128<ulong> high, ref Vector128<ulong> middle,
+		bool initialize
+	)
 	{
 		Vector128<ulong> a = value.AsUInt64();
 		Vector128<ulong> b = hashKey.AsUInt64();

@@ -78,7 +78,16 @@ internal readonly struct Blake2bScalar : IBlake2bKernel
 
 	// Runs G on four lanes in lockstep, which is faster than running the lanes one after another.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Step(ref ulong a0, ref ulong a1, ref ulong a2, ref ulong a3, ref ulong b0, ref ulong b1, ref ulong b2, ref ulong b3, ref ulong c0, ref ulong c1, ref ulong c2, ref ulong c3, ref ulong d0, ref ulong d1, ref ulong d2, ref ulong d3, ref byte block, int x0, int x1, int x2, int x3, int y0, int y1, int y2, int y3)
+	private static void Step
+	(
+		ref ulong a0, ref ulong a1, ref ulong a2, ref ulong a3,
+		ref ulong b0, ref ulong b1, ref ulong b2, ref ulong b3,
+		ref ulong c0, ref ulong c1, ref ulong c2, ref ulong c3,
+		ref ulong d0, ref ulong d1, ref ulong d2, ref ulong d3,
+		ref byte block,
+		int x0, int x1, int x2, int x3,
+		int y0, int y1, int y2, int y3
+	)
 	{
 		// Adding the message word first keeps one addition off the b dependency chain.
 		a0 = a0 + MessageWord(ref block, x0) + b0;
