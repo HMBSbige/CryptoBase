@@ -88,11 +88,10 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 
 		try
 		{
-			uint seenGeneration = 0;
+			uint generation = 0;
 
-			while (TryWaitForGeneration(seenGeneration, ref interrupted, out uint generation))
+			while (TryWaitForGeneration(ref generation, ref interrupted))
 			{
-				seenGeneration = generation;
 				ProcessClaimedLanes(generation);
 			}
 		}
@@ -104,12 +103,12 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 		RestoreInterrupt(interrupted);
 	}
 
-	private bool TryWaitForGeneration(uint seenGeneration, ref bool interrupted, out uint generation)
+	private bool TryWaitForGeneration(ref uint generation, ref bool interrupted)
 	{
 		Uninterruptibly
 		(
 			static state => state.Scheduler.WaitWhile(static (scheduler, seen) => Volatile.Read(ref scheduler._finished) is 0 && scheduler.PublishedGeneration == seen, state.SeenGeneration),
-			(Scheduler: this, SeenGeneration: seenGeneration),
+			(Scheduler: this, SeenGeneration: generation),
 			ref interrupted
 		);
 		generation = PublishedGeneration;
