@@ -7,7 +7,7 @@ namespace CryptoBase.Tests.Hashes;
 
 internal static class HashAlgorithmTestUtils
 {
-	private const int DirectBatchLength = 1024;
+	internal const int DirectBatchLength = 1024;
 
 	private static readonly int[] BatchBoundaryLengths = [511, 512, 513, 1023, 1024, 1025];
 	private static readonly int[] SourceOffsets = [1, 15, 31, 63];
@@ -64,32 +64,9 @@ internal static class HashAlgorithmTestUtils
 		yield return (blockSize + DirectBatchLength + 1, 31, blockSize);
 	}
 
-	internal static async Task VerifyHashVector<T>(string value, string expected, int expectedHashLength) where T : unmanaged, IHashCore<T>
+	internal static Task VerifyHashVector<T>(string value, string expected, int expectedHashLength) where T : unmanaged, IHashCore<T>
 	{
-		await Assert.That(T.HashLength).IsEqualTo(expectedHashLength);
-
-		byte[] source = Encoding.UTF8.GetBytes(value);
-		byte[] expectedHash = Convert.FromHexString(expected);
-		byte[] destination = CreateDestination<T>();
-
-		PrepareDestination(destination);
-		int written = HashAlgorithm<T>.HashData(source, destination);
-		await AssertOutput(destination, expectedHash, written);
-
-		using HashAlgorithm<T> hashAlgorithm = HashAlgorithm<T>.Create();
-		hashAlgorithm.Append(source);
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, expectedHash, written);
-
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetHashAndReset(destination);
-		await AssertOutput(destination, expectedHash, written);
-
-		AppendInFixedChunks(hashAlgorithm, source, 1);
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetHashAndReset(destination);
-		await AssertOutput(destination, expectedHash, written);
+		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyHashVector(value, expected, expectedHashLength);
 	}
 
 	internal static async Task VerifyHashVector<T>(string value, string expected, int expectedHashLength, int expectedBlockSize) where T : unmanaged, IHmacHashCore<T>
@@ -113,16 +90,124 @@ internal static class HashAlgorithmTestUtils
 
 	internal static Task VerifyBoundary<T>(int length, Func<byte[], byte[]> oracle) where T : unmanaged, IHashCore<T>
 	{
-		byte[] source = CreateDeterministicSource(length);
-		return VerifyBoundary<T>(source, oracle(source));
+		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyBoundary(length, oracle);
 	}
 
 	internal static Task VerifyBoundary<T>(int length, string expectedHex) where T : unmanaged, IHashCore<T>
 	{
-		return VerifyBoundary<T>(CreateDeterministicSource(length), Convert.FromHexString(expectedHex));
+		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyBoundary(length, expectedHex);
 	}
 
-	internal static async Task VerifyIncrementalBlockBatch<T>(int length, int sourceOffset, int blockSize, Func<byte[], byte[]> oracle) where T : unmanaged, IHashCore<T>
+	internal static Task VerifyIncrementalBlockBatch<T>(int length, int sourceOffset, int blockSize, Func<byte[], byte[]> oracle) where T : unmanaged, IHashCore<T>
+	{
+		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyIncrementalBlockBatch(length, sourceOffset, blockSize, oracle);
+	}
+
+	internal static byte[] CreateDestination<T>() where T : unmanaged, IIncrementalHashCore
+	{
+		return new byte[T.HashLength + 1];
+	}
+
+	internal static Task VerifyBoundary<T>(ReadOnlyMemory<byte> source, byte[] expected) where T : unmanaged, IHashCore<T>
+	{
+		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyBoundary(source, expected);
+	}
+
+	internal static Task VerifyOverlappingHashData<T>(byte[] source, byte[] expected) where T : unmanaged, IHashCore<T>
+	{
+		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyOverlappingHashData(source, expected);
+	}
+
+	internal static async Task VerifyOverlappingHashData(byte[] source, byte[] expected, Func<ReadOnlySpan<byte>, Span<byte>, int> hashData)
+	{
+		foreach ((int sourceOffset, int destinationOffset) in new[] { (0, 0), (0, 17), (17, 0), (0, source.Length - 1) })
+		{
+			byte[] buffer = new byte[Math.Max(sourceOffset + source.Length, destinationOffset + expected.Length) + 1];
+			PrepareDestination(buffer);
+			source.CopyTo(buffer.AsSpan().Slice(sourceOffset));
+			byte[] expectedBuffer = (byte[])buffer.Clone();
+			expected.CopyTo(expectedBuffer.AsSpan().Slice(destinationOffset));
+
+			int written = hashData(buffer.AsSpan().Slice(sourceOffset, source.Length), buffer.AsSpan().Slice(destinationOffset));
+
+			await Assert.That(written).IsEqualTo(expected.Length);
+			await Assert.That(buffer).IsEquivalentTo(expectedBuffer, CollectionOrdering.Matching);
+		}
+	}
+
+	internal static Task VerifyInputIsUnchanged<T>(int length, int offset) where T : unmanaged, IHashCore<T>
+	{
+		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyInputIsUnchanged(length, offset);
+	}
+
+	internal static void AppendInPieces<TAlgorithm>(TAlgorithm hashAlgorithm, ReadOnlySpan<byte> source, int pieceLength) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
+	{
+		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pieceLength);
+
+		do
+		{
+			int length = Math.Min(pieceLength, source.Length);
+			hashAlgorithm.Append(source.Slice(0, length));
+			source = source.Slice(length);
+		} while (!source.IsEmpty);
+	}
+
+	internal static void AppendInPseudoRandomPieces<TAlgorithm>(TAlgorithm hashAlgorithm, ReadOnlySpan<byte> source, uint state, int maximumPieceLength = 23) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
+	{
+		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumPieceLength);
+
+		do
+		{
+			state = state * 1664525U + 1013904223U;
+			int length = Math.Min((int)(state % (uint)maximumPieceLength) + 1, source.Length);
+			hashAlgorithm.Append(source.Slice(0, length));
+			source = source.Slice(length);
+		} while (!source.IsEmpty);
+	}
+}
+
+internal static class HashAlgorithmTestUtils<TAlgorithm> where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
+{
+	internal static async Task VerifyHashVector(string value, string expected, int expectedHashLength)
+	{
+		await Assert.That(TAlgorithm.HashLength).IsEqualTo(expectedHashLength);
+
+		byte[] source = Encoding.UTF8.GetBytes(value);
+		byte[] expectedHash = Convert.FromHexString(expected);
+		byte[] destination = CreateDestination();
+
+		PrepareDestination(destination);
+		int written = TAlgorithm.HashData(source, destination);
+		await AssertOutput(destination, expectedHash, written);
+
+		using TAlgorithm hashAlgorithm = TAlgorithm.Create();
+		hashAlgorithm.Append(source);
+		PrepareDestination(destination);
+		written = hashAlgorithm.GetCurrentHash(destination);
+		await AssertOutput(destination, expectedHash, written);
+
+		PrepareDestination(destination);
+		written = hashAlgorithm.GetHashAndReset(destination);
+		await AssertOutput(destination, expectedHash, written);
+
+		HashAlgorithmTestUtils.AppendInPieces(hashAlgorithm, source, 1);
+		PrepareDestination(destination);
+		written = hashAlgorithm.GetHashAndReset(destination);
+		await AssertOutput(destination, expectedHash, written);
+	}
+
+	internal static Task VerifyBoundary(int length, Func<byte[], byte[]> oracle)
+	{
+		byte[] source = CreateDeterministicSource(length);
+		return VerifyBoundary(source, oracle(source));
+	}
+
+	internal static Task VerifyBoundary(int length, string expectedHex)
+	{
+		return VerifyBoundary(CreateDeterministicSource(length), Convert.FromHexString(expectedHex));
+	}
+
+	internal static async Task VerifyIncrementalBlockBatch(int length, int sourceOffset, int blockSize, Func<byte[], byte[]> oracle)
 	{
 		byte[] payload = CreateDeterministicSource(length);
 		byte[] expected = oracle(payload);
@@ -130,9 +215,9 @@ internal static class HashAlgorithmTestUtils
 		source.AsSpan().Fill(DestinationSentinel);
 		payload.CopyTo(source.AsSpan().Slice(sourceOffset, payload.Length));
 		byte[] sourceCopy = (byte[])source.Clone();
-		byte[] destination = CreateDestination<T>();
+		byte[] destination = CreateDestination();
 
-		using HashAlgorithm<T> hashAlgorithm = HashAlgorithm<T>.Create();
+		using TAlgorithm hashAlgorithm = TAlgorithm.Create();
 
 		if (blockSize is 0)
 		{
@@ -141,7 +226,7 @@ internal static class HashAlgorithmTestUtils
 		else
 		{
 			int firstLength = blockSize - 1;
-			int middleLength = DirectBatchLength + 1;
+			int middleLength = HashAlgorithmTestUtils.DirectBatchLength + 1;
 			hashAlgorithm.Append(source.AsSpan().Slice(sourceOffset, firstLength));
 			hashAlgorithm.Append(source.AsSpan().Slice(sourceOffset + firstLength, middleLength));
 			hashAlgorithm.Append(source.AsSpan().Slice(sourceOffset + firstLength + middleLength, 1));
@@ -154,45 +239,50 @@ internal static class HashAlgorithmTestUtils
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
 	}
 
-	internal static byte[] CreateDestination<T>() where T : unmanaged, IIncrementalHashCore
+	internal static byte[] CreateDestination()
 	{
-		return new byte[T.HashLength + 1];
+		return new byte[TAlgorithm.HashLength + 1];
 	}
 
-	internal static async Task VerifyBoundary<T>(ReadOnlyMemory<byte> source, byte[] expected) where T : unmanaged, IHashCore<T>
+	internal static async Task VerifyBoundary(ReadOnlyMemory<byte> source, byte[] expected)
 	{
-		byte[] destination = CreateDestination<T>();
+		byte[] destination = CreateDestination();
 
 		PrepareDestination(destination);
-		int written = HashAlgorithm<T>.HashData(source.Span, destination);
+		int written = TAlgorithm.HashData(source.Span, destination);
 		await AssertOutput(destination, expected, written);
 
-		using HashAlgorithm<T> hashAlgorithm = HashAlgorithm<T>.Create();
+		using TAlgorithm hashAlgorithm = TAlgorithm.Create();
 		hashAlgorithm.Append(source.Span);
 		PrepareDestination(destination);
 		written = hashAlgorithm.GetCurrentHash(destination);
 		await AssertOutput(destination, expected, written);
 
 		hashAlgorithm.Reset();
-		AppendInFixedChunks(hashAlgorithm, source.Span, 13);
+		HashAlgorithmTestUtils.AppendInPieces(hashAlgorithm, source.Span, 13);
 		PrepareDestination(destination);
 		written = hashAlgorithm.GetCurrentHash(destination);
 		await AssertOutput(destination, expected, written);
 
 		hashAlgorithm.Reset();
-		AppendInPseudoRandomChunks(hashAlgorithm, source.Span, (uint)source.Length + 1);
+		HashAlgorithmTestUtils.AppendInPseudoRandomPieces(hashAlgorithm, source.Span, (uint)source.Length + 1);
 		PrepareDestination(destination);
 		written = hashAlgorithm.GetHashAndReset(destination);
 		await AssertOutput(destination, expected, written);
 	}
 
-	internal static async Task VerifyInputIsUnchanged<T>(int length, int offset) where T : unmanaged, IHashCore<T>
+	internal static Task VerifyOverlappingHashData(byte[] source, byte[] expected)
 	{
-		byte[] destination = new byte[T.HashLength];
+		return HashAlgorithmTestUtils.VerifyOverlappingHashData(source, expected, static (input, output) => TAlgorithm.HashData(input, output));
+	}
+
+	internal static async Task VerifyInputIsUnchanged(int length, int offset)
+	{
+		byte[] destination = new byte[TAlgorithm.HashLength];
 		byte[] source = CreateDeterministicSource(offset + length + 17);
 		byte[] sourceCopy = (byte[])source.Clone();
 
-		using HashAlgorithm<T> hashAlgorithm = HashAlgorithm<T>.Create();
+		using TAlgorithm hashAlgorithm = TAlgorithm.Create();
 		hashAlgorithm.Append(source.AsSpan().Slice(offset, length));
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
 
@@ -201,42 +291,7 @@ internal static class HashAlgorithmTestUtils
 		hashAlgorithm.GetHashAndReset(destination);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
 
-		HashAlgorithm<T>.HashData(source.AsSpan().Slice(offset, length), destination);
+		TAlgorithm.HashData(source.AsSpan().Slice(offset, length), destination);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
-	}
-
-	private static void AppendInPseudoRandomChunks<T>(T hashAlgorithm, ReadOnlySpan<byte> source, uint state, int maximumChunkLength = 23) where T : class, IHashAlgorithm<T>
-	{
-		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumChunkLength);
-
-		if (source.IsEmpty)
-		{
-			hashAlgorithm.Append(source);
-			return;
-		}
-
-		while (!source.IsEmpty)
-		{
-			state = state * 1664525U + 1013904223U;
-			int length = Math.Min((int)(state % (uint)maximumChunkLength) + 1, source.Length);
-			hashAlgorithm.Append(source.Slice(0, length));
-			source = source.Slice(length);
-		}
-	}
-
-	private static void AppendInFixedChunks<T>(HashAlgorithm<T> hashAlgorithm, ReadOnlySpan<byte> source, int chunkSize) where T : unmanaged, IHashCore<T>
-	{
-		if (source.IsEmpty)
-		{
-			hashAlgorithm.Append(source);
-			return;
-		}
-
-		while (!source.IsEmpty)
-		{
-			int length = Math.Min(chunkSize, source.Length);
-			hashAlgorithm.Append(source.Slice(0, length));
-			source = source.Slice(length);
-		}
 	}
 }

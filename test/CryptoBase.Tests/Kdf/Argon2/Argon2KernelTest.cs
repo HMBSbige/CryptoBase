@@ -8,9 +8,7 @@ public class Argon2KernelTest
 	[Test]
 	public async Task EveryKernelIsListed()
 	{
-		Type[] implemented = typeof(IArgon2Kernel).Assembly.GetTypes().Where(static type => type is { IsInterface: false, IsAbstract: false } && type.IsAssignableTo(typeof(IArgon2Kernel))).ToArray();
-
-		await Assert.That(Argon2KernelCase.All().Select(static kernel => kernel.KernelType)).IsEquivalentTo(implemented);
+		await Assert.That(Argon2KernelCase.All().Select(static kernel => kernel.KernelType)).IsEquivalentTo(TestUtils.ImplementationsOf(typeof(IArgon2Kernel)));
 	}
 
 	[Test]

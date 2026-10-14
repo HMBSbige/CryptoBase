@@ -44,6 +44,11 @@ public static class TestUtils
 		}
 	}
 
+	public static Type[] ImplementationsOf(Type interfaceType)
+	{
+		return interfaceType.Assembly.GetTypes().Where(type => type is { IsInterface: false, IsAbstract: false } && type.IsAssignableTo(interfaceType)).ToArray();
+	}
+
 	public static byte[] CreateGuardedBuffer(int offset, int length, int tailLength = 11)
 	{
 		byte[] buffer = new byte[offset + length + tailLength];
