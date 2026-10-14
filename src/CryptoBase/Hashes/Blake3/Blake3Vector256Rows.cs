@@ -236,7 +236,8 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 			rowFlags |= startFlags;
 		}
 
-		row3 = Avx2.Blend(row3, Vector256.Create(Vector128.Create(0, 0, blockCount is 1 ? last.LastLength : BlockLength, rowFlags)), 0b1100_0000);
+		Vector256<ulong> lengthAndFlags = Vector256.Create((ulong)rowFlags << 32 | (blockCount is 1 ? last.LastLength : BlockLength));
+		row3 = Avx2.Blend(row3, lengthAndFlags.AsUInt32(), 0b1100_0000);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
