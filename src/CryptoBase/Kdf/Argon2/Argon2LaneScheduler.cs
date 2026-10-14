@@ -1,4 +1,4 @@
-using static CryptoBase.Kdf.Argon2.Argon2Interrupts;
+using static CryptoBase.Internal.ThreadInterrupts;
 
 namespace CryptoBase.Kdf.Argon2;
 
@@ -51,23 +51,10 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 		WakeBlockedThreads();
 
 		// With no lane pending, every lane of the last phase has been claimed and processed, so no helper is processing one or can claim one.
-		bool waitForExit = Volatile.Read(ref _pendingLanes) is not 0;
-		bool interrupted = false;
-		SpinWait spinner = default;
-
-		while (waitForExit && Volatile.Read(ref _runningHelpers) is not 0)
+		if (Volatile.Read(ref _pendingLanes) is not 0)
 		{
-			try
-			{
-				spinner.SpinOnce();
-			}
-			catch (ThreadInterruptedException)
-			{
-				interrupted = true;
-			}
+			SpinUntilZero(ref _runningHelpers);
 		}
-
-		RestoreInterrupt(interrupted);
 	}
 
 	protected void RunPhase(int pass, int slice)
@@ -119,7 +106,12 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 
 	private bool TryWaitForGeneration(uint seenGeneration, ref bool interrupted, out uint generation)
 	{
-		Uninterruptibly(static state => state.Scheduler.WaitWhile(static (scheduler, seen) => Volatile.Read(ref scheduler._finished) is 0 && scheduler.PublishedGeneration == seen, state.SeenGeneration), (Scheduler: this, SeenGeneration: seenGeneration), ref interrupted);
+		Uninterruptibly
+		(
+			static state => state.Scheduler.WaitWhile(static (scheduler, seen) => Volatile.Read(ref scheduler._finished) is 0 && scheduler.PublishedGeneration == seen, state.SeenGeneration),
+			(Scheduler: this, SeenGeneration: seenGeneration),
+			ref interrupted
+		);
 		generation = PublishedGeneration;
 		return Volatile.Read(ref _finished) is 0;
 	}

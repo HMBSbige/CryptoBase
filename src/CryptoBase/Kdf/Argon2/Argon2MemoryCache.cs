@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using static CryptoBase.Kdf.Argon2.Argon2Interrupts;
+using static CryptoBase.Internal.ThreadInterrupts;
 using Region = (nint Address, nuint Length, long ReturnedAt);
 
 namespace CryptoBase.Kdf.Argon2;
