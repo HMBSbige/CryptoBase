@@ -18,7 +18,7 @@ public class XChaCha20Poly1305Test
 		byte[] associatedData = TestUtils.CreateDeterministicSource(associatedDataLength);
 		using XChaCha20Poly1305Cipher crypto = new(key);
 
-		int[] lengths = [.. Enumerable.Range(0, 301), 3071, 3072, 3073, 4097];
+		int[] lengths = [.. Enumerable.Range(0, 301), 1023, 1024, 1025, 1536, 3071, 3072, 3073, 4097];
 
 		foreach (int length in lengths)
 		{

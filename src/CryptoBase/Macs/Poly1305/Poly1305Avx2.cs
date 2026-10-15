@@ -315,6 +315,17 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 		h4 += carry3;
 	}
 
+	internal readonly void GetScalarState(out ulong h0, out ulong h1, out ulong h2, out ulong r0, out ulong r1)
+	{
+		_state.GetAccumulator64(out h0, out h1, out h2);
+		_state.GetKey64(out r0, out r1);
+	}
+
+	internal void SetScalarAccumulator(ulong h0, ulong h1, ulong h2)
+	{
+		_state.SetAccumulator64(h0, h1, h2);
+	}
+
 	public void AppendMessage(scoped ReadOnlySpan<byte> source)
 	{
 		Append(source, false);

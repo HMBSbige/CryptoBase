@@ -15,6 +15,18 @@ internal static partial class ChaCha20Utils
 		return Vector512.IsHardwareAccelerated && Avx512F.IsSupported && Poly1305Avx512.IsSupported && length >= Poly1305FusionThreshold;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static int XorPoly1305<TState>(ref uint stateRef, ref byte input, ref byte output, int length, ref TState mac) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
+	{
+		if (typeof(TState) == typeof(Poly1305Avx512))
+		{
+			return XorVector512Poly1305(ref stateRef, ref input, ref output, length, ref Unsafe.As<TState, Poly1305Avx512>(ref mac));
+		}
+
+		Debug.Assert(typeof(TState) == typeof(Poly1305Avx2));
+		return XorVector256Poly1305(ref stateRef, ref input, ref output, length, ref Unsafe.As<TState, Poly1305Avx2>(ref mac));
+	}
+
 	// Encrypts whole 1 KiB chunks, hashing the previous chunk's ciphertext (unpadded) between the double rounds.
 	internal static int XorVector512Poly1305(ref uint stateRef, ref byte input, ref byte output, int length, ref Poly1305Avx512 mac)
 	{

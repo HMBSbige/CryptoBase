@@ -2,7 +2,7 @@ namespace CryptoBase.Macs.Poly1305;
 
 internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 {
-	private const ulong FullBlockHighBit = 1;
+	internal const ulong FullBlockHighBit = 1;
 
 	public static bool IsSupported => true;
 
@@ -35,7 +35,7 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Block(ref ulong h0, ref ulong h1, ref ulong h2, ulong r0, ulong r1, ulong s1, ref byte source, ulong highBit)
+	internal static void Block(ref ulong h0, ref ulong h1, ref ulong h2, ulong r0, ulong r1, ulong s1, ref byte source, ulong highBit)
 	{
 		ulong t0 = Unsafe.ReadUnaligned<ulong>(ref source);
 		ulong t1 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref source, 8));

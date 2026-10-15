@@ -72,13 +72,13 @@ public class ChaCha20Cipher : SnuffleCipher
 		ChaCha20Utils.DerivePoly1305KeyAndKeyStream(ref StateRef, poly1305Key, keyStream);
 	}
 
-	/// <summary>Encrypts whole 1 KiB chunks from a block boundary and appends their ciphertext to <paramref name="mac" />.</summary>
+	/// <summary>Encrypts whole chunks from a block boundary and appends their ciphertext to <paramref name="mac" />.</summary>
 	/// <returns>The number of bytes processed.</returns>
-	internal int XorChunksAndAppendPoly1305(ReadOnlySpan<byte> source, Span<byte> destination, ref Poly1305Avx512 mac)
+	internal int XorChunksAndAppendPoly1305<TState>(ReadOnlySpan<byte> source, Span<byte> destination, ref TState mac) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
 	{
 		Debug.Assert(Index is 0 && destination.Length >= source.Length);
 
-		int processed = ChaCha20Utils.XorVector512Poly1305(ref StateRef, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref mac);
+		int processed = ChaCha20Utils.XorPoly1305(ref StateRef, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref mac);
 		Debug.Assert((ulong)processed / BlockSize <= CounterRemaining);
 		CounterRemaining -= (uint)processed / BlockSize;
 		return processed;

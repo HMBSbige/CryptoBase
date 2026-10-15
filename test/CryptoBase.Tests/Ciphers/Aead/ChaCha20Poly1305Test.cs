@@ -22,7 +22,7 @@ public class ChaCha20Poly1305Test
 		using ChaCha20Poly1305 expected = new(key);
 		using ChaCha20Poly1305Cipher crypto = new(key);
 
-		int[] lengths = [.. Enumerable.Range(0, 301), 1031, 3071, 3072, 3073, 4095, 4097, 65537];
+		int[] lengths = [.. Enumerable.Range(0, 301), 1023, 1024, 1025, 1031, 1536, 3071, 3072, 3073, 4095, 4097, 65537];
 
 		foreach (int length in lengths)
 		{
