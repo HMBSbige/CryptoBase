@@ -19,6 +19,7 @@ public sealed partial class Base32Encoding
 		]
 	);
 
+	private static readonly Vector512<byte> Avx512BwPackIndicesVector = Vector512.Create(Vector256.Create(4, 3, 2, 1, 0, 0x80, 0x80, 0x80, 9, 8, 7, 6, 5, 0x80, 0x80, 0x80, 10, 9, 8, 7, 6, 0x80, 0x80, 0x80, 15, 14, 13, 12, 11, 0x80, 0x80, 0x80));
 	private static readonly Vector512<byte> Avx512ShiftControlVector = Vector512.Create(Avx512EncodeShiftControl).AsByte();
 	private static readonly Vector512<byte> Avx512RfcAlphabetVector = Vector512.Create(Vector256.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"u8));
 	private static readonly Vector512<byte> Avx512HexAlphabetVector = Vector512.Create(Vector256.Create("0123456789ABCDEFGHIJKLMNOPQRSTUV"u8));
@@ -125,27 +126,11 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector512<ulong> PackEightFast(ref byte source)
-	{
-		return Vector512.Create
-		(
-			Pack5Fast(ref source), Pack5Fast(ref Unsafe.Add(ref source, 5)),
-			Pack5Fast(ref Unsafe.Add(ref source, 10)), Pack5Fast(ref Unsafe.Add(ref source, 15)),
-			Pack5Fast(ref Unsafe.Add(ref source, 20)), Pack5Fast(ref Unsafe.Add(ref source, 25)),
-			Pack5Fast(ref Unsafe.Add(ref source, 30)), Pack5Fast(ref Unsafe.Add(ref source, 35))
-		);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<ulong> PackEight(ref byte source)
 	{
-		return Vector512.Create
-		(
-			Pack5(ref source), Pack5(ref Unsafe.Add(ref source, 5)),
-			Pack5(ref Unsafe.Add(ref source, 10)), Pack5(ref Unsafe.Add(ref source, 15)),
-			Pack5(ref Unsafe.Add(ref source, 20)), Pack5(ref Unsafe.Add(ref source, 25)),
-			Pack5(ref Unsafe.Add(ref source, 30)), Pack5(ref Unsafe.Add(ref source, 35))
-		);
+		Vector256<byte> lower = Vector256.Create(Vector128.LoadUnsafe(ref source), Vector128.LoadUnsafe(ref source, 4));
+		Vector256<byte> upper = Vector256.Create(Vector128.LoadUnsafe(ref source, 20), Vector128.LoadUnsafe(ref source, 24));
+		return Avx512BW.Shuffle(lower.ToVector512Unsafe().WithUpper(upper), Avx512BwPackIndicesVector).AsUInt64();
 	}
 
 	private static int EncodeUtf8Avx512Bw(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
@@ -154,30 +139,18 @@ public sealed partial class Base32Encoding
 		Vector512<byte> threshold = Vector512.Create(thresholdValue);
 		Vector512<byte> first = Vector512.Create(firstValue);
 		Vector512<byte> second = Vector512.Create(secondValue);
-		int sourceRemaining = source.Length;
-		int destinationRemaining = destination.Length;
-		int blockCount = sourceRemaining >= 40 + Pack5FastOverReadBytes
-			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 40, destinationRemaining / 64)
-			: 0;
+		int blockCount = Math.Min(source.Length / 40, destination.Length / 64);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 
 		for (int i = 0; i < blockCount; ++i)
 		{
-			EncodeEight(PackEightFast(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
+			EncodeEight(PackEight(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, 40);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
 		}
 
-		int consumed = blockCount * 40;
-
-		if (sourceRemaining - consumed >= 40 && destinationRemaining - blockCount * 64 >= 64)
-		{
-			EncodeEight(PackEight(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
-			consumed += 40;
-		}
-
-		return consumed;
+		return blockCount * 40;
 	}
 
 	private static int EncodeCharsAvx512Bw(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
@@ -186,30 +159,18 @@ public sealed partial class Base32Encoding
 		Vector512<byte> threshold = Vector512.Create(thresholdValue);
 		Vector512<byte> first = Vector512.Create(firstValue);
 		Vector512<byte> second = Vector512.Create(secondValue);
-		int sourceRemaining = source.Length;
-		int destinationRemaining = destination.Length;
-		int blockCount = sourceRemaining >= 40 + Pack5FastOverReadBytes
-			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 40, destinationRemaining / 64)
-			: 0;
+		int blockCount = Math.Min(source.Length / 40, destination.Length / 64);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 
 		for (int i = 0; i < blockCount; ++i)
 		{
-			StoreEncodedChars(EncodeEight(PackEightFast(ref sourcePointer), threshold, first, second), ref destinationPointer);
+			StoreEncodedChars(EncodeEight(PackEight(ref sourcePointer), threshold, first, second), ref destinationPointer);
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, 40);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
 		}
 
-		int consumed = blockCount * 40;
-
-		if (sourceRemaining - consumed >= 40 && destinationRemaining - blockCount * 64 >= 64)
-		{
-			StoreEncodedChars(EncodeEight(PackEight(ref sourcePointer), threshold, first, second), ref destinationPointer);
-			consumed += 40;
-		}
-
-		return consumed;
+		return blockCount * 40;
 	}
 
 	private static unsafe int EncodeUtf8Avx512Vbmi(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
