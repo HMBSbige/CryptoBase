@@ -9,6 +9,7 @@ namespace CryptoBase.Tests.DataFormatExtensions;
 
 public class Base32SimdPathTest
 {
+	private const char CharSentinel = (char)0xA5A5;
 	private static readonly char[] WideChars = [(char)0x0100, (char)0x0141, (char)0x0172, (char)0x7F41, (char)0x8041, (char)0xFF41, (char)0xFFFF];
 
 	public static IEnumerable<string> SimdPaths()
@@ -79,6 +80,52 @@ public class Base32SimdPathTest
 				if (actualStatus != expectedStatus || actualConsumed != expectedConsumed || actualWritten != expectedWritten || !actual.AsSpan().SequenceEqual(expected))
 				{
 					failures.Add($"U+{(int)symbol:X4} at {position}: {actualStatus}/{actualConsumed}/{actualWritten}, scalar {expectedStatus}/{expectedConsumed}/{expectedWritten}");
+				}
+			}
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task EncodeMatchesScalarForEveryDestinationLength([MatrixMethod<Base32SimdPathTest>(nameof(SimdPaths))] string pathName, [Matrix] bool hex)
+	{
+		Base32SimdPath path = GetSupportedPath(pathName);
+		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		byte[] source = CreateDeterministicSource(240);
+		byte[] utf8Expected = new byte[encoding.GetEncodedLength(source.Length)];
+		byte[] utf8Actual = new byte[utf8Expected.Length];
+		char[] charsExpected = new char[utf8Expected.Length];
+		char[] charsActual = new char[utf8Expected.Length];
+		List<string> failures = [];
+
+		await Assert.That(encoding.EncodeUtf8BlocksPath(source, utf8Actual, path)).IsGreaterThan(0);
+		await Assert.That(encoding.EncodeCharsBlocksPath(source, charsActual, path)).IsGreaterThan(0);
+
+		for (int length = 0; length <= source.Length; ++length)
+		{
+			ReadOnlySpan<byte> input = source.AsSpan(0, length);
+
+			for (int destinationLength = 0; destinationLength <= encoding.GetEncodedLength(length); ++destinationLength)
+			{
+				PrepareDestination(utf8Expected);
+				PrepareDestination(utf8Actual);
+				charsExpected.AsSpan().Fill(CharSentinel);
+				charsActual.AsSpan().Fill(CharSentinel);
+				OperationStatus utf8ExpectedStatus = encoding.EncodeToUtf8Path(input, utf8Expected.AsSpan(0, destinationLength), out int utf8ExpectedConsumed, out int utf8ExpectedWritten, true, Base32SimdPath.Scalar);
+				OperationStatus utf8ActualStatus = encoding.EncodeToUtf8Path(input, utf8Actual.AsSpan(0, destinationLength), out int utf8ActualConsumed, out int utf8ActualWritten, true, path);
+				OperationStatus charsExpectedStatus = encoding.EncodeToCharsPath(input, charsExpected.AsSpan(0, destinationLength), out int charsExpectedConsumed, out int charsExpectedWritten, true, Base32SimdPath.Scalar);
+				OperationStatus charsActualStatus = encoding.EncodeToCharsPath(input, charsActual.AsSpan(0, destinationLength), out int charsActualConsumed, out int charsActualWritten, true, path);
+
+				if (utf8ActualStatus != utf8ExpectedStatus || utf8ActualConsumed != utf8ExpectedConsumed || utf8ActualWritten != utf8ExpectedWritten || !utf8Actual.AsSpan().SequenceEqual(utf8Expected))
+				{
+					failures.Add($"UTF-8 {length}/{destinationLength}: {utf8ActualStatus}/{utf8ActualConsumed}/{utf8ActualWritten}, scalar {utf8ExpectedStatus}/{utf8ExpectedConsumed}/{utf8ExpectedWritten}");
+				}
+
+				if (charsActualStatus != charsExpectedStatus || charsActualConsumed != charsExpectedConsumed || charsActualWritten != charsExpectedWritten || !charsActual.AsSpan().SequenceEqual(charsExpected))
+				{
+					failures.Add($"Chars {length}/{destinationLength}: {charsActualStatus}/{charsActualConsumed}/{charsActualWritten}, scalar {charsExpectedStatus}/{charsExpectedConsumed}/{charsExpectedWritten}");
 				}
 			}
 		}

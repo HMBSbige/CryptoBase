@@ -49,14 +49,6 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StoreEncodedChars(Vector256<byte> value, ref char destination)
-	{
-		ref ushort destinationReference = ref Unsafe.As<char, ushort>(ref destination);
-		Vector256.WidenLower(value).StoreUnsafe(ref destinationReference);
-		Vector256.WidenUpper(value).StoreUnsafe(ref destinationReference, 16);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void StoreEncodedChars(Vector512<byte> value, ref char destination)
 	{
 		ref ushort destinationReference = ref Unsafe.As<char, ushort>(ref destination);
@@ -64,55 +56,37 @@ public sealed partial class Base32Encoding
 		Vector512.WidenUpper(value).StoreUnsafe(ref destinationReference, 32);
 	}
 
+	// Saturating narrows turn every char above U+00FF into a byte the decoders reject, so no separate ASCII check is needed.
+	// These loads only feed fixed alphabets, so x86 uses the cheaper signed pack: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static bool TryNarrowAscii(ref char source, out Vector128<byte> value)
+	private static Vector128<byte> LoadNarrowSaturated128(ref char source)
 	{
 		ref ushort sourceReference = ref Unsafe.As<char, ushort>(ref source);
 		Vector128<ushort> lower = Vector128.LoadUnsafe(ref sourceReference);
 		Vector128<ushort> upper = Vector128.LoadUnsafe(ref sourceReference, 8);
 
-		if (!Vector128.EqualsAll((lower | upper) & Vector128.Create((ushort)0xff80), Vector128<ushort>.Zero))
+		if (Sse2.IsSupported)
 		{
-			value = default;
-			return false;
+			return Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
 		}
 
-		value = Vector128.Narrow(lower, upper);
-		return true;
+		return Vector128.NarrowWithSaturation(lower, upper);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static bool TryNarrowAscii(ref char source, out Vector256<byte> value)
+	private static Vector256<byte> LoadNarrowSaturated256(ref char source)
 	{
-		ref ushort sourceReference = ref Unsafe.As<char, ushort>(ref source);
-		Vector256<ushort> lower = Vector256.LoadUnsafe(ref sourceReference);
-		Vector256<ushort> upper = Vector256.LoadUnsafe(ref sourceReference, 16);
-
-		if (!Vector256.EqualsAll((lower | upper) & Vector256.Create((ushort)0xff80), Vector256<ushort>.Zero))
-		{
-			value = default;
-			return false;
-		}
-
-		value = Vector256.Narrow(lower, upper);
-		return true;
+		ref short sourceReference = ref Unsafe.As<char, short>(ref source);
+		Vector256<byte> packed = Avx2.PackUnsignedSaturate(Vector256.LoadUnsafe(ref sourceReference), Vector256.LoadUnsafe(ref sourceReference, 16));
+		return Avx2.Permute4x64(packed.AsUInt64(), 0b11_01_10_00).AsByte();
 	}
 
+	// Custom alphabets may contain NUL, so the 512-bit loads keep unsigned saturation and every char above U+00FF becomes 0xFF.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static bool TryNarrowAscii(ref char source, out Vector512<byte> value)
+	private static Vector512<byte> LoadNarrowSaturated512(ref char source)
 	{
 		ref ushort sourceReference = ref Unsafe.As<char, ushort>(ref source);
-		Vector512<ushort> lower = Vector512.LoadUnsafe(ref sourceReference);
-		Vector512<ushort> upper = Vector512.LoadUnsafe(ref sourceReference, 32);
-
-		if (!Vector512.EqualsAll((lower | upper) & Vector512.Create((ushort)0xff80), Vector512<ushort>.Zero))
-		{
-			value = default;
-			return false;
-		}
-
-		value = Vector512.Narrow(lower, upper);
-		return true;
+		return Vector512.NarrowWithSaturation(Vector512.LoadUnsafe(ref sourceReference), Vector512.LoadUnsafe(ref sourceReference, 32));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -139,16 +113,12 @@ public sealed partial class Base32Encoding
 		return Vector512.IsHardwareAccelerated && Avx512BW.IsSupported;
 	}
 
+	// A lone block still loads 16 bytes from offset 0; a trailing block after a pair loads from offset -6 instead.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> PackTwoFast(ref byte source)
+	private static int GetEncodeTwoBlockCount(int sourceLength, int destinationLength)
 	{
-		return Vector128.CreateUInt64(Pack5Fast(ref source), Pack5Fast(ref Unsafe.Add(ref source, 5)));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> PackTwo(ref byte source)
-	{
-		return Vector128.CreateUInt64(Pack5(ref source), Pack5(ref Unsafe.Add(ref source, 5)));
+		int blockCount = Math.Min(sourceLength / 10, destinationLength / 16);
+		return blockCount is 1 && sourceLength < 16 ? 0 : blockCount;
 	}
 
 	// Keep the offsets in the AdvSimd call chain. On .NET 10 ARM64, forwarding the

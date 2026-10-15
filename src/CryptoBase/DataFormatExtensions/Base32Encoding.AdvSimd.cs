@@ -3,165 +3,114 @@ namespace CryptoBase.DataFormatExtensions;
 public sealed partial class Base32Encoding
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> EncodeTwoAdvSimd
-	(
-		Vector128<ulong> value,
-		Vector128<ulong> mask0, Vector128<ulong> mask1, Vector128<ulong> mask2, Vector128<ulong> mask3,
-		Vector128<ulong> mask4, Vector128<ulong> mask5, Vector128<ulong> mask6, Vector128<ulong> mask7,
-		Vector128<sbyte> threshold, Vector128<byte> first, Vector128<byte> second
-	)
+	private static void GetEncodeAlphabet(byte alphabetKind, out Vector128<byte> alphabetLow, out Vector128<byte> alphabetHigh)
 	{
-		Vector128<ulong> result = value >>> 35 & mask0;
-		Vector128<ulong> next = value >>> 22 & mask1;
-		Vector128<ulong> later = value >>> 9 & mask2;
-		result |= next;
-		next = value << 4 & mask3;
-		later |= next;
-		result |= later;
-		next = value << 17 & mask4;
-		later = value << 30 & mask5;
-		next |= later;
-		later = value << 43 & mask6;
-		next |= later;
-		result |= next;
-		result |= value << 56 & mask7;
-		return MapSymbols(result.AsByte(), threshold, first, second);
+		ReadOnlySpan<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? "0123456789ABCDEFGHIJKLMNOPQRSTUV"u8 : "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"u8;
+		alphabetLow = Vector128.Create(alphabet);
+		alphabetHigh = Vector128.Create(alphabet.Slice(16));
+	}
+
+	// Each qword holds one 40-bit group as four big-endian 16-bit windows; per-lane shifts move the even and odd symbols into the low and high bytes.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<byte> EncodeTwoAdvSimd(Vector128<byte> input, Vector128<byte> indices, Vector128<short> evenShifts, Vector128<short> oddShifts, Vector128<byte> alphabetLow, Vector128<byte> alphabetHigh)
+	{
+		Vector128<ushort> windows = Vector128.Shuffle(input, indices).AsUInt16();
+		Vector128<ushort> even = AdvSimd.ShiftLogical(windows, evenShifts) & Vector128.Create((ushort)SymbolMask);
+		Vector128<ushort> odd = AdvSimd.ShiftLogical(windows, oddShifts);
+		Vector128<byte> symbols = Vector128.ConditionalSelect(Vector128.Create((ushort)(SymbolMask << 8)), odd, even).AsByte();
+		return AdvSimd.Arm64.VectorTableLookup((alphabetLow, alphabetHigh), symbols);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int EncodeUtf8AdvSimd(ReadOnlySpan<byte> source, Span<byte> destination, int sourceOffset, int destinationOffset, byte alphabetKind)
 	{
-		Vector128<ulong> mask0 = Vector128.Create((ulong)SymbolMask);
-		Vector128<ulong> mask1 = mask0 << 8;
-		Vector128<ulong> mask2 = mask0 << 16;
-		Vector128<ulong> mask3 = mask0 << 24;
-		Vector128<ulong> mask4 = mask0 << 32;
-		Vector128<ulong> mask5 = mask0 << 40;
-		Vector128<ulong> mask6 = mask0 << 48;
-		Vector128<ulong> mask7 = mask0 << 56;
-		GetEncodeMap(alphabetKind, out byte thresholdValue, out byte firstOffset, out byte secondOffset);
-		Vector128<sbyte> threshold = Vector128.Create((sbyte)thresholdValue);
-		Vector128<byte> first = Vector128.Create(firstOffset);
-		Vector128<byte> second = Vector128.Create(secondOffset);
-
-		int sourceRemaining = source.Length - sourceOffset;
-		int blockCount = sourceRemaining >= 10 + Pack5FastOverReadBytes
-			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 10, (destination.Length - destinationOffset) / 16)
-			: 0;
+		GetEncodeAlphabet(alphabetKind, out Vector128<byte> alphabetLow, out Vector128<byte> alphabetHigh);
+		Vector128<byte> lowIndices = Vector128.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8);
+		Vector128<byte> highIndices = Vector128.Create((byte)7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
+		Vector128<short> evenShifts = Vector128.Create(-11, -9, -7, -5, -11, -9, -7, -5);
+		Vector128<short> oddShifts = Vector128.Create(2, 4, 6, 8, 2, 4, 6, 8);
+		int blockCount = GetEncodeTwoBlockCount(source.Length - sourceOffset, destination.Length - destinationOffset);
 		ref byte sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
 		ref byte destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
 		int quadCount = blockCount >> 2;
 
 		for (int i = 0; i < quadCount; ++i)
 		{
-			Vector128<ulong> value0 = PackTwoFast(ref sourceReference);
-			Vector128<ulong> value1 = PackTwoFast(ref Unsafe.Add(ref sourceReference, 10));
-			Vector128<ulong> value2 = PackTwoFast(ref Unsafe.Add(ref sourceReference, 20));
-			Vector128<ulong> value3 = PackTwoFast(ref Unsafe.Add(ref sourceReference, 30));
-			EncodeTwoAdvSimd(value0, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second).StoreUnsafe(ref destinationReference);
-			EncodeTwoAdvSimd(value1, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second).StoreUnsafe(ref Unsafe.Add(ref destinationReference, 16));
-			EncodeTwoAdvSimd(value2, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second).StoreUnsafe(ref Unsafe.Add(ref destinationReference, 32));
-			EncodeTwoAdvSimd(value3, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second).StoreUnsafe(ref Unsafe.Add(ref destinationReference, 48));
+			Vector128<byte> input0 = Vector128.LoadUnsafe(ref sourceReference);
+			Vector128<byte> input1 = Vector128.LoadUnsafe(ref sourceReference, 4);
+			Vector128<byte> input2 = Vector128.LoadUnsafe(ref sourceReference, 20);
+			Vector128<byte> input3 = Vector128.LoadUnsafe(ref sourceReference, 24);
+			EncodeTwoAdvSimd(input0, lowIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh).StoreUnsafe(ref destinationReference);
+			EncodeTwoAdvSimd(input1, highIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh).StoreUnsafe(ref destinationReference, 16);
+			EncodeTwoAdvSimd(input2, lowIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh).StoreUnsafe(ref destinationReference, 32);
+			EncodeTwoAdvSimd(input3, highIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh).StoreUnsafe(ref destinationReference, 48);
 			sourceReference = ref Unsafe.Add(ref sourceReference, 40);
 			destinationReference = ref Unsafe.Add(ref destinationReference, 64);
 		}
 
-		int pairCount = (blockCount & 3) >> 1;
-
-		for (int i = 0; i < pairCount; ++i)
+		if ((blockCount & 2) is not 0)
 		{
-			Vector128<ulong> firstValue = PackTwoFast(ref sourceReference);
-			Vector128<ulong> secondValue = PackTwoFast(ref Unsafe.Add(ref sourceReference, 10));
-			EncodeTwoAdvSimd(firstValue, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second).StoreUnsafe(ref destinationReference);
-			EncodeTwoAdvSimd(secondValue, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second).StoreUnsafe(ref Unsafe.Add(ref destinationReference, 16));
+			EncodeTwoAdvSimd(Vector128.LoadUnsafe(ref sourceReference), lowIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh).StoreUnsafe(ref destinationReference);
+			EncodeTwoAdvSimd(Vector128.LoadUnsafe(ref sourceReference, 4), highIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh).StoreUnsafe(ref destinationReference, 16);
 			sourceReference = ref Unsafe.Add(ref sourceReference, 20);
 			destinationReference = ref Unsafe.Add(ref destinationReference, 32);
 		}
 
 		if ((blockCount & 1) is not 0)
 		{
-			EncodeTwoAdvSimd(PackTwoFast(ref sourceReference), mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second).StoreUnsafe(ref destinationReference);
-			sourceReference = ref Unsafe.Add(ref sourceReference, 10);
-			destinationReference = ref Unsafe.Add(ref destinationReference, 16);
+			Vector128<byte> encoded = blockCount is 1
+				? EncodeTwoAdvSimd(Vector128.LoadUnsafe(ref sourceReference), lowIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh)
+				: EncodeTwoAdvSimd(Vector128.LoadUnsafe(ref Unsafe.Subtract(ref sourceReference, 6)), highIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh);
+			encoded.StoreUnsafe(ref destinationReference);
 		}
 
-		int consumed = blockCount * 10;
-
-		if (sourceRemaining - consumed >= 10 && destination.Length - destinationOffset - blockCount * 16 >= 16)
-		{
-			EncodeTwoAdvSimd(PackTwo(ref sourceReference), mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second).StoreUnsafe(ref destinationReference);
-			consumed += 10;
-		}
-
-		return consumed;
+		return blockCount * 10;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int EncodeCharsAdvSimd(ReadOnlySpan<byte> source, Span<char> destination, int sourceOffset, int destinationOffset, byte alphabetKind)
 	{
-		Vector128<ulong> mask0 = Vector128.Create((ulong)SymbolMask);
-		Vector128<ulong> mask1 = mask0 << 8;
-		Vector128<ulong> mask2 = mask0 << 16;
-		Vector128<ulong> mask3 = mask0 << 24;
-		Vector128<ulong> mask4 = mask0 << 32;
-		Vector128<ulong> mask5 = mask0 << 40;
-		Vector128<ulong> mask6 = mask0 << 48;
-		Vector128<ulong> mask7 = mask0 << 56;
-		GetEncodeMap(alphabetKind, out byte thresholdValue, out byte firstOffset, out byte secondOffset);
-		Vector128<sbyte> threshold = Vector128.Create((sbyte)thresholdValue);
-		Vector128<byte> first = Vector128.Create(firstOffset);
-		Vector128<byte> second = Vector128.Create(secondOffset);
-
-		int sourceRemaining = source.Length - sourceOffset;
-		int blockCount = sourceRemaining >= 10 + Pack5FastOverReadBytes
-			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 10, (destination.Length - destinationOffset) / 16)
-			: 0;
+		GetEncodeAlphabet(alphabetKind, out Vector128<byte> alphabetLow, out Vector128<byte> alphabetHigh);
+		Vector128<byte> lowIndices = Vector128.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8);
+		Vector128<byte> highIndices = Vector128.Create((byte)7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
+		Vector128<short> evenShifts = Vector128.Create(-11, -9, -7, -5, -11, -9, -7, -5);
+		Vector128<short> oddShifts = Vector128.Create(2, 4, 6, 8, 2, 4, 6, 8);
+		int blockCount = GetEncodeTwoBlockCount(source.Length - sourceOffset, destination.Length - destinationOffset);
 		ref byte sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
 		ref char destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
 		int quadCount = blockCount >> 2;
 
 		for (int i = 0; i < quadCount; ++i)
 		{
-			Vector128<ulong> value0 = PackTwoFast(ref sourceReference);
-			Vector128<ulong> value1 = PackTwoFast(ref Unsafe.Add(ref sourceReference, 10));
-			Vector128<ulong> value2 = PackTwoFast(ref Unsafe.Add(ref sourceReference, 20));
-			Vector128<ulong> value3 = PackTwoFast(ref Unsafe.Add(ref sourceReference, 30));
-			StoreEncodedChars(EncodeTwoAdvSimd(value0, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second), ref destinationReference);
-			StoreEncodedChars(EncodeTwoAdvSimd(value1, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second), ref Unsafe.Add(ref destinationReference, 16));
-			StoreEncodedChars(EncodeTwoAdvSimd(value2, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second), ref Unsafe.Add(ref destinationReference, 32));
-			StoreEncodedChars(EncodeTwoAdvSimd(value3, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second), ref Unsafe.Add(ref destinationReference, 48));
+			Vector128<byte> input0 = Vector128.LoadUnsafe(ref sourceReference);
+			Vector128<byte> input1 = Vector128.LoadUnsafe(ref sourceReference, 4);
+			Vector128<byte> input2 = Vector128.LoadUnsafe(ref sourceReference, 20);
+			Vector128<byte> input3 = Vector128.LoadUnsafe(ref sourceReference, 24);
+			StoreEncodedChars(EncodeTwoAdvSimd(input0, lowIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh), ref destinationReference);
+			StoreEncodedChars(EncodeTwoAdvSimd(input1, highIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh), ref Unsafe.Add(ref destinationReference, 16));
+			StoreEncodedChars(EncodeTwoAdvSimd(input2, lowIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh), ref Unsafe.Add(ref destinationReference, 32));
+			StoreEncodedChars(EncodeTwoAdvSimd(input3, highIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh), ref Unsafe.Add(ref destinationReference, 48));
 			sourceReference = ref Unsafe.Add(ref sourceReference, 40);
 			destinationReference = ref Unsafe.Add(ref destinationReference, 64);
 		}
 
-		int pairCount = (blockCount & 3) >> 1;
-
-		for (int i = 0; i < pairCount; ++i)
+		if ((blockCount & 2) is not 0)
 		{
-			Vector128<ulong> firstValue = PackTwoFast(ref sourceReference);
-			Vector128<ulong> secondValue = PackTwoFast(ref Unsafe.Add(ref sourceReference, 10));
-			StoreEncodedChars(EncodeTwoAdvSimd(firstValue, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second), ref destinationReference);
-			StoreEncodedChars(EncodeTwoAdvSimd(secondValue, mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second), ref Unsafe.Add(ref destinationReference, 16));
+			StoreEncodedChars(EncodeTwoAdvSimd(Vector128.LoadUnsafe(ref sourceReference), lowIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh), ref destinationReference);
+			StoreEncodedChars(EncodeTwoAdvSimd(Vector128.LoadUnsafe(ref sourceReference, 4), highIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh), ref Unsafe.Add(ref destinationReference, 16));
 			sourceReference = ref Unsafe.Add(ref sourceReference, 20);
 			destinationReference = ref Unsafe.Add(ref destinationReference, 32);
 		}
 
 		if ((blockCount & 1) is not 0)
 		{
-			StoreEncodedChars(EncodeTwoAdvSimd(PackTwoFast(ref sourceReference), mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second), ref destinationReference);
-			sourceReference = ref Unsafe.Add(ref sourceReference, 10);
-			destinationReference = ref Unsafe.Add(ref destinationReference, 16);
+			Vector128<byte> encoded = blockCount is 1
+				? EncodeTwoAdvSimd(Vector128.LoadUnsafe(ref sourceReference), lowIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh)
+				: EncodeTwoAdvSimd(Vector128.LoadUnsafe(ref Unsafe.Subtract(ref sourceReference, 6)), highIndices, evenShifts, oddShifts, alphabetLow, alphabetHigh);
+			StoreEncodedChars(encoded, ref destinationReference);
 		}
 
-		int consumed = blockCount * 10;
-
-		if (sourceRemaining - consumed >= 10 && destination.Length - destinationOffset - blockCount * 16 >= 16)
-		{
-			StoreEncodedChars(EncodeTwoAdvSimd(PackTwo(ref sourceReference), mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7, threshold, first, second), ref destinationReference);
-			consumed += 10;
-		}
-
-		return consumed;
+		return blockCount * 10;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -305,21 +254,10 @@ public sealed partial class Base32Encoding
 
 		for (int i = 0; i < groupCount; ++i)
 		{
-			if
-			(
-				!TryNarrowAscii(ref sourcePointer, out Vector128<byte> firstInput)
-				|| !TryNarrowAscii(ref Unsafe.Add(ref sourcePointer, 16), out Vector128<byte> secondInput)
-				|| !TryNarrowAscii(ref Unsafe.Add(ref sourcePointer, 32), out Vector128<byte> thirdInput)
-				|| !TryNarrowAscii(ref Unsafe.Add(ref sourcePointer, 48), out Vector128<byte> fourthInput)
-			)
-			{
-				break;
-			}
-
-			Vector128<byte> first = DecodeTwoAdvSimd(firstInput, baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> firstValidMask);
-			Vector128<byte> second = DecodeTwoAdvSimd(secondInput, baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> secondValidMask);
-			Vector128<byte> third = DecodeTwoAdvSimd(thirdInput, baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> thirdValidMask);
-			Vector128<byte> fourth = DecodeTwoAdvSimd(fourthInput, baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> fourthValidMask);
+			Vector128<byte> first = DecodeTwoAdvSimd(LoadNarrowSaturated128(ref sourcePointer), baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> firstValidMask);
+			Vector128<byte> second = DecodeTwoAdvSimd(LoadNarrowSaturated128(ref Unsafe.Add(ref sourcePointer, 16)), baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> secondValidMask);
+			Vector128<byte> third = DecodeTwoAdvSimd(LoadNarrowSaturated128(ref Unsafe.Add(ref sourcePointer, 32)), baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> thirdValidMask);
+			Vector128<byte> fourth = DecodeTwoAdvSimd(LoadNarrowSaturated128(ref Unsafe.Add(ref sourcePointer, 48)), baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> fourthValidMask);
 
 			if (!IsValidAdvSimd(firstValidMask & secondValidMask & thirdValidMask & fourthValidMask))
 			{
@@ -335,16 +273,10 @@ public sealed partial class Base32Encoding
 			processedBlocks += 4;
 		}
 
-		if
-		(
-			processedBlocks == groupCount * 4
-			&& blockCount - processedBlocks >= 2
-			&& TryNarrowAscii(ref sourcePointer, out Vector128<byte> remainingFirstInput)
-			&& TryNarrowAscii(ref Unsafe.Add(ref sourcePointer, 16), out Vector128<byte> remainingSecondInput)
-		)
+		if (processedBlocks == groupCount * 4 && blockCount - processedBlocks >= 2)
 		{
-			Vector128<byte> first = DecodeTwoAdvSimd(remainingFirstInput, baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> firstValidMask);
-			Vector128<byte> second = DecodeTwoAdvSimd(remainingSecondInput, baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> secondValidMask);
+			Vector128<byte> first = DecodeTwoAdvSimd(LoadNarrowSaturated128(ref sourcePointer), baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> firstValidMask);
+			Vector128<byte> second = DecodeTwoAdvSimd(LoadNarrowSaturated128(ref Unsafe.Add(ref sourcePointer, 16)), baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> secondValidMask);
 
 			if (IsValidAdvSimd(firstValidMask & secondValidMask))
 			{
@@ -356,9 +288,9 @@ public sealed partial class Base32Encoding
 			}
 		}
 
-		if (processedBlocks == blockCount - 1 && TryNarrowAscii(ref sourcePointer, out Vector128<byte> input))
+		if (processedBlocks == blockCount - 1)
 		{
-			Vector128<byte> values = DecodeTwoAdvSimd(input, baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> validMask);
+			Vector128<byte> values = DecodeTwoAdvSimd(LoadNarrowSaturated128(ref sourcePointer), baseOffset, adjustedOffset, baseLimit, adjustedLimit, adjustment, out Vector128<byte> validMask);
 
 			if (IsValidAdvSimd(validMask))
 			{

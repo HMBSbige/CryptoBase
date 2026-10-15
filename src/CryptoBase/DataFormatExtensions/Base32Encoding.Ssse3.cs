@@ -3,24 +3,12 @@ namespace CryptoBase.DataFormatExtensions;
 public sealed partial class Base32Encoding
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> EncodeTwo(Vector128<ulong> value, Vector128<sbyte> threshold, Vector128<byte> first, Vector128<byte> second)
+	private static Vector128<byte> EncodeTwo(Vector128<byte> input, Vector128<byte> indices, Vector128<sbyte> threshold, Vector128<byte> first, Vector128<byte> second)
 	{
-		Vector128<ulong> mask = Vector128.Create((ulong)SymbolMask);
-		Vector128<ulong> result = value >>> 35 & mask;
-		Vector128<ulong> next = (value >>> 30 & mask) << 8;
-		Vector128<ulong> later = (value >>> 25 & mask) << 16;
-		result |= next;
-		next = (value >>> 20 & mask) << 24;
-		later |= next;
-		result |= later;
-		next = (value >>> 15 & mask) << 32;
-		later = (value >>> 10 & mask) << 40;
-		next |= later;
-		later = (value >>> 5 & mask) << 48;
-		next |= later;
-		result |= next;
-		result |= (value & mask) << 56;
-		return MapSymbols(result.AsByte(), threshold, first, second);
+		Vector128<ulong> windows = Ssse3.Shuffle(input, indices).AsUInt64();
+		Vector128<ushort> even = Sse2.MultiplyHigh((windows & Vector128.Create(0x03e00f803e00f800UL)).AsUInt16(), Vector128.Create(0x0800020000800020UL).AsUInt16());
+		Vector128<ushort> odd = (windows & Vector128.Create(0x001f007c01f007c0UL)).AsUInt16() * Vector128.Create(0x0100004000100004UL).AsUInt16();
+		return MapSymbols((even | odd).AsByte(), threshold, first, second);
 	}
 
 	private static int EncodeUtf8Ssse3(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
@@ -29,30 +17,30 @@ public sealed partial class Base32Encoding
 		Vector128<sbyte> threshold = Vector128.Create((sbyte)thresholdValue);
 		Vector128<byte> first = Vector128.Create(firstValue);
 		Vector128<byte> second = Vector128.Create(secondValue);
-		int sourceRemaining = source.Length;
-		int destinationRemaining = destination.Length;
-		int blockCount = sourceRemaining >= 10 + Pack5FastOverReadBytes
-			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 10, destinationRemaining / 16)
-			: 0;
+		Vector128<byte> lowIndices = Vector128.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8);
+		Vector128<byte> highIndices = Vector128.Create((byte)7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
+		int blockCount = GetEncodeTwoBlockCount(source.Length, destination.Length);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
+		int pairCount = blockCount >> 1;
 
-		for (int i = 0; i < blockCount; ++i)
+		for (int i = 0; i < pairCount; ++i)
 		{
-			EncodeTwo(PackTwoFast(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 10);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 16);
+			EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer), lowIndices, threshold, first, second).StoreUnsafe(ref destinationPointer);
+			EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer, 4), highIndices, threshold, first, second).StoreUnsafe(ref destinationPointer, 16);
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, 20);
+			destinationPointer = ref Unsafe.Add(ref destinationPointer, 32);
 		}
 
-		int consumed = blockCount * 10;
-
-		if (sourceRemaining - consumed >= 10 && destinationRemaining - blockCount * 16 >= 16)
+		if ((blockCount & 1) is not 0)
 		{
-			EncodeTwo(PackTwo(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
-			consumed += 10;
+			Vector128<byte> encoded = pairCount is 0
+				? EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer), lowIndices, threshold, first, second)
+				: EncodeTwo(Vector128.LoadUnsafe(ref Unsafe.Subtract(ref sourcePointer, 6)), highIndices, threshold, first, second);
+			encoded.StoreUnsafe(ref destinationPointer);
 		}
 
-		return consumed;
+		return blockCount * 10;
 	}
 
 	private static int EncodeCharsSsse3(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
@@ -61,30 +49,30 @@ public sealed partial class Base32Encoding
 		Vector128<sbyte> threshold = Vector128.Create((sbyte)thresholdValue);
 		Vector128<byte> first = Vector128.Create(firstValue);
 		Vector128<byte> second = Vector128.Create(secondValue);
-		int sourceRemaining = source.Length;
-		int destinationRemaining = destination.Length;
-		int blockCount = sourceRemaining >= 10 + Pack5FastOverReadBytes
-			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 10, destinationRemaining / 16)
-			: 0;
+		Vector128<byte> lowIndices = Vector128.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8);
+		Vector128<byte> highIndices = Vector128.Create((byte)7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
+		int blockCount = GetEncodeTwoBlockCount(source.Length, destination.Length);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
+		int pairCount = blockCount >> 1;
 
-		for (int i = 0; i < blockCount; ++i)
+		for (int i = 0; i < pairCount; ++i)
 		{
-			StoreEncodedChars(EncodeTwo(PackTwoFast(ref sourcePointer), threshold, first, second), ref destinationPointer);
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 10);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 16);
+			StoreEncodedChars(EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer), lowIndices, threshold, first, second), ref destinationPointer);
+			StoreEncodedChars(EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer, 4), highIndices, threshold, first, second), ref Unsafe.Add(ref destinationPointer, 16));
+			sourcePointer = ref Unsafe.Add(ref sourcePointer, 20);
+			destinationPointer = ref Unsafe.Add(ref destinationPointer, 32);
 		}
 
-		int consumed = blockCount * 10;
-
-		if (sourceRemaining - consumed >= 10 && destinationRemaining - blockCount * 16 >= 16)
+		if ((blockCount & 1) is not 0)
 		{
-			StoreEncodedChars(EncodeTwo(PackTwo(ref sourcePointer), threshold, first, second), ref destinationPointer);
-			consumed += 10;
+			Vector128<byte> encoded = pairCount is 0
+				? EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer), lowIndices, threshold, first, second)
+				: EncodeTwo(Vector128.LoadUnsafe(ref Unsafe.Subtract(ref sourcePointer, 6)), highIndices, threshold, first, second);
+			StoreEncodedChars(encoded, ref destinationPointer);
 		}
 
-		return consumed;
+		return blockCount * 10;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -168,17 +156,8 @@ public sealed partial class Base32Encoding
 
 		for (int i = 0; i < pairCount; ++i)
 		{
-			if
-			(
-				!TryNarrowAscii(ref sourcePointer, out Vector128<byte> firstInput)
-				|| !TryNarrowAscii(ref Unsafe.Add(ref sourcePointer, 16), out Vector128<byte> secondInput)
-			)
-			{
-				break;
-			}
-
-			Vector128<byte> first = DecodeTwoSse2(firstInput, deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> firstInvalidMask);
-			Vector128<byte> second = DecodeTwoSse2(secondInput, deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> secondInvalidMask);
+			Vector128<byte> first = DecodeTwoSse2(LoadNarrowSaturated128(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> firstInvalidMask);
+			Vector128<byte> second = DecodeTwoSse2(LoadNarrowSaturated128(ref Unsafe.Add(ref sourcePointer, 16)), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> secondInvalidMask);
 
 			if (!IsValidSse2(firstInvalidMask | secondInvalidMask))
 			{
@@ -192,14 +171,9 @@ public sealed partial class Base32Encoding
 			processedBlocks += 2;
 		}
 
-		if
-		(
-			processedBlocks == pairCount * 2
-			&& (blockCount & 1) is not 0
-			&& TryNarrowAscii(ref sourcePointer, out Vector128<byte> input)
-		)
+		if (processedBlocks == pairCount * 2 && (blockCount & 1) is not 0)
 		{
-			Vector128<byte> values = DecodeTwoSse2(input, deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> invalidMask);
+			Vector128<byte> values = DecodeTwoSse2(LoadNarrowSaturated128(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> invalidMask);
 
 			if (IsValidSse2(invalidMask))
 			{

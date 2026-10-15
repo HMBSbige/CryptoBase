@@ -83,6 +83,27 @@ public class Base32CustomAlphabetTest
 
 	[Test]
 	[MatrixDataSource]
+	public async Task CustomAlphabetWithControlSymbolsRejectsWideChars([Matrix(0x0080, 0x00FF, 0x0100, 0x017F, 0x7FFF, 0x8000, 0xFF00, 0xFFFF)] int invalidSymbol, [Matrix(15, 64, 127, 128, 327)] int invalidOffset)
+	{
+		const string alphabet = "\0abcdefghijklmnopqrstuvwxyz2345\u007f";
+		const int sourceLength = 205;
+		Base32Encoding encoding = Base32Encoding.Create(alphabet);
+		byte[] source = CreateDeterministicSource(sourceLength);
+		char[] encodedChars = EncodeReference(source, alphabet, '=', false);
+		encodedChars[invalidOffset] = (char)invalidSymbol;
+		byte[] destination = new byte[sourceLength];
+		PrepareDestination(destination);
+
+		OperationStatus status = encoding.DecodeFromChars(encodedChars, destination, out int consumed, out int written);
+
+		byte[] expected = source.AsSpan().Slice(0, invalidOffset / 8 * 5).ToArray();
+		await Assert.That(status).IsEqualTo(OperationStatus.InvalidData);
+		await Assert.That(consumed).IsEqualTo(invalidOffset / 8 * 8);
+		await AssertOutput(destination, expected, written);
+	}
+
+	[Test]
+	[MatrixDataSource]
 	public async Task CustomAlphabetUtf8DecodeReportsInvalidData([Matrix((byte)'!', (byte)0x80, (byte)0xff)] byte invalidSymbol, [Matrix(15, 16, 63, 64, 127, 128, 255, 327)] int invalidOffset)
 	{
 		const string alphabet = "abcdefghijklmnopqrstuvwxyz234567";
