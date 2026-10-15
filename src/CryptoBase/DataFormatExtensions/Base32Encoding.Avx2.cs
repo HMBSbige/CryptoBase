@@ -31,15 +31,11 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<ulong> PackFourFast(ref byte source)
-	{
-		return Vector256.Create(Pack5Fast(ref source), Pack5Fast(ref Unsafe.Add(ref source, 5)), Pack5Fast(ref Unsafe.Add(ref source, 10)), Pack5Fast(ref Unsafe.Add(ref source, 15)));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<ulong> PackFour(ref byte source)
 	{
-		return Vector256.Create(Pack5(ref source), Pack5(ref Unsafe.Add(ref source, 5)), Pack5(ref Unsafe.Add(ref source, 10)), Pack5(ref Unsafe.Add(ref source, 15)));
+		Vector256<byte> input = Vector256.Create(Vector128.LoadUnsafe(ref source), Vector128.LoadUnsafe(ref source, 4));
+		Vector256<byte> indices = Vector256.Create(4, 3, 2, 1, 0, 0x80, 0x80, 0x80, 9, 8, 7, 6, 5, 0x80, 0x80, 0x80, 10, 9, 8, 7, 6, 0x80, 0x80, 0x80, 15, 14, 13, 12, 11, 0x80, 0x80, 0x80);
+		return Avx2.Shuffle(input, indices).AsUInt64();
 	}
 
 	private static int EncodeUtf8Avx2(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
@@ -48,30 +44,18 @@ public sealed partial class Base32Encoding
 		Vector256<sbyte> threshold = Vector256.Create((sbyte)thresholdValue);
 		Vector256<byte> first = Vector256.Create(firstValue);
 		Vector256<byte> second = Vector256.Create(secondValue);
-		int sourceRemaining = source.Length;
-		int destinationRemaining = destination.Length;
-		int blockCount = sourceRemaining >= 20 + Pack5FastOverReadBytes
-			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 20, destinationRemaining / 32)
-			: 0;
+		int blockCount = Math.Min(source.Length / 20, destination.Length / 32);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 
 		for (int i = 0; i < blockCount; ++i)
 		{
-			EncodeFour(PackFourFast(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
+			EncodeFour(PackFour(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, 20);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 32);
 		}
 
-		int consumed = blockCount * 20;
-
-		if (sourceRemaining - consumed >= 20 && destinationRemaining - blockCount * 32 >= 32)
-		{
-			EncodeFour(PackFour(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
-			consumed += 20;
-		}
-
-		return consumed;
+		return blockCount * 20;
 	}
 
 	private static int EncodeCharsAvx2(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
@@ -80,30 +64,18 @@ public sealed partial class Base32Encoding
 		Vector256<sbyte> threshold = Vector256.Create((sbyte)thresholdValue);
 		Vector256<byte> first = Vector256.Create(firstValue);
 		Vector256<byte> second = Vector256.Create(secondValue);
-		int sourceRemaining = source.Length;
-		int destinationRemaining = destination.Length;
-		int blockCount = sourceRemaining >= 20 + Pack5FastOverReadBytes
-			? Math.Min((sourceRemaining - Pack5FastOverReadBytes) / 20, destinationRemaining / 32)
-			: 0;
+		int blockCount = Math.Min(source.Length / 20, destination.Length / 32);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
 
 		for (int i = 0; i < blockCount; ++i)
 		{
-			StoreEncodedChars(EncodeFour(PackFourFast(ref sourcePointer), threshold, first, second), ref destinationPointer);
+			StoreEncodedChars(EncodeFour(PackFour(ref sourcePointer), threshold, first, second), ref destinationPointer);
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, 20);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 32);
 		}
 
-		int consumed = blockCount * 20;
-
-		if (sourceRemaining - consumed >= 20 && destinationRemaining - blockCount * 32 >= 32)
-		{
-			StoreEncodedChars(EncodeFour(PackFour(ref sourcePointer), threshold, first, second), ref destinationPointer);
-			consumed += 20;
-		}
-
-		return consumed;
+		return blockCount * 20;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
