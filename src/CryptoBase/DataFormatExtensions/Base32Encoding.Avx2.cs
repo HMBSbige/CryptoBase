@@ -10,32 +10,14 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<byte> EncodeFour(Vector256<ulong> value, Vector256<sbyte> threshold, Vector256<byte> first, Vector256<byte> second)
-	{
-		Vector256<ulong> mask = Vector256.Create((ulong)SymbolMask);
-		Vector256<ulong> result = value >>> 35 & mask;
-		Vector256<ulong> next = (value >>> 30 & mask) << 8;
-		Vector256<ulong> later = (value >>> 25 & mask) << 16;
-		result |= next;
-		next = (value >>> 20 & mask) << 24;
-		later |= next;
-		result |= later;
-		next = (value >>> 15 & mask) << 32;
-		later = (value >>> 10 & mask) << 40;
-		next |= later;
-		later = (value >>> 5 & mask) << 48;
-		next |= later;
-		result |= next;
-		result |= (value & mask) << 56;
-		return MapSymbols(result.AsByte(), threshold, first, second);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<ulong> PackFour(ref byte source)
+	private static Vector256<byte> EncodeFour(ref byte source, Vector256<sbyte> threshold, Vector256<byte> first, Vector256<byte> second)
 	{
 		Vector256<byte> input = Vector256.Create(Vector128.LoadUnsafe(ref source), Vector128.LoadUnsafe(ref source, 4));
-		Vector256<byte> indices = Vector256.Create(4, 3, 2, 1, 0, 0x80, 0x80, 0x80, 9, 8, 7, 6, 5, 0x80, 0x80, 0x80, 10, 9, 8, 7, 6, 0x80, 0x80, 0x80, 15, 14, 13, 12, 11, 0x80, 0x80, 0x80);
-		return Avx2.Shuffle(input, indices).AsUInt64();
+		Vector256<byte> indices = Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8, 7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
+		Vector256<ulong> windows = Avx2.Shuffle(input, indices).AsUInt64();
+		Vector256<ushort> even = Avx2.MultiplyHigh((windows & Vector256.Create(0x03e00f803e00f800UL)).AsUInt16(), Vector256.Create(0x0800020000800020UL).AsUInt16());
+		Vector256<ushort> odd = Avx2.MultiplyLow((windows & Vector256.Create(0x001f007c01f007c0UL)).AsUInt16(), Vector256.Create(0x0100004000100004UL).AsUInt16());
+		return MapSymbols((even | odd).AsByte(), threshold, first, second);
 	}
 
 	private static int EncodeUtf8Avx2(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
@@ -50,7 +32,7 @@ public sealed partial class Base32Encoding
 
 		for (int i = 0; i < blockCount; ++i)
 		{
-			EncodeFour(PackFour(ref sourcePointer), threshold, first, second).StoreUnsafe(ref destinationPointer);
+			EncodeFour(ref sourcePointer, threshold, first, second).StoreUnsafe(ref destinationPointer);
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, 20);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 32);
 		}
@@ -70,7 +52,7 @@ public sealed partial class Base32Encoding
 
 		for (int i = 0; i < blockCount; ++i)
 		{
-			StoreEncodedChars(EncodeFour(PackFour(ref sourcePointer), threshold, first, second), ref destinationPointer);
+			StoreEncodedChars(EncodeFour(ref sourcePointer, threshold, first, second), ref destinationPointer);
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, 20);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 32);
 		}
