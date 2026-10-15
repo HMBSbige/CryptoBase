@@ -38,8 +38,7 @@ public class AesVpaesTest
 			byte[] plain = source.AsSpan(sourceOffset, length).ToArray();
 			byte[] encrypted = reference.EncryptEcb(plain, PaddingMode.None);
 			byte[] decrypted = reference.DecryptEcb(plain, PaddingMode.None);
-			byte[] actual = new byte[destinationOffset + length + 19];
-			TestUtils.PrepareDestination(actual);
+			byte[] actual = TestUtils.CreateGuardedBuffer(destinationOffset, length, 19);
 
 			crypto.EncryptBlocks(source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset));
 			await TestUtils.AssertOutput(actual, destinationOffset, encrypted);
@@ -104,8 +103,7 @@ public class AesVpaesTest
 			byte[] input = source.AsSpan(sourceOffset, length).ToArray();
 			byte[] blockMask = mask.AsSpan(maskOffset, length).ToArray();
 			byte[] expected = AesTestUtils.TransformReference(reference, input, blockMask, decrypt, xorInput);
-			byte[] actual = new byte[destinationOffset + length + 17];
-			TestUtils.PrepareDestination(actual);
+			byte[] actual = TestUtils.CreateGuardedBuffer(destinationOffset, length, 17);
 
 			TransformWithMask(in crypto, source.AsSpan(sourceOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
 			await TestUtils.AssertOutput(actual, destinationOffset, expected);

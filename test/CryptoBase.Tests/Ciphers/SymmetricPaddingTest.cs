@@ -37,51 +37,43 @@ public class SymmetricPaddingTest
 	}
 
 	[Test]
-	[Arguments(PaddingMode.None)]
-	[Arguments(PaddingMode.Zeros)]
-	[Arguments(PaddingMode.PKCS7)]
-	[Arguments(PaddingMode.ANSIX923)]
-	[Arguments(PaddingMode.ISO10126)]
-	public async Task InteroperatesWithBclPadding(PaddingMode mode)
+	[MatrixDataSource]
+	[MatrixExclusion(PaddingMode.None, 1)]
+	[MatrixExclusion(PaddingMode.None, 15)]
+	[MatrixExclusion(PaddingMode.None, 17)]
+	public async Task InteroperatesWithBclPadding(
+		[Matrix(PaddingMode.None, PaddingMode.Zeros, PaddingMode.PKCS7, PaddingMode.ANSIX923, PaddingMode.ISO10126)] PaddingMode mode,
+		[Matrix(0, 1, 15, 16, 17, 32)] int length)
 	{
 		using Aes aes = Aes.Create();
 		aes.Key = new byte[16];
+		byte[] source = new byte[length];
 
-		foreach (int length in new[] { 0, 1, 15, 16, 17, 32 })
+		for (int i = 0; i < length; ++i)
 		{
-			if (mode is PaddingMode.None && length % 16 is not 0)
-			{
-				continue;
-			}
+			source[i] = (byte)i;
+		}
 
-			byte[] source = new byte[length];
+		int paddedLength = SymmetricPadding.GetPaddedLength(length, 16, mode);
+		byte[] padded = new byte[paddedLength];
+		SymmetricPadding.Pad(source, padded, 16, mode);
+		byte[] encrypted = aes.EncryptEcb(padded, PaddingMode.None);
+		byte[] bclPlaintext = aes.DecryptEcb(encrypted, mode);
+		byte[] bclCiphertext = aes.EncryptEcb(source, mode);
+		byte[] bclPadded = aes.DecryptEcb(bclCiphertext, PaddingMode.None);
+		byte[] originalPadded = (byte[])bclPadded.Clone();
+		bool valid = SymmetricPadding.TryGetUnpaddedLength(bclPadded, 16, mode, out int retained);
 
-			for (int i = 0; i < length; ++i)
-			{
-				source[i] = (byte)i;
-			}
+		await Assert.That(paddedLength).IsEqualTo(aes.GetCiphertextLengthEcb(length, mode));
+		await Assert.That(valid).IsTrue();
+		await Assert.That(retained).IsEqualTo(bclPlaintext.Length);
+		await Assert.That(bclPadded).IsEquivalentTo(originalPadded, CollectionOrdering.Matching);
+		await Assert.That(bclPadded.AsMemory(0, retained)).IsEquivalentTo(bclPlaintext, CollectionOrdering.Matching);
+		await Assert.That(bclPlaintext.AsMemory(0, length)).IsEquivalentTo(source, CollectionOrdering.Matching);
 
-			int paddedLength = SymmetricPadding.GetPaddedLength(length, 16, mode);
-			byte[] padded = new byte[paddedLength];
-			SymmetricPadding.Pad(source, padded, 16, mode);
-			byte[] encrypted = aes.EncryptEcb(padded, PaddingMode.None);
-			byte[] bclPlaintext = aes.DecryptEcb(encrypted, mode);
-			byte[] bclCiphertext = aes.EncryptEcb(source, mode);
-			byte[] bclPadded = aes.DecryptEcb(bclCiphertext, PaddingMode.None);
-			byte[] originalPadded = (byte[])bclPadded.Clone();
-			bool valid = SymmetricPadding.TryGetUnpaddedLength(bclPadded, 16, mode, out int retained);
-
-			await Assert.That(paddedLength).IsEqualTo(aes.GetCiphertextLengthEcb(length, mode));
-			await Assert.That(valid).IsTrue();
-			await Assert.That(retained).IsEqualTo(bclPlaintext.Length);
-			await Assert.That(bclPadded).IsEquivalentTo(originalPadded, CollectionOrdering.Matching);
-			await Assert.That(bclPadded.AsMemory(0, retained)).IsEquivalentTo(bclPlaintext, CollectionOrdering.Matching);
-			await Assert.That(bclPlaintext.AsMemory(0, length)).IsEquivalentTo(source, CollectionOrdering.Matching);
-
-			if (mode is not PaddingMode.ISO10126)
-			{
-				await Assert.That(padded).IsEquivalentTo(bclPadded, CollectionOrdering.Matching);
-			}
+		if (mode is not PaddingMode.ISO10126)
+		{
+			await Assert.That(padded).IsEquivalentTo(bclPadded, CollectionOrdering.Matching);
 		}
 	}
 
@@ -133,32 +125,44 @@ public class SymmetricPaddingTest
 	}
 
 	[Test]
-	public async Task ArgumentFailuresDoNotWrite()
+	[Arguments(16, 16, PaddingMode.PKCS7)]
+	[Arguments(15, 15, PaddingMode.PKCS7)]
+	[Arguments(3, 16, PaddingMode.None)]
+	public async Task ArgumentFailuresDoNotWrite(int sourceLength, int destinationLength, PaddingMode mode)
 	{
 		byte[] destination = new byte[16];
 		destination.AsSpan().Fill(0xB6);
-		await Assert.That(() => SymmetricPadding.Pad(new byte[16], destination, 16, PaddingMode.PKCS7)).ThrowsExactly<ArgumentException>();
-		await Assert.That(destination).All(static value => value is 0xB6);
-		await Assert.That(() => SymmetricPadding.Pad(new byte[15], destination.AsSpan(0, 15), 16, PaddingMode.PKCS7)).ThrowsExactly<ArgumentException>();
-		await Assert.That(destination).All(static value => value is 0xB6);
-		await Assert.That(() => SymmetricPadding.Pad(new byte[3], destination, 16, PaddingMode.None)).ThrowsExactly<ArgumentException>();
-		await Assert.That(destination).All(static value => value is 0xB6);
 
-		foreach (int blockSize in new[] { 0, 256 })
-		{
-			await Assert.That(() => SymmetricPadding.Pad(new byte[3], destination, blockSize, PaddingMode.PKCS7)).ThrowsExactly<ArgumentOutOfRangeException>();
-			await Assert.That(destination).All(static value => value is 0xB6);
-			await Assert.That(() => SymmetricPadding.TryGetUnpaddedLength(destination, blockSize, PaddingMode.PKCS7, out _)).ThrowsExactly<ArgumentOutOfRangeException>();
-			await Assert.That(destination).All(static value => value is 0xB6);
-		}
+		await Assert.That(() => SymmetricPadding.Pad(new byte[sourceLength], destination.AsSpan(0, destinationLength), 16, mode)).ThrowsExactly<ArgumentException>();
+		await Assert.That(destination).All(static value => value is 0xB6);
+	}
 
-		foreach (PaddingMode mode in new[] { (PaddingMode)0, (PaddingMode)6 })
-		{
-			await Assert.That(() => SymmetricPadding.Pad(new byte[3], destination, 16, mode)).ThrowsExactly<ArgumentOutOfRangeException>();
-			await Assert.That(destination).All(static value => value is 0xB6);
-			await Assert.That(() => SymmetricPadding.TryGetUnpaddedLength(destination, 16, mode, out _)).ThrowsExactly<ArgumentOutOfRangeException>();
-			await Assert.That(destination).All(static value => value is 0xB6);
-		}
+	[Test]
+	[Arguments(0)]
+	[Arguments(256)]
+	public async Task InvalidBlockSizesDoNotWrite(int blockSize)
+	{
+		byte[] destination = new byte[16];
+		destination.AsSpan().Fill(0xB6);
+
+		await Assert.That(() => SymmetricPadding.Pad(new byte[3], destination, blockSize, PaddingMode.PKCS7)).ThrowsExactly<ArgumentOutOfRangeException>();
+		await Assert.That(destination).All(static value => value is 0xB6);
+		await Assert.That(() => SymmetricPadding.TryGetUnpaddedLength(destination, blockSize, PaddingMode.PKCS7, out _)).ThrowsExactly<ArgumentOutOfRangeException>();
+		await Assert.That(destination).All(static value => value is 0xB6);
+	}
+
+	[Test]
+	[Arguments((PaddingMode)0)]
+	[Arguments((PaddingMode)6)]
+	public async Task InvalidPaddingModesDoNotWrite(PaddingMode mode)
+	{
+		byte[] destination = new byte[16];
+		destination.AsSpan().Fill(0xB6);
+
+		await Assert.That(() => SymmetricPadding.Pad(new byte[3], destination, 16, mode)).ThrowsExactly<ArgumentOutOfRangeException>();
+		await Assert.That(destination).All(static value => value is 0xB6);
+		await Assert.That(() => SymmetricPadding.TryGetUnpaddedLength(destination, 16, mode, out _)).ThrowsExactly<ArgumentOutOfRangeException>();
+		await Assert.That(destination).All(static value => value is 0xB6);
 	}
 
 	[Test]
@@ -173,110 +177,79 @@ public class SymmetricPaddingTest
 	}
 
 	[Test]
-	[Arguments(PaddingMode.PKCS7)]
-	[Arguments(PaddingMode.ANSIX923)]
-	public async Task RejectsEveryCorruptedPaddingByte(PaddingMode mode)
+	[MatrixDataSource]
+	public async Task RejectsEveryCorruptedPaddingByte([Matrix(PaddingMode.PKCS7, PaddingMode.ANSIX923)] PaddingMode mode, [MatrixRange<int>(1, 16)] int count)
 	{
 		// Construct the expected encoding independently of Pad, then corrupt every checked position.
-		for (int count = 1; count <= 16; ++count)
-		{
-			byte[] padded = new byte[32];
-			padded.AsSpan().Fill(0x9D);
-			padded.AsSpan(32 - count, count - 1).Fill(mode is PaddingMode.PKCS7 ? (byte)count : (byte)0);
-			padded[31] = (byte)count;
-			bool valid = SymmetricPadding.TryGetUnpaddedLength(padded, 16, mode, out int retained);
-			await Assert.That(valid).IsTrue();
-			await Assert.That(retained).IsEqualTo(32 - count);
+		byte[] padded = new byte[32];
+		padded.AsSpan().Fill(0x9D);
+		padded.AsSpan(32 - count, count - 1).Fill(mode is PaddingMode.PKCS7 ? (byte)count : (byte)0);
+		padded[31] = (byte)count;
+		bool valid = SymmetricPadding.TryGetUnpaddedLength(padded, 16, mode, out int retained);
+		await Assert.That(valid).IsTrue();
+		await Assert.That(retained).IsEqualTo(32 - count);
 
-			for (int i = 32 - count; i < 32; ++i)
-			{
-				byte[] corrupted = (byte[])padded.Clone();
-				corrupted[i] = i is 31 ? (byte)0 : (byte)(corrupted[i] ^ 0x80);
-				byte[] original = (byte[])corrupted.Clone();
-				bool accepted = SymmetricPadding.TryGetUnpaddedLength(corrupted, 16, mode, out int length);
-				await Assert.That(accepted).IsFalse();
-				await Assert.That(length).IsEqualTo(0);
-				await Assert.That(corrupted).IsEquivalentTo(original, CollectionOrdering.Matching);
-			}
+		for (int i = 32 - count; i < 32; ++i)
+		{
+			byte[] corrupted = (byte[])padded.Clone();
+			corrupted[i] = i is 31 ? (byte)0 : (byte)(corrupted[i] ^ 0x80);
+			await AssertRejectedWithoutMutation(corrupted, mode);
 		}
 	}
 
 	[Test]
-	[Arguments(PaddingMode.PKCS7)]
-	[Arguments(PaddingMode.ANSIX923)]
-	[Arguments(PaddingMode.ISO10126)]
-	public async Task RejectsMalformedLengthsAndMissingPadding(PaddingMode mode)
+	[MatrixDataSource]
+	public async Task RejectsMalformedLengths([Matrix(PaddingMode.PKCS7, PaddingMode.ANSIX923, PaddingMode.ISO10126)] PaddingMode mode, [Matrix(0, 15, 17)] int size)
 	{
-		foreach (int size in new[] { 0, 15, 17 })
+		byte[] data = new byte[size];
+		data.AsSpan().Fill(0xA5);
+
+		if (size is not 0)
 		{
-			byte[] data = new byte[size];
-			data.AsSpan().Fill(0xA5);
-
-			if (size is not 0)
-			{
-				data[size - 1] = 1;
-			}
-
-			byte[] original = (byte[])data.Clone();
-			bool accepted = SymmetricPadding.TryGetUnpaddedLength(data, 16, mode, out int length);
-			await Assert.That(accepted).IsFalse();
-			await Assert.That(length).IsEqualTo(0);
-			await Assert.That(data).IsEquivalentTo(original, CollectionOrdering.Matching);
+			data[size - 1] = 1;
 		}
 
-		foreach (int count in new[] { 0, 17, 128, 255 })
-		{
-			byte[] data = new byte[32];
-			data.AsSpan().Fill(mode is PaddingMode.ANSIX923 ? (byte)0 : (byte)count);
-			data[31] = (byte)count;
-			byte[] original = (byte[])data.Clone();
-			bool accepted = SymmetricPadding.TryGetUnpaddedLength(data, 16, mode, out int length);
-			await Assert.That(accepted).IsFalse();
-			await Assert.That(length).IsEqualTo(0);
-			await Assert.That(data).IsEquivalentTo(original, CollectionOrdering.Matching);
-		}
+		await AssertRejectedWithoutMutation(data, mode);
 	}
 
 	[Test]
-	[Arguments(PaddingMode.None)]
-	[Arguments(PaddingMode.Zeros)]
-	public async Task UnalignedInputIsRejectedWithoutInferringZeroPadding(PaddingMode mode)
+	[MatrixDataSource]
+	public async Task RejectsInvalidPaddingCounts([Matrix(PaddingMode.PKCS7, PaddingMode.ANSIX923, PaddingMode.ISO10126)] PaddingMode mode, [Matrix(0, 17, 128, 255)] int count)
 	{
-		foreach (int size in new[] { 15, 17 })
-		{
-			bool valid = SymmetricPadding.TryGetUnpaddedLength(new byte[size], 16, mode, out int retained);
-			await Assert.That(valid).IsFalse();
-			await Assert.That(retained).IsEqualTo(0);
-		}
+		byte[] data = new byte[32];
+		data.AsSpan().Fill(mode is PaddingMode.ANSIX923 ? (byte)0 : (byte)count);
+		data[31] = (byte)count;
 
-		bool aligned = SymmetricPadding.TryGetUnpaddedLength(new byte[16], 16, mode, out int fullLength);
-		await Assert.That(aligned).IsTrue();
-		await Assert.That(fullLength).IsEqualTo(16);
+		await AssertRejectedWithoutMutation(data, mode);
 	}
 
 	[Test]
-	public async Task Iso10126AcceptsArbitraryPaddingContents()
+	[MatrixDataSource]
+	public async Task AlignmentIsCheckedWithoutInferringZeroPadding([Matrix(PaddingMode.None, PaddingMode.Zeros)] PaddingMode mode, [Matrix(15, 16, 17)] int size)
 	{
-		for (int count = 1; count <= 16; ++count)
-		{
-			byte[] padded = Convert.FromHexString("FF0002F0800473A901FE237E815AC3B6");
-			padded[15] = (byte)count;
-			byte[] original = (byte[])padded.Clone();
-			bool accepted = SymmetricPadding.TryGetUnpaddedLength(padded, 16, PaddingMode.ISO10126, out int length);
-			await Assert.That(accepted).IsTrue();
-			await Assert.That(length).IsEqualTo(16 - count);
-			await Assert.That(padded).IsEquivalentTo(original, CollectionOrdering.Matching);
-		}
+		bool valid = SymmetricPadding.TryGetUnpaddedLength(new byte[size], 16, mode, out int retained);
+
+		await Assert.That(valid).IsEqualTo(size is 16);
+		await Assert.That(retained).IsEqualTo(size is 16 ? size : 0);
 	}
 
 	[Test]
-	[Arguments(PaddingMode.PKCS7, 1)]
-	[Arguments(PaddingMode.PKCS7, 255)]
-	[Arguments(PaddingMode.ANSIX923, 1)]
-	[Arguments(PaddingMode.ANSIX923, 255)]
-	[Arguments(PaddingMode.ISO10126, 1)]
-	[Arguments(PaddingMode.ISO10126, 255)]
-	public async Task SupportsBlockSizeBoundaries(PaddingMode mode, int blockSize)
+	[MatrixDataSource]
+	public async Task Iso10126AcceptsArbitraryPaddingContents([MatrixRange<int>(1, 16)] int count)
+	{
+		byte[] padded = Convert.FromHexString("FF0002F0800473A901FE237E815AC3B6");
+		padded[15] = (byte)count;
+		byte[] original = (byte[])padded.Clone();
+		bool accepted = SymmetricPadding.TryGetUnpaddedLength(padded, 16, PaddingMode.ISO10126, out int length);
+
+		await Assert.That(accepted).IsTrue();
+		await Assert.That(length).IsEqualTo(16 - count);
+		await Assert.That(padded).IsEquivalentTo(original, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task SupportsBlockSizeBoundaries([Matrix(PaddingMode.PKCS7, PaddingMode.ANSIX923, PaddingMode.ISO10126)] PaddingMode mode, [Matrix(1, 255)] int blockSize)
 	{
 		byte[] expected = new byte[blockSize];
 		expected.AsSpan().Fill
@@ -308,4 +281,14 @@ public class SymmetricPaddingTest
 		await Assert.That(retained).IsEqualTo(0);
 		await Assert.That(expected).IsEquivalentTo(original, CollectionOrdering.Matching);
 	}
+	private static async Task AssertRejectedWithoutMutation(byte[] data, PaddingMode mode)
+	{
+		byte[] original = (byte[])data.Clone();
+		bool accepted = SymmetricPadding.TryGetUnpaddedLength(data, 16, mode, out int length);
+
+		await Assert.That(accepted).IsFalse();
+		await Assert.That(length).IsEqualTo(0);
+		await Assert.That(data).IsEquivalentTo(original, CollectionOrdering.Matching);
+	}
+
 }

@@ -64,10 +64,13 @@ public class Blake3HashAlgorithmTest
 		{
 			using Blake3HashAlgorithm hasher = Blake3TestUtils.CreateHasher(mode);
 			hasher.Append(source);
+			Blake3Reference reference = Blake3TestUtils.CreateReference(mode);
+			reference.Update(source);
 
 			foreach (int length in OutputLengths)
 			{
-				byte[] expected = Blake3TestUtils.ReferenceHash(mode, source, length, position);
+				byte[] expected = new byte[length];
+				reference.Finalize(expected, position);
 				byte[] destination = new byte[length + 1];
 				PrepareDestination(destination);
 				hasher.GetCurrentHash(destination.AsSpan(0, length), position);

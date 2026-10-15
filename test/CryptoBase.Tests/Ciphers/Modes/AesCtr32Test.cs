@@ -12,7 +12,12 @@ public class AesCtr32Test
 {
 	[Test]
 	[MatrixDataSource]
-	public async Task CountersWrapWithoutChangingNonce([Matrix(16, 24, 32)] int keyLength, [Matrix(2u, 0xFFFFFFFEu)] uint initialCounter, [Matrix(32, 48, 64, 128, 256, 4096)] int fullLength)
+	public async Task CountersWrapWithoutChangingNonce(
+		[Matrix(16, 24, 32)] int keyLength,
+		[Matrix(2u, 0xFFFFFFFEu)] uint initialCounter,
+		[Matrix(32, 48, 64, 128, 256, 4096)] int fullLength,
+		[Matrix(0, 1, 15)] int tailLength,
+		[Matrix] bool inPlace)
 	{
 		if (!AesCipherX86.IsSupported && !AesCipherArm.IsSupported)
 		{
@@ -25,36 +30,31 @@ public class AesCtr32Test
 		BinaryPrimitives.WriteUInt32BigEndian(initial.AsSpan(12), initialCounter);
 		using AesCipher cipher = AesCipher.Create(key);
 
-		foreach (int tailLength in new[] { 0, 1, 15 })
-		{
-			int length = fullLength + tailLength;
-			byte[] plaintext = CreateDeterministicSource(length);
-			byte[] input = new byte[prefixLength + length];
-			plaintext.CopyTo(input, prefixLength);
-			byte[] expected = CtrReference.Transform
-			(
-				initial, plaintext, counters =>
-				{
-					using Aes reference = Aes.Create();
-					reference.Key = key;
-					return reference.EncryptEcb(counters, PaddingMode.None);
-				}, counterBits: 32
-			);
-
-			foreach (bool inPlace in new[] { false, true })
+		int length = fullLength + tailLength;
+		byte[] plaintext = CreateDeterministicSource(length);
+		byte[] input = new byte[prefixLength + length];
+		plaintext.CopyTo(input, prefixLength);
+		byte[] expected = CtrReference.Transform
+		(
+			initial, plaintext, counters =>
 			{
-				byte[] output = CreateGuardedBuffer(prefixLength, length);
-				plaintext.CopyTo(output, prefixLength);
-				Vector128<byte> counter = Vector128.Create(initial);
-				ReadOnlySpan<byte> source = inPlace ? output.AsSpan(0, prefixLength + length) : input;
-				int processed = BlockModeDispatch.XorCtr<AesCipher, CtrIncrementer32>(cipher, ref counter, source.Slice(prefixLength), output.AsSpan(prefixLength));
-				CtrBlocks<AesCipher, CtrIncrementer32>.Xor(cipher, ref counter, source.Slice(prefixLength + processed), output.AsSpan(prefixLength + processed));
-				await Assert.That(processed).IsEqualTo(fullLength);
-				await AssertOutput(output, prefixLength, expected);
-				byte[] expectedCounter = (byte[])initial.Clone();
-				BinaryPrimitives.WriteUInt32BigEndian(expectedCounter.AsSpan(12), initialCounter + (uint)((length + 15) / 16));
-				await Assert.That(counter).IsEqualTo(Vector128.Create(expectedCounter));
-			}
-		}
+				using Aes reference = Aes.Create();
+				reference.Key = key;
+				return reference.EncryptEcb(counters, PaddingMode.None);
+			}, counterBits: 32
+		);
+
+		byte[] output = CreateGuardedBuffer(prefixLength, length);
+		plaintext.CopyTo(output, prefixLength);
+		Vector128<byte> counter = Vector128.Create(initial);
+		ReadOnlySpan<byte> source = inPlace ? output.AsSpan(0, prefixLength + length) : input;
+		int processed = BlockModeDispatch.XorCtr<AesCipher, CtrIncrementer32>(cipher, ref counter, source.Slice(prefixLength), output.AsSpan(prefixLength));
+		CtrBlocks<AesCipher, CtrIncrementer32>.Xor(cipher, ref counter, source.Slice(prefixLength + processed), output.AsSpan(prefixLength + processed));
+		await Assert.That(processed).IsEqualTo(fullLength);
+		await AssertOutput(output, prefixLength, expected);
+
+		byte[] expectedCounter = (byte[])initial.Clone();
+		BinaryPrimitives.WriteUInt32BigEndian(expectedCounter.AsSpan(12), initialCounter + (uint)((length + 15) / 16));
+		await Assert.That(counter).IsEqualTo(Vector128.Create(expectedCounter));
 	}
 }

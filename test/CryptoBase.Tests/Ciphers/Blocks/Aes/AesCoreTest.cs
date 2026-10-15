@@ -39,12 +39,9 @@ public class AesCoreTest
 				byte[] source = new byte[length + 1];
 				random.NextBytes(source);
 				byte[] expected = reference.EncryptEcb(source.AsSpan(1), PaddingMode.None);
-				byte[] actual = new byte[length + 3];
-				TestUtils.PrepareDestination(actual);
+				byte[] actual = TestUtils.CreateGuardedBuffer(1, length, 2);
 				crypto.EncryptBlocks(source.AsSpan(1), actual.AsSpan(1));
-				await Assert.That(actual.AsMemory(1, length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
-				await Assert.That(actual[0]).IsEqualTo(TestUtils.DestinationSentinel);
-				await Assert.That(actual.AsMemory(length + 1)).All(static value => value is TestUtils.DestinationSentinel);
+				await TestUtils.AssertOutput(actual, 1, expected);
 
 				crypto.DecryptBlocks(actual.AsSpan(1, length), actual.AsSpan(1));
 				await Assert.That(actual.AsMemory(1, length)).IsEquivalentTo(source.AsSpan(1).ToArray(), CollectionOrdering.Matching);
@@ -53,9 +50,7 @@ public class AesCoreTest
 
 				expected = reference.DecryptEcb(source.AsSpan(1), PaddingMode.None);
 				crypto.DecryptBlocks(source.AsSpan(1), actual.AsSpan(1));
-				await Assert.That(actual.AsMemory(1, length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
-				await Assert.That(actual[0]).IsEqualTo(TestUtils.DestinationSentinel);
-				await Assert.That(actual.AsMemory(length + 1)).All(static value => value is TestUtils.DestinationSentinel);
+				await TestUtils.AssertOutput(actual, 1, expected);
 			}
 		}
 	}

@@ -61,7 +61,7 @@ public class SM4GfniTest
 
 	[Test]
 	[MatrixDataSource]
-	public async Task Ctr32WrapsWithoutChangingNonce([Matrix(2u, 0xFFFFFFF1u, 0xFFFFFFF5u, 0xFFFFFFC0u)] uint initialCounter, [Matrix(1024, 2048, 4096)] int length)
+	public async Task Ctr32WrapsWithoutChangingNonce([Matrix(2u, 0xFFFFFFF1u, 0xFFFFFFF5u, 0xFFFFFFC0u)] uint initialCounter, [Matrix(1024, 2048, 4096)] int length, [Matrix] bool inPlace)
 	{
 		if (!SM4Gfni.SupportsModePolicy)
 		{
@@ -76,17 +76,14 @@ public class SM4GfniTest
 		byte[] plaintext = CreateDeterministicSource(length);
 		byte[] expected = CtrReference.Transform(initial, plaintext, counters => SM4Reference.Transform(key, counters), 32);
 
-		foreach (bool inPlace in new[] { false, true })
-		{
-			byte[] output = CreateGuardedBuffer(3, length);
-			plaintext.CopyTo(output, 3);
-			Vector128<byte> counter = Vector128.Create(initial);
-			int processed = BlockModeDispatch.XorCtr<SM4Cipher, CtrIncrementer32>(cipher, ref counter, inPlace ? output.AsSpan(3, length) : plaintext, output.AsSpan(3, length));
-			await Assert.That(processed).IsEqualTo(length);
-			await AssertOutput(output, 3, expected);
-			byte[] expectedCounter = (byte[])initial.Clone();
-			BinaryPrimitives.WriteUInt32BigEndian(expectedCounter.AsSpan(12), initialCounter + (uint)(length / 16));
-			await Assert.That(counter).IsEqualTo(Vector128.Create(expectedCounter));
-		}
+		byte[] output = CreateGuardedBuffer(3, length);
+		plaintext.CopyTo(output, 3);
+		Vector128<byte> counter = Vector128.Create(initial);
+		int processed = BlockModeDispatch.XorCtr<SM4Cipher, CtrIncrementer32>(cipher, ref counter, inPlace ? output.AsSpan(3, length) : plaintext, output.AsSpan(3, length));
+		await Assert.That(processed).IsEqualTo(length);
+		await AssertOutput(output, 3, expected);
+		byte[] expectedCounter = (byte[])initial.Clone();
+		BinaryPrimitives.WriteUInt32BigEndian(expectedCounter.AsSpan(12), initialCounter + (uint)(length / 16));
+		await Assert.That(counter).IsEqualTo(Vector128.Create(expectedCounter));
 	}
 }

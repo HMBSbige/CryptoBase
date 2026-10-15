@@ -25,48 +25,57 @@ public class SM4CtrTest
 		await VerifyStreamVector(CtrMode128<SM4Cipher>.Create(key, counter), plaintext, ciphertext);
 	}
 
+	public static IEnumerable<string> InitialCounters()
+	{
+		return
+		[
+			"000102030405060708090A0BFFFFFFE1",
+			"0001020304050607FFFFFFFFFFFFFFE1",
+			"00010203FFFFFFFFFFFFFFFFFFFFFFE1",
+			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1",
+			"0001020304050607FFFFFFFFFFFFFFE5",
+			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE5"
+		];
+	}
+
 	[Test]
-	[Arguments("000102030405060708090A0BFFFFFFE1")]
-	[Arguments("0001020304050607FFFFFFFFFFFFFFE1")]
-	[Arguments("00010203FFFFFFFFFFFFFFFFFFFFFFE1")]
-	[Arguments("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1")]
-	[Arguments("0001020304050607FFFFFFFFFFFFFFE5")]
-	[Arguments("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE5")]
-	public async Task BatchCarriesAndContinuationMatchScalarReference(string initialCounterHex)
+	[MatrixDataSource]
+	public async Task BatchCarriesMatchScalarReference([MatrixMethod<SM4CtrTest>(nameof(InitialCounters))] string initialCounterHex, [Matrix(255, 256, 257, 1023, 1024, 1025, 2048, 4097)] int length, [Matrix] bool inPlace)
+	{
+		byte[] key = CreateDeterministicSource(16);
+		byte[] counter = Convert.FromHexString(initialCounterHex);
+		byte[] plaintext = CreateDeterministicSource(4097).AsSpan(0, length).ToArray();
+		byte[] expected = CtrReference.Transform(counter, plaintext, counters => SM4Reference.Transform(key, counters));
+		byte[] output = CreateGuardedBuffer(3, length);
+		plaintext.CopyTo(output, 3);
+		using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
+
+		ReadOnlySpan<byte> source = inPlace ? output.AsSpan(3, length) : plaintext;
+		cipher.Xor(source, output.AsSpan(3));
+
+		await AssertOutput(output, 3, expected);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task ContinuationMatchesScalarReference([MatrixMethod<SM4CtrTest>(nameof(InitialCounters))] string initialCounterHex, [Matrix] bool inPlace)
 	{
 		byte[] key = CreateDeterministicSource(16);
 		byte[] counter = Convert.FromHexString(initialCounterHex);
 		byte[] plaintext = CreateDeterministicSource(4097);
 		byte[] expected = CtrReference.Transform(counter, plaintext, counters => SM4Reference.Transform(key, counters));
+		byte[] output = CreateGuardedBuffer(5, plaintext.Length);
+		plaintext.CopyTo(output, 5);
+		using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
+		int offset = 0;
 
-		foreach (int length in new[] { 255, 256, 257, 1023, 1024, 1025, 2048, 4097 })
+		foreach (int length in new[] { 1, 1040, 0, 1024, 15, 2017 })
 		{
-			foreach (bool inPlace in new[] { false, true })
-			{
-				byte[] output = CreateGuardedBuffer(3, length);
-				plaintext.AsSpan(0, length).CopyTo(output.AsSpan(3));
-				using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
-				ReadOnlySpan<byte> source = inPlace ? output.AsSpan(3, length) : plaintext.AsSpan(0, length);
-				cipher.Xor(source, output.AsSpan(3));
-				await AssertOutput(output, 3, expected.AsSpan(0, length).ToArray());
-			}
+			ReadOnlySpan<byte> source = inPlace ? output.AsSpan(5 + offset, length) : plaintext.AsSpan(offset, length);
+			cipher.Xor(source, output.AsSpan(5 + offset, length));
+			offset += length;
 		}
 
-		foreach (bool inPlace in new[] { false, true })
-		{
-			byte[] output = CreateGuardedBuffer(5, plaintext.Length);
-			plaintext.CopyTo(output, 5);
-			using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
-			int offset = 0;
-
-			foreach (int length in new[] { 1, 1040, 0, 1024, 15, 2017 })
-			{
-				ReadOnlySpan<byte> source = inPlace ? output.AsSpan(5 + offset, length) : plaintext.AsSpan(offset, length);
-				cipher.Xor(source, output.AsSpan(5 + offset, length));
-				offset += length;
-			}
-
-			await AssertOutput(output, 5, expected);
-		}
+		await AssertOutput(output, 5, expected);
 	}
 }

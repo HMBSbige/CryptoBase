@@ -38,8 +38,7 @@ public class AesBitsliceTest
 			byte[] plain = source.AsSpan(sourceOffset, length).ToArray();
 			byte[] encrypted = reference.EncryptEcb(plain, PaddingMode.None);
 			byte[] decrypted = reference.DecryptEcb(plain, PaddingMode.None);
-			byte[] actual = new byte[destinationOffset + length + 19];
-			TestUtils.PrepareDestination(actual);
+			byte[] actual = TestUtils.CreateGuardedBuffer(destinationOffset, length, 19);
 
 			crypto.EncryptBlocks(source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset));
 			await TestUtils.AssertOutput(actual, destinationOffset, encrypted);

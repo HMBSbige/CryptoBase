@@ -10,7 +10,8 @@ namespace CryptoBase.Tests.Hashes;
 public class HashUtilsTest
 {
 	[Test]
-	public async Task ComputeHashStartsAtCurrentPosition()
+	[MatrixDataSource]
+	public async Task ComputeHashStartsAtCurrentPosition([Matrix] bool useAsync)
 	{
 		const int startOffset = 137;
 		byte[] source = CreateDeterministicSource(81920 + 257);
@@ -20,14 +21,17 @@ public class HashUtilsTest
 		using MemoryStream stream = new(source, false);
 		stream.Position = startOffset;
 
-		int written = stream.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination);
+		int written = useAsync
+			? await stream.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination)
+			: stream.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination);
 
 		await AssertOutput(destination, expected, written);
 		await Assert.That(stream.Position).IsEqualTo(stream.Length);
 	}
 
 	[Test]
-	public async Task ComputeHashRejectsShortDestinationBeforeReading()
+	[MatrixDataSource]
+	public async Task ComputeHashRejectsShortDestinationBeforeReading([Matrix] bool useAsync)
 	{
 		byte[] source = CreateDeterministicSource(257);
 		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength - 1];
@@ -37,7 +41,14 @@ public class HashUtilsTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => stream.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+			if (useAsync)
+			{
+				await Assert.That(() => stream.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination).AsTask()).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+			}
+			else
+			{
+				await Assert.That(() => stream.ComputeHash<HashAlgorithm<Sha256HashAlgorithm>>(destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+			}
 			await Assert.That(stream.Position).IsEqualTo(11);
 			await Assert.That(destination).All(static value => value is DestinationSentinel);
 		}
@@ -57,40 +68,6 @@ public class HashUtilsTest
 
 		await AssertOutput(destination, expected, written);
 		await Assert.That(stream.Position).IsEqualTo(stream.Length);
-	}
-
-	[Test]
-	public async Task ComputeHashAsyncStartsAtCurrentPosition()
-	{
-		const int startOffset = 137;
-		byte[] source = CreateDeterministicSource(81920 + 257);
-		byte[] expected = SHA256.HashData(source.AsSpan(startOffset));
-		using MemoryStream stream = new(source, false);
-		stream.Position = startOffset;
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength + 1];
-		PrepareDestination(destination);
-
-		int written = await stream.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination);
-
-		await AssertOutput(destination, expected, written);
-		await Assert.That(stream.Position).IsEqualTo(stream.Length);
-	}
-
-	[Test]
-	public async Task ComputeHashAsyncRejectsShortDestinationBeforeReading()
-	{
-		byte[] source = CreateDeterministicSource(257);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength - 1];
-		PrepareDestination(destination);
-		using MemoryStream stream = new(source, false);
-		stream.Position = 11;
-
-		using (Assert.Multiple())
-		{
-			await Assert.That(() => stream.ComputeHashAsync<HashAlgorithm<Sha256HashAlgorithm>>(destination).AsTask()).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
-			await Assert.That(stream.Position).IsEqualTo(11);
-			await Assert.That(destination).All(static value => value is DestinationSentinel);
-		}
 	}
 
 	[Test]

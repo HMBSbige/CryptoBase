@@ -23,59 +23,66 @@ public class Blake2bKernelTest
 
 	private static readonly ulong[] FinalFlags = [0, ulong.MaxValue];
 
-	[Test]
-	public Task ScalarMatchesReference()
+	public static IEnumerable<(int BlockCount, UInt128 Counter, ulong FinalFlag)> KernelCases()
 	{
-		return VerifyKernel<Blake2bScalar>();
+		foreach (int blockCount in BlockCounts)
+		{
+			foreach (UInt128 counter in Counters)
+			{
+				foreach (ulong finalFlag in FinalFlags)
+				{
+					yield return (blockCount, counter, finalFlag);
+				}
+			}
+		}
 	}
 
 	[Test]
-	public Task Vector128MatchesReference()
+	[MethodDataSource(nameof(KernelCases))]
+	public Task ScalarMatchesReference(int blockCount, UInt128 counter, ulong finalFlag)
+	{
+		return VerifyKernel<Blake2bScalar>(blockCount, counter, finalFlag);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(KernelCases))]
+	public Task Vector128MatchesReference(int blockCount, UInt128 counter, ulong finalFlag)
 	{
 		if (!Blake2bVector128.IsSupported)
 		{
 			Skip.Test("SSE2 is required.");
 		}
 
-		return VerifyKernel<Blake2bVector128>();
+		return VerifyKernel<Blake2bVector128>(blockCount, counter, finalFlag);
 	}
 
 	[Test]
-	public Task Vector256MatchesReference()
+	[MethodDataSource(nameof(KernelCases))]
+	public Task Vector256MatchesReference(int blockCount, UInt128 counter, ulong finalFlag)
 	{
 		if (!Blake2bVector256.IsSupported)
 		{
 			Skip.Test("AVX2 is required.");
 		}
 
-		return VerifyKernel<Blake2bVector256>();
+		return VerifyKernel<Blake2bVector256>(blockCount, counter, finalFlag);
 	}
 
-	private static async Task VerifyKernel<TKernel>() where TKernel : IBlake2bKernel
+	private static async Task VerifyKernel<TKernel>(int blockCount, UInt128 counter, ulong finalFlag) where TKernel : IBlake2bKernel
 	{
-		foreach (int blockCount in BlockCounts)
+		byte[] buffer = CreateDeterministicSource(blockCount * BlockSize + 1);
+		ReadOnlyMemory<byte> unalignedBlocks = buffer.AsMemory(1);
+		ulong[] expected = CreateState(blockCount, counter, finalFlag);
+		ulong[] actual = (ulong[])expected.Clone();
+
+		for (int i = 0; i < blockCount; ++i)
 		{
-			byte[] buffer = CreateDeterministicSource(blockCount * BlockSize + 1);
-			ReadOnlyMemory<byte> unalignedBlocks = buffer.AsMemory(1);
-
-			foreach (UInt128 counter in Counters)
-			{
-				foreach (ulong finalFlag in FinalFlags)
-				{
-					ulong[] expected = CreateState(blockCount, counter, finalFlag);
-					ulong[] actual = (ulong[])expected.Clone();
-
-					for (int i = 0; i < blockCount; ++i)
-					{
-						Blake2bReference.Compress(expected, unalignedBlocks.Span.Slice(i * BlockSize, BlockSize), counter + (uint)(i * BlockSize), finalFlag);
-					}
-
-					TKernel.Compress(ref actual[0], unalignedBlocks.Span, counter, finalFlag);
-
-					await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
-				}
-			}
+			Blake2bReference.Compress(expected, unalignedBlocks.Span.Slice(i * BlockSize, BlockSize), counter + (uint)(i * BlockSize), finalFlag);
 		}
+
+		TKernel.Compress(ref actual[0], unalignedBlocks.Span, counter, finalFlag);
+
+		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
 	private static ulong[] CreateState(int blockCount, UInt128 counter, ulong finalFlag)

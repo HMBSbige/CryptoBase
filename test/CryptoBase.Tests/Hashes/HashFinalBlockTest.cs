@@ -27,17 +27,17 @@ public class HashFinalBlockTest
 
 		for (int length = 0; length <= MaxLength; ++length)
 		{
-			byte[] message = source.AsSpan(0, length).ToArray();
-			await Assert.That(Hash<HashAlgorithm<MD5HashAlgorithm>>(message)).IsEquivalentTo(Bcl.MD5.HashData(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<HashAlgorithm<Sha1HashAlgorithm>>(message)).IsEquivalentTo(Bcl.SHA1.HashData(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<HashAlgorithm<Sha256HashAlgorithm>>(message)).IsEquivalentTo(Bcl.SHA256.HashData(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<HashAlgorithm<Sha384HashAlgorithm>>(message)).IsEquivalentTo(Bcl.SHA384.HashData(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<HashAlgorithm<Sha512HashAlgorithm>>(message)).IsEquivalentTo(Bcl.SHA512.HashData(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<HashAlgorithm<Sha224HashAlgorithm>>(message)).IsEquivalentTo(HashIncrementally<HashAlgorithm<Sha224HashAlgorithm>>(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<HashAlgorithm<SM3HashAlgorithm>>(message)).IsEquivalentTo(HashIncrementally<HashAlgorithm<SM3HashAlgorithm>>(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<HashAlgorithm<Blake2b256HashAlgorithm>>(message)).IsEquivalentTo(HashIncrementally<HashAlgorithm<Blake2b256HashAlgorithm>>(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<HashAlgorithm<Blake2b512HashAlgorithm>>(message)).IsEquivalentTo(HashIncrementally<HashAlgorithm<Blake2b512HashAlgorithm>>(message), CollectionOrdering.Matching);
-			await Assert.That(Hash<Blake3HashAlgorithm>(message)).IsEquivalentTo(HashIncrementally<Blake3HashAlgorithm>(message), CollectionOrdering.Matching);
+			ReadOnlyMemory<byte> message = source.AsMemory(0, length);
+			await Assert.That(Hash<HashAlgorithm<MD5HashAlgorithm>>(message.Span)).IsEquivalentTo(Bcl.MD5.HashData(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<HashAlgorithm<Sha1HashAlgorithm>>(message.Span)).IsEquivalentTo(Bcl.SHA1.HashData(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<HashAlgorithm<Sha256HashAlgorithm>>(message.Span)).IsEquivalentTo(Bcl.SHA256.HashData(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<HashAlgorithm<Sha384HashAlgorithm>>(message.Span)).IsEquivalentTo(Bcl.SHA384.HashData(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<HashAlgorithm<Sha512HashAlgorithm>>(message.Span)).IsEquivalentTo(Bcl.SHA512.HashData(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<HashAlgorithm<Sha224HashAlgorithm>>(message.Span)).IsEquivalentTo(HashIncrementally<HashAlgorithm<Sha224HashAlgorithm>>(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<HashAlgorithm<SM3HashAlgorithm>>(message.Span)).IsEquivalentTo(HashIncrementally<HashAlgorithm<SM3HashAlgorithm>>(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<HashAlgorithm<Blake2b256HashAlgorithm>>(message.Span)).IsEquivalentTo(HashIncrementally<HashAlgorithm<Blake2b256HashAlgorithm>>(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<HashAlgorithm<Blake2b512HashAlgorithm>>(message.Span)).IsEquivalentTo(HashIncrementally<HashAlgorithm<Blake2b512HashAlgorithm>>(message.Span), CollectionOrdering.Matching);
+			await Assert.That(Hash<Blake3HashAlgorithm>(message.Span)).IsEquivalentTo(HashIncrementally<Blake3HashAlgorithm>(message.Span), CollectionOrdering.Matching);
 		}
 	}
 
@@ -52,16 +52,16 @@ public class HashFinalBlockTest
 
 			for (int length = 0; length <= MaxLength; ++length)
 			{
-				byte[] message = source.AsSpan(0, length).ToArray();
-				await Assert.That(Mac<MD5HashAlgorithm>(key, message)).IsEquivalentTo(Bcl.HMACMD5.HashData(key, message), CollectionOrdering.Matching);
-				await Assert.That(Mac<Sha1HashAlgorithm>(key, message)).IsEquivalentTo(Bcl.HMACSHA1.HashData(key, message), CollectionOrdering.Matching);
-				await Assert.That(Mac<Sha256HashAlgorithm>(key, message)).IsEquivalentTo(Bcl.HMACSHA256.HashData(key, message), CollectionOrdering.Matching);
-				await Assert.That(Mac<Sha384HashAlgorithm>(key, message)).IsEquivalentTo(Bcl.HMACSHA384.HashData(key, message), CollectionOrdering.Matching);
-				await Assert.That(Mac<Sha512HashAlgorithm>(key, message)).IsEquivalentTo(Bcl.HMACSHA512.HashData(key, message), CollectionOrdering.Matching);
-				await Assert.That(Mac<Sha224HashAlgorithm>(key, message)).IsEquivalentTo(MacIncrementally<Sha224HashAlgorithm>(key, message), CollectionOrdering.Matching);
-				await Assert.That(Mac<SM3HashAlgorithm>(key, message)).IsEquivalentTo(MacIncrementally<SM3HashAlgorithm>(key, message), CollectionOrdering.Matching);
-				await Assert.That(Mac<Blake2b256HashAlgorithm>(key, message)).IsEquivalentTo(MacIncrementally<Blake2b256HashAlgorithm>(key, message), CollectionOrdering.Matching);
-				await Assert.That(Mac<Blake2b512HashAlgorithm>(key, message)).IsEquivalentTo(MacIncrementally<Blake2b512HashAlgorithm>(key, message), CollectionOrdering.Matching);
+				ReadOnlyMemory<byte> message = source.AsMemory(0, length);
+				await Assert.That(Mac<MD5HashAlgorithm>(key, message.Span)).IsEquivalentTo(Bcl.HMACMD5.HashData(key, message.Span), CollectionOrdering.Matching);
+				await Assert.That(Mac<Sha1HashAlgorithm>(key, message.Span)).IsEquivalentTo(Bcl.HMACSHA1.HashData(key, message.Span), CollectionOrdering.Matching);
+				await Assert.That(Mac<Sha256HashAlgorithm>(key, message.Span)).IsEquivalentTo(Bcl.HMACSHA256.HashData(key, message.Span), CollectionOrdering.Matching);
+				await Assert.That(Mac<Sha384HashAlgorithm>(key, message.Span)).IsEquivalentTo(Bcl.HMACSHA384.HashData(key, message.Span), CollectionOrdering.Matching);
+				await Assert.That(Mac<Sha512HashAlgorithm>(key, message.Span)).IsEquivalentTo(Bcl.HMACSHA512.HashData(key, message.Span), CollectionOrdering.Matching);
+				await Assert.That(Mac<Sha224HashAlgorithm>(key, message.Span)).IsEquivalentTo(MacIncrementally<Sha224HashAlgorithm>(key, message.Span), CollectionOrdering.Matching);
+				await Assert.That(Mac<SM3HashAlgorithm>(key, message.Span)).IsEquivalentTo(MacIncrementally<SM3HashAlgorithm>(key, message.Span), CollectionOrdering.Matching);
+				await Assert.That(Mac<Blake2b256HashAlgorithm>(key, message.Span)).IsEquivalentTo(MacIncrementally<Blake2b256HashAlgorithm>(key, message.Span), CollectionOrdering.Matching);
+				await Assert.That(Mac<Blake2b512HashAlgorithm>(key, message.Span)).IsEquivalentTo(MacIncrementally<Blake2b512HashAlgorithm>(key, message.Span), CollectionOrdering.Matching);
 			}
 		}
 	}
@@ -88,14 +88,14 @@ public class HashFinalBlockTest
 		return digest;
 	}
 
-	private static byte[] Mac<T>(byte[] key, byte[] message) where T : unmanaged, IHmacHashCore<T>
+	private static byte[] Mac<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> message) where T : unmanaged, IHmacHashCore<T>
 	{
 		byte[] mac = new byte[HmacAlgorithm<T>.MacLength];
 		HmacAlgorithm<T>.Mac(key, message, mac);
 		return mac;
 	}
 
-	private static byte[] MacIncrementally<T>(byte[] key, byte[] message) where T : unmanaged, IHmacHashCore<T>
+	private static byte[] MacIncrementally<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> message) where T : unmanaged, IHmacHashCore<T>
 	{
 		using HmacAlgorithm<T> hmac = HmacAlgorithm<T>.Create(key);
 

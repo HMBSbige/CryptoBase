@@ -162,29 +162,27 @@ public class Argon2idTest
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 	}
 
-	[Test]
-	[Arguments(-1)]
-	[Arguments(1)]
-	[Arguments(2)]
-	[Arguments(3)]
-	[Arguments(5)]
-	public async Task MaxDegreeOfParallelismDoesNotChangeTheKey(int maxDegreeOfParallelism)
+	public static IEnumerable<Func<Argon2Case>> ParallelismCases()
 	{
-		Argon2Case[] cases =
-		[
-			new(32, 3, 4, 32, 8, 16, 8, 12),
-			new(240, 2, 3, 32, 10, 16, 0, 0),
-			new(100, 2, 5, 64, 7, 9, 1, 1)
-		];
+		yield return () => new Argon2Case(32, 3, 4, 32, 8, 16, 8, 12);
+		yield return () => new Argon2Case(240, 2, 3, 32, 10, 16, 0, 0);
+		yield return () => new Argon2Case(100, 2, 5, 64, 7, 9, 1, 1);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(ParallelismCases))]
+	public async Task MaxDegreeOfParallelismDoesNotChangeTheKey(Argon2Case testCase)
+	{
+		byte[] expected = testCase.ComputeReference();
 
 		using (Assert.Multiple())
 		{
-			foreach (Argon2Case testCase in cases)
+			foreach (int maxDegreeOfParallelism in new[] { -1, 1, 2, 3, 5 })
 			{
 				byte[] actual = new byte[testCase.TagLength];
 				Argon2id.DeriveKey(testCase.Password, testCase.Salt, actual, testCase.Parameters, testCase.Secret, testCase.AssociatedData, maxDegreeOfParallelism);
 
-				await Assert.That(actual).IsEquivalentTo(testCase.ComputeReference(), CollectionOrdering.Matching);
+				await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"maxDegreeOfParallelism = {maxDegreeOfParallelism}");
 			}
 		}
 	}
