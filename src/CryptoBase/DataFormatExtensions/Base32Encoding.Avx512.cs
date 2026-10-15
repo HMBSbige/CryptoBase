@@ -814,8 +814,8 @@ public sealed partial class Base32Encoding
 	private static int DecodeUtf8Avx512(ReadOnlySpan<byte> source, Span<byte> destination, int fullLength, byte alphabetKind)
 	{
 		GetDecodeShuffleMap(alphabetKind, out Vector128<byte> deltaCheck128, out Vector128<byte> deltaRebase128, out byte mapLowerBound);
-		Vector512<byte> deltaCheck = Vector512.Create(deltaCheck128);
-		Vector512<byte> deltaRebase = Vector512.Create(deltaRebase128);
+		Vector512<byte> deltaCheck = Vector512.Broadcast(deltaCheck128);
+		Vector512<byte> deltaRebase = Vector512.Broadcast(deltaRebase128);
 		Vector512<byte> nibbleMask = Vector512.Create((byte)0x0f);
 		Vector512<sbyte> lowerBound = Vector512.Create((sbyte)mapLowerBound);
 		Vector512<byte> packIndices = Avx512DecodedPackIndicesVector;
@@ -859,8 +859,8 @@ public sealed partial class Base32Encoding
 	private static int DecodeCharsAvx512(ReadOnlySpan<char> source, Span<byte> destination, int fullLength, byte alphabetKind)
 	{
 		GetDecodeShuffleMap(alphabetKind, out Vector128<byte> deltaCheck128, out Vector128<byte> deltaRebase128, out byte mapLowerBound);
-		Vector512<byte> deltaCheck = Vector512.Create(deltaCheck128);
-		Vector512<byte> deltaRebase = Vector512.Create(deltaRebase128);
+		Vector512<byte> deltaCheck = Vector512.Broadcast(deltaCheck128);
+		Vector512<byte> deltaRebase = Vector512.Broadcast(deltaRebase128);
 		Vector512<byte> nibbleMask = Vector512.Create((byte)0x0f);
 		Vector512<sbyte> lowerBound = Vector512.Create((sbyte)mapLowerBound);
 		Vector512<byte> packIndices = Avx512DecodedPackIndicesVector;
