@@ -71,9 +71,19 @@ public abstract class SnuffleCipher : IStreamCipher
 	protected ulong CounterRemaining;
 
 	/// <summary>
-	/// Maximum counter value (number of blocks that can be processed)
+	/// Gets the last valid block counter.
 	/// </summary>
 	protected virtual ulong MaxCounter => ulong.MaxValue;
+
+	/// <summary>
+	/// Gets the number of blocks from <paramref name="counter" /> through <see cref="MaxCounter" />, inclusive.
+	/// </summary>
+	private protected ulong GetBlocksRemaining(ulong counter)
+	{
+		ulong distance = MaxCounter - counter;
+		// 2^64 blocks do not fit in a ulong; the dropped final block lies beyond 2^70 bytes.
+		return distance is ulong.MaxValue ? distance : distance + 1;
+	}
 
 	/// <inheritdoc />
 	public void Xor(ReadOnlySpan<byte> source, Span<byte> destination)

@@ -46,7 +46,11 @@ public class ChaCha20Cipher : SnuffleCipher
 	/// <inheritdoc />
 	protected override int UpdateBlocks(in Span<uint> stateSpan, in Span<byte> keyStream, in ReadOnlySpan<byte> source, in Span<byte> destination)
 	{
-		return ChaCha20Utils.XorBlocks(stateSpan, source, destination);
+		// XorBlocks advances words 12-13 as one 64-bit counter; undo its carry into nonce word 13 after block 0xFFFFFFFF.
+		uint nonce0 = stateSpan[13];
+		int processed = ChaCha20Utils.XorBlocks(stateSpan, source, destination);
+		stateSpan[13] = nonce0;
+		return processed;
 	}
 
 	/// <inheritdoc />
@@ -107,7 +111,7 @@ public class ChaCha20Cipher : SnuffleCipher
 	/// <param name="counter">The counter value for the next 64-byte keystream block.</param>
 	public void SetCounter(uint counter)
 	{
-		CounterRemaining = MaxCounter - counter;
+		CounterRemaining = GetBlocksRemaining(counter);
 		Index = 0;
 		ChaCha20Utils.GetCounter(ref StateRef) = counter;
 	}

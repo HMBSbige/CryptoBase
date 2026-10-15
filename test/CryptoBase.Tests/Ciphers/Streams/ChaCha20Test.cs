@@ -1,4 +1,7 @@
 using CryptoBase.Ciphers.Streams;
+using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Streams;
 
@@ -32,5 +35,33 @@ public class ChaCha20Test
 		crypto.Xor(plaintext, actual);
 		oracle.Xor(plaintext, expected);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
+	public async Task FinalCounterBlockMatchesOriginalCounterLayout()
+	{
+		byte[] key = CreateDeterministicSource(ChaCha20Cipher.KeySize);
+		byte[] nonce = CreateDeterministicSource(ChaCha20Cipher.IVSize);
+		byte[] source = CreateDeterministicSource(65);
+		byte[] expected = new byte[64];
+		byte[] actual = new byte[source.Length];
+		PrepareDestination(actual);
+
+		// IETF nonce word 13 occupies the high half of the original 64-bit counter.
+		using ChaCha20OriginalCipher oracle = new(key, nonce.AsSpan().Slice(4));
+		oracle.SetCounter((ulong)BinaryPrimitives.ReadUInt32LittleEndian(nonce) << 32 | uint.MaxValue);
+		oracle.Xor(source.AsSpan().Slice(0, expected.Length), expected);
+
+		// DTLS 1.3 and QUIC header protection take the counter from ciphertext, so it can be 0xFFFFFFFF.
+		using ChaCha20Cipher crypto = new(key, nonce);
+		crypto.SetCounter(uint.MaxValue);
+		crypto.Xor(source.AsSpan().Slice(0, 2), actual);
+		crypto.Xor(source.AsSpan().Slice(2, 62), actual.AsSpan().Slice(2));
+		await Assert.That(actual.AsMemory(0, 64)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+
+		crypto.Xor(ReadOnlySpan<byte>.Empty, Span<byte>.Empty);
+		await Assert.That(() => crypto.Xor(source.AsSpan().Slice(64), actual.AsSpan().Slice(64))).ThrowsExactly<ArgumentOutOfRangeException>();
+		await Assert.That(actual[64]).IsEqualTo(DestinationSentinel);
 	}
 }

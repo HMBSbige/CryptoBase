@@ -15,24 +15,31 @@ public class SnuffleCipherDataLimitTest
 		using SnuffleCipher crypto = cipher.Create();
 		using SnuffleCipher oracle = cipher.Create();
 		ulong penultimateCounter = cipher.MaxCounter - 1;
-		byte[] source = CreateDeterministicSource(65);
+		byte[] source = CreateDeterministicSource(129);
 		byte[] destination = new byte[source.Length];
-		byte[] expected = new byte[64];
+		byte[] expected = new byte[128];
 
 		SetCounter(crypto, penultimateCounter);
 		destination.AsSpan().Fill(DestinationSentinel);
 		await Assert.That(() => crypto.Xor(source, destination)).ThrowsExactly<ArgumentOutOfRangeException>();
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 
+		// The bulk path reaches the final counter block; the byte-wise oracle uses the single-block path.
 		SetCounter(oracle, penultimateCounter);
-		crypto.Xor(source.AsSpan().Slice(0, 64), destination);
-		oracle.Xor(source.AsSpan().Slice(0, 64), expected);
-		await Assert.That(destination.AsMemory(0, 64)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		crypto.Xor(source.AsSpan().Slice(0, 128), destination);
 
-		destination[64] = DestinationSentinel;
-		await Assert.That(() => crypto.Xor(source.AsSpan().Slice(64), destination.AsSpan().Slice(64))).ThrowsExactly<ArgumentOutOfRangeException>();
-		await Assert.That(destination[64]).IsEqualTo(DestinationSentinel);
+		for (int i = 0; i < expected.Length; ++i)
+		{
+			oracle.Xor(source.AsSpan(i, 1), expected.AsSpan(i, 1));
+		}
 
+		await Assert.That(destination.AsMemory(0, 128)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+
+		await Assert.That(() => crypto.Xor(source.AsSpan().Slice(128), destination.AsSpan().Slice(128))).ThrowsExactly<ArgumentOutOfRangeException>();
+		await Assert.That(destination[128]).IsEqualTo(DestinationSentinel);
+		crypto.Xor(ReadOnlySpan<byte>.Empty, Span<byte>.Empty);
+
+		// The rewound stream must still use the original nonce.
 		SetCounter(crypto, 0);
 		SetCounter(oracle, 0);
 		expected = new byte[source.Length];

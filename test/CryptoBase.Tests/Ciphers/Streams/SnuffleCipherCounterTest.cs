@@ -11,7 +11,7 @@ public class SnuffleCipherCounterTest
 	(
 		[MethodDataSource(typeof(SnuffleCipherTestUtils), nameof(CipherCases))]
 		SnuffleCase cipher,
-		[Arguments(1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 20, 24, 31, 32, 64)]
+		[Arguments(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 20, 24, 31, 32, 64)]
 		int blocksBeforeCarry
 	)
 	{
@@ -21,10 +21,10 @@ public class SnuffleCipherCounterTest
 		using SnuffleCipher byteWise = cipher.Create();
 		using SnuffleCipher bulk = cipher.Create();
 
-		// The IETF variant stops at this implementation's 32-bit counter limit.
-		// The 64-bit variants cross the low-word carry at different SIMD batch positions.
+		// The low-word carry falls at a different SIMD batch position in each case.
+		// The IETF variant ends at block 0xFFFFFFFF; the 64-bit variants continue across the carry.
 		ulong counter = (1UL << 32) - (ulong)blocksBeforeCarry;
-		int length = cipher.MaxCounter is uint.MaxValue ? (blocksBeforeCarry - 1) * 64 : source.Length;
+		int length = cipher.MaxCounter is uint.MaxValue ? blocksBeforeCarry * 64 : source.Length;
 		SetCounter(byteWise, counter);
 		SetCounter(bulk, counter);
 
@@ -34,6 +34,13 @@ public class SnuffleCipherCounterTest
 		}
 
 		bulk.Xor(source.AsSpan(0, length), actual);
+		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+
+		// A carry into IETF nonce word 13 would change the rewound stream.
+		SetCounter(byteWise, 0);
+		SetCounter(bulk, 0);
+		byteWise.Xor(source, expected);
+		bulk.Xor(source, actual);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
