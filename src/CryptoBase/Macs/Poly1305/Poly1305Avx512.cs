@@ -646,7 +646,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<uint> BroadcastEighth(ref Vector512<uint> value)
 	{
-		return Vector512.Create(Unsafe.As<Vector512<uint>, ulong>(ref value)).AsUInt32();
+		return Vector512.Create(value.GetElement(0));
 	}
 
 	public void AppendMessage(scoped ReadOnlySpan<byte> source)

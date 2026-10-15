@@ -7,6 +7,31 @@ namespace CryptoBase.Tests.Ciphers.Aead;
 
 public class ChaCha20Poly1305FusionTest
 {
+	[Test]
+	[Arguments(128)]
+	[Arguments(256)]
+	[Arguments(1024)]
+	public async Task EightWayAccumulatorMatchesScalarMac(int length)
+	{
+		if (!Poly1305Avx512.IsSupported)
+		{
+			Skip.Test("AVX-512 is unavailable.");
+		}
+		byte[] key = TestUtils.CreateDeterministicSource(32);
+		byte[] input = TestUtils.CreateDeterministicSource(length);
+		byte[] expected = new byte[16], actual = new byte[16];
+		Poly1305Software scalar = default;
+		Poly1305Software.Initialize(ref scalar, key);
+		scalar.AppendMessage(input);
+		scalar.WriteMac(expected);
+		Poly1305Avx512 vector = default;
+		Poly1305Avx512.Initialize(ref vector, key);
+		vector.GetEightWayAccumulator(out Vector512<ulong> h0, out Vector512<ulong> h1, out Vector512<ulong> h2, out Vector512<ulong> h3, out Vector512<ulong> h4);
+		vector.FinishEightWay(ref input[0], length, h0, h1, h2, h3, h4);
+		vector.WriteMac(actual);
+		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
 	private static readonly int[] Lengths = [512, 513, 1023, 1024, 1025, 1536, 2047, 3072, 4111, 65537];
 
 	[Test]
