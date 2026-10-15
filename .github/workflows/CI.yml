@@ -38,8 +38,27 @@ jobs:
       matrix:
         os:
           - windows-latest
-          - ubuntu-latest
           - macos-latest
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-latest
+            disable: AVX512v2
+          - os: ubuntu-latest
+            disable: AVX512
+          - os: ubuntu-latest
+            disable: VAES
+          - os: ubuntu-latest
+            disable: GFNI
+          - os: ubuntu-latest
+            disable: AVX2
+          - os: ubuntu-latest
+            disable: AVX
+          - os: ubuntu-latest
+            disable: SSE42
+          - os: ubuntu-latest
+            disable: AES
+          - os: ubuntu-latest
+            disable: HWIntrinsic
 
     steps:
       - uses: actions/checkout@v7
@@ -49,20 +68,25 @@ jobs:
         with:
           dotnet-version: ${{ env.NET_VERSION }}
       - uses: petarpetrovt/setup-sde@v6.0
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.disable != 'HWIntrinsic'
 
       - name: Build (Release)
         working-directory: .
         run: dotnet build -c Release
 
+      - name: Build instruction set probe
+        if: runner.os == 'Linux' && matrix.disable != 'HWIntrinsic'
+        run: dotnet build ../../.github/InstructionSets.cs -c Release -o ../../artifacts/bin/InstructionSets
+
       - name: Run tests (Release)
+        if: ${{ !matrix.disable }}
         run: &run-tests |
           export DOTNET_TieredCompilation=0
           test_runner=(dotnet)
           if [[ -n "${SDE_PATH:-}" && "${DOTNET_EnableHWIntrinsic:-1}" != 0 ]]; then
-            probe=../../.github/InstructionSets.cs
-            native=$(dotnet run --file "$probe" -c Release)
-            emulated=$(DOTNET_EnableDiagnostics=0 "$SDE_PATH/sde64" -spr -- dotnet run --file "$probe" -c Release --no-build)
+            probe=../../artifacts/bin/InstructionSets/InstructionSets.dll
+            native=$(dotnet "$probe")
+            emulated=$(DOTNET_EnableDiagnostics=0 "$SDE_PATH/sde64" -spr -- dotnet "$probe")
             missing=$(LC_ALL=C comm -13 <(printf '%s\n' "$native") <(printf '%s\n' "$emulated") | paste -sd,)
             if [[ -n "$missing" ]]; then
               test_runner=("$SDE_PATH/sde64" -spr -- dotnet)
@@ -77,52 +101,53 @@ jobs:
           "${test_runner[@]}" ../../artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --disable-logo --minimum-expected-tests 1
 
       - name: Run tests (Debug)
+        if: ${{ !matrix.disable }}
         run: dotnet test -c Debug --no-restore --disable-logo --minimum-expected-tests 1
 
       - name: Run tests (Disable AVX512v2)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.disable == 'AVX512v2'
         run: *run-tests
         env:
           DOTNET_EnableAVX512v2: 0
 
       - name: Run tests (Disable AVX512)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.disable == 'AVX512'
         run: *run-tests
         env:
           DOTNET_EnableAVX512: 0
 
       - name: Run tests (Disable VAES)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.disable == 'VAES'
         run: *run-tests
         env:
           DOTNET_EnableVAES: 0
 
       - name: Run tests (Disable GFNI)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.disable == 'GFNI'
         run: *run-tests
         env:
           DOTNET_EnableGFNI: 0
 
       - name: Run tests (Disable AVX2)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.disable == 'AVX2'
         run: *run-tests
         env:
           DOTNET_EnableAVX2: 0
 
       - name: Run tests (Disable AVX)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.disable == 'AVX'
         run: *run-tests
         env:
           DOTNET_EnableAVX: 0
 
       - name: Run tests (Disable x86-64-v2 intrinsics)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.disable == 'SSE42'
         run: *run-tests
         env:
           DOTNET_EnableSSE42: 0
 
       - name: Run tests (Disable AES)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.disable == 'AES'
         run: *run-tests
         env:
           DOTNET_EnableAES: 0
@@ -152,6 +177,7 @@ jobs:
           DOTNET_EnableArm64Sha256: 0
 
       - name: Run tests (Disable HWIntrinsic)
+        if: runner.os != 'Linux' || matrix.disable == 'HWIntrinsic'
         run: *run-tests
         env:
           DOTNET_EnableHWIntrinsic: 0
