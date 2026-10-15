@@ -57,10 +57,22 @@ jobs:
 
       - name: Run tests (Release)
         run: &run-tests |
+          export DOTNET_TieredCompilation=0
           test_runner=(dotnet)
-          if [[ -n "${SDE_PATH:-}" ]]; then
-            test_runner=("$SDE_PATH/sde64" -spr -- dotnet)
-            export DOTNET_EnableDiagnostics=0 DOTNET_TieredCompilation=0
+          if [[ -n "${SDE_PATH:-}" && "${DOTNET_EnableHWIntrinsic:-1}" != 0 ]]; then
+            probe=../../.github/InstructionSets.cs
+            native=$(dotnet run --file "$probe" -c Release)
+            emulated=$(DOTNET_EnableDiagnostics=0 "$SDE_PATH/sde64" -spr -- dotnet run --file "$probe" -c Release --no-build)
+            missing=$(LC_ALL=C comm -13 <(printf '%s\n' "$native") <(printf '%s\n' "$emulated") | paste -sd,)
+            if [[ -n "$missing" ]]; then
+              test_runner=("$SDE_PATH/sde64" -spr -- dotnet)
+              export DOTNET_EnableDiagnostics=0
+              echo "Runner: SDE; missing: ${missing//,/, }"
+            else
+              echo "Runner: native"
+            fi
+          else
+            echo "Runner: native"
           fi
           "${test_runner[@]}" ../../artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --disable-logo --minimum-expected-tests 1
 
