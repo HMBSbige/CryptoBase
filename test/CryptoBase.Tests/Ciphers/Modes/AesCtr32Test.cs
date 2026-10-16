@@ -12,12 +12,14 @@ public class AesCtr32Test
 {
 	[Test]
 	[MatrixDataSource]
-	public async Task CountersWrapWithoutChangingNonce(
+	public async Task CountersWrapWithoutChangingNonce
+	(
 		[Matrix(16, 24, 32)] int keyLength,
 		[Matrix(2u, 0xFFFFFFFEu)] uint initialCounter,
 		[Matrix(32, 48, 64, 128, 256, 4096)] int fullLength,
 		[Matrix(0, 1, 15)] int tailLength,
-		[Matrix] bool inPlace)
+		[Matrix] bool inPlace
+	)
 	{
 		if (!AesCipherX86.IsSupported && !AesCipherArm.IsSupported)
 		{

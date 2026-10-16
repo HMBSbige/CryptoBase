@@ -125,10 +125,12 @@ internal struct AesCipherX86 : IDisposable, IAesVectorCore
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void KeyRound(
+		static void KeyRound
+		(
 			out Vector128<byte> a, out Vector128<byte> b, out Vector128<byte> c,
 			ref Vector128<byte> t0, ref Vector128<byte> t1,
-			[ConstantExpected] byte rcon0, [ConstantExpected] byte rcon1)
+			[ConstantExpected] byte rcon0, [ConstantExpected] byte rcon1
+		)
 		{
 			a = t0;
 			b = t1;

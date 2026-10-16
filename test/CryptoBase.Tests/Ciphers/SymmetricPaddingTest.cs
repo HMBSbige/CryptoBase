@@ -41,9 +41,11 @@ public class SymmetricPaddingTest
 	[MatrixExclusion(PaddingMode.None, 1)]
 	[MatrixExclusion(PaddingMode.None, 15)]
 	[MatrixExclusion(PaddingMode.None, 17)]
-	public async Task InteroperatesWithBclPadding(
+	public async Task InteroperatesWithBclPadding
+	(
 		[Matrix(PaddingMode.None, PaddingMode.Zeros, PaddingMode.PKCS7, PaddingMode.ANSIX923, PaddingMode.ISO10126)] PaddingMode mode,
-		[Matrix(0, 1, 15, 16, 17, 32)] int length)
+		[Matrix(0, 1, 15, 16, 17, 32)] int length
+	)
 	{
 		using Aes aes = Aes.Create();
 		aes.Key = new byte[16];
