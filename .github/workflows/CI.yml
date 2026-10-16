@@ -100,6 +100,10 @@ jobs:
           fi
           "${test_runner[@]}" ../../artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --disable-logo --minimum-expected-tests 1
 
+      - name: Run tests (Release, tiered compilation)
+        if: ${{ !matrix.disable }}
+        run: dotnet ../../artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --disable-logo --minimum-expected-tests 1
+
       - name: Run tests (Debug)
         if: ${{ !matrix.disable }}
         run: dotnet test -c Debug --no-restore --disable-logo --minimum-expected-tests 1
