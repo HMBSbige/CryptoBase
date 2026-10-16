@@ -291,15 +291,21 @@ internal partial struct Sha512Core
 
 		Vector256<ulong> previous = Vector256.Shuffle(words3, Vector256.Create(2ul, 3, 2, 3));
 		Vector256<ulong> previousSigma = SmallSigma1Avx2(previous);
-		result += Avx2.Permute2x128(previousSigma, Vector256<ulong>.Zero, 0x20);
+		result += previousSigma.GetLower().ToVector256();
 
 		Vector256<ulong> dependentSigma = SmallSigma1Avx2(result);
-		return result + Avx2.Permute2x128(Vector256<ulong>.Zero, dependentSigma, 0x20);
+		// Move the low half to the upper half and zero the lower half.
+		return result + Avx2.Permute2x128(dependentSigma, dependentSigma, 0x08);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<ulong> ShiftOneWordAvx2(Vector256<ulong> lower, Vector256<ulong> upper)
 	{
+		if (Avx512F.VL.IsSupported)
+		{
+			return Avx512F.VL.AlignRight64(upper, lower, 1);
+		}
+
 		Vector256<ulong> middle = Avx2.Permute2x128(lower, upper, 0x21);
 		return Avx2.AlignRight(middle, lower, 8);
 	}

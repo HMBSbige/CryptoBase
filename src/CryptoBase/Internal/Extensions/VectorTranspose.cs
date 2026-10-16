@@ -208,14 +208,14 @@ internal static class VectorTranspose
 		Vector256<uint> b6 = Avx2.UnpackLow(t6.AsUInt64(), t7.AsUInt64()).AsUInt32();
 		Vector256<uint> b7 = Avx2.UnpackHigh(t6.AsUInt64(), t7.AsUInt64()).AsUInt32();
 
-		x0 = Avx2.Permute2x128(b0, b4, 0x20);
-		x4 = Avx2.Permute2x128(b0, b4, 0x31);
-		x1 = Avx2.Permute2x128(b1, b5, 0x20);
-		x5 = Avx2.Permute2x128(b1, b5, 0x31);
-		x2 = Avx2.Permute2x128(b2, b6, 0x20);
-		x6 = Avx2.Permute2x128(b2, b6, 0x31);
-		x3 = Avx2.Permute2x128(b3, b7, 0x20);
-		x7 = Avx2.Permute2x128(b3, b7, 0x31);
+		x4 = Vector256.ConcatUpper(b0, b4);
+		x0 = Vector256.ConcatLower(b0, b4);
+		x5 = Vector256.ConcatUpper(b1, b5);
+		x1 = Vector256.ConcatLower(b1, b5);
+		x6 = Vector256.ConcatUpper(b2, b6);
+		x2 = Vector256.ConcatLower(b2, b6);
+		x7 = Vector256.ConcatUpper(b3, b7);
+		x3 = Vector256.ConcatLower(b3, b7);
 	}
 
 	// Transpose four word-major vectors into one 16-byte chunk per stream block.

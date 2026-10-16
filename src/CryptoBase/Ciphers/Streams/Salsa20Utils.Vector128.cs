@@ -142,9 +142,9 @@ internal static partial class Salsa20Utils
 		Vector128<uint> t2 = VectorTranspose.ZipLow(a3, a0);
 		Vector128<uint> t3 = VectorTranspose.ZipHigh(a3, a0);
 		a1 = VectorTranspose.ZipLow(t0.AsUInt64(), t2.AsUInt64()).AsUInt32();
-		a2 = Vector128.Create(t0.GetUpper(), t2.GetUpper()).RotateWordsLeft(3);
+		a2 = VectorTranspose.ZipHigh(t0.AsUInt64(), t2.AsUInt64()).AsUInt32().RotateWordsLeft(3);
 		a3 = VectorTranspose.ZipLow(t1.AsUInt64(), t3.AsUInt64()).AsUInt32().RotateWordsLeft(2);
-		a0 = Vector128.Create(t1.GetUpper(), t3.GetUpper()).RotateWordsLeft(1);
+		a0 = VectorTranspose.ZipHigh(t1.AsUInt64(), t3.AsUInt64()).AsUInt32().RotateWordsLeft(1);
 		Vector128<uint> b0 = a0;
 		Vector128<uint> b1 = a1;
 		Vector128<uint> b2 = a2;

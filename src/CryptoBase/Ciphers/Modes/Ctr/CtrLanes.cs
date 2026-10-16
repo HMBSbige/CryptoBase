@@ -12,7 +12,7 @@ internal static class CtrLanes<TIncrementer> where TIncrementer : struct, ICtrIn
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static Vector512<byte> Create4(Vector128<byte> current)
 	{
-		return TIncrementer.Add0123(Vector512.Create(current));
+		return TIncrementer.Add0123(Vector512.Broadcast(current));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

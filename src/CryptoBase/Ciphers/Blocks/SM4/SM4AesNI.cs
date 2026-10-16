@@ -45,6 +45,6 @@ internal readonly partial struct SM4AesNI : ISM4Kernel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static uint SubByte(uint value)
 	{
-		return Substitute(Vector128.Create(value).AsByte()).AsUInt32().ToScalar();
+		return Substitute(Vector128.CreateScalar(value).AsByte()).AsUInt32().ToScalar();
 	}
 }

@@ -174,7 +174,7 @@ internal static partial class SM4Layout
 			return Vector512.LoadUnsafe(ref source, offset);
 		}
 
-		Vector256<byte> upper = count > 2 ? Vector256.Create(Vector128.LoadUnsafe(ref source, offset + 32), Vector128<byte>.Zero) : Vector256<byte>.Zero;
+		Vector256<byte> upper = count > 2 ? Vector128.LoadUnsafe(ref source, offset + 32).ToVector256() : Vector256<byte>.Zero;
 		return Vector512.Create(LoadPairX86(count, ref source, offset), upper);
 	}
 

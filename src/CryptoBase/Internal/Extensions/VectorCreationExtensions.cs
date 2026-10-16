@@ -52,6 +52,30 @@ internal static class VectorCreationExtensions
 
 	extension(Vector256)
 	{
+		// ToVector256Unsafe leaves the upper half undefined, but the shuffle reads only elements 0 and 1.
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector256<T> Broadcast<T>(Vector128<T> value) where T : unmanaged
+		{
+			return Vector256.Shuffle(value.AsUInt64().ToVector256Unsafe(), Vector256.Create(0UL, 1UL, 0UL, 1UL)).As<ulong, T>();
+		}
+
+		// vinserti128 matches vperm2i128 and vshufi64x2 on Intel P-cores and has lower latency on AMD and Intel E-cores.
+		// The JIT copies right before taking its lower half while right is still live, so call ConcatUpper first when both halves are needed.
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector256<T> ConcatLower<T>(Vector256<T> left, Vector256<T> right) where T : unmanaged
+		{
+			return left.WithUpper(right.GetLower());
+		}
+
+		// ConcatUpper requires AVX2. vperm2i128 has no EVEX form and can only use ymm0-15, so prefer vshufi64x2 when AVX-512VL allows ymm16-31.
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector256<T> ConcatUpper<T>(Vector256<T> left, Vector256<T> right) where T : unmanaged
+		{
+			return Avx512F.VL.IsSupported
+				? Avx512F.VL.Shuffle2x128(left.AsUInt64(), right.AsUInt64(), 3).As<ulong, T>()
+				: Avx2.Permute2x128(left.AsUInt64(), right.AsUInt64(), 0x31).As<ulong, T>();
+		}
+
 		// Creates [a, 0, b, 0, c, 0, d, 0].
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Vector256<uint> CreateUInt32EvenLanes(uint a, uint b, uint c, uint d)

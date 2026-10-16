@@ -16,7 +16,7 @@ internal static partial class Crc32Vectorized
 
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
-		Vector512<ulong> x1 = Vector512.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector512.CreateScalar((ulong)state);
+		Vector512<ulong> x1 = Vector512.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector512.CreateScalar(state).AsUInt64();
 		Vector512<ulong> x2 = Vector512.LoadUnsafe(ref sourceRef, 64).AsUInt64();
 		Vector512<ulong> x3 = Vector512.LoadUnsafe(ref sourceRef, 128).AsUInt64();
 		Vector512<ulong> x4 = Vector512.LoadUnsafe(ref sourceRef, 192).AsUInt64();
@@ -103,7 +103,7 @@ internal static partial class Crc32Vectorized
 
 		if (length >= Avx2EightStreamThresholdInBytes)
 		{
-			x1 = Vector256.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector256.CreateScalar((ulong)state);
+			x1 = Vector256.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector256.CreateScalar(state).AsUInt64();
 			x2 = Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64();
 			x3 = Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64();
 			x4 = Vector256.LoadUnsafe(ref sourceRef, 96).AsUInt64();
@@ -144,7 +144,7 @@ internal static partial class Crc32Vectorized
 		}
 		else
 		{
-			x1 = Vector256.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector256.CreateScalar((ulong)state);
+			x1 = Vector256.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector256.CreateScalar(state).AsUInt64();
 			x2 = Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64();
 			x3 = Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64();
 			x4 = Vector256.LoadUnsafe(ref sourceRef, 96).AsUInt64();
@@ -215,7 +215,7 @@ internal static partial class Crc32Vectorized
 
 		if (length >= 8 * Vector128<byte>.Count)
 		{
-			x1 = Load(ref sourceRef, 0) ^ Vector128.CreateScalar((ulong)state);
+			x1 = Load(ref sourceRef, 0) ^ Vector128.CreateScalar(state).AsUInt64();
 			Vector128<ulong> x2 = Load(ref sourceRef, 16);
 			Vector128<ulong> x3 = Load(ref sourceRef, 32);
 			Vector128<ulong> x4 = Load(ref sourceRef, 48);
@@ -238,7 +238,7 @@ internal static partial class Crc32Vectorized
 		}
 		else
 		{
-			x1 = Load(ref sourceRef, 0) ^ Vector128.CreateScalar((ulong)state);
+			x1 = Load(ref sourceRef, 0) ^ Vector128.CreateScalar(state).AsUInt64();
 			sourceRef = ref Unsafe.Add(ref sourceRef, Vector128<byte>.Count);
 			length -= Vector128<byte>.Count;
 		}

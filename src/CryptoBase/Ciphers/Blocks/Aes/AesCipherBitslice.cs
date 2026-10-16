@@ -31,7 +31,7 @@ internal partial struct AesCipherBitslice : IDisposable
 		for (int round = 0; round <= _rounds; ++round)
 		{
 			ref InlineArray8<Vector128<byte>> roundKey = ref _roundKeys[round];
-			Vector128<byte> keyBytes = Vector128.Create(words[round * 4], words[round * 4 + 1], words[round * 4 + 2], words[round * 4 + 3]).AsByte();
+			Vector128<byte> keyBytes = Vector128.Create(words.Slice(round * 4, 4)).AsByte();
 			((Span<Vector128<byte>>)roundKey).Fill(TransposeBytes(keyBytes));
 			Transpose(ref roundKey);
 

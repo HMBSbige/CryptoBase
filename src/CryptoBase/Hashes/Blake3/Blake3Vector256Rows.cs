@@ -258,13 +258,15 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void StoreChainingValues(Vector256<uint> h0, Vector256<uint> h1, nuint count, ref byte output)
 	{
+		Vector256<uint> upper = Vector256.ConcatUpper(h0, h1);
+
 		if (count is 2)
 		{
-			Vector256.Create(h0.GetLower(), h1.GetLower()).AsByte().StoreUnsafe(ref output);
+			Vector256.ConcatLower(h0, h1).AsByte().StoreUnsafe(ref output);
 			output = ref Unsafe.Add(ref output, OutLength);
 		}
 
-		Vector256.Create(h0.GetUpper(), h1.GetUpper()).AsByte().StoreUnsafe(ref output);
+		upper.AsByte().StoreUnsafe(ref output);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
