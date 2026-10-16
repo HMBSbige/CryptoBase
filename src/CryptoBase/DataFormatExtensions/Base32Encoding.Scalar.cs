@@ -3,6 +3,7 @@ namespace CryptoBase.DataFormatExtensions;
 public sealed partial class Base32Encoding
 {
 	private const int Pack5FastOverReadBytes = sizeof(ulong) - InputBytesPerBlock;
+	private const ulong ByteLaneOnes = 0x0101_0101_0101_0101;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong Pack5(ref byte source)
@@ -17,7 +18,22 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong Pack5Fast(ref byte source)
 	{
-		return BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ulong>(ref source)) >> 24;
+		ulong value = Unsafe.ReadUnaligned<ulong>(ref source);
+		return (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value) >> 24;
+	}
+
+	// T is char or byte, and the type test folds at JIT time. Generic CreateChecked goes through the INumberBase conversion methods and is
+	// only free when they all inline; once a large caller runs out of inline budget, every symbol pays for those calls.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static T ToSymbol<T>(byte value) where T : unmanaged
+	{
+		return typeof(T) == typeof(char) ? Unsafe.BitCast<char, T>((char)value) : Unsafe.BitCast<byte, T>(value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static int FromSymbol<T>(T symbol) where T : unmanaged
+	{
+		return typeof(T) == typeof(char) ? Unsafe.BitCast<T, char>(symbol) : Unsafe.BitCast<T, byte>(symbol);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -79,40 +95,118 @@ public sealed partial class Base32Encoding
 		}
 	}
 
+	// The final one to four bytes, big-endian in the top of a uint and zero filled. Inputs of four bytes or more read the last four bytes and
+	// shift the already encoded ones out, so the common case is one load without a branch per byte.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void EncodeTail<T>(ReadOnlySpan<byte> source, Span<T> destination) where T : unmanaged, INumberBase<T>
+	private static uint ReadTail(ReadOnlySpan<byte> source, int remaining)
 	{
-		uint value = 0;
-
-		switch (source.Length)
+		if (source.Length >= sizeof(uint))
 		{
-			case 4:
+			uint last = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), source.Length - sizeof(uint)));
+			return (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(last) : last) << (sizeof(uint) - remaining) * 8;
+		}
+
+		uint value = (uint)source[0] << 24;
+
+		if (remaining > 1)
+		{
+			value |= (uint)source[1] << 16;
+		}
+
+		if (remaining > 2)
+		{
+			value |= (uint)source[2] << 8;
+		}
+
+		return value;
+	}
+
+	// Spreads the eight 5-bit values of a block into the bytes of a ulong, first symbol in the lowest byte: each step moves the upper half of
+	// every field up, so 40 bits become two 20-bit, four 10-bit and finally eight 5-bit fields.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static ulong SplitBlockValues(ulong block)
+	{
+		block = block & 0xF_FFFF | (block & 0xFF_FFF0_0000) << 12;
+		block = block & 0x03FF_0000_03FF | (block & 0x000F_FC00_000F_FC00) << 6;
+		block = block & 0x001F_001F_001F_001F | (block & 0x03E0_03E0_03E0_03E0) << 3;
+		return BinaryPrimitives.ReverseEndianness(block);
+	}
+
+	// SWAR form of the SIMD encode map: bytes above the threshold get the second offset. Values stay below 32 and symbols below 128,
+	// so no addition carries into the next byte.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static ulong MapBlockSymbols(ulong values, byte alphabetKind)
+	{
+		GetEncodeMap(alphabetKind, out byte threshold, out byte first, out byte second);
+		ulong above = (values + ByteLaneOnes * (byte)(0x7F - threshold) >> 7 & ByteLaneOnes) * byte.MaxValue;
+		return values + (ByteLaneOnes * first ^ above & ByteLaneOnes * (byte)(first ^ second));
+	}
+
+	// The eight values index the 32-byte custom table at once: two 16-entry shuffles on x86, where bit 4 of each value picks the half, and
+	// one two-register table lookup on ARM64. Elsewhere eight independent loads; a loop over the symbol count would chain them through the
+	// accumulator.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static ulong LookupBlockSymbols(ulong values, ref byte alphabet)
+	{
+		if (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported)
+		{
+			Vector128<byte> indices = Vector128.CreateScalarUnsafe(values).AsByte();
+			Vector128<byte> low = Vector128.LoadUnsafe(ref alphabet);
+			Vector128<byte> high = Vector128.LoadUnsafe(ref alphabet, 16);
+			Vector128<byte> symbols = AdvSimd.Arm64.IsSupported
+				? AdvSimd.Arm64.VectorTableLookup((low, high), indices)
+				: Vector128.ConditionalSelect(Vector128.GreaterThan(indices.AsSByte(), Vector128.Create((sbyte)15)).AsByte(), Ssse3.Shuffle(high, indices), Ssse3.Shuffle(low, indices));
+			return symbols.AsUInt64().ToScalar();
+		}
+
+		return Unsafe.Add(ref alphabet, (nuint)(values & SymbolMask))
+			| (ulong)Unsafe.Add(ref alphabet, (nuint)(values >> 8 & SymbolMask)) << 8
+			| (ulong)Unsafe.Add(ref alphabet, (nuint)(values >> 16 & SymbolMask)) << 16
+			| (ulong)Unsafe.Add(ref alphabet, (nuint)(values >> 24 & SymbolMask)) << 24
+			| (ulong)Unsafe.Add(ref alphabet, (nuint)(values >> 32 & SymbolMask)) << 32
+			| (ulong)Unsafe.Add(ref alphabet, (nuint)(values >> 40 & SymbolMask)) << 40
+			| (ulong)Unsafe.Add(ref alphabet, (nuint)(values >> 48 & SymbolMask)) << 48
+			| (ulong)Unsafe.Add(ref alphabet, (nuint)(values >> 56)) << 56;
+	}
+
+	// Builds the tail block as eight symbol bytes in one ulong: no per-symbol bounds checks and, for the built-in alphabets, no table loads.
+	// A padded block is always eight symbols and goes out in a single store.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void EncodeTail<T>(ReadOnlySpan<byte> source, int remaining, int symbolCount, Span<T> destination) where T : unmanaged
+	{
+		ulong values = SplitBlockValues((ulong)ReadTail(source, remaining) << 8);
+		ulong symbols = _alphabetKind is CustomAlphabetKind
+			? LookupBlockSymbols(values, ref MemoryMarshal.GetArrayDataReference(_alphabet))
+			: MapBlockSymbols(values, _alphabetKind);
+
+		if (destination.Length is OutputSymbolsPerBlock)
+		{
+			ulong keep = (1UL << symbolCount * 8) - 1;
+			symbols = symbols & keep | ByteLaneOnes * _padding & ~keep;
+
+			// The first symbol is the low byte, which a native store writes first only on little-endian.
+			if (!BitConverter.IsLittleEndian)
 			{
-				value |= source[3];
-				destination[6] = T.CreateChecked(_alphabet[(int)(value << 3 & SymbolMask)]);
-				destination[5] = T.CreateChecked(_alphabet[(int)(value >> 2 & SymbolMask)]);
-				goto case 3;
+				symbols = BinaryPrimitives.ReverseEndianness(symbols);
 			}
-			case 3:
+
+			ref T destinationReference = ref MemoryMarshal.GetReference(destination);
+
+			if (typeof(T) == typeof(char))
 			{
-				value |= (uint)source[2] << 8;
-				destination[4] = T.CreateChecked(_alphabet[(int)(value >> 7 & SymbolMask)]);
-				goto case 2;
+				Vector128.WidenLower(Vector128.CreateScalarUnsafe(symbols).AsByte()).StoreUnsafe(ref Unsafe.As<T, ushort>(ref destinationReference));
 			}
-			case 2:
+			else
 			{
-				value |= (uint)source[1] << 16;
-				destination[3] = T.CreateChecked(_alphabet[(int)(value >> 12 & SymbolMask)]);
-				destination[2] = T.CreateChecked(_alphabet[(int)(value >> 17 & SymbolMask)]);
-				goto case 1;
+				Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destinationReference), symbols);
 			}
-			case 1:
-			{
-				value |= (uint)source[0] << 24;
-				destination[1] = T.CreateChecked(_alphabet[(int)(value >> 22 & SymbolMask)]);
-				destination[0] = T.CreateChecked(_alphabet[(int)(value >> 27 & SymbolMask)]);
-				break;
-			}
+
+			return;
+		}
+
+		for (int i = 0; i < destination.Length; ++i)
+		{
+			destination[i] = ToSymbol<T>((byte)(symbols >> i * 8));
 		}
 	}
 
@@ -255,7 +349,7 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private bool TryGetValue<T>(T symbol, out int value) where T : unmanaged, INumberBase<T>
 	{
-		int index = int.CreateChecked(symbol);
+		int index = FromSymbol(symbol);
 		byte[] decodeTable = _decodeTable;
 
 		if ((uint)index >= (uint)decodeTable.Length)

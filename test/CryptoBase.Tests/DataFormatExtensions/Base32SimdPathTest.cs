@@ -94,14 +94,40 @@ public class Base32SimdPathTest
 		Base32SimdPath path = GetSupportedPath(pathName);
 		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
 		byte[] source = CreateDeterministicSource(240);
+		byte[] encoded = new byte[encoding.GetEncodedLength(source.Length)];
+
+		await Assert.That(encoding.EncodeUtf8BlocksPath(source, encoded, path)).IsGreaterThan(0);
+		await Assert.That(encoding.EncodeCharsBlocksPath(source, new char[encoded.Length], path)).IsGreaterThan(0);
+		await Assert.That(GetEncodeMismatches(encoding, source, path)).IsEmpty();
+	}
+
+	// Auto picks the short, overlapping and tail paths from the source and destination lengths, so every length pair is compared with Scalar.
+	[Test]
+	[MatrixDataSource]
+	public async Task AutoEncodeMatchesScalarForEveryDestinationLength([Matrix("rfc", "hex", "custom")] string alphabet, [Matrix] bool omitPadding)
+	{
+		Base32Encoding encoding = alphabet switch
+		{
+			"hex" => Base32Encoding.Rfc4648Hex,
+			"custom" => Base32Encoding.Create("abcdefghijklmnopqrstuvwxyz234567"),
+			_ => Base32Encoding.Rfc4648,
+		};
+
+		if (omitPadding)
+		{
+			encoding = encoding.OmitPadding;
+		}
+
+		await Assert.That(GetEncodeMismatches(encoding, CreateDeterministicSource(240), Base32SimdPath.Auto)).IsEmpty();
+	}
+
+	private static List<string> GetEncodeMismatches(Base32Encoding encoding, byte[] source, Base32SimdPath path)
+	{
 		byte[] utf8Expected = new byte[encoding.GetEncodedLength(source.Length)];
 		byte[] utf8Actual = new byte[utf8Expected.Length];
 		char[] charsExpected = new char[utf8Expected.Length];
 		char[] charsActual = new char[utf8Expected.Length];
 		List<string> failures = [];
-
-		await Assert.That(encoding.EncodeUtf8BlocksPath(source, utf8Actual, path)).IsGreaterThan(0);
-		await Assert.That(encoding.EncodeCharsBlocksPath(source, charsActual, path)).IsGreaterThan(0);
 
 		for (int length = 0; length <= source.Length; ++length)
 		{
@@ -130,7 +156,7 @@ public class Base32SimdPathTest
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
 	private static Base32SimdPath GetSupportedPath(string pathName)

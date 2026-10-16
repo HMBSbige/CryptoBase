@@ -207,13 +207,7 @@ public sealed partial class Base32Encoding
 			return OperationStatus.DestinationTooSmall;
 		}
 
-		EncodeTail(source.Slice(sourceOffset, remaining), destination.Slice(destinationOffset));
-
-		if (!_omitPadding)
-		{
-			destination.Slice(destinationOffset + symbolCount, finalLength - symbolCount).Fill(T.CreateChecked(_padding));
-		}
-
+		EncodeTail(source, remaining, symbolCount, destination.Slice(destinationOffset, finalLength));
 		destinationOffset += finalLength;
 
 		bytesConsumed = source.Length;
@@ -229,50 +223,39 @@ public sealed partial class Base32Encoding
 
 		if (path is not Base32SimdPath.Auto)
 		{
-			int simdConsumed = EncodeCharsForced(source, destination, _alphabetKind, path);
+			int simdConsumed = EncodeCharsForced(source, destination, _alphabet, _alphabetKind, path);
 			sourceOffset += simdConsumed;
 			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
-		else if (source.Length >= X86EncodeCharsSimdThreshold && destination.Length >= 16 && _alphabetKind is not CustomAlphabetKind)
+		else if
+		(
+			source.Length >= (IsAvx512VbmiVlSupported() ? X86EncodeCharsSimdThreshold : EncodeShortSimdThreshold)
+			&& destination.Length >= 16
+			&& (_alphabetKind is not CustomAlphabetKind || AdvSimd.IsSupported)
+		)
 		{
 			int simdConsumed = AdvSimd.IsSupported
-				? EncodeCharsAdvSimdAuto(source, destination, sourceOffset, destinationOffset, _alphabetKind)
+				? EncodeCharsAdvSimdAuto(source, destination, sourceOffset, destinationOffset, _alphabet)
 				: EncodeCharsAuto(source, destination, _alphabetKind);
 			sourceOffset += simdConsumed;
 			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
 		else if
 		(
-			source.Length >= X86EncodeVbmiVl128Threshold
-			&& destination.Length >= 16
-			&& _alphabetKind is not CustomAlphabetKind
-			&& IsAvx512VbmiVlSupported()
-		)
-		{
-			sourceOffset = EncodeCharsAvx512VbmiVl128Single(source, destination, _alphabetKind);
-			destinationOffset = 16;
-		}
-		else if
-		(
 			_alphabetKind is CustomAlphabetKind
 			&& source.Length >= X86EncodeVector256Threshold && destination.Length >= 32
-			&& (IsAvx512VbmiVlSupported() || IsAvx512VbmiSupported())
+			&& Avx2.IsSupported
 		)
 		{
 			int simdConsumed = EncodeCharsCustomAuto(source, destination);
 			sourceOffset += simdConsumed;
 			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
-		else if
-		(
-			source.Length >= X86EncodeVbmiVl128Threshold
-			&& destination.Length >= 16
-			&& _alphabetKind is CustomAlphabetKind
-			&& IsAvx512VbmiVlSupported()
-		)
+		else if (source.Length >= X86EncodeVbmiVl128Threshold && destination.Length >= 16 && IsAvx512VbmiVlSupported())
 		{
-			sourceOffset = EncodeCharsAvx512VbmiVl128CustomSingle(source, destination, _alphabet);
-			destinationOffset = 16;
+			// Built-in and custom alphabets share one inlined copy: every instance keeps its alphabet in _alphabet.
+			sourceOffset = EncodeCharsAvx512VbmiVl128Short(source, destination, Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
+			destinationOffset = sourceOffset / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
 
 		int availableBlocks = (source.Length - sourceOffset) / InputBytesPerBlock;
@@ -304,11 +287,11 @@ public sealed partial class Base32Encoding
 
 		if (path is not Base32SimdPath.Auto)
 		{
-			simdConsumed = EncodeUtf8Forced(source, destination, _alphabetKind, path);
+			simdConsumed = EncodeUtf8Forced(source, destination, _alphabet, _alphabetKind, path);
 		}
 		else if (AdvSimd.IsSupported)
 		{
-			simdConsumed = EncodeUtf8Auto(source, destination, sourceOffset, destinationOffset, _alphabetKind);
+			simdConsumed = EncodeUtf8Auto(source, destination, sourceOffset, destinationOffset, _alphabet, _alphabetKind);
 		}
 		else if
 		(
@@ -323,7 +306,7 @@ public sealed partial class Base32Encoding
 		(
 			_alphabetKind is CustomAlphabetKind
 			&& source.Length >= X86EncodeVector256Threshold && destination.Length >= 32
-			&& (IsAvx512VbmiVlSupported() || IsAvx512VbmiSupported())
+			&& Avx2.IsSupported
 		)
 		{
 			simdConsumed = EncodeUtf8CustomAuto(source, destination);
@@ -336,7 +319,7 @@ public sealed partial class Base32Encoding
 			&& IsAvx512VbmiVlSupported()
 		)
 		{
-			simdConsumed = EncodeUtf8Avx512VbmiVl128CustomSingle(source, destination, _alphabet);
+			simdConsumed = EncodeUtf8Avx512VbmiVl128Short(source, destination, Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
 		}
 
 		sourceOffset += simdConsumed;
@@ -552,7 +535,7 @@ public sealed partial class Base32Encoding
 
 	private bool TryGetRawSymbolCount<T>(ReadOnlySpan<T> source, out int symbolCount) where T : unmanaged, INumberBase<T>
 	{
-		int unpaddedLength = source.TrimEnd(T.CreateChecked(_padding)).Length;
+		int unpaddedLength = source.TrimEnd(ToSymbol<T>(_padding)).Length;
 
 		return TryGetRawSymbolCount(source.Length, source.Length - unpaddedLength, out symbolCount);
 	}

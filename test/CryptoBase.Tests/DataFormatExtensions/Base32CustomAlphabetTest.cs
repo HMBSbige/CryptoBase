@@ -54,6 +54,43 @@ public class Base32CustomAlphabetTest
 	}
 
 	[Test]
+	public async Task CustomAlphabetEncodeMatchesReferenceForEveryLength()
+	{
+		const string alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+		const char padding = '~';
+		const char charSentinel = (char)0xA5A5;
+		Base32Encoding encoding = Base32Encoding.Create(alphabet, padding);
+		byte[] source = CreateDeterministicSource(240);
+		byte[] utf8Actual = new byte[encoding.GetEncodedLength(source.Length) + 64];
+		char[] charsActual = new char[utf8Actual.Length];
+		List<string> failures = [];
+
+		for (int length = 0; length <= source.Length; ++length)
+		{
+			ReadOnlySpan<byte> input = source.AsSpan(0, length);
+			char[] expected = EncodeReference(input, alphabet, padding, false);
+			byte[] expectedUtf8 = ToByteSymbols(expected);
+			PrepareDestination(utf8Actual);
+			charsActual.AsSpan().Fill(charSentinel);
+
+			OperationStatus utf8Status = encoding.EncodeToUtf8(input, utf8Actual.AsSpan(0, expected.Length), out int utf8Consumed, out int utf8Written);
+			OperationStatus charsStatus = encoding.EncodeToChars(input, charsActual.AsSpan(0, expected.Length), out int charsConsumed, out int charsWritten);
+
+			if (utf8Status is not OperationStatus.Done || utf8Consumed != length || utf8Written != expected.Length || !utf8Actual.AsSpan(0, expected.Length).SequenceEqual(expectedUtf8) || utf8Actual.AsSpan(expected.Length).ContainsAnyExcept(DestinationSentinel))
+			{
+				failures.Add($"UTF-8 {length}: {utf8Status}/{utf8Consumed}/{utf8Written}");
+			}
+
+			if (charsStatus is not OperationStatus.Done || charsConsumed != length || charsWritten != expected.Length || !charsActual.AsSpan(0, expected.Length).SequenceEqual(expected) || charsActual.AsSpan(expected.Length).ContainsAnyExcept(charSentinel))
+			{
+				failures.Add($"Chars {length}: {charsStatus}/{charsConsumed}/{charsWritten}");
+			}
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
+	[Test]
 	[MatrixDataSource]
 	public async Task CustomAlphabetCharDecodeReportsInvalidData([Matrix('!', '\u0080', '\u0100')] char invalidSymbol, [Matrix(15, 16, 63, 64, 127, 128, 255, 327)] int invalidOffset)
 	{
