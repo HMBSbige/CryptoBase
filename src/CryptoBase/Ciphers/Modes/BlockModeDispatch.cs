@@ -82,12 +82,25 @@ internal static class BlockModeDispatch
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryEncryptGcm<TCipher>(TCipher cipher, ref GHashKey hashKey, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData) where TCipher : IBlockEncryptor<TCipher>
 	{
-		if (AesGcmFusion.ShouldFuse(source.Length) && cipher is AesCipher aes)
+		if (AesGcmFusion.IsSupported && cipher is AesCipher aes)
 		{
 			AesGcmFusion.Encrypt(aes, ref hashKey, nonce, source, destination, tag, associatedData);
 			return true;
 		}
 
+		return false;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static bool TryDecryptGcm<TCipher>(TCipher cipher, ref GHashKey hashKey, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData, out bool authenticated) where TCipher : IBlockEncryptor<TCipher>
+	{
+		if (AesGcmFusion.IsSupported && cipher is AesCipher aes)
+		{
+			authenticated = AesGcmFusion.TryDecrypt(aes, ref hashKey, nonce, source, tag, destination, associatedData);
+			return true;
+		}
+
+		authenticated = false;
 		return false;
 	}
 

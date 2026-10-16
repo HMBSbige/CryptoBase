@@ -5,83 +5,36 @@ namespace CryptoBase.Ciphers.Modes.Gcm;
 internal static partial class AesGcmX86
 {
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static void Encrypt(in AesCipherX86 aes, Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref GHashKey hashKey, ref Vector128<byte> accumulator, ref Vector128<byte> tagMask, Vector128<byte> associatedDataBlock, Vector128<byte> lengthBlock)
+	internal static void Transform<TDirection>(in AesCipherX86 aes, Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref GHashKey hashKey, ref Vector128<byte> accumulator, ref Vector128<byte> tagMask, Vector128<byte> associatedDataBlock, Vector128<byte> lengthBlock) where TDirection : struct, IBlockDirection
 	{
 		tagMask = aes.Encrypt(tagMask);
 		ref readonly GHashVector128PrecomputedKey powers = ref hashKey.GetVector128().Value;
 		accumulator = accumulator.ReverseEndianness128();
-		int processed = source.Length >= WideThreshold
-			? Encrypt8(in aes, ref counter, source, destination, ref accumulator, in powers)
-			: 0;
+		int processed = 0;
 
-		if (source.Length - processed >= 64)
+		if (source.Length >= 64)
 		{
-			processed += Encrypt4(in aes, ref counter, source.Slice(processed), destination.Slice(processed), ref accumulator, in powers);
+			// The block kernels take no AAD block, so hash it first.
+			accumulator ^= HashBlock(associatedDataBlock, in powers);
+			associatedDataBlock = Vector128<byte>.Zero;
+
+			if (source.Length >= WideThreshold)
+			{
+				processed = Transform8<TDirection>(in aes, ref counter, source, destination, ref accumulator, in powers);
+			}
+
+			if (source.Length - processed >= 64)
+			{
+				processed += Transform4<TDirection>(in aes, ref counter, source.Slice(processed), destination.Slice(processed), ref accumulator, in powers);
+			}
 		}
 
-		accumulator = EncryptFinal(in aes, counter, ref Unsafe.Add(ref MemoryMarshal.GetReference(source), processed), ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), processed), source.Length - processed, associatedDataBlock, lengthBlock, accumulator, in powers);
+		accumulator = TransformFinal<TDirection>(in aes, counter, ref Unsafe.Add(ref MemoryMarshal.GetReference(source), processed), ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), processed), source.Length - processed, associatedDataBlock, lengthBlock, accumulator, in powers);
 		accumulator = accumulator.ReverseEndianness128();
 	}
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static bool Decrypt(in AesCipherX86 aes, Vector128<byte> counter, Vector128<byte> j0, ref byte input, ref byte output, int length, ref byte tag, ref GHashKey hashKey, Vector128<byte> accumulator, Vector128<byte> associatedDataBlock, Vector128<byte> lengthBlock)
-	{
-		Debug.Assert(length is >= 0 and <= AesGcmFusion.MaxFusedDecryptionLength);
-		Vector128<byte> tagMask = aes.Encrypt(j0);
-		ref readonly GHashVector128PrecomputedKey powers = ref hashKey.GetVector128().Value;
-		Vector128<byte> hash = accumulator.ReverseEndianness128();
-		int bulkLength = length & -64;
-		int finalLength = length - bulkLength;
-		ref byte finalInput = ref Unsafe.Add(ref input, bulkLength);
-		ref byte finalOutput = ref Unsafe.Add(ref output, bulkLength);
-
-		for (int offset = 0; offset < bulkLength; offset += 64)
-		{
-			hash = HashBlocks4(hash, associatedDataBlock, ref Unsafe.Add(ref input, offset), in powers);
-			associatedDataBlock = Vector128<byte>.Zero;
-		}
-
-		if (finalLength is 0)
-		{
-			hash = HashLengthBlock(hash, associatedDataBlock, lengthBlock, in powers);
-
-			if (!FixedTime.Equals16(hash.ReverseEndianness128() ^ tagMask, Vector128.LoadUnsafe(ref tag)))
-			{
-				MemoryMarshal.CreateSpan(ref output, length).ZeroMemory();
-				return false;
-			}
-
-			DecryptBlocks4(in aes, counter, ref input, ref output, bulkLength);
-			return true;
-		}
-
-		EncryptCounters4(in aes, counter, (uint)bulkLength / 16, out Vector128<byte> k0, out Vector128<byte> k1, out Vector128<byte> k2, out Vector128<byte> k3);
-		GcmFinalBlocks.Load(ref finalInput, finalLength, out Vector128<byte> c0, out Vector128<byte> c1, out Vector128<byte> c2, out Vector128<byte> c3);
-		hash = HashFinal(hash, associatedDataBlock, c0, c1, c2, c3, GcmFinalBlocks.GetBlockCount(finalLength), lengthBlock, in powers);
-
-		if (!FixedTime.Equals16(hash.ReverseEndianness128() ^ tagMask, Vector128.LoadUnsafe(ref tag)))
-		{
-			MemoryMarshal.CreateSpan(ref output, length).ZeroMemory();
-			return false;
-		}
-
-		DecryptBlocks4(in aes, counter, ref input, ref output, bulkLength);
-		GcmFinalBlocks.Xor(ref k0, ref k1, ref k2, ref k3, ref finalInput, ref finalOutput, finalLength);
-		return true;
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void DecryptBlocks4(in AesCipherX86 aes, Vector128<byte> counter, ref byte input, ref byte output, int length)
-	{
-		for (int offset = 0; offset < length; offset += 64)
-		{
-			EncryptCounters4(in aes, counter, (uint)offset / 16, out Vector128<byte> k0, out Vector128<byte> k1, out Vector128<byte> k2, out Vector128<byte> k3);
-			BlockXor.XorStore4(ref input, ref output, (nuint)offset, ref k0, ref k1, ref k2, ref k3);
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> EncryptFinal(in AesCipherX86 aes, Vector128<byte> counter, ref byte input, ref byte output, int length, Vector128<byte> associatedDataBlock, Vector128<byte> lengthBlock, Vector128<byte> accumulator, in GHashVector128PrecomputedKey powers)
+	private static Vector128<byte> TransformFinal<TDirection>(in AesCipherX86 aes, Vector128<byte> counter, ref byte input, ref byte output, int length, Vector128<byte> associatedDataBlock, Vector128<byte> lengthBlock, Vector128<byte> accumulator, in GHashVector128PrecomputedKey powers) where TDirection : struct, IBlockDirection
 	{
 		Debug.Assert(length is >= 0 and <= GcmFinalBlocks.MaxLength);
 
@@ -90,17 +43,26 @@ internal static partial class AesGcmX86
 			return HashLengthBlock(accumulator, associatedDataBlock, lengthBlock, in powers);
 		}
 
-		EncryptCounters4(in aes, counter, 0, out Vector128<byte> c0, out Vector128<byte> c1, out Vector128<byte> c2, out Vector128<byte> c3);
-		GcmFinalBlocks.Xor(ref c0, ref c1, ref c2, ref c3, ref input, ref output, length);
-		return HashFinal(accumulator, associatedDataBlock, c0, c1, c2, c3, GcmFinalBlocks.GetBlockCount(length), lengthBlock, in powers);
+		EncryptCounters4(in aes, counter, out Vector128<byte> k0, out Vector128<byte> k1, out Vector128<byte> k2, out Vector128<byte> k3);
+
+		if (TDirection.IsDecrypt)
+		{
+			// Load the ciphertext before writing plaintext, including when the buffers overlap.
+			GcmFinalBlocks.Load(ref input, length, out Vector128<byte> c0, out Vector128<byte> c1, out Vector128<byte> c2, out Vector128<byte> c3);
+			GcmFinalBlocks.Xor(ref k0, ref k1, ref k2, ref k3, ref input, ref output, length);
+			return HashFinal(accumulator, associatedDataBlock, c0, c1, c2, c3, GcmFinalBlocks.GetBlockCount(length), lengthBlock, in powers);
+		}
+
+		GcmFinalBlocks.Xor(ref k0, ref k1, ref k2, ref k3, ref input, ref output, length);
+		return HashFinal(accumulator, associatedDataBlock, k0, k1, k2, k3, GcmFinalBlocks.GetBlockCount(length), lengthBlock, in powers);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void EncryptCounters4(in AesCipherX86 aes, Vector128<byte> counter, uint offset, out Vector128<byte> k0, out Vector128<byte> k1, out Vector128<byte> k2, out Vector128<byte> k3)
+	private static void EncryptCounters4(in AesCipherX86 aes, Vector128<byte> counter, out Vector128<byte> k0, out Vector128<byte> k1, out Vector128<byte> k2, out Vector128<byte> k3)
 	{
-		uint value = BinaryPrimitives.ReverseEndianness(counter.AsUInt32().GetElement(3)) + offset;
+		uint value = BinaryPrimitives.ReverseEndianness(counter.AsUInt32().GetElement(3));
 		Vector128<byte> prefix = Sse41.IsSupported ? counter : counter & Vector128.Create(uint.MaxValue, uint.MaxValue, uint.MaxValue, 0u).AsByte();
-		k0 = CreateCounter(prefix, value);
+		k0 = counter;
 		k1 = CreateCounter(prefix, value + 1u);
 		k2 = CreateCounter(prefix, value + 2u);
 		k3 = CreateCounter(prefix, value + 3u);
@@ -108,13 +70,9 @@ internal static partial class AesGcmX86
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> HashBlocks4(Vector128<byte> accumulator, Vector128<byte> associatedDataBlock, ref byte input, in GHashVector128PrecomputedKey powers)
+	private static Vector128<byte> HashBlock(Vector128<byte> block, in GHashVector128PrecomputedKey powers)
 	{
-		MultiplyBlock(Vector128.LoadUnsafe(ref input), accumulator, in powers, 4, out Vector128<byte> lo, out Vector128<byte> hi);
-		AccumulateBlock(Vector128.LoadUnsafe(ref input, 16), in powers, 3, ref lo, ref hi);
-		AccumulateBlock(Vector128.LoadUnsafe(ref input, 32), in powers, 2, ref lo, ref hi);
-		AccumulateBlock(Vector128.LoadUnsafe(ref input, 48), in powers, 1, ref lo, ref hi);
-		AccumulateBlock(associatedDataBlock, in powers, 5, ref lo, ref hi);
+		MultiplyBlock(block, Vector128<byte>.Zero, in powers, 1, out Vector128<byte> lo, out Vector128<byte> hi);
 		return GHashX86.ReducePrepared(lo, hi);
 	}
 

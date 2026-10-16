@@ -203,7 +203,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 	{
 		ref byte ptr = ref MemoryMarshal.GetReference(source);
 		Vector256<byte> blocks = Vector256.LoadUnsafe(ref ptr).ReverseEndianness128();
-		blocks = Vector256.Create(blocks.GetLower() ^ accumulator, blocks.GetUpper());
+		blocks ^= accumulator.ToVector256();
 		Vector256<byte> firstKey = blockCount is 16 ? _key1615 : _key87;
 		Vector256<byte> firstReductionKey = blockCount is 16 ? _keyK1615 : _keyK87;
 		GFMultiplyPreparedUnreduced(blocks, firstKey, firstReductionKey, out Vector256<byte> lo, out Vector256<byte> hi);

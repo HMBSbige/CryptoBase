@@ -7,7 +7,7 @@ namespace CryptoBase.Ciphers.Modes.Gcm;
 internal static partial class AesGcmArm
 {
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static int Encrypt8(in AesCipherArm aes, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, in GHashArmPrecomputedKey powers, ref Vector128<byte> tagMask)
+	internal static int Transform8<TDirection>(in AesCipherArm aes, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, in GHashArmPrecomputedKey powers, ref Vector128<byte> tagMask) where TDirection : struct, IBlockDirection
 	{
 		int length = source.Length & -128;
 		Debug.Assert(destination.Length >= length);
@@ -21,28 +21,50 @@ internal static partial class AesGcmArm
 		ref byte output = ref MemoryMarshal.GetReference(destination);
 		ref readonly AesKeys roundKeys = ref aes.RoundKeys;
 		Vector128<uint> counterState = counter.ReverseEndianness32().AsUInt32();
-		Vector128<byte> c0 = NextCounter(ref counterState);
-		Vector128<byte> c1 = NextCounter(ref counterState);
-		Vector128<byte> c2 = NextCounter(ref counterState);
-		Vector128<byte> c3 = NextCounter(ref counterState);
-		Vector128<byte> c4 = NextCounter(ref counterState);
-		Vector128<byte> c5 = NextCounter(ref counterState);
-		Vector128<byte> c6 = NextCounter(ref counterState);
-		Vector128<byte> c7 = NextCounter(ref counterState);
+		Vector128<byte> c0 = default, c1 = default, c2 = default, c3 = default, c4 = default, c5 = default, c6 = default, c7 = default;
 
-		Vector128<byte> tagState = tagMask;
-		EncryptFirstBatch9(in aes, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7, ref tagState);
-		tagMask = tagState;
+		if (!TDirection.IsDecrypt)
+		{
+			c0 = NextCounter(ref counterState);
+			c1 = NextCounter(ref counterState);
+			c2 = NextCounter(ref counterState);
+			c3 = NextCounter(ref counterState);
+			c4 = NextCounter(ref counterState);
+			c5 = NextCounter(ref counterState);
+			c6 = NextCounter(ref counterState);
+			c7 = NextCounter(ref counterState);
 
-		BlockXor.XorStore8(ref input, ref output, 0, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7);
+			Vector128<byte> tagState = tagMask;
+			EncryptFirstBatch9(in aes, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7, ref tagState);
+			tagMask = tagState;
+
+			BlockXor.XorStore8(ref input, ref output, 0, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7);
+		}
+		else
+		{
+			tagMask = aes.Encrypt(tagMask);
+		}
+
 		Vector128<byte> hash = accumulator;
 		Vector128<byte> h8 = powers.Key8;
 		Vector128<byte> h7 = powers.Key7;
 		Vector128<byte> h6 = powers.Key6;
 		Vector128<byte> h5 = powers.Key5;
 
-		for (nint offset = 128; offset < length; offset += 128)
+		for (nint offset = TDirection.IsDecrypt ? 0 : 128; offset < length; offset += 128)
 		{
+			if (TDirection.IsDecrypt)
+			{
+				c0 = Vector128.LoadUnsafe(ref input, (nuint)offset);
+				c1 = Vector128.LoadUnsafe(ref input, (nuint)(offset + 16));
+				c2 = Vector128.LoadUnsafe(ref input, (nuint)(offset + 32));
+				c3 = Vector128.LoadUnsafe(ref input, (nuint)(offset + 48));
+				c4 = Vector128.LoadUnsafe(ref input, (nuint)(offset + 64));
+				c5 = Vector128.LoadUnsafe(ref input, (nuint)(offset + 80));
+				c6 = Vector128.LoadUnsafe(ref input, (nuint)(offset + 96));
+				c7 = Vector128.LoadUnsafe(ref input, (nuint)(offset + 112));
+			}
+
 			Vector128<byte> v0 = NextCounter(ref counterState);
 			Vector128<byte> v1 = NextCounter(ref counterState);
 			Vector128<byte> v2 = NextCounter(ref counterState);
@@ -78,15 +100,20 @@ internal static partial class AesGcmArm
 			BlockXor.XorStore8(ref input, ref output, (nuint)offset, ref c0, ref c1, ref c2, ref c3, ref c4, ref c5, ref c6, ref c7);
 		}
 
-		GHashArm.GFMultiplyUnreduced(AdvSimd.Arm64.ReverseElementBits(c0) ^ hash, h8, out Vector128<ulong> finalLow, out Vector128<ulong> finalHigh, out Vector128<ulong> finalMiddle);
-		GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c1), h7, ref finalLow, ref finalHigh, ref finalMiddle);
-		GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c2), h6, ref finalLow, ref finalHigh, ref finalMiddle);
-		GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c3), h5, ref finalLow, ref finalHigh, ref finalMiddle);
-		GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c4), powers.Key4, ref finalLow, ref finalHigh, ref finalMiddle);
-		GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c5), powers.Key3, ref finalLow, ref finalHigh, ref finalMiddle);
-		GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c6), powers.Key2, ref finalLow, ref finalHigh, ref finalMiddle);
-		GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c7), powers.Key1, ref finalLow, ref finalHigh, ref finalMiddle);
-		accumulator = ReduceHash(finalLow, finalHigh, finalMiddle);
+		if (!TDirection.IsDecrypt)
+		{
+			GHashArm.GFMultiplyUnreduced(AdvSimd.Arm64.ReverseElementBits(c0) ^ hash, h8, out Vector128<ulong> finalLow, out Vector128<ulong> finalHigh, out Vector128<ulong> finalMiddle);
+			GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c1), h7, ref finalLow, ref finalHigh, ref finalMiddle);
+			GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c2), h6, ref finalLow, ref finalHigh, ref finalMiddle);
+			GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c3), h5, ref finalLow, ref finalHigh, ref finalMiddle);
+			GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c4), powers.Key4, ref finalLow, ref finalHigh, ref finalMiddle);
+			GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c5), powers.Key3, ref finalLow, ref finalHigh, ref finalMiddle);
+			GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c6), powers.Key2, ref finalLow, ref finalHigh, ref finalMiddle);
+			GHashArm.AccumulateProduct(AdvSimd.Arm64.ReverseElementBits(c7), powers.Key1, ref finalLow, ref finalHigh, ref finalMiddle);
+			hash = ReduceHash(finalLow, finalHigh, finalMiddle);
+		}
+
+		accumulator = hash;
 		counter = counterState.ReverseEndianness32().AsByte();
 		return length;
 	}

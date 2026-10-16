@@ -28,24 +28,24 @@ internal readonly struct GHashVector512PrecomputedKey : IGHashPowers
 		_key1 = key;
 		GetFirstFourPowers(_key1, out Vector256<byte> key21, out Vector256<byte> key43);
 		Vector128<byte> key4 = key43.GetLower();
-		_key4321 = Vector512.Create(key43, key21);
-		Vector512<byte> key4444 = Vector512.Create(key4);
+		_key4321 = key43.ToVector512Unsafe().WithUpper(key21);
+		Vector512<byte> key4444 = Vector512.Broadcast(key4);
 		_key8765 = GFMultiply(_key4321, key4444);
 
 		Vector128<byte> key8 = _key8765.GetLower().GetLower();
-		Vector512<byte> key8888 = Vector512.Create(key8);
+		Vector512<byte> key8888 = Vector512.Broadcast(key8);
 		_key12111009 = GFMultiply(_key4321, key8888);
 		_key16151413 = GFMultiply(_key8765, key8888);
 
 		Vector128<byte> key16 = _key16151413.GetLower().GetLower();
-		Vector512<byte> key16161616 = Vector512.Create(key16);
+		Vector512<byte> key16161616 = Vector512.Broadcast(key16);
 		_key20191817 = GFMultiply(_key4321, key16161616);
 		_key24232221 = GFMultiply(_key8765, key16161616);
 		_key28272625 = GFMultiply(_key12111009, key16161616);
 		_key32313029 = GFMultiply(_key16151413, key16161616);
 
 		Vector128<byte> key32 = _key32313029.GetLower().GetLower();
-		Vector512<byte> key32323232 = Vector512.Create(key32);
+		Vector512<byte> key32323232 = Vector512.Broadcast(key32);
 		_key36353433 = GFMultiply(_key4321, key32323232);
 		_key40393837 = GFMultiply(_key8765, key32323232);
 		_key44434241 = GFMultiply(_key12111009, key32323232);
@@ -78,7 +78,7 @@ internal readonly struct GHashVector512PrecomputedKey : IGHashPowers
 				Vector512<byte> x1 = Vector512.LoadUnsafe(ref ptr, 1 * 4 * BlockSize).ReverseEndianness128();
 				Vector512<byte> x2 = Vector512.LoadUnsafe(ref ptr, 2 * 4 * BlockSize).ReverseEndianness128();
 				Vector512<byte> x3 = Vector512.LoadUnsafe(ref ptr, 3 * 4 * BlockSize).ReverseEndianness128();
-				x0 ^= Vector512.Create(Vector256.Create(accumulator, Vector128<byte>.Zero), Vector256<byte>.Zero);
+				x0 ^= accumulator.ToVector256().ToVector512();
 
 				GFMultiply(_key64636261, x0, out Vector512<uint> lo0, out Vector512<uint> hi0);
 				GFMultiply(_key60595857, x1, out Vector512<uint> lo1, out Vector512<uint> hi1);
@@ -299,7 +299,7 @@ internal readonly struct GHashVector512PrecomputedKey : IGHashPowers
 
 		Vector256<byte> lastTwo = Vector256.LoadUnsafe(ref ptr, offset);
 		Vector128<byte> lastSource = Vector128.LoadUnsafe(ref ptr, offset + 2 * BlockSize);
-		Vector512<byte> lastBlocks = Vector512.Create(lastTwo, Vector256.Create(lastSource, finalBlock)).ReverseEndianness128();
+		Vector512<byte> lastBlocks = lastTwo.ToVector512Unsafe().WithUpper(Vector256.Create(lastSource, finalBlock)).ReverseEndianness128();
 		GFMultiply(_key4321, lastBlocks, out Vector512<uint> lastLo, out Vector512<uint> lastHi);
 		accumulator = ReduceTo128(lo ^ lastLo, hi ^ lastHi);
 	}

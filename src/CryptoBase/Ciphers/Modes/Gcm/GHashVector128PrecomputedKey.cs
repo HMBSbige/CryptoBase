@@ -46,7 +46,7 @@ internal readonly struct GHashVector128PrecomputedKey : IGHashPowers
 			_key3 = key43.GetUpper();
 			_key4 = key43.GetLower();
 
-			Vector256<byte> key44 = Vector256.Create(_key4);
+			Vector256<byte> key44 = Vector256.ConcatLower(key43, key43);
 			Vector256<byte> keyK44 = GHashX86.GetReductionKey(key44);
 			_keyK4 = keyK44.GetLower();
 			Vector256<byte> key65 = GFMultiplyPrepared(key21, key44, keyK44);

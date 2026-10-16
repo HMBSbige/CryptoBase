@@ -19,7 +19,7 @@ public class AesGcmFusionTest
 
 	[Test]
 	[MatrixDataSource]
-	public async Task UnalignedAndInPlaceMessagesMatchBclAcrossBatchBoundaries([Matrix(16, 24, 32)] int keyLength, [Matrix(0, 17, 4097)] int associatedDataLength, [MatrixMethod<AesGcmFusionTest>(nameof(MessageLengths))] int length)
+	public async Task UnalignedAndInPlaceMessagesMatchBclAcrossBatchBoundaries([Matrix(16, 24, 32)] int keyLength, [Matrix(0, 13, 17, 4097)] int associatedDataLength, [MatrixMethod<AesGcmFusionTest>(nameof(MessageLengths))] int length)
 	{
 		byte[] key = CreateDeterministicSource(keyLength);
 		using GcmMode128<AesCipher> cipher = GcmMode128<AesCipher>.Create(key);
@@ -48,7 +48,7 @@ public class AesGcmFusionTest
 		await AssertOutput(tag, 7, expectedTag);
 
 		// Exercise the internal entry point as well as public dispatch.
-		if (AesGcmFusion.ShouldFuse(length))
+		if (AesGcmFusion.IsSupported)
 		{
 			PrepareDestination(destination);
 			PrepareDestination(tag);
@@ -63,16 +63,37 @@ public class AesGcmFusionTest
 			await AssertOutput(destination, 5, expected);
 			await AssertOutput(tag, 7, expectedTag);
 		}
+
+		PrepareDestination(destination);
+		await Assert.That(cipher.TryDecrypt(nonce, expected, expectedTag, destination.AsSpan(5), associatedData)).IsTrue();
+		await AssertOutput(destination, 5, plaintext);
+		expected.CopyTo(destination, 5);
+		await Assert.That(cipher.TryDecrypt(nonce, destination.AsSpan(5, length), expectedTag, destination.AsSpan(5), associatedData)).IsTrue();
+		await AssertOutput(destination, 5, plaintext);
+
+		if (AesGcmFusion.IsSupported)
+		{
+			PrepareDestination(destination);
+			await Assert.That(DecryptFused(key, nonce, expected, expectedTag, destination.AsSpan(5), associatedData)).IsTrue();
+			await AssertOutput(destination, 5, plaintext);
+			expected.CopyTo(destination, 5);
+			await Assert.That(DecryptFused(key, nonce, destination.AsSpan(5, length), expectedTag, destination.AsSpan(5), associatedData)).IsTrue();
+			await AssertOutput(destination, 5, plaintext);
+			expectedTag[15] ^= 1;
+			expected.CopyTo(destination, 5);
+			await Assert.That(DecryptFused(key, nonce, destination.AsSpan(5, length), expectedTag, destination.AsSpan(5), associatedData)).IsFalse();
+			await AssertOutput(destination, 5, new byte[length]);
+		}
 	}
 
 	public static IEnumerable<(int KeyLength, int Length, int AssociatedDataLength)> OverlappingAssociatedDataCases()
 	{
-		return [(16, 17, 16), (16, 63, 1), (24, 31, 15), (24, 63, 17), (32, 16, 16), (32, 63, 16), (16, 65, 4097), (24, 4097, 65), (32, 16385, 4097), (16, 513, 127), (24, 513, 128), (32, 513, 129)];
+		return [(16, 17, 16), (16, 63, 1), (24, 31, 15), (24, 63, 17), (32, 16, 16), (32, 63, 16), (16, 64, 16), (24, 129, 13), (32, 1024, 16), (16, 65, 4097), (24, 4097, 65), (32, 16385, 4097), (16, 513, 127), (24, 513, 128), (32, 513, 129)];
 	}
 
 	[Test]
 	[MatrixDataSource]
-	public async Task OverlappingAssociatedDataIsConsumedBeforeWritingCiphertext([MatrixMethod<AesGcmFusionTest>(nameof(OverlappingAssociatedDataCases))] (int KeyLength, int Length, int AssociatedDataLength) scenario)
+	public async Task OverlappingAssociatedDataIsConsumedBeforeWritingOutput([MatrixMethod<AesGcmFusionTest>(nameof(OverlappingAssociatedDataCases))] (int KeyLength, int Length, int AssociatedDataLength) scenario)
 	{
 		(int keyLength, int length, int associatedDataLength) = scenario;
 		const int destinationOffset = 7;
@@ -98,13 +119,25 @@ public class AesGcmFusionTest
 		await Assert.That(buffer).IsEquivalentTo(expectedBuffer, CollectionOrdering.Matching);
 		await Assert.That(actualTag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
 
-		if (AesGcmFusion.ShouldFuse(length))
+		if (AesGcmFusion.IsSupported)
 		{
 			originalBuffer.CopyTo(buffer, 0);
 			PrepareDestination(actualTag);
 			EncryptFused(key, nonce, plaintext, buffer.AsSpan().Slice(destinationOffset), actualTag, buffer.AsSpan().Slice(associatedDataOffset, associatedDataLength));
 			await Assert.That(buffer).IsEquivalentTo(expectedBuffer, CollectionOrdering.Matching);
 			await Assert.That(actualTag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
+		}
+
+		originalBuffer.CopyTo(buffer, 0);
+		plaintext.CopyTo(expectedBuffer, destinationOffset);
+		await Assert.That(cipher.TryDecrypt(nonce, expected, expectedTag, buffer.AsSpan(destinationOffset), buffer.AsSpan(associatedDataOffset, associatedDataLength))).IsTrue();
+		await Assert.That(buffer).IsEquivalentTo(expectedBuffer, CollectionOrdering.Matching);
+
+		if (AesGcmFusion.IsSupported)
+		{
+			originalBuffer.CopyTo(buffer, 0);
+			await Assert.That(DecryptFused(key, nonce, expected, expectedTag, buffer.AsSpan(destinationOffset), buffer.AsSpan(associatedDataOffset, associatedDataLength))).IsTrue();
+			await Assert.That(buffer).IsEquivalentTo(expectedBuffer, CollectionOrdering.Matching);
 		}
 	}
 
@@ -130,7 +163,12 @@ public class AesGcmFusionTest
 
 	[Test]
 	[MatrixDataSource]
-	public async Task KernelWrapsOnlyTheLowCounterWordAndHashesProcessedBatches([Matrix(16, 24, 32)] int keyLength, [MatrixMethod<AesGcmFusionTest>(nameof(KernelCases))] (int BlocksPerBatch, int Length, string CounterHex) scenario)
+	public Task KernelWrapsOnlyTheLowCounterWordAndHashesProcessedBatches([Matrix(16, 24, 32)] int keyLength, [MatrixMethod<AesGcmFusionTest>(nameof(KernelCases))] (int BlocksPerBatch, int Length, string CounterHex) scenario, [Matrix] bool decrypt)
+	{
+		return decrypt ? VerifyKernel<Decryption>(keyLength, scenario) : VerifyKernel<Encryption>(keyLength, scenario);
+	}
+
+	private static async Task VerifyKernel<TDirection>(int keyLength, (int BlocksPerBatch, int Length, string CounterHex) scenario) where TDirection : struct, IBlockDirection
 	{
 		if (!AesCipherArm.IsSupported && (!AesCipherX86.IsSupported || !GHashX86.IsSupported))
 		{
@@ -151,7 +189,7 @@ public class AesGcmFusionTest
 		byte[] expectedCounter = initialCounter.ToArray();
 		byte[] expected = EncryptCounterReference(reference, expectedCounter, plaintext.AsSpan().Slice(0, expectedProcessed));
 		Vector128<byte> expectedHash = initialHash;
-		GHashSoftware.AppendPaddedSegments(ref expectedHash, in hashKey, expected, default, default);
+		GHashSoftware.AppendPaddedSegments(ref expectedHash, in hashKey, TDirection.IsDecrypt ? plaintext.AsSpan(0, expectedProcessed) : expected, default, default);
 		byte[] expectedHashBytes = expectedHash.AsReadOnlySpan().ToArray();
 
 		Vector128<byte> counter = MemoryMarshal.Read<Vector128<byte>>(initialCounter);
@@ -160,8 +198,8 @@ public class AesGcmFusionTest
 		plaintext.CopyTo(source, 3);
 		byte[] destination = CreateGuardedBuffer(5, length);
 		int processed = AesCipherArm.IsSupported
-			? EncryptArmKernel(blocksPerBatch, key, ref counter, source.AsSpan().Slice(3, length), destination.AsSpan().Slice(5), ref accumulator, hashKey)
-			: EncryptX86Kernel(blocksPerBatch, key, ref counter, source.AsSpan().Slice(3, length), destination.AsSpan().Slice(5), ref accumulator, hashKey);
+			? TransformArmKernel<TDirection>(blocksPerBatch, key, ref counter, source.AsSpan().Slice(3, length), destination.AsSpan().Slice(5), ref accumulator, hashKey)
+			: TransformX86Kernel<TDirection>(blocksPerBatch, key, ref counter, source.AsSpan().Slice(3, length), destination.AsSpan().Slice(5), ref accumulator, hashKey);
 		await Assert.That(processed).IsEqualTo(expectedProcessed);
 		await AssertOutput(destination, 5, expected);
 		await AssertOutput(source, 3, plaintext);
@@ -172,8 +210,8 @@ public class AesGcmFusionTest
 		accumulator = initialHash;
 		plaintext.CopyTo(destination, 5);
 		processed = AesCipherArm.IsSupported
-			? EncryptArmKernel(blocksPerBatch, key, ref counter, destination.AsSpan().Slice(5, length), destination.AsSpan().Slice(5), ref accumulator, hashKey)
-			: EncryptX86Kernel(blocksPerBatch, key, ref counter, destination.AsSpan().Slice(5, length), destination.AsSpan().Slice(5), ref accumulator, hashKey);
+			? TransformArmKernel<TDirection>(blocksPerBatch, key, ref counter, destination.AsSpan().Slice(5, length), destination.AsSpan().Slice(5), ref accumulator, hashKey)
+			: TransformX86Kernel<TDirection>(blocksPerBatch, key, ref counter, destination.AsSpan().Slice(5, length), destination.AsSpan().Slice(5), ref accumulator, hashKey);
 		byte[] expectedInPlace = plaintext.ToArray();
 		expected.CopyTo(expectedInPlace, 0);
 		await Assert.That(processed).IsEqualTo(expectedProcessed);
@@ -228,7 +266,25 @@ public class AesGcmFusionTest
 		}
 	}
 
-	private static int EncryptArmKernel(int blocksPerBatch, byte[] key, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, Vector128<byte> hashKey)
+	private static bool DecryptFused(byte[] key, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData)
+	{
+		using AesCipher cipher = AesCipher.Create(key);
+		Vector128<byte> h = default;
+		cipher.EncryptBlock(h.AsReadOnlySpan(), h.AsSpan());
+		GHashKey hashKey = GHashKey.Create(h.AsReadOnlySpan());
+		h.ZeroMemory();
+
+		try
+		{
+			return AesGcmFusion.TryDecrypt(cipher, ref hashKey, nonce, source, tag, destination, associatedData);
+		}
+		finally
+		{
+			hashKey.Dispose();
+		}
+	}
+
+	private static int TransformArmKernel<TDirection>(int blocksPerBatch, byte[] key, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, Vector128<byte> hashKey) where TDirection : struct, IBlockDirection
 	{
 		AesCipherArm cipher = AesCipherArm.Create(key);
 		Vector128<byte> tagMask = default;
@@ -238,8 +294,8 @@ public class AesGcmFusionTest
 		try
 		{
 			int processed = blocksPerBatch is 8
-				? AesGcmArm.Encrypt8(in cipher, ref counter, source, destination, ref accumulator, in powers, ref tagMask)
-				: AesGcmArm.Encrypt4(in cipher, ref counter, source, destination, ref accumulator, in powers);
+				? AesGcmArm.Transform8<TDirection>(in cipher, ref counter, source, destination, ref accumulator, in powers, ref tagMask)
+				: AesGcmArm.Transform4<TDirection>(in cipher, ref counter, source, destination, ref accumulator, in powers);
 			accumulator = AdvSimd.Arm64.ReverseElementBits(accumulator);
 			return processed;
 		}
@@ -250,7 +306,7 @@ public class AesGcmFusionTest
 		}
 	}
 
-	private static int EncryptX86Kernel(int blocksPerBatch, byte[] key, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, Vector128<byte> hashKey)
+	private static int TransformX86Kernel<TDirection>(int blocksPerBatch, byte[] key, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, Vector128<byte> hashKey) where TDirection : struct, IBlockDirection
 	{
 		AesCipherX86 cipher = AesCipherX86.Create(key);
 		GHashVector128PrecomputedKey powers = new(hashKey.ReverseEndianness128());
@@ -259,8 +315,8 @@ public class AesGcmFusionTest
 		try
 		{
 			int processed = blocksPerBatch is 8
-				? AesGcmX86.Encrypt8(in cipher, ref counter, source, destination, ref accumulator, in powers)
-				: AesGcmX86.Encrypt4(in cipher, ref counter, source, destination, ref accumulator, in powers);
+				? AesGcmX86.Transform8<TDirection>(in cipher, ref counter, source, destination, ref accumulator, in powers)
+				: AesGcmX86.Transform4<TDirection>(in cipher, ref counter, source, destination, ref accumulator, in powers);
 			accumulator = accumulator.ReverseEndianness128();
 			return processed;
 		}

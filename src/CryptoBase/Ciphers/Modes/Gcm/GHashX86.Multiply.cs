@@ -94,10 +94,10 @@ internal static partial class GHashX86
 	internal static Vector128<byte> PrepareKey(Vector128<byte> key)
 	{
 		Vector128<ulong> limbs = key.AsUInt64();
-		ulong reductionMask = 0UL - (limbs.GetElement(1) >> 63);
+		Vector128<byte> reductionMask = (Vector128.Shuffle(limbs.AsInt32(), Vector128.Create(3)) >> 31).AsByte();
 		Vector128<ulong> carry = limbs >> 63;
 		Vector128<ulong> shifted = limbs << 1 | Sse2.ShiftLeftLogical128BitLane(carry, 8);
-		return shifted.AsByte() ^ ReflectedPolynomial & Vector128.Create(reductionMask).AsByte();
+		return shifted.AsByte() ^ ReflectedPolynomial & reductionMask;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -164,6 +164,20 @@ internal static partial class GHashX86
 	internal static Vector128<byte> ReducePreparedTo128(Vector256<byte> lo, Vector256<byte> hi)
 	{
 		return ReducePrepared(lo.GetLower() ^ lo.GetUpper(), hi.GetLower() ^ hi.GetUpper());
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void GFMultiplyPreparedUnreduced(Vector512<byte> value, Vector512<byte> key, Vector512<byte> reductionKey, out Vector512<byte> lo, out Vector512<byte> hi)
+	{
+		Vector512<ulong> value64 = value.AsUInt64();
+		lo = Pclmulqdq.V512.CarrylessMultiply(value64, reductionKey.AsUInt64(), 0x00).AsByte() ^ Pclmulqdq.V512.CarrylessMultiply(value64, key.AsUInt64(), 0x01).AsByte();
+		hi = Pclmulqdq.V512.CarrylessMultiply(value64, reductionKey.AsUInt64(), 0x10).AsByte() ^ Pclmulqdq.V512.CarrylessMultiply(value64, key.AsUInt64(), 0x11).AsByte();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static Vector128<byte> ReducePreparedTo128(Vector512<byte> lo, Vector512<byte> hi)
+	{
+		return ReducePreparedTo128(lo.GetLower() ^ lo.GetUpper(), hi.GetLower() ^ hi.GetUpper());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

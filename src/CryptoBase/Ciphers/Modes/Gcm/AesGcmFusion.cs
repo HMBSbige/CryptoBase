@@ -1,5 +1,4 @@
 using CryptoBase.Ciphers.Blocks.Aes;
-using CryptoBase.Ciphers.Modes.Ctr;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
@@ -11,56 +10,17 @@ internal static partial class AesGcmFusion
 		get => X86Base.X64.IsSupported && AesCipherX86.IsSupported && GHashX86.IsSupported || AdvSimd.Arm64.IsSupported && AesCipherArm.IsSupported && GHashArm.IsSupported;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static bool ShouldFuse(int length)
+	internal static bool TryDecrypt(AesCipher aes, ref GHashKey hashKey, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData)
 	{
-		return IsSupported && (AesCipherX86.IsSupported || length >= 64) && (!GHashX86.IsSupported512 || length < GHashX86.Vector512Threshold);
+		Debug.Assert(IsSupported);
+		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, GcmMode128<AesCipher>.NonceSize, GcmMode128<AesCipher>.TagSize);
+		return DecryptFinalBlocks(aes, ref hashKey, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 	}
 
 	internal static void Encrypt(AesCipher aes, ref GHashKey hashKey, scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData)
 	{
-		Debug.Assert(ShouldFuse(source.Length));
+		Debug.Assert(IsSupported);
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, GcmMode128<AesCipher>.NonceSize, GcmMode128<AesCipher>.TagSize);
-		destination = destination.Slice(0, source.Length);
-
-		if (AesCipherX86.IsSupported)
-		{
-			EncryptFinalBlocks(aes, ref hashKey, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
-			return;
-		}
-
-		Vector128<byte> counter = Gcm.Begin(nonce, out Vector128<byte> tagBuffer);
-		GHash hash = GHash.Create(ref hashKey);
-
-		try
-		{
-			// Consume AAD before writing ciphertext, including when the buffers overlap.
-			hash.AppendPaddedSegmentsShort(associatedData);
-			int processed = EncryptBlocks(aes, ref counter, source, destination, ref hashKey, ref hash.Accumulator, ref tagBuffer);
-
-			if (processed < source.Length)
-			{
-				CtrBlocks<AesCipher, CtrIncrementer32>.Xor(aes, ref counter, source.Slice(processed), destination.Slice(processed));
-			}
-
-			Vector128<byte> lengthBlock = Gcm.CreateLengthBlock(associatedData.Length, source.Length);
-			hash.AppendPaddedSegmentsShort(destination.Slice(processed), lengthBlock.AsReadOnlySpan());
-			tagBuffer ^= hash.Accumulator;
-			MemoryMarshal.Write(tag, in tagBuffer);
-		}
-		finally
-		{
-			hash.Dispose();
-		}
-	}
-
-	private static int EncryptBlocks(AesCipher aes, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref GHashKey hashKey, ref Vector128<byte> accumulator, ref Vector128<byte> tagMask)
-	{
-		if (AesCipherX86.IsSupported)
-		{
-			return AesGcmX86.Encrypt(in aes.X86, ref counter, source, destination, ref hashKey, ref accumulator, ref tagMask);
-		}
-
-		return AesGcmArm.Encrypt(in aes.Arm, ref counter, source, destination, ref hashKey, ref accumulator, ref tagMask);
+		EncryptFinalBlocks(aes, ref hashKey, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 	}
 }

@@ -11,9 +11,17 @@ internal static partial class GHashX86
 
 	internal static bool IsSupported => Sse2.IsSupported && Pclmulqdq.IsSupported;
 
-	internal static bool IsSupported256 => Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
+	internal static bool IsSupported256
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
+	}
 
-	internal static bool IsSupported512 => Vector512.IsHardwareAccelerated && X86Base.X64.IsSupported && IsSupported256 && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
+	internal static bool IsSupported512
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Vector512.IsHardwareAccelerated && X86Base.X64.IsSupported && IsSupported256 && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool ShouldUseVector512(long firstPaddedLength, long secondPaddedLength, long thirdPaddedLength)
@@ -22,7 +30,9 @@ internal static partial class GHashX86
 		return IsSupported512 && parallelLength >= Vector512Threshold;
 	}
 
+	// Kept out of line: inlining the size dispatch exhausts the caller's inline budget and leaves its span helpers as calls.
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
 		Debug.Assert(IsSupported);
