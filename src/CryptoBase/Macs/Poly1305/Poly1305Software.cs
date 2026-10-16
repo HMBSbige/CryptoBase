@@ -34,8 +34,9 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 		state.Initialize(key);
 	}
 
+	// carry holds the part of word 1 that Poly1305Utils.Multiply64 has not folded into h1 yet.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Block(ref ulong h0, ref ulong h1, ref ulong h2, ulong r0, ulong r1, ulong s1, ref byte source, ulong highBit)
+	private static void Block(ref ulong h0, ref ulong h1, ref ulong h2, ref ulong carry, ulong r0, ulong r1, ulong s1, ref byte source, ulong highBit)
 	{
 		ulong t0 = Unsafe.ReadUnaligned<ulong>(ref source);
 		ulong t1 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref source, 8));
@@ -46,24 +47,18 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 			t1 = BinaryPrimitives.ReverseEndianness(t1);
 		}
 
-		Block(ref h0, ref h1, ref h2, r0, r1, s1, t0, t1, highBit);
+		Block(ref h0, ref h1, ref h2, ref carry, r0, r1, s1, t0, t1, highBit);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Block(ref ulong h0, ref ulong h1, ref ulong h2, ulong r0, ulong r1, ulong s1, ulong t0, ulong t1, ulong highBit)
+	private static void Block(ref ulong h0, ref ulong h1, ref ulong h2, ref ulong carry, ulong r0, ulong r1, ulong s1, ulong t0, ulong t1, ulong highBit)
 	{
-		ulong previous = h0;
 		h0 += t0;
-		ulong carry = h0 < previous ? 1UL : 0;
-		previous = h1;
+		carry += h0 < t0 ? 1UL : 0;
 		h1 += t1;
-		ulong nextCarry = h1 < previous ? 1UL : 0;
-		previous = h1;
-		h1 += carry;
-		nextCarry += h1 < previous ? 1UL : 0;
-		h2 += highBit + nextCarry;
+		h2 += highBit + (h1 < t1 ? 1UL : 0);
 
-		Poly1305Utils.Multiply64(ref h0, ref h1, ref h2, r0, r1, s1);
+		Poly1305Utils.Multiply64(ref h0, ref h1, ref h2, ref carry, r0, r1, s1);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,7 +67,9 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 		ulong h0 = _h0;
 		ulong h1 = _h1;
 		ulong h2 = _h2;
-		Block(ref h0, ref h1, ref h2, _r0, _r1, _s1, t0, t1, highBit);
+		ulong carry = 0;
+		Block(ref h0, ref h1, ref h2, ref carry, _r0, _r1, _s1, t0, t1, highBit);
+		Poly1305Utils.PropagateCarry(ref h1, ref h2, carry);
 		_h0 = h0;
 		_h1 = h1;
 		_h2 = h2;
@@ -102,14 +99,16 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 			ulong h0 = _h0;
 			ulong h1 = _h1;
 			ulong h2 = _h2;
+			ulong carry = 0;
 
 			do
 			{
-				Block(ref h0, ref h1, ref h2, r0, r1, s1, ref input, FullBlockHighBit);
+				Block(ref h0, ref h1, ref h2, ref carry, r0, r1, s1, ref input, FullBlockHighBit);
 				input = ref Unsafe.Add(ref input, Poly1305Algorithm.BlockSizeInBytes);
 				length -= Poly1305Algorithm.BlockSizeInBytes;
 			} while (length >= Poly1305Algorithm.BlockSizeInBytes);
 
+			Poly1305Utils.PropagateCarry(ref h1, ref h2, carry);
 			_h0 = h0;
 			_h1 = h1;
 			_h2 = h2;

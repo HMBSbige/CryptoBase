@@ -20,42 +20,44 @@ internal static class Poly1305Utils
 		m4 = high >>> 40 | Vector256.Create((ulong)Poly1305State26.FullBlockHighBit);
 	}
 
+	// Word 1 of the accumulator is h1 + carry: the carry out of word 0 waits for the next product instead of rippling through h1 and h2,
+	// which keeps it off the chain from one block to the next.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void Multiply64(ref ulong h0, ref ulong h1, ref ulong h2, ulong r0, ulong r1, ulong s1)
+	internal static void Multiply64(ref ulong h0, ref ulong h1, ref ulong h2, ref ulong carry, ulong r0, ulong r1, ulong s1)
 	{
 		ulong d3 = Math.BigMul(r1, h0, out ulong d2);
-		ulong d1 = Math.BigMul(r0, h0, out ulong nextH0);
+		ulong d1 = Math.BigMul(r0, h0, out ulong d0);
 
 		ulong high = Math.BigMul(r0, h1, out ulong low);
-		ulong previous = d2;
 		d2 += low;
-		d3 += high + (d2 < previous ? 1UL : 0);
+		d3 += high + (d2 < low ? 1UL : 0);
 
 		high = Math.BigMul(s1, h1, out low);
-		previous = nextH0;
-		nextH0 += low;
-		d1 += high + (nextH0 < previous ? 1UL : 0);
+		d0 += low;
+		d1 += high + (d0 < low ? 1UL : 0);
 
-		previous = d2;
-		d2 += h2 * s1;
-		d3 += d2 < previous ? 1UL : 0;
+		low = carry * s1;
+		d0 += low;
+		d1 += d0 < low ? 1UL : 0;
 
-		previous = d1;
-		ulong nextH1 = d1 + d2;
-		d3 += h2 * r0 + (nextH1 < previous ? 1UL : 0);
+		low = h2 * s1 + carry * r0;
+		d2 += low;
+		d3 += d2 < low ? 1UL : 0;
 
-		ulong nextH2 = d3 & 3;
-		ulong reduction = (d3 & ~3UL) + (d3 >> 2);
-		previous = nextH0;
-		nextH0 += reduction;
-		ulong carry = nextH0 < previous ? 1UL : 0;
-		previous = nextH1;
-		nextH1 += carry;
-		nextH2 += nextH1 < previous ? 1UL : 0;
+		ulong word1 = d1 + d2;
+		ulong word2 = d3 + h2 * r0 + (word1 < d2 ? 1UL : 0);
+		ulong reduction = (word2 & ~3UL) + (word2 >> 2);
+		h0 = d0 + reduction;
+		carry = h0 < reduction ? 1UL : 0;
+		h1 = word1;
+		h2 = word2 & 3;
+	}
 
-		h0 = nextH0;
-		h1 = nextH1;
-		h2 = nextH2;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void PropagateCarry(ref ulong h1, ref ulong h2, ulong carry)
+	{
+		h1 += carry;
+		h2 += h1 < carry ? 1UL : 0;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
