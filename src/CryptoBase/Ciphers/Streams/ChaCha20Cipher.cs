@@ -13,6 +13,9 @@ public class ChaCha20Cipher : SnuffleCipher
 	/// <summary>The required nonce size, in bytes.</summary>
 	public const int IVSize = 12;
 
+	/// <summary>The keystream block size, in bytes.</summary>
+	public new const int BlockSize = 64;
+
 	/// <inheritdoc />
 	protected override ulong MaxCounter => uint.MaxValue;
 
@@ -24,6 +27,31 @@ public class ChaCha20Cipher : SnuffleCipher
 	public ChaCha20Cipher(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		Init(key, iv);
+	}
+
+	/// <summary>Computes the keystream block at the specified counter.</summary>
+	/// <param name="key">The 256-bit key.</param>
+	/// <param name="nonce">The 96-bit nonce.</param>
+	/// <param name="counter">The block counter.</param>
+	/// <param name="destination">The buffer for the keystream block. Its length must be <see cref="BlockSize" />.</param>
+	/// <remarks><paramref name="destination" /> may overlap <paramref name="key" /> or <paramref name="nonce" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <exception cref="ArgumentOutOfRangeException">A buffer has the wrong length.</exception>
+	[SkipLocalsInit]
+	public static void GenerateBlock(ReadOnlySpan<byte> key, ReadOnlySpan<byte> nonce, uint counter, Span<byte> destination)
+	{
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(nonce.Length, IVSize, nameof(nonce));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, BlockSize, nameof(destination));
+
+		Unsafe.SkipInit(out InlineArray16<uint> state);
+		Span<uint> stateSpan = state;
+		Sigma32.CopyTo(stateSpan);
+		MemoryMarshal.Cast<byte, uint>(key).CopyTo(stateSpan.Slice(4));
+		stateSpan[12] = counter;
+		MemoryMarshal.Cast<byte, uint>(nonce).CopyTo(stateSpan.Slice(13));
+
+		ChaCha20Utils.UpdateKeyStream(Rounds, stateSpan, destination);
+		state.ZeroMemory();
 	}
 
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)

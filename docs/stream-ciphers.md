@@ -29,6 +29,21 @@ crypto.SetCounter(0);
 crypto.Xor(ciphertext, recovered);
 ```
 
+## Single ChaCha20 block
+
+`ChaCha20Cipher.GenerateBlock` computes the 64-byte keystream block at a counter without creating a cipher instance.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Ciphers.Streams;
+
+byte[] key = RandomNumberGenerator.GetBytes(ChaCha20Cipher.KeySize);
+byte[] nonce = RandomNumberGenerator.GetBytes(ChaCha20Cipher.IVSize);
+byte[] block = new byte[ChaCha20Cipher.BlockSize];
+
+ChaCha20Cipher.GenerateBlock(key, nonce, 1, block);
+```
+
 ## CTR
 
 | Type | Key | IV or counter |

@@ -64,4 +64,87 @@ public class ChaCha20Test
 		await Assert.That(() => crypto.Xor(source.AsSpan().Slice(64), actual.AsSpan().Slice(64))).ThrowsExactly<ArgumentOutOfRangeException>();
 		await Assert.That(actual[64]).IsEqualTo(DestinationSentinel);
 	}
+
+	[Test]
+	[Arguments
+	(
+		"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
+		"000000090000004A00000000",
+		1u,
+		"10F1E7E4D13B5915500FDD1FA32071C4C7D1F4C733C068030422AA9AC3D46C4ED2826446079FAA0914C2D705D98B02A2B5129CD1DE164EB9CBD083E8A2503C4E"
+	)]
+	public async Task GenerateBlockMatchesRfc8439BlockFunctionVector(string keyHex, string nonceHex, uint counter, string expectedHex)
+	{
+		byte[] actual = new byte[ChaCha20Cipher.BlockSize];
+
+		ChaCha20Cipher.GenerateBlock(Convert.FromHexString(keyHex), Convert.FromHexString(nonceHex), counter, actual);
+
+		await Assert.That(actual).IsEquivalentTo(Convert.FromHexString(expectedHex), CollectionOrdering.Matching);
+	}
+
+	[Test]
+	public async Task GenerateBlockProducesRfc9001HeaderProtectionMask()
+	{
+		byte[] key = Convert.FromHexString("25A282B9E82F06F21F488917A4FC8F1B73573685608597D0EFCB076B0AB7A7A4");
+		byte[] sample = Convert.FromHexString("5E5CD55C41F69080575D7999C25A5BFB");
+		byte[] block = new byte[ChaCha20Cipher.BlockSize];
+
+		ChaCha20Cipher.GenerateBlock(key, sample.AsSpan().Slice(4), BinaryPrimitives.ReadUInt32LittleEndian(sample), block);
+
+		await Assert.That(block.AsMemory(0, 5)).IsEquivalentTo(Convert.FromHexString("AEFEFE7D03"), CollectionOrdering.Matching);
+	}
+
+	[Test]
+	[Arguments(0u)]
+	[Arguments(1u)]
+	[Arguments(0x5CD55C5Eu)]
+	[Arguments(uint.MaxValue - 1)]
+	[Arguments(uint.MaxValue)]
+	public async Task GenerateBlockMatchesStreamKeystreamAtCounter(uint counter)
+	{
+		byte[] key = CreateDeterministicSource(ChaCha20Cipher.KeySize);
+		byte[] nonce = CreateDeterministicSource(ChaCha20Cipher.IVSize);
+		byte[] expected = new byte[ChaCha20Cipher.BlockSize];
+		byte[] actual = new byte[ChaCha20Cipher.BlockSize];
+
+		using (ChaCha20Cipher oracle = new(key, nonce))
+		{
+			oracle.SetCounter(counter);
+			oracle.Xor(new byte[ChaCha20Cipher.BlockSize], expected);
+		}
+
+		ChaCha20Cipher.GenerateBlock(key, nonce, counter, actual);
+
+		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	public async Task GenerateBlockAllowsDestinationToOverlapKeyAndNonce()
+	{
+		byte[] buffer = CreateDeterministicSource(ChaCha20Cipher.BlockSize);
+		byte[] expected = new byte[ChaCha20Cipher.BlockSize];
+		ChaCha20Cipher.GenerateBlock(buffer.AsSpan().Slice(0, ChaCha20Cipher.KeySize), buffer.AsSpan().Slice(ChaCha20Cipher.BlockSize - ChaCha20Cipher.IVSize), 7, expected);
+
+		ChaCha20Cipher.GenerateBlock(buffer.AsSpan().Slice(0, ChaCha20Cipher.KeySize), buffer.AsSpan().Slice(ChaCha20Cipher.BlockSize - ChaCha20Cipher.IVSize), 7, buffer);
+
+		await Assert.That(buffer).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	[Arguments(ChaCha20Cipher.KeySize - 1, ChaCha20Cipher.IVSize, ChaCha20Cipher.BlockSize, "key")]
+	[Arguments(ChaCha20Cipher.KeySize + 1, ChaCha20Cipher.IVSize, ChaCha20Cipher.BlockSize, "key")]
+	[Arguments(ChaCha20Cipher.KeySize, ChaCha20Cipher.IVSize - 1, ChaCha20Cipher.BlockSize, "nonce")]
+	[Arguments(ChaCha20Cipher.KeySize, ChaCha20Cipher.IVSize + 1, ChaCha20Cipher.BlockSize, "nonce")]
+	[Arguments(ChaCha20Cipher.KeySize, ChaCha20Cipher.IVSize, ChaCha20Cipher.BlockSize - 1, "destination")]
+	[Arguments(ChaCha20Cipher.KeySize, ChaCha20Cipher.IVSize, ChaCha20Cipher.BlockSize + 1, "destination")]
+	public async Task GenerateBlockRejectsWrongLengthsWithoutWriting(int keyLength, int nonceLength, int destinationLength, string parameterName)
+	{
+		byte[] key = new byte[keyLength];
+		byte[] nonce = new byte[nonceLength];
+		byte[] destination = new byte[destinationLength];
+		PrepareDestination(destination);
+
+		await Assert.That(() => ChaCha20Cipher.GenerateBlock(key, nonce, 0, destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName(parameterName);
+		await Assert.That(destination).All(static value => value is DestinationSentinel);
+	}
 }
