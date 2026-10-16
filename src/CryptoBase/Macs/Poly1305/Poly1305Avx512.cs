@@ -592,7 +592,6 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	}
 
 	// Hashes the remaining groups, multiplies each lane of the last one by its remaining power, and stores the sum as the scalar accumulator.
-	// Kept out of line because the fused caller has no registers left for the accumulator.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal void FinishEightWay(ref byte source, int length, Vector512<ulong> h0, Vector512<ulong> h1, Vector512<ulong> h2, Vector512<ulong> h3, Vector512<ulong> h4)
 	{
@@ -656,7 +655,6 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		Append(source, true);
 	}
 
-	// Kept out of line because a copy at each call site exhausts the caller's inline budget and leaves the scalar block helpers as calls.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void Append(scoped ReadOnlySpan<byte> source, bool padPartialBlock)
 	{

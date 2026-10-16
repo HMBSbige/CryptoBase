@@ -44,9 +44,6 @@ public sealed partial class Base32Encoding
 		Avx2.UnpackHigh(value, Vector256<byte>.Zero).AsUInt16().StoreUnsafe(ref destinationReference, 16);
 	}
 
-	// The AVX2 encoders rerun the loop body once for the remainder blocks, with the vector pulled back to end at the last whole block. A
-	// separate copy of the body for that vector makes RyuJIT read the shared constants from memory on every iteration instead of hoisting
-	// them into registers.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int EncodeUtf8Avx2(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
 	{

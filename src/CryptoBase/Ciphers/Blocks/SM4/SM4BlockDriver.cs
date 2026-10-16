@@ -29,7 +29,6 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 		ProcessFullBlocks(ref rk, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
 	}
 
-	// Avoid duplicating the round loop at each public single-block call site.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ProcessSingleBlock(ref uint rk, ref byte source, ref byte destination)
 	{

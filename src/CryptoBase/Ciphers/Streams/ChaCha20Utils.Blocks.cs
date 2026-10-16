@@ -16,7 +16,6 @@ internal static partial class ChaCha20Utils
 		return XorScalar(ref MemoryMarshal.GetReference(state), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
 	}
 
-	// Keep counter-carry handling and vector-path register saves out of the scalar fast path.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int XorCounterRegion(ref uint stateRef, ref byte input, ref byte output, int length)
 	{

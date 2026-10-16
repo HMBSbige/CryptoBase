@@ -54,7 +54,6 @@ internal struct GHashKey
 		return CreateTable(ref _arm, ref powers);
 	}
 
-	// Keep table construction out of the warm callers' stack frames.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private GHashKeyTable<GHashFourBlockPrecomputedKey> InitializeFourBlock()

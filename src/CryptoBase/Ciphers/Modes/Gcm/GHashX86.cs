@@ -30,7 +30,6 @@ internal static partial class GHashX86
 		return IsSupported512 && parallelLength >= Vector512Threshold;
 	}
 
-	// Kept out of line: inlining the size dispatch exhausts the caller's inline budget and leaves its span helpers as calls.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)

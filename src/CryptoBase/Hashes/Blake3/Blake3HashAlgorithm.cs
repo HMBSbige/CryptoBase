@@ -463,8 +463,6 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 		}
 	}
 
-	// Most appends in chunk mode stay inside the chunk, which takes no more than a copy and the compression of the block before it; skipping the bookkeeping
-	// of AppendCore speeds up 64-byte appends on Intel cores by about 5%.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void AppendInChunkMode(ReadOnlySpan<byte> source)
 	{
