@@ -147,50 +147,6 @@ internal ref struct Poly1305State26
 		H4 = (uint)d4;
 	}
 
-	// Converts r to the 64-bit radix used by Poly1305Software.
-	internal readonly void GetKey64(out ulong r0, out ulong r1)
-	{
-		r0 = _r0 | (ulong)_r1 << 26 | (ulong)_r2 << 52;
-		r1 = _r2 >> 12 | (ulong)_r3 << 14 | (ulong)_r4 << 40;
-	}
-
-	// Converts the accumulator to the 64-bit radix used by Poly1305Software.
-	internal readonly void GetAccumulator64(out ulong h0, out ulong h1, out ulong h2)
-	{
-		uint t0 = H0;
-		uint t1 = H1;
-		uint t2 = H2;
-		uint t3 = H3;
-		uint t4 = H4;
-		t1 += t0 >> 26;
-		t0 &= LimbMask;
-		t2 += t1 >> 26;
-		t1 &= LimbMask;
-		t3 += t2 >> 26;
-		t2 &= LimbMask;
-		t4 += t3 >> 26;
-		t3 &= LimbMask;
-		t0 += (t4 >> 26) * 5;
-		t4 &= LimbMask;
-		t1 += t0 >> 26;
-		t0 &= LimbMask;
-
-		UInt128 low = t0 + ((UInt128)t1 << 26) + ((UInt128)t2 << 52) + ((UInt128)t3 << 78);
-		UInt128 value = low + ((UInt128)(t4 & 0xFFFFFF) << 104);
-		h0 = (ulong)value;
-		h1 = (ulong)(value >> 64);
-		h2 = (t4 >> 24) + (value < low ? 1UL : 0);
-	}
-
-	internal void SetAccumulator64(ulong h0, ulong h1, ulong h2)
-	{
-		H0 = (uint)h0 & LimbMask;
-		H1 = (uint)(h0 >> 26) & LimbMask;
-		H2 = (uint)(h0 >> 52 | h1 << 12) & LimbMask;
-		H3 = (uint)(h1 >> 14) & LimbMask;
-		H4 = (uint)(h1 >> 40) | (uint)h2 << 24;
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Block(scoped ReadOnlySpan<byte> source, uint highBit)
 	{

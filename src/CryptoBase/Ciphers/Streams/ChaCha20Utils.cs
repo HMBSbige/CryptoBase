@@ -2,6 +2,9 @@ namespace CryptoBase.Ciphers.Streams;
 
 internal static partial class ChaCha20Utils
 {
+	// One batch of the widest keystream kernel.
+	internal static int BatchLength => 64 * (Vector512.IsHardwareAccelerated ? 16 : Vector256.IsHardwareAccelerated || AdvSimd.Arm64.IsSupported ? 8 : Sse2.IsSupported ? 4 : 1);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ref ulong GetCounterOriginal(ref uint state)
 	{
@@ -36,29 +39,6 @@ internal static partial class ChaCha20Utils
 		Unsafe.Add(ref stateRef, 9) = x13;
 		Unsafe.Add(ref stateRef, 10) = x14;
 		Unsafe.Add(ref stateRef, 11) = x15;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	public static void DerivePoly1305Key(Span<uint> state, Span<byte> destination)
-	{
-		Debug.Assert(state.Length is 16 && destination.Length is 32);
-
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		uint x00 = Unsafe.Add(ref stateRef, 0), x01 = Unsafe.Add(ref stateRef, 1), x02 = Unsafe.Add(ref stateRef, 2), x03 = Unsafe.Add(ref stateRef, 3);
-		uint x04 = Unsafe.Add(ref stateRef, 4), x05 = Unsafe.Add(ref stateRef, 5), x06 = Unsafe.Add(ref stateRef, 6), x07 = Unsafe.Add(ref stateRef, 7);
-		uint x08 = Unsafe.Add(ref stateRef, 8), x09 = Unsafe.Add(ref stateRef, 9), x10 = Unsafe.Add(ref stateRef, 10), x11 = Unsafe.Add(ref stateRef, 11);
-		uint x12 = Unsafe.Add(ref stateRef, 12), x13 = Unsafe.Add(ref stateRef, 13), x14 = Unsafe.Add(ref stateRef, 14), x15 = Unsafe.Add(ref stateRef, 15);
-		PermuteScalar(SnuffleCipher.Rounds, ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
-
-		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
-		Unsafe.WriteUnaligned(ref destinationRef, x00 + Unsafe.Add(ref stateRef, 0));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destinationRef, 4), x01 + Unsafe.Add(ref stateRef, 1));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destinationRef, 8), x02 + Unsafe.Add(ref stateRef, 2));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destinationRef, 12), x03 + Unsafe.Add(ref stateRef, 3));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destinationRef, 16), x04 + Unsafe.Add(ref stateRef, 4));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destinationRef, 20), x05 + Unsafe.Add(ref stateRef, 5));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destinationRef, 24), x06 + Unsafe.Add(ref stateRef, 6));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destinationRef, 28), x07 + Unsafe.Add(ref stateRef, 7));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

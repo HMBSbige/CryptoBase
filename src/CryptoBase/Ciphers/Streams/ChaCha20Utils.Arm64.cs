@@ -2,16 +2,17 @@ namespace CryptoBase.Ciphers.Streams;
 
 internal static partial class ChaCha20Utils
 {
-	private static int XorNeon(ref uint stateRef, ref byte input, ref byte output, int length)
+	// Runs whole 8-block batches; a shorter final batch stores only its leading blocks.
+	private static void XorNeon(ref uint stateRef, ref byte input, ref byte output, int blocks)
 	{
+		Debug.Assert(blocks % 8 is 0 or >= 5);
 		ref ulong counter = ref GetCounterOriginal(ref stateRef);
-		int processed = 0;
 		Vector128<uint> s0 = Vector128.LoadUnsafe(ref stateRef, 0);
 		Vector128<uint> s1 = Vector128.LoadUnsafe(ref stateRef, 4);
 		Vector128<uint> s2 = Vector128.LoadUnsafe(ref stateRef, 8);
 		Vector128<uint> s3 = Vector128.LoadUnsafe(ref stateRef, 12);
 
-		while (length - processed >= 512)
+		for (int processed = 0; blocks > 0; processed += 512, blocks -= 8)
 		{
 			Vector128<uint> a0 = s0;
 			Vector128<uint> a1 = s1;
@@ -219,24 +220,27 @@ internal static partial class ChaCha20Utils
 					}
 				}
 
-				ref byte scalarInput = ref Unsafe.Add(ref input, processed + 384 + half * 64);
-				ref byte scalarOutput = ref Unsafe.Add(ref output, processed + 384 + half * 64);
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 0), x00 + Unsafe.Add(ref stateRef, 0) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 0)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 4), x01 + Unsafe.Add(ref stateRef, 1) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 4)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 8), x02 + Unsafe.Add(ref stateRef, 2) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 8)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 12), x03 + Unsafe.Add(ref stateRef, 3) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 12)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 16), x04 + Unsafe.Add(ref stateRef, 4) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 16)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 20), x05 + Unsafe.Add(ref stateRef, 5) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 20)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 24), x06 + Unsafe.Add(ref stateRef, 6) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 24)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 28), x07 + Unsafe.Add(ref stateRef, 7) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 28)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 32), x08 + Unsafe.Add(ref stateRef, 8) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 32)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 36), x09 + Unsafe.Add(ref stateRef, 9) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 36)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 40), x10 + Unsafe.Add(ref stateRef, 10) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 40)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 44), x11 + Unsafe.Add(ref stateRef, 11) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 44)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 48), x12 + initialCounter ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 48)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 52), x13 + Unsafe.Add(ref stateRef, 13) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 52)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 56), x14 + Unsafe.Add(ref stateRef, 14) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 56)));
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 60), x15 + Unsafe.Add(ref stateRef, 15) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 60)));
+				if (blocks > 6 + half)
+				{
+					ref byte scalarInput = ref Unsafe.Add(ref input, processed + 384 + half * 64);
+					ref byte scalarOutput = ref Unsafe.Add(ref output, processed + 384 + half * 64);
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 0), x00 + Unsafe.Add(ref stateRef, 0) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 0)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 4), x01 + Unsafe.Add(ref stateRef, 1) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 4)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 8), x02 + Unsafe.Add(ref stateRef, 2) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 8)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 12), x03 + Unsafe.Add(ref stateRef, 3) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 12)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 16), x04 + Unsafe.Add(ref stateRef, 4) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 16)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 20), x05 + Unsafe.Add(ref stateRef, 5) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 20)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 24), x06 + Unsafe.Add(ref stateRef, 6) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 24)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 28), x07 + Unsafe.Add(ref stateRef, 7) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 28)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 32), x08 + Unsafe.Add(ref stateRef, 8) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 32)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 36), x09 + Unsafe.Add(ref stateRef, 9) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 36)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 40), x10 + Unsafe.Add(ref stateRef, 10) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 40)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 44), x11 + Unsafe.Add(ref stateRef, 11) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 44)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 48), x12 + initialCounter ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 48)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 52), x13 + Unsafe.Add(ref stateRef, 13) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 52)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 56), x14 + Unsafe.Add(ref stateRef, 14) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 56)));
+					Unsafe.WriteUnaligned(ref Unsafe.Add(ref scalarOutput, 60), x15 + Unsafe.Add(ref stateRef, 15) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref scalarInput, 60)));
+				}
 			}
 
 			a0 += s0;
@@ -279,18 +283,18 @@ internal static partial class ChaCha20Utils
 			(e2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 288))).StoreUnsafe(ref output, (nuint)(processed + 288));
 			e3 += s3.WithElement(0, (uint)(counter + 4));
 			(e3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 304))).StoreUnsafe(ref output, (nuint)(processed + 304));
-			f0 += s0;
-			(f0.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 320))).StoreUnsafe(ref output, (nuint)(processed + 320));
-			f1 += s1;
-			(f1.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 336))).StoreUnsafe(ref output, (nuint)(processed + 336));
-			f2 += s2;
-			(f2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 352))).StoreUnsafe(ref output, (nuint)(processed + 352));
-			f3 += s3.WithElement(0, (uint)(counter + 5));
-			(f3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 368))).StoreUnsafe(ref output, (nuint)(processed + 368));
-			counter += 8;
-			processed += 512;
+			if (blocks > 5)
+			{
+				f0 += s0;
+				(f0.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 320))).StoreUnsafe(ref output, (nuint)(processed + 320));
+				f1 += s1;
+				(f1.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 336))).StoreUnsafe(ref output, (nuint)(processed + 336));
+				f2 += s2;
+				(f2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 352))).StoreUnsafe(ref output, (nuint)(processed + 352));
+				f3 += s3.WithElement(0, (uint)(counter + 5));
+				(f3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 368))).StoreUnsafe(ref output, (nuint)(processed + 368));
+			}
+			counter += (uint)Math.Min(blocks, 8);
 		}
-
-		return processed;
 	}
 }

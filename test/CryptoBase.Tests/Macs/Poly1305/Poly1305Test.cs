@@ -150,65 +150,6 @@ public class Poly1305Test
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 	}
 
-	[Test]
-	public async Task State26AccumulatorConvertsToAndFrom64BitRadix()
-	{
-		BigInteger prime = (BigInteger.One << 130) - 5;
-		uint[] limbValues = [0, 1, Poly1305State26.LimbMask, Poly1305State26.LimbMask + 1, Poly1305State26.LimbMask + 64, 0x7FFFFFF];
-		Random random = new(26);
-
-		for (int trial = 0; trial < 512; ++trial)
-		{
-			uint[] limbs = new uint[5];
-
-			for (int i = 0; i < limbs.Length; ++i)
-			{
-				limbs[i] = trial < 64 ? limbValues[random.Next(limbValues.Length)] : (uint)random.Next(0x8000000);
-			}
-
-			BigInteger expected = Pack(limbs, 26) % prime;
-			ulong[] words = ConvertTo64(limbs);
-			await Assert.That(words[2]).IsLessThanOrEqualTo(7UL);
-			await Assert.That(Pack(words, 64) % prime).IsEqualTo(expected);
-
-			uint[] roundTrip = ConvertFrom64(words);
-			await Assert.That(Pack(roundTrip, 26) % prime).IsEqualTo(expected);
-		}
-
-		return;
-
-		static BigInteger Pack<T>(T[] limbs, int bits) where T : IBinaryInteger<T>
-		{
-			BigInteger value = BigInteger.Zero;
-
-			for (int i = limbs.Length - 1; i >= 0; --i)
-			{
-				value = (value << bits) + BigInteger.CreateChecked(limbs[i]);
-			}
-
-			return value;
-		}
-
-		static ulong[] ConvertTo64(uint[] limbs)
-		{
-			Poly1305State26 state = default;
-			state.H0 = limbs[0];
-			state.H1 = limbs[1];
-			state.H2 = limbs[2];
-			state.H3 = limbs[3];
-			state.H4 = limbs[4];
-			state.GetAccumulator64(out ulong h0, out ulong h1, out ulong h2);
-			return [h0, h1, h2];
-		}
-
-		static uint[] ConvertFrom64(ulong[] words)
-		{
-			Poly1305State26 state = default;
-			state.SetAccumulator64(words[0], words[1], words[2]);
-			return [state.H0, state.H1, state.H2, state.H3, state.H4];
-		}
-	}
-
 	private static void ComputeState26Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Poly1305State26 state = default;

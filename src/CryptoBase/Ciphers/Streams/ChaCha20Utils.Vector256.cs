@@ -15,12 +15,13 @@ internal static partial class ChaCha20Utils
 		b = (b ^ c).RotateLeftUInt32(7);
 	}
 
-	private static int XorVector256(ref uint stateRef, ref byte input, ref byte output, int length)
+	// Runs whole 8-block batches; a shorter final batch stores only its leading blocks.
+	private static void XorVector256(ref uint stateRef, ref byte input, ref byte output, int blocks)
 	{
+		Debug.Assert(blocks % 8 is 0 or > 4);
 		ref ulong counter = ref GetCounterOriginal(ref stateRef);
-		int processed = 0;
 
-		while (length - processed >= 512)
+		for (int processed = 0; blocks > 0; processed += 512, blocks -= 8)
 		{
 			Vector256<uint> c0 = Vector256.Create((uint)counter) + Vector256.CreateSequence(0u, 1u);
 			Vector256<uint> h0 = Vector256.Create(Unsafe.Add(ref stateRef, 13));
@@ -80,21 +81,64 @@ internal static partial class ChaCha20Utils
 			(a07.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 224))).StoreUnsafe(ref output, (nuint)(processed + 224));
 			(a08.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 256))).StoreUnsafe(ref output, (nuint)(processed + 256));
 			(a09.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 288))).StoreUnsafe(ref output, (nuint)(processed + 288));
-			(a10.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 320))).StoreUnsafe(ref output, (nuint)(processed + 320));
-			(a11.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 352))).StoreUnsafe(ref output, (nuint)(processed + 352));
-			(a12.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 384))).StoreUnsafe(ref output, (nuint)(processed + 384));
-			(a13.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 416))).StoreUnsafe(ref output, (nuint)(processed + 416));
-			(a14.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 448))).StoreUnsafe(ref output, (nuint)(processed + 448));
-			(a15.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 480))).StoreUnsafe(ref output, (nuint)(processed + 480));
-			counter += 8;
-			processed += 512;
+			if (blocks > 5)
+			{
+				(a10.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 320))).StoreUnsafe(ref output, (nuint)(processed + 320));
+				(a11.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 352))).StoreUnsafe(ref output, (nuint)(processed + 352));
+			}
+			if (blocks > 6)
+			{
+				(a12.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 384))).StoreUnsafe(ref output, (nuint)(processed + 384));
+				(a13.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 416))).StoreUnsafe(ref output, (nuint)(processed + 416));
+			}
+			if (blocks > 7)
+			{
+				(a14.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 448))).StoreUnsafe(ref output, (nuint)(processed + 448));
+				(a15.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 480))).StoreUnsafe(ref output, (nuint)(processed + 480));
+			}
+			counter += (uint)Math.Min(blocks, 8);
 		}
-
-		return processed;
 	}
 
-	private static void XorVector256Four(ref uint stateRef, ref byte input, ref byte output)
+	// One row-major state holds block n in the low lanes and block n + 1 in the high lanes.
+	private static void XorVector256Two(ref uint stateRef, ref byte input, ref byte output)
 	{
+		Vector256<uint> initial0 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 0));
+		Vector256<uint> initial1 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 4));
+		Vector256<uint> initial2 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 8));
+		Vector256<uint> initial3 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 12)).AddUInt32LE01();
+		Vector256<uint> a = initial0;
+		Vector256<uint> b = initial1;
+		Vector256<uint> c = initial2;
+		Vector256<uint> d = initial3;
+
+		for (int round = 0; round < SnuffleCipher.Rounds; round += 2)
+		{
+			QuarterRound(ref a, ref b, ref c, ref d);
+			a = Avx2.Shuffle(a, 0b10_01_00_11);
+			c = Avx2.Shuffle(c, 0b00_11_10_01);
+			d = Avx2.Shuffle(d, 0b01_00_11_10);
+			QuarterRound(ref a, ref b, ref c, ref d);
+			a = Avx2.Shuffle(a, 0b00_11_10_01);
+			c = Avx2.Shuffle(c, 0b10_01_00_11);
+			d = Avx2.Shuffle(d, 0b01_00_11_10);
+		}
+
+		a += initial0;
+		b += initial1;
+		c += initial2;
+		d += initial3;
+		(Vector256.ConcatUpper(a, b).AsByte() ^ Vector256.LoadUnsafe(ref input, 64)).StoreUnsafe(ref output, 64);
+		(Vector256.ConcatUpper(c, d).AsByte() ^ Vector256.LoadUnsafe(ref input, 96)).StoreUnsafe(ref output, 96);
+		(Vector256.ConcatLower(a, b).AsByte() ^ Vector256.LoadUnsafe(ref input)).StoreUnsafe(ref output);
+		(Vector256.ConcatLower(c, d).AsByte() ^ Vector256.LoadUnsafe(ref input, 32)).StoreUnsafe(ref output, 32);
+		GetCounterOriginal(ref stateRef) += 2;
+	}
+
+	// Two row-major states hold four blocks; three blocks skip the fourth store.
+	private static void XorVector256Four(ref uint stateRef, ref byte input, ref byte output, int blocks)
+	{
+		Debug.Assert(blocks is 3 or 4);
 		Vector128<uint> row = SnuffleCipher.LoadStateRow(ref stateRef, 0);
 		Vector256<uint> a0 = Vector256.Create(row);
 		Vector256<uint> b0 = a0;
@@ -146,11 +190,14 @@ internal static partial class ChaCha20Utils
 		(Vector256.ConcatUpper(a2, a3).AsByte() ^ Vector256.LoadUnsafe(ref input, 96)).StoreUnsafe(ref output, 96);
 		(Vector256.ConcatLower(a0, a1).AsByte() ^ Vector256.LoadUnsafe(ref input)).StoreUnsafe(ref output);
 		(Vector256.ConcatLower(a2, a3).AsByte() ^ Vector256.LoadUnsafe(ref input, 32)).StoreUnsafe(ref output, 32);
-		(Vector256.ConcatUpper(b0, b1).AsByte() ^ Vector256.LoadUnsafe(ref input, 192)).StoreUnsafe(ref output, 192);
-		(Vector256.ConcatUpper(b2, b3).AsByte() ^ Vector256.LoadUnsafe(ref input, 224)).StoreUnsafe(ref output, 224);
+		if (blocks > 3)
+		{
+			(Vector256.ConcatUpper(b0, b1).AsByte() ^ Vector256.LoadUnsafe(ref input, 192)).StoreUnsafe(ref output, 192);
+			(Vector256.ConcatUpper(b2, b3).AsByte() ^ Vector256.LoadUnsafe(ref input, 224)).StoreUnsafe(ref output, 224);
+		}
 		(Vector256.ConcatLower(b0, b1).AsByte() ^ Vector256.LoadUnsafe(ref input, 128)).StoreUnsafe(ref output, 128);
 		(Vector256.ConcatLower(b2, b3).AsByte() ^ Vector256.LoadUnsafe(ref input, 160)).StoreUnsafe(ref output, 160);
-		GetCounterOriginal(ref stateRef) += 4;
+		GetCounterOriginal(ref stateRef) += (uint)blocks;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

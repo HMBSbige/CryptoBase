@@ -7,7 +7,7 @@ namespace CryptoBase.Benchmark.Ciphers.Aead;
 [MemoryDiagnoser]
 public class XChaCha20Poly1305Benchmark
 {
-	[Params(64, 256, 1024, 1025, 8192)]
+	[Params(64, 256, 1024, 1025, 1500, 8192, 65536)]
 	public int ByteLength { get; set; }
 
 	private XChaCha20Poly1305Cipher _cryptoBase = null!;

@@ -32,10 +32,11 @@ internal static partial class ChaCha20Utils
 		d = w;
 	}
 
-	private static int XorVector128(ref uint stateRef, ref byte input, ref byte output, int length)
+	// Runs whole 4-block batches; a shorter final batch stores only its leading blocks.
+	private static void XorVector128(ref uint stateRef, ref byte input, ref byte output, int blocks)
 	{
+		Debug.Assert(blocks % 4 is 0 or 3);
 		ref ulong counter = ref GetCounterOriginal(ref stateRef);
-		int processed = 0;
 		Vector128<uint> s00 = Vector128.Create(Unsafe.Add(ref stateRef, 0));
 		Vector128<uint> s01 = Vector128.Create(Unsafe.Add(ref stateRef, 1));
 		Vector128<uint> s02 = Vector128.Create(Unsafe.Add(ref stateRef, 2));
@@ -52,12 +53,8 @@ internal static partial class ChaCha20Utils
 		Vector128<uint> s14 = Vector128.Create(Unsafe.Add(ref stateRef, 14));
 		Vector128<uint> s15 = Vector128.Create(Unsafe.Add(ref stateRef, 15));
 
-		int minimumBatchLength = AdvSimd.Arm64.IsSupported ? 192 : 256;
-
-		while (length - processed >= minimumBatchLength)
+		for (int processed = 0; blocks > 0; processed += 256, blocks -= 4)
 		{
-			int blocks = AdvSimd.Arm64.IsSupported && length - processed < 256 ? 3 : 4;
-			int batchLength = blocks * 64;
 			Vector128<uint> c0 = Vector128.Create((uint)counter) + Vector128.CreateSequence(0u, 1u);
 			Vector128<uint> h0 = s13;
 			Vector128<uint> a00 = s00;
@@ -101,16 +98,13 @@ internal static partial class ChaCha20Utils
 			a13 += h0;
 			a14 += s14;
 			a15 += s15;
-			bool storeFourthBlock = blocks is 4;
+			bool storeFourthBlock = blocks >= 4;
 			VectorTranspose.TransposeXorStore(a00, a01, a02, a03, ref input, ref output, (nuint)processed, storeFourthBlock);
 			VectorTranspose.TransposeXorStore(a04, a05, a06, a07, ref input, ref output, (nuint)(processed + 16), storeFourthBlock);
 			VectorTranspose.TransposeXorStore(a08, a09, a10, a11, ref input, ref output, (nuint)(processed + 32), storeFourthBlock);
 			VectorTranspose.TransposeXorStore(a12, a13, a14, a15, ref input, ref output, (nuint)(processed + 48), storeFourthBlock);
-			counter += (uint)blocks;
-			processed += batchLength;
+			counter += (uint)Math.Min(blocks, 4);
 		}
-
-		return processed;
 	}
 
 	private static void XorVector128Two(ref uint stateRef, ref byte input, ref byte output)

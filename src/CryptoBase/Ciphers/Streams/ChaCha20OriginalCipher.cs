@@ -90,15 +90,6 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 		ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
 	}
 
-	/// <summary>Derives the Poly1305 key from block 0 without advancing stream state; the caller must set the counter to 1 before processing the message.</summary>
-	internal void DerivePoly1305Key(Span<byte> destination)
-	{
-		Debug.Assert(destination.Length is 32);
-		Debug.Assert(ChaCha20Utils.GetCounterOriginal(ref StateRef) is 0);
-
-		ChaCha20Utils.DerivePoly1305Key(StateSpan, destination);
-	}
-
 	/// <summary>Sets the block counter and resets the byte offset within the block to zero.</summary>
 	/// <param name="counter">The counter value for the next 64-byte keystream block.</param>
 	public void SetCounter(ulong counter)
@@ -108,23 +99,23 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 		ChaCha20Utils.GetCounterOriginal(ref StateRef) = counter;
 	}
 
-	internal void DerivePoly1305KeyAndKeyStream(Span<byte> poly1305Key, Span<byte> keyStream)
+	internal void XorWholeBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Debug.Assert(ChaCha20Utils.GetCounterOriginal(ref StateRef) is 0);
+		Debug.Assert(Index is 0 && source.Length % BlockSize is 0 && destination.Length >= source.Length);
+		Debug.Assert((ulong)source.Length / BlockSize <= CounterRemaining);
 
-		ChaCha20Utils.DerivePoly1305KeyAndKeyStream(ref StateRef, poly1305Key, keyStream);
+		ChaCha20Utils.XorBlocks(StateSpan, source, destination);
+		CounterRemaining -= (uint)source.Length / BlockSize;
 	}
 
-	/// <summary>Encrypts whole chunks from a block boundary and appends their ciphertext to <paramref name="mac" />.</summary>
-	/// <returns>The number of bytes processed.</returns>
-	internal int XorChunksAndAppendPoly1305<TState>(ReadOnlySpan<byte> source, Span<byte> destination, ref TState mac) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
+	internal int XorChunksAndAppendPoly1305<TState>(ReadOnlySpan<byte> source, Span<byte> destination, ref TState mac, int processed, ref int hashedLength, bool decrypt) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
 	{
 		Debug.Assert(Index is 0 && destination.Length >= source.Length);
 
-		int processed = ChaCha20Utils.XorPoly1305(ref StateRef, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref mac);
-		Debug.Assert((ulong)processed / BlockSize <= CounterRemaining);
-		CounterRemaining -= (uint)processed / BlockSize;
-		return processed;
+		int end = ChaCha20Utils.XorPoly1305(ref StateRef, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref mac, processed, ref hashedLength, decrypt);
+		Debug.Assert((ulong)(end - processed + BlockSize - 1) / BlockSize <= CounterRemaining);
+		CounterRemaining -= (uint)(end - processed + BlockSize - 1) / BlockSize;
+		return end;
 	}
 
 	/// <inheritdoc />

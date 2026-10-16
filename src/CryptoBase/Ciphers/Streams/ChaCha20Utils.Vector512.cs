@@ -15,12 +15,13 @@ internal static partial class ChaCha20Utils
 		b = Avx512F.RotateLeft(b ^ c, 7);
 	}
 
-	private static int XorVector512(ref uint stateRef, ref byte input, ref byte output, int length)
+	// Runs whole 16-block batches; a shorter final batch stores only its leading blocks.
+	private static void XorVector512(ref uint stateRef, ref byte input, ref byte output, int blocks)
 	{
+		Debug.Assert(blocks % 16 is 0 or > 8);
 		ref ulong counter = ref GetCounterOriginal(ref stateRef);
-		int processed = 0;
 
-		while (length - processed >= 1024)
+		for (int processed = 0; blocks > 0; processed += 1024, blocks -= 16)
 		{
 			Vector512<uint> c0 = Vector512.Create((uint)counter) + Vector512.CreateSequence(0u, 1u);
 			Vector512<uint> h0 = Vector512.Create(Unsafe.Add(ref stateRef, 13));
@@ -79,17 +80,35 @@ internal static partial class ChaCha20Utils
 			(a06.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 384))).StoreUnsafe(ref output, (nuint)(processed + 384));
 			(a07.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 448))).StoreUnsafe(ref output, (nuint)(processed + 448));
 			(a08.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 512))).StoreUnsafe(ref output, (nuint)(processed + 512));
-			(a09.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 576))).StoreUnsafe(ref output, (nuint)(processed + 576));
-			(a10.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 640))).StoreUnsafe(ref output, (nuint)(processed + 640));
-			(a11.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 704))).StoreUnsafe(ref output, (nuint)(processed + 704));
-			(a12.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 768))).StoreUnsafe(ref output, (nuint)(processed + 768));
-			(a13.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 832))).StoreUnsafe(ref output, (nuint)(processed + 832));
-			(a14.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 896))).StoreUnsafe(ref output, (nuint)(processed + 896));
-			(a15.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 960))).StoreUnsafe(ref output, (nuint)(processed + 960));
-			counter += 16;
-			processed += 1024;
+			if (blocks > 9)
+			{
+				(a09.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 576))).StoreUnsafe(ref output, (nuint)(processed + 576));
+			}
+			if (blocks > 10)
+			{
+				(a10.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 640))).StoreUnsafe(ref output, (nuint)(processed + 640));
+			}
+			if (blocks > 11)
+			{
+				(a11.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 704))).StoreUnsafe(ref output, (nuint)(processed + 704));
+			}
+			if (blocks > 12)
+			{
+				(a12.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 768))).StoreUnsafe(ref output, (nuint)(processed + 768));
+			}
+			if (blocks > 13)
+			{
+				(a13.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 832))).StoreUnsafe(ref output, (nuint)(processed + 832));
+			}
+			if (blocks > 14)
+			{
+				(a14.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 896))).StoreUnsafe(ref output, (nuint)(processed + 896));
+			}
+			if (blocks > 15)
+			{
+				(a15.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 960))).StoreUnsafe(ref output, (nuint)(processed + 960));
+			}
+			counter += (uint)Math.Min(blocks, 16);
 		}
-
-		return processed;
 	}
 }
