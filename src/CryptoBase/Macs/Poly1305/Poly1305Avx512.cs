@@ -47,11 +47,8 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<uint> InterleavePowers(Vector256<uint> upper, Vector256<uint> lower)
 	{
-		Vector256<ulong> zippedLow = Avx2.UnpackLow(upper.AsUInt64(), lower.AsUInt64());
-		Vector256<ulong> zippedHigh = Avx2.UnpackHigh(upper.AsUInt64(), lower.AsUInt64());
-		Vector256<ulong> first = Vector256.Create(zippedLow.GetLower(), zippedHigh.GetLower());
-		Vector256<ulong> second = Vector256.Create(zippedLow.GetUpper(), zippedHigh.GetUpper());
-		return Vector512.Create(first, second).AsUInt32();
+		// Indices 0-3 and 8-11 read only the low halves, so the undefined upper bits from ToVector512Unsafe are never used.
+		return Avx512F.PermuteVar8x64x2(upper.AsUInt64().ToVector512Unsafe(), Vector512.Create(0UL, 8, 1, 9, 2, 10, 3, 11), lower.AsUInt64().ToVector512Unsafe()).AsUInt32();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,15 +59,15 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		out Vector256<uint> result0, out Vector256<uint> result1, out Vector256<uint> result2, out Vector256<uint> result3, out Vector256<uint> result4
 	)
 	{
-		Vector256<uint> r0 = Vector256.Create((ulong)power0).AsUInt32();
-		Vector256<uint> r1 = Vector256.Create((ulong)power1).AsUInt32();
-		Vector256<uint> r2 = Vector256.Create((ulong)power2).AsUInt32();
-		Vector256<uint> r3 = Vector256.Create((ulong)power3).AsUInt32();
-		Vector256<uint> r4 = Vector256.Create((ulong)power4).AsUInt32();
-		Vector256<uint> s1 = Vector256.Create((ulong)(power1 * 5)).AsUInt32();
-		Vector256<uint> s2 = Vector256.Create((ulong)(power2 * 5)).AsUInt32();
-		Vector256<uint> s3 = Vector256.Create((ulong)(power3 * 5)).AsUInt32();
-		Vector256<uint> s4 = Vector256.Create((ulong)(power4 * 5)).AsUInt32();
+		Vector256<uint> r0 = Vector256.Create(power0);
+		Vector256<uint> r1 = Vector256.Create(power1);
+		Vector256<uint> r2 = Vector256.Create(power2);
+		Vector256<uint> r3 = Vector256.Create(power3);
+		Vector256<uint> r4 = Vector256.Create(power4);
+		Vector256<uint> s1 = Vector256.Create(power1 * 5);
+		Vector256<uint> s2 = Vector256.Create(power2 * 5);
+		Vector256<uint> s3 = Vector256.Create(power3 * 5);
+		Vector256<uint> s4 = Vector256.Create(power4 * 5);
 
 		Vector256<ulong> d0 = Avx2.Multiply(h0, r0) + Avx2.Multiply(h1, s4) + Avx2.Multiply(h2, s3) + Avx2.Multiply(h3, s2) + Avx2.Multiply(h4, s1);
 		Vector256<ulong> d1 = Avx2.Multiply(h0, r1) + Avx2.Multiply(h1, r0) + Avx2.Multiply(h2, s4) + Avx2.Multiply(h3, s3) + Avx2.Multiply(h4, s2);
@@ -147,20 +144,20 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		int length = source.Length & -BlockSize8;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector512<ulong> mask = Vector512.Create((ulong)Poly1305State26.LimbMask);
-		Vector512<ulong> h0 = Vector512.CreateScalar((ulong)_state.H0);
-		Vector512<ulong> h1 = Vector512.CreateScalar((ulong)_state.H1);
-		Vector512<ulong> h2 = Vector512.CreateScalar((ulong)_state.H2);
-		Vector512<ulong> h3 = Vector512.CreateScalar((ulong)_state.H3);
-		Vector512<ulong> h4 = Vector512.CreateScalar((ulong)_state.H4);
-		Vector512<uint> r0 = Vector512.Create(_r0.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> r1 = Vector512.Create(_r1.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> r2 = Vector512.Create(_r2.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> r3 = Vector512.Create(_r3.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> r4 = Vector512.Create(_r4.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> s1 = Vector512.Create(_s1.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> s2 = Vector512.Create(_s2.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> s3 = Vector512.Create(_s3.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> s4 = Vector512.Create(_s4.AsUInt64().ToScalar()).AsUInt32();
+		Vector512<ulong> h0 = Vector512.CreateScalar(_state.H0).AsUInt64();
+		Vector512<ulong> h1 = Vector512.CreateScalar(_state.H1).AsUInt64();
+		Vector512<ulong> h2 = Vector512.CreateScalar(_state.H2).AsUInt64();
+		Vector512<ulong> h3 = Vector512.CreateScalar(_state.H3).AsUInt64();
+		Vector512<ulong> h4 = Vector512.CreateScalar(_state.H4).AsUInt64();
+		Vector512<uint> r0 = BroadcastEighth(ref _r0);
+		Vector512<uint> r1 = BroadcastEighth(ref _r1);
+		Vector512<uint> r2 = BroadcastEighth(ref _r2);
+		Vector512<uint> r3 = BroadcastEighth(ref _r3);
+		Vector512<uint> r4 = BroadcastEighth(ref _r4);
+		Vector512<uint> s1 = BroadcastEighth(ref _s1);
+		Vector512<uint> s2 = BroadcastEighth(ref _s2);
+		Vector512<uint> s3 = BroadcastEighth(ref _s3);
+		Vector512<uint> s4 = BroadcastEighth(ref _s4);
 
 		LoadEight(ref input, out Vector512<ulong> m0, out Vector512<ulong> m1, out Vector512<ulong> m2, out Vector512<ulong> m3, out Vector512<ulong> m4);
 		h2 += m2;
@@ -248,20 +245,20 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		int length = source.Length & -BlockSize8;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector512<ulong> mask = Vector512.Create((ulong)Poly1305State26.LimbMask);
-		Vector512<ulong> h0 = Vector512.CreateScalar((ulong)_state.H0);
-		Vector512<ulong> h1 = Vector512.CreateScalar((ulong)_state.H1);
-		Vector512<ulong> h2 = Vector512.CreateScalar((ulong)_state.H2);
-		Vector512<ulong> h3 = Vector512.CreateScalar((ulong)_state.H3);
-		Vector512<ulong> h4 = Vector512.CreateScalar((ulong)_state.H4);
-		Vector512<uint> r0 = Vector512.Create(_r0.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> r1 = Vector512.Create(_r1.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> r2 = Vector512.Create(_r2.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> r3 = Vector512.Create(_r3.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> r4 = Vector512.Create(_r4.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> s1 = Vector512.Create(_s1.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> s2 = Vector512.Create(_s2.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> s3 = Vector512.Create(_s3.AsUInt64().ToScalar()).AsUInt32();
-		Vector512<uint> s4 = Vector512.Create(_s4.AsUInt64().ToScalar()).AsUInt32();
+		Vector512<ulong> h0 = Vector512.CreateScalar(_state.H0).AsUInt64();
+		Vector512<ulong> h1 = Vector512.CreateScalar(_state.H1).AsUInt64();
+		Vector512<ulong> h2 = Vector512.CreateScalar(_state.H2).AsUInt64();
+		Vector512<ulong> h3 = Vector512.CreateScalar(_state.H3).AsUInt64();
+		Vector512<ulong> h4 = Vector512.CreateScalar(_state.H4).AsUInt64();
+		Vector512<uint> r0 = BroadcastEighth(ref _r0);
+		Vector512<uint> r1 = BroadcastEighth(ref _r1);
+		Vector512<uint> r2 = BroadcastEighth(ref _r2);
+		Vector512<uint> r3 = BroadcastEighth(ref _r3);
+		Vector512<uint> r4 = BroadcastEighth(ref _r4);
+		Vector512<uint> s1 = BroadcastEighth(ref _s1);
+		Vector512<uint> s2 = BroadcastEighth(ref _s2);
+		Vector512<uint> s3 = BroadcastEighth(ref _s3);
+		Vector512<uint> s4 = BroadcastEighth(ref _s4);
 
 		LoadEight(ref input, out Vector512<ulong> m0, out Vector512<ulong> m1, out Vector512<ulong> m2, out Vector512<ulong> m3, out Vector512<ulong> m4);
 		h0 += m0;
@@ -447,11 +444,11 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		Debug.Assert(source.Length >= Poly1305Algorithm.BlockSizeInBytes * 4);
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Poly1305Utils.LoadFour(ref input, out Vector256<ulong> m0, out Vector256<ulong> m1, out Vector256<ulong> m2, out Vector256<ulong> m3, out Vector256<ulong> m4);
-		Vector256<ulong> h0 = m0 + Vector256.CreateScalar((ulong)_state.H0);
-		Vector256<ulong> h1 = m1 + Vector256.CreateScalar((ulong)_state.H1);
-		Vector256<ulong> h2 = m2 + Vector256.CreateScalar((ulong)_state.H2);
-		Vector256<ulong> h3 = m3 + Vector256.CreateScalar((ulong)_state.H3);
-		Vector256<ulong> h4 = m4 + Vector256.CreateScalar((ulong)_state.H4);
+		Vector256<ulong> h0 = m0 + Vector256.CreateScalar(_state.H0).AsUInt64();
+		Vector256<ulong> h1 = m1 + Vector256.CreateScalar(_state.H1).AsUInt64();
+		Vector256<ulong> h2 = m2 + Vector256.CreateScalar(_state.H2).AsUInt64();
+		Vector256<ulong> h3 = m3 + Vector256.CreateScalar(_state.H3).AsUInt64();
+		Vector256<ulong> h4 = m4 + Vector256.CreateScalar(_state.H4).AsUInt64();
 		Vector256<uint> r0 = ExtractFourPowers(_r0);
 		Vector256<uint> r1 = ExtractFourPowers(_r1);
 		Vector256<uint> r2 = ExtractFourPowers(_r2);
@@ -526,11 +523,11 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal readonly void GetEightWayAccumulator(out Vector512<ulong> h0, out Vector512<ulong> h1, out Vector512<ulong> h2, out Vector512<ulong> h3, out Vector512<ulong> h4)
 	{
-		h0 = Vector512.CreateScalar((ulong)_state.H0);
-		h1 = Vector512.CreateScalar((ulong)_state.H1);
-		h2 = Vector512.CreateScalar((ulong)_state.H2);
-		h3 = Vector512.CreateScalar((ulong)_state.H3);
-		h4 = Vector512.CreateScalar((ulong)_state.H4);
+		h0 = Vector512.CreateScalar(_state.H0).AsUInt64();
+		h1 = Vector512.CreateScalar(_state.H1).AsUInt64();
+		h2 = Vector512.CreateScalar(_state.H2).AsUInt64();
+		h3 = Vector512.CreateScalar(_state.H3).AsUInt64();
+		h4 = Vector512.CreateScalar(_state.H4).AsUInt64();
 	}
 
 	// h = (h + m) * r^8 for one 128-byte group; powers are broadcast from memory to spare registers.
@@ -646,7 +643,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<uint> BroadcastEighth(ref Vector512<uint> value)
 	{
-		return Vector512.Create(value.GetElement(0));
+		return Vector512.Create(Unsafe.As<Vector512<uint>, uint>(ref value));
 	}
 
 	public void AppendMessage(scoped ReadOnlySpan<byte> source)
@@ -659,6 +656,8 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		Append(source, true);
 	}
 
+	// Kept out of line because a copy at each call site exhausts the caller's inline budget and leaves the scalar block helpers as calls.
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void Append(scoped ReadOnlySpan<byte> source, bool padPartialBlock)
 	{
 		if (source.Length >= BlockSize8)

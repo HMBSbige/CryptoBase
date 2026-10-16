@@ -142,14 +142,14 @@ internal static partial class ChaCha20Utils
 		initial = Vector256.Create(row).AddUInt32LE01();
 		a3 += initial;
 		b3 += initial.AddUInt32LE22();
-		(Avx2.Permute2x128(a0, a1, 0x20).AsByte() ^ Vector256.LoadUnsafe(ref input)).StoreUnsafe(ref output);
-		(Avx2.Permute2x128(a2, a3, 0x20).AsByte() ^ Vector256.LoadUnsafe(ref input, 32)).StoreUnsafe(ref output, 32);
-		(Avx2.Permute2x128(a0, a1, 0x31).AsByte() ^ Vector256.LoadUnsafe(ref input, 64)).StoreUnsafe(ref output, 64);
-		(Avx2.Permute2x128(a2, a3, 0x31).AsByte() ^ Vector256.LoadUnsafe(ref input, 96)).StoreUnsafe(ref output, 96);
-		(Avx2.Permute2x128(b0, b1, 0x20).AsByte() ^ Vector256.LoadUnsafe(ref input, 128)).StoreUnsafe(ref output, 128);
-		(Avx2.Permute2x128(b2, b3, 0x20).AsByte() ^ Vector256.LoadUnsafe(ref input, 160)).StoreUnsafe(ref output, 160);
-		(Avx2.Permute2x128(b0, b1, 0x31).AsByte() ^ Vector256.LoadUnsafe(ref input, 192)).StoreUnsafe(ref output, 192);
-		(Avx2.Permute2x128(b2, b3, 0x31).AsByte() ^ Vector256.LoadUnsafe(ref input, 224)).StoreUnsafe(ref output, 224);
+		(Vector256.ConcatUpper(a0, a1).AsByte() ^ Vector256.LoadUnsafe(ref input, 64)).StoreUnsafe(ref output, 64);
+		(Vector256.ConcatUpper(a2, a3).AsByte() ^ Vector256.LoadUnsafe(ref input, 96)).StoreUnsafe(ref output, 96);
+		(Vector256.ConcatLower(a0, a1).AsByte() ^ Vector256.LoadUnsafe(ref input)).StoreUnsafe(ref output);
+		(Vector256.ConcatLower(a2, a3).AsByte() ^ Vector256.LoadUnsafe(ref input, 32)).StoreUnsafe(ref output, 32);
+		(Vector256.ConcatUpper(b0, b1).AsByte() ^ Vector256.LoadUnsafe(ref input, 192)).StoreUnsafe(ref output, 192);
+		(Vector256.ConcatUpper(b2, b3).AsByte() ^ Vector256.LoadUnsafe(ref input, 224)).StoreUnsafe(ref output, 224);
+		(Vector256.ConcatLower(b0, b1).AsByte() ^ Vector256.LoadUnsafe(ref input, 128)).StoreUnsafe(ref output, 128);
+		(Vector256.ConcatLower(b2, b3).AsByte() ^ Vector256.LoadUnsafe(ref input, 160)).StoreUnsafe(ref output, 160);
 		GetCounterOriginal(ref stateRef) += 4;
 	}
 

@@ -62,9 +62,9 @@ internal static partial class ChaCha20Utils
 		b += initial1;
 		c += initial2;
 		d += initial3;
-		Vector256.Create(a.GetLower(), b.GetLower()).AsByte().StoreUnsafe(ref poly1305Key);
-		Vector256.Create(a.GetUpper(), b.GetUpper()).AsByte().StoreUnsafe(ref keyStream);
-		Vector256.Create(c.GetUpper(), d.GetUpper()).AsByte().StoreUnsafe(ref keyStream, 32);
+		Vector256.ConcatLower(a, b).AsByte().StoreUnsafe(ref poly1305Key);
+		Vector256.ConcatUpper(a, b).AsByte().StoreUnsafe(ref keyStream);
+		Vector256.ConcatUpper(c, d).AsByte().StoreUnsafe(ref keyStream, 32);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

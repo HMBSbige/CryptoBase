@@ -95,11 +95,11 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 	{
 		int length = source.Length & -BlockSize2;
 		ref byte input = ref MemoryMarshal.GetReference(source);
-		Vector128<ulong> h0 = Vector128.CreateScalar((ulong)_state.H0);
-		Vector128<ulong> h1 = Vector128.CreateScalar((ulong)_state.H1);
-		Vector128<ulong> h2 = Vector128.CreateScalar((ulong)_state.H2);
-		Vector128<ulong> h3 = Vector128.CreateScalar((ulong)_state.H3);
-		Vector128<ulong> h4 = Vector128.CreateScalar((ulong)_state.H4);
+		Vector128<ulong> h0 = Vector128.CreateScalar(_state.H0).AsUInt64();
+		Vector128<ulong> h1 = Vector128.CreateScalar(_state.H1).AsUInt64();
+		Vector128<ulong> h2 = Vector128.CreateScalar(_state.H2).AsUInt64();
+		Vector128<ulong> h3 = Vector128.CreateScalar(_state.H3).AsUInt64();
+		Vector128<ulong> h4 = Vector128.CreateScalar(_state.H4).AsUInt64();
 
 		LoadTwo(ref input, out Vector128<ulong> m0, out Vector128<ulong> m1, out Vector128<ulong> m2, out Vector128<ulong> m3, out Vector128<ulong> m4);
 		h0 += m0;

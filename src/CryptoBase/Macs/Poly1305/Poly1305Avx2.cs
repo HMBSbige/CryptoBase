@@ -75,11 +75,11 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 		int length = source.Length & -BlockSize4;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector256<ulong> mask = Vector256.Create((ulong)Poly1305State26.LimbMask);
-		Vector256<ulong> h0 = Vector256.CreateScalar((ulong)_state.H0);
-		Vector256<ulong> h1 = Vector256.CreateScalar((ulong)_state.H1);
-		Vector256<ulong> h2 = Vector256.CreateScalar((ulong)_state.H2);
-		Vector256<ulong> h3 = Vector256.CreateScalar((ulong)_state.H3);
-		Vector256<ulong> h4 = Vector256.CreateScalar((ulong)_state.H4);
+		Vector256<ulong> h0 = Vector256.CreateScalar(_state.H0).AsUInt64();
+		Vector256<ulong> h1 = Vector256.CreateScalar(_state.H1).AsUInt64();
+		Vector256<ulong> h2 = Vector256.CreateScalar(_state.H2).AsUInt64();
+		Vector256<ulong> h3 = Vector256.CreateScalar(_state.H3).AsUInt64();
+		Vector256<ulong> h4 = Vector256.CreateScalar(_state.H4).AsUInt64();
 		Poly1305Utils.LoadFour(ref input, out Vector256<ulong> m0, out Vector256<ulong> m1, out Vector256<ulong> m2, out Vector256<ulong> m3, out Vector256<ulong> m4);
 		h0 += m0;
 		h1 += m1;
