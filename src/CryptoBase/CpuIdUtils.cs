@@ -95,26 +95,16 @@ public static class CpuIdUtils
 		return false;
 	}
 
+	private static readonly (int Family, int Model)? AmdFamilyAndModel = X86Base.IsSupported && IsAuthenticAmd(X86Base.CpuId(0, 0)) ? DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax) : null;
+
 	internal static bool IsAmdZen5()
 	{
-		if (!X86Base.IsSupported)
-		{
-			return false;
-		}
-
-		(int family, int model) = DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax);
-		return IsZen5(family, model) && IsAuthenticAmd(X86Base.CpuId(0, 0));
+		return AmdFamilyAndModel is var (family, model) && IsZen5(family, model);
 	}
 
 	internal static bool IsAmdZen5With512BitDatapath()
 	{
-		if (!X86Base.IsSupported)
-		{
-			return false;
-		}
-
-		(int family, int model) = DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax);
-		return IsZen5With512BitDatapath(family, model) && IsAuthenticAmd(X86Base.CpuId(0, 0));
+		return AmdFamilyAndModel is var (family, model) && IsZen5With512BitDatapath(family, model);
 	}
 
 	internal static bool IsAuthenticAmd((int Eax, int Ebx, int Ecx, int Edx) id)
