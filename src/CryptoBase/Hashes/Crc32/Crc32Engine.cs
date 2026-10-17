@@ -94,7 +94,7 @@ internal static class Crc32Engine
 		)
 		{
 			state = Crc32Vectorized.UpdateArm<TAlgorithm>(state, source);
-			int bytesConsumed = source.Length - source.Length % Vector128<byte>.Count;
+			int bytesConsumed = source.Length & ~(Vector128<byte>.Count - 1);
 
 			if (bytesConsumed == source.Length)
 			{
