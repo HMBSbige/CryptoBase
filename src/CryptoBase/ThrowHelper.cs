@@ -30,7 +30,7 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
-	public static void ThrowDataLimitExceeded(string? paramName = default)
+	public static void ThrowDataLimitExceeded(string paramName)
 	{
 		throw new ArgumentOutOfRangeException(paramName, "Data limit exceeded!");
 	}
