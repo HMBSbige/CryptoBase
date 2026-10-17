@@ -153,8 +153,9 @@ internal static class CcmUtils
 		int macFlags = (TTag.Size - 2) / 2 << 3 | CounterFlags | (associatedDataLength is 0 ? 0 : AssociatedDataFlag);
 
 		b0 = Vector128.CreateUInt64(low | (uint)macFlags, high | length).AsByte();
-		a0 = Vector128.CreateUInt64(low | CounterFlags, high).AsByte();
-		return a0.ReverseEndianness128().IncUInt32LE();
+		Vector128<byte> counter = Vector128.CreateUInt64(low | CounterFlags, high).AsByte();
+		a0 = counter;
+		return counter.ReverseEndianness128().IncUInt32LE();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
