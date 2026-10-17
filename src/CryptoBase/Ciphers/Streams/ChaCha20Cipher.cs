@@ -103,12 +103,13 @@ public class ChaCha20Cipher : SnuffleCipher
 		ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
 	}
 
+	// AEAD messages stay far below 2^32 blocks, so the counter never carries into nonce word 13 here.
 	internal void XorWholeBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Debug.Assert(Index is 0 && source.Length % BlockSize is 0 && destination.Length >= source.Length);
-		Debug.Assert((ulong)source.Length / BlockSize <= CounterRemaining);
+		Debug.Assert((ulong)source.Length / BlockSize < CounterRemaining);
 
-		XorBlocks(StateSpan, source, destination);
+		ChaCha20Utils.XorBlocks(StateSpan, source, destination);
 		CounterRemaining -= (uint)source.Length / BlockSize;
 	}
 
