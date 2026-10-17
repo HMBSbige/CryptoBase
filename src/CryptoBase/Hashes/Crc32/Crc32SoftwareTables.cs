@@ -44,7 +44,7 @@ internal static class Crc32SoftwareTables
 			{
 				value = Unsafe.Add(ref lookup, (byte)value) ^ value >> 8;
 
-				if (transition is >= 2 and <= sizeof(ulong))
+				if (transition <= sizeof(ulong))
 				{
 					Unsafe.Add(ref slicingLookup, (transition - 2) * TableSize + i) = value;
 				}
