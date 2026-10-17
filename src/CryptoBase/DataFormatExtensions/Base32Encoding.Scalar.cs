@@ -315,7 +315,7 @@ public sealed partial class Base32Encoding
 		Unsafe.Add(ref destination, 4) = (byte)(v6 << 5 | v7);
 	}
 
-	private bool TryDecodeTail<T>(ReadOnlySpan<T> source, Span<byte> destination, out int symbolsConsumed, out int bytesWritten) where T : unmanaged, INumberBase<T>
+	private bool TryDecodeTail<T>(ReadOnlySpan<T> source, Span<byte> destination, out int symbolsConsumed, out int bytesWritten) where T : unmanaged
 	{
 		int buffer = 0;
 		int bits = 0;
@@ -347,7 +347,7 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private bool TryGetValue<T>(T symbol, out int value) where T : unmanaged, INumberBase<T>
+	private bool TryGetValue<T>(T symbol, out int value) where T : unmanaged
 	{
 		int index = FromSymbol(symbol);
 		byte[] decodeTable = _decodeTable;

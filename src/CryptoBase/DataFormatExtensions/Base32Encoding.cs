@@ -165,7 +165,7 @@ public sealed partial class Base32Encoding
 		return EncodeCore(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock, path);
 	}
 
-	private OperationStatus EncodeCore<T>(ReadOnlySpan<byte> source, Span<T> destination, out int bytesConsumed, out int symbolsWritten, bool isFinalBlock, Base32SimdPath path) where T : unmanaged, INumberBase<T>
+	private OperationStatus EncodeCore<T>(ReadOnlySpan<byte> source, Span<T> destination, out int bytesConsumed, out int symbolsWritten, bool isFinalBlock, Base32SimdPath path) where T : unmanaged
 	{
 		bytesConsumed = 0;
 		symbolsWritten = 0;
@@ -399,7 +399,7 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private OperationStatus DecodeCore<T>(ReadOnlySpan<T> source, Span<byte> destination, out int symbolsConsumed, out int bytesWritten, bool isFinalBlock, Base32SimdPath path) where T : unmanaged, INumberBase<T>
+	private OperationStatus DecodeCore<T>(ReadOnlySpan<T> source, Span<byte> destination, out int symbolsConsumed, out int bytesWritten, bool isFinalBlock, Base32SimdPath path) where T : unmanaged, IEquatable<T>
 	{
 		if (!isFinalBlock)
 		{
@@ -416,7 +416,7 @@ public sealed partial class Base32Encoding
 		return DecodeFinal(source, destination, symbolCount, out symbolsConsumed, out bytesWritten, path);
 	}
 
-	private OperationStatus DecodeFinal<T>(ReadOnlySpan<T> source, Span<byte> destination, int symbolCount, out int symbolsConsumed, out int bytesWritten, Base32SimdPath path) where T : unmanaged, INumberBase<T>
+	private OperationStatus DecodeFinal<T>(ReadOnlySpan<T> source, Span<byte> destination, int symbolCount, out int symbolsConsumed, out int bytesWritten, Base32SimdPath path) where T : unmanaged
 	{
 		symbolsConsumed = 0;
 		bytesWritten = 0;
@@ -465,7 +465,7 @@ public sealed partial class Base32Encoding
 		return OperationStatus.Done;
 	}
 
-	private OperationStatus DecodeIncremental<T>(ReadOnlySpan<T> source, Span<byte> destination, out int symbolsConsumed, out int bytesWritten, Base32SimdPath path) where T : unmanaged, INumberBase<T>
+	private OperationStatus DecodeIncremental<T>(ReadOnlySpan<T> source, Span<byte> destination, out int symbolsConsumed, out int bytesWritten, Base32SimdPath path) where T : unmanaged
 	{
 		symbolsConsumed = 0;
 		bytesWritten = 0;
@@ -533,7 +533,7 @@ public sealed partial class Base32Encoding
 		return OperationStatus.Done;
 	}
 
-	private bool TryGetRawSymbolCount<T>(ReadOnlySpan<T> source, out int symbolCount) where T : unmanaged, INumberBase<T>
+	private bool TryGetRawSymbolCount<T>(ReadOnlySpan<T> source, out int symbolCount) where T : unmanaged, IEquatable<T>
 	{
 		int unpaddedLength = source.TrimEnd(ToSymbol<T>(_padding)).Length;
 
@@ -567,7 +567,7 @@ public sealed partial class Base32Encoding
 		return true;
 	}
 
-	private bool HasCanonicalTrailingBits<T>(ReadOnlySpan<T> source, int symbolCount) where T : unmanaged, INumberBase<T>
+	private bool HasCanonicalTrailingBits<T>(ReadOnlySpan<T> source, int symbolCount) where T : unmanaged
 	{
 		// Defer invalid-symbol detection to the block/tail scan so the consumed count reflects the valid prefix.
 		return symbolCount is 0
