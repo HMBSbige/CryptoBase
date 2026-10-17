@@ -1,12 +1,14 @@
 ﻿<Solution>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
     <File Path="LICENSE" />
     <File Path="NuGet.Config" />
     <File Path="README.md" />
     <File Path=".github\renovate.json" />
+    <File Path=".github\test.sh" />
     <File Path=".github\workflows\CI.yml" />
     <File Path=".github\workflows\release.yml" />
     <File Path="Directory.Packages.props" />
