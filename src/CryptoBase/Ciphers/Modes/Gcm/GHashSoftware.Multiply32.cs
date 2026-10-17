@@ -2,6 +2,7 @@ namespace CryptoBase.Ciphers.Modes.Gcm;
 
 internal static partial class GHashSoftware
 {
+	[SkipLocalsInit]
 	internal static void Multiply32(ref ulong accumulatorHigh, ref ulong accumulatorLow, ulong keyHigh, ulong keyLow)
 	{
 		Span<uint> buffer = stackalloc uint[62];
