@@ -11,7 +11,7 @@ namespace CryptoBase.Hashes.Blake3;
 /// and a shorter output is a prefix of every longer one. A position reads the stream from any byte, so output can be produced in pieces or in parallel.
 /// </para>
 /// <para>
-/// Generic code, such as the stream extensions of <see cref="HashUtils" />, takes the hasher as an <see cref="IHashAlgorithm{TSelf}" />, whose members give
+/// Generic code, such as the stream extensions of the CryptoBase.IO package, takes the hasher as an <see cref="IHashAlgorithm{TSelf}" />, whose members give
 /// the output the fixed length of any other hash: they write its first <see cref="HashLength" /> bytes, the standard hash in the hash mode, and return
 /// that length, whereas the public methods fill their whole destination.
 /// </para>
