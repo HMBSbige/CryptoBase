@@ -57,36 +57,7 @@ hasher.Reset();
 
 ## Hashing a stream
 
-Stream hashing requires the `CryptoBase.IO` package. Each call reads the stream from its current position to the end.
-
-```csharp
-using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
-using CryptoBase.IO;
-
-using FileStream input = File.OpenRead(path);
-Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
-
-HashAlgorithm<Sha256HashAlgorithm>.HashData(input, hash);
-```
-
-```csharp
-await using FileStream input = File.OpenRead(path);
-byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
-
-await HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(input, hash);
-```
-
-```csharp
-using FileStream input = File.OpenRead(path);
-Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
-using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
-
-// Mix spans and streams in one hash; AppendAsync is the asynchronous form.
-hasher.Append("header"u8);
-hasher.Append(input);
-hasher.GetHashAndReset(hash);
-```
+Stream hashing requires the `CryptoBase.IO` package; see [Stream and file helpers](io.md).
 
 ## BLAKE3
 

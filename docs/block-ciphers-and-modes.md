@@ -78,3 +78,5 @@ xts.Encrypt(tweak, plaintext, ciphertext);
 // Decrypt the data unit.
 xts.Decrypt(tweak, ciphertext, recovered);
 ```
+
+To encrypt files and streams, see [Stream and file helpers](io.md). `XtsMode.GetIV` produces the same tweak the IO package uses for data unit `n`.

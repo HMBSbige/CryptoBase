@@ -28,6 +28,7 @@
     <File Path="docs\stream-ciphers.md" />
     <File Path="docs\block-ciphers-and-modes.md" />
     <File Path="docs\authenticated-encryption.md" />
+    <File Path="docs\io.md" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test\CryptoBase.Tests\CryptoBase.Tests.csproj" />

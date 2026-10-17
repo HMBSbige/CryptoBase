@@ -8,4 +8,7 @@ dotnet add package CryptoBase
 
 # Interfaces only.
 dotnet add package CryptoBase.Abstractions
+
+# Stream and file helpers.
+dotnet add package CryptoBase.IO
 ```
