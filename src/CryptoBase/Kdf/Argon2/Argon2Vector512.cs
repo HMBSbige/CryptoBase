@@ -62,7 +62,7 @@ internal readonly unsafe struct Argon2Vector512 : IArgon2Kernel
 
 		for (int index = 0; index < count; ++index)
 		{
-			ref ulong y = ref (*references.LocateInOwnLane(n0.ToScalar(), index))[0];
+			ref ulong y = ref (*references.LocateInOwnLane(n0.AsUInt32().ToScalar(), index))[0];
 			CompressNext(ref y, ref Unsafe.Add(ref destination, index)[0], xorDestination, ref n0, ref n1, ref n2, ref n3, ref n4, ref n5, ref n6, ref n7, ref n8, ref n9, ref n10, ref n11, ref n12, ref n13, ref n14, ref n15);
 		}
 

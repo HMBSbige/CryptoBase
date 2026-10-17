@@ -191,7 +191,7 @@ internal struct Blake3State
 		int bufferLength = BufferLength;
 		Debug.Assert(bufferLength > ChunkLength);
 
-		int hashedLength = bufferLength / ChunkLength * ChunkLength;
+		int hashedLength = bufferLength & ~(ChunkLength - 1);
 		PushSubtrees(buffer.Slice(0, hashedLength), stack);
 		buffer.Slice(hashedLength, bufferLength - hashedLength).CopyTo(buffer);
 		_usedBufferLength = Math.Max(_usedBufferLength, bufferLength);
