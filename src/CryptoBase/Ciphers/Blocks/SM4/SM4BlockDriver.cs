@@ -79,7 +79,7 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 
 		if (offset < length)
 		{
-			ProcessRemainder((length - offset) / 16, ref rk, ref Unsafe.Add(ref source, offset), ref Unsafe.Add(ref destination, offset));
+			ProcessRemainder((length - offset) >> 4, ref rk, ref Unsafe.Add(ref source, offset), ref Unsafe.Add(ref destination, offset));
 		}
 	}
 

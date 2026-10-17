@@ -134,7 +134,7 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool IsValidAdvSimd(Vector128<byte> values)
 	{
-		return AdvSimd.Arm64.MinAcross(values).ToScalar() >= AdvSimdDecodeValidBit;
+		return AdvSimd.Arm64.MinAcross(values).ToScalar() is not 0;
 	}
 
 	// Shift-and-insert merges adjacent fields into 10-, 20- and 40-bit big-endian groups; the bits it leaves above each group are cleared
