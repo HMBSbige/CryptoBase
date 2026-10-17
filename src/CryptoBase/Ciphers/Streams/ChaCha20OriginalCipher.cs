@@ -1,5 +1,3 @@
-using CryptoBase.Macs.Poly1305;
-
 namespace CryptoBase.Ciphers.Streams;
 
 /// <summary>
@@ -97,25 +95,6 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 		CounterRemaining = GetBlocksRemaining(counter);
 		Index = 0;
 		ChaCha20Utils.GetCounterOriginal(ref StateRef) = counter;
-	}
-
-	internal void XorWholeBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		Debug.Assert(Index is 0 && source.Length % BlockSize is 0 && destination.Length >= source.Length);
-		Debug.Assert((ulong)source.Length / BlockSize <= CounterRemaining);
-
-		ChaCha20Utils.XorBlocks(StateSpan, source, destination);
-		CounterRemaining -= (uint)source.Length / BlockSize;
-	}
-
-	internal int XorChunksAndAppendPoly1305<TState>(ReadOnlySpan<byte> source, Span<byte> destination, ref TState mac, int processed, ref int hashedLength, bool decrypt) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
-	{
-		Debug.Assert(Index is 0 && destination.Length >= source.Length);
-
-		int end = ChaCha20Utils.XorPoly1305(ref StateRef, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref mac, processed, ref hashedLength, decrypt);
-		Debug.Assert((ulong)(end - processed + BlockSize - 1) / BlockSize <= CounterRemaining);
-		CounterRemaining -= (uint)(end - processed + BlockSize - 1) / BlockSize;
-		return end;
 	}
 
 	/// <inheritdoc />

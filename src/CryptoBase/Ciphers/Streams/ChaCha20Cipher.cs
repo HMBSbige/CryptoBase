@@ -39,6 +39,11 @@ public class ChaCha20Cipher : SnuffleCipher
 		MemoryMarshal.Cast<byte, uint>(key).CopyTo(state.Slice(4));
 	}
 
+	/// <summary>Initializes a new instance whose whole state must be set by the derived class before use.</summary>
+	private protected ChaCha20Cipher()
+	{
+	}
+
 	/// <summary>Computes the keystream block at the specified counter.</summary>
 	/// <param name="key">The 256-bit key.</param>
 	/// <param name="nonce">The 96-bit nonce.</param>

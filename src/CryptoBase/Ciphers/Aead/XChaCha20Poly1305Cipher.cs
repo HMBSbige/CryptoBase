@@ -22,7 +22,7 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 	/// <inheritdoc />
 	public static int TagSize => 16;
 
-	private readonly XChaCha20Cipher _chacha20;
+	private readonly SubkeyCipher _chacha20;
 
 	/// <summary>
 	/// Initializes a new instance with the specified key.
@@ -32,7 +32,7 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
-		_chacha20 = new XChaCha20Cipher(key);
+		_chacha20 = new SubkeyCipher(key);
 	}
 
 	/// <inheritdoc />
@@ -41,7 +41,7 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
-		_chacha20.InitializeNonce(nonce);
+		_chacha20.InitializeXChaCha20Nonce(nonce);
 		ChaCha20Poly1305Utils.EncryptAndComputeTag(_chacha20, source, destination, tag, associatedData);
 	}
 
@@ -51,7 +51,7 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
-		_chacha20.InitializeNonce(nonce);
+		_chacha20.InitializeXChaCha20Nonce(nonce);
 		return ChaCha20Poly1305Utils.TryDecrypt(_chacha20, source, tag, destination, associatedData);
 	}
 
@@ -59,5 +59,37 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 	public void Dispose()
 	{
 		_chacha20.Dispose();
+	}
+
+	// XChaCha20-Poly1305 is ChaCha20-Poly1305 with the HChaCha20 subkey and a nonce of four zero bytes followed by nonce[16..24], so it reuses the IETF ChaCha20 core.
+	private sealed class SubkeyCipher : ChaCha20Cipher
+	{
+		private Vector256<byte> _key;
+
+		internal SubkeyCipher(ReadOnlySpan<byte> key)
+		{
+			_key = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(key));
+		}
+
+		/// <summary>Derives the subkey for <paramref name="nonce" /> and resets the block counter to zero.</summary>
+		internal void InitializeXChaCha20Nonce(ReadOnlySpan<byte> nonce)
+		{
+			Debug.Assert(nonce.Length is XChaCha20Cipher.IVSize);
+
+			ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(nonce);
+			Span<uint> state = StateSpan;
+			Sigma32.CopyTo(state);
+			ChaCha20Utils.DeriveXChaCha20Key(state, MemoryMarshal.Cast<byte, uint>(_key.AsSpan()), ivSpan);
+			state[13] = 0;
+			state[14] = ivSpan[4];
+			state[15] = ivSpan[5];
+			SetCounter(0);
+		}
+
+		public override void Dispose()
+		{
+			_key.ZeroMemory();
+			base.Dispose();
+		}
 	}
 }

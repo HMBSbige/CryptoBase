@@ -11,8 +11,6 @@ public class XChaCha20Cipher : ChaCha20OriginalCipher
 	/// <summary>The required nonce size, in bytes.</summary>
 	public new const int IVSize = 24;
 
-	private Vector256<byte> _key;
-
 	/// <summary>
 	/// Initializes a new instance with the specified key and nonce.
 	/// </summary>
@@ -23,41 +21,14 @@ public class XChaCha20Cipher : ChaCha20OriginalCipher
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
-		_key = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(key));
-
-		InitializeNonce(iv);
-	}
-
-	/// <summary>Initializes a new instance whose nonce must be set by <see cref="InitializeNonce" /> before use.</summary>
-	internal XChaCha20Cipher(ReadOnlySpan<byte> key)
-	{
-		Debug.Assert(key.Length is KeySize);
-
-		_key = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(key));
-	}
-
-	/// <summary>Initializes the nonce and resets the block counter to zero.</summary>
-	internal void InitializeNonce(ReadOnlySpan<byte> nonce)
-	{
-		Debug.Assert(nonce.Length is IVSize);
-
 		Span<uint> state = StateSpan;
-		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(_key.AsSpan());
-		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(nonce);
+		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 
 		Sigma32.CopyTo(state);
-		ChaCha20Utils.DeriveXChaCha20Key(state, keySpan, ivSpan);
+		ChaCha20Utils.DeriveXChaCha20Key(state, MemoryMarshal.Cast<byte, uint>(key), ivSpan);
 
 		state[14] = ivSpan[4];
 		state[15] = ivSpan[5];
 		SetCounter(0);
-	}
-
-	/// <inheritdoc />
-	public override void Dispose()
-	{
-		_key.ZeroMemory();
-		base.Dispose();
-		GC.SuppressFinalize(this);
 	}
 }
