@@ -108,21 +108,27 @@ internal static class XtsTestUtils
 			int offset = random.Next(0, Math.Min(shadow.Length + 3 * dataUnitSize, maxLength) + 1);
 			count = Math.Min(count, maxLength - offset);
 
-			if (kind < 9)
+			switch (kind)
 			{
-				int index = random.Next(64);
-				random.NextBytes(source.AsSpan(index, count));
-				await WriteAndRecord(target, shadow, source, index, count, offset, useAsync);
-			}
-			else if (kind < 19)
-			{
-				await ReadAndCompare(target, shadow, random.Next(8), count, offset, useAsync);
-			}
-			else
-			{
-				int length = random.Next(0, Math.Min(shadow.Length + 4 * dataUnitSize, maxLength) / dataUnitSize + 1) * dataUnitSize;
-				target.SetLength(length);
-				shadow.SetLength(length);
+				case < 9:
+				{
+					int index = random.Next(64);
+					random.NextBytes(source.AsSpan(index, count));
+					await WriteAndRecord(target, shadow, source, index, count, offset, useAsync);
+					break;
+				}
+				case < 19:
+				{
+					await ReadAndCompare(target, shadow, random.Next(8), count, offset, useAsync);
+					break;
+				}
+				default:
+				{
+					int length = random.Next(0, Math.Min(shadow.Length + 4 * dataUnitSize, maxLength) / dataUnitSize + 1) * dataUnitSize;
+					target.SetLength(length);
+					shadow.SetLength(length);
+					break;
+				}
 			}
 
 			if (operation % 50 is 49)

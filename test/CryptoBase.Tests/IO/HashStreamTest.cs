@@ -359,15 +359,15 @@ public class HashStreamTest
 			await Assert.That(() => hashing.Read(buffer)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => hashing.Read(buffer, 0, 1)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => hashing.ReadAsync(buffer.AsMemory()).AsTask()).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => hashing.ReadByte()).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(hashing.ReadByte).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => hashing.Write(buffer)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => hashing.WriteAsync(buffer.AsMemory()).AsTask()).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => hashing.WriteByte(1)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => hashing.Flush()).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => hashing.FlushAsync()).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(hashing.Flush).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(hashing.FlushAsync).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => hashing.GetCurrentHash(buffer)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => hashing.GetHashAndReset(buffer)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => hashing.Reset()).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(hashing.Reset).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(inner.Position).IsZero();
 		}
 	}

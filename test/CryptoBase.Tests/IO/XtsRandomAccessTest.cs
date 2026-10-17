@@ -110,25 +110,25 @@ public class XtsRandomAccessTest
 	[MatrixDataSource]
 	public async Task ExtensionWriteZeroFillsPaddingAndHole([Matrix] bool useAsync)
 	{
-		const int Unit = DefaultDataUnitSize;
+		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
-		XtsShadow shadow = new(Unit, 8 * Unit);
-		await WriteAndRecord(target, shadow, CreateDeterministicSource(2 * Unit), 0, 2 * Unit, 0, useAsync);
+		XtsShadow shadow = new(unit, 8 * unit);
+		await WriteAndRecord(target, shadow, CreateDeterministicSource(2 * unit), 0, 2 * unit, 0, useAsync);
 
 		byte[] data = CreateDeterministicSource(7);
-		await WriteAndRecord(target, shadow, data, 0, data.Length, 5 * Unit + 100, useAsync);
+		await WriteAndRecord(target, shadow, data, 0, data.Length, 5 * unit + 100, useAsync);
 
-		byte[] expected = new byte[4 * Unit];
-		data.CopyTo(expected, 3 * Unit + 100);
-		byte[] actual = new byte[4 * Unit];
+		byte[] expected = new byte[4 * unit];
+		data.CopyTo(expected, 3 * unit + 100);
+		byte[] actual = new byte[4 * unit];
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(xts.GetLength()).IsEqualTo(6 * Unit);
-			await Assert.That(await target.ReadAsync(actual, 0, actual.Length, 2 * Unit, useAsync)).IsEqualTo(actual.Length);
+			await Assert.That(xts.GetLength()).IsEqualTo(6 * unit);
+			await Assert.That(await target.ReadAsync(actual, 0, actual.Length, 2 * unit, useAsync)).IsEqualTo(actual.Length);
 			await AssertBytesEqual(actual, expected);
 			await AssertMatchesShadow<XtsMode<AesCipher>>(target, shadow);
 		}
@@ -137,37 +137,37 @@ public class XtsRandomAccessTest
 	[Test]
 	public async Task SetLengthGrowsWithZerosAndShrinks()
 	{
-		const int Unit = DefaultDataUnitSize;
+		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle();
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
-		XtsShadow shadow = new(Unit, 200 * Unit);
-		await WriteAndRecord(target, shadow, CreateDeterministicSource(3 * Unit), 0, 3 * Unit, 0, false);
+		XtsShadow shadow = new(unit, 200 * unit);
+		await WriteAndRecord(target, shadow, CreateDeterministicSource(3 * unit), 0, 3 * unit, 0, false);
 
-		xts.SetLength(150 * Unit);
-		shadow.SetLength(150 * Unit);
+		xts.SetLength(150 * unit);
+		shadow.SetLength(150 * unit);
 		await AssertMatchesShadow<XtsMode<AesCipher>>(target, shadow);
-		await Assert.That(shadow.Read(3 * Unit, 147 * Unit)).All(static value => value is 0);
+		await Assert.That(shadow.Read(3 * unit, 147 * unit)).All(static value => value is 0);
 
-		xts.SetLength(2 * Unit);
-		shadow.SetLength(2 * Unit);
+		xts.SetLength(2 * unit);
+		shadow.SetLength(2 * unit);
 		await AssertMatchesShadow<XtsMode<AesCipher>>(target, shadow);
 
 		// Growing again must not resurrect the truncated plaintext.
-		xts.SetLength(4 * Unit);
-		shadow.SetLength(4 * Unit);
+		xts.SetLength(4 * unit);
+		shadow.SetLength(4 * unit);
 		await AssertMatchesShadow<XtsMode<AesCipher>>(target, shadow);
-		await Assert.That(shadow.Read(2 * Unit, 2 * Unit)).All(static value => value is 0);
+		await Assert.That(shadow.Read(2 * unit, 2 * unit)).All(static value => value is 0);
 
-		xts.SetLength(4 * Unit);
+		xts.SetLength(4 * unit);
 		await AssertMatchesShadow<XtsMode<AesCipher>>(target, shadow);
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(() => xts.SetLength(-1)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("length");
-			await Assert.That(() => xts.SetLength(Unit + 1)).ThrowsExactly<ArgumentException>().WithParameterName("length");
-			await Assert.That(xts.GetLength()).IsEqualTo(4 * Unit);
+			await Assert.That(() => xts.SetLength(unit + 1)).ThrowsExactly<ArgumentException>().WithParameterName("length");
+			await Assert.That(xts.GetLength()).IsEqualTo(4 * unit);
 		}
 	}
 
@@ -191,22 +191,22 @@ public class XtsRandomAccessTest
 	[MatrixDataSource]
 	public async Task TruncatedBackendIsRejectedAtRuntime([Matrix] bool useAsync)
 	{
-		const int Unit = DefaultDataUnitSize;
+		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
-		byte[] buffer = new byte[2 * Unit];
-		await target.WriteAsync(CreateDeterministicSource(4 * Unit), 0, 4 * Unit, 0, useAsync);
+		byte[] buffer = new byte[2 * unit];
+		await target.WriteAsync(CreateDeterministicSource(4 * unit), 0, 4 * unit, 0, useAsync);
 
-		RandomAccess.SetLength(handle, 3 * Unit + 5);
+		RandomAccess.SetLength(handle, 3 * unit + 5);
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(async () => await target.ReadAsync(buffer, 0, 1, 0, useAsync)).ThrowsExactly<InvalidDataException>();
 			await Assert.That(async () => await target.WriteAsync(buffer, 0, 1, 0, useAsync)).ThrowsExactly<InvalidDataException>();
-			await Assert.That(() => xts.SetLength(Unit)).ThrowsExactly<InvalidDataException>();
-			await Assert.That(xts.GetLength()).IsEqualTo(3 * Unit + 5);
+			await Assert.That(() => xts.SetLength(unit)).ThrowsExactly<InvalidDataException>();
+			await Assert.That(xts.GetLength()).IsEqualTo(3 * unit + 5);
 		}
 	}
 
@@ -216,42 +216,42 @@ public class XtsRandomAccessTest
 	[MatrixDataSource]
 	public async Task FirstDataUnitNumberSelectsTweaks<TCipher>([Matrix] bool useAsync) where TCipher : class, IDataUnitCipher<TCipher>
 	{
-		const int Unit = 100;
+		const int unit = 100;
 		// The unit numbers carry from the low into the high 64-bit half.
 		UInt128 first = new(0x0123_4567_89AB_CDEF, ulong.MaxValue - 2);
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<TCipher> xts = XtsRandomAccess.Create(handle, TCipher.Create(Key), Unit, first, true);
+		using XtsRandomAccess<TCipher> xts = XtsRandomAccess.Create(handle, TCipher.Create(Key), unit, first, true);
 		XtsRandomAccessTarget<TCipher> target = new(xts, handle);
-		XtsShadow shadow = new(Unit, 8 * Unit);
+		XtsShadow shadow = new(unit, 8 * unit);
 
-		await WriteAndRecord(target, shadow, CreateDeterministicSource(6 * Unit + 7), 0, 6 * Unit + 7, 0, useAsync);
+		await WriteAndRecord(target, shadow, CreateDeterministicSource(6 * unit + 7), 0, 6 * unit + 7, 0, useAsync);
 
 		await AssertMatchesShadow<TCipher>(target, shadow, first);
-		await ReadAndCompare(target, shadow, 0, 3 * Unit, Unit + 50, useAsync);
+		await ReadAndCompare(target, shadow, 0, 3 * unit, unit + 50, useAsync);
 	}
 
 	[Test]
 	[MatrixDataSource]
 	public async Task DataUnitNumberOverflowIsRejectedBeforeWriting([Matrix] bool useAsync)
 	{
-		const int Unit = DefaultDataUnitSize;
+		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), Unit, UInt128.MaxValue, true);
+		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, UInt128.MaxValue, true);
 		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
-		XtsShadow shadow = new(Unit, 2 * Unit);
-		byte[] data = CreateDeterministicSource(Unit);
+		XtsShadow shadow = new(unit, 2 * unit);
+		byte[] data = CreateDeterministicSource(unit);
 
-		await WriteAndRecord(target, shadow, data, 0, Unit, 0, useAsync);
+		await WriteAndRecord(target, shadow, data, 0, unit, 0, useAsync);
 		await AssertMatchesShadow<XtsMode<AesCipher>>(target, shadow, UInt128.MaxValue);
 		byte[] backend = ReadAll(handle);
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(async () => await target.WriteAsync(data, 0, 1, Unit, useAsync)).ThrowsExactly<OverflowException>();
-			await Assert.That(async () => await target.WriteAsync(data, 0, 2, Unit - 1, useAsync)).ThrowsExactly<OverflowException>();
-			await Assert.That(() => xts.SetLength(2 * Unit)).ThrowsExactly<OverflowException>();
+			await Assert.That(async () => await target.WriteAsync(data, 0, 1, unit, useAsync)).ThrowsExactly<OverflowException>();
+			await Assert.That(async () => await target.WriteAsync(data, 0, 2, unit - 1, useAsync)).ThrowsExactly<OverflowException>();
+			await Assert.That(() => xts.SetLength(2 * unit)).ThrowsExactly<OverflowException>();
 			await AssertBytesEqual(ReadAll(handle), backend);
 		}
 	}
@@ -282,18 +282,18 @@ public class XtsRandomAccessTest
 	[MatrixDataSource]
 	public async Task ReadAtOrPastEndReturnsZero([Matrix] bool useAsync)
 	{
-		const int Unit = DefaultDataUnitSize;
+		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
-		XtsShadow shadow = new(Unit, 2 * Unit);
-		await WriteAndRecord(target, shadow, CreateDeterministicSource(2 * Unit), 0, 2 * Unit, 0, useAsync);
+		XtsShadow shadow = new(unit, 2 * unit);
+		await WriteAndRecord(target, shadow, CreateDeterministicSource(2 * unit), 0, 2 * unit, 0, useAsync);
 
-		await ReadAndCompare(target, shadow, 0, 10, 2 * Unit, useAsync);
-		await ReadAndCompare(target, shadow, 0, 10, 10 * Unit + 3, useAsync);
+		await ReadAndCompare(target, shadow, 0, 10, 2 * unit, useAsync);
+		await ReadAndCompare(target, shadow, 0, 10, 10 * unit + 3, useAsync);
 		await ReadAndCompare(target, shadow, 0, 0, 0, useAsync);
-		await Assert.That(xts.GetLength()).IsEqualTo(2 * Unit);
+		await Assert.That(xts.GetLength()).IsEqualTo(2 * unit);
 	}
 
 	[Test]
@@ -331,13 +331,13 @@ public class XtsRandomAccessTest
 	[Test]
 	public async Task AsyncOperationsHonorPreCanceledToken()
 	{
-		const int Unit = DefaultDataUnitSize;
+		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(true);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
-		await xts.WriteAsync(CreateDeterministicSource(Unit), 0);
+		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		await xts.WriteAsync(CreateDeterministicSource(unit), 0);
 		byte[] backend = ReadAll(handle);
-		byte[] buffer = new byte[Unit];
+		byte[] buffer = new byte[unit];
 		PrepareDestination(buffer);
 		using CancellationTokenSource cancellation = new();
 		await cancellation.CancelAsync();
@@ -345,7 +345,7 @@ public class XtsRandomAccessTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(() => xts.ReadAsync(buffer, 0, cancellation.Token).AsTask()).Throws<OperationCanceledException>();
-			await Assert.That(() => xts.WriteAsync(CreateDeterministicSource(2 * Unit), Unit, cancellation.Token).AsTask()).Throws<OperationCanceledException>();
+			await Assert.That(() => xts.WriteAsync(CreateDeterministicSource(2 * unit), unit, cancellation.Token).AsTask()).Throws<OperationCanceledException>();
 			await Assert.That(buffer).All(static value => value is DestinationSentinel);
 			await AssertBytesEqual(ReadAll(handle), backend);
 		}
@@ -354,12 +354,12 @@ public class XtsRandomAccessTest
 	[Test]
 	public async Task InstancesSharingHandleReadInParallel()
 	{
-		const int Unit = 4096;
-		byte[] plaintext = CreateDeterministicSource(64 * Unit);
+		const int unit = 4096;
+		byte[] plaintext = CreateDeterministicSource(64 * unit);
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(true);
 
-		using (XtsRandomAccess<XtsMode<AesCipher>> writer = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true))
+		using (XtsRandomAccess<XtsMode<AesCipher>> writer = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true))
 		{
 			await writer.WriteAsync(plaintext, 0);
 		}
@@ -371,7 +371,7 @@ public class XtsRandomAccessTest
 			int start = i * plaintext.Length / readers.Length;
 			readers[i] = Task.Run(async () =>
 			{
-				using XtsRandomAccess<XtsMode<AesCipher>> reader = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+				using XtsRandomAccess<XtsMode<AesCipher>> reader = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 				byte[] buffer = new byte[plaintext.Length / readers.Length];
 				await Assert.That(await reader.ReadAsync(buffer, start)).IsEqualTo(buffer.Length);
 				return buffer;
@@ -403,13 +403,13 @@ public class XtsRandomAccessTest
 			await Assert.That(cipher.IsDisposed).IsTrue();
 			await Assert.That(() => cipher.Encrypt(new byte[16], buffer, buffer)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(handle.IsClosed).IsEqualTo(!leaveOpen);
-			await Assert.That(() => xts.GetLength()).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(xts.GetLength).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.SetLength(0)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.Read(buffer, 0)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.Write(buffer, 0)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.ReadAsync(buffer, 0).AsTask()).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.WriteAsync(buffer, 0).AsTask()).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => xts.Flush()).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(xts.Flush).ThrowsExactly<ObjectDisposedException>();
 		}
 	}
 }

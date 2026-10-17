@@ -31,19 +31,19 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task CiphertextMatchesXtsRandomAccess([Matrix(100, 4096)] int dataUnitSize, [Matrix] bool useAsync)
 	{
-		const int Seed = 0x0C1F;
+		const int seed = 0x0C1F;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
 		using MemoryStream inner = new();
 
 		using (XtsRandomAccess<XtsMode<AesCipher>> randomAccess = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), dataUnitSize, leaveOpen: true))
 		{
-			await RunFuzz<XtsMode<AesCipher>>(new XtsRandomAccessTarget<XtsMode<AesCipher>>(randomAccess, handle), new XtsShadow(dataUnitSize, 256 * 1024), Seed, 120, useAsync);
+			await RunFuzz<XtsMode<AesCipher>>(new XtsRandomAccessTarget<XtsMode<AesCipher>>(randomAccess, handle), new XtsShadow(dataUnitSize, 256 * 1024), seed, 120, useAsync);
 		}
 
 		await using (XtsStream<XtsMode<AesCipher>> stream = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), dataUnitSize, leaveOpen: true))
 		{
-			await RunFuzz<XtsMode<AesCipher>>(new XtsStreamTarget(stream, inner.ToArray), new XtsShadow(dataUnitSize, 256 * 1024), Seed, 120, useAsync);
+			await RunFuzz<XtsMode<AesCipher>>(new XtsStreamTarget(stream, inner.ToArray), new XtsShadow(dataUnitSize, 256 * 1024), seed, 120, useAsync);
 		}
 
 		await AssertBytesEqual(inner.ToArray(), ReadAll(handle));
@@ -55,15 +55,15 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task FileStreamBackendMatchesOracle<TCipher>([Matrix] bool useAsync) where TCipher : class, IDataUnitCipher<TCipher>
 	{
-		const int Unit = 4096;
+		const int unit = 4096;
 		UInt128 first = new(1, 0x8000_0000_0000_0000);
-		byte[] plaintext = CreateDeterministicSource(20 * Unit + 123);
-		byte[] padded = PadToDataUnits(plaintext, Unit);
+		byte[] plaintext = CreateDeterministicSource(20 * unit + 123);
+		byte[] padded = PadToDataUnits(plaintext, unit);
 		using TempFile file = new();
 
 		await using (FileStream inner = new(file.Path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 4096, useAsync))
 		{
-			await using XtsStream<TCipher> xts = XtsStream.Create(inner, TCipher.Create(Key), Unit, first);
+			await using XtsStream<TCipher> xts = XtsStream.Create(inner, TCipher.Create(Key), unit, first);
 
 			if (useAsync)
 			{
@@ -90,15 +90,15 @@ public class XtsStreamTest
 			}
 		}
 
-		await AssertBytesEqual(await File.ReadAllBytesAsync(file.Path), Encrypt<TCipher>(padded, Unit, first));
+		await AssertBytesEqual(await File.ReadAllBytesAsync(file.Path), Encrypt<TCipher>(padded, unit, first));
 	}
 
 	[Test]
 	public async Task PositionSeekAndLengthFollowStreamConventions()
 	{
-		const int Unit = 16;
+		const int unit = 16;
 		using MemoryStream inner = new();
-		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit);
+		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit);
 		byte[] data = CreateDeterministicSource(20);
 		byte[] buffer = new byte[64];
 
@@ -107,7 +107,7 @@ public class XtsStreamTest
 			await Assert.That(xts.CanRead).IsTrue();
 			await Assert.That(xts.CanWrite).IsTrue();
 			await Assert.That(xts.CanSeek).IsTrue();
-			await Assert.That(xts.DataUnitSize).IsEqualTo(Unit);
+			await Assert.That(xts.DataUnitSize).IsEqualTo(unit);
 			await Assert.That(xts.Position).IsZero();
 			await Assert.That(xts.Length).IsZero();
 		}
@@ -162,12 +162,12 @@ public class XtsStreamTest
 	[Test]
 	public async Task ReadByteAndWriteByteTouchEachDataUnitOnce()
 	{
-		const int Unit = 16;
+		const int unit = 16;
 		byte[] data = CreateDeterministicSource(40);
 		byte[] padded = new byte[48];
 		data.CopyTo(padded, 0);
 		using CountingMemoryStream inner = new();
-		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 
 		foreach (byte value in data)
 		{
@@ -178,7 +178,7 @@ public class XtsStreamTest
 		{
 			// The third unit is still cached.
 			await Assert.That(inner.WriteCount).IsEqualTo(2);
-			await Assert.That(inner.Length).IsEqualTo(2 * Unit);
+			await Assert.That(inner.Length).IsEqualTo(2 * unit);
 			await Assert.That(xts.Length).IsEqualTo(padded.Length);
 		}
 
@@ -188,7 +188,7 @@ public class XtsStreamTest
 		{
 			await Assert.That(inner.WriteCount).IsEqualTo(3);
 			await Assert.That(inner.ReadCount).IsZero();
-			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, Unit));
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
 		}
 
 		xts.Position = 0;
@@ -215,17 +215,17 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task SmallSequentialTransfersTouchEachDataUnitOnce([Matrix] bool useAsync)
 	{
-		const int Unit = 512;
-		const int Chunk = 100;
-		byte[] data = CreateDeterministicSource(8 * Unit + Chunk);
-		byte[] padded = PadToDataUnits(data, Unit);
+		const int unit = 512;
+		const int chunk = 100;
+		byte[] data = CreateDeterministicSource(8 * unit + chunk);
+		byte[] padded = PadToDataUnits(data, unit);
 		using CountingMemoryStream inner = new();
-		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsStreamTarget target = new(xts, inner.ToArray);
 
-		for (int offset = 0; offset < data.Length; offset += Chunk)
+		for (int offset = 0; offset < data.Length; offset += chunk)
 		{
-			await target.WriteAsync(data, offset, Math.Min(Chunk, data.Length - offset), offset, useAsync);
+			await target.WriteAsync(data, offset, Math.Min(chunk, data.Length - offset), offset, useAsync);
 		}
 
 		await FlushAsync(xts, useAsync);
@@ -234,14 +234,14 @@ public class XtsStreamTest
 		{
 			await Assert.That(inner.WriteCount).IsEqualTo(9);
 			await Assert.That(inner.ReadCount).IsZero();
-			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, Unit));
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
 		}
 
 		byte[] actual = new byte[padded.Length];
 
-		for (int offset = 0; offset < actual.Length; offset += Chunk)
+		for (int offset = 0; offset < actual.Length; offset += chunk)
 		{
-			int count = Math.Min(Chunk, actual.Length - offset);
+			int count = Math.Min(chunk, actual.Length - offset);
 			await Assert.That(await target.ReadAsync(actual, offset, count, offset, useAsync)).IsEqualTo(count);
 		}
 
@@ -257,11 +257,11 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task AppendAfterPartialDataUnitWritesEachDataUnitOnce([Matrix] bool useAsync)
 	{
-		const int Unit = 512;
-		byte[] data = CreateDeterministicSource(5 * Unit + 100);
-		byte[] padded = PadToDataUnits(data, Unit);
+		const int unit = 512;
+		byte[] data = CreateDeterministicSource(5 * unit + 100);
+		byte[] padded = PadToDataUnits(data, unit);
 		using CountingMemoryStream inner = new();
-		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsStreamTarget target = new(xts, inner.ToArray);
 
 		// The second write completes the cached head unit, appends whole units and starts a partial tail unit.
@@ -272,7 +272,7 @@ public class XtsStreamTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(inner.WrittenBytes).IsEqualTo(padded.Length);
-			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, Unit));
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
 		}
 	}
 
@@ -280,24 +280,24 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task CachedDataUnitIsVisibleBeforeFlushAndWrittenOnDispose([Matrix] bool useAsync)
 	{
-		const int Unit = 100;
+		const int unit = 100;
 		byte[] data = CreateDeterministicSource(30);
-		byte[] padded = new byte[2 * Unit];
-		data.CopyTo(padded, Unit + 10);
+		byte[] padded = new byte[2 * unit];
+		data.CopyTo(padded, unit + 10);
 		using MemoryStream inner = new();
-		XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsStreamTarget target = new(xts, inner.ToArray);
-		byte[] actual = new byte[Unit];
+		byte[] actual = new byte[unit];
 
-		await target.WriteAsync(data, 0, data.Length, Unit + 10, useAsync);
+		await target.WriteAsync(data, 0, data.Length, unit + 10, useAsync);
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(inner.Length).IsZero();
 			await Assert.That(xts.Length).IsEqualTo(padded.Length);
 			await Assert.That(xts.Seek(0, SeekOrigin.End)).IsEqualTo(padded.Length);
-			await Assert.That(await target.ReadAsync(actual, 0, actual.Length, Unit, useAsync)).IsEqualTo(Unit);
-			await AssertBytesEqual(actual, padded.AsSpan(Unit).ToArray());
+			await Assert.That(await target.ReadAsync(actual, 0, actual.Length, unit, useAsync)).IsEqualTo(unit);
+			await AssertBytesEqual(actual, padded.AsSpan(unit).ToArray());
 			await Assert.That(inner.Length).IsZero();
 		}
 
@@ -310,28 +310,28 @@ public class XtsStreamTest
 			xts.Dispose();
 		}
 
-		await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, Unit));
+		await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
 	}
 
 	[Test]
 	public async Task SetLengthDiscardsCachedDataUnitPastNewEnd()
 	{
-		const int Unit = 64;
+		const int unit = 64;
 		using MemoryStream inner = new();
-		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
-		byte[] buffer = new byte[4 * Unit];
+		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		byte[] buffer = new byte[4 * unit];
 
-		xts.Position = 3 * Unit + 5;
+		xts.Position = 3 * unit + 5;
 		xts.Write(CreateDeterministicSource(7));
-		xts.SetLength(2 * Unit);
+		xts.SetLength(2 * unit);
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(xts.Length).IsEqualTo(2 * Unit);
-			await Assert.That(xts.Position).IsEqualTo(2 * Unit);
+			await Assert.That(xts.Length).IsEqualTo(2 * unit);
+			await Assert.That(xts.Position).IsEqualTo(2 * unit);
 		}
 
-		xts.SetLength(4 * Unit);
+		xts.SetLength(4 * unit);
 		xts.Flush();
 		xts.Position = 0;
 
@@ -339,7 +339,7 @@ public class XtsStreamTest
 		{
 			await Assert.That(xts.Read(buffer)).IsEqualTo(buffer.Length);
 			await Assert.That(buffer).All(static value => value is 0);
-			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(new byte[4 * Unit], Unit));
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(new byte[4 * unit], unit));
 		}
 	}
 
@@ -347,20 +347,20 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task DataUnitNumberOverflowIsRejectedBeforeCaching([Matrix] bool useAsync)
 	{
-		const int Unit = DefaultDataUnitSize;
-		byte[] data = CreateDeterministicSource(Unit);
+		const int unit = DefaultDataUnitSize;
+		byte[] data = CreateDeterministicSource(unit);
 		using MemoryStream inner = new();
-		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, UInt128.MaxValue, true);
+		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, UInt128.MaxValue, true);
 		XtsStreamTarget target = new(xts, inner.ToArray);
-		XtsShadow shadow = new(Unit, 2 * Unit);
-		await WriteAndRecord(target, shadow, data, 0, Unit, 0, useAsync);
+		XtsShadow shadow = new(unit, 2 * unit);
+		await WriteAndRecord(target, shadow, data, 0, unit, 0, useAsync);
 		await AssertMatchesShadow<XtsMode<AesCipher>>(target, shadow, UInt128.MaxValue);
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(async () => await target.WriteAsync(data, 0, 1, Unit, useAsync)).ThrowsExactly<OverflowException>();
-			await Assert.That(async () => await target.WriteAsync(data, 0, 2, Unit - 1, useAsync)).ThrowsExactly<OverflowException>();
-			await Assert.That(() => xts.SetLength(2 * Unit)).ThrowsExactly<OverflowException>();
+			await Assert.That(async () => await target.WriteAsync(data, 0, 1, unit, useAsync)).ThrowsExactly<OverflowException>();
+			await Assert.That(async () => await target.WriteAsync(data, 0, 2, unit - 1, useAsync)).ThrowsExactly<OverflowException>();
+			await Assert.That(() => xts.SetLength(2 * unit)).ThrowsExactly<OverflowException>();
 		}
 
 		await AssertMatchesShadow<XtsMode<AesCipher>>(target, shadow, UInt128.MaxValue);
@@ -384,12 +384,12 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task ArrayOverloadsForwardAndValidate([Matrix] bool useAsync)
 	{
-		const int Unit = 100;
+		const int unit = 100;
 		byte[] source = CreateDeterministicSource(260);
 		byte[] padded = new byte[300];
 		source.AsSpan(10, 230).CopyTo(padded);
 		using MemoryStream inner = new();
-		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		byte[] destination = new byte[320];
 		PrepareDestination(destination);
 
@@ -409,7 +409,7 @@ public class XtsStreamTest
 		{
 			await Assert.That(read).IsEqualTo(padded.Length);
 			await AssertOutput(destination, 7, padded);
-			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, Unit));
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
 			await Assert.That(() => xts.Read(null!, 0, 1)).ThrowsExactly<ArgumentNullException>().WithParameterName("buffer");
 			await Assert.That(() => xts.Read(destination, -1, 1)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("offset");
 			await Assert.That(() => xts.Read(destination, 1, destination.Length)).Throws<ArgumentException>();
@@ -425,13 +425,13 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task CopyToRoundTrips([Matrix] bool useAsync)
 	{
-		const int Unit = DefaultDataUnitSize;
-		byte[] plaintext = CreateDeterministicSource(200 * Unit + 77);
-		byte[] padded = PadToDataUnits(plaintext, Unit);
+		const int unit = DefaultDataUnitSize;
+		byte[] plaintext = CreateDeterministicSource(200 * unit + 77);
+		byte[] padded = PadToDataUnits(plaintext, unit);
 		using MemoryStream source = new(plaintext, false);
 		using MemoryStream inner = new();
 		using MemoryStream destination = new();
-		await using XtsStream<XtsMode<SM4Cipher>> xts = XtsStream.Create(inner, XtsMode<SM4Cipher>.Create(Key), Unit, leaveOpen: true);
+		await using XtsStream<XtsMode<SM4Cipher>> xts = XtsStream.Create(inner, XtsMode<SM4Cipher>.Create(Key), unit, leaveOpen: true);
 
 		if (useAsync)
 		{
@@ -448,7 +448,7 @@ public class XtsStreamTest
 
 		using (Assert.Multiple())
 		{
-			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<SM4Cipher>>(padded, Unit));
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<SM4Cipher>>(padded, unit));
 			await AssertBytesEqual(destination.ToArray(), padded);
 		}
 	}
@@ -457,12 +457,12 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task ShortInnerReadsAreCompleted([Matrix] bool useAsync)
 	{
-		const int Unit = 100;
-		XtsShadow shadow = new(Unit, 1000);
+		const int unit = 100;
+		XtsShadow shadow = new(unit, 1000);
 		shadow.Write(CreateDeterministicSource(700), 0);
 		using LimitedReadMemoryStream inner = new(7);
-		inner.Write(Encrypt<XtsMode<AesCipher>>(shadow.Span, Unit));
-		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		inner.Write(Encrypt<XtsMode<AesCipher>>(shadow.Span, unit));
+		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsStreamTarget target = new(xts, inner.ToArray);
 
 		await ReadAndCompare(target, shadow, 0, 700, 0, useAsync);
@@ -475,30 +475,30 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task BackendLengthNotWholeDataUnitsIsRejected([Matrix] bool useAsync)
 	{
-		const int Unit = 16;
-		using MemoryStream partial = new(new byte[3 * Unit + 1]);
+		const int unit = 16;
+		using MemoryStream partial = new(new byte[3 * unit + 1]);
 		using TrackingXtsCipher cipher = TrackingXtsCipher.Create(Key);
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => new XtsStream<TrackingXtsCipher>(partial, cipher, Unit)).ThrowsExactly<ArgumentException>().WithParameterName("inner");
+			await Assert.That(() => new XtsStream<TrackingXtsCipher>(partial, cipher, unit)).ThrowsExactly<ArgumentException>().WithParameterName("inner");
 			await Assert.That(partial.CanRead).IsTrue();
 			await Assert.That(cipher.IsDisposed).IsFalse();
 		}
 
 		using MemoryStream inner = new();
-		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsStreamTarget target = new(xts, inner.ToArray);
-		byte[] buffer = new byte[2 * Unit];
-		await target.WriteAsync(CreateDeterministicSource(4 * Unit), 0, 4 * Unit, 0, useAsync);
+		byte[] buffer = new byte[2 * unit];
+		await target.WriteAsync(CreateDeterministicSource(4 * unit), 0, 4 * unit, 0, useAsync);
 
-		inner.SetLength(3 * Unit + 5);
+		inner.SetLength(3 * unit + 5);
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(async () => await target.ReadAsync(buffer, 0, 1, 0, useAsync)).ThrowsExactly<InvalidDataException>();
 			await Assert.That(async () => await target.WriteAsync(buffer, 0, 1, 0, useAsync)).ThrowsExactly<InvalidDataException>();
-			await Assert.That(() => xts.SetLength(Unit)).ThrowsExactly<InvalidDataException>();
+			await Assert.That(() => xts.SetLength(unit)).ThrowsExactly<InvalidDataException>();
 		}
 	}
 
@@ -506,18 +506,18 @@ public class XtsStreamTest
 	[MatrixDataSource]
 	public async Task PrematureEndInsideDataUnitIsRejected([Matrix] bool useAsync)
 	{
-		const int Unit = 100;
+		const int unit = 100;
 		using LimitedReadMemoryStream inner = new(end: 250);
-		inner.Write(new byte[3 * Unit]);
-		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
+		inner.Write(new byte[3 * unit]);
+		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		XtsStreamTarget target = new(xts, inner.ToArray);
-		byte[] buffer = new byte[3 * Unit];
+		byte[] buffer = new byte[3 * unit];
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(async () => await target.ReadAsync(buffer, 0, buffer.Length, 0, useAsync)).ThrowsExactly<InvalidDataException>();
-			await Assert.That(async () => await target.ReadAsync(buffer, 0, 1, 2 * Unit + 60, useAsync)).ThrowsExactly<InvalidDataException>();
-			await Assert.That(async () => await target.WriteAsync(buffer, 0, 1, 2 * Unit + 60, useAsync)).ThrowsExactly<InvalidDataException>();
+			await Assert.That(async () => await target.ReadAsync(buffer, 0, 1, 2 * unit + 60, useAsync)).ThrowsExactly<InvalidDataException>();
+			await Assert.That(async () => await target.WriteAsync(buffer, 0, 1, 2 * unit + 60, useAsync)).ThrowsExactly<InvalidDataException>();
 		}
 	}
 
@@ -542,11 +542,11 @@ public class XtsStreamTest
 	[Test]
 	public async Task CapabilitiesMirrorInnerStream()
 	{
-		const int Unit = 16;
-		byte[] ciphertext = Encrypt<XtsMode<AesCipher>>(CreateDeterministicSource(2 * Unit), Unit);
+		const int unit = 16;
+		byte[] ciphertext = Encrypt<XtsMode<AesCipher>>(CreateDeterministicSource(2 * unit), unit);
 		using MemoryStream inner = new(ciphertext, false);
-		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit);
-		byte[] buffer = new byte[2 * Unit];
+		using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit);
+		byte[] buffer = new byte[2 * unit];
 
 		using (Assert.Multiple())
 		{
@@ -554,14 +554,14 @@ public class XtsStreamTest
 			await Assert.That(xts.CanWrite).IsFalse();
 			await Assert.That(xts.CanSeek).IsTrue();
 			await Assert.That(xts.Read(buffer)).IsEqualTo(buffer.Length);
-			await AssertBytesEqual(buffer, CreateDeterministicSource(2 * Unit));
+			await AssertBytesEqual(buffer, CreateDeterministicSource(2 * unit));
 			await Assert.That(() => xts.Write(buffer)).ThrowsExactly<NotSupportedException>();
 			await Assert.That(() => xts.Write(buffer.AsSpan(0, 1))).ThrowsExactly<NotSupportedException>();
 			await Assert.That(() => xts.WriteAsync(buffer.AsMemory(0, 1)).AsTask()).ThrowsExactly<NotSupportedException>();
 		}
 
 		using WriteOnlyMemoryStream writeOnly = new();
-		using XtsStream<XtsMode<AesCipher>> writer = XtsStream.Create(writeOnly, XtsMode<AesCipher>.Create(Key), Unit);
+		using XtsStream<XtsMode<AesCipher>> writer = XtsStream.Create(writeOnly, XtsMode<AesCipher>.Create(Key), unit);
 		writer.Write(buffer.AsSpan(0, 1));
 		writer.Position = 0;
 
@@ -576,13 +576,13 @@ public class XtsStreamTest
 	[Test]
 	public async Task AsyncOperationsHonorPreCanceledToken()
 	{
-		const int Unit = 16;
+		const int unit = 16;
 		using MemoryStream inner = new();
-		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), Unit, leaveOpen: true);
-		xts.Write(CreateDeterministicSource(2 * Unit));
+		await using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		xts.Write(CreateDeterministicSource(2 * unit));
 		xts.Position = 0;
 		byte[] backend = inner.ToArray();
-		byte[] buffer = new byte[Unit];
+		byte[] buffer = new byte[unit];
 		using CancellationTokenSource cancellation = new();
 		await cancellation.CancelAsync();
 
@@ -651,14 +651,14 @@ public class XtsStreamTest
 			await Assert.That(() => xts.SetLength(0)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.Read(buffer)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.Read(buffer, 0, 1)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => xts.ReadByte()).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(xts.ReadByte).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.Write(buffer)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.Write(buffer, 0, 1)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.WriteByte(1)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.ReadAsync(buffer).AsTask()).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => xts.WriteAsync(buffer).AsTask()).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => xts.Flush()).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => xts.FlushAsync()).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(xts.Flush).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(xts.FlushAsync).ThrowsExactly<ObjectDisposedException>();
 		}
 	}
 
