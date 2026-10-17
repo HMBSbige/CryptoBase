@@ -3,6 +3,7 @@ Package | NuGet
 -|-
 CryptoBase | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase/)
 CryptoBase.Abstractions | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.Abstractions.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.Abstractions/)
+CryptoBase.IO | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.IO.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.IO/)
 
 A fast crypto library for .NET
 

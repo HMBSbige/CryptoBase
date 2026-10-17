@@ -17,6 +17,7 @@
     <File Path="src\Package.props" />
     <Project Path="src\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
     <Project Path="src\CryptoBase\CryptoBase.csproj" />
+    <Project Path="src\CryptoBase.IO\CryptoBase.IO.csproj" />
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs\README.md" />

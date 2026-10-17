@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CryptoBase\CryptoBase.csproj" />
+    <ProjectReference Include="..\..\src\CryptoBase.IO\CryptoBase.IO.csproj" />
   </ItemGroup>
 
   <ItemGroup>
