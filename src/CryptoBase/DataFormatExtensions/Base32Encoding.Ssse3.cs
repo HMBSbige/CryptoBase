@@ -11,7 +11,7 @@ public sealed partial class Base32Encoding
 		return MapSymbols((even | odd).AsByte(), threshold, first, second);
 	}
 
-	private static int EncodeUtf8Ssse3(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
+	private static int EncodeSsse3<T>(ReadOnlySpan<byte> source, Span<T> destination, byte alphabetKind) where T : unmanaged
 	{
 		GetEncodeMap(alphabetKind, out byte thresholdValue, out byte firstValue, out byte secondValue);
 		Vector128<sbyte> threshold = Vector128.Create((sbyte)thresholdValue);
@@ -21,13 +21,13 @@ public sealed partial class Base32Encoding
 		Vector128<byte> highIndices = Vector128.Create((byte)7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
 		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
-		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
+		ref T destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int quadCount = blockCount >> 2;
 
 		for (int i = 0; i < quadCount; ++i)
 		{
-			EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer), lowIndices, threshold, first, second).StoreUnsafe(ref destinationPointer);
-			EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer, 4), highIndices, threshold, first, second).StoreUnsafe(ref destinationPointer, 16);
+			StoreSymbols(EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer), lowIndices, threshold, first, second), ref destinationPointer);
+			StoreSymbols(EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer, 4), highIndices, threshold, first, second), ref Unsafe.Add(ref destinationPointer, 16));
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, 20);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 32);
 		}
@@ -39,61 +39,20 @@ public sealed partial class Base32Encoding
 			// Re-encode the last four whole blocks; one or two leftover blocks only need the last pair.
 			int lastQuad = blockCount - 4;
 			ref byte lastSource = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), lastQuad * InputBytesPerBlock);
-			ref byte lastDestination = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), lastQuad * OutputSymbolsPerBlock);
+			ref T lastDestination = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), lastQuad * OutputSymbolsPerBlock);
 
 			if (remainder is 3)
 			{
-				EncodeTwo(Vector128.LoadUnsafe(ref lastSource), lowIndices, threshold, first, second).StoreUnsafe(ref lastDestination);
+				StoreSymbols(EncodeTwo(Vector128.LoadUnsafe(ref lastSource), lowIndices, threshold, first, second), ref lastDestination);
 			}
 
-			EncodeTwo(Vector128.LoadUnsafe(ref lastSource, 4), highIndices, threshold, first, second).StoreUnsafe(ref lastDestination, 16);
+			StoreSymbols(EncodeTwo(Vector128.LoadUnsafe(ref lastSource, 4), highIndices, threshold, first, second), ref Unsafe.Add(ref lastDestination, 16));
 		}
 
 		return blockCount * InputBytesPerBlock;
 	}
 
-	private static int EncodeCharsSsse3(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
-	{
-		GetEncodeMap(alphabetKind, out byte thresholdValue, out byte firstValue, out byte secondValue);
-		Vector128<sbyte> threshold = Vector128.Create((sbyte)thresholdValue);
-		Vector128<byte> first = Vector128.Create(firstValue);
-		Vector128<byte> second = Vector128.Create(secondValue);
-		Vector128<byte> lowIndices = Vector128.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8);
-		Vector128<byte> highIndices = Vector128.Create((byte)7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
-		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
-		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
-		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
-		int quadCount = blockCount >> 2;
-
-		for (int i = 0; i < quadCount; ++i)
-		{
-			StoreEncodedChars(EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer), lowIndices, threshold, first, second), ref destinationPointer);
-			StoreEncodedChars(EncodeTwo(Vector128.LoadUnsafe(ref sourcePointer, 4), highIndices, threshold, first, second), ref Unsafe.Add(ref destinationPointer, 16));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 20);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 32);
-		}
-
-		int remainder = blockCount & 3;
-
-		if (remainder is not 0)
-		{
-			// Re-encode the last four whole blocks; one or two leftover blocks only need the last pair.
-			int lastQuad = blockCount - 4;
-			ref byte lastSource = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), lastQuad * InputBytesPerBlock);
-			ref char lastDestination = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), lastQuad * OutputSymbolsPerBlock);
-
-			if (remainder is 3)
-			{
-				StoreEncodedChars(EncodeTwo(Vector128.LoadUnsafe(ref lastSource), lowIndices, threshold, first, second), ref lastDestination);
-			}
-
-			StoreEncodedChars(EncodeTwo(Vector128.LoadUnsafe(ref lastSource, 4), highIndices, threshold, first, second), ref Unsafe.Add(ref lastDestination, 16));
-		}
-
-		return blockCount * InputBytesPerBlock;
-	}
-
-	private static int EncodeUtf8Ssse3Short(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
+	private static int EncodeSsse3Short<T>(ReadOnlySpan<byte> source, Span<T> destination, byte alphabetKind) where T : unmanaged
 	{
 		GetEncodeMap(alphabetKind, out byte thresholdValue, out byte firstValue, out byte secondValue);
 		Vector128<sbyte> threshold = Vector128.Create((sbyte)thresholdValue);
@@ -102,32 +61,12 @@ public sealed partial class Base32Encoding
 		Vector128<byte> indices = Vector128.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 14, 7, 15, 14);
 		int blockCount = GetEncodeShortBlockCount(source.Length, destination.Length);
 		ref byte sourceReference = ref MemoryMarshal.GetReference(source);
-		ref byte destinationReference = ref MemoryMarshal.GetReference(destination);
-		EncodeTwo(LoadTenBytes(ref sourceReference), indices, threshold, first, second).StoreUnsafe(ref destinationReference);
+		ref T destinationReference = ref MemoryMarshal.GetReference(destination);
+		StoreSymbols(EncodeTwo(LoadTenBytes(ref sourceReference), indices, threshold, first, second), ref destinationReference);
 
 		if (blockCount is 3)
 		{
-			EncodeTwo(LoadTenBytes(ref Unsafe.Add(ref sourceReference, InputBytesPerBlock)), indices, threshold, first, second).StoreUnsafe(ref destinationReference, OutputSymbolsPerBlock);
-		}
-
-		return blockCount * InputBytesPerBlock;
-	}
-
-	private static int EncodeCharsSsse3Short(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
-	{
-		GetEncodeMap(alphabetKind, out byte thresholdValue, out byte firstValue, out byte secondValue);
-		Vector128<sbyte> threshold = Vector128.Create((sbyte)thresholdValue);
-		Vector128<byte> first = Vector128.Create(firstValue);
-		Vector128<byte> second = Vector128.Create(secondValue);
-		Vector128<byte> indices = Vector128.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 14, 7, 15, 14);
-		int blockCount = GetEncodeShortBlockCount(source.Length, destination.Length);
-		ref byte sourceReference = ref MemoryMarshal.GetReference(source);
-		ref char destinationReference = ref MemoryMarshal.GetReference(destination);
-		StoreEncodedChars(EncodeTwo(LoadTenBytes(ref sourceReference), indices, threshold, first, second), ref destinationReference);
-
-		if (blockCount is 3)
-		{
-			StoreEncodedChars(EncodeTwo(LoadTenBytes(ref Unsafe.Add(ref sourceReference, InputBytesPerBlock)), indices, threshold, first, second), ref Unsafe.Add(ref destinationReference, OutputSymbolsPerBlock));
+			StoreSymbols(EncodeTwo(LoadTenBytes(ref Unsafe.Add(ref sourceReference, InputBytesPerBlock)), indices, threshold, first, second), ref Unsafe.Add(ref destinationReference, OutputSymbolsPerBlock));
 		}
 
 		return blockCount * InputBytesPerBlock;
@@ -157,22 +96,22 @@ public sealed partial class Base32Encoding
 		return Ssse3.Shuffle(merged, Vector128.Create((byte)2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0));
 	}
 
-	private static int DecodeUtf8Vector128(ReadOnlySpan<byte> source, Span<byte> destination, int fullLength, byte alphabetKind)
+	private static int DecodeVector128<T>(ReadOnlySpan<T> source, Span<byte> destination, int fullLength, byte alphabetKind) where T : unmanaged
 	{
 		GetDecodeShuffleMap(alphabetKind, out Vector128<byte> deltaCheck, out Vector128<byte> deltaRebase, out byte mapLowerBound);
 		Vector128<byte> nibbleMask = Vector128.Create((byte)0x0f);
 		Vector128<sbyte> lowerBound = Vector128.Create((sbyte)mapLowerBound);
 
 		int blockCount = Math.Min(fullLength / 16, destination.Length / 10);
-		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref T sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		int processedBlocks = 0;
 
 		for (int i = 0; i < pairCount; ++i)
 		{
-			Vector128<byte> first = DecodeTwoSse2(Vector128.LoadUnsafe(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> firstInvalidMask);
-			Vector128<byte> second = DecodeTwoSse2(Vector128.LoadUnsafe(ref sourcePointer, 16), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> secondInvalidMask);
+			Vector128<byte> first = DecodeTwoSse2(LoadSymbols128(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> firstInvalidMask);
+			Vector128<byte> second = DecodeTwoSse2(LoadSymbols128(ref Unsafe.Add(ref sourcePointer, 16)), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> secondInvalidMask);
 
 			if (!IsValidSse2(firstInvalidMask | secondInvalidMask))
 			{
@@ -188,50 +127,7 @@ public sealed partial class Base32Encoding
 
 		if (processedBlocks == pairCount * 2 && (blockCount & 1) is not 0)
 		{
-			Vector128<byte> values = DecodeTwoSse2(Vector128.LoadUnsafe(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> invalidMask);
-
-			if (IsValidSse2(invalidMask))
-			{
-				StoreDecoded(PackDecoded(values), ref destinationPointer);
-				++processedBlocks;
-			}
-		}
-
-		return processedBlocks * 16;
-	}
-
-	private static int DecodeCharsVector128(ReadOnlySpan<char> source, Span<byte> destination, int fullLength, byte alphabetKind)
-	{
-		GetDecodeShuffleMap(alphabetKind, out Vector128<byte> deltaCheck, out Vector128<byte> deltaRebase, out byte mapLowerBound);
-		Vector128<byte> nibbleMask = Vector128.Create((byte)0x0f);
-		Vector128<sbyte> lowerBound = Vector128.Create((sbyte)mapLowerBound);
-
-		int blockCount = Math.Min(fullLength / 16, destination.Length / 10);
-		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
-		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
-		int pairCount = blockCount >> 1;
-		int processedBlocks = 0;
-
-		for (int i = 0; i < pairCount; ++i)
-		{
-			Vector128<byte> first = DecodeTwoSse2(LoadNarrowSaturated128(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> firstInvalidMask);
-			Vector128<byte> second = DecodeTwoSse2(LoadNarrowSaturated128(ref Unsafe.Add(ref sourcePointer, 16)), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> secondInvalidMask);
-
-			if (!IsValidSse2(firstInvalidMask | secondInvalidMask))
-			{
-				break;
-			}
-
-			PackDecoded(first).StoreUnsafe(ref destinationPointer);
-			StoreDecoded(PackDecoded(second), ref Unsafe.Add(ref destinationPointer, 10));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 32);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 20);
-			processedBlocks += 2;
-		}
-
-		if (processedBlocks == pairCount * 2 && (blockCount & 1) is not 0)
-		{
-			Vector128<byte> values = DecodeTwoSse2(LoadNarrowSaturated128(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> invalidMask);
+			Vector128<byte> values = DecodeTwoSse2(LoadSymbols128(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector128<byte> invalidMask);
 
 			if (IsValidSse2(invalidMask))
 			{

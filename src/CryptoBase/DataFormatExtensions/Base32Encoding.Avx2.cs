@@ -44,57 +44,29 @@ public sealed partial class Base32Encoding
 		Avx2.UnpackHigh(value, Vector256<byte>.Zero).AsUInt16().StoreUnsafe(ref destinationReference, 16);
 	}
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int EncodeUtf8Avx2(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
+	// For char, value must already hold the groups in the qword order StoreEncodedCharsUnpacked expects, which the char shuffle indices produce.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void StoreSymbols<T>(Vector256<byte> value, ref T destination) where T : unmanaged
 	{
-		GetEncodeMap(alphabetKind, out byte thresholdValue, out byte firstValue, out byte secondValue);
-		Vector256<sbyte> threshold = Vector256.Create((sbyte)thresholdValue);
-		Vector256<byte> first = Vector256.Create(firstValue);
-		Vector256<byte> second = Vector256.Create(secondValue);
-		Vector256<byte> indices = Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8, 7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
-		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
-		int vectorCount = blockCount >> 2;
-
-		if (vectorCount is 0)
+		if (typeof(T) != typeof(char))
 		{
-			return 0;
+			value.StoreUnsafe(ref Unsafe.As<T, byte>(ref destination));
+			return;
 		}
 
-		ref byte sourceReference = ref MemoryMarshal.GetReference(source);
-		ref byte destinationReference = ref MemoryMarshal.GetReference(destination);
-		int remainderBlocks = blockCount & 3;
-		nuint sourceOffset = 0;
-		nuint destinationOffset = 0;
-
-		while (true)
-		{
-			do
-			{
-				EncodeFour(ref Unsafe.Add(ref sourceReference, sourceOffset), indices, threshold, first, second).StoreUnsafe(ref destinationReference, destinationOffset);
-				sourceOffset += 4 * InputBytesPerBlock;
-				destinationOffset += 4 * OutputSymbolsPerBlock;
-			} while (--vectorCount is not 0);
-
-			if (remainderBlocks is 0)
-			{
-				return blockCount * InputBytesPerBlock;
-			}
-
-			sourceOffset -= (nuint)(4 - remainderBlocks) * InputBytesPerBlock;
-			destinationOffset -= (nuint)(4 - remainderBlocks) * OutputSymbolsPerBlock;
-			remainderBlocks = 0;
-			vectorCount = 1;
-		}
+		StoreEncodedCharsUnpacked(value, ref Unsafe.As<T, char>(ref destination));
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int EncodeCharsAvx2(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
+	private static int EncodeAvx2<T>(ReadOnlySpan<byte> source, Span<T> destination, byte alphabetKind) where T : unmanaged
 	{
 		GetEncodeMap(alphabetKind, out byte thresholdValue, out byte firstValue, out byte secondValue);
 		Vector256<sbyte> threshold = Vector256.Create((sbyte)thresholdValue);
 		Vector256<byte> first = Vector256.Create(firstValue);
 		Vector256<byte> second = Vector256.Create(secondValue);
-		Vector256<byte> indices = Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 11, 10, 12, 11, 13, 12, 14, 13, 2, 1, 3, 2, 4, 3, 5, 4, 12, 11, 13, 12, 14, 13, 15, 14);
+		Vector256<byte> indices = typeof(T) == typeof(char)
+			? Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 11, 10, 12, 11, 13, 12, 14, 13, 2, 1, 3, 2, 4, 3, 5, 4, 12, 11, 13, 12, 14, 13, 15, 14)
+			: Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8, 7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
 		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
 		int vectorCount = blockCount >> 2;
 
@@ -104,7 +76,7 @@ public sealed partial class Base32Encoding
 		}
 
 		ref byte sourceReference = ref MemoryMarshal.GetReference(source);
-		ref char destinationReference = ref MemoryMarshal.GetReference(destination);
+		ref T destinationReference = ref MemoryMarshal.GetReference(destination);
 		int remainderBlocks = blockCount & 3;
 		nuint sourceOffset = 0;
 		nuint destinationOffset = 0;
@@ -113,7 +85,7 @@ public sealed partial class Base32Encoding
 		{
 			do
 			{
-				StoreEncodedCharsUnpacked(EncodeFour(ref Unsafe.Add(ref sourceReference, sourceOffset), indices, threshold, first, second), ref Unsafe.Add(ref destinationReference, destinationOffset));
+				StoreSymbols(EncodeFour(ref Unsafe.Add(ref sourceReference, sourceOffset), indices, threshold, first, second), ref Unsafe.Add(ref destinationReference, destinationOffset));
 				sourceOffset += 4 * InputBytesPerBlock;
 				destinationOffset += 4 * OutputSymbolsPerBlock;
 			} while (--vectorCount is not 0);
@@ -141,10 +113,12 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private int EncodeUtf8Avx2Custom(ReadOnlySpan<byte> source, Span<byte> destination)
+	private int EncodeAvx2Custom<T>(ReadOnlySpan<byte> source, Span<T> destination) where T : unmanaged
 	{
 		GetCustomEncodeTables(_alphabet, out Vector256<byte> alphabetLow, out Vector256<byte> alphabetLowXorHigh);
-		Vector256<byte> indices = Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8, 7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
+		Vector256<byte> indices = typeof(T) == typeof(char)
+			? Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 11, 10, 12, 11, 13, 12, 14, 13, 2, 1, 3, 2, 4, 3, 5, 4, 12, 11, 13, 12, 14, 13, 15, 14)
+			: Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8, 7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14);
 		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
 		int vectorCount = blockCount >> 2;
 
@@ -154,7 +128,7 @@ public sealed partial class Base32Encoding
 		}
 
 		ref byte sourceReference = ref MemoryMarshal.GetReference(source);
-		ref byte destinationReference = ref MemoryMarshal.GetReference(destination);
+		ref T destinationReference = ref MemoryMarshal.GetReference(destination);
 		int remainderBlocks = blockCount & 3;
 		nuint sourceOffset = 0;
 		nuint destinationOffset = 0;
@@ -164,48 +138,7 @@ public sealed partial class Base32Encoding
 			do
 			{
 				Vector256<byte> values = SplitFour(ref Unsafe.Add(ref sourceReference, sourceOffset), indices);
-				MapCustomSymbols(values, alphabetLow, alphabetLowXorHigh).StoreUnsafe(ref destinationReference, destinationOffset);
-				sourceOffset += 4 * InputBytesPerBlock;
-				destinationOffset += 4 * OutputSymbolsPerBlock;
-			} while (--vectorCount is not 0);
-
-			if (remainderBlocks is 0)
-			{
-				return blockCount * InputBytesPerBlock;
-			}
-
-			sourceOffset -= (nuint)(4 - remainderBlocks) * InputBytesPerBlock;
-			destinationOffset -= (nuint)(4 - remainderBlocks) * OutputSymbolsPerBlock;
-			remainderBlocks = 0;
-			vectorCount = 1;
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private int EncodeCharsAvx2Custom(ReadOnlySpan<byte> source, Span<char> destination)
-	{
-		GetCustomEncodeTables(_alphabet, out Vector256<byte> alphabetLow, out Vector256<byte> alphabetLowXorHigh);
-		Vector256<byte> indices = Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 11, 10, 12, 11, 13, 12, 14, 13, 2, 1, 3, 2, 4, 3, 5, 4, 12, 11, 13, 12, 14, 13, 15, 14);
-		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
-		int vectorCount = blockCount >> 2;
-
-		if (vectorCount is 0)
-		{
-			return 0;
-		}
-
-		ref byte sourceReference = ref MemoryMarshal.GetReference(source);
-		ref char destinationReference = ref MemoryMarshal.GetReference(destination);
-		int remainderBlocks = blockCount & 3;
-		nuint sourceOffset = 0;
-		nuint destinationOffset = 0;
-
-		while (true)
-		{
-			do
-			{
-				Vector256<byte> values = SplitFour(ref Unsafe.Add(ref sourceReference, sourceOffset), indices);
-				StoreEncodedCharsUnpacked(MapCustomSymbols(values, alphabetLow, alphabetLowXorHigh), ref Unsafe.Add(ref destinationReference, destinationOffset));
+				StoreSymbols(MapCustomSymbols(values, alphabetLow, alphabetLowXorHigh), ref Unsafe.Add(ref destinationReference, destinationOffset));
 				sourceOffset += 4 * InputBytesPerBlock;
 				destinationOffset += 4 * OutputSymbolsPerBlock;
 			} while (--vectorCount is not 0);
@@ -262,7 +195,7 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int DecodeUtf8Avx2(ReadOnlySpan<byte> source, Span<byte> destination, int fullLength, byte alphabetKind)
+	private static int DecodeAvx2<T>(ReadOnlySpan<T> source, Span<byte> destination, int fullLength, byte alphabetKind) where T : unmanaged
 	{
 		GetDecodeShuffleMap(alphabetKind, out Vector128<byte> deltaCheck128, out Vector128<byte> deltaRebase128, out byte mapLowerBound);
 		Vector256<byte> deltaCheck = Vector256.Create(deltaCheck128);
@@ -270,52 +203,7 @@ public sealed partial class Base32Encoding
 		Vector256<byte> nibbleMask = Vector256.Create((byte)0x0f);
 		Vector256<sbyte> lowerBound = Vector256.Create((sbyte)mapLowerBound);
 		int blockCount = Math.Min(fullLength / 32, destination.Length / 20);
-		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
-		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
-		int pairCount = blockCount >> 1;
-		int processedBlocks = 0;
-
-		for (int i = 0; i < pairCount; ++i)
-		{
-			Vector256<byte> first = DecodeFour(Vector256.LoadUnsafe(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> firstInvalidMask);
-			Vector256<byte> second = DecodeFour(Vector256.LoadUnsafe(ref sourcePointer, 32), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> secondInvalidMask);
-
-			if (!IsValidAvx2(firstInvalidMask | secondInvalidMask))
-			{
-				break;
-			}
-
-			StoreDecodedOverlapping(PackDecoded(first), ref destinationPointer);
-			StoreDecoded(PackDecoded(second), ref Unsafe.Add(ref destinationPointer, 20));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, 64);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 40);
-			processedBlocks += 2;
-		}
-
-		if (processedBlocks == pairCount * 2 && (blockCount & 1) is not 0)
-		{
-			Vector256<byte> values = DecodeFour(Vector256.LoadUnsafe(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> invalidMask);
-
-			if (IsValidAvx2(invalidMask))
-			{
-				StoreDecoded(PackDecoded(values), ref destinationPointer);
-				++processedBlocks;
-			}
-		}
-
-		return processedBlocks * 32;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int DecodeCharsAvx2(ReadOnlySpan<char> source, Span<byte> destination, int fullLength, byte alphabetKind)
-	{
-		GetDecodeShuffleMap(alphabetKind, out Vector128<byte> deltaCheck128, out Vector128<byte> deltaRebase128, out byte mapLowerBound);
-		Vector256<byte> deltaCheck = Vector256.Create(deltaCheck128);
-		Vector256<byte> deltaRebase = Vector256.Create(deltaRebase128);
-		Vector256<byte> nibbleMask = Vector256.Create((byte)0x0f);
-		Vector256<sbyte> lowerBound = Vector256.Create((sbyte)mapLowerBound);
-		int blockCount = Math.Min(fullLength / 32, destination.Length / 20);
-		ref char sourcePointer = ref MemoryMarshal.GetReference(source);
+		ref T sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
 		const int stride = 128;
@@ -324,13 +212,13 @@ public sealed partial class Base32Encoding
 
 		for (int i = 0; i < pairCount; ++i)
 		{
-			if (i < prefetchPairs)
+			if (typeof(T) == typeof(char) && i < prefetchPairs)
 			{
 				StreamPrefetch.Bytes(ref sourcePointer, stride);
 			}
 
-			Vector256<byte> first = DecodeFour(LoadNarrowSaturated256(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> firstInvalidMask);
-			Vector256<byte> second = DecodeFour(LoadNarrowSaturated256(ref Unsafe.Add(ref sourcePointer, 32)), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> secondInvalidMask);
+			Vector256<byte> first = DecodeFour(LoadSymbols256(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> firstInvalidMask);
+			Vector256<byte> second = DecodeFour(LoadSymbols256(ref Unsafe.Add(ref sourcePointer, 32)), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> secondInvalidMask);
 
 			if (!IsValidAvx2(firstInvalidMask | secondInvalidMask))
 			{
@@ -346,7 +234,7 @@ public sealed partial class Base32Encoding
 
 		if (processedBlocks == pairCount * 2 && (blockCount & 1) is not 0)
 		{
-			Vector256<byte> values = DecodeFour(LoadNarrowSaturated256(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> invalidMask);
+			Vector256<byte> values = DecodeFour(LoadSymbols256(ref sourcePointer), deltaCheck, deltaRebase, nibbleMask, lowerBound, out Vector256<byte> invalidMask);
 
 			if (IsValidAvx2(invalidMask))
 			{

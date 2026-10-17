@@ -42,27 +42,44 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StoreEncodedChars(Vector128<byte> value, ref char destination)
+	private static void StoreSymbols<T>(Vector128<byte> value, ref T destination) where T : unmanaged
 	{
-		ref ushort destinationReference = ref Unsafe.As<char, ushort>(ref destination);
+		if (typeof(T) != typeof(char))
+		{
+			value.StoreUnsafe(ref Unsafe.As<T, byte>(ref destination));
+			return;
+		}
+
+		ref ushort destinationReference = ref Unsafe.As<T, ushort>(ref destination);
 		Vector128.WidenLower(value).StoreUnsafe(ref destinationReference);
 		Vector128.WidenUpper(value).StoreUnsafe(ref destinationReference, 8);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StoreEncodedChars(Vector512<byte> value, ref char destination)
+	private static void StoreSymbols<T>(Vector512<byte> value, ref T destination) where T : unmanaged
 	{
-		ref ushort destinationReference = ref Unsafe.As<char, ushort>(ref destination);
+		if (typeof(T) != typeof(char))
+		{
+			value.StoreUnsafe(ref Unsafe.As<T, byte>(ref destination));
+			return;
+		}
+
+		ref ushort destinationReference = ref Unsafe.As<T, ushort>(ref destination);
 		Vector512.WidenLower(value).StoreUnsafe(ref destinationReference);
 		Vector512.WidenUpper(value).StoreUnsafe(ref destinationReference, 32);
 	}
 
-	// Saturating narrows turn every char above U+00FF into a byte the decoders reject, so no separate ASCII check is needed.
-	// These loads only feed fixed alphabets, so x86 uses the cheaper signed pack: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
+	// Char input is narrowed with saturation, which turns every char above U+00FF into a byte the decoders reject, so no separate ASCII
+	// check is needed. These loads only feed fixed alphabets, so x86 uses the cheaper signed pack: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<byte> LoadNarrowSaturated128(ref char source)
+	private static Vector128<byte> LoadSymbols128<T>(ref T source) where T : unmanaged
 	{
-		ref ushort sourceReference = ref Unsafe.As<char, ushort>(ref source);
+		if (typeof(T) != typeof(char))
+		{
+			return Vector128.LoadUnsafe(ref Unsafe.As<T, byte>(ref source));
+		}
+
+		ref ushort sourceReference = ref Unsafe.As<T, ushort>(ref source);
 		Vector128<ushort> lower = Vector128.LoadUnsafe(ref sourceReference);
 		Vector128<ushort> upper = Vector128.LoadUnsafe(ref sourceReference, 8);
 
@@ -75,18 +92,28 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<byte> LoadNarrowSaturated256(ref char source)
+	private static Vector256<byte> LoadSymbols256<T>(ref T source) where T : unmanaged
 	{
-		ref short sourceReference = ref Unsafe.As<char, short>(ref source);
+		if (typeof(T) != typeof(char))
+		{
+			return Vector256.LoadUnsafe(ref Unsafe.As<T, byte>(ref source));
+		}
+
+		ref short sourceReference = ref Unsafe.As<T, short>(ref source);
 		Vector256<byte> packed = Avx2.PackUnsignedSaturate(Vector256.LoadUnsafe(ref sourceReference), Vector256.LoadUnsafe(ref sourceReference, 16));
 		return Avx2.Permute4x64(packed.AsUInt64(), 0b11_01_10_00).AsByte();
 	}
 
 	// Custom alphabets may contain NUL, so the 512-bit loads keep unsigned saturation and every char above U+00FF becomes 0xFF.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector512<byte> LoadNarrowSaturated512(ref char source)
+	private static Vector512<byte> LoadSymbols512<T>(ref T source) where T : unmanaged
 	{
-		ref ushort sourceReference = ref Unsafe.As<char, ushort>(ref source);
+		if (typeof(T) != typeof(char))
+		{
+			return Vector512.LoadUnsafe(ref Unsafe.As<T, byte>(ref source));
+		}
+
+		ref ushort sourceReference = ref Unsafe.As<T, ushort>(ref source);
 		return Vector512.NarrowWithSaturation(Vector512.LoadUnsafe(ref sourceReference), Vector512.LoadUnsafe(ref sourceReference, 32));
 	}
 
@@ -145,11 +172,11 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= Arm64EncodeSimdThreshold)
 		{
-			return EncodeCharsAdvSimd(source, destination, sourceOffset, destinationOffset, alphabet);
+			return EncodeAdvSimd(source, destination, sourceOffset, destinationOffset, alphabet);
 		}
 
 		return sourceRemaining >= EncodeShortSimdThreshold
-			? EncodeCharsAdvSimdShort(source, destination, sourceOffset, destinationOffset, alphabet)
+			? EncodeAdvSimdShort(source, destination, sourceOffset, destinationOffset, alphabet)
 			: 0;
 	}
 
@@ -170,7 +197,7 @@ public sealed partial class Base32Encoding
 			}
 
 			return sourceRemaining >= X86EncodeVbmiVl128Threshold
-				? EncodeCharsAvx512VbmiVl128Short(source, destination, GetShortAlphabet(alphabetKind))
+				? EncodeAvx512VbmiVl128Short(source, destination, GetShortAlphabet(alphabetKind))
 				: 0;
 		}
 
@@ -181,12 +208,12 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
 		{
-			return EncodeCharsAvx512Bw(source, destination, alphabetKind);
+			return EncodeAvx512Bw(source, destination, alphabetKind);
 		}
 
 		if (sourceRemaining >= X86EncodeVector256Threshold && Avx2.IsSupported)
 		{
-			return EncodeCharsAvx2(source, destination, alphabetKind);
+			return EncodeAvx2(source, destination, alphabetKind);
 		}
 
 		if (!Ssse3.IsSupported)
@@ -196,11 +223,11 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= X86EncodeVector256Threshold)
 		{
-			return EncodeCharsSsse3(source, destination, alphabetKind);
+			return EncodeSsse3(source, destination, alphabetKind);
 		}
 
 		return sourceRemaining >= EncodeShortSimdThreshold
-			? EncodeCharsSsse3Short(source, destination, alphabetKind)
+			? EncodeSsse3Short(source, destination, alphabetKind)
 			: 0;
 	}
 
@@ -223,7 +250,7 @@ public sealed partial class Base32Encoding
 			return EncodeCharsAvx512VbmiVl256Custom(source, destination);
 		}
 
-		return Avx2.IsSupported ? EncodeCharsAvx2Custom(source, destination) : 0;
+		return Avx2.IsSupported ? EncodeAvx2Custom(source, destination) : 0;
 	}
 
 	private static int EncodeCharsForced(ReadOnlySpan<byte> source, Span<char> destination, byte[] alphabet, byte alphabetKind, Base32SimdPath path)
@@ -235,13 +262,13 @@ public sealed partial class Base32Encoding
 
 		return path switch
 		{
-			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeCharsAdvSimd(source, destination, 0, 0, alphabet),
+			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeAdvSimd(source, destination, 0, 0, alphabet),
 			Base32SimdPath.Avx512Vbmi when IsAvx512VbmiSupported() => EncodeCharsAvx512Vbmi(source, destination, alphabetKind),
 			Base32SimdPath.Avx512VbmiVl256 when IsAvx512VbmiVlSupported() => EncodeCharsAvx512VbmiVl256(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => EncodeCharsAvx512VbmiVl128(source, destination, alphabetKind),
-			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeCharsAvx512Bw(source, destination, alphabetKind),
-			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeCharsAvx2(source, destination, alphabetKind),
-			Base32SimdPath.Ssse3 when Ssse3.IsSupported => EncodeCharsSsse3(source, destination, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
+			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeAvx512Bw(source, destination, alphabetKind),
+			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeAvx2(source, destination, alphabetKind),
+			Base32SimdPath.Ssse3 when Ssse3.IsSupported => EncodeSsse3(source, destination, alphabetKind),
 			_ => 0,
 		};
 	}
@@ -261,11 +288,11 @@ public sealed partial class Base32Encoding
 
 			if (arm64SourceRemaining >= Arm64EncodeSimdThreshold)
 			{
-				return EncodeUtf8AdvSimd(source, destination, sourceOffset, destinationOffset, alphabet);
+				return EncodeAdvSimd(source, destination, sourceOffset, destinationOffset, alphabet);
 			}
 
 			return arm64SourceRemaining >= EncodeShortSimdThreshold
-				? EncodeUtf8AdvSimdShort(source, destination, sourceOffset, destinationOffset, alphabet)
+				? EncodeAdvSimdShort(source, destination, sourceOffset, destinationOffset, alphabet)
 				: 0;
 		}
 
@@ -289,7 +316,7 @@ public sealed partial class Base32Encoding
 			}
 
 			return sourceRemaining >= X86EncodeVbmiVl128Threshold
-				? EncodeUtf8Avx512VbmiVl128(source, destination, alphabetKind)
+				? EncodeAvx512VbmiVl128(source, destination, alphabetKind)
 				: 0;
 		}
 
@@ -300,12 +327,12 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
 		{
-			return EncodeUtf8Avx512Bw(source, destination, alphabetKind);
+			return EncodeAvx512Bw(source, destination, alphabetKind);
 		}
 
 		if (sourceRemaining >= X86EncodeVector256Threshold && Avx2.IsSupported)
 		{
-			return EncodeUtf8Avx2(source, destination, alphabetKind);
+			return EncodeAvx2(source, destination, alphabetKind);
 		}
 
 		if (!Ssse3.IsSupported)
@@ -315,11 +342,11 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= X86EncodeVector256Threshold)
 		{
-			return EncodeUtf8Ssse3(source, destination, alphabetKind);
+			return EncodeSsse3(source, destination, alphabetKind);
 		}
 
 		return sourceRemaining >= EncodeShortSimdThreshold
-			? EncodeUtf8Ssse3Short(source, destination, alphabetKind)
+			? EncodeSsse3Short(source, destination, alphabetKind)
 			: 0;
 	}
 
@@ -340,7 +367,7 @@ public sealed partial class Base32Encoding
 			}
 
 			return sourceRemaining >= X86EncodeVbmiVl128Threshold
-				? EncodeUtf8Avx512VbmiVl128Short(source, destination, GetShortAlphabet(alphabetKind))
+				? EncodeAvx512VbmiVl128Short(source, destination, GetShortAlphabet(alphabetKind))
 				: 0;
 		}
 
@@ -351,12 +378,12 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
 		{
-			return EncodeUtf8Avx512Bw(source, destination, alphabetKind);
+			return EncodeAvx512Bw(source, destination, alphabetKind);
 		}
 
 		if (sourceRemaining >= X86EncodeVector256Threshold && Avx2.IsSupported)
 		{
-			return EncodeUtf8Avx2(source, destination, alphabetKind);
+			return EncodeAvx2(source, destination, alphabetKind);
 		}
 
 		if (!Ssse3.IsSupported)
@@ -366,11 +393,11 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= X86EncodeVector256Threshold)
 		{
-			return EncodeUtf8Ssse3(source, destination, alphabetKind);
+			return EncodeSsse3(source, destination, alphabetKind);
 		}
 
 		return sourceRemaining >= EncodeShortSimdThreshold
-			? EncodeUtf8Ssse3Short(source, destination, alphabetKind)
+			? EncodeSsse3Short(source, destination, alphabetKind)
 			: 0;
 	}
 
@@ -393,7 +420,7 @@ public sealed partial class Base32Encoding
 			return EncodeUtf8Avx512VbmiVl256Custom(source, destination);
 		}
 
-		return Avx2.IsSupported ? EncodeUtf8Avx2Custom(source, destination) : 0;
+		return Avx2.IsSupported ? EncodeAvx2Custom(source, destination) : 0;
 	}
 
 	private static int EncodeUtf8Forced(ReadOnlySpan<byte> source, Span<byte> destination, byte[] alphabet, byte alphabetKind, Base32SimdPath path)
@@ -405,13 +432,13 @@ public sealed partial class Base32Encoding
 
 		return path switch
 		{
-			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeUtf8AdvSimd(source, destination, 0, 0, alphabet),
+			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeAdvSimd(source, destination, 0, 0, alphabet),
 			Base32SimdPath.Avx512Vbmi when IsAvx512VbmiSupported() => EncodeUtf8Avx512Vbmi(source, destination, alphabetKind),
 			Base32SimdPath.Avx512VbmiVl256 when IsAvx512VbmiVlSupported() => EncodeUtf8Avx512VbmiVl256(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => EncodeUtf8Avx512VbmiVl128(source, destination, alphabetKind),
-			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeUtf8Avx512Bw(source, destination, alphabetKind),
-			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeUtf8Avx2(source, destination, alphabetKind),
-			Base32SimdPath.Ssse3 when Ssse3.IsSupported => EncodeUtf8Ssse3(source, destination, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
+			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeAvx512Bw(source, destination, alphabetKind),
+			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeAvx2(source, destination, alphabetKind),
+			Base32SimdPath.Ssse3 when Ssse3.IsSupported => EncodeSsse3(source, destination, alphabetKind),
 			_ => 0,
 		};
 	}
@@ -450,7 +477,7 @@ public sealed partial class Base32Encoding
 	{
 		if (path is not Base32SimdPath.Auto)
 		{
-			return DecodeCharsForced(source, destination, fullLength, _alphabetKind, path);
+			return DecodeForced(source, destination, fullLength, _alphabetKind, path);
 		}
 
 		return _alphabetKind is not CustomAlphabetKind && fullLength >= X86DecodeVector128Threshold && destination.Length >= 10
@@ -468,48 +495,48 @@ public sealed partial class Base32Encoding
 		{
 			// No narrower custom-alphabet decoder exists, so this ignores Vector512.IsHardwareAccelerated.
 			return IsAvx512VbmiSupported()
-				? DecodeCharsAvx512Vbmi(source, destination, fullLength, alphabetKind)
+				? DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind)
 				: DecodeScalar(source, destination, fullLength);
 		}
 
 		if (AdvSimd.IsSupported)
 		{
-			return DecodeCharsAdvSimd(source, destination, fullLength, alphabetKind);
+			return DecodeAdvSimd(source, destination, fullLength, alphabetKind);
 		}
 
 		if (IsAvx512VbmiVlSupported())
 		{
 			if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 			{
-				return DecodeCharsAvx512Vbmi(source, destination, fullLength, alphabetKind);
+				return DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind);
 			}
 
 			if (fullRemaining >= X86DecodeVector256Threshold)
 			{
-				return DecodeCharsAvx512VbmiVl256(source, destination, fullLength, alphabetKind);
+				return DecodeAvx512VbmiVl256(source, destination, fullLength, alphabetKind);
 			}
 
-			return DecodeCharsVector128(source, destination, fullLength, alphabetKind);
+			return DecodeVector128(source, destination, fullLength, alphabetKind);
 		}
 
 		if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 		{
-			return DecodeCharsAvx512Vbmi(source, destination, fullLength, alphabetKind);
+			return DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind);
 		}
 
 		if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Bw())
 		{
-			return DecodeCharsAvx512(source, destination, fullLength, alphabetKind);
+			return DecodeAvx512(source, destination, fullLength, alphabetKind);
 		}
 
 		if (fullRemaining >= X86DecodeVector256Threshold && Avx2.IsSupported)
 		{
-			return DecodeCharsAvx2(source, destination, fullLength, alphabetKind);
+			return DecodeAvx2(source, destination, fullLength, alphabetKind);
 		}
 
 		if (Ssse3.IsSupported)
 		{
-			return DecodeCharsVector128(source, destination, fullLength, alphabetKind);
+			return DecodeVector128(source, destination, fullLength, alphabetKind);
 		}
 
 		return fullRemaining >= X86DecodeVector512Threshold
@@ -517,7 +544,7 @@ public sealed partial class Base32Encoding
 			: 0;
 	}
 
-	private int DecodeCharsForced(ReadOnlySpan<char> source, Span<byte> destination, int fullLength, byte alphabetKind, Base32SimdPath path)
+	private int DecodeForced<T>(ReadOnlySpan<T> source, Span<byte> destination, int fullLength, byte alphabetKind, Base32SimdPath path) where T : unmanaged
 	{
 		if (path is Base32SimdPath.Scalar || alphabetKind is CustomAlphabetKind)
 		{
@@ -526,20 +553,20 @@ public sealed partial class Base32Encoding
 
 		return path switch
 		{
-			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => DecodeCharsAdvSimd(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512Vbmi when IsAvx512VbmiSupported() => DecodeCharsAvx512Vbmi(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl256 when IsAvx512VbmiVlSupported() => DecodeCharsAvx512VbmiVl256(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => DecodeCharsVector128(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => DecodeCharsAvx512(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx2 when Avx2.IsSupported => DecodeCharsAvx2(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Ssse3 when Ssse3.IsSupported => DecodeCharsVector128(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => DecodeAdvSimd(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Avx512Vbmi when IsAvx512VbmiSupported() => DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl256 when IsAvx512VbmiVlSupported() => DecodeAvx512VbmiVl256(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => DecodeVector128(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => DecodeAvx512(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Avx2 when Avx2.IsSupported => DecodeAvx2(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Ssse3 when Ssse3.IsSupported => DecodeVector128(source, destination, fullLength, alphabetKind),
 			_ => 0,
 		};
 	}
 
 	internal int DecodeCharsBlocksPath(ReadOnlySpan<char> source, Span<byte> destination, Base32SimdPath path)
 	{
-		return DecodeCharsForced(source, destination, source.Length & ~7, _alphabetKind, path);
+		return DecodeForced(source, destination, source.Length & ~7, _alphabetKind, path);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -547,7 +574,7 @@ public sealed partial class Base32Encoding
 	{
 		return path is Base32SimdPath.Auto
 			? DecodeUtf8Auto(source, destination, fullLength, _alphabetKind)
-			: DecodeUtf8Forced(source, destination, fullLength, _alphabetKind, path);
+			: DecodeForced(source, destination, fullLength, _alphabetKind, path);
 	}
 
 	private int DecodeUtf8Auto(ReadOnlySpan<byte> source, Span<byte> destination, int fullLength, byte alphabetKind)
@@ -557,14 +584,14 @@ public sealed partial class Base32Encoding
 		if (alphabetKind is CustomAlphabetKind)
 		{
 			return fullRemaining >= X86DecodeVector512Threshold && IsAvx512VbmiSupported()
-				? DecodeUtf8Avx512Vbmi(source, destination, fullLength, alphabetKind)
+				? DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind)
 				: DecodeScalar(source, destination, fullLength);
 		}
 
 		if (AdvSimd.IsSupported)
 		{
 			return fullRemaining >= Arm64DecodeSimdThreshold
-				? DecodeUtf8AdvSimd(source, destination, fullLength, alphabetKind)
+				? DecodeAdvSimd(source, destination, fullLength, alphabetKind)
 				: DecodeScalar(source, destination, fullLength);
 		}
 
@@ -572,64 +599,44 @@ public sealed partial class Base32Encoding
 		{
 			if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 			{
-				return DecodeUtf8Avx512Vbmi(source, destination, fullLength, alphabetKind);
+				return DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind);
 			}
 
 			if (fullRemaining >= X86DecodeVector256Threshold)
 			{
-				return DecodeUtf8Avx512VbmiVl256(source, destination, fullLength, alphabetKind);
+				return DecodeAvx512VbmiVl256(source, destination, fullLength, alphabetKind);
 			}
 
 			return fullRemaining >= X86DecodeVector128Threshold
-				? DecodeUtf8Vector128(source, destination, fullLength, alphabetKind)
+				? DecodeVector128(source, destination, fullLength, alphabetKind)
 				: DecodeScalar(source, destination, fullLength);
 		}
 
 		if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 		{
-			return DecodeUtf8Avx512Vbmi(source, destination, fullLength, alphabetKind);
+			return DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind);
 		}
 
 		if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Bw())
 		{
-			return DecodeUtf8Avx512(source, destination, fullLength, alphabetKind);
+			return DecodeAvx512(source, destination, fullLength, alphabetKind);
 		}
 
 		if (fullRemaining >= X86DecodeVector256Threshold && Avx2.IsSupported)
 		{
-			return DecodeUtf8Avx2(source, destination, fullLength, alphabetKind);
+			return DecodeAvx2(source, destination, fullLength, alphabetKind);
 		}
 
 		if (fullRemaining >= X86DecodeVector128Threshold && Ssse3.IsSupported)
 		{
-			return DecodeUtf8Vector128(source, destination, fullLength, alphabetKind);
+			return DecodeVector128(source, destination, fullLength, alphabetKind);
 		}
 
 		return DecodeScalar(source, destination, fullLength);
 	}
 
-	private int DecodeUtf8Forced(ReadOnlySpan<byte> source, Span<byte> destination, int fullLength, byte alphabetKind, Base32SimdPath path)
-	{
-		if (path is Base32SimdPath.Scalar || alphabetKind is CustomAlphabetKind)
-		{
-			return DecodeScalar(source, destination, fullLength);
-		}
-
-		return path switch
-		{
-			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => DecodeUtf8AdvSimd(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512Vbmi when IsAvx512VbmiSupported() => DecodeUtf8Avx512Vbmi(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl256 when IsAvx512VbmiVlSupported() => DecodeUtf8Avx512VbmiVl256(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => DecodeUtf8Vector128(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => DecodeUtf8Avx512(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx2 when Avx2.IsSupported => DecodeUtf8Avx2(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Ssse3 when Ssse3.IsSupported => DecodeUtf8Vector128(source, destination, fullLength, alphabetKind),
-			_ => 0,
-		};
-	}
-
 	internal int DecodeUtf8BlocksPath(ReadOnlySpan<byte> source, Span<byte> destination, Base32SimdPath path)
 	{
-		return DecodeUtf8Forced(source, destination, source.Length & ~7, _alphabetKind, path);
+		return DecodeForced(source, destination, source.Length & ~7, _alphabetKind, path);
 	}
 }
