@@ -21,7 +21,7 @@ internal static partial class ChaCha20Utils
 		Debug.Assert(blocks % 8 is 0 or > 4);
 		ref ulong counter = ref GetCounterOriginal(ref stateRef);
 
-		for (int processed = 0; blocks > 0; processed += 512, blocks -= 8)
+		for (nuint processed = 0; blocks > 0; processed += 512, blocks -= 8)
 		{
 			Vector256<uint> c0 = Vector256.Create((uint)counter) + Vector256.CreateSequence(0u, 1u);
 			Vector256<uint> h0 = Vector256.Create(Unsafe.Add(ref stateRef, 13));
@@ -71,30 +71,30 @@ internal static partial class ChaCha20Utils
 			a14 += Vector256.Create(Unsafe.Add(ref stateRef, 14));
 			a15 += Vector256.Create(Unsafe.Add(ref stateRef, 15));
 			VectorTranspose.Transpose(ref a00, ref a01, ref a02, ref a03, ref a04, ref a05, ref a06, ref a07, ref a08, ref a09, ref a10, ref a11, ref a12, ref a13, ref a14, ref a15);
-			(a00.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)processed)).StoreUnsafe(ref output, (nuint)processed);
-			(a01.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 32))).StoreUnsafe(ref output, (nuint)(processed + 32));
-			(a02.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 64))).StoreUnsafe(ref output, (nuint)(processed + 64));
-			(a03.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 96))).StoreUnsafe(ref output, (nuint)(processed + 96));
-			(a04.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 128))).StoreUnsafe(ref output, (nuint)(processed + 128));
-			(a05.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 160))).StoreUnsafe(ref output, (nuint)(processed + 160));
-			(a06.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 192))).StoreUnsafe(ref output, (nuint)(processed + 192));
-			(a07.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 224))).StoreUnsafe(ref output, (nuint)(processed + 224));
-			(a08.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 256))).StoreUnsafe(ref output, (nuint)(processed + 256));
-			(a09.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 288))).StoreUnsafe(ref output, (nuint)(processed + 288));
+			(a00.AsByte() ^ Vector256.LoadUnsafe(ref input, processed)).StoreUnsafe(ref output, processed);
+			(a01.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 32)).StoreUnsafe(ref output, processed + 32);
+			(a02.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 64)).StoreUnsafe(ref output, processed + 64);
+			(a03.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 96)).StoreUnsafe(ref output, processed + 96);
+			(a04.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 128)).StoreUnsafe(ref output, processed + 128);
+			(a05.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 160)).StoreUnsafe(ref output, processed + 160);
+			(a06.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 192)).StoreUnsafe(ref output, processed + 192);
+			(a07.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 224)).StoreUnsafe(ref output, processed + 224);
+			(a08.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 256)).StoreUnsafe(ref output, processed + 256);
+			(a09.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 288)).StoreUnsafe(ref output, processed + 288);
 			if (blocks > 5)
 			{
-				(a10.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 320))).StoreUnsafe(ref output, (nuint)(processed + 320));
-				(a11.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 352))).StoreUnsafe(ref output, (nuint)(processed + 352));
+				(a10.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 320)).StoreUnsafe(ref output, processed + 320);
+				(a11.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 352)).StoreUnsafe(ref output, processed + 352);
 			}
 			if (blocks > 6)
 			{
-				(a12.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 384))).StoreUnsafe(ref output, (nuint)(processed + 384));
-				(a13.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 416))).StoreUnsafe(ref output, (nuint)(processed + 416));
+				(a12.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 384)).StoreUnsafe(ref output, processed + 384);
+				(a13.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 416)).StoreUnsafe(ref output, processed + 416);
 			}
 			if (blocks > 7)
 			{
-				(a14.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 448))).StoreUnsafe(ref output, (nuint)(processed + 448));
-				(a15.AsByte() ^ Vector256.LoadUnsafe(ref input, (nuint)(processed + 480))).StoreUnsafe(ref output, (nuint)(processed + 480));
+				(a14.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 448)).StoreUnsafe(ref output, processed + 448);
+				(a15.AsByte() ^ Vector256.LoadUnsafe(ref input, processed + 480)).StoreUnsafe(ref output, processed + 480);
 			}
 			counter += (uint)Math.Min(blocks, 8);
 		}

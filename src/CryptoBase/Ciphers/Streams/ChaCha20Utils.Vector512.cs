@@ -21,7 +21,7 @@ internal static partial class ChaCha20Utils
 		Debug.Assert(blocks % 16 is 0 or > 8);
 		ref ulong counter = ref GetCounterOriginal(ref stateRef);
 
-		for (int processed = 0; blocks > 0; processed += 1024, blocks -= 16)
+		for (nuint processed = 0; blocks > 0; processed += 1024, blocks -= 16)
 		{
 			Vector512<uint> c0 = Vector512.Create((uint)counter) + Vector512.CreateSequence(0u, 1u);
 			Vector512<uint> h0 = Vector512.Create(Unsafe.Add(ref stateRef, 13));
@@ -71,42 +71,42 @@ internal static partial class ChaCha20Utils
 			a14 += Vector512.Create(Unsafe.Add(ref stateRef, 14));
 			a15 += Vector512.Create(Unsafe.Add(ref stateRef, 15));
 			VectorTranspose.Transpose(ref a00, ref a01, ref a02, ref a03, ref a04, ref a05, ref a06, ref a07, ref a08, ref a09, ref a10, ref a11, ref a12, ref a13, ref a14, ref a15);
-			(a00.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed)).StoreUnsafe(ref output, (nuint)processed);
-			(a01.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 64))).StoreUnsafe(ref output, (nuint)(processed + 64));
-			(a02.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 128))).StoreUnsafe(ref output, (nuint)(processed + 128));
-			(a03.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 192))).StoreUnsafe(ref output, (nuint)(processed + 192));
-			(a04.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 256))).StoreUnsafe(ref output, (nuint)(processed + 256));
-			(a05.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 320))).StoreUnsafe(ref output, (nuint)(processed + 320));
-			(a06.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 384))).StoreUnsafe(ref output, (nuint)(processed + 384));
-			(a07.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 448))).StoreUnsafe(ref output, (nuint)(processed + 448));
-			(a08.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 512))).StoreUnsafe(ref output, (nuint)(processed + 512));
+			(a00.AsByte() ^ Vector512.LoadUnsafe(ref input, processed)).StoreUnsafe(ref output, processed);
+			(a01.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 64)).StoreUnsafe(ref output, processed + 64);
+			(a02.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 128)).StoreUnsafe(ref output, processed + 128);
+			(a03.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 192)).StoreUnsafe(ref output, processed + 192);
+			(a04.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 256)).StoreUnsafe(ref output, processed + 256);
+			(a05.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 320)).StoreUnsafe(ref output, processed + 320);
+			(a06.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 384)).StoreUnsafe(ref output, processed + 384);
+			(a07.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 448)).StoreUnsafe(ref output, processed + 448);
+			(a08.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 512)).StoreUnsafe(ref output, processed + 512);
 			if (blocks > 9)
 			{
-				(a09.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 576))).StoreUnsafe(ref output, (nuint)(processed + 576));
+				(a09.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 576)).StoreUnsafe(ref output, processed + 576);
 			}
 			if (blocks > 10)
 			{
-				(a10.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 640))).StoreUnsafe(ref output, (nuint)(processed + 640));
+				(a10.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 640)).StoreUnsafe(ref output, processed + 640);
 			}
 			if (blocks > 11)
 			{
-				(a11.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 704))).StoreUnsafe(ref output, (nuint)(processed + 704));
+				(a11.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 704)).StoreUnsafe(ref output, processed + 704);
 			}
 			if (blocks > 12)
 			{
-				(a12.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 768))).StoreUnsafe(ref output, (nuint)(processed + 768));
+				(a12.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 768)).StoreUnsafe(ref output, processed + 768);
 			}
 			if (blocks > 13)
 			{
-				(a13.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 832))).StoreUnsafe(ref output, (nuint)(processed + 832));
+				(a13.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 832)).StoreUnsafe(ref output, processed + 832);
 			}
 			if (blocks > 14)
 			{
-				(a14.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 896))).StoreUnsafe(ref output, (nuint)(processed + 896));
+				(a14.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 896)).StoreUnsafe(ref output, processed + 896);
 			}
 			if (blocks > 15)
 			{
-				(a15.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 960))).StoreUnsafe(ref output, (nuint)(processed + 960));
+				(a15.AsByte() ^ Vector512.LoadUnsafe(ref input, processed + 960)).StoreUnsafe(ref output, processed + 960);
 			}
 			counter += (uint)Math.Min(blocks, 16);
 		}
