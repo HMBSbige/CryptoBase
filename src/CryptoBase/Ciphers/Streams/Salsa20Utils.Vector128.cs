@@ -148,7 +148,7 @@ internal static partial class Salsa20Utils
 		Vector128<uint> b0 = a0;
 		Vector128<uint> b1 = a1;
 		Vector128<uint> b2 = a2;
-		Vector128<uint> b3 = a3.WithElement(0, (uint)(counter + 1));
+		Vector128<uint> b3 = a3 + Vector128.CreateScalar(1u);
 
 		for (int round = 0; round < SnuffleCipher.Rounds; round += 2)
 		{
@@ -176,7 +176,7 @@ internal static partial class Salsa20Utils
 		(b0.AsByte() ^ Vector128.LoadUnsafe(ref input, 64)).StoreUnsafe(ref output, 64);
 		b1 += s1;
 		(b1.AsByte() ^ Vector128.LoadUnsafe(ref input, 80)).StoreUnsafe(ref output, 80);
-		b2 += s2.WithElement(0, (uint)(counter + 1));
+		b2 += s2 + Vector128.CreateScalar(1u);
 		(b2.AsByte() ^ Vector128.LoadUnsafe(ref input, 96)).StoreUnsafe(ref output, 96);
 		b3 += s3;
 		(b3.AsByte() ^ Vector128.LoadUnsafe(ref input, 112)).StoreUnsafe(ref output, 112);
