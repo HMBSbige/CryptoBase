@@ -9,56 +9,69 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_NOLOGO: 1
   DOTNET_GENERATE_ASPNET_CERTIFICATE: false
   NET_VERSION: 10.0.x
+  TUNIT_DISABLE_LOGO: 1
 
 jobs:
   check_format:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.NET_VERSION }}
 
+      # Test jobs build only the test project, so the whole solution, benchmarks included, is built here.
+      - name: Build
+        run: dotnet build -c Release
+
       - name: Check .NET format
-        run: dotnet format -v diag --verify-no-changes
+        run: dotnet format --no-restore -v diag --verify-no-changes
 
   test:
+    name: test (${{ matrix.os }}${{ matrix.disable && format(', no {0}', matrix.disable) }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
-        working-directory: test/CryptoBase.Tests
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - windows-latest
-          - macos-latest
         include:
-          - os: ubuntu-latest
-          - os: ubuntu-latest
-            disable: AVX512v2
-          - os: ubuntu-latest
-            disable: AVX512
-          - os: ubuntu-latest
-            disable: VAES
-          - os: ubuntu-latest
-            disable: GFNI
-          - os: ubuntu-latest
-            disable: AVX2
-          - os: ubuntu-latest
-            disable: AVX
-          - os: ubuntu-latest
-            disable: SSE42
-          - os: ubuntu-latest
-            disable: AES
-          - os: ubuntu-latest
-            disable: HWIntrinsic
+          # Linux x64 covers every x86 instruction-set level, under Intel SDE where the runner lacks one (see test.sh).
+          - { os: ubuntu-latest }
+          - { os: ubuntu-latest, disable: AVX512v2 }
+          - { os: ubuntu-latest, disable: Vector512 }
+          - { os: ubuntu-latest, disable: VAES }
+          - { os: ubuntu-latest, disable: GFNI }
+          - { os: ubuntu-latest, disable: AVX512 }
+          - { os: ubuntu-latest, disable: 'AVX512,GFNI,VAES' }
+          - { os: ubuntu-latest, disable: AVX2 }
+          - { os: ubuntu-latest, disable: AVX }
+          - { os: ubuntu-latest, disable: SSE42 }
+          - { os: ubuntu-latest, disable: AES }
+          - { os: ubuntu-latest, disable: HWIntrinsic }
+          # Linux ARM64 covers the ARM64 switches.
+          - { os: ubuntu-26.04-arm }
+          - { os: ubuntu-26.04-arm, disable: Arm64Aes }
+          - { os: ubuntu-26.04-arm, disable: Arm64Crc32 }
+          - { os: ubuntu-26.04-arm, disable: Arm64Sha1 }
+          - { os: ubuntu-26.04-arm, disable: Arm64Sha256 }
+          - { os: ubuntu-26.04-arm, disable: HWIntrinsic }
+          # Other platforms: default dispatch and the portable path.
+          - { os: windows-latest }
+          - { os: windows-latest, disable: HWIntrinsic }
+          - { os: macos-latest }
 
     steps:
       - uses: actions/checkout@v7
@@ -68,120 +81,20 @@ jobs:
         with:
           dotnet-version: ${{ env.NET_VERSION }}
       - uses: petarpetrovt/setup-sde@v6.0
-        if: runner.os == 'Linux' && matrix.disable != 'HWIntrinsic'
+        if: runner.os == 'Linux' && runner.arch == 'X64'
 
-      - name: Build (Release)
-        working-directory: .
-        run: dotnet build -c Release
+      - name: Build
+        run: dotnet build test/CryptoBase.Tests -c Release
 
-      - name: Build instruction set probe
-        if: runner.os == 'Linux' && matrix.disable != 'HWIntrinsic'
-        run: dotnet build ../../.github/InstructionSets.cs -c Release -o ../../artifacts/bin/InstructionSets
+      - name: Test (Release)
+        run: bash .github/test.sh
+        env:
+          DISABLE: ${{ matrix.disable }}
 
-      - name: Run tests (Release)
+      - name: Test (Release, tiered compilation)
         if: ${{ !matrix.disable }}
-        run: &run-tests |
-          export DOTNET_TieredCompilation=0
-          test_runner=(dotnet)
-          if [[ -n "${SDE_PATH:-}" && "${DOTNET_EnableHWIntrinsic:-1}" != 0 ]]; then
-            probe=../../artifacts/bin/InstructionSets/InstructionSets.dll
-            native=$(dotnet "$probe")
-            emulated=$(DOTNET_EnableDiagnostics=0 "$SDE_PATH/sde64" -spr -- dotnet "$probe")
-            missing=$(LC_ALL=C comm -13 <(printf '%s\n' "$native") <(printf '%s\n' "$emulated") | paste -sd,)
-            if [[ -n "$missing" ]]; then
-              test_runner=("$SDE_PATH/sde64" -spr -- dotnet)
-              export DOTNET_EnableDiagnostics=0
-              echo "Runner: SDE; missing: ${missing//,/, }"
-            else
-              echo "Runner: native"
-            fi
-          else
-            echo "Runner: native"
-          fi
-          "${test_runner[@]}" ../../artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --disable-logo --minimum-expected-tests 1
+        run: dotnet artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --minimum-expected-tests 1
 
-      - name: Run tests (Release, tiered compilation)
+      - name: Test (Debug)
         if: ${{ !matrix.disable }}
-        run: dotnet ../../artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --disable-logo --minimum-expected-tests 1
-
-      - name: Run tests (Debug)
-        if: ${{ !matrix.disable }}
-        run: dotnet test -c Debug --no-restore --disable-logo --minimum-expected-tests 1
-
-      - name: Run tests (Disable AVX512v2)
-        if: matrix.os == 'windows-latest' || matrix.disable == 'AVX512v2'
-        run: *run-tests
-        env:
-          DOTNET_EnableAVX512v2: 0
-
-      - name: Run tests (Disable AVX512)
-        if: matrix.os == 'windows-latest' || matrix.disable == 'AVX512'
-        run: *run-tests
-        env:
-          DOTNET_EnableAVX512: 0
-
-      - name: Run tests (Disable VAES)
-        if: matrix.os == 'windows-latest' || matrix.disable == 'VAES'
-        run: *run-tests
-        env:
-          DOTNET_EnableVAES: 0
-
-      - name: Run tests (Disable GFNI)
-        if: matrix.os == 'windows-latest' || matrix.disable == 'GFNI'
-        run: *run-tests
-        env:
-          DOTNET_EnableGFNI: 0
-
-      - name: Run tests (Disable AVX2)
-        if: matrix.os == 'windows-latest' || matrix.disable == 'AVX2'
-        run: *run-tests
-        env:
-          DOTNET_EnableAVX2: 0
-
-      - name: Run tests (Disable AVX)
-        if: matrix.os == 'windows-latest' || matrix.disable == 'AVX'
-        run: *run-tests
-        env:
-          DOTNET_EnableAVX: 0
-
-      - name: Run tests (Disable x86-64-v2 intrinsics)
-        if: matrix.os == 'windows-latest' || matrix.disable == 'SSE42'
-        run: *run-tests
-        env:
-          DOTNET_EnableSSE42: 0
-
-      - name: Run tests (Disable AES)
-        if: matrix.os == 'windows-latest' || matrix.disable == 'AES'
-        run: *run-tests
-        env:
-          DOTNET_EnableAES: 0
-
-      - name: Run tests (Disable ARM64 AES)
-        if: matrix.os == 'macos-latest'
-        run: *run-tests
-        env:
-          DOTNET_EnableArm64Aes: 0
-
-      - name: Run tests (Disable ARM64 CRC32)
-        if: matrix.os == 'macos-latest'
-        run: *run-tests
-        env:
-          DOTNET_EnableArm64Crc32: 0
-
-      - name: Run tests (Disable ARM64 SHA1)
-        if: matrix.os == 'macos-latest'
-        run: *run-tests
-        env:
-          DOTNET_EnableArm64Sha1: 0
-
-      - name: Run tests (Disable ARM64 SHA256)
-        if: matrix.os == 'macos-latest'
-        run: *run-tests
-        env:
-          DOTNET_EnableArm64Sha256: 0
-
-      - name: Run tests (Disable HWIntrinsic)
-        if: runner.os != 'Linux' || matrix.disable == 'HWIntrinsic'
-        run: *run-tests
-        env:
-          DOTNET_EnableHWIntrinsic: 0
+        run: dotnet test --project test/CryptoBase.Tests -c Debug --minimum-expected-tests 1
