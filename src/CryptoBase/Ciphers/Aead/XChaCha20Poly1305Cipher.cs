@@ -24,8 +24,6 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 
 	private readonly XChaCha20Cipher _chacha20;
 
-	private static ReadOnlySpan<byte> EmptyIV24 => "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8;
-
 	/// <summary>
 	/// Initializes a new instance with the specified key.
 	/// </summary>
@@ -34,7 +32,7 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 
-		_chacha20 = new XChaCha20Cipher(key, EmptyIV24);
+		_chacha20 = new XChaCha20Cipher(key);
 	}
 
 	/// <inheritdoc />

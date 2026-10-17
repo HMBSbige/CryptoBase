@@ -28,6 +28,14 @@ public class XChaCha20Cipher : ChaCha20OriginalCipher
 		InitializeNonce(iv);
 	}
 
+	/// <summary>Initializes a new instance whose nonce must be set by <see cref="InitializeNonce" /> before use.</summary>
+	internal XChaCha20Cipher(ReadOnlySpan<byte> key)
+	{
+		Debug.Assert(key.Length is KeySize);
+
+		_key = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(key));
+	}
+
 	/// <summary>Initializes the nonce and resets the block counter to zero.</summary>
 	internal void InitializeNonce(ReadOnlySpan<byte> nonce)
 	{
