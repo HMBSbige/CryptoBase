@@ -31,9 +31,15 @@ internal partial struct AesCipherBitslice : IDisposable
 		for (int round = 0; round <= _rounds; ++round)
 		{
 			ref InlineArray8<Vector128<byte>> roundKey = ref _roundKeys[round];
-			Vector128<byte> keyBytes = Vector128.Create(words.Slice(round * 4, 4)).AsByte();
-			((Span<Vector128<byte>>)roundKey).Fill(TransposeBytes(keyBytes));
-			Transpose(ref roundKey);
+			Vector128<byte> keyBytes = TransposeBytes(Vector128.Create(words.Slice(round * 4, 4)).AsByte());
+			roundKey[0] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x01), Vector128.Create((byte)0x01));
+			roundKey[1] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x02), Vector128.Create((byte)0x02));
+			roundKey[2] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x04), Vector128.Create((byte)0x04));
+			roundKey[3] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x08), Vector128.Create((byte)0x08));
+			roundKey[4] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x10), Vector128.Create((byte)0x10));
+			roundKey[5] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x20), Vector128.Create((byte)0x20));
+			roundKey[6] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x40), Vector128.Create((byte)0x40));
+			roundKey[7] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x80), Vector128.Create((byte)0x80));
 
 			if (round > 0)
 			{
