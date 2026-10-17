@@ -223,7 +223,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		{
 			if (completeLength is not 0)
 			{
-				AppendBlocks(ref accumulator, source.Slice(0, completeLength));
+				AppendBlocks(ref accumulator, source);
 			}
 
 			return;
