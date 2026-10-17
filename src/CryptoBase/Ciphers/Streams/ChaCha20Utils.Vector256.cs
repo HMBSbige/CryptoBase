@@ -103,10 +103,10 @@ internal static partial class ChaCha20Utils
 	// One row-major state holds block n in the low lanes and block n + 1 in the high lanes.
 	private static void XorVector256Two(ref uint stateRef, ref byte input, ref byte output)
 	{
-		Vector256<uint> initial0 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 0));
-		Vector256<uint> initial1 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 4));
-		Vector256<uint> initial2 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 8));
-		Vector256<uint> initial3 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 12)).AddUInt32LE01();
+		Vector256<uint> initial0 = Vector256.Create(Vector128.LoadUnsafe(ref stateRef));
+		Vector256<uint> initial1 = Vector256.Create(Vector128.LoadUnsafe(ref stateRef, 4));
+		Vector256<uint> initial2 = Vector256.Create(Vector128.LoadUnsafe(ref stateRef, 8));
+		Vector256<uint> initial3 = Vector256.Create(Vector128.LoadUnsafe(ref stateRef, 12)).AddUInt32LE01();
 		Vector256<uint> a = initial0;
 		Vector256<uint> b = initial1;
 		Vector256<uint> c = initial2;
