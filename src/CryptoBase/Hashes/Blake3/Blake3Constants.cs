@@ -4,7 +4,8 @@ internal static class Blake3Constants
 {
 	internal const int KeyLength = 32;
 	internal const int OutLength = 32;
-	internal const int BlockLength = 64;
+	internal const int BlockLengthLog2 = 6;
+	internal const int BlockLength = 1 << BlockLengthLog2;
 	internal const int ChunkLength = 1024;
 	internal const int ChunkBlocks = ChunkLength / BlockLength;
 	internal const int Rounds = 7;

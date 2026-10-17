@@ -210,7 +210,8 @@ internal struct Blake3State
 	{
 		Debug.Assert(BufferLength <= ChunkLength);
 
-		int blocks = (BufferLength - 1) / BlockLength;
+		// The last buffered block waits for the chunk end flags; an empty buffer gives -1, which the check below treats as nothing to compress.
+		int blocks = BufferLength - 1 >> BlockLengthLog2;
 		int compressedBlocks = _compressedBlocks;
 
 		if (blocks <= compressedBlocks)
