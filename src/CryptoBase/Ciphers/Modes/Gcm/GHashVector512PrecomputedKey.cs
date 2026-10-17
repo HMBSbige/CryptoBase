@@ -30,21 +30,24 @@ internal readonly struct GHashVector512PrecomputedKey : IGHashPowers
 		Vector128<byte> key4 = key43.GetLower();
 		_key4321 = key43.ToVector512Unsafe().WithUpper(key21);
 		Vector512<byte> key4444 = Vector512.Broadcast(key4);
-		_key8765 = GFMultiply(_key4321, key4444);
+		Vector512<byte> key8765 = GFMultiply(_key4321, key4444);
+		_key8765 = key8765;
 
-		Vector128<byte> key8 = _key8765.GetLower().GetLower();
+		Vector128<byte> key8 = key8765.GetLower().GetLower();
 		Vector512<byte> key8888 = Vector512.Broadcast(key8);
 		_key12111009 = GFMultiply(_key4321, key8888);
-		_key16151413 = GFMultiply(_key8765, key8888);
+		Vector512<byte> key16151413 = GFMultiply(_key8765, key8888);
+		_key16151413 = key16151413;
 
-		Vector128<byte> key16 = _key16151413.GetLower().GetLower();
+		Vector128<byte> key16 = key16151413.GetLower().GetLower();
 		Vector512<byte> key16161616 = Vector512.Broadcast(key16);
 		_key20191817 = GFMultiply(_key4321, key16161616);
 		_key24232221 = GFMultiply(_key8765, key16161616);
 		_key28272625 = GFMultiply(_key12111009, key16161616);
-		_key32313029 = GFMultiply(_key16151413, key16161616);
+		Vector512<byte> key32313029 = GFMultiply(_key16151413, key16161616);
+		_key32313029 = key32313029;
 
-		Vector128<byte> key32 = _key32313029.GetLower().GetLower();
+		Vector128<byte> key32 = key32313029.GetLower().GetLower();
 		Vector512<byte> key32323232 = Vector512.Broadcast(key32);
 		_key36353433 = GFMultiply(_key4321, key32323232);
 		_key40393837 = GFMultiply(_key8765, key32323232);
