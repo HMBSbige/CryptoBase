@@ -13,7 +13,7 @@ public static class Hkdf
 	/// <returns>The number of bytes written to <paramref name="prk" />.</returns>
 	public static int Extract<THash>(ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk) where THash : unmanaged, IHmacHashCore<THash>
 	{
-		ValidateExtractArguments<THash>(prk);
+		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, THash.HashLength, nameof(prk));
 
 		return HmacAlgorithm<THash>.Mac(salt, ikm, prk);
 	}
@@ -39,12 +39,6 @@ public static class Hkdf
 		using CryptoBuffer<byte> prk = new(stackalloc byte[hashLength]);
 		HmacState<THash>.Mac(salt, ikm, prk.Span);
 		ExpandCore<THash>(prk.Span, output, info);
-	}
-
-	private static void ValidateExtractArguments<THash>(Span<byte> prk) where THash : unmanaged, IHmacHashCore<THash>
-	{
-		int hashLengthInBytes = THash.HashLength;
-		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLengthInBytes, nameof(prk));
 	}
 
 	private static void ValidateExpandArguments<THash>(ReadOnlySpan<byte> prk, Span<byte> output) where THash : unmanaged, IHmacHashCore<THash>
