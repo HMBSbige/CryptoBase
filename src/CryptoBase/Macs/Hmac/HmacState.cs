@@ -269,15 +269,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WritePaddedKey(ReadOnlySpan<byte> key, Span<byte> keyBlock, byte pad)
 	{
-		Debug.Assert(key.Length <= keyBlock.Length);
-
-		if (keyBlock.Length % 32 is not 0)
-		{
-			key.CopyTo(keyBlock);
-			keyBlock.Slice(key.Length).Clear();
-			XorPad(keyBlock, pad);
-			return;
-		}
+		Debug.Assert(key.Length <= keyBlock.Length && keyBlock.Length % 32 is 0);
 
 		ref byte keyReference = ref MemoryMarshal.GetReference(key);
 		ref byte blockReference = ref MemoryMarshal.GetReference(keyBlock);
