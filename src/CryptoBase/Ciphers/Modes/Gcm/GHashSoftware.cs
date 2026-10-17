@@ -76,8 +76,7 @@ internal static partial class GHashSoftware
 				return;
 			}
 
-			finalBlock = default;
-			remaining.CopyTo(finalBlock.AsSpan());
+			finalBlock = GHash.PadFinalBlock(remaining);
 			AppendBlocks(finalBlock.AsReadOnlySpan());
 		}
 
