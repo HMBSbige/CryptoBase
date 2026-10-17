@@ -6,6 +6,6 @@ internal static class Crc32IeeeTables
 
 	static Crc32IeeeTables()
 	{
-		Crc32SoftwareTables.Initialize(0xedb88320U, ref Tables.Lookup, ref Tables.SlicingLookup, ref Tables.FourWayBraidLookup, ref Tables.FiveWayBraidLookup);
+		Crc32SoftwareTables.Initialize(0xedb88320U, ref Tables);
 	}
 }

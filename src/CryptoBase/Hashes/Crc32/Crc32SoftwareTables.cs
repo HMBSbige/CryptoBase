@@ -17,12 +17,12 @@ internal static class Crc32SoftwareTables
 		return ref Crc32CastagnoliTables.Tables;
 	}
 
-	internal static void Initialize(uint polynomial, ref InlineArray256<uint> lookupBuffer, ref Crc32SlicingLookupBuffer slicingLookupBuffer, ref Crc32BraidLookupBuffer fourWayBraidLookupBuffer, ref Crc32BraidLookupBuffer fiveWayBraidLookupBuffer)
+	internal static void Initialize(uint polynomial, ref Crc32TableSet tables)
 	{
-		ref uint lookup = ref lookupBuffer[0];
-		ref uint slicingLookup = ref slicingLookupBuffer[0];
-		ref uint fourWayBraidLookup = ref fourWayBraidLookupBuffer[0];
-		ref uint fiveWayBraidLookup = ref fiveWayBraidLookupBuffer[0];
+		ref uint lookup = ref tables.Lookup[0];
+		ref uint slicingLookup = ref tables.SlicingLookup[0];
+		ref uint fourWayBraidLookup = ref tables.FourWayBraidLookup[0];
+		ref uint fiveWayBraidLookup = ref tables.FiveWayBraidLookup[0];
 
 		for (int i = 0; i < TableSize; ++i)
 		{

@@ -17,7 +17,6 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 	/// <summary>Initializes the cipher with the supplied block cipher instances.</summary>
 	private XtsMode(TBlockCipher dataCipher, TBlockCipher tweakCipher)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(TBlockCipher.BlockSize, BlockSize);
 		_dataCipher = dataCipher;
 		_tweakCipher = tweakCipher;
 	}

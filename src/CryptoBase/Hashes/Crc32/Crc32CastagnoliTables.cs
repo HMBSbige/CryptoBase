@@ -6,6 +6,6 @@ internal static class Crc32CastagnoliTables
 
 	static Crc32CastagnoliTables()
 	{
-		Crc32SoftwareTables.Initialize(0x82f63b78U, ref Tables.Lookup, ref Tables.SlicingLookup, ref Tables.FourWayBraidLookup, ref Tables.FiveWayBraidLookup);
+		Crc32SoftwareTables.Initialize(0x82f63b78U, ref Tables);
 	}
 }

@@ -245,14 +245,6 @@ internal static class Crc32Software
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint GetBraidLookup<TMode>(ref uint baseLookup, ref uint tableLookup, byte index, nuint byteOffset)
-	{
-		return typeof(TMode) != typeof(FiveWayBraid)
-			? Unsafe.AddByteOffset(ref Unsafe.Add(ref baseLookup, index), byteOffset)
-			: Unsafe.Add(ref tableLookup, index);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint GetBraidLookup<TMode>(ref uint baseLookup, ref uint tableLookup, int index, nuint byteOffset)
 	{
 		return typeof(TMode) != typeof(FiveWayBraid)
