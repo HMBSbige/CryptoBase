@@ -29,6 +29,16 @@ public class ChaCha20Cipher : SnuffleCipher
 		Init(key, iv);
 	}
 
+	/// <summary>Initializes a new instance whose nonce must be set by <see cref="InitializeNonce" /> before use.</summary>
+	internal ChaCha20Cipher(ReadOnlySpan<byte> key)
+	{
+		Debug.Assert(key.Length is KeySize);
+
+		Span<uint> state = StateSpan;
+		Sigma32.CopyTo(state);
+		MemoryMarshal.Cast<byte, uint>(key).CopyTo(state.Slice(4));
+	}
+
 	/// <summary>Computes the keystream block at the specified counter.</summary>
 	/// <param name="key">The 256-bit key.</param>
 	/// <param name="nonce">The 96-bit nonce.</param>
