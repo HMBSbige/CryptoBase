@@ -169,8 +169,7 @@ internal static unsafe class Blake3Parallel
 			return 1;
 		}
 
-		int threads = maxDegreeOfParallelism is -1 ? Environment.ProcessorCount : maxDegreeOfParallelism;
-		return Math.Min(threads, (int)Math.Sqrt((double)length / ThreadCost));
+		return Math.Min(ThreadPoolHelper.GetThreadLimit(maxDegreeOfParallelism), (int)Math.Sqrt((double)length / ThreadCost));
 	}
 
 	private static int LeafLength(int length, int threads)

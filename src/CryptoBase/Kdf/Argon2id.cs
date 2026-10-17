@@ -32,8 +32,7 @@ public static class Argon2id
 	public static void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, Span<byte> destination, Argon2Parameters parameters, ReadOnlySpan<byte> secret = default, ReadOnlySpan<byte> associatedData = default, int maxDegreeOfParallelism = -1)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MinOutputLength, nameof(destination));
-		ArgumentOutOfRangeException.ThrowIfZero(maxDegreeOfParallelism);
-		ArgumentOutOfRangeException.ThrowIfLessThan(maxDegreeOfParallelism, -1);
+		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
 		if (parameters.Parallelism is 0)
 		{

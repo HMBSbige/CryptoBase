@@ -8,6 +8,18 @@ internal abstract class ThreadPoolHelper(ThreadPoolHelperBudget budget) : IThrea
 	{
 	}
 
+	internal static void ThrowIfInvalidParallelism(int maxDegreeOfParallelism)
+	{
+		ArgumentOutOfRangeException.ThrowIfZero(maxDegreeOfParallelism);
+		ArgumentOutOfRangeException.ThrowIfLessThan(maxDegreeOfParallelism, -1);
+	}
+
+	internal static int GetThreadLimit(int maxDegreeOfParallelism)
+	{
+		Debug.Assert(maxDegreeOfParallelism is -1 or > 0);
+		return maxDegreeOfParallelism is -1 ? Environment.ProcessorCount : maxDegreeOfParallelism;
+	}
+
 	protected int QueueHelpers(int count)
 	{
 		int reserved = budget.Reserve(count);

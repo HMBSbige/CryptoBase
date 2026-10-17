@@ -29,10 +29,8 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 	internal static int HelperCount(int lanes, int maxDegreeOfParallelism)
 	{
 		Debug.Assert(lanes > 0);
-		Debug.Assert(maxDegreeOfParallelism is -1 or > 0);
 
-		int threads = maxDegreeOfParallelism is -1 ? Environment.ProcessorCount : maxDegreeOfParallelism;
-		return Math.Min(lanes, threads) - 1;
+		return Math.Min(lanes, GetThreadLimit(maxDegreeOfParallelism)) - 1;
 	}
 
 	protected abstract void ProcessLane(int pass, int slice, int lane);

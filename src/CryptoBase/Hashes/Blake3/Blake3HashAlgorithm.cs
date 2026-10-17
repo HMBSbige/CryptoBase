@@ -136,7 +136,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	// Lets tests supply a budget that grants no helper or fails to queue one.
 	internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
 	{
-		ThrowIfInvalidParallelism(maxDegreeOfParallelism);
+		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
 		Blake3Tree.HashData(source, in Blake3Constants.IV, 0, destination, maxDegreeOfParallelism, budget);
 	}
@@ -163,7 +163,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	public static void KeyedHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, int maxDegreeOfParallelism = 1)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeyLengthInBytes, nameof(key));
-		ThrowIfInvalidParallelism(maxDegreeOfParallelism);
+		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
 		InlineArray8<uint> keyWords = Blake3Words.Load(in MemoryMarshal.GetReference(key));
 
@@ -190,7 +190,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	[SkipLocalsInit]
 	public static void DeriveKey(ReadOnlySpan<byte> context, ReadOnlySpan<byte> keyMaterial, Span<byte> destination, int maxDegreeOfParallelism = 1)
 	{
-		ThrowIfInvalidParallelism(maxDegreeOfParallelism);
+		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
 		InlineArray8<uint> contextKey = DeriveContextKey(context);
 
@@ -240,7 +240,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	internal void Append(ReadOnlySpan<byte> source, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		ThrowIfInvalidParallelism(maxDegreeOfParallelism);
+		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
 		AppendCore(source, maxDegreeOfParallelism, budget);
 	}
@@ -276,7 +276,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(position + (UInt128)(uint)destination.Length, OutputStreamLength, nameof(destination));
-		ThrowIfInvalidParallelism(maxDegreeOfParallelism);
+		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
 		Output.RootBytes(position, destination, maxDegreeOfParallelism, budget);
 	}
@@ -550,11 +550,5 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 		}
 
 		return contextKey;
-	}
-
-	private static void ThrowIfInvalidParallelism(int maxDegreeOfParallelism)
-	{
-		ArgumentOutOfRangeException.ThrowIfZero(maxDegreeOfParallelism);
-		ArgumentOutOfRangeException.ThrowIfLessThan(maxDegreeOfParallelism, -1);
 	}
 }
