@@ -294,7 +294,9 @@ public class Blake3ParallelTest
 		}
 	}
 
+	// Other tests contending for the array pool's locks would let the interrupt throw.
 	[Test]
+	[NotInParallel]
 	public async Task PendingInterruptSurvivesParallelHashing()
 	{
 		byte[] source = CreateDeterministicSource(4 * 1048576 + 1);
