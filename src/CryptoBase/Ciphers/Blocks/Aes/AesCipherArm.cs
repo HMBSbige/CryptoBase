@@ -7,7 +7,7 @@ internal struct AesCipherArm : IDisposable, IAesVectorCore, IAesSubWord
 {
 	public static bool IsSupported => AesArm.IsSupported;
 
-	internal int RoundKeyCount { get; }
+	internal int RoundKeyCount { get; private set; }
 
 	private AesKeys _roundKeys;
 	private AesKeys _reverseRoundKeys;
@@ -26,7 +26,7 @@ internal struct AesCipherArm : IDisposable, IAesVectorCore, IAesSubWord
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private AesCipherArm(ReadOnlySpan<byte> key)
+	internal void Initialize(ReadOnlySpan<byte> key)
 	{
 		Span<uint> keys = MemoryMarshal.CreateSpan(ref Unsafe.As<AesKeys, uint>(ref _roundKeys), 60);
 		RoundKeyCount = AesKeySchedule.Expand<AesCipherArm>(key, keys) + 1;
@@ -61,7 +61,9 @@ internal struct AesCipherArm : IDisposable, IAesVectorCore, IAesSubWord
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static AesCipherArm Create(ReadOnlySpan<byte> key)
 	{
-		return new AesCipherArm(key);
+		AesCipherArm cipher = default;
+		cipher.Initialize(key);
+		return cipher;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

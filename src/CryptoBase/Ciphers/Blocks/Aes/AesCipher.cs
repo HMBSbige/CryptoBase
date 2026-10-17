@@ -24,7 +24,8 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		}
 		else if (AesCipherArm.IsSupported)
 		{
-			_state.Arm = AesCipherArm.Create(key);
+			// Only the ARM64 backend is initialized in place: it skips a stack copy there, while AES-NI on x64 measured slower.
+			_state.Arm.Initialize(key);
 		}
 		else if (AesCipherVpaes.IsSupported)
 		{
