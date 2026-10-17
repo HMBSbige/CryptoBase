@@ -32,14 +32,28 @@ internal partial struct AesCipherBitslice : IDisposable
 		{
 			ref InlineArray8<Vector128<byte>> roundKey = ref _roundKeys[round];
 			Vector128<byte> keyBytes = TransposeBytes(Vector128.Create(words.Slice(round * 4, 4)).AsByte());
-			roundKey[0] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x01), Vector128.Create((byte)0x01));
-			roundKey[1] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x02), Vector128.Create((byte)0x02));
-			roundKey[2] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x04), Vector128.Create((byte)0x04));
-			roundKey[3] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x08), Vector128.Create((byte)0x08));
-			roundKey[4] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x10), Vector128.Create((byte)0x10));
-			roundKey[5] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x20), Vector128.Create((byte)0x20));
-			roundKey[6] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x40), Vector128.Create((byte)0x40));
-			roundKey[7] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x80), Vector128.Create((byte)0x80));
+			if (!Avx.IsSupported)
+			{
+				roundKey[0] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x01), Vector128.Create((byte)0x01));
+				roundKey[1] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x02), Vector128.Create((byte)0x02));
+				roundKey[2] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x04), Vector128.Create((byte)0x04));
+				roundKey[3] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x08), Vector128.Create((byte)0x08));
+				roundKey[4] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x10), Vector128.Create((byte)0x10));
+				roundKey[5] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x20), Vector128.Create((byte)0x20));
+				roundKey[6] = Vector128.Equals(keyBytes & Vector128.Create((byte)0x40), Vector128.Create((byte)0x40));
+			}
+			else
+			{
+				roundKey[0] = Vector128.LessThan((keyBytes.AsUInt16() << 7).AsSByte(), Vector128<sbyte>.Zero).AsByte();
+				roundKey[1] = Vector128.LessThan((keyBytes.AsUInt16() << 6).AsSByte(), Vector128<sbyte>.Zero).AsByte();
+				roundKey[2] = Vector128.LessThan((keyBytes.AsUInt16() << 5).AsSByte(), Vector128<sbyte>.Zero).AsByte();
+				roundKey[3] = Vector128.LessThan((keyBytes.AsUInt16() << 4).AsSByte(), Vector128<sbyte>.Zero).AsByte();
+				roundKey[4] = Vector128.LessThan((keyBytes.AsUInt16() << 3).AsSByte(), Vector128<sbyte>.Zero).AsByte();
+				roundKey[5] = Vector128.LessThan((keyBytes.AsUInt16() << 2).AsSByte(), Vector128<sbyte>.Zero).AsByte();
+				roundKey[6] = Vector128.LessThan((keyBytes.AsUInt16() << 1).AsSByte(), Vector128<sbyte>.Zero).AsByte();
+			}
+
+			roundKey[7] = Vector128.LessThan(keyBytes.AsSByte(), Vector128<sbyte>.Zero).AsByte();
 
 			if (round > 0)
 			{
