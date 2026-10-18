@@ -546,25 +546,11 @@ public sealed partial class Base32Encoding
 
 		if (paddingCount is not 0)
 		{
-			if (_omitPadding || (sourceLength & 7) is not 0 || symbolCount is 0 || GetPaddingCount(symbolCount) != paddingCount)
-			{
-				symbolCount = 0;
-				return false;
-			}
-		}
-		else if (!_omitPadding && (sourceLength & 7) is not 0)
-		{
-			symbolCount = 0;
-			return false;
+			// The last block holds 8 - paddingCount symbols, so with fewer than eight padding symbols the symbol count check also validates the padding.
+			return !_omitPadding && (sourceLength & 7) is 0 && paddingCount < OutputSymbolsPerBlock && IsValidSymbolCount(symbolCount);
 		}
 
-		if (!IsValidSymbolCount(symbolCount))
-		{
-			symbolCount = 0;
-			return false;
-		}
-
-		return true;
+		return _omitPadding ? IsValidSymbolCount(symbolCount) : (sourceLength & 7) is 0;
 	}
 
 	private bool HasCanonicalTrailingBits<T>(ReadOnlySpan<T> source, int symbolCount) where T : unmanaged
@@ -586,22 +572,10 @@ public sealed partial class Base32Encoding
 		return (int)((ulong)(uint)symbolCount * InputBytesPerBlock >> 3);
 	}
 
+	// Bits 0, 2, 4, 5 and 7 mark the valid counts mod 8. Matching the same values with an is pattern compiles to an IL switch, which keeps this method from being inlined.
 	private static bool IsValidSymbolCount(int symbolCount)
 	{
-		return (symbolCount & 7) is 0 or 2 or 4 or 5 or 7;
-	}
-
-	private static int GetPaddingCount(int symbolCount)
-	{
-		return (symbolCount & 7) switch
-		{
-			0 => 0,
-			2 => 6,
-			4 => 4,
-			5 => 3,
-			7 => 1,
-			_ => -1,
-		};
+		return (0b1011_0101 >> (symbolCount & 7) & 1) is not 0;
 	}
 
 	private static int GetTrailingBitsMask(int symbolCount)
