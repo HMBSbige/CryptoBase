@@ -1,9 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace CryptoBase.IO.Xts;
+namespace CryptoBase.IO.DataUnits;
 
 /// <summary>
-/// Maps byte ranges onto XTS data units stored in positional storage.
+/// Maps byte ranges onto encrypted data units stored in positional storage.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,7 +19,7 @@ namespace CryptoBase.IO.Xts;
 /// Instances are not thread-safe.
 /// </para>
 /// </remarks>
-internal sealed class XtsDataUnitTransform<TCipher> : IDisposable where TCipher : class, IDataUnitCipher<TCipher>
+internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : class, IDataUnitCipher<TCipher>
 {
 	private const int TweakLength = 16;
 	private const int PreferredChunkSize = 64 * 1024;
@@ -38,13 +38,13 @@ internal sealed class XtsDataUnitTransform<TCipher> : IDisposable where TCipher 
 	/// <param name="dataUnitSize">The data unit size, in bytes.</param>
 	/// <param name="firstDataUnitNumber">The data unit number of the data unit at offset zero.</param>
 	/// <param name="storageParamName">The public parameter that supplied <paramref name="storage" />.</param>
-	public XtsDataUnitTransform(IPositionalStorage storage, TCipher cipher, int dataUnitSize, UInt128 firstDataUnitNumber, string storageParamName)
+	public DataUnitTransform(IPositionalStorage storage, TCipher cipher, int dataUnitSize, UInt128 firstDataUnitNumber, string storageParamName)
 	{
 		ArgumentNullException.ThrowIfNull(cipher);
 
 		if (TCipher.TweakSize is not TweakLength)
 		{
-			throw new ArgumentException("XTS requires a cipher with a 16-byte tweak.", nameof(cipher));
+			throw new ArgumentException("The cipher must use a 16-byte tweak.", nameof(cipher));
 		}
 
 		ArgumentOutOfRangeException.ThrowIfLessThan(dataUnitSize, TweakLength);

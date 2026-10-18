@@ -1,4 +1,4 @@
-namespace CryptoBase.IO.Xts;
+namespace CryptoBase.IO.DataUnits;
 
 /// <summary>
 /// Adapts a file handle to <see cref="IPositionalStorage" /> through <see cref="RandomAccess" />.

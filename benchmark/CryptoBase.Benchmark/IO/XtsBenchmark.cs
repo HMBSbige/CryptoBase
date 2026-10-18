@@ -28,7 +28,7 @@ internal static class XtsBenchmarkData
 }
 
 /// <summary>
-/// Sequential <see cref="XtsStream{TCipher}" /> throughput over a <see cref="MemoryStream" /> with AES-256-XTS.
+/// Sequential <see cref="DataUnitStream{TCipher}" /> throughput over a <see cref="MemoryStream" /> with AES-256-XTS.
 /// </summary>
 /// <remarks>
 /// Every invocation moves exactly <see cref="XtsBenchmarkData.TotalLength" /> (1 MiB) of plaintext in calls of
@@ -50,8 +50,8 @@ public class XtsStreamBenchmark
 
 	private byte[] _plaintext = [];
 	private byte[] _buffer = [];
-	private XtsStream<XtsMode<AesCipher>> _writeStream = null!;
-	private XtsStream<XtsMode<AesCipher>> _readStream = null!;
+	private DataUnitStream<XtsMode<AesCipher>> _writeStream = null!;
+	private DataUnitStream<XtsMode<AesCipher>> _readStream = null!;
 
 	[GlobalSetup]
 	public void Setup()
@@ -59,9 +59,9 @@ public class XtsStreamBenchmark
 		_plaintext = RandomNumberGenerator.GetBytes(XtsBenchmarkData.TotalLength);
 		_buffer = new byte[ChunkSize];
 
-		_writeStream = XtsStream.Create(new MemoryStream(XtsBenchmarkData.TotalLength), XtsBenchmarkData.CreateCipher(), DataUnitSize);
+		_writeStream = DataUnitStream.Create(new MemoryStream(XtsBenchmarkData.TotalLength), XtsBenchmarkData.CreateCipher(), DataUnitSize);
 
-		_readStream = XtsStream.Create(new MemoryStream(XtsBenchmarkData.TotalLength), XtsBenchmarkData.CreateCipher(), DataUnitSize);
+		_readStream = DataUnitStream.Create(new MemoryStream(XtsBenchmarkData.TotalLength), XtsBenchmarkData.CreateCipher(), DataUnitSize);
 		_readStream.Write(_plaintext);
 		_readStream.Flush();
 	}
@@ -77,7 +77,7 @@ public class XtsStreamBenchmark
 	[BenchmarkCategory("Write")]
 	public long Write()
 	{
-		XtsStream<XtsMode<AesCipher>> stream = _writeStream;
+		DataUnitStream<XtsMode<AesCipher>> stream = _writeStream;
 		stream.SetLength(0);
 		ReadOnlySpan<byte> source = _plaintext;
 
@@ -94,7 +94,7 @@ public class XtsStreamBenchmark
 	[BenchmarkCategory("Read")]
 	public long Read()
 	{
-		XtsStream<XtsMode<AesCipher>> stream = _readStream;
+		DataUnitStream<XtsMode<AesCipher>> stream = _readStream;
 		stream.Position = 0;
 		Span<byte> buffer = _buffer;
 		long total = 0;
@@ -116,13 +116,13 @@ public class XtsStreamBenchmark
 }
 
 /// <summary>
-/// Positional <see cref="XtsRandomAccess{TCipher}" /> throughput over a temporary file with AES-256-XTS.
+/// Positional <see cref="DataUnitRandomAccess{TCipher}" /> throughput over a temporary file with AES-256-XTS.
 /// </summary>
 /// <remarks>
 /// Every invocation moves exactly <see cref="XtsBenchmarkData.TotalLength" /> (1 MiB) of plaintext from offset zero in
 /// aligned 64 KiB calls, so MiB/s = 1 / Mean in seconds. The file is opened once with <see cref="FileOptions.None" /> and
 /// pre-filled to 1 MiB, so writes overwrite whole data units and never read. <see cref="Write" /> does not call
-/// <see cref="XtsRandomAccess{TCipher}.Flush" />, which issues <see cref="RandomAccess.FlushToDisk" /> and would measure
+/// <see cref="DataUnitRandomAccess{TCipher}.Flush" />, which issues <see cref="RandomAccess.FlushToDisk" /> and would measure
 /// the disk instead of the XTS path.
 /// </remarks>
 [MemoryDiagnoser]
@@ -137,7 +137,7 @@ public class XtsRandomAccessBenchmark
 
 	private string _path = string.Empty;
 	private SafeFileHandle _handle = null!;
-	private XtsRandomAccess<XtsMode<AesCipher>> _xts = null!;
+	private DataUnitRandomAccess<XtsMode<AesCipher>> _xts = null!;
 	private byte[] _plaintext = [];
 	private byte[] _buffer = [];
 
@@ -146,7 +146,7 @@ public class XtsRandomAccessBenchmark
 	{
 		_path = Path.Combine(Path.GetTempPath(), $"CryptoBase.Benchmark.Xts.{Guid.NewGuid():N}.bin");
 		_handle = File.OpenHandle(_path, FileMode.CreateNew, FileAccess.ReadWrite);
-		_xts = XtsRandomAccess.Create(_handle, XtsBenchmarkData.CreateCipher(), DataUnitSize, leaveOpen: true);
+		_xts = DataUnitRandomAccess.Create(_handle, XtsBenchmarkData.CreateCipher(), DataUnitSize, leaveOpen: true);
 		_plaintext = RandomNumberGenerator.GetBytes(XtsBenchmarkData.TotalLength);
 		_buffer = new byte[XtsBenchmarkData.TotalLength];
 		_xts.Write(_plaintext, 0);

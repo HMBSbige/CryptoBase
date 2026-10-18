@@ -1,22 +1,22 @@
-using CryptoBase.IO.Xts;
+using CryptoBase.IO.DataUnits;
 
 namespace CryptoBase.IO;
 
 /// <summary>
-/// Provides XTS encryption over a seekable stream.
+/// Provides data-unit encryption over a seekable stream.
 /// </summary>
 /// <typeparam name="TCipher">The data-unit cipher.</typeparam>
 /// <remarks>
 /// <para>
 /// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16. The tweak of each data
-/// unit is its data unit number encoded as a 128-bit little-endian integer, the same convention as XTS in IEEE 1619, so
-/// <c>XtsMode&lt;TBlockCipher&gt;</c> can be used directly.
+/// unit is its data unit number encoded as a 128-bit little-endian integer, the same convention as XTS in IEEE 1619, so a
+/// cipher such as <c>XtsMode&lt;AesCipher&gt;</c> can be used directly.
 /// </para>
 /// <para>
-/// The inner stream holds whole data units only, because XTS does not encode lengths. The data unit at byte offset
-/// <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>. The stream position maps directly to the
-/// inner stream offset, starts at zero, and is applied to the inner stream before each access to it, so the inner stream
-/// position is not preserved.
+/// The inner stream holds whole data units only, because the cipher preserves length and so the ciphertext cannot record
+/// where the plaintext ends. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number
+/// <c>firstDataUnitNumber + n</c>. The stream position maps directly to the inner stream offset, starts at zero, and is
+/// applied to the inner stream before each access to it, so the inner stream position is not preserved.
 /// </para>
 /// <para>
 /// Writes past the end pad their last data unit with zeros, and any gap between the old end and the write is filled with
@@ -35,10 +35,10 @@ namespace CryptoBase.IO;
 /// thread-safe.
 /// </para>
 /// </remarks>
-public sealed class XtsStream<TCipher> : Stream where TCipher : class, IDataUnitCipher<TCipher>
+public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDataUnitCipher<TCipher>
 {
 	private readonly Stream _inner;
-	private readonly XtsDataUnitTransform<TCipher> _transform;
+	private readonly DataUnitTransform<TCipher> _transform;
 	private readonly bool _leaveOpen;
 	private readonly byte[] _unit;
 	private long? _unitStart;
@@ -47,7 +47,7 @@ public sealed class XtsStream<TCipher> : Stream where TCipher : class, IDataUnit
 	private bool _disposed;
 
 	/// <summary>
-	/// Initializes an XTS stream over a seekable stream.
+	/// Initializes a data-unit stream over a seekable stream.
 	/// </summary>
 	/// <param name="inner">The seekable stream that stores the ciphertext.</param>
 	/// <param name="cipher">The cipher; this instance takes ownership of it once the constructor succeeds.</param>
@@ -57,7 +57,7 @@ public sealed class XtsStream<TCipher> : Stream where TCipher : class, IDataUnit
 	/// <exception cref="ArgumentNullException"><paramref name="inner" /> or <paramref name="cipher" /> is <see langword="null" />.</exception>
 	/// <exception cref="ArgumentException"><paramref name="inner" /> is not seekable or its length is not a multiple of <paramref name="dataUnitSize" />, or <typeparamref name="TCipher" /> does not use a 16-byte tweak.</exception>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="dataUnitSize" /> is less than 16.</exception>
-	public XtsStream(Stream inner, TCipher cipher, int dataUnitSize, UInt128 firstDataUnitNumber = default, bool leaveOpen = false)
+	public DataUnitStream(Stream inner, TCipher cipher, int dataUnitSize, UInt128 firstDataUnitNumber = default, bool leaveOpen = false)
 	{
 		ArgumentNullException.ThrowIfNull(inner);
 
@@ -67,7 +67,7 @@ public sealed class XtsStream<TCipher> : Stream where TCipher : class, IDataUnit
 		}
 
 		_inner = inner;
-		_transform = new XtsDataUnitTransform<TCipher>(new SeekableStreamStorage(inner), cipher, dataUnitSize, firstDataUnitNumber, nameof(inner));
+		_transform = new DataUnitTransform<TCipher>(new SeekableStreamStorage(inner), cipher, dataUnitSize, firstDataUnitNumber, nameof(inner));
 		_leaveOpen = leaveOpen;
 		_unit = new byte[dataUnitSize];
 	}

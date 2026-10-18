@@ -1,4 +1,4 @@
-namespace CryptoBase.IO.Xts;
+namespace CryptoBase.IO.DataUnits;
 
 /// <summary>
 /// Adapts a seekable stream to <see cref="IPositionalStorage" /> by positioning it before each operation.

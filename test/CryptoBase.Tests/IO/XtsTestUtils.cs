@@ -2,7 +2,7 @@ using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.IO;
-using CryptoBase.IO.Xts;
+using CryptoBase.IO.DataUnits;
 using Microsoft.Win32.SafeHandles;
 using static CryptoBase.Tests.TestUtils;
 
@@ -58,7 +58,7 @@ internal static class XtsTestUtils
 	}
 
 	/// <summary>Verifies that the target decrypts to the shadow and that the backend matches the oracle ciphertext.</summary>
-	public static async Task AssertMatchesShadow<TCipher>(IXtsTarget target, XtsShadow shadow, UInt128 firstDataUnitNumber = default) where TCipher : class, IDataUnitCipher<TCipher>
+	public static async Task AssertMatchesShadow<TCipher>(IDataUnitTarget target, XtsShadow shadow, UInt128 firstDataUnitNumber = default) where TCipher : class, IDataUnitCipher<TCipher>
 	{
 		await Assert.That(target.GetLength()).IsEqualTo(shadow.Length);
 		byte[] plaintext = new byte[shadow.Length];
@@ -69,13 +69,13 @@ internal static class XtsTestUtils
 	}
 
 	/// <summary>Applies the same transfer to the target and the shadow and checks the read results.</summary>
-	public static async Task WriteAndRecord(IXtsTarget target, XtsShadow shadow, byte[] source, int index, int count, long offset, bool useAsync)
+	public static async Task WriteAndRecord(IDataUnitTarget target, XtsShadow shadow, byte[] source, int index, int count, long offset, bool useAsync)
 	{
 		await target.WriteAsync(source, index, count, offset, useAsync);
 		shadow.Write(source.AsSpan(index, count), (int)offset);
 	}
 
-	public static async Task ReadAndCompare(IXtsTarget target, XtsShadow shadow, int index, int count, long offset, bool useAsync)
+	public static async Task ReadAndCompare(IDataUnitTarget target, XtsShadow shadow, int index, int count, long offset, bool useAsync)
 	{
 		byte[] buffer = CreateGuardedBuffer(index, count, 9);
 
@@ -93,11 +93,11 @@ internal static class XtsTestUtils
 	}
 
 	/// <summary>Runs a deterministic sequence of reads, writes and length changes against the target and the shadow.</summary>
-	public static async Task RunFuzz<TCipher>(IXtsTarget target, XtsShadow shadow, int seed, int operations, bool useAsync) where TCipher : class, IDataUnitCipher<TCipher>
+	public static async Task RunFuzz<TCipher>(IDataUnitTarget target, XtsShadow shadow, int seed, int operations, bool useAsync) where TCipher : class, IDataUnitCipher<TCipher>
 	{
 		Random random = new(seed);
 		int dataUnitSize = shadow.DataUnitSize;
-		int chunk = XtsDataUnitTransform<TCipher>.GetChunkSize(dataUnitSize);
+		int chunk = DataUnitTransform<TCipher>.GetChunkSize(dataUnitSize);
 		int maxLength = shadow.Capacity - dataUnitSize;
 		byte[] source = new byte[maxLength + 64];
 
@@ -216,8 +216,8 @@ internal sealed class XtsShadow(int dataUnitSize, int capacity)
 	}
 }
 
-/// <summary>Abstracts the XTS facades for shared scenarios.</summary>
-internal interface IXtsTarget
+/// <summary>Abstracts the data-unit facades for shared scenarios.</summary>
+internal interface IDataUnitTarget
 {
 	long GetLength();
 
@@ -230,7 +230,7 @@ internal interface IXtsTarget
 	byte[] ReadBackend();
 }
 
-internal sealed class XtsRandomAccessTarget<TCipher>(XtsRandomAccess<TCipher> xts, SafeFileHandle handle) : IXtsTarget where TCipher : class, IDataUnitCipher<TCipher>
+internal sealed class DataUnitRandomAccessTarget<TCipher>(DataUnitRandomAccess<TCipher> xts, SafeFileHandle handle) : IDataUnitTarget where TCipher : class, IDataUnitCipher<TCipher>
 {
 	public long GetLength()
 	{
@@ -318,7 +318,7 @@ internal sealed class TrackingXtsCipher : IDataUnitCipher<TrackingXtsCipher>
 	}
 }
 
-/// <summary>A data-unit cipher whose tweak is too short for XTS.</summary>
+/// <summary>A data-unit cipher whose tweak is too short for the data-unit facades.</summary>
 internal sealed class ShortTweakCipher : IDataUnitCipher<ShortTweakCipher>
 {
 	public static int TweakSize => 8;

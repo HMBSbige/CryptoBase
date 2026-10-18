@@ -3,7 +3,7 @@ using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.IO;
-using CryptoBase.IO.Xts;
+using CryptoBase.IO.DataUnits;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.IO.XtsTestUtils;
@@ -12,7 +12,7 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.IO;
 
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-public class XtsRandomAccessTest
+public class DataUnitRandomAccessTest
 {
 	private const int DefaultDataUnitSize = 512;
 
@@ -26,8 +26,8 @@ public class XtsRandomAccessTest
 		byte[] original = plaintext.ToArray();
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<TCipher> xts = XtsRandomAccess.Create(handle, TCipher.Create(Key), dataUnitSize, leaveOpen: true);
-		XtsRandomAccessTarget<TCipher> target = new(xts, handle);
+		using DataUnitRandomAccess<TCipher> xts = DataUnitRandomAccess.Create(handle, TCipher.Create(Key), dataUnitSize, leaveOpen: true);
+		DataUnitRandomAccessTarget<TCipher> target = new(xts, handle);
 		XtsShadow shadow = new(dataUnitSize, plaintext.Length);
 
 		await WriteAndRecord(target, shadow, plaintext, 0, plaintext.Length, 0, useAsync);
@@ -56,12 +56,12 @@ public class XtsRandomAccessTest
 	public async Task WritesAtArbitraryOffsetsMatchShadow<TCipher>([Matrix(16, 100, 512, 4096)] int dataUnitSize, [Matrix] bool useAsync) where TCipher : class, IDataUnitCipher<TCipher>
 	{
 		int unit = dataUnitSize;
-		int chunk = XtsDataUnitTransform<TCipher>.GetChunkSize(dataUnitSize);
+		int chunk = DataUnitTransform<TCipher>.GetChunkSize(dataUnitSize);
 		int length = RoundUp(2 * chunk + 4 * unit, unit);
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<TCipher> xts = XtsRandomAccess.Create(handle, TCipher.Create(Key), dataUnitSize, leaveOpen: true);
-		XtsRandomAccessTarget<TCipher> target = new(xts, handle);
+		using DataUnitRandomAccess<TCipher> xts = DataUnitRandomAccess.Create(handle, TCipher.Create(Key), dataUnitSize, leaveOpen: true);
+		DataUnitRandomAccessTarget<TCipher> target = new(xts, handle);
 		XtsShadow shadow = new(dataUnitSize, length + unit);
 		byte[] initial = CreateDeterministicSource(length);
 		await WriteAndRecord(target, shadow, initial, 0, length, 0, useAsync);
@@ -101,9 +101,9 @@ public class XtsRandomAccessTest
 	{
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<TCipher> xts = XtsRandomAccess.Create(handle, TCipher.Create(Key), dataUnitSize, leaveOpen: true);
+		using DataUnitRandomAccess<TCipher> xts = DataUnitRandomAccess.Create(handle, TCipher.Create(Key), dataUnitSize, leaveOpen: true);
 
-		await RunFuzz<TCipher>(new XtsRandomAccessTarget<TCipher>(xts, handle), new XtsShadow(dataUnitSize, 512 * 1024), 0x5EED + dataUnitSize, 300, useAsync);
+		await RunFuzz<TCipher>(new DataUnitRandomAccessTarget<TCipher>(xts, handle), new XtsShadow(dataUnitSize, 512 * 1024), 0x5EED + dataUnitSize, 300, useAsync);
 	}
 
 	[Test]
@@ -113,8 +113,8 @@ public class XtsRandomAccessTest
 		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
-		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
+		using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		DataUnitRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
 		XtsShadow shadow = new(unit, 8 * unit);
 		await WriteAndRecord(target, shadow, CreateDeterministicSource(2 * unit), 0, 2 * unit, 0, useAsync);
 
@@ -140,8 +140,8 @@ public class XtsRandomAccessTest
 		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle();
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
-		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
+		using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		DataUnitRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
 		XtsShadow shadow = new(unit, 200 * unit);
 		await WriteAndRecord(target, shadow, CreateDeterministicSource(3 * unit), 0, 3 * unit, 0, false);
 
@@ -181,7 +181,7 @@ public class XtsRandomAccessTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => new XtsRandomAccess<TrackingXtsCipher>(handle, cipher, DefaultDataUnitSize)).ThrowsExactly<ArgumentException>().WithParameterName("handle");
+			await Assert.That(() => new DataUnitRandomAccess<TrackingXtsCipher>(handle, cipher, DefaultDataUnitSize)).ThrowsExactly<ArgumentException>().WithParameterName("handle");
 			await Assert.That(handle.IsClosed).IsFalse();
 			await Assert.That(cipher.IsDisposed).IsFalse();
 		}
@@ -194,8 +194,8 @@ public class XtsRandomAccessTest
 		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
-		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
+		using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		DataUnitRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
 		byte[] buffer = new byte[2 * unit];
 		await target.WriteAsync(CreateDeterministicSource(4 * unit), 0, 4 * unit, 0, useAsync);
 
@@ -221,8 +221,8 @@ public class XtsRandomAccessTest
 		UInt128 first = new(0x0123_4567_89AB_CDEF, ulong.MaxValue - 2);
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<TCipher> xts = XtsRandomAccess.Create(handle, TCipher.Create(Key), unit, first, true);
-		XtsRandomAccessTarget<TCipher> target = new(xts, handle);
+		using DataUnitRandomAccess<TCipher> xts = DataUnitRandomAccess.Create(handle, TCipher.Create(Key), unit, first, true);
+		DataUnitRandomAccessTarget<TCipher> target = new(xts, handle);
 		XtsShadow shadow = new(unit, 8 * unit);
 
 		await WriteAndRecord(target, shadow, CreateDeterministicSource(6 * unit + 7), 0, 6 * unit + 7, 0, useAsync);
@@ -238,8 +238,8 @@ public class XtsRandomAccessTest
 		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, UInt128.MaxValue, true);
-		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
+		using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, UInt128.MaxValue, true);
+		DataUnitRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
 		XtsShadow shadow = new(unit, 2 * unit);
 		byte[] data = CreateDeterministicSource(unit);
 
@@ -265,13 +265,13 @@ public class XtsRandomAccessTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => XtsRandomAccess.Create(null!, cipher, DefaultDataUnitSize)).ThrowsExactly<ArgumentNullException>().WithParameterName("handle");
-			await Assert.That(() => XtsRandomAccess.Create<XtsMode<AesCipher>>(handle, null!, DefaultDataUnitSize)).ThrowsExactly<ArgumentNullException>().WithParameterName("cipher");
-			await Assert.That(() => XtsRandomAccess.Create(handle, new ShortTweakCipher(), DefaultDataUnitSize)).ThrowsExactly<ArgumentException>().WithParameterName("cipher");
+			await Assert.That(() => DataUnitRandomAccess.Create(null!, cipher, DefaultDataUnitSize)).ThrowsExactly<ArgumentNullException>().WithParameterName("handle");
+			await Assert.That(() => DataUnitRandomAccess.Create<XtsMode<AesCipher>>(handle, null!, DefaultDataUnitSize)).ThrowsExactly<ArgumentNullException>().WithParameterName("cipher");
+			await Assert.That(() => DataUnitRandomAccess.Create(handle, new ShortTweakCipher(), DefaultDataUnitSize)).ThrowsExactly<ArgumentException>().WithParameterName("cipher");
 
 			foreach (int dataUnitSize in new[] { 15, 0, -1 })
 			{
-				await Assert.That(() => XtsRandomAccess.Create(handle, cipher, dataUnitSize)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("dataUnitSize");
+				await Assert.That(() => DataUnitRandomAccess.Create(handle, cipher, dataUnitSize)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("dataUnitSize");
 			}
 
 			await Assert.That(handle.IsClosed).IsFalse();
@@ -285,8 +285,8 @@ public class XtsRandomAccessTest
 		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
-		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
+		using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		DataUnitRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
 		XtsShadow shadow = new(unit, 2 * unit);
 		await WriteAndRecord(target, shadow, CreateDeterministicSource(2 * unit), 0, 2 * unit, 0, useAsync);
 
@@ -302,8 +302,8 @@ public class XtsRandomAccessTest
 	{
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), DefaultDataUnitSize, leaveOpen: true);
-		XtsRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
+		using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), DefaultDataUnitSize, leaveOpen: true);
+		DataUnitRandomAccessTarget<XtsMode<AesCipher>> target = new(xts, handle);
 
 		await target.WriteAsync([], 0, 0, 10 * DefaultDataUnitSize + 1, useAsync);
 
@@ -315,7 +315,7 @@ public class XtsRandomAccessTest
 	{
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle();
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), DefaultDataUnitSize, leaveOpen: true);
+		using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), DefaultDataUnitSize, leaveOpen: true);
 		byte[] buffer = new byte[16];
 
 		using (Assert.Multiple())
@@ -334,7 +334,7 @@ public class XtsRandomAccessTest
 		const int unit = DefaultDataUnitSize;
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(true);
-		using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 		await xts.WriteAsync(CreateDeterministicSource(unit), 0);
 		byte[] backend = ReadAll(handle);
 		byte[] buffer = new byte[unit];
@@ -359,7 +359,7 @@ public class XtsRandomAccessTest
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle(true);
 
-		using (XtsRandomAccess<XtsMode<AesCipher>> writer = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true))
+		using (DataUnitRandomAccess<XtsMode<AesCipher>> writer = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true))
 		{
 			await writer.WriteAsync(plaintext, 0);
 		}
@@ -371,7 +371,7 @@ public class XtsRandomAccessTest
 			int start = i * plaintext.Length / readers.Length;
 			readers[i] = Task.Run(async () =>
 			{
-				using XtsRandomAccess<XtsMode<AesCipher>> reader = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+				using DataUnitRandomAccess<XtsMode<AesCipher>> reader = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 				byte[] buffer = new byte[plaintext.Length / readers.Length];
 				await Assert.That(await reader.ReadAsync(buffer, start)).IsEqualTo(buffer.Length);
 				return buffer;
@@ -391,7 +391,7 @@ public class XtsRandomAccessTest
 		using TempFile file = new();
 		using SafeFileHandle handle = file.OpenHandle();
 		TrackingXtsCipher cipher = TrackingXtsCipher.Create(Key);
-		XtsRandomAccess<TrackingXtsCipher> xts = XtsRandomAccess.Create(handle, cipher, DefaultDataUnitSize, leaveOpen: leaveOpen);
+		DataUnitRandomAccess<TrackingXtsCipher> xts = DataUnitRandomAccess.Create(handle, cipher, DefaultDataUnitSize, leaveOpen: leaveOpen);
 		xts.Write(CreateDeterministicSource(DefaultDataUnitSize), 0);
 		byte[] buffer = new byte[DefaultDataUnitSize];
 

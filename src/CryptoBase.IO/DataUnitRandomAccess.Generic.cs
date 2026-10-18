@@ -1,20 +1,20 @@
-using CryptoBase.IO.Xts;
+using CryptoBase.IO.DataUnits;
 
 namespace CryptoBase.IO;
 
 /// <summary>
-/// Provides positional XTS encryption over a file handle.
+/// Provides positional data-unit encryption over a file handle.
 /// </summary>
 /// <typeparam name="TCipher">The data-unit cipher.</typeparam>
 /// <remarks>
 /// <para>
 /// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16. The tweak of each data
-/// unit is its data unit number encoded as a 128-bit little-endian integer, the same convention as XTS in IEEE 1619, so
-/// <c>XtsMode&lt;TBlockCipher&gt;</c> can be used directly.
+/// unit is its data unit number encoded as a 128-bit little-endian integer, the same convention as XTS in IEEE 1619, so a
+/// cipher such as <c>XtsMode&lt;AesCipher&gt;</c> can be used directly.
 /// </para>
 /// <para>
-/// The file holds whole data units only, because XTS does not encode lengths. The data unit at byte offset
-/// <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>.
+/// The file holds whole data units only, because the cipher preserves length and so the ciphertext cannot record where the
+/// plaintext ends. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>.
 /// </para>
 /// <para>
 /// Writes past the end pad their last data unit with zeros, and any gap between the old end and the write is filled with
@@ -27,15 +27,15 @@ namespace CryptoBase.IO;
 /// cipher.
 /// </para>
 /// </remarks>
-public sealed class XtsRandomAccess<TCipher> : IDisposable where TCipher : class, IDataUnitCipher<TCipher>
+public sealed class DataUnitRandomAccess<TCipher> : IDisposable where TCipher : class, IDataUnitCipher<TCipher>
 {
 	private readonly SafeFileHandle _handle;
-	private readonly XtsDataUnitTransform<TCipher> _transform;
+	private readonly DataUnitTransform<TCipher> _transform;
 	private readonly bool _leaveOpen;
 	private bool _disposed;
 
 	/// <summary>
-	/// Initializes positional XTS access over a file handle.
+	/// Initializes positional data-unit access over a file handle.
 	/// </summary>
 	/// <param name="handle">The file handle that stores the ciphertext.</param>
 	/// <param name="cipher">The cipher; this instance takes ownership of it once the constructor succeeds.</param>
@@ -45,12 +45,12 @@ public sealed class XtsRandomAccess<TCipher> : IDisposable where TCipher : class
 	/// <exception cref="ArgumentNullException"><paramref name="handle" /> or <paramref name="cipher" /> is <see langword="null" />.</exception>
 	/// <exception cref="ArgumentException"><typeparamref name="TCipher" /> does not use a 16-byte tweak, or the file length is not a multiple of <paramref name="dataUnitSize" />.</exception>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="dataUnitSize" /> is less than 16.</exception>
-	public XtsRandomAccess(SafeFileHandle handle, TCipher cipher, int dataUnitSize, UInt128 firstDataUnitNumber = default, bool leaveOpen = false)
+	public DataUnitRandomAccess(SafeFileHandle handle, TCipher cipher, int dataUnitSize, UInt128 firstDataUnitNumber = default, bool leaveOpen = false)
 	{
 		ArgumentNullException.ThrowIfNull(handle);
 
 		_handle = handle;
-		_transform = new XtsDataUnitTransform<TCipher>(new FileHandleStorage(handle), cipher, dataUnitSize, firstDataUnitNumber, nameof(handle));
+		_transform = new DataUnitTransform<TCipher>(new FileHandleStorage(handle), cipher, dataUnitSize, firstDataUnitNumber, nameof(handle));
 		_leaveOpen = leaveOpen;
 	}
 

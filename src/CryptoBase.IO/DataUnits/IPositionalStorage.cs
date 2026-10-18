@@ -1,7 +1,7 @@
-namespace CryptoBase.IO.Xts;
+namespace CryptoBase.IO.DataUnits;
 
 /// <summary>
-/// Provides positional access to the ciphertext backend of an XTS transform.
+/// Provides positional access to the ciphertext backend of a data-unit transform.
 /// </summary>
 /// <remarks>
 /// Reads may return fewer bytes than requested; callers loop until the request is satisfied or the backend ends.

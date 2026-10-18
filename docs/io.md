@@ -71,9 +71,9 @@ await source.CopyToAsync(hashing);
 hashing.GetHashAndReset(hash);
 ```
 
-## XtsRandomAccess
+## DataUnitRandomAccess
 
-`XtsRandomAccess` encrypts a file with XTS at arbitrary offsets. The file holds whole data units, so its length must be a multiple of the data unit size. The unit at offset `n * dataUnitSize` uses the little-endian 128-bit tweak `firstDataUnitNumber + n`, the same numbering as `XtsMode.GetIV`.
+`DataUnitRandomAccess` encrypts a file at arbitrary offsets with a data-unit cipher that uses a 16-byte tweak, such as `XtsMode<AesCipher>`. The file holds whole data units, so its length must be a multiple of the data unit size. The unit at offset `n * dataUnitSize` uses the little-endian 128-bit tweak `firstDataUnitNumber + n`, the same numbering as `XtsMode.GetIV`.
 
 Writes past the end zero-pad their last unit and fill any gap with encrypted zero units. A write that covers part of a unit reads and re-encrypts that unit, so the handle must be readable. The instance owns the cipher. Instances are not thread-safe; for parallel access, create one instance per thread over a shared handle with `leaveOpen: true`. `XtsMode<SM4Cipher>` from `CryptoBase.Ciphers.Blocks.SM4` works the same way.
 
@@ -91,7 +91,7 @@ byte[] plaintext = RandomNumberGenerator.GetBytes(10000);
 using SafeFileHandle handle = File.OpenHandle(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
 // The instance owns the cipher; the handle stays open.
-using XtsRandomAccess<XtsMode<AesCipher>> xts = XtsRandomAccess.Create(handle, XtsMode<AesCipher>.Create(dataKey, tweakKey), dataUnitSize: 4096, leaveOpen: true);
+using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(dataKey, tweakKey), dataUnitSize: 4096, leaveOpen: true);
 
 // Encrypt and write at any offset.
 xts.Write(plaintext, offset: 100);
@@ -111,9 +111,9 @@ xts.SetLength(8192);
 xts.Flush();
 ```
 
-## XtsStream
+## DataUnitStream
 
-`XtsStream` exposes the same layout as a seekable `Stream`. It requires a seekable inner stream. Its `Length` is the inner stream's length, extended by a changed data unit that has not been written yet.
+`DataUnitStream` exposes the same layout as a seekable `Stream`. It requires a seekable inner stream. Its `Length` is the inner stream's length, extended by a changed data unit that has not been written yet.
 
 ```csharp
 using System.Security.Cryptography;
@@ -126,7 +126,7 @@ byte[] tweakKey = RandomNumberGenerator.GetBytes(32);
 XtsMode<AesCipher> cipher = XtsMode<AesCipher>.Create(dataKey, tweakKey);
 
 // The stream owns the cipher and the file stream.
-using XtsStream<XtsMode<AesCipher>> xts = XtsStream.Create(File.Open(path, FileMode.OpenOrCreate), cipher, dataUnitSize: 512);
+using DataUnitStream<XtsMode<AesCipher>> xts = DataUnitStream.Create(File.Open(path, FileMode.OpenOrCreate), cipher, dataUnitSize: 512);
 
 // Write at a position.
 xts.Seek(1000, SeekOrigin.Begin);
@@ -138,4 +138,4 @@ byte[] buffer = new byte[11];
 xts.ReadExactly(buffer);
 ```
 
-`XtsStream` keeps the plaintext of the data unit that the last partial read or write touched, so small sequential reads and writes decrypt and encrypt each unit once. A changed unit reaches the inner stream when the stream moves to another unit, reads outside it, or is flushed or disposed. Call `Flush` before reading the inner stream directly or opening the file elsewhere. Reads and writes of whole aligned units go straight to the inner stream.
+`DataUnitStream` keeps the plaintext of the data unit that the last partial read or write touched, so small sequential reads and writes decrypt and encrypt each unit once. A changed unit reaches the inner stream when the stream moves to another unit, reads outside it, or is flushed or disposed. Call `Flush` before reading the inner stream directly or opening the file elsewhere. Reads and writes of whole aligned units go straight to the inner stream.
