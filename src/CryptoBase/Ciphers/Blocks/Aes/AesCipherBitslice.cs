@@ -79,54 +79,14 @@ internal partial struct AesCipherBitslice : IDisposable
 
 	public readonly void EncryptBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref byte input = ref MemoryMarshal.GetReference(source);
-		ref byte output = ref MemoryMarshal.GetReference(destination);
-		int remaining = source.Length;
-		int rounds = _rounds;
-
-		while (remaining > 0)
-		{
-			int length = Math.Min(remaining, BatchSize);
-			EncryptBatch(ref input, ref output, length, rounds);
-			input = ref Unsafe.Add(ref input, length);
-			output = ref Unsafe.Add(ref output, length);
-			remaining -= length;
-		}
+		AesDirectPolicy policy = default;
+		TransformWithPolicy<AesDirectPolicy, AesEncrypt>(ref policy, source, destination);
 	}
 
 	public readonly void DecryptBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ref byte input = ref MemoryMarshal.GetReference(source);
-		ref byte output = ref MemoryMarshal.GetReference(destination);
-		int remaining = source.Length;
-		int rounds = _rounds;
-
-		while (remaining > 0)
-		{
-			int length = Math.Min(remaining, BatchSize);
-			DecryptBatch(ref input, ref output, length, rounds);
-			input = ref Unsafe.Add(ref input, length);
-			output = ref Unsafe.Add(ref output, length);
-			remaining -= length;
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private readonly void EncryptBatch(ref byte input, ref byte output, int length, int rounds)
-	{
-		InlineArray8<Vector128<byte>> state = default;
-		Load(ref state, ref input, length);
-		EncryptState(ref state, rounds);
-		Store(ref state, ref output, length);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private readonly void DecryptBatch(ref byte input, ref byte output, int length, int rounds)
-	{
-		InlineArray8<Vector128<byte>> state = default;
-		Load(ref state, ref input, length);
-		DecryptState(ref state, rounds);
-		Store(ref state, ref output, length);
+		AesDirectPolicy policy = default;
+		TransformWithPolicy<AesDirectPolicy, AesDecrypt>(ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -303,96 +263,6 @@ internal partial struct AesCipherBitslice : IDisposable
 		q6 ^= u4;
 		q7 ^= u5;
 		MixColumns(ref q0, ref q1, ref q2, ref q3, ref q4, ref q5, ref q6, ref q7);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Load(ref InlineArray8<Vector128<byte>> state, ref byte source, int length)
-	{
-		LoadLayout(ref state, ref source, length);
-		Transpose(ref state);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void LoadLayout(ref InlineArray8<Vector128<byte>> state, ref byte source, int length)
-	{
-		state[0] = TransposeBytes(Vector128.LoadUnsafe(ref source));
-
-		if (length >= 32)
-		{
-			state[1] = TransposeBytes(Vector128.LoadUnsafe(ref source, 16));
-		}
-
-		if (length >= 48)
-		{
-			state[2] = TransposeBytes(Vector128.LoadUnsafe(ref source, 32));
-		}
-
-		if (length >= 64)
-		{
-			state[3] = TransposeBytes(Vector128.LoadUnsafe(ref source, 48));
-		}
-
-		if (length >= 80)
-		{
-			state[4] = TransposeBytes(Vector128.LoadUnsafe(ref source, 64));
-		}
-
-		if (length >= 96)
-		{
-			state[5] = TransposeBytes(Vector128.LoadUnsafe(ref source, 80));
-		}
-
-		if (length >= 112)
-		{
-			state[6] = TransposeBytes(Vector128.LoadUnsafe(ref source, 96));
-		}
-
-		if (length >= 128)
-		{
-			state[7] = TransposeBytes(Vector128.LoadUnsafe(ref source, 112));
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Store(ref InlineArray8<Vector128<byte>> state, ref byte destination, int length)
-	{
-		Transpose(ref state);
-		TransposeBytes(state[0]).StoreUnsafe(ref destination);
-
-		if (length >= 32)
-		{
-			TransposeBytes(state[1]).StoreUnsafe(ref destination, 16);
-		}
-
-		if (length >= 48)
-		{
-			TransposeBytes(state[2]).StoreUnsafe(ref destination, 32);
-		}
-
-		if (length >= 64)
-		{
-			TransposeBytes(state[3]).StoreUnsafe(ref destination, 48);
-		}
-
-		if (length >= 80)
-		{
-			TransposeBytes(state[4]).StoreUnsafe(ref destination, 64);
-		}
-
-		if (length >= 96)
-		{
-			TransposeBytes(state[5]).StoreUnsafe(ref destination, 80);
-		}
-
-		if (length >= 112)
-		{
-			TransposeBytes(state[6]).StoreUnsafe(ref destination, 96);
-		}
-
-		if (length >= 128)
-		{
-			TransposeBytes(state[7]).StoreUnsafe(ref destination, 112);
-		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
