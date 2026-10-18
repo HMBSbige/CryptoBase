@@ -40,7 +40,7 @@ public sealed partial class Base32Encoding
 	private static void EncodeBlock(ref byte source, ref char destination, ref byte alphabet)
 	{
 		ulong value = Pack5(ref source);
-		Unsafe.Add(ref destination, 0) = (char)Unsafe.Add(ref alphabet, (int)(value >> 35 & SymbolMask));
+		Unsafe.Add(ref destination, 0) = (char)Unsafe.Add(ref alphabet, (int)(value >> 35));
 		Unsafe.Add(ref destination, 1) = (char)Unsafe.Add(ref alphabet, (int)(value >> 30 & SymbolMask));
 		Unsafe.Add(ref destination, 2) = (char)Unsafe.Add(ref alphabet, (int)(value >> 25 & SymbolMask));
 		Unsafe.Add(ref destination, 3) = (char)Unsafe.Add(ref alphabet, (int)(value >> 20 & SymbolMask));
@@ -53,7 +53,8 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void EncodePackedBlock(ulong value, ref byte destination, ref byte alphabet)
 	{
-		Unsafe.Add(ref destination, 0) = Unsafe.Add(ref alphabet, (int)(value >> 35 & SymbolMask));
+		Debug.Assert(value >> 40 is 0);
+		Unsafe.Add(ref destination, 0) = Unsafe.Add(ref alphabet, (int)(value >> 35));
 		Unsafe.Add(ref destination, 1) = Unsafe.Add(ref alphabet, (int)(value >> 30 & SymbolMask));
 		Unsafe.Add(ref destination, 2) = Unsafe.Add(ref alphabet, (int)(value >> 25 & SymbolMask));
 		Unsafe.Add(ref destination, 3) = Unsafe.Add(ref alphabet, (int)(value >> 20 & SymbolMask));
