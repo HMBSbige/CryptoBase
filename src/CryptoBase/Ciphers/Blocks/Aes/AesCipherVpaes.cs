@@ -538,62 +538,8 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 			return;
 		}
 
-		EncryptBlocksCore(source, destination);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private readonly void EncryptBlocksCore(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		ref byte src = ref MemoryMarshal.GetReference(source);
-		ref byte dst = ref MemoryMarshal.GetReference(destination);
-		int offset = 0;
-
-		while (source.Length - offset >= 64)
-		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-			Vector128<byte> v2 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 32));
-			Vector128<byte> v3 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 48));
-
-			Encrypt4(ref v0, ref v1, ref v2, ref v3);
-
-			v0.StoreUnsafe(ref dst, (nuint)(offset + 0));
-			v1.StoreUnsafe(ref dst, (nuint)(offset + 16));
-			v2.StoreUnsafe(ref dst, (nuint)(offset + 32));
-			v3.StoreUnsafe(ref dst, (nuint)(offset + 48));
-			offset += 64;
-		}
-
-		if (source.Length - offset >= 48)
-		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-			Vector128<byte> v2 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 32));
-
-			Encrypt3(ref v0, ref v1, ref v2);
-
-			v0.StoreUnsafe(ref dst, (nuint)(offset + 0));
-			v1.StoreUnsafe(ref dst, (nuint)(offset + 16));
-			v2.StoreUnsafe(ref dst, (nuint)(offset + 32));
-			return;
-		}
-
-		if (source.Length - offset >= 32)
-		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-
-			Encrypt2(ref v0, ref v1);
-
-			v0.StoreUnsafe(ref dst, (nuint)(offset + 0));
-			v1.StoreUnsafe(ref dst, (nuint)(offset + 16));
-			offset += 32;
-		}
-
-		if (offset < source.Length)
-		{
-			Encrypt(Vector128.LoadUnsafe(ref src, (nuint)offset)).StoreUnsafe(ref dst, (nuint)offset);
-		}
+		AesDirectPolicy policy = default;
+		TransformWithPolicy<AesDirectPolicy, AesEncrypt>(ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -605,62 +551,8 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 			return;
 		}
 
-		DecryptBlocksCore(source, destination);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private readonly void DecryptBlocksCore(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		ref byte src = ref MemoryMarshal.GetReference(source);
-		ref byte dst = ref MemoryMarshal.GetReference(destination);
-		int offset = 0;
-
-		while (source.Length - offset >= 64)
-		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-			Vector128<byte> v2 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 32));
-			Vector128<byte> v3 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 48));
-
-			Decrypt4(ref v0, ref v1, ref v2, ref v3);
-
-			v0.StoreUnsafe(ref dst, (nuint)(offset + 0));
-			v1.StoreUnsafe(ref dst, (nuint)(offset + 16));
-			v2.StoreUnsafe(ref dst, (nuint)(offset + 32));
-			v3.StoreUnsafe(ref dst, (nuint)(offset + 48));
-			offset += 64;
-		}
-
-		if (source.Length - offset >= 48)
-		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-			Vector128<byte> v2 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 32));
-
-			Decrypt3(ref v0, ref v1, ref v2);
-
-			v0.StoreUnsafe(ref dst, (nuint)(offset + 0));
-			v1.StoreUnsafe(ref dst, (nuint)(offset + 16));
-			v2.StoreUnsafe(ref dst, (nuint)(offset + 32));
-			return;
-		}
-
-		if (source.Length - offset >= 32)
-		{
-			Vector128<byte> v0 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 0));
-			Vector128<byte> v1 = Vector128.LoadUnsafe(ref src, (nuint)(offset + 16));
-
-			Decrypt2(ref v0, ref v1);
-
-			v0.StoreUnsafe(ref dst, (nuint)(offset + 0));
-			v1.StoreUnsafe(ref dst, (nuint)(offset + 16));
-			offset += 32;
-		}
-
-		if (offset < source.Length)
-		{
-			Decrypt(Vector128.LoadUnsafe(ref src, (nuint)offset)).StoreUnsafe(ref dst, (nuint)offset);
-		}
+		AesDirectPolicy policy = default;
+		TransformWithPolicy<AesDirectPolicy, AesDecrypt>(ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
