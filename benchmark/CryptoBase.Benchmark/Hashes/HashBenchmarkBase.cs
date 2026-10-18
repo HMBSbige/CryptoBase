@@ -11,6 +11,15 @@ public static class HashBenchmarkSizes
 	public static IReadOnlyList<int> Block64 { get; } = [0, 55, 56, 64, 256, 1024, 8192, 1024 * 1024];
 
 	public static IReadOnlyList<int> Block128 { get; } = [0, 111, 112, 128, 256, 1024, 8192, 1024 * 1024];
+
+	// A sponge pads in place: rate - 1 bytes still fit one block, while a full rate needs a second permutation.
+	public static IReadOnlyList<int> Rate72 { get; } = [0, 71, 72, 256, 1024, 8192, 1024 * 1024];
+
+	public static IReadOnlyList<int> Rate104 { get; } = [0, 103, 104, 256, 1024, 8192, 1024 * 1024];
+
+	public static IReadOnlyList<int> Rate136 { get; } = [0, 135, 136, 256, 1024, 8192, 1024 * 1024];
+
+	public static IReadOnlyList<int> Rate144 { get; } = [0, 143, 144, 256, 1024, 8192, 1024 * 1024];
 }
 
 public abstract class BouncyCastleHashBenchmark<TCryptoBase, TBouncyCastle>
@@ -82,8 +91,14 @@ public abstract class BclAndBouncyCastleHashBenchmark<TCryptoBase, TBcl, TBouncy
 		return TBcl.HashData(Input, Hash);
 	}
 
+	// Where the platform lacks the algorithm, Bcl throws PlatformNotSupportedException and reports no result, while the other columns still run.
 	protected override void VerifyAdditionalCompetitors(ReadOnlySpan<byte> expected)
 	{
+		if (!TBcl.IsSupported)
+		{
+			return;
+		}
+
 		Bcl();
 		Verify(expected, Hash);
 	}

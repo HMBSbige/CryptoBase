@@ -4,6 +4,7 @@ using CryptoBase.Hashes.MD5;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha224;
 using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha3;
 using CryptoBase.Hashes.Sha384;
 using CryptoBase.Hashes.Sha512;
 using CryptoBase.Hashes.SM3;
@@ -15,6 +16,7 @@ using BouncyCastleMD5 = Org.BouncyCastle.Crypto.Digests.MD5Digest;
 using BouncyCastleSha1 = Org.BouncyCastle.Crypto.Digests.Sha1Digest;
 using BouncyCastleSha224 = Org.BouncyCastle.Crypto.Digests.Sha224Digest;
 using BouncyCastleSha256 = Org.BouncyCastle.Crypto.Digests.Sha256Digest;
+using BouncyCastleSha3 = Org.BouncyCastle.Crypto.Digests.Sha3Digest;
 using BouncyCastleSha384 = Org.BouncyCastle.Crypto.Digests.Sha384Digest;
 using BouncyCastleSha512 = Org.BouncyCastle.Crypto.Digests.Sha512Digest;
 using BouncyCastleSM3 = Org.BouncyCastle.Crypto.Digests.SM3Digest;
@@ -27,7 +29,7 @@ namespace CryptoBase.Benchmark.Macs.Hmac;
 public class HmacBenchmark
 {
 	private const int MaxInputLength = 1024 * 1024;
-	private const int MaxKeyLength = 129;
+	private const int MaxKeyLength = 137;
 	private byte[] _input = [];
 
 	private byte[] _key = [];
@@ -53,6 +55,29 @@ public class HmacBenchmark
 		yield return [1024, 129];
 		yield return [8192, 128];
 		yield return [MaxInputLength, 128];
+	}
+
+	// The HMAC block size of SHA3-256 is its 136-byte rate (FIPS 202, Table 3).
+	public static IEnumerable<object[]> Rate136Arguments()
+	{
+		yield return [0, 136];
+		yield return [136, 136];
+		yield return [1024, 135];
+		yield return [1024, 136];
+		yield return [1024, 137];
+		yield return [8192, 136];
+		yield return [MaxInputLength, 136];
+	}
+
+	public static IEnumerable<object[]> Rate72Arguments()
+	{
+		yield return [0, 72];
+		yield return [72, 72];
+		yield return [1024, 71];
+		yield return [1024, 72];
+		yield return [1024, 73];
+		yield return [8192, 72];
+		yield return [MaxInputLength, 72];
 	}
 
 	[GlobalSetup]
@@ -212,6 +237,60 @@ public class HmacBenchmark
 	public int Sha512BouncyCastle(int inputLength, int keyLength)
 	{
 		BouncyCastleHmac hmac = new(new BouncyCastleSha512());
+		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
+		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
+		return hmac.DoFinal(_mac);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("HMAC-SHA3-256")]
+	[ArgumentsSource(nameof(Rate136Arguments))]
+	public int Sha3_256Bcl(int inputLength, int keyLength)
+	{
+		return HMACSHA3_256.HashData(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("HMAC-SHA3-256")]
+	[ArgumentsSource(nameof(Rate136Arguments))]
+	public int Sha3_256CryptoBase(int inputLength, int keyLength)
+	{
+		return HmacAlgorithm<Sha3_256HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("HMAC-SHA3-256")]
+	[ArgumentsSource(nameof(Rate136Arguments))]
+	public int Sha3_256BouncyCastle(int inputLength, int keyLength)
+	{
+		BouncyCastleHmac hmac = new(new BouncyCastleSha3(256));
+		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
+		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
+		return hmac.DoFinal(_mac);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("HMAC-SHA3-512")]
+	[ArgumentsSource(nameof(Rate72Arguments))]
+	public int Sha3_512Bcl(int inputLength, int keyLength)
+	{
+		return HMACSHA3_512.HashData(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("HMAC-SHA3-512")]
+	[ArgumentsSource(nameof(Rate72Arguments))]
+	public int Sha3_512CryptoBase(int inputLength, int keyLength)
+	{
+		return HmacAlgorithm<Sha3_512HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("HMAC-SHA3-512")]
+	[ArgumentsSource(nameof(Rate72Arguments))]
+	public int Sha3_512BouncyCastle(int inputLength, int keyLength)
+	{
+		BouncyCastleHmac hmac = new(new BouncyCastleSha3(512));
 		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
 		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
 		return hmac.DoFinal(_mac);
