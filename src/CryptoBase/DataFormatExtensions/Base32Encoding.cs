@@ -556,9 +556,7 @@ public sealed partial class Base32Encoding
 	private bool HasCanonicalTrailingBits<T>(ReadOnlySpan<T> source, int symbolCount) where T : unmanaged
 	{
 		// Defer invalid-symbol detection to the block/tail scan so the consumed count reflects the valid prefix.
-		return symbolCount is 0
-				|| !TryGetValue(source[symbolCount - 1], out int value)
-				|| (value & GetTrailingBitsMask(symbolCount)) is 0;
+		return !TryGetValue(source[symbolCount - 1], out int value) || (value & GetTrailingBitsMask(symbolCount)) is 0;
 	}
 
 	private static int GetUnpaddedEncodedLength(int sourceLength)
@@ -578,16 +576,10 @@ public sealed partial class Base32Encoding
 		return (0b1011_0101 >> (symbolCount & 7) & 1) is not 0;
 	}
 
+	// The last symbol carries symbolCount * 5 mod 8 bits past the final whole byte.
 	private static int GetTrailingBitsMask(int symbolCount)
 	{
-		return (symbolCount & 7) switch
-		{
-			2 => 3,
-			4 => 15,
-			5 => 1,
-			7 => 7,
-			_ => 0,
-		};
+		return (1 << (symbolCount * InputBytesPerBlock & 7)) - 1;
 	}
 
 	private static (byte[] Alphabet, byte[] DecodeTable) CreateTables(string alphabet, byte padding)
