@@ -13,6 +13,10 @@
 | SHA-256 | `Sha256HashAlgorithm` |
 | SHA-384 | `Sha384HashAlgorithm` |
 | SHA-512 | `Sha512HashAlgorithm` |
+| SHA3-224 | `Sha3_224HashAlgorithm` |
+| SHA3-256 | `Sha3_256HashAlgorithm` |
+| SHA3-384 | `Sha3_384HashAlgorithm` |
+| SHA3-512 | `Sha3_512HashAlgorithm` |
 | SM3 | `SM3HashAlgorithm` |
 | CRC-32 | `Crc32HashAlgorithm` |
 | CRC-32C | `Crc32CHashAlgorithm` |
