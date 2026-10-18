@@ -2,14 +2,19 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashX86;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
+internal struct GHashFourBlockPrecomputedKey : IGHashPowers
 {
-	private readonly Vector128<byte> _key1;
-	private readonly Vector128<byte> _key2;
-	private readonly Vector128<byte> _key3;
-	private readonly Vector128<byte> _key4;
+	private Vector128<byte> _key1;
+	private Vector128<byte> _key2;
+	private Vector128<byte> _key3;
+	private Vector128<byte> _key4;
 
 	internal GHashFourBlockPrecomputedKey(Vector128<byte> key)
+	{
+		Initialize(key);
+	}
+
+	internal void Initialize(Vector128<byte> key)
 	{
 		_key1 = key;
 
@@ -28,7 +33,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		}
 	}
 
-	private void AppendBlocks(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
+	private readonly void AppendBlocks(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
 	{
 		if (IsSupported256)
 		{
@@ -40,7 +45,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		}
 	}
 
-	private void AppendBlocks256(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
+	private readonly void AppendBlocks256(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
 	{
 		int offset = 0;
 		int length = source.Length;
@@ -96,7 +101,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		}
 	}
 
-	private void AppendBlocks128(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
+	private readonly void AppendBlocks128(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
 	{
 		int offset = 0;
 		int length = source.Length;
@@ -166,7 +171,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		}
 	}
 
-	private void AppendFoldedPaddedRemainder(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, in Vector128<byte> finalBlock)
+	private readonly void AppendFoldedPaddedRemainder(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, in Vector128<byte> finalBlock)
 	{
 		int sourceBlocks = source.Length / BlockSize;
 		Debug.Assert(source.Length % BlockSize is 0);
@@ -203,7 +208,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private Vector128<byte> GetKey(int power)
+	private readonly Vector128<byte> GetKey(int power)
 	{
 		return power switch
 		{
@@ -214,7 +219,7 @@ internal readonly struct GHashFourBlockPrecomputedKey : IGHashPowers
 		};
 	}
 
-	public void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	public readonly void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
 	{
 		int completeLength = source.Length & -BlockSize;
 		ReadOnlySpan<byte> remaining = source.Slice(completeLength);

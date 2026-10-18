@@ -2,28 +2,33 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashX86;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
+internal struct GHashVector256PrecomputedKey : IGHashPowers
 {
-	private readonly Vector128<byte> _key1;
-	private readonly Vector256<byte> _key21;
-	private readonly Vector256<byte> _keyK21;
-	private readonly Vector256<byte> _key43;
-	private readonly Vector256<byte> _keyK43;
-	private readonly Vector256<byte> _key65;
-	private readonly Vector256<byte> _keyK65;
-	private readonly Vector256<byte> _key87;
-	private readonly Vector256<byte> _keyK87;
-	private readonly Vector256<byte> _key1009;
-	private readonly Vector256<byte> _keyK1009;
-	private readonly Vector256<byte> _key1211;
-	private readonly Vector256<byte> _keyK1211;
-	private readonly Vector256<byte> _key1413;
-	private readonly Vector256<byte> _keyK1413;
-	private readonly Vector256<byte> _key1615;
-	private readonly Vector256<byte> _keyK1615;
+	private Vector128<byte> _key1;
+	private Vector256<byte> _key21;
+	private Vector256<byte> _keyK21;
+	private Vector256<byte> _key43;
+	private Vector256<byte> _keyK43;
+	private Vector256<byte> _key65;
+	private Vector256<byte> _keyK65;
+	private Vector256<byte> _key87;
+	private Vector256<byte> _keyK87;
+	private Vector256<byte> _key1009;
+	private Vector256<byte> _keyK1009;
+	private Vector256<byte> _key1211;
+	private Vector256<byte> _keyK1211;
+	private Vector256<byte> _key1413;
+	private Vector256<byte> _keyK1413;
+	private Vector256<byte> _key1615;
+	private Vector256<byte> _keyK1615;
+
+	internal GHashVector256PrecomputedKey(Vector128<byte> key)
+	{
+		Initialize(key);
+	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal GHashVector256PrecomputedKey(Vector128<byte> key)
+	internal void Initialize(Vector128<byte> key)
 	{
 		_key1 = key;
 		Vector128<byte> preparedKey1 = PrepareKey(key);
@@ -57,7 +62,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 		_keyK1615 = GetReductionKey(_key1615);
 	}
 
-	private void AppendBlocks(ref Vector128<byte> accumulatorDestination, scoped ReadOnlySpan<byte> source)
+	private readonly void AppendBlocks(ref Vector128<byte> accumulatorDestination, scoped ReadOnlySpan<byte> source)
 	{
 		Vector128<byte> accumulator = accumulatorDestination;
 		int offset = 0;
@@ -158,7 +163,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 		accumulatorDestination = accumulator;
 	}
 
-	public void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	public readonly void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
 	{
 		int completeLength = source.Length & -BlockSize;
 		ReadOnlySpan<byte> remaining = source.Slice(completeLength);
@@ -198,7 +203,7 @@ internal readonly struct GHashVector256PrecomputedKey : IGHashPowers
 		AppendBlocks(ref accumulator, finalBlock.AsReadOnlySpan());
 	}
 
-	private void AppendFoldedTail(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
+	private readonly void AppendFoldedTail(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
 	{
 		ref byte ptr = ref MemoryMarshal.GetReference(source);
 		Vector256<byte> blocks = Vector256.LoadUnsafe(ref ptr).ReverseEndianness128();

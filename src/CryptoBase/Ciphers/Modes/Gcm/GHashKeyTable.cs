@@ -1,8 +1,9 @@
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal sealed class GHashKeyTable<T>(in T value) : IDisposable where T : unmanaged
+// Each table is initialized in place to avoid copying the powers through the stack.
+internal sealed class GHashKeyTable<T> : IDisposable where T : unmanaged
 {
-	internal T Value = value;
+	internal T Value;
 
 	public void Dispose()
 	{

@@ -1,18 +1,23 @@
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal readonly struct GHashArmPrecomputedKey
+internal struct GHashArmPrecomputedKey
 {
-	internal readonly Vector128<byte> Key1;
-	internal readonly Vector128<byte> Key2;
-	internal readonly Vector128<byte> Key3;
-	internal readonly Vector128<byte> Key4;
-	internal readonly Vector128<byte> Key5;
-	internal readonly Vector128<byte> Key6;
-	internal readonly Vector128<byte> Key7;
-	internal readonly Vector128<byte> Key8;
+	internal Vector128<byte> Key1;
+	internal Vector128<byte> Key2;
+	internal Vector128<byte> Key3;
+	internal Vector128<byte> Key4;
+	internal Vector128<byte> Key5;
+	internal Vector128<byte> Key6;
+	internal Vector128<byte> Key7;
+	internal Vector128<byte> Key8;
+
+	internal GHashArmPrecomputedKey(Vector128<byte> internalKey)
+	{
+		Initialize(internalKey);
+	}
 
 	// internalKey must already have the bits in each byte reversed.
-	internal GHashArmPrecomputedKey(Vector128<byte> internalKey)
+	internal void Initialize(Vector128<byte> internalKey)
 	{
 		Key1 = internalKey;
 		Key2 = GHashArm.GFSquare(Key1);
@@ -25,7 +30,7 @@ internal readonly struct GHashArmPrecomputedKey
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
+	internal readonly void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
 	{
 		int remainingBlocks = (int)(GHash.GetPaddedLength(source.Length) / GHash.BlockSizeInBytes);
 		Debug.Assert(remainingBlocks is > 0 and <= 8);
