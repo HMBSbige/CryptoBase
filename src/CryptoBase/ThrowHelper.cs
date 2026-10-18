@@ -34,4 +34,19 @@ internal static class ThrowHelper
 	{
 		throw new ArgumentOutOfRangeException(paramName, "Data limit exceeded!");
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void ThrowIfXofReading([DoesNotReturnIf(true)] bool reading)
+	{
+		if (reading)
+		{
+			ThrowXofReading();
+		}
+	}
+
+	[DoesNotReturn]
+	private static void ThrowXofReading()
+	{
+		throw new InvalidOperationException("This operation is not supported once the output has started reading; call Reset first.");
+	}
 }

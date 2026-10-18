@@ -46,6 +46,38 @@ internal static partial class KeccakP1600
 		return blocks * TRate.RateInBytes;
 	}
 
+	// Permutes the state and writes its first rate bytes for each whole block that fits in destination, and returns the number of
+	// bytes written; the state then holds the last block written.
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	internal static unsafe int SqueezeAvx512<TRate>(ref InlineArray25<ulong> state, Span<byte> destination) where TRate : IKeccakRate
+	{
+		Debug.Assert(IsAvx512Supported);
+		Debug.Assert(destination.Length >= TRate.RateInBytes);
+
+		int blocks = destination.Length / TRate.RateInBytes;
+		LoadRows(ref state, out Vector512<ulong> a0, out Vector512<ulong> a1, out Vector512<ulong> a2, out Vector512<ulong> a3, out Vector512<ulong> a4);
+
+		fixed (byte* output = destination)
+		{
+			ulong* block = (ulong*)output;
+
+			for (int i = 0; i < blocks; ++i)
+			{
+				PermuteRows(ref a0, ref a1, ref a2, ref a3, ref a4);
+				StoreBlockRow<TRate>(block, 0, a0);
+				StoreBlockRow<TRate>(block, 1, a1);
+				StoreBlockRow<TRate>(block, 2, a2);
+				StoreBlockRow<TRate>(block, 3, a3);
+				StoreBlockRow<TRate>(block, 4, a4);
+				block += TRate.RateInBytes / sizeof(ulong);
+			}
+		}
+
+		StoreRows(ref state, a0, a1, a2, a3, a4);
+		return blocks * TRate.RateInBytes;
+	}
+
 	// Lanes 5y to 5y + 4 of a block, as far as the block has them, in the low elements; the upper three may hold anything, as in
 	// PermuteRows. Where a full vector would read past the block, a masked load reads only those lanes, so the last block of
 	// source cannot fault on the bytes after it.
@@ -66,6 +98,29 @@ internal static partial class KeccakP1600
 
 		Vector512<ulong> mask = Vector512.LessThan(Vector512<ulong>.Indices, Vector512.Create((ulong)Math.Min(lanes, 5)));
 		return Avx512F.MaskLoad(block + 5 * row, mask, Vector512<ulong>.Zero);
+	}
+
+	// Writes lanes 5y to 5y + 4 of a block, as far as the block has them. A full vector is stored only where its upper three
+	// elements land on lanes that the next row overwrites; elsewhere a masked store writes only the row's lanes, so nothing
+	// lands past the block, and the last block cannot fault on the bytes after destination.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe void StoreBlockRow<TRate>(ulong* block, int row, Vector512<ulong> value) where TRate : IKeccakRate
+	{
+		int lanes = TRate.RateInBytes / sizeof(ulong) - 5 * row;
+
+		if (lanes <= 0)
+		{
+			return;
+		}
+
+		if (lanes >= Vector512<ulong>.Count)
+		{
+			value.Store(block + 5 * row);
+			return;
+		}
+
+		Vector512<ulong> mask = Vector512.LessThan(Vector512<ulong>.Indices, Vector512.Create((ulong)Math.Min(lanes, 5)));
+		Avx512F.MaskStore(block + 5 * row, mask, value);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

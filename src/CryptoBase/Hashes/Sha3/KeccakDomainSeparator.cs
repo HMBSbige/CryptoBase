@@ -5,4 +5,7 @@ internal static class KeccakDomainSeparator
 {
 	// M || 01
 	internal const byte Sha3 = 0x06;
+
+	// M || 1111
+	internal const byte Shake = 0x1F;
 }
