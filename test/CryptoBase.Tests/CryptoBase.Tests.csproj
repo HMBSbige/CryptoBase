@@ -17,4 +17,8 @@
     <AssemblyMetadata Include="WycheproofTestVectors" Value="$(MSBuildThisFileDirectory)../wycheproof/testvectors_v1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Cavp/**/*.rsp" LogicalName="%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

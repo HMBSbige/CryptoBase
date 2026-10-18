@@ -1,0 +1,2 @@
+# These are CAVP response files with test vectors, not the Visual C++ response files that the root .gitignore excludes.
+!*.rsp

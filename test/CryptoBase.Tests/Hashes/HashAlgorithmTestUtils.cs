@@ -32,6 +32,18 @@ internal static class HashAlgorithmTestUtils
 		255, 256, 257
 	];
 
+	// Sponge rates are not powers of two; rate - 1 leaves one byte, so the domain separator and the last padding bit share it.
+	public static IEnumerable<int> RateBlockAndPaddingLengths(int rate)
+	{
+		return
+		[
+			0, 1,
+			rate - 2, rate - 1, rate, rate + 1,
+			2 * rate - 1, 2 * rate, 2 * rate + 1,
+			3 * rate - 1, 3 * rate, 3 * rate + 1
+		];
+	}
+
 	public static IEnumerable<int> InputIntegrityLengths =>
 	[
 		0, 1,
@@ -51,7 +63,7 @@ internal static class HashAlgorithmTestUtils
 		return HashIncrementalBatchCases(128);
 	}
 
-	private static IEnumerable<(int, int, int)> HashIncrementalBatchCases(int blockSize)
+	public static IEnumerable<(int, int, int)> HashIncrementalBatchCases(int blockSize)
 	{
 		foreach (int length in BatchBoundaryLengths)
 		{

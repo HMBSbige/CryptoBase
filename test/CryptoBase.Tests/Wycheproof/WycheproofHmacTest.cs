@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.Macs;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha224;
 using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha3;
 using CryptoBase.Hashes.Sha384;
 using CryptoBase.Hashes.Sha512;
 using CryptoBase.Hashes.SM3;
@@ -49,6 +50,34 @@ public class WycheproofHmacTest
 	public Task HmacSha512(MacTestVector vector)
 	{
 		return Verify<HmacAlgorithm<Sha512HashAlgorithm>>(vector);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha3_224_test.json"])]
+	public Task HmacSha3_224(MacTestVector vector)
+	{
+		return Verify<HmacAlgorithm<Sha3_224HashAlgorithm>>(vector);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha3_256_test.json"])]
+	public Task HmacSha3_256(MacTestVector vector)
+	{
+		return Verify<HmacAlgorithm<Sha3_256HashAlgorithm>>(vector);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha3_384_test.json"])]
+	public Task HmacSha3_384(MacTestVector vector)
+	{
+		return Verify<HmacAlgorithm<Sha3_384HashAlgorithm>>(vector);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha3_512_test.json"])]
+	public Task HmacSha3_512(MacTestVector vector)
+	{
+		return Verify<HmacAlgorithm<Sha3_512HashAlgorithm>>(vector);
 	}
 
 	[Test]
