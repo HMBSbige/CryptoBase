@@ -5,42 +5,58 @@ namespace CryptoBase.Kdf.Argon2;
 internal static unsafe class Argon2Core
 {
 	internal const int SyncPoints = 4;
-	internal const uint TypeArgon2id = 2;
 	internal const int PrehashLength = 64;
-
-	private const uint Version = 0x13;
+	internal const int MinTagLength = 4;
+	internal const uint Version = 0x13;
 
 	// Prefetching data-independent references pays off once the memory outgrows the caches, but costs a little below this size.
 	private const ulong PrefetchMinimumBytes = 16 << 20;
 
-	internal static void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Parameters parameters, int maxDegreeOfParallelism, Span<byte> destination)
+	// The exceptions report these parameter names, which the public DeriveKey methods share.
+	internal static void ThrowIfInvalidArguments(Span<byte> destination, Argon2Parameters parameters, int maxDegreeOfParallelism)
+	{
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MinTagLength, nameof(destination));
+		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
+		ThrowIfDefault(parameters);
+	}
+
+	internal static void ThrowIfDefault(Argon2Parameters parameters)
+	{
+		if (parameters.Parallelism is 0)
+		{
+			throw new ArgumentException("The parameters must be created by an Argon2Parameters constructor.", nameof(parameters));
+		}
+	}
+
+	internal static void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Type type, Argon2Parameters parameters, int maxDegreeOfParallelism, Span<byte> destination)
 	{
 		if (Argon2Vector512.IsSupported)
 		{
-			DeriveKey<Argon2Vector512>(password, salt, secret, associatedData, parameters, maxDegreeOfParallelism, destination);
+			DeriveKey<Argon2Vector512>(password, salt, secret, associatedData, type, parameters, maxDegreeOfParallelism, destination);
 		}
 		else if (Argon2Vector256.IsSupported)
 		{
-			DeriveKey<Argon2Vector256>(password, salt, secret, associatedData, parameters, maxDegreeOfParallelism, destination);
+			DeriveKey<Argon2Vector256>(password, salt, secret, associatedData, type, parameters, maxDegreeOfParallelism, destination);
 		}
 		else if (Argon2Vector128.IsSupported)
 		{
-			DeriveKey<Argon2Vector128>(password, salt, secret, associatedData, parameters, maxDegreeOfParallelism, destination);
+			DeriveKey<Argon2Vector128>(password, salt, secret, associatedData, type, parameters, maxDegreeOfParallelism, destination);
 		}
 		else if (Argon2AdvSimd.IsSupported)
 		{
-			DeriveKey<Argon2AdvSimd>(password, salt, secret, associatedData, parameters, maxDegreeOfParallelism, destination);
+			DeriveKey<Argon2AdvSimd>(password, salt, secret, associatedData, type, parameters, maxDegreeOfParallelism, destination);
 		}
 		else
 		{
-			DeriveKey<Argon2Scalar>(password, salt, secret, associatedData, parameters, maxDegreeOfParallelism, destination);
+			DeriveKey<Argon2Scalar>(password, salt, secret, associatedData, type, parameters, maxDegreeOfParallelism, destination);
 		}
 	}
 
 	[SkipLocalsInit]
-	internal static void DeriveKey<TKernel>(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Parameters parameters, int maxDegreeOfParallelism, Span<byte> destination) where TKernel : IArgon2Kernel
+	internal static void DeriveKey<TKernel>(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Type type, Argon2Parameters parameters, int maxDegreeOfParallelism, Span<byte> destination) where TKernel : IArgon2Kernel
 	{
 		Debug.Assert(TKernel.IsSupported);
+		Debug.Assert(type is Argon2Type.Argon2d or Argon2Type.Argon2i or Argon2Type.Argon2id);
 		Debug.Assert(parameters.Parallelism > 0);
 		Debug.Assert(maxDegreeOfParallelism is -1 or > 0);
 		Debug.Assert(destination.Length >= 4);
@@ -55,7 +71,7 @@ internal static unsafe class Argon2Core
 
 		using CryptoBuffer<byte> prehashBuffer = new(stackalloc byte[PrehashLength]);
 		Span<byte> prehash = prehashBuffer.Span;
-		ComputePrehash(password, salt, secret, associatedData, parameters, destination.Length, prehash);
+		ComputePrehash(password, salt, secret, associatedData, type, parameters, destination.Length, prehash);
 
 		bool prefetchReferences = Sse.IsSupported && byteCount >= PrefetchMinimumBytes;
 
@@ -64,7 +80,7 @@ internal static unsafe class Argon2Core
 
 		try
 		{
-			new Argon2Instance<TKernel>(memory, parameters.Parallelism, segmentLength, parameters.Iterations, maxDegreeOfParallelism, prefetchReferences).Derive(prehash, destination);
+			new Argon2Instance<TKernel>(memory, type, parameters.Parallelism, segmentLength, parameters.Iterations, maxDegreeOfParallelism, prefetchReferences).Derive(prehash, destination);
 			wiped = true;
 		}
 		finally
@@ -81,7 +97,7 @@ internal static unsafe class Argon2Core
 	}
 
 	[SkipLocalsInit]
-	private static void ComputePrehash(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Parameters parameters, int tagLength, Span<byte> prehash)
+	private static void ComputePrehash(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Type type, Argon2Parameters parameters, int tagLength, Span<byte> prehash)
 	{
 		Span<byte> header = stackalloc byte[6 * sizeof(uint)];
 		BinaryPrimitives.WriteUInt32LittleEndian(header, (uint)parameters.Parallelism);
@@ -89,7 +105,7 @@ internal static unsafe class Argon2Core
 		BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(8), (uint)parameters.MemorySizeInKibibytes);
 		BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(12), (uint)parameters.Iterations);
 		BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(16), Version);
-		BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(20), TypeArgon2id);
+		BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(20), (uint)type);
 
 		Unsafe.SkipInit(out Blake2bCore blake2b);
 

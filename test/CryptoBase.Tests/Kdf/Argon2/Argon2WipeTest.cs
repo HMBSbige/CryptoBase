@@ -1,3 +1,4 @@
+using CryptoBase.Kdf;
 using CryptoBase.Kdf.Argon2;
 using System.Runtime.InteropServices;
 using static CryptoBase.Tests.TestUtils;
@@ -34,7 +35,7 @@ public class Argon2WipeTest
 			byte[] prehash = new byte[Argon2Core.PrehashLength];
 			Random.Shared.NextBytes(prehash);
 
-			new Argon2Instance<Argon2Scalar>((Argon2Block*)(region + GuardLength), lanes, segmentLength, 2, -1, false).Derive(prehash, new byte[32]);
+			new Argon2Instance<Argon2Scalar>((Argon2Block*)(region + GuardLength), Argon2Type.Argon2id, lanes, segmentLength, 2, -1, false).Derive(prehash, new byte[32]);
 
 			bool wiped = !buffer.Slice(GuardLength, length).ContainsAnyExcept((byte)0);
 			bool guarded = !buffer.Slice(0, GuardLength).ContainsAnyExcept(DestinationSentinel) && !buffer.Slice(GuardLength + length).ContainsAnyExcept(DestinationSentinel);

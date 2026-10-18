@@ -33,7 +33,7 @@ internal readonly unsafe struct Argon2Vector512 : IArgon2Kernel
 
 	// Only segments that reference their own lane are chained: selecting among several lanes needs more general-purpose registers than x64 has, and the JIT then spills J1, which puts a store and a reload on the critical path.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-	public static bool TryCompressChain(ref Argon2Block previous, ref Argon2Block destination, int count, Argon2ReferenceSet references, bool xorDestination)
+	public static bool TryCompressChain(ref Argon2Block previous, ref Argon2Block segment, int startIndex, int segmentLength, Argon2ReferenceSet references, bool xorDestination)
 	{
 		Debug.Assert(IsSupported);
 
@@ -60,10 +60,10 @@ internal readonly unsafe struct Argon2Vector512 : IArgon2Kernel
 		Vector512<ulong> n14 = Vector512.LoadUnsafe(ref x, 112);
 		Vector512<ulong> n15 = Vector512.LoadUnsafe(ref x, 120);
 
-		for (int index = 0; index < count; ++index)
+		for (int index = startIndex; index < segmentLength; ++index)
 		{
 			ref ulong y = ref (*references.LocateInOwnLane(n0.AsUInt32().ToScalar(), index))[0];
-			CompressNext(ref y, ref Unsafe.Add(ref destination, index)[0], xorDestination, ref n0, ref n1, ref n2, ref n3, ref n4, ref n5, ref n6, ref n7, ref n8, ref n9, ref n10, ref n11, ref n12, ref n13, ref n14, ref n15);
+			CompressNext(ref y, ref Unsafe.Add(ref segment, index)[0], xorDestination, ref n0, ref n1, ref n2, ref n3, ref n4, ref n5, ref n6, ref n7, ref n8, ref n9, ref n10, ref n11, ref n12, ref n13, ref n14, ref n15);
 		}
 
 		return true;

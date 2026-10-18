@@ -11,6 +11,7 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 	private const int CacheLineSize = 64;
 
 	private readonly Argon2Block* _memory;
+	private readonly Argon2Type _type;
 	private readonly int _segmentLength;
 	private readonly int _laneLength;
 	private readonly int _passes;
@@ -18,11 +19,12 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 
 	private byte* _prehash;
 
-	internal Argon2Instance(Argon2Block* memory, int lanes, int segmentLength, int passes, int maxDegreeOfParallelism, bool prefetch) : base(lanes, maxDegreeOfParallelism)
+	internal Argon2Instance(Argon2Block* memory, Argon2Type type, int lanes, int segmentLength, int passes, int maxDegreeOfParallelism, bool prefetch) : base(lanes, maxDegreeOfParallelism)
 	{
 		Debug.Assert(segmentLength >= 2);
 
 		_memory = memory;
+		_type = type;
 		_segmentLength = segmentLength;
 		_laneLength = segmentLength * SyncPoints;
 		_passes = passes;
@@ -77,23 +79,35 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 
 	protected override void ProcessLane(int pass, int slice, int lane)
 	{
-		switch (pass, slice)
+		if (pass is WipePass)
 		{
-			case (WipePass, _):
+			NativeMemory.Clear(_memory + (nint)lane * _laneLength, (nuint)_laneLength * Argon2Block.SizeInBytes);
+			return;
+		}
+
+		if (pass is 0 && slice is 0)
+		{
+			// The first segment of a lane only references the lane itself, so the phase that fills it also initializes the lane.
+			InitializeLane(lane);
+		}
+
+		// The type selects the addressing of whole segments, so the loops filling them do not depend on it.
+		switch (_type, pass, slice)
+		{
+			case (Argon2Type.Argon2i, 0, _):
+			case (Argon2Type.Argon2id, 0, < SyncPoints / 2):
 			{
-				NativeMemory.Clear(_memory + (nint)lane * _laneLength, (nuint)_laneLength * Argon2Block.SizeInBytes);
+				FillDataIndependentSegment<Argon2FirstPass>(pass, slice, lane);
 				break;
 			}
-			case (0, 0):
+			case (Argon2Type.Argon2i, _, _):
 			{
-				// The first segment of a lane only references the lane itself, so the phase that fills it also initializes the lane.
-				InitializeLane(lane);
-				FillDataIndependentSegment(slice, lane);
+				FillDataIndependentSegment<Argon2LaterPass>(pass, slice, lane);
 				break;
 			}
-			case (0, < SyncPoints / 2):
+			case (Argon2Type.Argon2d, 0, 0):
 			{
-				FillDataIndependentSegment(slice, lane);
+				FillFirstDataDependentSegment(lane);
 				break;
 			}
 			default:
@@ -122,15 +136,24 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 		}
 	}
 
+	// TPass makes the pass a constant in the first pass, the only one Argon2id fills here, so that supporting the later passes of Argon2i costs Argon2id no registers.
 	[SkipLocalsInit]
-	private void FillDataIndependentSegment(int slice, int lane)
+	private void FillDataIndependentSegment<TPass>(int pass, int slice, int lane) where TPass : struct, IArgon2Pass
 	{
+		Debug.Assert(TPass.IsFirst == pass is 0);
+
+		if (TPass.IsFirst)
+		{
+			pass = 0;
+		}
+
 		int segmentLength = _segmentLength;
 		int laneLength = _laneLength;
 		Argon2Block* laneBlocks = _memory + (nint)lane * laneLength;
-		Argon2ReferenceSet references = new(_memory, Lanes, segmentLength, 0, slice, lane);
+		Argon2ReferenceSet references = new(_memory, Lanes, segmentLength, pass, slice, lane);
 		bool prefetch = _prefetch;
-		int startIndex = slice is 0 ? 2 : 0;
+		bool xorDestination = !TPass.IsFirst;
+		int startIndex = TPass.IsFirst && slice is 0 ? 2 : 0;
 
 		Unsafe.SkipInit(out Argon2Block scratch);
 		Argon2Block zero = default;
@@ -144,16 +167,17 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 
 		try
 		{
+			input[0] = (ulong)pass;
 			input[1] = (ulong)lane;
 			input[2] = (ulong)slice;
 			input[3] = (ulong)laneLength * (ulong)Lanes;
 			input[4] = (ulong)_passes;
-			input[5] = TypeArgon2id;
+			input[5] = (ulong)_type;
 
 			NextAddresses(ref zero, ref input, ref addresses, ref scratch);
 
 			int current = slice * segmentLength + startIndex;
-			int previous = current - 1;
+			int previous = TPass.IsFirst || current is not 0 ? current - 1 : laneLength - 1;
 
 			for (int index = startIndex; index < segmentLength; ++index)
 			{
@@ -183,7 +207,7 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 				}
 
 				Argon2Block* reference = references.Locate(addresses[addressIndex], index);
-				TKernel.Compress(ref laneBlocks[previous], ref *reference, ref laneBlocks[current], ref scratch, false);
+				TKernel.Compress(ref laneBlocks[previous], ref *reference, ref laneBlocks[current], ref scratch, xorDestination);
 				previous = current++;
 			}
 		}
@@ -206,7 +230,9 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 		int current = slice * segmentLength;
 		int previous = current is 0 ? laneLength - 1 : current - 1;
 
-		if (TKernel.TryCompressChain(ref laneBlocks[previous], ref laneBlocks[current], segmentLength, references, xorDestination))
+		Debug.Assert(pass is not 0 || slice is not 0);
+
+		if (TKernel.TryCompressChain(ref laneBlocks[previous], ref laneBlocks[current], 0, segmentLength, references, xorDestination))
 		{
 			return;
 		}
@@ -220,6 +246,36 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 				Argon2Block* reference = references.Locate(laneBlocks[previous][0], index);
 				TKernel.Compress(ref laneBlocks[previous], ref *reference, ref laneBlocks[current], ref scratch, xorDestination);
 				previous = current++;
+			}
+		}
+		finally
+		{
+			scratch.ZeroMemory();
+		}
+	}
+
+	// The first Argon2d segment of a lane references only that lane and starts after the two blocks InitializeLane computes.
+	// Starting FillDataDependentSegment past index 0 would make the JIT keep fewer of its values in registers.
+	[SkipLocalsInit]
+	private void FillFirstDataDependentSegment(int lane)
+	{
+		int segmentLength = _segmentLength;
+		Argon2Block* laneBlocks = _memory + (nint)lane * _laneLength;
+		Argon2ReferenceSet references = new(_memory, Lanes, segmentLength, 0, 0, lane);
+
+		if (TKernel.TryCompressChain(ref laneBlocks[1], ref laneBlocks[0], 2, segmentLength, references, false))
+		{
+			return;
+		}
+
+		Unsafe.SkipInit(out Argon2Block scratch);
+
+		try
+		{
+			for (int index = 2; index < segmentLength; ++index)
+			{
+				Argon2Block* reference = references.LocateInOwnLane(laneBlocks[index - 1][0], index);
+				TKernel.Compress(ref laneBlocks[index - 1], ref *reference, ref laneBlocks[index], ref scratch, false);
 			}
 		}
 		finally

@@ -20,7 +20,7 @@ public abstract class Argon2KernelCase
 
 	internal abstract void Compress(ref Argon2Block previous, ref Argon2Block reference, ref Argon2Block destination, ref Argon2Block scratch, bool xorDestination);
 
-	public abstract void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Parameters parameters, Span<byte> destination);
+	public abstract void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Type type, Argon2Parameters parameters, Span<byte> destination);
 
 	public override string ToString()
 	{
@@ -38,9 +38,9 @@ public abstract class Argon2KernelCase
 			TKernel.Compress(ref previous, ref reference, ref destination, ref scratch, xorDestination);
 		}
 
-		public override void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Parameters parameters, Span<byte> destination)
+		public override void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Type type, Argon2Parameters parameters, Span<byte> destination)
 		{
-			Argon2Core.DeriveKey<TKernel>(password, salt, secret, associatedData, parameters, -1, destination);
+			Argon2Core.DeriveKey<TKernel>(password, salt, secret, associatedData, type, parameters, -1, destination);
 		}
 	}
 }

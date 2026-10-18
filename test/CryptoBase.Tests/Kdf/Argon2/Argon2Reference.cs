@@ -1,3 +1,4 @@
+using CryptoBase.Kdf;
 using CryptoBase.Tests.Hashes.Blake2b;
 using System.Buffers.Binary;
 
@@ -9,11 +10,10 @@ internal static class Argon2Reference
 
 	private const int SyncPoints = 4;
 	private const int Version = 0x13;
-	private const int TypeArgon2id = 2;
 
-	public static byte[] Argon2id(byte[] password, byte[] salt, byte[] secret, byte[] associatedData, int memorySize, int iterations, int parallelism, int tagLength)
+	public static byte[] Derive(Argon2Type type, byte[] password, byte[] salt, byte[] secret, byte[] associatedData, int memorySize, int iterations, int parallelism, int tagLength)
 	{
-		byte[] h0 = Blake2bReference.Hash([.. Le32(parallelism), .. Le32(tagLength), .. Le32(memorySize), .. Le32(iterations), .. Le32(Version), .. Le32(TypeArgon2id), .. Le32(password.Length), .. password, .. Le32(salt.Length), .. salt, .. Le32(secret.Length), .. secret, .. Le32(associatedData.Length), .. associatedData], 64);
+		byte[] h0 = Blake2bReference.Hash([.. Le32(parallelism), .. Le32(tagLength), .. Le32(memorySize), .. Le32(iterations), .. Le32(Version), .. Le32((int)type), .. Le32(password.Length), .. password, .. Le32(salt.Length), .. salt, .. Le32(secret.Length), .. secret, .. Le32(associatedData.Length), .. associatedData], 64);
 
 		int memoryBlocks = 4 * parallelism * (memorySize / (4 * parallelism));
 		int laneLength = memoryBlocks / parallelism;
@@ -48,7 +48,7 @@ internal static class Argon2Reference
 						int previous = j is 0 ? laneLength - 1 : j - 1;
 						ulong pseudoRandom;
 
-						if (pass is 0 && slice < SyncPoints / 2)
+						if (type is Argon2Type.Argon2i || type is Argon2Type.Argon2id && pass is 0 && slice < SyncPoints / 2)
 						{
 							if (addressCounter != k / BlockWords + 1)
 							{
@@ -59,7 +59,7 @@ internal static class Argon2Reference
 								input[2] = (ulong)slice;
 								input[3] = (ulong)memoryBlocks;
 								input[4] = (ulong)iterations;
-								input[5] = TypeArgon2id;
+								input[5] = (ulong)type;
 								input[6] = (ulong)addressCounter;
 								ulong[] zero = new ulong[BlockWords];
 								addresses = G(zero, G(zero, input));

@@ -10,8 +10,6 @@ namespace CryptoBase.Kdf;
 /// </remarks>
 public static class Argon2id
 {
-	private const int MinOutputLength = 4;
-
 	/// <summary>
 	/// Derives key material from a password using Argon2id.
 	/// </summary>
@@ -31,14 +29,7 @@ public static class Argon2id
 	/// <exception cref="ArgumentException"><paramref name="parameters" /> is the default value.</exception>
 	public static void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, Span<byte> destination, Argon2Parameters parameters, ReadOnlySpan<byte> secret = default, ReadOnlySpan<byte> associatedData = default, int maxDegreeOfParallelism = -1)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MinOutputLength, nameof(destination));
-		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
-
-		if (parameters.Parallelism is 0)
-		{
-			throw new ArgumentException("The parameters must be created by an Argon2Parameters constructor.", nameof(parameters));
-		}
-
-		Argon2Core.DeriveKey(password, salt, secret, associatedData, parameters, maxDegreeOfParallelism, destination);
+		Argon2Core.ThrowIfInvalidArguments(destination, parameters, maxDegreeOfParallelism);
+		Argon2Core.DeriveKey(password, salt, secret, associatedData, Argon2Type.Argon2id, parameters, maxDegreeOfParallelism, destination);
 	}
 }
