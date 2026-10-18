@@ -40,14 +40,6 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 		return MacSelected(key, source, destination);
 	}
 
-	internal static void MacPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> firstSegment, ReadOnlySpan<byte> secondSegment, ReadOnlySpan<byte> thirdSegment, Span<byte> destination)
-	{
-		Debug.Assert(key.Length is KeyLengthInBytes);
-		Debug.Assert(destination.Length >= MacLength);
-
-		MacPaddedSegmentsSelected(key, firstSegment, secondSegment, thirdSegment, destination);
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static int MacSelected(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
@@ -72,36 +64,6 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 		}
 
 		return MacCore<Poly1305Software>(key, source, destination);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void MacPaddedSegmentsSelected(ReadOnlySpan<byte> key, ReadOnlySpan<byte> firstSegment, ReadOnlySpan<byte> secondSegment, ReadOnlySpan<byte> thirdSegment, Span<byte> destination)
-	{
-		if (ShouldUseAvx512(firstSegment.Length, secondSegment.Length, thirdSegment.Length))
-		{
-			MacPaddedSegmentsCore<Poly1305Avx512>(key, firstSegment, secondSegment, thirdSegment, destination);
-			return;
-		}
-
-		if (ShouldUseAvx2(firstSegment.Length, secondSegment.Length, thirdSegment.Length))
-		{
-			MacPaddedSegmentsCore<Poly1305Avx2>(key, firstSegment, secondSegment, thirdSegment, destination);
-			return;
-		}
-
-		if (ShouldUseSse2(firstSegment.Length, secondSegment.Length, thirdSegment.Length))
-		{
-			MacPaddedSegmentsCore<Poly1305Sse2>(key, firstSegment, secondSegment, thirdSegment, destination);
-			return;
-		}
-
-		if (ShouldUseAdvSimd(firstSegment.Length, secondSegment.Length, thirdSegment.Length))
-		{
-			MacPaddedSegmentsCore<Poly1305AdvSimd>(key, firstSegment, secondSegment, thirdSegment, destination);
-			return;
-		}
-
-		MacPaddedSegmentsCore<Poly1305Software>(key, firstSegment, secondSegment, thirdSegment, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -228,26 +190,6 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 			state.AppendMessage(source);
 			state.WriteMac(destination);
 			return MacLength;
-		}
-		finally
-		{
-			state.ZeroMemory();
-		}
-	}
-
-	[SkipLocalsInit]
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void MacPaddedSegmentsCore<TState>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> firstSegment, ReadOnlySpan<byte> secondSegment, ReadOnlySpan<byte> thirdSegment, Span<byte> destination) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
-	{
-		Unsafe.SkipInit(out TState state);
-		TState.Initialize(ref state, key);
-
-		try
-		{
-			state.AppendPaddedSegment(firstSegment);
-			state.AppendPaddedSegment(secondSegment);
-			state.AppendPaddedSegment(thirdSegment);
-			state.WriteMac(destination);
 		}
 		finally
 		{
