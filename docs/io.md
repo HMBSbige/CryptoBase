@@ -71,6 +71,61 @@ await source.CopyToAsync(hashing);
 hashing.GetHashAndReset(hash);
 ```
 
+## Authenticating a stream
+
+Incremental MAC algorithms, such as `HmacAlgorithm<THash>`, read streams the same way. `MacData` and `MacDataAsync` dispose the keyed instance they create, which erases the key.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Hashes.Sha256;
+using CryptoBase.IO;
+using CryptoBase.Macs.Hmac;
+
+byte[] key = RandomNumberGenerator.GetBytes(32);
+using FileStream input = File.OpenRead(path);
+Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
+
+HmacAlgorithm<Sha256HashAlgorithm>.MacData(key, input, mac);
+```
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Hashes.Sha256;
+using CryptoBase.IO;
+using CryptoBase.Macs.Hmac;
+
+byte[] key = RandomNumberGenerator.GetBytes(32);
+await using FileStream input = File.OpenRead(path);
+byte[] mac = new byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
+using HmacAlgorithm<Sha256HashAlgorithm> hmac = HmacAlgorithm<Sha256HashAlgorithm>.Create(key);
+
+// Mix spans and streams in one MAC.
+hmac.Append("header"u8);
+await hmac.AppendAsync(input);
+hmac.GetMacAndReset(mac);
+```
+
+## MacStream
+
+`MacStream` authenticates every byte read from or written to the inner stream. It is not seekable. It owns the MAC algorithm and disposes it, erasing the key; `leaveOpen` applies only to the inner stream. `Reset` and `GetMacAndReset` keep the key.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Hashes.Sha256;
+using CryptoBase.IO;
+using CryptoBase.Macs.Hmac;
+
+byte[] key = RandomNumberGenerator.GetBytes(32);
+await using FileStream source = File.OpenRead(sourcePath);
+await using FileStream destination = File.Create(destinationPath);
+byte[] mac = new byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
+
+// Authenticate while copying; the stream disposes the MAC algorithm.
+await using MacStream<HmacAlgorithm<Sha256HashAlgorithm>> authenticating = MacStream.Create(destination, HmacAlgorithm<Sha256HashAlgorithm>.Create(key), leaveOpen: true);
+await source.CopyToAsync(authenticating);
+authenticating.GetMacAndReset(mac);
+```
+
 ## DataUnitRandomAccess
 
 `DataUnitRandomAccess` encrypts a file at arbitrary offsets with a data-unit cipher that uses a 16-byte tweak, such as `XtsMode<AesCipher>`. The file holds whole data units, so its length must be a multiple of the data unit size. The unit at offset `n * dataUnitSize` uses the little-endian 128-bit tweak `firstDataUnitNumber + n`, the same numbering as `XtsMode.GetIV`.
