@@ -112,8 +112,8 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 		Unsafe.SkipInit(out InlineArray64<byte> lastBlock);
 		Blake3LastLane last = new(ref Unsafe.Add(ref input, (count - 1) * stride), blockCount, tailLength, ref lastBlock);
 
-		Vector512<uint> h0 = Broadcast(Vector128.LoadUnsafe(in key));
-		Vector512<uint> h1 = Broadcast(Vector128.LoadUnsafe(in key, 4));
+		Vector512<uint> h0 = Vector512.Broadcast(Vector128.LoadUnsafe(in key));
+		Vector512<uint> h1 = Vector512.Broadcast(Vector128.LoadUnsafe(in key, 4));
 		Vector512<ulong> counters = Vector512.Create(counter);
 
 		if (chunks)
@@ -168,8 +168,8 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 		Unsafe.SkipInit(out InlineArray64<byte> lastBlock);
 		Blake3LastLane last = new(ref Unsafe.Add(ref input, (count - 1) * stride), blockCount, tailLength, ref lastBlock);
 
-		Vector512<uint> h0 = Broadcast(Vector128.LoadUnsafe(in key));
-		Vector512<uint> h1 = Broadcast(Vector128.LoadUnsafe(in key, 4));
+		Vector512<uint> h0 = Vector512.Broadcast(Vector128.LoadUnsafe(in key));
+		Vector512<uint> h1 = Vector512.Broadcast(Vector128.LoadUnsafe(in key, 4));
 		Vector512<uint> h2 = h0;
 		Vector512<uint> h3 = h1;
 		Vector512<ulong> counters0 = Vector512.Create(counter);
@@ -224,8 +224,8 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 		if (blockCount == last.TailBlocks)
 		{
 			Vector512<uint> lastLane = Vector512.Create(0u, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~0u, ~0u, ~0u, ~0u);
-			h0 = Vector512.ConditionalSelect(lastLane, Broadcast(Vector128.LoadUnsafe(in key)), h0);
-			h1 = Vector512.ConditionalSelect(lastLane, Broadcast(Vector128.LoadUnsafe(in key, 4)), h1);
+			h0 = Vector512.ConditionalSelect(lastLane, Vector512.Broadcast(Vector128.LoadUnsafe(in key)), h0);
+			h1 = Vector512.ConditionalSelect(lastLane, Vector512.Broadcast(Vector128.LoadUnsafe(in key, 4)), h1);
 			rowFlags |= startFlags;
 		}
 
@@ -389,14 +389,5 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 	private static Vector512<uint> Shuffle(Vector512<uint> left, Vector512<uint> right, [ConstantExpected] byte control)
 	{
 		return Avx512F.Shuffle(left.AsSingle(), right.AsSingle(), control).AsUInt32();
-	}
-
-	// Copies value to every block in one shuffle. On .NET 10, Vector512.Create(Vector128<T>) takes three inserts, two of them into an uninitialized vector
-	// read from the stack.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector512<uint> Broadcast(Vector128<uint> value)
-	{
-		Vector512<uint> wide = value.ToVector256Unsafe().ToVector512Unsafe();
-		return Avx512F.Shuffle4x128(wide, wide, 0);
 	}
 }
