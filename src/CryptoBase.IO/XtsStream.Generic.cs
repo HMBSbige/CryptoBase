@@ -8,10 +8,15 @@ namespace CryptoBase.IO;
 /// <typeparam name="TCipher">The data-unit cipher.</typeparam>
 /// <remarks>
 /// <para>
+/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16. The tweak of each data
+/// unit is its data unit number encoded as a 128-bit little-endian integer, the same convention as XTS in IEEE 1619, so
+/// <c>XtsMode&lt;TBlockCipher&gt;</c> can be used directly.
+/// </para>
+/// <para>
 /// The inner stream holds whole data units only, because XTS does not encode lengths. The data unit at byte offset
-/// <c>n * DataUnitSize</c> is encrypted with the little-endian 128-bit tweak <c>firstDataUnitNumber + n</c>. The stream
-/// position maps directly to the inner stream offset, starts at zero, and is applied to the inner stream before each
-/// access to it, so the inner stream position is not preserved.
+/// <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>. The stream position maps directly to the
+/// inner stream offset, starts at zero, and is applied to the inner stream before each access to it, so the inner stream
+/// position is not preserved.
 /// </para>
 /// <para>
 /// Writes past the end pad their last data unit with zeros, and any gap between the old end and the write is filled with
