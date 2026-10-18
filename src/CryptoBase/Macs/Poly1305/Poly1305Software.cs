@@ -146,13 +146,15 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 	public readonly void WriteMac(scoped Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= Poly1305Algorithm.MacLength);
+		// Poly1305Utils.Multiply64 leaves h2 at most 3 and PropagateCarry adds at most 1, so g2 >> 2 is 0 or 1 and works as the mask bit.
+		Debug.Assert(_h2 <= 4);
 
 		ulong g0 = _h0 + 5;
 		ulong carry = g0 < _h0 ? 1UL : 0;
 		ulong g1 = _h1 + carry;
 		carry = g1 < _h1 ? 1UL : 0;
 		ulong g2 = _h2 + carry;
-		ulong mask = 0UL - (g2 >> 2 is not 0 ? 1UL : 0);
+		ulong mask = 0UL - (g2 >> 2);
 		ulong h0 = _h0 & ~mask | g0 & mask;
 		ulong h1 = _h1 & ~mask | g1 & mask;
 

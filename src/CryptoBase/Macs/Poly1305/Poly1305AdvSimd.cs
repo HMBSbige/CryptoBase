@@ -162,12 +162,12 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		Vector128<ulong> lower23 = AdvSimd.Arm64.ZipLow(block2, block3);
 		Vector128<ulong> upper01 = AdvSimd.Arm64.ZipHigh(block0, block1);
 		Vector128<ulong> upper23 = AdvSimd.Arm64.ZipHigh(block2, block3);
-		Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
+		Vector128<uint> mask = Vector128.Create(Poly1305State26.LimbMask);
 
-		m0 = Vector128.Narrow(lower01 & mask, lower23 & mask);
-		m1 = Vector128.Narrow(lower01 >>> 26 & mask, lower23 >>> 26 & mask);
-		m2 = Vector128.Narrow((lower01 >>> 52 | upper01 << 12) & mask, (lower23 >>> 52 | upper23 << 12) & mask);
-		m3 = Vector128.Narrow(upper01 >>> 14 & mask, upper23 >>> 14 & mask);
+		m0 = Vector128.Narrow(lower01, lower23) & mask;
+		m1 = Vector128.Narrow(lower01 >>> 26, lower23 >>> 26) & mask;
+		m2 = Vector128.Narrow(lower01 >>> 52 | upper01 << 12, lower23 >>> 52 | upper23 << 12) & mask;
+		m3 = Vector128.Narrow(upper01 >>> 14, upper23 >>> 14) & mask;
 		m4 = Vector128.Narrow(upper01 >>> 40 | Vector128.Create((ulong)Poly1305State26.FullBlockHighBit), upper23 >>> 40 | Vector128.Create((ulong)Poly1305State26.FullBlockHighBit));
 	}
 
@@ -402,7 +402,8 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 
 	private void AppendFourWay(scoped ReadOnlySpan<byte> source)
 	{
-		int length = source.Length & -BlockSize4;
+		Debug.Assert(source.Length >= BlockSize4 && source.Length % BlockSize4 is 0);
+		int length = source.Length;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector128<uint> h0 = Vector128.CreateScalar(_state.H0);
 		Vector128<uint> h1 = Vector128.CreateScalar(_state.H1);
@@ -467,7 +468,8 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 
 	private void AppendEightWay(scoped ReadOnlySpan<byte> source)
 	{
-		int length = source.Length & -BlockSize4;
+		Debug.Assert(source.Length >= BlockSize4 && source.Length % BlockSize4 is 0);
+		int length = source.Length;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		LoadFour(ref input, out Vector128<uint> m0, out Vector128<uint> m1, out Vector128<uint> m2, out Vector128<uint> m3, out Vector128<uint> m4);
 		Vector128<uint> h0 = m0 + Vector128.CreateScalar(_state.H0);

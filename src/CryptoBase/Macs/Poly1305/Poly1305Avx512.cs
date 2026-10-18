@@ -141,7 +141,8 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 
 	private void AppendEightWay(scoped ReadOnlySpan<byte> source)
 	{
-		int length = source.Length & -BlockSize8;
+		Debug.Assert(source.Length >= BlockSize8 && source.Length % BlockSize8 is 0);
+		int length = source.Length;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector512<ulong> mask = Vector512.Create((ulong)Poly1305State26.LimbMask);
 		Vector512<ulong> h0 = Vector512.CreateScalar(_state.H0).AsUInt64();
@@ -242,7 +243,9 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 
 	private void AppendSixteenWay(scoped ReadOnlySpan<byte> source)
 	{
-		int length = source.Length & -BlockSize8;
+		Debug.Assert(source.Length >= BlockSize8 && source.Length % BlockSize8 is 0);
+		Debug.Assert(_hasSixteenthPower);
+		int length = source.Length;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector512<ulong> mask = Vector512.Create((ulong)Poly1305State26.LimbMask);
 		Vector512<ulong> h0 = Vector512.CreateScalar(_state.H0).AsUInt64();
@@ -269,7 +272,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		input = ref Unsafe.Add(ref input, BlockSize8);
 		int remaining = length - BlockSize8;
 
-		while (_hasSixteenthPower && remaining >= BlockSize8 * 2)
+		while (remaining >= BlockSize8 * 2)
 		{
 			Vector512<uint> coefficient = BroadcastSixteenth(ref _r0);
 			Vector512<ulong> loopD0 = Avx512F.Multiply(h0.AsUInt32(), coefficient);
