@@ -33,6 +33,8 @@ internal static partial class ChaCha20Utils
 	private static int XorVector512Poly1305<TDirection>(ref uint stateRef, ref byte input, ref byte output, int length, ref Poly1305Avx512 mac, int processed, ref int hashedLength) where TDirection : struct, IBlockDirection
 	{
 		Debug.Assert(TDirection.IsDecrypt ? hashedLength == processed : hashedLength <= processed);
+		// Encryption keeps hashed group-aligned and at most eight complete groups behind, which the behind count relies on.
+		Debug.Assert(TDirection.IsDecrypt || hashedLength % Poly1305EightWayGroupSize is 0 && processed - hashedLength < 9 * Poly1305EightWayGroupSize);
 		Debug.Assert(processed % Poly1305Algorithm.BlockSizeInBytes is 0);
 		Debug.Assert((uint)(length - processed + 63) / 64 <= (1UL << 32) - GetCounter(ref stateRef));
 
@@ -49,9 +51,9 @@ internal static partial class ChaCha20Utils
 		while (length - processed >= minimumChunk)
 		{
 			int chunk = Math.Min(length - processed, Poly1305FusionChunkSize);
-			int groups = chunk / Poly1305EightWayGroupSize;
+			int groups = (int)((uint)chunk / Poly1305EightWayGroupSize);
 			// FinishEightWay takes the last whole group the kernel hashes, so neither direction hashes it in the rounds.
-			bool finish = TDirection.IsDecrypt && length - processed - chunk < minimumChunk;
+			bool finish = TDirection.IsDecrypt && length - processed < Poly1305FusionChunkSize + minimumChunk;
 			int groupRounds;
 
 			if (TDirection.IsDecrypt)
@@ -60,9 +62,9 @@ internal static partial class ChaCha20Utils
 			}
 			else
 			{
-				int behind = Math.Min((processed - hashed) / Poly1305EightWayGroupSize, 8);
+				int behind = (int)((uint)(processed - hashed) / Poly1305EightWayGroupSize);
 
-				if (chunk < Poly1305FusionChunkSize && behind > 0 && length - hashed - behind * Poly1305EightWayGroupSize < Poly1305EightWayGroupSize)
+				if (chunk < Poly1305FusionChunkSize && (length ^ processed) < Poly1305EightWayGroupSize)
 				{
 					behind--;
 				}
