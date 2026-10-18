@@ -230,7 +230,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 
 		for (int round = 0; round < 16; round += 4)
 		{
-			uint word = Unsafe.Add(ref words, round & 15);
+			uint word = Unsafe.Add(ref words, round);
 			d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, round + 4 & 15), Unsafe.Add(ref roundConstants, round), out h);
 			b = BitOperations.RotateLeft(b, 9);
 			f = BitOperations.RotateLeft(f, 19);

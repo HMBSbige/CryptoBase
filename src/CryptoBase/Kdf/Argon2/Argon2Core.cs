@@ -46,7 +46,7 @@ internal static unsafe class Argon2Core
 		Debug.Assert(destination.Length >= 4);
 
 		int segmentLength = parameters.MemorySizeInKibibytes / (SyncPoints * parameters.Parallelism);
-		ulong byteCount = (ulong)parameters.Parallelism * (uint)(segmentLength * SyncPoints) * Argon2Block.SizeInBytes;
+		ulong byteCount = (ulong)(uint)(parameters.Parallelism * segmentLength) * (SyncPoints * Argon2Block.SizeInBytes);
 
 		if (byteCount > nuint.MaxValue)
 		{

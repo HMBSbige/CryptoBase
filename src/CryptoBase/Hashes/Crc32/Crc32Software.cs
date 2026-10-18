@@ -262,12 +262,12 @@ internal static class Crc32Software
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint UpdateWord(ulong word, ref uint lookup, ref uint slicingLookup)
 	{
-		return Unsafe.Add(ref slicingLookup, 6 * TableSize + (byte)word)
-				^ Unsafe.Add(ref slicingLookup, 5 * TableSize + (byte)(word >> 8))
-				^ Unsafe.Add(ref slicingLookup, 4 * TableSize + (byte)(word >> 16))
-				^ Unsafe.Add(ref slicingLookup, 3 * TableSize + ((int)word >>> 24))
-				^ Unsafe.Add(ref slicingLookup, 2 * TableSize + (byte)(word >> 32))
-				^ Unsafe.Add(ref slicingLookup, 1 * TableSize + (byte)(word >> 40))
+		return Unsafe.Add(ref slicingLookup, (uint)(6 * TableSize + (byte)word))
+				^ Unsafe.Add(ref slicingLookup, (uint)(5 * TableSize + (byte)(word >> 8)))
+				^ Unsafe.Add(ref slicingLookup, (uint)(4 * TableSize + (byte)(word >> 16)))
+				^ Unsafe.Add(ref slicingLookup, (uint)(3 * TableSize + ((int)word >>> 24)))
+				^ Unsafe.Add(ref slicingLookup, (uint)(2 * TableSize + (byte)(word >> 32)))
+				^ Unsafe.Add(ref slicingLookup, (uint)(1 * TableSize + (byte)(word >> 40)))
 				^ Unsafe.Add(ref slicingLookup, (byte)(word >> 48))
 				^ Unsafe.Add(ref lookup, (int)(word >> 56));
 	}

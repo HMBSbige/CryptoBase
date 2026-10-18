@@ -451,9 +451,9 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		Vector128<byte> times8 = MultiplyByX(times4);
 
 		Vector128<byte> times14 = times8 ^ times4 ^ times2;
-		Vector128<byte> times11 = times8 ^ times2 ^ value;
-		Vector128<byte> times13 = times8 ^ times4 ^ value;
 		Vector128<byte> times9 = times8 ^ value;
+		Vector128<byte> times11 = times9 ^ times2;
+		Vector128<byte> times13 = times9 ^ times4;
 
 		return times14
 				^ Vector128.ShuffleNative(times11, RotateColumnsBy1)
