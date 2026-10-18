@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Blake3;
 using CryptoBase.Hashes.Sha256;
@@ -220,6 +221,71 @@ public class StreamHashExtensionsTest
 
 		await AssertOutput(destination, expected, written);
 		await Assert.That(stream.Position).IsEqualTo(stream.Length);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task AppendRejectsDisposedHasherBeforeReading([Matrix] AppendSourceKind kind, [Matrix] bool useBlake3, [Matrix] bool useAsync)
+	{
+		using Stream stream = AppendSources.Create(kind);
+		long position = stream.Position;
+
+		if (useBlake3)
+		{
+			await VerifyAppendRejectsDisposed(Blake3HashAlgorithm.Create(), stream, useAsync);
+		}
+		else
+		{
+			await VerifyAppendRejectsDisposed(HashAlgorithm<Sha256HashAlgorithm>.Create(), stream, useAsync);
+		}
+
+		await Assert.That(stream.Position).IsEqualTo(position);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task AppendOfEmptyStreamLeavesHashUnchanged([Matrix(AppendSourceKind.NullStream, AppendSourceKind.EmptyStream, AppendSourceKind.StreamAtEnd)] AppendSourceKind kind, [Matrix] bool useAsync)
+	{
+		byte[] source = CreateDeterministicSource(37);
+		byte[] blake3Expected = new byte[Blake3HashAlgorithm.HashLength];
+		Blake3HashAlgorithm.HashData(source, blake3Expected);
+		using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
+		using Blake3HashAlgorithm blake3 = Blake3HashAlgorithm.Create();
+		using Stream stream = AppendSources.Create(kind);
+		byte[] blake3Actual = new byte[Blake3HashAlgorithm.HashLength];
+
+		hasher.Append(source);
+		blake3.Append(source);
+
+		if (useAsync)
+		{
+			await hasher.AppendAsync(stream);
+			await blake3.AppendAsync(stream);
+		}
+		else
+		{
+			hasher.Append(stream);
+			blake3.Append(stream);
+		}
+
+		blake3.GetCurrentHash(blake3Actual);
+
+		await AssertCurrentHash(hasher, SHA256.HashData(source));
+		await Assert.That(blake3Actual).IsEquivalentTo(blake3Expected, CollectionOrdering.Matching);
+	}
+
+	private static async Task VerifyAppendRejectsDisposed<TAlgorithm>(TAlgorithm hasher, Stream stream, bool useAsync) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
+	{
+		hasher.Dispose();
+
+		if (useAsync)
+		{
+			await Assert.That(() => hasher.AppendAsync(stream).AsTask()).ThrowsExactly<ObjectDisposedException>();
+		}
+		else
+		{
+			await Assert.That(() => hasher.Append(stream)).ThrowsExactly<ObjectDisposedException>();
+		}
 	}
 
 	private static async Task AssertCurrentHash(HashAlgorithm<Sha256HashAlgorithm> hasher, byte[] expected)

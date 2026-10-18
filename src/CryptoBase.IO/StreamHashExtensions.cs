@@ -21,6 +21,7 @@ public static class StreamHashExtensions
 			ArgumentNullException.ThrowIfNull(hasher);
 			ArgumentNullException.ThrowIfNull(source);
 			StreamDrain.ThrowIfNotReadable(source);
+			ThrowIfDisposed(hasher);
 
 			StreamDrain.ReadToEnd(source, hasher, static (h, data) => h.Append(data));
 		}
@@ -39,6 +40,7 @@ public static class StreamHashExtensions
 			ArgumentNullException.ThrowIfNull(hasher);
 			ArgumentNullException.ThrowIfNull(source);
 			StreamDrain.ThrowIfNotReadable(source);
+			ThrowIfDisposed(hasher);
 
 			if (cancellationToken.IsCancellationRequested)
 			{
@@ -91,6 +93,13 @@ public static class StreamHashExtensions
 
 			return HashDataCoreAsync<TAlgorithm>(source, destination, cancellationToken);
 		}
+	}
+
+	// Appending an empty span changes nothing but throws once the algorithm is disposed, so a disposed algorithm fails before the stream is read;
+	// otherwise an empty stream would never reach it, and a nonempty one would be read first.
+	private static void ThrowIfDisposed<TAlgorithm>(TAlgorithm hasher) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
+	{
+		hasher.Append(ReadOnlySpan<byte>.Empty);
 	}
 
 	private static async ValueTask<int> HashDataCoreAsync<TAlgorithm>(Stream source, Memory<byte> destination, CancellationToken cancellationToken) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>

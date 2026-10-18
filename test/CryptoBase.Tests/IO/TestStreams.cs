@@ -1,3 +1,5 @@
+using static CryptoBase.Tests.TestUtils;
+
 namespace CryptoBase.Tests.IO;
 
 /// <summary>A memory stream that reports that it cannot be read.</summary>
@@ -76,5 +78,29 @@ internal sealed class FailingReadMemoryStream : MemoryStream
 	public override int Read(Span<byte> buffer)
 	{
 		throw new IOException("Read failed.");
+	}
+}
+
+/// <summary>The streams that a disposed algorithm must reject, of which all but the last give the algorithm no data.</summary>
+public enum AppendSourceKind
+{
+	NullStream,
+	EmptyStream,
+	StreamAtEnd,
+	NonEmptyStream
+}
+
+internal static class AppendSources
+{
+	public static Stream Create(AppendSourceKind kind)
+	{
+		return kind switch
+		{
+			AppendSourceKind.NullStream => Stream.Null,
+			AppendSourceKind.EmptyStream => new MemoryStream(),
+			AppendSourceKind.StreamAtEnd => new MemoryStream(CreateDeterministicSource(257), false) { Position = 257 },
+			AppendSourceKind.NonEmptyStream => new MemoryStream(CreateDeterministicSource(257), false) { Position = 11 },
+			_ => throw new ArgumentOutOfRangeException(nameof(kind))
+		};
 	}
 }

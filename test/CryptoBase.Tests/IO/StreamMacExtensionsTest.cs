@@ -321,6 +321,49 @@ public class StreamMacExtensionsTest
 		}
 	}
 
+	[Test]
+	[MatrixDataSource]
+	public async Task AppendRejectsDisposedMacBeforeReading([Matrix] AppendSourceKind kind, [Matrix] bool useAsync)
+	{
+		using Stream stream = AppendSources.Create(kind);
+		long position = stream.Position;
+		HmacSha256 mac = HmacSha256.Create(Key);
+		mac.Dispose();
+
+		if (useAsync)
+		{
+			await Assert.That(() => mac.AppendAsync(stream).AsTask()).ThrowsExactly<ObjectDisposedException>();
+		}
+		else
+		{
+			await Assert.That(() => mac.Append(stream)).ThrowsExactly<ObjectDisposedException>();
+		}
+
+		await Assert.That(stream.Position).IsEqualTo(position);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task AppendOfEmptyStreamLeavesMacUnchanged([Matrix(AppendSourceKind.NullStream, AppendSourceKind.EmptyStream, AppendSourceKind.StreamAtEnd)] AppendSourceKind kind, [Matrix] bool useAsync)
+	{
+		byte[] source = CreateDeterministicSource(37);
+		using HmacSha256 mac = HmacSha256.Create(Key);
+		using Stream stream = AppendSources.Create(kind);
+
+		mac.Append(source);
+
+		if (useAsync)
+		{
+			await mac.AppendAsync(stream);
+		}
+		else
+		{
+			mac.Append(stream);
+		}
+
+		await AssertCurrentMac(mac, HMACSHA256.HashData(Key, source));
+	}
+
 	private static async Task AssertCurrentMac(HmacSha256 mac, byte[] expected)
 	{
 		byte[] actual = new byte[HmacSha256.MacLength];
