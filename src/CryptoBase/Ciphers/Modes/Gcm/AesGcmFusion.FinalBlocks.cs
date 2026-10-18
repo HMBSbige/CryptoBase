@@ -89,7 +89,7 @@ internal static partial class AesGcmFusion
 			return associatedData.IsEmpty ? Vector128<byte>.Zero : Vector128.LoadPartialUnsafe(ref MemoryMarshal.GetReference(associatedData), 0, associatedData.Length);
 		}
 
-		hash.AppendPaddedSegmentsShort(associatedData);
+		hash.AppendPaddedSegmentShort(associatedData);
 		return Vector128<byte>.Zero;
 	}
 }

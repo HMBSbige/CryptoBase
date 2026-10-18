@@ -25,31 +25,16 @@ internal readonly struct GHashArmPrecomputedKey
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void AppendPaddedSegments(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second)
+	internal void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source)
 	{
-		if (first.IsEmpty)
-		{
-			first = second;
-			second = default;
-		}
-
-		if (first.Length is GHash.BlockSizeInBytes && second.IsEmpty)
-		{
-			Vector128<byte> block = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(first)) ^ accumulator);
-			GHashArm.GFMultiplyUnreduced(block, Key1, out Vector128<ulong> singleLow, out Vector128<ulong> singleHigh, out Vector128<ulong> singleMiddle);
-			accumulator = AdvSimd.Arm64.ReverseElementBits(GHashArm.ReduceSchoolbookProduct(singleLow, singleHigh, singleMiddle ^ singleLow ^ singleHigh));
-			return;
-		}
-
-		int remainingBlocks = (int)((GHash.GetPaddedLength(first.Length) + GHash.GetPaddedLength(second.Length)) / GHash.BlockSizeInBytes);
+		int remainingBlocks = (int)(GHash.GetPaddedLength(source.Length) / GHash.BlockSizeInBytes);
 		Debug.Assert(remainingBlocks is > 0 and <= 8);
 		ReadOnlySpan<Vector128<byte>> powers = MemoryMarshal.CreateReadOnlySpan(in Key1, 8).Slice(0, remainingBlocks);
 		Vector128<byte> initial = AdvSimd.Arm64.ReverseElementBits(accumulator);
 		Vector128<ulong> low = default;
 		Vector128<ulong> high = default;
 		Vector128<ulong> middle = default;
-		AccumulateSegment(first, powers, ref remainingBlocks, ref initial, ref low, ref high, ref middle);
-		AccumulateSegment(second, powers, ref remainingBlocks, ref initial, ref low, ref high, ref middle);
+		AccumulateSegment(source, powers, ref remainingBlocks, ref initial, ref low, ref high, ref middle);
 		accumulator = AdvSimd.Arm64.ReverseElementBits(GHashArm.ReduceSchoolbookProduct(low, high, middle ^ low ^ high));
 	}
 

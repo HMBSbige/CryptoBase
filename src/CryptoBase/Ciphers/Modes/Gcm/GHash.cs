@@ -60,24 +60,19 @@ internal ref struct GHash : IDisposable
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal void AppendPaddedSegmentsShort(scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second = default)
+	internal void AppendPaddedSegmentShort(scoped ReadOnlySpan<byte> source)
 	{
-		if (first.IsEmpty && second.IsEmpty)
+		if (GHashX86.IsSupported && GetPaddedLength(source.Length) <= Vector128ShortThreshold)
 		{
-			return;
+			GHashX86.AppendPaddedSegments(ref _accumulator, ref _key.GetVector128().Value, source, default, default);
 		}
-
-		if (GHashX86.IsSupported && GetPaddedLength(first.Length) + GetPaddedLength(second.Length) <= Vector128ShortThreshold)
+		else if (GHashArm.IsSupported && GetPaddedLength(source.Length) <= ArmShortThreshold)
 		{
-			GHashX86.AppendPaddedSegments(ref _accumulator, ref _key.GetVector128().Value, first, second, default);
-		}
-		else if (GHashArm.IsSupported && GetPaddedLength(first.Length) + GetPaddedLength(second.Length) <= ArmShortThreshold)
-		{
-			_key.GetArm().Value.AppendPaddedSegments(ref _accumulator, first, second);
+			_key.GetArm().Value.AppendPaddedSegment(ref _accumulator, source);
 		}
 		else
 		{
-			AppendPaddedSegments(ref _accumulator, ref _key, first, second, default);
+			AppendPaddedSegments(ref _accumulator, ref _key, source, default, default);
 		}
 	}
 
