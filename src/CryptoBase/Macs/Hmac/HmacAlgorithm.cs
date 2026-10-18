@@ -20,17 +20,8 @@ public sealed class HmacAlgorithm<THash> : IMacAlgorithm<HmacAlgorithm<THash>> w
 	public static HmacAlgorithm<THash> Create(ReadOnlySpan<byte> key)
 	{
 		HmacAlgorithm<THash> macAlgorithm = new();
-
-		try
-		{
-			macAlgorithm._state.Initialize(key, true);
-			return macAlgorithm;
-		}
-		catch
-		{
-			macAlgorithm.Dispose();
-			throw;
-		}
+		macAlgorithm._state.Initialize(key, true);
+		return macAlgorithm;
 	}
 
 	/// <inheritdoc />
