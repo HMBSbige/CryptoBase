@@ -3,7 +3,11 @@ namespace CryptoBase.Ciphers.Streams;
 internal static partial class ChaCha20Utils
 {
 	// One batch of the widest keystream kernel.
-	internal static int BatchLength => 64 * (Vector512.IsHardwareAccelerated ? 16 : Vector256.IsHardwareAccelerated || AdvSimd.Arm64.IsSupported ? 8 : Sse2.IsSupported ? 4 : 1);
+	internal static int BatchLength
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => 64 * (Vector512.IsHardwareAccelerated ? 16 : Vector256.IsHardwareAccelerated || AdvSimd.Arm64.IsSupported ? 8 : Sse2.IsSupported ? 4 : 1);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ref ulong GetCounterOriginal(ref uint state)
