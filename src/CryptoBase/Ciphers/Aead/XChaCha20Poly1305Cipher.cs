@@ -76,13 +76,11 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 		{
 			Debug.Assert(nonce.Length is XChaCha20Cipher.IVSize);
 
-			ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(nonce);
 			Span<uint> state = StateSpan;
 			Sigma32.CopyTo(state);
-			ChaCha20Utils.DeriveXChaCha20Key(state, MemoryMarshal.Cast<byte, uint>(_key.AsSpan()), ivSpan);
+			ChaCha20Utils.DeriveXChaCha20Key(ref StateRef, ref Unsafe.As<Vector256<byte>, byte>(ref _key), ref MemoryMarshal.GetReference(nonce));
 			state[13] = 0;
-			state[14] = ivSpan[4];
-			state[15] = ivSpan[5];
+			MemoryMarshal.Cast<byte, uint>(nonce.Slice(16, 8)).CopyTo(state.Slice(14));
 			SetCounter(0);
 		}
 

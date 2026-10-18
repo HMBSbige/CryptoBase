@@ -21,14 +21,12 @@ internal static partial class ChaCha20Utils
 		return ref Unsafe.Add(ref state, 12);
 	}
 
+	// Reads the 32-byte key and the first 16 nonce bytes; the state holds the constants in words 0-3 and receives the subkey in words 4-11.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static void DeriveXChaCha20Key(Span<uint> state, ReadOnlySpan<uint> key, ReadOnlySpan<uint> nonce)
+	internal static void DeriveXChaCha20Key(ref uint stateRef, ref byte key, ref byte nonce)
 	{
-		Debug.Assert(state.Length is 16 && key.Length is 8 && nonce.Length >= 4);
-
-		ref uint stateRef = ref MemoryMarshal.GetReference(state);
-		ref uint keyRef = ref MemoryMarshal.GetReference(key);
-		ref uint nonceRef = ref MemoryMarshal.GetReference(nonce);
+		ref uint keyRef = ref Unsafe.As<byte, uint>(ref key);
+		ref uint nonceRef = ref Unsafe.As<byte, uint>(ref nonce);
 		uint x00 = Unsafe.Add(ref stateRef, 0), x01 = Unsafe.Add(ref stateRef, 1), x02 = Unsafe.Add(ref stateRef, 2), x03 = Unsafe.Add(ref stateRef, 3);
 		uint x04 = Unsafe.Add(ref keyRef, 0), x05 = Unsafe.Add(ref keyRef, 1), x06 = Unsafe.Add(ref keyRef, 2), x07 = Unsafe.Add(ref keyRef, 3);
 		uint x08 = Unsafe.Add(ref keyRef, 4), x09 = Unsafe.Add(ref keyRef, 5), x10 = Unsafe.Add(ref keyRef, 6), x11 = Unsafe.Add(ref keyRef, 7);

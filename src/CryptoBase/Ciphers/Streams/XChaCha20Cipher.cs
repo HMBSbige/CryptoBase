@@ -22,13 +22,9 @@ public class XChaCha20Cipher : ChaCha20OriginalCipher
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
 		Span<uint> state = StateSpan;
-		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-
 		Sigma32.CopyTo(state);
-		ChaCha20Utils.DeriveXChaCha20Key(state, MemoryMarshal.Cast<byte, uint>(key), ivSpan);
-
-		state[14] = ivSpan[4];
-		state[15] = ivSpan[5];
+		ChaCha20Utils.DeriveXChaCha20Key(ref StateRef, ref MemoryMarshal.GetReference(key), ref MemoryMarshal.GetReference(iv));
+		MemoryMarshal.Cast<byte, uint>(iv.Slice(16, 8)).CopyTo(state.Slice(14));
 		SetCounter(0);
 	}
 }
