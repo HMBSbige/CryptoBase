@@ -52,13 +52,6 @@ internal static class VectorCreationExtensions
 
 	extension(Vector256)
 	{
-		// ToVector256Unsafe leaves the upper half undefined, but the shuffle reads only elements 0 and 1.
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static Vector256<T> Broadcast<T>(Vector128<T> value) where T : unmanaged
-		{
-			return Vector256.Shuffle(value.AsUInt64().ToVector256Unsafe(), Vector256.Create(0UL, 1UL, 0UL, 1UL)).As<ulong, T>();
-		}
-
 		// vinserti128 matches vperm2i128 and vshufi64x2 on Intel P-cores and has lower latency on AMD and Intel E-cores.
 		// The JIT copies right before taking its lower half while right is still live, so call ConcatUpper first when both halves are needed.
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
