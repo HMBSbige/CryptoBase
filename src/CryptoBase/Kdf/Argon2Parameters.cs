@@ -27,7 +27,7 @@ public readonly record struct Argon2Parameters
 		Parallelism = parallelism;
 	}
 
-	private const int MaxParallelism = (1 << 24) - 1;
+	internal const int MaxParallelism = (1 << 24) - 1;
 
 	/// <summary>
 	/// Gets the first recommended option of RFC 9106 section 4: t = 1, p = 4, and m = 2 GiB.
