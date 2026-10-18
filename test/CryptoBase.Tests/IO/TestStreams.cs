@@ -64,3 +64,17 @@ internal sealed class YieldingMemoryStream : LimitedReadMemoryStream
 		Write(buffer.Span);
 	}
 }
+
+/// <summary>A memory stream whose reads throw <see cref="IOException" />.</summary>
+internal sealed class FailingReadMemoryStream : MemoryStream
+{
+	public override int Read(byte[] buffer, int offset, int count)
+	{
+		throw new IOException("Read failed.");
+	}
+
+	public override int Read(Span<byte> buffer)
+	{
+		throw new IOException("Read failed.");
+	}
+}
