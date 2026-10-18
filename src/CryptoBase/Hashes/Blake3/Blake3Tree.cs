@@ -175,13 +175,13 @@ internal static class Blake3Tree
 
 		int rightCount = CompressSubtreeWide<TKernel>(input.Slice(leftLength), in key, chunkCounter + (ulong)(leftLength / ChunkLength), flags, chainingValues.Slice(leftWidth * OutLength));
 
-		if (leftCount is 1)
+		if (leftWidth is 1)
 		{
 			chainingValues.Slice(0, 2 * OutLength).CopyTo(output);
 			return 2;
 		}
 
-		return CompressParents<TKernel>(chainingValues, leftCount + rightCount, in key, flags, output);
+		return CompressParents<TKernel>(chainingValues, leftWidth + rightCount, in key, flags, output);
 	}
 
 	private static int CompressChunks<TKernel>(ReadOnlySpan<byte> input, ref readonly InlineArray8<uint> key, ulong chunkCounter, uint flags, Span<byte> output) where TKernel : IBlake3Kernel
