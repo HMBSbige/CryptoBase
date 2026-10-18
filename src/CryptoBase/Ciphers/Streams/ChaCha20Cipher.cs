@@ -26,17 +26,17 @@ public class ChaCha20Cipher : SnuffleCipher
 	/// <param name="iv">The 96-bit nonce.</param>
 	public ChaCha20Cipher(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		Init(key, iv);
+		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
+
+		InitializeKey(StateSpan, key);
+		InitializeNonce(iv);
 	}
 
 	/// <summary>Initializes a new instance whose nonce must be set by <see cref="InitializeNonce" /> before use.</summary>
 	internal ChaCha20Cipher(ReadOnlySpan<byte> key)
 	{
-		Debug.Assert(key.Length is KeySize);
-
-		Span<uint> state = StateSpan;
-		Sigma32.CopyTo(state);
-		MemoryMarshal.Cast<byte, uint>(key).CopyTo(state.Slice(4));
+		InitializeKey(StateSpan, key);
 	}
 
 	/// <summary>Initializes a new instance whose whole state must be set by the derived class before use.</summary>
@@ -60,30 +60,22 @@ public class ChaCha20Cipher : SnuffleCipher
 
 		Unsafe.SkipInit(out InlineArray16<uint> state);
 		Span<uint> stateSpan = state;
-		Sigma32.CopyTo(stateSpan);
-		MemoryMarshal.Cast<byte, uint>(key).CopyTo(stateSpan.Slice(4));
+		InitializeKey(stateSpan, key);
 		stateSpan[12] = counter;
-		MemoryMarshal.Cast<byte, uint>(nonce).CopyTo(stateSpan.Slice(13));
+		MemoryMarshal.Cast<byte, uint>(nonce.Slice(0, IVSize)).CopyTo(stateSpan.Slice(13));
 
 		ChaCha20Utils.UpdateKeyStream(stateSpan, destination);
 		state.ZeroMemory();
 	}
 
-	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+	// Slicing the key and nonce to their validated lengths gives the copies constant sizes, which the JIT unrolls instead of calling Memmove.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void InitializeKey(Span<uint> state, ReadOnlySpan<byte> key)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
-		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
+		Debug.Assert(key.Length is KeySize);
 
-		Span<uint> state = StateSpan;
-		state[0] = Sigma32[0];
-		state[1] = Sigma32[1];
-		state[2] = Sigma32[2];
-		state[3] = Sigma32[3];
-
-		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
-		keySpan.CopyTo(state.Slice(4));
-
-		InitializeNonce(iv);
+		Sigma32.CopyTo(state);
+		MemoryMarshal.Cast<byte, uint>(key.Slice(0, KeySize)).CopyTo(state.Slice(4));
 	}
 
 	/// <inheritdoc />
@@ -139,11 +131,7 @@ public class ChaCha20Cipher : SnuffleCipher
 	{
 		Debug.Assert(nonce.Length is IVSize);
 
-		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(nonce);
-		Span<uint> state = StateSpan;
-		state[13] = ivSpan[0];
-		state[14] = ivSpan[1];
-		state[15] = ivSpan[2];
+		MemoryMarshal.Cast<byte, uint>(nonce.Slice(0, IVSize)).CopyTo(StateSpan.Slice(13));
 		SetCounter(0);
 	}
 
