@@ -29,10 +29,10 @@ public partial struct Sha1HashAlgorithm
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ProcessBlockArm64(ref Vector128<uint> stateAbcd, ref Vector64<uint> stateE, ref byte block)
 	{
-		Vector128<uint> words0 = LoadArm64Words(ref block);
-		Vector128<uint> words1 = LoadArm64Words(ref Unsafe.Add(ref block, 16));
-		Vector128<uint> words2 = LoadArm64Words(ref Unsafe.Add(ref block, 32));
-		Vector128<uint> words3 = LoadArm64Words(ref Unsafe.Add(ref block, 48));
+		Vector128<uint> words0 = HashCoreUtils.LoadBigEndianWords(ref block, 0);
+		Vector128<uint> words1 = HashCoreUtils.LoadBigEndianWords(ref block, 16);
+		Vector128<uint> words2 = HashCoreUtils.LoadBigEndianWords(ref block, 32);
+		Vector128<uint> words3 = HashCoreUtils.LoadBigEndianWords(ref block, 48);
 		Vector128<uint> savedStateAbcd = stateAbcd;
 		Vector64<uint> savedStateE = stateE;
 		Vector128<uint> chooseConstants = Vector128.Create(ChooseConstant);
@@ -82,12 +82,6 @@ public partial struct Sha1HashAlgorithm
 
 		stateAbcd += savedStateAbcd;
 		stateE += savedStateE;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> LoadArm64Words(ref byte source)
-	{
-		return Vector128.LoadUnsafe(ref source).ReverseEndianness32().AsUInt32();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

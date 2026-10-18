@@ -26,10 +26,10 @@ internal partial struct Sha256Core
 
 		do
 		{
-			Vector128<uint> words0 = LoadArm64Words(ref block);
-			Vector128<uint> words1 = LoadArm64Words(ref Unsafe.Add(ref block, 16));
-			Vector128<uint> words2 = LoadArm64Words(ref Unsafe.Add(ref block, 32));
-			Vector128<uint> words3 = LoadArm64Words(ref Unsafe.Add(ref block, 48));
+			Vector128<uint> words0 = HashCoreUtils.LoadBigEndianWords(ref block, 0);
+			Vector128<uint> words1 = HashCoreUtils.LoadBigEndianWords(ref block, 16);
+			Vector128<uint> words2 = HashCoreUtils.LoadBigEndianWords(ref block, 32);
+			Vector128<uint> words3 = HashCoreUtils.LoadBigEndianWords(ref block, 48);
 			uint a = h0;
 			uint b = h1;
 			uint c = h2;

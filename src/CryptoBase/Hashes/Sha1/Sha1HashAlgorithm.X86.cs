@@ -23,10 +23,10 @@ public partial struct Sha1HashAlgorithm
 			uint savedC = c;
 			uint savedD = d;
 			uint savedE = e;
-			Vector128<uint> words0 = LoadX86Words(ref blockRef);
-			Vector128<uint> words1 = LoadX86Words(ref Unsafe.Add(ref blockRef, 16));
-			Vector128<uint> words2 = LoadX86Words(ref Unsafe.Add(ref blockRef, 32));
-			Vector128<uint> words3 = LoadX86Words(ref Unsafe.Add(ref blockRef, 48));
+			Vector128<uint> words0 = HashCoreUtils.LoadBigEndianWords(ref blockRef, 0);
+			Vector128<uint> words1 = HashCoreUtils.LoadBigEndianWords(ref blockRef, 16);
+			Vector128<uint> words2 = HashCoreUtils.LoadBigEndianWords(ref blockRef, 32);
+			Vector128<uint> words3 = HashCoreUtils.LoadBigEndianWords(ref blockRef, 48);
 			StoreRoundInputsX86(words0, ChooseConstant, ref roundInputs[0]);
 			StoreRoundInputsX86(words1, ChooseConstant, ref roundInputs[4]);
 			StoreRoundInputsX86(words2, ChooseConstant, ref roundInputs[8]);
@@ -102,13 +102,6 @@ public partial struct Sha1HashAlgorithm
 		hashAlgorithm._h2 = c;
 		hashAlgorithm._h3 = d;
 		hashAlgorithm._h4 = e;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> LoadX86Words(ref byte source)
-	{
-		Vector128<byte> words = Vector128.LoadUnsafe(ref source);
-		return words.ReverseEndianness32().AsUInt32();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

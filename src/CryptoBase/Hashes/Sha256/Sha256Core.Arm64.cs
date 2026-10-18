@@ -83,12 +83,6 @@ internal partial struct Sha256Core
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> LoadArm64Words(ref byte source)
-	{
-		return Vector128.LoadUnsafe(ref source).ReverseEndianness32().AsUInt32();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe (Vector128<uint>, Vector128<uint>) LoadArm64RoundConstants(ref uint source, int offset)
 	{
 		return AdvSimd.Arm64.LoadPairVector128((uint*)Unsafe.AsPointer(ref Unsafe.Add(ref source, offset)));

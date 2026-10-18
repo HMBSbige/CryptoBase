@@ -22,10 +22,10 @@ public partial struct SM3HashAlgorithm
 
 		do
 		{
-			Vector128<uint> q0 = LoadWordsX86(ref block0, 0);
-			Vector128<uint> q1 = LoadWordsX86(ref block0, 16);
-			Vector128<uint> q2 = LoadWordsX86(ref block0, 32);
-			Vector128<uint> q3 = LoadWordsX86(ref block0, 48);
+			Vector128<uint> q0 = HashCoreUtils.LoadBigEndianWords(ref block0, 0);
+			Vector128<uint> q1 = HashCoreUtils.LoadBigEndianWords(ref block0, 16);
+			Vector128<uint> q2 = HashCoreUtils.LoadBigEndianWords(ref block0, 32);
+			Vector128<uint> q3 = HashCoreUtils.LoadBigEndianWords(ref block0, 48);
 
 			Round4EarlyX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, q0, q0 ^ q1, 0);
 			Round2EarlyX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, q1, q1 ^ q2);
@@ -91,12 +91,6 @@ public partial struct SM3HashAlgorithm
 			block0 = ref Unsafe.Add(ref block0, BlockSizeInBytes);
 			remaining -= BlockSizeInBytes;
 		} while (remaining is not 0);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> LoadWordsX86(ref byte source, nuint byteOffset)
-	{
-		return Vector128.LoadUnsafe(ref source, byteOffset).ReverseEndianness32().AsUInt32();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

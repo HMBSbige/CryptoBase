@@ -12,6 +12,12 @@ internal static class HashCoreUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static Vector128<uint> LoadBigEndianWords(ref byte source, nuint byteOffset)
+	{
+		return Vector128.LoadUnsafe(ref source, byteOffset).ReverseEndianness32().AsUInt32();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void LoadFourBigEndianWords(out uint destination, ref byte source)
 	{
 		destination = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref source));
