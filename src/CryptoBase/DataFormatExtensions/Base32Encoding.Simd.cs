@@ -118,21 +118,9 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static bool IsAvx512VbmiSupported()
-	{
-		return Avx512Vbmi.IsSupported && Avx512BW.IsSupported;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static bool IsAvx512VbmiVlSupported()
-	{
-		return Avx512Vbmi.VL.IsSupported && Avx512BW.VL.IsSupported;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool UseAvx512Vbmi()
 	{
-		return Vector512.IsHardwareAccelerated && IsAvx512VbmiSupported();
+		return Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -184,7 +172,7 @@ public sealed partial class Base32Encoding
 	{
 		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
 
-		if (IsAvx512VbmiVlSupported())
+		if (Avx512Vbmi.VL.IsSupported)
 		{
 			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 			{
@@ -245,7 +233,7 @@ public sealed partial class Base32Encoding
 			return 0;
 		}
 
-		if (IsAvx512VbmiVlSupported())
+		if (Avx512Vbmi.VL.IsSupported)
 		{
 			return EncodeCharsAvx512VbmiVl256Custom(source, destination);
 		}
@@ -263,9 +251,9 @@ public sealed partial class Base32Encoding
 		return path switch
 		{
 			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeAdvSimd(source, destination, 0, 0, alphabet),
-			Base32SimdPath.Avx512Vbmi when IsAvx512VbmiSupported() => EncodeCharsAvx512Vbmi(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl256 when IsAvx512VbmiVlSupported() => EncodeCharsAvx512VbmiVl256(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
+			Base32SimdPath.Avx512Vbmi when Avx512Vbmi.IsSupported => EncodeCharsAvx512Vbmi(source, destination, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl256 when Avx512Vbmi.VL.IsSupported => EncodeCharsAvx512VbmiVl256(source, destination, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl128 when Avx512Vbmi.VL.IsSupported => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
 			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeAvx512Bw(source, destination, alphabetKind),
 			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeAvx2(source, destination, alphabetKind),
 			Base32SimdPath.Ssse3 when Ssse3.IsSupported => EncodeSsse3(source, destination, alphabetKind),
@@ -303,7 +291,7 @@ public sealed partial class Base32Encoding
 
 		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
 
-		if (IsAvx512VbmiVlSupported())
+		if (Avx512Vbmi.VL.IsSupported)
 		{
 			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 			{
@@ -354,7 +342,7 @@ public sealed partial class Base32Encoding
 	{
 		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
 
-		if (IsAvx512VbmiVlSupported())
+		if (Avx512Vbmi.VL.IsSupported)
 		{
 			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 			{
@@ -415,7 +403,7 @@ public sealed partial class Base32Encoding
 			return 0;
 		}
 
-		if (IsAvx512VbmiVlSupported())
+		if (Avx512Vbmi.VL.IsSupported)
 		{
 			return EncodeUtf8Avx512VbmiVl256Custom(source, destination);
 		}
@@ -433,9 +421,9 @@ public sealed partial class Base32Encoding
 		return path switch
 		{
 			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeAdvSimd(source, destination, 0, 0, alphabet),
-			Base32SimdPath.Avx512Vbmi when IsAvx512VbmiSupported() => EncodeUtf8Avx512Vbmi(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl256 when IsAvx512VbmiVlSupported() => EncodeUtf8Avx512VbmiVl256(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
+			Base32SimdPath.Avx512Vbmi when Avx512Vbmi.IsSupported => EncodeUtf8Avx512Vbmi(source, destination, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl256 when Avx512Vbmi.VL.IsSupported => EncodeUtf8Avx512VbmiVl256(source, destination, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl128 when Avx512Vbmi.VL.IsSupported => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
 			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeAvx512Bw(source, destination, alphabetKind),
 			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeAvx2(source, destination, alphabetKind),
 			Base32SimdPath.Ssse3 when Ssse3.IsSupported => EncodeSsse3(source, destination, alphabetKind),
@@ -494,7 +482,7 @@ public sealed partial class Base32Encoding
 		if (alphabetKind is CustomAlphabetKind)
 		{
 			// No narrower custom-alphabet decoder exists, so this ignores Vector512.IsHardwareAccelerated.
-			return IsAvx512VbmiSupported()
+			return Avx512Vbmi.IsSupported
 				? DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind)
 				: DecodeScalar(source, destination, fullLength);
 		}
@@ -504,7 +492,7 @@ public sealed partial class Base32Encoding
 			return DecodeAdvSimd(source, destination, fullLength, alphabetKind);
 		}
 
-		if (IsAvx512VbmiVlSupported())
+		if (Avx512Vbmi.VL.IsSupported)
 		{
 			if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 			{
@@ -554,9 +542,9 @@ public sealed partial class Base32Encoding
 		return path switch
 		{
 			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => DecodeAdvSimd(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512Vbmi when IsAvx512VbmiSupported() => DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl256 when IsAvx512VbmiVlSupported() => DecodeAvx512VbmiVl256(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when IsAvx512VbmiVlSupported() => DecodeVector128(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Avx512Vbmi when Avx512Vbmi.IsSupported => DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl256 when Avx512Vbmi.VL.IsSupported => DecodeAvx512VbmiVl256(source, destination, fullLength, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl128 when Avx512Vbmi.VL.IsSupported => DecodeVector128(source, destination, fullLength, alphabetKind),
 			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => DecodeAvx512(source, destination, fullLength, alphabetKind),
 			Base32SimdPath.Avx2 when Avx2.IsSupported => DecodeAvx2(source, destination, fullLength, alphabetKind),
 			Base32SimdPath.Ssse3 when Ssse3.IsSupported => DecodeVector128(source, destination, fullLength, alphabetKind),
@@ -583,7 +571,7 @@ public sealed partial class Base32Encoding
 
 		if (alphabetKind is CustomAlphabetKind)
 		{
-			return fullRemaining >= X86DecodeVector512Threshold && IsAvx512VbmiSupported()
+			return fullRemaining >= X86DecodeVector512Threshold && Avx512Vbmi.IsSupported
 				? DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind)
 				: DecodeScalar(source, destination, fullLength);
 		}
@@ -595,7 +583,7 @@ public sealed partial class Base32Encoding
 				: DecodeScalar(source, destination, fullLength);
 		}
 
-		if (IsAvx512VbmiVlSupported())
+		if (Avx512Vbmi.VL.IsSupported)
 		{
 			if (fullRemaining >= X86DecodeVector512Threshold && UseAvx512Vbmi())
 			{

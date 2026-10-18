@@ -229,7 +229,7 @@ public sealed partial class Base32Encoding
 		}
 		else if
 		(
-			source.Length >= (IsAvx512VbmiVlSupported() ? X86EncodeCharsSimdThreshold : EncodeShortSimdThreshold)
+			source.Length >= (Avx512Vbmi.VL.IsSupported ? X86EncodeCharsSimdThreshold : EncodeShortSimdThreshold)
 			&& destination.Length >= 16
 			&& (_alphabetKind is not CustomAlphabetKind || AdvSimd.IsSupported)
 		)
@@ -251,7 +251,7 @@ public sealed partial class Base32Encoding
 			sourceOffset += simdConsumed;
 			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
-		else if (source.Length >= X86EncodeVbmiVl128Threshold && destination.Length >= 16 && IsAvx512VbmiVlSupported())
+		else if (source.Length >= X86EncodeVbmiVl128Threshold && destination.Length >= 16 && Avx512Vbmi.VL.IsSupported)
 		{
 			// Built-in and custom alphabets share one inlined copy: every instance keeps its alphabet in _alphabet.
 			sourceOffset = EncodeAvx512VbmiVl128Short(source, destination, Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
@@ -316,7 +316,7 @@ public sealed partial class Base32Encoding
 			_alphabetKind is CustomAlphabetKind
 			&& source.Length >= X86EncodeVbmiVl128Threshold
 			&& destination.Length >= 16
-			&& IsAvx512VbmiVlSupported()
+			&& Avx512Vbmi.VL.IsSupported
 		)
 		{
 			simdConsumed = EncodeAvx512VbmiVl128Short(source, destination, Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
