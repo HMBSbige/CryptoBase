@@ -85,7 +85,7 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	protected override void UpdateKeyStream()
 	{
-		ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
+		ChaCha20Utils.UpdateKeyStream(StateSpan, KeyStreamSpan);
 	}
 
 	/// <summary>Sets the block counter and resets the byte offset within the block to zero.</summary>

@@ -41,7 +41,7 @@ public class XSalsa20Cipher : Salsa20Cipher
 		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
 		ivSpan.Slice(0, 4).CopyTo(state.Slice(6));
 
-		Salsa20Utils.SalsaRound(Rounds, state);
+		Salsa20Utils.SalsaRound(state);
 
 		state[1] = state[0];
 		state[2] = state[5];

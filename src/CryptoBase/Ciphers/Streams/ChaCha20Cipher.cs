@@ -65,7 +65,7 @@ public class ChaCha20Cipher : SnuffleCipher
 		stateSpan[12] = counter;
 		MemoryMarshal.Cast<byte, uint>(nonce).CopyTo(stateSpan.Slice(13));
 
-		ChaCha20Utils.UpdateKeyStream(Rounds, stateSpan, destination);
+		ChaCha20Utils.UpdateKeyStream(stateSpan, destination);
 		state.ZeroMemory();
 	}
 
@@ -105,7 +105,7 @@ public class ChaCha20Cipher : SnuffleCipher
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	protected override void UpdateKeyStream()
 	{
-		ChaCha20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
+		ChaCha20Utils.UpdateKeyStream(StateSpan, KeyStreamSpan);
 	}
 
 	// AEAD messages stay far below 2^32 blocks, so the counter never carries into nonce word 13 here.

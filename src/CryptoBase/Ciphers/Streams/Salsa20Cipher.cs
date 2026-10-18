@@ -99,6 +99,6 @@ public class Salsa20Cipher : SnuffleCipher
 	/// <inheritdoc />
 	protected override void UpdateKeyStream()
 	{
-		Salsa20Utils.UpdateKeyStream(Rounds, StateSpan, KeyStreamSpan);
+		Salsa20Utils.UpdateKeyStream(StateSpan, KeyStreamSpan);
 	}
 }

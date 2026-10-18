@@ -29,7 +29,7 @@ internal static partial class ChaCha20Utils
 		uint x04 = Unsafe.Add(ref keyRef, 0), x05 = Unsafe.Add(ref keyRef, 1), x06 = Unsafe.Add(ref keyRef, 2), x07 = Unsafe.Add(ref keyRef, 3);
 		uint x08 = Unsafe.Add(ref keyRef, 4), x09 = Unsafe.Add(ref keyRef, 5), x10 = Unsafe.Add(ref keyRef, 6), x11 = Unsafe.Add(ref keyRef, 7);
 		uint x12 = Unsafe.Add(ref nonceRef, 0), x13 = Unsafe.Add(ref nonceRef, 1), x14 = Unsafe.Add(ref nonceRef, 2), x15 = Unsafe.Add(ref nonceRef, 3);
-		PermuteScalar(SnuffleCipher.Rounds, ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
+		PermuteScalar(ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
 
 		Unsafe.Add(ref stateRef, 4) = x00;
 		Unsafe.Add(ref stateRef, 5) = x01;
@@ -42,7 +42,7 @@ internal static partial class ChaCha20Utils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void UpdateKeyStream(in int rounds, in ReadOnlySpan<uint> state, in Span<byte> keyStream)
+	public static void UpdateKeyStream(in ReadOnlySpan<uint> state, in Span<byte> keyStream)
 	{
 		Debug.Assert(state.Length is 16 && keyStream.Length is 64);
 
@@ -51,7 +51,7 @@ internal static partial class ChaCha20Utils
 		uint x04 = Unsafe.Add(ref stateRef, 4), x05 = Unsafe.Add(ref stateRef, 5), x06 = Unsafe.Add(ref stateRef, 6), x07 = Unsafe.Add(ref stateRef, 7);
 		uint x08 = Unsafe.Add(ref stateRef, 8), x09 = Unsafe.Add(ref stateRef, 9), x10 = Unsafe.Add(ref stateRef, 10), x11 = Unsafe.Add(ref stateRef, 11);
 		uint x12 = Unsafe.Add(ref stateRef, 12), x13 = Unsafe.Add(ref stateRef, 13), x14 = Unsafe.Add(ref stateRef, 14), x15 = Unsafe.Add(ref stateRef, 15);
-		PermuteScalar(rounds, ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
+		PermuteScalar(ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
 
 		ref byte destination = ref MemoryMarshal.GetReference(keyStream);
 		SnuffleCipher.WriteKeyStreamRow(ref destination, x00 + Unsafe.Add(ref stateRef, 0), x01 + Unsafe.Add(ref stateRef, 1), x02 + Unsafe.Add(ref stateRef, 2), x03 + Unsafe.Add(ref stateRef, 3));
@@ -63,14 +63,13 @@ internal static partial class ChaCha20Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PermuteScalar
 	(
-		int rounds,
 		ref uint x00, ref uint x01, ref uint x02, ref uint x03,
 		ref uint x04, ref uint x05, ref uint x06, ref uint x07,
 		ref uint x08, ref uint x09, ref uint x10, ref uint x11,
 		ref uint x12, ref uint x13, ref uint x14, ref uint x15
 	)
 	{
-		for (int round = 0; round < rounds; round += 2)
+		for (int round = 0; round < SnuffleCipher.Rounds; round += 2)
 		{
 			x00 += x04;
 			x01 += x05;

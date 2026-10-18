@@ -25,7 +25,7 @@ internal static partial class ChaCha20Utils
 			uint x14 = Unsafe.Add(ref stateRef, 14);
 			uint x15 = Unsafe.Add(ref stateRef, 15);
 
-			PermuteScalar(SnuffleCipher.Rounds, ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
+			PermuteScalar(ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
 
 			Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 0), x00 + Unsafe.Add(ref stateRef, 0) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref input, 0)));
 			Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 4), x01 + Unsafe.Add(ref stateRef, 1) ^ Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref input, 4)));
