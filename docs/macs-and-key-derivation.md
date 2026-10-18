@@ -91,6 +91,32 @@ Hkdf.Extract<Sha256HashAlgorithm>(inputKeyMaterial, salt, pseudorandomKey);
 Hkdf.Expand<Sha256HashAlgorithm>(pseudorandomKey, outputKeyMaterial, info);
 ```
 
+## TLS 1.2 PRF
+
+The cipher suite selects the hash; the cipher suites defined in RFC 5246 use SHA-256. The overload with two seed parts takes `seed1 || seed2` without concatenating them.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Hashes.Sha256;
+using CryptoBase.Kdf;
+
+byte[] preMasterSecret = RandomNumberGenerator.GetBytes(48);
+byte[] clientRandom = RandomNumberGenerator.GetBytes(32);
+byte[] serverRandom = RandomNumberGenerator.GetBytes(32);
+byte[] masterSecret = new byte[48];
+byte[] keyBlock = new byte[128];
+
+// The master secret uses the seed client_random || server_random.
+Tls12Prf.DeriveKey<Sha256HashAlgorithm>(preMasterSecret, "master secret"u8, clientRandom, serverRandom, masterSecret);
+
+// The key block reverses the order to server_random || client_random.
+Tls12Prf.DeriveKey<Sha256HashAlgorithm>(masterSecret, "key expansion"u8, serverRandom, clientRandom, keyBlock);
+
+// The extended master secret from RFC 7627 uses the session hash as the seed.
+byte[] sessionHash = SHA256.HashData("handshake messages"u8);
+Tls12Prf.DeriveKey<Sha256HashAlgorithm>(preMasterSecret, "extended master secret"u8, sessionHash, masterSecret);
+```
+
 ## BLAKE3 key derivation
 
 ```csharp
