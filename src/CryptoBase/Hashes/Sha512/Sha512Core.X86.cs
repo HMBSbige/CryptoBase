@@ -2,8 +2,6 @@ namespace CryptoBase.Hashes.Sha512;
 
 internal partial struct Sha512Core
 {
-	private static readonly Vector256<byte> BigEndianShuffle256 = Vector256.Create(VectorEndianExtensions.ReverseEndianness64Mask128);
-
 	private void ProcessBlocksAvx2(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Avx2.IsSupported);
@@ -44,18 +42,19 @@ internal partial struct Sha512Core
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref byte sourceEnd = ref Unsafe.Add(ref sourceRef, (nuint)source.Length);
 		ref ulong schedule10 = ref schedule1[0];
+		Vector256<byte> reverseEndianness64 = Vector256.Create(VectorEndianExtensions.ReverseEndianness64Mask128);
 
 		do
 		{
 			ref ulong roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
-			Vector256<ulong> words0 = LoadWordPairAvx2(ref sourceRef, 0);
-			Vector256<ulong> words1 = LoadWordPairAvx2(ref sourceRef, 16);
-			Vector256<ulong> words2 = LoadWordPairAvx2(ref sourceRef, 32);
-			Vector256<ulong> words3 = LoadWordPairAvx2(ref sourceRef, 48);
-			Vector256<ulong> words4 = LoadWordPairAvx2(ref sourceRef, 64);
-			Vector256<ulong> words5 = LoadWordPairAvx2(ref sourceRef, 80);
-			Vector256<ulong> words6 = LoadWordPairAvx2(ref sourceRef, 96);
-			Vector256<ulong> words7 = LoadWordPairAvx2(ref sourceRef, 112);
+			Vector256<ulong> words0 = LoadWordPairAvx2(ref sourceRef, 0, reverseEndianness64);
+			Vector256<ulong> words1 = LoadWordPairAvx2(ref sourceRef, 16, reverseEndianness64);
+			Vector256<ulong> words2 = LoadWordPairAvx2(ref sourceRef, 32, reverseEndianness64);
+			Vector256<ulong> words3 = LoadWordPairAvx2(ref sourceRef, 48, reverseEndianness64);
+			Vector256<ulong> words4 = LoadWordPairAvx2(ref sourceRef, 64, reverseEndianness64);
+			Vector256<ulong> words5 = LoadWordPairAvx2(ref sourceRef, 80, reverseEndianness64);
+			Vector256<ulong> words6 = LoadWordPairAvx2(ref sourceRef, 96, reverseEndianness64);
+			Vector256<ulong> words7 = LoadWordPairAvx2(ref sourceRef, 112, reverseEndianness64);
 			ulong a = _h0;
 			ulong b = _h1;
 			ulong c = _h2;
@@ -206,10 +205,10 @@ internal partial struct Sha512Core
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<ulong> LoadWordPairAvx2(ref byte source, nuint offset)
+	private static Vector256<ulong> LoadWordPairAvx2(ref byte source, nuint offset, Vector256<byte> reverseEndianness64)
 	{
 		Vector256<byte> words = Vector256.Create(Vector128.LoadUnsafe(ref source, offset), Vector128.LoadUnsafe(ref source, BlockSizeInBytes + offset));
-		return Avx2.Shuffle(words, BigEndianShuffle256).AsUInt64();
+		return Avx2.Shuffle(words, reverseEndianness64).AsUInt64();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
