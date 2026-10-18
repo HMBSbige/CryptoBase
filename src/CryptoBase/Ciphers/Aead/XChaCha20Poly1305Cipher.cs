@@ -68,19 +68,18 @@ public sealed class XChaCha20Poly1305Cipher : IAeadCipher<XChaCha20Poly1305Ciphe
 
 		internal SubkeyCipher(ReadOnlySpan<byte> key)
 		{
+			Sigma32.CopyTo(StateSpan);
 			_key = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(key));
 		}
 
 		/// <summary>Derives the subkey for <paramref name="nonce" /> and resets the block counter to zero.</summary>
+		/// <remarks>Words 0-3 keep the constants and word 13 stays zero because AEAD messages never carry the counter into it.</remarks>
 		internal void InitializeXChaCha20Nonce(ReadOnlySpan<byte> nonce)
 		{
 			Debug.Assert(nonce.Length is XChaCha20Cipher.IVSize);
 
-			Span<uint> state = StateSpan;
-			Sigma32.CopyTo(state);
 			ChaCha20Utils.DeriveXChaCha20Key(ref StateRef, ref Unsafe.As<Vector256<byte>, byte>(ref _key), ref MemoryMarshal.GetReference(nonce));
-			state[13] = 0;
-			MemoryMarshal.Cast<byte, uint>(nonce.Slice(16, 8)).CopyTo(state.Slice(14));
+			MemoryMarshal.Cast<byte, uint>(nonce.Slice(16, 8)).CopyTo(StateSpan.Slice(14));
 			SetCounter(0);
 		}
 
