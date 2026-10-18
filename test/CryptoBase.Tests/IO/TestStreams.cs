@@ -81,6 +81,33 @@ internal sealed class FailingReadMemoryStream : MemoryStream
 	}
 }
 
+/// <summary>A memory stream whose reads past the end fill the buffer, as a failing decoder may, and then throw <see cref="IOException" />.</summary>
+internal sealed class FailingAtEndMemoryStream : MemoryStream
+{
+	public const byte Garbage = 0x5A;
+
+	public FailingAtEndMemoryStream(byte[] buffer) : base(buffer, false)
+	{
+	}
+
+	public override int Read(Span<byte> buffer)
+	{
+		if (Position < Length)
+		{
+			return base.Read(buffer);
+		}
+
+		buffer.Fill(Garbage);
+		throw new IOException("Read failed.");
+	}
+
+	public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+	{
+		await Task.Yield();
+		return Read(buffer.Span);
+	}
+}
+
 /// <summary>The streams that a disposed algorithm must reject, of which all but the last give the algorithm no data.</summary>
 public enum AppendSourceKind
 {
