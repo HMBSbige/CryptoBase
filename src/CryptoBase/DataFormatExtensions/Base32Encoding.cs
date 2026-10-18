@@ -46,7 +46,6 @@ public sealed partial class Base32Encoding
 
 		_padding = (byte)padding;
 		(_alphabet, _decodeTable) = CreateTables(alphabet, _padding);
-		_omitPadding = false;
 		_alphabetKind = alphabet switch
 		{
 			Rfc4648Alphabet => Rfc4648AlphabetKind,
