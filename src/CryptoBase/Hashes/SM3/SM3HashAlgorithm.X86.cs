@@ -27,7 +27,7 @@ public partial struct SM3HashAlgorithm
 			Vector128<uint> q2 = HashCoreUtils.LoadBigEndianWords(ref block0, 32);
 			Vector128<uint> q3 = HashCoreUtils.LoadBigEndianWords(ref block0, 48);
 
-			Round4EarlyX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, q0, q0 ^ q1, 0);
+			Round4EarlyX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, q0, q0 ^ q1);
 			Round2EarlyX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, q1, q1 ^ q2);
 
 			Vector128<uint> w0 = q0.RotateWordsLeft(2);
@@ -76,7 +76,7 @@ public partial struct SM3HashAlgorithm
 			}
 
 			Vector128<uint> words60 = WindowX86(w2, w3);
-			Round3LateX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, words60, words60 ^ w4, 60);
+			Round3LateX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, words60, words60 ^ w4);
 			RoundLateX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, words60.GetElement(3), words60.GetElement(3) ^ w5.GetElement(0), RoundConstants[63]);
 
 			hashAlgorithm._v0 = a ^= hashAlgorithm._v0;
@@ -146,20 +146,19 @@ public partial struct SM3HashAlgorithm
 	private static void Round4EarlyX86
 	(
 		ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h,
-		Vector128<uint> words, Vector128<uint> mixed,
-		int round
+		Vector128<uint> words, Vector128<uint> mixed
 	)
 	{
-		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, words.GetElement(0), mixed.GetElement(0), RoundConstants[round], out h);
+		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, words.GetElement(0), mixed.GetElement(0), RoundConstants[0], out h);
 		b = BitOperations.RotateLeft(b, 9);
 		f = BitOperations.RotateLeft(f, 19);
-		c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, words.GetElement(1), mixed.GetElement(1), RoundConstants[round + 1], out g);
+		c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, words.GetElement(1), mixed.GetElement(1), RoundConstants[1], out g);
 		a = BitOperations.RotateLeft(a, 9);
 		e = BitOperations.RotateLeft(e, 19);
-		b = RoundSoftwareEarly(c, d, a, b, g, h, e, f, words.GetElement(2), mixed.GetElement(2), RoundConstants[round + 2], out f);
+		b = RoundSoftwareEarly(c, d, a, b, g, h, e, f, words.GetElement(2), mixed.GetElement(2), RoundConstants[2], out f);
 		d = BitOperations.RotateLeft(d, 9);
 		h = BitOperations.RotateLeft(h, 19);
-		a = RoundSoftwareEarly(b, c, d, a, f, g, h, e, words.GetElement(3), mixed.GetElement(3), RoundConstants[round + 3], out e);
+		a = RoundSoftwareEarly(b, c, d, a, f, g, h, e, words.GetElement(3), mixed.GetElement(3), RoundConstants[3], out e);
 		c = BitOperations.RotateLeft(c, 9);
 		g = BitOperations.RotateLeft(g, 19);
 	}
@@ -246,21 +245,20 @@ public partial struct SM3HashAlgorithm
 	private static void Round3LateX86
 	(
 		ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h,
-		Vector128<uint> words, Vector128<uint> mixed,
-		int round
+		Vector128<uint> words, Vector128<uint> mixed
 	)
 	{
 		Vector128<ulong> packed01 = Sse2.UnpackLow(words, mixed).AsUInt64();
 		ulong packedRound = packed01.ToScalar();
-		d = RoundSoftwareLate(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round], out h);
+		d = RoundSoftwareLate(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[60], out h);
 		b = BitOperations.RotateLeft(b, 9);
 		f = BitOperations.RotateLeft(f, 19);
 		packedRound = packed01.GetElement(1);
-		c = RoundSoftwareLate(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 1], out g);
+		c = RoundSoftwareLate(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[61], out g);
 		a = BitOperations.RotateLeft(a, 9);
 		e = BitOperations.RotateLeft(e, 19);
 		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
-		b = RoundSoftwareLate(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 2], out f);
+		b = RoundSoftwareLate(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[62], out f);
 		d = BitOperations.RotateLeft(d, 9);
 		h = BitOperations.RotateLeft(h, 19);
 		(a, b, c, d) = (b, c, d, a);

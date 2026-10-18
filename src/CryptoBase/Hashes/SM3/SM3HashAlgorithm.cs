@@ -316,14 +316,13 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint ExpandSoftware(ref uint words, int round)
+	private static void ExpandSoftware(ref uint words, int round)
 	{
 		int index = round & 15;
 		uint word = P1(Unsafe.Add(ref words, index) ^ Unsafe.Add(ref words, round - 9 & 15) ^ BitOperations.RotateLeft(Unsafe.Add(ref words, round - 3 & 15), 15))
 					^ BitOperations.RotateLeft(Unsafe.Add(ref words, round - 13 & 15), 7)
 					^ Unsafe.Add(ref words, round - 6 & 15);
 		Unsafe.Add(ref words, index) = word;
-		return word;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
