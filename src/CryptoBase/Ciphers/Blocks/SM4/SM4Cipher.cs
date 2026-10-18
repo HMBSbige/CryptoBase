@@ -43,7 +43,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public void EncryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, 16, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
 		CipherBufferGuard.Output(source, destination);
 		ProcessBlocks(ref _roundKeys[0], source, destination, true);
 	}
@@ -51,14 +51,14 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public void EncryptBlocks(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
-		CipherBufferGuard.Blocks(source, destination, 16);
+		CipherBufferGuard.Blocks(source, destination, BlockSize);
 		ProcessBlocks(ref _roundKeys[0], source, destination, false);
 	}
 
 	/// <inheritdoc />
 	public void DecryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, 16, nameof(source));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
 		CipherBufferGuard.Output(source, destination);
 		ProcessBlocks(ref _reverseRoundKeys[0], source, destination, true);
 	}
@@ -66,7 +66,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public void DecryptBlocks(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
-		CipherBufferGuard.Blocks(source, destination, 16);
+		CipherBufferGuard.Blocks(source, destination, BlockSize);
 		ProcessBlocks(ref _reverseRoundKeys[0], source, destination, false);
 	}
 
