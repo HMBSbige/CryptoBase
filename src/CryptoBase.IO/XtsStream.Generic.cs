@@ -257,7 +257,7 @@ public sealed class XtsStream<TCipher> : Stream where TCipher : class, IDataUnit
 			{
 				if (TryGetWholeUnits(buffer.Length, position, out int units))
 				{
-					// Write a cached unit outside the range first, so the kernel does not fill it as a gap.
+					// Write a cached unit outside the range first, so the transform does not fill it as a gap.
 					DropUnitWithin(position, units);
 					FlushUnit();
 					_transform.Write(buffer.Slice(0, units), position);
