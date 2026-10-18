@@ -188,10 +188,24 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static unsafe int EncodeUtf8Avx512Vbmi(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
+	private static int EncodeUtf8Avx512Vbmi(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
 	{
 		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(alphabetKind));
 		Vector512<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
+		return EncodeUtf8Avx512Vbmi(source, destination, symbolMask, alphabet);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private int EncodeUtf8Avx512VbmiCustom(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(_alphabetKind));
+		Vector512<byte> alphabet = Vector512.Create(Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
+		return EncodeUtf8Avx512Vbmi(source, destination, symbolMask, alphabet);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe int EncodeUtf8Avx512Vbmi(ReadOnlySpan<byte> source, Span<byte> destination, Vector512<byte> symbolMask, Vector512<byte> alphabet)
+	{
 		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 8);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
@@ -240,195 +254,15 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static unsafe int EncodeCharsAvx512Vbmi(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
+	private static int EncodeCharsAvx512Vbmi(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
 	{
 		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(alphabetKind));
 		Vector512<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
-		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 8);
-		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
-		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
-		int vectorCount = blockCount >> 3;
-		int pairCount = vectorCount >> 1;
-		const int stride = 80;
-		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
-
-		for (int i = 0; i < pairCount; ++i)
-		{
-			if (i < prefetchPairs)
-			{
-				StreamPrefetch.Bytes(ref sourcePointer, stride);
-			}
-
-			Vector512<byte> firstInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			Vector512<byte> secondInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 40)), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			Vector512<byte> firstPacked = Avx512Vbmi.PermuteVar64x8(firstInput, Avx512CharPackIndicesVector);
-			Vector512<byte> secondPacked = Avx512Vbmi.PermuteVar64x8(secondInput, Avx512CharPackIndicesVector);
-			Vector512<byte> firstSymbols = Avx512Vbmi.MultiShift(Avx512ShiftControlVector, firstPacked.AsUInt64()) & symbolMask;
-			Vector512<byte> secondSymbols = Avx512Vbmi.MultiShift(Avx512ShiftControlVector, secondPacked.AsUInt64()) & symbolMask;
-			StoreEncodedCharsUnpacked(Avx512Vbmi.PermuteVar64x8(alphabet, firstSymbols), ref destinationPointer);
-			StoreEncodedCharsUnpacked(Avx512Vbmi.PermuteVar64x8(alphabet, secondSymbols), ref Unsafe.Add(ref destinationPointer, 64));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 128);
-		}
-
-		if ((vectorCount & 1) is not 0)
-		{
-			Vector512<byte> input = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			StoreEncodedCharsUnpacked(EncodeVbmi(input, Avx512CharPackIndicesVector, Avx512ShiftControlVector, symbolMask, alphabet), ref destinationPointer);
-		}
-
-		if ((blockCount & 7) is not 0)
-		{
-			int lastOctet = blockCount - 8;
-			Vector512<byte> input = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), lastOctet * InputBytesPerBlock)), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			StoreEncodedCharsUnpacked(EncodeVbmi(input, Avx512CharPackIndicesVector, Avx512ShiftControlVector, symbolMask, alphabet), ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), lastOctet * OutputSymbolsPerBlock));
-		}
-
-		return blockCount * InputBytesPerBlock;
+		return EncodeCharsAvx512Vbmi(source, destination, symbolMask, alphabet, Avx512EncodeLoadMask, Avx512CharPackIndicesVector, Avx512ShiftControlVector);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static unsafe int EncodeUtf8Avx512VbmiVl256(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
-	{
-		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
-		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
-		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
-		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
-		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
-		int vectorCount = blockCount >> 2;
-		int pairCount = vectorCount >> 1;
-		const int stride = 40;
-		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
-
-		for (int i = 0; i < pairCount; ++i)
-		{
-			if (i < prefetchPairs)
-			{
-				StreamPrefetch.Bytes(ref sourcePointer, stride);
-			}
-
-			Vector256<byte> firstInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			Vector256<byte> secondInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 20)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
-			Vector256<byte> firstOutput = EncodeVbmiVl256(firstInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
-			Vector256<byte> secondOutput = EncodeVbmiVl256(secondInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
-			firstOutput.StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 64));
-			secondOutput.StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 32));
-		}
-
-		if ((vectorCount & 1) is not 0)
-		{
-			Vector256<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			EncodeVbmiVl256(input, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet).StoreUnsafe(ref destinationPointer);
-		}
-
-		if ((blockCount & 3) is not 0)
-		{
-			int lastQuad = blockCount - 4;
-			Vector256<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), lastQuad * InputBytesPerBlock)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			EncodeVbmiVl256(input, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet).StoreUnsafe(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), lastQuad * OutputSymbolsPerBlock));
-		}
-
-		return blockCount * InputBytesPerBlock;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static unsafe int EncodeCharsAvx512VbmiVl256(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
-	{
-		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
-		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
-		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
-		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
-		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
-		int vectorCount = blockCount >> 2;
-		int pairCount = vectorCount >> 1;
-		const int stride = 40;
-		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
-
-		for (int i = 0; i < pairCount; ++i)
-		{
-			if (i < prefetchPairs)
-			{
-				StreamPrefetch.Bytes(ref sourcePointer, stride);
-			}
-
-			Vector256<byte> firstInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			Vector256<byte> secondInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 20)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			Vector256<byte> firstOutput = EncodeVbmiVl256(firstInput, Avx512Vl256CharPackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
-			Vector256<byte> secondOutput = EncodeVbmiVl256(secondInput, Avx512Vl256CharPackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
-			StoreEncodedCharsUnpacked(firstOutput, ref destinationPointer);
-			StoreEncodedCharsUnpacked(secondOutput, ref Unsafe.Add(ref destinationPointer, 32));
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
-		}
-
-		if ((vectorCount & 1) is not 0)
-		{
-			Vector256<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			StoreEncodedCharsUnpacked(EncodeVbmiVl256(input, Avx512Vl256CharPackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet), ref destinationPointer);
-		}
-
-		if ((blockCount & 3) is not 0)
-		{
-			int lastQuad = blockCount - 4;
-			Vector256<byte> input = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), lastQuad * InputBytesPerBlock)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			StoreEncodedCharsUnpacked(EncodeVbmiVl256(input, Avx512Vl256CharPackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet), ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), lastQuad * OutputSymbolsPerBlock));
-		}
-
-		return blockCount * InputBytesPerBlock;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private unsafe int EncodeUtf8Avx512VbmiCustom(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(_alphabetKind));
-		Vector512<byte> alphabet = Vector512.Create(Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
-		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 8);
-		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
-		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
-		int vectorCount = blockCount >> 3;
-		int pairCount = vectorCount >> 1;
-		const int stride = 80;
-		int prefetchPairs = StreamPrefetch.Iterations(pairCount, stride);
-
-		for (int i = 0; i < pairCount; ++i)
-		{
-			if (i < prefetchPairs)
-			{
-				StreamPrefetch.Bytes(ref sourcePointer, stride);
-			}
-
-			Vector512<byte> firstInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			Vector512<byte> secondInput = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 40)), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
-			destinationPointer = ref Unsafe.Add(ref destinationPointer, 128);
-			Vector512<byte> firstPacked = Avx512Vbmi.PermuteVar64x8(firstInput, Avx512PackIndicesVector);
-			Vector512<byte> secondPacked = Avx512Vbmi.PermuteVar64x8(secondInput, Avx512PackIndicesVector);
-			Vector512<byte> firstSymbols = Avx512Vbmi.MultiShift(Avx512ShiftControlVector, firstPacked.AsUInt64()) & symbolMask;
-			Vector512<byte> secondSymbols = Avx512Vbmi.MultiShift(Avx512ShiftControlVector, secondPacked.AsUInt64()) & symbolMask;
-			Avx512Vbmi.PermuteVar64x8(alphabet, firstSymbols).StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 128));
-			Avx512Vbmi.PermuteVar64x8(alphabet, secondSymbols).StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 64));
-		}
-
-		if ((vectorCount & 1) is not 0)
-		{
-			Vector512<byte> input = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			EncodeVbmi(input, Avx512PackIndicesVector, Avx512ShiftControlVector, symbolMask, alphabet).StoreUnsafe(ref destinationPointer);
-		}
-
-		if ((blockCount & 7) is not 0)
-		{
-			int lastOctet = blockCount - 8;
-			Vector512<byte> input = Avx512BW.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), lastOctet * InputBytesPerBlock)), Avx512EncodeLoadMask, Vector512<byte>.Zero);
-			EncodeVbmi(input, Avx512PackIndicesVector, Avx512ShiftControlVector, symbolMask, alphabet).StoreUnsafe(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), lastOctet * OutputSymbolsPerBlock));
-		}
-
-		return blockCount * InputBytesPerBlock;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private unsafe int EncodeCharsAvx512VbmiCustom(ReadOnlySpan<byte> source, Span<char> destination)
+	private int EncodeCharsAvx512VbmiCustom(ReadOnlySpan<byte> source, Span<char> destination)
 	{
 		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(_alphabetKind));
 		Vector512<byte> alphabet = Vector512.Create(Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
@@ -454,6 +288,12 @@ public sealed partial class Base32Encoding
 			)
 		);
 		Vector512<byte> shiftControl = Vector512.Create(Avx512EncodeShiftControl).AsByte();
+		return EncodeCharsAvx512Vbmi(source, destination, symbolMask, alphabet, loadMask, packIndices, shiftControl);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe int EncodeCharsAvx512Vbmi(ReadOnlySpan<byte> source, Span<char> destination, Vector512<byte> symbolMask, Vector512<byte> alphabet, Vector512<byte> loadMask, Vector512<byte> packIndices, Vector512<byte> shiftControl)
+	{
 		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 8);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
@@ -498,10 +338,24 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private unsafe int EncodeUtf8Avx512VbmiVl256Custom(ReadOnlySpan<byte> source, Span<byte> destination)
+	private static int EncodeUtf8Avx512VbmiVl256(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
+	{
+		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
+		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
+		return EncodeUtf8Avx512VbmiVl256(source, destination, symbolMask, alphabet);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private int EncodeUtf8Avx512VbmiVl256Custom(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(_alphabetKind));
 		Vector256<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet));
+		return EncodeUtf8Avx512VbmiVl256(source, destination, symbolMask, alphabet);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe int EncodeUtf8Avx512VbmiVl256(ReadOnlySpan<byte> source, Span<byte> destination, Vector256<byte> symbolMask, Vector256<byte> alphabet)
+	{
 		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
@@ -521,8 +375,10 @@ public sealed partial class Base32Encoding
 			Vector256<byte> secondInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 20)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
-			EncodeVbmiVl256(firstInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet).StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 64));
-			EncodeVbmiVl256(secondInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet).StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 32));
+			Vector256<byte> firstOutput = EncodeVbmiVl256(firstInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
+			Vector256<byte> secondOutput = EncodeVbmiVl256(secondInput, Avx512Vl256PackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
+			firstOutput.StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 64));
+			secondOutput.StoreUnsafe(ref Unsafe.Subtract(ref destinationPointer, 32));
 		}
 
 		if ((vectorCount & 1) is not 0)
@@ -542,10 +398,24 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private unsafe int EncodeCharsAvx512VbmiVl256Custom(ReadOnlySpan<byte> source, Span<char> destination)
+	private static int EncodeCharsAvx512VbmiVl256(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
+	{
+		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
+		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
+		return EncodeCharsAvx512VbmiVl256(source, destination, symbolMask, alphabet);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private int EncodeCharsAvx512VbmiVl256Custom(ReadOnlySpan<byte> source, Span<char> destination)
 	{
 		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(_alphabetKind));
 		Vector256<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet));
+		return EncodeCharsAvx512VbmiVl256(source, destination, symbolMask, alphabet);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe int EncodeCharsAvx512VbmiVl256(ReadOnlySpan<byte> source, Span<char> destination, Vector256<byte> symbolMask, Vector256<byte> alphabet)
+	{
 		int blockCount = GetEncodeBlockCount(source.Length, destination.Length, 4);
 		ref byte sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref char destinationPointer = ref MemoryMarshal.GetReference(destination);
@@ -563,8 +433,10 @@ public sealed partial class Base32Encoding
 
 			Vector256<byte> firstInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref sourcePointer), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
 			Vector256<byte> secondInput = Avx512BW.VL.MaskLoad((byte*)Unsafe.AsPointer(ref Unsafe.Add(ref sourcePointer, 20)), Avx512Vl256EncodeLoadMask, Vector256<byte>.Zero);
-			StoreEncodedCharsUnpacked(EncodeVbmiVl256(firstInput, Avx512Vl256CharPackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet), ref destinationPointer);
-			StoreEncodedCharsUnpacked(EncodeVbmiVl256(secondInput, Avx512Vl256CharPackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet), ref Unsafe.Add(ref destinationPointer, 32));
+			Vector256<byte> firstOutput = EncodeVbmiVl256(firstInput, Avx512Vl256CharPackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
+			Vector256<byte> secondOutput = EncodeVbmiVl256(secondInput, Avx512Vl256CharPackIndicesVector, Avx512Vl256ShiftControlVector, symbolMask, alphabet);
+			StoreEncodedCharsUnpacked(firstOutput, ref destinationPointer);
+			StoreEncodedCharsUnpacked(secondOutput, ref Unsafe.Add(ref destinationPointer, 32));
 			sourcePointer = ref Unsafe.Add(ref sourcePointer, stride);
 			destinationPointer = ref Unsafe.Add(ref destinationPointer, 64);
 		}
