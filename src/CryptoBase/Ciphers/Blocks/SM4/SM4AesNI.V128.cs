@@ -11,8 +11,8 @@ internal readonly partial struct SM4AesNI
 		Vector128<byte> m1l = Vector128.Create(PreAffineLow0, PreAffineLow1).AsByte();
 		Vector128<byte> m1h = Vector128.Create(PreAffineHigh0, PreAffineHigh1).AsByte();
 		Vector128<byte> t = x & c0f;
-		x &= ~c0f;
 		x = (x.AsUInt32() >>> 4).AsByte();
+		x &= c0f;
 		t = Ssse3.Shuffle(m1l, t);
 		x = Ssse3.Shuffle(m1h, x);
 		x ^= t;
