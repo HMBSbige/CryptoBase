@@ -102,13 +102,12 @@ internal static unsafe class Blake3Parallel
 			if (threads > 1)
 			{
 				int leafBlocks = LeafLength(destination.Length, threads) / BlockLength;
-				int leaves = (blocks + leafBlocks - 1) / leafBlocks;
 
 				fixed (InlineArray8<uint>* chainingValuePointer = &cv)
 				fixed (byte* blockPointer = &block)
 				fixed (byte* destinationPointer = destination)
 				{
-					XofJob job = new(chainingValuePointer, blockPointer, blockLength, counter, flags, destinationPointer, blocks, leafBlocks, leaves, budget);
+					XofJob job = new(chainingValuePointer, blockPointer, blockLength, counter, flags, destinationPointer, blocks, leafBlocks, budget);
 
 					if (job.TryStart(threads))
 					{
@@ -248,7 +247,7 @@ internal static unsafe class Blake3Parallel
 		private readonly int _blocks;
 		private readonly int _leafBlocks;
 
-		internal XofJob(InlineArray8<uint>* cv, byte* block, uint blockLength, ulong counter, uint flags, byte* destination, int blocks, int leafBlocks, int leaves, ThreadPoolHelperBudget budget) : base(leaves, budget)
+		internal XofJob(InlineArray8<uint>* cv, byte* block, uint blockLength, ulong counter, uint flags, byte* destination, int blocks, int leafBlocks, ThreadPoolHelperBudget budget) : base((blocks + leafBlocks - 1) / leafBlocks, budget)
 		{
 			_chainingValue = cv;
 			_block = block;
