@@ -21,20 +21,17 @@ internal static class GcmFinalBlocks
 
 		if (blockCount > 1)
 		{
-			k0 ^= Vector128.LoadUnsafe(ref input);
-			k0.StoreUnsafe(ref output);
+			BlockXor.XorStore1(ref input, ref output, 0, ref k0);
 		}
 
 		if (blockCount > 2)
 		{
-			k1 ^= Vector128.LoadUnsafe(ref input, 16);
-			k1.StoreUnsafe(ref output, 16);
+			BlockXor.XorStore1(ref input, ref output, 16, ref k1);
 		}
 
 		if (blockCount > 3)
 		{
-			k2 ^= Vector128.LoadUnsafe(ref input, 32);
-			k2.StoreUnsafe(ref output, 32);
+			BlockXor.XorStore1(ref input, ref output, 32, ref k2);
 		}
 
 		Vector128<byte> finalKeyStream = blockCount switch
