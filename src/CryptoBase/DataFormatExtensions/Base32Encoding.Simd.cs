@@ -168,7 +168,7 @@ public sealed partial class Base32Encoding
 			: 0;
 	}
 
-	private static int EncodeCharsAuto(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
+	private static int EncodeX86Auto<T>(ReadOnlySpan<byte> source, Span<T> destination, byte alphabetKind) where T : unmanaged
 	{
 		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
 
@@ -176,12 +176,12 @@ public sealed partial class Base32Encoding
 		{
 			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 			{
-				return EncodeCharsAvx512Vbmi(source, destination, alphabetKind);
+				return EncodeAvx512Vbmi(source, destination, alphabetKind);
 			}
 
 			if (sourceRemaining >= X86EncodeVector256Threshold)
 			{
-				return EncodeCharsAvx512VbmiVl256(source, destination, alphabetKind);
+				return EncodeAvx512VbmiVl256(source, destination, alphabetKind);
 			}
 
 			return sourceRemaining >= X86EncodeVbmiVl128Threshold
@@ -191,7 +191,7 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 		{
-			return EncodeCharsAvx512Vbmi(source, destination, alphabetKind);
+			return EncodeAvx512Vbmi(source, destination, alphabetKind);
 		}
 
 		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
@@ -219,13 +219,13 @@ public sealed partial class Base32Encoding
 			: 0;
 	}
 
-	private int EncodeCharsCustomAuto(ReadOnlySpan<byte> source, Span<char> destination)
+	private int EncodeCustomAuto<T>(ReadOnlySpan<byte> source, Span<T> destination) where T : unmanaged
 	{
 		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
 
 		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 		{
-			return EncodeCharsAvx512VbmiCustom(source, destination);
+			return EncodeAvx512VbmiCustom(source, destination);
 		}
 
 		if (sourceRemaining < X86EncodeVector256Threshold)
@@ -235,13 +235,13 @@ public sealed partial class Base32Encoding
 
 		if (Avx512Vbmi.VL.IsSupported)
 		{
-			return EncodeCharsAvx512VbmiVl256Custom(source, destination);
+			return EncodeAvx512VbmiVl256Custom(source, destination);
 		}
 
 		return Avx2.IsSupported ? EncodeAvx2Custom(source, destination) : 0;
 	}
 
-	private static int EncodeCharsForced(ReadOnlySpan<byte> source, Span<char> destination, byte[] alphabet, byte alphabetKind, Base32SimdPath path)
+	private static int EncodeForced<T>(ReadOnlySpan<byte> source, Span<T> destination, byte[] alphabet, byte alphabetKind, Base32SimdPath path) where T : unmanaged
 	{
 		if (path is Base32SimdPath.Scalar || alphabetKind is CustomAlphabetKind)
 		{
@@ -251,8 +251,8 @@ public sealed partial class Base32Encoding
 		return path switch
 		{
 			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeAdvSimd(source, destination, 0, 0, alphabet),
-			Base32SimdPath.Avx512Vbmi when Avx512Vbmi.IsSupported => EncodeCharsAvx512Vbmi(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl256 when Avx512Vbmi.VL.IsSupported => EncodeCharsAvx512VbmiVl256(source, destination, alphabetKind),
+			Base32SimdPath.Avx512Vbmi when Avx512Vbmi.IsSupported => EncodeAvx512Vbmi(source, destination, alphabetKind),
+			Base32SimdPath.Avx512VbmiVl256 when Avx512Vbmi.VL.IsSupported => EncodeAvx512VbmiVl256(source, destination, alphabetKind),
 			Base32SimdPath.Avx512VbmiVl128 when Avx512Vbmi.VL.IsSupported => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
 			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeAvx512Bw(source, destination, alphabetKind),
 			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeAvx2(source, destination, alphabetKind),
@@ -263,11 +263,11 @@ public sealed partial class Base32Encoding
 
 	internal int EncodeCharsBlocksPath(ReadOnlySpan<byte> source, Span<char> destination, Base32SimdPath path)
 	{
-		return EncodeCharsForced(source, destination, _alphabet, _alphabetKind, path);
+		return EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 	}
 
-	// Keep the complete dispatcher here even though x86 calls the specialized
-	// overload below. Its IL size preserves the ARM64 tail call without NoInlining.
+	// Keep the complete dispatcher here even though x86 calls EncodeX86Auto
+	// instead. Its IL size preserves the ARM64 tail call without NoInlining.
 	private static int EncodeUtf8Auto(ReadOnlySpan<byte> source, Span<byte> destination, int sourceOffset, int destinationOffset, byte[] alphabet, byte alphabetKind)
 	{
 		if (AdvSimd.IsSupported)
@@ -295,12 +295,12 @@ public sealed partial class Base32Encoding
 		{
 			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 			{
-				return EncodeUtf8Avx512Vbmi(source, destination, alphabetKind);
+				return EncodeAvx512Vbmi(source, destination, alphabetKind);
 			}
 
 			if (sourceRemaining >= X86EncodeVector256Threshold)
 			{
-				return EncodeUtf8Avx512VbmiVl256(source, destination, alphabetKind);
+				return EncodeAvx512VbmiVl256(source, destination, alphabetKind);
 			}
 
 			return sourceRemaining >= X86EncodeVbmiVl128Threshold
@@ -310,7 +310,7 @@ public sealed partial class Base32Encoding
 
 		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
 		{
-			return EncodeUtf8Avx512Vbmi(source, destination, alphabetKind);
+			return EncodeAvx512Vbmi(source, destination, alphabetKind);
 		}
 
 		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
@@ -336,104 +336,11 @@ public sealed partial class Base32Encoding
 		return sourceRemaining >= EncodeShortSimdThreshold
 			? EncodeSsse3Short(source, destination, alphabetKind)
 			: 0;
-	}
-
-	private static int EncodeUtf8X86Auto(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
-	{
-		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
-
-		if (Avx512Vbmi.VL.IsSupported)
-		{
-			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
-			{
-				return EncodeUtf8Avx512Vbmi(source, destination, alphabetKind);
-			}
-
-			if (sourceRemaining >= X86EncodeVector256Threshold)
-			{
-				return EncodeUtf8Avx512VbmiVl256(source, destination, alphabetKind);
-			}
-
-			return sourceRemaining >= X86EncodeVbmiVl128Threshold
-				? EncodeAvx512VbmiVl128Short(source, destination, GetShortAlphabet(alphabetKind))
-				: 0;
-		}
-
-		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
-		{
-			return EncodeUtf8Avx512Vbmi(source, destination, alphabetKind);
-		}
-
-		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
-		{
-			return EncodeAvx512Bw(source, destination, alphabetKind);
-		}
-
-		if (sourceRemaining >= X86EncodeVector256Threshold && Avx2.IsSupported)
-		{
-			return EncodeAvx2(source, destination, alphabetKind);
-		}
-
-		if (!Ssse3.IsSupported)
-		{
-			return 0;
-		}
-
-		if (sourceRemaining >= X86EncodeVector256Threshold)
-		{
-			return EncodeSsse3(source, destination, alphabetKind);
-		}
-
-		return sourceRemaining >= EncodeShortSimdThreshold
-			? EncodeSsse3Short(source, destination, alphabetKind)
-			: 0;
-	}
-
-	private int EncodeUtf8CustomAuto(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
-
-		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
-		{
-			return EncodeUtf8Avx512VbmiCustom(source, destination);
-		}
-
-		if (sourceRemaining < X86EncodeVector256Threshold)
-		{
-			return 0;
-		}
-
-		if (Avx512Vbmi.VL.IsSupported)
-		{
-			return EncodeUtf8Avx512VbmiVl256Custom(source, destination);
-		}
-
-		return Avx2.IsSupported ? EncodeAvx2Custom(source, destination) : 0;
-	}
-
-	private static int EncodeUtf8Forced(ReadOnlySpan<byte> source, Span<byte> destination, byte[] alphabet, byte alphabetKind, Base32SimdPath path)
-	{
-		if (path is Base32SimdPath.Scalar || alphabetKind is CustomAlphabetKind)
-		{
-			return 0;
-		}
-
-		return path switch
-		{
-			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeAdvSimd(source, destination, 0, 0, alphabet),
-			Base32SimdPath.Avx512Vbmi when Avx512Vbmi.IsSupported => EncodeUtf8Avx512Vbmi(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl256 when Avx512Vbmi.VL.IsSupported => EncodeUtf8Avx512VbmiVl256(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when Avx512Vbmi.VL.IsSupported => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
-			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeAvx512Bw(source, destination, alphabetKind),
-			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeAvx2(source, destination, alphabetKind),
-			Base32SimdPath.Ssse3 when Ssse3.IsSupported => EncodeSsse3(source, destination, alphabetKind),
-			_ => 0,
-		};
 	}
 
 	internal int EncodeUtf8BlocksPath(ReadOnlySpan<byte> source, Span<byte> destination, Base32SimdPath path)
 	{
-		return EncodeUtf8Forced(source, destination, _alphabet, _alphabetKind, path);
+		return EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

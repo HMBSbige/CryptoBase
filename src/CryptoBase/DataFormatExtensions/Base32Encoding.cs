@@ -222,7 +222,7 @@ public sealed partial class Base32Encoding
 
 		if (path is not Base32SimdPath.Auto)
 		{
-			int simdConsumed = EncodeCharsForced(source, destination, _alphabet, _alphabetKind, path);
+			int simdConsumed = EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 			sourceOffset += simdConsumed;
 			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
@@ -235,7 +235,7 @@ public sealed partial class Base32Encoding
 		{
 			int simdConsumed = AdvSimd.IsSupported
 				? EncodeCharsAdvSimdAuto(source, destination, sourceOffset, destinationOffset, _alphabet)
-				: EncodeCharsAuto(source, destination, _alphabetKind);
+				: EncodeX86Auto(source, destination, _alphabetKind);
 			sourceOffset += simdConsumed;
 			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
@@ -246,7 +246,7 @@ public sealed partial class Base32Encoding
 			&& Avx2.IsSupported
 		)
 		{
-			int simdConsumed = EncodeCharsCustomAuto(source, destination);
+			int simdConsumed = EncodeCustomAuto(source, destination);
 			sourceOffset += simdConsumed;
 			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
@@ -286,7 +286,7 @@ public sealed partial class Base32Encoding
 
 		if (path is not Base32SimdPath.Auto)
 		{
-			simdConsumed = EncodeUtf8Forced(source, destination, _alphabet, _alphabetKind, path);
+			simdConsumed = EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 		}
 		else if (AdvSimd.IsSupported)
 		{
@@ -299,7 +299,7 @@ public sealed partial class Base32Encoding
 			&& source.Length >= X86EncodeVbmiVl128Threshold
 		)
 		{
-			simdConsumed = EncodeUtf8X86Auto(source, destination, _alphabetKind);
+			simdConsumed = EncodeX86Auto(source, destination, _alphabetKind);
 		}
 		else if
 		(
@@ -308,7 +308,7 @@ public sealed partial class Base32Encoding
 			&& Avx2.IsSupported
 		)
 		{
-			simdConsumed = EncodeUtf8CustomAuto(source, destination);
+			simdConsumed = EncodeCustomAuto(source, destination);
 		}
 		else if
 		(

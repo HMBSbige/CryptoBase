@@ -188,19 +188,69 @@ public sealed partial class Base32Encoding
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int EncodeUtf8Avx512Vbmi(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
+	private static int EncodeAvx512Vbmi<T>(ReadOnlySpan<byte> source, Span<T> destination, byte alphabetKind) where T : unmanaged
 	{
 		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(alphabetKind));
 		Vector512<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
-		return EncodeUtf8Avx512Vbmi(source, destination, symbolMask, alphabet);
+		return typeof(T) == typeof(char)
+			? EncodeCharsAvx512Vbmi(source, MemoryMarshal.Cast<T, char>(destination), symbolMask, alphabet, Avx512EncodeLoadMask, Avx512CharPackIndicesVector, Avx512ShiftControlVector)
+			: EncodeUtf8Avx512Vbmi(source, MemoryMarshal.Cast<T, byte>(destination), symbolMask, alphabet);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private int EncodeUtf8Avx512VbmiCustom(ReadOnlySpan<byte> source, Span<byte> destination)
+	private int EncodeAvx512VbmiCustom<T>(ReadOnlySpan<byte> source, Span<T> destination) where T : unmanaged
 	{
 		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(_alphabetKind));
 		Vector512<byte> alphabet = Vector512.Create(Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
-		return EncodeUtf8Avx512Vbmi(source, destination, symbolMask, alphabet);
+
+		if (typeof(T) != typeof(char))
+		{
+			return EncodeUtf8Avx512Vbmi(source, MemoryMarshal.Cast<T, byte>(destination), symbolMask, alphabet);
+		}
+
+		// Local constants avoid the class-initialization slow path and register spills
+		// that RyuJIT otherwise emits for static vectors in this instance hot path.
+		Vector512<byte> loadMask = Vector512.Create
+		(
+			Vector256.Create(byte.MaxValue),
+			Vector256.Create(Vector128.Create(ulong.MaxValue, 0UL).AsByte(), Vector128<byte>.Zero)
+		);
+		// Same layout as Avx512CharPackIndicesVector.
+		Vector512<byte> packIndices = Vector512.Create
+		(
+			Vector256.Create
+			(
+				Vector128.Create((byte)4, 3, 2, 1, 0, 40, 40, 40, 24, 23, 22, 21, 20, 40, 40, 40),
+				Vector128.Create((byte)9, 8, 7, 6, 5, 40, 40, 40, 29, 28, 27, 26, 25, 40, 40, 40)
+			),
+			Vector256.Create
+			(
+				Vector128.Create((byte)14, 13, 12, 11, 10, 40, 40, 40, 34, 33, 32, 31, 30, 40, 40, 40),
+				Vector128.Create((byte)19, 18, 17, 16, 15, 40, 40, 40, 39, 38, 37, 36, 35, 40, 40, 40)
+			)
+		);
+		Vector512<byte> shiftControl = Vector512.Create(Avx512EncodeShiftControl).AsByte();
+		return EncodeCharsAvx512Vbmi(source, MemoryMarshal.Cast<T, char>(destination), symbolMask, alphabet, loadMask, packIndices, shiftControl);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static int EncodeAvx512VbmiVl256<T>(ReadOnlySpan<byte> source, Span<T> destination, byte alphabetKind) where T : unmanaged
+	{
+		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
+		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
+		return typeof(T) == typeof(char)
+			? EncodeCharsAvx512VbmiVl256(source, MemoryMarshal.Cast<T, char>(destination), symbolMask, alphabet)
+			: EncodeUtf8Avx512VbmiVl256(source, MemoryMarshal.Cast<T, byte>(destination), symbolMask, alphabet);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private int EncodeAvx512VbmiVl256Custom<T>(ReadOnlySpan<byte> source, Span<T> destination) where T : unmanaged
+	{
+		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(_alphabetKind));
+		Vector256<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet));
+		return typeof(T) == typeof(char)
+			? EncodeCharsAvx512VbmiVl256(source, MemoryMarshal.Cast<T, char>(destination), symbolMask, alphabet)
+			: EncodeUtf8Avx512VbmiVl256(source, MemoryMarshal.Cast<T, byte>(destination), symbolMask, alphabet);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -253,44 +303,6 @@ public sealed partial class Base32Encoding
 		return blockCount * InputBytesPerBlock;
 	}
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int EncodeCharsAvx512Vbmi(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
-	{
-		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(alphabetKind));
-		Vector512<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
-		return EncodeCharsAvx512Vbmi(source, destination, symbolMask, alphabet, Avx512EncodeLoadMask, Avx512CharPackIndicesVector, Avx512ShiftControlVector);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private int EncodeCharsAvx512VbmiCustom(ReadOnlySpan<byte> source, Span<char> destination)
-	{
-		Vector512<byte> symbolMask = Vector512.Create(GetVectorSymbolMask(_alphabetKind));
-		Vector512<byte> alphabet = Vector512.Create(Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
-		// Local constants avoid the class-initialization slow path and register spills
-		// that RyuJIT otherwise emits for static vectors in this instance hot path.
-		Vector512<byte> loadMask = Vector512.Create
-		(
-			Vector256.Create(byte.MaxValue),
-			Vector256.Create(Vector128.Create(ulong.MaxValue, 0UL).AsByte(), Vector128<byte>.Zero)
-		);
-		// Same layout as Avx512CharPackIndicesVector.
-		Vector512<byte> packIndices = Vector512.Create
-		(
-			Vector256.Create
-			(
-				Vector128.Create((byte)4, 3, 2, 1, 0, 40, 40, 40, 24, 23, 22, 21, 20, 40, 40, 40),
-				Vector128.Create((byte)9, 8, 7, 6, 5, 40, 40, 40, 29, 28, 27, 26, 25, 40, 40, 40)
-			),
-			Vector256.Create
-			(
-				Vector128.Create((byte)14, 13, 12, 11, 10, 40, 40, 40, 34, 33, 32, 31, 30, 40, 40, 40),
-				Vector128.Create((byte)19, 18, 17, 16, 15, 40, 40, 40, 39, 38, 37, 36, 35, 40, 40, 40)
-			)
-		);
-		Vector512<byte> shiftControl = Vector512.Create(Avx512EncodeShiftControl).AsByte();
-		return EncodeCharsAvx512Vbmi(source, destination, symbolMask, alphabet, loadMask, packIndices, shiftControl);
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe int EncodeCharsAvx512Vbmi(ReadOnlySpan<byte> source, Span<char> destination, Vector512<byte> symbolMask, Vector512<byte> alphabet, Vector512<byte> loadMask, Vector512<byte> packIndices, Vector512<byte> shiftControl)
 	{
@@ -337,22 +349,6 @@ public sealed partial class Base32Encoding
 		return blockCount * InputBytesPerBlock;
 	}
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int EncodeUtf8Avx512VbmiVl256(ReadOnlySpan<byte> source, Span<byte> destination, byte alphabetKind)
-	{
-		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
-		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
-		return EncodeUtf8Avx512VbmiVl256(source, destination, symbolMask, alphabet);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private int EncodeUtf8Avx512VbmiVl256Custom(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
-		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(_alphabetKind));
-		Vector256<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet));
-		return EncodeUtf8Avx512VbmiVl256(source, destination, symbolMask, alphabet);
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe int EncodeUtf8Avx512VbmiVl256(ReadOnlySpan<byte> source, Span<byte> destination, Vector256<byte> symbolMask, Vector256<byte> alphabet)
 	{
@@ -395,22 +391,6 @@ public sealed partial class Base32Encoding
 		}
 
 		return blockCount * InputBytesPerBlock;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int EncodeCharsAvx512VbmiVl256(ReadOnlySpan<byte> source, Span<char> destination, byte alphabetKind)
-	{
-		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(alphabetKind));
-		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
-		return EncodeCharsAvx512VbmiVl256(source, destination, symbolMask, alphabet);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private int EncodeCharsAvx512VbmiVl256Custom(ReadOnlySpan<byte> source, Span<char> destination)
-	{
-		Vector256<byte> symbolMask = Vector256.Create(GetVectorSymbolMask(_alphabetKind));
-		Vector256<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet));
-		return EncodeCharsAvx512VbmiVl256(source, destination, symbolMask, alphabet);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
