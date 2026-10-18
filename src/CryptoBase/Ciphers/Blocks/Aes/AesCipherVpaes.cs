@@ -470,8 +470,20 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 	private AesCipherVpaes(ReadOnlySpan<byte> key)
 	{
 		Span<uint> words = stackalloc uint[60];
-		_rounds = AesKeySchedule.Expand<AesCipherVpaes>(key, words);
+		_rounds = ExpandKey(key, words);
+		InitializeRoundKeys(words);
+		words.ZeroMemory();
+	}
 
+	private AesCipherVpaes(ReadOnlySpan<uint> words, int rounds)
+	{
+		_rounds = rounds;
+		InitializeRoundKeys(words);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void InitializeRoundKeys(ReadOnlySpan<uint> words)
+	{
 		ref uint wordRef = ref MemoryMarshal.GetReference(words);
 
 		// Round 0 is added straight after the input transform, so it only needs the basis change.
@@ -494,13 +506,21 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		Vector128<byte> finalRoundKey = Vector128.LoadUnsafe(ref wordRef, (nuint)(_rounds * 4)).AsByte();
 		_roundKeys[_rounds] = Vector128.ShuffleNative(finalRoundKey, GetShiftRowsShuffleMask(-_rounds)) ^ SBoxAffineConstant;
 		_reverseRoundKeys[0] = ApplyInputTransform(finalRoundKey ^ SBoxAffineConstant, DecryptionInputTransformLow, DecryptionInputTransformHigh);
-
-		words.ZeroMemory();
 	}
 
 	public static AesCipherVpaes Create(ReadOnlySpan<byte> key)
 	{
 		return new AesCipherVpaes(key);
+	}
+
+	public static AesCipherVpaes Create(ReadOnlySpan<uint> words, int rounds)
+	{
+		return new AesCipherVpaes(words, rounds);
+	}
+
+	internal static int ExpandKey(ReadOnlySpan<byte> key, Span<uint> words)
+	{
+		return AesKeySchedule.Expand<AesCipherVpaes>(key, words);
 	}
 
 	public void Dispose()

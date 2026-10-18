@@ -29,12 +29,14 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		}
 		else if (AesCipherVpaes.IsSupported)
 		{
-			_state.Vpaes = AesCipherVpaes.Create(key);
-
 			// SSSE3 measurements favor VPAES encryption and bitslice decryption batches.
 			if (AesCipherBitslice.IsSupported)
 			{
-				_bitslice = new BitsliceState(key);
+				_bitslice = new BitsliceState(key, out _state.Vpaes);
+			}
+			else
+			{
+				_state.Vpaes = AesCipherVpaes.Create(key);
 			}
 		}
 		else if (AesCipherBitslice.IsSupported)
@@ -330,9 +332,13 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	{
 		public AesCipherBitslice Cipher;
 
-		public BitsliceState(ReadOnlySpan<byte> key)
+		public BitsliceState(ReadOnlySpan<byte> key, out AesCipherVpaes vpaes)
 		{
-			Cipher = AesCipherBitslice.Create(key);
+			Span<uint> words = stackalloc uint[60];
+			int rounds = AesCipherVpaes.ExpandKey(key, words);
+			vpaes = AesCipherVpaes.Create(words, rounds);
+			Cipher = AesCipherBitslice.Create(words, rounds);
+			words.ZeroMemory();
 		}
 
 		public BitsliceState(ReadOnlySpan<byte> key, out AesCipherSoftware software)
