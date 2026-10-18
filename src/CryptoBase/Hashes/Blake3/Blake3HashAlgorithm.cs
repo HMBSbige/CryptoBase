@@ -16,12 +16,17 @@ namespace CryptoBase.Hashes.Blake3;
 /// that length, whereas the public methods fill their whole destination.
 /// </para>
 /// <para>
+/// As an <see cref="IXof{TSelf}" />, the instance also reads the stream in pieces: the first nonempty <see cref="Read" /> ends the input, and each read continues
+/// where the previous one stopped. Until <see cref="Reset" />, appending and the methods that write the start of the output then throw
+/// <see cref="InvalidOperationException" />, whereas <see cref="GetCurrentHash(Span{byte}, ulong, int)" /> still reads from any position.
+/// </para>
+/// <para>
 /// The calling thread and up to <c>maxDegreeOfParallelism - 1</c> thread pool threads hash long input as independent subtrees, and generate long output as independent blocks.
 /// The degree of parallelism never changes the result, and -1 removes the limit.
 /// </para>
 /// <para>
-/// Reads through <see cref="GetCurrentHash(Span{byte})" /> and <see cref="GetCurrentHash(Span{byte}, ulong, int)" /> may run concurrently with one another;
-/// every other instance operation requires exclusive access.
+/// Calls to <see cref="GetCurrentHash(Span{byte})" /> and <see cref="GetCurrentHash(Span{byte}, ulong, int)" /> may run concurrently with one another;
+/// every other instance operation, <see cref="Read" /> included, requires exclusive access.
 /// </para>
 /// <para>
 /// A reset in the keyed hash and key derivation modes erases the buffered input and the chaining values and output that the instance holds, so that only the key
@@ -29,7 +34,7 @@ namespace CryptoBase.Hashes.Blake3;
 /// included, and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
-public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
+public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, IXof<Blake3HashAlgorithm>
 {
 	/// <summary>
 	/// The key length of the keyed hash mode, in bytes.
@@ -66,6 +71,10 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	private ulong _readStart;
 	private ulong _readEnd;
 
+	// A read that ends the stream leaves the position at 2^64, so it needs more than 64 bits. Tests set it to read near the end of the stream.
+	internal UInt128 ReadPosition { get; set; }
+
+	private bool _reading;
 	private bool _disposed;
 
 	private Blake3HashAlgorithm()
@@ -149,6 +158,11 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 		return HashSizeInBytes;
 	}
 
+	static void IXof<Blake3HashAlgorithm>.HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		HashData(source, destination);
+	}
+
 	/// <summary>
 	/// Computes the keyed hash of <paramref name="source" />.
 	/// </summary>
@@ -209,11 +223,13 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	/// Appends <paramref name="source" /> to the current input.
 	/// </summary>
 	/// <param name="source">The data to append.</param>
+	/// <exception cref="InvalidOperationException">The instance is reading; call <see cref="Reset" /> first.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Append(ReadOnlySpan<byte> source)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
+		ThrowHelper.ThrowIfXofReading(_reading);
 
 		if (_chunkMode)
 		{
@@ -231,6 +247,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	/// <param name="source">The data to append.</param>
 	/// <param name="maxDegreeOfParallelism">The maximum number of threads, the calling thread included, or -1 for no limit.</param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism" /> is 0 or less than -1.</exception>
+	/// <exception cref="InvalidOperationException">The instance is reading; call <see cref="Reset" /> first.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public void Append(ReadOnlySpan<byte> source, int maxDegreeOfParallelism)
 	{
@@ -241,6 +258,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
+		ThrowHelper.ThrowIfXofReading(_reading);
 
 		AppendCore(source, maxDegreeOfParallelism, budget);
 	}
@@ -250,16 +268,19 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	/// </summary>
 	/// <remarks>The <see cref="IHashAlgorithm{TSelf}" /> member of the same name writes only the first <see cref="HashLength" /> bytes.</remarks>
 	/// <param name="destination">The buffer that receives the output; its length selects the output length.</param>
+	/// <exception cref="InvalidOperationException">The instance is reading; call <see cref="Reset" /> first.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public void GetCurrentHash(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
+		ThrowHelper.ThrowIfXofReading(_reading);
 		Output.RootBytes(0, destination, 1, ThreadPoolHelperBudget.Shared);
 	}
 
 	/// <summary>
 	/// Writes the output for the current input from byte <paramref name="position" /> onwards without changing the state.
 	/// </summary>
+	/// <remarks>Unlike the methods that write the start of the output, this one also works while the instance is reading, and leaves the read position unchanged.</remarks>
 	/// <param name="destination">The buffer that receives the output.</param>
 	/// <param name="position">The position in the output stream of the first byte to write.</param>
 	/// <param name="maxDegreeOfParallelism">The maximum number of threads, the calling thread included, or -1 for no limit.</param>
@@ -279,6 +300,34 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
 		Output.RootBytes(position, destination, maxDegreeOfParallelism, budget);
+	}
+
+	/// <summary>
+	/// Writes the next <c>destination.Length</c> bytes of the output stream for the current input.
+	/// </summary>
+	/// <remarks>
+	/// The first nonempty read ends the input and starts at the beginning of the stream; each later read continues where the previous one stopped, until
+	/// <see cref="Reset" />. An empty <paramref name="destination" /> leaves the state unchanged.
+	/// </remarks>
+	/// <param name="destination">The buffer that receives the output.</param>
+	/// <exception cref="ArgumentOutOfRangeException">The output would end past byte 2^64 - 1 of the stream.</exception>
+	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
+	[SkipLocalsInit]
+	public void Read(Span<byte> destination)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
+		if (destination.IsEmpty)
+		{
+			return;
+		}
+
+		UInt128 end = ReadPosition + (uint)destination.Length;
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(end, OutputStreamLength, nameof(destination));
+
+		Output.RootBytes((ulong)ReadPosition, destination, 1, ThreadPoolHelperBudget.Shared);
+		ReadPosition = end;
+		_reading = true;
 	}
 
 	int IHashAlgorithm<Blake3HashAlgorithm>.GetCurrentHash(Span<byte> destination)
@@ -301,11 +350,13 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	/// <para>The <see cref="IHashAlgorithm{TSelf}" /> member of the same name writes only the first <see cref="HashLength" /> bytes.</para>
 	/// </remarks>
 	/// <param name="destination">The buffer that receives the output; its length selects the output length.</param>
+	/// <exception cref="InvalidOperationException">The instance is reading; call <see cref="Reset" /> first.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	[SkipLocalsInit]
 	public void GetHashAndReset(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
+		ThrowHelper.ThrowIfXofReading(_reading);
 
 		if (Volatile.Read(ref _hasOutput))
 		{
@@ -335,7 +386,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	}
 
 	/// <summary>
-	/// Resets the state, discarding the current input while keeping the mode and key.
+	/// Resets the state, discarding the current input and leaving the reading state while keeping the mode and key.
 	/// </summary>
 	/// <remarks>In the keyed hash and key derivation modes, the reset erases the buffered input and the chaining values and output that the instance holds; the key remains until disposal.</remarks>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
@@ -348,7 +399,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 	/// <summary>
 	/// Creates an independent copy of the current state.
 	/// </summary>
-	/// <returns>A new instance that continues from the current input.</returns>
+	/// <returns>A new instance that continues from the current input or read position.</returns>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public Blake3HashAlgorithm Clone()
 	{
@@ -359,7 +410,9 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 			_state = _state,
 			_chunkMode = _chunkMode,
 			_readStart = _readStart,
-			_readEnd = _readEnd
+			_readEnd = _readEnd,
+			ReadPosition = ReadPosition,
+			_reading = _reading
 		};
 
 		// Renting may fail for lack of memory; the caller then never receives the clone, so disposal erases what it has copied.
@@ -511,6 +564,8 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 		_chunkMode = false;
 		_readStart = 0;
 		_readEnd = 0;
+		ReadPosition = 0;
+		_reading = false;
 	}
 
 	private static byte[]? RentCopy(byte[]? array, int length)
