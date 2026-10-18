@@ -5,7 +5,7 @@ namespace CryptoBase.Ciphers.Blocks.Aes;
 
 internal struct AesCipherX86 : IDisposable, IAesVectorCore
 {
-	public static bool IsSupported => AesX86.IsSupported && Sse2.IsSupported;
+	public static bool IsSupported => AesX86.IsSupported;
 
 	internal int RoundKeyCount { get; }
 
