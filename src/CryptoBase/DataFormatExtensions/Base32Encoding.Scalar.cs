@@ -18,8 +18,7 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong Pack5Fast(ref byte source)
 	{
-		ulong value = Unsafe.ReadUnaligned<ulong>(ref source);
-		return (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value) >> 24;
+		return BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ulong>(ref source)) >> 24;
 	}
 
 	// T is char or byte, and the type test folds at JIT time. Generic CreateChecked goes through the INumberBase conversion methods and is
@@ -104,7 +103,7 @@ public sealed partial class Base32Encoding
 		if (source.Length >= sizeof(uint))
 		{
 			uint last = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), source.Length - sizeof(uint)));
-			return (BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(last) : last) << (sizeof(uint) - remaining) * 8;
+			return BinaryPrimitives.ReverseEndianness(last) << (sizeof(uint) - remaining) * 8;
 		}
 
 		uint value = (uint)source[0] << 24;
@@ -184,12 +183,6 @@ public sealed partial class Base32Encoding
 		{
 			ulong keep = (1UL << symbolCount * 8) - 1;
 			symbols = symbols & keep | ByteLaneOnes * _padding & ~keep;
-
-			// The first symbol is the low byte, which a native store writes first only on little-endian.
-			if (!BitConverter.IsLittleEndian)
-			{
-				symbols = BinaryPrimitives.ReverseEndianness(symbols);
-			}
 
 			ref T destinationReference = ref MemoryMarshal.GetReference(destination);
 

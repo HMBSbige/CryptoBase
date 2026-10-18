@@ -127,7 +127,6 @@ internal readonly struct Blake2bScalar : IBlake2bKernel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong MessageWord(ref byte block, int index)
 	{
-		ulong word = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref block, index * sizeof(ulong)));
-		return BitConverter.IsLittleEndian ? word : BinaryPrimitives.ReverseEndianness(word);
+		return Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref block, index * sizeof(ulong)));
 	}
 }

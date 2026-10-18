@@ -252,13 +252,12 @@ internal readonly struct Blake3Scalar : IBlake3Compressor, IBlake3XofKernel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint MessageWord(ref byte block, int index)
 	{
-		uint word = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref block, index * sizeof(uint)));
-		return BitConverter.IsLittleEndian ? word : BinaryPrimitives.ReverseEndianness(word);
+		return Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref block, index * sizeof(uint)));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WriteWord(ref byte destination, int index, uint value)
 	{
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, index * sizeof(uint)), BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, index * sizeof(uint)), value);
 	}
 }

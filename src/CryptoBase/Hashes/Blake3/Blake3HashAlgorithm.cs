@@ -544,11 +544,6 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>
 		Span<uint> words = contextKey;
 		Blake3Tree.HashData(context, in Blake3Constants.IV, Blake3Flags.DeriveKeyContext, MemoryMarshal.AsBytes(words), 1, ThreadPoolHelperBudget.Shared);
 
-		if (!BitConverter.IsLittleEndian)
-		{
-			BinaryPrimitives.ReverseEndianness(words, words);
-		}
-
 		return contextKey;
 	}
 }

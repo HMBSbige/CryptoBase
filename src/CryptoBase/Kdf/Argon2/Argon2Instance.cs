@@ -63,11 +63,6 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 
 				RunPhase(WipePass, 0);
 
-				if (!BitConverter.IsLittleEndian)
-				{
-					BinaryPrimitives.ReverseEndianness(finalWords, finalWords);
-				}
-
 				HashVariable(final, destination);
 			}
 			finally
@@ -124,11 +119,6 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 			BinaryPrimitives.WriteUInt32LittleEndian(seed.Slice(PrehashLength), (uint)i);
 			Span<ulong> block = laneBlocks[i];
 			HashVariable(seed, MemoryMarshal.AsBytes(block));
-
-			if (!BitConverter.IsLittleEndian)
-			{
-				BinaryPrimitives.ReverseEndianness(block, block);
-			}
 		}
 	}
 

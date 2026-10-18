@@ -87,8 +87,7 @@ internal static class Crc32Engine
 
 		if
 		(
-			BitConverter.IsLittleEndian
-			&& source.Length >= armVectorThreshold
+			source.Length >= armVectorThreshold
 			&& AesArm.IsSupported
 			&& AdvSimd.IsSupported
 		)

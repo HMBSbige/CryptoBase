@@ -41,12 +41,6 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 		ulong t0 = Unsafe.ReadUnaligned<ulong>(ref source);
 		ulong t1 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref source, 8));
 
-		if (!BitConverter.IsLittleEndian)
-		{
-			t0 = BinaryPrimitives.ReverseEndianness(t0);
-			t1 = BinaryPrimitives.ReverseEndianness(t1);
-		}
-
 		Block(ref h0, ref h1, ref h2, ref carry, r0, r1, s1, t0, t1, highBit);
 	}
 

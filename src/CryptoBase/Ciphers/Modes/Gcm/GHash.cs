@@ -31,13 +31,6 @@ internal ref struct GHash : IDisposable
 	{
 		Debug.Assert(remaining.Length is > 0 and < BlockSizeInBytes);
 
-		if (!BitConverter.IsLittleEndian)
-		{
-			Vector128<byte> block = default;
-			remaining.CopyTo(block.AsSpan());
-			return block;
-		}
-
 		return Vector128.LoadPartialUnsafe(ref MemoryMarshal.GetReference(remaining), 0, remaining.Length);
 	}
 

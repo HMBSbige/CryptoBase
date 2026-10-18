@@ -121,11 +121,11 @@ internal static class Crc32Software
 
 			for (int block = 1; block < blockCount; ++block)
 			{
-				ulong word0 = ReadWord(ref sourceRef) ^ crc0;
-				ulong word1 = ReadWord(ref Unsafe.Add(ref sourceRef, 8)) ^ crc1;
-				ulong word2 = ReadWord(ref Unsafe.Add(ref sourceRef, 16)) ^ crc2;
-				ulong word3 = ReadWord(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3;
-				ulong word4 = useFourWayBraid ? 0 : ReadWord(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4;
+				ulong word0 = Unsafe.ReadUnaligned<ulong>(ref sourceRef) ^ crc0;
+				ulong word1 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 8)) ^ crc1;
+				ulong word2 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 16)) ^ crc2;
+				ulong word3 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3;
+				ulong word4 = useFourWayBraid ? 0 : Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4;
 				crc0 = Unsafe.Add(ref braidLookup, (byte)word0);
 				crc1 = Unsafe.Add(ref braidLookup, (byte)word1);
 				crc2 = Unsafe.Add(ref braidLookup, (byte)word2);
@@ -209,18 +209,18 @@ internal static class Crc32Software
 				sourceRef = ref Unsafe.Add(ref sourceRef, braidBlockSize);
 			}
 
-			uint combined = UpdateWord(ReadWord(ref sourceRef) ^ crc0, ref lookup, ref slicingLookup);
-			combined = UpdateWord(ReadWord(ref Unsafe.Add(ref sourceRef, 8)) ^ crc1 ^ combined, ref lookup, ref slicingLookup);
-			combined = UpdateWord(ReadWord(ref Unsafe.Add(ref sourceRef, 16)) ^ crc2 ^ combined, ref lookup, ref slicingLookup);
+			uint combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref sourceRef) ^ crc0, ref lookup, ref slicingLookup);
+			combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 8)) ^ crc1 ^ combined, ref lookup, ref slicingLookup);
+			combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 16)) ^ crc2 ^ combined, ref lookup, ref slicingLookup);
 
 			if (useFourWayBraid)
 			{
-				state = UpdateWord(ReadWord(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3 ^ combined, ref lookup, ref slicingLookup);
+				state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3 ^ combined, ref lookup, ref slicingLookup);
 			}
 			else
 			{
-				combined = UpdateWord(ReadWord(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3 ^ combined, ref lookup, ref slicingLookup);
-				state = UpdateWord(ReadWord(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4 ^ combined, ref lookup, ref slicingLookup);
+				combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3 ^ combined, ref lookup, ref slicingLookup);
+				state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4 ^ combined, ref lookup, ref slicingLookup);
 			}
 
 			sourceRef = ref Unsafe.Add(ref sourceRef, braidBlockSize);
@@ -229,7 +229,7 @@ internal static class Crc32Software
 
 		while (length >= sizeof(ulong))
 		{
-			state = UpdateWord(ReadWord(ref sourceRef) ^ state, ref lookup, ref slicingLookup);
+			state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref sourceRef) ^ state, ref lookup, ref slicingLookup);
 			sourceRef = ref Unsafe.Add(ref sourceRef, sizeof(ulong));
 			length -= sizeof(ulong);
 		}
@@ -250,13 +250,6 @@ internal static class Crc32Software
 		return typeof(TMode) != typeof(FiveWayBraid)
 			? Unsafe.AddByteOffset(ref Unsafe.Add(ref baseLookup, index), byteOffset)
 			: Unsafe.Add(ref tableLookup, index);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong ReadWord(ref byte source)
-	{
-		ulong value = Unsafe.ReadUnaligned<ulong>(ref source);
-		return BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

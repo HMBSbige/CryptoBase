@@ -89,11 +89,6 @@ internal struct Blake2bCore
 			Compress(ref state[0], finalBlock.AsReadOnlySpan(), (uint)sourceLength, ulong.MaxValue);
 		}
 
-		if (!BitConverter.IsLittleEndian)
-		{
-			BinaryPrimitives.ReverseEndianness(state, state);
-		}
-
 		MemoryMarshal.AsBytes(state).Slice(0, hashLength).CopyTo(destination);
 	}
 
@@ -179,12 +174,6 @@ internal struct Blake2bCore
 		Compress(ref _state[0], buffer.AsReadOnlySpan(), _counter + (uint)bufferedLength, ulong.MaxValue);
 
 		Span<ulong> state = _state;
-
-		if (!BitConverter.IsLittleEndian)
-		{
-			BinaryPrimitives.ReverseEndianness(state, state);
-		}
-
 		MemoryMarshal.AsBytes(state).Slice(0, hashLength).CopyTo(destination);
 	}
 

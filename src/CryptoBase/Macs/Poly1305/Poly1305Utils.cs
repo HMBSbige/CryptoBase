@@ -65,12 +65,6 @@ internal static class Poly1305Utils
 	{
 		Debug.Assert(destination.Length >= Poly1305Algorithm.MacLength);
 
-		if (!BitConverter.IsLittleEndian)
-		{
-			low = BinaryPrimitives.ReverseEndianness(low);
-			high = BinaryPrimitives.ReverseEndianness(high);
-		}
-
 		ref byte output = ref MemoryMarshal.GetReference(destination);
 
 		if (Vector128.IsHardwareAccelerated)

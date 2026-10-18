@@ -8,8 +8,7 @@ internal static class Gcm
 		Debug.Assert(nonce.Length is 12);
 		ref byte source = ref MemoryMarshal.GetReference(nonce);
 		ulong low = Unsafe.ReadUnaligned<ulong>(ref source);
-		ulong high = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref source, 8));
-		high = BitConverter.IsLittleEndian ? high | 0x0100000000000000UL : high << 32 | 1UL;
+		ulong high = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref source, 8)) | 0x0100000000000000UL;
 		j0 = Vector128.CreateUInt64(low, high).AsByte();
 		return j0.WithElement(15, (byte)2);
 	}
@@ -17,15 +16,8 @@ internal static class Gcm
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static Vector128<byte> CreateLengthBlock(int associatedDataLength, int ciphertextLength)
 	{
-		ulong associatedDataBits = (ulong)associatedDataLength << 3;
-		ulong ciphertextBits = (ulong)ciphertextLength << 3;
-
-		if (BitConverter.IsLittleEndian)
-		{
-			associatedDataBits = BinaryPrimitives.ReverseEndianness(associatedDataBits);
-			ciphertextBits = BinaryPrimitives.ReverseEndianness(ciphertextBits);
-		}
-
+		ulong associatedDataBits = BinaryPrimitives.ReverseEndianness((ulong)associatedDataLength << 3);
+		ulong ciphertextBits = BinaryPrimitives.ReverseEndianness((ulong)ciphertextLength << 3);
 		return Vector128.CreateUInt64(associatedDataBits, ciphertextBits).AsByte();
 	}
 }
