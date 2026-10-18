@@ -580,9 +580,10 @@ public sealed partial class Base32Encoding
 		return (sourceLength * OutputSymbolsPerBlock + InputBytesPerBlock - 1) / InputBytesPerBlock;
 	}
 
+	// Counts are non-negative, so an unsigned shift replaces the signed 64-bit division, which needs a sign fixup on x64 and a helper call on x86.
 	private static int GetDecodedLength(int symbolCount)
 	{
-		return (int)((long)symbolCount * InputBytesPerBlock / OutputSymbolsPerBlock);
+		return (int)((ulong)(uint)symbolCount * InputBytesPerBlock >> 3);
 	}
 
 	private static bool IsValidSymbolCount(int symbolCount)
