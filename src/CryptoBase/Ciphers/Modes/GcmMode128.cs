@@ -93,12 +93,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 			else
 			{
 				_blockCipher.EncryptBlock(j0.AsReadOnlySpan(), tagMask.AsSpan());
-				int processed = BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer32>(_blockCipher, ref counter, source, destination);
-
-				if (processed < source.Length)
-				{
-					CtrBlocks<TBlockCipher, CtrIncrementer32>.Xor(_blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
-				}
+				XorKeyStream(ref counter, source, destination);
 			}
 
 			Vector128<byte> lengthBlock = CreateLengthBlock(associatedData.Length, source.Length);
@@ -142,18 +137,23 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 				return false;
 			}
 
-			int processed = BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer32>(_blockCipher, ref counter, source, destination);
-
-			if (processed < source.Length)
-			{
-				CtrBlocks<TBlockCipher, CtrIncrementer32>.Xor(_blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
-			}
-
+			XorKeyStream(ref counter, source, destination);
 			return true;
 		}
 		finally
 		{
 			hash.Dispose();
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void XorKeyStream(ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		int processed = BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer32>(_blockCipher, ref counter, source, destination);
+
+		if (processed < source.Length)
+		{
+			CtrBlocks<TBlockCipher, CtrIncrementer32>.Xor(_blockCipher, ref counter, source.Slice(processed), destination.Slice(processed));
 		}
 	}
 
