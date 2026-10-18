@@ -14,7 +14,8 @@ namespace CryptoBase.IO.Xts;
 /// Aligned reads land directly in the caller's buffer and are decrypted in place; partial data units go through a pooled
 /// scratch unit. Writes assemble whole data units in a pooled window: encrypted zeros for any gap after the old end, the
 /// caller's data, and the existing plaintext around partially written units. Each window is encrypted in place and written
-/// with one backend call, so the caller's buffer is never modified. Every pooled buffer is cleared before it is returned.
+/// with one backend call, so the caller's buffer is never modified. Read scratch units are cleared before they are returned;
+/// a written window holds only ciphertext, so write windows are cleared only when a write fails.
 /// Instances are not thread-safe.
 /// </para>
 /// </remarks>
@@ -154,7 +155,7 @@ internal sealed class XtsDataUnitTransform<TCipher> : IDisposable where TCipher 
 		}
 		finally
 		{
-			ReturnCleared(scratch, DataUnitSize);
+			ReturnCleared(scratch);
 		}
 	}
 
@@ -250,7 +251,7 @@ internal sealed class XtsDataUnitTransform<TCipher> : IDisposable where TCipher 
 		}
 		finally
 		{
-			ReturnCleared(scratch, DataUnitSize);
+			ReturnCleared(scratch);
 		}
 	}
 
@@ -280,9 +281,15 @@ internal sealed class XtsDataUnitTransform<TCipher> : IDisposable where TCipher 
 				await _storage.WriteAsync(window, windowStart, cancellationToken).ConfigureAwait(false);
 			}
 		}
+		catch
+		{
+			// A failure before the window is encrypted leaves plaintext in it.
+			CryptographicOperations.ZeroMemory(scratch.AsSpan(0, scratchLength));
+			throw;
+		}
 		finally
 		{
-			ReturnCleared(scratch, scratchLength);
+			ArrayPool<byte>.Shared.Return(scratch);
 		}
 	}
 
@@ -314,9 +321,15 @@ internal sealed class XtsDataUnitTransform<TCipher> : IDisposable where TCipher 
 				_storage.Write(window, windowStart);
 			}
 		}
+		catch
+		{
+			// A failure before the window is encrypted leaves plaintext in it.
+			CryptographicOperations.ZeroMemory(scratch.AsSpan(0, scratchLength));
+			throw;
+		}
 		finally
 		{
-			ReturnCleared(scratch, scratchLength);
+			ArrayPool<byte>.Shared.Return(scratch);
 		}
 	}
 
@@ -494,15 +507,15 @@ internal sealed class XtsDataUnitTransform<TCipher> : IDisposable where TCipher 
 		}
 	}
 
-	private static void ReturnCleared(byte[]? array, int length)
+	private void ReturnCleared(byte[]? scratch)
 	{
-		if (array is null)
+		if (scratch is null)
 		{
 			return;
 		}
 
-		CryptographicOperations.ZeroMemory(array.AsSpan(0, length));
-		ArrayPool<byte>.Shared.Return(array);
+		CryptographicOperations.ZeroMemory(scratch.AsSpan(0, DataUnitSize));
+		ArrayPool<byte>.Shared.Return(scratch);
 	}
 
 	[DoesNotReturn]
