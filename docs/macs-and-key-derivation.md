@@ -137,7 +137,9 @@ hasher.Append(inputKeyMaterial);
 hasher.GetCurrentHash(outputKeyMaterial);
 ```
 
-## Argon2id
+## Argon2
+
+Argon2id, Argon2i and Argon2d take the same arguments. RFC 9106 makes Argon2id the primary variant. Argon2d's memory accesses depend on the password, so use it only where side-channel attacks are not a threat.
 
 ```csharp
 using System.Security.Cryptography;
@@ -161,4 +163,35 @@ Argon2id.DeriveKey(password, salt, tag, parameters);
 // Add a secret key (pepper) and associated data.
 byte[] secret = RandomNumberGenerator.GetBytes(32);
 Argon2id.DeriveKey(password, salt, tag, parameters, secret, "user-id"u8);
+
+// Use the other types.
+Argon2i.DeriveKey(password, salt, tag, parameters);
+Argon2d.DeriveKey(password, salt, tag, parameters);
+```
+
+`Argon2PasswordHasher` stores a password hash with its type, parameters and salt in the PHC string format of the Argon2 reference implementation, such as `$argon2id$v=19$m=19456,t=2,p=1$<salt>$<hash>`. `Verify` and `NeedsRehash` throw `FormatException` for a malformed or unsupported string. `Verify` costs the time and memory the string specifies, so verify only strings from trusted storage.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Kdf;
+
+ReadOnlySpan<byte> password = "correct horse battery staple"u8;
+Argon2Parameters parameters = new(memorySizeInKibibytes: 19 * 1024, iterations: 2, parallelism: 1);
+
+// Hash with a random 16-byte salt into a 32-byte hash.
+string stored = Argon2PasswordHasher.Hash(password, parameters, Argon2Type.Argon2id);
+
+// Verify a password against the stored string.
+bool valid = Argon2PasswordHasher.Verify(password, stored);
+
+// Once a password is verified, hash it again if the stored settings are not the current ones.
+if (valid && Argon2PasswordHasher.NeedsRehash(stored, Argon2Parameters.Rfc9106SecondRecommended, Argon2Type.Argon2id))
+{
+    stored = Argon2PasswordHasher.Hash(password, Argon2Parameters.Rfc9106SecondRecommended, Argon2Type.Argon2id);
+}
+
+// The string does not hold the secret key (pepper), so pass it to both methods.
+byte[] secret = RandomNumberGenerator.GetBytes(32);
+string peppered = Argon2PasswordHasher.Hash(password, parameters, Argon2Type.Argon2id, secret: secret);
+valid = Argon2PasswordHasher.Verify(password, peppered, secret);
 ```

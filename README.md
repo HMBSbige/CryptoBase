@@ -57,8 +57,10 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| HKDF | ✅ |
+| Argon2d | ✅ |
+| Argon2i | ✅ |
 | Argon2id | ✅ |
+| HKDF | ✅ |
 | TLS 1.2 PRF | ✅ |
 
 ### Symmetric-key algorithms
