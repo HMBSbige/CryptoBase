@@ -69,13 +69,13 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 		Transform<Decryption>(tweak, source, destination);
 	}
 
-	private void Transform<TDirection>(ReadOnlySpan<byte> tweakInput, ReadOnlySpan<byte> source, Span<byte> destination) where TDirection : struct, IBlockDirection
+	private void Transform<TDirection>(ReadOnlySpan<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination) where TDirection : struct, IBlockDirection
 	{
-		ArgumentOutOfRangeException.ThrowIfNotEqual(tweakInput.Length, BlockSize, nameof(tweakInput));
+		ArgumentOutOfRangeException.ThrowIfNotEqual(tweak.Length, BlockSize, nameof(tweak));
 		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, BlockSize, nameof(source));
 		CipherBufferGuard.Output(source, destination);
-		Vector128<byte> tweak = default;
-		_tweakCipher.EncryptBlock(tweakInput, tweak.AsSpan());
+		Vector128<byte> tweakBlock = default;
+		_tweakCipher.EncryptBlock(tweak, tweakBlock.AsSpan());
 		int tail = source.Length % BlockSize;
 		int fullLength = tail is 0 ? source.Length : source.Length - tail - BlockSize;
 		bool stealingBlockTransformed = false;
@@ -84,16 +84,16 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 		{
 			ReadOnlySpan<byte> fullSource = source.Slice(0, fullLength);
 
-			if (!BlockModeDispatch.TryTransformXts<TBlockCipher, TDirection>(_dataCipher, ref tweak, fullSource, destination))
+			if (!BlockModeDispatch.TryTransformXts<TBlockCipher, TDirection>(_dataCipher, ref tweakBlock, fullSource, destination))
 			{
-				TransformBuffered<TDirection>(ref tweak, source.Slice(0, source.Length - tail), destination, TDirection.IsDecrypt && tail is not 0);
+				TransformBuffered<TDirection>(ref tweakBlock, source.Slice(0, source.Length - tail), destination, TDirection.IsDecrypt && tail is not 0);
 				stealingBlockTransformed = tail is not 0;
 			}
 		}
 
 		if (tail is not 0)
 		{
-			TransformTail<TDirection>(tweak, source.Slice(fullLength), destination.Slice(fullLength), tail, stealingBlockTransformed);
+			TransformTail<TDirection>(tweakBlock, source.Slice(fullLength), destination.Slice(fullLength), tail, stealingBlockTransformed);
 		}
 	}
 
