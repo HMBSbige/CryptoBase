@@ -189,7 +189,7 @@ internal static partial class ChaCha20Utils
 			}
 
 			FastUtils.Xor(keyStreamBuffer, MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref input, processed), partial), MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output, processed), partial), partial);
-			keyStreamBuffer.Clear();
+			keyStreamBuffer.ZeroMemory();
 			processed = length;
 		}
 
