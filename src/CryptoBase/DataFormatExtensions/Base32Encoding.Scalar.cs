@@ -336,9 +336,9 @@ public sealed partial class Base32Encoding
 
 			if (bits >= 8)
 			{
+				// Bits above the pending ones are already written, and the byte cast drops them.
 				bits -= 8;
 				destination[destinationOffset++] = (byte)(buffer >> bits);
-				buffer &= (1 << bits) - 1;
 			}
 		}
 
