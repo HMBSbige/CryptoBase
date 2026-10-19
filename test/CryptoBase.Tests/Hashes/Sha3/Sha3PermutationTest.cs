@@ -7,7 +7,7 @@ public class Sha3PermutationTest
 {
 	// Keccak-f[1600] applied to the all-zero state, then to its own output, from the Keccak team's
 	// https://github.com/XKCP/XKCP/blob/master/tests/TestVectors/KeccakF-1600-IntermediateValues.txt
-	private static readonly ulong[] ZeroStatePermutedOnce =
+	internal static readonly ulong[] ZeroStatePermutedOnce =
 	[
 		0xF1258F7940E1DDE7UL, 0x84D5CCF933C0478AUL, 0xD598261EA65AA9EEUL, 0xBD1547306F80494DUL, 0x8B284E056253D057UL,
 		0xFF97A42D7F8E6FD4UL, 0x90FEE5A0A44647C4UL, 0x8C5BDA0CD6192E76UL, 0xAD30A6F71B19059CUL, 0x30935AB7D08FFC64UL,
@@ -16,7 +16,7 @@ public class Sha3PermutationTest
 		0x940C7922AE3A2614UL, 0x1841F924A2C509E4UL, 0x16F53526E70465C2UL, 0x75F644E97F30A13BUL, 0xEAF1FF7B5CECA249UL
 	];
 
-	private static readonly ulong[] ZeroStatePermutedTwice =
+	internal static readonly ulong[] ZeroStatePermutedTwice =
 	[
 		0x2D5C954DF96ECB3CUL, 0x6A332CD07057B56DUL, 0x093D8D1270D76B6CUL, 0x8A20D9B25569D094UL, 0x4F9C4F99E5E7F156UL,
 		0xF957B9A2DA65FB38UL, 0x85773DAE1275AF0DUL, 0xFAF4F247C3D810F7UL, 0x1F1B9EE6F79A8759UL, 0xE4FECC0FEE98B425UL,
