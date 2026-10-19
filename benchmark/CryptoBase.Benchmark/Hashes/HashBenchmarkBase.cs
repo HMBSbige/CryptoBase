@@ -20,6 +20,8 @@ public static class HashBenchmarkSizes
 	public static IReadOnlyList<int> Rate136 { get; } = [0, 135, 136, 256, 1024, 8192, 1024 * 1024];
 
 	public static IReadOnlyList<int> Rate144 { get; } = [0, 143, 144, 256, 1024, 8192, 1024 * 1024];
+
+	public static IReadOnlyList<int> Rate168 { get; } = [0, 167, 168, 256, 1024, 8192, 1024 * 1024];
 }
 
 public abstract class BouncyCastleHashBenchmark<TCryptoBase, TBouncyCastle>
