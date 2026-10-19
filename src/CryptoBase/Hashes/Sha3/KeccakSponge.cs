@@ -13,6 +13,14 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 
 	internal bool IsSqueezing { get; private set; }
 
+	// Lets KeccakBatchSponge hand one of its streams over to go on alone.
+	internal KeccakSponge(in InlineArray25<ulong> state, int position, bool isSqueezing)
+	{
+		_state = state;
+		_position = position;
+		IsSqueezing = isSqueezing;
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Reset()
 	{
