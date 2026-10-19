@@ -82,7 +82,7 @@ public class ShakeTest
 		}
 	}
 
-	// Appends and reads the same pieces on both sides, so each call boundary is compared with the platform's.
+	// Appends the same pieces on both sides, so each call boundary is compared with the platform's.
 	[Test]
 	[MethodDataSource(nameof(SecurityStrengths))]
 	public async Task MatchesPlatformIncrementally(int securityStrength)
@@ -93,14 +93,8 @@ public class ShakeTest
 
 		foreach (int[] pieceLengths in XofContractTest.PieceLengthPatterns(rate))
 		{
-			using IDisposable platform = CreatePlatform(securityStrength, out Action<ReadOnlySpan<byte>> platformAppend, out PlatformOutput platformRead,
-				out PlatformOutput platformCurrent, out PlatformOutput platformFinal);
-			using Xof<Shake128HashAlgorithm> shake128 = Xof<Shake128HashAlgorithm>.Create();
-			using Xof<Shake256HashAlgorithm> shake256 = Xof<Shake256HashAlgorithm>.Create();
-			Action<ReadOnlySpan<byte>> append = securityStrength is 128 ? shake128.Append : shake256.Append;
-			PlatformOutput read = securityStrength is 128 ? shake128.Read : shake256.Read;
-			PlatformOutput current = securityStrength is 128 ? shake128.GetCurrentHash : shake256.GetCurrentHash;
-			PlatformOutput final = securityStrength is 128 ? shake128.GetHashAndReset : shake256.GetHashAndReset;
+			using IDisposable platform = CreatePlatform(securityStrength, out Action<ReadOnlySpan<byte>> platformAppend, out _, out PlatformOutput platformCurrent, out PlatformOutput platformFinal);
+			using IDisposable xof = CreateXof(securityStrength, out Action<ReadOnlySpan<byte>> append, out _, out PlatformOutput current, out PlatformOutput final);
 
 			for (int round = 0; round < 2; ++round)
 			{
@@ -117,7 +111,22 @@ public class ShakeTest
 				await AssertSameOutput(current, platformCurrent, 3 * rate + 11);
 				await AssertSameOutput(final, platformFinal, rate + 1);
 			}
+		}
+	}
 
+	// Reads the same pieces on both sides, so each read boundary is compared with the platform's.
+	[Test]
+	[MethodDataSource(nameof(SecurityStrengths))]
+	public async Task MatchesPlatformReads(int securityStrength)
+	{
+		SkipUnlessPlatformReads(securityStrength);
+		int rate = Rate(securityStrength);
+		byte[] source = CreateDeterministicSource(7 * rate + 13);
+
+		foreach (int[] pieceLengths in XofContractTest.PieceLengthPatterns(rate))
+		{
+			using IDisposable platform = CreatePlatform(securityStrength, out Action<ReadOnlySpan<byte>> platformAppend, out PlatformOutput platformRead, out _, out _);
+			using IDisposable xof = CreateXof(securityStrength, out Action<ReadOnlySpan<byte>> append, out PlatformOutput read, out _, out _);
 			platformAppend(source);
 			append(source);
 
@@ -242,6 +251,22 @@ public class ShakeTest
 		}
 	}
 
+	// Reading in pieces needs EVP_DigestSqueeze, which OpenSSL added in 3.3; with an older OpenSSL, Read throws PlatformNotSupportedException.
+	private static void SkipUnlessPlatformReads(int securityStrength)
+	{
+		SkipUnlessPlatformSupports(securityStrength);
+		using IDisposable platform = CreatePlatform(securityStrength, out _, out PlatformOutput read, out _, out _);
+
+		try
+		{
+			read(new byte[1]);
+		}
+		catch (PlatformNotSupportedException)
+		{
+			Skip.Test($"The platform's SHAKE{securityStrength} cannot read in pieces.");
+		}
+	}
+
 	private static void PlatformHashData(int securityStrength, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		if (securityStrength is 128)
@@ -267,6 +292,22 @@ public class ShakeTest
 			Shake256 shake = new();
 			(append, read, current, final) = (shake.AppendData, shake.Read, shake.GetCurrentHash, shake.GetHashAndReset);
 			return shake;
+		}
+	}
+
+	private static IDisposable CreateXof(int securityStrength, out Action<ReadOnlySpan<byte>> append, out PlatformOutput read, out PlatformOutput current, out PlatformOutput final)
+	{
+		if (securityStrength is 128)
+		{
+			Xof<Shake128HashAlgorithm> xof = Xof<Shake128HashAlgorithm>.Create();
+			(append, read, current, final) = (xof.Append, xof.Read, xof.GetCurrentHash, xof.GetHashAndReset);
+			return xof;
+		}
+		else
+		{
+			Xof<Shake256HashAlgorithm> xof = Xof<Shake256HashAlgorithm>.Create();
+			(append, read, current, final) = (xof.Append, xof.Read, xof.GetCurrentHash, xof.GetHashAndReset);
+			return xof;
 		}
 	}
 
