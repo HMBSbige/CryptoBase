@@ -6,6 +6,8 @@ using CryptoBase.Hashes.Sha256;
 using CryptoBase.Hashes.Sha384;
 using CryptoBase.Hashes.Sha512;
 using CryptoBase.Kdf;
+using CryptoBase.Macs.Hmac;
+using CryptoBase.Platform;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Kdf;
@@ -80,6 +82,20 @@ public class Hkdf64Benchmark
 		return Hkdf.Extract<Sha256HashAlgorithm>(_ikm, _salt, _sha256Prk);
 	}
 
+	[Benchmark]
+	[BenchmarkCategory("SHA-256 Extract")]
+	public int GenericSha256Extract()
+	{
+		return Hkdf<HmacAlgorithm<Sha256HashAlgorithm>>.Extract(_ikm, _salt, _sha256Prk);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("SHA-256 Extract")]
+	public int PlatformSha256Extract()
+	{
+		return Hkdf<PlatformHmacSha256>.Extract(_ikm, _salt, _sha256Prk);
+	}
+
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("SHA-256 DeriveKey")]
 	public void BclSha256DeriveKey()
@@ -92,6 +108,20 @@ public class Hkdf64Benchmark
 	public void CryptoBaseSha256DeriveKey()
 	{
 		Hkdf.DeriveKey<Sha256HashAlgorithm>(_ikm, _sha256Output, _salt, _info);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("SHA-256 DeriveKey")]
+	public void GenericSha256DeriveKey()
+	{
+		Hkdf<HmacAlgorithm<Sha256HashAlgorithm>>.DeriveKey(_ikm, _sha256Output, _salt, _info);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("SHA-256 DeriveKey")]
+	public void PlatformSha256DeriveKey()
+	{
+		Hkdf<PlatformHmacSha256>.DeriveKey(_ikm, _sha256Output, _salt, _info);
 	}
 }
 
@@ -210,6 +240,165 @@ public class Hkdf64BlockCountBenchmark
 	public void Bcl()
 	{
 		HKDF.DeriveKey(HashAlgorithmName.SHA256, _ikm, _output, _salt, _info);
+	}
+
+	[Benchmark]
+	public void Generic()
+	{
+		Hkdf<HmacAlgorithm<Sha256HashAlgorithm>>.DeriveKey(_ikm, _output, _salt, _info);
+	}
+
+	[Benchmark]
+	public void Platform()
+	{
+		Hkdf<PlatformHmacSha256>.DeriveKey(_ikm, _output, _salt, _info);
+	}
+}
+
+// The shape of a TLS 1.3 key schedule step with SHA-256: a 32-byte secret and salt, and a 32-byte output from an HkdfLabel of about 50 bytes.
+[MemoryDiagnoser]
+[CategoriesColumn]
+[GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
+public class HkdfTls13Benchmark
+{
+	private byte[] _ikm = [];
+	private byte[] _salt = [];
+	private byte[] _info = [];
+	private byte[] _prk = [];
+	private byte[] _output = [];
+
+	[GlobalSetup]
+	public void Setup()
+	{
+		_ikm = RandomNumberGenerator.GetBytes(32);
+		_salt = RandomNumberGenerator.GetBytes(32);
+		_info = RandomNumberGenerator.GetBytes(50);
+		_prk = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		_output = new byte[32];
+
+		BclExtract();
+		byte[] expectedPrk = (byte[])_prk.Clone();
+		VerifyExtract(expectedPrk, CryptoBaseExtract);
+		VerifyExtract(expectedPrk, GenericExtract);
+		VerifyExtract(expectedPrk, PlatformExtract);
+
+		BclExpand();
+		byte[] expectedExpand = (byte[])_output.Clone();
+		VerifyOutput(expectedExpand, CryptoBaseExpand);
+		VerifyOutput(expectedExpand, GenericExpand);
+		VerifyOutput(expectedExpand, PlatformExpand);
+
+		BclDeriveKey();
+		byte[] expectedDeriveKey = (byte[])_output.Clone();
+		VerifyOutput(expectedDeriveKey, CryptoBaseDeriveKey);
+		VerifyOutput(expectedDeriveKey, GenericDeriveKey);
+		VerifyOutput(expectedDeriveKey, PlatformDeriveKey);
+	}
+
+	private void VerifyExtract(byte[] expected, Func<int> extract)
+	{
+		_prk.AsSpan().Clear();
+		extract();
+		Verify(expected, _prk);
+	}
+
+	private void VerifyOutput(byte[] expected, Action derive)
+	{
+		_output.AsSpan().Clear();
+		derive();
+		Verify(expected, _output);
+	}
+
+	private static void Verify(ReadOnlySpan<byte> expected, ReadOnlySpan<byte> actual)
+	{
+		if (!CryptographicOperations.FixedTimeEquals(expected, actual))
+		{
+			throw new InvalidOperationException("Benchmark implementations produced different keys.");
+		}
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("Extract")]
+	public int BclExtract()
+	{
+		return HKDF.Extract(HashAlgorithmName.SHA256, _ikm, _salt, _prk);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Extract")]
+	public int CryptoBaseExtract()
+	{
+		return Hkdf.Extract<Sha256HashAlgorithm>(_ikm, _salt, _prk);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Extract")]
+	public int GenericExtract()
+	{
+		return Hkdf<HmacAlgorithm<Sha256HashAlgorithm>>.Extract(_ikm, _salt, _prk);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Extract")]
+	public int PlatformExtract()
+	{
+		return Hkdf<PlatformHmacSha256>.Extract(_ikm, _salt, _prk);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("Expand")]
+	public void BclExpand()
+	{
+		HKDF.Expand(HashAlgorithmName.SHA256, _prk, _output, _info);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Expand")]
+	public void CryptoBaseExpand()
+	{
+		Hkdf.Expand<Sha256HashAlgorithm>(_prk, _output, _info);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Expand")]
+	public void GenericExpand()
+	{
+		Hkdf<HmacAlgorithm<Sha256HashAlgorithm>>.Expand(_prk, _output, _info);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Expand")]
+	public void PlatformExpand()
+	{
+		Hkdf<PlatformHmacSha256>.Expand(_prk, _output, _info);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("DeriveKey")]
+	public void BclDeriveKey()
+	{
+		HKDF.DeriveKey(HashAlgorithmName.SHA256, _ikm, _output, _salt, _info);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("DeriveKey")]
+	public void CryptoBaseDeriveKey()
+	{
+		Hkdf.DeriveKey<Sha256HashAlgorithm>(_ikm, _output, _salt, _info);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("DeriveKey")]
+	public void GenericDeriveKey()
+	{
+		Hkdf<HmacAlgorithm<Sha256HashAlgorithm>>.DeriveKey(_ikm, _output, _salt, _info);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("DeriveKey")]
+	public void PlatformDeriveKey()
+	{
+		Hkdf<PlatformHmacSha256>.DeriveKey(_ikm, _output, _salt, _info);
 	}
 }
 

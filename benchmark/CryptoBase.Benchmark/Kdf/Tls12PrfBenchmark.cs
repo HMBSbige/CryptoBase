@@ -3,6 +3,8 @@ using BenchmarkDotNet.Configs;
 using CryptoBase.Hashes.Sha256;
 using CryptoBase.Hashes.Sha384;
 using CryptoBase.Kdf;
+using CryptoBase.Macs.Hmac;
+using CryptoBase.Platform;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
@@ -17,8 +19,8 @@ public class Tls12PrfBenchmark
 {
 	private const string Label = "key expansion";
 
-	// 48 bytes is a master secret; 128 and 256 bytes cover key blocks.
-	[Params(48, 128, 256)]
+	// 32 bytes is a single block, 48 bytes is a master secret, and 128 and 256 bytes cover key blocks.
+	[Params(32, 48, 128, 256)]
 	public int OutputLength { get; set; }
 
 	private byte[] _secret = [];
@@ -47,6 +49,20 @@ public class Tls12PrfBenchmark
 	public void CryptoBaseSha256()
 	{
 		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(_secret, "key expansion"u8, _seed, _output);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("SHA-256")]
+	public void GenericSha256()
+	{
+		Tls12Prf<HmacAlgorithm<Sha256HashAlgorithm>>.DeriveKey(_secret, "key expansion"u8, _seed, _output);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("SHA-256")]
+	public void PlatformSha256()
+	{
+		Tls12Prf<PlatformHmacSha256>.DeriveKey(_secret, "key expansion"u8, _seed, _output);
 	}
 
 	[Benchmark(Baseline = true)]

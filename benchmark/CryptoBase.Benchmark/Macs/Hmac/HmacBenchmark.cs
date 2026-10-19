@@ -9,6 +9,7 @@ using CryptoBase.Hashes.Sha384;
 using CryptoBase.Hashes.Sha512;
 using CryptoBase.Hashes.SM3;
 using CryptoBase.Macs.Hmac;
+using CryptoBase.Platform;
 using System.Security.Cryptography;
 using BouncyCastleHmac = Org.BouncyCastle.Crypto.Macs.HMac;
 using BouncyCastleKeyParameter = Org.BouncyCastle.Crypto.Parameters.KeyParameter;
@@ -175,6 +176,14 @@ public class HmacBenchmark
 	public int Sha256CryptoBase(int inputLength, int keyLength)
 	{
 		return HmacAlgorithm<Sha256HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("HMAC-SHA256")]
+	[ArgumentsSource(nameof(Block64Arguments))]
+	public int Sha256Platform(int inputLength, int keyLength)
+	{
+		return PlatformHmacSha256.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
