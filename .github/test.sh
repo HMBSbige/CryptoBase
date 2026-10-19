@@ -1,10 +1,26 @@
 #!/usr/bin/env bash
-# Runs the Release tests with full optimization, from the repository root.
+# Runs the tests from the repository root: optimized Release by default, "tiered" for tiered compilation, "debug" for Debug.
 #   DISABLE   Comma-separated DOTNET_Enable<name> switches to turn off; Vector512 caps vectors at 256 bits instead.
-#   SDE_PATH  Intel SDE kit; the tests run under "sde64 -spr" when SDE adds instruction sets this runner lacks.
+#   SDE_PATH  Intel SDE kit; the default mode runs under "sde64 -spr" when SDE adds instruction sets this runner lacks.
+#   SHARD     hashes, ciphers or rest: runs only that shard.
 set -eo pipefail
 
-export DOTNET_TieredCompilation=0
+tests=artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll
+
+# Filters cannot negate, so rest lists every other namespace.
+shard_filter() {
+	case $1 in
+		hashes) echo '/*/CryptoBase.Tests.Hashes*/*/*' ;;
+		ciphers) echo '/*/CryptoBase.Tests.Ciphers*/*/*' ;;
+		rest) echo "/*/(CryptoBase.Tests)$(printf '|(CryptoBase.Tests.%s*)' Cavp DataFormatExtensions IO Kdf Kems Macs Platform Vectors Wycheproof)/*/*" ;;
+		*) echo "Unknown shard: $1" >&2; return 1 ;;
+	esac
+}
+
+# Prints the namespaces of the tests that a filter selects.
+namespaces() {
+	dotnet "$tests" --list-tests json --treenode-filter "$1" --ignore-exit-code 8 | awk -F'"' '$2 == "namespace" { print $4 }' | sort -u
+}
 
 for feature in ${DISABLE//,/ }; do
 	case $feature in
@@ -13,6 +29,33 @@ for feature in ${DISABLE//,/ }; do
 	esac
 done
 
+filter=()
+
+if [[ -n $SHARD ]]; then
+	shard=$(shard_filter "$SHARD")
+	filter=(--treenode-filter "$shard")
+fi
+
+case $1 in
+	'') ;;
+	tiered) exec dotnet "$tests" --minimum-expected-tests 1 "${filter[@]}" ;;
+	debug) exec dotnet test --project test/CryptoBase.Tests -c Debug --minimum-expected-tests 1 "${filter[@]}" ;;
+	*) echo "Unknown mode: $1" >&2; exit 1 ;;
+esac
+
+# A namespace missing from rest would go untested. The wildcard filter, like the shards, leaves out explicit tests.
+if [[ -n $SHARD ]]; then
+	all=$(namespaces '/*/*/*/*')
+	sharded=$(for name in hashes ciphers rest; do namespaces "$(shard_filter "$name")"; done | sort)
+
+	if [[ -z $all || $all != "$sharded" ]]; then
+		echo 'Each namespace must be in exactly one shard (< missing, > repeated):' >&2
+		diff <(echo "$all") <(echo "$sharded") >&2
+		exit 1
+	fi
+fi
+
+export DOTNET_TieredCompilation=0
 runner=(dotnet)
 
 if [[ -n $SDE_PATH ]]; then
@@ -37,4 +80,4 @@ if [[ -n $SDE_PATH ]]; then
 	fi
 fi
 
-"${runner[@]}" artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --minimum-expected-tests 1
+"${runner[@]}" "$tests" --minimum-expected-tests 1 "${filter[@]}"

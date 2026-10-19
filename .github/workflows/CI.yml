@@ -38,23 +38,38 @@ jobs:
         run: dotnet format --no-restore -v diag --verify-no-changes
 
   test:
-    name: test (${{ matrix.os }}${{ matrix.disable && format(', no {0}', matrix.disable) }})
+    name: test (${{ matrix.os }}${{ matrix.disable && format(', no {0}', matrix.disable) }}${{ matrix.shard && format(', {0}', matrix.shard) }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     defaults:
       run:
         shell: bash
+    env:
+      # test.sh defines the shards.
+      SHARD: ${{ matrix.shard }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Linux x64 covers every x86 instruction-set level, under Intel SDE where the runner lacks one (see test.sh).
-          - { os: ubuntu-latest }
-          - { os: ubuntu-latest, disable: AVX512v2 }
-          - { os: ubuntu-latest, disable: Vector512 }
-          - { os: ubuntu-latest, disable: VAES }
-          - { os: ubuntu-latest, disable: GFNI }
-          - { os: ubuntu-latest, disable: AVX512 }
+          # Linux x64 covers every x86 instruction-set level, under Intel SDE where sde is set and the runner lacks one (see test.sh).
+          # Emulating AVX-512 is slow, so the entries that need it run in shards.
+          - { os: ubuntu-latest, sde: true, shard: hashes }
+          - { os: ubuntu-latest, sde: true, shard: ciphers }
+          - { os: ubuntu-latest, sde: true, shard: rest }
+          - { os: ubuntu-latest, disable: AVX512v2, sde: true, shard: hashes }
+          - { os: ubuntu-latest, disable: AVX512v2, sde: true, shard: ciphers }
+          - { os: ubuntu-latest, disable: AVX512v2, sde: true, shard: rest }
+          # Still takes the AVX-512VL paths.
+          - { os: ubuntu-latest, disable: Vector512, sde: true, shard: hashes }
+          - { os: ubuntu-latest, disable: Vector512, sde: true, shard: ciphers }
+          - { os: ubuntu-latest, disable: Vector512, sde: true, shard: rest }
+          - { os: ubuntu-latest, disable: VAES, sde: true, shard: hashes }
+          - { os: ubuntu-latest, disable: VAES, sde: true, shard: ciphers }
+          - { os: ubuntu-latest, disable: VAES, sde: true, shard: rest }
+          - { os: ubuntu-latest, disable: GFNI, sde: true, shard: hashes }
+          - { os: ubuntu-latest, disable: GFNI, sde: true, shard: ciphers }
+          - { os: ubuntu-latest, disable: GFNI, sde: true, shard: rest }
+          - { os: ubuntu-latest, disable: AVX512, sde: true }
           - { os: ubuntu-latest, disable: 'AVX512,GFNI,VAES' }
           - { os: ubuntu-latest, disable: AVX2 }
           - { os: ubuntu-latest, disable: AVX }
@@ -81,7 +96,7 @@ jobs:
         with:
           dotnet-version: ${{ env.NET_VERSION }}
       - uses: petarpetrovt/setup-sde@v6.0
-        if: runner.os == 'Linux' && runner.arch == 'X64'
+        if: matrix.sde
 
       - name: Build
         run: dotnet build test/CryptoBase.Tests -c Release
@@ -93,8 +108,8 @@ jobs:
 
       - name: Test (Release, tiered compilation)
         if: ${{ !matrix.disable }}
-        run: dotnet artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll --minimum-expected-tests 1
+        run: bash .github/test.sh tiered
 
       - name: Test (Debug)
         if: ${{ !matrix.disable }}
-        run: dotnet test --project test/CryptoBase.Tests -c Debug --minimum-expected-tests 1
+        run: bash .github/test.sh debug
