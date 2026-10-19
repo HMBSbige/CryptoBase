@@ -135,6 +135,28 @@ public class Argon2MemoryCacheTest
 		}
 	}
 
+	[Test]
+	public async Task KeepsRegionsReturnedWithinThePeriod()
+	{
+		Argon2MemoryCache cache = new(1 << 20, TrimPeriodMilliseconds);
+
+		try
+		{
+			cache.Return(cache.Rent(4096), 4096);
+			cache.Trim(false);
+
+			using (Assert.Multiple())
+			{
+				await Assert.That(cache.CachedBytes).IsEqualTo(4096u);
+				await Assert.That(TrimTimer(cache)).IsNotNull();
+			}
+		}
+		finally
+		{
+			cache.Trim(true);
+		}
+	}
+
 	// The trim timer calls back on the thread pool, where other tests running in parallel could hold it back past the deadline.
 	[Test]
 	[NotInParallel]
@@ -152,7 +174,11 @@ public class Argon2MemoryCacheTest
 				await Task.Delay(20);
 			}
 
-			await Assert.That(cache.CachedBytes).IsEqualTo(0u);
+			using (Assert.Multiple())
+			{
+				await Assert.That(cache.CachedBytes).IsEqualTo(0u);
+				await Assert.That(TrimTimer(cache)).IsNull();
+			}
 		}
 		finally
 		{
@@ -162,4 +188,7 @@ public class Argon2MemoryCacheTest
 
 	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_gate")]
 	private static extern ref Lock Gate(Argon2MemoryCache cache);
+
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_trimTimer")]
+	private static extern ref Timer? TrimTimer(Argon2MemoryCache cache);
 }
