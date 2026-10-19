@@ -6,7 +6,7 @@
 | --- | --- |
 | BLAKE2b-256 | `Blake2b256HashAlgorithm` |
 | BLAKE2b-512 | `Blake2b512HashAlgorithm` |
-| BLAKE3 | `Blake3HashAlgorithm` |
+| BLAKE3 | `Blake3HashAlgorithm` (also an XOF) |
 | MD5 | `MD5HashAlgorithm` |
 | SHA-1 | `Sha1HashAlgorithm` |
 | SHA-224 | `Sha224HashAlgorithm` |
@@ -17,6 +17,8 @@
 | SHA3-256 | `Sha3_256HashAlgorithm` |
 | SHA3-384 | `Sha3_384HashAlgorithm` |
 | SHA3-512 | `Sha3_512HashAlgorithm` |
+| SHAKE128 | `Shake128HashAlgorithm` (with `Xof<TCore>`) |
+| SHAKE256 | `Shake256HashAlgorithm` (with `Xof<TCore>`) |
 | SM3 | `SM3HashAlgorithm` |
 | CRC-32 | `Crc32HashAlgorithm` |
 | CRC-32C | `Crc32CHashAlgorithm` |
@@ -58,6 +60,62 @@ hasher.GetHashAndReset(hash);
 hasher.Append("discarded"u8);
 hasher.Reset();
 ```
+
+## Extendable-output functions
+
+SHAKE128 and SHAKE256 are extendable-output functions (XOFs): the output is a stream of any length, and a shorter output is a prefix of every longer one. `Xof<TCore>` provides them; the destination length selects the output length. For their full strength, read at least 32 bytes from SHAKE128 and 64 bytes from SHAKE256.
+
+```csharp
+using CryptoBase.Hashes;
+using CryptoBase.Hashes.Sha3;
+
+byte[] output = new byte[64];
+
+// Hash the complete input.
+Xof<Shake256HashAlgorithm>.HashData("hello world"u8, output);
+```
+
+```csharp
+using CryptoBase.Hashes;
+using CryptoBase.Hashes.Sha3;
+
+// Create an incremental XOF.
+using Xof<Shake128HashAlgorithm> xof = Xof<Shake128HashAlgorithm>.Create();
+
+// Append input.
+xof.Append("hello "u8);
+xof.Append("world"u8);
+
+// Get the start of the output without changing the state.
+byte[] prefix = new byte[32];
+xof.GetCurrentHash(prefix);
+
+// Read the output in pieces; each read continues where the previous one stopped.
+byte[] first = new byte[100];
+byte[] second = new byte[1000];
+xof.Read(first);
+xof.Read(second);
+
+// Discard the input and start over.
+xof.Reset();
+```
+
+The first nonempty `Read` ends the input; until `Reset`, `Append`, `GetCurrentHash` and `GetHashAndReset` throw `InvalidOperationException`.
+
+`Blake3HashAlgorithm` implements `IXof<TSelf>` too, so generic code can take either:
+
+```csharp
+using CryptoBase.Abstractions.Hashes;
+
+static void Expand<T>(ReadOnlySpan<byte> input, Span<byte> output) where T : class, IXof<T>
+{
+	using T xof = T.Create();
+	xof.Append(input);
+	xof.Read(output);
+}
+```
+
+The stream extensions of `CryptoBase.IO` take only `IHashAlgorithm<TSelf>`, so to feed a stream to an XOF, append its contents yourself.
 
 ## Hashing a stream
 
