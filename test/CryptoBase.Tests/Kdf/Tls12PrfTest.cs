@@ -279,7 +279,7 @@ public class Tls12PrfTest
 	}
 
 	// P_hash written directly from RFC 5246, section 5.
-	private static byte[] ReferencePrf(Func<byte[], byte[], byte[]> mac, byte[] secret, byte[] label, byte[] seed, int length)
+	internal static byte[] ReferencePrf(Func<byte[], byte[], byte[]> mac, byte[] secret, byte[] label, byte[] seed, int length)
 	{
 		byte[] labelAndSeed = Concat(label, seed);
 		byte[] output = new byte[length];
@@ -297,7 +297,7 @@ public class Tls12PrfTest
 		return output;
 	}
 
-	private static Func<byte[], byte[], byte[]> PlatformMac(HashAlgorithmName name)
+	internal static Func<byte[], byte[], byte[]> PlatformMac(HashAlgorithmName name)
 	{
 		return (key, source) => CryptographicOperations.HmacData(name, key, source);
 	}
@@ -309,7 +309,7 @@ public class Tls12PrfTest
 		return mac;
 	}
 
-	private static byte[] CreateData(int length, int seed)
+	internal static byte[] CreateData(int length, int seed)
 	{
 		byte[] data = new byte[length];
 

@@ -312,7 +312,7 @@ public class HkdfTest
 		await Assert.That(prk).IsEquivalentTo(prkCopy, CollectionOrdering.Matching);
 	}
 
-	private static byte[] CreateData(int length, int seed)
+	internal static byte[] CreateData(int length, int seed)
 	{
 		byte[] data = new byte[length];
 
@@ -324,7 +324,7 @@ public class HkdfTest
 		return data;
 	}
 
-	private static byte[] CreateOverlapBuffer(ReadOnlySpan<byte> source, int sourceOffset, int destinationOffset, int destinationLength)
+	internal static byte[] CreateOverlapBuffer(ReadOnlySpan<byte> source, int sourceOffset, int destinationOffset, int destinationLength)
 	{
 		byte[] buffer = new byte[Math.Max(sourceOffset + source.Length, destinationOffset + destinationLength)];
 		source.CopyTo(buffer.AsSpan(sourceOffset));
