@@ -100,7 +100,7 @@ public class HmacTest
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
-	private static async Task VerifyLifecycleContract<TMac>() where TMac : class, IMacAlgorithm<TMac>
+	internal static async Task VerifyLifecycleContract<TMac>() where TMac : class, IMacAlgorithm<TMac>
 	{
 		byte[] key = CreateDeterministicSource(137);
 		byte[] source = CreateDeterministicSource(173);
@@ -141,7 +141,7 @@ public class HmacTest
 		await AssertOutput(destination, expected, written);
 	}
 
-	private static async Task VerifyOwnershipContract<TMac>() where TMac : class, IMacAlgorithm<TMac>
+	internal static async Task VerifyOwnershipContract<TMac>() where TMac : class, IMacAlgorithm<TMac>
 	{
 		byte[] key = CreateDeterministicSource(37);
 		byte[] source = CreateDeterministicSource(19);
@@ -161,7 +161,7 @@ public class HmacTest
 		}
 	}
 
-	private static async Task VerifyShortDestinations<TMac>() where TMac : class, IMacAlgorithm<TMac>
+	internal static async Task VerifyShortDestinations<TMac>() where TMac : class, IMacAlgorithm<TMac>
 	{
 		byte[] key = CreateDeterministicSource(137);
 		byte[] source = CreateDeterministicSource(73);
