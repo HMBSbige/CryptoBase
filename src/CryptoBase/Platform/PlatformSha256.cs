@@ -4,7 +4,7 @@ namespace CryptoBase.Platform;
 /// Provides one-shot and incremental SHA-256 hashing backed by <see cref="SHA256" /> and <see cref="IncrementalHash" />.
 /// </summary>
 /// <remarks>
-/// Failures of the platform implementation surface as <see cref="CryptographicException" />. Disposal releases the platform state and is idempotent;
+/// Platform failures throw <see cref="CryptographicException" />, leave the destination unchanged and dispose the failing instance. Disposal releases the platform state and is idempotent;
 /// subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </remarks>
 public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
@@ -35,22 +35,12 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	}
 
 	/// <inheritdoc />
+	[SkipLocalsInit]
 	public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 
-		if (source.Overlaps(destination))
-		{
-			return HashOverlapping(source, destination);
-		}
-
-		return SHA256.HashData(source, destination);
-	}
-
-	// Hashing into a temporary buffer reads all of the source before the destination is written.
-	[SkipLocalsInit]
-	private static int HashOverlapping(ReadOnlySpan<byte> source, Span<byte> destination)
-	{
+		// The temporary buffer keeps the destination unchanged on failure and lets the source overlap it.
 		using CryptoBuffer<byte> hash = new(stackalloc byte[HashLength]);
 		SHA256.HashData(source, hash.Span);
 		hash.Span.CopyTo(destination);
@@ -61,7 +51,16 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	public void Append(ReadOnlySpan<byte> source)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		_hash.AppendData(source);
+
+		try
+		{
+			_hash.AppendData(source);
+		}
+		catch
+		{
+			Dispose();
+			throw;
+		}
 	}
 
 	/// <inheritdoc />
@@ -72,25 +71,63 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 
 		// IncrementalHash has no reset of its own; finalizing into a discarded buffer resets it.
 		using CryptoBuffer<byte> discarded = new(stackalloc byte[HashLength]);
-		_hash.GetHashAndReset(discarded.Span);
+
+		try
+		{
+			_hash.GetHashAndReset(discarded.Span);
+		}
+		catch
+		{
+			Dispose();
+			throw;
+		}
 	}
 
 	/// <inheritdoc />
+	[SkipLocalsInit]
 	public int GetCurrentHash(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 
-		return _hash.GetCurrentHash(destination);
+		using CryptoBuffer<byte> hash = new(stackalloc byte[HashLength]);
+
+		try
+		{
+			_hash.GetCurrentHash(hash.Span);
+		}
+		catch
+		{
+			Dispose();
+			throw;
+		}
+
+		hash.Span.CopyTo(destination);
+		return HashLength;
 	}
 
 	/// <inheritdoc />
+	[SkipLocalsInit]
 	public int GetHashAndReset(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 
-		return _hash.GetHashAndReset(destination);
+		// The platform can fail after writing the hash, so it goes through a temporary buffer.
+		using CryptoBuffer<byte> hash = new(stackalloc byte[HashLength]);
+
+		try
+		{
+			_hash.GetHashAndReset(hash.Span);
+		}
+		catch
+		{
+			Dispose();
+			throw;
+		}
+
+		hash.Span.CopyTo(destination);
+		return HashLength;
 	}
 
 	/// <inheritdoc />

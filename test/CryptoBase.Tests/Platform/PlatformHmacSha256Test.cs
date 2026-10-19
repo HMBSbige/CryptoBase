@@ -3,7 +3,9 @@ using CryptoBase.Platform;
 using CryptoBase.Tests.Macs;
 using CryptoBase.Tests.Macs.Hmac;
 using CryptoBase.Tests.Wycheproof;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
+using System.Security.Cryptography;
 using System.Text;
 using static CryptoBase.Tests.TestUtils;
 using ManagedHmacSha256 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha256.Sha256HashAlgorithm>;
@@ -142,6 +144,38 @@ public class PlatformHmacSha256Test
 	}
 
 	[Test]
+	public async Task PlatformFailureDisposesTheInstance()
+	{
+		byte[] key = CreateDeterministicSource(32);
+		byte[] source = CreateDeterministicSource(19);
+		byte[] destination = new byte[PlatformHmacSha256.MacLength];
+		Action<PlatformHmacSha256>[] operations =
+		[
+			mac => mac.Append(source),
+			mac => mac.Reset(),
+			mac => mac.GetCurrentMac(destination),
+			mac => mac.GetMacAndReset(destination),
+		];
+
+		foreach (Action<PlatformHmacSha256> operation in operations)
+		{
+			using IncrementalHash working = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA256, key);
+			using PlatformHmacSha256 mac = PlatformHmacSha256.Create(key);
+
+			// Make the next platform call fail.
+			PlatformFields.Hmac(mac).Dispose();
+			PrepareDestination(destination);
+			await Assert.That(() => operation(mac)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(destination).All(static value => value is DestinationSentinel);
+
+			// Working platform state does not revive the failed instance.
+			PlatformFields.Hmac(mac) = working;
+			await Assert.That(() => mac.GetMacAndReset(destination)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(destination).All(static value => value is DestinationSentinel);
+		}
+	}
+
+	[Test]
 	[Arguments(0)]
 	[Arguments(20)]
 	[Arguments(97)]
@@ -185,5 +219,11 @@ public class PlatformHmacSha256Test
 			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 			await Assert.That(inner.ToArray()).IsEquivalentTo(source, CollectionOrdering.Matching);
 		}
+	}
+
+	private static class PlatformFields
+	{
+		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hmac")]
+		public static extern ref IncrementalHash Hmac(PlatformHmacSha256 mac);
 	}
 }

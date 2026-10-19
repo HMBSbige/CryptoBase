@@ -6,7 +6,7 @@ namespace CryptoBase.Platform;
 /// Provides one-shot and incremental HMAC-SHA256 backed by <see cref="HMACSHA256" /> and <see cref="IncrementalHash" />.
 /// </summary>
 /// <remarks>
-/// Failures of the platform implementation surface as <see cref="CryptographicException" />. Disposal releases the keyed platform state and is idempotent;
+/// Platform failures throw <see cref="CryptographicException" />, leave the destination unchanged and dispose the failing instance. Disposal releases the keyed platform state and is idempotent;
 /// subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </remarks>
 public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
@@ -37,22 +37,12 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	}
 
 	/// <inheritdoc />
+	[SkipLocalsInit]
 	public static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MacLength, nameof(destination));
 
-		if (key.Overlaps(destination) || source.Overlaps(destination))
-		{
-			return MacOverlapping(key, source, destination);
-		}
-
-		return HMACSHA256.HashData(key, source, destination);
-	}
-
-	// Computing into a temporary buffer reads all of the key and source before the destination is written.
-	[SkipLocalsInit]
-	private static int MacOverlapping(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
-	{
+		// The temporary buffer keeps the destination unchanged on failure and lets the key and source overlap it.
 		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLength]);
 		HMACSHA256.HashData(key, source, mac.Span);
 		mac.Span.CopyTo(destination);
@@ -63,7 +53,16 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	public void Append(ReadOnlySpan<byte> source)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		_hmac.AppendData(source);
+
+		try
+		{
+			_hmac.AppendData(source);
+		}
+		catch
+		{
+			Dispose();
+			throw;
+		}
 	}
 
 	/// <inheritdoc />
@@ -74,25 +73,63 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 
 		// IncrementalHash has no reset of its own; finalizing into a discarded buffer resets it and keeps the key.
 		using CryptoBuffer<byte> discarded = new(stackalloc byte[MacLength]);
-		_hmac.GetHashAndReset(discarded.Span);
+
+		try
+		{
+			_hmac.GetHashAndReset(discarded.Span);
+		}
+		catch
+		{
+			Dispose();
+			throw;
+		}
 	}
 
 	/// <inheritdoc />
+	[SkipLocalsInit]
 	public int GetCurrentMac(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MacLength, nameof(destination));
 
-		return _hmac.GetCurrentHash(destination);
+		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLength]);
+
+		try
+		{
+			_hmac.GetCurrentHash(mac.Span);
+		}
+		catch
+		{
+			Dispose();
+			throw;
+		}
+
+		mac.Span.CopyTo(destination);
+		return MacLength;
 	}
 
 	/// <inheritdoc />
+	[SkipLocalsInit]
 	public int GetMacAndReset(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MacLength, nameof(destination));
 
-		return _hmac.GetHashAndReset(destination);
+		// The platform can fail after writing the MAC, so it goes through a temporary buffer.
+		using CryptoBuffer<byte> mac = new(stackalloc byte[MacLength]);
+
+		try
+		{
+			_hmac.GetHashAndReset(mac.Span);
+		}
+		catch
+		{
+			Dispose();
+			throw;
+		}
+
+		mac.Span.CopyTo(destination);
+		return MacLength;
 	}
 
 	/// <inheritdoc />

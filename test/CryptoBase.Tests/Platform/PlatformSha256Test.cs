@@ -2,7 +2,9 @@ using CryptoBase.IO;
 using CryptoBase.Platform;
 using CryptoBase.Tests.Hashes;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
+using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 using ManagedSha256 = CryptoBase.Hashes.HashAlgorithm<CryptoBase.Hashes.Sha256.Sha256HashAlgorithm>;
 
@@ -132,6 +134,37 @@ public class PlatformSha256Test
 	}
 
 	[Test]
+	public async Task PlatformFailureDisposesTheInstance()
+	{
+		byte[] source = CreateDeterministicSource(19);
+		byte[] destination = HashAlgorithmTestUtils<PlatformSha256>.CreateDestination();
+		Action<PlatformSha256>[] operations =
+		[
+			hashAlgorithm => hashAlgorithm.Append(source),
+			hashAlgorithm => hashAlgorithm.Reset(),
+			hashAlgorithm => hashAlgorithm.GetCurrentHash(destination),
+			hashAlgorithm => hashAlgorithm.GetHashAndReset(destination),
+		];
+
+		foreach (Action<PlatformSha256> operation in operations)
+		{
+			using IncrementalHash working = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+			using PlatformSha256 hashAlgorithm = PlatformSha256.Create();
+
+			// Make the next platform call fail.
+			PlatformFields.Hash(hashAlgorithm).Dispose();
+			PrepareDestination(destination);
+			await Assert.That(() => operation(hashAlgorithm)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(destination).All(static value => value is DestinationSentinel);
+
+			// Working platform state does not revive the failed instance.
+			PlatformFields.Hash(hashAlgorithm) = working;
+			await Assert.That(() => hashAlgorithm.GetHashAndReset(destination)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(destination).All(static value => value is DestinationSentinel);
+		}
+	}
+
+	[Test]
 	public async Task ShortDestinationsLeaveDestinationAndStateUnchanged()
 	{
 		byte[] source = CreateDeterministicSource(23);
@@ -197,5 +230,11 @@ public class PlatformSha256Test
 		byte[] hash = new byte[ManagedSha256.HashLength];
 		ManagedSha256.HashData(source, hash);
 		return hash;
+	}
+
+	private static class PlatformFields
+	{
+		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hash")]
+		public static extern ref IncrementalHash Hash(PlatformSha256 hashAlgorithm);
 	}
 }
