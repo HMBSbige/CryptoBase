@@ -3,6 +3,7 @@ using CryptoBase.Platform;
 using CryptoBase.Tests.Macs;
 using CryptoBase.Tests.Macs.Hmac;
 using CryptoBase.Tests.Wycheproof;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
@@ -12,6 +13,7 @@ using ManagedHmacSha256 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.S
 
 namespace CryptoBase.Tests.Platform;
 
+[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class PlatformHmacSha256Test
 {
 	// RFC 4231, section 4; test case 5 truncates the output and is left out.
