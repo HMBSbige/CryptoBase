@@ -44,4 +44,16 @@ internal static class Sha3TestUtils
 		sponge.Pad(domainSeparator);
 		return sponge;
 	}
+
+	public static bool IsKernelSupported(int lanes)
+	{
+		return lanes switch
+		{
+			1 => KeccakP1600Times1.IsSupported,
+			2 => KeccakP1600Times2.IsSupported,
+			4 => KeccakP1600Times4.IsSupported,
+			8 => KeccakP1600Times8.IsSupported,
+			_ => false
+		};
+	}
 }

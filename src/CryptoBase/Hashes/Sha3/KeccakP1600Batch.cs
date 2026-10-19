@@ -51,6 +51,29 @@ internal static class KeccakP1600Batch
 		}
 	}
 
+	// Two sponges of any rates in one run of the two-lane kernel.
+	[SkipLocalsInit]
+	internal static void Permute<TFirst, TSecond>(ref KeccakSponge<TFirst> first, ref KeccakSponge<TSecond> second) where TFirst : IKeccakRate where TSecond : IKeccakRate
+	{
+		if (MaxLanes < KeccakP1600Times2.Lanes)
+		{
+			first.Permute();
+			second.Permute();
+			return;
+		}
+
+		Unsafe.SkipInit(out InlineArray25<InlineArray2<ulong>> pair);
+		ref ulong lanes = ref pair[0][0];
+		first.ExportState(ref lanes, KeccakP1600Times2.Lanes);
+		second.ExportState(ref Unsafe.Add(ref lanes, 1), KeccakP1600Times2.Lanes);
+		KeccakP1600Times2.Permute(ref lanes);
+		first.ImportPermutedState(ref lanes, KeccakP1600Times2.Lanes);
+		second.ImportPermutedState(ref Unsafe.Add(ref lanes, 1), KeccakP1600Times2.Lanes);
+
+		// Either state may be secret, as G's is in decapsulation.
+		pair.ZeroMemory();
+	}
+
 	private static int ChooseMaxLanes()
 	{
 		if (KeccakP1600Times8.IsSupported)

@@ -1,4 +1,5 @@
 using CryptoBase.Hashes.Sha3;
+using System.Runtime.InteropServices;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
@@ -16,6 +17,9 @@ public class KeccakBatchSpongeTest
 	// Each forces one kernel for every group.
 	public static IEnumerable<int> Lanes => [1, 2, 4, 8];
 
+	// As Lanes, and zero to let ResetWithGuests choose.
+	public static IEnumerable<int> SeededLanes => [0, 1, 2, 4, 8];
+
 	[Test]
 	public async Task ScheduleCoversEveryStream()
 	{
@@ -28,7 +32,7 @@ public class KeccakBatchSpongeTest
 			for (int remaining = streams; remaining > 0;)
 			{
 				int lanes = KeccakP1600Batch.ChooseLanes(remaining);
-				await Assert.That(IsSupported(lanes)).IsTrue().Because($"{lanes} lanes for {remaining} of {streams} streams");
+				await Assert.That(Sha3TestUtils.IsKernelSupported(lanes)).IsTrue().Because($"{lanes} lanes for {remaining} of {streams} streams");
 
 				int count = Math.Min(remaining, lanes);
 				groups.Add($"{KernelName(lanes)}[{count}]");
@@ -47,7 +51,7 @@ public class KeccakBatchSpongeTest
 	[CombinedDataSources]
 	public Task MatchesIndependentSponges([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
 	{
-		if (!IsSupported(lanes))
+		if (!Sha3TestUtils.IsKernelSupported(lanes))
 		{
 			Skip.Test($"{KernelName(lanes)} is not supported here.");
 		}
@@ -80,7 +84,7 @@ public class KeccakBatchSpongeTest
 			Skip.Test("Guard pages are not supported here.");
 		}
 
-		if (!IsSupported(lanes))
+		if (!Sha3TestUtils.IsKernelSupported(lanes))
 		{
 			Skip.Test($"{KernelName(lanes)} is not supported here.");
 		}
@@ -96,6 +100,72 @@ public class KeccakBatchSpongeTest
 		};
 	}
 
+	// Zero lanes lets ResetWithGuests choose, which must take as many streams on as wide a kernel as without a seed.
+	[Test]
+	[CombinedDataSources]
+	public Task SeededResetMatchesIndependentSponges([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(SeededLanes))] int lanes)
+	{
+		if (lanes is not 0 && !Sha3TestUtils.IsKernelSupported(lanes))
+		{
+			Skip.Test($"{KernelName(lanes)} is not supported here.");
+		}
+
+		return rate switch
+		{
+			72 => VerifySeeded<KeccakRate72>(KeccakReference.Sha3DomainSeparator, lanes),
+			104 => VerifySeeded<KeccakRate104>(KeccakReference.Sha3DomainSeparator, lanes),
+			136 => VerifySeeded<KeccakRate136>(KeccakReference.ShakeDomainSeparator, lanes),
+			144 => VerifySeeded<KeccakRate144>(KeccakReference.Sha3DomainSeparator, lanes),
+			168 => VerifySeeded<KeccakRate168>(KeccakReference.ShakeDomainSeparator, lanes),
+			_ => throw new ArgumentOutOfRangeException(nameof(rate))
+		};
+	}
+
+	// The prefix and the suffixes may end at an inaccessible page.
+	[Test]
+	[MethodDataSource(nameof(Lanes))]
+	public async Task SeededResetStaysWithinPrefixAndSuffixes(int lanes)
+	{
+		if (!GuardPageBuffer.IsSupported)
+		{
+			Skip.Test("Guard pages are not supported here.");
+		}
+
+		if (!Sha3TestUtils.IsKernelSupported(lanes))
+		{
+			Skip.Test($"{KernelName(lanes)} is not supported here.");
+		}
+
+		using GuardPageBuffer prefix = new(KeccakBatchSponge<KeccakRate168>.SeedLength);
+		CreateDeterministicSource(prefix.Span.Length).CopyTo(prefix.Span);
+
+		for (int streams = 1; streams <= lanes; ++streams)
+		{
+			foreach (int suffixLength in (int[])[1, 2])
+			{
+				using GuardPageBuffer suffixBuffer = new(streams * sizeof(ushort));
+				Span<ushort> suffixes = MemoryMarshal.Cast<byte, ushort>(suffixBuffer.Span);
+				ushort[] values = Suffixes(streams, suffixLength);
+				values.CopyTo(suffixes);
+
+				KeccakBatchSponge<KeccakRate168> batch = default;
+				batch.Reset(streams, lanes, prefix.Span, suffixes, suffixLength, KeccakReference.ShakeDomainSeparator);
+				byte[] actual = new byte[streams * KeccakRate168.RateInBytes];
+				batch.Squeeze(actual);
+
+				byte[] expected = new byte[actual.Length];
+
+				for (int j = 0; j < streams; ++j)
+				{
+					KeccakSponge<KeccakRate168> sponge = Sha3TestUtils.AbsorbAndPad<KeccakRate168>(SeededInput(prefix.Span, values[j], suffixLength), KeccakReference.ShakeDomainSeparator);
+					sponge.Squeeze(expected.AsSpan(j * KeccakRate168.RateInBytes, KeccakRate168.RateInBytes));
+				}
+
+				await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"{streams} streams with {suffixLength}-byte suffixes");
+			}
+		}
+	}
+
 	[Test]
 	public async Task PaddingSwitchesToSqueezing()
 	{
@@ -109,18 +179,6 @@ public class KeccakBatchSpongeTest
 		sponge.Pad(KeccakReference.ShakeDomainSeparator);
 		await Assert.That(sponge.IsSqueezing).IsTrue();
 		await Assert.That(sponge.ExtractLane(0).IsSqueezing).IsTrue();
-	}
-
-	private static bool IsSupported(int lanes)
-	{
-		return lanes switch
-		{
-			1 => KeccakP1600Times1.IsSupported,
-			2 => KeccakP1600Times2.IsSupported,
-			4 => KeccakP1600Times4.IsSupported,
-			8 => KeccakP1600Times8.IsSupported,
-			_ => false
-		};
 	}
 
 	// Each group absorbs in two calls where the input allows, the second starting mid-word, on a word boundary or past a block
@@ -163,33 +221,7 @@ public class KeccakBatchSpongeTest
 						batch.Absorb(Gather(inputs, inputLength, first, count, 0, split));
 						batch.Absorb(Gather(inputs, inputLength, first, count, split, inputLength - split));
 						batch.Pad(domainSeparator);
-
-						for (int j = 0; j < count; ++j)
-						{
-							actual[first + j] = new byte[outputLength];
-						}
-
-						int offset = 0;
-
-						foreach (int length in squeezeLengths)
-						{
-							byte[] outputs = new byte[count * length];
-							batch.Squeeze(outputs);
-
-							for (int j = 0; j < count; ++j)
-							{
-								outputs.AsSpan(j * length, length).CopyTo(actual[first + j].AsSpan(offset));
-							}
-
-							offset += length;
-						}
-
-						for (int j = 0; j < count; ++j)
-						{
-							KeccakSponge<TRate> extracted = batch.ExtractLane(j);
-							extracted.Squeeze(actual[first + j].AsSpan(offset, extractedLength));
-						}
-
+						SqueezeGroup(ref batch, actual.AsSpan(first, count), squeezeLengths, outputLength);
 						first += count;
 					}
 
@@ -247,6 +279,124 @@ public class KeccakBatchSpongeTest
 		}
 
 		return output.Span.ToArray();
+	}
+
+	private static async Task VerifySeeded<TRate>(byte domainSeparator, int lanes) where TRate : IKeccakRate
+	{
+		int rate = TRate.RateInBytes;
+		byte[] prefix = CreateDeterministicSource(KeccakBatchSponge<TRate>.SeedLength);
+		int[] squeezeLengths = [3 * rate, 7, rate + 1];
+		int extractedLength = rate + 5;
+		int outputLength = squeezeLengths.Sum() + extractedLength;
+		int[] guestCounts = lanes is 0 ? [0, 1, 2] : [0];
+
+		foreach (int suffixLength in (int[])[1, 2])
+		{
+			foreach (int streams in StreamCounts)
+			{
+				ushort[] suffixes = Suffixes(streams, suffixLength);
+				byte[][] expected = new byte[streams][];
+
+				for (int j = 0; j < streams; ++j)
+				{
+					KeccakSponge<TRate> sponge = Sha3TestUtils.AbsorbAndPad<TRate>(SeededInput(prefix, suffixes[j], suffixLength), domainSeparator);
+					expected[j] = new byte[outputLength];
+					sponge.Squeeze(expected[j]);
+				}
+
+				foreach (int guests in guestCounts)
+				{
+					byte[][] actual = new byte[streams][];
+
+					for (int first = 0; first < streams;)
+					{
+						KeccakBatchSponge<TRate> batch = default;
+
+						if (lanes is 0)
+						{
+							KeccakBatchSponge<TRate> unseeded = default;
+							unseeded.ResetWithGuests(streams - first, guests);
+							batch.ResetWithGuests(streams - first, guests, prefix, suffixes.AsSpan(first), suffixLength, domainSeparator);
+
+							using (Assert.Multiple())
+							{
+								await Assert.That(batch.Count).IsEqualTo(unseeded.Count);
+								await Assert.That(batch.FreeLanes).IsEqualTo(unseeded.FreeLanes);
+							}
+						}
+						else
+						{
+							batch.Reset(streams - first, lanes, prefix, suffixes.AsSpan(first), suffixLength, domainSeparator);
+						}
+
+						await Assert.That(batch.IsSqueezing).IsTrue();
+
+						int count = batch.Count;
+						SqueezeGroup(ref batch, actual.AsSpan(first, count), squeezeLengths, outputLength);
+						first += count;
+					}
+
+					using (Assert.Multiple())
+					{
+						for (int j = 0; j < streams; ++j)
+						{
+							await Assert.That(actual[j]).IsEquivalentTo(expected[j], CollectionOrdering.Matching).Because($"stream {j} of {streams} with {suffixLength}-byte suffixes and {guests} guests");
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Squeezes in lockstep across block boundaries and from mid-block, then hands every stream to a sponge of its own for the rest.
+	private static void SqueezeGroup<TRate>(ref KeccakBatchSponge<TRate> batch, Span<byte[]> actual, int[] squeezeLengths, int outputLength) where TRate : IKeccakRate
+	{
+		int offset = 0;
+
+		for (int j = 0; j < actual.Length; ++j)
+		{
+			actual[j] = new byte[outputLength];
+		}
+
+		foreach (int length in squeezeLengths)
+		{
+			byte[] outputs = new byte[actual.Length * length];
+			batch.Squeeze(outputs);
+
+			for (int j = 0; j < actual.Length; ++j)
+			{
+				outputs.AsSpan(j * length, length).CopyTo(actual[j].AsSpan(offset));
+			}
+
+			offset += length;
+		}
+
+		for (int j = 0; j < actual.Length; ++j)
+		{
+			KeccakSponge<TRate> extracted = batch.ExtractLane(j);
+			extracted.Squeeze(actual[j].AsSpan(offset));
+		}
+	}
+
+	// Distinct suffixes that use every byte they have.
+	private static ushort[] Suffixes(int streams, int suffixLength)
+	{
+		int mask = suffixLength is 1 ? 0xFF : 0xFFFF;
+		return [.. Enumerable.Range(0, streams).Select(j => (ushort)(0xA5C3 + j * 0x0101 & mask))];
+	}
+
+	private static byte[] SeededInput(ReadOnlySpan<byte> prefix, ushort suffix, int suffixLength)
+	{
+		byte[] input = new byte[prefix.Length + suffixLength];
+		prefix.CopyTo(input);
+		input[prefix.Length] = (byte)suffix;
+
+		if (suffixLength is 2)
+		{
+			input[prefix.Length + 1] = (byte)(suffix >> 8);
+		}
+
+		return input;
 	}
 
 	private static void Reset<TRate>(ref KeccakBatchSponge<TRate> batch, int streams, int lanes) where TRate : IKeccakRate
