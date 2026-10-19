@@ -113,7 +113,7 @@ public static class SymmetricPadding
 			}
 			case PaddingMode.ISO10126:
 			{
-				RandomNumberGenerator.Fill(padding.Slice(0, paddingLength - 1));
+				SystemRandom.Fill(padding.Slice(0, paddingLength - 1));
 				padding[paddingLength - 1] = (byte)paddingLength;
 				break;
 			}

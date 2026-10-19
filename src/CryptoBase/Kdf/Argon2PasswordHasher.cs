@@ -44,7 +44,7 @@ public static class Argon2PasswordHasher
 
 		using CryptoBuffer<byte> saltBuffer = CryptoBuffer<byte>.ShouldUsePool(saltLength) ? new CryptoBuffer<byte>(saltLength) : new CryptoBuffer<byte>(stackalloc byte[saltLength]);
 		Span<byte> salt = saltBuffer.Span;
-		RandomNumberGenerator.Fill(salt);
+		SystemRandom.Fill(salt);
 
 		return Hash(password, salt, parameters, type, hashLength, secret);
 	}
