@@ -9,7 +9,7 @@ public class Sha3SpongeTest
 {
 	private const int ShakeRate = 136;
 
-	public static IEnumerable<int> Rates => [72, 104, 136, 144];
+	public static IEnumerable<int> Rates => [72, 104, 136, 144, 168];
 
 	public static IEnumerable<byte> DomainSeparators => [KeccakReference.Sha3DomainSeparator, KeccakReference.ShakeDomainSeparator];
 
@@ -26,6 +26,7 @@ public class Sha3SpongeTest
 			104 => VerifyIncrementalSqueeze<KeccakRate104>(rate, domainSeparator, messageLengthOffset),
 			136 => VerifyIncrementalSqueeze<KeccakRate136>(rate, domainSeparator, messageLengthOffset),
 			144 => VerifyIncrementalSqueeze<KeccakRate144>(rate, domainSeparator, messageLengthOffset),
+			168 => VerifyIncrementalSqueeze<KeccakRate168>(rate, domainSeparator, messageLengthOffset),
 			_ => throw new ArgumentOutOfRangeException(nameof(rate))
 		};
 	}
@@ -45,6 +46,50 @@ public class Sha3SpongeTest
 		sponge.Squeeze(output);
 
 		await Assert.That(output).IsEquivalentTo(Sha3TestUtils.Shake256Output(message, outputLength), CollectionOrdering.Matching);
+	}
+
+	// The AVX-512 absorb reads the rows that a full vector would run past a block with masked loads, so input that ends at an
+	// inaccessible page must absorb without faulting, whether whole blocks or a partial one end it.
+	[Test]
+	[MethodDataSource(nameof(Rates))]
+	public Task AbsorbReadsNothingPastTheInput(int rate)
+	{
+		if (!GuardPageBuffer.IsSupported)
+		{
+			Skip.Test("Guard pages are not supported here.");
+		}
+
+		return rate switch
+		{
+			72 => VerifyAbsorbBeforeGuardPage<KeccakRate72>(rate),
+			104 => VerifyAbsorbBeforeGuardPage<KeccakRate104>(rate),
+			136 => VerifyAbsorbBeforeGuardPage<KeccakRate136>(rate),
+			144 => VerifyAbsorbBeforeGuardPage<KeccakRate144>(rate),
+			168 => VerifyAbsorbBeforeGuardPage<KeccakRate168>(rate),
+			_ => throw new ArgumentOutOfRangeException(nameof(rate))
+		};
+	}
+
+	// The AVX-512 squeeze writes the rows that a full vector would run past a block with masked stores, so output that ends at an
+	// inaccessible page must squeeze without faulting, from any position and whether a whole block or a partial one ends it.
+	[Test]
+	[MethodDataSource(nameof(Rates))]
+	public Task SqueezeWritesNothingPastTheOutput(int rate)
+	{
+		if (!GuardPageBuffer.IsSupported)
+		{
+			Skip.Test("Guard pages are not supported here.");
+		}
+
+		return rate switch
+		{
+			72 => VerifySqueezeBeforeGuardPage<KeccakRate72>(rate),
+			104 => VerifySqueezeBeforeGuardPage<KeccakRate104>(rate),
+			136 => VerifySqueezeBeforeGuardPage<KeccakRate136>(rate),
+			144 => VerifySqueezeBeforeGuardPage<KeccakRate144>(rate),
+			168 => VerifySqueezeBeforeGuardPage<KeccakRate168>(rate),
+			_ => throw new ArgumentOutOfRangeException(nameof(rate))
+		};
 	}
 
 	[Test]
@@ -72,7 +117,7 @@ public class Sha3SpongeTest
 		await Assert.That(TRate.RateInBytes).IsEqualTo(rate);
 
 		byte[] message = CreateDeterministicSource(Math.Max(0, rate + messageLengthOffset));
-		int outputLength = 4 * rate + 5;
+		int outputLength = 6 * rate + 5;
 		byte[] expected = KeccakReference.Sponge(message, rate, domainSeparator, outputLength);
 
 		KeccakSponge<TRate> sponge = Sha3TestUtils.AbsorbAndPad<TRate>(message, domainSeparator);
@@ -99,15 +144,65 @@ public class Sha3SpongeTest
 		}
 	}
 
-	// Empty requests must not advance the output, and requests may end exactly on, just before, or just after a block boundary.
+	private static async Task VerifyAbsorbBeforeGuardPage<TRate>(int rate) where TRate : IKeccakRate
+	{
+		await Assert.That(TRate.RateInBytes).IsEqualTo(rate);
+
+		foreach (int length in (int[])[rate, 2 * rate, 3 * rate, 3 * rate + 1, 4 * rate - 1])
+		{
+			byte[] message = CreateDeterministicSource(length);
+			byte[] expected = KeccakReference.Sponge(message, rate, KeccakReference.Sha3DomainSeparator, rate);
+
+			await Assert.That(AbsorbBeforeGuardPage<TRate>(message)).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"{length}-byte message");
+		}
+	}
+
+	private static byte[] AbsorbBeforeGuardPage<TRate>(byte[] message) where TRate : IKeccakRate
+	{
+		using GuardPageBuffer buffer = new(message.Length);
+		message.CopyTo(buffer.Span);
+
+		KeccakSponge<TRate> sponge = Sha3TestUtils.AbsorbAndPad<TRate>(buffer.Span, KeccakReference.Sha3DomainSeparator);
+		byte[] output = new byte[TRate.RateInBytes];
+		sponge.Squeeze(output);
+		return output;
+	}
+
+	// Each case discards the first skipped bytes, which leaves the sponge at the start, middle or end of a block, then squeezes
+	// into memory that ends at the guard page. Ending one byte into a block leaves the last whole block before it nowhere to
+	// spill but the guard page.
+	private static async Task VerifySqueezeBeforeGuardPage<TRate>(int rate) where TRate : IKeccakRate
+	{
+		await Assert.That(TRate.RateInBytes).IsEqualTo(rate);
+
+		byte[] message = CreateDeterministicSource(rate + 5);
+		(int Skipped, int Length)[] cases =
+		[
+			(0, rate), (0, 2 * rate), (0, 3 * rate), (0, 3 * rate + 1), (0, 4 * rate - 1),
+			(7, 2 * rate), (7, 3 * rate - 6), (7, 4 * rate + 3), (rate, 2 * rate + 1)
+		];
+
+		foreach ((int skipped, int length) in cases)
+		{
+			byte[] expected = KeccakReference.Sponge(message, rate, KeccakReference.ShakeDomainSeparator, skipped + length).AsSpan(skipped).ToArray();
+
+			await Assert.That(SqueezeBeforeGuardPage<TRate>(message, skipped, length)).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"{length} bytes after {skipped}");
+		}
+	}
+
+	private static byte[] SqueezeBeforeGuardPage<TRate>(byte[] message, int skipped, int length) where TRate : IKeccakRate
+	{
+		using GuardPageBuffer buffer = new(length);
+
+		KeccakSponge<TRate> sponge = Sha3TestUtils.AbsorbAndPad<TRate>(message, KeccakReference.ShakeDomainSeparator);
+		sponge.Squeeze(new byte[skipped]);
+		sponge.Squeeze(buffer.Span);
+		return buffer.Span.ToArray();
+	}
+
+	// Adds requests that end one or several blocks past the current one, from its start or from within it.
 	private static IEnumerable<int[]> PieceLengthPatterns(int rate)
 	{
-		yield return [1];
-		yield return [rate - 1];
-		yield return [rate];
-		yield return [rate + 1];
-		yield return [2 * rate + 3];
-		yield return [0, 7, rate - 7, 0, 2 * rate, 1];
-		yield return [3, 1, 4, 1, 5, 9, 2, 6, 5, 35, 89, 79, 3, 238, 46];
+		return XofContractTest.PieceLengthPatterns(rate).Concat([[2 * rate], [2 * rate + 1], [3 * rate], [rate - 1, 3 * rate], [7, 4 * rate + 3]]);
 	}
 }
