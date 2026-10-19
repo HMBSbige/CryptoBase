@@ -32,6 +32,21 @@ mac.Append("discarded"u8);
 mac.Reset();
 ```
 
+## Platform-backed HMAC-SHA256
+
+`PlatformHmacSha256` computes HMAC-SHA256 with the operating system's cryptographic library. It implements `IMacAlgorithm<TSelf>`, so it can replace `HmacAlgorithm<Sha256HashAlgorithm>` in generic code, `MacStream<T>` and the generic KDFs below. `IsPreferred` is `true` on x86 and x64 processors with the SHA extensions, where it is faster than the managed implementation.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Platform;
+
+byte[] key = RandomNumberGenerator.GetBytes(32);
+Span<byte> tag = stackalloc byte[PlatformHmacSha256.MacLength];
+
+// Authenticate the complete input.
+PlatformHmacSha256.Mac(key, "message"u8, tag);
+```
+
 ## Poly1305
 
 ```csharp
@@ -115,6 +130,31 @@ Tls12Prf.DeriveKey<Sha256HashAlgorithm>(masterSecret, "key expansion"u8, serverR
 // The extended master secret from RFC 7627 uses the session hash as the seed.
 byte[] sessionHash = SHA256.HashData("handshake messages"u8);
 Tls12Prf.DeriveKey<Sha256HashAlgorithm>(preMasterSecret, "extended master secret"u8, sessionHash, masterSecret);
+```
+
+## HKDF and TLS 1.2 PRF over any MAC
+
+`Hkdf<TMac>` and `Tls12Prf<TMac>` provide the same methods as the classes above, over the MAC that the type argument selects.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Kdf;
+using CryptoBase.Platform;
+
+byte[] inputKeyMaterial = RandomNumberGenerator.GetBytes(32);
+byte[] salt = RandomNumberGenerator.GetBytes(32);
+byte[] outputKeyMaterial = new byte[32];
+
+// HKDF over the platform HMAC.
+Hkdf<PlatformHmacSha256>.DeriveKey(inputKeyMaterial, outputKeyMaterial, salt, "example encryption key"u8);
+
+byte[] preMasterSecret = RandomNumberGenerator.GetBytes(48);
+byte[] clientRandom = RandomNumberGenerator.GetBytes(32);
+byte[] serverRandom = RandomNumberGenerator.GetBytes(32);
+byte[] masterSecret = new byte[48];
+
+// The TLS 1.2 PRF over the platform HMAC.
+Tls12Prf<PlatformHmacSha256>.DeriveKey(preMasterSecret, "master secret"u8, clientRandom, serverRandom, masterSecret);
 ```
 
 ## BLAKE3 key derivation

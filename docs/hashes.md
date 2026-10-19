@@ -121,6 +121,19 @@ The stream extensions of `CryptoBase.IO` take only `IHashAlgorithm<TSelf>`, so t
 
 Stream hashing requires the `CryptoBase.IO` package; see [Stream and file helpers](io.md).
 
+## Platform-backed SHA-256
+
+`PlatformSha256` computes SHA-256 with the operating system's cryptographic library. It implements `IHashAlgorithm<TSelf>`, so it can replace `HashAlgorithm<Sha256HashAlgorithm>` in generic code and `HashStream<T>`. `IsPreferred` is `true` on x86 and x64 processors with the SHA extensions, where it is faster than the managed implementation.
+
+```csharp
+using CryptoBase.Platform;
+
+Span<byte> hash = stackalloc byte[PlatformSha256.HashLength];
+
+// Hash the complete input.
+PlatformSha256.HashData("hello world"u8, hash);
+```
+
 ## BLAKE3
 
 ```csharp
