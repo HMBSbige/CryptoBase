@@ -135,7 +135,9 @@ public class Argon2MemoryCacheTest
 		}
 	}
 
+	// The trim timer calls back on the thread pool, where other tests running in parallel could hold it back past the deadline.
 	[Test]
+	[NotInParallel]
 	public async Task FreesIdleRegions()
 	{
 		Argon2MemoryCache cache = new(1 << 20, 50);
