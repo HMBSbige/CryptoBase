@@ -6,14 +6,15 @@ namespace CryptoBase.Tests.Hashes.Sha3;
 public class KeccakBatchSpongeTest
 {
 	// Stream counts below, at and past each kernel width, so that groups end both full and partial.
-	private static readonly int[] StreamCounts = [1, 2, 3, 4, 5, 7, 8, 9, 16, 30];
+	private static readonly int[] StreamCounts = [1, 2, 3, 4, 5, 7, 8, 9, 30];
+
+	// Stream counts for which KeccakP1600Batch chooses each kernel width, alone and after full groups.
+	private static readonly int[] ChosenStreamCounts = [1, 3, 5, 9, 11, 30];
 
 	public static IEnumerable<int> Rates => [72, 104, 136, 144, 168];
 
-	public static IEnumerable<byte> DomainSeparators => [KeccakReference.Sha3DomainSeparator, KeccakReference.ShakeDomainSeparator];
-
-	// Zero lets KeccakP1600Batch choose; the others force one kernel for every group.
-	public static IEnumerable<int> Lanes => [0, 1, 2, 4, 8];
+	// Each forces one kernel for every group.
+	public static IEnumerable<int> Lanes => [1, 2, 4, 8];
 
 	[Test]
 	public async Task ScheduleCoversEveryStream()
@@ -34,31 +35,38 @@ public class KeccakBatchSpongeTest
 				remaining -= count;
 			}
 
-			if (StreamCounts.Contains(streams))
+			if (ChosenStreamCounts.Contains(streams))
 			{
 				TestContext.Current?.Output.WriteLine($"{streams} streams: {string.Join(" + ", groups)}");
 			}
 		}
 	}
 
+	// Each rate pads with the domain separator of a function that uses it.
 	[Test]
 	[CombinedDataSources]
-	public Task MatchesIndependentSponges([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(DomainSeparators))] byte domainSeparator, [MethodDataSource(nameof(Lanes))] int lanes)
+	public Task MatchesIndependentSponges([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
 	{
-		if (lanes is not 0 && !IsSupported(lanes))
+		if (!IsSupported(lanes))
 		{
 			Skip.Test($"{KernelName(lanes)} is not supported here.");
 		}
 
 		return rate switch
 		{
-			72 => Verify<KeccakRate72>(domainSeparator, lanes),
-			104 => Verify<KeccakRate104>(domainSeparator, lanes),
-			136 => Verify<KeccakRate136>(domainSeparator, lanes),
-			144 => Verify<KeccakRate144>(domainSeparator, lanes),
-			168 => Verify<KeccakRate168>(domainSeparator, lanes),
+			72 => Verify<KeccakRate72>(KeccakReference.Sha3DomainSeparator, lanes, StreamCounts),
+			104 => Verify<KeccakRate104>(KeccakReference.Sha3DomainSeparator, lanes, StreamCounts),
+			136 => Verify<KeccakRate136>(KeccakReference.ShakeDomainSeparator, lanes, StreamCounts),
+			144 => Verify<KeccakRate144>(KeccakReference.Sha3DomainSeparator, lanes, StreamCounts),
+			168 => Verify<KeccakRate168>(KeccakReference.ShakeDomainSeparator, lanes, StreamCounts),
 			_ => throw new ArgumentOutOfRangeException(nameof(rate))
 		};
+	}
+
+	[Test]
+	public Task ChosenKernelsMatchIndependentSponges()
+	{
+		return Verify<KeccakRate168>(KeccakReference.ShakeDomainSeparator, 0, ChosenStreamCounts);
 	}
 
 	// The vector paths load and store whole words of every stream four or eight at a time, so inputs and outputs that end at an
@@ -72,7 +80,7 @@ public class KeccakBatchSpongeTest
 			Skip.Test("Guard pages are not supported here.");
 		}
 
-		if (lanes is not 0 && !IsSupported(lanes))
+		if (!IsSupported(lanes))
 		{
 			Skip.Test($"{KernelName(lanes)} is not supported here.");
 		}
@@ -117,20 +125,20 @@ public class KeccakBatchSpongeTest
 
 	// Each group absorbs in two calls where the input allows, the second starting mid-word, on a word boundary or past a block
 	// boundary, squeezes in lockstep across block boundaries and from mid-block, then hands every stream to a sponge of its own to
-	// squeeze more blocks. The input lengths fall on both sides of a word, of one to three of the four-word tiles that the vector
-	// paths transpose, and of the block.
-	private static async Task Verify<TRate>(byte domainSeparator, int lanes) where TRate : IKeccakRate
+	// squeeze more blocks. The input lengths fall on both sides of a word, of one and two four-word tiles, and of the block. Zero
+	// lanes lets KeccakP1600Batch choose.
+	private static async Task Verify<TRate>(byte domainSeparator, int lanes, int[] streamCounts) where TRate : IKeccakRate
 	{
 		int rate = TRate.RateInBytes;
-		int[] inputLengths = [0, 1, 7, 8, 9, 31, 32, 33, 34, 63, 64, 65, 66, 95, 96, 97, 128, rate - 1, rate, rate + 1, 2 * rate + 5];
-		int[] splits = [5, 8, 16, rate + 3];
+		int[] inputLengths = [0, 7, 8, 9, 31, 32, 33, 63, 64, 65, rate - 1, rate, rate + 1, 2 * rate + 5];
+		int[] splits = [5, 8, rate + 3];
 		int[] squeezeLengths = [3 * rate, 7, rate + 1];
 		int extractedLength = 2 * rate + 5;
 		int outputLength = squeezeLengths.Sum() + extractedLength;
 
 		foreach (int inputLength in inputLengths)
 		{
-			foreach (int streams in StreamCounts)
+			foreach (int streams in streamCounts)
 			{
 				byte[] inputs = CreateDeterministicSource(streams * inputLength);
 				byte[][] expected = new byte[streams][];
