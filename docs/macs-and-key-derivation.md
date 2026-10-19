@@ -34,7 +34,7 @@ mac.Reset();
 
 ## Platform-backed HMAC-SHA256
 
-`PlatformHmacSha256` computes HMAC-SHA256 with the operating system's cryptographic library. It implements `IMacAlgorithm<TSelf>`, so it can replace `HmacAlgorithm<Sha256HashAlgorithm>` in generic code, `MacStream<T>` and the generic KDFs below. `IsPreferred` is `true` on x86 and x64 processors with the SHA extensions, where it is faster than the managed implementation.
+`PlatformHmacSha256` computes HMAC-SHA256 with the operating system's cryptographic library. It implements `IMacAlgorithm<TSelf>`, so it can replace `HmacAlgorithm<Sha256HashAlgorithm>` in generic code, `MacStream<T>` and the generic KDFs below. `IsPreferred` is `true` on x86 and x64 processors with the SHA extensions, where it is expected to be faster than the managed implementation.
 
 ```csharp
 using System.Security.Cryptography;
@@ -132,9 +132,9 @@ byte[] sessionHash = SHA256.HashData("handshake messages"u8);
 Tls12Prf.DeriveKey<Sha256HashAlgorithm>(preMasterSecret, "extended master secret"u8, sessionHash, masterSecret);
 ```
 
-## HKDF and TLS 1.2 PRF over any MAC
+## HKDF and TLS 1.2 PRF over a chosen HMAC implementation
 
-`Hkdf<TMac>` and `Tls12Prf<TMac>` provide the same methods as the classes above, over the MAC that the type argument selects.
+`Hkdf<TMac>` and `Tls12Prf<TMac>` provide the same methods as the classes above, with the HMAC implementation that the type argument selects. The type argument must be an HMAC: RFC 5869 and RFC 5246 define these functions over HMAC only, and their security does not carry over to other MACs.
 
 ```csharp
 using System.Security.Cryptography;

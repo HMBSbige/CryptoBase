@@ -3,7 +3,7 @@ using CryptoBase.Abstractions.Macs;
 namespace CryptoBase.Kdf;
 
 /// <summary>
-/// Implements the TLS 1.2 pseudorandom function as specified by RFC 5246, section 5, over a MAC algorithm.
+/// Implements the TLS 1.2 pseudorandom function as specified by RFC 5246, section 5, over an HMAC implementation.
 /// </summary>
 /// <remarks>
 /// The output is <c>P_hash(secret, label || seed)</c> truncated to the output length, with the HMAC that the cipher suite selects.
@@ -39,7 +39,7 @@ public static class Tls12Prf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	{
 		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
-		// A single block stays one-shot and allocates nothing; the keyed instance is created only when more than one block reuses it.
+		// A single block stays one-shot; the keyed instance is created only when more than one block reuses it.
 		if (output.Length <= TMac.MacLength)
 		{
 			DeriveBlock(secret, label, seed1, seed2, output);

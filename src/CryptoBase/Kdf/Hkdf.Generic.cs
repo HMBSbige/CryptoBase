@@ -3,13 +3,13 @@ using CryptoBase.Abstractions.Macs;
 namespace CryptoBase.Kdf;
 
 /// <summary>
-/// Implements HKDF as specified by RFC 5869 over a MAC algorithm.
+/// Implements HKDF as specified by RFC 5869 over an HMAC implementation.
 /// </summary>
 /// <remarks>
 /// Extract and a single-block expansion take one call to <c>TMac.Mac</c> each. A longer expansion creates one keyed <typeparamref name="TMac" /> instance and
 /// computes every block with it. Any input may overlap the output.
 /// </remarks>
-/// <typeparam name="TMac">The MAC algorithm, normally an HMAC.</typeparam>
+/// <typeparam name="TMac">The HMAC implementation. RFC 5869 defines HKDF over HMAC only.</typeparam>
 public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 {
 	/// <summary>
@@ -87,7 +87,7 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 
 	private static void ExpandCore(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
-		// A single block stays one-shot and allocates nothing; the keyed instance is created only when more than one block reuses it.
+		// A single block stays one-shot; the keyed instance is created only when more than one block reuses it.
 		if (output.Length <= TMac.MacLength)
 		{
 			ExpandBlock(prk, output, info);

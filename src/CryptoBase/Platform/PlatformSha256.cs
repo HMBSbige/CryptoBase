@@ -21,7 +21,7 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	public static int HashLength => SHA256.HashSizeInBytes;
 
 	/// <summary>
-	/// Gets a value that indicates whether this type is faster than the managed SHA-256 on the current processor.
+	/// Gets a value that indicates whether this type is expected to be faster than the managed SHA-256 on the current processor.
 	/// </summary>
 	/// <remarks>
 	/// It is <see langword="true" /> on x86 and x64 processors with the SHA extensions, which the managed implementation does not use.

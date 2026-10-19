@@ -23,7 +23,7 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	public static int MacLength => HMACSHA256.HashSizeInBytes;
 
 	/// <summary>
-	/// Gets a value that indicates whether this type is faster than the managed HMAC-SHA256 on the current processor.
+	/// Gets a value that indicates whether this type is expected to be faster than the managed HMAC-SHA256 on the current processor.
 	/// </summary>
 	/// <remarks>
 	/// It is <see langword="true" /> on x86 and x64 processors with the SHA extensions, which the managed implementation does not use.
