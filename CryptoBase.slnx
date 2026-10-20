@@ -25,6 +25,7 @@
     <File Path="docs\data-formats.md" />
     <File Path="docs\hashes.md" />
     <File Path="docs\macs-and-key-derivation.md" />
+    <File Path="docs\key-encapsulation.md" />
     <File Path="docs\stream-ciphers.md" />
     <File Path="docs\block-ciphers-and-modes.md" />
     <File Path="docs\authenticated-encryption.md" />

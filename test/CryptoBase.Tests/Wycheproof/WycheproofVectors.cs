@@ -41,6 +41,10 @@ internal static partial class WycheproofVectors
 	[JsonSerializable(typeof(TestFile<IndCpaTestVector>))]
 	[JsonSerializable(typeof(TestFile<MacTestVector>))]
 	[JsonSerializable(typeof(TestFile<HkdfTestVector>))]
+	[JsonSerializable(typeof(TestFile<MLKemTestVector>))]
+	[JsonSerializable(typeof(TestFile<MLKemEncapsTestVector>))]
+	[JsonSerializable(typeof(TestFile<MLKemKeyGenTestVector>))]
+	[JsonSerializable(typeof(TestFile<MLKemDecapsValidationTestVector>))]
 	private sealed partial class VectorsJsonContext : JsonSerializerContext;
 
 	private sealed class HexConverter : JsonConverter<byte[]>

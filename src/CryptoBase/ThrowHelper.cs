@@ -24,6 +24,24 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
+	public static void ThrowOutputsOverlap(string parameterName)
+	{
+		throw new ArgumentException("The output buffers must not overlap.", parameterName);
+	}
+
+	[DoesNotReturn]
+	public static void ThrowInvalidKey(string parameterName)
+	{
+		throw new ArgumentException("The key is invalid.", parameterName);
+	}
+
+	[DoesNotReturn]
+	public static void ThrowMissingKey(string keyName)
+	{
+		throw new InvalidOperationException($"The instance does not hold the {keyName}.");
+	}
+
+	[DoesNotReturn]
 	public static T ThrowArgumentOutOfRangeException<T>(string? paramName = default, string? message = default)
 	{
 		throw new ArgumentOutOfRangeException(paramName, message);

@@ -136,7 +136,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| ML-KEM | ⚠️ |
+| ML-KEM | ✅ |
 | HQC | ⚠️ |
 
 #### Hybrid key agreement mechanisms
