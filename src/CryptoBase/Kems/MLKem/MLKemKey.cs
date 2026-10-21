@@ -285,7 +285,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		}
 
 		hash.Suspend(out _partialEncapsulationKeyHash, out _encapsulationKeyHashAbsorbed);
-		_hasEncapsulationKeyHash = false;
 		d.CopyTo(_d);
 		seed.Slice(SymmetricLength).CopyTo(_z);
 		HasPrivateSeed = true;
