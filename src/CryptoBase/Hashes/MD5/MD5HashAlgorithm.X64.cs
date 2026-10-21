@@ -188,7 +188,6 @@ public partial struct MD5HashAlgorithm
 			selected ^= a;
 			b += selected;
 			b = BitOperations.RotateLeft(b, 22);
-			selected = d;
 			b += c;
 
 			// Round 2.
@@ -480,7 +479,6 @@ public partial struct MD5HashAlgorithm
 			selected ^= c;
 			b += selected;
 			b = BitOperations.RotateLeft(b, 23);
-			selected = c;
 			b += c;
 
 			// Round 4.
@@ -638,12 +636,11 @@ public partial struct MD5HashAlgorithm
 
 			b += message + 0xEB86D391U;
 			selected |= c;
+			// Unused, but removing this load changes the instruction order the JIT emits for this step.
 			message = ReadX64Message(ref source, 0);
 			selected ^= d;
 			b += selected;
-			selected = uint.MaxValue;
 			b = BitOperations.RotateLeft(b, 21);
-			selected ^= d;
 			b += c;
 
 			stateA += a;
