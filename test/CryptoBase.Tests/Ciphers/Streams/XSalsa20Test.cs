@@ -14,18 +14,16 @@ public class XSalsa20Test
 		(@"27ba7e81e7edd4e71be53c07ce8e633138f287e155c7fa9e84c4ad804b7fa1b9", @"ea05f4ebcd2fb6b000da0612861ba54ff5c176fb601391aa", @"e09ff5d2cb050d69b2d42494bde5825238c756d6991d99d7a20d1ef0b83c371c89872690b2", @"a23e7ef93c5d0667c96d9e404dcbe6be62026fa98f7a3ff9ba5d458643a16a1cef7272dc60", @"fc11d5369f4fc4971b6d3d6c078aef9b0f05c0e61ab89c025168054defeb03fef633858700", @"97a9b52f35983557c77a11b314b4f7d5dc2cca15ee47616f861873cbfed1d32372171a61e3")
 	];
 
-	private static async Task Test_Internal(XSalsa20Cipher crypto, string i1, string o1, string i2, string o2)
+	[Test]
+	[MethodDataSource(nameof(Data))]
+	public async Task Test(string keyHex, string ivHex, string i1, string o1, string i2, string o2)
 	{
+		using XSalsa20Cipher crypto = new(Convert.FromHexString(keyHex), Convert.FromHexString(ivHex));
 		byte[] h1 = Convert.FromHexString(i1);
-
 		byte[] g1 = Convert.FromHexString(o1);
-
 		byte[] h2 = Convert.FromHexString(i2);
-
 		byte[] g2 = Convert.FromHexString(o2);
-
 		byte[] x1 = new byte[h1.Length];
-
 		byte[] x2 = new byte[h2.Length];
 
 		crypto.Xor(h1, x1);
@@ -41,15 +39,5 @@ public class XSalsa20Test
 
 		crypto.Xor(g2, x2);
 		await Assert.That(x2).IsEquivalentTo(h2, CollectionOrdering.Matching);
-	}
-
-	[Test]
-	[MethodDataSource(nameof(Data))]
-	public async Task Test(string keyHex, string ivHex, string i1, string o1, string i2, string o2)
-	{
-		byte[] key = Convert.FromHexString(keyHex);
-		byte[] iv = Convert.FromHexString(ivHex);
-		using XSalsa20Cipher crypto = new(key, iv);
-		await Test_Internal(crypto, i1, o1, i2, o2);
 	}
 }
