@@ -35,7 +35,7 @@ public class FastUtilsTest
 		byte[] sourceBuffer = CreateDeterministicSource(length + 2);
 		byte[] expected = new byte[length];
 		byte[] destinationBuffer = new byte[length + 2];
-		destinationBuffer.AsSpan().Fill(DestinationSentinel);
+		PrepareDestination(destinationBuffer);
 
 		ReadOnlySpan<byte> stream = streamBuffer.AsSpan(1, length);
 		ReadOnlySpan<byte> source = sourceBuffer.AsSpan(2, length);
@@ -44,9 +44,7 @@ public class FastUtilsTest
 
 		FastUtils.Xor(stream, source, destination, length);
 
-		await Assert.That(destinationBuffer.AsMemory(1, length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
-		await Assert.That(destinationBuffer[0]).IsEqualTo(DestinationSentinel);
-		await Assert.That(destinationBuffer[^1]).IsEqualTo(DestinationSentinel);
+		await AssertOutput(destinationBuffer, 1, expected);
 	}
 
 	[Test]
@@ -72,7 +70,7 @@ public class FastUtilsTest
 		byte[] sourceBuffer = CreateDeterministicSource(length + 1);
 		byte[] expected = new byte[length];
 		byte[] actual = new byte[length + 1];
-		actual.AsSpan().Fill(DestinationSentinel);
+		PrepareDestination(actual);
 		ReadOnlySpan<byte> source = sourceBuffer.AsSpan(1, length);
 		ComputeXor(stream, source, expected);
 

@@ -20,7 +20,7 @@ public class SnuffleCipherDataLimitTest
 		byte[] expected = new byte[128];
 
 		SetCounter(crypto, penultimateCounter);
-		destination.AsSpan().Fill(DestinationSentinel);
+		PrepareDestination(destination);
 		await Assert.That(() => crypto.Xor(source, destination)).ThrowsExactly<ArgumentOutOfRangeException>();
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 

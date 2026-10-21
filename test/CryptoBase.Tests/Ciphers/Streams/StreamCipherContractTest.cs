@@ -30,7 +30,7 @@ public class StreamCipherContractTest
 		using IStreamCipher oracle = cipher.Create();
 		byte[] source = CreateDeterministicSource(65);
 		byte[] shortDestination = new byte[source.Length - 1];
-		shortDestination.AsSpan().Fill(DestinationSentinel);
+		PrepareDestination(shortDestination);
 
 		await Assert.That(() => subject.Xor(source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 

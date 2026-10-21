@@ -66,9 +66,7 @@ public class SnuffleCipherBlocksTest
 				}
 			}
 
-			await Assert.That(output.AsMemory(7, length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
-			await Assert.That(output.AsMemory(0, 7)).All(static value => value is DestinationSentinel);
-			await Assert.That(output.AsMemory(length + 7)).All(static value => value is DestinationSentinel);
+			await AssertOutput(output, 7, expected);
 		}
 	}
 }

@@ -124,7 +124,7 @@ public class Poly1305Test
 		byte[] keyCopy = (byte[])key.Clone();
 		byte[] sourceCopy = (byte[])source.Clone();
 		byte[] shortDestination = new byte[Poly1305Algorithm.MacLength - 1];
-		shortDestination.AsSpan().Fill(DestinationSentinel);
+		PrepareDestination(shortDestination);
 
 		await Assert.That(() => Poly1305Algorithm.Mac(key, source, shortDestination))
 			.ThrowsExactly<ArgumentOutOfRangeException>();
@@ -142,7 +142,7 @@ public class Poly1305Test
 		byte[] source = CreateDeterministicSource(73);
 		byte[] invalidKey = new byte[keyLength];
 		byte[] destination = new byte[Poly1305Algorithm.MacLength];
-		destination.AsSpan().Fill(DestinationSentinel);
+		PrepareDestination(destination);
 
 		await Assert.That(() => Poly1305Algorithm.Mac(invalidKey, source, destination))
 			.ThrowsExactly<ArgumentOutOfRangeException>();

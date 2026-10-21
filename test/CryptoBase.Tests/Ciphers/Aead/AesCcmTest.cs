@@ -170,7 +170,7 @@ public class AesCcmTest
 		byte[] badTag = tag.ToArray();
 		badTag[0] ^= 1;
 		byte[] rejected = new byte[plaintext.Length];
-		rejected.AsSpan().Fill(DestinationSentinel);
+		PrepareDestination(rejected);
 		bool forged = CcmUtils.TryDecrypt<TTag, BufferedCcmBlockEncryptor<AesCipher>>(encryptor, nonce, ciphertext, badTag, rejected, associatedData);
 		return (ciphertext, tag, authenticated, recovered, forged, rejected);
 	}

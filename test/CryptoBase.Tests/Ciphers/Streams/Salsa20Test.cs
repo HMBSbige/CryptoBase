@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Streams;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Streams;
 
@@ -19,13 +20,6 @@ public class Salsa20Test
 	)]
 	public async Task VerifiedFirstBlockForBothKeySizes(string keyHex, string nonceHex, string expectedHex)
 	{
-		byte[] expected = Convert.FromHexString(expectedHex);
-		byte[] source = new byte[64];
-		byte[] actual = new byte[source.Length];
-		using Salsa20Cipher crypto = new(Convert.FromHexString(keyHex), Convert.FromHexString(nonceHex));
-
-		crypto.Xor(source, actual);
-
-		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		await VerifyStreamVector(new Salsa20Cipher(Convert.FromHexString(keyHex), Convert.FromHexString(nonceHex)), new byte[64], Convert.FromHexString(expectedHex));
 	}
 }

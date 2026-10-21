@@ -18,7 +18,7 @@ public class AesXtsTest
 		byte[] destination = new byte[17];
 		using XtsMode<AesCipher> crypto = XtsMode<AesCipher>.Create(CreateDeterministicSource(32));
 
-		destination.AsSpan().Fill(DestinationSentinel);
+		PrepareDestination(destination);
 		await Assert.That(() => Transform(crypto, decrypt, iv.AsSpan(0, 15), source, destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("tweak");
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 

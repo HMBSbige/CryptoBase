@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Streams;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Streams;
 
@@ -19,15 +20,6 @@ public class ChaCha20OriginalTest
 	)]
 	public async Task VerifiedFirstBlockForBothKeySizes(string keyHex, string nonceHex, string expectedHex)
 	{
-		byte[] key = Convert.FromHexString(keyHex);
-		byte[] nonce = Convert.FromHexString(nonceHex);
-		byte[] expected = Convert.FromHexString(expectedHex);
-		byte[] source = new byte[64];
-		byte[] actual = new byte[source.Length];
-		using ChaCha20OriginalCipher crypto = new(key, nonce);
-
-		crypto.Xor(source, actual);
-
-		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		await VerifyStreamVector(new ChaCha20OriginalCipher(Convert.FromHexString(keyHex), Convert.FromHexString(nonceHex)), new byte[64], Convert.FromHexString(expectedHex));
 	}
 }
