@@ -45,6 +45,14 @@ internal static class Sha3TestUtils
 		return sponge;
 	}
 
+	public static byte[] AbsorbPadAndSqueeze<TRate>(ReadOnlySpan<byte> message, byte domainSeparator, int outputLength) where TRate : IKeccakRate
+	{
+		KeccakSponge<TRate> sponge = AbsorbAndPad<TRate>(message, domainSeparator);
+		byte[] output = new byte[outputLength];
+		sponge.Squeeze(output);
+		return output;
+	}
+
 	public static bool IsKernelSupported(int lanes)
 	{
 		return lanes switch
@@ -54,6 +62,25 @@ internal static class Sha3TestUtils
 			4 => KeccakP1600Times4.IsSupported,
 			8 => KeccakP1600Times8.IsSupported,
 			_ => false
+		};
+	}
+
+	public static void SkipUnlessKernelSupported(int lanes)
+	{
+		if (!IsKernelSupported(lanes))
+		{
+			Skip.Test($"{KernelName(lanes)} is not supported here.");
+		}
+	}
+
+	public static string KernelName(int lanes)
+	{
+		return lanes switch
+		{
+			8 => nameof(KeccakP1600Times8),
+			4 => nameof(KeccakP1600Times4),
+			2 => nameof(KeccakP1600Times2),
+			_ => nameof(KeccakP1600Times1)
 		};
 	}
 }

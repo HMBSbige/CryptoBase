@@ -23,7 +23,7 @@ public class KeccakBatchSpongeTest
 	[Test]
 	public async Task ScheduleCoversEveryStream()
 	{
-		TestContext.Current?.Output.WriteLine($"Widest kernel: {KernelName(KeccakP1600Batch.MaxLanes)}");
+		TestContext.Current?.Output.WriteLine($"Widest kernel: {Sha3TestUtils.KernelName(KeccakP1600Batch.MaxLanes)}");
 
 		for (int streams = 1; streams <= 64; ++streams)
 		{
@@ -35,7 +35,7 @@ public class KeccakBatchSpongeTest
 				await Assert.That(Sha3TestUtils.IsKernelSupported(lanes)).IsTrue().Because($"{lanes} lanes for {remaining} of {streams} streams");
 
 				int count = Math.Min(remaining, lanes);
-				groups.Add($"{KernelName(lanes)}[{count}]");
+				groups.Add($"{Sha3TestUtils.KernelName(lanes)}[{count}]");
 				remaining -= count;
 			}
 
@@ -51,10 +51,7 @@ public class KeccakBatchSpongeTest
 	[CombinedDataSources]
 	public Task MatchesIndependentSponges([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
 	{
-		if (!Sha3TestUtils.IsKernelSupported(lanes))
-		{
-			Skip.Test($"{KernelName(lanes)} is not supported here.");
-		}
+		Sha3TestUtils.SkipUnlessKernelSupported(lanes);
 
 		return rate switch
 		{
@@ -80,11 +77,7 @@ public class KeccakBatchSpongeTest
 	public Task StaysWithinInputsAndOutputs([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
 	{
 		GuardPageBuffer.SkipUnlessSupported();
-
-		if (!Sha3TestUtils.IsKernelSupported(lanes))
-		{
-			Skip.Test($"{KernelName(lanes)} is not supported here.");
-		}
+		Sha3TestUtils.SkipUnlessKernelSupported(lanes);
 
 		return rate switch
 		{
@@ -102,9 +95,9 @@ public class KeccakBatchSpongeTest
 	[CombinedDataSources]
 	public Task SeededResetMatchesIndependentSponges([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(SeededLanes))] int lanes)
 	{
-		if (lanes is not 0 && !Sha3TestUtils.IsKernelSupported(lanes))
+		if (lanes is not 0)
 		{
-			Skip.Test($"{KernelName(lanes)} is not supported here.");
+			Sha3TestUtils.SkipUnlessKernelSupported(lanes);
 		}
 
 		return rate switch
@@ -124,11 +117,7 @@ public class KeccakBatchSpongeTest
 	public async Task SeededResetStaysWithinPrefixAndSuffixes(int lanes)
 	{
 		GuardPageBuffer.SkipUnlessSupported();
-
-		if (!Sha3TestUtils.IsKernelSupported(lanes))
-		{
-			Skip.Test($"{KernelName(lanes)} is not supported here.");
-		}
+		Sha3TestUtils.SkipUnlessKernelSupported(lanes);
 
 		using GuardPageBuffer prefix = new(KeccakBatchSponge<KeccakRate168>.SeedLength);
 		CreateDeterministicSource(prefix.Span.Length).CopyTo(prefix.Span);
@@ -197,9 +186,7 @@ public class KeccakBatchSpongeTest
 
 				for (int j = 0; j < streams; ++j)
 				{
-					KeccakSponge<TRate> sponge = Sha3TestUtils.AbsorbAndPad<TRate>(inputs.AsSpan(j * inputLength, inputLength), domainSeparator);
-					expected[j] = new byte[outputLength];
-					sponge.Squeeze(expected[j]);
+					expected[j] = Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(inputs.AsSpan(j * inputLength, inputLength), domainSeparator, outputLength);
 				}
 
 				foreach (int split in splits.Select(split => Math.Min(split, inputLength)).Distinct())
@@ -293,9 +280,7 @@ public class KeccakBatchSpongeTest
 
 				for (int j = 0; j < streams; ++j)
 				{
-					KeccakSponge<TRate> sponge = Sha3TestUtils.AbsorbAndPad<TRate>(SeededInput(prefix, suffixes[j], suffixLength), domainSeparator);
-					expected[j] = new byte[outputLength];
-					sponge.Squeeze(expected[j]);
+					expected[j] = Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(SeededInput(prefix, suffixes[j], suffixLength), domainSeparator, outputLength);
 				}
 
 				foreach (int guests in guestCounts)
@@ -415,16 +400,5 @@ public class KeccakBatchSpongeTest
 		}
 
 		return gathered;
-	}
-
-	private static string KernelName(int lanes)
-	{
-		return lanes switch
-		{
-			8 => nameof(KeccakP1600Times8),
-			4 => nameof(KeccakP1600Times4),
-			2 => nameof(KeccakP1600Times2),
-			_ => nameof(KeccakP1600Times1)
-		};
 	}
 }

@@ -37,9 +37,9 @@ public class KeccakSharedPermutationTest
 	[CombinedDataSources]
 	public Task GuestsMatchSeparateSponges([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Rates))] int guestRate, [MethodDataSource(nameof(Lanes))] int lanes)
 	{
-		if (lanes is not 0 && !Sha3TestUtils.IsKernelSupported(lanes))
+		if (lanes is not 0)
 		{
-			Skip.Test($"{lanes} lanes are not supported here.");
+			Sha3TestUtils.SkipUnlessKernelSupported(lanes);
 		}
 
 		return Run(rate, guestRate, new GuestCase(lanes));
@@ -94,14 +94,6 @@ public class KeccakSharedPermutationTest
 		};
 	}
 
-	private static byte[] Expected<TRate>(ReadOnlySpan<byte> message, byte domainSeparator, int outputLength) where TRate : IKeccakRate
-	{
-		KeccakSponge<TRate> sponge = Sha3TestUtils.AbsorbAndPad<TRate>(message, domainSeparator);
-		byte[] output = new byte[outputLength];
-		sponge.Squeeze(output);
-		return output;
-	}
-
 	// Takes every permutation offered: the next block of the message while absorbing, else a whole block of output.
 	private static void Step<TRate>(ref KeccakSponge<TRate> sponge, ReadOnlySpan<byte> message, ref int absorbed, Span<byte> output, ref int squeezed, byte domainSeparator) where TRate : IKeccakRate
 	{
@@ -139,7 +131,7 @@ public class KeccakSharedPermutationTest
 				foreach (int messageLength in (int[])[0, 1, rate - prefixLength - 1, rate - prefixLength, rate - prefixLength + 1, 2 * rate, 3 * rate + 5])
 				{
 					byte[] input = CreateDeterministicSource(prefixLength + messageLength);
-					byte[] expected = Expected<TRate>(input, domainSeparator, outputLength);
+					byte[] expected = Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(input, domainSeparator, outputLength);
 					int permutations = input.Length / rate + 1;
 
 					for (int steps = 0; steps <= permutations; ++steps)
@@ -195,8 +187,8 @@ public class KeccakSharedPermutationTest
 
 				using (Assert.Multiple())
 				{
-					await Assert.That(firstOutput).IsEquivalentTo(Expected<TFirst>(firstMessage, KeccakReference.Sha3DomainSeparator, outputLength), CollectionOrdering.Matching).Because($"{firstLength}-byte message beside {secondLength} bytes, {pairs} pairs");
-					await Assert.That(secondOutput).IsEquivalentTo(Expected<TSecond>(secondMessage, KeccakReference.ShakeDomainSeparator, outputLength), CollectionOrdering.Matching).Because($"{secondLength}-byte message beside {firstLength} bytes, {pairs} pairs");
+					await Assert.That(firstOutput).IsEquivalentTo(Sha3TestUtils.AbsorbPadAndSqueeze<TFirst>(firstMessage, KeccakReference.Sha3DomainSeparator, outputLength), CollectionOrdering.Matching).Because($"{firstLength}-byte message beside {secondLength} bytes, {pairs} pairs");
+					await Assert.That(secondOutput).IsEquivalentTo(Sha3TestUtils.AbsorbPadAndSqueeze<TSecond>(secondMessage, KeccakReference.ShakeDomainSeparator, outputLength), CollectionOrdering.Matching).Because($"{secondLength}-byte message beside {firstLength} bytes, {pairs} pairs");
 				}
 			}
 		}
@@ -249,13 +241,13 @@ public class KeccakSharedPermutationTest
 
 					for (int j = 0; j < count; ++j)
 					{
-						byte[] expected = Expected<TRate>(inputs.AsSpan(j * inputLength, inputLength), KeccakReference.ShakeDomainSeparator, outputLength);
+						byte[] expected = Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(inputs.AsSpan(j * inputLength, inputLength), KeccakReference.ShakeDomainSeparator, outputLength);
 						await Assert.That(outputs.AsSpan(j * outputLength, outputLength).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"stream {j} of {count} with {guestCount} guests in {groupLanes} lanes");
 					}
 
 					for (int i = 0; i < guestCount; ++i)
 					{
-						byte[] expected = Expected<TGuest>(guestMessages[i], KeccakReference.Sha3DomainSeparator, guestOutputLength);
+						byte[] expected = Sha3TestUtils.AbsorbPadAndSqueeze<TGuest>(guestMessages[i], KeccakReference.Sha3DomainSeparator, guestOutputLength);
 						await Assert.That(guestOutputs[i]).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"guest {i} of {guestCount} beside {count} streams in {groupLanes} lanes");
 					}
 				}

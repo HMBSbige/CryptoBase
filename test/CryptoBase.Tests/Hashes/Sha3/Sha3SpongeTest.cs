@@ -41,9 +41,7 @@ public class Sha3SpongeTest
 	{
 		byte[] message = CreateDeterministicSource(messageLength);
 		const int outputLength = 3 * ShakeRate + 11;
-		KeccakSponge<KeccakRate136> sponge = Sha3TestUtils.AbsorbAndPad<KeccakRate136>(message, KeccakReference.ShakeDomainSeparator);
-		byte[] output = new byte[outputLength];
-		sponge.Squeeze(output);
+		byte[] output = Sha3TestUtils.AbsorbPadAndSqueeze<KeccakRate136>(message, KeccakReference.ShakeDomainSeparator, outputLength);
 
 		await Assert.That(output).IsEquivalentTo(Sha3TestUtils.Shake256Output(message, outputLength), CollectionOrdering.Matching);
 	}
@@ -156,10 +154,7 @@ public class Sha3SpongeTest
 		using GuardPageBuffer buffer = new(message.Length);
 		message.CopyTo(buffer.Span);
 
-		KeccakSponge<TRate> sponge = Sha3TestUtils.AbsorbAndPad<TRate>(buffer.Span, KeccakReference.Sha3DomainSeparator);
-		byte[] output = new byte[TRate.RateInBytes];
-		sponge.Squeeze(output);
-		return output;
+		return Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(buffer.Span, KeccakReference.Sha3DomainSeparator, TRate.RateInBytes);
 	}
 
 	// Each case discards the first skipped bytes, which leaves the sponge at the start, middle or end of a block, then squeezes
