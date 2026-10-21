@@ -20,47 +20,22 @@ public class Base32ContractTest
 	[Arguments("M=AAAAAA")]
 	[Arguments("MZ======")]
 	[Arguments("=M======")]
-	public async Task InvalidInputReturnsInvalidData(string encoded)
+	public Task InvalidInputReturnsInvalidData(string encoded)
 	{
-		byte[] encodedBytes = ToByteSymbols(encoded);
-		byte[] charDestination = Enumerable.Repeat(DestinationSentinel, 8).ToArray();
-		byte[] utf8Destination = Enumerable.Repeat(DestinationSentinel, 8).ToArray();
-		OperationStatus charStatus = Base32Encoding.Rfc4648.DecodeFromChars(encoded.AsSpan(), charDestination, out int charsConsumed, out int charsWritten);
-		OperationStatus utf8Status = Base32Encoding.Rfc4648.DecodeFromUtf8(encodedBytes, utf8Destination, out int bytesConsumed, out int bytesWritten);
-
-		await Assert.That(charStatus).IsEqualTo(OperationStatus.InvalidData);
-		await Assert.That(utf8Status).IsEqualTo(OperationStatus.InvalidData);
-		await Assert.That(charsConsumed).IsZero();
-		await Assert.That(charsWritten).IsZero();
-		await Assert.That(bytesConsumed).IsZero();
-		await Assert.That(bytesWritten).IsZero();
-		await Assert.That(charDestination).All(static value => value is DestinationSentinel);
-		await Assert.That(utf8Destination).All(static value => value is DestinationSentinel);
+		return AssertInvalidWithoutWriting(Base32Encoding.Rfc4648, encoded, 8);
 	}
 
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public async Task InvalidFirstSymbolInLongInputDoesNotWrite(bool hex)
+	public Task InvalidFirstSymbolInLongInputDoesNotWrite(bool hex)
 	{
 		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
 		byte[] source = CreateDeterministicSource(1040);
 		char[] encoded = EncodeReference(source, hex, false);
 		encoded[0] = '!';
-		byte[] charDestination = new byte[source.Length];
-		byte[] utf8Destination = new byte[source.Length];
-		PrepareDestination(charDestination);
-		PrepareDestination(utf8Destination);
 
-		OperationStatus charStatus = encoding.DecodeFromChars(encoded, charDestination, out int charsConsumed, out int charsWritten);
-		OperationStatus utf8Status = encoding.DecodeFromUtf8(ToByteSymbols(encoded), utf8Destination, out int bytesConsumed, out int bytesWritten);
-
-		await Assert.That(charStatus).IsEqualTo(OperationStatus.InvalidData);
-		await Assert.That(utf8Status).IsEqualTo(OperationStatus.InvalidData);
-		await Assert.That(charsConsumed).IsZero();
-		await Assert.That(bytesConsumed).IsZero();
-		await AssertOutput(charDestination, [], charsWritten);
-		await AssertOutput(utf8Destination, [], bytesWritten);
+		return AssertInvalidWithoutWriting(encoding, new string(encoded), source.Length);
 	}
 
 	[Test]
@@ -262,22 +237,10 @@ public class Base32ContractTest
 	[Arguments(true, "M")]
 	[Arguments(true, "MZX")]
 	[Arguments(true, "MZXW6Y")]
-	public async Task PaddingPolicyAndRawSymbolCountsAreEnforced(bool omitPadding, string encoded)
+	public Task PaddingPolicyAndRawSymbolCountsAreEnforced(bool omitPadding, string encoded)
 	{
 		Base32Encoding encoding = omitPadding ? Base32Encoding.Rfc4648.OmitPadding : Base32Encoding.Rfc4648;
-		byte[] destinationChars = Enumerable.Repeat(DestinationSentinel, 8).ToArray();
-		byte[] destinationUtf8 = Enumerable.Repeat(DestinationSentinel, 8).ToArray();
-		OperationStatus charStatus = encoding.DecodeFromChars(encoded, destinationChars, out int charsConsumed, out int charsWritten);
-		OperationStatus utf8Status = encoding.DecodeFromUtf8(ToByteSymbols(encoded), destinationUtf8, out int bytesConsumed, out int bytesWritten);
-
-		await Assert.That(charStatus).IsEqualTo(OperationStatus.InvalidData);
-		await Assert.That(utf8Status).IsEqualTo(OperationStatus.InvalidData);
-		await Assert.That(charsConsumed).IsZero();
-		await Assert.That(charsWritten).IsZero();
-		await Assert.That(bytesConsumed).IsZero();
-		await Assert.That(bytesWritten).IsZero();
-		await Assert.That(destinationChars).All(static value => value is DestinationSentinel);
-		await Assert.That(destinationUtf8).All(static value => value is DestinationSentinel);
+		return AssertInvalidWithoutWriting(encoding, encoded, 8);
 	}
 
 	[Test]
@@ -295,45 +258,18 @@ public class Base32ContractTest
 		char[] encoded = EncodeReference(new byte[sourceLength], hex, omitPadding);
 		int rawSymbolCount = (sourceLength * 8 + 4) / 5;
 		int unusedBits = rawSymbolCount * 5 - sourceLength * 8;
-		byte[] destinationChars = new byte[sourceLength + 1];
-		byte[] destinationUtf8 = new byte[sourceLength + 1];
 
 		for (int trailingValue = 1; trailingValue < 1 << unusedBits; ++trailingValue)
 		{
 			encoded[rawSymbolCount - 1] = alphabet[trailingValue];
-			byte[] encodedUtf8 = ToByteSymbols(encoded);
-			PrepareDestination(destinationChars);
-			PrepareDestination(destinationUtf8);
-			OperationStatus charStatus = encoding.DecodeFromChars(encoded, destinationChars, out int charsConsumed, out int charsWritten);
-			OperationStatus utf8Status = encoding.DecodeFromUtf8(encodedUtf8, destinationUtf8, out int bytesConsumed, out int bytesWritten);
-
-			await Assert.That(charStatus).IsEqualTo(OperationStatus.InvalidData);
-			await Assert.That(utf8Status).IsEqualTo(OperationStatus.InvalidData);
-			await Assert.That(charsConsumed).IsZero();
-			await Assert.That(charsWritten).IsZero();
-			await Assert.That(bytesConsumed).IsZero();
-			await Assert.That(bytesWritten).IsZero();
-			await Assert.That(destinationChars).All(static value => value is DestinationSentinel);
-			await Assert.That(destinationUtf8).All(static value => value is DestinationSentinel);
+			await AssertInvalidWithoutWriting(encoding, new string(encoded), sourceLength + 1);
 		}
 	}
 
 	[Test]
-	public async Task InvalidLastSymbolReportsTheValidPrefix()
+	public Task InvalidLastSymbolReportsTheValidPrefix()
 	{
-		byte[] destinationChars = Enumerable.Repeat(DestinationSentinel, 1).ToArray();
-		byte[] destinationUtf8 = Enumerable.Repeat(DestinationSentinel, 1).ToArray();
-		OperationStatus charStatus = Base32Encoding.Rfc4648.OmitPadding.DecodeFromChars("M!", destinationChars, out int charsConsumed, out int charsWritten);
-		OperationStatus utf8Status = Base32Encoding.Rfc4648.OmitPadding.DecodeFromUtf8("M!"u8, destinationUtf8, out int bytesConsumed, out int bytesWritten);
-
-		await Assert.That(charStatus).IsEqualTo(OperationStatus.InvalidData);
-		await Assert.That(utf8Status).IsEqualTo(OperationStatus.InvalidData);
-		await Assert.That(charsConsumed).IsEqualTo(1);
-		await Assert.That(charsWritten).IsZero();
-		await Assert.That(bytesConsumed).IsEqualTo(1);
-		await Assert.That(bytesWritten).IsZero();
-		await Assert.That(destinationChars).All(static value => value is DestinationSentinel);
-		await Assert.That(destinationUtf8).All(static value => value is DestinationSentinel);
+		return AssertInvalidWithoutWriting(Base32Encoding.Rfc4648.OmitPadding, "M!", 1, expectedConsumed: 1);
 	}
 
 	[Test]
@@ -356,6 +292,25 @@ public class Base32ContractTest
 
 		await Assert.That(() => Base32Encoding.GetMaxDecodedLength(-1)).ThrowsExactly<ArgumentOutOfRangeException>();
 		await Assert.That(Base32Encoding.GetMaxDecodedLength(int.MaxValue)).IsEqualTo(1_342_177_279);
+	}
+
+	private static async Task AssertInvalidWithoutWriting(Base32Encoding encoding, string encoded, int destinationLength, int expectedConsumed = 0)
+	{
+		byte[] charDestination = new byte[destinationLength];
+		byte[] utf8Destination = new byte[destinationLength];
+		PrepareDestination(charDestination);
+		PrepareDestination(utf8Destination);
+		OperationStatus charStatus = encoding.DecodeFromChars(encoded, charDestination, out int charsConsumed, out int charsWritten);
+		OperationStatus utf8Status = encoding.DecodeFromUtf8(ToByteSymbols(encoded), utf8Destination, out int bytesConsumed, out int bytesWritten);
+
+		await Assert.That(charStatus).IsEqualTo(OperationStatus.InvalidData);
+		await Assert.That(utf8Status).IsEqualTo(OperationStatus.InvalidData);
+		await Assert.That(charsConsumed).IsEqualTo(expectedConsumed);
+		await Assert.That(charsWritten).IsZero();
+		await Assert.That(bytesConsumed).IsEqualTo(expectedConsumed);
+		await Assert.That(bytesWritten).IsZero();
+		await Assert.That(charDestination).All(static value => value is DestinationSentinel);
+		await Assert.That(utf8Destination).All(static value => value is DestinationSentinel);
 	}
 
 	private static bool IsPrefixFollowedBySentinel(byte[] destination, byte[] source, int length)
