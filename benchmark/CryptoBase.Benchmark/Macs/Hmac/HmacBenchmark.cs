@@ -11,6 +11,7 @@ using CryptoBase.Hashes.SM3;
 using CryptoBase.Macs.Hmac;
 using CryptoBase.Platform;
 using System.Security.Cryptography;
+using BouncyCastleDigest = Org.BouncyCastle.Crypto.IDigest;
 using BouncyCastleHmac = Org.BouncyCastle.Crypto.Macs.HMac;
 using BouncyCastleKeyParameter = Org.BouncyCastle.Crypto.Parameters.KeyParameter;
 using BouncyCastleMD5 = Org.BouncyCastle.Crypto.Digests.MD5Digest;
@@ -110,10 +111,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int MD5BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleMD5());
-		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
-		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
-		return hmac.DoFinal(_mac);
+		return BouncyCastleCore(new BouncyCastleMD5(), inputLength, keyLength);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -137,10 +135,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int Sha1BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleSha1());
-		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
-		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
-		return hmac.DoFinal(_mac);
+		return BouncyCastleCore(new BouncyCastleSha1(), inputLength, keyLength);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -156,10 +151,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int Sha224BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleSha224());
-		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
-		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
-		return hmac.DoFinal(_mac);
+		return BouncyCastleCore(new BouncyCastleSha224(), inputLength, keyLength);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -191,10 +183,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int Sha256BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleSha256());
-		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
-		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
-		return hmac.DoFinal(_mac);
+		return BouncyCastleCore(new BouncyCastleSha256(), inputLength, keyLength);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -218,10 +207,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block128Arguments))]
 	public int Sha384BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleSha384());
-		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
-		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
-		return hmac.DoFinal(_mac);
+		return BouncyCastleCore(new BouncyCastleSha384(), inputLength, keyLength);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -245,10 +231,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block128Arguments))]
 	public int Sha512BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleSha512());
-		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
-		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
-		return hmac.DoFinal(_mac);
+		return BouncyCastleCore(new BouncyCastleSha512(), inputLength, keyLength);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -272,10 +255,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Rate136Arguments))]
 	public int Sha3_256BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleSha3(256));
-		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
-		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
-		return hmac.DoFinal(_mac);
+		return BouncyCastleCore(new BouncyCastleSha3(256), inputLength, keyLength);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -299,10 +279,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Rate72Arguments))]
 	public int Sha3_512BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleSha3(512));
-		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
-		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
-		return hmac.DoFinal(_mac);
+		return BouncyCastleCore(new BouncyCastleSha3(512), inputLength, keyLength);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -318,7 +295,12 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int SM3BouncyCastle(int inputLength, int keyLength)
 	{
-		BouncyCastleHmac hmac = new(new BouncyCastleSM3());
+		return BouncyCastleCore(new BouncyCastleSM3(), inputLength, keyLength);
+	}
+
+	private int BouncyCastleCore(BouncyCastleDigest digest, int inputLength, int keyLength)
+	{
+		BouncyCastleHmac hmac = new(digest);
 		hmac.Init(new BouncyCastleKeyParameter(_key.AsSpan(0, keyLength)));
 		hmac.BlockUpdate(_input.AsSpan(0, inputLength));
 		return hmac.DoFinal(_mac);
