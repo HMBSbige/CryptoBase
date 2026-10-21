@@ -283,6 +283,7 @@ public class SymmetricPaddingTest
 		await Assert.That(retained).IsEqualTo(0);
 		await Assert.That(expected).IsEquivalentTo(original, CollectionOrdering.Matching);
 	}
+
 	private static async Task AssertRejectedWithoutMutation(byte[] data, PaddingMode mode)
 	{
 		byte[] original = (byte[])data.Clone();
@@ -292,5 +293,4 @@ public class SymmetricPaddingTest
 		await Assert.That(length).IsEqualTo(0);
 		await Assert.That(data).IsEquivalentTo(original, CollectionOrdering.Matching);
 	}
-
 }
