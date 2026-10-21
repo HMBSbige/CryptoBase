@@ -70,75 +70,13 @@ internal readonly struct Blake3Scalar : IBlake3Compressor, IBlake3XofKernel
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Compress(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, ref byte output)
 	{
-		ref uint h = ref Unsafe.AsRef(in cv);
-		uint v0 = h;
-		uint v1 = Unsafe.Add(ref h, 1);
-		uint v2 = Unsafe.Add(ref h, 2);
-		uint v3 = Unsafe.Add(ref h, 3);
-		uint v4 = Unsafe.Add(ref h, 4);
-		uint v5 = Unsafe.Add(ref h, 5);
-		uint v6 = Unsafe.Add(ref h, 6);
-		uint v7 = Unsafe.Add(ref h, 7);
-		uint v8 = IV0;
-		uint v9 = IV1;
-		uint v10 = IV2;
-		uint v11 = IV3;
-		uint v12 = (uint)counter;
-		uint v13 = (uint)(counter >> 32);
-		uint v14 = blockLength;
-		uint v15 = flags;
-
-		Rounds(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref block);
-
-		WriteWord(ref output, 0, v0 ^ v8);
-		WriteWord(ref output, 1, v1 ^ v9);
-		WriteWord(ref output, 2, v2 ^ v10);
-		WriteWord(ref output, 3, v3 ^ v11);
-		WriteWord(ref output, 4, v4 ^ v12);
-		WriteWord(ref output, 5, v5 ^ v13);
-		WriteWord(ref output, 6, v6 ^ v14);
-		WriteWord(ref output, 7, v7 ^ v15);
+		Compress(in cv, ref block, blockLength, counter, flags, ref output, false);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void CompressXof(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, ref byte output)
 	{
-		ref uint h = ref Unsafe.AsRef(in cv);
-		uint v0 = h;
-		uint v1 = Unsafe.Add(ref h, 1);
-		uint v2 = Unsafe.Add(ref h, 2);
-		uint v3 = Unsafe.Add(ref h, 3);
-		uint v4 = Unsafe.Add(ref h, 4);
-		uint v5 = Unsafe.Add(ref h, 5);
-		uint v6 = Unsafe.Add(ref h, 6);
-		uint v7 = Unsafe.Add(ref h, 7);
-		uint v8 = IV0;
-		uint v9 = IV1;
-		uint v10 = IV2;
-		uint v11 = IV3;
-		uint v12 = (uint)counter;
-		uint v13 = (uint)(counter >> 32);
-		uint v14 = blockLength;
-		uint v15 = flags;
-
-		Rounds(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref block);
-
-		WriteWord(ref output, 0, v0 ^ v8);
-		WriteWord(ref output, 1, v1 ^ v9);
-		WriteWord(ref output, 2, v2 ^ v10);
-		WriteWord(ref output, 3, v3 ^ v11);
-		WriteWord(ref output, 4, v4 ^ v12);
-		WriteWord(ref output, 5, v5 ^ v13);
-		WriteWord(ref output, 6, v6 ^ v14);
-		WriteWord(ref output, 7, v7 ^ v15);
-		WriteWord(ref output, 8, v8 ^ h);
-		WriteWord(ref output, 9, v9 ^ Unsafe.Add(ref h, 1));
-		WriteWord(ref output, 10, v10 ^ Unsafe.Add(ref h, 2));
-		WriteWord(ref output, 11, v11 ^ Unsafe.Add(ref h, 3));
-		WriteWord(ref output, 12, v12 ^ Unsafe.Add(ref h, 4));
-		WriteWord(ref output, 13, v13 ^ Unsafe.Add(ref h, 5));
-		WriteWord(ref output, 14, v14 ^ Unsafe.Add(ref h, 6));
-		WriteWord(ref output, 15, v15 ^ Unsafe.Add(ref h, 7));
+		Compress(in cv, ref block, blockLength, counter, flags, ref output, true);
 	}
 
 	[SkipLocalsInit]
@@ -173,6 +111,51 @@ internal readonly struct Blake3Scalar : IBlake3Compressor, IBlake3XofKernel
 		for (nuint i = 0; i < count; ++i)
 		{
 			CompressXof(in cv, ref block, blockLength, counter + i, flags, ref Unsafe.Add(ref output, i * BlockLength));
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Compress(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, ref byte output, bool xof)
+	{
+		ref uint h = ref Unsafe.AsRef(in cv);
+		uint v0 = h;
+		uint v1 = Unsafe.Add(ref h, 1);
+		uint v2 = Unsafe.Add(ref h, 2);
+		uint v3 = Unsafe.Add(ref h, 3);
+		uint v4 = Unsafe.Add(ref h, 4);
+		uint v5 = Unsafe.Add(ref h, 5);
+		uint v6 = Unsafe.Add(ref h, 6);
+		uint v7 = Unsafe.Add(ref h, 7);
+		uint v8 = IV0;
+		uint v9 = IV1;
+		uint v10 = IV2;
+		uint v11 = IV3;
+		uint v12 = (uint)counter;
+		uint v13 = (uint)(counter >> 32);
+		uint v14 = blockLength;
+		uint v15 = flags;
+
+		Rounds(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref block);
+
+		WriteWord(ref output, 0, v0 ^ v8);
+		WriteWord(ref output, 1, v1 ^ v9);
+		WriteWord(ref output, 2, v2 ^ v10);
+		WriteWord(ref output, 3, v3 ^ v11);
+		WriteWord(ref output, 4, v4 ^ v12);
+		WriteWord(ref output, 5, v5 ^ v13);
+		WriteWord(ref output, 6, v6 ^ v14);
+		WriteWord(ref output, 7, v7 ^ v15);
+
+		if (xof)
+		{
+			WriteWord(ref output, 8, v8 ^ h);
+			WriteWord(ref output, 9, v9 ^ Unsafe.Add(ref h, 1));
+			WriteWord(ref output, 10, v10 ^ Unsafe.Add(ref h, 2));
+			WriteWord(ref output, 11, v11 ^ Unsafe.Add(ref h, 3));
+			WriteWord(ref output, 12, v12 ^ Unsafe.Add(ref h, 4));
+			WriteWord(ref output, 13, v13 ^ Unsafe.Add(ref h, 5));
+			WriteWord(ref output, 14, v14 ^ Unsafe.Add(ref h, 6));
+			WriteWord(ref output, 15, v15 ^ Unsafe.Add(ref h, 7));
 		}
 	}
 
