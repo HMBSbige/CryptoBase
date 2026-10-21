@@ -157,29 +157,7 @@ public class Tls12PrfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		ReadOnlySpan<byte> overlappedInput = buffer.AsSpan(inputOffset, overlapped.Length);
 		Span<byte> output = buffer.AsSpan(outputOffset, outputLength);
 
-		switch (input)
-		{
-			case PrfInput.Secret:
-			{
-				Tls12Prf<TMac>.DeriveKey(overlappedInput, label, seed1, seed2, output);
-				break;
-			}
-			case PrfInput.Label:
-			{
-				Tls12Prf<TMac>.DeriveKey(secret, overlappedInput, seed1, seed2, output);
-				break;
-			}
-			case PrfInput.Seed1:
-			{
-				Tls12Prf<TMac>.DeriveKey(secret, label, overlappedInput, seed2, output);
-				break;
-			}
-			default:
-			{
-				Tls12Prf<TMac>.DeriveKey(secret, label, seed1, overlappedInput, output);
-				break;
-			}
-		}
+		Tls12Prf<TMac>.DeriveKey(input is PrfInput.Secret ? overlappedInput : secret, input is PrfInput.Label ? overlappedInput : label, input is PrfInput.Seed1 ? overlappedInput : seed1, input is PrfInput.Seed2 ? overlappedInput : seed2, output);
 
 		await Assert.That(buffer.AsMemory(outputOffset, outputLength)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
