@@ -51,9 +51,9 @@ internal readonly struct AesDecrypt : IAesOperation
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void ApplyBatch<TPolicy>(in AesCipherBitslice core, ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length, int rounds) where TPolicy : struct, IAesModePolicy, allows ref struct
+	public static void ApplyBatch<TPolicy>(in AesCipherBitslice core, ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length) where TPolicy : struct, IAesModePolicy, allows ref struct
 	{
-		core.DecryptBatch(ref policy, ref input, ref output, offset, length, rounds);
+		core.DecryptBatch(ref policy, ref input, ref output, offset, length);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

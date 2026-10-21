@@ -11,6 +11,6 @@ internal interface IAesOperation
 	static abstract void Apply2(in AesCipherVpaes core, ref Vector128<byte> v0, ref Vector128<byte> v1);
 	static abstract void Apply3(in AesCipherVpaes core, ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2);
 	static abstract void Apply4(in AesCipherVpaes core, ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2, ref Vector128<byte> v3);
-	static abstract void ApplyBatch<TPolicy>(in AesCipherBitslice core, ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length, int rounds) where TPolicy : struct, IAesModePolicy, allows ref struct;
+	static abstract void ApplyBatch<TPolicy>(in AesCipherBitslice core, ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length) where TPolicy : struct, IAesModePolicy, allows ref struct;
 	static abstract void ApplyBlocks(in AesCipherSoftware core, ReadOnlySpan<byte> source, Span<byte> destination);
 }

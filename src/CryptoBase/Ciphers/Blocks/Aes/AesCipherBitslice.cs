@@ -90,8 +90,9 @@ internal partial struct AesCipherBitslice : IDisposable
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private readonly void EncryptState(ref InlineArray8<Vector128<byte>> state, int rounds)
+	private readonly void EncryptState(ref InlineArray8<Vector128<byte>> state)
 	{
+		int rounds = _rounds;
 		Vector128<byte> q0 = state[0];
 		Vector128<byte> q1 = state[1];
 		Vector128<byte> q2 = state[2];
@@ -125,8 +126,9 @@ internal partial struct AesCipherBitslice : IDisposable
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private readonly void DecryptState(ref InlineArray8<Vector128<byte>> state, int rounds)
+	private readonly void DecryptState(ref InlineArray8<Vector128<byte>> state)
 	{
+		int rounds = _rounds;
 		Vector128<byte> q0 = state[0];
 		Vector128<byte> q1 = state[1];
 		Vector128<byte> q2 = state[2];
