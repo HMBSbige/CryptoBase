@@ -39,7 +39,6 @@ internal static class Sha3TestUtils
 	public static KeccakSponge<TRate> AbsorbAndPad<TRate>(ReadOnlySpan<byte> message, byte domainSeparator) where TRate : IKeccakRate
 	{
 		KeccakSponge<TRate> sponge = default;
-		sponge.Reset();
 		sponge.Absorb(message);
 		sponge.Pad(domainSeparator);
 		return sponge;
