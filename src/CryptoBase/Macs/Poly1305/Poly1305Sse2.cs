@@ -93,7 +93,8 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 
 	private void AppendTwoWay(scoped ReadOnlySpan<byte> source)
 	{
-		int length = source.Length & -BlockSize2;
+		Debug.Assert(source.Length >= BlockSize2 && source.Length % BlockSize2 is 0);
+		int length = source.Length;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector128<ulong> h0 = Vector128.CreateScalar(_state.H0).AsUInt64();
 		Vector128<ulong> h1 = Vector128.CreateScalar(_state.H1).AsUInt64();
