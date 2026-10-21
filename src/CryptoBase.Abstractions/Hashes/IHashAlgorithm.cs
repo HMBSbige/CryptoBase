@@ -5,26 +5,13 @@ namespace CryptoBase.Abstractions.Hashes;
 /// </summary>
 /// <remarks>Disposal is idempotent.</remarks>
 /// <typeparam name="TSelf">The implementing type.</typeparam>
-public interface IHashAlgorithm<out TSelf> : IOneShotHashAlgorithm, IDisposable where TSelf : class, IHashAlgorithm<TSelf>
+public interface IHashAlgorithm<out TSelf> : IOneShotHashAlgorithm, IIncrementalAlgorithm, IDisposable where TSelf : class, IHashAlgorithm<TSelf>
 {
 	/// <summary>
 	/// Creates an initialized instance.
 	/// </summary>
 	/// <returns>A new initialized instance.</returns>
 	static abstract TSelf Create();
-
-	/// <summary>
-	/// Appends <paramref name="source" /> to the current input.
-	/// </summary>
-	/// <param name="source">The data to append.</param>
-	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	void Append(ReadOnlySpan<byte> source);
-
-	/// <summary>
-	/// Resets the state, discarding the current input.
-	/// </summary>
-	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	void Reset();
 
 	/// <summary>
 	/// Writes the hash of the current input without changing the state.

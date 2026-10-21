@@ -1,3 +1,4 @@
+global using CryptoBase.Abstractions;
 global using CryptoBase.Abstractions.Ciphers;
 global using CryptoBase.Abstractions.Hashes;
 global using CryptoBase.Abstractions.Macs;

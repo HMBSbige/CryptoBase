@@ -3,9 +3,9 @@ namespace CryptoBase.Abstractions.Macs;
 /// <summary>
 /// Defines an incremental MAC algorithm with disposable keyed state.
 /// </summary>
-/// <remarks>Each instance owns its keyed state. Disposal erases it and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.</remarks>
+/// <remarks>Each instance owns its keyed state. Disposal erases it and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />. <see cref="IIncrementalAlgorithm.Reset" /> discards the message while retaining the key.</remarks>
 /// <typeparam name="TSelf">The implementing type.</typeparam>
-public interface IMacAlgorithm<out TSelf> : IOneShotMacAlgorithm, IDisposable where TSelf : class, IMacAlgorithm<TSelf>
+public interface IMacAlgorithm<out TSelf> : IOneShotMacAlgorithm, IIncrementalAlgorithm, IDisposable where TSelf : class, IMacAlgorithm<TSelf>
 {
 	/// <summary>
 	/// Creates an instance initialized with <paramref name="key" />.
@@ -15,19 +15,6 @@ public interface IMacAlgorithm<out TSelf> : IOneShotMacAlgorithm, IDisposable wh
 	/// <returns>The initialized instance.</returns>
 	/// <exception cref="ArgumentException"><paramref name="key" /> is invalid.</exception>
 	static abstract TSelf Create(ReadOnlySpan<byte> key);
-
-	/// <summary>
-	/// Appends <paramref name="source" /> to the current message.
-	/// </summary>
-	/// <param name="source">The data to append.</param>
-	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	void Append(ReadOnlySpan<byte> source);
-
-	/// <summary>
-	/// Resets the message while retaining the key.
-	/// </summary>
-	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	void Reset();
 
 	/// <summary>
 	/// Writes the current MAC without changing the state.
