@@ -4,7 +4,7 @@ using CryptoBase.Kdf;
 using CryptoBase.Macs.Hmac;
 using CryptoBase.Platform;
 using CryptoBase.Tests.Wycheproof;
-using static CryptoBase.Tests.Kdf.HkdfTest;
+using static CryptoBase.Tests.Kdf.KdfTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kdf;

@@ -9,6 +9,7 @@ using CryptoBase.Hashes.SM3;
 using CryptoBase.Kdf;
 using CryptoBase.Macs.Hmac;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.Kdf.KdfTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kdf;
@@ -307,17 +308,5 @@ public class Tls12PrfTest
 		byte[] mac = new byte[HmacAlgorithm<THash>.MacLength];
 		HmacAlgorithm<THash>.Mac(key, source, mac);
 		return mac;
-	}
-
-	internal static byte[] CreateData(int length, int seed)
-	{
-		byte[] data = new byte[length];
-
-		for (int i = 0; i < data.Length; ++i)
-		{
-			data[i] = (byte)(seed + i * 31 + (i >> 1));
-		}
-
-		return data;
 	}
 }

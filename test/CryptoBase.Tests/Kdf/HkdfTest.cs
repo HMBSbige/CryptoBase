@@ -9,6 +9,7 @@ using CryptoBase.Hashes.Sha512;
 using CryptoBase.Hashes.SM3;
 using CryptoBase.Kdf;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.Kdf.KdfTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kdf;
@@ -310,24 +311,5 @@ public class HkdfTest
 		await Assert.That(salt).IsEquivalentTo(saltCopy, CollectionOrdering.Matching);
 		await Assert.That(info).IsEquivalentTo(infoCopy, CollectionOrdering.Matching);
 		await Assert.That(prk).IsEquivalentTo(prkCopy, CollectionOrdering.Matching);
-	}
-
-	internal static byte[] CreateData(int length, int seed)
-	{
-		byte[] data = new byte[length];
-
-		for (int i = 0; i < data.Length; ++i)
-		{
-			data[i] = (byte)(seed + i * 31 + (i >> 1));
-		}
-
-		return data;
-	}
-
-	internal static byte[] CreateOverlapBuffer(ReadOnlySpan<byte> source, int sourceOffset, int destinationOffset, int destinationLength)
-	{
-		byte[] buffer = new byte[Math.Max(sourceOffset + source.Length, destinationOffset + destinationLength)];
-		source.CopyTo(buffer.AsSpan(sourceOffset));
-		return buffer;
 	}
 }

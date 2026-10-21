@@ -4,6 +4,7 @@ using CryptoBase.Kdf;
 using CryptoBase.Macs.Hmac;
 using CryptoBase.Platform;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.Kdf.KdfTestUtils;
 using static CryptoBase.Tests.Kdf.Tls12PrfTest;
 using static CryptoBase.Tests.TestUtils;
 

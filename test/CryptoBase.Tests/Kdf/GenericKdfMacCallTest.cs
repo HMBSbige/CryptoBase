@@ -1,6 +1,6 @@
 using CryptoBase.Hashes.Sha256;
 using CryptoBase.Kdf;
-using static CryptoBase.Tests.Kdf.HkdfTest;
+using static CryptoBase.Tests.Kdf.KdfTestUtils;
 
 namespace CryptoBase.Tests.Kdf;
 
