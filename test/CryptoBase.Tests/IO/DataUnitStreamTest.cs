@@ -134,8 +134,7 @@ public class DataUnitStreamTest
 	{
 		const int unit = 16;
 		byte[] data = CreateDeterministicSource(40);
-		byte[] padded = new byte[48];
-		data.CopyTo(padded, 0);
+		byte[] padded = PadToDataUnits(data, unit);
 		using CountingMemoryStream inner = new();
 		using DataUnitStream<XtsMode<AesCipher>> xts = DataUnitStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
 
