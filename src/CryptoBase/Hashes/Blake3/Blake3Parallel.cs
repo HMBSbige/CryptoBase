@@ -20,9 +20,9 @@ internal static unsafe class Blake3Parallel
 	// another, each in about the time the calling thread takes to hash this much, so it may only gain from a few times this length.
 	internal const int MinParallelLength = 128 * 1024;
 
-	internal static bool TryCompressSubtreeToParentNode(ReadOnlySpan<byte> input, ref readonly InlineArray8<uint> key, ulong chunkCounter, uint flags, Span<byte> output, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
+	internal static bool TryCompressSubtreeToParentNode(ReadOnlySpan<byte> input, ref readonly InlineArray8<uint> key, uint flags, Span<byte> output, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
 	{
-		return TryCompressSubtrees(input, [0, input.Length], in key, chunkCounter, flags, output, maxDegreeOfParallelism, budget);
+		return TryCompressSubtrees(input, [0, input.Length], in key, 0, flags, output, maxDegreeOfParallelism, budget);
 	}
 
 	// A head, a subtree of several chunks that ends where the input starts, is hashed by the calling thread while pool threads start, writing its children to headOutput.

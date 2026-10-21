@@ -669,7 +669,7 @@ public class Blake3ParallelTest
 	private static bool TryCompressInParallel(byte[] source, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
 	{
 		Span<byte> children = stackalloc byte[2 * Blake3Constants.OutLength];
-		return Blake3Parallel.TryCompressSubtreeToParentNode(source, in Blake3Constants.IV, 0, 0, children, maxDegreeOfParallelism, budget);
+		return Blake3Parallel.TryCompressSubtreeToParentNode(source, in Blake3Constants.IV, 0, children, maxDegreeOfParallelism, budget);
 	}
 
 	// Hashes in one shot, appends after a buffered head and reads long output, all of which hash in parallel when helpers take part.

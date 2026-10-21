@@ -33,7 +33,7 @@ internal static class Blake3Tree
 		{
 			Unsafe.SkipInit(out InlineArray64<byte> children);
 
-			if (maxDegreeOfParallelism is 1 || !Blake3Parallel.TryCompressSubtreeToParentNode(source, in key, 0, flags, children, maxDegreeOfParallelism, budget))
+			if (maxDegreeOfParallelism is 1 || !Blake3Parallel.TryCompressSubtreeToParentNode(source, in key, flags, children, maxDegreeOfParallelism, budget))
 			{
 				CompressSubtreeToParentNode(source, in key, 0, flags, children);
 			}
