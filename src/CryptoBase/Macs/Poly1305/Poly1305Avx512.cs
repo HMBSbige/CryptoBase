@@ -576,7 +576,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	{
 		Debug.Assert(length >= BlockSize8 && length % BlockSize8 is 0);
 
-		for (int offset = 0; offset < length - BlockSize8; offset += BlockSize8)
+		for (nint offset = 0; offset < length - BlockSize8; offset += BlockSize8)
 		{
 			AppendEightWayGroup(ref this, ref Unsafe.Add(ref source, offset), ref h0, ref h1, ref h2, ref h3, ref h4);
 		}

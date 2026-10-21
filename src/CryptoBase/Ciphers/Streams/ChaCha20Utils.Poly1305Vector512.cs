@@ -150,19 +150,19 @@ internal static partial class ChaCha20Utils
 			}
 
 			(a00.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed)).StoreUnsafe(ref output, (nuint)processed);
-			(a01.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 64))).StoreUnsafe(ref output, (nuint)(processed + 64));
-			(a02.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 128))).StoreUnsafe(ref output, (nuint)(processed + 128));
-			(a03.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 192))).StoreUnsafe(ref output, (nuint)(processed + 192));
-			(a04.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 256))).StoreUnsafe(ref output, (nuint)(processed + 256));
-			(a05.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 320))).StoreUnsafe(ref output, (nuint)(processed + 320));
-			(a06.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 384))).StoreUnsafe(ref output, (nuint)(processed + 384));
-			(a07.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 448))).StoreUnsafe(ref output, (nuint)(processed + 448));
-			(a08.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 512))).StoreUnsafe(ref output, (nuint)(processed + 512));
-			(a09.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 576))).StoreUnsafe(ref output, (nuint)(processed + 576));
-			(a10.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 640))).StoreUnsafe(ref output, (nuint)(processed + 640));
-			(a11.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 704))).StoreUnsafe(ref output, (nuint)(processed + 704));
-			(a12.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 768))).StoreUnsafe(ref output, (nuint)(processed + 768));
-			(a13.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 832))).StoreUnsafe(ref output, (nuint)(processed + 832));
+			(a01.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 64)).StoreUnsafe(ref output, (nuint)processed + 64);
+			(a02.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 128)).StoreUnsafe(ref output, (nuint)processed + 128);
+			(a03.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 192)).StoreUnsafe(ref output, (nuint)processed + 192);
+			(a04.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 256)).StoreUnsafe(ref output, (nuint)processed + 256);
+			(a05.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 320)).StoreUnsafe(ref output, (nuint)processed + 320);
+			(a06.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 384)).StoreUnsafe(ref output, (nuint)processed + 384);
+			(a07.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 448)).StoreUnsafe(ref output, (nuint)processed + 448);
+			(a08.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 512)).StoreUnsafe(ref output, (nuint)processed + 512);
+			(a09.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 576)).StoreUnsafe(ref output, (nuint)processed + 576);
+			(a10.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 640)).StoreUnsafe(ref output, (nuint)processed + 640);
+			(a11.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 704)).StoreUnsafe(ref output, (nuint)processed + 704);
+			(a12.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 768)).StoreUnsafe(ref output, (nuint)processed + 768);
+			(a13.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 832)).StoreUnsafe(ref output, (nuint)processed + 832);
 
 			if (finish)
 			{
@@ -170,8 +170,8 @@ internal static partial class ChaCha20Utils
 				hashed += Poly1305EightWayGroupSize;
 			}
 
-			(a14.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 896))).StoreUnsafe(ref output, (nuint)(processed + 896));
-			(a15.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)(processed + 960))).StoreUnsafe(ref output, (nuint)(processed + 960));
+			(a14.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 896)).StoreUnsafe(ref output, (nuint)processed + 896);
+			(a15.AsByte() ^ Vector512.LoadUnsafe(ref input, (nuint)processed + 960)).StoreUnsafe(ref output, (nuint)processed + 960);
 			counter += 16;
 			processed += Poly1305FusionChunkSize;
 		}

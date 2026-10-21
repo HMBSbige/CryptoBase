@@ -243,56 +243,58 @@ internal static partial class ChaCha20Utils
 				}
 			}
 
+			ref byte batchInput = ref Unsafe.Add(ref input, processed);
+			ref byte batchOutput = ref Unsafe.Add(ref output, processed);
 			a0 += s0;
-			(a0.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)processed)).StoreUnsafe(ref output, (nuint)processed);
+			(a0.AsByte() ^ Vector128.LoadUnsafe(ref batchInput)).StoreUnsafe(ref batchOutput);
 			a1 += s1;
-			(a1.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 16))).StoreUnsafe(ref output, (nuint)(processed + 16));
+			(a1.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 16)).StoreUnsafe(ref batchOutput, 16);
 			a2 += s2;
-			(a2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 32))).StoreUnsafe(ref output, (nuint)(processed + 32));
+			(a2.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 32)).StoreUnsafe(ref batchOutput, 32);
 			a3 += s3.WithElement(0, (uint)counter);
-			(a3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 48))).StoreUnsafe(ref output, (nuint)(processed + 48));
+			(a3.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 48)).StoreUnsafe(ref batchOutput, 48);
 			b0 += s0;
-			(b0.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 64))).StoreUnsafe(ref output, (nuint)(processed + 64));
+			(b0.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 64)).StoreUnsafe(ref batchOutput, 64);
 			b1 += s1;
-			(b1.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 80))).StoreUnsafe(ref output, (nuint)(processed + 80));
+			(b1.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 80)).StoreUnsafe(ref batchOutput, 80);
 			b2 += s2;
-			(b2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 96))).StoreUnsafe(ref output, (nuint)(processed + 96));
+			(b2.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 96)).StoreUnsafe(ref batchOutput, 96);
 			b3 += s3.WithElement(0, (uint)(counter + 1));
-			(b3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 112))).StoreUnsafe(ref output, (nuint)(processed + 112));
+			(b3.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 112)).StoreUnsafe(ref batchOutput, 112);
 			c0 += s0;
-			(c0.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 128))).StoreUnsafe(ref output, (nuint)(processed + 128));
+			(c0.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 128)).StoreUnsafe(ref batchOutput, 128);
 			c1 += s1;
-			(c1.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 144))).StoreUnsafe(ref output, (nuint)(processed + 144));
+			(c1.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 144)).StoreUnsafe(ref batchOutput, 144);
 			c2 += s2;
-			(c2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 160))).StoreUnsafe(ref output, (nuint)(processed + 160));
+			(c2.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 160)).StoreUnsafe(ref batchOutput, 160);
 			c3 += s3.WithElement(0, (uint)(counter + 2));
-			(c3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 176))).StoreUnsafe(ref output, (nuint)(processed + 176));
+			(c3.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 176)).StoreUnsafe(ref batchOutput, 176);
 			d0 += s0;
-			(d0.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 192))).StoreUnsafe(ref output, (nuint)(processed + 192));
+			(d0.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 192)).StoreUnsafe(ref batchOutput, 192);
 			d1 += s1;
-			(d1.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 208))).StoreUnsafe(ref output, (nuint)(processed + 208));
+			(d1.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 208)).StoreUnsafe(ref batchOutput, 208);
 			d2 += s2;
-			(d2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 224))).StoreUnsafe(ref output, (nuint)(processed + 224));
+			(d2.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 224)).StoreUnsafe(ref batchOutput, 224);
 			d3 += s3.WithElement(0, (uint)(counter + 3));
-			(d3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 240))).StoreUnsafe(ref output, (nuint)(processed + 240));
+			(d3.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 240)).StoreUnsafe(ref batchOutput, 240);
 			e0 += s0;
-			(e0.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 256))).StoreUnsafe(ref output, (nuint)(processed + 256));
+			(e0.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 256)).StoreUnsafe(ref batchOutput, 256);
 			e1 += s1;
-			(e1.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 272))).StoreUnsafe(ref output, (nuint)(processed + 272));
+			(e1.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 272)).StoreUnsafe(ref batchOutput, 272);
 			e2 += s2;
-			(e2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 288))).StoreUnsafe(ref output, (nuint)(processed + 288));
+			(e2.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 288)).StoreUnsafe(ref batchOutput, 288);
 			e3 += s3.WithElement(0, (uint)(counter + 4));
-			(e3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 304))).StoreUnsafe(ref output, (nuint)(processed + 304));
+			(e3.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 304)).StoreUnsafe(ref batchOutput, 304);
 			if (blocks > 5)
 			{
 				f0 += s0;
-				(f0.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 320))).StoreUnsafe(ref output, (nuint)(processed + 320));
+				(f0.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 320)).StoreUnsafe(ref batchOutput, 320);
 				f1 += s1;
-				(f1.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 336))).StoreUnsafe(ref output, (nuint)(processed + 336));
+				(f1.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 336)).StoreUnsafe(ref batchOutput, 336);
 				f2 += s2;
-				(f2.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 352))).StoreUnsafe(ref output, (nuint)(processed + 352));
+				(f2.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 352)).StoreUnsafe(ref batchOutput, 352);
 				f3 += s3.WithElement(0, (uint)(counter + 5));
-				(f3.AsByte() ^ Vector128.LoadUnsafe(ref input, (nuint)(processed + 368))).StoreUnsafe(ref output, (nuint)(processed + 368));
+				(f3.AsByte() ^ Vector128.LoadUnsafe(ref batchInput, 368)).StoreUnsafe(ref batchOutput, 368);
 			}
 			counter += (uint)Math.Min(blocks, 8);
 		}
