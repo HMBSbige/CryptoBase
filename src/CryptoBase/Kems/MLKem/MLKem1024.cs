@@ -9,8 +9,8 @@ namespace CryptoBase.Kems.MLKem;
 /// and the modulus check on both the embedded encapsulation key and the secret vector.
 /// </para>
 /// <para>
-/// The private seed is d ‖ z, 64 bytes. The key is expanded once, when it is generated or imported. Encapsulation and decapsulation may run concurrently
-/// on one instance.
+/// The private seed is d ‖ z, 64 bytes. The key is expanded once, when it is generated or imported. Encapsulation and decapsulation may run
+/// concurrently on one instance.
 /// </para>
 /// </remarks>
 public sealed class MLKem1024 : IKem<MLKem1024>

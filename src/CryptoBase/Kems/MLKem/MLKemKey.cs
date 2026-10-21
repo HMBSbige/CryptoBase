@@ -238,8 +238,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		G(d, new ReadOnlySpan<byte>(in rank), rhoSigma.Span);
 		rhoSigma.Span.Slice(0, SymmetricLength).CopyTo(_rho);
 
-		// H(ek) absorbs ek as each t̂[c] completes, so the PRF streams take the free lanes of the first two columns of Â^T, and H those
-		// of the rest.
+		// H(ek) absorbs ek as each t̂[c] completes, so the PRF streams take the free lanes of the first two columns of
+		// Â^T, and H those of the rest.
 		using CryptoBuffer<byte> prfOutputs = new(stackalloc byte[2 * k * prfLength]);
 		using CryptoBuffer<KeccakSponge<KeccakRate136>> prfSponges = new(stackalloc KeccakSponge<KeccakRate136>[2 * k]);
 		scoped PrfGuests prf = new(rhoSigma.Span.Slice(SymmetricLength), prfSponges.Span, prfOutputs.Span, prfLength);
@@ -692,8 +692,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		return valid;
 	}
 
-	// The PRF streams of key generation (Algorithm 13, lines 8 to 15), run in free lanes of the matrix sampling. A default instance
-	// has no streams.
+	// The PRF streams of key generation (Algorithm 13, lines 8 to 15), run in free lanes of the matrix sampling.
+	// A default instance has no streams.
 	private ref struct PrfGuests
 	{
 		private readonly ReadOnlySpan<byte> _seed;
@@ -766,8 +766,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		}
 	}
 
-	// J(z ‖ c) or H(ek), permuted a block at a time beside other permutations. Only the first Available bytes of the message need be
-	// known. A default instance hashes nothing.
+	// J(z ‖ c) or H(ek), permuted a block at a time beside other permutations. Only the first Available bytes of
+	// the message need be known. A default instance hashes nothing.
 	private ref struct OverlappedHash
 	{
 		private readonly ReadOnlySpan<byte> _message;

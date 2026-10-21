@@ -142,9 +142,9 @@ public sealed partial class Base32Encoding
 		return values + (ByteLaneOnes * first ^ above & ByteLaneOnes * (byte)(first ^ second));
 	}
 
-	// The eight values index the 32-byte custom table at once: two 16-entry shuffles on x86, where bit 4 of each value picks the half, and
-	// one two-register table lookup on ARM64. Elsewhere eight independent loads; a loop over the symbol count would chain them through the
-	// accumulator.
+	// The eight values index the 32-byte custom table at once: two 16-entry shuffles on x86, where bit 4 of each value picks the
+	// half, and one two-register table lookup on ARM64. Elsewhere eight independent loads; a loop over the symbol count would chain
+	// them through the accumulator.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong LookupBlockSymbols(ulong values, ref byte alphabet)
 	{

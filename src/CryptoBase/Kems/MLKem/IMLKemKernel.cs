@@ -13,8 +13,8 @@ internal interface IMLKemKernel
 	// NTT⁻¹ (Algorithm 10) in place, times R = 2^16, which undoes the R⁻¹ of MultiplyAccumulate. In: |f| < q. Out: |f| < q.
 	static abstract void InverseNtt(Span<short> f);
 
-	// destination = R⁻¹ · Σ a_j × b_j for j < count, with × the MultiplyNTTs of Algorithm 11, a_j at a[j · aStride] and b_j at
-	// b[j · 256]. In: |a|, |b| < q, 1 ≤ count ≤ 4. Out: |destination| < q. destination overlaps neither a nor b.
+	// destination = R⁻¹ · Σ a_j × b_j for j < count, a_j at a[j · aStride] and b_j at b[j · 256], × being MultiplyNTTs (Algorithm 11).
+	// In: |a|, |b| < q, 1 ≤ count ≤ 4. Out: |destination| < q. destination overlaps neither a nor b.
 	static abstract void MultiplyAccumulate(ReadOnlySpan<short> a, int aStride, ReadOnlySpan<short> b, Span<short> destination, int count);
 
 	// In: any. Out: |f| < q.
@@ -32,8 +32,8 @@ internal interface IMLKemKernel
 	// ByteEncode_12 (Algorithm 5) of f mod q into 384 bytes. In: |f| < q.
 	static abstract void Encode12(ReadOnlySpan<short> f, Span<byte> destination);
 
-	// ByteDecode_12 (Algorithm 6) of 384 bytes without the reduction modulo q. Returns whether all the values are below q, the modulus
-	// check of Sec. 7.2.
+	// ByteDecode_12 (Algorithm 6) of 384 bytes without the reduction modulo q. Returns whether all the values are below q, the
+	// modulus check of Sec. 7.2.
 	static abstract bool Decode12(ReadOnlySpan<byte> source, Span<short> f);
 
 	// ByteEncode_d(Compress_d(f mod q)) (Sec. 4.2.1, Algorithm 5) into 32 · d bytes, for d = bits in {1, 4, 5, 10, 11}. In: |f| < q.

@@ -125,8 +125,8 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel
 		Unsafe.SkipInit(out InlineArray16<Vector256<uint>> message);
 		uint blockFlags = flags | startFlags;
 
-		// Near its end, an input would prefetch the start of the next input, which another lane has already read; it prefetches the input that its lane hashes in
-		// the next batch instead.
+		// Near its end, an input would prefetch the start of the next input, which another lane has already read; it prefetches the input that its lane hashes
+		// in the next batch instead.
 		nuint nextBatch = (count - 1) * stride;
 
 		do

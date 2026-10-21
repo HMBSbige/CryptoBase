@@ -351,9 +351,9 @@ internal static unsafe class Blake3Parallel
 			ProcessItems();
 		}
 
-		// Spinning and yielding keep the processor of the calling thread busy, so a helper that a thread of higher priority preempted elsewhere cannot move to
-		// it; once the spin runs out, blocking frees the processor. On an STA thread, blocking pumps COM and SendMessage messages, as the waits of
-		// Argon2LaneScheduler do.
+		// Spinning and yielding keep the processor of the calling thread busy, so a helper that a thread of higher priority preempted
+		// elsewhere cannot move to it; once the spin runs out, blocking frees the processor. On an STA thread, blocking pumps COM and
+		// SendMessage messages, as the waits of Argon2LaneScheduler do.
 		private void WaitForHelpers(ref bool interrupted)
 		{
 			long spinDeadline = Stopwatch.GetTimestamp() + SpinTicks;

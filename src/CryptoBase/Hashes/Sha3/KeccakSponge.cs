@@ -155,8 +155,8 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 			state.Slice(position, available).CopyTo(destination);
 			destination = destination.Slice(available);
 
-			// Passing one byte less leaves the last block, whole or not, to the permutation below, so that the state ends
-			// holding it either way.
+			// Passing one byte less leaves the last block, whole or not, to the permutation below, so that the state
+			// ends holding it either way.
 			if (KeccakP1600.IsAvx512Supported && destination.Length > TRate.RateInBytes)
 			{
 				destination = destination.Slice(KeccakP1600.SqueezeAvx512<TRate>(ref _state, destination.Slice(0, destination.Length - 1)));

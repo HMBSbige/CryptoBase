@@ -268,8 +268,8 @@ public class Blake3ParallelTest
 		}
 	}
 
-	// With no helper granted, the work takes the serial path, which beats the calling thread hashing every leaf alone; helpers run inline show that only the
-	// budget keeps it serial.
+	// With no helper granted, the work takes the serial path, which beats the calling thread hashing every leaf alone; helpers run inline show that only
+	// the budget keeps it serial.
 	[Test]
 	[Arguments(2)]
 	[Arguments(16)]
@@ -717,8 +717,8 @@ public class Blake3ParallelTest
 		}
 	}
 
-	// One item, which its helper holds until the test releases it, spinning rather than waiting, so that an interrupt pending on the helper can only surface
-	// in the waits of the job.
+	// One item, which its helper holds until the test releases it, spinning rather than waiting, so that an interrupt pending on the helper can only
+	// surface in the waits of the job.
 	private sealed class HeldJob() : Blake3Parallel.ParallelJob(1, ThreadPoolHelperBudget.Shared)
 	{
 		private bool _entered;

@@ -70,8 +70,8 @@ internal readonly struct MLKemScalar : IMLKemKernel
 		}
 	}
 
-	// Each pair is a product modulo X² ∓ γ. A term is below 2q², so the sums of four stay below q · 2^15, the input bound of
-	// MontgomeryReduce.
+	// Each pair is a product modulo X² ∓ γ. A term is below 2q², so the sums of four stay below q · 2^15, the input
+	// bound of MontgomeryReduce.
 	public static void MultiplyAccumulate(ReadOnlySpan<short> a, int aStride, ReadOnlySpan<short> b, Span<short> destination, int count)
 	{
 		Debug.Assert(count is >= 1 and <= 4);

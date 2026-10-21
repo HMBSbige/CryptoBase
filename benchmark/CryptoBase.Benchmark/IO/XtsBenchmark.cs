@@ -32,10 +32,10 @@ internal static class XtsBenchmarkData
 /// </summary>
 /// <remarks>
 /// Every invocation moves exactly <see cref="XtsBenchmarkData.TotalLength" /> (1 MiB) of plaintext in calls of
-/// <see cref="ChunkSize" /> bytes (the last call may be shorter), so MiB/s = 1 / Mean in seconds.
-/// <see cref="Write" /> truncates the stream first and ends with <see cref="Stream.Flush()" />, which writes the last
-/// cached data unit. Chunks smaller than a data unit go through the stream's one-unit plaintext cache, so each data unit is
-/// still encrypted or decrypted once.
+/// <see cref="ChunkSize" /> bytes (the last call may be shorter), so MiB/s = 1 / Mean in seconds. <see cref="Write" />
+/// truncates the stream first and ends with <see cref="Stream.Flush()" />, which writes the last cached data unit.
+/// Chunks smaller than a data unit go through the stream's one-unit plaintext cache, so each data unit is still
+/// encrypted or decrypted once.
 /// </remarks>
 [MemoryDiagnoser]
 [CategoriesColumn]

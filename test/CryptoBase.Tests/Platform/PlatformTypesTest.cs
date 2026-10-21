@@ -5,8 +5,8 @@ namespace CryptoBase.Tests.Platform;
 
 public class PlatformTypesTest
 {
-	// A platform type must beat the managed implementation on some processor, using hardware .NET has no intrinsics for, as
-	// PlatformSha256 does. IsPreferred names those processors.
+	// A platform type must beat the managed implementation on some processor, using hardware .NET has no intrinsics
+	// for, as PlatformSha256 does. IsPreferred names those processors.
 	[Test]
 	public async Task EveryPlatformTypeSaysWhereItIsPreferred()
 	{

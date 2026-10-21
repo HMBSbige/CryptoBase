@@ -112,8 +112,8 @@ public class WycheproofMLKemTest
 		return VerifyDecapsulationKey<MLKem1024>(vector);
 	}
 
-	// The invalid vectors have a seed or a ciphertext of the wrong length; the valid ones include ciphertexts that decapsulation must
-	// reject implicitly.
+	// The invalid vectors have a seed or a ciphertext of the wrong length; the valid ones include ciphertexts that
+	// decapsulation must reject implicitly.
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifyDecapsulation<T>(MLKemTestVector vector) where T : class, IKem<T>
 	{

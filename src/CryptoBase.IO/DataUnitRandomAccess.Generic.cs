@@ -13,8 +13,8 @@ namespace CryptoBase.IO;
 /// cipher such as <c>XtsMode&lt;AesCipher&gt;</c> can be used directly.
 /// </para>
 /// <para>
-/// The file holds whole data units only, because the cipher preserves length and so the ciphertext cannot record where the
-/// plaintext ends. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>.
+/// The file holds whole data units only, as the ciphertext of a length-preserving cipher cannot record where the plaintext ends.
+/// The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>.
 /// </para>
 /// <para>
 /// Writes past the end pad their last data unit with zeros, and any gap between the old end and the write is filled with
@@ -22,9 +22,9 @@ namespace CryptoBase.IO;
 /// re-encrypts that unit, so the handle must also be readable. Reads never extend the file.
 /// </para>
 /// <para>
-/// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the handle. Instances are not thread-safe.
-/// For parallel access, create one instance per thread over the same handle with <c>leaveOpen: true</c>, each with its own
-/// cipher.
+/// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the handle.
+/// Instances are not thread-safe. For parallel access, create one instance per thread over the same
+/// handle with <c>leaveOpen: true</c>, each with its own cipher.
 /// </para>
 /// </remarks>
 public sealed class DataUnitRandomAccess<TCipher> : IDisposable where TCipher : class, IDataUnitCipher<TCipher>

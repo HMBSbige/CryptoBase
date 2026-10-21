@@ -142,8 +142,8 @@ public static class SymmetricPadding
 	/// When only the final block is supplied, <paramref name="unpaddedLength"/> refers to that block, not the whole message.
 	/// </para>
 	/// <para>
-	/// <see cref="PaddingMode.None"/> and <see cref="PaddingMode.Zeros"/> check only alignment and retain the entire input,
-	/// including empty input. Trailing zeros are not removed because they may belong to the original data.
+	/// <see cref="PaddingMode.None"/> and <see cref="PaddingMode.Zeros"/> check only alignment and retain the entire
+	/// input, including empty input. Trailing zeros are not removed because they may belong to the original data.
 	/// </para>
 	/// <para>
 	/// <see cref="PaddingMode.PKCS7"/>, <see cref="PaddingMode.ANSIX923"/>, and <see cref="PaddingMode.ISO10126"/>

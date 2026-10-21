@@ -46,8 +46,8 @@ internal static partial class KeccakP1600
 		return blocks * TRate.RateInBytes;
 	}
 
-	// Permutes the state and writes its first rate bytes for each whole block that fits in destination, and returns the number of
-	// bytes written; the state then holds the last block written.
+	// Permutes the state and writes its first rate bytes for each whole block that fits in destination, and returns
+	// the number of bytes written; the state then holds the last block written.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static unsafe int SqueezeAvx512<TRate>(ref InlineArray25<ulong> state, Span<byte> destination) where TRate : IKeccakRate
@@ -78,9 +78,8 @@ internal static partial class KeccakP1600
 		return blocks * TRate.RateInBytes;
 	}
 
-	// Lanes 5y to 5y + 4 of a block, as far as the block has them, in the low elements; the upper three may hold anything, as in
-	// PermuteRows. Where a full vector would read past the block, a masked load reads only those lanes, so the last block of
-	// source cannot fault on the bytes after it.
+	// Lanes 5y to 5y + 4 of a block, as far as it has them, in the low elements; as in PermuteRows, the upper three may hold anything.
+	// A masked load reads only those lanes where a full vector would read past the block, so the last block of source cannot fault.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe Vector512<ulong> LoadBlockRow<TRate>(ulong* block, int row) where TRate : IKeccakRate
 	{
@@ -199,8 +198,8 @@ internal static partial class KeccakP1600
 			d3 = Avx512F.RotateLeftVariable(Avx512F.TernaryLogic(d3, parityLeft, parityRight, 0x96), rho3);
 			d4 = Avx512F.RotateLeftVariable(Avx512F.TernaryLogic(d4, parityLeft, parityRight, 0x96), rho4);
 
-			// χ and ι: row 2k is diagonal k shuffled by plusK, and its lanes x + 1 and x + 2 are the same diagonal shuffled by plusK+1
-			// and plusK+2. 0xD2 is 0xF0 ^ (~0xCC & 0xAA).
+			// χ and ι: row 2k is diagonal k shuffled by plusK, and its lanes x + 1 and x + 2 are the same diagonal
+			// shuffled by plusK+1 and plusK+2. 0xD2 is 0xF0 ^ (~0xCC & 0xAA).
 			a0 = Avx512F.TernaryLogic(d0 ^ Vector512.CreateScalar(Unsafe.Add(ref roundConstants, round)), Avx512F.PermuteVar8x64(d0, plus1), Avx512F.PermuteVar8x64(d0, plus2), 0xD2);
 			a2 = Avx512F.TernaryLogic(Avx512F.PermuteVar8x64(d1, plus1), Avx512F.PermuteVar8x64(d1, plus2), Avx512F.PermuteVar8x64(d1, plus3), 0xD2);
 			a4 = Avx512F.TernaryLogic(Avx512F.PermuteVar8x64(d2, plus2), Avx512F.PermuteVar8x64(d2, plus3), Avx512F.PermuteVar8x64(d2, plus4), 0xD2);

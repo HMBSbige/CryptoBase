@@ -29,8 +29,8 @@ namespace CryptoBase.Hashes.Blake3;
 /// every other instance operation, <see cref="Read" /> included, requires exclusive access.
 /// </para>
 /// <para>
-/// A reset in the keyed hash and key derivation modes erases the buffered input and the chaining values and output that the instance holds, so that only the key
-/// remains until disposal; copies left in registers, on thread stacks or behind a moving garbage collector are out of reach. Disposal erases the state, key
+/// A reset in the keyed hash and key derivation modes erases the buffered input and the chaining values and output that the instance holds, so that only the
+/// key remains until disposal; copies left in registers, on thread stacks or behind a moving garbage collector are out of reach. Disposal erases the state, key
 /// included, and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
@@ -306,8 +306,8 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// Writes the next <c>destination.Length</c> bytes of the output stream for the current input.
 	/// </summary>
 	/// <remarks>
-	/// The first nonempty read ends the input and starts at the beginning of the stream; each later read continues where the previous one stopped, until
-	/// <see cref="Reset" />. An empty <paramref name="destination" /> leaves the state unchanged.
+	/// The first nonempty read ends the input and starts at the beginning of the stream; each later read continues where the previous one stopped,
+	/// until <see cref="Reset" />. An empty <paramref name="destination" /> leaves the state unchanged.
 	/// </remarks>
 	/// <param name="destination">The buffer that receives the output.</param>
 	/// <exception cref="ArgumentOutOfRangeException">The output would end past byte 2^64 - 1 of the stream.</exception>
@@ -344,8 +344,8 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// In the keyed hash and key derivation modes, the reset erases the buffered input and the chaining values and output that the instance holds; the key
-	/// remains until disposal.
+	/// In the keyed hash and key derivation modes, the reset erases the buffered input and the chaining values and output that the instance holds;
+	/// the key remains until disposal.
 	/// </para>
 	/// <para>The <see cref="IHashAlgorithm{TSelf}" /> member of the same name writes only the first <see cref="HashLength" /> bytes.</para>
 	/// </remarks>
@@ -525,8 +525,8 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 		}
 	}
 
-	// Shrinking the buffer may rent the stack, which may fail for lack of memory, so the mode changes only afterwards: chunk mode cannot take a buffer longer
-	// than a chunk.
+	// Shrinking the buffer may rent the stack, which may fail for lack of memory, so the mode changes only afterwards: chunk mode cannot take a
+	// buffer longer than a chunk.
 	private void ChooseModeAfterRead(Span<byte> buffer)
 	{
 		ulong inputLength = _state.InputLength;
@@ -543,8 +543,8 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 
 	private void ResetState()
 	{
-		// Erasing skips what the input has left untouched, the output included unless a read created it, which on 64-byte messages cuts the cost of a reset by
-		// about two thirds.
+		// Erasing skips what the input has left untouched, the output included unless a read created it, which on 64-byte messages cuts the cost of a
+		// reset by about two thirds.
 		if (_state.IsSecret)
 		{
 			_state.EraseAndReset(_buffer, _stack);

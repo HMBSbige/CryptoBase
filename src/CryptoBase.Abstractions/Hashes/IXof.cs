@@ -39,8 +39,8 @@ public interface IXof<out TSelf> : IDisposable where TSelf : class, IXof<TSelf>
 	/// Writes the next <c>destination.Length</c> bytes of the output stream for the current input.
 	/// </summary>
 	/// <remarks>
-	/// The first nonempty read ends the input and starts the reading state at the beginning of the stream; each later read continues where the previous
-	/// one stopped. An empty <paramref name="destination" /> leaves the state unchanged.
+	/// The first nonempty read ends the input and starts the reading state at the beginning of the stream; each later read continues where
+	/// the previous one stopped. An empty <paramref name="destination" /> leaves the state unchanged.
 	/// </remarks>
 	/// <param name="destination">The buffer that receives the output.</param>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>

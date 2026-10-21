@@ -69,8 +69,8 @@ public sealed partial class Base32Encoding
 		Vector512.WidenUpper(value).StoreUnsafe(ref destinationReference, 32);
 	}
 
-	// Char input is narrowed with saturation, which turns every char above U+00FF into a byte the decoders reject, so no separate ASCII
-	// check is needed. These loads only feed fixed alphabets, so x86 uses the cheaper signed pack: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
+	// Char input is narrowed with saturation, which turns every char above U+00FF into a byte the decoders reject, so no ASCII check is needed.
+	// These loads only feed fixed alphabets, so x86 uses the cheaper signed pack: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> LoadSymbols128<T>(ref T source) where T : unmanaged
 	{
@@ -266,8 +266,8 @@ public sealed partial class Base32Encoding
 		return EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 	}
 
-	// Keep the complete dispatcher here even though x86 calls EncodeX86Auto
-	// instead. Its IL size preserves the ARM64 tail call without NoInlining.
+	// Keep the complete dispatcher here even though x86 calls EncodeX86Auto instead.
+	// Its IL size preserves the ARM64 tail call without NoInlining.
 	private static int EncodeUtf8Auto(ReadOnlySpan<byte> source, Span<byte> destination, int sourceOffset, int destinationOffset, byte[] alphabet, byte alphabetKind)
 	{
 		if (AdvSimd.IsSupported)

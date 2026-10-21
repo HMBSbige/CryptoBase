@@ -138,8 +138,8 @@ internal struct Blake3State
 		ReadOnlySpan<byte> body = source.Slice(0, bodyLength);
 		source = source.Slice(bodyLength);
 
-		// Hashing in parallel is the one step that may throw, for lack of memory, so the head stays buffered until it is pushed, and a failure leaves the input
-		// as it was.
+		// Hashing in parallel is the one step that may throw, for lack of memory, so the head stays buffered until it is pushed, and a failure
+		// leaves the input as it was.
 		if (maxDegreeOfParallelism is not 1 && body.Length >= Blake3Parallel.MinParallelLength && AppendSubtreesInParallel(head, body, maxDegreeOfParallelism, budget, stack))
 		{
 			head = default;

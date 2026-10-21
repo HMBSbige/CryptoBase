@@ -31,8 +31,8 @@ namespace CryptoBase.IO;
 /// Reads and writes of whole aligned data units go straight to the inner stream.
 /// </para>
 /// <para>
-/// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the inner stream. Instances are not
-/// thread-safe.
+/// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the inner stream.
+/// Instances are not thread-safe.
 /// </para>
 /// </remarks>
 public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDataUnitCipher<TCipher>
