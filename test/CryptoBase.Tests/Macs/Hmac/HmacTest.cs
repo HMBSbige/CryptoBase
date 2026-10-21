@@ -3,8 +3,8 @@ using CryptoBase.Abstractions.Macs;
 using CryptoBase.Hashes.Blake2b;
 using CryptoBase.Hashes.Sha256;
 using CryptoBase.Macs.Hmac;
+using CryptoBase.Platform;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Macs.Hmac;
@@ -35,32 +35,24 @@ public class HmacTest
 	[Arguments(97)]
 	public Task OneShotMacSupportsOverlappingInputsAndDestination(int destinationOffset)
 	{
-		return VerifyOneShotOverlap(destinationOffset);
+		return VerifyOneShotOverlap<HmacAlgorithm<Sha256HashAlgorithm>, PlatformHmacSha256>(destinationOffset);
 	}
 
-	private static async Task VerifyOneShotOverlap(int destinationOffset)
+	internal static async Task VerifyOneShotOverlap<TMac, TReference>(int destinationOffset) where TMac : IOneShotMacAlgorithm where TReference : IOneShotMacAlgorithm
 	{
 		const int keyOffset = 0;
 		const int keyLength = 64;
 		const int sourceOffset = 80;
 		const int sourceLength = 97;
-		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256HashAlgorithm.HashLength);
+		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + TMac.MacLength);
 		byte[] buffer = CreateDeterministicSource(bufferLength);
-		byte[] expected = HMACSHA256.HashData
-		(
-			buffer.AsSpan().Slice(keyOffset, keyLength),
-			buffer.AsSpan().Slice(sourceOffset, sourceLength)
-		);
+		byte[] expected = new byte[TReference.MacLength];
+		TReference.Mac(buffer.AsSpan(keyOffset, keyLength), buffer.AsSpan(sourceOffset, sourceLength), expected);
 
-		int written = HmacAlgorithm<Sha256HashAlgorithm>.Mac
-		(
-			buffer.AsSpan().Slice(keyOffset, keyLength),
-			buffer.AsSpan().Slice(sourceOffset, sourceLength),
-			buffer.AsSpan().Slice(destinationOffset, Sha256HashAlgorithm.HashLength)
-		);
+		int written = TMac.Mac(buffer.AsSpan(keyOffset, keyLength), buffer.AsSpan(sourceOffset, sourceLength), buffer.AsSpan(destinationOffset, TMac.MacLength));
 
-		await Assert.That(written).IsEqualTo(Sha256HashAlgorithm.HashLength);
-		await Assert.That(buffer.AsSpan().Slice(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		await Assert.That(written).IsEqualTo(TMac.MacLength);
+		await Assert.That(buffer.AsSpan(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
 	[Test]

@@ -182,21 +182,9 @@ public class PlatformHmacSha256Test
 	[Arguments(20)]
 	[Arguments(97)]
 	[Arguments(150)]
-	public async Task OneShotMacSupportsOverlappingInputsAndDestination(int destinationOffset)
+	public Task OneShotMacSupportsOverlappingInputsAndDestination(int destinationOffset)
 	{
-		const int keyOffset = 0;
-		const int keyLength = 64;
-		const int sourceOffset = 80;
-		const int sourceLength = 97;
-		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + PlatformHmacSha256.MacLength);
-		byte[] buffer = CreateDeterministicSource(bufferLength);
-		byte[] expected = new byte[ManagedHmacSha256.MacLength];
-		ManagedHmacSha256.Mac(buffer.AsSpan(keyOffset, keyLength), buffer.AsSpan(sourceOffset, sourceLength), expected);
-
-		int written = PlatformHmacSha256.Mac(buffer.AsSpan(keyOffset, keyLength), buffer.AsSpan(sourceOffset, sourceLength), buffer.AsSpan(destinationOffset, PlatformHmacSha256.MacLength));
-
-		await Assert.That(written).IsEqualTo(PlatformHmacSha256.MacLength);
-		await Assert.That(buffer.AsSpan(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		return HmacTest.VerifyOneShotOverlap<PlatformHmacSha256, ManagedHmacSha256>(destinationOffset);
 	}
 
 	[Test]
