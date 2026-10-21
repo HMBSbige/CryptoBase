@@ -132,7 +132,7 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 
 			if (blockCount <= last.TailBlocks)
 			{
-				JoinLastLane(ref h0, ref h1, ref row3, in key, in last, blockCount, rowFlags, startFlags);
+				JoinLastLane(ref h0, ref h1, ref row3, in key, in last, blockCount, rowFlags);
 			}
 
 			Vector512<uint> row0 = h0;
@@ -194,7 +194,7 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 
 			if (blockCount <= last.TailBlocks)
 			{
-				JoinLastLane(ref h2, ref h3, ref row7, in key, in last, blockCount, rowFlags, startFlags);
+				JoinLastLane(ref h2, ref h3, ref row7, in key, in last, blockCount, rowFlags);
 			}
 
 			Vector512<uint> row0 = h0;
@@ -219,14 +219,14 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void JoinLastLane(ref Vector512<uint> h0, ref Vector512<uint> h1, ref Vector512<uint> row3, ref readonly uint key, ref readonly Blake3LastLane last, nuint blockCount, uint rowFlags, uint startFlags)
+	private static void JoinLastLane(ref Vector512<uint> h0, ref Vector512<uint> h1, ref Vector512<uint> row3, ref readonly uint key, ref readonly Blake3LastLane last, nuint blockCount, uint rowFlags)
 	{
 		if (blockCount == last.TailBlocks)
 		{
 			Vector512<uint> lastLane = Vector512.Create(0u, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ~0u, ~0u, ~0u, ~0u);
 			h0 = Vector512.ConditionalSelect(lastLane, Vector512.Broadcast(Vector128.LoadUnsafe(in key)), h0);
 			h1 = Vector512.ConditionalSelect(lastLane, Vector512.Broadcast(Vector128.LoadUnsafe(in key, 4)), h1);
-			rowFlags |= startFlags;
+			rowFlags |= Blake3Flags.ChunkStart;
 		}
 
 		Vector512<ulong> lengthAndFlags = Vector512.Create((ulong)rowFlags << 32 | (blockCount is 1 ? last.LastLength : BlockLength));

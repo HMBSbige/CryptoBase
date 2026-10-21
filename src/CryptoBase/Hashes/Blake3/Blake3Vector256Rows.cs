@@ -142,7 +142,7 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 
 			if (blockCount <= last.TailBlocks)
 			{
-				JoinLastLane(ref h0, ref h1, ref row3, in key, in last, blockCount, rowFlags, startFlags);
+				JoinLastLane(ref h0, ref h1, ref row3, in key, in last, blockCount, rowFlags);
 			}
 
 			Vector256<uint> row0 = h0;
@@ -202,7 +202,7 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 
 			if (blockCount <= last.TailBlocks)
 			{
-				JoinLastLane(ref h2, ref h3, ref row7, in key, in last, blockCount, rowFlags, startFlags);
+				JoinLastLane(ref h2, ref h3, ref row7, in key, in last, blockCount, rowFlags);
 			}
 
 			Vector256<uint> row0 = h0;
@@ -227,13 +227,13 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void JoinLastLane(ref Vector256<uint> h0, ref Vector256<uint> h1, ref Vector256<uint> row3, ref readonly uint key, ref readonly Blake3LastLane last, nuint blockCount, uint rowFlags, uint startFlags)
+	private static void JoinLastLane(ref Vector256<uint> h0, ref Vector256<uint> h1, ref Vector256<uint> row3, ref readonly uint key, ref readonly Blake3LastLane last, nuint blockCount, uint rowFlags)
 	{
 		if (blockCount == last.TailBlocks)
 		{
 			h0 = Avx2.Blend(h0, Vector256.Create(Vector128.LoadUnsafe(in key)), 0b1111_0000);
 			h1 = Avx2.Blend(h1, Vector256.Create(Vector128.LoadUnsafe(in key, 4)), 0b1111_0000);
-			rowFlags |= startFlags;
+			rowFlags |= Blake3Flags.ChunkStart;
 		}
 
 		Vector256<ulong> lengthAndFlags = Vector256.Create((ulong)rowFlags << 32 | (blockCount is 1 ? last.LastLength : BlockLength));
