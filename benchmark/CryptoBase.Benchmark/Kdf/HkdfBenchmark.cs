@@ -1,5 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
+using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha256;
@@ -455,8 +456,12 @@ public class Hkdf128BlockCountBenchmark
 	}
 }
 
+public class HkdfOverlapBenchmark() : HkdfOverlapBenchmarkBase<Sha256HashAlgorithm>(HashAlgorithmName.SHA256);
+
+public class HkdfSha512OverlapBenchmark() : HkdfOverlapBenchmarkBase<Sha512HashAlgorithm>(HashAlgorithmName.SHA512);
+
 [MemoryDiagnoser]
-public class HkdfOverlapBenchmark
+public abstract class HkdfOverlapBenchmarkBase<THash>(HashAlgorithmName hashAlgorithm) where THash : unmanaged, IHmacHashCore<THash>
 {
 	[Params(65, 8192)]
 	public int InfoLength { get; set; }
@@ -471,7 +476,7 @@ public class HkdfOverlapBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_prk = RandomNumberGenerator.GetBytes(HashAlgorithm<Sha256HashAlgorithm>.HashLength);
+		_prk = RandomNumberGenerator.GetBytes(HashAlgorithm<THash>.HashLength);
 		int bufferLength = Math.Max(InfoLength, OutputLength);
 		_cryptoBaseBuffer = new byte[bufferLength];
 		_bclBuffer = new byte[bufferLength];
@@ -482,49 +487,12 @@ public class HkdfOverlapBenchmark
 	[Benchmark(Baseline = true)]
 	public void CryptoBase()
 	{
-		Hkdf.Expand<Sha256HashAlgorithm>(_prk, _cryptoBaseBuffer.AsSpan(0, OutputLength), _cryptoBaseBuffer.AsSpan(0, InfoLength));
+		Hkdf.Expand<THash>(_prk, _cryptoBaseBuffer.AsSpan(0, OutputLength), _cryptoBaseBuffer.AsSpan(0, InfoLength));
 	}
 
 	[Benchmark]
 	public void Bcl()
 	{
-		HKDF.Expand(HashAlgorithmName.SHA256, _prk, _bclBuffer.AsSpan(0, OutputLength), _bclBuffer.AsSpan(0, InfoLength));
-	}
-}
-
-[MemoryDiagnoser]
-public class HkdfSha512OverlapBenchmark
-{
-	[Params(65, 8192)]
-	public int InfoLength { get; set; }
-
-	[Params(32, 97)]
-	public int OutputLength { get; set; }
-
-	private byte[] _prk = [];
-	private byte[] _cryptoBaseBuffer = [];
-	private byte[] _bclBuffer = [];
-
-	[GlobalSetup]
-	public void Setup()
-	{
-		_prk = RandomNumberGenerator.GetBytes(HashAlgorithm<Sha512HashAlgorithm>.HashLength);
-		int bufferLength = Math.Max(InfoLength, OutputLength);
-		_cryptoBaseBuffer = new byte[bufferLength];
-		_bclBuffer = new byte[bufferLength];
-		RandomNumberGenerator.Fill(_cryptoBaseBuffer.AsSpan(0, InfoLength));
-		_cryptoBaseBuffer.AsSpan().CopyTo(_bclBuffer);
-	}
-
-	[Benchmark(Baseline = true)]
-	public void CryptoBase()
-	{
-		Hkdf.Expand<Sha512HashAlgorithm>(_prk, _cryptoBaseBuffer.AsSpan(0, OutputLength), _cryptoBaseBuffer.AsSpan(0, InfoLength));
-	}
-
-	[Benchmark]
-	public void Bcl()
-	{
-		HKDF.Expand(HashAlgorithmName.SHA512, _prk, _bclBuffer.AsSpan(0, OutputLength), _bclBuffer.AsSpan(0, InfoLength));
+		HKDF.Expand(hashAlgorithm, _prk, _bclBuffer.AsSpan(0, OutputLength), _bclBuffer.AsSpan(0, InfoLength));
 	}
 }
