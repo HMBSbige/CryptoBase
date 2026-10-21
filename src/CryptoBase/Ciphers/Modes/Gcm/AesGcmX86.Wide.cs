@@ -142,20 +142,26 @@ internal static partial class AesGcmX86
 
 		if (!TDirection.IsDecrypt)
 		{
-			MultiplyKaratsuba(v0.ReverseEndianness128() ^ hash, powers.GetKey(8), powers.GetXorKey(8), out Vector128<uint> lastP00, out Vector128<uint> lastP11, out Vector128<uint> lastPm);
-			AccumulateKaratsubaBlock(v1, in powers, 7, ref lastP00, ref lastP11, ref lastPm);
-			AccumulateKaratsubaBlock(v2, in powers, 6, ref lastP00, ref lastP11, ref lastPm);
-			AccumulateKaratsubaBlock(v3, in powers, 5, ref lastP00, ref lastP11, ref lastPm);
-			AccumulateKaratsubaBlock(v4, in powers, 4, ref lastP00, ref lastP11, ref lastPm);
-			AccumulateKaratsubaBlock(v5, in powers, 3, ref lastP00, ref lastP11, ref lastPm);
-			AccumulateKaratsubaBlock(v6, in powers, 2, ref lastP00, ref lastP11, ref lastPm);
-			AccumulateKaratsubaBlock(v7, in powers, 1, ref lastP00, ref lastP11, ref lastPm);
-			hash = ReduceKaratsuba(lastP00, lastP11, lastPm);
+			hash = HashBlocks8(hash, v0, v1, v2, v3, v4, v5, v6, v7, in powers);
 		}
 
 		accumulator = hash;
 		counter = Ssse3.IsSupported ? prefix.ReverseEndianness128() : CreateCounter(prefix, value);
 		return length;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<byte> HashBlocks8(Vector128<byte> hash, Vector128<byte> v0, Vector128<byte> v1, Vector128<byte> v2, Vector128<byte> v3, Vector128<byte> v4, Vector128<byte> v5, Vector128<byte> v6, Vector128<byte> v7, in GHashVector128PrecomputedKey powers)
+	{
+		MultiplyKaratsuba(v0.ReverseEndianness128() ^ hash, powers.GetKey(8), powers.GetXorKey(8), out Vector128<uint> p00, out Vector128<uint> p11, out Vector128<uint> pm);
+		AccumulateKaratsubaBlock(v1, in powers, 7, ref p00, ref p11, ref pm);
+		AccumulateKaratsubaBlock(v2, in powers, 6, ref p00, ref p11, ref pm);
+		AccumulateKaratsubaBlock(v3, in powers, 5, ref p00, ref p11, ref pm);
+		AccumulateKaratsubaBlock(v4, in powers, 4, ref p00, ref p11, ref pm);
+		AccumulateKaratsubaBlock(v5, in powers, 3, ref p00, ref p11, ref pm);
+		AccumulateKaratsubaBlock(v6, in powers, 2, ref p00, ref p11, ref pm);
+		AccumulateKaratsubaBlock(v7, in powers, 1, ref p00, ref p11, ref pm);
+		return ReduceKaratsuba(p00, p11, pm);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
