@@ -79,13 +79,7 @@ public class Base32Test
 			encoding = encoding.OmitPadding;
 		}
 
-		byte[] source = new byte[length];
-
-		for (int i = 0; i < source.Length; ++i)
-		{
-			source[i] = (byte)(i * 37 + length * 11);
-		}
-
+		byte[] source = CreatePatternSource(length, length * 11);
 		char[] expected = EncodeReference(source, hex, omitPadding);
 		char[] actual = new char[encoding.GetEncodedLength(source.Length)];
 		await Assert.That(encoding.EncodeToChars(source, actual, out int encodeCharsConsumed, out int charsWritten)).IsEqualTo(OperationStatus.Done);

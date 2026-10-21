@@ -11,17 +11,12 @@ public class Base32CustomAlphabetTest
 	[MatrixDataSource]
 	public async Task CustomAlphabetAndPaddingRoundTrip([Matrix(10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 39, 40, 41, 73, 79, 80, 81, 160, 205)] int sourceLength, [Matrix] bool omitPadding)
 	{
-		const string alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+		const string alphabet = LowercaseAlphabet;
 		const char padding = '~';
 		Base32Encoding custom = Base32Encoding.Create(alphabet, padding);
 		Base32Encoding encoding = omitPadding ? custom.OmitPadding : custom;
 
-		byte[] source = new byte[sourceLength];
-
-		for (int i = 0; i < source.Length; ++i)
-		{
-			source[i] = (byte)(i * 37 + sourceLength * 11);
-		}
+		byte[] source = CreatePatternSource(sourceLength, sourceLength * 11);
 
 		char[] expected = EncodeReference(source, alphabet, padding, omitPadding);
 		byte[] expectedUtf8 = ToByteSymbols(expected);
@@ -56,7 +51,7 @@ public class Base32CustomAlphabetTest
 	[Test]
 	public async Task CustomAlphabetEncodeMatchesReferenceForEveryLength()
 	{
-		const string alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+		const string alphabet = LowercaseAlphabet;
 		const char padding = '~';
 		const char charSentinel = (char)0xA5A5;
 		Base32Encoding encoding = Base32Encoding.Create(alphabet, padding);
@@ -94,15 +89,10 @@ public class Base32CustomAlphabetTest
 	[MatrixDataSource]
 	public async Task CustomAlphabetCharDecodeReportsInvalidData([Matrix('!', '\u0080', '\u0100')] char invalidSymbol, [Matrix(15, 16, 63, 64, 127, 128, 255, 327)] int invalidOffset)
 	{
-		const string alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+		const string alphabet = LowercaseAlphabet;
 		const int sourceLength = 205;
 		Base32Encoding encoding = Base32Encoding.Create(alphabet);
-		byte[] source = new byte[sourceLength];
-
-		for (int i = 0; i < source.Length; ++i)
-		{
-			source[i] = (byte)(i * 37 + 11);
-		}
+		byte[] source = CreatePatternSource(sourceLength, 11);
 
 		char[] encodedChars = EncodeReference(source, alphabet, '=', false);
 		encodedChars[invalidOffset] = invalidSymbol;
@@ -143,15 +133,10 @@ public class Base32CustomAlphabetTest
 	[MatrixDataSource]
 	public async Task CustomAlphabetUtf8DecodeReportsInvalidData([Matrix((byte)'!', (byte)0x80, (byte)0xff)] byte invalidSymbol, [Matrix(15, 16, 63, 64, 127, 128, 255, 327)] int invalidOffset)
 	{
-		const string alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+		const string alphabet = LowercaseAlphabet;
 		const int sourceLength = 205;
 		Base32Encoding encoding = Base32Encoding.Create(alphabet);
-		byte[] source = new byte[sourceLength];
-
-		for (int i = 0; i < source.Length; ++i)
-		{
-			source[i] = (byte)(i * 37 + 11);
-		}
+		byte[] source = CreatePatternSource(sourceLength, 11);
 
 		byte[] encodedUtf8 = ToByteSymbols(EncodeReference(source, alphabet, '=', false));
 		encodedUtf8[invalidOffset] = invalidSymbol;
@@ -170,7 +155,7 @@ public class Base32CustomAlphabetTest
 	[Test]
 	public async Task InvalidConfigurationIsRejected()
 	{
-		const string alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+		const string alphabet = LowercaseAlphabet;
 
 		await Assert.That(() => Base32Encoding.Create(alphabet.Substring(1))).ThrowsExactly<ArgumentException>();
 		await Assert.That(() => Base32Encoding.Create(alphabet + '8')).ThrowsExactly<ArgumentException>();

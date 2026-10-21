@@ -4,11 +4,28 @@ namespace CryptoBase.Tests.DataFormatExtensions;
 
 public static class Base32TestUtils
 {
+	public const string LowercaseAlphabet = "abcdefghijklmnopqrstuvwxyz234567";
+
+	public static string Rfc4648Alphabet(bool hex)
+	{
+		return hex ? "0123456789ABCDEFGHIJKLMNOPQRSTUV" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+	}
+
+	public static byte[] CreatePatternSource(int length, int offset)
+	{
+		byte[] source = new byte[length];
+
+		for (int i = 0; i < source.Length; ++i)
+		{
+			source[i] = (byte)(i * 37 + offset);
+		}
+
+		return source;
+	}
+
 	public static char[] EncodeReference(ReadOnlySpan<byte> source, bool hex, bool omitPadding)
 	{
-		const string rfc4648 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-		const string rfc4648Hex = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-		return EncodeReference(source, hex ? rfc4648Hex : rfc4648, '=', omitPadding);
+		return EncodeReference(source, Rfc4648Alphabet(hex), '=', omitPadding);
 	}
 
 	public static char[] EncodeReference(ReadOnlySpan<byte> source, string alphabet, char padding, bool omitPadding)

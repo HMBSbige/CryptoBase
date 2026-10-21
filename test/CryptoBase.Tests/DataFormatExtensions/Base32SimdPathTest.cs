@@ -109,7 +109,7 @@ public class Base32SimdPathTest
 		Base32Encoding encoding = alphabet switch
 		{
 			"hex" => Base32Encoding.Rfc4648Hex,
-			"custom" => Base32Encoding.Create("abcdefghijklmnopqrstuvwxyz234567"),
+			"custom" => Base32Encoding.Create(LowercaseAlphabet),
 			_ => Base32Encoding.Rfc4648,
 		};
 

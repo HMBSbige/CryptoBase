@@ -105,7 +105,7 @@ public class Base32ContractTest
 	{
 		// The lengths reach the 256-bit and 512-bit decoders; '=' is skipped because its validity depends on its position.
 		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
-		string alphabet = hex ? "0123456789ABCDEFGHIJKLMNOPQRSTUV" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+		string alphabet = Rfc4648Alphabet(hex);
 		byte[] source = CreateDeterministicSource(symbolCount / 8 * 5);
 		char[] valid = EncodeReference(source, hex, false);
 		int[] positions = [0, 7, 31, symbolCount - 1];
@@ -217,10 +217,10 @@ public class Base32ContractTest
 	[Arguments(true)]
 	public async Task VectorBlockDestinationTooSmallReportsProcessedPrefix(bool customAlphabet)
 	{
-		string alphabet = customAlphabet ? "abcdefghijklmnopqrstuvwxyz234567" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+		string alphabet = customAlphabet ? LowercaseAlphabet : Rfc4648Alphabet(false);
 		Base32Encoding encoding = customAlphabet ? Base32Encoding.Create(alphabet) : Base32Encoding.Rfc4648;
-		byte[] encodeSource = Enumerable.Range(0, 20).Select(static value => (byte)(value * 37 + 11)).ToArray();
-		byte[] decodeSource = Enumerable.Range(0, 80).Select(static value => (byte)(value * 37 + 11)).ToArray();
+		byte[] encodeSource = CreatePatternSource(20, 11);
+		byte[] decodeSource = CreatePatternSource(80, 11);
 
 		char[] expectedChars = EncodeReference(encodeSource, alphabet, '=', false);
 		byte[] expectedUtf8 = ToByteSymbols(expectedChars);
@@ -291,7 +291,7 @@ public class Base32ContractTest
 			encoding = encoding.OmitPadding;
 		}
 
-		string alphabet = hex ? "0123456789ABCDEFGHIJKLMNOPQRSTUV" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+		string alphabet = Rfc4648Alphabet(hex);
 		char[] encoded = EncodeReference(new byte[sourceLength], hex, omitPadding);
 		int rawSymbolCount = (sourceLength * 8 + 4) / 5;
 		int unusedBits = rawSymbolCount * 5 - sourceLength * 8;
