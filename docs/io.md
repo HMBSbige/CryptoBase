@@ -2,10 +2,6 @@
 
 [Back to documentation](README.md)
 
-## Installation
-
-`CryptoBase.IO` depends only on `CryptoBase.Abstractions`. The algorithms come from `CryptoBase`.
-
 ```shell
 dotnet add package CryptoBase
 dotnet add package CryptoBase.IO
@@ -65,7 +61,7 @@ await using FileStream source = File.OpenRead(sourcePath);
 await using FileStream destination = File.Create(destinationPath);
 byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 
-// Hash while copying; the stream disposes the hasher.
+// Hash while copying.
 await using HashStream<HashAlgorithm<Sha256HashAlgorithm>> hashing = HashStream.Create(destination, HashAlgorithm<Sha256HashAlgorithm>.Create(), leaveOpen: true);
 await source.CopyToAsync(hashing);
 hashing.GetHashAndReset(hash);
@@ -73,7 +69,7 @@ hashing.GetHashAndReset(hash);
 
 ## Authenticating a stream
 
-Incremental MAC algorithms, such as `HmacAlgorithm<THash>`, read streams the same way. `MacData` and `MacDataAsync` dispose the keyed instance they create, which erases the key.
+Incremental MACs, such as `HmacAlgorithm<THash>`, read streams the same way.
 
 ```csharp
 using System.Security.Cryptography;
@@ -107,7 +103,7 @@ hmac.GetMacAndReset(mac);
 
 ## MacStream
 
-`MacStream` authenticates every byte read from or written to the inner stream. It is not seekable. It owns the MAC algorithm and disposes it, erasing the key; `leaveOpen` applies only to the inner stream. `Reset` and `GetMacAndReset` keep the key.
+`MacStream` does the same as `HashStream` with a MAC. `Reset` and `GetMacAndReset` keep the key.
 
 ```csharp
 using System.Security.Cryptography;
@@ -120,7 +116,7 @@ await using FileStream source = File.OpenRead(sourcePath);
 await using FileStream destination = File.Create(destinationPath);
 byte[] mac = new byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
 
-// Authenticate while copying; the stream disposes the MAC algorithm.
+// Authenticate while copying.
 await using MacStream<HmacAlgorithm<Sha256HashAlgorithm>> authenticating = MacStream.Create(destination, HmacAlgorithm<Sha256HashAlgorithm>.Create(key), leaveOpen: true);
 await source.CopyToAsync(authenticating);
 authenticating.GetMacAndReset(mac);
@@ -128,9 +124,9 @@ authenticating.GetMacAndReset(mac);
 
 ## DataUnitRandomAccess
 
-`DataUnitRandomAccess` encrypts a file at arbitrary offsets with a data-unit cipher that uses a 16-byte tweak, such as `XtsMode<AesCipher>`. The file holds whole data units, so its length must be a multiple of the data unit size. The unit at offset `n * dataUnitSize` uses the little-endian 128-bit tweak `firstDataUnitNumber + n`, the same numbering as `XtsMode.GetIV`.
+`DataUnitRandomAccess` encrypts a file at any offset with a data-unit cipher that uses a 16-byte tweak, such as `XtsMode<AesCipher>` or `XtsMode<SM4Cipher>`. The file holds whole data units only. The unit at offset `n * dataUnitSize` uses the tweak that `XtsMode.GetIV` gives for `firstDataUnitNumber + n`.
 
-Writes past the end zero-pad their last unit and fill any gap with encrypted zero units. A write that covers part of a unit reads and re-encrypts that unit, so the handle must be readable. The instance owns the cipher. Instances are not thread-safe; for parallel access, create one instance per thread over a shared handle with `leaveOpen: true`. `XtsMode<SM4Cipher>` from `CryptoBase.Ciphers.Blocks.SM4` works the same way.
+Writes past the end zero-pad their last unit and fill any gap with encrypted zero units. A partial-unit write re-encrypts the whole unit, so the handle must be readable. Instances are not thread-safe; for parallel access, create one instance per thread over a shared handle with `leaveOpen: true`.
 
 ```csharp
 using System.Security.Cryptography;
@@ -148,10 +144,10 @@ using SafeFileHandle handle = File.OpenHandle(path, FileMode.OpenOrCreate, FileA
 // The instance owns the cipher; the handle stays open.
 using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(dataKey, tweakKey), dataUnitSize: 4096, leaveOpen: true);
 
-// Encrypt and write at any offset.
+// Write at any offset.
 xts.Write(plaintext, offset: 100);
 
-// Read and decrypt at any offset.
+// Read at any offset.
 byte[] buffer = new byte[plaintext.Length];
 int read = xts.Read(buffer, offset: 100);
 
@@ -168,7 +164,7 @@ xts.Flush();
 
 ## DataUnitStream
 
-`DataUnitStream` exposes the same layout as a seekable `Stream`. It requires a seekable inner stream. Its `Length` is the inner stream's length, extended by a changed data unit that has not been written yet.
+`DataUnitStream` exposes the same layout as a seekable `Stream` over a seekable inner stream. Its `Length` includes a changed data unit that has not been written yet.
 
 ```csharp
 using System.Security.Cryptography;
@@ -193,4 +189,4 @@ byte[] buffer = new byte[11];
 xts.ReadExactly(buffer);
 ```
 
-`DataUnitStream` keeps the plaintext of the data unit that the last partial read or write touched, so small sequential reads and writes decrypt and encrypt each unit once. A changed unit reaches the inner stream when the stream moves to another unit, reads outside it, or is flushed or disposed. Call `Flush` before reading the inner stream directly or opening the file elsewhere. Reads and writes of whole aligned units go straight to the inner stream.
+A changed data unit reaches the inner stream when the stream moves to another unit or is flushed or disposed. Call `Flush` before reading the inner stream directly or opening the file elsewhere.

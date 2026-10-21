@@ -2,7 +2,7 @@
 
 [Back to documentation](README.md)
 
-CryptoBase implements ML-KEM from FIPS 203 in the `CryptoBase.Kems.MLKem` namespace:
+CryptoBase implements ML-KEM (FIPS 203) in the `CryptoBase.Kems.MLKem` namespace:
 
 | Type | Security category | Encapsulation key | Decapsulation key | Ciphertext | Shared secret | Private seed |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -10,99 +10,91 @@ CryptoBase implements ML-KEM from FIPS 203 in the `CryptoBase.Kems.MLKem` namesp
 | `MLKem768` | 3 | 1184 bytes | 2400 bytes | 1088 bytes | 32 bytes | 64 bytes |
 | `MLKem1024` | 5 | 1568 bytes | 3168 bytes | 1568 bytes | 32 bytes | 64 bytes |
 
-Each type exposes these lengths as static properties, such as `MLKem768.CiphertextLength`. The examples use `MLKem768`.
-
-## Generating a key pair
+## Establishing a shared secret
 
 ```csharp
 using CryptoBase.Kems.MLKem;
 
-using MLKem768 kem = MLKem768.GenerateKey();
+// Receiver: generate a key pair and send the encapsulation key.
+using MLKem768 receiver = MLKem768.GenerateKey();
 
-// Send the encapsulation key to the peer.
 byte[] encapsulationKey = new byte[MLKem768.EncapsulationKeyLength];
-kem.ExportEncapsulationKey(encapsulationKey);
-```
+receiver.ExportEncapsulationKey(encapsulationKey);
 
-## Encapsulating to a peer
-
-The peer imports the encapsulation key, creates a shared secret and sends the ciphertext back:
-
-```csharp
-using CryptoBase.Kems.MLKem;
-
-using MLKem768 peer = MLKem768.ImportEncapsulationKey(encapsulationKey);
-
+// Sender: import the encapsulation key, create a shared secret and send the ciphertext.
 byte[] ciphertext = new byte[MLKem768.CiphertextLength];
-Span<byte> sharedSecret = stackalloc byte[MLKem768.SharedSecretLength];
-peer.Encapsulate(ciphertext, sharedSecret);
+byte[] senderSecret = new byte[MLKem768.SharedSecretLength];
+
+using (MLKem768 sender = MLKem768.ImportEncapsulationKey(encapsulationKey))
+{
+    sender.Encapsulate(ciphertext, senderSecret);
+}
+
+// Receiver: recover the shared secret from the ciphertext.
+byte[] receiverSecret = new byte[MLKem768.SharedSecretLength];
+receiver.Decapsulate(ciphertext, receiverSecret);
+
+// senderSecret and receiverSecret are equal.
 ```
 
-The two outputs must not overlap.
+The shared secret can key an AEAD directly or feed [HKDF](macs-and-key-derivation.md#hkdf).
 
-## Decapsulating
+`Encapsulate` throws `ArgumentException` if `ciphertext` and `sharedSecret` overlap. `Decapsulate` throws `ArgumentException` for a ciphertext that does not have exactly `CiphertextLength` bytes, and `InvalidOperationException` on an instance imported from an encapsulation key alone. Calls on one instance may run concurrently.
 
-The holder of the key pair recovers the same shared secret from the ciphertext:
-
-```csharp
-Span<byte> sharedSecret = stackalloc byte[MLKem768.SharedSecretLength];
-kem.Decapsulate(ciphertext, sharedSecret);
-```
-
-A ciphertext must have exactly `CiphertextLength` bytes; any other length throws `ArgumentException`. An instance imported from an encapsulation key alone throws `InvalidOperationException`.
-
-Calls on one instance may run concurrently.
+`Decapsulate` does not report a changed or foreign ciphertext of the right length: it writes a pseudorandom value instead of the shared secret, without throwing, so the receiver's AEAD decryption fails.
 
 ## Saving and restoring a key
 
-The 64-byte private seed is the most compact form of a key pair:
+The private seed is the most compact form of a key pair:
 
 ```csharp
 using CryptoBase.Kems.MLKem;
 
+using MLKem768 key = MLKem768.GenerateKey();
+
 byte[] seed = new byte[MLKem768.PrivateSeedLength];
-kem.ExportPrivateSeed(seed);
+key.ExportPrivateSeed(seed);
 
 using MLKem768 restored = MLKem768.ImportPrivateSeed(seed);
 ```
 
-`ExportDecapsulationKey` and `ImportDecapsulationKey` store the expanded decapsulation key instead. An instance imported from it has no seed, so `HasPrivateSeed` is `false` and `ExportPrivateSeed` throws `InvalidOperationException`. `HasDecapsulationKey` says whether an instance can decapsulate and export its decapsulation key.
-
-Exports return the number of bytes written; a shorter destination throws `ArgumentException`. Disposing an instance erases its key material.
-
-## Implicit rejection
-
-`Decapsulate` never reports whether a ciphertext is genuine: an altered or foreign ciphertext yields a pseudorandom value instead of the shared secret, and the protocol has to detect the mismatch.
+The expanded decapsulation key of FIPS 203 is the other form:
 
 ```csharp
-ciphertext[0] ^= 1;
+byte[] decapsulationKey = new byte[MLKem768.DecapsulationKeyLength];
+key.ExportDecapsulationKey(decapsulationKey);
 
-Span<byte> rejected = stackalloc byte[MLKem768.SharedSecretLength];
-kem.Decapsulate(ciphertext, rejected);
-
-// No exception: rejected differs from the peer's shared secret.
+using MLKem768 fromDecapsulationKey = MLKem768.ImportDecapsulationKey(decapsulationKey);
 ```
 
-## Import checks
+| Property | `GenerateKey`, `ImportPrivateSeed` | `ImportDecapsulationKey` | `ImportEncapsulationKey` |
+| --- | :---: | :---: | :---: |
+| `HasPrivateSeed` | ✅ | | |
+| `HasDecapsulationKey` | ✅ | ✅ | |
 
-Imports apply the input checks of FIPS 203 and throw `ArgumentException` for a key that fails them:
-
-- An encapsulation key must have exactly `EncapsulationKeyLength` bytes, and every coefficient it encodes must be below q = 3329.
-- A decapsulation key must have exactly `DecapsulationKeyLength` bytes, the encapsulation key it embeds must pass the check above, and its hash of that key must match. Its secret coefficients must be below q too.
-- A private seed must have exactly `PrivateSeedLength` bytes.
+Exporting what an instance does not hold throws `InvalidOperationException`. Imports throw `ArgumentException` for input of the wrong length or a key that fails the checks of FIPS 203.
 
 ## Generic code
 
-The three types implement `IKem<TSelf>`, so code can work with any of them:
+The three types implement `IKem<TSelf>`:
 
 ```csharp
 using CryptoBase.Abstractions.Kems;
+using CryptoBase.Kems.MLKem;
 
 static byte[] Encapsulate<T>(ReadOnlySpan<byte> encapsulationKey, Span<byte> sharedSecret) where T : class, IKem<T>
 {
-	using T kem = T.ImportEncapsulationKey(encapsulationKey);
-	byte[] ciphertext = new byte[T.CiphertextLength];
-	kem.Encapsulate(ciphertext, sharedSecret);
-	return ciphertext;
+    using T kem = T.ImportEncapsulationKey(encapsulationKey);
+
+    byte[] ciphertext = new byte[T.CiphertextLength];
+    kem.Encapsulate(ciphertext, sharedSecret);
+    return ciphertext;
 }
+
+using MLKem1024 receiver = MLKem1024.GenerateKey();
+byte[] encapsulationKey = new byte[MLKem1024.EncapsulationKeyLength];
+receiver.ExportEncapsulationKey(encapsulationKey);
+
+byte[] sharedSecret = new byte[MLKem1024.SharedSecretLength];
+byte[] ciphertext = Encapsulate<MLKem1024>(encapsulationKey, sharedSecret);
 ```

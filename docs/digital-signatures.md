@@ -10,8 +10,6 @@ CryptoBase implements ML-DSA (FIPS 204) in the `CryptoBase.Signatures.MLDsa` nam
 | `MLDsa65` | 3 | 1952 bytes | 4032 bytes | 3309 bytes | 32 bytes | `MLDsa65` (0x0905) |
 | `MLDsa87` | 5 | 2592 bytes | 4896 bytes | 4627 bytes | 32 bytes | `MLDsa87` (0x0906) |
 
-Each type exposes these lengths as static properties, such as `MLDsa65.SignatureLength`. The examples use `MLDsa65`.
-
 ## Signing and verifying
 
 ```csharp
@@ -35,11 +33,11 @@ bool valid = verifier.Verify(message, signature); // true
 bool tampered = verifier.Verify("massage"u8, signature); // false
 ```
 
-`Verify` returns `false` for any invalid signature, including one of the wrong length; it does not throw. Signing uses fresh randomness, so two signatures of the same message differ and both verify. `Sign` on an instance that holds only the public key throws `InvalidOperationException`. Calls on one instance may run concurrently.
+`Verify` returns `false` for any invalid signature, including one of the wrong length. Signing is randomized, so signatures of one message differ. `Sign` on an instance that holds only the public key throws `InvalidOperationException`. Calls on one instance may run concurrently.
 
 ### Context strings
 
-`Sign` and `Verify` take an optional context string of up to `MaxContextLength` (255) bytes. A signature verifies only with the context it was made with:
+`Sign` and `Verify` take an optional context string of up to `MaxContextLength` (255) bytes:
 
 ```csharp
 signer.Sign(message, signature, "example.com/v1"u8);
@@ -64,7 +62,7 @@ const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
 
 using MLDsa65 signer = MLDsa65.GenerateKey();
 
-// Hash a large file without loading it, here with CryptoBase.IO.
+// Hash the file with CryptoBase.IO.
 byte[] hash = new byte[HashAlgorithm<Sha512HashAlgorithm>.HashLength];
 
 using (FileStream file = File.OpenRead(path))
@@ -78,7 +76,7 @@ signer.SignPreHash(hash, signature, Sha512Oid);
 bool valid = signer.VerifyPreHash(hash, signature, Sha512Oid); // true
 ```
 
-A HashML-DSA signature is not an ML-DSA signature: `Verify` rejects one from `SignPreHash`, and `VerifyPreHash` rejects one from `Sign`. Both methods take a context string too.
+`Verify` rejects a signature from `SignPreHash`, and `VerifyPreHash` one from `Sign`.
 
 Each type accepts these hash algorithms:
 
@@ -98,7 +96,7 @@ Any other OID, and a hash of the wrong length, throws `ArgumentException`.
 
 ## Signing μ (external μ)
 
-`SignMu` and `VerifyMu` take the 64-byte message representative μ of FIPS 204 instead of the message. The party that has the message computes μ, for instance while the message streams past, and only μ reaches the holder of the private key. A signature from `SignMu` is an ordinary ML-DSA signature that `Verify` accepts with the message.
+`SignMu` and `VerifyMu` take the 64-byte message representative μ of FIPS 204 instead of the message, so only μ needs to reach the holder of the private key.
 
 ```csharp
 using CryptoBase.Hashes;
@@ -138,7 +136,7 @@ bool validMu = signer.VerifyMu(mu, signature); // true
 
 ## Saving and restoring a key
 
-The 32-byte private seed is the most compact form of a key pair:
+The private seed is the most compact form of a key pair:
 
 ```csharp
 using CryptoBase.Signatures.MLDsa;
@@ -158,9 +156,6 @@ byte[] privateKey = new byte[MLDsa65.PrivateKeyLength];
 key.ExportPrivateKey(privateKey);
 
 using MLDsa65 fromPrivateKey = MLDsa65.ImportPrivateKey(privateKey);
-
-// An instance imported from it has no seed.
-bool hasSeed = fromPrivateKey.HasPrivateSeed; // false
 ```
 
 | Property | `GenerateKey`, `ImportPrivateSeed` | `ImportPrivateKey` | `ImportPublicKey` |
@@ -168,11 +163,11 @@ bool hasSeed = fromPrivateKey.HasPrivateSeed; // false
 | `HasPrivateSeed` | ✅ | | |
 | `HasPrivateKey` | ✅ | ✅ | |
 
-Exporting what an instance does not hold throws `InvalidOperationException`. Exports return the number of bytes written; a shorter destination throws `ArgumentException`. Imports throw `ArgumentException` for input of the wrong length or a private key that fails the checks of FIPS 204; any byte string of `PublicKeyLength` bytes is a public key. Disposing an instance erases its key material; any later call other than `Dispose` throws `ObjectDisposedException`.
+Exporting what an instance does not hold throws `InvalidOperationException`. Imports throw `ArgumentException` for input of the wrong length or a private key that fails the checks of FIPS 204; any `PublicKeyLength` bytes are a valid public key.
 
 ### DER encodings
 
-Keys also travel as SubjectPublicKeyInfo and PKCS #8 in the encodings of RFC 9881:
+SubjectPublicKeyInfo and PKCS #8 follow RFC 9881:
 
 ```csharp
 using System.Security.Cryptography;
@@ -191,11 +186,11 @@ string publicPem = PemEncoding.WriteString("PUBLIC KEY", spki);
 string privatePem = PemEncoding.WriteString("PRIVATE KEY", pkcs8);
 ```
 
-`ExportPkcs8PrivateKey` writes the seed form when the instance holds the seed, and the expandedKey form otherwise. `ImportPkcs8PrivateKey` accepts all three forms of RFC 9881 (seed, expandedKey and both) and keeps the seed when there is one. `Pkcs8PrivateKeyLength` throws `InvalidOperationException` on an instance without the private key. Imports throw `ArgumentException` for DER of another algorithm, trailing data, or a key that fails the checks above.
+`ExportPkcs8PrivateKey` writes the seed form when the instance holds the seed, and the expandedKey form otherwise; `ImportPkcs8PrivateKey` accepts the seed, expandedKey and both forms. Imports throw `ArgumentException` for DER of another algorithm, trailing data, or a key that fails the checks above.
 
 ## Protocol code
 
-The three types implement `ISignatureKey<TSelf>` from `CryptoBase.Abstractions.Signatures`, so TLS or X.509 code can hold a key without knowing its algorithm. `SignatureScheme` holds the TLS SignatureScheme code points; `MLDsa44`, `MLDsa65` and `MLDsa87` sign the whole message, such as the content of a TLS 1.3 CertificateVerify, with an empty context.
+The three types implement `ISignatureKey<TSelf>`, so TLS or X.509 code can use a key without knowing its algorithm. `SignatureScheme` holds the TLS code points; `MLDsa44`, `MLDsa65` and `MLDsa87` sign the whole message with an empty context.
 
 ```csharp
 using CryptoBase.Abstractions.Signatures;

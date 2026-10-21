@@ -4,28 +4,90 @@
 
 ## Base32
 
+`Base32Encoding` encodes to and decodes from `char` or UTF-8 buffers. Like `Base64`, it returns `OperationStatus` instead of throwing for bad input or short buffers.
+
+| Instance | Alphabet | Padding |
+| --- | --- | --- |
+| `Base32Encoding.Rfc4648` | `A`–`Z`, `2`–`7` | `=` |
+| `Base32Encoding.Rfc4648Hex` | `0`–`9`, `A`–`V` | `=` |
+| `encoding.OmitPadding` | Same as `encoding` | None; padded input fails to decode |
+| `Base32Encoding.Create(alphabet, padding)` | 32 distinct ASCII characters | `padding`, `=` by default |
+
+### Encoding and decoding a whole buffer
+
 ```csharp
 using System.Buffers;
 using CryptoBase.DataFormatExtensions;
 
-ReadOnlySpan<byte> data = "hello"u8;
-Base32Encoding encoding = Base32Encoding.Rfc4648;
-// Base32Encoding encoding = Base32Encoding.Rfc4648Hex; // Base32hex.
-// Base32Encoding encoding = Base32Encoding.Rfc4648.OmitPadding; // Omit '=' padding.
-// Base32Encoding encoding = Base32Encoding.Create("abcdefghijklmnopqrstuvwxyz234567"); // Custom alphabet.
-int encodedLength = encoding.GetEncodedLength(data.Length);
-Span<char> encoded = stackalloc char[encodedLength];
-Span<byte> decoded = stackalloc byte[Base32Encoding.GetMaxDecodedLength(encodedLength)];
+static string ToBase32(Base32Encoding encoding, ReadOnlySpan<byte> data)
+{
+    char[] encoded = new char[encoding.GetEncodedLength(data.Length)];
+    encoding.EncodeToChars(data, encoded, out _, out int charsWritten);
+    return new string(encoded, 0, charsWritten);
+}
 
-// Encode to padded RFC 4648 Base32 (NBSWY3DP).
-// The default isFinalBlock=true performs a complete OneShot operation.
-OperationStatus encodeStatus = encoding.EncodeToChars(data, encoded, out int bytesConsumed, out int charsWritten);
-OperationStatus decodeStatus = encoding.DecodeFromChars(encoded.Slice(0, charsWritten), decoded, out int charsConsumed, out int bytesWritten);
+static byte[]? FromBase32(Base32Encoding encoding, ReadOnlySpan<char> text)
+{
+    byte[] decoded = new byte[Base32Encoding.GetMaxDecodedLength(text.Length)];
 
-// Pass isFinalBlock=false to process complete blocks and retain an incomplete tail for the next call.
+    if (encoding.DecodeFromChars(text, decoded, out _, out int bytesWritten) is not OperationStatus.Done)
+    {
+        // InvalidData: a character outside the alphabet or bad padding.
+        return null;
+    }
 
-// The UTF-8 overloads use byte counts for both out pairs.
-Span<byte> encodedUtf8 = stackalloc byte[encodedLength];
-OperationStatus utf8EncodeStatus = encoding.EncodeToUtf8(data, encodedUtf8, out int sourceBytesConsumed, out int encodedBytesWritten);
-OperationStatus utf8DecodeStatus = encoding.DecodeFromUtf8(encodedUtf8.Slice(0, encodedBytesWritten), decoded, out int encodedBytesConsumed, out int decodedBytesWritten);
+    return decoded.AsSpan(0, bytesWritten).ToArray();
+}
+
+string padded = ToBase32(Base32Encoding.Rfc4648, "hello"u8); // "NBSWY3DP"
+string hex = ToBase32(Base32Encoding.Rfc4648Hex, "hi"u8); // "D1KG===="
+string unpadded = ToBase32(Base32Encoding.Rfc4648.OmitPadding, "hi"u8); // "NBUQ"
+
+byte[]? data = FromBase32(Base32Encoding.Rfc4648, padded);
+
+// A custom alphabet, here lowercase.
+Base32Encoding lowercase = Base32Encoding.Create("abcdefghijklmnopqrstuvwxyz234567");
+string lower = ToBase32(lowercase, "hello"u8); // "nbswy3dp"
+```
+
+`EncodeToUtf8` and `DecodeFromUtf8` do the same with UTF-8 bytes.
+
+### Encoding in pieces
+
+With `isFinalBlock: false`, a call processes whole 5-byte groups (8 characters when decoding) and leaves the rest of the input unconsumed. Carry the rest over to the next call, and pass `isFinalBlock: true` with the last piece; when decoding, a group with padding is accepted only there:
+
+```csharp
+using System.Buffers;
+using System.Text;
+using CryptoBase.DataFormatExtensions;
+
+static void EncodeStream(Base32Encoding encoding, Stream source, TextWriter destination)
+{
+    byte[] input = new byte[4096];
+    char[] output = new char[encoding.GetEncodedLength(input.Length)];
+    int pending = 0;
+
+    while (true)
+    {
+        int read = source.Read(input, pending, input.Length - pending);
+        int available = pending + read;
+        bool isFinalBlock = read is 0;
+
+        OperationStatus status = encoding.EncodeToChars(input.AsSpan(0, available), output, out int consumed, out int written, isFinalBlock);
+        destination.Write(output, 0, written);
+
+        if (isFinalBlock)
+        {
+            return;
+        }
+
+        // NeedMoreData: carry the unconsumed tail over.
+        pending = available - consumed;
+        input.AsSpan(consumed, pending).CopyTo(input);
+    }
+}
+
+using MemoryStream source = new(Encoding.UTF8.GetBytes("hello world"));
+using StringWriter destination = new();
+EncodeStream(Base32Encoding.Rfc4648, source, destination);
 ```

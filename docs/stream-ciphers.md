@@ -2,15 +2,19 @@
 
 [Back to documentation](README.md)
 
-## Direct implementations
+Stream ciphers encrypt and decrypt with the same `Xor` call.
 
-| Type | Key | Nonce or IV |
-| --- | ---: | ---: |
-| `ChaCha20Cipher` | 32 bytes | 12 bytes |
-| `ChaCha20OriginalCipher` | 16 or 32 bytes | 8 bytes |
-| `XChaCha20Cipher` | 32 bytes | 24 bytes |
-| `Salsa20Cipher` | 16 or 32 bytes | 8 bytes |
-| `XSalsa20Cipher` | 32 bytes | 24 bytes |
+## ChaCha20 and Salsa20
+
+| Type | Key | Nonce or IV | Counter |
+| --- | ---: | ---: | ---: |
+| `ChaCha20Cipher` | 32 bytes | 12 bytes | 32-bit |
+| `ChaCha20OriginalCipher` | 16 or 32 bytes | 8 bytes | 64-bit |
+| `XChaCha20Cipher` | 32 bytes | 24 bytes | 64-bit |
+| `Salsa20Cipher` | 16 or 32 bytes | 8 bytes | 64-bit |
+| `XSalsa20Cipher` | 32 bytes | 24 bytes | 64-bit |
+
+A new instance starts at block counter 0.
 
 ```csharp
 using System.Security.Cryptography;
@@ -18,20 +22,29 @@ using CryptoBase.Ciphers.Streams;
 
 byte[] key = RandomNumberGenerator.GetBytes(XChaCha20Cipher.KeySize);
 byte[] nonce = RandomNumberGenerator.GetBytes(XChaCha20Cipher.IVSize);
-byte[] plaintext = "message"u8.ToArray();
+byte[] plaintext = RandomNumberGenerator.GetBytes(1000);
 byte[] ciphertext = new byte[plaintext.Length];
-byte[] recovered = new byte[ciphertext.Length];
 
-using XChaCha20Cipher crypto = new(key, nonce);
+using (XChaCha20Cipher encryptor = new(key, nonce))
+{
+    // Input can arrive in pieces of any length; each call continues the keystream.
+    encryptor.Xor(plaintext.AsSpan(0, 100), ciphertext.AsSpan(0, 100));
+    encryptor.Xor(plaintext.AsSpan(100), ciphertext.AsSpan(100));
+}
 
-crypto.Xor(plaintext, ciphertext);
-crypto.SetCounter(0);
-crypto.Xor(ciphertext, recovered);
+using XChaCha20Cipher decryptor = new(key, nonce);
+
+// Decrypt in place.
+byte[] recovered = ciphertext.ToArray();
+decryptor.Xor(recovered, recovered);
+
+// Decrypt from block 2 (byte 128) on.
+decryptor.SetCounter(2);
+byte[] tail = new byte[ciphertext.Length - 128];
+decryptor.Xor(ciphertext.AsSpan(128), tail);
 ```
 
-## Single ChaCha20 block
-
-`ChaCha20Cipher.GenerateBlock` computes the 64-byte keystream block at a counter without creating a cipher instance.
+`ChaCha20Cipher.GenerateBlock` computes one keystream block without an instance, such as the RFC 8439 Poly1305 key:
 
 ```csharp
 using System.Security.Cryptography;
@@ -41,17 +54,18 @@ byte[] key = RandomNumberGenerator.GetBytes(ChaCha20Cipher.KeySize);
 byte[] nonce = RandomNumberGenerator.GetBytes(ChaCha20Cipher.IVSize);
 byte[] block = new byte[ChaCha20Cipher.BlockSize];
 
-ChaCha20Cipher.GenerateBlock(key, nonce, 1, block);
+ChaCha20Cipher.GenerateBlock(key, nonce, counter: 0, block);
+ReadOnlySpan<byte> poly1305Key = block.AsSpan(0, 32);
 ```
 
 ## CTR
 
-| Type | Key | IV or counter |
+| Type | Key | Initial counter |
 | --- | ---: | ---: |
-| `CtrMode128<AesCipher>` | 16, 24, or 32 bytes | Exactly 16 bytes |
-| `CtrMode128<SM4Cipher>` | 16 bytes | Exactly 16 bytes |
+| `CtrMode128<AesCipher>` | 16, 24, or 32 bytes | 16 bytes |
+| `CtrMode128<SM4Cipher>` | 16 bytes | 16 bytes |
 
-CTR increments the full 128-bit counter in big-endian order.
+`CtrMode128<T>` increments the whole 16-byte counter block as a big-endian number.
 
 ```csharp
 using System.Security.Cryptography;
@@ -59,10 +73,36 @@ using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
 
 byte[] key = RandomNumberGenerator.GetBytes(32);
-byte[] counter = RandomNumberGenerator.GetBytes(16);
-byte[] input = "message"u8.ToArray();
-byte[] output = new byte[input.Length];
+byte[] initialCounter = RandomNumberGenerator.GetBytes(16);
+byte[] plaintext = "message"u8.ToArray();
+byte[] ciphertext = new byte[plaintext.Length];
+byte[] recovered = new byte[ciphertext.Length];
 
-using CtrMode128<AesCipher> ctr = CtrMode128<AesCipher>.Create(key, counter);
-ctr.Xor(input, output);
+using (CtrMode128<AesCipher> encryptor = CtrMode128<AesCipher>.Create(key, initialCounter))
+{
+    encryptor.Xor(plaintext, ciphertext);
+}
+
+using CtrMode128<AesCipher> decryptor = CtrMode128<AesCipher>.Create(key, initialCounter);
+decryptor.Xor(ciphertext, recovered);
+```
+
+## Generic code
+
+All the stream ciphers implement `IStreamCipher`:
+
+```csharp
+using CryptoBase.Abstractions.Ciphers;
+
+static async Task XorStreamAsync(IStreamCipher cipher, Stream source, Stream destination)
+{
+    byte[] buffer = new byte[81920];
+    int read;
+
+    while ((read = await source.ReadAsync(buffer)) > 0)
+    {
+        cipher.Xor(buffer.AsSpan(0, read), buffer.AsSpan(0, read));
+        await destination.WriteAsync(buffer.AsMemory(0, read));
+    }
+}
 ```
