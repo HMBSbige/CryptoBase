@@ -129,7 +129,6 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 		int macLength = TMac.MacLength;
 		int inputLength = checked(macLength + info.Length + 1);
 		using CryptoBuffer<byte> inputBuffer = CryptoBuffer<byte>.ShouldUsePool(inputLength) ? new CryptoBuffer<byte>(inputLength) : new CryptoBuffer<byte>(stackalloc byte[inputLength]);
-		using CryptoBuffer<byte> lastBlock = new(stackalloc byte[macLength]);
 
 		Span<byte> blockInput = inputBuffer.Span;
 		Span<byte> previous = blockInput.Slice(0, macLength);
@@ -147,8 +146,9 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 
 			if (remainingOutput.Length < macLength)
 			{
-				mac.GetMacAndReset(lastBlock.Span);
-				lastBlock.Span.Slice(0, remainingOutput.Length).CopyTo(remainingOutput);
+				// T(i - 1) is no longer needed, so the truncated last block reuses its buffer.
+				mac.GetMacAndReset(previous);
+				previous.Slice(0, remainingOutput.Length).CopyTo(remainingOutput);
 				return;
 			}
 
