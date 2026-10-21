@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Aead;
 using System.Security.Cryptography;
 
@@ -41,16 +42,21 @@ public class ChaCha20Poly1305Test
 		byte[] plaintext = TestUtils.CreateDeterministicSource(length);
 		byte[] expectedCiphertext = new byte[length];
 		byte[] expectedTag = new byte[16];
-		byte[] ciphertext = inPlace ? plaintext.ToArray() : new byte[length];
-		byte[] tag = new byte[16];
-		byte[] decrypted = inPlace ? ciphertext : new byte[length];
 		expected.Encrypt(nonce, plaintext, expectedCiphertext, expectedTag, associatedData);
 
-		crypto.Encrypt(nonce, inPlace ? ciphertext : plaintext, ciphertext, tag, associatedData);
+		await VerifyEncryptAndDecrypt(crypto, nonce, plaintext, associatedData, inPlace, expectedCiphertext, expectedTag);
+	}
+
+	internal static async Task VerifyEncryptAndDecrypt<TCipher>(TCipher cipher, byte[] nonce, byte[] plaintext, byte[] associatedData, bool inPlace, byte[] expectedCiphertext, byte[] expectedTag) where TCipher : IAeadCipher<TCipher>
+	{
+		byte[] ciphertext = inPlace ? plaintext.ToArray() : new byte[plaintext.Length];
+		byte[] tag = new byte[TCipher.TagSize];
+		byte[] decrypted = inPlace ? ciphertext : new byte[plaintext.Length];
+		cipher.Encrypt(nonce, inPlace ? ciphertext : plaintext, ciphertext, tag, associatedData);
 
 		await Assert.That(ciphertext).IsEquivalentTo(expectedCiphertext, CollectionOrdering.Matching);
 		await Assert.That(tag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
-		await Assert.That(crypto.TryDecrypt(nonce, ciphertext, tag, decrypted, associatedData)).IsTrue();
+		await Assert.That(cipher.TryDecrypt(nonce, ciphertext, tag, decrypted, associatedData)).IsTrue();
 		await Assert.That(decrypted).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
 	}
 }

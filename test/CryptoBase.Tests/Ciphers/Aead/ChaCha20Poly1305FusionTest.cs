@@ -119,14 +119,7 @@ public class ChaCha20Poly1305FusionTest
 			using TCipher fresh = TCipher.Create(key);
 			fresh.Encrypt(nonce, plaintext, expectedCiphertext, expectedTag, associatedData);
 
-			byte[] ciphertext = inPlace ? plaintext.ToArray() : new byte[length];
-			byte[] tag = new byte[TCipher.TagSize];
-			byte[] decrypted = inPlace ? ciphertext : new byte[length];
-			cipher.Encrypt(nonce, inPlace ? ciphertext : plaintext, ciphertext, tag, associatedData);
-			await Assert.That(ciphertext).IsEquivalentTo(expectedCiphertext, CollectionOrdering.Matching);
-			await Assert.That(tag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
-			await Assert.That(cipher.TryDecrypt(nonce, ciphertext, tag, decrypted, associatedData)).IsTrue();
-			await Assert.That(decrypted).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
+			await ChaCha20Poly1305Test.VerifyEncryptAndDecrypt(cipher, nonce, plaintext, associatedData, inPlace, expectedCiphertext, expectedTag);
 		}
 	}
 

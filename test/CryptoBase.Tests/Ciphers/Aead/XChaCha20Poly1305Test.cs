@@ -41,14 +41,6 @@ public class XChaCha20Poly1305Test
 		byte[] expectedTag = new byte[XChaCha20Poly1305Cipher.TagSize];
 		Poly1305Algorithm.Mac(keyStream.AsSpan(0, Poly1305Algorithm.KeyLengthInBytes), macInput, expectedTag);
 
-		byte[] ciphertext = inPlace ? plaintext.ToArray() : new byte[length];
-		byte[] tag = new byte[XChaCha20Poly1305Cipher.TagSize];
-		byte[] decrypted = inPlace ? ciphertext : new byte[length];
-		crypto.Encrypt(nonce, inPlace ? ciphertext : plaintext, ciphertext, tag, associatedData);
-
-		await Assert.That(ciphertext).IsEquivalentTo(expectedCiphertext, CollectionOrdering.Matching);
-		await Assert.That(tag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
-		await Assert.That(crypto.TryDecrypt(nonce, ciphertext, tag, decrypted, associatedData)).IsTrue();
-		await Assert.That(decrypted).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
+		await ChaCha20Poly1305Test.VerifyEncryptAndDecrypt(crypto, nonce, plaintext, associatedData, inPlace, expectedCiphertext, expectedTag);
 	}
 }
