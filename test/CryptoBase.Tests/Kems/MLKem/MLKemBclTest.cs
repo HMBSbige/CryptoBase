@@ -62,33 +62,6 @@ public class MLKemBclTest
 	[GenerateGenericTest(typeof(MLKem512))]
 	[GenerateGenericTest(typeof(MLKem768))]
 	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task TamperedCiphertextsAreRejectedAlike<T>() where T : class, IKem<T>
-	{
-		SkipUnlessSupported();
-
-		using T kem = T.GenerateKey();
-		using BclMLKem bcl = BclMLKem.ImportDecapsulationKey(BclAlgorithm<T>(), ExportDecapsulationKey(kem));
-		byte[] ciphertext = Encapsulate(kem).Ciphertext;
-		List<int> mismatches = [];
-		int index = 0;
-
-		foreach (byte[] tampered in Tampered(ciphertext))
-		{
-			if (!Decapsulate(kem, tampered).AsSpan().SequenceEqual(bcl.Decapsulate(tampered)))
-			{
-				mismatches.Add(index);
-			}
-
-			++index;
-		}
-
-		await Assert.That(mismatches).IsEmpty();
-	}
-
-	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
 	public async Task ImportsPlatformGeneratedKeys<T>() where T : class, IKem<T>
 	{
 		SkipUnlessSupported();

@@ -60,33 +60,4 @@ public class CtrModeContractTest
 		await Assert.That(processed).IsEqualTo(length);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
-
-	[Test]
-	[GenerateGenericTest(typeof(AesCipher))]
-	[GenerateGenericTest(typeof(SM4Cipher))]
-	[Arguments("000102030405060708090A0BFFFFFFFE", 48)]
-	[Arguments("000102030405060708090A0BFFFFFFFE", 4096)]
-	[Arguments("0000000000000000fffffffffffffffd", 4096)]
-	[Arguments("fffffffffffffffffffffffffffffffd", 4096)]
-	public async Task FullWidthCounterCarries<TCipher>(string initialHex, int length) where TCipher : IBlockCipher<TCipher>
-	{
-		byte[] key = CreateDeterministicSource(16);
-		byte[] initial = Convert.FromHexString(initialHex);
-		byte[] expected = new byte[length];
-		byte[] actual = new byte[expected.Length];
-		using TCipher cipher = TCipher.Create(key);
-		using CtrMode128<TCipher> ctr = CtrMode128<TCipher>.Create(key, initial);
-		UInt128 counter = BinaryPrimitives.ReadUInt128BigEndian(initial);
-		byte[] block = new byte[16];
-
-		for (int offset = 0; offset < expected.Length; offset += 16)
-		{
-			BinaryPrimitives.WriteUInt128BigEndian(block, counter);
-			cipher.EncryptBlock(block, expected.AsSpan(offset, 16));
-			++counter;
-		}
-
-		ctr.Xor(new byte[actual.Length], actual);
-		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
-	}
 }

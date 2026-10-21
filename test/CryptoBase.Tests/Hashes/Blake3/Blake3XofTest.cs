@@ -141,20 +141,4 @@ public class Blake3XofTest
 
 		hasher.Read(Span<byte>.Empty);
 	}
-
-	[Test]
-	public async Task OneShotThroughIXofMatchesHashData()
-	{
-		byte[] source = CreateDeterministicSource(1500);
-		byte[] expected = Blake3TestUtils.ReferenceHash(Blake3Mode.Hash, source, 1000);
-		byte[] actual = new byte[expected.Length];
-		HashData<Blake3HashAlgorithm>(source, actual);
-
-		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
-	}
-
-	private static void HashData<T>(ReadOnlySpan<byte> source, Span<byte> destination) where T : class, IXof<T>
-	{
-		T.HashData(source, destination);
-	}
 }

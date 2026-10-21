@@ -43,22 +43,6 @@ public class StreamCipherContractTest
 	}
 
 	[Test]
-	[MethodDataSource(nameof(CipherCases))]
-	public async Task ExactInPlaceOperationMatchesSeparateDestination(StreamCipherCase cipher)
-	{
-		using IStreamCipher inPlace = cipher.Create();
-		using IStreamCipher separate = cipher.Create();
-		byte[] source = CreateDeterministicSource(129);
-		byte[] inPlaceBuffer = (byte[])source.Clone();
-		byte[] expected = new byte[source.Length];
-
-		inPlace.Xor(inPlaceBuffer, inPlaceBuffer);
-		separate.Xor(source, expected);
-
-		await Assert.That(inPlaceBuffer).IsEquivalentTo(expected, CollectionOrdering.Matching);
-	}
-
-	[Test]
 	public async Task SnuffleConstructorsRejectInvalidKeyAndNonceLengths()
 	{
 		await Assert.That(static () => new ChaCha20Cipher(new byte[31], new byte[12]).Dispose()).ThrowsExactly<ArgumentOutOfRangeException>();

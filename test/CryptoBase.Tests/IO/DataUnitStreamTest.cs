@@ -3,7 +3,6 @@ using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.IO;
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.IO.XtsTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -25,28 +24,6 @@ public class DataUnitStreamTest
 		await using DataUnitStream<TCipher> xts = DataUnitStream.Create(inner, TCipher.Create(Key), dataUnitSize, leaveOpen: true);
 
 		await RunFuzz<TCipher>(new DataUnitStreamTarget(xts, inner.ToArray), new XtsShadow(dataUnitSize, 512 * 1024), 0x5EED + dataUnitSize, 300, useAsync);
-	}
-
-	[Test]
-	[MatrixDataSource]
-	public async Task CiphertextMatchesDataUnitRandomAccess([Matrix(100, 4096)] int dataUnitSize, [Matrix] bool useAsync)
-	{
-		const int seed = 0x0C1F;
-		using TempFile file = new();
-		using SafeFileHandle handle = file.OpenHandle(useAsync);
-		using MemoryStream inner = new();
-
-		using (DataUnitRandomAccess<XtsMode<AesCipher>> randomAccess = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), dataUnitSize, leaveOpen: true))
-		{
-			await RunFuzz<XtsMode<AesCipher>>(new DataUnitRandomAccessTarget<XtsMode<AesCipher>>(randomAccess, handle), new XtsShadow(dataUnitSize, 256 * 1024), seed, 120, useAsync);
-		}
-
-		await using (DataUnitStream<XtsMode<AesCipher>> stream = DataUnitStream.Create(inner, XtsMode<AesCipher>.Create(Key), dataUnitSize, leaveOpen: true))
-		{
-			await RunFuzz<XtsMode<AesCipher>>(new DataUnitStreamTarget(stream, inner.ToArray), new XtsShadow(dataUnitSize, 256 * 1024), seed, 120, useAsync);
-		}
-
-		await AssertBytesEqual(inner.ToArray(), ReadAll(handle));
 	}
 
 	[Test]

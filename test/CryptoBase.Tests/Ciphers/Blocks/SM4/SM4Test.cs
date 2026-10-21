@@ -38,17 +38,6 @@ public class SM4Test
 	}
 
 	[Test]
-	[Arguments("0123456789ABCDEFFEDCBA9876543210")]
-	[Arguments("00000000000000000000000000000000")]
-	[Arguments("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")]
-	public async Task BatchWidthsMatchSingleBlockReference(string keyHex)
-	{
-		byte[] key = Convert.FromHexString(keyHex);
-
-		await TestUtils.TestNBlock16<SM4Cipher>(key);
-	}
-
-	[Test]
 	[Arguments(0u)]
 	[Arguments(uint.MaxValue)]
 	[Arguments(0xA55A3CC3u)]

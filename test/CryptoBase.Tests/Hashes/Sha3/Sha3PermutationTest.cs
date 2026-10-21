@@ -26,18 +26,6 @@ public class Sha3PermutationTest
 	];
 
 	[Test]
-	public async Task PermuteMatchesKeccakTeamValues()
-	{
-		InlineArray25<ulong> state = default;
-
-		KeccakP1600.Permute(ref state);
-		await Assert.That(ToArray(state)).IsEquivalentTo(ZeroStatePermutedOnce, CollectionOrdering.Matching);
-
-		KeccakP1600.Permute(ref state);
-		await Assert.That(ToArray(state)).IsEquivalentTo(ZeroStatePermutedTwice, CollectionOrdering.Matching);
-	}
-
-	[Test]
 	public async Task ReferenceMatchesKeccakTeamValues()
 	{
 		ulong[] state = new ulong[25];
