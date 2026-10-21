@@ -157,7 +157,7 @@ public sealed partial class Base32Encoding
 		GetDecodeTable(alphabetKind, out Vector128<byte> table0, out Vector128<byte> table1, out Vector128<byte> table2, out Vector128<byte> table3);
 		Vector128<byte> extract = Vector128.Create(4, 3, 2, 1, 0, 12, 11, 10, 9, 8, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);
 
-		int blockCount = Math.Min(fullLength / 16, destination.Length / 10);
+		int blockCount = Math.Min(fullLength >> 4, destination.Length / 10);
 		ref T sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int groupCount = blockCount >> 2;

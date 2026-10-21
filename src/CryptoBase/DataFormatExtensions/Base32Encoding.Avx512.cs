@@ -573,7 +573,7 @@ public sealed partial class Base32Encoding
 	{
 		Vector256<byte> low = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexDecodeLowVector : Avx512VlRfcDecodeLowVector;
 		Vector256<byte> high = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexDecodeHighVector : Avx512VlRfcDecodeHighVector;
-		int blockCount = Math.Min(fullLength / 32, destination.Length / 20);
+		int blockCount = Math.Min(fullLength >> 5, destination.Length / 20);
 		ref T sourcePointer = ref MemoryMarshal.GetReference(source);
 		ref byte destinationPointer = ref MemoryMarshal.GetReference(destination);
 		int pairCount = blockCount >> 1;
