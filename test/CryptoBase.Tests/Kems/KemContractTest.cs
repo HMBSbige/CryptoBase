@@ -338,10 +338,7 @@ public class KemContractTest
 	[GenerateGenericTest(typeof(MLKem1024))]
 	public async Task StaysWithinBuffers<T>() where T : class, IKem<T>
 	{
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		using T generated = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(generated);

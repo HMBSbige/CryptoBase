@@ -907,10 +907,7 @@ public class MLDsaKernelTest
 	{
 		SkipUnlessSupported(kernel);
 
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		Random random = new(19);
 		int[] f = RandomInts(random, N, Q);

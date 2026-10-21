@@ -79,10 +79,7 @@ public class KeccakBatchSpongeTest
 	[CombinedDataSources]
 	public Task StaysWithinInputsAndOutputs([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
 	{
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		if (!Sha3TestUtils.IsKernelSupported(lanes))
 		{
@@ -126,10 +123,7 @@ public class KeccakBatchSpongeTest
 	[MethodDataSource(nameof(Lanes))]
 	public async Task SeededResetStaysWithinPrefixAndSuffixes(int lanes)
 	{
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		if (!Sha3TestUtils.IsKernelSupported(lanes))
 		{

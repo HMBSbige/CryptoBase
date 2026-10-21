@@ -54,10 +54,7 @@ public class Sha3SpongeTest
 	[MethodDataSource(nameof(Rates))]
 	public Task AbsorbReadsNothingPastTheInput(int rate)
 	{
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		return rate switch
 		{
@@ -76,10 +73,7 @@ public class Sha3SpongeTest
 	[MethodDataSource(nameof(Rates))]
 	public Task SqueezeWritesNothingPastTheOutput(int rate)
 	{
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		return rate switch
 		{

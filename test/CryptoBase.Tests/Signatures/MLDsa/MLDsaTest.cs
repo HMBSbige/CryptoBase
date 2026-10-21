@@ -709,10 +709,7 @@ internal class MLDsaTest
 	[GenerateGenericTest(typeof(MLDsa87))]
 	public async Task StaysWithinBuffers<T>() where T : class, IMLDsa<T>
 	{
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		using T generated = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(generated);

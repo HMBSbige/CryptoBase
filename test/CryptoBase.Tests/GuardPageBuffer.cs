@@ -24,6 +24,14 @@ public sealed unsafe partial class GuardPageBuffer : IDisposable
 
 	public static bool IsSupported => OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
 
+	public static void SkipUnlessSupported()
+	{
+		if (!IsSupported)
+		{
+			Skip.Test("Guard pages are not supported here.");
+		}
+	}
+
 	public GuardPageBuffer(int length)
 	{
 		ArgumentOutOfRangeException.ThrowIfNegative(length);

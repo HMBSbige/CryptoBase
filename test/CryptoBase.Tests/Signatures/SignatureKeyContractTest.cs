@@ -330,10 +330,7 @@ public class SignatureKeyContractTest
 	[GenerateGenericTest(typeof(MLDsa87))]
 	public async Task StaysWithinBuffers<T>() where T : class, ISignatureKey<T>
 	{
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		using T generated = GenerateKey<T>();
 		SignatureScheme scheme = SchemesOf<T>()[0];

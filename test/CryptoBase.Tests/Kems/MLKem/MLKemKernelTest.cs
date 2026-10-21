@@ -295,10 +295,7 @@ public class MLKemKernelTest
 	{
 		SkipUnlessSupported(kernel);
 
-		if (!GuardPageBuffer.IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		GuardPageBuffer.SkipUnlessSupported();
 
 		Random random = new(8);
 		short[] f = RandomPolynomial(random, Q - 1);
