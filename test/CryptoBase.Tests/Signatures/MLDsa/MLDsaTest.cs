@@ -1013,10 +1013,5 @@ internal class MLDsaTest
 		return writer.Encode();
 	}
 
-	private static byte[] ShortBuffer(int length, int shortfall)
-	{
-		return CreateGuardedBuffer(0, Math.Max(0, length - shortfall), 0);
-	}
-
 	private sealed record Buffers(byte[] Seed, byte[] PrivateKey, byte[] PublicKey, byte[] Signature, byte[] Message, byte[] Mu, byte[] Hash);
 }

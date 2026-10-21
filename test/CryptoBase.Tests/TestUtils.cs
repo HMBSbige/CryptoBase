@@ -56,6 +56,18 @@ public static class TestUtils
 		return buffer;
 	}
 
+	public static byte[] ShortBuffer(int length, int shortfall)
+	{
+		return CreateGuardedBuffer(0, Math.Max(0, length - shortfall), 0);
+	}
+
+	public static byte[] Resize(byte[] source, int delta)
+	{
+		byte[] resized = new byte[source.Length + delta];
+		source.AsSpan(0, Math.Min(source.Length, resized.Length)).CopyTo(resized);
+		return resized;
+	}
+
 	public static async Task AssertOutput(byte[] destination, byte[] expected, int written)
 	{
 		using (Assert.Multiple())

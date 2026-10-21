@@ -74,11 +74,4 @@ internal static class SignatureTestUtils
 		flipped[index] ^= (byte)(1 << index % 8);
 		return flipped;
 	}
-
-	public static byte[] Resize(byte[] source, int delta)
-	{
-		byte[] resized = new byte[source.Length + delta];
-		source.AsSpan(0, Math.Min(source.Length, resized.Length)).CopyTo(resized);
-		return resized;
-	}
 }

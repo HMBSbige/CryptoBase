@@ -376,16 +376,4 @@ public class KemContractTest
 			await Assert.That(encapsulationKeyBuffer.Span.ToArray()).IsEquivalentTo(encapsulationKey, CollectionOrdering.Matching);
 		}
 	}
-
-	private static byte[] ShortBuffer(int length, int shortfall)
-	{
-		return CreateGuardedBuffer(0, Math.Max(0, length - shortfall), 0);
-	}
-
-	private static byte[] Resize(byte[] source, int delta)
-	{
-		byte[] resized = new byte[source.Length + delta];
-		source.AsSpan(0, Math.Min(source.Length, resized.Length)).CopyTo(resized);
-		return resized;
-	}
 }

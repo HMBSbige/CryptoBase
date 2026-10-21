@@ -381,9 +381,4 @@ public class SignatureKeyContractTest
 			yield return MLDsa87.GenerateKey();
 		}
 	}
-
-	private static byte[] ShortBuffer(int length, int shortfall)
-	{
-		return CreateGuardedBuffer(0, Math.Max(0, length - shortfall), 0);
-	}
 }
