@@ -75,14 +75,6 @@ internal static partial class Crc32Vectorized
 
 		Vector128<ulong> fold128 = constants.Fold128Vector128;
 		Vector128<ulong> folded = Fold128(folded256.GetUpper(), folded256.GetLower(), fold128);
-
-		if (length >= Vector128<byte>.Count)
-		{
-			folded = Fold128(Load(ref sourceRef, 0), folded, fold128);
-			sourceRef = ref Unsafe.Add(ref sourceRef, Vector128<byte>.Count);
-			length -= Vector128<byte>.Count;
-		}
-
 		folded = FoldRemainingX86(folded, ref sourceRef, ref length, in constants);
 		bytesConsumed = source.Length - length;
 		return folded;
@@ -188,14 +180,6 @@ internal static partial class Crc32Vectorized
 
 		Vector128<ulong> fold128 = constants.Fold128Vector128;
 		Vector128<ulong> folded = Fold128(x1.GetUpper(), x1.GetLower(), fold128);
-
-		if (length >= Vector128<byte>.Count)
-		{
-			folded = Fold128(Load(ref sourceRef, 0), folded, fold128);
-			sourceRef = ref Unsafe.Add(ref sourceRef, Vector128<byte>.Count);
-			length -= Vector128<byte>.Count;
-		}
-
 		folded = FoldRemainingX86(folded, ref sourceRef, ref length, in constants);
 		bytesConsumed = source.Length - length;
 		return folded;
