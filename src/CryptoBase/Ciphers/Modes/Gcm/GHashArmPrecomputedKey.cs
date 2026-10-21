@@ -29,21 +29,13 @@ internal struct GHashArmPrecomputedKey
 	{
 		int remainingBlocks = (int)(GHash.GetPaddedLength(source.Length) / GHash.BlockSizeInBytes);
 		Debug.Assert(remainingBlocks is > 0 and <= 8);
-		ReadOnlySpan<Vector128<byte>> powers = MemoryMarshal.CreateReadOnlySpan(in Key1, 8).Slice(0, remainingBlocks);
+		ref Vector128<byte> power = ref Unsafe.AsRef(in Key1);
 		Vector128<byte> initial = AdvSimd.Arm64.ReverseElementBits(accumulator);
 		Vector128<ulong> low = default;
 		Vector128<ulong> high = default;
 		Vector128<ulong> middle = default;
-		AccumulateSegment(source, powers, ref remainingBlocks, ref initial, ref low, ref high, ref middle);
-		accumulator = AdvSimd.Arm64.ReverseElementBits(GHashArm.ReduceSchoolbookProduct(low, high, middle ^ low ^ high));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void AccumulateSegment(scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<Vector128<byte>> powers, ref int remainingBlocks, ref Vector128<byte> initial, ref Vector128<ulong> low, ref Vector128<ulong> high, ref Vector128<ulong> middle)
-	{
 		int completeLength = source.Length & -GHash.BlockSizeInBytes;
 		ref byte input = ref MemoryMarshal.GetReference(source);
-		ref Vector128<byte> power = ref MemoryMarshal.GetReference(powers);
 
 		for (int offset = 0; offset < completeLength; offset += GHash.BlockSizeInBytes)
 		{
@@ -57,7 +49,8 @@ internal struct GHashArmPrecomputedKey
 			Vector128<byte> finalBlock = Vector128.LoadPartialUnsafe(ref input, (nuint)completeLength, source.Length - completeLength);
 			Vector128<byte> block = AdvSimd.Arm64.ReverseElementBits(finalBlock) ^ initial;
 			GHashArm.AccumulateProduct(block, Unsafe.Add(ref power, --remainingBlocks), ref low, ref high, ref middle);
-			initial = default;
 		}
+
+		accumulator = AdvSimd.Arm64.ReverseElementBits(GHashArm.ReduceSchoolbookProduct(low, high, middle ^ low ^ high));
 	}
 }
