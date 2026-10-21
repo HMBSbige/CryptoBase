@@ -9,13 +9,6 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 	private const int N = MLKemConstants.N;
 	private const short Q = MLKemConstants.Q;
 
-	// 1441 · q⁻¹ mod 2^16, for the factor that ends NTT⁻¹.
-	private const short InverseNttFactorQInverse = -10079;
-
-	// Zetas[1] · 1441 · R⁻¹ mod q: the zeta of the last layer of NTT⁻¹ and the factor that ends it, in one Montgomery product.
-	private const short LastInverseZeta = 1397;
-	private const short LastInverseZetaQInverse = 5237;
-
 	public static bool IsSupported => Avx512BW.IsSupported && Vector512.IsHardwareAccelerated;
 
 	// The bounds are those of MLKemAvx2.Ntt.
@@ -399,8 +392,8 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void LastInverseButterfly(Vector512<short> x, Vector512<short> y, out Vector512<short> low, out Vector512<short> high)
 	{
-		low = MultiplyMontgomery(x + y, Vector512.Create(MLKemConstants.InverseNttFactor), Vector512.Create(InverseNttFactorQInverse));
-		high = MultiplyMontgomery(y - x, Vector512.Create(LastInverseZeta), Vector512.Create(LastInverseZetaQInverse));
+		low = MultiplyMontgomery(x + y, Vector512.Create(MLKemConstants.InverseNttFactor), Vector512.Create(MLKemConstants.InverseNttFactorQInverse));
+		high = MultiplyMontgomery(y - x, Vector512.Create(MLKemConstants.LastInverseZeta), Vector512.Create(MLKemConstants.LastInverseZetaQInverse));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

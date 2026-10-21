@@ -9,14 +9,6 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 	private const int N = MLKemConstants.N;
 	private const short Q = MLKemConstants.Q;
 
-	// c · q⁻¹ mod 2^16 for the constants c of ToMontgomery and of the end of NTT⁻¹.
-	private const short RSquaredQInverse = 20553;
-	private const short InverseNttFactorQInverse = -10079;
-
-	// Zetas[1] · 1441 · R⁻¹ mod q: the zeta of the last layer of NTT⁻¹ and the factor that ends it, in one Montgomery product.
-	private const short LastInverseZeta = 1397;
-	private const short LastInverseZetaQInverse = 5237;
-
 	public static bool IsSupported => Avx2.IsSupported;
 
 	// Each half stays in eight registers after layer 1. A product by a zeta is below 3q/4, so seven layers keep the coefficients below
@@ -60,8 +52,8 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 			ref Vector256<short> high = ref Unsafe.Add(ref low, 8);
 			Vector256<short> sum = low + high;
 			Vector256<short> difference = high - low;
-			low = MultiplyMontgomery(sum, Vector256.Create(MLKemConstants.InverseNttFactor), Vector256.Create(InverseNttFactorQInverse));
-			high = MultiplyMontgomery(difference, Vector256.Create(LastInverseZeta), Vector256.Create(LastInverseZetaQInverse));
+			low = MultiplyMontgomery(sum, Vector256.Create(MLKemConstants.InverseNttFactor), Vector256.Create(MLKemConstants.InverseNttFactorQInverse));
+			high = MultiplyMontgomery(difference, Vector256.Create(MLKemConstants.LastInverseZeta), Vector256.Create(MLKemConstants.LastInverseZetaQInverse));
 		}
 	}
 
@@ -125,7 +117,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 		for (nuint i = 0; i < N; i += 16)
 		{
 			Vector256<short> value = Vector256.LoadUnsafe(ref coefficients, i);
-			MultiplyMontgomery(value, Vector256.Create(MLKemConstants.RSquared), Vector256.Create(RSquaredQInverse)).StoreUnsafe(ref coefficients, i);
+			MultiplyMontgomery(value, Vector256.Create(MLKemConstants.RSquared), Vector256.Create(MLKemConstants.RSquaredQInverse)).StoreUnsafe(ref coefficients, i);
 		}
 	}
 

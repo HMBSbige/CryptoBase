@@ -13,8 +13,20 @@ internal static class MLKemConstants
 	// R² mod q; Montgomery multiplication by it multiplies by R.
 	internal const short RSquared = 1353;
 
+	// RSquared · q⁻¹ mod 2^16.
+	internal const short RSquaredQInverse = 20553;
+
 	// R² / 128 mod q, which ends NTT⁻¹ (Algorithm 10, line 14) by dividing by 128 and multiplying by R.
 	internal const short InverseNttFactor = 1441;
+
+	// InverseNttFactor · q⁻¹ mod 2^16.
+	internal const short InverseNttFactorQInverse = -10079;
+
+	// Zetas[1] · InverseNttFactor · R⁻¹ mod q and its product with q⁻¹ mod 2^16: the zeta of the last layer of NTT⁻¹ and the factor
+	// that ends it, which MLKemAvx2 and MLKemAvx512 apply in one Montgomery product.
+	internal const short LastInverseZeta = 1397;
+
+	internal const short LastInverseZetaQInverse = 5237;
 
 	// 2^26 / q rounded: (a · 20159 + 2^25) >> 26 is a / q rounded for every 16-bit a.
 	internal const int BarrettMultiplier = 20159;
