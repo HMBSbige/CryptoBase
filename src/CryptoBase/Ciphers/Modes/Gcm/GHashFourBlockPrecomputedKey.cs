@@ -9,11 +9,6 @@ internal struct GHashFourBlockPrecomputedKey : IGHashPowers
 	private Vector128<byte> _key3;
 	private Vector128<byte> _key4;
 
-	internal GHashFourBlockPrecomputedKey(Vector128<byte> key)
-	{
-		Initialize(key);
-	}
-
 	internal void Initialize(Vector128<byte> key)
 	{
 		_key1 = key;

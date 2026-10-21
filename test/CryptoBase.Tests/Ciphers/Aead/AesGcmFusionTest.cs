@@ -288,7 +288,8 @@ public class AesGcmFusionTest
 	{
 		AesCipherArm cipher = AesCipherArm.Create(key);
 		Vector128<byte> tagMask = default;
-		GHashArmPrecomputedKey powers = new(AdvSimd.Arm64.ReverseElementBits(hashKey));
+		GHashArmPrecomputedKey powers = default;
+		powers.Initialize(AdvSimd.Arm64.ReverseElementBits(hashKey));
 		accumulator = AdvSimd.Arm64.ReverseElementBits(accumulator);
 
 		try
@@ -309,7 +310,8 @@ public class AesGcmFusionTest
 	private static int TransformX86Kernel<TDirection>(int blocksPerBatch, byte[] key, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, Vector128<byte> hashKey) where TDirection : struct, IBlockDirection
 	{
 		AesCipherX86 cipher = AesCipherX86.Create(key);
-		GHashVector128PrecomputedKey powers = new(hashKey.ReverseEndianness128());
+		GHashVector128PrecomputedKey powers = default;
+		powers.Initialize(hashKey.ReverseEndianness128());
 		accumulator = accumulator.ReverseEndianness128();
 
 		try

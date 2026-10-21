@@ -11,11 +11,6 @@ internal struct GHashArmPrecomputedKey
 	internal Vector128<byte> Key7;
 	internal Vector128<byte> Key8;
 
-	internal GHashArmPrecomputedKey(Vector128<byte> internalKey)
-	{
-		Initialize(internalKey);
-	}
-
 	// internalKey must already have the bits in each byte reversed.
 	internal void Initialize(Vector128<byte> internalKey)
 	{

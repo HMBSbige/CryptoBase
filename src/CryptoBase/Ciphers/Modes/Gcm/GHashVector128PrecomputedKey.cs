@@ -29,11 +29,6 @@ internal struct GHashVector128PrecomputedKey : IGHashPowers
 	private Vector128<byte> _keyX7;
 	private Vector128<byte> _keyX8;
 
-	internal GHashVector128PrecomputedKey(Vector128<byte> key)
-	{
-		Initialize(key);
-	}
-
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal void Initialize(Vector128<byte> key)
 	{

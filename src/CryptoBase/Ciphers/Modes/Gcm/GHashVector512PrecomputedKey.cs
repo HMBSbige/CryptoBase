@@ -22,11 +22,6 @@ internal struct GHashVector512PrecomputedKey : IGHashPowers
 	private Vector512<byte> _key60595857;
 	private Vector512<byte> _key64636261;
 
-	internal GHashVector512PrecomputedKey(Vector128<byte> key)
-	{
-		Initialize(key);
-	}
-
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal void Initialize(Vector128<byte> key)
 	{
