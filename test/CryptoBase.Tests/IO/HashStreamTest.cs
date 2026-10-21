@@ -2,6 +2,7 @@ using CryptoBase.Hashes.Blake3;
 using CryptoBase.IO;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using Sha256Hasher = CryptoBase.Hashes.HashAlgorithm<CryptoBase.Hashes.Sha256.Sha256HashAlgorithm>;
 
@@ -10,8 +11,6 @@ namespace CryptoBase.Tests.IO;
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class HashStreamTest
 {
-	private static readonly int[] ChunkSizes = [1, 7, 13, 509, 4099];
-
 	[Test]
 	[MatrixDataSource]
 	public async Task ReadHashesExactlyTheBytesRead([Matrix] bool useAsync)
@@ -20,21 +19,8 @@ public class HashStreamTest
 		byte[] expected = SHA256.HashData(source);
 		using YieldingMemoryStream inner = new(source, 3001);
 		using HashStream<Sha256Hasher> hashing = HashStream.Create(inner, Sha256Hasher.Create());
-		using MemoryStream output = new();
-		byte[] buffer = new byte[ChunkSizes[^1]];
 
-		for (int i = 0; ; ++i)
-		{
-			Memory<byte> chunk = buffer.AsMemory(0, ChunkSizes[i % ChunkSizes.Length]);
-			int read = useAsync ? await hashing.ReadAsync(chunk) : hashing.Read(chunk.Span);
-
-			if (read is 0)
-			{
-				break;
-			}
-
-			output.Write(buffer, 0, read);
-		}
+		byte[] output = await ReadInChunksAsync(hashing, useAsync);
 
 		byte[] actual = new byte[Sha256Hasher.HashLength];
 		int written = hashing.GetHashAndReset(actual);
@@ -43,7 +29,7 @@ public class HashStreamTest
 		{
 			await Assert.That(written).IsEqualTo(expected.Length);
 			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
-			await Assert.That(output.ToArray()).IsEquivalentTo(source, CollectionOrdering.Matching);
+			await Assert.That(output).IsEquivalentTo(source, CollectionOrdering.Matching);
 		}
 	}
 
@@ -56,22 +42,7 @@ public class HashStreamTest
 		using YieldingMemoryStream inner = new();
 		using HashStream<Sha256Hasher> hashing = HashStream.Create(inner, Sha256Hasher.Create(), true);
 
-		for (int offset = 0, i = 0; offset < source.Length; ++i)
-		{
-			int size = Math.Min(ChunkSizes[i % ChunkSizes.Length], source.Length - offset);
-			ReadOnlyMemory<byte> chunk = source.AsMemory(offset, size);
-
-			if (useAsync)
-			{
-				await hashing.WriteAsync(chunk);
-			}
-			else
-			{
-				hashing.Write(chunk.Span);
-			}
-
-			offset += size;
-		}
+		await WriteInChunksAsync(hashing, source, useAsync);
 
 		byte[] actual = new byte[Sha256Hasher.HashLength];
 		hashing.GetCurrentHash(actual);
@@ -93,14 +64,7 @@ public class HashStreamTest
 		using MemoryStream destination = new();
 		using HashStream<Sha256Hasher> hashing = HashStream.Create(inner, Sha256Hasher.Create());
 
-		if (useAsync)
-		{
-			await hashing.CopyToAsync(destination);
-		}
-		else
-		{
-			hashing.CopyTo(destination);
-		}
+		await CopyToAsync(hashing, destination, useAsync);
 
 		byte[] actual = new byte[Sha256Hasher.HashLength];
 		hashing.GetCurrentHash(actual);
@@ -123,14 +87,7 @@ public class HashStreamTest
 		using MemoryStream inner = new();
 		using HashStream<Blake3HashAlgorithm> hashing = HashStream.Create(inner, Blake3HashAlgorithm.Create(), true);
 
-		if (useAsync)
-		{
-			await input.CopyToAsync(hashing);
-		}
-		else
-		{
-			input.CopyTo(hashing);
-		}
+		await CopyToAsync(input, hashing, useAsync);
 
 		byte[] actual = new byte[Blake3HashAlgorithm.HashLength];
 		hashing.GetCurrentHash(actual);
@@ -190,14 +147,7 @@ public class HashStreamTest
 		using MemoryStream writeInner = new();
 		using HashStream<Sha256Hasher> writer = HashStream.Create(writeInner, Sha256Hasher.Create(), true);
 
-		if (useAsync)
-		{
-			await writer.WriteAsync(buffer, offset, read);
-		}
-		else
-		{
-			writer.Write(buffer, offset, read);
-		}
+		await WriteAsync(writer, buffer, offset, read, useAsync);
 
 		byte[] readHash = new byte[Sha256Hasher.HashLength];
 		byte[] writeHash = new byte[Sha256Hasher.HashLength];
@@ -326,16 +276,8 @@ public class HashStreamTest
 		Sha256Hasher hasher = Sha256Hasher.Create();
 		HashStream<Sha256Hasher> hashing = HashStream.Create(inner, hasher, leaveOpen);
 
-		if (useAsync)
-		{
-			await hashing.DisposeAsync();
-			await hashing.DisposeAsync();
-		}
-		else
-		{
-			hashing.Dispose();
-			hashing.Dispose();
-		}
+		await DisposeAsync(hashing, useAsync);
+		await DisposeAsync(hashing, useAsync);
 
 		using (Assert.Multiple())
 		{

@@ -1,6 +1,7 @@
 using CryptoBase.IO;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using HmacSha256 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha256.Sha256HashAlgorithm>;
 using HmacSha512 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha512.Sha512HashAlgorithm>;
@@ -10,8 +11,6 @@ namespace CryptoBase.Tests.IO;
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class MacStreamTest
 {
-	private static readonly int[] ChunkSizes = [1, 7, 13, 509, 4099];
-
 	// Longer than the SHA-256 block size, so HMAC hashes the key first.
 	private static readonly byte[] Key = CreateDeterministicSource(97);
 
@@ -23,21 +22,8 @@ public class MacStreamTest
 		byte[] expected = HMACSHA256.HashData(Key, source);
 		using YieldingMemoryStream inner = new(source, 3001);
 		using MacStream<HmacSha256> authenticating = MacStream.Create(inner, HmacSha256.Create(Key));
-		using MemoryStream output = new();
-		byte[] buffer = new byte[ChunkSizes[^1]];
 
-		for (int i = 0; ; ++i)
-		{
-			Memory<byte> chunk = buffer.AsMemory(0, ChunkSizes[i % ChunkSizes.Length]);
-			int read = useAsync ? await authenticating.ReadAsync(chunk) : authenticating.Read(chunk.Span);
-
-			if (read is 0)
-			{
-				break;
-			}
-
-			output.Write(buffer, 0, read);
-		}
+		byte[] output = await ReadInChunksAsync(authenticating, useAsync);
 
 		byte[] actual = new byte[HmacSha256.MacLength];
 		int written = authenticating.GetMacAndReset(actual);
@@ -46,7 +32,7 @@ public class MacStreamTest
 		{
 			await Assert.That(written).IsEqualTo(expected.Length);
 			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
-			await Assert.That(output.ToArray()).IsEquivalentTo(source, CollectionOrdering.Matching);
+			await Assert.That(output).IsEquivalentTo(source, CollectionOrdering.Matching);
 		}
 	}
 
@@ -59,22 +45,7 @@ public class MacStreamTest
 		using YieldingMemoryStream inner = new();
 		using MacStream<HmacSha256> authenticating = MacStream.Create(inner, HmacSha256.Create(Key), true);
 
-		for (int offset = 0, i = 0; offset < source.Length; ++i)
-		{
-			int size = Math.Min(ChunkSizes[i % ChunkSizes.Length], source.Length - offset);
-			ReadOnlyMemory<byte> chunk = source.AsMemory(offset, size);
-
-			if (useAsync)
-			{
-				await authenticating.WriteAsync(chunk);
-			}
-			else
-			{
-				authenticating.Write(chunk.Span);
-			}
-
-			offset += size;
-		}
+		await WriteInChunksAsync(authenticating, source, useAsync);
 
 		byte[] actual = new byte[HmacSha256.MacLength];
 		authenticating.GetCurrentMac(actual);
@@ -96,14 +67,7 @@ public class MacStreamTest
 		using MemoryStream destination = new();
 		using MacStream<HmacSha256> authenticating = MacStream.Create(inner, HmacSha256.Create(Key));
 
-		if (useAsync)
-		{
-			await authenticating.CopyToAsync(destination);
-		}
-		else
-		{
-			authenticating.CopyTo(destination);
-		}
+		await CopyToAsync(authenticating, destination, useAsync);
 
 		byte[] actual = new byte[HmacSha256.MacLength];
 		authenticating.GetCurrentMac(actual);
@@ -125,14 +89,7 @@ public class MacStreamTest
 		using MemoryStream inner = new();
 		using MacStream<HmacSha512> authenticating = MacStream.Create(inner, HmacSha512.Create(Key), true);
 
-		if (useAsync)
-		{
-			await input.CopyToAsync(authenticating);
-		}
-		else
-		{
-			input.CopyTo(authenticating);
-		}
+		await CopyToAsync(input, authenticating, useAsync);
 
 		byte[] actual = new byte[HmacSha512.MacLength];
 		authenticating.GetCurrentMac(actual);
@@ -192,14 +149,7 @@ public class MacStreamTest
 		using MemoryStream writeInner = new();
 		using MacStream<HmacSha256> writer = MacStream.Create(writeInner, HmacSha256.Create(Key), true);
 
-		if (useAsync)
-		{
-			await writer.WriteAsync(buffer, offset, read);
-		}
-		else
-		{
-			writer.Write(buffer, offset, read);
-		}
+		await WriteAsync(writer, buffer, offset, read, useAsync);
 
 		byte[] readMac = new byte[HmacSha256.MacLength];
 		byte[] writeMac = new byte[HmacSha256.MacLength];
@@ -328,16 +278,8 @@ public class MacStreamTest
 		HmacSha256 mac = HmacSha256.Create(Key);
 		MacStream<HmacSha256> authenticating = MacStream.Create(inner, mac, leaveOpen);
 
-		if (useAsync)
-		{
-			await authenticating.DisposeAsync();
-			await authenticating.DisposeAsync();
-		}
-		else
-		{
-			authenticating.Dispose();
-			authenticating.Dispose();
-		}
+		await DisposeAsync(authenticating, useAsync);
+		await DisposeAsync(authenticating, useAsync);
 
 		using (Assert.Multiple())
 		{

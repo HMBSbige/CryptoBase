@@ -4,6 +4,7 @@ using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.IO;
 using System.Diagnostics.CodeAnalysis;
+using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.IO.XtsTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
@@ -42,16 +43,8 @@ public class DataUnitStreamTest
 		{
 			await using DataUnitStream<TCipher> xts = DataUnitStream.Create(inner, TCipher.Create(Key), unit, first);
 
-			if (useAsync)
-			{
-				await xts.WriteAsync(plaintext);
-				await xts.FlushAsync();
-			}
-			else
-			{
-				xts.Write(plaintext);
-				xts.Flush();
-			}
+			await WriteAsync(xts, plaintext, useAsync);
+			await FlushAsync(xts, useAsync);
 
 			byte[] actual = new byte[padded.Length + 5];
 			PrepareDestination(actual);
@@ -278,14 +271,7 @@ public class DataUnitStreamTest
 			await Assert.That(inner.Length).IsZero();
 		}
 
-		if (useAsync)
-		{
-			await xts.DisposeAsync();
-		}
-		else
-		{
-			xts.Dispose();
-		}
+		await DisposeAsync(xts, useAsync);
 
 		await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
 	}
@@ -370,14 +356,7 @@ public class DataUnitStreamTest
 		byte[] destination = new byte[320];
 		PrepareDestination(destination);
 
-		if (useAsync)
-		{
-			await xts.WriteAsync(source, 10, 230);
-		}
-		else
-		{
-			xts.Write(source, 10, 230);
-		}
+		await WriteAsync(xts, source, 10, 230, useAsync);
 
 		xts.Position = 0;
 		int read = useAsync ? await xts.ReadAsync(destination, 7, 310) : xts.Read(destination, 7, 310);
@@ -410,18 +389,9 @@ public class DataUnitStreamTest
 		using MemoryStream destination = new();
 		await using DataUnitStream<XtsMode<SM4Cipher>> xts = DataUnitStream.Create(inner, XtsMode<SM4Cipher>.Create(Key), unit, leaveOpen: true);
 
-		if (useAsync)
-		{
-			await source.CopyToAsync(xts);
-			xts.Position = 0;
-			await xts.CopyToAsync(destination);
-		}
-		else
-		{
-			source.CopyTo(xts);
-			xts.Position = 0;
-			xts.CopyTo(destination);
-		}
+		await CopyToAsync(source, xts, useAsync);
+		xts.Position = 0;
+		await CopyToAsync(xts, destination, useAsync);
 
 		using (Assert.Multiple())
 		{
@@ -639,18 +609,6 @@ public class DataUnitStreamTest
 		}
 	}
 
-	private static async ValueTask FlushAsync(Stream stream, bool useAsync)
-	{
-		if (useAsync)
-		{
-			await stream.FlushAsync();
-		}
-		else
-		{
-			stream.Flush();
-		}
-	}
-
 	private sealed class DataUnitStreamTarget(Stream xts, Func<byte[]> readBackend) : IDataUnitTarget
 	{
 		public long GetLength()
@@ -666,17 +624,7 @@ public class DataUnitStreamTest
 		public async ValueTask<int> ReadAsync(byte[] buffer, int index, int count, long offset, bool useAsync)
 		{
 			xts.Position = offset;
-			int read;
-
-			if (useAsync)
-			{
-				read = await xts.ReadAsync(buffer.AsMemory(index, count));
-			}
-			else
-			{
-				read = xts.Read(buffer.AsSpan(index, count));
-			}
-
+			int read = useAsync ? await xts.ReadAsync(buffer.AsMemory(index, count)) : xts.Read(buffer.AsSpan(index, count));
 			await Assert.That(xts.Position).IsEqualTo(offset + read);
 			return read;
 		}
@@ -684,16 +632,7 @@ public class DataUnitStreamTest
 		public async ValueTask WriteAsync(byte[] buffer, int index, int count, long offset, bool useAsync)
 		{
 			xts.Position = offset;
-
-			if (useAsync)
-			{
-				await xts.WriteAsync(buffer.AsMemory(index, count));
-			}
-			else
-			{
-				xts.Write(buffer.AsSpan(index, count));
-			}
-
+			await StreamTestUtils.WriteAsync(xts, buffer.AsMemory(index, count), useAsync);
 			await Assert.That(xts.Position).IsEqualTo(offset + count);
 		}
 

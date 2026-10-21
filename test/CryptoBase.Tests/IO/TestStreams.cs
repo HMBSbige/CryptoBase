@@ -131,3 +131,100 @@ internal static class AppendSources
 		};
 	}
 }
+
+/// <summary>Calls the synchronous overload of a stream operation, or the asynchronous one when <c>useAsync</c> is set.</summary>
+internal static class StreamTestUtils
+{
+	private static readonly int[] ChunkSizes = [1, 7, 13, 509, 4099];
+
+	public static async Task WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, bool useAsync)
+	{
+		if (useAsync)
+		{
+			await stream.WriteAsync(buffer);
+		}
+		else
+		{
+			stream.Write(buffer.Span);
+		}
+	}
+
+	public static async Task WriteAsync(Stream stream, byte[] buffer, int offset, int count, bool useAsync)
+	{
+		if (useAsync)
+		{
+			await stream.WriteAsync(buffer, offset, count);
+		}
+		else
+		{
+			stream.Write(buffer, offset, count);
+		}
+	}
+
+	public static async Task FlushAsync(Stream stream, bool useAsync)
+	{
+		if (useAsync)
+		{
+			await stream.FlushAsync();
+		}
+		else
+		{
+			stream.Flush();
+		}
+	}
+
+	public static async Task CopyToAsync(Stream source, Stream destination, bool useAsync)
+	{
+		if (useAsync)
+		{
+			await source.CopyToAsync(destination);
+		}
+		else
+		{
+			source.CopyTo(destination);
+		}
+	}
+
+	public static async Task DisposeAsync(Stream stream, bool useAsync)
+	{
+		if (useAsync)
+		{
+			await stream.DisposeAsync();
+		}
+		else
+		{
+			stream.Dispose();
+		}
+	}
+
+	/// <summary>Reads <paramref name="stream" /> to its end in calls of varying sizes and returns the bytes read.</summary>
+	public static async Task<byte[]> ReadInChunksAsync(Stream stream, bool useAsync)
+	{
+		using MemoryStream output = new();
+		byte[] buffer = new byte[ChunkSizes[^1]];
+
+		for (int i = 0; ; ++i)
+		{
+			Memory<byte> chunk = buffer.AsMemory(0, ChunkSizes[i % ChunkSizes.Length]);
+			int read = useAsync ? await stream.ReadAsync(chunk) : stream.Read(chunk.Span);
+
+			if (read is 0)
+			{
+				return output.ToArray();
+			}
+
+			output.Write(buffer, 0, read);
+		}
+	}
+
+	/// <summary>Writes <paramref name="source" /> to <paramref name="stream" /> in calls of varying sizes.</summary>
+	public static async Task WriteInChunksAsync(Stream stream, byte[] source, bool useAsync)
+	{
+		for (int offset = 0, i = 0; offset < source.Length; ++i)
+		{
+			int size = Math.Min(ChunkSizes[i % ChunkSizes.Length], source.Length - offset);
+			await WriteAsync(stream, source.AsMemory(offset, size), useAsync);
+			offset += size;
+		}
+	}
+}
