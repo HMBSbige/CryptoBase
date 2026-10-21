@@ -22,8 +22,7 @@ public class StreamHashBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_stream = new MemoryStream
-		(RandomNumberGenerator.GetBytes(ByteLength), false);
+		_stream = new MemoryStream(RandomNumberGenerator.GetBytes(ByteLength), false);
 		_hash = GC.AllocateUninitializedArray<byte>(HashAlgorithm<Sha256HashAlgorithm>.HashLength);
 	}
 
