@@ -42,12 +42,11 @@ public abstract class XofBenchmark<TCryptoBase, TBcl, TBouncyCastle>
 
 	private byte[] _input = [];
 	private byte[] _output = [];
-	private TBouncyCastle _bouncyCastle = default!;
+	private readonly TBouncyCastle _bouncyCastle = new();
 
 	[GlobalSetup]
 	public void Setup()
 	{
-		_bouncyCastle = new TBouncyCastle();
 		_input = RandomNumberGenerator.GetBytes(Lengths.InputLength);
 		_output = new byte[Lengths.OutputLength];
 

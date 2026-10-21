@@ -39,12 +39,11 @@ public abstract class BouncyCastleHashBenchmark<TCryptoBase, TBouncyCastle>
 
 	protected byte[] Hash { get; private set; } = [];
 
-	private TBouncyCastle _bouncyCastle = default!;
+	private readonly TBouncyCastle _bouncyCastle = new();
 
 	[GlobalSetup]
 	public void Setup()
 	{
-		_bouncyCastle = new TBouncyCastle();
 		Input = RandomNumberGenerator.GetBytes(ByteLength);
 		Hash = new byte[HashAlgorithm<TCryptoBase>.HashLength];
 
