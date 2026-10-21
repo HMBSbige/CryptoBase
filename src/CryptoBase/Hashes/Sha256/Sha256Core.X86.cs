@@ -128,10 +128,11 @@ internal partial struct Sha256Core
 	private static void StoreRoundInputAvx2(Vector256<uint> words, ref InlineArray16<uint> schedule0, ref InlineArray64<uint> schedule1, int scheduleOffset, int round)
 	{
 		ref uint roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
-		Vector128<uint> constants128 = Vector128.LoadUnsafe(ref roundConstant0, (uint)round);
+		nuint roundOffset = (uint)round;
+		Vector128<uint> constants128 = Vector128.LoadUnsafe(ref roundConstant0, roundOffset);
 		Vector256<uint> roundInput = words + Vector256.Create(constants128);
 		roundInput.GetLower().StoreUnsafe(ref schedule0[scheduleOffset]);
-		roundInput.GetUpper().StoreUnsafe(ref schedule1[round]);
+		roundInput.GetUpper().StoreUnsafe(ref schedule1[0], roundOffset);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

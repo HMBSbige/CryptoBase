@@ -288,9 +288,9 @@ internal partial struct Sha512Core
 		Vector256<ulong> wordsMinus7 = ShiftOneWordAvx2(words2, words3);
 		Vector256<ulong> result = words0 + wordsMinus7 + SmallSigma0Avx2(sigma0Input);
 
-		Vector256<ulong> previous = words3.GetUpper().ToVector256Unsafe();
+		Vector256<ulong> previous = Avx2.Permute2x128(words3, words3, 0x81);
 		Vector256<ulong> previousSigma = SmallSigma1Avx2(previous);
-		result += previousSigma.GetLower().ToVector256();
+		result += previousSigma;
 
 		Vector256<ulong> dependentSigma = SmallSigma1Avx2(result);
 		// Move the low half to the upper half and zero the lower half.
