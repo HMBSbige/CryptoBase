@@ -206,7 +206,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 
 		Unsafe.SkipInit(out InlineArray2048<byte> storage);
 		Span<byte> keyStream = storage.AsSpan();
-		Span<byte> batch = keyStream.Slice(0, (source.Length + 15 & -16) + 16);
+		Span<byte> batch = keyStream.Slice(0, source.Length + 31 & -16);
 
 		try
 		{
