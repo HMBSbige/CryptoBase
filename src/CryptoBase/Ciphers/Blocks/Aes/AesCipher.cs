@@ -296,14 +296,14 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		{
 			for (int i = 0; i < length; i += BlockSize)
 			{
-				policy.Prepare1(ref src, (nuint)(offset + i)).StoreUnsafe(ref MemoryMarshal.GetReference(scratch), (nuint)i);
+				policy.Prepare1(ref src, (uint)(offset + i)).StoreUnsafe(ref MemoryMarshal.GetReference(scratch), (uint)i);
 			}
 
 			TOperation.ApplyBlocks(in _state.Software, scratch, scratch);
 
 			for (int i = 0; i < length; i += BlockSize)
 			{
-				policy.Finish1(ref src, ref dst, (nuint)(offset + i), Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(scratch), (nuint)i));
+				policy.Finish1(ref src, ref dst, (uint)(offset + i), Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(scratch), (uint)i));
 			}
 		}
 		finally
