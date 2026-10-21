@@ -149,6 +149,6 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| ML-DSA | ⚠️ |
+| ML-DSA | ✅ |
 | SLH-DSA | ⚠️ |
 | FN-DSA | ⚠️ |

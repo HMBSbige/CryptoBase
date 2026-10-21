@@ -42,6 +42,24 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
+	public static void ThrowUnsupportedSignatureScheme(string parameterName)
+	{
+		throw new ArgumentException("The key does not support the signature scheme.", parameterName);
+	}
+
+	[DoesNotReturn]
+	public static void ThrowUnsupportedHashAlgorithm(string parameterName)
+	{
+		throw new ArgumentException("The hash algorithm is not supported.", parameterName);
+	}
+
+	[DoesNotReturn]
+	public static void ThrowHashLengthMismatch(string parameterName)
+	{
+		throw new ArgumentException("The hash does not have the output length of its algorithm.", parameterName);
+	}
+
+	[DoesNotReturn]
 	public static T ThrowArgumentOutOfRangeException<T>(string? paramName = default, string? message = default)
 	{
 		throw new ArgumentOutOfRangeException(paramName, message);

@@ -1,6 +1,7 @@
 global using CryptoBase.Abstractions.Ciphers;
 global using CryptoBase.Abstractions.Hashes;
 global using CryptoBase.Abstractions.Kems;
+global using CryptoBase.Abstractions.Signatures;
 global using CryptoBase.Internal;
 global using CryptoBase.Internal.Extensions;
 global using System.Buffers.Binary;

@@ -7,6 +7,7 @@
 - [Hashes](hashes.md)
 - [MACs and key derivation](macs-and-key-derivation.md)
 - [Key encapsulation](key-encapsulation.md)
+- [Digital signatures](digital-signatures.md)
 - [Data formats](data-formats.md)
 - [Stream ciphers](stream-ciphers.md)
 - [Block ciphers and modes](block-ciphers-and-modes.md)

@@ -11,6 +11,17 @@ internal static partial class WycheproofVectors
 
 	public static IEnumerable<T> Load<T>(string fileName) where T : WycheproofTestVector
 	{
+		return Load<TestFile<T>>(fileName, typeof(T)).TestGroups.SelectMany(static group => group.Tests);
+	}
+
+	// For files whose groups hold what their tests share, such as a key.
+	public static IEnumerable<T> Load<TGroup, T>(string fileName) where TGroup : WycheproofTestGroup<T> where T : WycheproofTestVector
+	{
+		return Load<GroupFile<TGroup>>(fileName, typeof(TGroup)).TestGroups.SelectMany(static group => group.Tests.Select(group.Complete));
+	}
+
+	private static TFile Load<TFile>(string fileName, Type registeredType) where TFile : class
+	{
 		string path = Path.Combine(VectorsDirectory, fileName);
 
 		if (!File.Exists(path))
@@ -18,16 +29,17 @@ internal static partial class WycheproofVectors
 			throw new FileNotFoundException($"Wycheproof test vectors '{fileName}' were not found. Run 'git submodule update --init'.", path);
 		}
 
-		JsonTypeInfo<TestFile<T>> typeInfo = (JsonTypeInfo<TestFile<T>>)(VectorsJsonContext.Default.GetTypeInfo(typeof(TestFile<T>)) ?? throw new NotSupportedException($"{typeof(T).Name} is not registered in {nameof(VectorsJsonContext)}."));
+		JsonTypeInfo<TFile> typeInfo = (JsonTypeInfo<TFile>)(VectorsJsonContext.Default.GetTypeInfo(typeof(TFile)) ?? throw new NotSupportedException($"{registeredType.Name} is not registered in {nameof(VectorsJsonContext)}."));
 
 		using FileStream stream = File.OpenRead(path);
-		TestFile<T> file = JsonSerializer.Deserialize(stream, typeInfo) ?? throw new JsonException($"{fileName} is empty.");
-		return file.TestGroups.SelectMany(static group => group.Tests);
+		return JsonSerializer.Deserialize(stream, typeInfo) ?? throw new JsonException($"{fileName} is empty.");
 	}
 
 	private sealed record TestFile<T>(TestGroup<T>[] TestGroups);
 
 	private sealed record TestGroup<T>(T[] Tests);
+
+	private sealed record GroupFile<TGroup>(TGroup[] TestGroups);
 
 	[JsonSourceGenerationOptions
 	(
@@ -45,6 +57,9 @@ internal static partial class WycheproofVectors
 	[JsonSerializable(typeof(TestFile<MLKemEncapsTestVector>))]
 	[JsonSerializable(typeof(TestFile<MLKemKeyGenTestVector>))]
 	[JsonSerializable(typeof(TestFile<MLKemDecapsValidationTestVector>))]
+	[JsonSerializable(typeof(GroupFile<MLDsaVerifyTestGroup>))]
+	[JsonSerializable(typeof(GroupFile<MLDsaSignSeedTestGroup>))]
+	[JsonSerializable(typeof(GroupFile<MLDsaSignNoSeedTestGroup>))]
 	private sealed partial class VectorsJsonContext : JsonSerializerContext;
 
 	private sealed class HexConverter : JsonConverter<byte[]>
