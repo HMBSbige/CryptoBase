@@ -18,12 +18,7 @@ public static class StreamMacExtensions
 		/// <exception cref="ObjectDisposedException">The MAC algorithm has been disposed.</exception>
 		public void Append(Stream source)
 		{
-			ArgumentNullException.ThrowIfNull(mac);
-			ArgumentNullException.ThrowIfNull(source);
-			StreamDrain.ThrowIfNotReadable(source);
-			ThrowIfDisposed(mac);
-
-			StreamDrain.ReadToEnd(source, mac, static (m, data) => m.Append(data));
+			StreamDrain.Append(mac, source);
 		}
 
 		/// <summary>
@@ -37,17 +32,7 @@ public static class StreamMacExtensions
 		/// <exception cref="ObjectDisposedException">The MAC algorithm has been disposed.</exception>
 		public ValueTask AppendAsync(Stream source, CancellationToken cancellationToken = default)
 		{
-			ArgumentNullException.ThrowIfNull(mac);
-			ArgumentNullException.ThrowIfNull(source);
-			StreamDrain.ThrowIfNotReadable(source);
-			ThrowIfDisposed(mac);
-
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return ValueTask.FromCanceled(cancellationToken);
-			}
-
-			return StreamDrain.ReadToEndAsync(source, mac, static (m, data) => m.Append(data), cancellationToken);
+			return StreamDrain.AppendAsync(mac, source, cancellationToken);
 		}
 
 		/// <summary>
@@ -97,13 +82,6 @@ public static class StreamMacExtensions
 			// Async methods cannot take spans, so the keyed instance is created here and the async core disposes it.
 			return MacDataCoreAsync(TAlgorithm.Create(key), source, destination, cancellationToken);
 		}
-	}
-
-	// Appending an empty span changes nothing but throws once the algorithm is disposed, so a disposed algorithm fails before the stream is read;
-	// otherwise an empty stream would never reach it, and a nonempty one would be read first.
-	private static void ThrowIfDisposed<TAlgorithm>(TAlgorithm mac) where TAlgorithm : class, IMacAlgorithm<TAlgorithm>
-	{
-		mac.Append(ReadOnlySpan<byte>.Empty);
 	}
 
 	private static async ValueTask<int> MacDataCoreAsync<TAlgorithm>(TAlgorithm algorithm, Stream source, Memory<byte> destination, CancellationToken cancellationToken) where TAlgorithm : class, IMacAlgorithm<TAlgorithm>

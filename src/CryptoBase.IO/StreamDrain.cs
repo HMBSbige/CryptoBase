@@ -17,6 +17,25 @@ internal static class StreamDrain
 		}
 	}
 
+	public static void Append(IIncrementalAlgorithm algorithm, Stream source, [CallerArgumentExpression(nameof(algorithm))] string? algorithmParamName = null)
+	{
+		ThrowIfInvalid(algorithm, source, algorithmParamName);
+
+		ReadToEnd(source, algorithm, static (a, data) => a.Append(data));
+	}
+
+	public static ValueTask AppendAsync(IIncrementalAlgorithm algorithm, Stream source, CancellationToken cancellationToken, [CallerArgumentExpression(nameof(algorithm))] string? algorithmParamName = null)
+	{
+		ThrowIfInvalid(algorithm, source, algorithmParamName);
+
+		if (cancellationToken.IsCancellationRequested)
+		{
+			return ValueTask.FromCanceled(cancellationToken);
+		}
+
+		return ReadToEndAsync(source, algorithm, static (a, data) => a.Append(data), cancellationToken);
+	}
+
 	public static void ReadToEnd<TSink>(Stream source, TSink sink, Action<TSink, ReadOnlySpan<byte>> append)
 	{
 		byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
@@ -90,6 +109,16 @@ internal static class StreamDrain
 		{
 			Erase(buffer, used, completed);
 		}
+	}
+
+	private static void ThrowIfInvalid(IIncrementalAlgorithm algorithm, Stream source, string? algorithmParamName)
+	{
+		ArgumentNullException.ThrowIfNull(algorithm, algorithmParamName);
+		ArgumentNullException.ThrowIfNull(source);
+		ThrowIfNotReadable(source);
+
+		// Appending an empty span changes nothing but throws once the algorithm is disposed, so a disposed algorithm fails before any read, even on an empty stream.
+		algorithm.Append(ReadOnlySpan<byte>.Empty);
 	}
 
 	// Completed reads fill at most the first used bytes, so erasing only those keeps short streams from paying for the whole buffer. A read that throws may

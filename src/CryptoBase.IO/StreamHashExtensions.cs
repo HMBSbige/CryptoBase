@@ -18,12 +18,7 @@ public static class StreamHashExtensions
 		/// <exception cref="ObjectDisposedException">The hasher has been disposed.</exception>
 		public void Append(Stream source)
 		{
-			ArgumentNullException.ThrowIfNull(hasher);
-			ArgumentNullException.ThrowIfNull(source);
-			StreamDrain.ThrowIfNotReadable(source);
-			ThrowIfDisposed(hasher);
-
-			StreamDrain.ReadToEnd(source, hasher, static (h, data) => h.Append(data));
+			StreamDrain.Append(hasher, source);
 		}
 
 		/// <summary>
@@ -37,17 +32,7 @@ public static class StreamHashExtensions
 		/// <exception cref="ObjectDisposedException">The hasher has been disposed.</exception>
 		public ValueTask AppendAsync(Stream source, CancellationToken cancellationToken = default)
 		{
-			ArgumentNullException.ThrowIfNull(hasher);
-			ArgumentNullException.ThrowIfNull(source);
-			StreamDrain.ThrowIfNotReadable(source);
-			ThrowIfDisposed(hasher);
-
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return ValueTask.FromCanceled(cancellationToken);
-			}
-
-			return StreamDrain.ReadToEndAsync(source, hasher, static (h, data) => h.Append(data), cancellationToken);
+			return StreamDrain.AppendAsync(hasher, source, cancellationToken);
 		}
 
 		/// <summary>
@@ -93,13 +78,6 @@ public static class StreamHashExtensions
 
 			return HashDataCoreAsync<TAlgorithm>(source, destination, cancellationToken);
 		}
-	}
-
-	// Appending an empty span changes nothing but throws once the algorithm is disposed, so a disposed algorithm fails before the stream is read;
-	// otherwise an empty stream would never reach it, and a nonempty one would be read first.
-	private static void ThrowIfDisposed<TAlgorithm>(TAlgorithm hasher) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
-	{
-		hasher.Append(ReadOnlySpan<byte>.Empty);
 	}
 
 	private static async ValueTask<int> HashDataCoreAsync<TAlgorithm>(Stream source, Memory<byte> destination, CancellationToken cancellationToken) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
