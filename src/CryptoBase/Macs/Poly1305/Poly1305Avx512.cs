@@ -214,35 +214,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		h1 += m1;
 		h3 += m3;
 		h4 += m4;
-
-		Vector512<ulong> finalD2 = Avx512F.Multiply(h2.AsUInt32(), _r0);
-		Vector512<ulong> finalD3 = Avx512F.Multiply(h2.AsUInt32(), _r1);
-		Vector512<ulong> finalD4 = Avx512F.Multiply(h2.AsUInt32(), _r2);
-		Vector512<ulong> finalD0 = Avx512F.Multiply(h2.AsUInt32(), _s3);
-		Vector512<ulong> finalD1 = Avx512F.Multiply(h2.AsUInt32(), _s4);
-
-		finalD1 += Avx512F.Multiply(h0.AsUInt32(), _r1);
-		finalD2 += Avx512F.Multiply(h1.AsUInt32(), _r1);
-		finalD4 += Avx512F.Multiply(h3.AsUInt32(), _r1);
-		finalD0 += Avx512F.Multiply(h4.AsUInt32(), _s1);
-		finalD0 += Avx512F.Multiply(h0.AsUInt32(), _r0);
-		finalD1 += Avx512F.Multiply(h1.AsUInt32(), _r0);
-		finalD3 += Avx512F.Multiply(h3.AsUInt32(), _r0);
-		finalD4 += Avx512F.Multiply(h4.AsUInt32(), _r0);
-		finalD0 += Avx512F.Multiply(h3.AsUInt32(), _s2);
-		finalD1 += Avx512F.Multiply(h4.AsUInt32(), _s2);
-		finalD3 += Avx512F.Multiply(h1.AsUInt32(), _r2);
-		finalD2 += Avx512F.Multiply(h0.AsUInt32(), _r2);
-		finalD4 += Avx512F.Multiply(h1.AsUInt32(), _r3);
-		finalD3 += Avx512F.Multiply(h0.AsUInt32(), _r3);
-		finalD1 += Avx512F.Multiply(h3.AsUInt32(), _s3);
-		finalD2 += Avx512F.Multiply(h4.AsUInt32(), _s3);
-		finalD2 += Avx512F.Multiply(h3.AsUInt32(), _s4);
-		finalD3 += Avx512F.Multiply(h4.AsUInt32(), _s4);
-		finalD4 += Avx512F.Multiply(h0.AsUInt32(), _r4);
-		finalD0 += Avx512F.Multiply(h1.AsUInt32(), _s4);
-
-		_state.SetAccumulator(Vector512.Sum(finalD0), Vector512.Sum(finalD1), Vector512.Sum(finalD2), Vector512.Sum(finalD3), Vector512.Sum(finalD4));
+		SetAccumulatorFromLanes(h0.AsUInt32(), h1.AsUInt32(), h2.AsUInt32(), h3.AsUInt32(), h4.AsUInt32());
 	}
 
 	private void AppendSixteenWay(scoped ReadOnlySpan<byte> source)
@@ -404,39 +376,47 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 			remaining -= BlockSize8;
 		}
 
-		Vector512<ulong> finalD2 = Avx512F.Multiply(h2.AsUInt32(), _r0);
-		Vector512<ulong> finalD3 = Avx512F.Multiply(h2.AsUInt32(), _r1);
-		Vector512<ulong> finalD4 = Avx512F.Multiply(h2.AsUInt32(), _r2);
-		Vector512<ulong> finalD0 = Avx512F.Multiply(h2.AsUInt32(), _s3);
-		Vector512<ulong> finalD1 = Avx512F.Multiply(h2.AsUInt32(), _s4);
+		SetAccumulatorFromLanes(h0.AsUInt32(), h1.AsUInt32(), h2.AsUInt32(), h3.AsUInt32(), h4.AsUInt32());
+	}
 
-		finalD1 += Avx512F.Multiply(h0.AsUInt32(), _r1);
-		finalD2 += Avx512F.Multiply(h1.AsUInt32(), _r1);
-		finalD4 += Avx512F.Multiply(h3.AsUInt32(), _r1);
-		finalD0 += Avx512F.Multiply(h4.AsUInt32(), _s1);
-		finalD0 += Avx512F.Multiply(h0.AsUInt32(), _r0);
-		finalD1 += Avx512F.Multiply(h1.AsUInt32(), _r0);
-		finalD3 += Avx512F.Multiply(h3.AsUInt32(), _r0);
-		finalD4 += Avx512F.Multiply(h4.AsUInt32(), _r0);
-		finalD0 += Avx512F.Multiply(h3.AsUInt32(), _s2);
-		finalD1 += Avx512F.Multiply(h4.AsUInt32(), _s2);
-		finalD3 += Avx512F.Multiply(h1.AsUInt32(), _r2);
-		finalD2 += Avx512F.Multiply(h0.AsUInt32(), _r2);
-		finalD4 += Avx512F.Multiply(h1.AsUInt32(), _r3);
-		finalD3 += Avx512F.Multiply(h0.AsUInt32(), _r3);
-		finalD1 += Avx512F.Multiply(h3.AsUInt32(), _s3);
-		finalD2 += Avx512F.Multiply(h4.AsUInt32(), _s3);
-		finalD2 += Avx512F.Multiply(h3.AsUInt32(), _s4);
-		finalD3 += Avx512F.Multiply(h4.AsUInt32(), _s4);
-		finalD4 += Avx512F.Multiply(h0.AsUInt32(), _r4);
-		finalD0 += Avx512F.Multiply(h1.AsUInt32(), _s4);
+	// Multiplies each lane by its remaining power and stores the sum of the lanes as the scalar accumulator.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void SetAccumulatorFromLanes(Vector512<uint> a0, Vector512<uint> a1, Vector512<uint> a2, Vector512<uint> a3, Vector512<uint> a4)
+	{
+		Vector512<ulong> d2 = Avx512F.Multiply(a2, _r0);
+		Vector512<ulong> d3 = Avx512F.Multiply(a2, _r1);
+		Vector512<ulong> d4 = Avx512F.Multiply(a2, _r2);
+		Vector512<ulong> d0 = Avx512F.Multiply(a2, _s3);
+		Vector512<ulong> d1 = Avx512F.Multiply(a2, _s4);
 
-		ulong d0 = Vector512.Sum(finalD0);
-		ulong d1 = Vector512.Sum(finalD1);
-		ulong d2 = Vector512.Sum(finalD2);
-		ulong d3 = Vector512.Sum(finalD3);
-		ulong d4 = Vector512.Sum(finalD4);
-		_state.SetAccumulator(d0, d1, d2, d3, d4);
+		d1 += Avx512F.Multiply(a0, _r1);
+		d2 += Avx512F.Multiply(a1, _r1);
+		d4 += Avx512F.Multiply(a3, _r1);
+		d0 += Avx512F.Multiply(a4, _s1);
+		d0 += Avx512F.Multiply(a0, _r0);
+		d1 += Avx512F.Multiply(a1, _r0);
+		d3 += Avx512F.Multiply(a3, _r0);
+		d4 += Avx512F.Multiply(a4, _r0);
+		d0 += Avx512F.Multiply(a3, _s2);
+		d1 += Avx512F.Multiply(a4, _s2);
+		d3 += Avx512F.Multiply(a1, _r2);
+		d2 += Avx512F.Multiply(a0, _r2);
+		d4 += Avx512F.Multiply(a1, _r3);
+		d3 += Avx512F.Multiply(a0, _r3);
+		d1 += Avx512F.Multiply(a3, _s3);
+		d2 += Avx512F.Multiply(a4, _s3);
+		d2 += Avx512F.Multiply(a3, _s4);
+		d3 += Avx512F.Multiply(a4, _s4);
+		d4 += Avx512F.Multiply(a0, _r4);
+		d0 += Avx512F.Multiply(a1, _s4);
+
+		// Passing the sums straight to the call makes x86 spill more.
+		ulong sum0 = Vector512.Sum(d0);
+		ulong sum1 = Vector512.Sum(d1);
+		ulong sum2 = Vector512.Sum(d2);
+		ulong sum3 = Vector512.Sum(d3);
+		ulong sum4 = Vector512.Sum(d4);
+		_state.SetAccumulator(sum0, sum1, sum2, sum3, sum4);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -615,35 +595,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		Vector512<uint> a2 = (h2 + m2).AsUInt32();
 		Vector512<uint> a3 = (h3 + m3).AsUInt32();
 		Vector512<uint> a4 = (h4 + m4).AsUInt32();
-
-		Vector512<ulong> d2 = Avx512F.Multiply(a2, _r0);
-		Vector512<ulong> d3 = Avx512F.Multiply(a2, _r1);
-		Vector512<ulong> d4 = Avx512F.Multiply(a2, _r2);
-		Vector512<ulong> d0 = Avx512F.Multiply(a2, _s3);
-		Vector512<ulong> d1 = Avx512F.Multiply(a2, _s4);
-
-		d1 += Avx512F.Multiply(a0, _r1);
-		d2 += Avx512F.Multiply(a1, _r1);
-		d4 += Avx512F.Multiply(a3, _r1);
-		d0 += Avx512F.Multiply(a4, _s1);
-		d0 += Avx512F.Multiply(a0, _r0);
-		d1 += Avx512F.Multiply(a1, _r0);
-		d3 += Avx512F.Multiply(a3, _r0);
-		d4 += Avx512F.Multiply(a4, _r0);
-		d0 += Avx512F.Multiply(a3, _s2);
-		d1 += Avx512F.Multiply(a4, _s2);
-		d3 += Avx512F.Multiply(a1, _r2);
-		d2 += Avx512F.Multiply(a0, _r2);
-		d4 += Avx512F.Multiply(a1, _r3);
-		d3 += Avx512F.Multiply(a0, _r3);
-		d1 += Avx512F.Multiply(a3, _s3);
-		d2 += Avx512F.Multiply(a4, _s3);
-		d2 += Avx512F.Multiply(a3, _s4);
-		d3 += Avx512F.Multiply(a4, _s4);
-		d4 += Avx512F.Multiply(a0, _r4);
-		d0 += Avx512F.Multiply(a1, _s4);
-
-		_state.SetAccumulator(Vector512.Sum(d0), Vector512.Sum(d1), Vector512.Sum(d2), Vector512.Sum(d3), Vector512.Sum(d4));
+		SetAccumulatorFromLanes(a0, a1, a2, a3, a4);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
