@@ -1,6 +1,5 @@
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
-using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
@@ -266,29 +265,8 @@ public class AesCtrXtsOracleTest
 
 		public byte[] Oracle(byte[] iv, byte[] source, bool decrypt)
 		{
-			UInt128 tweak = BinaryPrimitives.ReadUInt128LittleEndian(_tweakCipher.EncryptEcb(iv, PaddingMode.None));
-			byte[] output = new byte[source.Length];
-			int tail = source.Length % 16;
-			int ordinaryLength = tail is 0 ? source.Length : source.Length - tail - 16;
-			int offset = 0;
-
-			for (; offset < ordinaryLength; offset += 16, tweak = MultiplyByAlpha(tweak))
-			{
-				XexBlock(tweak, source.AsSpan(offset, 16), output.AsSpan(offset, 16), decrypt);
-			}
-
-			if (tail is not 0)
-			{
-				UInt128 nextTweak = MultiplyByAlpha(tweak);
-				Span<byte> complete = stackalloc byte[16];
-				// CTS first recovers/produces the stolen block, then reconstructs its full input.
-				XexBlock(decrypt ? nextTweak : tweak, source.AsSpan(offset, 16), complete, decrypt);
-				complete.Slice(0, tail).CopyTo(output.AsSpan(offset + 16));
-				source.AsSpan(offset + 16).CopyTo(complete);
-				XexBlock(decrypt ? tweak : nextTweak, complete, output.AsSpan(offset, 16), decrypt);
-			}
-
-			return output;
+			byte[] encryptedTweak = _tweakCipher.EncryptEcb(iv, PaddingMode.None);
+			return XtsReference.Transform(encryptedTweak, source, decrypt, block => decrypt ? _dataCipher.DecryptEcb(block, PaddingMode.None) : _dataCipher.EncryptEcb(block, PaddingMode.None));
 		}
 
 		public void Dispose()
@@ -296,28 +274,6 @@ public class AesCtrXtsOracleTest
 			_cipher.Dispose();
 			_tweakCipher.Dispose();
 			_dataCipher.Dispose();
-		}
-
-		private void XexBlock(UInt128 tweak, ReadOnlySpan<byte> source, Span<byte> destination, bool decrypt)
-		{
-			Span<byte> block = stackalloc byte[16];
-			BinaryPrimitives.WriteUInt128LittleEndian(block, BinaryPrimitives.ReadUInt128LittleEndian(source) ^ tweak);
-
-			if (decrypt)
-			{
-				_dataCipher.DecryptEcb(block, destination, PaddingMode.None);
-			}
-			else
-			{
-				_dataCipher.EncryptEcb(block, destination, PaddingMode.None);
-			}
-
-			BinaryPrimitives.WriteUInt128LittleEndian(destination, BinaryPrimitives.ReadUInt128LittleEndian(destination) ^ tweak);
-		}
-
-		private static UInt128 MultiplyByAlpha(UInt128 value)
-		{
-			return value << 1 ^ (value >> 127) * 0x87u;
 		}
 	}
 }
