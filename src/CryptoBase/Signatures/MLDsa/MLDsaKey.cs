@@ -294,15 +294,12 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// ML-DSA.Sign with a given rnd, for known-answer tests.
-	[SkipLocalsInit]
 	internal int Sign(ReadOnlySpan<byte> message, ReadOnlySpan<byte> context, ReadOnlySpan<byte> randomness, Span<byte> destination)
 	{
 		ThrowIfCannotSign(context, destination);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(randomness.Length, SeedLength, nameof(randomness));
 
-		using CryptoBuffer<byte> randomnessCopy = new(stackalloc byte[SeedLength]);
-		randomness.CopyTo(randomnessCopy.Span);
-		return Sign<MLDsaKernelDispatch>(PureDomain, context, [], message, randomnessCopy.Span, destination);
+		return Sign<MLDsaKernelDispatch>(PureDomain, context, [], message, randomness, destination);
 	}
 
 	// ML-DSA.Verify (Algorithm 3).
@@ -371,15 +368,12 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// ML-DSA.Sign_internal after μ with a given rnd, for known-answer tests.
-	[SkipLocalsInit]
 	internal int SignMu(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> randomness, Span<byte> destination)
 	{
 		ThrowIfCannotSignMu(mu, destination);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(randomness.Length, SeedLength, nameof(randomness));
 
-		using CryptoBuffer<byte> randomnessCopy = new(stackalloc byte[SeedLength]);
-		randomness.CopyTo(randomnessCopy.Span);
-		return SignMu<MLDsaKernelDispatch>(mu, randomnessCopy.Span, destination);
+		return SignMu<MLDsaKernelDispatch>(mu, randomness, destination);
 	}
 
 	// ML-DSA.Verify_internal (Algorithm 8) after μ.
