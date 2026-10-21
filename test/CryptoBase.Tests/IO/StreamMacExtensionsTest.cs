@@ -223,16 +223,7 @@ public class StreamMacExtensionsTest
 		stream.Position = startOffset;
 
 		mac.Append(header);
-
-		if (useAsync)
-		{
-			await mac.AppendAsync(stream);
-		}
-		else
-		{
-			mac.Append(stream);
-		}
-
+		await AppendAsync(mac, stream, useAsync);
 		mac.Append(trailer);
 
 		await AssertCurrentMac(mac, expected);
@@ -250,25 +241,9 @@ public class StreamMacExtensionsTest
 		using MemoryStream secondStream = new(second, false);
 		byte[] firstMac = new byte[HmacSha256.MacLength];
 
-		if (useAsync)
-		{
-			await mac.AppendAsync(firstStream);
-		}
-		else
-		{
-			mac.Append(firstStream);
-		}
-
+		await AppendAsync(mac, firstStream, useAsync);
 		mac.GetMacAndReset(firstMac);
-
-		if (useAsync)
-		{
-			await mac.AppendAsync(secondStream);
-		}
-		else
-		{
-			mac.Append(secondStream);
-		}
+		await AppendAsync(mac, secondStream, useAsync);
 
 		await Assert.That(firstMac).IsEquivalentTo(HMACSHA256.HashData(Key, first), CollectionOrdering.Matching);
 		await AssertCurrentMac(mac, HMACSHA256.HashData(Key, second));
@@ -351,7 +326,13 @@ public class StreamMacExtensionsTest
 		using Stream stream = AppendSources.Create(kind);
 
 		mac.Append(source);
+		await AppendAsync(mac, stream, useAsync);
 
+		await AssertCurrentMac(mac, HMACSHA256.HashData(Key, source));
+	}
+
+	private static async Task AppendAsync<TAlgorithm>(TAlgorithm mac, Stream stream, bool useAsync) where TAlgorithm : class, IMacAlgorithm<TAlgorithm>
+	{
 		if (useAsync)
 		{
 			await mac.AppendAsync(stream);
@@ -360,8 +341,6 @@ public class StreamMacExtensionsTest
 		{
 			mac.Append(stream);
 		}
-
-		await AssertCurrentMac(mac, HMACSHA256.HashData(Key, source));
 	}
 
 	private static async Task AssertCurrentMac(HmacSha256 mac, byte[] expected)

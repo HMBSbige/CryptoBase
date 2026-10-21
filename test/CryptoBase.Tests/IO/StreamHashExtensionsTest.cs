@@ -163,16 +163,7 @@ public class StreamHashExtensionsTest
 		stream.Position = startOffset;
 
 		hasher.Append(header);
-
-		if (useAsync)
-		{
-			await hasher.AppendAsync(stream);
-		}
-		else
-		{
-			hasher.Append(stream);
-		}
-
+		await AppendAsync(hasher, stream, useAsync);
 		hasher.Append(trailer);
 
 		await AssertCurrentHash(hasher, expected);
@@ -188,14 +179,7 @@ public class StreamHashExtensionsTest
 		using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
 		using MemoryStream stream = new(first, false);
 
-		if (useAsync)
-		{
-			await hasher.AppendAsync(stream);
-		}
-		else
-		{
-			hasher.Append(stream);
-		}
+		await AppendAsync(hasher, stream, useAsync);
 
 		await AssertCurrentHash(hasher, SHA256.HashData(first));
 
@@ -256,22 +240,24 @@ public class StreamHashExtensionsTest
 
 		hasher.Append(source);
 		blake3.Append(source);
-
-		if (useAsync)
-		{
-			await hasher.AppendAsync(stream);
-			await blake3.AppendAsync(stream);
-		}
-		else
-		{
-			hasher.Append(stream);
-			blake3.Append(stream);
-		}
-
+		await AppendAsync(hasher, stream, useAsync);
+		await AppendAsync(blake3, stream, useAsync);
 		blake3.GetCurrentHash(blake3Actual);
 
 		await AssertCurrentHash(hasher, SHA256.HashData(source));
 		await Assert.That(blake3Actual).IsEquivalentTo(blake3Expected, CollectionOrdering.Matching);
+	}
+
+	private static async Task AppendAsync<TAlgorithm>(TAlgorithm hasher, Stream stream, bool useAsync) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
+	{
+		if (useAsync)
+		{
+			await hasher.AppendAsync(stream);
+		}
+		else
+		{
+			hasher.Append(stream);
+		}
 	}
 
 	private static async Task VerifyAppendRejectsDisposed<TAlgorithm>(TAlgorithm hasher, Stream stream, bool useAsync) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
