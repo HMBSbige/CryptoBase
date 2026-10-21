@@ -107,27 +107,6 @@ internal static class VectorEndianExtensions
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public Vector128<T> ReverseEndianness64()
-		{
-			if (AdvSimd.IsSupported)
-			{
-				return AdvSimd.ReverseElement8(value.AsUInt64()).As<ulong, T>();
-			}
-
-			if (Sse2.IsSupported && !Ssse3.IsSupported)
-			{
-				Vector128<ushort> v = value.AsUInt16();
-				v = v << 8 | v >>> 8;
-
-				v = Sse2.ShuffleLow(v, 0b00_01_10_11);
-				return Sse2.ShuffleHigh(v, 0b00_01_10_11).As<ushort, T>();
-			}
-
-			Vector128<byte> reverse64 = ReverseEndianness64Mask128;
-			return Vector128.Shuffle(value.AsByte(), reverse64).As<byte, T>();
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector128<T> ReverseEndianness32()
 		{
 			if (AdvSimd.IsSupported)
