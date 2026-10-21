@@ -514,7 +514,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 
 		if (eta is 2)
 		{
-			Pack3(ref source, ref target, 2);
+			Pack3(ref source, ref target);
 		}
 		else
 		{
@@ -931,13 +931,13 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 	// Each 32 values below 8 make 12 bytes: pairs join into 6 bits, fours into 12 and eights into the three low bytes of each 64-bit
 	// lane, which a shuffle gathers into the first 6 bytes of the low 128-bit lane and the next 6 of the high one.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Pack3(ref int source, ref byte destination, int bias)
+	private static void Pack3(ref int source, ref byte destination)
 	{
 		Vector256<byte> fields = Vector256.Create(0, 1, 2, 8, 9, 10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0, 1, 2, 8, 9, 10, 0x80, 0x80, 0x80, 0x80);
 
 		for (nuint i = 0; i < 8; ++i)
 		{
-			Vector256<short> pairs = Avx2.MultiplyAddAdjacent(LoadBytes(ref Unsafe.Add(ref source, 32 * i), bias, true), Vector256.Create((short)(1 | 8 << 8)).AsSByte());
+			Vector256<short> pairs = Avx2.MultiplyAddAdjacent(LoadBytes(ref Unsafe.Add(ref source, 32 * i), 2, true), Vector256.Create((short)(1 | 8 << 8)).AsSByte());
 			Vector256<ulong> fours = Avx2.MultiplyAddAdjacent(pairs, Vector256.Create(1 | 64 << 16).AsInt16()).AsUInt64();
 			Vector256<byte> lanes = Avx2.Shuffle((fours | fours >>> 20).AsByte(), fields);
 			Vector128<byte> packed = lanes.GetLower() | lanes.GetUpper();

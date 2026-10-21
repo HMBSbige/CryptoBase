@@ -521,7 +521,7 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 
 		if (eta is 2)
 		{
-			Pack3(ref source, ref target, 2);
+			Pack3(ref source, ref target);
 		}
 		else
 		{
@@ -1020,12 +1020,12 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 	// Each 32 values below 8 make 12 bytes: pairs of bytes join into 6 bits, pairs of these into 12 and pairs of those into the three
 	// low bytes of each 64-bit lane, of which a shuffle gathers six bytes from each 16 values.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Pack3(ref int source, ref byte destination, int bias)
+	private static void Pack3(ref int source, ref byte destination)
 	{
 		for (nuint i = 0; i < 8; ++i)
 		{
-			Vector128<byte> low = Vector128.Shuffle(Join3(LoadBytes(ref Unsafe.Add(ref source, 32 * i), bias, true)), Vector128.Create(0, 1, 2, 8, 9, 10, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero));
-			Vector128<byte> high = Vector128.Shuffle(Join3(LoadBytes(ref Unsafe.Add(ref source, 32 * i + 16), bias, true)), Vector128.Create(Zero, Zero, Zero, Zero, Zero, Zero, 0, 1, 2, 8, 9, 10, Zero, Zero, Zero, Zero));
+			Vector128<byte> low = Vector128.Shuffle(Join3(LoadBytes(ref Unsafe.Add(ref source, 32 * i), 2, true)), Vector128.Create(0, 1, 2, 8, 9, 10, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero));
+			Vector128<byte> high = Vector128.Shuffle(Join3(LoadBytes(ref Unsafe.Add(ref source, 32 * i + 16), 2, true)), Vector128.Create(Zero, Zero, Zero, Zero, Zero, Zero, 0, 1, 2, 8, 9, 10, Zero, Zero, Zero, Zero));
 			Vector128<byte> packed = low | high;
 
 			if (i < 7)
