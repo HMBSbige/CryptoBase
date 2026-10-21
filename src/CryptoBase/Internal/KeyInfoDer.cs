@@ -128,7 +128,11 @@ internal static class KeyInfoDer
 
 			if (!contents.IsEmpty && Asn1Tag.Decode(contents, out _) == AttributesTag)
 			{
-				AsnDecoder.ReadEncodedValue(contents, AsnEncodingRules.DER, out _, out _, out consumed);
+				if (!TrySkipAttributes(contents, out consumed))
+				{
+					return false;
+				}
+
 				contents = contents.Slice(consumed);
 			}
 
@@ -149,5 +153,37 @@ internal static class KeyInfoDer
 		{
 			return false;
 		}
+	}
+
+	// SET OF SEQUENCE { OBJECT IDENTIFIER, SET OF ANY } in DER; the values, of unknown types, are skipped whole.
+	private static bool TrySkipAttributes(ReadOnlySpan<byte> source, out int consumed)
+	{
+		AsnDecoder.ReadSetOf(source, AsnEncodingRules.DER, out int offset, out int length, out consumed, expectedTag: AttributesTag);
+		ReadOnlySpan<byte> attributes = source.Slice(offset, length);
+
+		while (!attributes.IsEmpty)
+		{
+			AsnDecoder.ReadSequence(attributes, AsnEncodingRules.DER, out offset, out length, out int attributeLength);
+			ReadOnlySpan<byte> attribute = attributes.Slice(offset, length);
+			AsnDecoder.ReadObjectIdentifier(attribute, AsnEncodingRules.DER, out int typeLength);
+			AsnDecoder.ReadSetOf(attribute.Slice(typeLength), AsnEncodingRules.DER, out offset, out length, out int valuesLength);
+
+			if (typeLength + valuesLength != attribute.Length)
+			{
+				return false;
+			}
+
+			ReadOnlySpan<byte> values = attribute.Slice(typeLength + offset, length);
+
+			while (!values.IsEmpty)
+			{
+				AsnDecoder.ReadEncodedValue(values, AsnEncodingRules.DER, out _, out _, out int valueLength);
+				values = values.Slice(valueLength);
+			}
+
+			attributes = attributes.Slice(attributeLength);
+		}
+
+		return true;
 	}
 }

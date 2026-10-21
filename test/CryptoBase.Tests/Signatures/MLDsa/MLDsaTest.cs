@@ -133,13 +133,15 @@ internal class MLDsaTest
 
 		// A version 2 OneAsymmetricKey may carry the public key, and any key may carry attributes.
 		using T withPublicKey = T.ImportPkcs8PrivateKey(OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), publicKey));
-		using T withAttributes = T.ImportPkcs8PrivateKey(OneAsymmetricKey(algorithmIdentifier, ExpandedKeyChoice(privateKey), attributes: true));
-		using T fromBoth = T.ImportPkcs8PrivateKey(OneAsymmetricKey(algorithmIdentifier, BothChoice(seed, privateKey), publicKey, true));
+		using T withAttributes = T.ImportPkcs8PrivateKey(OneAsymmetricKey(algorithmIdentifier, ExpandedKeyChoice(privateKey), attributes: [0xA0, 0x00]));
+		using T withTwoAttributes = T.ImportPkcs8PrivateKey(OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), attributes: [0xA0, 0x12, 0x30, 0x07, 0x06, 0x01, 0x2A, 0x31, 0x02, 0x05, 0x00, 0x30, 0x07, 0x06, 0x01, 0x2B, 0x31, 0x02, 0x05, 0x00]));
+		using T fromBoth = T.ImportPkcs8PrivateKey(OneAsymmetricKey(algorithmIdentifier, BothChoice(seed, privateKey), publicKey, [0xA0, 0x00]));
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(ExportPrivateSeed(withPublicKey)).IsEquivalentTo(seed, CollectionOrdering.Matching);
 			await Assert.That(ExportPrivateKey(withAttributes)).IsEquivalentTo(privateKey, CollectionOrdering.Matching);
+			await Assert.That(ExportPrivateSeed(withTwoAttributes)).IsEquivalentTo(seed, CollectionOrdering.Matching);
 			await Assert.That(ExportPrivateSeed(fromBoth)).IsEquivalentTo(seed, CollectionOrdering.Matching);
 			await Assert.That(ExportPrivateKey(fromBoth)).IsEquivalentTo(privateKey, CollectionOrdering.Matching);
 		}
@@ -172,6 +174,12 @@ internal class MLDsaTest
 			OneAsymmetricKey(algorithmIdentifier, ExpandedKeyChoice(privateKey), Flip(publicKey, 100)),
 			// An empty publicKey is not an absent one.
 			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), []),
+			// Attributes must be a DER SET OF Attribute: truncated, without a type, without values, unsorted.
+			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), attributes: [0xA0, 0x01, 0xFF]),
+			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), attributes: [0xA0, 0x01, 0x30]),
+			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), attributes: [0xA0, 0x02, 0x30, 0x00]),
+			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), attributes: [0xA0, 0x05, 0x30, 0x03, 0x06, 0x01, 0x2A]),
+			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), attributes: [0xA0, 0x0E, 0x30, 0x05, 0x06, 0x01, 0x2B, 0x31, 0x00, 0x30, 0x05, 0x06, 0x01, 0x2A, 0x31, 0x00]),
 			// Each part must have its length.
 			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed.AsSpan(1).ToArray())),
 			OneAsymmetricKey(algorithmIdentifier, ExpandedKeyChoice([.. privateKey, 0])),
@@ -942,8 +950,8 @@ internal class MLDsaTest
 	}
 
 	// A OneAsymmetricKey (RFC 5958) around an encoded ML-DSA-*-PrivateKey; version 2 with publicKey if given, and
-	// with an empty set of attributes if asked.
-	private static byte[] OneAsymmetricKey(byte[] algorithmIdentifier, byte[] privateKey, byte[]? publicKey = null, bool attributes = false, int? version = null)
+	// with attributes, an encoded [0] field, if given.
+	private static byte[] OneAsymmetricKey(byte[] algorithmIdentifier, byte[] privateKey, byte[]? publicKey = null, byte[]? attributes = null, int? version = null)
 	{
 		AsnWriter writer = new(AsnEncodingRules.DER);
 
@@ -953,9 +961,9 @@ internal class MLDsaTest
 			writer.WriteEncodedValue(algorithmIdentifier);
 			writer.WriteOctetString(privateKey);
 
-			if (attributes)
+			if (attributes is not null)
 			{
-				writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0, true)).Dispose();
+				writer.WriteEncodedValue(attributes);
 			}
 
 			if (publicKey is not null)
