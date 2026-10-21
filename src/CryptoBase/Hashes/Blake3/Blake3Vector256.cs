@@ -137,7 +137,7 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel
 
 			if (blockCount <= tailBlocks)
 			{
-				Vector256<uint> tail = Vector256.GreaterThanOrEqual(Vector256<uint>.Indices, Vector256.Create((uint)count - 1));
+				Vector256<uint> tail = Vector256.GreaterThan(Vector256<int>.Indices, Vector256.Create((int)count - 2)).AsUInt32();
 				uint tailFlags = flags;
 
 				if (blockCount == tailBlocks)

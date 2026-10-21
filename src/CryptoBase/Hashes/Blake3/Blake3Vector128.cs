@@ -134,7 +134,7 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel
 
 			if (blockCount <= tailBlocks)
 			{
-				Vector128<uint> tail = Vector128.GreaterThanOrEqual(Vector128<uint>.Indices, Vector128.Create((uint)count - 1));
+				Vector128<uint> tail = Vector128.GreaterThan(Vector128<int>.Indices, Vector128.Create((int)count - 2)).AsUInt32();
 				uint tailFlags = flags;
 
 				if (blockCount == tailBlocks)
