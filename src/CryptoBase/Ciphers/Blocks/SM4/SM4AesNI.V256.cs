@@ -106,7 +106,7 @@ internal readonly partial struct SM4AesNI
 		Vector256<byte> c0f = Vector256.Create((byte)0x0F);
 		Vector256<byte> vshr = Vector256.Create(SM4AesConstants.InverseShiftRows);
 
-		for (int i = 0; i < 32; i += 4)
+		for (nuint i = 0; i < 32; i += 4)
 		{
 			Round(ref v0, ref v1, ref v2, ref v3, Vector256.Create(Unsafe.Add(ref rk, i)).AsByte(), c0f, vshr);
 			Round(ref v1, ref v2, ref v3, ref v0, Vector256.Create(Unsafe.Add(ref rk, i + 1)).AsByte(), c0f, vshr);
@@ -138,7 +138,7 @@ internal readonly partial struct SM4AesNI
 
 		if (Avx512F.VL.IsSupported)
 		{
-			for (int i = 0; i < 32; i += 4)
+			for (nuint i = 0; i < 32; i += 4)
 			{
 				Round2V256(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, Vector256.Create(Unsafe.Add(ref rk, i)).AsByte(), c0f, vshr);
 				Round2V256(ref v1, ref v2, ref v3, ref v0, ref v5, ref v6, ref v7, ref v4, Vector256.Create(Unsafe.Add(ref rk, i + 1)).AsByte(), c0f, vshr);

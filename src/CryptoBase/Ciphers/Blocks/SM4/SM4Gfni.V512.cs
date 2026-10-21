@@ -21,7 +21,7 @@ internal readonly partial struct SM4Gfni
 	{
 		SM4Layout.Load16X86(count, ref source, 0, out Vector512<byte> v0, out Vector512<byte> v1, out Vector512<byte> v2, out Vector512<byte> v3);
 
-		for (int i = 0; i < 32; i += 4)
+		for (nuint i = 0; i < 32; i += 4)
 		{
 			Round(ref v0, v1, v2, v3, Vector512.Create(Unsafe.Add(ref rk, i)).AsByte());
 			Round(ref v1, v2, v3, v0, Vector512.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
@@ -38,7 +38,7 @@ internal readonly partial struct SM4Gfni
 		SM4Layout.Load16X86(count, ref source, 0, out Vector512<byte> a0, out Vector512<byte> a1, out Vector512<byte> a2, out Vector512<byte> a3);
 		SM4Layout.Load16X86(count - 16, ref source, 256, out Vector512<byte> b0, out Vector512<byte> b1, out Vector512<byte> b2, out Vector512<byte> b3);
 
-		for (int i = 0; i < 32; i += 4)
+		for (nuint i = 0; i < 32; i += 4)
 		{
 			Vector512<byte> key = Vector512.Create(Unsafe.Add(ref rk, i)).AsByte();
 			Round(ref a0, a1, a2, a3, key);
@@ -142,7 +142,7 @@ internal readonly partial struct SM4Gfni
 		ref Vector512<byte> d0, ref Vector512<byte> d1, ref Vector512<byte> d2, ref Vector512<byte> d3
 	)
 	{
-		for (int i = 0; i < 32; i += 4)
+		for (nuint i = 0; i < 32; i += 4)
 		{
 			Vector512<byte> key = Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i)).AsByte();
 			Round(ref a0, a1, a2, a3, key);

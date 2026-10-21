@@ -115,7 +115,7 @@ internal readonly partial struct SM4AesNI
 		Vector128<byte> shr = SM4AesConstants.InverseShiftRows;
 		Vector128<byte> input = Vector128.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
 
-		for (int i = 0; i < 28; i += 4)
+		for (nuint i = 0; i < 28; i += 4)
 		{
 			RoundLookahead(ref v0, v2, v3, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 1)).AsByte(), c0f, shr);
 			RoundLookahead(ref v1, v3, v0, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 2)).AsByte(), c0f, shr);

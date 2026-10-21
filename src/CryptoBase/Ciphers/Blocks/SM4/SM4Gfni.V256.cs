@@ -36,7 +36,7 @@ internal readonly partial struct SM4Gfni
 		{
 			Vector256<byte> input = Vector256.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
 
-			for (int i = 0; i < 28; i += 4)
+			for (nuint i = 0; i < 28; i += 4)
 			{
 				RoundLookahead(ref v0, v2, v3, ref input, Vector256.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
 				RoundLookahead(ref v1, v3, v0, ref input, Vector256.Create(Unsafe.Add(ref rk, i + 2)).AsByte());
@@ -51,7 +51,7 @@ internal readonly partial struct SM4Gfni
 		}
 		else
 		{
-			for (int i = 0; i < 32; i += 4)
+			for (nuint i = 0; i < 32; i += 4)
 			{
 				Round(ref v0, v1, v2, v3, Vector256.Create(Unsafe.Add(ref rk, i)).AsByte());
 				Round(ref v1, v2, v3, v0, Vector256.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
@@ -95,7 +95,7 @@ internal readonly partial struct SM4Gfni
 		ref Vector256<byte> b0, ref Vector256<byte> b1, ref Vector256<byte> b2, ref Vector256<byte> b3
 	)
 	{
-		for (int i = 0; i < 32; i += 4)
+		for (nuint i = 0; i < 32; i += 4)
 		{
 			Vector256<byte> key = Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i)).AsByte();
 			Round(ref a0, a1, a2, a3, key);

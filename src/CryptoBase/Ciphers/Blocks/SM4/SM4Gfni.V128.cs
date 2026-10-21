@@ -31,7 +31,7 @@ internal readonly partial struct SM4Gfni
 		SM4Layout.Load4X86(count, ref source, 0, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3);
 		Vector128<byte> input = Vector128.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
 
-		for (int i = 0; i < 28; i += 4)
+		for (nuint i = 0; i < 28; i += 4)
 		{
 			RoundLookahead(ref v0, v2, v3, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
 			RoundLookahead(ref v1, v3, v0, ref input, Vector128.Create(Unsafe.Add(ref rk, i + 2)).AsByte());
@@ -53,7 +53,7 @@ internal readonly partial struct SM4Gfni
 		SM4Layout.Load4X86(count, ref source, 0, out Vector128<byte> a0, out Vector128<byte> a1, out Vector128<byte> a2, out Vector128<byte> a3);
 		SM4Layout.Load4X86(count - 4, ref source, 64, out Vector128<byte> b0, out Vector128<byte> b1, out Vector128<byte> b2, out Vector128<byte> b3);
 
-		for (int i = 0; i < 32; i += 4)
+		for (nuint i = 0; i < 32; i += 4)
 		{
 			Vector128<byte> key = Vector128.Create(Unsafe.Add(ref rk, i)).AsByte();
 			Round(ref a0, a1, a2, a3, key);
