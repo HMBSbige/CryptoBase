@@ -859,40 +859,8 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 
 			Vector256<byte> shifted = Avx2.ShiftLeftLogicalVariable(values.AsUInt32(), shifts).AsByte();
 			Vector256<byte> packed = Avx2.Shuffle(shifted, evenFields) | Avx2.Shuffle(shifted, oddFields);
-			StoreLane(packed.GetLower(), ref destination, bits * i, bits);
-			StoreLane(packed.GetUpper(), ref destination, bits * i + bits / 2, bits);
-		}
-	}
-
-	// The bits / 2 bytes at the start of lane at offset, as a store of 16 bytes where that stays within the 32 · bits.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StoreLane(Vector128<byte> lane, ref byte destination, int offset, [ConstantExpected(Min = 10, Max = 20)] int bits)
-	{
-		if (offset <= 32 * bits - 16)
-		{
-			lane.StoreUnsafe(ref destination, (nuint)offset);
-			return;
-		}
-
-		ref byte target = ref Unsafe.Add(ref destination, offset);
-
-		if (bits is 10)
-		{
-			Unsafe.WriteUnaligned(ref target, lane.AsUInt32().ToScalar());
-			Unsafe.Add(ref target, 4) = lane.GetElement(4);
-		}
-		else
-		{
-			Unsafe.WriteUnaligned(ref target, lane.AsUInt64().ToScalar());
-
-			if (bits is 18)
-			{
-				Unsafe.Add(ref target, 8) = lane.GetElement(8);
-			}
-			else
-			{
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref target, 8), lane.AsUInt16().GetElement(4));
-			}
+			MLDsaVector128.StoreLane(packed.GetLower(), ref destination, bits * i, bits);
+			MLDsaVector128.StoreLane(packed.GetUpper(), ref destination, bits * i + bits / 2, bits);
 		}
 	}
 

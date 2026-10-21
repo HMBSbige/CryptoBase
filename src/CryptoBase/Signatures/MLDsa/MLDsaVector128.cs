@@ -937,8 +937,6 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 			}
 		}
 
-		int length = bits / 2;
-
 		for (int i = 0; i < 64; ++i)
 		{
 			Vector128<int> values = Vector128.LoadUnsafe(ref source, (nuint)(4 * i));
@@ -950,17 +948,21 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 
 			Vector128<byte> shifted = (values.AsUInt32() * multipliers).AsByte();
 			Vector128<byte> packed = Vector128.Shuffle(shifted, evenFields) | Vector128.Shuffle(shifted, oddFields);
-			int offset = length * i;
-
-			if (offset <= 32 * bits - 16)
-			{
-				packed.StoreUnsafe(ref destination, (nuint)offset);
-			}
-			else
-			{
-				StorePartial(packed, ref Unsafe.Add(ref destination, offset), length);
-			}
+			StoreLane(packed, ref destination, bits / 2 * i, bits);
 		}
+	}
+
+	// The bits / 2 bytes at the start of lane at offset, as a store of 16 bytes where that stays within the 32 · bits.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void StoreLane(Vector128<byte> lane, ref byte destination, int offset, [ConstantExpected(Min = 10, Max = 20)] int bits)
+	{
+		if (offset <= 32 * bits - 16)
+		{
+			lane.StoreUnsafe(ref destination, (nuint)offset);
+			return;
+		}
+
+		StorePartial(lane, ref Unsafe.Add(ref destination, offset), bits / 2);
 	}
 
 	// The first length bytes of value.
