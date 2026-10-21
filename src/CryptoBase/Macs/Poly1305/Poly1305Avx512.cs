@@ -149,11 +149,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		int length = source.Length;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector512<ulong> mask = Vector512.Create((ulong)Poly1305State26.LimbMask);
-		Vector512<ulong> h0 = Vector512.CreateScalar(_state.H0).AsUInt64();
-		Vector512<ulong> h1 = Vector512.CreateScalar(_state.H1).AsUInt64();
-		Vector512<ulong> h2 = Vector512.CreateScalar(_state.H2).AsUInt64();
-		Vector512<ulong> h3 = Vector512.CreateScalar(_state.H3).AsUInt64();
-		Vector512<ulong> h4 = Vector512.CreateScalar(_state.H4).AsUInt64();
+		GetEightWayAccumulator(out Vector512<ulong> h0, out Vector512<ulong> h1, out Vector512<ulong> h2, out Vector512<ulong> h3, out Vector512<ulong> h4);
 		Vector512<uint> r0 = BroadcastEighth(ref _r0);
 		Vector512<uint> r1 = BroadcastEighth(ref _r1);
 		Vector512<uint> r2 = BroadcastEighth(ref _r2);
@@ -224,11 +220,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		int length = source.Length;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		Vector512<ulong> mask = Vector512.Create((ulong)Poly1305State26.LimbMask);
-		Vector512<ulong> h0 = Vector512.CreateScalar(_state.H0).AsUInt64();
-		Vector512<ulong> h1 = Vector512.CreateScalar(_state.H1).AsUInt64();
-		Vector512<ulong> h2 = Vector512.CreateScalar(_state.H2).AsUInt64();
-		Vector512<ulong> h3 = Vector512.CreateScalar(_state.H3).AsUInt64();
-		Vector512<ulong> h4 = Vector512.CreateScalar(_state.H4).AsUInt64();
+		GetEightWayAccumulator(out Vector512<ulong> h0, out Vector512<ulong> h1, out Vector512<ulong> h2, out Vector512<ulong> h3, out Vector512<ulong> h4);
 		Vector512<uint> r0 = BroadcastEighth(ref _r0);
 		Vector512<uint> r1 = BroadcastEighth(ref _r1);
 		Vector512<uint> r2 = BroadcastEighth(ref _r2);
