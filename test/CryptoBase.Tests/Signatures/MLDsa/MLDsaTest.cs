@@ -170,6 +170,8 @@ internal class MLDsaTest
 			OneAsymmetricKey(algorithmIdentifier, BothChoice(seed, Flip(privateKey, 40))),
 			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), ExportPublicKey(other)),
 			OneAsymmetricKey(algorithmIdentifier, ExpandedKeyChoice(privateKey), Flip(publicKey, 100)),
+			// An empty publicKey is not an absent one.
+			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed), []),
 			// Each part must have its length.
 			OneAsymmetricKey(algorithmIdentifier, SeedChoice(seed.AsSpan(1).ToArray())),
 			OneAsymmetricKey(algorithmIdentifier, ExpandedKeyChoice([.. privateKey, 0])),

@@ -132,9 +132,10 @@ internal static class KeyInfoDer
 				contents = contents.Slice(consumed);
 			}
 
+			// Empty means absent, so an empty publicKey is invalid.
 			if (version is 1 && !contents.IsEmpty)
 			{
-				if (!AsnDecoder.TryReadPrimitiveBitString(contents, AsnEncodingRules.DER, out int unusedBits, out publicKey, out consumed, PublicKeyTag) || unusedBits is not 0)
+				if (!AsnDecoder.TryReadPrimitiveBitString(contents, AsnEncodingRules.DER, out int unusedBits, out publicKey, out consumed, PublicKeyTag) || unusedBits is not 0 || publicKey.IsEmpty)
 				{
 					return false;
 				}
