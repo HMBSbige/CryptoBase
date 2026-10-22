@@ -18,6 +18,12 @@ internal readonly partial struct SM4AesNI : ISM4Kernel
 
 	public static int MaxBlocks => Avx2.IsSupported ? 16 : 8;
 
+	private static Vector128<byte> InverseShiftRows
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Vector128.Create((byte)0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Process(int width, int count, ref uint rk, ref byte source, ref byte destination)
 	{

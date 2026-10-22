@@ -112,7 +112,7 @@ internal readonly partial struct SM4AesNI
 	private static void Rounds4V128(ref uint rk, ref Vector128<byte> v0, ref Vector128<byte> v1, ref Vector128<byte> v2, ref Vector128<byte> v3)
 	{
 		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
-		Vector128<byte> shr = SM4AesConstants.InverseShiftRows;
+		Vector128<byte> shr = InverseShiftRows;
 		Vector128<byte> input = Vector128.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
 
 		for (nuint i = 0; i < 28; i += 4)
@@ -152,7 +152,7 @@ internal readonly partial struct SM4AesNI
 	)
 	{
 		Vector128<byte> c0f = Vector128.Create((byte)0x0F);
-		Vector128<byte> shr = SM4AesConstants.InverseShiftRows;
+		Vector128<byte> shr = InverseShiftRows;
 
 		for (int i = 0; i < 32; ++i)
 		{
@@ -177,6 +177,6 @@ internal readonly partial struct SM4AesNI
 		PreTransform(ref x);
 		x = AesX86.EncryptLast(x, Vector128.Create((byte)0x0F));
 		PostTransform(ref x);
-		return Ssse3.Shuffle(x, SM4AesConstants.InverseShiftRows);
+		return Ssse3.Shuffle(x, InverseShiftRows);
 	}
 }

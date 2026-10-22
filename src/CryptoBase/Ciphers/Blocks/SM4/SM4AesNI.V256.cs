@@ -104,7 +104,7 @@ internal readonly partial struct SM4AesNI
 	private static void Rounds8V256(ref uint rk, ref Vector256<byte> v0, ref Vector256<byte> v1, ref Vector256<byte> v2, ref Vector256<byte> v3)
 	{
 		Vector256<byte> c0f = Vector256.Create((byte)0x0F);
-		Vector256<byte> vshr = Vector256.Create(SM4AesConstants.InverseShiftRows);
+		Vector256<byte> vshr = Vector256.Create(InverseShiftRows);
 
 		for (nuint i = 0; i < 32; i += 4)
 		{
@@ -134,7 +134,7 @@ internal readonly partial struct SM4AesNI
 	)
 	{
 		Vector256<byte> c0f = Vector256.Create((byte)0x0F);
-		Vector256<byte> vshr = Vector256.Create(SM4AesConstants.InverseShiftRows);
+		Vector256<byte> vshr = Vector256.Create(InverseShiftRows);
 
 		if (Avx512F.VL.IsSupported)
 		{
@@ -172,6 +172,6 @@ internal readonly partial struct SM4AesNI
 		PreTransform(ref x);
 		x = AesX86EncryptLast(x, Vector256.Create((byte)0x0F));
 		PostTransform(ref x);
-		return Avx2.Shuffle(x, Vector256.Create(SM4AesConstants.InverseShiftRows));
+		return Avx2.Shuffle(x, Vector256.Create(InverseShiftRows));
 	}
 }
