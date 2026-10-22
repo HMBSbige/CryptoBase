@@ -55,6 +55,19 @@ internal static class BlockModeDispatch
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static bool TryEncryptBlock<TCipher>(TCipher cipher, Vector128<byte> value, out Vector128<byte> result) where TCipher : IBlockEncryptor<TCipher>
+	{
+		if (IsAesVectorSupported && cipher is AesCipher aes)
+		{
+			result = AesCipherX86.IsSupported ? aes.X86.Encrypt(value) : aes.Arm.Encrypt(value);
+			return true;
+		}
+
+		result = default;
+		return false;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static Vector128<byte> TransformBlock<TCipher, TDirection>(TCipher cipher, Vector128<byte> value) where TCipher : IBlockCipher<TCipher> where TDirection : struct, IBlockDirection
 	{
 		if (IsAesVectorSupported && cipher is AesCipher aes)

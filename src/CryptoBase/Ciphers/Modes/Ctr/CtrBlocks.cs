@@ -23,8 +23,11 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static Vector128<byte> EncryptCounter(TBlockCipher blockCipher, ref Vector128<byte> counter)
 	{
-		Vector128<byte> stream = default;
-		blockCipher.EncryptBlock(counter.AsReadOnlySpan(), stream.AsSpan());
+		if (!BlockModeDispatch.TryEncryptBlock(blockCipher, counter, out Vector128<byte> stream))
+		{
+			blockCipher.EncryptBlock(counter.AsReadOnlySpan(), stream.AsSpan());
+		}
+
 		counter = TIncrementer.Inc(counter.ReverseEndianness128()).ReverseEndianness128();
 		return stream;
 	}
