@@ -36,6 +36,11 @@ public class KmacDifferentialTest
 			Skip.Test($"The platform has no {variant} here.");
 		}
 
+		if (OpenSslRejects(keyLength, CustomizationLengths(variant.Rate).Max()))
+		{
+			Skip.Test($"OpenSSL's {variant} rejects these lengths.");
+		}
+
 		return VerifyGrid(variant, keyLength, Platform);
 	}
 
@@ -106,7 +111,7 @@ public class KmacDifferentialTest
 
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 
-		if (IsPlatformSupported(variant))
+		if (IsPlatformSupported(variant) && !OpenSslRejects(key.Length, customization.Length))
 		{
 			await Assert.That(actual).IsEquivalentTo(Platform(variant, key, source, customization, length), CollectionOrdering.Matching);
 		}
@@ -189,6 +194,11 @@ public class KmacDifferentialTest
 			(256, true) => PlatformKmacXof256.IsSupported,
 			_ => false
 		};
+	}
+
+	private static bool OpenSslRejects(int keyLength, int customizationLength)
+	{
+		return !OperatingSystem.IsWindows() && (keyLength is < 4 or > 512 || customizationLength > 512);
 	}
 
 	private static byte[] Platform(KmacVariant variant, byte[] key, byte[] source, byte[] customization, int outputLength)
