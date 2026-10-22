@@ -4,8 +4,8 @@
 
 | Algorithm | Type | Namespace | Output |
 | --- | --- | --- | ---: |
-| BLAKE2b-256 | `HashAlgorithm<Blake2b256Core>` | `CryptoBase.Hashes.Blake2b` | 32 bytes |
-| BLAKE2b-512 | `HashAlgorithm<Blake2b512Core>` | `CryptoBase.Hashes.Blake2b` | 64 bytes |
+| BLAKE2b-256 | `HashAlgorithm<Blake2b256Core>` | `CryptoBase.Hashes.Blake2` | 32 bytes |
+| BLAKE2b-512 | `HashAlgorithm<Blake2b512Core>` | `CryptoBase.Hashes.Blake2` | 64 bytes |
 | BLAKE3 | `Blake3HashAlgorithm` | `CryptoBase.Hashes.Blake3` | 32 bytes or any length |
 | MD5 | `HashAlgorithm<MD5Core>` | `CryptoBase.Hashes.MD5` | 16 bytes |
 | SHA-1 | `HashAlgorithm<Sha1Core>` | `CryptoBase.Hashes.Sha1` | 20 bytes |

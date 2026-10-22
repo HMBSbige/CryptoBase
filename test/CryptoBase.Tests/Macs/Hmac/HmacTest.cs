@@ -1,6 +1,6 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Abstractions.Macs;
-using CryptoBase.Hashes.Blake2b;
+using CryptoBase.Hashes.Blake2;
 using CryptoBase.Hashes.Sha2;
 using CryptoBase.Macs.Hmac;
 using CryptoBase.Platform;

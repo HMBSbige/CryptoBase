@@ -1,4 +1,4 @@
-using CryptoBase.Hashes.Blake2b;
+using CryptoBase.Hashes.Blake2;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha2;
 

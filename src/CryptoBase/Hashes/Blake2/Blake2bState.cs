@@ -1,4 +1,4 @@
-namespace CryptoBase.Hashes.Blake2b;
+namespace CryptoBase.Hashes.Blake2;
 
 internal struct Blake2bState
 {

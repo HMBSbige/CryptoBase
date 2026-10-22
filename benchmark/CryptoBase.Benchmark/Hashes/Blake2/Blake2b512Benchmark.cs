@@ -1,8 +1,8 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase.Hashes.Blake2b;
+using CryptoBase.Hashes.Blake2;
 using Org.BouncyCastle.Crypto.Digests;
 
-namespace CryptoBase.Benchmark.Hashes.Blake2b;
+namespace CryptoBase.Benchmark.Hashes.Blake2;
 
 [MemoryDiagnoser]
 public class Blake2b512Benchmark : BouncyCastleHashBenchmark<Blake2b512Core, Blake2bDigest>

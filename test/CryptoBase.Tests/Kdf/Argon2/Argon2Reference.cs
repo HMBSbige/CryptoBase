@@ -1,5 +1,5 @@
 using CryptoBase.Kdf;
-using CryptoBase.Tests.Hashes.Blake2b;
+using CryptoBase.Tests.Hashes.Blake2;
 using System.Buffers.Binary;
 
 namespace CryptoBase.Tests.Kdf.Argon2;

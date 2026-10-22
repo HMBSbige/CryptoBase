@@ -1,6 +1,6 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Blake2b;
+using CryptoBase.Hashes.Blake2;
 using CryptoBase.Hashes.Blake3;
 using CryptoBase.Hashes.MD5;
 using CryptoBase.Hashes.Sha1;

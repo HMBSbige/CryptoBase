@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Numerics;
 
-namespace CryptoBase.Tests.Hashes.Blake2b;
+namespace CryptoBase.Tests.Hashes.Blake2;
 
 internal static class Blake2bReference
 {

@@ -1,12 +1,12 @@
-namespace CryptoBase.Hashes.Blake2b;
+namespace CryptoBase.Hashes.Blake2;
 
 /// <summary>
-/// Provides the BLAKE2b-512 hash core.
+/// Provides the BLAKE2b-256 hash core.
 /// </summary>
-/// <remarks>Computes unkeyed BLAKE2b with a 64-byte digest, as specified in RFC 7693.</remarks>
-public struct Blake2b512Core : IHmacHashCore<Blake2b512Core>
+/// <remarks>Computes unkeyed BLAKE2b with a 32-byte digest, as specified in RFC 7693.</remarks>
+public struct Blake2b256Core : IHmacHashCore<Blake2b256Core>
 {
-	private const int HashSizeInBytes = 64;
+	private const int HashSizeInBytes = 32;
 
 	private Blake2bState _state;
 
@@ -17,9 +17,9 @@ public struct Blake2b512Core : IHmacHashCore<Blake2b512Core>
 	public static int HmacBlockSize => Blake2bState.BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static Blake2b512Core IHashCore<Blake2b512Core>.Create()
+	static Blake2b256Core IHashCore<Blake2b256Core>.Create()
 	{
-		Unsafe.SkipInit(out Blake2b512Core hashAlgorithm);
+		Unsafe.SkipInit(out Blake2b256Core hashAlgorithm);
 		hashAlgorithm._state.Initialize(HashSizeInBytes);
 		return hashAlgorithm;
 	}

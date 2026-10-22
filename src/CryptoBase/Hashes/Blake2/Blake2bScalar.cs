@@ -1,6 +1,6 @@
-using static CryptoBase.Hashes.Blake2b.Blake2bState;
+using static CryptoBase.Hashes.Blake2.Blake2bState;
 
-namespace CryptoBase.Hashes.Blake2b;
+namespace CryptoBase.Hashes.Blake2;
 
 internal readonly struct Blake2bScalar : IBlake2bKernel
 {

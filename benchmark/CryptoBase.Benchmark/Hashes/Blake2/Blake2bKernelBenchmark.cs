@@ -1,8 +1,8 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase.Hashes.Blake2b;
+using CryptoBase.Hashes.Blake2;
 using System.Security.Cryptography;
 
-namespace CryptoBase.Benchmark.Hashes.Blake2b;
+namespace CryptoBase.Benchmark.Hashes.Blake2;
 
 public class Blake2bKernelBenchmark
 {

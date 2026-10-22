@@ -1,8 +1,8 @@
-using CryptoBase.Hashes.Blake2b;
+using CryptoBase.Hashes.Blake2;
 using static CryptoBase.Tests.Hashes.HashAlgorithmTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
-namespace CryptoBase.Tests.Hashes.Blake2b;
+namespace CryptoBase.Tests.Hashes.Blake2;
 
 public class Blake2bHashDataTest
 {

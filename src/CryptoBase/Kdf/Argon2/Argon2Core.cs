@@ -1,4 +1,4 @@
-using CryptoBase.Hashes.Blake2b;
+using CryptoBase.Hashes.Blake2;
 
 namespace CryptoBase.Kdf.Argon2;
 
