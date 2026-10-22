@@ -126,26 +126,26 @@ internal readonly partial struct Blake2bVector128 : IBlake2bKernel
 		a1 = a1 + x1 + b1;
 		d0 ^= a0;
 		d1 ^= a1;
-		d0 = Sse2.Shuffle(d0.AsUInt32(), 0b10_11_00_01).AsUInt64();
-		d1 = Sse2.Shuffle(d1.AsUInt32(), 0b10_11_00_01).AsUInt64();
+		d0 = d0.RotateRightUInt64(32);
+		d1 = d1.RotateRightUInt64(32);
 		c0 += d0;
 		c1 += d1;
 		b0 ^= c0;
 		b1 ^= c1;
-		b0 = b0 >>> 24 | b0 << 40;
-		b1 = b1 >>> 24 | b1 << 40;
+		b0 = b0.RotateRightUInt64(24);
+		b1 = b1.RotateRightUInt64(24);
 		a0 = a0 + y0 + b0;
 		a1 = a1 + y1 + b1;
 		d0 ^= a0;
 		d1 ^= a1;
-		d0 = Sse2.ShuffleHigh(Sse2.ShuffleLow(d0.AsUInt16(), 0b00_11_10_01), 0b00_11_10_01).AsUInt64();
-		d1 = Sse2.ShuffleHigh(Sse2.ShuffleLow(d1.AsUInt16(), 0b00_11_10_01), 0b00_11_10_01).AsUInt64();
+		d0 = d0.RotateRightUInt64(16);
+		d1 = d1.RotateRightUInt64(16);
 		c0 += d0;
 		c1 += d1;
 		b0 ^= c0;
 		b1 ^= c1;
-		b0 = b0 >>> 63 | b0 << 1;
-		b1 = b1 >>> 63 | b1 << 1;
+		b0 = b0.RotateRightUInt64(63);
+		b1 = b1.RotateRightUInt64(63);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
