@@ -395,7 +395,7 @@ internal struct Blake3State
 		}
 		else if (!buffered.IsEmpty || remaining is 0)
 		{
-			Blake3Output.FromChunk(buffered, in _key, _chunkCounter, _flags, out output);
+			Blake3Output.FromChunk(buffered, in _key, Blake3Flags.ChunkStart, _chunkCounter, _flags, out output);
 		}
 		else
 		{

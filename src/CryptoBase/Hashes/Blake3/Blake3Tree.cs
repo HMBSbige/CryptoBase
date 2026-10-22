@@ -27,7 +27,7 @@ internal static class Blake3Tree
 
 		if (source.Length <= ChunkLength)
 		{
-			Blake3Output.FromChunk(source, in key, 0, flags, out output);
+			Blake3Output.FromChunk(source, in key, Blake3Flags.ChunkStart, 0, flags, out output);
 		}
 		else
 		{

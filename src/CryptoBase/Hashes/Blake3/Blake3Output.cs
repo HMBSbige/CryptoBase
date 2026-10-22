@@ -10,12 +10,6 @@ internal struct Blake3Output
 	internal uint UsedBlockLength;
 	internal uint Flags;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void FromChunk(ReadOnlySpan<byte> chunk, ref readonly InlineArray8<uint> key, ulong chunkCounter, uint flags, out Blake3Output output)
-	{
-		FromChunk(chunk, in key, Blake3Flags.ChunkStart, chunkCounter, flags, out output);
-	}
-
 	[SkipLocalsInit]
 	internal static void FromChunk(ReadOnlySpan<byte> blocks, ref readonly InlineArray8<uint> cv, uint startFlag, ulong chunkCounter, uint flags, out Blake3Output output)
 	{
