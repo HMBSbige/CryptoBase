@@ -11,6 +11,9 @@ internal static class KeccakReference
 	public const byte Sha3DomainSeparator = 0x06;
 	public const byte ShakeDomainSeparator = 0x1F;
 
+	// The suffix bits 00 of SP 800-185, Sec. 3.3, followed by the first pad10*1 bit.
+	public const byte CShakeDomainSeparator = 0x04;
+
 	private const int Width = 5;
 	private const int LaneSize = 64;
 	private const int Rounds = 24;
@@ -45,6 +48,76 @@ internal static class KeccakReference
 	public static int Sha3Rate(int hashLength)
 	{
 		return 200 - 2 * hashLength;
+	}
+
+	// The functions below transcribe SP 800-185 (https://doi.org/10.6028/NIST.SP.800-185) on byte strings, building each input whole.
+
+	// left_encode from Sec. 2.3.1: n is the least positive integer with 2^(8n) > x, and x = sum of 256^(n-i) x_i for i = 1 to n.
+	public static byte[] LeftEncode(ulong x)
+	{
+		byte[] digits = Base256Digits(x);
+		return [(byte)digits.Length, .. digits];
+	}
+
+	// right_encode from Sec. 2.3.1.
+	public static byte[] RightEncode(ulong x)
+	{
+		byte[] digits = Base256Digits(x);
+		return [.. digits, (byte)digits.Length];
+	}
+
+	// encode_string from Sec. 2.3.2, whose length prefix counts bits.
+	public static byte[] EncodeString(ReadOnlySpan<byte> s)
+	{
+		return TestUtils.Concat(LeftEncode((ulong)s.Length * 8), s);
+	}
+
+	// bytepad from Sec. 2.3.3.
+	public static byte[] BytePad(ReadOnlySpan<byte> x, int w)
+	{
+		byte[] z = TestUtils.Concat(LeftEncode((ulong)w), x);
+		byte[] padded = new byte[(z.Length + w - 1) / w * w];
+		z.CopyTo(padded, 0);
+		return padded;
+	}
+
+	// cSHAKE from Sec. 3.3: SHAKE when N and S are empty, else KECCAK[c] with the suffix bits 00.
+	public static byte[] CShake(ReadOnlySpan<byte> source, int rateInBytes, ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization, int outputLength)
+	{
+		if (functionName.IsEmpty && customization.IsEmpty)
+		{
+			return Sponge(source, rateInBytes, ShakeDomainSeparator, outputLength);
+		}
+
+		byte[] prefix = BytePad(TestUtils.Concat(EncodeString(functionName), EncodeString(customization)), rateInBytes);
+		return Sponge(TestUtils.Concat(prefix, source), rateInBytes, CShakeDomainSeparator, outputLength);
+	}
+
+	// KMAC from Sec. 4.3 and KMACXOF from Sec. 4.3.1, which encodes the output length as 0; the rate selects KMAC128 (168) or KMAC256 (136).
+	public static byte[] Kmac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, int rateInBytes, ReadOnlySpan<byte> customization, int outputLength, bool xof)
+	{
+		byte[] newX = TestUtils.Concat(BytePad(EncodeString(key), rateInBytes), source);
+		newX = TestUtils.Concat(newX, RightEncode(xof ? 0 : (ulong)outputLength * 8));
+		return CShake(newX, rateInBytes, "KMAC"u8, customization, outputLength);
+	}
+
+	private static byte[] Base256Digits(ulong x)
+	{
+		int n = 1;
+
+		while (n < sizeof(ulong) && x >> 8 * n is not 0)
+		{
+			++n;
+		}
+
+		byte[] digits = new byte[n];
+
+		for (int i = 1; i <= n; ++i)
+		{
+			digits[i - 1] = (byte)(x >> 8 * (n - i));
+		}
+
+		return digits;
 	}
 
 	// SPONGE[KECCAK-p[1600, 24], pad10*1, r] from Algorithm 8, on byte strings whose suffix bits fit in domainSeparator.

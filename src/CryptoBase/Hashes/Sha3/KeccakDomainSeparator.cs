@@ -8,4 +8,7 @@ internal static class KeccakDomainSeparator
 
 	// M || 1111
 	internal const byte Shake = 0x1F;
+
+	// M || 00, for cSHAKE (SP 800-185, Sec. 3.3)
+	internal const byte CShake = 0x04;
 }

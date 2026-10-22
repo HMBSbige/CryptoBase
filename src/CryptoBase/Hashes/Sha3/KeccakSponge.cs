@@ -74,6 +74,48 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 		_position = source.Length;
 	}
 
+	// Ends a partial block as though zeros filled the rest, as bytepad does (SP 800-185, Sec. 2.3.3): XORing zeros leaves the state
+	// unchanged, so only the permutation remains. At a block boundary there is nothing to fill.
+	internal void FinishBlock()
+	{
+		Debug.Assert(!IsSqueezing);
+
+		if (_position is not 0)
+		{
+			KeccakP1600.Permute(ref _state);
+			_position = 0;
+		}
+	}
+
+	// Absorbs the length low-order bytes of bytes, least significant first, as Sp800_185Encoding packs them. The bytes past the length
+	// are zero and the state extends more than a word past the rate, so a block that the bytes do not fill takes them in one XOR.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void AbsorbWord(ulong bytes, int length)
+	{
+		Debug.Assert(!IsSqueezing);
+		Debug.Assert(length is > 0 and < sizeof(ulong) ? bytes >> length * 8 is 0 : length is sizeof(ulong));
+
+		int position = _position;
+		int bytesNeeded = TRate.RateInBytes - position;
+
+		if (length < bytesNeeded)
+		{
+			ref byte state = ref Unsafe.Add(ref Unsafe.As<ulong, byte>(ref _state[0]), position);
+			Unsafe.WriteUnaligned(ref state, Unsafe.ReadUnaligned<ulong>(ref state) ^ bytes);
+			_position = position + length;
+			return;
+		}
+
+		AbsorbWordBlocks(bytes, length, position, bytesNeeded);
+	}
+
+	// Since the length is below the rate, the bytes end the block, and any rest starts the next one.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void AbsorbWordBlocks(ulong bytes, int length, int position, int bytesNeeded)
+	{
+		AbsorbBlocks(MemoryMarshal.AsBytes(new ReadOnlySpan<ulong>(in bytes)).Slice(0, length), position, bytesNeeded);
+	}
+
 	internal void Pad(byte domainSeparator)
 	{
 		Debug.Assert(!IsSqueezing);
