@@ -14,7 +14,7 @@ public class AesGcmBenchmark
 	[Params(0, 16, 256, 1024, 8192)]
 	public int ByteLength { get; set; }
 
-	private GcmMode128<AesCipher> _cryptoBase = null!;
+	private GcmMode<AesCipher> _cryptoBase = null!;
 	private AesGcm _bcl = null!;
 	private IBlockCipher _bouncyCastlePrimitive = null!;
 	private KeyParameter _bouncyCastleKey = null!;
@@ -29,7 +29,7 @@ public class AesGcmBenchmark
 	public void Setup()
 	{
 		byte[] key = RandomNumberGenerator.GetBytes(16);
-		_cryptoBase = GcmMode128<AesCipher>.Create(key);
+		_cryptoBase = GcmMode<AesCipher>.Create(key);
 		_bcl = new AesGcm(key, 16);
 		_bouncyCastlePrimitive = AesUtilities.CreateEngine();
 		_bouncyCastleKey = new KeyParameter(key);

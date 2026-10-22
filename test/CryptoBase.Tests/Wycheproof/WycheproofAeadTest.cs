@@ -18,42 +18,42 @@ public class WycheproofAeadTest
 	[MethodDataSource(nameof(Vectors), Arguments = ["aes_gcm_test.json"])]
 	public Task AesGcm(AeadTestVector vector)
 	{
-		return Verify<GcmMode128<AesCipher>>(vector);
+		return Verify<GcmMode<AesCipher>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["aes_ccm_test.json"])]
 	public Task AesCcm(AeadTestVector vector)
 	{
-		return Verify<CcmMode128<AesCipher>>(vector);
+		return Verify<CcmMode<AesCipher>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["aes_ccm_test.json"])]
 	public Task AesCcm8(AeadTestVector vector)
 	{
-		return Verify<Ccm8Mode128<AesCipher>>(vector);
+		return Verify<Ccm8Mode<AesCipher>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["sm4_gcm_test.json"])]
 	public Task SM4Gcm(AeadTestVector vector)
 	{
-		return Verify<GcmMode128<SM4Cipher>>(vector);
+		return Verify<GcmMode<SM4Cipher>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["sm4_ccm_test.json"])]
 	public Task SM4Ccm(AeadTestVector vector)
 	{
-		return Verify<CcmMode128<SM4Cipher>>(vector);
+		return Verify<CcmMode<SM4Cipher>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["sm4_ccm_test.json"])]
 	public Task SM4Ccm8(AeadTestVector vector)
 	{
-		return Verify<Ccm8Mode128<SM4Cipher>>(vector);
+		return Verify<Ccm8Mode<SM4Cipher>>(vector);
 	}
 
 	[Test]

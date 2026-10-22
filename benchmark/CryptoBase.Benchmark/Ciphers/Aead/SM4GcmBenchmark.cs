@@ -14,7 +14,7 @@ public class SM4GcmBenchmark
 	[Params(0, 16, 256, 1024, 8192)]
 	public int ByteLength { get; set; }
 
-	private GcmMode128<SM4Cipher> _cryptoBase = null!;
+	private GcmMode<SM4Cipher> _cryptoBase = null!;
 	private KeyParameter _bouncyCastleKey = null!;
 	private byte[] _input = [];
 	private byte[] _output = [];
@@ -27,7 +27,7 @@ public class SM4GcmBenchmark
 	public void Setup()
 	{
 		byte[] key = RandomNumberGenerator.GetBytes(16);
-		_cryptoBase = GcmMode128<SM4Cipher>.Create(key);
+		_cryptoBase = GcmMode<SM4Cipher>.Create(key);
 		_bouncyCastleKey = new KeyParameter(key);
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
 		_output = new byte[ByteLength];

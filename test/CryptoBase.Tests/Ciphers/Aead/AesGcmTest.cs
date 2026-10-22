@@ -18,8 +18,8 @@ public class AesGcmTest
 	)
 	{
 		byte[] key = CreateDeterministicSource(keyLength);
-		using GcmMode128<AesCipher> gcm = GcmMode128<AesCipher>.Create(key);
-		using AesGcm reference = new(key, GcmMode128<AesCipher>.TagSize);
+		using GcmMode<AesCipher> gcm = GcmMode<AesCipher>.Create(key);
+		using AesGcm reference = new(key, GcmMode<AesCipher>.TagSize);
 		byte[] nonce = CreateDeterministicSource(12);
 		await AssertMessageMatchesBcl(gcm, reference, nonce, messageLength, associatedDataLength);
 	}
@@ -29,8 +29,8 @@ public class AesGcmTest
 	public async Task ReusedInstanceMatchesBcl([Matrix(16, 24, 32)] int keyLength)
 	{
 		byte[] key = CreateDeterministicSource(keyLength);
-		using GcmMode128<AesCipher> gcm = GcmMode128<AesCipher>.Create(key);
-		using AesGcm reference = new(key, GcmMode128<AesCipher>.TagSize);
+		using GcmMode<AesCipher> gcm = GcmMode<AesCipher>.Create(key);
+		using AesGcm reference = new(key, GcmMode<AesCipher>.TagSize);
 		int messageNumber = 0;
 
 		foreach (int length in new[] { 0, 1, 15, 16, 17, 127, 128, 129, 257, 513, 2047, 2048, 2049, 4097, 16385, 513, 17, 0 })
@@ -47,8 +47,8 @@ public class AesGcmTest
 	public async Task EveryLengthMatchesBclInPlaceAndRejectsTamperedTags(int associatedDataLength)
 	{
 		byte[] key = CreateDeterministicSource(16);
-		using GcmMode128<AesCipher> gcm = GcmMode128<AesCipher>.Create(key);
-		using AesGcm reference = new(key, GcmMode128<AesCipher>.TagSize);
+		using GcmMode<AesCipher> gcm = GcmMode<AesCipher>.Create(key);
+		using AesGcm reference = new(key, GcmMode<AesCipher>.TagSize);
 		byte[] nonce = CreateDeterministicSource(12);
 		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
 
@@ -77,7 +77,7 @@ public class AesGcmTest
 		}
 	}
 
-	private static async Task AssertMessageMatchesBcl(GcmMode128<AesCipher> gcm, AesGcm reference, byte[] nonce, int messageLength, int associatedDataLength)
+	private static async Task AssertMessageMatchesBcl(GcmMode<AesCipher> gcm, AesGcm reference, byte[] nonce, int messageLength, int associatedDataLength)
 	{
 		byte[] plaintext = CreateDeterministicSource(messageLength);
 		byte[] associatedData = CreateDeterministicSource(associatedDataLength);

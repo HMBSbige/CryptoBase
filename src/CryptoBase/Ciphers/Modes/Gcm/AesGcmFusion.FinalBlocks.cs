@@ -8,10 +8,10 @@ internal static partial class AesGcmFusion
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void EncryptFinalBlocks(AesCipher aes, ref GHashKey hashKey, ref byte nonceStart, ref byte sourceStart, ref byte destinationStart, int length, ref byte tagStart, ref byte associatedDataStart, int associatedDataLength)
 	{
-		ReadOnlySpan<byte> nonce = MemoryMarshal.CreateReadOnlySpan(ref nonceStart, GcmMode128<AesCipher>.NonceSize);
+		ReadOnlySpan<byte> nonce = MemoryMarshal.CreateReadOnlySpan(ref nonceStart, GcmMode<AesCipher>.NonceSize);
 		ReadOnlySpan<byte> source = MemoryMarshal.CreateReadOnlySpan(ref sourceStart, length);
 		Span<byte> destination = MemoryMarshal.CreateSpan(ref destinationStart, length);
-		Span<byte> tag = MemoryMarshal.CreateSpan(ref tagStart, GcmMode128<AesCipher>.TagSize);
+		Span<byte> tag = MemoryMarshal.CreateSpan(ref tagStart, GcmMode<AesCipher>.TagSize);
 		ReadOnlySpan<byte> associatedData = MemoryMarshal.CreateReadOnlySpan(ref associatedDataStart, associatedDataLength);
 		Vector128<byte> counter = Gcm.Begin(nonce, out Vector128<byte> tagBuffer);
 		GHash hash = GHash.Create(ref hashKey);
@@ -44,7 +44,7 @@ internal static partial class AesGcmFusion
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static bool DecryptFinalBlocks(AesCipher aes, ref GHashKey hashKey, ref byte nonceStart, ref byte sourceStart, ref byte destinationStart, int length, ref byte tagStart, ref byte associatedDataStart, int associatedDataLength)
 	{
-		ReadOnlySpan<byte> nonce = MemoryMarshal.CreateReadOnlySpan(ref nonceStart, GcmMode128<AesCipher>.NonceSize);
+		ReadOnlySpan<byte> nonce = MemoryMarshal.CreateReadOnlySpan(ref nonceStart, GcmMode<AesCipher>.NonceSize);
 		ReadOnlySpan<byte> source = MemoryMarshal.CreateReadOnlySpan(ref sourceStart, length);
 		Span<byte> destination = MemoryMarshal.CreateSpan(ref destinationStart, length);
 		ReadOnlySpan<byte> associatedData = MemoryMarshal.CreateReadOnlySpan(ref associatedDataStart, associatedDataLength);

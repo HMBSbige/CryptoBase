@@ -22,13 +22,13 @@ public class AesGcmFusionTest
 	public async Task UnalignedAndInPlaceMessagesMatchBclAcrossBatchBoundaries([Matrix(16, 24, 32)] int keyLength, [Matrix(0, 13, 17, 4097)] int associatedDataLength, [MatrixMethod<AesGcmFusionTest>(nameof(MessageLengths))] int length)
 	{
 		byte[] key = CreateDeterministicSource(keyLength);
-		using GcmMode128<AesCipher> cipher = GcmMode128<AesCipher>.Create(key);
-		using AesGcm reference = new(key, GcmMode128<AesCipher>.TagSize);
+		using GcmMode<AesCipher> cipher = GcmMode<AesCipher>.Create(key);
+		using AesGcm reference = new(key, GcmMode<AesCipher>.TagSize);
 		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
-		byte[] nonce = CreateDeterministicSource(GcmMode128<AesCipher>.NonceSize);
+		byte[] nonce = CreateDeterministicSource(GcmMode<AesCipher>.NonceSize);
 		byte[] plaintext = CreateDeterministicSource(length);
 		byte[] expected = new byte[length];
-		byte[] expectedTag = new byte[GcmMode128<AesCipher>.TagSize];
+		byte[] expectedTag = new byte[GcmMode<AesCipher>.TagSize];
 		reference.Encrypt(nonce, plaintext, expected, expectedTag, associatedData);
 
 		byte[] source = CreateGuardedBuffer(3, length);
@@ -99,12 +99,12 @@ public class AesGcmFusionTest
 		const int destinationOffset = 7;
 		int associatedDataOffset = associatedDataLength is 1 ? destinationOffset : 3;
 		byte[] key = CreateDeterministicSource(keyLength);
-		using GcmMode128<AesCipher> cipher = GcmMode128<AesCipher>.Create(key);
+		using GcmMode<AesCipher> cipher = GcmMode<AesCipher>.Create(key);
 		byte[] plaintext = CreateDeterministicSource(length);
 		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
-		byte[] nonce = CreateDeterministicSource(GcmMode128<AesCipher>.NonceSize);
+		byte[] nonce = CreateDeterministicSource(GcmMode<AesCipher>.NonceSize);
 		byte[] expected = new byte[length];
-		byte[] expectedTag = new byte[GcmMode128<AesCipher>.TagSize];
+		byte[] expectedTag = new byte[GcmMode<AesCipher>.TagSize];
 		using AesGcm reference = new(key, expectedTag.Length);
 		reference.Encrypt(nonce, plaintext, expected, expectedTag, associatedData);
 

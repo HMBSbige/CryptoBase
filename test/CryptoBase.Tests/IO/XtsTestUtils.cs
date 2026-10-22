@@ -39,7 +39,7 @@ internal static class XtsTestUtils
 
 		for (int i = 0; i < plaintext.Length; i += dataUnitSize)
 		{
-			XtsMode.GetIV(tweak, firstDataUnitNumber + (ulong)(i / dataUnitSize));
+			XtsMode.GetTweak(tweak, firstDataUnitNumber + (ulong)(i / dataUnitSize));
 			cipher.Encrypt(tweak, plaintext.Slice(i, dataUnitSize), ciphertext.AsSpan(i, dataUnitSize));
 		}
 

@@ -51,12 +51,12 @@ public class AesCcmTest
 	public async Task MessagesMatchReference([Matrix(16, 24, 32)] int keyLength, [MatrixMethod<AesCcmTest>(nameof(MessageLengths))] int length)
 	{
 		byte[] key = CreateDeterministicSource(keyLength);
-		byte[] nonce = CreateDeterministicSource(CcmMode128<AesCipher>.NonceSize);
+		byte[] nonce = CreateDeterministicSource(CcmMode<AesCipher>.NonceSize);
 		byte[] associatedData = CreateDeterministicSource(29);
 		byte[] plaintext = CreateDeterministicSource(length);
 		(byte[] expected, byte[] expectedTag) = EncryptReference(key, nonce, plaintext, associatedData);
 
-		using (CcmMode128<AesCipher> cipher = CcmMode128<AesCipher>.Create(key))
+		using (CcmMode<AesCipher> cipher = CcmMode<AesCipher>.Create(key))
 		{
 			await CcmTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
 		}
@@ -69,11 +69,11 @@ public class AesCcmTest
 	public async Task AssociatedDataLengthEncodingMatchesReference([MatrixMethod<AesCcmTest>(nameof(AssociatedDataLengths))] int associatedDataLength)
 	{
 		byte[] key = CreateDeterministicSource(16);
-		byte[] nonce = CreateDeterministicSource(CcmMode128<AesCipher>.NonceSize);
+		byte[] nonce = CreateDeterministicSource(CcmMode<AesCipher>.NonceSize);
 		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
 		byte[] plaintext = CreateDeterministicSource(17);
 		(byte[] expected, byte[] expectedTag) = EncryptReference(key, nonce, plaintext, associatedData);
-		using CcmMode128<AesCipher> cipher = CcmMode128<AesCipher>.Create(key);
+		using CcmMode<AesCipher> cipher = CcmMode<AesCipher>.Create(key);
 		await CcmTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
 	}
 
@@ -81,11 +81,11 @@ public class AesCcmTest
 	public async Task MessageLengthIsLimitedByTheLengthField()
 	{
 		byte[] key = CreateDeterministicSource(16);
-		byte[] nonce = CreateDeterministicSource(CcmMode128<AesCipher>.NonceSize);
+		byte[] nonce = CreateDeterministicSource(CcmMode<AesCipher>.NonceSize);
 		byte[] plaintext = CreateDeterministicSource(MaxMessageLength + 1);
 		byte[] ciphertext = new byte[plaintext.Length];
-		byte[] tag = new byte[CcmMode128<AesCipher>.TagSize];
-		using CcmMode128<AesCipher> cipher = CcmMode128<AesCipher>.Create(key);
+		byte[] tag = new byte[CcmMode<AesCipher>.TagSize];
+		using CcmMode<AesCipher> cipher = CcmMode<AesCipher>.Create(key);
 		PrepareDestination(ciphertext);
 		PrepareDestination(tag);
 
@@ -138,7 +138,7 @@ public class AesCcmTest
 	{
 		using AesCcm aes = new(key);
 		byte[] ciphertext = new byte[plaintext.Length];
-		byte[] tag = new byte[CcmMode128<AesCipher>.TagSize];
+		byte[] tag = new byte[CcmMode<AesCipher>.TagSize];
 		aes.Encrypt(nonce, plaintext, ciphertext, tag);
 		return (ciphertext, tag);
 	}

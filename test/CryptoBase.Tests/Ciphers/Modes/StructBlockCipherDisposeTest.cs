@@ -11,7 +11,7 @@ public class StructBlockCipherDisposeTest
 	[Test]
 	public async Task CcmDisposesStoredCipher()
 	{
-		CcmMode128<InlineKeyBlockCipher> mode = CcmMode128<InlineKeyBlockCipher>.Create(Key.AsSpan(0, 16));
+		CcmMode<InlineKeyBlockCipher> mode = CcmMode<InlineKeyBlockCipher>.Create(Key.AsSpan(0, 16));
 		await Assert.That(EncryptorFields<InlineKeyBlockCipher>.Ccm(mode).IsWiped).IsFalse();
 
 		mode.Dispose();
@@ -22,7 +22,7 @@ public class StructBlockCipherDisposeTest
 	[Test]
 	public async Task Ccm8DisposesStoredCipher()
 	{
-		Ccm8Mode128<InlineKeyBlockCipher> mode = Ccm8Mode128<InlineKeyBlockCipher>.Create(Key.AsSpan(0, 16));
+		Ccm8Mode<InlineKeyBlockCipher> mode = Ccm8Mode<InlineKeyBlockCipher>.Create(Key.AsSpan(0, 16));
 		await Assert.That(EncryptorFields<InlineKeyBlockCipher>.Ccm8(mode).IsWiped).IsFalse();
 
 		mode.Dispose();
@@ -33,7 +33,7 @@ public class StructBlockCipherDisposeTest
 	[Test]
 	public async Task GcmDisposesStoredCipher()
 	{
-		GcmMode128<InlineKeyBlockCipher> mode = GcmMode128<InlineKeyBlockCipher>.Create(Key.AsSpan(0, 16));
+		GcmMode<InlineKeyBlockCipher> mode = GcmMode<InlineKeyBlockCipher>.Create(Key.AsSpan(0, 16));
 		await Assert.That(EncryptorFields<InlineKeyBlockCipher>.Gcm(mode).IsWiped).IsFalse();
 
 		mode.Dispose();
@@ -77,9 +77,9 @@ public class StructBlockCipherDisposeTest
 	{
 		using (Assert.Multiple())
 		{
-			await Assert.That(CountReleasesAfterDisposingTwice(static () => CcmMode128<ReleaseCountingBlockCipher>.Create(Key.AsSpan(0, 16)))).IsEqualTo(1);
-			await Assert.That(CountReleasesAfterDisposingTwice(static () => Ccm8Mode128<ReleaseCountingBlockCipher>.Create(Key.AsSpan(0, 16)))).IsEqualTo(1);
-			await Assert.That(CountReleasesAfterDisposingTwice(static () => GcmMode128<ReleaseCountingBlockCipher>.Create(Key.AsSpan(0, 16)))).IsEqualTo(1);
+			await Assert.That(CountReleasesAfterDisposingTwice(static () => CcmMode<ReleaseCountingBlockCipher>.Create(Key.AsSpan(0, 16)))).IsEqualTo(1);
+			await Assert.That(CountReleasesAfterDisposingTwice(static () => Ccm8Mode<ReleaseCountingBlockCipher>.Create(Key.AsSpan(0, 16)))).IsEqualTo(1);
+			await Assert.That(CountReleasesAfterDisposingTwice(static () => GcmMode<ReleaseCountingBlockCipher>.Create(Key.AsSpan(0, 16)))).IsEqualTo(1);
 			await Assert.That(CountReleasesAfterDisposingTwice(static () => CtrMode128<ReleaseCountingBlockCipher>.Create(Key.AsSpan(0, 16), new byte[16]))).IsEqualTo(1);
 			await Assert.That(CountReleasesAfterDisposingTwice(static () => XtsMode<ReleaseCountingBlockCipher>.Create(Key))).IsEqualTo(2);
 		}
@@ -97,13 +97,13 @@ public class StructBlockCipherDisposeTest
 	private static class EncryptorFields<TBlockCipher> where TBlockCipher : IBlockEncryptor<TBlockCipher>
 	{
 		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockCipher")]
-		public static extern ref TBlockCipher Ccm(CcmMode128<TBlockCipher> mode);
+		public static extern ref TBlockCipher Ccm(CcmMode<TBlockCipher> mode);
 
 		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockCipher")]
-		public static extern ref TBlockCipher Ccm8(Ccm8Mode128<TBlockCipher> mode);
+		public static extern ref TBlockCipher Ccm8(Ccm8Mode<TBlockCipher> mode);
 
 		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockCipher")]
-		public static extern ref TBlockCipher Gcm(GcmMode128<TBlockCipher> mode);
+		public static extern ref TBlockCipher Gcm(GcmMode<TBlockCipher> mode);
 
 		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockCipher")]
 		public static extern ref TBlockCipher Ctr(CtrMode128<TBlockCipher> mode);

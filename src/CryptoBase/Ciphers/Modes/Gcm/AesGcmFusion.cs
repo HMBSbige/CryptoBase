@@ -13,14 +13,14 @@ internal static partial class AesGcmFusion
 	internal static bool TryDecrypt(AesCipher aes, ref GHashKey hashKey, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData)
 	{
 		Debug.Assert(IsSupported);
-		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, GcmMode128<AesCipher>.NonceSize, GcmMode128<AesCipher>.TagSize);
+		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, GcmMode<AesCipher>.NonceSize, GcmMode<AesCipher>.TagSize);
 		return DecryptFinalBlocks(aes, ref hashKey, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 	}
 
 	internal static void Encrypt(AesCipher aes, ref GHashKey hashKey, scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData)
 	{
 		Debug.Assert(IsSupported);
-		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, GcmMode128<AesCipher>.NonceSize, GcmMode128<AesCipher>.TagSize);
+		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, GcmMode<AesCipher>.NonceSize, GcmMode<AesCipher>.TagSize);
 		EncryptFinalBlocks(aes, ref hashKey, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 	}
 }

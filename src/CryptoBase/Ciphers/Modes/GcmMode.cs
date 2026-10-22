@@ -8,17 +8,17 @@ namespace CryptoBase.Ciphers.Modes;
 /// Provides Galois/Counter Mode authenticated encryption for a 16-byte block cipher.
 /// </summary>
 /// <typeparam name="TBlockCipher">The block cipher type.</typeparam>
-public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCipher>> where TBlockCipher : IBlockEncryptor<TBlockCipher>
+public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> where TBlockCipher : IBlockEncryptor<TBlockCipher>
 {
 	/// <inheritdoc />
-	public static GcmMode128<TBlockCipher> Create(scoped ReadOnlySpan<byte> key)
+	public static GcmMode<TBlockCipher> Create(scoped ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(TBlockCipher.BlockSize, 16);
 		TBlockCipher cipher = TBlockCipher.Create(key);
 
 		try
 		{
-			return new GcmMode128<TBlockCipher>(cipher);
+			return new GcmMode<TBlockCipher>(cipher);
 		}
 		catch
 		{
@@ -40,7 +40,7 @@ public sealed class GcmMode128<TBlockCipher> : IAeadCipher<GcmMode128<TBlockCiph
 	private TBlockCipher _blockCipher;
 	private GHashKey _hashKey;
 
-	private GcmMode128(TBlockCipher blockCipher)
+	private GcmMode(TBlockCipher blockCipher)
 	{
 		_blockCipher = blockCipher;
 		Vector128<byte> hashKey = default;

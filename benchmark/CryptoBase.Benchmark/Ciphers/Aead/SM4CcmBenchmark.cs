@@ -14,7 +14,7 @@ public class SM4CcmBenchmark
 	[Params(0, 16, 256, 1024, 8192)]
 	public int ByteLength { get; set; }
 
-	private CcmMode128<SM4Cipher> _cryptoBase = null!;
+	private CcmMode<SM4Cipher> _cryptoBase = null!;
 	private KeyParameter _bouncyCastleKey = null!;
 	private byte[] _input = [];
 	private byte[] _ciphertext = [];
@@ -28,7 +28,7 @@ public class SM4CcmBenchmark
 	public void Setup()
 	{
 		byte[] key = RandomNumberGenerator.GetBytes(16);
-		_cryptoBase = CcmMode128<SM4Cipher>.Create(key);
+		_cryptoBase = CcmMode<SM4Cipher>.Create(key);
 		_bouncyCastleKey = new KeyParameter(key);
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
 		_ciphertext = new byte[ByteLength];

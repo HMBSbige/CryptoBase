@@ -9,22 +9,22 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.Ciphers.Aead;
 
 [InheritsTests]
-public class AesGcmBufferOverlapTest() : AeadBufferOverlapTest<GcmMode128<AesCipher>>(32);
+public class AesGcmBufferOverlapTest() : AeadBufferOverlapTest<GcmMode<AesCipher>>(32);
 
 [InheritsTests]
-public class SM4GcmBufferOverlapTest() : AeadBufferOverlapTest<GcmMode128<SM4Cipher>>(16);
+public class SM4GcmBufferOverlapTest() : AeadBufferOverlapTest<GcmMode<SM4Cipher>>(16);
 
 [InheritsTests]
-public class AesCcmBufferOverlapTest() : AeadBufferOverlapTest<CcmMode128<AesCipher>>(32);
+public class AesCcmBufferOverlapTest() : AeadBufferOverlapTest<CcmMode<AesCipher>>(32);
 
 [InheritsTests]
-public class SM4CcmBufferOverlapTest() : AeadBufferOverlapTest<CcmMode128<SM4Cipher>>(16);
+public class SM4CcmBufferOverlapTest() : AeadBufferOverlapTest<CcmMode<SM4Cipher>>(16);
 
 [InheritsTests]
-public class AesCcm8BufferOverlapTest() : AeadBufferOverlapTest<Ccm8Mode128<AesCipher>>(32);
+public class AesCcm8BufferOverlapTest() : AeadBufferOverlapTest<Ccm8Mode<AesCipher>>(32);
 
 [InheritsTests]
-public class SM4Ccm8BufferOverlapTest() : AeadBufferOverlapTest<Ccm8Mode128<SM4Cipher>>(16);
+public class SM4Ccm8BufferOverlapTest() : AeadBufferOverlapTest<Ccm8Mode<SM4Cipher>>(16);
 
 [InheritsTests]
 public class ChaCha20Poly1305BufferOverlapTest() : AeadBufferOverlapTest<ChaCha20Poly1305Cipher>(32);

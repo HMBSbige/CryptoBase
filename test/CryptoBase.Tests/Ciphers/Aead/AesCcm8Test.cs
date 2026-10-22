@@ -14,12 +14,12 @@ public class AesCcm8Test
 	public async Task MessagesMatchReference([Matrix(16, 24, 32)] int keyLength, [MatrixMethod<AesCcmTest>(nameof(AesCcmTest.MessageLengths))] int length, [Matrix(0, 29, 0xFF0A)] int associatedDataLength)
 	{
 		byte[] key = CreateDeterministicSource(keyLength);
-		byte[] nonce = CreateDeterministicSource(Ccm8Mode128<AesCipher>.NonceSize);
+		byte[] nonce = CreateDeterministicSource(Ccm8Mode<AesCipher>.NonceSize);
 		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
 		byte[] plaintext = CreateDeterministicSource(length);
 		(byte[] expected, byte[] expectedTag) = AesCcmTest.EncryptReference(key, nonce, plaintext, associatedData, TagLength);
 
-		using (Ccm8Mode128<AesCipher> cipher = Ccm8Mode128<AesCipher>.Create(key))
+		using (Ccm8Mode<AesCipher> cipher = Ccm8Mode<AesCipher>.Create(key))
 		{
 			await CcmTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
 		}

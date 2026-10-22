@@ -9,22 +9,22 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.Ciphers.Aead;
 
 [InheritsTests]
-public class AesGcmContractTest() : AeadContractTest<GcmMode128<AesCipher>>(32);
+public class AesGcmContractTest() : AeadContractTest<GcmMode<AesCipher>>(32);
 
 [InheritsTests]
-public class SM4GcmContractTest() : AeadContractTest<GcmMode128<SM4Cipher>>(16);
+public class SM4GcmContractTest() : AeadContractTest<GcmMode<SM4Cipher>>(16);
 
 [InheritsTests]
-public class AesCcmContractTest() : AeadContractTest<CcmMode128<AesCipher>>(32);
+public class AesCcmContractTest() : AeadContractTest<CcmMode<AesCipher>>(32);
 
 [InheritsTests]
-public class SM4CcmContractTest() : AeadContractTest<CcmMode128<SM4Cipher>>(16);
+public class SM4CcmContractTest() : AeadContractTest<CcmMode<SM4Cipher>>(16);
 
 [InheritsTests]
-public class AesCcm8ContractTest() : AeadContractTest<Ccm8Mode128<AesCipher>>(32);
+public class AesCcm8ContractTest() : AeadContractTest<Ccm8Mode<AesCipher>>(32);
 
 [InheritsTests]
-public class SM4Ccm8ContractTest() : AeadContractTest<Ccm8Mode128<SM4Cipher>>(16);
+public class SM4Ccm8ContractTest() : AeadContractTest<Ccm8Mode<SM4Cipher>>(16);
 
 [InheritsTests]
 public class ChaCha20Poly1305ContractTest() : AeadContractTest<ChaCha20Poly1305Cipher>(32);

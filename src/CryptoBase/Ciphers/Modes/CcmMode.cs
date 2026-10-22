@@ -7,13 +7,13 @@ namespace CryptoBase.Ciphers.Modes;
 /// </summary>
 /// <remarks>Each message is limited to 2^24 - 1 bytes.</remarks>
 /// <typeparam name="TBlockCipher">The block cipher type.</typeparam>
-public sealed class CcmMode128<TBlockCipher> : IAeadCipher<CcmMode128<TBlockCipher>> where TBlockCipher : IBlockEncryptor<TBlockCipher>
+public sealed class CcmMode<TBlockCipher> : IAeadCipher<CcmMode<TBlockCipher>> where TBlockCipher : IBlockEncryptor<TBlockCipher>
 {
 	/// <inheritdoc />
-	public static CcmMode128<TBlockCipher> Create(scoped ReadOnlySpan<byte> key)
+	public static CcmMode<TBlockCipher> Create(scoped ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(TBlockCipher.BlockSize, 16);
-		return new CcmMode128<TBlockCipher>(TBlockCipher.Create(key));
+		return new CcmMode<TBlockCipher>(TBlockCipher.Create(key));
 	}
 
 	/// <inheritdoc />
@@ -25,7 +25,7 @@ public sealed class CcmMode128<TBlockCipher> : IAeadCipher<CcmMode128<TBlockCiph
 	// Not readonly: a readonly field would make Dispose run on a defensive copy when TBlockCipher is a struct.
 	private TBlockCipher _blockCipher;
 
-	private CcmMode128(TBlockCipher blockCipher)
+	private CcmMode(TBlockCipher blockCipher)
 	{
 		_blockCipher = blockCipher;
 	}

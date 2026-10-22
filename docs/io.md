@@ -124,7 +124,7 @@ authenticating.GetMacAndReset(mac);
 
 ## DataUnitRandomAccess
 
-`DataUnitRandomAccess` encrypts a file at any offset with a data-unit cipher that uses a 16-byte tweak, such as `XtsMode<AesCipher>` or `XtsMode<SM4Cipher>`. The file holds whole data units only. The unit at offset `n * dataUnitSize` uses the tweak that `XtsMode.GetIV` gives for `firstDataUnitNumber + n`.
+`DataUnitRandomAccess` encrypts a file at any offset with a data-unit cipher that uses a 16-byte tweak, such as `XtsMode<AesCipher>` or `XtsMode<SM4Cipher>`. The file holds whole data units only. The unit at offset `n * dataUnitSize` uses the tweak that `XtsMode.GetTweak` gives for `firstDataUnitNumber + n`.
 
 Writes past the end zero-pad their last unit and fill any gap with encrypted zero units. A partial-unit write re-encrypts the whole unit, so the handle must be readable. Instances are not thread-safe; for parallel access, create one instance per thread over a shared handle with `leaveOpen: true`.
 

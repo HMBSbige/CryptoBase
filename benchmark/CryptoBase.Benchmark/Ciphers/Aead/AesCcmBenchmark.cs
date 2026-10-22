@@ -17,8 +17,8 @@ public class AesCcmBenchmark
 	[Params(16, 24, 32)]
 	public int KeyLength { get; set; }
 
-	private CcmMode128<AesCipher> _cryptoBase = null!;
-	private Ccm8Mode128<AesCipher> _cryptoBase8 = null!;
+	private CcmMode<AesCipher> _cryptoBase = null!;
+	private Ccm8Mode<AesCipher> _cryptoBase8 = null!;
 	private AesCcm? _bcl;
 	private IBlockCipher _bouncyCastlePrimitive = null!;
 	private KeyParameter _bouncyCastleKey = null!;
@@ -35,8 +35,8 @@ public class AesCcmBenchmark
 	public void Setup()
 	{
 		byte[] key = RandomNumberGenerator.GetBytes(KeyLength);
-		_cryptoBase = CcmMode128<AesCipher>.Create(key);
-		_cryptoBase8 = Ccm8Mode128<AesCipher>.Create(key);
+		_cryptoBase = CcmMode<AesCipher>.Create(key);
+		_cryptoBase8 = Ccm8Mode<AesCipher>.Create(key);
 		_bcl = AesCcm.IsSupported ? new AesCcm(key) : null;
 		_bouncyCastlePrimitive = AesUtilities.CreateEngine();
 		_bouncyCastleKey = new KeyParameter(key);

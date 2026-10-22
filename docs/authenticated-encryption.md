@@ -4,12 +4,12 @@
 
 | Type | Namespace | Key | Nonce | Tag |
 | --- | --- | ---: | ---: | ---: |
-| `GcmMode128<AesCipher>` | `CryptoBase.Ciphers.Modes` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
-| `GcmMode128<SM4Cipher>` | `CryptoBase.Ciphers.Modes` | 16 bytes | 12 bytes | 16 bytes |
-| `CcmMode128<AesCipher>` | `CryptoBase.Ciphers.Modes` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
-| `CcmMode128<SM4Cipher>` | `CryptoBase.Ciphers.Modes` | 16 bytes | 12 bytes | 16 bytes |
-| `Ccm8Mode128<AesCipher>` | `CryptoBase.Ciphers.Modes` | 16, 24, or 32 bytes | 12 bytes | 8 bytes |
-| `Ccm8Mode128<SM4Cipher>` | `CryptoBase.Ciphers.Modes` | 16 bytes | 12 bytes | 8 bytes |
+| `GcmMode<AesCipher>` | `CryptoBase.Ciphers.Modes` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
+| `GcmMode<SM4Cipher>` | `CryptoBase.Ciphers.Modes` | 16 bytes | 12 bytes | 16 bytes |
+| `CcmMode<AesCipher>` | `CryptoBase.Ciphers.Modes` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
+| `CcmMode<SM4Cipher>` | `CryptoBase.Ciphers.Modes` | 16 bytes | 12 bytes | 16 bytes |
+| `Ccm8Mode<AesCipher>` | `CryptoBase.Ciphers.Modes` | 16, 24, or 32 bytes | 12 bytes | 8 bytes |
+| `Ccm8Mode<SM4Cipher>` | `CryptoBase.Ciphers.Modes` | 16 bytes | 12 bytes | 8 bytes |
 | `ChaCha20Poly1305Cipher` | `CryptoBase.Ciphers.Aead` | 32 bytes | 12 bytes | 16 bytes |
 | `XChaCha20Poly1305Cipher` | `CryptoBase.Ciphers.Aead` | 32 bytes | 24 bytes | 16 bytes |
 
@@ -65,6 +65,6 @@ static byte[] Encrypt<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> plaintext, o
     return ciphertext;
 }
 
-byte[] sm4Ciphertext = Encrypt<CcmMode128<SM4Cipher>>(RandomNumberGenerator.GetBytes(16), "message"u8, out byte[] sm4Nonce, out byte[] sm4Tag);
+byte[] sm4Ciphertext = Encrypt<CcmMode<SM4Cipher>>(RandomNumberGenerator.GetBytes(16), "message"u8, out byte[] sm4Nonce, out byte[] sm4Tag);
 byte[] chachaCiphertext = Encrypt<ChaCha20Poly1305Cipher>(RandomNumberGenerator.GetBytes(32), "message"u8, out byte[] chachaNonce, out byte[] chachaTag);
 ```

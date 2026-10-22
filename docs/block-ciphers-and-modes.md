@@ -51,7 +51,7 @@ using XtsMode<AesCipher> sameXts = XtsMode<AesCipher>.Create(combinedKey);
 // Encrypt sector 42 of a disk image.
 byte[] sector = RandomNumberGenerator.GetBytes(512);
 Span<byte> tweak = stackalloc byte[XtsMode<AesCipher>.TweakSize];
-XtsMode.GetIV(tweak, dataUnitSeqNumber: 42);
+XtsMode.GetTweak(tweak, dataUnitNumber: 42);
 
 byte[] ciphertext = new byte[sector.Length];
 xts.Encrypt(tweak, sector, ciphertext);

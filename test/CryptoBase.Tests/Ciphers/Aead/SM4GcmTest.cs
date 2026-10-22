@@ -20,7 +20,7 @@ public class SM4GcmTest
 		byte[] associatedData = CreateDeterministicSource(17);
 		byte[] plaintext = CreateDeterministicSource(length);
 		(byte[] expected, byte[] expectedTag) = EncryptReference(key, nonce, plaintext, associatedData);
-		using GcmMode128<SM4Cipher> cipher = GcmMode128<SM4Cipher>.Create(key);
+		using GcmMode<SM4Cipher> cipher = GcmMode<SM4Cipher>.Create(key);
 		byte[] source = CreateGuardedBuffer(3, length);
 		plaintext.CopyTo(source, 3);
 		byte[] destination = CreateGuardedBuffer(5, length);

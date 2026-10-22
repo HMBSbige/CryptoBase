@@ -121,61 +121,61 @@ internal static class CryptoList
 			}
 			case Aes128Gcm:
 			{
-				using GcmMode128<AesCipher> crypto = GcmMode128<AesCipher>.Create(key16);
+				using GcmMode<AesCipher> crypto = GcmMode<AesCipher>.Create(key16);
 				test.TestAead(crypto);
 				break;
 			}
 			case Aes192Gcm:
 			{
-				using GcmMode128<AesCipher> crypto = GcmMode128<AesCipher>.Create(key24);
+				using GcmMode<AesCipher> crypto = GcmMode<AesCipher>.Create(key24);
 				test.TestAead(crypto);
 				break;
 			}
 			case Aes256Gcm:
 			{
-				using GcmMode128<AesCipher> crypto = GcmMode128<AesCipher>.Create(key32);
+				using GcmMode<AesCipher> crypto = GcmMode<AesCipher>.Create(key32);
 				test.TestAead(crypto);
 				break;
 			}
 			case SM4Gcm:
 			{
-				using GcmMode128<SM4Cipher> crypto = GcmMode128<SM4Cipher>.Create(key16);
+				using GcmMode<SM4Cipher> crypto = GcmMode<SM4Cipher>.Create(key16);
 				test.TestAead(crypto);
 				break;
 			}
 			case Aes128Ccm:
 			{
-				using CcmMode128<AesCipher> crypto = CcmMode128<AesCipher>.Create(key16);
+				using CcmMode<AesCipher> crypto = CcmMode<AesCipher>.Create(key16);
 				test.TestAead(crypto);
 				break;
 			}
 			case Aes192Ccm:
 			{
-				using CcmMode128<AesCipher> crypto = CcmMode128<AesCipher>.Create(key24);
+				using CcmMode<AesCipher> crypto = CcmMode<AesCipher>.Create(key24);
 				test.TestAead(crypto);
 				break;
 			}
 			case Aes256Ccm:
 			{
-				using CcmMode128<AesCipher> crypto = CcmMode128<AesCipher>.Create(key32);
+				using CcmMode<AesCipher> crypto = CcmMode<AesCipher>.Create(key32);
 				test.TestAead(crypto);
 				break;
 			}
 			case SM4Ccm:
 			{
-				using CcmMode128<SM4Cipher> crypto = CcmMode128<SM4Cipher>.Create(key16);
+				using CcmMode<SM4Cipher> crypto = CcmMode<SM4Cipher>.Create(key16);
 				test.TestAead(crypto);
 				break;
 			}
 			case Aes128Ccm8:
 			{
-				using Ccm8Mode128<AesCipher> crypto = Ccm8Mode128<AesCipher>.Create(key16);
+				using Ccm8Mode<AesCipher> crypto = Ccm8Mode<AesCipher>.Create(key16);
 				test.TestAead(crypto);
 				break;
 			}
 			case Aes256Ccm8:
 			{
-				using Ccm8Mode128<AesCipher> crypto = Ccm8Mode128<AesCipher>.Create(key32);
+				using Ccm8Mode<AesCipher> crypto = Ccm8Mode<AesCipher>.Create(key32);
 				test.TestAead(crypto);
 				break;
 			}
