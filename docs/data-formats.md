@@ -52,6 +52,8 @@ string lower = ToBase32(lowercase, "hello"u8); // "nbswy3dp"
 
 `EncodeToUtf8` and `DecodeFromUtf8` do the same with UTF-8 bytes.
 
+The source and destination must not overlap, such as two slices of one array; otherwise the output may be wrong.
+
 ### Encoding in pieces
 
 With `isFinalBlock: false`, a call processes whole 5-byte groups (8 characters when decoding) and leaves the rest of the input unconsumed. Carry the rest over to the next call, and pass `isFinalBlock: true` with the last piece; when decoding, a group with padding is accepted only there:
