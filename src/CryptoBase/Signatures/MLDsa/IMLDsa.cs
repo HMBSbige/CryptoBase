@@ -1,7 +1,7 @@
 namespace CryptoBase.Signatures.MLDsa;
 
 // The members that MLDsa44, MLDsa65 and MLDsa87 share beyond ISignatureKey, so that code can be generic over the parameter set.
-internal interface IMLDsa<TSelf> : ISignatureKey<TSelf> where TSelf : class, IMLDsa<TSelf>
+internal interface IMLDsa<out TSelf> : ISignatureKey<TSelf> where TSelf : class, IMLDsa<TSelf>
 {
 	static abstract int PrivateSeedLength { get; }
 
