@@ -5,7 +5,42 @@ namespace CryptoBase.Tests.Ciphers.Blocks.Aes;
 
 internal static class AesTestUtils
 {
-	public static byte[] TransformReference(BclAes reference, byte[] source, byte[] mask, bool decrypt, bool xorInput)
+	public delegate void MaskedTransform(ReadOnlySpan<byte> source, ReadOnlySpan<byte> xorOperand, Span<byte> destination);
+
+	public static async Task AssertMaskedTransformsMatchBcl(BclAes reference, Random random, int blocks, bool decrypt, bool xorInput, MaskedTransform transform)
+	{
+		int length = blocks * 16;
+		int sourceOffset = blocks % 15 + 1;
+		int maskOffset = 16 - sourceOffset;
+		int destinationOffset = blocks * 7 % 15 + 1;
+		byte[] source = new byte[sourceOffset + length + 19];
+		byte[] mask = new byte[maskOffset + length + 23];
+		random.NextBytes(source);
+		random.NextBytes(mask);
+		byte[] originalSource = source.ToArray();
+		byte[] originalMask = mask.ToArray();
+		byte[] input = source.AsSpan(sourceOffset, length).ToArray();
+		byte[] blockMask = mask.AsSpan(maskOffset, length).ToArray();
+		byte[] expected = TransformReference(reference, input, blockMask, decrypt, xorInput);
+		byte[] actual = TestUtils.CreateGuardedBuffer(destinationOffset, length, 17);
+
+		transform(source.AsSpan(sourceOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset));
+		await TestUtils.AssertOutput(actual, destinationOffset, expected);
+		await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
+		await Assert.That(mask).IsEquivalentTo(originalMask, CollectionOrdering.Matching);
+
+		input.CopyTo(actual, destinationOffset);
+		transform(actual.AsSpan(destinationOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset));
+		await TestUtils.AssertOutput(actual, destinationOffset, expected);
+		await Assert.That(mask).IsEquivalentTo(originalMask, CollectionOrdering.Matching);
+
+		blockMask.CopyTo(actual, destinationOffset);
+		transform(source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset, length), actual.AsSpan(destinationOffset));
+		await TestUtils.AssertOutput(actual, destinationOffset, expected);
+		await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
+	}
+
+	private static byte[] TransformReference(BclAes reference, byte[] source, byte[] mask, bool decrypt, bool xorInput)
 	{
 		byte[] input = xorInput ? source.ToArray() : source;
 

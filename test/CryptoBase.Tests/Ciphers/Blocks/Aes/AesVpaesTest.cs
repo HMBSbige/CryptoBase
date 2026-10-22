@@ -90,35 +90,7 @@ public class AesVpaesTest
 
 		foreach (int blocks in new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 63, 64, 65, 257 })
 		{
-			int length = blocks * 16;
-			int sourceOffset = blocks % 15 + 1;
-			int maskOffset = 16 - sourceOffset;
-			int destinationOffset = blocks * 7 % 15 + 1;
-			byte[] source = new byte[sourceOffset + length + 19];
-			byte[] mask = new byte[maskOffset + length + 23];
-			random.NextBytes(source);
-			random.NextBytes(mask);
-			byte[] originalSource = source.ToArray();
-			byte[] originalMask = mask.ToArray();
-			byte[] input = source.AsSpan(sourceOffset, length).ToArray();
-			byte[] blockMask = mask.AsSpan(maskOffset, length).ToArray();
-			byte[] expected = AesTestUtils.TransformReference(reference, input, blockMask, decrypt, xorInput);
-			byte[] actual = TestUtils.CreateGuardedBuffer(destinationOffset, length, 17);
-
-			TransformWithMask(in crypto, source.AsSpan(sourceOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
-			await TestUtils.AssertOutput(actual, destinationOffset, expected);
-			await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
-			await Assert.That(mask).IsEquivalentTo(originalMask, CollectionOrdering.Matching);
-
-			input.CopyTo(actual, destinationOffset);
-			TransformWithMask(in crypto, actual.AsSpan(destinationOffset, length), mask.AsSpan(maskOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
-			await TestUtils.AssertOutput(actual, destinationOffset, expected);
-			await Assert.That(mask).IsEquivalentTo(originalMask, CollectionOrdering.Matching);
-
-			blockMask.CopyTo(actual, destinationOffset);
-			TransformWithMask(in crypto, source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset, length), actual.AsSpan(destinationOffset), decrypt, xorInput);
-			await TestUtils.AssertOutput(actual, destinationOffset, expected);
-			await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
+			await AesTestUtils.AssertMaskedTransformsMatchBcl(reference, random, blocks, decrypt, xorInput, (source, xorOperand, destination) => TransformWithMask(in crypto, source, xorOperand, destination, decrypt, xorInput));
 		}
 	}
 
