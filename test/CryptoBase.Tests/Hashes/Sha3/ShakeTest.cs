@@ -93,8 +93,8 @@ public class ShakeTest
 
 		foreach (int[] pieceLengths in XofContractTest.PieceLengthPatterns(rate))
 		{
-			using IDisposable platform = CreatePlatform(securityStrength, out Action<ReadOnlySpan<byte>> platformAppend, out _, out PlatformOutput platformCurrent, out PlatformOutput platformFinal);
-			using IDisposable xof = CreateXof(securityStrength, out Action<ReadOnlySpan<byte>> append, out _, out PlatformOutput current, out PlatformOutput final);
+			using IDisposable platform = CreatePlatform(securityStrength, out Action<ReadOnlySpan<byte>> platformAppend, out _, out Action<Span<byte>> platformCurrent, out Action<Span<byte>> platformFinal);
+			using IDisposable xof = CreateXof(securityStrength, out Action<ReadOnlySpan<byte>> append, out _, out Action<Span<byte>> current, out Action<Span<byte>> final);
 
 			for (int round = 0; round < 2; ++round)
 			{
@@ -125,8 +125,8 @@ public class ShakeTest
 
 		foreach (int[] pieceLengths in XofContractTest.PieceLengthPatterns(rate))
 		{
-			using IDisposable platform = CreatePlatform(securityStrength, out Action<ReadOnlySpan<byte>> platformAppend, out PlatformOutput platformRead, out _, out _);
-			using IDisposable xof = CreateXof(securityStrength, out Action<ReadOnlySpan<byte>> append, out PlatformOutput read, out _, out _);
+			using IDisposable platform = CreatePlatform(securityStrength, out Action<ReadOnlySpan<byte>> platformAppend, out Action<Span<byte>> platformRead, out _, out _);
+			using IDisposable xof = CreateXof(securityStrength, out Action<ReadOnlySpan<byte>> append, out Action<Span<byte>> read, out _, out _);
 			platformAppend(source);
 			append(source);
 
@@ -188,8 +188,6 @@ public class ShakeTest
 		reading.Dispose();
 		await Assert.That(reading.Clone).ThrowsExactly<ObjectDisposedException>();
 	}
-
-	private delegate void PlatformOutput(Span<byte> destination);
 
 	private static int Rate(int securityStrength)
 	{
@@ -255,7 +253,7 @@ public class ShakeTest
 	private static void SkipUnlessPlatformReads(int securityStrength)
 	{
 		SkipUnlessPlatformSupports(securityStrength);
-		using IDisposable platform = CreatePlatform(securityStrength, out _, out PlatformOutput read, out _, out _);
+		using IDisposable platform = CreatePlatform(securityStrength, out _, out Action<Span<byte>> read, out _, out _);
 
 		try
 		{
@@ -279,7 +277,7 @@ public class ShakeTest
 		}
 	}
 
-	private static IDisposable CreatePlatform(int securityStrength, out Action<ReadOnlySpan<byte>> append, out PlatformOutput read, out PlatformOutput current, out PlatformOutput final)
+	private static IDisposable CreatePlatform(int securityStrength, out Action<ReadOnlySpan<byte>> append, out Action<Span<byte>> read, out Action<Span<byte>> current, out Action<Span<byte>> final)
 	{
 		if (securityStrength is 128)
 		{
@@ -295,7 +293,7 @@ public class ShakeTest
 		}
 	}
 
-	private static IDisposable CreateXof(int securityStrength, out Action<ReadOnlySpan<byte>> append, out PlatformOutput read, out PlatformOutput current, out PlatformOutput final)
+	private static IDisposable CreateXof(int securityStrength, out Action<ReadOnlySpan<byte>> append, out Action<Span<byte>> read, out Action<Span<byte>> current, out Action<Span<byte>> final)
 	{
 		if (securityStrength is 128)
 		{
@@ -311,7 +309,7 @@ public class ShakeTest
 		}
 	}
 
-	private static async Task AssertSameOutput(PlatformOutput actual, PlatformOutput expected, int length)
+	private static async Task AssertSameOutput(Action<Span<byte>> actual, Action<Span<byte>> expected, int length)
 	{
 		byte[] expectedOutput = new byte[length];
 		expected(expectedOutput);

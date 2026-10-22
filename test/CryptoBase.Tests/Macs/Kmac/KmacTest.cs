@@ -2,6 +2,7 @@ using CryptoBase.Tests.Hashes;
 using CryptoBase.Tests.Hashes.Sha3;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using static CryptoBase.Tests.Hashes.Sha3.Sha3TestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Macs.Kmac;
@@ -13,8 +14,6 @@ public class KmacTest
 {
 	private static readonly byte[] Key = CreateDeterministicSource(32);
 	private static readonly byte[] Customization = "My Tagged Application"u8.ToArray();
-
-	private delegate void OutputWriter(Span<byte> destination);
 
 	[Test]
 	[MethodDataSource(typeof(Sp800_185Samples), nameof(Sp800_185Samples.Kmac))]
@@ -380,13 +379,5 @@ public class KmacTest
 
 			await Assert.That(buffer.AsSpan(destinationOffset, outputLength).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"destination at {destinationOffset}");
 		}
-	}
-
-	private static async Task AssertWrites(byte[] expected, OutputWriter write)
-	{
-		byte[] destination = new byte[expected.Length + 2];
-		PrepareDestination(destination);
-		write(destination.AsSpan(1, expected.Length));
-		await AssertOutput(destination, 1, expected);
 	}
 }

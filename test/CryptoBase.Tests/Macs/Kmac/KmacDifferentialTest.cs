@@ -55,14 +55,14 @@ public class KmacDifferentialTest
 	// 8191 bytes, then K: rate - 5 bytes fill one block exactly. 31 and 32 cross the change in the length of left_encode(8 |K|).
 	private static IEnumerable<int> KeyLengths(int rate)
 	{
-		int fillsBlock = LengthGiving(rate, length => KeccakReference.LeftEncode((ulong)rate).Length + KeccakReference.EncodeString(new byte[length]).Length);
+		int fillsBlock = Sha3TestUtils.LengthGiving(rate, length => KeccakReference.LeftEncode((ulong)rate).Length + KeccakReference.EncodeString(new byte[length]).Length);
 		return [0, 1, 31, 32, fillsBlock - 1, fillsBlock, fillsBlock + 1, rate + 1, 2 * rate];
 	}
 
 	// bytepad(encode_string("KMAC") || encode_string(S), rate) takes 2 + 6 + 3 bytes before S from 32 bytes on, so rate - 11 bytes fill the block.
 	private static IEnumerable<int> CustomizationLengths(int rate)
 	{
-		int fillsBlock = LengthGiving(rate, length => KeccakReference.LeftEncode((ulong)rate).Length
+		int fillsBlock = Sha3TestUtils.LengthGiving(rate, length => KeccakReference.LeftEncode((ulong)rate).Length
 			+ KeccakReference.EncodeString("KMAC"u8).Length
 			+ KeccakReference.EncodeString(new byte[length]).Length);
 		return [0, 1, fillsBlock - 1, fillsBlock, fillsBlock + 1];
@@ -71,19 +71,6 @@ public class KmacDifferentialTest
 	private static IEnumerable<int> OutputLengths(int rate)
 	{
 		return [1, 16, 32, rate - 1, rate, rate + 1, 2 * rate + 5];
-	}
-
-	private static int LengthGiving(int target, Func<int, int> encodedLength)
-	{
-		for (int length = 0; length <= target; ++length)
-		{
-			if (encodedLength(length) == target)
-			{
-				return length;
-			}
-		}
-
-		throw new InvalidOperationException($"No length gives {target} encoded bytes.");
 	}
 
 	public static IEnumerable<(KmacVariant Variant, int Length)> ThreeByteLengthCases()
@@ -104,7 +91,7 @@ public class KmacDifferentialTest
 	public async Task MatchesOraclesWithThreeByteLengths(KmacVariant variant, int length)
 	{
 		byte[] key = CreateDeterministicSource(length);
-		byte[] customization = Customization(length);
+		byte[] customization = Sha3TestUtils.Customization(length);
 		byte[] source = CreateDeterministicSource(variant.Rate + 1);
 		byte[] expected = variant.Reference(key, source, length, customization);
 		byte[] actual = variant.Compute(key, source, length, customization);
@@ -125,7 +112,7 @@ public class KmacDifferentialTest
 
 		foreach (int customizationLength in CustomizationLengths(rate))
 		{
-			byte[] customization = Customization(customizationLength);
+			byte[] customization = Sha3TestUtils.Customization(customizationLength);
 			using KmacSubject kmac = variant.Create(key, customization);
 
 			foreach (int sourceLength in HashAlgorithmTestUtils.RateBlockAndPaddingLengths(rate))
@@ -170,18 +157,6 @@ public class KmacDifferentialTest
 		}
 
 		return output;
-	}
-
-	private static byte[] Customization(int length)
-	{
-		byte[] customization = CreateDeterministicSource(length);
-
-		for (int i = 0; i < customization.Length; ++i)
-		{
-			customization[i] ^= 0xFF;
-		}
-
-		return customization;
 	}
 
 	private static bool IsPlatformSupported(KmacVariant variant)

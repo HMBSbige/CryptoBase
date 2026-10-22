@@ -3,6 +3,7 @@ using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha3;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using static CryptoBase.Tests.Hashes.Sha3.Sha3TestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
@@ -314,8 +315,6 @@ public class CShakeTest
 		});
 	}
 
-	private delegate void OutputWriter(Span<byte> destination);
-
 	private static async Task VerifySample<T>(byte[] data, byte[] customization, byte[] expected) where T : class, IXof<T>
 	{
 		using T xof = Create<T>([], customization);
@@ -375,13 +374,5 @@ public class CShakeTest
 		byte[] output = new byte[length];
 		HashData<T>(Name, Customization, source, output);
 		return output;
-	}
-
-	private static async Task AssertWrites(byte[] expected, OutputWriter write)
-	{
-		byte[] destination = new byte[expected.Length + 2];
-		PrepareDestination(destination);
-		write(destination.AsSpan(1, expected.Length));
-		await AssertOutput(destination, 1, expected);
 	}
 }

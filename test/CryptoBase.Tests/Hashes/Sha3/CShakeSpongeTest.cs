@@ -75,9 +75,9 @@ public class CShakeSpongeTest
 
 		foreach (int target in (int[])[rate - 1, rate, rate + 1, 2 * rate - 1, 2 * rate, 2 * rate + 1])
 		{
-			yield return (0, LengthGivingPrefix(target, s => PrefixLength(rate, 0, s)));
-			yield return (LengthGivingPrefix(target, n => PrefixLength(rate, n, 0)), 0);
-			yield return (4, LengthGivingPrefix(target, s => PrefixLength(rate, 4, s)));
+			yield return (0, Sha3TestUtils.LengthGiving(target, s => PrefixLength(rate, 0, s)));
+			yield return (Sha3TestUtils.LengthGiving(target, n => PrefixLength(rate, n, 0)), 0);
+			yield return (4, Sha3TestUtils.LengthGiving(target, s => PrefixLength(rate, 4, s)));
 		}
 	}
 
@@ -89,34 +89,9 @@ public class CShakeSpongeTest
 			+ KeccakReference.EncodeString(new byte[customizationLength]).Length;
 	}
 
-	private static int LengthGivingPrefix(int target, Func<int, int> prefixLength)
-	{
-		for (int length = 0; length <= target; ++length)
-		{
-			if (prefixLength(length) == target)
-			{
-				return length;
-			}
-		}
-
-		throw new InvalidOperationException($"No length gives a {target}-byte prefix.");
-	}
-
 	private static IEnumerable<int> OutputLengths(int rate)
 	{
 		return [0, 1, rate - 1, rate, rate + 1, 3 * rate + 11];
-	}
-
-	private static byte[] Customization(int length)
-	{
-		byte[] customization = CreateDeterministicSource(length);
-
-		for (int i = 0; i < customization.Length; ++i)
-		{
-			customization[i] ^= 0xFF;
-		}
-
-		return customization;
 	}
 
 	private static async Task VerifyMatchesReference<TRate>() where TRate : IKeccakRate
@@ -127,7 +102,7 @@ public class CShakeSpongeTest
 		foreach ((int nameLength, int customizationLength) in NameAndCustomizationLengths(rate))
 		{
 			byte[] name = CreateDeterministicSource(nameLength);
-			byte[] customization = Customization(customizationLength);
+			byte[] customization = Sha3TestUtils.Customization(customizationLength);
 			CShakeSponge<TRate> seeded = default;
 			seeded.Initialize(name, customization);
 

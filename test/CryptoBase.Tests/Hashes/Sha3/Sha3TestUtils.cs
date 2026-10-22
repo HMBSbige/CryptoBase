@@ -1,5 +1,6 @@
 using CryptoBase.Hashes.Sha3;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
@@ -81,5 +82,38 @@ internal static class Sha3TestUtils
 			2 => nameof(KeccakP1600Times2),
 			_ => nameof(KeccakP1600Times1)
 		};
+	}
+
+	public static async Task AssertWrites(byte[] expected, Action<Span<byte>> write)
+	{
+		byte[] destination = new byte[expected.Length + 2];
+		PrepareDestination(destination);
+		write(destination.AsSpan(1, expected.Length));
+		await AssertOutput(destination, 1, expected);
+	}
+
+	public static byte[] Customization(int length)
+	{
+		byte[] customization = CreateDeterministicSource(length);
+
+		for (int i = 0; i < customization.Length; ++i)
+		{
+			customization[i] ^= 0xFF;
+		}
+
+		return customization;
+	}
+
+	public static int LengthGiving(int target, Func<int, int> encodedLength)
+	{
+		for (int length = 0; length <= target; ++length)
+		{
+			if (encodedLength(length) == target)
+			{
+				return length;
+			}
+		}
+
+		throw new InvalidOperationException($"No length gives {target} encoded bytes.");
 	}
 }
