@@ -153,34 +153,7 @@ internal static class VectorTranspose
 		// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
 		// =>
 		// 0 8 1 9 2 10 3 11 4 12 5 13 6 14 7 15
-		Vector256<uint> original1 = v1;
-		Vector256<uint> original2 = v2;
-		Vector256<uint> original3 = v3;
-		Vector256<uint> original4 = v4;
-		Vector256<uint> original5 = v5;
-		Vector256<uint> original6 = v6;
-		Vector256<uint> original7 = v7;
-		Vector256<uint> original8 = v8;
-		Vector256<uint> original9 = v9;
-		Vector256<uint> original10 = v10;
-		Vector256<uint> original11 = v11;
-		Vector256<uint> original12 = v12;
-		Vector256<uint> original13 = v13;
-		Vector256<uint> original14 = v14;
-		v1 = original8;
-		v2 = original1;
-		v3 = original9;
-		v4 = original2;
-		v5 = original10;
-		v6 = original3;
-		v7 = original11;
-		v8 = original4;
-		v9 = original12;
-		v10 = original5;
-		v11 = original13;
-		v12 = original6;
-		v13 = original14;
-		v14 = original7;
+		(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14) = (v8, v1, v9, v2, v10, v3, v11, v4, v12, v5, v13, v6, v14, v7);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
