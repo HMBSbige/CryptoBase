@@ -2,7 +2,7 @@ using Sha256Arm = System.Runtime.Intrinsics.Arm.Sha256;
 
 namespace CryptoBase.Hashes.Sha2;
 
-internal partial struct Sha256Core
+internal partial struct Sha256State
 {
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private unsafe void ProcessBlocksArm64(ReadOnlySpan<byte> source)

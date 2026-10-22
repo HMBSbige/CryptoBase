@@ -1,6 +1,6 @@
 namespace CryptoBase.Hashes.Sha2;
 
-internal partial struct Sha256Core
+internal partial struct Sha256State
 {
 	[SkipLocalsInit]
 	private void ProcessBlocksAvx2(ReadOnlySpan<byte> source)

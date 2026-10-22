@@ -107,7 +107,7 @@ internal static unsafe class Argon2Core
 		BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(16), Version);
 		BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(20), (uint)type);
 
-		Unsafe.SkipInit(out Blake2bCore blake2b);
+		Unsafe.SkipInit(out Blake2bState blake2b);
 
 		try
 		{
@@ -126,7 +126,7 @@ internal static unsafe class Argon2Core
 	}
 
 	[SkipLocalsInit]
-	private static void AppendWithLength(ref Blake2bCore blake2b, ReadOnlySpan<byte> data)
+	private static void AppendWithLength(ref Blake2bState blake2b, ReadOnlySpan<byte> data)
 	{
 		Span<byte> length = stackalloc byte[sizeof(uint)];
 		BinaryPrimitives.WriteUInt32LittleEndian(length, (uint)data.Length);
@@ -139,13 +139,13 @@ internal static unsafe class Argon2Core
 	{
 		Span<byte> outputLength = stackalloc byte[sizeof(uint)];
 		BinaryPrimitives.WriteUInt32LittleEndian(outputLength, (uint)destination.Length);
-		Unsafe.SkipInit(out Blake2bCore blake2b);
+		Unsafe.SkipInit(out Blake2bState blake2b);
 		Unsafe.SkipInit(out InlineArray64<byte> chainBuffer);
 		Span<byte> chain = chainBuffer;
 
 		try
 		{
-			if (destination.Length <= Blake2bCore.MaxHashSizeInBytes)
+			if (destination.Length <= Blake2bState.MaxHashSizeInBytes)
 			{
 				blake2b.Initialize(destination.Length);
 				blake2b.Append(outputLength);
@@ -154,24 +154,24 @@ internal static unsafe class Argon2Core
 				return;
 			}
 
-			blake2b.Initialize(Blake2bCore.MaxHashSizeInBytes);
+			blake2b.Initialize(Blake2bState.MaxHashSizeInBytes);
 			blake2b.Append(outputLength);
 			blake2b.Append(input);
-			blake2b.Finalize(chain, Blake2bCore.MaxHashSizeInBytes);
+			blake2b.Finalize(chain, Blake2bState.MaxHashSizeInBytes);
 
 			while (true)
 			{
-				chain.Slice(0, Blake2bCore.MaxHashSizeInBytes / 2).CopyTo(destination);
-				destination = destination.Slice(Blake2bCore.MaxHashSizeInBytes / 2);
+				chain.Slice(0, Blake2bState.MaxHashSizeInBytes / 2).CopyTo(destination);
+				destination = destination.Slice(Blake2bState.MaxHashSizeInBytes / 2);
 
-				if (destination.Length <= Blake2bCore.MaxHashSizeInBytes)
+				if (destination.Length <= Blake2bState.MaxHashSizeInBytes)
 				{
 					break;
 				}
 
-				blake2b.Initialize(Blake2bCore.MaxHashSizeInBytes);
+				blake2b.Initialize(Blake2bState.MaxHashSizeInBytes);
 				blake2b.Append(chain);
-				blake2b.Finalize(chain, Blake2bCore.MaxHashSizeInBytes);
+				blake2b.Finalize(chain, Blake2bState.MaxHashSizeInBytes);
 			}
 
 			blake2b.Initialize(destination.Length);

@@ -31,7 +31,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 
 		if (UseBlake2bHashData())
 		{
-			Blake2bCore.HashData(source, destination, TCore.HashLength);
+			Blake2bState.HashData(source, destination, TCore.HashLength);
 			return TCore.HashLength;
 		}
 

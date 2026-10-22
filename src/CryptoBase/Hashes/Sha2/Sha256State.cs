@@ -2,7 +2,7 @@ using Sha256Arm = System.Runtime.Intrinsics.Arm.Sha256;
 
 namespace CryptoBase.Hashes.Sha2;
 
-internal partial struct Sha256Core
+internal partial struct Sha256State
 {
 	private ulong _byteCount;
 	private uint _h0;

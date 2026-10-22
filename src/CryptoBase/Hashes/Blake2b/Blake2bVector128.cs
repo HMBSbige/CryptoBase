@@ -1,4 +1,4 @@
-using static CryptoBase.Hashes.Blake2b.Blake2bCore;
+using static CryptoBase.Hashes.Blake2b.Blake2bState;
 
 namespace CryptoBase.Hashes.Blake2b;
 

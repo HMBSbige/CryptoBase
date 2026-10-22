@@ -1,6 +1,6 @@
 namespace CryptoBase.Hashes.Sha2;
 
-internal partial struct Sha512Core
+internal partial struct Sha512State
 {
 	private UInt128 _byteCount;
 	private ulong _h0;

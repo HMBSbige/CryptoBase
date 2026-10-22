@@ -15,13 +15,13 @@ public struct Sha384HashAlgorithm : IHmacHashCore<Sha384HashAlgorithm>
 	private const ulong InitialH6 = 0xDB0C2E0D64F98FA7UL;
 	private const ulong InitialH7 = 0x47B5481DBEFA4FA4UL;
 
-	private Sha512Core _state;
+	private Sha512State _state;
 
 	/// <inheritdoc />
 	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSize => Sha512Core.BlockSizeInBytes;
+	public static int HmacBlockSize => Sha512State.BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static Sha384HashAlgorithm IHashCore<Sha384HashAlgorithm>.Create()

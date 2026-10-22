@@ -15,13 +15,13 @@ public struct Sha256HashAlgorithm : IHmacHashCore<Sha256HashAlgorithm>
 	private const uint InitialH6 = 0x1F83D9ABU;
 	private const uint InitialH7 = 0x5BE0CD19U;
 
-	private Sha256Core _state;
+	private Sha256State _state;
 
 	/// <inheritdoc />
 	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSize => Sha256Core.BlockSizeInBytes;
+	public static int HmacBlockSize => Sha256State.BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static Sha256HashAlgorithm IHashCore<Sha256HashAlgorithm>.Create()

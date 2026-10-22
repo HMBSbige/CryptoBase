@@ -8,13 +8,13 @@ public struct Blake2b512HashAlgorithm : IHmacHashCore<Blake2b512HashAlgorithm>
 {
 	private const int HashSizeInBytes = 64;
 
-	private Blake2bCore _state;
+	private Blake2bState _state;
 
 	/// <inheritdoc />
 	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSize => Blake2bCore.BlockSizeInBytes;
+	public static int HmacBlockSize => Blake2bState.BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static Blake2b512HashAlgorithm IHashCore<Blake2b512HashAlgorithm>.Create()

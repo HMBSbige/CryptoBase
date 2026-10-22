@@ -15,13 +15,13 @@ public struct Sha512HashAlgorithm : IHmacHashCore<Sha512HashAlgorithm>
 	private const ulong InitialH6 = 0x1F83D9ABFB41BD6BUL;
 	private const ulong InitialH7 = 0x5BE0CD19137E2179UL;
 
-	private Sha512Core _state;
+	private Sha512State _state;
 
 	/// <inheritdoc />
 	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSize => Sha512Core.BlockSizeInBytes;
+	public static int HmacBlockSize => Sha512State.BlockSizeInBytes;
 
 	[SkipLocalsInit]
 	static Sha512HashAlgorithm IHashCore<Sha512HashAlgorithm>.Create()

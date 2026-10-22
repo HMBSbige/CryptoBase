@@ -1,6 +1,6 @@
 namespace CryptoBase.Hashes.Blake2b;
 
-internal struct Blake2bCore
+internal struct Blake2bState
 {
 	internal const int BlockSizeInBytes = 128;
 	internal const int MaxHashSizeInBytes = 64;
