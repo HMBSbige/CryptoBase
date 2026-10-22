@@ -1,15 +1,17 @@
-namespace CryptoBase;
+namespace CryptoBase.Internal;
 
 /// <summary>
 /// Provides low-level helpers optimized for cryptographic operations.
 /// </summary>
-public static class FastUtils
+internal static class FastUtils
 {
 	/// <summary>
 	/// destination = source ^ stream
 	/// </summary>
 	public static void Xor(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
+		Debug.Assert(length <= stream.Length && length <= source.Length && length <= destination.Length);
+
 		int i = 0;
 		int left = length;
 
@@ -102,6 +104,8 @@ public static class FastUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void XorLess16(ReadOnlySpan<byte> stream, ReadOnlySpan<byte> source, Span<byte> destination, int length)
 	{
+		Debug.Assert(length <= stream.Length && length <= source.Length && length <= destination.Length);
+
 		XorTail(ref MemoryMarshal.GetReference(stream), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), length);
 	}
 

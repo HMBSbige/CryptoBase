@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.Internal;
 using System.Numerics.Tensors;
 using System.Security.Cryptography;
 

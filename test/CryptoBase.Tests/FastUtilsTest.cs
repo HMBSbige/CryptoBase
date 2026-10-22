@@ -1,3 +1,4 @@
+using CryptoBase.Internal;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests;

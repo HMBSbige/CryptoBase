@@ -1,3 +1,5 @@
+using CryptoBase.Internal;
+
 namespace CryptoBase.Tests;
 
 public class CryptoBufferTest

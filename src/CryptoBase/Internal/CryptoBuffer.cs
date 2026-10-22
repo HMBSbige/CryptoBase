@@ -1,11 +1,11 @@
 using System.Buffers;
 
-namespace CryptoBase;
+namespace CryptoBase.Internal;
 
 /// <summary>
 /// Provides temporary storage that is cleared when disposed.
 /// </summary>
-public readonly ref struct CryptoBuffer<T> : IDisposable where T : unmanaged
+internal readonly ref struct CryptoBuffer<T> : IDisposable where T : unmanaged
 {
 	private const int MaxSmallArrayBytes = 256;
 

@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.Internal;
 using System.Buffers;
 
 namespace CryptoBase.Benchmark;
