@@ -87,6 +87,26 @@ using CtrMode128<AesCipher> decryptor = CtrMode128<AesCipher>.Create(key, initia
 decryptor.Xor(ciphertext, recovered);
 ```
 
+`Reset` restarts the keystream from a new counter block and keeps the expanded key, so one instance can handle many messages that each have their own counter, such as one per packet:
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Ciphers.Blocks.Aes;
+using CryptoBase.Ciphers.Modes;
+
+byte[] key = RandomNumberGenerator.GetBytes(16);
+byte[][] counters = [RandomNumberGenerator.GetBytes(16), RandomNumberGenerator.GetBytes(16)];
+byte[][] payloads = ["first"u8.ToArray(), "second"u8.ToArray()];
+
+using CtrMode128<AesCipher> cipher = CtrMode128<AesCipher>.Create(key, counters[0]);
+
+for (int i = 0; i < payloads.Length; ++i)
+{
+    cipher.Reset(counters[i]);
+    cipher.Xor(payloads[i], payloads[i]);
+}
+```
+
 ## Generic code
 
 All the stream ciphers implement `IStreamCipher`:

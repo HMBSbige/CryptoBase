@@ -19,4 +19,26 @@ public class AesCtrTest
 
 		await VerifyStreamVector(CtrMode128<AesCipher>.Create(key, counter), plaintext, ciphertext);
 	}
+
+	/// <summary>
+	/// RFC 3711 Appendix B.2, SRTP AES-CM keystream for one packet IV.
+	/// </summary>
+	[Test]
+	public async Task SrtpKeystreamVectorAfterReset()
+	{
+		byte[] key = Convert.FromHexString("2B7E151628AED2A6ABF7158809CF4F3C");
+		byte[] iv = Convert.FromHexString("F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000");
+		byte[] head = Convert.FromHexString("E03EAD0935C95E80E166B16DD92B4EB4D23513162B02D0F72A43A2FE4A5F97AB41E95B3BB0A2E8DD477901E4FCA894C0");
+		byte[] tail = Convert.FromHexString("EC8CDF7398607CB0F2D21675EA9EA1E4362B7C3C6773516318A077D7FC5073AE6A2CC3787889374FBEB4C81B17BA6C44");
+		byte[] keyStream = new byte[1044512];
+
+		using CtrMode128<AesCipher> cipher = CtrMode128<AesCipher>.Create(key, new byte[16]);
+		// Leave unused keystream from a partial block for Reset to discard.
+		cipher.Xor(new byte[5], new byte[5]);
+		cipher.Reset(iv);
+		cipher.Xor(keyStream, keyStream);
+
+		await Assert.That(keyStream.AsMemory(0, head.Length)).IsEquivalentTo(head, CollectionOrdering.Matching);
+		await Assert.That(keyStream.AsMemory(keyStream.Length - tail.Length)).IsEquivalentTo(tail, CollectionOrdering.Matching);
+	}
 }

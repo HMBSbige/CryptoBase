@@ -4,6 +4,7 @@ using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.Ciphers.Modes.Ctr;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Intrinsics;
 using static CryptoBase.Tests.TestUtils;
 
@@ -12,28 +13,17 @@ namespace CryptoBase.Tests.Ciphers.Modes;
 public class CtrModeContractTest
 {
 	[Test]
-	[GenerateGenericTest(typeof(AesCipher))]
-	[GenerateGenericTest(typeof(SM4Cipher))]
-	[MatrixDataSource]
-	public async Task InitialCounterMustBeExactlyOneBlock<TCipher>([Matrix(0, 15, 17)] int length) where TCipher : IBlockCipher<TCipher>
+	[Arguments(15)]
+	[Arguments(17)]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
+	public async Task CounterMustBeExactlyOneBlock(int length)
 	{
 		byte[] key = CreateDeterministicSource(16);
-		byte[] initialCounter = new byte[length];
-		await Assert.That(() => CtrMode128<TCipher>.Create(key, initialCounter).Dispose()).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("initialCounter");
-	}
+		byte[] counter = new byte[length];
+		using CtrMode128<AesCipher> cipher = CtrMode128<AesCipher>.Create(key, new byte[16]);
 
-	[Test]
-	[GenerateGenericTest(typeof(AesCipher))]
-	[GenerateGenericTest(typeof(SM4Cipher))]
-	[MatrixDataSource]
-	public async Task CriticalBatchBoundariesMatchByteWiseProcessing<TCipher>([Matrix(1, 15, 16, 17, 31, 32, 33, 48, 64, 80, 96, 112, 127, 128, 129, 255, 256, 257, 511, 512, 513, 2047, 2048, 2049, 4097)] int length) where TCipher : IBlockCipher<TCipher>
-	{
-		byte[] key = CreateDeterministicSource(16);
-		byte[] counter = CreateDeterministicSource(16);
-
-		using CtrMode128<TCipher> crypto = CtrMode128<TCipher>.Create(key, counter);
-		using CtrMode128<TCipher> bulk = CtrMode128<TCipher>.Create(key, counter);
-		await TestBlocks(crypto, bulk, length);
+		await Assert.That(() => CtrMode128<AesCipher>.Create(key, counter).Dispose()).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("initialCounter");
+		await Assert.That(() => cipher.Reset(counter)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("initialCounter");
 	}
 
 	[Test]

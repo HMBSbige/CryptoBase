@@ -43,6 +43,18 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 		}
 	}
 
+	/// <summary>Restarts the keystream from a new initial counter and keeps the expanded key.</summary>
+	/// <remarks>Discards any unused keystream bytes from a partial block, so the next <see cref="Xor" /> call starts at a block boundary.</remarks>
+	/// <param name="initialCounter">The new 16-byte big-endian counter block.</param>
+	public void Reset(scoped ReadOnlySpan<byte> initialCounter)
+	{
+		ArgumentOutOfRangeException.ThrowIfNotEqual(initialCounter.Length, BlockSize, nameof(initialCounter));
+
+		_counter = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(initialCounter));
+		_keyStream.ZeroMemory();
+		_index = 0;
+	}
+
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Xor(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
