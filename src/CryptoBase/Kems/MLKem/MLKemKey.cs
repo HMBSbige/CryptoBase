@@ -421,19 +421,13 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		}
 	}
 
+	// Concurrent callers write the same bytes, so no lock is needed; the flag is set last.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void CompleteEncapsulationKeyHash<TKernel>(scoped ref OverlappedHash beside) where TKernel : IMLKemKernel
 	{
 		Span<byte> encapsulationKey = stackalloc byte[EncapsulationKeyLength];
 		EncodeEncapsulationKey<TKernel>(encapsulationKey);
-		CompleteEncapsulationKeyHash(encapsulationKey, ref beside);
-	}
-
-	// Concurrent callers write the same bytes, so no lock is needed; the flag is set last.
-	[SkipLocalsInit]
-	private void CompleteEncapsulationKeyHash(scoped ReadOnlySpan<byte> encapsulationKey, scoped ref OverlappedHash beside)
-	{
 		scoped OverlappedHash hash = new(in _partialEncapsulationKeyHash, _encapsulationKeyHashAbsorbed, encapsulationKey);
 
 		while (hash.CanStep && beside.CanStep)
