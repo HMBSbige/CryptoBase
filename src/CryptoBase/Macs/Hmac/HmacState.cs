@@ -69,7 +69,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Reset()
 	{
-		_innerState.ZeroMemory();
 		_innerState = _innerSeed;
 	}
 
