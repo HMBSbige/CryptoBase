@@ -160,35 +160,14 @@ internal readonly struct Blake2bVector256 : IBlake2bKernel
 	{
 		Vector256<ulong> x = Vector256.Create(LoadPair(ref block, x0, x1), LoadPair(ref block, x2, x3));
 		a = a + x + b;
-
-		if (Avx512F.VL.IsSupported)
-		{
-			d = Avx512F.VL.RotateRight(d ^ a, 32);
-			c += d;
-			b = Avx512F.VL.RotateRight(b ^ c, 24);
-		}
-		else
-		{
-			d = Avx2.Shuffle((d ^ a).AsUInt32(), 0b10_11_00_01).AsUInt64();
-			c += d;
-			b = Avx2.Shuffle((b ^ c).AsByte(), Vector256.Create(Vector128.Create((byte)3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10))).AsUInt64();
-		}
+		d = (d ^ a).RotateRightUInt64(32);
+		c += d;
+		b = (b ^ c).RotateRightUInt64(24);
 
 		Vector256<ulong> y = Vector256.Create(LoadPair(ref block, y0, y1), LoadPair(ref block, y2, y3));
 		a = a + y + b;
-
-		if (Avx512F.VL.IsSupported)
-		{
-			d = Avx512F.VL.RotateRight(d ^ a, 16);
-			c += d;
-			b = Avx512F.VL.RotateRight(b ^ c, 63);
-		}
-		else
-		{
-			d = Avx2.Shuffle((d ^ a).AsByte(), Vector256.Create(Vector128.Create((byte)2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9))).AsUInt64();
-			c += d;
-			b ^= c;
-			b = b >>> 63 | b + b;
-		}
+		d = (d ^ a).RotateRightUInt64(16);
+		c += d;
+		b = (b ^ c).RotateRightUInt64(63);
 	}
 }
