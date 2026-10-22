@@ -139,11 +139,6 @@ public sealed partial class Base32Encoding
 		return EncodeCore(source, destination, out bytesConsumed, out charsWritten, isFinalBlock, Base32SimdPath.Auto);
 	}
 
-	internal OperationStatus EncodeToCharsPath(ReadOnlySpan<byte> source, Span<char> destination, out int bytesConsumed, out int charsWritten, bool isFinalBlock, Base32SimdPath path)
-	{
-		return EncodeCore(source, destination, out bytesConsumed, out charsWritten, isFinalBlock, path);
-	}
-
 	/// <summary>
 	/// Encodes bytes as Base32 text represented by UTF-8 bytes.
 	/// </summary>
@@ -159,12 +154,7 @@ public sealed partial class Base32Encoding
 		return EncodeCore(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock, Base32SimdPath.Auto);
 	}
 
-	internal OperationStatus EncodeToUtf8Path(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock, Base32SimdPath path)
-	{
-		return EncodeCore(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock, path);
-	}
-
-	private OperationStatus EncodeCore<T>(ReadOnlySpan<byte> source, Span<T> destination, out int bytesConsumed, out int symbolsWritten, bool isFinalBlock, Base32SimdPath path) where T : unmanaged
+	internal OperationStatus EncodeCore<T>(ReadOnlySpan<byte> source, Span<T> destination, out int bytesConsumed, out int symbolsWritten, bool isFinalBlock, Base32SimdPath path) where T : unmanaged
 	{
 		bytesConsumed = 0;
 		symbolsWritten = 0;
@@ -372,11 +362,6 @@ public sealed partial class Base32Encoding
 		return DecodeCore(source, destination, out charsConsumed, out bytesWritten, isFinalBlock, Base32SimdPath.Auto);
 	}
 
-	internal OperationStatus DecodeFromCharsPath(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten, bool isFinalBlock, Base32SimdPath path)
-	{
-		return DecodeCore(source, destination, out charsConsumed, out bytesWritten, isFinalBlock, path);
-	}
-
 	/// <summary>
 	/// Decodes Base32 text represented by UTF-8 bytes.
 	/// </summary>
@@ -392,13 +377,8 @@ public sealed partial class Base32Encoding
 		return DecodeCore(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock, Base32SimdPath.Auto);
 	}
 
-	internal OperationStatus DecodeFromUtf8Path(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock, Base32SimdPath path)
-	{
-		return DecodeCore(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock, path);
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private OperationStatus DecodeCore<T>(ReadOnlySpan<T> source, Span<byte> destination, out int symbolsConsumed, out int bytesWritten, bool isFinalBlock, Base32SimdPath path) where T : unmanaged, IEquatable<T>
+	internal OperationStatus DecodeCore<T>(ReadOnlySpan<T> source, Span<byte> destination, out int symbolsConsumed, out int bytesWritten, bool isFinalBlock, Base32SimdPath path) where T : unmanaged, IEquatable<T>
 	{
 		if (!isFinalBlock)
 		{

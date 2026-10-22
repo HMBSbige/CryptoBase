@@ -29,7 +29,7 @@ public class Base32SimdPathTest
 		byte[] actual = new byte[expected.Length];
 		List<string> failures = [];
 
-		await Assert.That(encoding.DecodeUtf8BlocksPath(valid, actual, path)).IsEqualTo(GetVectorizedLength(path, symbolCount));
+		await Assert.That(encoding.DecodeBlocksPath(valid, actual, path)).IsEqualTo(GetVectorizedLength(path, symbolCount));
 
 		for (int value = 0; value <= byte.MaxValue; ++value)
 		{
@@ -39,8 +39,8 @@ public class Base32SimdPathTest
 				input[position] = (byte)value;
 				PrepareDestination(expected);
 				PrepareDestination(actual);
-				OperationStatus expectedStatus = encoding.DecodeFromUtf8Path(input, expected, out int expectedConsumed, out int expectedWritten, true, Base32SimdPath.Scalar);
-				OperationStatus actualStatus = encoding.DecodeFromUtf8Path(input, actual, out int actualConsumed, out int actualWritten, true, path);
+				OperationStatus expectedStatus = encoding.DecodeCore(input, expected, out int expectedConsumed, out int expectedWritten, true, Base32SimdPath.Scalar);
+				OperationStatus actualStatus = encoding.DecodeCore(input, actual, out int actualConsumed, out int actualWritten, true, path);
 
 				if (actualStatus != expectedStatus || actualConsumed != expectedConsumed || actualWritten != expectedWritten || !actual.AsSpan().SequenceEqual(expected))
 				{
@@ -64,7 +64,7 @@ public class Base32SimdPathTest
 		byte[] actual = new byte[expected.Length];
 		List<string> failures = [];
 
-		await Assert.That(encoding.DecodeCharsBlocksPath(valid, actual, path)).IsEqualTo(GetVectorizedLength(path, symbolCount));
+		await Assert.That(encoding.DecodeBlocksPath(valid, actual, path)).IsEqualTo(GetVectorizedLength(path, symbolCount));
 
 		foreach (char symbol in Enumerable.Range(0, 0x100).Select(static value => (char)value).Concat(WideChars))
 		{
@@ -74,8 +74,8 @@ public class Base32SimdPathTest
 				input[position] = symbol;
 				PrepareDestination(expected);
 				PrepareDestination(actual);
-				OperationStatus expectedStatus = encoding.DecodeFromCharsPath(input, expected, out int expectedConsumed, out int expectedWritten, true, Base32SimdPath.Scalar);
-				OperationStatus actualStatus = encoding.DecodeFromCharsPath(input, actual, out int actualConsumed, out int actualWritten, true, path);
+				OperationStatus expectedStatus = encoding.DecodeCore(input, expected, out int expectedConsumed, out int expectedWritten, true, Base32SimdPath.Scalar);
+				OperationStatus actualStatus = encoding.DecodeCore(input, actual, out int actualConsumed, out int actualWritten, true, path);
 
 				if (actualStatus != expectedStatus || actualConsumed != expectedConsumed || actualWritten != expectedWritten || !actual.AsSpan().SequenceEqual(expected))
 				{
@@ -96,8 +96,8 @@ public class Base32SimdPathTest
 		byte[] source = CreateDeterministicSource(240);
 		byte[] encoded = new byte[encoding.GetEncodedLength(source.Length)];
 
-		await Assert.That(encoding.EncodeUtf8BlocksPath(source, encoded, path)).IsGreaterThan(0);
-		await Assert.That(encoding.EncodeCharsBlocksPath(source, new char[encoded.Length], path)).IsGreaterThan(0);
+		await Assert.That(encoding.EncodeBlocksPath(source, encoded, path)).IsGreaterThan(0);
+		await Assert.That(encoding.EncodeBlocksPath(source, new char[encoded.Length], path)).IsGreaterThan(0);
 		await Assert.That(GetEncodeMismatches(encoding, source, path)).IsEmpty();
 	}
 
@@ -160,10 +160,10 @@ public class Base32SimdPathTest
 			byte[] utf8Actual = new byte[utf8Expected.Length];
 			char[] charsExpected = new char[utf8Expected.Length];
 			char[] charsActual = new char[utf8Expected.Length];
-			encoding.EncodeToUtf8Path(input, utf8Expected, out _, out _, true, Base32SimdPath.Scalar);
-			encoding.EncodeToUtf8Path(guardedInput, utf8Actual, out _, out _, true, path);
-			encoding.EncodeToCharsPath(input, charsExpected, out _, out _, true, Base32SimdPath.Scalar);
-			encoding.EncodeToCharsPath(guardedInput, charsActual, out _, out _, true, path);
+			encoding.EncodeCore(input, utf8Expected, out _, out _, true, Base32SimdPath.Scalar);
+			encoding.EncodeCore(guardedInput, utf8Actual, out _, out _, true, path);
+			encoding.EncodeCore(input, charsExpected, out _, out _, true, Base32SimdPath.Scalar);
+			encoding.EncodeCore(guardedInput, charsActual, out _, out _, true, path);
 
 			if (!utf8Actual.AsSpan().SequenceEqual(utf8Expected))
 			{
@@ -197,10 +197,10 @@ public class Base32SimdPathTest
 				PrepareDestination(utf8Actual);
 				charsExpected.AsSpan().Fill(CharSentinel);
 				charsActual.AsSpan().Fill(CharSentinel);
-				OperationStatus utf8ExpectedStatus = encoding.EncodeToUtf8Path(input, utf8Expected.AsSpan(0, destinationLength), out int utf8ExpectedConsumed, out int utf8ExpectedWritten, true, Base32SimdPath.Scalar);
-				OperationStatus utf8ActualStatus = encoding.EncodeToUtf8Path(input, utf8Actual.AsSpan(0, destinationLength), out int utf8ActualConsumed, out int utf8ActualWritten, true, path);
-				OperationStatus charsExpectedStatus = encoding.EncodeToCharsPath(input, charsExpected.AsSpan(0, destinationLength), out int charsExpectedConsumed, out int charsExpectedWritten, true, Base32SimdPath.Scalar);
-				OperationStatus charsActualStatus = encoding.EncodeToCharsPath(input, charsActual.AsSpan(0, destinationLength), out int charsActualConsumed, out int charsActualWritten, true, path);
+				OperationStatus utf8ExpectedStatus = encoding.EncodeCore(input, utf8Expected.AsSpan(0, destinationLength), out int utf8ExpectedConsumed, out int utf8ExpectedWritten, true, Base32SimdPath.Scalar);
+				OperationStatus utf8ActualStatus = encoding.EncodeCore(input, utf8Actual.AsSpan(0, destinationLength), out int utf8ActualConsumed, out int utf8ActualWritten, true, path);
+				OperationStatus charsExpectedStatus = encoding.EncodeCore(input, charsExpected.AsSpan(0, destinationLength), out int charsExpectedConsumed, out int charsExpectedWritten, true, Base32SimdPath.Scalar);
+				OperationStatus charsActualStatus = encoding.EncodeCore(input, charsActual.AsSpan(0, destinationLength), out int charsActualConsumed, out int charsActualWritten, true, path);
 
 				if (utf8ActualStatus != utf8ExpectedStatus || utf8ActualConsumed != utf8ExpectedConsumed || utf8ActualWritten != utf8ExpectedWritten || !utf8Actual.AsSpan().SequenceEqual(utf8Expected))
 				{

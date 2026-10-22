@@ -261,7 +261,7 @@ public sealed partial class Base32Encoding
 		};
 	}
 
-	internal int EncodeCharsBlocksPath(ReadOnlySpan<byte> source, Span<char> destination, Base32SimdPath path)
+	internal int EncodeBlocksPath<T>(ReadOnlySpan<byte> source, Span<T> destination, Base32SimdPath path) where T : unmanaged
 	{
 		return EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 	}
@@ -336,11 +336,6 @@ public sealed partial class Base32Encoding
 		return sourceRemaining >= EncodeShortSimdThreshold
 			? EncodeSsse3Short(source, destination, alphabetKind)
 			: 0;
-	}
-
-	internal int EncodeUtf8BlocksPath(ReadOnlySpan<byte> source, Span<byte> destination, Base32SimdPath path)
-	{
-		return EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -459,7 +454,7 @@ public sealed partial class Base32Encoding
 		};
 	}
 
-	internal int DecodeCharsBlocksPath(ReadOnlySpan<char> source, Span<byte> destination, Base32SimdPath path)
+	internal int DecodeBlocksPath<T>(ReadOnlySpan<T> source, Span<byte> destination, Base32SimdPath path) where T : unmanaged
 	{
 		return DecodeForced(source, destination, source.Length & ~7, _alphabetKind, path);
 	}
@@ -528,10 +523,5 @@ public sealed partial class Base32Encoding
 		}
 
 		return DecodeScalar(source, destination, fullLength);
-	}
-
-	internal int DecodeUtf8BlocksPath(ReadOnlySpan<byte> source, Span<byte> destination, Base32SimdPath path)
-	{
-		return DecodeForced(source, destination, source.Length & ~7, _alphabetKind, path);
 	}
 }
