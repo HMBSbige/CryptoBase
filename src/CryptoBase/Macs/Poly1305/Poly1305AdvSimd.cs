@@ -357,6 +357,24 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		MultiplyAdd(ref d3Lower, ref d3Upper, h4, coefficient);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void SetAccumulatorFromLanes(Vector128<uint> h0, Vector128<uint> h1, Vector128<uint> h2, Vector128<uint> h3, Vector128<uint> h4)
+	{
+		Multiply
+		(
+			h0, h1, h2, h3, h4,
+			_r0, _r1, _r2, _r3, _r4,
+			_s1, _s2, _s3, _s4,
+			out Vector128<ulong> d0Lower, out Vector128<ulong> d0Upper,
+			out Vector128<ulong> d1Lower, out Vector128<ulong> d1Upper,
+			out Vector128<ulong> d2Lower, out Vector128<ulong> d2Upper,
+			out Vector128<ulong> d3Lower, out Vector128<ulong> d3Upper,
+			out Vector128<ulong> d4Lower, out Vector128<ulong> d4Upper
+		);
+
+		_state.SetAccumulator(Vector128.Sum(d0Lower + d0Upper), Vector128.Sum(d1Lower + d1Upper), Vector128.Sum(d2Lower + d2Upper), Vector128.Sum(d3Lower + d3Upper), Vector128.Sum(d4Lower + d4Upper));
+	}
+
 	private void AppendFourWay(scoped ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(source.Length >= BlockSize4 && source.Length % BlockSize4 is 0);
@@ -408,19 +426,7 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		h1 += m1;
 		h3 += m3;
 		h4 += m4;
-		Multiply
-		(
-			h0, h1, h2, h3, h4,
-			_r0, _r1, _r2, _r3, _r4,
-			_s1, _s2, _s3, _s4,
-			out Vector128<ulong> finalD0Lower, out Vector128<ulong> finalD0Upper,
-			out Vector128<ulong> finalD1Lower, out Vector128<ulong> finalD1Upper,
-			out Vector128<ulong> finalD2Lower, out Vector128<ulong> finalD2Upper,
-			out Vector128<ulong> finalD3Lower, out Vector128<ulong> finalD3Upper,
-			out Vector128<ulong> finalD4Lower, out Vector128<ulong> finalD4Upper
-		);
-
-		_state.SetAccumulator(Vector128.Sum(finalD0Lower + finalD0Upper), Vector128.Sum(finalD1Lower + finalD1Upper), Vector128.Sum(finalD2Lower + finalD2Upper), Vector128.Sum(finalD3Lower + finalD3Upper), Vector128.Sum(finalD4Lower + finalD4Upper));
+		SetAccumulatorFromLanes(h0, h1, h2, h3, h4);
 	}
 
 	private void AppendEightWay(scoped ReadOnlySpan<byte> source)
@@ -492,19 +498,7 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 			remaining -= BlockSize4;
 		}
 
-		Multiply
-		(
-			h0, h1, h2, h3, h4,
-			_r0, _r1, _r2, _r3, _r4,
-			_s1, _s2, _s3, _s4,
-			out Vector128<ulong> finalD0Lower, out Vector128<ulong> finalD0Upper,
-			out Vector128<ulong> finalD1Lower, out Vector128<ulong> finalD1Upper,
-			out Vector128<ulong> finalD2Lower, out Vector128<ulong> finalD2Upper,
-			out Vector128<ulong> finalD3Lower, out Vector128<ulong> finalD3Upper,
-			out Vector128<ulong> finalD4Lower, out Vector128<ulong> finalD4Upper
-		);
-
-		_state.SetAccumulator(Vector128.Sum(finalD0Lower + finalD0Upper), Vector128.Sum(finalD1Lower + finalD1Upper), Vector128.Sum(finalD2Lower + finalD2Upper), Vector128.Sum(finalD3Lower + finalD3Upper), Vector128.Sum(finalD4Lower + finalD4Upper));
+		SetAccumulatorFromLanes(h0, h1, h2, h3, h4);
 	}
 
 	private void AppendTwoWay(scoped ReadOnlySpan<byte> source, int secondLength, bool padPartialBlock)
