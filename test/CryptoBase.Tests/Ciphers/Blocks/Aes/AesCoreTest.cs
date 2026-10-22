@@ -62,22 +62,8 @@ public class AesCoreTest
 	public async Task AllByteValuesMatchBcl(int keyLength)
 	{
 		byte[] key = TestUtils.CreateDeterministicSource(keyLength);
-		byte[] source = new byte[256 * 64];
-
-		for (int value = 0; value < 256; ++value)
-		{
-			source.AsSpan(value * 64, 64).Fill((byte)value);
-		}
-
-		using BclAes reference = BclAes.Create();
-		reference.SetKey(key);
 		using AesCipher crypto = AesCipher.Create(key);
-
-		byte[] actual = new byte[source.Length];
-		crypto.EncryptBlocks(source, actual);
-		await Assert.That(actual).IsEquivalentTo(reference.EncryptEcb(source, PaddingMode.None), CollectionOrdering.Matching);
-		crypto.DecryptBlocks(source, actual);
-		await Assert.That(actual).IsEquivalentTo(reference.DecryptEcb(source, PaddingMode.None), CollectionOrdering.Matching);
+		await AesTestUtils.AssertAllByteValuesMatchBcl(key, 64, crypto.EncryptBlocks, crypto.DecryptBlocks);
 	}
 
 	[Test]

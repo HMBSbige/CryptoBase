@@ -1,5 +1,4 @@
 using CryptoBase.Ciphers.Blocks.Aes;
-using System.Security.Cryptography;
 using BclAes = System.Security.Cryptography.Aes;
 
 namespace CryptoBase.Tests.Ciphers.Blocks.Aes;
@@ -31,27 +30,7 @@ public class AesVpaesTest
 			int sourceOffset = iteration * 7 % 15 + 1;
 			int destinationOffset = 16 - sourceOffset;
 
-			int length = blocks * 16;
-			byte[] source = new byte[sourceOffset + length + 5];
-			random.NextBytes(source);
-			byte[] originalSource = source.ToArray();
-			byte[] plain = source.AsSpan(sourceOffset, length).ToArray();
-			byte[] encrypted = reference.EncryptEcb(plain, PaddingMode.None);
-			byte[] decrypted = reference.DecryptEcb(plain, PaddingMode.None);
-			byte[] actual = TestUtils.CreateGuardedBuffer(destinationOffset, length, 19);
-
-			crypto.EncryptBlocks(source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset));
-			await TestUtils.AssertOutput(actual, destinationOffset, encrypted);
-
-			crypto.DecryptBlocks(actual.AsSpan(destinationOffset, length), actual.AsSpan(destinationOffset));
-			await TestUtils.AssertOutput(actual, destinationOffset, plain);
-
-			crypto.EncryptBlocks(actual.AsSpan(destinationOffset, length), actual.AsSpan(destinationOffset));
-			await TestUtils.AssertOutput(actual, destinationOffset, encrypted);
-
-			crypto.DecryptBlocks(source.AsSpan(sourceOffset, length), actual.AsSpan(destinationOffset));
-			await TestUtils.AssertOutput(actual, destinationOffset, decrypted);
-			await Assert.That(source).IsEquivalentTo(originalSource, CollectionOrdering.Matching);
+			await AesTestUtils.AssertUnalignedAndInPlaceTransformsMatchBcl(reference, random, blocks, sourceOffset, destinationOffset, crypto.EncryptBlocks, crypto.DecryptBlocks);
 		}
 	}
 
@@ -60,21 +39,8 @@ public class AesVpaesTest
 	public async Task AllByteValuesMatchBcl([Matrix(16, 24, 32)] int keyLength)
 	{
 		byte[] key = TestUtils.CreateDeterministicSource(keyLength);
-		byte[] source = new byte[256 * 16];
-
-		for (int value = 0; value < 256; ++value)
-		{
-			source.AsSpan(value * 16, 16).Fill((byte)value);
-		}
-
-		using BclAes reference = BclAes.Create();
-		reference.SetKey(key);
 		using AesCipherVpaes crypto = AesCipherVpaes.Create(key);
-		byte[] actual = new byte[source.Length];
-		crypto.EncryptBlocks(source, actual);
-		await Assert.That(actual).IsEquivalentTo(reference.EncryptEcb(source, PaddingMode.None), CollectionOrdering.Matching);
-		crypto.DecryptBlocks(source, actual);
-		await Assert.That(actual).IsEquivalentTo(reference.DecryptEcb(source, PaddingMode.None), CollectionOrdering.Matching);
+		await AesTestUtils.AssertAllByteValuesMatchBcl(key, 16, crypto.EncryptBlocks, crypto.DecryptBlocks);
 	}
 
 	[Test]
