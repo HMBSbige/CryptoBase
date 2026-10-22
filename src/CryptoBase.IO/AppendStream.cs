@@ -5,6 +5,7 @@ namespace CryptoBase.IO;
 /// <para>
 /// Data is appended in the order it passes through, whether it is read or written. Mixing reads and writes on one instance therefore appends the interleaving.
 /// The stream does not buffer: reads go directly into the caller's buffer and only the bytes actually read are appended; writes are appended after the inner stream accepts them.
+/// A write buffer must therefore not overlap the inner stream's storage, such as the array returned by <see cref="MemoryStream.GetBuffer" />; otherwise the appended bytes may differ from the written ones.
 /// </para>
 /// <para>
 /// The stream is not seekable. The instance owns the algorithm and disposes it on disposal; <c>leaveOpen</c> only controls the inner stream.
