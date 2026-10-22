@@ -265,8 +265,8 @@ public sealed partial class Base32Encoding
 		return EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 	}
 
-	// Keep the complete dispatcher here even though x86 calls EncodeX86Auto instead.
-	// Its IL size preserves the ARM64 tail call without NoInlining.
+	// Only AdvSimd hardware calls this, so the x86 half never runs; it mirrors EncodeX86Auto to keep the IL size above the inlining limit.
+	// Inlined into EncodeCore by FullOpts, or marked NoInlining, it would stop reaching the AdvSimd encoders through ARM64 tail calls.
 	private static int EncodeUtf8Auto(ReadOnlySpan<byte> source, Span<byte> destination, int sourceOffset, int destinationOffset, byte[] alphabet, byte alphabetKind)
 	{
 		if (AdvSimd.IsSupported)
