@@ -14,7 +14,7 @@ public static class Tls12Prf
 	/// <summary>
 	/// Derives key material using the TLS 1.2 PRF.
 	/// </summary>
-	/// <typeparam name="TCore">The hash function that P_hash uses.</typeparam>
+	/// <typeparam name="TCore">The hash core that P_hash uses.</typeparam>
 	/// <param name="secret">The secret. It may be empty.</param>
 	/// <param name="label">The ASCII label, such as <c>"master secret"u8</c>, without a length prefix or a trailing null.</param>
 	/// <param name="seed">The seed.</param>
@@ -28,7 +28,7 @@ public static class Tls12Prf
 	/// <summary>
 	/// Derives key material using the TLS 1.2 PRF with the seed <c>seed1 || seed2</c>, such as <c>client_random || server_random</c>.
 	/// </summary>
-	/// <typeparam name="TCore">The hash function that P_hash uses.</typeparam>
+	/// <typeparam name="TCore">The hash core that P_hash uses.</typeparam>
 	/// <param name="secret">The secret. It may be empty.</param>
 	/// <param name="label">The ASCII label, such as <c>"master secret"u8</c>, without a length prefix or a trailing null.</param>
 	/// <param name="seed1">The first part of the seed.</param>
