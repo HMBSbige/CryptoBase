@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark.Hashes.Blake3;
 [CategoriesColumn]
 public class Blake3CompressorBenchmark
 {
-	private readonly uint[] _chainingValue = [Blake3Constants.IV0, Blake3Constants.IV1, Blake3Constants.IV2, Blake3Constants.IV3, Blake3Constants.IV4, Blake3Constants.IV5, Blake3Constants.IV6, Blake3Constants.IV7];
+	private readonly uint[] _chainingValue = [.. Blake3Constants.IV];
 	private readonly byte[] _chunk = RandomNumberGenerator.GetBytes(Blake3Constants.ChunkLength);
 	private readonly byte[] _output = new byte[Blake3Constants.BlockLength];
 
