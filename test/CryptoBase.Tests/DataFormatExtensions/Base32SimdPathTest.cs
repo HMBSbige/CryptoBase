@@ -106,12 +106,7 @@ public class Base32SimdPathTest
 	[MatrixDataSource]
 	public async Task AutoEncodeMatchesScalarForEveryDestinationLength([Matrix("rfc", "hex", "custom")] string alphabet, [Matrix] bool omitPadding)
 	{
-		Base32Encoding encoding = alphabet switch
-		{
-			"hex" => Base32Encoding.Rfc4648Hex,
-			"custom" => Base32Encoding.Create(LowercaseAlphabet),
-			_ => Base32Encoding.Rfc4648,
-		};
+		Base32Encoding encoding = CreateEncoding(alphabet);
 
 		if (omitPadding)
 		{
@@ -119,6 +114,69 @@ public class Base32SimdPathTest
 		}
 
 		await Assert.That(GetEncodeMismatches(encoding, CreateDeterministicSource(240), Base32SimdPath.Auto)).IsEmpty();
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task EncodeDoesNotReadPastSource([MatrixMethod<Base32SimdPathTest>(nameof(SimdPaths))] string pathName, [Matrix] bool hex)
+	{
+		GuardPageBuffer.SkipUnlessSupported();
+		Base32SimdPath path = GetSupportedPath(pathName);
+
+		await Assert.That(GetGuardedEncodeMismatches(hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648, path)).IsEmpty();
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task AutoEncodeDoesNotReadPastSource([Matrix("rfc", "hex", "custom")] string alphabet)
+	{
+		GuardPageBuffer.SkipUnlessSupported();
+
+		await Assert.That(GetGuardedEncodeMismatches(CreateEncoding(alphabet), Base32SimdPath.Auto)).IsEmpty();
+	}
+
+	private static Base32Encoding CreateEncoding(string alphabet)
+	{
+		return alphabet switch
+		{
+			"hex" => Base32Encoding.Rfc4648Hex,
+			"custom" => Base32Encoding.Create(LowercaseAlphabet),
+			_ => Base32Encoding.Rfc4648,
+		};
+	}
+
+	private static List<string> GetGuardedEncodeMismatches(Base32Encoding encoding, Base32SimdPath path)
+	{
+		byte[] source = CreateDeterministicSource(240);
+		using GuardPageBuffer guarded = new(source.Length);
+		source.CopyTo(guarded.Span);
+		List<string> failures = [];
+
+		for (int length = 0; length <= source.Length; ++length)
+		{
+			ReadOnlySpan<byte> input = source.AsSpan(source.Length - length);
+			ReadOnlySpan<byte> guardedInput = guarded.Span.Slice(source.Length - length);
+			byte[] utf8Expected = new byte[encoding.GetEncodedLength(length)];
+			byte[] utf8Actual = new byte[utf8Expected.Length];
+			char[] charsExpected = new char[utf8Expected.Length];
+			char[] charsActual = new char[utf8Expected.Length];
+			encoding.EncodeToUtf8Path(input, utf8Expected, out _, out _, true, Base32SimdPath.Scalar);
+			encoding.EncodeToUtf8Path(guardedInput, utf8Actual, out _, out _, true, path);
+			encoding.EncodeToCharsPath(input, charsExpected, out _, out _, true, Base32SimdPath.Scalar);
+			encoding.EncodeToCharsPath(guardedInput, charsActual, out _, out _, true, path);
+
+			if (!utf8Actual.AsSpan().SequenceEqual(utf8Expected))
+			{
+				failures.Add($"UTF-8 {length}");
+			}
+
+			if (!charsActual.AsSpan().SequenceEqual(charsExpected))
+			{
+				failures.Add($"Chars {length}");
+			}
+		}
+
+		return failures;
 	}
 
 	private static List<string> GetEncodeMismatches(Base32Encoding encoding, byte[] source, Base32SimdPath path)
