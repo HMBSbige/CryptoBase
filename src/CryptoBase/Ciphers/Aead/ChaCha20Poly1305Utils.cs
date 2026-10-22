@@ -17,25 +17,25 @@ internal static class ChaCha20Poly1305Utils
 		ref byte tagStart = ref MemoryMarshal.GetReference(tag);
 		ref byte associatedDataStart = ref MemoryMarshal.GetReference(associatedData);
 
-		if (ChaCha20Utils.CanFusePoly1305<Poly1305Avx512>() && ExceedsFirstBatch(source.Length) || Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length, Poly1305Algorithm.BlockSizeInBytes))
+		if (ChaCha20Utils.CanFusePoly1305<Poly1305Avx512>() && ExceedsFirstBatch(source.Length) || Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length))
 		{
 			Encrypt<Poly1305Avx512>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 			return;
 		}
 
-		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length, Poly1305Algorithm.BlockSizeInBytes))
+		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length))
 		{
 			Encrypt<Poly1305Avx2>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 			return;
 		}
 
-		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length, Poly1305Algorithm.BlockSizeInBytes))
+		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length))
 		{
 			Encrypt<Poly1305Sse2>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 			return;
 		}
 
-		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length, Poly1305Algorithm.BlockSizeInBytes))
+		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length))
 		{
 			Encrypt<Poly1305AdvSimd>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 			return;
@@ -54,22 +54,22 @@ internal static class ChaCha20Poly1305Utils
 		ref byte tagStart = ref MemoryMarshal.GetReference(tag);
 		ref byte associatedDataStart = ref MemoryMarshal.GetReference(associatedData);
 
-		if (ChaCha20Utils.CanFusePoly1305<Poly1305Avx512>() && ExceedsFirstBatch(source.Length) || Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length, Poly1305Algorithm.BlockSizeInBytes))
+		if (ChaCha20Utils.CanFusePoly1305<Poly1305Avx512>() && ExceedsFirstBatch(source.Length) || Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length))
 		{
 			return Decrypt<Poly1305Avx512>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 		}
 
-		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length, Poly1305Algorithm.BlockSizeInBytes))
+		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length))
 		{
 			return Decrypt<Poly1305Avx2>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 		}
 
-		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length, Poly1305Algorithm.BlockSizeInBytes))
+		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length))
 		{
 			return Decrypt<Poly1305Sse2>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 		}
 
-		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length, Poly1305Algorithm.BlockSizeInBytes))
+		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length))
 		{
 			return Decrypt<Poly1305AdvSimd>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 		}

@@ -92,32 +92,32 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static bool ShouldUseAvx512(int firstLength, int secondLength, int thirdLength)
+	internal static bool ShouldUseAvx512(int firstLength, int secondLength)
 	{
-		return ShouldUseAvx512Core(GetParallelLength(firstLength, secondLength, thirdLength, Avx512BlockSizeInBytes));
+		return ShouldUseAvx512Core(GetParallelLength(firstLength, secondLength, Avx512BlockSizeInBytes));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static bool ShouldUseAvx2(int firstLength, int secondLength, int thirdLength)
+	internal static bool ShouldUseAvx2(int firstLength, int secondLength)
 	{
-		long parallelLength = GetParallelLength(firstLength, secondLength, thirdLength, Avx2BlockSizeInBytes);
-		long sse2ParallelLength = GetParallelLength(firstLength, secondLength, thirdLength, Sse2BlockSizeInBytes);
+		long parallelLength = GetParallelLength(firstLength, secondLength, Avx2BlockSizeInBytes);
+		long sse2ParallelLength = GetParallelLength(firstLength, secondLength, Sse2BlockSizeInBytes);
 		return ShouldUseAvx2Core(parallelLength, sse2ParallelLength);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static bool ShouldUseSse2(int firstLength, int secondLength, int thirdLength)
+	internal static bool ShouldUseSse2(int firstLength, int secondLength)
 	{
-		long inputLength = firstLength + (long)secondLength + thirdLength;
-		long parallelLength = GetParallelLength(firstLength, secondLength, thirdLength, Sse2BlockSizeInBytes);
-		int maximumParallelLength = Math.Max(firstLength & -Sse2BlockSizeInBytes, Math.Max(secondLength & -Sse2BlockSizeInBytes, thirdLength & -Sse2BlockSizeInBytes));
+		long inputLength = firstLength + (long)secondLength + BlockSizeInBytes;
+		long parallelLength = GetParallelLength(firstLength, secondLength, Sse2BlockSizeInBytes);
+		int maximumParallelLength = Math.Max(firstLength & -Sse2BlockSizeInBytes, secondLength & -Sse2BlockSizeInBytes);
 		return ShouldUseSse2Core(inputLength, parallelLength, maximumParallelLength);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static bool ShouldUseAdvSimd(int firstLength, int secondLength, int thirdLength)
+	internal static bool ShouldUseAdvSimd(int firstLength, int secondLength)
 	{
-		return ShouldUseAdvSimdCore(GetParallelLength(firstLength, secondLength, thirdLength, Avx2BlockSizeInBytes));
+		return ShouldUseAdvSimdCore(GetParallelLength(firstLength, secondLength, Avx2BlockSizeInBytes));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -173,9 +173,9 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static long GetParallelLength(int firstLength, int secondLength, int thirdLength, int blockSize)
+	private static long GetParallelLength(int firstLength, int secondLength, int blockSize)
 	{
-		return (firstLength & -blockSize) + (long)(secondLength & -blockSize) + (thirdLength & -blockSize);
+		return (firstLength & -blockSize) + (long)(secondLength & -blockSize);
 	}
 
 	[SkipLocalsInit]
