@@ -316,21 +316,21 @@ internal readonly struct MLKemScalar : IMLKemKernel
 
 	// a · R⁻¹ mod q for |a| < q · 2^15, in (−q, q).
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static short MontgomeryReduce(int a)
+	private static short MontgomeryReduce(int a)
 	{
 		short t = (short)(a * MLKemConstants.QInverse);
 		return (short)(a - t * Q >> 16);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static short MultiplyMontgomery(short a, short b)
+	private static short MultiplyMontgomery(short a, short b)
 	{
 		return MontgomeryReduce(a * b);
 	}
 
 	// In [−(q − 1) / 2, (q − 1) / 2].
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static short BarrettReduce(short a)
+	private static short BarrettReduce(short a)
 	{
 		int t = MLKemConstants.BarrettMultiplier * a + (1 << 25) >> 26;
 		return (short)(a - t * Q);
