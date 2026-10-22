@@ -18,20 +18,6 @@ internal static partial class ChaCha20Utils
 		b = (b ^ c).RotateLeftUInt32(7);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void QuarterRoundLocal(ref Vector128<uint> a, ref Vector128<uint> b, ref Vector128<uint> c, ref Vector128<uint> d)
-	{
-		Vector128<uint> x = a;
-		Vector128<uint> y = b;
-		Vector128<uint> z = c;
-		Vector128<uint> w = d;
-		QuarterRound(ref x, ref y, ref z, ref w);
-		a = x;
-		b = y;
-		c = z;
-		d = w;
-	}
-
 	// Runs whole 4-block batches; a shorter final batch stores only its leading blocks.
 	private static void XorVector128(ref uint stateRef, ref byte input, ref byte output, int blocks)
 	{
@@ -121,16 +107,16 @@ internal static partial class ChaCha20Utils
 
 		for (int round = 0; round < SnuffleCipher.Rounds; round += 2)
 		{
-			QuarterRoundLocal(ref a0, ref a1, ref a2, ref a3);
-			QuarterRoundLocal(ref b0, ref b1, ref b2, ref b3);
+			QuarterRound(ref a0, ref a1, ref a2, ref a3);
+			QuarterRound(ref b0, ref b1, ref b2, ref b3);
 			a0 = a0.RotateWordsLeft(3);
 			a2 = a2.RotateWordsLeft(1);
 			a3 = a3.RotateWordsLeft(2);
 			b0 = b0.RotateWordsLeft(3);
 			b2 = b2.RotateWordsLeft(1);
 			b3 = b3.RotateWordsLeft(2);
-			QuarterRoundLocal(ref a0, ref a1, ref a2, ref a3);
-			QuarterRoundLocal(ref b0, ref b1, ref b2, ref b3);
+			QuarterRound(ref a0, ref a1, ref a2, ref a3);
+			QuarterRound(ref b0, ref b1, ref b2, ref b3);
 			a0 = a0.RotateWordsLeft(1);
 			a2 = a2.RotateWordsLeft(3);
 			a3 = a3.RotateWordsLeft(2);
