@@ -1,16 +1,14 @@
 namespace CryptoBase.Hashes.Sha3;
 
 // The IXof contract over CShakeSponge, shared by CShake128Xof and CShake256Xof, which check disposal before calling in.
-// Resets return to the seed, so they keep the function name and customization string.
+// Resets return to the seed, so they keep the function name and customization string, and the sponge squeezes only while reading.
 internal struct CShakeXofState<TRate> where TRate : IKeccakRate
 {
 	private CShakeSponge<TRate> _sponge;
-	private bool _reading;
 
 	internal void Initialize(ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization)
 	{
 		_sponge.Initialize(functionName, customization);
-		_reading = false;
 	}
 
 	[SkipLocalsInit]
@@ -27,7 +25,7 @@ internal struct CShakeXofState<TRate> where TRate : IKeccakRate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Append(ReadOnlySpan<byte> source)
 	{
-		ThrowHelper.ThrowIfXofReading(_reading);
+		ThrowHelper.ThrowIfXofReading(_sponge.IsSqueezing);
 		_sponge.Absorb(source);
 	}
 
@@ -38,10 +36,9 @@ internal struct CShakeXofState<TRate> where TRate : IKeccakRate
 			return;
 		}
 
-		if (!_reading)
+		if (!_sponge.IsSqueezing)
 		{
 			_sponge.Pad();
-			_reading = true;
 		}
 
 		_sponge.Squeeze(destination);
@@ -49,13 +46,13 @@ internal struct CShakeXofState<TRate> where TRate : IKeccakRate
 
 	internal readonly void GetCurrentHash(Span<byte> destination)
 	{
-		ThrowHelper.ThrowIfXofReading(_reading);
+		ThrowHelper.ThrowIfXofReading(_sponge.IsSqueezing);
 		_sponge.SqueezeCopy(destination);
 	}
 
 	internal void GetHashAndReset(Span<byte> destination)
 	{
-		ThrowHelper.ThrowIfXofReading(_reading);
+		ThrowHelper.ThrowIfXofReading(_sponge.IsSqueezing);
 
 		_sponge.Pad();
 		_sponge.Squeeze(destination);
@@ -65,6 +62,5 @@ internal struct CShakeXofState<TRate> where TRate : IKeccakRate
 	internal void Reset()
 	{
 		_sponge.Reset();
-		_reading = false;
 	}
 }

@@ -7,12 +7,10 @@ namespace CryptoBase.Macs.Kmac;
 internal struct KmacXofState<TRate> where TRate : IKeccakRate
 {
 	private CShakeSponge<TRate> _sponge;
-	private bool _reading;
 
 	internal void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> customization)
 	{
 		_sponge.InitializeKmac(key, customization);
-		_reading = false;
 	}
 
 	internal static void HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, ReadOnlySpan<byte> customization)
@@ -23,7 +21,7 @@ internal struct KmacXofState<TRate> where TRate : IKeccakRate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Append(ReadOnlySpan<byte> source)
 	{
-		ThrowHelper.ThrowIfXofReading(_reading);
+		ThrowHelper.ThrowIfXofReading(_sponge.IsSqueezing);
 		_sponge.Absorb(source);
 	}
 
@@ -34,11 +32,10 @@ internal struct KmacXofState<TRate> where TRate : IKeccakRate
 			return;
 		}
 
-		if (!_reading)
+		if (!_sponge.IsSqueezing)
 		{
 			_sponge.AbsorbRightEncode(0);
 			_sponge.Pad();
-			_reading = true;
 		}
 
 		_sponge.Squeeze(destination);
@@ -46,13 +43,13 @@ internal struct KmacXofState<TRate> where TRate : IKeccakRate
 
 	internal readonly void GetCurrentHash(Span<byte> destination)
 	{
-		ThrowHelper.ThrowIfXofReading(_reading);
+		ThrowHelper.ThrowIfXofReading(_sponge.IsSqueezing);
 		_sponge.SqueezeCopy(0, destination);
 	}
 
 	internal void GetHashAndReset(Span<byte> destination)
 	{
-		ThrowHelper.ThrowIfXofReading(_reading);
+		ThrowHelper.ThrowIfXofReading(_sponge.IsSqueezing);
 
 		KmacState<TRate>.Finish(ref _sponge, 0, destination);
 		_sponge.Reset();
@@ -61,12 +58,10 @@ internal struct KmacXofState<TRate> where TRate : IKeccakRate
 	internal void Reset()
 	{
 		_sponge.Reset();
-		_reading = false;
 	}
 
 	internal void ZeroMemory()
 	{
 		_sponge.ZeroMemory();
-		_reading = false;
 	}
 }
