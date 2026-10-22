@@ -66,71 +66,15 @@ public class PlatformSha256Test
 	}
 
 	[Test]
-	public async Task LifecycleContract()
+	public Task LifecycleContract()
 	{
-		byte[] source = "abc"u8.ToArray();
-		byte[] expected = ManagedHash(source);
-		byte[] emptyExpected = ManagedHash([]);
-		byte[] doubledExpected = ManagedHash(Concat(source, source));
-		byte[] destination = HashAlgorithmTestUtils<PlatformSha256>.CreateDestination();
-
-		using PlatformSha256 hashAlgorithm = PlatformSha256.Create();
-
-		PrepareDestination(destination);
-		int written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, emptyExpected, written);
-
-		int split = source.Length / 2;
-		hashAlgorithm.Append(source.AsSpan().Slice(0, split));
-		hashAlgorithm.Append(source.AsSpan().Slice(split));
-
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, expected, written);
-
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, expected, written);
-
-		hashAlgorithm.Append(source);
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetHashAndReset(destination);
-		await AssertOutput(destination, doubledExpected, written);
-
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, emptyExpected, written);
-
-		hashAlgorithm.Append(source);
-		hashAlgorithm.Reset();
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, emptyExpected, written);
-
-		hashAlgorithm.Append(source);
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetHashAndReset(destination);
-		await AssertOutput(destination, expected, written);
+		return HashAlgorithmTest.VerifyLifecycleContract<PlatformSha256>(ManagedHash);
 	}
 
 	[Test]
-	public async Task OwnershipContract()
+	public Task OwnershipContract()
 	{
-		byte[] source = CreateDeterministicSource(19);
-		byte[] destination = new byte[PlatformSha256.HashLength];
-
-		using PlatformSha256 owner = PlatformSha256.Create();
-		PlatformSha256 alias = owner;
-		alias.Dispose();
-		alias.Dispose();
-
-		using (Assert.Multiple())
-		{
-			await Assert.That(() => owner.Append(source)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(owner.Reset).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => owner.GetCurrentHash(destination)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => owner.GetHashAndReset(destination)).ThrowsExactly<ObjectDisposedException>();
-		}
+		return HashAlgorithmTest.VerifyOwnershipContract<PlatformSha256>();
 	}
 
 	[Test]
@@ -165,42 +109,9 @@ public class PlatformSha256Test
 	}
 
 	[Test]
-	public async Task ShortDestinationsLeaveDestinationAndStateUnchanged()
+	public Task ShortDestinationsLeaveDestinationAndStateUnchanged()
 	{
-		byte[] source = CreateDeterministicSource(23);
-		byte[] expected = ManagedHash(source);
-		byte[] emptyExpected = ManagedHash([]);
-		byte[] shortDestination = new byte[PlatformSha256.HashLength - 1];
-		byte[] destination = HashAlgorithmTestUtils<PlatformSha256>.CreateDestination();
-
-		using PlatformSha256 hashAlgorithm = PlatformSha256.Create();
-		hashAlgorithm.Append(source);
-		PrepareDestination(shortDestination);
-
-		await Assert.That(() => hashAlgorithm.GetCurrentHash(shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
-		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
-
-		PrepareDestination(destination);
-		int written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, expected, written);
-
-		PrepareDestination(shortDestination);
-		await Assert.That(() => hashAlgorithm.GetHashAndReset(shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
-		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
-
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetHashAndReset(destination);
-		await AssertOutput(destination, expected, written);
-
-		PrepareDestination(destination);
-		written = hashAlgorithm.GetCurrentHash(destination);
-		await AssertOutput(destination, emptyExpected, written);
-
-		byte[] sourceCopy = (byte[])source.Clone();
-		PrepareDestination(shortDestination);
-		await Assert.That(() => PlatformSha256.HashData(source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
-		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
-		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
+		return HashAlgorithmTest.VerifyShortDestinations<PlatformSha256>(ManagedHash);
 	}
 
 	[Test]

@@ -1,8 +1,8 @@
+using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha2;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
-using static CryptoBase.Tests.Hashes.HashAlgorithmTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes;
@@ -11,17 +11,51 @@ namespace CryptoBase.Tests.Hashes;
 public class HashAlgorithmTest
 {
 	[Test]
-	public async Task LifecycleContract()
+	public Task LifecycleContract()
+	{
+		return VerifyLifecycleContract<HashAlgorithm<Sha256Core>>(SHA256.HashData);
+	}
+
+	[Test]
+	[Arguments(0, 0)]
+	[Arguments(0, 17)]
+	[Arguments(17, 0)]
+	public async Task HashDataSupportsOverlappingSourceAndDestination(int sourceOffset, int destinationOffset)
+	{
+		const int sourceLength = 97;
+		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256Core.HashLength);
+		byte[] buffer = CreateDeterministicSource(bufferLength);
+		byte[] expected = SHA256.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength));
+
+		int written = HashAlgorithm<Sha256Core>.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength), buffer.AsSpan().Slice(destinationOffset, Sha256Core.HashLength));
+
+		await Assert.That(written).IsEqualTo(Sha256Core.HashLength);
+		await Assert.That(buffer.AsSpan().Slice(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	public Task OwnershipContract()
+	{
+		return VerifyOwnershipContract<HashAlgorithm<Sha256Core>>();
+	}
+
+	[Test]
+	public Task ShortDestinationsLeaveDestinationAndStateUnchanged()
+	{
+		return VerifyShortDestinations<HashAlgorithm<Sha256Core>>(SHA256.HashData);
+	}
+
+	internal static async Task VerifyLifecycleContract<TAlgorithm>(Func<byte[], byte[]> oracle) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
 	{
 		byte[] source = "abc"u8.ToArray();
-		byte[] expected = SHA256.HashData(source);
-		byte[] emptyExpected = SHA256.HashData(ReadOnlySpan<byte>.Empty);
-		byte[] doubledExpected = SHA256.HashData(Concat(source, source));
+		byte[] expected = oracle(source);
+		byte[] emptyExpected = oracle([]);
+		byte[] doubledExpected = oracle(Concat(source, source));
 
-		await Assert.That(Sha256Core.HashLength).IsEqualTo(expected.Length);
+		await Assert.That(TAlgorithm.HashLength).IsEqualTo(expected.Length);
 
-		byte[] destination = CreateDestination<Sha256Core>();
-		using HashAlgorithm<Sha256Core> hashAlgorithm = HashAlgorithm<Sha256Core>.Create();
+		byte[] destination = HashAlgorithmTestUtils<TAlgorithm>.CreateDestination();
+		using TAlgorithm hashAlgorithm = TAlgorithm.Create();
 
 		PrepareDestination(destination);
 		int written = hashAlgorithm.GetCurrentHash(destination);
@@ -58,33 +92,19 @@ public class HashAlgorithmTest
 		PrepareDestination(destination);
 		written = hashAlgorithm.GetCurrentHash(destination);
 		await AssertOutput(destination, expected, written);
+
+		PrepareDestination(destination);
+		written = hashAlgorithm.GetHashAndReset(destination);
+		await AssertOutput(destination, expected, written);
 	}
 
-	[Test]
-	[Arguments(0, 0)]
-	[Arguments(0, 17)]
-	[Arguments(17, 0)]
-	public async Task HashDataSupportsOverlappingSourceAndDestination(int sourceOffset, int destinationOffset)
-	{
-		const int sourceLength = 97;
-		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256Core.HashLength);
-		byte[] buffer = CreateDeterministicSource(bufferLength);
-		byte[] expected = SHA256.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength));
-
-		int written = HashAlgorithm<Sha256Core>.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength), buffer.AsSpan().Slice(destinationOffset, Sha256Core.HashLength));
-
-		await Assert.That(written).IsEqualTo(Sha256Core.HashLength);
-		await Assert.That(buffer.AsSpan().Slice(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
-	}
-
-	[Test]
-	public async Task OwnershipContract()
+	internal static async Task VerifyOwnershipContract<TAlgorithm>() where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
 	{
 		byte[] source = CreateDeterministicSource(19);
-		byte[] destination = new byte[HashAlgorithm<Sha256Core>.HashLength];
+		byte[] destination = new byte[TAlgorithm.HashLength];
 
-		using HashAlgorithm<Sha256Core> owner = HashAlgorithm<Sha256Core>.Create();
-		HashAlgorithm<Sha256Core> alias = owner;
+		using TAlgorithm owner = TAlgorithm.Create();
+		TAlgorithm alias = owner;
 		alias.Dispose();
 		alias.Dispose();
 
@@ -97,16 +117,15 @@ public class HashAlgorithmTest
 		}
 	}
 
-	[Test]
-	public async Task ShortDestinationsLeaveDestinationAndStateUnchanged()
+	internal static async Task VerifyShortDestinations<TAlgorithm>(Func<byte[], byte[]> oracle) where TAlgorithm : class, IHashAlgorithm<TAlgorithm>
 	{
 		byte[] source = CreateDeterministicSource(23);
-		byte[] expected = SHA256.HashData(source);
-		byte[] emptyExpected = SHA256.HashData(ReadOnlySpan<byte>.Empty);
-		byte[] shortDestination = new byte[Sha256Core.HashLength - 1];
-		byte[] destination = CreateDestination<Sha256Core>();
+		byte[] expected = oracle(source);
+		byte[] emptyExpected = oracle([]);
+		byte[] shortDestination = new byte[TAlgorithm.HashLength - 1];
+		byte[] destination = HashAlgorithmTestUtils<TAlgorithm>.CreateDestination();
 
-		using HashAlgorithm<Sha256Core> hashAlgorithm = HashAlgorithm<Sha256Core>.Create();
+		using TAlgorithm hashAlgorithm = TAlgorithm.Create();
 		hashAlgorithm.Append(source);
 		PrepareDestination(shortDestination);
 
@@ -133,7 +152,7 @@ public class HashAlgorithmTest
 
 		byte[] sourceCopy = (byte[])source.Clone();
 		PrepareDestination(shortDestination);
-		await Assert.That(() => HashAlgorithm<Sha256Core>.HashData(source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+		await Assert.That(() => TAlgorithm.HashData(source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
 	}
