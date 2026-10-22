@@ -153,7 +153,7 @@ public class KeccakBatchSpongeTest
 	public async Task PaddingSwitchesToSqueezing()
 	{
 		KeccakBatchSponge<KeccakRate136> sponge = default;
-		sponge.Reset(3);
+		sponge.ResetWithGuests(3, 0);
 		await Assert.That(sponge.IsSqueezing).IsFalse();
 
 		sponge.Absorb(new byte[sponge.Count * 137]);
@@ -380,14 +380,7 @@ public class KeccakBatchSpongeTest
 
 	private static void Reset<TRate>(ref KeccakBatchSponge<TRate> batch, int streams, int lanes) where TRate : IKeccakRate
 	{
-		if (lanes is 0)
-		{
-			batch.Reset(streams);
-		}
-		else
-		{
-			batch.Reset(streams, lanes);
-		}
+		batch.Reset(streams, lanes is 0 ? KeccakP1600Batch.ChooseLanes(streams) : lanes);
 	}
 
 	private static byte[] Gather(byte[] inputs, int inputLength, int first, int count, int offset, int length)

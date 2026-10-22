@@ -45,7 +45,7 @@ public class KeccakSharedPermutationTest
 		return Run(rate, guestRate, new GuestCase(lanes));
 	}
 
-	// Guests only take lanes the streams leave free, so a batch takes as many streams as Reset alone gives it.
+	// Guests only take lanes the streams leave free, so a batch takes as many streams as it would without them.
 	[Test]
 	public async Task ResetWithGuestsTakesAsManyStreamsAsReset()
 	{
@@ -54,7 +54,7 @@ public class KeccakSharedPermutationTest
 			for (int streams = 1; streams <= 20; ++streams)
 			{
 				KeccakBatchSponge<KeccakRate168> alone = default;
-				alone.Reset(streams);
+				alone.Reset(streams, KeccakP1600Batch.ChooseLanes(streams));
 
 				for (int guests = 0; guests <= 8; ++guests)
 				{

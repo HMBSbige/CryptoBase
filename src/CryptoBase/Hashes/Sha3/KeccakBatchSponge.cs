@@ -27,14 +27,9 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 
 	internal readonly int FreeLanes => _lanes - Count;
 
-	// Takes as many of the remaining streams as KeccakP1600Batch assigns to one kernel; Count says how many.
-	internal void Reset(int streams)
-	{
-		Reset(streams, KeccakP1600Batch.ChooseLanes(streams));
-	}
-
-	// Leaves up to guests lanes free for Permute where the kernel has room, but takes as many streams as Reset(streams) would: a
-	// guest only saves a permutation, while a stream left over can cost a batch.
+	// Takes as many of the remaining streams as KeccakP1600Batch assigns to one kernel, Count says how many, and leaves up to guests
+	// lanes free for Permute where the kernel has room. Guests never cost a stream: a guest only saves a permutation, while a stream
+	// left over can cost a batch.
 	internal void ResetWithGuests(int streams, int guests)
 	{
 		Debug.Assert(guests >= 0);

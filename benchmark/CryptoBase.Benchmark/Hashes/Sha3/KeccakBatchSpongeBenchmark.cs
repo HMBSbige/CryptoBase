@@ -83,7 +83,7 @@ public class KeccakBatchSpongeBenchmark
 
 		for (int first = 0; first < Batch.Streams; first += sponge.Count)
 		{
-			sponge.Reset(Batch.Streams - first);
+			sponge.ResetWithGuests(Batch.Streams - first, 0);
 			sponge.Absorb(_inputs.AsSpan(first * inputLength, sponge.Count * inputLength));
 			sponge.Pad(KeccakDomainSeparator.Shake);
 			sponge.Squeeze(_outputs.AsSpan(first * outputLength, sponge.Count * outputLength));
