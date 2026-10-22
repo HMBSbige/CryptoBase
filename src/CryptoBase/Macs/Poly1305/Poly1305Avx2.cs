@@ -70,6 +70,76 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 		_hasEighthPower = true;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector256<uint> Broadcast(ref Vector256<uint> value, bool eighthPower)
+	{
+		return eighthPower ? BroadcastEighth(ref value) : BroadcastFirst(ref value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void Multiply
+	(
+		bool eighthPower, bool accumulate,
+		Vector256<ulong> x0, Vector256<ulong> x1, Vector256<ulong> x2, Vector256<ulong> x3, Vector256<ulong> x4,
+		ref Vector256<ulong> d0, ref Vector256<ulong> d1, ref Vector256<ulong> d2, ref Vector256<ulong> d3, ref Vector256<ulong> d4
+	)
+	{
+		Vector256<uint> coefficient = Broadcast(ref _ruwy0, eighthPower);
+
+		if (accumulate)
+		{
+			d0 += Avx2.Multiply(x0.AsUInt32(), coefficient);
+			d1 += Avx2.Multiply(x1.AsUInt32(), coefficient);
+			d2 += Avx2.Multiply(x2.AsUInt32(), coefficient);
+			d3 += Avx2.Multiply(x3.AsUInt32(), coefficient);
+			d4 += Avx2.Multiply(x4.AsUInt32(), coefficient);
+		}
+		else
+		{
+			d0 = Avx2.Multiply(x0.AsUInt32(), coefficient);
+			d1 = Avx2.Multiply(x1.AsUInt32(), coefficient);
+			d2 = Avx2.Multiply(x2.AsUInt32(), coefficient);
+			d3 = Avx2.Multiply(x3.AsUInt32(), coefficient);
+			d4 = Avx2.Multiply(x4.AsUInt32(), coefficient);
+		}
+
+		coefficient = Broadcast(ref _ruwy1, eighthPower);
+		d1 += Avx2.Multiply(x0.AsUInt32(), coefficient);
+		d2 += Avx2.Multiply(x1.AsUInt32(), coefficient);
+		d3 += Avx2.Multiply(x2.AsUInt32(), coefficient);
+		d4 += Avx2.Multiply(x3.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _ruwy2, eighthPower);
+		d2 += Avx2.Multiply(x0.AsUInt32(), coefficient);
+		d3 += Avx2.Multiply(x1.AsUInt32(), coefficient);
+		d4 += Avx2.Multiply(x2.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _ruwy3, eighthPower);
+		d3 += Avx2.Multiply(x0.AsUInt32(), coefficient);
+		d4 += Avx2.Multiply(x1.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _ruwy4, eighthPower);
+		d4 += Avx2.Multiply(x0.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _svxz1, eighthPower);
+		d0 += Avx2.Multiply(x4.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _svxz2, eighthPower);
+		d0 += Avx2.Multiply(x3.AsUInt32(), coefficient);
+		d1 += Avx2.Multiply(x4.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _svxz3, eighthPower);
+		d0 += Avx2.Multiply(x2.AsUInt32(), coefficient);
+		d1 += Avx2.Multiply(x3.AsUInt32(), coefficient);
+		d2 += Avx2.Multiply(x4.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _svxz4, eighthPower);
+		d0 += Avx2.Multiply(x1.AsUInt32(), coefficient);
+		d1 += Avx2.Multiply(x2.AsUInt32(), coefficient);
+		d2 += Avx2.Multiply(x3.AsUInt32(), coefficient);
+		d3 += Avx2.Multiply(x4.AsUInt32(), coefficient);
+	}
+
 	private void AppendFourWay(scoped ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(source.Length >= BlockSize4 && source.Length % BlockSize4 is 0);
@@ -93,92 +163,15 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 
 		while (_hasEighthPower && remaining >= BlockSize4 * 2)
 		{
-			Vector256<uint> coefficient = BroadcastEighth(ref _ruwy0);
-			Vector256<ulong> loopD0 = Avx2.Multiply(h0.AsUInt32(), coefficient);
-			Vector256<ulong> loopD1 = Avx2.Multiply(h1.AsUInt32(), coefficient);
-			Vector256<ulong> loopD2 = Avx2.Multiply(h2.AsUInt32(), coefficient);
-			Vector256<ulong> loopD3 = Avx2.Multiply(h3.AsUInt32(), coefficient);
-			Vector256<ulong> loopD4 = Avx2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastEighth(ref _ruwy1);
-			loopD1 += Avx2.Multiply(h0.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(h1.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(h2.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(h3.AsUInt32(), coefficient);
-
-			coefficient = BroadcastEighth(ref _ruwy2);
-			loopD2 += Avx2.Multiply(h0.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(h1.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(h2.AsUInt32(), coefficient);
-
-			coefficient = BroadcastEighth(ref _ruwy3);
-			loopD3 += Avx2.Multiply(h0.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(h1.AsUInt32(), coefficient);
-
-			coefficient = BroadcastEighth(ref _ruwy4);
-			loopD4 += Avx2.Multiply(h0.AsUInt32(), coefficient);
-
-			coefficient = BroadcastEighth(ref _svxz1);
-			loopD0 += Avx2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastEighth(ref _svxz2);
-			loopD0 += Avx2.Multiply(h3.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastEighth(ref _svxz3);
-			loopD0 += Avx2.Multiply(h2.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(h3.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastEighth(ref _svxz4);
-			loopD0 += Avx2.Multiply(h1.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(h2.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(h3.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(h4.AsUInt32(), coefficient);
+			Vector256<ulong> loopD0 = Vector256<ulong>.Zero;
+			Vector256<ulong> loopD1 = Vector256<ulong>.Zero;
+			Vector256<ulong> loopD2 = Vector256<ulong>.Zero;
+			Vector256<ulong> loopD3 = Vector256<ulong>.Zero;
+			Vector256<ulong> loopD4 = Vector256<ulong>.Zero;
+			Multiply(true, false, h0, h1, h2, h3, h4, ref loopD0, ref loopD1, ref loopD2, ref loopD3, ref loopD4);
 
 			Poly1305Utils.LoadFour(ref input, out m0, out m1, out m2, out m3, out m4);
-			coefficient = BroadcastFirst(ref _ruwy0);
-			loopD0 += Avx2.Multiply(m0.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(m1.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(m2.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(m3.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ruwy1);
-			loopD1 += Avx2.Multiply(m0.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(m1.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(m2.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(m3.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ruwy2);
-			loopD2 += Avx2.Multiply(m0.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(m1.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(m2.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ruwy3);
-			loopD3 += Avx2.Multiply(m0.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(m1.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ruwy4);
-			loopD4 += Avx2.Multiply(m0.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _svxz1);
-			loopD0 += Avx2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _svxz2);
-			loopD0 += Avx2.Multiply(m3.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _svxz3);
-			loopD0 += Avx2.Multiply(m2.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(m3.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _svxz4);
-			loopD0 += Avx2.Multiply(m1.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(m2.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(m3.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(m4.AsUInt32(), coefficient);
+			Multiply(false, true, m0, m1, m2, m3, m4, ref loopD0, ref loopD1, ref loopD2, ref loopD3, ref loopD4);
 
 			ref byte secondGroup = ref Unsafe.Add(ref input, BlockSize4);
 			Poly1305Utils.LoadFour(ref secondGroup, out m0, out m1, out m2, out m3, out m4);
@@ -196,48 +189,12 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 
 		while (remaining is not 0)
 		{
-			Vector256<uint> coefficient = BroadcastFirst(ref _ruwy0);
-			Vector256<ulong> loopD0 = Avx2.Multiply(h0.AsUInt32(), coefficient);
-			Vector256<ulong> loopD1 = Avx2.Multiply(h1.AsUInt32(), coefficient);
-			Vector256<ulong> loopD2 = Avx2.Multiply(h2.AsUInt32(), coefficient);
-			Vector256<ulong> loopD3 = Avx2.Multiply(h3.AsUInt32(), coefficient);
-			Vector256<ulong> loopD4 = Avx2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ruwy1);
-			loopD1 += Avx2.Multiply(h0.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(h1.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(h2.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(h3.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ruwy2);
-			loopD2 += Avx2.Multiply(h0.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(h1.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(h2.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ruwy3);
-			loopD3 += Avx2.Multiply(h0.AsUInt32(), coefficient);
-			loopD4 += Avx2.Multiply(h1.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ruwy4);
-			loopD4 += Avx2.Multiply(h0.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _svxz1);
-			loopD0 += Avx2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _svxz2);
-			loopD0 += Avx2.Multiply(h3.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _svxz3);
-			loopD0 += Avx2.Multiply(h2.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(h3.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _svxz4);
-			loopD0 += Avx2.Multiply(h1.AsUInt32(), coefficient);
-			loopD1 += Avx2.Multiply(h2.AsUInt32(), coefficient);
-			loopD2 += Avx2.Multiply(h3.AsUInt32(), coefficient);
-			loopD3 += Avx2.Multiply(h4.AsUInt32(), coefficient);
+			Vector256<ulong> loopD0 = Vector256<ulong>.Zero;
+			Vector256<ulong> loopD1 = Vector256<ulong>.Zero;
+			Vector256<ulong> loopD2 = Vector256<ulong>.Zero;
+			Vector256<ulong> loopD3 = Vector256<ulong>.Zero;
+			Vector256<ulong> loopD4 = Vector256<ulong>.Zero;
+			Multiply(false, false, h0, h1, h2, h3, h4, ref loopD0, ref loopD1, ref loopD2, ref loopD3, ref loopD4);
 
 			Reduce(loopD0, loopD1, loopD2, loopD3, loopD4, mask, out h0, out h1, out h2, out h3, out h4);
 
