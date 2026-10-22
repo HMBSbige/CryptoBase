@@ -11,8 +11,6 @@ namespace CryptoBase.Tests.Hashes;
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class XofContractTest
 {
-	private delegate void OutputWriter(Span<byte> destination);
-
 	[Test]
 	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
 	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
@@ -250,13 +248,5 @@ public class XofContractTest
 			xof.Append(source.Slice(0, length));
 			source = source.Slice(length);
 		}
-	}
-
-	private static async Task AssertWrites(byte[] expected, OutputWriter write)
-	{
-		byte[] destination = new byte[expected.Length + 2];
-		PrepareDestination(destination);
-		write(destination.AsSpan(1, expected.Length));
-		await AssertOutput(destination, 1, expected);
 	}
 }

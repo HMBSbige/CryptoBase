@@ -3,7 +3,6 @@ using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha3;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using static CryptoBase.Tests.Hashes.Sha3.Sha3TestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;

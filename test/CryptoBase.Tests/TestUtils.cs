@@ -90,6 +90,14 @@ public static class TestUtils
 		}
 	}
 
+	public static async Task AssertWrites(byte[] expected, Action<Span<byte>> write)
+	{
+		byte[] destination = new byte[expected.Length + 2];
+		PrepareDestination(destination);
+		write(destination.AsSpan(1, expected.Length));
+		await AssertOutput(destination, 1, expected);
+	}
+
 	private static async Task AssertOutputCore(byte[] destination, byte[] expected, int offset = 0)
 	{
 		await Assert.That(destination.AsMemory(offset, expected.Length)).IsEquivalentTo(expected, CollectionOrdering.Matching);

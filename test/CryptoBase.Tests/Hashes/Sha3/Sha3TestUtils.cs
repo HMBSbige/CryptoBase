@@ -84,14 +84,6 @@ internal static class Sha3TestUtils
 		};
 	}
 
-	public static async Task AssertWrites(byte[] expected, Action<Span<byte>> write)
-	{
-		byte[] destination = new byte[expected.Length + 2];
-		PrepareDestination(destination);
-		write(destination.AsSpan(1, expected.Length));
-		await AssertOutput(destination, 1, expected);
-	}
-
 	public static byte[] Customization(int length)
 	{
 		byte[] customization = CreateDeterministicSource(length);
