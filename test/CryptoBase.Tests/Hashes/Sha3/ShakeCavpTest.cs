@@ -134,10 +134,7 @@ public class ShakeCavpTest
 
 	private static async Task VerifyOutput<T>(byte[] message, byte[] expected) where T : unmanaged, IXofCore<T>
 	{
-		byte[] destination = new byte[expected.Length + 2];
-		PrepareDestination(destination);
-		Xof<T>.HashData(message, destination.AsSpan(1, expected.Length));
-		await AssertOutput(destination, 1, expected);
+		await AssertWrites(expected, destination => Xof<T>.HashData(message, destination));
 
 		// Appends the input and reads the output in pieces of up to three blocks, which start and end at arbitrary offsets within blocks.
 		using Xof<T> xof = Xof<T>.Create();
@@ -152,6 +149,7 @@ public class ShakeCavpTest
 			offset += length;
 		}
 
+		byte[] destination = new byte[expected.Length + 2];
 		PrepareDestination(destination);
 
 		for (int offset = 0; offset < expected.Length;)
