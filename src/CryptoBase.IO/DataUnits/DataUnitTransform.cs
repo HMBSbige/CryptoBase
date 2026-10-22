@@ -263,7 +263,9 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 
 		try
 		{
-			for (long windowStart = plan.Start; windowStart < plan.Stop; windowStart += scratchLength)
+			long windowStart = plan.Start;
+
+			while (windowStart < plan.Stop)
 			{
 				Memory<byte> window = scratch.AsMemory(0, (int)Math.Min(scratchLength, plan.Stop - windowStart));
 
@@ -279,6 +281,7 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 
 				EncryptWindow(window.Span, windowStart, source.Span, offset, plan.Length);
 				await _storage.WriteAsync(window, windowStart, cancellationToken).ConfigureAwait(false);
+				windowStart += window.Length;
 			}
 		}
 		catch
@@ -303,7 +306,9 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 
 		try
 		{
-			for (long windowStart = plan.Start; windowStart < plan.Stop; windowStart += scratchLength)
+			long windowStart = plan.Start;
+
+			while (windowStart < plan.Stop)
 			{
 				Span<byte> window = scratch.AsSpan(0, (int)Math.Min(scratchLength, plan.Stop - windowStart));
 
@@ -319,6 +324,7 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 
 				EncryptWindow(window, windowStart, source, offset, plan.Length);
 				_storage.Write(window, windowStart);
+				windowStart += window.Length;
 			}
 		}
 		catch

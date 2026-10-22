@@ -15,6 +15,11 @@ public class DataUnitStreamTest
 {
 	private const int DefaultDataUnitSize = 512;
 
+	private const long MaxLength = long.MaxValue / DefaultDataUnitSize * DefaultDataUnitSize;
+
+	// One data unit more than the 64 KiB transform window, so a range this long ending at MaxLength has a short last window next to long.MaxValue.
+	private const int WindowSpanningLength = 64 * 1024 + DefaultDataUnitSize;
+
 	[Test]
 	[GenerateGenericTest(typeof(XtsMode<AesCipher>))]
 	[GenerateGenericTest(typeof(XtsMode<SM4Cipher>))]
@@ -344,6 +349,38 @@ public class DataUnitStreamTest
 
 	[Test]
 	[MatrixDataSource]
+	public async Task WriteEndingAtLargestLengthSucceeds([Matrix] bool useAsync)
+	{
+		const long start = MaxLength - WindowSpanningLength;
+		byte[] data = CreateDeterministicSource(WindowSpanningLength);
+		await using DataUnitStream<XtsMode<AesCipher>> xts = DataUnitStream.Create(new SparseTailStream(start), XtsMode<AesCipher>.Create(Key), DefaultDataUnitSize);
+		xts.Position = start;
+		await WriteAsync(xts, data, useAsync);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(xts.Position).IsEqualTo(MaxLength);
+			await Assert.That(xts.Length).IsEqualTo(MaxLength);
+		}
+
+		xts.Position = start;
+		await AssertBytesEqual(await ReadInChunksAsync(xts, useAsync), data);
+	}
+
+	[Test]
+	public async Task GrowthToLargestLengthSucceeds()
+	{
+		const long start = MaxLength - WindowSpanningLength;
+		await using DataUnitStream<XtsMode<AesCipher>> xts = DataUnitStream.Create(new SparseTailStream(start), XtsMode<AesCipher>.Create(Key), DefaultDataUnitSize);
+		xts.SetLength(MaxLength);
+		await Assert.That(xts.Length).IsEqualTo(MaxLength);
+
+		xts.Position = start;
+		await AssertBytesEqual(await ReadInChunksAsync(xts, false), new byte[WindowSpanningLength]);
+	}
+
+	[Test]
+	[MatrixDataSource]
 	public async Task ArrayOverloadsForwardAndValidate([Matrix] bool useAsync)
 	{
 		const int unit = 100;
@@ -645,6 +682,56 @@ public class DataUnitStreamTest
 	private sealed class NonSeekableMemoryStream : MemoryStream
 	{
 		public override bool CanSeek => false;
+	}
+
+	/// <summary>Starts <c>tailStart</c> bytes long and stores only the bytes from there on, so it can reach offsets near <see cref="long.MaxValue" />.</summary>
+	private sealed class SparseTailStream(long tailStart) : Stream
+	{
+		private readonly MemoryStream _tail = new();
+
+		public override bool CanRead => true;
+
+		public override bool CanSeek => true;
+
+		public override bool CanWrite => true;
+
+		public override long Length => tailStart + _tail.Length;
+
+		public override long Position { get; set; }
+
+		public override void Flush()
+		{
+		}
+
+		public override int Read(byte[] buffer, int offset, int count)
+		{
+			int read = SeekTail().Read(buffer, offset, count);
+			Position += read;
+			return read;
+		}
+
+		public override void Write(byte[] buffer, int offset, int count)
+		{
+			SeekTail().Write(buffer, offset, count);
+			Position += count;
+		}
+
+		public override long Seek(long offset, SeekOrigin origin)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override void SetLength(long value)
+		{
+			throw new NotSupportedException();
+		}
+
+		private MemoryStream SeekTail()
+		{
+			ArgumentOutOfRangeException.ThrowIfLessThan(Position, tailStart);
+			_tail.Position = Position - tailStart;
+			return _tail;
+		}
 	}
 
 	/// <summary>Counts calls; derived memory streams route every read and write through the array overloads.</summary>
