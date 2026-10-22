@@ -53,9 +53,6 @@ public class XSalsa20Cipher : Salsa20Cipher
 		state[6] = ivSpan[4];
 		state[7] = ivSpan[5];
 
-		state[8] = ivSpan[2];
-		state[9] = ivSpan[3];
-
 		state[0] = Sigma32[0];
 		state[5] = Sigma32[1];
 		state[10] = Sigma32[2];
