@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions;
 using CryptoBase.Hashes.Sha3;
 using CryptoBase.Macs.Kmac;
 using CryptoBase.Tests.Hashes.Sha3;
@@ -6,8 +7,8 @@ using System.Runtime.InteropServices;
 
 namespace CryptoBase.Tests.Macs.Kmac;
 
-// The four KMAC classes share no interface that covers their output, so the tests reach them through KmacSubject, whose members each forward to
-// the one member of the same role: GetCurrentMac or GetCurrentHash, and GetMacAndReset or GetHashAndReset.
+// The four KMAC classes share no interface that covers their output, so the tests reach them through KmacSubject, which binds each role to the one
+// member that plays it: GetCurrentMac or GetCurrentHash, and GetMacAndReset or GetHashAndReset.
 public sealed record KmacVariant(int SecurityStrength, bool Xof)
 {
 	public static IEnumerable<KmacVariant> All => [.. FixedLength, .. Extendable];
@@ -56,10 +57,10 @@ public sealed record KmacVariant(int SecurityStrength, bool Xof)
 	{
 		return (SecurityStrength, Xof) switch
 		{
-			(128, false) => new KmacSubject.Fixed128(Kmac128Algorithm.Create(key, customization)),
-			(256, false) => new KmacSubject.Fixed256(Kmac256Algorithm.Create(key, customization)),
-			(128, true) => new KmacSubject.Xof128(KmacXof128Algorithm.Create(key, customization)),
-			(256, true) => new KmacSubject.Xof256(KmacXof256Algorithm.Create(key, customization)),
+			(128, false) => Subject(Kmac128Algorithm.Create(key, customization)),
+			(256, false) => Subject(Kmac256Algorithm.Create(key, customization)),
+			(128, true) => Subject(KmacXof128Algorithm.Create(key, customization)),
+			(256, true) => Subject(KmacXof256Algorithm.Create(key, customization)),
 			_ => throw new NotSupportedException(ToString())
 		};
 	}
@@ -68,202 +69,86 @@ public sealed record KmacVariant(int SecurityStrength, bool Xof)
 	{
 		return KeccakReference.Kmac(key, source, Rate, customization, outputLength, Xof);
 	}
-}
 
-public abstract class KmacSubject : IDisposable
-{
-	private KmacSubject() { }
-
-	public abstract void Append(ReadOnlySpan<byte> source);
-
-	public abstract void GetCurrent(Span<byte> destination);
-
-	public abstract void GetAndReset(Span<byte> destination);
-
-	public abstract void Reset();
-
-	public abstract void Dispose();
-
-	// Read and Clone exist on the extendable-output classes only.
-	public virtual void Read(Span<byte> destination)
+	private static KmacSubject Subject(Kmac128Algorithm kmac)
 	{
-		throw new NotSupportedException();
+		return new KmacSubject(kmac, kmac.GetCurrentMac, kmac.GetMacAndReset, () => Bytes(ref State(kmac)));
 	}
 
-	public virtual KmacSubject Clone()
+	private static KmacSubject Subject(Kmac256Algorithm kmac)
 	{
-		throw new NotSupportedException();
+		return new KmacSubject(kmac, kmac.GetCurrentMac, kmac.GetMacAndReset, () => Bytes(ref State(kmac)));
 	}
 
-	// A copy of the internal state, which holds the key, to check its erasure.
-	public abstract byte[] StateBytes();
+	private static KmacSubject Subject(KmacXof128Algorithm xof)
+	{
+		return new KmacSubject(xof, xof.GetCurrentHash, xof.GetHashAndReset, () => Bytes(ref State(xof)), xof.Read, () => Subject(xof.Clone()));
+	}
+
+	private static KmacSubject Subject(KmacXof256Algorithm xof)
+	{
+		return new KmacSubject(xof, xof.GetCurrentHash, xof.GetHashAndReset, () => Bytes(ref State(xof)), xof.Read, () => Subject(xof.Clone()));
+	}
 
 	private static byte[] Bytes<T>(ref T state) where T : struct
 	{
 		return MemoryMarshal.AsBytes(new Span<T>(ref state)).ToArray();
 	}
 
-	public sealed class Fixed128(Kmac128Algorithm kmac) : KmacSubject
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_state")]
+	private static extern ref KmacState<KeccakRate168> State(Kmac128Algorithm kmac);
+
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_state")]
+	private static extern ref KmacState<KeccakRate136> State(Kmac256Algorithm kmac);
+
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_state")]
+	private static extern ref KmacXofState<KeccakRate168> State(KmacXof128Algorithm xof);
+
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_state")]
+	private static extern ref KmacXofState<KeccakRate136> State(KmacXof256Algorithm xof);
+}
+
+public sealed class KmacSubject(IIncrementalAlgorithm kmac, Action<Span<byte>> getCurrent, Action<Span<byte>> getAndReset, Func<byte[]> stateBytes, Action<Span<byte>>? read = null, Func<KmacSubject>? clone = null) : IDisposable
+{
+	public void Append(ReadOnlySpan<byte> source)
 	{
-		public override void Append(ReadOnlySpan<byte> source)
-		{
-			kmac.Append(source);
-		}
-
-		public override void GetCurrent(Span<byte> destination)
-		{
-			kmac.GetCurrentMac(destination);
-		}
-
-		public override void GetAndReset(Span<byte> destination)
-		{
-			kmac.GetMacAndReset(destination);
-		}
-
-		public override void Reset()
-		{
-			kmac.Reset();
-		}
-
-		public override void Dispose()
-		{
-			kmac.Dispose();
-		}
-
-		public override byte[] StateBytes()
-		{
-			return Bytes(ref State(kmac));
-		}
-
-		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_state")]
-		private static extern ref KmacState<KeccakRate168> State(Kmac128Algorithm kmac);
+		kmac.Append(source);
 	}
 
-	public sealed class Fixed256(Kmac256Algorithm kmac) : KmacSubject
+	public void GetCurrent(Span<byte> destination)
 	{
-		public override void Append(ReadOnlySpan<byte> source)
-		{
-			kmac.Append(source);
-		}
-
-		public override void GetCurrent(Span<byte> destination)
-		{
-			kmac.GetCurrentMac(destination);
-		}
-
-		public override void GetAndReset(Span<byte> destination)
-		{
-			kmac.GetMacAndReset(destination);
-		}
-
-		public override void Reset()
-		{
-			kmac.Reset();
-		}
-
-		public override void Dispose()
-		{
-			kmac.Dispose();
-		}
-
-		public override byte[] StateBytes()
-		{
-			return Bytes(ref State(kmac));
-		}
-
-		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_state")]
-		private static extern ref KmacState<KeccakRate136> State(Kmac256Algorithm kmac);
+		getCurrent(destination);
 	}
 
-	public sealed class Xof128(KmacXof128Algorithm xof) : KmacSubject
+	public void GetAndReset(Span<byte> destination)
 	{
-		public override void Append(ReadOnlySpan<byte> source)
-		{
-			xof.Append(source);
-		}
-
-		public override void GetCurrent(Span<byte> destination)
-		{
-			xof.GetCurrentHash(destination);
-		}
-
-		public override void GetAndReset(Span<byte> destination)
-		{
-			xof.GetHashAndReset(destination);
-		}
-
-		public override void Reset()
-		{
-			xof.Reset();
-		}
-
-		public override void Dispose()
-		{
-			xof.Dispose();
-		}
-
-		public override void Read(Span<byte> destination)
-		{
-			xof.Read(destination);
-		}
-
-		public override KmacSubject Clone()
-		{
-			return new Xof128(xof.Clone());
-		}
-
-		public override byte[] StateBytes()
-		{
-			return Bytes(ref State(xof));
-		}
-
-		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_state")]
-		private static extern ref KmacXofState<KeccakRate168> State(KmacXof128Algorithm xof);
+		getAndReset(destination);
 	}
 
-	public sealed class Xof256(KmacXof256Algorithm xof) : KmacSubject
+	public void Reset()
 	{
-		public override void Append(ReadOnlySpan<byte> source)
-		{
-			xof.Append(source);
-		}
+		kmac.Reset();
+	}
 
-		public override void GetCurrent(Span<byte> destination)
-		{
-			xof.GetCurrentHash(destination);
-		}
+	public void Dispose()
+	{
+		((IDisposable)kmac).Dispose();
+	}
 
-		public override void GetAndReset(Span<byte> destination)
-		{
-			xof.GetHashAndReset(destination);
-		}
+	// Read and Clone exist on the extendable-output classes only.
+	public void Read(Span<byte> destination)
+	{
+		(read ?? throw new NotSupportedException())(destination);
+	}
 
-		public override void Reset()
-		{
-			xof.Reset();
-		}
+	public KmacSubject Clone()
+	{
+		return (clone ?? throw new NotSupportedException())();
+	}
 
-		public override void Dispose()
-		{
-			xof.Dispose();
-		}
-
-		public override void Read(Span<byte> destination)
-		{
-			xof.Read(destination);
-		}
-
-		public override KmacSubject Clone()
-		{
-			return new Xof256(xof.Clone());
-		}
-
-		public override byte[] StateBytes()
-		{
-			return Bytes(ref State(xof));
-		}
-
-		[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_state")]
-		private static extern ref KmacXofState<KeccakRate136> State(KmacXof256Algorithm xof);
+	// A copy of the internal state, which holds the key, to check its erasure.
+	public byte[] StateBytes()
+	{
+		return stateBytes();
 	}
 }
