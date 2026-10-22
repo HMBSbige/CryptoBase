@@ -82,6 +82,15 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	public void EncryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
+
+		if (AesCipherX86.IsSupported)
+		{
+			CipherBufferGuard.Output(source, destination);
+			Vector128<byte> block = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source));
+			_state.X86.Encrypt(block).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
+			return;
+		}
+
 		EncryptBlocks(source, destination);
 	}
 
@@ -123,6 +132,15 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	public void DecryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
+
+		if (AesCipherX86.IsSupported)
+		{
+			CipherBufferGuard.Output(source, destination);
+			Vector128<byte> block = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source));
+			_state.X86.Decrypt(block).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
+			return;
+		}
+
 		DecryptBlocks(source, destination);
 	}
 
