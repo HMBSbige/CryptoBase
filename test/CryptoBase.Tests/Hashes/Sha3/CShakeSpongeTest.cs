@@ -23,7 +23,7 @@ public class CShakeSpongeTest
 		};
 	}
 
-	// Builds KMAC from Initialize("KMAC"u8, S), AbsorbBytePaddedString(K), Absorb(X) and AbsorbRightEncode(L).
+	// Builds KMAC from InitializeKmac(K, S), Absorb(X) and AbsorbRightEncode(L).
 	[Test]
 	[MethodDataSource(nameof(Rates))]
 	public Task KmacMatchesReference(int rate)
@@ -54,8 +54,7 @@ public class CShakeSpongeTest
 	public async Task ZeroMemoryErasesSeedAndState()
 	{
 		CShakeSponge<KeccakRate136> sponge = default;
-		sponge.Initialize("KMAC"u8, "customization"u8);
-		sponge.AbsorbBytePaddedString(CreateDeterministicSource(32));
+		sponge.InitializeKmac(CreateDeterministicSource(32), "customization"u8);
 		sponge.Absorb(CreateDeterministicSource(5));
 
 		sponge.ZeroMemory();
@@ -168,8 +167,7 @@ public class CShakeSpongeTest
 			foreach (byte[] customization in customizations)
 			{
 				CShakeSponge<TRate> sponge = default;
-				sponge.Initialize("KMAC"u8, customization);
-				sponge.AbsorbBytePaddedString(key);
+				sponge.InitializeKmac(key, customization);
 
 				// Each round starts from the seed that Reset restores, as after the previous round's output. Messages of rate - 3 to rate - 1
 				// bytes leave right_encode(L), of 2 or 3 bytes, to fill the block or to run into the next one.
@@ -201,8 +199,7 @@ public class CShakeSpongeTest
 	private static byte[] Kmac<TRate>(byte[] key, byte[] source, byte[] customization, int outputLength, bool xof) where TRate : IKeccakRate
 	{
 		CShakeSponge<TRate> sponge = default;
-		sponge.Initialize("KMAC"u8, customization);
-		sponge.AbsorbBytePaddedString(key);
+		sponge.InitializeKmac(key, customization);
 		sponge.Absorb(source);
 		sponge.AbsorbRightEncode(xof ? 0 : (ulong)outputLength * 8);
 		sponge.Pad();

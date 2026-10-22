@@ -24,15 +24,6 @@ internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 		_seed = _sponge;
 	}
 
-	// Makes the bytepadded string part of the seed.
-	internal void AbsorbBytePaddedString(ReadOnlySpan<byte> value)
-	{
-		Debug.Assert(_domainSeparator is KeccakDomainSeparator.CShake);
-
-		AbsorbBytePaddedString(ref _sponge, value);
-		_seed = _sponge;
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Absorb(ReadOnlySpan<byte> source)
 	{
