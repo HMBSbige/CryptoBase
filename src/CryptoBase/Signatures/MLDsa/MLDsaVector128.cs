@@ -400,7 +400,7 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 			Vector128<int> h = Vector128.LoadUnsafe(ref y, i);
 			r1 += Vector128.ConditionalSelect(Vector128.GreaterThan(r0, Vector128<int>.Zero), h, -h);
 			r1 += r1 >> 31 & m;
-			r1 -= Vector128.GreaterThanOrEqual(r1, m) & m;
+			r1 = Vector128.AndNot(r1, Vector128.Equals(r1, m));
 			r1.StoreUnsafe(ref z, i);
 		}
 	}
@@ -812,11 +812,11 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 		else
 		{
 			a1 = a1 * Vector128.Create(11275) + Vector128.Create(1 << 23) >> 24;
-			a1 ^= Vector128.Create(43) - a1 >> 31 & a1;
+			a1 = Vector128.AndNot(a1, Vector128.GreaterThan(a1, Vector128.Create(43)));
 		}
 
 		r0 = a - a1 * Vector128.Create(2 * gamma2);
-		r0 -= Vector128.Create((Q - 1) / 2) - r0 >> 31 & Vector128.Create(Q);
+		r0 -= Vector128.GreaterThan(r0, Vector128.Create((Q - 1) / 2)) & Vector128.Create(Q);
 		return a1;
 	}
 

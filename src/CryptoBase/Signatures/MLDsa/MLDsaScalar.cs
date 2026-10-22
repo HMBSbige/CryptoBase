@@ -272,7 +272,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 
 		int count = 0;
 
-		for (int i = 0; i < source.Length && count < destination.Length; i += 3)
+		for (int i = 0; (uint)i < (uint)source.Length && count < destination.Length; i += 3)
 		{
 			int value = source[i] | source[i + 1] << 8 | (source[i + 2] & 0x7F) << 16;
 
@@ -293,11 +293,11 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 
 		int count = 0;
 
-		for (int i = 0; i < source.Length && count < destination.Length; ++i)
+		for (int i = 0; i < source.Length && (uint)count < (uint)destination.Length; ++i)
 		{
 			count = AppendEta(source[i] & 15, destination, count, eta);
 
-			if (count < destination.Length)
+			if ((uint)count < (uint)destination.Length)
 			{
 				count = AppendEta(source[i] >> 4, destination, count, eta);
 			}

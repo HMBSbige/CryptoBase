@@ -1030,7 +1030,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 
 			do
 			{
-				if (position == StreamBlockLength)
+				if (position >= StreamBlockLength)
 				{
 					sponge.Squeeze(block.Span);
 					position = 0;

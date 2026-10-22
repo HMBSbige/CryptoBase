@@ -364,9 +364,10 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		{
 			Vector256<int> r1 = Decompose(Vector256.LoadUnsafe(ref x, i), gamma2, out Vector256<int> r0);
 			Vector256<int> h = Vector256.LoadUnsafe(ref y, i);
-			r1 += Vector256.ConditionalSelect(Vector256.GreaterThan(r0, Vector256<int>.Zero), h, -h);
+			Vector256<int> positive = Vector256.GreaterThan(r0, Vector256<int>.Zero);
+			r1 = r1 + positive - (h ^ positive);
 			r1 += r1 >> 31 & m;
-			r1 -= Vector256.GreaterThanOrEqual(r1, m) & m;
+			r1 = Vector256.AndNot(r1, Vector256.Equals(r1, m));
 			r1.StoreUnsafe(ref z, i);
 		}
 	}
@@ -765,11 +766,11 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		else
 		{
 			a1 = a1 * Vector256.Create(11275) + Vector256.Create(1 << 23) >> 24;
-			a1 ^= Vector256.Create(43) - a1 >> 31 & a1;
+			a1 = Vector256.AndNot(a1, Vector256.GreaterThan(a1, Vector256.Create(43)));
 		}
 
 		r0 = a - a1 * Vector256.Create(2 * gamma2);
-		r0 -= Vector256.Create((Q - 1) / 2) - r0 >> 31 & Vector256.Create(Q);
+		r0 -= Vector256.GreaterThan(r0, Vector256.Create((Q - 1) / 2)) & Vector256.Create(Q);
 		return a1;
 	}
 
@@ -793,12 +794,14 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 	private static bool DecodeEta(ref byte source, ref int destination, [ConstantExpected] int eta, [ConstantExpected(Min = 3, Max = 4)] int bits, Vector256<byte> fields, Vector256<uint> shifts)
 	{
 		Vector256<int> inRange = Vector256<int>.Zero;
+		Vector256<int> limit = Vector256.Create(2 * eta);
+		Vector256<int> center = Vector256.Create(eta);
 
 		for (int i = 0; i < 32; ++i)
 		{
 			Vector256<int> v = Unpack(ref source, bits * i, bits, fields, shifts);
-			inRange |= Vector256.Create(2 * eta) - v;
-			(Vector256.Create(eta) - v).StoreUnsafe(ref destination, (nuint)(8 * i));
+			inRange |= limit - v;
+			(center - v).StoreUnsafe(ref destination, (nuint)(8 * i));
 		}
 
 		return inRange.ExtractMostSignificantBits() is 0;
@@ -807,9 +810,11 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void DecodeZ(ref byte source, ref int destination, [ConstantExpected(Min = 18, Max = 20)] int bits, Vector256<byte> fields, Vector256<uint> shifts)
 	{
+		Vector256<int> gamma1 = Vector256.Create(1 << bits - 1);
+
 		for (int i = 0; i < 32; ++i)
 		{
-			(Vector256.Create(1 << bits - 1) - Unpack(ref source, bits * i, bits, fields, shifts)).StoreUnsafe(ref destination, (nuint)(8 * i));
+			(gamma1 - Unpack(ref source, bits * i, bits, fields, shifts)).StoreUnsafe(ref destination, (nuint)(8 * i));
 		}
 	}
 
@@ -848,13 +853,15 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 			}
 		}
 
+		Vector256<int> b = Vector256.Create(bias);
+
 		for (int i = 0; i < 32; ++i)
 		{
 			Vector256<int> values = Vector256.LoadUnsafe(ref source, (nuint)(8 * i));
 
 			if (subtract)
 			{
-				values = Vector256.Create(bias) - values;
+				values = b - values;
 			}
 
 			Vector256<byte> shifted = Avx2.ShiftLeftLogicalVariable(values.AsUInt32(), shifts).AsByte();

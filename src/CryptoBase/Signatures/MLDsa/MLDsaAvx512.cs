@@ -267,7 +267,7 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 			Vector512<int> h = Vector512.LoadUnsafe(ref y, i);
 			r1 += Vector512.ConditionalSelect(Vector512.GreaterThan(r0, Vector512<int>.Zero), h, -h);
 			r1 += r1 >> 31 & m;
-			r1 -= Vector512.GreaterThanOrEqual(r1, m) & m;
+			r1 &= r1 - m >> 31;
 			r1.StoreUnsafe(ref z, i);
 		}
 	}
@@ -329,7 +329,7 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 				Vector128<byte> bytes = Vector128.CreateScalar(Unsafe.ReadUnaligned<ulong>(input + offset)).AsByte();
 				Vector512<int> b = Avx512F.ConvertToVector512Int32(Sse2.UnpackLow(bytes & Vector128.Create((byte)0x0F), bytes >>> 4));
 				Vector512<int> accepted = Vector512.LessThan(b, bound);
-				Vector512<int> values = eta is 2 ? Vector512.Create(2) - (b - (b * Vector512.Create(205) >>> 10) * Vector512.Create(5)) : Vector512.Create(4) - b;
+				Vector512<int> values = eta is 2 ? (b * Vector512.Create(205) >>> 10) * Vector512.Create(5) - b + Vector512.Create(2) : ~b + Vector512.Create(5);
 				int written = Math.Min(BitOperations.PopCount(accepted.ExtractMostSignificantBits()), destination.Length - count);
 				Store(Avx512F.Compress(Vector512<int>.Zero, accepted, values), output + count, written);
 				count += written;
@@ -556,11 +556,11 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 		else
 		{
 			a1 = a1 * Vector512.Create(11275) + Vector512.Create(1 << 23) >> 24;
-			a1 ^= Vector512.Create(43) - a1 >> 31 & a1;
+			a1 &= a1 - Vector512.Create(44) >> 31;
 		}
 
 		r0 = a - a1 * Vector512.Create(2 * gamma2);
-		r0 -= Vector512.Create((Q - 1) / 2) - r0 >> 31 & Vector512.Create(Q);
+		r0 -= Vector512.AndNot(Vector512.Create(Q), r0 - Vector512.Create((Q + 1) / 2) >> 31);
 		return a1;
 	}
 
