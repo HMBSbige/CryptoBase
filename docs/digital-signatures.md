@@ -52,7 +52,7 @@ bool noContext = verifier.Verify(message, signature); // false
 
 ```csharp
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha512;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 using CryptoBase.Signatures.MLDsa;
 

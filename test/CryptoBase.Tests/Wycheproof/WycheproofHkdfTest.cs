@@ -1,8 +1,6 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes.Sha1;
-using CryptoBase.Hashes.Sha256;
-using CryptoBase.Hashes.Sha384;
-using CryptoBase.Hashes.Sha512;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Kdf;
 
 namespace CryptoBase.Tests.Wycheproof;

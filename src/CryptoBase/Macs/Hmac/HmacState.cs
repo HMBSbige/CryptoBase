@@ -1,6 +1,6 @@
 using CryptoBase.Hashes.Blake2b;
 using CryptoBase.Hashes.Sha1;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 
 namespace CryptoBase.Macs.Hmac;
 

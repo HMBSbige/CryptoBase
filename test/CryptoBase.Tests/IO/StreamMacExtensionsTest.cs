@@ -4,8 +4,8 @@ using CryptoBase.Tests.Wycheproof;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
-using HmacSha256 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha256.Sha256HashAlgorithm>;
-using HmacSha512 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha512.Sha512HashAlgorithm>;
+using HmacSha256 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha2.Sha256HashAlgorithm>;
+using HmacSha512 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha2.Sha512HashAlgorithm>;
 
 namespace CryptoBase.Tests.IO;
 

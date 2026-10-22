@@ -1,9 +1,9 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Crc32C;
+using CryptoBase.Hashes.Crc32;
 using System.Security.Cryptography;
 
-namespace CryptoBase.Benchmark.Hashes.Crc32C;
+namespace CryptoBase.Benchmark.Hashes.Crc32;
 
 [MemoryDiagnoser]
 public class Crc32CBenchmark

@@ -1,4 +1,4 @@
-namespace CryptoBase.Hashes.Sha256;
+namespace CryptoBase.Hashes.Sha2;
 
 internal partial struct Sha256Core
 {

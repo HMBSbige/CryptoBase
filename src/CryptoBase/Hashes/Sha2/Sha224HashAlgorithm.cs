@@ -1,6 +1,4 @@
-using CryptoBase.Hashes.Sha256;
-
-namespace CryptoBase.Hashes.Sha224;
+namespace CryptoBase.Hashes.Sha2;
 
 /// <summary>
 /// Provides the SHA-224 hash core.

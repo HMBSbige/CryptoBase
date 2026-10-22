@@ -1,6 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 using CryptoBase.Macs.Hmac;
 using System.Buffers.Binary;

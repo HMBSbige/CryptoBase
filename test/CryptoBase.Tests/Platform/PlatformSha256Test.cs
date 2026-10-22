@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
-using ManagedSha256 = CryptoBase.Hashes.HashAlgorithm<CryptoBase.Hashes.Sha256.Sha256HashAlgorithm>;
+using ManagedSha256 = CryptoBase.Hashes.HashAlgorithm<CryptoBase.Hashes.Sha2.Sha256HashAlgorithm>;
 
 namespace CryptoBase.Tests.Platform;
 

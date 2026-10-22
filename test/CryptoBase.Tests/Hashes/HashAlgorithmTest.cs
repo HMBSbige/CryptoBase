@@ -1,5 +1,5 @@
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Hashes.HashAlgorithmTestUtils;

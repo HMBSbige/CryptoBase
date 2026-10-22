@@ -1,8 +1,8 @@
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Hashes.HashAlgorithmTestUtils;
 
-namespace CryptoBase.Tests.Hashes.Sha256;
+namespace CryptoBase.Tests.Hashes.Sha2;
 
 public class Sha256Test
 {

@@ -1,5 +1,5 @@
 using CryptoBase.Abstractions.Macs;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Kdf;
 using CryptoBase.Macs.Hmac;
 using CryptoBase.Platform;

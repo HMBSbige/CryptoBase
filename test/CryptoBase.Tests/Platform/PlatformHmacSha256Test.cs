@@ -9,7 +9,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 using System.Text;
 using static CryptoBase.Tests.TestUtils;
-using ManagedHmacSha256 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha256.Sha256HashAlgorithm>;
+using ManagedHmacSha256 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha2.Sha256HashAlgorithm>;
 
 namespace CryptoBase.Tests.Platform;
 

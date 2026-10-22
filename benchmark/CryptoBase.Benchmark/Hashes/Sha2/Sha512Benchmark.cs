@@ -1,8 +1,8 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase.Hashes.Sha512;
+using CryptoBase.Hashes.Sha2;
 using Org.BouncyCastle.Crypto.Digests;
 
-namespace CryptoBase.Benchmark.Hashes.Sha512;
+namespace CryptoBase.Benchmark.Hashes.Sha2;
 
 [MemoryDiagnoser]
 public class Sha512Benchmark : BclAndBouncyCastleHashBenchmark<Sha512HashAlgorithm, BclSha512, Sha512Digest>

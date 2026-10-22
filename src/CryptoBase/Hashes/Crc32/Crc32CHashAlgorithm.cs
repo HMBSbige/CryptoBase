@@ -1,6 +1,4 @@
-using CryptoBase.Hashes.Crc32;
-
-namespace CryptoBase.Hashes.Crc32C;
+namespace CryptoBase.Hashes.Crc32;
 
 /// <summary>
 /// Provides the CRC-32C (Castagnoli) checksum core.

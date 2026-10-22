@@ -20,7 +20,7 @@
 
 ```csharp
 using System.Security.Cryptography;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Macs.Hmac;
 
 byte[] key = RandomNumberGenerator.GetBytes(32);
@@ -49,7 +49,7 @@ To check a received tag:
 
 ```csharp
 using System.Security.Cryptography;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Macs.Hmac;
 
 static bool IsValid(ReadOnlySpan<byte> key, ReadOnlySpan<byte> message, ReadOnlySpan<byte> receivedTag)
@@ -176,7 +176,7 @@ xof.Read(second);
 
 ```csharp
 using System.Security.Cryptography;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Kdf;
 using CryptoBase.Macs.Hmac;
 
@@ -204,7 +204,7 @@ The overload with two seed parts takes `seed1 || seed2` without concatenating th
 
 ```csharp
 using System.Security.Cryptography;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Kdf;
 
 byte[] preMasterSecret = RandomNumberGenerator.GetBytes(48);

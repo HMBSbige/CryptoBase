@@ -1,7 +1,7 @@
-using CryptoBase.Hashes.Crc32C;
+using CryptoBase.Hashes.Crc32;
 using static CryptoBase.Tests.Hashes.HashAlgorithmTestUtils;
 
-namespace CryptoBase.Tests.Hashes.Crc32C;
+namespace CryptoBase.Tests.Hashes.Crc32;
 
 public class Crc32CTest
 {

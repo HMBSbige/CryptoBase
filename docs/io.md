@@ -13,7 +13,7 @@ Each call reads the stream from its current position to the end.
 
 ```csharp
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 
 using FileStream input = File.OpenRead(path);
@@ -24,7 +24,7 @@ HashAlgorithm<Sha256HashAlgorithm>.HashData(input, hash);
 
 ```csharp
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 
 await using FileStream input = File.OpenRead(path);
@@ -35,7 +35,7 @@ await HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(input, hash);
 
 ```csharp
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 
 await using FileStream input = File.OpenRead(path);
@@ -54,7 +54,7 @@ hasher.GetHashAndReset(hash);
 
 ```csharp
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 
 await using FileStream source = File.OpenRead(sourcePath);
@@ -73,7 +73,7 @@ Incremental MACs, such as `HmacAlgorithm<THash>`, read streams the same way.
 
 ```csharp
 using System.Security.Cryptography;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 using CryptoBase.Macs.Hmac;
 
@@ -86,7 +86,7 @@ HmacAlgorithm<Sha256HashAlgorithm>.MacData(key, input, mac);
 
 ```csharp
 using System.Security.Cryptography;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 using CryptoBase.Macs.Hmac;
 
@@ -107,7 +107,7 @@ hmac.GetMacAndReset(mac);
 
 ```csharp
 using System.Security.Cryptography;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 using CryptoBase.Macs.Hmac;
 

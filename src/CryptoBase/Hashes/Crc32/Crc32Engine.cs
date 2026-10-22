@@ -1,4 +1,3 @@
-using CryptoBase.Hashes.Crc32C;
 using AesArm = System.Runtime.Intrinsics.Arm.Aes;
 using Crc32Arm = System.Runtime.Intrinsics.Arm.Crc32;
 

@@ -9,10 +9,10 @@
 | BLAKE3 | `Blake3HashAlgorithm` | `CryptoBase.Hashes.Blake3` | 32 bytes or any length |
 | MD5 | `HashAlgorithm<MD5HashAlgorithm>` | `CryptoBase.Hashes.MD5` | 16 bytes |
 | SHA-1 | `HashAlgorithm<Sha1HashAlgorithm>` | `CryptoBase.Hashes.Sha1` | 20 bytes |
-| SHA-224 | `HashAlgorithm<Sha224HashAlgorithm>` | `CryptoBase.Hashes.Sha224` | 28 bytes |
-| SHA-256 | `HashAlgorithm<Sha256HashAlgorithm>` | `CryptoBase.Hashes.Sha256` | 32 bytes |
-| SHA-384 | `HashAlgorithm<Sha384HashAlgorithm>` | `CryptoBase.Hashes.Sha384` | 48 bytes |
-| SHA-512 | `HashAlgorithm<Sha512HashAlgorithm>` | `CryptoBase.Hashes.Sha512` | 64 bytes |
+| SHA-224 | `HashAlgorithm<Sha224HashAlgorithm>` | `CryptoBase.Hashes.Sha2` | 28 bytes |
+| SHA-256 | `HashAlgorithm<Sha256HashAlgorithm>` | `CryptoBase.Hashes.Sha2` | 32 bytes |
+| SHA-384 | `HashAlgorithm<Sha384HashAlgorithm>` | `CryptoBase.Hashes.Sha2` | 48 bytes |
+| SHA-512 | `HashAlgorithm<Sha512HashAlgorithm>` | `CryptoBase.Hashes.Sha2` | 64 bytes |
 | SHA3-224 | `HashAlgorithm<Sha3_224HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | 28 bytes |
 | SHA3-256 | `HashAlgorithm<Sha3_256HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | 32 bytes |
 | SHA3-384 | `HashAlgorithm<Sha3_384HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | 48 bytes |
@@ -23,13 +23,13 @@
 | cSHAKE256 | `CShake256Xof` | `CryptoBase.Hashes.Sha3` | Any length |
 | SM3 | `HashAlgorithm<SM3HashAlgorithm>` | `CryptoBase.Hashes.SM3` | 32 bytes |
 | CRC-32 | `HashAlgorithm<Crc32HashAlgorithm>` | `CryptoBase.Hashes.Crc32` | 4 bytes |
-| CRC-32C | `HashAlgorithm<Crc32CHashAlgorithm>` | `CryptoBase.Hashes.Crc32C` | 4 bytes |
+| CRC-32C | `HashAlgorithm<Crc32CHashAlgorithm>` | `CryptoBase.Hashes.Crc32` | 4 bytes |
 
 ## One-shot hashing
 
 ```csharp
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 
 Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
 
@@ -42,7 +42,7 @@ string hex = Convert.ToHexStringLower(hash); // "b94d27b9934d3e08..."
 
 ```csharp
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 
 using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
 Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
@@ -99,7 +99,7 @@ To hash a stream or file, see [Stream and file helpers](io.md).
 
 ```csharp
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Platform;
 
 Span<byte> hash = stackalloc byte[PlatformSha256.HashLength];

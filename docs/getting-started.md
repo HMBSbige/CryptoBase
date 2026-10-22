@@ -25,7 +25,7 @@ Hash a string and encrypt it:
 using System.Security.Cryptography;
 using CryptoBase.Ciphers.Aead;
 using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 
 byte[] message = "hello world"u8.ToArray();
 

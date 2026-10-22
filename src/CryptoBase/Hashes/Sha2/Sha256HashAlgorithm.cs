@@ -1,4 +1,4 @@
-namespace CryptoBase.Hashes.Sha256;
+namespace CryptoBase.Hashes.Sha2;
 
 /// <summary>
 /// Provides the SHA-256 hash core.

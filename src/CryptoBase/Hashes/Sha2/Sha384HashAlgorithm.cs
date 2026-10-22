@@ -1,19 +1,19 @@
-namespace CryptoBase.Hashes.Sha512;
+namespace CryptoBase.Hashes.Sha2;
 
 /// <summary>
-/// Provides the SHA-512 hash core.
+/// Provides the SHA-384 hash core.
 /// </summary>
-public struct Sha512HashAlgorithm : IHmacHashCore<Sha512HashAlgorithm>
+public struct Sha384HashAlgorithm : IHmacHashCore<Sha384HashAlgorithm>
 {
-	internal const int HashSizeInBytes = 64;
-	private const ulong InitialH0 = 0x6A09E667F3BCC908UL;
-	private const ulong InitialH1 = 0xBB67AE8584CAA73BUL;
-	private const ulong InitialH2 = 0x3C6EF372FE94F82BUL;
-	private const ulong InitialH3 = 0xA54FF53A5F1D36F1UL;
-	private const ulong InitialH4 = 0x510E527FADE682D1UL;
-	private const ulong InitialH5 = 0x9B05688C2B3E6C1FUL;
-	private const ulong InitialH6 = 0x1F83D9ABFB41BD6BUL;
-	private const ulong InitialH7 = 0x5BE0CD19137E2179UL;
+	private const int HashSizeInBytes = 48;
+	private const ulong InitialH0 = 0xCBBB9D5DC1059ED8UL;
+	private const ulong InitialH1 = 0x629A292A367CD507UL;
+	private const ulong InitialH2 = 0x9159015A3070DD17UL;
+	private const ulong InitialH3 = 0x152FECD8F70E5939UL;
+	private const ulong InitialH4 = 0x67332667FFC00B31UL;
+	private const ulong InitialH5 = 0x8EB44A8768581511UL;
+	private const ulong InitialH6 = 0xDB0C2E0D64F98FA7UL;
+	private const ulong InitialH7 = 0x47B5481DBEFA4FA4UL;
 
 	private Sha512Core _state;
 
@@ -24,9 +24,9 @@ public struct Sha512HashAlgorithm : IHmacHashCore<Sha512HashAlgorithm>
 	public static int HmacBlockSize => Sha512Core.BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static Sha512HashAlgorithm IHashCore<Sha512HashAlgorithm>.Create()
+	static Sha384HashAlgorithm IHashCore<Sha384HashAlgorithm>.Create()
 	{
-		Unsafe.SkipInit(out Sha512HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out Sha384HashAlgorithm hashAlgorithm);
 		hashAlgorithm.Reset();
 		return hashAlgorithm;
 	}

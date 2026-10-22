@@ -1,29 +1,29 @@
-using CryptoBase.Hashes.Sha512;
+using CryptoBase.Hashes.Sha2;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Hashes.HashAlgorithmTestUtils;
 
-namespace CryptoBase.Tests.Hashes.Sha512;
+namespace CryptoBase.Tests.Hashes.Sha2;
 
-public class Sha512Test
+public class Sha384Test
 {
 	[Test]
 	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(Hash128BlockAndPaddingLengths))]
 	public Task BlockBoundaries(int length)
 	{
-		return VerifyBoundary<Sha512HashAlgorithm>(length, SHA512.HashData);
+		return VerifyBoundary<Sha384HashAlgorithm>(length, SHA384.HashData);
 	}
 
 	[Test]
 	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(Hash128IncrementalBatchCases))]
 	public Task IncrementalBlockBatches(int length, int sourceOffset, int blockSize)
 	{
-		return VerifyIncrementalBlockBatch<Sha512HashAlgorithm>(length, sourceOffset, blockSize, SHA512.HashData);
+		return VerifyIncrementalBlockBatch<Sha384HashAlgorithm>(length, sourceOffset, blockSize, SHA384.HashData);
 	}
 
 	[Test]
 	[CombinedDataSources]
 	public Task InputIsUnchanged([MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(InputIntegrityLengths))] int length, [Arguments(1, 7)] int offset)
 	{
-		return VerifyInputIsUnchanged<Sha512HashAlgorithm>(length, offset);
+		return VerifyInputIsUnchanged<Sha384HashAlgorithm>(length, offset);
 	}
 }

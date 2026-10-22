@@ -1,10 +1,7 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes.Blake2b;
 using CryptoBase.Hashes.Sha1;
-using CryptoBase.Hashes.Sha224;
-using CryptoBase.Hashes.Sha256;
-using CryptoBase.Hashes.Sha384;
-using CryptoBase.Hashes.Sha512;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Hashes.SM3;
 using CryptoBase.Kdf;
 using CryptoBase.Macs.Hmac;

@@ -1,4 +1,4 @@
-namespace CryptoBase.Hashes.Sha512;
+namespace CryptoBase.Hashes.Sha2;
 
 internal partial struct Sha512Core
 {

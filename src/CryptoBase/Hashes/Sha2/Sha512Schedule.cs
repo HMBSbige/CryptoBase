@@ -1,4 +1,4 @@
-namespace CryptoBase.Hashes.Sha512;
+namespace CryptoBase.Hashes.Sha2;
 
 [InlineArray(80)]
 internal struct Sha512Schedule

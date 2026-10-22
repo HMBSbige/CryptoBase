@@ -1,7 +1,7 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Blake3;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;

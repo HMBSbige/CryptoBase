@@ -1,7 +1,7 @@
-using CryptoBase.Hashes.Sha224;
+using CryptoBase.Hashes.Sha2;
 using static CryptoBase.Tests.Hashes.HashAlgorithmTestUtils;
 
-namespace CryptoBase.Tests.Hashes.Sha224;
+namespace CryptoBase.Tests.Hashes.Sha2;
 
 public class Sha224Test
 {

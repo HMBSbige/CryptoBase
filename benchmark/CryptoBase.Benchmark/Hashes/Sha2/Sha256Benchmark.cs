@@ -1,9 +1,9 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase.Hashes.Sha256;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Platform;
 using Org.BouncyCastle.Crypto.Digests;
 
-namespace CryptoBase.Benchmark.Hashes.Sha256;
+namespace CryptoBase.Benchmark.Hashes.Sha2;
 
 [MemoryDiagnoser]
 public class Sha256Benchmark : BclAndBouncyCastleHashBenchmark<Sha256HashAlgorithm, BclSha256, Sha256Digest>
