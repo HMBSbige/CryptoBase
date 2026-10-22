@@ -45,6 +45,7 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 		AbsorbBlocks(source, position, bytesNeeded);
 	}
 
+	[SkipLocalsInit]
 	private void AbsorbBlocks(ReadOnlySpan<byte> source, int position, int bytesNeeded)
 	{
 		if (position is not 0)
@@ -184,6 +185,7 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 	}
 
 	// Output continues across calls; the permutation runs only when more output is requested than the current block holds.
+	[SkipLocalsInit]
 	internal void Squeeze(Span<byte> destination)
 	{
 		Debug.Assert(IsSqueezing);
