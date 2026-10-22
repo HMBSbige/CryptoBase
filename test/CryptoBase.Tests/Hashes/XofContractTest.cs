@@ -7,7 +7,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes;
 
-// Checks every IXof against its own one-shot HashData; ShakeTest, ShakeCavpTest and Blake3XofTest compare that with independent oracles.
+// Checks every IXof against its own one-shot HashData; ShakeTest, ShakeCavpTest, CShakeTest and Blake3XofTest compare that with independent oracles.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class XofContractTest
 {
@@ -17,6 +17,8 @@ public class XofContractTest
 	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
+	[GenerateGenericTest(typeof(CShake128Xof))]
+	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task IncrementalMatchesHashData<T>() where T : class, IXof<T>
 	{
 		int block = BlockLength<T>();
@@ -52,6 +54,8 @@ public class XofContractTest
 	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
+	[GenerateGenericTest(typeof(CShake128Xof))]
+	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task ReadInPiecesMatchesOneRead<T>() where T : class, IXof<T>
 	{
 		int block = BlockLength<T>();
@@ -86,6 +90,8 @@ public class XofContractTest
 	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
+	[GenerateGenericTest(typeof(CShake128Xof))]
+	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task ReadingRejectsInputAndRestartsUntilReset<T>() where T : class, IXof<T>
 	{
 		int block = BlockLength<T>();
@@ -125,6 +131,8 @@ public class XofContractTest
 	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
+	[GenerateGenericTest(typeof(CShake128Xof))]
+	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task GetCurrentHashLeavesStateUnchanged<T>() where T : class, IXof<T>
 	{
 		int block = BlockLength<T>();
@@ -145,6 +153,8 @@ public class XofContractTest
 	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
+	[GenerateGenericTest(typeof(CShake128Xof))]
+	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task GetHashAndResetStartsOver<T>() where T : class, IXof<T>
 	{
 		int block = BlockLength<T>();
@@ -168,6 +178,8 @@ public class XofContractTest
 	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
+	[GenerateGenericTest(typeof(CShake128Xof))]
+	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task DisposeIsIdempotentAndFinal<T>() where T : class, IXof<T>
 	{
 		T absorbing = T.Create();
@@ -195,12 +207,12 @@ public class XofContractTest
 
 	internal static int BlockLength<T>()
 	{
-		if (typeof(T) == typeof(Xof<Shake128HashAlgorithm>))
+		if (typeof(T) == typeof(Xof<Shake128HashAlgorithm>) || typeof(T) == typeof(CShake128Xof))
 		{
 			return 168;
 		}
 
-		if (typeof(T) == typeof(Xof<Shake256HashAlgorithm>))
+		if (typeof(T) == typeof(Xof<Shake256HashAlgorithm>) || typeof(T) == typeof(CShake256Xof))
 		{
 			return 136;
 		}

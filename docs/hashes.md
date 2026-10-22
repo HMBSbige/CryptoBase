@@ -19,6 +19,8 @@
 | SHA3-512 | `HashAlgorithm<Sha3_512HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | 64 bytes |
 | SHAKE128 | `Xof<Shake128HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | Any length |
 | SHAKE256 | `Xof<Shake256HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | Any length |
+| cSHAKE128 | `CShake128Xof` | `CryptoBase.Hashes.Sha3` | Any length |
+| cSHAKE256 | `CShake256Xof` | `CryptoBase.Hashes.Sha3` | Any length |
 | SM3 | `HashAlgorithm<SM3HashAlgorithm>` | `CryptoBase.Hashes.SM3` | 32 bytes |
 | CRC-32 | `HashAlgorithm<Crc32HashAlgorithm>` | `CryptoBase.Hashes.Crc32` | 4 bytes |
 | CRC-32C | `HashAlgorithm<Crc32CHashAlgorithm>` | `CryptoBase.Hashes.Crc32C` | 4 bytes |
@@ -151,7 +153,7 @@ xof.Reset();
 
 The first nonempty `Read` ends the input: until `Reset`, `Append`, `GetCurrentHash` and `GetHashAndReset` throw `InvalidOperationException`.
 
-`Xof<TCore>` and `Blake3HashAlgorithm` implement `IXof<TSelf>`:
+`Xof<TCore>`, `CShake128Xof`, `CShake256Xof` and `Blake3HashAlgorithm` implement `IXof<TSelf>`:
 
 ```csharp
 using CryptoBase.Abstractions.Hashes;
@@ -170,7 +172,35 @@ static byte[] Expand<T>(ReadOnlySpan<byte> input, int length) where T : class, I
 }
 
 byte[] shake = Expand<Xof<Shake256HashAlgorithm>>("seed"u8, 200);
+byte[] cshake = Expand<CShake256Xof>("seed"u8, 200); // Create() gives SHAKE256 output
 byte[] blake3 = Expand<Blake3HashAlgorithm>("seed"u8, 200);
+```
+
+## cSHAKE128 and cSHAKE256
+
+With the function name and customization string empty, cSHAKE is SHAKE.
+
+```csharp
+using CryptoBase.Hashes.Sha3;
+
+byte[] output = new byte[64];
+CShake256Xof.HashData(functionName: [], customization: "Email Signature"u8, "hello world"u8, output);
+```
+
+Incrementally; `Reset` and `GetHashAndReset` keep the function name and customization string:
+
+```csharp
+using CryptoBase.Hashes.Sha3;
+
+using CShake128Xof xof = CShake128Xof.Create(functionName: [], customization: "Email Signature"u8);
+
+xof.Append("hello "u8);
+xof.Append("world"u8);
+
+byte[] first = new byte[100];
+byte[] second = new byte[1000];
+xof.Read(first);
+xof.Read(second);
 ```
 
 ## BLAKE3

@@ -43,6 +43,8 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | SHA3-512 | ✅ |
 | SHAKE128 | ✅ |
 | SHAKE256 | ✅ |
+| cSHAKE128 | ✅ |
+| cSHAKE256 | ✅ |
 | SM3 | ✅ |
 
 #### Non-cryptographic checksums
