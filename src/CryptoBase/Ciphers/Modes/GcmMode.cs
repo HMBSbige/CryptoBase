@@ -241,7 +241,7 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 	{
 		Vector128<byte> lengthBlock = CreateLengthBlock(associatedData.Length, ciphertext.Length);
 		Vector128<byte> expectedTag = tagMask ^ hash.Finish(associatedData, ciphertext, lengthBlock.AsReadOnlySpan());
-		return FixedTime.Equals16(expectedTag.AsReadOnlySpan(), tag);
+		return FixedTime.Equals16(expectedTag, Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(tag)));
 	}
 
 	/// <inheritdoc/>
