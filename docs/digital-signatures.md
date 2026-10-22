@@ -33,24 +33,22 @@ bool valid = verifier.Verify(message, signature); // true
 bool tampered = verifier.Verify("massage"u8, signature); // false
 ```
 
-`Verify` returns `false` for any invalid signature, including one of the wrong length. Signing is randomized, so signatures of one message differ. `Sign` on an instance that holds only the public key throws `InvalidOperationException`. Calls on one instance may run concurrently.
+Signing and verification may run concurrently on one instance.
 
 ### Context strings
 
-`Sign` and `Verify` take an optional context string of up to `MaxContextLength` (255) bytes:
+`Sign` and `Verify` take an optional context string of up to `MaxContextLength` bytes:
 
 ```csharp
 signer.Sign(message, signature, "example.com/v1"u8);
 
 bool sameContext = verifier.Verify(message, signature, "example.com/v1"u8); // true
-bool noContext = verifier.Verify(message, signature); // false: the context differs
+bool noContext = verifier.Verify(message, signature); // false
 ```
-
-A longer context throws `ArgumentException`, in `Verify` too.
 
 ## Signing a hash (HashML-DSA)
 
-`SignPreHash` and `VerifyPreHash` take the hash of the message instead of the message, and the dotted-decimal OID of the hash algorithm:
+`SignPreHash` and `VerifyPreHash` take the hash of the message and the dotted-decimal OID of the hash algorithm:
 
 ```csharp
 using CryptoBase.Hashes;
@@ -76,8 +74,6 @@ signer.SignPreHash(hash, signature, Sha512Oid);
 bool valid = signer.VerifyPreHash(hash, signature, Sha512Oid); // true
 ```
 
-`Verify` rejects a signature from `SignPreHash`, and `VerifyPreHash` one from `Sign`.
-
 Each type accepts these hash algorithms:
 
 | Hash | OID | `MLDsa44` | `MLDsa65` | `MLDsa87` |
@@ -92,47 +88,17 @@ Each type accepts these hash algorithms:
 | SHAKE128, 32 bytes of output | 2.16.840.1.101.3.4.2.11 | ✅ | | |
 | SHAKE256, 64 bytes of output | 2.16.840.1.101.3.4.2.12 | ✅ | ✅ | ✅ |
 
-Any other OID, and a hash of the wrong length, throws `ArgumentException`.
-
 ## Signing μ (external μ)
 
-`SignMu` and `VerifyMu` take the 64-byte message representative μ of FIPS 204 instead of the message, so only μ needs to reach the holder of the private key.
+`SignMu` and `VerifyMu` take the message representative μ of FIPS 204, Algorithm 7, so only μ needs to reach the holder of the private key:
 
 ```csharp
-using CryptoBase.Hashes;
-using CryptoBase.Hashes.Sha3;
-using CryptoBase.Signatures.MLDsa;
-
-// μ for Sign(message, signature, context).
-static byte[] ComputeMu(ReadOnlySpan<byte> publicKey, ReadOnlySpan<byte> context, ReadOnlySpan<byte> message)
-{
-    Span<byte> tr = stackalloc byte[64];
-    Xof<Shake256HashAlgorithm>.HashData(publicKey, tr);
-
-    using Xof<Shake256HashAlgorithm> xof = Xof<Shake256HashAlgorithm>.Create();
-    xof.Append(tr);
-    xof.Append([0, (byte)context.Length]);
-    xof.Append(context);
-    xof.Append(message);
-
-    byte[] mu = new byte[MLDsa65.MuLength];
-    xof.Read(mu);
-    return mu;
-}
-
-using MLDsa65 signer = MLDsa65.GenerateKey();
-byte[] publicKey = new byte[MLDsa65.PublicKeyLength];
-signer.ExportPublicKey(publicKey);
-
-byte[] mu = ComputeMu(publicKey, "example.com/v1"u8, "message"u8);
+// mu has MLDsa65.MuLength bytes.
 byte[] signature = new byte[MLDsa65.SignatureLength];
 signer.SignMu(mu, signature);
 
-bool valid = signer.Verify("message"u8, signature, "example.com/v1"u8); // true
-bool validMu = signer.VerifyMu(mu, signature); // true
+bool valid = signer.VerifyMu(mu, signature); // true
 ```
-
-μ must have exactly `MuLength` bytes; any other length throws `ArgumentException`.
 
 ## Saving and restoring a key
 
@@ -149,7 +115,7 @@ key.ExportPrivateSeed(seed);
 using MLDsa65 restored = MLDsa65.ImportPrivateSeed(seed);
 ```
 
-The expanded private key of FIPS 204 is the other form:
+The expanded private key of FIPS 204 is the other form. An instance imported from it holds no seed, so `ExportPrivateSeed` throws:
 
 ```csharp
 byte[] privateKey = new byte[MLDsa65.PrivateKeyLength];
@@ -157,13 +123,6 @@ key.ExportPrivateKey(privateKey);
 
 using MLDsa65 fromPrivateKey = MLDsa65.ImportPrivateKey(privateKey);
 ```
-
-| Property | `GenerateKey`, `ImportPrivateSeed` | `ImportPrivateKey` | `ImportPublicKey` |
-| --- | :---: | :---: | :---: |
-| `HasPrivateSeed` | ✅ | | |
-| `HasPrivateKey` | ✅ | ✅ | |
-
-Exporting what an instance does not hold throws `InvalidOperationException`. Imports throw `ArgumentException` for input of the wrong length or a private key that fails the checks of FIPS 204; any `PublicKeyLength` bytes are a valid public key.
 
 ### DER encodings
 
@@ -186,7 +145,7 @@ string publicPem = PemEncoding.WriteString("PUBLIC KEY", spki);
 string privatePem = PemEncoding.WriteString("PRIVATE KEY", pkcs8);
 ```
 
-`ExportPkcs8PrivateKey` writes the seed form when the instance holds the seed, and the expandedKey form otherwise; `ImportPkcs8PrivateKey` accepts the seed, expandedKey and both forms. Imports throw `ArgumentException` for DER of another algorithm, trailing data, or a key that fails the checks above.
+`ImportPkcs8PrivateKey` accepts the seed, expandedKey and both forms. `ExportPkcs8PrivateKey` writes the seed form if the instance holds the seed, and the expandedKey form otherwise.
 
 ## Protocol code
 

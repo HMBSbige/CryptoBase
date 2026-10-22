@@ -39,7 +39,7 @@ receiver.Decapsulate(ciphertext, receiverSecret);
 
 The shared secret can key an AEAD directly or feed [HKDF](macs-and-key-derivation.md#hkdf).
 
-`Encapsulate` throws `ArgumentException` if `ciphertext` and `sharedSecret` overlap. `Decapsulate` throws `ArgumentException` for a ciphertext that does not have exactly `CiphertextLength` bytes, and `InvalidOperationException` on an instance imported from an encapsulation key alone. Calls on one instance may run concurrently.
+`Encapsulate` throws `ArgumentException` if `ciphertext` and `sharedSecret` overlap. `Decapsulate` throws `ArgumentException` for a ciphertext that does not have exactly `CiphertextLength` bytes, and `InvalidOperationException` on an instance imported from an encapsulation key alone. Encapsulation and decapsulation may run concurrently on one instance.
 
 `Decapsulate` does not report a changed or foreign ciphertext of the right length: it writes a pseudorandom value instead of the shared secret, without throwing, so the receiver's AEAD decryption fails.
 
