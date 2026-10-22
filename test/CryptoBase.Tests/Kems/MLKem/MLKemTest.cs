@@ -338,8 +338,7 @@ public class MLKemTest
 				}
 				case KeccakSponge<KeccakRate136> sponge:
 				{
-					ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<KeccakSponge<KeccakRate136>>(in sponge));
-					contents[field.Name] = bytes.Length - bytes.Count((byte)0);
+					contents[field.Name] = CountNonZero(MemoryMarshal.AsBytes(new ReadOnlySpan<KeccakSponge<KeccakRate136>>(in sponge)));
 					break;
 				}
 				case int number:
@@ -362,9 +361,8 @@ public class MLKemTest
 		return contents;
 	}
 
-	private static int CountNonZero(InlineArray32<byte> value)
+	private static int CountNonZero(ReadOnlySpan<byte> bytes)
 	{
-		ReadOnlySpan<byte> bytes = value;
 		return bytes.Length - bytes.Count((byte)0);
 	}
 }
