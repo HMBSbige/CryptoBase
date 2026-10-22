@@ -9,6 +9,5 @@ internal enum Base32SimdPath
 	Avx512Bw,
 	Avx512Vbmi,
 	Avx512VbmiVl256,
-	Avx512VbmiVl128,
 	AdvSimd,
 }

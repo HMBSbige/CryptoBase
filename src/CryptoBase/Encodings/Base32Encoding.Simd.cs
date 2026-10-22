@@ -253,7 +253,6 @@ public sealed partial class Base32Encoding
 			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => EncodeAdvSimd(source, destination, 0, 0, alphabet),
 			Base32SimdPath.Avx512Vbmi when Avx512Vbmi.IsSupported => EncodeAvx512Vbmi(source, destination, alphabetKind),
 			Base32SimdPath.Avx512VbmiVl256 when Avx512Vbmi.VL.IsSupported => EncodeAvx512VbmiVl256(source, destination, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when Avx512Vbmi.VL.IsSupported => EncodeAvx512VbmiVl128(source, destination, alphabetKind),
 			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => EncodeAvx512Bw(source, destination, alphabetKind),
 			Base32SimdPath.Avx2 when Avx2.IsSupported => EncodeAvx2(source, destination, alphabetKind),
 			Base32SimdPath.Ssse3 when Ssse3.IsSupported => EncodeSsse3(source, destination, alphabetKind),
@@ -304,7 +303,7 @@ public sealed partial class Base32Encoding
 			}
 
 			return sourceRemaining >= X86EncodeVbmiVl128Threshold
-				? EncodeAvx512VbmiVl128(source, destination, alphabetKind)
+				? EncodeAvx512VbmiVl128Short(source, destination, GetShortAlphabet(alphabetKind))
 				: 0;
 		}
 
@@ -446,7 +445,6 @@ public sealed partial class Base32Encoding
 			Base32SimdPath.AdvSimd when AdvSimd.IsSupported => DecodeAdvSimd(source, destination, fullLength, alphabetKind),
 			Base32SimdPath.Avx512Vbmi when Avx512Vbmi.IsSupported => DecodeAvx512Vbmi(source, destination, fullLength, alphabetKind),
 			Base32SimdPath.Avx512VbmiVl256 when Avx512Vbmi.VL.IsSupported => DecodeAvx512VbmiVl256(source, destination, fullLength, alphabetKind),
-			Base32SimdPath.Avx512VbmiVl128 when Avx512Vbmi.VL.IsSupported => DecodeVector128(source, destination, fullLength, alphabetKind),
 			Base32SimdPath.Avx512Bw when Avx512BW.IsSupported => DecodeAvx512(source, destination, fullLength, alphabetKind),
 			Base32SimdPath.Avx2 when Avx2.IsSupported => DecodeAvx2(source, destination, fullLength, alphabetKind),
 			Base32SimdPath.Ssse3 when Ssse3.IsSupported => DecodeVector128(source, destination, fullLength, alphabetKind),

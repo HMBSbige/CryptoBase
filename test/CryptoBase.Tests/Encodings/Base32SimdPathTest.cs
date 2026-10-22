@@ -227,7 +227,7 @@ public class Base32SimdPathTest
 			Base32SimdPath.Avx2 => Avx2.IsSupported,
 			Base32SimdPath.Avx512Bw => Avx512BW.IsSupported,
 			Base32SimdPath.Avx512Vbmi => Avx512Vbmi.IsSupported && Avx512BW.IsSupported,
-			Base32SimdPath.Avx512VbmiVl256 or Base32SimdPath.Avx512VbmiVl128 => Avx512Vbmi.VL.IsSupported && Avx512BW.VL.IsSupported,
+			Base32SimdPath.Avx512VbmiVl256 => Avx512Vbmi.VL.IsSupported && Avx512BW.VL.IsSupported,
 			Base32SimdPath.AdvSimd => AdvSimd.IsSupported,
 			_ => throw new ArgumentOutOfRangeException(nameof(pathName), pathName, "Add the new SIMD path to this test."),
 		};
