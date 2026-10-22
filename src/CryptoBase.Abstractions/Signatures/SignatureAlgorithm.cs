@@ -1,96 +1,77 @@
 namespace CryptoBase.Abstractions.Signatures;
 
 /// <summary>
-/// Identifies a signature algorithm by its TLS SignatureScheme code point.
+/// Identifies a signature algorithm.
 /// </summary>
-/// <remarks>
-/// The values are those of the IANA TLS SignatureScheme registry (RFC 8446, Section 4.2.3); the ML-DSA values are those of draft-ietf-tls-mldsa.
-/// Each scheme fixes the hashing, padding and encoding of a signature.
-/// </remarks>
-public enum SignatureAlgorithm : ushort
+public enum SignatureAlgorithm
 {
 	/// <summary>
-	/// RSASSA-PKCS1-v1_5 with SHA-256 (rsa_pkcs1_sha256).
+	/// RSASSA-PKCS1-v1_5 with SHA-256.
 	/// </summary>
-	RsaPkcs1Sha256 = 0x0401,
+	RsaPkcs1Sha256 = 1,
 
 	/// <summary>
-	/// RSASSA-PKCS1-v1_5 with SHA-384 (rsa_pkcs1_sha384).
+	/// RSASSA-PKCS1-v1_5 with SHA-384.
 	/// </summary>
-	RsaPkcs1Sha384 = 0x0501,
+	RsaPkcs1Sha384 = 2,
 
 	/// <summary>
-	/// RSASSA-PKCS1-v1_5 with SHA-512 (rsa_pkcs1_sha512).
+	/// RSASSA-PKCS1-v1_5 with SHA-512.
 	/// </summary>
-	RsaPkcs1Sha512 = 0x0601,
+	RsaPkcs1Sha512 = 3,
 
 	/// <summary>
-	/// ECDSA on the secp256r1 (P-256) curve with SHA-256 (ecdsa_secp256r1_sha256).
+	/// RSASSA-PSS with SHA-256, MGF1 with SHA-256, and a 32-byte salt.
 	/// </summary>
-	EcdsaSecp256r1Sha256 = 0x0403,
+	RsaPssSha256 = 4,
 
 	/// <summary>
-	/// ECDSA on the secp384r1 (P-384) curve with SHA-384 (ecdsa_secp384r1_sha384).
+	/// RSASSA-PSS with SHA-384, MGF1 with SHA-384, and a 48-byte salt.
 	/// </summary>
-	EcdsaSecp384r1Sha384 = 0x0503,
+	RsaPssSha384 = 5,
 
 	/// <summary>
-	/// ECDSA on the secp521r1 (P-521) curve with SHA-512 (ecdsa_secp521r1_sha512).
+	/// RSASSA-PSS with SHA-512, MGF1 with SHA-512, and a 64-byte salt.
 	/// </summary>
-	EcdsaSecp521r1Sha512 = 0x0603,
+	RsaPssSha512 = 6,
 
 	/// <summary>
-	/// RSASSA-PSS with SHA-256 and a key of the rsaEncryption type (rsa_pss_rsae_sha256).
+	/// ECDSA with SHA-256, the signature DER-encoded.
 	/// </summary>
-	RsaPssRsaeSha256 = 0x0804,
+	EcdsaSha256 = 7,
 
 	/// <summary>
-	/// RSASSA-PSS with SHA-384 and a key of the rsaEncryption type (rsa_pss_rsae_sha384).
+	/// ECDSA with SHA-384, the signature DER-encoded.
 	/// </summary>
-	RsaPssRsaeSha384 = 0x0805,
+	EcdsaSha384 = 8,
 
 	/// <summary>
-	/// RSASSA-PSS with SHA-512 and a key of the rsaEncryption type (rsa_pss_rsae_sha512).
+	/// ECDSA with SHA-512, the signature DER-encoded.
 	/// </summary>
-	RsaPssRsaeSha512 = 0x0806,
+	EcdsaSha512 = 9,
 
 	/// <summary>
-	/// EdDSA on edwards25519 (ed25519).
+	/// Ed25519.
 	/// </summary>
-	Ed25519 = 0x0807,
+	Ed25519 = 10,
 
 	/// <summary>
-	/// EdDSA on edwards448 (ed448).
+	/// Ed448 with an empty context.
 	/// </summary>
-	Ed448 = 0x0808,
+	Ed448 = 11,
 
 	/// <summary>
-	/// RSASSA-PSS with SHA-256 and a key of the RSASSA-PSS type (rsa_pss_pss_sha256).
+	/// ML-DSA-44 with an empty context.
 	/// </summary>
-	RsaPssPssSha256 = 0x0809,
+	MLDsa44 = 12,
 
 	/// <summary>
-	/// RSASSA-PSS with SHA-384 and a key of the RSASSA-PSS type (rsa_pss_pss_sha384).
+	/// ML-DSA-65 with an empty context.
 	/// </summary>
-	RsaPssPssSha384 = 0x080A,
+	MLDsa65 = 13,
 
 	/// <summary>
-	/// RSASSA-PSS with SHA-512 and a key of the RSASSA-PSS type (rsa_pss_pss_sha512).
+	/// ML-DSA-87 with an empty context.
 	/// </summary>
-	RsaPssPssSha512 = 0x080B,
-
-	/// <summary>
-	/// ML-DSA-44 of FIPS 204, pure and with an empty context (mldsa44).
-	/// </summary>
-	MLDsa44 = 0x0904,
-
-	/// <summary>
-	/// ML-DSA-65 of FIPS 204, pure and with an empty context (mldsa65).
-	/// </summary>
-	MLDsa65 = 0x0905,
-
-	/// <summary>
-	/// ML-DSA-87 of FIPS 204, pure and with an empty context (mldsa87).
-	/// </summary>
-	MLDsa87 = 0x0906
+	MLDsa87 = 14
 }

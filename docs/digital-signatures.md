@@ -4,11 +4,11 @@
 
 CryptoBase implements ML-DSA (FIPS 204) in the `CryptoBase.Signatures.MLDsa` namespace:
 
-| Type | Security category | Public key | Private key | Signature | Private seed | `SignatureAlgorithm` |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| `MLDsa44` | 2 | 1312 bytes | 2560 bytes | 2420 bytes | 32 bytes | `MLDsa44` (0x0904) |
-| `MLDsa65` | 3 | 1952 bytes | 4032 bytes | 3309 bytes | 32 bytes | `MLDsa65` (0x0905) |
-| `MLDsa87` | 5 | 2592 bytes | 4896 bytes | 4627 bytes | 32 bytes | `MLDsa87` (0x0906) |
+| Type | Security category | Public key | Private key | Signature | Private seed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `MLDsa44` | 2 | 1312 bytes | 2560 bytes | 2420 bytes | 32 bytes |
+| `MLDsa65` | 3 | 1952 bytes | 4032 bytes | 3309 bytes | 32 bytes |
+| `MLDsa87` | 5 | 2592 bytes | 4896 bytes | 4627 bytes | 32 bytes |
 
 ## Signing and verifying
 
@@ -190,7 +190,7 @@ string privatePem = PemEncoding.WriteString("PRIVATE KEY", pkcs8);
 
 ## Protocol code
 
-The three types implement `ISignatureKey<TSelf>`, so TLS or X.509 code can use a key without knowing its algorithm. `SignatureAlgorithm` holds the TLS code points; `MLDsa44`, `MLDsa65` and `MLDsa87` sign the whole message with an empty context.
+The three types implement `ISignatureKey<TSelf>`, so protocol code such as TLS or X.509 can use a key without knowing its algorithm. Each type supports only the `SignatureAlgorithm` of the same name, which signs the whole message with an empty context.
 
 ```csharp
 using CryptoBase.Abstractions.Signatures;
@@ -216,5 +216,3 @@ key.ExportSubjectPublicKeyInfo(spki);
 byte[] signature = Sign(key, SignatureAlgorithm.MLDsa65, "content"u8);
 bool valid = Verify<MLDsa65>(spki, SignatureAlgorithm.MLDsa65, "content"u8, signature); // true
 ```
-
-An ML-DSA key supports only the algorithm of its parameter set; `GetMaxSignatureLength`, `Sign` and `Verify` throw `ArgumentException` for any other.

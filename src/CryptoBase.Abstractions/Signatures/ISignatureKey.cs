@@ -1,8 +1,7 @@
 namespace CryptoBase.Abstractions.Signatures;
 
 /// <summary>
-/// Defines a signing key pair, or the verification key alone, that a TLS or X.509 implementation can hold without
-/// knowing the algorithm at compile time.
+/// Defines a signing key pair, or the verification key alone, that protocol code can hold without knowing the algorithm at compile time.
 /// </summary>
 /// <remarks>
 /// <para>

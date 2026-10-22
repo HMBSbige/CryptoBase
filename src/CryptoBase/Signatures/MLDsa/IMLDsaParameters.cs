@@ -21,7 +21,7 @@ internal interface IMLDsaParameters
 
 	static abstract int Omega { get; }
 
-	// The TLS SignatureScheme of pure ML-DSA with an empty context.
+	// The SignatureAlgorithm of pure ML-DSA with an empty context.
 	static abstract SignatureAlgorithm Algorithm { get; }
 
 	// The DER AlgorithmIdentifier, with absent parameters (RFC 9881, Sec. 2).

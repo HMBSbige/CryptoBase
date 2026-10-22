@@ -212,7 +212,7 @@ public class SignatureKeyContractTest
 
 		using (Assert.Multiple())
 		{
-			foreach (SignatureAlgorithm algorithm in (SignatureAlgorithm[])[.. Enum.GetValues<SignatureAlgorithm>(), 0, (SignatureAlgorithm)ushort.MaxValue])
+			foreach (SignatureAlgorithm algorithm in (SignatureAlgorithm[])[.. Enum.GetValues<SignatureAlgorithm>(), 0, (SignatureAlgorithm)(-1), (SignatureAlgorithm)int.MaxValue])
 			{
 				if (supported.Contains(algorithm))
 				{
