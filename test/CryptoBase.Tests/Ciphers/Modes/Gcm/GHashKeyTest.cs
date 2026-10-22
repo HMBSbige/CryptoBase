@@ -9,39 +9,34 @@ public class GHashKeyTest
 	public async Task DisposeErasesCachedTables()
 	{
 		GHashKey key = GHashKey.Create(CreateDeterministicSource(16));
-		GHashKeyTable<GHashFourBlockPrecomputedKey>? fourBlock = null;
-		GHashKeyTable<GHashVector128PrecomputedKey>? vector128 = null;
-		GHashKeyTable<GHashVector256PrecomputedKey>? vector256 = null;
-		GHashKeyTable<GHashVector512PrecomputedKey>? vector512 = null;
-		GHashKeyTable<GHashArmPrecomputedKey>? arm = null;
-		List<byte[]> before = [];
+		List<Func<byte[]>> tables = [];
 
 		try
 		{
 			if (GHashX86.IsSupported)
 			{
-				fourBlock = key.GetFourBlock();
-				vector128 = key.GetVector128();
-				before.Add(GetBytes(fourBlock));
-				before.Add(GetBytes(vector128));
+				tables.Add(GetReader(key.GetFourBlock()));
+				tables.Add(GetReader(key.GetVector128()));
 			}
 
 			if (GHashX86.IsSupported256)
 			{
-				vector256 = key.GetVector256();
-				before.Add(GetBytes(vector256));
+				tables.Add(GetReader(key.GetVector256()));
 			}
 
 			if (GHashX86.IsSupported512)
 			{
-				vector512 = key.GetVector512();
-				before.Add(GetBytes(vector512));
+				tables.Add(GetReader(key.GetVector512()));
 			}
 
 			if (GHashArm.IsSupported)
 			{
-				arm = key.GetArm();
-				before.Add(GetBytes(arm));
+				tables.Add(GetReader(key.GetArm()));
+			}
+
+			foreach (Func<byte[]> table in tables)
+			{
+				await Assert.That(table()).Any(static value => value is not 0);
 			}
 		}
 		finally
@@ -49,46 +44,16 @@ public class GHashKeyTest
 			key.Dispose();
 		}
 
-		List<byte[]> after = [key.Value.AsReadOnlySpan().ToArray()];
+		await Assert.That(key.Value.AsReadOnlySpan().ToArray()).All(static value => value is 0);
 
-		if (fourBlock is not null)
+		foreach (Func<byte[]> table in tables)
 		{
-			after.Add(GetBytes(fourBlock));
-		}
-
-		if (vector128 is not null)
-		{
-			after.Add(GetBytes(vector128));
-		}
-
-		if (vector256 is not null)
-		{
-			after.Add(GetBytes(vector256));
-		}
-
-		if (vector512 is not null)
-		{
-			after.Add(GetBytes(vector512));
-		}
-
-		if (arm is not null)
-		{
-			after.Add(GetBytes(arm));
-		}
-
-		foreach (byte[] bytes in before)
-		{
-			await Assert.That(bytes).Any(static value => value is not 0);
-		}
-
-		foreach (byte[] bytes in after)
-		{
-			await Assert.That(bytes).All(static value => value is 0);
+			await Assert.That(table()).All(static value => value is 0);
 		}
 	}
 
-	private static byte[] GetBytes<T>(GHashKeyTable<T> table) where T : unmanaged
+	private static Func<byte[]> GetReader<T>(GHashKeyTable<T> table) where T : unmanaged
 	{
-		return table.Value.AsReadOnlySpan().ToArray();
+		return () => table.Value.AsReadOnlySpan().ToArray();
 	}
 }
