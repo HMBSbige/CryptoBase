@@ -36,47 +36,34 @@ public class HmacBenchmark
 
 	public static IEnumerable<object[]> Block64Arguments()
 	{
-		yield return [0, 64];
-		yield return [64, 64];
-		yield return [1024, 63];
-		yield return [1024, 64];
-		yield return [1024, 65];
-		yield return [8192, 64];
-		yield return [MaxInputLength, 64];
+		return Arguments(64);
 	}
 
 	public static IEnumerable<object[]> Block128Arguments()
 	{
-		yield return [0, 128];
-		yield return [128, 128];
-		yield return [1024, 127];
-		yield return [1024, 128];
-		yield return [1024, 129];
-		yield return [8192, 128];
-		yield return [MaxInputLength, 128];
+		return Arguments(128);
 	}
 
 	// The HMAC block size of SHA3-256 is its 136-byte rate (FIPS 202, Table 3).
 	public static IEnumerable<object[]> Rate136Arguments()
 	{
-		yield return [0, 136];
-		yield return [136, 136];
-		yield return [1024, 135];
-		yield return [1024, 136];
-		yield return [1024, 137];
-		yield return [8192, 136];
-		yield return [MaxInputLength, 136];
+		return Arguments(136);
 	}
 
 	public static IEnumerable<object[]> Rate72Arguments()
 	{
-		yield return [0, 72];
-		yield return [72, 72];
-		yield return [1024, 71];
-		yield return [1024, 72];
-		yield return [1024, 73];
-		yield return [8192, 72];
-		yield return [MaxInputLength, 72];
+		return Arguments(72);
+	}
+
+	private static IEnumerable<object[]> Arguments(int blockSize)
+	{
+		yield return [0, blockSize];
+		yield return [blockSize, blockSize];
+		yield return [1024, blockSize - 1];
+		yield return [1024, blockSize];
+		yield return [1024, blockSize + 1];
+		yield return [8192, blockSize];
+		yield return [MaxInputLength, blockSize];
 	}
 
 	[GlobalSetup]
