@@ -53,20 +53,14 @@ internal struct Blake3Output
 		output.Flags = flags | Blake3Flags.Parent;
 	}
 
-	// The destination may overlap the block, because the compressors read the whole block before writing.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal readonly void ChainingValue(ref byte destination)
-	{
-		Blake3Compressor.Compress(in InputChainingValue[0], ref Unsafe.AsRef(in Block[0]), UsedBlockLength, Counter, Flags, ref destination);
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void BecomeParent(ReadOnlySpan<byte> leftChainingValue, ref readonly InlineArray8<uint> key, uint flags)
 	{
 		Debug.Assert(leftChainingValue.Length is OutLength);
 
 		Span<byte> block = Block;
-		ChainingValue(ref block[OutLength]);
+		// The chaining value may overwrite the block, because the compressors read the whole block before writing.
+		Blake3Compressor.Compress(in InputChainingValue[0], ref block[0], UsedBlockLength, Counter, Flags, ref block[OutLength]);
 		leftChainingValue.CopyTo(block);
 		InputChainingValue = key;
 		Counter = 0;
