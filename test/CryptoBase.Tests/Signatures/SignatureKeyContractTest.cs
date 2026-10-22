@@ -33,17 +33,17 @@ public class SignatureKeyContractTest
 		// Every instance verifies what every instance with the private key signs.
 		byte[] message = CreateDeterministicSource(100);
 
-		foreach (SignatureScheme scheme in SchemesOf<T>())
+		foreach (SignatureAlgorithm algorithm in AlgorithmsOf<T>())
 		{
 			foreach (T signer in (T[])[generated, fromPrivateKey])
 			{
-				byte[] signature = Sign(signer, scheme, message);
+				byte[] signature = Sign(signer, algorithm, message);
 
 				using (Assert.Multiple())
 				{
 					foreach (T verifier in (T[])[generated, fromPrivateKey, fromSubjectPublicKeyInfo])
 					{
-						await Assert.That(verifier.Verify(scheme, message, signature)).IsTrue();
+						await Assert.That(verifier.Verify(algorithm, message, signature)).IsTrue();
 					}
 				}
 			}
@@ -84,10 +84,10 @@ public class SignatureKeyContractTest
 			await Assert.That(() => publicOnly.ExportPkcs8PrivateKey(privateKey)).ThrowsExactly<InvalidOperationException>();
 			await Assert.That(privateKey).All(static value => value is DestinationSentinel);
 
-			foreach (SignatureScheme scheme in SchemesOf<T>())
+			foreach (SignatureAlgorithm algorithm in AlgorithmsOf<T>())
 			{
-				byte[] signature = CreateGuardedBuffer(0, publicOnly.GetMaxSignatureLength(scheme));
-				await Assert.That(() => publicOnly.Sign(scheme, [1, 2, 3], signature)).ThrowsExactly<InvalidOperationException>();
+				byte[] signature = CreateGuardedBuffer(0, publicOnly.GetMaxSignatureLength(algorithm));
+				await Assert.That(() => publicOnly.Sign(algorithm, [1, 2, 3], signature)).ThrowsExactly<InvalidOperationException>();
 				await Assert.That(signature).All(static value => value is DestinationSentinel);
 			}
 		}
@@ -113,10 +113,10 @@ public class SignatureKeyContractTest
 				await Assert.That(subjectPublicKeyInfo).All(static value => value is DestinationSentinel);
 				await Assert.That(privateKey).All(static value => value is DestinationSentinel);
 
-				foreach (SignatureScheme scheme in SchemesOf<T>())
+				foreach (SignatureAlgorithm algorithm in AlgorithmsOf<T>())
 				{
-					byte[] signature = ShortBuffer(key.GetMaxSignatureLength(scheme), shortfall);
-					await Assert.That(() => key.Sign(scheme, [1, 2, 3], signature)).Throws<ArgumentException>().WithParameterName("destination");
+					byte[] signature = ShortBuffer(key.GetMaxSignatureLength(algorithm), shortfall);
+					await Assert.That(() => key.Sign(algorithm, [1, 2, 3], signature)).Throws<ArgumentException>().WithParameterName("destination");
 					await Assert.That(signature).All(static value => value is DestinationSentinel);
 				}
 			}
@@ -144,16 +144,16 @@ public class SignatureKeyContractTest
 			await AssertOutput(subjectPublicKeyInfoOutput, 1, subjectPublicKeyInfo);
 			await AssertOutput(privateKeyOutput, 1, privateKey);
 
-			foreach (SignatureScheme scheme in SchemesOf<T>())
+			foreach (SignatureAlgorithm algorithm in AlgorithmsOf<T>())
 			{
 				byte[] message = CreateDeterministicSource(10);
-				byte[] signatureOutput = CreateGuardedBuffer(1, key.GetMaxSignatureLength(scheme));
-				int signatureWritten = key.Sign(scheme, message, signatureOutput.AsSpan(1));
+				byte[] signatureOutput = CreateGuardedBuffer(1, key.GetMaxSignatureLength(algorithm));
+				int signatureWritten = key.Sign(algorithm, message, signatureOutput.AsSpan(1));
 				byte[] signature = signatureOutput.AsSpan(1, signatureWritten).ToArray();
 
-				await Assert.That(signatureWritten).IsBetween(1, key.GetMaxSignatureLength(scheme));
+				await Assert.That(signatureWritten).IsBetween(1, key.GetMaxSignatureLength(algorithm));
 				await AssertOutput(signatureOutput, 1, signature);
-				await Assert.That(key.Verify(scheme, message, signature)).IsTrue();
+				await Assert.That(key.Verify(algorithm, message, signature)).IsTrue();
 			}
 		}
 	}
@@ -202,28 +202,28 @@ public class SignatureKeyContractTest
 	[GenerateGenericTest(typeof(MLDsa44))]
 	[GenerateGenericTest(typeof(MLDsa65))]
 	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task SupportsOnlyItsSchemes<T>() where T : class, ISignatureKey<T>
+	public async Task SupportsOnlyItsAlgorithms<T>() where T : class, ISignatureKey<T>
 	{
 		using T key = GenerateKey<T>();
-		SignatureScheme[] supported = SchemesOf<T>();
+		SignatureAlgorithm[] supported = AlgorithmsOf<T>();
 		byte[] message = CreateDeterministicSource(10);
 		byte[] signature = Sign(key, supported[0], message);
 		byte[] destination = CreateGuardedBuffer(0, signature.Length);
 
 		using (Assert.Multiple())
 		{
-			foreach (SignatureScheme scheme in (SignatureScheme[])[.. Enum.GetValues<SignatureScheme>(), 0, (SignatureScheme)ushort.MaxValue])
+			foreach (SignatureAlgorithm algorithm in (SignatureAlgorithm[])[.. Enum.GetValues<SignatureAlgorithm>(), 0, (SignatureAlgorithm)ushort.MaxValue])
 			{
-				if (supported.Contains(scheme))
+				if (supported.Contains(algorithm))
 				{
-					await Assert.That(key.Supports(scheme)).IsTrue().Because(scheme.ToString());
+					await Assert.That(key.Supports(algorithm)).IsTrue().Because(algorithm.ToString());
 					continue;
 				}
 
-				await Assert.That(key.Supports(scheme)).IsFalse().Because(scheme.ToString());
-				await Assert.That(() => key.GetMaxSignatureLength(scheme)).Throws<ArgumentException>().WithParameterName("scheme");
-				await Assert.That(() => key.Sign(scheme, message, destination)).Throws<ArgumentException>().WithParameterName("scheme");
-				await Assert.That(() => key.Verify(scheme, message, signature)).Throws<ArgumentException>().WithParameterName("scheme");
+				await Assert.That(key.Supports(algorithm)).IsFalse().Because(algorithm.ToString());
+				await Assert.That(() => key.GetMaxSignatureLength(algorithm)).Throws<ArgumentException>().WithParameterName("algorithm");
+				await Assert.That(() => key.Sign(algorithm, message, destination)).Throws<ArgumentException>().WithParameterName("algorithm");
+				await Assert.That(() => key.Verify(algorithm, message, signature)).Throws<ArgumentException>().WithParameterName("algorithm");
 			}
 
 			await Assert.That(destination).All(static value => value is DestinationSentinel);
@@ -239,15 +239,15 @@ public class SignatureKeyContractTest
 		using T key = GenerateKey<T>();
 		byte[] message = CreateDeterministicSource(40);
 
-		foreach (SignatureScheme scheme in SchemesOf<T>())
+		foreach (SignatureAlgorithm algorithm in AlgorithmsOf<T>())
 		{
-			byte[] signature = Sign(key, scheme, message);
+			byte[] signature = Sign(key, algorithm, message);
 			List<int> accepted = [];
 			int index = 0;
 
 			foreach (byte[] tampered in Tampered(signature))
 			{
-				if (key.Verify(scheme, message, tampered))
+				if (key.Verify(algorithm, message, tampered))
 				{
 					accepted.Add(index);
 				}
@@ -258,12 +258,12 @@ public class SignatureKeyContractTest
 			using (Assert.Multiple())
 			{
 				await Assert.That(accepted).IsEmpty();
-				await Assert.That(key.Verify(scheme, message, signature)).IsTrue();
-				await Assert.That(key.Verify(scheme, Flip(message, 0), signature)).IsFalse();
-				await Assert.That(key.Verify(scheme, message, Resize(signature, -1))).IsFalse();
-				await Assert.That(key.Verify(scheme, message, Resize(signature, 1))).IsFalse();
-				await Assert.That(key.Verify(scheme, message, [])).IsFalse();
-				await Assert.That(key.Verify(scheme, message, new byte[signature.Length])).IsFalse();
+				await Assert.That(key.Verify(algorithm, message, signature)).IsTrue();
+				await Assert.That(key.Verify(algorithm, Flip(message, 0), signature)).IsFalse();
+				await Assert.That(key.Verify(algorithm, message, Resize(signature, -1))).IsFalse();
+				await Assert.That(key.Verify(algorithm, message, Resize(signature, 1))).IsFalse();
+				await Assert.That(key.Verify(algorithm, message, [])).IsFalse();
+				await Assert.That(key.Verify(algorithm, message, new byte[signature.Length])).IsFalse();
 			}
 		}
 	}
@@ -282,14 +282,14 @@ public class SignatureKeyContractTest
 		{
 			await Assert.That(ExportPkcs8PrivateKey(first)).IsNotEquivalentTo(ExportPkcs8PrivateKey(second));
 
-			foreach (SignatureScheme scheme in SchemesOf<T>())
+			foreach (SignatureAlgorithm algorithm in AlgorithmsOf<T>())
 			{
-				byte[] firstSignature = Sign(first, scheme, message);
-				byte[] secondSignature = Sign(first, scheme, message);
+				byte[] firstSignature = Sign(first, algorithm, message);
+				byte[] secondSignature = Sign(first, algorithm, message);
 
 				await Assert.That(firstSignature).IsNotEquivalentTo(secondSignature);
-				await Assert.That(first.Verify(scheme, message, firstSignature)).IsTrue();
-				await Assert.That(first.Verify(scheme, message, secondSignature)).IsTrue();
+				await Assert.That(first.Verify(algorithm, message, firstSignature)).IsTrue();
+				await Assert.That(first.Verify(algorithm, message, secondSignature)).IsTrue();
 			}
 		}
 	}
@@ -301,9 +301,9 @@ public class SignatureKeyContractTest
 	public async Task DisposedInstancesThrow<T>() where T : class, ISignatureKey<T>
 	{
 		T key = GenerateKey<T>();
-		SignatureScheme scheme = SchemesOf<T>()[0];
+		SignatureAlgorithm algorithm = AlgorithmsOf<T>()[0];
 		byte[] message = CreateDeterministicSource(10);
-		byte[] signature = Sign(key, scheme, message);
+		byte[] signature = Sign(key, algorithm, message);
 		byte[] subjectPublicKeyInfo = new byte[key.SubjectPublicKeyInfoLength];
 		byte[] privateKey = new byte[key.Pkcs8PrivateKeyLength];
 		key.Dispose();
@@ -314,10 +314,10 @@ public class SignatureKeyContractTest
 			await Assert.That(() => key.HasPrivateKey).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => key.SubjectPublicKeyInfoLength).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => key.Pkcs8PrivateKeyLength).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => key.Supports(scheme)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => key.GetMaxSignatureLength(scheme)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => key.Sign(scheme, message, new byte[signature.Length])).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => key.Verify(scheme, message, signature)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => key.Supports(algorithm)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => key.GetMaxSignatureLength(algorithm)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => key.Sign(algorithm, message, new byte[signature.Length])).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => key.Verify(algorithm, message, signature)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => key.ExportSubjectPublicKeyInfo(subjectPublicKeyInfo)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => key.ExportPkcs8PrivateKey(privateKey)).ThrowsExactly<ObjectDisposedException>();
 		}
@@ -333,7 +333,7 @@ public class SignatureKeyContractTest
 		GuardPageBuffer.SkipUnlessSupported();
 
 		using T generated = GenerateKey<T>();
-		SignatureScheme scheme = SchemesOf<T>()[0];
+		SignatureAlgorithm algorithm = AlgorithmsOf<T>()[0];
 		byte[] subjectPublicKeyInfo = ExportSubjectPublicKeyInfo(generated);
 		byte[] privateKey = ExportPkcs8PrivateKey(generated);
 		byte[] message = CreateDeterministicSource(33);
@@ -341,7 +341,7 @@ public class SignatureKeyContractTest
 		using GuardPageBuffer subjectPublicKeyInfoBuffer = new(subjectPublicKeyInfo.Length);
 		using GuardPageBuffer privateKeyBuffer = new(privateKey.Length);
 		using GuardPageBuffer messageBuffer = new(message.Length);
-		using GuardPageBuffer signatureBuffer = new(generated.GetMaxSignatureLength(scheme));
+		using GuardPageBuffer signatureBuffer = new(generated.GetMaxSignatureLength(algorithm));
 		subjectPublicKeyInfo.CopyTo(subjectPublicKeyInfoBuffer.Span);
 		privateKey.CopyTo(privateKeyBuffer.Span);
 		message.CopyTo(messageBuffer.Span);
@@ -349,8 +349,8 @@ public class SignatureKeyContractTest
 		using T fromPrivateKey = T.ImportPkcs8PrivateKey(privateKeyBuffer.Span);
 		using T fromSubjectPublicKeyInfo = T.ImportSubjectPublicKeyInfo(subjectPublicKeyInfoBuffer.Span);
 
-		int written = fromPrivateKey.Sign(scheme, messageBuffer.Span, signatureBuffer.Span);
-		bool verified = fromSubjectPublicKeyInfo.Verify(scheme, messageBuffer.Span, signatureBuffer.Span.Slice(0, written));
+		int written = fromPrivateKey.Sign(algorithm, messageBuffer.Span, signatureBuffer.Span);
+		bool verified = fromSubjectPublicKeyInfo.Verify(algorithm, messageBuffer.Span, signatureBuffer.Span.Slice(0, written));
 		fromPrivateKey.ExportSubjectPublicKeyInfo(subjectPublicKeyInfoBuffer.Span);
 		fromPrivateKey.ExportPkcs8PrivateKey(privateKeyBuffer.Span);
 

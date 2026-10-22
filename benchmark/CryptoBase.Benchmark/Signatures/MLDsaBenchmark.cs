@@ -11,16 +11,16 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Signatures;
 
-public class MLDsa44Benchmark() : MLDsaBenchmark<MLDsa44>(SignatureScheme.MLDsa44, MLDsa44.GenerateKey, seed => MLDsa44.ImportPrivateSeed(seed), MLDsaAlgorithm.MLDsa44, MLDsaParameters.ml_dsa_44);
+public class MLDsa44Benchmark() : MLDsaBenchmark<MLDsa44>(SignatureAlgorithm.MLDsa44, MLDsa44.GenerateKey, seed => MLDsa44.ImportPrivateSeed(seed), MLDsaAlgorithm.MLDsa44, MLDsaParameters.ml_dsa_44);
 
-public class MLDsa65Benchmark() : MLDsaBenchmark<MLDsa65>(SignatureScheme.MLDsa65, MLDsa65.GenerateKey, seed => MLDsa65.ImportPrivateSeed(seed), MLDsaAlgorithm.MLDsa65, MLDsaParameters.ml_dsa_65);
+public class MLDsa65Benchmark() : MLDsaBenchmark<MLDsa65>(SignatureAlgorithm.MLDsa65, MLDsa65.GenerateKey, seed => MLDsa65.ImportPrivateSeed(seed), MLDsaAlgorithm.MLDsa65, MLDsaParameters.ml_dsa_65);
 
-public class MLDsa87Benchmark() : MLDsaBenchmark<MLDsa87>(SignatureScheme.MLDsa87, MLDsa87.GenerateKey, seed => MLDsa87.ImportPrivateSeed(seed), MLDsaAlgorithm.MLDsa87, MLDsaParameters.ml_dsa_87);
+public class MLDsa87Benchmark() : MLDsaBenchmark<MLDsa87>(SignatureAlgorithm.MLDsa87, MLDsa87.GenerateKey, seed => MLDsa87.ImportPrivateSeed(seed), MLDsaAlgorithm.MLDsa87, MLDsaParameters.ml_dsa_87);
 
 [MemoryDiagnoser]
 [CategoriesColumn]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
-public abstract class MLDsaBenchmark<T>(SignatureScheme scheme, Func<T> generateKey, Func<byte[], T> importPrivateSeed, MLDsaAlgorithm bclAlgorithm, MLDsaParameters bouncyCastleParameters) where T : class, ISignatureKey<T>
+public abstract class MLDsaBenchmark<T>(SignatureAlgorithm algorithm, Func<T> generateKey, Func<byte[], T> importPrivateSeed, MLDsaAlgorithm bclAlgorithm, MLDsaParameters bouncyCastleParameters) where T : class, ISignatureKey<T>
 {
 	// Every parameter set has a 32-byte seed.
 	private readonly byte[] _seed = RandomNumberGenerator.GetBytes(MLDsa44.PrivateSeedLength);
@@ -40,7 +40,7 @@ public abstract class MLDsaBenchmark<T>(SignatureScheme scheme, Func<T> generate
 	public void Setup()
 	{
 		_cryptoBase = importPrivateSeed(_seed);
-		_signature = new byte[_cryptoBase.GetMaxSignatureLength(scheme)];
+		_signature = new byte[_cryptoBase.GetMaxSignatureLength(algorithm)];
 		_subjectPublicKeyInfo = new byte[_cryptoBase.SubjectPublicKeyInfoLength];
 		_cryptoBase.ExportSubjectPublicKeyInfo(_subjectPublicKeyInfo);
 		_bcl = MLDsa.IsSupported ? MLDsa.ImportMLDsaPrivateSeed(bclAlgorithm, _seed) : null;
@@ -111,7 +111,7 @@ public abstract class MLDsaBenchmark<T>(SignatureScheme scheme, Func<T> generate
 	[BenchmarkCategory("Sign")]
 	public void CryptoBaseSign()
 	{
-		_cryptoBase.Sign(scheme, _message, _signature);
+		_cryptoBase.Sign(algorithm, _message, _signature);
 	}
 
 	[Benchmark]
@@ -133,7 +133,7 @@ public abstract class MLDsaBenchmark<T>(SignatureScheme scheme, Func<T> generate
 	[BenchmarkCategory("Verify")]
 	public bool CryptoBaseVerify()
 	{
-		return _cryptoBase.Verify(scheme, _message, _signature);
+		return _cryptoBase.Verify(algorithm, _message, _signature);
 	}
 
 	[Benchmark]
@@ -157,7 +157,7 @@ public abstract class MLDsaBenchmark<T>(SignatureScheme scheme, Func<T> generate
 	public bool CryptoBaseImportAndVerify()
 	{
 		using T key = T.ImportSubjectPublicKeyInfo(_subjectPublicKeyInfo);
-		return key.Verify(scheme, _message, _signature);
+		return key.Verify(algorithm, _message, _signature);
 	}
 
 	[Benchmark]

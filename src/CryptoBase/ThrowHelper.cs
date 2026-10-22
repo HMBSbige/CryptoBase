@@ -42,9 +42,9 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
-	public static void ThrowUnsupportedSignatureScheme(string parameterName)
+	public static void ThrowUnsupportedSignatureAlgorithm(string parameterName)
 	{
-		throw new ArgumentException("The key does not support the signature scheme.", parameterName);
+		throw new ArgumentException("The key does not support the signature algorithm.", parameterName);
 	}
 
 	[DoesNotReturn]

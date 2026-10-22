@@ -411,7 +411,7 @@ internal class MLDsaTest
 		byte[] preHash = SignPreHash(key, hash, Sha512Oid, context);
 		byte[] fromMu = SignMu(key, Mu(publicKey, message, context));
 		byte[] fromPreHashMu = SignMu(key, PreHashMu(publicKey, hash, 3, context));
-		byte[] scheme = Sign(key, SchemesOf<T>()[0], message);
+		byte[] fromAlgorithm = Sign(key, AlgorithmsOf<T>()[0], message);
 
 		using (Assert.Multiple())
 		{
@@ -432,9 +432,9 @@ internal class MLDsaTest
 			await Assert.That(key.Verify(message, fromMu, context)).IsTrue();
 			await Assert.That(key.VerifyPreHash(hash, fromPreHashMu, Sha512Oid, context)).IsTrue();
 
-			// The scheme is ML-DSA with an empty context.
-			await Assert.That(key.Verify(message, scheme)).IsTrue();
-			await Assert.That(key.Verify(SchemesOf<T>()[0], message, Sign(key, message))).IsTrue();
+			// The SignatureAlgorithm member is ML-DSA with an empty context.
+			await Assert.That(key.Verify(message, fromAlgorithm)).IsTrue();
+			await Assert.That(key.Verify(AlgorithmsOf<T>()[0], message, Sign(key, message))).IsTrue();
 		}
 	}
 

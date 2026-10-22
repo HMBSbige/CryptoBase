@@ -14,7 +14,7 @@ namespace CryptoBase.Signatures.MLDsa;
 /// The DER encodings are those of RFC 9881: a PKCS #8 export holds the seed form if the instance holds the seed, and the expandedKey form
 /// otherwise, and a PKCS #8 import accepts the seed, expandedKey and both forms, keeps the seed if there is one, and rejects a seed that does
 /// not expand to the expandedKey beside it, or a publicKey that does not match the private key.
-/// <see cref="SignatureScheme.MLDsa87" /> is ML-DSA-87 with an empty context.
+/// <see cref="SignatureAlgorithm.MLDsa87" /> is ML-DSA-87 with an empty context.
 /// </para>
 /// </remarks>
 public sealed class MLDsa87 : IMLDsa<MLDsa87>
@@ -353,31 +353,31 @@ public sealed class MLDsa87 : IMLDsa<MLDsa87>
 	}
 
 	/// <inheritdoc />
-	public bool Supports(SignatureScheme scheme)
+	public bool Supports(SignatureAlgorithm algorithm)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return MLDsaKey<MLDsa87Parameters>.Supports(scheme);
+		return MLDsaKey<MLDsa87Parameters>.Supports(algorithm);
 	}
 
 	/// <inheritdoc />
-	public int GetMaxSignatureLength(SignatureScheme scheme)
+	public int GetMaxSignatureLength(SignatureAlgorithm algorithm)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return MLDsaKey<MLDsa87Parameters>.GetMaxSignatureLength(scheme);
+		return MLDsaKey<MLDsa87Parameters>.GetMaxSignatureLength(algorithm);
 	}
 
 	/// <inheritdoc />
-	public int Sign(SignatureScheme scheme, ReadOnlySpan<byte> message, Span<byte> destination)
+	public int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return _key.Sign(scheme, message, destination);
+		return _key.Sign(algorithm, message, destination);
 	}
 
 	/// <inheritdoc />
-	public bool Verify(SignatureScheme scheme, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+	public bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return _key.Verify(scheme, message, signature);
+		return _key.Verify(algorithm, message, signature);
 	}
 
 	/// <inheritdoc />

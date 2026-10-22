@@ -130,7 +130,7 @@ public class WycheproofMLDsaTest
 
 			if (vector.Ctx is null or [])
 			{
-				await Assert.That(key.Verify(SchemesOf<T>()[0], vector.Msg, vector.Sig)).IsEqualTo(valid);
+				await Assert.That(key.Verify(AlgorithmsOf<T>()[0], vector.Msg, vector.Sig)).IsEqualTo(valid);
 			}
 		}
 	}

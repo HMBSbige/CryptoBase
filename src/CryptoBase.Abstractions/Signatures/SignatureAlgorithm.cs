@@ -7,7 +7,7 @@ namespace CryptoBase.Abstractions.Signatures;
 /// The values are those of the IANA TLS SignatureScheme registry (RFC 8446, Section 4.2.3); the ML-DSA values are those of draft-ietf-tls-mldsa.
 /// Each scheme fixes the hashing, padding and encoding of a signature.
 /// </remarks>
-public enum SignatureScheme : ushort
+public enum SignatureAlgorithm : ushort
 {
 	/// <summary>
 	/// RSASSA-PKCS1-v1_5 with SHA-256 (rsa_pkcs1_sha256).

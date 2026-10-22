@@ -258,27 +258,27 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		return KeyInfoDer.WritePrivateKeyInfo(TParameters.AlgorithmIdentifier, choice.Span, destination);
 	}
 
-	internal static bool Supports(SignatureScheme scheme)
+	internal static bool Supports(SignatureAlgorithm algorithm)
 	{
-		return scheme == TParameters.Scheme;
+		return algorithm == TParameters.Algorithm;
 	}
 
-	internal static int GetMaxSignatureLength(SignatureScheme scheme)
+	internal static int GetMaxSignatureLength(SignatureAlgorithm algorithm)
 	{
-		ThrowIfUnsupported(scheme);
+		ThrowIfUnsupported(algorithm);
 		return SignatureLength;
 	}
 
-	// The scheme is ML-DSA with an empty context.
-	internal int Sign(SignatureScheme scheme, ReadOnlySpan<byte> message, Span<byte> destination)
+	// The algorithm is ML-DSA with an empty context.
+	internal int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
-		ThrowIfUnsupported(scheme);
+		ThrowIfUnsupported(algorithm);
 		return Sign(message, default, destination);
 	}
 
-	internal bool Verify(SignatureScheme scheme, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+	internal bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
 	{
-		ThrowIfUnsupported(scheme);
+		ThrowIfUnsupported(algorithm);
 		return Verify(message, signature, default);
 	}
 
@@ -409,11 +409,11 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		}
 	}
 
-	private static void ThrowIfUnsupported(SignatureScheme scheme)
+	private static void ThrowIfUnsupported(SignatureAlgorithm algorithm)
 	{
-		if (!Supports(scheme))
+		if (!Supports(algorithm))
 		{
-			ThrowHelper.ThrowUnsupportedSignatureScheme(nameof(scheme));
+			ThrowHelper.ThrowUnsupportedSignatureAlgorithm(nameof(algorithm));
 		}
 	}
 

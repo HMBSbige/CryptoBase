@@ -18,7 +18,7 @@ internal readonly struct MLDsa87Parameters : IMLDsaParameters
 
 	public static int Omega => 75;
 
-	public static SignatureScheme Scheme => SignatureScheme.MLDsa87;
+	public static SignatureAlgorithm Algorithm => SignatureAlgorithm.MLDsa87;
 
 	// id-ml-dsa-87, 2.16.840.1.101.3.4.3.19.
 	public static ReadOnlySpan<byte> AlgorithmIdentifier => [0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x13];

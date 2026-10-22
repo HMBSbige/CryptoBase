@@ -21,19 +21,19 @@ internal static class SignatureTestUtils
 		return typeof(T) == typeof(MLDsa87) ? (T)(object)MLDsa87.GenerateKey() : throw new NotSupportedException(typeof(T).Name);
 	}
 
-	public static SignatureScheme[] SchemesOf<T>() where T : class, ISignatureKey<T>
+	public static SignatureAlgorithm[] AlgorithmsOf<T>() where T : class, ISignatureKey<T>
 	{
 		if (typeof(T) == typeof(MLDsa44))
 		{
-			return [SignatureScheme.MLDsa44];
+			return [SignatureAlgorithm.MLDsa44];
 		}
 
 		if (typeof(T) == typeof(MLDsa65))
 		{
-			return [SignatureScheme.MLDsa65];
+			return [SignatureAlgorithm.MLDsa65];
 		}
 
-		return typeof(T) == typeof(MLDsa87) ? [SignatureScheme.MLDsa87] : throw new NotSupportedException(typeof(T).Name);
+		return typeof(T) == typeof(MLDsa87) ? [SignatureAlgorithm.MLDsa87] : throw new NotSupportedException(typeof(T).Name);
 	}
 
 	public static byte[] ExportSubjectPublicKeyInfo<T>(T key) where T : class, ISignatureKey<T>
@@ -50,10 +50,10 @@ internal static class SignatureTestUtils
 		return privateKey;
 	}
 
-	public static byte[] Sign<T>(T key, SignatureScheme scheme, ReadOnlySpan<byte> message) where T : class, ISignatureKey<T>
+	public static byte[] Sign<T>(T key, SignatureAlgorithm algorithm, ReadOnlySpan<byte> message) where T : class, ISignatureKey<T>
 	{
-		byte[] signature = new byte[key.GetMaxSignatureLength(scheme)];
-		int written = key.Sign(scheme, message, signature);
+		byte[] signature = new byte[key.GetMaxSignatureLength(algorithm)];
+		int written = key.Sign(algorithm, message, signature);
 		return signature.AsSpan(0, written).ToArray();
 	}
 

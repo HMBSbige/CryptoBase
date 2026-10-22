@@ -6,9 +6,9 @@ namespace CryptoBase.Abstractions.Signatures;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A key signs and verifies with the signature schemes that <see cref="Supports" /> accepts. A message is passed whole and unhashed, such as the
+/// A key signs and verifies with the signature algorithms that <see cref="Supports" /> accepts. A message is passed whole and unhashed, such as the
 /// content that a TLS 1.3 CertificateVerify covers, the parameters that a TLS 1.2 ServerKeyExchange covers, or an X.509 TBSCertificate;
-/// the scheme fixes any hashing, padding and encoding. Signing takes randomness from the system where the scheme is randomized.
+/// the algorithm fixes any hashing, padding and encoding. Signing takes randomness from the system where the algorithm is randomized.
 /// A signature that is invalid, including one of the wrong length, verifies as <see langword="false" /> rather than throwing.
 /// </para>
 /// <para>
@@ -39,45 +39,45 @@ public interface ISignatureKey : IDisposable
 	int Pkcs8PrivateKeyLength { get; }
 
 	/// <summary>
-	/// Determines whether the key can sign and verify with <paramref name="scheme" />.
+	/// Determines whether the key can sign and verify with <paramref name="algorithm" />.
 	/// </summary>
-	/// <param name="scheme">The signature scheme, which need not be a defined value.</param>
-	/// <returns><see langword="true" /> if the key can use <paramref name="scheme" />; otherwise, <see langword="false" />.</returns>
+	/// <param name="algorithm">The signature algorithm, which need not be a defined value.</param>
+	/// <returns><see langword="true" /> if the key can use <paramref name="algorithm" />; otherwise, <see langword="false" />.</returns>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	bool Supports(SignatureScheme scheme);
+	bool Supports(SignatureAlgorithm algorithm);
 
 	/// <summary>
-	/// Gets the length of the longest signature that the key writes with <paramref name="scheme" />.
+	/// Gets the length of the longest signature that the key writes with <paramref name="algorithm" />.
 	/// </summary>
-	/// <param name="scheme">The signature scheme.</param>
+	/// <param name="algorithm">The signature algorithm.</param>
 	/// <returns>The maximum signature length, in bytes.</returns>
-	/// <exception cref="ArgumentException">The key does not support <paramref name="scheme" />.</exception>
+	/// <exception cref="ArgumentException">The key does not support <paramref name="algorithm" />.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	int GetMaxSignatureLength(SignatureScheme scheme);
+	int GetMaxSignatureLength(SignatureAlgorithm algorithm);
 
 	/// <summary>
-	/// Signs <paramref name="message" /> with <paramref name="scheme" />.
+	/// Signs <paramref name="message" /> with <paramref name="algorithm" />.
 	/// </summary>
 	/// <remarks>On failure, <paramref name="destination" /> remains unchanged.</remarks>
-	/// <param name="scheme">The signature scheme.</param>
-	/// <param name="message">The whole message, which the scheme hashes if it hashes at all.</param>
+	/// <param name="algorithm">The signature algorithm.</param>
+	/// <param name="message">The whole message, which the algorithm hashes if it hashes at all.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="GetMaxSignatureLength" /> bytes long.</param>
 	/// <returns>The length of the signature, in bytes.</returns>
-	/// <exception cref="ArgumentException">The key does not support <paramref name="scheme" />, or <paramref name="destination" /> is too short.</exception>
+	/// <exception cref="ArgumentException">The key does not support <paramref name="algorithm" />, or <paramref name="destination" /> is too short.</exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the private key.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	int Sign(SignatureScheme scheme, ReadOnlySpan<byte> message, Span<byte> destination);
+	int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination);
 
 	/// <summary>
-	/// Verifies that <paramref name="signature" /> is a signature of <paramref name="message" /> with <paramref name="scheme" />.
+	/// Verifies that <paramref name="signature" /> is a signature of <paramref name="message" /> with <paramref name="algorithm" />.
 	/// </summary>
-	/// <param name="scheme">The signature scheme.</param>
-	/// <param name="message">The whole message, which the scheme hashes if it hashes at all.</param>
+	/// <param name="algorithm">The signature algorithm.</param>
+	/// <param name="message">The whole message, which the algorithm hashes if it hashes at all.</param>
 	/// <param name="signature">The signature.</param>
 	/// <returns><see langword="true" /> if the signature is valid; otherwise, <see langword="false" />.</returns>
-	/// <exception cref="ArgumentException">The key does not support <paramref name="scheme" />.</exception>
+	/// <exception cref="ArgumentException">The key does not support <paramref name="algorithm" />.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	bool Verify(SignatureScheme scheme, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature);
+	bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature);
 
 	/// <summary>
 	/// Writes the public key as a DER-encoded X.509 SubjectPublicKeyInfo (RFC 5280).
