@@ -217,24 +217,17 @@ public class GHashTest
 		Vector128<byte> neonAccumulator = GHashNeon.IsSupported ? HashNeonPaddedSegments(key, first, default, default) : default;
 		Vector128<byte> expectedPrefix = ComputeReferenceHash(key, first, default, default);
 		Vector128<byte> expected = ComputeReferenceHash(key, first, second, third);
-		GHashKey keyContext = GHashKey.Create(key);
+		Vector128<byte> keyValue = Vector128.Create(key);
 
-		try
-		{
-			GHashSoftware.AppendPaddedSegments(ref accumulator, in keyContext.Value, default, default, default);
-			await Assert.That(accumulator).IsEqualTo(expectedPrefix);
-			GHashSoftware.AppendPaddedSegments(ref accumulator, in keyContext.Value, default, second, third);
+		GHashSoftware.AppendPaddedSegments(ref accumulator, in keyValue, default, default, default);
+		await Assert.That(accumulator).IsEqualTo(expectedPrefix);
+		GHashSoftware.AppendPaddedSegments(ref accumulator, in keyValue, default, second, third);
 
-			if (GHashNeon.IsSupported)
-			{
-				GHashNeon.AppendPaddedSegments(ref neonAccumulator, in keyContext.Value, default, default, default);
-				await Assert.That(neonAccumulator).IsEqualTo(expectedPrefix);
-				GHashNeon.AppendPaddedSegments(ref neonAccumulator, in keyContext.Value, default, second, third);
-			}
-		}
-		finally
+		if (GHashNeon.IsSupported)
 		{
-			keyContext.Dispose();
+			GHashNeon.AppendPaddedSegments(ref neonAccumulator, in keyValue, default, default, default);
+			await Assert.That(neonAccumulator).IsEqualTo(expectedPrefix);
+			GHashNeon.AppendPaddedSegments(ref neonAccumulator, in keyValue, default, second, third);
 		}
 
 		await Assert.That(accumulator).IsEqualTo(expected);
@@ -420,34 +413,16 @@ public class GHashTest
 
 	private static Vector128<byte> HashSoftwarePaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
 	{
-		GHashKey keyContext = GHashKey.Create(key);
-
-		try
-		{
-			Vector128<byte> accumulator = default;
-			GHashSoftware.AppendPaddedSegments(ref accumulator, in keyContext.Value, first, second, third);
-			return accumulator;
-		}
-		finally
-		{
-			keyContext.Dispose();
-		}
+		Vector128<byte> accumulator = default;
+		GHashSoftware.AppendPaddedSegments(ref accumulator, Vector128.Create(key), first, second, third);
+		return accumulator;
 	}
 
 	private static Vector128<byte> HashNeonPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
 	{
-		GHashKey keyContext = GHashKey.Create(key);
-
-		try
-		{
-			Vector128<byte> accumulator = default;
-			GHashNeon.AppendPaddedSegments(ref accumulator, in keyContext.Value, first, second, third);
-			return accumulator;
-		}
-		finally
-		{
-			keyContext.Dispose();
-		}
+		Vector128<byte> accumulator = default;
+		GHashNeon.AppendPaddedSegments(ref accumulator, Vector128.Create(key), first, second, third);
+		return accumulator;
 	}
 
 	internal static Vector128<byte> ComputeReferenceHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)
