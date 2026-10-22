@@ -40,7 +40,7 @@ public partial struct SM3Core
 			for (int round = 6; round < 15; round += 3)
 			{
 				Vector128<uint> words = WindowX86(w2, w3);
-				Vector128<uint> next = ScheduleAndRound3EarlyX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, w0, w1, w2, w3, w4, w5, words, words ^ w4, round);
+				Vector128<uint> next = ScheduleAndRound3X86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, w0, w1, w2, w3, w4, w5, words, words ^ w4, round, false, false);
 
 				w0 = w1;
 				w1 = w2;
@@ -52,7 +52,7 @@ public partial struct SM3Core
 
 			{
 				Vector128<uint> words = WindowX86(w2, w3);
-				Vector128<uint> next = ScheduleAndRoundMixedX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, w0, w1, w2, w3, w4, w5, words, words ^ w4);
+				Vector128<uint> next = ScheduleAndRound3X86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, w0, w1, w2, w3, w4, w5, words, words ^ w4, 15, false, true);
 				w0 = w1;
 				w1 = w2;
 				w2 = w3;
@@ -60,13 +60,11 @@ public partial struct SM3Core
 				w4 = w5;
 				w5 = next;
 			}
-
-			ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
 			for (int round = 18; round < 60; round += 3)
 			{
 				Vector128<uint> words = WindowX86(w2, w3);
-				Vector128<uint> next = ScheduleAndRound3LateX86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, w0, w1, w2, w3, w4, w5, words, words ^ w4, ref roundConstants, round);
+				Vector128<uint> next = ScheduleAndRound3X86(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, w0, w1, w2, w3, w4, w5, words, words ^ w4, round, true, true);
 				w0 = w1;
 				w1 = w2;
 				w2 = w3;
@@ -112,29 +110,29 @@ public partial struct SM3Core
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> ScheduleAndRound3EarlyX86
+	private static Vector128<uint> ScheduleAndRound3X86
 	(
 		ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h,
 		Vector128<uint> w0, Vector128<uint> w1, Vector128<uint> w2, Vector128<uint> w3, Vector128<uint> w4, Vector128<uint> w5,
 		Vector128<uint> words, Vector128<uint> mixed,
-		int round
+		int round, bool firstLate, bool restLate
 	)
 	{
 		Vector128<ulong> packed01 = Sse2.UnpackLow(words, mixed).AsUInt64();
 		ulong packedRound = packed01.ToScalar();
 		Vector128<uint> partial = WindowX86(w0, w1);
-		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round], out h);
+		d = RoundSoftware(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round], firstLate, out h);
 		b = BitOperations.RotateLeft(b, 9);
 		f = BitOperations.RotateLeft(f, 19);
 		partial ^= w3 ^ w5.RotateLeftUInt32(15);
 		Vector128<uint> window13 = WindowX86(w1, w2);
 		packedRound = packed01.GetElement(1);
-		c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 1], out g);
+		c = RoundSoftware(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 1], restLate, out g);
 		a = BitOperations.RotateLeft(a, 9);
 		e = BitOperations.RotateLeft(e, 19);
 		Vector128<uint> next = P1X86(partial);
 		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
-		b = RoundSoftwareEarly(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 2], out f);
+		b = RoundSoftware(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[round + 2], restLate, out f);
 		d = BitOperations.RotateLeft(d, 9);
 		h = BitOperations.RotateLeft(h, 19);
 		(a, b, c, d) = (b, c, d, a);
@@ -149,16 +147,16 @@ public partial struct SM3Core
 		Vector128<uint> words, Vector128<uint> mixed
 	)
 	{
-		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, words.GetElement(0), mixed.GetElement(0), RoundConstants[0], out h);
+		d = RoundSoftware(a, b, c, d, e, f, g, h, words.GetElement(0), mixed.GetElement(0), RoundConstants[0], false, out h);
 		b = BitOperations.RotateLeft(b, 9);
 		f = BitOperations.RotateLeft(f, 19);
-		c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, words.GetElement(1), mixed.GetElement(1), RoundConstants[1], out g);
+		c = RoundSoftware(d, a, b, c, h, e, f, g, words.GetElement(1), mixed.GetElement(1), RoundConstants[1], false, out g);
 		a = BitOperations.RotateLeft(a, 9);
 		e = BitOperations.RotateLeft(e, 19);
-		b = RoundSoftwareEarly(c, d, a, b, g, h, e, f, words.GetElement(2), mixed.GetElement(2), RoundConstants[2], out f);
+		b = RoundSoftware(c, d, a, b, g, h, e, f, words.GetElement(2), mixed.GetElement(2), RoundConstants[2], false, out f);
 		d = BitOperations.RotateLeft(d, 9);
 		h = BitOperations.RotateLeft(h, 19);
-		a = RoundSoftwareEarly(b, c, d, a, f, g, h, e, words.GetElement(3), mixed.GetElement(3), RoundConstants[3], out e);
+		a = RoundSoftware(b, c, d, a, f, g, h, e, words.GetElement(3), mixed.GetElement(3), RoundConstants[3], false, out e);
 		c = BitOperations.RotateLeft(c, 9);
 		g = BitOperations.RotateLeft(g, 19);
 	}
@@ -170,75 +168,14 @@ public partial struct SM3Core
 		Vector128<uint> words, Vector128<uint> mixed
 	)
 	{
-		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, words.GetElement(0), mixed.GetElement(0), RoundConstants[4], out h);
+		d = RoundSoftware(a, b, c, d, e, f, g, h, words.GetElement(0), mixed.GetElement(0), RoundConstants[4], false, out h);
 		b = BitOperations.RotateLeft(b, 9);
 		f = BitOperations.RotateLeft(f, 19);
-		c = RoundSoftwareEarly(d, a, b, c, h, e, f, g, words.GetElement(1), mixed.GetElement(1), RoundConstants[5], out g);
+		c = RoundSoftware(d, a, b, c, h, e, f, g, words.GetElement(1), mixed.GetElement(1), RoundConstants[5], false, out g);
 		a = BitOperations.RotateLeft(a, 9);
 		e = BitOperations.RotateLeft(e, 19);
 		(a, b, c, d) = (c, d, a, b);
 		(e, f, g, h) = (g, h, e, f);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> ScheduleAndRoundMixedX86
-	(
-		ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h,
-		Vector128<uint> w0, Vector128<uint> w1, Vector128<uint> w2, Vector128<uint> w3, Vector128<uint> w4, Vector128<uint> w5,
-		Vector128<uint> words, Vector128<uint> mixed
-	)
-	{
-		Vector128<ulong> packed01 = Sse2.UnpackLow(words, mixed).AsUInt64();
-		ulong packedRound = packed01.ToScalar();
-		Vector128<uint> partial = WindowX86(w0, w1);
-		d = RoundSoftwareEarly(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[15], out h);
-		b = BitOperations.RotateLeft(b, 9);
-		f = BitOperations.RotateLeft(f, 19);
-		partial ^= w3 ^ w5.RotateLeftUInt32(15);
-		Vector128<uint> window13 = WindowX86(w1, w2);
-		packedRound = packed01.GetElement(1);
-		c = RoundSoftwareLate(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[16], out g);
-		a = BitOperations.RotateLeft(a, 9);
-		e = BitOperations.RotateLeft(e, 19);
-		Vector128<uint> next = P1X86(partial);
-		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
-		b = RoundSoftwareLate(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[17], out f);
-		d = BitOperations.RotateLeft(d, 9);
-		h = BitOperations.RotateLeft(h, 19);
-		(a, b, c, d) = (b, c, d, a);
-		(e, f, g, h) = (f, g, h, e);
-		return next ^ window13.RotateLeftUInt32(7) ^ w4;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> ScheduleAndRound3LateX86
-	(
-		ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h,
-		Vector128<uint> w0, Vector128<uint> w1, Vector128<uint> w2, Vector128<uint> w3, Vector128<uint> w4, Vector128<uint> w5,
-		Vector128<uint> words, Vector128<uint> mixed, ref uint roundConstants,
-		int round
-	)
-	{
-		Vector128<ulong> packed01 = Sse2.UnpackLow(words, mixed).AsUInt64();
-		ulong packedRound = packed01.ToScalar();
-		Vector128<uint> partial = WindowX86(w0, w1);
-		d = RoundSoftwareLate(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), Unsafe.Add(ref roundConstants, (uint)round), out h);
-		b = BitOperations.RotateLeft(b, 9);
-		f = BitOperations.RotateLeft(f, 19);
-		partial ^= w3 ^ w5.RotateLeftUInt32(15);
-		Vector128<uint> window13 = WindowX86(w1, w2);
-		packedRound = packed01.GetElement(1);
-		c = RoundSoftwareLate(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), Unsafe.Add(ref roundConstants, (uint)(round + 1)), out g);
-		a = BitOperations.RotateLeft(a, 9);
-		e = BitOperations.RotateLeft(e, 19);
-		Vector128<uint> next = P1X86(partial);
-		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
-		b = RoundSoftwareLate(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), Unsafe.Add(ref roundConstants, (uint)(round + 2)), out f);
-		d = BitOperations.RotateLeft(d, 9);
-		h = BitOperations.RotateLeft(h, 19);
-		(a, b, c, d) = (b, c, d, a);
-		(e, f, g, h) = (f, g, h, e);
-		return next ^ window13.RotateLeftUInt32(7) ^ w4;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -250,15 +187,15 @@ public partial struct SM3Core
 	{
 		Vector128<ulong> packed01 = Sse2.UnpackLow(words, mixed).AsUInt64();
 		ulong packedRound = packed01.ToScalar();
-		d = RoundSoftwareLate(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[60], out h);
+		d = RoundSoftware(a, b, c, d, e, f, g, h, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[60], true, out h);
 		b = BitOperations.RotateLeft(b, 9);
 		f = BitOperations.RotateLeft(f, 19);
 		packedRound = packed01.GetElement(1);
-		c = RoundSoftwareLate(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[61], out g);
+		c = RoundSoftware(d, a, b, c, h, e, f, g, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[61], true, out g);
 		a = BitOperations.RotateLeft(a, 9);
 		e = BitOperations.RotateLeft(e, 19);
 		packedRound = Sse2.UnpackHigh(words, mixed).AsUInt64().ToScalar();
-		b = RoundSoftwareLate(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[62], out f);
+		b = RoundSoftware(c, d, a, b, g, h, e, f, (uint)packedRound, (uint)(packedRound >> 32), RoundConstants[62], true, out f);
 		d = BitOperations.RotateLeft(d, 9);
 		h = BitOperations.RotateLeft(h, 19);
 		(a, b, c, d) = (b, c, d, a);
