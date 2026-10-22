@@ -41,12 +41,12 @@ public class XtsModeTest
 	{
 		byte[] key = CreateDeterministicSource(keyLength * 2);
 		byte[] plaintext = CreateDeterministicSource(length);
-		byte[] iv = new byte[16];
+		byte[] tweak = new byte[16];
 		byte[] initialTweak = new byte[16];
 		initialTweak.AsSpan().Fill(0xFF);
 		using TCipher tweakCipher = TCipher.Create(key.AsSpan(keyLength));
 		// Force carries across both 64-bit halves and the reduction boundary.
-		tweakCipher.DecryptBlock(initialTweak, iv);
+		tweakCipher.DecryptBlock(initialTweak, tweak);
 		byte[] expected = XtsReference.Transform(initialTweak, plaintext, false, block =>
 		{
 			using TCipher dataCipher = TCipher.Create(key.AsSpan(0, keyLength));
@@ -57,14 +57,14 @@ public class XtsModeTest
 		byte[] output = new byte[length + 7];
 		PrepareDestination(output);
 
-		cipher.Encrypt(iv, plaintext, output);
+		cipher.Encrypt(tweak, plaintext, output);
 		await AssertOutput(output, expected);
-		cipher.Decrypt(iv, expected, output);
+		cipher.Decrypt(tweak, expected, output);
 		await AssertOutput(output, plaintext);
 		plaintext.CopyTo(output, 0);
-		cipher.Encrypt(iv, output.AsSpan(0, length), output);
+		cipher.Encrypt(tweak, output.AsSpan(0, length), output);
 		await AssertOutput(output, expected);
-		cipher.Decrypt(iv, output.AsSpan(0, length), output);
+		cipher.Decrypt(tweak, output.AsSpan(0, length), output);
 		await AssertOutput(output, plaintext);
 	}
 }

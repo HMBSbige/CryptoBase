@@ -13,19 +13,19 @@ public class AesXtsTest
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 	public async Task InvalidInputsAreRejectedBeforeWriting(bool decrypt)
 	{
-		byte[] iv = new byte[16];
+		byte[] tweak = new byte[16];
 		byte[] source = CreateDeterministicSource(16);
 		byte[] destination = new byte[17];
 		using XtsMode<AesCipher> crypto = XtsMode<AesCipher>.Create(CreateDeterministicSource(32));
 
 		PrepareDestination(destination);
-		await Assert.That(() => Transform(crypto, decrypt, iv.AsSpan(0, 15), source, destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("tweak");
+		await Assert.That(() => Transform(crypto, decrypt, tweak.AsSpan(0, 15), source, destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("tweak");
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 
-		await Assert.That(() => Transform(crypto, decrypt, iv, source.AsSpan(0, 15), destination)).ThrowsExactly<ArgumentOutOfRangeException>();
+		await Assert.That(() => Transform(crypto, decrypt, tweak, source.AsSpan(0, 15), destination)).ThrowsExactly<ArgumentOutOfRangeException>();
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 
-		await Assert.That(() => Transform(crypto, decrypt, iv, source, destination.AsSpan(0, 15))).ThrowsExactly<ArgumentOutOfRangeException>();
+		await Assert.That(() => Transform(crypto, decrypt, tweak, source, destination.AsSpan(0, 15))).ThrowsExactly<ArgumentOutOfRangeException>();
 		await Assert.That(destination).All(static value => value is DestinationSentinel);
 	}
 
@@ -60,15 +60,15 @@ public class AesXtsTest
 		await Assert.That(buffer).IsEquivalentTo(original, CollectionOrdering.Matching);
 	}
 
-	private static void Transform(XtsMode<AesCipher> crypto, bool decrypt, ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source, Span<byte> destination)
+	private static void Transform(XtsMode<AesCipher> crypto, bool decrypt, ReadOnlySpan<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		if (decrypt)
 		{
-			crypto.Decrypt(iv, source, destination);
+			crypto.Decrypt(tweak, source, destination);
 		}
 		else
 		{
-			crypto.Encrypt(iv, source, destination);
+			crypto.Encrypt(tweak, source, destination);
 		}
 	}
 }

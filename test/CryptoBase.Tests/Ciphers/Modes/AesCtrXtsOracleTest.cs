@@ -125,8 +125,8 @@ public class AesCtrXtsOracleTest
 	public async Task XtsBoundariesAndStealingMatchBclOracle([Matrix(16, 24, 32)] int keyLength, [MatrixMethod<AesCtrXtsOracleTest>(nameof(XtsLengths))] int length)
 	{
 		using XtsFixture xts = new(keyLength);
-		byte[] iv = xts.IvForEncryptedTweak(Convert.FromHexString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
-		await VerifyXtsRoundTrip(xts, iv, length);
+		byte[] tweak = xts.TweakForEncryptedTweak(Convert.FromHexString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+		await VerifyXtsRoundTrip(xts, tweak, length);
 	}
 
 	[Test]
@@ -134,47 +134,47 @@ public class AesCtrXtsOracleTest
 	public async Task XtsTweakValuesMatchBclOracle([Matrix(16, 24, 32)] int keyLength, [Matrix("00000000000000000000000000000000", "179A1DA023A629AC2FB235B83BBE41C4")] string encryptedTweakHex)
 	{
 		using XtsFixture xts = new(keyLength);
-		byte[] iv = xts.IvForEncryptedTweak(Convert.FromHexString(encryptedTweakHex));
-		await VerifyXtsRoundTrip(xts, iv, 4097);
+		byte[] tweak = xts.TweakForEncryptedTweak(Convert.FromHexString(encryptedTweakHex));
+		await VerifyXtsRoundTrip(xts, tweak, 4097);
 	}
 
 	[Test]
 	[MatrixDataSource]
-	public async Task XtsConsumesAliasedIvBeforeWriting([Matrix(17, 145)] int length, [Matrix] bool ivAtEnd, [Matrix] bool decrypt)
+	public async Task XtsConsumesAliasedTweakBeforeWriting([Matrix(17, 145)] int length, [Matrix] bool tweakAtEnd, [Matrix] bool decrypt)
 	{
 		using XtsFixture xts = new(16);
 		byte[] input = CreateDeterministicSource(length);
-		int ivOffset = ivAtEnd ? length - 16 : 0;
-		byte[] iv = input.AsSpan(ivOffset, 16).ToArray();
-		byte[] expected = xts.Oracle(iv, input, decrypt);
+		int tweakOffset = tweakAtEnd ? length - 16 : 0;
+		byte[] tweak = input.AsSpan(tweakOffset, 16).ToArray();
+		byte[] expected = xts.Oracle(tweak, input, decrypt);
 
 		byte[] inPlace = WithGuards(input, 3);
-		xts.Transform(decrypt, inPlace.AsSpan(3 + ivOffset, 16), inPlace.AsSpan(3, length), inPlace.AsSpan(3));
-		await VerifyOutput(inPlace, 3, expected, "IV aliases in-place buffer");
+		xts.Transform(decrypt, inPlace.AsSpan(3 + tweakOffset, 16), inPlace.AsSpan(3, length), inPlace.AsSpan(3));
+		await VerifyOutput(inPlace, 3, expected, "Tweak aliases in-place buffer");
 
 		byte[] destinationAlias = CreateGuardedBuffer(5, length);
-		iv.CopyTo(destinationAlias, 5 + ivOffset);
-		xts.Transform(decrypt, destinationAlias.AsSpan(5 + ivOffset, 16), input, destinationAlias.AsSpan(5));
-		await VerifyOutput(destinationAlias, 5, expected, "IV aliases destination");
+		tweak.CopyTo(destinationAlias, 5 + tweakOffset);
+		xts.Transform(decrypt, destinationAlias.AsSpan(5 + tweakOffset, 16), input, destinationAlias.AsSpan(5));
+		await VerifyOutput(destinationAlias, 5, expected, "Tweak aliases destination");
 	}
 
-	private static async Task VerifyXtsRoundTrip(XtsFixture xts, byte[] iv, int length)
+	private static async Task VerifyXtsRoundTrip(XtsFixture xts, byte[] tweak, int length)
 	{
 		byte[] plaintext = CreateDeterministicSource(length);
-		byte[] expected = xts.Oracle(iv, plaintext, false);
-		byte[] unalignedIv = WithGuards(iv, 1);
-		ReadOnlySpan<byte> ivSpan = unalignedIv.AsSpan(1, 16);
+		byte[] expected = xts.Oracle(tweak, plaintext, false);
+		byte[] unalignedTweak = WithGuards(tweak, 1);
+		ReadOnlySpan<byte> tweakSpan = unalignedTweak.AsSpan(1, 16);
 		byte[] source = WithGuards(plaintext, 3);
 		byte[] ciphertext = WithGuards(expected, 3);
 		byte[] encrypted = CreateGuardedBuffer(5, length);
 		byte[] decrypted = CreateGuardedBuffer(5, length);
 		byte[] inPlaceEncrypted = WithGuards(plaintext, 7);
 
-		xts.Transform(false, ivSpan, source.AsSpan(3, length), encrypted.AsSpan(5));
-		xts.Transform(true, ivSpan, ciphertext.AsSpan(3, length), decrypted.AsSpan(5));
-		xts.Transform(false, ivSpan, inPlaceEncrypted.AsSpan(7, length), inPlaceEncrypted.AsSpan(7));
+		xts.Transform(false, tweakSpan, source.AsSpan(3, length), encrypted.AsSpan(5));
+		xts.Transform(true, tweakSpan, ciphertext.AsSpan(3, length), decrypted.AsSpan(5));
+		xts.Transform(false, tweakSpan, inPlaceEncrypted.AsSpan(7, length), inPlaceEncrypted.AsSpan(7));
 		byte[] inPlaceDecrypted = inPlaceEncrypted.ToArray();
-		xts.Transform(true, ivSpan, inPlaceDecrypted.AsSpan(7, length), inPlaceDecrypted.AsSpan(7));
+		xts.Transform(true, tweakSpan, inPlaceDecrypted.AsSpan(7, length), inPlaceDecrypted.AsSpan(7));
 
 		await VerifyOutput(encrypted, 5, expected, "encryption");
 		await VerifyOutput(source, 3, plaintext, "source unchanged");
@@ -182,7 +182,7 @@ public class AesCtrXtsOracleTest
 		await VerifyOutput(ciphertext, 3, expected, "ciphertext unchanged");
 		await VerifyOutput(inPlaceEncrypted, 7, expected, "in-place encryption");
 		await VerifyOutput(inPlaceDecrypted, 7, plaintext, "in-place decryption");
-		await VerifyOutput(unalignedIv, 1, iv, "IV unchanged");
+		await VerifyOutput(unalignedTweak, 1, tweak, "Tweak unchanged");
 	}
 
 	private static void XorFragmented(CtrMode128<AesCipher> cipher, ReadOnlySpan<byte> source, Span<byte> destination)
@@ -246,26 +246,26 @@ public class AesCtrXtsOracleTest
 			_cipher = XtsMode<AesCipher>.Create(dataKey, tweakKey);
 		}
 
-		public byte[] IvForEncryptedTweak(byte[] encryptedTweak)
+		public byte[] TweakForEncryptedTweak(byte[] encryptedTweak)
 		{
 			return _tweakCipher.DecryptEcb(encryptedTweak, PaddingMode.None);
 		}
 
-		public void Transform(bool decrypt, ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source, Span<byte> destination)
+		public void Transform(bool decrypt, ReadOnlySpan<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			if (decrypt)
 			{
-				_cipher.Decrypt(iv, source, destination);
+				_cipher.Decrypt(tweak, source, destination);
 			}
 			else
 			{
-				_cipher.Encrypt(iv, source, destination);
+				_cipher.Encrypt(tweak, source, destination);
 			}
 		}
 
-		public byte[] Oracle(byte[] iv, byte[] source, bool decrypt)
+		public byte[] Oracle(byte[] tweak, byte[] source, bool decrypt)
 		{
-			byte[] encryptedTweak = _tweakCipher.EncryptEcb(iv, PaddingMode.None);
+			byte[] encryptedTweak = _tweakCipher.EncryptEcb(tweak, PaddingMode.None);
 			return XtsReference.Transform(encryptedTweak, source, decrypt, block => decrypt ? _dataCipher.DecryptEcb(block, PaddingMode.None) : _dataCipher.EncryptEcb(block, PaddingMode.None));
 		}
 
