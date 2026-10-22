@@ -1,6 +1,6 @@
 using System.Buffers;
 
-namespace CryptoBase.DataFormatExtensions;
+namespace CryptoBase.Encodings;
 
 /// <summary>
 /// Represents a Base32 encoder and decoder configured with a 32-character ASCII alphabet.

@@ -17,7 +17,7 @@
 
 ```csharp
 using System.Buffers;
-using CryptoBase.DataFormatExtensions;
+using CryptoBase.Encodings;
 
 static string ToBase32(Base32Encoding encoding, ReadOnlySpan<byte> data)
 {
@@ -61,7 +61,7 @@ With `isFinalBlock: false`, a call processes whole 5-byte groups (8 characters w
 ```csharp
 using System.Buffers;
 using System.Text;
-using CryptoBase.DataFormatExtensions;
+using CryptoBase.Encodings;
 
 static void EncodeStream(Base32Encoding encoding, Stream source, TextWriter destination)
 {

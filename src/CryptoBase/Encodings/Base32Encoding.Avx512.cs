@@ -1,4 +1,4 @@
-namespace CryptoBase.DataFormatExtensions;
+namespace CryptoBase.Encodings;
 
 public sealed partial class Base32Encoding
 {

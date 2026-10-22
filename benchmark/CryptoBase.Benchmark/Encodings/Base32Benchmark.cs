@@ -1,9 +1,9 @@
 using BenchmarkDotNet.Attributes;
-using CryptoBase.DataFormatExtensions;
+using CryptoBase.Encodings;
 using System.Buffers;
 using System.Security.Cryptography;
 
-namespace CryptoBase.Benchmark.DataFormatExtensions;
+namespace CryptoBase.Benchmark.Encodings;
 
 [MemoryDiagnoser]
 public class Base32Benchmark

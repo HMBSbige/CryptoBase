@@ -1,8 +1,8 @@
-using CryptoBase.DataFormatExtensions;
+using CryptoBase.Encodings;
 using System.Buffers;
 using static CryptoBase.Tests.TestUtils;
 
-namespace CryptoBase.Tests.DataFormatExtensions;
+namespace CryptoBase.Tests.Encodings;
 
 public class Base32IncrementalTest
 {

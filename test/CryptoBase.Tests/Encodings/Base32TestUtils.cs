@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace CryptoBase.Tests.DataFormatExtensions;
+namespace CryptoBase.Tests.Encodings;
 
 public static class Base32TestUtils
 {

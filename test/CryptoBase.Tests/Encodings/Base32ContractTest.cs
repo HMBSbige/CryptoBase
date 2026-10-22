@@ -1,9 +1,9 @@
-using CryptoBase.DataFormatExtensions;
+using CryptoBase.Encodings;
 using System.Buffers;
-using static CryptoBase.Tests.DataFormatExtensions.Base32TestUtils;
+using static CryptoBase.Tests.Encodings.Base32TestUtils;
 using static CryptoBase.Tests.TestUtils;
 
-namespace CryptoBase.Tests.DataFormatExtensions;
+namespace CryptoBase.Tests.Encodings;
 
 public class Base32ContractTest
 {

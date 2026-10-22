@@ -1,4 +1,4 @@
-namespace CryptoBase.DataFormatExtensions;
+namespace CryptoBase.Encodings;
 
 internal enum Base32SimdPath
 {
