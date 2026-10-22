@@ -17,9 +17,9 @@ using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 
 using FileStream input = File.OpenRead(path);
-Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256Core>.HashLength];
 
-HashAlgorithm<Sha256HashAlgorithm>.HashData(input, hash);
+HashAlgorithm<Sha256Core>.HashData(input, hash);
 ```
 
 ```csharp
@@ -28,9 +28,9 @@ using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 
 await using FileStream input = File.OpenRead(path);
-byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+byte[] hash = new byte[HashAlgorithm<Sha256Core>.HashLength];
 
-await HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(input, hash);
+await HashAlgorithm<Sha256Core>.HashDataAsync(input, hash);
 ```
 
 ```csharp
@@ -39,8 +39,8 @@ using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
 
 await using FileStream input = File.OpenRead(path);
-byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
-using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
+byte[] hash = new byte[HashAlgorithm<Sha256Core>.HashLength];
+using HashAlgorithm<Sha256Core> hasher = HashAlgorithm<Sha256Core>.Create();
 
 // Mix spans and streams in one hash.
 hasher.Append("header"u8);
@@ -59,17 +59,17 @@ using CryptoBase.IO;
 
 await using FileStream source = File.OpenRead(sourcePath);
 await using FileStream destination = File.Create(destinationPath);
-byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+byte[] hash = new byte[HashAlgorithm<Sha256Core>.HashLength];
 
 // Hash while copying.
-await using HashStream<HashAlgorithm<Sha256HashAlgorithm>> hashing = HashStream.Create(destination, HashAlgorithm<Sha256HashAlgorithm>.Create(), leaveOpen: true);
+await using HashStream<HashAlgorithm<Sha256Core>> hashing = HashStream.Create(destination, HashAlgorithm<Sha256Core>.Create(), leaveOpen: true);
 await source.CopyToAsync(hashing);
 hashing.GetHashAndReset(hash);
 ```
 
 ## Authenticating a stream
 
-Incremental MACs, such as `HmacAlgorithm<THash>`, read streams the same way.
+Incremental MACs, such as `HmacAlgorithm<TCore>`, read streams the same way.
 
 ```csharp
 using System.Security.Cryptography;
@@ -79,9 +79,9 @@ using CryptoBase.Macs.Hmac;
 
 byte[] key = RandomNumberGenerator.GetBytes(32);
 using FileStream input = File.OpenRead(path);
-Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
+Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256Core>.MacLength];
 
-HmacAlgorithm<Sha256HashAlgorithm>.MacData(key, input, mac);
+HmacAlgorithm<Sha256Core>.MacData(key, input, mac);
 ```
 
 ```csharp
@@ -92,8 +92,8 @@ using CryptoBase.Macs.Hmac;
 
 byte[] key = RandomNumberGenerator.GetBytes(32);
 await using FileStream input = File.OpenRead(path);
-byte[] mac = new byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
-using HmacAlgorithm<Sha256HashAlgorithm> hmac = HmacAlgorithm<Sha256HashAlgorithm>.Create(key);
+byte[] mac = new byte[HmacAlgorithm<Sha256Core>.MacLength];
+using HmacAlgorithm<Sha256Core> hmac = HmacAlgorithm<Sha256Core>.Create(key);
 
 // Mix spans and streams in one MAC.
 hmac.Append("header"u8);
@@ -114,10 +114,10 @@ using CryptoBase.Macs.Hmac;
 byte[] key = RandomNumberGenerator.GetBytes(32);
 await using FileStream source = File.OpenRead(sourcePath);
 await using FileStream destination = File.Create(destinationPath);
-byte[] mac = new byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
+byte[] mac = new byte[HmacAlgorithm<Sha256Core>.MacLength];
 
 // Authenticate while copying.
-await using MacStream<HmacAlgorithm<Sha256HashAlgorithm>> authenticating = MacStream.Create(destination, HmacAlgorithm<Sha256HashAlgorithm>.Create(key), leaveOpen: true);
+await using MacStream<HmacAlgorithm<Sha256Core>> authenticating = MacStream.Create(destination, HmacAlgorithm<Sha256Core>.Create(key), leaveOpen: true);
 await source.CopyToAsync(authenticating);
 authenticating.GetMacAndReset(mac);
 ```

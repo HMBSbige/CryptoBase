@@ -33,8 +33,8 @@ public class CShakeTest
 
 	// SP 800-185, Sec. 3.3: with an empty function name and customization string, cSHAKE is SHAKE.
 	[Test]
-	[GenerateGenericTest(typeof(CShake128Xof), typeof(Shake128HashAlgorithm))]
-	[GenerateGenericTest(typeof(CShake256Xof), typeof(Shake256HashAlgorithm))]
+	[GenerateGenericTest(typeof(CShake128Xof), typeof(Shake128Core))]
+	[GenerateGenericTest(typeof(CShake256Xof), typeof(Shake256Core))]
 	public async Task EmptyNameAndCustomizationGiveShake<T, TShake>() where T : class, IXof<T> where TShake : unmanaged, IXofCore<TShake>
 	{
 		int rate = Rate<T>();

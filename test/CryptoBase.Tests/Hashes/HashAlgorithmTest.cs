@@ -18,10 +18,10 @@ public class HashAlgorithmTest
 		byte[] emptyExpected = SHA256.HashData(ReadOnlySpan<byte>.Empty);
 		byte[] doubledExpected = SHA256.HashData(Concat(source, source));
 
-		await Assert.That(Sha256HashAlgorithm.HashLength).IsEqualTo(expected.Length);
+		await Assert.That(Sha256Core.HashLength).IsEqualTo(expected.Length);
 
-		byte[] destination = CreateDestination<Sha256HashAlgorithm>();
-		using HashAlgorithm<Sha256HashAlgorithm> hashAlgorithm = HashAlgorithm<Sha256HashAlgorithm>.Create();
+		byte[] destination = CreateDestination<Sha256Core>();
+		using HashAlgorithm<Sha256Core> hashAlgorithm = HashAlgorithm<Sha256Core>.Create();
 
 		PrepareDestination(destination);
 		int written = hashAlgorithm.GetCurrentHash(destination);
@@ -67,13 +67,13 @@ public class HashAlgorithmTest
 	public async Task HashDataSupportsOverlappingSourceAndDestination(int sourceOffset, int destinationOffset)
 	{
 		const int sourceLength = 97;
-		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256HashAlgorithm.HashLength);
+		int bufferLength = Math.Max(sourceOffset + sourceLength, destinationOffset + Sha256Core.HashLength);
 		byte[] buffer = CreateDeterministicSource(bufferLength);
 		byte[] expected = SHA256.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength));
 
-		int written = HashAlgorithm<Sha256HashAlgorithm>.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength), buffer.AsSpan().Slice(destinationOffset, Sha256HashAlgorithm.HashLength));
+		int written = HashAlgorithm<Sha256Core>.HashData(buffer.AsSpan().Slice(sourceOffset, sourceLength), buffer.AsSpan().Slice(destinationOffset, Sha256Core.HashLength));
 
-		await Assert.That(written).IsEqualTo(Sha256HashAlgorithm.HashLength);
+		await Assert.That(written).IsEqualTo(Sha256Core.HashLength);
 		await Assert.That(buffer.AsSpan().Slice(destinationOffset, written).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
@@ -81,10 +81,10 @@ public class HashAlgorithmTest
 	public async Task OwnershipContract()
 	{
 		byte[] source = CreateDeterministicSource(19);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		byte[] destination = new byte[HashAlgorithm<Sha256Core>.HashLength];
 
-		using HashAlgorithm<Sha256HashAlgorithm> owner = HashAlgorithm<Sha256HashAlgorithm>.Create();
-		HashAlgorithm<Sha256HashAlgorithm> alias = owner;
+		using HashAlgorithm<Sha256Core> owner = HashAlgorithm<Sha256Core>.Create();
+		HashAlgorithm<Sha256Core> alias = owner;
 		alias.Dispose();
 		alias.Dispose();
 
@@ -103,10 +103,10 @@ public class HashAlgorithmTest
 		byte[] source = CreateDeterministicSource(23);
 		byte[] expected = SHA256.HashData(source);
 		byte[] emptyExpected = SHA256.HashData(ReadOnlySpan<byte>.Empty);
-		byte[] shortDestination = new byte[Sha256HashAlgorithm.HashLength - 1];
-		byte[] destination = CreateDestination<Sha256HashAlgorithm>();
+		byte[] shortDestination = new byte[Sha256Core.HashLength - 1];
+		byte[] destination = CreateDestination<Sha256Core>();
 
-		using HashAlgorithm<Sha256HashAlgorithm> hashAlgorithm = HashAlgorithm<Sha256HashAlgorithm>.Create();
+		using HashAlgorithm<Sha256Core> hashAlgorithm = HashAlgorithm<Sha256Core>.Create();
 		hashAlgorithm.Append(source);
 		PrepareDestination(shortDestination);
 
@@ -133,7 +133,7 @@ public class HashAlgorithmTest
 
 		byte[] sourceCopy = (byte[])source.Clone();
 		PrepareDestination(shortDestination);
-		await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashData(source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+		await Assert.That(() => HashAlgorithm<Sha256Core>.HashData(source, shortDestination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 		await Assert.That(shortDestination).All(static value => value is DestinationSentinel);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
 	}

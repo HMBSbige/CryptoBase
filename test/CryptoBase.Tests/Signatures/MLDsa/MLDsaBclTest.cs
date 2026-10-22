@@ -240,11 +240,11 @@ internal class MLDsaBclTest
 		{
 			byte[] seed = new byte[32];
 			BinaryPrimitives.WriteInt32LittleEndian(seed, counter);
-			Xof<Shake256HashAlgorithm>.HashData([.. seed, (byte)k, (byte)l], expanded);
+			Xof<Shake256Core>.HashData([.. seed, (byte)k, (byte)l], expanded);
 
 			for (int nonce = 0; nonce < k + l; ++nonce)
 			{
-				Xof<Shake256HashAlgorithm>.HashData([.. expanded.AsSpan(32, 64), (byte)nonce, 0], blocks);
+				Xof<Shake256Core>.HashData([.. expanded.AsSpan(32, 64), (byte)nonce, 0], blocks);
 				int accepted = blocks.Sum(static b => (b & 15) < 9 ? 1 : 0) + blocks.Sum(static b => b >> 4 < 9 ? 1 : 0);
 
 				if (accepted < 256)

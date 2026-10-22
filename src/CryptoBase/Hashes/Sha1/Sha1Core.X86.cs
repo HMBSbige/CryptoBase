@@ -1,9 +1,9 @@
 namespace CryptoBase.Hashes.Sha1;
 
-public partial struct Sha1HashAlgorithm
+public partial struct Sha1Core
 {
 	[SkipLocalsInit]
-	private static void ProcessBlocksSsse3(ref Sha1HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
+	private static void ProcessBlocksSsse3(ref Sha1Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(X86Base.X64.IsSupported && Ssse3.IsSupported);
 

@@ -1,9 +1,9 @@
 namespace CryptoBase.Hashes.Crc32;
 
 /// <summary>
-/// Provides the CRC-32 (IEEE) checksum core.
+/// Provides the CRC-32C (Castagnoli) checksum core.
 /// </summary>
-public struct Crc32HashAlgorithm : IHashCore<Crc32HashAlgorithm>
+public struct Crc32CCore : IHashCore<Crc32CCore>
 {
 	private uint _state;
 
@@ -11,15 +11,15 @@ public struct Crc32HashAlgorithm : IHashCore<Crc32HashAlgorithm>
 	public static int HashLength => sizeof(uint);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static Crc32HashAlgorithm IHashCore<Crc32HashAlgorithm>.Create()
+	static Crc32CCore IHashCore<Crc32CCore>.Create()
 	{
-		return new Crc32HashAlgorithm { _state = Crc32Engine.InitialState };
+		return new Crc32CCore { _state = Crc32Engine.InitialState };
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
 	{
-		_state = Crc32Engine.Update<Crc32HashAlgorithm>(_state, source);
+		_state = Crc32Engine.Update<Crc32CCore>(_state, source);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

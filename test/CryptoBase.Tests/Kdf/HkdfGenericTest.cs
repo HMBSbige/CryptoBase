@@ -10,7 +10,7 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.Kdf;
 
 [GenerateGenericTest(typeof(PlatformHmacSha256))]
-[GenerateGenericTest(typeof(HmacAlgorithm<Sha256HashAlgorithm>))]
+[GenerateGenericTest(typeof(HmacAlgorithm<Sha256Core>))]
 [GenerateGenericTest(typeof(ClobberingHmacSha256))]
 public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 {
@@ -113,7 +113,7 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] info = CreateData(infoLength, 47);
 		byte[] expectedPrk = new byte[MacLength];
 		byte[] prk = new byte[MacLength];
-		Hkdf.Extract<Sha256HashAlgorithm>(ikm, salt, expectedPrk);
+		Hkdf.Extract<Sha256Core>(ikm, salt, expectedPrk);
 		int written = Hkdf<TMac>.Extract(ikm, salt, prk);
 		await Assert.That(written).IsEqualTo(MacLength);
 		await Assert.That(prk).IsEquivalentTo(expectedPrk, CollectionOrdering.Matching);
@@ -125,15 +125,15 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 			byte[] expected = new byte[outputLength];
 			byte[] actual = new byte[outputLength];
 
-			Hkdf.Expand<Sha256HashAlgorithm>(prk, expected, info);
+			Hkdf.Expand<Sha256Core>(prk, expected, info);
 			Hkdf<TMac>.Expand(prk, actual, info);
 			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 
-			Hkdf.Expand<Sha256HashAlgorithm>(longPrk, expected, info);
+			Hkdf.Expand<Sha256Core>(longPrk, expected, info);
 			Hkdf<TMac>.Expand(longPrk, actual, info);
 			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 
-			Hkdf.DeriveKey<Sha256HashAlgorithm>(ikm, expected, salt, info);
+			Hkdf.DeriveKey<Sha256Core>(ikm, expected, salt, info);
 			Hkdf<TMac>.DeriveKey(ikm, actual, salt, info);
 			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 		}
@@ -170,7 +170,7 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		await Assert.That(oversizedOutput).All(static value => value is DestinationSentinel);
 
 		byte[] expected = new byte[maximumOutput.Length];
-		Hkdf.Expand<Sha256HashAlgorithm>(prk, expected, info);
+		Hkdf.Expand<Sha256Core>(prk, expected, info);
 		Hkdf<TMac>.Expand(prk, maximumOutput, info);
 		await Assert.That(maximumOutput).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
@@ -182,7 +182,7 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] prk = CreateData(prkLength, 13);
 		byte[] info = CreateData(23, 19);
 		byte[] expected = new byte[outputLength];
-		Hkdf.Expand<Sha256HashAlgorithm>(prk, expected, info);
+		Hkdf.Expand<Sha256Core>(prk, expected, info);
 
 		byte[] buffer = CreateOverlapBuffer(prk, prkOffset, outputOffset, outputLength);
 		Hkdf<TMac>.Expand(buffer.AsSpan(prkOffset, prk.Length), buffer.AsSpan(outputOffset, outputLength), info);
@@ -199,7 +199,7 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] ikm = CreateData(73, 11);
 		byte[] salt = CreateData(37, 29);
 		byte[] expected = new byte[MacLength];
-		Hkdf.Extract<Sha256HashAlgorithm>(ikm, salt, expected);
+		Hkdf.Extract<Sha256Core>(ikm, salt, expected);
 
 		byte[] buffer = CreateOverlapBuffer(ikm, ikmOffset, prkOffset, MacLength);
 		int written = Hkdf<TMac>.Extract(buffer.AsSpan(ikmOffset, ikm.Length), salt, buffer.AsSpan(prkOffset, MacLength));
@@ -217,7 +217,7 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] ikm = CreateData(73, 11);
 		byte[] salt = CreateData(37, 29);
 		byte[] expected = new byte[MacLength];
-		Hkdf.Extract<Sha256HashAlgorithm>(ikm, salt, expected);
+		Hkdf.Extract<Sha256Core>(ikm, salt, expected);
 
 		byte[] buffer = CreateOverlapBuffer(salt, saltOffset, prkOffset, MacLength);
 		int written = Hkdf<TMac>.Extract(ikm, buffer.AsSpan(saltOffset, salt.Length), buffer.AsSpan(prkOffset, MacLength));
@@ -236,12 +236,12 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] info = CreateData(257, 19);
 
 		byte[] expected = new byte[outputLength];
-		Hkdf.Expand<Sha256HashAlgorithm>(prk, expected, info);
+		Hkdf.Expand<Sha256Core>(prk, expected, info);
 		byte[] buffer = CreateOverlapBuffer(info, infoOffset, outputOffset, outputLength);
 		Hkdf<TMac>.Expand(prk, buffer.AsSpan(outputOffset, outputLength), buffer.AsSpan(infoOffset, info.Length));
 		await Assert.That(buffer.AsMemory(outputOffset, outputLength)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 
-		Hkdf.DeriveKey<Sha256HashAlgorithm>(ikm, expected, salt, info);
+		Hkdf.DeriveKey<Sha256Core>(ikm, expected, salt, info);
 		buffer = CreateOverlapBuffer(info, infoOffset, outputOffset, outputLength);
 		Hkdf<TMac>.DeriveKey(ikm, buffer.AsSpan(outputOffset, outputLength), salt, buffer.AsSpan(infoOffset, info.Length));
 		await Assert.That(buffer.AsMemory(outputOffset, outputLength)).IsEquivalentTo(expected, CollectionOrdering.Matching);
@@ -258,7 +258,7 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] salt = CreateData(37, 29);
 		byte[] info = CreateData(23, 47);
 		byte[] expected = new byte[outputLength];
-		Hkdf.DeriveKey<Sha256HashAlgorithm>(ikm, expected, salt, info);
+		Hkdf.DeriveKey<Sha256Core>(ikm, expected, salt, info);
 
 		byte[] buffer = CreateOverlapBuffer(ikm, inputOffset, outputOffset, outputLength);
 		Hkdf<TMac>.DeriveKey(buffer.AsSpan(inputOffset, ikm.Length), buffer.AsSpan(outputOffset, outputLength), salt, info);
@@ -277,17 +277,17 @@ public class HkdfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] salt = CreateData(37, 29);
 		byte[] info = CreateData(257, 47);
 		byte[] prk = new byte[MacLength];
-		Hkdf.Extract<Sha256HashAlgorithm>(ikm, salt, prk);
+		Hkdf.Extract<Sha256Core>(ikm, salt, prk);
 
 		byte[] expectedExpanded = new byte[outputLength];
-		Hkdf.Expand<Sha256HashAlgorithm>(prk, expectedExpanded, info);
+		Hkdf.Expand<Sha256Core>(prk, expectedExpanded, info);
 		byte[] expandBuffer = new byte[outputLength];
 		info.CopyTo(expandBuffer, 0);
 		Hkdf<TMac>.Expand(prk, expandBuffer, expandBuffer.AsSpan().Slice(0, info.Length));
 		await Assert.That(expandBuffer).IsEquivalentTo(expectedExpanded, CollectionOrdering.Matching);
 
 		byte[] expectedDerived = new byte[outputLength];
-		Hkdf.DeriveKey<Sha256HashAlgorithm>(ikm, expectedDerived, salt, info);
+		Hkdf.DeriveKey<Sha256Core>(ikm, expectedDerived, salt, info);
 		byte[] deriveBuffer = new byte[outputLength];
 		info.CopyTo(deriveBuffer, 0);
 		Hkdf<TMac>.DeriveKey(ikm, deriveBuffer, salt, deriveBuffer.AsSpan().Slice(0, info.Length));

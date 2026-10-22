@@ -14,7 +14,7 @@ public class Blake2bHashDataTest
 	public async Task SupportsOverlappingSourceAndDestination(int length)
 	{
 		byte[] source = CreateDeterministicSource(length);
-		await VerifyOverlappingHashData<Blake2b256HashAlgorithm>(source, GetKnownDigest(source, Blake2b256Test.BoundaryVectors, nameof(Blake2b256HashAlgorithm)));
-		await VerifyOverlappingHashData<Blake2b512HashAlgorithm>(source, GetKnownDigest(source, Blake2b512Test.BoundaryVectors, nameof(Blake2b512HashAlgorithm)));
+		await VerifyOverlappingHashData<Blake2b256Core>(source, GetKnownDigest(source, Blake2b256Test.BoundaryVectors, nameof(Blake2b256Core)));
+		await VerifyOverlappingHashData<Blake2b512Core>(source, GetKnownDigest(source, Blake2b512Test.BoundaryVectors, nameof(Blake2b512Core)));
 	}
 }

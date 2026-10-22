@@ -39,27 +39,27 @@ public class SM3Test
 	[Arguments("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd", "debe9ff92275b8a138604889c18e5a4d6fdb70e5387e5765293dcba39c0c5732")]
 	public Task KnownVectors(string value, string expected)
 	{
-		return VerifyHashVector<SM3HashAlgorithm>(value, expected, 32, 64);
+		return VerifyHashVector<SM3Core>(value, expected, 32, 64);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(BoundaryVectors))]
 	public Task BlockBoundaries(int length, string expectedHex)
 	{
-		return VerifyBoundary<SM3HashAlgorithm>(length, expectedHex);
+		return VerifyBoundary<SM3Core>(length, expectedHex);
 	}
 
 	[Test]
 	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(Hash64IncrementalBatchCases))]
 	public Task IncrementalBlockBatches(int length, int sourceOffset, int blockSize)
 	{
-		return VerifyIncrementalBlockBatch<SM3HashAlgorithm>(length, sourceOffset, blockSize, static source => GetKnownDigest(source, BoundaryVectors, "SM3"));
+		return VerifyIncrementalBlockBatch<SM3Core>(length, sourceOffset, blockSize, static source => GetKnownDigest(source, BoundaryVectors, "SM3"));
 	}
 
 	[Test]
 	[CombinedDataSources]
 	public Task InputIsUnchanged([MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(InputIntegrityLengths))] int length, [Arguments(1, 7)] int offset)
 	{
-		return VerifyInputIsUnchanged<SM3HashAlgorithm>(length, offset);
+		return VerifyInputIsUnchanged<SM3Core>(length, offset);
 	}
 }

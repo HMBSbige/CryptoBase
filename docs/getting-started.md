@@ -30,8 +30,8 @@ using CryptoBase.Hashes.Sha2;
 byte[] message = "hello world"u8.ToArray();
 
 // SHA-256.
-byte[] hash = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
-HashAlgorithm<Sha256HashAlgorithm>.HashData(message, hash);
+byte[] hash = new byte[HashAlgorithm<Sha256Core>.HashLength];
+HashAlgorithm<Sha256Core>.HashData(message, hash);
 Console.WriteLine(Convert.ToHexStringLower(hash));
 
 // XChaCha20-Poly1305.

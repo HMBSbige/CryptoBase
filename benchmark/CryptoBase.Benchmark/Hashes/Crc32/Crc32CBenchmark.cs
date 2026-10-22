@@ -18,12 +18,12 @@ public class Crc32CBenchmark
 	public void Setup()
 	{
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
-		_hash = new byte[HashAlgorithm<Crc32CHashAlgorithm>.HashLength];
+		_hash = new byte[HashAlgorithm<Crc32CCore>.HashLength];
 	}
 
 	[Benchmark]
 	public void CryptoBase()
 	{
-		HashAlgorithm<Crc32CHashAlgorithm>.HashData(_input, _hash);
+		HashAlgorithm<Crc32CCore>.HashData(_input, _hash);
 	}
 }

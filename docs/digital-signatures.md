@@ -61,11 +61,11 @@ const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
 using MLDsa65 signer = MLDsa65.GenerateKey();
 
 // Hash the file with CryptoBase.IO.
-byte[] hash = new byte[HashAlgorithm<Sha512HashAlgorithm>.HashLength];
+byte[] hash = new byte[HashAlgorithm<Sha512Core>.HashLength];
 
 using (FileStream file = File.OpenRead(path))
 {
-    HashAlgorithm<Sha512HashAlgorithm>.HashData(file, hash);
+    HashAlgorithm<Sha512Core>.HashData(file, hash);
 }
 
 byte[] signature = new byte[MLDsa65.SignatureLength];

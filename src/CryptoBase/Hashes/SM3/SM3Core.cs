@@ -4,7 +4,7 @@ namespace CryptoBase.Hashes.SM3;
 /// Provides the SM3 hash core.
 /// </summary>
 /// <seealso href="https://www.oscca.gov.cn/sca/xxgk/2010-12/17/1002389/files/302a3ada057c4a73830536d03e683110.pdf">SM3 cryptographic hash algorithm</seealso>
-public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
+public partial struct SM3Core : IHmacHashCore<SM3Core>
 {
 	private const int LengthOffset = 56;
 	private const int HashSizeInBytes = 32;
@@ -41,9 +41,9 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	public static int HmacBlockSize => BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static SM3HashAlgorithm IHashCore<SM3HashAlgorithm>.Create()
+	static SM3Core IHashCore<SM3Core>.Create()
 	{
-		Unsafe.SkipInit(out SM3HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out SM3Core hashAlgorithm);
 		hashAlgorithm.Reset();
 		return hashAlgorithm;
 	}
@@ -65,7 +65,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void AppendBlocks(ref SM3HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source, int bufferedLength, int bytesNeeded)
+	private static void AppendBlocks(ref SM3Core hashAlgorithm, ReadOnlySpan<byte> source, int bufferedLength, int bytesNeeded)
 	{
 		Span<byte> buffer = hashAlgorithm._buffer;
 
@@ -153,7 +153,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	}
 
 	[SkipLocalsInit]
-	private static void Finalize(ref SM3HashAlgorithm hashAlgorithm, Span<byte> destination)
+	private static void Finalize(ref SM3Core hashAlgorithm, Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= HashLength);
 
@@ -184,7 +184,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ProcessBlocks(ref SM3HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
+	private static void ProcessBlocks(ref SM3Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(!source.IsEmpty);
 		Debug.Assert(source.Length % BlockSizeInBytes is 0);
@@ -199,7 +199,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 	}
 
 	[SkipLocalsInit]
-	private static void ProcessBlocksSoftware(ref SM3HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
+	private static void ProcessBlocksSoftware(ref SM3Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out InlineArray16<uint> schedule);
 		ref byte block = ref MemoryMarshal.GetReference(source);
@@ -213,7 +213,7 @@ public partial struct SM3HashAlgorithm : IHmacHashCore<SM3HashAlgorithm>
 		} while (remaining is not 0);
 	}
 
-	private static void ProcessSoftware(ref SM3HashAlgorithm hashAlgorithm, ref byte block, ref InlineArray16<uint> schedule)
+	private static void ProcessSoftware(ref SM3Core hashAlgorithm, ref byte block, ref InlineArray16<uint> schedule)
 	{
 		ref uint words = ref schedule[0];
 		HashCoreUtils.LoadSixteenBigEndianWords(out words, ref block);

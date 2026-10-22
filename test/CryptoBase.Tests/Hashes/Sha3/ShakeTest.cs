@@ -160,12 +160,12 @@ public class ShakeTest
 	{
 		byte[] source = CreateDeterministicSource(200);
 		byte[] expected = new byte[3 * 168];
-		Xof<Shake128HashAlgorithm>.HashData(Concat(source, source), expected);
+		Xof<Shake128Core>.HashData(Concat(source, source), expected);
 
-		using Xof<Shake128HashAlgorithm> xof = Xof<Shake128HashAlgorithm>.Create();
+		using Xof<Shake128Core> xof = Xof<Shake128Core>.Create();
 		xof.Append(source);
 
-		using Xof<Shake128HashAlgorithm> absorbing = xof.Clone();
+		using Xof<Shake128Core> absorbing = xof.Clone();
 		absorbing.Append(source);
 		byte[] actual = new byte[expected.Length];
 		absorbing.GetCurrentHash(actual);
@@ -173,7 +173,7 @@ public class ShakeTest
 
 		xof.Append(source);
 		xof.Read(actual.AsSpan(0, 170));
-		Xof<Shake128HashAlgorithm> reading = xof.Clone();
+		Xof<Shake128Core> reading = xof.Clone();
 		byte[] rest = new byte[expected.Length - 170];
 		xof.Read(rest);
 		reading.Read(actual.AsSpan(170));
@@ -205,17 +205,17 @@ public class ShakeTest
 	{
 		if (securityStrength is 128)
 		{
-			Xof<Shake128HashAlgorithm>.HashData(source, destination);
+			Xof<Shake128Core>.HashData(source, destination);
 		}
 		else
 		{
-			Xof<Shake256HashAlgorithm>.HashData(source, destination);
+			Xof<Shake256Core>.HashData(source, destination);
 		}
 	}
 
 	private static byte[] ReadIncrementally(int securityStrength, byte[] source, int outputLength, uint seed)
 	{
-		return securityStrength is 128 ? ReadIncrementally<Shake128HashAlgorithm>(source, outputLength, seed) : ReadIncrementally<Shake256HashAlgorithm>(source, outputLength, seed);
+		return securityStrength is 128 ? ReadIncrementally<Shake128Core>(source, outputLength, seed) : ReadIncrementally<Shake256Core>(source, outputLength, seed);
 	}
 
 	private static byte[] ReadIncrementally<TCore>(byte[] source, int outputLength, uint seed) where TCore : unmanaged, IXofCore<TCore>
@@ -299,13 +299,13 @@ public class ShakeTest
 	{
 		if (securityStrength is 128)
 		{
-			Xof<Shake128HashAlgorithm> xof = Xof<Shake128HashAlgorithm>.Create();
+			Xof<Shake128Core> xof = Xof<Shake128Core>.Create();
 			(append, read, current, final) = (xof.Append, xof.Read, xof.GetCurrentHash, xof.GetHashAndReset);
 			return xof;
 		}
 		else
 		{
-			Xof<Shake256HashAlgorithm> xof = Xof<Shake256HashAlgorithm>.Create();
+			Xof<Shake256Core> xof = Xof<Shake256Core>.Create();
 			(append, read, current, final) = (xof.Append, xof.Read, xof.GetCurrentHash, xof.GetHashAndReset);
 			return xof;
 		}

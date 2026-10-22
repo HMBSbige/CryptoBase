@@ -1,19 +1,19 @@
 namespace CryptoBase.Hashes.Sha2;
 
 /// <summary>
-/// Provides the SHA-224 hash core.
+/// Provides the SHA-256 hash core.
 /// </summary>
-public struct Sha224HashAlgorithm : IHmacHashCore<Sha224HashAlgorithm>
+public struct Sha256Core : IHmacHashCore<Sha256Core>
 {
-	private const int HashSizeInBytes = 28;
-	private const uint InitialH0 = 0xC1059ED8U;
-	private const uint InitialH1 = 0x367CD507U;
-	private const uint InitialH2 = 0x3070DD17U;
-	private const uint InitialH3 = 0xF70E5939U;
-	private const uint InitialH4 = 0xFFC00B31U;
-	private const uint InitialH5 = 0x68581511U;
-	private const uint InitialH6 = 0x64F98FA7U;
-	private const uint InitialH7 = 0xBEFA4FA4U;
+	internal const int HashSizeInBytes = 32;
+	private const uint InitialH0 = 0x6A09E667U;
+	private const uint InitialH1 = 0xBB67AE85U;
+	private const uint InitialH2 = 0x3C6EF372U;
+	private const uint InitialH3 = 0xA54FF53AU;
+	private const uint InitialH4 = 0x510E527FU;
+	private const uint InitialH5 = 0x9B05688CU;
+	private const uint InitialH6 = 0x1F83D9ABU;
+	private const uint InitialH7 = 0x5BE0CD19U;
 
 	private Sha256State _state;
 
@@ -24,9 +24,9 @@ public struct Sha224HashAlgorithm : IHmacHashCore<Sha224HashAlgorithm>
 	public static int HmacBlockSize => Sha256State.BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static Sha224HashAlgorithm IHashCore<Sha224HashAlgorithm>.Create()
+	static Sha256Core IHashCore<Sha256Core>.Create()
 	{
-		Unsafe.SkipInit(out Sha224HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out Sha256Core hashAlgorithm);
 		hashAlgorithm.Reset();
 		return hashAlgorithm;
 	}

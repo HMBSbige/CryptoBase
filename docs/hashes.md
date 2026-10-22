@@ -4,26 +4,26 @@
 
 | Algorithm | Type | Namespace | Output |
 | --- | --- | --- | ---: |
-| BLAKE2b-256 | `HashAlgorithm<Blake2b256HashAlgorithm>` | `CryptoBase.Hashes.Blake2b` | 32 bytes |
-| BLAKE2b-512 | `HashAlgorithm<Blake2b512HashAlgorithm>` | `CryptoBase.Hashes.Blake2b` | 64 bytes |
+| BLAKE2b-256 | `HashAlgorithm<Blake2b256Core>` | `CryptoBase.Hashes.Blake2b` | 32 bytes |
+| BLAKE2b-512 | `HashAlgorithm<Blake2b512Core>` | `CryptoBase.Hashes.Blake2b` | 64 bytes |
 | BLAKE3 | `Blake3HashAlgorithm` | `CryptoBase.Hashes.Blake3` | 32 bytes or any length |
-| MD5 | `HashAlgorithm<MD5HashAlgorithm>` | `CryptoBase.Hashes.MD5` | 16 bytes |
-| SHA-1 | `HashAlgorithm<Sha1HashAlgorithm>` | `CryptoBase.Hashes.Sha1` | 20 bytes |
-| SHA-224 | `HashAlgorithm<Sha224HashAlgorithm>` | `CryptoBase.Hashes.Sha2` | 28 bytes |
-| SHA-256 | `HashAlgorithm<Sha256HashAlgorithm>` | `CryptoBase.Hashes.Sha2` | 32 bytes |
-| SHA-384 | `HashAlgorithm<Sha384HashAlgorithm>` | `CryptoBase.Hashes.Sha2` | 48 bytes |
-| SHA-512 | `HashAlgorithm<Sha512HashAlgorithm>` | `CryptoBase.Hashes.Sha2` | 64 bytes |
-| SHA3-224 | `HashAlgorithm<Sha3_224HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | 28 bytes |
-| SHA3-256 | `HashAlgorithm<Sha3_256HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | 32 bytes |
-| SHA3-384 | `HashAlgorithm<Sha3_384HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | 48 bytes |
-| SHA3-512 | `HashAlgorithm<Sha3_512HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | 64 bytes |
-| SHAKE128 | `Xof<Shake128HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | Any length |
-| SHAKE256 | `Xof<Shake256HashAlgorithm>` | `CryptoBase.Hashes.Sha3` | Any length |
+| MD5 | `HashAlgorithm<MD5Core>` | `CryptoBase.Hashes.MD5` | 16 bytes |
+| SHA-1 | `HashAlgorithm<Sha1Core>` | `CryptoBase.Hashes.Sha1` | 20 bytes |
+| SHA-224 | `HashAlgorithm<Sha224Core>` | `CryptoBase.Hashes.Sha2` | 28 bytes |
+| SHA-256 | `HashAlgorithm<Sha256Core>` | `CryptoBase.Hashes.Sha2` | 32 bytes |
+| SHA-384 | `HashAlgorithm<Sha384Core>` | `CryptoBase.Hashes.Sha2` | 48 bytes |
+| SHA-512 | `HashAlgorithm<Sha512Core>` | `CryptoBase.Hashes.Sha2` | 64 bytes |
+| SHA3-224 | `HashAlgorithm<Sha3_224Core>` | `CryptoBase.Hashes.Sha3` | 28 bytes |
+| SHA3-256 | `HashAlgorithm<Sha3_256Core>` | `CryptoBase.Hashes.Sha3` | 32 bytes |
+| SHA3-384 | `HashAlgorithm<Sha3_384Core>` | `CryptoBase.Hashes.Sha3` | 48 bytes |
+| SHA3-512 | `HashAlgorithm<Sha3_512Core>` | `CryptoBase.Hashes.Sha3` | 64 bytes |
+| SHAKE128 | `Xof<Shake128Core>` | `CryptoBase.Hashes.Sha3` | Any length |
+| SHAKE256 | `Xof<Shake256Core>` | `CryptoBase.Hashes.Sha3` | Any length |
 | cSHAKE128 | `CShake128Xof` | `CryptoBase.Hashes.Sha3` | Any length |
 | cSHAKE256 | `CShake256Xof` | `CryptoBase.Hashes.Sha3` | Any length |
-| SM3 | `HashAlgorithm<SM3HashAlgorithm>` | `CryptoBase.Hashes.SM3` | 32 bytes |
-| CRC-32 | `HashAlgorithm<Crc32HashAlgorithm>` | `CryptoBase.Hashes.Crc32` | 4 bytes |
-| CRC-32C | `HashAlgorithm<Crc32CHashAlgorithm>` | `CryptoBase.Hashes.Crc32` | 4 bytes |
+| SM3 | `HashAlgorithm<SM3Core>` | `CryptoBase.Hashes.SM3` | 32 bytes |
+| CRC-32 | `HashAlgorithm<Crc32Core>` | `CryptoBase.Hashes.Crc32` | 4 bytes |
+| CRC-32C | `HashAlgorithm<Crc32CCore>` | `CryptoBase.Hashes.Crc32` | 4 bytes |
 
 ## One-shot hashing
 
@@ -31,9 +31,9 @@
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha2;
 
-Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256Core>.HashLength];
 
-HashAlgorithm<Sha256HashAlgorithm>.HashData("hello world"u8, hash);
+HashAlgorithm<Sha256Core>.HashData("hello world"u8, hash);
 
 string hex = Convert.ToHexStringLower(hash); // "b94d27b9934d3e08..."
 ```
@@ -44,8 +44,8 @@ string hex = Convert.ToHexStringLower(hash); // "b94d27b9934d3e08..."
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha2;
 
-using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
-Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+using HashAlgorithm<Sha256Core> hasher = HashAlgorithm<Sha256Core>.Create();
+Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256Core>.HashLength];
 
 hasher.Append("hello "u8);
 hasher.Append("world"u8);
@@ -87,8 +87,8 @@ static byte[] HashAll<T>(IEnumerable<byte[]> chunks) where T : class, IHashAlgor
 }
 
 byte[][] chunks = ["hello "u8.ToArray(), "world"u8.ToArray()];
-byte[] sm3 = HashAll<HashAlgorithm<SM3HashAlgorithm>>(chunks);
-byte[] sha3 = HashAll<HashAlgorithm<Sha3_256HashAlgorithm>>(chunks);
+byte[] sm3 = HashAll<HashAlgorithm<SM3Core>>(chunks);
+byte[] sha3 = HashAll<HashAlgorithm<Sha3_256Core>>(chunks);
 ```
 
 To hash a stream or file, see [Stream and file helpers](io.md).
@@ -110,7 +110,7 @@ static int Sha256(ReadOnlySpan<byte> source, Span<byte> destination)
 {
     return PlatformSha256.IsPreferred
         ? PlatformSha256.HashData(source, destination)
-        : HashAlgorithm<Sha256HashAlgorithm>.HashData(source, destination);
+        : HashAlgorithm<Sha256Core>.HashData(source, destination);
 }
 ```
 
@@ -123,7 +123,7 @@ using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha3;
 
 byte[] output = new byte[64];
-Xof<Shake256HashAlgorithm>.HashData("hello world"u8, output);
+Xof<Shake256Core>.HashData("hello world"u8, output);
 ```
 
 Incrementally:
@@ -132,7 +132,7 @@ Incrementally:
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha3;
 
-using Xof<Shake128HashAlgorithm> xof = Xof<Shake128HashAlgorithm>.Create();
+using Xof<Shake128Core> xof = Xof<Shake128Core>.Create();
 
 xof.Append("hello "u8);
 xof.Append("world"u8);
@@ -171,7 +171,7 @@ static byte[] Expand<T>(ReadOnlySpan<byte> input, int length) where T : class, I
     return output;
 }
 
-byte[] shake = Expand<Xof<Shake256HashAlgorithm>>("seed"u8, 200);
+byte[] shake = Expand<Xof<Shake256Core>>("seed"u8, 200);
 byte[] cshake = Expand<CShake256Xof>("seed"u8, 200); // Create() gives SHAKE256 output
 byte[] blake3 = Expand<Blake3HashAlgorithm>("seed"u8, 200);
 ```

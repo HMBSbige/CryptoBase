@@ -31,7 +31,7 @@ public class MLKemTest
 		foreach (byte[] tampered in Tampered(ciphertext))
 		{
 			byte[] expected = new byte[T.SharedSecretLength];
-			Xof<Shake256HashAlgorithm>.HashData(Concat(z, tampered), expected);
+			Xof<Shake256Core>.HashData(Concat(z, tampered), expected);
 
 			if (!Decapsulate(kem, tampered).AsSpan().SequenceEqual(expected))
 			{
@@ -131,7 +131,7 @@ public class MLKemTest
 		byte[] tampered = (byte[])ciphertext.Clone();
 		tampered[0] ^= 1;
 		byte[] rejected = new byte[T.SharedSecretLength];
-		Xof<Shake256HashAlgorithm>.HashData(Concat(seed.AsSpan(32), tampered), rejected);
+		Xof<Shake256Core>.HashData(Concat(seed.AsSpan(32), tampered), rejected);
 
 		using T decapsulatedFirst = T.ImportPrivateSeed(seed);
 		byte[] firstSharedSecret = Decapsulate(decapsulatedFirst, ciphertext);
@@ -281,13 +281,13 @@ public class MLKemTest
 
 			byte[] d = new byte[32];
 			BinaryPrimitives.WriteInt32LittleEndian(d, counter);
-			HashAlgorithm<Sha3_512HashAlgorithm>.HashData([.. d, (byte)k], rhoSigma);
+			HashAlgorithm<Sha3_512Core>.HashData([.. d, (byte)k], rhoSigma);
 
 			for (int entry = 0; entry < k * k; ++entry)
 			{
 				int row = entry / k;
 				int column = entry % k;
-				Xof<Shake128HashAlgorithm>.HashData([.. rhoSigma.AsSpan(0, 32), (byte)row, (byte)column], blocks);
+				Xof<Shake128Core>.HashData([.. rhoSigma.AsSpan(0, 32), (byte)row, (byte)column], blocks);
 
 				if (!found[entry] && MLKemReference.RejectSample(blocks, 256).Count < 256)
 				{

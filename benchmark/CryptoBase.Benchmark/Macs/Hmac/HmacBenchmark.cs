@@ -84,7 +84,7 @@ public class HmacBenchmark
 	{
 		_key = RandomNumberGenerator.GetBytes(MaxKeyLength);
 		_input = RandomNumberGenerator.GetBytes(MaxInputLength);
-		_mac = new byte[HmacAlgorithm<Sha512HashAlgorithm>.MacLength];
+		_mac = new byte[HmacAlgorithm<Sha512Core>.MacLength];
 	}
 
 	[Benchmark(Baseline = true)]
@@ -100,7 +100,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int MD5CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<MD5HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<MD5Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
@@ -124,7 +124,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int Sha1CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<Sha1HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<Sha1Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
@@ -140,7 +140,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int Sha224CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<Sha224HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<Sha224Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
@@ -164,7 +164,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int Sha256CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<Sha256HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<Sha256Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
@@ -196,7 +196,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block128Arguments))]
 	public int Sha384CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<Sha384HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<Sha384Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
@@ -220,7 +220,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block128Arguments))]
 	public int Sha512CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<Sha512HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<Sha512Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
@@ -244,7 +244,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Rate136Arguments))]
 	public int Sha3_256CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<Sha3_256HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<Sha3_256Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
@@ -268,7 +268,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Rate72Arguments))]
 	public int Sha3_512CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<Sha3_512HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<Sha3_512Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]
@@ -284,7 +284,7 @@ public class HmacBenchmark
 	[ArgumentsSource(nameof(Block64Arguments))]
 	public int SM3CryptoBase(int inputLength, int keyLength)
 	{
-		return HmacAlgorithm<SM3HashAlgorithm>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
+		return HmacAlgorithm<SM3Core>.Mac(_key.AsSpan(0, keyLength), _input.AsSpan(0, inputLength), _mac);
 	}
 
 	[Benchmark]

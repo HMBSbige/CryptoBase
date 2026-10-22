@@ -46,8 +46,8 @@ public class EmptyAppendTest
 	[Test]
 	public async Task EveryHashCoreIsCovered()
 	{
-		await Assert.That(HashCores().Select(static core => core())).Contains(typeof(Sha256HashAlgorithm));
-		await Assert.That(HmacHashCores().Select(static core => core())).Contains(typeof(Sha256HashAlgorithm));
+		await Assert.That(HashCores().Select(static core => core())).Contains(typeof(Sha256Core));
+		await Assert.That(HmacHashCores().Select(static core => core())).Contains(typeof(Sha256Core));
 	}
 
 	[Test]
@@ -111,10 +111,10 @@ public class EmptyAppendTest
 		return Run(hasher.Append, hasher.GetCurrentHash, hasher.GetHashAndReset, HashAlgorithm<TCore>.HashLength, operations, appendEmpty, null);
 	}
 
-	private static List<byte[]> RunHmacAlgorithm<THash>(byte[] key, int[] operations, bool appendEmpty) where THash : unmanaged, IHmacHashCore<THash>
+	private static List<byte[]> RunHmacAlgorithm<TCore>(byte[] key, int[] operations, bool appendEmpty) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		using HmacAlgorithm<THash> mac = HmacAlgorithm<THash>.Create(key);
-		return Run(mac.Append, mac.GetCurrentMac, mac.GetMacAndReset, HmacAlgorithm<THash>.MacLength, operations, appendEmpty, null);
+		using HmacAlgorithm<TCore> mac = HmacAlgorithm<TCore>.Create(key);
+		return Run(mac.Append, mac.GetCurrentMac, mac.GetMacAndReset, HmacAlgorithm<TCore>.MacLength, operations, appendEmpty, null);
 	}
 
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Run calls observe only before it returns, while the hasher is alive.")]
@@ -207,7 +207,7 @@ public class EmptyAppendTest
 
 	private static IEnumerable<Type> ImplementationsOfSelf(Type genericInterface)
 	{
-		return typeof(Sha256HashAlgorithm).Assembly.GetTypes()
+		return typeof(Sha256Core).Assembly.GetTypes()
 			.Where(type => type is { IsValueType: true, IsGenericTypeDefinition: false }
 				&& type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == genericInterface && i.GenericTypeArguments[0] == type))
 			.OrderBy(static type => type.FullName, StringComparer.Ordinal);

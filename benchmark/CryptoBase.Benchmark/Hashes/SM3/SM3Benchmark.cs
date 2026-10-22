@@ -5,7 +5,7 @@ using Org.BouncyCastle.Crypto.Digests;
 namespace CryptoBase.Benchmark.Hashes.SM3;
 
 [MemoryDiagnoser]
-public class SM3Benchmark : BouncyCastleHashBenchmark<SM3HashAlgorithm, SM3Digest>
+public class SM3Benchmark : BouncyCastleHashBenchmark<SM3Core, SM3Digest>
 {
 	protected override IReadOnlyList<int> Sizes => HashBenchmarkSizes.Block64;
 }

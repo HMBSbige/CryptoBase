@@ -11,64 +11,64 @@ public static class Hkdf
 	/// Extracts a pseudorandom key using HKDF.
 	/// </summary>
 	/// <returns>The number of bytes written to <paramref name="prk" />.</returns>
-	public static int Extract<THash>(ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk) where THash : unmanaged, IHmacHashCore<THash>
+	public static int Extract<TCore>(ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, THash.HashLength, nameof(prk));
+		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, TCore.HashLength, nameof(prk));
 
-		return HmacAlgorithm<THash>.Mac(salt, ikm, prk);
+		return HmacAlgorithm<TCore>.Mac(salt, ikm, prk);
 	}
 
 	/// <summary>
 	/// Expands a pseudorandom key using HKDF.
 	/// </summary>
-	public static void Expand<THash>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where THash : unmanaged, IHmacHashCore<THash>
+	public static void Expand<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		ValidateExpandArguments<THash>(prk, output);
-		ExpandCore<THash>(prk, output, info);
+		ValidateExpandArguments<TCore>(prk, output);
+		ExpandCore<TCore>(prk, output, info);
 	}
 
 	/// <summary>
 	/// Derives key material using HKDF extract-and-expand.
 	/// </summary>
 	[SkipLocalsInit]
-	public static void DeriveKey<THash>(ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info) where THash : unmanaged, IHmacHashCore<THash>
+	public static void DeriveKey<TCore>(ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		ValidateOutputLength<THash>(output);
+		ValidateOutputLength<TCore>(output);
 
-		int hashLength = THash.HashLength;
+		int hashLength = TCore.HashLength;
 		using CryptoBuffer<byte> prk = new(stackalloc byte[hashLength]);
-		HmacState<THash>.Mac(salt, ikm, prk.Span);
-		ExpandCore<THash>(prk.Span, output, info);
+		HmacState<TCore>.Mac(salt, ikm, prk.Span);
+		ExpandCore<TCore>(prk.Span, output, info);
 	}
 
-	private static void ValidateExpandArguments<THash>(ReadOnlySpan<byte> prk, Span<byte> output) where THash : unmanaged, IHmacHashCore<THash>
+	private static void ValidateExpandArguments<TCore>(ReadOnlySpan<byte> prk, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		ValidateOutputLength<THash>(output);
-		int hashLength = THash.HashLength;
+		ValidateOutputLength<TCore>(output);
+		int hashLength = TCore.HashLength;
 		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, hashLength, nameof(prk));
 	}
 
-	private static void ValidateOutputLength<THash>(Span<byte> output) where THash : unmanaged, IHmacHashCore<THash>
+	private static void ValidateOutputLength<TCore>(Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
-		int maxOkmLength = checked(255 * THash.HashLength);
+		int maxOkmLength = checked(255 * TCore.HashLength);
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 	}
 
-	private static void ExpandCore<THash>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where THash : unmanaged, IHmacHashCore<THash>
+	private static void ExpandCore<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		if (output.Length <= THash.HashLength || !info.Overlaps(output, out int outputOffset))
+		if (output.Length <= TCore.HashLength || !info.Overlaps(output, out int outputOffset))
 		{
-			ExpandBlocks<THash>(prk, output, info);
+			ExpandBlocks<TCore>(prk, output, info);
 			return;
 		}
 
-		ExpandOverlapping<THash>(prk, output, info, outputOffset);
+		ExpandOverlapping<TCore>(prk, output, info, outputOffset);
 	}
 
 	[SkipLocalsInit]
-	private static void ExpandOverlapping<THash>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info, int outputOffset) where THash : unmanaged, IHmacHashCore<THash>
+	private static void ExpandOverlapping<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info, int outputOffset) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		int overlapOffset = Math.Max(0, outputOffset);
 		int overlapEnd = (int)Math.Min(info.Length, (long)outputOffset + output.Length);
@@ -78,18 +78,18 @@ public static class Hkdf
 		using CryptoBuffer<byte> overlapBuffer = CryptoBuffer<byte>.ShouldUsePool(overlapLength) ? new CryptoBuffer<byte>(overlapLength) : new CryptoBuffer<byte>(stackalloc byte[overlapLength]);
 		Span<byte> overlapCopy = overlapBuffer.Span;
 		info.Slice(overlapOffset, overlapLength).CopyTo(overlapCopy);
-		ExpandOverlappingBlocks<THash>(prk, output, info.Slice(0, overlapOffset), overlapCopy, info.Slice(overlapOffset + overlapLength));
+		ExpandOverlappingBlocks<TCore>(prk, output, info.Slice(0, overlapOffset), overlapCopy, info.Slice(overlapOffset + overlapLength));
 	}
 
 	[SkipLocalsInit]
-	private static void ExpandBlocks<THash>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where THash : unmanaged, IHmacHashCore<THash>
+	private static void ExpandBlocks<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		int hashLength = THash.HashLength;
+		int hashLength = TCore.HashLength;
 		byte counter = 0;
 		ReadOnlySpan<byte> counterSpan = counter.AsReadOnlySpan();
 		ReadOnlySpan<byte> previous = ReadOnlySpan<byte>.Empty;
 		Span<byte> remainingOutput = output;
-		Unsafe.SkipInit(out HmacState<THash> hmac);
+		Unsafe.SkipInit(out HmacState<TCore> hmac);
 
 		try
 		{
@@ -137,14 +137,14 @@ public static class Hkdf
 
 	// Keep segmented info out of the common loop so it has no per-block overlap branches.
 	[SkipLocalsInit]
-	private static void ExpandOverlappingBlocks<THash>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> infoPrefix, ReadOnlySpan<byte> overlapCopy, ReadOnlySpan<byte> infoSuffix) where THash : unmanaged, IHmacHashCore<THash>
+	private static void ExpandOverlappingBlocks<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> infoPrefix, ReadOnlySpan<byte> overlapCopy, ReadOnlySpan<byte> infoSuffix) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		int hashLength = THash.HashLength;
+		int hashLength = TCore.HashLength;
 		byte counter = 0;
 		ReadOnlySpan<byte> counterSpan = counter.AsReadOnlySpan();
 		ReadOnlySpan<byte> previous = ReadOnlySpan<byte>.Empty;
 		Span<byte> remainingOutput = output;
-		Unsafe.SkipInit(out HmacState<THash> hmac);
+		Unsafe.SkipInit(out HmacState<TCore> hmac);
 
 		try
 		{

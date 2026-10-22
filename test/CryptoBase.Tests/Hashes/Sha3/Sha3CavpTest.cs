@@ -23,7 +23,7 @@ public class Sha3CavpTest
 	[MethodDataSource(nameof(Records), Arguments = ["SHA3_224LongMsg.rsp"])]
 	public Task Sha3_224Messages(CavpRecord record)
 	{
-		return VerifyMessage<Sha3_224HashAlgorithm>(record);
+		return VerifyMessage<Sha3_224Core>(record);
 	}
 
 	[Test]
@@ -31,7 +31,7 @@ public class Sha3CavpTest
 	[MethodDataSource(nameof(Records), Arguments = ["SHA3_256LongMsg.rsp"])]
 	public Task Sha3_256Messages(CavpRecord record)
 	{
-		return VerifyMessage<Sha3_256HashAlgorithm>(record);
+		return VerifyMessage<Sha3_256Core>(record);
 	}
 
 	[Test]
@@ -39,7 +39,7 @@ public class Sha3CavpTest
 	[MethodDataSource(nameof(Records), Arguments = ["SHA3_384LongMsg.rsp"])]
 	public Task Sha3_384Messages(CavpRecord record)
 	{
-		return VerifyMessage<Sha3_384HashAlgorithm>(record);
+		return VerifyMessage<Sha3_384Core>(record);
 	}
 
 	[Test]
@@ -47,31 +47,31 @@ public class Sha3CavpTest
 	[MethodDataSource(nameof(Records), Arguments = ["SHA3_512LongMsg.rsp"])]
 	public Task Sha3_512Messages(CavpRecord record)
 	{
-		return VerifyMessage<Sha3_512HashAlgorithm>(record);
+		return VerifyMessage<Sha3_512Core>(record);
 	}
 
 	[Test]
 	public Task Sha3_224MonteCarlo()
 	{
-		return VerifyMonteCarlo<Sha3_224HashAlgorithm>("SHA3_224Monte.rsp");
+		return VerifyMonteCarlo<Sha3_224Core>("SHA3_224Monte.rsp");
 	}
 
 	[Test]
 	public Task Sha3_256MonteCarlo()
 	{
-		return VerifyMonteCarlo<Sha3_256HashAlgorithm>("SHA3_256Monte.rsp");
+		return VerifyMonteCarlo<Sha3_256Core>("SHA3_256Monte.rsp");
 	}
 
 	[Test]
 	public Task Sha3_384MonteCarlo()
 	{
-		return VerifyMonteCarlo<Sha3_384HashAlgorithm>("SHA3_384Monte.rsp");
+		return VerifyMonteCarlo<Sha3_384Core>("SHA3_384Monte.rsp");
 	}
 
 	[Test]
 	public Task Sha3_512MonteCarlo()
 	{
-		return VerifyMonteCarlo<Sha3_512HashAlgorithm>("SHA3_512Monte.rsp");
+		return VerifyMonteCarlo<Sha3_512Core>("SHA3_512Monte.rsp");
 	}
 
 	// Guards the embedding and sampling: ShortMsg covers every length from 0 to the rate, and Monte holds the seed and its checkpoints.

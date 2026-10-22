@@ -39,28 +39,28 @@ public class Blake2b512Test
 	[Arguments("The quick brown fox jumps over the lazy dog", "a8add4bdddfd93e4877d2746e62817b116364a1fa7bc148d95090bc7333b3673f82401cf7aa2e4cb1ecd90296e3f14cb5413f8ed77be73045b13914cdcd6a918")]
 	public Task KnownVectors(string value, string expected)
 	{
-		return VerifyHashVector<Blake2b512HashAlgorithm>(value, expected, 64, 128);
+		return VerifyHashVector<Blake2b512Core>(value, expected, 64, 128);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(BoundaryVectors))]
 	public Task BlockBoundaries(int length, string expectedHex)
 	{
-		return VerifyBoundary<Blake2b512HashAlgorithm>(length, expectedHex);
+		return VerifyBoundary<Blake2b512Core>(length, expectedHex);
 	}
 
 	[Test]
 	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(Hash128IncrementalBatchCases))]
 	public Task IncrementalBlockBatches(int length, int sourceOffset, int blockSize)
 	{
-		return VerifyIncrementalBlockBatch<Blake2b512HashAlgorithm>(length, sourceOffset, blockSize, static source => GetKnownDigest(source, BoundaryVectors, "BLAKE2b-512"));
+		return VerifyIncrementalBlockBatch<Blake2b512Core>(length, sourceOffset, blockSize, static source => GetKnownDigest(source, BoundaryVectors, "BLAKE2b-512"));
 	}
 
 	[Test]
 	[CombinedDataSources]
 	public Task InputIsUnchanged([MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(InputIntegrityLengths))] int length, [Arguments(1, 7)] int offset)
 	{
-		return VerifyInputIsUnchanged<Blake2b512HashAlgorithm>(length, offset);
+		return VerifyInputIsUnchanged<Blake2b512Core>(length, offset);
 	}
 
 	[Test]
@@ -71,6 +71,6 @@ public class Blake2b512Test
 	public Task HmacKnownVectors(int keyLength, int sourceLength, string expectedHex)
 	{
 		byte[] key = CreateDeterministicSource(keyLength + 1).AsSpan(1).ToArray();
-		return MacAlgorithmTestUtils.VerifyVector<HmacAlgorithm<Blake2b512HashAlgorithm>>(key, CreateDeterministicSource(sourceLength), Convert.FromHexString(expectedHex));
+		return MacAlgorithmTestUtils.VerifyVector<HmacAlgorithm<Blake2b512Core>>(key, CreateDeterministicSource(sourceLength), Convert.FromHexString(expectedHex));
 	}
 }

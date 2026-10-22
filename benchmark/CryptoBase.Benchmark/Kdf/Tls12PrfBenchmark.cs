@@ -47,14 +47,14 @@ public class Tls12PrfBenchmark
 	[BenchmarkCategory("SHA-256")]
 	public void CryptoBaseSha256()
 	{
-		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(_secret, "key expansion"u8, _seed, _output);
+		Tls12Prf.DeriveKey<Sha256Core>(_secret, "key expansion"u8, _seed, _output);
 	}
 
 	[Benchmark]
 	[BenchmarkCategory("SHA-256")]
 	public void GenericSha256()
 	{
-		Tls12Prf<HmacAlgorithm<Sha256HashAlgorithm>>.DeriveKey(_secret, "key expansion"u8, _seed, _output);
+		Tls12Prf<HmacAlgorithm<Sha256Core>>.DeriveKey(_secret, "key expansion"u8, _seed, _output);
 	}
 
 	[Benchmark]
@@ -75,6 +75,6 @@ public class Tls12PrfBenchmark
 	[BenchmarkCategory("SHA-384")]
 	public void CryptoBaseSha384()
 	{
-		Tls12Prf.DeriveKey<Sha384HashAlgorithm>(_secret, "key expansion"u8, _seed, _output);
+		Tls12Prf.DeriveKey<Sha384Core>(_secret, "key expansion"u8, _seed, _output);
 	}
 }

@@ -39,27 +39,27 @@ public class Sha224Test
 	[Arguments(@"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", @"c97ca9a559850ce97a04a96def6d99a9e0e0e2ab14e6b8df265fc0b3")]
 	public Task KnownVectors(string value, string expected)
 	{
-		return VerifyHashVector<Sha224HashAlgorithm>(value, expected, 28, 64);
+		return VerifyHashVector<Sha224Core>(value, expected, 28, 64);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(BoundaryVectors))]
 	public Task BlockBoundaries(int length, string expectedHex)
 	{
-		return VerifyBoundary<Sha224HashAlgorithm>(length, expectedHex);
+		return VerifyBoundary<Sha224Core>(length, expectedHex);
 	}
 
 	[Test]
 	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(Hash64IncrementalBatchCases))]
 	public Task IncrementalBlockBatches(int length, int sourceOffset, int blockSize)
 	{
-		return VerifyIncrementalBlockBatch<Sha224HashAlgorithm>(length, sourceOffset, blockSize, static source => GetKnownDigest(source, BoundaryVectors, "SHA-224"));
+		return VerifyIncrementalBlockBatch<Sha224Core>(length, sourceOffset, blockSize, static source => GetKnownDigest(source, BoundaryVectors, "SHA-224"));
 	}
 
 	[Test]
 	[CombinedDataSources]
 	public Task InputIsUnchanged([MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(InputIntegrityLengths))] int length, [Arguments(1, 7)] int offset)
 	{
-		return VerifyInputIsUnchanged<Sha224HashAlgorithm>(length, offset);
+		return VerifyInputIsUnchanged<Sha224Core>(length, offset);
 	}
 }

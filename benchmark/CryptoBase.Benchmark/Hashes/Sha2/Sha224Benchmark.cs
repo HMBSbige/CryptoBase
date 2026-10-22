@@ -5,7 +5,7 @@ using Org.BouncyCastle.Crypto.Digests;
 namespace CryptoBase.Benchmark.Hashes.Sha2;
 
 [MemoryDiagnoser]
-public class Sha224Benchmark : BouncyCastleHashBenchmark<Sha224HashAlgorithm, Sha224Digest>
+public class Sha224Benchmark : BouncyCastleHashBenchmark<Sha224Core, Sha224Digest>
 {
 	protected override IReadOnlyList<int> Sizes => HashBenchmarkSizes.Block64;
 }

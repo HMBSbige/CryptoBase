@@ -14,43 +14,43 @@ public static class Tls12Prf
 	/// <summary>
 	/// Derives key material using the TLS 1.2 PRF.
 	/// </summary>
-	/// <typeparam name="THash">The hash function that P_hash uses.</typeparam>
+	/// <typeparam name="TCore">The hash function that P_hash uses.</typeparam>
 	/// <param name="secret">The secret. It may be empty.</param>
 	/// <param name="label">The ASCII label, such as <c>"master secret"u8</c>, without a length prefix or a trailing null.</param>
 	/// <param name="seed">The seed.</param>
 	/// <param name="output">The buffer that receives the derived key material. Its length selects how many bytes are derived.</param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="output" /> is empty.</exception>
-	public static void DeriveKey<THash>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed, Span<byte> output) where THash : unmanaged, IHmacHashCore<THash>
+	public static void DeriveKey<TCore>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		DeriveKey<THash>(secret, label, seed, ReadOnlySpan<byte>.Empty, output);
+		DeriveKey<TCore>(secret, label, seed, ReadOnlySpan<byte>.Empty, output);
 	}
 
 	/// <summary>
 	/// Derives key material using the TLS 1.2 PRF with the seed <c>seed1 || seed2</c>, such as <c>client_random || server_random</c>.
 	/// </summary>
-	/// <typeparam name="THash">The hash function that P_hash uses.</typeparam>
+	/// <typeparam name="TCore">The hash function that P_hash uses.</typeparam>
 	/// <param name="secret">The secret. It may be empty.</param>
 	/// <param name="label">The ASCII label, such as <c>"master secret"u8</c>, without a length prefix or a trailing null.</param>
 	/// <param name="seed1">The first part of the seed.</param>
 	/// <param name="seed2">The second part of the seed.</param>
 	/// <param name="output">The buffer that receives the derived key material. Its length selects how many bytes are derived.</param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="output" /> is empty.</exception>
-	public static void DeriveKey<THash>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where THash : unmanaged, IHmacHashCore<THash>
+	public static void DeriveKey<TCore>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
 		// Only the label and seed need copying: the secret is consumed before the first write, and a single-block output is written after the last read.
-		if (output.Length > THash.HashLength && (label.Overlaps(output) || seed1.Overlaps(output) || seed2.Overlaps(output)))
+		if (output.Length > TCore.HashLength && (label.Overlaps(output) || seed1.Overlaps(output) || seed2.Overlaps(output)))
 		{
-			DeriveOverlapping<THash>(secret, label, seed1, seed2, output);
+			DeriveOverlapping<TCore>(secret, label, seed1, seed2, output);
 			return;
 		}
 
-		DeriveBlocks<THash>(secret, label, seed1, seed2, output);
+		DeriveBlocks<TCore>(secret, label, seed1, seed2, output);
 	}
 
 	[SkipLocalsInit]
-	private static void DeriveOverlapping<THash>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where THash : unmanaged, IHmacHashCore<THash>
+	private static void DeriveOverlapping<TCore>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		int length = checked(label.Length + seed1.Length + seed2.Length);
 		using CryptoBuffer<byte> labelAndSeedBuffer = CryptoBuffer<byte>.ShouldUsePool(length) ? new CryptoBuffer<byte>(length) : new CryptoBuffer<byte>(stackalloc byte[length]);
@@ -58,17 +58,17 @@ public static class Tls12Prf
 		label.CopyTo(labelAndSeed);
 		seed1.CopyTo(labelAndSeed.Slice(label.Length));
 		seed2.CopyTo(labelAndSeed.Slice(label.Length + seed1.Length));
-		DeriveBlocks<THash>(secret, labelAndSeed, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, output);
+		DeriveBlocks<TCore>(secret, labelAndSeed, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, output);
 	}
 
 	[SkipLocalsInit]
-	private static void DeriveBlocks<THash>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where THash : unmanaged, IHmacHashCore<THash>
+	private static void DeriveBlocks<TCore>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		int hashLength = THash.HashLength;
+		int hashLength = TCore.HashLength;
 		using CryptoBuffer<byte> aBuffer = new(stackalloc byte[hashLength]);
 		Span<byte> a = aBuffer.Span;
 		Span<byte> remainingOutput = output;
-		Unsafe.SkipInit(out HmacState<THash> hmac);
+		Unsafe.SkipInit(out HmacState<TCore> hmac);
 
 		try
 		{

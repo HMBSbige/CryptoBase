@@ -2,10 +2,10 @@ using Sha1Arm = System.Runtime.Intrinsics.Arm.Sha1;
 
 namespace CryptoBase.Hashes.Sha1;
 
-public partial struct Sha1HashAlgorithm
+public partial struct Sha1Core
 {
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void ProcessBlocksArm64(ref Sha1HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
+	private static void ProcessBlocksArm64(ref Sha1Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Sha1Arm.Arm64.IsSupported);
 

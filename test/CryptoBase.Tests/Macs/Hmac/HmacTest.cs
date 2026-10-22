@@ -15,19 +15,19 @@ public class HmacTest
 	[Test]
 	public Task Sha256LifecycleContract()
 	{
-		return VerifyLifecycleContract<HmacAlgorithm<Sha256HashAlgorithm>>();
+		return VerifyLifecycleContract<HmacAlgorithm<Sha256Core>>();
 	}
 
 	[Test]
 	public Task Sha256OwnershipContract()
 	{
-		return VerifyOwnershipContract<HmacAlgorithm<Sha256HashAlgorithm>>();
+		return VerifyOwnershipContract<HmacAlgorithm<Sha256Core>>();
 	}
 
 	[Test]
 	public Task ShortDestinationsDoNotChangeStateOrOutput()
 	{
-		return VerifyShortDestinations<HmacAlgorithm<Sha256HashAlgorithm>>();
+		return VerifyShortDestinations<HmacAlgorithm<Sha256Core>>();
 	}
 
 	[Test]
@@ -35,7 +35,7 @@ public class HmacTest
 	[Arguments(97)]
 	public Task OneShotMacSupportsOverlappingInputsAndDestination(int destinationOffset)
 	{
-		return VerifyOneShotOverlap<HmacAlgorithm<Sha256HashAlgorithm>, PlatformHmacSha256>(destinationOffset);
+		return VerifyOneShotOverlap<HmacAlgorithm<Sha256Core>, PlatformHmacSha256>(destinationOffset);
 	}
 
 	internal static async Task VerifyOneShotOverlap<TMac, TReference>(int destinationOffset) where TMac : IOneShotMacAlgorithm where TReference : IOneShotMacAlgorithm
@@ -58,22 +58,22 @@ public class HmacTest
 	[Test]
 	public async Task Blake2bPrecompressedKeyBlocksMatchOneShot()
 	{
-		await VerifyReusedInstance<Blake2b512HashAlgorithm>();
-		await VerifyReusedInstance<Blake2b256HashAlgorithm>();
+		await VerifyReusedInstance<Blake2b512Core>();
+		await VerifyReusedInstance<Blake2b256Core>();
 	}
 
-	private static async Task VerifyReusedInstance<THash>() where THash : unmanaged, IHmacHashCore<THash>
+	private static async Task VerifyReusedInstance<TCore>() where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		byte[] key = CreateDeterministicSource(32);
 		byte[] source = CreateDeterministicSource(300);
-		byte[] expected = new byte[HmacAlgorithm<THash>.MacLength];
-		byte[] actual = new byte[HmacAlgorithm<THash>.MacLength];
-		using HmacAlgorithm<THash> mac = HmacAlgorithm<THash>.Create(key);
+		byte[] expected = new byte[HmacAlgorithm<TCore>.MacLength];
+		byte[] actual = new byte[HmacAlgorithm<TCore>.MacLength];
+		using HmacAlgorithm<TCore> mac = HmacAlgorithm<TCore>.Create(key);
 
 		foreach (int length in (int[])[0, 1, 64, 127, 128, 129, 0, 255, 256, 257, 300, 0])
 		{
 			byte[] message = source.AsSpan(0, length).ToArray();
-			HmacAlgorithm<THash>.Mac(key, message, expected);
+			HmacAlgorithm<TCore>.Mac(key, message, expected);
 
 			mac.Append(message.AsSpan().Slice(0, length / 2));
 			mac.Append(message.AsSpan().Slice(length / 2));
@@ -88,7 +88,7 @@ public class HmacTest
 		}
 
 		mac.GetMacAndReset(actual);
-		HmacAlgorithm<THash>.Mac(key, ReadOnlySpan<byte>.Empty, expected);
+		HmacAlgorithm<TCore>.Mac(key, ReadOnlySpan<byte>.Empty, expected);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 

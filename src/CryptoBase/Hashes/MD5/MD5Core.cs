@@ -3,7 +3,7 @@ namespace CryptoBase.Hashes.MD5;
 /// <summary>
 /// Provides the MD5 hash core.
 /// </summary>
-public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
+public partial struct MD5Core : IHmacHashCore<MD5Core>
 {
 	private const int LengthOffset = 56;
 
@@ -62,9 +62,9 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 	public static int HmacBlockSize => BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static MD5HashAlgorithm IHashCore<MD5HashAlgorithm>.Create()
+	static MD5Core IHashCore<MD5Core>.Create()
 	{
-		Unsafe.SkipInit(out MD5HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out MD5Core hashAlgorithm);
 		hashAlgorithm.Reset();
 		return hashAlgorithm;
 	}
@@ -161,7 +161,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		return BitOperations.RotateLeft(a, s) + b;
 	}
 
-	private static void Finalize(ref MD5HashAlgorithm hashAlgorithm, ref byte destination)
+	private static void Finalize(ref MD5Core hashAlgorithm, ref byte destination)
 	{
 		int index = (int)(hashAlgorithm._byteCount & BlockSizeInBytes - 1);
 		Span<byte> buffer = hashAlgorithm._buffer;
@@ -178,10 +178,10 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(LengthOffset), hashAlgorithm._byteCount << 3);
 		ProcessBlocks(ref hashAlgorithm, ref MemoryMarshal.GetReference(buffer), 1);
 
-		Unsafe.As<MD5HashAlgorithm, Vector128<byte>>(ref hashAlgorithm).StoreUnsafe(ref destination);
+		Unsafe.As<MD5Core, Vector128<byte>>(ref hashAlgorithm).StoreUnsafe(ref destination);
 	}
 
-	private static void ProcessBlocks(ref MD5HashAlgorithm hashAlgorithm, ref byte source, int blockCount)
+	private static void ProcessBlocks(ref MD5Core hashAlgorithm, ref byte source, int blockCount)
 	{
 		bool subsequentBlockOverlapsState =
 			blockCount > 1
@@ -203,7 +203,7 @@ public partial struct MD5HashAlgorithm : IHmacHashCore<MD5HashAlgorithm>
 		ProcessBlocksSoftware(ref hashAlgorithm, ref source, blockCount);
 	}
 
-	private static void ProcessBlocksSoftware(ref MD5HashAlgorithm hashAlgorithm, ref byte source, int blockCount)
+	private static void ProcessBlocksSoftware(ref MD5Core hashAlgorithm, ref byte source, int blockCount)
 	{
 		ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 

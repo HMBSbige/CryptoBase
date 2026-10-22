@@ -45,7 +45,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool UseBlake2bHashData()
 	{
-		return typeof(TCore) == typeof(Blake2b256HashAlgorithm) || typeof(TCore) == typeof(Blake2b512HashAlgorithm);
+		return typeof(TCore) == typeof(Blake2b256Core) || typeof(TCore) == typeof(Blake2b512Core);
 	}
 
 	/// <inheritdoc />

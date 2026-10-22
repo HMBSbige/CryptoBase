@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.TestUtils;
-using Sha256Hasher = CryptoBase.Hashes.HashAlgorithm<CryptoBase.Hashes.Sha2.Sha256HashAlgorithm>;
+using Sha256Hasher = CryptoBase.Hashes.HashAlgorithm<CryptoBase.Hashes.Sha2.Sha256Core>;
 
 namespace CryptoBase.Tests.IO;
 

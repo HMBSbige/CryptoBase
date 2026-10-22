@@ -132,7 +132,7 @@ internal partial struct Sha512State
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 32), BinaryPrimitives.ReverseEndianness(_h4));
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 40), BinaryPrimitives.ReverseEndianness(_h5));
 
-		if (hashLengthInBytes is Sha512HashAlgorithm.HashSizeInBytes)
+		if (hashLengthInBytes is Sha512Core.HashSizeInBytes)
 		{
 			Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 48), BinaryPrimitives.ReverseEndianness(_h6));
 			Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 56), BinaryPrimitives.ReverseEndianness(_h7));

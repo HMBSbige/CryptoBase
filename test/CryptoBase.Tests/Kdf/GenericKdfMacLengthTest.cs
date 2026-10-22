@@ -11,17 +11,17 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.Kdf;
 
 // The other generic KDF tests use HMAC-SHA256; these cover the other MAC lengths.
-[GenerateGenericTest(typeof(Sha1HashAlgorithm))]
-[GenerateGenericTest(typeof(Sha384HashAlgorithm))]
-[GenerateGenericTest(typeof(Sha512HashAlgorithm))]
-public class GenericKdfMacLengthTest<THash> where THash : unmanaged, IHmacHashCore<THash>
+[GenerateGenericTest(typeof(Sha1Core))]
+[GenerateGenericTest(typeof(Sha384Core))]
+[GenerateGenericTest(typeof(Sha512Core))]
+public class GenericKdfMacLengthTest<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 {
-	private static readonly int MacLength = HmacAlgorithm<THash>.MacLength;
+	private static readonly int MacLength = HmacAlgorithm<TCore>.MacLength;
 
 	private static readonly HashAlgorithmName HashName =
-		typeof(THash) == typeof(Sha1HashAlgorithm) ? HashAlgorithmName.SHA1 :
-		typeof(THash) == typeof(Sha384HashAlgorithm) ? HashAlgorithmName.SHA384 :
-		typeof(THash) == typeof(Sha512HashAlgorithm) ? HashAlgorithmName.SHA512 :
+		typeof(TCore) == typeof(Sha1Core) ? HashAlgorithmName.SHA1 :
+		typeof(TCore) == typeof(Sha384Core) ? HashAlgorithmName.SHA384 :
+		typeof(TCore) == typeof(Sha512Core) ? HashAlgorithmName.SHA512 :
 		throw new NotSupportedException();
 
 	// The output length is blocks * MacLength + extra.
@@ -41,7 +41,7 @@ public class GenericKdfMacLengthTest<THash> where THash : unmanaged, IHmacHashCo
 		HKDF.DeriveKey(HashName, ikm, expected, salt, info);
 
 		byte[] actual = new byte[expected.Length];
-		Hkdf<HmacAlgorithm<THash>>.DeriveKey(ikm, actual, salt, info);
+		Hkdf<HmacAlgorithm<TCore>>.DeriveKey(ikm, actual, salt, info);
 
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
@@ -50,7 +50,7 @@ public class GenericKdfMacLengthTest<THash> where THash : unmanaged, IHmacHashCo
 	public async Task HkdfRejectsMoreThan255Blocks()
 	{
 		byte[] output = new byte[255 * MacLength + 1];
-		await Assert.That(() => Hkdf<HmacAlgorithm<THash>>.DeriveKey([], output, [], [])).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("output");
+		await Assert.That(() => Hkdf<HmacAlgorithm<TCore>>.DeriveKey([], output, [], [])).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("output");
 	}
 
 	[Test]
@@ -69,7 +69,7 @@ public class GenericKdfMacLengthTest<THash> where THash : unmanaged, IHmacHashCo
 		byte[] expected = ReferencePrf(PlatformMac(HashName), secret, label, Concat(seed1, seed2), blocks * MacLength + extra);
 
 		byte[] actual = new byte[expected.Length];
-		Tls12Prf<HmacAlgorithm<THash>>.DeriveKey(secret, label, seed1, seed2, actual);
+		Tls12Prf<HmacAlgorithm<TCore>>.DeriveKey(secret, label, seed1, seed2, actual);
 
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
@@ -86,7 +86,7 @@ public class GenericKdfMacLengthTest<THash> where THash : unmanaged, IHmacHashCo
 		byte[] expected = new byte[length];
 		HKDF.DeriveKey(HashName, buffer[..6], expected, buffer[6..12], buffer[12..18]);
 
-		Hkdf<HmacAlgorithm<THash>>.DeriveKey(buffer.AsSpan(0, 6), buffer.AsSpan(3, length), buffer.AsSpan(6, 6), buffer.AsSpan(12, 6));
+		Hkdf<HmacAlgorithm<TCore>>.DeriveKey(buffer.AsSpan(0, 6), buffer.AsSpan(3, length), buffer.AsSpan(6, 6), buffer.AsSpan(12, 6));
 
 		await Assert.That(buffer.AsMemory(3, length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
@@ -101,7 +101,7 @@ public class GenericKdfMacLengthTest<THash> where THash : unmanaged, IHmacHashCo
 		byte[] buffer = CreateData(Math.Max(24, 3 + length), 5);
 		byte[] expected = ReferencePrf(PlatformMac(HashName), buffer[..6], buffer[6..12], buffer[12..24], length);
 
-		Tls12Prf<HmacAlgorithm<THash>>.DeriveKey(buffer.AsSpan(0, 6), buffer.AsSpan(6, 6), buffer.AsSpan(12, 6), buffer.AsSpan(18, 6), buffer.AsSpan(3, length));
+		Tls12Prf<HmacAlgorithm<TCore>>.DeriveKey(buffer.AsSpan(0, 6), buffer.AsSpan(6, 6), buffer.AsSpan(12, 6), buffer.AsSpan(18, 6), buffer.AsSpan(3, length));
 
 		await Assert.That(buffer.AsMemory(3, length)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}

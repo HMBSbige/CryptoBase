@@ -1,8 +1,8 @@
 namespace CryptoBase.Hashes.MD5;
 
-public partial struct MD5HashAlgorithm
+public partial struct MD5Core
 {
-	private static void ProcessBlocksArm64(ref MD5HashAlgorithm hashAlgorithm, ref byte source, int blockCount)
+	private static void ProcessBlocksArm64(ref MD5Core hashAlgorithm, ref byte source, int blockCount)
 	{
 		Debug.Assert(ArmBase.Arm64.IsSupported);
 		ReadOnlySpan<uint> roundConstants = RoundConstants;

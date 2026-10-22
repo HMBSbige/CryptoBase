@@ -4,7 +4,7 @@
 
 | Algorithm | Type | Namespace |
 | --- | --- | --- |
-| HMAC | `HmacAlgorithm<THash>` | `CryptoBase.Macs.Hmac` |
+| HMAC | `HmacAlgorithm<TCore>` | `CryptoBase.Macs.Hmac` |
 | HMAC-SHA256 | `PlatformHmacSha256` | `CryptoBase.Platform` |
 | Poly1305 | `Poly1305Algorithm` | `CryptoBase.Macs.Poly1305` |
 | BLAKE3 keyed hash and key derivation | `Blake3HashAlgorithm` | `CryptoBase.Hashes.Blake3` |
@@ -16,7 +16,7 @@
 
 ## HMAC
 
-`THash` is the type argument of any `HashAlgorithm<T>` in [Hashes](hashes.md) except CRC-32 and CRC-32C.
+`TCore` is the type argument of any `HashAlgorithm<T>` in [Hashes](hashes.md) except CRC-32 and CRC-32C.
 
 ```csharp
 using System.Security.Cryptography;
@@ -24,12 +24,12 @@ using CryptoBase.Hashes.Sha2;
 using CryptoBase.Macs.Hmac;
 
 byte[] key = RandomNumberGenerator.GetBytes(32);
-byte[] tag = new byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
+byte[] tag = new byte[HmacAlgorithm<Sha256Core>.MacLength];
 
-HmacAlgorithm<Sha256HashAlgorithm>.Mac(key, "message"u8, tag);
+HmacAlgorithm<Sha256Core>.Mac(key, "message"u8, tag);
 
 // Incrementally.
-using HmacAlgorithm<Sha256HashAlgorithm> mac = HmacAlgorithm<Sha256HashAlgorithm>.Create(key);
+using HmacAlgorithm<Sha256Core> mac = HmacAlgorithm<Sha256Core>.Create(key);
 
 mac.Append("mess"u8);
 mac.Append("age"u8);
@@ -54,8 +54,8 @@ using CryptoBase.Macs.Hmac;
 
 static bool IsValid(ReadOnlySpan<byte> key, ReadOnlySpan<byte> message, ReadOnlySpan<byte> receivedTag)
 {
-    Span<byte> expected = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
-    HmacAlgorithm<Sha256HashAlgorithm>.Mac(key, message, expected);
+    Span<byte> expected = stackalloc byte[HmacAlgorithm<Sha256Core>.MacLength];
+    HmacAlgorithm<Sha256Core>.Mac(key, message, expected);
     return CryptographicOperations.FixedTimeEquals(expected, receivedTag);
 }
 ```
@@ -186,14 +186,14 @@ byte[] salt = RandomNumberGenerator.GetBytes(32);
 // Derive two independent keys from one secret by varying info.
 byte[] encryptionKey = new byte[32];
 byte[] macKey = new byte[32];
-Hkdf.DeriveKey<Sha256HashAlgorithm>(sharedSecret, encryptionKey, salt, "example v1 encryption"u8);
-Hkdf.DeriveKey<Sha256HashAlgorithm>(sharedSecret, macKey, salt, "example v1 mac"u8);
+Hkdf.DeriveKey<Sha256Core>(sharedSecret, encryptionKey, salt, "example v1 encryption"u8);
+Hkdf.DeriveKey<Sha256Core>(sharedSecret, macKey, salt, "example v1 mac"u8);
 
 // The same in two steps: extract once, then expand for each key.
-Span<byte> pseudorandomKey = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
-Hkdf.Extract<Sha256HashAlgorithm>(sharedSecret, salt, pseudorandomKey);
-Hkdf.Expand<Sha256HashAlgorithm>(pseudorandomKey, encryptionKey, "example v1 encryption"u8);
-Hkdf.Expand<Sha256HashAlgorithm>(pseudorandomKey, macKey, "example v1 mac"u8);
+Span<byte> pseudorandomKey = stackalloc byte[HmacAlgorithm<Sha256Core>.MacLength];
+Hkdf.Extract<Sha256Core>(sharedSecret, salt, pseudorandomKey);
+Hkdf.Expand<Sha256Core>(pseudorandomKey, encryptionKey, "example v1 encryption"u8);
+Hkdf.Expand<Sha256Core>(pseudorandomKey, macKey, "example v1 mac"u8);
 ```
 
 The destination length selects the output length, from 1 byte to 255 times the hash length. `salt` and `info` may be empty.
@@ -214,14 +214,14 @@ byte[] masterSecret = new byte[48];
 byte[] keyBlock = new byte[128];
 
 // Master secret.
-Tls12Prf.DeriveKey<Sha256HashAlgorithm>(preMasterSecret, "master secret"u8, clientRandom, serverRandom, masterSecret);
+Tls12Prf.DeriveKey<Sha256Core>(preMasterSecret, "master secret"u8, clientRandom, serverRandom, masterSecret);
 
 // Key block.
-Tls12Prf.DeriveKey<Sha256HashAlgorithm>(masterSecret, "key expansion"u8, serverRandom, clientRandom, keyBlock);
+Tls12Prf.DeriveKey<Sha256Core>(masterSecret, "key expansion"u8, serverRandom, clientRandom, keyBlock);
 
 // Extended master secret (RFC 7627).
 byte[] sessionHash = SHA256.HashData("handshake messages"u8);
-Tls12Prf.DeriveKey<Sha256HashAlgorithm>(preMasterSecret, "extended master secret"u8, sessionHash, masterSecret);
+Tls12Prf.DeriveKey<Sha256Core>(preMasterSecret, "extended master secret"u8, sessionHash, masterSecret);
 ```
 
 ## HKDF and TLS 1.2 PRF over a chosen HMAC implementation

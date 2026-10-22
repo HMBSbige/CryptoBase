@@ -28,7 +28,7 @@ public class Tls12PrfTest
 	[Arguments(@"e18828740352b530d69b34c6597dea2e", @"f5a3fe6d34e2e28560fdcaf6823f9091", @"224d8af3c0453393a9779789d21cf7da5ee62ae6b617873d489428efc8dd58d1566e7029e2ca3a5ecd355dc64d4d927e2fbd78c4233e8604b14749a77a92a70fddf614bc0df623d798604e4ca5512794d802a258e82f86cf")]
 	public Task Sha224Vector(string secretHex, string seedHex, string outputHex)
 	{
-		return VerifyVector<Sha224HashAlgorithm>(secretHex, TestLabelHex, seedHex, outputHex);
+		return VerifyVector<Sha224Core>(secretHex, TestLabelHex, seedHex, outputHex);
 	}
 
 	// https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/ (attachment tls1.2-prf-test-vectors.txt), label "test label"
@@ -36,7 +36,7 @@ public class Tls12PrfTest
 	[Arguments(@"9bbe436ba940f017b17652849a71db35", @"a0ba9f936cda311827a6f796ffd5198c", @"e3f229ba727be17b8d122620557cd453c2aab21d07c3d495329b52d4e61edb5a6b301791e90d35c9c9a46b4e14baf9af0fa022f7077def17abfd3797c0564bab4fbc91666e9def9b97fce34f796789baa48082d122ee42c5a72e5a5110fff70187347b66")]
 	public Task Sha256Vector(string secretHex, string seedHex, string outputHex)
 	{
-		return VerifyVector<Sha256HashAlgorithm>(secretHex, TestLabelHex, seedHex, outputHex);
+		return VerifyVector<Sha256Core>(secretHex, TestLabelHex, seedHex, outputHex);
 	}
 
 	// https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/ (attachment tls1.2-prf-test-vectors.txt), label "test label"
@@ -44,7 +44,7 @@ public class Tls12PrfTest
 	[Arguments(@"b80b733d6ceefcdc71566ea48e5567df", @"cd665cf6a8447dd6ff8b27555edb7465", @"7b0c18e9ced410ed1804f2cfa34a336a1c14dffb4900bb5fd7942107e81c83cde9ca0faa60be9fe34f82b1233c9146a0e534cb400fed2700884f9dc236f80edd8bfa961144c9e8d792eca722a7b32fc3d416d473ebc2c5fd4abfdad05d9184259b5bf8cd4d90fa0d31e2dec479e4f1a26066f2eea9a69236a3e52655c9e9aee691c8f3a26854308d5eaa3be85e0990703d73e56f")]
 	public Task Sha384Vector(string secretHex, string seedHex, string outputHex)
 	{
-		return VerifyVector<Sha384HashAlgorithm>(secretHex, TestLabelHex, seedHex, outputHex);
+		return VerifyVector<Sha384Core>(secretHex, TestLabelHex, seedHex, outputHex);
 	}
 
 	// https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/ (attachment tls1.2-prf-test-vectors.txt), label "test label"
@@ -52,7 +52,7 @@ public class Tls12PrfTest
 	[Arguments(@"b0323523c1853599584d88568bbb05eb", @"d4640e12e4bcdbfb437f03e6ae418ee5", @"1261f588c798c5c201ff036e7a9cb5edcd7fe3f94c669a122a4638d7d508b283042df6789875c7147e906d868bc75c45e20eb40c1cf4a1713b27371f68432592f7dc8ea8ef223e12ea8507841311bf68653d0cfc4056d811f025c45ddfa6e6fec702f054b409d6f28dd0a3233e498da41a3e75c5630eedbe22fe254e33a1b0e9f6b9826675bec7d01a845658dc9c397545401d40b9f46c7a400ee1b8f81ca0a60d1a397a1028bff5d2ef5066126842fb8da4197632bdb54ff6633f86bbc836e640d4d898")]
 	public Task Sha512Vector(string secretHex, string seedHex, string outputHex)
 	{
-		return VerifyVector<Sha512HashAlgorithm>(secretHex, TestLabelHex, seedHex, outputHex);
+		return VerifyVector<Sha512Core>(secretHex, TestLabelHex, seedHex, outputHex);
 	}
 
 	// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/components/800-135testvectors/tls.zip
@@ -62,7 +62,7 @@ public class Tls12PrfTest
 	[Arguments(@"b9664b35350787f891966cc494cc29340fa6e7d2db0e85ef648b640129749988fcf7c49c17989b041745d768203a554e", @"2bde249495f104e65b3b07cc88e940cd0d31c7ab6e3990dc253ff32826eea720", @"cf08c14548ac478165b03c1c08bba0ff5959a0ded3da678f03febae4a28c05cd", @"284806ac208958e6fff30ebf99d908cb00fc5af915a19a5b34cac30340031f65", @"d2ec44801e16c23e9d4cfe4c5c238523860dcca2b3f7dea5409fb31fceefa713", @"918b60d280f8471784392edbb9dd1fef7a78f823672a78fdb62822707e717a6d1ef54ca58f0b3b84a6fa092eb27089dd", @"1910e1496131f7ef05a7a568fffe7a3d3073e4f08500c97fce69d1c42a4ccf7553e52bc1ce84b760214f2632fee46ab0c4fb2bbe1214a560c7b041cbf4be44162d559ed8e8b34ab847f66aa5e948bef5a336d9d5c1e58b9ec4484f2024c4c453d87f1e9542556fe4f4615e2bdc20f74af7cf2311bd2a02bd415868339d50414d")]
 	public Task Sha256CavpVector(string preMasterSecretHex, string clientHelloRandomHex, string serverHelloRandomHex, string clientRandomHex, string serverRandomHex, string masterSecretHex, string keyBlockHex)
 	{
-		return VerifyCavpVector<Sha256HashAlgorithm>(preMasterSecretHex, clientHelloRandomHex, serverHelloRandomHex, clientRandomHex, serverRandomHex, masterSecretHex, keyBlockHex);
+		return VerifyCavpVector<Sha256Core>(preMasterSecretHex, clientHelloRandomHex, serverHelloRandomHex, clientRandomHex, serverRandomHex, masterSecretHex, keyBlockHex);
 	}
 
 	// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/components/800-135testvectors/tls.zip
@@ -72,7 +72,7 @@ public class Tls12PrfTest
 	[Arguments(@"232a3e2a13c1d85a2fb290a63f701f5d3eaa592fa9828ee355c67e7d1aeff2939efe734cb9a860215d6d1733b7b6574f", @"a1c148c1b0ca25075dc7fbcb6521749c4f5ac9bf1b27e5cf0fb4530d29e2c80c", @"0ee8ec33cd65274b0dc34919d944ee2c61343f64ed44189e67e2f4b760c70c79", @"dce4c7973f3b0468d944de1870025bcc130e7832fd3fbfcd40ad287b13ee28f9", @"c68423e2743b91bf9e2e1078bab5c5c884bd70983e0272343279e41738e943b5", @"2a1d6063b37a458b07746a7b04ed54c9ddeef5f2e488050dfb4b0f38cc5b178e3c20e6a72307efc859bd2e1c24f790c7", @"de9f2ce42403605743e84e71b2fba535bbb2020e5899d98773c140c27abbfef4b4754ff01ea10e38604ec621f48a4af14715ee81b0ba10bdbebb5104bbc2411004a2962b0e7f5c2ebb27590678510c06cf880f9f529b164e75be0b7481881089944744bc33a0b8fd35d7f7a4f1dcc1bea500919e42aabb7f84d821fb1f018a4b")]
 	public Task Sha384CavpVector(string preMasterSecretHex, string clientHelloRandomHex, string serverHelloRandomHex, string clientRandomHex, string serverRandomHex, string masterSecretHex, string keyBlockHex)
 	{
-		return VerifyCavpVector<Sha384HashAlgorithm>(preMasterSecretHex, clientHelloRandomHex, serverHelloRandomHex, clientRandomHex, serverRandomHex, masterSecretHex, keyBlockHex);
+		return VerifyCavpVector<Sha384Core>(preMasterSecretHex, clientHelloRandomHex, serverHelloRandomHex, clientRandomHex, serverRandomHex, masterSecretHex, keyBlockHex);
 	}
 
 	// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/components/800-135testvectors/tls.zip
@@ -82,21 +82,21 @@ public class Tls12PrfTest
 	[Arguments(@"c0e2f0d9897fff0cfe6adb9916f5bf9aa2977977decff80c14f284e1d0391d0cdc320681177aeaca9f99ac398738632e", @"c1ae884cad43fed3e2e98beb225ffbcd93c5b3ffb634f2b658a0c39b97eed8fb", @"02bfb194b3443d2fdf4466c88a0a05c459995d360476ff76df9a088832c8ac59", @"00ac1cf7a2a6376548eba6b6f69ba9e10ab93cedca87521df83e84269628e45f", @"8e111a579904a5c79e6db0832ccb8190ee88db5fd722d8b3f96379286a19f94a", @"74348710df03212b648663bd0a2b9940190e59bdb592876c747656b26f36ce0843505b999138459cf921503ab1c2bffb", @"edeed5638bda76490ff7a3d39f8bb8bc25c9811dd8b2bcd67ddd9c588bd7f05fb8c3328bc6a3252d5a4fc6b07444f5bbb39f67a6e193adc45e282e2e40d5ffe77342101f7e414b28babb94e727cbafa0bf2fc1895ca1c3045a6b75e4d0612345988b54821072432a5b835699bba58bf7cbeb1496461fd99bd76bc82e738794b2")]
 	public Task Sha512CavpVector(string preMasterSecretHex, string clientHelloRandomHex, string serverHelloRandomHex, string clientRandomHex, string serverRandomHex, string masterSecretHex, string keyBlockHex)
 	{
-		return VerifyCavpVector<Sha512HashAlgorithm>(preMasterSecretHex, clientHelloRandomHex, serverHelloRandomHex, clientRandomHex, serverRandomHex, masterSecretHex, keyBlockHex);
+		return VerifyCavpVector<Sha512Core>(preMasterSecretHex, clientHelloRandomHex, serverHelloRandomHex, clientRandomHex, serverRandomHex, masterSecretHex, keyBlockHex);
 	}
 
-	private static async Task VerifyVector<THash>(string secretHex, string labelHex, string seedHex, string outputHex) where THash : unmanaged, IHmacHashCore<THash>
+	private static async Task VerifyVector<TCore>(string secretHex, string labelHex, string seedHex, string outputHex) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		byte[] secret = Convert.FromHexString(secretHex);
 		byte[] label = Convert.FromHexString(labelHex);
 		byte[] seed = Convert.FromHexString(seedHex);
 		byte[] expected = Convert.FromHexString(outputHex);
 
-		await VerifyDerivation<THash>(secret, label, seed, ReadOnlySpan<byte>.Empty, expected);
-		await VerifyDerivation<THash>(secret, label, seed.AsSpan(0, 5), seed.AsSpan(5), expected);
+		await VerifyDerivation<TCore>(secret, label, seed, ReadOnlySpan<byte>.Empty, expected);
+		await VerifyDerivation<TCore>(secret, label, seed.AsSpan(0, 5), seed.AsSpan(5), expected);
 	}
 
-	private static async Task VerifyCavpVector<THash>(string preMasterSecretHex, string clientHelloRandomHex, string serverHelloRandomHex, string clientRandomHex, string serverRandomHex, string masterSecretHex, string keyBlockHex) where THash : unmanaged, IHmacHashCore<THash>
+	private static async Task VerifyCavpVector<TCore>(string preMasterSecretHex, string clientHelloRandomHex, string serverHelloRandomHex, string clientRandomHex, string serverRandomHex, string masterSecretHex, string keyBlockHex) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		byte[] preMasterSecret = Convert.FromHexString(preMasterSecretHex);
 		byte[] clientHelloRandom = Convert.FromHexString(clientHelloRandomHex);
@@ -106,24 +106,24 @@ public class Tls12PrfTest
 		byte[] masterSecret = Convert.FromHexString(masterSecretHex);
 		byte[] keyBlock = Convert.FromHexString(keyBlockHex);
 
-		await VerifyDerivation<THash>(preMasterSecret, "master secret"u8.ToArray(), clientHelloRandom, serverHelloRandom, masterSecret);
-		await VerifyDerivation<THash>(preMasterSecret, "master secret"u8.ToArray(), Concat(clientHelloRandom, serverHelloRandom), ReadOnlySpan<byte>.Empty, masterSecret);
-		await VerifyDerivation<THash>(masterSecret, "key expansion"u8.ToArray(), serverRandom, clientRandom, keyBlock);
-		await VerifyDerivation<THash>(masterSecret, "key expansion"u8.ToArray(), Concat(serverRandom, clientRandom), ReadOnlySpan<byte>.Empty, keyBlock);
+		await VerifyDerivation<TCore>(preMasterSecret, "master secret"u8.ToArray(), clientHelloRandom, serverHelloRandom, masterSecret);
+		await VerifyDerivation<TCore>(preMasterSecret, "master secret"u8.ToArray(), Concat(clientHelloRandom, serverHelloRandom), ReadOnlySpan<byte>.Empty, masterSecret);
+		await VerifyDerivation<TCore>(masterSecret, "key expansion"u8.ToArray(), serverRandom, clientRandom, keyBlock);
+		await VerifyDerivation<TCore>(masterSecret, "key expansion"u8.ToArray(), Concat(serverRandom, clientRandom), ReadOnlySpan<byte>.Empty, keyBlock);
 	}
 
-	private static Task VerifyDerivation<THash>(byte[] secret, byte[] label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, byte[] expected) where THash : unmanaged, IHmacHashCore<THash>
+	private static Task VerifyDerivation<TCore>(byte[] secret, byte[] label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, byte[] expected) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		const int offset = 3;
 		byte[] buffer = CreateGuardedBuffer(offset, expected.Length);
 
 		if (seed2.IsEmpty)
 		{
-			Tls12Prf.DeriveKey<THash>(secret, label, seed1, buffer.AsSpan(offset, expected.Length));
+			Tls12Prf.DeriveKey<TCore>(secret, label, seed1, buffer.AsSpan(offset, expected.Length));
 		}
 		else
 		{
-			Tls12Prf.DeriveKey<THash>(secret, label, seed1, seed2, buffer.AsSpan(offset, expected.Length));
+			Tls12Prf.DeriveKey<TCore>(secret, label, seed1, seed2, buffer.AsSpan(offset, expected.Length));
 		}
 
 		return AssertOutput(buffer, offset, expected);
@@ -132,27 +132,27 @@ public class Tls12PrfTest
 	[Test]
 	public async Task MatchesPlatformHmacReference()
 	{
-		await VerifySweep<Sha1HashAlgorithm>(PlatformMac(HashAlgorithmName.SHA1));
-		await VerifySweep<Sha256HashAlgorithm>(PlatformMac(HashAlgorithmName.SHA256));
-		await VerifySweep<Sha384HashAlgorithm>(PlatformMac(HashAlgorithmName.SHA384));
-		await VerifySweep<Sha512HashAlgorithm>(PlatformMac(HashAlgorithmName.SHA512));
+		await VerifySweep<Sha1Core>(PlatformMac(HashAlgorithmName.SHA1));
+		await VerifySweep<Sha256Core>(PlatformMac(HashAlgorithmName.SHA256));
+		await VerifySweep<Sha384Core>(PlatformMac(HashAlgorithmName.SHA384));
+		await VerifySweep<Sha512Core>(PlatformMac(HashAlgorithmName.SHA512));
 	}
 
 	// The platform has no HMAC for these hashes.
 	[Test]
 	public async Task MatchesHmacAlgorithmReference()
 	{
-		await VerifySweep<Sha224HashAlgorithm>(HmacAlgorithmMac<Sha224HashAlgorithm>);
-		await VerifySweep<SM3HashAlgorithm>(HmacAlgorithmMac<SM3HashAlgorithm>);
-		await VerifySweep<Blake2b256HashAlgorithm>(HmacAlgorithmMac<Blake2b256HashAlgorithm>);
-		await VerifySweep<Blake2b512HashAlgorithm>(HmacAlgorithmMac<Blake2b512HashAlgorithm>);
+		await VerifySweep<Sha224Core>(HmacAlgorithmMac<Sha224Core>);
+		await VerifySweep<SM3Core>(HmacAlgorithmMac<SM3Core>);
+		await VerifySweep<Blake2b256Core>(HmacAlgorithmMac<Blake2b256Core>);
+		await VerifySweep<Blake2b512Core>(HmacAlgorithmMac<Blake2b512Core>);
 	}
 
-	private static async Task VerifySweep<THash>(Func<byte[], byte[], byte[]> mac) where THash : unmanaged, IHmacHashCore<THash>
+	private static async Task VerifySweep<TCore>(Func<byte[], byte[], byte[]> mac) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		int hashLength = THash.HashLength;
-		int[] secretLengths = [0, 48, THash.HmacBlockSize + 1];
-		(int Label, int Seed)[] inputLengths = [(13, 64), (13, 0), (0, 32), (13, THash.HmacBlockSize + 7)];
+		int hashLength = TCore.HashLength;
+		int[] secretLengths = [0, 48, TCore.HmacBlockSize + 1];
+		(int Label, int Seed)[] inputLengths = [(13, 64), (13, 0), (0, 32), (13, TCore.HmacBlockSize + 7)];
 
 		foreach (int secretLength in secretLengths)
 		{
@@ -168,11 +168,11 @@ public class Tls12PrfTest
 				{
 					byte[] expected = reference.AsSpan(0, outputLength).ToArray();
 					byte[] actual = new byte[outputLength];
-					Tls12Prf.DeriveKey<THash>(secret, label, seed, actual);
+					Tls12Prf.DeriveKey<TCore>(secret, label, seed, actual);
 					await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 
 					byte[] split = new byte[outputLength];
-					Tls12Prf.DeriveKey<THash>(secret, label, seed.AsSpan(0, seedLength / 3), seed.AsSpan(seedLength / 3), split);
+					Tls12Prf.DeriveKey<TCore>(secret, label, seed.AsSpan(0, seedLength / 3), seed.AsSpan(seedLength / 3), split);
 					await Assert.That(split).IsEquivalentTo(expected, CollectionOrdering.Matching);
 				}
 			}
@@ -189,7 +189,7 @@ public class Tls12PrfTest
 		byte[] expected = ReferencePrf(PlatformMac(HashAlgorithmName.SHA1), secret, label, seed, outputLength);
 		byte[] actual = new byte[outputLength];
 
-		Tls12Prf.DeriveKey<Sha1HashAlgorithm>(secret, label, seed, actual);
+		Tls12Prf.DeriveKey<Sha1Core>(secret, label, seed, actual);
 
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
@@ -201,10 +201,10 @@ public class Tls12PrfTest
 		byte[] label = "master secret"u8.ToArray();
 		byte[] seed = CreateData(32, 5);
 
-		await Assert.That(() => Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, seed, Array.Empty<byte>()))
+		await Assert.That(() => Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, Array.Empty<byte>()))
 			.ThrowsExactly<ArgumentOutOfRangeException>()
 			.WithParameterName("output");
-		await Assert.That(() => Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, seed, seed, Array.Empty<byte>()))
+		await Assert.That(() => Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, seed, Array.Empty<byte>()))
 			.ThrowsExactly<ArgumentOutOfRangeException>()
 			.WithParameterName("output");
 	}
@@ -232,7 +232,7 @@ public class Tls12PrfTest
 		ReadOnlySpan<byte> overlappedInput = buffer.AsSpan(inputOffset, overlapped.Length);
 		Span<byte> output = buffer.AsSpan(outputOffset, outputLength);
 
-		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(input is PrfInput.Secret ? overlappedInput : secret, input is PrfInput.Label ? overlappedInput : label, input is PrfInput.Seed1 ? overlappedInput : seed1, input is PrfInput.Seed2 ? overlappedInput : seed2, output);
+		Tls12Prf.DeriveKey<Sha256Core>(input is PrfInput.Secret ? overlappedInput : secret, input is PrfInput.Label ? overlappedInput : label, input is PrfInput.Seed1 ? overlappedInput : seed1, input is PrfInput.Seed2 ? overlappedInput : seed2, output);
 
 		await Assert.That(buffer.AsMemory(outputOffset, outputLength)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
@@ -249,7 +249,7 @@ public class Tls12PrfTest
 		byte[] buffer = new byte[Math.Max(seed.Length, outputLength)];
 		seed.CopyTo(buffer, 0);
 
-		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, buffer.AsSpan(0, seed.Length), buffer.AsSpan(0, outputLength));
+		Tls12Prf.DeriveKey<Sha256Core>(secret, label, buffer.AsSpan(0, seed.Length), buffer.AsSpan(0, outputLength));
 
 		await Assert.That(buffer.AsMemory(0, outputLength)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
@@ -278,10 +278,10 @@ public class Tls12PrfTest
 		return (key, source) => CryptographicOperations.HmacData(name, key, source);
 	}
 
-	private static byte[] HmacAlgorithmMac<THash>(byte[] key, byte[] source) where THash : unmanaged, IHmacHashCore<THash>
+	private static byte[] HmacAlgorithmMac<TCore>(byte[] key, byte[] source) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
-		byte[] mac = new byte[HmacAlgorithm<THash>.MacLength];
-		HmacAlgorithm<THash>.Mac(key, source, mac);
+		byte[] mac = new byte[HmacAlgorithm<TCore>.MacLength];
+		HmacAlgorithm<TCore>.Mac(key, source, mac);
 		return mac;
 	}
 }

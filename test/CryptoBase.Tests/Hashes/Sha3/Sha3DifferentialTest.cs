@@ -19,10 +19,10 @@ public class Sha3DifferentialTest
 	{
 		return hashLength switch
 		{
-			28 => VerifyHashes<Sha3_224HashAlgorithm>(),
-			32 => VerifyHashes<Sha3_256HashAlgorithm>(),
-			48 => VerifyHashes<Sha3_384HashAlgorithm>(),
-			64 => VerifyHashes<Sha3_512HashAlgorithm>(),
+			28 => VerifyHashes<Sha3_224Core>(),
+			32 => VerifyHashes<Sha3_256Core>(),
+			48 => VerifyHashes<Sha3_384Core>(),
+			64 => VerifyHashes<Sha3_512Core>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(hashLength))
 		};
 	}
@@ -33,10 +33,10 @@ public class Sha3DifferentialTest
 	{
 		return hashLength switch
 		{
-			28 => VerifyHmacs<Sha3_224HashAlgorithm>(),
-			32 => VerifyHmacs<Sha3_256HashAlgorithm>(),
-			48 => VerifyHmacs<Sha3_384HashAlgorithm>(),
-			64 => VerifyHmacs<Sha3_512HashAlgorithm>(),
+			28 => VerifyHmacs<Sha3_224Core>(),
+			32 => VerifyHmacs<Sha3_256Core>(),
+			48 => VerifyHmacs<Sha3_384Core>(),
+			64 => VerifyHmacs<Sha3_512Core>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(hashLength))
 		};
 	}

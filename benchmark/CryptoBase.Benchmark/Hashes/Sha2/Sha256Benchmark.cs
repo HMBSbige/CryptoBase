@@ -6,7 +6,7 @@ using Org.BouncyCastle.Crypto.Digests;
 namespace CryptoBase.Benchmark.Hashes.Sha2;
 
 [MemoryDiagnoser]
-public class Sha256Benchmark : BclAndBouncyCastleHashBenchmark<Sha256HashAlgorithm, BclSha256, Sha256Digest>
+public class Sha256Benchmark : BclAndBouncyCastleHashBenchmark<Sha256Core, BclSha256, Sha256Digest>
 {
 	protected override IReadOnlyList<int> Sizes => HashBenchmarkSizes.Block64;
 

@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Hashes.MD5;
 
-public partial struct MD5HashAlgorithm
+public partial struct MD5Core
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint ReadX64Message(ref byte source, int wordIndex)
@@ -12,7 +12,7 @@ public partial struct MD5HashAlgorithm
 	}
 
 	[SuppressMessage("ReSharper", "RedundantAssignment")]
-	private static void ProcessBlocksX64(ref MD5HashAlgorithm hashAlgorithm, ref byte source, int blockCount)
+	private static void ProcessBlocksX64(ref MD5Core hashAlgorithm, ref byte source, int blockCount)
 	{
 		Debug.Assert(X86Base.X64.IsSupported);
 		uint stateA = hashAlgorithm._a;

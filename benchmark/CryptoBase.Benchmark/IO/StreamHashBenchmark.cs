@@ -23,7 +23,7 @@ public class StreamHashBenchmark
 	public void Setup()
 	{
 		_stream = new MemoryStream(RandomNumberGenerator.GetBytes(ByteLength), false);
-		_hash = GC.AllocateUninitializedArray<byte>(HashAlgorithm<Sha256HashAlgorithm>.HashLength);
+		_hash = GC.AllocateUninitializedArray<byte>(HashAlgorithm<Sha256Core>.HashLength);
 	}
 
 	[GlobalCleanup]
@@ -37,8 +37,8 @@ public class StreamHashBenchmark
 	public uint CryptoBaseSync()
 	{
 		_stream.Position = 0;
-		Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
-		_ = HashAlgorithm<Sha256HashAlgorithm>.HashData(_stream, hash);
+		Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256Core>.HashLength];
+		_ = HashAlgorithm<Sha256Core>.HashData(_stream, hash);
 		return BinaryPrimitives.ReadUInt32LittleEndian(hash);
 	}
 
@@ -47,7 +47,7 @@ public class StreamHashBenchmark
 	public uint BclSync()
 	{
 		_stream.Position = 0;
-		Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		Span<byte> hash = stackalloc byte[HashAlgorithm<Sha256Core>.HashLength];
 		_ = SHA256.HashData(_stream, hash);
 		return BinaryPrimitives.ReadUInt32LittleEndian(hash);
 	}
@@ -57,7 +57,7 @@ public class StreamHashBenchmark
 	public ValueTask<int> CryptoBaseAsync()
 	{
 		_stream.Position = 0;
-		return HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(_stream, _hash);
+		return HashAlgorithm<Sha256Core>.HashDataAsync(_stream, _hash);
 	}
 
 	[Benchmark]

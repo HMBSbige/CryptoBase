@@ -5,21 +5,21 @@ namespace CryptoBase.Macs.Hmac;
 /// <summary>
 /// Provides one-shot and incremental keyed-hash message authentication code (HMAC) operations.
 /// </summary>
-/// <typeparam name="THash">The hash core used to compute the HMAC.</typeparam>
-public sealed class HmacAlgorithm<THash> : IMacAlgorithm<HmacAlgorithm<THash>> where THash : unmanaged, IHmacHashCore<THash>
+/// <typeparam name="TCore">The hash core used to compute the HMAC.</typeparam>
+public sealed class HmacAlgorithm<TCore> : IMacAlgorithm<HmacAlgorithm<TCore>> where TCore : unmanaged, IHmacHashCore<TCore>
 {
-	private HmacState<THash> _state;
+	private HmacState<TCore> _state;
 	private bool _disposed;
 
 	private HmacAlgorithm() { }
 
 	/// <inheritdoc />
-	public static int MacLength => THash.HashLength;
+	public static int MacLength => TCore.HashLength;
 
 	/// <inheritdoc />
-	public static HmacAlgorithm<THash> Create(ReadOnlySpan<byte> key)
+	public static HmacAlgorithm<TCore> Create(ReadOnlySpan<byte> key)
 	{
-		HmacAlgorithm<THash> macAlgorithm = new();
+		HmacAlgorithm<TCore> macAlgorithm = new();
 		macAlgorithm._state.Initialize(key, true);
 		return macAlgorithm;
 	}
@@ -58,7 +58,7 @@ public sealed class HmacAlgorithm<THash> : IMacAlgorithm<HmacAlgorithm<THash>> w
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		return HmacState<THash>.Mac(key, source, destination);
+		return HmacState<TCore>.Mac(key, source, destination);
 	}
 
 	/// <inheritdoc />

@@ -4,7 +4,7 @@ namespace CryptoBase.Hashes.Blake2b;
 /// Provides the BLAKE2b-256 hash core.
 /// </summary>
 /// <remarks>Computes unkeyed BLAKE2b with a 32-byte digest, as specified in RFC 7693.</remarks>
-public struct Blake2b256HashAlgorithm : IHmacHashCore<Blake2b256HashAlgorithm>
+public struct Blake2b256Core : IHmacHashCore<Blake2b256Core>
 {
 	private const int HashSizeInBytes = 32;
 
@@ -17,9 +17,9 @@ public struct Blake2b256HashAlgorithm : IHmacHashCore<Blake2b256HashAlgorithm>
 	public static int HmacBlockSize => Blake2bState.BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static Blake2b256HashAlgorithm IHashCore<Blake2b256HashAlgorithm>.Create()
+	static Blake2b256Core IHashCore<Blake2b256Core>.Create()
 	{
-		Unsafe.SkipInit(out Blake2b256HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out Blake2b256Core hashAlgorithm);
 		hashAlgorithm._state.Initialize(HashSizeInBytes);
 		return hashAlgorithm;
 	}

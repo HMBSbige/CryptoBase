@@ -12,24 +12,24 @@ internal sealed class ClobberingHmacSha256 : IMacAlgorithm<ClobberingHmacSha256>
 {
 	private const byte Sentinel = 0x5A;
 
-	private readonly HmacAlgorithm<Sha256HashAlgorithm> _hmac;
+	private readonly HmacAlgorithm<Sha256Core> _hmac;
 
-	private ClobberingHmacSha256(HmacAlgorithm<Sha256HashAlgorithm> hmac)
+	private ClobberingHmacSha256(HmacAlgorithm<Sha256Core> hmac)
 	{
 		_hmac = hmac;
 	}
 
-	public static int MacLength => HmacAlgorithm<Sha256HashAlgorithm>.MacLength;
+	public static int MacLength => HmacAlgorithm<Sha256Core>.MacLength;
 
 	public static ClobberingHmacSha256 Create(ReadOnlySpan<byte> key)
 	{
-		return new ClobberingHmacSha256(HmacAlgorithm<Sha256HashAlgorithm>.Create(key));
+		return new ClobberingHmacSha256(HmacAlgorithm<Sha256Core>.Create(key));
 	}
 
 	public static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Clobber(destination);
-		return HmacAlgorithm<Sha256HashAlgorithm>.Mac(key, source, destination);
+		return HmacAlgorithm<Sha256Core>.Mac(key, source, destination);
 	}
 
 	public void Append(ReadOnlySpan<byte> source)

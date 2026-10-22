@@ -39,28 +39,28 @@ public class Blake2b256Test
 	[Arguments("The quick brown fox jumps over the lazy dog", "01718cec35cd3d796dd00020e0bfecb473ad23457d063b75eff29c0ffa2e58a9")]
 	public Task KnownVectors(string value, string expected)
 	{
-		return VerifyHashVector<Blake2b256HashAlgorithm>(value, expected, 32, 128);
+		return VerifyHashVector<Blake2b256Core>(value, expected, 32, 128);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(BoundaryVectors))]
 	public Task BlockBoundaries(int length, string expectedHex)
 	{
-		return VerifyBoundary<Blake2b256HashAlgorithm>(length, expectedHex);
+		return VerifyBoundary<Blake2b256Core>(length, expectedHex);
 	}
 
 	[Test]
 	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(Hash128IncrementalBatchCases))]
 	public Task IncrementalBlockBatches(int length, int sourceOffset, int blockSize)
 	{
-		return VerifyIncrementalBlockBatch<Blake2b256HashAlgorithm>(length, sourceOffset, blockSize, static source => GetKnownDigest(source, BoundaryVectors, "BLAKE2b-256"));
+		return VerifyIncrementalBlockBatch<Blake2b256Core>(length, sourceOffset, blockSize, static source => GetKnownDigest(source, BoundaryVectors, "BLAKE2b-256"));
 	}
 
 	[Test]
 	[CombinedDataSources]
 	public Task InputIsUnchanged([MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(InputIntegrityLengths))] int length, [Arguments(1, 7)] int offset)
 	{
-		return VerifyInputIsUnchanged<Blake2b256HashAlgorithm>(length, offset);
+		return VerifyInputIsUnchanged<Blake2b256Core>(length, offset);
 	}
 
 	[Test]
@@ -71,6 +71,6 @@ public class Blake2b256Test
 	public Task HmacKnownVectors(int keyLength, int sourceLength, string expectedHex)
 	{
 		byte[] key = CreateDeterministicSource(keyLength + 1).AsSpan(1).ToArray();
-		return MacAlgorithmTestUtils.VerifyVector<HmacAlgorithm<Blake2b256HashAlgorithm>>(key, CreateDeterministicSource(sourceLength), Convert.FromHexString(expectedHex));
+		return MacAlgorithmTestUtils.VerifyVector<HmacAlgorithm<Blake2b256Core>>(key, CreateDeterministicSource(sourceLength), Convert.FromHexString(expectedHex));
 	}
 }

@@ -11,7 +11,7 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.Kdf;
 
 [GenerateGenericTest(typeof(PlatformHmacSha256))]
-[GenerateGenericTest(typeof(HmacAlgorithm<Sha256HashAlgorithm>))]
+[GenerateGenericTest(typeof(HmacAlgorithm<Sha256Core>))]
 [GenerateGenericTest(typeof(ClobberingHmacSha256))]
 public class Tls12PrfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 {
@@ -92,7 +92,7 @@ public class Tls12PrfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 				{
 					byte[] expected = reference.AsSpan(0, outputLength).ToArray();
 					byte[] nonGeneric = new byte[outputLength];
-					Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, seed, nonGeneric);
+					Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, nonGeneric);
 					await Assert.That(nonGeneric).IsEquivalentTo(expected, CollectionOrdering.Matching);
 
 					byte[] actual = new byte[outputLength];
@@ -117,7 +117,7 @@ public class Tls12PrfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] expected = new byte[outputLength];
 		byte[] actual = new byte[outputLength];
 
-		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, seed, expected);
+		Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, expected);
 		Tls12Prf<TMac>.DeriveKey(secret, label, seed, actual);
 
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
@@ -143,7 +143,7 @@ public class Tls12PrfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] seed1 = CreateData(input is PrfInput.Seed1 ? overlappedLength : 32, 5);
 		byte[] seed2 = CreateData(input is PrfInput.Seed2 ? overlappedLength : 32, 7);
 		byte[] expected = new byte[outputLength];
-		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, seed1, seed2, expected);
+		Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed1, seed2, expected);
 
 		byte[] overlapped = input switch
 		{
@@ -172,7 +172,7 @@ public class Tls12PrfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 		byte[] label = "key expansion"u8.ToArray();
 		byte[] seed = CreateData(64, 5);
 		byte[] expected = new byte[outputLength];
-		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, seed, expected);
+		Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, expected);
 		byte[] buffer = new byte[Math.Max(seed.Length, outputLength)];
 		seed.CopyTo(buffer, 0);
 

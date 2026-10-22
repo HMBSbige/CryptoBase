@@ -121,7 +121,7 @@ internal partial struct Sha256State
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 20), BinaryPrimitives.ReverseEndianness(_h5));
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 24), BinaryPrimitives.ReverseEndianness(_h6));
 
-		if (hashLengthInBytes is Sha256HashAlgorithm.HashSizeInBytes)
+		if (hashLengthInBytes is Sha256Core.HashSizeInBytes)
 		{
 			Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 28), BinaryPrimitives.ReverseEndianness(_h7));
 		}

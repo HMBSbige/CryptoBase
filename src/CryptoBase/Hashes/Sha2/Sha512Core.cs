@@ -3,7 +3,7 @@ namespace CryptoBase.Hashes.Sha2;
 /// <summary>
 /// Provides the SHA-512 hash core.
 /// </summary>
-public struct Sha512HashAlgorithm : IHmacHashCore<Sha512HashAlgorithm>
+public struct Sha512Core : IHmacHashCore<Sha512Core>
 {
 	internal const int HashSizeInBytes = 64;
 	private const ulong InitialH0 = 0x6A09E667F3BCC908UL;
@@ -24,9 +24,9 @@ public struct Sha512HashAlgorithm : IHmacHashCore<Sha512HashAlgorithm>
 	public static int HmacBlockSize => Sha512State.BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static Sha512HashAlgorithm IHashCore<Sha512HashAlgorithm>.Create()
+	static Sha512Core IHashCore<Sha512Core>.Create()
 	{
-		Unsafe.SkipInit(out Sha512HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out Sha512Core hashAlgorithm);
 		hashAlgorithm.Reset();
 		return hashAlgorithm;
 	}

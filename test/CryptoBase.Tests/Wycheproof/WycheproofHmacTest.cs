@@ -18,70 +18,70 @@ public class WycheproofHmacTest
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha1_test.json"])]
 	public Task HmacSha1(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha1HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha1Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha224_test.json"])]
 	public Task HmacSha224(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha224HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha224Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha256_test.json"])]
 	public Task HmacSha256(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha256HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha256Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha384_test.json"])]
 	public Task HmacSha384(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha384HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha384Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha512_test.json"])]
 	public Task HmacSha512(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha512HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha512Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha3_224_test.json"])]
 	public Task HmacSha3_224(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha3_224HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha3_224Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha3_256_test.json"])]
 	public Task HmacSha3_256(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha3_256HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha3_256Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha3_384_test.json"])]
 	public Task HmacSha3_384(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha3_384HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha3_384Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sha3_512_test.json"])]
 	public Task HmacSha3_512(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<Sha3_512HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<Sha3_512Core>>(vector);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Vectors), Arguments = ["hmac_sm3_test.json"])]
 	public Task HmacSM3(MacTestVector vector)
 	{
-		return Verify<HmacAlgorithm<SM3HashAlgorithm>>(vector);
+		return Verify<HmacAlgorithm<SM3Core>>(vector);
 	}
 
 	private static async Task Verify<TMac>(MacTestVector vector) where TMac : class, IMacAlgorithm<TMac>

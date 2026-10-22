@@ -25,7 +25,7 @@ public class StreamMacBenchmark
 	{
 		_key = RandomNumberGenerator.GetBytes(32);
 		_stream = new MemoryStream(RandomNumberGenerator.GetBytes(ByteLength), false);
-		_mac = GC.AllocateUninitializedArray<byte>(HmacAlgorithm<Sha256HashAlgorithm>.MacLength);
+		_mac = GC.AllocateUninitializedArray<byte>(HmacAlgorithm<Sha256Core>.MacLength);
 	}
 
 	[GlobalCleanup]
@@ -39,8 +39,8 @@ public class StreamMacBenchmark
 	public uint CryptoBaseSync()
 	{
 		_stream.Position = 0;
-		Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
-		_ = HmacAlgorithm<Sha256HashAlgorithm>.MacData(_key, _stream, mac);
+		Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256Core>.MacLength];
+		_ = HmacAlgorithm<Sha256Core>.MacData(_key, _stream, mac);
 		return BinaryPrimitives.ReadUInt32LittleEndian(mac);
 	}
 
@@ -49,7 +49,7 @@ public class StreamMacBenchmark
 	public uint BclSync()
 	{
 		_stream.Position = 0;
-		Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256HashAlgorithm>.MacLength];
+		Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256Core>.MacLength];
 		_ = HMACSHA256.HashData(_key, _stream, mac);
 		return BinaryPrimitives.ReadUInt32LittleEndian(mac);
 	}
@@ -59,7 +59,7 @@ public class StreamMacBenchmark
 	public ValueTask<int> CryptoBaseAsync()
 	{
 		_stream.Position = 0;
-		return HmacAlgorithm<Sha256HashAlgorithm>.MacDataAsync(_key, _stream, _mac);
+		return HmacAlgorithm<Sha256Core>.MacDataAsync(_key, _stream, _mac);
 	}
 
 	[Benchmark]

@@ -19,14 +19,14 @@ public class StreamHashExtensionsTest
 		const int startOffset = 137;
 		byte[] source = CreateDeterministicSource(StreamDrain.BufferSize * 2 + 257);
 		byte[] expected = SHA256.HashData(source.AsSpan(startOffset));
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength + 1];
+		byte[] destination = new byte[HashAlgorithm<Sha256Core>.HashLength + 1];
 		PrepareDestination(destination);
 		using MemoryStream stream = new(source, false);
 		stream.Position = startOffset;
 
 		int written = useAsync
-			? await HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(stream, destination)
-			: HashAlgorithm<Sha256HashAlgorithm>.HashData(stream, destination);
+			? await HashAlgorithm<Sha256Core>.HashDataAsync(stream, destination)
+			: HashAlgorithm<Sha256Core>.HashData(stream, destination);
 
 		await AssertOutput(destination, expected, written);
 		await Assert.That(stream.Position).IsEqualTo(stream.Length);
@@ -37,7 +37,7 @@ public class StreamHashExtensionsTest
 	public async Task HashDataRejectsShortDestinationBeforeReading([Matrix] bool useAsync)
 	{
 		byte[] source = CreateDeterministicSource(257);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength - 1];
+		byte[] destination = new byte[HashAlgorithm<Sha256Core>.HashLength - 1];
 		PrepareDestination(destination);
 		using MemoryStream stream = new(source, false);
 		stream.Position = 11;
@@ -46,11 +46,11 @@ public class StreamHashExtensionsTest
 		{
 			if (useAsync)
 			{
-				await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(stream, destination).AsTask()).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+				await Assert.That(() => HashAlgorithm<Sha256Core>.HashDataAsync(stream, destination).AsTask()).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 			}
 			else
 			{
-				await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashData(stream, destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
+				await Assert.That(() => HashAlgorithm<Sha256Core>.HashData(stream, destination)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("destination");
 			}
 			await Assert.That(stream.Position).IsEqualTo(11);
 			await Assert.That(destination).All(static value => value is DestinationSentinel);
@@ -63,12 +63,12 @@ public class StreamHashExtensionsTest
 	{
 		byte[] source = CreateDeterministicSource(sourceLength);
 		byte[] expected = SHA256.HashData(source);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		byte[] destination = new byte[HashAlgorithm<Sha256Core>.HashLength];
 		using MemoryStream stream = new LimitedReadMemoryStream(source, 7);
 
 		int written = useAsync
-			? await HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(stream, destination)
-			: HashAlgorithm<Sha256HashAlgorithm>.HashData(stream, destination);
+			? await HashAlgorithm<Sha256Core>.HashDataAsync(stream, destination)
+			: HashAlgorithm<Sha256Core>.HashData(stream, destination);
 
 		await AssertOutput(destination, expected, written);
 		await Assert.That(stream.Position).IsEqualTo(stream.Length);
@@ -77,15 +77,15 @@ public class StreamHashExtensionsTest
 	[Test]
 	public async Task HashDataRejectsNullAndUnreadableStreamsBeforeWriting()
 	{
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		byte[] destination = new byte[HashAlgorithm<Sha256Core>.HashLength];
 		PrepareDestination(destination);
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashData((Stream)null!, destination)).ThrowsExactly<ArgumentNullException>().WithParameterName("source");
-			await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashData(new WriteOnlyMemoryStream(), destination)).ThrowsExactly<ArgumentException>().WithParameterName("source");
-			await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(null!, destination).AsTask()).ThrowsExactly<ArgumentNullException>().WithParameterName("source");
-			await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(new WriteOnlyMemoryStream(), destination).AsTask()).ThrowsExactly<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => HashAlgorithm<Sha256Core>.HashData((Stream)null!, destination)).ThrowsExactly<ArgumentNullException>().WithParameterName("source");
+			await Assert.That(() => HashAlgorithm<Sha256Core>.HashData(new WriteOnlyMemoryStream(), destination)).ThrowsExactly<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => HashAlgorithm<Sha256Core>.HashDataAsync(null!, destination).AsTask()).ThrowsExactly<ArgumentNullException>().WithParameterName("source");
+			await Assert.That(() => HashAlgorithm<Sha256Core>.HashDataAsync(new WriteOnlyMemoryStream(), destination).AsTask()).ThrowsExactly<ArgumentException>().WithParameterName("source");
 			await Assert.That(destination).All(static value => value is DestinationSentinel);
 		}
 	}
@@ -93,8 +93,8 @@ public class StreamHashExtensionsTest
 	[Test]
 	public async Task AppendRejectsNullArgumentsAndUnreadableStreams()
 	{
-		using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
-		HashAlgorithm<Sha256HashAlgorithm>? nullHasher = null;
+		using HashAlgorithm<Sha256Core> hasher = HashAlgorithm<Sha256Core>.Create();
+		HashAlgorithm<Sha256Core>? nullHasher = null;
 		using MemoryStream stream = new(CreateDeterministicSource(257), false);
 		stream.Position = 11;
 
@@ -115,13 +115,13 @@ public class StreamHashExtensionsTest
 	public async Task HashDataAsyncHonorsPreCanceledTokenBeforeReading()
 	{
 		byte[] source = CreateDeterministicSource(257);
-		byte[] destination = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		byte[] destination = new byte[HashAlgorithm<Sha256Core>.HashLength];
 		PrepareDestination(destination);
 		using MemoryStream stream = new(source, false);
 		using CancellationTokenSource cancellation = new();
 		cancellation.Cancel();
 
-		OperationCanceledException exception = (await Assert.That(() => HashAlgorithm<Sha256HashAlgorithm>.HashDataAsync(stream, destination, cancellation.Token).AsTask()).Throws<OperationCanceledException>())!;
+		OperationCanceledException exception = (await Assert.That(() => HashAlgorithm<Sha256Core>.HashDataAsync(stream, destination, cancellation.Token).AsTask()).Throws<OperationCanceledException>())!;
 
 		using (Assert.Multiple())
 		{
@@ -134,7 +134,7 @@ public class StreamHashExtensionsTest
 	[Test]
 	public async Task AppendAsyncHonorsPreCanceledTokenBeforeReading()
 	{
-		using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
+		using HashAlgorithm<Sha256Core> hasher = HashAlgorithm<Sha256Core>.Create();
 		using MemoryStream stream = new(CreateDeterministicSource(257), false);
 		using CancellationTokenSource cancellation = new();
 		cancellation.Cancel();
@@ -158,7 +158,7 @@ public class StreamHashExtensionsTest
 		byte[] body = CreateDeterministicSource(4096 * 2 + 33);
 		byte[] trailer = CreateDeterministicSource(7);
 		byte[] expected = SHA256.HashData(Concat(Concat(header, body.AsSpan(startOffset)), trailer));
-		using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
+		using HashAlgorithm<Sha256Core> hasher = HashAlgorithm<Sha256Core>.Create();
 		using MemoryStream stream = new LimitedReadMemoryStream(body, 1000);
 		stream.Position = startOffset;
 
@@ -176,7 +176,7 @@ public class StreamHashExtensionsTest
 	{
 		byte[] first = CreateDeterministicSource(StreamDrain.BufferSize + 1);
 		byte[] second = CreateDeterministicSource(31);
-		using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
+		using HashAlgorithm<Sha256Core> hasher = HashAlgorithm<Sha256Core>.Create();
 		using MemoryStream stream = new(first, false);
 
 		await AppendAsync(hasher, stream, useAsync);
@@ -220,7 +220,7 @@ public class StreamHashExtensionsTest
 		}
 		else
 		{
-			await VerifyAppendRejectsDisposed(HashAlgorithm<Sha256HashAlgorithm>.Create(), stream, useAsync);
+			await VerifyAppendRejectsDisposed(HashAlgorithm<Sha256Core>.Create(), stream, useAsync);
 		}
 
 		await Assert.That(stream.Position).IsEqualTo(position);
@@ -233,7 +233,7 @@ public class StreamHashExtensionsTest
 		byte[] source = CreateDeterministicSource(37);
 		byte[] blake3Expected = new byte[Blake3HashAlgorithm.HashLength];
 		Blake3HashAlgorithm.HashData(source, blake3Expected);
-		using HashAlgorithm<Sha256HashAlgorithm> hasher = HashAlgorithm<Sha256HashAlgorithm>.Create();
+		using HashAlgorithm<Sha256Core> hasher = HashAlgorithm<Sha256Core>.Create();
 		using Blake3HashAlgorithm blake3 = Blake3HashAlgorithm.Create();
 		using Stream stream = AppendSources.Create(kind);
 		byte[] blake3Actual = new byte[Blake3HashAlgorithm.HashLength];
@@ -274,9 +274,9 @@ public class StreamHashExtensionsTest
 		}
 	}
 
-	private static async Task AssertCurrentHash(HashAlgorithm<Sha256HashAlgorithm> hasher, byte[] expected)
+	private static async Task AssertCurrentHash(HashAlgorithm<Sha256Core> hasher, byte[] expected)
 	{
-		byte[] actual = new byte[HashAlgorithm<Sha256HashAlgorithm>.HashLength];
+		byte[] actual = new byte[HashAlgorithm<Sha256Core>.HashLength];
 		hasher.GetCurrentHash(actual);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}

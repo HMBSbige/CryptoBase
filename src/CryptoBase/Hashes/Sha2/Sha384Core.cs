@@ -3,7 +3,7 @@ namespace CryptoBase.Hashes.Sha2;
 /// <summary>
 /// Provides the SHA-384 hash core.
 /// </summary>
-public struct Sha384HashAlgorithm : IHmacHashCore<Sha384HashAlgorithm>
+public struct Sha384Core : IHmacHashCore<Sha384Core>
 {
 	private const int HashSizeInBytes = 48;
 	private const ulong InitialH0 = 0xCBBB9D5DC1059ED8UL;
@@ -24,9 +24,9 @@ public struct Sha384HashAlgorithm : IHmacHashCore<Sha384HashAlgorithm>
 	public static int HmacBlockSize => Sha512State.BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static Sha384HashAlgorithm IHashCore<Sha384HashAlgorithm>.Create()
+	static Sha384Core IHashCore<Sha384Core>.Create()
 	{
-		Unsafe.SkipInit(out Sha384HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out Sha384Core hashAlgorithm);
 		hashAlgorithm.Reset();
 		return hashAlgorithm;
 	}

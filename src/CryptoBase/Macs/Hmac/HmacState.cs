@@ -4,7 +4,7 @@ using CryptoBase.Hashes.Sha2;
 
 namespace CryptoBase.Macs.Hmac;
 
-internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
+internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 {
 	private const byte Ipad = 0x36;
 	private const byte Opad = 0x5c;
@@ -14,23 +14,23 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Vector128.IsHardwareAccelerated
-				&& THash.HmacBlockSize % 32 is 0
-				&& (!AdvSimd.Arm64.IsSupported || typeof(THash) != typeof(Sha1HashAlgorithm) && typeof(THash) != typeof(Sha256HashAlgorithm));
+				&& TCore.HmacBlockSize % 32 is 0
+				&& (!AdvSimd.Arm64.IsSupported || typeof(TCore) != typeof(Sha1Core) && typeof(TCore) != typeof(Sha256Core));
 	}
 
-	private THash _innerSeed;
-	private THash _outerSeed;
-	private THash _innerState;
+	private TCore _innerSeed;
+	private TCore _outerSeed;
+	private TCore _innerState;
 
 	[SkipLocalsInit]
 	internal void Initialize(ReadOnlySpan<byte> key, bool reuseSeeds)
 	{
-		using CryptoBuffer<byte> keyBlock = new(stackalloc byte[THash.HmacBlockSize + (UseDirectKeyPads ? THash.HashLength : 0)]);
+		using CryptoBuffer<byte> keyBlock = new(stackalloc byte[TCore.HmacBlockSize + (UseDirectKeyPads ? TCore.HashLength : 0)]);
 
 		if (UseDirectKeyPads)
 		{
-			ReadOnlySpan<byte> normalizedKey = NormalizeKeyForDirectPads(key, keyBlock.Span.Slice(THash.HmacBlockSize));
-			InitializeSeeds(normalizedKey, keyBlock.Span.Slice(0, THash.HmacBlockSize), out _innerSeed, out _outerSeed);
+			ReadOnlySpan<byte> normalizedKey = NormalizeKeyForDirectPads(key, keyBlock.Span.Slice(TCore.HmacBlockSize));
+			InitializeSeeds(normalizedKey, keyBlock.Span.Slice(0, TCore.HmacBlockSize), out _innerSeed, out _outerSeed);
 		}
 		else
 		{
@@ -48,15 +48,15 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void PrecompressKeyBlock(ref THash seed)
+	private static void PrecompressKeyBlock(ref TCore seed)
 	{
-		if (typeof(THash) == typeof(Blake2b512HashAlgorithm))
+		if (typeof(TCore) == typeof(Blake2b512Core))
 		{
-			Unsafe.As<THash, Blake2b512HashAlgorithm>(ref seed).PrecompressBuffer();
+			Unsafe.As<TCore, Blake2b512Core>(ref seed).PrecompressBuffer();
 		}
-		else if (typeof(THash) == typeof(Blake2b256HashAlgorithm))
+		else if (typeof(TCore) == typeof(Blake2b256Core))
 		{
-			Unsafe.As<THash, Blake2b256HashAlgorithm>(ref seed).PrecompressBuffer();
+			Unsafe.As<TCore, Blake2b256Core>(ref seed).PrecompressBuffer();
 		}
 	}
 
@@ -77,10 +77,10 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal readonly int GetCurrentMac(Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
-		THash inner = _innerState;
-		THash outer = _outerSeed;
+		TCore inner = _innerState;
+		TCore outer = _outerSeed;
 
 		try
 		{
@@ -95,7 +95,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 
 	internal int GetMacAndReset(Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 		return Vector128.IsHardwareAccelerated
 			? GetMacAndResetDestructive(destination)
 			: GetMacAndResetSoftware(destination);
@@ -105,8 +105,8 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private int GetMacAndResetSoftware(Span<byte> destination)
 	{
-		THash inner = _innerState;
-		THash outer = _outerSeed;
+		TCore inner = _innerState;
+		TCore outer = _outerSeed;
 
 		try
 		{
@@ -124,9 +124,9 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[SkipLocalsInit]
 	internal int GetMacAndResetDestructive(Span<byte> destination)
 	{
-		Debug.Assert(destination.Length >= THash.HashLength);
+		Debug.Assert(destination.Length >= TCore.HashLength);
 
-		THash outer = _outerSeed;
+		TCore outer = _outerSeed;
 
 		try
 		{
@@ -142,25 +142,25 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 
 	internal int GetMacDestructive(Span<byte> destination)
 	{
-		Debug.Assert(destination.Length >= THash.HashLength);
+		Debug.Assert(destination.Length >= TCore.HashLength);
 		return FinalizeMac(ref _innerState, ref _outerSeed, destination);
 	}
 
 	[SkipLocalsInit]
 	internal static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, THash.HashLength, nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
-		Unsafe.SkipInit(out THash inner);
-		Unsafe.SkipInit(out THash outer);
-		Span<byte> keyBlock = stackalloc byte[THash.HmacBlockSize + (UseDirectKeyPads ? THash.HashLength : 0)];
+		Unsafe.SkipInit(out TCore inner);
+		Unsafe.SkipInit(out TCore outer);
+		Span<byte> keyBlock = stackalloc byte[TCore.HmacBlockSize + (UseDirectKeyPads ? TCore.HashLength : 0)];
 
 		try
 		{
 			if (UseDirectKeyPads)
 			{
-				ReadOnlySpan<byte> normalizedKey = NormalizeKeyForDirectPads(key, keyBlock.Slice(THash.HmacBlockSize));
-				InitializeSeeds(normalizedKey, keyBlock.Slice(0, THash.HmacBlockSize), out inner, out outer);
+				ReadOnlySpan<byte> normalizedKey = NormalizeKeyForDirectPads(key, keyBlock.Slice(TCore.HmacBlockSize));
+				InitializeSeeds(normalizedKey, keyBlock.Slice(0, TCore.HmacBlockSize), out inner, out outer);
 			}
 			else
 			{
@@ -179,24 +179,24 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 		}
 	}
 
-	private static void InitializeSeeds(Span<byte> keyBlock, out THash innerSeed, out THash outerSeed)
+	private static void InitializeSeeds(Span<byte> keyBlock, out TCore innerSeed, out TCore outerSeed)
 	{
 		XorPad(keyBlock, Ipad);
-		innerSeed = THash.Create();
+		innerSeed = TCore.Create();
 		innerSeed.Append(keyBlock);
 
 		XorPad(keyBlock, Ipad ^ Opad);
-		outerSeed = THash.Create();
+		outerSeed = TCore.Create();
 		outerSeed.Append(keyBlock);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static int FinalizeMac(ref THash inner, ref THash outer, Span<byte> destination)
+	private static int FinalizeMac(ref TCore inner, ref TCore outer, Span<byte> destination)
 	{
 		inner.Finalize(destination);
-		outer.Append(destination.Slice(0, THash.HashLength));
+		outer.Append(destination.Slice(0, TCore.HashLength));
 		outer.Finalize(destination);
-		return THash.HashLength;
+		return TCore.HashLength;
 	}
 
 	[SkipLocalsInit]
@@ -207,14 +207,14 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 
 		if (key.Length > keyBlock.Length)
 		{
-			Unsafe.SkipInit(out THash hash);
+			Unsafe.SkipInit(out TCore hash);
 
 			try
 			{
-				hash = THash.Create();
+				hash = TCore.Create();
 				hash.Append(key);
 				hash.Finalize(keyBlock);
-				normalizedKeyLength = THash.HashLength;
+				normalizedKeyLength = TCore.HashLength;
 			}
 			finally
 			{
@@ -231,14 +231,14 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void InitializeSeeds(ReadOnlySpan<byte> key, Span<byte> keyBlock, out THash innerSeed, out THash outerSeed)
+	private static void InitializeSeeds(ReadOnlySpan<byte> key, Span<byte> keyBlock, out TCore innerSeed, out TCore outerSeed)
 	{
 		WritePaddedKey(key, keyBlock, Ipad);
-		innerSeed = THash.Create();
+		innerSeed = TCore.Create();
 		innerSeed.Append(keyBlock);
 
 		WritePaddedKey(key, keyBlock, Opad);
-		outerSeed = THash.Create();
+		outerSeed = TCore.Create();
 		outerSeed.Append(keyBlock);
 	}
 
@@ -246,19 +246,19 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ReadOnlySpan<byte> NormalizeKeyForDirectPads(ReadOnlySpan<byte> key, Span<byte> hashBuffer)
 	{
-		if (key.Length <= THash.HmacBlockSize)
+		if (key.Length <= TCore.HmacBlockSize)
 		{
 			return key;
 		}
 
-		Unsafe.SkipInit(out THash hash);
+		Unsafe.SkipInit(out TCore hash);
 
 		try
 		{
-			hash = THash.Create();
+			hash = TCore.Create();
 			hash.Append(key);
 			hash.Finalize(hashBuffer);
-			return hashBuffer.Slice(0, THash.HashLength);
+			return hashBuffer.Slice(0, TCore.HashLength);
 		}
 		finally
 		{
@@ -308,7 +308,7 @@ internal struct HmacState<THash> where THash : unmanaged, IHmacHashCore<THash>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void XorPad(Span<byte> pad, byte value)
 	{
-		int length = THash.HmacBlockSize;
+		int length = TCore.HmacBlockSize;
 		Debug.Assert(pad.Length == length);
 		ref byte padReference = ref MemoryMarshal.GetReference(pad);
 		int offset = 0;

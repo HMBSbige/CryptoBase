@@ -5,7 +5,7 @@ namespace CryptoBase.Hashes.Sha1;
 /// <summary>
 /// Provides the SHA-1 hash core.
 /// </summary>
-public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
+public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 {
 	private const int LengthOffset = 56;
 	private const int HashSizeInBytes = 20;
@@ -31,9 +31,9 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	public static int HmacBlockSize => BlockSizeInBytes;
 
 	[SkipLocalsInit]
-	static Sha1HashAlgorithm IHashCore<Sha1HashAlgorithm>.Create()
+	static Sha1Core IHashCore<Sha1Core>.Create()
 	{
-		Unsafe.SkipInit(out Sha1HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out Sha1Core hashAlgorithm);
 		hashAlgorithm.Reset();
 		return hashAlgorithm;
 	}
@@ -89,7 +89,7 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 		Finalize(ref this, destination);
 	}
 
-	private static void Finalize(ref Sha1HashAlgorithm hashAlgorithm, Span<byte> destination)
+	private static void Finalize(ref Sha1Core hashAlgorithm, Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= HashLength);
 
@@ -117,7 +117,7 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ProcessBlocks(ref Sha1HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
+	private static void ProcessBlocks(ref Sha1Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(!source.IsEmpty);
 		Debug.Assert(source.Length % BlockSizeInBytes is 0);
@@ -149,7 +149,7 @@ public partial struct Sha1HashAlgorithm : IHmacHashCore<Sha1HashAlgorithm>
 	}
 
 	[SkipLocalsInit]
-	private static void ProcessBlocksSoftware(ref Sha1HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
+	private static void ProcessBlocksSoftware(ref Sha1Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out InlineArray16<uint> schedule);
 		ref uint schedule0 = ref schedule[0];

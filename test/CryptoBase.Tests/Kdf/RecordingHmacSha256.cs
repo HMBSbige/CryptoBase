@@ -12,14 +12,14 @@ internal sealed class RecordingHmacSha256 : IMacAlgorithm<RecordingHmacSha256>
 {
 	private static readonly AsyncLocal<MacCallCounts?> CurrentCounts = new();
 
-	private readonly HmacAlgorithm<Sha256HashAlgorithm> _hmac;
+	private readonly HmacAlgorithm<Sha256Core> _hmac;
 
-	private RecordingHmacSha256(HmacAlgorithm<Sha256HashAlgorithm> hmac)
+	private RecordingHmacSha256(HmacAlgorithm<Sha256Core> hmac)
 	{
 		_hmac = hmac;
 	}
 
-	public static int MacLength => HmacAlgorithm<Sha256HashAlgorithm>.MacLength;
+	public static int MacLength => HmacAlgorithm<Sha256Core>.MacLength;
 
 	private static MacCallCounts Counts => CurrentCounts.Value ?? throw new InvalidOperationException($"Call {nameof(Record)} before using {nameof(RecordingHmacSha256)}.");
 
@@ -36,13 +36,13 @@ internal sealed class RecordingHmacSha256 : IMacAlgorithm<RecordingHmacSha256>
 	public static RecordingHmacSha256 Create(ReadOnlySpan<byte> key)
 	{
 		++Counts.Create;
-		return new RecordingHmacSha256(HmacAlgorithm<Sha256HashAlgorithm>.Create(key));
+		return new RecordingHmacSha256(HmacAlgorithm<Sha256Core>.Create(key));
 	}
 
 	public static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		++Counts.Mac;
-		return HmacAlgorithm<Sha256HashAlgorithm>.Mac(key, source, destination);
+		return HmacAlgorithm<Sha256Core>.Mac(key, source, destination);
 	}
 
 	public void Append(ReadOnlySpan<byte> source)

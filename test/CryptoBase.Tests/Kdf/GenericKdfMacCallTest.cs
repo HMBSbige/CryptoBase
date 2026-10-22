@@ -24,13 +24,13 @@ public class GenericKdfMacCallTest
 		MacCallCounts counts = RecordingHmacSha256.Record();
 		Hkdf<RecordingHmacSha256>.Expand(prk, actual, info);
 		await Assert.That(counts).IsEqualTo(new MacCallCounts { Mac = 1 });
-		Hkdf.Expand<Sha256HashAlgorithm>(prk, expected, info);
+		Hkdf.Expand<Sha256Core>(prk, expected, info);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 
 		counts = RecordingHmacSha256.Record();
 		Hkdf<RecordingHmacSha256>.DeriveKey(ikm, actual, salt, info);
 		await Assert.That(counts).IsEqualTo(new MacCallCounts { Mac = 2 });
-		Hkdf.DeriveKey<Sha256HashAlgorithm>(ikm, expected, salt, info);
+		Hkdf.DeriveKey<Sha256Core>(ikm, expected, salt, info);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
@@ -52,13 +52,13 @@ public class GenericKdfMacCallTest
 		MacCallCounts counts = RecordingHmacSha256.Record();
 		Hkdf<RecordingHmacSha256>.Expand(prk, actual, info);
 		await Assert.That(counts).IsEqualTo(keyed);
-		Hkdf.Expand<Sha256HashAlgorithm>(prk, expected, info);
+		Hkdf.Expand<Sha256Core>(prk, expected, info);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 
 		counts = RecordingHmacSha256.Record();
 		Hkdf<RecordingHmacSha256>.DeriveKey(ikm, actual, salt, info);
 		await Assert.That(counts).IsEqualTo(keyed with { Mac = 1 });
-		Hkdf.DeriveKey<Sha256HashAlgorithm>(ikm, expected, salt, info);
+		Hkdf.DeriveKey<Sha256Core>(ikm, expected, salt, info);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
@@ -79,7 +79,7 @@ public class GenericKdfMacCallTest
 
 		// A(1) and the block.
 		await Assert.That(counts).IsEqualTo(new MacCallCounts { Mac = 2 });
-		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, seed, expected);
+		Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, expected);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
@@ -103,7 +103,7 @@ public class GenericKdfMacCallTest
 		// A(1) to A(n) and the n blocks.
 		int macCount = 2 * blockCount;
 		await Assert.That(counts).IsEqualTo(new MacCallCounts { Create = 1, Append = macCount, GetMacAndReset = macCount, Dispose = 1 });
-		Tls12Prf.DeriveKey<Sha256HashAlgorithm>(secret, label, seed, expected);
+		Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, expected);
 		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 }

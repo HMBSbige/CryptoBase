@@ -10,27 +10,27 @@ public class Crc32Test
 	[Arguments("123456789", "cbf43926")]
 	public Task KnownVectors(string value, string expected)
 	{
-		return VerifyHashVector<Crc32HashAlgorithm>(value, expected, sizeof(uint));
+		return VerifyHashVector<Crc32Core>(value, expected, sizeof(uint));
 	}
 
 	[Test]
 	[CombinedDataSources]
 	public Task BlockBoundaries([MethodDataSource(typeof(CrcTestUtils), nameof(CrcTestUtils.BlockBoundaryLengths))] int length, [Arguments(0, 1, 3, 15)] int offset)
 	{
-		return CrcTestUtils.VerifyBlockBoundary<Crc32HashAlgorithm>(length, offset, 0xedb88320);
+		return CrcTestUtils.VerifyBlockBoundary<Crc32Core>(length, offset, 0xedb88320);
 	}
 
 	[Test]
 	[MethodDataSource(typeof(CrcTestUtils), nameof(CrcTestUtils.SplitBoundaryCases))]
 	public Task IncrementalBlockBatches(int length, int splitSize)
 	{
-		return CrcTestUtils.VerifySplitBoundary<Crc32HashAlgorithm>(length, splitSize, 0xedb88320);
+		return CrcTestUtils.VerifySplitBoundary<Crc32Core>(length, splitSize, 0xedb88320);
 	}
 
 	[Test]
 	[CombinedDataSources]
 	public Task InputIsUnchanged([MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(InputIntegrityLengths))] int length, [Arguments(1, 7)] int offset)
 	{
-		return VerifyInputIsUnchanged<Crc32HashAlgorithm>(length, offset);
+		return VerifyInputIsUnchanged<Crc32Core>(length, offset);
 	}
 }

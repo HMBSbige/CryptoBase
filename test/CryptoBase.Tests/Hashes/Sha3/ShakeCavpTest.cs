@@ -24,7 +24,7 @@ public class ShakeCavpTest
 	[MethodDataSource(nameof(Records), Arguments = ["SHAKE128LongMsg.rsp"])]
 	public Task Shake128Messages(CavpRecord record)
 	{
-		return VerifyMessage<Shake128HashAlgorithm>(record);
+		return VerifyMessage<Shake128Core>(record);
 	}
 
 	[Test]
@@ -32,33 +32,33 @@ public class ShakeCavpTest
 	[MethodDataSource(nameof(Records), Arguments = ["SHAKE256LongMsg.rsp"])]
 	public Task Shake256Messages(CavpRecord record)
 	{
-		return VerifyMessage<Shake256HashAlgorithm>(record);
+		return VerifyMessage<Shake256Core>(record);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Records), Arguments = ["SHAKE128VariableOut.rsp"])]
 	public Task Shake128VariableOutput(CavpRecord record)
 	{
-		return VerifyVariableOutput<Shake128HashAlgorithm>(record);
+		return VerifyVariableOutput<Shake128Core>(record);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Records), Arguments = ["SHAKE256VariableOut.rsp"])]
 	public Task Shake256VariableOutput(CavpRecord record)
 	{
-		return VerifyVariableOutput<Shake256HashAlgorithm>(record);
+		return VerifyVariableOutput<Shake256Core>(record);
 	}
 
 	[Test]
 	public Task Shake128MonteCarlo()
 	{
-		return VerifyMonteCarlo<Shake128HashAlgorithm>("SHAKE128Monte.rsp");
+		return VerifyMonteCarlo<Shake128Core>("SHAKE128Monte.rsp");
 	}
 
 	[Test]
 	public Task Shake256MonteCarlo()
 	{
-		return VerifyMonteCarlo<Shake256HashAlgorithm>("SHAKE256Monte.rsp");
+		return VerifyMonteCarlo<Shake256Core>("SHAKE256Monte.rsp");
 	}
 
 	// Guards the embedding and sampling: ShortMsg covers every message length from 0 to twice the rate, and Monte holds the message and its checkpoints.

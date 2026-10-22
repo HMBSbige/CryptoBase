@@ -1,9 +1,9 @@
 namespace CryptoBase.Hashes.SM3;
 
-public partial struct SM3HashAlgorithm
+public partial struct SM3Core
 {
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void ProcessBlocksX86(ref SM3HashAlgorithm hashAlgorithm, ReadOnlySpan<byte> source)
+	private static void ProcessBlocksX86(ref SM3Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(X86Base.X64.IsSupported && Ssse3.IsSupported);
 		Debug.Assert(!source.IsEmpty);

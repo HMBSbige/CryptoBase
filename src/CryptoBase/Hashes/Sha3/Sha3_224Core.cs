@@ -1,25 +1,25 @@
 namespace CryptoBase.Hashes.Sha3;
 
 /// <summary>
-/// Provides the SHA3-256 hash core.
+/// Provides the SHA3-224 hash core.
 /// </summary>
-/// <remarks>Computes SHA3-256 as specified in FIPS 202. HMAC uses the 136-byte sponge rate as its block size, per FIPS 202, Table 3.</remarks>
-public struct Sha3_256HashAlgorithm : IHmacHashCore<Sha3_256HashAlgorithm>
+/// <remarks>Computes SHA3-224 as specified in FIPS 202. HMAC uses the 144-byte sponge rate as its block size, per FIPS 202, Table 3.</remarks>
+public struct Sha3_224Core : IHmacHashCore<Sha3_224Core>
 {
-	private const int HashSizeInBytes = 32;
+	private const int HashSizeInBytes = 28;
 
-	private KeccakSponge<KeccakRate136> _sponge;
+	private KeccakSponge<KeccakRate144> _sponge;
 
 	/// <inheritdoc />
 	public static int HashLength => HashSizeInBytes;
 
 	/// <inheritdoc />
-	public static int HmacBlockSize => KeccakRate136.RateInBytes;
+	public static int HmacBlockSize => KeccakRate144.RateInBytes;
 
 	[SkipLocalsInit]
-	static Sha3_256HashAlgorithm IHashCore<Sha3_256HashAlgorithm>.Create()
+	static Sha3_224Core IHashCore<Sha3_224Core>.Create()
 	{
-		Unsafe.SkipInit(out Sha3_256HashAlgorithm hashAlgorithm);
+		Unsafe.SkipInit(out Sha3_224Core hashAlgorithm);
 		hashAlgorithm._sponge.Reset();
 		return hashAlgorithm;
 	}

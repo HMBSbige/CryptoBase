@@ -14,8 +14,8 @@ public class XofContractTest
 	private delegate void OutputWriter(Span<byte> destination);
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
-	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
+	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
+	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]
@@ -51,8 +51,8 @@ public class XofContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
-	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
+	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
+	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]
@@ -87,8 +87,8 @@ public class XofContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
-	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
+	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
+	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]
@@ -128,8 +128,8 @@ public class XofContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
-	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
+	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
+	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]
@@ -150,8 +150,8 @@ public class XofContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
-	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
+	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
+	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]
@@ -175,8 +175,8 @@ public class XofContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128HashAlgorithm>))]
-	[GenerateGenericTest(typeof(Xof<Shake256HashAlgorithm>))]
+	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
+	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
 	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]
@@ -207,12 +207,12 @@ public class XofContractTest
 
 	internal static int BlockLength<T>()
 	{
-		if (typeof(T) == typeof(Xof<Shake128HashAlgorithm>) || typeof(T) == typeof(CShake128Xof))
+		if (typeof(T) == typeof(Xof<Shake128Core>) || typeof(T) == typeof(CShake128Xof))
 		{
 			return 168;
 		}
 
-		if (typeof(T) == typeof(Xof<Shake256HashAlgorithm>) || typeof(T) == typeof(CShake256Xof))
+		if (typeof(T) == typeof(Xof<Shake256Core>) || typeof(T) == typeof(CShake256Xof))
 		{
 			return 136;
 		}

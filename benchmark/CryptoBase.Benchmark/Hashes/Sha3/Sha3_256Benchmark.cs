@@ -5,7 +5,7 @@ using Org.BouncyCastle.Crypto.Digests;
 namespace CryptoBase.Benchmark.Hashes.Sha3;
 
 [MemoryDiagnoser]
-public class Sha3_256Benchmark : BclAndBouncyCastleHashBenchmark<Sha3_256HashAlgorithm, BclSha3_256, Sha3Digest>
+public class Sha3_256Benchmark : BclAndBouncyCastleHashBenchmark<Sha3_256Core, BclSha3_256, Sha3Digest>
 {
 	protected override IReadOnlyList<int> Sizes => HashBenchmarkSizes.Rate136;
 }

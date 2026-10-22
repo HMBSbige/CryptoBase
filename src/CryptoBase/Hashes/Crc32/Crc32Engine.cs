@@ -149,8 +149,8 @@ internal static class Crc32Engine
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool IsIeee<TAlgorithm>() where TAlgorithm : unmanaged
 	{
-		bool isIeee = typeof(TAlgorithm) == typeof(Crc32HashAlgorithm);
-		Debug.Assert(isIeee || typeof(TAlgorithm) == typeof(Crc32CHashAlgorithm));
+		bool isIeee = typeof(TAlgorithm) == typeof(Crc32Core);
+		Debug.Assert(isIeee || typeof(TAlgorithm) == typeof(Crc32CCore));
 		return isIeee;
 	}
 
