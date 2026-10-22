@@ -22,6 +22,7 @@ public class Argon2idTest() : Argon2DeriveKeyTest(Argon2Type.Argon2id)
 	}
 
 	[Test]
+	[Argon2LargeMemory]
 	[Arguments("password", "somesalt", 2, 16, 1, @"09316115d5cf24ed5a15a31a3ba326e5cf32edc24702987c02b6566f61913cf7")]
 	[Arguments("password", "somesalt", 2, 8, 1, @"9dfeb910e80bad0311fee20f9c0e2b12c17987b4cac90c2ef54d5b3021c68bfe")]
 	[Arguments("password", "somesalt", 2, 8, 2, @"6d093c501fd5999645e0ea3bf620d7b8be7fd2db59c20d9fff9539da2bf57037")]
@@ -34,6 +35,7 @@ public class Argon2idTest() : Argon2DeriveKeyTest(Argon2Type.Argon2id)
 	}
 
 	[Test]
+	[Argon2LargeMemory]
 	[Arguments(66000, 3, @"3286724bc8e762f816a043f16cb7da16264ef1455a5260355aae5447c0586fa1")]
 	[Arguments(65536, 4, @"716733ba17477e10c0eac8788a61e795df9c5086d785b7de8e295b910fe9fd4a")]
 	public async Task LargeMemoryVector(int memorySizeInKibibytes, int parallelism, string tagHex)
