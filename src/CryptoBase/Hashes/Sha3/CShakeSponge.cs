@@ -17,6 +17,13 @@ internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 		_seed = _sponge;
 	}
 
+	internal void InitializeKmac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> customization)
+	{
+		_domainSeparator = Initialize(ref _sponge, "KMAC"u8, customization);
+		AbsorbBytePaddedString(ref _sponge, key);
+		_seed = _sponge;
+	}
+
 	// Makes the bytepadded string part of the seed.
 	internal void AbsorbBytePaddedString(ReadOnlySpan<byte> value)
 	{

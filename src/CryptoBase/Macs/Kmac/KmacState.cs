@@ -54,8 +54,7 @@ internal struct KmacState<TRate> where TRate : IKeccakRate
 
 	internal static void Seed(ref CShakeSponge<TRate> sponge, ReadOnlySpan<byte> key, ReadOnlySpan<byte> customization)
 	{
-		sponge.Initialize("KMAC"u8, customization);
-		sponge.AbsorbBytePaddedString(key);
+		sponge.InitializeKmac(key, customization);
 	}
 
 	internal static void Finish(ref CShakeSponge<TRate> sponge, ulong outputLengthInBits, Span<byte> destination)
