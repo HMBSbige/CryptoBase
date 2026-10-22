@@ -181,18 +181,9 @@ internal static class Crc32Engine
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint FinishX86<TAlgorithm>(Vector128<ulong> folded, ReadOnlySpan<byte> source, int bytesConsumed) where TAlgorithm : unmanaged
 	{
-		uint state;
-
-		if (IsIeee<TAlgorithm>())
-		{
-			state = Crc32Vectorized.ReduceIeeeX86(folded);
-		}
-		else
-		{
-			state = Sse42.X64.IsSupported
-				? Crc32Vectorized.ReduceCastagnoliX86(folded)
-				: Crc32Vectorized.ReduceCastagnoliBarrettX86(folded);
-		}
+		uint state = !IsIeee<TAlgorithm>() && Sse42.X64.IsSupported
+			? Crc32Vectorized.ReduceCastagnoliX86(folded)
+			: Crc32Vectorized.ReduceBarrettX86<TAlgorithm>(folded);
 
 		return bytesConsumed < source.Length
 			? UpdateX86Tail<TAlgorithm>(state, source.Slice(bytesConsumed))

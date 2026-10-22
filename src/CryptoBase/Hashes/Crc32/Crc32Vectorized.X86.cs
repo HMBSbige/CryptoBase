@@ -233,13 +233,16 @@ internal static partial class Crc32Vectorized
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static uint ReduceIeeeX86(Vector128<ulong> value)
+	internal static uint ReduceBarrettX86<TAlgorithm>(Vector128<ulong> value) where TAlgorithm : unmanaged
 	{
+		bool isIeee = Crc32Engine.IsIeee<TAlgorithm>();
+		Vector128<ulong> fold64 = isIeee ? Vector128.CreateScalar(0x00ccaa009eUL) : Vector128.CreateScalar(0x014cd00bd6UL);
+		Vector128<ulong> fold32 = isIeee ? Vector128.CreateScalar(0x0163cd6124UL) : Vector128.CreateScalar(0x00dd45aab8UL);
 		Vector128<ulong> bitmask = Vector128.Create((ulong)uint.MaxValue);
-		value = Sse2.ShiftRightLogical128BitLane(value, 8) ^ Pclmulqdq.CarrylessMultiply(value, Vector128.CreateScalar(0x00ccaa009eUL), 0x00);
-		value = Pclmulqdq.CarrylessMultiply(value & bitmask, Vector128.CreateScalar(0x0163cd6124UL), 0x00) ^ Sse2.ShiftRightLogical128BitLane(value, 4);
+		value = Sse2.ShiftRightLogical128BitLane(value, 8) ^ Pclmulqdq.CarrylessMultiply(value, fold64, 0x00);
+		value = Pclmulqdq.CarrylessMultiply(value & bitmask, fold32, 0x00) ^ Sse2.ShiftRightLogical128BitLane(value, 4);
 
-		Vector128<ulong> polynomialMu = Vector128.Create(0x01db710641UL, 0x01f7011641UL);
+		Vector128<ulong> polynomialMu = isIeee ? Vector128.Create(0x01db710641UL, 0x01f7011641UL) : Vector128.Create(0x0105ec76f1UL, 0x00dea713f1UL);
 		Vector128<ulong> reduction = Pclmulqdq.CarrylessMultiply(value & bitmask, polynomialMu, 0x10) & bitmask;
 		reduction = Pclmulqdq.CarrylessMultiply(reduction, polynomialMu, 0x00);
 		return (value ^ reduction).AsUInt32().GetElement(1);
@@ -251,21 +254,6 @@ internal static partial class Crc32Vectorized
 		Debug.Assert(Sse42.X64.IsSupported);
 		ulong state = Sse42.X64.Crc32(0, value.GetElement(0));
 		return (uint)Sse42.X64.Crc32(state, value.GetElement(1));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static uint ReduceCastagnoliBarrettX86(Vector128<ulong> value)
-	{
-		Vector128<ulong> bitmask = Vector128.Create((ulong)uint.MaxValue);
-		value = Sse2.ShiftRightLogical128BitLane(value, 8)
-				^ Pclmulqdq.CarrylessMultiply(value, Vector128.CreateScalar(0x014cd00bd6UL), 0x00);
-		value = Pclmulqdq.CarrylessMultiply(value & bitmask, Vector128.CreateScalar(0x00dd45aab8UL), 0x00)
-				^ Sse2.ShiftRightLogical128BitLane(value, 4);
-
-		Vector128<ulong> polynomialMu = Vector128.Create(0x0105ec76f1UL, 0x00dea713f1UL);
-		Vector128<ulong> reduction = Pclmulqdq.CarrylessMultiply(value & bitmask, polynomialMu, 0x10) & bitmask;
-		reduction = Pclmulqdq.CarrylessMultiply(reduction, polynomialMu, 0x00);
-		return (value ^ reduction).AsUInt32().GetElement(1);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
