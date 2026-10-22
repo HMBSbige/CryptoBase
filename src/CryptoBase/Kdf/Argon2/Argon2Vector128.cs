@@ -108,20 +108,20 @@ internal readonly struct Argon2Vector128 : IArgon2Kernel
 	{
 		a0 = BlaMka(a0, b0);
 		a1 = BlaMka(a1, b1);
-		d0 = RotateRight32(d0 ^ a0);
-		d1 = RotateRight32(d1 ^ a1);
+		d0 = (d0 ^ a0).RotateRightUInt64(32);
+		d1 = (d1 ^ a1).RotateRightUInt64(32);
 		c0 = BlaMka(c0, d0);
 		c1 = BlaMka(c1, d1);
-		b0 = RotateRight24(b0 ^ c0);
-		b1 = RotateRight24(b1 ^ c1);
+		b0 = (b0 ^ c0).RotateRightUInt64(24);
+		b1 = (b1 ^ c1).RotateRightUInt64(24);
 		a0 = BlaMka(a0, b0);
 		a1 = BlaMka(a1, b1);
-		d0 = RotateRight16(d0 ^ a0);
-		d1 = RotateRight16(d1 ^ a1);
+		d0 = (d0 ^ a0).RotateRightUInt64(16);
+		d1 = (d1 ^ a1).RotateRightUInt64(16);
 		c0 = BlaMka(c0, d0);
 		c1 = BlaMka(c1, d1);
-		b0 = RotateRight63(b0 ^ c0);
-		b1 = RotateRight63(b1 ^ c1);
+		b0 = (b0 ^ c0).RotateRightUInt64(63);
+		b1 = (b1 ^ c1).RotateRightUInt64(63);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -129,40 +129,6 @@ internal readonly struct Argon2Vector128 : IArgon2Kernel
 	{
 		Vector128<ulong> product = Sse2.Multiply(x.AsUInt32(), y.AsUInt32());
 		return x + y + (product + product);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> RotateRight32(Vector128<ulong> value)
-	{
-		return Sse2.Shuffle(value.AsUInt32(), 0b10_11_00_01).AsUInt64();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> RotateRight24(Vector128<ulong> value)
-	{
-		if (Ssse3.IsSupported)
-		{
-			return Ssse3.Shuffle(value.AsByte(), Vector128.Create((byte)3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10)).AsUInt64();
-		}
-
-		return value >>> 24 | value << 40;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> RotateRight16(Vector128<ulong> value)
-	{
-		if (Ssse3.IsSupported)
-		{
-			return Ssse3.Shuffle(value.AsByte(), Vector128.Create((byte)2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9)).AsUInt64();
-		}
-
-		return Sse2.ShuffleHigh(Sse2.ShuffleLow(value.AsUInt16(), 0b00_11_10_01), 0b00_11_10_01).AsUInt64();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> RotateRight63(Vector128<ulong> value)
-	{
-		return value >>> 63 | value + value;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

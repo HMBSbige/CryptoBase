@@ -102,6 +102,37 @@ internal static class VectorBitOperationsExtensions
 			return value.RotateLeftUInt32((byte)(32 - offset));
 #pragma warning restore CA1857
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public Vector128<T> RotateRightUInt64([ConstantExpected(Min = 1, Max = 63)] byte offset)
+		{
+			if (Avx512F.VL.IsSupported)
+			{
+				return Avx512F.VL.RotateRight(value.AsUInt64(), offset).As<ulong, T>();
+			}
+
+			if (Sse2.IsSupported && offset is 32)
+			{
+				return Sse2.Shuffle(value.AsUInt32(), 0b10_11_00_01).As<uint, T>();
+			}
+
+			if (Ssse3.IsSupported && (offset & 7) is 0)
+			{
+				return Ssse3.Shuffle(value.AsByte(), CreateRotateRightUInt64ShuffleIndices(offset)).As<byte, T>();
+			}
+
+			if (Sse2.IsSupported && offset is 16)
+			{
+				return Sse2.ShuffleHigh(Sse2.ShuffleLow(value.AsUInt16(), 0b00_11_10_01), 0b00_11_10_01).As<ushort, T>();
+			}
+
+			if (offset is 63)
+			{
+				return (value.AsUInt64() >>> 63 | value.AsUInt64() + value.AsUInt64()).As<ulong, T>();
+			}
+
+			return (value.AsUInt64() >>> offset | value.AsUInt64() << 64 - offset).As<ulong, T>();
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -131,5 +162,19 @@ internal static class VectorBitOperationsExtensions
 		};
 
 		return rotated.As<byte, T>();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<byte> CreateRotateRightUInt64ShuffleIndices(byte offset)
+	{
+		return offset switch
+		{
+			8 => Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 0, 9, 10, 11, 12, 13, 14, 15, 8),
+			16 => Vector128.Create((byte)2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9),
+			24 => Vector128.Create((byte)3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10),
+			40 => Vector128.Create((byte)5, 6, 7, 0, 1, 2, 3, 4, 13, 14, 15, 8, 9, 10, 11, 12),
+			48 => Vector128.Create((byte)6, 7, 0, 1, 2, 3, 4, 5, 14, 15, 8, 9, 10, 11, 12, 13),
+			_ => Vector128.Create((byte)7, 0, 1, 2, 3, 4, 5, 6, 15, 8, 9, 10, 11, 12, 13, 14)
+		};
 	}
 }
