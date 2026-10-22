@@ -11,7 +11,7 @@ internal struct KmacState<TRate> where TRate : IKeccakRate
 
 	internal void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> customization)
 	{
-		Seed(ref _sponge, key, customization);
+		_sponge.InitializeKmac(key, customization);
 	}
 
 	internal static void Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, ReadOnlySpan<byte> customization)
@@ -52,11 +52,6 @@ internal struct KmacState<TRate> where TRate : IKeccakRate
 
 	// The steps below are shared with KmacXofState, which encodes L as 0 (Sec. 4.3.1).
 
-	internal static void Seed(ref CShakeSponge<TRate> sponge, ReadOnlySpan<byte> key, ReadOnlySpan<byte> customization)
-	{
-		sponge.InitializeKmac(key, customization);
-	}
-
 	internal static void Finish(ref CShakeSponge<TRate> sponge, ulong outputLengthInBits, Span<byte> destination)
 	{
 		sponge.AbsorbRightEncode(outputLengthInBits);
@@ -64,7 +59,7 @@ internal struct KmacState<TRate> where TRate : IKeccakRate
 		sponge.Squeeze(destination);
 	}
 
-	// Seed and Finish on a lone sponge. All input is absorbed before the output is written, so the destination may overlap the key or the source.
+	// CShakeSponge.InitializeKmac and Finish on a lone sponge. All input is absorbed before the output is written, so the destination may overlap the key or the source.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void Compute(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> customization, ulong outputLengthInBits, Span<byte> destination)

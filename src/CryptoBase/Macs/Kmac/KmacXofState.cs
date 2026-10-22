@@ -11,7 +11,7 @@ internal struct KmacXofState<TRate> where TRate : IKeccakRate
 
 	internal void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> customization)
 	{
-		KmacState<TRate>.Seed(ref _sponge, key, customization);
+		_sponge.InitializeKmac(key, customization);
 		_reading = false;
 	}
 
