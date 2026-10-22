@@ -291,77 +291,34 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void MultiplyBroadcast
 	(
+		bool accumulate,
 		Vector128<uint> h0, Vector128<uint> h1, Vector128<uint> h2, Vector128<uint> h3, Vector128<uint> h4,
 		in Poly1305Power power,
-		out Vector128<ulong> d0Lower, out Vector128<ulong> d0Upper,
-		out Vector128<ulong> d1Lower, out Vector128<ulong> d1Upper,
-		out Vector128<ulong> d2Lower, out Vector128<ulong> d2Upper,
-		out Vector128<ulong> d3Lower, out Vector128<ulong> d3Upper,
-		out Vector128<ulong> d4Lower, out Vector128<ulong> d4Upper
-	)
-	{
-		Vector128<uint> coefficient = Vector128.Create(power.Limb0);
-		Multiply(h0, coefficient, out d0Lower, out d0Upper);
-		Multiply(h1, coefficient, out d1Lower, out d1Upper);
-		Multiply(h2, coefficient, out d2Lower, out d2Upper);
-		Multiply(h3, coefficient, out d3Lower, out d3Upper);
-		Multiply(h4, coefficient, out d4Lower, out d4Upper);
-
-		coefficient = Vector128.Create(power.Limb1);
-		MultiplyAdd(ref d1Lower, ref d1Upper, h0, coefficient);
-		MultiplyAdd(ref d2Lower, ref d2Upper, h1, coefficient);
-		MultiplyAdd(ref d3Lower, ref d3Upper, h2, coefficient);
-		MultiplyAdd(ref d4Lower, ref d4Upper, h3, coefficient);
-
-		coefficient = Vector128.Create(power.Limb2);
-		MultiplyAdd(ref d2Lower, ref d2Upper, h0, coefficient);
-		MultiplyAdd(ref d3Lower, ref d3Upper, h1, coefficient);
-		MultiplyAdd(ref d4Lower, ref d4Upper, h2, coefficient);
-
-		coefficient = Vector128.Create(power.Limb3);
-		MultiplyAdd(ref d3Lower, ref d3Upper, h0, coefficient);
-		MultiplyAdd(ref d4Lower, ref d4Upper, h1, coefficient);
-
-		coefficient = Vector128.Create(power.Limb4);
-		MultiplyAdd(ref d4Lower, ref d4Upper, h0, coefficient);
-
-		coefficient = Vector128.Create(power.Limb1 * 5);
-		MultiplyAdd(ref d0Lower, ref d0Upper, h4, coefficient);
-
-		coefficient = Vector128.Create(power.Limb2 * 5);
-		MultiplyAdd(ref d0Lower, ref d0Upper, h3, coefficient);
-		MultiplyAdd(ref d1Lower, ref d1Upper, h4, coefficient);
-
-		coefficient = Vector128.Create(power.Limb3 * 5);
-		MultiplyAdd(ref d0Lower, ref d0Upper, h2, coefficient);
-		MultiplyAdd(ref d1Lower, ref d1Upper, h3, coefficient);
-		MultiplyAdd(ref d2Lower, ref d2Upper, h4, coefficient);
-
-		coefficient = Vector128.Create(power.Limb4 * 5);
-		MultiplyAdd(ref d0Lower, ref d0Upper, h1, coefficient);
-		MultiplyAdd(ref d1Lower, ref d1Upper, h2, coefficient);
-		MultiplyAdd(ref d2Lower, ref d2Upper, h3, coefficient);
-		MultiplyAdd(ref d3Lower, ref d3Upper, h4, coefficient);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void MultiplyAddBroadcast
-	(
 		ref Vector128<ulong> d0Lower, ref Vector128<ulong> d0Upper,
 		ref Vector128<ulong> d1Lower, ref Vector128<ulong> d1Upper,
 		ref Vector128<ulong> d2Lower, ref Vector128<ulong> d2Upper,
 		ref Vector128<ulong> d3Lower, ref Vector128<ulong> d3Upper,
-		ref Vector128<ulong> d4Lower, ref Vector128<ulong> d4Upper,
-		Vector128<uint> h0, Vector128<uint> h1, Vector128<uint> h2, Vector128<uint> h3, Vector128<uint> h4,
-		in Poly1305Power power
+		ref Vector128<ulong> d4Lower, ref Vector128<ulong> d4Upper
 	)
 	{
 		Vector128<uint> coefficient = Vector128.Create(power.Limb0);
-		MultiplyAdd(ref d0Lower, ref d0Upper, h0, coefficient);
-		MultiplyAdd(ref d1Lower, ref d1Upper, h1, coefficient);
-		MultiplyAdd(ref d2Lower, ref d2Upper, h2, coefficient);
-		MultiplyAdd(ref d3Lower, ref d3Upper, h3, coefficient);
-		MultiplyAdd(ref d4Lower, ref d4Upper, h4, coefficient);
+
+		if (accumulate)
+		{
+			MultiplyAdd(ref d0Lower, ref d0Upper, h0, coefficient);
+			MultiplyAdd(ref d1Lower, ref d1Upper, h1, coefficient);
+			MultiplyAdd(ref d2Lower, ref d2Upper, h2, coefficient);
+			MultiplyAdd(ref d3Lower, ref d3Upper, h3, coefficient);
+			MultiplyAdd(ref d4Lower, ref d4Upper, h4, coefficient);
+		}
+		else
+		{
+			Multiply(h0, coefficient, out d0Lower, out d0Upper);
+			Multiply(h1, coefficient, out d1Lower, out d1Upper);
+			Multiply(h2, coefficient, out d2Lower, out d2Upper);
+			Multiply(h3, coefficient, out d3Lower, out d3Upper);
+			Multiply(h4, coefficient, out d4Lower, out d4Upper);
+		}
 
 		coefficient = Vector128.Create(power.Limb1);
 		MultiplyAdd(ref d1Lower, ref d1Upper, h0, coefficient);
@@ -484,18 +441,20 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 
 		while (remaining >= BlockSize4 * 2)
 		{
-			MultiplyBroadcast
-			(
-				h0, h1, h2, h3, h4, in power8,
-				out Vector128<ulong> d0Lower, out Vector128<ulong> d0Upper,
-				out Vector128<ulong> d1Lower, out Vector128<ulong> d1Upper,
-				out Vector128<ulong> d2Lower, out Vector128<ulong> d2Upper,
-				out Vector128<ulong> d3Lower, out Vector128<ulong> d3Upper,
-				out Vector128<ulong> d4Lower, out Vector128<ulong> d4Upper
-			);
+			Vector128<ulong> d0Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d0Upper = Vector128<ulong>.Zero;
+			Vector128<ulong> d1Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d1Upper = Vector128<ulong>.Zero;
+			Vector128<ulong> d2Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d2Upper = Vector128<ulong>.Zero;
+			Vector128<ulong> d3Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d3Upper = Vector128<ulong>.Zero;
+			Vector128<ulong> d4Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d4Upper = Vector128<ulong>.Zero;
+			MultiplyBroadcast(false, h0, h1, h2, h3, h4, in power8, ref d0Lower, ref d0Upper, ref d1Lower, ref d1Upper, ref d2Lower, ref d2Upper, ref d3Lower, ref d3Upper, ref d4Lower, ref d4Upper);
 
 			LoadFour(ref input, out m0, out m1, out m2, out m3, out m4);
-			MultiplyAddBroadcast(ref d0Lower, ref d0Upper, ref d1Lower, ref d1Upper, ref d2Lower, ref d2Upper, ref d3Lower, ref d3Upper, ref d4Lower, ref d4Upper, m0, m1, m2, m3, m4, in power4);
+			MultiplyBroadcast(true, m0, m1, m2, m3, m4, in power4, ref d0Lower, ref d0Upper, ref d1Lower, ref d1Upper, ref d2Lower, ref d2Upper, ref d3Lower, ref d3Upper, ref d4Lower, ref d4Upper);
 			Reduce(d0Lower, d0Upper, d1Lower, d1Upper, d2Lower, d2Upper, d3Lower, d3Upper, d4Lower, d4Upper, out h0, out h1, out h2, out h3, out h4);
 
 			ref byte secondGroup = ref Unsafe.Add(ref input, BlockSize4);
@@ -511,15 +470,17 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 
 		while (remaining is not 0)
 		{
-			MultiplyBroadcast
-			(
-				h0, h1, h2, h3, h4, in power4,
-				out Vector128<ulong> d0Lower, out Vector128<ulong> d0Upper,
-				out Vector128<ulong> d1Lower, out Vector128<ulong> d1Upper,
-				out Vector128<ulong> d2Lower, out Vector128<ulong> d2Upper,
-				out Vector128<ulong> d3Lower, out Vector128<ulong> d3Upper,
-				out Vector128<ulong> d4Lower, out Vector128<ulong> d4Upper
-			);
+			Vector128<ulong> d0Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d0Upper = Vector128<ulong>.Zero;
+			Vector128<ulong> d1Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d1Upper = Vector128<ulong>.Zero;
+			Vector128<ulong> d2Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d2Upper = Vector128<ulong>.Zero;
+			Vector128<ulong> d3Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d3Upper = Vector128<ulong>.Zero;
+			Vector128<ulong> d4Lower = Vector128<ulong>.Zero;
+			Vector128<ulong> d4Upper = Vector128<ulong>.Zero;
+			MultiplyBroadcast(false, h0, h1, h2, h3, h4, in power4, ref d0Lower, ref d0Upper, ref d1Lower, ref d1Upper, ref d2Lower, ref d2Upper, ref d3Lower, ref d3Upper, ref d4Lower, ref d4Upper);
 			Reduce(d0Lower, d0Upper, d1Lower, d1Upper, d2Lower, d2Upper, d3Lower, d3Upper, d4Lower, d4Upper, out h0, out h1, out h2, out h3, out h4);
 			LoadFour(ref input, out m0, out m1, out m2, out m3, out m4);
 			h0 += m0;
