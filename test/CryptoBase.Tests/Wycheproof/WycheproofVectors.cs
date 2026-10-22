@@ -57,6 +57,7 @@ internal static partial class WycheproofVectors
 	[JsonSerializable(typeof(TestFile<MLKemEncapsTestVector>))]
 	[JsonSerializable(typeof(TestFile<MLKemKeyGenTestVector>))]
 	[JsonSerializable(typeof(TestFile<MLKemDecapsValidationTestVector>))]
+	[JsonSerializable(typeof(GroupFile<KmacTestGroup>))]
 	[JsonSerializable(typeof(GroupFile<MLDsaVerifyTestGroup>))]
 	[JsonSerializable(typeof(GroupFile<MLDsaSignSeedTestGroup>))]
 	[JsonSerializable(typeof(GroupFile<MLDsaSignNoSeedTestGroup>))]

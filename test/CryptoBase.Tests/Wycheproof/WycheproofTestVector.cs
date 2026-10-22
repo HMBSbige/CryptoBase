@@ -37,6 +37,21 @@ public sealed record IndCpaTestVector(byte[] Key, byte[] Iv, byte[] Msg, byte[] 
 
 public sealed record MacTestVector(byte[] Key, byte[] Msg, byte[] Tag) : WycheproofTestVector;
 
+// KMAC encodes the output length L into its input, so the group's tag size, in bits, is the length the tag is computed for.
+public sealed record KmacTestVector(byte[] Key, byte[] Msg, byte[] Tag) : WycheproofTestVector
+{
+	[JsonIgnore]
+	public int TagSize { get; init; }
+}
+
+public sealed record KmacTestGroup(int TagSize) : WycheproofTestGroup<KmacTestVector>
+{
+	public override KmacTestVector Complete(KmacTestVector test)
+	{
+		return test with { TagSize = TagSize };
+	}
+}
+
 public sealed record HkdfTestVector(byte[] Ikm, byte[] Salt, byte[] Info, int Size, byte[] Okm) : WycheproofTestVector;
 
 // Decapsulation after key generation from a seed; ek is missing where the seed has the wrong length.

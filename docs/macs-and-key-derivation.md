@@ -8,6 +8,8 @@
 | HMAC-SHA256 | `PlatformHmacSha256` | `CryptoBase.Platform` |
 | Poly1305 | `Poly1305Algorithm` | `CryptoBase.Macs.Poly1305` |
 | BLAKE3 keyed hash and key derivation | `Blake3HashAlgorithm` | `CryptoBase.Hashes.Blake3` |
+| KMAC128, KMAC256 | `Kmac128Algorithm`, `Kmac256Algorithm` | `CryptoBase.Macs.Kmac` |
+| KMACXOF128, KMACXOF256 | `KmacXof128Algorithm`, `KmacXof256Algorithm` | `CryptoBase.Macs.Kmac` |
 | HKDF | `Hkdf`, `Hkdf<TMac>` | `CryptoBase.Kdf` |
 | TLS 1.2 PRF | `Tls12Prf`, `Tls12Prf<TMac>` | `CryptoBase.Kdf` |
 | Argon2 | `Argon2id`, `Argon2i`, `Argon2d`, `Argon2PasswordHasher` | `CryptoBase.Kdf` |
@@ -109,6 +111,65 @@ Blake3HashAlgorithm.KeyedHashData(key, "message"u8, tag);
 using Blake3HashAlgorithm mac = Blake3HashAlgorithm.CreateKeyed(key);
 mac.Append("message"u8);
 mac.GetHashAndReset(tag);
+```
+
+## KMAC
+
+The destination length selects the tag length; a truncated tag is not the shorter tag.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Macs.Kmac;
+
+byte[] key = RandomNumberGenerator.GetBytes(32);
+byte[] tag = new byte[32];
+
+Kmac256Algorithm.Mac(key, "message"u8, tag);
+
+// Each customization string gives unrelated tags under the same key.
+Kmac256Algorithm.Mac(key, "message"u8, tag, customization: "example v1 session tokens"u8);
+
+// Reset and GetMacAndReset keep the key and customization string.
+using Kmac256Algorithm mac = Kmac256Algorithm.Create(key, customization: "example v1 session tokens"u8);
+
+mac.Append("mess"u8);
+mac.Append("age"u8);
+mac.GetCurrentMac(tag);
+mac.GetMacAndReset(tag);
+```
+
+To check a received tag, compute it at the length the protocol fixes:
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Macs.Kmac;
+
+static bool IsValid(ReadOnlySpan<byte> key, ReadOnlySpan<byte> message, ReadOnlySpan<byte> receivedTag)
+{
+    Span<byte> expected = stackalloc byte[32];
+    Kmac256Algorithm.Mac(key, message, expected);
+    return CryptographicOperations.FixedTimeEquals(expected, receivedTag);
+}
+```
+
+`KmacXof128Algorithm` and `KmacXof256Algorithm` compute KMACXOF, whose output is a stream.
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Macs.Kmac;
+
+byte[] key = RandomNumberGenerator.GetBytes(32);
+byte[] output = new byte[64];
+
+KmacXof256Algorithm.HashData(key, "message"u8, output, customization: "example v1 key stream"u8);
+
+using KmacXof256Algorithm xof = KmacXof256Algorithm.Create(key, customization: "example v1 key stream"u8);
+xof.Append("message"u8);
+
+byte[] first = new byte[32];
+byte[] second = new byte[32];
+xof.Read(first);
+xof.Read(second);
 ```
 
 ## HKDF

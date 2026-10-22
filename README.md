@@ -60,6 +60,10 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ---------- |:------:|
 | HMAC | ✅ |
 | Poly1305 | ✅ |
+| KMAC128 | ✅ |
+| KMAC256 | ✅ |
+| KMACXOF128 | ✅ |
+| KMACXOF256 | ✅ |
 
 ### Key derivation functions
 
