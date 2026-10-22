@@ -5,31 +5,35 @@ namespace CryptoBase.Hashes.Sha256;
 internal partial struct Sha256Core
 {
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private void ProcessBlocksArm64(ReadOnlySpan<byte> source)
+	private unsafe void ProcessBlocksArm64(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Sha256Arm.Arm64.IsSupported);
 
 		ref uint firstStateWord = ref _h0;
 		Vector128<uint> state0 = Vector128.LoadUnsafe(ref firstStateWord);
 		Vector128<uint> state1 = Vector128.LoadUnsafe(ref firstStateWord, 4);
-		ref byte block = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 
-		do
+		fixed (byte* start = &MemoryMarshal.GetReference(source))
 		{
-			ProcessBlockArm64(ref state0, ref state1, ref block);
-			block = ref Unsafe.Add(ref block, BlockSizeInBytes);
-			remainingLength -= BlockSizeInBytes;
-		} while (remainingLength is not 0);
+			byte* block = start;
+
+			do
+			{
+				ProcessBlockArm64(ref state0, ref state1, block);
+				block += BlockSizeInBytes;
+				remainingLength -= BlockSizeInBytes;
+			} while (remainingLength is not 0);
+		}
 
 		state0.StoreUnsafe(ref firstStateWord);
 		state1.StoreUnsafe(ref firstStateWord, 4);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe void ProcessBlockArm64(ref Vector128<uint> state0, ref Vector128<uint> state1, ref byte block)
+	private static unsafe void ProcessBlockArm64(ref Vector128<uint> state0, ref Vector128<uint> state1, byte* block)
 	{
-		(Vector128<byte> block0, Vector128<byte> block1, Vector128<byte> block2, Vector128<byte> block3) = AdvSimd.Arm64.Load4xVector128((byte*)Unsafe.AsPointer(ref block));
+		(Vector128<byte> block0, Vector128<byte> block1, Vector128<byte> block2, Vector128<byte> block3) = AdvSimd.Arm64.Load4xVector128(block);
 		Vector128<uint> words0 = block0.ReverseEndianness32().AsUInt32();
 		Vector128<uint> words1 = block1.ReverseEndianness32().AsUInt32();
 		Vector128<uint> words2 = block2.ReverseEndianness32().AsUInt32();
