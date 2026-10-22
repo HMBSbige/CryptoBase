@@ -21,7 +21,7 @@ public class XtsBenchmark
 	private byte[] _input = [];
 	private byte[] _output = [];
 	private byte[] _ciphertext = [];
-	private byte[] _iv = [];
+	private byte[] _tweak = [];
 
 	[GlobalSetup]
 	public void Setup()
@@ -30,8 +30,8 @@ public class XtsBenchmark
 		_input = RandomNumberGenerator.GetBytes(ByteLength);
 		_output = new byte[ByteLength];
 		_ciphertext = new byte[_output.Length];
-		_iv = RandomNumberGenerator.GetBytes(XtsMode<AesCipher>.TweakSize);
-		_xts.Encrypt(_iv, _input, _ciphertext);
+		_tweak = RandomNumberGenerator.GetBytes(XtsMode<AesCipher>.TweakSize);
+		_xts.Encrypt(_tweak, _input, _ciphertext);
 	}
 
 	[GlobalCleanup]
@@ -44,13 +44,13 @@ public class XtsBenchmark
 	[BenchmarkCategory("Encrypt")]
 	public void Encrypt()
 	{
-		_xts.Encrypt(_iv, _input, _output);
+		_xts.Encrypt(_tweak, _input, _output);
 	}
 
 	[Benchmark]
 	[BenchmarkCategory("Decrypt")]
 	public void Decrypt()
 	{
-		_xts.Decrypt(_iv, _ciphertext, _output);
+		_xts.Decrypt(_tweak, _ciphertext, _output);
 	}
 }
