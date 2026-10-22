@@ -23,39 +23,27 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 	{
 	}
 
+	// Slicing the key and nonce to their validated lengths gives the copies constant sizes, which the JIT unrolls instead of calling Memmove.
 	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
-		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
-		int keyLength = key.Length;
-
 		Span<uint> state = StateSpan;
 
-		switch (keyLength)
+		switch (key.Length)
 		{
 			case 16:
 			{
-				state[0] = Sigma16[0];
-				state[1] = Sigma16[1];
-				state[2] = Sigma16[2];
-				state[3] = Sigma16[3];
-				state[8] = keySpan[0];
-				state[9] = keySpan[1];
-				state[10] = keySpan[2];
-				state[11] = keySpan[3];
+				ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key.Slice(0, 16));
+				Sigma16.CopyTo(state);
+				keySpan.CopyTo(state.Slice(4));
+				keySpan.CopyTo(state.Slice(8));
 				break;
 			}
 			case 32:
 			{
-				state[0] = Sigma32[0];
-				state[1] = Sigma32[1];
-				state[2] = Sigma32[2];
-				state[3] = Sigma32[3];
-				state[8] = keySpan[4];
-				state[9] = keySpan[5];
-				state[10] = keySpan[6];
-				state[11] = keySpan[7];
+				Sigma32.CopyTo(state);
+				MemoryMarshal.Cast<byte, uint>(key.Slice(0, 32)).CopyTo(state.Slice(4));
 				break;
 			}
 			default:
@@ -65,14 +53,7 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 			}
 		}
 
-		state[4] = keySpan[0];
-		state[5] = keySpan[1];
-		state[6] = keySpan[2];
-		state[7] = keySpan[3];
-
-		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		state[14] = ivSpan[0];
-		state[15] = ivSpan[1];
+		MemoryMarshal.Cast<byte, uint>(iv.Slice(0, IVSize)).CopyTo(state.Slice(14));
 	}
 
 	/// <inheritdoc />
