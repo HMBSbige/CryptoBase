@@ -12,7 +12,7 @@ internal partial struct AesCipherBitslice : IDisposable
 	private AesCipherBitslice(ReadOnlySpan<byte> key)
 	{
 		Span<uint> words = stackalloc uint[60];
-		_rounds = AesCipherSoftware.ExpandKey(key, words);
+		_rounds = AesKeySchedule.Expand<AesCipherSoftware>(key, words);
 
 		InitializeRoundKeys(words);
 

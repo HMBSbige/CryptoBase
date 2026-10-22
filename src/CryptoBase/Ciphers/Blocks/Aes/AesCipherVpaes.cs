@@ -470,7 +470,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 	private AesCipherVpaes(ReadOnlySpan<byte> key)
 	{
 		Span<uint> words = stackalloc uint[60];
-		_rounds = ExpandKey(key, words);
+		_rounds = AesKeySchedule.Expand<AesCipherVpaes>(key, words);
 		InitializeRoundKeys(words);
 		words.ZeroMemory();
 	}
@@ -516,11 +516,6 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 	public static AesCipherVpaes Create(ReadOnlySpan<uint> words, int rounds)
 	{
 		return new AesCipherVpaes(words, rounds);
-	}
-
-	internal static int ExpandKey(ReadOnlySpan<byte> key, Span<uint> words)
-	{
-		return AesKeySchedule.Expand<AesCipherVpaes>(key, words);
 	}
 
 	public void Dispose()

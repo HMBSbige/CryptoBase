@@ -8,7 +8,7 @@ internal partial struct AesCipherSoftware : IDisposable, IAesSubWord
 	private AesCipherSoftware(ReadOnlySpan<byte> key)
 	{
 		Span<uint> words = stackalloc uint[60];
-		_rounds = ExpandKey(key, words);
+		_rounds = AesKeySchedule.Expand<AesCipherSoftware>(key, words);
 
 		InitializeRoundKeys(words);
 
@@ -168,11 +168,6 @@ internal partial struct AesCipherSoftware : IDisposable, IAesSubWord
 		}
 
 		state.ZeroMemory();
-	}
-
-	internal static int ExpandKey(ReadOnlySpan<byte> key, Span<uint> words)
-	{
-		return AesKeySchedule.Expand<AesCipherSoftware>(key, words);
 	}
 
 	static uint IAesSubWord.SubWord(uint value)

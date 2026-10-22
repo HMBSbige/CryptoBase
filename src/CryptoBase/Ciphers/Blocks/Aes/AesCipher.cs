@@ -335,7 +335,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		public BitsliceState(ReadOnlySpan<byte> key, out AesCipherVpaes vpaes)
 		{
 			Span<uint> words = stackalloc uint[60];
-			int rounds = AesCipherVpaes.ExpandKey(key, words);
+			int rounds = AesKeySchedule.Expand<AesCipherVpaes>(key, words);
 			vpaes = AesCipherVpaes.Create(words, rounds);
 			Cipher = AesCipherBitslice.Create(words, rounds);
 			words.ZeroMemory();
@@ -344,7 +344,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		public BitsliceState(ReadOnlySpan<byte> key, out AesCipherSoftware software)
 		{
 			Span<uint> words = stackalloc uint[60];
-			int rounds = AesCipherSoftware.ExpandKey(key, words);
+			int rounds = AesKeySchedule.Expand<AesCipherSoftware>(key, words);
 			software = AesCipherSoftware.Create(words, rounds);
 			Cipher = AesCipherBitslice.Create(words, rounds);
 			words.ZeroMemory();
