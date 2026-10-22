@@ -16,13 +16,12 @@ public static class CpuIdUtils
 	{
 		if (X86Base.IsSupported)
 		{
-			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(0, 0);
+			(_, int ebx, int ecx, int edx) = X86Base.CpuId(0, 0);
 			Span<byte> buffer = stackalloc byte[12];
 
-			Debug.WriteLine(id);
-			BinaryPrimitives.WriteInt32LittleEndian(buffer, id.Ebx);
-			BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(4), id.Edx);
-			BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(8), id.Ecx);
+			BinaryPrimitives.WriteInt32LittleEndian(buffer, ebx);
+			BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(4), edx);
+			BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(8), ecx);
 
 			return Encoding.ASCII.GetString(buffer.TrimEnd(byte.MinValue));
 		}
@@ -68,15 +67,7 @@ public static class CpuIdUtils
 	/// </summary>
 	public static bool IsSupportX86ShaEx()
 	{
-		if (X86Base.IsSupported)
-		{
-			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(7, 0);
-			Debug.WriteLine(id);
-
-			return ((uint)id.Ebx >> 29 & 1) is 1;
-		}
-
-		return false;
+		return X86Base.IsSupported && ((uint)X86Base.CpuId(7, 0).Ebx >> 29 & 1) is 1;
 	}
 
 	/// <summary>
@@ -84,15 +75,7 @@ public static class CpuIdUtils
 	/// </summary>
 	public static bool IsSupportX86VAes()
 	{
-		if (X86Base.IsSupported)
-		{
-			(int Eax, int Ebx, int Ecx, int Edx) id = X86Base.CpuId(7, 0);
-			Debug.WriteLine(id);
-
-			return ((uint)id.Ecx >> 9 & 1) is 1;
-		}
-
-		return false;
+		return X86Base.IsSupported && ((uint)X86Base.CpuId(7, 0).Ecx >> 9 & 1) is 1;
 	}
 
 	private static readonly (int Family, int Model)? AmdFamilyAndModel = X86Base.IsSupported && IsAuthenticAmd(X86Base.CpuId(0, 0)) ? DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax) : null;
