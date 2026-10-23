@@ -175,7 +175,7 @@ internal static partial class SM4Layout
 		}
 
 		Vector256<byte> upper = count > 2 ? Vector128.LoadUnsafe(ref source, offset + 32).ToVector256() : Vector256<byte>.Zero;
-		return Vector512.Create(LoadPairX86(count, ref source, offset), upper);
+		return LoadPairX86(count, ref source, offset).ToVector512Unsafe().WithUpper(upper);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
