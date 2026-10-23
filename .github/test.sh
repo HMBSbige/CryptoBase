@@ -12,7 +12,7 @@ shard_filter() {
 	case $1 in
 		hashes) echo '/*/CryptoBase.Tests.Hashes*/*/*' ;;
 		ciphers) echo '/*/CryptoBase.Tests.Ciphers*/*/*' ;;
-		rest) echo "/*/(CryptoBase.Tests)$(printf '|(CryptoBase.Tests.%s*)' Cavp Encodings IO Kdf Kems Macs Platform Signatures Vectors Wycheproof)/*/*" ;;
+		rest) echo "/*/(CryptoBase.Tests)$(printf '|(CryptoBase.Tests.%s*)' Cavp EllipticCurves Encodings IO Kdf Kems Macs Platform Signatures Vectors Wycheproof)/*/*" ;;
 		*) echo "Unknown shard: $1" >&2; return 1 ;;
 	esac
 }

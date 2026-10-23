@@ -5,7 +5,9 @@ namespace CryptoBase.Tests.Wycheproof;
 public enum WycheproofResult
 {
 	Valid,
-	Invalid
+	Invalid,
+
+	Acceptable
 }
 
 public abstract record WycheproofTestVector
@@ -53,6 +55,10 @@ public sealed record KmacTestGroup(int TagSize) : WycheproofTestGroup<KmacTestVe
 }
 
 public sealed record HkdfTestVector(byte[] Ikm, byte[] Salt, byte[] Info, int Size, byte[] Okm) : WycheproofTestVector;
+
+public sealed record EcCurveTestVector(string Name, string Oid, byte[] P, byte[] N, byte[] A, byte[] B, byte[] Gx, byte[] Gy, int H) : WycheproofTestVector;
+
+public sealed record EcdhEcpointTestVector(byte[] Public, byte[] Private, byte[] Shared) : WycheproofTestVector;
 
 // Decapsulation after key generation from a seed; ek is missing where the seed has the wrong length.
 public sealed record MLKemTestVector(byte[] Seed, byte[] C, byte[] K, byte[]? Ek = null) : WycheproofTestVector;
