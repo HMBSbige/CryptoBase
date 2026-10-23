@@ -126,7 +126,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| ECDH | ⚠️ |
+| ECDH | ✅ |
 | ECDSA | ⚠️ |
 | RSA | ⚠️ |
 | X25519 | ⚠️ |
