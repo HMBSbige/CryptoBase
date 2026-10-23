@@ -265,9 +265,7 @@ public sealed partial class Base32Encoding
 		return EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 	}
 
-	// Only AdvSimd hardware calls this, so the x86 half never runs; it mirrors EncodeX86Auto to keep the IL size above the inlining limit.
-	// Inlined into EncodeCore by FullOpts, or marked NoInlining, it would stop reaching the AdvSimd encoders through ARM64 tail calls.
-	private static int EncodeUtf8Auto(ReadOnlySpan<byte> source, Span<byte> destination, int sourceOffset, int destinationOffset, byte[] alphabet, byte alphabetKind)
+	private static int EncodeUtf8Auto(ReadOnlySpan<byte> source, Span<byte> destination, int sourceOffset, int destinationOffset, byte[] alphabet)
 	{
 		if (AdvSimd.IsSupported)
 		{
@@ -283,58 +281,7 @@ public sealed partial class Base32Encoding
 				: 0;
 		}
 
-		if (alphabetKind is CustomAlphabetKind)
-		{
-			return 0;
-		}
-
-		int sourceRemaining = Math.Min(source.Length, destination.Length / OutputSymbolsPerBlock * InputBytesPerBlock);
-
-		if (Avx512Vbmi.VL.IsSupported)
-		{
-			if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
-			{
-				return EncodeAvx512Vbmi(source, destination, alphabetKind);
-			}
-
-			if (sourceRemaining >= X86EncodeVector256Threshold)
-			{
-				return EncodeAvx512VbmiVl256(source, destination, alphabetKind);
-			}
-
-			return sourceRemaining >= X86EncodeVbmiVl128Threshold
-				? EncodeAvx512VbmiVl128Short(source, destination, GetShortAlphabet(alphabetKind))
-				: 0;
-		}
-
-		if (sourceRemaining >= X86EncodeVector512Threshold && UseAvx512Vbmi())
-		{
-			return EncodeAvx512Vbmi(source, destination, alphabetKind);
-		}
-
-		if (sourceRemaining >= X86EncodeAvx512BwThreshold && UseAvx512Bw())
-		{
-			return EncodeAvx512Bw(source, destination, alphabetKind);
-		}
-
-		if (sourceRemaining >= X86EncodeVector256Threshold && Avx2.IsSupported)
-		{
-			return EncodeAvx2(source, destination, alphabetKind);
-		}
-
-		if (!Ssse3.IsSupported)
-		{
-			return 0;
-		}
-
-		if (sourceRemaining >= X86EncodeVector256Threshold)
-		{
-			return EncodeSsse3(source, destination, alphabetKind);
-		}
-
-		return sourceRemaining >= EncodeShortSimdThreshold
-			? EncodeSsse3Short(source, destination, alphabetKind)
-			: 0;
+		return 0;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

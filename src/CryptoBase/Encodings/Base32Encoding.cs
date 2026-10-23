@@ -280,7 +280,7 @@ public sealed partial class Base32Encoding
 		}
 		else if (AdvSimd.IsSupported)
 		{
-			simdConsumed = EncodeUtf8Auto(source, destination, sourceOffset, destinationOffset, _alphabet, _alphabetKind);
+			simdConsumed = EncodeUtf8Auto(source, destination, sourceOffset, destinationOffset, _alphabet);
 		}
 		else if
 		(
