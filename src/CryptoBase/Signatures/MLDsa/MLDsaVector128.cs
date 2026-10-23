@@ -1046,8 +1046,8 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 	{
 		Vector128<ushort> w = bytes.AsUInt16();
 		Vector128<uint> d = (w & Vector128.Create((ushort)0x07) | w >>> 5 & Vector128.Create((ushort)0x38)).AsUInt32();
-		Vector128<ulong> e = (d & Vector128.Create(0x3Fu) | d >>> 10 & Vector128.Create(0xFC0u)).AsUInt64();
-		return (e & Vector128.Create(0xFFFUL) | e >>> 20 & Vector128.Create(0xFFF000UL)).AsByte();
+		Vector128<ulong> e = (d & Vector128.Create(0x3Fu) | d >>> 10).AsUInt64();
+		return (e & Vector128.Create(0xFFFUL) | e >>> 20).AsByte();
 	}
 
 	// Each 32 values below 16 make 16 bytes, a pair per byte.
