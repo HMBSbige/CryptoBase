@@ -171,32 +171,12 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 			h3 += m3;
 			h4 += m4;
 
-			Vector512<ulong> loopD2 = Avx512F.Multiply(h2.AsUInt32(), r0);
-			Vector512<ulong> loopD3 = Avx512F.Multiply(h2.AsUInt32(), r1);
-			Vector512<ulong> loopD4 = Avx512F.Multiply(h2.AsUInt32(), r2);
-			Vector512<ulong> loopD0 = Avx512F.Multiply(h2.AsUInt32(), s3);
-			Vector512<ulong> loopD1 = Avx512F.Multiply(h2.AsUInt32(), s4);
-
-			loopD1 += Avx512F.Multiply(h0.AsUInt32(), r1);
-			loopD2 += Avx512F.Multiply(h1.AsUInt32(), r1);
-			loopD4 += Avx512F.Multiply(h3.AsUInt32(), r1);
-			loopD0 += Avx512F.Multiply(h4.AsUInt32(), s1);
-			loopD0 += Avx512F.Multiply(h0.AsUInt32(), r0);
-			loopD1 += Avx512F.Multiply(h1.AsUInt32(), r0);
-			loopD3 += Avx512F.Multiply(h3.AsUInt32(), r0);
-			loopD4 += Avx512F.Multiply(h4.AsUInt32(), r0);
-			loopD0 += Avx512F.Multiply(h3.AsUInt32(), s2);
-			loopD1 += Avx512F.Multiply(h4.AsUInt32(), s2);
-			loopD3 += Avx512F.Multiply(h1.AsUInt32(), r2);
-			loopD2 += Avx512F.Multiply(h0.AsUInt32(), r2);
-			loopD4 += Avx512F.Multiply(h1.AsUInt32(), r3);
-			loopD3 += Avx512F.Multiply(h0.AsUInt32(), r3);
-			loopD1 += Avx512F.Multiply(h3.AsUInt32(), s3);
-			loopD2 += Avx512F.Multiply(h4.AsUInt32(), s3);
-			loopD2 += Avx512F.Multiply(h3.AsUInt32(), s4);
-			loopD3 += Avx512F.Multiply(h4.AsUInt32(), s4);
-			loopD4 += Avx512F.Multiply(h0.AsUInt32(), r4);
-			loopD0 += Avx512F.Multiply(h1.AsUInt32(), s4);
+			Vector512<ulong> loopD0 = Vector512<ulong>.Zero;
+			Vector512<ulong> loopD1 = Vector512<ulong>.Zero;
+			Vector512<ulong> loopD2 = Vector512<ulong>.Zero;
+			Vector512<ulong> loopD3 = Vector512<ulong>.Zero;
+			Vector512<ulong> loopD4 = Vector512<ulong>.Zero;
+			MultiplyLanes(false, h0.AsUInt32(), h1.AsUInt32(), h2.AsUInt32(), h3.AsUInt32(), h4.AsUInt32(), r0, r1, r2, r3, r4, s1, s2, s3, s4, ref loopD0, ref loopD1, ref loopD2, ref loopD3, ref loopD4);
 
 			Reduce(loopD0, loopD1, loopD2, loopD3, loopD4, mask, out h0, out h1, out h2, out h3, out h4);
 
@@ -242,76 +222,10 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 
 		while (remaining >= BlockSize8 * 2)
 		{
-			Vector512<uint> coefficient = BroadcastSixteenth(ref _r0);
-			Vector512<ulong> loopD0 = Avx512F.Multiply(h0.AsUInt32(), coefficient);
-			Vector512<ulong> loopD1 = Avx512F.Multiply(h1.AsUInt32(), coefficient);
-			Vector512<ulong> loopD2 = Avx512F.Multiply(h2.AsUInt32(), coefficient);
-			Vector512<ulong> loopD3 = Avx512F.Multiply(h3.AsUInt32(), coefficient);
-			Vector512<ulong> loopD4 = Avx512F.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastSixteenth(ref _r1);
-			loopD1 += Avx512F.Multiply(h0.AsUInt32(), coefficient);
-			loopD2 += Avx512F.Multiply(h1.AsUInt32(), coefficient);
-			loopD3 += Avx512F.Multiply(h2.AsUInt32(), coefficient);
-			loopD4 += Avx512F.Multiply(h3.AsUInt32(), coefficient);
-
-			coefficient = BroadcastSixteenth(ref _r2);
-			loopD2 += Avx512F.Multiply(h0.AsUInt32(), coefficient);
-			loopD3 += Avx512F.Multiply(h1.AsUInt32(), coefficient);
-			loopD4 += Avx512F.Multiply(h2.AsUInt32(), coefficient);
-
-			coefficient = BroadcastSixteenth(ref _r3);
-			loopD3 += Avx512F.Multiply(h0.AsUInt32(), coefficient);
-			loopD4 += Avx512F.Multiply(h1.AsUInt32(), coefficient);
-
-			coefficient = BroadcastSixteenth(ref _r4);
-			loopD4 += Avx512F.Multiply(h0.AsUInt32(), coefficient);
-
-			coefficient = BroadcastSixteenth(ref _s1);
-			loopD0 += Avx512F.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastSixteenth(ref _s2);
-			loopD0 += Avx512F.Multiply(h3.AsUInt32(), coefficient);
-			loopD1 += Avx512F.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastSixteenth(ref _s3);
-			loopD0 += Avx512F.Multiply(h2.AsUInt32(), coefficient);
-			loopD1 += Avx512F.Multiply(h3.AsUInt32(), coefficient);
-			loopD2 += Avx512F.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastSixteenth(ref _s4);
-			loopD0 += Avx512F.Multiply(h1.AsUInt32(), coefficient);
-			loopD1 += Avx512F.Multiply(h2.AsUInt32(), coefficient);
-			loopD2 += Avx512F.Multiply(h3.AsUInt32(), coefficient);
-			loopD3 += Avx512F.Multiply(h4.AsUInt32(), coefficient);
+			MultiplyBroadcast(ref this, true, h0.AsUInt32(), h1.AsUInt32(), h2.AsUInt32(), h3.AsUInt32(), h4.AsUInt32(), out Vector512<ulong> loopD0, out Vector512<ulong> loopD1, out Vector512<ulong> loopD2, out Vector512<ulong> loopD3, out Vector512<ulong> loopD4);
 
 			LoadEight(ref input, out m0, out m1, out m2, out m3, out m4);
-			loopD2 += Avx512F.Multiply(m2.AsUInt32(), r0);
-			loopD3 += Avx512F.Multiply(m2.AsUInt32(), r1);
-			loopD4 += Avx512F.Multiply(m2.AsUInt32(), r2);
-			loopD0 += Avx512F.Multiply(m2.AsUInt32(), s3);
-			loopD1 += Avx512F.Multiply(m2.AsUInt32(), s4);
-
-			loopD1 += Avx512F.Multiply(m0.AsUInt32(), r1);
-			loopD2 += Avx512F.Multiply(m1.AsUInt32(), r1);
-			loopD4 += Avx512F.Multiply(m3.AsUInt32(), r1);
-			loopD0 += Avx512F.Multiply(m4.AsUInt32(), s1);
-			loopD0 += Avx512F.Multiply(m0.AsUInt32(), r0);
-			loopD1 += Avx512F.Multiply(m1.AsUInt32(), r0);
-			loopD3 += Avx512F.Multiply(m3.AsUInt32(), r0);
-			loopD4 += Avx512F.Multiply(m4.AsUInt32(), r0);
-			loopD0 += Avx512F.Multiply(m3.AsUInt32(), s2);
-			loopD1 += Avx512F.Multiply(m4.AsUInt32(), s2);
-			loopD3 += Avx512F.Multiply(m1.AsUInt32(), r2);
-			loopD2 += Avx512F.Multiply(m0.AsUInt32(), r2);
-			loopD4 += Avx512F.Multiply(m1.AsUInt32(), r3);
-			loopD3 += Avx512F.Multiply(m0.AsUInt32(), r3);
-			loopD1 += Avx512F.Multiply(m3.AsUInt32(), s3);
-			loopD2 += Avx512F.Multiply(m4.AsUInt32(), s3);
-			loopD2 += Avx512F.Multiply(m3.AsUInt32(), s4);
-			loopD3 += Avx512F.Multiply(m4.AsUInt32(), s4);
-			loopD4 += Avx512F.Multiply(m0.AsUInt32(), r4);
-			loopD0 += Avx512F.Multiply(m1.AsUInt32(), s4);
+			MultiplyLanes(true, m0.AsUInt32(), m1.AsUInt32(), m2.AsUInt32(), m3.AsUInt32(), m4.AsUInt32(), r0, r1, r2, r3, r4, s1, s2, s3, s4, ref loopD0, ref loopD1, ref loopD2, ref loopD3, ref loopD4);
 
 			ref byte secondGroup = ref Unsafe.Add(ref input, BlockSize8);
 			LoadEight(ref secondGroup, out m0, out m1, out m2, out m3, out m4);
@@ -329,32 +243,12 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 
 		while (remaining is not 0)
 		{
-			Vector512<ulong> loopD2 = Avx512F.Multiply(h2.AsUInt32(), r0);
-			Vector512<ulong> loopD3 = Avx512F.Multiply(h2.AsUInt32(), r1);
-			Vector512<ulong> loopD4 = Avx512F.Multiply(h2.AsUInt32(), r2);
-			Vector512<ulong> loopD0 = Avx512F.Multiply(h2.AsUInt32(), s3);
-			Vector512<ulong> loopD1 = Avx512F.Multiply(h2.AsUInt32(), s4);
-
-			loopD1 += Avx512F.Multiply(h0.AsUInt32(), r1);
-			loopD2 += Avx512F.Multiply(h1.AsUInt32(), r1);
-			loopD4 += Avx512F.Multiply(h3.AsUInt32(), r1);
-			loopD0 += Avx512F.Multiply(h4.AsUInt32(), s1);
-			loopD0 += Avx512F.Multiply(h0.AsUInt32(), r0);
-			loopD1 += Avx512F.Multiply(h1.AsUInt32(), r0);
-			loopD3 += Avx512F.Multiply(h3.AsUInt32(), r0);
-			loopD4 += Avx512F.Multiply(h4.AsUInt32(), r0);
-			loopD0 += Avx512F.Multiply(h3.AsUInt32(), s2);
-			loopD1 += Avx512F.Multiply(h4.AsUInt32(), s2);
-			loopD3 += Avx512F.Multiply(h1.AsUInt32(), r2);
-			loopD2 += Avx512F.Multiply(h0.AsUInt32(), r2);
-			loopD4 += Avx512F.Multiply(h1.AsUInt32(), r3);
-			loopD3 += Avx512F.Multiply(h0.AsUInt32(), r3);
-			loopD1 += Avx512F.Multiply(h3.AsUInt32(), s3);
-			loopD2 += Avx512F.Multiply(h4.AsUInt32(), s3);
-			loopD2 += Avx512F.Multiply(h3.AsUInt32(), s4);
-			loopD3 += Avx512F.Multiply(h4.AsUInt32(), s4);
-			loopD4 += Avx512F.Multiply(h0.AsUInt32(), r4);
-			loopD0 += Avx512F.Multiply(h1.AsUInt32(), s4);
+			Vector512<ulong> loopD0 = Vector512<ulong>.Zero;
+			Vector512<ulong> loopD1 = Vector512<ulong>.Zero;
+			Vector512<ulong> loopD2 = Vector512<ulong>.Zero;
+			Vector512<ulong> loopD3 = Vector512<ulong>.Zero;
+			Vector512<ulong> loopD4 = Vector512<ulong>.Zero;
+			MultiplyLanes(false, h0.AsUInt32(), h1.AsUInt32(), h2.AsUInt32(), h3.AsUInt32(), h4.AsUInt32(), r0, r1, r2, r3, r4, s1, s2, s3, s4, ref loopD0, ref loopD1, ref loopD2, ref loopD3, ref loopD4);
 
 			Reduce(loopD0, loopD1, loopD2, loopD3, loopD4, mask, out h0, out h1, out h2, out h3, out h4);
 
@@ -369,6 +263,111 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		}
 
 		SetAccumulatorFromLanes(h0.AsUInt32(), h1.AsUInt32(), h2.AsUInt32(), h3.AsUInt32(), h4.AsUInt32());
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector512<uint> Broadcast(ref Vector512<uint> value, bool sixteenthPower)
+	{
+		return sixteenthPower ? BroadcastSixteenth(ref value) : BroadcastEighth(ref value);
+	}
+
+	// Grouping by coefficient keeps only one broadcast power live at a time.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void MultiplyBroadcast
+	(
+		ref Poly1305Avx512 state, bool sixteenthPower,
+		Vector512<uint> x0, Vector512<uint> x1, Vector512<uint> x2, Vector512<uint> x3, Vector512<uint> x4,
+		out Vector512<ulong> d0, out Vector512<ulong> d1, out Vector512<ulong> d2, out Vector512<ulong> d3, out Vector512<ulong> d4
+	)
+	{
+		Vector512<uint> coefficient = Broadcast(ref state._r0, sixteenthPower);
+		d0 = Avx512F.Multiply(x0, coefficient);
+		d1 = Avx512F.Multiply(x1, coefficient);
+		d2 = Avx512F.Multiply(x2, coefficient);
+		d3 = Avx512F.Multiply(x3, coefficient);
+		d4 = Avx512F.Multiply(x4, coefficient);
+
+		coefficient = Broadcast(ref state._r1, sixteenthPower);
+		d1 += Avx512F.Multiply(x0, coefficient);
+		d2 += Avx512F.Multiply(x1, coefficient);
+		d3 += Avx512F.Multiply(x2, coefficient);
+		d4 += Avx512F.Multiply(x3, coefficient);
+
+		coefficient = Broadcast(ref state._r2, sixteenthPower);
+		d2 += Avx512F.Multiply(x0, coefficient);
+		d3 += Avx512F.Multiply(x1, coefficient);
+		d4 += Avx512F.Multiply(x2, coefficient);
+
+		coefficient = Broadcast(ref state._r3, sixteenthPower);
+		d3 += Avx512F.Multiply(x0, coefficient);
+		d4 += Avx512F.Multiply(x1, coefficient);
+
+		d4 += Avx512F.Multiply(x0, Broadcast(ref state._r4, sixteenthPower));
+		d0 += Avx512F.Multiply(x4, Broadcast(ref state._s1, sixteenthPower));
+
+		coefficient = Broadcast(ref state._s2, sixteenthPower);
+		d0 += Avx512F.Multiply(x3, coefficient);
+		d1 += Avx512F.Multiply(x4, coefficient);
+
+		coefficient = Broadcast(ref state._s3, sixteenthPower);
+		d0 += Avx512F.Multiply(x2, coefficient);
+		d1 += Avx512F.Multiply(x3, coefficient);
+		d2 += Avx512F.Multiply(x4, coefficient);
+
+		coefficient = Broadcast(ref state._s4, sixteenthPower);
+		d0 += Avx512F.Multiply(x1, coefficient);
+		d1 += Avx512F.Multiply(x2, coefficient);
+		d2 += Avx512F.Multiply(x3, coefficient);
+		d3 += Avx512F.Multiply(x4, coefficient);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void MultiplyLanes
+	(
+		bool accumulate,
+		Vector512<uint> x0, Vector512<uint> x1, Vector512<uint> x2, Vector512<uint> x3, Vector512<uint> x4,
+		Vector512<uint> r0, Vector512<uint> r1, Vector512<uint> r2, Vector512<uint> r3, Vector512<uint> r4,
+		Vector512<uint> s1, Vector512<uint> s2, Vector512<uint> s3, Vector512<uint> s4,
+		ref Vector512<ulong> d0, ref Vector512<ulong> d1, ref Vector512<ulong> d2, ref Vector512<ulong> d3, ref Vector512<ulong> d4
+	)
+	{
+		if (accumulate)
+		{
+			d2 += Avx512F.Multiply(x2, r0);
+			d3 += Avx512F.Multiply(x2, r1);
+			d4 += Avx512F.Multiply(x2, r2);
+			d0 += Avx512F.Multiply(x2, s3);
+			d1 += Avx512F.Multiply(x2, s4);
+		}
+		else
+		{
+			d2 = Avx512F.Multiply(x2, r0);
+			d3 = Avx512F.Multiply(x2, r1);
+			d4 = Avx512F.Multiply(x2, r2);
+			d0 = Avx512F.Multiply(x2, s3);
+			d1 = Avx512F.Multiply(x2, s4);
+		}
+
+		d1 += Avx512F.Multiply(x0, r1);
+		d2 += Avx512F.Multiply(x1, r1);
+		d4 += Avx512F.Multiply(x3, r1);
+		d0 += Avx512F.Multiply(x4, s1);
+		d0 += Avx512F.Multiply(x0, r0);
+		d1 += Avx512F.Multiply(x1, r0);
+		d3 += Avx512F.Multiply(x3, r0);
+		d4 += Avx512F.Multiply(x4, r0);
+		d0 += Avx512F.Multiply(x3, s2);
+		d1 += Avx512F.Multiply(x4, s2);
+		d3 += Avx512F.Multiply(x1, r2);
+		d2 += Avx512F.Multiply(x0, r2);
+		d4 += Avx512F.Multiply(x1, r3);
+		d3 += Avx512F.Multiply(x0, r3);
+		d1 += Avx512F.Multiply(x3, s3);
+		d2 += Avx512F.Multiply(x4, s3);
+		d2 += Avx512F.Multiply(x3, s4);
+		d3 += Avx512F.Multiply(x4, s4);
+		d4 += Avx512F.Multiply(x0, r4);
+		d0 += Avx512F.Multiply(x1, s4);
 	}
 
 	// Multiplies each lane by its remaining power and stores the sum of the lanes as the scalar accumulator.
@@ -520,46 +519,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		Vector512<uint> a3 = (h3 + m3).AsUInt32();
 		Vector512<uint> a4 = (h4 + m4).AsUInt32();
 
-		// Grouping by coefficient keeps only one broadcast power live at a time.
-		Vector512<uint> coefficient = BroadcastEighth(ref state._r0);
-		Vector512<ulong> d0 = Avx512F.Multiply(a0, coefficient);
-		Vector512<ulong> d1 = Avx512F.Multiply(a1, coefficient);
-		Vector512<ulong> d2 = Avx512F.Multiply(a2, coefficient);
-		Vector512<ulong> d3 = Avx512F.Multiply(a3, coefficient);
-		Vector512<ulong> d4 = Avx512F.Multiply(a4, coefficient);
-
-		coefficient = BroadcastEighth(ref state._r1);
-		d1 += Avx512F.Multiply(a0, coefficient);
-		d2 += Avx512F.Multiply(a1, coefficient);
-		d3 += Avx512F.Multiply(a2, coefficient);
-		d4 += Avx512F.Multiply(a3, coefficient);
-
-		coefficient = BroadcastEighth(ref state._r2);
-		d2 += Avx512F.Multiply(a0, coefficient);
-		d3 += Avx512F.Multiply(a1, coefficient);
-		d4 += Avx512F.Multiply(a2, coefficient);
-
-		coefficient = BroadcastEighth(ref state._r3);
-		d3 += Avx512F.Multiply(a0, coefficient);
-		d4 += Avx512F.Multiply(a1, coefficient);
-
-		d4 += Avx512F.Multiply(a0, BroadcastEighth(ref state._r4));
-		d0 += Avx512F.Multiply(a4, BroadcastEighth(ref state._s1));
-
-		coefficient = BroadcastEighth(ref state._s2);
-		d0 += Avx512F.Multiply(a3, coefficient);
-		d1 += Avx512F.Multiply(a4, coefficient);
-
-		coefficient = BroadcastEighth(ref state._s3);
-		d0 += Avx512F.Multiply(a2, coefficient);
-		d1 += Avx512F.Multiply(a3, coefficient);
-		d2 += Avx512F.Multiply(a4, coefficient);
-
-		coefficient = BroadcastEighth(ref state._s4);
-		d0 += Avx512F.Multiply(a1, coefficient);
-		d1 += Avx512F.Multiply(a2, coefficient);
-		d2 += Avx512F.Multiply(a3, coefficient);
-		d3 += Avx512F.Multiply(a4, coefficient);
+		MultiplyBroadcast(ref state, false, a0, a1, a2, a3, a4, out Vector512<ulong> d0, out Vector512<ulong> d1, out Vector512<ulong> d2, out Vector512<ulong> d3, out Vector512<ulong> d4);
 
 		// Reduce into locals so the carry chain stays in registers even when the caller's accumulator is spilled.
 		Reduce(d0, d1, d2, d3, d4, Vector512.Create((ulong)Poly1305State26.LimbMask), out Vector512<ulong> n0, out Vector512<ulong> n1, out Vector512<ulong> n2, out Vector512<ulong> n3, out Vector512<ulong> n4);
