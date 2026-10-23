@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions.Kems;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kems;
 
@@ -35,9 +36,22 @@ internal static class KemTestUtils
 
 	public static byte[] Decapsulate<T>(T kem, ReadOnlySpan<byte> ciphertext) where T : class, IKem<T>
 	{
-		byte[] sharedSecret = new byte[T.SharedSecretLength];
-		kem.Decapsulate(ciphertext, sharedSecret);
+		(bool result, byte[] sharedSecret) = TryDecapsulate(kem, ciphertext);
+
+		if (!result)
+		{
+			Assert.Fail("TryDecapsulate returned false.");
+		}
+
 		return sharedSecret;
+	}
+
+	// Output starts filled with DestinationSentinel, so a false result can be checked to leave it unchanged.
+	public static (bool Result, byte[] Output) TryDecapsulate<T>(T kem, ReadOnlySpan<byte> ciphertext) where T : class, IKem<T>
+	{
+		byte[] output = CreateGuardedBuffer(0, T.SharedSecretLength, 0);
+		bool result = kem.TryDecapsulate(ciphertext, output);
+		return (result, output);
 	}
 
 	// The ciphertext with one bit flipped at every byte position in turn, then all zeros and all ones.

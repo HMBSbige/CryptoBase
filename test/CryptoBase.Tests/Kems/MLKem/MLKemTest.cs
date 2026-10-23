@@ -308,7 +308,7 @@ public class MLKemTest
 			kem.ExportDecapsulationKey(decapsulationKey);
 			kem.ExportEncapsulationKey(encapsulationKey);
 			kem.Encapsulate(ciphertext, sharedSecret);
-			kem.Decapsulate(ciphertext, decapsulated);
+			kem.TryDecapsulate(ciphertext, decapsulated);
 		}
 	}
 

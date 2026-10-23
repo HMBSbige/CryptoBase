@@ -110,7 +110,12 @@ public class KemContractTest
 			await Assert.That(() => fromDecapsulationKey.ExportPrivateSeed(seed)).ThrowsExactly<InvalidOperationException>();
 			await Assert.That(() => fromEncapsulationKey.ExportPrivateSeed(seed)).ThrowsExactly<InvalidOperationException>();
 			await Assert.That(() => fromEncapsulationKey.ExportDecapsulationKey(decapsulationKey)).ThrowsExactly<InvalidOperationException>();
-			await Assert.That(() => fromEncapsulationKey.Decapsulate(ciphertext, sharedSecret)).ThrowsExactly<InvalidOperationException>();
+
+			foreach (byte[] input in (byte[][])[ciphertext, [], Resize(ciphertext, -1), Resize(ciphertext, 1)])
+			{
+				await Assert.That(() => fromEncapsulationKey.TryDecapsulate(input, sharedSecret)).ThrowsExactly<InvalidOperationException>();
+			}
+
 			await Assert.That(seed).All(static value => value is DestinationSentinel);
 			await Assert.That(decapsulationKey).All(static value => value is DestinationSentinel);
 			await Assert.That(sharedSecret).All(static value => value is DestinationSentinel);
@@ -143,7 +148,11 @@ public class KemContractTest
 				await Assert.That(() => kem.ExportEncapsulationKey(encapsulationKey)).Throws<ArgumentException>().WithParameterName("destination");
 				await Assert.That(() => kem.Encapsulate(shortCiphertext, fullSecret)).Throws<ArgumentException>().WithParameterName("ciphertext");
 				await Assert.That(() => kem.Encapsulate(fullCiphertext, shortSecret)).Throws<ArgumentException>().WithParameterName("sharedSecret");
-				await Assert.That(() => kem.Decapsulate(ciphertext, shortSecret)).Throws<ArgumentException>().WithParameterName("sharedSecret");
+
+				foreach (byte[] input in (byte[][])[ciphertext, [], Resize(ciphertext, -1), Resize(ciphertext, 1)])
+				{
+					await Assert.That(() => kem.TryDecapsulate(input, shortSecret)).Throws<ArgumentException>().WithParameterName("sharedSecret");
+				}
 
 				foreach (byte[] buffer in (byte[][])[seed, decapsulationKey, encapsulationKey, shortCiphertext, shortSecret, fullCiphertext, fullSecret])
 				{
@@ -157,14 +166,12 @@ public class KemContractTest
 	[GenerateGenericTest(typeof(MLKem512))]
 	[GenerateGenericTest(typeof(MLKem768))]
 	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task InputsOfTheWrongLengthThrow<T>() where T : class, IKem<T>
+	public async Task ImportsOfTheWrongLengthThrow<T>() where T : class, IKem<T>
 	{
 		using T kem = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(kem);
 		byte[] decapsulationKey = ExportDecapsulationKey(kem);
 		byte[] encapsulationKey = ExportEncapsulationKey(kem);
-		byte[] ciphertext = Encapsulate(kem).Ciphertext;
-		byte[] sharedSecret = CreateGuardedBuffer(0, T.SharedSecretLength);
 
 		using (Assert.Multiple())
 		{
@@ -173,14 +180,35 @@ public class KemContractTest
 				await Assert.That(() => T.ImportPrivateSeed(Resize(seed, delta))).Throws<ArgumentException>().WithParameterName("source");
 				await Assert.That(() => T.ImportDecapsulationKey(Resize(decapsulationKey, delta))).Throws<ArgumentException>().WithParameterName("source");
 				await Assert.That(() => T.ImportEncapsulationKey(Resize(encapsulationKey, delta))).Throws<ArgumentException>().WithParameterName("source");
-				await Assert.That(() => kem.Decapsulate(Resize(ciphertext, delta), sharedSecret)).Throws<ArgumentException>().WithParameterName("ciphertext");
 			}
 
 			await Assert.That(() => T.ImportPrivateSeed([])).Throws<ArgumentException>().WithParameterName("source");
 			await Assert.That(() => T.ImportDecapsulationKey([])).Throws<ArgumentException>().WithParameterName("source");
 			await Assert.That(() => T.ImportEncapsulationKey([])).Throws<ArgumentException>().WithParameterName("source");
-			await Assert.That(() => kem.Decapsulate([], sharedSecret)).Throws<ArgumentException>().WithParameterName("ciphertext");
-			await Assert.That(sharedSecret).All(static value => value is DestinationSentinel);
+		}
+	}
+
+	[Test]
+	[GenerateGenericTest(typeof(MLKem512))]
+	[GenerateGenericTest(typeof(MLKem768))]
+	[GenerateGenericTest(typeof(MLKem1024))]
+	public async Task CiphertextsOfTheWrongLengthReturnFalse<T>() where T : class, IKem<T>
+	{
+		using T generated = T.GenerateKey();
+		using T fromDecapsulationKey = T.ImportDecapsulationKey(ExportDecapsulationKey(generated));
+		byte[] ciphertext = Encapsulate(generated).Ciphertext;
+
+		using (Assert.Multiple())
+		{
+			foreach (byte[] input in (byte[][])[[], Resize(ciphertext, -1), Resize(ciphertext, 1)])
+			{
+				foreach (T kem in (T[])[generated, fromDecapsulationKey])
+				{
+					byte[] sharedSecret = CreateGuardedBuffer(0, T.SharedSecretLength);
+					await Assert.That(kem.TryDecapsulate(input, sharedSecret)).IsFalse().Because($"{input.Length} bytes");
+					await Assert.That(sharedSecret).All(static value => value is DestinationSentinel);
+				}
+			}
 		}
 	}
 
@@ -229,7 +257,8 @@ public class KemContractTest
 		{
 			byte[] buffer = new byte[T.CiphertextLength + T.SharedSecretLength];
 			ciphertext.CopyTo(buffer, 0);
-			kem.Decapsulate(buffer.AsSpan(0, T.CiphertextLength), buffer.AsSpan(offset, T.SharedSecretLength));
+			bool result = kem.TryDecapsulate(buffer.AsSpan(0, T.CiphertextLength), buffer.AsSpan(offset, T.SharedSecretLength));
+			await Assert.That(result).IsTrue();
 			await Assert.That(buffer.AsSpan(offset, T.SharedSecretLength).ToArray()).IsEquivalentTo(sharedSecret, CollectionOrdering.Matching);
 		}
 	}
@@ -258,11 +287,12 @@ public class KemContractTest
 		kem.Encapsulate(ciphertextOutput.AsSpan(1), secretOutput.AsSpan(1));
 		byte[] ciphertext = ciphertextOutput.AsSpan(1, T.CiphertextLength).ToArray();
 		byte[] sharedSecret = secretOutput.AsSpan(1, T.SharedSecretLength).ToArray();
-		kem.Decapsulate(ciphertext, decapsulatedOutput.AsSpan(1));
+		bool decapsulationResult = kem.TryDecapsulate(ciphertext, decapsulatedOutput.AsSpan(1));
 
 		using (Assert.Multiple())
 		{
 			await Assert.That((seedWritten, decapsulationKeyWritten, encapsulationKeyWritten)).IsEqualTo((T.PrivateSeedLength, T.DecapsulationKeyLength, T.EncapsulationKeyLength));
+			await Assert.That(decapsulationResult).IsTrue();
 			await AssertOutput(seedOutput, 1, seed);
 			await AssertOutput(decapsulationKeyOutput, 1, decapsulationKey);
 			await AssertOutput(encapsulationKeyOutput, 1, encapsulationKey);
@@ -291,43 +321,61 @@ public class KemContractTest
 			await Assert.That(() => kem.ExportDecapsulationKey(new byte[T.DecapsulationKeyLength])).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => kem.ExportEncapsulationKey(new byte[T.EncapsulationKeyLength])).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => kem.Encapsulate(new byte[T.CiphertextLength], new byte[T.SharedSecretLength])).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => kem.Decapsulate(ciphertext, new byte[T.SharedSecretLength])).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => kem.TryDecapsulate(ciphertext, new byte[T.SharedSecretLength])).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => kem.TryDecapsulate([], new byte[T.SharedSecretLength])).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => kem.TryDecapsulate([], [])).ThrowsExactly<ObjectDisposedException>();
 		}
 	}
 
-	// A ciphertext that was not produced for the key decapsulates to a value that differs from the shared secret, without an exception,
-	// and the same value every time and from every instance with the decapsulation key.
+	// Whether tampering checked bytes changes the value depends on the algorithm, so only tampering unchecked bytes must change it.
 	[Test]
 	[GenerateGenericTest(typeof(MLKem512))]
 	[GenerateGenericTest(typeof(MLKem768))]
 	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task TamperedCiphertextsAreRejectedImplicitly<T>() where T : class, IKem<T>
+	public async Task TamperedCiphertextsFailThePublicChecksOrYieldADeterministicValue<T>() where T : class, IKem<T>
 	{
-		using T kem = T.GenerateKey();
-		using T fromDecapsulationKey = T.ImportDecapsulationKey(ExportDecapsulationKey(kem));
-		(byte[] ciphertext, byte[] sharedSecret) = Encapsulate(kem);
+		using T generated = T.GenerateKey();
+		using T fromSeed = T.ImportPrivateSeed(ExportPrivateSeed(generated));
+		using T fromDecapsulationKey = T.ImportDecapsulationKey(ExportDecapsulationKey(generated));
+		using T unrelated = T.GenerateKey();
+		// generated twice, so that a repeated call is compared too.
+		T[] holders = [generated, generated, fromSeed, fromDecapsulationKey];
+		(byte[] ciphertext, byte[] sharedSecret) = Encapsulate(generated);
+		KemCiphertextChecks checks = KemCiphertextChecks.Of<T>();
 		List<string> failures = [];
 		int index = 0;
 
+		await Assert.That(checks.CheckedRanges).All(range => range is { Offset: >= 0, Length: > 0 } && range.Offset + range.Length <= T.CiphertextLength);
+
 		foreach (byte[] tampered in Tampered(ciphertext))
 		{
-			byte[] first = Decapsulate(kem, tampered);
-			byte[] second = Decapsulate(kem, tampered);
-			byte[] other = Decapsulate(fromDecapsulationKey, tampered);
+			(bool Result, byte[] Output)[] outcomes = [.. holders.Select(kem => TryDecapsulate(kem, tampered))];
+			string? violation = FindViolation(outcomes, TryDecapsulate(unrelated, tampered), sharedSecret, checks.TouchesCheckedRange(ciphertext, tampered));
 
-			if (first.AsSpan().SequenceEqual(sharedSecret) || !first.AsSpan().SequenceEqual(second) || !first.AsSpan().SequenceEqual(other))
+			if (violation is not null)
 			{
-				failures.Add($"tampered ciphertext {index}");
+				failures.Add($"tampered ciphertext {index}: {violation}");
 			}
 
 			++index;
+		}
+
+		for (int i = 0; i < checks.InvalidCiphertexts.Length; ++i)
+		{
+			byte[] invalid = checks.InvalidCiphertexts[i];
+			(bool Result, byte[] Output)[] outcomes = [.. holders.Select(kem => TryDecapsulate(kem, invalid)), TryDecapsulate(unrelated, invalid)];
+
+			if (invalid.Length != T.CiphertextLength || outcomes.Any(static outcome => outcome.Result || outcome.Output.AsSpan().ContainsAnyExcept(DestinationSentinel)))
+			{
+				failures.Add($"invalid ciphertext {i}: has the wrong length, or does not return false and leave the output unchanged");
+			}
 		}
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(index).IsEqualTo(T.CiphertextLength + 2);
 			await Assert.That(failures).IsEmpty();
-			await Assert.That(Decapsulate(kem, ciphertext)).IsEquivalentTo(sharedSecret, CollectionOrdering.Matching);
+			await Assert.That(Decapsulate(generated, ciphertext)).IsEquivalentTo(sharedSecret, CollectionOrdering.Matching);
 		}
 	}
 
@@ -360,7 +408,7 @@ public class KemContractTest
 		using T fromEncapsulationKey = T.ImportEncapsulationKey(encapsulationKeyBuffer.Span);
 
 		fromEncapsulationKey.Encapsulate(ciphertextBuffer.Span, secretBuffer.Span);
-		fromDecapsulationKey.Decapsulate(ciphertextBuffer.Span, decapsulatedBuffer.Span);
+		bool decapsulationResult = fromDecapsulationKey.TryDecapsulate(ciphertextBuffer.Span, decapsulatedBuffer.Span);
 		byte[] sharedSecret = secretBuffer.Span.ToArray();
 		byte[] decapsulated = decapsulatedBuffer.Span.ToArray();
 
@@ -370,10 +418,49 @@ public class KemContractTest
 
 		using (Assert.Multiple())
 		{
+			await Assert.That(decapsulationResult).IsTrue();
 			await Assert.That(decapsulated).IsEquivalentTo(sharedSecret, CollectionOrdering.Matching);
 			await Assert.That(seedBuffer.Span.ToArray()).IsEquivalentTo(seed, CollectionOrdering.Matching);
 			await Assert.That(decapsulationKeyBuffer.Span.ToArray()).IsEquivalentTo(decapsulationKey, CollectionOrdering.Matching);
 			await Assert.That(encapsulationKeyBuffer.Span.ToArray()).IsEquivalentTo(encapsulationKey, CollectionOrdering.Matching);
 		}
+	}
+
+	// outcomes come from instances that hold the key the ciphertext was encapsulated to.
+	private static string? FindViolation((bool Result, byte[] Output)[] outcomes, (bool Result, byte[] Output) unrelated, byte[] sharedSecret, bool touchesCheckedRange)
+	{
+		(bool result, byte[] output) = outcomes[0];
+
+		if (outcomes.Any(outcome => outcome.Result != result))
+		{
+			return "the result differs between calls or instances";
+		}
+
+		if (unrelated.Result != result)
+		{
+			return "the result differs from that of an unrelated key";
+		}
+
+		if (!result)
+		{
+			if (unrelated.Output.AsSpan().ContainsAnyExcept(DestinationSentinel) || outcomes.Any(static outcome => outcome.Output.AsSpan().ContainsAnyExcept(DestinationSentinel)))
+			{
+				return "false changed the output";
+			}
+
+			return touchesCheckedRange ? null : "false, although only bytes that the checks do not read changed";
+		}
+
+		if (!output.AsSpan().ContainsAnyExcept(DestinationSentinel))
+		{
+			return "true left the output unchanged";
+		}
+
+		if (!touchesCheckedRange && output.AsSpan().SequenceEqual(sharedSecret))
+		{
+			return "the shared secret was recovered, although only bytes that the checks do not read changed";
+		}
+
+		return outcomes.All(outcome => outcome.Output.AsSpan().SequenceEqual(output)) ? null : "the value differs between calls or instances";
 	}
 }

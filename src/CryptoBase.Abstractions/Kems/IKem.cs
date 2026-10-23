@@ -51,10 +51,13 @@ public interface IKem<out TSelf> : IDisposable where TSelf : class, IKem<TSelf>
 	/// <summary>
 	/// Derives a key pair from <paramref name="source" />.
 	/// </summary>
-	/// <remarks>The derivation is deterministic: the same seed always gives the same key pair.</remarks>
+	/// <remarks>
+	/// The derivation is deterministic: the same seed always gives the same key pair. Some algorithms reject some seeds of the right length; for
+	/// example, a hybrid KEM requires the elliptic curve private key in the seed to lie in [1, n − 1].
+	/// </remarks>
 	/// <param name="source">The private seed, exactly <see cref="PrivateSeedLength" /> bytes long.</param>
 	/// <returns>An instance that holds the private seed, the decapsulation key and the encapsulation key.</returns>
-	/// <exception cref="ArgumentException"><paramref name="source" /> has the wrong length.</exception>
+	/// <exception cref="ArgumentException"><paramref name="source" /> has the wrong length or is not a valid private seed.</exception>
 	static abstract TSelf ImportPrivateSeed(ReadOnlySpan<byte> source);
 
 	/// <summary>
@@ -69,7 +72,7 @@ public interface IKem<out TSelf> : IDisposable where TSelf : class, IKem<TSelf>
 	/// <summary>
 	/// Imports an encapsulation key.
 	/// </summary>
-	/// <remarks>The key is validated before use.</remarks>
+	/// <remarks>The key is validated in full, so once it is imported, <see cref="Encapsulate" /> cannot fail because of its contents.</remarks>
 	/// <param name="source">The encapsulation key, exactly <see cref="EncapsulationKeyLength" /> bytes long.</param>
 	/// <returns>An instance that holds only the encapsulation key.</returns>
 	/// <exception cref="ArgumentException"><paramref name="source" /> has the wrong length or is not a valid encapsulation key.</exception>
@@ -136,17 +139,26 @@ public interface IKem<out TSelf> : IDisposable where TSelf : class, IKem<TSelf>
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// A ciphertext of the right length never fails: one that was not produced by encapsulating to this key yields a pseudorandom value derived from
-	/// the decapsulation key and the ciphertext instead of the shared secret (implicit rejection), so the caller cannot tell the two apart.
+	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> does not have exactly <see cref="CiphertextLength" /> bytes or a
+	/// publicly encoded value in it, such as an elliptic curve point, is invalid. The result depends only on the ciphertext and the encapsulation key,
+	/// never on secret key material.
 	/// </para>
 	/// <para>
-	/// <paramref name="ciphertext" /> may overlap <paramref name="sharedSecret" />. On failure, <paramref name="sharedSecret" /> remains unchanged.
+	/// <see langword="true" /> does not mean that <paramref name="ciphertext" /> was encapsulated to this key. The shared secret need not bind the
+	/// ciphertext, so a protocol that relies on that binding must include the ciphertext in its key derivation or transcript. A KEM with implicit
+	/// rejection writes, for a ciphertext that was not encapsulated to the key, a pseudorandom value derived from the decapsulation key and the
+	/// ciphertext.
+	/// </para>
+	/// <para>
+	/// The exceptions take precedence: they are thrown even if <paramref name="ciphertext" /> is also invalid. <paramref name="ciphertext" /> may overlap
+	/// <paramref name="sharedSecret" />. If the method returns <see langword="false" /> or throws, <paramref name="sharedSecret" /> remains unchanged.
 	/// </para>
 	/// </remarks>
-	/// <param name="ciphertext">The ciphertext, exactly <see cref="CiphertextLength" /> bytes long.</param>
+	/// <param name="ciphertext">The ciphertext.</param>
 	/// <param name="sharedSecret">The buffer that receives the shared secret.</param>
-	/// <exception cref="ArgumentException"><paramref name="ciphertext" /> has the wrong length, or <paramref name="sharedSecret" /> is too short.</exception>
+	/// <returns><see langword="false" /> if <paramref name="ciphertext" /> fails the public checks; otherwise, <see langword="true" />.</returns>
+	/// <exception cref="ArgumentException"><paramref name="sharedSecret" /> is too short.</exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the decapsulation key.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret);
+	bool TryDecapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret);
 }

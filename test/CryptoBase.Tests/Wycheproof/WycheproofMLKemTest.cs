@@ -1,8 +1,8 @@
 using CryptoBase.Abstractions.Kems;
 using CryptoBase.Kems.MLKem;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Kems.KemTestUtils;
 using static CryptoBase.Tests.Kems.MLKem.MLKemTestUtils;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Wycheproof;
 
@@ -114,7 +114,6 @@ public class WycheproofMLKemTest
 
 	// The invalid vectors have a seed or a ciphertext of the wrong length; the valid ones include ciphertexts that
 	// decapsulation must reject implicitly.
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifyDecapsulation<T>(MLKemTestVector vector) where T : class, IKem<T>
 	{
 		if (vector.Seed.Length != T.PrivateSeedLength)
@@ -137,10 +136,13 @@ public class WycheproofMLKemTest
 
 		if (vector.Result is WycheproofResult.Invalid)
 		{
+			(bool result, byte[] output) = TryDecapsulate(kem, vector.C);
+
 			using (Assert.Multiple())
 			{
 				await Assert.That(vector.C.Length).IsNotEqualTo(T.CiphertextLength);
-				await Assert.That(() => kem.Decapsulate(vector.C, new byte[T.SharedSecretLength])).Throws<ArgumentException>();
+				await Assert.That(result).IsFalse();
+				await Assert.That(output).All(static value => value is DestinationSentinel);
 			}
 
 			return;
@@ -188,17 +190,19 @@ public class WycheproofMLKemTest
 
 	// The invalid vectors have a ciphertext or a decapsulation key of the wrong length, or a decapsulation key whose hash or embedded
 	// encapsulation key was corrupted.
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifyDecapsulationKey<T>(MLKemDecapsValidationTestVector vector) where T : class, IKem<T>
 	{
 		if (vector.Flags.Contains("IncorrectCiphertextLength"))
 		{
 			using T valid = T.ImportDecapsulationKey(vector.Dk);
+			(bool result, byte[] output) = TryDecapsulate(valid, vector.C);
 
 			using (Assert.Multiple())
 			{
 				await Assert.That(vector.Result).IsEqualTo(WycheproofResult.Invalid);
-				await Assert.That(() => valid.Decapsulate(vector.C, new byte[T.SharedSecretLength])).Throws<ArgumentException>();
+				await Assert.That(vector.C.Length).IsNotEqualTo(T.CiphertextLength);
+				await Assert.That(result).IsFalse();
+				await Assert.That(output).All(static value => value is DestinationSentinel);
 			}
 
 			return;

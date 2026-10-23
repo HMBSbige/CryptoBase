@@ -138,7 +138,7 @@ public abstract class MLKemBenchmark<T>(MLKemAlgorithm bclAlgorithm, MLKemParame
 	[BenchmarkCategory("Decapsulate")]
 	public void CryptoBaseDecapsulate()
 	{
-		_cryptoBase.Decapsulate(_ciphertext, _sharedSecret);
+		_cryptoBase.TryDecapsulate(_ciphertext, _sharedSecret);
 	}
 
 	[Benchmark]

@@ -13,6 +13,7 @@ CryptoBase implements ML-KEM (FIPS 203) in the `CryptoBase.Kems.MLKem` namespace
 ## Establishing a shared secret
 
 ```csharp
+using System.Security.Cryptography;
 using CryptoBase.Kems.MLKem;
 
 // Receiver: generate a key pair and send the encapsulation key.
@@ -32,16 +33,23 @@ using (MLKem768 sender = MLKem768.ImportEncapsulationKey(encapsulationKey))
 
 // Receiver: recover the shared secret from the ciphertext.
 byte[] receiverSecret = new byte[MLKem768.SharedSecretLength];
-receiver.Decapsulate(ciphertext, receiverSecret);
+
+if (!receiver.TryDecapsulate(ciphertext, receiverSecret))
+{
+    // The ciphertext is malformed; receiverSecret is unchanged.
+    throw new CryptographicException("Invalid ciphertext.");
+}
 
 // senderSecret and receiverSecret are equal.
 ```
 
 The shared secret can key an AEAD directly or feed [HKDF](macs-and-key-derivation.md#hkdf).
 
-`Encapsulate` throws `ArgumentException` if `ciphertext` and `sharedSecret` overlap. `Decapsulate` throws `ArgumentException` for a ciphertext that does not have exactly `CiphertextLength` bytes, and `InvalidOperationException` on an instance imported from an encapsulation key alone. Encapsulation and decapsulation may run concurrently on one instance.
+`TryDecapsulate` returns `false`, leaving `sharedSecret` unchanged, for a ciphertext of the wrong length or with an invalid public part, such as an elliptic curve point. `true` does not mean that the ciphertext was encapsulated to the key.
 
-`Decapsulate` does not report a changed or foreign ciphertext of the right length: it writes a pseudorandom value instead of the shared secret, without throwing, so the receiver's AEAD decryption fails.
+`TryDecapsulate` throws `ObjectDisposedException` after `Dispose`, `InvalidOperationException` on an instance imported from an encapsulation key alone, and `ArgumentException` if `sharedSecret` is too short. `Encapsulate` throws `ArgumentException` if `ciphertext` and `sharedSecret` overlap. Encapsulation and decapsulation may run concurrently on one instance.
+
+ML-KEM checks only the length. For a changed or foreign ciphertext of the right length, it writes a pseudorandom value instead of the shared secret, so the receiver's AEAD decryption fails.
 
 ## Saving and restoring a key
 
@@ -79,6 +87,7 @@ Exporting what an instance does not hold throws `InvalidOperationException`. Imp
 The three types implement `IKem<TSelf>`:
 
 ```csharp
+using System.Security.Cryptography;
 using CryptoBase.Abstractions.Kems;
 using CryptoBase.Kems.MLKem;
 
@@ -91,10 +100,24 @@ static byte[] Encapsulate<T>(ReadOnlySpan<byte> encapsulationKey, Span<byte> sha
     return ciphertext;
 }
 
+static byte[] Decapsulate<T>(T kem, ReadOnlySpan<byte> ciphertext) where T : class, IKem<T>
+{
+    byte[] sharedSecret = new byte[T.SharedSecretLength];
+
+    if (!kem.TryDecapsulate(ciphertext, sharedSecret))
+    {
+        throw new CryptographicException("Invalid ciphertext.");
+    }
+
+    return sharedSecret;
+}
+
 using MLKem1024 receiver = MLKem1024.GenerateKey();
 byte[] encapsulationKey = new byte[MLKem1024.EncapsulationKeyLength];
 receiver.ExportEncapsulationKey(encapsulationKey);
 
 byte[] sharedSecret = new byte[MLKem1024.SharedSecretLength];
 byte[] ciphertext = Encapsulate<MLKem1024>(encapsulationKey, sharedSecret);
+
+byte[] receiverSecret = Decapsulate(receiver, ciphertext); // equal to sharedSecret
 ```

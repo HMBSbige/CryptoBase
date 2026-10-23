@@ -184,18 +184,22 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		Encapsulate<MLKemKernelDispatch>(messageCopy.Span, ciphertext, sharedSecret);
 	}
 
-	internal void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
+	internal bool TryDecapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		if (!HasDecapsulationKey)
 		{
 			ThrowHelper.ThrowMissingKey("decapsulation key");
 		}
 
-		// The ciphertext type check of Sec. 7.3.
-		ArgumentOutOfRangeException.ThrowIfNotEqual(ciphertext.Length, CiphertextLength, nameof(ciphertext));
 		ArgumentOutOfRangeException.ThrowIfLessThan(sharedSecret.Length, SharedSecretLength, nameof(sharedSecret));
 
+		if (ciphertext.Length != CiphertextLength)
+		{
+			return false;
+		}
+
 		Decapsulate<MLKemKernelDispatch>(ciphertext, sharedSecret);
+		return true;
 	}
 
 	internal void Clear()

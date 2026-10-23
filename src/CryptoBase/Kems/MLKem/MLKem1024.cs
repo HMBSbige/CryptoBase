@@ -9,8 +9,12 @@ namespace CryptoBase.Kems.MLKem;
 /// and the modulus check on both the embedded encapsulation key and the secret vector.
 /// </para>
 /// <para>
-/// The private seed is d ‖ z, 64 bytes. The key is expanded once, when it is generated or imported. Encapsulation and decapsulation may run
-/// concurrently on one instance.
+/// <see cref="TryDecapsulate" /> returns <see langword="false" /> only for a ciphertext of the wrong length; any other ciphertext that was not
+/// encapsulated to the key is rejected implicitly.
+/// </para>
+/// <para>
+/// The private seed is d ‖ z, and every 64-byte value is valid. The key is expanded once, when it is generated or imported. Encapsulation and
+/// decapsulation may run concurrently on one instance.
 /// </para>
 /// </remarks>
 public sealed class MLKem1024 : IKem<MLKem1024>
@@ -123,10 +127,10 @@ public sealed class MLKem1024 : IKem<MLKem1024>
 	}
 
 	/// <inheritdoc />
-	public void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
+	public bool TryDecapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		_key.Decapsulate(ciphertext, sharedSecret);
+		return _key.TryDecapsulate(ciphertext, sharedSecret);
 	}
 
 	/// <inheritdoc />
