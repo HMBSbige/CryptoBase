@@ -137,7 +137,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		Debug.Assert(_position < TRate.RateInBytes);
 
 		ref ulong state = ref _state[0][0];
-		XorRow(ref Unsafe.Add(ref state, _position / sizeof(ulong) * _lanes), _lanes, (ulong)domainSeparator << 8 * (_position & 7));
+		XorRow(ref Unsafe.Add(ref state, (_position >> 3) * _lanes), _lanes, (ulong)domainSeparator << 8 * (_position & 7));
 		XorRow(ref Unsafe.Add(ref state, (TRate.RateInBytes / sizeof(ulong) - 1) * _lanes), _lanes, (ulong)LastPaddingBit << 56);
 		_position = TRate.RateInBytes;
 		IsSqueezing = true;
