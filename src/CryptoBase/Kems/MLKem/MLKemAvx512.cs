@@ -120,8 +120,7 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 		}
 	}
 
-	// 512-bit accesses that straddle cache lines cost these more than the arithmetic they save, and polynomials in arrays or on the
-	// stack are seldom 64-byte aligned, so they run on 256-bit vectors.
+	// A 512-bit Reduce is faster on its own, but it makes Encrypt spill 512-bit registers around calls and is no faster end to end, so it runs on 256-bit vectors.
 	public static void Reduce(Span<short> f)
 	{
 		MLKemAvx2.Reduce(f);
@@ -129,7 +128,15 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 
 	public static void ToMontgomery(Span<short> f)
 	{
-		MLKemAvx2.ToMontgomery(f);
+		Debug.Assert(f.Length is N);
+
+		ref short coefficients = ref MemoryMarshal.GetReference(f);
+
+		for (nuint i = 0; i < N; i += 32)
+		{
+			Vector512<short> value = Vector512.LoadUnsafe(ref coefficients, i);
+			MultiplyMontgomery(value, Vector512.Create(MLKemConstants.RSquared), Vector512.Create(MLKemConstants.RSquaredQInverse)).StoreUnsafe(ref coefficients, i);
+		}
 	}
 
 	public static void Add(ReadOnlySpan<short> left, ReadOnlySpan<short> right, Span<short> destination)
