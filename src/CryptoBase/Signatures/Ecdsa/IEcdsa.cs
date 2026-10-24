@@ -1,7 +1,6 @@
 namespace CryptoBase.Signatures.Ecdsa;
 
-// The types implement the signing and verification members here explicitly: they are for tests, which choose the additional data and the
-// format.
+// The types implement the signing and verification members here explicitly: they are for tests, which choose the additional data and the format.
 internal interface IEcdsa<out TSelf> : ISignatureKey<TSelf> where TSelf : class, IEcdsa<TSelf>
 {
 	static abstract int PrivateKeyLength { get; }

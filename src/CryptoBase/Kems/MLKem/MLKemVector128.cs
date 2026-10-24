@@ -2,8 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Kems.MLKem;
 
-// Eight coefficients per 128-bit vector, one implementation for SSE4.1 and AdvSimd. Products with a constant ζ use Barrett
-// multiplication, which needs only the rounding high multiplication both have, so the constants are plain residues.
+// Eight coefficients per 128-bit vector, one implementation for SSE4.1 and AdvSimd. Products with a constant ζ use Barrett multiplication, which needs only the rounding high multiplication both have, so the constants are plain residues.
 internal readonly partial struct MLKemVector128 : IMLKemKernel
 {
 	private const int N = MLKemConstants.N;
@@ -17,8 +16,7 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 
 	public static bool IsSupported => Sse41.IsSupported || AdvSimd.Arm64.IsSupported;
 
-	// Layers 1 to 3 run on vectors 32 coefficients apart, layers 4 to 7 on four consecutive ones, which Interleave pairs for layers 6
-	// and 7 and, applied a third time, restores. Coefficients stay below 8q < 2^15 until the final reduction.
+	// Layers 1 to 3 run on vectors 32 coefficients apart, layers 4 to 7 on four consecutive ones, which Interleave pairs for layers 6 and 7 and, applied a third time, restores. Coefficients stay below 8q < 2^15 until the final reduction.
 	public static void Ntt(Span<short> f)
 	{
 		Debug.Assert(f.Length is N);
@@ -162,8 +160,7 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 		}
 	}
 
-	// The product of a pair is a' · (b0, b1) and a · (b1, b0) with a' = (a0, ±γ · a1). Each is below 2q², so the sums of up to four stay
-	// below q · 2^15, the input bound of MontgomeryReduce.
+	// The product of a pair is a' · (b0, b1) and a · (b1, b0) with a' = (a0, ±γ · a1). Each is below 2q², so the sums of up to four stay below q · 2^15, the input bound of MontgomeryReduce.
 	public static void MultiplyAccumulate(ReadOnlySpan<short> a, int aStride, ReadOnlySpan<short> b, Span<short> destination, int count)
 	{
 		Debug.Assert(count is >= 1 and <= 4);
@@ -815,8 +812,7 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 		}
 	}
 
-	// For d ≤ 10, lane i takes the one or two bytes holding bits d · i to d · i + d − 1. For d = 11, 32-bit lane i takes the up to four
-	// bytes holding values 2i and 2i + 1.
+	// For d ≤ 10, lane i takes the one or two bytes holding bits d · i to d · i + d − 1. For d = 11, 32-bit lane i takes the up to four bytes holding values 2i and 2i + 1.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> DecompressIndices([ConstantExpected(Min = 1, Max = 11)] int bits)
 	{

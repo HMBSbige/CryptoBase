@@ -2,9 +2,7 @@ using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
 
-// The blocks that the row kernels read for their last input, which may be a partial chunk. Its lane then joins late, so that it ends with the full
-// chunks, and reads its last block from a zero-padded copy, which keeps every load inside the input; before it joins, it reads the chunk before it, whose
-// result the key then replaces.
+// The blocks that the row kernels read for their last input, which may be a partial chunk. Its lane then joins late, so that it ends with the full chunks, and reads its last block from a zero-padded copy, which keeps every load inside the input; before it joins, it reads the chunk before it, whose result the key then replaces.
 internal ref struct Blake3LastLane
 {
 	private ref byte _block;

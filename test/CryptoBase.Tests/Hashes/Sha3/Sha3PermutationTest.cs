@@ -5,8 +5,7 @@ namespace CryptoBase.Tests.Hashes.Sha3;
 
 public class Sha3PermutationTest
 {
-	// Keccak-f[1600] applied to the all-zero state, then to its own output, from the Keccak team's
-	// https://github.com/XKCP/XKCP/blob/master/tests/TestVectors/KeccakF-1600-IntermediateValues.txt
+	// Keccak-f[1600] applied to the all-zero state, then to its own output, from the Keccak team's https://github.com/XKCP/XKCP/blob/master/tests/TestVectors/KeccakF-1600-IntermediateValues.txt
 	internal static readonly ulong[] ZeroStatePermutedOnce =
 	[
 		0xF1258F7940E1DDE7UL, 0x84D5CCF933C0478AUL, 0xD598261EA65AA9EEUL, 0xBD1547306F80494DUL, 0x8B284E056253D057UL,

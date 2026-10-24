@@ -125,8 +125,7 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel
 		Unsafe.SkipInit(out InlineArray16<Vector256<uint>> message);
 		uint blockFlags = flags | startFlags;
 
-		// Near its end, an input would prefetch the start of the next input, which another lane has already read; it prefetches the input that its lane hashes
-		// in the next batch instead.
+		// Near its end, an input would prefetch the start of the next input, which another lane has already read; it prefetches the input that its lane hashes in the next batch instead.
 		nuint nextBatch = (count - 1) * stride;
 
 		do
@@ -296,8 +295,7 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel
 		LoadWords(ref Unsafe.Add(ref block, 48), o1, o2, o3, o4, o5, o6, o7, ref Unsafe.Add(ref message, 12));
 	}
 
-	// Loads four words of each input as four vectors. Inputs i and i + 4 share a row, input i + 4 in the high lane, which leaves only a 4x4 transpose
-	// within each lane: the loads, not lane-crossing shuffles, put the inputs into place.
+	// Loads four words of each input as four vectors. Inputs i and i + 4 share a row, input i + 4 in the high lane, which leaves only a 4x4 transpose within each lane: the loads, not lane-crossing shuffles, put the inputs into place.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void LoadWords(ref byte block, nuint o1, nuint o2, nuint o3, nuint o4, nuint o5, nuint o6, nuint o7, ref Vector256<uint> message)
 	{

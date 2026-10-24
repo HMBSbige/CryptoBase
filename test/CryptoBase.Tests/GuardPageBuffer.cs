@@ -2,8 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace CryptoBase.Tests;
 
-// Memory that ends where an inaccessible page begins, so code that reads or writes past the end of Span faults instead of
-// touching whatever happens to follow it.
+// Memory that ends where an inaccessible page begins, so code that reads or writes past the end of Span faults instead of touching whatever happens to follow it.
 public sealed unsafe partial class GuardPageBuffer : IDisposable
 {
 	private const uint MemCommit = 0x1000;

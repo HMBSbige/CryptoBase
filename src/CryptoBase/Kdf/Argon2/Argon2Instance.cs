@@ -254,8 +254,7 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 		}
 	}
 
-	// The first Argon2d segment of a lane references only that lane and starts after the two blocks InitializeLane computes.
-	// Starting FillDataDependentSegment past index 0 would make the JIT keep fewer of its values in registers.
+	// The first Argon2d segment of a lane references only that lane and starts after the two blocks InitializeLane computes. Starting FillDataDependentSegment past index 0 would make the JIT keep fewer of its values in registers.
 	[SkipLocalsInit]
 	private void FillFirstDataDependentSegment(int lane)
 	{

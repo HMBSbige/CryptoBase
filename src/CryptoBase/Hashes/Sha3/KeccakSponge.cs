@@ -1,7 +1,6 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// The sponge construction of FIPS 202, Sec. 4 and 5, over Keccak-p[1600, 24] with byte-aligned input and output.
-// The state itself buffers partial blocks, so whole input blocks are XORed in without copying.
+// The sponge construction of FIPS 202, Sec. 4 and 5, over Keccak-p[1600, 24] with byte-aligned input and output. The state itself buffers partial blocks, so whole input blocks are XORed in without copying.
 internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 {
 	private const byte LastPaddingBit = 0x80;
@@ -75,8 +74,7 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 		_position = source.Length;
 	}
 
-	// Ends a partial block as though zeros filled the rest, as bytepad does (SP 800-185, Sec. 2.3.3): XORing zeros leaves the state
-	// unchanged, so only the permutation remains. At a block boundary there is nothing to fill.
+	// Ends a partial block as though zeros filled the rest, as bytepad does (SP 800-185, Sec. 2.3.3): XORing zeros leaves the state unchanged, so only the permutation remains. At a block boundary there is nothing to fill.
 	internal void FinishBlock()
 	{
 		Debug.Assert(!IsSqueezing);
@@ -88,8 +86,7 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 		}
 	}
 
-	// Absorbs the length low-order bytes of bytes, least significant first, as Sp800_185Encoding packs them. The bytes past the length
-	// are zero and the state extends more than a word past the rate, so a block that the bytes do not fill takes them in one XOR.
+	// Absorbs the length low-order bytes of bytes, least significant first, as Sp800_185Encoding packs them. The bytes past the length are zero and the state extends more than a word past the rate, so a block that the bytes do not fill takes them in one XOR.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void AbsorbWord(ulong bytes, int length)
 	{
@@ -128,8 +125,7 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 		IsSqueezing = true;
 	}
 
-	// Absorbs up to the end of the block, padding if source ends first, and returns the bytes absorbed. The permutation is left to
-	// the caller, so that it can run beside other states.
+	// Absorbs up to the end of the block, padding if source ends first, and returns the bytes absorbed. The permutation is left to the caller, so that it can run beside other states.
 	internal int AbsorbBlock(ReadOnlySpan<byte> source, byte domainSeparator)
 	{
 		Debug.Assert(!IsSqueezing);
@@ -199,8 +195,7 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 			state.Slice(position, available).CopyTo(destination);
 			destination = destination.Slice(available);
 
-			// Passing one byte less leaves the last block, whole or not, to the permutation below, so that the state
-			// ends holding it either way.
+			// Passing one byte less leaves the last block, whole or not, to the permutation below, so that the state ends holding it either way.
 			if (KeccakP1600.IsAvx512Supported && destination.Length > TRate.RateInBytes)
 			{
 				destination = destination.Slice(KeccakP1600.SqueezeAvx512<TRate>(ref _state, destination.Slice(0, destination.Length - 1)));

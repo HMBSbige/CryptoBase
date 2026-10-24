@@ -2,8 +2,7 @@ using static CryptoBase.Internal.ThreadInterrupts;
 
 namespace CryptoBase.Kdf.Argon2;
 
-// With several lanes, pool threads queued once claim lanes alongside the calling thread and wait between phases, which costs far less than handing every slice to Parallel.For.
-// The calling thread processes every lane nobody has claimed, so progress never depends on a helper starting.
+// With several lanes, pool threads queued once claim lanes alongside the calling thread and wait between phases, which costs far less than handing every slice to Parallel.For. The calling thread processes every lane nobody has claimed, so progress never depends on a helper starting.
 internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelism) : ThreadPoolHelper
 {
 	// Threads waiting between phases spin for about 500 µs before blocking: long enough to cover the usual stagger between lanes of a phase, short enough not to hold a core while other derivations need it.

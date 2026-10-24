@@ -4,8 +4,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-// The platform implementations are independent oracles where they exist; .NET has no SHA3-224, and macOS lacks SHA-3 entirely,
-// so the FIPS 202 transcription in KeccakReference stands in for them there.
+// The platform implementations are independent oracles where they exist; .NET has no SHA3-224, and macOS lacks SHA-3 entirely, so the FIPS 202 transcription in KeccakReference stands in for them there.
 internal static class Sha3TestUtils
 {
 	public static byte[] Hash(int hashLength, byte[] source)

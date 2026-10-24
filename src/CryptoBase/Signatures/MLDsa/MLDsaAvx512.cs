@@ -1,7 +1,6 @@
 namespace CryptoBase.Signatures.MLDsa;
 
-// Sixteen coefficients per 512-bit vector, with products as in MLDsaAvx2. IsSupported requires Vector512.IsHardwareAccelerated too,
-// which the runtime reports false where it prefers 256-bit vectors.
+// Sixteen coefficients per 512-bit vector, with products as in MLDsaAvx2. IsSupported requires Vector512.IsHardwareAccelerated too, which the runtime reports false where it prefers 256-bit vectors.
 internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 {
 	private const int N = MLDsaConstants.N;
@@ -10,8 +9,7 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 
 	public static bool IsSupported => Avx512BW.IsSupported && Vector512.IsHardwareAccelerated;
 
-	// Layer 1 runs on vectors 128 coefficients apart, layers 2 to 4 on the eight vectors of each half,
-	// layers 5 to 8 in NttPair. The bounds are those of MLDsaAvx2.Ntt.
+	// Layer 1 runs on vectors 128 coefficients apart, layers 2 to 4 on the eight vectors of each half, layers 5 to 8 in NttPair. The bounds are those of MLDsaAvx2.Ntt.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Ntt(Span<int> f)
 	{
@@ -149,8 +147,7 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 		}
 	}
 
-	// These do too little arithmetic per access to pay for 512-bit accesses that straddle cache lines, and polynomials in arrays or on
-	// the stack are seldom 64-byte aligned, so they run on 256-bit vectors.
+	// These do too little arithmetic per access to pay for 512-bit accesses that straddle cache lines, and polynomials in arrays or on the stack are seldom 64-byte aligned, so they run on 256-bit vectors.
 	public static void Reduce(Span<int> f)
 	{
 		MLDsaAvx2.Reduce(f);
@@ -272,8 +269,7 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 		}
 	}
 
-	// Sixteen candidates from 48 bytes, each 128-bit lane taking 12; vpcompressd moves the accepted ones to the front, and a masked
-	// store writes no more of them than destination holds.
+	// Sixteen candidates from 48 bytes, each 128-bit lane taking 12; vpcompressd moves the accepted ones to the front, and a masked store writes no more of them than destination holds.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static unsafe int RejectSample(ReadOnlySpan<byte> source, Span<int> destination)
 	{
@@ -310,8 +306,7 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 		return count;
 	}
 
-	// Sixteen candidates from each 8 bytes, the low half of a byte first. vpcompressd moves the accepted ones to the front, and a masked
-	// store writes no more of them than destination holds; which they are says nothing of the values, as MLDsaAvx2.RejectEta argues.
+	// Sixteen candidates from each 8 bytes, the low half of a byte first. vpcompressd moves the accepted ones to the front, and a masked store writes no more of them than destination holds; which they are says nothing of the values, as MLDsaAvx2.RejectEta argues.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static unsafe int RejectEta(ReadOnlySpan<byte> source, Span<int> destination, int eta)
 	{
@@ -344,8 +339,7 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 		return count;
 	}
 
-	// The encoders and decoders run on 256-bit vectors: the bytes of a group of values come from or go to one 128-bit lane,
-	// which 512-bit vectors would only add lanes to.
+	// The encoders and decoders run on 256-bit vectors: the bytes of a group of values come from or go to one 128-bit lane, which 512-bit vectors would only add lanes to.
 	public static void EncodeT1(ReadOnlySpan<int> t1, Span<byte> destination)
 	{
 		MLDsaAvx2.EncodeT1(t1, destination);

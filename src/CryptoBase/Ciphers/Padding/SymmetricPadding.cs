@@ -19,14 +19,11 @@ public static class SymmetricPadding
 	/// Both modes return zero for empty input.
 	/// </para>
 	/// <para>
-	/// <see cref="PaddingMode.PKCS7"/>, <see cref="PaddingMode.ANSIX923"/>, and <see cref="PaddingMode.ISO10126"/>
-	/// add 1 to <paramref name="blockSizeInBytes"/> bytes. Input that already contains a whole number of blocks,
-	/// including empty input, receives a full block of padding.
+	/// <see cref="PaddingMode.PKCS7"/>, <see cref="PaddingMode.ANSIX923"/>, and <see cref="PaddingMode.ISO10126"/> add 1 to <paramref name="blockSizeInBytes"/> bytes. Input that already contains a whole number of blocks, including empty input, receives a full block of padding.
 	/// </para>
 	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException">
-	/// <paramref name="sourceLength"/> is negative, <paramref name="blockSizeInBytes"/> is outside 1 to 255,
-	/// or <paramref name="paddingMode"/> is unsupported.
+	/// <paramref name="sourceLength"/> is negative, <paramref name="blockSizeInBytes"/> is outside 1 to 255, or <paramref name="paddingMode"/> is unsupported.
 	/// </exception>
 	/// <exception cref="ArgumentException"><see cref="PaddingMode.None"/> is selected and the input length is not a multiple of the block size.</exception>
 	/// <exception cref="OverflowException">The result exceeds <see cref="int.MaxValue"/>.</exception>
@@ -71,8 +68,7 @@ public static class SymmetricPadding
 	/// Destination bytes beyond the returned length remain unchanged.
 	/// </para>
 	/// <para>
-	/// Invalid arguments leave the destination unchanged; a failure to generate
-	/// <see cref="PaddingMode.ISO10126"/> random bytes may modify the padding region.
+	/// Invalid arguments leave the destination unchanged; a failure to generate <see cref="PaddingMode.ISO10126"/> random bytes may modify the padding region.
 	/// </para>
 	/// </remarks>
 	/// <exception cref="ArgumentException">Input is unaligned with <see cref="PaddingMode.None"/>, the destination is too short, or input and written output overlap at different starting addresses.</exception>
@@ -142,12 +138,10 @@ public static class SymmetricPadding
 	/// When only the final block is supplied, <paramref name="unpaddedLength"/> refers to that block, not the whole message.
 	/// </para>
 	/// <para>
-	/// <see cref="PaddingMode.None"/> and <see cref="PaddingMode.Zeros"/> check only alignment and retain the entire
-	/// input, including empty input. Trailing zeros are not removed because they may belong to the original data.
+	/// <see cref="PaddingMode.None"/> and <see cref="PaddingMode.Zeros"/> check only alignment and retain the entire input, including empty input. Trailing zeros are not removed because they may belong to the original data.
 	/// </para>
 	/// <para>
-	/// <see cref="PaddingMode.PKCS7"/>, <see cref="PaddingMode.ANSIX923"/>, and <see cref="PaddingMode.ISO10126"/>
-	/// require nonempty input whose final byte specifies a padding length from 1 to <paramref name="blockSizeInBytes"/>.
+	/// <see cref="PaddingMode.PKCS7"/>, <see cref="PaddingMode.ANSIX923"/>, and <see cref="PaddingMode.ISO10126"/> require nonempty input whose final byte specifies a padding length from 1 to <paramref name="blockSizeInBytes"/>.
 	/// Preceding padding bytes must equal that length for PKCS7 or zero for ANSI X9.23; ISO10126 accepts any values.
 	/// </para>
 	/// </remarks>

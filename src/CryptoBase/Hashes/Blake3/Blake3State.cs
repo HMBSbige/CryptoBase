@@ -4,8 +4,7 @@ namespace CryptoBase.Hashes.Blake3;
 
 internal struct Blake3State
 {
-	// Input shorter than 2^31 bytes spans fewer than 2^21 chunks, so it splits into at most 21 subtrees that grow until the chunk counter is aligned to the rest,
-	// then at most 21 that shrink to fit it.
+	// Input shorter than 2^31 bytes spans fewer than 2^21 chunks, so it splits into at most 21 subtrees that grow until the chunk counter is aligned to the rest, then at most 21 that shrink to fit it.
 	private const int MaxSubtrees = 42;
 
 	// A group is a node of 2^GroupDepth chunks, which fills every lane of the widest kernel.
@@ -23,8 +22,7 @@ internal struct Blake3State
 
 	private int _capacity;
 
-	// The chaining value after the blocks of the buffered chunk that chunk mode has compressed as they filled, so that reads that keep following appends
-	// compress each block once.
+	// The chaining value after the blocks of the buffered chunk that chunk mode has compressed as they filled, so that reads that keep following appends compress each block once.
 	private InlineArray8<uint> _chunkChainingValue;
 	private int _compressedBlocks;
 
@@ -138,8 +136,7 @@ internal struct Blake3State
 		ReadOnlySpan<byte> body = source.Slice(0, bodyLength);
 		source = source.Slice(bodyLength);
 
-		// Hashing in parallel is the one step that may throw, for lack of memory, so the head stays buffered until it is pushed, and a failure
-		// leaves the input as it was.
+		// Hashing in parallel is the one step that may throw, for lack of memory, so the head stays buffered until it is pushed, and a failure leaves the input as it was.
 		if (maxDegreeOfParallelism is not 1 && body.Length >= Blake3Parallel.MinParallelLength && AppendSubtreesInParallel(head, body, maxDegreeOfParallelism, budget, stack))
 		{
 			head = default;
@@ -273,8 +270,7 @@ internal struct Blake3State
 		_compressedBlocks = 0;
 	}
 
-	// The calling thread hashes a head of several chunks while pool threads start on the body. A head of one chunk, which has no top node to keep and may go on
-	// from blocks that chunk mode compressed, is pushed once the body is hashed instead, since the state must not change before hashing has succeeded.
+	// The calling thread hashes a head of several chunks while pool threads start on the body. A head of one chunk, which has no top node to keep and may go on from blocks that chunk mode compressed, is pushed once the body is hashed instead, since the state must not change before hashing has succeeded.
 	[SkipLocalsInit]
 	private bool AppendSubtreesInParallel(ReadOnlySpan<byte> head, ReadOnlySpan<byte> source, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget, Span<byte> stack)
 	{

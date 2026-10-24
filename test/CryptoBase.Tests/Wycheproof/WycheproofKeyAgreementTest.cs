@@ -34,8 +34,7 @@ public class WycheproofKeyAgreementTest
 		return VerifyEcdh<EcdhP521>(vector);
 	}
 
-	// The private keys, all in [1, n − 1], come in various lengths. The one acceptable vector has a compressed point, which is rejected like
-	// the invalid ones.
+	// The private keys, all in [1, n − 1], come in various lengths. The one acceptable vector has a compressed point, which is rejected like the invalid ones.
 	private static async Task VerifyEcdh<T>(EcdhEcpointTestVector vector) where T : class, IKeyAgreement<T>
 	{
 		using T key = T.ImportPrivateKey(CurveCase.EncodeInteger(ModulusCase.Decode(vector.Private), T.PrivateKeyLength));

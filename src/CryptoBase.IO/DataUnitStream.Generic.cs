@@ -8,27 +8,16 @@ namespace CryptoBase.IO;
 /// <typeparam name="TCipher">The data-unit cipher.</typeparam>
 /// <remarks>
 /// <para>
-/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16. The tweak of each data
-/// unit is its data unit number encoded as a 128-bit little-endian integer, the same convention as XTS in IEEE 1619, so a
-/// cipher such as <c>XtsMode&lt;AesCipher&gt;</c> can be used directly.
+/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16. The tweak of each data unit is its data unit number encoded as a 128-bit little-endian integer, the same convention as XTS in IEEE 1619, so a cipher such as <c>XtsMode&lt;AesCipher&gt;</c> can be used directly.
 /// </para>
 /// <para>
-/// The inner stream holds whole data units only, because the cipher preserves length and so the ciphertext cannot record
-/// where the plaintext ends. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number
-/// <c>firstDataUnitNumber + n</c>. The stream position maps directly to the inner stream offset, starts at zero, and is
-/// applied to the inner stream before each access to it, so the inner stream position is not preserved.
+/// The inner stream holds whole data units only, because the cipher preserves length and so the ciphertext cannot record where the plaintext ends. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>. The stream position maps directly to the inner stream offset, starts at zero, and is applied to the inner stream before each access to it, so the inner stream position is not preserved.
 /// </para>
 /// <para>
-/// Writes past the end pad their last data unit with zeros, and any gap between the old end and the write is filled with
-/// encrypted zero data units, so the gap reads back as zeros. Writing part of an existing data unit that is not cached reads
-/// and decrypts that unit, so the inner stream must also be readable. Reads never extend the inner stream.
+/// Writes past the end pad their last data unit with zeros, and any gap between the old end and the write is filled with encrypted zero data units, so the gap reads back as zeros. Writing part of an existing data unit that is not cached reads and decrypts that unit, so the inner stream must also be readable. Reads never extend the inner stream.
 /// </para>
 /// <para>
-/// The stream keeps the plaintext of the data unit that the last partial read or write touched. Further partial reads and
-/// writes of that unit use it without touching the inner stream, so small sequential reads decrypt each unit once and small
-/// sequential writes encrypt each unit once. A changed unit is written to the inner stream when the stream moves to another
-/// unit, reads outside it, or is flushed or disposed; call <see cref="Flush" /> before using the inner stream directly.
-/// Reads and writes of whole aligned data units go straight to the inner stream.
+/// The stream keeps the plaintext of the data unit that the last partial read or write touched. Further partial reads and writes of that unit use it without touching the inner stream, so small sequential reads decrypt each unit once and small sequential writes encrypt each unit once. A changed unit is written to the inner stream when the stream moves to another unit, reads outside it, or is flushed or disposed; call <see cref="Flush" /> before using the inner stream directly. Reads and writes of whole aligned data units go straight to the inner stream.
 /// </para>
 /// <para>
 /// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the inner stream.
@@ -138,8 +127,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 
 	/// <inheritdoc />
 	/// <remarks>
-	/// <paramref name="value" /> must be a multiple of <see cref="DataUnitSize" />. Growth appends encrypted zero data units.
-	/// If the position is beyond the new length, it moves to the new end.
+	/// <paramref name="value" /> must be a multiple of <see cref="DataUnitSize" />. Growth appends encrypted zero data units. If the position is beyond the new length, it moves to the new end.
 	/// </remarks>
 	public override void SetLength(long value)
 	{
@@ -487,8 +475,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	}
 
 	/// <summary>
-	/// Gets at most <paramref name="length" /> bytes of cached plaintext from <paramref name="position" /> to the end of its
-	/// data unit, or an empty span when that data unit is not cached.
+	/// Gets at most <paramref name="length" /> bytes of cached plaintext from <paramref name="position" /> to the end of its data unit, or an empty span when that data unit is not cached.
 	/// </summary>
 	private Span<byte> GetCachedRange(long position, int length)
 	{
@@ -502,8 +489,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	}
 
 	/// <summary>
-	/// Copies cached plaintext at <paramref name="position" /> into <paramref name="buffer" /> and returns the bytes copied,
-	/// or zero when the data unit at <paramref name="position" /> is not cached.
+	/// Copies cached plaintext at <paramref name="position" /> into <paramref name="buffer" /> and returns the bytes copied, or zero when the data unit at <paramref name="position" /> is not cached.
 	/// </summary>
 	private int ReadFromUnit(Span<byte> buffer, long position)
 	{
@@ -513,8 +499,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	}
 
 	/// <summary>
-	/// Copies <paramref name="buffer" /> into the cached plaintext at <paramref name="position" /> and returns the bytes
-	/// copied, or zero when the data unit at <paramref name="position" /> is not cached.
+	/// Copies <paramref name="buffer" /> into the cached plaintext at <paramref name="position" /> and returns the bytes copied, or zero when the data unit at <paramref name="position" /> is not cached.
 	/// </summary>
 	private int WriteToUnit(ReadOnlySpan<byte> buffer, long position)
 	{
@@ -531,8 +516,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	}
 
 	/// <summary>
-	/// Caches the data unit that contains <paramref name="position" />. When it does not exist, returns
-	/// <see langword="false" />, or starts it from zeros if <paramref name="create" /> is set.
+	/// Caches the data unit that contains <paramref name="position" />. When it does not exist, returns <see langword="false" />, or starts it from zeros if <paramref name="create" /> is set.
 	/// </summary>
 	private bool LoadUnit(long position, bool create)
 	{

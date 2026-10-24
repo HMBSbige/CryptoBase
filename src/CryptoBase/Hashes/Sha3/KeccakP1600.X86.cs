@@ -46,8 +46,7 @@ internal static partial class KeccakP1600
 		return blocks * TRate.RateInBytes;
 	}
 
-	// Permutes the state and writes its first rate bytes for each whole block that fits in destination, and returns
-	// the number of bytes written; the state then holds the last block written.
+	// Permutes the state and writes its first rate bytes for each whole block that fits in destination, and returns the number of bytes written; the state then holds the last block written.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static unsafe int SqueezeAvx512<TRate>(ref InlineArray25<ulong> state, Span<byte> destination) where TRate : IKeccakRate
@@ -78,8 +77,7 @@ internal static partial class KeccakP1600
 		return blocks * TRate.RateInBytes;
 	}
 
-	// Lanes 5y to 5y + 4 of a block, as far as it has them, in the low elements; as in PermuteRows, the upper three may hold anything.
-	// A masked load reads only those lanes where a full vector would read past the block, so the last block of source cannot fault.
+	// Lanes 5y to 5y + 4 of a block, as far as it has them, in the low elements; as in PermuteRows, the upper three may hold anything. A masked load reads only those lanes where a full vector would read past the block, so the last block of source cannot fault.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe Vector512<ulong> LoadBlockRow<TRate>(ulong* block, int row) where TRate : IKeccakRate
 	{
@@ -99,9 +97,7 @@ internal static partial class KeccakP1600
 		return Avx512F.MaskLoad(block + 5 * row, mask, Vector512<ulong>.Zero);
 	}
 
-	// Writes lanes 5y to 5y + 4 of a block, as far as the block has them. A full vector is stored only where its upper three
-	// elements land on lanes that the next row overwrites; elsewhere a masked store writes only the row's lanes, so nothing
-	// lands past the block, and the last block cannot fault on the bytes after destination.
+	// Writes lanes 5y to 5y + 4 of a block, as far as the block has them. A full vector is stored only where its upper three elements land on lanes that the next row overwrites; elsewhere a masked store writes only the row's lanes, so nothing lands past the block, and the last block cannot fault on the bytes after destination.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe void StoreBlockRow<TRate>(ulong* block, int row, Vector512<ulong> value) where TRate : IKeccakRate
 	{
@@ -137,8 +133,7 @@ internal static partial class KeccakP1600
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void StoreRows(ref InlineArray25<ulong> state, Vector512<ulong> a0, Vector512<ulong> a1, Vector512<ulong> a2, Vector512<ulong> a3, Vector512<ulong> a4)
 	{
-		// Each store overwrites the upper elements of the one before. The last starts where LoadRows reads row 4, three lanes early,
-		// and fills those lanes from row 3, so that nothing is written past the state.
+		// Each store overwrites the upper elements of the one before. The last starts where LoadRows reads row 4, three lanes early, and fills those lanes from row 3, so that nothing is written past the state.
 		ref ulong lanes = ref state[0];
 		a0.StoreUnsafe(ref lanes);
 		a1.StoreUnsafe(ref lanes, 5);
@@ -147,11 +142,7 @@ internal static partial class KeccakP1600
 		Avx512F.PermuteVar8x64x2(a3, Vector512.Create(2UL, 3, 4, 8, 9, 10, 11, 12), a4).StoreUnsafe(ref lanes, 17);
 	}
 
-	// One state in five 512-bit vectors: row y holds plane y, lanes A[0..4, y], in its low five elements, and the three upper
-	// elements carry garbage that never reaches the low five. π sends lane (x, y) to row 2x + 3y, so diagonal x - y = k becomes row
-	// 2k with lane x' at element x' + k. The diagonals still hold lane x at element x, so they are blended from the rows while θ
-	// computes the column parities, then take θ and ρ; the rotations within a vector that then put each diagonal in row order also
-	// supply the neighbours χ needs.
+	// One state in five 512-bit vectors: row y holds plane y, lanes A[0..4, y], in its low five elements, and the three upper elements carry garbage that never reaches the low five. π sends lane (x, y) to row 2x + 3y, so diagonal x - y = k becomes row 2k with lane x' at element x' + k. The diagonals still hold lane x at element x, so they are blended from the rows while θ computes the column parities, then take θ and ρ; the rotations within a vector that then put each diagonal in row order also supply the neighbours χ needs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PermuteRows(ref Vector512<ulong> row0, ref Vector512<ulong> row1, ref Vector512<ulong> row2, ref Vector512<ulong> row3, ref Vector512<ulong> row4)
 	{
@@ -198,8 +189,7 @@ internal static partial class KeccakP1600
 			d3 = Avx512F.RotateLeftVariable(Avx512F.TernaryLogic(d3, parityLeft, parityRight, 0x96), rho3);
 			d4 = Avx512F.RotateLeftVariable(Avx512F.TernaryLogic(d4, parityLeft, parityRight, 0x96), rho4);
 
-			// χ and ι: row 2k is diagonal k shuffled by plusK, and its lanes x + 1 and x + 2 are the same diagonal
-			// shuffled by plusK+1 and plusK+2. 0xD2 is 0xF0 ^ (~0xCC & 0xAA).
+			// χ and ι: row 2k is diagonal k shuffled by plusK, and its lanes x + 1 and x + 2 are the same diagonal shuffled by plusK+1 and plusK+2. 0xD2 is 0xF0 ^ (~0xCC & 0xAA).
 			a0 = Avx512F.TernaryLogic(d0 ^ Vector512.CreateScalar(Unsafe.Add(ref roundConstants, round)), Avx512F.PermuteVar8x64(d0, plus1), Avx512F.PermuteVar8x64(d0, plus2), 0xD2);
 			a2 = Avx512F.TernaryLogic(Avx512F.PermuteVar8x64(d1, plus1), Avx512F.PermuteVar8x64(d1, plus2), Avx512F.PermuteVar8x64(d1, plus3), 0xD2);
 			a4 = Avx512F.TernaryLogic(Avx512F.PermuteVar8x64(d2, plus2), Avx512F.PermuteVar8x64(d2, plus3), Avx512F.PermuteVar8x64(d2, plus4), 0xD2);
@@ -214,8 +204,7 @@ internal static partial class KeccakP1600
 		row4 = a4;
 	}
 
-	// With constant masks, the JIT emits VPBLENDMQ under mask registers it loads once, whereas ConditionalSelect becomes a destructive
-	// VPTERNLOGQ that needs a register copy for each blend.
+	// With constant masks, the JIT emits VPBLENDMQ under mask registers it loads once, whereas ConditionalSelect becomes a destructive VPTERNLOGQ that needs a register copy for each blend.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<ulong> Blend(Vector512<ulong> mask, Vector512<ulong> ifSet, Vector512<ulong> ifClear)
 	{

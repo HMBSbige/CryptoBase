@@ -14,8 +14,7 @@ public class ShakeTest
 	public static IEnumerable<int> SecurityStrengths => [128, 256];
 
 	// The FIPS 202 examples give 4096 bits of output for the empty message and for 200 bytes of 0xA3, whose bit string 11000101 is written LSB first:
-	// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHAKE128_Msg0.pdf, SHAKE256_Msg0.pdf,
-	// SHAKE128_Msg1600.pdf and SHAKE256_Msg1600.pdf. The first and last 32 bytes stand for the whole output.
+	// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHAKE128_Msg0.pdf, SHAKE256_Msg0.pdf, SHAKE128_Msg1600.pdf and SHAKE256_Msg1600.pdf. The first and last 32 bytes stand for the whole output.
 	[Test]
 	[Arguments(128, 0, "7F9C2BA4E88F827D616045507605853ED73B8093F6EFBC88EB1A6EACFA66EF26", "43E41B45A653F2A5C4492C1ADD544512DDA2529833462B71A41A45BE97290B6F")]
 	[Arguments(256, 0, "46B9DD2B0BA88D13233B3FEB743EEB243FCD52EA62B81B82B50C27646ED5762F", "AB0BAE316339894304E35877B0C28A9B1FD166C796B9CC258A064A8F57E27F2A")]

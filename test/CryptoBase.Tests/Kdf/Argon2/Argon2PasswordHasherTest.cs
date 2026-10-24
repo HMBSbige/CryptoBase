@@ -10,8 +10,7 @@ public class Argon2PasswordHasherTest
 	// A hashtest vector of test.c, cited below.
 	private const string SmallReferenceString = "$argon2i$v=19$m=256,t=2,p=2$c29tZXNhbHQ$T/XOJ2mh1/TIpJHfCdQan76Q5esCFVoT5MAeIM1Oq2E";
 
-	// The version 0x13 hashtest vectors of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/src/test.c, except those using 256 MiB or more,
-	// and the example of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/README.md, with four lanes and a 24-byte hash.
+	// The version 0x13 hashtest vectors of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/src/test.c, except those using 256 MiB or more, and the example of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/README.md, with four lanes and a 24-byte hash.
 	[Test]
 	[Argon2LargeMemory]
 	[Arguments("password", "somesalt", Argon2Type.Argon2i, 65536, 2, 1, "$argon2i$v=19$m=65536,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]

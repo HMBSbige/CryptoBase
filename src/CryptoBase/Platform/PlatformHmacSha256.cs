@@ -6,8 +6,7 @@ namespace CryptoBase.Platform;
 /// Provides one-shot and incremental HMAC-SHA256 backed by <see cref="HMACSHA256" /> and <see cref="IncrementalHash" />.
 /// </summary>
 /// <remarks>
-/// Platform failures throw <see cref="CryptographicException" />, leave the destination unchanged and dispose the failing instance. Disposal releases the keyed platform state and is idempotent;
-/// subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// Platform failures throw <see cref="CryptographicException" />, leave the destination unchanged and dispose the failing instance. Disposal releases the keyed platform state and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </remarks>
 public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 {

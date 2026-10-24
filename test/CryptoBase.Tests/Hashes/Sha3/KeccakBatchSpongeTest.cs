@@ -70,8 +70,7 @@ public class KeccakBatchSpongeTest
 		return Verify<KeccakRate168>(KeccakReference.ShakeDomainSeparator, 0, ChosenStreamCounts);
 	}
 
-	// The vector paths load and store whole words of every stream four or eight at a time, so inputs and outputs that end at an
-	// inaccessible page must absorb and squeeze without faulting; the last stream of the last group reaches the page.
+	// The vector paths load and store whole words of every stream four or eight at a time, so inputs and outputs that end at an inaccessible page must absorb and squeeze without faulting; the last stream of the last group reaches the page.
 	[Test]
 	[CombinedDataSources]
 	public Task StaysWithinInputsAndOutputs([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
@@ -164,10 +163,7 @@ public class KeccakBatchSpongeTest
 		await Assert.That(sponge.ExtractLane(0).IsSqueezing).IsTrue();
 	}
 
-	// Each group absorbs in two calls where the input allows, the second starting mid-word, on a word boundary or past
-	// a block boundary, squeezes in lockstep across block boundaries and from mid-block, then hands every stream to a
-	// sponge of its own to squeeze more blocks. The input lengths fall on both sides of a word, of one and two
-	// four-word tiles, and of the block. Zero lanes lets KeccakP1600Batch choose.
+	// Each group absorbs in two calls where the input allows, the second starting mid-word, on a word boundary or past a block boundary, squeezes in lockstep across block boundaries and from mid-block, then hands every stream to a sponge of its own to squeeze more blocks. The input lengths fall on both sides of a word, of one and two four-word tiles, and of the block. Zero lanes lets KeccakP1600Batch choose.
 	private static async Task Verify<TRate>(byte domainSeparator, int lanes, int[] streamCounts) where TRate : IKeccakRate
 	{
 		int rate = TRate.RateInBytes;
@@ -218,8 +214,7 @@ public class KeccakBatchSpongeTest
 		}
 	}
 
-	// Seeds of ML-KEM and ML-DSA, SLH-DSA F and H inputs at n = 32, a block and a byte, squeezed for whole and partial word tiles.
-	// Groups of the forced kernel width leave a partial group where it does not divide the streams.
+	// Seeds of ML-KEM and ML-DSA, SLH-DSA F and H inputs at n = 32, a block and a byte, squeezed for whole and partial word tiles. Groups of the forced kernel width leave a partial group where it does not divide the streams.
 	private static async Task VerifyBeforeGuardPages<TRate>(int lanes) where TRate : IKeccakRate
 	{
 		int rate = TRate.RateInBytes;

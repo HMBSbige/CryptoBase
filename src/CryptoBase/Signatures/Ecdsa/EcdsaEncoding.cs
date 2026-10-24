@@ -2,8 +2,7 @@ using CryptoBase.EllipticCurves;
 
 namespace CryptoBase.Signatures.Ecdsa;
 
-// The integer methods do not branch on or index by their input, which may be secret; signatures are public, so their encoding and parsing
-// may branch.
+// The integer methods do not branch on or index by their input, which may be secret; signatures are public, so their encoding and parsing may branch.
 internal static class EcdsaEncoding<TOrder> where TOrder : unmanaged, IMontgomeryModulus
 {
 	private const byte SequenceTag = 0x30;

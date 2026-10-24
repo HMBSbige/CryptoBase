@@ -91,8 +91,7 @@ public class MontgomeryModulusTest
 		}
 	}
 
-	// Reduce may give any value below 2m congruent to t·R⁻¹ modulo m, for any t below m·R. The generic reduction takes u·R − Q·m to u for
-	// any Q below R, so u next to m and 2m reach the extremes of its final subtraction. Patterned limbs make long carry and borrow chains.
+	// Reduce may give any value below 2m congruent to t·R⁻¹ modulo m, for any t below m·R. The generic reduction takes u·R − Q·m to u for any Q below R, so u next to m and 2m reach the extremes of its final subtraction. Patterned limbs make long carry and borrow chains.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task ReduceGivesTRInverseBelowTwiceTheModulus(ModulusCase modulus)
@@ -112,8 +111,7 @@ public class MontgomeryModulusTest
 			products.UnionWith([u * r, u * r - m, u * r - least * m, u * r - (least + 1) * m, u * r - quotient * m, u * r - (r - 2) * m, u * r - (r - 1) * m]);
 		}
 
-		// P-521 reduces t = h·R + a·2^55 + b through v = a + b·2^466: h next to m and the lower half next to R and 2^521 put v just below
-		// 2^521, at it and at its most.
+		// P-521 reduces t = h·R + a·2^55 + b through v = a + b·2^466: h next to m and the lower half next to R and 2^521 put v just below 2^521, at it and at its most.
 		BigInteger power = BigInteger.One << modulus.BitLength;
 
 		foreach (BigInteger high in (BigInteger[])[0, 1, m - 2, m - 1])
@@ -124,8 +122,7 @@ public class MontgomeryModulusTest
 			}
 		}
 
-		// P-384 clears limb i with q = t_i·(2^32 + 1) mod 2^64, so a limb 0 of 2^64 − 2^33 + 1 gives q = 2^64 − 2^32 + 1, the nonzero q for
-		// which q + ⌊q/2^32⌋ wraps to 0, at the bottom of the range and next to its top.
+		// P-384 clears limb i with q = t_i·(2^32 + 1) mod 2^64, so a limb 0 of 2^64 − 2^33 + 1 gives q = 2^64 − 2^32 + 1, the nonzero q for which q + ⌊q/2^32⌋ wraps to 0, at the bottom of the range and next to its top.
 		products.UnionWith([0xFFFFFFFE00000001, limit - r + 0xFFFFFFFE00000001]);
 
 		for (int i = 0; i < 256; ++i)

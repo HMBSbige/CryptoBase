@@ -2,8 +2,7 @@ using System.Formats.Asn1;
 
 namespace CryptoBase.Internal;
 
-// The DER envelopes of keys: SubjectPublicKeyInfo (RFC 5280, Sec. 4.1) and PrivateKeyInfo or OneAsymmetricKey (RFC 5958), for one
-// AlgorithmIdentifier given whole in DER, so that a key of another algorithm or with other parameters does not match.
+// The DER envelopes of keys: SubjectPublicKeyInfo (RFC 5280, Sec. 4.1) and PrivateKeyInfo or OneAsymmetricKey (RFC 5958), for one AlgorithmIdentifier given whole in DER, so that a key of another algorithm or with other parameters does not match.
 internal static class KeyInfoDer
 {
 	private static readonly Asn1Tag AttributesTag = new(TagClass.ContextSpecific, 0, true);
@@ -93,8 +92,7 @@ internal static class KeyInfoDer
 		}
 	}
 
-	// The privateKey of the PrivateKeyInfo or OneAsymmetricKey that fills source, and the publicKey of a version 2
-	// OneAsymmetricKey, or empty. Attributes are skipped. The results are slices of source.
+	// The privateKey of the PrivateKeyInfo or OneAsymmetricKey that fills source, and the publicKey of a version 2 OneAsymmetricKey, or empty. Attributes are skipped. The results are slices of source.
 	internal static bool TryReadPrivateKeyInfo(ReadOnlySpan<byte> algorithmIdentifier, ReadOnlySpan<byte> source, out ReadOnlySpan<byte> privateKey, out ReadOnlySpan<byte> publicKey)
 	{
 		privateKey = default;

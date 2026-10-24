@@ -5,8 +5,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.MLDsa;
 
-// Checks every kernel operation against MLDsaReference. Where IMLDsaKernel allows lazy reduction, an output passes if it is congruent modulo q and
-// within the range the contract states, so that the same tests hold vector kernels that reduce differently; elsewhere it must be the exact value.
+// Checks every kernel operation against MLDsaReference. Where IMLDsaKernel allows lazy reduction, an output passes if it is congruent modulo q and within the range the contract states, so that the same tests hold vector kernels that reduce differently; elsewhere it must be the exact value.
 public class MLDsaKernelTest
 {
 	// The bound of Reduce, and the magnitude below which its result is the centered representative.
@@ -318,8 +317,7 @@ public class MLDsaKernelTest
 		{
 			for (int round = 0; round < 64 && mismatches.Count < MaxMismatches; ++round)
 			{
-				// Sums and differences within the input of Reduce: small ones that stay below the bound, with the bound itself at one
-				// position in every other round, or large ones that mostly reach it.
+				// Sums and differences within the input of Reduce: small ones that stay below the bound, with the bound itself at one position in every other round, or large ones that mostly reach it.
 				int limit = round % 2 is 0 ? bound / 2 + 1 : 1 << 29;
 				int[] left = RandomInts(random, N, limit);
 				int[] right = RandomInts(random, N, limit);
@@ -471,8 +469,7 @@ public class MLDsaKernelTest
 		await Assert.That(mismatches).IsEmpty();
 	}
 
-	// Algorithm 39 for r = high · 2γ2 + low with z = −low, so that r + z = high · 2γ2 has the HighBits high, over every
-	// high and every |low| < 2γ2. high varies across the lanes, so that over all shifts each low meets every high.
+	// Algorithm 39 for r = high · 2γ2 + low with z = −low, so that r + z = high · 2γ2 has the HighBits high, over every high and every |low| < 2γ2. high varies across the lanes, so that over all shifts each low meets every high.
 	[Test]
 	[MethodDataSource(typeof(MLDsaKernelCase), nameof(MLDsaKernelCase.All))]
 	public async Task MakeHintMatchesReferenceForEveryInput(MLDsaKernelCase kernel)
@@ -587,9 +584,7 @@ public class MLDsaKernelTest
 		await Assert.That(mismatches).IsEmpty();
 	}
 
-	// Signing checks w0 − ⟨⟨cs2⟩⟩ in place of LowBits(w − ⟨⟨cs2⟩⟩) and takes the hints from w0 − ⟨⟨cs2⟩⟩ + ⟨⟨ct0⟩⟩ and HighBits(w): the
-	// rejection must agree with Algorithm 7, line 23, each hint of a coefficient that passes with line 26, and UseHint must give back
-	// HighBits(w) from it (Algorithm 8, line 10).
+	// Signing checks w0 − ⟨⟨cs2⟩⟩ in place of LowBits(w − ⟨⟨cs2⟩⟩) and takes the hints from w0 − ⟨⟨cs2⟩⟩ + ⟨⟨ct0⟩⟩ and HighBits(w): the rejection must agree with Algorithm 7, line 23, each hint of a coefficient that passes with line 26, and UseHint must give back HighBits(w) from it (Algorithm 8, line 10).
 	[Test]
 	[MethodDataSource(typeof(MLDsaKernelCase), nameof(MLDsaKernelCase.All))]
 	public async Task HintsOfSigningMatchAlgorithm7(MLDsaKernelCase kernel)
@@ -774,8 +769,7 @@ public class MLDsaKernelTest
 		Random random = new(15);
 		const int Bound = 1 << D - 1;
 
-		// The extremes alone and alternating, and packed values from the position: its 8 bits in the low ones and its low 5 bits in the
-		// high ones, and their complement, so that the bits of each joint differ between neighbours and over every byte.
+		// The extremes alone and alternating, and packed values from the position: its 8 bits in the low ones and its low 5 bits in the high ones, and their complement, so that the bits of each joint differ between neighbours and over every byte.
 		int[] lowest = Enumerable.Repeat(1 - Bound, N).ToArray();
 		int[] highest = Enumerable.Repeat(Bound, N).ToArray();
 		int[] alternating = Enumerable.Range(0, N).Select(static i => i % 2 is 0 ? 1 - Bound : Bound).ToArray();
@@ -1106,8 +1100,7 @@ public class MLDsaKernelTest
 		}
 	}
 
-	// Coefficients at the edges of every case of Decompose and MakeHint: w1 of 0, 1 and m − 1 with w0 at its ends, cs2 at ±β, and ct0
-	// at ±(γ2 − 1), so that w0 − cs2 + ct0 reaches ±γ2.
+	// Coefficients at the edges of every case of Decompose and MakeHint: w1 of 0, 1 and m − 1 with w0 at its ends, cs2 at ±β, and ct0 at ±(γ2 − 1), so that w0 − cs2 + ct0 reaches ±γ2.
 	private static void FillEdges(int[] w, int[] cs2, int[] ct0, int gamma2, int beta, int m)
 	{
 		int i = 0;

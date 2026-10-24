@@ -8,8 +8,7 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel
 
 	public static int Degree => 16;
 
-	// Eight or fewer inputs left over go to an eight-lane kernel, which takes no more instructions per input on any AVX-512 core and fewer cycles on cores that
-	// split 512-bit operations.
+	// Eight or fewer inputs left over go to an eight-lane kernel, which takes no more instructions per input on any AVX-512 core and fewer cycles on cores that split 512-bit operations.
 	public static void HashChunks(ref byte input, nuint length, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
 		for (; length > 16 * ChunkLength; length -= 16 * ChunkLength)
@@ -139,8 +138,7 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel
 		Unsafe.SkipInit(out InlineArray16<Vector512<uint>> message);
 		uint blockFlags = flags | startFlags;
 
-		// Near its end, an input would prefetch the start of the next input, which another lane has already read; it prefetches the input that its lane hashes
-		// in the next batch instead.
+		// Near its end, an input would prefetch the start of the next input, which another lane has already read; it prefetches the input that its lane hashes in the next batch instead.
 		nuint nextBatch = (count - 1) * stride;
 
 		do
@@ -213,8 +211,7 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel
 		}
 	}
 
-	// Hashes sixteen consecutive full chunks as Hash does, without its offsets in memory: the loads and prefetches take constant offsets, and no lane takes
-	// the steps of a partial chunk.
+	// Hashes sixteen consecutive full chunks as Hash does, without its offsets in memory: the loads and prefetches take constant offsets, and no lane takes the steps of a partial chunk.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void HashFull(ref byte input, ref readonly uint key, ulong counter, uint flags, ref byte output)

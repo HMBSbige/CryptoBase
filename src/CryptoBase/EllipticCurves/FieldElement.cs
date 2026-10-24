@@ -2,9 +2,7 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// Always below m. Whether it is in Montgomery form is up to the caller: Multiply, Square and Invert work in that form, the encodings take
-// and give the plain value, and the other operations work in either. No operation branches on or indexes by a value; masks are 0 or
-// ulong.MaxValue. Any result may be the same variable as an input.
+// Always below m. Whether it is in Montgomery form is up to the caller: Multiply, Square and Invert work in that form, the encodings take and give the plain value, and the other operations work in either. No operation branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
 internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModulus
 {
 	private TModulus _limbs;

@@ -7,15 +7,10 @@ namespace CryptoBase.IO.DataUnits;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The backend holds whole data units only. The data unit at byte offset <c>n * dataUnitSize</c> is transformed with the
-/// little-endian 128-bit tweak <c>firstDataUnitNumber + n</c>.
+/// The backend holds whole data units only. The data unit at byte offset <c>n * dataUnitSize</c> is transformed with the little-endian 128-bit tweak <c>firstDataUnitNumber + n</c>.
 /// </para>
 /// <para>
-/// Aligned reads land directly in the caller's buffer and are decrypted in place; partial data units go through a pooled
-/// scratch unit. Writes assemble whole data units in a pooled window: encrypted zeros for any gap after the old end, the
-/// caller's data, and the existing plaintext around partially written units. Each window is encrypted in place and written
-/// with one backend call, so the caller's buffer is never modified. Read scratch units are cleared before they are returned;
-/// a written window holds only ciphertext, so write windows are cleared only when a write fails.
+/// Aligned reads land directly in the caller's buffer and are decrypted in place; partial data units go through a pooled scratch unit. Writes assemble whole data units in a pooled window: encrypted zeros for any gap after the old end, the caller's data, and the existing plaintext around partially written units. Each window is encrypted in place and written with one backend call, so the caller's buffer is never modified. Read scratch units are cleared before they are returned; a written window holds only ciphertext, so write windows are cleared only when a write fails.
 /// Instances are not thread-safe.
 /// </para>
 /// </remarks>
@@ -184,8 +179,7 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 	}
 
 	/// <summary>
-	/// Throws when <paramref name="count" /> bytes at <paramref name="offset" /> would end past the last data unit that has a
-	/// data unit number and ends within <see cref="long.MaxValue" />.
+	/// Throws when <paramref name="count" /> bytes at <paramref name="offset" /> would end past the last data unit that has a data unit number and ends within <see cref="long.MaxValue" />.
 	/// </summary>
 	public void ValidateRange(long offset, int count)
 	{
@@ -360,9 +354,7 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 	/// Builds the plaintext of the data units in <paramref name="window" /> and encrypts it in place.
 	/// </summary>
 	/// <remarks>
-	/// Units before <paramref name="offset" /> are gap units and become zeros. Units that <paramref name="source" /> covers
-	/// only partially keep their existing plaintext around it; when they exist below <paramref name="length" />, the window
-	/// must hold their ciphertext on entry.
+	/// Units before <paramref name="offset" /> are gap units and become zeros. Units that <paramref name="source" /> covers only partially keep their existing plaintext around it; when they exist below <paramref name="length" />, the window must hold their ciphertext on entry.
 	/// </remarks>
 	private void EncryptWindow(Span<byte> window, long windowStart, ReadOnlySpan<byte> source, long offset, long length)
 	{

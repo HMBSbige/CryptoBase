@@ -3,8 +3,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-// SHA-3 squeezes at most one block, so these tests drive the sponge directly to cover what SHAKE needs:
-// any domain separator and output of any length, squeezed incrementally.
+// SHA-3 squeezes at most one block, so these tests drive the sponge directly to cover what SHAKE needs: any domain separator and output of any length, squeezed incrementally.
 public class Sha3SpongeTest
 {
 	private const int ShakeRate = 136;
@@ -46,8 +45,7 @@ public class Sha3SpongeTest
 		await Assert.That(output).IsEquivalentTo(Sha3TestUtils.Shake256Output(message, outputLength), CollectionOrdering.Matching);
 	}
 
-	// The AVX-512 absorb reads the rows that a full vector would run past a block with masked loads, so input that ends at an
-	// inaccessible page must absorb without faulting, whether whole blocks or a partial one end it.
+	// The AVX-512 absorb reads the rows that a full vector would run past a block with masked loads, so input that ends at an inaccessible page must absorb without faulting, whether whole blocks or a partial one end it.
 	[Test]
 	[MethodDataSource(nameof(Rates))]
 	public Task AbsorbReadsNothingPastTheInput(int rate)
@@ -65,8 +63,7 @@ public class Sha3SpongeTest
 		};
 	}
 
-	// The AVX-512 squeeze writes the rows that a full vector would run past a block with masked stores, so output that ends at an
-	// inaccessible page must squeeze without faulting, from any position and whether a whole block or a partial one ends it.
+	// The AVX-512 squeeze writes the rows that a full vector would run past a block with masked stores, so output that ends at an inaccessible page must squeeze without faulting, from any position and whether a whole block or a partial one ends it.
 	[Test]
 	[MethodDataSource(nameof(Rates))]
 	public Task SqueezeWritesNothingPastTheOutput(int rate)
@@ -157,9 +154,7 @@ public class Sha3SpongeTest
 		return Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(buffer.Span, KeccakReference.Sha3DomainSeparator, TRate.RateInBytes);
 	}
 
-	// Each case discards the first skipped bytes, which leaves the sponge at the start, middle or end of a block, then squeezes
-	// into memory that ends at the guard page. Ending one byte into a block leaves the last whole block before it nowhere to
-	// spill but the guard page.
+	// Each case discards the first skipped bytes, which leaves the sponge at the start, middle or end of a block, then squeezes into memory that ends at the guard page. Ending one byte into a block leaves the last whole block before it nowhere to spill but the guard page.
 	private static async Task VerifySqueezeBeforeGuardPage<TRate>(int rate) where TRate : IKeccakRate
 	{
 		await Assert.That(TRate.RateInBytes).IsEqualTo(rate);

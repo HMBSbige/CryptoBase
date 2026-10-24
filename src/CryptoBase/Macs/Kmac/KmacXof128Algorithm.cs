@@ -8,16 +8,11 @@ namespace CryptoBase.Macs.Kmac;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Computes KMACXOF128 as specified in NIST SP 800-185, Sec. 4.3.1, over a 168-byte sponge rate: KMAC128 with the output length encoded as 0, so that
-/// the output is a stream, of which a destination of any length receives the start, and a shorter output is a prefix of every longer one. Unlike
-/// with <see cref="Kmac128Algorithm" />, the output does not depend on the length requested, so an application that needs tags of more than one
-/// length should prefer KMAC128. The key and the customization string may have any length, empty included.
+/// Computes KMACXOF128 as specified in NIST SP 800-185, Sec. 4.3.1, over a 168-byte sponge rate: KMAC128 with the output length encoded as 0, so that the output is a stream, of which a destination of any length receives the start, and a shorter output is a prefix of every longer one. Unlike with <see cref="Kmac128Algorithm" />, the output does not depend on the length requested, so an application that needs tags of more than one length should prefer KMAC128. The key and the customization string may have any length, empty included.
 /// </para>
 /// <para>
-/// The first nonempty <see cref="Read" /> ends the input, and each read continues where the previous one stopped; until <see cref="Reset" />,
-/// <see cref="Append" />, <see cref="GetCurrentHash" /> and <see cref="GetHashAndReset" /> then throw <see cref="InvalidOperationException" />.
-/// A reset keeps the key and customization string, which the instance holds until disposal. Disposal erases the state, key included, and is
-/// idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// The first nonempty <see cref="Read" /> ends the input, and each read continues where the previous one stopped; until <see cref="Reset" />, <see cref="Append" />, <see cref="GetCurrentHash" /> and <see cref="GetHashAndReset" /> then throw <see cref="InvalidOperationException" />.
+/// A reset keeps the key and customization string, which the instance holds until disposal. Disposal erases the state, key included, and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class KmacXof128Algorithm : IIncrementalAlgorithm, IDisposable

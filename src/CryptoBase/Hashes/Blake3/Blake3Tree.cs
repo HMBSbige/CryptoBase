@@ -5,12 +5,10 @@ namespace CryptoBase.Hashes.Blake3;
 // Hashes whole subtrees with the widest kernel, keeping a wide row of chaining values on the way up so that parents fill the lanes too.
 internal static class Blake3Tree
 {
-	// Chosen once, so that every dispatch and every length derived from Degree follows the same kernel. The dispatches test this constant in if chains,
-	// which the JIT folds before inlining; a switch, folded after, left ReduceToChildren worse register-allocated.
+	// Chosen once, so that every dispatch and every length derived from Degree follows the same kernel. The dispatches test this constant in if chains, which the JIT folds before inlining; a switch, folded after, left ReduceToChildren worse register-allocated.
 	internal static readonly Blake3TreeKernel Kernel = ChooseKernel();
 
-	// The number of chunks that the kernel hashes side by side; Blake3Vector512x2 counts as the Blake3Vector512 it runs twice, since the leaf length and
-	// chunk mode interval that derive from this measured slower sized to its 32 chunks.
+	// The number of chunks that the kernel hashes side by side; Blake3Vector512x2 counts as the Blake3Vector512 it runs twice, since the leaf length and chunk mode interval that derive from this measured slower sized to its 32 chunks.
 	internal static int Degree => Kernel switch
 	{
 		Blake3TreeKernel.Vector512x2 or Blake3TreeKernel.Vector512 => Blake3Vector512.Degree,

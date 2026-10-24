@@ -8,13 +8,10 @@ namespace CryptoBase.Signatures.Ecdsa;
 /// <remarks>
 /// <para>
 /// The nonce is derived from the private key, the hash and fresh system randomness, so signing a message twice gives two different signatures.
-/// s is not reduced to the lower half of [1, n − 1]. Signatures are in DER, and verification rejects any other encoding of r and s. Signing and
-/// verification may run concurrently on one instance.
+/// s is not reduced to the lower half of [1, n − 1]. Signatures are in DER, and verification rejects any other encoding of r and s. Signing and verification may run concurrently on one instance.
 /// </para>
 /// <para>
-/// SubjectPublicKeyInfo and PKCS #8 name the curve by its OID and hold the public key uncompressed; other parameters and point encodings are
-/// rejected. A PKCS #8 export holds the private key, the curve and the public key. A PKCS #8 import accepts a key without the curve or the public
-/// key, but rejects either, in the inner or the outer structure, if it does not match the private key.
+/// SubjectPublicKeyInfo and PKCS #8 name the curve by its OID and hold the public key uncompressed; other parameters and point encodings are rejected. A PKCS #8 export holds the private key, the curve and the public key. A PKCS #8 import accepts a key without the curve or the public key, but rejects either, in the inner or the outer structure, if it does not match the private key.
 /// </para>
 /// </remarks>
 public sealed class EcdsaP384 : IEcdsa<EcdsaP384>

@@ -17,8 +17,7 @@ public class WycheproofEcdsaTest
 		"ModifiedGenerator", "NoCofactor", "WrongOrder"
 	];
 
-	// Each file's acceptable SubjectPublicKeyInfo vectors carry these flags and are all rejected. A file with any other set fails, so that its
-	// vectors are decided anew.
+	// Each file's acceptable SubjectPublicKeyInfo vectors carry these flags and are all rejected. A file with any other set fails, so that its vectors are decided anew.
 	private static readonly Dictionary<string, string[]> AcceptableFlags = new()
 	{
 		["ecdh_secp256r1_test.json"] = KeyEncodingFlags,

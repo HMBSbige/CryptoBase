@@ -7,8 +7,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-// XofContractTest covers the IXof contract of Create(), which is SHAKE; these tests cover a function name and customization string, which
-// every operation must keep, and the equivalence with SHAKE when both are empty.
+// XofContractTest covers the IXof contract of Create(), which is SHAKE; these tests cover a function name and customization string, which every operation must keep, and the equivalence with SHAKE when both are empty.
 public class CShakeTest
 {
 	private static readonly byte[] Name = "KMAC"u8.ToArray();
@@ -60,8 +59,7 @@ public class CShakeTest
 		}
 	}
 
-	// The prefix takes one block for short strings, and two for the pair of rate and rate - 8 bytes: 2 + (3 + rate) + (3 + rate - 8) bytes end on
-	// the boundary. The lengths of the last pair, 65536 bits and more, take three bytes to encode.
+	// The prefix takes one block for short strings, and two for the pair of rate and rate - 8 bytes: 2 + (3 + rate) + (3 + rate - 8) bytes end on the boundary. The lengths of the last pair, 65536 bits and more, take three bytes to encode.
 	[Test]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]

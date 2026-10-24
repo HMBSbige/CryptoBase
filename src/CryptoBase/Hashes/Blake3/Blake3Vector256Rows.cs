@@ -3,16 +3,13 @@ using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
 
-// Hashes up to four inputs with the state of each held as four rows, as Blake3Vector128.Compress does: two inputs to a chain of 256-bit rows, input i of
-// a chain in 128-bit lane i. A chain of one input keeps it in lane 1 and rehashes input 0 in lane 0.
-// Two inputs make one chain no longer than a single compression; four make two chains, which share the vector ports. Where the 112 vector instructions of
-// a round of the four-lane column kernel, not latency, bound it, as on Intel cores, two chains hash four inputs faster.
+// Hashes up to four inputs with the state of each held as four rows, as Blake3Vector128.Compress does: two inputs to a chain of 256-bit rows, input i of a chain in 128-bit lane i. A chain of one input keeps it in lane 1 and rehashes input 0 in lane 0.
+// Two inputs make one chain no longer than a single compression; four make two chains, which share the vector ports. Where the 112 vector instructions of a round of the four-lane column kernel, not latency, bound it, as on Intel cores, two chains hash four inputs faster.
 internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 {
 	public static bool IsSupported => Avx2.IsSupported;
 
-	// Without the rotations of AVX-512VL the chains grow longer, and on Zen 5, whose vector operations take two cycles, two chains then hash three or four
-	// inputs slower than the four-lane kernel.
+	// Without the rotations of AVX-512VL the chains grow longer, and on Zen 5, whose vector operations take two cycles, two chains then hash three or four inputs slower than the four-lane kernel.
 	private static readonly bool PreferTwoChains = Avx512F.VL.IsSupported || !CpuIdUtils.IsAmdZen5();
 
 	public static int Degree => 4;
@@ -36,9 +33,7 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 		nuint count = length / ChunkLength;
 		nuint tailLength = length % ChunkLength;
 
-		// A partial last chunk takes a lane of its own when a chain has one spare, or when its blocks would take longer on their own than the lane. Where the
-		// scalar compressor hashes single chunks faster than a chain, it joins one full chunk from twelve blocks, and two, which then take two chains, always,
-		// since the second chain runs in the cycles the first leaves idle; elsewhere it joins one always, and two from ten blocks.
+		// A partial last chunk takes a lane of its own when a chain has one spare, or when its blocks would take longer on their own than the lane. Where the scalar compressor hashes single chunks faster than a chain, it joins one full chunk from twelve blocks, and two, which then take two chains, always, since the second chain runs in the cycles the first leaves idle; elsewhere it joins one always, and two from ten blocks.
 		bool rides = count switch
 		{
 			0 => false,

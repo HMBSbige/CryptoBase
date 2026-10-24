@@ -1,8 +1,6 @@
 namespace CryptoBase.EllipticCurves;
 
-// Carries and borrows are 0 or 1. A comparison taken as a value, as in Carry and Borrow, compiles to a flag read such as setb or cset and
-// not to a branch. The methods on limb sequences take count limbs, least significant first, and are unrolled up to MaxLimbCount so that a
-// constant count drops the steps beyond it. A result may be the same sequence as an input unless a method says otherwise.
+// Carries and borrows are 0 or 1. A comparison taken as a value, as in Carry and Borrow, compiles to a flag read such as setb or cset and not to a branch. The methods on limb sequences take count limbs, least significant first, and are unrolled up to MaxLimbCount so that a constant count drops the steps beyond it. A result may be the same sequence as an input unless a method says otherwise.
 internal static class LimbArithmetic
 {
 	internal const int MaxLimbCount = 9;

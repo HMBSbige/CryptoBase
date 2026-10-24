@@ -31,8 +31,7 @@ internal struct P256Field : IMontgomeryModulus
 
 	public static ulong NegativeInverse => 0x0000000000000001UL;
 
-	// With x_k = x^(2^k − 1), the table holds x, x_2, x_4, x_8, x_16 and x_32. From x_32, the power runs through the rest of p − 2: 31
-	// zeros and a one, 96 zeros, 94 ones, a zero and a one.
+	// With x_k = x^(2^k − 1), the table holds x, x_2, x_4, x_8, x_16 and x_32. From x_32, the power runs through the rest of p − 2: 31 zeros and a one, 96 zeros, 94 ones, a zero and a one.
 	public static ReadOnlySpan<byte> InversionChain =>
 	[
 		5,
@@ -40,8 +39,7 @@ internal struct P256Field : IMontgomeryModulus
 		32, 0, 128, 5, 32, 5, 16, 4, 8, 3, 4, 2, 2, 1, 2, 0,
 	];
 
-	// p ≡ −1 mod 2^64, so the q that clears limb i is t_i, and q·p = q·2^192·(2^64 − 2^32 + 1) + q·2^96 − q. The −q cancels limb i, q·2^96
-	// is q shifted into limbs i + 1 and i + 2, and the rest is one product at limbs i + 3 and i + 4.
+	// p ≡ −1 mod 2^64, so the q that clears limb i is t_i, and q·p = q·2^192·(2^64 − 2^32 + 1) + q·2^96 − q. The −q cancels limb i, q·2^96 is q shifted into limbs i + 1 and i + 2, and the rest is one product at limbs i + 3 and i + 4.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ulong Reduce<TSelf>(ref ulong product) where TSelf : struct, IMontgomeryModulus
 	{

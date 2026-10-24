@@ -5,8 +5,7 @@ namespace CryptoBase.IO;
 /// </summary>
 internal static class StreamDrain
 {
-	// BLAKE3 hashes appends of a whole group (16 KiB) or more in place instead of copying them, and fewer reads mean fewer calls into the stream. A power of
-	// two keeps aligned reads on BLAKE3 subtree boundaries, and 64 KiB stays below the large object heap threshold.
+	// BLAKE3 hashes appends of a whole group (16 KiB) or more in place instead of copying them, and fewer reads mean fewer calls into the stream. A power of two keeps aligned reads on BLAKE3 subtree boundaries, and 64 KiB stays below the large object heap threshold.
 	public const int BufferSize = 64 * 1024;
 
 	public static void ThrowIfNotReadable(Stream source)
@@ -121,8 +120,7 @@ internal static class StreamDrain
 		algorithm.Append(ReadOnlySpan<byte>.Empty);
 	}
 
-	// Completed reads fill at most the first used bytes, so erasing only those keeps short streams from paying for the whole buffer. A read that throws may
-	// have written anywhere in the buffer first, as a decoder may before it finds corrupt data, so a failure erases all of it.
+	// Completed reads fill at most the first used bytes, so erasing only those keeps short streams from paying for the whole buffer. A read that throws may have written anywhere in the buffer first, as a decoder may before it finds corrupt data, so a failure erases all of it.
 	private static void Erase(byte[] buffer, int used, bool completed)
 	{
 		CryptographicOperations.ZeroMemory(completed ? buffer.AsSpan(0, used) : buffer);

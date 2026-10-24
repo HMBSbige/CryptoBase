@@ -12,8 +12,7 @@ using BclMLDsa = System.Security.Cryptography.MLDsa;
 
 namespace CryptoBase.Tests.Signatures.MLDsa;
 
-// Differential tests against the platform implementation, where there is one. Not every platform signs or verifies μ itself, so
-// μ is checked through its message methods.
+// Differential tests against the platform implementation, where there is one. Not every platform signs or verifies μ itself, so μ is checked through its message methods.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 internal class MLDsaBclTest
 {
@@ -209,8 +208,7 @@ internal class MLDsaBclTest
 		}
 	}
 
-	// ExpandS squeezes more than two SHAKE256 blocks for a polynomial only for η = 4, and rarely, so a seed is searched for that
-	// needs them in some polynomial of s1 or s2.
+	// ExpandS squeezes more than two SHAKE256 blocks for a polynomial only for η = 4, and rarely, so a seed is searched for that needs them in some polynomial of s1 or s2.
 	[Test]
 	public async Task SecretsThatNeedMoreBlocksMatchThePlatform()
 	{
@@ -229,8 +227,7 @@ internal class MLDsaBclTest
 		yield return RandomNumberGenerator.GetBytes(255);
 	}
 
-	// The first of the seeds ξ = 0, 1, 2, ... (little-endian) for which two SHAKE256 blocks of some stream of ExpandS hold fewer
-	// than 256 coefficients in [−4, 4], with η = 4.
+	// The first of the seeds ξ = 0, 1, 2, ... (little-endian) for which two SHAKE256 blocks of some stream of ExpandS hold fewer than 256 coefficients in [−4, 4], with η = 4.
 	private static byte[] SeedNeedingMoreSecretBlocks(int k, int l)
 	{
 		byte[] expanded = new byte[128];

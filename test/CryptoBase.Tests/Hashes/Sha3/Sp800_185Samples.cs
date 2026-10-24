@@ -10,9 +10,7 @@ public sealed record KmacSample(int SecurityStrength, bool Xof, byte[] Key, byte
 	public int Rate => 200 - SecurityStrength / 4;
 }
 
-// The NIST examples for SP 800-185, transcribed from
-// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/cSHAKE_samples.pdf, KMAC_samples.pdf and
-// KMACXOF_samples.pdf. Every cSHAKE example has an empty function name; a KMAC customization string printed as "(null)" is empty here.
+// The NIST examples for SP 800-185, transcribed from https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/cSHAKE_samples.pdf, KMAC_samples.pdf and KMACXOF_samples.pdf. Every cSHAKE example has an empty function name; a KMAC customization string printed as "(null)" is empty here.
 // The customization strings are ASCII and the outputs hexadecimal; the output length is the requested length L.
 public static class Sp800_185Samples
 {

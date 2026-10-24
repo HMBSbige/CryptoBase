@@ -2,8 +2,7 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// For a = −3. The time, the branches and the table indices depend on the scalars and the points, so every input must be public: nothing
-// that holds a secret may call it.
+// For a = −3. The time, the branches and the table indices depend on the scalars and the points, so every input must be public: nothing that holds a secret may call it.
 internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
 	where TField : unmanaged, IMontgomeryModulus
@@ -102,8 +101,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		return FieldElement<TField>.AreEqual(in x, in product) is not 0;
 	}
 
-	// Holds for every point: Z = 0 gives Z3 = 0, and no other point has Y = 0, as a curve of odd order has no point of order 2. The result
-	// may be the input.
+	// Holds for every point: Z = 0 gives Z3 = 0, and no other point has Y = 0, as a curve of odd order has no point of order 2. The result may be the input.
 	internal static void Double(in JacobianPoint<TField> value, out JacobianPoint<TField> result)
 	{
 		FieldElement<TField>.Square(in value.Y, out FieldElement<TField> gamma);
@@ -208,9 +206,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		Combine(in r, in j, in v, in s1, out result.X, out result.Y);
 	}
 
-	// Writes the NAF of width w of k and returns the index of its top nonzero digit, or −1 for k = 0. A nonzero digit at i carries out only
-	// if the w bits of k from i plus the carry in exceed 2^(w − 1), which needs a bit of k at or above i + w − 1, so i + w ≤ N for
-	// N = TOrder.BitLength: digit N takes the last carry.
+	// Writes the NAF of width w of k and returns the index of its top nonzero digit, or −1 for k = 0. A nonzero digit at i carries out only if the w bits of k from i plus the carry in exceed 2^(w − 1), which needs a bit of k at or above i + w − 1, so i + w ≤ N for N = TOrder.BitLength: digit N takes the last carry.
 	internal static int Recode(in FieldElement<TOrder> scalar, int width, Span<sbyte> digits)
 	{
 		// Digits up to 2^(w − 1) − 1 must fit in an sbyte.

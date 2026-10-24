@@ -5,9 +5,7 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark.Hashes.Sha3;
 
 // The SHAKE stream batches of ML-KEM and ML-DSA sampling, one KeccakSponge after another against KeccakBatchSponge groups:
-// 34-byte SHAKE128 seeds squeezed for three blocks each, 33-byte SHAKE256 seeds squeezed for 192 bytes each, and 66-byte
-// SHAKE256 seeds squeezed for 576 bytes each as in ML-DSA's ExpandMask. The 96- and 128-byte SHAKE256 inputs squeezed for 32 bytes
-// are the F, PRF and H calls of SLH-DSA with n = 32, one permutation per stream.
+// 34-byte SHAKE128 seeds squeezed for three blocks each, 33-byte SHAKE256 seeds squeezed for 192 bytes each, and 66-byte SHAKE256 seeds squeezed for 576 bytes each as in ML-DSA's ExpandMask. The 96- and 128-byte SHAKE256 inputs squeezed for 32 bytes are the F, PRF and H calls of SLH-DSA with n = 32, one permutation per stream.
 public class KeccakBatchSpongeBenchmark
 {
 	private byte[] _inputs = [];

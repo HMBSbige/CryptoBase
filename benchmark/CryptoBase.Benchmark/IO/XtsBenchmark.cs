@@ -31,11 +31,7 @@ internal static class XtsBenchmarkData
 /// Sequential <see cref="DataUnitStream{TCipher}" /> throughput over a <see cref="MemoryStream" /> with AES-256-XTS.
 /// </summary>
 /// <remarks>
-/// Every invocation moves exactly <see cref="XtsBenchmarkData.TotalLength" /> (1 MiB) of plaintext in calls of
-/// <see cref="ChunkSize" /> bytes (the last call may be shorter), so MiB/s = 1 / Mean in seconds. <see cref="Write" />
-/// truncates the stream first and ends with <see cref="Stream.Flush()" />, which writes the last cached data unit.
-/// Chunks smaller than a data unit go through the stream's one-unit plaintext cache, so each data unit is still
-/// encrypted or decrypted once.
+/// Every invocation moves exactly <see cref="XtsBenchmarkData.TotalLength" /> (1 MiB) of plaintext in calls of <see cref="ChunkSize" /> bytes (the last call may be shorter), so MiB/s = 1 / Mean in seconds. <see cref="Write" /> truncates the stream first and ends with <see cref="Stream.Flush()" />, which writes the last cached data unit. Chunks smaller than a data unit go through the stream's one-unit plaintext cache, so each data unit is still encrypted or decrypted once.
 /// </remarks>
 [MemoryDiagnoser]
 [CategoriesColumn]
@@ -119,11 +115,7 @@ public class XtsStreamBenchmark
 /// Positional <see cref="DataUnitRandomAccess{TCipher}" /> throughput over a temporary file with AES-256-XTS.
 /// </summary>
 /// <remarks>
-/// Every invocation moves exactly <see cref="XtsBenchmarkData.TotalLength" /> (1 MiB) of plaintext from offset zero in
-/// aligned 64 KiB calls, so MiB/s = 1 / Mean in seconds. The file is opened once with <see cref="FileOptions.None" /> and
-/// pre-filled to 1 MiB, so writes overwrite whole data units and never read. <see cref="Write" /> does not call
-/// <see cref="DataUnitRandomAccess{TCipher}.Flush" />, which issues <see cref="RandomAccess.FlushToDisk" /> and would measure
-/// the disk instead of the XTS path.
+/// Every invocation moves exactly <see cref="XtsBenchmarkData.TotalLength" /> (1 MiB) of plaintext from offset zero in aligned 64 KiB calls, so MiB/s = 1 / Mean in seconds. The file is opened once with <see cref="FileOptions.None" /> and pre-filled to 1 MiB, so writes overwrite whole data units and never read. <see cref="Write" /> does not call <see cref="DataUnitRandomAccess{TCipher}.Flush" />, which issues <see cref="RandomAccess.FlushToDisk" /> and would measure the disk instead of the XTS path.
 /// </remarks>
 [MemoryDiagnoser]
 [CategoriesColumn]

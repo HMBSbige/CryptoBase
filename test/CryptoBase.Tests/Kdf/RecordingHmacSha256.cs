@@ -5,8 +5,7 @@ using CryptoBase.Macs.Hmac;
 namespace CryptoBase.Tests.Kdf;
 
 /// <summary>
-/// HMAC-SHA256 that counts its calls into the <see cref="MacCallCounts" /> that the latest <see cref="Record" /> in the current async flow returned, so that
-/// tests running in parallel each see only their own calls.
+/// HMAC-SHA256 that counts its calls into the <see cref="MacCallCounts" /> that the latest <see cref="Record" /> in the current async flow returned, so that tests running in parallel each see only their own calls.
 /// </summary>
 internal sealed class RecordingHmacSha256 : IMacAlgorithm<RecordingHmacSha256>
 {

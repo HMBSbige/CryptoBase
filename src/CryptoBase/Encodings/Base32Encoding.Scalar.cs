@@ -21,8 +21,7 @@ public sealed partial class Base32Encoding
 		return BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ulong>(ref source)) >> 24;
 	}
 
-	// T is char or byte, and the type test folds at JIT time. Generic CreateChecked goes through the INumberBase conversion methods and is
-	// only free when they all inline; once a large caller runs out of inline budget, every symbol pays for those calls.
+	// T is char or byte, and the type test folds at JIT time. Generic CreateChecked goes through the INumberBase conversion methods and is only free when they all inline; once a large caller runs out of inline budget, every symbol pays for those calls.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static T ToSymbol<T>(byte value) where T : unmanaged
 	{
@@ -95,8 +94,7 @@ public sealed partial class Base32Encoding
 		}
 	}
 
-	// The final one to four bytes, big-endian in the top of a uint and zero filled. Inputs of four bytes or more read the last four bytes and
-	// shift the already encoded ones out, so the common case is one load without a branch per byte.
+	// The final one to four bytes, big-endian in the top of a uint and zero filled. Inputs of four bytes or more read the last four bytes and shift the already encoded ones out, so the common case is one load without a branch per byte.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint ReadTail(ReadOnlySpan<byte> source, int remaining)
 	{
@@ -121,8 +119,7 @@ public sealed partial class Base32Encoding
 		return value;
 	}
 
-	// Spreads the eight 5-bit values of a block into the bytes of a ulong, first symbol in the lowest byte: each step moves the upper half of
-	// every field up, so 40 bits become two 20-bit, four 10-bit and finally eight 5-bit fields.
+	// Spreads the eight 5-bit values of a block into the bytes of a ulong, first symbol in the lowest byte: each step moves the upper half of every field up, so 40 bits become two 20-bit, four 10-bit and finally eight 5-bit fields.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong SplitBlockValues(ulong block)
 	{
@@ -132,8 +129,7 @@ public sealed partial class Base32Encoding
 		return BinaryPrimitives.ReverseEndianness(block);
 	}
 
-	// SWAR form of the SIMD encode map: bytes above the threshold get the second offset. Values stay below 32 and symbols below 128,
-	// so no addition carries into the next byte.
+	// SWAR form of the SIMD encode map: bytes above the threshold get the second offset. Values stay below 32 and symbols below 128, so no addition carries into the next byte.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong MapBlockSymbols(ulong values, byte alphabetKind)
 	{
@@ -142,9 +138,7 @@ public sealed partial class Base32Encoding
 		return values + (ByteLaneOnes * first ^ above & ByteLaneOnes * (byte)(first ^ second));
 	}
 
-	// The eight values index the 32-byte custom table at once: two 16-entry shuffles on x86, where bit 4 of each value picks the
-	// half, and one two-register table lookup on ARM64. Elsewhere eight independent loads; a loop over the symbol count would chain
-	// them through the accumulator.
+	// The eight values index the 32-byte custom table at once: two 16-entry shuffles on x86, where bit 4 of each value picks the half, and one two-register table lookup on ARM64. Elsewhere eight independent loads; a loop over the symbol count would chain them through the accumulator.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong LookupBlockSymbols(ulong values, ref byte alphabet)
 	{
@@ -169,8 +163,7 @@ public sealed partial class Base32Encoding
 			| (ulong)Unsafe.Add(ref alphabet, (nuint)(values >> 56)) << 56;
 	}
 
-	// Builds the tail block as eight symbol bytes in one ulong: no per-symbol bounds checks and, for the built-in alphabets, no table loads.
-	// A padded block is always eight symbols and goes out in a single store.
+	// Builds the tail block as eight symbol bytes in one ulong: no per-symbol bounds checks and, for the built-in alphabets, no table loads. A padded block is always eight symbols and goes out in a single store.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void EncodeTail<T>(ReadOnlySpan<byte> source, int remaining, int symbolCount, Span<T> destination) where T : unmanaged
 	{

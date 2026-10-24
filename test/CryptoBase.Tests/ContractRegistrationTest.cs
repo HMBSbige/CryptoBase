@@ -8,8 +8,7 @@ using System.Reflection;
 
 namespace CryptoBase.Tests;
 
-// The contract tests list their types by hand, so this catches a public implementation left out of them. The per-type data that they read
-// needs no check here: a listed type that lacks it fails the contract tests.
+// The contract tests list their types by hand, so this catches a public implementation left out of them. The per-type data that they read needs no check here: a listed type that lacks it fails the contract tests.
 public class ContractRegistrationTest
 {
 	[Test]

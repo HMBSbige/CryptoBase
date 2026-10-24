@@ -44,8 +44,7 @@ public class MLKemTest
 		await Assert.That(mismatches).IsEmpty();
 	}
 
-	// An entry of Â that three SHAKE128 blocks leave short squeezes more after its group. Grouping depends on the parameter and
-	// instruction sets, so a seed is searched that leaves each entry short.
+	// An entry of Â that three SHAKE128 blocks leave short squeezes more after its group. Grouping depends on the parameter and instruction sets, so a seed is searched that leaves each entry short.
 	[Test]
 	[GenerateGenericTest(typeof(MLKem512))]
 	[GenerateGenericTest(typeof(MLKem768))]
@@ -263,8 +262,7 @@ public class MLKemTest
 		}
 	}
 
-	// For each entry (i, j) of Â^T, SampleNTT(ρ ‖ i ‖ j), the first of the seeds d = 0, 1, 2, ... (little-endian) whose three SHAKE128
-	// blocks for that entry hold fewer than 256 coefficients.
+	// For each entry (i, j) of Â^T, SampleNTT(ρ ‖ i ‖ j), the first of the seeds d = 0, 1, 2, ... (little-endian) whose three SHAKE128 blocks for that entry hold fewer than 256 coefficients.
 	private static List<(int Row, int Column, byte[] D)> SeedsLeavingEachEntryShort(int k)
 	{
 		List<(int, int, byte[])> seeds = [];

@@ -3,8 +3,7 @@ namespace CryptoBase.EllipticCurves;
 // Every limb of every entry is read, so neither the time nor the addresses depend on the index.
 internal static class MaskedSelect
 {
-	// result is zero if index ≥ count. Only hardware-accelerated vectors are used: the software fallback of the others may branch on the
-	// values.
+	// result is zero if index ≥ count. Only hardware-accelerated vectors are used: the software fallback of the others may branch on the values.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Lookup<T>(ref readonly T table, int count, uint index, out T result) where T : unmanaged
 	{

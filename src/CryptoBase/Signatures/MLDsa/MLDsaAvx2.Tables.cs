@@ -2,8 +2,7 @@ namespace CryptoBase.Signatures.MLDsa;
 
 internal readonly partial struct MLDsaAvx2
 {
-	// For the butterflies of NttPair, layers 6, 7 and 8 of each 16 coefficients: the zetas of the lanes, their ζ · q⁻¹ mod 2^32, and both
-	// again for the odd lanes, moved to the even lanes that vpmuldq reads.
+	// For the butterflies of NttPair, layers 6, 7 and 8 of each 16 coefficients: the zetas of the lanes, their ζ · q⁻¹ mod 2^32, and both again for the odd lanes, moved to the even lanes that vpmuldq reads.
 	private static ReadOnlySpan<int> NttZetas =>
 	[
 		// Coefficients 0 to 15.

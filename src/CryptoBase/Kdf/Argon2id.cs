@@ -20,8 +20,7 @@ public static class Argon2id
 	/// <param name="secret">The secret key, also known as a pepper.</param>
 	/// <param name="associatedData">The associated data.</param>
 	/// <param name="maxDegreeOfParallelism">
-	/// The maximum number of threads that fill the lanes, the calling thread included, or -1 for no limit; the other threads come from the thread pool.
-	/// It never changes the derived key.
+	/// The maximum number of threads that fill the lanes, the calling thread included, or -1 for no limit; the other threads come from the thread pool. It never changes the derived key.
 	/// </param>
 	/// <exception cref="ArgumentOutOfRangeException">
 	/// <paramref name="destination" /> is shorter than 4 bytes, or <paramref name="maxDegreeOfParallelism" /> is 0 or less than -1.

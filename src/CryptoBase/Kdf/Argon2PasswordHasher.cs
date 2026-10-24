@@ -11,8 +11,7 @@ namespace CryptoBase.Kdf;
 /// It does not hold the secret, which must be supplied again.
 /// </para>
 /// <para>
-/// Parsing is strict: the version must be 19; the parameters must be exactly <c>m</c>, <c>t</c> and <c>p</c> in that order, in decimal without leading zeros and within the ranges of <see cref="Argon2Parameters" />;
-/// the salt must be at least 8 bytes long and the hash at least 4 bytes long. The optional <c>keyid</c> and <c>data</c> parameters are not supported.
+/// Parsing is strict: the version must be 19; the parameters must be exactly <c>m</c>, <c>t</c> and <c>p</c> in that order, in decimal without leading zeros and within the ranges of <see cref="Argon2Parameters" />; the salt must be at least 8 bytes long and the hash at least 4 bytes long. The optional <c>keyid</c> and <c>data</c> parameters are not supported.
 /// </para>
 /// <para>
 /// Verification costs as much time and memory as the string specifies, so verify only strings from trusted storage.

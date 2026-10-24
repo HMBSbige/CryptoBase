@@ -2,8 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Kems.MLKem;
 
-// Thirty-two coefficients per 512-bit vector, as in MLKemAvx2. IsSupported requires Vector512.IsHardwareAccelerated too, which the
-// runtime reports false where it prefers 256-bit vectors.
+// Thirty-two coefficients per 512-bit vector, as in MLKemAvx2. IsSupported requires Vector512.IsHardwareAccelerated too, which the runtime reports false where it prefers 256-bit vectors.
 internal readonly partial struct MLKemAvx512 : IMLKemKernel
 {
 	private const int N = MLKemConstants.N;
@@ -724,8 +723,7 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 		return (raised >>> 13).AsInt16() - Vector512.Create((short)3);
 	}
 
-	// The twelve bytes of each quarter of the 48 at start, one quarter per 128-bit lane. The load moves back near the end of length
-	// bytes to stay within them.
+	// The twelve bytes of each quarter of the 48 at start, one quarter per 128-bit lane. The load moves back near the end of length bytes to stay within them.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<int> Groups(ref byte source, int start, [ConstantExpected] int length)
 	{
@@ -734,8 +732,7 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 		return Avx512F.PermuteVar16x32(Vector512.LoadUnsafe(ref source, (nuint)offset).AsInt32(), groups);
 	}
 
-	// Spelled out for all four lanes, as a 512-bit vector made from a 128-bit constant is rebuilt with two inserts on every iteration
-	// of a loop instead of being loaded whole.
+	// Spelled out for all four lanes, as a 512-bit vector made from a 128-bit constant is rebuilt with two inserts on every iteration of a loop instead of being loaded whole.
 	private static Vector512<byte> Encode12Bytes
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

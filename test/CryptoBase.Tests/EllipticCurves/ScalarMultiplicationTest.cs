@@ -321,9 +321,7 @@ public class ScalarMultiplicationTest
 		}
 	}
 
-	// 2^(w − 1) is the largest digit and carries nothing. 2^(w − 1) + 1 gives the most negative digit,
-	// 1 − 2^(w − 1), and then 2 − 2^(w − 1) in each window above, each with a carry out. 2^w − 1 gives −1 and then 0s, with a carry that
-	// runs through every window. The carry out of the last window is the digit above it.
+	// 2^(w − 1) is the largest digit and carries nothing. 2^(w − 1) + 1 gives the most negative digit, 1 − 2^(w − 1), and then 2 − 2^(w − 1) in each window above, each with a carry out. 2^w − 1 gives −1 and then 0s, with a carry that runs through every window. The carry out of the last window is the digit above it.
 	private static IEnumerable<(int Width, BigInteger Scalar, int[] Digits)> PatternScalars(CurveCase curve)
 	{
 		foreach (int width in PatternWidths)

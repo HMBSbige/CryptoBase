@@ -5,8 +5,7 @@ using static CryptoBase.Tests.KeyAgreements.Ecdh.EcdhTestUtils;
 
 namespace CryptoBase.Tests.KeyAgreements;
 
-// Keys of the right length that a type rejects from their contents alone. KeyAgreementContractTest needs an entry for every type it tests.
-// These lists are the only data that catch a missing check, so each needs a key for each kind of rejection.
+// Keys of the right length that a type rejects from their contents alone. KeyAgreementContractTest needs an entry for every type it tests. These lists are the only data that catch a missing check, so each needs a key for each kind of rejection.
 internal sealed record KeyAgreementChecks(byte[][] InvalidPrivateKeys, byte[][] InvalidPublicKeys)
 {
 	public static KeyAgreementChecks Of<T>() where T : class, IKeyAgreement<T>

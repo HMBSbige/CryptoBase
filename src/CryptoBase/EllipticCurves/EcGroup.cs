@@ -2,8 +2,7 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// Scalars are plain values below n. Nothing here branches on or indexes by a point or a scalar, except where a method says that its input
-// is public.
+// Scalars are plain values below n. Nothing here branches on or indexes by a point or a scalar, except where a method says that its input is public.
 internal static class EcGroup<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
 	where TField : unmanaged, IMontgomeryModulus
@@ -15,8 +14,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 
 	private static ref readonly FieldElement<TField> B => ref FieldElement<TField>.FromLimbs(TCurve.B);
 
-	// Complete for a = −3 on a curve of odd order: any two points, equal, opposite or at infinity. The result may be either input: it is
-	// written only after the last read of the inputs.
+	// Complete for a = −3 on a curve of odd order: any two points, equal, opposite or at infinity. The result may be either input: it is written only after the last read of the inputs.
 	internal static void Add(in ProjectivePoint<TField> left, in ProjectivePoint<TField> right, out ProjectivePoint<TField> result)
 	{
 		FieldElement<TField>.Multiply(in left.X, in right.X, out FieldElement<TField> t0);
@@ -146,8 +144,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		result.Y = y3;
 	}
 
-	// Sets result to k·G for k below n. Neither the time nor the addresses depend on k. The projective form of the result depends on k and
-	// not only on k·G, so for a secret k use MultiplyBaseToAffine or MultiplyBaseReduceX, which clear it.
+	// Sets result to k·G for k below n. Neither the time nor the addresses depend on k. The projective form of the result depends on k and not only on k·G, so for a secret k use MultiplyBaseToAffine or MultiplyBaseReduceX, which clear it.
 	[SkipLocalsInit]
 	internal static void MultiplyBase(in FieldElement<TOrder> scalar, out ProjectivePoint<TField> result)
 	{
@@ -173,8 +170,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		sum.ZeroMemory();
 	}
 
-	// Sets result to k·P for a point P on the curve and k below n. Neither the time nor the addresses depend on k or P. As with MultiplyBase,
-	// the projective form depends on k, so for a secret k use TryMultiplyExportX.
+	// Sets result to k·P for a point P on the curve and k below n. Neither the time nor the addresses depend on k or P. As with MultiplyBase, the projective form depends on k, so for a secret k use TryMultiplyExportX.
 	[SkipLocalsInit]
 	internal static void Multiply(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, out ProjectivePoint<TField> result)
 	{
@@ -224,8 +220,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		product.ZeroMemory();
 	}
 
-	// For a point P on the curve and k below n. Returns false, leaving destination unchanged, if k·P is the point at infinity; the return
-	// value reveals that anyway, so it may decide a branch.
+	// For a point P on the curve and k below n. Returns false, leaving destination unchanged, if k·P is the point at infinity; the return value reveals that anyway, so it may decide a branch.
 	internal static bool TryMultiplyExportX(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> destination)
 	{
 		Multiply(in point, in scalar, out ProjectivePoint<TField> product);
@@ -355,10 +350,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		return TOrder.BitLength / width + 1;
 	}
 
-	// Writes digits d_i in [−2^(w − 1) + 1, 2^(w − 1)] with k = Σ d_i·2^(wi). Window i of k plus the carry from below, v in [0, 2^w],
-	// gives d_i = v and no carry if v ≤ 2^(w − 1), and d_i = v − 2^w and a carry otherwise. The top window holds at most w − 1 bits of k,
-	// so v ≤ 2^(w − 1) there and no carry is lost. The carry and digits come from arithmetic on v, not comparisons, and only i decides
-	// which limbs are read.
+	// Writes digits d_i in [−2^(w − 1) + 1, 2^(w − 1)] with k = Σ d_i·2^(wi). Window i of k plus the carry from below, v in [0, 2^w], gives d_i = v and no carry if v ≤ 2^(w − 1), and d_i = v − 2^w and a carry otherwise. The top window holds at most w − 1 bits of k, so v ≤ 2^(w − 1) there and no carry is lost. The carry and digits come from arithmetic on v, not comparisons, and only i decides which limbs are read.
 	private static void Recode(in FieldElement<TOrder> scalar, int width, Span<sbyte> digits)
 	{
 		// Digits up to 2^(w − 1) must fit in an sbyte.

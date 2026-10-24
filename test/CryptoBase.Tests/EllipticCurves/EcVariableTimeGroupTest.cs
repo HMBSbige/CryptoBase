@@ -156,9 +156,7 @@ public class EcVariableTimeGroupTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The digits of u1 add multiples of G before those of u2 add multiples of Q at the same position. With Q = ±G, u1 = u2 = 1 adds G and ±G
-	// at the last digit, and u1 = u2 = 2^(N − 1) + 1 does so at the top digit too, where −G leaves the point at infinity for the doublings
-	// and the additions below. With Q = ±2⁻¹·G, u2 = 2 leaves ±G for G at the last digit.
+	// The digits of u1 add multiples of G before those of u2 add multiples of Q at the same position. With Q = ±G, u1 = u2 = 1 adds G and ±G at the last digit, and u1 = u2 = 2^(N − 1) + 1 does so at the top digit too, where −G leaves the point at infinity for the doublings and the additions below. With Q = ±2⁻¹·G, u2 = 2 leaves ±G for G at the last digit.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MultiplyAddMeetsEqualAndOppositePoints(CurveCase curve)
@@ -206,10 +204,7 @@ public class EcVariableTimeGroupTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// With n < p < 2n, x mod n is x − n for x in [n, p): the least such x above n here, where r = x − n fails the comparison of x with r and
-	// passes that with r + n, and the least x from n, which may be n itself, with x mod n = 0 below every r. A small x leaves r + n < p for r
-	// near x, so a wrong r there reaches the second comparison and fails it; an x near p − n leaves r + n ≥ p, as does r = x + p − n, whose
-	// r + n ≡ x would match without the bound.
+	// With n < p < 2n, x mod n is x − n for x in [n, p): the least such x above n here, where r = x − n fails the comparison of x with r and passes that with r + n, and the least x from n, which may be n itself, with x mod n = 0 below every r. A small x leaves r + n < p for r near x, so a wrong r there reaches the second comparison and fails it; an x near p − n leaves r + n ≥ p, as does r = x + p − n, whose r + n ≡ x would match without the bound.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task XModOrderEqualsMatchesTheReference(CurveCase curve)
@@ -231,8 +226,7 @@ public class EcVariableTimeGroupTest
 		foreach (CurvePoint point in points)
 		{
 			BigInteger x = point.X % n;
-			// r = x + R − n makes r + n carry out of the limbs and leave x in them, which would match without the carry; it is below n only
-			// where R < 2n.
+			// r = x + R − n makes r + n carry out of the limbs and leave x in them, which would match without the carry; it is below n only where R < 2n.
 			BigInteger wrapped = point.X + curve.R - n;
 
 			foreach (BigInteger r in (BigInteger[])[x, x - 1, x + 1, point.X + p - n, wrapped])

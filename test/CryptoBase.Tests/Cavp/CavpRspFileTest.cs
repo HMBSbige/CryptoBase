@@ -1,7 +1,6 @@
 namespace CryptoBase.Tests.Cavp;
 
-// The well-formed inputs are excerpts of the CAVP SHA-3 and SHAKE response files from
-// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha-3bytetestvectors.zip and shakebytetestvectors.zip.
+// The well-formed inputs are excerpts of the CAVP SHA-3 and SHAKE response files from https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha-3bytetestvectors.zip and shakebytetestvectors.zip.
 public class CavpRspFileTest
 {
 	[Test]

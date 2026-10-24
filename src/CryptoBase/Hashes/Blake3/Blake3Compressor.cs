@@ -4,12 +4,10 @@ namespace CryptoBase.Hashes.Blake3;
 
 internal static class Blake3Compressor
 {
-	// A single compression is bound by the serial dependency chain of G, so row vectors only win where vector additions, XORs and rotations take one cycle.
-	// Zen 5 and ARM64 cores take two, and their wide scalar pipelines run the four independent Gs of a step side by side instead.
+	// A single compression is bound by the serial dependency chain of G, so row vectors only win where vector additions, XORs and rotations take one cycle. Zen 5 and ARM64 cores take two, and their wide scalar pipelines run the four independent Gs of a step side by side instead.
 	internal static readonly bool PreferScalar = AdvSimd.Arm64.IsSupported || X86Base.X64.IsSupported && CpuIdUtils.IsAmdZen5();
 
-	// Chosen apart from Blake3Tree.Kernel, which weighs many inputs side by side rather than one compression. A field, which the JIT takes as a constant;
-	// as a property, the check cost every compression a call.
+	// Chosen apart from Blake3Tree.Kernel, which weighs many inputs side by side rather than one compression. A field, which the JIT takes as a constant; as a property, the check cost every compression a call.
 	private static readonly bool UseVector128 = Blake3Vector128.IsSupported && !PreferScalar;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

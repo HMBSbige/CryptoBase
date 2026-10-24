@@ -7,31 +7,22 @@ namespace CryptoBase.Hashes.Blake3;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The output is a stream of up to 2^64 bytes: a destination of any length receives its start, the default 32-byte length gives the standard hash,
-/// and a shorter output is a prefix of every longer one. A position reads the stream from any byte, so output can be produced in pieces or in parallel.
+/// The output is a stream of up to 2^64 bytes: a destination of any length receives its start, the default 32-byte length gives the standard hash, and a shorter output is a prefix of every longer one. A position reads the stream from any byte, so output can be produced in pieces or in parallel.
 /// </para>
 /// <para>
-/// Generic code, such as the stream extensions of the CryptoBase.IO package, takes the hasher as an <see cref="IHashAlgorithm{TSelf}" />, whose members give
-/// the output the fixed length of any other hash: they write its first <see cref="HashLength" /> bytes, the standard hash in the hash mode, and return
-/// that length, whereas the public methods fill their whole destination.
+/// Generic code, such as the stream extensions of the CryptoBase.IO package, takes the hasher as an <see cref="IHashAlgorithm{TSelf}" />, whose members give the output the fixed length of any other hash: they write its first <see cref="HashLength" /> bytes, the standard hash in the hash mode, and return that length, whereas the public methods fill their whole destination.
 /// </para>
 /// <para>
-/// As an <see cref="IXof{TSelf}" />, the instance also reads the stream in pieces: the first nonempty <see cref="Read" /> ends the input, and each read continues
-/// where the previous one stopped. Until <see cref="Reset" />, appending and the methods that write the start of the output then throw
-/// <see cref="InvalidOperationException" />, whereas <see cref="GetCurrentHash(Span{byte}, ulong, int)" /> still reads from any position.
+/// As an <see cref="IXof{TSelf}" />, the instance also reads the stream in pieces: the first nonempty <see cref="Read" /> ends the input, and each read continues where the previous one stopped. Until <see cref="Reset" />, appending and the methods that write the start of the output then throw <see cref="InvalidOperationException" />, whereas <see cref="GetCurrentHash(Span{byte}, ulong, int)" /> still reads from any position.
 /// </para>
 /// <para>
-/// The calling thread and up to <c>maxDegreeOfParallelism - 1</c> thread pool threads hash long input as independent subtrees, and generate long output as independent blocks.
-/// The degree of parallelism never changes the result, and -1 removes the limit.
+/// The calling thread and up to <c>maxDegreeOfParallelism - 1</c> thread pool threads hash long input as independent subtrees, and generate long output as independent blocks. The degree of parallelism never changes the result, and -1 removes the limit.
 /// </para>
 /// <para>
-/// Calls to <see cref="GetCurrentHash(Span{byte})" /> and <see cref="GetCurrentHash(Span{byte}, ulong, int)" /> may run concurrently with one another;
-/// every other instance operation, <see cref="Read" /> included, requires exclusive access.
+/// Calls to <see cref="GetCurrentHash(Span{byte})" /> and <see cref="GetCurrentHash(Span{byte}, ulong, int)" /> may run concurrently with one another; every other instance operation, <see cref="Read" /> included, requires exclusive access.
 /// </para>
 /// <para>
-/// A reset in the keyed hash and key derivation modes erases the buffered input and the chaining values and output that the instance holds, so that only the
-/// key remains until disposal; copies left in registers, on thread stacks or behind a moving garbage collector are out of reach. Disposal erases the state, key
-/// included, and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// A reset in the keyed hash and key derivation modes erases the buffered input and the chaining values and output that the instance holds, so that only the key remains until disposal; copies left in registers, on thread stacks or behind a moving garbage collector are out of reach. Disposal erases the state, key included, and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, IXof<Blake3HashAlgorithm>
@@ -54,17 +45,13 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	private byte[]? _buffer;
 	private byte[]? _stack;
 
-	// Creating the output hashes the buffered input, so reads share it until the input changes. A read creates it in a local before it publishes it,
-	// so concurrent reads, which publish equal outputs, never see part of one. The next append learns from it that a read came in between.
+	// Creating the output hashes the buffered input, so reads share it until the input changes. A read creates it in a local before it publishes it, so concurrent reads, which publish equal outputs, never see part of one. The next append learns from it that a read came in between.
 	private Blake3Output _output;
 	private bool _hasOutput;
 
 	private bool _usedOutput;
 
-	// A read in group mode hashes up to a group side by side, in about the time chunk mode takes to compress a group divided by the degree of the tree kernel
-	// block by block, and hashes the buffered input again later; chunk mode wins until reads come about 1.5 times that far apart on Zen 5 and Intel cores, and
-	// about 2.5 times on Apple cores, whose scalar compression keeps up better with Blake3Vector128x2. A field, which the JIT takes as a constant, spares
-	// every append in chunk mode a call and a division.
+	// A read in group mode hashes up to a group side by side, in about the time chunk mode takes to compress a group divided by the degree of the tree kernel block by block, and hashes the buffered input again later; chunk mode wins until reads come about 1.5 times that far apart on Zen 5 and Intel cores, and about 2.5 times on Apple cores, whose scalar compression keeps up better with Blake3Vector128x2. A field, which the JIT takes as a constant, spares every append in chunk mode a call and a division.
 	private static readonly int ChunkModeInterval = (Blake3Tree.Kernel is Blake3TreeKernel.Vector128x2 ? 5 : 3) * Blake3State.GroupLength / (2 * Blake3Tree.Degree);
 
 	private bool _chunkMode;
@@ -306,8 +293,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// Writes the next <c>destination.Length</c> bytes of the output stream for the current input.
 	/// </summary>
 	/// <remarks>
-	/// The first nonempty read ends the input and starts at the beginning of the stream; each later read continues where the previous one stopped,
-	/// until <see cref="Reset" />. An empty <paramref name="destination" /> leaves the state unchanged.
+	/// The first nonempty read ends the input and starts at the beginning of the stream; each later read continues where the previous one stopped, until <see cref="Reset" />. An empty <paramref name="destination" /> leaves the state unchanged.
 	/// </remarks>
 	/// <param name="destination">The buffer that receives the output.</param>
 	/// <exception cref="ArgumentOutOfRangeException">The output would end past byte 2^64 - 1 of the stream.</exception>
@@ -344,8 +330,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// In the keyed hash and key derivation modes, the reset erases the buffered input and the chaining values and output that the instance holds;
-	/// the key remains until disposal.
+	/// In the keyed hash and key derivation modes, the reset erases the buffered input and the chaining values and output that the instance holds; the key remains until disposal.
 	/// </para>
 	/// <para>The <see cref="IHashAlgorithm{TSelf}" /> member of the same name writes only the first <see cref="HashLength" /> bytes.</para>
 	/// </remarks>
@@ -474,8 +459,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 		}
 	}
 
-	// The buffer is a group, so that short appends fill every lane of the widest kernel. A read hashes the buffered input, though, so reads that come often
-	// would hash it over and over; chunk mode buffers a chunk instead and compresses its blocks as they fill, so that a read compresses at most one.
+	// The buffer is a group, so that short appends fill every lane of the widest kernel. A read hashes the buffered input, though, so reads that come often would hash it over and over; chunk mode buffers a chunk instead and compresses its blocks as they fill, so that a read compresses at most one.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void AppendCore(ReadOnlySpan<byte> source, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
 	{
@@ -525,8 +509,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 		}
 	}
 
-	// Shrinking the buffer may rent the stack, which may fail for lack of memory, so the mode changes only afterwards: chunk mode cannot take a
-	// buffer longer than a chunk.
+	// Shrinking the buffer may rent the stack, which may fail for lack of memory, so the mode changes only afterwards: chunk mode cannot take a buffer longer than a chunk.
 	private void ChooseModeAfterRead(Span<byte> buffer)
 	{
 		ulong inputLength = _state.InputLength;
@@ -543,8 +526,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 
 	private void ResetState()
 	{
-		// Erasing skips what the input has left untouched, the output included unless a read created it, which on 64-byte messages cuts the cost of a
-		// reset by about two thirds.
+		// Erasing skips what the input has left untouched, the output included unless a read created it, which on 64-byte messages cuts the cost of a reset by about two thirds.
 		if (_state.IsSecret)
 		{
 			_state.EraseAndReset(_buffer, _stack);

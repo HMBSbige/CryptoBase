@@ -5,13 +5,10 @@ namespace CryptoBase.Abstractions.Kems;
 /// </summary>
 /// <remarks>
 /// <para>
-/// An instance holds the key it was generated or imported with. An instance from <see cref="GenerateKey" /> or <see cref="ImportPrivateSeed" />
-/// holds the private seed and the decapsulation key; one from <see cref="ImportDecapsulationKey" /> holds the decapsulation key but not the seed;
-/// one from <see cref="ImportEncapsulationKey" /> can only encapsulate. Every instance holds the encapsulation key.
+/// An instance holds the key it was generated or imported with. An instance from <see cref="GenerateKey" /> or <see cref="ImportPrivateSeed" /> holds the private seed and the decapsulation key; one from <see cref="ImportDecapsulationKey" /> holds the decapsulation key but not the seed; one from <see cref="ImportEncapsulationKey" /> can only encapsulate. Every instance holds the encapsulation key.
 /// </para>
 /// <para>
-/// Outputs have fixed lengths: a longer destination receives that many bytes at its start, and a shorter one throws before anything is written.
-/// Disposal erases the key material and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// Outputs have fixed lengths: a longer destination receives that many bytes at its start, and a shorter one throws before anything is written. Disposal erases the key material and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 /// <typeparam name="TSelf">The implementing type.</typeparam>
@@ -52,8 +49,7 @@ public interface IKem<out TSelf> : IDisposable where TSelf : class, IKem<TSelf>
 	/// Derives a key pair from <paramref name="source" />.
 	/// </summary>
 	/// <remarks>
-	/// The derivation is deterministic: the same seed always gives the same key pair. Some algorithms reject some seeds of the right length; for
-	/// example, a hybrid KEM requires the elliptic curve private key in the seed to lie in [1, n − 1].
+	/// The derivation is deterministic: the same seed always gives the same key pair. Some algorithms reject some seeds of the right length; for example, a hybrid KEM requires the elliptic curve private key in the seed to lie in [1, n − 1].
 	/// </remarks>
 	/// <param name="source">The private seed, exactly <see cref="PrivateSeedLength" /> bytes long.</param>
 	/// <returns>An instance that holds the private seed, the decapsulation key and the encapsulation key.</returns>
@@ -139,19 +135,13 @@ public interface IKem<out TSelf> : IDisposable where TSelf : class, IKem<TSelf>
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> does not have exactly <see cref="CiphertextLength" /> bytes or a
-	/// publicly encoded value in it, such as an elliptic curve point, is invalid. The result depends only on the ciphertext and the encapsulation key,
-	/// never on secret key material.
+	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> does not have exactly <see cref="CiphertextLength" /> bytes or a publicly encoded value in it, such as an elliptic curve point, is invalid. The result depends only on the ciphertext and the encapsulation key, never on secret key material.
 	/// </para>
 	/// <para>
-	/// <see langword="true" /> does not mean that <paramref name="ciphertext" /> was encapsulated to this key. The shared secret need not bind the
-	/// ciphertext, so a protocol that relies on that binding must include the ciphertext in its key derivation or transcript. A KEM with implicit
-	/// rejection writes, for a ciphertext that was not encapsulated to the key, a pseudorandom value derived from the decapsulation key and the
-	/// ciphertext.
+	/// <see langword="true" /> does not mean that <paramref name="ciphertext" /> was encapsulated to this key. The shared secret need not bind the ciphertext, so a protocol that relies on that binding must include the ciphertext in its key derivation or transcript. A KEM with implicit rejection writes, for a ciphertext that was not encapsulated to the key, a pseudorandom value derived from the decapsulation key and the ciphertext.
 	/// </para>
 	/// <para>
-	/// The exceptions take precedence: they are thrown even if <paramref name="ciphertext" /> is also invalid. <paramref name="ciphertext" /> may overlap
-	/// <paramref name="sharedSecret" />. If the method returns <see langword="false" /> or throws, <paramref name="sharedSecret" /> remains unchanged.
+	/// The exceptions take precedence: they are thrown even if <paramref name="ciphertext" /> is also invalid. <paramref name="ciphertext" /> may overlap <paramref name="sharedSecret" />. If the method returns <see langword="false" /> or throws, <paramref name="sharedSecret" /> remains unchanged.
 	/// </para>
 	/// </remarks>
 	/// <param name="ciphertext">The ciphertext.</param>

@@ -4,8 +4,7 @@ namespace CryptoBase.Hashes.Sha3;
 /// Provides the SHAKE128 extendable-output function core.
 /// </summary>
 /// <remarks>
-/// Computes SHAKE128 as specified in FIPS 202, Sec. 6.2, over a 168-byte sponge rate. Use it through <see cref="Xof{TCore}" />, whose output length
-/// is the destination length; collision resistance reaches its full 128 bits from 32 bytes of output, per FIPS 202, Table 4.
+/// Computes SHAKE128 as specified in FIPS 202, Sec. 6.2, over a 168-byte sponge rate. Use it through <see cref="Xof{TCore}" />, whose output length is the destination length; collision resistance reaches its full 128 bits from 32 bytes of output, per FIPS 202, Table 4.
 /// </remarks>
 public struct Shake128Core : IXofCore<Shake128Core>
 {

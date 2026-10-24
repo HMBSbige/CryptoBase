@@ -4,8 +4,7 @@ using Region = (nint Address, nuint Length, long ReturnedAt);
 
 namespace CryptoBase.Kdf.Argon2;
 
-// Keeps recently released working memory for reuse: touching fresh memory costs a page fault per page, about as much as a whole pass.
-// Freeing a region of tens of MiB takes milliseconds, so it happens outside the lock.
+// Keeps recently released working memory for reuse: touching fresh memory costs a page fault per page, about as much as a whole pass. Freeing a region of tens of MiB takes milliseconds, so it happens outside the lock.
 internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPeriodMilliseconds)
 {
 	internal const nuint Alignment = 64;
@@ -106,8 +105,7 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 		NativeMemory.AlignedFree((void*)address);
 	}
 
-	// Starting a timer links it into its queue before a wait an interrupt can cut short, so retrying the constructor of a running timer would leave the first one running unreferenced.
-	// The timer is created stopped, which takes no lock, and Change only reschedules it.
+	// Starting a timer links it into its queue before a wait an interrupt can cut short, so retrying the constructor of a running timer would leave the first one running unreferenced. The timer is created stopped, which takes no lock, and Change only reschedules it.
 	private Timer CreateTrimTimer(ref bool interrupted)
 	{
 		Timer timer;

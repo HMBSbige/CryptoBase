@@ -7,8 +7,7 @@ using BouncyCastleKmac = Org.BouncyCastle.Crypto.Macs.KMac;
 
 namespace CryptoBase.Benchmark.Macs.Kmac;
 
-// The customization string of the NIST KMAC samples, with outputs of twice the security strength. Incremental creates an instance per
-// operation; Reuse keeps one, which each operation resets to its key.
+// The customization string of the NIST KMAC samples, with outputs of twice the security strength. Incremental creates an instance per operation; Reuse keeps one, which each operation resets to its key.
 [MemoryDiagnoser]
 [CategoriesColumn]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]

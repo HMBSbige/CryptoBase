@@ -7,9 +7,7 @@ namespace CryptoBase.KeyAgreements.Ecdh;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The private key is big-endian and must lie in [1, n − 1]. The public key is in the uncompressed encoding, and
-/// <see cref="TryDeriveSharedSecret" /> returns <see langword="false" /> unless the peer public key is in that encoding, has both coordinates below the
-/// field prime and lies on the curve.
+/// The private key is big-endian and must lie in [1, n − 1]. The public key is in the uncompressed encoding, and <see cref="TryDeriveSharedSecret" /> returns <see langword="false" /> unless the peer public key is in that encoding, has both coordinates below the field prime and lies on the curve.
 /// </para>
 /// <para>
 /// The shared secret is the x-coordinate of the shared point as big-endian bytes. Exports and derivations may run concurrently on one instance.

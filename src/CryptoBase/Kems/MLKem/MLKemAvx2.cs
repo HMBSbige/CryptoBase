@@ -2,8 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Kems.MLKem;
 
-// Sixteen coefficients per 256-bit vector. Encoders and decoders never access past the end of a buffer. The operations that loop or
-// hold many vectors are not inlined, as merged into a large caller their vectors end up on the stack.
+// Sixteen coefficients per 256-bit vector. Encoders and decoders never access past the end of a buffer. The operations that loop or hold many vectors are not inlined, as merged into a large caller their vectors end up on the stack.
 internal readonly partial struct MLKemAvx2 : IMLKemKernel
 {
 	private const int N = MLKemConstants.N;
@@ -11,8 +10,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 
 	public static bool IsSupported => Avx2.IsSupported;
 
-	// Each half stays in eight registers after layer 1. A product by a zeta is below 3q/4, so seven layers keep the coefficients below
-	// q + 7 · 3q/4 < 2^15 without reduction.
+	// Each half stays in eight registers after layer 1. A product by a zeta is below 3q/4, so seven layers keep the coefficients below q + 7 · 3q/4 < 2^15 without reduction.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Ntt(Span<short> f)
 	{
@@ -57,8 +55,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 		}
 	}
 
-	// The product modulo X² ∓ γ is (x0·y0 + x1·y1) + (±γ − 1) · x1·y1 + (x0·y1 + x1·y0)·X, each sum one multiply-add. Four terms sum
-	// unreduced below 8q² < q · 2^15.
+	// The product modulo X² ∓ γ is (x0·y0 + x1·y1) + (±γ − 1) · x1·y1 + (x0·y1 + x1·y0)·X, each sum one multiply-add. Four terms sum unreduced below 8q² < q · 2^15.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void MultiplyAccumulate(ReadOnlySpan<short> a, int aStride, ReadOnlySpan<short> b, Span<short> destination, int count)
 	{
@@ -168,8 +165,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref target, 376), last.GetUpper().AsUInt64().ToScalar());
 	}
 
-	// Each 128-bit lane reads the 16 bytes that end where its 12 do. Only the largest value decides the check, so the time does not
-	// depend on where an invalid value lies.
+	// Each 128-bit lane reads the 16 bytes that end where its 12 do. Only the largest value decides the check, so the time does not depend on where an invalid value lies.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static bool Decode12(ReadOnlySpan<byte> source, Span<short> f)
 	{
@@ -267,8 +263,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 		}
 	}
 
-	// The store writes eight lanes however few are accepted, so the values collect in a buffer first. The candidates are public, which
-	// allows the lookups and branches.
+	// The store writes eight lanes however few are accepted, so the values collect in a buffer first. The candidates are public, which allows the lookups and branches.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int RejectSample(ReadOnlySpan<byte> source, Span<short> destination)
@@ -502,8 +497,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 		return Avx2.PermuteVar8x32(packed.AsInt32(), Vector256.Create(0, 1, 2, 4, 5, 6, 3, 7)).AsByte();
 	}
 
-	// Compress_d for x in (−q, q). The rounded product is off by at most one, which the remainder 2^d · x − y · q, exact modulo 2^16,
-	// corrects when beyond q/2.
+	// Compress_d for x in (−q, q). The rounded product is off by at most one, which the remainder 2^d · x − y · q, exact modulo 2^16, corrects when beyond q/2.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<short> CompressValues(Vector256<short> x, short multiplier, [ConstantExpected] byte bits)
 	{
@@ -710,8 +704,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 		}
 	}
 
-	// Twenty-two bytes per vector, as 16 from its start and 16 ending at its end. An 11-bit field spans up to three bytes, so it is
-	// shifted within a 32-bit lane.
+	// Twenty-two bytes per vector, as 16 from its start and 16 ending at its end. An 11-bit field spans up to three bytes, so it is shifted within a 32-bit lane.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Decompress11(ref byte source, ref short destination)
 	{

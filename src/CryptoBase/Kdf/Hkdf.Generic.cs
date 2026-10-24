@@ -6,8 +6,7 @@ namespace CryptoBase.Kdf;
 /// Implements HKDF as specified by RFC 5869 over an HMAC implementation.
 /// </summary>
 /// <remarks>
-/// Extract and a single-block expansion take one call to <c>TMac.Mac</c> each. A longer expansion creates one keyed <typeparamref name="TMac" /> instance and
-/// computes every block with it. Any input may overlap the output.
+/// Extract and a single-block expansion take one call to <c>TMac.Mac</c> each. A longer expansion creates one keyed <typeparamref name="TMac" /> instance and computes every block with it. Any input may overlap the output.
 /// </remarks>
 /// <typeparam name="TMac">The HMAC implementation. RFC 5869 defines HKDF over HMAC only.</typeparam>
 public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
@@ -97,8 +96,7 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 		ExpandBlocks(prk, output, info);
 	}
 
-	// T(1) = MAC(PRK, info || 1). Info is copied before the output is written, so it may overlap the output. The MAC goes through a scratch buffer when
-	// the output is short or overlaps the key, so the call never gets overlapping buffers.
+	// T(1) = MAC(PRK, info || 1). Info is copied before the output is written, so it may overlap the output. The MAC goes through a scratch buffer when the output is short or overlaps the key, so the call never gets overlapping buffers.
 	[SkipLocalsInit]
 	private static void ExpandBlock(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
@@ -121,8 +119,7 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 		block.Span.Slice(0, output.Length).CopyTo(output);
 	}
 
-	// T(i) = MAC(PRK, T(i - 1) || info || i), with T(0) empty. The buffer holds T(i - 1) || info || i and the first block skips T(0), so no append reads
-	// the output and info may overlap it. Create consumes the key before the first block is written, so the key may overlap the output too.
+	// T(i) = MAC(PRK, T(i - 1) || info || i), with T(0) empty. The buffer holds T(i - 1) || info || i and the first block skips T(0), so no append reads the output and info may overlap it. Create consumes the key before the first block is written, so the key may overlap the output too.
 	[SkipLocalsInit]
 	private static void ExpandBlocks(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{

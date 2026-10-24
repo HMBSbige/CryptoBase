@@ -2,8 +2,7 @@ using CryptoBase.Hashes.Sha3;
 
 namespace CryptoBase.Macs.Kmac;
 
-// KMACXOF of SP 800-185, Sec. 4.3.1, shared by KmacXof128Algorithm and KmacXof256Algorithm, which check disposal before calling in: KMAC with L
-// encoded as 0, so that the output is a stream. Reading follows the IXof contract; copies of the state hold the key, so they are erased.
+// KMACXOF of SP 800-185, Sec. 4.3.1, shared by KmacXof128Algorithm and KmacXof256Algorithm, which check disposal before calling in: KMAC with L encoded as 0, so that the output is a stream. Reading follows the IXof contract; copies of the state hold the key, so they are erased.
 internal struct KmacXofState<TRate> where TRate : IKeccakRate
 {
 	private CShakeSponge<TRate> _sponge;

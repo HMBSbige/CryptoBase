@@ -39,8 +39,7 @@ internal static partial class KeccakP1600
 		state = a;
 	}
 
-	// Computes the round plane by plane: each output plane reads its five π source lanes, applies θ and ρ, then χ and ι, and folds
-	// the result into the column parities c0..c4 for the next round's θ.
+	// Computes the round plane by plane: each output plane reads its five π source lanes, applies θ and ρ, then χ and ι, and folds the result into the column parities c0..c4 for the next round's θ.
 	// The constant ρ lookups fold into rotate immediates.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Round(ref InlineArray25<ulong> a, ref InlineArray25<ulong> e, ref ulong c0, ref ulong c1, ref ulong c2, ref ulong c3, ref ulong c4, ulong roundConstant)

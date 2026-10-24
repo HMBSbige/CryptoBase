@@ -146,8 +146,7 @@ public sealed partial class Base32Encoding
 		return Avx512Vbmi.VL.PermuteVar16x8x2(alphabetLow, symbols, alphabetHigh);
 	}
 
-	// A full-width load reads 24 or 12 bytes past its blocks, into filler lanes that the symbol mask drops. The kernels load at full
-	// width while that overread stays inside the source, that is while five or three more blocks follow, and the last blocks exactly.
+	// A full-width load reads 24 or 12 bytes past its blocks, into filler lanes that the symbol mask drops. The kernels load at full width while that overread stays inside the source, that is while five or three more blocks follow, and the last blocks exactly.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<byte> LoadEightBlocks(ref byte source)
 	{
@@ -209,9 +208,7 @@ public sealed partial class Base32Encoding
 			return EncodeUtf8Avx512Vbmi(source, MemoryMarshal.Cast<T, byte>(destination), symbolMask, alphabet);
 		}
 
-		// Local constants avoid the class-initialization slow path and register spills
-		// that RyuJIT otherwise emits for static vectors in this instance hot path.
-		// Same layout as Avx512CharPackIndicesVector.
+		// Local constants avoid the class-initialization slow path and register spills that RyuJIT otherwise emits for static vectors in this instance hot path. Same layout as Avx512CharPackIndicesVector.
 		Vector512<byte> packIndices = Vector512.Create
 		(
 			Vector256.Create
@@ -479,9 +476,7 @@ public sealed partial class Base32Encoding
 		return alphabetKind is Rfc4648HexAlphabetKind ? Vector256.Create("0123456789ABCDEFGHIJKLMNOPQRSTUV"u8) : Vector256.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"u8);
 	}
 
-	// EncodeCore inlines this, custom alphabets included, so its tables are literals rather than the static vectors: a process that only
-	// uses custom alphabets never initializes the class statics, and EncodeCore would then keep the initialization helper calls, with the
-	// vectors live across them in callee-saved registers that every call saves and restores.
+	// EncodeCore inlines this, custom alphabets included, so its tables are literals rather than the static vectors: a process that only uses custom alphabets never initializes the class statics, and EncodeCore would then keep the initialization helper calls, with the vectors live across them in callee-saved registers that every call saves and restores.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> EncodeVbmiVl128Short(ref byte source, nuint offset, Vector256<byte> alphabet)
 	{
@@ -558,8 +553,7 @@ public sealed partial class Base32Encoding
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<byte> LookupVbmiVl256(Vector256<byte> input, Vector256<byte> low, Vector256<byte> high)
 	{
-		// The 256-bit VPERMI2B only reads index bits 5:0, so a byte outside 0x20-0x5F would alias an entry inside that window.
-		// Clamping maps such bytes to ' ' or '_', which are invalid in both alphabets.
+		// The 256-bit VPERMI2B only reads index bits 5:0, so a byte outside 0x20-0x5F would alias an entry inside that window. Clamping maps such bytes to ' ' or '_', which are invalid in both alphabets.
 		Vector256<byte> index = Vector256.Min(Vector256.Max(input, Vector256.Create((byte)' ')), Vector256.Create((byte)'_'));
 		return Avx512Vbmi.VL.PermuteVar32x8x2(low, index, high);
 	}

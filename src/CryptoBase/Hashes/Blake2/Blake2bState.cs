@@ -177,8 +177,7 @@ internal struct Blake2bState
 		MemoryMarshal.AsBytes(state).Slice(0, hashLength).CopyTo(destination);
 	}
 
-	// Single-stream BLAKE2b is bound by the serial dependency chain of G, so vector kernels only win where vector integer additions and rotations take one cycle.
-	// Zen 5 and ARM64 cores take two, so x64 Zen 5 and ARM64 use the scalar kernel.
+	// Single-stream BLAKE2b is bound by the serial dependency chain of G, so vector kernels only win where vector integer additions and rotations take one cycle. Zen 5 and ARM64 cores take two, so x64 Zen 5 and ARM64 use the scalar kernel.
 	// 32-bit x86 keeps the vector kernels because it has no 64-bit general-purpose registers.
 	private static readonly bool PreferScalar = X86Base.X64.IsSupported && CpuIdUtils.IsAmdZen5();
 

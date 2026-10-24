@@ -5,15 +5,11 @@ namespace CryptoBase.Signatures.MLDsa;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Importing a private key checks that s1 and s2 lie in [−η, η] and that t0 and tr follow from ρ, s1 and s2. Every byte
-/// string of <see cref="PublicKeyLength" /> bytes is a public key, so importing one checks only its length. Signing and
-/// verification may run concurrently on one instance.
+/// Importing a private key checks that s1 and s2 lie in [−η, η] and that t0 and tr follow from ρ, s1 and s2. Every byte string of <see cref="PublicKeyLength" /> bytes is a public key, so importing one checks only its length. Signing and verification may run concurrently on one instance.
 /// </para>
 /// <para>
 /// Signing is hedged with 32 bytes of system randomness, so signing a message twice gives two different signatures.
-/// The DER encodings are those of RFC 9881: a PKCS #8 export holds the seed form if the instance holds the seed, and the expandedKey form
-/// otherwise, and a PKCS #8 import accepts the seed, expandedKey and both forms, keeps the seed if there is one, and rejects a seed that does
-/// not expand to the expandedKey beside it, or a publicKey that does not match the private key.
+/// The DER encodings are those of RFC 9881: a PKCS #8 export holds the seed form if the instance holds the seed, and the expandedKey form otherwise, and a PKCS #8 import accepts the seed, expandedKey and both forms, keeps the seed if there is one, and rejects a seed that does not expand to the expandedKey beside it, or a publicKey that does not match the private key.
 /// <see cref="SignatureAlgorithm.MLDsa44" /> is ML-DSA-44 with an empty context.
 /// </para>
 /// </remarks>
@@ -267,9 +263,7 @@ public sealed class MLDsa44 : IMLDsa<MLDsa44>
 	/// Signs the hash of a message with HashML-DSA.Sign (FIPS 204, Algorithm 4).
 	/// </summary>
 	/// <remarks>
-	/// The hash algorithm needs a collision strength of at least 128 bits, that of ML-DSA-44: SHA-256, SHA-384, SHA-512, SHA-512/256, SHA3-256,
-	/// SHA3-384, SHA3-512, SHAKE128 with 32 bytes of output, or SHAKE256 with 64 bytes of output. <paramref name="hash" /> may overlap
-	/// <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.
+	/// The hash algorithm needs a collision strength of at least 128 bits, that of ML-DSA-44: SHA-256, SHA-384, SHA-512, SHA-512/256, SHA3-256, SHA3-384, SHA3-512, SHAKE128 with 32 bytes of output, or SHAKE256 with 64 bytes of output. <paramref name="hash" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.
 	/// </remarks>
 	/// <param name="hash">The hash of the message, as long as the output of the hash algorithm.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="SignatureLength" /> bytes long.</param>
@@ -278,8 +272,7 @@ public sealed class MLDsa44 : IMLDsa<MLDsa44>
 	/// <returns>The value of <see cref="SignatureLength" />.</returns>
 	/// <exception cref="ArgumentNullException"><paramref name="hashAlgorithmOid" /> is <see langword="null" />.</exception>
 	/// <exception cref="ArgumentException">
-	/// <paramref name="hashAlgorithmOid" /> is not a supported hash algorithm, <paramref name="hash" /> has the wrong length,
-	/// <paramref name="destination" /> is too short, or <paramref name="context" /> is too long.
+	/// <paramref name="hashAlgorithmOid" /> is not a supported hash algorithm, <paramref name="hash" /> has the wrong length, <paramref name="destination" /> is too short, or <paramref name="context" /> is too long.
 	/// </exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the private key.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
@@ -300,8 +293,7 @@ public sealed class MLDsa44 : IMLDsa<MLDsa44>
 	/// <returns><see langword="true" /> if the signature is valid; otherwise, <see langword="false" />.</returns>
 	/// <exception cref="ArgumentNullException"><paramref name="hashAlgorithmOid" /> is <see langword="null" />.</exception>
 	/// <exception cref="ArgumentException">
-	/// <paramref name="hashAlgorithmOid" /> is not a supported hash algorithm, <paramref name="hash" /> has the wrong length, or
-	/// <paramref name="context" /> is too long.
+	/// <paramref name="hashAlgorithmOid" /> is not a supported hash algorithm, <paramref name="hash" /> has the wrong length, or <paramref name="context" /> is too long.
 	/// </exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public bool VerifyPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
@@ -314,9 +306,7 @@ public sealed class MLDsa44 : IMLDsa<MLDsa44>
 	/// Signs the message representative μ with ML-DSA.Sign_internal (FIPS 204, Algorithm 7), which then skips computing μ.
 	/// </summary>
 	/// <remarks>
-	/// μ = H(tr ‖ M′, 64) for tr = H(pk, 64) and the M′ of ML-DSA.Sign or HashML-DSA.Sign; the caller computes it, so that the message need not
-	/// pass through the instance. <paramref name="mu" /> may overlap <paramref name="destination" />. On failure,
-	/// <paramref name="destination" /> remains unchanged.
+	/// μ = H(tr ‖ M′, 64) for tr = H(pk, 64) and the M′ of ML-DSA.Sign or HashML-DSA.Sign; the caller computes it, so that the message need not pass through the instance. <paramref name="mu" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.
 	/// </remarks>
 	/// <param name="mu">The message representative, exactly <see cref="MuLength" /> bytes long.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="SignatureLength" /> bytes long.</param>
@@ -338,8 +328,7 @@ public sealed class MLDsa44 : IMLDsa<MLDsa44>
 	}
 
 	/// <summary>
-	/// Verifies that <paramref name="signature" /> is a signature of the message representative μ with ML-DSA.Verify_internal
-	/// (FIPS 204, Algorithm 8), which then skips computing μ.
+	/// Verifies that <paramref name="signature" /> is a signature of the message representative μ with ML-DSA.Verify_internal (FIPS 204, Algorithm 8), which then skips computing μ.
 	/// </summary>
 	/// <remarks>μ is that of <see cref="SignMu(ReadOnlySpan{byte}, Span{byte})" />.</remarks>
 	/// <param name="mu">The message representative, exactly <see cref="MuLength" /> bytes long.</param>

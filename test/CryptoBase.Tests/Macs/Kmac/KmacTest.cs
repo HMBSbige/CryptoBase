@@ -6,8 +6,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Macs.Kmac;
 
-// The NIST samples and the contract of the public classes; KmacDifferentialTest compares the output with the platform and with KeccakReference
-// over lengths around the block boundaries.
+// The NIST samples and the contract of the public classes; KmacDifferentialTest compares the output with the platform and with KeccakReference over lengths around the block boundaries.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before disposal.")]
 public class KmacTest
 {

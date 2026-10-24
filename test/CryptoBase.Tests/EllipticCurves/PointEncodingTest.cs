@@ -149,8 +149,7 @@ public class PointEncodingTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The points with the least x and the least y have encodings that start with zero bytes, and the one with the least x from n makes
-	// ReduceX reduce.
+	// The points with the least x and the least y have encodings that start with zero bytes, and the one with the least x from n makes ReduceX reduce.
 	private static IEnumerable<CurvePoint> Points(EcReference reference, Random random)
 	{
 		yield return reference.Generator;

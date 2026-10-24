@@ -3,8 +3,7 @@ namespace CryptoBase.Signatures.MLDsa;
 // The constants of MLDsaVector128 in the order the operations consume them.
 internal readonly partial struct MLDsaVector128
 {
-	// For the butterflies of NttPair, layers 7 and 8 of each eight coefficients, a line each: the zetas of the lanes, their
-	// ζ · q⁻¹ mod 2^32, and both again for the odd lanes, moved to the even lanes that pmuldq reads.
+	// For the butterflies of NttPair, layers 7 and 8 of each eight coefficients, a line each: the zetas of the lanes, their ζ · q⁻¹ mod 2^32, and both again for the odd lanes, moved to the even lanes that pmuldq reads.
 	private static ReadOnlySpan<int> NttZetas =>
 	[
 		// Coefficients 0 to 31.

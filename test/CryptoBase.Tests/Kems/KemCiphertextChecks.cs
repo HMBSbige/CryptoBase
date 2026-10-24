@@ -8,11 +8,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kems;
 
-// The public checks of TryDecapsulate on a ciphertext of the right length. KemContractTest needs an entry for every type it tests.
-// CheckedRanges should hold only the bytes that the checks read: no test notices a range listed in excess, and within the listed ranges the
-// tampering test asserts less.
-// InvalidCiphertexts is the only data that catches a missing public check, so it needs a ciphertext for each kind of rejection.
-// KemContractTest expects an unrelated key to give the same result, which holds only while the checks read the ciphertext alone.
+// The public checks of TryDecapsulate on a ciphertext of the right length. KemContractTest needs an entry for every type it tests. CheckedRanges should hold only the bytes that the checks read: no test notices a range listed in excess, and within the listed ranges the tampering test asserts less.
+// InvalidCiphertexts is the only data that catches a missing public check, so it needs a ciphertext for each kind of rejection. KemContractTest expects an unrelated key to give the same result, which holds only while the checks read the ciphertext alone.
 internal sealed record KemCiphertextChecks((int Offset, int Length)[] CheckedRanges, byte[][] InvalidCiphertexts)
 {
 	public static KemCiphertextChecks Of<T>() where T : class, IKem<T>

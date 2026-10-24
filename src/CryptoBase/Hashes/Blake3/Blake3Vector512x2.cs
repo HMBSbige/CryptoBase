@@ -2,16 +2,12 @@ using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
 
-// Hashes 32 consecutive full chunks as two groups of 16, each laid out as in Blake3Vector512, with the steps of the two groups interleaved half by half:
-// where vector additions and rotations take two cycles, as on Zen 5, one group alone leaves the vector pipelines waiting on the latency of each G, and the
-// other group fills those cycles. Fewer chunks, and all parents, take Blake3Vector512.
+// Hashes 32 consecutive full chunks as two groups of 16, each laid out as in Blake3Vector512, with the steps of the two groups interleaved half by half: where vector additions and rotations take two cycles, as on Zen 5, one group alone leaves the vector pipelines waiting on the latency of each G, and the other group fills those cycles. Fewer chunks, and all parents, take Blake3Vector512.
 internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 {
 	public static bool IsSupported => Blake3Vector512.IsSupported;
 
-	// Measured faster than Blake3Vector512 on Zen 5 only. A thread whose core it shares with another hashing thread measured about as fast, and at most 5%
-	// slower, with either kernel, so threads take it whether or not they share cores. Cores that split 512-bit operations are bound by their throughput,
-	// with no cycles for the second group to fill.
+	// Measured faster than Blake3Vector512 on Zen 5 only. A thread whose core it shares with another hashing thread measured about as fast, and at most 5% slower, with either kernel, so threads take it whether or not they share cores. Cores that split 512-bit operations are bound by their throughput, with no cycles for the second group to fill.
 	internal static readonly bool IsPreferred = IsSupported && CpuIdUtils.IsAmdZen5With512BitDatapath();
 
 	public static int Degree => 32;
@@ -37,8 +33,7 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 		Blake3Vector512.HashParents(ref input, count, in key, flags, ref output);
 	}
 
-	// The two states take all 32 vector registers, so the steps read the message words from memory; locals of this frame measured faster for them than a
-	// buffer from stackalloc or the heap.
+	// The two states take all 32 vector registers, so the steps read the message words from memory; locals of this frame measured faster for them than a buffer from stackalloc or the heap.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash(ref byte input, ref readonly uint key, ulong counter, uint flags, ref byte output)

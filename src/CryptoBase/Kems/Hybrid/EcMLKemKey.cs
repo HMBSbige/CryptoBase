@@ -34,8 +34,7 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 
 	private static int EcSharedSecretLength => EcKey<TCurve, TField, TOrder>.SharedSecretLength;
 
-	// Here and in the two private imports, the ML-KEM part goes first: MLKemKey throws without keeping any of the new key, so only a failure
-	// of the elliptic curve part, which keeps no new d either, needs the ML-KEM part cleared.
+	// Here and in the two private imports, the ML-KEM part goes first: MLKemKey throws without keeping any of the new key, so only a failure of the elliptic curve part, which keeps no new d either, needs the ML-KEM part cleared.
 	internal void GenerateKey()
 	{
 		_mlKemKey.GenerateKey();
@@ -214,8 +213,7 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 		}
 	}
 
-	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. The
-	// derivation cannot fail, since Q is a point on the curve.
+	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. The derivation cannot fail, since Q is a point on the curve.
 	[SkipLocalsInit]
 	private readonly void WriteEcParts(in EcKey<TCurve, TField, TOrder> ephemeral, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{

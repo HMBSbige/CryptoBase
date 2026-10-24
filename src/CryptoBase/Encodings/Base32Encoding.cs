@@ -131,8 +131,7 @@ public sealed partial class Base32Encoding
 	/// <param name="destination">The output span which contains the result of the operation, i.e. the ASCII chars in Base32.</param>
 	/// <param name="bytesConsumed">When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
 	/// <param name="charsWritten">When this method returns, contains the number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-	/// <param name="isFinalBlock"><see langword="true" /> when the input span contains the entirety of data to encode; <see langword="false" /> when more data may follow,
-	/// such as when calling in a loop. Calls with <see langword="false" /> should be followed up with another call where this parameter is <see langword="true" />. The default is <see langword="true" />.</param>
+	/// <param name="isFinalBlock"><see langword="true" /> when the input span contains the entirety of data to encode; <see langword="false" /> when more data may follow, such as when calling in a loop. Calls with <see langword="false" /> should be followed up with another call where this parameter is <see langword="true" />. The default is <see langword="true" />.</param>
 	/// <returns>The encoding status: <see cref="OperationStatus.Done" />, <see cref="OperationStatus.DestinationTooSmall" />, or <see cref="OperationStatus.NeedMoreData" />.</returns>
 	public OperationStatus EncodeToChars(ReadOnlySpan<byte> source, Span<char> destination, out int bytesConsumed, out int charsWritten, bool isFinalBlock = true)
 	{
@@ -146,8 +145,7 @@ public sealed partial class Base32Encoding
 	/// <param name="destination">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in Base32.</param>
 	/// <param name="bytesConsumed">When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
 	/// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-	/// <param name="isFinalBlock"><see langword="true" /> when the input span contains the entirety of data to encode; <see langword="false" /> when more data may follow,
-	/// such as when calling in a loop. Calls with <see langword="false" /> should be followed up with another call where this parameter is <see langword="true" />. The default is <see langword="true" />.</param>
+	/// <param name="isFinalBlock"><see langword="true" /> when the input span contains the entirety of data to encode; <see langword="false" /> when more data may follow, such as when calling in a loop. Calls with <see langword="false" /> should be followed up with another call where this parameter is <see langword="true" />. The default is <see langword="true" />.</param>
 	/// <returns>The encoding status: <see cref="OperationStatus.Done" />, <see cref="OperationStatus.DestinationTooSmall" />, or <see cref="OperationStatus.NeedMoreData" />.</returns>
 	public OperationStatus EncodeToUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
 	{
@@ -354,8 +352,7 @@ public sealed partial class Base32Encoding
 	/// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
 	/// <param name="charsConsumed">When this method returns, contains the number of input chars consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
 	/// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-	/// <param name="isFinalBlock"><see langword="true" /> when the input span contains the entirety of data to decode; <see langword="false" /> when more data may follow,
-	/// such as when calling in a loop. Calls with <see langword="false" /> should be followed up with another call where this parameter is <see langword="true" />. The default is <see langword="true" />.</param>
+	/// <param name="isFinalBlock"><see langword="true" /> when the input span contains the entirety of data to decode; <see langword="false" /> when more data may follow, such as when calling in a loop. Calls with <see langword="false" /> should be followed up with another call where this parameter is <see langword="true" />. The default is <see langword="true" />.</param>
 	/// <returns>The decoding status: <see cref="OperationStatus.Done" />, <see cref="OperationStatus.DestinationTooSmall" />, <see cref="OperationStatus.NeedMoreData" />, or <see cref="OperationStatus.InvalidData" />.</returns>
 	public OperationStatus DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten, bool isFinalBlock = true)
 	{
@@ -369,8 +366,7 @@ public sealed partial class Base32Encoding
 	/// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
 	/// <param name="bytesConsumed">When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
 	/// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-	/// <param name="isFinalBlock"><see langword="true" /> when the input span contains the entirety of data to decode; <see langword="false" /> when more data may follow,
-	/// such as when calling in a loop. Calls with <see langword="false" /> should be followed up with another call where this parameter is <see langword="true" />. The default is <see langword="true" />.</param>
+	/// <param name="isFinalBlock"><see langword="true" /> when the input span contains the entirety of data to decode; <see langword="false" /> when more data may follow, such as when calling in a loop. Calls with <see langword="false" /> should be followed up with another call where this parameter is <see langword="true" />. The default is <see langword="true" />.</param>
 	/// <returns>The decoding status: <see cref="OperationStatus.Done" />, <see cref="OperationStatus.DestinationTooSmall" />, <see cref="OperationStatus.NeedMoreData" />, or <see cref="OperationStatus.InvalidData" />.</returns>
 	public OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
 	{

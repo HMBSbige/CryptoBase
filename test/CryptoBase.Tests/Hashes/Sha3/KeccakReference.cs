@@ -3,8 +3,7 @@ using System.Numerics;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-// A direct transcription of FIPS 202 (https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf) that shares no code with the library:
-// it derives the round constants with Algorithm 5 and the ρ offsets with Algorithm 2 instead of copying tables.
+// A direct transcription of FIPS 202 (https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf) that shares no code with the library: it derives the round constants with Algorithm 5 and the ρ offsets with Algorithm 2 instead of copying tables.
 internal static class KeccakReference
 {
 	// The suffix bits of Sec. 6.1 and 6.2 followed by the first pad10*1 bit, as in Appendix B.2, Table 6.

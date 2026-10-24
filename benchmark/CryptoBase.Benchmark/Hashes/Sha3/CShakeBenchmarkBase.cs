@@ -48,8 +48,7 @@ public readonly struct CryptoBaseCShake256 : ICShake
 	}
 }
 
-// One-shot cSHAKE of the input lengths of the rate to a 32-byte output. With a customization string, against BouncyCastle; with an empty
-// function name and customization string, which is SHAKE (SP 800-185, Sec. 3.3), against Xof over the SHAKE core of the same rate.
+// One-shot cSHAKE of the input lengths of the rate to a 32-byte output. With a customization string, against BouncyCastle; with an empty function name and customization string, which is SHAKE (SP 800-185, Sec. 3.3), against Xof over the SHAKE core of the same rate.
 [MemoryDiagnoser]
 [CategoriesColumn]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]

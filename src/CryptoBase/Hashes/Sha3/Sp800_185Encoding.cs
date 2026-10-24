@@ -1,8 +1,6 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// The integer encodings of SP 800-185, Sec. 2.3.1, each packed into a word: its bytes in order from the least significant byte, as a
-// little-endian store writes them, with zeros past its length. The values encoded are rates and lengths in bits of spans, all below
-// 2^56, so every encoding fits.
+// The integer encodings of SP 800-185, Sec. 2.3.1, each packed into a word: its bytes in order from the least significant byte, as a little-endian store writes them, with zeros past its length. The values encoded are rates and lengths in bits of spans, all below 2^56, so every encoding fits.
 internal static class Sp800_185Encoding
 {
 	// The length of either encoding of value.

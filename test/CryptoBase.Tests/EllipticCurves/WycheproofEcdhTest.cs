@@ -16,8 +16,7 @@ public class WycheproofEcdhTest
 		}
 	}
 
-	// The private keys, all in [1, n − 1], come in various lengths. The one acceptable vector has a compressed point, which is rejected
-	// like the invalid ones.
+	// The private keys, all in [1, n − 1], come in various lengths. The one acceptable vector has a compressed point, which is rejected like the invalid ones.
 	[Test]
 	[MethodDataSource(nameof(Vectors))]
 	public async Task SharedSecretMatches(CurveCase curve, EcdhEcpointTestVector vector)

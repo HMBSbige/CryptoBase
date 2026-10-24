@@ -6,8 +6,7 @@ using System.Formats.Asn1;
 
 namespace CryptoBase.Signatures.Ecdsa;
 
-// algorithmIdentifier is the DER of id-ecPublicKey with the named curve. Nothing on the signing path branches on or indexes by a secret,
-// except the retries of the nonce derivation. As with EcKey, keep a key in one writable location and do not copy it.
+// algorithmIdentifier is the DER of id-ecPublicKey with the named curve. Nothing on the signing path branches on or indexes by a secret, except the retries of the nonce derivation. As with EcKey, keep a key in one writable location and do not copy it.
 internal struct EcdsaKey<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
 	where TField : unmanaged, IMontgomeryModulus

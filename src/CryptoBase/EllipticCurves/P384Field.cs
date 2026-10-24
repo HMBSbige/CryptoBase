@@ -34,8 +34,7 @@ internal struct P384Field : IMontgomeryModulus
 
 	public static ulong NegativeInverse => 0x0000000100000001UL;
 
-	// With x_k = x^(2^k − 1), the table holds x, x_2, x_3, x_6, x_12, x_15, x_30, x_60 and x_120. The power goes on through x_240 to x_255,
-	// then runs through the rest of p − 2: a zero and 32 ones, 64 zeros and 30 ones, a zero and a one.
+	// With x_k = x^(2^k − 1), the table holds x, x_2, x_3, x_6, x_12, x_15, x_30, x_60 and x_120. The power goes on through x_240 to x_255, then runs through the rest of p − 2: a zero and 32 ones, 64 zeros and 30 ones, a zero and a one.
 	public static ReadOnlySpan<byte> InversionChain =>
 	[
 		8,
@@ -43,9 +42,7 @@ internal struct P384Field : IMontgomeryModulus
 		15, 5, 31, 6, 2, 1, 94, 6, 2, 0,
 	];
 
-	// The q that clears limb i is t_i·(2^32 + 1) mod 2^64, and q·p = q·2^384 − q·d for d = 2^128 + 2^96 − 2^32 + 1. For x the six limbs
-	// from limb i, x + q·p = (x − q·d) mod 2^384 + (q − β)·2^384 with β the borrow out of x − q·d, so a round subtracts q·d from x, which
-	// clears limb i, and adds q − β at limb i + 6.
+	// The q that clears limb i is t_i·(2^32 + 1) mod 2^64, and q·p = q·2^384 − q·d for d = 2^128 + 2^96 − 2^32 + 1. For x the six limbs from limb i, x + q·p = (x − q·d) mod 2^384 + (q − β)·2^384 with β the borrow out of x − q·d, so a round subtracts q·d from x, which clears limb i, and adds q − β at limb i + 6.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ulong Reduce<TSelf>(ref ulong product) where TSelf : struct, IMontgomeryModulus
 	{
@@ -64,8 +61,7 @@ internal struct P384Field : IMontgomeryModulus
 	private static void ReduceRound(ref ulong t, ref ulong carry)
 	{
 		ulong q = t + (t << 32);
-		// q·d = (q − low) + (low − high)·2^64 + (q + high)·2^128 for q·2^32 = high·2^64 + low. Its limb 0 is t_0, which the subtraction
-		// clears, so only the borrow out of it counts.
+		// q·d = (q − low) + (low − high)·2^64 + (q + high)·2^128 for q·2^32 = high·2^64 + low. Its limb 0 is t_0, which the subtraction clears, so only the borrow out of it counts.
 		ulong low = q << 32;
 		ulong high = q >> 32;
 		ulong borrow = Borrow(q, low);

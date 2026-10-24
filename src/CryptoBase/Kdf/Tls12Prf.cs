@@ -6,8 +6,7 @@ namespace CryptoBase.Kdf;
 /// Implements the TLS 1.2 pseudorandom function as specified by RFC 5246, section 5.
 /// </summary>
 /// <remarks>
-/// The output is <c>P_hash(secret, label || seed)</c> truncated to the output length, with the hash that the cipher suite selects.
-/// Any input may overlap the output.
+/// The output is <c>P_hash(secret, label || seed)</c> truncated to the output length, with the hash that the cipher suite selects. Any input may overlap the output.
 /// </remarks>
 public static class Tls12Prf
 {

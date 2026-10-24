@@ -5,8 +5,7 @@ using CryptoBase.Macs.Hmac;
 namespace CryptoBase.Tests.Kdf;
 
 /// <summary>
-/// HMAC-SHA256 that overwrites the destination before it reads the key and source or finishes the MAC, so that the generic KDF tests fail if a KDF hands
-/// a MAC a destination that overlaps an input it still needs.
+/// HMAC-SHA256 that overwrites the destination before it reads the key and source or finishes the MAC, so that the generic KDF tests fail if a KDF hands a MAC a destination that overlaps an input it still needs.
 /// </summary>
 internal sealed class ClobberingHmacSha256 : IMacAlgorithm<ClobberingHmacSha256>
 {

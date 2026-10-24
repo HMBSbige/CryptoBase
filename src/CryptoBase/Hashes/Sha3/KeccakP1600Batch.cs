@@ -1,7 +1,6 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// Splits a batch of streams into groups for the interleaved kernels: the widest kernel takes groups while it can fill its lanes,
-// and also the streams left over, except that a single stream goes to Times1 and two to four streams to Times4 rather than Times8.
+// Splits a batch of streams into groups for the interleaved kernels: the widest kernel takes groups while it can fill its lanes, and also the streams left over, except that a single stream goes to Times1 and two to four streams to Times4 rather than Times8.
 internal static class KeccakP1600Batch
 {
 	internal static readonly int MaxLanes = ChooseMaxLanes();

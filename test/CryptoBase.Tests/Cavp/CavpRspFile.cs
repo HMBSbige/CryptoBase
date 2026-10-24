@@ -2,8 +2,7 @@ namespace CryptoBase.Tests.Cavp;
 
 // Parses NIST CAVP response (.rsp) files, such as those of the SHA3VS:
 // https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha3vs.pdf
-// Lines starting with '#' are comments, "[Name = Value]" and "[Name]" lines are section headers,
-// and other lines are "Name = Value" fields grouped into records by blank lines or headers.
+// Lines starting with '#' are comments, "[Name = Value]" and "[Name]" lines are section headers, and other lines are "Name = Value" fields grouped into records by blank lines or headers.
 public sealed class CavpRspFile
 {
 	private CavpRspFile(IReadOnlyList<CavpRecord> records)

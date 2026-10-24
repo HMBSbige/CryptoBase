@@ -31,8 +31,7 @@ internal struct P384Order : IMontgomeryModulus
 
 	public static ulong NegativeInverse => 0x6ED46089E88FDC45UL;
 
-	// With x_k = x^(2^k − 1), the table holds x, x², the odd powers of x up to x^15, x_8, x_16, x_32 and x_64. The power goes on to x_194,
-	// the leading ones of n − 2, then the steps follow its bits, each appending zeros and an entry.
+	// With x_k = x^(2^k − 1), the table holds x, x², the odd powers of x up to x^15, x_8, x_16, x_32 and x_64. The power goes on to x_194, the leading ones of n − 2, then the steps follow its bits, each appending zeros and an entry.
 	public static ReadOnlySpan<byte> InversionChain =>
 	[
 		12,

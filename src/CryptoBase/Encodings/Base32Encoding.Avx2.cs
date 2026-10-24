@@ -26,9 +26,7 @@ public sealed partial class Base32Encoding
 		return MapSymbols(SplitFour(ref source, indices), threshold, first, second);
 	}
 
-	// A 32-entry lookup from two in-lane shuffles. The first returns low[value & 15]. Subtracting 16 sets the high bit of values
-	// 0-15, so the second shuffle returns zero for them, and maps 16-31 to 0-15, where (low ^ high)[value - 16] turns the first
-	// result into high[value - 16].
+	// A 32-entry lookup from two in-lane shuffles. The first returns low[value & 15]. Subtracting 16 sets the high bit of values 0-15, so the second shuffle returns zero for them, and maps 16-31 to 0-15, where (low ^ high)[value - 16] turns the first result into high[value - 16].
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<byte> MapCustomSymbols(Vector256<byte> value, Vector256<byte> alphabetLow, Vector256<byte> alphabetLowXorHigh)
 	{

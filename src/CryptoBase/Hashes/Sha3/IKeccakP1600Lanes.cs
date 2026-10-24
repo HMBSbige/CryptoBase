@@ -1,7 +1,6 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// The lane-wise operations of a round on vectors that each hold the same lane of several interleaved states,
-// so that KeccakP1600Interleaved spells the round once for every vector width.
+// The lane-wise operations of a round on vectors that each hold the same lane of several interleaved states, so that KeccakP1600Interleaved spells the round once for every vector width.
 internal interface IKeccakP1600Lanes<TVector> where TVector : struct
 {
 	static abstract TVector Xor(TVector left, TVector right);

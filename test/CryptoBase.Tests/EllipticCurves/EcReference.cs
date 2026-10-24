@@ -217,8 +217,7 @@ internal sealed class EcReference(EcCurveTestVector curve)
 		}
 	}
 
-	// Takes the first y whose cubic x³ + ax + b − y² has a single root: its gcd with X^p − X is the product of X − x over the roots, so it is
-	// then linear.
+	// Takes the first y whose cubic x³ + ax + b − y² has a single root: its gcd with X^p − X is the product of X − x over the roots, so it is then linear.
 	internal CurvePoint PointWithYFrom(BigInteger start)
 	{
 		for (BigInteger y = start;; ++y)

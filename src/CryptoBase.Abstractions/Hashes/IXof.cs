@@ -5,9 +5,7 @@ namespace CryptoBase.Abstractions.Hashes;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A shorter output is a prefix of every longer one. The first nonempty <see cref="Read" /> ends the input and moves the instance to the reading state,
-/// in which it returns successive bytes of the output stream; <see cref="Append" />, <see cref="GetCurrentHash" /> and <see cref="GetHashAndReset" />
-/// then throw <see cref="InvalidOperationException" /> until <see cref="Reset" />.
+/// A shorter output is a prefix of every longer one. The first nonempty <see cref="Read" /> ends the input and moves the instance to the reading state, in which it returns successive bytes of the output stream; <see cref="Append" />, <see cref="GetCurrentHash" /> and <see cref="GetHashAndReset" /> then throw <see cref="InvalidOperationException" /> until <see cref="Reset" />.
 /// </para>
 /// <para>Disposal is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.</para>
 /// </remarks>
@@ -39,8 +37,7 @@ public interface IXof<out TSelf> : IDisposable where TSelf : class, IXof<TSelf>
 	/// Writes the next <c>destination.Length</c> bytes of the output stream for the current input.
 	/// </summary>
 	/// <remarks>
-	/// The first nonempty read ends the input and starts the reading state at the beginning of the stream; each later read continues where
-	/// the previous one stopped. An empty <paramref name="destination" /> leaves the state unchanged.
+	/// The first nonempty read ends the input and starts the reading state at the beginning of the stream; each later read continues where the previous one stopped. An empty <paramref name="destination" /> leaves the state unchanged.
 	/// </remarks>
 	/// <param name="destination">The buffer that receives the output.</param>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>

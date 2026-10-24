@@ -5,16 +5,13 @@ namespace CryptoBase.Kems.MLKem;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Importing an encapsulation key performs the modulus check of FIPS 203, Section 7.2. Importing a decapsulation key performs the checks of Section 7.3
-/// and the modulus check on both the embedded encapsulation key and the secret vector.
+/// Importing an encapsulation key performs the modulus check of FIPS 203, Section 7.2. Importing a decapsulation key performs the checks of Section 7.3 and the modulus check on both the embedded encapsulation key and the secret vector.
 /// </para>
 /// <para>
-/// <see cref="TryDecapsulate" /> returns <see langword="false" /> only for a ciphertext of the wrong length; any other ciphertext that was not
-/// encapsulated to the key is rejected implicitly.
+/// <see cref="TryDecapsulate" /> returns <see langword="false" /> only for a ciphertext of the wrong length; any other ciphertext that was not encapsulated to the key is rejected implicitly.
 /// </para>
 /// <para>
-/// The private seed is d ‖ z, and every 64-byte value is valid. The key is expanded once, when it is generated or imported. Encapsulation and
-/// decapsulation may run concurrently on one instance.
+/// The private seed is d ‖ z, and every 64-byte value is valid. The key is expanded once, when it is generated or imported. Encapsulation and decapsulation may run concurrently on one instance.
 /// </para>
 /// </remarks>
 public sealed class MLKem768 : IKem<MLKem768>

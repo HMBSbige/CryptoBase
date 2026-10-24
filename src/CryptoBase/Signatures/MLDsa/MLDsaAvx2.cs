@@ -2,9 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Signatures.MLDsa;
 
-// Eight coefficients per 256-bit vector. vpmuldq multiplies only the even 32-bit lanes into 64 bits, so a product of two vectors takes
-// it once for the even lanes and once for the odd lanes moved down. Encoders and decoders never access past the end of a buffer. The
-// operations that loop or hold many vectors are not inlined, as merged into a large caller their vectors end up on the stack.
+// Eight coefficients per 256-bit vector. vpmuldq multiplies only the even 32-bit lanes into 64 bits, so a product of two vectors takes it once for the even lanes and once for the odd lanes moved down. Encoders and decoders never access past the end of a buffer. The operations that loop or hold many vectors are not inlined, as merged into a large caller their vectors end up on the stack.
 internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 {
 	private const int N = MLDsaConstants.N;
@@ -13,8 +11,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 
 	public static bool IsSupported => Avx2.IsSupported;
 
-	// Layers 1 to 3 run on eight vectors 32 coefficients apart, layers 4 to 8 on four consecutive ones. A product by a zeta is below q,
-	// so eight layers keep the coefficients below 9q without reduction.
+	// Layers 1 to 3 run on eight vectors 32 coefficients apart, layers 4 to 8 on four consecutive ones. A product by a zeta is below q, so eight layers keep the coefficients below 9q without reduction.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Ntt(Span<int> f)
 	{
@@ -150,8 +147,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		}
 	}
 
-	// The products of the even and of the odd lanes sum apart in 64 bits. A product is below 9q², so the sum of eight stays below 2^31 · q, the input
-	// bound of MontgomeryReduce. Each pass takes two vectors through all the polynomials, and the products of the first polynomial start the sums.
+	// The products of the even and of the odd lanes sum apart in 64 bits. A product is below 9q², so the sum of eight stays below 2^31 · q, the input bound of MontgomeryReduce. Each pass takes two vectors through all the polynomials, and the products of the first polynomial start the sums.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void MultiplyAccumulate(ReadOnlySpan<int> a, ReadOnlySpan<int> b, Span<int> destination, int count)
 	{
@@ -372,8 +368,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		}
 	}
 
-	// Eight candidates from 24 bytes, each 128-bit lane taking its 12 from the 16 bytes that end where they do; vpermd moves the accepted
-	// ones to the front of a buffer that takes whole vectors. The bytes are public, so the permutation may depend on them.
+	// Eight candidates from 24 bytes, each 128-bit lane taking its 12 from the 16 bytes that end where they do; vpermd moves the accepted ones to the front of a buffer that takes whole vectors. The bytes are public, so the permutation may depend on them.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int RejectSample(ReadOnlySpan<byte> source, Span<int> destination)
@@ -411,12 +406,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		return count;
 	}
 
-	// Eight candidates from each 4 bytes, the low half of a byte first. A byte shuffle looks up b mod 5 for η = 2 or b for η = 4,
-	// one from RejectIndices moves those of the accepted candidates to the front, and η minus them go to destination as a whole
-	// vector while eight more fit; the scalar kernel takes the rest. The row of the table and the count follow which candidates are
-	// rejected, and that pattern says nothing of the values: the half-bytes are independent and uniform, whether one is accepted
-	// depends only on whether it is below the bound, and an accepted one is uniform over the accepted values whatever the others
-	// are, so the pattern is independent of s1 and s2. Where the scalar kernel writes moves with the same pattern.
+	// Eight candidates from each 4 bytes, the low half of a byte first. A byte shuffle looks up b mod 5 for η = 2 or b for η = 4, one from RejectIndices moves those of the accepted candidates to the front, and η minus them go to destination as a whole vector while eight more fit; the scalar kernel takes the rest. The row of the table and the count follow which candidates are rejected, and that pattern says nothing of the values: the half-bytes are independent and uniform, whether one is accepted depends only on whether it is below the bound, and an accepted one is uniform over the accepted values whatever the others are, so the pattern is independent of s1 and s2. Where the scalar kernel writes moves with the same pattern.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int RejectEta(ReadOnlySpan<byte> source, Span<int> destination, int eta)
 	{
@@ -475,10 +465,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		}
 	}
 
-	// Each eight values make 13 bytes. 2^12 − t0_i moves to its bit within its first byte, and the bytes of the even and of the odd
-	// values of a 128-bit lane, which do not overlap, gather with a shuffle each: those of the low lane into its bytes 0 to 6 and those
-	// of the high lane into its bytes 6 to 12, and an or of the lanes joins the halves of byte 6. Groups are stored 16 bytes at a time,
-	// the next overwriting the excess, but for the last.
+	// Each eight values make 13 bytes. 2^12 − t0_i moves to its bit within its first byte, and the bytes of the even and of the odd values of a 128-bit lane, which do not overlap, gather with a shuffle each: those of the low lane into its bytes 0 to 6 and those of the high lane into its bytes 6 to 12, and an or of the lanes joins the halves of byte 6. Groups are stored 16 bytes at a time, the next overwriting the excess, but for the last.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void EncodeT0(ReadOnlySpan<int> t0, Span<byte> destination)
 	{
@@ -604,9 +591,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		}
 	}
 
-	// Layers 6 to 8 of NTT on the 16 coefficients of a and b. With x and y the 32-bit interleavings of a and b, lanes i of x and y hold
-	// the pairs of layer 7, those of their 128-bit lanes swapped the pairs of layer 6, and those of their interleavings the pairs of
-	// layer 8, which interleave once more into the order of a and b.
+	// Layers 6 to 8 of NTT on the 16 coefficients of a and b. With x and y the 32-bit interleavings of a and b, lanes i of x and y hold the pairs of layer 7, those of their 128-bit lanes swapped the pairs of layer 6, and those of their interleavings the pairs of layer 8, which interleave once more into the order of a and b.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void NttPair(ref Vector256<int> a, ref Vector256<int> b, ref Vector256<int> zetas)
 	{
@@ -707,8 +692,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		high = MultiplyMontgomery(difference, zeta, zetaQInverse, zeta, zetaQInverse);
 	}
 
-	// a · ζ · R⁻¹ mod q in (−q, q) for |ζ| < q / 2: ζ of the even lanes in the even lanes of zeta, ζ of the odd lanes in the even lanes of
-	// zetaOdd, each with its ζ · q⁻¹ mod 2^32. The 64-bit differences have zero low halves, so their high halves join with an or.
+	// a · ζ · R⁻¹ mod q in (−q, q) for |ζ| < q / 2: ζ of the even lanes in the even lanes of zeta, ζ of the odd lanes in the even lanes of zetaOdd, each with its ζ · q⁻¹ mod 2^32. The 64-bit differences have zero low halves, so their high halves join with an or.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<int> MultiplyMontgomery(Vector256<int> a, Vector256<int> zeta, Vector256<int> zetaQInverse, Vector256<int> zetaOdd, Vector256<int> zetaOddQInverse)
 	{
@@ -774,9 +758,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		return a1;
 	}
 
-	// The eight values of bits bits from bits bytes at start of the 32 · bits at source. Lane h takes values 4h to 4h + 3 from the 16
-	// bytes at byte 4h · bits / 8, moved back to end with the source where they would pass it: fields picks the bytes of each value
-	// into its 32-bit lane, and shifts moves it down.
+	// The eight values of bits bits from bits bytes at start of the 32 · bits at source. Lane h takes values 4h to 4h + 3 from the 16 bytes at byte 4h · bits / 8, moved back to end with the source where they would pass it: fields picks the bytes of each value into its 32-bit lane, and shifts moves it down.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<int> Unpack(ref byte source, int start, [ConstantExpected(Min = 3, Max = 20)] int bits, Vector256<byte> fields, Vector256<uint> shifts)
 	{
@@ -818,9 +800,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		}
 	}
 
-	// Values of bits bits, bits even and at least 10: bias − f_i, or f_i without subtract. Each value moves to its bit within its
-	// first byte, and the bytes of the even and of the odd values of a 128-bit lane, which do not overlap, gather with a shuffle
-	// each into bits / 2 bytes. Lanes are stored 16 bytes at a time, the next overwriting the excess, but for those near the end.
+	// Values of bits bits, bits even and at least 10: bias − f_i, or f_i without subtract. Each value moves to its bit within its first byte, and the bytes of the even and of the odd values of a 128-bit lane, which do not overlap, gather with a shuffle each into bits / 2 bytes. Lanes are stored 16 bytes at a time, the next overwriting the excess, but for those near the end.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PackWide(ref int source, ref byte destination, [ConstantExpected(Min = 10, Max = 20)] int bits, int bias, bool subtract)
 	{
@@ -871,8 +851,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		}
 	}
 
-	// The 13 bytes of the eight values at source, 2^12 − t0_i each, at the start of a 128-bit vector. The value shifted to its bit is
-	// biases, 2^12 shifted alike, less the shifted t0_i.
+	// The 13 bytes of the eight values at source, 2^12 − t0_i each, at the start of a 128-bit vector. The value shifted to its bit is biases, 2^12 shifted alike, less the shifted t0_i.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> Pack13(ref int source, Vector256<uint> shifts, Vector256<uint> biases, Vector256<byte> evenFields, Vector256<byte> oddFields)
 	{
@@ -903,8 +882,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		return Avx2.PermuteVar8x32(bytes.AsInt32(), Vector256.Create(0, 4, 1, 5, 2, 6, 3, 7)).AsByte();
 	}
 
-	// Each 32 values below 8 make 12 bytes: pairs join into 6 bits, fours into 12 and eights into the three low bytes of each 64-bit
-	// lane, which a shuffle gathers into the first 6 bytes of the low 128-bit lane and the next 6 of the high one.
+	// Each 32 values below 8 make 12 bytes: pairs join into 6 bits, fours into 12 and eights into the three low bytes of each 64-bit lane, which a shuffle gathers into the first 6 bytes of the low 128-bit lane and the next 6 of the high one.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Pack3(ref int source, ref byte destination)
 	{
@@ -941,8 +919,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		}
 	}
 
-	// Each 32 values below 64 make 24 bytes: pairs join into 12 bits and fours into the three low bytes of each 32-bit lane,
-	// which a shuffle and a permutation gather.
+	// Each 32 values below 64 make 24 bytes: pairs join into 12 bits and fours into the three low bytes of each 32-bit lane, which a shuffle and a permutation gather.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Pack6(ref int source, ref byte destination)
 	{

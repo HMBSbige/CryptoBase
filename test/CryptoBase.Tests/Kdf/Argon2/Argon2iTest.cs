@@ -21,8 +21,7 @@ public class Argon2iTest() : Argon2DeriveKeyTest(Argon2Type.Argon2i)
 		await Assert.That(tag).IsEquivalentTo(Convert.FromHexString(@"c814d9d1dc7f37aa13f0d77f2494bda1c8de6b016dd388d29952a4c4672b6ce8"), CollectionOrdering.Matching);
 	}
 
-	// The version 0x13 hashtest vectors of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/src/test.c, except those using 256 MiB or more,
-	// and the example of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/README.md, with four lanes and a 24-byte tag.
+	// The version 0x13 hashtest vectors of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/src/test.c, except those using 256 MiB or more, and the example of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/README.md, with four lanes and a 24-byte tag.
 	[Test]
 	[Argon2LargeMemory]
 	[Arguments("password", "somesalt", 2, 16, 1, @"c1628832147d9720c5bd1cfd61367078729f6dfb6f8fea9ff98158e0d7816ed0")]

@@ -8,9 +8,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 
 	public static bool IsSupported => true;
 
-	// Each of the eight layers adds less than q to a coefficient, so they stay below 9q. The butterflies of the first three layers
-	// (len = 128, 64, 32) keep within each f[j + 32i] for i < 8, and those of the last three within each group of len = 4, which has m = 32 to
-	// 63 and starts at 8(m − 32); both take their three layers in registers, and the two layers between take the loop of Algorithm 41.
+	// Each of the eight layers adds less than q to a coefficient, so they stay below 9q. The butterflies of the first three layers (len = 128, 64, 32) keep within each f[j + 32i] for i < 8, and those of the last three within each group of len = 4, which has m = 32 to 63 and starts at 8(m − 32); both take their three layers in registers, and the two layers between take the loop of Algorithm 41.
 	public static void Ntt(Span<int> f)
 	{
 		Debug.Assert(f.Length is N);
@@ -49,9 +47,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 		}
 	}
 
-	// The sums double in each layer, so coefficient 0 reaches 256 times the input bound, below 2^31 for inputs below q. The layers go
-	// as in Ntt in reverse, a group of len = 4 with m of Algorithm 42 starting at 8(63 − m), and the last three also multiply by
-	// InverseNttFactor, which ends Algorithm 42.
+	// The sums double in each layer, so coefficient 0 reaches 256 times the input bound, below 2^31 for inputs below q. The layers go as in Ntt in reverse, a group of len = 4 with m of Algorithm 42 starting at 8(63 − m), and the last three also multiply by InverseNttFactor, which ends Algorithm 42.
 	public static void InverseNtt(Span<int> f)
 	{
 		Debug.Assert(f.Length is N);
@@ -223,9 +219,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 		}
 	}
 
-	// high · 2γ2 + low has other HighBits than high where low is outside [−γ2, γ2], or is −γ2 and high is not 0, which line 4 of
-	// Algorithm 36 would leave as 0: where γ2 − low or low + γ2 − [high ≠ 0] is negative. The sign bits are taken in 64 bits, which no
-	// int32 low overflows, so that no comparison of the values can become a branch.
+	// high · 2γ2 + low has other HighBits than high where low is outside [−γ2, γ2], or is −γ2 and high is not 0, which line 4 of Algorithm 36 would leave as 0: where γ2 − low or low + γ2 − [high ≠ 0] is negative. The sign bits are taken in 64 bits, which no int32 low overflows, so that no comparison of the values can become a branch.
 	public static int MakeHint(ReadOnlySpan<int> low, ReadOnlySpan<int> high, Span<int> hint, int gamma2)
 	{
 		Debug.Assert(low.Length is N && high.Length is N && hint.Length is N);
@@ -285,8 +279,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 		return count;
 	}
 
-	// CoeffFromHalfByte (Algorithm 15) for the low then the high half of each byte. Every candidate is computed and written, and the count
-	// advances by whether it is accepted, so that the values do not steer branches.
+	// CoeffFromHalfByte (Algorithm 15) for the low then the high half of each byte. Every candidate is computed and written, and the count advances by whether it is accepted, so that the values do not steer branches.
 	public static int RejectEta(ReadOnlySpan<byte> source, Span<int> destination, int eta)
 	{
 		Debug.Assert(eta is 2 or 4);
@@ -376,8 +369,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 		Pack(w1, destination, gamma2 is MLDsaConstants.Gamma2Small ? 6 : 4, 0, false);
 	}
 
-	// Three layers of Algorithm 41 on f[0], f[stride], ..., f[7 · stride]: the group with Zetas[m], then the two it splits into, with
-	// Zetas[2m] and Zetas[2m + 1], then the four with Zetas[4m] to Zetas[4m + 3].
+	// Three layers of Algorithm 41 on f[0], f[stride], ..., f[7 · stride]: the group with Zetas[m], then the two it splits into, with Zetas[2m] and Zetas[2m + 1], then the four with Zetas[4m] to Zetas[4m + 3].
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void NttThreeLayers(ref int f, nint stride, ref int zetas, nint m)
 	{
@@ -418,8 +410,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 		Unsafe.Add(ref f, 7 * stride) = f7;
 	}
 
-	// Three layers of Algorithm 42 on f[0], f[stride], ..., f[7 · stride], with its m: the four groups with Zetas[4m + 3] down to Zetas[4m], then the
-	// two they join into, with Zetas[2m + 1] and Zetas[2m], then the one with Zetas[m]; with scale, the last also multiplies by InverseNttFactor.
+	// Three layers of Algorithm 42 on f[0], f[stride], ..., f[7 · stride], with its m: the four groups with Zetas[4m + 3] down to Zetas[4m], then the two they join into, with Zetas[2m + 1] and Zetas[2m], then the one with Zetas[m]; with scale, the last also multiplies by InverseNttFactor.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void InverseNttThreeLayers(ref int f, nint stride, ref int zetas, nint m, bool scale)
 	{
@@ -524,9 +515,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 		return a + (a >> 31 & Q);
 	}
 
-	// r1 = ⌈r / 128⌉ · M >> s is ⌊(r + γ2 − 1) / (2γ2)⌋ for r in [0, q), with M / 2^s approximating 128 / (2γ2). The last high bits,
-	// (q − 1) / (2γ2), become 0 (Algorithm 36, line 4): by the mask for γ2 = (q − 1) / 32, and by the select for (q − 1) / 88. The low
-	// bits above (q − 1) / 2 are those of r − q.
+	// r1 = ⌈r / 128⌉ · M >> s is ⌊(r + γ2 − 1) / (2γ2)⌋ for r in [0, q), with M / 2^s approximating 128 / (2γ2). The last high bits, (q − 1) / (2γ2), become 0 (Algorithm 36, line 4): by the mask for γ2 = (q − 1) / 32, and by the select for (q − 1) / 88. The low bits above (q − 1) / 2 are those of r − q.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static int Decompose(int r, int gamma2, out int r0)
 	{
@@ -570,8 +559,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 		return count + accepted;
 	}
 
-	// Writes bits low bits of each value in order, least significant first: of bias − f_i for BitPack (Algorithm 17), of f_i for
-	// SimpleBitPack (Algorithm 16). 256 · bits fills whole 32-bit words, so the bit buffer is empty at the end.
+	// Writes bits low bits of each value in order, least significant first: of bias − f_i for BitPack (Algorithm 17), of f_i for SimpleBitPack (Algorithm 16). 256 · bits fills whole 32-bit words, so the bit buffer is empty at the end.
 	private static void Pack(ReadOnlySpan<int> f, Span<byte> destination, int bits, int bias, bool subtract)
 	{
 		Debug.Assert(f.Length is N && destination.Length >= 32 * bits);

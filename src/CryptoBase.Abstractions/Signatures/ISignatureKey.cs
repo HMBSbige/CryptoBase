@@ -5,15 +5,11 @@ namespace CryptoBase.Abstractions.Signatures;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A key signs and verifies with the signature algorithms that <see cref="Supports" /> accepts. A message is passed whole and unhashed, such as the
-/// content that a TLS 1.3 CertificateVerify covers, the parameters that a TLS 1.2 ServerKeyExchange covers, or an X.509 TBSCertificate;
-/// the algorithm fixes any hashing, padding and encoding. Signing takes randomness from the system where the algorithm is randomized.
+/// A key signs and verifies with the signature algorithms that <see cref="Supports" /> accepts. A message is passed whole and unhashed, such as the content that a TLS 1.3 CertificateVerify covers, the parameters that a TLS 1.2 ServerKeyExchange covers, or an X.509 TBSCertificate; the algorithm fixes any hashing, padding and encoding. Signing takes randomness from the system where the algorithm is randomized.
 /// A signature that is invalid, including one of the wrong length, verifies as <see langword="false" /> rather than throwing.
 /// </para>
 /// <para>
-/// Outputs have lengths the instance reports, as a maximum for signatures: a longer destination receives the output at its start, and a shorter
-/// one throws before anything is written. Disposal erases the key material and is idempotent; subsequent instance operations other than disposal
-/// throw <see cref="ObjectDisposedException" />.
+/// Outputs have lengths the instance reports, as a maximum for signatures: a longer destination receives the output at its start, and a shorter one throws before anything is written. Disposal erases the key material and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public interface ISignatureKey : IDisposable

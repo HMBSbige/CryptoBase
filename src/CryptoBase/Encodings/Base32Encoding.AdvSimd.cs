@@ -97,8 +97,7 @@ public sealed partial class Base32Encoding
 	private const byte AdvSimdDecodeTableStart = 0x30;
 	private const byte AdvSimdDecodeValidBit = 0x20;
 
-	// Both built-in alphabets use symbols 0x30-0x6F, so one four-register TBL maps symbol - 0x30. Entries hold the value with bit 5 set;
-	// invalid symbols and the zeroes TBL returns for out-of-range indices both lack it, and the packer ignores bits above the low five.
+	// Both built-in alphabets use symbols 0x30-0x6F, so one four-register TBL maps symbol - 0x30. Entries hold the value with bit 5 set; invalid symbols and the zeroes TBL returns for out-of-range indices both lack it, and the packer ignores bits above the low five.
 	private static readonly byte[] AdvSimdRfcDecodeTable = CreateAdvSimdDecodeTable(Rfc4648Alphabet);
 	private static readonly byte[] AdvSimdHexDecodeTable = CreateAdvSimdDecodeTable(Rfc4648HexAlphabet);
 
@@ -137,8 +136,7 @@ public sealed partial class Base32Encoding
 		return AdvSimd.Arm64.MinAcross(values).ToScalar() is not 0;
 	}
 
-	// Shift-and-insert merges adjacent fields into 10-, 20- and 40-bit big-endian groups; the bits it leaves above each group are cleared
-	// by the next insert or skipped by the final byte gather.
+	// Shift-and-insert merges adjacent fields into 10-, 20- and 40-bit big-endian groups; the bits it leaves above each group are cleared by the next insert or skipped by the final byte gather.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> PackDecodedAdvSimd(Vector128<byte> values, Vector128<byte> extract)
 	{

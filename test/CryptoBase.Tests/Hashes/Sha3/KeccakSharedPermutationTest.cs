@@ -214,8 +214,7 @@ public class KeccakSharedPermutationTest
 		}
 	}
 
-	// Guests of their own rate and lengths, at times more than the free lanes. Some batch inputs reach past a block, so that Absorb
-	// permutes on its own first.
+	// Guests of their own rate and lengths, at times more than the free lanes. Some batch inputs reach past a block, so that Absorb permutes on its own first.
 	private readonly struct GuestCase(int lanes) : IRatePairCase
 	{
 		private const int Blocks = 3;

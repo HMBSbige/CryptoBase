@@ -4,8 +4,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kems.MLKem;
 
-// Checks every kernel operation against MLKemReference, accepting any output congruent modulo q within the range IMLKemKernel
-// states, so that the same tests hold vector kernels that reduce lazily.
+// Checks every kernel operation against MLKemReference, accepting any output congruent modulo q within the range IMLKemKernel states, so that the same tests hold vector kernels that reduce lazily.
 public class MLKemKernelTest
 {
 	private static readonly int[] CompressionBits = [1, 4, 5, 10, 11];
@@ -52,8 +51,7 @@ public class MLKemKernelTest
 		}
 	}
 
-	// Products in the NTT domain must match products of the polynomials themselves, and sums of up to four products must stay within
-	// range with every input at its largest magnitude.
+	// Products in the NTT domain must match products of the polynomials themselves, and sums of up to four products must stay within range with every input at its largest magnitude.
 	[Test]
 	[MethodDataSource(typeof(MLKemKernelCase), nameof(MLKemKernelCase.All))]
 	public async Task MultiplyAccumulateMatchesPolynomialProducts(MLKemKernelCase kernel)

@@ -1,8 +1,6 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// Up to eight sponges with one rate that absorb equal-length inputs and squeeze in lockstep, permuted together by an
-// interleaved kernel, for the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from.
-// The Count inputs or outputs of a call lie back to back in one buffer, each a Count-th of its length.
+// Up to eight sponges with one rate that absorb equal-length inputs and squeeze in lockstep, permuted together by an interleaved kernel, for the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from. The Count inputs or outputs of a call lie back to back in one buffer, each a Count-th of its length.
 internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 {
 	// The length of the prefix that the seeded Reset takes.
@@ -10,8 +8,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 
 	private const byte LastPaddingBit = 0x80;
 
-	// Room for the widest kernel, in the layout of IKeccakP1600Kernel: word _lanes * i + j is lane i of stream j. Row i, lane i
-	// of every stream, is one vector to the kernel.
+	// Room for the widest kernel, in the layout of IKeccakP1600Kernel: word _lanes * i + j is lane i of stream j. Row i, lane i of every stream, is one vector to the kernel.
 	// ReSharper disable once UnassignedField.Compiler
 	private InlineArray25<InlineArray8<ulong>> _state;
 
@@ -27,9 +24,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 
 	internal readonly int FreeLanes => _lanes - Count;
 
-	// Takes as many of the remaining streams as KeccakP1600Batch assigns to one kernel, Count says how many, and leaves up to guests
-	// lanes free for Permute where the kernel has room. Guests never cost a stream: a guest only saves a permutation, while a stream
-	// left over can cost a batch.
+	// Takes as many of the remaining streams as KeccakP1600Batch assigns to one kernel, Count says how many, and leaves up to guests lanes free for Permute where the kernel has room. Guests never cost a stream: a guest only saves a permutation, while a stream left over can cost a batch.
 	internal void ResetWithGuests(int streams, int guests)
 	{
 		Debug.Assert(guests >= 0);
@@ -49,8 +44,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		IsSqueezing = false;
 	}
 
-	// As ResetWithGuests, then Absorb and Pad of prefix ‖ suffixes[j] for stream j, the suffix suffixLength bytes little-endian,
-	// written straight into the state.
+	// As ResetWithGuests, then Absorb and Pad of prefix ‖ suffixes[j] for stream j, the suffix suffixLength bytes little-endian, written straight into the state.
 	internal void ResetWithGuests(int streams, int guests, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator)
 	{
 		Debug.Assert(guests >= 0);
@@ -126,9 +120,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		_position = position + length - offset;
 	}
 
-	// Below 0x80, the domain separator leaves room for the last padding bit in the current block even when one byte remains.
-	// Streams from Count up to _lanes are padded too, which is harmless: only ExtractLane and CopyStreams read the state back,
-	// and both stop at Count, and a guest overwrites its lane. The permutation is left to Squeeze, or to Permute to share.
+	// Below 0x80, the domain separator leaves room for the last padding bit in the current block even when one byte remains. Streams from Count up to _lanes are padded too, which is harmless: only ExtractLane and CopyStreams read the state back, and both stop at Count, and a guest overwrites its lane. The permutation is left to Squeeze, or to Permute to share.
 	[SkipLocalsInit]
 	internal void Pad(byte domainSeparator)
 	{
@@ -352,8 +344,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		Vector512<ulong> r6 = Vector512.LoadUnsafe(ref word, 48);
 		Vector512<ulong> r7 = Vector512.LoadUnsafe(ref word, 56);
 
-		// Three rounds of two-source shuffles gather the words of each stream in twos, fours and eights: t0 holds words 0 and 1 of
-		// streams 0, 2, 4 and 6, and u0 words 0 to 3 of streams 0 and 4.
+		// Three rounds of two-source shuffles gather the words of each stream in twos, fours and eights: t0 holds words 0 and 1 of streams 0, 2, 4 and 6, and u0 words 0 to 3 of streams 0 and 4.
 		Vector512<ulong> t0 = Avx512F.UnpackLow(r0, r1);
 		Vector512<ulong> t1 = Avx512F.UnpackHigh(r0, r1);
 		Vector512<ulong> t2 = Avx512F.UnpackLow(r2, r3);
@@ -426,9 +417,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		}
 	}
 
-	// XORs four words of each of eight streams into four rows, loading two streams per vector: with streams 0 and 2 in v0 and 1
-	// and 3 in v1, the unpacks leave a word of streams 0 and 1, or 2 and 3, in each 128-bit quarter, and one shuffle of quarters
-	// per row gathers the four pairs of a word.
+	// XORs four words of each of eight streams into four rows, loading two streams per vector: with streams 0 and 2 in v0 and 1 and 3 in v1, the unpacks leave a word of streams 0 and 1, or 2 and 3, in each 128-bit quarter, and one shuffle of quarters per row gathers the four pairs of a word.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void XorWords4x8(ref ulong word, ref byte input, nint stride)
 	{

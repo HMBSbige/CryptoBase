@@ -8,10 +8,7 @@ using PlatformKmacXof256 = System.Security.Cryptography.KmacXof256;
 
 namespace CryptoBase.Tests.Macs.Kmac;
 
-// Compares every variant with two independent oracles over the same grid: the platform's KMAC where available, and the SP 800-185
-// transcription in KeccakReference everywhere. The key, customization string, message and output
-// lengths are those around the block boundaries of bytepad(encode_string(K)), of the cSHAKE prefix, of the message with right_encode(L), and of
-// the output.
+// Compares every variant with two independent oracles over the same grid: the platform's KMAC where available, and the SP 800-185 transcription in KeccakReference everywhere. The key, customization string, message and output lengths are those around the block boundaries of bytepad(encode_string(K)), of the cSHAKE prefix, of the message with right_encode(L), and of the output.
 public class KmacDifferentialTest
 {
 	private delegate byte[] Oracle(KmacVariant variant, byte[] key, byte[] source, byte[] customization, int outputLength);
@@ -51,8 +48,7 @@ public class KmacDifferentialTest
 		return VerifyGrid(variant, keyLength, static (variant, key, source, customization, outputLength) => variant.Reference(key, source, outputLength, customization));
 	}
 
-	// bytepad(encode_string(K), rate) takes left_encode(rate), 2 bytes, then left_encode(8 |K|), 2 bytes below 32-byte keys and 3 from there to
-	// 8191 bytes, then K: rate - 5 bytes fill one block exactly. 31 and 32 cross the change in the length of left_encode(8 |K|).
+	// bytepad(encode_string(K), rate) takes left_encode(rate), 2 bytes, then left_encode(8 |K|), 2 bytes below 32-byte keys and 3 from there to 8191 bytes, then K: rate - 5 bytes fill one block exactly. 31 and 32 cross the change in the length of left_encode(8 |K|).
 	private static IEnumerable<int> KeyLengths(int rate)
 	{
 		int fillsBlock = Sha3TestUtils.LengthGiving(rate, length => KeccakReference.LeftEncode((ulong)rate).Length + KeccakReference.EncodeString(new byte[length]).Length);
@@ -84,8 +80,7 @@ public class KmacDifferentialTest
 		}
 	}
 
-	// From 8192 bytes, 65536 bits, the lengths of the key, the customization string and the output take three bytes to encode, one more than
-	// anywhere in the grid.
+	// From 8192 bytes, 65536 bits, the lengths of the key, the customization string and the output take three bytes to encode, one more than anywhere in the grid.
 	[Test]
 	[MethodDataSource(nameof(ThreeByteLengthCases))]
 	public async Task MatchesOraclesWithThreeByteLengths(KmacVariant variant, int length)

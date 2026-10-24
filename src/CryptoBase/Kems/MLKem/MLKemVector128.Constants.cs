@@ -1,7 +1,6 @@
 namespace CryptoBase.Kems.MLKem;
 
-// The constants of MLKemVector128 in the order the operations consume them. Each line of factors is eight ζ followed by their
-// quotients ζ' = ⌊ζ · 2^15 / q⌉.
+// The constants of MLKemVector128 in the order the operations consume them. Each line of factors is eight ζ followed by their quotients ζ' = ⌊ζ · 2^15 / q⌉.
 internal readonly partial struct MLKemVector128
 {
 	// Layer 6 takes its zetas in the order [a, a, b, b, a, a, b, b], layer 7 in [a, a, b, b, c, c, d, d].

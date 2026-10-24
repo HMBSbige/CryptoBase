@@ -3,8 +3,7 @@ using AesArm = System.Runtime.Intrinsics.Arm.Aes;
 
 namespace CryptoBase.Ciphers.Modes.Ccm;
 
-// The state is the MAC XORed with the last round key, which folds into the next first round key, so no EOR separates
-// the rounds of consecutive blocks.
+// The state is the MAC XORed with the last round key, which folds into the next first round key, so no EOR separates the rounds of consecutive blocks.
 internal readonly ref struct AesArmCcmBlockEncryptor : ICcmBlockEncryptor
 {
 	private readonly ref readonly AesKeys _keys;

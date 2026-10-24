@@ -163,9 +163,7 @@ public class ShakeCavpTest
 		await AssertOutput(destination, 1, expected);
 	}
 
-	// SHA3VS, Sec. 6.3.3: each message is the leftmost 128 bits of the previous output, padded with zeros if shorter, and each output length after the
-	// first is minoutbytes + (the rightmost 16 bits of the previous output mod (maxoutbytes - minoutbytes + 1)), in bytes; the first is maxoutbytes.
-	// The minimum is rounded up and the maximum down to whole bytes. Every 1000th output is a checkpoint, and the chain carries on across checkpoints.
+	// SHA3VS, Sec. 6.3.3: each message is the leftmost 128 bits of the previous output, padded with zeros if shorter, and each output length after the first is minoutbytes + (the rightmost 16 bits of the previous output mod (maxoutbytes - minoutbytes + 1)), in bytes; the first is maxoutbytes. The minimum is rounded up and the maximum down to whole bytes. Every 1000th output is a checkpoint, and the chain carries on across checkpoints.
 	private static async Task VerifyMonteCarlo<T>(string fileName) where T : unmanaged, IXofCore<T>
 	{
 		IReadOnlyList<CavpRecord> records = CavpRspFile.Load(fileName).Records;
