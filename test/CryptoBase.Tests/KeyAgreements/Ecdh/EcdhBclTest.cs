@@ -59,40 +59,4 @@ public class EcdhBclTest
 			}
 		}
 	}
-
-	private static ECCurve BclCurve(CurveCase curve)
-	{
-		return ECCurve.CreateFromValue(curve.Parameters.Oid);
-	}
-
-	private static void SkipUnlessSupported(CurveCase curve)
-	{
-		try
-		{
-			using ECDiffieHellman key = ECDiffieHellman.Create(BclCurve(curve));
-			_ = key.DeriveRawSecretAgreement(key.PublicKey);
-		}
-		catch (PlatformNotSupportedException e)
-		{
-			Skip.Test($"The platform has no raw ECDH on the curve {curve.Parameters.Oid}: {e.Message}");
-		}
-	}
-
-	// value in exactly length bytes, whatever padding the platform gives it.
-	private static byte[] Normalize(byte[]? value, int length)
-	{
-		ArgumentNullException.ThrowIfNull(value);
-
-		return CurveCase.EncodeInteger(ModulusCase.Decode(value), length);
-	}
-
-	private static byte[] Encode(CurveCase curve, ECPoint point)
-	{
-		return [0x04, .. Normalize(point.X, curve.FieldLength), .. Normalize(point.Y, curve.FieldLength)];
-	}
-
-	private static ECPoint Decode(CurveCase curve, byte[] encoding)
-	{
-		return new ECPoint { X = encoding.AsSpan(1, curve.FieldLength).ToArray(), Y = encoding.AsSpan(1 + curve.FieldLength, curve.FieldLength).ToArray() };
-	}
 }

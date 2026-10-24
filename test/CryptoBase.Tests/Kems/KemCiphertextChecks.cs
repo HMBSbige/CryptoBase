@@ -1,5 +1,10 @@
+using CryptoBase.Abstractions.KeyAgreements;
 using CryptoBase.Abstractions.Kems;
+using CryptoBase.KeyAgreements.Ecdh;
+using CryptoBase.Kems.Hybrid;
 using CryptoBase.Kems.MLKem;
+using CryptoBase.Tests.KeyAgreements;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kems;
 
@@ -17,6 +22,16 @@ internal sealed record KemCiphertextChecks((int Offset, int Length)[] CheckedRan
 			return new KemCiphertextChecks([], []);
 		}
 
+		if (typeof(T) == typeof(SecP256r1MLKem768))
+		{
+			return EcMLKem<EcdhP256>(T.CiphertextLength);
+		}
+
+		if (typeof(T) == typeof(SecP384r1MLKem1024))
+		{
+			return EcMLKem<EcdhP384>(T.CiphertextLength);
+		}
+
 		throw new NotSupportedException(typeof(T).Name);
 	}
 
@@ -31,5 +46,12 @@ internal sealed record KemCiphertextChecks((int Offset, int Length)[] CheckedRan
 		}
 
 		return false;
+	}
+
+	private static KemCiphertextChecks EcMLKem<TEcdh>(int ciphertextLength) where TEcdh : class, IKeyAgreement<TEcdh>
+	{
+		byte[] mlKemCiphertext = CreateDeterministicSource(ciphertextLength - TEcdh.PublicKeyLength);
+		byte[][] invalid = [.. KeyAgreementChecks.Of<TEcdh>().InvalidPublicKeys.Select(publicKey => Concat(publicKey, mlKemCiphertext))];
+		return new KemCiphertextChecks([(0, TEcdh.PublicKeyLength)], invalid);
 	}
 }

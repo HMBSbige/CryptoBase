@@ -10,6 +10,8 @@ CryptoBase implements ML-KEM (FIPS 203) in the `CryptoBase.Kems.MLKem` namespace
 | `MLKem768` | 3 | 1184 bytes | 2400 bytes | 1088 bytes | 32 bytes | 64 bytes |
 | `MLKem1024` | 5 | 1568 bytes | 3168 bytes | 1568 bytes | 32 bytes | 64 bytes |
 
+The `CryptoBase.Kems.Hybrid` namespace combines ML-KEM with elliptic curve Diffie–Hellman; see [Hybrid KEMs](#hybrid-kems).
+
 ## Establishing a shared secret
 
 ```csharp
@@ -82,9 +84,58 @@ using MLKem768 fromDecapsulationKey = MLKem768.ImportDecapsulationKey(decapsulat
 
 Exporting what an instance does not hold throws `InvalidOperationException`. Imports throw `ArgumentException` for input of the wrong length or a key that fails the checks of FIPS 203.
 
+## Hybrid KEMs
+
+The `CryptoBase.Kems.Hybrid` namespace combines ECDH with ML-KEM. The encodings and shared secrets are those of the TLS groups SecP256r1MLKEM768 and SecP384r1MLKEM1024:
+
+| Type | Curve | ML-KEM | Encapsulation key | Decapsulation key | Ciphertext | Shared secret | Private seed |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `SecP256r1MLKem768` | P-256 | ML-KEM-768 | 1249 bytes | 2432 bytes | 1153 bytes | 64 bytes | 96 bytes |
+| `SecP384r1MLKem1024` | P-384 | ML-KEM-1024 | 1665 bytes | 3216 bytes | 1665 bytes | 80 bytes | 112 bytes |
+
+Each value is its elliptic curve part followed by its ML-KEM part:
+
+| Value | Elliptic curve part | ML-KEM part |
+| --- | --- | --- |
+| Encapsulation key | The public key, `0x04 ‖ x ‖ y` | The encapsulation key |
+| Ciphertext | An ephemeral public key, `0x04 ‖ x ‖ y` | The ciphertext |
+| Shared secret | The x-coordinate of the shared point, 32 or 48 big-endian bytes | The shared secret |
+| Private seed | The private key, a big-endian integer | The private seed |
+| Decapsulation key | The private key, a big-endian integer | The decapsulation key |
+
+The private seed and the decapsulation key are formats of this library. Unlike an ML-KEM seed, not every private seed of the right length is valid.
+
+They are used like the ML-KEM types. `TryDecapsulate` returns `false` for a ciphertext of the wrong length or whose ephemeral public key is not an uncompressed point on the curve.
+
+The shared secret does not bind the ciphertext, so a protocol that needs that binding must include the ciphertext in its key derivation or transcript:
+
+```csharp
+using CryptoBase.Hashes.Sha2;
+using CryptoBase.Kdf;
+using CryptoBase.Kems.Hybrid;
+
+using SecP256r1MLKem768 receiver = SecP256r1MLKem768.GenerateKey();
+
+byte[] encapsulationKey = new byte[SecP256r1MLKem768.EncapsulationKeyLength];
+receiver.ExportEncapsulationKey(encapsulationKey);
+
+byte[] ciphertext = new byte[SecP256r1MLKem768.CiphertextLength];
+byte[] sharedSecret = new byte[SecP256r1MLKem768.SharedSecretLength];
+
+using (SecP256r1MLKem768 sender = SecP256r1MLKem768.ImportEncapsulationKey(encapsulationKey))
+{
+    sender.Encapsulate(ciphertext, sharedSecret);
+}
+
+// Derive the key from the secret, the encapsulation key and the ciphertext.
+byte[] info = [.. "example v1 encryption"u8, .. encapsulationKey, .. ciphertext];
+byte[] encryptionKey = new byte[32];
+Hkdf.DeriveKey<Sha256Core>(sharedSecret, encryptionKey, [], info);
+```
+
 ## Generic code
 
-The three types implement `IKem<TSelf>`:
+The ML-KEM and hybrid types implement `IKem<TSelf>`:
 
 ```csharp
 using System.Security.Cryptography;
