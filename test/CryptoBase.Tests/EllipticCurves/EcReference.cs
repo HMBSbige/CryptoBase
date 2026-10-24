@@ -208,7 +208,7 @@ internal sealed class EcReference(EcCurveTestVector curve)
 
 	internal CurvePoint PointWithXFrom(BigInteger start)
 	{
-		for (BigInteger x = start;; ++x)
+		for (BigInteger x = start; ; ++x)
 		{
 			if (SquareRoot(Cubic(x)) is { } y)
 			{
@@ -220,7 +220,7 @@ internal sealed class EcReference(EcCurveTestVector curve)
 	// Takes the first y whose cubic x³ + ax + b − y² has a single root: its gcd with X^p − X is the product of X − x over the roots, so it is then linear.
 	internal CurvePoint PointWithYFrom(BigInteger start)
 	{
-		for (BigInteger y = start;; ++y)
+		for (BigInteger y = start; ; ++y)
 		{
 			BigInteger[] cubic = [Mod(B - y * y), A, 0, 1];
 			BigInteger[] power = [1];

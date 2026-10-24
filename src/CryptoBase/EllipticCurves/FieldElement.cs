@@ -281,14 +281,46 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		ref ulong t = ref Unsafe.As<Product, ulong>(ref product);
 		int n = TModulus.LimbCount;
 		Unsafe.Add(ref t, n) = MultiplyLimbs(ref x, y, ref t, n);
-		if (n > 1) AddProductRow(ref x, ref y, ref t, 1);
-		if (n > 2) AddProductRow(ref x, ref y, ref t, 2);
-		if (n > 3) AddProductRow(ref x, ref y, ref t, 3);
-		if (n > 4) AddProductRow(ref x, ref y, ref t, 4);
-		if (n > 5) AddProductRow(ref x, ref y, ref t, 5);
-		if (n > 6) AddProductRow(ref x, ref y, ref t, 6);
-		if (n > 7) AddProductRow(ref x, ref y, ref t, 7);
-		if (n > 8) AddProductRow(ref x, ref y, ref t, 8);
+		if (n > 1)
+		{
+			AddProductRow(ref x, ref y, ref t, 1);
+		}
+
+		if (n > 2)
+		{
+			AddProductRow(ref x, ref y, ref t, 2);
+		}
+
+		if (n > 3)
+		{
+			AddProductRow(ref x, ref y, ref t, 3);
+		}
+
+		if (n > 4)
+		{
+			AddProductRow(ref x, ref y, ref t, 4);
+		}
+
+		if (n > 5)
+		{
+			AddProductRow(ref x, ref y, ref t, 5);
+		}
+
+		if (n > 6)
+		{
+			AddProductRow(ref x, ref y, ref t, 6);
+		}
+
+		if (n > 7)
+		{
+			AddProductRow(ref x, ref y, ref t, 7);
+		}
+
+		if (n > 8)
+		{
+			AddProductRow(ref x, ref y, ref t, 8);
+		}
+
 		Reduce(ref t, out result);
 	}
 
@@ -309,25 +341,85 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		int n = TModulus.LimbCount;
 		t = 0;
 		Unsafe.Add(ref t, n) = MultiplyLimbs(ref Unsafe.Add(ref x, 1), x, ref Unsafe.Add(ref t, 1), n - 1);
-		if (n > 2) AddCrossRow(ref x, ref t, 1);
-		if (n > 3) AddCrossRow(ref x, ref t, 2);
-		if (n > 4) AddCrossRow(ref x, ref t, 3);
-		if (n > 5) AddCrossRow(ref x, ref t, 4);
-		if (n > 6) AddCrossRow(ref x, ref t, 5);
-		if (n > 7) AddCrossRow(ref x, ref t, 6);
-		if (n > 8) AddCrossRow(ref x, ref t, 7);
+		if (n > 2)
+		{
+			AddCrossRow(ref x, ref t, 1);
+		}
+
+		if (n > 3)
+		{
+			AddCrossRow(ref x, ref t, 2);
+		}
+
+		if (n > 4)
+		{
+			AddCrossRow(ref x, ref t, 3);
+		}
+
+		if (n > 5)
+		{
+			AddCrossRow(ref x, ref t, 4);
+		}
+
+		if (n > 6)
+		{
+			AddCrossRow(ref x, ref t, 5);
+		}
+
+		if (n > 7)
+		{
+			AddCrossRow(ref x, ref t, 6);
+		}
+
+		if (n > 8)
+		{
+			AddCrossRow(ref x, ref t, 7);
+		}
+
 		Unsafe.Add(ref t, 2 * n - 1) = 0;
 		ulong carry = 0;
 		ulong shifted = 0;
 		DoubleAddSquare(ref x, ref t, 0, ref carry, ref shifted);
-		if (n > 1) DoubleAddSquare(ref x, ref t, 1, ref carry, ref shifted);
-		if (n > 2) DoubleAddSquare(ref x, ref t, 2, ref carry, ref shifted);
-		if (n > 3) DoubleAddSquare(ref x, ref t, 3, ref carry, ref shifted);
-		if (n > 4) DoubleAddSquare(ref x, ref t, 4, ref carry, ref shifted);
-		if (n > 5) DoubleAddSquare(ref x, ref t, 5, ref carry, ref shifted);
-		if (n > 6) DoubleAddSquare(ref x, ref t, 6, ref carry, ref shifted);
-		if (n > 7) DoubleAddSquare(ref x, ref t, 7, ref carry, ref shifted);
-		if (n > 8) DoubleAddSquare(ref x, ref t, 8, ref carry, ref shifted);
+		if (n > 1)
+		{
+			DoubleAddSquare(ref x, ref t, 1, ref carry, ref shifted);
+		}
+
+		if (n > 2)
+		{
+			DoubleAddSquare(ref x, ref t, 2, ref carry, ref shifted);
+		}
+
+		if (n > 3)
+		{
+			DoubleAddSquare(ref x, ref t, 3, ref carry, ref shifted);
+		}
+
+		if (n > 4)
+		{
+			DoubleAddSquare(ref x, ref t, 4, ref carry, ref shifted);
+		}
+
+		if (n > 5)
+		{
+			DoubleAddSquare(ref x, ref t, 5, ref carry, ref shifted);
+		}
+
+		if (n > 6)
+		{
+			DoubleAddSquare(ref x, ref t, 6, ref carry, ref shifted);
+		}
+
+		if (n > 7)
+		{
+			DoubleAddSquare(ref x, ref t, 7, ref carry, ref shifted);
+		}
+
+		if (n > 8)
+		{
+			DoubleAddSquare(ref x, ref t, 8, ref carry, ref shifted);
+		}
+
 		Reduce(ref t, out result);
 	}
 
@@ -366,14 +458,46 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		int n = TModulus.LimbCount;
 		ulong carry = 0;
 		ReduceRound(ref product, 0, ref carry);
-		if (n > 1) ReduceRound(ref product, 1, ref carry);
-		if (n > 2) ReduceRound(ref product, 2, ref carry);
-		if (n > 3) ReduceRound(ref product, 3, ref carry);
-		if (n > 4) ReduceRound(ref product, 4, ref carry);
-		if (n > 5) ReduceRound(ref product, 5, ref carry);
-		if (n > 6) ReduceRound(ref product, 6, ref carry);
-		if (n > 7) ReduceRound(ref product, 7, ref carry);
-		if (n > 8) ReduceRound(ref product, 8, ref carry);
+		if (n > 1)
+		{
+			ReduceRound(ref product, 1, ref carry);
+		}
+
+		if (n > 2)
+		{
+			ReduceRound(ref product, 2, ref carry);
+		}
+
+		if (n > 3)
+		{
+			ReduceRound(ref product, 3, ref carry);
+		}
+
+		if (n > 4)
+		{
+			ReduceRound(ref product, 4, ref carry);
+		}
+
+		if (n > 5)
+		{
+			ReduceRound(ref product, 5, ref carry);
+		}
+
+		if (n > 6)
+		{
+			ReduceRound(ref product, 6, ref carry);
+		}
+
+		if (n > 7)
+		{
+			ReduceRound(ref product, 7, ref carry);
+		}
+
+		if (n > 8)
+		{
+			ReduceRound(ref product, 8, ref carry);
+		}
+
 		return carry;
 	}
 
