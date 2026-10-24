@@ -1,0 +1,232 @@
+using CryptoBase.EllipticCurves;
+
+namespace CryptoBase.Signatures.Ecdsa;
+
+/// <summary>
+/// Provides ECDSA over the curve P-384.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The nonce is derived from the private key, the hash and fresh system randomness, so signing a message twice gives two different signatures.
+/// s is not reduced to the lower half of [1, n − 1]. Signatures are in DER, and verification rejects any other encoding of r and s. Signing and
+/// verification may run concurrently on one instance.
+/// </para>
+/// <para>
+/// SubjectPublicKeyInfo and PKCS #8 name the curve by its OID and hold the public key uncompressed; other parameters and point encodings are
+/// rejected. A PKCS #8 export holds the private key, the curve and the public key. A PKCS #8 import accepts a key without the curve or the public
+/// key, but rejects either, in the inner or the outer structure, if it does not match the private key.
+/// </para>
+/// </remarks>
+public sealed class EcdsaP384 : IEcdsa<EcdsaP384>
+{
+	private EcdsaKey<P384Curve, P384Field, P384Order> _key;
+	private bool _disposed;
+
+	private EcdsaP384() { }
+
+	/// <summary>
+	/// Gets the length of the private key, in bytes.
+	/// </summary>
+	public static int PrivateKeyLength => EcdsaKey<P384Curve, P384Field, P384Order>.PrivateKeyLength;
+
+	/// <summary>
+	/// Gets the length of the public key in the uncompressed encoding, in bytes.
+	/// </summary>
+	public static int PublicKeyLength => EcdsaKey<P384Curve, P384Field, P384Order>.PublicKeyLength;
+
+	/// <inheritdoc />
+	public bool HasPrivateKey
+	{
+		get
+		{
+			ObjectDisposedException.ThrowIf(_disposed, this);
+			return _key.HasPrivateKey;
+		}
+	}
+
+	/// <inheritdoc />
+	public int SubjectPublicKeyInfoLength
+	{
+		get
+		{
+			ObjectDisposedException.ThrowIf(_disposed, this);
+			return EcdsaKey<P384Curve, P384Field, P384Order>.GetSubjectPublicKeyInfoLength(AlgorithmIdentifier);
+		}
+	}
+
+	/// <inheritdoc />
+	public int Pkcs8PrivateKeyLength
+	{
+		get
+		{
+			ObjectDisposedException.ThrowIf(_disposed, this);
+			return _key.GetPkcs8PrivateKeyLength(AlgorithmIdentifier);
+		}
+	}
+
+	private static ReadOnlySpan<byte> AlgorithmIdentifier =>
+	[
+		0x30, 0x10, 0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01, 0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x22,
+	];
+
+	/// <summary>
+	/// Generates a key pair from a new random private key.
+	/// </summary>
+	/// <returns>An instance that holds the private key and the public key.</returns>
+	public static EcdsaP384 GenerateKey()
+	{
+		EcdsaP384 key = new();
+		key._key.GenerateKey();
+		return key;
+	}
+
+	/// <summary>
+	/// Imports a private key.
+	/// </summary>
+	/// <remarks>Implementation-owned key material is erased if the key is invalid.</remarks>
+	/// <param name="source">The private key as big-endian bytes, exactly <see cref="PrivateKeyLength" /> bytes long.</param>
+	/// <returns>An instance that holds the private key and the public key.</returns>
+	/// <exception cref="ArgumentException"><paramref name="source" /> has the wrong length or is not in [1, n − 1].</exception>
+	public static EcdsaP384 ImportPrivateKey(ReadOnlySpan<byte> source)
+	{
+		EcdsaP384 key = new();
+		key._key.ImportPrivateKey(source);
+		return key;
+	}
+
+	/// <summary>
+	/// Imports a public key.
+	/// </summary>
+	/// <param name="source">The public key in the uncompressed encoding, exactly <see cref="PublicKeyLength" /> bytes long.</param>
+	/// <returns>An instance that holds only the public key.</returns>
+	/// <exception cref="ArgumentException"><paramref name="source" /> has the wrong length or is not a point on the curve.</exception>
+	public static EcdsaP384 ImportPublicKey(ReadOnlySpan<byte> source)
+	{
+		EcdsaP384 key = new();
+		key._key.ImportPublicKey(source);
+		return key;
+	}
+
+	/// <inheritdoc />
+	public static EcdsaP384 ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
+	{
+		EcdsaP384 key = new();
+		key._key.ImportSubjectPublicKeyInfo(AlgorithmIdentifier, source);
+		return key;
+	}
+
+	/// <inheritdoc />
+	public static EcdsaP384 ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
+	{
+		EcdsaP384 key = new();
+		key._key.ImportPkcs8PrivateKey(AlgorithmIdentifier, source);
+		return key;
+	}
+
+	/// <summary>
+	/// Writes the private key.
+	/// </summary>
+	/// <remarks>On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <param name="destination">The output buffer.</param>
+	/// <returns>The value of <see cref="PrivateKeyLength" />.</returns>
+	/// <exception cref="ArgumentException"><paramref name="destination" /> is too short.</exception>
+	/// <exception cref="InvalidOperationException">The instance does not hold the private key.</exception>
+	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
+	public int ExportPrivateKey(Span<byte> destination)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.ExportPrivateKey(destination);
+	}
+
+	/// <summary>
+	/// Writes the public key.
+	/// </summary>
+	/// <remarks>On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <param name="destination">The output buffer.</param>
+	/// <returns>The value of <see cref="PublicKeyLength" />.</returns>
+	/// <exception cref="ArgumentException"><paramref name="destination" /> is too short.</exception>
+	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
+	public int ExportPublicKey(Span<byte> destination)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.ExportPublicKey(destination);
+	}
+
+	/// <inheritdoc />
+	public int ExportSubjectPublicKeyInfo(Span<byte> destination)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.ExportSubjectPublicKeyInfo(AlgorithmIdentifier, destination);
+	}
+
+	/// <inheritdoc />
+	public int ExportPkcs8PrivateKey(Span<byte> destination)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.ExportPkcs8PrivateKey(AlgorithmIdentifier, destination);
+	}
+
+	/// <inheritdoc />
+	public bool Supports(SignatureAlgorithm algorithm)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return EcdsaKey<P384Curve, P384Field, P384Order>.Supports(algorithm);
+	}
+
+	/// <inheritdoc />
+	public int GetMaxSignatureLength(SignatureAlgorithm algorithm)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return EcdsaKey<P384Curve, P384Field, P384Order>.GetMaxSignatureLength(algorithm);
+	}
+
+	/// <inheritdoc />
+	public int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.Sign(algorithm, message, destination);
+	}
+
+	/// <inheritdoc />
+	public bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.Verify(algorithm, message, signature);
+	}
+
+	int IEcdsa<EcdsaP384>.Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.Sign(algorithm, message, additionalData, format, destination);
+	}
+
+	int IEcdsa<EcdsaP384>.SignHash(SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.SignHash(algorithm, hash, additionalData, format, destination);
+	}
+
+	bool IEcdsa<EcdsaP384>.Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.Verify(algorithm, message, signature, format);
+	}
+
+	bool IEcdsa<EcdsaP384>.VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		return _key.VerifyHash(hash, signature, format);
+	}
+
+	/// <inheritdoc />
+	public void Dispose()
+	{
+		if (_disposed)
+		{
+			return;
+		}
+
+		_key.Clear();
+		_disposed = true;
+	}
+}

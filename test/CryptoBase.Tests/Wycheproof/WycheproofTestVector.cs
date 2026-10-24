@@ -60,6 +60,30 @@ public sealed record EcCurveTestVector(string Name, string Oid, byte[] P, byte[]
 
 public sealed record EcdhEcpointTestVector(byte[] Public, byte[] Private, byte[] Shared) : WycheproofTestVector;
 
+public sealed record EcdhTestVector(byte[] Public, byte[] Private, byte[] Shared) : WycheproofTestVector;
+
+public sealed record EcdsaVerifyTestVector(byte[] Msg, byte[] Sig) : WycheproofTestVector
+{
+	[JsonIgnore]
+	public byte[] PublicKey { get; init; } = [];
+
+	[JsonIgnore]
+	public byte[] PublicKeyDer { get; init; } = [];
+
+	[JsonIgnore]
+	public string Sha { get; init; } = "";
+}
+
+public sealed record EcPublicKey(string Curve, byte[] Uncompressed);
+
+public sealed record EcdsaVerifyTestGroup(EcPublicKey PublicKey, byte[] PublicKeyDer, string Sha) : WycheproofTestGroup<EcdsaVerifyTestVector>
+{
+	public override EcdsaVerifyTestVector Complete(EcdsaVerifyTestVector test)
+	{
+		return test with { PublicKey = PublicKey.Uncompressed, PublicKeyDer = PublicKeyDer, Sha = Sha };
+	}
+}
+
 // Decapsulation after key generation from a seed; ek is missing where the seed has the wrong length.
 public sealed record MLKemTestVector(byte[] Seed, byte[] C, byte[] K, byte[]? Ek = null) : WycheproofTestVector;
 

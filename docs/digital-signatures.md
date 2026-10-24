@@ -10,6 +10,8 @@ CryptoBase implements ML-DSA (FIPS 204) in the `CryptoBase.Signatures.MLDsa` nam
 | `MLDsa65` | 3 | 1952 bytes | 4032 bytes | 3309 bytes | 32 bytes |
 | `MLDsa87` | 5 | 2592 bytes | 4896 bytes | 4627 bytes | 32 bytes |
 
+[ECDSA](#ecdsa) is in the `CryptoBase.Signatures.Ecdsa` namespace.
+
 ## Signing and verifying
 
 ```csharp
@@ -147,9 +149,76 @@ string privatePem = PemEncoding.WriteString("PRIVATE KEY", pkcs8);
 
 `ImportPkcs8PrivateKey` accepts the seed, expandedKey and both forms. `ExportPkcs8PrivateKey` writes the seed form if the instance holds the seed, and the expandedKey form otherwise.
 
+## ECDSA
+
+| Type | Curve | Public key | Private key | Signature |
+| --- | --- | ---: | ---: | ---: |
+| `EcdsaP256` | P-256 (secp256r1) | 65 bytes | 32 bytes | at most 72 bytes |
+| `EcdsaP384` | P-384 (secp384r1) | 97 bytes | 48 bytes | at most 104 bytes |
+| `EcdsaP521` | P-521 (secp521r1) | 133 bytes | 66 bytes | at most 139 bytes |
+
+### Signing and verifying
+
+The hash is part of the `SignatureAlgorithm`: `EcdsaSha256`, `EcdsaSha384` or `EcdsaSha512`. A signature is DER, so its length varies and `Sign` returns it:
+
+```csharp
+using CryptoBase.Abstractions.Signatures;
+using CryptoBase.Signatures.Ecdsa;
+
+// Signer: generate a key pair and give the public key to the verifiers.
+using EcdsaP256 signer = EcdsaP256.GenerateKey();
+
+byte[] publicKey = new byte[EcdsaP256.PublicKeyLength];
+signer.ExportPublicKey(publicKey);
+
+// Signer: sign a message.
+byte[] message = "message"u8.ToArray();
+byte[] buffer = new byte[signer.GetMaxSignatureLength(SignatureAlgorithm.EcdsaSha256)];
+int written = signer.Sign(SignatureAlgorithm.EcdsaSha256, message, buffer);
+byte[] signature = buffer.AsSpan(0, written).ToArray();
+
+// Verifier: import the public key and check the signature.
+using EcdsaP256 verifier = EcdsaP256.ImportPublicKey(publicKey);
+
+bool valid = verifier.Verify(SignatureAlgorithm.EcdsaSha256, message, signature); // true
+bool tampered = verifier.Verify(SignatureAlgorithm.EcdsaSha256, "massage"u8, signature); // false
+```
+
+Signing and verification may run concurrently on one instance. Signing twice gives two different signatures. Signatures are not normalized to a low s, and verification accepts only strict DER.
+
+### Saving and restoring a key
+
+The private key is a big-endian integer and the public key the uncompressed point `0x04 ‖ x ‖ y`:
+
+```csharp
+using CryptoBase.Signatures.Ecdsa;
+
+using EcdsaP256 key = EcdsaP256.GenerateKey();
+
+byte[] privateKey = new byte[EcdsaP256.PrivateKeyLength];
+key.ExportPrivateKey(privateKey);
+
+using EcdsaP256 restored = EcdsaP256.ImportPrivateKey(privateKey);
+```
+
+SubjectPublicKeyInfo and PKCS #8 work as for ML-DSA:
+
+```csharp
+byte[] spki = new byte[key.SubjectPublicKeyInfoLength];
+key.ExportSubjectPublicKeyInfo(spki);
+
+byte[] pkcs8 = new byte[key.Pkcs8PrivateKeyLength];
+key.ExportPkcs8PrivateKey(pkcs8);
+
+using EcdsaP256 fromSpki = EcdsaP256.ImportSubjectPublicKeyInfo(spki);
+using EcdsaP256 fromPkcs8 = EcdsaP256.ImportPkcs8PrivateKey(pkcs8);
+```
+
+Both name the curve by its OID and hold the point uncompressed; explicit curve parameters and compressed points are rejected. `ExportPkcs8PrivateKey` includes the curve and the public key; `ImportPkcs8PrivateKey` accepts a key without them, but throws if either does not match.
+
 ## Protocol code
 
-The three types implement `ISignatureKey<TSelf>`, so protocol code such as TLS or X.509 can use a key without knowing its algorithm. Each type supports only the `SignatureAlgorithm` of the same name, which signs the whole message with an empty context.
+The ML-DSA and ECDSA types implement `ISignatureKey<TSelf>`, so protocol code such as TLS or X.509 can use a key without knowing its algorithm. Each ML-DSA type supports only the `SignatureAlgorithm` of the same name, which signs the whole message with an empty context. Each ECDSA type supports `EcdsaSha256`, `EcdsaSha384` and `EcdsaSha512`.
 
 ```csharp
 using CryptoBase.Abstractions.Signatures;

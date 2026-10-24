@@ -1,39 +1,30 @@
 using CryptoBase.Abstractions.Signatures;
+using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.MLDsa;
+using CryptoBase.Tests.Signatures.Ecdsa;
 
 namespace CryptoBase.Tests.Signatures;
 
 internal static class SignatureTestUtils
 {
-	// ISignatureKey cannot make a key, so each type makes its own.
+	public static readonly KeyType[] KeyTypes =
+	[
+		new(typeof(MLDsa44), [SignatureAlgorithm.MLDsa44], MLDsa44.GenerateKey),
+		new(typeof(MLDsa65), [SignatureAlgorithm.MLDsa65], MLDsa65.GenerateKey),
+		new(typeof(MLDsa87), [SignatureAlgorithm.MLDsa87], MLDsa87.GenerateKey),
+		new(typeof(EcdsaP256), EcdsaTestUtils.Algorithms, EcdsaP256.GenerateKey),
+		new(typeof(EcdsaP384), EcdsaTestUtils.Algorithms, EcdsaP384.GenerateKey),
+		new(typeof(EcdsaP521), EcdsaTestUtils.Algorithms, EcdsaP521.GenerateKey),
+	];
+
 	public static T GenerateKey<T>() where T : class, ISignatureKey<T>
 	{
-		if (typeof(T) == typeof(MLDsa44))
-		{
-			return (T)(object)MLDsa44.GenerateKey();
-		}
-
-		if (typeof(T) == typeof(MLDsa65))
-		{
-			return (T)(object)MLDsa65.GenerateKey();
-		}
-
-		return typeof(T) == typeof(MLDsa87) ? (T)(object)MLDsa87.GenerateKey() : throw new NotSupportedException(typeof(T).Name);
+		return (T)KeyTypeOf<T>().GenerateKey();
 	}
 
 	public static SignatureAlgorithm[] AlgorithmsOf<T>() where T : class, ISignatureKey<T>
 	{
-		if (typeof(T) == typeof(MLDsa44))
-		{
-			return [SignatureAlgorithm.MLDsa44];
-		}
-
-		if (typeof(T) == typeof(MLDsa65))
-		{
-			return [SignatureAlgorithm.MLDsa65];
-		}
-
-		return typeof(T) == typeof(MLDsa87) ? [SignatureAlgorithm.MLDsa87] : throw new NotSupportedException(typeof(T).Name);
+		return KeyTypeOf<T>().Algorithms;
 	}
 
 	public static byte[] ExportSubjectPublicKeyInfo<T>(T key) where T : class, ISignatureKey<T>
@@ -74,4 +65,11 @@ internal static class SignatureTestUtils
 		flipped[index] ^= (byte)(1 << index % 8);
 		return flipped;
 	}
+
+	private static KeyType KeyTypeOf<T>() where T : class, ISignatureKey<T>
+	{
+		return KeyTypes.FirstOrDefault(static type => type.Type == typeof(T)) ?? throw new NotSupportedException(typeof(T).Name);
+	}
+
+	public sealed record KeyType(Type Type, SignatureAlgorithm[] Algorithms, Func<ISignatureKey> GenerateKey);
 }
