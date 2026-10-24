@@ -20,72 +20,46 @@ env:
   NET_VERSION: 10.0.x
   TUNIT_DISABLE_LOGO: 1
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check_format:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          submodules: true
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.NET_VERSION }}
 
-      # Test jobs build only the test project, so the whole solution, benchmarks included, is built here.
+      # Test jobs build only the test project, without analyzers, so the whole solution, benchmarks included, is built and analyzed here.
       - name: Build
         run: dotnet build -c Release
 
       - name: Check .NET format
         run: dotnet format --no-restore -v diag --verify-no-changes
 
+      - name: Check test shards
+        run: bash .github/test.sh shards
+
   test:
-    name: test (${{ matrix.os }}${{ matrix.disable && format(', no {0}', matrix.disable) }}${{ matrix.shard && format(', {0}', matrix.shard) }})
+    name: test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash
-    env:
-      # test.sh defines the shards.
-      SHARD: ${{ matrix.shard }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Linux x64 covers every x86 instruction-set level, under Intel SDE where sde is set and the runner lacks one (see test.sh).
-          # Emulating AVX-512 is slow, so the entries that need it run in shards.
-          - { os: ubuntu-latest, sde: true, shard: hashes }
-          - { os: ubuntu-latest, sde: true, shard: ciphers }
-          - { os: ubuntu-latest, sde: true, shard: rest }
-          - { os: ubuntu-latest, disable: AVX512v2, sde: true, shard: hashes }
-          - { os: ubuntu-latest, disable: AVX512v2, sde: true, shard: ciphers }
-          - { os: ubuntu-latest, disable: AVX512v2, sde: true, shard: rest }
-          # Still takes the AVX-512VL paths.
-          - { os: ubuntu-latest, disable: Vector512, sde: true, shard: hashes }
-          - { os: ubuntu-latest, disable: Vector512, sde: true, shard: ciphers }
-          - { os: ubuntu-latest, disable: Vector512, sde: true, shard: rest }
-          - { os: ubuntu-latest, disable: VAES, sde: true, shard: hashes }
-          - { os: ubuntu-latest, disable: VAES, sde: true, shard: ciphers }
-          - { os: ubuntu-latest, disable: VAES, sde: true, shard: rest }
-          - { os: ubuntu-latest, disable: GFNI, sde: true, shard: hashes }
-          - { os: ubuntu-latest, disable: GFNI, sde: true, shard: ciphers }
-          - { os: ubuntu-latest, disable: GFNI, sde: true, shard: rest }
-          - { os: ubuntu-latest, disable: AVX512, sde: true }
-          - { os: ubuntu-latest, disable: 'AVX512,GFNI,VAES' }
-          - { os: ubuntu-latest, disable: AVX2 }
-          - { os: ubuntu-latest, disable: AVX }
-          - { os: ubuntu-latest, disable: SSE42 }
-          - { os: ubuntu-latest, disable: AES }
-          - { os: ubuntu-latest, disable: HWIntrinsic }
+          # Linux x64 covers the x86 instruction-set levels below the ones that the avx512 jobs cover.
+          - { os: ubuntu-latest, disable: 'AVX512,GFNI,VAES AVX2 AVX SSE42 AES HWIntrinsic' }
           # Linux ARM64 covers the ARM64 switches.
-          - { os: ubuntu-26.04-arm }
-          - { os: ubuntu-26.04-arm, disable: Arm64Aes }
-          - { os: ubuntu-26.04-arm, disable: Arm64Crc32 }
-          - { os: ubuntu-26.04-arm, disable: Arm64Sha1 }
-          - { os: ubuntu-26.04-arm, disable: Arm64Sha256 }
-          - { os: ubuntu-26.04-arm, disable: HWIntrinsic }
+          - { os: ubuntu-26.04-arm, disable: 'none Arm64Aes Arm64Crc32 Arm64Sha1 Arm64Sha256 HWIntrinsic' }
           # Other platforms: default dispatch and the portable path.
-          - { os: windows-latest }
-          - { os: windows-latest, disable: HWIntrinsic }
+          - { os: windows-latest, disable: 'none HWIntrinsic' }
           - { os: macos-latest }
 
     steps:
@@ -95,11 +69,9 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.NET_VERSION }}
-      - uses: petarpetrovt/setup-sde@v6.0
-        if: matrix.sde
 
       - name: Build
-        run: dotnet build test/CryptoBase.Tests -c Release
+        run: dotnet build test/CryptoBase.Tests -c Release -p:RunAnalyzers=false
 
       - name: Test (Release)
         run: bash .github/test.sh
@@ -107,9 +79,97 @@ jobs:
           DISABLE: ${{ matrix.disable }}
 
       - name: Test (Release, tiered compilation)
-        if: ${{ !matrix.disable }}
         run: bash .github/test.sh tiered
 
+  debug:
+    name: debug (${{ matrix.os }}, ${{ matrix.shard }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-26.04-arm, windows-latest, macos-latest]
+        # Two halves that take about as long.
+        shard: [ec, 'hashes,ciphers,rest']
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.NET_VERSION }}
+
       - name: Test (Debug)
-        if: ${{ !matrix.disable }}
         run: bash .github/test.sh debug
+        env:
+          SHARD: ${{ matrix.shard }}
+
+  # Linux x64 runners differ in CPU, and only some have every instruction set that the AVX-512 paths take. These jobs each try for one, and run the tests natively if they get one; avx512_sde runs them under Intel SDE, sharded since emulation is slow, if none does.
+  avx512:
+    name: avx512 (try ${{ matrix.try }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        try: [1, 2, 3, 4, 5]
+    # Matrix jobs combine their outputs, leaving out empty ones, so native is set if any job got one.
+    outputs:
+      native: ${{ steps.probe.outputs.native }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.NET_VERSION }}
+      - uses: petarpetrovt/setup-sde@v6.0
+
+      - name: Probe
+        id: probe
+        run: |
+          missing=$(bash .github/test.sh probe)
+          [[ -n $missing ]] || echo native=true >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        if: steps.probe.outputs.native
+        run: dotnet build test/CryptoBase.Tests -c Release -p:RunAnalyzers=false
+
+      # The runs match the avx512_sde matrix; Vector512 still takes the AVX-512VL paths.
+      - name: Test (Release)
+        if: steps.probe.outputs.native
+        run: bash .github/test.sh
+        env:
+          DISABLE: none AVX512v2 Vector512 VAES GFNI AVX512
+
+  avx512_sde:
+    name: avx512 sde (${{ matrix.disable && format('no {0}, ', matrix.disable) }}${{ matrix.shard }})
+    needs: avx512
+    if: ${{ !cancelled() && !needs.avx512.outputs.native }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        disable: ['', AVX512v2, Vector512, VAES, GFNI, AVX512]
+        shard: [hashes, ciphers, ec, rest]
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.NET_VERSION }}
+      - uses: petarpetrovt/setup-sde@v6.0
+
+      - name: Build
+        run: dotnet build test/CryptoBase.Tests -c Release -p:RunAnalyzers=false
+
+      - name: Test (Release)
+        run: bash .github/test.sh
+        env:
+          DISABLE: ${{ matrix.disable }}
+          SHARD: ${{ matrix.shard }}
