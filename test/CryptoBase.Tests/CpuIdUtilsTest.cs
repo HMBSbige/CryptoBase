@@ -57,6 +57,26 @@ public class CpuIdUtilsTest
 	}
 
 	[Test]
+	[Arguments(0x19, 0x01, true)] // Milan
+	[Arguments(0x19, 0x11, true)] // Genoa
+	[Arguments(0x19, 0x61, true)] // Raphael
+	[Arguments(0x19, 0x74, true)] // Phoenix
+	[Arguments(0x1A, 0x1F, false)]
+	[Arguments(0x1A, 0x20, true)] // Strix Point
+	[Arguments(0x1A, 0x2F, true)]
+	[Arguments(0x1A, 0x30, false)]
+	[Arguments(0x1A, 0x44, false)] // Granite Ridge
+	[Arguments(0x1A, 0x60, true)] // Krackan
+	[Arguments(0x1A, 0x6F, true)]
+	[Arguments(0x1A, 0x70, false)] // Strix Halo
+	[Arguments(0x1A, 0xD0, false)]
+	[Arguments(0x17, 0x71, false)] // Zen 2
+	public async Task MatchesZenWith256BitDatapathModelRanges(int family, int model, bool expected)
+	{
+		await Assert.That(CpuIdUtils.IsZenWith256BitDatapath(family, model)).IsEqualTo(expected);
+	}
+
+	[Test]
 	[Arguments("AuthenticAMD", true)]
 	[Arguments("GenuineIntel", false)]
 	[Arguments("HygonGenuine", false)]

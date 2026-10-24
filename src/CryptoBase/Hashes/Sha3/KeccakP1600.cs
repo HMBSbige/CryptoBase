@@ -7,9 +7,15 @@ internal static partial class KeccakP1600
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Permute(ref InlineArray25<ulong> state)
 	{
-		if (IsAvx512Supported)
+		if (PreferAvx512)
 		{
 			PermuteAvx512(ref state);
+			return;
+		}
+
+		if (KeccakP1600Lane128.IsSupported)
+		{
+			PermuteLane128(ref state);
 			return;
 		}
 

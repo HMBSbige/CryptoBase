@@ -54,9 +54,13 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 			source = source.Slice(bytesNeeded);
 		}
 
-		if (KeccakP1600.IsAvx512Supported && source.Length >= TRate.RateInBytes)
+		if (KeccakP1600.PreferAvx512 && source.Length >= TRate.RateInBytes)
 		{
 			source = source.Slice(KeccakP1600.AbsorbAvx512<TRate>(ref _state, source));
+		}
+		else if (KeccakP1600Lane128.IsSupported && source.Length >= TRate.RateInBytes)
+		{
+			source = source.Slice(KeccakP1600.AbsorbLane128<TRate>(ref _state, source));
 		}
 
 		while (source.Length >= TRate.RateInBytes)
@@ -196,9 +200,13 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 			destination = destination.Slice(available);
 
 			// Passing one byte less leaves the last block, whole or not, to the permutation below, so that the state ends holding it either way.
-			if (KeccakP1600.IsAvx512Supported && destination.Length > TRate.RateInBytes)
+			if (KeccakP1600.PreferAvx512 && destination.Length > TRate.RateInBytes)
 			{
 				destination = destination.Slice(KeccakP1600.SqueezeAvx512<TRate>(ref _state, destination.Slice(0, destination.Length - 1)));
+			}
+			else if (KeccakP1600Lane128.IsSupported && destination.Length > TRate.RateInBytes)
+			{
+				destination = destination.Slice(KeccakP1600.SqueezeLane128<TRate>(ref _state, destination.Slice(0, destination.Length - 1)));
 			}
 
 			KeccakP1600.Permute(ref _state);

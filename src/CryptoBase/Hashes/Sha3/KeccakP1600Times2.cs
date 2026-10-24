@@ -13,7 +13,19 @@ internal readonly struct KeccakP1600Times2 : IKeccakP1600Kernel, IKeccakP1600Lan
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Permute(ref ulong state)
 	{
-		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Times2>(ref Unsafe.As<ulong, Vector128<ulong>>(ref state));
+		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Times2>(ref state);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector128<ulong> Load(ref ulong state, int lane)
+	{
+		return Vector128.LoadUnsafe(ref state, (nuint)(lane * Lanes));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Store(ref ulong state, int lane, Vector128<ulong> value)
+	{
+		value.StoreUnsafe(ref state, (nuint)(lane * Lanes));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

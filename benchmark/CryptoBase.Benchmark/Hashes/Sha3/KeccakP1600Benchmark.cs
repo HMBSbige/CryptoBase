@@ -22,6 +22,28 @@ public class KeccakP1600Benchmark
 		KeccakP1600.Permute(ref _state);
 	}
 
+	[Benchmark]
+	public void Avx512()
+	{
+		if (!KeccakP1600.IsAvx512Supported)
+		{
+			throw new PlatformNotSupportedException("AVX-512 is not supported in this process.");
+		}
+
+		KeccakP1600.PermuteAvx512(ref _state);
+	}
+
+	[Benchmark]
+	public void Lane128()
+	{
+		if (!KeccakP1600Lane128.IsSupported)
+		{
+			throw new PlatformNotSupportedException("AVX-512VL is not supported in this process.");
+		}
+
+		KeccakP1600.PermuteLane128(ref _state);
+	}
+
 	[Benchmark(OperationsPerInvoke = 2)]
 	public void Times2()
 	{

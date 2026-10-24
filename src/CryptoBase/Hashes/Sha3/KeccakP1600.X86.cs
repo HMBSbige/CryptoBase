@@ -4,6 +4,41 @@ internal static partial class KeccakP1600
 {
 	internal static bool IsAvx512Supported => Vector512.IsHardwareAccelerated && Avx512F.IsSupported;
 
+	// Zen 4 and 256-bit-datapath Zen 5 halve the row kernel's shuffle throughput; Lane128 has no shuffles.
+	internal static readonly bool PreferAvx512 = IsAvx512Supported && !CpuIdUtils.IsAmdWith256BitDatapath();
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void PermuteLane128(ref InlineArray25<ulong> state)
+	{
+		Debug.Assert(KeccakP1600Lane128.IsSupported);
+
+		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128>(ref state[0]);
+	}
+
+	// XORs each whole block of source into the state and permutes it, and returns the number of bytes absorbed.
+	internal static int AbsorbLane128<TRate>(ref InlineArray25<ulong> state, ReadOnlySpan<byte> source) where TRate : IKeccakRate
+	{
+		Debug.Assert(KeccakP1600Lane128.IsSupported);
+		Debug.Assert(source.Length >= TRate.RateInBytes);
+
+		int blocks = source.Length / TRate.RateInBytes;
+		ref ulong block = ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(source));
+		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128, KeccakP1600AbsorbBlocks<TRate>>(ref state[0], ref block, blocks);
+		return blocks * TRate.RateInBytes;
+	}
+
+	// Permutes the state and writes its first rate bytes for each whole block that fits in destination, and returns the number of bytes written; the state then holds the last block written.
+	internal static int SqueezeLane128<TRate>(ref InlineArray25<ulong> state, Span<byte> destination) where TRate : IKeccakRate
+	{
+		Debug.Assert(KeccakP1600Lane128.IsSupported);
+		Debug.Assert(destination.Length >= TRate.RateInBytes);
+
+		int blocks = destination.Length / TRate.RateInBytes;
+		ref ulong block = ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(destination));
+		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128, KeccakP1600SqueezeBlocks<TRate>>(ref state[0], ref block, blocks);
+		return blocks * TRate.RateInBytes;
+	}
+
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void PermuteAvx512(ref InlineArray25<ulong> state)
