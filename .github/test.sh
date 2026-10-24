@@ -38,7 +38,7 @@ fi
 
 case $1 in
 	'') ;;
-	tiered) exec dotnet "$tests" --minimum-expected-tests 1 "${filter[@]}" ;;
+	tiered) DOTNET_TieredCompilation=1 exec dotnet "$tests" --minimum-expected-tests 1 "${filter[@]}" ;;
 	debug) exec dotnet test --project test/CryptoBase.Tests -c Debug --minimum-expected-tests 1 "${filter[@]}" ;;
 	*) echo "Unknown mode: $1" >&2; exit 1 ;;
 esac
@@ -55,7 +55,6 @@ if [[ -n $SHARD ]]; then
 	fi
 fi
 
-export DOTNET_TieredCompilation=0
 runner=(dotnet)
 
 if [[ -n $SDE_PATH ]]; then
