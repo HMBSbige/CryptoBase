@@ -47,15 +47,16 @@ jobs:
         run: bash .github/test.sh shards
 
   test:
-    name: test (${{ matrix.os }})
+    name: test (${{ matrix.os }}${{ matrix.part && format(', part {0}', matrix.part) }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Linux x64 covers the x86 instruction-set levels below the ones that the avx512 jobs cover.
-          - { os: ubuntu-latest, disable: 'AVX512,GFNI,VAES AVX2 AVX SSE42 AES HWIntrinsic' }
+          # Linux x64 covers the x86 instruction-set levels below the ones that the avx512 jobs cover, in two parts since its runs take the longest.
+          - { os: ubuntu-latest, part: 1, disable: 'AVX512,GFNI,VAES AVX2 AVX' }
+          - { os: ubuntu-latest, part: 2, disable: 'SSE42 AES HWIntrinsic' }
           # Linux ARM64 covers the ARM64 switches.
           - { os: ubuntu-26.04-arm, disable: 'none Arm64Aes Arm64Crc32 Arm64Sha1 Arm64Sha256 HWIntrinsic' }
           # Other platforms: default dispatch and the portable path.
@@ -78,7 +79,9 @@ jobs:
         env:
           DISABLE: ${{ matrix.disable }}
 
+      # The first Linux x64 part runs it for both.
       - name: Test (Release, tiered compilation)
+        if: matrix.part != 2
         run: bash .github/test.sh tiered
 
   debug:
