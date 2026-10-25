@@ -39,20 +39,48 @@ internal struct P384Field : IMontgomeryModulus
 	public static ulong Reduce<TSelf>(ref ulong product) where TSelf : struct, IMontgomeryModulus
 	{
 		ulong carry = 0;
-		ReduceRound(ref product, ref carry);
-		ReduceRound(ref Unsafe.Add(ref product, 1), ref carry);
-		ReduceRound(ref Unsafe.Add(ref product, 2), ref carry);
-		ReduceRound(ref Unsafe.Add(ref product, 3), ref carry);
-		ReduceRound(ref Unsafe.Add(ref product, 4), ref carry);
-		ReduceRound(ref Unsafe.Add(ref product, 5), ref carry);
+		ReduceRound(product, ref Unsafe.Add(ref product, 1), ref Unsafe.Add(ref product, 2), ref Unsafe.Add(ref product, 3), ref Unsafe.Add(ref product, 4), ref Unsafe.Add(ref product, 5), ref Unsafe.Add(ref product, 6), ref carry);
+		ReduceRound(Unsafe.Add(ref product, 1), ref Unsafe.Add(ref product, 2), ref Unsafe.Add(ref product, 3), ref Unsafe.Add(ref product, 4), ref Unsafe.Add(ref product, 5), ref Unsafe.Add(ref product, 6), ref Unsafe.Add(ref product, 7), ref carry);
+		ReduceRound(Unsafe.Add(ref product, 2), ref Unsafe.Add(ref product, 3), ref Unsafe.Add(ref product, 4), ref Unsafe.Add(ref product, 5), ref Unsafe.Add(ref product, 6), ref Unsafe.Add(ref product, 7), ref Unsafe.Add(ref product, 8), ref carry);
+		ReduceRound(Unsafe.Add(ref product, 3), ref Unsafe.Add(ref product, 4), ref Unsafe.Add(ref product, 5), ref Unsafe.Add(ref product, 6), ref Unsafe.Add(ref product, 7), ref Unsafe.Add(ref product, 8), ref Unsafe.Add(ref product, 9), ref carry);
+		ReduceRound(Unsafe.Add(ref product, 4), ref Unsafe.Add(ref product, 5), ref Unsafe.Add(ref product, 6), ref Unsafe.Add(ref product, 7), ref Unsafe.Add(ref product, 8), ref Unsafe.Add(ref product, 9), ref Unsafe.Add(ref product, 10), ref carry);
+		ReduceRound(Unsafe.Add(ref product, 5), ref Unsafe.Add(ref product, 6), ref Unsafe.Add(ref product, 7), ref Unsafe.Add(ref product, 8), ref Unsafe.Add(ref product, 9), ref Unsafe.Add(ref product, 10), ref Unsafe.Add(ref product, 11), ref carry);
 		return carry;
 	}
 
-	// q = 0 subtracts nothing, so q − β does not wrap.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ReduceRound(ref ulong t, ref ulong carry)
+	// The product and the rounds of Reduce in locals rather than in memory. Not inlined, as for P256Field.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static void Multiply<TSelf>(ref ulong x, ref ulong y, ref ulong result) where TSelf : struct, IMontgomeryModulus
 	{
-		ulong q = t + (t << 32);
+		MultiplyLimbs(ref x, ref y, out ulong t0, out ulong t1, out ulong t2, out ulong t3, out ulong t4, out ulong t5, out ulong t6, out ulong t7, out ulong t8, out ulong t9, out ulong t10, out ulong t11);
+		Reduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, ref result);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static void Square<TSelf>(ref ulong x, ref ulong result) where TSelf : struct, IMontgomeryModulus
+	{
+		SquareLimbs(ref x, out ulong t0, out ulong t1, out ulong t2, out ulong t3, out ulong t4, out ulong t5, out ulong t6, out ulong t7, out ulong t8, out ulong t9, out ulong t10, out ulong t11);
+		Reduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, ref result);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Reduce(ulong t0, ulong t1, ulong t2, ulong t3, ulong t4, ulong t5, ulong t6, ulong t7, ulong t8, ulong t9, ulong t10, ulong t11, ref ulong result)
+	{
+		ulong carry = 0;
+		ReduceRound(t0, ref t1, ref t2, ref t3, ref t4, ref t5, ref t6, ref carry);
+		ReduceRound(t1, ref t2, ref t3, ref t4, ref t5, ref t6, ref t7, ref carry);
+		ReduceRound(t2, ref t3, ref t4, ref t5, ref t6, ref t7, ref t8, ref carry);
+		ReduceRound(t3, ref t4, ref t5, ref t6, ref t7, ref t8, ref t9, ref carry);
+		ReduceRound(t4, ref t5, ref t6, ref t7, ref t8, ref t9, ref t10, ref carry);
+		ReduceRound(t5, ref t6, ref t7, ref t8, ref t9, ref t10, ref t11, ref carry);
+		FieldElement<P384Field>.ReduceOnce(t6, t7, t8, t9, t10, t11, carry, ref result);
+	}
+
+	// Clears t0 from t0 to t6. q = 0 subtracts nothing, so q − β does not wrap.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ReduceRound(ulong t0, ref ulong t1, ref ulong t2, ref ulong t3, ref ulong t4, ref ulong t5, ref ulong t6, ref ulong carry)
+	{
+		ulong q = t0 + (t0 << 32);
 		// q·d = (q − low) + (low − high)·2^64 + (q + high)·2^128 for q·2^32 = high·2^64 + low. Its limb 0 is t_0, which the subtraction clears, so only the borrow out of it counts.
 		ulong low = q << 32;
 		ulong high = q >> 32;
@@ -63,11 +91,11 @@ internal struct P384Field : IMontgomeryModulus
 		ulong d2 = sum - borrow;
 		ulong d3 = Carry(sum, q);
 		borrow = 0;
-		Unsafe.Add(ref t, 1) = SubtractWithBorrow(Unsafe.Add(ref t, 1), d1, ref borrow);
-		Unsafe.Add(ref t, 2) = SubtractWithBorrow(Unsafe.Add(ref t, 2), d2, ref borrow);
-		Unsafe.Add(ref t, 3) = SubtractWithBorrow(Unsafe.Add(ref t, 3), d3, ref borrow);
-		Unsafe.Add(ref t, 4) = SubtractWithBorrow(Unsafe.Add(ref t, 4), 0, ref borrow);
-		Unsafe.Add(ref t, 5) = SubtractWithBorrow(Unsafe.Add(ref t, 5), 0, ref borrow);
-		Unsafe.Add(ref t, 6) = AddWithCarry(Unsafe.Add(ref t, 6), q - borrow, ref carry);
+		t1 = SubtractWithBorrow(t1, d1, ref borrow);
+		t2 = SubtractWithBorrow(t2, d2, ref borrow);
+		t3 = SubtractWithBorrow(t3, d3, ref borrow);
+		t4 = SubtractWithBorrow(t4, 0, ref borrow);
+		t5 = SubtractWithBorrow(t5, 0, ref borrow);
+		t6 = AddWithCarry(t6, q - borrow, ref carry);
 	}
 }

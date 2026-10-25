@@ -103,6 +103,43 @@ public class FieldElementTest
 		await Assert.That(failures).IsEmpty();
 	}
 
+	// Before its final subtraction a product is a value u below 2m, which Reduce gives. Where 2m > R, random operands give u below m and u of R or more, which carries out of the top limb, about equally often. u in [m, R) is rare for them, but ImportReduced reaches it: its product of x and R mod m has u = x.
+	[Test]
+	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
+	public async Task MultiplyAndSquareTakeBothSidesOfTheFinalSubtraction(ModulusCase modulus)
+	{
+		BigInteger m = modulus.Modulus;
+		BigInteger r = modulus.R;
+		BigInteger rInverse = RInverse(modulus);
+		int below = 0;
+		int carried = 0;
+		Random random = new(16);
+		List<string> failures = [];
+
+		for (int i = 0; i < 2 * RandomCount; ++i)
+		{
+			BigInteger left = modulus.RandomBelow(random, m);
+			BigInteger right = modulus.RandomBelow(random, m);
+
+			foreach (BigInteger u in (BigInteger[])[modulus.Reduce(left * right), modulus.Reduce(left * left)])
+			{
+				below += u < m ? 1 : 0;
+				carried += u >= r ? 1 : 0;
+			}
+
+			Check(failures, $"{left:X} · {right:X}", modulus.Multiply(left, right), left * right * rInverse % m);
+			Check(failures, $"{left:X}²", modulus.Square(left), left * left * rInverse % m);
+		}
+
+		await Assert.That(failures).IsEmpty();
+
+		if (2 * m > r)
+		{
+			await Assert.That(below).IsPositive();
+			await Assert.That(carried).IsPositive();
+		}
+	}
+
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task MontgomeryFormRoundTrips(ModulusCase modulus)

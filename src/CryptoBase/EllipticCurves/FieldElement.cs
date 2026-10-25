@@ -533,6 +533,29 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		Unsafe.Add(ref result, 3) = Select(mask, t3, d3);
 	}
 
+	// As above for LimbCount = 6.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void ReduceOnce(ulong t0, ulong t1, ulong t2, ulong t3, ulong t4, ulong t5, ulong high, ref ulong result)
+	{
+		Debug.Assert(TModulus.LimbCount is 6);
+
+		ulong borrow = 0;
+		ulong d0 = SubtractWithBorrow(t0, TModulus.Modulus[0], ref borrow);
+		ulong d1 = SubtractWithBorrow(t1, TModulus.Modulus[1], ref borrow);
+		ulong d2 = SubtractWithBorrow(t2, TModulus.Modulus[2], ref borrow);
+		ulong d3 = SubtractWithBorrow(t3, TModulus.Modulus[3], ref borrow);
+		ulong d4 = SubtractWithBorrow(t4, TModulus.Modulus[4], ref borrow);
+		ulong d5 = SubtractWithBorrow(t5, TModulus.Modulus[5], ref borrow);
+		_ = SubtractWithBorrow(high, 0, ref borrow);
+		ulong mask = 0 - borrow;
+		result = Select(mask, t0, d0);
+		Unsafe.Add(ref result, 1) = Select(mask, t1, d1);
+		Unsafe.Add(ref result, 2) = Select(mask, t2, d2);
+		Unsafe.Add(ref result, 3) = Select(mask, t3, d3);
+		Unsafe.Add(ref result, 4) = Select(mask, t4, d4);
+		Unsafe.Add(ref result, 5) = Select(mask, t5, d5);
+	}
+
 	[InlineArray(2)]
 	private struct Product
 	{
