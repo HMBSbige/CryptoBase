@@ -66,15 +66,20 @@ public abstract class CurveCase
 
 	internal int PublicKeyLength => 1 + 2 * FieldLength;
 
-	internal abstract ProjectiveValue Add(ProjectiveValue left, ProjectiveValue right, ResultAliasing aliasing = ResultAliasing.None);
+	internal abstract JacobianValue Add(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None);
 
-	internal abstract ProjectiveValue Add(ProjectiveValue left, CurvePoint right, bool inPlace = false);
+	internal abstract JacobianValue Add(JacobianValue left, CurvePoint right, bool inPlace = false);
 
-	internal abstract ProjectiveValue Double(ProjectiveValue value, bool inPlace = false);
+	// The sum and the mask that tells equal points.
+	internal abstract (JacobianValue Sum, ulong Equal) AddDistinct(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None);
 
-	internal abstract ProjectiveValue MultiplyBase(BigInteger scalar);
+	internal abstract (JacobianValue Sum, ulong Equal) AddDistinct(JacobianValue left, CurvePoint right, bool inPlace = false);
 
-	internal abstract ProjectiveValue Multiply(CurvePoint point, BigInteger scalar);
+	internal abstract JacobianValue Double(JacobianValue value, bool inPlace = false);
+
+	internal abstract JacobianValue MultiplyBase(BigInteger scalar);
+
+	internal abstract JacobianValue Multiply(CurvePoint point, BigInteger scalar);
 
 	internal abstract CurvePoint MultiplyBaseToAffine(BigInteger scalar);
 
@@ -82,11 +87,11 @@ public abstract class CurveCase
 
 	internal abstract bool TryMultiplyExportX(CurvePoint point, BigInteger scalar, byte[] destination);
 
-	internal abstract CurvePoint ToAffine(ProjectiveValue value);
+	internal abstract CurvePoint ToAffine(JacobianValue value);
 
-	internal abstract byte[] ExportX(ProjectiveValue value);
+	internal abstract byte[] ExportX(JacobianValue value);
 
-	internal abstract BigInteger ReduceX(ProjectiveValue value);
+	internal abstract BigInteger ReduceX(JacobianValue value);
 
 	// The result is what FieldElement<TOrder>.TryImportNonzero leaves, whether or not it accepts.
 	internal abstract bool TryImportScalar(byte[] source, out BigInteger scalar);
@@ -101,7 +106,7 @@ public abstract class CurveCase
 	internal abstract CurvePoint SelectFromGeneratorTable(int window, int digit);
 
 	// The multiples need not be points.
-	internal abstract ProjectiveValue SelectFromMultiples(ProjectiveValue[] multiples, int digit);
+	internal abstract JacobianValue SelectFromMultiples(JacobianValue[] multiples, int digit);
 
 	internal abstract int VariableTimeGeneratorWidth { get; }
 
@@ -186,10 +191,10 @@ public abstract class CurveCase
 
 		internal override int GeneratorWindowLength => EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
 
-		internal override ProjectiveValue Add(ProjectiveValue left, ProjectiveValue right, ResultAliasing aliasing = ResultAliasing.None)
+		internal override JacobianValue Add(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None)
 		{
-			ProjectivePoint<TField> x = ToPoint(left);
-			ProjectivePoint<TField> y = ToPoint(right);
+			JacobianPoint<TField> x = ToPoint(left);
+			JacobianPoint<TField> y = ToPoint(right);
 
 			switch (aliasing)
 			{
@@ -200,14 +205,14 @@ public abstract class CurveCase
 					EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out y);
 					return ToValue(y);
 				default:
-					EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out ProjectivePoint<TField> result);
+					EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
 					return ToValue(result);
 			}
 		}
 
-		internal override ProjectiveValue Add(ProjectiveValue left, CurvePoint right, bool inPlace = false)
+		internal override JacobianValue Add(JacobianValue left, CurvePoint right, bool inPlace = false)
 		{
-			ProjectivePoint<TField> x = ToPoint(left);
+			JacobianPoint<TField> x = ToPoint(left);
 			AffinePoint<TField> y = ToPoint(right);
 
 			if (inPlace)
@@ -216,13 +221,49 @@ public abstract class CurveCase
 				return ToValue(x);
 			}
 
-			EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out ProjectivePoint<TField> result);
+			EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
-		internal override ProjectiveValue Double(ProjectiveValue value, bool inPlace = false)
+		internal override (JacobianValue Sum, ulong Equal) AddDistinct(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None)
 		{
-			ProjectivePoint<TField> x = ToPoint(value);
+			JacobianPoint<TField> x = ToPoint(left);
+			JacobianPoint<TField> y = ToPoint(right);
+			ulong equal;
+
+			switch (aliasing)
+			{
+				case ResultAliasing.Left:
+					equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out x);
+					return (ToValue(x), equal);
+				case ResultAliasing.Right:
+					equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out y);
+					return (ToValue(y), equal);
+				default:
+					equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out JacobianPoint<TField> result);
+					return (ToValue(result), equal);
+			}
+		}
+
+		internal override (JacobianValue Sum, ulong Equal) AddDistinct(JacobianValue left, CurvePoint right, bool inPlace = false)
+		{
+			JacobianPoint<TField> x = ToPoint(left);
+			AffinePoint<TField> y = ToPoint(right);
+			ulong equal;
+
+			if (inPlace)
+			{
+				equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out x);
+				return (ToValue(x), equal);
+			}
+
+			equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out JacobianPoint<TField> result);
+			return (ToValue(result), equal);
+		}
+
+		internal override JacobianValue Double(JacobianValue value, bool inPlace = false)
+		{
+			JacobianPoint<TField> x = ToPoint(value);
 
 			if (inPlace)
 			{
@@ -230,19 +271,19 @@ public abstract class CurveCase
 				return ToValue(x);
 			}
 
-			EcGroup<TCurve, TField, TOrder>.Double(in x, out ProjectivePoint<TField> result);
+			EcGroup<TCurve, TField, TOrder>.Double(in x, out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
-		internal override ProjectiveValue MultiplyBase(BigInteger scalar)
+		internal override JacobianValue MultiplyBase(BigInteger scalar)
 		{
-			EcGroup<TCurve, TField, TOrder>.MultiplyBase(ToScalar(scalar), out ProjectivePoint<TField> result);
+			EcGroup<TCurve, TField, TOrder>.MultiplyBase(ToScalar(scalar), out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
-		internal override ProjectiveValue Multiply(CurvePoint point, BigInteger scalar)
+		internal override JacobianValue Multiply(CurvePoint point, BigInteger scalar)
 		{
-			EcGroup<TCurve, TField, TOrder>.Multiply(ToPoint(point), ToScalar(scalar), out ProjectivePoint<TField> result);
+			EcGroup<TCurve, TField, TOrder>.Multiply(ToPoint(point), ToScalar(scalar), out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
@@ -263,20 +304,20 @@ public abstract class CurveCase
 			return EcGroup<TCurve, TField, TOrder>.TryMultiplyExportX(ToPoint(point), ToScalar(scalar), destination);
 		}
 
-		internal override CurvePoint ToAffine(ProjectiveValue value)
+		internal override CurvePoint ToAffine(JacobianValue value)
 		{
 			EcGroup<TCurve, TField, TOrder>.ToAffine(ToPoint(value), out AffinePoint<TField> result);
 			return ToValue(result);
 		}
 
-		internal override byte[] ExportX(ProjectiveValue value)
+		internal override byte[] ExportX(JacobianValue value)
 		{
 			byte[] x = new byte[TField.ByteLength];
 			EcGroup<TCurve, TField, TOrder>.ExportX(ToPoint(value), x);
 			return x;
 		}
 
-		internal override BigInteger ReduceX(ProjectiveValue value)
+		internal override BigInteger ReduceX(JacobianValue value)
 		{
 			EcGroup<TCurve, TField, TOrder>.ReduceX(ToPoint(value), out FieldElement<TOrder> result);
 			return ScalarValue(result);
@@ -315,10 +356,10 @@ public abstract class CurveCase
 			return ToValue(result);
 		}
 
-		internal override ProjectiveValue SelectFromMultiples(ProjectiveValue[] multiples, int digit)
+		internal override JacobianValue SelectFromMultiples(JacobianValue[] multiples, int digit)
 		{
-			ProjectivePoint<TField>[] points = [.. multiples.Select(static multiple => ToPoint(multiple))];
-			EcGroup<TCurve, TField, TOrder>.Select(points, digit, out ProjectivePoint<TField> result);
+			JacobianPoint<TField>[] points = [.. multiples.Select(static multiple => ToPoint(multiple))];
+			EcGroup<TCurve, TField, TOrder>.Select(points, digit, out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
@@ -437,19 +478,9 @@ public abstract class CurveCase
 			return ModulusCase.Decode(bytes);
 		}
 
-		private static ProjectivePoint<TField> ToPoint(ProjectiveValue value)
-		{
-			return new ProjectivePoint<TField> { X = ToElement(value.X), Y = ToElement(value.Y), Z = ToElement(value.Z) };
-		}
-
 		private static AffinePoint<TField> ToPoint(CurvePoint point)
 		{
 			return new AffinePoint<TField> { X = ToElement(point.X), Y = ToElement(point.Y) };
-		}
-
-		private static ProjectiveValue ToValue(in ProjectivePoint<TField> point)
-		{
-			return new ProjectiveValue(FieldValue(point.X), FieldValue(point.Y), FieldValue(point.Z));
 		}
 
 		private static CurvePoint ToValue(in AffinePoint<TField> point)

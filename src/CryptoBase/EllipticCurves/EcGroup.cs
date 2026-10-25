@@ -14,155 +14,124 @@ internal static class EcGroup<TCurve, TField, TOrder>
 
 	private static ref readonly FieldElement<TField> B => ref FieldElement<TField>.FromLimbs(TCurve.B);
 
-	// Complete for a = −3 on a curve of odd order: any two points, equal, opposite or at infinity. The result may be either input: it is written only after the last read of the inputs.
-	internal static void Add(in ProjectivePoint<TField> left, in ProjectivePoint<TField> right, out ProjectivePoint<TField> result)
+	// For a = −3. Holds for every point: Z = 0 gives Z3 = 0, and no other point has Y = 0, as a curve of odd order has no point of order 2. The result may be the input.
+	internal static void Double(in JacobianPoint<TField> value, out JacobianPoint<TField> result)
 	{
-		FieldElement<TField>.Multiply(in left.X, in right.X, out FieldElement<TField> t0);
-		FieldElement<TField>.Multiply(in left.Y, in right.Y, out FieldElement<TField> t1);
-		FieldElement<TField>.Multiply(in left.Z, in right.Z, out FieldElement<TField> t2);
-		FieldElement<TField>.Add(in left.X, in left.Y, out FieldElement<TField> t3);
-		FieldElement<TField>.Add(in right.X, in right.Y, out FieldElement<TField> t4);
-		FieldElement<TField>.Multiply(in t3, in t4, out t3);
-		FieldElement<TField>.Add(in t0, in t1, out t4);
-		FieldElement<TField>.Subtract(in t3, in t4, out t3);
-		FieldElement<TField>.Add(in left.Y, in left.Z, out t4);
-		FieldElement<TField>.Add(in right.Y, in right.Z, out FieldElement<TField> x3);
-		FieldElement<TField>.Multiply(in t4, in x3, out t4);
-		FieldElement<TField>.Add(in t1, in t2, out x3);
-		FieldElement<TField>.Subtract(in t4, in x3, out t4);
-		FieldElement<TField>.Add(in left.X, in left.Z, out x3);
-		FieldElement<TField>.Add(in right.X, in right.Z, out FieldElement<TField> y3);
-		FieldElement<TField>.Multiply(in x3, in y3, out x3);
-		FieldElement<TField>.Add(in t0, in t2, out y3);
-		FieldElement<TField>.Subtract(in x3, in y3, out y3);
-		FieldElement<TField>.Multiply(in B, in t2, out FieldElement<TField> z3);
-		FieldElement<TField>.Subtract(in y3, in z3, out x3);
-		FieldElement<TField>.Add(in x3, in x3, out z3);
-		FieldElement<TField>.Add(in x3, in z3, out x3);
-		FieldElement<TField>.Subtract(in t1, in x3, out z3);
-		FieldElement<TField>.Add(in t1, in x3, out x3);
-		FieldElement<TField>.Multiply(in B, in y3, out y3);
-		FieldElement<TField>.Add(in t2, in t2, out t1);
-		FieldElement<TField>.Add(in t1, in t2, out t2);
-		FieldElement<TField>.Subtract(in y3, in t2, out y3);
-		FieldElement<TField>.Subtract(in y3, in t0, out y3);
-		FieldElement<TField>.Add(in y3, in y3, out t1);
-		FieldElement<TField>.Add(in t1, in y3, out y3);
-		FieldElement<TField>.Add(in t0, in t0, out t1);
-		FieldElement<TField>.Add(in t1, in t0, out t0);
-		FieldElement<TField>.Subtract(in t0, in t2, out t0);
-		FieldElement<TField>.Multiply(in t4, in y3, out t1);
-		FieldElement<TField>.Multiply(in t0, in y3, out t2);
-		FieldElement<TField>.Multiply(in x3, in z3, out y3);
-		FieldElement<TField>.Add(in y3, in t2, out y3);
-		FieldElement<TField>.Multiply(in t3, in x3, out x3);
-		FieldElement<TField>.Subtract(in x3, in t1, out result.X);
-		FieldElement<TField>.Multiply(in t4, in z3, out z3);
-		FieldElement<TField>.Multiply(in t3, in t0, out t1);
-		FieldElement<TField>.Add(in z3, in t1, out result.Z);
-		result.Y = y3;
+		FieldElement<TField>.Square(in value.Y, out FieldElement<TField> gamma);
+		FieldElement<TField>.Add(in gamma, in gamma, out FieldElement<TField> twoGamma);
+		FieldElement<TField>.Multiply(in value.X, in twoGamma, out FieldElement<TField> fourBeta);
+		FieldElement<TField>.Add(in fourBeta, in fourBeta, out fourBeta);
+		FieldElement<TField>.Square(in value.Z, out FieldElement<TField> delta);
+		FieldElement<TField>.Subtract(in value.X, in delta, out FieldElement<TField> alpha);
+		FieldElement<TField>.Add(in value.X, in delta, out delta);
+		FieldElement<TField>.Multiply(in alpha, in delta, out alpha);
+		FieldElement<TField>.Add(in alpha, in alpha, out delta);
+		FieldElement<TField>.Add(in alpha, in delta, out alpha);
+		FieldElement<TField>.Multiply(in value.Y, in value.Z, out FieldElement<TField> z3);
+		FieldElement<TField>.Add(in z3, in z3, out result.Z);
+		FieldElement<TField>.Square(in alpha, out FieldElement<TField> x3);
+		FieldElement<TField>.Subtract(in x3, in fourBeta, out x3);
+		FieldElement<TField>.Subtract(in x3, in fourBeta, out x3);
+		FieldElement<TField>.Subtract(in fourBeta, in x3, out fourBeta);
+		FieldElement<TField>.Multiply(in alpha, in fourBeta, out alpha);
+		FieldElement<TField>.Square(in twoGamma, out twoGamma);
+		FieldElement<TField>.Add(in twoGamma, in twoGamma, out twoGamma);
+		FieldElement<TField>.Subtract(in alpha, in twoGamma, out result.Y);
+		result.X = x3;
+	}
+
+	// Any two points, equal, opposite or at infinity: masks take the other input where one is at infinity and the double where the points are equal. The result may be either input: it is written only after the last read of the inputs.
+	internal static void Add(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
+	{
+		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
+		Double(in left, out JacobianPoint<TField> twice);
+		JacobianPoint<TField>.ConditionalSelect(equal, in twice, in sum, out sum);
+		JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in left.Z), in right, in sum, out sum);
+		JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in right.Z), in left, in sum, out result);
 	}
 
 	// As above, with an affine right, which cannot be the point at infinity; the left may be.
-	internal static void Add(in ProjectivePoint<TField> left, in AffinePoint<TField> right, out ProjectivePoint<TField> result)
+	internal static void Add(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
 	{
-		FieldElement<TField>.Multiply(in left.X, in right.X, out FieldElement<TField> t0);
-		FieldElement<TField>.Multiply(in left.Y, in right.Y, out FieldElement<TField> t1);
-		FieldElement<TField>.Add(in right.X, in right.Y, out FieldElement<TField> t3);
-		FieldElement<TField>.Add(in left.X, in left.Y, out FieldElement<TField> t4);
-		FieldElement<TField>.Multiply(in t3, in t4, out t3);
-		FieldElement<TField>.Add(in t0, in t1, out t4);
-		FieldElement<TField>.Subtract(in t3, in t4, out t3);
-		FieldElement<TField>.Multiply(in right.Y, in left.Z, out t4);
-		FieldElement<TField>.Add(in t4, in left.Y, out t4);
-		FieldElement<TField>.Multiply(in right.X, in left.Z, out FieldElement<TField> y3);
-		FieldElement<TField>.Add(in y3, in left.X, out y3);
-		FieldElement<TField>.Multiply(in B, in left.Z, out FieldElement<TField> z3);
-		FieldElement<TField>.Subtract(in y3, in z3, out FieldElement<TField> x3);
-		FieldElement<TField>.Add(in x3, in x3, out z3);
-		FieldElement<TField>.Add(in x3, in z3, out x3);
-		FieldElement<TField>.Subtract(in t1, in x3, out z3);
-		FieldElement<TField>.Add(in t1, in x3, out x3);
-		FieldElement<TField>.Multiply(in B, in y3, out y3);
-		FieldElement<TField>.Add(in left.Z, in left.Z, out t1);
-		FieldElement<TField>.Add(in t1, in left.Z, out FieldElement<TField> t2);
-		FieldElement<TField>.Subtract(in y3, in t2, out y3);
-		FieldElement<TField>.Subtract(in y3, in t0, out y3);
-		FieldElement<TField>.Add(in y3, in y3, out t1);
-		FieldElement<TField>.Add(in t1, in y3, out y3);
-		FieldElement<TField>.Add(in t0, in t0, out t1);
-		FieldElement<TField>.Add(in t1, in t0, out t0);
-		FieldElement<TField>.Subtract(in t0, in t2, out t0);
-		FieldElement<TField>.Multiply(in t4, in y3, out t1);
-		FieldElement<TField>.Multiply(in t0, in y3, out t2);
-		FieldElement<TField>.Multiply(in x3, in z3, out y3);
-		FieldElement<TField>.Add(in y3, in t2, out y3);
-		FieldElement<TField>.Multiply(in t3, in x3, out x3);
-		FieldElement<TField>.Subtract(in x3, in t1, out result.X);
-		FieldElement<TField>.Multiply(in t4, in z3, out z3);
-		FieldElement<TField>.Multiply(in t3, in t0, out t1);
-		FieldElement<TField>.Add(in z3, in t1, out result.Z);
-		result.Y = y3;
+		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
+		Double(in left, out JacobianPoint<TField> twice);
+		JacobianPoint<TField>.ConditionalSelect(equal, in twice, in sum, out sum);
+		JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in left.Z), in right, in sum, out result);
 	}
 
-	internal static void Double(in ProjectivePoint<TField> value, out ProjectivePoint<TField> result)
+	// Sets result to left + right for points that are not the point at infinity, except that equal points give (0, 0, 0); opposite points give Z = 0, the point at infinity. Returns ulong.MaxValue if the points are equal, which is where H = 0 and R = 0, and 0 otherwise. The result may be either input.
+	internal static ulong AddDistinct(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
 	{
-		FieldElement<TField>.Square(in value.X, out FieldElement<TField> t0);
-		FieldElement<TField>.Square(in value.Y, out FieldElement<TField> t1);
-		FieldElement<TField>.Square(in value.Z, out FieldElement<TField> t2);
-		FieldElement<TField>.Multiply(in value.X, in value.Y, out FieldElement<TField> t3);
-		FieldElement<TField>.Add(in t3, in t3, out t3);
-		FieldElement<TField>.Multiply(in value.X, in value.Z, out FieldElement<TField> z3);
-		FieldElement<TField>.Add(in z3, in z3, out z3);
-		FieldElement<TField>.Multiply(in B, in t2, out FieldElement<TField> y3);
-		FieldElement<TField>.Subtract(in y3, in z3, out y3);
-		FieldElement<TField>.Add(in y3, in y3, out FieldElement<TField> x3);
-		FieldElement<TField>.Add(in x3, in y3, out y3);
-		FieldElement<TField>.Subtract(in t1, in y3, out x3);
-		FieldElement<TField>.Add(in t1, in y3, out y3);
-		FieldElement<TField>.Multiply(in x3, in y3, out y3);
-		FieldElement<TField>.Multiply(in x3, in t3, out x3);
-		FieldElement<TField>.Add(in t2, in t2, out t3);
-		FieldElement<TField>.Add(in t2, in t3, out t2);
-		FieldElement<TField>.Multiply(in B, in z3, out z3);
-		FieldElement<TField>.Subtract(in z3, in t2, out z3);
-		FieldElement<TField>.Subtract(in z3, in t0, out z3);
-		FieldElement<TField>.Add(in z3, in z3, out t3);
-		FieldElement<TField>.Add(in z3, in t3, out z3);
-		FieldElement<TField>.Add(in t0, in t0, out t3);
-		FieldElement<TField>.Add(in t3, in t0, out t0);
-		FieldElement<TField>.Subtract(in t0, in t2, out t0);
-		FieldElement<TField>.Multiply(in t0, in z3, out t0);
-		FieldElement<TField>.Add(in y3, in t0, out y3);
-		FieldElement<TField>.Multiply(in value.Y, in value.Z, out t0);
-		FieldElement<TField>.Add(in t0, in t0, out t0);
-		FieldElement<TField>.Multiply(in t0, in z3, out z3);
-		FieldElement<TField>.Subtract(in x3, in z3, out result.X);
-		FieldElement<TField>.Multiply(in t0, in t1, out z3);
-		FieldElement<TField>.Add(in z3, in z3, out z3);
+		FieldElement<TField>.Square(in left.Z, out FieldElement<TField> z1z1);
+		FieldElement<TField>.Square(in right.Z, out FieldElement<TField> z2z2);
+		FieldElement<TField>.Multiply(in left.X, in z2z2, out FieldElement<TField> u1);
+		FieldElement<TField>.Multiply(in right.X, in z1z1, out FieldElement<TField> h);
+		FieldElement<TField>.Subtract(in h, in u1, out h);
+		FieldElement<TField>.Multiply(in z2z2, in right.Z, out z2z2);
+		FieldElement<TField>.Multiply(in left.Y, in z2z2, out FieldElement<TField> s1);
+		FieldElement<TField>.Multiply(in z1z1, in left.Z, out z1z1);
+		FieldElement<TField>.Multiply(in right.Y, in z1z1, out FieldElement<TField> r);
+		FieldElement<TField>.Subtract(in r, in s1, out r);
+		FieldElement<TField>.Add(in r, in r, out r);
+		ulong equal = FieldElement<TField>.IsZero(in h) & FieldElement<TField>.IsZero(in r);
+		FieldElement<TField>.Multiply(in left.Z, in right.Z, out FieldElement<TField> z3);
+		FieldElement<TField>.Multiply(in z3, in h, out z3);
 		FieldElement<TField>.Add(in z3, in z3, out result.Z);
-		result.Y = y3;
+		FieldElement<TField>.Square(in h, out FieldElement<TField> i);
+		FieldElement<TField>.Add(in i, in i, out i);
+		FieldElement<TField>.Add(in i, in i, out i);
+		FieldElement<TField>.Multiply(in h, in i, out FieldElement<TField> j);
+		FieldElement<TField>.Multiply(in u1, in i, out FieldElement<TField> v);
+		FieldElement<TField>.Multiply(in s1, in j, out s1);
+		Combine(in r, in j, in v, in s1, out result.X, out result.Y);
+		return equal;
 	}
 
-	// Sets result to k·G for k below n. Neither the time nor the addresses depend on k. The projective form of the result depends on k and not only on k·G, so for a secret k use MultiplyBaseToAffine or MultiplyBaseReduceX, which clear it.
+	// As above, with an affine right.
+	internal static ulong AddDistinct(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
+	{
+		FieldElement<TField>.Square(in left.Z, out FieldElement<TField> zz);
+		FieldElement<TField>.Multiply(in right.X, in zz, out FieldElement<TField> h);
+		FieldElement<TField>.Subtract(in h, in left.X, out h);
+		FieldElement<TField>.Multiply(in zz, in left.Z, out zz);
+		FieldElement<TField>.Multiply(in right.Y, in zz, out FieldElement<TField> r);
+		FieldElement<TField>.Subtract(in r, in left.Y, out r);
+		FieldElement<TField>.Add(in r, in r, out r);
+		ulong equal = FieldElement<TField>.IsZero(in h) & FieldElement<TField>.IsZero(in r);
+		FieldElement<TField>.Square(in h, out FieldElement<TField> i);
+		FieldElement<TField>.Add(in i, in i, out i);
+		FieldElement<TField>.Add(in i, in i, out i);
+		FieldElement<TField>.Multiply(in h, in i, out FieldElement<TField> j);
+		FieldElement<TField>.Multiply(in left.X, in i, out FieldElement<TField> v);
+		FieldElement<TField>.Multiply(in left.Y, in j, out FieldElement<TField> yj);
+		FieldElement<TField>.Multiply(in left.Z, in h, out h);
+		FieldElement<TField>.Add(in h, in h, out result.Z);
+		Combine(in r, in j, in v, in yj, out result.X, out result.Y);
+		return equal;
+	}
+
+	// Sets result to k·G for k below n. Neither the time nor the addresses depend on k. The Jacobian form of the result depends on k and not only on k·G, so for a secret k use MultiplyBaseToAffine or MultiplyBaseReduceX, which clear it.
 	[SkipLocalsInit]
-	internal static void MultiplyBase(in FieldElement<TOrder> scalar, out ProjectivePoint<TField> result)
+	internal static void MultiplyBase(in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
 		int entries = EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
 		Span<sbyte> digits = stackalloc sbyte[EcGeneratorTable<TCurve, TField, TOrder>.WindowCount];
 		Recode(in scalar, TCurve.GeneratorWindowWidth, digits);
 		ref AffinePoint<TField> window = ref MemoryMarshal.GetArrayDataReference(EcGeneratorTable<TCurve, TField, TOrder>.Entries);
-		result = ProjectivePoint<TField>.Identity;
-		Unsafe.SkipInit(out AffinePoint<TField> entry);
-		Unsafe.SkipInit(out ProjectivePoint<TField> sum);
+		Select(in window, entries, digits[0], out AffinePoint<TField> entry);
+		// A digit of 0 selects (0, 0), which is not a point: the first window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
+		result = default;
+		JacobianPoint<TField>.ConditionalSelect(~ZeroMask((ulong)digits[0]), in entry, in result, out result);
+		Unsafe.SkipInit(out JacobianPoint<TField> sum);
 
-		for (int i = 0; i < digits.Length; ++i)
+		// Window i adds d·2^(wi)·G, 1 ≤ |d| ≤ 2^(w − 1), to L·G with L = Σ_{j<i} d_j·2^(wj), so −2^(wi)/2 < L < 2^(wi). Opposite points give Z = 0, which is right. Equal ones need L − d·2^(wi), which is not 0, to be a multiple of n. Let t = ⌊N/w⌋ for N = TOrder.BitLength, which w does not divide. Below window t, |L − d·2^(wi)| < 2^(w(i + 1)) ≤ 2^(wt) < n. In window t, 0 < d ≤ 2^(N − wt) puts L − d·2^(wt) in (−2n, 0), so it would be −n: then k = 2d·2^(wt) − n < n and L = d·2^(wt) − n > −2^(wt)/2 put d·2^(wt) in (n − 2^(wt)/2, n), which holds no multiple of 2^(wt), as 2^N − n < 2^(wt)/2 for each curve here.
+		for (int i = 1; i < digits.Length; ++i)
 		{
-			// A digit of 0 selects (0, 0), which is not a point, so the sum is discarded.
-			Select(in window, entries, digits[i], out entry);
-			Add(in result, in entry, out sum);
-			ProjectivePoint<TField>.ConditionalSelect(ZeroMask((ulong)digits[i]), in result, in sum, out result);
 			window = ref Unsafe.Add(ref window, entries);
+			Select(in window, entries, digits[i], out entry);
+			_ = AddDistinct(in result, in entry, out sum);
+			JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in result.Z), in entry, in sum, out sum);
+			JacobianPoint<TField>.ConditionalSelect(ZeroMask((ulong)digits[i]), in result, in sum, out result);
 		}
 
 		digits.ZeroMemory();
@@ -170,24 +139,31 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		sum.ZeroMemory();
 	}
 
-	// Sets result to k·P for a point P on the curve and k below n. Neither the time nor the addresses depend on k or P. As with MultiplyBase, the projective form depends on k, so for a secret k use TryMultiplyExportX.
+	// Sets result to k·P for a point P on the curve and k below n. Neither the time nor the addresses depend on k or P. As with MultiplyBase, the Jacobian form depends on k, so for a secret k use TryMultiplyExportX.
 	[SkipLocalsInit]
-	internal static void Multiply(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, out ProjectivePoint<TField> result)
+	internal static void Multiply(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[DigitCount(WindowWidth)];
-		Span<ProjectivePoint<TField>> multiples = stackalloc ProjectivePoint<TField>[(1 << WindowWidth - 1) + 1];
+		Span<JacobianPoint<TField>> multiples = stackalloc JacobianPoint<TField>[1 << WindowWidth - 1];
 		Recode(in scalar, WindowWidth, digits);
-		multiples[0] = ProjectivePoint<TField>.Identity;
-		ProjectivePoint<TField>.FromAffine(in point, out multiples[1]);
-		Double(in multiples[1], out multiples[2]);
+		JacobianPoint<TField>.FromAffine(in point, out multiples[0]);
 
-		for (int j = 3; j < multiples.Length; ++j)
+		// multiples[j − 1] is j·P. For odd j it is (j − 1)·P + P, two points that are neither equal, opposite nor at infinity, as 2 < j < n.
+		for (int j = 2; j <= multiples.Length; ++j)
 		{
-			Add(in multiples[j - 1], in point, out multiples[j]);
+			if (j % 2 is 0)
+			{
+				Double(in multiples[j / 2 - 1], out multiples[j - 1]);
+			}
+			else
+			{
+				_ = AddDistinct(in multiples[j - 2], in point, out multiples[j - 1]);
+			}
 		}
 
 		Select(multiples, digits[^1], out result);
-		Unsafe.SkipInit(out ProjectivePoint<TField> entry);
+		Unsafe.SkipInit(out JacobianPoint<TField> entry);
+		Unsafe.SkipInit(out JacobianPoint<TField> sum);
 
 		for (int i = digits.Length - 2; i >= 0; --i)
 		{
@@ -197,17 +173,29 @@ internal static class EcGroup<TCurve, TField, TOrder>
 			}
 
 			Select(multiples, digits[i], out entry);
-			Add(in result, in entry, out result);
+
+			// The doublings leave 32a·P for the value a ≥ 0 of the digits above i, and the entry is d·P, |d| ≤ 16. The digits from i down make more than −32^(i + 1)/2, so 32a < n/32^i + 16. Opposite points give Z = 0, which is right; equal ones need 32a ≡ d (mod n). For i ≥ 1, |32a − d| < n leaves 32a = d, so a = d = 0: both points at infinity, which the masks cover. In window 0, k = 32a + d, so equal points need k ≡ 2d (mod n) with d the low digit of k. For d > 0 that is k = 2d, whose low digit is not d; for d < 0 it is k = n + 2d, whose low digit is d just if d ≡ −n (mod 32). No d in [−15, −1] does that for P-256, n ≡ 17, or P-384, n ≡ 19, but d = −9 does for P-521, n ≡ 9, at k = n − 18, so that window doubles where the points are equal.
+			if (i is not 0)
+			{
+				_ = AddDistinct(in result, in entry, out sum);
+				JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in result.Z), in entry, in sum, out sum);
+				JacobianPoint<TField>.ConditionalSelect(ZeroMask((ulong)digits[i]), in result, in sum, out result);
+			}
+			else
+			{
+				Add(in result, in entry, out result);
+			}
 		}
 
 		digits.ZeroMemory();
 		entry.ZeroMemory();
+		sum.ZeroMemory();
 	}
 
 	// k must lie in [1, n − 1].
 	internal static void MultiplyBaseToAffine(in FieldElement<TOrder> scalar, out AffinePoint<TField> result)
 	{
-		MultiplyBase(in scalar, out ProjectivePoint<TField> product);
+		MultiplyBase(in scalar, out JacobianPoint<TField> product);
 		ToAffine(in product, out result);
 		product.ZeroMemory();
 	}
@@ -215,7 +203,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	// k must lie in [1, n − 1].
 	internal static void MultiplyBaseReduceX(in FieldElement<TOrder> scalar, out FieldElement<TOrder> result)
 	{
-		MultiplyBase(in scalar, out ProjectivePoint<TField> product);
+		MultiplyBase(in scalar, out JacobianPoint<TField> product);
 		ReduceX(in product, out result);
 		product.ZeroMemory();
 	}
@@ -223,8 +211,8 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	// For a point P on the curve and k below n. Returns false, leaving destination unchanged, if k·P is the point at infinity; the return value reveals that anyway, so it may decide a branch.
 	internal static bool TryMultiplyExportX(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> destination)
 	{
-		Multiply(in point, in scalar, out ProjectivePoint<TField> product);
-		bool valid = ProjectivePoint<TField>.IsIdentity(in product) is 0;
+		Multiply(in point, in scalar, out JacobianPoint<TField> product);
+		bool valid = FieldElement<TField>.IsZero(in product.Z) is 0;
 
 		if (valid)
 		{
@@ -236,17 +224,20 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	}
 
 	// The point at infinity gives (0, 0), which is not on the curve.
-	internal static void ToAffine(in ProjectivePoint<TField> point, out AffinePoint<TField> result)
+	internal static void ToAffine(in JacobianPoint<TField> point, out AffinePoint<TField> result)
 	{
 		FieldElement<TField>.Invert(in point.Z, out FieldElement<TField> inverse);
-		FieldElement<TField>.Multiply(in point.X, in inverse, out result.X);
+		FieldElement<TField>.Square(in inverse, out FieldElement<TField> square);
+		FieldElement<TField>.Multiply(in point.X, in square, out result.X);
+		FieldElement<TField>.Multiply(in square, in inverse, out inverse);
 		FieldElement<TField>.Multiply(in point.Y, in inverse, out result.Y);
-		// With the affine form, Z⁻¹ gives back the projective one.
+		// With the affine form, Z⁻² or Z⁻³ would give back the Jacobian one.
+		square.ZeroMemory();
 		inverse.ZeroMemory();
 	}
 
 	// None of the points may be the point at infinity. They are public, so the inversion may take variable time and nothing is cleared.
-	internal static void ToAffine(ReadOnlySpan<ProjectivePoint<TField>> points, Span<AffinePoint<TField>> result)
+	internal static void ToAffine(ReadOnlySpan<JacobianPoint<TField>> points, Span<AffinePoint<TField>> result)
 	{
 		Debug.Assert(points.Length > 0 && result.Length == points.Length);
 
@@ -264,19 +255,18 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		{
 			FieldElement<TField>.Multiply(in inverse, in products[i - 1], out FieldElement<TField> zInverse);
 			FieldElement<TField>.Multiply(in inverse, in points[i].Z, out inverse);
-			FieldElement<TField>.Multiply(in points[i].X, in zInverse, out result[i].X);
-			FieldElement<TField>.Multiply(in points[i].Y, in zInverse, out result[i].Y);
+			Scale(in points[i], in zInverse, out result[i]);
 		}
 
-		FieldElement<TField>.Multiply(in points[0].X, in inverse, out result[0].X);
-		FieldElement<TField>.Multiply(in points[0].Y, in inverse, out result[0].Y);
+		Scale(in points[0], in inverse, out result[0]);
 	}
 
 	// point must not be the point at infinity.
-	internal static void ExportX(in ProjectivePoint<TField> point, Span<byte> destination)
+	internal static void ExportX(in JacobianPoint<TField> point, Span<byte> destination)
 	{
 		FieldElement<TField>.Invert(in point.Z, out FieldElement<TField> inverse);
-		// The inverse is Z⁻¹R; with R taken off, the product with X comes out in plain form.
+		FieldElement<TField>.Square(in inverse, out inverse);
+		// The square is Z⁻²R; with R taken off, the product with X comes out in plain form.
 		FieldElement<TField>.FromMontgomery(in inverse, out inverse);
 		FieldElement<TField>.Multiply(in point.X, in inverse, out FieldElement<TField> x);
 		FieldElement<TField>.Export(in x, destination);
@@ -286,7 +276,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 
 	// point must not be the point at infinity.
 	[SkipLocalsInit]
-	internal static void ReduceX(in ProjectivePoint<TField> point, out FieldElement<TOrder> result)
+	internal static void ReduceX(in JacobianPoint<TField> point, out FieldElement<TOrder> result)
 	{
 		Debug.Assert(TField.ByteLength == TOrder.ByteLength);
 
@@ -378,12 +368,34 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		ConditionalNegate((ulong)sign, ref result.Y);
 	}
 
-	// multiples holds 0·P to (multiples.Length − 1)·P.
-	internal static void Select(ReadOnlySpan<ProjectivePoint<TField>> multiples, int digit, out ProjectivePoint<TField> result)
+	// multiples holds 1·P to multiples.Length·P. A digit of 0 gives (0, 0, 0), the point at infinity.
+	internal static void Select(ReadOnlySpan<JacobianPoint<TField>> multiples, int digit, out JacobianPoint<TField> result)
 	{
 		int sign = digit >> 31;
-		MaskedSelect.Lookup(in MemoryMarshal.GetReference(multiples), multiples.Length, (uint)((digit ^ sign) - sign), out result);
+		MaskedSelect.Lookup(in MemoryMarshal.GetReference(multiples), multiples.Length, (uint)((digit ^ sign) - sign) - 1, out result);
 		ConditionalNegate((ulong)sign, ref result.Y);
+	}
+
+	// Sets result to (X·Z⁻², Y·Z⁻³) from zInverse = Z⁻¹.
+	private static void Scale(in JacobianPoint<TField> point, in FieldElement<TField> zInverse, out AffinePoint<TField> result)
+	{
+		FieldElement<TField>.Square(in zInverse, out FieldElement<TField> power);
+		FieldElement<TField>.Multiply(in point.X, in power, out result.X);
+		FieldElement<TField>.Multiply(in power, in zInverse, out power);
+		FieldElement<TField>.Multiply(in point.Y, in power, out result.Y);
+	}
+
+	private static void Combine(in FieldElement<TField> r, in FieldElement<TField> j, in FieldElement<TField> v, in FieldElement<TField> sj, out FieldElement<TField> x, out FieldElement<TField> y)
+	{
+		FieldElement<TField>.Square(in r, out FieldElement<TField> x3);
+		FieldElement<TField>.Subtract(in x3, in j, out x3);
+		FieldElement<TField>.Subtract(in x3, in v, out x3);
+		FieldElement<TField>.Subtract(in x3, in v, out x3);
+		FieldElement<TField>.Subtract(in v, in x3, out FieldElement<TField> y3);
+		FieldElement<TField>.Multiply(in r, in y3, out y3);
+		FieldElement<TField>.Subtract(in y3, in sj, out y3);
+		FieldElement<TField>.Subtract(in y3, in sj, out y);
+		x = x3;
 	}
 
 	private static void ConditionalNegate(ulong mask, ref FieldElement<TField> value)

@@ -10,16 +10,17 @@ internal static class EcVariableTimeGeneratorTable<TCurve, TField, TOrder>
 
 	internal static readonly AffinePoint<TField>[] Entries = Build();
 
+	// Each entry after G is (j − 2)·G + 2G for odd j ≥ 3, two points that are neither equal, opposite nor at infinity.
 	private static AffinePoint<TField>[] Build()
 	{
-		ProjectivePoint<TField>[] multiples = new ProjectivePoint<TField>[1 << Width - 2];
+		JacobianPoint<TField>[] multiples = new JacobianPoint<TField>[1 << Width - 2];
 		AffinePoint<TField> generator = new() { X = FieldElement<TField>.FromLimbs(TCurve.GeneratorX), Y = FieldElement<TField>.FromLimbs(TCurve.GeneratorY) };
-		ProjectivePoint<TField>.FromAffine(in generator, out multiples[0]);
-		EcGroup<TCurve, TField, TOrder>.Double(in multiples[0], out ProjectivePoint<TField> twice);
+		JacobianPoint<TField>.FromAffine(in generator, out multiples[0]);
+		EcGroup<TCurve, TField, TOrder>.Double(in multiples[0], out JacobianPoint<TField> twice);
 
 		for (int j = 1; j < multiples.Length; ++j)
 		{
-			EcGroup<TCurve, TField, TOrder>.Add(in multiples[j - 1], in twice, out multiples[j]);
+			_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in multiples[j - 1], in twice, out multiples[j]);
 		}
 
 		AffinePoint<TField>[] entries = new AffinePoint<TField>[multiples.Length];

@@ -6,9 +6,6 @@ namespace CryptoBase.Tests.EllipticCurves;
 // An affine point with plain coordinates; where a CurvePoint? is expected, null is the point at infinity.
 internal sealed record CurvePoint(BigInteger X, BigInteger Y);
 
-// Plain homogeneous coordinates (X : Y : Z).
-internal readonly record struct ProjectiveValue(BigInteger X, BigInteger Y, BigInteger Z);
-
 // Plain Jacobian coordinates (X : Y : Z).
 internal readonly record struct JacobianValue(BigInteger X, BigInteger Y, BigInteger Z);
 
@@ -81,14 +78,6 @@ internal sealed class EcReference(EcCurveTestVector curve)
 		return point.X >= 0 && point.X < P && point.Y >= 0 && point.Y < P && Mod(point.Y * point.Y - Cubic(point.X)) == 0;
 	}
 
-	// Also requires coordinates below p and rejects (0 : 0 : 0).
-	internal bool IsOnProjectiveCurve(ProjectiveValue value)
-	{
-		(BigInteger x, BigInteger y, BigInteger z) = value;
-		bool reduced = x >= 0 && x < P && y >= 0 && y < P && z >= 0 && z < P;
-		return reduced && !(x.IsZero && y.IsZero && z.IsZero) && Mod(y * y * z - x * x * x - A * x * z * z - B * z * z * z) == 0;
-	}
-
 	internal CurvePoint? Negate(CurvePoint? point)
 	{
 		return point is null ? null : new CurvePoint(point.X, Mod(-point.Y));
@@ -138,23 +127,6 @@ internal sealed class EcReference(EcCurveTestVector curve)
 		}
 
 		return products;
-	}
-
-	internal CurvePoint? ToAffine(ProjectiveValue value)
-	{
-		if (value.Z.IsZero)
-		{
-			return null;
-		}
-
-		BigInteger inverse = Inverse(value.Z);
-		return new CurvePoint(Mod(value.X * inverse), Mod(value.Y * inverse));
-	}
-
-	internal ProjectiveValue Randomize(CurvePoint? point, Random random)
-	{
-		BigInteger lambda = 1 + RandomBelow(random, P - 1);
-		return point is null ? new ProjectiveValue(0, lambda, 0) : new ProjectiveValue(Mod(lambda * point.X), Mod(lambda * point.Y), lambda);
 	}
 
 	// Also requires coordinates below p.

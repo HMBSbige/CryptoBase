@@ -7,8 +7,10 @@ public class ScalarMultiplicationTest
 {
 	private const int RandomCount = 16;
 
-	// 2^(w − 1) for the width of k·P.
-	private const int MultiplyWindowLength = 16;
+	// The width w of the windows of k·P.
+	private const int MultiplyWindowWidth = 5;
+
+	private const int MultiplyWindowLength = 1 << MultiplyWindowWidth - 1;
 
 	private static readonly int[] PatternWidths = [3, 4, 5, 6, 7];
 
@@ -42,9 +44,7 @@ public class ScalarMultiplicationTest
 	[MethodDataSource(nameof(MultiplyCases))]
 	public async Task MultiplyMatchesTheReference(CurveCase curve, int pointIndex)
 	{
-		Random random = new(2);
-		CurvePoint[] points = [curve.Reference.Generator, curve.Reference.RandomPoint(random), curve.Reference.RandomPoint(random)];
-		CurvePoint point = points[pointIndex];
+		CurvePoint point = MultiplyPoint(curve, pointIndex);
 		List<string> failures = [];
 
 		foreach ((BigInteger scalar, CurvePoint? expected) in Cases(curve, point, 3))
@@ -53,6 +53,54 @@ public class ScalarMultiplicationTest
 		}
 
 		await Assert.That(failures).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(nameof(MultiplyCases))]
+	public async Task MultiplyHandlesExceptionalScalars(CurveCase curve, int pointIndex)
+	{
+		CurvePoint point = MultiplyPoint(curve, pointIndex);
+		BigInteger[] scalars = [.. ExceptionalScalars(curve)];
+		List<string> failures = [];
+
+		foreach ((BigInteger scalar, CurvePoint? expected) in scalars.Zip(curve.Reference.Multiply(point, scalars)))
+		{
+			CheckPoint(failures, curve.Reference, $"{scalar:X} · {Show(point)}", curve.Multiply(point, scalar), expected);
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
+	public async Task MultiplyBaseHandlesExceptionalScalars(CurveCase curve)
+	{
+		BigInteger[] scalars = [.. ExceptionalScalars(curve)];
+		List<string> failures = [];
+
+		foreach ((BigInteger scalar, CurvePoint? expected) in scalars.Zip(curve.Reference.Multiply(curve.Reference.Generator, scalars)))
+		{
+			CheckPoint(failures, curve.Reference, $"{scalar:X} · G", curve.MultiplyBase(scalar), expected);
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
+	// Follows the digits of both multiplications on the scalars alone to find the additions of equal points, which only P-521 has, at k = n − 18: there the last addition of k·P adds −9·P to itself. The tests above would miss a wrong result there if the scalars did not hold it.
+	[Test]
+	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
+	public async Task ExceptionalScalarsMeetEqualPointsOnlyWhereExpected(CurveCase curve)
+	{
+		BigInteger n = curve.Order;
+		List<string> found = [];
+
+		foreach (BigInteger scalar in ExceptionalScalars(curve))
+		{
+			found.AddRange(EqualAdditions(curve, scalar).Select(addition => $"n − {n - scalar}: {addition}"));
+		}
+
+		string[] expected = curve.Name is "secp521r1" ? ["n − 18: k·P in window 0"] : [];
+		await Assert.That(found).IsEquivalentTo(expected);
 	}
 
 	// The entry takes k in [1, n − 1].
@@ -242,20 +290,21 @@ public class ScalarMultiplicationTest
 		await Assert.That(failures).IsEmpty();
 	}
 
+	// The multiples stand for 1·P to 2^(w − 1)·P; a digit of 0 gives (0, 0, 0).
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task SelectFromMultiplesGivesEveryDigit(CurveCase curve)
 	{
 		Random random = new(9);
 		BigInteger p = curve.FieldModulus;
-		ProjectiveValue[] multiples = [.. Enumerable.Range(0, MultiplyWindowLength + 1).Select(_ => new ProjectiveValue(EcReference.RandomBelow(random, p), EcReference.RandomBelow(random, p), EcReference.RandomBelow(random, p)))];
+		JacobianValue[] multiples = [.. Enumerable.Range(0, MultiplyWindowLength).Select(_ => new JacobianValue(EcReference.RandomBelow(random, p), EcReference.RandomBelow(random, p), EcReference.RandomBelow(random, p)))];
 		List<string> failures = [];
 
 		for (int digit = 1 - MultiplyWindowLength; digit <= MultiplyWindowLength; ++digit)
 		{
-			ProjectiveValue entry = multiples[Math.Abs(digit)];
-			ProjectiveValue expected = digit < 0 ? entry with { Y = (p - entry.Y) % p } : entry;
-			ProjectiveValue actual = curve.SelectFromMultiples(multiples, digit);
+			JacobianValue entry = digit is 0 ? new JacobianValue(0, 0, 0) : multiples[Math.Abs(digit) - 1];
+			JacobianValue expected = digit < 0 ? entry with { Y = (p - entry.Y) % p } : entry;
+			JacobianValue actual = curve.SelectFromMultiples(multiples, digit);
 
 			if (actual != expected)
 			{
@@ -319,6 +368,99 @@ public class ScalarMultiplicationTest
 		{
 			yield return (scalar, product);
 		}
+	}
+
+	private static CurvePoint MultiplyPoint(CurveCase curve, int pointIndex)
+	{
+		Random random = new(2);
+		CurvePoint[] points = [curve.Reference.Generator, curve.Reference.RandomPoint(random), curve.Reference.RandomPoint(random)];
+		return points[pointIndex];
+	}
+
+	// Scalars around the additions that may meet equal points or the point at infinity. As k = 2^w·a + d for the low digit d of k·P, its last addition adds d·P to itself just if k ≡ 2d, which for d < 0 is n + 2d; n − 2^j ends in a run of carries; 2^(wi) leaves the point at infinity in the accumulator up to window i; and around the top window t of each width w come 2^(wt) and n − 2^(wt) with their neighbors, d·2^(wt), and 2d·2^(wt) − n, which would have the top addition of k·G add d·2^(wt)·G to itself.
+	private static SortedSet<BigInteger> ExceptionalScalars(CurveCase curve)
+	{
+		BigInteger n = curve.Order;
+		int bits = curve.ScalarBitLength;
+		SortedSet<BigInteger> scalars = [1, n - 1];
+
+		for (int d = 1; d <= MultiplyWindowLength; ++d)
+		{
+			scalars.Add(2 * d);
+			scalars.Add(n - 2 * d);
+		}
+
+		for (int j = 0; j <= 2 * Math.Max(MultiplyWindowWidth, curve.GeneratorWindowWidth); ++j)
+		{
+			scalars.Add(n - (BigInteger.One << j));
+		}
+
+		foreach (int width in (int[])[MultiplyWindowWidth, curve.GeneratorWindowWidth])
+		{
+			int top = bits / width * width;
+			BigInteger power = BigInteger.One << top;
+
+			for (int i = 0; i < top; i += width)
+			{
+				scalars.Add(BigInteger.One << i);
+			}
+
+			for (int s = -2; s <= 2; ++s)
+			{
+				scalars.Add(power + s);
+				scalars.Add(n - power + s);
+			}
+
+			for (BigInteger multiple = power; multiple < n; multiple += power)
+			{
+				scalars.Add(multiple);
+				scalars.Add(2 * multiple - n);
+			}
+		}
+
+		scalars.RemoveWhere(scalar => scalar < 0 || scalar >= n);
+		return scalars;
+	}
+
+	// The additions of equal points, neither at infinity, that the digits lead to: in k·P, of d·P to the accumulator 2^w·a·P left by the doublings, from the top window down; in k·G, of d·2^(wi)·G to the sum L·G of the windows below i.
+	private static IEnumerable<string> EqualAdditions(CurveCase curve, BigInteger scalar)
+	{
+		BigInteger n = curve.Order;
+		int[] digits = Recode(scalar, MultiplyWindowWidth, curve.ScalarBitLength / MultiplyWindowWidth + 1);
+		BigInteger accumulator = digits[^1];
+
+		for (int i = digits.Length - 2; i >= 0; --i)
+		{
+			accumulator <<= MultiplyWindowWidth;
+
+			if (IsEqualAddition(accumulator, digits[i], n))
+			{
+				yield return $"k·P in window {i}";
+			}
+
+			accumulator += digits[i];
+		}
+
+		int width = curve.GeneratorWindowWidth;
+		digits = Recode(scalar, width, curve.GeneratorWindowCount);
+		BigInteger sum = 0;
+
+		for (int i = 0; i < digits.Length; ++i)
+		{
+			BigInteger entry = (BigInteger)digits[i] << i * width;
+
+			if (IsEqualAddition(sum, entry, n))
+			{
+				yield return $"k·G in window {i}";
+			}
+
+			sum += entry;
+		}
+	}
+
+	private static bool IsEqualAddition(BigInteger left, BigInteger right, BigInteger n)
+	{
+		return !(left % n).IsZero && !(right % n).IsZero && ((left - right) % n).IsZero;
 	}
 
 	// 2^(w − 1) is the largest digit and carries nothing. 2^(w − 1) + 1 gives the most negative digit, 1 − 2^(w − 1), and then 2 − 2^(w − 1) in each window above, each with a carry out. 2^w − 1 gives −1 and then 0s, with a carry that runs through every window. The carry out of the last window is the digit above it.

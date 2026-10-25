@@ -68,7 +68,7 @@ public class PointEncodingTest
 
 		foreach (CurvePoint point in Points(reference, random))
 		{
-			if (!curve.ExportX(reference.Randomize(point, random)).AsSpan().SequenceEqual(curve.EncodeCoordinate(point.X)))
+			if (!curve.ExportX(reference.RandomizeJacobian(point, random)).AsSpan().SequenceEqual(curve.EncodeCoordinate(point.X)))
 			{
 				failures.Add(Show(point));
 			}
@@ -87,7 +87,7 @@ public class PointEncodingTest
 
 		foreach (CurvePoint point in Points(reference, random))
 		{
-			BigInteger reduced = curve.ReduceX(reference.Randomize(point, random));
+			BigInteger reduced = curve.ReduceX(reference.RandomizeJacobian(point, random));
 
 			if (reduced != point.X % curve.Order)
 			{

@@ -16,7 +16,7 @@ public class EcGroupTest
 
 		foreach ((CurvePoint? left, CurvePoint? right) in Pairs(reference, random))
 		{
-			ProjectiveValue sum = curve.Add(reference.Randomize(left, random), reference.Randomize(right, random));
+			JacobianValue sum = curve.Add(reference.RandomizeJacobian(left, random), reference.RandomizeJacobian(right, random));
 			CheckPoint(failures, reference, $"{Show(left)} + {Show(right)}", sum, reference.Add(left, right));
 		}
 
@@ -39,8 +39,58 @@ public class EcGroupTest
 				continue;
 			}
 
-			ProjectiveValue sum = curve.Add(reference.Randomize(left, random), right);
+			JacobianValue sum = curve.Add(reference.RandomizeJacobian(left, random), right);
 			CheckPoint(failures, reference, $"{Show(left)} + affine {Show(right)}", sum, reference.Add(left, right));
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
+	// Equal points give (0, 0, 0) and set the mask; any other two points not at infinity give their sum, the point at infinity for opposite points.
+	[Test]
+	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
+	public async Task AddDistinctMatchesTheReference(CurveCase curve)
+	{
+		EcReference reference = curve.Reference;
+		Random random = new(6);
+		List<string> failures = [];
+
+		foreach ((CurvePoint? left, CurvePoint? right) in Pairs(reference, random))
+		{
+			if (left is null || right is null)
+			{
+				continue;
+			}
+
+			bool equal = left == right;
+			JacobianValue[] lefts = [reference.RandomizeJacobian(left, random), reference.RandomizeJacobian(left, random)];
+			(string Name, (JacobianValue Sum, ulong Equal) Result)[] results =
+			[
+				("", curve.AddDistinct(lefts[0], reference.RandomizeJacobian(right, random))),
+				("affine ", curve.AddDistinct(lefts[1], right)),
+			];
+
+			foreach ((string name, (JacobianValue sum, ulong mask)) in results)
+			{
+				string operation = $"{Show(left)} + {name}{Show(right)}";
+
+				if (mask != (equal ? ulong.MaxValue : 0))
+				{
+					failures.Add($"{operation} gave the mask {mask:X}");
+				}
+
+				if (equal)
+				{
+					if (sum != new JacobianValue(0, 0, 0))
+					{
+						failures.Add($"{operation} gave {sum}, expected (0, 0, 0)");
+					}
+				}
+				else
+				{
+					CheckPoint(failures, reference, operation, sum, reference.Add(left, right));
+				}
+			}
 		}
 
 		await Assert.That(failures).IsEmpty();
@@ -56,13 +106,14 @@ public class EcGroupTest
 
 		foreach (CurvePoint? point in Points(reference, random))
 		{
-			ProjectiveValue twice = curve.Double(reference.Randomize(point, random));
+			JacobianValue twice = curve.Double(reference.RandomizeJacobian(point, random));
 			CheckPoint(failures, reference, $"2 · {Show(point)}", twice, reference.Add(point, point));
 		}
 
 		await Assert.That(failures).IsEmpty();
 	}
 
+	// Each mask of the complete additions reads the inputs after the formula, so the pairs include equal and opposite points and the point at infinity on either side.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ResultMayOverwriteAnInput(CurveCase curve)
@@ -74,16 +125,27 @@ public class EcGroupTest
 		for (int i = 0; i < RandomCount; ++i)
 		{
 			CurvePoint point = reference.RandomPoint(random);
-			ProjectiveValue left = reference.Randomize(point, random);
-			ProjectiveValue right = reference.Randomize(i % 2 is 0 ? point : reference.RandomPoint(random), random);
-			CurvePoint affine = reference.RandomPoint(random);
+			(CurvePoint? first, CurvePoint? second) = (i % 5) switch
+			{
+				0 => (point, point),
+				1 => (point, reference.Negate(point)),
+				2 => (point, null),
+				3 => (null, point),
+				_ => (point, reference.RandomPoint(random))
+			};
+
+			JacobianValue left = reference.RandomizeJacobian(first, random);
+			JacobianValue right = reference.RandomizeJacobian(second, random);
+			CurvePoint affine = second ?? point;
 
 			foreach (ResultAliasing aliasing in (ResultAliasing[])[ResultAliasing.Left, ResultAliasing.Right])
 			{
 				CheckSame(failures, $"Add over {aliasing}", curve.Add(left, right, aliasing), curve.Add(left, right));
+				CheckSame(failures, $"AddDistinct over {aliasing}", curve.AddDistinct(left, right, aliasing), curve.AddDistinct(left, right));
 			}
 
 			CheckSame(failures, "mixed Add in place", curve.Add(left, affine, true), curve.Add(left, affine));
+			CheckSame(failures, "mixed AddDistinct in place", curve.AddDistinct(left, affine, true), curve.AddDistinct(left, affine));
 			CheckSame(failures, "Double in place", curve.Double(left, true), curve.Double(left));
 		}
 
@@ -100,7 +162,7 @@ public class EcGroupTest
 
 		foreach (CurvePoint? point in Points(reference, random))
 		{
-			CurvePoint actual = curve.ToAffine(reference.Randomize(point, random));
+			CurvePoint actual = curve.ToAffine(reference.RandomizeJacobian(point, random));
 
 			if (actual != (point ?? new CurvePoint(0, 0)))
 			{
@@ -139,9 +201,9 @@ public class EcGroupTest
 		}
 	}
 
-	private static void CheckSame(List<string> failures, string operation, ProjectiveValue actual, ProjectiveValue expected)
+	private static void CheckSame<T>(List<string> failures, string operation, T actual, T expected)
 	{
-		if (actual != expected)
+		if (!EqualityComparer<T>.Default.Equals(actual, expected))
 		{
 			failures.Add($"{operation} gave {actual}, expected {expected}");
 		}

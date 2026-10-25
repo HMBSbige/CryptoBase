@@ -12,19 +12,23 @@ internal static class EcGeneratorTable<TCurve, TField, TOrder>
 
 	internal static int WindowLength => 1 << TCurve.GeneratorWindowWidth - 1;
 
+	// The base B of a window doubles into 2B, and each later entry j·B, j ≥ 3, is (j − 1)·B + B, two points that are neither equal, opposite nor at infinity.
 	private static AffinePoint<TField>[] Build()
 	{
-		ProjectivePoint<TField>[] multiples = new ProjectivePoint<TField>[WindowCount * WindowLength];
+		Debug.Assert(WindowLength >= 2);
+
+		JacobianPoint<TField>[] multiples = new JacobianPoint<TField>[WindowCount * WindowLength];
 		AffinePoint<TField> generator = new() { X = FieldElement<TField>.FromLimbs(TCurve.GeneratorX), Y = FieldElement<TField>.FromLimbs(TCurve.GeneratorY) };
-		ProjectivePoint<TField>.FromAffine(in generator, out ProjectivePoint<TField> windowBase);
+		JacobianPoint<TField>.FromAffine(in generator, out JacobianPoint<TField> windowBase);
 
 		for (int i = 0; i < multiples.Length; i += WindowLength)
 		{
 			multiples[i] = windowBase;
+			EcGroup<TCurve, TField, TOrder>.Double(in windowBase, out multiples[i + 1]);
 
-			for (int j = 1; j < WindowLength; ++j)
+			for (int j = 2; j < WindowLength; ++j)
 			{
-				EcGroup<TCurve, TField, TOrder>.Add(in multiples[i + j - 1], in windowBase, out multiples[i + j]);
+				_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in multiples[i + j - 1], in windowBase, out multiples[i + j]);
 			}
 
 			// The last entry is 2^(w − 1) times the base, so its double is the base of the next window.
