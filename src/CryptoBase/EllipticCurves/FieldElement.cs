@@ -257,7 +257,8 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		}
 	}
 
-	// x may be any value of LimbCount limbs if y < m: the product is then below m·R, as Reduce needs.
+	// x may be any value of LimbCount limbs if y < m: the product is then below m·R, as Reduce needs. Not inlined: inlined into a small caller, it exceeds the inlining budget of that caller, and the helpers left over become calls.
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	private static void Multiply(ref ulong x, ref ulong y, out FieldElement<TModulus> result)
 	{
@@ -316,7 +317,8 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		Unsafe.Add(ref row, TModulus.LimbCount) = MultiplyAddLimbs(ref x, Unsafe.Add(ref y, i), ref row, TModulus.LimbCount);
 	}
 
-	// x < m keeps x² below m·R, as Reduce needs.
+	// x < m keeps x² below m·R, as Reduce needs. Not inlined, as for Multiply.
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	private static void Square(ref ulong x, out FieldElement<TModulus> result)
 	{
