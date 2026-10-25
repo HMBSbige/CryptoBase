@@ -111,6 +111,9 @@ public abstract class CurveCase
 	// The table of k·P: 1·P to count·P.
 	internal abstract CurvePoint[] Multiples(CurvePoint point, int count);
 
+	// The table of the one-off u1·G + u2·Q: Q, 3Q, ….
+	internal abstract CurvePoint[] OddMultiplesVariableTime(CurvePoint point, int count);
+
 	internal abstract int VariableTimeGeneratorWidth { get; }
 
 	internal abstract CurvePoint[] VariableTimeGeneratorTable();
@@ -129,8 +132,6 @@ public abstract class CurveCase
 	internal abstract JacobianValue MultiplyAddWithTableVariableTime(BigInteger u1, CurvePoint point, BigInteger u2);
 
 	internal abstract bool XModOrderEqualsVariableTime(JacobianValue point, BigInteger r);
-
-	internal abstract JacobianValue AddVariableTime(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None);
 
 	internal abstract JacobianValue AddVariableTime(JacobianValue left, CurvePoint right, bool inPlace = false);
 
@@ -384,6 +385,13 @@ public abstract class CurveCase
 			return [.. multiples.Select(static multiple => ToValue(multiple))];
 		}
 
+		internal override CurvePoint[] OddMultiplesVariableTime(CurvePoint point, int count)
+		{
+			AffinePoint<TField>[] multiples = new AffinePoint<TField>[count];
+			EcVariableTimeGroup<TCurve, TField, TOrder>.BuildOddMultiples(ToPoint(point), multiples);
+			return [.. multiples.Select(static multiple => ToValue(multiple))];
+		}
+
 		internal override int VariableTimeGeneratorWidth => EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Width;
 
 		internal override CurvePoint[] VariableTimeGeneratorTable()
@@ -418,25 +426,6 @@ public abstract class CurveCase
 		internal override bool XModOrderEqualsVariableTime(JacobianValue point, BigInteger r)
 		{
 			return EcVariableTimeGroup<TCurve, TField, TOrder>.XModOrderEquals(ToPoint(point), ToScalar(r));
-		}
-
-		internal override JacobianValue AddVariableTime(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None)
-		{
-			JacobianPoint<TField> x = ToPoint(left);
-			JacobianPoint<TField> y = ToPoint(right);
-
-			switch (aliasing)
-			{
-				case ResultAliasing.Left:
-					EcVariableTimeGroup<TCurve, TField, TOrder>.Add(in x, in y, out x);
-					return ToValue(x);
-				case ResultAliasing.Right:
-					EcVariableTimeGroup<TCurve, TField, TOrder>.Add(in x, in y, out y);
-					return ToValue(y);
-				default:
-					EcVariableTimeGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
-					return ToValue(result);
-			}
 		}
 
 		internal override JacobianValue AddVariableTime(JacobianValue left, CurvePoint right, bool inPlace = false)

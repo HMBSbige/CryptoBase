@@ -20,14 +20,8 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		Span<sbyte> pointDigits = stackalloc sbyte[DigitCount];
 		int top = Math.Max(Recode(in u1, EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Width, baseDigits), Recode(in u2, PointWidth, pointDigits));
 		ReadOnlySpan<AffinePoint<TField>> baseMultiples = EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Entries;
-		Span<JacobianPoint<TField>> pointMultiples = stackalloc JacobianPoint<TField>[1 << PointWidth - 2];
-		JacobianPoint<TField>.FromAffine(in point, out pointMultiples[0]);
-		EcGroup<TCurve, TField, TOrder>.Double(in pointMultiples[0], out JacobianPoint<TField> twice);
-
-		for (int j = 1; j < pointMultiples.Length; ++j)
-		{
-			Add(in pointMultiples[j - 1], in twice, out pointMultiples[j]);
-		}
+		Span<AffinePoint<TField>> pointMultiples = stackalloc AffinePoint<TField>[1 << PointWidth - 2];
+		BuildOddMultiples(in point, pointMultiples);
 
 		// Z = 0, the point at infinity.
 		result = default;
@@ -53,7 +47,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 			if (digit is not 0)
 			{
-				JacobianPoint<TField> entry = pointMultiples[Math.Abs(digit) >> 1];
+				AffinePoint<TField> entry = pointMultiples[Math.Abs(digit) >> 1];
 
 				if (digit < 0)
 				{
@@ -140,6 +134,26 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		}
 	}
 
+	// Sets multiples[j] to (2j + 1)·Q for a point Q on the curve: 3Q = 2Q + Q and then (j + 2)·Q = j·Q + 2Q, additions of two points that are neither equal, opposite nor at infinity, as j + 2 < n.
+	[SkipLocalsInit]
+	internal static void BuildOddMultiples(in AffinePoint<TField> point, Span<AffinePoint<TField>> multiples)
+	{
+		Debug.Assert(multiples.Length >= 2);
+
+		Span<JacobianPoint<TField>> sums = stackalloc JacobianPoint<TField>[multiples.Length - 1];
+		JacobianPoint<TField>.FromAffine(in point, out JacobianPoint<TField> twice);
+		EcGroup<TCurve, TField, TOrder>.Double(in twice, out twice);
+		_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in twice, in point, out sums[0]);
+
+		for (int j = 1; j < sums.Length; ++j)
+		{
+			_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in sums[j - 1], in twice, out sums[j]);
+		}
+
+		multiples[0] = point;
+		EcGroup<TCurve, TField, TOrder>.ToAffineVariableTime(sums, multiples.Slice(1));
+	}
+
 	// For r in [1, n − 1]. As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p, and x = t means X = t·Z².
 	[SkipLocalsInit]
 	internal static bool XModOrderEquals(in JacobianPoint<TField> point, in FieldElement<TOrder> r)
@@ -185,37 +199,12 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 			return;
 		}
 
-		// Opposite points give Z = 0 by themselves. Equal ones need the double, of right, as result may already hold the sum over left.
+		// Opposite points give Z = 0 by themselves. Equal ones need the double, taken of right, as result may be left and already hold the sum.
 		if (EcGroup<TCurve, TField, TOrder>.AddDistinct(in left, in right, out result) is not 0)
 		{
 			JacobianPoint<TField>.FromAffine(in right, out result);
 			EcGroup<TCurve, TField, TOrder>.Double(in result, out result);
 		}
-	}
-
-	// The result may be either input.
-	internal static void Add(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
-	{
-		if (left.IsInfinity)
-		{
-			result = right;
-			return;
-		}
-
-		if (right.IsInfinity)
-		{
-			result = left;
-			return;
-		}
-
-		// Opposite points give Z = 0 by themselves; equal ones need the double.
-		if (EcGroup<TCurve, TField, TOrder>.AddDistinct(in left, in right, out JacobianPoint<TField> sum) is not 0)
-		{
-			EcGroup<TCurve, TField, TOrder>.Double(in left, out result);
-			return;
-		}
-
-		result = sum;
 	}
 
 	// Writes the NAF of width w of k and returns the index of its top nonzero digit, or −1 for k = 0.

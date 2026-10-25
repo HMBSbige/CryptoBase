@@ -7,22 +7,8 @@ public class EcVariableTimeGroupTest
 {
 	private const int RandomCount = 8;
 
-	[Test]
-	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
-	public async Task AddMatchesTheReference(CurveCase curve)
-	{
-		EcReference reference = curve.Reference;
-		Random random = new(11);
-		List<string> failures = [];
-
-		foreach ((CurvePoint? left, CurvePoint? right) in EcGroupTest.Pairs(reference, random))
-		{
-			JacobianValue sum = curve.AddVariableTime(reference.RandomizeJacobian(left, random), reference.RandomizeJacobian(right, random));
-			CheckPoint(failures, reference, $"{Show(left)} + {Show(right)}", sum, reference.Add(left, right));
-		}
-
-		await Assert.That(failures).IsEmpty();
-	}
+	// The one-off u1·G + u2·Q takes Q, 3Q, …, 15Q for the NAF of width 5.
+	private const int OddMultipleCount = 8;
 
 	// The affine right input cannot be the point at infinity.
 	[Test]
@@ -49,7 +35,7 @@ public class EcVariableTimeGroupTest
 
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
-	public async Task ResultMayOverwriteAnInput(CurveCase curve)
+	public async Task ResultMayOverwriteTheLeftInput(CurveCase curve)
 	{
 		EcReference reference = curve.Reference;
 		Random random = new(14);
@@ -66,14 +52,7 @@ public class EcVariableTimeGroupTest
 			};
 
 			JacobianValue left = reference.RandomizeJacobian(point, random);
-			JacobianValue right = reference.RandomizeJacobian(other, random);
 			CurvePoint affine = other ?? point;
-
-			foreach (ResultAliasing aliasing in (ResultAliasing[])[ResultAliasing.Left, ResultAliasing.Right])
-			{
-				CheckSame(failures, $"Add over {aliasing}", curve.AddVariableTime(left, right, aliasing), curve.AddVariableTime(left, right));
-			}
-
 			CheckSame(failures, "mixed Add in place", curve.AddVariableTime(left, affine, true), curve.AddVariableTime(left, affine));
 		}
 
@@ -136,6 +115,32 @@ public class EcVariableTimeGroupTest
 		}
 
 		await Assert.That(failures).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(nameof(MultiplyAddCases))]
+	public async Task OddMultiplesHoldEachOddMultiple(CurveCase curve, PointKind kind)
+	{
+		EcReference reference = curve.Reference;
+		BigInteger n = curve.Order;
+		Random random = new(17 + (int)kind);
+
+		CurvePoint point = kind switch
+		{
+			PointKind.Generator => reference.Generator,
+			PointKind.NegatedGenerator => reference.PublicKey(n - 1),
+			PointKind.Random => reference.RandomPoint(random),
+			_ => reference.PublicKey(1 + EcReference.RandomBelow(random, n - 1))
+		};
+
+		CurvePoint[] multiples = curve.OddMultiplesVariableTime(point, OddMultipleCount);
+		CurvePoint?[] expected = reference.Multiply(point, [.. Enumerable.Range(0, OddMultipleCount).Select(static j => (BigInteger)(2 * j + 1))]);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(multiples.Length).IsEqualTo(expected.Length);
+			await Assert.That(Enumerable.Range(0, Math.Min(multiples.Length, expected.Length)).Where(i => multiples[i] != expected[i])).IsEmpty();
+		}
 	}
 
 	// The digits of u1 add multiples of G before those of u2 add multiples of Q at the same position. With Q = ±G, u1 = u2 = 1 adds G and ±G at the last digit, and u1 = u2 = 2^(N − 1) + 1 does so at the top digit too, where −G leaves the point at infinity for the doublings and the additions below. With Q = ±2⁻¹·G, u2 = 2 leaves ±G for G at the last digit.
