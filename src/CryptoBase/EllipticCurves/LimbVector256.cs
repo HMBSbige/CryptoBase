@@ -13,21 +13,9 @@ internal readonly struct LimbVector256(Vector256<ulong> value) : ILimbVector<Lim
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static LimbVector256 Load(ref readonly ulong source)
-	{
-		return new LimbVector256(Vector256.LoadUnsafe(in source));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Store(ref ulong destination)
 	{
 		_value.StoreUnsafe(ref destination);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static LimbVector256 Equal(LimbVector256 left, LimbVector256 right)
-	{
-		return new LimbVector256(Vector256.Equals(left._value, right._value));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,14 +25,8 @@ internal readonly struct LimbVector256(Vector256<ulong> value) : ILimbVector<Lim
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static LimbVector256 operator &(LimbVector256 left, LimbVector256 right)
+	public static LimbVector256 MergeWhereEqual(LimbVector256 accumulator, LimbVector256 position, LimbVector256 target, ref readonly ulong source)
 	{
-		return new LimbVector256(left._value & right._value);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static LimbVector256 operator |(LimbVector256 left, LimbVector256 right)
-	{
-		return new LimbVector256(left._value | right._value);
+		return new LimbVector256(Vector256.ConditionalSelect(Vector256.Equals(position._value, target._value), Vector256.LoadUnsafe(in source), accumulator._value));
 	}
 }

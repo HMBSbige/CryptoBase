@@ -49,7 +49,8 @@ internal static class MaskedSelect
 
 			for (int j = 0; j < count; ++j)
 			{
-				selected |= TVector.Load(in limbs) & TVector.Equal(position, target);
+				// Positions differ from entry to entry, so at most one entry matches, and selected is still 0 there.
+				selected = TVector.MergeWhereEqual(selected, position, target, in limbs);
 				position += one;
 				limbs = ref Unsafe.Add(ref limbs, length);
 			}
