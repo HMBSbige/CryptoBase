@@ -1,3 +1,5 @@
+using CryptoBase.Hashes.Sha3;
+
 namespace CryptoBase.Hashes;
 
 /// <summary>
@@ -23,6 +25,18 @@ public sealed class Xof<TCore> : IXof<Xof<TCore>> where TCore : unmanaged, IXofC
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		if (typeof(TCore) == typeof(Shake128Core))
+		{
+			Shake128Core.HashData(source, destination);
+			return;
+		}
+
+		if (typeof(TCore) == typeof(Shake256Core))
+		{
+			Shake256Core.HashData(source, destination);
+			return;
+		}
+
 		TCore state = TCore.Create();
 		state.Append(source);
 		state.Read(destination);

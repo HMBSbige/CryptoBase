@@ -15,6 +15,13 @@ internal struct CShakeXofState<TRate> where TRate : IKeccakRate
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void HashData(ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		// With both strings empty, cSHAKE is SHAKE (SP 800-185, Sec. 3.3).
+		if (functionName.IsEmpty && customization.IsEmpty)
+		{
+			KeccakSponge<TRate>.HashData(source, destination, KeccakDomainSeparator.Shake);
+			return;
+		}
+
 		Unsafe.SkipInit(out KeccakSponge<TRate> sponge);
 		byte domainSeparator = CShakeSponge<TRate>.Initialize(ref sponge, functionName, customization);
 		sponge.Absorb(source);

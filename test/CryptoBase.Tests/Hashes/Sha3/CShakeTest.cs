@@ -41,20 +41,25 @@ public class CShakeTest
 		foreach (int inputLength in (int[])[0, 1, rate - 1, rate, rate + 1, 3 * rate + 5])
 		{
 			byte[] source = CreateDeterministicSource(inputLength);
-			byte[] expected = new byte[2 * rate + 3];
-			Xof<TShake>.HashData(source, expected);
 
-			using T created = T.Create();
-			created.Append(source);
-			using T customized = Create<T>([], []);
-			customized.Append(source);
-
-			using (Assert.Multiple())
+			// Below the rate, input and output each take one block, which one-shot hashing computes without a sponge.
+			foreach (int outputLength in (int[])[1, 32, rate - 1, rate, rate + 1, 2 * rate + 3])
 			{
-				await AssertWrites(expected, destination => T.HashData(source, destination));
-				await AssertWrites(expected, destination => HashData<T>([], [], source, destination));
-				await AssertWrites(expected, created.Read);
-				await AssertWrites(expected, customized.Read);
+				byte[] expected = KeccakReference.Sponge(source, rate, KeccakReference.ShakeDomainSeparator, outputLength);
+
+				using T created = T.Create();
+				created.Append(source);
+				using T customized = Create<T>([], []);
+				customized.Append(source);
+
+				using (Assert.Multiple())
+				{
+					await AssertWrites(expected, destination => Xof<TShake>.HashData(source, destination));
+					await AssertWrites(expected, destination => T.HashData(source, destination));
+					await AssertWrites(expected, destination => HashData<T>([], [], source, destination));
+					await AssertWrites(expected, created.Read);
+					await AssertWrites(expected, customized.Read);
+				}
 			}
 		}
 	}
@@ -302,14 +307,19 @@ public class CShakeTest
 	public async Task HashDataSupportsOverlappingSourceAndDestination<T>() where T : class, IXof<T>
 	{
 		int rate = Rate<T>();
-		byte[] source = CreateDeterministicSource(rate + 9);
-		byte[] expected = Output<T>(source, 2 * rate + 1);
 
-		await HashAlgorithmTestUtils.VerifyOverlappingHashData(source, expected, (input, output) =>
+		// Without a function name or customization string, a short input and output take one block each.
+		foreach ((byte[] name, byte[] customization, int inputLength, int outputLength) in new[] { (Name, Customization, rate + 9, 2 * rate + 1), ([], [], rate + 9, 2 * rate + 1), ([], [], rate - 1, rate) })
 		{
-			HashData<T>(Name, Customization, input, output.Slice(0, expected.Length));
-			return expected.Length;
-		});
+			byte[] source = CreateDeterministicSource(inputLength);
+			byte[] expected = KeccakReference.CShake(source, rate, name, customization, outputLength);
+
+			await HashAlgorithmTestUtils.VerifyOverlappingHashData(source, expected, (input, output) =>
+			{
+				HashData<T>(name, customization, input, output.Slice(0, expected.Length));
+				return expected.Length;
+			});
+		}
 	}
 
 	private static async Task VerifySample<T>(byte[] data, byte[] customization, byte[] expected) where T : class, IXof<T>

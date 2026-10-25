@@ -1,4 +1,5 @@
 using CryptoBase.Hashes.Blake2;
+using CryptoBase.Hashes.Sha3;
 
 namespace CryptoBase.Hashes;
 
@@ -35,6 +36,11 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 			return TCore.HashLength;
 		}
 
+		if (TryHashDataSha3(source, destination))
+		{
+			return TCore.HashLength;
+		}
+
 		TCore state = TCore.Create();
 		state.Append(source);
 		state.Finalize(destination);
@@ -46,6 +52,36 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	private static bool UseBlake2bHashData()
 	{
 		return typeof(TCore) == typeof(Blake2b256Core) || typeof(TCore) == typeof(Blake2b512Core);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool TryHashDataSha3(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		if (typeof(TCore) == typeof(Sha3_224Core))
+		{
+			Sha3_224Core.HashData(source, destination);
+			return true;
+		}
+
+		if (typeof(TCore) == typeof(Sha3_256Core))
+		{
+			Sha3_256Core.HashData(source, destination);
+			return true;
+		}
+
+		if (typeof(TCore) == typeof(Sha3_384Core))
+		{
+			Sha3_384Core.HashData(source, destination);
+			return true;
+		}
+
+		if (typeof(TCore) == typeof(Sha3_512Core))
+		{
+			Sha3_512Core.HashData(source, destination);
+			return true;
+		}
+
+		return false;
 	}
 
 	/// <inheritdoc />

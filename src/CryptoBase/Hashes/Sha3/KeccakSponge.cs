@@ -118,6 +118,43 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 		AbsorbBlocks(MemoryMarshal.AsBytes(new ReadOnlySpan<ulong>(in bytes)).Slice(0, length), position, bytesNeeded);
 	}
 
+	// Absorbs source, pads it and squeezes destination, starting from the zero state. All input is absorbed before any output is written, so the two may overlap.
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator)
+	{
+		if (source.Length < TRate.RateInBytes && destination.Length <= TRate.RateInBytes)
+		{
+			HashBlock(source, destination, domainSeparator);
+			return;
+		}
+
+		Unsafe.SkipInit(out KeccakSponge<TRate> sponge);
+		sponge.Reset();
+		sponge.Absorb(source);
+		sponge.Pad(domainSeparator);
+		sponge.Squeeze(destination);
+	}
+
+	// With one block in and one out, the state is zero apart from the input and its padding, so the input is copied in rather than XORed, and the output read straight after the one permutation.
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void HashBlock(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator)
+	{
+		Debug.Assert(source.Length < TRate.RateInBytes);
+		Debug.Assert(destination.Length <= TRate.RateInBytes);
+		Debug.Assert(domainSeparator is not 0 and < LastPaddingBit);
+
+		InlineArray25<ulong> state = default;
+		Span<byte> bytes = state.AsSpan();
+		source.CopyTo(bytes);
+		ref byte block = ref MemoryMarshal.GetReference(bytes);
+		Unsafe.Add(ref block, source.Length) = domainSeparator;
+		Unsafe.Add(ref block, TRate.RateInBytes - 1) |= LastPaddingBit;
+		KeccakP1600.Permute(ref state);
+		bytes.Slice(0, destination.Length).CopyTo(destination);
+	}
+
 	internal void Pad(byte domainSeparator)
 	{
 		Debug.Assert(!IsSqueezing);

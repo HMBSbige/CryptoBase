@@ -24,6 +24,13 @@ public struct Sha3_512Core : IHmacHashCore<Sha3_512Core>
 		return hashAlgorithm;
 	}
 
+	// The one-shot computation for HashAlgorithm<TCore>.HashData, whose destination is already checked.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		KeccakSponge<KeccakRate72>.HashData(source, destination.Slice(0, HashSizeInBytes), KeccakDomainSeparator.Sha3);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
 	{

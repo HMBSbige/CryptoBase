@@ -142,15 +142,20 @@ public class ShakeTest
 	[MethodDataSource(nameof(SecurityStrengths))]
 	public async Task HashDataSupportsOverlappingSourceAndDestination(int securityStrength)
 	{
-		byte[] source = CreateDeterministicSource(Rate(securityStrength) + 9);
-		byte[] expected = new byte[2 * Rate(securityStrength) + 1];
-		HashData(securityStrength, source, expected);
+		int rate = Rate(securityStrength);
 
-		await HashAlgorithmTestUtils.VerifyOverlappingHashData(source, expected, (input, output) =>
+		// The short input and output take one block each, which one-shot hashing computes without a sponge.
+		foreach ((int inputLength, int outputLength) in new[] { (rate + 9, 2 * rate + 1), (20, 32), (rate - 1, rate) })
 		{
-			HashData(securityStrength, input, output.Slice(0, expected.Length));
-			return expected.Length;
-		});
+			byte[] source = CreateDeterministicSource(inputLength);
+			byte[] expected = KeccakReference.Sponge(source, rate, KeccakReference.ShakeDomainSeparator, outputLength);
+
+			await HashAlgorithmTestUtils.VerifyOverlappingHashData(source, expected, (input, output) =>
+			{
+				HashData(securityStrength, input, output.Slice(0, expected.Length));
+				return expected.Length;
+			});
+		}
 	}
 
 	[Test]

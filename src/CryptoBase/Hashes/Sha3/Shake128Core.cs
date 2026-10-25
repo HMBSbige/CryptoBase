@@ -18,6 +18,13 @@ public struct Shake128Core : IXofCore<Shake128Core>
 		return xof;
 	}
 
+	// The one-shot computation for Xof<TCore>.HashData.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		KeccakSponge<KeccakRate168>.HashData(source, destination, KeccakDomainSeparator.Shake);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	void IXofCore<Shake128Core>.Append(ReadOnlySpan<byte> source)
 	{
