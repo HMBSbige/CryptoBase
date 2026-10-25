@@ -67,7 +67,7 @@ public abstract class EcdsaBenchmark<T>(Func<T> generateKey, ECCurve bclCurve, D
 		_bouncyCastleVerifier = CreateBouncyCastleVerifier(PublicKeyFactory.CreateKey(_subjectPublicKeyInfo));
 
 		Func<byte[]>[] signers = [() => _destination.AsSpan(0, BclSign()).ToArray(), BouncyCastleSign, () => _destination.AsSpan(0, CryptoBaseSign()).ToArray()];
-		Func<bool>[] verifiers = [BclVerify, BouncyCastleVerify, CryptoBaseVerify, BclImportAndVerify, BouncyCastleImportAndVerify, CryptoBaseImportAndVerify];
+		Func<bool>[] verifiers = [BclVerify, BouncyCastleVerify, CryptoBaseVerify, BclImportAndVerify, BouncyCastleImportAndVerify, CryptoBaseImportAndVerify, BclImportAndVerifyTwice, BouncyCastleImportAndVerifyTwice, CryptoBaseImportAndVerifyTwice];
 
 		foreach (Func<byte[]> sign in signers)
 		{
@@ -179,6 +179,34 @@ public abstract class EcdsaBenchmark<T>(Func<T> generateKey, ECCurve bclCurve, D
 		DsaDigestSigner verifier = CreateBouncyCastleVerifier(PublicKeyFactory.CreateKey(_subjectPublicKeyInfo));
 		verifier.BlockUpdate(_message);
 		return verifier.VerifySignature(_signature);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("ImportSubjectPublicKeyInfo+Verify×2")]
+	public bool CryptoBaseImportAndVerifyTwice()
+	{
+		using T key = T.ImportSubjectPublicKeyInfo(_subjectPublicKeyInfo);
+		return key.Verify(Algorithm, _message, _signature) & key.Verify(Algorithm, _message, _signature);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("ImportSubjectPublicKeyInfo+Verify×2")]
+	public bool BclImportAndVerifyTwice()
+	{
+		using ECDsa key = ECDsa.Create();
+		key.ImportSubjectPublicKeyInfo(_subjectPublicKeyInfo, out _);
+		return key.VerifyData(_message, _signature, _bclHash, DSASignatureFormat.Rfc3279DerSequence) & key.VerifyData(_message, _signature, _bclHash, DSASignatureFormat.Rfc3279DerSequence);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("ImportSubjectPublicKeyInfo+Verify×2")]
+	public bool BouncyCastleImportAndVerifyTwice()
+	{
+		DsaDigestSigner verifier = CreateBouncyCastleVerifier(PublicKeyFactory.CreateKey(_subjectPublicKeyInfo));
+		verifier.BlockUpdate(_message);
+		bool valid = verifier.VerifySignature(_signature);
+		verifier.BlockUpdate(_message);
+		return valid & verifier.VerifySignature(_signature);
 	}
 
 	private DsaDigestSigner CreateBouncyCastleVerifier(AsymmetricKeyParameter publicKey)

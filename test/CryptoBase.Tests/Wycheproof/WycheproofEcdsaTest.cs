@@ -177,7 +177,7 @@ public class WycheproofEcdsaTest
 		}
 	}
 
-	// Every group key is valid, and the files have no acceptable vectors.
+	// Every group key is valid, and the files have no acceptable vectors. The first verification with an instance goes without the table of its public key, and the later ones use it.
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifyVerification<T>(EcdsaVerifyTestVector vector, EcdsaSignatureFormat format) where T : class, IEcdsa<T>
 	{
@@ -190,8 +190,12 @@ public class WycheproofEcdsaTest
 		{
 			await Assert.That(vector.Result).IsNotEqualTo(WycheproofResult.Acceptable);
 			await Assert.That(ExportPublicKey(key)).IsEquivalentTo(vector.PublicKey, CollectionOrdering.Matching);
-			await Assert.That(key.Verify(algorithm, vector.Msg, vector.Sig, format)).IsEqualTo(valid);
 			await Assert.That(fromPublicKey.Verify(algorithm, vector.Msg, vector.Sig, format)).IsEqualTo(valid);
+
+			for (int i = 0; i < 3; ++i)
+			{
+				await Assert.That(key.Verify(algorithm, vector.Msg, vector.Sig, format)).IsEqualTo(valid).Because($"verification {i}");
+			}
 
 			if (format is EcdsaSignatureFormat.Der)
 			{

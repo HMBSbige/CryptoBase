@@ -11,6 +11,9 @@ namespace CryptoBase.Signatures.Ecdsa;
 /// s is not reduced to the lower half of [1, n − 1]. Signatures are in DER, and verification rejects any other encoding of r and s. Signing and verification may run concurrently on one instance.
 /// </para>
 /// <para>
+/// The second verification with an instance builds a table from the public key, which makes that verification slower and every later one faster. The instance keeps the table, about 8 KB, until it is disposed, so to verify many signatures with one key, keep one instance rather than import the key for each.
+/// </para>
+/// <para>
 /// SubjectPublicKeyInfo and PKCS #8 name the curve by its OID and hold the public key uncompressed; other parameters and point encodings are rejected. A PKCS #8 export holds the private key, the curve and the public key. A PKCS #8 import accepts a key without the curve or the public key, but rejects either, in the inner or the outer structure, if it does not match the private key.
 /// </para>
 /// </remarks>

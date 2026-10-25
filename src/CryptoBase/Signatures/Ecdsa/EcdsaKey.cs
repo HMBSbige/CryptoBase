@@ -18,6 +18,8 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 	private const int AdditionalDataLength = 32;
 
 	private EcKey<TCurve, TField, TOrder> _key;
+	private AffinePoint<TField>[]? _pointTable;
+	private bool _verified;
 
 	internal static int PrivateKeyLength => EcKey<TCurve, TField, TOrder>.PrivateKeyLength;
 
@@ -46,12 +48,15 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 
 	internal void GenerateKey()
 	{
+		DropPointTable();
 		_key.GenerateKey();
 	}
 
 	internal void ImportPrivateKey(ReadOnlySpan<byte> source)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, PrivateKeyLength, nameof(source));
+
+		DropPointTable();
 
 		if (!_key.TryImportPrivateKey(source))
 		{
@@ -63,6 +68,8 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, PublicKeyLength, nameof(source));
 
+		DropPointTable();
+
 		if (!_key.TryImportPublicKey(source))
 		{
 			ThrowHelper.ThrowInvalidKey(nameof(source));
@@ -71,6 +78,8 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 
 	internal void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> algorithmIdentifier, ReadOnlySpan<byte> source)
 	{
+		DropPointTable();
+
 		if (!KeyInfoDer.TryReadSubjectPublicKeyInfo(algorithmIdentifier, source, out ReadOnlySpan<byte> publicKey) || !_key.TryImportPublicKey(publicKey))
 		{
 			ThrowHelper.ThrowInvalidKey(nameof(source));
@@ -79,6 +88,8 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 
 	internal void ImportPkcs8PrivateKey(ReadOnlySpan<byte> algorithmIdentifier, ReadOnlySpan<byte> source)
 	{
+		DropPointTable();
+
 		if (!KeyInfoDer.TryReadPrivateKeyInfo(algorithmIdentifier, source, out ReadOnlySpan<byte> privateKey, out ReadOnlySpan<byte> publicKey)
 			|| !TryImportEcPrivateKey(NamedCurve(algorithmIdentifier), privateKey)
 			|| !publicKey.IsEmpty && !MatchesPublicKey(publicKey))
@@ -183,13 +194,13 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		return SignHashCore(algorithm, hash, additionalData, format, destination);
 	}
 
-	internal readonly bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+	internal bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
 	{
 		return Verify(algorithm, message, signature, EcdsaSignatureFormat.Der);
 	}
 
 	[SkipLocalsInit]
-	internal readonly bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
+	internal bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
 	{
 		ThrowIfUnsupported(algorithm);
 
@@ -198,7 +209,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		return VerifyHash(hash.Slice(0, hashLength), signature, format);
 	}
 
-	internal readonly bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
+	internal bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
 	{
 		return EcdsaEncoding<TOrder>.TryRead(format, signature, out FieldElement<TOrder> r, out FieldElement<TOrder> s) && Verify(hash, in r, in s);
 	}
@@ -206,6 +217,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 	internal void Clear()
 	{
 		_key.Clear();
+		DropPointTable();
 	}
 
 	private static void ThrowIfUnsupported(SignatureAlgorithm algorithm)
@@ -392,8 +404,8 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		}
 	}
 
-	// Every input is public, so s⁻¹ and R = u1·G + u2·Q may take variable time.
-	private readonly bool Verify(ReadOnlySpan<byte> hash, in FieldElement<TOrder> r, in FieldElement<TOrder> s)
+	// Every input is public, so s⁻¹ and R = u1·G + u2·Q may take variable time. The first verification goes without the table of Q, which a key that verifies once has no use for, and a later one builds it. Threads that verify at once may each build one, but only the first to finish publishes it, the others discard theirs, and the paths with and without it give the same R.
+	private bool Verify(ReadOnlySpan<byte> hash, in FieldElement<TOrder> r, in FieldElement<TOrder> s)
 	{
 		EcdsaEncoding<TOrder>.ImportHash(hash, out FieldElement<TOrder> e);
 		// s⁻¹R times a plain value is a plain product.
@@ -401,7 +413,32 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		FieldElement<TOrder>.InvertVariableTime(in inverse, out inverse);
 		FieldElement<TOrder>.Multiply(in inverse, in e, out FieldElement<TOrder> u1);
 		FieldElement<TOrder>.Multiply(in inverse, in r, out FieldElement<TOrder> u2);
-		EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in u1, in _key.PublicPoint, in u2, out JacobianPoint<TField> point);
+		AffinePoint<TField>[]? table = _pointTable;
+		JacobianPoint<TField> point;
+
+		if (table is null && !_verified)
+		{
+			_verified = true;
+			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in u1, in _key.PublicPoint, in u2, out point);
+		}
+		else
+		{
+			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in u1, table ?? PublishPointTable(), in u2, out point);
+		}
+
 		return EcVariableTimeGroup<TCurve, TField, TOrder>.XModOrderEquals(in point, in r);
+	}
+
+	private AffinePoint<TField>[] PublishPointTable()
+	{
+		AffinePoint<TField>[] table = EcVariableTimePointTable<TCurve, TField, TOrder>.Build(in _key.PublicPoint);
+		return Interlocked.CompareExchange(ref _pointTable, table, null) ?? table;
+	}
+
+	// The table follows from the public key, so whatever replaces or clears the key drops it.
+	private void DropPointTable()
+	{
+		_pointTable = null;
+		_verified = false;
 	}
 }

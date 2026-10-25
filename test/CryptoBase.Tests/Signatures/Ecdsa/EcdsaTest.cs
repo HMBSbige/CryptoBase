@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using static CryptoBase.Tests.Signatures.Ecdsa.EcdsaKnownAnswerTest;
 using static CryptoBase.Tests.Signatures.Ecdsa.EcdsaTestUtils;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -417,6 +419,170 @@ internal class EcdsaTest
 		}
 	}
 
+	// The first verification with an instance goes without the table of its public key, and the later ones use it, so both must decide alike: here valid signatures, the same signatures over other hashes, r and s at the ends of [1, n − 1], and R = O.
+	[Test]
+	[GenerateGenericTest(typeof(EcdsaP256))]
+	[GenerateGenericTest(typeof(EcdsaP384))]
+	[GenerateGenericTest(typeof(EcdsaP521))]
+	public async Task FirstAndLaterVerificationsAgree<T>() where T : class, IEcdsa<T>
+	{
+		CurveCase curve = CurveOf<T>();
+		BigInteger n = curve.Order;
+		using T signer = T.GenerateKey();
+		byte[] publicKey = ExportPublicKey(signer);
+		BigInteger d = new(ExportPrivateKey(signer), isUnsigned: true, isBigEndian: true);
+		Random random = new(7);
+		List<(BigInteger E, byte[] Signature)> cases = [];
+
+		for (int i = 0; i < 4; ++i)
+		{
+			BigInteger e = EcReference.RandomBelow(random, n);
+			byte[] signature = SignHash(signer, SignatureAlgorithm.EcdsaSha256, HashOf(curve, e), [], EcdsaSignatureFormat.Concatenated);
+			cases.Add((e, signature));
+			cases.Add(((e + 1) % n, signature));
+		}
+
+		foreach (BigInteger r in (BigInteger[])[1, n - 1])
+		{
+			foreach (BigInteger s in (BigInteger[])[1, n - 1])
+			{
+				byte[] signature = [.. curve.EncodeScalar(r), .. curve.EncodeScalar(s)];
+				cases.Add((0, signature));
+				cases.Add((EcReference.RandomBelow(random, n), signature));
+				cases.Add(((n - r * d % n) % n, signature));
+			}
+		}
+
+		using T later = T.ImportPublicKey(publicKey);
+		List<bool> expected = [.. cases.Select(c => ReferenceVerifies(curve, publicKey, c.E, c.Signature))];
+		List<string> failures = [];
+
+		for (int i = 0; i < 2; ++i)
+		{
+			_ = later.VerifyHash(HashOf(curve, cases[0].E), cases[0].Signature, EcdsaSignatureFormat.Concatenated);
+		}
+
+		for (int i = 0; i < cases.Count; ++i)
+		{
+			(BigInteger e, byte[] signature) = cases[i];
+			using T first = T.ImportPublicKey(publicKey);
+			byte[] hash = HashOf(curve, e);
+
+			if (first.VerifyHash(hash, signature, EcdsaSignatureFormat.Concatenated) != expected[i] || later.VerifyHash(hash, signature, EcdsaSignatureFormat.Concatenated) != expected[i])
+			{
+				failures.Add($"e = {e:X}, r ‖ s = {Convert.ToHexString(signature)}, expected {expected[i]}");
+			}
+		}
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(expected).Contains(true).And.Contains(false);
+			await Assert.That(failures).IsEmpty();
+		}
+	}
+
+	// Threads that verify with a new instance at once may each build the table of its public key.
+	[Test]
+	[GenerateGenericTest(typeof(EcdsaP256))]
+	[GenerateGenericTest(typeof(EcdsaP384))]
+	[GenerateGenericTest(typeof(EcdsaP521))]
+	public async Task ConcurrentVerificationsWithANewInstanceAgree<T>() where T : class, IEcdsa<T>
+	{
+		const int threadCount = 8;
+		using T signer = T.GenerateKey();
+		byte[] publicKey = ExportPublicKey(signer);
+		byte[] message = CreateDeterministicSource(30);
+		byte[] other = CreateDeterministicSource(31);
+		byte[] signature = Sign(signer, SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Der);
+		int failures = 0;
+
+		for (int round = 0; round < 4; ++round)
+		{
+			using T key = T.ImportPublicKey(publicKey);
+			using Barrier barrier = new(threadCount);
+			Task[] tasks = new Task[threadCount];
+
+			for (int i = 0; i < tasks.Length; ++i)
+			{
+				tasks[i] = Task.Factory.StartNew(() =>
+				{
+					barrier.SignalAndWait();
+
+					for (int k = 0; k < 4; ++k)
+					{
+						if (!key.Verify(SignatureAlgorithm.EcdsaSha256, message, signature) || key.Verify(SignatureAlgorithm.EcdsaSha256, other, signature))
+						{
+							Interlocked.Increment(ref failures);
+						}
+					}
+				}, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+			}
+
+			await Task.WhenAll(tasks);
+		}
+
+		await Assert.That(failures).IsZero();
+	}
+
+	// The table belongs to the public key, so whatever replaces the key must drop it: otherwise the new key would verify as the old one.
+	[Test]
+	public async Task ReplacingTheKeyDropsTheTable()
+	{
+		CurveCase curve = CurveOf<EcdsaP256>();
+		byte[] algorithmIdentifier = AlgorithmIdentifier(curve.Parameters.Oid);
+		using EcdsaP256 first = EcdsaP256.GenerateKey();
+		using EcdsaP256 second = EcdsaP256.GenerateKey();
+		byte[] message = CreateDeterministicSource(20);
+		byte[] firstPublicKey = ExportPublicKey(first);
+		byte[] firstSignature = Sign(first, SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Der);
+		byte[] secondSignature = Sign(second, SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Der);
+		byte[] secondPublicKey = ExportPublicKey(second);
+		byte[] secondPrivateKey = ExportPrivateKey(second);
+		byte[] subjectPublicKeyInfo = ExportSubjectPublicKeyInfo(second);
+		byte[] pkcs8 = ExportPkcs8PrivateKey(second);
+		List<string> failures = [];
+
+		for (int i = 0; i < 5; ++i)
+		{
+			EcdsaKey<P256Curve, P256Field, P256Order> core = default;
+			core.ImportPublicKey(firstPublicKey);
+			bool verified = core.Verify(SignatureAlgorithm.EcdsaSha256, message, firstSignature) & core.Verify(SignatureAlgorithm.EcdsaSha256, message, firstSignature);
+
+			switch (i)
+			{
+				case 0:
+					core.ImportPublicKey(secondPublicKey);
+					break;
+				case 1:
+					core.ImportSubjectPublicKeyInfo(algorithmIdentifier, subjectPublicKeyInfo);
+					break;
+				case 2:
+					core.ImportPrivateKey(secondPrivateKey);
+					break;
+				case 3:
+					core.ImportPkcs8PrivateKey(algorithmIdentifier, pkcs8);
+					break;
+				default:
+					core.GenerateKey();
+					break;
+			}
+
+			for (int k = 0; k < 3; ++k)
+			{
+				verified &= !core.Verify(SignatureAlgorithm.EcdsaSha256, message, firstSignature) && (i is 4 || core.Verify(SignatureAlgorithm.EcdsaSha256, message, secondSignature));
+			}
+
+			if (!verified)
+			{
+				failures.Add($"replacement {i}");
+			}
+
+			core.Clear();
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
 	[Test]
 	[GenerateGenericTest(typeof(EcdsaP256))]
 	[GenerateGenericTest(typeof(EcdsaP384))]
@@ -522,7 +688,7 @@ internal class EcdsaTest
 			}
 			catch (ArgumentException)
 			{
-				erased.Add(core.AsSpan().IndexOfAnyExcept((byte)0) < 0);
+				erased.Add(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<EcdsaKey<P256Curve, P256Field, P256Order>, byte>(ref core), Unsafe.SizeOf<EcdsaKey<P256Curve, P256Field, P256Order>>()).IndexOfAnyExcept((byte)0) < 0);
 			}
 		}
 
@@ -564,11 +730,15 @@ internal class EcdsaTest
 		}
 
 		using T key = T.GenerateKey();
+		using T verifier = T.ImportPublicKey(ExportPublicKey(key));
 		byte[] message = CreateDeterministicSource(100);
 		byte[] signature = new byte[key.GetMaxSignatureLength(SignatureAlgorithm.EcdsaSha512)];
 
+		// Before the measurement, the second verification with key allocates the table of its public key; within it, key verifies with that table and verifier for the first time, without one.
 		bool valid = Exercise(key, message, signature);
+		int written = key.Sign(SignatureAlgorithm.EcdsaSha256, message, signature);
 		long before = GC.GetAllocatedBytesForCurrentThread();
+		valid &= verifier.Verify(SignatureAlgorithm.EcdsaSha256, message, signature.AsSpan(0, written));
 		valid &= Exercise(key, message, signature);
 		long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
@@ -592,6 +762,12 @@ internal class EcdsaTest
 
 			return valid;
 		}
+	}
+
+	// A hash of the length of n that truncates to e.
+	private static byte[] HashOf(CurveCase curve, BigInteger e)
+	{
+		return CurveCase.EncodeInteger(e << 8 * curve.ScalarLength - curve.ScalarBitLength, curve.ScalarLength);
 	}
 
 	private static bool ReferenceVerifies(CurveCase curve, byte[] publicKey, BigInteger e, byte[] concatenated)
