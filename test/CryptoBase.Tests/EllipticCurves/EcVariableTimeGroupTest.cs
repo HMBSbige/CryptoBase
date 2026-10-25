@@ -49,23 +49,6 @@ public class EcVariableTimeGroupTest
 
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
-	public async Task DoubleMatchesTheReference(CurveCase curve)
-	{
-		EcReference reference = curve.Reference;
-		Random random = new(13);
-		List<string> failures = [];
-
-		foreach (CurvePoint? point in EcGroupTest.Points(reference, random))
-		{
-			JacobianValue twice = curve.DoubleVariableTime(reference.RandomizeJacobian(point, random));
-			CheckPoint(failures, reference, $"2 · {Show(point)}", twice, reference.Add(point, point));
-		}
-
-		await Assert.That(failures).IsEmpty();
-	}
-
-	[Test]
-	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ResultMayOverwriteAnInput(CurveCase curve)
 	{
 		EcReference reference = curve.Reference;
@@ -92,7 +75,6 @@ public class EcVariableTimeGroupTest
 			}
 
 			CheckSame(failures, "mixed Add in place", curve.AddVariableTime(left, affine, true), curve.AddVariableTime(left, affine));
-			CheckSame(failures, "Double in place", curve.DoubleVariableTime(left, true), curve.DoubleVariableTime(left));
 		}
 
 		await Assert.That(failures).IsEmpty();

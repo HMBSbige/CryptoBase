@@ -120,8 +120,6 @@ public abstract class CurveCase
 
 	internal abstract JacobianValue AddVariableTime(JacobianValue left, CurvePoint right, bool inPlace = false);
 
-	internal abstract JacobianValue DoubleVariableTime(JacobianValue value, bool inPlace = false);
-
 	internal abstract int RecodeVariableTime(BigInteger scalar, int width, out int[] digits);
 
 	internal abstract KeyCase NewKey();
@@ -412,20 +410,6 @@ public abstract class CurveCase
 			}
 
 			EcVariableTimeGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
-			return ToValue(result);
-		}
-
-		internal override JacobianValue DoubleVariableTime(JacobianValue value, bool inPlace = false)
-		{
-			JacobianPoint<TField> x = ToPoint(value);
-
-			if (inPlace)
-			{
-				EcVariableTimeGroup<TCurve, TField, TOrder>.Double(in x, out x);
-				return ToValue(x);
-			}
-
-			EcVariableTimeGroup<TCurve, TField, TOrder>.Double(in x, out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 

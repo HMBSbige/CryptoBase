@@ -22,7 +22,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		ReadOnlySpan<AffinePoint<TField>> baseMultiples = EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Entries;
 		Span<JacobianPoint<TField>> pointMultiples = stackalloc JacobianPoint<TField>[1 << PointWidth - 2];
 		JacobianPoint<TField>.FromAffine(in point, out pointMultiples[0]);
-		Double(in pointMultiples[0], out JacobianPoint<TField> twice);
+		EcGroup<TCurve, TField, TOrder>.Double(in pointMultiples[0], out JacobianPoint<TField> twice);
 
 		for (int j = 1; j < pointMultiples.Length; ++j)
 		{
@@ -34,7 +34,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 		for (int i = top; i >= 0; --i)
 		{
-			Double(in result, out result);
+			EcGroup<TCurve, TField, TOrder>.Double(in result, out result);
 			int digit = baseDigits[i];
 
 			if (digit is not 0)
@@ -101,32 +101,6 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		return FieldElement<TField>.AreEqual(in x, in product) is not 0;
 	}
 
-	// Holds for every point: Z = 0 gives Z3 = 0, and no other point has Y = 0, as a curve of odd order has no point of order 2. The result may be the input.
-	internal static void Double(in JacobianPoint<TField> value, out JacobianPoint<TField> result)
-	{
-		FieldElement<TField>.Square(in value.Y, out FieldElement<TField> gamma);
-		FieldElement<TField>.Add(in gamma, in gamma, out FieldElement<TField> twoGamma);
-		FieldElement<TField>.Multiply(in value.X, in twoGamma, out FieldElement<TField> fourBeta);
-		FieldElement<TField>.Add(in fourBeta, in fourBeta, out fourBeta);
-		FieldElement<TField>.Square(in value.Z, out FieldElement<TField> delta);
-		FieldElement<TField>.Subtract(in value.X, in delta, out FieldElement<TField> alpha);
-		FieldElement<TField>.Add(in value.X, in delta, out delta);
-		FieldElement<TField>.Multiply(in alpha, in delta, out alpha);
-		FieldElement<TField>.Add(in alpha, in alpha, out delta);
-		FieldElement<TField>.Add(in alpha, in delta, out alpha);
-		FieldElement<TField>.Multiply(in value.Y, in value.Z, out FieldElement<TField> z3);
-		FieldElement<TField>.Add(in z3, in z3, out result.Z);
-		FieldElement<TField>.Square(in alpha, out FieldElement<TField> x3);
-		FieldElement<TField>.Subtract(in x3, in fourBeta, out x3);
-		FieldElement<TField>.Subtract(in x3, in fourBeta, out x3);
-		FieldElement<TField>.Subtract(in fourBeta, in x3, out fourBeta);
-		FieldElement<TField>.Multiply(in alpha, in fourBeta, out alpha);
-		FieldElement<TField>.Square(in twoGamma, out twoGamma);
-		FieldElement<TField>.Add(in twoGamma, in twoGamma, out twoGamma);
-		FieldElement<TField>.Subtract(in alpha, in twoGamma, out result.Y);
-		result.X = x3;
-	}
-
 	// The result may be left.
 	internal static void Add(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
 	{
@@ -136,29 +110,12 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 			return;
 		}
 
-		FieldElement<TField>.Square(in left.Z, out FieldElement<TField> zz);
-		FieldElement<TField>.Multiply(in right.X, in zz, out FieldElement<TField> h);
-		FieldElement<TField>.Subtract(in h, in left.X, out h);
-		FieldElement<TField>.Multiply(in zz, in left.Z, out zz);
-		FieldElement<TField>.Multiply(in right.Y, in zz, out FieldElement<TField> r);
-		FieldElement<TField>.Subtract(in r, in left.Y, out r);
-		FieldElement<TField>.Add(in r, in r, out r);
-
-		if (FieldElement<TField>.IsZero(in h) is not 0)
+		// Opposite points give Z = 0 by themselves. Equal ones need the double, of right, as result may already hold the sum over left.
+		if (EcGroup<TCurve, TField, TOrder>.AddDistinct(in left, in right, out result) is not 0)
 		{
-			AddSameX(in left, in r, out result);
-			return;
+			JacobianPoint<TField>.FromAffine(in right, out result);
+			EcGroup<TCurve, TField, TOrder>.Double(in result, out result);
 		}
-
-		FieldElement<TField>.Square(in h, out FieldElement<TField> i);
-		FieldElement<TField>.Add(in i, in i, out i);
-		FieldElement<TField>.Add(in i, in i, out i);
-		FieldElement<TField>.Multiply(in h, in i, out FieldElement<TField> j);
-		FieldElement<TField>.Multiply(in left.X, in i, out FieldElement<TField> v);
-		FieldElement<TField>.Multiply(in left.Y, in j, out FieldElement<TField> yj);
-		FieldElement<TField>.Multiply(in left.Z, in h, out h);
-		FieldElement<TField>.Add(in h, in h, out result.Z);
-		Combine(in r, in j, in v, in yj, out result.X, out result.Y);
 	}
 
 	// The result may be either input.
@@ -176,34 +133,14 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 			return;
 		}
 
-		FieldElement<TField>.Square(in left.Z, out FieldElement<TField> z1z1);
-		FieldElement<TField>.Square(in right.Z, out FieldElement<TField> z2z2);
-		FieldElement<TField>.Multiply(in left.X, in z2z2, out FieldElement<TField> u1);
-		FieldElement<TField>.Multiply(in right.X, in z1z1, out FieldElement<TField> h);
-		FieldElement<TField>.Subtract(in h, in u1, out h);
-		FieldElement<TField>.Multiply(in z2z2, in right.Z, out z2z2);
-		FieldElement<TField>.Multiply(in left.Y, in z2z2, out FieldElement<TField> s1);
-		FieldElement<TField>.Multiply(in z1z1, in left.Z, out z1z1);
-		FieldElement<TField>.Multiply(in right.Y, in z1z1, out FieldElement<TField> r);
-		FieldElement<TField>.Subtract(in r, in s1, out r);
-		FieldElement<TField>.Add(in r, in r, out r);
-
-		if (FieldElement<TField>.IsZero(in h) is not 0)
+		// Opposite points give Z = 0 by themselves; equal ones need the double.
+		if (EcGroup<TCurve, TField, TOrder>.AddDistinct(in left, in right, out JacobianPoint<TField> sum) is not 0)
 		{
-			AddSameX(in left, in r, out result);
+			EcGroup<TCurve, TField, TOrder>.Double(in left, out result);
 			return;
 		}
 
-		FieldElement<TField>.Multiply(in left.Z, in right.Z, out FieldElement<TField> z3);
-		FieldElement<TField>.Multiply(in z3, in h, out z3);
-		FieldElement<TField>.Add(in z3, in z3, out result.Z);
-		FieldElement<TField>.Square(in h, out FieldElement<TField> i);
-		FieldElement<TField>.Add(in i, in i, out i);
-		FieldElement<TField>.Add(in i, in i, out i);
-		FieldElement<TField>.Multiply(in h, in i, out FieldElement<TField> j);
-		FieldElement<TField>.Multiply(in u1, in i, out FieldElement<TField> v);
-		FieldElement<TField>.Multiply(in s1, in j, out s1);
-		Combine(in r, in j, in v, in s1, out result.X, out result.Y);
+		result = sum;
 	}
 
 	// Writes the NAF of width w of k and returns the index of its top nonzero digit, or −1 for k = 0. A nonzero digit at i carries out only if the w bits of k from i plus the carry in exceed 2^(w − 1), which needs a bit of k at or above i + w − 1, so i + w ≤ N for N = TOrder.BitLength: digit N takes the last carry.
@@ -239,31 +176,5 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		Debug.Assert(carry is 0);
 
 		return top;
-	}
-
-	// The result may be left.
-	private static void AddSameX(in JacobianPoint<TField> left, in FieldElement<TField> r, out JacobianPoint<TField> result)
-	{
-		if (FieldElement<TField>.IsZero(in r) is not 0)
-		{
-			Double(in left, out result);
-		}
-		else
-		{
-			result = default;
-		}
-	}
-
-	private static void Combine(in FieldElement<TField> r, in FieldElement<TField> j, in FieldElement<TField> v, in FieldElement<TField> sj, out FieldElement<TField> x, out FieldElement<TField> y)
-	{
-		FieldElement<TField>.Square(in r, out FieldElement<TField> x3);
-		FieldElement<TField>.Subtract(in x3, in j, out x3);
-		FieldElement<TField>.Subtract(in x3, in v, out x3);
-		FieldElement<TField>.Subtract(in x3, in v, out x3);
-		FieldElement<TField>.Subtract(in v, in x3, out FieldElement<TField> y3);
-		FieldElement<TField>.Multiply(in r, in y3, out y3);
-		FieldElement<TField>.Subtract(in y3, in sj, out y3);
-		FieldElement<TField>.Subtract(in y3, in sj, out y);
-		x = x3;
 	}
 }
