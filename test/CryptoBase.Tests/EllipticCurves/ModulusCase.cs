@@ -47,8 +47,6 @@ public abstract class ModulusCase
 
 	internal abstract ulong NegativeInverse { get; }
 
-	internal abstract byte[] InversionChain { get; }
-
 	internal abstract int StorageSize { get; }
 
 	internal abstract int ElementSize { get; }
@@ -226,8 +224,6 @@ public abstract class ModulusCase
 		internal override ulong[] RSquaredLimbs => TModulus.RSquared.ToArray();
 
 		internal override ulong NegativeInverse => TModulus.NegativeInverse;
-
-		internal override byte[] InversionChain => TModulus.InversionChain.ToArray();
 
 		internal override int StorageSize => Unsafe.SizeOf<TModulus>();
 

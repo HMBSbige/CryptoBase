@@ -37,14 +37,6 @@ internal struct P521Field : IMontgomeryModulus
 
 	public static ulong NegativeInverse => 0x0000000000000001UL;
 
-	// With x_k = x^(2^k − 1), the table holds x, x_2, x_4 and so on up to x_128. The power goes on to x_512 by 128 ones at a time and to x_519 by 4, 2 and 1, then ends p − 2 = 2^521 − 3 with a zero and a one.
-	public static ReadOnlySpan<byte> InversionChain =>
-	[
-		7,
-		1, 0, 2, 1, 4, 2, 8, 3, 16, 4, 32, 5, 64, 6,
-		128, 7, 128, 7, 128, 7, 4, 2, 2, 1, 1, 0, 2, 0,
-	];
-
 	// R = 2^576 ≡ 2^55, so the reduction is a rotation rather than Montgomery rounds. With h the upper half of t and a·2^55 + b the lower, b < 2^55, t·R⁻¹ ≡ h + a + b·2^466 since 2^−55 ≡ 2^466. v = a + b·2^466 < 2^522 differs from a only in limbs 7 and 8, which give its bit f at 2^521 before the sum, and v ≡ v − f·2^521 + f. The sum h + (v − f·2^521) + f is below 2p: h ≤ p − 1, and v − 2^521 is below 2^521 − 2^466 if f = 1 and v below 2^521 otherwise. It fits the upper limbs with no carry.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ulong Reduce<TSelf>(ref ulong product) where TSelf : struct, IMontgomeryModulus

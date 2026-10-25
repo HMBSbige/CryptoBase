@@ -60,37 +60,6 @@ public class MontgomeryModulusTest
 		}
 	}
 
-	[Test]
-	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
-	public async Task InversionChainRaisesToTheModulusLessTwo(ModulusCase modulus)
-	{
-		byte[] chain = modulus.InversionChain;
-		await Assert.That(chain.Length % 2).IsEqualTo(1);
-
-		int stored = chain[0];
-		int steps = chain.Length / 2;
-		List<BigInteger> table = [1];
-		BigInteger power = 1;
-
-		for (int step = 0; step < steps; ++step)
-		{
-			int entry = chain[2 * step + 2];
-			await Assert.That(entry).IsLessThan(table.Count);
-			power = (power << chain[2 * step + 1]) + table[entry];
-
-			if (step < stored)
-			{
-				table.Add(power);
-			}
-		}
-
-		using (Assert.Multiple())
-		{
-			await Assert.That(stored).IsLessThanOrEqualTo(steps);
-			await Assert.That(power).IsEqualTo(modulus.Modulus - 2);
-		}
-	}
-
 	// Reduce may give any value below 2m congruent to t·R⁻¹ modulo m, for any t below m·R. The generic reduction takes u·R − Q·m to u for any Q below R, so u next to m and 2m reach the extremes of its final subtraction. Patterned limbs make long carry and borrow chains.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]

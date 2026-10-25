@@ -34,14 +34,6 @@ internal struct P384Field : IMontgomeryModulus
 
 	public static ulong NegativeInverse => 0x0000000100000001UL;
 
-	// With x_k = x^(2^k − 1), the table holds x, x_2, x_3, x_6, x_12, x_15, x_30, x_60 and x_120. The power goes on through x_240 to x_255, then runs through the rest of p − 2: a zero and 32 ones, 64 zeros and 30 ones, a zero and a one.
-	public static ReadOnlySpan<byte> InversionChain =>
-	[
-		8,
-		1, 0, 1, 0, 3, 2, 6, 3, 3, 2, 15, 5, 30, 6, 60, 7, 120, 8,
-		15, 5, 31, 6, 2, 1, 94, 6, 2, 0,
-	];
-
 	// The q that clears limb i is t_i·(2^32 + 1) mod 2^64, and q·p = q·2^384 − q·d for d = 2^128 + 2^96 − 2^32 + 1. For x the six limbs from limb i, x + q·p = (x − q·d) mod 2^384 + (q − β)·2^384 with β the borrow out of x − q·d, so a round subtracts q·d from x, which clears limb i, and adds q − β at limb i + 6.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ulong Reduce<TSelf>(ref ulong product) where TSelf : struct, IMontgomeryModulus

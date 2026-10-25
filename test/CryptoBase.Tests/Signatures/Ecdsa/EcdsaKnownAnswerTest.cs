@@ -401,7 +401,6 @@ internal class EcdsaKnownAnswerTest
 		private static readonly ulong[] ModulusLimbs = ToLimbs(Value);
 		private static readonly ulong[] MontgomeryOneLimbs = ToLimbs((BigInteger.One << 192) % Value);
 		private static readonly ulong[] RSquaredLimbs = ToLimbs((BigInteger.One << 384) % Value);
-		private static readonly byte[] InversionChainBytes = BinaryChain(Value - 2);
 
 		private ulong _limb;
 
@@ -432,27 +431,6 @@ internal class EcdsaKnownAnswerTest
 
 				return 0 - inverse;
 			}
-		}
-
-		public static ReadOnlySpan<byte> InversionChain => InversionChainBytes;
-
-		private static byte[] BinaryChain(BigInteger exponent)
-		{
-			List<byte> chain = [0];
-			int squarings = 0;
-
-			for (int bit = (int)exponent.GetBitLength() - 2; bit >= 0; --bit)
-			{
-				++squarings;
-
-				if (!(exponent >> bit).IsEven)
-				{
-					chain.AddRange([(byte)squarings, 0]);
-					squarings = 0;
-				}
-			}
-
-			return [.. chain];
 		}
 
 		private static ulong[] ToLimbs(BigInteger value)

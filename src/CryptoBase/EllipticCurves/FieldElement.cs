@@ -92,32 +92,10 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		Multiply(ref Limbs(in value), ref Limbs(ref one), out result);
 	}
 
-	// 0 gives 0. The chain is public, so the branches and table indices it decides say nothing about value.
-	[SkipLocalsInit]
+	// 0 gives 0.
 	internal static void Invert(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
 	{
-		ReadOnlySpan<byte> chain = TModulus.InversionChain;
-		int stored = chain[0];
-		Span<FieldElement<TModulus>> table = MemoryMarshal.Cast<ulong, FieldElement<TModulus>>(stackalloc ulong[(stored + 1) * TModulus.LimbCount]);
-		table[0] = value;
-		FieldElement<TModulus> power = value;
-
-		for (int step = 0; 2 * step + 1 < chain.Length; ++step)
-		{
-			for (int i = chain[2 * step + 1]; i > 0; --i)
-			{
-				Square(in power, out power);
-			}
-
-			Multiply(in power, in table[chain[2 * step + 2]], out power);
-
-			if (step < stored)
-			{
-				table[step + 1] = power;
-			}
-		}
-
-		result = power;
+		SafeGcd<TModulus>.Invert(in value, out result);
 	}
 
 	internal static void ConditionalSelect(ulong mask, in FieldElement<TModulus> whenSet, in FieldElement<TModulus> whenClear, out FieldElement<TModulus> result)

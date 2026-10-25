@@ -27,13 +27,4 @@ internal struct P256Order : IMontgomeryModulus
 	];
 
 	public static ulong NegativeInverse => 0xCCD1C8AAEE00BC4FUL;
-
-	// With x_k = x^(2^k − 1), the table holds x, x², the odd powers of x up to x^15, x_8, x_16 and x_32. From x_32, the leading 32 ones of n − 2, the steps follow its bits, each appending zeros and an entry.
-	public static ReadOnlySpan<byte> InversionChain =>
-	[
-		11,
-		0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 4, 8, 8, 9, 16, 10,
-		33, 0, 32, 11, 32, 11, 5, 8, 5, 4, 6, 7, 4, 8, 4, 3, 5, 6, 5, 7, 5, 4, 4, 0, 5, 8, 4, 2, 4, 7, 5, 0,
-		6, 8, 5, 4, 4, 4, 4, 2, 4, 5, 5, 6, 8, 6, 4, 8, 5, 2, 5, 2, 6, 5, 4, 3, 6, 8,
-	];
 }

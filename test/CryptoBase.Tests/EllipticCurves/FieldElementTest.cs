@@ -128,25 +128,7 @@ public class FieldElementTest
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task InvertGivesTheInverseInMontgomeryForm(ModulusCase modulus)
 	{
-		BigInteger m = modulus.Modulus;
-		BigInteger rSquared = modulus.R * modulus.R % m;
-		BigInteger one = modulus.R % m;
-		List<string> failures = [];
-
-		foreach (BigInteger value in Values(modulus, 8, 16))
-		{
-			// value = aR stands for a, so the inverse a⁻¹R is value⁻¹R²; value^(m − 2) also maps 0 to 0.
-			BigInteger inverse = modulus.Invert(value);
-			Check(failures, $"1 / {value:X}", inverse, BigInteger.ModPow(value, m - 2, m) * rSquared % m);
-			Check(failures, $"1 / {value:X} through the Montgomery form", modulus.FromMontgomery(modulus.Invert(modulus.ToMontgomery(value))), BigInteger.ModPow(value, m - 2, m));
-
-			if (!value.IsZero)
-			{
-				Check(failures, $"{value:X} · 1 / {value:X}", modulus.Multiply(value, inverse), one);
-			}
-		}
-
-		await Assert.That(failures).IsEmpty();
+		await Assert.That(InversionFailures(modulus, modulus.Invert)).IsEmpty();
 	}
 
 	[Test]
@@ -315,6 +297,46 @@ public class FieldElementTest
 		}
 
 		await Assert.That(failures).IsEmpty();
+	}
+
+	private static List<string> InversionFailures(ModulusCase modulus, Func<BigInteger, bool, BigInteger> invert)
+	{
+		BigInteger m = modulus.Modulus;
+		BigInteger rSquared = modulus.R * modulus.R % m;
+		BigInteger one = modulus.R % m;
+		List<string> failures = [];
+
+		foreach (BigInteger value in InversionValues(modulus))
+		{
+			// value = aR stands for a, so the inverse a⁻¹R is value⁻¹R²; value^(m − 2) also maps 0 to 0.
+			BigInteger inverse = invert(value, false);
+			Check(failures, $"1 / {value:X}", inverse, BigInteger.ModPow(value, m - 2, m) * rSquared % m);
+			Check(failures, $"1 / {value:X} through the Montgomery form", modulus.FromMontgomery(invert(modulus.ToMontgomery(value), false)), BigInteger.ModPow(value, m - 2, m));
+
+			if (!value.IsZero)
+			{
+				Check(failures, $"{value:X} · 1 / {value:X}", modulus.Multiply(value, inverse), one);
+			}
+		}
+
+		return failures;
+	}
+
+	// The divsteps of an inversion read the low bits of the value first and reach the high ones last, so runs of zeros or ones at either end, as in powers of two and in values with only their low or only their high bits set, steer them to extremes.
+	private static SortedSet<BigInteger> InversionValues(ModulusCase modulus)
+	{
+		BigInteger m = modulus.Modulus;
+		BigInteger top = BigInteger.One << modulus.BitLength;
+		SortedSet<BigInteger> values = [.. Values(modulus, 8, 16)];
+
+		for (int k = 0; k <= modulus.BitLength; ++k)
+		{
+			BigInteger power = BigInteger.One << k;
+			values.UnionWith([power, power - 1, top - power, m - power]);
+		}
+
+		values.RemoveWhere(value => value < 0 || value >= m);
+		return values;
 	}
 
 	private static void Check(List<string> failures, string operation, BigInteger actual, BigInteger expected)
