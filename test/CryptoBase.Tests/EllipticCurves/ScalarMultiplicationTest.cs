@@ -290,29 +290,44 @@ public class ScalarMultiplicationTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The multiples stand for 1·P to 2^(w − 1)·P; a digit of 0 gives (0, 0, 0).
+	// The multiples stand for 1·P to 2^(w − 1)·P; a digit of 0 gives (0, 0).
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task SelectFromMultiplesGivesEveryDigit(CurveCase curve)
 	{
 		Random random = new(9);
 		BigInteger p = curve.FieldModulus;
-		JacobianValue[] multiples = [.. Enumerable.Range(0, MultiplyWindowLength).Select(_ => new JacobianValue(EcReference.RandomBelow(random, p), EcReference.RandomBelow(random, p), EcReference.RandomBelow(random, p)))];
+		CurvePoint[] multiples = [.. Enumerable.Range(0, MultiplyWindowLength).Select(_ => new CurvePoint(EcReference.RandomBelow(random, p), EcReference.RandomBelow(random, p)))];
 		List<string> failures = [];
 
 		for (int digit = 1 - MultiplyWindowLength; digit <= MultiplyWindowLength; ++digit)
 		{
-			JacobianValue entry = digit is 0 ? new JacobianValue(0, 0, 0) : multiples[Math.Abs(digit) - 1];
-			JacobianValue expected = digit < 0 ? entry with { Y = (p - entry.Y) % p } : entry;
-			JacobianValue actual = curve.SelectFromMultiples(multiples, digit);
+			CurvePoint entry = digit is 0 ? new CurvePoint(0, 0) : multiples[Math.Abs(digit) - 1];
+			CurvePoint expected = digit < 0 ? entry with { Y = (p - entry.Y) % p } : entry;
+			CurvePoint actual = curve.SelectFromMultiples(multiples, digit);
 
 			if (actual != expected)
 			{
-				failures.Add($"digit {digit}: {actual}, expected {expected}");
+				failures.Add($"digit {digit}: {Show(actual)}, expected {Show(expected)}");
 			}
 		}
 
 		await Assert.That(failures).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(nameof(MultiplyCases))]
+	public async Task MultiplesHoldEachMultiple(CurveCase curve, int pointIndex)
+	{
+		CurvePoint point = MultiplyPoint(curve, pointIndex);
+		CurvePoint[] multiples = curve.Multiples(point, MultiplyWindowLength);
+		CurvePoint?[] expected = curve.Reference.Multiply(point, [.. Enumerable.Range(1, MultiplyWindowLength).Select(static j => (BigInteger)j)]);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(multiples.Length).IsEqualTo(expected.Length);
+			await Assert.That(Enumerable.Range(0, Math.Min(multiples.Length, expected.Length)).Where(i => multiples[i] != expected[i])).IsEmpty();
+		}
 	}
 
 	[Test]

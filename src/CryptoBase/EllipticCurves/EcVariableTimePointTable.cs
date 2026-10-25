@@ -39,7 +39,7 @@ internal static class EcVariableTimePointTable<TCurve, TField, TOrder>
 		}
 
 		AffinePoint<TField>[] affineBases = new AffinePoint<TField>[bases.Length];
-		EcGroup<TCurve, TField, TOrder>.ToAffine(bases, affineBases);
+		EcGroup<TCurve, TField, TOrder>.ToAffineVariableTime(bases, affineBases);
 		JacobianPoint<TField>[] multiples = new JacobianPoint<TField>[Length];
 
 		for (int c = 0; c < PartCount; ++c)
@@ -54,7 +54,7 @@ internal static class EcVariableTimePointTable<TCurve, TField, TOrder>
 		}
 
 		AffinePoint<TField>[] entries = new AffinePoint<TField>[Length];
-		EcGroup<TCurve, TField, TOrder>.ToAffine(multiples, entries);
+		EcGroup<TCurve, TField, TOrder>.ToAffineVariableTime(multiples, entries);
 		return entries;
 	}
 }

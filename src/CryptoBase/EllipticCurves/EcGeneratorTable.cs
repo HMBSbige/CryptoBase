@@ -36,7 +36,7 @@ internal static class EcGeneratorTable<TCurve, TField, TOrder>
 		}
 
 		AffinePoint<TField>[] entries = new AffinePoint<TField>[multiples.Length];
-		EcGroup<TCurve, TField, TOrder>.ToAffine(multiples, entries);
+		EcGroup<TCurve, TField, TOrder>.ToAffineVariableTime(multiples, entries);
 		return entries;
 	}
 }

@@ -144,25 +144,13 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	internal static void Multiply(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[DigitCount(WindowWidth)];
-		Span<JacobianPoint<TField>> multiples = stackalloc JacobianPoint<TField>[1 << WindowWidth - 1];
+		Span<AffinePoint<TField>> table = stackalloc AffinePoint<TField>[1 << WindowWidth - 1];
 		Recode(in scalar, WindowWidth, digits);
-		JacobianPoint<TField>.FromAffine(in point, out multiples[0]);
-
-		// multiples[j − 1] is j·P. For odd j it is (j − 1)·P + P, two points that are neither equal, opposite nor at infinity, as 2 < j < n.
-		for (int j = 2; j <= multiples.Length; ++j)
-		{
-			if (j % 2 is 0)
-			{
-				Double(in multiples[j / 2 - 1], out multiples[j - 1]);
-			}
-			else
-			{
-				_ = AddDistinct(in multiples[j - 2], in point, out multiples[j - 1]);
-			}
-		}
-
-		Select(multiples, digits[^1], out result);
-		Unsafe.SkipInit(out JacobianPoint<TField> entry);
+		BuildMultiples(in point, table);
+		Select(table, digits[^1], out AffinePoint<TField> entry);
+		// A digit of 0 selects (0, 0), which is not a point: the top window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
+		result = default;
+		JacobianPoint<TField>.ConditionalSelect(~ZeroMask((ulong)digits[^1]), in entry, in result, out result);
 		Unsafe.SkipInit(out JacobianPoint<TField> sum);
 
 		for (int i = digits.Length - 2; i >= 0; --i)
@@ -172,24 +160,54 @@ internal static class EcGroup<TCurve, TField, TOrder>
 				Double(in result, out result);
 			}
 
-			Select(multiples, digits[i], out entry);
+			Select(table, digits[i], out entry);
 
-			// The doublings leave 32a·P for the value a ≥ 0 of the digits above i, and the entry is d·P, |d| ≤ 16. The digits from i down make more than −32^(i + 1)/2, so 32a < n/32^i + 16. Opposite points give Z = 0, which is right; equal ones need 32a ≡ d (mod n). For i ≥ 1, |32a − d| < n leaves 32a = d, so a = d = 0: both points at infinity, which the masks cover. In window 0, k = 32a + d, so equal points need k ≡ 2d (mod n) with d the low digit of k. For d > 0 that is k = 2d, whose low digit is not d; for d < 0 it is k = n + 2d, whose low digit is d just if d ≡ −n (mod 32). No d in [−15, −1] does that for P-256, n ≡ 17, or P-384, n ≡ 19, but d = −9 does for P-521, n ≡ 9, at k = n − 18, so that window doubles where the points are equal.
+			// The doublings leave 32a·P for the value a ≥ 0 of the digits above i, and the entry is d·P, |d| ≤ 16, or (0, 0) for d = 0. The digits from i down make more than −32^(i + 1)/2, so 32a < n/32^i + 16. Opposite points give Z = 0, which is right; equal ones need 32a ≡ d (mod n). For i ≥ 1, |32a − d| < n leaves 32a = d, so a = 0 and d = 0: the point at infinity and a digit of 0, which the masks cover. In window 0, k = 32a + d, so equal points need k ≡ 2d (mod n) with d the low digit of k. For d > 0 that is k = 2d, whose low digit is not d; for d < 0 it is k = n + 2d, whose low digit is d just if d ≡ −n (mod 32). No d in [−15, −1] does that for P-256, n ≡ 17, or P-384, n ≡ 19, but d = −9 does for P-521, n ≡ 9, at k = n − 18, so that window doubles where the points are equal.
 			if (i is not 0)
 			{
 				_ = AddDistinct(in result, in entry, out sum);
 				JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in result.Z), in entry, in sum, out sum);
-				JacobianPoint<TField>.ConditionalSelect(ZeroMask((ulong)digits[i]), in result, in sum, out result);
 			}
 			else
 			{
-				Add(in result, in entry, out result);
+				Add(in result, in entry, out sum);
 			}
+
+			JacobianPoint<TField>.ConditionalSelect(ZeroMask((ulong)digits[i]), in result, in sum, out result);
 		}
 
 		digits.ZeroMemory();
+		table.ZeroMemory();
 		entry.ZeroMemory();
 		sum.ZeroMemory();
+	}
+
+	// Sets multiples[j − 1] to j·P for a point P on the curve. No j·P is the point at infinity, as j ≤ multiples.Length < n, so each has an affine form. Every caller of Multiply passes a public P, but the inversion takes constant time all the same and the intermediates are cleared, so that neither the time nor the addresses depend on P.
+	[SkipLocalsInit]
+	internal static void BuildMultiples(in AffinePoint<TField> point, Span<AffinePoint<TField>> multiples)
+	{
+		Debug.Assert(multiples.Length >= 2);
+
+		// sums[j − 2] is j·P. For odd j it is (j − 1)·P + P, two points that are neither equal, opposite nor at infinity, as 2 < j < n.
+		Span<JacobianPoint<TField>> sums = stackalloc JacobianPoint<TField>[multiples.Length - 1];
+		JacobianPoint<TField>.FromAffine(in point, out JacobianPoint<TField> first);
+		Double(in first, out sums[0]);
+
+		for (int j = 3; j <= multiples.Length; ++j)
+		{
+			if (j % 2 is 0)
+			{
+				Double(in sums[j / 2 - 2], out sums[j - 2]);
+			}
+			else
+			{
+				_ = AddDistinct(in sums[j - 3], in point, out sums[j - 2]);
+			}
+		}
+
+		multiples[0] = point;
+		ToAffine(sums, multiples.Slice(1));
+		sums.ZeroMemory();
 	}
 
 	// k must lie in [1, n − 1].
@@ -236,29 +254,57 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		inverse.ZeroMemory();
 	}
 
-	// None of the points may be the point at infinity. They are public, so the inversion may take variable time and nothing is cleared.
+	// None of the points may be the point at infinity. Neither the time nor the addresses depend on the points, and the intermediates are cleared.
 	internal static void ToAffine(ReadOnlySpan<JacobianPoint<TField>> points, Span<AffinePoint<TField>> result)
+	{
+		ToAffine(points, result, false);
+	}
+
+	// As above for public points: the inversion may take variable time, and nothing is cleared.
+	internal static void ToAffineVariableTime(ReadOnlySpan<JacobianPoint<TField>> points, Span<AffinePoint<TField>> result)
+	{
+		ToAffine(points, result, true);
+	}
+
+	// One inversion for all the points: result[i].X holds the product of the Z of points 0 to i until result[i] is written.
+	private static void ToAffine(ReadOnlySpan<JacobianPoint<TField>> points, Span<AffinePoint<TField>> result, bool variableTime)
 	{
 		Debug.Assert(points.Length > 0 && result.Length == points.Length);
 
-		FieldElement<TField>[] products = new FieldElement<TField>[points.Length];
-		products[0] = points[0].Z;
+		result[0].X = points[0].Z;
 
 		for (int i = 1; i < points.Length; ++i)
 		{
-			FieldElement<TField>.Multiply(in products[i - 1], in points[i].Z, out products[i]);
+			FieldElement<TField>.Multiply(in result[i - 1].X, in points[i].Z, out result[i].X);
 		}
 
-		FieldElement<TField>.InvertVariableTime(in products[^1], out FieldElement<TField> inverse);
+		FieldElement<TField> inverse;
+
+		if (variableTime)
+		{
+			FieldElement<TField>.InvertVariableTime(in result[^1].X, out inverse);
+		}
+		else
+		{
+			FieldElement<TField>.Invert(in result[^1].X, out inverse);
+		}
+
+		Unsafe.SkipInit(out FieldElement<TField> zInverse);
 
 		for (int i = points.Length - 1; i > 0; --i)
 		{
-			FieldElement<TField>.Multiply(in inverse, in products[i - 1], out FieldElement<TField> zInverse);
+			FieldElement<TField>.Multiply(in inverse, in result[i - 1].X, out zInverse);
 			FieldElement<TField>.Multiply(in inverse, in points[i].Z, out inverse);
 			Scale(in points[i], in zInverse, out result[i]);
 		}
 
 		Scale(in points[0], in inverse, out result[0]);
+
+		if (!variableTime)
+		{
+			inverse.ZeroMemory();
+			zInverse.ZeroMemory();
+		}
 	}
 
 	// point must not be the point at infinity.
@@ -368,12 +414,10 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		ConditionalNegate((ulong)sign, ref result.Y);
 	}
 
-	// multiples holds 1·P to multiples.Length·P. A digit of 0 gives (0, 0, 0), the point at infinity.
-	internal static void Select(ReadOnlySpan<JacobianPoint<TField>> multiples, int digit, out JacobianPoint<TField> result)
+	// multiples holds 1·P to multiples.Length·P. A digit of 0 gives (0, 0), which is not a point.
+	internal static void Select(ReadOnlySpan<AffinePoint<TField>> multiples, int digit, out AffinePoint<TField> result)
 	{
-		int sign = digit >> 31;
-		MaskedSelect.Lookup(in MemoryMarshal.GetReference(multiples), multiples.Length, (uint)((digit ^ sign) - sign) - 1, out result);
-		ConditionalNegate((ulong)sign, ref result.Y);
+		Select(in MemoryMarshal.GetReference(multiples), multiples.Length, digit, out result);
 	}
 
 	// Sets result to (X·Z⁻², Y·Z⁻³) from zInverse = Z⁻¹.

@@ -106,7 +106,10 @@ public abstract class CurveCase
 	internal abstract CurvePoint SelectFromGeneratorTable(int window, int digit);
 
 	// The multiples need not be points.
-	internal abstract JacobianValue SelectFromMultiples(JacobianValue[] multiples, int digit);
+	internal abstract CurvePoint SelectFromMultiples(CurvePoint[] multiples, int digit);
+
+	// The table of k·P: 1·P to count·P.
+	internal abstract CurvePoint[] Multiples(CurvePoint point, int count);
 
 	internal abstract int VariableTimeGeneratorWidth { get; }
 
@@ -367,11 +370,18 @@ public abstract class CurveCase
 			return ToValue(result);
 		}
 
-		internal override JacobianValue SelectFromMultiples(JacobianValue[] multiples, int digit)
+		internal override CurvePoint SelectFromMultiples(CurvePoint[] multiples, int digit)
 		{
-			JacobianPoint<TField>[] points = [.. multiples.Select(static multiple => ToPoint(multiple))];
-			EcGroup<TCurve, TField, TOrder>.Select(points, digit, out JacobianPoint<TField> result);
+			AffinePoint<TField>[] points = [.. multiples.Select(static multiple => ToPoint(multiple))];
+			EcGroup<TCurve, TField, TOrder>.Select(points, digit, out AffinePoint<TField> result);
 			return ToValue(result);
+		}
+
+		internal override CurvePoint[] Multiples(CurvePoint point, int count)
+		{
+			AffinePoint<TField>[] multiples = new AffinePoint<TField>[count];
+			EcGroup<TCurve, TField, TOrder>.BuildMultiples(ToPoint(point), multiples);
+			return [.. multiples.Select(static multiple => ToValue(multiple))];
 		}
 
 		internal override int VariableTimeGeneratorWidth => EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Width;
