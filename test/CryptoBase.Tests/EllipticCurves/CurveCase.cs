@@ -114,6 +114,17 @@ public abstract class CurveCase
 
 	internal abstract JacobianValue MultiplyAddVariableTime(BigInteger u1, CurvePoint point, BigInteger u2);
 
+	internal abstract int PointTableWidth { get; }
+
+	internal abstract int PointTablePartCount { get; }
+
+	internal abstract int PointTablePartLength { get; }
+
+	internal abstract CurvePoint[] VariableTimePointTable(CurvePoint point);
+
+	// With the table of point.
+	internal abstract JacobianValue MultiplyAddWithTableVariableTime(BigInteger u1, CurvePoint point, BigInteger u2);
+
 	internal abstract bool XModOrderEqualsVariableTime(JacobianValue point, BigInteger r);
 
 	internal abstract JacobianValue AddVariableTime(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None);
@@ -121,6 +132,8 @@ public abstract class CurveCase
 	internal abstract JacobianValue AddVariableTime(JacobianValue left, CurvePoint right, bool inPlace = false);
 
 	internal abstract int RecodeVariableTime(BigInteger scalar, int width, out int[] digits);
+
+	internal abstract int RecodeVariableTime(BigInteger scalar, int start, int length, int width, out int[] digits);
 
 	internal abstract KeyCase NewKey();
 
@@ -374,6 +387,24 @@ public abstract class CurveCase
 			return ToValue(result);
 		}
 
+		internal override int PointTableWidth => EcVariableTimePointTable<TCurve, TField, TOrder>.Width;
+
+		internal override int PointTablePartCount => EcVariableTimePointTable<TCurve, TField, TOrder>.PartCount;
+
+		internal override int PointTablePartLength => EcVariableTimePointTable<TCurve, TField, TOrder>.PartLength;
+
+		internal override CurvePoint[] VariableTimePointTable(CurvePoint point)
+		{
+			return [.. EcVariableTimePointTable<TCurve, TField, TOrder>.Build(ToPoint(point)).Select(static entry => ToValue(entry))];
+		}
+
+		internal override JacobianValue MultiplyAddWithTableVariableTime(BigInteger u1, CurvePoint point, BigInteger u2)
+		{
+			AffinePoint<TField>[] table = EcVariableTimePointTable<TCurve, TField, TOrder>.Build(ToPoint(point));
+			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(ToScalar(u1), table, ToScalar(u2), out JacobianPoint<TField> result);
+			return ToValue(result);
+		}
+
 		internal override bool XModOrderEqualsVariableTime(JacobianValue point, BigInteger r)
 		{
 			return EcVariableTimeGroup<TCurve, TField, TOrder>.XModOrderEquals(ToPoint(point), ToScalar(r));
@@ -417,6 +448,14 @@ public abstract class CurveCase
 		{
 			sbyte[] recoded = new sbyte[EcVariableTimeGroup<TCurve, TField, TOrder>.DigitCount];
 			int top = EcVariableTimeGroup<TCurve, TField, TOrder>.Recode(ToScalar(scalar), width, recoded);
+			digits = [.. recoded.Select(static digit => (int)digit)];
+			return top;
+		}
+
+		internal override int RecodeVariableTime(BigInteger scalar, int start, int length, int width, out int[] digits)
+		{
+			sbyte[] recoded = new sbyte[length + 1];
+			int top = EcVariableTimeGroup<TCurve, TField, TOrder>.Recode(ToScalar(scalar), start, length, width, recoded);
 			digits = [.. recoded.Select(static digit => (int)digit)];
 			return top;
 		}

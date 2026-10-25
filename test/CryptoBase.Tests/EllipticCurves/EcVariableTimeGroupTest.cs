@@ -186,6 +186,28 @@ public class EcVariableTimeGroupTest
 		await Assert.That(failures).IsEmpty();
 	}
 
+	// After the parts of u2, the table path adds the windows of u1 to u2·Q. With u1 = 2^(wk), whose one nonzero digit is 1 in window k, and Q = ±2^(wk)·u2⁻¹·G, that one addition meets u2·Q = ±2^(wk)·G, the same point or its opposite.
+	[Test]
+	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
+	public async Task MultiplyAddWithTheTableMeetsEqualAndOppositePoints(CurveCase curve)
+	{
+		EcReference reference = curve.Reference;
+		BigInteger n = curve.Order;
+		Random random = new(15);
+		List<string> failures = [];
+
+		foreach (int k in (int[])[0, 1, curve.GeneratorWindowCount / 2, curve.GeneratorWindowCount - 1])
+		{
+			BigInteger u1 = BigInteger.One << curve.GeneratorWindowWidth * k;
+			BigInteger u2 = 1 + EcReference.RandomBelow(random, n - 1);
+			BigInteger q = u1 * BigInteger.ModPow(u2, n - 2, n) % n;
+			Check(failures, curve, u1, reference.PublicKey(q), u2, reference.Multiply(reference.Generator, 2 * u1 % n));
+			Check(failures, curve, u1, reference.PublicKey(n - q), u2, null);
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
 	// With n < p < 2n, x mod n is x − n for x in [n, p): the least such x above n here, where r = x − n fails the comparison of x with r and passes that with r + n, and the least x from n, which may be n itself, with x mod n = 0 below every r. A small x leaves r + n < p for r near x, so a wrong r there reaches the second comparison and fails it; an x near p − n leaves r + n ≥ p, as does r = x + p − n, whose r + n ≡ x would match without the bound.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
@@ -277,8 +299,36 @@ public class EcVariableTimeGroupTest
 
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
+	public async Task PointTableHoldsTheOddMultiplesOfEachPart(CurveCase curve)
+	{
+		EcReference reference = curve.Reference;
+		CurvePoint point = reference.RandomPoint(new Random(16));
+		CurvePoint[] table = curve.VariableTimePointTable(point);
+		List<BigInteger> scalars = [];
+
+		for (int c = 0; c < curve.PointTablePartCount; ++c)
+		{
+			for (int j = 1; j < 1 << curve.PointTableWidth - 1; j += 2)
+			{
+				scalars.Add((BigInteger)j << c * curve.PointTablePartLength);
+			}
+		}
+
+		CurvePoint?[] multiples = reference.Multiply(point, scalars);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(table.Length).IsEqualTo(multiples.Length);
+			await Assert.That(Enumerable.Range(0, Math.Min(table.Length, multiples.Length)).Where(i => table[i] != multiples[i])).IsEmpty();
+		}
+	}
+
+	// The table path recodes each part of u2 from the bits of that part alone.
+	[Test]
+	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task RecodeGivesTheNaf(CurveCase curve)
 	{
+		int length = curve.PointTablePartLength;
 		List<string> failures = [];
 
 		foreach (int width in Widths)
@@ -286,34 +336,46 @@ public class EcVariableTimeGroupTest
 			foreach (BigInteger scalar in RecodeScalars(curve, width))
 			{
 				int top = curve.RecodeVariableTime(scalar, width, out int[] digits);
-				BigInteger sum = 0;
-				int previous = int.MinValue / 2;
-				int highest = -1;
-				bool valid = digits.Length == curve.ScalarBitLength + 1;
+				CheckNaf(failures, $"w = {width}, {scalar:X}", scalar, width, curve.ScalarBitLength, top, digits);
 
-				for (int i = 0; i < digits.Length; ++i)
+				for (int start = 0; start < curve.ScalarBitLength; start += length)
 				{
-					int digit = digits[i];
-					sum += (BigInteger)digit << i;
-
-					if (digit is 0)
-					{
-						continue;
-					}
-
-					valid &= int.IsOddInteger(digit) && Math.Abs(digit) < 1 << width - 1 && i - previous >= width;
-					previous = i;
-					highest = i;
-				}
-
-				if (!valid || sum != scalar || top != highest)
-				{
-					failures.Add($"w = {width}, {scalar:X}: top {top}, digits {string.Join(", ", digits)}");
+					top = curve.RecodeVariableTime(scalar, start, length, width, out digits);
+					CheckNaf(failures, $"w = {width}, {scalar:X} from bit {start}", scalar >> start & (BigInteger.One << length) - 1, width, length, top, digits);
 				}
 			}
 		}
 
 		await Assert.That(failures).IsEmpty();
+	}
+
+	// value has length bits, which take length + 1 digits.
+	private static void CheckNaf(List<string> failures, string operation, BigInteger value, int width, int length, int top, int[] digits)
+	{
+		BigInteger sum = 0;
+		int previous = int.MinValue / 2;
+		int highest = -1;
+		bool valid = digits.Length == length + 1;
+
+		for (int i = 0; i < digits.Length; ++i)
+		{
+			int digit = digits[i];
+			sum += (BigInteger)digit << i;
+
+			if (digit is 0)
+			{
+				continue;
+			}
+
+			valid &= int.IsOddInteger(digit) && Math.Abs(digit) < 1 << width - 1 && i - previous >= width;
+			previous = i;
+			highest = i;
+		}
+
+		if (!valid || sum != value || top != highest)
+		{
+			failures.Add($"{operation}: top {top}, digits {string.Join(", ", digits)}");
+		}
 	}
 
 	private static void CheckSame(List<string> failures, string operation, JacobianValue actual, JacobianValue expected)
@@ -324,9 +386,12 @@ public class EcVariableTimeGroupTest
 		}
 	}
 
+	// With and without the table of the point.
 	private static void Check(List<string> failures, CurveCase curve, BigInteger u1, CurvePoint point, BigInteger u2, CurvePoint? expected)
 	{
-		CheckPoint(failures, curve.Reference, $"{u1:X} · G + {u2:X} · {Show(point)}", curve.MultiplyAddVariableTime(u1, point, u2), expected);
+		string operation = $"{u1:X} · G + {u2:X} · {Show(point)}";
+		CheckPoint(failures, curve.Reference, operation, curve.MultiplyAddVariableTime(u1, point, u2), expected);
+		CheckPoint(failures, curve.Reference, $"{operation} with the table", curve.MultiplyAddWithTableVariableTime(u1, point, u2), expected);
 	}
 
 	private static BigInteger[] EdgeScalars(CurveCase curve)

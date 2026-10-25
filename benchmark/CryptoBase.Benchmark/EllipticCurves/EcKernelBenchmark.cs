@@ -116,6 +116,18 @@ public class EcKernelBenchmark
 	}
 
 	[Benchmark]
+	public int BuildPointTable()
+	{
+		return _kernel.BuildPointTable();
+	}
+
+	[Benchmark]
+	public void MultiplyAddWithTable()
+	{
+		_kernel.MultiplyAddWithTable();
+	}
+
+	[Benchmark]
 	public bool TryDecode()
 	{
 		return _kernel.TryDecode();
@@ -151,6 +163,10 @@ public class EcKernelBenchmark
 
 		void MultiplyAdd();
 
+		int BuildPointTable();
+
+		void MultiplyAddWithTable();
+
 		bool TryDecode();
 	}
 
@@ -160,6 +176,7 @@ public class EcKernelBenchmark
 		where TOrder : unmanaged, IMontgomeryModulus
 	{
 		private readonly byte[] _encoded = new byte[EcGroup<TCurve, TField, TOrder>.EncodedLength];
+		private readonly AffinePoint<TField>[] _pointTable;
 		private FieldElement<TField> _fieldLeft;
 		private FieldElement<TField> _fieldRight;
 		private FieldElement<TOrder> _orderLeft;
@@ -177,6 +194,7 @@ public class EcKernelBenchmark
 			RandomScalar(out FieldElement<TOrder> scalar);
 			EcGroup<TCurve, TField, TOrder>.MultiplyBaseToAffine(in scalar, out _affine);
 			EcGroup<TCurve, TField, TOrder>.Encode(in _affine, _encoded);
+			_pointTable = EcVariableTimePointTable<TCurve, TField, TOrder>.Build(in _affine);
 			RandomScalar(out scalar);
 			EcGroup<TCurve, TField, TOrder>.MultiplyBase(in scalar, out _jacobian);
 			RandomScalar(out scalar);
@@ -271,6 +289,17 @@ public class EcKernelBenchmark
 		public void MultiplyAdd()
 		{
 			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in _orderLeft, in _affine, in _orderRight, out JacobianPoint<TField> result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		}
+
+		public int BuildPointTable()
+		{
+			return EcVariableTimePointTable<TCurve, TField, TOrder>.Build(in _affine).Length;
+		}
+
+		public void MultiplyAddWithTable()
+		{
+			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in _orderLeft, _pointTable, in _orderRight, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 

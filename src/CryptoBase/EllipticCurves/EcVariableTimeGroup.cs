@@ -65,6 +65,81 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		}
 	}
 
+	// As above, with the table that EcVariableTimePointTable builds for Q. Each part of u2 has a NAF of its own, which needs only the doublings of one part; u1·G follows from the windows of EcGeneratorTable, which need none.
+	[SkipLocalsInit]
+	internal static void MultiplyAdd(in FieldElement<TOrder> u1, ReadOnlySpan<AffinePoint<TField>> pointTable, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
+	{
+		Debug.Assert(pointTable.Length == EcVariableTimePointTable<TCurve, TField, TOrder>.Length);
+
+		const int parts = EcVariableTimePointTable<TCurve, TField, TOrder>.PartCount;
+		int partLength = EcVariableTimePointTable<TCurve, TField, TOrder>.PartLength;
+		int partEntries = EcVariableTimePointTable<TCurve, TField, TOrder>.PartEntryCount;
+		int stride = partLength + 1;
+		Span<sbyte> pointDigits = stackalloc sbyte[parts * stride];
+		int top = -1;
+
+		for (int c = 0; c < parts; ++c)
+		{
+			top = Math.Max(top, Recode(in u2, c * partLength, partLength, EcVariableTimePointTable<TCurve, TField, TOrder>.Width, pointDigits.Slice(c * stride, stride)));
+		}
+
+		// Z = 0, the point at infinity.
+		result = default;
+
+		for (int i = top; i >= 0; --i)
+		{
+			if (i < top)
+			{
+				EcGroup<TCurve, TField, TOrder>.Double(in result, out result);
+			}
+
+			for (int c = 0; c < parts; ++c)
+			{
+				int digit = pointDigits[c * stride + i];
+
+				if (digit is not 0)
+				{
+					AffinePoint<TField> entry = pointTable[c * partEntries + (Math.Abs(digit) >> 1)];
+
+					if (digit < 0)
+					{
+						FieldElement<TField>.Negate(in entry.Y, out entry.Y);
+					}
+
+					Add(in result, in entry, out result);
+				}
+			}
+		}
+
+		int width = TCurve.GeneratorWindowWidth;
+		int windowCount = EcGeneratorTable<TCurve, TField, TOrder>.WindowCount;
+		int windowLength = EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
+		ReadOnlySpan<AffinePoint<TField>> windows = EcGeneratorTable<TCurve, TField, TOrder>.Entries;
+		ReadOnlySpan<ulong> limbs = FieldElement<TOrder>.GetLimbs(in u1);
+		uint mask = (1u << width) - 1;
+		uint carry = 0;
+
+		// The digits of EcGroup.MultiplyBase, from [−2^(w − 1) + 1, 2^(w − 1)].
+		for (int i = 0; i < windowCount; ++i)
+		{
+			uint value = ((uint)ReadBits(limbs, i * width) & mask) + carry;
+			carry = value > (uint)windowLength ? 1u : 0u;
+			int digit = (int)(value - (carry << width));
+
+			if (digit is not 0)
+			{
+				AffinePoint<TField> entry = windows[i * windowLength + Math.Abs(digit) - 1];
+
+				if (digit < 0)
+				{
+					FieldElement<TField>.Negate(in entry.Y, out entry.Y);
+				}
+
+				Add(in result, in entry, out result);
+			}
+		}
+	}
+
 	// For r in [1, n − 1]. As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p, and x = t means X = t·Z².
 	[SkipLocalsInit]
 	internal static bool XModOrderEquals(in JacobianPoint<TField> point, in FieldElement<TOrder> r)
@@ -143,12 +218,18 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		result = sum;
 	}
 
-	// Writes the NAF of width w of k and returns the index of its top nonzero digit, or −1 for k = 0. A nonzero digit at i carries out only if the w bits of k from i plus the carry in exceed 2^(w − 1), which needs a bit of k at or above i + w − 1, so i + w ≤ N for N = TOrder.BitLength: digit N takes the last carry.
+	// Writes the NAF of width w of k and returns the index of its top nonzero digit, or −1 for k = 0.
 	internal static int Recode(in FieldElement<TOrder> scalar, int width, Span<sbyte> digits)
+	{
+		return Recode(in scalar, 0, TOrder.BitLength, width, digits);
+	}
+
+	// As above for the value of the bits of k from start to start + length − 1, with length + 1 digits. A nonzero digit at i carries out only if the w bits from i plus the carry in exceed 2^(w − 1), which needs a bit at or above i + w − 1, so i + w ≤ length: digit length takes the last carry.
+	internal static int Recode(in FieldElement<TOrder> scalar, int start, int length, int width, Span<sbyte> digits)
 	{
 		// Digits up to 2^(w − 1) − 1 must fit in an sbyte.
 		Debug.Assert(width is >= 2 and <= 8);
-		Debug.Assert(digits.Length == DigitCount);
+		Debug.Assert(digits.Length == length + 1);
 
 		ReadOnlySpan<ulong> limbs = FieldElement<TOrder>.GetLimbs(in scalar);
 		uint mask = (1u << width) - 1;
@@ -158,7 +239,8 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 		for (int i = 0; i < digits.Length;)
 		{
-			uint window = (uint)ReadBits(limbs, i) & mask;
+			// The mask leaves out the bits from start + length on.
+			uint window = (uint)ReadBits(limbs, start + i) & mask >> Math.Max(width - (length - i), 0);
 
 			if ((window & 1) == carry)
 			{
