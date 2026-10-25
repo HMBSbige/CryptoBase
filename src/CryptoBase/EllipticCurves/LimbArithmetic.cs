@@ -51,6 +51,35 @@ internal static class LimbArithmetic
 			return ArmBase.Arm64.MultiplyHigh(x, y);
 		}
 
+		return MultiplyPortable(x, y, out low);
+	}
+
+	// Without BMI2 or Arm64, Math.BigMul calls a fallback that passes the low limb through memory; the same four 32-bit products inlined need neither the call nor the memory. They are kept out of Multiply, whose IL counts against the inlining budget of every caller, so that it stays small.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static ulong MultiplyPortable(ulong x, ulong y, out ulong low)
+	{
+		ulong xLow = (uint)x;
+		ulong xHigh = x >> 32;
+		ulong yLow = (uint)y;
+		ulong yHigh = y >> 32;
+		ulong lowProduct = xLow * yLow;
+		ulong cross1 = xHigh * yLow;
+		ulong cross2 = xLow * yHigh;
+		// Below 3·2^32, so it does not wrap.
+		ulong middle = (lowProduct >> 32) + (uint)cross1 + (uint)cross2;
+		low = middle << 32 | (uint)lowProduct;
+		return xHigh * yHigh + (cross1 >> 32) + (cross2 >> 32) + (middle >> 32);
+	}
+
+	// As Multiply, but without BMI2 or Arm64 a call to Math.BigMul, for code with many products at once, such as the matrix steps of SafeGcd, where the inlined portable products would leave so many values live that most of them would spill.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static ulong MultiplyOutOfLine(ulong x, ulong y, out ulong low)
+	{
+		if (Bmi2.X64.IsSupported || ArmBase.Arm64.IsSupported)
+		{
+			return Multiply(x, y, out low);
+		}
+
 		return Math.BigMul(x, y, out low);
 	}
 

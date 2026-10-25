@@ -514,7 +514,7 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 	private static void MultiplyAdd(ref Sum sum, ulong x, ulong y, ulong ySign)
 	{
 		// The product of x and y as unsigned words exceeds the signed one by 2^64·y if x < 0 and by 2^64·x if y < 0.
-		ulong productHigh = Multiply(x, y, out ulong productLow) - (y & (ulong)((long)x >> 63)) - (x & ySign);
+		ulong productHigh = MultiplyOutOfLine(x, y, out ulong productLow) - (y & (ulong)((long)x >> 63)) - (x & ySign);
 		sum.Low += productLow;
 		sum.High += productHigh + Carry(sum.Low, productLow);
 	}
