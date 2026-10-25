@@ -15,6 +15,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	private static ref readonly FieldElement<TField> B => ref FieldElement<TField>.FromLimbs(TCurve.B);
 
 	// For a = −3. Holds for every point: Z = 0 gives Z3 = 0, and no other point has Y = 0, as a curve of odd order has no point of order 2. The result may be the input.
+	[SkipLocalsInit]
 	internal static void Double(in JacobianPoint<TField> value, out JacobianPoint<TField> result)
 	{
 		FieldElement<TField>.Square(in value.Y, out FieldElement<TField> gamma);
@@ -41,6 +42,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	}
 
 	// Any two points, equal, opposite or at infinity: masks take the other input where one is at infinity and the double where the points are equal. The result may be either input: it is written only after the last read of the inputs.
+	[SkipLocalsInit]
 	internal static void Add(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
 	{
 		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
@@ -51,6 +53,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	}
 
 	// As above, with an affine right, which cannot be the point at infinity; the left may be.
+	[SkipLocalsInit]
 	internal static void Add(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
 	{
 		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
@@ -60,6 +63,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	}
 
 	// Sets result to left + right for points that are not the point at infinity, except that equal points give (0, 0, 0); opposite points give Z = 0, the point at infinity. Returns ulong.MaxValue if the points are equal, which is where H = 0 and R = 0, and 0 otherwise. The result may be either input.
+	[SkipLocalsInit]
 	internal static ulong AddDistinct(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
 	{
 		FieldElement<TField>.Square(in left.Z, out FieldElement<TField> z1z1);
@@ -88,6 +92,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	}
 
 	// As above, with an affine right.
+	[SkipLocalsInit]
 	internal static ulong AddDistinct(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
 	{
 		FieldElement<TField>.Square(in left.Z, out FieldElement<TField> zz);
@@ -463,6 +468,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		FieldElement<TField>.Multiply(in point.Y, in power, out result.Y);
 	}
 
+	[SkipLocalsInit]
 	private static void Combine(in FieldElement<TField> r, in FieldElement<TField> j, in FieldElement<TField> v, in FieldElement<TField> sj, out FieldElement<TField> x, out FieldElement<TField> y)
 	{
 		FieldElement<TField>.Square(in r, out FieldElement<TField> x3);
