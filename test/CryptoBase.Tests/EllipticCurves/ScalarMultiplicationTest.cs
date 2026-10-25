@@ -175,6 +175,34 @@ public class ScalarMultiplicationTest
 		await Assert.That(failures).IsEmpty();
 	}
 
+	// The entry takes k in [1, n − 1] and normalizes k·G and k·P with one inversion; each must match its own normalization.
+	[Test]
+	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
+	public async Task MultiplyEncodeExportXMatchesSeparateNormalizations(CurveCase curve)
+	{
+		CurvePoint point = curve.Reference.RandomPoint(new Random(9));
+		List<string> failures = [];
+
+		foreach ((BigInteger scalar, CurvePoint? expected) in Cases(curve, point, 10))
+		{
+			if (scalar.IsZero)
+			{
+				continue;
+			}
+
+			(byte[] encoded, byte[] x) = curve.MultiplyEncodeExportX(point, scalar);
+			byte[] separateX = new byte[curve.FieldLength];
+			bool valid = curve.TryMultiplyExportX(point, scalar, separateX);
+
+			if (expected is null || !valid || !encoded.AsSpan().SequenceEqual(curve.Encode(curve.MultiplyBaseToAffine(scalar))) || !x.AsSpan().SequenceEqual(separateX) || !x.AsSpan().SequenceEqual(curve.EncodeCoordinate(expected.X)))
+			{
+				failures.Add($"{scalar:X}: {Convert.ToHexString(encoded)}, {Convert.ToHexString(x)}");
+			}
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MinusOneTimesGIsMinusG(CurveCase curve)

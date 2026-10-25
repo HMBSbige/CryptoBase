@@ -127,31 +127,31 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 
 	internal void Encapsulate(Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
-		ThrowIfInvalidEncapsulationBuffers(ciphertext, sharedSecret);
+		ThrowIfCannotEncapsulate(ciphertext, sharedSecret);
 
-		EcKey<TCurve, TField, TOrder> ephemeral = default;
+		FieldElement<TOrder> ephemeral = default;
 
 		try
 		{
-			ephemeral.GenerateKey();
+			EcKey<TCurve, TField, TOrder>.GeneratePrivateScalar(SystemRandom.Fill, out ephemeral);
 			_mlKemKey.Encapsulate(ciphertext.Slice(EcPublicKeyLength), sharedSecret.Slice(EcSharedSecretLength));
 			WriteEcParts(in ephemeral, ciphertext, sharedSecret);
 		}
 		finally
 		{
-			ephemeral.Clear();
+			ephemeral.ZeroMemory();
 		}
 	}
 
 	internal void Encapsulate(ReadOnlySpan<byte> ephemeralPrivateKey, ReadOnlySpan<byte> message, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
-		ThrowIfInvalidEncapsulationBuffers(ciphertext, sharedSecret);
+		ThrowIfCannotEncapsulate(ciphertext, sharedSecret);
 
-		EcKey<TCurve, TField, TOrder> ephemeral = default;
+		FieldElement<TOrder> ephemeral = default;
 
 		try
 		{
-			if (!ephemeral.TryImportPrivateKey(ephemeralPrivateKey))
+			if (!FieldElement<TOrder>.TryImportNonzero(ephemeralPrivateKey, out ephemeral))
 			{
 				ThrowHelper.ThrowInvalidKey(nameof(ephemeralPrivateKey));
 			}
@@ -161,7 +161,7 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 		}
 		finally
 		{
-			ephemeral.Clear();
+			ephemeral.ZeroMemory();
 		}
 	}
 
@@ -202,8 +202,14 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 		_mlKemKey.Clear();
 	}
 
-	private static void ThrowIfInvalidEncapsulationBuffers(Span<byte> ciphertext, Span<byte> sharedSecret)
+	// The ML-KEM part checks for its own key; the elliptic curve point is read directly, so it is checked here.
+	private readonly void ThrowIfCannotEncapsulate(Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
+		if (!_ecKey.HasPublicKey)
+		{
+			ThrowHelper.ThrowMissingKey("encapsulation key");
+		}
+
 		ArgumentOutOfRangeException.ThrowIfLessThan(ciphertext.Length, CiphertextLength, nameof(ciphertext));
 		ArgumentOutOfRangeException.ThrowIfLessThan(sharedSecret.Length, SharedSecretLength, nameof(sharedSecret));
 
@@ -213,15 +219,9 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 		}
 	}
 
-	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. The derivation cannot fail, since Q is a point on the curve.
-	[SkipLocalsInit]
-	private readonly void WriteEcParts(in EcKey<TCurve, TField, TOrder> ephemeral, Span<byte> ciphertext, Span<byte> sharedSecret)
+	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. Q was checked to be on the curve when it was imported, and the ephemeral key lies in [1, n − 1].
+	private readonly void WriteEcParts(in FieldElement<TOrder> ephemeral, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
-		Span<byte> publicKey = stackalloc byte[EcPublicKeyLength];
-		_ecKey.ExportPublicKey(publicKey);
-		bool derived = ephemeral.TryDeriveSharedSecret(publicKey, sharedSecret);
-		Debug.Assert(derived);
-
-		ephemeral.ExportPublicKey(ciphertext);
+		EcGroup<TCurve, TField, TOrder>.MultiplyEncodeExportX(in _ecKey.PublicPoint, in ephemeral, ciphertext.Slice(0, EcPublicKeyLength), sharedSecret.Slice(0, EcSharedSecretLength));
 	}
 }

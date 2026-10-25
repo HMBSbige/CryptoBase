@@ -87,6 +87,8 @@ public abstract class CurveCase
 
 	internal abstract bool TryMultiplyExportX(CurvePoint point, BigInteger scalar, byte[] destination);
 
+	internal abstract (byte[] Encoded, byte[] X) MultiplyEncodeExportX(CurvePoint point, BigInteger scalar);
+
 	internal abstract CurvePoint ToAffine(JacobianValue value);
 
 	internal abstract byte[] ExportX(JacobianValue value);
@@ -317,6 +319,14 @@ public abstract class CurveCase
 		internal override bool TryMultiplyExportX(CurvePoint point, BigInteger scalar, byte[] destination)
 		{
 			return EcGroup<TCurve, TField, TOrder>.TryMultiplyExportX(ToPoint(point), ToScalar(scalar), destination);
+		}
+
+		internal override (byte[] Encoded, byte[] X) MultiplyEncodeExportX(CurvePoint point, BigInteger scalar)
+		{
+			byte[] encoded = new byte[EcGroup<TCurve, TField, TOrder>.EncodedLength];
+			byte[] x = new byte[TField.ByteLength];
+			EcGroup<TCurve, TField, TOrder>.MultiplyEncodeExportX(ToPoint(point), ToScalar(scalar), encoded, x);
+			return (encoded, x);
 		}
 
 		internal override CurvePoint ToAffine(JacobianValue value)

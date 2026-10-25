@@ -110,7 +110,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		return equal;
 	}
 
-	// Sets result to k·G for k below n. Neither the time nor the addresses depend on k. The Jacobian form of the result depends on k and not only on k·G, so for a secret k use MultiplyBaseToAffine or MultiplyBaseReduceX, which clear it.
+	// Sets result to k·G for k below n. Neither the time nor the addresses depend on k. The Jacobian form of the result depends on k and not only on k·G, so for a secret k use MultiplyBaseToAffine, MultiplyBaseReduceX or MultiplyEncodeExportX, which clear it.
 	[SkipLocalsInit]
 	internal static void MultiplyBase(in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
@@ -139,7 +139,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		sum.ZeroMemory();
 	}
 
-	// Sets result to k·P for a point P on the curve and k below n. Neither the time nor the addresses depend on k or P. As with MultiplyBase, the Jacobian form depends on k, so for a secret k use TryMultiplyExportX.
+	// Sets result to k·P for a point P on the curve and k below n. Neither the time nor the addresses depend on k or P. As with MultiplyBase, the Jacobian form depends on k, so for a secret k use TryMultiplyExportX or MultiplyEncodeExportX.
 	[SkipLocalsInit]
 	internal static void Multiply(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
@@ -239,6 +239,40 @@ internal static class EcGroup<TCurve, TField, TOrder>
 
 		product.ZeroMemory();
 		return valid;
+	}
+
+	// For a point P on the curve and k in [1, n − 1], writes the encoding of k·G to encoded and the x-coordinate of k·P to x. Neither product is the point at infinity, as the group has prime order n, so one inversion of the product of their Z gives both Z⁻¹. Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
+	[SkipLocalsInit]
+	internal static void MultiplyEncodeExportX(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> encoded, Span<byte> x)
+	{
+		Debug.Assert(encoded.Length == EncodedLength && x.Length == TField.ByteLength);
+
+		int length = TField.ByteLength;
+		MultiplyBase(in scalar, out JacobianPoint<TField> baseProduct);
+		Multiply(in point, in scalar, out JacobianPoint<TField> product);
+		FieldElement<TField>.Multiply(in baseProduct.Z, in product.Z, out FieldElement<TField> inverse);
+		FieldElement<TField>.Invert(in inverse, out inverse);
+		FieldElement<TField>.Multiply(in inverse, in product.Z, out FieldElement<TField> baseInverse);
+		FieldElement<TField>.Multiply(in inverse, in baseProduct.Z, out inverse);
+		// As in ExportX, the powers of Z⁻¹ are taken out of Montgomery form, so that the products with X and Y come out in plain form.
+		FieldElement<TField>.Square(in baseInverse, out FieldElement<TField> power);
+		FieldElement<TField>.FromMontgomery(in power, out power);
+		FieldElement<TField>.Multiply(in baseProduct.X, in power, out FieldElement<TField> coordinate);
+		encoded[0] = 0x04;
+		FieldElement<TField>.Export(in coordinate, encoded.Slice(1, length));
+		FieldElement<TField>.Multiply(in power, in baseInverse, out power);
+		FieldElement<TField>.Multiply(in baseProduct.Y, in power, out coordinate);
+		FieldElement<TField>.Export(in coordinate, encoded.Slice(1 + length, length));
+		FieldElement<TField>.Square(in inverse, out power);
+		FieldElement<TField>.FromMontgomery(in power, out power);
+		FieldElement<TField>.Multiply(in product.X, in power, out coordinate);
+		FieldElement<TField>.Export(in coordinate, x);
+		baseProduct.ZeroMemory();
+		product.ZeroMemory();
+		inverse.ZeroMemory();
+		baseInverse.ZeroMemory();
+		power.ZeroMemory();
+		coordinate.ZeroMemory();
 	}
 
 	// The point at infinity gives (0, 0), which is not on the curve.

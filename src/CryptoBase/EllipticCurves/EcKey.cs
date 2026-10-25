@@ -49,29 +49,36 @@ internal struct EcKey<TCurve, TField, TOrder>
 		GenerateKey(SystemRandom.Fill);
 	}
 
-	// Only the retry after a candidate outside [1, n − 1] branches. If fill throws, the key stays as it was.
+	// If fill throws, the key stays as it was.
 	[SkipLocalsInit]
 	internal void GenerateKey(Action<Span<byte>> fill)
 	{
-		using CryptoBuffer<byte> buffer = new(stackalloc byte[PrivateKeyLength]);
-		Span<byte> candidate = buffer.Span;
 		Unsafe.SkipInit(out FieldElement<TOrder> privateKey);
 
 		try
 		{
-			do
-			{
-				fill(candidate);
-				candidate[0] &= (byte)(0xFF >> 8 * TOrder.ByteLength - TOrder.BitLength);
-			}
-			while (!FieldElement<TOrder>.TryImportNonzero(candidate, out privateKey));
-
+			GeneratePrivateScalar(fill, out privateKey);
 			SetKey(in privateKey);
 		}
 		finally
 		{
 			privateKey.ZeroMemory();
 		}
+	}
+
+	// Sets result to a d in [1, n − 1] drawn from fill. Only the retry after a candidate outside that range branches.
+	[SkipLocalsInit]
+	internal static void GeneratePrivateScalar(Action<Span<byte>> fill, out FieldElement<TOrder> result)
+	{
+		using CryptoBuffer<byte> buffer = new(stackalloc byte[PrivateKeyLength]);
+		Span<byte> candidate = buffer.Span;
+
+		do
+		{
+			fill(candidate);
+			candidate[0] &= (byte)(0xFF >> 8 * TOrder.ByteLength - TOrder.BitLength);
+		}
+		while (!FieldElement<TOrder>.TryImportNonzero(candidate, out result));
 	}
 
 	internal bool TryImportPrivateKey(ReadOnlySpan<byte> source)
