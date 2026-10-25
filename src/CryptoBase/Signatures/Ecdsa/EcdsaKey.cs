@@ -392,13 +392,13 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		}
 	}
 
-	// Every input is public, so R = u1·G + u2·Q may take variable time.
+	// Every input is public, so s⁻¹ and R = u1·G + u2·Q may take variable time.
 	private readonly bool Verify(ReadOnlySpan<byte> hash, in FieldElement<TOrder> r, in FieldElement<TOrder> s)
 	{
 		EcdsaEncoding<TOrder>.ImportHash(hash, out FieldElement<TOrder> e);
 		// s⁻¹R times a plain value is a plain product.
 		FieldElement<TOrder>.ToMontgomery(in s, out FieldElement<TOrder> inverse);
-		FieldElement<TOrder>.Invert(in inverse, out inverse);
+		FieldElement<TOrder>.InvertVariableTime(in inverse, out inverse);
 		FieldElement<TOrder>.Multiply(in inverse, in e, out FieldElement<TOrder> u1);
 		FieldElement<TOrder>.Multiply(in inverse, in r, out FieldElement<TOrder> u2);
 		EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in u1, in _key.PublicPoint, in u2, out JacobianPoint<TField> point);

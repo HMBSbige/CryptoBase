@@ -75,6 +75,8 @@ public abstract class ModulusCase
 
 	internal abstract BigInteger Invert(BigInteger value, bool inPlace = false);
 
+	internal abstract BigInteger InvertVariableTime(BigInteger value, bool inPlace = false);
+
 	internal abstract BigInteger ConditionalSelect(ulong mask, BigInteger whenSet, BigInteger whenClear, ResultAliasing aliasing = ResultAliasing.None);
 
 	internal abstract (BigInteger Left, BigInteger Right) ConditionalSwap(ulong mask, BigInteger left, BigInteger right);
@@ -285,6 +287,11 @@ public abstract class ModulusCase
 		internal override BigInteger Invert(BigInteger value, bool inPlace = false)
 		{
 			return Run(FieldElement<TModulus>.Invert, value, inPlace);
+		}
+
+		internal override BigInteger InvertVariableTime(BigInteger value, bool inPlace = false)
+		{
+			return Run(FieldElement<TModulus>.InvertVariableTime, value, inPlace);
 		}
 
 		internal override BigInteger ConditionalSelect(ulong mask, BigInteger whenSet, BigInteger whenClear, ResultAliasing aliasing = ResultAliasing.None)

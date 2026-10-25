@@ -133,6 +133,13 @@ public class FieldElementTest
 
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
+	public async Task InvertVariableTimeGivesTheInverseInMontgomeryForm(ModulusCase modulus)
+	{
+		await Assert.That(InversionFailures(modulus, modulus.InvertVariableTime)).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task ConditionalSelectAndSwapFollowTheMask(ModulusCase modulus)
 	{
 		List<string> failures = [];
@@ -294,6 +301,7 @@ public class FieldElementTest
 			Check(failures, $"ToMontgomery {inPlace}", modulus.ToMontgomery(left, true), modulus.ToMontgomery(left));
 			Check(failures, $"FromMontgomery {inPlace}", modulus.FromMontgomery(left, true), modulus.FromMontgomery(left));
 			Check(failures, $"Invert {inPlace}", modulus.Invert(left, true), modulus.Invert(left));
+			Check(failures, $"InvertVariableTime {inPlace}", modulus.InvertVariableTime(left, true), modulus.InvertVariableTime(left));
 		}
 
 		await Assert.That(failures).IsEmpty();

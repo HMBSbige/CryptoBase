@@ -58,6 +58,43 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 		state.ZeroMemory();
 	}
 
+	// The time depends on value, which must be public. The loop ends once g is 0, and f and g lose their top limbs as they shrink.
+	[SkipLocalsInit]
+	internal static void InvertVariableTime(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
+	{
+		Load(in value, out State state);
+		ref long f = ref state.F[0];
+		ref long g = ref state.G[0];
+		// η = −δ, for δ starting at 1.
+		long eta = -1;
+		int length = Length;
+
+		while (true)
+		{
+			eta = DivstepsVariableTime(eta, (ulong)f, (ulong)g, out Transition t);
+			UpdateDE(ref state, in t);
+			UpdateFG(ref f, ref g, in t, length);
+
+			if (IsZero(ref g, length))
+			{
+				break;
+			}
+
+			long fTop = Unsafe.Add(ref f, length - 1);
+			long gTop = Unsafe.Add(ref g, length - 1);
+
+			// Top limbs that are only the sign of the limbs below them fold into those.
+			if (length > 1 && (fTop ^ fTop >> 63 | gTop ^ gTop >> 63) is 0)
+			{
+				Unsafe.Add(ref f, length - 2) |= fTop << 62;
+				Unsafe.Add(ref g, length - 2) |= gTop << 62;
+				--length;
+			}
+		}
+
+		Store(ref state, Unsafe.Add(ref f, length - 1), out result);
+	}
+
 	private static void Load(in FieldElement<TModulus> value, out State state)
 	{
 		Debug.Assert(Length <= Capacity);
@@ -151,6 +188,60 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 	{
 		low = (int)packed;
 		high = (long)(packed - (ulong)low) >> 32;
+	}
+
+	// Runs 62 steps on the low limbs f and g and returns η after them. A run of even g is one shift, and while δ ≤ 0 an odd g only gains f, so a multiple of f clears several of its low bits at once, up to the step at which δ turns positive.
+	private static long DivstepsVariableTime(long eta, ulong f, ulong g, out Transition t)
+	{
+		ulong u = 1;
+		ulong v = 0;
+		ulong q = 0;
+		ulong r = 1;
+		int left = 62;
+
+		while (true)
+		{
+			// The bit at left caps the run at the steps left.
+			int zeros = BitOperations.TrailingZeroCount(g | ulong.MaxValue << left);
+			g >>= zeros;
+			u <<= zeros;
+			v <<= zeros;
+			eta -= zeros;
+			left -= zeros;
+
+			if (left is 0)
+			{
+				break;
+			}
+
+			int limit;
+			ulong w;
+
+			// For δ > 0 the step goes to (g, g − f), which is (g, −f) and then the addition below.
+			if (eta < 0)
+			{
+				eta = -eta;
+				(f, g) = (g, 0 - f);
+				(u, q) = (q, 0 - u);
+				(v, r) = (r, 0 - v);
+				limit = Math.Min((int)eta + 1, left);
+				// w = −g/f modulo 2^6, as f·(f² − 2) ≡ −1/f.
+				w = f * g * (f * f - 2) & ulong.MaxValue >> 64 - limit & 63;
+			}
+			else
+			{
+				limit = Math.Min((int)eta + 1, left);
+				// w = −g/f modulo 2^4, as f + 8·((f + 1)/4 mod 2) ≡ 1/f.
+				w = 0 - (f + ((f + 1 & 4) << 1)) * g & ulong.MaxValue >> 64 - limit & 15;
+			}
+
+			g += f * w;
+			q += u * w;
+			r += v * w;
+		}
+
+		t = new Transition((long)u, (long)v, (long)q, (long)r);
+		return eta;
 	}
 
 	// Replaces the first length limbs of f and g with t·(f, g)/2^62. The batch makes the low 62 bits of u·f + v·g and q·f + r·g 0, so every limb of the result is the accumulated column above it.
@@ -404,6 +495,18 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 			Unsafe.Add(ref limb, 1) += limb >> 62;
 			limb &= (long)LimbMask;
 		}
+	}
+
+	private static bool IsZero(ref long limbs, int length)
+	{
+		long bits = 0;
+
+		for (int i = 0; i < length; ++i)
+		{
+			bits |= Unsafe.Add(ref limbs, i);
+		}
+
+		return bits is 0;
 	}
 
 	// sum gains x·y, for x of either sign and y either below 2^62 or a top limb whose sign mask is ySign.

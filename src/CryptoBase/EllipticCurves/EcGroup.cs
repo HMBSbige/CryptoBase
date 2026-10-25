@@ -245,7 +245,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		inverse.ZeroMemory();
 	}
 
-	// None of the points may be the point at infinity. They are public, so nothing is cleared.
+	// None of the points may be the point at infinity. They are public, so the inversion may take variable time and nothing is cleared.
 	internal static void ToAffine(ReadOnlySpan<ProjectivePoint<TField>> points, Span<AffinePoint<TField>> result)
 	{
 		Debug.Assert(points.Length > 0 && result.Length == points.Length);
@@ -258,7 +258,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 			FieldElement<TField>.Multiply(in products[i - 1], in points[i].Z, out products[i]);
 		}
 
-		FieldElement<TField>.Invert(in products[^1], out FieldElement<TField> inverse);
+		FieldElement<TField>.InvertVariableTime(in products[^1], out FieldElement<TField> inverse);
 
 		for (int i = points.Length - 1; i > 0; --i)
 		{
