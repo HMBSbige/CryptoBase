@@ -25,7 +25,7 @@ internal interface IMontgomeryModulus
 		return FieldElement<TSelf>.MontgomeryReduce(ref product);
 	}
 
-	// Sets the LimbCount limbs at result to x·y·R⁻¹ mod m, for x below R and y below m. result may be x or y. TSelf is the implementing type.
+	// Sets the LimbCount limbs at result to x·y·R⁻¹ mod m, for x and y below m. result may be x or y. TSelf is the implementing type.
 	static virtual void Multiply<TSelf>(ref ulong x, ref ulong y, ref ulong result) where TSelf : struct, IMontgomeryModulus
 	{
 		FieldElement<TSelf>.MontgomeryMultiply(ref x, ref y, ref result);

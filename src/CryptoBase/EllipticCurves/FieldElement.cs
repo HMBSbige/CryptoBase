@@ -195,13 +195,13 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		return IsZero(in result) is 0;
 	}
 
-	// Sets result to the plain value of any ByteLength big-endian bytes mod m: the value is below R, so multiplying it by R mod m reduces it.
+	// Sets result to the plain value of any ByteLength big-endian bytes mod m: the value is below R, so multiplying it by R mod m reduces it. TModulus.Multiply may need both factors below m, so the generic multiplication, which does not, takes the value.
 	internal static void ImportReduced(ReadOnlySpan<byte> source, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out FieldElement<TModulus> value);
 		ReadBigEndian(source, ref Limbs(ref value));
 		Unsafe.SkipInit(out result);
-		TModulus.Multiply<TModulus>(ref Limbs(ref value), ref MemoryMarshal.GetReference(TModulus.MontgomeryOne), ref Limbs(ref result));
+		MontgomeryMultiply(ref Limbs(ref value), ref MemoryMarshal.GetReference(TModulus.MontgomeryOne), ref Limbs(ref result));
 	}
 
 	internal static void Export(in FieldElement<TModulus> value, Span<byte> destination)
@@ -263,7 +263,7 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		}
 	}
 
-	// The generic IMontgomeryModulus.Multiply. x may be any value of LimbCount limbs if y < m: the product is then below m·R, as Reduce needs. Not inlined: inlined into a small caller, it exceeds the inlining budget of that caller, and the helpers left over become calls.
+	// The generic IMontgomeryModulus.Multiply, and the one for an x that is not reduced: x may be any value of LimbCount limbs if y < m, since the product is then below m·R, as Reduce needs. Not inlined: inlined into a small caller, it exceeds the inlining budget of that caller, and the helpers left over become calls.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void MontgomeryMultiply(ref ulong x, ref ulong y, ref ulong result)

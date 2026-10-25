@@ -103,7 +103,7 @@ public class FieldElementTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Before its final subtraction a product is a value u below 2m, which Reduce gives. Where 2m > R, random operands give u below m and u of R or more, which carries out of the top limb, about equally often. u in [m, R) is rare for them, but ImportReduced reaches it: its product of x and R mod m has u = x.
+	// Before its final subtraction a product is a value u below 2m, which Reduce gives. Where 2m > R, random operands give u below m and u of R or more, which carries out of the top limb, about equally often. u in [m, R) is rare for them; the next test builds operands that give it.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task MultiplyAndSquareTakeBothSidesOfTheFinalSubtraction(ModulusCase modulus)
@@ -138,6 +138,43 @@ public class FieldElementTest
 			await Assert.That(below).IsPositive();
 			await Assert.That(carried).IsPositive();
 		}
+	}
+
+	// A Reduce of Montgomery rounds adds Q·m for a Q below R, so x·y + Q·m = u·R. For u in [m, R) and a y, x = u·R·y⁻¹ mod m makes x·y ≡ u·R mod m, and then Q = (u·R − x·y) / m, which is below R if x·y > (u − m)·R.
+	[Test]
+	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
+	public async Task MultiplySubtractsTheModulusFromAProductThatDoesNotCarry(ModulusCase modulus)
+	{
+		BigInteger m = modulus.Modulus;
+		BigInteger r = modulus.R;
+		BigInteger rInverse = RInverse(modulus);
+		BigInteger[] targets = [m, m + 1, m + (BigInteger.One << 64), (m + r) / 2, r - 1];
+		int reached = 0;
+		Random random = new(17);
+		List<string> failures = [];
+
+		foreach (BigInteger u in targets.Where(u => u < r))
+		{
+			for (int i = 0; i < 8; ++i)
+			{
+				BigInteger y = i < 4 ? m - 1 - i : modulus.RandomBelow(random, m);
+				BigInteger x = u * r % m * BigInteger.ModPow(y, m - 2, m) % m;
+
+				if (x * y <= (u - m) * r)
+				{
+					continue;
+				}
+
+				// P521Field.Reduce is a rotation rather than Montgomery rounds, so it gives another u.
+				reached += modulus.Reduce(x * y) == u ? 1 : 0;
+				Check(failures, $"{x:X} · {y:X}", modulus.Multiply(x, y), x * y * rInverse % m);
+				Check(failures, $"{y:X} · {x:X}", modulus.Multiply(y, x), x * y * rInverse % m);
+				Check(failures, $"{x:X} · {y:X} over the left", modulus.Multiply(x, y, ResultAliasing.Left), x * y * rInverse % m);
+			}
+		}
+
+		await Assert.That(failures).IsEmpty();
+		await Assert.That(reached).IsPositive();
 	}
 
 	[Test]
