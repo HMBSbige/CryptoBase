@@ -36,6 +36,7 @@ internal partial struct Sha512State
 	}
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private void ProcessBlockPairsAvx2(ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out Sha512Schedule schedule1);
@@ -126,6 +127,7 @@ internal partial struct Sha512State
 	}
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private void ProcessBlocksAvx2Single(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Avx2.IsSupported);

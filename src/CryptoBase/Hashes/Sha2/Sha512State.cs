@@ -191,7 +191,7 @@ internal partial struct Sha512State
 	}
 
 	[SkipLocalsInit]
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private void ProcessBlocksSoftware(ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out InlineArray16<ulong> schedule);

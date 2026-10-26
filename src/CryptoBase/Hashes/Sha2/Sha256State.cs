@@ -195,7 +195,7 @@ internal partial struct Sha256State
 	}
 
 	[SkipLocalsInit]
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private void ProcessBlocksSoftware(ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out InlineArray16<uint> schedule);
