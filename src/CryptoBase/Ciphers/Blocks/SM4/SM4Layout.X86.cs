@@ -236,7 +236,27 @@ internal static partial class SM4Layout
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void XorStoreQuadX86(int count, ref byte source, ref byte destination, nuint offset, Vector512<byte> value)
 	{
-		StoreQuadX86(count, ref destination, offset, value.ReverseEndianness128() ^ LoadQuadX86(count, ref source, offset));
+		value = value.ReverseEndianness128();
+
+		if (count >= 4)
+		{
+			(value ^ Vector512.LoadUnsafe(ref source, offset)).StoreUnsafe(ref destination, offset);
+			return;
+		}
+
+		if (count >= 2)
+		{
+			(value.GetLower() ^ Vector256.LoadUnsafe(ref source, offset)).StoreUnsafe(ref destination, offset);
+		}
+		else
+		{
+			(value.GetLower().GetLower() ^ Vector128.LoadUnsafe(ref source, offset)).StoreUnsafe(ref destination, offset);
+		}
+
+		if (count > 2)
+		{
+			(value.GetUpper().GetLower() ^ Vector128.LoadUnsafe(ref source, offset + 32)).StoreUnsafe(ref destination, offset + 32);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -276,7 +296,7 @@ internal static partial class SM4Layout
 			return Vector256.LoadUnsafe(ref source, offset);
 		}
 
-		return Vector256.Create(Vector128.LoadUnsafe(ref source, offset), Vector128<byte>.Zero);
+		return Vector128.LoadUnsafe(ref source, offset).ToVector256();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

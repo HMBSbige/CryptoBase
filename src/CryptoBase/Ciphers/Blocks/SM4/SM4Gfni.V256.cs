@@ -35,7 +35,8 @@ internal readonly partial struct SM4Gfni
 		SM4Layout.Store8X86(count, ref destination, 0, v0, v1, v2, v3);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	// Inlined into the batch loop, the rounds without AVX-512VL exhaust the inline budget and turn into calls.
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Process16V256(int count, ref uint rk, ref byte source, ref byte destination)
 	{
 		SM4Layout.Load8X86(count, ref source, 0, out Vector256<byte> a0, out Vector256<byte> a1, out Vector256<byte> a2, out Vector256<byte> a3);
