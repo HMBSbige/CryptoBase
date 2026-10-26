@@ -20,15 +20,7 @@ internal readonly partial struct SM4Gfni
 	private static void Process16V512(int count, ref uint rk, ref byte source, ref byte destination)
 	{
 		SM4Layout.Load16X86(count, ref source, 0, out Vector512<byte> v0, out Vector512<byte> v1, out Vector512<byte> v2, out Vector512<byte> v3);
-
-		for (nuint i = 0; i < 32; i += 4)
-		{
-			Round(ref v0, v1, v2, v3, Vector512.Create(Unsafe.Add(ref rk, i)).AsByte());
-			Round(ref v1, v2, v3, v0, Vector512.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
-			Round(ref v2, v3, v0, v1, Vector512.Create(Unsafe.Add(ref rk, i + 2)).AsByte());
-			Round(ref v3, v0, v1, v2, Vector512.Create(Unsafe.Add(ref rk, i + 3)).AsByte());
-		}
-
+		Rounds16V512(in rk, ref v0, ref v1, ref v2, ref v3);
 		SM4Layout.Store16X86(count, ref destination, 0, v0, v1, v2, v3);
 	}
 
@@ -37,26 +29,7 @@ internal readonly partial struct SM4Gfni
 	{
 		SM4Layout.Load16X86(count, ref source, 0, out Vector512<byte> a0, out Vector512<byte> a1, out Vector512<byte> a2, out Vector512<byte> a3);
 		SM4Layout.Load16X86(count - 16, ref source, 256, out Vector512<byte> b0, out Vector512<byte> b1, out Vector512<byte> b2, out Vector512<byte> b3);
-
-		for (nuint i = 0; i < 32; i += 4)
-		{
-			Vector512<byte> key = Vector512.Create(Unsafe.Add(ref rk, i)).AsByte();
-			Round(ref a0, a1, a2, a3, key);
-			Round(ref b0, b1, b2, b3, key);
-
-			key = Vector512.Create(Unsafe.Add(ref rk, i + 1)).AsByte();
-			Round(ref a1, a2, a3, a0, key);
-			Round(ref b1, b2, b3, b0, key);
-
-			key = Vector512.Create(Unsafe.Add(ref rk, i + 2)).AsByte();
-			Round(ref a2, a3, a0, a1, key);
-			Round(ref b2, b3, b0, b1, key);
-
-			key = Vector512.Create(Unsafe.Add(ref rk, i + 3)).AsByte();
-			Round(ref a3, a0, a1, a2, key);
-			Round(ref b3, b0, b1, b2, key);
-		}
-
+		Rounds32V512(in rk, ref a0, ref a1, ref a2, ref a3, ref b0, ref b1, ref b2, ref b3);
 		SM4Layout.Store16X86(count, ref destination, 0, a0, a1, a2, a3);
 		SM4Layout.Store16X86(count - 16, ref destination, 256, b0, b1, b2, b3);
 	}
@@ -130,6 +103,46 @@ internal readonly partial struct SM4Gfni
 		(x4, x5, x6, x7) = (b0, b1, b2, b3);
 		(x8, x9, x10, x11) = (c0, c1, c2, c3);
 		(x12, x13, x14, x15) = (d0, d1, d2, d3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Rounds16V512(ref readonly uint rk, ref Vector512<byte> a0, ref Vector512<byte> a1, ref Vector512<byte> a2, ref Vector512<byte> a3)
+	{
+		for (nuint i = 0; i < 32; i += 4)
+		{
+			Round(ref a0, a1, a2, a3, Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i)).AsByte());
+			Round(ref a1, a2, a3, a0, Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 1)).AsByte());
+			Round(ref a2, a3, a0, a1, Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 2)).AsByte());
+			Round(ref a3, a0, a1, a2, Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 3)).AsByte());
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Rounds32V512
+	(
+		ref readonly uint rk,
+		ref Vector512<byte> a0, ref Vector512<byte> a1, ref Vector512<byte> a2, ref Vector512<byte> a3,
+		ref Vector512<byte> b0, ref Vector512<byte> b1, ref Vector512<byte> b2, ref Vector512<byte> b3
+	)
+	{
+		for (nuint i = 0; i < 32; i += 4)
+		{
+			Vector512<byte> key = Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i)).AsByte();
+			Round(ref a0, a1, a2, a3, key);
+			Round(ref b0, b1, b2, b3, key);
+
+			key = Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 1)).AsByte();
+			Round(ref a1, a2, a3, a0, key);
+			Round(ref b1, b2, b3, b0, key);
+
+			key = Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 2)).AsByte();
+			Round(ref a2, a3, a0, a1, key);
+			Round(ref b2, b3, b0, b1, key);
+
+			key = Vector512.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 3)).AsByte();
+			Round(ref a3, a0, a1, a2, key);
+			Round(ref b3, b0, b1, b2, key);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
