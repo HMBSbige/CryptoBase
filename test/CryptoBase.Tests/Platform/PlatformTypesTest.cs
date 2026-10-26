@@ -5,7 +5,7 @@ namespace CryptoBase.Tests.Platform;
 
 public class PlatformTypesTest
 {
-	// A platform type must beat the managed implementation on some processor, using hardware .NET has no intrinsics for, as PlatformSha256 does. IsPreferred names those processors.
+	// A platform type must beat the managed implementation somewhere, using hardware .NET has no intrinsics for, as PlatformSha256 does. IsPreferredFor says where, by input length.
 	[Test]
 	public async Task EveryPlatformTypeSaysWhereItIsPreferred()
 	{
@@ -19,9 +19,9 @@ public class PlatformTypesTest
 		{
 			foreach (Type type in types)
 			{
-				PropertyInfo? isPreferred = type.GetProperty("IsPreferred", BindingFlags.Public | BindingFlags.Static);
-				await Assert.That(isPreferred?.PropertyType).IsEqualTo(typeof(bool))
-					.Because($"{type.Name} needs a static bool IsPreferred that is true only on the processors where the platform beats the managed implementation; a type that is preferred nowhere does not belong in CryptoBase.Platform");
+				MethodInfo? isPreferredFor = type.GetMethod("IsPreferredFor", BindingFlags.Public | BindingFlags.Static, [typeof(int)]);
+				await Assert.That(isPreferredFor?.ReturnType).IsEqualTo(typeof(bool))
+					.Because($"{type.Name} needs a static bool IsPreferredFor(int) that is true only where the platform beats the managed implementation for an input of that length; a type that is preferred nowhere does not belong in CryptoBase.Platform");
 			}
 		}
 	}

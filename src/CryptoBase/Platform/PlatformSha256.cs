@@ -19,13 +19,26 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	/// <inheritdoc />
 	public static int HashLength => SHA256.HashSizeInBytes;
 
+	// The shortest source whose padding takes it to four blocks; below it, the fixed cost of a call to the platform outweighs the SHA extensions.
+	private const int MinPreferredLength = 3 * 64 - 8;
+
+	internal static bool HasShaExtensions { get; } = CpuIdUtils.IsSupportX86ShaEx();
+
 	/// <summary>
-	/// Gets a value that indicates whether this type is expected to be faster than the managed SHA-256 on the current processor.
+	/// Returns a value that indicates whether this type is expected to be faster than the managed SHA-256 for a source of the specified length.
 	/// </summary>
+	/// <param name="length">The length of the source, in bytes.</param>
+	/// <returns><see langword="true" /> if this type is expected to be faster; otherwise, <see langword="false" />.</returns>
 	/// <remarks>
-	/// It is <see langword="true" /> on x86 and x64 processors with the SHA extensions, which the managed implementation does not use.
+	/// It is <see langword="true" /> only on x86 and x64 processors with the SHA extensions: on Windows at any length, elsewhere from 184 bytes.
 	/// </remarks>
-	public static bool IsPreferred { get; } = CpuIdUtils.IsSupportX86ShaEx();
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="length" /> is negative.</exception>
+	public static bool IsPreferredFor(int length)
+	{
+		ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+		return HasShaExtensions && (OperatingSystem.IsWindows() || length >= MinPreferredLength);
+	}
 
 	/// <inheritdoc />
 	public static PlatformSha256 Create()

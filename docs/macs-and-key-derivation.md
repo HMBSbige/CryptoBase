@@ -64,10 +64,12 @@ To authenticate a stream or file, see [Stream and file helpers](io.md#authentica
 
 ## Platform-backed HMAC-SHA256
 
-`PlatformHmacSha256` computes HMAC-SHA256 with the operating system's cryptographic library. `IsPreferred` is `true` on x86 and x64 processors with the SHA extensions, where it is expected to be faster than the managed implementation.
+`PlatformHmacSha256` computes HMAC-SHA256 with the operating system's cryptographic library. `IsPreferredFor` tells whether it is expected to be faster than the managed implementation for a message of a given length.
 
 ```csharp
 using System.Security.Cryptography;
+using CryptoBase.Hashes.Sha2;
+using CryptoBase.Macs.Hmac;
 using CryptoBase.Platform;
 
 byte[] key = RandomNumberGenerator.GetBytes(32);
@@ -78,6 +80,14 @@ PlatformHmacSha256.Mac(key, "message"u8, tag);
 using PlatformHmacSha256 mac = PlatformHmacSha256.Create(key);
 mac.Append("message"u8);
 mac.GetMacAndReset(tag);
+
+// Use the faster implementation.
+static int HmacSha256(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
+{
+    return PlatformHmacSha256.IsPreferredFor(source.Length)
+        ? PlatformHmacSha256.Mac(key, source, destination)
+        : HmacAlgorithm<Sha256Core>.Mac(key, source, destination);
+}
 ```
 
 ## Poly1305

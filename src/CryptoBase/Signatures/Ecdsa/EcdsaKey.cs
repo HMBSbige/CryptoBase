@@ -246,7 +246,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 	{
 		return algorithm switch
 		{
-			SignatureAlgorithm.EcdsaSha256 when PlatformSha256.IsPreferred => SHA256.HashData(message, destination),
+			SignatureAlgorithm.EcdsaSha256 when PlatformSha256.IsPreferredFor(message.Length) => SHA256.HashData(message, destination),
 			SignatureAlgorithm.EcdsaSha256 => HashAlgorithm<Sha256Core>.HashData(message, destination),
 			SignatureAlgorithm.EcdsaSha384 => HashAlgorithm<Sha384Core>.HashData(message, destination),
 			_ => HashAlgorithm<Sha512Core>.HashData(message, destination)

@@ -21,13 +21,24 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	/// <inheritdoc />
 	public static int MacLength => HMACSHA256.HashSizeInBytes;
 
+	// Below it, the fixed cost of a call to the platform outweighs the SHA extensions.
+	private const int MinPreferredLength = 256;
+
 	/// <summary>
-	/// Gets a value that indicates whether this type is expected to be faster than the managed HMAC-SHA256 on the current processor.
+	/// Returns a value that indicates whether this type is expected to be faster than the managed HMAC-SHA256 for a message of the specified length and a key of at most 64 bytes.
 	/// </summary>
+	/// <param name="length">The length of the message, in bytes.</param>
+	/// <returns><see langword="true" /> if this type is expected to be faster; otherwise, <see langword="false" />.</returns>
 	/// <remarks>
-	/// It is <see langword="true" /> on x86 and x64 processors with the SHA extensions, which the managed implementation does not use.
+	/// It is <see langword="true" /> only on x86 and x64 processors with the SHA extensions: on Windows at any length, elsewhere from 256 bytes.
 	/// </remarks>
-	public static bool IsPreferred => PlatformSha256.IsPreferred;
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="length" /> is negative.</exception>
+	public static bool IsPreferredFor(int length)
+	{
+		ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+		return PlatformSha256.HasShaExtensions && (OperatingSystem.IsWindows() || length >= MinPreferredLength);
+	}
 
 	/// <inheritdoc />
 	public static PlatformHmacSha256 Create(ReadOnlySpan<byte> key)

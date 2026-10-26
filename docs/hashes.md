@@ -95,7 +95,7 @@ To hash a stream or file, see [Stream and file helpers](io.md).
 
 ## Platform-backed SHA-256
 
-`PlatformSha256` computes SHA-256 with the operating system's cryptographic library. `IsPreferred` is `true` on x86 and x64 processors with the SHA extensions, where it is expected to be faster than the managed implementation.
+`PlatformSha256` computes SHA-256 with the operating system's cryptographic library. `IsPreferredFor` tells whether it is expected to be faster than the managed implementation for a source of a given length.
 
 ```csharp
 using CryptoBase.Hashes;
@@ -108,7 +108,7 @@ PlatformSha256.HashData("hello world"u8, hash);
 // Use the faster implementation.
 static int Sha256(ReadOnlySpan<byte> source, Span<byte> destination)
 {
-    return PlatformSha256.IsPreferred
+    return PlatformSha256.IsPreferredFor(source.Length)
         ? PlatformSha256.HashData(source, destination)
         : HashAlgorithm<Sha256Core>.HashData(source, destination);
 }

@@ -121,10 +121,19 @@ public class PlatformHmacSha256Test
 	}
 
 	[Test]
-	public async Task IsPreferredOnlyWithX86ShaExtensions()
+	public async Task IsPreferredForNeedsX86ShaExtensionsAndOutsideWindows256Bytes()
 	{
-		bool expected = X86Base.IsSupported && (X86Base.CpuId(7, 0).Ebx & 1 << 29) is not 0;
-		await Assert.That(PlatformHmacSha256.IsPreferred).IsEqualTo(expected);
+		bool extensions = X86Base.IsSupported && (X86Base.CpuId(7, 0).Ebx & 1 << 29) is not 0;
+		bool anyLength = extensions && OperatingSystem.IsWindows();
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(PlatformHmacSha256.IsPreferredFor(0)).IsEqualTo(anyLength);
+			await Assert.That(PlatformHmacSha256.IsPreferredFor(255)).IsEqualTo(anyLength);
+			await Assert.That(PlatformHmacSha256.IsPreferredFor(256)).IsEqualTo(extensions);
+			await Assert.That(PlatformHmacSha256.IsPreferredFor(int.MaxValue)).IsEqualTo(extensions);
+			await Assert.That(static () => PlatformHmacSha256.IsPreferredFor(-1)).Throws<ArgumentOutOfRangeException>().WithParameterName("length");
+		}
 	}
 
 	[Test]

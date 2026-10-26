@@ -25,10 +25,19 @@ public class PlatformSha256Test
 	}
 
 	[Test]
-	public async Task IsPreferredOnlyWithX86ShaExtensions()
+	public async Task IsPreferredForNeedsX86ShaExtensionsAndOutsideWindows184Bytes()
 	{
-		bool expected = X86Base.IsSupported && (X86Base.CpuId(7, 0).Ebx & 1 << 29) is not 0;
-		await Assert.That(PlatformSha256.IsPreferred).IsEqualTo(expected);
+		bool extensions = X86Base.IsSupported && (X86Base.CpuId(7, 0).Ebx & 1 << 29) is not 0;
+		bool anyLength = extensions && OperatingSystem.IsWindows();
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(PlatformSha256.IsPreferredFor(0)).IsEqualTo(anyLength);
+			await Assert.That(PlatformSha256.IsPreferredFor(183)).IsEqualTo(anyLength);
+			await Assert.That(PlatformSha256.IsPreferredFor(184)).IsEqualTo(extensions);
+			await Assert.That(PlatformSha256.IsPreferredFor(int.MaxValue)).IsEqualTo(extensions);
+			await Assert.That(static () => PlatformSha256.IsPreferredFor(-1)).Throws<ArgumentOutOfRangeException>().WithParameterName("length");
+		}
 	}
 
 	[Test]
