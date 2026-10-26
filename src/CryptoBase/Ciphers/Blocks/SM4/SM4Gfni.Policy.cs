@@ -48,32 +48,9 @@ internal readonly partial struct SM4Gfni
 				Process64FullV512(in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
 			}
 
-			switch (source.Length - offset)
+			if (offset < source.Length)
 			{
-				case 0:
-				{
-					break;
-				}
-				case 16 * 16:
-				{
-					Process16FullV512(in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
-					break;
-				}
-				case 32 * 16:
-				{
-					Process32FullV512(in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
-					break;
-				}
-				case 48 * 16:
-				{
-					Process48FullV512(in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
-					break;
-				}
-				default:
-				{
-					ProcessPartialV512(source.Length - offset >> 4, in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
-					break;
-				}
+				ProcessUpTo64V512(source.Length - offset >> 4, in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
 			}
 		}
 		else
@@ -85,6 +62,41 @@ internal readonly partial struct SM4Gfni
 		}
 
 		policy.SaveState(ref state);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ProcessUpTo64V512<TPolicy>(int count, ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
+	{
+		Debug.Assert(count is > 0 and <= 64);
+
+		switch (count)
+		{
+			case 16:
+			{
+				Process16FullV512(in rk, ref source, ref destination, ref policy);
+				break;
+			}
+			case 32:
+			{
+				Process32FullV512(in rk, ref source, ref destination, ref policy);
+				break;
+			}
+			case 48:
+			{
+				Process48FullV512(in rk, ref source, ref destination, ref policy);
+				break;
+			}
+			case 64:
+			{
+				Process64FullV512(in rk, ref source, ref destination, ref policy);
+				break;
+			}
+			default:
+			{
+				ProcessPartialV512(count, in rk, ref source, ref destination, ref policy);
+				break;
+			}
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

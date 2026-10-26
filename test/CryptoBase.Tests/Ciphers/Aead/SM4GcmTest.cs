@@ -50,6 +50,33 @@ public class SM4GcmTest
 
 	[Test]
 	[MatrixDataSource]
+	public async Task TagMaskBatchesMatchScalarReference([MatrixRange<int>(1, 126)] int dataBlocks, [Matrix(0, 5)] int missingBytes, [Matrix] bool inPlace)
+	{
+		// E(J0) and the data key stream share one batch of 2 to 127 blocks in both directions.
+		int length = dataBlocks * 16 - missingBytes;
+		byte[] key = CreateDeterministicSource(16);
+		byte[] nonce = CreateDeterministicSource(12);
+		byte[] associatedData = CreateDeterministicSource(17);
+		byte[] plaintext = CreateDeterministicSource(length);
+		(byte[] expected, byte[] expectedTag) = EncryptReference(key, nonce, plaintext, associatedData);
+		using GcmMode<SM4Cipher> cipher = GcmMode<SM4Cipher>.Create(key);
+		byte[] destination = CreateGuardedBuffer(5, length);
+		byte[] tag = new byte[16];
+
+		if (inPlace)
+		{
+			plaintext.CopyTo(destination, 5);
+		}
+
+		cipher.Encrypt(nonce, inPlace ? destination.AsSpan(5, length) : plaintext, destination.AsSpan(5, length), tag, associatedData);
+		await AssertOutput(destination, 5, expected);
+		await AssertOutput(tag, expectedTag);
+		await Assert.That(cipher.TryDecrypt(nonce, inPlace ? destination.AsSpan(5, length) : expected, expectedTag, destination.AsSpan(5, length), associatedData)).IsTrue();
+		await AssertOutput(destination, 5, plaintext);
+	}
+
+	[Test]
+	[MatrixDataSource]
 	public async Task TailsMatchScalarReference([MatrixRange<int>(1, 63)] int tailBlocks, [Matrix(0, 5)] int extraBytes)
 	{
 		// Encryption sends the bytes past its 2032-byte tag-mask batch through the CTR batches; decryption at this size sends all of them.

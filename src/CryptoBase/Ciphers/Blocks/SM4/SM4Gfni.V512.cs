@@ -37,22 +37,8 @@ internal readonly partial struct SM4Gfni
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Process64V512(int count, ref uint rk, ref byte source, ref byte destination)
 	{
-		if (count is 64)
-		{
-			SM4DirectPolicy policy = default;
-			Process64FullV512(in rk, ref source, ref destination, ref policy);
-			return;
-		}
-
-		Load16V512(count, ref source, 0, out Vector512<byte> a0, out Vector512<byte> a1, out Vector512<byte> a2, out Vector512<byte> a3);
-		Load16V512(count - 16, ref source, 256, out Vector512<byte> b0, out Vector512<byte> b1, out Vector512<byte> b2, out Vector512<byte> b3);
-		Load16V512(count - 32, ref source, 512, out Vector512<byte> c0, out Vector512<byte> c1, out Vector512<byte> c2, out Vector512<byte> c3);
-		Load16V512(count - 48, ref source, 768, out Vector512<byte> d0, out Vector512<byte> d1, out Vector512<byte> d2, out Vector512<byte> d3);
-		Rounds64PartialV512(ref rk, ref a0, ref a1, ref a2, ref a3, ref b0, ref b1, ref b2, ref b3, ref c0, ref c1, ref c2, ref c3, ref d0, ref d1, ref d2, ref d3);
-		Store16V512(count, ref destination, 0, a0, a1, a2, a3);
-		Store16V512(count - 16, ref destination, 256, b0, b1, b2, b3);
-		Store16V512(count - 32, ref destination, 512, c0, c1, c2, c3);
-		Store16V512(count - 48, ref destination, 768, d0, d1, d2, d3);
+		SM4DirectPolicy policy = default;
+		ProcessUpTo64V512(count, in rk, ref source, ref destination, ref policy);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -141,42 +127,6 @@ internal readonly partial struct SM4Gfni
 		policy.Finish16(ref source, ref destination, 256, b0, b1, b2, b3);
 		policy.Finish16(ref source, ref destination, 512, c0, c1, c2, c3);
 		policy.FinishPartial16(count - 48, ref source, ref destination, 768, d0, d1, d2, d3);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Load16V512(int count, ref byte source, nuint offset, out Vector512<byte> x0, out Vector512<byte> x1, out Vector512<byte> x2, out Vector512<byte> x3)
-	{
-		SM4Layout.Load16X86(count, ref source, offset, out x0, out x1, out x2, out x3);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Store16V512(int count, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3)
-	{
-		SM4Layout.Store16X86(count, ref destination, offset, x0, x1, x2, x3);
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Rounds64PartialV512
-	(
-		ref uint rk,
-		ref Vector512<byte> x0, ref Vector512<byte> x1, ref Vector512<byte> x2, ref Vector512<byte> x3,
-		ref Vector512<byte> x4, ref Vector512<byte> x5, ref Vector512<byte> x6, ref Vector512<byte> x7,
-		ref Vector512<byte> x8, ref Vector512<byte> x9, ref Vector512<byte> x10, ref Vector512<byte> x11,
-		ref Vector512<byte> x12, ref Vector512<byte> x13, ref Vector512<byte> x14, ref Vector512<byte> x15
-	)
-	{
-		// Copy ref parameters into locals to keep round state in registers.
-		Vector512<byte> a0 = x0, a1 = x1, a2 = x2, a3 = x3;
-		Vector512<byte> b0 = x4, b1 = x5, b2 = x6, b3 = x7;
-		Vector512<byte> c0 = x8, c1 = x9, c2 = x10, c3 = x11;
-		Vector512<byte> d0 = x12, d1 = x13, d2 = x14, d3 = x15;
-
-		Rounds64V512(in rk, ref a0, ref a1, ref a2, ref a3, ref b0, ref b1, ref b2, ref b3, ref c0, ref c1, ref c2, ref c3, ref d0, ref d1, ref d2, ref d3);
-
-		(x0, x1, x2, x3) = (a0, a1, a2, a3);
-		(x4, x5, x6, x7) = (b0, b1, b2, b3);
-		(x8, x9, x10, x11) = (c0, c1, c2, c3);
-		(x12, x13, x14, x15) = (d0, d1, d2, d3);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

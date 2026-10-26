@@ -11,6 +11,8 @@ namespace CryptoBase.Benchmark.Ciphers.Modes;
 [MemoryDiagnoser]
 public class SM4CtrBenchmark : BlockModeStreamCipherBenchmarkBase
 {
+	public override IEnumerable<int> ByteLengths => [16, 128, 240, 256, 496, 512, 1008, 1024, 8192];
+
 	private CtrMode128<SM4Cipher> _cryptoBase = null!;
 	private SicBlockCipher _bouncyCastle = null!;
 
