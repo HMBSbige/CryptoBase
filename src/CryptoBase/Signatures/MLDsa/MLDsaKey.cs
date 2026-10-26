@@ -37,9 +37,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	private const int StreamBlockLength = 136;
 	private const int SecretSqueezeLength = 2 * StreamBlockLength;
 
-	// ρ′ or ρ″ and a 2-byte nonce (Algorithms 33 and 34).
-	private const int StreamInputLength = HashLength + sizeof(ushort);
-
 	// Each row of Â followed by the entry of t̂1 in that row. Verification takes Â ∘ ẑ − t̂1 ∘ ĉ of a row in one MultiplyAccumulate.
 	private int[]? _rows;
 
@@ -1133,14 +1130,14 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	private static void ExpandSecrets<TKernel>(ReadOnlySpan<byte> seed, Span<int> secrets) where TKernel : IMLDsaKernel
 	{
 		int streams = L + K;
-		using CryptoBuffer<byte> inputs = new(stackalloc byte[MaxStreams * StreamInputLength]);
+		Span<ushort> nonces = stackalloc ushort[MaxStreams];
 		using CryptoBuffer<byte> outputs = new(stackalloc byte[MaxStreams * SecretSqueezeLength]);
 		Span<int> sampled = stackalloc int[MaxStreams];
 		Unsafe.SkipInit(out KeccakBatchSponge<KeccakRate136> sponge);
 
 		for (int done = 0; done < streams; done += sponge.Count)
 		{
-			AbsorbSeeds(ref sponge, seed, done, streams - done, 0, inputs.Span);
+			AbsorbSeeds(ref sponge, seed, done, streams - done, 0, nonces);
 			int count = sponge.Count;
 			Span<byte> groupOutputs = outputs.Span.Slice(0, count * SecretSqueezeLength);
 			Span<int> groupSampled = sampled.Slice(0, count);
@@ -1172,7 +1169,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	internal static void ExpandMask<TKernel>(ReadOnlySpan<byte> seed, int kappa, Span<int> y, ReadOnlySpan<byte> message, Span<byte> hash) where TKernel : IMLDsaKernel
 	{
 		int zLength = ZLength;
-		using CryptoBuffer<byte> inputs = new(stackalloc byte[MaxStreams * StreamInputLength]);
+		Span<ushort> nonces = stackalloc ushort[MaxStreams];
 		using CryptoBuffer<byte> outputs = new(stackalloc byte[MaxStreams * zLength]);
 		Unsafe.SkipInit(out KeccakBatchSponge<KeccakRate136> sponge);
 		KeccakSponge<KeccakRate136> guest = default;
@@ -1183,7 +1180,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 
 		for (int done = 0; done < L; done += sponge.Count)
 		{
-			AbsorbSeeds(ref sponge, seed, kappa + done, L - done, hashSteps > 0 ? 1 : 0, inputs.Span);
+			AbsorbSeeds(ref sponge, seed, kappa + done, L - done, hashSteps > 0 ? 1 : 0, nonces);
 			int count = sponge.Count;
 			Span<byte> groupOutputs = outputs.Span.Slice(0, count * zLength);
 
@@ -1221,24 +1218,19 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// Resets sponge to as many of the streams SHAKE256 streams as one batch takes, leaving room for guests where the kernel has it; stream j absorbs seed ‖ IntegerToBytes(first + j, 2).
-	private static void AbsorbSeeds(ref KeccakBatchSponge<KeccakRate136> sponge, ReadOnlySpan<byte> seed, int first, int streams, int guests, Span<byte> inputs)
+	private static void AbsorbSeeds(ref KeccakBatchSponge<KeccakRate136> sponge, ReadOnlySpan<byte> seed, int first, int streams, int guests, Span<ushort> nonces)
 	{
 		Debug.Assert(seed.Length is HashLength);
 
-		sponge.ResetWithGuests(streams, guests);
-		int count = sponge.Count;
-		Debug.Assert(count <= MaxStreams);
-		inputs = inputs.Slice(0, count * StreamInputLength);
+		int group = Math.Min(streams, MaxStreams);
 
-		for (int j = 0; j < count; ++j)
+		for (int j = 0; j < group; ++j)
 		{
-			Span<byte> input = inputs.Slice(j * StreamInputLength, StreamInputLength);
-			seed.CopyTo(input);
-			BinaryPrimitives.WriteUInt16LittleEndian(input.Slice(HashLength), (ushort)(first + j));
+			nonces[j] = (ushort)(first + j);
 		}
 
-		sponge.Absorb(inputs);
-		sponge.Pad(KeccakDomainSeparator.Shake);
+		sponge.ResetWithGuests(streams, guests, seed, nonces.Slice(0, group), sizeof(ushort), KeccakDomainSeparator.Shake);
+		Debug.Assert(sponge.Count <= MaxStreams);
 	}
 
 	// H(first ‖ second ‖ third, destination.Length), with H SHAKE256.
