@@ -9,12 +9,13 @@ public class EcKernelBenchmark
 {
 	private IKernel _kernel = new Kernel<P256Curve, P256Field52, P256Order>();
 
-	// P256Saturated is P-256 over the saturated P256Field, to compare with the unsaturated field.
+	// P256Saturated and P384Saturated are P-256 and P-384 over the saturated P256Field and P384Field, to compare with the unsaturated fields.
 	public enum CurveKind
 	{
 		P256,
 		P256Saturated,
 		P384,
+		P384Saturated,
 		P521
 	}
 
@@ -28,7 +29,8 @@ public class EcKernelBenchmark
 		{
 			CurveKind.P256 => new Kernel<P256Curve, P256Field52, P256Order>(),
 			CurveKind.P256Saturated => new Kernel<P256Curve, P256Field, P256Order>(),
-			CurveKind.P384 => new Kernel<P384Curve, P384Field, P384Order>(),
+			CurveKind.P384 => new Kernel<P384Curve, P384Field56, P384Order>(),
+			CurveKind.P384Saturated => new Kernel<P384Curve, P384Field, P384Order>(),
 			CurveKind.P521 => new Kernel<P521Curve, P521Field, P521Order>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(Curve))
 		};

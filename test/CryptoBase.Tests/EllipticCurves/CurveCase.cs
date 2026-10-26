@@ -18,7 +18,7 @@ public abstract class CurveCase
 	public static IEnumerable<CurveCase> All()
 	{
 		yield return new Case<P256Curve, P256Field52, P256Order>("secp256r1");
-		yield return new Case<P384Curve, P384Field, P384Order>("secp384r1");
+		yield return new Case<P384Curve, P384Field56, P384Order>("secp384r1");
 		yield return new Case<P521Curve, P521Field, P521Order>("secp521r1");
 	}
 

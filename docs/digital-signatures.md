@@ -186,7 +186,7 @@ bool tampered = verifier.Verify(SignatureAlgorithm.EcdsaSha256, "massage"u8, sig
 
 Signing and verification may run concurrently on one instance. Signing twice gives two different signatures. Signatures are not normalized to a low s, and verification accepts only strict DER.
 
-The second verification with an instance builds a table from the public key, which makes that verification slower and every later one faster. The instance keeps the table until it is disposed: about 10 KB for P-256, 12 KB for P-384 and 18 KB for P-521. To verify many signatures with one key, keep one instance rather than import the key for each.
+The second verification with an instance builds a table from the public key, which makes that verification slower and every later one faster. The instance keeps the table until it is disposed: about 10 KB for P-256, 14 KB for P-384 and 18 KB for P-521. To verify many signatures with one key, keep one instance rather than import the key for each.
 
 ### Saving and restoring a key
 
