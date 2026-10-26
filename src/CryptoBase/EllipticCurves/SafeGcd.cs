@@ -3,6 +3,7 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 namespace CryptoBase.EllipticCurves;
 
 // Inversion modulo m by divsteps, which take (δ, f, g) with f odd to (1 − δ, g, (g − f)/2) if δ > 0 and g is odd, to (1 + δ, f, (g + f)/2) if only g is odd and to (1 + δ, f, g/2) if g is even. They keep gcd(f, g), and from f = m and g = x they bring g to 0 and f to ±gcd(x, m) = ±1. d and e start at 0 and R² and go through the same linear maps modulo m, so d ≡ f·R²/x and e ≡ g·R²/x throughout and d·f ends at R²/x, which for x = aR is a⁻¹R; x = 0 leaves d at 0.
+// e may start at any N below m in place of R², which ends d·f at N/x.
 // f, g, d and e are signed values in Length limbs of 62 bits, least significant first, the last limb a signed long that takes the rest. The steps read only δ and the low bits of f and g, so a batch of up to 62 runs on the bottom limbs alone and yields a matrix, scaled by 2^62, that then maps the full values at once. The division by 2^62 is exact for f and g; d and e first gain the multiple of m that clears their low 62 bits, which keeps them in (−2m, m).
 internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModulus
 {
@@ -40,10 +41,17 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 	}
 
 	// Neither the time nor the addresses depend on value: BatchCount batches of BatchSteps steps cover the bound for any value, and every step and update works with masks.
-	[SkipLocalsInit]
 	internal static void Invert(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
 	{
-		Load(in value, out State state);
+		Invert(in value, TModulus.RSquared, out result);
+	}
+
+	// As above, but giving numerator/value mod m in place of R²/value, for a numerator below m. Not inlined, nor is Load: with the loop inlined into a caller, or Load into the loop, the inlining budget runs out before the helpers of the matrix updates, which then become calls in every batch.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	[SkipLocalsInit]
+	internal static void Invert(in FieldElement<TModulus> value, ReadOnlySpan<ulong> numerator, out FieldElement<TModulus> result)
+	{
+		Load(in value, numerator, out State state);
 		// ζ = −(δ + 1/2), for δ starting at 1/2.
 		long zeta = -1;
 
@@ -59,10 +67,17 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 	}
 
 	// The time depends on value, which must be public. The loop ends once g is 0, and f and g lose their top limbs as they shrink.
-	[SkipLocalsInit]
 	internal static void InvertVariableTime(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
 	{
-		Load(in value, out State state);
+		InvertVariableTime(in value, TModulus.RSquared, out result);
+	}
+
+	// As above, but giving numerator/value mod m in place of R²/value, for a numerator below m. Not inlined, for the reason given at Invert.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	[SkipLocalsInit]
+	internal static void InvertVariableTime(in FieldElement<TModulus> value, ReadOnlySpan<ulong> numerator, out FieldElement<TModulus> result)
+	{
+		Load(in value, numerator, out State state);
 		ref long f = ref state.F[0];
 		ref long g = ref state.G[0];
 		// η = −δ, for δ starting at 1.
@@ -95,14 +110,14 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 		Store(ref state, Unsafe.Add(ref f, length - 1), out result);
 	}
 
-	private static void Load(in FieldElement<TModulus> value, out State state)
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void Load(in FieldElement<TModulus> value, ReadOnlySpan<ulong> numerator, out State state)
 	{
-		Debug.Assert(Length <= Capacity);
+		Debug.Assert(Length <= Capacity && numerator.Length == TModulus.LimbCount);
 
 		Unsafe.SkipInit(out state);
 		ReadOnlySpan<ulong> modulus = TModulus.Modulus;
 		ReadOnlySpan<ulong> x = FieldElement<TModulus>.GetLimbs(in value);
-		ReadOnlySpan<ulong> rSquared = TModulus.RSquared;
 
 		for (int i = 0; i < Length; ++i)
 		{
@@ -112,7 +127,7 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 			state.F[i] = limb;
 			state.G[i] = (long)(ReadBits(x, position) & LimbMask);
 			state.D[i] = 0;
-			state.E[i] = (long)(ReadBits(rSquared, position) & LimbMask);
+			state.E[i] = (long)(ReadBits(numerator, position) & LimbMask);
 		}
 	}
 

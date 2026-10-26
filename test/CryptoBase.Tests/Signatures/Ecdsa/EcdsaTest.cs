@@ -544,7 +544,7 @@ internal class EcdsaTest
 
 		for (int i = 0; i < 5; ++i)
 		{
-			EcdsaKey<P256Curve, P256Field, P256Order> core = default;
+			EcdsaKey<P256Curve, P256Field52, P256Order> core = default;
 			core.ImportPublicKey(firstPublicKey);
 			bool verified = core.Verify(SignatureAlgorithm.EcdsaSha256, message, firstSignature) & core.Verify(SignatureAlgorithm.EcdsaSha256, message, firstSignature);
 
@@ -680,7 +680,7 @@ internal class EcdsaTest
 
 		foreach (byte[] encoding in (byte[][])[Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, otherQ)), Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, null), otherQ)])
 		{
-			EcdsaKey<P256Curve, P256Field, P256Order> core = default;
+			EcdsaKey<P256Curve, P256Field52, P256Order> core = default;
 
 			try
 			{
@@ -688,7 +688,7 @@ internal class EcdsaTest
 			}
 			catch (ArgumentException)
 			{
-				erased.Add(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<EcdsaKey<P256Curve, P256Field, P256Order>, byte>(ref core), Unsafe.SizeOf<EcdsaKey<P256Curve, P256Field, P256Order>>()).IndexOfAnyExcept((byte)0) < 0);
+				erased.Add(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<EcdsaKey<P256Curve, P256Field52, P256Order>, byte>(ref core), Unsafe.SizeOf<EcdsaKey<P256Curve, P256Field52, P256Order>>()).IndexOfAnyExcept((byte)0) < 0);
 			}
 		}
 

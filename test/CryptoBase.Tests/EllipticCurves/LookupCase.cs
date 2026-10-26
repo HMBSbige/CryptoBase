@@ -9,9 +9,11 @@ public abstract class LookupCase
 	public static IEnumerable<LookupCase> All()
 	{
 		return Widths<AffinePoint<P256Field>>()
+			.Concat(Widths<AffinePoint<P256Field52>>())
 			.Concat(Widths<AffinePoint<P384Field>>())
 			.Concat(Widths<AffinePoint<P521Field>>())
 			.Concat(Widths<JacobianPoint<P256Field>>())
+			.Concat(Widths<JacobianPoint<P256Field52>>())
 			.Concat(Widths<JacobianPoint<P384Field>>())
 			.Concat(Widths<JacobianPoint<P521Field>>());
 	}

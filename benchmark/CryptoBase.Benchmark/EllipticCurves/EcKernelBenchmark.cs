@@ -7,11 +7,13 @@ namespace CryptoBase.Benchmark.EllipticCurves;
 
 public class EcKernelBenchmark
 {
-	private IKernel _kernel = new Kernel<P256Curve, P256Field, P256Order>();
+	private IKernel _kernel = new Kernel<P256Curve, P256Field52, P256Order>();
 
+	// P256Saturated is P-256 over the saturated P256Field, to compare with the unsaturated field.
 	public enum CurveKind
 	{
 		P256,
+		P256Saturated,
 		P384,
 		P521
 	}
@@ -24,7 +26,8 @@ public class EcKernelBenchmark
 	{
 		_kernel = Curve switch
 		{
-			CurveKind.P256 => new Kernel<P256Curve, P256Field, P256Order>(),
+			CurveKind.P256 => new Kernel<P256Curve, P256Field52, P256Order>(),
+			CurveKind.P256Saturated => new Kernel<P256Curve, P256Field, P256Order>(),
 			CurveKind.P384 => new Kernel<P384Curve, P384Field, P384Order>(),
 			CurveKind.P521 => new Kernel<P521Curve, P521Field, P521Order>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(Curve))
