@@ -10,5 +10,9 @@ internal interface ISM4ModePolicy
 	void Prepare16(ref byte source, nuint offset, out Vector512<byte> x0, out Vector512<byte> x1, out Vector512<byte> x2, out Vector512<byte> x3);
 	void Finish16(ref byte source, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3);
 
+	// count is in [1, 16]: the state advances by count blocks, and exactly count blocks are read and written.
+	void PreparePartial16(int count, ref byte source, nuint offset, out Vector512<byte> x0, out Vector512<byte> x1, out Vector512<byte> x2, out Vector512<byte> x3);
+	void FinishPartial16(int count, ref byte source, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3);
+
 	void SaveState(ref Vector128<byte> state);
 }

@@ -54,6 +54,13 @@ internal struct SM4CtrPolicy<TIncrementer> : ISM4ModePolicy where TIncrementer :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Prepare16(ref byte source, nuint offset, out Vector512<byte> x0, out Vector512<byte> x1, out Vector512<byte> x2, out Vector512<byte> x3)
 	{
+		PreparePartial16(16, ref source, offset, out x0, out x1, out x2, out x3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void PreparePartial16(int count, ref byte source, nuint offset, out Vector512<byte> x0, out Vector512<byte> x1, out Vector512<byte> x2, out Vector512<byte> x3)
+	{
+		// Lanes past count still get counters; FinishPartial16 drops them.
 		Vector512<uint> a0 = Vector512.Create(_w0);
 		Vector512<uint> a1 = Vector512.Create(_w1);
 		Vector512<uint> a2 = Vector512.Create(_w2);
@@ -70,7 +77,7 @@ internal struct SM4CtrPolicy<TIncrementer> : ISM4ModePolicy where TIncrementer :
 			a0 -= carry;
 		}
 
-		Advance(16);
+		Advance(count);
 		x0 = a0.AsByte();
 		x1 = a1.AsByte();
 		x2 = a2.AsByte();
@@ -81,6 +88,12 @@ internal struct SM4CtrPolicy<TIncrementer> : ISM4ModePolicy where TIncrementer :
 	public readonly void Finish16(ref byte source, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3)
 	{
 		SM4Layout.XorStore16X86(ref source, ref destination, offset, x0, x1, x2, x3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public readonly void FinishPartial16(int count, ref byte source, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3)
+	{
+		SM4Layout.XorStore16X86(count, ref source, ref destination, offset, x0, x1, x2, x3);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

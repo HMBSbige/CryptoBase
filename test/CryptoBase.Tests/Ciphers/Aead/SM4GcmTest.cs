@@ -13,7 +13,7 @@ public class SM4GcmTest
 {
 	[Test]
 	[MatrixDataSource]
-	public async Task BatchBoundariesMatchScalarReference([Matrix(0, 1, 15, 16, 17, 1007, 1008, 1009, 1023, 1024, 1025, 2031, 2032, 2033, 2049, 3055, 3056, 3057, 4095, 4096, 4097, 8192, 8193)] int length)
+	public async Task BatchBoundariesMatchScalarReference([Matrix(0, 1, 15, 16, 17, 1007, 1008, 1009, 1023, 1024, 1025, 2031, 2032, 2033, 2049, 2288, 2304, 2544, 2800, 2816, 3055, 3056, 3057, 4095, 4096, 4097, 8192, 8193)] int length)
 	{
 		byte[] key = CreateDeterministicSource(16);
 		byte[] nonce = CreateDeterministicSource(12);
@@ -46,6 +46,28 @@ public class SM4GcmTest
 		expected.CopyTo(destination, 5);
 		await Assert.That(cipher.TryDecrypt(nonce, destination.AsSpan(5, length), expectedTag, destination.AsSpan(5), associatedData)).IsFalse();
 		await AssertOutput(destination, 5, new byte[length]);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task TailsMatchScalarReference([MatrixRange<int>(1, 63)] int tailBlocks, [Matrix(0, 5)] int extraBytes)
+	{
+		// Encryption sends the bytes past its 2032-byte tag-mask batch through the CTR batches; decryption at this size sends all of them.
+		int length = 2048 + tailBlocks * 16 + extraBytes;
+		byte[] key = CreateDeterministicSource(16);
+		byte[] nonce = CreateDeterministicSource(12);
+		byte[] associatedData = CreateDeterministicSource(17);
+		byte[] plaintext = CreateDeterministicSource(length);
+		(byte[] expected, byte[] expectedTag) = EncryptReference(key, nonce, plaintext, associatedData);
+		using GcmMode<SM4Cipher> cipher = GcmMode<SM4Cipher>.Create(key);
+		byte[] destination = CreateGuardedBuffer(5, length);
+		byte[] tag = new byte[16];
+
+		cipher.Encrypt(nonce, plaintext, destination.AsSpan(5, length), tag, associatedData);
+		await AssertOutput(destination, 5, expected);
+		await AssertOutput(tag, expectedTag);
+		await Assert.That(cipher.TryDecrypt(nonce, expected, expectedTag, destination.AsSpan(5, length), associatedData)).IsTrue();
+		await AssertOutput(destination, 5, plaintext);
 	}
 
 	private static (byte[] Ciphertext, byte[] Tag) EncryptReference(byte[] key, byte[] nonce, byte[] plaintext, byte[] associatedData)

@@ -167,6 +167,38 @@ internal static partial class SM4Layout
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void XorStore16X86(int count, ref byte source, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3)
+	{
+		Transpose(ref x0, ref x1, ref x2, ref x3);
+
+		if (count > 0)
+		{
+			XorStoreQuadX86(count, ref source, ref destination, offset, x0);
+		}
+
+		if (count > 4)
+		{
+			XorStoreQuadX86(count - 4, ref source, ref destination, offset + 64, x1);
+		}
+
+		if (count > 8)
+		{
+			XorStoreQuadX86(count - 8, ref source, ref destination, offset + 128, x2);
+		}
+
+		if (count > 12)
+		{
+			XorStoreQuadX86(count - 12, ref source, ref destination, offset + 192, x3);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void XorStoreQuadX86(int count, ref byte source, ref byte destination, nuint offset, Vector512<byte> value)
+	{
+		StoreQuadX86(count, ref destination, offset, value.ReverseEndianness128() ^ LoadQuadX86(count, ref source, offset));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<byte> LoadQuadX86(int count, ref byte source, nuint offset)
 	{
 		if (count >= 4)

@@ -34,13 +34,14 @@ public class SM4CtrTest
 			"00010203FFFFFFFFFFFFFFFFFFFFFFE1",
 			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE1",
 			"0001020304050607FFFFFFFFFFFFFFE5",
-			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE5"
+			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE5",
+			"0001020304050607FFFFFFFFFFFFFFA9"
 		];
 	}
 
 	[Test]
 	[MatrixDataSource]
-	public async Task BatchCarriesMatchScalarReference([MatrixMethod<SM4CtrTest>(nameof(InitialCounters))] string initialCounterHex, [Matrix(255, 256, 257, 1023, 1024, 1025, 2048, 4097)] int length, [Matrix] bool inPlace)
+	public async Task BatchCarriesMatchScalarReference([MatrixMethod<SM4CtrTest>(nameof(InitialCounters))] string initialCounterHex, [Matrix(255, 256, 257, 512, 768, 1023, 1024, 1025, 1280, 1543, 1792, 2048, 4097)] int length, [Matrix] bool inPlace)
 	{
 		byte[] key = CreateDeterministicSource(16);
 		byte[] counter = Convert.FromHexString(initialCounterHex);
@@ -54,6 +55,32 @@ public class SM4CtrTest
 		cipher.Xor(source, output.AsSpan(3));
 
 		await AssertOutput(output, 3, expected);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task TailsMatchScalarReference([Matrix(0, 1)] int batches, [MatrixRange<int>(1, 63)] int tailBlocks, [Matrix(0, 7)] int extraBytes, [Matrix] bool inPlace)
+	{
+		int length = (batches * 64 + tailBlocks) * 16 + extraBytes;
+		// Wraps the low 96 bits halfway through the tail, so the carry crosses words inside a partial group.
+		uint low = 0u - (uint)(batches * 64 + tailBlocks / 2);
+		byte[] counter = [0, 1, 2, 3, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, (byte)(low >> 24), (byte)(low >> 16), (byte)(low >> 8), (byte)low];
+		byte[] key = CreateDeterministicSource(16);
+		byte[] plaintext = CreateDeterministicSource(length);
+		byte[] expected = CtrReference.Transform(counter, plaintext, counters => SM4Reference.Transform(key, counters));
+		byte[] output = CreateGuardedBuffer(3, length);
+		plaintext.CopyTo(output, 3);
+		using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
+
+		ReadOnlySpan<byte> source = inPlace ? output.AsSpan(3, length) : plaintext;
+		cipher.Xor(source, output.AsSpan(3, length));
+		await AssertOutput(output, 3, expected);
+
+		// The counter after the tail must also be right.
+		byte[] next = new byte[16];
+		cipher.Xor(next, next);
+		byte[] expectedNext = CtrReference.Transform(counter, new byte[length + 16], counters => SM4Reference.Transform(key, counters)).AsSpan(length).ToArray();
+		await AssertOutput(next, expectedNext);
 	}
 
 	[Test]
