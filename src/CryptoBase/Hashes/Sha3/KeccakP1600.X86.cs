@@ -112,6 +112,78 @@ internal static partial class KeccakP1600
 		return blocks * TRate.RateInBytes;
 	}
 
+	// Hashes an input shorter than the rate to an output of at most the rate: the padded block is loaded straight into the rows and the output stored straight from them, so the state never passes through memory. All input is loaded before any output is stored, so the two may overlap.
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	internal static unsafe void HashBlockAvx512<TRate>(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator) where TRate : IKeccakRate
+	{
+		Debug.Assert(IsAvx512Supported && Avx512BW.IsSupported);
+		Debug.Assert(source.Length < TRate.RateInBytes);
+		Debug.Assert(destination.Length <= TRate.RateInBytes);
+
+		fixed (byte* input = source)
+		fixed (byte* output = destination)
+		{
+			Vector512<ulong> a0 = LoadPaddedRow<TRate>(input, source.Length, 0, domainSeparator);
+			Vector512<ulong> a1 = LoadPaddedRow<TRate>(input, source.Length, 1, domainSeparator);
+			Vector512<ulong> a2 = LoadPaddedRow<TRate>(input, source.Length, 2, domainSeparator);
+			Vector512<ulong> a3 = LoadPaddedRow<TRate>(input, source.Length, 3, domainSeparator);
+			Vector512<ulong> a4 = LoadPaddedRow<TRate>(input, source.Length, 4, domainSeparator);
+			PermuteRows(ref a0, ref a1, ref a2, ref a3, ref a4);
+			StoreOutputRow(output, destination.Length, 0, a0);
+			StoreOutputRow(output, destination.Length, 1, a1);
+			StoreOutputRow(output, destination.Length, 2, a2);
+			StoreOutputRow(output, destination.Length, 3, a3);
+			StoreOutputRow(output, destination.Length, 4, a4);
+		}
+	}
+
+	// Bytes 40y to 40y + 39 of the padded block in the low bytes, which are lanes 5y to 5y + 4 as LoadBlockRow places them; the upper bytes may hold anything, so the masked load may take input past the row.
+	// A row that the input does not reach skips the load: a masked load from an unmapped address, such as the null pointer of an empty input, is slow even with every byte masked off.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe Vector512<ulong> LoadPaddedRow<TRate>(byte* input, int length, int row, byte domainSeparator) where TRate : IKeccakRate
+	{
+		const int rowBytes = 5 * sizeof(ulong);
+		int offset = rowBytes * row;
+
+		if (offset >= TRate.RateInBytes)
+		{
+			return Vector512<ulong>.Zero;
+		}
+
+		// Below 0 or past the row, the byte index matches no byte of the row.
+		int remaining = length - offset;
+		Vector512<byte> indices = Vector512<byte>.Indices;
+		Vector512<byte> value = Vector512.Equals(indices, Vector512.Create((byte)remaining)) & Vector512.Create(domainSeparator);
+		int last = TRate.RateInBytes - 1 - offset;
+
+		if (last < rowBytes)
+		{
+			value |= Vector512.Equals(indices, Vector512.Create((byte)last)) & Vector512.Create((byte)0x80);
+		}
+
+		if (remaining > 0)
+		{
+			value |= Avx512BW.MaskLoad(input + offset, Vector512.LessThan(indices, Vector512.Create((byte)Math.Min(remaining, Vector512<byte>.Count))), Vector512<byte>.Zero);
+		}
+
+		return value.AsUInt64();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe void StoreOutputRow(byte* output, int length, int row, Vector512<ulong> value)
+	{
+		const int rowBytes = 5 * sizeof(ulong);
+		int remaining = length - rowBytes * row;
+
+		if (remaining <= 0)
+		{
+			return;
+		}
+
+		Avx512BW.MaskStore(output + rowBytes * row, Vector512.LessThan(Vector512<byte>.Indices, Vector512.Create((byte)Math.Min(remaining, rowBytes))), value.AsByte());
+	}
+
 	// Lanes 5y to 5y + 4 of a block, as far as it has them, in the low elements; as in PermuteRows, the upper three may hold anything. A masked load reads only those lanes where a full vector would read past the block, so the last block of source cannot fault.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe Vector512<ulong> LoadBlockRow<TRate>(ulong* block, int row) where TRate : IKeccakRate

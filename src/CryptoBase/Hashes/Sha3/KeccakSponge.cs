@@ -125,6 +125,12 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 	{
 		if (source.Length < TRate.RateInBytes && destination.Length <= TRate.RateInBytes)
 		{
+			if (KeccakP1600.PreferAvx512 && Avx512BW.IsSupported)
+			{
+				KeccakP1600.HashBlockAvx512<TRate>(source, destination, domainSeparator);
+				return;
+			}
+
 			HashBlock(source, destination, domainSeparator);
 			return;
 		}

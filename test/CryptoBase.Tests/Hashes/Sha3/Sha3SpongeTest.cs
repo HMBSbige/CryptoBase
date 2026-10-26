@@ -81,6 +81,24 @@ public class Sha3SpongeTest
 		};
 	}
 
+	// One-shot hashing of an input shorter than the rate loads the padded block with masked loads and stores the output with masked stores, so input that ends at an inaccessible page, and output that does, must hash without faulting.
+	[Test]
+	[MethodDataSource(nameof(Rates))]
+	public Task HashDataTouchesNothingPastTheInputOrTheOutput(int rate)
+	{
+		GuardPageBuffer.SkipUnlessSupported();
+
+		return rate switch
+		{
+			72 => VerifyHashDataBeforeGuardPages<KeccakRate72>(rate),
+			104 => VerifyHashDataBeforeGuardPages<KeccakRate104>(rate),
+			136 => VerifyHashDataBeforeGuardPages<KeccakRate136>(rate),
+			144 => VerifyHashDataBeforeGuardPages<KeccakRate144>(rate),
+			168 => VerifyHashDataBeforeGuardPages<KeccakRate168>(rate),
+			_ => throw new ArgumentOutOfRangeException(nameof(rate))
+		};
+	}
+
 	[Test]
 	public async Task PaddingSwitchesToSqueezing()
 	{
@@ -182,6 +200,33 @@ public class Sha3SpongeTest
 		sponge.Squeeze(new byte[skipped]);
 		sponge.Squeeze(buffer.Span);
 		return buffer.Span.ToArray();
+	}
+
+	// Input lengths around the 40-byte rows and the 64-byte vectors of the AVX-512 path, up to one byte short of the rate; output lengths up to the rate, which one block holds.
+	private static async Task VerifyHashDataBeforeGuardPages<TRate>(int rate) where TRate : IKeccakRate
+	{
+		await Assert.That(TRate.RateInBytes).IsEqualTo(rate);
+
+		foreach (int inputLength in (int[])[0, 1, 7, 39, 40, 41, 63, 64, 65, rate - 41, rate - 40, rate - 1])
+		{
+			byte[] message = CreateDeterministicSource(inputLength);
+
+			foreach (int outputLength in (int[])[1, 32, 40, 41, 64, rate])
+			{
+				byte[] expected = KeccakReference.Sponge(message, rate, KeccakReference.ShakeDomainSeparator, outputLength);
+
+				await Assert.That(HashDataBeforeGuardPages<TRate>(message, outputLength)).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"{inputLength}-byte input, {outputLength}-byte output");
+			}
+		}
+	}
+
+	private static byte[] HashDataBeforeGuardPages<TRate>(byte[] message, int outputLength) where TRate : IKeccakRate
+	{
+		using GuardPageBuffer input = new(message.Length);
+		using GuardPageBuffer output = new(outputLength);
+		message.CopyTo(input.Span);
+		KeccakSponge<TRate>.HashData(input.Span, output.Span, KeccakReference.ShakeDomainSeparator);
+		return output.Span.ToArray();
 	}
 
 	// Adds requests that end one or several blocks past the current one, from its start or from within it.
