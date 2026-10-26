@@ -5,7 +5,7 @@ namespace CryptoBase.EllipticCurves;
 // The private key d is a plain value in [1, n − 1]. Keep a key in one writable location and do not copy it: a copy keeps d where Clear cannot reach it.
 internal struct EcKey<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IMontgomeryModulus
+	where TField : unmanaged, IEcField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private FieldElement<TOrder> _privateKey;

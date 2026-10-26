@@ -29,6 +29,8 @@ public abstract class CurveCase
 
 	public abstract Type CurveType { get; }
 
+	public abstract Type FieldType { get; }
+
 	public string Name { get; }
 
 	internal EcCurveTestVector Parameters { get; }
@@ -47,11 +49,12 @@ public abstract class CurveCase
 
 	internal abstract BigInteger OrderModulus { get; }
 
-	internal BigInteger R => BigInteger.One << 64 * FieldLimbCount;
+	// The range of the 64-bit limbs of a scalar.
+	internal BigInteger ScalarLimbRange => BigInteger.One << 64 * ScalarLimbCount;
 
-	internal abstract int FieldLimbCount { get; }
+	internal abstract int ScalarLimbCount { get; }
 
-	// The constants as stored, in Montgomery form.
+	// The constants as stored, plain.
 	internal abstract BigInteger StoredB { get; }
 
 	internal abstract BigInteger StoredGeneratorX { get; }
@@ -179,10 +182,12 @@ public abstract class CurveCase
 
 	private sealed class Case<TCurve, TField, TOrder>(string name) : CurveCase(name)
 		where TCurve : struct, IEcCurve
-		where TField : unmanaged, IMontgomeryModulus
+		where TField : unmanaged, IEcField<TField>
 		where TOrder : unmanaged, IMontgomeryModulus
 	{
 		public override Type CurveType => typeof(TCurve);
+
+		public override Type FieldType => typeof(TField);
 
 		internal override int FieldLength => TField.ByteLength;
 
@@ -194,7 +199,7 @@ public abstract class CurveCase
 
 		internal override BigInteger OrderModulus => ModulusCase.FromLimbs(TOrder.Modulus);
 
-		internal override int FieldLimbCount => TField.LimbCount;
+		internal override int ScalarLimbCount => TOrder.LimbCount;
 
 		internal override BigInteger StoredB => ModulusCase.FromLimbs(TCurve.B);
 
@@ -474,22 +479,22 @@ public abstract class CurveCase
 			return new Key();
 		}
 
-		private static FieldElement<TField> ToElement(BigInteger value)
+		private static TField ToElement(BigInteger value)
 		{
-			if (!FieldElement<TField>.TryImport(EncodeInteger(value, TField.ByteLength), out FieldElement<TField> element))
+			if (!TField.TryImport(EncodeInteger(value, TField.ByteLength), out TField element))
 			{
 				throw new ArgumentOutOfRangeException(nameof(value), value, "The value is not below p.");
 			}
 
-			FieldElement<TField>.ToMontgomery(in element, out element);
+			TField.ToMontgomery(in element, out element);
 			return element;
 		}
 
-		private static BigInteger FieldValue(in FieldElement<TField> element)
+		private static BigInteger FieldValue(in TField element)
 		{
-			FieldElement<TField>.FromMontgomery(in element, out FieldElement<TField> plain);
+			TField.FromMontgomery(in element, out TField plain);
 			byte[] bytes = new byte[TField.ByteLength];
-			FieldElement<TField>.Export(in plain, bytes);
+			TField.Export(in plain, bytes);
 			return ModulusCase.Decode(bytes);
 		}
 

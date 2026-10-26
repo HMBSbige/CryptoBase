@@ -172,13 +172,13 @@ public class EcKernelBenchmark
 
 	private sealed class Kernel<TCurve, TField, TOrder> : IKernel
 		where TCurve : struct, IEcCurve
-		where TField : unmanaged, IMontgomeryModulus
+		where TField : unmanaged, IEcField<TField>
 		where TOrder : unmanaged, IMontgomeryModulus
 	{
 		private readonly byte[] _encoded = new byte[EcGroup<TCurve, TField, TOrder>.EncodedLength];
 		private readonly AffinePoint<TField>[] _pointTable;
-		private FieldElement<TField> _fieldLeft;
-		private FieldElement<TField> _fieldRight;
+		private TField _fieldLeft;
+		private TField _fieldRight;
 		private FieldElement<TOrder> _orderLeft;
 		private FieldElement<TOrder> _orderRight;
 		private AffinePoint<TField> _affine;
@@ -208,19 +208,19 @@ public class EcKernelBenchmark
 
 		public void FieldMultiply()
 		{
-			FieldElement<TField>.Multiply(in _fieldLeft, in _fieldRight, out FieldElement<TField> result);
+			TField.Multiply(in _fieldLeft, in _fieldRight, out TField result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public void FieldSquare()
 		{
-			FieldElement<TField>.Square(in _fieldLeft, out FieldElement<TField> result);
+			TField.Square(in _fieldLeft, out TField result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public void FieldInvert()
 		{
-			FieldElement<TField>.Invert(in _fieldLeft, out FieldElement<TField> result);
+			TField.Invert(in _fieldLeft, out TField result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
@@ -310,9 +310,11 @@ public class EcKernelBenchmark
 			return decoded;
 		}
 
-		private static void RandomField(out FieldElement<TField> result)
+		private static void RandomField(out TField result)
 		{
-			FieldElement<TField>.ImportReduced(RandomNumberGenerator.GetBytes(TField.ByteLength), out result);
+			while (!TField.TryImport(RandomNumberGenerator.GetBytes(TField.ByteLength), out result))
+			{
+			}
 		}
 
 		private static void RandomScalar(out FieldElement<TOrder> result)

@@ -235,8 +235,8 @@ public class EcVariableTimeGroupTest
 		foreach (CurvePoint point in points)
 		{
 			BigInteger x = point.X % n;
-			// r = x + R − n makes r + n carry out of the limbs and leave x in them, which would match without the carry; it is below n only where R < 2n.
-			BigInteger wrapped = point.X + curve.R - n;
+			// r = x + R − n, for R the range of the limbs of a scalar, makes r + n carry out of the limbs and leave x in them, which would match without the carry; it is below n only where R < 2n.
+			BigInteger wrapped = point.X + curve.ScalarLimbRange - n;
 
 			foreach (BigInteger r in (BigInteger[])[x, x - 1, x + 1, point.X + p - n, wrapped])
 			{
@@ -272,7 +272,7 @@ public class EcVariableTimeGroupTest
 		{
 			await Assert.That(n < p && p < 2 * n).IsTrue();
 			await Assert.That(above.X < p).IsTrue();
-			await Assert.That(wrapping > 0).IsEqualTo(curve.R < 2 * n);
+			await Assert.That(wrapping > 0).IsEqualTo(curve.ScalarLimbRange < 2 * n);
 			await Assert.That(failures).IsEmpty();
 		}
 	}

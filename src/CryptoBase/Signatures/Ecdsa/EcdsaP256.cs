@@ -19,7 +19,7 @@ namespace CryptoBase.Signatures.Ecdsa;
 /// </remarks>
 public sealed class EcdsaP256 : IEcdsa<EcdsaP256>
 {
-	private EcdsaKey<P256Curve, P256Field, P256Order> _key;
+	private EcdsaKey<P256Curve, P256CurveField, P256Order> _key;
 	private bool _disposed;
 
 	private EcdsaP256() { }
@@ -27,12 +27,12 @@ public sealed class EcdsaP256 : IEcdsa<EcdsaP256>
 	/// <summary>
 	/// Gets the length of the private key, in bytes.
 	/// </summary>
-	public static int PrivateKeyLength => EcdsaKey<P256Curve, P256Field, P256Order>.PrivateKeyLength;
+	public static int PrivateKeyLength => EcdsaKey<P256Curve, P256CurveField, P256Order>.PrivateKeyLength;
 
 	/// <summary>
 	/// Gets the length of the public key in the uncompressed encoding, in bytes.
 	/// </summary>
-	public static int PublicKeyLength => EcdsaKey<P256Curve, P256Field, P256Order>.PublicKeyLength;
+	public static int PublicKeyLength => EcdsaKey<P256Curve, P256CurveField, P256Order>.PublicKeyLength;
 
 	/// <inheritdoc />
 	public bool HasPrivateKey
@@ -50,7 +50,7 @@ public sealed class EcdsaP256 : IEcdsa<EcdsaP256>
 		get
 		{
 			ObjectDisposedException.ThrowIf(_disposed, this);
-			return EcdsaKey<P256Curve, P256Field, P256Order>.GetSubjectPublicKeyInfoLength(AlgorithmIdentifier);
+			return EcdsaKey<P256Curve, P256CurveField, P256Order>.GetSubjectPublicKeyInfoLength(AlgorithmIdentifier);
 		}
 	}
 
@@ -170,14 +170,14 @@ public sealed class EcdsaP256 : IEcdsa<EcdsaP256>
 	public bool Supports(SignatureAlgorithm algorithm)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return EcdsaKey<P256Curve, P256Field, P256Order>.Supports(algorithm);
+		return EcdsaKey<P256Curve, P256CurveField, P256Order>.Supports(algorithm);
 	}
 
 	/// <inheritdoc />
 	public int GetMaxSignatureLength(SignatureAlgorithm algorithm)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return EcdsaKey<P256Curve, P256Field, P256Order>.GetMaxSignatureLength(algorithm);
+		return EcdsaKey<P256Curve, P256CurveField, P256Order>.GetMaxSignatureLength(algorithm);
 	}
 
 	/// <inheritdoc />

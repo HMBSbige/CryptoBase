@@ -3,7 +3,7 @@ namespace CryptoBase.EllipticCurves;
 // Window i holds j·2^(wi)·G for j from 1 to 2^(w − 1), w = GeneratorWindowWidth.
 internal static class EcGeneratorTable<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IMontgomeryModulus
+	where TField : unmanaged, IEcField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	internal static readonly AffinePoint<TField>[] Entries = Build();
@@ -18,7 +18,7 @@ internal static class EcGeneratorTable<TCurve, TField, TOrder>
 		Debug.Assert(WindowLength >= 2);
 
 		JacobianPoint<TField>[] multiples = new JacobianPoint<TField>[WindowCount * WindowLength];
-		AffinePoint<TField> generator = new() { X = FieldElement<TField>.FromLimbs(TCurve.GeneratorX), Y = FieldElement<TField>.FromLimbs(TCurve.GeneratorY) };
+		EcGroup<TCurve, TField, TOrder>.Generator(out AffinePoint<TField> generator);
 		JacobianPoint<TField>.FromAffine(in generator, out JacobianPoint<TField> windowBase);
 
 		for (int i = 0; i < multiples.Length; i += WindowLength)

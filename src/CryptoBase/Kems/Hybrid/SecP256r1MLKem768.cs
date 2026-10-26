@@ -23,25 +23,25 @@ namespace CryptoBase.Kems.Hybrid;
 /// </remarks>
 public sealed class SecP256r1MLKem768 : IKem<SecP256r1MLKem768>
 {
-	private EcMLKemKey<P256Curve, P256Field, P256Order, MLKem768Parameters> _key;
+	private EcMLKemKey<P256Curve, P256CurveField, P256Order, MLKem768Parameters> _key;
 	private bool _disposed;
 
 	private SecP256r1MLKem768() { }
 
 	/// <inheritdoc />
-	public static int EncapsulationKeyLength => EcMLKemKey<P256Curve, P256Field, P256Order, MLKem768Parameters>.EncapsulationKeyLength;
+	public static int EncapsulationKeyLength => EcMLKemKey<P256Curve, P256CurveField, P256Order, MLKem768Parameters>.EncapsulationKeyLength;
 
 	/// <inheritdoc />
-	public static int DecapsulationKeyLength => EcMLKemKey<P256Curve, P256Field, P256Order, MLKem768Parameters>.DecapsulationKeyLength;
+	public static int DecapsulationKeyLength => EcMLKemKey<P256Curve, P256CurveField, P256Order, MLKem768Parameters>.DecapsulationKeyLength;
 
 	/// <inheritdoc />
-	public static int PrivateSeedLength => EcMLKemKey<P256Curve, P256Field, P256Order, MLKem768Parameters>.PrivateSeedLength;
+	public static int PrivateSeedLength => EcMLKemKey<P256Curve, P256CurveField, P256Order, MLKem768Parameters>.PrivateSeedLength;
 
 	/// <inheritdoc />
-	public static int CiphertextLength => EcMLKemKey<P256Curve, P256Field, P256Order, MLKem768Parameters>.CiphertextLength;
+	public static int CiphertextLength => EcMLKemKey<P256Curve, P256CurveField, P256Order, MLKem768Parameters>.CiphertextLength;
 
 	/// <inheritdoc />
-	public static int SharedSecretLength => EcMLKemKey<P256Curve, P256Field, P256Order, MLKem768Parameters>.SharedSecretLength;
+	public static int SharedSecretLength => EcMLKemKey<P256Curve, P256CurveField, P256Order, MLKem768Parameters>.SharedSecretLength;
 
 	/// <inheritdoc />
 	public bool HasPrivateSeed

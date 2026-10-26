@@ -15,19 +15,19 @@ namespace CryptoBase.KeyAgreements.Ecdh;
 /// </remarks>
 public sealed class EcdhP384 : IKeyAgreement<EcdhP384>
 {
-	private EcdhKey<P384Curve, P384Field, P384Order> _key;
+	private EcdhKey<P384Curve, P384CurveField, P384Order> _key;
 	private bool _disposed;
 
 	private EcdhP384() { }
 
 	/// <inheritdoc />
-	public static int PrivateKeyLength => EcdhKey<P384Curve, P384Field, P384Order>.PrivateKeyLength;
+	public static int PrivateKeyLength => EcdhKey<P384Curve, P384CurveField, P384Order>.PrivateKeyLength;
 
 	/// <inheritdoc />
-	public static int PublicKeyLength => EcdhKey<P384Curve, P384Field, P384Order>.PublicKeyLength;
+	public static int PublicKeyLength => EcdhKey<P384Curve, P384CurveField, P384Order>.PublicKeyLength;
 
 	/// <inheritdoc />
-	public static int SharedSecretLength => EcdhKey<P384Curve, P384Field, P384Order>.SharedSecretLength;
+	public static int SharedSecretLength => EcdhKey<P384Curve, P384CurveField, P384Order>.SharedSecretLength;
 
 	/// <inheritdoc />
 	public static EcdhP384 GenerateKey()

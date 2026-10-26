@@ -1,6 +1,6 @@
 namespace CryptoBase.EllipticCurves;
 
-// The curve y² = x³ − 3x + b over the field of p, with a group of prime order n. The constants are elements of that field in Montgomery form, least significant limb first.
+// The curve y² = x³ − 3x + b over the field of p, with a group of prime order n. The constants are plain values below p, least significant limb of 64 bits first, so that they hold for any IEcField of p.
 internal interface IEcCurve
 {
 	static abstract ReadOnlySpan<ulong> B { get; }

@@ -15,19 +15,19 @@ namespace CryptoBase.KeyAgreements.Ecdh;
 /// </remarks>
 public sealed class EcdhP521 : IKeyAgreement<EcdhP521>
 {
-	private EcdhKey<P521Curve, P521Field, P521Order> _key;
+	private EcdhKey<P521Curve, P521CurveField, P521Order> _key;
 	private bool _disposed;
 
 	private EcdhP521() { }
 
 	/// <inheritdoc />
-	public static int PrivateKeyLength => EcdhKey<P521Curve, P521Field, P521Order>.PrivateKeyLength;
+	public static int PrivateKeyLength => EcdhKey<P521Curve, P521CurveField, P521Order>.PrivateKeyLength;
 
 	/// <inheritdoc />
-	public static int PublicKeyLength => EcdhKey<P521Curve, P521Field, P521Order>.PublicKeyLength;
+	public static int PublicKeyLength => EcdhKey<P521Curve, P521CurveField, P521Order>.PublicKeyLength;
 
 	/// <inheritdoc />
-	public static int SharedSecretLength => EcdhKey<P521Curve, P521Field, P521Order>.SharedSecretLength;
+	public static int SharedSecretLength => EcdhKey<P521Curve, P521CurveField, P521Order>.SharedSecretLength;
 
 	/// <inheritdoc />
 	public static EcdhP521 GenerateKey()

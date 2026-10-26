@@ -1,16 +1,11 @@
 namespace CryptoBase.EllipticCurves;
 
 // An odd prime m with R = 2^(64·LimbCount); limbs are least significant first. An implementation must be an inline array of LimbCount ulong values: FieldElement<T> stores its limbs in one.
-internal interface IMontgomeryModulus
+internal interface IMontgomeryModulus : IPrimeModulus
 {
 	static abstract int LimbCount { get; }
 
-	// ⌈BitLength / 8⌉, the length of the big-endian encoding.
-	static abstract int ByteLength { get; }
-
 	static abstract int BitLength { get; }
-
-	static abstract ReadOnlySpan<ulong> Modulus { get; }
 
 	static abstract ReadOnlySpan<ulong> MontgomeryOne { get; }
 

@@ -5,40 +5,21 @@ namespace CryptoBase.EllipticCurves;
 // Scalars are plain values below n. Nothing here branches on or indexes by a point or a scalar, except where a method says that its input is public.
 internal static class EcGroup<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IMontgomeryModulus
+	where TField : unmanaged, IEcField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private const int WindowWidth = 5;
 
 	internal static int EncodedLength => 1 + 2 * TField.ByteLength;
 
-	private static ref readonly FieldElement<TField> B => ref FieldElement<TField>.FromLimbs(TCurve.B);
+	// b in Montgomery form.
+	private static readonly TField B = FromPlain(TCurve.B);
 
-	// For a = −3. Holds for every point: Z = 0 gives Z3 = 0, and no other point has Y = 0, as a curve of odd order has no point of order 2. The result may be the input.
-	[SkipLocalsInit]
+	// Holds for every point. The result may be the input.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Double(in JacobianPoint<TField> value, out JacobianPoint<TField> result)
 	{
-		FieldElement<TField>.Square(in value.Y, out FieldElement<TField> gamma);
-		FieldElement<TField>.Add(in gamma, in gamma, out FieldElement<TField> twoGamma);
-		FieldElement<TField>.Multiply(in value.X, in twoGamma, out FieldElement<TField> fourBeta);
-		FieldElement<TField>.Add(in fourBeta, in fourBeta, out fourBeta);
-		FieldElement<TField>.Square(in value.Z, out FieldElement<TField> delta);
-		FieldElement<TField>.Subtract(in value.X, in delta, out FieldElement<TField> alpha);
-		FieldElement<TField>.Add(in value.X, in delta, out delta);
-		FieldElement<TField>.Multiply(in alpha, in delta, out alpha);
-		FieldElement<TField>.Add(in alpha, in alpha, out delta);
-		FieldElement<TField>.Add(in alpha, in delta, out alpha);
-		FieldElement<TField>.Multiply(in value.Y, in value.Z, out FieldElement<TField> z3);
-		FieldElement<TField>.Add(in z3, in z3, out result.Z);
-		FieldElement<TField>.Square(in alpha, out FieldElement<TField> x3);
-		FieldElement<TField>.Subtract(in x3, in fourBeta, out x3);
-		FieldElement<TField>.Subtract(in x3, in fourBeta, out x3);
-		FieldElement<TField>.Subtract(in fourBeta, in x3, out fourBeta);
-		FieldElement<TField>.Multiply(in alpha, in fourBeta, out alpha);
-		FieldElement<TField>.Square(in twoGamma, out twoGamma);
-		FieldElement<TField>.Add(in twoGamma, in twoGamma, out twoGamma);
-		FieldElement<TField>.Subtract(in alpha, in twoGamma, out result.Y);
-		result.X = x3;
+		TField.Double(in value, out result);
 	}
 
 	// Any two points, equal, opposite or at infinity: masks take the other input where one is at infinity and the double where the points are equal. The result may be either input: it is written only after the last read of the inputs.
@@ -48,8 +29,8 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
 		Double(in left, out JacobianPoint<TField> twice);
 		JacobianPoint<TField>.ConditionalSelect(equal, in twice, in sum, out sum);
-		JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in left.Z), in right, in sum, out sum);
-		JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in right.Z), in left, in sum, out result);
+		JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in left.Z), in right, in sum, out sum);
+		JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in right.Z), in left, in sum, out result);
 	}
 
 	// As above, with an affine right, which cannot be the point at infinity; the left may be.
@@ -59,60 +40,28 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
 		Double(in left, out JacobianPoint<TField> twice);
 		JacobianPoint<TField>.ConditionalSelect(equal, in twice, in sum, out sum);
-		JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in left.Z), in right, in sum, out result);
+		JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in left.Z), in right, in sum, out result);
 	}
 
-	// Sets result to left + right for points that are not the point at infinity, except that equal points give (0, 0, 0); opposite points give Z = 0, the point at infinity. Returns ulong.MaxValue if the points are equal, which is where H = 0 and R = 0, and 0 otherwise. The result may be either input.
-	[SkipLocalsInit]
+	// The contract of IEcField.AddDistinct: for points that are not the point at infinity; equal points give (0, 0, 0) and the mask ulong.MaxValue.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong AddDistinct(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
 	{
-		FieldElement<TField>.Square(in left.Z, out FieldElement<TField> z1z1);
-		FieldElement<TField>.Square(in right.Z, out FieldElement<TField> z2z2);
-		FieldElement<TField>.Multiply(in left.X, in z2z2, out FieldElement<TField> u1);
-		FieldElement<TField>.Multiply(in right.X, in z1z1, out FieldElement<TField> h);
-		FieldElement<TField>.Subtract(in h, in u1, out h);
-		FieldElement<TField>.Multiply(in z2z2, in right.Z, out z2z2);
-		FieldElement<TField>.Multiply(in left.Y, in z2z2, out FieldElement<TField> s1);
-		FieldElement<TField>.Multiply(in z1z1, in left.Z, out z1z1);
-		FieldElement<TField>.Multiply(in right.Y, in z1z1, out FieldElement<TField> r);
-		FieldElement<TField>.Subtract(in r, in s1, out r);
-		FieldElement<TField>.Add(in r, in r, out r);
-		ulong equal = FieldElement<TField>.IsZero(in h) & FieldElement<TField>.IsZero(in r);
-		FieldElement<TField>.Multiply(in left.Z, in right.Z, out FieldElement<TField> z3);
-		FieldElement<TField>.Multiply(in z3, in h, out z3);
-		FieldElement<TField>.Add(in z3, in z3, out result.Z);
-		FieldElement<TField>.Square(in h, out FieldElement<TField> i);
-		FieldElement<TField>.Add(in i, in i, out i);
-		FieldElement<TField>.Add(in i, in i, out i);
-		FieldElement<TField>.Multiply(in h, in i, out FieldElement<TField> j);
-		FieldElement<TField>.Multiply(in u1, in i, out FieldElement<TField> v);
-		FieldElement<TField>.Multiply(in s1, in j, out s1);
-		Combine(in r, in j, in v, in s1, out result.X, out result.Y);
-		return equal;
+		return TField.AddDistinct(in left, in right, out result);
 	}
 
 	// As above, with an affine right.
-	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong AddDistinct(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
 	{
-		FieldElement<TField>.Square(in left.Z, out FieldElement<TField> zz);
-		FieldElement<TField>.Multiply(in right.X, in zz, out FieldElement<TField> h);
-		FieldElement<TField>.Subtract(in h, in left.X, out h);
-		FieldElement<TField>.Multiply(in zz, in left.Z, out zz);
-		FieldElement<TField>.Multiply(in right.Y, in zz, out FieldElement<TField> r);
-		FieldElement<TField>.Subtract(in r, in left.Y, out r);
-		FieldElement<TField>.Add(in r, in r, out r);
-		ulong equal = FieldElement<TField>.IsZero(in h) & FieldElement<TField>.IsZero(in r);
-		FieldElement<TField>.Square(in h, out FieldElement<TField> i);
-		FieldElement<TField>.Add(in i, in i, out i);
-		FieldElement<TField>.Add(in i, in i, out i);
-		FieldElement<TField>.Multiply(in h, in i, out FieldElement<TField> j);
-		FieldElement<TField>.Multiply(in left.X, in i, out FieldElement<TField> v);
-		FieldElement<TField>.Multiply(in left.Y, in j, out FieldElement<TField> yj);
-		FieldElement<TField>.Multiply(in left.Z, in h, out h);
-		FieldElement<TField>.Add(in h, in h, out result.Z);
-		Combine(in r, in j, in v, in yj, out result.X, out result.Y);
-		return equal;
+		return TField.AddDistinct(in left, in right, out result);
+	}
+
+	// G, from the plain coordinates of TCurve.
+	internal static void Generator(out AffinePoint<TField> result)
+	{
+		result.X = FromPlain(TCurve.GeneratorX);
+		result.Y = FromPlain(TCurve.GeneratorY);
 	}
 
 	// Sets result to k·G for k below n. Neither the time nor the addresses depend on k. The Jacobian form of the result depends on k and not only on k·G, so for a secret k use MultiplyBaseToAffine, MultiplyBaseReduceX or MultiplyEncodeExportX, which clear it.
@@ -135,7 +84,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 			window = ref Unsafe.Add(ref window, entries);
 			Select(in window, entries, digits[i], out entry);
 			_ = AddDistinct(in result, in entry, out sum);
-			JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in result.Z), in entry, in sum, out sum);
+			JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in result.Z), in entry, in sum, out sum);
 			JacobianPoint<TField>.ConditionalSelect(ZeroMask((ulong)digits[i]), in result, in sum, out result);
 		}
 
@@ -171,7 +120,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 			if (i is not 0)
 			{
 				_ = AddDistinct(in result, in entry, out sum);
-				JacobianPoint<TField>.ConditionalSelect(FieldElement<TField>.IsZero(in result.Z), in entry, in sum, out sum);
+				JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in result.Z), in entry, in sum, out sum);
 			}
 			else
 			{
@@ -235,7 +184,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	internal static bool TryMultiplyExportX(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> destination)
 	{
 		Multiply(in point, in scalar, out JacobianPoint<TField> product);
-		bool valid = FieldElement<TField>.IsZero(in product.Z) is 0;
+		bool valid = TField.IsZero(in product.Z) is 0;
 
 		if (valid)
 		{
@@ -255,23 +204,23 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		int length = TField.ByteLength;
 		MultiplyBase(in scalar, out JacobianPoint<TField> baseProduct);
 		Multiply(in point, in scalar, out JacobianPoint<TField> product);
-		FieldElement<TField>.Multiply(in baseProduct.Z, in product.Z, out FieldElement<TField> inverse);
-		FieldElement<TField>.Invert(in inverse, out inverse);
-		FieldElement<TField>.Multiply(in inverse, in product.Z, out FieldElement<TField> baseInverse);
-		FieldElement<TField>.Multiply(in inverse, in baseProduct.Z, out inverse);
+		TField.Multiply(in baseProduct.Z, in product.Z, out TField inverse);
+		TField.Invert(in inverse, out inverse);
+		TField.Multiply(in inverse, in product.Z, out TField baseInverse);
+		TField.Multiply(in inverse, in baseProduct.Z, out inverse);
 		// As in ExportX, the powers of Z⁻¹ are taken out of Montgomery form, so that the products with X and Y come out in plain form.
-		FieldElement<TField>.Square(in baseInverse, out FieldElement<TField> power);
-		FieldElement<TField>.FromMontgomery(in power, out power);
-		FieldElement<TField>.Multiply(in baseProduct.X, in power, out FieldElement<TField> coordinate);
+		TField.Square(in baseInverse, out TField power);
+		TField.FromMontgomery(in power, out power);
+		TField.Multiply(in baseProduct.X, in power, out TField coordinate);
 		encoded[0] = 0x04;
-		FieldElement<TField>.Export(in coordinate, encoded.Slice(1, length));
-		FieldElement<TField>.Multiply(in power, in baseInverse, out power);
-		FieldElement<TField>.Multiply(in baseProduct.Y, in power, out coordinate);
-		FieldElement<TField>.Export(in coordinate, encoded.Slice(1 + length, length));
-		FieldElement<TField>.Square(in inverse, out power);
-		FieldElement<TField>.FromMontgomery(in power, out power);
-		FieldElement<TField>.Multiply(in product.X, in power, out coordinate);
-		FieldElement<TField>.Export(in coordinate, x);
+		TField.Export(in coordinate, encoded.Slice(1, length));
+		TField.Multiply(in power, in baseInverse, out power);
+		TField.Multiply(in baseProduct.Y, in power, out coordinate);
+		TField.Export(in coordinate, encoded.Slice(1 + length, length));
+		TField.Square(in inverse, out power);
+		TField.FromMontgomery(in power, out power);
+		TField.Multiply(in product.X, in power, out coordinate);
+		TField.Export(in coordinate, x);
 		baseProduct.ZeroMemory();
 		product.ZeroMemory();
 		inverse.ZeroMemory();
@@ -283,11 +232,11 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	// The point at infinity gives (0, 0), which is not on the curve.
 	internal static void ToAffine(in JacobianPoint<TField> point, out AffinePoint<TField> result)
 	{
-		FieldElement<TField>.Invert(in point.Z, out FieldElement<TField> inverse);
-		FieldElement<TField>.Square(in inverse, out FieldElement<TField> square);
-		FieldElement<TField>.Multiply(in point.X, in square, out result.X);
-		FieldElement<TField>.Multiply(in square, in inverse, out inverse);
-		FieldElement<TField>.Multiply(in point.Y, in inverse, out result.Y);
+		TField.Invert(in point.Z, out TField inverse);
+		TField.Square(in inverse, out TField square);
+		TField.Multiply(in point.X, in square, out result.X);
+		TField.Multiply(in square, in inverse, out inverse);
+		TField.Multiply(in point.Y, in inverse, out result.Y);
 		// With the affine form, Z⁻² or Z⁻³ would give back the Jacobian one.
 		square.ZeroMemory();
 		inverse.ZeroMemory();
@@ -314,26 +263,26 @@ internal static class EcGroup<TCurve, TField, TOrder>
 
 		for (int i = 1; i < points.Length; ++i)
 		{
-			FieldElement<TField>.Multiply(in result[i - 1].X, in points[i].Z, out result[i].X);
+			TField.Multiply(in result[i - 1].X, in points[i].Z, out result[i].X);
 		}
 
-		FieldElement<TField> inverse;
+		TField inverse;
 
 		if (variableTime)
 		{
-			FieldElement<TField>.InvertVariableTime(in result[^1].X, out inverse);
+			TField.InvertVariableTime(in result[^1].X, out inverse);
 		}
 		else
 		{
-			FieldElement<TField>.Invert(in result[^1].X, out inverse);
+			TField.Invert(in result[^1].X, out inverse);
 		}
 
-		Unsafe.SkipInit(out FieldElement<TField> zInverse);
+		Unsafe.SkipInit(out TField zInverse);
 
 		for (int i = points.Length - 1; i > 0; --i)
 		{
-			FieldElement<TField>.Multiply(in inverse, in result[i - 1].X, out zInverse);
-			FieldElement<TField>.Multiply(in inverse, in points[i].Z, out inverse);
+			TField.Multiply(in inverse, in result[i - 1].X, out zInverse);
+			TField.Multiply(in inverse, in points[i].Z, out inverse);
 			Scale(in points[i], in zInverse, out result[i]);
 		}
 
@@ -349,12 +298,12 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	// point must not be the point at infinity.
 	internal static void ExportX(in JacobianPoint<TField> point, Span<byte> destination)
 	{
-		FieldElement<TField>.Invert(in point.Z, out FieldElement<TField> inverse);
-		FieldElement<TField>.Square(in inverse, out inverse);
+		TField.Invert(in point.Z, out TField inverse);
+		TField.Square(in inverse, out inverse);
 		// The square is Z⁻²R; with R taken off, the product with X comes out in plain form.
-		FieldElement<TField>.FromMontgomery(in inverse, out inverse);
-		FieldElement<TField>.Multiply(in point.X, in inverse, out FieldElement<TField> x);
-		FieldElement<TField>.Export(in x, destination);
+		TField.FromMontgomery(in inverse, out inverse);
+		TField.Multiply(in point.X, in inverse, out TField x);
+		TField.Export(in x, destination);
 		x.ZeroMemory();
 		inverse.ZeroMemory();
 	}
@@ -376,10 +325,10 @@ internal static class EcGroup<TCurve, TField, TOrder>
 
 		int length = TField.ByteLength;
 		destination[0] = 0x04;
-		FieldElement<TField>.FromMontgomery(in point.X, out FieldElement<TField> coordinate);
-		FieldElement<TField>.Export(in coordinate, destination.Slice(1, length));
-		FieldElement<TField>.FromMontgomery(in point.Y, out coordinate);
-		FieldElement<TField>.Export(in coordinate, destination.Slice(1 + length, length));
+		TField.FromMontgomery(in point.X, out TField coordinate);
+		TField.Export(in coordinate, destination.Slice(1, length));
+		TField.FromMontgomery(in point.Y, out coordinate);
+		TField.Export(in coordinate, destination.Slice(1 + length, length));
 	}
 
 	// The cofactor is 1, so every point on the curve is in the group of G. The input is public, so the checks may branch.
@@ -389,15 +338,15 @@ internal static class EcGroup<TCurve, TField, TOrder>
 
 		if (source.Length != 1 + 2 * length
 			|| source[0] is not 0x04
-			|| !FieldElement<TField>.TryImport(source.Slice(1, length), out FieldElement<TField> x)
-			|| !FieldElement<TField>.TryImport(source.Slice(1 + length, length), out FieldElement<TField> y))
+			|| !TField.TryImport(source.Slice(1, length), out TField x)
+			|| !TField.TryImport(source.Slice(1 + length, length), out TField y))
 		{
 			result = default;
 			return false;
 		}
 
-		FieldElement<TField>.ToMontgomery(in x, out result.X);
-		FieldElement<TField>.ToMontgomery(in y, out result.Y);
+		TField.ToMontgomery(in x, out result.X);
+		TField.ToMontgomery(in y, out result.Y);
 
 		if (!IsOnCurve(in result))
 		{
@@ -410,13 +359,14 @@ internal static class EcGroup<TCurve, TField, TOrder>
 
 	private static bool IsOnCurve(in AffinePoint<TField> point)
 	{
-		FieldElement<TField>.Square(in point.X, out FieldElement<TField> right);
-		FieldElement<TField>.Multiply(in right, in point.X, out right);
-		FieldElement<TField>.MultiplySmall(in point.X, 3, out FieldElement<TField> threeX);
-		FieldElement<TField>.Subtract(in right, in threeX, out right);
-		FieldElement<TField>.Add(in right, in B, out right);
-		FieldElement<TField>.Square(in point.Y, out FieldElement<TField> left);
-		return FieldElement<TField>.AreEqual(in left, in right) is not 0;
+		TField.Square(in point.X, out TField right);
+		TField.Multiply(in right, in point.X, out right);
+		TField.Subtract(in right, in point.X, out right);
+		TField.Subtract(in right, in point.X, out right);
+		TField.Subtract(in right, in point.X, out right);
+		TField.Add(in right, in B, out right);
+		TField.Square(in point.Y, out TField left);
+		return TField.AreEqual(in left, in right) is not 0;
 	}
 
 	// The digit beyond ⌊N/w⌋, N = TOrder.BitLength, holds the top N mod w bits, if any, and the carry into them.
@@ -460,31 +410,26 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	}
 
 	// Sets result to (X·Z⁻², Y·Z⁻³) from zInverse = Z⁻¹.
-	private static void Scale(in JacobianPoint<TField> point, in FieldElement<TField> zInverse, out AffinePoint<TField> result)
+	private static void Scale(in JacobianPoint<TField> point, in TField zInverse, out AffinePoint<TField> result)
 	{
-		FieldElement<TField>.Square(in zInverse, out FieldElement<TField> power);
-		FieldElement<TField>.Multiply(in point.X, in power, out result.X);
-		FieldElement<TField>.Multiply(in power, in zInverse, out power);
-		FieldElement<TField>.Multiply(in point.Y, in power, out result.Y);
+		TField.Square(in zInverse, out TField power);
+		TField.Multiply(in point.X, in power, out result.X);
+		TField.Multiply(in power, in zInverse, out power);
+		TField.Multiply(in point.Y, in power, out result.Y);
 	}
 
-	[SkipLocalsInit]
-	private static void Combine(in FieldElement<TField> r, in FieldElement<TField> j, in FieldElement<TField> v, in FieldElement<TField> sj, out FieldElement<TField> x, out FieldElement<TField> y)
+	// The element of a plain value below p, in Montgomery form.
+	private static TField FromPlain(ReadOnlySpan<ulong> limbs)
 	{
-		FieldElement<TField>.Square(in r, out FieldElement<TField> x3);
-		FieldElement<TField>.Subtract(in x3, in j, out x3);
-		FieldElement<TField>.Subtract(in x3, in v, out x3);
-		FieldElement<TField>.Subtract(in x3, in v, out x3);
-		FieldElement<TField>.Subtract(in v, in x3, out FieldElement<TField> y3);
-		FieldElement<TField>.Multiply(in r, in y3, out y3);
-		FieldElement<TField>.Subtract(in y3, in sj, out y3);
-		FieldElement<TField>.Subtract(in y3, in sj, out y);
-		x = x3;
+		TField.FromLimbs(limbs, out TField value);
+		TField.ToMontgomery(in value, out value);
+		return value;
 	}
 
-	private static void ConditionalNegate(ulong mask, ref FieldElement<TField> value)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ConditionalNegate(ulong mask, ref TField value)
 	{
-		FieldElement<TField>.Negate(in value, out FieldElement<TField> negated);
-		FieldElement<TField>.ConditionalSelect(mask, in negated, in value, out value);
+		TField.Negate(in value, out TField negated);
+		TField.ConditionalSelect(mask, in negated, in value, out value);
 	}
 }

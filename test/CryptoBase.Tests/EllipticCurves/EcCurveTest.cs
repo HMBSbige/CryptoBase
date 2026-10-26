@@ -1,5 +1,6 @@
 using CryptoBase.EllipticCurves;
-using System.Numerics;
+using CryptoBase.Signatures.Ecdsa;
+using System.Reflection;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
@@ -11,6 +12,15 @@ public class EcCurveTest
 		Type[] curves = [.. typeof(IEcCurve).Assembly.GetTypes().Where(static type => type.GetInterfaces().Contains(typeof(IEcCurve)))];
 
 		await Assert.That(CurveCase.All().Select(static curve => curve.CurveType)).IsEquivalentTo(curves);
+	}
+
+	// The cases name their fields themselves, so this keeps them on the fields that CurveFields.cs picks.
+	[Test]
+	public async Task CasesUseTheFieldsOfTheLibrary()
+	{
+		Type[] fields = [.. new[] { typeof(EcdsaP256), typeof(EcdsaP384), typeof(EcdsaP521) }.Select(static type => type.GetField("_key", BindingFlags.NonPublic | BindingFlags.Instance)!.FieldType.GetGenericArguments()[1])];
+
+		await Assert.That(CurveCase.All().Select(static curve => curve.FieldType)).IsEquivalentTo(fields);
 	}
 
 	[Test]
@@ -32,16 +42,15 @@ public class EcCurveTest
 
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
-	public async Task ConstantsAreTheCurveParametersInMontgomeryForm(CurveCase curve)
+	public async Task ConstantsAreTheCurveParameters(CurveCase curve)
 	{
 		EcReference reference = curve.Reference;
-		BigInteger r = curve.R;
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(curve.StoredB).IsEqualTo(reference.B * r % reference.P);
-			await Assert.That(curve.StoredGeneratorX).IsEqualTo(reference.Generator.X * r % reference.P);
-			await Assert.That(curve.StoredGeneratorY).IsEqualTo(reference.Generator.Y * r % reference.P);
+			await Assert.That(curve.StoredB).IsEqualTo(reference.B);
+			await Assert.That(curve.StoredGeneratorX).IsEqualTo(reference.Generator.X);
+			await Assert.That(curve.StoredGeneratorY).IsEqualTo(reference.Generator.Y);
 		}
 	}
 

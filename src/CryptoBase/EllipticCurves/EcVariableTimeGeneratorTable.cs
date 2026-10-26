@@ -3,7 +3,7 @@ namespace CryptoBase.EllipticCurves;
 // The odd multiples G, 3G, …, (2^(w − 1) − 1)·G for the NAF of width w = Width.
 internal static class EcVariableTimeGeneratorTable<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IMontgomeryModulus
+	where TField : unmanaged, IEcField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	internal const int Width = 8;
@@ -14,7 +14,7 @@ internal static class EcVariableTimeGeneratorTable<TCurve, TField, TOrder>
 	private static AffinePoint<TField>[] Build()
 	{
 		JacobianPoint<TField>[] multiples = new JacobianPoint<TField>[1 << Width - 2];
-		AffinePoint<TField> generator = new() { X = FieldElement<TField>.FromLimbs(TCurve.GeneratorX), Y = FieldElement<TField>.FromLimbs(TCurve.GeneratorY) };
+		EcGroup<TCurve, TField, TOrder>.Generator(out AffinePoint<TField> generator);
 		JacobianPoint<TField>.FromAffine(in generator, out multiples[0]);
 		EcGroup<TCurve, TField, TOrder>.Double(in multiples[0], out JacobianPoint<TField> twice);
 

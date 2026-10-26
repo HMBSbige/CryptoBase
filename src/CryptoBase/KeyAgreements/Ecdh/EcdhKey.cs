@@ -5,7 +5,7 @@ namespace CryptoBase.KeyAgreements.Ecdh;
 // As with EcKey, keep a key in one writable location and do not copy it.
 internal struct EcdhKey<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IMontgomeryModulus
+	where TField : unmanaged, IEcField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private EcKey<TCurve, TField, TOrder> _key;

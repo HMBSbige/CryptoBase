@@ -3,7 +3,7 @@ namespace CryptoBase.EllipticCurves;
 // For a public point Q. The N = TOrder.BitLength bits of a scalar split into PartCount parts of L = PartLength bits, and part c holds the odd multiples B, 3B, …, (2^(w − 1) − 1)·B of B = 2^(cL)·Q for the NAF of width w = Width, so that a product with Q takes L doublings instead of N.
 internal static class EcVariableTimePointTable<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IMontgomeryModulus
+	where TField : unmanaged, IEcField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	internal const int Width = 5;

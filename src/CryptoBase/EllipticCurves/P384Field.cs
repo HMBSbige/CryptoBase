@@ -4,7 +4,7 @@ namespace CryptoBase.EllipticCurves;
 
 // p = 2^384 - 2^128 - 2^96 + 2^32 - 1.
 [InlineArray(6)]
-internal struct P384Field : IMontgomeryModulus
+internal struct P384Field : ISaturatedField<P384Field>
 {
 	private ulong _limb;
 

@@ -4,7 +4,7 @@ namespace CryptoBase.EllipticCurves;
 
 // p = 2^521 - 1.
 [InlineArray(9)]
-internal struct P521Field : IMontgomeryModulus
+internal struct P521Field : ISaturatedField<P521Field>
 {
 	private ulong _limb;
 

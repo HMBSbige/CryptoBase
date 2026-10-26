@@ -5,7 +5,7 @@ namespace CryptoBase.EllipticCurves;
 // For a = −3. The time, the branches and the table indices depend on the scalars and the points, so every input must be public: nothing that holds a secret may call it.
 internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IMontgomeryModulus
+	where TField : unmanaged, IEcField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private const int PointWidth = 5;
@@ -37,7 +37,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 				if (digit < 0)
 				{
-					FieldElement<TField>.Negate(in entry.Y, out entry.Y);
+					TField.Negate(in entry.Y, out entry.Y);
 				}
 
 				Add(in result, in entry, out result);
@@ -51,7 +51,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 				if (digit < 0)
 				{
-					FieldElement<TField>.Negate(in entry.Y, out entry.Y);
+					TField.Negate(in entry.Y, out entry.Y);
 				}
 
 				Add(in result, in entry, out result);
@@ -97,7 +97,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 					if (digit < 0)
 					{
-						FieldElement<TField>.Negate(in entry.Y, out entry.Y);
+						TField.Negate(in entry.Y, out entry.Y);
 					}
 
 					Add(in result, in entry, out result);
@@ -126,7 +126,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 				if (digit < 0)
 				{
-					FieldElement<TField>.Negate(in entry.Y, out entry.Y);
+					TField.Negate(in entry.Y, out entry.Y);
 				}
 
 				Add(in result, in entry, out result);
@@ -158,7 +158,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 	[SkipLocalsInit]
 	internal static bool XModOrderEquals(in JacobianPoint<TField> point, in FieldElement<TOrder> r)
 	{
-		Debug.Assert(TField.LimbCount == TOrder.LimbCount);
+		Debug.Assert(TField.Modulus.Length == TOrder.LimbCount);
 
 		if (point.IsInfinity)
 		{
@@ -166,17 +166,18 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		}
 
 		// The Montgomery Z² times a plain t is the plain t·Z², to compare with the plain X.
-		FieldElement<TField>.Square(in point.Z, out FieldElement<TField> zz);
-		FieldElement<TField>.FromMontgomery(in point.X, out FieldElement<TField> x);
+		TField.Square(in point.Z, out TField zz);
+		TField.FromMontgomery(in point.X, out TField x);
 		ReadOnlySpan<ulong> candidate = FieldElement<TOrder>.GetLimbs(in r);
-		FieldElement<TField>.Multiply(in zz, in FieldElement<TField>.FromLimbs(candidate), out FieldElement<TField> product);
+		TField.FromLimbs(candidate, out TField t);
+		TField.Multiply(in zz, in t, out TField product);
 
-		if (FieldElement<TField>.AreEqual(in x, in product) is not 0)
+		if (TField.AreEqual(in x, in product) is not 0)
 		{
 			return true;
 		}
 
-		int count = TField.LimbCount;
+		int count = TOrder.LimbCount;
 		Span<ulong> sum = stackalloc ulong[count];
 		Span<ulong> difference = stackalloc ulong[count];
 		ulong carry = AddLimbs(ref MemoryMarshal.GetReference(candidate), ref MemoryMarshal.GetReference(TOrder.Modulus), ulong.MaxValue, ref MemoryMarshal.GetReference(sum), count);
@@ -186,8 +187,9 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 			return false;
 		}
 
-		FieldElement<TField>.Multiply(in zz, in FieldElement<TField>.FromLimbs(sum), out product);
-		return FieldElement<TField>.AreEqual(in x, in product) is not 0;
+		TField.FromLimbs(sum, out t);
+		TField.Multiply(in zz, in t, out product);
+		return TField.AreEqual(in x, in product) is not 0;
 	}
 
 	// The result may be left.

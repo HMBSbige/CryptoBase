@@ -6,7 +6,7 @@ namespace CryptoBase.Kems.Hybrid;
 // As with EcKey and MLKemKey, keep a key in one writable location and do not copy it.
 internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IMontgomeryModulus
+	where TField : unmanaged, IEcField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 	where TParameters : struct, IMLKemParameters
 {
