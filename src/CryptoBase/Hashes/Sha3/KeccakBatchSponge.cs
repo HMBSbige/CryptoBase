@@ -3,8 +3,9 @@ namespace CryptoBase.Hashes.Sha3;
 // Up to eight sponges with one rate that absorb equal-length inputs and squeeze in lockstep, permuted together by an interleaved kernel, for the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from. The Count inputs or outputs of a call lie back to back in one buffer, each a Count-th of its length.
 internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 {
-	// The length of the prefix that the seeded Reset takes.
-	internal const int SeedLength = 32;
+	// The lengths of the prefix that the seeded Reset takes.
+	internal const int ShortPrefixLength = 32;
+	internal const int LongPrefixLength = 64;
 
 	private const byte LastPaddingBit = 0x80;
 
@@ -52,19 +53,35 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		Reset(streams, KeccakP1600Batch.ChooseLanes(streams + guests), prefix, suffixes, suffixLength, domainSeparator);
 	}
 
-	// Rows 0 to 3 take the prefix and row 4 each suffix with the domain separator. The free lanes are filled too, as for Pad.
+	// The prefix takes rows 0 to 3, or 0 to 7 when it is 64 bytes long, and the next row each suffix with the domain separator. The free lanes are filled too, as for Pad.
 	[SkipLocalsInit]
 	internal void Reset(int streams, int lanes, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator)
 	{
-		const int SuffixRow = SeedLength / sizeof(ulong);
+		Debug.Assert(prefix.Length is ShortPrefixLength or LongPrefixLength);
+
+		if (prefix.Length is LongPrefixLength)
+		{
+			Reset(streams, lanes, prefix, suffixes, suffixLength, domainSeparator, LongPrefixLength / sizeof(ulong));
+		}
+		else
+		{
+			Reset(streams, lanes, prefix, suffixes, suffixLength, domainSeparator, ShortPrefixLength / sizeof(ulong));
+		}
+	}
+
+	// Inlined into each branch above, so that suffixRowIndex is a constant.
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void Reset(int streams, int lanes, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator, int suffixRowIndex)
+	{
 		int lastRow = TRate.RateInBytes / sizeof(ulong) - 1;
 
 		Debug.Assert(streams > 0);
 		Debug.Assert(lanes is 1 or 2 or 4 or 8);
-		Debug.Assert(prefix.Length is SeedLength);
+		Debug.Assert(prefix.Length == suffixRowIndex * sizeof(ulong));
 		Debug.Assert(suffixLength is 1 or 2);
 		Debug.Assert(domainSeparator is not 0 and < LastPaddingBit);
-		Debug.Assert(SuffixRow < lastRow);
+		Debug.Assert(suffixRowIndex < lastRow);
 
 		int count = Math.Min(streams, lanes);
 		Debug.Assert(suffixes.Length >= count);
@@ -76,7 +93,15 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		FillRow(ref Unsafe.Add(ref state, 2 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 16)));
 		FillRow(ref Unsafe.Add(ref state, 3 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 24)));
 
-		ref ulong suffixRow = ref Unsafe.Add(ref state, SuffixRow * lanes);
+		if (suffixRowIndex > ShortPrefixLength / sizeof(ulong))
+		{
+			FillRow(ref Unsafe.Add(ref state, 4 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 32)));
+			FillRow(ref Unsafe.Add(ref state, 5 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 40)));
+			FillRow(ref Unsafe.Add(ref state, 6 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 48)));
+			FillRow(ref Unsafe.Add(ref state, 7 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 56)));
+		}
+
+		ref ulong suffixRow = ref Unsafe.Add(ref state, suffixRowIndex * lanes);
 		ref ushort suffix = ref MemoryMarshal.GetReference(suffixes);
 		ulong padding = (ulong)domainSeparator << 8 * suffixLength;
 		FillRow(ref suffixRow, lanes, padding);
@@ -88,7 +113,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 			Unsafe.Add(ref suffixRow, j) = Unsafe.Add(ref suffix, j) | padding;
 		}
 
-		MemoryMarshal.CreateSpan(ref Unsafe.Add(ref state, (SuffixRow + 1) * lanes), (lastRow - SuffixRow - 1) * lanes).Clear();
+		MemoryMarshal.CreateSpan(ref Unsafe.Add(ref state, (suffixRowIndex + 1) * lanes), (lastRow - suffixRowIndex - 1) * lanes).Clear();
 		FillRow(ref Unsafe.Add(ref state, lastRow * lanes), lanes, (ulong)LastPaddingBit << 56);
 		MemoryMarshal.CreateSpan(ref Unsafe.Add(ref state, (lastRow + 1) * lanes), (KeccakP1600Constants.LaneCount - lastRow - 1) * lanes).Clear();
 

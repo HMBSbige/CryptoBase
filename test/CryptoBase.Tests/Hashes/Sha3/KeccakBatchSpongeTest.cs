@@ -12,6 +12,8 @@ public class KeccakBatchSpongeTest
 	// Stream counts for which KeccakP1600Batch chooses each kernel width, alone and after full groups.
 	private static readonly int[] ChosenStreamCounts = [1, 3, 5, 9, 11, 30];
 
+	private static readonly int[] PrefixLengths = [KeccakBatchSponge<KeccakRate168>.ShortPrefixLength, KeccakBatchSponge<KeccakRate168>.LongPrefixLength];
+
 	public static IEnumerable<int> Rates => [72, 104, 136, 144, 168];
 
 	// Each forces one kernel for every group.
@@ -118,32 +120,35 @@ public class KeccakBatchSpongeTest
 		GuardPageBuffer.SkipUnlessSupported();
 		Sha3TestUtils.SkipUnlessKernelSupported(lanes);
 
-		using GuardPageBuffer prefix = new(KeccakBatchSponge<KeccakRate168>.SeedLength);
-		CreateDeterministicSource(prefix.Span.Length).CopyTo(prefix.Span);
-
-		for (int streams = 1; streams <= lanes; ++streams)
+		foreach (int prefixLength in PrefixLengths)
 		{
-			foreach (int suffixLength in (int[])[1, 2])
+			using GuardPageBuffer prefix = new(prefixLength);
+			CreateDeterministicSource(prefixLength).CopyTo(prefix.Span);
+
+			for (int streams = 1; streams <= lanes; ++streams)
 			{
-				using GuardPageBuffer suffixBuffer = new(streams * sizeof(ushort));
-				Span<ushort> suffixes = MemoryMarshal.Cast<byte, ushort>(suffixBuffer.Span);
-				ushort[] values = Suffixes(streams, suffixLength);
-				values.CopyTo(suffixes);
-
-				KeccakBatchSponge<KeccakRate168> batch = default;
-				batch.Reset(streams, lanes, prefix.Span, suffixes, suffixLength, KeccakReference.ShakeDomainSeparator);
-				byte[] actual = new byte[streams * KeccakRate168.RateInBytes];
-				batch.Squeeze(actual);
-
-				byte[] expected = new byte[actual.Length];
-
-				for (int j = 0; j < streams; ++j)
+				foreach (int suffixLength in (int[])[1, 2])
 				{
-					KeccakSponge<KeccakRate168> sponge = Sha3TestUtils.AbsorbAndPad<KeccakRate168>(SeededInput(prefix.Span, values[j], suffixLength), KeccakReference.ShakeDomainSeparator);
-					sponge.Squeeze(expected.AsSpan(j * KeccakRate168.RateInBytes, KeccakRate168.RateInBytes));
-				}
+					using GuardPageBuffer suffixBuffer = new(streams * sizeof(ushort));
+					Span<ushort> suffixes = MemoryMarshal.Cast<byte, ushort>(suffixBuffer.Span);
+					ushort[] values = Suffixes(streams, suffixLength);
+					values.CopyTo(suffixes);
 
-				await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"{streams} streams with {suffixLength}-byte suffixes");
+					KeccakBatchSponge<KeccakRate168> batch = default;
+					batch.Reset(streams, lanes, prefix.Span, suffixes, suffixLength, KeccakReference.ShakeDomainSeparator);
+					byte[] actual = new byte[streams * KeccakRate168.RateInBytes];
+					batch.Squeeze(actual);
+
+					byte[] expected = new byte[actual.Length];
+
+					for (int j = 0; j < streams; ++j)
+					{
+						KeccakSponge<KeccakRate168> sponge = Sha3TestUtils.AbsorbAndPad<KeccakRate168>(SeededInput(prefix.Span, values[j], suffixLength), KeccakReference.ShakeDomainSeparator);
+						sponge.Squeeze(expected.AsSpan(j * KeccakRate168.RateInBytes, KeccakRate168.RateInBytes));
+					}
+
+					await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"{prefixLength}-byte prefix, {streams} streams with {suffixLength}-byte suffixes");
+				}
 			}
 		}
 	}
@@ -260,61 +265,66 @@ public class KeccakBatchSpongeTest
 	private static async Task VerifySeeded<TRate>(byte domainSeparator, int lanes) where TRate : IKeccakRate
 	{
 		int rate = TRate.RateInBytes;
-		byte[] prefix = CreateDeterministicSource(KeccakBatchSponge<TRate>.SeedLength);
 		int[] squeezeLengths = [3 * rate, 7, rate + 1];
 		int extractedLength = rate + 5;
 		int outputLength = squeezeLengths.Sum() + extractedLength;
 		int[] guestCounts = lanes is 0 ? [0, 1, 2] : [0];
 
-		foreach (int suffixLength in (int[])[1, 2])
+		// The suffix needs a row of its own before the last row of the rate.
+		foreach (int prefixLength in PrefixLengths.Where(length => length < rate - sizeof(ulong)))
 		{
-			foreach (int streams in StreamCounts)
+			byte[] prefix = CreateDeterministicSource(prefixLength);
+
+			foreach (int suffixLength in (int[])[1, 2])
 			{
-				ushort[] suffixes = Suffixes(streams, suffixLength);
-				byte[][] expected = new byte[streams][];
-
-				for (int j = 0; j < streams; ++j)
+				foreach (int streams in StreamCounts)
 				{
-					expected[j] = Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(SeededInput(prefix, suffixes[j], suffixLength), domainSeparator, outputLength);
-				}
+					ushort[] suffixes = Suffixes(streams, suffixLength);
+					byte[][] expected = new byte[streams][];
 
-				foreach (int guests in guestCounts)
-				{
-					byte[][] actual = new byte[streams][];
-
-					for (int first = 0; first < streams;)
+					for (int j = 0; j < streams; ++j)
 					{
-						KeccakBatchSponge<TRate> batch = default;
-
-						if (lanes is 0)
-						{
-							KeccakBatchSponge<TRate> unseeded = default;
-							unseeded.ResetWithGuests(streams - first, guests);
-							batch.ResetWithGuests(streams - first, guests, prefix, suffixes.AsSpan(first), suffixLength, domainSeparator);
-
-							using (Assert.Multiple())
-							{
-								await Assert.That(batch.Count).IsEqualTo(unseeded.Count);
-								await Assert.That(batch.FreeLanes).IsEqualTo(unseeded.FreeLanes);
-							}
-						}
-						else
-						{
-							batch.Reset(streams - first, lanes, prefix, suffixes.AsSpan(first), suffixLength, domainSeparator);
-						}
-
-						await Assert.That(batch.IsSqueezing).IsTrue();
-
-						int count = batch.Count;
-						SqueezeGroup(ref batch, actual.AsSpan(first, count), squeezeLengths, outputLength);
-						first += count;
+						expected[j] = Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(SeededInput(prefix, suffixes[j], suffixLength), domainSeparator, outputLength);
 					}
 
-					using (Assert.Multiple())
+					foreach (int guests in guestCounts)
 					{
-						for (int j = 0; j < streams; ++j)
+						byte[][] actual = new byte[streams][];
+
+						for (int first = 0; first < streams;)
 						{
-							await Assert.That(actual[j]).IsEquivalentTo(expected[j], CollectionOrdering.Matching).Because($"stream {j} of {streams} with {suffixLength}-byte suffixes and {guests} guests");
+							KeccakBatchSponge<TRate> batch = default;
+
+							if (lanes is 0)
+							{
+								KeccakBatchSponge<TRate> unseeded = default;
+								unseeded.ResetWithGuests(streams - first, guests);
+								batch.ResetWithGuests(streams - first, guests, prefix, suffixes.AsSpan(first), suffixLength, domainSeparator);
+
+								using (Assert.Multiple())
+								{
+									await Assert.That(batch.Count).IsEqualTo(unseeded.Count);
+									await Assert.That(batch.FreeLanes).IsEqualTo(unseeded.FreeLanes);
+								}
+							}
+							else
+							{
+								batch.Reset(streams - first, lanes, prefix, suffixes.AsSpan(first), suffixLength, domainSeparator);
+							}
+
+							await Assert.That(batch.IsSqueezing).IsTrue();
+
+							int count = batch.Count;
+							SqueezeGroup(ref batch, actual.AsSpan(first, count), squeezeLengths, outputLength);
+							first += count;
+						}
+
+						using (Assert.Multiple())
+						{
+							for (int j = 0; j < streams; ++j)
+							{
+								await Assert.That(actual[j]).IsEquivalentTo(expected[j], CollectionOrdering.Matching).Because($"stream {j} of {streams} with a {prefix.Length}-byte prefix, {suffixLength}-byte suffixes and {guests} guests");
+							}
 						}
 					}
 				}
