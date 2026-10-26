@@ -43,19 +43,39 @@ internal partial struct P256Field52 : IEcField<P256Field52>
 	// 2^520 mod p in 64-bit limbs: the numerator for SafeGcd, which then takes aR to R²/(aR) = a⁻¹R.
 	private static ReadOnlySpan<ulong> InverseNumerator => [0x0000000000000300, 0xFFFFFBFFFFFFFF00, 0xFFFFFFFFFFFFFEFF, 0x000004FFFFFFFDFF];
 
+	// The canonical value in four 64-bit limbs, so that an affine point fills 64 bytes.
+	public static int PackedLength => 4;
+
 	public static void FromLimbs(ReadOnlySpan<ulong> limbs, out P256Field52 result)
 	{
 		Debug.Assert(limbs.Length is 4);
 
-		ulong w0 = limbs[0];
-		ulong w1 = limbs[1];
-		ulong w2 = limbs[2];
-		ulong w3 = limbs[3];
-		result.L0 = w0 & Mask;
-		result.L1 = (w0 >> 52 | w1 << 12) & Mask;
-		result.L2 = (w1 >> 40 | w2 << 24) & Mask;
-		result.L3 = (w2 >> 28 | w3 << 36) & Mask;
-		result.L4 = w3 >> 16;
+		FromLimbs(limbs[0], limbs[1], limbs[2], limbs[3], out result);
+	}
+
+	public static void Pack(in AffinePoint<P256Field52> point, Span<ulong> destination)
+	{
+		ToSaturated(in point.X, out FieldElement<P256Field> x);
+		ToSaturated(in point.Y, out FieldElement<P256Field> y);
+		FieldElement<P256Field>.GetLimbs(in x).CopyTo(destination);
+		FieldElement<P256Field>.GetLimbs(in y).CopyTo(destination.Slice(PackedLength));
+	}
+
+	// The packed Y overlaps the unpacked X, so all eight limbs are read first.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Unpack(ref AffinePoint<P256Field52> point)
+	{
+		ref ulong limbs = ref Unsafe.As<AffinePoint<P256Field52>, ulong>(ref point);
+		ulong x0 = limbs;
+		ulong x1 = Unsafe.Add(ref limbs, 1);
+		ulong x2 = Unsafe.Add(ref limbs, 2);
+		ulong x3 = Unsafe.Add(ref limbs, 3);
+		ulong y0 = Unsafe.Add(ref limbs, 4);
+		ulong y1 = Unsafe.Add(ref limbs, 5);
+		ulong y2 = Unsafe.Add(ref limbs, 6);
+		ulong y3 = Unsafe.Add(ref limbs, 7);
+		FromLimbs(x0, x1, x2, x3, out point.X);
+		FromLimbs(y0, y1, y2, y3, out point.Y);
 	}
 
 	public static bool TryImport(ReadOnlySpan<byte> source, out P256Field52 result)
@@ -91,7 +111,7 @@ internal partial struct P256Field52 : IEcField<P256Field52>
 	}
 
 	// With a = x_i·2^6 and b = y_j·2^6, a·b = x_i·y_j·2^12 < 2^124 splits at bit 52 of x_i·y_j: the high word is x_i·y_j >> 52 and the low word is (x_i·y_j mod 2^52)·2^12. The column sums of these halves stay below 2^63, so they need no carries before Reduce.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(in P256Field52 left, in P256Field52 right, out P256Field52 result)
 	{
 		ulong a0 = left.L0 << 6;
@@ -117,7 +137,7 @@ internal partial struct P256Field52 : IEcField<P256Field52>
 	}
 
 	// As Multiply with right = value. The cross products take d = x_i·2^7 for 2·x_i·x_j.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Square(in P256Field52 value, out P256Field52 result)
 	{
 		ulong a0 = value.L0 << 6;
@@ -255,6 +275,17 @@ internal partial struct P256Field52 : IEcField<P256Field52>
 		Unsafe.Add(ref limbs, 2) = l2 >> 24 | l3 << 28;
 		Unsafe.Add(ref limbs, 3) = l3 >> 36 | l4 << 16;
 		t.ZeroMemory();
+	}
+
+	// The value of four 64-bit limbs below p.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void FromLimbs(ulong w0, ulong w1, ulong w2, ulong w3, out P256Field52 result)
+	{
+		result.L0 = w0 & Mask;
+		result.L1 = (w0 >> 52 | w1 << 12) & Mask;
+		result.L2 = (w1 >> 40 | w2 << 24) & Mask;
+		result.L3 = (w2 >> 28 | w3 << 36) & Mask;
+		result.L4 = w3 >> 16;
 	}
 
 	// Five Montgomery rounds on t = Σ t_k·2^(52k). As p ≡ −1 (mod 2^52), round k takes q = t_k mod 2^52 and adds q·p = q·(p + 1) − q: the −q clears limb k, leaving its carry, and Spread adds q·(p + 1) to the limbs above. Limbs 5 to 9, carried, are the result. Limbs 0 to 3 of t never go negative, limbs 4 to 9 may, so their carries shift arithmetically; for inputs below 2^56 every limb stays below 2^63 in magnitude. The result is (t + Q·p)/2^260 for some 0 ≤ Q < 2^260, so non-negative and below t/2^260 + p, with limbs 0 to 3 below 2^52.

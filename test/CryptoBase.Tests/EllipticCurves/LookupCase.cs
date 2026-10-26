@@ -1,6 +1,7 @@
 using CryptoBase.EllipticCurves;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
@@ -8,7 +9,9 @@ public abstract class LookupCase
 {
 	public static IEnumerable<LookupCase> All()
 	{
-		return Widths<AffinePoint<P256Field52>>()
+		// Vector512<ulong> stands for a 64-byte entry of the packed P-256 generator table.
+		return Widths<Vector512<ulong>>()
+			.Concat(Widths<AffinePoint<P256Field52>>())
 			.Concat(Widths<AffinePoint<P384Field56>>())
 			.Concat(Widths<AffinePoint<P521Field58>>())
 			.Concat(Widths<JacobianPoint<P256Field52>>())

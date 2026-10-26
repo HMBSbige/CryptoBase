@@ -25,6 +25,12 @@ internal readonly struct LimbVector128(Vector128<ulong> value) : ILimbVector<Lim
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static LimbVector128 operator |(LimbVector128 left, LimbVector128 right)
+	{
+		return new LimbVector128(left._value | right._value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static LimbVector128 MergeWhereEqual(LimbVector128 accumulator, LimbVector128 position, LimbVector128 target, ref readonly ulong source)
 	{
 		return new LimbVector128(Vector128.ConditionalSelect(Vector128.Equals(position._value, target._value), Vector128.LoadUnsafe(in source), accumulator._value));

@@ -51,6 +51,21 @@ internal interface IEcField<TSelf> : IPrimeModulus where TSelf : unmanaged, IEcF
 		SelectLimbs(mask, ref Unsafe.As<TSelf, ulong>(ref Unsafe.AsRef(in whenSet)), ref Unsafe.As<TSelf, ulong>(ref Unsafe.AsRef(in whenClear)), ref Unsafe.As<TSelf, ulong>(ref result), Unsafe.SizeOf<TSelf>() / sizeof(ulong));
 	}
 
+	// The limbs of each coordinate in EcGeneratorTable: by default those of the element, but a field whose elements leave room above p may pack the value mod p into fewer.
+	static virtual int PackedLength => Unsafe.SizeOf<TSelf>() / sizeof(ulong);
+
+	// Writes X and then Y of point in PackedLength limbs each.
+	static virtual void Pack(in AffinePoint<TSelf> point, Span<ulong> destination)
+	{
+		MemoryMarshal.Cast<AffinePoint<TSelf>, ulong>(new ReadOnlySpan<AffinePoint<TSelf>>(in point)).CopyTo(destination);
+	}
+
+	// Turns the limbs that Pack wrote, at the start of point, back into elements in place.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static virtual void Unpack(ref AffinePoint<TSelf> point)
+	{
+	}
+
 	// Holds for every point: Z = 0 gives Z3 = 0, and no other point has Y = 0, as a curve of odd order has no point of order 2. The result may be the input.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static virtual void Double(in JacobianPoint<TSelf> value, out JacobianPoint<TSelf> result)

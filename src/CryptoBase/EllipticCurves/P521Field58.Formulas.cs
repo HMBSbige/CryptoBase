@@ -7,7 +7,7 @@ internal partial struct P521Field58
 {
 	// γ = Y², β = Xγ, δ = Z², α = 3(X − δ)(X + δ), X3 = α² − 8β, Y3 = α(4β − X3) − 8γ², Z3 = 2YZ.
 	// 4β = X·4γ takes sizes 1 and 4, and 4γ² = (2γ)² size 2. X − δ is of size 3 and X + δ of 2; α, three times their product, is of size 3 and is reduced to E for α² and α(4β − X3). α² − 4β − 4β is of size 5, 4β − X3 of 3 and α(4β − X3) − 4γ² − 4γ² of 5. Z3 = 2Y·Z takes sizes 2 and 1.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	[SkipLocalsInit]
 	public static void Double(in JacobianPoint<P521Field58> value, out JacobianPoint<P521Field58> result)
 	{
@@ -39,7 +39,7 @@ internal partial struct P521Field58
 
 	// H and R go through WeakReduce, which IsReducedZero requires, and stay reduced afterwards, so that the products of H keep within the sizes.
 	// U1, U2, S1 and S2 are of E, so H = U2 − U1 is of size 3 and R = 2(S2 − S1) of 6; reduced, both are of E. 2H is of size 2, so Z3 = (Z1·Z2)·2H takes sizes 1 and 2, I = (2H)² sizes 2 and 2, and J, V and S1·J take E.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	[SkipLocalsInit]
 	public static ulong AddDistinct(in JacobianPoint<P521Field58> left, in JacobianPoint<P521Field58> right, out JacobianPoint<P521Field58> result)
 	{
@@ -69,7 +69,7 @@ internal partial struct P521Field58
 	}
 
 	// As above, with an affine right, whose coordinates are of E as well. H = X2·Z1² − X1 and R = 2(Y2·Z1³ − Y1) have the sizes above, Z3 = Z1·2H takes sizes 1 and 2, and V = X1·I and Y1·J take E.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	[SkipLocalsInit]
 	public static ulong AddDistinct(in JacobianPoint<P521Field58> left, in AffinePoint<P521Field58> right, out JacobianPoint<P521Field58> result)
 	{

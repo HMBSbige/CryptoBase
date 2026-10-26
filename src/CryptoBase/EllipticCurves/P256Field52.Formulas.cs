@@ -8,6 +8,7 @@ internal partial struct P256Field52
 	// γ = Y², β = Xγ, δ = Z², α = 3(X − δ)(X + δ), X3 = α² − 8β, Y3 = α(4β − X3) − 8γ², Z3 = 2YZ. The result may be the input.
 	// γ, β and δ are below 2.1p, and 2γ, 4β and 8γ², each twice a product of inputs of E, are of E and below 4.1p. X − δ is below 9.1p in limbs below 2^55 and X + δ below 6.1p in limbs below 2^54. Their product is below 4.4p, so its limb 4 may exceed 2^50 and it is not of E; it goes only into α, below 13.2p in limbs below 2^54, which only Multiply and Square take. α² − 8β is below 21.8p in limbs below 2^55. 4β − X3 is below 9.1p in limbs below 2^55, α(4β − X3) below 8.4p, and that less 8γ² below 13.4p in limbs below 2^54.
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static void Double(in JacobianPoint<P256Field52> value, out JacobianPoint<P256Field52> result)
 	{
 		Square(in value.Y, out P256Field52 gamma);
@@ -38,6 +39,7 @@ internal partial struct P256Field52
 	// H and R go through WeakReduce for the zero tests and stay reduced after them, which keeps the products of H within E.
 	// U1, U2, S1 and S2 are below 1.6p, so H is below 6.6p in limbs below 2^54 and 2R below 12.8p in limbs below 2^55; reduced, both are below 1.1p in limbs below 2^52. Z1·Z2·H is below 1.2p, so Z3 is below 2.3p. I = 4H² is below 4.3p in limbs below 2^54, not of E, and goes only into Multiply; J, V and S1·J are below 1.4p.
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static ulong AddDistinct(in JacobianPoint<P256Field52> left, in JacobianPoint<P256Field52> right, out JacobianPoint<P256Field52> result)
 	{
 		Square(in left.Z, out P256Field52 z1z1);
@@ -69,6 +71,7 @@ internal partial struct P256Field52
 
 	// As above, with an affine right, whose coordinates are of E as well. H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.3p, so Z3 is below 2.6p, and V = X1·I and Y1·J are below 2.1p.
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static ulong AddDistinct(in JacobianPoint<P256Field52> left, in AffinePoint<P256Field52> right, out JacobianPoint<P256Field52> result)
 	{
 		Square(in left.Z, out P256Field52 zz);

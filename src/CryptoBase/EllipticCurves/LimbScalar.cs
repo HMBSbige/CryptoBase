@@ -25,6 +25,12 @@ internal readonly struct LimbScalar(ulong value) : ILimbVector<LimbScalar>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static LimbScalar operator |(LimbScalar left, LimbScalar right)
+	{
+		return new LimbScalar(left._value | right._value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static LimbScalar MergeWhereEqual(LimbScalar accumulator, LimbScalar position, LimbScalar target, ref readonly ulong source)
 	{
 		return new LimbScalar(accumulator._value | source & LimbArithmetic.ZeroMask(position._value ^ target._value));

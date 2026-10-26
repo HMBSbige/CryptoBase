@@ -7,6 +7,7 @@ internal partial struct P384Field56
 	// γ = Y², β = Xγ, δ = Z², α = 3(X − δ)(X + δ), X3 = α² − 8β, Y3 = α(4β − X3) − 8γ², Z3 = 2YZ.
 	// γ, β and δ are below 1.1p in limbs below 2^56, and 2γ and 4β below 2.2p in limbs below 2^57. X − δ is below 9p in limbs below 5·2^56 and X + δ below 5.1p in limbs below 3·2^56, so their product is below 1.2p and α below 3.6p in limbs below 3·2^56. α² − 8β is below 11.1p in limbs below 2^59. 4β − X3 is below 7.1p in limbs below 5·2^56, α(4β − X3) below 1.1p, and that less 8γ² below 6.1p in limbs below 2^58.
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static void Double(in JacobianPoint<P384Field56> value, out JacobianPoint<P384Field56> result)
 	{
 		Square(in value.Y, out P384Field56 gamma);
@@ -37,6 +38,7 @@ internal partial struct P384Field56
 	// H and R go through WeakReduce for the zero tests and stay reduced after them, so that the products of H keep within E.
 	// U1, U2, S1 and S2 are below 1.1p in limbs below 2^56, so H is below 6.1p in limbs below 2^58 and 2R below 12.1p in limbs below 2^59; reduced, both are below 2^384 + 2^342 in limbs below 2^56. Z1·Z2·H is below 1.1p, so Z3 is below 2.1p. I = 4H² is below 4.1p in limbs below 2^58, and J, V and S1·J are below 1.1p.
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static ulong AddDistinct(in JacobianPoint<P384Field56> left, in JacobianPoint<P384Field56> right, out JacobianPoint<P384Field56> result)
 	{
 		Square(in left.Z, out P384Field56 z1z1);
@@ -68,6 +70,7 @@ internal partial struct P384Field56
 
 	// As above, with an affine right, whose coordinates are of E as well. H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.1p, so Z3 is below 2.1p, and V = X1·I and Y1·J are below 1.1p.
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static ulong AddDistinct(in JacobianPoint<P384Field56> left, in AffinePoint<P384Field56> right, out JacobianPoint<P384Field56> result)
 	{
 		Square(in left.Z, out P384Field56 zz);

@@ -108,7 +108,6 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		int width = TCurve.GeneratorWindowWidth;
 		int windowCount = EcGeneratorTable<TCurve, TField, TOrder>.WindowCount;
 		int windowLength = EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
-		ReadOnlySpan<AffinePoint<TField>> windows = EcGeneratorTable<TCurve, TField, TOrder>.Entries;
 		ReadOnlySpan<ulong> limbs = FieldElement<TOrder>.GetLimbs(in u1);
 		uint mask = (1u << width) - 1;
 		uint carry = 0;
@@ -122,7 +121,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 			if (digit is not 0)
 			{
-				AffinePoint<TField> entry = windows[i * windowLength + Math.Abs(digit) - 1];
+				EcGeneratorTable<TCurve, TField, TOrder>.Read(i * windowLength + Math.Abs(digit) - 1, out AffinePoint<TField> entry);
 
 				if (digit < 0)
 				{

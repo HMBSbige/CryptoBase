@@ -376,13 +376,20 @@ public abstract class CurveCase
 
 		internal override CurvePoint[] GeneratorTable()
 		{
-			return [.. EcGeneratorTable<TCurve, TField, TOrder>.Entries.Select(static entry => ToValue(entry))];
+			CurvePoint[] table = new CurvePoint[EcGeneratorTable<TCurve, TField, TOrder>.WindowCount * EcGeneratorTable<TCurve, TField, TOrder>.WindowLength];
+
+			for (int i = 0; i < table.Length; ++i)
+			{
+				EcGeneratorTable<TCurve, TField, TOrder>.Read(i, out AffinePoint<TField> entry);
+				table[i] = ToValue(entry);
+			}
+
+			return table;
 		}
 
 		internal override CurvePoint SelectFromGeneratorTable(int window, int digit)
 		{
-			int length = EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
-			EcGroup<TCurve, TField, TOrder>.Select(in EcGeneratorTable<TCurve, TField, TOrder>.Entries[window * length], length, digit, out AffinePoint<TField> result);
+			EcGroup<TCurve, TField, TOrder>.SelectBase(window, digit, out AffinePoint<TField> result);
 			return ToValue(result);
 		}
 

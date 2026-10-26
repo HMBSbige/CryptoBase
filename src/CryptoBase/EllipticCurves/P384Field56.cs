@@ -98,7 +98,7 @@ internal partial struct P384Field56 : IEcField<P384Field56>
 
 	// Carrying the left limbs first gives x_i below 2^56, x_6 too as the value is below 2^392. With a_i = x_i·2^8 and a right limb y_j below 2^60, a_i·y_j = x_i·y_j·2^8 < 2^124, so its high half is x_i·y_j >> 56, below 2^60, and its low half (x_i·y_j mod 2^56)·2^8. A column sums at most seven of each, below 2^63 with room for the Montgomery rounds, so all the columns come first without carries and the rounds after.
 	// Each column adds one product at a time and each right limb is loaded where it is first used, so that few values are live at once.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(in P384Field56 left, in P384Field56 right, out P384Field56 result)
 	{
 		ulong x = left.L0;
@@ -216,7 +216,7 @@ internal partial struct P384Field56 : IEcField<P384Field56>
 	}
 
 	// Multiply with value as both factors, for limbs below 2^58, which need no carrying first: a_i = x_i·2^4 gives a_i·a_i = x_i²·2^8, and d_i = x_i·2^5 gives the doubled cross product 2·x_i·x_j·2^8 in one product, which keeps each column within the bound of Multiply.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Square(in P384Field56 value, out P384Field56 result)
 	{
 		ulong a0 = value.L0 << 4;

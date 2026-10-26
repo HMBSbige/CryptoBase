@@ -106,7 +106,7 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 	}
 
 	// The columns go to Reduce. This is the form for Arm64, which has registers for all eighteen shifted limbs, and for x64 without BMI2, where each High is a call.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void MultiplyInRegisters(in P521Field58 left, in P521Field58 right, out P521Field58 result)
 	{
 		ulong a0 = left.L0 << 3;
@@ -148,7 +148,7 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 	}
 
 	// The x64 registers do not hold all eighteen shifted limbs, so those of left stay in memory, in s_9 to s_17, where they are operands of the products. The columns go to s_0 to s_8 as they finish, and columns 9 to 17 fold in there by the steps of Reduce, so that only two columns are open at a time.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	[SkipLocalsInit]
 	private static void MultiplyThroughMemory(in P521Field58 left, in P521Field58 right, out P521Field58 result)
 	{
@@ -462,7 +462,7 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 	}
 
 	// Multiply with right = value, so its bounds hold. Each cross product 2·x_i·x_j takes d_i = x_i·2^4, for limbs below 2^60, and gives one Low in place of two and a High, 2·x_i·x_j >> 58, within the bound of the two it replaces.
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Square(in P521Field58 value, out P521Field58 result)
 	{
 		ulong a0 = value.L0 << 3;

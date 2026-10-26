@@ -68,11 +68,9 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	[SkipLocalsInit]
 	internal static void MultiplyBase(in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
-		int entries = EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
 		Span<sbyte> digits = stackalloc sbyte[EcGeneratorTable<TCurve, TField, TOrder>.WindowCount];
 		Recode(in scalar, TCurve.GeneratorWindowWidth, digits);
-		ref AffinePoint<TField> window = ref MemoryMarshal.GetArrayDataReference(EcGeneratorTable<TCurve, TField, TOrder>.Entries);
-		Select(in window, entries, digits[0], out AffinePoint<TField> entry);
+		SelectBase(0, digits[0], out AffinePoint<TField> entry);
 		// A digit of 0 selects (0, 0), which is not a point: the first window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
 		result = default;
 		JacobianPoint<TField>.ConditionalSelect(~ZeroMask((ulong)digits[0]), in entry, in result, out result);
@@ -81,8 +79,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		// Window i adds d·2^(wi)·G, 1 ≤ |d| ≤ 2^(w − 1), to L·G with L = Σ_{j<i} d_j·2^(wj), so −2^(wi)/2 < L < 2^(wi). Opposite points give Z = 0, which is right. Equal ones need L − d·2^(wi), which is not 0, to be a multiple of n. Let t = ⌊N/w⌋ for N = TOrder.BitLength, which w does not divide. Below window t, |L − d·2^(wi)| < 2^(w(i + 1)) ≤ 2^(wt) < n. In window t, 0 < d ≤ 2^(N − wt) puts L − d·2^(wt) in (−2n, 0), so it would be −n: then k = 2d·2^(wt) − n < n and L = d·2^(wt) − n > −2^(wt)/2 put d·2^(wt) in (n − 2^(wt)/2, n), which holds no multiple of 2^(wt), as 2^N − n < 2^(wt)/2 for each curve here.
 		for (int i = 1; i < digits.Length; ++i)
 		{
-			window = ref Unsafe.Add(ref window, entries);
-			Select(in window, entries, digits[i], out entry);
+			SelectBase(i, digits[i], out entry);
 			_ = AddDistinct(in result, in entry, out sum);
 			JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in result.Z), in entry, in sum, out sum);
 			JacobianPoint<TField>.ConditionalSelect(ZeroMask((ulong)digits[i]), in result, in sum, out result);
@@ -400,6 +397,17 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	{
 		int sign = digit >> 31;
 		MaskedSelect.Lookup(in window, entries, (uint)((digit ^ sign) - sign) - 1, out result);
+		ConditionalNegate((ulong)sign, ref result.Y);
+	}
+
+	// digit·B from window of EcGeneratorTable, which holds 1·B to WindowLength·B. A digit of 0 gives (0, 0), which is not a point.
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	internal static void SelectBase(int window, int digit, out AffinePoint<TField> result)
+	{
+		int sign = digit >> 31;
+		Unsafe.SkipInit(out result);
+		MaskedSelect.Lookup(in EcGeneratorTable<TCurve, TField, TOrder>.Window(window), EcGeneratorTable<TCurve, TField, TOrder>.EntryLength, EcGeneratorTable<TCurve, TField, TOrder>.WindowLength, (uint)((digit ^ sign) - sign) - 1, ref Unsafe.As<AffinePoint<TField>, ulong>(ref result));
+		TField.Unpack(ref result);
 		ConditionalNegate((ulong)sign, ref result.Y);
 	}
 
