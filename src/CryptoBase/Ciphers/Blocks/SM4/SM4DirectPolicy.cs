@@ -19,6 +19,18 @@ internal readonly struct SM4DirectPolicy : ISM4ModePolicy
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void PreparePartial8(int count, ref byte source, nuint offset, out Vector256<byte> x0, out Vector256<byte> x1, out Vector256<byte> x2, out Vector256<byte> x3)
+	{
+		SM4Layout.Load8X86(count, ref source, offset, out x0, out x1, out x2, out x3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void FinishPartial8(int count, ref byte source, ref byte destination, nuint offset, Vector256<byte> x0, Vector256<byte> x1, Vector256<byte> x2, Vector256<byte> x3)
+	{
+		SM4Layout.Store8X86(count, ref destination, offset, x0, x1, x2, x3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Prepare16(ref byte source, nuint offset, out Vector512<byte> x0, out Vector512<byte> x1, out Vector512<byte> x2, out Vector512<byte> x3)
 	{
 		SM4Layout.Load16X86(16, ref source, offset, out x0, out x1, out x2, out x3);

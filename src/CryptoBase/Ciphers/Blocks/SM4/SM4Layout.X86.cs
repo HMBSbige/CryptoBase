@@ -157,6 +157,32 @@ internal static partial class SM4Layout
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void XorStore8X86(int count, ref byte source, ref byte destination, nuint offset, Vector256<byte> x0, Vector256<byte> x1, Vector256<byte> x2, Vector256<byte> x3)
+	{
+		Transpose(ref x0, ref x1, ref x2, ref x3);
+
+		if (count > 0)
+		{
+			XorStorePairX86(count, ref source, ref destination, offset, x0);
+		}
+
+		if (count > 2)
+		{
+			XorStorePairX86(count - 2, ref source, ref destination, offset + 32, x1);
+		}
+
+		if (count > 4)
+		{
+			XorStorePairX86(count - 4, ref source, ref destination, offset + 64, x2);
+		}
+
+		if (count > 6)
+		{
+			XorStorePairX86(count - 6, ref source, ref destination, offset + 96, x3);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void XorStore16X86(ref byte source, ref byte destination, nuint offset, Vector512<byte> x0, Vector512<byte> x1, Vector512<byte> x2, Vector512<byte> x3)
 	{
 		Transpose(ref x0, ref x1, ref x2, ref x3);
@@ -190,6 +216,21 @@ internal static partial class SM4Layout
 		{
 			XorStoreQuadX86(count - 12, ref source, ref destination, offset + 192, x3);
 		}
+	}
+
+	// One count check covers both the load and the store.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void XorStorePairX86(int count, ref byte source, ref byte destination, nuint offset, Vector256<byte> value)
+	{
+		value = value.ReverseEndianness128();
+
+		if (count >= 2)
+		{
+			(value ^ Vector256.LoadUnsafe(ref source, offset)).StoreUnsafe(ref destination, offset);
+			return;
+		}
+
+		(value.GetLower() ^ Vector128.LoadUnsafe(ref source, offset)).StoreUnsafe(ref destination, offset);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

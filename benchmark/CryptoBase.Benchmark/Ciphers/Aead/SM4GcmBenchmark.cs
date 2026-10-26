@@ -11,7 +11,7 @@ namespace CryptoBase.Benchmark.Ciphers.Aead;
 [MemoryDiagnoser]
 public class SM4GcmBenchmark
 {
-	[Params(0, 16, 256, 512, 768, 1008, 1024, 2032, 8192)]
+	[Params(0, 16, 112, 128, 256, 512, 768, 1008, 1024, 2032, 8192)]
 	public int ByteLength { get; set; }
 
 	private GcmMode<SM4Cipher> _cryptoBase = null!;

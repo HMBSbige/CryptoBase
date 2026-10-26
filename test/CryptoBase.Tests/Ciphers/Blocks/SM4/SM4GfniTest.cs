@@ -61,7 +61,7 @@ public class SM4GfniTest
 
 	[Test]
 	[MatrixDataSource]
-	public async Task Ctr32WrapsWithoutChangingNonce([Matrix(2u, 0xFFFFFFF1u, 0xFFFFFFF5u, 0xFFFFFFC0u)] uint initialCounter, [Matrix(1024, 2048, 4096)] int length, [Matrix] bool inPlace)
+	public async Task Ctr32WrapsWithoutChangingNonce([Matrix(2u, 0xFFFFFFF1u, 0xFFFFFFF5u, 0xFFFFFFFCu, 0xFFFFFFC0u)] uint initialCounter, [Matrix(32, 112, 240, 1024, 1264, 2048, 4096)] int length, [Matrix] bool inPlace)
 	{
 		if (!SM4Gfni.SupportsModePolicy)
 		{

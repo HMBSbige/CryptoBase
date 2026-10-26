@@ -31,35 +31,7 @@ internal readonly partial struct SM4Gfni
 	private static void Process8V256(int count, ref uint rk, ref byte source, ref byte destination)
 	{
 		SM4Layout.Load8X86(count, ref source, 0, out Vector256<byte> v0, out Vector256<byte> v1, out Vector256<byte> v2, out Vector256<byte> v3);
-
-		if (Avx512F.VL.IsSupported)
-		{
-			Vector256<byte> input = Vector256.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
-
-			for (nuint i = 0; i < 28; i += 4)
-			{
-				RoundLookahead(ref v0, v2, v3, ref input, Vector256.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
-				RoundLookahead(ref v1, v3, v0, ref input, Vector256.Create(Unsafe.Add(ref rk, i + 2)).AsByte());
-				RoundLookahead(ref v2, v0, v1, ref input, Vector256.Create(Unsafe.Add(ref rk, i + 3)).AsByte());
-				RoundLookahead(ref v3, v1, v2, ref input, Vector256.Create(Unsafe.Add(ref rk, i + 4)).AsByte());
-			}
-
-			RoundLookahead(ref v0, v2, v3, ref input, Vector256.Create(Unsafe.Add(ref rk, 29)).AsByte());
-			RoundLookahead(ref v1, v3, v0, ref input, Vector256.Create(Unsafe.Add(ref rk, 30)).AsByte());
-			RoundLookahead(ref v2, v0, v1, ref input, Vector256.Create(Unsafe.Add(ref rk, 31)).AsByte());
-			v3 = SM4Linear.XorTransform(v3.AsUInt32(), Substitute(input).AsUInt32()).AsByte();
-		}
-		else
-		{
-			for (nuint i = 0; i < 32; i += 4)
-			{
-				Round(ref v0, v1, v2, v3, Vector256.Create(Unsafe.Add(ref rk, i)).AsByte());
-				Round(ref v1, v2, v3, v0, Vector256.Create(Unsafe.Add(ref rk, i + 1)).AsByte());
-				Round(ref v2, v3, v0, v1, Vector256.Create(Unsafe.Add(ref rk, i + 2)).AsByte());
-				Round(ref v3, v0, v1, v2, Vector256.Create(Unsafe.Add(ref rk, i + 3)).AsByte());
-			}
-		}
-
+		Rounds8V256(in rk, ref v0, ref v1, ref v2, ref v3);
 		SM4Layout.Store8X86(count, ref destination, 0, v0, v1, v2, v3);
 	}
 
@@ -85,6 +57,56 @@ internal readonly partial struct SM4Gfni
 
 		policy.Finish8(ref source, ref destination, 0, a0, a1, a2, a3);
 		policy.Finish8(ref source, ref destination, 128, b0, b1, b2, b3);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void Process8PartialV256<TPolicy>(int count, ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
+	{
+		policy.PreparePartial8(count, ref source, 0, out Vector256<byte> a0, out Vector256<byte> a1, out Vector256<byte> a2, out Vector256<byte> a3);
+		Rounds8V256(in rk, ref a0, ref a1, ref a2, ref a3);
+		policy.FinishPartial8(count, ref source, ref destination, 0, a0, a1, a2, a3);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void Process16PartialV256<TPolicy>(int count, ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
+	{
+		policy.Prepare8(ref source, 0, out Vector256<byte> a0, out Vector256<byte> a1, out Vector256<byte> a2, out Vector256<byte> a3);
+		policy.PreparePartial8(count - 8, ref source, 128, out Vector256<byte> b0, out Vector256<byte> b1, out Vector256<byte> b2, out Vector256<byte> b3);
+		Rounds16V256(in rk, ref a0, ref a1, ref a2, ref a3, ref b0, ref b1, ref b2, ref b3);
+		policy.Finish8(ref source, ref destination, 0, a0, a1, a2, a3);
+		policy.FinishPartial8(count - 8, ref source, ref destination, 128, b0, b1, b2, b3);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Rounds8V256(ref readonly uint rk, ref Vector256<byte> v0, ref Vector256<byte> v1, ref Vector256<byte> v2, ref Vector256<byte> v3)
+	{
+		if (Avx512F.VL.IsSupported)
+		{
+			Vector256<byte> input = Vector256.Create(rk).AsByte() ^ v1 ^ v2 ^ v3;
+
+			for (nuint i = 0; i < 28; i += 4)
+			{
+				RoundLookahead(ref v0, v2, v3, ref input, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 1)).AsByte());
+				RoundLookahead(ref v1, v3, v0, ref input, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 2)).AsByte());
+				RoundLookahead(ref v2, v0, v1, ref input, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 3)).AsByte());
+				RoundLookahead(ref v3, v1, v2, ref input, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 4)).AsByte());
+			}
+
+			RoundLookahead(ref v0, v2, v3, ref input, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), 29)).AsByte());
+			RoundLookahead(ref v1, v3, v0, ref input, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), 30)).AsByte());
+			RoundLookahead(ref v2, v0, v1, ref input, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), 31)).AsByte());
+			v3 = SM4Linear.XorTransform(v3.AsUInt32(), Substitute(input).AsUInt32()).AsByte();
+		}
+		else
+		{
+			for (nuint i = 0; i < 32; i += 4)
+			{
+				Round(ref v0, v1, v2, v3, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i)).AsByte());
+				Round(ref v1, v2, v3, v0, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 1)).AsByte());
+				Round(ref v2, v3, v0, v1, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 2)).AsByte());
+				Round(ref v3, v0, v1, v2, Vector256.Create(Unsafe.Add(ref Unsafe.AsRef(in rk), i + 3)).AsByte());
+			}
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

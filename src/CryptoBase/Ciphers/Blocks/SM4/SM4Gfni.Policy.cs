@@ -16,8 +16,8 @@ internal readonly partial struct SM4Gfni
 			return 0;
 		}
 
-		// The 512-bit path finishes every whole block after its 64-block batches with one fused kernel run.
-		int length = source.Length & (MaxBlocks is 64 ? -16 : -(16 * 16));
+		// Every whole block after the full batches takes one fused kernel run.
+		int length = source.Length & -16;
 
 		if (length is 0)
 		{
@@ -55,9 +55,19 @@ internal readonly partial struct SM4Gfni
 		}
 		else
 		{
-			for (int offset = 0; offset < source.Length; offset += 16 * 16)
+			int offset = 0;
+
+			for (; source.Length - offset >= 16 * 16; offset += 16 * 16)
 			{
 				Process16V256(in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
+			}
+
+			if (offset < source.Length)
+			{
+				// Pass a copy: taking policy's address here would keep the loop above from holding it in registers.
+				TPolicy tail = policy;
+				ProcessPartialV256(source.Length - offset >> 4, in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref tail);
+				policy = tail;
 			}
 		}
 
@@ -120,6 +130,21 @@ internal readonly partial struct SM4Gfni
 		else
 		{
 			Process64PartialV512(count, in rk, ref source, ref destination, ref policy);
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ProcessPartialV256<TPolicy>(int count, ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
+	{
+		Debug.Assert(count is > 0 and < 16);
+
+		if (count <= 8)
+		{
+			Process8PartialV256(count, in rk, ref source, ref destination, ref policy);
+		}
+		else
+		{
+			Process16PartialV256(count, in rk, ref source, ref destination, ref policy);
 		}
 	}
 }
