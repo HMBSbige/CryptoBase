@@ -10,14 +10,11 @@ public class FieldArithmeticBenchmark
 {
 	private const int Operations = 64;
 
-	private IKernel _kernel = new Kernel<P256Field>();
+	private IKernel _kernel = new Kernel<P256Order>();
 
 	public enum ModulusKind
 	{
-		P256Field,
-		P256Order,
-		P384Field,
-		P521Field
+		P256Order
 	}
 
 	[ParamsAllValues]
@@ -28,10 +25,7 @@ public class FieldArithmeticBenchmark
 	{
 		_kernel = Modulus switch
 		{
-			ModulusKind.P256Field => new Kernel<P256Field>(),
 			ModulusKind.P256Order => new Kernel<P256Order>(),
-			ModulusKind.P384Field => new Kernel<P384Field>(),
-			ModulusKind.P521Field => new Kernel<P521Field>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(Modulus))
 		};
 	}

@@ -165,7 +165,6 @@ public class FieldElementTest
 					continue;
 				}
 
-				// P521Field.Reduce is a rotation rather than Montgomery rounds, so it gives another u.
 				reached += modulus.Reduce(x * y) == u ? 1 : 0;
 				Check(failures, $"{x:X} · {y:X}", modulus.Multiply(x, y), x * y * rInverse % m);
 				Check(failures, $"{y:X} · {x:X}", modulus.Multiply(y, x), x * y * rInverse % m);

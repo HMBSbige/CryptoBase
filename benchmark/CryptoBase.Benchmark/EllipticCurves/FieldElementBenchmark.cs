@@ -7,15 +7,12 @@ namespace CryptoBase.Benchmark.EllipticCurves;
 
 public class FieldElementBenchmark
 {
-	private IKernel _kernel = new Kernel<P256Field>();
+	private IKernel _kernel = new Kernel<P256Order>();
 
 	public enum ModulusKind
 	{
-		P256Field,
 		P256Order,
-		P384Field,
 		P384Order,
-		P521Field,
 		P521Order
 	}
 
@@ -27,11 +24,8 @@ public class FieldElementBenchmark
 	{
 		_kernel = Modulus switch
 		{
-			ModulusKind.P256Field => new Kernel<P256Field>(),
 			ModulusKind.P256Order => new Kernel<P256Order>(),
-			ModulusKind.P384Field => new Kernel<P384Field>(),
 			ModulusKind.P384Order => new Kernel<P384Order>(),
-			ModulusKind.P521Field => new Kernel<P521Field>(),
 			ModulusKind.P521Order => new Kernel<P521Order>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(Modulus))
 		};
