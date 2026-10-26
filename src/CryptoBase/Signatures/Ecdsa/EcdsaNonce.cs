@@ -1,28 +1,52 @@
 using CryptoBase.EllipticCurves;
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Macs.Hmac;
+using CryptoBase.Platform;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Signatures.Ecdsa;
 
-// K, V and the candidates are secret; only the retry after a rejected candidate branches on them.
+// K, V and the candidates are secret; only the retry after a rejected candidate branches on them. HMAC-SHA256 goes to HMACSHA256 where the platform is faster for these short messages.
 internal struct EcdsaNonce<THash, TOrder> where THash : unmanaged, IHmacHashCore<THash> where TOrder : unmanaged, IMontgomeryModulus
 {
-	// Keyed with K.
+	// The longest message to K that goes to HMACSHA256; it holds 32 bytes of additional data on every curve, and longer messages take the managed HMAC.
+	private const int MaxPlatformMessageLength = 256;
+
+	// Most MACs of a nonce take V alone, so the platform takes them all where it is faster for V.
+	private static readonly bool PlatformPreferred = typeof(THash) == typeof(Sha256Core) && PlatformHmacSha256.IsPreferredFor(Sha256Core.HashSizeInBytes);
+
+	// Keyed with the zero K that every nonce starts from.
+	private static readonly HmacState<THash> ZeroKeyHmac = CreateZeroKeyHmac();
+
+	// Keyed with K for the managed HMAC.
 	private HmacState<THash> _hmac;
+	// K for HMACSHA256.
+	private InlineArray32<byte> _key;
 	private InlineArray64<byte> _value;
 	private bool _hasCandidate;
+	private bool _platform;
+
+	[UnscopedRef]
+	private Span<byte> K => _key;
 
 	[UnscopedRef]
 	private Span<byte> V => ((Span<byte>)_value).Slice(0, THash.HashLength);
 
 	// privateKey and hash are ByteLength big-endian bytes each, the hash already truncated and reduced mod n.
-	[SkipLocalsInit]
 	internal void Initialize(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData)
 	{
-		Span<byte> key = stackalloc byte[THash.HashLength];
-		key.Clear();
 		V.Fill(0x01);
-		_hmac.Initialize(key, true);
+		_platform = PlatformPreferred && THash.HashLength + 1 + privateKey.Length + hash.Length + additionalData.Length <= MaxPlatformMessageLength;
+
+		if (_platform)
+		{
+			K.Clear();
+		}
+		else
+		{
+			_hmac = ZeroKeyHmac;
+		}
+
 		Update(0x00, privateKey, hash, additionalData);
 		Update(0x01, privateKey, hash, additionalData);
 		_hasCandidate = false;
@@ -50,8 +74,16 @@ internal struct EcdsaNonce<THash, TOrder> where THash : unmanaged, IHmacHashCore
 
 			for (; 8 * blocksLength < TOrder.BitLength; blocksLength += hashLength)
 			{
-				_hmac.Append(V);
-				_hmac.GetMacAndReset(V);
+				if (_platform)
+				{
+					PlatformMac(V, V);
+				}
+				else
+				{
+					_hmac.Append(V);
+					_hmac.GetMacAndReset(V);
+				}
+
 				V.CopyTo(blocks.Slice(blocksLength));
 			}
 
@@ -67,13 +99,29 @@ internal struct EcdsaNonce<THash, TOrder> where THash : unmanaged, IHmacHashCore
 	internal void Clear()
 	{
 		_hmac.ZeroMemory();
+		_key.ZeroMemory();
 		_value.ZeroMemory();
 		_hasCandidate = false;
+	}
+
+	private static HmacState<THash> CreateZeroKeyHmac()
+	{
+		Span<byte> key = stackalloc byte[THash.HashLength];
+		key.Clear();
+		HmacState<THash> hmac = default;
+		hmac.Initialize(key, true);
+		return hmac;
 	}
 
 	[SkipLocalsInit]
 	private void Update(byte separator, ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData)
 	{
+		if (_platform)
+		{
+			PlatformUpdate(separator, privateKey, hash, additionalData);
+			return;
+		}
+
 		using CryptoBuffer<byte> key = new(stackalloc byte[THash.HashLength]);
 		_hmac.Append(V);
 		_hmac.Append(new ReadOnlySpan<byte>(in separator));
@@ -84,5 +132,29 @@ internal struct EcdsaNonce<THash, TOrder> where THash : unmanaged, IHmacHashCore
 		_hmac.Initialize(key.Span, true);
 		_hmac.Append(V);
 		_hmac.GetMacAndReset(V);
+	}
+
+	[SkipLocalsInit]
+	private void PlatformUpdate(byte separator, ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData)
+	{
+		Span<byte> value = V;
+		using CryptoBuffer<byte> buffer = new(stackalloc byte[MaxPlatformMessageLength]);
+		Span<byte> message = buffer.Span.Slice(0, value.Length + 1 + privateKey.Length + hash.Length + additionalData.Length);
+		value.CopyTo(message);
+		message[value.Length] = separator;
+		privateKey.CopyTo(message.Slice(value.Length + 1));
+		hash.CopyTo(message.Slice(value.Length + 1 + privateKey.Length));
+		additionalData.CopyTo(message.Slice(message.Length - additionalData.Length));
+		PlatformMac(message, K);
+		PlatformMac(value, value);
+	}
+
+	// HMAC_K(source), through a temporary buffer, as destination may overlap K or source.
+	[SkipLocalsInit]
+	private readonly void PlatformMac(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		using CryptoBuffer<byte> mac = new(stackalloc byte[HMACSHA256.HashSizeInBytes]);
+		HMACSHA256.HashData(_key, source, mac.Span);
+		mac.Span.CopyTo(destination);
 	}
 }
