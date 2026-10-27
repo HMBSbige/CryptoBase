@@ -107,7 +107,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	public static Blake3HashAlgorithm CreateDeriveKey(ReadOnlySpan<byte> context)
 	{
 		Blake3HashAlgorithm hasher = new();
-		InlineArray8<uint> contextKey = DeriveContextKey(context);
+		DeriveContextKey(context, out InlineArray8<uint> contextKey);
 		hasher._state.Initialize(in contextKey, Blake3Flags.DeriveKeyMaterial);
 		contextKey.ZeroMemory();
 		return hasher;
@@ -180,7 +180,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	{
 		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
-		InlineArray8<uint> contextKey = DeriveContextKey(context);
+		DeriveContextKey(context, out InlineArray8<uint> contextKey);
 
 		// Hashing in parallel may fail for lack of memory, and the context key is erased all the same.
 		try
@@ -561,13 +561,10 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 		array = null;
 	}
 
-	[SkipLocalsInit]
-	private static InlineArray8<uint> DeriveContextKey(ReadOnlySpan<byte> context)
+	// Hashes straight into the caller's variable, so that erasing it leaves no copy of the context key behind.
+	private static void DeriveContextKey(ReadOnlySpan<byte> context, out InlineArray8<uint> contextKey)
 	{
-		Unsafe.SkipInit(out InlineArray8<uint> contextKey);
-		Span<uint> words = contextKey;
-		Blake3Tree.HashData(context, in Blake3Constants.IV, Blake3Flags.DeriveKeyContext, MemoryMarshal.AsBytes(words), 1, ThreadPoolHelperBudget.Shared);
-
-		return contextKey;
+		Unsafe.SkipInit(out contextKey);
+		Blake3Tree.HashData(context, in Blake3Constants.IV, Blake3Flags.DeriveKeyContext, contextKey.AsSpan(), 1, ThreadPoolHelperBudget.Shared);
 	}
 }
