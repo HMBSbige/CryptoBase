@@ -151,7 +151,7 @@ public sealed partial class Base32Encoding
 	}
 
 	// Keep the offsets in the AdvSimd call chain. On .NET 10 ARM64, forwarding the caller's zero-valued registers is faster than materializing two zero arguments.
-	private static int EncodeCharsAdvSimdAuto(ReadOnlySpan<byte> source, Span<char> destination, int sourceOffset, int destinationOffset, byte[] alphabet)
+	private static int EncodeAdvSimdAuto<T>(ReadOnlySpan<byte> source, Span<T> destination, int sourceOffset, int destinationOffset, byte[] alphabet) where T : unmanaged
 	{
 		int sourceRemaining = Math.Min(source.Length - sourceOffset, (destination.Length - destinationOffset) / OutputSymbolsPerBlock * InputBytesPerBlock);
 
@@ -260,25 +260,6 @@ public sealed partial class Base32Encoding
 	internal int EncodeBlocksPath<T>(ReadOnlySpan<byte> source, Span<T> destination, Base32SimdPath path) where T : unmanaged
 	{
 		return EncodeForced(source, destination, _alphabet, _alphabetKind, path);
-	}
-
-	private static int EncodeUtf8Auto(ReadOnlySpan<byte> source, Span<byte> destination, int sourceOffset, int destinationOffset, byte[] alphabet)
-	{
-		if (AdvSimd.IsSupported)
-		{
-			int arm64SourceRemaining = Math.Min(source.Length - sourceOffset, (destination.Length - destinationOffset) / OutputSymbolsPerBlock * InputBytesPerBlock);
-
-			if (arm64SourceRemaining >= Arm64EncodeSimdThreshold)
-			{
-				return EncodeAdvSimd(source, destination, sourceOffset, destinationOffset, alphabet);
-			}
-
-			return arm64SourceRemaining >= EncodeShortSimdThreshold
-				? EncodeAdvSimdShort(source, destination, sourceOffset, destinationOffset, alphabet)
-				: 0;
-		}
-
-		return 0;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

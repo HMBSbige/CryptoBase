@@ -222,7 +222,7 @@ public sealed partial class Base32Encoding
 		)
 		{
 			int simdConsumed = AdvSimd.IsSupported
-				? EncodeCharsAdvSimdAuto(source, destination, sourceOffset, destinationOffset, _alphabet)
+				? EncodeAdvSimdAuto(source, destination, sourceOffset, destinationOffset, _alphabet)
 				: EncodeX86Auto(source, destination, _alphabetKind);
 			sourceOffset += simdConsumed;
 			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
@@ -278,7 +278,7 @@ public sealed partial class Base32Encoding
 		}
 		else if (AdvSimd.IsSupported)
 		{
-			simdConsumed = EncodeUtf8Auto(source, destination, sourceOffset, destinationOffset, _alphabet);
+			simdConsumed = EncodeAdvSimdAuto(source, destination, sourceOffset, destinationOffset, _alphabet);
 		}
 		else if
 		(
