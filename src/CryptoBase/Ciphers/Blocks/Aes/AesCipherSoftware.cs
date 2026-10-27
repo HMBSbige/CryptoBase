@@ -30,13 +30,15 @@ internal partial struct AesCipherSoftware : IDisposable, IAesSubWord
 			ulong low = Interleave(words[round * 4], words[round * 4 + 2]);
 			ulong high = Interleave(words[round * 4 + 1], words[round * 4 + 3]);
 
-			for (int block = 0; block < 4; ++block)
+			// Blocks 0-3 hold low and blocks 4-7 hold high, so bit i of each byte fills the low or high nibble of plane i.
+			for (int i = 0; i < 8; ++i)
 			{
-				roundKey[block] = low;
-				roundKey[block + 4] = high;
+				ulong lowBits = low & 0x0101010101010101;
+				ulong highBits = high & 0x0101010101010101;
+				roundKey[i] = (lowBits << 4) - lowBits | (highBits << 8) - (highBits << 4);
+				low >>= 1;
+				high >>= 1;
 			}
-
-			Transpose(ref roundKey);
 
 			if (round != _rounds)
 			{
@@ -172,13 +174,23 @@ internal partial struct AesCipherSoftware : IDisposable, IAesSubWord
 
 	static uint IAesSubWord.SubWord(uint value)
 	{
+		// With the word in every block lane, byte j of bit plane i repeats bit i of byte j, so no transpose is needed.
 		InlineArray8<ulong> state = default;
-		((Span<ulong>)state).Fill(value | (ulong)value << 32);
-		Transpose(ref state);
+
+		for (int i = 0; i < 8; ++i)
+		{
+			state[i] = (value >> i & 0x01010101) * 0xFF;
+		}
+
 		state = SubBytes(in state);
 		SubBytesNots(ref state);
-		Transpose(ref state);
-		uint result = (uint)state[0];
+		uint result = 0;
+
+		for (int i = 0; i < 8; ++i)
+		{
+			result |= ((uint)state[i] & 0x01010101) << i;
+		}
+
 		state.ZeroMemory();
 		return result;
 	}
