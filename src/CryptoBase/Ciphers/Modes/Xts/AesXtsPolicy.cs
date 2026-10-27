@@ -4,7 +4,6 @@ namespace CryptoBase.Ciphers.Modes.Xts;
 
 internal struct AesXtsPolicy : IAesModePolicy
 {
-	private Vector128<byte> _t0;
 	private Vector128<byte> _t1;
 	private Vector128<byte> _t2;
 	private Vector128<byte> _t3;
@@ -50,8 +49,7 @@ internal struct AesXtsPolicy : IAesModePolicy
 			return;
 		}
 
-		_t0 = _tweak;
-		_t1 = XtsTweak.MultiplyByAlpha(_t0);
+		_t1 = XtsTweak.MultiplyByAlpha(_tweak);
 		_t2 = XtsTweak.MultiplyByAlpha(_t1);
 		_t3 = XtsTweak.MultiplyByAlpha(_t2);
 		_t4 = XtsTweak.MultiplyByAlpha(_t3);
@@ -59,7 +57,7 @@ internal struct AesXtsPolicy : IAesModePolicy
 		_t6 = XtsTweak.MultiplyByAlpha(_t5);
 		_t7 = XtsTweak.MultiplyByAlpha(_t6);
 
-		v0 = Vector128.LoadUnsafe(ref source, offset) ^ _t0;
+		v0 = Vector128.LoadUnsafe(ref source, offset) ^ _tweak;
 		v1 = Vector128.LoadUnsafe(ref source, offset + 16) ^ _t1;
 		v2 = Vector128.LoadUnsafe(ref source, offset + 32) ^ _t2;
 		v3 = Vector128.LoadUnsafe(ref source, offset + 48) ^ _t3;
@@ -84,7 +82,7 @@ internal struct AesXtsPolicy : IAesModePolicy
 			return;
 		}
 
-		(v0 ^ _t0).StoreUnsafe(ref destination, offset);
+		(v0 ^ _tweak).StoreUnsafe(ref destination, offset);
 		(v1 ^ _t1).StoreUnsafe(ref destination, offset + 16);
 		(v2 ^ _t2).StoreUnsafe(ref destination, offset + 32);
 		(v3 ^ _t3).StoreUnsafe(ref destination, offset + 48);
@@ -98,12 +96,11 @@ internal struct AesXtsPolicy : IAesModePolicy
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Prepare4(ref byte source, nuint offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3)
 	{
-		_t0 = _tweak;
-		_t1 = XtsTweak.MultiplyByAlpha(_t0);
+		_t1 = XtsTweak.MultiplyByAlpha(_tweak);
 		_t2 = XtsTweak.MultiplyByAlpha(_t1);
 		_t3 = XtsTweak.MultiplyByAlpha(_t2);
 
-		v0 = Vector128.LoadUnsafe(ref source, offset) ^ _t0;
+		v0 = Vector128.LoadUnsafe(ref source, offset) ^ _tweak;
 		v1 = Vector128.LoadUnsafe(ref source, offset + 16) ^ _t1;
 		v2 = Vector128.LoadUnsafe(ref source, offset + 32) ^ _t2;
 		v3 = Vector128.LoadUnsafe(ref source, offset + 48) ^ _t3;
@@ -112,7 +109,7 @@ internal struct AesXtsPolicy : IAesModePolicy
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Finish4(ref byte source, ref byte destination, nuint offset, Vector128<byte> v0, Vector128<byte> v1, Vector128<byte> v2, Vector128<byte> v3)
 	{
-		(v0 ^ _t0).StoreUnsafe(ref destination, offset);
+		(v0 ^ _tweak).StoreUnsafe(ref destination, offset);
 		(v1 ^ _t1).StoreUnsafe(ref destination, offset + 16);
 		(v2 ^ _t2).StoreUnsafe(ref destination, offset + 32);
 		(v3 ^ _t3).StoreUnsafe(ref destination, offset + 48);
@@ -122,17 +119,16 @@ internal struct AesXtsPolicy : IAesModePolicy
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Prepare2(ref byte source, nuint offset, out Vector128<byte> v0, out Vector128<byte> v1)
 	{
-		_t0 = _tweak;
-		_t1 = XtsTweak.MultiplyByAlpha(_t0);
+		_t1 = XtsTweak.MultiplyByAlpha(_tweak);
 
-		v0 = Vector128.LoadUnsafe(ref source, offset) ^ _t0;
+		v0 = Vector128.LoadUnsafe(ref source, offset) ^ _tweak;
 		v1 = Vector128.LoadUnsafe(ref source, offset + 16) ^ _t1;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Finish2(ref byte source, ref byte destination, nuint offset, Vector128<byte> v0, Vector128<byte> v1)
 	{
-		(v0 ^ _t0).StoreUnsafe(ref destination, offset);
+		(v0 ^ _tweak).StoreUnsafe(ref destination, offset);
 		(v1 ^ _t1).StoreUnsafe(ref destination, offset + 16);
 		_tweak = XtsTweak.MultiplyByAlpha(_t1);
 	}
