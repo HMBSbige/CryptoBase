@@ -58,15 +58,16 @@ internal partial struct Sha256State
 			return;
 		}
 
-		AppendBlocks(source, bufferedLength, bytesNeeded);
+		AppendBlocks(source, bufferedLength);
 	}
 
-	private void AppendBlocks(ReadOnlySpan<byte> source, int bufferedLength, int bytesNeeded)
+	private void AppendBlocks(ReadOnlySpan<byte> source, int bufferedLength)
 	{
 		Span<byte> buffer = _buffer;
 
 		if (bufferedLength is not 0)
 		{
+			int bytesNeeded = BlockSizeInBytes - bufferedLength;
 			source.Slice(0, bytesNeeded).CopyTo(buffer.Slice(bufferedLength));
 			ProcessBlocks(buffer);
 			source = source.Slice(bytesNeeded);
