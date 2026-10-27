@@ -93,8 +93,8 @@ public abstract class AppendStream<TAlgorithm> : Stream where TAlgorithm : class
 	/// <inheritdoc />
 	public override int ReadByte()
 	{
-		Span<byte> buffer = stackalloc byte[1];
-		return Read(buffer) is 0 ? -1 : buffer[0];
+		byte value = 0;
+		return Read(new Span<byte>(ref value)) is 0 ? -1 : value;
 	}
 
 	/// <inheritdoc />
@@ -142,9 +142,7 @@ public abstract class AppendStream<TAlgorithm> : Stream where TAlgorithm : class
 	/// <inheritdoc />
 	public override void WriteByte(byte value)
 	{
-		Span<byte> buffer = stackalloc byte[1];
-		buffer[0] = value;
-		Write(buffer);
+		Write(new ReadOnlySpan<byte>(in value));
 	}
 
 	/// <inheritdoc />
