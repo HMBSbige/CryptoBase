@@ -13,9 +13,8 @@ internal static class Crc32Engine
 	private const int X86Avx512Threshold = 256;
 
 	// One 128-byte batch is marginally faster through the four-stream XMM path.
-	private const int IeeeX86Avx2Threshold = 129;
+	private const int X86Avx2Threshold = 129;
 	private const int CastagnoliX86Avx2Threshold = 512;
-	private const int IeeeX86Vector128Threshold = 16;
 	private const int CastagnoliX86Vector128Threshold = 1024;
 	private const int Arm64HybridThresholdInBytes = 6 * 1024;
 
@@ -25,6 +24,7 @@ internal static class Crc32Engine
 		get => Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
 	}
 
+	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static uint Update<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
 	{
@@ -54,31 +54,22 @@ internal static class Crc32Engine
 			source = source.Slice(bytesConsumed);
 		}
 
+		// CRC-32C with SSE4.2 returned above unless the widest supported fold applies, so these thresholds only matter without a CRC instruction.
 		if (Pclmulqdq.IsSupported)
 		{
 			if (source.Length >= X86Avx512Threshold && UseX86Vector512)
 			{
-				return UpdateX86512<TAlgorithm>(state, source);
+				return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86512(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
 			}
 
-			int avx2Threshold = isIeee ? IeeeX86Avx2Threshold : CastagnoliX86Avx2Threshold;
-
-			if (source.Length >= avx2Threshold && Avx2.IsSupported && Pclmulqdq.V256.IsSupported)
+			if (source.Length >= X86Avx2Threshold && Avx2.IsSupported && Pclmulqdq.V256.IsSupported)
 			{
-				return UpdateX86256<TAlgorithm>(state, source);
+				return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86256(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
 			}
 
-			int vector128Threshold = isIeee
-				? IeeeX86Vector128Threshold
-				: Sse42.X64.IsSupported
-					? CastagnoliX86Vector128Threshold
-					: Sse42.IsSupported
-						? VectorThresholdWithCrcInstruction
-						: VectorThresholdWithoutCrcInstruction;
-
-			if (source.Length >= vector128Threshold)
+			if (source.Length >= VectorThresholdWithoutCrcInstruction)
 			{
-				return UpdateX86128<TAlgorithm>(state, source);
+				return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86128(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
 			}
 		}
 
@@ -152,30 +143,6 @@ internal static class Crc32Engine
 		bool isIeee = typeof(TAlgorithm) == typeof(Crc32Core);
 		Debug.Assert(isIeee || typeof(TAlgorithm) == typeof(Crc32CCore));
 		return isIeee;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint UpdateX86512<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
-	{
-		ref readonly Crc32X86FoldingConstants constants = ref GetX86Constants<TAlgorithm>();
-		Vector128<ulong> folded = Crc32Vectorized.FoldX86512(state, source, in constants, out int bytesConsumed);
-		return FinishX86<TAlgorithm>(folded, source, bytesConsumed);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint UpdateX86256<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
-	{
-		ref readonly Crc32X86FoldingConstants constants = ref GetX86Constants<TAlgorithm>();
-		Vector128<ulong> folded = Crc32Vectorized.FoldX86256(state, source, in constants, out int bytesConsumed);
-		return FinishX86<TAlgorithm>(folded, source, bytesConsumed);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint UpdateX86128<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
-	{
-		ref readonly Crc32X86FoldingConstants constants = ref GetX86Constants<TAlgorithm>();
-		Vector128<ulong> folded = Crc32Vectorized.FoldX86128(state, source, in constants, out int bytesConsumed);
-		return FinishX86<TAlgorithm>(folded, source, bytesConsumed);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
