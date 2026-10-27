@@ -39,7 +39,12 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 
 	internal static int DecapsulationKeyLength => 2 * EncodedPolynomialLength * K + 3 * SymmetricLength;
 
-	internal static int CiphertextLength => SymmetricLength * (TParameters.Du * K + TParameters.Dv);
+	// Its constrained calls make the IL too long for the inliner to see that it folds to a constant.
+	internal static int CiphertextLength
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => SymmetricLength * (TParameters.Du * K + TParameters.Dv);
+	}
 
 	// The longer of the η1 and η2 outputs, so that all 2k + 1 PRF streams share batches.
 	private static int EncryptionPrfLength => 64 * Math.Max(TParameters.Eta1, Eta2);
