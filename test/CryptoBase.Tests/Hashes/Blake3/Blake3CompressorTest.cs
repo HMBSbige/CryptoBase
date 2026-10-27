@@ -28,7 +28,7 @@ public class Blake3CompressorTest
 	[MethodDataSource(typeof(Blake3CompressorCase), nameof(Blake3CompressorCase.All))]
 	public async Task CompressBlocksMatchesReference(Blake3CompressorCase compressor)
 	{
-		SkipIfUnsupported(compressor);
+		SkipUnlessSupported(compressor);
 
 		ReadOnlyMemory<byte> blocks = CreateDeterministicSource(MaxBlockCount * BlockLength + 1).AsMemory(1);
 		uint[] initial = WordsFromLittleEndianBytes(CreateDeterministicSource(OutLength));
@@ -62,7 +62,7 @@ public class Blake3CompressorTest
 	[MethodDataSource(typeof(Blake3CompressorCase), nameof(Blake3CompressorCase.All))]
 	public async Task CompressMatchesReference(Blake3CompressorCase compressor)
 	{
-		SkipIfUnsupported(compressor);
+		SkipUnlessSupported(compressor);
 
 		uint[] chainingValue = WordsFromLittleEndianBytes(CreateDeterministicSource(OutLength));
 		byte[] block = CreateDeterministicSource(BlockLength);
@@ -99,14 +99,6 @@ public class Blake3CompressorTest
 					await Assert.That(xofInPlace).IsEquivalentTo(expected, CollectionOrdering.Matching);
 				}
 			}
-		}
-	}
-
-	private static void SkipIfUnsupported(Blake3CompressorCase compressor)
-	{
-		if (!compressor.IsSupported)
-		{
-			Skip.Test($"{compressor} is not supported here.");
 		}
 	}
 }

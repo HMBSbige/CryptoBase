@@ -22,7 +22,7 @@ public class KeccakP1600KernelTest
 	[MethodDataSource(typeof(KeccakP1600KernelCase), nameof(KeccakP1600KernelCase.All))]
 	public async Task PermuteMatchesKeccakTeamValues(KeccakP1600KernelCase kernel)
 	{
-		SkipIfUnsupported(kernel);
+		SkipUnlessSupported(kernel);
 
 		ulong[] state = CreateGuardedState(kernel.Lanes);
 
@@ -38,7 +38,7 @@ public class KeccakP1600KernelTest
 	[MethodDataSource(typeof(KeccakP1600KernelCase), nameof(KeccakP1600KernelCase.All))]
 	public async Task PermuteMatchesReference(KeccakP1600KernelCase kernel)
 	{
-		SkipIfUnsupported(kernel);
+		SkipUnlessSupported(kernel);
 
 		Random random = new(kernel.Lanes);
 		ulong[][] expected = new ulong[kernel.Lanes][];
@@ -64,14 +64,6 @@ public class KeccakP1600KernelTest
 
 			kernel.Permute(state);
 			await AssertStates(state, expected);
-		}
-	}
-
-	private static void SkipIfUnsupported(KeccakP1600KernelCase kernel)
-	{
-		if (!kernel.IsSupported)
-		{
-			Skip.Test($"{kernel} is not supported here.");
 		}
 	}
 

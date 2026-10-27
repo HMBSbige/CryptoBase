@@ -43,18 +43,9 @@ public class Sha3PermutationTest
 	[Arguments(3)]
 	public async Task PermuteMatchesReference(int seed)
 	{
-		Random random = new(seed);
-		ulong[] expected = new ulong[25];
-
-		for (int i = 0; i < expected.Length; ++i)
-		{
-			expected[i] = (ulong)random.NextInt64(long.MinValue, long.MaxValue);
-		}
-
-		InlineArray25<ulong> state = default;
-		InlineArray25<ulong> scalarState = default;
-		expected.CopyTo(state);
-		expected.CopyTo(scalarState);
+		InlineArray25<ulong> state = Sha3TestUtils.RandomState(seed);
+		InlineArray25<ulong> scalarState = state;
+		ulong[] expected = Sha3TestUtils.ToArray(state);
 
 		for (int i = 0; i < 4; ++i)
 		{
@@ -64,14 +55,9 @@ public class Sha3PermutationTest
 
 			using (Assert.Multiple())
 			{
-				await Assert.That(ToArray(state)).IsEquivalentTo(expected, CollectionOrdering.Matching);
-				await Assert.That(ToArray(scalarState)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+				await Assert.That(Sha3TestUtils.ToArray(state)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+				await Assert.That(Sha3TestUtils.ToArray(scalarState)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 			}
 		}
-	}
-
-	private static ulong[] ToArray(in InlineArray25<ulong> state)
-	{
-		return ((ReadOnlySpan<ulong>)state).ToArray();
 	}
 }

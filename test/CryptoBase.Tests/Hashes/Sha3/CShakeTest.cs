@@ -36,7 +36,7 @@ public class CShakeTest
 	[GenerateGenericTest(typeof(CShake256Xof), typeof(Shake256Core))]
 	public async Task EmptyNameAndCustomizationGiveShake<T, TShake>() where T : class, IXof<T> where TShake : unmanaged, IXofCore<TShake>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 
 		foreach (int inputLength in (int[])[0, 1, rate - 1, rate, rate + 1, 3 * rate + 5])
 		{
@@ -70,7 +70,7 @@ public class CShakeTest
 	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task MatchesReference<T>() where T : class, IXof<T>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 		int outputLength = 2 * rate + 3;
 		(byte[] Name, byte[] Customization)[] pairs =
 		[
@@ -105,7 +105,7 @@ public class CShakeTest
 	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task AppendInPiecesMatchesOneAppend<T>() where T : class, IXof<T>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 		byte[] source = CreateDeterministicSource(7 * rate + 13);
 		byte[] expected = Output<T>(source, 3 * rate + 11);
 		using T xof = Create<T>(Name, Customization);
@@ -128,7 +128,7 @@ public class CShakeTest
 	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task ReadInPiecesMatchesOneRead<T>() where T : class, IXof<T>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 		byte[] source = CreateDeterministicSource(rate + 1);
 		int outputLength = 4 * rate + 5;
 		byte[] expected = Output<T>(source, outputLength);
@@ -157,7 +157,7 @@ public class CShakeTest
 	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task GetCurrentHashLeavesStateUnchanged<T>() where T : class, IXof<T>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 		byte[] first = CreateDeterministicSource(rate - 1);
 		byte[] second = CreateDeterministicSource(2 * rate + 9);
 		using T xof = Create<T>(Name, Customization);
@@ -176,7 +176,7 @@ public class CShakeTest
 	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task ResetsKeepNameAndCustomization<T>() where T : class, IXof<T>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 		byte[] first = CreateDeterministicSource(rate + 1);
 		byte[] second = CreateDeterministicSource(3);
 		using T xof = Create<T>(Name, Customization);
@@ -200,7 +200,7 @@ public class CShakeTest
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the instance is disposed.")]
 	public async Task ReadingRejectsInputUntilReset<T>() where T : class, IXof<T>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 		byte[] first = CreateDeterministicSource(rate + 3);
 		byte[] second = CreateDeterministicSource(7);
 		byte[] expected = Output<T>(Concat(first, second), 2 * rate + 5);
@@ -237,7 +237,7 @@ public class CShakeTest
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before reading is disposed.")]
 	public async Task CloneIsIndependent<T>() where T : class, IXof<T>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 		byte[] source = CreateDeterministicSource(rate + 32);
 		byte[] expected = Output<T>(Concat(source, source), 3 * rate);
 		using T xof = Create<T>(Name, Customization);
@@ -306,7 +306,7 @@ public class CShakeTest
 	[GenerateGenericTest(typeof(CShake256Xof))]
 	public async Task HashDataSupportsOverlappingSourceAndDestination<T>() where T : class, IXof<T>
 	{
-		int rate = Rate<T>();
+		int rate = XofContractTest.BlockLength<T>();
 
 		// Without a function name or customization string, a short input and output take one block each.
 		foreach ((byte[] name, byte[] customization, int inputLength, int outputLength) in new[] { (Name, Customization, rate + 9, 2 * rate + 1), ([], [], rate + 9, 2 * rate + 1), ([], [], rate - 1, rate) })
@@ -332,11 +332,6 @@ public class CShakeTest
 			await AssertWrites(expected, destination => HashData<T>([], customization, data, destination));
 			await AssertWrites(expected, xof.Read);
 		}
-	}
-
-	private static int Rate<T>()
-	{
-		return typeof(T) == typeof(CShake128Xof) ? 168 : typeof(T) == typeof(CShake256Xof) ? 136 : throw new NotSupportedException(typeof(T).Name);
 	}
 
 	private static T Create<T>(ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization) where T : class, IXof<T>

@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-public abstract class KeccakP1600KernelCase
+public abstract class KeccakP1600KernelCase : IKernelCase
 {
 	public static IEnumerable<KeccakP1600KernelCase> All()
 	{
@@ -11,6 +11,11 @@ public abstract class KeccakP1600KernelCase
 		yield return new Kernel<KeccakP1600Times2>();
 		yield return new Kernel<KeccakP1600Times4>();
 		yield return new Kernel<KeccakP1600Times8>();
+	}
+
+	public static KeccakP1600KernelCase For(int lanes)
+	{
+		return All().Single(kernel => kernel.Lanes == lanes);
 	}
 
 	public abstract Type KernelType { get; }

@@ -13,38 +13,33 @@ public class Sha3CavpTest
 	private const int MonteCarloCheckpoints = 100;
 	private const int MonteCarloIterations = 1000;
 
-	public static IEnumerable<CavpRecord> Records(string fileName)
-	{
-		return CavpRspFile.Load(fileName).Records;
-	}
-
 	[Test]
-	[MethodDataSource(nameof(Records), Arguments = ["SHA3_224ShortMsg.rsp"])]
-	[MethodDataSource(nameof(Records), Arguments = ["SHA3_224LongMsg.rsp"])]
+	[CavpRecords("SHA3_224ShortMsg.rsp")]
+	[CavpRecords("SHA3_224LongMsg.rsp")]
 	public Task Sha3_224Messages(CavpRecord record)
 	{
 		return VerifyMessage<Sha3_224Core>(record);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Records), Arguments = ["SHA3_256ShortMsg.rsp"])]
-	[MethodDataSource(nameof(Records), Arguments = ["SHA3_256LongMsg.rsp"])]
+	[CavpRecords("SHA3_256ShortMsg.rsp")]
+	[CavpRecords("SHA3_256LongMsg.rsp")]
 	public Task Sha3_256Messages(CavpRecord record)
 	{
 		return VerifyMessage<Sha3_256Core>(record);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Records), Arguments = ["SHA3_384ShortMsg.rsp"])]
-	[MethodDataSource(nameof(Records), Arguments = ["SHA3_384LongMsg.rsp"])]
+	[CavpRecords("SHA3_384ShortMsg.rsp")]
+	[CavpRecords("SHA3_384LongMsg.rsp")]
 	public Task Sha3_384Messages(CavpRecord record)
 	{
 		return VerifyMessage<Sha3_384Core>(record);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Records), Arguments = ["SHA3_512ShortMsg.rsp"])]
-	[MethodDataSource(nameof(Records), Arguments = ["SHA3_512LongMsg.rsp"])]
+	[CavpRecords("SHA3_512ShortMsg.rsp")]
+	[CavpRecords("SHA3_512LongMsg.rsp")]
 	public Task Sha3_512Messages(CavpRecord record)
 	{
 		return VerifyMessage<Sha3_512Core>(record);

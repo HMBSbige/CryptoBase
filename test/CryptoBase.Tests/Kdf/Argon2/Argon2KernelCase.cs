@@ -3,7 +3,7 @@ using CryptoBase.Kdf.Argon2;
 
 namespace CryptoBase.Tests.Kdf.Argon2;
 
-public abstract class Argon2KernelCase
+public abstract class Argon2KernelCase : IKernelCase
 {
 	public static IEnumerable<Argon2KernelCase> All()
 	{

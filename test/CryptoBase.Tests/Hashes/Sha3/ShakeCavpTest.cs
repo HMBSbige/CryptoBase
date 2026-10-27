@@ -14,36 +14,31 @@ public class ShakeCavpTest
 	private const int MonteCarloIterations = 1000;
 	private const int MonteCarloMessageLength = 16;
 
-	public static IEnumerable<CavpRecord> Records(string fileName)
-	{
-		return CavpRspFile.Load(fileName).Records;
-	}
-
 	[Test]
-	[MethodDataSource(nameof(Records), Arguments = ["SHAKE128ShortMsg.rsp"])]
-	[MethodDataSource(nameof(Records), Arguments = ["SHAKE128LongMsg.rsp"])]
+	[CavpRecords("SHAKE128ShortMsg.rsp")]
+	[CavpRecords("SHAKE128LongMsg.rsp")]
 	public Task Shake128Messages(CavpRecord record)
 	{
 		return VerifyMessage<Shake128Core>(record);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Records), Arguments = ["SHAKE256ShortMsg.rsp"])]
-	[MethodDataSource(nameof(Records), Arguments = ["SHAKE256LongMsg.rsp"])]
+	[CavpRecords("SHAKE256ShortMsg.rsp")]
+	[CavpRecords("SHAKE256LongMsg.rsp")]
 	public Task Shake256Messages(CavpRecord record)
 	{
 		return VerifyMessage<Shake256Core>(record);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Records), Arguments = ["SHAKE128VariableOut.rsp"])]
+	[CavpRecords("SHAKE128VariableOut.rsp")]
 	public Task Shake128VariableOutput(CavpRecord record)
 	{
 		return VerifyVariableOutput<Shake128Core>(record);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Records), Arguments = ["SHAKE256VariableOut.rsp"])]
+	[CavpRecords("SHAKE256VariableOut.rsp")]
 	public Task Shake256VariableOutput(CavpRecord record)
 	{
 		return VerifyVariableOutput<Shake256Core>(record);

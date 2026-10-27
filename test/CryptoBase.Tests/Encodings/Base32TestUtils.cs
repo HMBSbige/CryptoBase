@@ -1,3 +1,4 @@
+using CryptoBase.Encodings;
 using System.Text;
 
 namespace CryptoBase.Tests.Encodings;
@@ -9,6 +10,12 @@ public static class Base32TestUtils
 	public static string Rfc4648Alphabet(bool hex)
 	{
 		return hex ? "0123456789ABCDEFGHIJKLMNOPQRSTUV" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+	}
+
+	public static Base32Encoding Rfc4648Encoding(bool hex, bool omitPadding = false)
+	{
+		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		return omitPadding ? encoding.OmitPadding : encoding;
 	}
 
 	public static byte[] CreatePatternSource(int length, int offset)

@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace CryptoBase.Tests.Hashes.Blake3;
 
-public abstract class Blake3KernelCase
+public abstract class Blake3KernelCase : IKernelCase
 {
 	public static IEnumerable<Blake3KernelCase> All()
 	{

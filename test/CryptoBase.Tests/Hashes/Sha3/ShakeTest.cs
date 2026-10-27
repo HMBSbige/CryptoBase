@@ -1,4 +1,3 @@
-using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha3;
 using System.Diagnostics.CodeAnalysis;
@@ -55,7 +54,7 @@ public class ShakeTest
 			}
 
 			byte[] longExpected = KeccakReference.Sponge(source, rate, KeccakReference.ShakeDomainSeparator, 4 * rate + 5);
-			await Assert.That(ReadIncrementally(securityStrength, source, longExpected.Length, (uint)inputLength)).IsEquivalentTo(longExpected, CollectionOrdering.Matching);
+			await Assert.That(ReadIncrementally(securityStrength, source, longExpected.Length)).IsEquivalentTo(longExpected, CollectionOrdering.Matching);
 		}
 	}
 
@@ -215,22 +214,17 @@ public class ShakeTest
 		}
 	}
 
-	private static byte[] ReadIncrementally(int securityStrength, byte[] source, int outputLength, uint seed)
+	private static byte[] ReadIncrementally(int securityStrength, byte[] source, int outputLength)
 	{
-		return securityStrength is 128 ? ReadIncrementally<Shake128Core>(source, outputLength, seed) : ReadIncrementally<Shake256Core>(source, outputLength, seed);
-	}
-
-	private static byte[] ReadIncrementally<TCore>(byte[] source, int outputLength, uint seed) where TCore : unmanaged, IXofCore<TCore>
-	{
-		using Xof<TCore> xof = Xof<TCore>.Create();
+		using IDisposable xof = CreateXof(securityStrength, out Action<ReadOnlySpan<byte>> append, out Action<Span<byte>> read, out _, out _);
 		byte[] output = new byte[outputLength];
-		uint state = seed;
+		uint state = (uint)source.Length;
 
 		for (int offset = 0; offset < source.Length;)
 		{
 			state = state * 1664525U + 1013904223U;
 			int length = Math.Min((int)(state % 300U), source.Length - offset);
-			xof.Append(source.AsSpan(offset, length));
+			append(source.AsSpan(offset, length));
 			offset += length;
 		}
 
@@ -238,7 +232,7 @@ public class ShakeTest
 		{
 			state = state * 1664525U + 1013904223U;
 			int length = Math.Min((int)(state % 300U), outputLength - offset);
-			xof.Read(output.AsSpan(offset, length));
+			read(output.AsSpan(offset, length));
 			offset += length;
 		}
 

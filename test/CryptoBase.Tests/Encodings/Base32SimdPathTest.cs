@@ -22,7 +22,7 @@ public class Base32SimdPathTest
 	public async Task Utf8DecodeMatchesScalarForEveryByte([MatrixMethod<Base32SimdPathTest>(nameof(SimdPaths))] string pathName, [Matrix(112, 192)] int symbolCount, [Matrix] bool hex)
 	{
 		Base32SimdPath path = GetSupportedPath(pathName);
-		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		Base32Encoding encoding = Rfc4648Encoding(hex);
 		byte[] valid = ToByteSymbols(EncodeReference(CreateDeterministicSource(symbolCount / 8 * 5), hex, false));
 		byte[] input = new byte[symbolCount];
 		byte[] expected = new byte[symbolCount / 8 * 5];
@@ -57,7 +57,7 @@ public class Base32SimdPathTest
 	public async Task CharDecodeMatchesScalarForEveryChar([MatrixMethod<Base32SimdPathTest>(nameof(SimdPaths))] string pathName, [Matrix(112, 192)] int symbolCount, [Matrix] bool hex)
 	{
 		Base32SimdPath path = GetSupportedPath(pathName);
-		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		Base32Encoding encoding = Rfc4648Encoding(hex);
 		char[] valid = EncodeReference(CreateDeterministicSource(symbolCount / 8 * 5), hex, false);
 		char[] input = new char[symbolCount];
 		byte[] expected = new byte[symbolCount / 8 * 5];
@@ -92,7 +92,7 @@ public class Base32SimdPathTest
 	public async Task EncodeMatchesScalarForEveryDestinationLength([MatrixMethod<Base32SimdPathTest>(nameof(SimdPaths))] string pathName, [Matrix] bool hex)
 	{
 		Base32SimdPath path = GetSupportedPath(pathName);
-		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		Base32Encoding encoding = Rfc4648Encoding(hex);
 		byte[] source = CreateDeterministicSource(240);
 		byte[] encoded = new byte[encoding.GetEncodedLength(source.Length)];
 
@@ -123,7 +123,7 @@ public class Base32SimdPathTest
 		GuardPageBuffer.SkipUnlessSupported();
 		Base32SimdPath path = GetSupportedPath(pathName);
 
-		await Assert.That(GetGuardedEncodeMismatches(hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648, path)).IsEmpty();
+		await Assert.That(GetGuardedEncodeMismatches(Rfc4648Encoding(hex), path)).IsEmpty();
 	}
 
 	[Test]

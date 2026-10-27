@@ -41,14 +41,14 @@ public class PlatformSha256Test
 	}
 
 	[Test]
-	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(HashAlgorithmTestUtils.Hash64BlockAndPaddingLengths))]
+	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(HashAlgorithmTestUtils.BlockAndPaddingLengths), Arguments = [64])]
 	public Task BlockBoundaries(int length)
 	{
 		return HashAlgorithmTestUtils<PlatformSha256>.VerifyBoundary(length, ManagedHash);
 	}
 
 	[Test]
-	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(HashAlgorithmTestUtils.Hash64IncrementalBatchCases))]
+	[MethodDataSource(typeof(HashAlgorithmTestUtils), nameof(HashAlgorithmTestUtils.HashIncrementalBatchCases), Arguments = [64])]
 	public Task IncrementalBlockBatches(int length, int sourceOffset, int blockSize)
 	{
 		return HashAlgorithmTestUtils<PlatformSha256>.VerifyIncrementalBlockBatch(length, sourceOffset, blockSize, ManagedHash);

@@ -25,7 +25,7 @@ public class KeccakBatchSpongeTest
 	[Test]
 	public async Task ScheduleCoversEveryStream()
 	{
-		TestContext.Current?.Output.WriteLine($"Widest kernel: {Sha3TestUtils.KernelName(KeccakP1600Batch.MaxLanes)}");
+		TestContext.Current?.Output.WriteLine($"Widest kernel: {KeccakP1600KernelCase.For(KeccakP1600Batch.MaxLanes)}");
 
 		for (int streams = 1; streams <= 64; ++streams)
 		{
@@ -34,10 +34,10 @@ public class KeccakBatchSpongeTest
 			for (int remaining = streams; remaining > 0;)
 			{
 				int lanes = KeccakP1600Batch.ChooseLanes(remaining);
-				await Assert.That(Sha3TestUtils.IsKernelSupported(lanes)).IsTrue().Because($"{lanes} lanes for {remaining} of {streams} streams");
+				await Assert.That(KeccakP1600KernelCase.For(lanes).IsSupported).IsTrue().Because($"{lanes} lanes for {remaining} of {streams} streams");
 
 				int count = Math.Min(remaining, lanes);
-				groups.Add($"{Sha3TestUtils.KernelName(lanes)}[{count}]");
+				groups.Add($"{KeccakP1600KernelCase.For(lanes)}[{count}]");
 				remaining -= count;
 			}
 
@@ -53,7 +53,7 @@ public class KeccakBatchSpongeTest
 	[CombinedDataSources]
 	public Task MatchesIndependentSponges([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
 	{
-		Sha3TestUtils.SkipUnlessKernelSupported(lanes);
+		SkipUnlessSupported(KeccakP1600KernelCase.For(lanes));
 
 		return rate switch
 		{
@@ -78,7 +78,7 @@ public class KeccakBatchSpongeTest
 	public Task StaysWithinInputsAndOutputs([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
 	{
 		GuardPageBuffer.SkipUnlessSupported();
-		Sha3TestUtils.SkipUnlessKernelSupported(lanes);
+		SkipUnlessSupported(KeccakP1600KernelCase.For(lanes));
 
 		return rate switch
 		{
@@ -98,7 +98,7 @@ public class KeccakBatchSpongeTest
 	{
 		if (lanes is not 0)
 		{
-			Sha3TestUtils.SkipUnlessKernelSupported(lanes);
+			SkipUnlessSupported(KeccakP1600KernelCase.For(lanes));
 		}
 
 		return rate switch
@@ -118,7 +118,7 @@ public class KeccakBatchSpongeTest
 	public async Task SeededResetStaysWithinPrefixAndSuffixes(int lanes)
 	{
 		GuardPageBuffer.SkipUnlessSupported();
-		Sha3TestUtils.SkipUnlessKernelSupported(lanes);
+		SkipUnlessSupported(KeccakP1600KernelCase.For(lanes));
 
 		foreach (int prefixLength in PrefixLengths)
 		{

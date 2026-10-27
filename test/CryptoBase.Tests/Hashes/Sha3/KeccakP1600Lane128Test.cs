@@ -15,10 +15,10 @@ public class KeccakP1600Lane128Test
 		InlineArray25<ulong> state = default;
 
 		KeccakP1600.PermuteLane128(ref state);
-		await Assert.That(ToArray(state)).IsEquivalentTo(Sha3PermutationTest.ZeroStatePermutedOnce, CollectionOrdering.Matching);
+		await Assert.That(Sha3TestUtils.ToArray(state)).IsEquivalentTo(Sha3PermutationTest.ZeroStatePermutedOnce, CollectionOrdering.Matching);
 
 		KeccakP1600.PermuteLane128(ref state);
-		await Assert.That(ToArray(state)).IsEquivalentTo(Sha3PermutationTest.ZeroStatePermutedTwice, CollectionOrdering.Matching);
+		await Assert.That(Sha3TestUtils.ToArray(state)).IsEquivalentTo(Sha3PermutationTest.ZeroStatePermutedTwice, CollectionOrdering.Matching);
 	}
 
 	[Test]
@@ -28,22 +28,14 @@ public class KeccakP1600Lane128Test
 	public async Task PermuteMatchesReference(int seed)
 	{
 		SkipUnlessSupported();
-		Random random = new(seed);
-		ulong[] expected = new ulong[25];
-
-		for (int i = 0; i < expected.Length; ++i)
-		{
-			expected[i] = (ulong)random.NextInt64(long.MinValue, long.MaxValue);
-		}
-
-		InlineArray25<ulong> state = default;
-		expected.CopyTo(state);
+		InlineArray25<ulong> state = Sha3TestUtils.RandomState(seed);
+		ulong[] expected = Sha3TestUtils.ToArray(state);
 
 		for (int i = 0; i < 4; ++i)
 		{
 			KeccakReference.Permute(expected);
 			KeccakP1600.PermuteLane128(ref state);
-			await Assert.That(ToArray(state)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+			await Assert.That(Sha3TestUtils.ToArray(state)).IsEquivalentTo(expected, CollectionOrdering.Matching);
 		}
 	}
 
@@ -85,7 +77,7 @@ public class KeccakP1600Lane128Test
 		int rate = TRate.RateInBytes;
 		byte[] source = new byte[3 * rate + 5];
 		new Random(rate).NextBytes(source);
-		InlineArray25<ulong> state = RandomState(rate);
+		InlineArray25<ulong> state = Sha3TestUtils.RandomState(rate);
 		InlineArray25<ulong> expected = state;
 
 		int absorbed = KeccakP1600.AbsorbLane128<TRate>(ref state, source);
@@ -103,7 +95,7 @@ public class KeccakP1600Lane128Test
 		using (Assert.Multiple())
 		{
 			await Assert.That(absorbed).IsEqualTo(3 * rate);
-			await Assert.That(ToArray(state)).IsEquivalentTo(ToArray(expected), CollectionOrdering.Matching);
+			await Assert.That(Sha3TestUtils.ToArray(state)).IsEquivalentTo(Sha3TestUtils.ToArray(expected), CollectionOrdering.Matching);
 		}
 	}
 
@@ -114,7 +106,7 @@ public class KeccakP1600Lane128Test
 		byte[] destination = new byte[3 * rate + 5];
 		destination.AsSpan().Fill(0xA5);
 		byte[] expectedOutput = (byte[])destination.Clone();
-		InlineArray25<ulong> state = RandomState(rate);
+		InlineArray25<ulong> state = Sha3TestUtils.RandomState(rate);
 		InlineArray25<ulong> expected = state;
 
 		int written = KeccakP1600.SqueezeLane128<TRate>(ref state, destination);
@@ -133,7 +125,7 @@ public class KeccakP1600Lane128Test
 		{
 			await Assert.That(written).IsEqualTo(3 * rate);
 			await Assert.That(destination).IsEquivalentTo(expectedOutput, CollectionOrdering.Matching);
-			await Assert.That(ToArray(state)).IsEquivalentTo(ToArray(expected), CollectionOrdering.Matching);
+			await Assert.That(Sha3TestUtils.ToArray(state)).IsEquivalentTo(Sha3TestUtils.ToArray(expected), CollectionOrdering.Matching);
 		}
 	}
 
@@ -145,21 +137,4 @@ public class KeccakP1600Lane128Test
 		}
 	}
 
-	private static InlineArray25<ulong> RandomState(int seed)
-	{
-		Random random = new(seed);
-		InlineArray25<ulong> state = default;
-
-		for (int i = 0; i < 25; ++i)
-		{
-			state[i] = (ulong)random.NextInt64(long.MinValue, long.MaxValue);
-		}
-
-		return state;
-	}
-
-	private static ulong[] ToArray(in InlineArray25<ulong> state)
-	{
-		return ((ReadOnlySpan<ulong>)state).ToArray();
-	}
 }

@@ -1,4 +1,5 @@
 using CryptoBase.Hashes.Sha3;
+using CryptoBase.Internal;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 
@@ -52,35 +53,22 @@ internal static class Sha3TestUtils
 		return output;
 	}
 
-	public static bool IsKernelSupported(int lanes)
+	public static InlineArray25<ulong> RandomState(int seed)
 	{
-		return lanes switch
-		{
-			1 => KeccakP1600Times1.IsSupported,
-			2 => KeccakP1600Times2.IsSupported,
-			4 => KeccakP1600Times4.IsSupported,
-			8 => KeccakP1600Times8.IsSupported,
-			_ => false
-		};
-	}
+		Random random = new(seed);
+		InlineArray25<ulong> state = default;
 
-	public static void SkipUnlessKernelSupported(int lanes)
-	{
-		if (!IsKernelSupported(lanes))
+		for (int i = 0; i < 25; ++i)
 		{
-			Skip.Test($"{KernelName(lanes)} is not supported here.");
+			state[i] = (ulong)random.NextInt64(long.MinValue, long.MaxValue);
 		}
+
+		return state;
 	}
 
-	public static string KernelName(int lanes)
+	public static ulong[] ToArray(in InlineArray25<ulong> state)
 	{
-		return lanes switch
-		{
-			8 => nameof(KeccakP1600Times8),
-			4 => nameof(KeccakP1600Times4),
-			2 => nameof(KeccakP1600Times2),
-			_ => nameof(KeccakP1600Times1)
-		};
+		return ((ReadOnlySpan<ulong>)state).ToArray();
 	}
 
 	public static byte[] Customization(int length)

@@ -9,17 +9,17 @@ namespace CryptoBase.Tests.Hashes;
 
 // Checks every IXof against its own one-shot HashData; ShakeTest, ShakeCavpTest, CShakeTest and Blake3XofTest compare that with independent oracles.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-public class XofContractTest
+[GenerateGenericTest(typeof(Xof<Shake128Core>))]
+[GenerateGenericTest(typeof(Xof<Shake256Core>))]
+[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
+[GenerateGenericTest(typeof(CShake128Xof))]
+[GenerateGenericTest(typeof(CShake256Xof))]
+public class XofContractTest<T> where T : class, IXof<T>
 {
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
-	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
-	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
-	[GenerateGenericTest(typeof(CShake128Xof))]
-	[GenerateGenericTest(typeof(CShake256Xof))]
-	public async Task IncrementalMatchesHashData<T>() where T : class, IXof<T>
+	public async Task IncrementalMatchesHashData()
 	{
-		int block = BlockLength<T>();
+		int block = XofContractTest.BlockLength<T>();
 		int longest = 3 * block + 11;
 		using T xof = T.Create();
 
@@ -27,7 +27,7 @@ public class XofContractTest
 		{
 			byte[] source = CreateDeterministicSource(inputLength);
 			byte[] sourceCopy = (byte[])source.Clone();
-			byte[] longOutput = Output<T>(source, longest);
+			byte[] longOutput = Output(source, longest);
 
 			foreach (int outputLength in (int[])[0, 1, block - 1, block, block + 1, longest])
 			{
@@ -49,23 +49,18 @@ public class XofContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
-	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
-	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
-	[GenerateGenericTest(typeof(CShake128Xof))]
-	[GenerateGenericTest(typeof(CShake256Xof))]
-	public async Task ReadInPiecesMatchesOneRead<T>() where T : class, IXof<T>
+	public async Task ReadInPiecesMatchesOneRead()
 	{
-		int block = BlockLength<T>();
+		int block = XofContractTest.BlockLength<T>();
 		int outputLength = 4 * block + 5;
 		using T xof = T.Create();
 
 		foreach (int inputLength in (int[])[0, block + 1])
 		{
 			byte[] source = CreateDeterministicSource(inputLength);
-			byte[] expected = Output<T>(source, outputLength);
+			byte[] expected = Output(source, outputLength);
 
-			foreach (int[] pieceLengths in PieceLengthPatterns(block))
+			foreach (int[] pieceLengths in XofContractTest.PieceLengthPatterns(block))
 			{
 				xof.Reset();
 				xof.Append(source);
@@ -85,17 +80,12 @@ public class XofContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
-	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
-	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
-	[GenerateGenericTest(typeof(CShake128Xof))]
-	[GenerateGenericTest(typeof(CShake256Xof))]
-	public async Task ReadingRejectsInputAndRestartsUntilReset<T>() where T : class, IXof<T>
+	public async Task ReadingRejectsInputAndRestartsUntilReset()
 	{
-		int block = BlockLength<T>();
+		int block = XofContractTest.BlockLength<T>();
 		byte[] first = CreateDeterministicSource(block + 3);
 		byte[] second = CreateDeterministicSource(7);
-		byte[] expected = Output<T>(Concat(first, second), 2 * block + 5);
+		byte[] expected = Output(Concat(first, second), 2 * block + 5);
 		using T xof = T.Create();
 
 		xof.Append(first);
@@ -121,64 +111,49 @@ public class XofContractTest
 
 		xof.Reset();
 		xof.Append(second);
-		await AssertWrites(Output<T>(second, block + 1), xof.GetCurrentHash);
-		await AssertWrites(Output<T>(second, block + 1), xof.Read);
+		await AssertWrites(Output(second, block + 1), xof.GetCurrentHash);
+		await AssertWrites(Output(second, block + 1), xof.Read);
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
-	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
-	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
-	[GenerateGenericTest(typeof(CShake128Xof))]
-	[GenerateGenericTest(typeof(CShake256Xof))]
-	public async Task GetCurrentHashLeavesStateUnchanged<T>() where T : class, IXof<T>
+	public async Task GetCurrentHashLeavesStateUnchanged()
 	{
-		int block = BlockLength<T>();
+		int block = XofContractTest.BlockLength<T>();
 		byte[] first = CreateDeterministicSource(block - 1);
 		byte[] second = CreateDeterministicSource(2 * block + 9);
 		using T xof = T.Create();
 
 		xof.Append(first);
-		await AssertWrites(Output<T>(first, 2 * block + 3), xof.GetCurrentHash);
-		await AssertWrites(Output<T>(first, 1), xof.GetCurrentHash);
+		await AssertWrites(Output(first, 2 * block + 3), xof.GetCurrentHash);
+		await AssertWrites(Output(first, 1), xof.GetCurrentHash);
 		xof.GetCurrentHash(Span<byte>.Empty);
 
 		xof.Append(second);
-		await AssertWrites(Output<T>(Concat(first, second), 2 * block + 3), xof.Read);
+		await AssertWrites(Output(Concat(first, second), 2 * block + 3), xof.Read);
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
-	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
-	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
-	[GenerateGenericTest(typeof(CShake128Xof))]
-	[GenerateGenericTest(typeof(CShake256Xof))]
-	public async Task GetHashAndResetStartsOver<T>() where T : class, IXof<T>
+	public async Task GetHashAndResetStartsOver()
 	{
-		int block = BlockLength<T>();
+		int block = XofContractTest.BlockLength<T>();
 		byte[] first = CreateDeterministicSource(block + 1);
 		byte[] second = CreateDeterministicSource(3);
 		using T xof = T.Create();
 
 		xof.Append(first);
-		await AssertWrites(Output<T>(first, block + 7), xof.GetHashAndReset);
-		await AssertWrites(Output<T>([], block + 7), xof.GetCurrentHash);
+		await AssertWrites(Output(first, block + 7), xof.GetHashAndReset);
+		await AssertWrites(Output([], block + 7), xof.GetCurrentHash);
 
 		xof.Append(second);
 		xof.GetHashAndReset(Span<byte>.Empty);
-		await AssertWrites(Output<T>([], 9), xof.GetCurrentHash);
+		await AssertWrites(Output([], 9), xof.GetCurrentHash);
 
 		xof.Append(second);
-		await AssertWrites(Output<T>(second, block + 7), xof.Read);
+		await AssertWrites(Output(second, block + 7), xof.Read);
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(Xof<Shake128Core>))]
-	[GenerateGenericTest(typeof(Xof<Shake256Core>))]
-	[GenerateGenericTest(typeof(Blake3HashAlgorithm))]
-	[GenerateGenericTest(typeof(CShake128Xof))]
-	[GenerateGenericTest(typeof(CShake256Xof))]
-	public async Task DisposeIsIdempotentAndFinal<T>() where T : class, IXof<T>
+	public async Task DisposeIsIdempotentAndFinal()
 	{
 		T absorbing = T.Create();
 		absorbing.Append([1, 2, 3]);
@@ -203,6 +178,29 @@ public class XofContractTest
 		}
 	}
 
+	private static byte[] Output(ReadOnlySpan<byte> source, int length)
+	{
+		byte[] output = new byte[length];
+		T.HashData(source, output);
+		return output;
+	}
+
+	private static void AppendInPieces(T xof, ReadOnlySpan<byte> source, int seed)
+	{
+		uint state = (uint)seed;
+
+		while (!source.IsEmpty)
+		{
+			state = state * 1664525U + 1013904223U;
+			int length = Math.Min((int)(state % 200U), source.Length);
+			xof.Append(source.Slice(0, length));
+			source = source.Slice(length);
+		}
+	}
+}
+
+internal static class XofContractTest
+{
 	internal static int BlockLength<T>()
 	{
 		if (typeof(T) == typeof(Xof<Shake128Core>) || typeof(T) == typeof(CShake128Xof))
@@ -228,25 +226,5 @@ public class XofContractTest
 		yield return [2 * block + 3];
 		yield return [0, 7, block - 7, 0, 2 * block, 1];
 		yield return [3, 1, 4, 1, 5, 9, 2, 6, 5, 35, 89, 79, 3, 238, 46];
-	}
-
-	private static byte[] Output<T>(ReadOnlySpan<byte> source, int length) where T : class, IXof<T>
-	{
-		byte[] output = new byte[length];
-		T.HashData(source, output);
-		return output;
-	}
-
-	private static void AppendInPieces<T>(T xof, ReadOnlySpan<byte> source, int seed) where T : class, IXof<T>
-	{
-		uint state = (uint)seed;
-
-		while (!source.IsEmpty)
-		{
-			state = state * 1664525U + 1013904223U;
-			int length = Math.Min((int)(state % 200U), source.Length);
-			xof.Append(source.Slice(0, length));
-			source = source.Slice(length);
-		}
 	}
 }

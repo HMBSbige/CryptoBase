@@ -22,7 +22,7 @@ public class Blake3KernelTest
 	[MethodDataSource(typeof(Blake3KernelCase), nameof(Blake3KernelCase.All))]
 	public async Task HashChunksMatchesReference(Blake3KernelCase kernel)
 	{
-		SkipIfUnsupported(kernel);
+		SkipUnlessSupported(kernel);
 
 		int maxCount = MaxCount(kernel);
 		ReadOnlyMemory<byte> input = CreateMisalignedSource(maxCount * ChunkLength);
@@ -55,7 +55,7 @@ public class Blake3KernelTest
 	[MethodDataSource(typeof(Blake3KernelCase), nameof(Blake3KernelCase.All))]
 	public async Task HashChunksWithPartialLastChunkMatchesReference(Blake3KernelCase kernel)
 	{
-		SkipIfUnsupported(kernel);
+		SkipUnlessSupported(kernel);
 
 		int maxCount = MaxCount(kernel);
 		ReadOnlyMemory<byte> input = CreateMisalignedSource(maxCount * ChunkLength);
@@ -89,7 +89,7 @@ public class Blake3KernelTest
 	[MethodDataSource(typeof(Blake3KernelCase), nameof(Blake3KernelCase.All))]
 	public async Task HashParentsMatchesReference(Blake3KernelCase kernel)
 	{
-		SkipIfUnsupported(kernel);
+		SkipUnlessSupported(kernel);
 
 		int maxCount = MaxCount(kernel);
 		ReadOnlyMemory<byte> input = CreateMisalignedSource(maxCount * BlockLength);
@@ -130,7 +130,7 @@ public class Blake3KernelTest
 	[MethodDataSource(typeof(Blake3KernelCase), nameof(Blake3KernelCase.WithXof))]
 	public async Task XofManyMatchesReference(Blake3KernelCase kernel)
 	{
-		SkipIfUnsupported(kernel);
+		SkipUnlessSupported(kernel);
 
 		int maxCount = MaxCount(kernel);
 		uint[] chainingValue = WordsFromLittleEndianBytes(CreateDeterministicSource(OutLength));
@@ -169,7 +169,7 @@ public class Blake3KernelTest
 	[MethodDataSource(typeof(Blake3KernelCase), nameof(Blake3KernelCase.All))]
 	public async Task CompressSubtreeToParentNodeMatchesReference(Blake3KernelCase kernel)
 	{
-		SkipIfUnsupported(kernel);
+		SkipUnlessSupported(kernel);
 
 		int row = kernel.Degree * ChunkLength;
 		int[] lengths =
@@ -197,14 +197,6 @@ public class Blake3KernelTest
 					await AssertOutput(output, SubtreeChildren(input.Span, key, chunkCounter, flags));
 				}
 			}
-		}
-	}
-
-	private static void SkipIfUnsupported(Blake3KernelCase kernel)
-	{
-		if (!kernel.IsSupported)
-		{
-			Skip.Test($"{kernel} is not supported here.");
 		}
 	}
 

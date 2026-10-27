@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace CryptoBase.Tests.Hashes.Blake3;
 
-public abstract class Blake3CompressorCase
+public abstract class Blake3CompressorCase : IKernelCase
 {
 	public static IEnumerable<Blake3CompressorCase> All()
 	{

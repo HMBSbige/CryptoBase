@@ -21,14 +21,12 @@ public class Tls12PrfTest
 		Seed2,
 	}
 
-	private const string TestLabelHex = @"74657374206c6162656c";
-
 	// https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/ (attachment tls1.2-prf-test-vectors.txt), label "test label"
 	[Test]
 	[Arguments(@"e18828740352b530d69b34c6597dea2e", @"f5a3fe6d34e2e28560fdcaf6823f9091", @"224d8af3c0453393a9779789d21cf7da5ee62ae6b617873d489428efc8dd58d1566e7029e2ca3a5ecd355dc64d4d927e2fbd78c4233e8604b14749a77a92a70fddf614bc0df623d798604e4ca5512794d802a258e82f86cf")]
 	public Task Sha224Vector(string secretHex, string seedHex, string outputHex)
 	{
-		return VerifyVector<Sha224Core>(secretHex, TestLabelHex, seedHex, outputHex);
+		return VerifyVector<Sha224Core>(secretHex, seedHex, outputHex);
 	}
 
 	// https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/ (attachment tls1.2-prf-test-vectors.txt), label "test label"
@@ -36,7 +34,7 @@ public class Tls12PrfTest
 	[Arguments(@"9bbe436ba940f017b17652849a71db35", @"a0ba9f936cda311827a6f796ffd5198c", @"e3f229ba727be17b8d122620557cd453c2aab21d07c3d495329b52d4e61edb5a6b301791e90d35c9c9a46b4e14baf9af0fa022f7077def17abfd3797c0564bab4fbc91666e9def9b97fce34f796789baa48082d122ee42c5a72e5a5110fff70187347b66")]
 	public Task Sha256Vector(string secretHex, string seedHex, string outputHex)
 	{
-		return VerifyVector<Sha256Core>(secretHex, TestLabelHex, seedHex, outputHex);
+		return VerifyVector<Sha256Core>(secretHex, seedHex, outputHex);
 	}
 
 	// https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/ (attachment tls1.2-prf-test-vectors.txt), label "test label"
@@ -44,7 +42,7 @@ public class Tls12PrfTest
 	[Arguments(@"b80b733d6ceefcdc71566ea48e5567df", @"cd665cf6a8447dd6ff8b27555edb7465", @"7b0c18e9ced410ed1804f2cfa34a336a1c14dffb4900bb5fd7942107e81c83cde9ca0faa60be9fe34f82b1233c9146a0e534cb400fed2700884f9dc236f80edd8bfa961144c9e8d792eca722a7b32fc3d416d473ebc2c5fd4abfdad05d9184259b5bf8cd4d90fa0d31e2dec479e4f1a26066f2eea9a69236a3e52655c9e9aee691c8f3a26854308d5eaa3be85e0990703d73e56f")]
 	public Task Sha384Vector(string secretHex, string seedHex, string outputHex)
 	{
-		return VerifyVector<Sha384Core>(secretHex, TestLabelHex, seedHex, outputHex);
+		return VerifyVector<Sha384Core>(secretHex, seedHex, outputHex);
 	}
 
 	// https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/ (attachment tls1.2-prf-test-vectors.txt), label "test label"
@@ -52,7 +50,7 @@ public class Tls12PrfTest
 	[Arguments(@"b0323523c1853599584d88568bbb05eb", @"d4640e12e4bcdbfb437f03e6ae418ee5", @"1261f588c798c5c201ff036e7a9cb5edcd7fe3f94c669a122a4638d7d508b283042df6789875c7147e906d868bc75c45e20eb40c1cf4a1713b27371f68432592f7dc8ea8ef223e12ea8507841311bf68653d0cfc4056d811f025c45ddfa6e6fec702f054b409d6f28dd0a3233e498da41a3e75c5630eedbe22fe254e33a1b0e9f6b9826675bec7d01a845658dc9c397545401d40b9f46c7a400ee1b8f81ca0a60d1a397a1028bff5d2ef5066126842fb8da4197632bdb54ff6633f86bbc836e640d4d898")]
 	public Task Sha512Vector(string secretHex, string seedHex, string outputHex)
 	{
-		return VerifyVector<Sha512Core>(secretHex, TestLabelHex, seedHex, outputHex);
+		return VerifyVector<Sha512Core>(secretHex, seedHex, outputHex);
 	}
 
 	// https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/components/800-135testvectors/tls.zip
@@ -85,10 +83,10 @@ public class Tls12PrfTest
 		return VerifyCavpVector<Sha512Core>(preMasterSecretHex, clientHelloRandomHex, serverHelloRandomHex, clientRandomHex, serverRandomHex, masterSecretHex, keyBlockHex);
 	}
 
-	private static async Task VerifyVector<TCore>(string secretHex, string labelHex, string seedHex, string outputHex) where TCore : unmanaged, IHmacHashCore<TCore>
+	private static async Task VerifyVector<TCore>(string secretHex, string seedHex, string outputHex) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		byte[] secret = Convert.FromHexString(secretHex);
-		byte[] label = Convert.FromHexString(labelHex);
+		byte[] label = "test label"u8.ToArray();
 		byte[] seed = Convert.FromHexString(seedHex);
 		byte[] expected = Convert.FromHexString(outputHex);
 
@@ -227,8 +225,7 @@ public class Tls12PrfTest
 			PrfInput.Seed1 => seed1,
 			_ => seed2,
 		};
-		byte[] buffer = new byte[Math.Max(inputOffset + overlapped.Length, outputOffset + outputLength)];
-		overlapped.CopyTo(buffer, inputOffset);
+		byte[] buffer = CreateOverlapBuffer(overlapped, inputOffset, outputOffset, outputLength);
 		ReadOnlySpan<byte> overlappedInput = buffer.AsSpan(inputOffset, overlapped.Length);
 		Span<byte> output = buffer.AsSpan(outputOffset, outputLength);
 

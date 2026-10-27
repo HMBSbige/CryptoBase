@@ -29,6 +29,23 @@ public abstract class Argon2DeriveKeyTest(Argon2Type type)
 
 	protected abstract void DeriveKey(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, Span<byte> destination, Argon2Parameters parameters, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, int maxDegreeOfParallelism);
 
+	// https://www.rfc-editor.org/rfc/rfc9106#section-5
+	[Test]
+	public async Task Rfc9106Vector()
+	{
+		string expected = type switch
+		{
+			Argon2Type.Argon2d => @"512b391b6f1162975371d30919734294f868e3be3984f3c1a13a4db9fabe4acb",
+			Argon2Type.Argon2i => @"c814d9d1dc7f37aa13f0d77f2494bda1c8de6b016dd388d29952a4c4672b6ce8",
+			Argon2Type.Argon2id => @"0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659",
+			_ => throw new ArgumentOutOfRangeException(nameof(type))
+		};
+		byte[] tag = new byte[32];
+		DeriveKey(Fill(32, 0x01), Fill(16, 0x02), tag, new Argon2Parameters(memorySizeInKibibytes: 32, iterations: 3, parallelism: 4), Fill(8, 0x03), Fill(12, 0x04), -1);
+
+		await Assert.That(tag).IsEquivalentTo(Convert.FromHexString(expected), CollectionOrdering.Matching);
+	}
+
 	[Test]
 	[MethodDataSource(nameof(Cases))]
 	public async Task EveryKernelMatchesReference(Argon2Case testCase)
@@ -158,7 +175,7 @@ public abstract class Argon2DeriveKeyTest(Argon2Type type)
 		}
 	}
 
-	protected static byte[] Fill(int length, byte value)
+	private static byte[] Fill(int length, byte value)
 	{
 		return Enumerable.Repeat(value, length).ToArray();
 	}

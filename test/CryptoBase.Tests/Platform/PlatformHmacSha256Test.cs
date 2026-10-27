@@ -56,19 +56,10 @@ public class PlatformHmacSha256Test
 	}
 
 	[Test]
-	[MethodDataSource(typeof(WycheproofHmacTest), nameof(WycheproofHmacTest.Vectors), Arguments = ["hmac_sha256_test.json"])]
-	public async Task WycheproofVector(MacTestVector vector)
+	[WycheproofVectors<MacTestVector>("hmac_sha256_test.json")]
+	public Task WycheproofVector(MacTestVector vector)
 	{
-		byte[] mac = new byte[PlatformHmacSha256.MacLength];
-		PlatformHmacSha256.Mac(vector.Key, vector.Msg, mac);
-
-		using PlatformHmacSha256 algorithm = PlatformHmacSha256.Create(vector.Key);
-		algorithm.Append(vector.Msg);
-		byte[] incrementalMac = new byte[PlatformHmacSha256.MacLength];
-		algorithm.GetMacAndReset(incrementalMac);
-
-		await Assert.That(incrementalMac).IsEquivalentTo(mac, CollectionOrdering.Matching);
-		await Assert.That(mac.AsSpan().StartsWith(vector.Tag)).IsEqualTo(vector.Result is WycheproofResult.Valid);
+		return WycheproofHmacTest.Verify<PlatformHmacSha256>(vector);
 	}
 
 	[Test]

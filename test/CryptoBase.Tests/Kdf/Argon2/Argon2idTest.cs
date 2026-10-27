@@ -13,15 +13,6 @@ public class Argon2idTest() : Argon2DeriveKeyTest(Argon2Type.Argon2id)
 	}
 
 	[Test]
-	public async Task Rfc9106Vector()
-	{
-		byte[] tag = new byte[32];
-		Argon2id.DeriveKey(Fill(32, 0x01), Fill(16, 0x02), tag, new Argon2Parameters(memorySizeInKibibytes: 32, iterations: 3, parallelism: 4), Fill(8, 0x03), Fill(12, 0x04));
-
-		await Assert.That(tag).IsEquivalentTo(Convert.FromHexString(@"0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659"), CollectionOrdering.Matching);
-	}
-
-	[Test]
 	[Argon2LargeMemory]
 	[Arguments("password", "somesalt", 2, 16, 1, @"09316115d5cf24ed5a15a31a3ba326e5cf32edc24702987c02b6566f61913cf7")]
 	[Arguments("password", "somesalt", 2, 8, 1, @"9dfeb910e80bad0311fee20f9c0e2b12c17987b4cac90c2ef54d5b3021c68bfe")]

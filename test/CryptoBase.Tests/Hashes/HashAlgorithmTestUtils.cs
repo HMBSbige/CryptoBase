@@ -12,25 +12,31 @@ internal static class HashAlgorithmTestUtils
 	private static readonly int[] BatchBoundaryLengths = [511, 512, 513, 1023, 1024, 1025];
 	private static readonly int[] SourceOffsets = [1, 15, 31, 63];
 
-	public static IEnumerable<int> Hash64BlockAndPaddingLengths =>
-	[
-		0, 1,
-		54, 55, 56,
-		63, 64, 65,
-		118, 119, 120,
-		127, 128, 129,
-		255, 256, 257,
-		511, 512, 513
-	];
-
-	public static IEnumerable<int> Hash128BlockAndPaddingLengths =>
-	[
-		0, 1,
-		110, 111, 112,
-		127, 128, 129,
-		238, 239, 240,
-		255, 256, 257
-	];
+	public static IEnumerable<int> BlockAndPaddingLengths(int blockSize)
+	{
+		return blockSize switch
+		{
+			64 =>
+			[
+				0, 1,
+				54, 55, 56,
+				63, 64, 65,
+				118, 119, 120,
+				127, 128, 129,
+				255, 256, 257,
+				511, 512, 513
+			],
+			128 =>
+			[
+				0, 1,
+				110, 111, 112,
+				127, 128, 129,
+				238, 239, 240,
+				255, 256, 257
+			],
+			_ => throw new ArgumentOutOfRangeException(nameof(blockSize))
+		};
+	}
 
 	// Sponge rates are not powers of two; rate - 1 leaves one byte, so the domain separator and the last padding bit share it.
 	public static IEnumerable<int> RateBlockAndPaddingLengths(int rate)
@@ -52,16 +58,6 @@ internal static class HashAlgorithmTestUtils
 		511, 512, 513, 527, 528,
 		1023, 1024, 1025
 	];
-
-	public static IEnumerable<(int, int, int)> Hash64IncrementalBatchCases()
-	{
-		return HashIncrementalBatchCases(64);
-	}
-
-	public static IEnumerable<(int, int, int)> Hash128IncrementalBatchCases()
-	{
-		return HashIncrementalBatchCases(128);
-	}
 
 	public static IEnumerable<(int, int, int)> HashIncrementalBatchCases(int blockSize)
 	{
@@ -87,7 +83,7 @@ internal static class HashAlgorithmTestUtils
 		await VerifyHashVector<T>(value, expected, expectedHashLength);
 	}
 
-	internal static byte[] GetKnownDigest(byte[] source, IEnumerable<(int Length, string ExpectedHex)> vectors, string algorithmName)
+	internal static byte[] GetKnownDigest(byte[] source, IEnumerable<(int Length, string ExpectedHex)> vectors)
 	{
 		foreach ((int length, string expectedHex) in vectors)
 		{
@@ -97,17 +93,12 @@ internal static class HashAlgorithmTestUtils
 			}
 		}
 
-		throw new InvalidOperationException($@"No {algorithmName} test vector for a {source.Length}-byte source.");
+		throw new InvalidOperationException($@"No test vector for a {source.Length}-byte source.");
 	}
 
 	internal static Task VerifyBoundary<T>(int length, Func<byte[], byte[]> oracle) where T : unmanaged, IHashCore<T>
 	{
 		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyBoundary(length, oracle);
-	}
-
-	internal static Task VerifyBoundary<T>(int length, string expectedHex) where T : unmanaged, IHashCore<T>
-	{
-		return HashAlgorithmTestUtils<HashAlgorithm<T>>.VerifyBoundary(length, expectedHex);
 	}
 
 	internal static Task VerifyIncrementalBlockBatch<T>(int length, int sourceOffset, int blockSize, Func<byte[], byte[]> oracle) where T : unmanaged, IHashCore<T>

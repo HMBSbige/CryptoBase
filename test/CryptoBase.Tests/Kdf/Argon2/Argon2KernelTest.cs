@@ -1,5 +1,6 @@
 using CryptoBase.Kdf.Argon2;
 using System.Runtime.InteropServices;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kdf.Argon2;
 
@@ -15,10 +16,7 @@ public class Argon2KernelTest
 	[MethodDataSource(typeof(Argon2KernelCase), nameof(Argon2KernelCase.All))]
 	public async Task MatchesReference(Argon2KernelCase kernel)
 	{
-		if (!kernel.IsSupported)
-		{
-			Skip.Test($"{kernel} is not supported here.");
-		}
+		SkipUnlessSupported(kernel);
 
 		Random random = new(0x1234_5678);
 

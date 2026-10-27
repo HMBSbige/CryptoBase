@@ -30,7 +30,7 @@ public class Base32ContractTest
 	[Arguments(true)]
 	public Task InvalidFirstSymbolInLongInputDoesNotWrite(bool hex)
 	{
-		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		Base32Encoding encoding = Rfc4648Encoding(hex);
 		byte[] source = CreateDeterministicSource(1040);
 		char[] encoded = EncodeReference(source, hex, false);
 		encoded[0] = '!';
@@ -79,7 +79,7 @@ public class Base32ContractTest
 	public async Task EveryInvalidAsciiSymbolIsRejectedAtVectorLengths([Matrix(32, 40, 56, 64, 72, 128)] int symbolCount, [Matrix] bool hex)
 	{
 		// The lengths reach the 256-bit and 512-bit decoders; '=' is skipped because its validity depends on its position.
-		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		Base32Encoding encoding = Rfc4648Encoding(hex);
 		string alphabet = Rfc4648Alphabet(hex);
 		byte[] source = CreateDeterministicSource(symbolCount / 8 * 5);
 		char[] valid = EncodeReference(source, hex, false);
@@ -239,7 +239,7 @@ public class Base32ContractTest
 	[Arguments(true, "MZXW6Y")]
 	public Task PaddingPolicyAndRawSymbolCountsAreEnforced(bool omitPadding, string encoded)
 	{
-		Base32Encoding encoding = omitPadding ? Base32Encoding.Rfc4648.OmitPadding : Base32Encoding.Rfc4648;
+		Base32Encoding encoding = Rfc4648Encoding(false, omitPadding);
 		return AssertInvalidWithoutWriting(encoding, encoded, 8);
 	}
 
@@ -247,12 +247,7 @@ public class Base32ContractTest
 	[MatrixDataSource]
 	public async Task NonCanonicalTrailingBitsAreRejectedForEveryShortTail([Matrix(1, 2, 3, 4)] int sourceLength, [Matrix] bool omitPadding, [Matrix] bool hex)
 	{
-		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
-
-		if (omitPadding)
-		{
-			encoding = encoding.OmitPadding;
-		}
+		Base32Encoding encoding = Rfc4648Encoding(hex, omitPadding);
 
 		string alphabet = Rfc4648Alphabet(hex);
 		char[] encoded = EncodeReference(new byte[sourceLength], hex, omitPadding);

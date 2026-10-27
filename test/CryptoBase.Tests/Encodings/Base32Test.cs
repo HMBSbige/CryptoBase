@@ -31,7 +31,7 @@ public class Base32Test
 	public async Task Rfc4648VectorsRoundTrip(bool hex, string originExpected, string base32Expected)
 	{
 		byte[] origin = Encoding.UTF8.GetBytes(originExpected);
-		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
+		Base32Encoding encoding = Rfc4648Encoding(hex);
 		char[] encoded = new char[encoding.GetEncodedLength(origin.Length)];
 		byte[] decoded = new byte[Base32Encoding.GetMaxDecodedLength(encoded.Length)];
 
@@ -52,7 +52,7 @@ public class Base32Test
 	[MatrixDataSource]
 	public async Task FourByteTailAcceptsEveryCanonicalTrailingValue([Matrix((byte)0x40, (byte)0x41, (byte)0x42, (byte)0x43)] byte lastByte, [Matrix] bool omitPadding)
 	{
-		Base32Encoding encoding = omitPadding ? Base32Encoding.Rfc4648.OmitPadding : Base32Encoding.Rfc4648;
+		Base32Encoding encoding = Rfc4648Encoding(false, omitPadding);
 		byte[] source = { 0, 0, 0, lastByte };
 		char[] encodedChars = new char[encoding.GetEncodedLength(source.Length)];
 		byte[] decodedChars = new byte[Base32Encoding.GetMaxDecodedLength(encodedChars.Length)];
@@ -72,12 +72,7 @@ public class Base32Test
 	[MatrixDataSource]
 	public async Task LengthsMatchIndependentEncoder([MatrixMethod<Base32Test>(nameof(SourceLengths))] int length, [Matrix] bool hex, [Matrix] bool omitPadding)
 	{
-		Base32Encoding encoding = hex ? Base32Encoding.Rfc4648Hex : Base32Encoding.Rfc4648;
-
-		if (omitPadding)
-		{
-			encoding = encoding.OmitPadding;
-		}
+		Base32Encoding encoding = Rfc4648Encoding(hex, omitPadding);
 
 		byte[] source = CreatePatternSource(length, length * 11);
 		char[] expected = EncodeReference(source, hex, omitPadding);

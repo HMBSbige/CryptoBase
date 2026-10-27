@@ -152,8 +152,7 @@ public class Tls12PrfGenericTest<TMac> where TMac : class, IMacAlgorithm<TMac>
 			PrfInput.Seed1 => seed1,
 			_ => seed2,
 		};
-		byte[] buffer = new byte[Math.Max(inputOffset + overlapped.Length, outputOffset + outputLength)];
-		overlapped.CopyTo(buffer, inputOffset);
+		byte[] buffer = CreateOverlapBuffer(overlapped, inputOffset, outputOffset, outputLength);
 		ReadOnlySpan<byte> overlappedInput = buffer.AsSpan(inputOffset, overlapped.Length);
 		Span<byte> output = buffer.AsSpan(outputOffset, outputLength);
 

@@ -39,7 +39,7 @@ public class KeccakSharedPermutationTest
 	{
 		if (lanes is not 0)
 		{
-			Sha3TestUtils.SkipUnlessKernelSupported(lanes);
+			SkipUnlessSupported(KeccakP1600KernelCase.For(lanes));
 		}
 
 		return Run(rate, guestRate, new GuestCase(lanes));
