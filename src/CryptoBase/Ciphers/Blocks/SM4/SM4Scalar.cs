@@ -120,20 +120,19 @@ internal static class SM4Scalar
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ProcessBlock(ReadOnlySpan<uint> rk, ReadOnlySpan<byte> source, Span<byte> destination)
+	private static void ProcessBlock(ref uint rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		uint x0 = BinaryPrimitives.ReadUInt32BigEndian(source);
 		uint x1 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(4));
 		uint x2 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(8));
 		uint x3 = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(12));
-		ref uint keys = ref MemoryMarshal.GetReference(rk);
 
 		for (int i = 0; i < 32; i += 4)
 		{
-			x0 ^= T(x1 ^ x2 ^ x3 ^ Unsafe.Add(ref keys, i));
-			x1 ^= T(x0 ^ x2 ^ x3 ^ Unsafe.Add(ref keys, i + 1));
-			x2 ^= T(x0 ^ x1 ^ x3 ^ Unsafe.Add(ref keys, i + 2));
-			x3 ^= T(x0 ^ x1 ^ x2 ^ Unsafe.Add(ref keys, i + 3));
+			x0 ^= T(x1 ^ x2 ^ x3 ^ Unsafe.Add(ref rk, i));
+			x1 ^= T(x0 ^ x2 ^ x3 ^ Unsafe.Add(ref rk, i + 1));
+			x2 ^= T(x0 ^ x1 ^ x3 ^ Unsafe.Add(ref rk, i + 2));
+			x3 ^= T(x0 ^ x1 ^ x2 ^ Unsafe.Add(ref rk, i + 3));
 		}
 
 		BinaryPrimitives.WriteUInt32BigEndian(destination, x3);
@@ -145,11 +144,9 @@ internal static class SM4Scalar
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void ProcessBlocks(ref uint rk, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		ReadOnlySpan<uint> keys = MemoryMarshal.CreateReadOnlySpan(ref rk, 32);
-
 		for (int offset = 0; offset < source.Length; offset += 16)
 		{
-			ProcessBlock(keys, source.Slice(offset, 16), destination.Slice(offset, 16));
+			ProcessBlock(ref rk, source.Slice(offset, 16), destination.Slice(offset, 16));
 		}
 	}
 }

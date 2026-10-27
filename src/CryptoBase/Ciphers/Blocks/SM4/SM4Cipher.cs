@@ -73,7 +73,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal int TransformBatches<TPolicy>(ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, ISM4ModePolicy
 	{
-		return SM4Gfni.TransformBatches<TPolicy>(in _roundKeys[0], ref state, source, destination);
+		return SM4Gfni.TransformBatches<TPolicy>(ref _roundKeys[0], ref state, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -9,7 +9,7 @@ internal readonly partial struct SM4Gfni
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static int TransformBatches<TPolicy>(ref readonly uint rk, ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, ISM4ModePolicy
+	internal static int TransformBatches<TPolicy>(ref uint rk, ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, ISM4ModePolicy
 	{
 		if (!SupportsModePolicy)
 		{
@@ -24,12 +24,12 @@ internal readonly partial struct SM4Gfni
 			return 0;
 		}
 
-		Transform<TPolicy>(in rk, ref state, source.Slice(0, length), destination);
+		Transform<TPolicy>(ref rk, ref state, source.Slice(0, length), destination);
 		return length;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Transform<TPolicy>(ref readonly uint rk, ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, ISM4ModePolicy
+	private static void Transform<TPolicy>(ref uint rk, ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, ISM4ModePolicy
 	{
 		Debug.Assert(source.Length % 16 is 0 && destination.Length >= source.Length);
 
@@ -45,12 +45,12 @@ internal readonly partial struct SM4Gfni
 
 			for (; source.Length - offset >= 64 * 16; offset += 64 * 16)
 			{
-				Process64FullV512(in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
+				Process64FullV512(ref rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
 			}
 
 			if (offset < source.Length)
 			{
-				ProcessUpTo64V512(source.Length - offset >> 4, in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
+				ProcessUpTo64V512(source.Length - offset >> 4, ref rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
 			}
 		}
 		else
@@ -59,14 +59,14 @@ internal readonly partial struct SM4Gfni
 
 			for (; source.Length - offset >= 16 * 16; offset += 16 * 16)
 			{
-				Process16V256(in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
+				Process16V256(ref rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref policy);
 			}
 
 			if (offset < source.Length)
 			{
 				// Pass a copy: taking policy's address here would keep the loop above from holding it in registers.
 				TPolicy tail = policy;
-				ProcessPartialV256(source.Length - offset >> 4, in rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref tail);
+				ProcessPartialV256(source.Length - offset >> 4, ref rk, ref Unsafe.Add(ref src, offset), ref Unsafe.Add(ref dst, offset), ref tail);
 				policy = tail;
 			}
 		}
@@ -75,7 +75,7 @@ internal readonly partial struct SM4Gfni
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ProcessUpTo64V512<TPolicy>(int count, ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
+	private static void ProcessUpTo64V512<TPolicy>(int count, ref uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
 	{
 		Debug.Assert(count is > 0 and <= 64);
 
@@ -83,68 +83,68 @@ internal readonly partial struct SM4Gfni
 		{
 			case 16:
 			{
-				Process16FullV512(in rk, ref source, ref destination, ref policy);
+				Process16FullV512(ref rk, ref source, ref destination, ref policy);
 				break;
 			}
 			case 32:
 			{
-				Process32FullV512(in rk, ref source, ref destination, ref policy);
+				Process32FullV512(ref rk, ref source, ref destination, ref policy);
 				break;
 			}
 			case 48:
 			{
-				Process48FullV512(in rk, ref source, ref destination, ref policy);
+				Process48FullV512(ref rk, ref source, ref destination, ref policy);
 				break;
 			}
 			case 64:
 			{
-				Process64FullV512(in rk, ref source, ref destination, ref policy);
+				Process64FullV512(ref rk, ref source, ref destination, ref policy);
 				break;
 			}
 			default:
 			{
-				ProcessPartialV512(count, in rk, ref source, ref destination, ref policy);
+				ProcessPartialV512(count, ref rk, ref source, ref destination, ref policy);
 				break;
 			}
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ProcessPartialV512<TPolicy>(int count, ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
+	private static void ProcessPartialV512<TPolicy>(int count, ref uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
 	{
 		Debug.Assert(count is > 0 and < 64 && count % 16 is not 0);
 
 		// A kernel run costs about the same for one to four 16-block groups, so the tail takes one run with only its last group partial.
 		if (count < 16)
 		{
-			Process16PartialV512(count, in rk, ref source, ref destination, ref policy);
+			Process16PartialV512(count, ref rk, ref source, ref destination, ref policy);
 		}
 		else if (count < 32)
 		{
-			Process32PartialV512(count, in rk, ref source, ref destination, ref policy);
+			Process32PartialV512(count, ref rk, ref source, ref destination, ref policy);
 		}
 		else if (count < 48)
 		{
-			Process48PartialV512(count, in rk, ref source, ref destination, ref policy);
+			Process48PartialV512(count, ref rk, ref source, ref destination, ref policy);
 		}
 		else
 		{
-			Process64PartialV512(count, in rk, ref source, ref destination, ref policy);
+			Process64PartialV512(count, ref rk, ref source, ref destination, ref policy);
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ProcessPartialV256<TPolicy>(int count, ref readonly uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
+	private static void ProcessPartialV256<TPolicy>(int count, ref uint rk, ref byte source, ref byte destination, ref TPolicy policy) where TPolicy : struct, ISM4ModePolicy
 	{
 		Debug.Assert(count is > 0 and < 16);
 
 		if (count <= 8)
 		{
-			Process8PartialV256(count, in rk, ref source, ref destination, ref policy);
+			Process8PartialV256(count, ref rk, ref source, ref destination, ref policy);
 		}
 		else
 		{
-			Process16PartialV256(count, in rk, ref source, ref destination, ref policy);
+			Process16PartialV256(count, ref rk, ref source, ref destination, ref policy);
 		}
 	}
 }
