@@ -9,8 +9,6 @@ internal readonly ref struct CryptoBuffer<T> : IDisposable where T : unmanaged
 {
 	private const int MaxSmallArrayBytes = 256;
 
-	private static int MaxSmallArrayElements => MaxSmallArrayBytes / Unsafe.SizeOf<T>();
-
 	private readonly T[]? _buffer;
 
 	/// <summary>
@@ -46,7 +44,7 @@ internal readonly ref struct CryptoBuffer<T> : IDisposable where T : unmanaged
 
 	internal static bool ShouldUsePool(int length)
 	{
-		return length > MaxSmallArrayElements;
+		return length > MaxSmallArrayBytes / Unsafe.SizeOf<T>();
 	}
 
 	/// <inheritdoc />

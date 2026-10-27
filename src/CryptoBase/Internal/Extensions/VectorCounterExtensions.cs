@@ -85,21 +85,7 @@ internal static class VectorCounterExtensions
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector512<T> AddUInt128LE4444()
 		{
-			Vector512<ulong> v = nonce.AsUInt64();
-			Vector512<ulong> thr = Vector512.Create
-			(
-				ulong.MaxValue - 4UL, 0xFFFF_FFFF_FFFF_FFFFUL,
-				ulong.MaxValue - 4UL, 0xFFFF_FFFF_FFFF_FFFFUL,
-				ulong.MaxValue - 4UL, 0xFFFF_FFFF_FFFF_FFFFUL,
-				ulong.MaxValue - 4UL, 0xFFFF_FFFF_FFFF_FFFFUL
-			);
-
-			Vector512<ulong> sum = v + Vector512.Create(4UL, 0, 4, 0, 4, 0, 4, 0);
-
-			Vector512<ulong> carry = Vector512.GreaterThan(v, thr);
-			carry = Avx512BW.ShiftLeftLogical128BitLane(carry.AsByte(), 8).AsUInt64();
-
-			return (sum - carry).As<ulong, T>();
+			return AddUInt128LE(nonce.AsUInt64(), Vector512.Create(4UL, 0, 4, 0, 4, 0, 4, 0)).As<ulong, T>();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -112,21 +98,7 @@ internal static class VectorCounterExtensions
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector512<T> AddUInt128LE0123()
 		{
-			Vector512<ulong> v = nonce.AsUInt64();
-			Vector512<ulong> thr = Vector512.Create
-			(
-				ulong.MaxValue - 0UL, 0xFFFF_FFFF_FFFF_FFFFUL,
-				ulong.MaxValue - 1UL, 0xFFFF_FFFF_FFFF_FFFFUL,
-				ulong.MaxValue - 2UL, 0xFFFF_FFFF_FFFF_FFFFUL,
-				ulong.MaxValue - 3UL, 0xFFFF_FFFF_FFFF_FFFFUL
-			);
-
-			Vector512<ulong> sum = v + Vector512.Create(0UL, 0, 1, 0, 2, 0, 3, 0);
-
-			Vector512<ulong> carry = Vector512.GreaterThan(v, thr);
-			carry = Avx512BW.ShiftLeftLogical128BitLane(carry.AsByte(), 8).AsUInt64();
-
-			return (sum - carry).As<ulong, T>();
+			return AddUInt128LE(nonce.AsUInt64(), Vector512.Create(0UL, 0, 1, 0, 2, 0, 3, 0)).As<ulong, T>();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -134,5 +106,17 @@ internal static class VectorCounterExtensions
 		{
 			return (nonce.AsUInt32() + Vector512.Create(0u, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0)).As<uint, T>();
 		}
+	}
+
+	// Adds an increment whose high halves are zero to each 128-bit lane; a low half overflows exactly when it exceeds the complement of its increment.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector512<ulong> AddUInt128LE(Vector512<ulong> value, Vector512<ulong> increment)
+	{
+		Vector512<ulong> sum = value + increment;
+
+		Vector512<ulong> carry = Vector512.GreaterThan(value, ~increment);
+		carry = Avx512BW.ShiftLeftLogical128BitLane(carry.AsByte(), 8).AsUInt64();
+
+		return sum - carry;
 	}
 }
