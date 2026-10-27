@@ -5,7 +5,6 @@ using CryptoBase.Internal;
 using CryptoBase.Kems.MLKem;
 using CryptoBase.Tests.Hashes.Sha3;
 using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using static CryptoBase.Tests.Kems.KemTestUtils;
@@ -13,14 +12,14 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kems.MLKem;
 
-public class MLKemTest
+[GenerateGenericTest(typeof(MLKem512))]
+[GenerateGenericTest(typeof(MLKem768))]
+[GenerateGenericTest(typeof(MLKem1024))]
+public class MLKemTest<T> where T : class, IKem<T>
 {
 	// A ciphertext that does not re-encrypt to itself yields K̄ = J(z ‖ c) (Algorithm 18, lines 8 to 11), z being the last 32 bytes of dk.
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task RejectionYieldsTheHashOfZAndTheCiphertext<T>() where T : class, IKem<T>
+	public async Task RejectionYieldsTheHashOfZAndTheCiphertext()
 	{
 		using T kem = T.GenerateKey();
 		byte[] z = ExportDecapsulationKey(kem).AsSpan(T.DecapsulationKeyLength - 32).ToArray();
@@ -46,10 +45,7 @@ public class MLKemTest
 
 	// An entry of Â that three SHAKE128 blocks leave short squeezes more after its group. Grouping depends on the parameter and instruction sets, so a seed is searched that leaves each entry short.
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task MatrixEntriesThatNeedMoreBlocksMatchTheReference<T>() where T : class, IKem<T>
+	public async Task MatrixEntriesThatNeedMoreBlocksMatchTheReference()
 	{
 		int k = (T.EncapsulationKeyLength - 32) / 384;
 		int eta1 = k is 2 ? 3 : 2;
@@ -78,10 +74,7 @@ public class MLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task DisposeErasesTheKey<T>() where T : class, IKem<T>
+	public async Task DisposeErasesTheKey()
 	{
 		T generated = T.GenerateKey();
 		T fromDecapsulationKey = T.ImportDecapsulationKey(ExportDecapsulationKey(generated));
@@ -114,10 +107,7 @@ public class MLKemTest
 
 	// Whichever use of H(ek) comes first finishes it; all must agree with later calls, an import of dk and the reference.
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task FirstUseOfAGeneratedKeyFinishesTheHashOfTheEncapsulationKey<T>() where T : class, IKem<T>
+	public async Task FirstUseOfAGeneratedKeyFinishesTheHashOfTheEncapsulationKey()
 	{
 		int k = (T.EncapsulationKeyLength - 32) / 384;
 		int eta1 = k is 2 ? 3 : 2;
@@ -127,8 +117,7 @@ public class MLKemTest
 		byte[] encapsulationKeyHash = KeccakReference.Sha3(encapsulationKey, 32);
 		using T peer = T.ImportEncapsulationKey(encapsulationKey);
 		(byte[] ciphertext, byte[] sharedSecret) = MLKemTestUtils.Encapsulate(peer, message);
-		byte[] tampered = (byte[])ciphertext.Clone();
-		tampered[0] ^= 1;
+		byte[] tampered = Flip(ciphertext, 0);
 		byte[] rejected = new byte[T.SharedSecretLength];
 		Xof<Shake256Core>.HashData(Concat(seed.AsSpan(32), tampered), rejected);
 
@@ -172,10 +161,7 @@ public class MLKemTest
 
 	// Concurrent first uses finish H(ek) without a lock.
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task ConcurrentFirstUsesOfAGeneratedKeyAgree<T>() where T : class, IKem<T>
+	public async Task ConcurrentFirstUsesOfAGeneratedKeyAgree()
 	{
 		const int Threads = 8;
 		const int Keys = 16;
@@ -231,16 +217,10 @@ public class MLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task KeyOperationsDoNotAllocate<T>() where T : class, IKem<T>
+	public async Task KeyOperationsDoNotAllocate()
 	{
 		// Without optimization, every read of a constant ReadOnlySpan<short>, such as the zetas, allocates a field handle.
-		if (typeof(T).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled is true)
-		{
-			Skip.Test("The implementation is not optimized.");
-		}
+		SkipUnlessOptimized<T>();
 
 		using T kem = T.GenerateKey();
 		byte[] seed = new byte[T.PrivateSeedLength];
@@ -298,7 +278,7 @@ public class MLKemTest
 		return seeds;
 	}
 
-	private static void Exercise<T>(T kem, byte[] seed, byte[] decapsulationKey, byte[] encapsulationKey, byte[] ciphertext, byte[] sharedSecret, byte[] decapsulated) where T : class, IKem<T>
+	private static void Exercise(T kem, byte[] seed, byte[] decapsulationKey, byte[] encapsulationKey, byte[] ciphertext, byte[] sharedSecret, byte[] decapsulated)
 	{
 		for (int i = 0; i < 4; ++i)
 		{
@@ -311,7 +291,7 @@ public class MLKemTest
 	}
 
 	// The number of nonzero elements or set flags in each field of the key an instance holds; arrays receives the arrays it references.
-	private static Dictionary<string, int> KeyContents<T>(T kem, List<short[]> arrays) where T : class, IKem<T>
+	private static Dictionary<string, int> KeyContents(T kem, List<short[]> arrays)
 	{
 		FieldInfo? keyField = typeof(T).GetField("_key", BindingFlags.Instance | BindingFlags.NonPublic);
 		object key = keyField?.GetValue(kem) ?? throw new InvalidOperationException($"{typeof(T).Name} has no key field.");

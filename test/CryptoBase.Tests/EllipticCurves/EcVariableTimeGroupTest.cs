@@ -383,14 +383,6 @@ public class EcVariableTimeGroupTest
 		}
 	}
 
-	private static void CheckSame(List<string> failures, string operation, JacobianValue actual, JacobianValue expected)
-	{
-		if (actual != expected)
-		{
-			failures.Add($"{operation} gave {actual}, expected {expected}");
-		}
-	}
-
 	// With and without the table of the point.
 	private static void Check(List<string> failures, CurveCase curve, BigInteger u1, CurvePoint point, BigInteger u2, CurvePoint? expected)
 	{

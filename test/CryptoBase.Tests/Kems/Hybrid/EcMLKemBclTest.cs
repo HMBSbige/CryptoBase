@@ -15,14 +15,14 @@ using BclMLKem = System.Security.Cryptography.MLKem;
 
 namespace CryptoBase.Tests.Kems.Hybrid;
 
-public class EcMLKemBclTest
+[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
+[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
+public class EcMLKemBclTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
 {
 	private const int Iterations = 8;
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task DecapsulatesWhatThePlatformEncapsulates<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task DecapsulatesWhatThePlatformEncapsulates()
 	{
 		CurveCase curve = CurveOf<TEcdh>();
 		SkipUnlessSupported(curve);
@@ -48,9 +48,7 @@ public class EcMLKemBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task ThePlatformDecapsulatesWhatTheKeyEncapsulates<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task ThePlatformDecapsulatesWhatTheKeyEncapsulates()
 	{
 		CurveCase curve = CurveOf<TEcdh>();
 		SkipUnlessSupported(curve);
@@ -69,9 +67,7 @@ public class EcMLKemBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task ImportsKeysOfPlatformKeys<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task ImportsKeysOfPlatformKeys()
 	{
 		CurveCase curve = CurveOf<TEcdh>();
 		SkipUnlessSupported(curve);

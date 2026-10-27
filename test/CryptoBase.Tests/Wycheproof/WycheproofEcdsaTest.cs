@@ -4,6 +4,7 @@ using CryptoBase.Tests.EllipticCurves;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
+using static CryptoBase.Tests.Signatures.Ecdsa.EcdsaKnownAnswerTest;
 using static CryptoBase.Tests.Signatures.Ecdsa.EcdsaTestUtils;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 
@@ -32,79 +33,69 @@ public class WycheproofEcdsaTest
 		["secp521r1"] = ["ecdsa_secp521r1_sha512_test.json"],
 	};
 
-	public static IEnumerable<EcdsaVerifyTestVector> VerificationVectors(string fileName)
-	{
-		return WycheproofVectors.Load<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>(fileName);
-	}
-
-	public static IEnumerable<EcdhTestVector> SubjectPublicKeyInfoVectors(string fileName)
-	{
-		return WycheproofVectors.Load<EcdhTestVector>(fileName);
-	}
-
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp256r1_sha256_test.json"])]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp256r1_sha512_test.json"])]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp256r1_sha256_test.json")]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp256r1_sha512_test.json")]
 	public Task DerVerificationP256(EcdsaVerifyTestVector vector)
 	{
 		return VerifyVerification<EcdsaP256>(vector, EcdsaSignatureFormat.Der);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp384r1_sha256_test.json"])]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp384r1_sha384_test.json"])]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp384r1_sha512_test.json"])]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp384r1_sha256_test.json")]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp384r1_sha384_test.json")]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp384r1_sha512_test.json")]
 	public Task DerVerificationP384(EcdsaVerifyTestVector vector)
 	{
 		return VerifyVerification<EcdsaP384>(vector, EcdsaSignatureFormat.Der);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp521r1_sha512_test.json"])]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp521r1_sha512_test.json")]
 	public Task DerVerificationP521(EcdsaVerifyTestVector vector)
 	{
 		return VerifyVerification<EcdsaP521>(vector, EcdsaSignatureFormat.Der);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp256r1_sha256_p1363_test.json"])]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp256r1_sha512_p1363_test.json"])]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp256r1_sha256_p1363_test.json")]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp256r1_sha512_p1363_test.json")]
 	public Task ConcatenatedVerificationP256(EcdsaVerifyTestVector vector)
 	{
 		return VerifyVerification<EcdsaP256>(vector, EcdsaSignatureFormat.Concatenated);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp384r1_sha384_p1363_test.json"])]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp384r1_sha512_p1363_test.json"])]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp384r1_sha384_p1363_test.json")]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp384r1_sha512_p1363_test.json")]
 	public Task ConcatenatedVerificationP384(EcdsaVerifyTestVector vector)
 	{
 		return VerifyVerification<EcdsaP384>(vector, EcdsaSignatureFormat.Concatenated);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["ecdsa_secp521r1_sha512_p1363_test.json"])]
+	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp521r1_sha512_p1363_test.json")]
 	public Task ConcatenatedVerificationP521(EcdsaVerifyTestVector vector)
 	{
 		return VerifyVerification<EcdsaP521>(vector, EcdsaSignatureFormat.Concatenated);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(SubjectPublicKeyInfoVectors), Arguments = ["ecdh_secp256r1_test.json"])]
+	[WycheproofVectors<EcdhTestVector>("ecdh_secp256r1_test.json")]
 	public Task SubjectPublicKeyInfoP256(EcdhTestVector vector)
 	{
 		return VerifySubjectPublicKeyInfo<EcdsaP256>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(SubjectPublicKeyInfoVectors), Arguments = ["ecdh_secp384r1_test.json"])]
+	[WycheproofVectors<EcdhTestVector>("ecdh_secp384r1_test.json")]
 	public Task SubjectPublicKeyInfoP384(EcdhTestVector vector)
 	{
 		return VerifySubjectPublicKeyInfo<EcdsaP384>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(SubjectPublicKeyInfoVectors), Arguments = ["ecdh_secp521r1_test.json"])]
+	[WycheproofVectors<EcdhTestVector>("ecdh_secp521r1_test.json")]
 	public Task SubjectPublicKeyInfoP521(EcdhTestVector vector)
 	{
 		return VerifySubjectPublicKeyInfo<EcdsaP521>(vector);
@@ -116,7 +107,7 @@ public class WycheproofEcdsaTest
 	[Arguments("ecdh_secp521r1_test.json")]
 	public async Task AcceptableSubjectPublicKeyInfoFlagsArePinned(string fileName)
 	{
-		IEnumerable<string> flags = SubjectPublicKeyInfoVectors(fileName).Where(static vector => vector.Result is WycheproofResult.Acceptable).SelectMany(static vector => vector.Flags);
+		IEnumerable<string> flags = WycheproofVectors.Load<EcdhTestVector>(fileName).Where(static vector => vector.Result is WycheproofResult.Acceptable).SelectMany(static vector => vector.Flags);
 
 		await Assert.That(flags.Distinct()).IsEquivalentTo(AcceptableFlags[fileName]);
 	}
@@ -131,46 +122,41 @@ public class WycheproofEcdsaTest
 		CurveCase curve = CurveCase.Named(curveName);
 		EcReference reference = curve.Reference;
 		BigInteger n = curve.Order;
+		List<(string FileName, EcdsaVerifyTestVector Vector, BigInteger R, BigInteger W)> candidates = [];
+
+		foreach (string fileName in DerFiles[curve.Name])
+		{
+			foreach (EcdsaVerifyTestVector vector in WycheproofVectors.Load<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>(fileName).Where(static vector => vector.Result is WycheproofResult.Valid))
+			{
+				AsnReader signature = new AsnReader(vector.Sig, AsnEncodingRules.DER).ReadSequence();
+				BigInteger r = signature.ReadInteger();
+				BigInteger s = signature.ReadInteger();
+
+				if (r + n < reference.P)
+				{
+					candidates.Add((fileName, vector, r, BigInteger.ModPow(s, n - 2, n)));
+				}
+			}
+		}
+
+		// u1·G + u2·Q for all the candidates at once.
+		BigInteger[] u1 = [.. candidates.Select(c => new BigInteger(TruncatedHash(Hash(AlgorithmOf(c.Vector), c.Vector.Msg), curve), isUnsigned: true, isBigEndian: true) * c.W % n)];
+		CurvePoint?[] points = reference.Add(reference.Multiply(reference.Generator, u1), reference.Multiply([.. candidates.Select(c => curve.DecodePoint(c.Vector.PublicKey))], [.. candidates.Select(c => c.R * c.W % n)]));
 		List<string> found = [];
 
 		using (Assert.Multiple())
 		{
-			foreach (string fileName in DerFiles[curve.Name])
+			foreach ((string fileName, EcdsaVerifyTestVector vector, _, _) in candidates.Where((candidate, i) => points[i]?.X == candidate.R + n))
 			{
-				foreach (EcdsaVerifyTestVector vector in VerificationVectors(fileName).Where(static vector => vector.Result is WycheproofResult.Valid))
+				bool verified = curveName switch
 				{
-					AsnReader signature = new AsnReader(vector.Sig, AsnEncodingRules.DER).ReadSequence();
-					BigInteger r = signature.ReadInteger();
-					BigInteger s = signature.ReadInteger();
+					"secp256r1" => VerifyDer<EcdsaP256>(vector),
+					"secp384r1" => VerifyDer<EcdsaP384>(vector),
+					_ => VerifyDer<EcdsaP521>(vector)
+				};
 
-					if (r + n >= reference.P)
-					{
-						continue;
-					}
-
-					SignatureAlgorithm algorithm = AlgorithmOf(vector);
-					byte[] hash = Hash(algorithm, vector.Msg);
-					BigInteger e = new BigInteger(hash, isUnsigned: true, isBigEndian: true) >> Math.Max(0, 8 * hash.Length - curve.ScalarBitLength);
-					BigInteger w = BigInteger.ModPow(s, n - 2, n);
-					int length = curve.FieldLength;
-					CurvePoint q = new(new BigInteger(vector.PublicKey.AsSpan(1, length), isUnsigned: true, isBigEndian: true), new BigInteger(vector.PublicKey.AsSpan(1 + length), isUnsigned: true, isBigEndian: true));
-					CurvePoint? point = reference.Add(reference.Multiply(reference.Generator, e * w % n), reference.Multiply(q, r * w % n));
-
-					if (point is null || point.X != r + n)
-					{
-						continue;
-					}
-
-					bool verified = curveName switch
-					{
-						"secp256r1" => VerifyDer<EcdsaP256>(vector),
-						"secp384r1" => VerifyDer<EcdsaP384>(vector),
-						_ => VerifyDer<EcdsaP521>(vector)
-					};
-
-					found.Add($"{fileName}, {vector}");
-					await Assert.That(verified).IsTrue().Because($"{fileName}, {vector}");
-				}
+				found.Add($"{fileName}, {vector}");
+				await Assert.That(verified).IsTrue().Because($"{fileName}, {vector}");
 			}
 
 			await Assert.That(found).IsNotEmpty();

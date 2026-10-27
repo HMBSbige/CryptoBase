@@ -1,21 +1,20 @@
 using CryptoBase.Abstractions.KeyAgreements;
 using CryptoBase.KeyAgreements.Ecdh;
 using CryptoBase.Tests.EllipticCurves;
-using System.Diagnostics;
 using System.Numerics;
-using System.Reflection;
 using static CryptoBase.Tests.KeyAgreements.Ecdh.EcdhTestUtils;
 using static CryptoBase.Tests.KeyAgreements.KeyAgreementTestUtils;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.KeyAgreements.Ecdh;
 
-public class EcdhTest
+[GenerateGenericTest(typeof(EcdhP256))]
+[GenerateGenericTest(typeof(EcdhP384))]
+[GenerateGenericTest(typeof(EcdhP521))]
+public class EcdhTest<T> where T : class, IKeyAgreement<T>
 {
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task LengthsFollowTheCurve<T>() where T : class, IKeyAgreement<T>
+	public async Task LengthsFollowTheCurve()
 	{
 		CurveCase curve = CurveOf<T>();
 
@@ -23,21 +22,7 @@ public class EcdhTest
 	}
 
 	[Test]
-	public async Task LengthsAreFixed()
-	{
-		using (Assert.Multiple())
-		{
-			await Assert.That((EcdhP256.PrivateKeyLength, EcdhP256.PublicKeyLength, EcdhP256.SharedSecretLength)).IsEqualTo((32, 65, 32));
-			await Assert.That((EcdhP384.PrivateKeyLength, EcdhP384.PublicKeyLength, EcdhP384.SharedSecretLength)).IsEqualTo((48, 97, 48));
-			await Assert.That((EcdhP521.PrivateKeyLength, EcdhP521.PublicKeyLength, EcdhP521.SharedSecretLength)).IsEqualTo((66, 133, 66));
-		}
-	}
-
-	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task ExtremePrivateKeysGiveTheGeneratorAndItsNegation<T>() where T : class, IKeyAgreement<T>
+	public async Task ExtremePrivateKeysGiveTheGeneratorAndItsNegation()
 	{
 		CurveCase curve = CurveOf<T>();
 		CurvePoint g = curve.Reference.Generator;
@@ -52,10 +37,7 @@ public class EcdhTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task SharedSecretIsTheXCoordinate<T>() where T : class, IKeyAgreement<T>
+	public async Task SharedSecretIsTheXCoordinate()
 	{
 		CurveCase curve = CurveOf<T>();
 		using T one = T.ImportPrivateKey(curve.EncodeScalar(BigInteger.One));
@@ -63,7 +45,7 @@ public class EcdhTest
 		using T key = T.GenerateKey();
 		using T peer = T.GenerateKey();
 		byte[] peerPublicKey = ExportPublicKey(peer);
-		CurvePoint q = new(ModulusCase.Decode(peerPublicKey.AsSpan(1, curve.FieldLength)), ModulusCase.Decode(peerPublicKey.AsSpan(1 + curve.FieldLength)));
+		CurvePoint q = curve.DecodePoint(peerPublicKey);
 		byte[] negated = curve.EncodePoint(q with { Y = curve.Reference.P - q.Y });
 		byte[] expected = curve.EncodeCoordinate(q.X);
 
@@ -77,10 +59,7 @@ public class EcdhTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task ReducedCoordinatesAreAccepted<T>() where T : class, IKeyAgreement<T>
+	public async Task ReducedCoordinatesAreAccepted()
 	{
 		CurveCase curve = CurveOf<T>();
 		CurvePoint point = curve.Reference.PointWithXFrom(BigInteger.Zero);
@@ -97,16 +76,10 @@ public class EcdhTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task KeyOperationsDoNotAllocate<T>() where T : class, IKeyAgreement<T>
+	public async Task KeyOperationsDoNotAllocate()
 	{
 		// Without optimization, every read of a constant ReadOnlySpan<ulong>, such as the field modulus, allocates a field handle.
-		if (typeof(T).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled is true)
-		{
-			Skip.Test("The implementation is not optimized.");
-		}
+		SkipUnlessOptimized<T>();
 
 		using T key = T.GenerateKey();
 		using T peer = T.GenerateKey();
@@ -129,11 +102,25 @@ public class EcdhTest
 		}
 	}
 
-	private static bool Exercise<T>(T key, byte[] privateKey, byte[] publicKey, byte[] peerPublicKey, byte[] invalidPublicKey, byte[] sharedSecret) where T : class, IKeyAgreement<T>
+	private static bool Exercise(T key, byte[] privateKey, byte[] publicKey, byte[] peerPublicKey, byte[] invalidPublicKey, byte[] sharedSecret)
 	{
 		key.ExportPrivateKey(privateKey);
 		key.ExportPublicKey(publicKey);
 		bool rejected = !key.TryDeriveSharedSecret(invalidPublicKey, sharedSecret);
 		return key.TryDeriveSharedSecret(peerPublicKey, sharedSecret) & rejected;
+	}
+}
+
+public class EcdhTest
+{
+	[Test]
+	public async Task LengthsAreFixed()
+	{
+		using (Assert.Multiple())
+		{
+			await Assert.That((EcdhP256.PrivateKeyLength, EcdhP256.PublicKeyLength, EcdhP256.SharedSecretLength)).IsEqualTo((32, 65, 32));
+			await Assert.That((EcdhP384.PrivateKeyLength, EcdhP384.PublicKeyLength, EcdhP384.SharedSecretLength)).IsEqualTo((48, 97, 48));
+			await Assert.That((EcdhP521.PrivateKeyLength, EcdhP521.PublicKeyLength, EcdhP521.SharedSecretLength)).IsEqualTo((66, 133, 66));
+		}
 	}
 }

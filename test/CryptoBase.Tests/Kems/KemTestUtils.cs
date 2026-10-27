@@ -59,9 +59,7 @@ internal static class KemTestUtils
 	{
 		for (int i = 0; i < ciphertext.Length; ++i)
 		{
-			byte[] tampered = (byte[])ciphertext.Clone();
-			tampered[i] ^= (byte)(1 << i % 8);
-			yield return tampered;
+			yield return Flip(ciphertext, i);
 		}
 
 		yield return new byte[ciphertext.Length];

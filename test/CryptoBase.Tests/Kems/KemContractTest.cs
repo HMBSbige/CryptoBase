@@ -9,15 +9,15 @@ namespace CryptoBase.Tests.Kems;
 
 // Checks every IKem against the behavior its documentation promises; the known-answer and differential tests check the values.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-public class KemContractTest
+[GenerateGenericTest(typeof(MLKem512))]
+[GenerateGenericTest(typeof(MLKem768))]
+[GenerateGenericTest(typeof(MLKem1024))]
+[GenerateGenericTest(typeof(SecP256r1MLKem768))]
+[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
+public class KemContractTest<T> where T : class, IKem<T>
 {
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task EveryKeyFormatRoundTrips<T>() where T : class, IKem<T>
+	public async Task EveryKeyFormatRoundTrips()
 	{
 		using T generated = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(generated);
@@ -56,12 +56,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task GenerateKeyAndEncapsulateAreRandomized<T>() where T : class, IKem<T>
+	public async Task GenerateKeyAndEncapsulateAreRandomized()
 	{
 		using T first = T.GenerateKey();
 		using T second = T.GenerateKey();
@@ -77,12 +72,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task ReportsWhichKeysItHolds<T>() where T : class, IKem<T>
+	public async Task ReportsWhichKeysItHolds()
 	{
 		using T generated = T.GenerateKey();
 		using T fromSeed = T.ImportPrivateSeed(ExportPrivateSeed(generated));
@@ -99,12 +89,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task MissingKeysThrowInvalidOperation<T>() where T : class, IKem<T>
+	public async Task MissingKeysThrowInvalidOperation()
 	{
 		using T generated = T.GenerateKey();
 		using T fromDecapsulationKey = T.ImportDecapsulationKey(ExportDecapsulationKey(generated));
@@ -132,12 +117,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task ShortOutputsThrowAndStayUnchanged<T>() where T : class, IKem<T>
+	public async Task ShortOutputsThrowAndStayUnchanged()
 	{
 		using T kem = T.GenerateKey();
 		byte[] ciphertext = Encapsulate(kem).Ciphertext;
@@ -174,12 +154,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task ImportsOfTheWrongLengthThrow<T>() where T : class, IKem<T>
+	public async Task ImportsOfTheWrongLengthThrow()
 	{
 		using T kem = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(kem);
@@ -202,12 +177,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task CiphertextsOfTheWrongLengthReturnFalse<T>() where T : class, IKem<T>
+	public async Task CiphertextsOfTheWrongLengthReturnFalse()
 	{
 		using T generated = T.GenerateKey();
 		using T fromDecapsulationKey = T.ImportDecapsulationKey(ExportDecapsulationKey(generated));
@@ -228,12 +198,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task OverlappingOutputsThrow<T>() where T : class, IKem<T>
+	public async Task OverlappingOutputsThrow()
 	{
 		using T kem = T.GenerateKey();
 		int ciphertextLength = T.CiphertextLength;
@@ -262,12 +227,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task DecapsulationMayOverlapItsInput<T>() where T : class, IKem<T>
+	public async Task DecapsulationMayOverlapItsInput()
 	{
 		using T kem = T.GenerateKey();
 		(byte[] ciphertext, byte[] sharedSecret) = Encapsulate(kem);
@@ -283,12 +243,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task LongerOutputsReceiveOnlyTheirLength<T>() where T : class, IKem<T>
+	public async Task LongerOutputsReceiveOnlyTheirLength()
 	{
 		using T kem = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(kem);
@@ -324,12 +279,7 @@ public class KemContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task DisposedInstancesThrow<T>() where T : class, IKem<T>
+	public async Task DisposedInstancesThrow()
 	{
 		T kem = T.GenerateKey();
 		byte[] ciphertext = Encapsulate(kem).Ciphertext;
@@ -355,12 +305,7 @@ public class KemContractTest
 
 	// Whether tampering checked bytes changes the value depends on the algorithm, so only tampering unchecked bytes must change it.
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task TamperedCiphertextsFailThePublicChecksOrYieldADeterministicValue<T>() where T : class, IKem<T>
+	public async Task TamperedCiphertextsFailThePublicChecksOrYieldADeterministicValue()
 	{
 		using T generated = T.GenerateKey();
 		using T fromSeed = T.ImportPrivateSeed(ExportPrivateSeed(generated));
@@ -409,12 +354,7 @@ public class KemContractTest
 
 	// Inputs and outputs that end where an inaccessible page begins must be read and written without faulting.
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task StaysWithinBuffers<T>() where T : class, IKem<T>
+	public async Task StaysWithinBuffers()
 	{
 		GuardPageBuffer.SkipUnlessSupported();
 

@@ -6,7 +6,6 @@ using CryptoBase.KeyAgreements.Ecdh;
 using CryptoBase.Tests.EllipticCurves;
 using CryptoBase.Tests.Kems.MLKem;
 using CryptoBase.Tests.KeyAgreements;
-using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -20,24 +19,14 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kems.Hybrid;
 
-public class EcMLKemTest
+[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
+[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
+public class EcMLKemTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
 {
 	private const int Iterations = 4;
 
 	[Test]
-	public async Task LengthsAreFixed()
-	{
-		using (Assert.Multiple())
-		{
-			await Assert.That((SecP256r1MLKem768.EncapsulationKeyLength, SecP256r1MLKem768.CiphertextLength, SecP256r1MLKem768.SharedSecretLength, SecP256r1MLKem768.PrivateSeedLength, SecP256r1MLKem768.DecapsulationKeyLength)).IsEqualTo((1249, 1153, 64, 96, 2432));
-			await Assert.That((SecP384r1MLKem1024.EncapsulationKeyLength, SecP384r1MLKem1024.CiphertextLength, SecP384r1MLKem1024.SharedSecretLength, SecP384r1MLKem1024.PrivateSeedLength, SecP384r1MLKem1024.DecapsulationKeyLength)).IsEqualTo((1665, 1665, 80, 112, 3216));
-		}
-	}
-
-	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task KeysConcatenateTheirParts<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task KeysConcatenateTheirParts()
 	{
 		using T kem = T.GenerateKey();
 		(byte[] privateKey, byte[] mlKemSeed) = Split(ExportPrivateSeed(kem), TEcdh.PrivateKeyLength);
@@ -52,9 +41,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task EncapsulationConcatenatesItsParts<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task EncapsulationConcatenatesItsParts()
 	{
 		CurveCase curve = CurveOf<TEcdh>();
 		using T kem = T.GenerateKey();
@@ -84,9 +71,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task EachDecapsulatesWhatThePartsEncapsulate<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task EachDecapsulatesWhatThePartsEncapsulate()
 	{
 		for (int i = 0; i < Iterations; ++i)
 		{
@@ -114,9 +99,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task PrivateKeysOutsideTheRangeThrow<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task PrivateKeysOutsideTheRangeThrow()
 	{
 		CurveCase curve = CurveOf<TEcdh>();
 		using T kem = T.GenerateKey();
@@ -154,9 +137,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task InvalidMLKemDecapsulationKeysThrow<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task InvalidMLKemDecapsulationKeysThrow()
 	{
 		using T kem = T.GenerateKey();
 		(byte[] privateKey, byte[] mlKemDecapsulationKey) = Split(ExportDecapsulationKey(kem), TEcdh.PrivateKeyLength);
@@ -175,9 +156,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task InvalidEncapsulationKeysThrow<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task InvalidEncapsulationKeysThrow()
 	{
 		using T kem = T.GenerateKey();
 		(byte[] publicKey, byte[] mlKemEncapsulationKey) = Split(ExportEncapsulationKey(kem), TEcdh.PublicKeyLength);
@@ -196,9 +175,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task TamperingTheMLKemCiphertextKeepsTheEcdhPart<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task TamperingTheMLKemCiphertextKeepsTheEcdhPart()
 	{
 		using T kem = T.GenerateKey();
 		using TMLKem mlKem = TMLKem.ImportPrivateSeed(ExportPrivateSeed(kem).AsSpan(TEcdh.PrivateKeyLength));
@@ -220,9 +197,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task NegatingTheEphemeralPublicKeyKeepsTheSharedSecret<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task NegatingTheEphemeralPublicKeyKeepsTheSharedSecret()
 	{
 		CurveCase curve = CurveOf<TEcdh>();
 
@@ -231,7 +206,7 @@ public class EcMLKemTest
 			using T kem = T.GenerateKey();
 			(byte[] ciphertext, byte[] sharedSecret) = Encapsulate(kem);
 			(byte[] ephemeralPublicKey, byte[] mlKemCiphertext) = Split(ciphertext, TEcdh.PublicKeyLength);
-			BigInteger y = ModulusCase.Decode(ephemeralPublicKey.AsSpan(1 + curve.FieldLength));
+			BigInteger y = curve.DecodePoint(ephemeralPublicKey).Y;
 			byte[] negated = [.. ephemeralPublicKey.AsSpan(0, 1 + curve.FieldLength), .. curve.EncodeCoordinate(curve.Reference.P - y)];
 			byte[] altered = Concat(negated, mlKemCiphertext);
 
@@ -244,9 +219,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-	public async Task DecapsulationMayOverlapEitherPartOfItsInput<T, TEcdh, TMLKem>() where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+	public async Task DecapsulationMayOverlapEitherPartOfItsInput()
 	{
 		int ciphertextLength = T.CiphertextLength;
 		int secretLength = T.SharedSecretLength;
@@ -271,9 +244,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task EveryOverlapOfTheOutputsThrows<T>() where T : class, IKem<T>
+	public async Task EveryOverlapOfTheOutputsThrows()
 	{
 		int ciphertextLength = T.CiphertextLength;
 		int secretLength = T.SharedSecretLength;
@@ -303,15 +274,10 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task KeyOperationsDoNotAllocate<T>() where T : class, IKem<T>
+	public async Task KeyOperationsDoNotAllocate()
 	{
 		// Without optimization, every read of a constant ReadOnlySpan, such as the field modulus or the zetas, allocates a field handle.
-		if (typeof(T).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled is true)
-		{
-			Skip.Test("The implementation is not optimized.");
-		}
+		SkipUnlessOptimized<T>();
 
 		using T kem = T.GenerateKey();
 		byte[] seed = new byte[T.PrivateSeedLength];
@@ -336,9 +302,7 @@ public class EcMLKemTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(SecP256r1MLKem768))]
-	[GenerateGenericTest(typeof(SecP384r1MLKem1024))]
-	public async Task DisposeErasesTheKey<T>() where T : class, IKem<T>
+	public async Task DisposeErasesTheKey()
 	{
 		T generated = T.GenerateKey();
 		T fromDecapsulationKey = T.ImportDecapsulationKey(ExportDecapsulationKey(generated));
@@ -359,7 +323,7 @@ public class EcMLKemTest
 		}
 	}
 
-	private static bool Exercise<T>(T kem, byte[] seed, byte[] decapsulationKey, byte[] encapsulationKey, byte[] ciphertext, byte[] invalidCiphertext, byte[] sharedSecret, byte[] decapsulated) where T : class, IKem<T>
+	private static bool Exercise(T kem, byte[] seed, byte[] decapsulationKey, byte[] encapsulationKey, byte[] ciphertext, byte[] invalidCiphertext, byte[] sharedSecret, byte[] decapsulated)
 	{
 		bool results = true;
 
@@ -374,13 +338,6 @@ public class EcMLKemTest
 		}
 
 		return results;
-	}
-
-	private static byte[] Flip(byte[] source, int index)
-	{
-		byte[] flipped = (byte[])source.Clone();
-		flipped[index] ^= (byte)(1 << index % 8);
-		return flipped;
 	}
 
 	private static byte[] WithLargeCoefficient(byte[] source, int offset)
@@ -418,7 +375,7 @@ public class EcMLKemTest
 					throw new InvalidOperationException($"The test does not know how to check {type.Name}.");
 				}
 
-				MethodInfo bytes = typeof(EcMLKemTest).GetMethod(nameof(Bytes), BindingFlags.Static | BindingFlags.NonPublic) ?? throw new MissingMethodException(nameof(EcMLKemTest), nameof(Bytes));
+				MethodInfo bytes = typeof(EcMLKemTest<T, TEcdh, TMLKem>).GetMethod(nameof(Bytes), BindingFlags.Static | BindingFlags.NonPublic) ?? throw new MissingMethodException(nameof(EcMLKemTest), nameof(Bytes));
 				return bytes.MakeGenericMethod(type).Invoke(null, [value]) as byte[] ?? [.. type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SelectMany(field => Contents(field.GetValue(value)))];
 			}
 		}
@@ -433,5 +390,18 @@ public class EcMLKemTest
 
 		TValue copy = (TValue)value;
 		return MemoryMarshal.AsBytes(new ReadOnlySpan<TValue>(in copy)).ToArray();
+	}
+}
+
+public class EcMLKemTest
+{
+	[Test]
+	public async Task LengthsAreFixed()
+	{
+		using (Assert.Multiple())
+		{
+			await Assert.That((SecP256r1MLKem768.EncapsulationKeyLength, SecP256r1MLKem768.CiphertextLength, SecP256r1MLKem768.SharedSecretLength, SecP256r1MLKem768.PrivateSeedLength, SecP256r1MLKem768.DecapsulationKeyLength)).IsEqualTo((1249, 1153, 64, 96, 2432));
+			await Assert.That((SecP384r1MLKem1024.EncapsulationKeyLength, SecP384r1MLKem1024.CiphertextLength, SecP384r1MLKem1024.SharedSecretLength, SecP384r1MLKem1024.PrivateSeedLength, SecP384r1MLKem1024.DecapsulationKeyLength)).IsEqualTo((1665, 1665, 80, 112, 3216));
+		}
 	}
 }

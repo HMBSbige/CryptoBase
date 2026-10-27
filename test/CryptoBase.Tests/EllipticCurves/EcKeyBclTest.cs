@@ -1,5 +1,5 @@
-using System.Numerics;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.KeyAgreements.Ecdh.EcdhTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
@@ -78,11 +78,6 @@ public class EcKeyBclTest
 		}
 	}
 
-	private static ECCurve BclCurve(CurveCase curve)
-	{
-		return ECCurve.CreateFromValue(curve.Parameters.Oid);
-	}
-
 	private static void SkipUnlessSupported(CurveCase curve)
 	{
 		try
@@ -95,22 +90,5 @@ public class EcKeyBclTest
 		{
 			Skip.Test($"The platform has no raw ECDH or ECDSA on {curve.Name}: {e.Message}");
 		}
-	}
-
-	private static byte[] Normalize(byte[]? value, int length)
-	{
-		ArgumentNullException.ThrowIfNull(value);
-
-		return CurveCase.EncodeInteger(new BigInteger(value, isUnsigned: true, isBigEndian: true), length);
-	}
-
-	private static byte[] Encode(CurveCase curve, ECPoint point)
-	{
-		return [0x04, .. Normalize(point.X, curve.FieldLength), .. Normalize(point.Y, curve.FieldLength)];
-	}
-
-	private static ECPoint Decode(CurveCase curve, byte[] encoding)
-	{
-		return new ECPoint { X = encoding.AsSpan(1, curve.FieldLength).ToArray(), Y = encoding.AsSpan(1 + curve.FieldLength, curve.FieldLength).ToArray() };
 	}
 }

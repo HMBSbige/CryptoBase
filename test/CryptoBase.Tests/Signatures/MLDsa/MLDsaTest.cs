@@ -1,7 +1,6 @@
 using CryptoBase.Internal;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Tests.Hashes.Sha3;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Reflection;
@@ -14,15 +13,15 @@ namespace CryptoBase.Tests.Signatures.MLDsa;
 
 // The behavior of ML-DSA beyond ISignatureKey; SignatureKeyContractTest checks the rest, and the Wycheproof and differential tests the values.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-internal class MLDsaTest
+[GenerateGenericTest(typeof(MLDsa44))]
+[GenerateGenericTest(typeof(MLDsa65))]
+[GenerateGenericTest(typeof(MLDsa87))]
+internal class MLDsaTest<T> where T : class, IMLDsa<T>
 {
 	private const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task EveryKeyFormatRoundTrips<T>() where T : class, IMLDsa<T>
+	public async Task EveryKeyFormatRoundTrips()
 	{
 		using T generated = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(generated);
@@ -62,10 +61,7 @@ internal class MLDsaTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task ReportsWhichKeysItHolds<T>() where T : class, IMLDsa<T>
+	public async Task ReportsWhichKeysItHolds()
 	{
 		using T generated = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(generated);
@@ -95,10 +91,7 @@ internal class MLDsaTest
 
 	// The seed form when the instance holds the seed, the expandedKey form otherwise (RFC 9881, Sec. 6).
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task ExportsTheEncodingsOfRfc9881<T>() where T : class, IMLDsa<T>
+	public async Task ExportsTheEncodingsOfRfc9881()
 	{
 		using T generated = T.GenerateKey();
 		using T fromPrivateKey = T.ImportPrivateKey(ExportPrivateKey(generated));
@@ -120,10 +113,7 @@ internal class MLDsaTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task ImportsTheEncodingsOfRfc9881<T>() where T : class, IMLDsa<T>
+	public async Task ImportsTheEncodingsOfRfc9881()
 	{
 		using T generated = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(generated);
@@ -148,10 +138,7 @@ internal class MLDsaTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task RejectsMalformedOrInconsistentEncodings<T>() where T : class, IMLDsa<T>
+	public async Task RejectsMalformedOrInconsistentEncodings()
 	{
 		using T generated = T.GenerateKey();
 		using T other = T.GenerateKey();
@@ -236,10 +223,7 @@ internal class MLDsaTest
 
 	// s1 and s2 outside [−η, η], or t0 or tr that do not follow from ρ, s1 and s2; K is free.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task RejectsInconsistentPrivateKeys<T>() where T : class, IMLDsa<T>
+	public async Task RejectsInconsistentPrivateKeys()
 	{
 		(int k, int l, int eta, _) = Parameters<T>();
 		int etaLength = eta is 2 ? 96 : 128;
@@ -270,10 +254,7 @@ internal class MLDsaTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task MissingKeysThrowInvalidOperation<T>() where T : class, IMLDsa<T>
+	public async Task MissingKeysThrowInvalidOperation()
 	{
 		using T generated = T.GenerateKey();
 		using T fromPrivateKey = T.ImportPrivateKey(ExportPrivateKey(generated));
@@ -299,10 +280,7 @@ internal class MLDsaTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task ShortOutputsThrowAndStayUnchanged<T>() where T : class, IMLDsa<T>
+	public async Task ShortOutputsThrowAndStayUnchanged()
 	{
 		using T key = T.GenerateKey();
 		byte[] mu = new byte[T.MuLength];
@@ -333,10 +311,7 @@ internal class MLDsaTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task InputsOfTheWrongLengthThrow<T>() where T : class, IMLDsa<T>
+	public async Task InputsOfTheWrongLengthThrow()
 	{
 		using T key = T.GenerateKey();
 		byte[] seed = ExportPrivateSeed(key);
@@ -397,10 +372,7 @@ internal class MLDsaTest
 
 	// The context, the mode and the hash each separate signatures; μ joins the message methods to the μ methods.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task SignaturesAreBoundToTheirInputs<T>() where T : class, IMLDsa<T>
+	public async Task SignaturesAreBoundToTheirInputs()
 	{
 		using T key = T.GenerateKey();
 		byte[] publicKey = ExportPublicKey(key);
@@ -440,10 +412,7 @@ internal class MLDsaTest
 
 	// Every hash under 2.16.840.1.101.3.4.2 whose collision strength, half its output, reaches λ (FIPS 204, Sec. 5.4), and no other; μ from the reference sponge checks the OID that went into M′.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task AcceptsExactlyTheHashesOfItsStrength<T>() where T : class, IMLDsa<T>
+	public async Task AcceptsExactlyTheHashesOfItsStrength()
 	{
 		(string Oid, byte Arc, int Length)[] hashes =
 		[
@@ -481,10 +450,7 @@ internal class MLDsaTest
 
 	// With a given rnd, signing is deterministic and the same from every instance with the private key.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task SigningWithAGivenRandomnessIsDeterministic<T>() where T : class, IMLDsa<T>
+	public async Task SigningWithAGivenRandomnessIsDeterministic()
 	{
 		using T generated = T.GenerateKey();
 		using T fromPrivateKey = T.ImportPrivateKey(ExportPrivateKey(generated));
@@ -504,16 +470,13 @@ internal class MLDsaTest
 
 	// Every byte of the hints changed, and every hint count pushed past ω.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task TamperedHintsFailVerification<T>() where T : class, IMLDsa<T>
+	public async Task TamperedHintsFailVerification()
 	{
 		(int k, _, _, _) = Parameters<T>();
 		using T key = T.GenerateKey();
 		byte[] message = CreateDeterministicSource(30);
 		byte[] signature = Sign(key, message);
-		int hintOffset = HintStart<T>();
+		int hintOffset = HintStart();
 		int omega = T.SignatureLength - hintOffset - k;
 		List<string> accepted = [];
 
@@ -547,10 +510,7 @@ internal class MLDsaTest
 
 	// The message and μ are read in full before the signature is written over them.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task SigningMayOverlapItsInput<T>() where T : class, IMLDsa<T>
+	public async Task SigningMayOverlapItsInput()
 	{
 		using T key = T.GenerateKey();
 		byte[] message = CreateDeterministicSource(T.SignatureLength + 10);
@@ -579,10 +539,7 @@ internal class MLDsaTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task DisposeErasesTheKey<T>() where T : class, IMLDsa<T>
+	public async Task DisposeErasesTheKey()
 	{
 		T generated = T.GenerateKey();
 		T fromPrivateKey = T.ImportPrivateKey(ExportPrivateKey(generated));
@@ -612,10 +569,7 @@ internal class MLDsaTest
 
 	// Signing and verification may run concurrently on one instance, including the first of each, which transform the key under a lock.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task ConcurrentOperationsAgree<T>() where T : class, IMLDsa<T>
+	public async Task ConcurrentOperationsAgree()
 	{
 		const int Threads = 8;
 		const int Keys = 8;
@@ -675,16 +629,10 @@ internal class MLDsaTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task KeyOperationsDoNotAllocate<T>() where T : class, IMLDsa<T>
+	public async Task KeyOperationsDoNotAllocate()
 	{
 		// Without optimization, every read of a constant ReadOnlySpan<int>, such as the zetas, allocates a field handle.
-		if (typeof(T).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled is true)
-		{
-			Skip.Test("The implementation is not optimized.");
-		}
+		SkipUnlessOptimized<T>();
 
 		using T key = T.GenerateKey();
 		Buffers buffers = new(new byte[T.PrivateSeedLength], new byte[T.PrivateKeyLength], new byte[T.PublicKeyLength], new byte[T.SignatureLength], CreateDeterministicSource(100), Mu(ExportPublicKey(key), CreateDeterministicSource(100)), new byte[64]);
@@ -703,10 +651,7 @@ internal class MLDsaTest
 
 	// Inputs and outputs that end where an inaccessible page begins must be read and written without faulting.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task StaysWithinBuffers<T>() where T : class, IMLDsa<T>
+	public async Task StaysWithinBuffers()
 	{
 		GuardPageBuffer.SkipUnlessSupported();
 
@@ -759,92 +704,7 @@ internal class MLDsaTest
 		}
 	}
 
-	// ExpandS squeezes a stream on with its batch when its first two blocks leave it short of 256 coefficients. Each seed, found by search, leaves one stream of ML-DSA-65 short, whose η = 4 rejects enough candidates for that to happen; the reference takes each stream from as many blocks as it needs.
-	[Test]
-	[Arguments("dde351508bd727157e0810bb8a594f620ab46670b2ca6f14a1fe6dfeaa6edd96", 3)]
-	[Arguments("f407c06404e99af47d0c19f3a4db8ccf4d7963a4fc9dc263c2fba3f64ac3ebe3", 6)]
-	[Arguments("3a33d0cef9aa04d56310f61dc4dff174d7d7138c04e8686c23433d44d272d65b", 10)]
-	public async Task ExpandSContinuesAStreamThatFallsShort(string seedHex, int shortStream)
-	{
-		const int Rate = 136;
-		const int N = MLDsaReference.N;
-		(int k, int l, int eta, _) = Parameters<MLDsa65>();
-		int etaLength = 32 * MLDsaReference.BitLength(2 * eta);
-		byte[] seed = Convert.FromHexString(seedHex);
-		byte[] rhoPrime = KeccakReference.Sponge([.. seed, (byte)k, (byte)l], Rate, 0x1F, 128).AsSpan(32, 64).ToArray();
-
-		using MLDsa65 key = MLDsa65.ImportPrivateSeed(seed);
-		byte[] privateKey = ExportPrivateKey(key);
-
-		for (int r = 0; r < l + k; ++r)
-		{
-			byte[] stream = KeccakReference.Sponge([.. rhoPrime, (byte)r, (byte)(r >> 8)], Rate, 0x1F, 4 * Rate);
-			bool fallsShort = MLDsaReference.RejectEta(stream.AsSpan(0, 2 * Rate), N, eta).Count < N;
-			byte[] expected = MLDsaReference.BitPack([.. MLDsaReference.RejectEta(stream, N, eta)], eta, eta);
-
-			using (Assert.Multiple())
-			{
-				await Assert.That(fallsShort).IsEqualTo(r == shortStream).Because($"stream {r} of {seedHex}");
-				await Assert.That(privateKey.AsSpan(128 + r * etaLength, etaLength).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"stream {r} of {seedHex}");
-			}
-		}
-	}
-
-	// ExpandMask hashes a message in a free lane of its batches where the kernel leaves one. Whatever the lanes, y must be that of Algorithm 34 and the hash SHAKE256 of the message: for messages that end within, at and beyond the blocks the batches permute, for the μ ‖ w1Encode(w1) that signing hashes, and for κ at the start and the end of its range.
-	[Test]
-	public async Task ExpandMaskHashesAMessageBesideItsStreams()
-	{
-		await VerifyExpandMask<MLDsa44Parameters>();
-		await VerifyExpandMask<MLDsa65Parameters>();
-		await VerifyExpandMask<MLDsa87Parameters>();
-	}
-
-	private static async Task VerifyExpandMask<TParameters>() where TParameters : struct, IMLDsaParameters
-	{
-		const int Rate = 136;
-		const int N = MLDsaReference.N;
-		int l = TParameters.L;
-		int gamma1 = 1 << TParameters.Gamma1Bits;
-		int zLength = 32 * (TParameters.Gamma1Bits + 1);
-		int commitmentLength = 64 + TParameters.K * 32 * (TParameters.Gamma2 == MLDsaConstants.Gamma2Small ? 6 : 4);
-		int hashLength = TParameters.Lambda / 4;
-		Random random = new(TParameters.K);
-		byte[] seed = new byte[64];
-		random.NextBytes(seed);
-
-		foreach (int kappa in (int[])[0, 7 * l, ushort.MaxValue + 1 - l])
-		{
-			int[] expected = new int[l * N];
-
-			for (int r = 0; r < l; ++r)
-			{
-				int nonce = kappa + r;
-				byte[] stream = KeccakReference.Sponge([.. seed, (byte)nonce, (byte)(nonce >> 8)], Rate, 0x1F, zLength);
-				MLDsaReference.BitUnpack(stream, gamma1 - 1, gamma1).CopyTo(expected, r * N);
-			}
-
-			int[] plain = new int[l * N];
-			MLDsaKey<TParameters>.ExpandMask<MLDsaKernelDispatch>(seed, kappa, plain, [], []);
-			await Assert.That(plain).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"y without a message at κ = {kappa} with l = {l}");
-
-			foreach (int length in (int[])[1, Rate - 1, Rate, Rate + 1, 5 * Rate - 1, 5 * Rate, 5 * Rate + 1, commitmentLength, 2 * commitmentLength])
-			{
-				byte[] message = new byte[length];
-				random.NextBytes(message);
-				int[] y = new int[l * N];
-				byte[] hash = new byte[hashLength];
-				MLDsaKey<TParameters>.ExpandMask<MLDsaKernelDispatch>(seed, kappa, y, message, hash);
-
-				using (Assert.Multiple())
-				{
-					await Assert.That(y).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"y beside a message of {length} bytes at κ = {kappa} with l = {l}");
-					await Assert.That(hash).IsEquivalentTo(KeccakReference.Sponge(message, Rate, 0x1F, hashLength), CollectionOrdering.Matching).Because($"the hash of {length} bytes at κ = {kappa} with l = {l}");
-				}
-			}
-		}
-	}
-
-	private static bool Exercise<T>(T key, Buffers buffers) where T : class, IMLDsa<T>
+	private static bool Exercise(T key, Buffers buffers)
 	{
 		bool valid = true;
 
@@ -865,7 +725,7 @@ internal class MLDsaTest
 	}
 
 	// The offset of the hints in a signature: c̃, then l polynomials of z.
-	private static int HintStart<T>() where T : class, IMLDsa<T>
+	private static int HintStart()
 	{
 		(_, int l, _, int lambda) = Parameters<T>();
 		int zLength = 32 * (lambda is 128 ? 18 : 20);
@@ -873,7 +733,7 @@ internal class MLDsaTest
 	}
 
 	// The number of nonzero elements or set flags in each field of the key an instance holds; arrays receives the arrays it references.
-	private static Dictionary<string, int> KeyContents<T>(T key, List<Array> arrays) where T : class, IMLDsa<T>
+	private static Dictionary<string, int> KeyContents(T key, List<Array> arrays)
 	{
 		FieldInfo? keyField = typeof(T).GetField("_key", BindingFlags.Instance | BindingFlags.NonPublic);
 		object state = keyField?.GetValue(key) ?? throw new InvalidOperationException($"{typeof(T).Name} has no key field.");
@@ -1008,4 +868,92 @@ internal class MLDsaTest
 	}
 
 	private sealed record Buffers(byte[] Seed, byte[] PrivateKey, byte[] PublicKey, byte[] Signature, byte[] Message, byte[] Mu, byte[] Hash);
+}
+
+internal class MLDsaTest
+{
+	// ExpandS squeezes a stream on with its batch when its first two blocks leave it short of 256 coefficients. Each seed, found by search, leaves one stream of ML-DSA-65 short, whose η = 4 rejects enough candidates for that to happen; the reference takes each stream from as many blocks as it needs.
+	[Test]
+	[Arguments("dde351508bd727157e0810bb8a594f620ab46670b2ca6f14a1fe6dfeaa6edd96", 3)]
+	[Arguments("f407c06404e99af47d0c19f3a4db8ccf4d7963a4fc9dc263c2fba3f64ac3ebe3", 6)]
+	[Arguments("3a33d0cef9aa04d56310f61dc4dff174d7d7138c04e8686c23433d44d272d65b", 10)]
+	public async Task ExpandSContinuesAStreamThatFallsShort(string seedHex, int shortStream)
+	{
+		const int Rate = 136;
+		const int N = MLDsaReference.N;
+		(int k, int l, int eta, _) = Parameters<MLDsa65>();
+		int etaLength = 32 * MLDsaReference.BitLength(2 * eta);
+		byte[] seed = Convert.FromHexString(seedHex);
+		byte[] rhoPrime = KeccakReference.Sponge([.. seed, (byte)k, (byte)l], Rate, 0x1F, 128).AsSpan(32, 64).ToArray();
+
+		using MLDsa65 key = MLDsa65.ImportPrivateSeed(seed);
+		byte[] privateKey = ExportPrivateKey(key);
+
+		for (int r = 0; r < l + k; ++r)
+		{
+			byte[] stream = KeccakReference.Sponge([.. rhoPrime, (byte)r, (byte)(r >> 8)], Rate, 0x1F, 4 * Rate);
+			bool fallsShort = MLDsaReference.RejectEta(stream.AsSpan(0, 2 * Rate), N, eta).Count < N;
+			byte[] expected = MLDsaReference.BitPack([.. MLDsaReference.RejectEta(stream, N, eta)], eta, eta);
+
+			using (Assert.Multiple())
+			{
+				await Assert.That(fallsShort).IsEqualTo(r == shortStream).Because($"stream {r} of {seedHex}");
+				await Assert.That(privateKey.AsSpan(128 + r * etaLength, etaLength).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"stream {r} of {seedHex}");
+			}
+		}
+	}
+
+	// ExpandMask hashes a message in a free lane of its batches where the kernel leaves one. Whatever the lanes, y must be that of Algorithm 34 and the hash SHAKE256 of the message: for messages that end within, at and beyond the blocks the batches permute, for the μ ‖ w1Encode(w1) that signing hashes, and for κ at the start and the end of its range.
+	[Test]
+	public async Task ExpandMaskHashesAMessageBesideItsStreams()
+	{
+		await VerifyExpandMask<MLDsa44Parameters>();
+		await VerifyExpandMask<MLDsa65Parameters>();
+		await VerifyExpandMask<MLDsa87Parameters>();
+	}
+
+	private static async Task VerifyExpandMask<TParameters>() where TParameters : struct, IMLDsaParameters
+	{
+		const int Rate = 136;
+		const int N = MLDsaReference.N;
+		int l = TParameters.L;
+		int gamma1 = 1 << TParameters.Gamma1Bits;
+		int zLength = 32 * (TParameters.Gamma1Bits + 1);
+		int commitmentLength = 64 + TParameters.K * 32 * (TParameters.Gamma2 == MLDsaConstants.Gamma2Small ? 6 : 4);
+		int hashLength = TParameters.Lambda / 4;
+		Random random = new(TParameters.K);
+		byte[] seed = new byte[64];
+		random.NextBytes(seed);
+
+		foreach (int kappa in (int[])[0, 7 * l, ushort.MaxValue + 1 - l])
+		{
+			int[] expected = new int[l * N];
+
+			for (int r = 0; r < l; ++r)
+			{
+				int nonce = kappa + r;
+				byte[] stream = KeccakReference.Sponge([.. seed, (byte)nonce, (byte)(nonce >> 8)], Rate, 0x1F, zLength);
+				MLDsaReference.BitUnpack(stream, gamma1 - 1, gamma1).CopyTo(expected, r * N);
+			}
+
+			int[] plain = new int[l * N];
+			MLDsaKey<TParameters>.ExpandMask<MLDsaKernelDispatch>(seed, kappa, plain, [], []);
+			await Assert.That(plain).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"y without a message at κ = {kappa} with l = {l}");
+
+			foreach (int length in (int[])[1, Rate - 1, Rate, Rate + 1, 5 * Rate - 1, 5 * Rate, 5 * Rate + 1, commitmentLength, 2 * commitmentLength])
+			{
+				byte[] message = new byte[length];
+				random.NextBytes(message);
+				int[] y = new int[l * N];
+				byte[] hash = new byte[hashLength];
+				MLDsaKey<TParameters>.ExpandMask<MLDsaKernelDispatch>(seed, kappa, y, message, hash);
+
+				using (Assert.Multiple())
+				{
+					await Assert.That(y).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"y beside a message of {length} bytes at κ = {kappa} with l = {l}");
+					await Assert.That(hash).IsEquivalentTo(KeccakReference.Sponge(message, Rate, 0x1F, hashLength), CollectionOrdering.Matching).Because($"the hash of {length} bytes at κ = {kappa} with l = {l}");
+				}
+			}
+		}
+	}
 }

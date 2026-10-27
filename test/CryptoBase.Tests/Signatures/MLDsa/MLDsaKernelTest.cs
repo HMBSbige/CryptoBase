@@ -1035,14 +1035,6 @@ public class MLDsaKernelTest
 		return MemoryMarshal.Cast<byte, int>(buffer.Span);
 	}
 
-	private static void SkipUnlessSupported(MLDsaKernelCase kernel)
-	{
-		if (!kernel.IsSupported)
-		{
-			Skip.Test($"{kernel} is not supported here.");
-		}
-	}
-
 	private static async Task VerifyMultiplyAccumulate(MLDsaKernelCase kernel, int[] a, int[] b, int count)
 	{
 		int[] expected = new int[N];

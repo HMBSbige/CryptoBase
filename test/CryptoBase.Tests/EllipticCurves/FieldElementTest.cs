@@ -389,10 +389,11 @@ public class FieldElementTest
 
 		foreach (BigInteger value in InversionValues(modulus))
 		{
-			// value = aR stands for a, so the inverse a⁻¹R is value⁻¹R²; value^(m − 2) also maps 0 to 0.
+			// value = aR stands for a, so the inverse a⁻¹R is value⁻¹R²; the inverse of 0 is taken to be 0.
 			BigInteger inverse = invert(value, false);
-			Check(failures, $"1 / {value:X}", inverse, BigInteger.ModPow(value, m - 2, m) * rSquared % m);
-			Check(failures, $"1 / {value:X} through the Montgomery form", modulus.FromMontgomery(invert(modulus.ToMontgomery(value), false)), BigInteger.ModPow(value, m - 2, m));
+			BigInteger valueInverse = EcReference.Inverse(value, m);
+			Check(failures, $"1 / {value:X}", inverse, valueInverse * rSquared % m);
+			Check(failures, $"1 / {value:X} through the Montgomery form", modulus.FromMontgomery(invert(modulus.ToMontgomery(value), false)), valueInverse);
 
 			if (!value.IsZero)
 			{

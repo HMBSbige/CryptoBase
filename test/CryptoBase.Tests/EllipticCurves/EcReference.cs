@@ -31,14 +31,22 @@ internal sealed class EcReference(EcCurveTestVector curve)
 	internal BigInteger Inverse(BigInteger value)
 	{
 		BigInteger remainder = Mod(value);
-		BigInteger divisor = P;
-		BigInteger x = 1;
-		BigInteger previous = 0;
 
 		if (remainder.IsZero)
 		{
 			throw new DivideByZeroException();
 		}
+
+		return Inverse(remainder, P);
+	}
+
+	// The inverse of value in [0, modulus) by the extended Euclidean algorithm, or 0 for 0, as value^(modulus − 2) gives for a prime modulus.
+	internal static BigInteger Inverse(BigInteger value, BigInteger modulus)
+	{
+		BigInteger remainder = value;
+		BigInteger divisor = modulus;
+		BigInteger x = 1;
+		BigInteger previous = 0;
 
 		while (!divisor.IsZero)
 		{
@@ -47,7 +55,7 @@ internal sealed class EcReference(EcCurveTestVector curve)
 			(x, previous) = (previous, x - quotient * previous);
 		}
 
-		return Mod(x);
+		return x.Sign < 0 ? x + modulus : x;
 	}
 
 	// Inverts all the values with a single inversion of their product.
@@ -114,8 +122,13 @@ internal sealed class EcReference(EcCurveTestVector curve)
 		return Multiply(point, [scalar])[0];
 	}
 
-	// Doubles and adds for all the scalars at once, so that each step takes a single inversion.
 	internal CurvePoint?[] Multiply(CurvePoint? point, IReadOnlyCollection<BigInteger> scalars)
+	{
+		return Multiply([.. scalars.Select(_ => point)], [.. scalars]);
+	}
+
+	// Multiplies pairwise, doubling and adding for all the pairs at once, so that each step takes a single inversion.
+	internal CurvePoint?[] Multiply(IReadOnlyList<CurvePoint?> points, IReadOnlyList<BigInteger> scalars)
 	{
 		CurvePoint?[] products = new CurvePoint?[scalars.Count];
 
@@ -123,7 +136,7 @@ internal sealed class EcReference(EcCurveTestVector curve)
 		{
 			int shift = (int)bit;
 			products = Add(products, products);
-			products = Add(products, [.. scalars.Select(scalar => (scalar >> shift).IsEven ? null : point)]);
+			products = Add(products, [.. scalars.Select((scalar, i) => (scalar >> shift).IsEven ? null : points[i])]);
 		}
 
 		return products;

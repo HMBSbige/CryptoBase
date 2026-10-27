@@ -7,15 +7,15 @@ using static CryptoBase.Tests.KeyAgreements.KeyAgreementTestUtils;
 
 namespace CryptoBase.Tests.KeyAgreements.Ecdh;
 
-public class EcdhBclTest
+[GenerateGenericTest(typeof(EcdhP256))]
+[GenerateGenericTest(typeof(EcdhP384))]
+[GenerateGenericTest(typeof(EcdhP521))]
+public class EcdhBclTest<T> where T : class, IKeyAgreement<T>
 {
 	private const int Iterations = 8;
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task SharedSecretsMatchThePlatform<T>() where T : class, IKeyAgreement<T>
+	public async Task SharedSecretsMatchThePlatform()
 	{
 		CurveCase curve = CurveOf<T>();
 		SkipUnlessSupported(curve);
@@ -32,10 +32,7 @@ public class EcdhBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task PrivateKeysMoveBetweenImplementations<T>() where T : class, IKeyAgreement<T>
+	public async Task PrivateKeysMoveBetweenImplementations()
 	{
 		CurveCase curve = CurveOf<T>();
 		SkipUnlessSupported(curve);

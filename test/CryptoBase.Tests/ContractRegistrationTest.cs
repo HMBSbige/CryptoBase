@@ -12,24 +12,18 @@ namespace CryptoBase.Tests;
 public class ContractRegistrationTest
 {
 	[Test]
-	[Arguments(typeof(ISignatureKey<>), typeof(SignatureKeyContractTest))]
-	[Arguments(typeof(IKeyAgreement<>), typeof(KeyAgreementContractTest))]
-	[Arguments(typeof(IKem<>), typeof(KemContractTest))]
+	[Arguments(typeof(ISignatureKey<>), typeof(SignatureKeyContractTest<>))]
+	[Arguments(typeof(IKeyAgreement<>), typeof(KeyAgreementContractTest<>))]
+	[Arguments(typeof(IKem<>), typeof(KemContractTest<>))]
 	public async Task EveryPublicImplementationIsListed(Type contract, Type contractTest)
 	{
 		Type[] implementations = [.. LibraryAssemblies().SelectMany(static assembly => assembly.GetExportedTypes()).Where(type => type is { IsClass: true, IsAbstract: false } && type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == contract))];
-		MethodInfo[] tests = [.. contractTest.GetMethods().Where(static method => method.IsGenericMethodDefinition && method.IsDefined(typeof(TestAttribute)))];
+		Type[] listed = [.. contractTest.GetCustomAttributes<GenerateGenericTestAttribute>().Select(static attribute => attribute.TypeArguments.Single())];
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(implementations).IsNotEmpty();
-			await Assert.That(tests).IsNotEmpty();
-
-			foreach (MethodInfo test in tests)
-			{
-				Type[] listed = [.. test.GetCustomAttributes<GenerateGenericTestAttribute>().Select(static attribute => attribute.TypeArguments.Single())];
-				await Assert.That(listed).IsEquivalentTo(implementations).Because(test.Name);
-			}
+			await Assert.That(listed).IsEquivalentTo(implementations);
 		}
 	}
 

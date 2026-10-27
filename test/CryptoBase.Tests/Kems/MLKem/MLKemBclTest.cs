@@ -8,15 +8,15 @@ using BclMLKem = System.Security.Cryptography.MLKem;
 namespace CryptoBase.Tests.Kems.MLKem;
 
 // Differential tests against the platform implementation, where there is one.
-public class MLKemBclTest
+[GenerateGenericTest(typeof(MLKem512))]
+[GenerateGenericTest(typeof(MLKem768))]
+[GenerateGenericTest(typeof(MLKem1024))]
+public class MLKemBclTest<T> where T : class, IKem<T>
 {
 	private const int Iterations = 8;
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task SeedsExpandToTheSameKeys<T>() where T : class, IKem<T>
+	public async Task SeedsExpandToTheSameKeys()
 	{
 		SkipUnlessSupported();
 
@@ -35,10 +35,7 @@ public class MLKemBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task EachDecapsulatesWhatTheOtherEncapsulates<T>() where T : class, IKem<T>
+	public async Task EachDecapsulatesWhatTheOtherEncapsulates()
 	{
 		SkipUnlessSupported();
 
@@ -59,10 +56,7 @@ public class MLKemBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLKem512))]
-	[GenerateGenericTest(typeof(MLKem768))]
-	[GenerateGenericTest(typeof(MLKem1024))]
-	public async Task ImportsPlatformGeneratedKeys<T>() where T : class, IKem<T>
+	public async Task ImportsPlatformGeneratedKeys()
 	{
 		SkipUnlessSupported();
 

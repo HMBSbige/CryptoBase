@@ -9,16 +9,16 @@ namespace CryptoBase.Tests.Signatures;
 
 // Checks every ISignatureKey against the behavior its documentation promises; the known-answer and differential tests check the values.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-public class SignatureKeyContractTest
+[GenerateGenericTest(typeof(MLDsa44))]
+[GenerateGenericTest(typeof(MLDsa65))]
+[GenerateGenericTest(typeof(MLDsa87))]
+[GenerateGenericTest(typeof(EcdsaP256))]
+[GenerateGenericTest(typeof(EcdsaP384))]
+[GenerateGenericTest(typeof(EcdsaP521))]
+public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 {
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task EveryKeyFormatRoundTrips<T>() where T : class, ISignatureKey<T>
+	public async Task EveryKeyFormatRoundTrips()
 	{
 		using T generated = GenerateKey<T>();
 		byte[] subjectPublicKeyInfo = ExportSubjectPublicKeyInfo(generated);
@@ -55,13 +55,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task ReportsWhetherItHoldsThePrivateKey<T>() where T : class, ISignatureKey<T>
+	public async Task ReportsWhetherItHoldsThePrivateKey()
 	{
 		using T generated = GenerateKey<T>();
 		using T fromPrivateKey = T.ImportPkcs8PrivateKey(ExportPkcs8PrivateKey(generated));
@@ -76,13 +70,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task MissingPrivateKeyThrowsInvalidOperation<T>() where T : class, ISignatureKey<T>
+	public async Task MissingPrivateKeyThrowsInvalidOperation()
 	{
 		using T generated = GenerateKey<T>();
 		using T publicOnly = T.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo(generated));
@@ -104,13 +92,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task ShortOutputsThrowAndStayUnchanged<T>() where T : class, ISignatureKey<T>
+	public async Task ShortOutputsThrowAndStayUnchanged()
 	{
 		using T key = GenerateKey<T>();
 
@@ -137,13 +119,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task LongerOutputsReceiveOnlyTheirLength<T>() where T : class, ISignatureKey<T>
+	public async Task LongerOutputsReceiveOnlyTheirLength()
 	{
 		using T key = GenerateKey<T>();
 		byte[] subjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key);
@@ -175,13 +151,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task MalformedEncodingsThrow<T>() where T : class, ISignatureKey<T>
+	public async Task MalformedEncodingsThrow()
 	{
 		using T key = GenerateKey<T>();
 		byte[] subjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key);
@@ -190,7 +160,7 @@ public class SignatureKeyContractTest
 		List<byte[]> otherPrivateKeys = [privateKey.AsSpan(0, privateKey.Length - 1).ToArray(), [.. privateKey, 0], [0x31, .. privateKey.AsSpan(1)], [], subjectPublicKeyInfo];
 
 		// The keys of every other type.
-		foreach (ISignatureKey other in OtherKeys<T>())
+		foreach (ISignatureKey other in OtherKeys())
 		{
 			using (other)
 			{
@@ -218,13 +188,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task SupportsOnlyItsAlgorithms<T>() where T : class, ISignatureKey<T>
+	public async Task SupportsOnlyItsAlgorithms()
 	{
 		using T key = GenerateKey<T>();
 		SignatureAlgorithm[] supported = AlgorithmsOf<T>();
@@ -253,13 +217,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task TamperedSignaturesFailVerification<T>() where T : class, ISignatureKey<T>
+	public async Task TamperedSignaturesFailVerification()
 	{
 		using T key = GenerateKey<T>();
 		byte[] message = CreateDeterministicSource(40);
@@ -294,13 +252,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task GenerateKeyAndSignAreRandomized<T>() where T : class, ISignatureKey<T>
+	public async Task GenerateKeyAndSignAreRandomized()
 	{
 		using T first = GenerateKey<T>();
 		using T second = GenerateKey<T>();
@@ -323,13 +275,7 @@ public class SignatureKeyContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task DisposedInstancesThrow<T>() where T : class, ISignatureKey<T>
+	public async Task DisposedInstancesThrow()
 	{
 		T key = GenerateKey<T>();
 		SignatureAlgorithm algorithm = AlgorithmsOf<T>()[0];
@@ -356,13 +302,7 @@ public class SignatureKeyContractTest
 
 	// A signature may be shorter than the maximum, so it is verified from a buffer of its own length.
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task StaysWithinBuffers<T>() where T : class, ISignatureKey<T>
+	public async Task StaysWithinBuffers()
 	{
 		GuardPageBuffer.SkipUnlessSupported();
 
@@ -400,7 +340,7 @@ public class SignatureKeyContractTest
 	}
 
 	// One key of every other ISignatureKey type.
-	private static IEnumerable<ISignatureKey> OtherKeys<T>() where T : class, ISignatureKey<T>
+	private static IEnumerable<ISignatureKey> OtherKeys()
 	{
 		return KeyTypes.Where(static type => type.Type != typeof(T)).Select(static type => type.GenerateKey());
 	}

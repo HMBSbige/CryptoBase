@@ -332,14 +332,6 @@ public class MLKemKernelTest
 		}
 	}
 
-	private static void SkipUnlessSupported(MLKemKernelCase kernel)
-	{
-		if (!kernel.IsSupported)
-		{
-			Skip.Test($"{kernel} is not supported here.");
-		}
-	}
-
 	private static async Task VerifyDecode12(MLKemKernelCase kernel, byte[] source, int[] values)
 	{
 		short[] decoded = new short[N];

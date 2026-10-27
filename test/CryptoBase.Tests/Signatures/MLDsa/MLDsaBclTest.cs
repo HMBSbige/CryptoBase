@@ -14,12 +14,15 @@ namespace CryptoBase.Tests.Signatures.MLDsa;
 
 // Differential tests against the platform implementation, where there is one. Not every platform signs or verifies μ itself, so μ is checked through its message methods.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-internal class MLDsaBclTest
+[GenerateGenericTest(typeof(MLDsa44))]
+[GenerateGenericTest(typeof(MLDsa65))]
+[GenerateGenericTest(typeof(MLDsa87))]
+internal class MLDsaBclTest<T> where T : class, IMLDsa<T>
 {
 	private const int Iterations = 8;
 
 	// The hashes that the platform knows; it does not know SHA-512/256.
-	private static readonly (string Oid, byte Arc, int Length)[] PreHashAlgorithms =
+	private static (string Oid, byte Arc, int Length)[] PreHashAlgorithms =>
 	[
 		("2.16.840.1.101.3.4.2.1", 1, 32), // SHA-256
 		("2.16.840.1.101.3.4.2.2", 2, 48), // SHA-384
@@ -32,10 +35,7 @@ internal class MLDsaBclTest
 	];
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task SeedsExpandToTheSameKeys<T>() where T : class, IMLDsa<T>
+	public async Task SeedsExpandToTheSameKeys()
 	{
 		SkipUnlessSupported();
 
@@ -59,10 +59,7 @@ internal class MLDsaBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task EachVerifiesWhatTheOtherSigns<T>() where T : class, IMLDsa<T>
+	public async Task EachVerifiesWhatTheOtherSigns()
 	{
 		SkipUnlessSupported();
 
@@ -90,10 +87,7 @@ internal class MLDsaBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task PreHashSignaturesAgree<T>() where T : class, IMLDsa<T>
+	public async Task PreHashSignaturesAgree()
 	{
 		SkipUnlessSupported();
 
@@ -136,10 +130,7 @@ internal class MLDsaBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task MuSignaturesAgree<T>() where T : class, IMLDsa<T>
+	public async Task MuSignaturesAgree()
 	{
 		SkipUnlessSupported();
 
@@ -166,10 +157,7 @@ internal class MLDsaBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(MLDsa44))]
-	[GenerateGenericTest(typeof(MLDsa65))]
-	[GenerateGenericTest(typeof(MLDsa87))]
-	public async Task EachImportsTheKeysOfTheOther<T>() where T : class, IMLDsa<T>
+	public async Task EachImportsTheKeysOfTheOther()
 	{
 		SkipUnlessSupported();
 
@@ -208,6 +196,16 @@ internal class MLDsaBclTest
 		}
 	}
 
+	private static IEnumerable<byte[]> Contexts()
+	{
+		yield return [];
+		yield return RandomNumberGenerator.GetBytes(7);
+		yield return RandomNumberGenerator.GetBytes(255);
+	}
+}
+
+internal class MLDsaBclTest
+{
 	// ExpandS squeezes more than two SHAKE256 blocks for a polynomial only for η = 4, and rarely, so a seed is searched for that needs them in some polynomial of s1 or s2.
 	[Test]
 	public async Task SecretsThatNeedMoreBlocksMatchThePlatform()
@@ -218,13 +216,6 @@ internal class MLDsaBclTest
 		using MLDsa65 key = MLDsa65.ImportPrivateSeed(seed);
 		using BclMLDsa bcl = BclMLDsa.ImportMLDsaPrivateSeed(MLDsaAlgorithm.MLDsa65, seed);
 		await Assert.That(ExportPrivateKey(key)).IsEquivalentTo(bcl.ExportMLDsaPrivateKey(), CollectionOrdering.Matching);
-	}
-
-	private static IEnumerable<byte[]> Contexts()
-	{
-		yield return [];
-		yield return RandomNumberGenerator.GetBytes(7);
-		yield return RandomNumberGenerator.GetBytes(255);
 	}
 
 	// The first of the seeds ξ = 0, 1, 2, ... (little-endian) for which two SHAKE256 blocks of some stream of ExpandS hold fewer than 256 coefficients in [−4, 4], with η = 4.
@@ -252,13 +243,5 @@ internal class MLDsaBclTest
 		}
 
 		throw new InvalidOperationException("No seed found that needs more blocks.");
-	}
-
-	private static void SkipUnlessSupported()
-	{
-		if (!BclMLDsa.IsSupported)
-		{
-			Skip.Test("The platform does not support ML-DSA.");
-		}
 	}
 }

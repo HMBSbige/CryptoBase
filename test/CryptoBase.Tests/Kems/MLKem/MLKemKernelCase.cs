@@ -2,7 +2,7 @@ using CryptoBase.Kems.MLKem;
 
 namespace CryptoBase.Tests.Kems.MLKem;
 
-public abstract class MLKemKernelCase
+public abstract class MLKemKernelCase : IKernelCase
 {
 	public static IEnumerable<MLKemKernelCase> All()
 	{

@@ -162,6 +162,12 @@ public abstract class CurveCase
 		return [0x04, .. EncodeCoordinate(point.X), .. EncodeCoordinate(point.Y)];
 	}
 
+	// Reads an uncompressed point without checking it.
+	internal CurvePoint DecodePoint(ReadOnlySpan<byte> encoding)
+	{
+		return new CurvePoint(ModulusCase.Decode(encoding.Slice(1, FieldLength)), ModulusCase.Decode(encoding.Slice(1 + FieldLength)));
+	}
+
 	internal static byte[] EncodeInteger(BigInteger value, int length)
 	{
 		byte[] bytes = new byte[length];

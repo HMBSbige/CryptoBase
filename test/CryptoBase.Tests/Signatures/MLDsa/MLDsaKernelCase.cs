@@ -2,7 +2,7 @@ using CryptoBase.Signatures.MLDsa;
 
 namespace CryptoBase.Tests.Signatures.MLDsa;
 
-public abstract class MLDsaKernelCase
+public abstract class MLDsaKernelCase : IKernelCase
 {
 	public static IEnumerable<MLDsaKernelCase> All()
 	{

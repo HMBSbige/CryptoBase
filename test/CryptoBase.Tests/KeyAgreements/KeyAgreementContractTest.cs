@@ -7,13 +7,13 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.KeyAgreements;
 
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-public class KeyAgreementContractTest
+[GenerateGenericTest(typeof(EcdhP256))]
+[GenerateGenericTest(typeof(EcdhP384))]
+[GenerateGenericTest(typeof(EcdhP521))]
+public class KeyAgreementContractTest<T> where T : class, IKeyAgreement<T>
 {
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task PrivateKeysRoundTrip<T>() where T : class, IKeyAgreement<T>
+	public async Task PrivateKeysRoundTrip()
 	{
 		using T generated = T.GenerateKey();
 		byte[] privateKey = ExportPrivateKey(generated);
@@ -29,10 +29,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task BothPartiesDeriveTheSameSecret<T>() where T : class, IKeyAgreement<T>
+	public async Task BothPartiesDeriveTheSameSecret()
 	{
 		using T alice = T.GenerateKey();
 		using T bob = T.GenerateKey();
@@ -50,10 +47,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task UnrelatedKeysGiveOtherSecrets<T>() where T : class, IKeyAgreement<T>
+	public async Task UnrelatedKeysGiveOtherSecrets()
 	{
 		using T alice = T.GenerateKey();
 		using T bob = T.GenerateKey();
@@ -68,10 +62,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task GenerateKeyIsRandomized<T>() where T : class, IKeyAgreement<T>
+	public async Task GenerateKeyIsRandomized()
 	{
 		using T first = T.GenerateKey();
 		using T second = T.GenerateKey();
@@ -84,10 +75,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task PublicKeysOfTheWrongLengthReturnFalse<T>() where T : class, IKeyAgreement<T>
+	public async Task PublicKeysOfTheWrongLengthReturnFalse()
 	{
 		using T key = T.GenerateKey();
 		using T peer = T.GenerateKey();
@@ -105,10 +93,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task InvalidPublicKeysReturnFalse<T>() where T : class, IKeyAgreement<T>
+	public async Task InvalidPublicKeysReturnFalse()
 	{
 		using T first = T.GenerateKey();
 		using T second = T.GenerateKey();
@@ -140,10 +125,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task InvalidPrivateKeysThrow<T>() where T : class, IKeyAgreement<T>
+	public async Task InvalidPrivateKeysThrow()
 	{
 		byte[][] invalidPrivateKeys = KeyAgreementChecks.Of<T>().InvalidPrivateKeys;
 
@@ -159,10 +141,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task ImportsOfTheWrongLengthThrow<T>() where T : class, IKeyAgreement<T>
+	public async Task ImportsOfTheWrongLengthThrow()
 	{
 		using T key = T.GenerateKey();
 		byte[] privateKey = ExportPrivateKey(key);
@@ -177,14 +156,11 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task ShortOutputsThrowAndStayUnchanged<T>() where T : class, IKeyAgreement<T>
+	public async Task ShortOutputsThrowAndStayUnchanged()
 	{
 		using T key = T.GenerateKey();
 		using T peer = T.GenerateKey();
-		byte[][] peerPublicKeys = PeerPublicKeys<T>(ExportPublicKey(peer));
+		byte[][] peerPublicKeys = PeerPublicKeys(ExportPublicKey(peer));
 
 		foreach (int shortfall in (int[])[1, int.MaxValue])
 		{
@@ -211,10 +187,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task LongerOutputsReceiveOnlyTheirLength<T>() where T : class, IKeyAgreement<T>
+	public async Task LongerOutputsReceiveOnlyTheirLength()
 	{
 		using T key = T.GenerateKey();
 		using T peer = T.GenerateKey();
@@ -243,10 +216,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task DerivationMayOverlapItsInput<T>() where T : class, IKeyAgreement<T>
+	public async Task DerivationMayOverlapItsInput()
 	{
 		using T key = T.GenerateKey();
 		using T peer = T.GenerateKey();
@@ -269,14 +239,11 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task DisposedInstancesThrow<T>() where T : class, IKeyAgreement<T>
+	public async Task DisposedInstancesThrow()
 	{
 		T key = T.GenerateKey();
 		using T peer = T.GenerateKey();
-		byte[][] peerPublicKeys = PeerPublicKeys<T>(ExportPublicKey(peer));
+		byte[][] peerPublicKeys = PeerPublicKeys(ExportPublicKey(peer));
 		key.Dispose();
 		key.Dispose();
 
@@ -294,10 +261,7 @@ public class KeyAgreementContractTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdhP256))]
-	[GenerateGenericTest(typeof(EcdhP384))]
-	[GenerateGenericTest(typeof(EcdhP521))]
-	public async Task StaysWithinBuffers<T>() where T : class, IKeyAgreement<T>
+	public async Task StaysWithinBuffers()
 	{
 		GuardPageBuffer.SkipUnlessSupported();
 
@@ -328,7 +292,7 @@ public class KeyAgreementContractTest
 		}
 	}
 
-	private static byte[][] PeerPublicKeys<T>(byte[] valid) where T : class, IKeyAgreement<T>
+	private static byte[][] PeerPublicKeys(byte[] valid)
 	{
 		return [valid, [], Resize(valid, -1), Resize(valid, 1), .. KeyAgreementChecks.Of<T>().InvalidPublicKeys];
 	}

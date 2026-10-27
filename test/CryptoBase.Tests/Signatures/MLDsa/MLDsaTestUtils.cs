@@ -3,6 +3,7 @@
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Tests.Hashes.Sha3;
 using System.Security.Cryptography;
+using BclMLDsa = System.Security.Cryptography.MLDsa;
 
 namespace CryptoBase.Tests.Signatures.MLDsa;
 
@@ -169,6 +170,14 @@ internal static class MLDsaTestUtils
 		}
 
 		return typeof(T) == typeof(MLDsa87) ? MLDsaAlgorithm.MLDsa87 : throw new NotSupportedException(typeof(T).Name);
+	}
+
+	public static void SkipUnlessSupported()
+	{
+		if (!BclMLDsa.IsSupported)
+		{
+			Skip.Test("The platform does not support ML-DSA.");
+		}
 	}
 
 	private static byte[] MuOfFormattedMessage(ReadOnlySpan<byte> publicKey, ReadOnlySpan<byte> formattedMessage)

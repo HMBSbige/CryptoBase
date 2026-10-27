@@ -1,12 +1,16 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.EllipticCurves;
+using System.Formats.Asn1;
+using System.Numerics;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Tests.Signatures.Ecdsa;
 
 internal static class EcdsaTestUtils
 {
+	private const string EcPublicKeyOid = "1.2.840.10045.2.1";
+
 	public static readonly SignatureAlgorithm[] Algorithms = [SignatureAlgorithm.EcdsaSha256, SignatureAlgorithm.EcdsaSha384, SignatureAlgorithm.EcdsaSha512];
 
 	public static CurveCase CurveOf<T>() where T : class, IEcdsa<T>
@@ -73,5 +77,67 @@ internal static class EcdsaTestUtils
 		byte[] signature = new byte[MaxLength(key, algorithm, format)];
 		int written = key.SignHash(algorithm, hash, additionalData, format, signature);
 		return signature.AsSpan(0, written).ToArray();
+	}
+
+	public static byte[] Integer(BigInteger value)
+	{
+		return Element(0x02, value.ToByteArray(isBigEndian: true));
+	}
+
+	public static byte[] Oid(string oid)
+	{
+		AsnWriter writer = new(AsnEncodingRules.DER);
+		writer.WriteObjectIdentifier(oid);
+		return writer.Encode();
+	}
+
+	// Written here rather than by the code under test.
+	public static byte[] Header(byte tag, int length)
+	{
+		return length switch
+		{
+			< 0x80 => [tag, (byte)length],
+			< 0x100 => [tag, 0x81, (byte)length],
+			_ => [tag, 0x82, (byte)(length >> 8), (byte)length]
+		};
+	}
+
+	public static byte[] Element(byte tag, byte[] contents)
+	{
+		return [.. Header(tag, contents.Length), .. contents];
+	}
+
+	public static byte[] LongForm(byte tag, byte[] contents)
+	{
+		return contents.Length < 0x80 ? [tag, 0x81, (byte)contents.Length, .. contents] : [tag, 0x82, 0, (byte)contents.Length, .. contents];
+	}
+
+	public static byte[] AlgorithmIdentifier(string curveOid)
+	{
+		return Element(0x30, [.. Oid(EcPublicKeyOid), .. Oid(curveOid)]);
+	}
+
+	public static byte[] EcPrivateKey(int version, byte[] d, string? curveOid, byte[]? publicKey, byte[]? trailing = null)
+	{
+		List<byte> contents = [.. Element(0x02, [(byte)version]), .. Element(0x04, d)];
+
+		if (curveOid is not null)
+		{
+			contents.AddRange(Element(0xA0, Oid(curveOid)));
+		}
+
+		if (publicKey is not null)
+		{
+			contents.AddRange(Element(0xA1, Element(0x03, [0, .. publicKey])));
+		}
+
+		contents.AddRange(trailing ?? []);
+		return Element(0x30, [.. contents]);
+	}
+
+	public static byte[] Pkcs8(string curveOid, byte[] ecPrivateKey, byte[]? publicKey = null)
+	{
+		byte[] contents = [.. Element(0x02, [(byte)(publicKey is null ? 0 : 1)]), .. AlgorithmIdentifier(curveOid), .. Element(0x04, ecPrivateKey)];
+		return Element(0x30, publicKey is null ? contents : [.. contents, .. Element(0x81, [0, .. publicKey])]);
 	}
 }

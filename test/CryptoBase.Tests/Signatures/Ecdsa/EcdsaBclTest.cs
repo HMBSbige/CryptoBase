@@ -2,8 +2,8 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.EllipticCurves;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.KeyAgreements.Ecdh.EcdhTestUtils;
 using static CryptoBase.Tests.Signatures.Ecdsa.EcdsaTestUtils;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -11,17 +11,17 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.Signatures.Ecdsa;
 
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-internal class EcdsaBclTest
+[GenerateGenericTest(typeof(EcdsaP256))]
+[GenerateGenericTest(typeof(EcdsaP384))]
+[GenerateGenericTest(typeof(EcdsaP521))]
+internal class EcdsaBclTest<T> where T : class, IEcdsa<T>
 {
 	private const int Iterations = 8;
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task PlatformVerifiesOurSignatures<T>() where T : class, IEcdsa<T>
+	public async Task PlatformVerifiesOurSignatures()
 	{
-		ECCurve bclCurve = SkipUnlessSupported<T>();
+		ECCurve bclCurve = SkipUnlessSupported();
 		List<string> failed = [];
 
 		for (int i = 0; i < Iterations; ++i)
@@ -47,12 +47,9 @@ internal class EcdsaBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task WeVerifyPlatformSignatures<T>() where T : class, IEcdsa<T>
+	public async Task WeVerifyPlatformSignatures()
 	{
-		ECCurve bclCurve = SkipUnlessSupported<T>();
+		ECCurve bclCurve = SkipUnlessSupported();
 		List<string> failed = [];
 
 		for (int i = 0; i < Iterations; ++i)
@@ -78,12 +75,9 @@ internal class EcdsaBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task HashesOfAnyLengthAgree<T>() where T : class, IEcdsa<T>
+	public async Task HashesOfAnyLengthAgree()
 	{
-		ECCurve bclCurve = SkipUnlessSupported<T>();
+		ECCurve bclCurve = SkipUnlessSupported();
 		using T key = T.GenerateKey();
 		using ECDsa bcl = ECDsa.Create(bclCurve);
 		bcl.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo(key), out _);
@@ -109,12 +103,9 @@ internal class EcdsaBclTest
 	}
 
 	[Test]
-	[GenerateGenericTest(typeof(EcdsaP256))]
-	[GenerateGenericTest(typeof(EcdsaP384))]
-	[GenerateGenericTest(typeof(EcdsaP521))]
-	public async Task KeysRoundTripThroughThePlatform<T>() where T : class, IEcdsa<T>
+	public async Task KeysRoundTripThroughThePlatform()
 	{
-		ECCurve bclCurve = SkipUnlessSupported<T>();
+		ECCurve bclCurve = SkipUnlessSupported();
 		CurveCase curve = CurveOf<T>();
 
 		for (int i = 0; i < Iterations; ++i)
@@ -135,15 +126,15 @@ internal class EcdsaBclTest
 				await Assert.That(ExportPrivateKey(fromBcl)).IsEquivalentTo(Normalize(bclParameters.D, curve.ScalarLength), CollectionOrdering.Matching);
 				await Assert.That(ExportSubjectPublicKeyInfo(fromBcl)).IsEquivalentTo(bcl.ExportSubjectPublicKeyInfo(), CollectionOrdering.Matching);
 				await Assert.That(ExportSubjectPublicKeyInfo(fromBclPublicKey)).IsEquivalentTo(bcl.ExportSubjectPublicKeyInfo(), CollectionOrdering.Matching);
-				await Assert.That(ExportPublicKey(fromBcl)).IsEquivalentTo((byte[])[0x04, .. Normalize(bclParameters.Q.X, curve.FieldLength), .. Normalize(bclParameters.Q.Y, curve.FieldLength)], CollectionOrdering.Matching);
+				await Assert.That(ExportPublicKey(fromBcl)).IsEquivalentTo(Encode(curve, bclParameters.Q), CollectionOrdering.Matching);
 			}
 		}
 	}
 
-	private static ECCurve SkipUnlessSupported<T>() where T : class, IEcdsa<T>
+	private static ECCurve SkipUnlessSupported()
 	{
 		CurveCase curve = CurveOf<T>();
-		ECCurve bclCurve = ECCurve.CreateFromValue(curve.Parameters.Oid);
+		ECCurve bclCurve = BclCurve(curve);
 
 		try
 		{
@@ -159,12 +150,5 @@ internal class EcdsaBclTest
 		}
 
 		return bclCurve;
-	}
-
-	private static byte[] Normalize(byte[]? value, int length)
-	{
-		ArgumentNullException.ThrowIfNull(value);
-
-		return CurveCase.EncodeInteger(new BigInteger(value, isUnsigned: true, isBigEndian: true), length);
 	}
 }

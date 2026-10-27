@@ -96,7 +96,7 @@ public abstract class ModulusCase
 
 	internal byte[] Encode(BigInteger value)
 	{
-		return Encode(value, ByteLength);
+		return CurveCase.EncodeInteger(value, ByteLength);
 	}
 
 	internal static BigInteger Decode(ReadOnlySpan<byte> bytes)
@@ -169,19 +169,6 @@ public abstract class ModulusCase
 				return value;
 			}
 		}
-	}
-
-	private static byte[] Encode(BigInteger value, int length)
-	{
-		byte[] bytes = new byte[length];
-		int count = value.GetByteCount(isUnsigned: true);
-
-		if (count > length || !value.TryWriteBytes(bytes.AsSpan(length - count), out _, isUnsigned: true, isBigEndian: true))
-		{
-			throw new ArgumentOutOfRangeException(nameof(value), value, $"The value does not fit in {length} bytes.");
-		}
-
-		return bytes;
 	}
 
 	internal static BigInteger FromLimbs(ReadOnlySpan<ulong> limbs)
@@ -400,7 +387,7 @@ public abstract class ModulusCase
 
 		private static FieldElement<TModulus> ToElement(BigInteger value)
 		{
-			if (!FieldElement<TModulus>.TryImport(Encode(value, TModulus.ByteLength), out FieldElement<TModulus> element))
+			if (!FieldElement<TModulus>.TryImport(CurveCase.EncodeInteger(value, TModulus.ByteLength), out FieldElement<TModulus> element))
 			{
 				throw new ArgumentOutOfRangeException(nameof(value), value, "The value is not below the modulus.");
 			}

@@ -14,6 +14,14 @@ internal static class EcTestUtils
 		}
 	}
 
+	internal static void CheckSame<T>(List<string> failures, string operation, T actual, T expected)
+	{
+		if (!EqualityComparer<T>.Default.Equals(actual, expected))
+		{
+			failures.Add($"{operation} gave {actual}, expected {expected}");
+		}
+	}
+
 	internal static string Show(CurvePoint? point)
 	{
 		return point is null ? "O" : $"({point.X:X}, {point.Y:X})";

@@ -282,7 +282,7 @@ internal class EcdsaKnownAnswerTest
 	{
 		CurveCase curve = CurveOf<EcdsaP256>();
 		byte[] privateKey = Convert.FromHexString(P256Key.PrivateKey);
-		byte[] hash = TruncatedHash(SHA256.HashData("sample"u8), curve.Order, curve.ScalarBitLength, curve.ScalarLength);
+		byte[] hash = TruncatedHash(SHA256.HashData("sample"u8), curve);
 		byte[] additionalData = Convert.FromHexString("1328FA49A535A116B6B926F4C45F879068CCFB55DF0B45F527C7196A2A4C4379");
 
 		using (Assert.Multiple())
@@ -305,17 +305,17 @@ internal class EcdsaKnownAnswerTest
 	}
 
 	// Computed here rather than by the code under test.
-	internal static byte[] TruncatedHash(byte[] hash, BigInteger n, int bitLength, int length)
+	internal static byte[] TruncatedHash(byte[] hash, CurveCase curve)
 	{
 		BigInteger value = new(hash, isUnsigned: true, isBigEndian: true);
-		int excess = 8 * hash.Length - bitLength;
+		int excess = 8 * hash.Length - curve.ScalarBitLength;
 
 		if (excess > 0)
 		{
 			value >>= excess;
 		}
 
-		return CurveCase.EncodeInteger(value % n, length);
+		return curve.EncodeScalar(value % curve.Order);
 	}
 
 	private static byte[] DeriveNonce<THash, TOrder>(byte[] privateKey, byte[] hash, byte[] additionalData, int index) where THash : unmanaged, IHmacHashCore<THash> where TOrder : unmanaged, IMontgomeryModulus
@@ -347,7 +347,7 @@ internal class EcdsaKnownAnswerTest
 	{
 		CurveCase curve = CurveOf<T>();
 		int length = curve.ScalarLength;
-		byte[] hash = TruncatedHash(Hash(vector.Algorithm, Encoding.UTF8.GetBytes(vector.Message)), curve.Order, curve.ScalarBitLength, length);
+		byte[] hash = TruncatedHash(Hash(vector.Algorithm, Encoding.UTF8.GetBytes(vector.Message)), curve);
 
 		await Assert.That(Convert.ToHexString(DeriveNonce<TOrder>(vector.Algorithm, FromHex(key.PrivateKey, length), hash, [], 0))).IsEqualTo(Padded(vector.K, length));
 	}
