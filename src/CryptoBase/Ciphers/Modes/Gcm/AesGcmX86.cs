@@ -21,14 +21,8 @@ internal static partial class AesGcmX86
 		ref readonly AesKeys roundKeys = ref aes.RoundKeys;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		ref byte output = ref MemoryMarshal.GetReference(destination);
-		Vector128<byte> prefix = counter;
+		Vector128<byte> prefix = GetCounterPrefix(counter);
 		uint value = BinaryPrimitives.ReadUInt32BigEndian(counter.AsReadOnlySpan().Slice(12));
-
-		if (!Sse41.IsSupported)
-		{
-			prefix &= Vector128.Create(uint.MaxValue, uint.MaxValue, uint.MaxValue, 0u).AsByte();
-		}
-
 		Vector128<byte> c0 = default, c1 = default, c2 = default, c3 = default;
 
 		if (!TDirection.IsDecrypt)
@@ -95,6 +89,12 @@ internal static partial class AesGcmX86
 		accumulator = hash;
 		counter = CreateCounter(prefix, value);
 		return length;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<byte> GetCounterPrefix(Vector128<byte> counter)
+	{
+		return Sse41.IsSupported ? counter : counter & Vector128.Create(uint.MaxValue, uint.MaxValue, uint.MaxValue, 0u).AsByte();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

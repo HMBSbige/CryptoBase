@@ -61,7 +61,7 @@ internal static partial class AesGcmX86
 	private static void EncryptCounters4(in AesCipherX86 aes, Vector128<byte> counter, out Vector128<byte> k0, out Vector128<byte> k1, out Vector128<byte> k2, out Vector128<byte> k3)
 	{
 		uint value = BinaryPrimitives.ReverseEndianness(counter.AsUInt32().GetElement(3));
-		Vector128<byte> prefix = Sse41.IsSupported ? counter : counter & Vector128.Create(uint.MaxValue, uint.MaxValue, uint.MaxValue, 0u).AsByte();
+		Vector128<byte> prefix = GetCounterPrefix(counter);
 		k0 = counter;
 		k1 = CreateCounter(prefix, value + 1u);
 		k2 = CreateCounter(prefix, value + 2u);

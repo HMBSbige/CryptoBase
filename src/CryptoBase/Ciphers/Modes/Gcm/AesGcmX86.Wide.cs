@@ -27,18 +27,8 @@ internal static partial class AesGcmX86
 		ref readonly AesKeys roundKeys = ref aes.RoundKeys;
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		ref byte output = ref MemoryMarshal.GetReference(destination);
-		Vector128<byte> prefix = counter;
+		Vector128<byte> prefix = Ssse3.IsSupported ? counter.ReverseEndianness128() : GetCounterPrefix(counter);
 		uint value = BinaryPrimitives.ReadUInt32BigEndian(counter.AsReadOnlySpan().Slice(12));
-
-		if (Ssse3.IsSupported)
-		{
-			prefix = prefix.ReverseEndianness128();
-		}
-		else if (!Sse41.IsSupported)
-		{
-			prefix &= Vector128.Create(uint.MaxValue, uint.MaxValue, uint.MaxValue, 0u).AsByte();
-		}
-
 		Vector128<byte> v0 = default, v1 = default, v2 = default, v3 = default, v4 = default, v5 = default, v6 = default, v7 = default;
 
 		if (!TDirection.IsDecrypt)

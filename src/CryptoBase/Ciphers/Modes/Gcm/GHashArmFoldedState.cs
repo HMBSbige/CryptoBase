@@ -25,24 +25,7 @@ internal ref struct GHashArmFoldedState : IDisposable
 
 		while (length >= 8 * BlockSize)
 		{
-			Vector128<byte> value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 1 * BlockSize));
-			GFMultiplyUnreduced(value, _powers.Key7, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
-			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 2 * BlockSize));
-			AccumulateProduct(value, _powers.Key6, ref lowProduct, ref highProduct, ref middleProduct);
-			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 3 * BlockSize));
-			AccumulateProduct(value, _powers.Key5, ref lowProduct, ref highProduct, ref middleProduct);
-			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 4 * BlockSize));
-			AccumulateProduct(value, _powers.Key4, ref lowProduct, ref highProduct, ref middleProduct);
-			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 5 * BlockSize));
-			AccumulateProduct(value, _powers.Key3, ref lowProduct, ref highProduct, ref middleProduct);
-			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 6 * BlockSize));
-			AccumulateProduct(value, _powers.Key2, ref lowProduct, ref highProduct, ref middleProduct);
-			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef, 7 * BlockSize));
-			AccumulateProduct(value, _powers.Key1, ref lowProduct, ref highProduct, ref middleProduct);
-			value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref sourceRef)) ^ _accumulator;
-			AccumulateProduct(value, _powers.Key8, ref lowProduct, ref highProduct, ref middleProduct);
-			FinishFold(lowProduct, highProduct, middleProduct);
-
+			FoldEight(ref sourceRef, ref Unsafe.Add(ref sourceRef, 7 * BlockSize));
 			sourceRef = ref Unsafe.Add(ref sourceRef, 8 * BlockSize);
 			length -= 8 * BlockSize;
 		}
@@ -137,6 +120,12 @@ internal ref struct GHashArmFoldedState : IDisposable
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void AppendEight(ref byte source, ref byte lastSource)
+	{
+		FoldEight(ref source, ref lastSource);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void FoldEight(ref byte source, ref byte lastSource)
 	{
 		Vector128<byte> value = AdvSimd.Arm64.ReverseElementBits(Vector128.LoadUnsafe(ref source, 1 * BlockSize));
 		GFMultiplyUnreduced(value, _powers.Key7, out Vector128<ulong> lowProduct, out Vector128<ulong> highProduct, out Vector128<ulong> middleProduct);
