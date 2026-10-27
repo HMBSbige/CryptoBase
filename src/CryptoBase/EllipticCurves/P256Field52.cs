@@ -3,9 +3,13 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 namespace CryptoBase.EllipticCurves;
 
 // The field of p = 2^256 − 2^224 + 2^192 + 2^96 − 1 in five unsaturated limbs, value Σ L_i·2^(52i), with Montgomery R = 2^260. As p ≡ −1 (mod 2^52), Montgomery reduction needs no multiplication.
-// The form E: limbs 0 to 3 below 2^53 and limb 4 below 2^50, so values below 2^258 + 2^210, just over 4p. The IEcField members take and give elements of E. The formulas in P256Field52.Formulas.cs skip reductions between steps, within these limits:
+// The form E: limbs 0 to 3 below 2^53 and limb 4 below 2^50, so values below 2^258 + 2^210, just over 4p. The IEcField members take and give elements of E. The formulas of EcFormulas skip reductions between steps, within these limits:
 // Multiply and Square take limbs below 2^56 and give limbs 0 to 3 below 2^52 and a value below x·y/2^260 + p; for inputs of E that is below 2^257 − 2^223, so limb 4 is below 2^49. AddUnreduced adds limbs without carries. SubtractUnreduced adds 5p, so its subtrahend must be of E. WeakReduce takes limbs below 2^62 to limbs 0 to 3 below 2^52, limb 4 below 2^48 + 2^16·⌊L4/2^48⌋ + 2^10 and a value below 2p, so into E.
-internal partial struct P256Field52 : IEcField<P256Field52>
+// For inputs of E the steps of the formulas keep within these limits, and the outputs are of E: X3 and Y3 come from WeakReduce, and Z3 is twice a product of inputs of E, which has limbs 0 to 3 below 2^52 and limb 4 below 2^49. Every input of Multiply and Square has limbs below 2^55, every input of WeakReduce limbs below 2^56, and every subtrahend of SubtractUnreduced is of E. Other intermediate values need not be of E.
+// In Double, γ, β and δ are below 2.1p, and 2γ, 4β and 8γ², each twice a product of inputs of E, are of E and below 4.1p. X − δ is below 9.1p in limbs below 2^55 and X + δ below 6.1p in limbs below 2^54. Their product is below 4.4p, so its limb 4 may exceed 2^50 and it is not of E; it goes only into α, below 13.2p in limbs below 2^54, which only Multiply and Square take. α² − 8β is below 21.8p in limbs below 2^55. 4β − X3 is below 9.1p in limbs below 2^55, α(4β − X3) below 8.4p, and that less 8γ² below 13.4p in limbs below 2^54.
+// In AddDistinct, U1, U2, S1 and S2 are below 1.6p, so H is below 6.6p in limbs below 2^54 and 2R below 12.8p in limbs below 2^55; reduced, both are below 1.1p in limbs below 2^52. Z1·Z2·H is below 1.2p, so Z3 is below 2.3p. I = 4H² is below 4.3p in limbs below 2^54, not of E, and goes only into Multiply; J, V and S1·J are below 1.4p. With an affine right, whose coordinates are of E as well, H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.3p, so Z3 is below 2.6p, and V = X1·I and Y1·J are below 2.1p.
+// X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ then take R below 1.1p and J, V and SJ below 2.1p, in limbs 0 to 3 below 2^52 and limb 4 below 2^50. R² is below 1.1p and R² − J − 2V below 16.1p in limbs below 2^56. V − X3 is below 7.1p in limbs below 2^54, R(V − X3) below 1.5p, and that less 2·SJ below 11.5p in limbs below 2^55.
+internal struct P256Field52 : IEcField<P256Field52>
 {
 	internal ulong L0;
 	internal ulong L1;
@@ -203,7 +207,7 @@ internal partial struct P256Field52 : IEcField<P256Field52>
 
 	// The limbs add without carries; the caller keeps them within what the next operation takes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void AddUnreduced(in P256Field52 left, in P256Field52 right, out P256Field52 result)
+	public static void AddUnreduced(in P256Field52 left, in P256Field52 right, out P256Field52 result)
 	{
 		result.L0 = left.L0 + right.L0;
 		result.L1 = left.L1 + right.L1;
@@ -214,7 +218,7 @@ internal partial struct P256Field52 : IEcField<P256Field52>
 
 	// left + 5p − right, limb by limb, for right of E: no limb goes negative, and each grows by at most its limb of 5p, below 2^53 + 2^52.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void SubtractUnreduced(in P256Field52 left, in P256Field52 right, out P256Field52 result)
+	public static void SubtractUnreduced(in P256Field52 left, in P256Field52 right, out P256Field52 result)
 	{
 		result.L0 = left.L0 + FiveP0 - right.L0;
 		result.L1 = left.L1 + FiveP1 - right.L1;
@@ -225,7 +229,7 @@ internal partial struct P256Field52 : IEcField<P256Field52>
 
 	// For limbs below 2^62: subtracts h·p for h = L4 >> 48, then carries. As h·p = h·2^256 − h·(2^224 − 2^192 − 2^96 + 1), h·2^256 comes off limb 4 and the rest goes in as h·2^16 at limb 4, −h·2^36 at limb 3, −h·2^44 at limb 1 and h at limb 0. The value stays non-negative, as it was at least h·2^256, but limbs 1 and 3 may go negative before the carries, so the carries shift arithmetically. Limbs 0 to 3 come out below 2^52 and the value below 2^256 + 2^218 + h·2^224, so limb 4 below 2^48 + 2^16·h + 2^10, and h < 2^14 puts the value below 2p.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void WeakReduce(in P256Field52 value, out P256Field52 result)
+	public static void WeakReduce(in P256Field52 value, out P256Field52 result)
 	{
 		ulong h = value.L4 >> 48;
 		ulong t0 = value.L0 + h;
@@ -245,7 +249,7 @@ internal partial struct P256Field52 : IEcField<P256Field52>
 
 	// For the output of WeakReduce: its value is below 2p and its limbs 0 to 3 below 2^52, so it is 0 mod p just if its limbs are those of 0 or of p.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong IsReducedZero(in P256Field52 value)
+	public static ulong IsReducedZero(in P256Field52 value)
 	{
 		ulong zero = value.L0 | value.L1 | value.L2 | value.L3 | value.L4;
 		ulong modulus = value.L0 ^ P0 | value.L1 ^ P1 | value.L2 | value.L3 ^ P3 | value.L4 ^ P4;

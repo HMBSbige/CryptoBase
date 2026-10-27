@@ -1,6 +1,6 @@
 namespace CryptoBase.EllipticCurves;
 
-// Carries and borrows are 0 or 1. A comparison taken as a value, as in Carry and Borrow, compiles to a flag read such as setb or cset and not to a branch. The methods on limb sequences take count limbs, least significant first, and are unrolled up to MaxLimbCount so that a constant count drops the steps beyond it. A result may be the same sequence as an input unless a method says otherwise.
+// Carries and borrows are 0 or 1. A comparison taken as a value, as in Carry, compiles to a flag read such as setb or cset and not to a branch. The methods on limb sequences take count limbs, least significant first, and are unrolled up to MaxLimbCount so that a constant count drops the steps beyond it. A result may be the same sequence as an input unless a method says otherwise.
 internal static class LimbArithmetic
 {
 	internal const int MaxLimbCount = 9;
@@ -26,12 +26,6 @@ internal static class LimbArithmetic
 	internal static ulong Carry(ulong sum, ulong addend)
 	{
 		return Unsafe.BitCast<bool, byte>(sum < addend);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static ulong Borrow(ulong minuend, ulong subtrahend)
-	{
-		return Unsafe.BitCast<bool, byte>(minuend < subtrahend);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -348,165 +342,6 @@ internal static class LimbArithmetic
 		}
 
 		return carry;
-	}
-
-	// Sets t0 to t7 to the product of the four-limb x and y, in locals rather than in memory.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void MultiplyLimbs(ref ulong x, ref ulong y, out ulong t0, out ulong t1, out ulong t2, out ulong t3, out ulong t4, out ulong t5, out ulong t6, out ulong t7)
-	{
-		ulong x0 = x;
-		ulong x1 = Unsafe.Add(ref x, 1);
-		ulong x2 = Unsafe.Add(ref x, 2);
-		ulong x3 = Unsafe.Add(ref x, 3);
-		ulong word = y;
-		ulong carry = Multiply(x0, word, out t0);
-		carry = MultiplyAdd(x1, word, carry, 0, out t1);
-		carry = MultiplyAdd(x2, word, carry, 0, out t2);
-		t4 = MultiplyAdd(x3, word, carry, 0, out t3);
-		word = Unsafe.Add(ref y, 1);
-		carry = MultiplyAdd(x0, word, t1, 0, out t1);
-		carry = MultiplyAdd(x1, word, t2, carry, out t2);
-		carry = MultiplyAdd(x2, word, t3, carry, out t3);
-		t5 = MultiplyAdd(x3, word, t4, carry, out t4);
-		word = Unsafe.Add(ref y, 2);
-		carry = MultiplyAdd(x0, word, t2, 0, out t2);
-		carry = MultiplyAdd(x1, word, t3, carry, out t3);
-		carry = MultiplyAdd(x2, word, t4, carry, out t4);
-		t6 = MultiplyAdd(x3, word, t5, carry, out t5);
-		word = Unsafe.Add(ref y, 3);
-		carry = MultiplyAdd(x0, word, t3, 0, out t3);
-		carry = MultiplyAdd(x1, word, t4, carry, out t4);
-		carry = MultiplyAdd(x2, word, t5, carry, out t5);
-		t7 = MultiplyAdd(x3, word, t6, carry, out t6);
-	}
-
-	// As MultiplyLimbs with y = x: the cross products once, doubled, plus the squares of the limbs.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void SquareLimbs(ref ulong x, out ulong t0, out ulong t1, out ulong t2, out ulong t3, out ulong t4, out ulong t5, out ulong t6, out ulong t7)
-	{
-		ulong x0 = x;
-		ulong x1 = Unsafe.Add(ref x, 1);
-		ulong x2 = Unsafe.Add(ref x, 2);
-		ulong x3 = Unsafe.Add(ref x, 3);
-		ulong carry = Multiply(x1, x0, out ulong c1);
-		carry = MultiplyAdd(x2, x0, carry, 0, out ulong c2);
-		ulong c4 = MultiplyAdd(x3, x0, carry, 0, out ulong c3);
-		carry = MultiplyAdd(x2, x1, c3, 0, out c3);
-		ulong c5 = MultiplyAdd(x3, x1, c4, carry, out c4);
-		ulong c6 = MultiplyAdd(x3, x2, c5, 0, out c5);
-		ulong h0 = Multiply(x0, x0, out t0);
-		ulong h1 = Multiply(x1, x1, out ulong l1);
-		ulong h2 = Multiply(x2, x2, out ulong l2);
-		ulong h3 = Multiply(x3, x3, out ulong l3);
-		carry = 0;
-		t1 = AddWithCarry(c1 << 1, h0, ref carry);
-		t2 = AddWithCarry(c2 << 1 | c1 >> 63, l1, ref carry);
-		t3 = AddWithCarry(c3 << 1 | c2 >> 63, h1, ref carry);
-		t4 = AddWithCarry(c4 << 1 | c3 >> 63, l2, ref carry);
-		t5 = AddWithCarry(c5 << 1 | c4 >> 63, h2, ref carry);
-		t6 = AddWithCarry(c6 << 1 | c5 >> 63, l3, ref carry);
-		// x² is below 2^512, so the top limb does not wrap.
-		t7 = (c6 >> 63) + h3 + carry;
-	}
-
-	// Sets t0 to t11 to the product of the six-limb x and y, in locals rather than in memory.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void MultiplyLimbs(ref ulong x, ref ulong y, out ulong t0, out ulong t1, out ulong t2, out ulong t3, out ulong t4, out ulong t5, out ulong t6, out ulong t7, out ulong t8, out ulong t9, out ulong t10, out ulong t11)
-	{
-		ulong x0 = x;
-		ulong x1 = Unsafe.Add(ref x, 1);
-		ulong x2 = Unsafe.Add(ref x, 2);
-		ulong x3 = Unsafe.Add(ref x, 3);
-		ulong x4 = Unsafe.Add(ref x, 4);
-		ulong x5 = Unsafe.Add(ref x, 5);
-		ulong word = y;
-		ulong carry = Multiply(x0, word, out t0);
-		carry = MultiplyAdd(x1, word, carry, 0, out t1);
-		carry = MultiplyAdd(x2, word, carry, 0, out t2);
-		carry = MultiplyAdd(x3, word, carry, 0, out t3);
-		carry = MultiplyAdd(x4, word, carry, 0, out t4);
-		t6 = MultiplyAdd(x5, word, carry, 0, out t5);
-		word = Unsafe.Add(ref y, 1);
-		carry = MultiplyAdd(x0, word, t1, 0, out t1);
-		carry = MultiplyAdd(x1, word, t2, carry, out t2);
-		carry = MultiplyAdd(x2, word, t3, carry, out t3);
-		carry = MultiplyAdd(x3, word, t4, carry, out t4);
-		carry = MultiplyAdd(x4, word, t5, carry, out t5);
-		t7 = MultiplyAdd(x5, word, t6, carry, out t6);
-		word = Unsafe.Add(ref y, 2);
-		carry = MultiplyAdd(x0, word, t2, 0, out t2);
-		carry = MultiplyAdd(x1, word, t3, carry, out t3);
-		carry = MultiplyAdd(x2, word, t4, carry, out t4);
-		carry = MultiplyAdd(x3, word, t5, carry, out t5);
-		carry = MultiplyAdd(x4, word, t6, carry, out t6);
-		t8 = MultiplyAdd(x5, word, t7, carry, out t7);
-		word = Unsafe.Add(ref y, 3);
-		carry = MultiplyAdd(x0, word, t3, 0, out t3);
-		carry = MultiplyAdd(x1, word, t4, carry, out t4);
-		carry = MultiplyAdd(x2, word, t5, carry, out t5);
-		carry = MultiplyAdd(x3, word, t6, carry, out t6);
-		carry = MultiplyAdd(x4, word, t7, carry, out t7);
-		t9 = MultiplyAdd(x5, word, t8, carry, out t8);
-		word = Unsafe.Add(ref y, 4);
-		carry = MultiplyAdd(x0, word, t4, 0, out t4);
-		carry = MultiplyAdd(x1, word, t5, carry, out t5);
-		carry = MultiplyAdd(x2, word, t6, carry, out t6);
-		carry = MultiplyAdd(x3, word, t7, carry, out t7);
-		carry = MultiplyAdd(x4, word, t8, carry, out t8);
-		t10 = MultiplyAdd(x5, word, t9, carry, out t9);
-		word = Unsafe.Add(ref y, 5);
-		carry = MultiplyAdd(x0, word, t5, 0, out t5);
-		carry = MultiplyAdd(x1, word, t6, carry, out t6);
-		carry = MultiplyAdd(x2, word, t7, carry, out t7);
-		carry = MultiplyAdd(x3, word, t8, carry, out t8);
-		carry = MultiplyAdd(x4, word, t9, carry, out t9);
-		t11 = MultiplyAdd(x5, word, t10, carry, out t10);
-	}
-
-	// As MultiplyLimbs with y = x: the cross products once, doubled, plus the squares of the limbs.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void SquareLimbs(ref ulong x, out ulong t0, out ulong t1, out ulong t2, out ulong t3, out ulong t4, out ulong t5, out ulong t6, out ulong t7, out ulong t8, out ulong t9, out ulong t10, out ulong t11)
-	{
-		ulong x0 = x;
-		ulong x1 = Unsafe.Add(ref x, 1);
-		ulong x2 = Unsafe.Add(ref x, 2);
-		ulong x3 = Unsafe.Add(ref x, 3);
-		ulong x4 = Unsafe.Add(ref x, 4);
-		ulong x5 = Unsafe.Add(ref x, 5);
-		ulong carry = Multiply(x1, x0, out ulong c1);
-		carry = MultiplyAdd(x2, x0, carry, 0, out ulong c2);
-		carry = MultiplyAdd(x3, x0, carry, 0, out ulong c3);
-		carry = MultiplyAdd(x4, x0, carry, 0, out ulong c4);
-		ulong c6 = MultiplyAdd(x5, x0, carry, 0, out ulong c5);
-		carry = MultiplyAdd(x2, x1, c3, 0, out c3);
-		carry = MultiplyAdd(x3, x1, c4, carry, out c4);
-		carry = MultiplyAdd(x4, x1, c5, carry, out c5);
-		ulong c7 = MultiplyAdd(x5, x1, c6, carry, out c6);
-		carry = MultiplyAdd(x3, x2, c5, 0, out c5);
-		carry = MultiplyAdd(x4, x2, c6, carry, out c6);
-		ulong c8 = MultiplyAdd(x5, x2, c7, carry, out c7);
-		carry = MultiplyAdd(x4, x3, c7, 0, out c7);
-		ulong c9 = MultiplyAdd(x5, x3, c8, carry, out c8);
-		ulong c10 = MultiplyAdd(x5, x4, c9, 0, out c9);
-		ulong h0 = Multiply(x0, x0, out t0);
-		ulong h1 = Multiply(x1, x1, out ulong l1);
-		ulong h2 = Multiply(x2, x2, out ulong l2);
-		ulong h3 = Multiply(x3, x3, out ulong l3);
-		ulong h4 = Multiply(x4, x4, out ulong l4);
-		ulong h5 = Multiply(x5, x5, out ulong l5);
-		carry = 0;
-		t1 = AddWithCarry(c1 << 1, h0, ref carry);
-		t2 = AddWithCarry(c2 << 1 | c1 >> 63, l1, ref carry);
-		t3 = AddWithCarry(c3 << 1 | c2 >> 63, h1, ref carry);
-		t4 = AddWithCarry(c4 << 1 | c3 >> 63, l2, ref carry);
-		t5 = AddWithCarry(c5 << 1 | c4 >> 63, h2, ref carry);
-		t6 = AddWithCarry(c6 << 1 | c5 >> 63, l3, ref carry);
-		t7 = AddWithCarry(c7 << 1 | c6 >> 63, h3, ref carry);
-		t8 = AddWithCarry(c8 << 1 | c7 >> 63, l4, ref carry);
-		t9 = AddWithCarry(c9 << 1 | c8 >> 63, h4, ref carry);
-		t10 = AddWithCarry(c10 << 1 | c9 >> 63, l5, ref carry);
-		// x² is below 2^768, so the top limb does not wrap.
-		t11 = (c10 >> 63) + h5 + carry;
 	}
 
 	// Returns the 64 bits from position on, with zeros above the top limb. Only position decides which limbs are read.

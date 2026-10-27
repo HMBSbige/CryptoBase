@@ -348,7 +348,7 @@ public abstract class ModulusCase
 				limbs[i] = (ulong)(product >> 64 * i & ulong.MaxValue);
 			}
 
-			ulong carry = TModulus.Reduce<TModulus>(ref limbs[0]);
+			ulong carry = FieldElement<TModulus>.MontgomeryReduce(ref limbs[0]);
 			return FromLimbs(limbs.AsSpan(n)) + ((BigInteger)carry << 64 * n);
 		}
 

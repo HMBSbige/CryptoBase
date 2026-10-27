@@ -74,19 +74,19 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 	internal static void Multiply(in FieldElement<TModulus> left, in FieldElement<TModulus> right, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out result);
-		TModulus.Multiply<TModulus>(ref Limbs(in left), ref Limbs(in right), ref Limbs(ref result));
+		MontgomeryMultiply(ref Limbs(in left), ref Limbs(in right), ref Limbs(ref result));
 	}
 
 	internal static void Square(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out result);
-		TModulus.Square<TModulus>(ref Limbs(in value), ref Limbs(ref result));
+		MontgomerySquare(ref Limbs(in value), ref Limbs(ref result));
 	}
 
 	internal static void ToMontgomery(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out result);
-		TModulus.Multiply<TModulus>(ref Limbs(in value), ref MemoryMarshal.GetReference(TModulus.RSquared), ref Limbs(ref result));
+		MontgomeryMultiply(ref Limbs(in value), ref MemoryMarshal.GetReference(TModulus.RSquared), ref Limbs(ref result));
 	}
 
 	internal static void FromMontgomery(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
@@ -94,7 +94,7 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		FieldElement<TModulus> one = default;
 		Limbs(ref one) = 1;
 		Unsafe.SkipInit(out result);
-		TModulus.Multiply<TModulus>(ref Limbs(in value), ref Limbs(ref one), ref Limbs(ref result));
+		MontgomeryMultiply(ref Limbs(in value), ref Limbs(ref one), ref Limbs(ref result));
 	}
 
 	// 0 gives 0.
@@ -195,7 +195,7 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		return IsZero(in result) is 0;
 	}
 
-	// Sets result to the plain value of any ByteLength big-endian bytes mod m: the value is below R, so multiplying it by R mod m reduces it. TModulus.Multiply may need both factors below m, so the generic multiplication, which does not, takes the value.
+	// Sets result to the plain value of any ByteLength big-endian bytes mod m: the value is below R, so multiplying it by R mod m reduces it, as MontgomeryMultiply takes an x that is not reduced.
 	internal static void ImportReduced(ReadOnlySpan<byte> source, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out FieldElement<TModulus> value);
@@ -263,10 +263,10 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		}
 	}
 
-	// The generic IMontgomeryModulus.Multiply, and the one for an x that is not reduced: x may be any value of LimbCount limbs if y < m, since the product is then below m·R, as Reduce needs. Not inlined: inlined into a small caller, it exceeds the inlining budget of that caller, and the helpers left over become calls.
+	// x may be any value of LimbCount limbs if y < m, since the product is then below m·R, as Reduce needs. Not inlined: inlined into a small caller, it exceeds the inlining budget of that caller, and the helpers left over become calls.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
-	internal static void MontgomeryMultiply(ref ulong x, ref ulong y, ref ulong result)
+	private static void MontgomeryMultiply(ref ulong x, ref ulong y, ref ulong result)
 	{
 		Unsafe.SkipInit(out Product product);
 		ref ulong t = ref Unsafe.As<Product, ulong>(ref product);
@@ -323,10 +323,10 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		Unsafe.Add(ref row, TModulus.LimbCount) = MultiplyAddLimbs(ref x, Unsafe.Add(ref y, i), ref row, TModulus.LimbCount);
 	}
 
-	// The generic IMontgomeryModulus.Square. x < m keeps x² below m·R, as Reduce needs. Not inlined, as for MontgomeryMultiply.
+	// x < m keeps x² below m·R, as Reduce needs. Not inlined, as for MontgomeryMultiply.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
-	internal static void MontgomerySquare(ref ulong x, ref ulong result)
+	private static void MontgomerySquare(ref ulong x, ref ulong result)
 	{
 		Unsafe.SkipInit(out Product product);
 		ref ulong t = ref Unsafe.As<Product, ulong>(ref product);
@@ -440,10 +440,11 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Reduce(ref ulong product, ref ulong result)
 	{
-		ulong carry = TModulus.Reduce<TModulus>(ref product);
+		ulong carry = MontgomeryReduce(ref product);
 		ReduceOnce(ref Unsafe.Add(ref product, TModulus.LimbCount), carry, ref result);
 	}
 
+	// Replaces the 2·LimbCount limbs t at product, t < m·R, with a value below 2m that is congruent to t·R⁻¹ modulo m: the upper LimbCount limbs and the returned carry above them.
 	internal static ulong MontgomeryReduce(ref ulong product)
 	{
 		int n = TModulus.LimbCount;
@@ -512,48 +513,6 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		ulong borrow = SubtractLimbs(ref low, ref MemoryMarshal.GetReference(TModulus.Modulus), ref d, TModulus.LimbCount);
 		_ = SubtractWithBorrow(high, 0, ref borrow);
 		SelectLimbs(0 - borrow, ref low, ref d, ref result, TModulus.LimbCount);
-	}
-
-	// As above for LimbCount = 4, with value = t0 + t1·2^64 + t2·2^128 + t3·2^192 + high·R in locals.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void ReduceOnce(ulong t0, ulong t1, ulong t2, ulong t3, ulong high, ref ulong result)
-	{
-		Debug.Assert(TModulus.LimbCount is 4);
-
-		ulong borrow = 0;
-		ulong d0 = SubtractWithBorrow(t0, TModulus.Modulus[0], ref borrow);
-		ulong d1 = SubtractWithBorrow(t1, TModulus.Modulus[1], ref borrow);
-		ulong d2 = SubtractWithBorrow(t2, TModulus.Modulus[2], ref borrow);
-		ulong d3 = SubtractWithBorrow(t3, TModulus.Modulus[3], ref borrow);
-		_ = SubtractWithBorrow(high, 0, ref borrow);
-		ulong mask = 0 - borrow;
-		result = Select(mask, t0, d0);
-		Unsafe.Add(ref result, 1) = Select(mask, t1, d1);
-		Unsafe.Add(ref result, 2) = Select(mask, t2, d2);
-		Unsafe.Add(ref result, 3) = Select(mask, t3, d3);
-	}
-
-	// As above for LimbCount = 6.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void ReduceOnce(ulong t0, ulong t1, ulong t2, ulong t3, ulong t4, ulong t5, ulong high, ref ulong result)
-	{
-		Debug.Assert(TModulus.LimbCount is 6);
-
-		ulong borrow = 0;
-		ulong d0 = SubtractWithBorrow(t0, TModulus.Modulus[0], ref borrow);
-		ulong d1 = SubtractWithBorrow(t1, TModulus.Modulus[1], ref borrow);
-		ulong d2 = SubtractWithBorrow(t2, TModulus.Modulus[2], ref borrow);
-		ulong d3 = SubtractWithBorrow(t3, TModulus.Modulus[3], ref borrow);
-		ulong d4 = SubtractWithBorrow(t4, TModulus.Modulus[4], ref borrow);
-		ulong d5 = SubtractWithBorrow(t5, TModulus.Modulus[5], ref borrow);
-		_ = SubtractWithBorrow(high, 0, ref borrow);
-		ulong mask = 0 - borrow;
-		result = Select(mask, t0, d0);
-		Unsafe.Add(ref result, 1) = Select(mask, t1, d1);
-		Unsafe.Add(ref result, 2) = Select(mask, t2, d2);
-		Unsafe.Add(ref result, 3) = Select(mask, t3, d3);
-		Unsafe.Add(ref result, 4) = Select(mask, t4, d4);
-		Unsafe.Add(ref result, 5) = Select(mask, t5, d5);
 	}
 
 	[InlineArray(2)]

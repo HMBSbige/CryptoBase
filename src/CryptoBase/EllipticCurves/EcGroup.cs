@@ -392,11 +392,11 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		}
 	}
 
-	// window holds the multiples 1·B to entries·B of a point B. A digit of 0 gives (0, 0), which is not a point.
-	internal static void Select(ref readonly AffinePoint<TField> window, int entries, int digit, out AffinePoint<TField> result)
+	// multiples holds 1·P to multiples.Length·P. A digit of 0 gives (0, 0), which is not a point.
+	internal static void Select(ReadOnlySpan<AffinePoint<TField>> multiples, int digit, out AffinePoint<TField> result)
 	{
 		int sign = digit >> 31;
-		MaskedSelect.Lookup(in window, entries, (uint)((digit ^ sign) - sign) - 1, out result);
+		MaskedSelect.Lookup(in MemoryMarshal.GetReference(multiples), multiples.Length, (uint)((digit ^ sign) - sign) - 1, out result);
 		ConditionalNegate((ulong)sign, ref result.Y);
 	}
 
@@ -409,12 +409,6 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		MaskedSelect.Lookup(in EcGeneratorTable<TCurve, TField, TOrder>.Window(window), EcGeneratorTable<TCurve, TField, TOrder>.EntryLength, EcGeneratorTable<TCurve, TField, TOrder>.WindowLength, (uint)((digit ^ sign) - sign) - 1, ref Unsafe.As<AffinePoint<TField>, ulong>(ref result));
 		TField.Unpack(ref result);
 		ConditionalNegate((ulong)sign, ref result.Y);
-	}
-
-	// multiples holds 1·P to multiples.Length·P. A digit of 0 gives (0, 0), which is not a point.
-	internal static void Select(ReadOnlySpan<AffinePoint<TField>> multiples, int digit, out AffinePoint<TField> result)
-	{
-		Select(in MemoryMarshal.GetReference(multiples), multiples.Length, digit, out result);
 	}
 
 	// Sets result to (X·Z⁻², Y·Z⁻³) from zInverse = Z⁻¹.

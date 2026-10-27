@@ -2,10 +2,14 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// The field of p = 2^384 − 2^128 − 2^96 + 2^32 − 1 in seven unsaturated limbs, the value Σ L_i·2^(56i), with Montgomery form for R = 2^392. Every member takes and gives elements of the form E: limbs 0 to 5 below 2^57 and limb 6 below 2^50, so values below 2^386 + 2^338, just over 4p. The formulas in P384Field56.Formulas.cs skip reductions between steps within these limits:
+// The field of p = 2^384 − 2^128 − 2^96 + 2^32 − 1 in seven unsaturated limbs, the value Σ L_i·2^(56i), with Montgomery form for R = 2^392. Every member takes and gives elements of the form E: limbs 0 to 5 below 2^57 and limb 6 below 2^50, so values below 2^386 + 2^338, just over 4p. The formulas of EcFormulas skip reductions between steps within these limits:
 // Multiply takes a left in limbs below 2^63 with a value below 2^392 and a right in limbs below 2^60, and Square limbs below 2^58. Both give limbs 0 to 5 below 2^56 and a value below x·y/2^392 + p; for inputs of E that is below p + 2^381, with limb 6 below 2^48 + 2^45, so a product needs no reduction after it. AddUnreduced adds limbs; SubtractUnreduced adds 5p, whose limbs cover those of E, for a subtrahend of E; and WeakReduce takes limbs below 2^62 to limbs 0 to 5 below 2^56, limb 6 at most 2^48 + 2^6 and a value below 2^384 + 2^342, so below 2p and in E.
 // −p⁻¹ ≡ 2^32 + 1 (mod 2^56), as (2^32 − 1)(2^32 + 1) = 2^64 − 1, so Montgomery reduction needs no multiplication.
-internal partial struct P384Field56 : IEcField<P384Field56>
+// For inputs of E the steps of the formulas keep within these limits, and the outputs are of E: X3 and Y3 come from WeakReduce, and Z3 is twice an output of Multiply, which has limbs 0 to 5 below 2^56 and limb 6 below 2^49 for the inputs here. Every input of Multiply has limbs below 5·2^56 and a value below 9p, every input of Square limbs below 3·2^56, every subtrahend of SubtractUnreduced is of E, as outputs of Multiply, Square and WeakReduce and their doubles below 2.2p are, and every input of WeakReduce has limbs below 2^60.
+// In Double, γ, β and δ are below 1.1p in limbs below 2^56, and 2γ and 4β below 2.2p in limbs below 2^57. X − δ is below 9p in limbs below 5·2^56 and X + δ below 5.1p in limbs below 3·2^56, so their product is below 1.2p and α below 3.6p in limbs below 3·2^56. α² − 8β is below 11.1p in limbs below 2^59. 4β − X3 is below 7.1p in limbs below 5·2^56, α(4β − X3) below 1.1p, and that less 8γ² below 6.1p in limbs below 2^58.
+// In AddDistinct, U1, U2, S1 and S2 are below 1.1p in limbs below 2^56, so H is below 6.1p in limbs below 2^58 and 2R below 12.1p in limbs below 2^59; reduced, both are below 2^384 + 2^342 in limbs below 2^56. Z1·Z2·H is below 1.1p, so Z3 is below 2.1p. I = 4H² is below 4.1p in limbs below 2^58, and J, V and S1·J are below 1.1p. With an affine right, whose coordinates are of E as well, H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.1p, so Z3 is below 2.1p, and V = X1·I and Y1·J are below 1.1p.
+// X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ then take R below 2^384 + 2^342 and J, V and SJ below 1.1p, all in limbs below 2^56. R² is below 1.1p and R² − J − 2V below 16.1p in limbs below 10·2^56. V − X3 is below 6.1p in limbs below 2^58, R(V − X3) below 1.1p, and that less 2·SJ below 11.1p in limbs below 2^59.
+internal struct P384Field56 : IEcField<P384Field56>
 {
 	internal ulong L0;
 	internal ulong L1;
@@ -290,7 +294,7 @@ internal partial struct P384Field56 : IEcField<P384Field56>
 
 	// The limbs add without carries; the caller keeps them within what the next operation takes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void AddUnreduced(in P384Field56 left, in P384Field56 right, out P384Field56 result)
+	public static void AddUnreduced(in P384Field56 left, in P384Field56 right, out P384Field56 result)
 	{
 		result.L0 = left.L0 + right.L0;
 		result.L1 = left.L1 + right.L1;
@@ -303,7 +307,7 @@ internal partial struct P384Field56 : IEcField<P384Field56>
 
 	// left + 5p − right, limb by limb, for right of E: each limb grows by that of 5p, below 2^57 + 2^56, and none goes negative.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void SubtractUnreduced(in P384Field56 left, in P384Field56 right, out P384Field56 result)
+	public static void SubtractUnreduced(in P384Field56 left, in P384Field56 right, out P384Field56 result)
 	{
 		result.L0 = left.L0 + FiveP0 - right.L0;
 		result.L1 = left.L1 + FiveP1 - right.L1;
@@ -316,7 +320,7 @@ internal partial struct P384Field56 : IEcField<P384Field56>
 
 	// For limbs below 2^62, subtracts h·p with h = L6 >> 48 below 2^14, then carries. h·p = h·2^384 − h·(2^128 + 2^96 − 2^32 + 1), so h·2^384 comes off limb 6, which leaves the value non-negative as it was at least h·2^384, and the rest goes in as h·2^16 at limb 2, h·2^40 at limb 1 and h − h·2^32 at limb 0. Only limb 0 may go negative, above −2^46, so only its carry shifts arithmetically, and it is at least −1: limb 1 gains h·2^40 ≥ 2^40 for h > 0, and h = 0 leaves limb 0 as it was. Limbs 0 to 5 come out below 2^56. Limb 6 keeps L6 mod 2^48, limbs 0 to 5 add below 2^342 + 2^287 and the rest of h·p below 2^143, so the value is below (2^48 − 1)·2^336 + 2^342 + 2^288, under 2^384 + 2^342.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void WeakReduce(in P384Field56 value, out P384Field56 result)
+	public static void WeakReduce(in P384Field56 value, out P384Field56 result)
 	{
 		ulong h = value.L6 >> 48;
 		ulong t0 = value.L0 + h - (h << 32);
@@ -336,7 +340,7 @@ internal partial struct P384Field56 : IEcField<P384Field56>
 
 	// For the output of WeakReduce: its value is below 2p and its limbs 0 to 5 below 2^56, so it is 0 mod p just if its limbs are those of 0 or of p.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong IsReducedZero(in P384Field56 value)
+	public static ulong IsReducedZero(in P384Field56 value)
 	{
 		ulong zero = value.L0 | value.L1 | value.L2 | value.L3 | value.L4 | value.L5 | value.L6;
 		ulong modulus = value.L0 ^ P0 | value.L1 ^ P1 | value.L2 ^ P2 | value.L3 ^ Mask | value.L4 ^ Mask | value.L5 ^ Mask | value.L6 ^ P6;

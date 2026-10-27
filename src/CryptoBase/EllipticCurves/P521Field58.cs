@@ -543,7 +543,7 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 
 	// The limbs add without carries; the caller keeps them within what the next operation takes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void AddUnreduced(in P521Field58 left, in P521Field58 right, out P521Field58 result)
+	public static void AddUnreduced(in P521Field58 left, in P521Field58 right, out P521Field58 result)
 	{
 		result.L0 = left.L0 + right.L0;
 		result.L1 = left.L1 + right.L1;
@@ -558,7 +558,7 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 
 	// left + 2p − right, limb by limb, for right of E: no limb goes negative.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void SubtractUnreduced(in P521Field58 left, in P521Field58 right, out P521Field58 result)
+	public static void SubtractUnreduced(in P521Field58 left, in P521Field58 right, out P521Field58 result)
 	{
 		result.L0 = left.L0 + TwoP - right.L0;
 		result.L1 = left.L1 + TwoP - right.L1;
@@ -572,14 +572,14 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void WeakReduce(in P521Field58 value, out P521Field58 result)
+	public static void WeakReduce(in P521Field58 value, out P521Field58 result)
 	{
 		Carry(value.L0, value.L1, value.L2, value.L3, value.L4, value.L5, value.L6, value.L7, value.L8, out result);
 	}
 
 	// For the output of WeakReduce: its value is below 2p and its limbs 0 to 7 below 2^58, so it is 0 mod p just if its limbs are those of 0 or of p.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong IsReducedZero(in P521Field58 value)
+	public static ulong IsReducedZero(in P521Field58 value)
 	{
 		ulong zero = value.L0 | value.L1 | value.L2 | value.L3 | value.L4 | value.L5 | value.L6 | value.L7 | value.L8;
 		ulong modulus = value.L0 ^ Mask | value.L1 ^ Mask | value.L2 ^ Mask | value.L3 ^ Mask | value.L4 ^ Mask | value.L5 ^ Mask | value.L6 ^ Mask | value.L7 ^ Mask | value.L8 ^ TopMask;
