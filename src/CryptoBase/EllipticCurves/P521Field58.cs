@@ -674,17 +674,7 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong High(ulong a, ulong b)
 	{
-		if (Bmi2.X64.IsSupported)
-		{
-			return Bmi2.X64.MultiplyNoFlags(a, b);
-		}
-
-		if (ArmBase.Arm64.IsSupported)
-		{
-			return ArmBase.Arm64.MultiplyHigh(a, b);
-		}
-
-		return Math.BigMul(a, b, out _);
+		return MultiplyOutOfLine(a, b, out _);
 	}
 
 	// ⌊t/2^58⌋ for a t that may be negative.

@@ -65,7 +65,7 @@ internal static class LimbArithmetic
 		return xHigh * yHigh + (cross1 >> 32) + (cross2 >> 32) + (middle >> 32);
 	}
 
-	// As Multiply, but without BMI2 or Arm64 a call to Math.BigMul, for code with many products at once, such as the matrix steps of SafeGcd, where the inlined portable products would leave so many values live that most of them would spill.
+	// As Multiply, but without BMI2 or Arm64 a call to Math.BigMul, for code with many products at once, such as the matrix steps of SafeGcd and the column sums of P384Field56 and P521Field58, where the inlined portable products would leave so many values live that most of them would spill.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong MultiplyOutOfLine(ulong x, ulong y, out ulong low)
 	{
