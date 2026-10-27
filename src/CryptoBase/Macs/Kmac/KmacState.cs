@@ -45,11 +45,6 @@ internal struct KmacState<TRate> where TRate : IKeccakRate
 		_sponge.Reset();
 	}
 
-	internal void ZeroMemory()
-	{
-		_sponge.ZeroMemory();
-	}
-
 	// The steps below are shared with KmacXofState, which encodes L as 0 (Sec. 4.3.1).
 
 	internal static void Finish(ref CShakeSponge<TRate> sponge, ulong outputLengthInBits, Span<byte> destination)

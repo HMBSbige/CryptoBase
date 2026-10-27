@@ -58,9 +58,4 @@ internal struct KmacXofState<TRate> where TRate : IKeccakRate
 	{
 		_sponge.Reset();
 	}
-
-	internal void ZeroMemory()
-	{
-		_sponge.ZeroMemory();
-	}
 }

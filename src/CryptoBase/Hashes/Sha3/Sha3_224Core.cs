@@ -16,12 +16,9 @@ public struct Sha3_224Core : IHmacHashCore<Sha3_224Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => KeccakRate144.RateInBytes;
 
-	[SkipLocalsInit]
 	static Sha3_224Core IHashCore<Sha3_224Core>.Create()
 	{
-		Unsafe.SkipInit(out Sha3_224Core hashAlgorithm);
-		hashAlgorithm._sponge.Reset();
-		return hashAlgorithm;
+		return default;
 	}
 
 	// The one-shot computation for HashAlgorithm<TCore>.HashData, whose destination is already checked.

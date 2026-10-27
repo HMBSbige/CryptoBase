@@ -78,14 +78,6 @@ internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 		_sponge = _seed;
 	}
 
-	// Erases both states, since a KMAC seed holds the key; Initialize must run again before any other use.
-	internal void ZeroMemory()
-	{
-		_seed.ZeroMemory();
-		_sponge.ZeroMemory();
-		_domainSeparator = 0;
-	}
-
 	// With both strings empty, cSHAKE is SHAKE (Sec. 3.3): no prefix, and SHAKE's domain separator. Returns the domain separator to pad with.
 	internal static byte Initialize(ref KeccakSponge<TRate> sponge, ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization)
 	{

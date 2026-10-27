@@ -10,12 +10,9 @@ public struct Shake128Core : IXofCore<Shake128Core>
 {
 	private KeccakSponge<KeccakRate168> _sponge;
 
-	[SkipLocalsInit]
 	static Shake128Core IXofCore<Shake128Core>.Create()
 	{
-		Unsafe.SkipInit(out Shake128Core xof);
-		xof._sponge.Reset();
-		return xof;
+		return default;
 	}
 
 	// The one-shot computation for Xof<TCore>.HashData.
