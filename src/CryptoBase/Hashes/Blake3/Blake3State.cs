@@ -41,12 +41,13 @@ internal struct Blake3State
 	internal readonly int UsedBufferLength => Math.Max(_usedBufferLength, BufferLength);
 	internal int UsedStackLength { readonly get; private set; }
 
+	// The state of a new instance is zeroed, which leaves only the capacity of the empty state to set.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Initialize(ref readonly InlineArray8<uint> key, uint flags)
 	{
 		_key = key;
 		_flags = flags;
-		Reset();
+		_capacity = GroupLength;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

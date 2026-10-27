@@ -87,16 +87,13 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// <param name="key">The 32-byte key.</param>
 	/// <returns>A new initialized instance.</returns>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="key" /> is not 32 bytes long.</exception>
-	[SkipLocalsInit]
 	public static Blake3HashAlgorithm CreateKeyed(ReadOnlySpan<byte> key)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeyLengthInBytes, nameof(key));
 
-		// Allocating first leaves no copy of the key behind should allocation fail.
+		// The key goes straight into the state, which leaves no copy of it to erase.
 		Blake3HashAlgorithm hasher = new();
-		InlineArray8<uint> keyWords = Blake3Words.Load(in MemoryMarshal.GetReference(key));
-		hasher._state.Initialize(in keyWords, Blake3Flags.KeyedHash);
-		keyWords.ZeroMemory();
+		hasher._state.Initialize(in Unsafe.As<byte, InlineArray8<uint>>(ref MemoryMarshal.GetReference(key)), Blake3Flags.KeyedHash);
 		return hasher;
 	}
 
@@ -160,23 +157,13 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// <exception cref="ArgumentOutOfRangeException">
 	/// <paramref name="key" /> is not 32 bytes long, or <paramref name="maxDegreeOfParallelism" /> is 0 or less than -1.
 	/// </exception>
-	[SkipLocalsInit]
 	public static void KeyedHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, int maxDegreeOfParallelism = 1)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeyLengthInBytes, nameof(key));
 		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
 
-		InlineArray8<uint> keyWords = Blake3Words.Load(in MemoryMarshal.GetReference(key));
-
-		// Hashing in parallel may fail for lack of memory, and the copy of the key is erased all the same.
-		try
-		{
-			Blake3Tree.HashData(source, in keyWords, Blake3Flags.KeyedHash, destination, maxDegreeOfParallelism, ThreadPoolHelperBudget.Shared);
-		}
-		finally
-		{
-			keyWords.ZeroMemory();
-		}
+		// Hashing reads the key where the caller keeps it, which leaves no copy of it to erase, and is done with it before it writes the destination.
+		Blake3Tree.HashData(source, in Unsafe.As<byte, InlineArray8<uint>>(ref MemoryMarshal.GetReference(key)), Blake3Flags.KeyedHash, destination, maxDegreeOfParallelism, ThreadPoolHelperBudget.Shared);
 	}
 
 	/// <summary>
