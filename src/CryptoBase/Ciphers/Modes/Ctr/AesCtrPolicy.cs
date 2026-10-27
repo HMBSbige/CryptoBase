@@ -23,25 +23,8 @@ internal struct AesCtrPolicy<TIncrementer> : IAesModePolicy where TIncrementer :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Prepare8(ref byte source, nuint offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3, out Vector128<byte> v4, out Vector128<byte> v5, out Vector128<byte> v6, out Vector128<byte> v7)
 	{
-		if (Avx2.IsSupported)
-		{
-			Next2(ref _lanes256, out v0, out v1);
-			Next2(ref _lanes256, out v2, out v3);
-			Next2(ref _lanes256, out v4, out v5);
-			Next2(ref _lanes256, out v6, out v7);
-			_current = _lanes256.GetLower();
-		}
-		else
-		{
-			v0 = CtrLanes<TIncrementer>.Next(ref _current);
-			v1 = CtrLanes<TIncrementer>.Next(ref _current);
-			v2 = CtrLanes<TIncrementer>.Next(ref _current);
-			v3 = CtrLanes<TIncrementer>.Next(ref _current);
-			v4 = CtrLanes<TIncrementer>.Next(ref _current);
-			v5 = CtrLanes<TIncrementer>.Next(ref _current);
-			v6 = CtrLanes<TIncrementer>.Next(ref _current);
-			v7 = CtrLanes<TIncrementer>.Next(ref _current);
-		}
+		Prepare4(ref source, offset, out v0, out v1, out v2, out v3);
+		Prepare4(ref source, offset + 64, out v4, out v5, out v6, out v7);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -61,10 +44,8 @@ internal struct AesCtrPolicy<TIncrementer> : IAesModePolicy where TIncrementer :
 		}
 		else
 		{
-			v0 = CtrLanes<TIncrementer>.Next(ref _current);
-			v1 = CtrLanes<TIncrementer>.Next(ref _current);
-			v2 = CtrLanes<TIncrementer>.Next(ref _current);
-			v3 = CtrLanes<TIncrementer>.Next(ref _current);
+			Prepare2(ref source, offset, out v0, out v1);
+			Prepare2(ref source, offset + 32, out v2, out v3);
 		}
 	}
 
