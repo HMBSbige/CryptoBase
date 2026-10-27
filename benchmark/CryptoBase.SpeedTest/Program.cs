@@ -138,9 +138,7 @@ cmd.SetAction
 
 			Console.Write($@"Testing {realMethod}: ");
 
-			CryptoTest t = new(bytes, seconds);
-
-			CryptoList.Run(realMethod, t);
+			CryptoList.Run(realMethod, new CryptoTest(bytes, seconds));
 		}
 	}
 );

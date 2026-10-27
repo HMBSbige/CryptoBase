@@ -10,13 +10,7 @@ internal sealed class CryptoTest(int bufferSize, double seconds)
 		24, 25, 26, 27, 28, 29, 30, 31
 	];
 
-	public static ReadOnlySpan<byte> IV =>
-	[
-		0, 1, 2, 3, 4, 5, 6, 7, 8,
-		9, 10, 11, 12, 13, 14, 15,
-		16, 17, 18, 19, 20, 21, 22, 23,
-		24, 25, 26, 27, 28, 29, 30, 31
-	];
+	public static ReadOnlySpan<byte> IV => Key;
 
 	private const double TargetBatchSeconds = 0.02;
 
@@ -24,31 +18,41 @@ internal sealed class CryptoTest(int bufferSize, double seconds)
 
 	internal const double MinimumSeconds = SampleCount * TargetBatchSeconds;
 
+	// The Test methods take ownership of the instance and dispose it once measured.
 	public void TestStream<T>(T crypto) where T : IStreamCipher
 	{
-		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
-		byte[] output = new byte[bufferSize];
+		using (crypto)
+		{
+			byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
+			byte[] output = new byte[bufferSize];
 
-		Measure(() => crypto.Xor(input, output));
+			Measure(() => crypto.Xor(input, output));
+		}
 	}
 
 	public void TestAead<T>(T crypto) where T : IAeadCipher<T>
 	{
-		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
-		byte[] output = new byte[input.Length];
-		byte[] nonce = [.. IV.Slice(0, T.NonceSize)];
-		byte[] tag = new byte[T.TagSize];
+		using (crypto)
+		{
+			byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
+			byte[] output = new byte[input.Length];
+			byte[] nonce = [.. IV.Slice(0, T.NonceSize)];
+			byte[] tag = new byte[T.TagSize];
 
-		Measure(() => crypto.Encrypt(nonce, input, output, tag));
+			Measure(() => crypto.Encrypt(nonce, input, output, tag));
+		}
 	}
 
 	public void TestDataUnit<T>(T crypto) where T : IDataUnitCipher<T>
 	{
-		byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
-		byte[] output = new byte[bufferSize];
-		byte[] iv = [.. IV.Slice(0, T.TweakSize)];
+		using (crypto)
+		{
+			byte[] input = RandomNumberGenerator.GetBytes(bufferSize);
+			byte[] output = new byte[bufferSize];
+			byte[] iv = [.. IV.Slice(0, T.TweakSize)];
 
-		Measure(() => crypto.Encrypt(iv, input, output));
+			Measure(() => crypto.Encrypt(iv, input, output));
+		}
 	}
 
 	private void Measure(Action operation)

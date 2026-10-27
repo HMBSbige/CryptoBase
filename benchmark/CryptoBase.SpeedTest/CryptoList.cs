@@ -66,143 +66,74 @@ internal static class CryptoList
 		switch (name)
 		{
 			case Aes128Ctr:
-			{
-				using CtrMode128<AesCipher> crypto = CtrMode128<AesCipher>.Create(key16, iv16);
-				test.TestStream(crypto);
+				test.TestStream(CtrMode128<AesCipher>.Create(key16, iv16));
 				break;
-			}
 			case Aes192Ctr:
-			{
-				using CtrMode128<AesCipher> crypto = CtrMode128<AesCipher>.Create(key24, iv16);
-				test.TestStream(crypto);
+				test.TestStream(CtrMode128<AesCipher>.Create(key24, iv16));
 				break;
-			}
 			case Aes256Ctr:
-			{
-				using CtrMode128<AesCipher> crypto = CtrMode128<AesCipher>.Create(key32, iv16);
-				test.TestStream(crypto);
+				test.TestStream(CtrMode128<AesCipher>.Create(key32, iv16));
 				break;
-			}
 			case SM4Ctr:
-			{
-				using CtrMode128<SM4Cipher> crypto = CtrMode128<SM4Cipher>.Create(key16, iv16);
-				test.TestStream(crypto);
+				test.TestStream(CtrMode128<SM4Cipher>.Create(key16, iv16));
 				break;
-			}
 			case ChaCha20Original:
-			{
-				using ChaCha20OriginalCipher crypto = new(key32, iv16.Slice(0, 8));
-				test.TestStream(crypto);
+				test.TestStream(new ChaCha20OriginalCipher(key32, iv16.Slice(0, 8)));
 				break;
-			}
 			case ChaCha20:
-			{
-				using ChaCha20Cipher crypto = new(key32, iv16.Slice(0, 12));
-				test.TestStream(crypto);
+				test.TestStream(new ChaCha20Cipher(key32, iv16.Slice(0, 12)));
 				break;
-			}
 			case XChaCha20:
-			{
-				using XChaCha20Cipher crypto = new(key32, iv24);
-				test.TestStream(crypto);
+				test.TestStream(new XChaCha20Cipher(key32, iv24));
 				break;
-			}
 			case Salsa20:
-			{
-				using Salsa20Cipher crypto = new(key32, iv16.Slice(0, 8));
-				test.TestStream(crypto);
+				test.TestStream(new Salsa20Cipher(key32, iv16.Slice(0, 8)));
 				break;
-			}
 			case XSalsa20:
-			{
-				using XSalsa20Cipher crypto = new(key32, iv24);
-				test.TestStream(crypto);
+				test.TestStream(new XSalsa20Cipher(key32, iv24));
 				break;
-			}
 			case Aes128Gcm:
-			{
-				using GcmMode<AesCipher> crypto = GcmMode<AesCipher>.Create(key16);
-				test.TestAead(crypto);
+				test.TestAead(GcmMode<AesCipher>.Create(key16));
 				break;
-			}
 			case Aes192Gcm:
-			{
-				using GcmMode<AesCipher> crypto = GcmMode<AesCipher>.Create(key24);
-				test.TestAead(crypto);
+				test.TestAead(GcmMode<AesCipher>.Create(key24));
 				break;
-			}
 			case Aes256Gcm:
-			{
-				using GcmMode<AesCipher> crypto = GcmMode<AesCipher>.Create(key32);
-				test.TestAead(crypto);
+				test.TestAead(GcmMode<AesCipher>.Create(key32));
 				break;
-			}
 			case SM4Gcm:
-			{
-				using GcmMode<SM4Cipher> crypto = GcmMode<SM4Cipher>.Create(key16);
-				test.TestAead(crypto);
+				test.TestAead(GcmMode<SM4Cipher>.Create(key16));
 				break;
-			}
 			case Aes128Ccm:
-			{
-				using CcmMode<AesCipher> crypto = CcmMode<AesCipher>.Create(key16);
-				test.TestAead(crypto);
+				test.TestAead(CcmMode<AesCipher>.Create(key16));
 				break;
-			}
 			case Aes192Ccm:
-			{
-				using CcmMode<AesCipher> crypto = CcmMode<AesCipher>.Create(key24);
-				test.TestAead(crypto);
+				test.TestAead(CcmMode<AesCipher>.Create(key24));
 				break;
-			}
 			case Aes256Ccm:
-			{
-				using CcmMode<AesCipher> crypto = CcmMode<AesCipher>.Create(key32);
-				test.TestAead(crypto);
+				test.TestAead(CcmMode<AesCipher>.Create(key32));
 				break;
-			}
 			case SM4Ccm:
-			{
-				using CcmMode<SM4Cipher> crypto = CcmMode<SM4Cipher>.Create(key16);
-				test.TestAead(crypto);
+				test.TestAead(CcmMode<SM4Cipher>.Create(key16));
 				break;
-			}
 			case Aes128Ccm8:
-			{
-				using Ccm8Mode<AesCipher> crypto = Ccm8Mode<AesCipher>.Create(key16);
-				test.TestAead(crypto);
+				test.TestAead(Ccm8Mode<AesCipher>.Create(key16));
 				break;
-			}
 			case Aes256Ccm8:
-			{
-				using Ccm8Mode<AesCipher> crypto = Ccm8Mode<AesCipher>.Create(key32);
-				test.TestAead(crypto);
+				test.TestAead(Ccm8Mode<AesCipher>.Create(key32));
 				break;
-			}
 			case ChaCha20Poly1305:
-			{
-				using ChaCha20Poly1305Cipher crypto = ChaCha20Poly1305Cipher.Create(key32);
-				test.TestAead(crypto);
+				test.TestAead(ChaCha20Poly1305Cipher.Create(key32));
 				break;
-			}
 			case XChaCha20Poly1305:
-			{
-				using XChaCha20Poly1305Cipher crypto = XChaCha20Poly1305Cipher.Create(key32);
-				test.TestAead(crypto);
+				test.TestAead(XChaCha20Poly1305Cipher.Create(key32));
 				break;
-			}
 			case Aes128Xts:
-			{
-				using XtsMode<AesCipher> crypto = XtsMode<AesCipher>.Create(key16, KeyForTweak.Slice(0, 16));
-				test.TestDataUnit(crypto);
+				test.TestDataUnit(XtsMode<AesCipher>.Create(key16, KeyForTweak.Slice(0, 16)));
 				break;
-			}
 			case Aes256Xts:
-			{
-				using XtsMode<AesCipher> crypto = XtsMode<AesCipher>.Create(key32, KeyForTweak);
-				test.TestDataUnit(crypto);
+				test.TestDataUnit(XtsMode<AesCipher>.Create(key32, KeyForTweak));
 				break;
-			}
 			default:
 				throw new NotSupportedException(name);
 		}
