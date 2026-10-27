@@ -113,27 +113,7 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 			return;
 		}
 
-		Poly1305Utils.LoadPartialBlock(MemoryMarshal.CreateReadOnlySpan(ref input, length), out ulong low, out ulong high);
-		ulong highBit;
-
-		if (padPartialBlock)
-		{
-			highBit = FullBlockHighBit;
-		}
-		else
-		{
-			highBit = 0;
-
-			if (length < sizeof(ulong))
-			{
-				low |= 1UL << length * 8;
-			}
-			else
-			{
-				high |= 1UL << (length - sizeof(ulong)) * 8;
-			}
-		}
-
+		Poly1305Utils.LoadFinalBlock(MemoryMarshal.CreateReadOnlySpan(ref input, length), padPartialBlock, FullBlockHighBit, out ulong low, out ulong high, out ulong highBit);
 		Block(low, high, highBit);
 	}
 

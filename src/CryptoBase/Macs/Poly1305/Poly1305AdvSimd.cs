@@ -75,7 +75,8 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		d4 = AdvSimd.MultiplyWideningLowerAndAdd(d4, h0, coefficient4);
 		d0 = AdvSimd.MultiplyWideningLowerAndAdd(d0, h1, coefficient4x5);
 
-		ReduceHalf(d0, d1, d2, d3, d4, out Vector128<ulong> p0, out Vector128<ulong> p1, out Vector128<ulong> p2, out Vector128<ulong> p3, out Vector128<ulong> p4);
+		Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
+		Poly1305Utils.Reduce(d0, d1, d2, d3, d4, mask, out Vector128<ulong> p0, out Vector128<ulong> p1, out Vector128<ulong> p2, out Vector128<ulong> p3, out Vector128<ulong> p4);
 		Vector64<uint> limb0 = Vector64.Narrow(p0.GetLower(), p0.GetUpper());
 		Vector64<uint> limb1 = Vector64.Narrow(p1.GetLower(), p1.GetUpper());
 		Vector64<uint> limb2 = Vector64.Narrow(p2.GetLower(), p2.GetUpper());
@@ -115,29 +116,9 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		else
 		{
 			ref byte partial = ref Unsafe.Add(ref source, Poly1305Algorithm.BlockSizeInBytes);
-			Poly1305Utils.LoadPartialBlock(MemoryMarshal.CreateReadOnlySpan(ref partial, secondLength), out ulong low, out ulong high);
-			uint highBit;
-
-			if (padPartialBlock)
-			{
-				highBit = Poly1305State26.FullBlockHighBit;
-			}
-			else
-			{
-				highBit = 0;
-
-				if (secondLength < sizeof(ulong))
-				{
-					low |= 1UL << secondLength * 8;
-				}
-				else
-				{
-					high |= 1UL << (secondLength - sizeof(ulong)) * 8;
-				}
-			}
-
+			Poly1305Utils.LoadFinalBlock(MemoryMarshal.CreateReadOnlySpan(ref partial, secondLength), padPartialBlock, Poly1305State26.FullBlockHighBit, out ulong low, out ulong high, out ulong highBit);
 			block1 = Vector128.CreateUInt64(low, high);
-			highBits = Vector128.Create((ulong)Poly1305State26.FullBlockHighBit, highBit);
+			highBits = Vector128.Create(Poly1305State26.FullBlockHighBit, highBit);
 		}
 
 		Vector128<ulong> lower = AdvSimd.Arm64.ZipLow(block0, block1);
@@ -198,37 +179,6 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ReduceHalf
-	(
-		Vector128<ulong> d0, Vector128<ulong> d1, Vector128<ulong> d2, Vector128<ulong> d3, Vector128<ulong> d4,
-		out Vector128<ulong> h0, out Vector128<ulong> h1, out Vector128<ulong> h2, out Vector128<ulong> h3, out Vector128<ulong> h4
-	)
-	{
-		Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
-		Vector128<ulong> carry3 = d3 >>> 26;
-		h3 = d3 & mask;
-		h4 = d4 + carry3;
-		Vector128<ulong> carry0 = d0 >>> 26;
-		h0 = d0 & mask;
-		h1 = d1 + carry0;
-		Vector128<ulong> carry4 = h4 >>> 26;
-		h4 &= mask;
-		Vector128<ulong> carry1 = h1 >>> 26;
-		h1 &= mask;
-		h2 = d2 + carry1;
-		h0 += carry4 + (carry4 << 2);
-		Vector128<ulong> carry2 = h2 >>> 26;
-		h2 &= mask;
-		h3 += carry2;
-		carry0 = h0 >>> 26;
-		h0 &= mask;
-		h1 += carry0;
-		carry3 = h3 >>> 26;
-		h3 &= mask;
-		h4 += carry3;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Reduce
 	(
 		Vector128<ulong> d0Lower, Vector128<ulong> d0Upper,
@@ -239,8 +189,9 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		out Vector128<uint> h0, out Vector128<uint> h1, out Vector128<uint> h2, out Vector128<uint> h3, out Vector128<uint> h4
 	)
 	{
-		ReduceHalf(d0Lower, d1Lower, d2Lower, d3Lower, d4Lower, out Vector128<ulong> h0Lower, out Vector128<ulong> h1Lower, out Vector128<ulong> h2Lower, out Vector128<ulong> h3Lower, out Vector128<ulong> h4Lower);
-		ReduceHalf(d0Upper, d1Upper, d2Upper, d3Upper, d4Upper, out Vector128<ulong> h0Upper, out Vector128<ulong> h1Upper, out Vector128<ulong> h2Upper, out Vector128<ulong> h3Upper, out Vector128<ulong> h4Upper);
+		Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
+		Poly1305Utils.Reduce(d0Lower, d1Lower, d2Lower, d3Lower, d4Lower, mask, out Vector128<ulong> h0Lower, out Vector128<ulong> h1Lower, out Vector128<ulong> h2Lower, out Vector128<ulong> h3Lower, out Vector128<ulong> h4Lower);
+		Poly1305Utils.Reduce(d0Upper, d1Upper, d2Upper, d3Upper, d4Upper, mask, out Vector128<ulong> h0Upper, out Vector128<ulong> h1Upper, out Vector128<ulong> h2Upper, out Vector128<ulong> h3Upper, out Vector128<ulong> h4Upper);
 		h0 = Vector128.Narrow(h0Lower, h0Upper);
 		h1 = Vector128.Narrow(h1Lower, h1Upper);
 		h2 = Vector128.Narrow(h2Lower, h2Upper);
@@ -501,6 +452,8 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		SetAccumulatorFromLanes(h0, h1, h2, h3, h4);
 	}
 
+	// Inlined into a caller, the tail spends the inline budget and leaves some multiply helpers as calls.
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void AppendTwoWay(scoped ReadOnlySpan<byte> source, int secondLength, bool padPartialBlock)
 	{
 		ref byte input = ref MemoryMarshal.GetReference(source);

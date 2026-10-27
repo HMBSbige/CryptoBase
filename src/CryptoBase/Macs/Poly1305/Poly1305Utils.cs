@@ -20,6 +20,37 @@ internal static class Poly1305Utils
 		m4 = high >>> 40 | Vector256.Create((ulong)Poly1305State26.FullBlockHighBit);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void Reduce
+	(
+		Vector128<ulong> d0, Vector128<ulong> d1, Vector128<ulong> d2, Vector128<ulong> d3, Vector128<ulong> d4,
+		Vector128<ulong> mask,
+		out Vector128<ulong> h0, out Vector128<ulong> h1, out Vector128<ulong> h2, out Vector128<ulong> h3, out Vector128<ulong> h4
+	)
+	{
+		Vector128<ulong> carry3 = d3 >>> 26;
+		h3 = d3 & mask;
+		h4 = d4 + carry3;
+		Vector128<ulong> carry0 = d0 >>> 26;
+		h0 = d0 & mask;
+		h1 = d1 + carry0;
+		Vector128<ulong> carry4 = h4 >>> 26;
+		h4 &= mask;
+		Vector128<ulong> carry1 = h1 >>> 26;
+		h1 &= mask;
+		h2 = d2 + carry1;
+		h0 += carry4 + (carry4 << 2);
+		Vector128<ulong> carry2 = h2 >>> 26;
+		h2 &= mask;
+		h3 += carry2;
+		carry0 = h0 >>> 26;
+		h0 &= mask;
+		h1 += carry0;
+		carry3 = h3 >>> 26;
+		h3 &= mask;
+		h4 += carry3;
+	}
+
 	// Word 1 of the accumulator is h1 + carry: the carry out of word 0 waits for the next product instead of rippling through h1 and h2, which keeps it off the chain from one block to the next.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Multiply64(ref ulong h0, ref ulong h1, ref ulong h2, ref ulong carry, ulong r0, ulong r1, ulong s1)
@@ -76,8 +107,33 @@ internal static class Poly1305Utils
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, sizeof(ulong)), high);
 	}
 
+	// A zero-padded AEAD segment sets the full-block high bit; a message instead ends with a 0x01 byte after its last byte.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void LoadPartialBlock(scoped ReadOnlySpan<byte> source, out ulong low, out ulong high)
+	internal static void LoadFinalBlock(scoped ReadOnlySpan<byte> source, bool padPartialBlock, ulong fullBlockHighBit, out ulong low, out ulong high, out ulong highBit)
+	{
+		LoadPartialBlock(source, out low, out high);
+
+		if (padPartialBlock)
+		{
+			highBit = fullBlockHighBit;
+		}
+		else
+		{
+			highBit = 0;
+
+			if (source.Length < sizeof(ulong))
+			{
+				low |= 1UL << source.Length * 8;
+			}
+			else
+			{
+				high |= 1UL << (source.Length - sizeof(ulong)) * 8;
+			}
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void LoadPartialBlock(scoped ReadOnlySpan<byte> source, out ulong low, out ulong high)
 	{
 		Debug.Assert(source.Length is > 0 and < Poly1305Algorithm.BlockSizeInBytes);
 

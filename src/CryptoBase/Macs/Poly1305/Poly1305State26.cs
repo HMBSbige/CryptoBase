@@ -177,28 +177,8 @@ internal ref struct Poly1305State26
 			return;
 		}
 
-		Poly1305Utils.LoadPartialBlock(source, out ulong low, out ulong high);
-		uint highBit;
-
-		if (padPartialBlock)
-		{
-			highBit = FullBlockHighBit;
-		}
-		else
-		{
-			highBit = 0;
-
-			if (source.Length < sizeof(ulong))
-			{
-				low |= 1UL << source.Length * 8;
-			}
-			else
-			{
-				high |= 1UL << (source.Length - sizeof(ulong)) * 8;
-			}
-		}
-
-		Block(low, high, highBit);
+		Poly1305Utils.LoadFinalBlock(source, padPartialBlock, FullBlockHighBit, out ulong low, out ulong high, out ulong highBit);
+		Block(low, high, (uint)highBit);
 	}
 
 	internal void WriteMac(scoped Span<byte> destination)
