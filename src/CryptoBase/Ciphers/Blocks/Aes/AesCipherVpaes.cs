@@ -204,7 +204,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		);
 	}
 
-	internal readonly Vector128<byte> Encrypt(Vector128<byte> block)
+	private readonly Vector128<byte> Encrypt(Vector128<byte> block)
 	{
 		ref readonly Vector128<byte> roundKey = ref _roundKeys[0];
 		Vector128<byte> forwardShuffle = EncryptionForwardMixColumnsShuffleMask;
@@ -223,7 +223,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		return EncryptFinalRound(value, Unsafe.Add(ref Unsafe.AsRef(in roundKey), 1), GetShiftRowsShuffleMask(_rounds));
 	}
 
-	internal readonly void Encrypt2(ref Vector128<byte> block0, ref Vector128<byte> block1)
+	private readonly void Encrypt2(ref Vector128<byte> block0, ref Vector128<byte> block1)
 	{
 		ref readonly Vector128<byte> roundKey = ref _roundKeys[0];
 		Vector128<byte> forwardShuffle = EncryptionForwardMixColumnsShuffleMask;
@@ -247,7 +247,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block1 = EncryptFinalRound(v1, finalRoundKey, shiftRowsShuffle);
 	}
 
-	internal readonly void Encrypt3(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2)
+	private readonly void Encrypt3(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2)
 	{
 		ref readonly Vector128<byte> roundKey = ref _roundKeys[0];
 		Vector128<byte> forwardShuffle = EncryptionForwardMixColumnsShuffleMask;
@@ -280,7 +280,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block2 = EncryptFinalRound(v2, finalRoundKey, shiftRowsShuffle);
 	}
 
-	internal readonly void Encrypt4(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2, ref Vector128<byte> block3)
+	private readonly void Encrypt4(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2, ref Vector128<byte> block3)
 	{
 		ref readonly Vector128<byte> roundKey = ref _roundKeys[0];
 		Vector128<byte> forwardShuffle = EncryptionForwardMixColumnsShuffleMask;
@@ -318,7 +318,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block3 = EncryptFinalRound(v3, finalRoundKey, shiftRowsShuffle);
 	}
 
-	internal readonly Vector128<byte> Decrypt(Vector128<byte> block)
+	private readonly Vector128<byte> Decrypt(Vector128<byte> block)
 	{
 		ref readonly Vector128<byte> roundKey = ref _reverseRoundKeys[0];
 		Vector128<byte> forwardShuffle = DecryptionForwardMixColumnsShuffleMask;
@@ -335,7 +335,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		return DecryptFinalRound(value, Unsafe.Add(ref Unsafe.AsRef(in roundKey), 1), GetShiftRowsShuffleMask(-_rounds));
 	}
 
-	internal readonly void Decrypt2(ref Vector128<byte> block0, ref Vector128<byte> block1)
+	private readonly void Decrypt2(ref Vector128<byte> block0, ref Vector128<byte> block1)
 	{
 		ref readonly Vector128<byte> roundKey = ref _reverseRoundKeys[0];
 		Vector128<byte> forwardShuffle = DecryptionForwardMixColumnsShuffleMask;
@@ -357,7 +357,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block1 = DecryptFinalRound(v1, finalRoundKey, shiftRowsShuffle);
 	}
 
-	internal readonly void Decrypt3(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2)
+	private readonly void Decrypt3(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2)
 	{
 		ref readonly Vector128<byte> roundKey = ref _reverseRoundKeys[0];
 		Vector128<byte> forwardShuffle = DecryptionForwardMixColumnsShuffleMask;
@@ -388,7 +388,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		block2 = DecryptFinalRound(v2, finalRoundKey, shiftRowsShuffle);
 	}
 
-	internal readonly void Decrypt4(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2, ref Vector128<byte> block3)
+	private readonly void Decrypt4(ref Vector128<byte> block0, ref Vector128<byte> block1, ref Vector128<byte> block2, ref Vector128<byte> block3)
 	{
 		ref readonly Vector128<byte> roundKey = ref _reverseRoundKeys[0];
 		Vector128<byte> forwardShuffle = DecryptionForwardMixColumnsShuffleMask;
@@ -559,7 +559,15 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		while (source.Length - offset >= 64)
 		{
 			policy.Prepare4(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3);
-			TOperation.Apply4(in this, ref v0, ref v1, ref v2, ref v3);
+			if (TOperation.IsDecrypt)
+			{
+				Decrypt4(ref v0, ref v1, ref v2, ref v3);
+			}
+			else
+			{
+				Encrypt4(ref v0, ref v1, ref v2, ref v3);
+			}
+
 			policy.Finish4(ref src, ref dst, (nuint)offset, v0, v1, v2, v3);
 			offset += 64;
 		}
@@ -568,7 +576,15 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		{
 			policy.Prepare2(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1);
 			Vector128<byte> v2 = policy.Prepare1(ref src, (nuint)(offset + 32));
-			TOperation.Apply3(in this, ref v0, ref v1, ref v2);
+			if (TOperation.IsDecrypt)
+			{
+				Decrypt3(ref v0, ref v1, ref v2);
+			}
+			else
+			{
+				Encrypt3(ref v0, ref v1, ref v2);
+			}
+
 			policy.Finish2(ref src, ref dst, (nuint)offset, v0, v1);
 			policy.Finish1(ref src, ref dst, (nuint)(offset + 32), v2);
 			return;
@@ -577,16 +593,29 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		if (source.Length - offset >= 32)
 		{
 			policy.Prepare2(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1);
-			TOperation.Apply2(in this, ref v0, ref v1);
+			if (TOperation.IsDecrypt)
+			{
+				Decrypt2(ref v0, ref v1);
+			}
+			else
+			{
+				Encrypt2(ref v0, ref v1);
+			}
+
 			policy.Finish2(ref src, ref dst, (nuint)offset, v0, v1);
 			offset += 32;
 		}
 
 		if (offset < source.Length)
 		{
-			Vector128<byte> value = policy.Prepare1(ref src, (nuint)offset);
-			value = TOperation.Apply1(in this, value);
-			policy.Finish1(ref src, ref dst, (nuint)offset, value);
+			if (TOperation.IsDecrypt)
+			{
+				policy.Finish1(ref src, ref dst, (nuint)offset, Decrypt(policy.Prepare1(ref src, (nuint)offset)));
+			}
+			else
+			{
+				policy.Finish1(ref src, ref dst, (nuint)offset, Encrypt(policy.Prepare1(ref src, (nuint)offset)));
+			}
 		}
 	}
 }

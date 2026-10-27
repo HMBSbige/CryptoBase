@@ -10,12 +10,19 @@ internal partial struct AesCipherBitslice
 		for (int offset = 0; offset < source.Length; offset += BatchSize)
 		{
 			int length = Math.Min(source.Length - offset, BatchSize);
-			TOperation.ApplyBatch(in this, ref policy, ref input, ref output, (nuint)offset, length);
+			if (TOperation.IsDecrypt)
+			{
+				DecryptBatch(ref policy, ref input, ref output, (nuint)offset, length);
+			}
+			else
+			{
+				EncryptBatch(ref policy, ref input, ref output, (nuint)offset, length);
+			}
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal readonly void EncryptBatch<TPolicy>(ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length) where TPolicy : struct, IAesModePolicy, allows ref struct
+	private readonly void EncryptBatch<TPolicy>(ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length) where TPolicy : struct, IAesModePolicy, allows ref struct
 	{
 		InlineArray8<Vector128<byte>> state = default;
 		LoadLayout(ref state, ref policy, ref input, offset, length);
@@ -25,7 +32,7 @@ internal partial struct AesCipherBitslice
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal readonly void DecryptBatch<TPolicy>(ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length) where TPolicy : struct, IAesModePolicy, allows ref struct
+	private readonly void DecryptBatch<TPolicy>(ref TPolicy policy, ref byte input, ref byte output, nuint offset, int length) where TPolicy : struct, IAesModePolicy, allows ref struct
 	{
 		InlineArray8<Vector128<byte>> state = default;
 		LoadLayout(ref state, ref policy, ref input, offset, length);
