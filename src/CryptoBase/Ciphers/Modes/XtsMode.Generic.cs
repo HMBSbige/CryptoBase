@@ -150,42 +150,35 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void TransformTail<TDirection>(Vector128<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination, int tail, bool stealingBlockTransformed) where TDirection : struct, IBlockDirection
 	{
-		Span<byte> batch = stackalloc byte[2 * BlockSize];
+		Debug.Assert(source.Length == BlockSize + tail && destination.Length >= source.Length);
 
-		try
+		ref byte input = ref MemoryMarshal.GetReference(source);
+		ref byte output = ref MemoryMarshal.GetReference(destination);
+		Vector128<byte> last;
+
+		if (stealingBlockTransformed)
 		{
-			Span<byte> last = batch.Slice(0, BlockSize);
-			Span<byte> partial = batch.Slice(BlockSize, tail);
-			(stealingBlockTransformed ? destination : source).Slice(0, BlockSize).CopyTo(last);
-			source.Slice(BlockSize, tail).CopyTo(partial);
-
-			if (!stealingBlockTransformed)
-			{
-				Vector128<byte> next = XtsTweak.MultiplyByAlpha(tweak);
-				TransformBlock<TDirection>(TDirection.IsDecrypt ? next : tweak, last);
-				tweak = TDirection.IsDecrypt ? tweak : next;
-			}
-
-			last.Slice(0, tail).CopyTo(destination.Slice(BlockSize, tail));
-			partial.CopyTo(last);
-			TransformBlock<TDirection>(tweak, last);
-			last.CopyTo(destination);
+			last = Vector128.LoadUnsafe(ref output);
 		}
-		finally
+		else
 		{
-			batch.ZeroMemory();
+			Vector128<byte> next = XtsTweak.MultiplyByAlpha(tweak);
+			last = TransformBlock<TDirection>(TDirection.IsDecrypt ? next : tweak, Vector128.LoadUnsafe(ref input));
+			tweak = TDirection.IsDecrypt ? tweak : next;
 		}
+
+		// In place, the stolen bytes overwrite the partial block, so read it first.
+		Vector128<byte> partial = Vector128.LoadPartialUnsafe(ref input, BlockSize, tail);
+		last.StorePartialUnsafe(ref output, BlockSize, tail);
+		Vector128<byte> mask = Vector128.LessThan(Vector128<sbyte>.Indices, Vector128.Create((sbyte)tail)).AsByte();
+		TransformBlock<TDirection>(tweak, Vector128.ConditionalSelect(mask, partial, last)).StoreUnsafe(ref output);
 	}
 
-	private void TransformBlock<TDirection>(Vector128<byte> tweak, Span<byte> block) where TDirection : struct, IBlockDirection
+	private Vector128<byte> TransformBlock<TDirection>(Vector128<byte> tweak, Vector128<byte> block) where TDirection : struct, IBlockDirection
 	{
-		Vector128<byte> value = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(block)) ^ tweak;
-
-		value = BlockModeDispatch.TransformBlock<TBlockCipher, TDirection>(_dataCipher, value);
-		(value ^ tweak).StoreUnsafe(ref MemoryMarshal.GetReference(block));
+		return BlockModeDispatch.TransformBlock<TBlockCipher, TDirection>(_dataCipher, block ^ tweak) ^ tweak;
 	}
 }
