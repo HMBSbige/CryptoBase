@@ -27,32 +27,26 @@ internal static partial class Salsa20Utils
 		SnuffleCipher.WriteKeyStreamRow(ref Unsafe.Add(ref destination, 48), x12 + Unsafe.Add(ref stateRef, 12), x13 + Unsafe.Add(ref stateRef, 13), x14 + Unsafe.Add(ref stateRef, 14), x15 + Unsafe.Add(ref stateRef, 15));
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void SalsaRound(in Span<uint> x)
+	// Reads the 32-byte key and the first 16 nonce bytes; the state holds the constants in words 0, 5, 10 and 15 and receives the subkey in words 1-4 and 11-14.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	internal static void DeriveXSalsa20Key(ref uint stateRef, ref byte key, ref byte nonce)
 	{
-		uint x15 = x[15], x14 = x[14], x13 = x[13], x12 = x[12];
-		uint x11 = x[11], x10 = x[10], x09 = x[9], x08 = x[8];
-		uint x07 = x[7], x06 = x[6], x05 = x[5], x04 = x[4];
-		uint x03 = x[3], x02 = x[2], x01 = x[1], x00 = x[0];
-
+		ref uint keyRef = ref Unsafe.As<byte, uint>(ref key);
+		ref uint nonceRef = ref Unsafe.As<byte, uint>(ref nonce);
+		uint x00 = Unsafe.Add(ref stateRef, 0), x01 = Unsafe.Add(ref keyRef, 0), x02 = Unsafe.Add(ref keyRef, 1), x03 = Unsafe.Add(ref keyRef, 2);
+		uint x04 = Unsafe.Add(ref keyRef, 3), x05 = Unsafe.Add(ref stateRef, 5), x06 = Unsafe.Add(ref nonceRef, 0), x07 = Unsafe.Add(ref nonceRef, 1);
+		uint x08 = Unsafe.Add(ref nonceRef, 2), x09 = Unsafe.Add(ref nonceRef, 3), x10 = Unsafe.Add(ref stateRef, 10), x11 = Unsafe.Add(ref keyRef, 4);
+		uint x12 = Unsafe.Add(ref keyRef, 5), x13 = Unsafe.Add(ref keyRef, 6), x14 = Unsafe.Add(ref keyRef, 7), x15 = Unsafe.Add(ref stateRef, 15);
 		PermuteScalar(ref x00, ref x01, ref x02, ref x03, ref x04, ref x05, ref x06, ref x07, ref x08, ref x09, ref x10, ref x11, ref x12, ref x13, ref x14, ref x15);
 
-		x[15] = x15;
-		x[14] = x14;
-		x[13] = x13;
-		x[12] = x12;
-		x[11] = x11;
-		x[10] = x10;
-		x[9] = x09;
-		x[8] = x08;
-		x[7] = x07;
-		x[6] = x06;
-		x[5] = x05;
-		x[4] = x04;
-		x[3] = x03;
-		x[2] = x02;
-		x[1] = x01;
-		x[0] = x00;
+		Unsafe.Add(ref stateRef, 1) = x00;
+		Unsafe.Add(ref stateRef, 2) = x05;
+		Unsafe.Add(ref stateRef, 3) = x10;
+		Unsafe.Add(ref stateRef, 4) = x15;
+		Unsafe.Add(ref stateRef, 11) = x06;
+		Unsafe.Add(ref stateRef, 12) = x07;
+		Unsafe.Add(ref stateRef, 13) = x08;
+		Unsafe.Add(ref stateRef, 14) = x09;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

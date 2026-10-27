@@ -18,44 +18,16 @@ public class XSalsa20Cipher : Salsa20Cipher
 	/// <param name="iv">The 192-bit nonce.</param>
 	public XSalsa20Cipher(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
 	{
-		Init(key, iv);
-		SetCounter(0);
-	}
-
-	private void Init(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
-	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(iv.Length, IVSize, nameof(iv));
 
 		Span<uint> state = StateSpan;
-
 		state[0] = Sigma32[0];
 		state[5] = Sigma32[1];
 		state[10] = Sigma32[2];
 		state[15] = Sigma32[3];
-
-		ReadOnlySpan<uint> keySpan = MemoryMarshal.Cast<byte, uint>(key);
-		keySpan.Slice(0, 4).CopyTo(state.Slice(1));
-		keySpan.Slice(4).CopyTo(state.Slice(11));
-
-		ReadOnlySpan<uint> ivSpan = MemoryMarshal.Cast<byte, uint>(iv);
-		ivSpan.Slice(0, 4).CopyTo(state.Slice(6));
-
-		Salsa20Utils.SalsaRound(state);
-
-		state[1] = state[0];
-		state[2] = state[5];
-		state[3] = state[10];
-		state[4] = state[15];
-
-		state.Slice(6, 4).CopyTo(state.Slice(11));
-
-		state[6] = ivSpan[4];
-		state[7] = ivSpan[5];
-
-		state[0] = Sigma32[0];
-		state[5] = Sigma32[1];
-		state[10] = Sigma32[2];
-		state[15] = Sigma32[3];
+		Salsa20Utils.DeriveXSalsa20Key(ref StateRef, ref MemoryMarshal.GetReference(key), ref MemoryMarshal.GetReference(iv));
+		MemoryMarshal.Cast<byte, uint>(iv.Slice(16, 8)).CopyTo(state.Slice(6));
+		SetCounter(0);
 	}
 }
