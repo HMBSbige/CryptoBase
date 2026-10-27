@@ -40,9 +40,14 @@ internal static class VectorBitOperationsExtensions
 				return Avx512F.VL.RotateRight(value.AsUInt64(), offset).As<ulong, T>();
 			}
 
+			if (Avx2.IsSupported && offset is 32)
+			{
+				return Avx2.Shuffle(value.AsUInt32(), 0b10_11_00_01).As<uint, T>();
+			}
+
 			if (Avx2.IsSupported && (offset & 7) is 0)
 			{
-				return RotateRightUInt64ByWholeBytes(value, offset);
+				return Avx2.Shuffle(value.AsByte(), Vector256.Create(CreateRotateRightUInt64ShuffleIndices(offset))).As<byte, T>();
 			}
 
 			if (offset is 63)
@@ -144,24 +149,6 @@ internal static class VectorBitOperationsExtensions
 			16 => Vector128.Create((byte)2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13),
 			_ => Vector128.Create((byte)1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12)
 		};
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<T> RotateRightUInt64ByWholeBytes<T>(Vector256<T> value, byte offset)
-	{
-		Vector256<byte> bytes = value.AsByte();
-		Vector256<byte> rotated = offset switch
-		{
-			8 => Avx2.Shuffle(bytes, Vector256.Create(Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 0, 9, 10, 11, 12, 13, 14, 15, 8))),
-			16 => Avx2.Shuffle(bytes, Vector256.Create(Vector128.Create((byte)2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9))),
-			24 => Avx2.Shuffle(bytes, Vector256.Create(Vector128.Create((byte)3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10))),
-			32 => Avx2.Shuffle(value.AsUInt32(), 0b10_11_00_01).AsByte(),
-			40 => Avx2.Shuffle(bytes, Vector256.Create(Vector128.Create((byte)5, 6, 7, 0, 1, 2, 3, 4, 13, 14, 15, 8, 9, 10, 11, 12))),
-			48 => Avx2.Shuffle(bytes, Vector256.Create(Vector128.Create((byte)6, 7, 0, 1, 2, 3, 4, 5, 14, 15, 8, 9, 10, 11, 12, 13))),
-			_ => Avx2.Shuffle(bytes, Vector256.Create(Vector128.Create((byte)7, 0, 1, 2, 3, 4, 5, 6, 15, 8, 9, 10, 11, 12, 13, 14)))
-		};
-
-		return rotated.As<byte, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
