@@ -18,7 +18,18 @@ public class SnuffleCipherBlocksTest
 	{
 		using SnuffleCipher byteWise = cipher.Create();
 		using SnuffleCipher bulk = cipher.Create();
-		await TestBlocks(byteWise, bulk, length);
+		byte[] data = CreateDeterministicSource(length);
+		byte[] expected = new byte[length];
+		byte[] actual = new byte[length];
+
+		for (int i = 0; i < length; ++i)
+		{
+			byteWise.Xor(data.AsSpan(i, 1), expected.AsSpan(i, 1));
+		}
+
+		bulk.Xor(data, actual);
+
+		await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
 	[Test]

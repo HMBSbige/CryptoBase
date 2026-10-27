@@ -8,105 +8,85 @@ namespace CryptoBase.Tests.Wycheproof;
 
 public class WycheproofMLKemTest
 {
-	public static IEnumerable<MLKemTestVector> DecapsulationVectors(string fileName)
-	{
-		return WycheproofVectors.Load<MLKemTestVector>(fileName);
-	}
-
-	public static IEnumerable<MLKemEncapsTestVector> EncapsulationVectors(string fileName)
-	{
-		return WycheproofVectors.Load<MLKemEncapsTestVector>(fileName);
-	}
-
-	public static IEnumerable<MLKemKeyGenTestVector> KeyGenerationVectors(string fileName)
-	{
-		return WycheproofVectors.Load<MLKemKeyGenTestVector>(fileName);
-	}
-
-	public static IEnumerable<MLKemDecapsValidationTestVector> DecapsulationKeyVectors(string fileName)
-	{
-		return WycheproofVectors.Load<MLKemDecapsValidationTestVector>(fileName);
-	}
-
 	[Test]
-	[MethodDataSource(nameof(DecapsulationVectors), Arguments = ["mlkem_512_test.json"])]
+	[WycheproofVectors<MLKemTestVector>("mlkem_512_test.json")]
 	public Task Decapsulation512(MLKemTestVector vector)
 	{
 		return VerifyDecapsulation<MLKem512>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(DecapsulationVectors), Arguments = ["mlkem_768_test.json"])]
+	[WycheproofVectors<MLKemTestVector>("mlkem_768_test.json")]
 	public Task Decapsulation768(MLKemTestVector vector)
 	{
 		return VerifyDecapsulation<MLKem768>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(DecapsulationVectors), Arguments = ["mlkem_1024_test.json"])]
+	[WycheproofVectors<MLKemTestVector>("mlkem_1024_test.json")]
 	public Task Decapsulation1024(MLKemTestVector vector)
 	{
 		return VerifyDecapsulation<MLKem1024>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(EncapsulationVectors), Arguments = ["mlkem_512_encaps_test.json"])]
+	[WycheproofVectors<MLKemEncapsTestVector>("mlkem_512_encaps_test.json")]
 	public Task Encapsulation512(MLKemEncapsTestVector vector)
 	{
 		return VerifyEncapsulation<MLKem512>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(EncapsulationVectors), Arguments = ["mlkem_768_encaps_test.json"])]
+	[WycheproofVectors<MLKemEncapsTestVector>("mlkem_768_encaps_test.json")]
 	public Task Encapsulation768(MLKemEncapsTestVector vector)
 	{
 		return VerifyEncapsulation<MLKem768>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(EncapsulationVectors), Arguments = ["mlkem_1024_encaps_test.json"])]
+	[WycheproofVectors<MLKemEncapsTestVector>("mlkem_1024_encaps_test.json")]
 	public Task Encapsulation1024(MLKemEncapsTestVector vector)
 	{
 		return VerifyEncapsulation<MLKem1024>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(KeyGenerationVectors), Arguments = ["mlkem_512_keygen_seed_test.json"])]
+	[WycheproofVectors<MLKemKeyGenTestVector>("mlkem_512_keygen_seed_test.json")]
 	public Task KeyGeneration512(MLKemKeyGenTestVector vector)
 	{
 		return VerifyKeyGeneration<MLKem512>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(KeyGenerationVectors), Arguments = ["mlkem_768_keygen_seed_test.json"])]
+	[WycheproofVectors<MLKemKeyGenTestVector>("mlkem_768_keygen_seed_test.json")]
 	public Task KeyGeneration768(MLKemKeyGenTestVector vector)
 	{
 		return VerifyKeyGeneration<MLKem768>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(KeyGenerationVectors), Arguments = ["mlkem_1024_keygen_seed_test.json"])]
+	[WycheproofVectors<MLKemKeyGenTestVector>("mlkem_1024_keygen_seed_test.json")]
 	public Task KeyGeneration1024(MLKemKeyGenTestVector vector)
 	{
 		return VerifyKeyGeneration<MLKem1024>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(DecapsulationKeyVectors), Arguments = ["mlkem_512_semi_expanded_decaps_test.json"])]
+	[WycheproofVectors<MLKemDecapsValidationTestVector>("mlkem_512_semi_expanded_decaps_test.json")]
 	public Task DecapsulationKey512(MLKemDecapsValidationTestVector vector)
 	{
 		return VerifyDecapsulationKey<MLKem512>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(DecapsulationKeyVectors), Arguments = ["mlkem_768_semi_expanded_decaps_test.json"])]
+	[WycheproofVectors<MLKemDecapsValidationTestVector>("mlkem_768_semi_expanded_decaps_test.json")]
 	public Task DecapsulationKey768(MLKemDecapsValidationTestVector vector)
 	{
 		return VerifyDecapsulationKey<MLKem768>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(DecapsulationKeyVectors), Arguments = ["mlkem_1024_semi_expanded_decaps_test.json"])]
+	[WycheproofVectors<MLKemDecapsValidationTestVector>("mlkem_1024_semi_expanded_decaps_test.json")]
 	public Task DecapsulationKey1024(MLKemDecapsValidationTestVector vector)
 	{
 		return VerifyDecapsulationKey<MLKem1024>(vector);

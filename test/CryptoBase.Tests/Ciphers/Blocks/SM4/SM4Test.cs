@@ -34,7 +34,13 @@ public class SM4Test
 
 		await Assert.That(SM4Reference.Transform(key, plaintext)).IsEquivalentTo(ciphertext, CollectionOrdering.Matching);
 		await Assert.That(SM4Reference.Transform(key, ciphertext, true)).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
-		await TestUtils.TestBlock16<SM4Cipher>(key, plaintext, ciphertext);
+
+		using SM4Cipher crypto = SM4Cipher.Create(key);
+		byte[] actual = new byte[16];
+		crypto.EncryptBlock(plaintext, actual);
+		await Assert.That(actual).IsEquivalentTo(ciphertext, CollectionOrdering.Matching);
+		crypto.DecryptBlock(ciphertext, actual);
+		await Assert.That(actual).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
 	}
 
 	[Test]
@@ -78,8 +84,7 @@ public class SM4Test
 			int sourceOffset = sample * 7 % 15 + 1;
 			int destinationOffset = 16 - sourceOffset;
 
-			byte[] source = TestUtils.CreateGuardedBuffer(sourceOffset, plaintext.Length);
-			plaintext.CopyTo(source, sourceOffset);
+			byte[] source = TestUtils.CreateGuardedBuffer(sourceOffset, plaintext);
 			byte[] destination = TestUtils.CreateGuardedBuffer(destinationOffset, plaintext.Length);
 			crypto.EncryptBlocks(source.AsSpan().Slice(sourceOffset, plaintext.Length), destination.AsSpan().Slice(destinationOffset));
 			await TestUtils.AssertOutput(destination, destinationOffset, ciphertext);

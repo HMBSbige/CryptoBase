@@ -5,13 +5,8 @@ namespace CryptoBase.Tests.Wycheproof;
 
 public class WycheproofXtsTest
 {
-	public static IEnumerable<IndCpaTestVector> Vectors(string fileName)
-	{
-		return WycheproofVectors.Load<IndCpaTestVector>(fileName);
-	}
-
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["aes_xts_test.json"])]
+	[WycheproofVectors<IndCpaTestVector>("aes_xts_test.json")]
 	public async Task AesXts(IndCpaTestVector vector)
 	{
 		await Assert.That(vector.Result).IsEqualTo(WycheproofResult.Valid);

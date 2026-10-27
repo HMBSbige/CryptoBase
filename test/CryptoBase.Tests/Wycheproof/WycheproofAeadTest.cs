@@ -9,62 +9,57 @@ namespace CryptoBase.Tests.Wycheproof;
 
 public class WycheproofAeadTest
 {
-	public static IEnumerable<AeadTestVector> Vectors(string fileName)
-	{
-		return WycheproofVectors.Load<AeadTestVector>(fileName);
-	}
-
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["aes_gcm_test.json"])]
+	[WycheproofVectors<AeadTestVector>("aes_gcm_test.json")]
 	public Task AesGcm(AeadTestVector vector)
 	{
 		return Verify<GcmMode<AesCipher>>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["aes_ccm_test.json"])]
+	[WycheproofVectors<AeadTestVector>("aes_ccm_test.json")]
 	public Task AesCcm(AeadTestVector vector)
 	{
 		return Verify<CcmMode<AesCipher>>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["aes_ccm_test.json"])]
+	[WycheproofVectors<AeadTestVector>("aes_ccm_test.json")]
 	public Task AesCcm8(AeadTestVector vector)
 	{
 		return Verify<Ccm8Mode<AesCipher>>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["sm4_gcm_test.json"])]
+	[WycheproofVectors<AeadTestVector>("sm4_gcm_test.json")]
 	public Task SM4Gcm(AeadTestVector vector)
 	{
 		return Verify<GcmMode<SM4Cipher>>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["sm4_ccm_test.json"])]
+	[WycheproofVectors<AeadTestVector>("sm4_ccm_test.json")]
 	public Task SM4Ccm(AeadTestVector vector)
 	{
 		return Verify<CcmMode<SM4Cipher>>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["sm4_ccm_test.json"])]
+	[WycheproofVectors<AeadTestVector>("sm4_ccm_test.json")]
 	public Task SM4Ccm8(AeadTestVector vector)
 	{
 		return Verify<Ccm8Mode<SM4Cipher>>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["chacha20_poly1305_test.json"])]
+	[WycheproofVectors<AeadTestVector>("chacha20_poly1305_test.json")]
 	public Task ChaCha20Poly1305(AeadTestVector vector)
 	{
 		return Verify<ChaCha20Poly1305Cipher>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["xchacha20_poly1305_test.json"])]
+	[WycheproofVectors<AeadTestVector>("xchacha20_poly1305_test.json")]
 	public Task XChaCha20Poly1305(AeadTestVector vector)
 	{
 		return Verify<XChaCha20Poly1305Cipher>(vector);

@@ -5,13 +5,8 @@ namespace CryptoBase.Tests.Wycheproof;
 // The tag size of each group is the output length L, 128, 256 or 512 bits; the invalid vectors modify the tag.
 public class WycheproofKmacTest
 {
-	public static IEnumerable<KmacTestVector> Vectors(string fileName)
-	{
-		return WycheproofVectors.Load<KmacTestGroup, KmacTestVector>(fileName);
-	}
-
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["kmac128_no_customization_test.json"])]
+	[WycheproofVectors<KmacTestGroup, KmacTestVector>("kmac128_no_customization_test.json")]
 	public async Task Kmac128NoCustomization(KmacTestVector vector)
 	{
 		byte[] mac = new byte[vector.TagSize / 8];
@@ -26,7 +21,7 @@ public class WycheproofKmacTest
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["kmac256_no_customization_test.json"])]
+	[WycheproofVectors<KmacTestGroup, KmacTestVector>("kmac256_no_customization_test.json")]
 	public async Task Kmac256NoCustomization(KmacTestVector vector)
 	{
 		byte[] mac = new byte[vector.TagSize / 8];

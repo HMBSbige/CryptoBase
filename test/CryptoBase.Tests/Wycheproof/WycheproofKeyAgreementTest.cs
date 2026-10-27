@@ -8,27 +8,22 @@ namespace CryptoBase.Tests.Wycheproof;
 
 public class WycheproofKeyAgreementTest
 {
-	public static IEnumerable<EcdhEcpointTestVector> Vectors(string fileName)
-	{
-		return WycheproofVectors.Load<EcdhEcpointTestVector>(fileName);
-	}
-
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["ecdh_secp256r1_ecpoint_test.json"])]
+	[WycheproofVectors<EcdhEcpointTestVector>("ecdh_secp256r1_ecpoint_test.json")]
 	public Task EcdhP256(EcdhEcpointTestVector vector)
 	{
 		return VerifyEcdh<EcdhP256>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["ecdh_secp384r1_ecpoint_test.json"])]
+	[WycheproofVectors<EcdhEcpointTestVector>("ecdh_secp384r1_ecpoint_test.json")]
 	public Task EcdhP384(EcdhEcpointTestVector vector)
 	{
 		return VerifyEcdh<EcdhP384>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(Vectors), Arguments = ["ecdh_secp521r1_ecpoint_test.json"])]
+	[WycheproofVectors<EcdhEcpointTestVector>("ecdh_secp521r1_ecpoint_test.json")]
 	public Task EcdhP521(EcdhEcpointTestVector vector)
 	{
 		return VerifyEcdh<EcdhP521>(vector);

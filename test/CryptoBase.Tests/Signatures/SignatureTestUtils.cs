@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures;
 
@@ -57,13 +58,6 @@ internal static class SignatureTestUtils
 		}
 
 		yield return Flip(signature, signature.Length - 1);
-	}
-
-	public static byte[] Flip(byte[] source, int index)
-	{
-		byte[] flipped = (byte[])source.Clone();
-		flipped[index] ^= (byte)(1 << index % 8);
-		return flipped;
 	}
 
 	private static KeyType KeyTypeOf<T>() where T : class, ISignatureKey<T>

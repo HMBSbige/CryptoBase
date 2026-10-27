@@ -12,9 +12,33 @@ public class AesCoreTest
 	[Arguments(32)]
 	public async Task BatchWidthsMatchSingleBlockReference(int keyLength)
 	{
-		byte[] key = TestUtils.CreateDeterministicSource(keyLength);
+		using AesCipher crypto = AesCipher.Create(TestUtils.CreateDeterministicSource(keyLength));
 
-		await TestUtils.TestNBlock16<AesCipher>(key);
+		foreach (int blocks in new[] { 0, 1, 2, 3, 4, 7, 8, 9, 15, 16, 17, 31, 32, 33, 65 })
+		{
+			byte[] source = TestUtils.CreateDeterministicSource(blocks * 16);
+			byte[] expected = new byte[source.Length];
+
+			for (int i = 0; i < source.Length; i += 16)
+			{
+				crypto.EncryptBlock(source.AsSpan(i, 16), expected.AsSpan(i, 16));
+			}
+
+			byte[] actual = new byte[source.Length + 7];
+			TestUtils.PrepareDestination(actual);
+			crypto.EncryptBlocks(source, actual);
+			await TestUtils.AssertOutput(actual, expected);
+			byte[] unalignedSource = new byte[source.Length + 1];
+			source.CopyTo(unalignedSource, 1);
+			byte[] unalignedOutput = new byte[source.Length + 2];
+			TestUtils.PrepareDestination(unalignedOutput);
+			crypto.EncryptBlocks(unalignedSource.AsSpan(1), unalignedOutput.AsSpan(1));
+			await TestUtils.AssertOutput(unalignedOutput, 1, expected);
+			crypto.DecryptBlocks(actual.AsSpan(0, source.Length), actual);
+			await TestUtils.AssertOutput(actual, source);
+			crypto.EncryptBlocks(actual.AsSpan(0, source.Length), actual);
+			await TestUtils.AssertOutput(actual, expected);
+		}
 	}
 
 	[Test]

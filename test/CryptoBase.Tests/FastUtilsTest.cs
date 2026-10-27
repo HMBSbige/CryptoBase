@@ -6,31 +6,8 @@ namespace CryptoBase.Tests;
 public class FastUtilsTest
 {
 	[Test]
-	[Arguments(0)]
-	[Arguments(1)]
-	[Arguments(2)]
-	[Arguments(3)]
-	[Arguments(4)]
-	[Arguments(5)]
-	[Arguments(6)]
-	[Arguments(7)]
-	[Arguments(8)]
-	[Arguments(15)]
-	[Arguments(16)]
-	[Arguments(31)]
-	[Arguments(32)]
-	[Arguments(63)]
-	[Arguments(64)]
-	[Arguments(65)]
-	[Arguments(127)]
-	[Arguments(128)]
-	[Arguments(129)]
-	[Arguments(4095)]
-	[Arguments(4096)]
-	[Arguments(4097)]
-	[Arguments(4096 + 127)]
-	[Arguments(8192)]
-	public async Task XorMatchesReferenceAtVectorAndScalarBoundaries(int length)
+	[MatrixDataSource]
+	public async Task XorMatchesReferenceAtVectorAndScalarBoundaries([Matrix(0, 1, 2, 3, 4, 5, 6, 7, 8, 15, 16, 31, 32, 63, 64, 65, 127, 128, 129, 4095, 4096, 4097, 4096 + 127, 8192)] int length)
 	{
 		byte[] streamBuffer = CreateDeterministicSource(length + 1);
 		byte[] sourceBuffer = CreateDeterministicSource(length + 2);
@@ -49,23 +26,8 @@ public class FastUtilsTest
 	}
 
 	[Test]
-	[Arguments(0)]
-	[Arguments(1)]
-	[Arguments(2)]
-	[Arguments(3)]
-	[Arguments(4)]
-	[Arguments(5)]
-	[Arguments(6)]
-	[Arguments(7)]
-	[Arguments(8)]
-	[Arguments(9)]
-	[Arguments(10)]
-	[Arguments(11)]
-	[Arguments(12)]
-	[Arguments(13)]
-	[Arguments(14)]
-	[Arguments(15)]
-	public async Task XorLess16MatchesReferenceForEveryScalarTail(int length)
+	[MatrixDataSource]
+	public async Task XorLess16MatchesReferenceForEveryScalarTail([MatrixRange<int>(0, 15)] int length)
 	{
 		byte[] stream = CreateDeterministicSource(length);
 		byte[] sourceBuffer = CreateDeterministicSource(length + 1);
@@ -81,15 +43,8 @@ public class FastUtilsTest
 	}
 
 	[Test]
-	[Arguments(2)]
-	[Arguments(3)]
-	[Arguments(7)]
-	[Arguments(13)]
-	[Arguments(15)]
-	[Arguments(45)]
-	[Arguments(129)]
-	[Arguments(8193)]
-	public async Task XorSupportsStreamAsExactInPlaceDestination(int length)
+	[MatrixDataSource]
+	public async Task XorSupportsStreamAsExactInPlaceDestination([Matrix(2, 3, 7, 13, 15, 45, 129, 8193)] int length)
 	{
 		byte[] stream = CreateDeterministicSource(length);
 		byte[] sourceBuffer = CreateDeterministicSource(length + 1);
@@ -103,15 +58,8 @@ public class FastUtilsTest
 	}
 
 	[Test]
-	[Arguments(2)]
-	[Arguments(3)]
-	[Arguments(7)]
-	[Arguments(13)]
-	[Arguments(15)]
-	[Arguments(45)]
-	[Arguments(129)]
-	[Arguments(8193)]
-	public async Task XorSupportsSourceAsExactInPlaceDestination(int length)
+	[MatrixDataSource]
+	public async Task XorSupportsSourceAsExactInPlaceDestination([Matrix(2, 3, 7, 13, 15, 45, 129, 8193)] int length)
 	{
 		byte[] stream = CreateDeterministicSource(length);
 		byte[] sourceBuffer = CreateDeterministicSource(length + 1);
@@ -125,23 +73,8 @@ public class FastUtilsTest
 	}
 
 	[Test]
-	[Arguments(0)]
-	[Arguments(1)]
-	[Arguments(2)]
-	[Arguments(3)]
-	[Arguments(4)]
-	[Arguments(5)]
-	[Arguments(6)]
-	[Arguments(7)]
-	[Arguments(8)]
-	[Arguments(9)]
-	[Arguments(10)]
-	[Arguments(11)]
-	[Arguments(12)]
-	[Arguments(13)]
-	[Arguments(14)]
-	[Arguments(15)]
-	public async Task XorLess16SupportsSourceAsExactInPlaceDestination(int length)
+	[MatrixDataSource]
+	public async Task XorLess16SupportsSourceAsExactInPlaceDestination([MatrixRange<int>(0, 15)] int length)
 	{
 		byte[] stream = CreateDeterministicSource(length);
 		byte[] sourceBuffer = CreateDeterministicSource(length + 1);

@@ -7,79 +7,64 @@ namespace CryptoBase.Tests.Wycheproof;
 
 public class WycheproofMLDsaTest
 {
-	public static IEnumerable<MLDsaVerifyTestVector> VerificationVectors(string fileName)
-	{
-		return WycheproofVectors.Load<MLDsaVerifyTestGroup, MLDsaVerifyTestVector>(fileName);
-	}
-
-	public static IEnumerable<MLDsaSignTestVector> SeedSigningVectors(string fileName)
-	{
-		return WycheproofVectors.Load<MLDsaSignSeedTestGroup, MLDsaSignTestVector>(fileName);
-	}
-
-	public static IEnumerable<MLDsaSignTestVector> PrivateKeySigningVectors(string fileName)
-	{
-		return WycheproofVectors.Load<MLDsaSignNoSeedTestGroup, MLDsaSignTestVector>(fileName);
-	}
-
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["mldsa_44_verify_test.json"])]
+	[WycheproofVectors<MLDsaVerifyTestGroup, MLDsaVerifyTestVector>("mldsa_44_verify_test.json")]
 	public Task Verification44(MLDsaVerifyTestVector vector)
 	{
 		return VerifyVerification<MLDsa44>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["mldsa_65_verify_test.json"])]
+	[WycheproofVectors<MLDsaVerifyTestGroup, MLDsaVerifyTestVector>("mldsa_65_verify_test.json")]
 	public Task Verification65(MLDsaVerifyTestVector vector)
 	{
 		return VerifyVerification<MLDsa65>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(VerificationVectors), Arguments = ["mldsa_87_verify_test.json"])]
+	[WycheproofVectors<MLDsaVerifyTestGroup, MLDsaVerifyTestVector>("mldsa_87_verify_test.json")]
 	public Task Verification87(MLDsaVerifyTestVector vector)
 	{
 		return VerifyVerification<MLDsa87>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(SeedSigningVectors), Arguments = ["mldsa_44_sign_seed_test.json"])]
+	[WycheproofVectors<MLDsaSignSeedTestGroup, MLDsaSignTestVector>("mldsa_44_sign_seed_test.json")]
 	public Task SigningFromSeed44(MLDsaSignTestVector vector)
 	{
 		return VerifySigningFromSeed<MLDsa44>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(SeedSigningVectors), Arguments = ["mldsa_65_sign_seed_test.json"])]
+	[WycheproofVectors<MLDsaSignSeedTestGroup, MLDsaSignTestVector>("mldsa_65_sign_seed_test.json")]
 	public Task SigningFromSeed65(MLDsaSignTestVector vector)
 	{
 		return VerifySigningFromSeed<MLDsa65>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(SeedSigningVectors), Arguments = ["mldsa_87_sign_seed_test.json"])]
+	[WycheproofVectors<MLDsaSignSeedTestGroup, MLDsaSignTestVector>("mldsa_87_sign_seed_test.json")]
 	public Task SigningFromSeed87(MLDsaSignTestVector vector)
 	{
 		return VerifySigningFromSeed<MLDsa87>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(PrivateKeySigningVectors), Arguments = ["mldsa_44_sign_noseed_test.json"])]
+	[WycheproofVectors<MLDsaSignNoSeedTestGroup, MLDsaSignTestVector>("mldsa_44_sign_noseed_test.json")]
 	public Task SigningFromPrivateKey44(MLDsaSignTestVector vector)
 	{
 		return VerifySigningFromPrivateKey<MLDsa44>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(PrivateKeySigningVectors), Arguments = ["mldsa_65_sign_noseed_test.json"])]
+	[WycheproofVectors<MLDsaSignNoSeedTestGroup, MLDsaSignTestVector>("mldsa_65_sign_noseed_test.json")]
 	public Task SigningFromPrivateKey65(MLDsaSignTestVector vector)
 	{
 		return VerifySigningFromPrivateKey<MLDsa65>(vector);
 	}
 
 	[Test]
-	[MethodDataSource(nameof(PrivateKeySigningVectors), Arguments = ["mldsa_87_sign_noseed_test.json"])]
+	[WycheproofVectors<MLDsaSignNoSeedTestGroup, MLDsaSignTestVector>("mldsa_87_sign_noseed_test.json")]
 	public Task SigningFromPrivateKey87(MLDsaSignTestVector vector)
 	{
 		return VerifySigningFromPrivateKey<MLDsa87>(vector);

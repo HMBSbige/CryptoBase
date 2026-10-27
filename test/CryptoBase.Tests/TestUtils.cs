@@ -1,4 +1,6 @@
 using CryptoBase.Abstractions.Ciphers;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace CryptoBase.Tests;
 
@@ -26,6 +28,13 @@ public static class TestUtils
 		return result;
 	}
 
+	public static byte[] Flip(byte[] source, int index)
+	{
+		byte[] flipped = (byte[])source.Clone();
+		flipped[index] ^= (byte)(1 << index % 8);
+		return flipped;
+	}
+
 	public static void PrepareDestination(Span<byte> destination)
 	{
 		destination.Fill(DestinationSentinel);
@@ -44,6 +53,22 @@ public static class TestUtils
 		}
 	}
 
+	public static void SkipUnlessOptimized<T>()
+	{
+		if (typeof(T).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled is true)
+		{
+			Skip.Test("The implementation is not optimized.");
+		}
+	}
+
+	public static void SkipUnlessSupported(IKernelCase kernel)
+	{
+		if (!kernel.IsSupported)
+		{
+			Skip.Test($"{kernel} is not supported here.");
+		}
+	}
+
 	public static Type[] ImplementationsOf(Type interfaceType)
 	{
 		return interfaceType.Assembly.GetTypes().Where(type => type is { IsInterface: false, IsAbstract: false } && type.IsAssignableTo(interfaceType)).ToArray();
@@ -53,6 +78,13 @@ public static class TestUtils
 	{
 		byte[] buffer = new byte[offset + length + tailLength];
 		PrepareDestination(buffer);
+		return buffer;
+	}
+
+	public static byte[] CreateGuardedBuffer(int offset, ReadOnlySpan<byte> payload)
+	{
+		byte[] buffer = CreateGuardedBuffer(offset, payload.Length);
+		payload.CopyTo(buffer.AsSpan().Slice(offset));
 		return buffer;
 	}
 
@@ -112,63 +144,6 @@ public static class TestUtils
 			byte[] actual = new byte[source.Length];
 			crypto.Xor(source, actual);
 			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
-		}
-	}
-
-	public static async Task TestBlocks(IStreamCipher crypto, IStreamCipher bulk, int length)
-	{
-		byte[] data = CreateDeterministicSource(length);
-		byte[] expected = new byte[length];
-		byte[] cipher = new byte[length];
-
-		for (int i = 0; i < length; ++i)
-		{
-			crypto.Xor(data.AsSpan().Slice(i, 1), expected.AsSpan().Slice(i, 1));
-		}
-
-		bulk.Xor(data, cipher);
-
-		await Assert.That(cipher).IsEquivalentTo(expected, CollectionOrdering.Matching);
-	}
-
-	public static async Task TestBlock16<T>(byte[] key, byte[] plain, byte[] cipher) where T : IBlockCipher<T>
-	{
-		using T crypto = T.Create(key);
-		byte[] actual = new byte[16];
-		crypto.EncryptBlock(plain, actual);
-		await Assert.That(actual).IsEquivalentTo(cipher, CollectionOrdering.Matching);
-		crypto.DecryptBlock(cipher, actual);
-		await Assert.That(actual).IsEquivalentTo(plain, CollectionOrdering.Matching);
-	}
-
-	public static async Task TestNBlock16<T>(byte[] key) where T : IBlockCipher<T>
-	{
-		using T crypto = T.Create(key);
-
-		foreach (int blocks in new[] { 0, 1, 2, 3, 4, 7, 8, 9, 15, 16, 17, 31, 32, 33, 65 })
-		{
-			byte[] source = CreateDeterministicSource(blocks * 16);
-			byte[] expected = new byte[source.Length];
-
-			for (int i = 0; i < source.Length; i += 16)
-			{
-				crypto.EncryptBlock(source.AsSpan(i, 16), expected.AsSpan(i, 16));
-			}
-
-			byte[] actual = new byte[source.Length + 7];
-			PrepareDestination(actual);
-			crypto.EncryptBlocks(source, actual);
-			await AssertOutput(actual, expected);
-			byte[] unalignedSource = new byte[source.Length + 1];
-			source.CopyTo(unalignedSource, 1);
-			byte[] unalignedOutput = new byte[source.Length + 2];
-			PrepareDestination(unalignedOutput);
-			crypto.EncryptBlocks(unalignedSource.AsSpan(1), unalignedOutput.AsSpan(1));
-			await AssertOutput(unalignedOutput, 1, expected);
-			crypto.DecryptBlocks(actual.AsSpan(0, source.Length), actual);
-			await AssertOutput(actual, source);
-			crypto.EncryptBlocks(actual.AsSpan(0, source.Length), actual);
-			await AssertOutput(actual, expected);
 		}
 	}
 }
