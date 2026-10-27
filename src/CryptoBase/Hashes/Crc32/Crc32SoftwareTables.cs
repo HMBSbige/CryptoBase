@@ -6,21 +6,10 @@ internal static class Crc32SoftwareTables
 	internal const int FourWayBraidBlockSizeInBytes = 4 * sizeof(ulong);
 	internal const int FiveWayBraidBlockSizeInBytes = 5 * sizeof(ulong);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static ref Crc32TableSet Get<TAlgorithm>() where TAlgorithm : unmanaged
-	{
-		if (Crc32Engine.IsIeee<TAlgorithm>())
-		{
-			return ref Crc32IeeeTables.Tables;
-		}
-
-		return ref Crc32CastagnoliTables.Tables;
-	}
-
 	internal static void Initialize(uint polynomial, ref Crc32TableSet tables)
 	{
 		ref uint lookup = ref tables.Lookup[0];
-		ref uint slicingLookup = ref tables.SlicingLookup[0];
+		ref uint slicingLookup = ref tables.Lookup[TableSize];
 		ref uint fourWayBraidLookup = ref tables.FourWayBraidLookup[0];
 		ref uint fiveWayBraidLookup = ref tables.FiveWayBraidLookup[0];
 

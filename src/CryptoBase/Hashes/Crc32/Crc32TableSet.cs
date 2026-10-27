@@ -2,8 +2,8 @@ namespace CryptoBase.Hashes.Crc32;
 
 internal struct Crc32TableSet
 {
-	internal InlineArray256<uint> Lookup;
-	internal Crc32SlicingLookupBuffer SlicingLookup;
-	internal Crc32BraidLookupBuffer FourWayBraidLookup;
-	internal Crc32BraidLookupBuffer FiveWayBraidLookup;
+	// The byte-wise table, followed by the seven further slicing-by-8 tables.
+	internal InlineArray2048<uint> Lookup;
+	internal InlineArray2048<uint> FourWayBraidLookup;
+	internal InlineArray2048<uint> FiveWayBraidLookup;
 }

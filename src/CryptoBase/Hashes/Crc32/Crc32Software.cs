@@ -17,35 +17,23 @@ internal static class Crc32Software
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static uint Update<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
 	{
-		ref Crc32TableSet tables = ref Crc32SoftwareTables.Get<TAlgorithm>();
+		ref Crc32TableSet tables = ref Crc32SoftwareTables<TAlgorithm>.Tables;
 
 		if (UseX64Braid)
 		{
-			return UpdateX64(state, source, ref tables.Lookup[0], ref tables.SlicingLookup[0], ref tables.FourWayBraidLookup[0], ref tables.FiveWayBraidLookup[0]);
+			if (source.Length >= FourWayBraidBlockSizeInBytes)
+			{
+				return source.Length >= X64FiveWayBraidThresholdInBytes
+					? UpdateSlicing<X64FiveWayBraid>(state, source, ref tables.Lookup[0], ref tables.Lookup[TableSize], ref tables.FiveWayBraidLookup[0])
+					: UpdateSlicing<FourWayBraid>(state, source, ref tables.Lookup[0], ref tables.Lookup[TableSize], ref tables.FourWayBraidLookup[0]);
+			}
 		}
-
-		return UpdateFiveWay(state, source, ref tables.Lookup[0], ref tables.SlicingLookup[0], ref tables.FiveWayBraidLookup[0]);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint UpdateX64(uint state, ReadOnlySpan<byte> source, ref uint lookup, ref uint slicingLookup, ref uint fourWayBraidLookup, ref uint fiveWayBraidLookup)
-	{
-		if (source.Length >= FourWayBraidBlockSizeInBytes)
+		else if (source.Length >= FiveWayBraidBlockSizeInBytes)
 		{
-			return source.Length >= X64FiveWayBraidThresholdInBytes
-				? UpdateSlicing<X64FiveWayBraid>(state, source, ref lookup, ref slicingLookup, ref fiveWayBraidLookup)
-				: UpdateSlicing<FourWayBraid>(state, source, ref lookup, ref slicingLookup, ref fourWayBraidLookup);
+			return UpdateSlicing<FiveWayBraid>(state, source, ref tables.Lookup[0], ref tables.Lookup[TableSize], ref tables.FiveWayBraidLookup[0]);
 		}
 
-		return UpdateBytes(state, source, ref lookup);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint UpdateFiveWay(uint state, ReadOnlySpan<byte> source, ref uint lookup, ref uint slicingLookup, ref uint braidLookup)
-	{
-		return source.Length >= FiveWayBraidBlockSizeInBytes
-			? UpdateSlicing<FiveWayBraid>(state, source, ref lookup, ref slicingLookup, ref braidLookup)
-			: UpdateBytes(state, source, ref lookup);
+		return UpdateBytes(state, source, ref tables.Lookup[0]);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

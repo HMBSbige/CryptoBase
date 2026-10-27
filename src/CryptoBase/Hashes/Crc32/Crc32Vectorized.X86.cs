@@ -88,23 +88,23 @@ internal static partial class Crc32Vectorized
 
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
-		Vector256<ulong> x1;
-		Vector256<ulong> x2;
-		Vector256<ulong> x3;
-		Vector256<ulong> x4;
+		Vector256<ulong> x1 = Vector256.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector256.CreateScalar(state).AsUInt64();
+		Vector256<ulong> x2 = Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64();
+		Vector256<ulong> x3 = Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64();
+		Vector256<ulong> x4 = Vector256.LoadUnsafe(ref sourceRef, 96).AsUInt64();
+		sourceRef = ref Unsafe.Add(ref sourceRef, 4 * Vector256<byte>.Count);
+		length -= 4 * Vector256<byte>.Count;
 
-		if (length >= Avx2EightStreamThresholdInBytes)
+		Vector256<ulong> fold1024 = constants.Fold1024Vector256;
+
+		if (source.Length >= Avx2EightStreamThresholdInBytes)
 		{
-			x1 = Vector256.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector256.CreateScalar(state).AsUInt64();
-			x2 = Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64();
-			x3 = Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64();
-			x4 = Vector256.LoadUnsafe(ref sourceRef, 96).AsUInt64();
-			Vector256<ulong> x5 = Vector256.LoadUnsafe(ref sourceRef, 128).AsUInt64();
-			Vector256<ulong> x6 = Vector256.LoadUnsafe(ref sourceRef, 160).AsUInt64();
-			Vector256<ulong> x7 = Vector256.LoadUnsafe(ref sourceRef, 192).AsUInt64();
-			Vector256<ulong> x8 = Vector256.LoadUnsafe(ref sourceRef, 224).AsUInt64();
-			sourceRef = ref Unsafe.Add(ref sourceRef, 8 * Vector256<byte>.Count);
-			length -= 8 * Vector256<byte>.Count;
+			Vector256<ulong> x5 = Vector256.LoadUnsafe(ref sourceRef).AsUInt64();
+			Vector256<ulong> x6 = Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64();
+			Vector256<ulong> x7 = Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64();
+			Vector256<ulong> x8 = Vector256.LoadUnsafe(ref sourceRef, 96).AsUInt64();
+			sourceRef = ref Unsafe.Add(ref sourceRef, 4 * Vector256<byte>.Count);
+			length -= 4 * Vector256<byte>.Count;
 
 			Vector256<ulong> fold2048 = constants.Fold2048Vector256;
 			int prefetchThreshold = StreamPrefetch.MinimumRemaining(length, 8 * Vector256<byte>.Count);
@@ -128,32 +128,20 @@ internal static partial class Crc32Vectorized
 				length -= 8 * Vector256<byte>.Count;
 			}
 
-			Vector256<ulong> fold1024 = constants.Fold1024Vector256;
 			x1 = Fold256(x5, x1, fold1024);
 			x2 = Fold256(x6, x2, fold1024);
 			x3 = Fold256(x7, x3, fold1024);
 			x4 = Fold256(x8, x4, fold1024);
 		}
-		else
+
+		while (length >= 4 * Vector256<byte>.Count)
 		{
-			x1 = Vector256.LoadUnsafe(ref sourceRef).AsUInt64() ^ Vector256.CreateScalar(state).AsUInt64();
-			x2 = Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64();
-			x3 = Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64();
-			x4 = Vector256.LoadUnsafe(ref sourceRef, 96).AsUInt64();
+			x1 = Fold256(Vector256.LoadUnsafe(ref sourceRef).AsUInt64(), x1, fold1024);
+			x2 = Fold256(Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64(), x2, fold1024);
+			x3 = Fold256(Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64(), x3, fold1024);
+			x4 = Fold256(Vector256.LoadUnsafe(ref sourceRef, 96).AsUInt64(), x4, fold1024);
 			sourceRef = ref Unsafe.Add(ref sourceRef, 4 * Vector256<byte>.Count);
 			length -= 4 * Vector256<byte>.Count;
-
-			Vector256<ulong> fold1024 = constants.Fold1024Vector256;
-
-			while (length >= 4 * Vector256<byte>.Count)
-			{
-				x1 = Fold256(Vector256.LoadUnsafe(ref sourceRef).AsUInt64(), x1, fold1024);
-				x2 = Fold256(Vector256.LoadUnsafe(ref sourceRef, 32).AsUInt64(), x2, fold1024);
-				x3 = Fold256(Vector256.LoadUnsafe(ref sourceRef, 64).AsUInt64(), x3, fold1024);
-				x4 = Fold256(Vector256.LoadUnsafe(ref sourceRef, 96).AsUInt64(), x4, fold1024);
-				sourceRef = ref Unsafe.Add(ref sourceRef, 4 * Vector256<byte>.Count);
-				length -= 4 * Vector256<byte>.Count;
-			}
 		}
 
 		Vector256<ulong> fold512 = constants.Fold512Vector256;
