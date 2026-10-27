@@ -698,6 +698,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// μ ← H(tr ‖ M′, 64) (Algorithm 7) with M′ = IntegerToBytes(domain, 1) ‖ IntegerToBytes(|ctx|, 1) ‖ ctx ‖ oid ‖ message, oid empty for ML-DSA (Algorithm 2) and that of the hash for HashML-DSA (Algorithm 4).
+	[SkipLocalsInit]
 	private readonly void ComputeMu(byte domain, ReadOnlySpan<byte> context, ReadOnlySpan<byte> oid, ReadOnlySpan<byte> message, Span<byte> mu)
 	{
 		ReadOnlySpan<byte> header = [domain, (byte)context.Length];
