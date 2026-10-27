@@ -38,7 +38,6 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 		fixed (byte* prehashPointer = prehash)
 		{
 			_prehash = prehashPointer;
-			Argon2Block finalBlock = default;
 
 			try
 			{
@@ -52,10 +51,9 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 					}
 				}
 
+				// The last block of the first lane accumulates the final block in place; the wipe clears it with the rest of the memory.
 				Argon2Block* lastBlock = _memory + (_laneLength - 1);
-				finalBlock = *lastBlock;
-				Span<ulong> finalWords = finalBlock;
-				Span<byte> final = MemoryMarshal.AsBytes(finalWords);
+				Span<byte> final = new(lastBlock, Argon2Block.SizeInBytes);
 
 				for (int lane = 1; lane < Lanes; ++lane)
 				{
@@ -63,14 +61,12 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 					FastUtils.Xor(final, new ReadOnlySpan<byte>(lastBlock, Argon2Block.SizeInBytes), final, Argon2Block.SizeInBytes);
 				}
 
-				RunPhase(WipePass, 0);
-
 				HashVariable(final, destination);
+
+				RunPhase(WipePass, 0);
 			}
 			finally
 			{
-				finalBlock.ZeroMemory();
-
 				StopHelpers();
 				_prehash = null;
 			}
