@@ -145,18 +145,16 @@ internal static unsafe class Argon2Core
 
 		try
 		{
+			blake2b.Initialize(Math.Min(destination.Length, Blake2bState.MaxHashSizeInBytes));
+			blake2b.Append(outputLength);
+			blake2b.Append(input);
+
 			if (destination.Length <= Blake2bState.MaxHashSizeInBytes)
 			{
-				blake2b.Initialize(destination.Length);
-				blake2b.Append(outputLength);
-				blake2b.Append(input);
 				blake2b.Finalize(destination, destination.Length);
 				return;
 			}
 
-			blake2b.Initialize(Blake2bState.MaxHashSizeInBytes);
-			blake2b.Append(outputLength);
-			blake2b.Append(input);
 			blake2b.Finalize(chain, Blake2bState.MaxHashSizeInBytes);
 
 			while (true)
