@@ -12,13 +12,13 @@ public partial struct MD5Core
 	}
 
 	[SuppressMessage("ReSharper", "RedundantAssignment")]
-	private static void ProcessBlocksX64(ref MD5Core hashAlgorithm, ref byte source, int blockCount)
+	private void ProcessBlocksX64(ref byte source, int blockCount)
 	{
 		Debug.Assert(X86Base.X64.IsSupported);
-		uint stateA = hashAlgorithm._a;
-		uint stateB = hashAlgorithm._b;
-		uint stateC = hashAlgorithm._c;
-		uint stateD = hashAlgorithm._d;
+		uint stateA = _a;
+		uint stateB = _b;
+		uint stateC = _c;
+		uint stateD = _d;
 
 		do
 		{
@@ -651,9 +651,9 @@ public partial struct MD5Core
 			source = ref Unsafe.Add(ref source, BlockSizeInBytes);
 		} while (--blockCount is not 0);
 
-		hashAlgorithm._a = stateA;
-		hashAlgorithm._b = stateB;
-		hashAlgorithm._c = stateC;
-		hashAlgorithm._d = stateD;
+		_a = stateA;
+		_b = stateB;
+		_c = stateC;
+		_d = stateD;
 	}
 }

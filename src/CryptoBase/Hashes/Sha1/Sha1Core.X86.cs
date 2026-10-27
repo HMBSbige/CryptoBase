@@ -3,17 +3,17 @@ namespace CryptoBase.Hashes.Sha1;
 public partial struct Sha1Core
 {
 	[SkipLocalsInit]
-	private static void ProcessBlocksSsse3(ref Sha1Core hashAlgorithm, ReadOnlySpan<byte> source)
+	private void ProcessBlocksSsse3(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(X86Base.X64.IsSupported && Ssse3.IsSupported);
 
 		ref byte blockRef = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
-		uint a = hashAlgorithm._h0;
-		uint b = hashAlgorithm._h1;
-		uint c = hashAlgorithm._h2;
-		uint d = hashAlgorithm._h3;
-		uint e = hashAlgorithm._h4;
+		uint a = _h0;
+		uint b = _h1;
+		uint c = _h2;
+		uint d = _h3;
+		uint e = _h4;
 		Unsafe.SkipInit(out InlineArray16<uint> roundInputs);
 
 		do
@@ -97,11 +97,11 @@ public partial struct Sha1Core
 			remainingLength -= BlockSizeInBytes;
 		} while (remainingLength is not 0);
 
-		hashAlgorithm._h0 = a;
-		hashAlgorithm._h1 = b;
-		hashAlgorithm._h2 = c;
-		hashAlgorithm._h3 = d;
-		hashAlgorithm._h4 = e;
+		_h0 = a;
+		_h1 = b;
+		_h2 = c;
+		_h3 = d;
+		_h4 = e;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

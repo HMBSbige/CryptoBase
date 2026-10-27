@@ -24,10 +24,11 @@ public struct Sha384Core : IHmacHashCore<Sha384Core>
 	public static int HmacBlockSize => Sha512State.BlockSizeInBytes;
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static Sha384Core IHashCore<Sha384Core>.Create()
 	{
 		Unsafe.SkipInit(out Sha384Core hashAlgorithm);
-		hashAlgorithm.Reset();
+		hashAlgorithm._state.Reset(InitialH0, InitialH1, InitialH2, InitialH3, InitialH4, InitialH5, InitialH6, InitialH7);
 		return hashAlgorithm;
 	}
 
@@ -35,12 +36,6 @@ public struct Sha384Core : IHmacHashCore<Sha384Core>
 	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
 	{
 		_state.Append(source);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void Reset()
-	{
-		_state.Reset(InitialH0, InitialH1, InitialH2, InitialH3, InitialH4, InitialH5, InitialH6, InitialH7);
 	}
 
 	void IIncrementalHashCore.Finalize(Span<byte> destination)

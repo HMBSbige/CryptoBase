@@ -41,10 +41,19 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	public static int HmacBlockSize => BlockSizeInBytes;
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static SM3Core IHashCore<SM3Core>.Create()
 	{
 		Unsafe.SkipInit(out SM3Core hashAlgorithm);
-		hashAlgorithm.Reset();
+		hashAlgorithm._byteCount = 0;
+		hashAlgorithm._v0 = 0x7380166FU;
+		hashAlgorithm._v1 = 0x4914B2B9U;
+		hashAlgorithm._v2 = 0x172442D7U;
+		hashAlgorithm._v3 = 0xDA8A0600U;
+		hashAlgorithm._v4 = 0xA96F30BCU;
+		hashAlgorithm._v5 = 0x163138AAU;
+		hashAlgorithm._v6 = 0xE38DEE4DU;
+		hashAlgorithm._v7 = 0xB0FB0E4EU;
 		return hashAlgorithm;
 	}
 
@@ -88,20 +97,6 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		{
 			source.CopyTo(buffer);
 		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void Reset()
-	{
-		_byteCount = 0;
-		_v0 = 0x7380166FU;
-		_v1 = 0x4914B2B9U;
-		_v2 = 0x172442D7U;
-		_v3 = 0xDA8A0600U;
-		_v4 = 0xA96F30BCU;
-		_v5 = 0x163138AAU;
-		_v6 = 0xE38DEE4DU;
-		_v7 = 0xB0FB0E4EU;
 	}
 
 	void IIncrementalHashCore.Finalize(Span<byte> destination)

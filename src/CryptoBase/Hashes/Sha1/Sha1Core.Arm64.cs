@@ -5,13 +5,13 @@ namespace CryptoBase.Hashes.Sha1;
 public partial struct Sha1Core
 {
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void ProcessBlocksArm64(ref Sha1Core hashAlgorithm, ReadOnlySpan<byte> source)
+	private void ProcessBlocksArm64(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Sha1Arm.Arm64.IsSupported);
 
-		ref uint firstStateWord = ref hashAlgorithm._h0;
+		ref uint firstStateWord = ref _h0;
 		Vector128<uint> stateAbcd = Vector128.LoadUnsafe(ref firstStateWord);
-		Vector64<uint> stateE = Vector64.CreateScalar(hashAlgorithm._h4);
+		Vector64<uint> stateE = Vector64.CreateScalar(_h4);
 		ref byte block = ref MemoryMarshal.GetReference(source);
 		int remainingLength = source.Length;
 
@@ -23,7 +23,7 @@ public partial struct Sha1Core
 		} while (remainingLength is not 0);
 
 		stateAbcd.StoreUnsafe(ref firstStateWord);
-		hashAlgorithm._h4 = stateE.ToScalar();
+		_h4 = stateE.ToScalar();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

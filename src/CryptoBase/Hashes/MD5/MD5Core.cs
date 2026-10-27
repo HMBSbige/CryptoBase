@@ -62,10 +62,15 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 	public static int HmacBlockSize => BlockSizeInBytes;
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static MD5Core IHashCore<MD5Core>.Create()
 	{
 		Unsafe.SkipInit(out MD5Core hashAlgorithm);
-		hashAlgorithm.Reset();
+		hashAlgorithm._a = 0x67452301U;
+		hashAlgorithm._b = 0xEFCDAB89U;
+		hashAlgorithm._c = 0x98BADCFEU;
+		hashAlgorithm._d = 0x10325476U;
+		hashAlgorithm._byteCount = 0;
 		return hashAlgorithm;
 	}
 
@@ -86,7 +91,7 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 		if (bufferedLength is not 0)
 		{
 			source.Slice(0, bytesNeeded).CopyTo(buffer.Slice(bufferedLength));
-			ProcessBlocks(ref this, ref MemoryMarshal.GetReference(buffer), 1);
+			ProcessBlocks(ref MemoryMarshal.GetReference(buffer), 1);
 			source = source.Slice(bytesNeeded);
 		}
 
@@ -95,7 +100,7 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 		if (blockCount is not 0)
 		{
 			int byteCount = blockCount * BlockSizeInBytes;
-			ProcessBlocks(ref this, ref MemoryMarshal.GetReference(source), blockCount);
+			ProcessBlocks(ref MemoryMarshal.GetReference(source), blockCount);
 			source = source.Slice(byteCount);
 		}
 
@@ -105,19 +110,10 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 		}
 	}
 
-	private void Reset()
-	{
-		_a = 0x67452301U;
-		_b = 0xEFCDAB89U;
-		_c = 0x98BADCFEU;
-		_d = 0x10325476U;
-		_byteCount = 0;
-	}
-
 	void IIncrementalHashCore.Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
-		Finalize(ref this, ref MemoryMarshal.GetReference(destination));
+		Finalize(ref MemoryMarshal.GetReference(destination));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,49 +157,49 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 		return BitOperations.RotateLeft(a, s) + b;
 	}
 
-	private static void Finalize(ref MD5Core hashAlgorithm, ref byte destination)
+	private void Finalize(ref byte destination)
 	{
-		int index = (int)(hashAlgorithm._byteCount & BlockSizeInBytes - 1);
-		Span<byte> buffer = hashAlgorithm._buffer;
+		int index = (int)(_byteCount & BlockSizeInBytes - 1);
+		Span<byte> buffer = _buffer;
 		buffer[index++] = 0x80;
 
 		if (index > LengthOffset)
 		{
 			buffer.Slice(index).Clear();
-			ProcessBlocks(ref hashAlgorithm, ref MemoryMarshal.GetReference(buffer), 1);
+			ProcessBlocks(ref MemoryMarshal.GetReference(buffer), 1);
 			index = 0;
 		}
 
 		buffer.Slice(index, LengthOffset - index).Clear();
-		BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(LengthOffset), hashAlgorithm._byteCount << 3);
-		ProcessBlocks(ref hashAlgorithm, ref MemoryMarshal.GetReference(buffer), 1);
+		BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(LengthOffset), _byteCount << 3);
+		ProcessBlocks(ref MemoryMarshal.GetReference(buffer), 1);
 
-		Unsafe.As<MD5Core, Vector128<byte>>(ref hashAlgorithm).StoreUnsafe(ref destination);
+		Unsafe.As<MD5Core, Vector128<byte>>(ref this).StoreUnsafe(ref destination);
 	}
 
-	private static void ProcessBlocks(ref MD5Core hashAlgorithm, ref byte source, int blockCount)
+	private void ProcessBlocks(ref byte source, int blockCount)
 	{
 		bool subsequentBlockOverlapsState =
 			blockCount > 1
 			&& MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref source, BlockSizeInBytes), (blockCount - 1) * BlockSizeInBytes)
-				.Overlaps(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref hashAlgorithm._a), 4 * sizeof(uint)));
+				.Overlaps(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref _a), 4 * sizeof(uint)));
 
 		if (!subsequentBlockOverlapsState && ArmBase.Arm64.IsSupported)
 		{
-			ProcessBlocksArm64(ref hashAlgorithm, ref source, blockCount);
+			ProcessBlocksArm64(ref source, blockCount);
 			return;
 		}
 
 		if (!subsequentBlockOverlapsState && X86Base.X64.IsSupported)
 		{
-			ProcessBlocksX64(ref hashAlgorithm, ref source, blockCount);
+			ProcessBlocksX64(ref source, blockCount);
 			return;
 		}
 
-		ProcessBlocksSoftware(ref hashAlgorithm, ref source, blockCount);
+		ProcessBlocksSoftware(ref source, blockCount);
 	}
 
-	private static void ProcessBlocksSoftware(ref MD5Core hashAlgorithm, ref byte source, int blockCount)
+	private void ProcessBlocksSoftware(ref byte source, int blockCount)
 	{
 		ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
@@ -211,10 +207,10 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 		{
 			ref InlineArray16<uint> x = ref Unsafe.As<byte, InlineArray16<uint>>(ref source);
 
-			uint a = hashAlgorithm._a;
-			uint b = hashAlgorithm._b;
-			uint c = hashAlgorithm._c;
-			uint d = hashAlgorithm._d;
+			uint a = _a;
+			uint b = _b;
+			uint c = _c;
+			uint d = _d;
 
 			a = FF(a, b, c, d, x[0], S11, Unsafe.Add(ref roundConstants, 0));
 			d = FF(d, a, b, c, x[1], S12, Unsafe.Add(ref roundConstants, 1));
@@ -284,10 +280,10 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 			c = II(c, d, a, b, x[2], S43, Unsafe.Add(ref roundConstants, 62));
 			b = II(b, c, d, a, x[9], S44, Unsafe.Add(ref roundConstants, 63));
 
-			hashAlgorithm._a += a;
-			hashAlgorithm._b += b;
-			hashAlgorithm._c += c;
-			hashAlgorithm._d += d;
+			_a += a;
+			_b += b;
+			_c += c;
+			_d += d;
 
 			source = ref Unsafe.Add(ref source, BlockSizeInBytes);
 		} while (--blockCount is not 0);

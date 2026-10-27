@@ -31,10 +31,16 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 	public static int HmacBlockSize => BlockSizeInBytes;
 
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static Sha1Core IHashCore<Sha1Core>.Create()
 	{
 		Unsafe.SkipInit(out Sha1Core hashAlgorithm);
-		hashAlgorithm.Reset();
+		hashAlgorithm._byteCount = 0;
+		hashAlgorithm._h0 = 0x67452301U;
+		hashAlgorithm._h1 = 0xEFCDAB89U;
+		hashAlgorithm._h2 = 0x98BADCFEU;
+		hashAlgorithm._h3 = 0x10325476U;
+		hashAlgorithm._h4 = 0xC3D2E1F0U;
 		return hashAlgorithm;
 	}
 
@@ -54,7 +60,7 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 		if (bufferedLength is not 0)
 		{
 			source.Slice(0, bytesNeeded).CopyTo(buffer.Slice(bufferedLength));
-			ProcessBlocks(ref this, buffer);
+			ProcessBlocks(buffer);
 			source = source.Slice(bytesNeeded);
 		}
 
@@ -62,7 +68,7 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 
 		if (completeLength is not 0)
 		{
-			ProcessBlocks(ref this, source.Slice(0, completeLength));
+			ProcessBlocks(source.Slice(0, completeLength));
 			source = source.Slice(completeLength);
 		}
 
@@ -72,59 +78,48 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 		}
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void Reset()
-	{
-		_byteCount = 0;
-		_h0 = 0x67452301U;
-		_h1 = 0xEFCDAB89U;
-		_h2 = 0x98BADCFEU;
-		_h3 = 0x10325476U;
-		_h4 = 0xC3D2E1F0U;
-	}
-
 	void IIncrementalHashCore.Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
-		Finalize(ref this, destination);
+		Finalize(destination);
 	}
 
-	private static void Finalize(ref Sha1Core hashAlgorithm, Span<byte> destination)
+	private void Finalize(Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= HashLength);
 
-		Span<byte> buffer = hashAlgorithm._buffer;
-		int index = (int)(hashAlgorithm._byteCount & BlockSizeInBytes - 1);
+		Span<byte> buffer = _buffer;
+		int index = (int)(_byteCount & BlockSizeInBytes - 1);
 		buffer[index++] = 0x80;
 
 		if (index > LengthOffset)
 		{
 			buffer.Slice(index).Clear();
-			ProcessBlocks(ref hashAlgorithm, buffer.AsReadOnlySpan());
+			ProcessBlocks(buffer.AsReadOnlySpan());
 			index = 0;
 		}
 
 		buffer.Slice(index, LengthOffset - index).Clear();
-		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(LengthOffset), hashAlgorithm._byteCount << 3);
-		ProcessBlocks(ref hashAlgorithm, buffer.AsReadOnlySpan());
+		BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(LengthOffset), _byteCount << 3);
+		ProcessBlocks(buffer.AsReadOnlySpan());
 
 		ref byte output = ref MemoryMarshal.GetReference(destination);
-		Unsafe.WriteUnaligned(ref output, BinaryPrimitives.ReverseEndianness(hashAlgorithm._h0));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 4), BinaryPrimitives.ReverseEndianness(hashAlgorithm._h1));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 8), BinaryPrimitives.ReverseEndianness(hashAlgorithm._h2));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 12), BinaryPrimitives.ReverseEndianness(hashAlgorithm._h3));
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 16), BinaryPrimitives.ReverseEndianness(hashAlgorithm._h4));
+		Unsafe.WriteUnaligned(ref output, BinaryPrimitives.ReverseEndianness(_h0));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 4), BinaryPrimitives.ReverseEndianness(_h1));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 8), BinaryPrimitives.ReverseEndianness(_h2));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 12), BinaryPrimitives.ReverseEndianness(_h3));
+		Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 16), BinaryPrimitives.ReverseEndianness(_h4));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ProcessBlocks(ref Sha1Core hashAlgorithm, ReadOnlySpan<byte> source)
+	private void ProcessBlocks(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(!source.IsEmpty);
 		Debug.Assert(source.Length % BlockSizeInBytes is 0);
 
 		if (Sha1Arm.Arm64.IsSupported)
 		{
-			ProcessBlocksArm64(ref hashAlgorithm, source);
+			ProcessBlocksArm64(source);
 			return;
 		}
 
@@ -134,22 +129,22 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 			if
 			(
 				source.Length > BlockSizeInBytes
-				&& source.Slice(BlockSizeInBytes).Overlaps(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref hashAlgorithm._h0), 5 * sizeof(uint)))
+				&& source.Slice(BlockSizeInBytes).Overlaps(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref _h0), 5 * sizeof(uint)))
 			)
 			{
-				ProcessBlocksSoftware(ref hashAlgorithm, source);
+				ProcessBlocksSoftware(source);
 				return;
 			}
 
-			ProcessBlocksSsse3(ref hashAlgorithm, source);
+			ProcessBlocksSsse3(source);
 			return;
 		}
 
-		ProcessBlocksSoftware(ref hashAlgorithm, source);
+		ProcessBlocksSoftware(source);
 	}
 
 	[SkipLocalsInit]
-	private static void ProcessBlocksSoftware(ref Sha1Core hashAlgorithm, ReadOnlySpan<byte> source)
+	private void ProcessBlocksSoftware(ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out InlineArray16<uint> schedule);
 		ref uint schedule0 = ref schedule[0];
@@ -160,11 +155,11 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 		{
 			HashCoreUtils.LoadSixteenBigEndianWords(out schedule0, ref block0);
 
-			uint a = hashAlgorithm._h0;
-			uint b = hashAlgorithm._h1;
-			uint c = hashAlgorithm._h2;
-			uint d = hashAlgorithm._h3;
-			uint e = hashAlgorithm._h4;
+			uint a = _h0;
+			uint b = _h1;
+			uint c = _h2;
+			uint d = _h3;
+			uint e = _h4;
 
 			ChooseFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0);
 			ChooseFiveRounds(ref a, ref b, ref c, ref d, ref e, ref Unsafe.Add(ref schedule0, 5));
@@ -191,11 +186,11 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 70, ParityConstant2);
 			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 75, ParityConstant2);
 
-			hashAlgorithm._h0 += a;
-			hashAlgorithm._h1 += b;
-			hashAlgorithm._h2 += c;
-			hashAlgorithm._h3 += d;
-			hashAlgorithm._h4 += e;
+			_h0 += a;
+			_h1 += b;
+			_h2 += c;
+			_h3 += d;
+			_h4 += e;
 			block0 = ref Unsafe.Add(ref block0, BlockSizeInBytes);
 			remainingLength -= BlockSizeInBytes;
 		} while (remainingLength is not 0);
