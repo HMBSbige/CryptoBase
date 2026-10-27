@@ -11,201 +11,106 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Kdf;
 
-[MemoryDiagnoser]
-[CategoriesColumn]
-[GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
-public class Hkdf64Benchmark
+public class HkdfSha1Benchmark() : HkdfBenchmarkBase<Sha1Core>(HashAlgorithmName.SHA1);
+
+public class HkdfSha256Benchmark() : HkdfBenchmarkBase<Sha256Core>(HashAlgorithmName.SHA256)
 {
-	[Params(0, 1, 63, 64, 65, 128, 256, 1024, 8192, 1024 * 1024)]
-	public int ByteLength { get; set; }
-
-	private byte[] _ikm = [];
-	private byte[] _salt = [];
-	private byte[] _info = [];
-	private byte[] _sha1Prk = [];
-	private byte[] _sha1Output = [];
-	private byte[] _sha256Prk = [];
-	private byte[] _sha256Output = [];
-
-	[GlobalSetup]
-	public void Setup()
+	[Benchmark]
+	[BenchmarkCategory("Extract")]
+	public int GenericExtract()
 	{
-		_ikm = RandomNumberGenerator.GetBytes(ByteLength);
-		_salt = RandomNumberGenerator.GetBytes(Sha256Core.HmacBlockSize);
-		_info = RandomNumberGenerator.GetBytes(80);
-		_sha1Prk = new byte[HashAlgorithm<Sha1Core>.HashLength];
-		_sha1Output = new byte[2 * HashAlgorithm<Sha1Core>.HashLength + 1];
-		_sha256Prk = new byte[HashAlgorithm<Sha256Core>.HashLength];
-		_sha256Output = new byte[2 * HashAlgorithm<Sha256Core>.HashLength + 1];
-	}
-
-	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("SHA-1 Extract")]
-	public int BclSha1Extract()
-	{
-		return HKDF.Extract(HashAlgorithmName.SHA1, _ikm, _salt, _sha1Prk);
+		return Hkdf<HmacAlgorithm<Sha256Core>>.Extract(Ikm, Salt, Prk);
 	}
 
 	[Benchmark]
-	[BenchmarkCategory("SHA-1 Extract")]
-	public int CryptoBaseSha1Extract()
+	[BenchmarkCategory("Extract")]
+	public int PlatformExtract()
 	{
-		return Hkdf.Extract<Sha1Core>(_ikm, _salt, _sha1Prk);
-	}
-
-	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("SHA-1 DeriveKey")]
-	public void BclSha1DeriveKey()
-	{
-		HKDF.DeriveKey(HashAlgorithmName.SHA1, _ikm, _sha1Output, _salt, _info);
+		return Hkdf<PlatformHmacSha256>.Extract(Ikm, Salt, Prk);
 	}
 
 	[Benchmark]
-	[BenchmarkCategory("SHA-1 DeriveKey")]
-	public void CryptoBaseSha1DeriveKey()
+	[BenchmarkCategory("DeriveKey")]
+	public void GenericDeriveKey()
 	{
-		Hkdf.DeriveKey<Sha1Core>(_ikm, _sha1Output, _salt, _info);
-	}
-
-	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("SHA-256 Extract")]
-	public int BclSha256Extract()
-	{
-		return HKDF.Extract(HashAlgorithmName.SHA256, _ikm, _salt, _sha256Prk);
+		Hkdf<HmacAlgorithm<Sha256Core>>.DeriveKey(Ikm, Output, Salt, Info);
 	}
 
 	[Benchmark]
-	[BenchmarkCategory("SHA-256 Extract")]
-	public int CryptoBaseSha256Extract()
+	[BenchmarkCategory("DeriveKey")]
+	public void PlatformDeriveKey()
 	{
-		return Hkdf.Extract<Sha256Core>(_ikm, _salt, _sha256Prk);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("SHA-256 Extract")]
-	public int GenericSha256Extract()
-	{
-		return Hkdf<HmacAlgorithm<Sha256Core>>.Extract(_ikm, _salt, _sha256Prk);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("SHA-256 Extract")]
-	public int PlatformSha256Extract()
-	{
-		return Hkdf<PlatformHmacSha256>.Extract(_ikm, _salt, _sha256Prk);
-	}
-
-	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("SHA-256 DeriveKey")]
-	public void BclSha256DeriveKey()
-	{
-		HKDF.DeriveKey(HashAlgorithmName.SHA256, _ikm, _sha256Output, _salt, _info);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("SHA-256 DeriveKey")]
-	public void CryptoBaseSha256DeriveKey()
-	{
-		Hkdf.DeriveKey<Sha256Core>(_ikm, _sha256Output, _salt, _info);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("SHA-256 DeriveKey")]
-	public void GenericSha256DeriveKey()
-	{
-		Hkdf<HmacAlgorithm<Sha256Core>>.DeriveKey(_ikm, _sha256Output, _salt, _info);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("SHA-256 DeriveKey")]
-	public void PlatformSha256DeriveKey()
-	{
-		Hkdf<PlatformHmacSha256>.DeriveKey(_ikm, _sha256Output, _salt, _info);
+		Hkdf<PlatformHmacSha256>.DeriveKey(Ikm, Output, Salt, Info);
 	}
 }
 
+public class HkdfSha384Benchmark() : HkdfBenchmarkBase<Sha384Core>(HashAlgorithmName.SHA384);
+
+public class HkdfSha512Benchmark() : HkdfBenchmarkBase<Sha512Core>(HashAlgorithmName.SHA512);
+
 [MemoryDiagnoser]
 [CategoriesColumn]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
-public class Hkdf128Benchmark
+public abstract class HkdfBenchmarkBase<TCore>(HashAlgorithmName hashAlgorithm) where TCore : unmanaged, IHmacHashCore<TCore>
 {
-	[Params(0, 1, 127, 128, 129, 256, 1024, 8192, 1024 * 1024)]
+	[ParamsSource(nameof(ByteLengths))]
 	public int ByteLength { get; set; }
+
+	// Around one and two HMAC blocks, then long inputs; for 128-byte blocks two blocks are the 256 bytes listed anyway.
+	public IEnumerable<int> ByteLengths => new[] { 0, 1, TCore.HmacBlockSize - 1, TCore.HmacBlockSize, TCore.HmacBlockSize + 1, 2 * TCore.HmacBlockSize, 256, 1024, 8192, 1024 * 1024 }.Distinct();
 
 	private byte[] _ikm = [];
 	private byte[] _salt = [];
 	private byte[] _info = [];
-	private byte[] _sha384Prk = [];
-	private byte[] _sha384Output = [];
-	private byte[] _sha512Prk = [];
-	private byte[] _sha512Output = [];
+	private byte[] _prk = [];
+	private byte[] _output = [];
+
+	protected ReadOnlySpan<byte> Ikm => _ikm;
+
+	protected ReadOnlySpan<byte> Salt => _salt;
+
+	protected ReadOnlySpan<byte> Info => _info;
+
+	protected Span<byte> Prk => _prk;
+
+	protected Span<byte> Output => _output;
 
 	[GlobalSetup]
 	public void Setup()
 	{
 		_ikm = RandomNumberGenerator.GetBytes(ByteLength);
-		_salt = RandomNumberGenerator.GetBytes(Sha512Core.HmacBlockSize);
+		_salt = RandomNumberGenerator.GetBytes(TCore.HmacBlockSize);
 		_info = RandomNumberGenerator.GetBytes(80);
-		_sha384Prk = new byte[HashAlgorithm<Sha384Core>.HashLength];
-		_sha384Output = new byte[2 * HashAlgorithm<Sha384Core>.HashLength + 1];
-		_sha512Prk = new byte[HashAlgorithm<Sha512Core>.HashLength];
-		_sha512Output = new byte[2 * HashAlgorithm<Sha512Core>.HashLength + 1];
+		_prk = new byte[HashAlgorithm<TCore>.HashLength];
+		_output = new byte[2 * HashAlgorithm<TCore>.HashLength + 1];
 	}
 
 	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("SHA-384 Extract")]
-	public int BclSha384Extract()
+	[BenchmarkCategory("Extract")]
+	public int BclExtract()
 	{
-		return HKDF.Extract(HashAlgorithmName.SHA384, _ikm, _salt, _sha384Prk);
+		return HKDF.Extract(hashAlgorithm, _ikm, _salt, _prk);
 	}
 
 	[Benchmark]
-	[BenchmarkCategory("SHA-384 Extract")]
-	public int CryptoBaseSha384Extract()
+	[BenchmarkCategory("Extract")]
+	public int CryptoBaseExtract()
 	{
-		return Hkdf.Extract<Sha384Core>(_ikm, _salt, _sha384Prk);
+		return Hkdf.Extract<TCore>(_ikm, _salt, _prk);
 	}
 
 	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("SHA-384 DeriveKey")]
-	public void BclSha384DeriveKey()
+	[BenchmarkCategory("DeriveKey")]
+	public void BclDeriveKey()
 	{
-		HKDF.DeriveKey(HashAlgorithmName.SHA384, _ikm, _sha384Output, _salt, _info);
+		HKDF.DeriveKey(hashAlgorithm, _ikm, _output, _salt, _info);
 	}
 
 	[Benchmark]
-	[BenchmarkCategory("SHA-384 DeriveKey")]
-	public void CryptoBaseSha384DeriveKey()
+	[BenchmarkCategory("DeriveKey")]
+	public void CryptoBaseDeriveKey()
 	{
-		Hkdf.DeriveKey<Sha384Core>(_ikm, _sha384Output, _salt, _info);
-	}
-
-	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("SHA-512 Extract")]
-	public int BclSha512Extract()
-	{
-		return HKDF.Extract(HashAlgorithmName.SHA512, _ikm, _salt, _sha512Prk);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("SHA-512 Extract")]
-	public int CryptoBaseSha512Extract()
-	{
-		return Hkdf.Extract<Sha512Core>(_ikm, _salt, _sha512Prk);
-	}
-
-	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("SHA-512 DeriveKey")]
-	public void BclSha512DeriveKey()
-	{
-		HKDF.DeriveKey(HashAlgorithmName.SHA512, _ikm, _sha512Output, _salt, _info);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("SHA-512 DeriveKey")]
-	public void CryptoBaseSha512DeriveKey()
-	{
-		Hkdf.DeriveKey<Sha512Core>(_ikm, _sha512Output, _salt, _info);
+		Hkdf.DeriveKey<TCore>(_ikm, _output, _salt, _info);
 	}
 }
 

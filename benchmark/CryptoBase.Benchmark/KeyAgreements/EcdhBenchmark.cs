@@ -28,7 +28,6 @@ public abstract class EcdhBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier bou
 {
 	private readonly byte[] _peerPublicKey = new byte[T.PublicKeyLength];
 	private readonly byte[] _sharedSecret = new byte[T.SharedSecretLength];
-	private readonly SecureRandom _random = new();
 	private T _cryptoBase = null!;
 	private ECDiffieHellman _bcl = null!;
 	private ECDiffieHellman _bclPeer = null!;
@@ -60,7 +59,7 @@ public abstract class EcdhBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier bou
 
 		_bouncyCastleDomain = ECNamedDomainParameters.LookupOid(bouncyCastleCurve);
 		_bouncyCastleGenerator = new ECKeyPairGenerator();
-		_bouncyCastleGenerator.Init(new ECKeyGenerationParameters(bouncyCastleCurve, _random));
+		_bouncyCastleGenerator.Init(new ECKeyGenerationParameters(bouncyCastleCurve, new SecureRandom()));
 		_bouncyCastleAgreement = new ECDHBasicAgreement();
 		_bouncyCastleAgreement.Init(new ECPrivateKeyParameters(new BigInteger(1, privateKey), _bouncyCastleDomain));
 		_bouncyCastlePeerPublicKey = UncompressedPoint.ToBouncyCastle(_bouncyCastleDomain, _peerPublicKey);

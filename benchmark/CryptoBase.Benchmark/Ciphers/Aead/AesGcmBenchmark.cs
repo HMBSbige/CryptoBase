@@ -63,10 +63,6 @@ public class AesGcmBenchmark
 	[Benchmark]
 	public void BouncyCastle()
 	{
-		GcmBlockCipher engine = new(_bouncyCastlePrimitive);
-		engine.Init(true, new AeadParameters(_bouncyCastleKey, 128, _nonce));
-		engine.ProcessAadBytes(_associatedData);
-		int written = engine.ProcessBytes(_input, _bouncyCastleOutput);
-		engine.DoFinal(_bouncyCastleOutput.AsSpan(written));
+		AeadBenchmarkUtils.BouncyCastleEncrypt(new GcmBlockCipher(_bouncyCastlePrimitive), _bouncyCastleKey, _nonce, _input, _bouncyCastleOutput, _associatedData);
 	}
 }

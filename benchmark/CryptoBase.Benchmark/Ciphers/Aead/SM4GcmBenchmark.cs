@@ -52,10 +52,6 @@ public class SM4GcmBenchmark
 	[Benchmark]
 	public void BouncyCastle()
 	{
-		GcmBlockCipher engine = new(new SM4Engine());
-		engine.Init(true, new AeadParameters(_bouncyCastleKey, 128, _nonce));
-		engine.ProcessAadBytes(_associatedData);
-		int written = engine.ProcessBytes(_input, _bouncyCastleOutput);
-		engine.DoFinal(_bouncyCastleOutput.AsSpan(written));
+		AeadBenchmarkUtils.BouncyCastleEncrypt(new GcmBlockCipher(new SM4Engine()), _bouncyCastleKey, _nonce, _input, _bouncyCastleOutput, _associatedData);
 	}
 }

@@ -52,8 +52,6 @@ public class KmacBenchmark
 
 		if (Kmac128.IsSupported)
 		{
-			_bclKmac128?.Dispose();
-			_bclKmac256?.Dispose();
 			_bclKmac128 = new Kmac128(_key, Customization);
 			_bclKmac256 = new Kmac256(_key, Customization);
 		}

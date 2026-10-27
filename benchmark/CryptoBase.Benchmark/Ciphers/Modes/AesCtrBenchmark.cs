@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.Benchmark.Ciphers.Streams;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
 using Org.BouncyCastle.Crypto;
@@ -9,7 +10,7 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark.Ciphers.Modes;
 
 [MemoryDiagnoser]
-public class AesCtrBenchmark : BlockModeStreamCipherBenchmarkBase
+public class AesCtrBenchmark : StreamCipherBenchmarkBase
 {
 	[Params(16, 24, 32)]
 	public int KeyLength { get; set; }

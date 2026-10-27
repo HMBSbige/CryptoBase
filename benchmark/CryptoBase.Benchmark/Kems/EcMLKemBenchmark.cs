@@ -89,7 +89,6 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 			throw new InvalidOperationException("Benchmark implementations expanded the seed to different keys.");
 		}
 
-		byte[] expected = new byte[T.SharedSecretLength];
 		List<Action> encapsulators = [BouncyCastleEncapsulate, CryptoBaseEncapsulate];
 		List<Action> decapsulators = [BouncyCastleDecapsulate, CryptoBaseDecapsulate];
 
@@ -99,22 +98,7 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 			decapsulators.Insert(0, BclDecapsulate);
 		}
 
-		foreach (Action encapsulate in encapsulators)
-		{
-			encapsulate();
-			_sharedSecret.CopyTo(expected);
-
-			foreach (Action decapsulate in decapsulators)
-			{
-				_sharedSecret.AsSpan().Clear();
-				decapsulate();
-
-				if (!_sharedSecret.AsSpan().SequenceEqual(expected))
-				{
-					throw new InvalidOperationException("Benchmark implementations produced different shared secrets.");
-				}
-			}
-		}
+		KemCrossCheck.Run(_sharedSecret, encapsulators, decapsulators);
 	}
 
 	[GlobalCleanup]

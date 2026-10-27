@@ -26,7 +26,6 @@ public class EcdsaP521Benchmark() : EcdsaBenchmark<EcdsaP521>(EcdsaP521.Generate
 public abstract class EcdsaBenchmark<T>(Func<T> generateKey, ECCurve bclCurve, DerObjectIdentifier bouncyCastleCurve) where T : class, ISignatureKey<T>
 {
 	private readonly byte[] _message = RandomNumberGenerator.GetBytes(32);
-	private readonly SecureRandom _random = new();
 	private byte[] _destination = [];
 	private byte[] _signature = [];
 	private byte[] _subjectPublicKeyInfo = [];
@@ -61,7 +60,7 @@ public abstract class EcdsaBenchmark<T>(Func<T> generateKey, ECCurve bclCurve, D
 		_bcl.ImportPkcs8PrivateKey(pkcs8PrivateKey, out _);
 
 		_bouncyCastleGenerator = new ECKeyPairGenerator();
-		_bouncyCastleGenerator.Init(new ECKeyGenerationParameters(bouncyCastleCurve, _random));
+		_bouncyCastleGenerator.Init(new ECKeyGenerationParameters(bouncyCastleCurve, new SecureRandom()));
 		_bouncyCastleSigner = new DsaDigestSigner(new ECDsaSigner(new HMacDsaKCalculator(CreateDigest())), CreateDigest(), StandardDsaEncoding.Instance);
 		_bouncyCastleSigner.Init(true, PrivateKeyFactory.CreateKey(pkcs8PrivateKey));
 		_bouncyCastleVerifier = CreateBouncyCastleVerifier(PublicKeyFactory.CreateKey(_subjectPublicKeyInfo));

@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using CryptoBase.Benchmark.Ciphers.Streams;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using Org.BouncyCastle.Crypto.Engines;
@@ -9,7 +10,7 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark.Ciphers.Modes;
 
 [MemoryDiagnoser]
-public class SM4CtrBenchmark : BlockModeStreamCipherBenchmarkBase
+public class SM4CtrBenchmark : StreamCipherBenchmarkBase
 {
 	public override IEnumerable<int> ByteLengths => [16, 128, 240, 256, 496, 512, 1008, 1024, 1040, 1152, 8192];
 

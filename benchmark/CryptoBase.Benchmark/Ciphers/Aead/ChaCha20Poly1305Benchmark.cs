@@ -59,10 +59,6 @@ public class ChaCha20Poly1305Benchmark
 	[Benchmark]
 	public void BouncyCastle()
 	{
-		BouncyCastleChaCha20Poly1305 engine = new();
-		engine.Init(true, new AeadParameters(_bouncyCastleKey, 128, _nonce));
-		engine.ProcessAadBytes(_associatedData);
-		int written = engine.ProcessBytes(_input, _bouncyCastleOutput);
-		engine.DoFinal(_bouncyCastleOutput.AsSpan(written));
+		AeadBenchmarkUtils.BouncyCastleEncrypt(new BouncyCastleChaCha20Poly1305(), _bouncyCastleKey, _nonce, _input, _bouncyCastleOutput, _associatedData);
 	}
 }
