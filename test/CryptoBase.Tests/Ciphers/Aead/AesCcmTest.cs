@@ -58,7 +58,7 @@ public class AesCcmTest
 
 		using (CcmMode<AesCipher> cipher = CcmMode<AesCipher>.Create(key))
 		{
-			await CcmTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
+			await AeadTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
 		}
 
 		await AssertBuffered<CcmTag16>(key, nonce, plaintext, associatedData, expected, expectedTag);
@@ -74,7 +74,7 @@ public class AesCcmTest
 		byte[] plaintext = CreateDeterministicSource(17);
 		(byte[] expected, byte[] expectedTag) = EncryptReference(key, nonce, plaintext, associatedData);
 		using CcmMode<AesCipher> cipher = CcmMode<AesCipher>.Create(key);
-		await CcmTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
+		await AeadTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
 	}
 
 	[Test]

@@ -21,26 +21,10 @@ public class SM4GcmTest
 		byte[] plaintext = CreateDeterministicSource(length);
 		(byte[] expected, byte[] expectedTag) = EncryptReference(key, nonce, plaintext, associatedData);
 		using GcmMode<SM4Cipher> cipher = GcmMode<SM4Cipher>.Create(key);
-		byte[] source = CreateGuardedBuffer(3, length);
-		plaintext.CopyTo(source, 3);
-		byte[] destination = CreateGuardedBuffer(5, length);
-		byte[] tag = CreateGuardedBuffer(7, 16);
-
-		cipher.Encrypt(nonce, source.AsSpan(3, length), destination.AsSpan(5), tag.AsSpan(7, 16), associatedData);
-		await AssertOutput(destination, 5, expected);
-		await AssertOutput(tag, 7, expectedTag);
-		await AssertOutput(source, 3, plaintext);
-		await Assert.That(cipher.TryDecrypt(nonce, expected, expectedTag, destination.AsSpan(5), associatedData)).IsTrue();
-		await AssertOutput(destination, 5, plaintext);
-
-		cipher.Encrypt(nonce, destination.AsSpan(5, length), destination.AsSpan(5), tag.AsSpan(7, 16), associatedData);
-		await AssertOutput(destination, 5, expected);
-		await AssertOutput(tag, 7, expectedTag);
-		await Assert.That(cipher.TryDecrypt(nonce, destination.AsSpan(5, length), expectedTag, destination.AsSpan(5), associatedData)).IsTrue();
-		await AssertOutput(destination, 5, plaintext);
+		await AeadTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
 
 		expectedTag[0] ^= 1;
-		PrepareDestination(destination);
+		byte[] destination = CreateGuardedBuffer(5, length);
 		await Assert.That(cipher.TryDecrypt(nonce, expected, expectedTag, destination.AsSpan(5), associatedData)).IsFalse();
 		await AssertOutput(destination, 5, new byte[length]);
 		expected.CopyTo(destination, 5);

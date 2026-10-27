@@ -46,8 +46,7 @@ public class AesCtr32Test
 			}, counterBits: 32
 		);
 
-		byte[] output = CreateGuardedBuffer(prefixLength, length);
-		plaintext.CopyTo(output, prefixLength);
+		byte[] output = CreateGuardedBuffer(prefixLength, plaintext);
 		Vector128<byte> counter = Vector128.Create(initial);
 		ReadOnlySpan<byte> source = inPlace ? output.AsSpan(0, prefixLength + length) : input;
 		int processed = BlockModeDispatch.XorCtr<AesCipher, CtrIncrementer32>(cipher, ref counter, source.Slice(prefixLength), output.AsSpan(prefixLength));

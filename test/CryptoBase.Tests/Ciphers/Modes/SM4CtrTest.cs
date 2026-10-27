@@ -47,8 +47,7 @@ public class SM4CtrTest
 		byte[] counter = Convert.FromHexString(initialCounterHex);
 		byte[] plaintext = CreateDeterministicSource(4097).AsSpan(0, length).ToArray();
 		byte[] expected = CtrReference.Transform(counter, plaintext, counters => SM4Reference.Transform(key, counters));
-		byte[] output = CreateGuardedBuffer(3, length);
-		plaintext.CopyTo(output, 3);
+		byte[] output = CreateGuardedBuffer(3, plaintext);
 		using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
 
 		ReadOnlySpan<byte> source = inPlace ? output.AsSpan(3, length) : plaintext;
@@ -68,8 +67,7 @@ public class SM4CtrTest
 		byte[] key = CreateDeterministicSource(16);
 		byte[] plaintext = CreateDeterministicSource(length);
 		byte[] expected = CtrReference.Transform(counter, plaintext, counters => SM4Reference.Transform(key, counters));
-		byte[] output = CreateGuardedBuffer(3, length);
-		plaintext.CopyTo(output, 3);
+		byte[] output = CreateGuardedBuffer(3, plaintext);
 		using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
 
 		ReadOnlySpan<byte> source = inPlace ? output.AsSpan(3, length) : plaintext;
@@ -91,8 +89,7 @@ public class SM4CtrTest
 		byte[] counter = Convert.FromHexString(initialCounterHex);
 		byte[] plaintext = CreateDeterministicSource(4097);
 		byte[] expected = CtrReference.Transform(counter, plaintext, counters => SM4Reference.Transform(key, counters));
-		byte[] output = CreateGuardedBuffer(5, plaintext.Length);
-		plaintext.CopyTo(output, 5);
+		byte[] output = CreateGuardedBuffer(5, plaintext);
 		using CtrMode128<SM4Cipher> cipher = CtrMode128<SM4Cipher>.Create(key, counter);
 		int offset = 0;
 

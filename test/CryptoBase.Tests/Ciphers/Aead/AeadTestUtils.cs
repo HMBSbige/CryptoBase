@@ -3,13 +3,12 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Aead;
 
-internal static class CcmTestUtils
+internal static class AeadTestUtils
 {
 	internal static async Task AssertMessage<T>(T cipher, byte[] nonce, byte[] plaintext, byte[] associatedData, byte[] expected, byte[] expectedTag) where T : IAeadCipher<T>
 	{
 		int length = plaintext.Length;
-		byte[] source = CreateGuardedBuffer(3, length);
-		plaintext.CopyTo(source, 3);
+		byte[] source = CreateGuardedBuffer(3, plaintext);
 		byte[] destination = CreateGuardedBuffer(5, length);
 		byte[] tag = CreateGuardedBuffer(7, T.TagSize);
 

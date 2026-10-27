@@ -31,7 +31,7 @@ public class AesCtrXtsOracleTest
 		byte[] plaintext = CreateDeterministicSource(length);
 		byte[] expected = CtrOracle(key, counter, plaintext);
 
-		byte[] source = WithGuards(plaintext, 3);
+		byte[] source = CreateGuardedBuffer(3, plaintext);
 		byte[] destination = CreateGuardedBuffer(5, length);
 
 		using (CtrMode128<AesCipher> cipher = CtrMode128<AesCipher>.Create(key, counter))
@@ -42,7 +42,7 @@ public class AesCtrXtsOracleTest
 		await VerifyOutput(destination, 5, expected, "encryption");
 		await VerifyOutput(source, 3, plaintext, "source unchanged");
 
-		byte[] inPlace = WithGuards(plaintext, 7);
+		byte[] inPlace = CreateGuardedBuffer(7, plaintext);
 
 		using (CtrMode128<AesCipher> cipher = CtrMode128<AesCipher>.Create(key, counter))
 		{
@@ -79,7 +79,7 @@ public class AesCtrXtsOracleTest
 		byte[] counter = Convert.FromHexString(counterHex);
 		byte[] plaintext = CreateDeterministicSource(FragmentedPrefixLength + ContinuationLength);
 		byte[] expected = CtrOracle(key, counter, plaintext);
-		byte[] buffer = WithGuards(inPlace ? plaintext : new byte[plaintext.Length], 3);
+		byte[] buffer = CreateGuardedBuffer(3, inPlace ? plaintext : new byte[plaintext.Length]);
 
 		using (CtrMode128<AesCipher> cipher = CtrMode128<AesCipher>.Create(key, counter))
 		{
@@ -148,7 +148,7 @@ public class AesCtrXtsOracleTest
 		byte[] tweak = input.AsSpan(tweakOffset, 16).ToArray();
 		byte[] expected = xts.Oracle(tweak, input, decrypt);
 
-		byte[] inPlace = WithGuards(input, 3);
+		byte[] inPlace = CreateGuardedBuffer(3, input);
 		xts.Transform(decrypt, inPlace.AsSpan(3 + tweakOffset, 16), inPlace.AsSpan(3, length), inPlace.AsSpan(3));
 		await VerifyOutput(inPlace, 3, expected, "Tweak aliases in-place buffer");
 
@@ -162,13 +162,13 @@ public class AesCtrXtsOracleTest
 	{
 		byte[] plaintext = CreateDeterministicSource(length);
 		byte[] expected = xts.Oracle(tweak, plaintext, false);
-		byte[] unalignedTweak = WithGuards(tweak, 1);
+		byte[] unalignedTweak = CreateGuardedBuffer(1, tweak);
 		ReadOnlySpan<byte> tweakSpan = unalignedTweak.AsSpan(1, 16);
-		byte[] source = WithGuards(plaintext, 3);
-		byte[] ciphertext = WithGuards(expected, 3);
+		byte[] source = CreateGuardedBuffer(3, plaintext);
+		byte[] ciphertext = CreateGuardedBuffer(3, expected);
 		byte[] encrypted = CreateGuardedBuffer(5, length);
 		byte[] decrypted = CreateGuardedBuffer(5, length);
-		byte[] inPlaceEncrypted = WithGuards(plaintext, 7);
+		byte[] inPlaceEncrypted = CreateGuardedBuffer(7, plaintext);
 
 		xts.Transform(false, tweakSpan, source.AsSpan(3, length), encrypted.AsSpan(5));
 		xts.Transform(true, tweakSpan, ciphertext.AsSpan(3, length), decrypted.AsSpan(5));
@@ -214,13 +214,6 @@ public class AesCtrXtsOracleTest
 		BclAes cipher = BclAes.Create();
 		cipher.Key = key.ToArray();
 		return cipher;
-	}
-
-	private static byte[] WithGuards(byte[] payload, int offset)
-	{
-		byte[] buffer = CreateGuardedBuffer(offset, payload.Length);
-		payload.CopyTo(buffer, offset);
-		return buffer;
 	}
 
 	private static async Task VerifyOutput(byte[] buffer, int offset, byte[] expected, string step)

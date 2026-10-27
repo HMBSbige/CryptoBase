@@ -21,7 +21,7 @@ public class AesCcm8Test
 
 		using (Ccm8Mode<AesCipher> cipher = Ccm8Mode<AesCipher>.Create(key))
 		{
-			await CcmTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
+			await AeadTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
 		}
 
 		await AesCcmTest.AssertBuffered<CcmTag8>(key, nonce, plaintext, associatedData, expected, expectedTag);

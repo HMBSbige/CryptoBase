@@ -270,7 +270,7 @@ public class StreamMacExtensionsTest
 
 	// Truncated tags are checked as a prefix of the full MAC, as in WycheproofHmacTest.
 	[Test]
-	[MethodDataSource(typeof(WycheproofHmacTest), nameof(WycheproofHmacTest.Vectors), Arguments = ["hmac_sha256_test.json"])]
+	[WycheproofVectors<MacTestVector>("hmac_sha256_test.json")]
 	public async Task StreamsMatchWycheproofHmacSha256(MacTestVector vector)
 	{
 		byte[] mac = new byte[HmacSha256.MacLength];

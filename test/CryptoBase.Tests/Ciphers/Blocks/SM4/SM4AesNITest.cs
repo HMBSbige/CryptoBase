@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Blocks.SM4;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
 namespace CryptoBase.Tests.Ciphers.Blocks.SM4;
@@ -26,7 +27,7 @@ public class SM4AesNITest
 	[Test]
 	public Task Sbox128CoversEveryByteValueInEveryPosition()
 	{
-		return SM4KernelTestUtils.Substitute128MatchesIndependentReference(SM4AesNI.Substitute);
+		return SM4KernelTestUtils.SubstituteMatchesIndependentReference<Vector128<byte>>(SM4AesNI.Substitute);
 	}
 
 	[Test]
@@ -37,6 +38,6 @@ public class SM4AesNITest
 			Skip.Test("AVX2 is required.");
 		}
 
-		return SM4KernelTestUtils.Substitute256MatchesIndependentReference(SM4AesNI.Substitute);
+		return SM4KernelTestUtils.SubstituteMatchesIndependentReference<Vector256<byte>>(SM4AesNI.Substitute);
 	}
 }

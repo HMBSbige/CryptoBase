@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Blocks.SM4;
+using System.Runtime.Intrinsics;
 
 namespace CryptoBase.Tests.Ciphers.Blocks.SM4;
 
@@ -24,6 +25,6 @@ public class SM4NeonTest
 	[Test]
 	public Task SboxCoversEveryByteValueInEveryPosition()
 	{
-		return SM4KernelTestUtils.Substitute128MatchesIndependentReference(SM4Neon.Substitute);
+		return SM4KernelTestUtils.SubstituteMatchesIndependentReference<Vector128<byte>>(SM4Neon.Substitute);
 	}
 }

@@ -1,6 +1,9 @@
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.Ciphers.Modes.Gcm;
+using CryptoBase.Tests.Ciphers.Modes;
+using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -31,8 +34,7 @@ public class AesGcmFusionTest
 		byte[] expectedTag = new byte[GcmMode<AesCipher>.TagSize];
 		reference.Encrypt(nonce, plaintext, expected, expectedTag, associatedData);
 
-		byte[] source = CreateGuardedBuffer(3, length);
-		plaintext.CopyTo(source, 3);
+		byte[] source = CreateGuardedBuffer(3, plaintext);
 		byte[] destination = CreateGuardedBuffer(5, length);
 		byte[] tag = CreateGuardedBuffer(7, expectedTag.Length);
 		cipher.Encrypt(nonce, source.AsSpan().Slice(3, length), destination.AsSpan().Slice(5), tag.AsSpan().Slice(7, expectedTag.Length), associatedData);
@@ -168,6 +170,7 @@ public class AesGcmFusionTest
 		return decrypt ? VerifyKernel<Decryption>(keyLength, scenario) : VerifyKernel<Encryption>(keyLength, scenario);
 	}
 
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 	private static async Task VerifyKernel<TDirection>(int keyLength, (int BlocksPerBatch, int Length, string CounterHex) scenario) where TDirection : struct, IBlockDirection
 	{
 		if (!AesCipherArm.IsSupported && (!AesCipherX86.IsSupported || !GHashX86.IsSupported))
@@ -186,16 +189,16 @@ public class AesGcmFusionTest
 		int expectedProcessed = length / batchSize * batchSize;
 		byte[] plaintext = CreateDeterministicSource(length);
 		byte[] initialCounter = Convert.FromHexString(counterHex);
+		byte[] expected = CtrReference.Transform(initialCounter, plaintext.AsSpan(0, expectedProcessed).ToArray(), counters => reference.EncryptEcb(counters, PaddingMode.None), 32);
 		byte[] expectedCounter = initialCounter.ToArray();
-		byte[] expected = EncryptCounterReference(reference, expectedCounter, plaintext.AsSpan().Slice(0, expectedProcessed));
+		BinaryPrimitives.WriteUInt32BigEndian(expectedCounter.AsSpan(12), BinaryPrimitives.ReadUInt32BigEndian(initialCounter.AsSpan(12)) + (uint)(expectedProcessed / 16));
 		Vector128<byte> expectedHash = initialHash;
 		GHashSoftware.AppendPaddedSegments(ref expectedHash, in hashKey, TDirection.IsDecrypt ? plaintext.AsSpan(0, expectedProcessed) : expected, default, default);
 		byte[] expectedHashBytes = expectedHash.AsReadOnlySpan().ToArray();
 
 		Vector128<byte> counter = MemoryMarshal.Read<Vector128<byte>>(initialCounter);
 		Vector128<byte> accumulator = initialHash;
-		byte[] source = CreateGuardedBuffer(3, length);
-		plaintext.CopyTo(source, 3);
+		byte[] source = CreateGuardedBuffer(3, plaintext);
 		byte[] destination = CreateGuardedBuffer(5, length);
 		int processed = AesCipherArm.IsSupported
 			? TransformArmKernel<TDirection>(blocksPerBatch, key, ref counter, source.AsSpan().Slice(3, length), destination.AsSpan().Slice(5), ref accumulator, hashKey)
@@ -218,34 +221,6 @@ public class AesGcmFusionTest
 		await AssertOutput(destination, 5, expectedInPlace);
 		await Assert.That(counter.AsReadOnlySpan().ToArray()).IsEquivalentTo(expectedCounter, CollectionOrdering.Matching);
 		await Assert.That(accumulator.AsReadOnlySpan().ToArray()).IsEquivalentTo(expectedHashBytes, CollectionOrdering.Matching);
-	}
-
-	private static byte[] EncryptCounterReference(BclAes reference, byte[] counter, ReadOnlySpan<byte> source)
-	{
-		byte[] ciphertext = new byte[source.Length];
-		Span<byte> mask = stackalloc byte[16];
-
-		for (int offset = 0; offset < source.Length; offset += 16)
-		{
-			reference.EncryptEcb(counter, mask, PaddingMode.None);
-
-			for (int i = 0; i < mask.Length; ++i)
-			{
-				ciphertext[offset + i] = (byte)(source[offset + i] ^ mask[i]);
-			}
-
-			for (int i = 15; i >= 12; --i)
-			{
-				counter[i] = (byte)(counter[i] + 1);
-
-				if (counter[i] is not 0)
-				{
-					break;
-				}
-			}
-		}
-
-		return ciphertext;
 	}
 
 	private static void EncryptFused(byte[] key, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData)

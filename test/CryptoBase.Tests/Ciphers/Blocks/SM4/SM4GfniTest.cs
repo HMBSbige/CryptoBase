@@ -34,7 +34,7 @@ public class SM4GfniTest
 	[Test]
 	public Task Sbox128CoversEveryByteValueInEveryPosition()
 	{
-		return SM4KernelTestUtils.Substitute128MatchesIndependentReference(SM4Gfni.Substitute);
+		return SM4KernelTestUtils.SubstituteMatchesIndependentReference<Vector128<byte>>(SM4Gfni.Substitute);
 	}
 
 	[Test]
@@ -45,7 +45,7 @@ public class SM4GfniTest
 			Skip.Test("GFNI with 256-bit vectors is required.");
 		}
 
-		return SM4KernelTestUtils.Substitute256MatchesIndependentReference(SM4Gfni.Substitute);
+		return SM4KernelTestUtils.SubstituteMatchesIndependentReference<Vector256<byte>>(SM4Gfni.Substitute);
 	}
 
 	[Test]
@@ -56,7 +56,7 @@ public class SM4GfniTest
 			Skip.Test("GFNI with 512-bit vectors is required.");
 		}
 
-		return SM4KernelTestUtils.Substitute512MatchesIndependentReference(SM4Gfni.Substitute);
+		return SM4KernelTestUtils.SubstituteMatchesIndependentReference<Vector512<byte>>(SM4Gfni.Substitute);
 	}
 
 	[Test]
@@ -76,8 +76,7 @@ public class SM4GfniTest
 		byte[] plaintext = CreateDeterministicSource(length);
 		byte[] expected = CtrReference.Transform(initial, plaintext, counters => SM4Reference.Transform(key, counters), 32);
 
-		byte[] output = CreateGuardedBuffer(3, length);
-		plaintext.CopyTo(output, 3);
+		byte[] output = CreateGuardedBuffer(3, plaintext);
 		Vector128<byte> counter = Vector128.Create(initial);
 		int processed = BlockModeDispatch.XorCtr<SM4Cipher, CtrIncrementer32>(cipher, ref counter, inPlace ? output.AsSpan(3, length) : plaintext, output.AsSpan(3, length));
 		await Assert.That(processed).IsEqualTo(length);

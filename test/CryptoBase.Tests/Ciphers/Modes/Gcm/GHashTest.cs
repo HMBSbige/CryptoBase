@@ -64,12 +64,7 @@ public class GHashTest
 		Vector128<byte> actual = HashPaddedSegments(key, source, default, default);
 
 		await Assert.That(actual).IsEqualTo(expected);
-		await Assert.That(HashSoftwarePaddedSegments(key, source, default, default)).IsEqualTo(expected);
-
-		if (GHashNeon.IsSupported)
-		{
-			await Assert.That(HashNeonPaddedSegments(key, source, default, default)).IsEqualTo(expected);
-		}
+		await AssertPortableBackends(key, source, default, default, expected);
 
 		await Assert.That(key).IsEquivalentTo(keyCopy, CollectionOrdering.Matching);
 		await Assert.That(source).IsEquivalentTo(sourceCopy, CollectionOrdering.Matching);
@@ -88,14 +83,9 @@ public class GHashTest
 		BinaryPrimitives.WriteUInt64BigEndian(lengths.AsSpan().Slice(8), (ulong)ciphertext.Length * 8);
 		Vector128<byte> expected = MemoryMarshal.Read<Vector128<byte>>(Convert.FromHexString(expectedHex));
 
-		await Assert.That(HashSoftwarePaddedSegments(key, associatedData, ciphertext, lengths)).IsEqualTo(expected);
+		await AssertPortableBackends(key, associatedData, ciphertext, lengths, expected);
 		await Assert.That(HashPaddedSegments(key, associatedData, ciphertext, lengths)).IsEqualTo(expected);
 		await Assert.That(ComputeReferenceHash(key, associatedData, ciphertext, lengths)).IsEqualTo(expected);
-
-		if (GHashNeon.IsSupported)
-		{
-			await Assert.That(HashNeonPaddedSegments(key, associatedData, ciphertext, lengths)).IsEqualTo(expected);
-		}
 	}
 
 	[Test]
@@ -147,12 +137,7 @@ public class GHashTest
 		source.AsSpan().Fill(0xff);
 		Vector128<byte> expected = ComputeReferenceHash(key, source, default, default);
 
-		await Assert.That(HashSoftwarePaddedSegments(key, source, default, default)).IsEqualTo(expected);
-
-		if (GHashNeon.IsSupported)
-		{
-			await Assert.That(HashNeonPaddedSegments(key, source, default, default)).IsEqualTo(expected);
-		}
+		await AssertPortableBackends(key, source, default, default, expected);
 	}
 
 	[Test]
@@ -168,14 +153,8 @@ public class GHashTest
 			Vector128<byte> expectedDataBit = ComputeReferenceHash(allOnes, singleBit, default, default);
 			Vector128<byte> expectedKeyBit = ComputeReferenceHash(singleBit, allOnes, default, default);
 
-			await Assert.That(HashSoftwarePaddedSegments(allOnes, singleBit, default, default)).IsEqualTo(expectedDataBit);
-			await Assert.That(HashSoftwarePaddedSegments(singleBit, allOnes, default, default)).IsEqualTo(expectedKeyBit);
-
-			if (GHashNeon.IsSupported)
-			{
-				await Assert.That(HashNeonPaddedSegments(allOnes, singleBit, default, default)).IsEqualTo(expectedDataBit);
-				await Assert.That(HashNeonPaddedSegments(singleBit, allOnes, default, default)).IsEqualTo(expectedKeyBit);
-			}
+			await AssertPortableBackends(allOnes, singleBit, default, default, expectedDataBit);
+			await AssertPortableBackends(singleBit, allOnes, default, default, expectedKeyBit);
 		}
 	}
 
@@ -196,12 +175,7 @@ public class GHashTest
 			random.NextBytes(third);
 			Vector128<byte> expected = ComputeReferenceHash(key, first, second, third);
 
-			await Assert.That(HashSoftwarePaddedSegments(key, first, second, third)).IsEqualTo(expected);
-
-			if (GHashNeon.IsSupported)
-			{
-				await Assert.That(HashNeonPaddedSegments(key, first, second, third)).IsEqualTo(expected);
-			}
+			await AssertPortableBackends(key, first, second, third, expected);
 		}
 	}
 
@@ -262,12 +236,7 @@ public class GHashTest
 		}
 
 		await Assert.That(actual).IsEqualTo(expected);
-		await Assert.That(HashSoftwarePaddedSegments(key, first, second, third)).IsEqualTo(expected);
-
-		if (GHashNeon.IsSupported)
-		{
-			await Assert.That(HashNeonPaddedSegments(key, first, second, third)).IsEqualTo(expected);
-		}
+		await AssertPortableBackends(key, first, second, third, expected);
 	}
 
 	[Test]
@@ -283,14 +252,8 @@ public class GHashTest
 		await Assert.That(segmentedHash).IsEqualTo(ComputeReferenceHash(key, first, second, default));
 		await Assert.That(combinedHash).IsEqualTo(ComputeReferenceHash(key, combined, default, default));
 		await Assert.That(segmentedHash).IsNotEqualTo(combinedHash);
-		await Assert.That(HashSoftwarePaddedSegments(key, first, second, default)).IsEqualTo(segmentedHash);
-		await Assert.That(HashSoftwarePaddedSegments(key, combined, default, default)).IsEqualTo(combinedHash);
-
-		if (GHashNeon.IsSupported)
-		{
-			await Assert.That(HashNeonPaddedSegments(key, first, second, default)).IsEqualTo(segmentedHash);
-			await Assert.That(HashNeonPaddedSegments(key, combined, default, default)).IsEqualTo(combinedHash);
-		}
+		await AssertPortableBackends(key, first, second, default, segmentedHash);
+		await AssertPortableBackends(key, combined, default, default, combinedHash);
 	}
 
 	[Test]
@@ -394,6 +357,17 @@ public class GHashTest
 
 		await Assert.That((UInt128)high32 << 64 | low32).IsEqualTo(expected);
 		await Assert.That((UInt128)high64 << 64 | low64).IsEqualTo(expected);
+	}
+
+	// The software backend runs everywhere and the NEON backend only on ARM64.
+	private static async Task AssertPortableBackends(byte[] key, byte[]? first, byte[]? second, byte[]? third, Vector128<byte> expected)
+	{
+		await Assert.That(HashSoftwarePaddedSegments(key, first, second, third)).IsEqualTo(expected);
+
+		if (GHashNeon.IsSupported)
+		{
+			await Assert.That(HashNeonPaddedSegments(key, first, second, third)).IsEqualTo(expected);
+		}
 	}
 
 	private static Vector128<byte> HashPaddedSegments(ReadOnlySpan<byte> key, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third)

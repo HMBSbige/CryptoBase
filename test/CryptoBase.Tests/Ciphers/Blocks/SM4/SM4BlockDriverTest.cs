@@ -2,6 +2,7 @@ using CryptoBase.Ciphers.Blocks.SM4;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace CryptoBase.Tests.Ciphers.Blocks.SM4;
 
@@ -26,11 +27,11 @@ public class SM4BlockDriverTest
 	{
 		return maximum switch
 		{
-			4 => Verify<Kernel4>(blocks, singleBlock),
-			8 => Verify<Kernel8>(blocks, singleBlock),
-			16 => Verify<Kernel16>(blocks, singleBlock),
-			32 => Verify<Kernel32>(blocks, singleBlock),
-			64 => Verify<Kernel64>(blocks, singleBlock),
+			4 => Verify<Kernel<int>>(blocks, singleBlock),
+			8 => Verify<Kernel<long>>(blocks, singleBlock),
+			16 => Verify<Kernel<Int128>>(blocks, singleBlock),
+			32 => Verify<Kernel<Vector256<byte>>>(blocks, singleBlock),
+			64 => Verify<Kernel<Vector512<byte>>>(blocks, singleBlock),
 			_ => throw new ArgumentOutOfRangeException(nameof(maximum))
 		};
 	}
@@ -83,86 +84,34 @@ public class SM4BlockDriverTest
 		await TestUtils.AssertOutput(source, sourceOffset, input);
 	}
 
-	private static void RecordAndCopy(int maximum, int width, int count, ref uint rk, ref byte source, ref byte destination)
-	{
-		if (width < 4 || width > maximum || (width & width - 1) is not 0 || count < 1 || count > width)
-		{
-			throw new InvalidOperationException($"Invalid kernel batch: maximum={maximum}, width={width}, count={count}.");
-		}
-
-		if (rk >= Unsafe.Add(ref rk, 1))
-		{
-			throw new InvalidOperationException("The driver made more calls than there are input blocks.");
-		}
-
-		Span<uint> record = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref rk, 2 + (int)rk * 4), 4);
-		ReadOnlySpan<byte> input = MemoryMarshal.CreateReadOnlySpan(ref source, count * 16);
-		Span<byte> output = MemoryMarshal.CreateSpan(ref destination, count * 16);
-		record[0] = (uint)width;
-		record[1] = (uint)count;
-		record[2] = BinaryPrimitives.ReadUInt32LittleEndian(input);
-		record[3] = BinaryPrimitives.ReadUInt32LittleEndian(output);
-		input.CopyTo(output);
-		++rk;
-	}
-
-	private readonly struct Kernel4 : ISM4Kernel
+	// Records each batch and copies it; the maximum width, in blocks, is the size of TWidth in bytes.
+	private readonly struct Kernel<TWidth> : ISM4Kernel where TWidth : unmanaged
 	{
 		public static bool IsSupported => true;
 
-		public static int MaxBlocks => 4;
+		public static int MaxBlocks => Unsafe.SizeOf<TWidth>();
 
 		public static void Process(int width, int count, ref uint rk, ref byte source, ref byte destination)
 		{
-			RecordAndCopy(MaxBlocks, width, count, ref rk, ref source, ref destination);
-		}
-	}
+			if (width < 4 || width > MaxBlocks || (width & width - 1) is not 0 || count < 1 || count > width)
+			{
+				throw new InvalidOperationException($"Invalid kernel batch: maximum={MaxBlocks}, width={width}, count={count}.");
+			}
 
-	private readonly struct Kernel8 : ISM4Kernel
-	{
-		public static bool IsSupported => true;
+			if (rk >= Unsafe.Add(ref rk, 1))
+			{
+				throw new InvalidOperationException("The driver made more calls than there are input blocks.");
+			}
 
-		public static int MaxBlocks => 8;
-
-		public static void Process(int width, int count, ref uint rk, ref byte source, ref byte destination)
-		{
-			RecordAndCopy(MaxBlocks, width, count, ref rk, ref source, ref destination);
-		}
-	}
-
-	private readonly struct Kernel16 : ISM4Kernel
-	{
-		public static bool IsSupported => true;
-
-		public static int MaxBlocks => 16;
-
-		public static void Process(int width, int count, ref uint rk, ref byte source, ref byte destination)
-		{
-			RecordAndCopy(MaxBlocks, width, count, ref rk, ref source, ref destination);
-		}
-	}
-
-	private readonly struct Kernel32 : ISM4Kernel
-	{
-		public static bool IsSupported => true;
-
-		public static int MaxBlocks => 32;
-
-		public static void Process(int width, int count, ref uint rk, ref byte source, ref byte destination)
-		{
-			RecordAndCopy(MaxBlocks, width, count, ref rk, ref source, ref destination);
-		}
-	}
-
-	private readonly struct Kernel64 : ISM4Kernel
-	{
-		public static bool IsSupported => true;
-
-		public static int MaxBlocks => 64;
-
-		public static void Process(int width, int count, ref uint rk, ref byte source, ref byte destination)
-		{
-			RecordAndCopy(MaxBlocks, width, count, ref rk, ref source, ref destination);
+			Span<uint> record = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref rk, 2 + (int)rk * 4), 4);
+			ReadOnlySpan<byte> input = MemoryMarshal.CreateReadOnlySpan(ref source, count * 16);
+			Span<byte> output = MemoryMarshal.CreateSpan(ref destination, count * 16);
+			record[0] = (uint)width;
+			record[1] = (uint)count;
+			record[2] = BinaryPrimitives.ReadUInt32LittleEndian(input);
+			record[3] = BinaryPrimitives.ReadUInt32LittleEndian(output);
+			input.CopyTo(output);
+			++rk;
 		}
 	}
 }

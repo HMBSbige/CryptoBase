@@ -1,5 +1,5 @@
 using CryptoBase.Ciphers.Blocks.SM4;
-using System.Runtime.Intrinsics;
+using System.Runtime.InteropServices;
 
 namespace CryptoBase.Tests.Ciphers.Blocks.SM4;
 
@@ -26,8 +26,7 @@ internal static class SM4KernelTestUtils
 				SM4KeySchedule.InitRoundKeys(ref key[0], ref roundKeys[0]);
 				int sourceOffset = sample * 7 % 15 + 1;
 				int destinationOffset = 16 - sourceOffset;
-				byte[] source = TestUtils.CreateGuardedBuffer(sourceOffset, input.Length);
-				input.CopyTo(source, sourceOffset);
+				byte[] source = TestUtils.CreateGuardedBuffer(sourceOffset, input);
 				byte[] destination = TestUtils.CreateGuardedBuffer(destinationOffset, input.Length);
 
 				for (int direction = 0; direction < 2; ++direction)
@@ -47,41 +46,16 @@ internal static class SM4KernelTestUtils
 		}
 	}
 
-	public static Task Substitute128MatchesIndependentReference(Func<Vector128<byte>, Vector128<byte>> substitute)
-	{
-		return SubstituteMatchesIndependentReference
-		(
-			Vector128<uint>.Count, (inputs, actual, offset) =>
-				substitute(Vector128.LoadUnsafe(ref inputs[offset]).AsByte()).AsUInt32().StoreUnsafe(ref actual[offset])
-		);
-	}
-
-	public static Task Substitute256MatchesIndependentReference(Func<Vector256<byte>, Vector256<byte>> substitute)
-	{
-		return SubstituteMatchesIndependentReference
-		(
-			Vector256<uint>.Count, (inputs, actual, offset) =>
-				substitute(Vector256.LoadUnsafe(ref inputs[offset]).AsByte()).AsUInt32().StoreUnsafe(ref actual[offset])
-		);
-	}
-
-	public static Task Substitute512MatchesIndependentReference(Func<Vector512<byte>, Vector512<byte>> substitute)
-	{
-		return SubstituteMatchesIndependentReference
-		(
-			Vector512<uint>.Count, (inputs, actual, offset) =>
-				substitute(Vector512.LoadUnsafe(ref inputs[offset]).AsByte()).AsUInt32().StoreUnsafe(ref actual[offset])
-		);
-	}
-
-	private static async Task SubstituteMatchesIndependentReference(int stride, Action<uint[], uint[], int> substitute)
+	public static async Task SubstituteMatchesIndependentReference<TVector>(Func<TVector, TVector> substitute) where TVector : unmanaged
 	{
 		uint[] inputs = CreateSboxInputs();
 		uint[] actual = new uint[inputs.Length];
+		ReadOnlySpan<TVector> source = MemoryMarshal.Cast<uint, TVector>(inputs);
+		Span<TVector> destination = MemoryMarshal.Cast<uint, TVector>(actual.AsSpan());
 
-		for (int offset = 0; offset < inputs.Length; offset += stride)
+		for (int i = 0; i < source.Length; ++i)
 		{
-			substitute(inputs, actual, offset);
+			destination[i] = substitute(source[i]);
 		}
 
 		await Assert.That(actual).IsEquivalentTo(inputs.Select(SM4Reference.Substitute), CollectionOrdering.Matching);

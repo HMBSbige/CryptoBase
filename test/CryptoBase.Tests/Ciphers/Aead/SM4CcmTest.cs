@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.Tests.Ciphers.Blocks.SM4;
@@ -9,28 +10,17 @@ namespace CryptoBase.Tests.Ciphers.Aead;
 public class SM4CcmTest
 {
 	[Test]
+	[GenerateGenericTest(typeof(CcmMode<SM4Cipher>))]
+	[GenerateGenericTest(typeof(Ccm8Mode<SM4Cipher>))]
 	[MatrixDataSource]
-	public async Task MessagesMatchReference([Matrix(0, 1, 15, 16, 17, 31, 32, 33, 255, 256, 257, 4097)] int length, [Matrix(0, 14, 29, 0xFF0A)] int associatedDataLength)
+	public async Task MessagesMatchReference<T>([Matrix(0, 1, 15, 16, 17, 31, 32, 33, 255, 256, 257, 4097)] int length, [Matrix(0, 14, 29, 0xFF0A)] int associatedDataLength) where T : IAeadCipher<T>
 	{
 		byte[] key = CreateDeterministicSource(SM4Cipher.KeySize);
-		byte[] nonce = CreateDeterministicSource(CcmMode<SM4Cipher>.NonceSize);
+		byte[] nonce = CreateDeterministicSource(T.NonceSize);
 		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
 		byte[] plaintext = CreateDeterministicSource(length);
-		(byte[] expected, byte[] expectedTag) = CcmReference.Encrypt(blocks => SM4Reference.Transform(key, blocks), nonce, plaintext, associatedData);
-		using CcmMode<SM4Cipher> cipher = CcmMode<SM4Cipher>.Create(key);
-		await CcmTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
-	}
-
-	[Test]
-	[MatrixDataSource]
-	public async Task Ccm8MessagesMatchReference([Matrix(0, 1, 15, 16, 17, 31, 32, 33, 255, 256, 257, 4097)] int length, [Matrix(0, 14, 29, 0xFF0A)] int associatedDataLength)
-	{
-		byte[] key = CreateDeterministicSource(SM4Cipher.KeySize);
-		byte[] nonce = CreateDeterministicSource(Ccm8Mode<SM4Cipher>.NonceSize);
-		byte[] associatedData = CreateDeterministicSource(associatedDataLength);
-		byte[] plaintext = CreateDeterministicSource(length);
-		(byte[] expected, byte[] expectedTag) = CcmReference.Encrypt(blocks => SM4Reference.Transform(key, blocks), nonce, plaintext, associatedData, Ccm8Mode<SM4Cipher>.TagSize);
-		using Ccm8Mode<SM4Cipher> cipher = Ccm8Mode<SM4Cipher>.Create(key);
-		await CcmTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
+		(byte[] expected, byte[] expectedTag) = CcmReference.Encrypt(blocks => SM4Reference.Transform(key, blocks), nonce, plaintext, associatedData, T.TagSize);
+		using T cipher = T.Create(key);
+		await AeadTestUtils.AssertMessage(cipher, nonce, plaintext, associatedData, expected, expectedTag);
 	}
 }
