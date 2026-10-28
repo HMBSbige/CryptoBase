@@ -8,18 +8,35 @@ namespace CryptoBase.Benchmark.Encodings;
 [MemoryDiagnoser]
 public class Base32Benchmark
 {
-	[Params(1, 4, 5, 6, 1024, 8192)]
+	public enum EncodingKind
+	{
+		Rfc4648,
+		OmitPadding,
+		Custom
+	}
+
+	[Params(1, 4, 5, 6, 10, 20, 40, 160, 1024, 8192)]
 	public int ByteLength { get; set; }
+
+	[ParamsAllValues]
+	public EncodingKind Kind { get; set; }
 
 	private byte[] _data = [];
 	private char[] _encodedChars = [];
 	private byte[] _encodedUtf8 = [];
 	private byte[] _decoded = [];
-	private readonly Base32Encoding _encoding = Base32Encoding.Rfc4648;
+	private Base32Encoding _encoding = Base32Encoding.Rfc4648;
 
 	[GlobalSetup]
 	public void Setup()
 	{
+		_encoding = Kind switch
+		{
+			EncodingKind.Rfc4648 => Base32Encoding.Rfc4648,
+			EncodingKind.OmitPadding => Base32Encoding.Rfc4648.OmitPadding,
+			EncodingKind.Custom => Base32Encoding.Create("0123456789ABCDEFGHJKMNPQRSTVWXYZ"),
+			_ => throw new ArgumentOutOfRangeException(nameof(Kind))
+		};
 		_data = RandomNumberGenerator.GetBytes(ByteLength);
 		_encodedChars = new char[_encoding.GetEncodedLength(ByteLength)];
 		_encodedUtf8 = new byte[_encodedChars.Length];
