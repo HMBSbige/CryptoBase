@@ -27,18 +27,17 @@ public class SM4BlockDriverTest
 	{
 		return maximum switch
 		{
-			4 => Verify<Kernel<int>>(blocks, singleBlock),
-			8 => Verify<Kernel<long>>(blocks, singleBlock),
-			16 => Verify<Kernel<Int128>>(blocks, singleBlock),
-			32 => Verify<Kernel<Vector256<byte>>>(blocks, singleBlock),
-			64 => Verify<Kernel<Vector512<byte>>>(blocks, singleBlock),
+			4 => Verify<Kernel<int>>(maximum, blocks, singleBlock),
+			8 => Verify<Kernel<long>>(maximum, blocks, singleBlock),
+			16 => Verify<Kernel<Int128>>(maximum, blocks, singleBlock),
+			32 => Verify<Kernel<Vector256<byte>>>(maximum, blocks, singleBlock),
+			64 => Verify<Kernel<Vector512<byte>>>(maximum, blocks, singleBlock),
 			_ => throw new ArgumentOutOfRangeException(nameof(maximum))
 		};
 	}
 
-	private static async Task Verify<TKernel>(int blocks, bool singleBlock) where TKernel : struct, ISM4Kernel
+	private static async Task Verify<TKernel>(int maximum, int blocks, bool singleBlock) where TKernel : struct, ISM4Kernel
 	{
-		int maximum = TKernel.MaxBlocks;
 		int sourceOffset = blocks % 15 + 1;
 		int destinationOffset = 16 - sourceOffset;
 		byte[] input = TestUtils.CreateDeterministicSource(blocks * 16);
