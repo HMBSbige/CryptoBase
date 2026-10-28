@@ -179,6 +179,53 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 	}
 
 	/// <summary>
+	/// Writes the whole data unit <paramref name="unit" /> at <paramref name="offset" />, encrypting it in place unless a gap precedes it.
+	/// </summary>
+	/// <remarks><paramref name="unit" /> may hold ciphertext afterwards; if the backend write fails, it holds the plaintext again.</remarks>
+	public void WriteUnitInPlace(Span<byte> unit, long offset)
+	{
+		if (offset > GetValidatedLength())
+		{
+			Write(unit, offset);
+			return;
+		}
+
+		EncryptUnit(unit, offset);
+
+		try
+		{
+			_storage.Write(unit, offset);
+		}
+		catch
+		{
+			DecryptUnits(unit, offset);
+			throw;
+		}
+	}
+
+	/// <inheritdoc cref="WriteUnitInPlace" />
+	public async ValueTask WriteUnitInPlaceAsync(Memory<byte> unit, long offset, CancellationToken cancellationToken)
+	{
+		if (offset > GetValidatedLength())
+		{
+			await WriteAsync(unit, offset, cancellationToken).ConfigureAwait(false);
+			return;
+		}
+
+		EncryptUnit(unit.Span, offset);
+
+		try
+		{
+			await _storage.WriteAsync(unit, offset, cancellationToken).ConfigureAwait(false);
+		}
+		catch
+		{
+			DecryptUnits(unit.Span, offset);
+			throw;
+		}
+	}
+
+	/// <summary>
 	/// Throws when <paramref name="count" /> bytes at <paramref name="offset" /> would end past the last data unit that has a data unit number and ends within <see cref="long.MaxValue" />.
 	/// </summary>
 	public void ValidateRange(long offset, int count)
@@ -458,6 +505,13 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 		long maxUnits = long.MaxValue / dataUnitSize;
 		UInt128 lastUnitIndex = UInt128.MaxValue - firstDataUnitNumber;
 		return (lastUnitIndex < (ulong)maxUnits ? (long)lastUnitIndex + 1 : maxUnits) * dataUnitSize;
+	}
+
+	private void EncryptUnit(Span<byte> unit, long offset)
+	{
+		Span<byte> tweak = stackalloc byte[TweakLength];
+		BinaryPrimitives.WriteUInt128LittleEndian(tweak, GetDataUnitNumber(offset));
+		_cipher.Encrypt(tweak, unit, unit);
 	}
 
 	private void DecryptUnits(Span<byte> units, long offset)

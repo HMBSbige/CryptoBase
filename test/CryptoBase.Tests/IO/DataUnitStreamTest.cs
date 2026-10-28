@@ -281,6 +281,34 @@ public class DataUnitStreamTest
 	}
 
 	[Test]
+	[MatrixDataSource]
+	public async Task FailedWriteOfReplacedDataUnitKeepsItCached([Matrix] bool useAsync)
+	{
+		const int unit = 64;
+		byte[] data = CreateDeterministicSource(10);
+		byte[] padded = new byte[unit];
+		data.CopyTo(padded, 5);
+		using FailingWriteMemoryStream inner = new();
+		await using DataUnitStream<XtsMode<AesCipher>> xts = DataUnitStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		DataUnitStreamTarget target = new(xts, inner.ToArray);
+		byte[] actual = new byte[unit];
+
+		await target.WriteAsync(data, 0, data.Length, 5, useAsync);
+		inner.FailNextWrite = true;
+
+		await Assert.That(async () => await target.WriteAsync(data, 0, 1, unit + 3, useAsync)).ThrowsExactly<IOException>();
+
+		await FlushAsync(xts, useAsync);
+
+		using (Assert.Multiple())
+		{
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
+			await Assert.That(await target.ReadAsync(actual, 0, actual.Length, 0, useAsync)).IsEqualTo(unit);
+			await AssertBytesEqual(actual, padded);
+		}
+	}
+
+	[Test]
 	public async Task SetLengthDiscardsCachedDataUnitPastNewEnd()
 	{
 		const int unit = 64;
@@ -731,6 +759,23 @@ public class DataUnitStreamTest
 			ArgumentOutOfRangeException.ThrowIfLessThan(Position, tailStart);
 			_tail.Position = Position - tailStart;
 			return _tail;
+		}
+	}
+
+	/// <summary>Throws from the next write once <see cref="FailNextWrite" /> is set, without writing anything.</summary>
+	private sealed class FailingWriteMemoryStream : MemoryStream
+	{
+		public bool FailNextWrite { get; set; }
+
+		public override void Write(byte[] buffer, int offset, int count)
+		{
+			if (FailNextWrite)
+			{
+				FailNextWrite = false;
+				throw new IOException("Simulated write failure.");
+			}
+
+			base.Write(buffer, offset, count);
 		}
 	}
 

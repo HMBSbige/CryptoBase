@@ -345,7 +345,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 
 		try
 		{
-			await FlushUnitAsync(CancellationToken.None).ConfigureAwait(false);
+			await EvictUnitAsync(CancellationToken.None).ConfigureAwait(false);
 		}
 		finally
 		{
@@ -366,7 +366,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 		{
 			try
 			{
-				FlushUnit();
+				EvictUnit();
 			}
 			finally
 			{
@@ -518,9 +518,8 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	/// </summary>
 	private bool LoadUnit(long position, bool create)
 	{
-		FlushUnit();
+		EvictUnit();
 		long unitStart = position - position % DataUnitSize;
-		_unitStart = null;
 
 		if (_transform.Read(_unit, unitStart) is 0)
 		{
@@ -538,9 +537,8 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 
 	private async ValueTask<bool> LoadUnitAsync(long position, bool create, CancellationToken cancellationToken)
 	{
-		await FlushUnitAsync(cancellationToken).ConfigureAwait(false);
+		await EvictUnitAsync(cancellationToken).ConfigureAwait(false);
 		long unitStart = position - position % DataUnitSize;
-		_unitStart = null;
 
 		if (await _transform.ReadAsync(_unit, unitStart, cancellationToken).ConfigureAwait(false) is 0)
 		{
@@ -572,6 +570,31 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 			await _transform.WriteAsync(_unit, unitStart, cancellationToken).ConfigureAwait(false);
 			_unitDirty = false;
 		}
+	}
+
+	/// <summary>
+	/// Writes a changed cached data unit before the cache is reused, encrypting it in the cache, and leaves no unit cached.
+	/// </summary>
+	private void EvictUnit()
+	{
+		if (DirtyUnitStart is { } unitStart)
+		{
+			_transform.WriteUnitInPlace(_unit, unitStart);
+			_unitDirty = false;
+		}
+
+		_unitStart = null;
+	}
+
+	private async ValueTask EvictUnitAsync(CancellationToken cancellationToken)
+	{
+		if (DirtyUnitStart is { } unitStart)
+		{
+			await _transform.WriteUnitInPlaceAsync(_unit, unitStart, cancellationToken).ConfigureAwait(false);
+			_unitDirty = false;
+		}
+
+		_unitStart = null;
 	}
 
 	/// <summary>
