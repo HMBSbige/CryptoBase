@@ -7,7 +7,6 @@ internal readonly struct Blake2bVector256 : IBlake2bKernel
 {
 	public static bool IsSupported => Avx2.IsSupported;
 
-	// Under AVX-512, holding the block in zmm registers and selecting words with vpermt2q was no faster than these 256-bit steps.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Compress(ref ulong state, ReadOnlySpan<byte> blocks, UInt128 counter, ulong finalFlag)

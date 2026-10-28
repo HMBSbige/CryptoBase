@@ -4,7 +4,7 @@ internal static class Vector512CreationExtensions
 {
 	extension(Vector512)
 	{
-		// Requires AVX-512F. One shuffle copies the initialized low 128 bits to every block; Vector512.Create(Vector128<T>) takes three inserts on .NET 10, two of them into an uninitialized vector read from the stack.
+		// Requires AVX-512F. One shuffle copies the initialized low 128 bits to every block; Vector512.Create(Vector128<T>) instead inserts into an uninitialized vector read from the stack.
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Vector512<T> Broadcast<T>(Vector128<T> value) where T : unmanaged
 		{

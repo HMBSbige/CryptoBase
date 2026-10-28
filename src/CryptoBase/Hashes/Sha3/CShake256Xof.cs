@@ -5,7 +5,7 @@ namespace CryptoBase.Hashes.Sha3;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Computes cSHAKE256 as specified in NIST SP 800-185, Sec. 3, over a 136-byte sponge rate. The function name and the customization string, both bit strings given as bytes, are absorbed ahead of the input, so that different values give unrelated output; with both empty, cSHAKE256 is SHAKE256, per Sec. 3.3. The function name is reserved for functions that NIST defines, such as <c>"KMAC"u8</c>; applications leave it empty and choose the customization string, per Sec. 3.4. Any choice of the two leaves the security of SHAKE256, per Sec. 8.2.1: collision resistance reaches its full 256 bits from 64 bytes of output.
+/// Computes cSHAKE256 as specified in NIST SP 800-185, Sec. 3. The function name and the customization string are bit strings given as bytes, and different values give unrelated output; with both empty, cSHAKE256 is SHAKE256, per Sec. 3.3. The function name is reserved for functions that NIST defines, such as <c>"KMAC"u8</c>; applications leave it empty and choose the customization string, per Sec. 3.4. Any choice of the two leaves the security of SHAKE256, per Sec. 8.2.1: collision resistance reaches its full 256 bits from 64 bytes of output.
 /// </para>
 /// <para><see cref="Reset" /> and <see cref="GetHashAndReset" /> keep the function name and customization string.</para>
 /// </remarks>

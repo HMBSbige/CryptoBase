@@ -9,7 +9,7 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 	private const byte Ipad = 0x36;
 	private const byte Opad = 0x5c;
 
-	// ARM64 SHA1 and SHA256 keep the in-place XorPad path after measured regressions.
+	// ARM64 SHA1 and SHA256 keep the in-place XorPad path, which is faster for them.
 	private static bool UseDirectKeyPads
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

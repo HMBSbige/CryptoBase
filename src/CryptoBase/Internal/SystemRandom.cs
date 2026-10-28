@@ -1,7 +1,7 @@
 namespace CryptoBase.Internal;
 
 /// <summary>
-/// Calls getrandom directly on Linux rather than through OpenSSL, and falls back to <see cref="RandomNumberGenerator"/> elsewhere.
+/// Calls getrandom directly on Linux, and falls back to <see cref="RandomNumberGenerator"/> elsewhere.
 /// </summary>
 internal static partial class SystemRandom
 {
@@ -20,7 +20,7 @@ internal static partial class SystemRandom
 			return;
 		}
 
-		// No flags: block until the pool is ready, like OpenSSL.
+		// No flags: block until the pool is ready.
 		while (!data.IsEmpty)
 		{
 			nint n = GetRandom(data, (nuint)data.Length, 0);

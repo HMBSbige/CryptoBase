@@ -24,12 +24,12 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		}
 		else if (AesCipherArm.IsSupported)
 		{
-			// Only the ARM64 backend is initialized in place: it skips a stack copy there, while AES-NI on x64 measured slower.
+			// Only the ARM64 backend is initialized in place, which skips a stack copy here but slows AES-NI.
 			_state.Arm.Initialize(key);
 		}
 		else if (AesCipherVpaes.IsSupported)
 		{
-			// SSSE3 measurements favor VPAES encryption and bitslice decryption batches.
+			// Under SSSE3, VPAES is the faster backend for encryption and bitslice for decryption batches.
 			if (AesCipherBitslice.IsSupported)
 			{
 				_bitslice = new BitsliceState(key, out _state.Vpaes);
@@ -227,7 +227,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 			return true;
 		}
 
-		// SSSE3 measurements favor VPAES encryption and bitslice decryption batches.
+		// Under SSSE3, VPAES is the faster backend for encryption and bitslice for decryption batches.
 		if (AesCipherVpaes.IsSupported && !TOperation.IsDecrypt)
 		{
 			_state.Vpaes.TransformWithPolicy<TPolicy, TOperation>(ref policy, source, destination);

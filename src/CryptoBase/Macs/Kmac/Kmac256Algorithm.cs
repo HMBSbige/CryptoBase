@@ -8,10 +8,10 @@ namespace CryptoBase.Macs.Kmac;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Computes KMAC256 as specified in NIST SP 800-185, Sec. 4, over a 136-byte sponge rate: cSHAKE256 with the function name <c>"KMAC"</c> and the customization string absorbs the key, padded to a whole block, then the message, then the output length L in bits. The key and the customization string may have any length, empty included; different customization strings give unrelated tags for the same key and message. The key length in bits bounds the security strength, which reaches its full 256 bits from a 32-byte key, per Sec. 8.4.1; Sec. 8.4.2 asks for tags of at least 32 bits, 4 bytes, and a risk assessment below 64 bits.
+/// Computes KMAC256 as specified in NIST SP 800-185, Sec. 4. The key and the customization string may have any length, empty included; different customization strings give unrelated tags for the same key and message. The key length in bits bounds the security strength, which reaches its full 256 bits from a 32-byte key, per Sec. 8.4.1; Sec. 8.4.2 asks for tags of at least 32 bits, 4 bytes, and a risk assessment below 64 bits.
 /// </para>
 /// <para>
-/// The destination length selects L: a destination of n bytes receives the tag for L = 8n bits. Since L is part of the input, tags of different lengths are unrelated, so truncating a longer tag does not give a shorter one. An empty destination throws, since an empty tag would verify every message. <see cref="KmacXof256Algorithm" /> computes KMACXOF256, whose output is a stream.
+/// The destination length selects the output length L: a destination of n bytes receives the tag for L = 8n bits. Since L is part of the input, tags of different lengths are unrelated, so truncating a longer tag does not give a shorter one. An empty destination throws, since an empty tag would verify every message. <see cref="KmacXof256Algorithm" /> computes KMACXOF256, whose output is a stream.
 /// </para>
 /// <para>
 /// A reset keeps the key and customization string, which the instance holds until disposal. Disposal erases the state, key included, and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.

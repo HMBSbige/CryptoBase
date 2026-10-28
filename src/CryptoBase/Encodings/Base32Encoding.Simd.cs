@@ -150,7 +150,7 @@ public sealed partial class Base32Encoding
 		return Vector128.Create(Unsafe.ReadUnaligned<ulong>(ref source), Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref source, 2))).AsByte();
 	}
 
-	// Keep the offsets in the AdvSimd call chain. On .NET 10 ARM64, forwarding the caller's zero-valued registers is faster than materializing two zero arguments.
+	// Keep the offsets in the AdvSimd call chain: on ARM64, forwarding the caller's zero-valued registers avoids materializing two zero arguments.
 	private static int EncodeAdvSimdAuto<T>(ReadOnlySpan<byte> source, Span<T> destination, int sourceOffset, int destinationOffset, byte[] alphabet) where T : unmanaged
 	{
 		int sourceRemaining = Math.Min(source.Length - sourceOffset, (destination.Length - destinationOffset) / OutputSymbolsPerBlock * InputBytesPerBlock);

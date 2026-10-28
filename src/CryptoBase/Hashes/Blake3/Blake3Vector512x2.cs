@@ -7,7 +7,7 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 {
 	public static bool IsSupported => Blake3Vector512.IsSupported;
 
-	// Measured faster than Blake3Vector512 on Zen 5 only. A thread whose core it shares with another hashing thread measured about as fast, and at most 5% slower, with either kernel, so threads take it whether or not they share cores. Cores that split 512-bit operations are bound by their throughput, with no cycles for the second group to fill.
+	// Only Zen 5 with a 512-bit datapath leaves cycles for the second group to fill; cores that split 512-bit operations are bound by their throughput. Threads take it whether or not they share a core.
 	internal static readonly bool IsPreferred = IsSupported && CpuIdUtils.IsAmdZen5With512BitDatapath();
 
 	public static int Degree => 32;
@@ -33,7 +33,7 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 		Blake3Vector512.HashParents(ref input, count, in key, flags, ref output);
 	}
 
-	// The two states take all 32 vector registers, so the steps read the message words from memory; locals of this frame measured faster for them than a buffer from stackalloc or the heap.
+	// The two states take all 32 vector registers, so the steps read the message words from memory, kept in locals of this frame rather than in a buffer from stackalloc or the heap.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash(ref byte input, ref readonly uint key, ulong counter, uint flags, ref byte output)
@@ -66,7 +66,7 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 
 		do
 		{
-			// Near the end of the chunks, prefetch the next batch, which follows in memory; a mask measured faster than a conditional.
+			// Near the end of the chunks, prefetch the next batch, which follows in memory; the offset is masked rather than chosen by a conditional.
 			const nuint nextBatch = 31 * ChunkLength;
 			nuint skip = (nuint)((nint)(blockCount - PrefetchDistance / BlockLength - 1) >> 8 * nint.Size - 1) & nextBatch;
 			Blake3Vector512.PrefetchFull(ref input, skip);

@@ -9,7 +9,7 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 {
 	public static bool IsSupported => Vector512.IsHardwareAccelerated && Avx512F.IsSupported;
 
-	// Measured faster than the column kernels for two to eight inputs on Zen 5 only.
+	// Preferred over the column kernels for two to eight inputs on Zen 5 only.
 	internal static readonly bool IsPreferred = IsSupported && CpuIdUtils.IsAmdZen5();
 
 	public static int Degree => 8;

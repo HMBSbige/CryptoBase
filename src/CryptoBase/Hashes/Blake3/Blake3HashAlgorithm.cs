@@ -51,7 +51,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 
 	private bool _usedOutput;
 
-	// A read in group mode hashes up to a group side by side, in about the time chunk mode takes to compress a group divided by the degree of the tree kernel block by block, and hashes the buffered input again later; chunk mode wins until reads come about 1.5 times that far apart on Zen 5 and Intel cores, and about 2.5 times on Apple cores, whose scalar compression keeps up better with Blake3Vector128x2. A field, which the JIT takes as a constant, spares every append in chunk mode a call and a division.
+	// A read in group mode hashes up to a group side by side, in about the time chunk mode takes to compress a group divided by the degree of the tree kernel block by block, and hashes the buffered input again later; chunk mode wins until reads come 3/2 times that far apart, or 5/2 times with Blake3Vector128x2, against which scalar compression keeps up better. A field, which the JIT takes as a constant, spares every append in chunk mode a call and a division.
 	private static readonly int ChunkModeInterval = (Blake3Tree.Kernel is Blake3TreeKernel.Vector128x2 ? 5 : 3) * Blake3State.GroupLength / (2 * Blake3Tree.Degree);
 
 	private bool _chunkMode;
@@ -513,7 +513,7 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 
 	private void ResetState()
 	{
-		// Erasing skips what the input has left untouched, the output included unless a read created it, which on 64-byte messages cuts the cost of a reset by about two thirds.
+		// Erasing skips what the input has left untouched, the output included unless a read created it.
 		if (_state.IsSecret)
 		{
 			_state.EraseAndReset(_buffer, _stack);

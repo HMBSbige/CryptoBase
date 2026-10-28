@@ -119,7 +119,7 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 		}
 	}
 
-	// A 512-bit Reduce is faster on its own, but it makes Encrypt spill 512-bit registers around calls and is no faster end to end, so it runs on 256-bit vectors.
+	// A 512-bit Reduce makes Encrypt spill 512-bit registers around calls, so it runs on 256-bit vectors.
 	public static void Reduce(Span<short> f)
 	{
 		MLKemAvx2.Reduce(f);

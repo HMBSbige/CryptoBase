@@ -7,7 +7,7 @@ internal readonly struct Blake3Vector128x2 : IBlake3Kernel
 {
 	public static bool IsSupported => AdvSimd.Arm64.IsSupported;
 
-	// Measured faster than the four-lane kernel on Apple M2; other cores may have fewer vector pipelines, and no cycles to spare for the second group.
+	// Limited to Apple cores: others may have fewer vector pipelines, and no cycles to spare for the second group.
 	internal static readonly bool IsPreferred = IsSupported && (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS());
 
 	public static int Degree => 8;
@@ -184,7 +184,7 @@ internal readonly struct Blake3Vector128x2 : IBlake3Kernel
 			Vector128<uint> w14 = Vector128.Create((uint)BlockLength);
 			Vector128<uint> w15 = laneFlags1;
 
-			// The steps of Blake3Vector128.RoundsAvx512Vl, each running its first half on both groups, then its second half on both. Interleaving whole steps instead keeps too little independent work within reach of the core, and was slower than one group of four lanes.
+			// The steps of Blake3Vector128.RoundsAvx512Vl, each running its first half on both groups, then its second half on both. Interleaving whole steps instead keeps too little independent work within reach of the core.
 			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref t, ref message0[0], 0, 2, 4, 6, true);
 			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref t, ref message1[0], 0, 2, 4, 6, true);
 			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref t, ref message0[0], 1, 3, 5, 7, false);
@@ -298,7 +298,7 @@ internal readonly struct Blake3Vector128x2 : IBlake3Kernel
 		}
 	}
 
-	// Every call shares the one temporary t: with a temporary of its own per call, the JIT spilled it between the two instructions of a rotation. Rotating by 8 shifts and inserts like the other rotations instead of looking up a table, whose indices would take one more vector register when the two groups already need more than ARM64 has; on Apple M2 this was faster here, though slower in the four-lane kernel.
+	// Every call shares the one temporary t: with a temporary of its own per call, the JIT spilled it between the two instructions of a rotation. Rotating by 8 shifts and inserts like the other rotations instead of looking up a table, whose indices would take one more vector register when the two groups already need more than ARM64 has.
 	// ReSharper disable once RedundantAssignment
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Half

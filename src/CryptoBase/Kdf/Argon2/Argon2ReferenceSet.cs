@@ -69,7 +69,7 @@ internal readonly unsafe struct Argon2ReferenceSet
 		ulong x = (ulong)j1 * j1 >> 32;
 		uint position = _startPosition + areaSize - 1 - (uint)(areaSize * x >> 32);
 
-		// Only possible after the first pass; with a single lane, a branch measured faster than a mask.
+		// Only possible after the first pass; with a single lane, a branch is cheaper than a mask.
 		if (position >= _laneLength)
 		{
 			position -= _laneLength;

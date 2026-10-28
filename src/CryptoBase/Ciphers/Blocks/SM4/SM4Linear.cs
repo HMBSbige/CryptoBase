@@ -3,7 +3,7 @@ namespace CryptoBase.Ciphers.Blocks.SM4;
 internal static class SM4Linear
 {
 	// 0x96 selects a ^ b ^ c.
-	// Explicit TernaryLogic keeps the XOR grouping that measured faster than equivalent ^ expressions.
+	// Explicit TernaryLogic keeps this XOR grouping, which equivalent ^ expressions do not.
 	private const byte Xor3 = 0xF0 ^ 0xCC ^ 0xAA;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

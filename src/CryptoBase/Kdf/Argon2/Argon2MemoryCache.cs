@@ -4,7 +4,7 @@ using Region = (nint Address, nuint Length, long ReturnedAt);
 
 namespace CryptoBase.Kdf.Argon2;
 
-// Keeps recently released working memory for reuse: touching fresh memory costs a page fault per page, about as much as a whole pass. Freeing a region of tens of MiB takes milliseconds, so it happens outside the lock.
+// Keeps recently released working memory for reuse: touching fresh memory costs a page fault per page. Freeing a large region is slow, so it happens outside the lock.
 internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPeriodMilliseconds)
 {
 	internal const nuint Alignment = 64;
