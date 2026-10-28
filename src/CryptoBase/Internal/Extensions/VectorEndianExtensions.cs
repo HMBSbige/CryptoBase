@@ -2,12 +2,6 @@ namespace CryptoBase.Internal.Extensions;
 
 internal static class VectorEndianExtensions
 {
-	internal static Vector128<byte> ReverseEndianness64Mask128
-	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Vector128.Create((byte)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
-	}
-
 	extension<T>(Vector512<T> value)
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
