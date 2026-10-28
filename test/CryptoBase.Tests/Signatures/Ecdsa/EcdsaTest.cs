@@ -553,6 +553,8 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 	}
 
 	[Test]
+	// Background GC can overcount unused allocation-context space, causing intermittent allocation assertion failures.
+	// https://github.com/dotnet/runtime/pull/134855
 	public async Task SigningAndVerificationDoNotAllocate()
 	{
 		// Without optimization, every read of a constant ReadOnlySpan<ulong>, such as the curve constants, allocates a field handle.
