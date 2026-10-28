@@ -11,13 +11,19 @@ internal static partial class WycheproofVectors
 
 	public static IEnumerable<T> Load<T>(string fileName) where T : WycheproofTestVector
 	{
-		return Load<TestFile<T>>(fileName, typeof(T)).TestGroups.SelectMany(static group => group.Tests);
+		return WithSource(fileName, Load<TestFile<T>>(fileName, typeof(T)).TestGroups.SelectMany(static group => group.Tests));
 	}
 
 	// For files whose groups hold what their tests share, such as a key.
 	public static IEnumerable<T> Load<TGroup, T>(string fileName) where TGroup : WycheproofTestGroup<T> where T : WycheproofTestVector
 	{
-		return Load<GroupFile<TGroup>>(fileName, typeof(TGroup)).TestGroups.SelectMany(static group => group.Tests.Select(group.Complete));
+		return WithSource(fileName, Load<GroupFile<TGroup>>(fileName, typeof(TGroup)).TestGroups.SelectMany(static group => group.Tests.Select(group.Complete)));
+	}
+
+	private static IEnumerable<T> WithSource<T>(string fileName, IEnumerable<T> vectors) where T : WycheproofTestVector
+	{
+		string source = Path.GetFileNameWithoutExtension(fileName);
+		return vectors.Select(vector => vector with { Source = source });
 	}
 
 	private static TFile Load<TFile>(string fileName, Type registeredType) where TFile : class

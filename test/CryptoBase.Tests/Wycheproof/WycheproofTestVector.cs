@@ -19,9 +19,13 @@ public abstract record WycheproofTestVector
 
 	public required WycheproofResult Result { get; init; }
 
+	// A test can take the tests of several files, whose tcIds overlap.
+	[JsonIgnore]
+	public string Source { get; init; } = "";
+
 	public sealed override string ToString()
 	{
-		return Flags is [] ? $"tcId {TcId}" : $"tcId {TcId}: {string.Join(", ", Flags)}";
+		return Flags is [] ? $"{Source} tcId {TcId}" : $"{Source} tcId {TcId}: {string.Join(", ", Flags)}";
 	}
 }
 
