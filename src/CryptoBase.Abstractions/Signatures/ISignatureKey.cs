@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace CryptoBase.Abstractions.Signatures;
 
 /// <summary>
@@ -29,7 +31,7 @@ public interface ISignatureKey : IDisposable
 	/// <summary>
 	/// Gets the length of the PKCS #8 private key that <see cref="ExportPkcs8PrivateKey" /> writes, in bytes.
 	/// </summary>
-	/// <exception cref="InvalidOperationException">The instance does not hold the private key.</exception>
+	/// <exception cref="InvalidOperationException">The instance does not hold the private key, or the private key is not exportable.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	int Pkcs8PrivateKeyLength { get; }
 
@@ -60,6 +62,7 @@ public interface ISignatureKey : IDisposable
 	/// <returns>The length of the signature, in bytes.</returns>
 	/// <exception cref="ArgumentException">The key does not support <paramref name="algorithm" />, or <paramref name="destination" /> is too short.</exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the private key.</exception>
+	/// <exception cref="CryptographicException">The key store or device that holds the private key failed to sign.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination);
 
@@ -91,7 +94,7 @@ public interface ISignatureKey : IDisposable
 	/// <param name="destination">The output buffer.</param>
 	/// <returns>The value of <see cref="Pkcs8PrivateKeyLength" />.</returns>
 	/// <exception cref="ArgumentException"><paramref name="destination" /> is too short.</exception>
-	/// <exception cref="InvalidOperationException">The instance does not hold the private key.</exception>
+	/// <exception cref="InvalidOperationException">The instance does not hold the private key, or the private key is not exportable.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	int ExportPkcs8PrivateKey(Span<byte> destination);
 }
