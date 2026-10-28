@@ -6,8 +6,6 @@ public class FieldElementTest
 {
 	private const int RandomCount = 128;
 
-	private static readonly uint[] SmallFactors = [0, 1, 2, 3, 4, 5, 7, 8, 12, 255, 256, 65537, uint.MaxValue];
-
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task AddMatchesBigInteger(ModulusCase modulus)
@@ -18,54 +16,6 @@ public class FieldElementTest
 		foreach ((BigInteger left, BigInteger right) in Pairs(modulus, 1))
 		{
 			Check(failures, $"{left:X} + {right:X}", modulus.Add(left, right), (left + right) % m);
-		}
-
-		await Assert.That(failures).IsEmpty();
-	}
-
-	[Test]
-	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
-	public async Task SubtractMatchesBigInteger(ModulusCase modulus)
-	{
-		BigInteger m = modulus.Modulus;
-		List<string> failures = [];
-
-		foreach ((BigInteger left, BigInteger right) in Pairs(modulus, 2))
-		{
-			Check(failures, $"{left:X} - {right:X}", modulus.Subtract(left, right), (left - right + m) % m);
-		}
-
-		await Assert.That(failures).IsEmpty();
-	}
-
-	[Test]
-	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
-	public async Task NegateMatchesBigInteger(ModulusCase modulus)
-	{
-		BigInteger m = modulus.Modulus;
-		List<string> failures = [];
-
-		foreach (BigInteger value in Values(modulus, 3))
-		{
-			Check(failures, $"-{value:X}", modulus.Negate(value), (m - value) % m);
-		}
-
-		await Assert.That(failures).IsEmpty();
-	}
-
-	[Test]
-	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
-	public async Task MultiplySmallMatchesBigInteger(ModulusCase modulus)
-	{
-		BigInteger m = modulus.Modulus;
-		List<string> failures = [];
-
-		foreach (BigInteger value in Values(modulus, 4))
-		{
-			foreach (uint factor in SmallFactors)
-			{
-				Check(failures, $"{factor} · {value:X}", modulus.MultiplySmall(value, factor), factor * value % m);
-			}
 		}
 
 		await Assert.That(failures).IsEmpty();
@@ -87,26 +37,10 @@ public class FieldElementTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	[Test]
-	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
-	public async Task SquareMatchesBigInteger(ModulusCase modulus)
-	{
-		BigInteger m = modulus.Modulus;
-		BigInteger rInverse = RInverse(modulus);
-		List<string> failures = [];
-
-		foreach (BigInteger value in Values(modulus, 6))
-		{
-			Check(failures, $"{value:X}²", modulus.Square(value), value * value * rInverse % m);
-		}
-
-		await Assert.That(failures).IsEmpty();
-	}
-
 	// Before its final subtraction a product is a value u below 2m, which Reduce gives. Where 2m > R, random operands give u below m and u of R or more, which carries out of the top limb, about equally often. u in [m, R) is rare for them; the next test builds operands that give it.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
-	public async Task MultiplyAndSquareTakeBothSidesOfTheFinalSubtraction(ModulusCase modulus)
+	public async Task MultiplyTakesBothSidesOfTheFinalSubtraction(ModulusCase modulus)
 	{
 		BigInteger m = modulus.Modulus;
 		BigInteger r = modulus.R;
@@ -121,14 +55,10 @@ public class FieldElementTest
 			BigInteger left = modulus.RandomBelow(random, m);
 			BigInteger right = modulus.RandomBelow(random, m);
 
-			foreach (BigInteger u in (BigInteger[])[modulus.Reduce(left * right), modulus.Reduce(left * left)])
-			{
-				below += u < m ? 1 : 0;
-				carried += u >= r ? 1 : 0;
-			}
-
+			BigInteger u = modulus.Reduce(left * right);
+			below += u < m ? 1 : 0;
+			carried += u >= r ? 1 : 0;
 			Check(failures, $"{left:X} · {right:X}", modulus.Multiply(left, right), left * right * rInverse % m);
-			Check(failures, $"{left:X}²", modulus.Square(left), left * left * rInverse % m);
 		}
 
 		await Assert.That(failures).IsEmpty();
@@ -182,15 +112,14 @@ public class FieldElementTest
 	{
 		BigInteger m = modulus.Modulus;
 		BigInteger r = modulus.R;
-		BigInteger rInverse = RInverse(modulus);
 		List<string> failures = [];
 
+		// Multiplying by the plain 1 leaves the Montgomery form.
 		foreach (BigInteger value in Values(modulus, 7))
 		{
 			BigInteger montgomery = modulus.ToMontgomery(value);
 			Check(failures, $"{value:X} · R", montgomery, value * r % m);
-			Check(failures, $"{value:X} · R⁻¹", modulus.FromMontgomery(value), value * rInverse % m);
-			Check(failures, $"{value:X} · R · R⁻¹", modulus.FromMontgomery(montgomery), value);
+			Check(failures, $"{value:X} · R · R⁻¹", modulus.Multiply(montgomery, 1), value);
 		}
 
 		Check(failures, "1 · R", modulus.MontgomeryOne, r % m);
@@ -211,50 +140,18 @@ public class FieldElementTest
 		await Assert.That(InversionFailures(modulus, modulus.InvertVariableTime)).IsEmpty();
 	}
 
+	// Some boundary values differ from zero in a single limb.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
-	public async Task ConditionalSelectAndSwapFollowTheMask(ModulusCase modulus)
+	public async Task IsZeroComparesEveryLimb(ModulusCase modulus)
 	{
 		List<string> failures = [];
 
-		foreach ((BigInteger left, BigInteger right) in Pairs(modulus, 9))
+		foreach (BigInteger value in modulus.BoundaryValues())
 		{
-			Check(failures, $"select {left:X} over {right:X}", modulus.ConditionalSelect(ulong.MaxValue, left, right), left);
-			Check(failures, $"select {right:X} over {left:X}", modulus.ConditionalSelect(0, left, right), right);
-
-			(BigInteger swappedLeft, BigInteger swappedRight) = modulus.ConditionalSwap(ulong.MaxValue, left, right);
-			Check(failures, $"swap {left:X} with {right:X}, left", swappedLeft, right);
-			Check(failures, $"swap {left:X} with {right:X}, right", swappedRight, left);
-
-			(BigInteger keptLeft, BigInteger keptRight) = modulus.ConditionalSwap(0, left, right);
-			Check(failures, $"keep {left:X} and {right:X}, left", keptLeft, left);
-			Check(failures, $"keep {left:X} and {right:X}, right", keptRight, right);
-		}
-
-		await Assert.That(failures).IsEmpty();
-	}
-
-	// Some boundary values differ from zero, and from one another, in a single limb.
-	[Test]
-	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
-	public async Task IsZeroAndAreEqualCompareEveryLimb(ModulusCase modulus)
-	{
-		BigInteger[] values = modulus.BoundaryValues();
-		List<string> failures = [];
-
-		foreach (BigInteger left in values)
-		{
-			if (modulus.IsZero(left) != Mask(left.IsZero))
+			if (modulus.IsZero(value) != Mask(value.IsZero))
 			{
-				failures.Add($"IsZero({left:X})");
-			}
-
-			foreach (BigInteger right in values)
-			{
-				if (modulus.AreEqual(left, right) != Mask(left == right))
-				{
-					failures.Add($"AreEqual({left:X}, {right:X})");
-				}
+				failures.Add($"IsZero({value:X})");
 			}
 		}
 
@@ -361,18 +258,11 @@ public class FieldElementTest
 			{
 				string over = $"{left:X}, {right:X} over {aliasing}";
 				Check(failures, $"Add {over}", modulus.Add(left, right, aliasing), modulus.Add(left, right));
-				Check(failures, $"Subtract {over}", modulus.Subtract(left, right, aliasing), modulus.Subtract(left, right));
 				Check(failures, $"Multiply {over}", modulus.Multiply(left, right, aliasing), modulus.Multiply(left, right));
-				Check(failures, $"ConditionalSelect set {over}", modulus.ConditionalSelect(ulong.MaxValue, left, right, aliasing), left);
-				Check(failures, $"ConditionalSelect clear {over}", modulus.ConditionalSelect(0, left, right, aliasing), right);
 			}
 
 			string inPlace = $"{left:X} in place";
-			Check(failures, $"Negate {inPlace}", modulus.Negate(left, true), modulus.Negate(left));
-			Check(failures, $"MultiplySmall {inPlace}", modulus.MultiplySmall(left, 3, true), modulus.MultiplySmall(left, 3));
-			Check(failures, $"Square {inPlace}", modulus.Square(left, true), modulus.Square(left));
 			Check(failures, $"ToMontgomery {inPlace}", modulus.ToMontgomery(left, true), modulus.ToMontgomery(left));
-			Check(failures, $"FromMontgomery {inPlace}", modulus.FromMontgomery(left, true), modulus.FromMontgomery(left));
 			Check(failures, $"Invert {inPlace}", modulus.Invert(left, true), modulus.Invert(left));
 			Check(failures, $"InvertVariableTime {inPlace}", modulus.InvertVariableTime(left, true), modulus.InvertVariableTime(left));
 		}
@@ -393,7 +283,7 @@ public class FieldElementTest
 			BigInteger inverse = invert(value, false);
 			BigInteger valueInverse = EcReference.Inverse(value, m);
 			Check(failures, $"1 / {value:X}", inverse, valueInverse * rSquared % m);
-			Check(failures, $"1 / {value:X} through the Montgomery form", modulus.FromMontgomery(invert(modulus.ToMontgomery(value), false)), valueInverse);
+			Check(failures, $"1 / {value:X} through the Montgomery form", modulus.Multiply(invert(modulus.ToMontgomery(value), false), 1), valueInverse);
 
 			if (!value.IsZero)
 			{

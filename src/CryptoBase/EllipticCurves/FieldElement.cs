@@ -2,7 +2,7 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// Always below m. Whether it is in Montgomery form is up to the caller: Multiply, Square and the inversions work in that form, the encodings take and give the plain value, and the other operations work in either. No operation but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
+// Always below m. Whether it is in Montgomery form is up to the caller: Multiply and the inversions work in that form, the encodings take and give the plain value, and the other operations work in either. No operation but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
 internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModulus
 {
 	private TModulus _limbs;
@@ -32,69 +32,16 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		ReduceOnce(ref s, carry, ref Limbs(ref result));
 	}
 
-	[SkipLocalsInit]
-	internal static void Subtract(in FieldElement<TModulus> left, in FieldElement<TModulus> right, out FieldElement<TModulus> result)
-	{
-		Unsafe.SkipInit(out FieldElement<TModulus> difference);
-		ref ulong d = ref Limbs(ref difference);
-		ulong borrow = SubtractLimbs(ref Limbs(in left), ref Limbs(in right), ref d, TModulus.LimbCount);
-		Unsafe.SkipInit(out result);
-		_ = AddLimbs(ref d, ref MemoryMarshal.GetReference(TModulus.Modulus), 0 - borrow, ref Limbs(ref result), TModulus.LimbCount);
-	}
-
-	internal static void Negate(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
-	{
-		FieldElement<TModulus> zero = default;
-		Subtract(in zero, in value, out result);
-	}
-
-	// factor must be public.
-	internal static void MultiplySmall(in FieldElement<TModulus> value, uint factor, out FieldElement<TModulus> result)
-	{
-		if (factor is 0)
-		{
-			result = default;
-			return;
-		}
-
-		FieldElement<TModulus> addend = value;
-		result = addend;
-
-		for (int bit = 30 - BitOperations.LeadingZeroCount(factor); bit >= 0; --bit)
-		{
-			Add(in result, in result, out result);
-
-			if ((factor >> bit & 1) is not 0)
-			{
-				Add(in result, in addend, out result);
-			}
-		}
-	}
-
 	internal static void Multiply(in FieldElement<TModulus> left, in FieldElement<TModulus> right, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out result);
 		MontgomeryMultiply(ref Limbs(in left), ref Limbs(in right), ref Limbs(ref result));
 	}
 
-	internal static void Square(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
-	{
-		Unsafe.SkipInit(out result);
-		MontgomerySquare(ref Limbs(in value), ref Limbs(ref result));
-	}
-
 	internal static void ToMontgomery(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out result);
 		MontgomeryMultiply(ref Limbs(in value), ref MemoryMarshal.GetReference(TModulus.RSquared), ref Limbs(ref result));
-	}
-
-	internal static void FromMontgomery(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
-	{
-		FieldElement<TModulus> one = default;
-		Limbs(ref one) = 1;
-		Unsafe.SkipInit(out result);
-		MontgomeryMultiply(ref Limbs(in value), ref Limbs(ref one), ref Limbs(ref result));
 	}
 
 	// 0 gives 0.
@@ -109,25 +56,6 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		SafeGcd<TModulus>.InvertVariableTime(in value, out result);
 	}
 
-	internal static void ConditionalSelect(ulong mask, in FieldElement<TModulus> whenSet, in FieldElement<TModulus> whenClear, out FieldElement<TModulus> result)
-	{
-		Unsafe.SkipInit(out result);
-		SelectLimbs(mask, ref Limbs(in whenSet), ref Limbs(in whenClear), ref Limbs(ref result), TModulus.LimbCount);
-	}
-
-	internal static void ConditionalSwap(ulong mask, ref FieldElement<TModulus> left, ref FieldElement<TModulus> right)
-	{
-		ref ulong x = ref Limbs(ref left);
-		ref ulong y = ref Limbs(ref right);
-
-		for (nint i = 0; i < TModulus.LimbCount; ++i)
-		{
-			ulong difference = (Unsafe.Add(ref x, i) ^ Unsafe.Add(ref y, i)) & mask;
-			Unsafe.Add(ref x, i) ^= difference;
-			Unsafe.Add(ref y, i) ^= difference;
-		}
-	}
-
 	internal static ulong IsZero(in FieldElement<TModulus> value)
 	{
 		ref ulong x = ref Limbs(in value);
@@ -139,20 +67,6 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		}
 
 		return ZeroMask(bits);
-	}
-
-	internal static ulong AreEqual(in FieldElement<TModulus> left, in FieldElement<TModulus> right)
-	{
-		ref ulong x = ref Limbs(in left);
-		ref ulong y = ref Limbs(in right);
-		ulong difference = 0;
-
-		for (nint i = 0; i < TModulus.LimbCount; ++i)
-		{
-			difference |= Unsafe.Add(ref x, i) ^ Unsafe.Add(ref y, i);
-		}
-
-		return ZeroMask(difference);
 	}
 
 	// Reads ByteLength big-endian bytes; if the value is not below m, result is 0.
@@ -321,119 +235,6 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 	{
 		ref ulong row = ref Unsafe.Add(ref product, i);
 		Unsafe.Add(ref row, TModulus.LimbCount) = MultiplyAddLimbs(ref x, Unsafe.Add(ref y, i), ref row, TModulus.LimbCount);
-	}
-
-	// x < m keeps x² below m·R, as Reduce needs. Not inlined, as for MontgomeryMultiply.
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
-	private static void MontgomerySquare(ref ulong x, ref ulong result)
-	{
-		Unsafe.SkipInit(out Product product);
-		ref ulong t = ref Unsafe.As<Product, ulong>(ref product);
-		int n = TModulus.LimbCount;
-		t = 0;
-		Unsafe.Add(ref t, n) = MultiplyLimbs(ref Unsafe.Add(ref x, 1), x, ref Unsafe.Add(ref t, 1), n - 1);
-		if (n > 2)
-		{
-			AddCrossRow(ref x, ref t, 1);
-		}
-
-		if (n > 3)
-		{
-			AddCrossRow(ref x, ref t, 2);
-		}
-
-		if (n > 4)
-		{
-			AddCrossRow(ref x, ref t, 3);
-		}
-
-		if (n > 5)
-		{
-			AddCrossRow(ref x, ref t, 4);
-		}
-
-		if (n > 6)
-		{
-			AddCrossRow(ref x, ref t, 5);
-		}
-
-		if (n > 7)
-		{
-			AddCrossRow(ref x, ref t, 6);
-		}
-
-		if (n > 8)
-		{
-			AddCrossRow(ref x, ref t, 7);
-		}
-
-		Unsafe.Add(ref t, 2 * n - 1) = 0;
-		ulong carry = 0;
-		ulong shifted = 0;
-		DoubleAddSquare(ref x, ref t, 0, ref carry, ref shifted);
-		if (n > 1)
-		{
-			DoubleAddSquare(ref x, ref t, 1, ref carry, ref shifted);
-		}
-
-		if (n > 2)
-		{
-			DoubleAddSquare(ref x, ref t, 2, ref carry, ref shifted);
-		}
-
-		if (n > 3)
-		{
-			DoubleAddSquare(ref x, ref t, 3, ref carry, ref shifted);
-		}
-
-		if (n > 4)
-		{
-			DoubleAddSquare(ref x, ref t, 4, ref carry, ref shifted);
-		}
-
-		if (n > 5)
-		{
-			DoubleAddSquare(ref x, ref t, 5, ref carry, ref shifted);
-		}
-
-		if (n > 6)
-		{
-			DoubleAddSquare(ref x, ref t, 6, ref carry, ref shifted);
-		}
-
-		if (n > 7)
-		{
-			DoubleAddSquare(ref x, ref t, 7, ref carry, ref shifted);
-		}
-
-		if (n > 8)
-		{
-			DoubleAddSquare(ref x, ref t, 8, ref carry, ref shifted);
-		}
-
-		Reduce(ref t, ref result);
-	}
-
-	// The limbs of the product from i + LimbCount on are not yet set.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void AddCrossRow(ref ulong x, ref ulong product, int i)
-	{
-		int n = TModulus.LimbCount;
-		Unsafe.Add(ref product, i + n) = MultiplyAddLimbs(ref Unsafe.Add(ref x, i + 1), Unsafe.Add(ref x, i), ref Unsafe.Add(ref product, 2 * i + 1), n - 1 - i);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void DoubleAddSquare(ref ulong x, ref ulong product, int i, ref ulong carry, ref ulong shifted)
-	{
-		ulong word = Unsafe.Add(ref x, i);
-		ulong high = LimbArithmetic.Multiply(word, word, out ulong low);
-		ref ulong pair = ref Unsafe.Add(ref product, 2 * i);
-		ulong even = pair;
-		ulong odd = Unsafe.Add(ref pair, 1);
-		pair = AddWithCarry(even << 1 | shifted, low, ref carry);
-		Unsafe.Add(ref pair, 1) = AddWithCarry(odd << 1 | even >> 63, high, ref carry);
-		shifted = odd >> 63;
 	}
 
 	// The product must be below m·R; it is overwritten.

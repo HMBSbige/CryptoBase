@@ -56,21 +56,9 @@ public class EcKernelBenchmark
 	}
 
 	[Benchmark]
-	public void OrderSquare()
-	{
-		_kernel.OrderSquare();
-	}
-
-	[Benchmark]
 	public void OrderInvert()
 	{
 		_kernel.OrderInvert();
-	}
-
-	[Benchmark]
-	public void Add()
-	{
-		_kernel.Add();
 	}
 
 	[Benchmark]
@@ -143,11 +131,7 @@ public class EcKernelBenchmark
 
 		void OrderMultiply();
 
-		void OrderSquare();
-
 		void OrderInvert();
-
-		void Add();
 
 		void AddAffine();
 
@@ -230,21 +214,9 @@ public class EcKernelBenchmark
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
-		public void OrderSquare()
-		{
-			FieldElement<TOrder>.Square(in _orderLeft, out FieldElement<TOrder> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
-		}
-
 		public void OrderInvert()
 		{
 			FieldElement<TOrder>.Invert(in _orderLeft, out FieldElement<TOrder> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
-		}
-
-		public void Add()
-		{
-			EcGroup<TCurve, TField, TOrder>.Add(in _jacobian, in _otherJacobian, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 

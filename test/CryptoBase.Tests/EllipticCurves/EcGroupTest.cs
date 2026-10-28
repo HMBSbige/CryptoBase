@@ -6,23 +6,6 @@ public class EcGroupTest
 {
 	private const int RandomCount = 16;
 
-	[Test]
-	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
-	public async Task AddMatchesTheReference(CurveCase curve)
-	{
-		EcReference reference = curve.Reference;
-		Random random = new(1);
-		List<string> failures = [];
-
-		foreach ((CurvePoint? left, CurvePoint? right) in Pairs(reference, random))
-		{
-			JacobianValue sum = curve.Add(reference.RandomizeJacobian(left, random), reference.RandomizeJacobian(right, random));
-			CheckPoint(failures, reference, $"{Show(left)} + {Show(right)}", sum, reference.Add(left, right));
-		}
-
-		await Assert.That(failures).IsEmpty();
-	}
-
 	// The affine right input cannot be the point at infinity.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
@@ -140,7 +123,6 @@ public class EcGroupTest
 
 			foreach (ResultAliasing aliasing in (ResultAliasing[])[ResultAliasing.Left, ResultAliasing.Right])
 			{
-				CheckSame(failures, $"Add over {aliasing}", curve.Add(left, right, aliasing), curve.Add(left, right));
 				CheckSame(failures, $"AddDistinct over {aliasing}", curve.AddDistinct(left, right, aliasing), curve.AddDistinct(left, right));
 			}
 

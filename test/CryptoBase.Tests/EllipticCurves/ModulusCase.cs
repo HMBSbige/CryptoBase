@@ -59,31 +59,15 @@ public abstract class ModulusCase
 
 	internal abstract BigInteger Add(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None);
 
-	internal abstract BigInteger Subtract(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None);
-
 	internal abstract BigInteger Multiply(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None);
 
-	internal abstract BigInteger Negate(BigInteger value, bool inPlace = false);
-
-	internal abstract BigInteger MultiplySmall(BigInteger value, uint factor, bool inPlace = false);
-
-	internal abstract BigInteger Square(BigInteger value, bool inPlace = false);
-
 	internal abstract BigInteger ToMontgomery(BigInteger value, bool inPlace = false);
-
-	internal abstract BigInteger FromMontgomery(BigInteger value, bool inPlace = false);
 
 	internal abstract BigInteger Invert(BigInteger value, bool inPlace = false);
 
 	internal abstract BigInteger InvertVariableTime(BigInteger value, bool inPlace = false);
 
-	internal abstract BigInteger ConditionalSelect(ulong mask, BigInteger whenSet, BigInteger whenClear, ResultAliasing aliasing = ResultAliasing.None);
-
-	internal abstract (BigInteger Left, BigInteger Right) ConditionalSwap(ulong mask, BigInteger left, BigInteger right);
-
 	internal abstract ulong IsZero(BigInteger value);
-
-	internal abstract ulong AreEqual(BigInteger left, BigInteger right);
 
 	// The result is what Export writes after the import.
 	internal abstract bool TryImport(byte[] source, out BigInteger result);
@@ -227,48 +211,14 @@ public abstract class ModulusCase
 			return Run(FieldElement<TModulus>.Add, left, right, aliasing);
 		}
 
-		internal override BigInteger Subtract(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None)
-		{
-			return Run(FieldElement<TModulus>.Subtract, left, right, aliasing);
-		}
-
 		internal override BigInteger Multiply(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None)
 		{
 			return Run(FieldElement<TModulus>.Multiply, left, right, aliasing);
 		}
 
-		internal override BigInteger Negate(BigInteger value, bool inPlace = false)
-		{
-			return Run(FieldElement<TModulus>.Negate, value, inPlace);
-		}
-
-		internal override BigInteger MultiplySmall(BigInteger value, uint factor, bool inPlace = false)
-		{
-			FieldElement<TModulus> x = ToElement(value);
-
-			if (inPlace)
-			{
-				FieldElement<TModulus>.MultiplySmall(in x, factor, out x);
-				return ToValue(x);
-			}
-
-			FieldElement<TModulus>.MultiplySmall(in x, factor, out FieldElement<TModulus> result);
-			return ToValue(result);
-		}
-
-		internal override BigInteger Square(BigInteger value, bool inPlace = false)
-		{
-			return Run(FieldElement<TModulus>.Square, value, inPlace);
-		}
-
 		internal override BigInteger ToMontgomery(BigInteger value, bool inPlace = false)
 		{
 			return Run(FieldElement<TModulus>.ToMontgomery, value, inPlace);
-		}
-
-		internal override BigInteger FromMontgomery(BigInteger value, bool inPlace = false)
-		{
-			return Run(FieldElement<TModulus>.FromMontgomery, value, inPlace);
 		}
 
 		internal override BigInteger Invert(BigInteger value, bool inPlace = false)
@@ -281,41 +231,9 @@ public abstract class ModulusCase
 			return Run(FieldElement<TModulus>.InvertVariableTime, value, inPlace);
 		}
 
-		internal override BigInteger ConditionalSelect(ulong mask, BigInteger whenSet, BigInteger whenClear, ResultAliasing aliasing = ResultAliasing.None)
-		{
-			FieldElement<TModulus> x = ToElement(whenSet);
-			FieldElement<TModulus> y = ToElement(whenClear);
-
-			switch (aliasing)
-			{
-				case ResultAliasing.Left:
-					FieldElement<TModulus>.ConditionalSelect(mask, in x, in y, out x);
-					return ToValue(x);
-				case ResultAliasing.Right:
-					FieldElement<TModulus>.ConditionalSelect(mask, in x, in y, out y);
-					return ToValue(y);
-				default:
-					FieldElement<TModulus>.ConditionalSelect(mask, in x, in y, out FieldElement<TModulus> result);
-					return ToValue(result);
-			}
-		}
-
-		internal override (BigInteger Left, BigInteger Right) ConditionalSwap(ulong mask, BigInteger left, BigInteger right)
-		{
-			FieldElement<TModulus> x = ToElement(left);
-			FieldElement<TModulus> y = ToElement(right);
-			FieldElement<TModulus>.ConditionalSwap(mask, ref x, ref y);
-			return (ToValue(x), ToValue(y));
-		}
-
 		internal override ulong IsZero(BigInteger value)
 		{
 			return FieldElement<TModulus>.IsZero(ToElement(value));
-		}
-
-		internal override ulong AreEqual(BigInteger left, BigInteger right)
-		{
-			return FieldElement<TModulus>.AreEqual(ToElement(left), ToElement(right));
 		}
 
 		internal override bool TryImport(byte[] source, out BigInteger result)

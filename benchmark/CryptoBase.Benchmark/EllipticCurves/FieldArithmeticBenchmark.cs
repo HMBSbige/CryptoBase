@@ -37,32 +37,16 @@ public class FieldArithmeticBenchmark
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
-	public void Square()
-	{
-		_kernel.Square(Operations);
-	}
-
-	[Benchmark(OperationsPerInvoke = Operations)]
 	public void Add()
 	{
 		_kernel.Add(Operations);
-	}
-
-	[Benchmark(OperationsPerInvoke = Operations)]
-	public void Subtract()
-	{
-		_kernel.Subtract(Operations);
 	}
 
 	private interface IKernel
 	{
 		void Multiply(int count);
 
-		void Square(int count);
-
 		void Add(int count);
-
-		void Subtract(int count);
 	}
 
 	private sealed class Kernel<TModulus> : IKernel where TModulus : struct, IMontgomeryModulus
@@ -88,18 +72,6 @@ public class FieldArithmeticBenchmark
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
 		}
 
-		public void Square(int count)
-		{
-			FieldElement<TModulus> value = _left;
-
-			for (int i = 0; i < count; ++i)
-			{
-				FieldElement<TModulus>.Square(in value, out value);
-			}
-
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
-		}
-
 		public void Add(int count)
 		{
 			FieldElement<TModulus> value = _left;
@@ -107,18 +79,6 @@ public class FieldArithmeticBenchmark
 			for (int i = 0; i < count; ++i)
 			{
 				FieldElement<TModulus>.Add(in value, in _right, out value);
-			}
-
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
-		}
-
-		public void Subtract(int count)
-		{
-			FieldElement<TModulus> value = _left;
-
-			for (int i = 0; i < count; ++i)
-			{
-				FieldElement<TModulus>.Subtract(in value, in _right, out value);
 			}
 
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);

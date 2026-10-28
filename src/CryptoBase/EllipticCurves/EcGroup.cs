@@ -22,18 +22,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		TField.Double(in value, out result);
 	}
 
-	// Any two points, equal, opposite or at infinity: masks take the other input where one is at infinity and the double where the points are equal. The result may be either input: it is written only after the last read of the inputs.
-	[SkipLocalsInit]
-	internal static void Add(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
-	{
-		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
-		Double(in left, out JacobianPoint<TField> twice);
-		JacobianPoint<TField>.ConditionalSelect(equal, in twice, in sum, out sum);
-		JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in left.Z), in right, in sum, out sum);
-		JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in right.Z), in left, in sum, out result);
-	}
-
-	// As above, with an affine right, which cannot be the point at infinity; the left may be.
+	// Any left, equal, opposite or at infinity, and an affine right, which cannot be the point at infinity: masks take the right where the left is at infinity and the double where the points are equal. The result may be the left: it is written only after the last read of the inputs.
 	[SkipLocalsInit]
 	internal static void Add(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
 	{

@@ -195,8 +195,6 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 			JacobianPoint<TField> y = Loose(reference.RandomizeJacobian(right, random), random);
 			EcGroup<TCurve, TField, TOrder>.Double(in x, out JacobianPoint<TField> twice);
 			CheckPoint(failures, reference, $"2 · {Show(left)}", twice, reference.Add(left, left));
-			EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> sum);
-			CheckPoint(failures, reference, operation, sum, reference.Add(left, right));
 
 			if (right is null)
 			{
@@ -204,7 +202,7 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 			}
 
 			AffinePoint<TField> affine = Loose(right, random);
-			EcGroup<TCurve, TField, TOrder>.Add(in x, in affine, out sum);
+			EcGroup<TCurve, TField, TOrder>.Add(in x, in affine, out JacobianPoint<TField> sum);
 			CheckPoint(failures, reference, $"{operation}, affine", sum, reference.Add(left, right));
 
 			if (left is null)
@@ -221,7 +219,7 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Results feed the next step unreduced, for thousands of steps: doublings and complete additions of G and of 2kG to kG, checked against the reference along the way.
+	// Results feed the next step unreduced, for thousands of steps: doublings, complete additions of G, and additions of 2kG to kG, which differ while kG is not the point at infinity, checked against the reference along the way.
 	[Test]
 	public async Task LongChainsOfFormulasStayInForm()
 	{
@@ -243,7 +241,7 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 					break;
 				case 1:
 					EcGroup<TCurve, TField, TOrder>.Double(in point, out JacobianPoint<TField> twice);
-					EcGroup<TCurve, TField, TOrder>.Add(in point, in twice, out point);
+					_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in point, in twice, out point);
 					k *= 3;
 					break;
 				default:

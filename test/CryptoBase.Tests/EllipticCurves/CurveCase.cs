@@ -69,8 +69,6 @@ public abstract class CurveCase
 
 	internal int PublicKeyLength => 1 + 2 * FieldLength;
 
-	internal abstract JacobianValue Add(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None);
-
 	internal abstract JacobianValue Add(JacobianValue left, CurvePoint right, bool inPlace = false);
 
 	// The sum and the mask that tells equal points.
@@ -218,25 +216,6 @@ public abstract class CurveCase
 		internal override int GeneratorWindowCount => EcGeneratorTable<TCurve, TField, TOrder>.WindowCount;
 
 		internal override int GeneratorWindowLength => EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
-
-		internal override JacobianValue Add(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None)
-		{
-			JacobianPoint<TField> x = ToPoint(left);
-			JacobianPoint<TField> y = ToPoint(right);
-
-			switch (aliasing)
-			{
-				case ResultAliasing.Left:
-					EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out x);
-					return ToValue(x);
-				case ResultAliasing.Right:
-					EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out y);
-					return ToValue(y);
-				default:
-					EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
-					return ToValue(result);
-			}
-		}
 
 		internal override JacobianValue Add(JacobianValue left, CurvePoint right, bool inPlace = false)
 		{
