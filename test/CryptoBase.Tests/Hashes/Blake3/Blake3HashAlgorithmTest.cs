@@ -486,6 +486,36 @@ public class Blake3HashAlgorithmTest
 		}
 	}
 
+	// The key always starts at an odd offset; 201 is past the key and the destination of every layout.
+	public static IEnumerable<(int KeyOffset, int SourceOffset, int DestinationOffset)> KeyLayouts()
+	{
+		return [(1, 201, 40), (163, 176, 0), (7, 201, 7), (7, 201, 26), (155, 201, 0), (7, 20, 26)];
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task KeyMayOverlapSourceOrDestination([Matrix(1, 1025, 132097)] int length, [MatrixMethod<Blake3HashAlgorithmTest>(nameof(KeyLayouts))] (int KeyOffset, int SourceOffset, int DestinationOffset) layout, [Matrix(1, -1)] int maxDegreeOfParallelism)
+	{
+		const int keyLength = 32;
+		(int keyOffset, int sourceOffset, int destinationOffset) = layout;
+		byte[] initial = CreateDeterministicSource(Math.Max(Math.Max(keyOffset + keyLength, sourceOffset + length), destinationOffset + OutputLength) + 1);
+		byte[] key = initial.AsSpan(keyOffset, keyLength).ToArray();
+		Blake3Reference reference = Blake3Reference.CreateKeyed(key);
+		reference.Update(initial.AsSpan(sourceOffset, length));
+		byte[] expected = (byte[])initial.Clone();
+		reference.Finalize(expected.AsSpan(destinationOffset, OutputLength));
+
+		byte[] buffer = (byte[])initial.Clone();
+		Blake3HashAlgorithm.KeyedHashData(buffer.AsSpan(keyOffset, keyLength), buffer.AsSpan(sourceOffset, length), buffer.AsSpan(destinationOffset, OutputLength), maxDegreeOfParallelism);
+		await Assert.That(buffer).IsEquivalentTo(expected, CollectionOrdering.Matching);
+
+		buffer = (byte[])initial.Clone();
+		using Blake3HashAlgorithm hasher = Blake3HashAlgorithm.CreateKeyed(buffer.AsSpan(keyOffset, keyLength));
+		hasher.Append(buffer.AsSpan(sourceOffset, length), maxDegreeOfParallelism);
+		hasher.GetCurrentHash(buffer.AsSpan(destinationOffset, OutputLength), 0, maxDegreeOfParallelism);
+		await Assert.That(buffer).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
 	private static int FirstMismatchingRead(Blake3Mode mode, byte[] source, IEnumerable<(int Length, bool Read)> pieces)
 	{
 		using Blake3HashAlgorithm hasher = Blake3TestUtils.CreateHasher(mode);
