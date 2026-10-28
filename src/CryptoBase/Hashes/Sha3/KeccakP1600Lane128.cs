@@ -5,8 +5,12 @@ namespace CryptoBase.Hashes.Sha3;
 // One state with each lane in the low element of its own 128-bit vector, so that the 32 AVX-512 vector registers hold nearly all of the round and VPTERNLOGQ takes each three-way XOR of θ and each lane of χ in one instruction. The round is KeccakP1600Times2's, whose upper element is simply left unused: no lane is ever shuffled across vectors, which is what costs the single-state 512-bit kernel on cores that split 512-bit instructions in two.
 internal readonly struct KeccakP1600Lane128 : IKeccakP1600Lanes<Vector128<ulong>>
 {
-	// Without AVX-512VL most rotations take three instructions where the scalar kernel takes one, and nothing else is cheaper than scalar.
-	public static bool IsSupported => Avx512F.VL.IsSupported;
+	// Without AVX-512VL most rotations take three instructions where the scalar kernel takes one, and nothing else is cheaper than scalar on x64. 32-bit x86 takes it anyway: the scalar kernel splits each lane over two of its few general-purpose registers.
+	public static bool IsSupported
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Avx512F.VL.IsSupported || Sse2.IsSupported && !X86Base.X64.IsSupported;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector128<ulong> Load(ref ulong state, int lane)
