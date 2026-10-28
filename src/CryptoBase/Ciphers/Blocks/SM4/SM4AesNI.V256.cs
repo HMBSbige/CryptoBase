@@ -165,13 +165,4 @@ internal readonly partial struct SM4AesNI
 			v7 = t4;
 		}
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static Vector256<byte> Substitute(Vector256<byte> x)
-	{
-		PreTransform(ref x);
-		x = AesX86EncryptLast(x, Vector256.Create((byte)0x0F));
-		PostTransform(ref x);
-		return Avx2.Shuffle(x, Vector256.Create(InverseShiftRows));
-	}
 }
