@@ -1,5 +1,6 @@
 namespace CryptoBase.Internal;
 
+// Each method spells out its blocks rather than calling a narrower one, which would cost the JIT an extra address computation per store.
 internal static class BlockXor
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

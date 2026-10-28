@@ -3,7 +3,7 @@ namespace CryptoBase.Internal;
 internal static unsafe class StreamPrefetch
 {
 	// The hardware prefetchers on x86 stop at 4 KiB boundaries, so each new 4 KiB block would start with cache misses.
-	internal const int Distance = 4096;
+	private const int Distance = 4096;
 
 	private const int MinimumLength = 4 << 20;
 
