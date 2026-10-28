@@ -18,7 +18,11 @@ internal struct AesXtsPolicy : IAesModePolicy
 	private Vector128<byte> _tweak;
 
 	// Only 16 registers
-	private static bool Packed8 => !Avx512F.IsSupported && !AdvSimd.Arm64.IsSupported && Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
+	private static bool Packed8
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => !Avx512F.IsSupported && !AdvSimd.Arm64.IsSupported && Avx2.IsSupported && Pclmulqdq.V256.IsSupported;
+	}
 
 	public static bool UseBatch8 => Avx512F.IsSupported || AdvSimd.Arm64.IsSupported || Packed8;
 
