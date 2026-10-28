@@ -70,20 +70,9 @@ public class EcVariableTimeGroupTest
 	}
 
 	// A test of its own for each, so that the larger curves run in parallel.
-	public static IEnumerable<(CurveCase Curve, PointKind Kind)> MultiplyAddCases()
-	{
-		foreach (CurveCase curve in CurveCase.All())
-		{
-			foreach (PointKind kind in Enum.GetValues<PointKind>())
-			{
-				yield return (curve, kind);
-			}
-		}
-	}
-
 	[Test]
-	[MethodDataSource(nameof(MultiplyAddCases))]
-	public async Task MultiplyAddMatchesTheReference(CurveCase curve, PointKind kind)
+	[MatrixDataSource]
+	public async Task MultiplyAddMatchesTheReference([MatrixMethod<CurveCase>(nameof(CurveCase.All))] CurveCase curve, [Matrix] PointKind kind)
 	{
 		EcReference reference = curve.Reference;
 		BigInteger n = curve.Order;
@@ -118,8 +107,8 @@ public class EcVariableTimeGroupTest
 	}
 
 	[Test]
-	[MethodDataSource(nameof(MultiplyAddCases))]
-	public async Task OddMultiplesHoldEachOddMultiple(CurveCase curve, PointKind kind)
+	[MatrixDataSource]
+	public async Task OddMultiplesHoldEachOddMultiple([MatrixMethod<CurveCase>(nameof(CurveCase.All))] CurveCase curve, [Matrix] PointKind kind)
 	{
 		EcReference reference = curve.Reference;
 		BigInteger n = curve.Order;

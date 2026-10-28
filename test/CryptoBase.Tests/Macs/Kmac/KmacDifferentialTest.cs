@@ -15,7 +15,7 @@ public class KmacDifferentialTest
 
 	public static IEnumerable<(KmacVariant Variant, int KeyLength)> Cases()
 	{
-		foreach (KmacVariant variant in KmacVariant.All)
+		foreach (KmacVariant variant in KmacVariant.All())
 		{
 			foreach (int keyLength in KeyLengths(variant.Rate))
 			{
@@ -69,21 +69,10 @@ public class KmacDifferentialTest
 		return [1, 16, 32, rate - 1, rate, rate + 1, 2 * rate + 5];
 	}
 
-	public static IEnumerable<(KmacVariant Variant, int Length)> ThreeByteLengthCases()
-	{
-		foreach (KmacVariant variant in KmacVariant.All)
-		{
-			foreach (int length in (int[])[8191, 8192, 8193])
-			{
-				yield return (variant, length);
-			}
-		}
-	}
-
 	// From 8192 bytes, 65536 bits, the lengths of the key, the customization string and the output take three bytes to encode, one more than anywhere in the grid.
 	[Test]
-	[MethodDataSource(nameof(ThreeByteLengthCases))]
-	public async Task MatchesOraclesWithThreeByteLengths(KmacVariant variant, int length)
+	[MatrixDataSource]
+	public async Task MatchesOraclesWithThreeByteLengths([MatrixMethod<KmacVariant>(nameof(KmacVariant.All))] KmacVariant variant, [Matrix(8191, 8192, 8193)] int length)
 	{
 		byte[] key = CreateDeterministicSource(length);
 		byte[] customization = Sha3TestUtils.Customization(length);

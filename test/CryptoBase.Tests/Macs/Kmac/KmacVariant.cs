@@ -10,7 +10,10 @@ namespace CryptoBase.Tests.Macs.Kmac;
 // The four KMAC classes share no interface that covers their output, so the tests reach them through KmacSubject, which binds each role to the one member that plays it: GetCurrentMac or GetCurrentHash, and GetMacAndReset or GetHashAndReset.
 public sealed record KmacVariant(int SecurityStrength, bool Xof)
 {
-	public static IEnumerable<KmacVariant> All => [.. FixedLength, .. Extendable];
+	public static IEnumerable<KmacVariant> All()
+	{
+		return [.. FixedLength, .. Extendable];
+	}
 
 	public static IEnumerable<KmacVariant> FixedLength => [new(128, false), new(256, false)];
 
