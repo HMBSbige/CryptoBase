@@ -122,7 +122,6 @@ public class FieldElementTest
 			Check(failures, $"{value:X} · R · R⁻¹", modulus.Multiply(montgomery, 1), value);
 		}
 
-		Check(failures, "1 · R", modulus.MontgomeryOne, r % m);
 		await Assert.That(failures).IsEmpty();
 	}
 

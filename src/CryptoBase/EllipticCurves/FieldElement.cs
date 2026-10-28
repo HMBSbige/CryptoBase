@@ -7,16 +7,6 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 {
 	private TModulus _limbs;
 
-	internal static ref readonly FieldElement<TModulus> MontgomeryOne => ref FromLimbs(TModulus.MontgomeryOne);
-
-	// The limbs must be below m.
-	internal static ref readonly FieldElement<TModulus> FromLimbs(ReadOnlySpan<ulong> limbs)
-	{
-		Debug.Assert(limbs.Length == TModulus.LimbCount);
-
-		return ref Unsafe.As<ulong, FieldElement<TModulus>>(ref MemoryMarshal.GetReference(limbs));
-	}
-
 	internal static ReadOnlySpan<ulong> GetLimbs(ref readonly FieldElement<TModulus> value)
 	{
 		return MemoryMarshal.CreateReadOnlySpan(ref Limbs(in value), TModulus.LimbCount);

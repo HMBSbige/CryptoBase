@@ -55,8 +55,6 @@ public abstract class ModulusCase
 
 	internal BigInteger R => BigInteger.One << 64 * LimbCount;
 
-	internal abstract BigInteger MontgomeryOne { get; }
-
 	internal abstract BigInteger Add(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None);
 
 	internal abstract BigInteger Multiply(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None);
@@ -203,8 +201,6 @@ public abstract class ModulusCase
 		internal override int ElementSize => Unsafe.SizeOf<FieldElement<TModulus>>();
 
 		internal override BigInteger Modulus { get; } = FromLimbs(TModulus.Modulus);
-
-		internal override BigInteger MontgomeryOne => ToValue(FieldElement<TModulus>.MontgomeryOne);
 
 		internal override BigInteger Add(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None)
 		{
