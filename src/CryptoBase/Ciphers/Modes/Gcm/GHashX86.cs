@@ -67,11 +67,10 @@ internal static partial class GHashX86
 
 		Vector128<byte> internalKey = key.Value.ReverseEndianness128();
 		Vector128<byte> internalAccumulator = accumulator.ReverseEndianness128();
-		Unsafe.SkipInit(out Vector128<byte> finalBlock);
 
-		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, first, ref finalBlock);
-		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, second, ref finalBlock);
-		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, third, ref finalBlock);
+		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, first);
+		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, second);
+		AppendPaddedSegmentSequential(ref internalAccumulator, in internalKey, third);
 		accumulator = internalAccumulator.ReverseEndianness128();
 	}
 
@@ -121,7 +120,8 @@ internal static partial class GHashX86
 		accumulator = localAccumulator;
 	}
 
-	private static void AppendPaddedSegmentSequential(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void AppendPaddedSegmentSequential(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> source)
 	{
 		int completeLength = source.Length & -BlockSize;
 
@@ -137,8 +137,6 @@ internal static partial class GHashX86
 			return;
 		}
 
-		finalBlock = GHash.PadFinalBlock(remaining);
-		ReadOnlySpan<byte> block = finalBlock.AsReadOnlySpan();
-		AppendSequential(ref accumulator, in key, block);
+		accumulator = GFMultiply(key, GHash.PadFinalBlock(remaining).ReverseEndianness128() ^ accumulator);
 	}
 }
