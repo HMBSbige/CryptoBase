@@ -47,19 +47,22 @@ public class KeccakSharedPermutationTest
 
 	// Guests only take lanes the streams leave free, so a batch takes as many streams as it would without them.
 	[Test]
-	public async Task ResetWithGuestsTakesAsManyStreamsAsReset()
+	public async Task GuestsTakeNoStreams()
 	{
+		byte[] prefix = CreateDeterministicSource(KeccakBatchSponge<KeccakRate168>.ShortPrefixLength);
+		ushort[] suffixes = Sha3TestUtils.Suffixes(KeccakP1600Batch.MaxLanes, sizeof(ushort));
+
 		using (Assert.Multiple())
 		{
 			for (int streams = 1; streams <= 20; ++streams)
 			{
 				KeccakBatchSponge<KeccakRate168> alone = default;
-				alone.Reset(streams, KeccakP1600Batch.ChooseLanes(streams));
+				alone.ResetWithGuests(streams, 0, prefix, suffixes, sizeof(ushort), KeccakReference.ShakeDomainSeparator);
 
 				for (int guests = 0; guests <= 8; ++guests)
 				{
 					KeccakBatchSponge<KeccakRate168> batch = default;
-					batch.ResetWithGuests(streams, guests);
+					batch.ResetWithGuests(streams, guests, prefix, suffixes, sizeof(ushort), KeccakReference.ShakeDomainSeparator);
 
 					await Assert.That(batch.Count).IsEqualTo(alone.Count).Because($"{streams} streams with {guests} guests");
 					await Assert.That(batch.FreeLanes).IsGreaterThanOrEqualTo(Math.Min(guests, KeccakP1600Batch.MaxLanes - batch.Count)).Because($"{streams} streams with {guests} guests");
@@ -214,7 +217,7 @@ public class KeccakSharedPermutationTest
 		}
 	}
 
-	// Guests of their own rate and lengths, at times more than the free lanes. Some batch inputs reach past a block, so that Absorb permutes on its own first.
+	// Guests of their own rate and lengths, at times more than the free lanes, beside batches seeded as in ML-KEM and ML-DSA.
 	private readonly struct GuestCase(int lanes) : IRatePairCase
 	{
 		private const int Blocks = 3;
@@ -224,15 +227,17 @@ public class KeccakSharedPermutationTest
 			int rate = TRate.RateInBytes;
 			int outputLength = Blocks * rate + 9;
 			int guestOutputLength = (Blocks + 1) * TGuest.RateInBytes + 1;
-			(int, int, int)[] cases = [(1, 1, 34), (2, 3, 33), (3, 1, rate + 2), (5, 4, 0), (7, 2, 34), (6, 9, 66)];
+			(int Streams, int GuestCount, int PrefixLength, int SuffixLength)[] cases = [(1, 1, 32, 2), (2, 3, 32, 1), (3, 1, 64, 1), (5, 4, 64, 2), (7, 2, 32, 2), (6, 9, 64, 2)];
 
-			foreach ((int streams, int guestCount, int inputLength) in cases)
+			// The suffix needs a row of its own before the last row of the rate.
+			foreach ((int streams, int guestCount, int prefixLength, int suffixLength) in cases.Where(c => c.PrefixLength < rate - sizeof(ulong)))
 			{
 				int groupLanes = lanes is 0 ? KeccakP1600Batch.ChooseLanes(streams + guestCount) : lanes;
 				int count = Math.Min(streams, groupLanes);
-				byte[] inputs = CreateDeterministicSource(count * inputLength);
+				byte[] prefix = CreateDeterministicSource(prefixLength);
+				ushort[] suffixes = Sha3TestUtils.Suffixes(count, suffixLength);
 				byte[][] guestMessages = [.. Enumerable.Range(0, guestCount).Select(static i => CreateDeterministicSource(i * 151 % 400))];
-				(byte[] outputs, byte[][] guestOutputs, int actualCount) = Host<TRate, TGuest>(streams, inputs, guestMessages, outputLength, guestOutputLength);
+				(byte[] outputs, byte[][] guestOutputs, int actualCount) = Host<TRate, TGuest>(streams, prefix, suffixes, suffixLength, guestMessages, outputLength, guestOutputLength);
 
 				using (Assert.Multiple())
 				{
@@ -240,7 +245,7 @@ public class KeccakSharedPermutationTest
 
 					for (int j = 0; j < count; ++j)
 					{
-						byte[] expected = Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(inputs.AsSpan(j * inputLength, inputLength), KeccakReference.ShakeDomainSeparator, outputLength);
+						byte[] expected = Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(Sha3TestUtils.SeededInput(prefix, suffixes[j], suffixLength), KeccakReference.ShakeDomainSeparator, outputLength);
 						await Assert.That(outputs.AsSpan(j * outputLength, outputLength).ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"stream {j} of {count} with {guestCount} guests in {groupLanes} lanes");
 					}
 
@@ -253,7 +258,7 @@ public class KeccakSharedPermutationTest
 			}
 		}
 
-		private (byte[] Outputs, byte[][] GuestOutputs, int Count) Host<TRate, TGuest>(int streams, byte[] inputs, byte[][] guestMessages, int outputLength, int guestOutputLength) where TRate : IKeccakRate where TGuest : IKeccakRate
+		private (byte[] Outputs, byte[][] GuestOutputs, int Count) Host<TRate, TGuest>(int streams, byte[] prefix, ushort[] suffixes, int suffixLength, byte[][] guestMessages, int outputLength, int guestOutputLength) where TRate : IKeccakRate where TGuest : IKeccakRate
 		{
 			int rate = TRate.RateInBytes;
 			int guestCount = guestMessages.Length;
@@ -265,16 +270,14 @@ public class KeccakSharedPermutationTest
 
 			if (lanes is 0)
 			{
-				batch.ResetWithGuests(streams, guestCount);
+				batch.ResetWithGuests(streams, guestCount, prefix, suffixes, suffixLength, KeccakReference.ShakeDomainSeparator);
 			}
 			else
 			{
-				batch.Reset(streams, lanes);
+				batch.Reset(streams, lanes, prefix, suffixes, suffixLength, KeccakReference.ShakeDomainSeparator);
 			}
 
 			byte[] outputs = new byte[batch.Count * outputLength];
-			batch.Absorb(inputs);
-			batch.Pad(KeccakReference.ShakeDomainSeparator);
 
 			for (int block = 0; block < Blocks; ++block)
 			{

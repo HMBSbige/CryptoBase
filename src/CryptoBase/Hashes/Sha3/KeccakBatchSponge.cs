@@ -1,9 +1,9 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// Up to eight sponges with one rate that absorb equal-length inputs and squeeze in lockstep, permuted together by an interleaved kernel, for the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from. The Count inputs or outputs of a call lie back to back in one buffer, each a Count-th of its length.
+// Up to eight sponges with one rate that absorb a shared prefix, each with a short suffix of its own, and squeeze in lockstep, permuted together by an interleaved kernel, for the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from. The Count outputs of a Squeeze lie back to back in one buffer, each a Count-th of its length.
 internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 {
-	// The lengths of the prefix that the seeded Reset takes.
+	// The lengths of the prefix that Reset takes.
 	internal const int ShortPrefixLength = 32;
 	internal const int LongPrefixLength = 64;
 
@@ -16,7 +16,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 	// The Lanes of the kernel chosen in Reset; lanes from Count up to it are permuted but unused, or hold guests during Permute.
 	private int _lanes;
 
-	// Bytes of the current block absorbed or squeezed so far, the same in every stream.
+	// Bytes of the current block squeezed so far, the same in every stream.
 	private int _position;
 
 	internal int Count { get; private set; }
@@ -26,26 +26,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 	internal readonly int FreeLanes => _lanes - Count;
 
 	// Takes as many of the remaining streams as KeccakP1600Batch assigns to one kernel, Count says how many, and leaves up to guests lanes free for Permute where the kernel has room. Guests never cost a stream: a guest only saves a permutation, while a stream left over can cost a batch.
-	internal void ResetWithGuests(int streams, int guests)
-	{
-		Debug.Assert(guests >= 0);
-
-		Reset(streams, KeccakP1600Batch.ChooseLanes(streams + guests));
-	}
-
-	internal void Reset(int streams, int lanes)
-	{
-		Debug.Assert(streams > 0);
-		Debug.Assert(lanes is 1 or 2 or 4 or 8);
-
-		MemoryMarshal.CreateSpan(ref _state[0][0], KeccakP1600Constants.LaneCount * lanes).Clear();
-		_lanes = lanes;
-		_position = 0;
-		Count = Math.Min(streams, lanes);
-		IsSqueezing = false;
-	}
-
-	// As ResetWithGuests, then Absorb and Pad of prefix ‖ suffixes[j] for stream j, the suffix suffixLength bytes little-endian, written straight into the state.
+	// Stream j absorbs and pads prefix ‖ suffixes[j], the suffix suffixLength bytes little-endian, written straight into the state.
 	internal void ResetWithGuests(int streams, int guests, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator)
 	{
 		Debug.Assert(guests >= 0);
@@ -53,7 +34,7 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		Reset(streams, KeccakP1600Batch.ChooseLanes(streams + guests), prefix, suffixes, suffixLength, domainSeparator);
 	}
 
-	// The prefix takes rows 0 to 3, or 0 to 7 when it is 64 bytes long, and the next row each suffix with the domain separator. The free lanes are filled too, as for Pad.
+	// The prefix takes rows 0 to 3, or 0 to 7 when it is 64 bytes long, and the next row each suffix with the domain separator. The free lanes are filled too, which is harmless: only ExtractLane and CopyStreams read the state back, and both stop at Count, and a guest overwrites its lane. The permutation is left to Squeeze, or to Permute to share.
 	[SkipLocalsInit]
 	internal void Reset(int streams, int lanes, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator)
 	{
@@ -120,43 +101,6 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		_lanes = lanes;
 		_position = TRate.RateInBytes;
 		Count = count;
-		IsSqueezing = true;
-	}
-
-	[SkipLocalsInit]
-	internal void Absorb(ReadOnlySpan<byte> inputs)
-	{
-		Debug.Assert(!IsSqueezing);
-		Debug.Assert(inputs.Length % Count is 0);
-
-		int length = inputs.Length / Count;
-		int offset = 0;
-		int position = _position;
-
-		for (int blockLength = TRate.RateInBytes - position; length - offset >= blockLength; blockLength = TRate.RateInBytes)
-		{
-			XorStreams(inputs, length, offset, position, blockLength);
-			Permute();
-			offset += blockLength;
-			position = 0;
-		}
-
-		XorStreams(inputs, length, offset, position, length - offset);
-		_position = position + length - offset;
-	}
-
-	// Below 0x80, the domain separator leaves room for the last padding bit in the current block even when one byte remains. Streams from Count up to _lanes are padded too, which is harmless: only ExtractLane and CopyStreams read the state back, and both stop at Count, and a guest overwrites its lane. The permutation is left to Squeeze, or to Permute to share.
-	[SkipLocalsInit]
-	internal void Pad(byte domainSeparator)
-	{
-		Debug.Assert(!IsSqueezing);
-		Debug.Assert(domainSeparator is not 0 and < LastPaddingBit);
-		Debug.Assert(_position < TRate.RateInBytes);
-
-		ref ulong state = ref _state[0][0];
-		XorRow(ref Unsafe.Add(ref state, (_position >> 3) * _lanes), _lanes, (ulong)domainSeparator << 8 * (_position & 7));
-		XorRow(ref Unsafe.Add(ref state, (TRate.RateInBytes / sizeof(ulong) - 1) * _lanes), _lanes, (ulong)LastPaddingBit << 56);
-		_position = TRate.RateInBytes;
 		IsSqueezing = true;
 	}
 
@@ -237,59 +181,6 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 	private void Permute()
 	{
 		KeccakP1600Batch.Permute(_lanes, ref _state[0][0]);
-	}
-
-	private void XorStreams(ReadOnlySpan<byte> inputs, int length, int offset, int position, int count)
-	{
-		ref ulong state = ref _state[0][0];
-		ref byte input = ref Unsafe.Add(ref MemoryMarshal.GetReference(inputs), offset);
-		int lanes = _lanes;
-		int streams = Count;
-		int head = Math.Min(-position & 7, count);
-		int words = (count - head) / sizeof(ulong);
-
-		XorBytes(ref state, lanes, streams, position, ref input, length, head);
-		position += head;
-		input = ref Unsafe.Add(ref input, head);
-		ref ulong word = ref Unsafe.Add(ref state, position / sizeof(ulong) * lanes);
-
-		nint stride = length;
-		int i = 0;
-
-		if (Avx512F.IsSupported && lanes is 8 && streams is 8)
-		{
-			for (; i <= words - 4; i += 4)
-			{
-				XorWords4x8(ref word, ref input, stride);
-				word = ref Unsafe.Add(ref word, 4 * 8);
-				input = ref Unsafe.Add(ref input, 4 * sizeof(ulong));
-			}
-		}
-		else if (Avx2.IsSupported && lanes is 4 && streams is 4)
-		{
-			for (; i <= words - 4; i += 4)
-			{
-				XorWords4x4(ref word, ref input, stride);
-				word = ref Unsafe.Add(ref word, 4 * 4);
-				input = ref Unsafe.Add(ref input, 4 * sizeof(ulong));
-			}
-		}
-
-		for (; i < words; ++i)
-		{
-			ref byte source = ref input;
-
-			for (int j = 0; j < streams; ++j)
-			{
-				Unsafe.Add(ref word, j) ^= Unsafe.ReadUnaligned<ulong>(ref source);
-				source = ref Unsafe.Add(ref source, length);
-			}
-
-			word = ref Unsafe.Add(ref word, lanes);
-			input = ref Unsafe.Add(ref input, sizeof(ulong));
-		}
-
-		XorBytes(ref state, lanes, streams, position + words * sizeof(ulong), ref input, length, count - head - words * sizeof(ulong));
 	}
 
 	private readonly void CopyStreams(Span<byte> outputs, int length, int offset, int position, int count)
@@ -442,75 +333,6 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		}
 	}
 
-	// XORs four words of each of eight streams into four rows, loading two streams per vector: with streams 0 and 2 in v0 and 1 and 3 in v1, the unpacks leave a word of streams 0 and 1, or 2 and 3, in each 128-bit quarter, and one shuffle of quarters per row gathers the four pairs of a word.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void XorWords4x8(ref ulong word, ref byte input, nint stride)
-	{
-		ref ulong source = ref Unsafe.As<byte, ulong>(ref input);
-		Vector512<ulong> v0 = Vector256.LoadUnsafe(ref source).ToVector512Unsafe().WithUpper(Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, 2 * stride)));
-		Vector512<ulong> v1 = Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, stride)).ToVector512Unsafe().WithUpper(Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, 3 * stride)));
-		Vector512<ulong> v2 = Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, 4 * stride)).ToVector512Unsafe().WithUpper(Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, 6 * stride)));
-		Vector512<ulong> v3 = Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, 5 * stride)).ToVector512Unsafe().WithUpper(Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, 7 * stride)));
-
-		Vector512<ulong> t0 = Avx512F.UnpackLow(v0, v1);
-		Vector512<ulong> t1 = Avx512F.UnpackHigh(v0, v1);
-		Vector512<ulong> t2 = Avx512F.UnpackLow(v2, v3);
-		Vector512<ulong> t3 = Avx512F.UnpackHigh(v2, v3);
-
-		(Vector512.LoadUnsafe(ref word) ^ Avx512F.Shuffle4x128(t0, t2, 0x88)).StoreUnsafe(ref word);
-		(Vector512.LoadUnsafe(ref word, 8) ^ Avx512F.Shuffle4x128(t1, t3, 0x88)).StoreUnsafe(ref word, 8);
-		(Vector512.LoadUnsafe(ref word, 16) ^ Avx512F.Shuffle4x128(t0, t2, 0xDD)).StoreUnsafe(ref word, 16);
-		(Vector512.LoadUnsafe(ref word, 24) ^ Avx512F.Shuffle4x128(t1, t3, 0xDD)).StoreUnsafe(ref word, 24);
-	}
-
-	// The shuffles of CopyWords4x4, as a transposition is its own inverse.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void XorWords4x4(ref ulong word, ref byte input, nint stride)
-	{
-		ref ulong source = ref Unsafe.As<byte, ulong>(ref input);
-		Vector256<ulong> r0 = Vector256.LoadUnsafe(ref source);
-		Vector256<ulong> r1 = Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, stride));
-		Vector256<ulong> r2 = Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, 2 * stride));
-		Vector256<ulong> r3 = Vector256.LoadUnsafe(ref Unsafe.AddByteOffset(ref source, 3 * stride));
-
-		Vector256<ulong> t0 = Avx2.UnpackLow(r0, r1);
-		Vector256<ulong> t1 = Avx2.UnpackHigh(r0, r1);
-		Vector256<ulong> t2 = Avx2.UnpackLow(r2, r3);
-		Vector256<ulong> t3 = Avx2.UnpackHigh(r2, r3);
-
-		(Vector256.LoadUnsafe(ref word) ^ Avx2.Permute2x128(t0, t2, 0x20)).StoreUnsafe(ref word);
-		(Vector256.LoadUnsafe(ref word, 4) ^ Avx2.Permute2x128(t1, t3, 0x20)).StoreUnsafe(ref word, 4);
-		(Vector256.LoadUnsafe(ref word, 8) ^ Avx2.Permute2x128(t0, t2, 0x31)).StoreUnsafe(ref word, 8);
-		(Vector256.LoadUnsafe(ref word, 12) ^ Avx2.Permute2x128(t1, t3, 0x31)).StoreUnsafe(ref word, 12);
-	}
-
-	private static void XorRow(ref ulong row, int lanes, ulong value)
-	{
-		switch (lanes)
-		{
-			case 8:
-			{
-				(Vector512.LoadUnsafe(ref row) ^ Vector512.Create(value)).StoreUnsafe(ref row);
-				break;
-			}
-			case 4:
-			{
-				(Vector256.LoadUnsafe(ref row) ^ Vector256.Create(value)).StoreUnsafe(ref row);
-				break;
-			}
-			case 2:
-			{
-				(Vector128.LoadUnsafe(ref row) ^ Vector128.Create(value)).StoreUnsafe(ref row);
-				break;
-			}
-			default:
-			{
-				row ^= value;
-				break;
-			}
-		}
-	}
-
 	private static void FillRow(ref ulong row, int lanes, ulong value)
 	{
 		switch (lanes)
@@ -534,18 +356,6 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 			{
 				row = value;
 				break;
-			}
-		}
-	}
-
-	// Bytes in the outer loop, as count is mostly 0.
-	private static void XorBytes(ref ulong state, int lanes, int streams, int position, ref byte input, int length, int count)
-	{
-		for (int k = 0; k < count; ++k)
-		{
-			for (int j = 0; j < streams; ++j)
-			{
-				ByteAt(ref Unsafe.Add(ref state, j), lanes, position + k) ^= Unsafe.Add(ref input, j * length + k);
 			}
 		}
 	}

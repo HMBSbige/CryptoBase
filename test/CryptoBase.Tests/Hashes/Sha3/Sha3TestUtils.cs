@@ -53,6 +53,28 @@ internal static class Sha3TestUtils
 		return output;
 	}
 
+	// Distinct suffixes for the seeded KeccakBatchSponge.Reset that use every byte they have.
+	public static ushort[] Suffixes(int streams, int suffixLength)
+	{
+		int mask = suffixLength is 1 ? 0xFF : 0xFFFF;
+		return [.. Enumerable.Range(0, streams).Select(j => (ushort)(0xA5C3 + j * 0x0101 & mask))];
+	}
+
+	// The input that the seeded KeccakBatchSponge.Reset absorbs for a stream: prefix ‖ suffix, the suffix suffixLength bytes little-endian.
+	public static byte[] SeededInput(ReadOnlySpan<byte> prefix, ushort suffix, int suffixLength)
+	{
+		byte[] input = new byte[prefix.Length + suffixLength];
+		prefix.CopyTo(input);
+		input[prefix.Length] = (byte)suffix;
+
+		if (suffixLength is 2)
+		{
+			input[prefix.Length + 1] = (byte)(suffix >> 8);
+		}
+
+		return input;
+	}
+
 	public static InlineArray25<ulong> RandomState(int seed)
 	{
 		Random random = new(seed);

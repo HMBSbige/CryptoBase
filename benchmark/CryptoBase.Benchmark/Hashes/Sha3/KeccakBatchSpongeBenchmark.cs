@@ -1,26 +1,27 @@
 using BenchmarkDotNet.Attributes;
 using CryptoBase.Hashes.Sha3;
+using System.Buffers.Binary;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Hashes.Sha3;
 
-// The SHAKE stream batches of ML-KEM and ML-DSA sampling, one KeccakSponge after another against KeccakBatchSponge groups:
-// 34-byte SHAKE128 seeds squeezed for three blocks each, 33-byte SHAKE256 seeds squeezed for 192 bytes each, and 66-byte SHAKE256 seeds squeezed for 576 bytes each as in ML-DSA's ExpandMask. The 96- and 128-byte SHAKE256 inputs squeezed for 32 bytes are the F, PRF and H calls of SLH-DSA with n = 32, one permutation per stream.
+// The SHAKE stream batches of ML-KEM and ML-DSA sampling, one KeccakSponge after another against KeccakBatchSponge groups, of streams that share a prefix and differ in a 1- or 2-byte suffix:
+// 32 + 2-byte SHAKE128 seeds squeezed for three blocks each, 32 + 1-byte SHAKE256 seeds squeezed for 192 bytes each, and 64 + 2-byte SHAKE256 seeds squeezed for 576 bytes each as in ML-DSA's ExpandMask.
 public class KeccakBatchSpongeBenchmark
 {
+	private byte[] _prefix = [];
 	private byte[] _inputs = [];
+	private ushort[] _suffixes = [];
 	private byte[] _outputs = [];
 
 	public static IEnumerable<ShakeBatch> Batches =>
 	[
-		new(128, 4, 34, 3 * KeccakRate168.RateInBytes),
-		new(128, 9, 34, 3 * KeccakRate168.RateInBytes),
-		new(128, 16, 34, 3 * KeccakRate168.RateInBytes),
-		new(256, 4, 33, 192),
-		new(128, 30, 34, 3 * KeccakRate168.RateInBytes),
-		new(256, 8, 66, 576),
-		new(256, 8, 96, 32),
-		new(256, 8, 128, 32)
+		new(128, 4, 32, 2, 3 * KeccakRate168.RateInBytes),
+		new(128, 9, 32, 2, 3 * KeccakRate168.RateInBytes),
+		new(128, 16, 32, 2, 3 * KeccakRate168.RateInBytes),
+		new(256, 4, 32, 1, 192),
+		new(128, 30, 32, 2, 3 * KeccakRate168.RateInBytes),
+		new(256, 8, 64, 2, 576)
 	];
 
 	[ParamsSource(nameof(Batches))]
@@ -29,8 +30,27 @@ public class KeccakBatchSpongeBenchmark
 	[GlobalSetup]
 	public void Setup()
 	{
-		_inputs = RandomNumberGenerator.GetBytes(Batch.Streams * Batch.InputLength);
+		int inputLength = Batch.PrefixLength + Batch.SuffixLength;
+		_prefix = RandomNumberGenerator.GetBytes(Batch.PrefixLength);
+		_inputs = new byte[Batch.Streams * inputLength];
+		_suffixes = new ushort[Batch.Streams];
 		_outputs = new byte[Batch.Streams * Batch.OutputLength];
+
+		for (int j = 0; j < Batch.Streams; ++j)
+		{
+			_suffixes[j] = (ushort)j;
+			Span<byte> input = _inputs.AsSpan(j * inputLength, inputLength);
+			_prefix.CopyTo(input);
+
+			if (Batch.SuffixLength is 1)
+			{
+				input[Batch.PrefixLength] = (byte)j;
+			}
+			else
+			{
+				BinaryPrimitives.WriteUInt16LittleEndian(input.Slice(Batch.PrefixLength), (ushort)j);
+			}
+		}
 	}
 
 	[Benchmark(Baseline = true)]
@@ -61,7 +81,7 @@ public class KeccakBatchSpongeBenchmark
 
 	private void Sequential<TRate>() where TRate : IKeccakRate
 	{
-		int inputLength = Batch.InputLength;
+		int inputLength = Batch.PrefixLength + Batch.SuffixLength;
 		int outputLength = Batch.OutputLength;
 
 		for (int i = 0; i < Batch.Streams; ++i)
@@ -75,24 +95,21 @@ public class KeccakBatchSpongeBenchmark
 
 	private void Batched<TRate>() where TRate : IKeccakRate
 	{
-		int inputLength = Batch.InputLength;
 		int outputLength = Batch.OutputLength;
 		KeccakBatchSponge<TRate> sponge = default;
 
 		for (int first = 0; first < Batch.Streams; first += sponge.Count)
 		{
-			sponge.ResetWithGuests(Batch.Streams - first, 0);
-			sponge.Absorb(_inputs.AsSpan(first * inputLength, sponge.Count * inputLength));
-			sponge.Pad(KeccakDomainSeparator.Shake);
+			sponge.ResetWithGuests(Batch.Streams - first, 0, _prefix, _suffixes.AsSpan(first), Batch.SuffixLength, KeccakDomainSeparator.Shake);
 			sponge.Squeeze(_outputs.AsSpan(first * outputLength, sponge.Count * outputLength));
 		}
 	}
 
-	public readonly record struct ShakeBatch(int Shake, int Streams, int InputLength, int OutputLength)
+	public readonly record struct ShakeBatch(int Shake, int Streams, int PrefixLength, int SuffixLength, int OutputLength)
 	{
 		public override string ToString()
 		{
-			return $"SHAKE{Shake} x{Streams} {InputLength}->{OutputLength}";
+			return $"SHAKE{Shake} x{Streams} {PrefixLength}+{SuffixLength}->{OutputLength}";
 		}
 	}
 }
