@@ -183,7 +183,7 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 	private static int MacCore<TState>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
 	{
 		Unsafe.SkipInit(out TState state);
-		TState.Initialize(ref state, key);
+		state.Initialize(key);
 
 		try
 		{

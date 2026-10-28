@@ -16,7 +16,7 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	private Vector512<uint> _s1, _s2, _s3, _s4;
 	private bool _hasSixteenthPower;
 
-	private void Initialize(scoped ReadOnlySpan<byte> key)
+	public void Initialize(scoped ReadOnlySpan<byte> key)
 	{
 		Debug.Assert(IsSupported);
 		Debug.Assert(key.Length is Poly1305Algorithm.KeyLengthInBytes);
@@ -41,11 +41,6 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 		_s3 = _r3 * 5;
 		_s4 = _r4 * 5;
 		_hasSixteenthPower = false;
-	}
-
-	public static void Initialize(ref Poly1305Avx512 state, scoped ReadOnlySpan<byte> key)
-	{
-		state.Initialize(key);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

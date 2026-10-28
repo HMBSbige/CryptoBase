@@ -185,7 +185,7 @@ public class ChaCha20Poly1305FusionTest
 		cipher.Xor(plaintext, ciphertext);
 
 		Poly1305Software state = default;
-		Poly1305Software.Initialize(ref state, poly1305Key);
+		state.Initialize(poly1305Key);
 		state.AppendPaddedSegment(associatedData);
 		state.AppendPaddedSegment(ciphertext);
 		state.WriteMac(tag);
@@ -199,7 +199,7 @@ public class ChaCha20Poly1305FusionTest
 		cipher.SetCounter(counter);
 
 		Poly1305Avx512 state = default;
-		Poly1305Avx512.Initialize(ref state, poly1305Key);
+		state.Initialize(poly1305Key);
 		// A non-zero accumulator checks the conversion into and out of the kernel.
 		state.AppendPaddedSegment(associatedData);
 		if (decrypt)

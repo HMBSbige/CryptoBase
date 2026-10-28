@@ -11,7 +11,7 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 	private Vector128<uint> _sv1, _sv2, _sv3, _sv4;
 	private bool _hasFourthPower;
 
-	private void Initialize(scoped ReadOnlySpan<byte> key)
+	public void Initialize(scoped ReadOnlySpan<byte> key)
 	{
 		Debug.Assert(IsSupported);
 		Debug.Assert(key.Length is Poly1305Algorithm.KeyLengthInBytes);
@@ -29,11 +29,6 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 		_sv3 = _ru3 * 5;
 		_sv4 = _ru4 * 5;
 		_hasFourthPower = false;
-	}
-
-	public static void Initialize(ref Poly1305Sse2 state, scoped ReadOnlySpan<byte> key)
-	{
-		state.Initialize(key);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

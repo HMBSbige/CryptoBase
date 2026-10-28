@@ -12,7 +12,7 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 
 	private ulong _h0, _h1, _h2;
 
-	private void Initialize(scoped ReadOnlySpan<byte> key)
+	public void Initialize(scoped ReadOnlySpan<byte> key)
 	{
 		Debug.Assert(key.Length is Poly1305Algorithm.KeyLengthInBytes);
 
@@ -27,11 +27,6 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 		_h0 = 0;
 		_h1 = 0;
 		_h2 = 0;
-	}
-
-	public static void Initialize(ref Poly1305Software state, scoped ReadOnlySpan<byte> key)
-	{
-		state.Initialize(key);
 	}
 
 	// carry holds the part of word 1 that Poly1305Utils.Multiply64 has not folded into h1 yet.

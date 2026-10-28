@@ -217,7 +217,7 @@ public class Poly1305Test
 		static void ComputeSoftwareMac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 		{
 			Poly1305Software state = default;
-			Poly1305Software.Initialize(ref state, key);
+			state.Initialize(key);
 
 			try
 			{

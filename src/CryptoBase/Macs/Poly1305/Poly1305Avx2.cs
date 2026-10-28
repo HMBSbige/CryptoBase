@@ -11,7 +11,7 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 	private Vector256<uint> _svxz1, _svxz2, _svxz3, _svxz4;
 	private bool _hasEighthPower;
 
-	private void Initialize(scoped ReadOnlySpan<byte> key)
+	public void Initialize(scoped ReadOnlySpan<byte> key)
 	{
 		Debug.Assert(IsSupported);
 		Debug.Assert(key.Length is Poly1305Algorithm.KeyLengthInBytes);
@@ -29,11 +29,6 @@ internal ref struct Poly1305Avx2 : IPoly1305State<Poly1305Avx2>
 		_svxz3 = _ruwy3 * 5;
 		_svxz4 = _ruwy4 * 5;
 		_hasEighthPower = false;
-	}
-
-	public static void Initialize(ref Poly1305Avx2 state, scoped ReadOnlySpan<byte> key)
-	{
-		state.Initialize(key);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

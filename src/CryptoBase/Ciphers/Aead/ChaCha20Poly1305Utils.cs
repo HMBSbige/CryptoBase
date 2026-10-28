@@ -115,7 +115,7 @@ internal static class ChaCha20Poly1305Utils
 		DeriveKeyStream(cipher, firstBatch.Span);
 
 		Unsafe.SkipInit(out TState state);
-		TState.Initialize(ref state, firstBatch.Span.Slice(0, Poly1305Algorithm.KeyLengthInBytes));
+		state.Initialize(firstBatch.Span.Slice(0, Poly1305Algorithm.KeyLengthInBytes));
 
 		try
 		{
@@ -162,7 +162,7 @@ internal static class ChaCha20Poly1305Utils
 		Unsafe.SkipInit(out Vector128<byte> computedTag);
 
 		Unsafe.SkipInit(out TState state);
-		TState.Initialize(ref state, firstBatch.Span.Slice(0, Poly1305Algorithm.KeyLengthInBytes));
+		state.Initialize(firstBatch.Span.Slice(0, Poly1305Algorithm.KeyLengthInBytes));
 
 		try
 		{

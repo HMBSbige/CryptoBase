@@ -11,7 +11,7 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 	private Vector128<uint> _r0, _r1, _r2, _r3, _r4;
 	private Vector128<uint> _s1, _s2, _s3, _s4;
 
-	private void Initialize(scoped ReadOnlySpan<byte> key)
+	public void Initialize(scoped ReadOnlySpan<byte> key)
 	{
 		Debug.Assert(IsSupported);
 		Debug.Assert(key.Length is Poly1305Algorithm.KeyLengthInBytes);
@@ -84,11 +84,6 @@ internal ref struct Poly1305AdvSimd : IPoly1305State<Poly1305AdvSimd>
 		Vector64<uint> limb4 = Vector64.Narrow(p4.GetLower(), p4.GetUpper());
 		r3 = new Poly1305Power(limb0.GetElement(0), limb1.GetElement(0), limb2.GetElement(0), limb3.GetElement(0), limb4.GetElement(0));
 		r4 = new Poly1305Power(limb0.GetElement(1), limb1.GetElement(1), limb2.GetElement(1), limb3.GetElement(1), limb4.GetElement(1));
-	}
-
-	public static void Initialize(ref Poly1305AdvSimd state, scoped ReadOnlySpan<byte> key)
-	{
-		state.Initialize(key);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
