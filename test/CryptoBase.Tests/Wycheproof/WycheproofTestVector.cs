@@ -14,8 +14,8 @@ public abstract record WycheproofTestVector
 {
 	public required int TcId { get; init; }
 
-	// The key generation files have no flags.
-	public string[] Flags { get; init; } = [];
+	// The key generation files have no flags, for which deserialization sets null.
+	public string[] Flags { get => field ?? []; init; }
 
 	public required WycheproofResult Result { get; init; }
 
