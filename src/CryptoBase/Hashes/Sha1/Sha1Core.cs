@@ -48,14 +48,21 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 	{
 		int bufferedLength = (int)(_byteCount & BlockSizeInBytes - 1);
 		_byteCount += (uint)source.Length;
-		Span<byte> buffer = _buffer;
 		int bytesNeeded = BlockSizeInBytes - bufferedLength;
 
 		if (source.Length < bytesNeeded)
 		{
+			Span<byte> buffer = _buffer;
 			source.CopyTo(buffer.Slice(bufferedLength));
 			return;
 		}
+
+		AppendBlocks(source, bufferedLength, bytesNeeded);
+	}
+
+	private void AppendBlocks(ReadOnlySpan<byte> source, int bufferedLength, int bytesNeeded)
+	{
+		Span<byte> buffer = _buffer;
 
 		if (bufferedLength is not 0)
 		{
