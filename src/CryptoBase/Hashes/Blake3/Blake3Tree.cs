@@ -29,19 +29,7 @@ internal static class Blake3Tree
 		}
 		else
 		{
-			Unsafe.SkipInit(out InlineArray64<byte> children);
-
-			if (maxDegreeOfParallelism is 1 || !Blake3Parallel.TryCompressSubtreeToParentNode(source, in key, flags, children, maxDegreeOfParallelism, budget))
-			{
-				CompressSubtreeToParentNode(source, in key, 0, flags, children);
-			}
-
-			Blake3Output.FromParent(children, in key, flags, out output);
-
-			if (Blake3Flags.IsSecret(flags))
-			{
-				children.ZeroMemory();
-			}
+			RootFromSubtree(source, in key, flags, maxDegreeOfParallelism, budget, out output);
 		}
 
 		// Writing long output in parallel may fail for lack of memory, and the output, secret in the keyed hash and key derivation modes, is erased all the same.
@@ -55,6 +43,26 @@ internal static class Blake3Tree
 			{
 				output.ZeroMemory();
 			}
+		}
+	}
+
+	// Kept out of HashData, whose prologue would otherwise zero the span temporaries of the parallel call even for inputs of one chunk.
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void RootFromSubtree(ReadOnlySpan<byte> source, ref readonly InlineArray8<uint> key, uint flags, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget, out Blake3Output output)
+	{
+		Unsafe.SkipInit(out InlineArray64<byte> children);
+
+		if (maxDegreeOfParallelism is 1 || !Blake3Parallel.TryCompressSubtreeToParentNode(source, in key, flags, children, maxDegreeOfParallelism, budget))
+		{
+			CompressSubtreeToParentNode(source, in key, 0, flags, children);
+		}
+
+		Blake3Output.FromParent(children, in key, flags, out output);
+
+		if (Blake3Flags.IsSecret(flags))
+		{
+			children.ZeroMemory();
 		}
 	}
 
