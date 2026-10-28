@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Blocks.Aes;
+using CryptoBase.Ciphers.Modes;
 using BclAes = System.Security.Cryptography.Aes;
 
 namespace CryptoBase.Tests.Ciphers.Blocks.Aes;
@@ -90,11 +91,11 @@ public class AesVpaesTest
 	{
 		if (decrypt)
 		{
-			crypto.TransformWithPolicy<TPolicy, AesDecrypt>(ref policy, source, destination);
+			crypto.TransformWithPolicy<TPolicy, Decryption>(ref policy, source, destination);
 		}
 		else
 		{
-			crypto.TransformWithPolicy<TPolicy, AesEncrypt>(ref policy, source, destination);
+			crypto.TransformWithPolicy<TPolicy, Encryption>(ref policy, source, destination);
 		}
 	}
 }

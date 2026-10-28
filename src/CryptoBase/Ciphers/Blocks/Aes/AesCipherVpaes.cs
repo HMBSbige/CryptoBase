@@ -1,3 +1,5 @@
+using CryptoBase.Ciphers.Modes;
+
 namespace CryptoBase.Ciphers.Blocks.Aes;
 
 internal struct AesCipherVpaes : IDisposable, IAesSubWord
@@ -534,7 +536,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		}
 
 		AesDirectPolicy policy = default;
-		TransformWithPolicy<AesDirectPolicy, AesEncrypt>(ref policy, source, destination);
+		TransformWithPolicy<AesDirectPolicy, Encryption>(ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -547,11 +549,11 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		}
 
 		AesDirectPolicy policy = default;
-		TransformWithPolicy<AesDirectPolicy, AesDecrypt>(ref policy, source, destination);
+		TransformWithPolicy<AesDirectPolicy, Decryption>(ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	public readonly void TransformWithPolicy<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination, int offset = 0) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
+	public readonly void TransformWithPolicy<TPolicy, TDirection>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination, int offset = 0) where TPolicy : struct, IAesModePolicy, allows ref struct where TDirection : struct, IBlockDirection
 	{
 		ref byte src = ref MemoryMarshal.GetReference(source);
 		ref byte dst = ref MemoryMarshal.GetReference(destination);
@@ -559,7 +561,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		while (source.Length - offset >= 64)
 		{
 			policy.Prepare4(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3);
-			if (TOperation.IsDecrypt)
+			if (TDirection.IsDecrypt)
 			{
 				Decrypt4(ref v0, ref v1, ref v2, ref v3);
 			}
@@ -576,7 +578,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		{
 			policy.Prepare2(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1);
 			Vector128<byte> v2 = policy.Prepare1(ref src, (nuint)(offset + 32));
-			if (TOperation.IsDecrypt)
+			if (TDirection.IsDecrypt)
 			{
 				Decrypt3(ref v0, ref v1, ref v2);
 			}
@@ -593,7 +595,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 		if (source.Length - offset >= 32)
 		{
 			policy.Prepare2(ref src, (nuint)offset, out Vector128<byte> v0, out Vector128<byte> v1);
-			if (TOperation.IsDecrypt)
+			if (TDirection.IsDecrypt)
 			{
 				Decrypt2(ref v0, ref v1);
 			}
@@ -608,7 +610,7 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 
 		if (offset < source.Length)
 		{
-			if (TOperation.IsDecrypt)
+			if (TDirection.IsDecrypt)
 			{
 				policy.Finish1(ref src, ref dst, (nuint)offset, Decrypt(policy.Prepare1(ref src, (nuint)offset)));
 			}

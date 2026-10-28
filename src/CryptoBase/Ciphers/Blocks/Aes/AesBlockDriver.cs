@@ -1,3 +1,5 @@
+using CryptoBase.Ciphers.Modes;
+
 namespace CryptoBase.Ciphers.Blocks.Aes;
 
 internal static class AesBlockDriver<TCore> where TCore : struct, IAesVectorCore
@@ -6,34 +8,34 @@ internal static class AesBlockDriver<TCore> where TCore : struct, IAesVectorCore
 	internal static void EncryptBlocks(ref TCore core, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		AesDirectPolicy policy = default;
-		Process<AesDirectPolicy, AesEncrypt>(ref core, ref policy, source, destination);
+		Process<AesDirectPolicy, Encryption>(ref core, ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void DecryptBlocks(ref TCore core, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		AesDirectPolicy policy = default;
-		Process<AesDirectPolicy, AesDecrypt>(ref core, ref policy, source, destination);
+		Process<AesDirectPolicy, Decryption>(ref core, ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static void TransformWithPolicy<TPolicy, TOperation>(ref TCore core, ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
+	internal static void TransformWithPolicy<TPolicy, TDirection>(ref TCore core, ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TDirection : struct, IBlockDirection
 	{
-		Process<TPolicy, TOperation>(ref core, ref policy, source, destination);
+		Process<TPolicy, TDirection>(ref core, ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static void Transform<TPolicy, TOperation>(ref TCore core, ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy where TOperation : struct, IAesOperation
+	internal static void Transform<TPolicy, TDirection>(ref TCore core, ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy where TDirection : struct, IBlockDirection
 	{
 		Debug.Assert(source.Length % 16 is 0 && destination.Length >= source.Length);
 		TPolicy policy = default;
 		policy.Initialize(state, source.Length);
-		Process<TPolicy, TOperation>(ref core, ref policy, source, destination);
+		Process<TPolicy, TDirection>(ref core, ref policy, source, destination);
 		policy.SaveState(ref state);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Process<TPolicy, TOperation>(ref TCore core, ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
+	private static void Process<TPolicy, TDirection>(ref TCore core, ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TDirection : struct, IBlockDirection
 	{
 		ref byte src = ref MemoryMarshal.GetReference(source);
 		ref byte dst = ref MemoryMarshal.GetReference(destination);
@@ -46,7 +48,7 @@ internal static class AesBlockDriver<TCore> where TCore : struct, IAesVectorCore
 				nuint position = (nuint)offset;
 				policy.Prepare8(ref src, position, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3, out Vector128<byte> v4, out Vector128<byte> v5, out Vector128<byte> v6, out Vector128<byte> v7);
 
-				if (TOperation.IsDecrypt)
+				if (TDirection.IsDecrypt)
 				{
 					core.Decrypt8(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
 				}
@@ -65,7 +67,7 @@ internal static class AesBlockDriver<TCore> where TCore : struct, IAesVectorCore
 			nuint position = (nuint)offset;
 			policy.Prepare4(ref src, position, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3);
 
-			if (TOperation.IsDecrypt)
+			if (TDirection.IsDecrypt)
 			{
 				core.Decrypt4(ref v0, ref v1, ref v2, ref v3);
 			}
@@ -83,7 +85,7 @@ internal static class AesBlockDriver<TCore> where TCore : struct, IAesVectorCore
 			nuint position = (nuint)offset;
 			policy.Prepare2(ref src, position, out Vector128<byte> v0, out Vector128<byte> v1);
 
-			if (TOperation.IsDecrypt)
+			if (TDirection.IsDecrypt)
 			{
 				core.Decrypt2(ref v0, ref v1);
 			}
@@ -100,7 +102,7 @@ internal static class AesBlockDriver<TCore> where TCore : struct, IAesVectorCore
 		{
 			nuint position = (nuint)offset;
 
-			if (TOperation.IsDecrypt)
+			if (TDirection.IsDecrypt)
 			{
 				policy.Finish1(ref src, ref dst, position, core.Decrypt(policy.Prepare1(ref src, position)));
 			}

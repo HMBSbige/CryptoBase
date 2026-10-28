@@ -1,3 +1,5 @@
+using CryptoBase.Ciphers.Modes;
+
 namespace CryptoBase.Ciphers.Blocks.Aes;
 
 internal partial struct AesCipherBitslice : IDisposable
@@ -80,13 +82,13 @@ internal partial struct AesCipherBitslice : IDisposable
 	public readonly void EncryptBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		AesDirectPolicy policy = default;
-		TransformWithPolicy<AesDirectPolicy, AesEncrypt>(ref policy, source, destination);
+		TransformWithPolicy<AesDirectPolicy, Encryption>(ref policy, source, destination);
 	}
 
 	public readonly void DecryptBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		AesDirectPolicy policy = default;
-		TransformWithPolicy<AesDirectPolicy, AesDecrypt>(ref policy, source, destination);
+		TransformWithPolicy<AesDirectPolicy, Decryption>(ref policy, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,8 +1,10 @@
+using CryptoBase.Ciphers.Modes;
+
 namespace CryptoBase.Ciphers.Blocks.Aes;
 
 internal partial struct AesCipherBitslice
 {
-	public readonly void TransformWithPolicy<TPolicy, TOperation>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TOperation : struct, IAesOperation
+	public readonly void TransformWithPolicy<TPolicy, TDirection>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination) where TPolicy : struct, IAesModePolicy, allows ref struct where TDirection : struct, IBlockDirection
 	{
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		ref byte output = ref MemoryMarshal.GetReference(destination);
@@ -10,7 +12,7 @@ internal partial struct AesCipherBitslice
 		for (int offset = 0; offset < source.Length; offset += BatchSize)
 		{
 			int length = Math.Min(source.Length - offset, BatchSize);
-			if (TOperation.IsDecrypt)
+			if (TDirection.IsDecrypt)
 			{
 				DecryptBatch(ref policy, ref input, ref output, (nuint)offset, length);
 			}

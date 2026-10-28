@@ -23,7 +23,7 @@ internal static class BlockModeDispatch
 		{
 			int length = source.Length & -BlockSize;
 
-			if (TryTransformAes<TCipher, AesCtrPolicy<TIncrementer>, AesEncrypt>(cipher, ref counter, source.Slice(0, length), destination))
+			if (TryTransformAes<TCipher, AesCtrPolicy<TIncrementer>, Encryption>(cipher, ref counter, source.Slice(0, length), destination))
 			{
 				return length;
 			}
@@ -42,9 +42,7 @@ internal static class BlockModeDispatch
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryTransformXts<TCipher, TDirection>(TCipher cipher, ref Vector128<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination) where TCipher : IBlockCipher<TCipher> where TDirection : struct, IBlockDirection
 	{
-		return TDirection.IsDecrypt
-			? TryTransformAes<TCipher, AesXtsPolicy, AesDecrypt>(cipher, ref tweak, source, destination)
-			: TryTransformAes<TCipher, AesXtsPolicy, AesEncrypt>(cipher, ref tweak, source, destination);
+		return TryTransformAes<TCipher, AesXtsPolicy, TDirection>(cipher, ref tweak, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -172,8 +170,8 @@ internal static class BlockModeDispatch
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static bool TryTransformAes<TCipher, TPolicy, TOperation>(TCipher cipher, ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TCipher : IBlockEncryptor<TCipher> where TPolicy : struct, IAesModePolicy where TOperation : struct, IAesOperation
+	private static bool TryTransformAes<TCipher, TPolicy, TDirection>(TCipher cipher, ref Vector128<byte> state, ReadOnlySpan<byte> source, Span<byte> destination) where TCipher : IBlockEncryptor<TCipher> where TPolicy : struct, IAesModePolicy where TDirection : struct, IBlockDirection
 	{
-		return IsAesVectorSupported && cipher is AesCipher aes && aes.TryTransform<TPolicy, TOperation>(ref state, source, destination);
+		return IsAesVectorSupported && cipher is AesCipher aes && aes.TryTransform<TPolicy, TDirection>(ref state, source, destination);
 	}
 }
