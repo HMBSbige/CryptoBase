@@ -96,24 +96,6 @@ internal struct P256Field52 : IEcField<P256Field52>
 		saturated.ZeroMemory();
 	}
 
-	public static void Add(in P256Field52 left, in P256Field52 right, out P256Field52 result)
-	{
-		AddUnreduced(in left, in right, out result);
-		WeakReduce(in result, out result);
-	}
-
-	public static void Subtract(in P256Field52 left, in P256Field52 right, out P256Field52 result)
-	{
-		SubtractUnreduced(in left, in right, out result);
-		WeakReduce(in result, out result);
-	}
-
-	public static void Negate(in P256Field52 value, out P256Field52 result)
-	{
-		P256Field52 zero = default;
-		Subtract(in zero, in value, out result);
-	}
-
 	// With a = x_i·2^6 and b = y_j·2^6, a·b = x_i·y_j·2^12 < 2^124 splits at bit 52 of x_i·y_j: the high word is x_i·y_j >> 52 and the low word is (x_i·y_j mod 2^52)·2^12. The column sums of these halves stay below 2^63, so they need no carries before Reduce.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(in P256Field52 left, in P256Field52 right, out P256Field52 result)
@@ -191,18 +173,6 @@ internal struct P256Field52 : IEcField<P256Field52>
 		ToSaturated(in value, out FieldElement<P256Field> saturated);
 		SafeGcd<P256Field>.InvertVariableTime(in saturated, InverseNumerator, out saturated);
 		FromLimbs(FieldElement<P256Field>.GetLimbs(in saturated), out result);
-	}
-
-	public static ulong IsZero(in P256Field52 value)
-	{
-		WeakReduce(in value, out P256Field52 reduced);
-		return IsReducedZero(in reduced);
-	}
-
-	public static ulong AreEqual(in P256Field52 left, in P256Field52 right)
-	{
-		SubtractUnreduced(in left, in right, out P256Field52 difference);
-		return IsZero(in difference);
 	}
 
 	// The limbs add without carries; the caller keeps them within what the next operation takes.

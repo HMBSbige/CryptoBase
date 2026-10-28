@@ -18,12 +18,6 @@ internal interface IEcField<TSelf> : IPrimeModulus where TSelf : unmanaged, IEcF
 	// Writes the value mod p in ByteLength big-endian bytes.
 	static abstract void Export(in TSelf value, Span<byte> destination);
 
-	static abstract void Add(in TSelf left, in TSelf right, out TSelf result);
-
-	static abstract void Subtract(in TSelf left, in TSelf right, out TSelf result);
-
-	static abstract void Negate(in TSelf value, out TSelf result);
-
 	static abstract void Multiply(in TSelf left, in TSelf right, out TSelf result);
 
 	static abstract void Square(in TSelf value, out TSelf result);
@@ -38,11 +32,6 @@ internal interface IEcField<TSelf> : IPrimeModulus where TSelf : unmanaged, IEcF
 	// The time depends on value, which must be public. 0 gives 0.
 	static abstract void InvertVariableTime(in TSelf value, out TSelf result);
 
-	// ulong.MaxValue if the value is 0 mod p and 0 otherwise.
-	static abstract ulong IsZero(in TSelf value);
-
-	static abstract ulong AreEqual(in TSelf left, in TSelf right);
-
 	// Limb by limb without carries; the caller keeps the result within what the next operation takes.
 	static abstract void AddUnreduced(in TSelf left, in TSelf right, out TSelf result);
 
@@ -54,6 +43,42 @@ internal interface IEcField<TSelf> : IPrimeModulus where TSelf : unmanaged, IEcF
 
 	// For an output of WeakReduce: ulong.MaxValue if it is 0 mod p, which below 2p means 0 or p, and 0 otherwise.
 	static abstract ulong IsReducedZero(in TSelf value);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static virtual void Add(in TSelf left, in TSelf right, out TSelf result)
+	{
+		TSelf.AddUnreduced(in left, in right, out result);
+		TSelf.WeakReduce(in result, out result);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static virtual void Subtract(in TSelf left, in TSelf right, out TSelf result)
+	{
+		TSelf.SubtractUnreduced(in left, in right, out result);
+		TSelf.WeakReduce(in result, out result);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static virtual void Negate(in TSelf value, out TSelf result)
+	{
+		TSelf zero = default;
+		TSelf.Subtract(in zero, in value, out result);
+	}
+
+	// ulong.MaxValue if the value is 0 mod p and 0 otherwise.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static virtual ulong IsZero(in TSelf value)
+	{
+		TSelf.WeakReduce(in value, out TSelf reduced);
+		return TSelf.IsReducedZero(in reduced);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static virtual ulong AreEqual(in TSelf left, in TSelf right)
+	{
+		TSelf.SubtractUnreduced(in left, in right, out TSelf difference);
+		return TSelf.IsZero(in difference);
+	}
 
 	// Limb by limb, which gives an element of the form of the inputs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -73,24 +73,6 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 		saturated.ZeroMemory();
 	}
 
-	public static void Add(in P521Field58 left, in P521Field58 right, out P521Field58 result)
-	{
-		AddUnreduced(in left, in right, out result);
-		WeakReduce(in result, out result);
-	}
-
-	public static void Subtract(in P521Field58 left, in P521Field58 right, out P521Field58 result)
-	{
-		SubtractUnreduced(in left, in right, out result);
-		WeakReduce(in result, out result);
-	}
-
-	public static void Negate(in P521Field58 value, out P521Field58 result)
-	{
-		P521Field58 zero = default;
-		Subtract(in zero, in value, out result);
-	}
-
 	// Both operands are shifted left by 3: for limbs x_i and y_j below 2^61, x_i·2^3 · y_j·2^3 < 2^128, so High gives x_i·y_j >> 58 and Low gives x_i·y_j mod 2^58. Column k sums the Low of the pairs with i + j = k and the High of those with i + j = k − 1, at most nine of each. For sizes a and b, a High is below ab·2^58, or ab·2^58·(1/2 + 2^−52) with limb 8, which enters one column at most twice, so the Highs sum to below 8ab·2^58·(1 + 2^−50) and the column to below 58·2^58 for ab ≤ 6, within 64 bits. Columns 0 to 7 hold at most eight Lows and seven Highs, so below 50·2^58, and column 17 is below 2^60.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Multiply(in P521Field58 left, in P521Field58 right, out P521Field58 result)
@@ -527,18 +509,6 @@ internal partial struct P521Field58 : IEcField<P521Field58>
 		ToSaturated(in value, out FieldElement<P521Field> saturated);
 		SafeGcd<P521Field>.InvertVariableTime(in saturated, InverseNumerator, out saturated);
 		FromLimbs(FieldElement<P521Field>.GetLimbs(in saturated), out result);
-	}
-
-	public static ulong IsZero(in P521Field58 value)
-	{
-		WeakReduce(in value, out P521Field58 reduced);
-		return IsReducedZero(in reduced);
-	}
-
-	public static ulong AreEqual(in P521Field58 left, in P521Field58 right)
-	{
-		SubtractUnreduced(in left, in right, out P521Field58 difference);
-		return IsZero(in difference);
 	}
 
 	// The limbs add without carries; the caller keeps them within what the next operation takes.

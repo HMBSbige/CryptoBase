@@ -82,24 +82,6 @@ internal struct P384Field56 : IEcField<P384Field56>
 		saturated.ZeroMemory();
 	}
 
-	public static void Add(in P384Field56 left, in P384Field56 right, out P384Field56 result)
-	{
-		AddUnreduced(in left, in right, out result);
-		WeakReduce(in result, out result);
-	}
-
-	public static void Subtract(in P384Field56 left, in P384Field56 right, out P384Field56 result)
-	{
-		SubtractUnreduced(in left, in right, out result);
-		WeakReduce(in result, out result);
-	}
-
-	public static void Negate(in P384Field56 value, out P384Field56 result)
-	{
-		P384Field56 zero = default;
-		Subtract(in zero, in value, out result);
-	}
-
 	// Carrying the left limbs first gives x_i below 2^56, x_6 too as the value is below 2^392. With a_i = x_i·2^8 and a right limb y_j below 2^60, a_i·y_j = x_i·y_j·2^8 < 2^124, so its high half is x_i·y_j >> 56, below 2^60, and its low half (x_i·y_j mod 2^56)·2^8. A column sums at most seven of each, below 2^63 with room for the Montgomery rounds, so all the columns come first without carries and the rounds after.
 	// Each column adds one product at a time and each right limb is loaded where it is first used, so that few values are live at once.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
@@ -278,18 +260,6 @@ internal struct P384Field56 : IEcField<P384Field56>
 		ToSaturated(in value, out FieldElement<P384Field> saturated);
 		SafeGcd<P384Field>.InvertVariableTime(in saturated, InverseNumerator, out saturated);
 		FromLimbs(FieldElement<P384Field>.GetLimbs(in saturated), out result);
-	}
-
-	public static ulong IsZero(in P384Field56 value)
-	{
-		WeakReduce(in value, out P384Field56 reduced);
-		return IsReducedZero(in reduced);
-	}
-
-	public static ulong AreEqual(in P384Field56 left, in P384Field56 right)
-	{
-		SubtractUnreduced(in left, in right, out P384Field56 difference);
-		return IsZero(in difference);
 	}
 
 	// The limbs add without carries; the caller keeps them within what the next operation takes.
