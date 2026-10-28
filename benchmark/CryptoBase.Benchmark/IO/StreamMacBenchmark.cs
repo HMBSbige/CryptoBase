@@ -19,6 +19,7 @@ public class StreamMacBenchmark
 	private byte[] _key = null!;
 	private MemoryStream _stream = null!;
 	private byte[] _mac = null!;
+	private HmacAlgorithm<Sha256Core> _hmac = null!;
 
 	[GlobalSetup]
 	public void Setup()
@@ -26,12 +27,14 @@ public class StreamMacBenchmark
 		_key = RandomNumberGenerator.GetBytes(32);
 		_stream = new MemoryStream(RandomNumberGenerator.GetBytes(ByteLength), false);
 		_mac = GC.AllocateUninitializedArray<byte>(HmacAlgorithm<Sha256Core>.MacLength);
+		_hmac = HmacAlgorithm<Sha256Core>.Create(_key);
 	}
 
 	[GlobalCleanup]
 	public void Cleanup()
 	{
 		_stream.Dispose();
+		_hmac.Dispose();
 	}
 
 	[Benchmark(Baseline = true)]
@@ -51,6 +54,17 @@ public class StreamMacBenchmark
 		_stream.Position = 0;
 		Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256Core>.MacLength];
 		_ = HMACSHA256.HashData(_key, _stream, mac);
+		return BinaryPrimitives.ReadUInt32LittleEndian(mac);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Sync")]
+	public uint CryptoBaseInstanceSync()
+	{
+		_stream.Position = 0;
+		Span<byte> mac = stackalloc byte[HmacAlgorithm<Sha256Core>.MacLength];
+		_hmac.Append(_stream);
+		_ = _hmac.GetMacAndReset(mac);
 		return BinaryPrimitives.ReadUInt32LittleEndian(mac);
 	}
 
