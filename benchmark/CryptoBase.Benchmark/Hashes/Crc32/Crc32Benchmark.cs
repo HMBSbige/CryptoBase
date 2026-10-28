@@ -9,7 +9,7 @@ namespace CryptoBase.Benchmark.Hashes.Crc32;
 [MemoryDiagnoser]
 public class Crc32Benchmark
 {
-	[Params(8, 16, 128, 256, 1024, 8192, 1024 * 1024)]
+	[Params(8, 16, 128, 256, 1023, 1024, 8191, 8192, 1024 * 1024)]
 	public int ByteLength { get; set; }
 
 	private byte[] _input = [];
