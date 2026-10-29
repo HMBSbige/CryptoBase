@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.Ciphers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Reflection;
 
 namespace CryptoBase.Tests;
@@ -98,6 +99,43 @@ public static class TestUtils
 		byte[] resized = new byte[source.Length + delta];
 		source.AsSpan(0, Math.Min(source.Length, resized.Length)).CopyTo(resized);
 		return resized;
+	}
+
+	// A DER TLV with a one-byte tag around the concatenated contents.
+	public static byte[] Tlv(byte tag, params byte[][] contents)
+	{
+		int length = contents.Sum(static content => content.Length);
+		List<byte> encoded = [tag];
+
+		if (length < 0x80)
+		{
+			encoded.Add((byte)length);
+		}
+		else
+		{
+			byte[] lengthBytes = BitConverter.GetBytes(length).Reverse().SkipWhile(static value => value is 0).ToArray();
+			encoded.Add((byte)(0x80 | lengthBytes.Length));
+			encoded.AddRange(lengthBytes);
+		}
+
+		foreach (byte[] content in contents)
+		{
+			encoded.AddRange(content);
+		}
+
+		return [.. encoded];
+	}
+
+	public static byte[] Sequence(params byte[][] contents)
+	{
+		return Tlv(0x30, contents);
+	}
+
+	public static byte[] Oid(string oid)
+	{
+		AsnWriter writer = new(AsnEncodingRules.DER);
+		writer.WriteObjectIdentifier(oid);
+		return writer.Encode();
 	}
 
 	public static async Task AssertOutput(byte[] destination, byte[] expected, int written)

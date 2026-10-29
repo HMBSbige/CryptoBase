@@ -14,6 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\PemReader.cs" Link="Shared\PemReader.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
   </ItemGroup>
 

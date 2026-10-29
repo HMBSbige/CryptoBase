@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
+using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures;
@@ -28,21 +29,33 @@ internal static class SignatureTestUtils
 		return KeyTypeOf<T>().Algorithms;
 	}
 
-	public static byte[] ExportSubjectPublicKeyInfo<T>(T key) where T : class, ISignatureKey<T>
+	// The ECDSA key type for a curve size, and its curve in the BCL.
+	public static (KeyType Type, ECCurve Curve) EcdsaCurve(int bits)
+	{
+		return bits switch
+		{
+			256 => (KeyTypeOf<EcdsaP256>(), ECCurve.NamedCurves.nistP256),
+			384 => (KeyTypeOf<EcdsaP384>(), ECCurve.NamedCurves.nistP384),
+			521 => (KeyTypeOf<EcdsaP521>(), ECCurve.NamedCurves.nistP521),
+			_ => throw new ArgumentOutOfRangeException(nameof(bits), bits, null)
+		};
+	}
+
+	public static byte[] ExportSubjectPublicKeyInfo(ISignatureKey key)
 	{
 		byte[] subjectPublicKeyInfo = new byte[key.SubjectPublicKeyInfoLength];
 		key.ExportSubjectPublicKeyInfo(subjectPublicKeyInfo);
 		return subjectPublicKeyInfo;
 	}
 
-	public static byte[] ExportPkcs8PrivateKey<T>(T key) where T : class, ISignatureKey<T>
+	public static byte[] ExportPkcs8PrivateKey(ISignatureKey key)
 	{
 		byte[] privateKey = new byte[key.Pkcs8PrivateKeyLength];
 		key.ExportPkcs8PrivateKey(privateKey);
 		return privateKey;
 	}
 
-	public static byte[] Sign<T>(T key, SignatureAlgorithm algorithm, ReadOnlySpan<byte> message) where T : class, ISignatureKey<T>
+	public static byte[] Sign(ISignatureKey key, SignatureAlgorithm algorithm, ReadOnlySpan<byte> message)
 	{
 		byte[] signature = new byte[key.GetMaxSignatureLength(algorithm)];
 		int written = key.Sign(algorithm, message, signature);

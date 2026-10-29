@@ -1,9 +1,9 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.EllipticCurves;
-using System.Formats.Asn1;
 using System.Numerics;
 using System.Security.Cryptography;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.Ecdsa;
 
@@ -82,13 +82,6 @@ internal static class EcdsaTestUtils
 	public static byte[] Integer(BigInteger value)
 	{
 		return Element(0x02, value.ToByteArray(isBigEndian: true));
-	}
-
-	public static byte[] Oid(string oid)
-	{
-		AsnWriter writer = new(AsnEncodingRules.DER);
-		writer.WriteObjectIdentifier(oid);
-		return writer.Encode();
 	}
 
 	// Written here rather than by the code under test.
