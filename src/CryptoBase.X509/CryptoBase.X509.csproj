@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="../Package.props" />
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <Description>X.509 certificates for CryptoBase.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CryptoBase.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\PemReader.cs" Link="Shared\PemReader.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

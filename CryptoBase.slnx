@@ -18,6 +18,7 @@
     <Project Path="src\CryptoBase.Abstractions\CryptoBase.Abstractions.csproj" />
     <Project Path="src\CryptoBase\CryptoBase.csproj" />
     <Project Path="src\CryptoBase.IO\CryptoBase.IO.csproj" />
+    <Project Path="src\CryptoBase.X509\CryptoBase.X509.csproj" />
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs\README.md" />

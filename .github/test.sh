@@ -17,7 +17,7 @@ shard_filter() {
 			hashes) names+=(Hashes) ;;
 			ciphers) names+=(Ciphers) ;;
 			ec) names+=(EllipticCurves KeyAgreements Signatures) ;;
-			rest) names+=('' Cavp Encodings IO Kdf Kems Macs Platform Vectors Wycheproof) ;;
+			rest) names+=('' Cavp Encodings IO Kdf Kems Macs Platform Vectors Wycheproof X509) ;;
 			*) echo "Unknown shard: $shard" >&2; return 1 ;;
 		esac
 	done

@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CryptoBase\CryptoBase.csproj" />
     <ProjectReference Include="..\..\src\CryptoBase.IO\CryptoBase.IO.csproj" />
+    <ProjectReference Include="..\..\src\CryptoBase.X509\CryptoBase.X509.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +22,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Cavp/**/*.rsp" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="X509/Rfc9881/*.pem" LogicalName="%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>
