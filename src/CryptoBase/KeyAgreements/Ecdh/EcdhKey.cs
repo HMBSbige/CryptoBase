@@ -2,19 +2,19 @@ using CryptoBase.EllipticCurves;
 
 namespace CryptoBase.KeyAgreements.Ecdh;
 
-// As with EcKey, keep a key in one writable location and do not copy it.
+// As with ECKey, keep a key in one writable location and do not copy it.
 internal struct EcdhKey<TCurve, TField, TOrder>
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
-	private EcKey<TCurve, TField, TOrder> _key;
+	private ECKey<TCurve, TField, TOrder> _key;
 
-	internal static int PrivateKeyLength => EcKey<TCurve, TField, TOrder>.PrivateKeyLength;
+	internal static int PrivateKeyLength => ECKey<TCurve, TField, TOrder>.PrivateKeyLength;
 
-	internal static int PublicKeyLength => EcKey<TCurve, TField, TOrder>.PublicKeyLength;
+	internal static int PublicKeyLength => ECKey<TCurve, TField, TOrder>.PublicKeyLength;
 
-	internal static int SharedSecretLength => EcKey<TCurve, TField, TOrder>.SharedSecretLength;
+	internal static int SharedSecretLength => ECKey<TCurve, TField, TOrder>.SharedSecretLength;
 
 	internal void GenerateKey()
 	{
@@ -43,7 +43,7 @@ internal struct EcdhKey<TCurve, TField, TOrder>
 
 	internal readonly bool TryDeriveSharedSecret(ReadOnlySpan<byte> peerPublicKey, Span<byte> sharedSecret)
 	{
-		// EcKey checks the length too, but under the name destination.
+		// ECKey checks the length too, but under the name destination.
 		ArgumentOutOfRangeException.ThrowIfLessThan(sharedSecret.Length, SharedSecretLength, nameof(sharedSecret));
 		return _key.TryDeriveSharedSecret(peerPublicKey, sharedSecret);
 	}

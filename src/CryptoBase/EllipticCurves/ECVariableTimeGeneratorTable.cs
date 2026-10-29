@@ -1,9 +1,9 @@
 namespace CryptoBase.EllipticCurves;
 
 // The odd multiples G, 3G, …, (2^(w − 1) − 1)·G for the NAF of width w = Width.
-internal static class EcVariableTimeGeneratorTable<TCurve, TField, TOrder>
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+internal static class ECVariableTimeGeneratorTable<TCurve, TField, TOrder>
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	internal const int Width = 8;
@@ -14,17 +14,17 @@ internal static class EcVariableTimeGeneratorTable<TCurve, TField, TOrder>
 	private static AffinePoint<TField>[] Build()
 	{
 		JacobianPoint<TField>[] multiples = new JacobianPoint<TField>[1 << Width - 2];
-		EcGroup<TCurve, TField, TOrder>.Generator(out AffinePoint<TField> generator);
+		ECGroup<TCurve, TField, TOrder>.Generator(out AffinePoint<TField> generator);
 		JacobianPoint<TField>.FromAffine(in generator, out multiples[0]);
-		EcGroup<TCurve, TField, TOrder>.Double(in multiples[0], out JacobianPoint<TField> twice);
+		ECGroup<TCurve, TField, TOrder>.Double(in multiples[0], out JacobianPoint<TField> twice);
 
 		for (int j = 1; j < multiples.Length; ++j)
 		{
-			_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in multiples[j - 1], in twice, out multiples[j]);
+			_ = ECGroup<TCurve, TField, TOrder>.AddDistinct(in multiples[j - 1], in twice, out multiples[j]);
 		}
 
 		AffinePoint<TField>[] entries = new AffinePoint<TField>[multiples.Length];
-		EcGroup<TCurve, TField, TOrder>.ToAffineVariableTime(multiples, entries);
+		ECGroup<TCurve, TField, TOrder>.ToAffineVariableTime(multiples, entries);
 		return entries;
 	}
 }

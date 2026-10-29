@@ -1,6 +1,6 @@
 namespace CryptoBase.EllipticCurves;
 
-internal readonly struct P521Curve : IEcCurve
+internal readonly struct P521Curve : IECCurve
 {
 	public static ReadOnlySpan<ulong> B =>
 	[

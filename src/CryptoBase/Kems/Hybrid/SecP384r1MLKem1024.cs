@@ -23,25 +23,25 @@ namespace CryptoBase.Kems.Hybrid;
 /// </remarks>
 public sealed class SecP384r1MLKem1024 : IKem<SecP384r1MLKem1024>
 {
-	private EcMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters> _key;
+	private ECMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters> _key;
 	private bool _disposed;
 
 	private SecP384r1MLKem1024() { }
 
 	/// <inheritdoc />
-	public static int EncapsulationKeyLength => EcMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.EncapsulationKeyLength;
+	public static int EncapsulationKeyLength => ECMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.EncapsulationKeyLength;
 
 	/// <inheritdoc />
-	public static int DecapsulationKeyLength => EcMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.DecapsulationKeyLength;
+	public static int DecapsulationKeyLength => ECMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.DecapsulationKeyLength;
 
 	/// <inheritdoc />
-	public static int PrivateSeedLength => EcMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.PrivateSeedLength;
+	public static int PrivateSeedLength => ECMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.PrivateSeedLength;
 
 	/// <inheritdoc />
-	public static int CiphertextLength => EcMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.CiphertextLength;
+	public static int CiphertextLength => ECMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.CiphertextLength;
 
 	/// <inheritdoc />
-	public static int SharedSecretLength => EcMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.SharedSecretLength;
+	public static int SharedSecretLength => ECMLKemKey<P384Curve, P384CurveField, P384Order, MLKem1024Parameters>.SharedSecretLength;
 
 	/// <inheritdoc />
 	public bool HasPrivateSeed

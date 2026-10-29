@@ -1,8 +1,8 @@
 namespace CryptoBase.EllipticCurves;
 
-// The default IEcField point formulas, with the contracts stated there, with the reductions between steps left out: sums and differences go through AddUnreduced and SubtractUnreduced, and only the values that a zero test or a coordinate of the result needs go through WeakReduce. A field that takes these defaults states the bounds that keep each step within what the next one takes.
+// The default IECField point formulas, with the contracts stated there, with the reductions between steps left out: sums and differences go through AddUnreduced and SubtractUnreduced, and only the values that a zero test or a coordinate of the result needs go through WeakReduce. A field that takes these defaults states the bounds that keep each step within what the next one takes.
 // Multiply and Square are not inlined, so a value that they take or give by reference stays in memory; the sums and differences between them go to locals of their own, which the JIT can keep in registers. Each formula writes a coordinate of the result only after its last read of the inputs, so that the result may be an input.
-internal static class EcFormulas<TField> where TField : unmanaged, IEcField<TField>
+internal static class ECFormulas<TField> where TField : unmanaged, IECField<TField>
 {
 	// γ = Y², β = Xγ, δ = Z², α = 3(X − δ)(X + δ), X3 = α² − 8β, Y3 = α(4β − X3) − 8γ², Z3 = 2YZ.
 	[SkipLocalsInit]

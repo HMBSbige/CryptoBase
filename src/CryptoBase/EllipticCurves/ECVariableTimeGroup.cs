@@ -3,9 +3,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 namespace CryptoBase.EllipticCurves;
 
 // For a = −3. The time, the branches and the table indices depend on the scalars and the points, so every input must be public: nothing that holds a secret may call it.
-internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private const int PointWidth = 5;
@@ -18,8 +18,8 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 	{
 		Span<sbyte> baseDigits = stackalloc sbyte[DigitCount];
 		Span<sbyte> pointDigits = stackalloc sbyte[DigitCount];
-		int top = Math.Max(Recode(in u1, EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Width, baseDigits), Recode(in u2, PointWidth, pointDigits));
-		ReadOnlySpan<AffinePoint<TField>> baseMultiples = EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Entries;
+		int top = Math.Max(Recode(in u1, ECVariableTimeGeneratorTable<TCurve, TField, TOrder>.Width, baseDigits), Recode(in u2, PointWidth, pointDigits));
+		ReadOnlySpan<AffinePoint<TField>> baseMultiples = ECVariableTimeGeneratorTable<TCurve, TField, TOrder>.Entries;
 		Span<AffinePoint<TField>> pointMultiples = stackalloc AffinePoint<TField>[1 << PointWidth - 2];
 		BuildOddMultiples(in point, pointMultiples);
 
@@ -28,7 +28,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 		for (int i = top; i >= 0; --i)
 		{
-			EcGroup<TCurve, TField, TOrder>.Double(in result, out result);
+			ECGroup<TCurve, TField, TOrder>.Double(in result, out result);
 			int digit = baseDigits[i];
 
 			if (digit is not 0)
@@ -59,22 +59,22 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		}
 	}
 
-	// As above, with the table that EcVariableTimePointTable builds for Q. Each part of u2 has a NAF of its own, which needs only the doublings of one part; u1·G follows from the windows of EcGeneratorTable, which need none.
+	// As above, with the table that ECVariableTimePointTable builds for Q. Each part of u2 has a NAF of its own, which needs only the doublings of one part; u1·G follows from the windows of ECGeneratorTable, which need none.
 	[SkipLocalsInit]
 	internal static void MultiplyAdd(in FieldElement<TOrder> u1, ReadOnlySpan<AffinePoint<TField>> pointTable, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
 	{
-		Debug.Assert(pointTable.Length == EcVariableTimePointTable<TCurve, TField, TOrder>.Length);
+		Debug.Assert(pointTable.Length == ECVariableTimePointTable<TCurve, TField, TOrder>.Length);
 
-		const int parts = EcVariableTimePointTable<TCurve, TField, TOrder>.PartCount;
-		int partLength = EcVariableTimePointTable<TCurve, TField, TOrder>.PartLength;
-		int partEntries = EcVariableTimePointTable<TCurve, TField, TOrder>.PartEntryCount;
+		const int parts = ECVariableTimePointTable<TCurve, TField, TOrder>.PartCount;
+		int partLength = ECVariableTimePointTable<TCurve, TField, TOrder>.PartLength;
+		int partEntries = ECVariableTimePointTable<TCurve, TField, TOrder>.PartEntryCount;
 		int stride = partLength + 1;
 		Span<sbyte> pointDigits = stackalloc sbyte[parts * stride];
 		int top = -1;
 
 		for (int c = 0; c < parts; ++c)
 		{
-			top = Math.Max(top, Recode(in u2, c * partLength, partLength, EcVariableTimePointTable<TCurve, TField, TOrder>.Width, pointDigits.Slice(c * stride, stride)));
+			top = Math.Max(top, Recode(in u2, c * partLength, partLength, ECVariableTimePointTable<TCurve, TField, TOrder>.Width, pointDigits.Slice(c * stride, stride)));
 		}
 
 		// Z = 0, the point at infinity.
@@ -84,7 +84,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		{
 			if (i < top)
 			{
-				EcGroup<TCurve, TField, TOrder>.Double(in result, out result);
+				ECGroup<TCurve, TField, TOrder>.Double(in result, out result);
 			}
 
 			for (int c = 0; c < parts; ++c)
@@ -106,13 +106,13 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		}
 
 		int width = TCurve.GeneratorWindowWidth;
-		int windowCount = EcGeneratorTable<TCurve, TField, TOrder>.WindowCount;
-		int windowLength = EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
+		int windowCount = ECGeneratorTable<TCurve, TField, TOrder>.WindowCount;
+		int windowLength = ECGeneratorTable<TCurve, TField, TOrder>.WindowLength;
 		ReadOnlySpan<ulong> limbs = FieldElement<TOrder>.GetLimbs(in u1);
 		uint mask = (1u << width) - 1;
 		uint carry = 0;
 
-		// The digits of EcGroup.MultiplyBase, from [−2^(w − 1) + 1, 2^(w − 1)].
+		// The digits of ECGroup.MultiplyBase, from [−2^(w − 1) + 1, 2^(w − 1)].
 		for (int i = 0; i < windowCount; ++i)
 		{
 			uint value = ((uint)ReadBits(limbs, i * width) & mask) + carry;
@@ -121,7 +121,7 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 			if (digit is not 0)
 			{
-				EcGeneratorTable<TCurve, TField, TOrder>.Read(i * windowLength + Math.Abs(digit) - 1, out AffinePoint<TField> entry);
+				ECGeneratorTable<TCurve, TField, TOrder>.Read(i * windowLength + Math.Abs(digit) - 1, out AffinePoint<TField> entry);
 
 				if (digit < 0)
 				{
@@ -141,16 +141,16 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 
 		Span<JacobianPoint<TField>> sums = stackalloc JacobianPoint<TField>[multiples.Length - 1];
 		JacobianPoint<TField>.FromAffine(in point, out JacobianPoint<TField> twice);
-		EcGroup<TCurve, TField, TOrder>.Double(in twice, out twice);
-		_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in twice, in point, out sums[0]);
+		ECGroup<TCurve, TField, TOrder>.Double(in twice, out twice);
+		_ = ECGroup<TCurve, TField, TOrder>.AddDistinct(in twice, in point, out sums[0]);
 
 		for (int j = 1; j < sums.Length; ++j)
 		{
-			_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in sums[j - 1], in twice, out sums[j]);
+			_ = ECGroup<TCurve, TField, TOrder>.AddDistinct(in sums[j - 1], in twice, out sums[j]);
 		}
 
 		multiples[0] = point;
-		EcGroup<TCurve, TField, TOrder>.ToAffineVariableTime(sums, multiples.Slice(1));
+		ECGroup<TCurve, TField, TOrder>.ToAffineVariableTime(sums, multiples.Slice(1));
 	}
 
 	// For r in [1, n − 1]. As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p, and x = t means X = t·Z².
@@ -201,10 +201,10 @@ internal static class EcVariableTimeGroup<TCurve, TField, TOrder>
 		}
 
 		// Opposite points give Z = 0 by themselves. Equal ones need the double, taken of right, as result may be left and already hold the sum.
-		if (EcGroup<TCurve, TField, TOrder>.AddDistinct(in left, in right, out result) is not 0)
+		if (ECGroup<TCurve, TField, TOrder>.AddDistinct(in left, in right, out result) is not 0)
 		{
 			JacobianPoint<TField>.FromAffine(in right, out result);
-			EcGroup<TCurve, TField, TOrder>.Double(in result, out result);
+			ECGroup<TCurve, TField, TOrder>.Double(in result, out result);
 		}
 	}
 

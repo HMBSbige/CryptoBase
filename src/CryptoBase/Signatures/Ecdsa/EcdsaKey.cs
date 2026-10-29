@@ -6,10 +6,10 @@ using System.Formats.Asn1;
 
 namespace CryptoBase.Signatures.Ecdsa;
 
-// algorithmIdentifier is the DER of id-ecPublicKey with the named curve. Nothing on the signing path branches on or indexes by a secret, except the retries of the nonce derivation. As with EcKey, keep a key in one writable location and do not copy it.
+// algorithmIdentifier is the DER of id-ecPublicKey with the named curve. Nothing on the signing path branches on or indexes by a secret, except the retries of the nonce derivation. As with ECKey, keep a key in one writable location and do not copy it.
 internal struct EcdsaKey<TCurve, TField, TOrder>
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	// The SEQUENCE header and the OID of id-ecPublicKey, which come before the named curve in an AlgorithmIdentifier.
@@ -17,13 +17,13 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 
 	private const int AdditionalDataLength = 32;
 
-	private EcKey<TCurve, TField, TOrder> _key;
+	private ECKey<TCurve, TField, TOrder> _key;
 	private AffinePoint<TField>[]? _pointTable;
 	private bool _verified;
 
-	internal static int PrivateKeyLength => EcKey<TCurve, TField, TOrder>.PrivateKeyLength;
+	internal static int PrivateKeyLength => ECKey<TCurve, TField, TOrder>.PrivateKeyLength;
 
-	internal static int PublicKeyLength => EcKey<TCurve, TField, TOrder>.PublicKeyLength;
+	internal static int PublicKeyLength => ECKey<TCurve, TField, TOrder>.PublicKeyLength;
 
 	internal readonly bool HasPrivateKey => _key.HasPrivateKey;
 
@@ -43,7 +43,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 			ThrowHelper.ThrowMissingKey("private key");
 		}
 
-		return KeyInfoDer.GetPrivateKeyInfoLength(algorithmIdentifier, GetEcPrivateKeyLength(NamedCurve(algorithmIdentifier)));
+		return KeyInfoDer.GetPrivateKeyInfoLength(algorithmIdentifier, GetECPrivateKeyLength(NamedCurve(algorithmIdentifier)));
 	}
 
 	internal void GenerateKey()
@@ -91,7 +91,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		DropPointTable();
 
 		if (!KeyInfoDer.TryReadPrivateKeyInfo(algorithmIdentifier, source, out ReadOnlySpan<byte> privateKey, out ReadOnlySpan<byte> publicKey)
-			|| !TryImportEcPrivateKey(NamedCurve(algorithmIdentifier), privateKey)
+			|| !TryImportECPrivateKey(NamedCurve(algorithmIdentifier), privateKey)
 			|| !publicKey.IsEmpty && !MatchesPublicKey(publicKey))
 		{
 			Clear();
@@ -125,7 +125,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, GetPkcs8PrivateKeyLength(algorithmIdentifier), nameof(destination));
 
 		ReadOnlySpan<byte> curve = NamedCurve(algorithmIdentifier);
-		int length = GetEcPrivateKeyLength(curve);
+		int length = GetECPrivateKeyLength(curve);
 		using CryptoBuffer<byte> privateKey = new(stackalloc byte[PrivateKeyLength]);
 		using CryptoBuffer<byte> ecPrivateKey = new(stackalloc byte[length]);
 		Span<byte> publicKey = stackalloc byte[PublicKeyLength];
@@ -235,7 +235,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		return curve;
 	}
 
-	private static int GetEcPrivateKeyLength(ReadOnlySpan<byte> curve)
+	private static int GetECPrivateKeyLength(ReadOnlySpan<byte> curve)
 	{
 		int publicKeyLength = KeyInfoDer.GetEncodedLength(KeyInfoDer.GetEncodedLength(1 + PublicKeyLength));
 		return KeyInfoDer.GetEncodedLength(3 + KeyInfoDer.GetEncodedLength(PrivateKeyLength) + KeyInfoDer.GetEncodedLength(curve.Length) + publicKeyLength);
@@ -265,7 +265,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, EcdsaEncoding<TOrder>.GetMaxLength(format), nameof(destination));
 	}
 
-	private bool TryImportEcPrivateKey(ReadOnlySpan<byte> curve, ReadOnlySpan<byte> source)
+	private bool TryImportECPrivateKey(ReadOnlySpan<byte> curve, ReadOnlySpan<byte> source)
 	{
 		ReadOnlySpan<byte> publicKey = default;
 
@@ -382,7 +382,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 			do
 			{
 				nonce.Next(out k);
-				EcGroup<TCurve, TField, TOrder>.MultiplyBaseReduceX(in k, out r);
+				ECGroup<TCurve, TField, TOrder>.MultiplyBaseReduceX(in k, out r);
 				// rR · d · R⁻¹ = r·d, and k⁻¹R · (e + r·d) · R⁻¹ = s, in plain form.
 				FieldElement<TOrder>.ToMontgomery(in r, out s);
 				FieldElement<TOrder>.Multiply(in s, in privateKey, out sum);
@@ -419,19 +419,19 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		if (table is null && !_verified)
 		{
 			_verified = true;
-			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in u1, in _key.PublicPoint, in u2, out point);
+			ECVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in u1, in _key.PublicPoint, in u2, out point);
 		}
 		else
 		{
-			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in u1, table ?? PublishPointTable(), in u2, out point);
+			ECVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in u1, table ?? PublishPointTable(), in u2, out point);
 		}
 
-		return EcVariableTimeGroup<TCurve, TField, TOrder>.XModOrderEquals(in point, in r);
+		return ECVariableTimeGroup<TCurve, TField, TOrder>.XModOrderEquals(in point, in r);
 	}
 
 	private AffinePoint<TField>[] PublishPointTable()
 	{
-		AffinePoint<TField>[] table = EcVariableTimePointTable<TCurve, TField, TOrder>.Build(in _key.PublicPoint);
+		AffinePoint<TField>[] table = ECVariableTimePointTable<TCurve, TField, TOrder>.Build(in _key.PublicPoint);
 		return Interlocked.CompareExchange(ref _pointTable, table, null) ?? table;
 	}
 

@@ -7,7 +7,7 @@ using CryptoBase.Tests.EllipticCurves;
 using CryptoBase.Tests.Kems.MLKem;
 using CryptoBase.Tests.KeyAgreements.Ecdh;
 using System.Security.Cryptography;
-using static CryptoBase.Tests.Kems.Hybrid.EcMLKemTestUtils;
+using static CryptoBase.Tests.Kems.Hybrid.ECMLKemTestUtils;
 using static CryptoBase.Tests.Kems.KemTestUtils;
 using static CryptoBase.Tests.KeyAgreements.Ecdh.EcdhTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -17,7 +17,7 @@ namespace CryptoBase.Tests.Kems.Hybrid;
 
 [GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
 [GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-public class EcMLKemBclTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+public class ECMLKemBclTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
 {
 	private const int Iterations = 8;
 

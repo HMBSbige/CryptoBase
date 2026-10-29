@@ -15,7 +15,7 @@ internal sealed record KeyAgreementChecks(byte[][] InvalidPrivateKeys, byte[][] 
 
 	private static KeyAgreementChecks Ecdh(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		CurvePoint g = reference.Generator;
 		byte[] generator = curve.EncodePoint(g);
 		CurvePoint small = reference.PointWithXFrom(BigInteger.Zero);

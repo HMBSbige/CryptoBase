@@ -3,36 +3,36 @@ using CryptoBase.Kems.MLKem;
 
 namespace CryptoBase.Kems.Hybrid;
 
-// As with EcKey and MLKemKey, keep a key in one writable location and do not copy it.
-internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+// As with ECKey and MLKemKey, keep a key in one writable location and do not copy it.
+internal struct ECMLKemKey<TCurve, TField, TOrder, TParameters>
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 	where TParameters : struct, IMLKemParameters
 {
-	private EcKey<TCurve, TField, TOrder> _ecKey;
+	private ECKey<TCurve, TField, TOrder> _ecKey;
 	private MLKemKey<TParameters> _mlKemKey;
 
-	internal static int EncapsulationKeyLength => EcPublicKeyLength + MLKemKey<TParameters>.EncapsulationKeyLength;
+	internal static int EncapsulationKeyLength => ECPublicKeyLength + MLKemKey<TParameters>.EncapsulationKeyLength;
 
-	internal static int DecapsulationKeyLength => EcPrivateKeyLength + MLKemKey<TParameters>.DecapsulationKeyLength;
+	internal static int DecapsulationKeyLength => ECPrivateKeyLength + MLKemKey<TParameters>.DecapsulationKeyLength;
 
-	internal static int PrivateSeedLength => EcPrivateKeyLength + MLKemKey<TParameters>.PrivateSeedLength;
+	internal static int PrivateSeedLength => ECPrivateKeyLength + MLKemKey<TParameters>.PrivateSeedLength;
 
-	internal static int CiphertextLength => EcPublicKeyLength + MLKemKey<TParameters>.CiphertextLength;
+	internal static int CiphertextLength => ECPublicKeyLength + MLKemKey<TParameters>.CiphertextLength;
 
-	internal static int SharedSecretLength => EcSharedSecretLength + MLKemKey<TParameters>.SharedSecretLength;
+	internal static int SharedSecretLength => ECSharedSecretLength + MLKemKey<TParameters>.SharedSecretLength;
 
 	// The elliptic curve private key is held whenever the ML-KEM decapsulation key is.
 	internal readonly bool HasPrivateSeed => _mlKemKey.HasPrivateSeed;
 
 	internal readonly bool HasDecapsulationKey => _mlKemKey.HasDecapsulationKey;
 
-	private static int EcPrivateKeyLength => EcKey<TCurve, TField, TOrder>.PrivateKeyLength;
+	private static int ECPrivateKeyLength => ECKey<TCurve, TField, TOrder>.PrivateKeyLength;
 
-	private static int EcPublicKeyLength => EcKey<TCurve, TField, TOrder>.PublicKeyLength;
+	private static int ECPublicKeyLength => ECKey<TCurve, TField, TOrder>.PublicKeyLength;
 
-	private static int EcSharedSecretLength => EcKey<TCurve, TField, TOrder>.SharedSecretLength;
+	private static int ECSharedSecretLength => ECKey<TCurve, TField, TOrder>.SharedSecretLength;
 
 	// Here and in the two private imports, the ML-KEM part goes first: MLKemKey throws without keeping any of the new key, so only a failure of the elliptic curve part, which keeps no new d either, needs the ML-KEM part cleared.
 	internal void GenerateKey()
@@ -54,9 +54,9 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, PrivateSeedLength, nameof(source));
 
-		_mlKemKey.ImportPrivateSeed(source.Slice(EcPrivateKeyLength));
+		_mlKemKey.ImportPrivateSeed(source.Slice(ECPrivateKeyLength));
 
-		if (!_ecKey.TryImportPrivateKey(source.Slice(0, EcPrivateKeyLength)))
+		if (!_ecKey.TryImportPrivateKey(source.Slice(0, ECPrivateKeyLength)))
 		{
 			_mlKemKey.Clear();
 			ThrowHelper.ThrowInvalidKey(nameof(source));
@@ -67,9 +67,9 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, DecapsulationKeyLength, nameof(source));
 
-		_mlKemKey.ImportDecapsulationKey(source.Slice(EcPrivateKeyLength));
+		_mlKemKey.ImportDecapsulationKey(source.Slice(ECPrivateKeyLength));
 
-		if (!_ecKey.TryImportPrivateKey(source.Slice(0, EcPrivateKeyLength)))
+		if (!_ecKey.TryImportPrivateKey(source.Slice(0, ECPrivateKeyLength)))
 		{
 			_mlKemKey.Clear();
 			ThrowHelper.ThrowInvalidKey(nameof(source));
@@ -80,12 +80,12 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, EncapsulationKeyLength, nameof(source));
 
-		if (!_ecKey.TryImportPublicKey(source.Slice(0, EcPublicKeyLength)))
+		if (!_ecKey.TryImportPublicKey(source.Slice(0, ECPublicKeyLength)))
 		{
 			ThrowHelper.ThrowInvalidKey(nameof(source));
 		}
 
-		_mlKemKey.ImportEncapsulationKey(source.Slice(EcPublicKeyLength));
+		_mlKemKey.ImportEncapsulationKey(source.Slice(ECPublicKeyLength));
 	}
 
 	internal readonly int ExportPrivateSeed(Span<byte> destination)
@@ -98,7 +98,7 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, PrivateSeedLength, nameof(destination));
 
 		_ecKey.ExportPrivateKey(destination);
-		_mlKemKey.ExportPrivateSeed(destination.Slice(EcPrivateKeyLength));
+		_mlKemKey.ExportPrivateSeed(destination.Slice(ECPrivateKeyLength));
 		return PrivateSeedLength;
 	}
 
@@ -112,7 +112,7 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, DecapsulationKeyLength, nameof(destination));
 
 		_ecKey.ExportPrivateKey(destination);
-		_mlKemKey.ExportDecapsulationKey(destination.Slice(EcPrivateKeyLength));
+		_mlKemKey.ExportDecapsulationKey(destination.Slice(ECPrivateKeyLength));
 		return DecapsulationKeyLength;
 	}
 
@@ -121,7 +121,7 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, EncapsulationKeyLength, nameof(destination));
 
 		_ecKey.ExportPublicKey(destination);
-		_mlKemKey.ExportEncapsulationKey(destination.Slice(EcPublicKeyLength));
+		_mlKemKey.ExportEncapsulationKey(destination.Slice(ECPublicKeyLength));
 		return EncapsulationKeyLength;
 	}
 
@@ -133,9 +133,9 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 
 		try
 		{
-			EcKey<TCurve, TField, TOrder>.GeneratePrivateScalar(SystemRandom.Fill, out ephemeral);
-			_mlKemKey.Encapsulate(ciphertext.Slice(EcPublicKeyLength), sharedSecret.Slice(EcSharedSecretLength));
-			WriteEcParts(in ephemeral, ciphertext, sharedSecret);
+			ECKey<TCurve, TField, TOrder>.GeneratePrivateScalar(SystemRandom.Fill, out ephemeral);
+			_mlKemKey.Encapsulate(ciphertext.Slice(ECPublicKeyLength), sharedSecret.Slice(ECSharedSecretLength));
+			WriteECParts(in ephemeral, ciphertext, sharedSecret);
 		}
 		finally
 		{
@@ -156,8 +156,8 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 				ThrowHelper.ThrowInvalidKey(nameof(ephemeralPrivateKey));
 			}
 
-			_mlKemKey.Encapsulate(message, ciphertext.Slice(EcPublicKeyLength), sharedSecret.Slice(EcSharedSecretLength));
-			WriteEcParts(in ephemeral, ciphertext, sharedSecret);
+			_mlKemKey.Encapsulate(message, ciphertext.Slice(ECPublicKeyLength), sharedSecret.Slice(ECSharedSecretLength));
+			WriteECParts(in ephemeral, ciphertext, sharedSecret);
 		}
 		finally
 		{
@@ -184,12 +184,12 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 		using CryptoBuffer<byte> secret = new(stackalloc byte[SharedSecretLength]);
 
 		// d·R cannot be the point at infinity, so this fails only if R is not a point on the curve.
-		if (!_ecKey.TryDeriveSharedSecret(ciphertext.Slice(0, EcPublicKeyLength), secret.Span))
+		if (!_ecKey.TryDeriveSharedSecret(ciphertext.Slice(0, ECPublicKeyLength), secret.Span))
 		{
 			return false;
 		}
 
-		bool decapsulated = _mlKemKey.TryDecapsulate(ciphertext.Slice(EcPublicKeyLength), secret.Span.Slice(EcSharedSecretLength));
+		bool decapsulated = _mlKemKey.TryDecapsulate(ciphertext.Slice(ECPublicKeyLength), secret.Span.Slice(ECSharedSecretLength));
 		Debug.Assert(decapsulated);
 
 		secret.Span.CopyTo(sharedSecret);
@@ -220,8 +220,8 @@ internal struct EcMLKemKey<TCurve, TField, TOrder, TParameters>
 	}
 
 	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. Q was checked to be on the curve when it was imported, and the ephemeral key lies in [1, n − 1].
-	private readonly void WriteEcParts(in FieldElement<TOrder> ephemeral, Span<byte> ciphertext, Span<byte> sharedSecret)
+	private readonly void WriteECParts(in FieldElement<TOrder> ephemeral, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
-		EcGroup<TCurve, TField, TOrder>.MultiplyEncodeExportX(in _ecKey.PublicPoint, in ephemeral, ciphertext.Slice(0, EcPublicKeyLength), sharedSecret.Slice(0, EcSharedSecretLength));
+		ECGroup<TCurve, TField, TOrder>.MultiplyEncodeExportX(in _ecKey.PublicPoint, in ephemeral, ciphertext.Slice(0, ECPublicKeyLength), sharedSecret.Slice(0, ECSharedSecretLength));
 	}
 }

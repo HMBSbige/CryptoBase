@@ -3,9 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 namespace CryptoBase.EllipticCurves;
 
 // The private key d is a plain value in [1, n − 1]. Keep a key in one writable location and do not copy it: a copy keeps d where Clear cannot reach it.
-internal struct EcKey<TCurve, TField, TOrder>
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+internal struct ECKey<TCurve, TField, TOrder>
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private FieldElement<TOrder> _privateKey;
@@ -13,7 +13,7 @@ internal struct EcKey<TCurve, TField, TOrder>
 
 	internal static int PrivateKeyLength => TOrder.ByteLength;
 
-	internal static int PublicKeyLength => EcGroup<TCurve, TField, TOrder>.EncodedLength;
+	internal static int PublicKeyLength => ECGroup<TCurve, TField, TOrder>.EncodedLength;
 
 	internal static int SharedSecretLength => TField.ByteLength;
 
@@ -102,7 +102,7 @@ internal struct EcKey<TCurve, TField, TOrder>
 	{
 		Clear();
 
-		if (!EcGroup<TCurve, TField, TOrder>.TryDecode(source, out _publicKey))
+		if (!ECGroup<TCurve, TField, TOrder>.TryDecode(source, out _publicKey))
 		{
 			return false;
 		}
@@ -133,7 +133,7 @@ internal struct EcKey<TCurve, TField, TOrder>
 
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, PublicKeyLength, nameof(destination));
 
-		EcGroup<TCurve, TField, TOrder>.Encode(in _publicKey, destination.Slice(0, PublicKeyLength));
+		ECGroup<TCurve, TField, TOrder>.Encode(in _publicKey, destination.Slice(0, PublicKeyLength));
 		return PublicKeyLength;
 	}
 
@@ -146,12 +146,12 @@ internal struct EcKey<TCurve, TField, TOrder>
 
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, SharedSecretLength, nameof(destination));
 
-		if (!EcGroup<TCurve, TField, TOrder>.TryDecode(peerPublicKey, out AffinePoint<TField> peer))
+		if (!ECGroup<TCurve, TField, TOrder>.TryDecode(peerPublicKey, out AffinePoint<TField> peer))
 		{
 			return false;
 		}
 
-		return EcGroup<TCurve, TField, TOrder>.TryMultiplyExportX(in peer, in _privateKey, destination.Slice(0, SharedSecretLength));
+		return ECGroup<TCurve, TField, TOrder>.TryMultiplyExportX(in peer, in _privateKey, destination.Slice(0, SharedSecretLength));
 	}
 
 	internal void Clear()
@@ -164,7 +164,7 @@ internal struct EcKey<TCurve, TField, TOrder>
 
 	private void SetKey(in FieldElement<TOrder> privateKey)
 	{
-		EcGroup<TCurve, TField, TOrder>.MultiplyBaseToAffine(in privateKey, out AffinePoint<TField> publicKey);
+		ECGroup<TCurve, TField, TOrder>.MultiplyBaseToAffine(in privateKey, out AffinePoint<TField> publicKey);
 		_privateKey = privateKey;
 		_publicKey = publicKey;
 		HasPrivateKey = true;

@@ -11,8 +11,8 @@ public abstract class CurveCase
 	private protected CurveCase(string name)
 	{
 		Name = name;
-		Parameters = WycheproofVectors.Load<EcCurveTestVector>("ec_prime_order_curves_test.json").Single(curve => curve.Name == name);
-		Reference = new EcReference(Parameters);
+		Parameters = WycheproofVectors.Load<ECCurveTestVector>("ec_prime_order_curves_test.json").Single(curve => curve.Name == name);
+		Reference = new ECReference(Parameters);
 	}
 
 	public static IEnumerable<CurveCase> All()
@@ -33,9 +33,9 @@ public abstract class CurveCase
 
 	public string Name { get; }
 
-	internal EcCurveTestVector Parameters { get; }
+	internal ECCurveTestVector Parameters { get; }
 
-	internal EcReference Reference { get; }
+	internal ECReference Reference { get; }
 
 	internal BigInteger Order => Reference.N;
 
@@ -185,8 +185,8 @@ public abstract class CurveCase
 	}
 
 	private sealed class Case<TCurve, TField, TOrder>(string name) : CurveCase(name)
-		where TCurve : struct, IEcCurve
-		where TField : unmanaged, IEcField<TField>
+		where TCurve : struct, IECCurve
+		where TField : unmanaged, IECField<TField>
 		where TOrder : unmanaged, IMontgomeryModulus
 	{
 		public override Type CurveType => typeof(TCurve);
@@ -213,9 +213,9 @@ public abstract class CurveCase
 
 		internal override int GeneratorWindowWidth => TCurve.GeneratorWindowWidth;
 
-		internal override int GeneratorWindowCount => EcGeneratorTable<TCurve, TField, TOrder>.WindowCount;
+		internal override int GeneratorWindowCount => ECGeneratorTable<TCurve, TField, TOrder>.WindowCount;
 
-		internal override int GeneratorWindowLength => EcGeneratorTable<TCurve, TField, TOrder>.WindowLength;
+		internal override int GeneratorWindowLength => ECGeneratorTable<TCurve, TField, TOrder>.WindowLength;
 
 		internal override JacobianValue Add(JacobianValue left, CurvePoint right, bool inPlace = false)
 		{
@@ -224,11 +224,11 @@ public abstract class CurveCase
 
 			if (inPlace)
 			{
-				EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out x);
+				ECGroup<TCurve, TField, TOrder>.Add(in x, in y, out x);
 				return ToValue(x);
 			}
 
-			EcGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
@@ -241,13 +241,13 @@ public abstract class CurveCase
 			switch (aliasing)
 			{
 				case ResultAliasing.Left:
-					equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out x);
+					equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out x);
 					return (ToValue(x), equal);
 				case ResultAliasing.Right:
-					equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out y);
+					equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out y);
 					return (ToValue(y), equal);
 				default:
-					equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out JacobianPoint<TField> result);
+					equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out JacobianPoint<TField> result);
 					return (ToValue(result), equal);
 			}
 		}
@@ -260,11 +260,11 @@ public abstract class CurveCase
 
 			if (inPlace)
 			{
-				equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out x);
+				equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out x);
 				return (ToValue(x), equal);
 			}
 
-			equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out JacobianPoint<TField> result);
+			equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out JacobianPoint<TField> result);
 			return (ToValue(result), equal);
 		}
 
@@ -274,67 +274,67 @@ public abstract class CurveCase
 
 			if (inPlace)
 			{
-				EcGroup<TCurve, TField, TOrder>.Double(in x, out x);
+				ECGroup<TCurve, TField, TOrder>.Double(in x, out x);
 				return ToValue(x);
 			}
 
-			EcGroup<TCurve, TField, TOrder>.Double(in x, out JacobianPoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.Double(in x, out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override JacobianValue MultiplyBase(BigInteger scalar)
 		{
-			EcGroup<TCurve, TField, TOrder>.MultiplyBase(ToScalar(scalar), out JacobianPoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.MultiplyBase(ToScalar(scalar), out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override JacobianValue Multiply(CurvePoint point, BigInteger scalar)
 		{
-			EcGroup<TCurve, TField, TOrder>.Multiply(ToPoint(point), ToScalar(scalar), out JacobianPoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.Multiply(ToPoint(point), ToScalar(scalar), out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override CurvePoint MultiplyBaseToAffine(BigInteger scalar)
 		{
-			EcGroup<TCurve, TField, TOrder>.MultiplyBaseToAffine(ToScalar(scalar), out AffinePoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.MultiplyBaseToAffine(ToScalar(scalar), out AffinePoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override BigInteger MultiplyBaseReduceX(BigInteger scalar)
 		{
-			EcGroup<TCurve, TField, TOrder>.MultiplyBaseReduceX(ToScalar(scalar), out FieldElement<TOrder> result);
+			ECGroup<TCurve, TField, TOrder>.MultiplyBaseReduceX(ToScalar(scalar), out FieldElement<TOrder> result);
 			return ScalarValue(result);
 		}
 
 		internal override bool TryMultiplyExportX(CurvePoint point, BigInteger scalar, byte[] destination)
 		{
-			return EcGroup<TCurve, TField, TOrder>.TryMultiplyExportX(ToPoint(point), ToScalar(scalar), destination);
+			return ECGroup<TCurve, TField, TOrder>.TryMultiplyExportX(ToPoint(point), ToScalar(scalar), destination);
 		}
 
 		internal override (byte[] Encoded, byte[] X) MultiplyEncodeExportX(CurvePoint point, BigInteger scalar)
 		{
-			byte[] encoded = new byte[EcGroup<TCurve, TField, TOrder>.EncodedLength];
+			byte[] encoded = new byte[ECGroup<TCurve, TField, TOrder>.EncodedLength];
 			byte[] x = new byte[TField.ByteLength];
-			EcGroup<TCurve, TField, TOrder>.MultiplyEncodeExportX(ToPoint(point), ToScalar(scalar), encoded, x);
+			ECGroup<TCurve, TField, TOrder>.MultiplyEncodeExportX(ToPoint(point), ToScalar(scalar), encoded, x);
 			return (encoded, x);
 		}
 
 		internal override CurvePoint ToAffine(JacobianValue value)
 		{
-			EcGroup<TCurve, TField, TOrder>.ToAffine(ToPoint(value), out AffinePoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.ToAffine(ToPoint(value), out AffinePoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override byte[] ExportX(JacobianValue value)
 		{
 			byte[] x = new byte[TField.ByteLength];
-			EcGroup<TCurve, TField, TOrder>.ExportX(ToPoint(value), x);
+			ECGroup<TCurve, TField, TOrder>.ExportX(ToPoint(value), x);
 			return x;
 		}
 
 		internal override BigInteger ReduceX(JacobianValue value)
 		{
-			EcGroup<TCurve, TField, TOrder>.ReduceX(ToPoint(value), out FieldElement<TOrder> result);
+			ECGroup<TCurve, TField, TOrder>.ReduceX(ToPoint(value), out FieldElement<TOrder> result);
 			return ScalarValue(result);
 		}
 
@@ -347,25 +347,25 @@ public abstract class CurveCase
 
 		internal override byte[] Encode(CurvePoint point)
 		{
-			byte[] encoding = new byte[EcGroup<TCurve, TField, TOrder>.EncodedLength];
-			EcGroup<TCurve, TField, TOrder>.Encode(ToPoint(point), encoding);
+			byte[] encoding = new byte[ECGroup<TCurve, TField, TOrder>.EncodedLength];
+			ECGroup<TCurve, TField, TOrder>.Encode(ToPoint(point), encoding);
 			return encoding;
 		}
 
 		internal override bool TryDecode(byte[] source, out CurvePoint point)
 		{
-			bool decoded = EcGroup<TCurve, TField, TOrder>.TryDecode(source, out AffinePoint<TField> result);
+			bool decoded = ECGroup<TCurve, TField, TOrder>.TryDecode(source, out AffinePoint<TField> result);
 			point = ToValue(result);
 			return decoded;
 		}
 
 		internal override CurvePoint[] GeneratorTable()
 		{
-			CurvePoint[] table = new CurvePoint[EcGeneratorTable<TCurve, TField, TOrder>.WindowCount * EcGeneratorTable<TCurve, TField, TOrder>.WindowLength];
+			CurvePoint[] table = new CurvePoint[ECGeneratorTable<TCurve, TField, TOrder>.WindowCount * ECGeneratorTable<TCurve, TField, TOrder>.WindowLength];
 
 			for (int i = 0; i < table.Length; ++i)
 			{
-				EcGeneratorTable<TCurve, TField, TOrder>.Read(i, out AffinePoint<TField> entry);
+				ECGeneratorTable<TCurve, TField, TOrder>.Read(i, out AffinePoint<TField> entry);
 				table[i] = ToValue(entry);
 			}
 
@@ -374,65 +374,65 @@ public abstract class CurveCase
 
 		internal override CurvePoint SelectFromGeneratorTable(int window, int digit)
 		{
-			EcGroup<TCurve, TField, TOrder>.SelectBase(window, digit, out AffinePoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.SelectBase(window, digit, out AffinePoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override CurvePoint SelectFromMultiples(CurvePoint[] multiples, int digit)
 		{
 			AffinePoint<TField>[] points = [.. multiples.Select(static multiple => ToPoint(multiple))];
-			EcGroup<TCurve, TField, TOrder>.Select(points, digit, out AffinePoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.Select(points, digit, out AffinePoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override CurvePoint[] Multiples(CurvePoint point, int count)
 		{
 			AffinePoint<TField>[] multiples = new AffinePoint<TField>[count];
-			EcGroup<TCurve, TField, TOrder>.BuildMultiples(ToPoint(point), multiples);
+			ECGroup<TCurve, TField, TOrder>.BuildMultiples(ToPoint(point), multiples);
 			return [.. multiples.Select(static multiple => ToValue(multiple))];
 		}
 
 		internal override CurvePoint[] OddMultiplesVariableTime(CurvePoint point, int count)
 		{
 			AffinePoint<TField>[] multiples = new AffinePoint<TField>[count];
-			EcVariableTimeGroup<TCurve, TField, TOrder>.BuildOddMultiples(ToPoint(point), multiples);
+			ECVariableTimeGroup<TCurve, TField, TOrder>.BuildOddMultiples(ToPoint(point), multiples);
 			return [.. multiples.Select(static multiple => ToValue(multiple))];
 		}
 
-		internal override int VariableTimeGeneratorWidth => EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Width;
+		internal override int VariableTimeGeneratorWidth => ECVariableTimeGeneratorTable<TCurve, TField, TOrder>.Width;
 
 		internal override CurvePoint[] VariableTimeGeneratorTable()
 		{
-			return [.. EcVariableTimeGeneratorTable<TCurve, TField, TOrder>.Entries.Select(static entry => ToValue(entry))];
+			return [.. ECVariableTimeGeneratorTable<TCurve, TField, TOrder>.Entries.Select(static entry => ToValue(entry))];
 		}
 
 		internal override JacobianValue MultiplyAddVariableTime(BigInteger u1, CurvePoint point, BigInteger u2)
 		{
-			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(ToScalar(u1), ToPoint(point), ToScalar(u2), out JacobianPoint<TField> result);
+			ECVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(ToScalar(u1), ToPoint(point), ToScalar(u2), out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
-		internal override int PointTableWidth => EcVariableTimePointTable<TCurve, TField, TOrder>.Width;
+		internal override int PointTableWidth => ECVariableTimePointTable<TCurve, TField, TOrder>.Width;
 
-		internal override int PointTablePartCount => EcVariableTimePointTable<TCurve, TField, TOrder>.PartCount;
+		internal override int PointTablePartCount => ECVariableTimePointTable<TCurve, TField, TOrder>.PartCount;
 
-		internal override int PointTablePartLength => EcVariableTimePointTable<TCurve, TField, TOrder>.PartLength;
+		internal override int PointTablePartLength => ECVariableTimePointTable<TCurve, TField, TOrder>.PartLength;
 
 		internal override CurvePoint[] VariableTimePointTable(CurvePoint point)
 		{
-			return [.. EcVariableTimePointTable<TCurve, TField, TOrder>.Build(ToPoint(point)).Select(static entry => ToValue(entry))];
+			return [.. ECVariableTimePointTable<TCurve, TField, TOrder>.Build(ToPoint(point)).Select(static entry => ToValue(entry))];
 		}
 
 		internal override JacobianValue MultiplyAddWithTableVariableTime(BigInteger u1, CurvePoint point, BigInteger u2)
 		{
-			AffinePoint<TField>[] table = EcVariableTimePointTable<TCurve, TField, TOrder>.Build(ToPoint(point));
-			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(ToScalar(u1), table, ToScalar(u2), out JacobianPoint<TField> result);
+			AffinePoint<TField>[] table = ECVariableTimePointTable<TCurve, TField, TOrder>.Build(ToPoint(point));
+			ECVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(ToScalar(u1), table, ToScalar(u2), out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override bool XModOrderEqualsVariableTime(JacobianValue point, BigInteger r)
 		{
-			return EcVariableTimeGroup<TCurve, TField, TOrder>.XModOrderEquals(ToPoint(point), ToScalar(r));
+			return ECVariableTimeGroup<TCurve, TField, TOrder>.XModOrderEquals(ToPoint(point), ToScalar(r));
 		}
 
 		internal override JacobianValue AddVariableTime(JacobianValue left, CurvePoint right, bool inPlace = false)
@@ -442,18 +442,18 @@ public abstract class CurveCase
 
 			if (inPlace)
 			{
-				EcVariableTimeGroup<TCurve, TField, TOrder>.Add(in x, in y, out x);
+				ECVariableTimeGroup<TCurve, TField, TOrder>.Add(in x, in y, out x);
 				return ToValue(x);
 			}
 
-			EcVariableTimeGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
+			ECVariableTimeGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
 			return ToValue(result);
 		}
 
 		internal override int RecodeVariableTime(BigInteger scalar, int width, out int[] digits)
 		{
-			sbyte[] recoded = new sbyte[EcVariableTimeGroup<TCurve, TField, TOrder>.DigitCount];
-			int top = EcVariableTimeGroup<TCurve, TField, TOrder>.Recode(ToScalar(scalar), width, recoded);
+			sbyte[] recoded = new sbyte[ECVariableTimeGroup<TCurve, TField, TOrder>.DigitCount];
+			int top = ECVariableTimeGroup<TCurve, TField, TOrder>.Recode(ToScalar(scalar), width, recoded);
 			digits = [.. recoded.Select(static digit => (int)digit)];
 			return top;
 		}
@@ -461,7 +461,7 @@ public abstract class CurveCase
 		internal override int RecodeVariableTime(BigInteger scalar, int start, int length, int width, out int[] digits)
 		{
 			sbyte[] recoded = new sbyte[length + 1];
-			int top = EcVariableTimeGroup<TCurve, TField, TOrder>.Recode(ToScalar(scalar), start, length, width, recoded);
+			int top = ECVariableTimeGroup<TCurve, TField, TOrder>.Recode(ToScalar(scalar), start, length, width, recoded);
 			digits = [.. recoded.Select(static digit => (int)digit)];
 			return top;
 		}
@@ -529,7 +529,7 @@ public abstract class CurveCase
 
 		private sealed class Key : KeyCase
 		{
-			private EcKey<TCurve, TField, TOrder> _key;
+			private ECKey<TCurve, TField, TOrder> _key;
 
 			internal override bool HasPrivateKey => _key.HasPrivateKey;
 
@@ -539,11 +539,11 @@ public abstract class CurveCase
 
 			internal override CurvePoint PublicPoint => ToValue(_key.PublicPoint);
 
-			internal override int PrivateKeyLength => EcKey<TCurve, TField, TOrder>.PrivateKeyLength;
+			internal override int PrivateKeyLength => ECKey<TCurve, TField, TOrder>.PrivateKeyLength;
 
-			internal override int PublicKeyLength => EcKey<TCurve, TField, TOrder>.PublicKeyLength;
+			internal override int PublicKeyLength => ECKey<TCurve, TField, TOrder>.PublicKeyLength;
 
-			internal override int SharedSecretLength => EcKey<TCurve, TField, TOrder>.SharedSecretLength;
+			internal override int SharedSecretLength => ECKey<TCurve, TField, TOrder>.SharedSecretLength;
 
 			internal override void GenerateKey()
 			{
@@ -587,7 +587,7 @@ public abstract class CurveCase
 
 			internal override byte[] Storage()
 			{
-				return MemoryMarshal.AsBytes(new ReadOnlySpan<EcKey<TCurve, TField, TOrder>>(ref _key)).ToArray();
+				return MemoryMarshal.AsBytes(new ReadOnlySpan<ECKey<TCurve, TField, TOrder>>(ref _key)).ToArray();
 			}
 		}
 	}

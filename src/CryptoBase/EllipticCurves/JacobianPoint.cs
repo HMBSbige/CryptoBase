@@ -1,7 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
 // Coordinates are in Montgomery form.
-internal struct JacobianPoint<TField> where TField : unmanaged, IEcField<TField>
+internal struct JacobianPoint<TField> where TField : unmanaged, IECField<TField>
 {
 	internal TField X;
 	internal TField Y;

@@ -1,9 +1,9 @@
 namespace CryptoBase.EllipticCurves;
 
 // Window i holds j·2^(wi)·G for j from 1 to 2^(w − 1), w = GeneratorWindowWidth, each entry as TField.Pack writes it. The entries start on a 64-byte boundary, so that a 64-byte entry fills one cache line.
-internal static class EcGeneratorTable<TCurve, TField, TOrder>
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+internal static class ECGeneratorTable<TCurve, TField, TOrder>
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private const int Alignment = 64;
@@ -15,7 +15,7 @@ internal static class EcGeneratorTable<TCurve, TField, TOrder>
 	// ReSharper disable once StaticMemberInGenericType
 	private static readonly int Start = AlignedStart(Storage);
 
-	internal static int WindowCount => EcGroup<TCurve, TField, TOrder>.DigitCount(TCurve.GeneratorWindowWidth);
+	internal static int WindowCount => ECGroup<TCurve, TField, TOrder>.DigitCount(TCurve.GeneratorWindowWidth);
 
 	internal static int WindowLength => 1 << TCurve.GeneratorWindowWidth - 1;
 
@@ -40,25 +40,25 @@ internal static class EcGeneratorTable<TCurve, TField, TOrder>
 		Debug.Assert(WindowLength >= 2);
 
 		JacobianPoint<TField>[] multiples = new JacobianPoint<TField>[WindowCount * WindowLength];
-		EcGroup<TCurve, TField, TOrder>.Generator(out AffinePoint<TField> generator);
+		ECGroup<TCurve, TField, TOrder>.Generator(out AffinePoint<TField> generator);
 		JacobianPoint<TField>.FromAffine(in generator, out JacobianPoint<TField> windowBase);
 
 		for (int i = 0; i < multiples.Length; i += WindowLength)
 		{
 			multiples[i] = windowBase;
-			EcGroup<TCurve, TField, TOrder>.Double(in windowBase, out multiples[i + 1]);
+			ECGroup<TCurve, TField, TOrder>.Double(in windowBase, out multiples[i + 1]);
 
 			for (int j = 2; j < WindowLength; ++j)
 			{
-				_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in multiples[i + j - 1], in windowBase, out multiples[i + j]);
+				_ = ECGroup<TCurve, TField, TOrder>.AddDistinct(in multiples[i + j - 1], in windowBase, out multiples[i + j]);
 			}
 
 			// The last entry is 2^(w − 1) times the base, so its double is the base of the next window.
-			EcGroup<TCurve, TField, TOrder>.Double(in multiples[i + WindowLength - 1], out windowBase);
+			ECGroup<TCurve, TField, TOrder>.Double(in multiples[i + WindowLength - 1], out windowBase);
 		}
 
 		AffinePoint<TField>[] entries = new AffinePoint<TField>[multiples.Length];
-		EcGroup<TCurve, TField, TOrder>.ToAffineVariableTime(multiples, entries);
+		ECGroup<TCurve, TField, TOrder>.ToAffineVariableTime(multiples, entries);
 		ulong[] storage = GC.AllocateUninitializedArray<ulong>(entries.Length * EntryLength + Alignment / sizeof(ulong) - 1, true);
 		Span<ulong> packed = storage.AsSpan(AlignedStart(storage));
 

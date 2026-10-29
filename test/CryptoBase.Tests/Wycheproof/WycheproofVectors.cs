@@ -59,7 +59,7 @@ internal static partial class WycheproofVectors
 	[JsonSerializable(typeof(TestFile<IndCpaTestVector>))]
 	[JsonSerializable(typeof(TestFile<MacTestVector>))]
 	[JsonSerializable(typeof(TestFile<HkdfTestVector>))]
-	[JsonSerializable(typeof(TestFile<EcCurveTestVector>))]
+	[JsonSerializable(typeof(TestFile<ECCurveTestVector>))]
 	[JsonSerializable(typeof(TestFile<EcdhEcpointTestVector>))]
 	[JsonSerializable(typeof(TestFile<EcdhTestVector>))]
 	[JsonSerializable(typeof(TestFile<MLKemTestVector>))]

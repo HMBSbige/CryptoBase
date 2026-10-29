@@ -1,5 +1,5 @@
 using System.Numerics;
-using static CryptoBase.Tests.EllipticCurves.EcTestUtils;
+using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
@@ -207,7 +207,7 @@ public class ScalarMultiplicationTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MinusOneTimesGIsMinusG(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		CurvePoint? minusG = reference.Negate(reference.Generator);
 
 		using (Assert.Multiple())
@@ -221,7 +221,7 @@ public class ScalarMultiplicationTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task BothMultiplicationsAgreeOnG(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		Random random = new(4);
 		List<BigInteger> scalars = [0, 1, 2, 3, n - 2, n - 1, (n - 1) / 2];
@@ -229,7 +229,7 @@ public class ScalarMultiplicationTest
 
 		for (int i = 0; i < RandomCount; ++i)
 		{
-			scalars.Add(EcReference.RandomBelow(random, n));
+			scalars.Add(ECReference.RandomBelow(random, n));
 		}
 
 		foreach (BigInteger scalar in scalars)
@@ -250,7 +250,7 @@ public class ScalarMultiplicationTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task GeneratorTableHoldsTheMultiples(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		CurvePoint[] table = curve.GeneratorTable();
 		CurvePoint? windowBase = reference.Generator;
 		List<string> failures = [];
@@ -284,7 +284,7 @@ public class ScalarMultiplicationTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task SelectFromGeneratorTableGivesEveryDigit(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		int half = curve.GeneratorWindowLength;
 		CurvePoint? windowBase = reference.Generator;
 		List<string> failures = [];
@@ -325,7 +325,7 @@ public class ScalarMultiplicationTest
 	{
 		Random random = new(9);
 		BigInteger p = curve.FieldModulus;
-		CurvePoint[] multiples = [.. Enumerable.Range(0, MultiplyWindowLength).Select(_ => new CurvePoint(EcReference.RandomBelow(random, p), EcReference.RandomBelow(random, p)))];
+		CurvePoint[] multiples = [.. Enumerable.Range(0, MultiplyWindowLength).Select(_ => new CurvePoint(ECReference.RandomBelow(random, p), ECReference.RandomBelow(random, p)))];
 		List<string> failures = [];
 
 		for (int digit = 1 - MultiplyWindowLength; digit <= MultiplyWindowLength; ++digit)
@@ -379,7 +379,7 @@ public class ScalarMultiplicationTest
 
 	private static IEnumerable<(BigInteger Scalar, CurvePoint? Expected)> Cases(CurveCase curve, CurvePoint point, int seed)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		CurvePoint? power = point;
 		CurvePoint? belowPower = null;
@@ -404,7 +404,7 @@ public class ScalarMultiplicationTest
 
 		for (int i = 0; i < RandomCount; ++i)
 		{
-			scalars.Add(EcReference.RandomBelow(random, n));
+			scalars.Add(ECReference.RandomBelow(random, n));
 		}
 
 		foreach ((BigInteger scalar, CurvePoint? product) in scalars.Zip(reference.Multiply(point, scalars)))

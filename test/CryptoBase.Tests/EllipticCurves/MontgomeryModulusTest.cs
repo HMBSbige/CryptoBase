@@ -17,7 +17,7 @@ public class MontgomeryModulusTest
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task ModulusIsTheCurveConstant(ModulusCase modulus)
 	{
-		EcCurveTestVector curve = WycheproofVectors.Load<EcCurveTestVector>("ec_prime_order_curves_test.json").Single(curve => curve.Name == modulus.Curve);
+		ECCurveTestVector curve = WycheproofVectors.Load<ECCurveTestVector>("ec_prime_order_curves_test.json").Single(curve => curve.Name == modulus.Curve);
 
 		await Assert.That(modulus.Modulus).IsEqualTo(ModulusCase.Decode(modulus.IsOrder ? curve.N : curve.P));
 	}

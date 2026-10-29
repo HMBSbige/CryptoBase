@@ -5,7 +5,7 @@ namespace CryptoBase.Tests.EllipticCurves;
 
 // P384Field56 against BigInteger, with inputs anywhere in the form that its members take, limbs 0 to 5 below 2^57 and limb 6 below 2^50, as well as canonical ones: a value v also stands as v + kp for every k that fits, with limbs as large as the form allows. Every result must be in that form, and some in the tighter forms that the formulas rely on.
 [InheritsTests]
-internal class P384Field56Test() : EcFieldTest<P384Curve, P384Field56, P384Order>(56, 1UL << 57, 1UL << 50, BigInteger.One << 392, 1UL << 48, 8)
+internal class P384Field56Test() : ECFieldTest<P384Curve, P384Field56, P384Order>(56, 1UL << 57, 1UL << 50, BigInteger.One << 392, 1UL << 48, 8)
 {
 	// What WeakReduce leaves the value below, 2^384 + 2^342, which is below 2p.
 	private static readonly BigInteger ReducedBound = (BigInteger.One << 384) + (BigInteger.One << 342);

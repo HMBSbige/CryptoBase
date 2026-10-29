@@ -5,7 +5,7 @@ namespace CryptoBase.Tests.EllipticCurves;
 
 // P521Field58 against BigInteger. Inputs cover the whole form that the members take, limbs 0 to 7 below 2^58 and limb 8 below 2^57 + 2^6, not only canonical values: a value v also stands as v + p where that fits. Every result must be in the form. R = 1, so every value is plain.
 [InheritsTests]
-internal class P521Field58Test() : EcFieldTest<P521Curve, P521Field58, P521Order>(58, 1UL << 58, Top, BigInteger.One, 1UL << 57, 9)
+internal class P521Field58Test() : ECFieldTest<P521Curve, P521Field58, P521Order>(58, 1UL << 58, Top, BigInteger.One, 1UL << 57, 9)
 {
 	private const ulong Top = (1UL << 57) + (1UL << 6);
 

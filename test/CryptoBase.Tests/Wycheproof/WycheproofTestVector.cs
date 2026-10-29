@@ -60,7 +60,7 @@ public sealed record KmacTestGroup(int TagSize) : WycheproofTestGroup<KmacTestVe
 
 public sealed record HkdfTestVector(byte[] Ikm, byte[] Salt, byte[] Info, int Size, byte[] Okm) : WycheproofTestVector;
 
-public sealed record EcCurveTestVector(string Name, string Oid, byte[] P, byte[] N, byte[] A, byte[] B, byte[] Gx, byte[] Gy, int H) : WycheproofTestVector;
+public sealed record ECCurveTestVector(string Name, string Oid, byte[] P, byte[] N, byte[] A, byte[] B, byte[] Gx, byte[] Gy, int H) : WycheproofTestVector;
 
 public sealed record EcdhEcpointTestVector(byte[] Public, byte[] Private, byte[] Shared) : WycheproofTestVector;
 
@@ -78,9 +78,9 @@ public sealed record EcdsaVerifyTestVector(byte[] Msg, byte[] Sig) : WycheproofT
 	public string Sha { get; init; } = "";
 }
 
-public sealed record EcPublicKey(string Curve, byte[] Uncompressed);
+public sealed record ECPublicKey(string Curve, byte[] Uncompressed);
 
-public sealed record EcdsaVerifyTestGroup(EcPublicKey PublicKey, byte[] PublicKeyDer, string Sha) : WycheproofTestGroup<EcdsaVerifyTestVector>
+public sealed record EcdsaVerifyTestGroup(ECPublicKey PublicKey, byte[] PublicKeyDer, string Sha) : WycheproofTestGroup<EcdsaVerifyTestVector>
 {
 	public override EcdsaVerifyTestVector Complete(EcdsaVerifyTestVector test)
 	{

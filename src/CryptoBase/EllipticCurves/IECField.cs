@@ -3,8 +3,8 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 namespace CryptoBase.EllipticCurves;
 
 // The field of p for a curve with a = −3. An implementation is the storage of one element, a sequence of ulong limbs, so that points hold it directly, and its static members are the arithmetic. Multiply, Square and the inversions work in Montgomery form, Export takes and FromLimbs and TryImport give the plain value, and whether a value is in that form is otherwise up to the caller. An element need not be below p: an implementation states the form that its members take and give, and every result but those of AddUnreduced and SubtractUnreduced is in that form. No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
-// The point formulas are members too, so that a field can choose where to reduce between steps; the defaults, in EcFormulas, reduce only where WeakReduce is called, and a field that takes them states the bounds that keep each step within what the next one takes.
-internal interface IEcField<TSelf> : IPrimeModulus where TSelf : unmanaged, IEcField<TSelf>
+// The point formulas are members too, so that a field can choose where to reduce between steps; the defaults, in ECFormulas, reduce only where WeakReduce is called, and a field that takes them states the bounds that keep each step within what the next one takes.
+internal interface IECField<TSelf> : IPrimeModulus where TSelf : unmanaged, IECField<TSelf>
 {
 	// 1 in Montgomery form.
 	static abstract ref readonly TSelf One { get; }
@@ -88,7 +88,7 @@ internal interface IEcField<TSelf> : IPrimeModulus where TSelf : unmanaged, IEcF
 		SelectLimbs(mask, ref Unsafe.As<TSelf, ulong>(ref Unsafe.AsRef(in whenSet)), ref Unsafe.As<TSelf, ulong>(ref Unsafe.AsRef(in whenClear)), ref Unsafe.As<TSelf, ulong>(ref result), Unsafe.SizeOf<TSelf>() / sizeof(ulong));
 	}
 
-	// The limbs of each coordinate in EcGeneratorTable: by default those of the element, but a field whose elements leave room above p may pack the value mod p into fewer.
+	// The limbs of each coordinate in ECGeneratorTable: by default those of the element, but a field whose elements leave room above p may pack the value mod p into fewer.
 	static virtual int PackedLength => Unsafe.SizeOf<TSelf>() / sizeof(ulong);
 
 	// Writes X and then Y of point in PackedLength limbs each.
@@ -107,20 +107,20 @@ internal interface IEcField<TSelf> : IPrimeModulus where TSelf : unmanaged, IEcF
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static virtual void Double(in JacobianPoint<TSelf> value, out JacobianPoint<TSelf> result)
 	{
-		EcFormulas<TSelf>.Double(in value, out result);
+		ECFormulas<TSelf>.Double(in value, out result);
 	}
 
 	// Sets result to left + right for points that are not the point at infinity, except that equal points give (0, 0, 0); opposite points give Z = 0, the point at infinity. Returns ulong.MaxValue if the points are equal, which is where H = 0 and R = 0, and 0 otherwise. The result may be either input.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static virtual ulong AddDistinct(in JacobianPoint<TSelf> left, in JacobianPoint<TSelf> right, out JacobianPoint<TSelf> result)
 	{
-		return EcFormulas<TSelf>.AddDistinct(in left, in right, out result);
+		return ECFormulas<TSelf>.AddDistinct(in left, in right, out result);
 	}
 
 	// As above, with an affine right.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static virtual ulong AddDistinct(in JacobianPoint<TSelf> left, in AffinePoint<TSelf> right, out JacobianPoint<TSelf> result)
 	{
-		return EcFormulas<TSelf>.AddDistinct(in left, in right, out result);
+		return ECFormulas<TSelf>.AddDistinct(in left, in right, out result);
 	}
 }

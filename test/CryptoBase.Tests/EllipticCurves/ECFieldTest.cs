@@ -2,14 +2,14 @@ using CryptoBase.EllipticCurves;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static CryptoBase.Tests.EllipticCurves.EcTestUtils;
+using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
 // The tests that every field of unsaturated limbs shares, against BigInteger. Limbs hold limbBits bits each when canonical; the form that the members take has every limb but the top one below formLow, which is 2^limbBits or twice that, and the top one below formTop. A value v also stands as v + kp for every k that fits, with limbs 2^limbBits or more where formLow allows. R is the Montgomery factor, 1 for a field that does not use it, and canonical elements have the top limb below canonicalTop. The two long chains take the seeds chainSeed and chainSeed + 1.
-internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong formLow, ulong formTop, BigInteger r, ulong canonicalTop, int chainSeed)
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+internal abstract class ECFieldTest<TCurve, TField, TOrder>(int limbBits, ulong formLow, ulong formTop, BigInteger r, ulong canonicalTop, int chainSeed)
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private protected const int RandomCount = 32;
@@ -184,16 +184,16 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 	[Test]
 	public async Task FormulasMatchTheReferenceForCoordinatesAtTheLimits()
 	{
-		EcReference reference = Curve.Reference;
+		ECReference reference = Curve.Reference;
 		Random random = new(7);
 		List<string> failures = [];
 
-		foreach ((CurvePoint? left, CurvePoint? right) in EcGroupTest.Pairs(reference, random))
+		foreach ((CurvePoint? left, CurvePoint? right) in ECGroupTest.Pairs(reference, random))
 		{
 			string operation = $"{Show(left)} + {Show(right)}";
 			JacobianPoint<TField> x = Loose(reference.RandomizeJacobian(left, random), random);
 			JacobianPoint<TField> y = Loose(reference.RandomizeJacobian(right, random), random);
-			EcGroup<TCurve, TField, TOrder>.Double(in x, out JacobianPoint<TField> twice);
+			ECGroup<TCurve, TField, TOrder>.Double(in x, out JacobianPoint<TField> twice);
 			CheckPoint(failures, reference, $"2 · {Show(left)}", twice, reference.Add(left, left));
 
 			if (right is null)
@@ -202,7 +202,7 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 			}
 
 			AffinePoint<TField> affine = Loose(right, random);
-			EcGroup<TCurve, TField, TOrder>.Add(in x, in affine, out JacobianPoint<TField> sum);
+			ECGroup<TCurve, TField, TOrder>.Add(in x, in affine, out JacobianPoint<TField> sum);
 			CheckPoint(failures, reference, $"{operation}, affine", sum, reference.Add(left, right));
 
 			if (left is null)
@@ -210,9 +210,9 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 				continue;
 			}
 
-			ulong mask = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out sum);
+			ulong mask = ECGroup<TCurve, TField, TOrder>.AddDistinct(in x, in y, out sum);
 			CheckDistinct(failures, reference, operation, mask, sum, left, right);
-			mask = EcGroup<TCurve, TField, TOrder>.AddDistinct(in x, in affine, out sum);
+			mask = ECGroup<TCurve, TField, TOrder>.AddDistinct(in x, in affine, out sum);
 			CheckDistinct(failures, reference, $"{operation}, affine", mask, sum, left, right);
 		}
 
@@ -223,7 +223,7 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 	[Test]
 	public async Task LongChainsOfFormulasStayInForm()
 	{
-		EcReference reference = Curve.Reference;
+		ECReference reference = Curve.Reference;
 		BigInteger n = Curve.Order;
 		Random random = new(chainSeed);
 		AffinePoint<TField> generator = Loose(reference.Generator, random);
@@ -236,16 +236,16 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 			switch (random.Next(4))
 			{
 				case 0:
-					EcGroup<TCurve, TField, TOrder>.Add(in point, in generator, out point);
+					ECGroup<TCurve, TField, TOrder>.Add(in point, in generator, out point);
 					k += 1;
 					break;
 				case 1:
-					EcGroup<TCurve, TField, TOrder>.Double(in point, out JacobianPoint<TField> twice);
-					_ = EcGroup<TCurve, TField, TOrder>.AddDistinct(in point, in twice, out point);
+					ECGroup<TCurve, TField, TOrder>.Double(in point, out JacobianPoint<TField> twice);
+					_ = ECGroup<TCurve, TField, TOrder>.AddDistinct(in point, in twice, out point);
 					k *= 3;
 					break;
 				default:
-					EcGroup<TCurve, TField, TOrder>.Double(in point, out point);
+					ECGroup<TCurve, TField, TOrder>.Double(in point, out point);
 					k *= 2;
 					break;
 			}
@@ -486,18 +486,18 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 		}
 	}
 
-	private protected void CheckPoint(List<string> failures, EcReference reference, string operation, in JacobianPoint<TField> actual, CurvePoint? expected)
+	private protected void CheckPoint(List<string> failures, ECReference reference, string operation, in JacobianPoint<TField> actual, CurvePoint? expected)
 	{
 		if (!IsInForm(actual.X) || !IsInForm(actual.Y) || !IsInForm(actual.Z))
 		{
 			failures.Add($"{operation} gave ({ShowLimbs(actual.X)}, {ShowLimbs(actual.Y)}, {ShowLimbs(actual.Z)}), out of the form");
 		}
 
-		EcTestUtils.CheckPoint(failures, reference, operation, Value(actual), expected);
+		ECTestUtils.CheckPoint(failures, reference, operation, Value(actual), expected);
 	}
 
 	// Equal points give (0, 0, 0) and set the mask; any others give their sum.
-	private void CheckDistinct(List<string> failures, EcReference reference, string operation, ulong mask, in JacobianPoint<TField> actual, CurvePoint left, CurvePoint right)
+	private void CheckDistinct(List<string> failures, ECReference reference, string operation, ulong mask, in JacobianPoint<TField> actual, CurvePoint left, CurvePoint right)
 	{
 		bool equal = left == right;
 
@@ -529,7 +529,7 @@ internal abstract class EcFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 
 	private protected static BigInteger RandomBelow(Random random, BigInteger bound)
 	{
-		return EcReference.RandomBelow(random, bound);
+		return ECReference.RandomBelow(random, bound);
 	}
 
 	private protected static string ShowLimbs(in TField value)

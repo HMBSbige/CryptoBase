@@ -334,7 +334,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 	public async Task PointAtInfinityDoesNotVerify()
 	{
 		CurveCase curve = CurveOf<T>();
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		using T key = T.GenerateKey();
 		int length = T.PrivateKeyLength;
@@ -371,7 +371,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 
 		for (int i = 0; i < 4; ++i)
 		{
-			BigInteger e = EcReference.RandomBelow(random, n);
+			BigInteger e = ECReference.RandomBelow(random, n);
 			byte[] signature = SignHash(signer, SignatureAlgorithm.EcdsaSha256, HashOf(curve, e), [], EcdsaSignatureFormat.Concatenated);
 			cases.Add((e, signature));
 			cases.Add(((e + 1) % n, signature));
@@ -383,7 +383,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 			{
 				byte[] signature = [.. curve.EncodeScalar(r), .. curve.EncodeScalar(s)];
 				cases.Add((0, signature));
-				cases.Add((EcReference.RandomBelow(random, n), signature));
+				cases.Add((ECReference.RandomBelow(random, n), signature));
 				cases.Add(((n - r * d % n) % n, signature));
 			}
 		}
@@ -466,8 +466,8 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		byte[] expected = ExportPkcs8PrivateKey(key);
 		byte[][] encodings =
 		[
-			Pkcs8(curveOid, EcPrivateKey(1, d, null, null)), Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, null)), Pkcs8(curveOid, EcPrivateKey(1, d, null, q)),
-			Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, q)), Pkcs8(curveOid, EcPrivateKey(1, d, null, null), q), Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, q), q)
+			Pkcs8(curveOid, ECPrivateKey(1, d, null, null)), Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, null)), Pkcs8(curveOid, ECPrivateKey(1, d, null, q)),
+			Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, q)), Pkcs8(curveOid, ECPrivateKey(1, d, null, null), q), Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, q), q)
 		];
 
 		using (Assert.Multiple())
@@ -494,7 +494,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		byte[] q = ExportPublicKey(key);
 		byte[] otherQ = ExportPublicKey(other);
 		byte[] compressedQ = [(byte)(2 + (q[^1] & 1)), .. q.AsSpan(1, curve.FieldLength)];
-		byte[] valid = EcPrivateKey(1, d, curveOid, q);
+		byte[] valid = ECPrivateKey(1, d, curveOid, q);
 		AsnWriter nullParameters = new(AsnEncodingRules.DER);
 
 		using (nullParameters.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, true)))
@@ -504,19 +504,19 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 
 		byte[][] invalid =
 		[
-			Pkcs8(curveOid, EcPrivateKey(1, d, otherCurveOid, q)), Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, otherQ)), Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, compressedQ)),
-			Pkcs8(curveOid, EcPrivateKey(1, d, null, otherQ)), Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, q), otherQ), Pkcs8(curveOid, EcPrivateKey(1, d, null, null), compressedQ),
-			Pkcs8(curveOid, EcPrivateKey(0, d, curveOid, q)), Pkcs8(curveOid, EcPrivateKey(2, d, curveOid, q)),
-			Pkcs8(curveOid, EcPrivateKey(1, d.AsSpan(1).ToArray(), curveOid, null)), Pkcs8(curveOid, EcPrivateKey(1, [0, .. d], curveOid, null)),
-			Pkcs8(curveOid, EcPrivateKey(1, curve.EncodeScalar(0), null, null)), Pkcs8(curveOid, EcPrivateKey(1, curve.EncodeScalar(curve.Order), null, null)),
-			Pkcs8(curveOid, EcPrivateKey(1, Enumerable.Repeat((byte)0xFF, d.Length).ToArray(), null, null)),
-			Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, q, [0x05, 0x00])), Pkcs8(curveOid, [.. valid, 0x05, 0x00]), Pkcs8(curveOid, [.. valid, 0]),
-			Pkcs8(curveOid, EcPrivateKey(1, d, null, null, [.. Element(0xA1, Element(0x03, [0, .. q])), .. Element(0xA0, Oid(curveOid))])),
-			Pkcs8(curveOid, EcPrivateKey(1, d, null, null, nullParameters.Encode())), Pkcs8(curveOid, EcPrivateKey(1, d, null, null, Element(0xA2, [0x05, 0x00]))),
-			Pkcs8(curveOid, EcPrivateKey(1, d, null, null, Element(0xA1, Element(0x03, [1, .. q])))), Pkcs8(curveOid, EcPrivateKey(1, d, null, null, Element(0xA1, Element(0x04, q)))),
-			Pkcs8(curveOid, EcPrivateKey(1, d, null, null, Element(0xA1, [.. Element(0x03, [0, .. q]), 0x05, 0x00]))), Pkcs8(curveOid, EcPrivateKey(1, d, null, null, Element(0xA0, [.. Oid(curveOid), 0x05, 0x00]))),
-			Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, q, Element(0xA1, Element(0x03, [0, .. q])))), Pkcs8(curveOid, [0x04, (byte)d.Length, .. d]),
-			Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, [])), Pkcs8(curveOid, valid, []), Pkcs8(otherCurveOid, valid)
+			Pkcs8(curveOid, ECPrivateKey(1, d, otherCurveOid, q)), Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, otherQ)), Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, compressedQ)),
+			Pkcs8(curveOid, ECPrivateKey(1, d, null, otherQ)), Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, q), otherQ), Pkcs8(curveOid, ECPrivateKey(1, d, null, null), compressedQ),
+			Pkcs8(curveOid, ECPrivateKey(0, d, curveOid, q)), Pkcs8(curveOid, ECPrivateKey(2, d, curveOid, q)),
+			Pkcs8(curveOid, ECPrivateKey(1, d.AsSpan(1).ToArray(), curveOid, null)), Pkcs8(curveOid, ECPrivateKey(1, [0, .. d], curveOid, null)),
+			Pkcs8(curveOid, ECPrivateKey(1, curve.EncodeScalar(0), null, null)), Pkcs8(curveOid, ECPrivateKey(1, curve.EncodeScalar(curve.Order), null, null)),
+			Pkcs8(curveOid, ECPrivateKey(1, Enumerable.Repeat((byte)0xFF, d.Length).ToArray(), null, null)),
+			Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, q, [0x05, 0x00])), Pkcs8(curveOid, [.. valid, 0x05, 0x00]), Pkcs8(curveOid, [.. valid, 0]),
+			Pkcs8(curveOid, ECPrivateKey(1, d, null, null, [.. Element(0xA1, Element(0x03, [0, .. q])), .. Element(0xA0, Oid(curveOid))])),
+			Pkcs8(curveOid, ECPrivateKey(1, d, null, null, nullParameters.Encode())), Pkcs8(curveOid, ECPrivateKey(1, d, null, null, Element(0xA2, [0x05, 0x00]))),
+			Pkcs8(curveOid, ECPrivateKey(1, d, null, null, Element(0xA1, Element(0x03, [1, .. q])))), Pkcs8(curveOid, ECPrivateKey(1, d, null, null, Element(0xA1, Element(0x04, q)))),
+			Pkcs8(curveOid, ECPrivateKey(1, d, null, null, Element(0xA1, [.. Element(0x03, [0, .. q]), 0x05, 0x00]))), Pkcs8(curveOid, ECPrivateKey(1, d, null, null, Element(0xA0, [.. Oid(curveOid), 0x05, 0x00]))),
+			Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, q, Element(0xA1, Element(0x03, [0, .. q])))), Pkcs8(curveOid, [0x04, (byte)d.Length, .. d]),
+			Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, [])), Pkcs8(curveOid, valid, []), Pkcs8(otherCurveOid, valid)
 		];
 
 		using T imported = T.ImportPkcs8PrivateKey(Pkcs8(curveOid, valid));
@@ -604,7 +604,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 	// Whether each r ‖ s verifies over its e, with the multiplications of all of them at once.
 	private static bool[] ReferenceVerifies(CurveCase curve, byte[] publicKey, IReadOnlyList<(BigInteger E, byte[] Signature)> cases)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		int length = curve.ScalarLength;
 		BigInteger n = reference.N;
 		BigInteger[] r = [.. cases.Select(c => new BigInteger(c.Signature.AsSpan(0, length), isUnsigned: true, isBigEndian: true))];
@@ -730,7 +730,7 @@ internal class EcdsaTest
 		byte[] otherQ = ExportPublicKey(other);
 		List<bool> erased = [];
 
-		foreach (byte[] encoding in (byte[][])[Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, otherQ)), Pkcs8(curveOid, EcPrivateKey(1, d, curveOid, null), otherQ)])
+		foreach (byte[] encoding in (byte[][])[Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, otherQ)), Pkcs8(curveOid, ECPrivateKey(1, d, curveOid, null), otherQ)])
 		{
 			EcdsaKey<P256Curve, P256Field52, P256Order> core = default;
 

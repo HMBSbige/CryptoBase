@@ -1,8 +1,8 @@
 namespace CryptoBase.Tests.EllipticCurves;
 
-internal static class EcTestUtils
+internal static class ECTestUtils
 {
-	internal static void CheckPoint(List<string> failures, EcReference reference, string operation, JacobianValue actual, CurvePoint? expected)
+	internal static void CheckPoint(List<string> failures, ECReference reference, string operation, JacobianValue actual, CurvePoint? expected)
 	{
 		if (!reference.IsOnJacobianCurve(actual))
 		{

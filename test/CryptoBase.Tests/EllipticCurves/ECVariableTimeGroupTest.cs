@@ -1,9 +1,9 @@
 using System.Numerics;
-using static CryptoBase.Tests.EllipticCurves.EcTestUtils;
+using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-public class EcVariableTimeGroupTest
+public class ECVariableTimeGroupTest
 {
 	private const int RandomCount = 8;
 
@@ -15,11 +15,11 @@ public class EcVariableTimeGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MixedAddMatchesTheReference(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(12);
 		List<string> failures = [];
 
-		foreach ((CurvePoint? left, CurvePoint? right) in EcGroupTest.Pairs(reference, random))
+		foreach ((CurvePoint? left, CurvePoint? right) in ECGroupTest.Pairs(reference, random))
 		{
 			if (right is null)
 			{
@@ -37,7 +37,7 @@ public class EcVariableTimeGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ResultMayOverwriteTheLeftInput(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(14);
 		List<string> failures = [];
 
@@ -74,10 +74,10 @@ public class EcVariableTimeGroupTest
 	[MatrixDataSource]
 	public async Task MultiplyAddMatchesTheReference([MatrixMethod<CurveCase>(nameof(CurveCase.All))] CurveCase curve, [Matrix] PointKind kind)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		Random random = new(1 + (int)kind);
-		BigInteger d = 1 + EcReference.RandomBelow(random, n - 1);
+		BigInteger d = 1 + ECReference.RandomBelow(random, n - 1);
 
 		CurvePoint point = kind switch
 		{
@@ -92,7 +92,7 @@ public class EcVariableTimeGroupTest
 
 		for (int i = 0; i < RandomCount; ++i)
 		{
-			pairs.Add((EcReference.RandomBelow(random, n), EcReference.RandomBelow(random, n)));
+			pairs.Add((ECReference.RandomBelow(random, n), ECReference.RandomBelow(random, n)));
 		}
 
 		CurvePoint?[] sums = reference.Add(reference.Multiply(reference.Generator, [.. pairs.Select(static pair => pair.U1)]), reference.Multiply(point, [.. pairs.Select(static pair => pair.U2)]));
@@ -110,7 +110,7 @@ public class EcVariableTimeGroupTest
 	[MatrixDataSource]
 	public async Task OddMultiplesHoldEachOddMultiple([MatrixMethod<CurveCase>(nameof(CurveCase.All))] CurveCase curve, [Matrix] PointKind kind)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		Random random = new(17 + (int)kind);
 
@@ -119,7 +119,7 @@ public class EcVariableTimeGroupTest
 			PointKind.Generator => reference.Generator,
 			PointKind.NegatedGenerator => reference.PublicKey(n - 1),
 			PointKind.Random => reference.RandomPoint(random),
-			_ => reference.PublicKey(1 + EcReference.RandomBelow(random, n - 1))
+			_ => reference.PublicKey(1 + ECReference.RandomBelow(random, n - 1))
 		};
 
 		CurvePoint[] multiples = curve.OddMultiplesVariableTime(point, OddMultipleCount);
@@ -137,7 +137,7 @@ public class EcVariableTimeGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MultiplyAddMeetsEqualAndOppositePoints(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		BigInteger split = (BigInteger.One << curve.ScalarBitLength - 1) + 1;
 		CurvePoint generator = reference.Generator;
@@ -162,15 +162,15 @@ public class EcVariableTimeGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MultiplyAddCancelsAndDoubles(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		Random random = new(5);
 		List<string> failures = [];
 
 		for (int i = 0; i < RandomCount; ++i)
 		{
-			BigInteger d = 1 + EcReference.RandomBelow(random, n - 1);
-			BigInteger u2 = i is 0 ? 1 : 1 + EcReference.RandomBelow(random, n - 1);
+			BigInteger d = 1 + ECReference.RandomBelow(random, n - 1);
+			BigInteger u2 = i is 0 ? 1 : 1 + ECReference.RandomBelow(random, n - 1);
 			CurvePoint point = reference.PublicKey(d);
 			BigInteger u1 = u2 * d % n;
 			Check(failures, curve, n - u1, point, u2, null);
@@ -185,7 +185,7 @@ public class EcVariableTimeGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MultiplyAddWithTheTableMeetsEqualAndOppositePoints(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		Random random = new(15);
 		List<string> failures = [];
@@ -193,7 +193,7 @@ public class EcVariableTimeGroupTest
 		foreach (int k in (int[])[0, 1, curve.GeneratorWindowCount / 2, curve.GeneratorWindowCount - 1])
 		{
 			BigInteger u1 = BigInteger.One << curve.GeneratorWindowWidth * k;
-			BigInteger u2 = 1 + EcReference.RandomBelow(random, n - 1);
+			BigInteger u2 = 1 + ECReference.RandomBelow(random, n - 1);
 			BigInteger q = u1 * BigInteger.ModPow(u2, n - 2, n) % n;
 			Check(failures, curve, u1, reference.PublicKey(q), u2, reference.Multiply(reference.Generator, 2 * u1 % n));
 			Check(failures, curve, u1, reference.PublicKey(n - q), u2, null);
@@ -207,7 +207,7 @@ public class EcVariableTimeGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task XModOrderEqualsMatchesTheReference(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		BigInteger p = reference.P;
 		Random random = new(6);
@@ -270,7 +270,7 @@ public class EcVariableTimeGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task GeneratorTableHoldsTheOddMultiples(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		CurvePoint[] table = curve.VariableTimeGeneratorTable();
 		CurvePoint? twice = reference.Add(reference.Generator, reference.Generator);
 		CurvePoint? multiple = reference.Generator;
@@ -295,7 +295,7 @@ public class EcVariableTimeGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task PointTableHoldsTheOddMultiplesOfEachPart(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		CurvePoint point = reference.RandomPoint(new Random(16));
 		CurvePoint[] table = curve.VariableTimePointTable(point);
 		List<BigInteger> scalars = [];
@@ -423,7 +423,7 @@ public class EcVariableTimeGroupTest
 
 		for (int i = 0; i < RandomCount; ++i)
 		{
-			scalars.Add(EcReference.RandomBelow(random, n));
+			scalars.Add(ECReference.RandomBelow(random, n));
 		}
 
 		return scalars;

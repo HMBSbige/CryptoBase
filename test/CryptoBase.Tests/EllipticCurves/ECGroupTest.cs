@@ -1,8 +1,8 @@
-using static CryptoBase.Tests.EllipticCurves.EcTestUtils;
+using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-public class EcGroupTest
+public class ECGroupTest
 {
 	private const int RandomCount = 16;
 
@@ -11,7 +11,7 @@ public class EcGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MixedAddMatchesTheReference(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(2);
 		List<string> failures = [];
 
@@ -34,7 +34,7 @@ public class EcGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task AddDistinctMatchesTheReference(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(6);
 		List<string> failures = [];
 
@@ -83,7 +83,7 @@ public class EcGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task DoubleMatchesTheReference(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(3);
 		List<string> failures = [];
 
@@ -101,7 +101,7 @@ public class EcGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ResultMayOverwriteAnInput(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(4);
 		List<string> failures = [];
 
@@ -138,7 +138,7 @@ public class EcGroupTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ToAffineDividesByZ(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(5);
 		List<string> failures = [];
 
@@ -155,7 +155,7 @@ public class EcGroupTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	internal static IEnumerable<CurvePoint?> Points(EcReference reference, Random random)
+	internal static IEnumerable<CurvePoint?> Points(ECReference reference, Random random)
 	{
 		yield return null;
 		yield return reference.Generator;
@@ -168,7 +168,7 @@ public class EcGroupTest
 		}
 	}
 
-	internal static IEnumerable<(CurvePoint? Left, CurvePoint? Right)> Pairs(EcReference reference, Random random)
+	internal static IEnumerable<(CurvePoint? Left, CurvePoint? Right)> Pairs(ECReference reference, Random random)
 	{
 		yield return (null, null);
 

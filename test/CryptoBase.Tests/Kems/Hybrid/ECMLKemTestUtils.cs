@@ -3,7 +3,7 @@ using CryptoBase.Kems.Hybrid;
 
 namespace CryptoBase.Tests.Kems.Hybrid;
 
-internal static class EcMLKemTestUtils
+internal static class ECMLKemTestUtils
 {
 	public static (byte[] Ciphertext, byte[] SharedSecret) Encapsulate<T>(T kem, ReadOnlySpan<byte> ephemeralPrivateKey, ReadOnlySpan<byte> message) where T : class, IKem<T>
 	{

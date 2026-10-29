@@ -5,7 +5,7 @@ namespace CryptoBase.EllipticCurves;
 // The field of p = 2^521 − 1 in nine unsaturated limbs, the value Σ L_i·2^(58i). Montgomery form takes R = 1, so it is the plain value, and as 2^521 ≡ 1 (mod p) the reduction needs no multiplication.
 // Every member takes and gives the form E: limbs 0 to 7 below 2^58 and limb 8 below 2^57 + 2^6, so values below 2^521 + 2^470 < 2p. An element is of size s if its limbs 0 to 7 are below s·2^58 and limb 8 below s·(2^57 + 2^6); E is size 1.
 // The formulas in P521Field58.Formulas.cs skip reductions between steps and keep the sizes within these limits: Multiply takes sizes a and b up to 6 with ab ≤ 6, so Square takes sizes up to √6, and both give E; AddUnreduced adds sizes; SubtractUnreduced adds 2p, so 2 to the size, for a subtrahend of E; WeakReduce takes limbs below 2^64 − 2^7, so sizes up to 63, to E.
-internal partial struct P521Field58 : IEcField<P521Field58>
+internal partial struct P521Field58 : IECField<P521Field58>
 {
 	internal ulong L0;
 	internal ulong L1;

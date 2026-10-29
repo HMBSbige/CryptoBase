@@ -9,8 +9,8 @@ internal sealed record CurvePoint(BigInteger X, BigInteger Y);
 // Plain Jacobian coordinates (X : Y : Z).
 internal readonly record struct JacobianValue(BigInteger X, BigInteger Y, BigInteger Z);
 
-// Affine arithmetic from the curve parameters alone, to check EcGroup against.
-internal sealed class EcReference(EcCurveTestVector curve)
+// Affine arithmetic from the curve parameters alone, to check ECGroup against.
+internal sealed class ECReference(ECCurveTestVector curve)
 {
 	internal BigInteger P { get; } = ModulusCase.Decode(curve.P);
 

@@ -11,7 +11,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using static CryptoBase.Tests.Kems.Hybrid.EcMLKemTestUtils;
+using static CryptoBase.Tests.Kems.Hybrid.ECMLKemTestUtils;
 using static CryptoBase.Tests.Kems.KemTestUtils;
 using static CryptoBase.Tests.KeyAgreements.Ecdh.EcdhTestUtils;
 using static CryptoBase.Tests.KeyAgreements.KeyAgreementTestUtils;
@@ -21,7 +21,7 @@ namespace CryptoBase.Tests.Kems.Hybrid;
 
 [GenerateGenericTest(typeof(SecP256r1MLKem768), typeof(EcdhP256), typeof(MLKem768))]
 [GenerateGenericTest(typeof(SecP384r1MLKem1024), typeof(EcdhP384), typeof(MLKem1024))]
-public class EcMLKemTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
+public class ECMLKemTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh : class, IKeyAgreement<TEcdh> where TMLKem : class, IKem<TMLKem>
 {
 	private const int Iterations = 4;
 
@@ -377,7 +377,7 @@ public class EcMLKemTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh 
 					throw new InvalidOperationException($"The test does not know how to check {type.Name}.");
 				}
 
-				MethodInfo bytes = typeof(EcMLKemTest<T, TEcdh, TMLKem>).GetMethod(nameof(Bytes), BindingFlags.Static | BindingFlags.NonPublic) ?? throw new MissingMethodException(nameof(EcMLKemTest), nameof(Bytes));
+				MethodInfo bytes = typeof(ECMLKemTest<T, TEcdh, TMLKem>).GetMethod(nameof(Bytes), BindingFlags.Static | BindingFlags.NonPublic) ?? throw new MissingMethodException(nameof(ECMLKemTest), nameof(Bytes));
 				return bytes.MakeGenericMethod(type).Invoke(null, [value]) as byte[] ?? [.. type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SelectMany(field => Contents(field.GetValue(value)))];
 			}
 		}
@@ -395,7 +395,7 @@ public class EcMLKemTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh 
 	}
 }
 
-public class EcMLKemTest
+public class ECMLKemTest
 {
 	[Test]
 	public async Task LengthsAreFixed()

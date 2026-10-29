@@ -120,7 +120,7 @@ public class WycheproofEcdsaTest
 	public async Task VectorsWithXAboveTheOrderVerify(string curveName)
 	{
 		CurveCase curve = CurveCase.Named(curveName);
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		List<(string FileName, EcdsaVerifyTestVector Vector, BigInteger R, BigInteger W)> candidates = [];
 

@@ -3,9 +3,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 namespace CryptoBase.EllipticCurves;
 
 // Scalars are plain values below n. Nothing here branches on or indexes by a point or a scalar, except where a method says that its input is public.
-internal static class EcGroup<TCurve, TField, TOrder>
-	where TCurve : struct, IEcCurve
-	where TField : unmanaged, IEcField<TField>
+internal static class ECGroup<TCurve, TField, TOrder>
+	where TCurve : struct, IECCurve
+	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
 	private const int WindowWidth = 5;
@@ -32,7 +32,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in left.Z), in right, in sum, out result);
 	}
 
-	// The contract of IEcField.AddDistinct: for points that are not the point at infinity; equal points give (0, 0, 0) and the mask ulong.MaxValue.
+	// The contract of IECField.AddDistinct: for points that are not the point at infinity; equal points give (0, 0, 0) and the mask ulong.MaxValue.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong AddDistinct(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
 	{
@@ -57,7 +57,7 @@ internal static class EcGroup<TCurve, TField, TOrder>
 	[SkipLocalsInit]
 	internal static void MultiplyBase(in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
-		Span<sbyte> digits = stackalloc sbyte[EcGeneratorTable<TCurve, TField, TOrder>.WindowCount];
+		Span<sbyte> digits = stackalloc sbyte[ECGeneratorTable<TCurve, TField, TOrder>.WindowCount];
 		Recode(in scalar, TCurve.GeneratorWindowWidth, digits);
 		SelectBase(0, digits[0], out AffinePoint<TField> entry);
 		// A digit of 0 selects (0, 0), which is not a point: the first window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
@@ -389,13 +389,13 @@ internal static class EcGroup<TCurve, TField, TOrder>
 		ConditionalNegate((ulong)sign, ref result.Y);
 	}
 
-	// digit·B from window of EcGeneratorTable, which holds 1·B to WindowLength·B. A digit of 0 gives (0, 0), which is not a point.
+	// digit·B from window of ECGeneratorTable, which holds 1·B to WindowLength·B. A digit of 0 gives (0, 0), which is not a point.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	internal static void SelectBase(int window, int digit, out AffinePoint<TField> result)
 	{
 		int sign = digit >> 31;
 		Unsafe.SkipInit(out result);
-		MaskedSelect.Lookup(in EcGeneratorTable<TCurve, TField, TOrder>.Window(window), EcGeneratorTable<TCurve, TField, TOrder>.EntryLength, EcGeneratorTable<TCurve, TField, TOrder>.WindowLength, (uint)((digit ^ sign) - sign) - 1, ref Unsafe.As<AffinePoint<TField>, ulong>(ref result));
+		MaskedSelect.Lookup(in ECGeneratorTable<TCurve, TField, TOrder>.Window(window), ECGeneratorTable<TCurve, TField, TOrder>.EntryLength, ECGeneratorTable<TCurve, TField, TOrder>.WindowLength, (uint)((digit ^ sign) - sign) - 1, ref Unsafe.As<AffinePoint<TField>, ulong>(ref result));
 		TField.Unpack(ref result);
 		ConditionalNegate((ulong)sign, ref result.Y);
 	}

@@ -1,5 +1,5 @@
 using System.Numerics;
-using static CryptoBase.Tests.EllipticCurves.EcTestUtils;
+using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
@@ -62,7 +62,7 @@ public class PointEncodingTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ExportXWritesTheAffineX(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(3);
 		List<string> failures = [];
 
@@ -81,7 +81,7 @@ public class PointEncodingTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ReduceXTakesTheAffineXModN(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		Random random = new(4);
 		List<string> failures = [];
 
@@ -115,7 +115,7 @@ public class PointEncodingTest
 
 		for (int i = 0; i < RandomCount; ++i)
 		{
-			BigInteger value = 1 + EcReference.RandomBelow(random, n - 1);
+			BigInteger value = 1 + ECReference.RandomBelow(random, n - 1);
 			cases.Add(($"{value:X}", curve.EncodeScalar(value), value));
 		}
 
@@ -150,7 +150,7 @@ public class PointEncodingTest
 	}
 
 	// The points with the least x and the least y have encodings that start with zero bytes, and the one with the least x from n makes ReduceX reduce.
-	private static IEnumerable<CurvePoint> Points(EcReference reference, Random random)
+	private static IEnumerable<CurvePoint> Points(ECReference reference, Random random)
 	{
 		yield return reference.Generator;
 		yield return reference.PointWithXFrom(0);
@@ -167,7 +167,7 @@ public class PointEncodingTest
 
 	private static IEnumerable<(string Name, byte[] Encoding)> InvalidEncodings(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		CurvePoint g = reference.Generator;
 		byte[] x = curve.EncodeCoordinate(g.X);
 		byte[] y = curve.EncodeCoordinate(g.Y);

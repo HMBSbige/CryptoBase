@@ -280,7 +280,7 @@ public class FieldElementTest
 		{
 			// value = aR stands for a, so the inverse a⁻¹R is value⁻¹R²; the inverse of 0 is taken to be 0.
 			BigInteger inverse = invert(value, false);
-			BigInteger valueInverse = EcReference.Inverse(value, m);
+			BigInteger valueInverse = ECReference.Inverse(value, m);
 			Check(failures, $"1 / {value:X}", inverse, valueInverse * rSquared % m);
 			Check(failures, $"1 / {value:X} through the Montgomery form", modulus.Multiply(invert(modulus.ToMontgomery(value), false), 1), valueInverse);
 

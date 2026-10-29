@@ -4,12 +4,12 @@ using System.Reflection;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-public class EcCurveTest
+public class ECCurveTest
 {
 	[Test]
 	public async Task EveryCurveIsListed()
 	{
-		Type[] curves = [.. typeof(IEcCurve).Assembly.GetTypes().Where(static type => type.GetInterfaces().Contains(typeof(IEcCurve)))];
+		Type[] curves = [.. typeof(IECCurve).Assembly.GetTypes().Where(static type => type.GetInterfaces().Contains(typeof(IECCurve)))];
 
 		await Assert.That(CurveCase.All().Select(static curve => curve.CurveType)).IsEquivalentTo(curves);
 	}
@@ -27,7 +27,7 @@ public class EcCurveTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task TypesMatchTheCurve(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 
 		using (Assert.Multiple())
 		{
@@ -44,7 +44,7 @@ public class EcCurveTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ConstantsAreTheCurveParameters(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 
 		using (Assert.Multiple())
 		{
@@ -58,7 +58,7 @@ public class EcCurveTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task GeneratorIsOnTheCurveWithOrderN(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 
 		using (Assert.Multiple())
 		{

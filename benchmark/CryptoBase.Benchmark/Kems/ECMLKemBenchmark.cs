@@ -17,14 +17,14 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Kems;
 
-public class SecP256r1MLKem768Benchmark() : EcMLKemBenchmark<SecP256r1MLKem768>(ECCurve.NamedCurves.nistP256, SecObjectIdentifiers.SecP256r1, MLKemAlgorithm.MLKem768, MLKemParameters.ml_kem_768);
+public class SecP256r1MLKem768Benchmark() : ECMLKemBenchmark<SecP256r1MLKem768>(ECCurve.NamedCurves.nistP256, SecObjectIdentifiers.SecP256r1, MLKemAlgorithm.MLKem768, MLKemParameters.ml_kem_768);
 
-public class SecP384r1MLKem1024Benchmark() : EcMLKemBenchmark<SecP384r1MLKem1024>(ECCurve.NamedCurves.nistP384, SecObjectIdentifiers.SecP384r1, MLKemAlgorithm.MLKem1024, MLKemParameters.ml_kem_1024);
+public class SecP384r1MLKem1024Benchmark() : ECMLKemBenchmark<SecP384r1MLKem1024>(ECCurve.NamedCurves.nistP384, SecObjectIdentifiers.SecP384r1, MLKemAlgorithm.MLKem1024, MLKemParameters.ml_kem_1024);
 
 [MemoryDiagnoser]
 [CategoriesColumn]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
-public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier bouncyCastleCurve, MLKemAlgorithm bclAlgorithm, MLKemParameters bouncyCastleParameters) where T : class, IKem<T>
+public abstract class ECMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier bouncyCastleCurve, MLKemAlgorithm bclAlgorithm, MLKemParameters bouncyCastleParameters) where T : class, IKem<T>
 {
 	private const int MLKemSeedLength = 64;
 	private const int MLKemSharedSecretLength = 32;
@@ -40,27 +40,27 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 	private ECDiffieHellmanPublicKey _bclPublicKey = null!;
 	private MLKem? _bclMLKem;
 	private ECNamedDomainParameters _bouncyCastleDomain = null!;
-	private ECKeyPairGenerator _bouncyCastleEcGenerator = null!;
+	private ECKeyPairGenerator _bouncyCastleECGenerator = null!;
 	private ECDHBasicAgreement _bouncyCastleAgreement = null!;
 	private ECPublicKeyParameters _bouncyCastlePublicKey = null!;
 	private MLKemKeyPairGenerator _bouncyCastleMLKemGenerator = null!;
 	private MLKemEncapsulator _bouncyCastleEncapsulator = null!;
 	private MLKemDecapsulator _bouncyCastleDecapsulator = null!;
 
-	private static int EcLength => T.SharedSecretLength - MLKemSharedSecretLength;
+	private static int ECLength => T.SharedSecretLength - MLKemSharedSecretLength;
 
-	private static int EcPublicKeyLength => 1 + 2 * EcLength;
+	private static int ECPublicKeyLength => 1 + 2 * ECLength;
 
 	private MLKem BclMLKem => _bclMLKem ?? throw new PlatformNotSupportedException("The platform does not support ML-KEM.");
 
 	[GlobalSetup]
 	public void Setup()
 	{
-		ReadOnlySpan<byte> ecPrivateKey = _seed.AsSpan(0, EcLength);
-		ReadOnlySpan<byte> mlKemSeed = _seed.AsSpan(EcLength, MLKemSeedLength);
+		ReadOnlySpan<byte> ecPrivateKey = _seed.AsSpan(0, ECLength);
+		ReadOnlySpan<byte> mlKemSeed = _seed.AsSpan(ECLength, MLKemSeedLength);
 		_cryptoBase = T.ImportPrivateSeed(_seed);
 		_cryptoBase.ExportEncapsulationKey(_encapsulationKey);
-		ReadOnlySpan<byte> ecPublicKey = _encapsulationKey.AsSpan(0, EcPublicKeyLength);
+		ReadOnlySpan<byte> ecPublicKey = _encapsulationKey.AsSpan(0, ECPublicKeyLength);
 
 		ECParameters bclParameters = UncompressedPoint.ToBcl(bclCurve, ecPublicKey);
 		bclParameters.D = ecPrivateKey.ToArray();
@@ -69,8 +69,8 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 		_bclMLKem = MLKem.IsSupported ? MLKem.ImportPrivateSeed(bclAlgorithm, mlKemSeed) : null;
 
 		_bouncyCastleDomain = ECNamedDomainParameters.LookupOid(bouncyCastleCurve);
-		_bouncyCastleEcGenerator = new ECKeyPairGenerator();
-		_bouncyCastleEcGenerator.Init(new ECKeyGenerationParameters(bouncyCastleCurve, _random));
+		_bouncyCastleECGenerator = new ECKeyPairGenerator();
+		_bouncyCastleECGenerator.Init(new ECKeyGenerationParameters(bouncyCastleCurve, _random));
 		_bouncyCastleAgreement = new ECDHBasicAgreement();
 		_bouncyCastleAgreement.Init(new ECPrivateKeyParameters(new BigInteger(1, ecPrivateKey), _bouncyCastleDomain));
 		_bouncyCastlePublicKey = UncompressedPoint.ToBouncyCastle(_bouncyCastleDomain, ecPublicKey);
@@ -83,8 +83,8 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 		_bouncyCastleDecapsulator = new MLKemDecapsulator(bouncyCastleParameters);
 		_bouncyCastleDecapsulator.Init(bouncyCastleKey);
 
-		if (!_bclEcdh.ExportParameters(false).Q.X.AsSpan().SequenceEqual(ecPublicKey.Slice(1, EcLength))
-			|| !bouncyCastleKey.GetPublicKeyEncoded().AsSpan().SequenceEqual(_encapsulationKey.AsSpan(EcPublicKeyLength)))
+		if (!_bclEcdh.ExportParameters(false).Q.X.AsSpan().SequenceEqual(ecPublicKey.Slice(1, ECLength))
+			|| !bouncyCastleKey.GetPublicKeyEncoded().AsSpan().SequenceEqual(_encapsulationKey.AsSpan(ECPublicKeyLength)))
 		{
 			throw new InvalidOperationException("Benchmark implementations expanded the seed to different keys.");
 		}
@@ -129,7 +129,7 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 	[BenchmarkCategory("GenerateKey")]
 	public (AsymmetricCipherKeyPair, AsymmetricCipherKeyPair) BouncyCastleGenerateKey()
 	{
-		return (_bouncyCastleEcGenerator.GenerateKeyPair(), _bouncyCastleMLKemGenerator.GenerateKeyPair());
+		return (_bouncyCastleECGenerator.GenerateKeyPair(), _bouncyCastleMLKemGenerator.GenerateKeyPair());
 	}
 
 	[Benchmark(Baseline = true)]
@@ -165,19 +165,19 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 	public void BclDecapsulate()
 	{
 		MLKem mlKem = BclMLKem;
-		using ECDiffieHellman ephemeral = ECDiffieHellman.Create(UncompressedPoint.ToBcl(bclCurve, _ciphertext.AsSpan(0, EcPublicKeyLength)));
+		using ECDiffieHellman ephemeral = ECDiffieHellman.Create(UncompressedPoint.ToBcl(bclCurve, _ciphertext.AsSpan(0, ECPublicKeyLength)));
 		using ECDiffieHellmanPublicKey ephemeralPublicKey = ephemeral.PublicKey;
 		_bclEcdh.DeriveRawSecretAgreement(ephemeralPublicKey).CopyTo(_sharedSecret, 0);
-		mlKem.Decapsulate(_ciphertext.AsSpan(EcPublicKeyLength), _sharedSecret.AsSpan(EcLength));
+		mlKem.Decapsulate(_ciphertext.AsSpan(ECPublicKeyLength), _sharedSecret.AsSpan(ECLength));
 	}
 
 	[Benchmark]
 	[BenchmarkCategory("Decapsulate")]
 	public void BouncyCastleDecapsulate()
 	{
-		ECPublicKeyParameters ephemeralPublicKey = UncompressedPoint.ToBouncyCastle(_bouncyCastleDomain, _ciphertext.AsSpan(0, EcPublicKeyLength));
-		BigIntegers.AsUnsignedByteArray(_bouncyCastleAgreement.CalculateAgreement(ephemeralPublicKey), _sharedSecret.AsSpan(0, EcLength));
-		_bouncyCastleDecapsulator.Decapsulate(_ciphertext.AsSpan(EcPublicKeyLength), _sharedSecret.AsSpan(EcLength));
+		ECPublicKeyParameters ephemeralPublicKey = UncompressedPoint.ToBouncyCastle(_bouncyCastleDomain, _ciphertext.AsSpan(0, ECPublicKeyLength));
+		BigIntegers.AsUnsignedByteArray(_bouncyCastleAgreement.CalculateAgreement(ephemeralPublicKey), _sharedSecret.AsSpan(0, ECLength));
+		_bouncyCastleDecapsulator.Decapsulate(_ciphertext.AsSpan(ECPublicKeyLength), _sharedSecret.AsSpan(ECLength));
 	}
 
 	[Benchmark(Baseline = true)]
@@ -192,8 +192,8 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 	[BenchmarkCategory("ImportEncapsulationKey+Encapsulate")]
 	public void BclImportAndEncapsulate()
 	{
-		using MLKem mlKem = MLKem.ImportEncapsulationKey(bclAlgorithm, _encapsulationKey.AsSpan(EcPublicKeyLength));
-		using ECDiffieHellman ecdh = ECDiffieHellman.Create(UncompressedPoint.ToBcl(bclCurve, _encapsulationKey.AsSpan(0, EcPublicKeyLength)));
+		using MLKem mlKem = MLKem.ImportEncapsulationKey(bclAlgorithm, _encapsulationKey.AsSpan(ECPublicKeyLength));
+		using ECDiffieHellman ecdh = ECDiffieHellman.Create(UncompressedPoint.ToBcl(bclCurve, _encapsulationKey.AsSpan(0, ECPublicKeyLength)));
 		using ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey;
 		BclEncapsulate(publicKey, mlKem, _output);
 	}
@@ -202,9 +202,9 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 	[BenchmarkCategory("ImportEncapsulationKey+Encapsulate")]
 	public void BouncyCastleImportAndEncapsulate()
 	{
-		ECPublicKeyParameters publicKey = UncompressedPoint.ToBouncyCastle(_bouncyCastleDomain, _encapsulationKey.AsSpan(0, EcPublicKeyLength));
+		ECPublicKeyParameters publicKey = UncompressedPoint.ToBouncyCastle(_bouncyCastleDomain, _encapsulationKey.AsSpan(0, ECPublicKeyLength));
 		MLKemEncapsulator encapsulator = new(bouncyCastleParameters);
-		encapsulator.Init(new ParametersWithRandom(MLKemPublicKeyParameters.FromEncoding(bouncyCastleParameters, _encapsulationKey.AsSpan(EcPublicKeyLength).ToArray()), _random));
+		encapsulator.Init(new ParametersWithRandom(MLKemPublicKeyParameters.FromEncoding(bouncyCastleParameters, _encapsulationKey.AsSpan(ECPublicKeyLength).ToArray()), _random));
 		BouncyCastleEncapsulate(publicKey, encapsulator, _output);
 	}
 
@@ -214,18 +214,18 @@ public abstract class EcMLKemBenchmark<T>(ECCurve bclCurve, DerObjectIdentifier 
 		ECParameters ephemeralParameters = ephemeral.ExportParameters(false);
 		ciphertext[0] = 0x04;
 		ephemeralParameters.Q.X.CopyTo(ciphertext.Slice(1));
-		ephemeralParameters.Q.Y.CopyTo(ciphertext.Slice(1 + EcLength));
+		ephemeralParameters.Q.Y.CopyTo(ciphertext.Slice(1 + ECLength));
 		ephemeral.DeriveRawSecretAgreement(publicKey).CopyTo(_sharedSecret, 0);
-		mlKem.Encapsulate(ciphertext.Slice(EcPublicKeyLength), _sharedSecret.AsSpan(EcLength));
+		mlKem.Encapsulate(ciphertext.Slice(ECPublicKeyLength), _sharedSecret.AsSpan(ECLength));
 	}
 
 	private void BouncyCastleEncapsulate(ECPublicKeyParameters publicKey, MLKemEncapsulator encapsulator, Span<byte> ciphertext)
 	{
-		AsymmetricCipherKeyPair ephemeral = _bouncyCastleEcGenerator.GenerateKeyPair();
-		((ECPublicKeyParameters)ephemeral.Public).Q.EncodeTo(false, ciphertext.Slice(0, EcPublicKeyLength));
+		AsymmetricCipherKeyPair ephemeral = _bouncyCastleECGenerator.GenerateKeyPair();
+		((ECPublicKeyParameters)ephemeral.Public).Q.EncodeTo(false, ciphertext.Slice(0, ECPublicKeyLength));
 		ECDHBasicAgreement agreement = new();
 		agreement.Init(ephemeral.Private);
-		BigIntegers.AsUnsignedByteArray(agreement.CalculateAgreement(publicKey), _sharedSecret.AsSpan(0, EcLength));
-		encapsulator.Encapsulate(ciphertext.Slice(EcPublicKeyLength), _sharedSecret.AsSpan(EcLength));
+		BigIntegers.AsUnsignedByteArray(agreement.CalculateAgreement(publicKey), _sharedSecret.AsSpan(0, ECLength));
+		encapsulator.Encapsulate(ciphertext.Slice(ECPublicKeyLength), _sharedSecret.AsSpan(ECLength));
 	}
 }

@@ -9,7 +9,7 @@ namespace CryptoBase.Tests.Signatures.Ecdsa;
 
 internal static class EcdsaTestUtils
 {
-	private const string EcPublicKeyOid = "1.2.840.10045.2.1";
+	private const string ECPublicKeyOid = "1.2.840.10045.2.1";
 
 	public static readonly SignatureAlgorithm[] Algorithms = [SignatureAlgorithm.EcdsaSha256, SignatureAlgorithm.EcdsaSha384, SignatureAlgorithm.EcdsaSha512];
 
@@ -114,10 +114,10 @@ internal static class EcdsaTestUtils
 
 	public static byte[] AlgorithmIdentifier(string curveOid)
 	{
-		return Element(0x30, [.. Oid(EcPublicKeyOid), .. Oid(curveOid)]);
+		return Element(0x30, [.. Oid(ECPublicKeyOid), .. Oid(curveOid)]);
 	}
 
-	public static byte[] EcPrivateKey(int version, byte[] d, string? curveOid, byte[]? publicKey, byte[]? trailing = null)
+	public static byte[] ECPrivateKey(int version, byte[] d, string? curveOid, byte[]? publicKey, byte[]? trailing = null)
 	{
 		List<byte> contents = [.. Element(0x02, [(byte)version]), .. Element(0x04, d)];
 

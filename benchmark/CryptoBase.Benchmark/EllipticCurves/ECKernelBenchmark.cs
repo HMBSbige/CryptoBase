@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-public class EcKernelBenchmark
+public class ECKernelBenchmark
 {
 	private IKernel _kernel = new Kernel<P256Curve, P256Field52, P256Order>();
 
@@ -155,11 +155,11 @@ public class EcKernelBenchmark
 	}
 
 	private sealed class Kernel<TCurve, TField, TOrder> : IKernel
-		where TCurve : struct, IEcCurve
-		where TField : unmanaged, IEcField<TField>
+		where TCurve : struct, IECCurve
+		where TField : unmanaged, IECField<TField>
 		where TOrder : unmanaged, IMontgomeryModulus
 	{
-		private readonly byte[] _encoded = new byte[EcGroup<TCurve, TField, TOrder>.EncodedLength];
+		private readonly byte[] _encoded = new byte[ECGroup<TCurve, TField, TOrder>.EncodedLength];
 		private readonly AffinePoint<TField>[] _pointTable;
 		private TField _fieldLeft;
 		private TField _fieldRight;
@@ -176,13 +176,13 @@ public class EcKernelBenchmark
 			RandomScalar(out _orderLeft);
 			RandomScalar(out _orderRight);
 			RandomScalar(out FieldElement<TOrder> scalar);
-			EcGroup<TCurve, TField, TOrder>.MultiplyBaseToAffine(in scalar, out _affine);
-			EcGroup<TCurve, TField, TOrder>.Encode(in _affine, _encoded);
-			_pointTable = EcVariableTimePointTable<TCurve, TField, TOrder>.Build(in _affine);
+			ECGroup<TCurve, TField, TOrder>.MultiplyBaseToAffine(in scalar, out _affine);
+			ECGroup<TCurve, TField, TOrder>.Encode(in _affine, _encoded);
+			_pointTable = ECVariableTimePointTable<TCurve, TField, TOrder>.Build(in _affine);
 			RandomScalar(out scalar);
-			EcGroup<TCurve, TField, TOrder>.MultiplyBase(in scalar, out _jacobian);
+			ECGroup<TCurve, TField, TOrder>.MultiplyBase(in scalar, out _jacobian);
 			RandomScalar(out scalar);
-			EcGroup<TCurve, TField, TOrder>.MultiplyBase(in scalar, out _otherJacobian);
+			ECGroup<TCurve, TField, TOrder>.MultiplyBase(in scalar, out _otherJacobian);
 
 			if (!TryDecode())
 			{
@@ -222,62 +222,62 @@ public class EcKernelBenchmark
 
 		public void AddAffine()
 		{
-			EcGroup<TCurve, TField, TOrder>.Add(in _jacobian, in _affine, out JacobianPoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.Add(in _jacobian, in _affine, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public void AddDistinct()
 		{
-			ulong equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in _jacobian, in _otherJacobian, out JacobianPoint<TField> result);
+			ulong equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in _jacobian, in _otherJacobian, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(equal);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public void AddDistinctAffine()
 		{
-			ulong equal = EcGroup<TCurve, TField, TOrder>.AddDistinct(in _jacobian, in _affine, out JacobianPoint<TField> result);
+			ulong equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in _jacobian, in _affine, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(equal);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public void Double()
 		{
-			EcGroup<TCurve, TField, TOrder>.Double(in _jacobian, out JacobianPoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.Double(in _jacobian, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public void MultiplyBase()
 		{
-			EcGroup<TCurve, TField, TOrder>.MultiplyBase(in _orderLeft, out JacobianPoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.MultiplyBase(in _orderLeft, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public void Multiply()
 		{
-			EcGroup<TCurve, TField, TOrder>.Multiply(in _affine, in _orderLeft, out JacobianPoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.Multiply(in _affine, in _orderLeft, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public void MultiplyAdd()
 		{
-			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in _orderLeft, in _affine, in _orderRight, out JacobianPoint<TField> result);
+			ECVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in _orderLeft, in _affine, in _orderRight, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public int BuildPointTable()
 		{
-			return EcVariableTimePointTable<TCurve, TField, TOrder>.Build(in _affine).Length;
+			return ECVariableTimePointTable<TCurve, TField, TOrder>.Build(in _affine).Length;
 		}
 
 		public void MultiplyAddWithTable()
 		{
-			EcVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in _orderLeft, _pointTable, in _orderRight, out JacobianPoint<TField> result);
+			ECVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in _orderLeft, _pointTable, in _orderRight, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 		}
 
 		public bool TryDecode()
 		{
-			bool decoded = EcGroup<TCurve, TField, TOrder>.TryDecode(_encoded, out AffinePoint<TField> result);
+			bool decoded = ECGroup<TCurve, TField, TOrder>.TryDecode(_encoded, out AffinePoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
 			return decoded;
 		}

@@ -3,7 +3,7 @@ using static CryptoBase.Tests.KeyAgreements.Ecdh.EcdhTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-public class EcKeyBclTest
+public class ECKeyBclTest
 {
 	private const int Iterations = 8;
 

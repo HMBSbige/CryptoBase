@@ -1,9 +1,9 @@
 using System.Numerics;
-using static CryptoBase.Tests.EllipticCurves.EcTestUtils;
+using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-public class EcKeyTest
+public class ECKeyTest
 {
 	private const int Iterations = 4;
 
@@ -11,11 +11,11 @@ public class EcKeyTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ImportPrivateKeyTakesOneToNMinusOne(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		List<string> failures = [];
 
-		foreach (BigInteger d in (BigInteger[])[1, 2, n - 2, n - 1, 1 + EcReference.RandomBelow(new Random(1), n - 1)])
+		foreach (BigInteger d in (BigInteger[])[1, 2, n - 2, n - 1, 1 + ECReference.RandomBelow(new Random(1), n - 1)])
 		{
 			KeyCase key = curve.NewKey();
 			byte[] source = curve.EncodeScalar(d);
@@ -239,7 +239,7 @@ public class EcKeyTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task SharedSecretIsTheXOfTheProduct(CurveCase curve)
 	{
-		EcReference reference = curve.Reference;
+		ECReference reference = curve.Reference;
 		BigInteger n = curve.Order;
 		Random random = new(2);
 		List<(BigInteger, BigInteger)> pairs = [(1, 1), (1, n - 1), (n - 1, n - 1)];
@@ -247,7 +247,7 @@ public class EcKeyTest
 
 		for (int i = 0; i < Iterations; ++i)
 		{
-			pairs.Add((1 + EcReference.RandomBelow(random, n - 1), 1 + EcReference.RandomBelow(random, n - 1)));
+			pairs.Add((1 + ECReference.RandomBelow(random, n - 1), 1 + ECReference.RandomBelow(random, n - 1)));
 		}
 
 		foreach ((BigInteger a, BigInteger b) in pairs)
