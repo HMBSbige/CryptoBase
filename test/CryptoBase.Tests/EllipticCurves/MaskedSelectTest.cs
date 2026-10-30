@@ -48,4 +48,22 @@ public class MaskedSelectTest
 
 		await Assert.That(failures).IsEmpty();
 	}
+
+	// A page of a new table becomes resident only when read. The table spans two pages or more, so index 0 selects nothing in the last, and count selects nothing at all.
+	[Test]
+	[MethodDataSource(typeof(LookupCase), nameof(LookupCase.All))]
+	public async Task LookupReadsEveryEntry(LookupCase lookup)
+	{
+		GuardPageBuffer.SkipUnlessSupported();
+
+		int count = (2 * Environment.SystemPageSize + lookup.EntryLength - 1) / lookup.EntryLength;
+
+		foreach (uint index in (uint[])[0, (uint)count])
+		{
+			using GuardPageBuffer table = new(count * lookup.EntryLength);
+			await Assert.That(table.GetResidency()).DoesNotContain(true);
+			lookup.Lookup(table.Span, count, index, 0x00);
+			await Assert.That(table.GetResidency()).DoesNotContain(false);
+		}
+	}
 }

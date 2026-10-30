@@ -10,11 +10,14 @@ public sealed unsafe partial class GuardPageBuffer : IDisposable
 	private const uint MemRelease = 0x8000;
 	private const uint PageNoAccess = 0x01;
 	private const uint PageReadWrite = 0x04;
+	// What GetCurrentProcess returns.
+	private const nint CurrentProcess = -1;
 
 	private const int ProtNone = 0;
 	private const int ProtRead = 1;
 	private const int ProtWrite = 2;
 	private const int MapPrivate = 0x02;
+	private const int MadvNoHugePage = 15;
 
 	private readonly byte* _allocation;
 	private readonly nuint _allocationSize;
@@ -73,9 +76,58 @@ public sealed unsafe partial class GuardPageBuffer : IDisposable
 			UnmapMemory(_allocation, _allocationSize);
 			throw new InvalidOperationException($"mprotect failed with errno {error}.");
 		}
+
+		// Without huge pages, touching a page does not bring in its neighbors. A kernel without them rejects the advice.
+		if (OperatingSystem.IsLinux())
+		{
+			_ = AdviseMemory(_allocation, _allocationSize, MadvNoHugePage);
+		}
 	}
 
 	public Span<byte> Span => new(_allocation + _guardOffset - (nuint)_length, _length);
+
+	// For each page that holds part of Span, whether code has read or written it.
+	public bool[] GetResidency()
+	{
+		nuint pageSize = (nuint)Environment.SystemPageSize;
+		nuint end = (nuint)(_allocation + _guardOffset);
+		nuint start = end - (nuint)_length & ~(pageSize - 1);
+		bool[] residency = new bool[(end - start) / pageSize];
+
+		for (int i = 0; i < residency.Length; ++i)
+		{
+			nuint page = start + (nuint)i * pageSize;
+			residency[i] = OperatingSystem.IsWindows() ? IsInWorkingSet(page) : IsInCore(page, pageSize);
+		}
+
+		return residency;
+	}
+
+	// The lowest bit of the attributes, Valid, is set for a page in the working set.
+	private static bool IsInWorkingSet(nuint page)
+	{
+		WorkingSetExInformation information = new(page, 0);
+
+		if (!QueryWorkingSetEx(CurrentProcess, &information, (uint)sizeof(WorkingSetExInformation)))
+		{
+			throw new InvalidOperationException($"QueryWorkingSetEx failed with error {Marshal.GetLastPInvokeError()}.");
+		}
+
+		return (information.VirtualAttributes & 1) is not 0;
+	}
+
+	// The lowest bit of the status is set for a resident page.
+	private static bool IsInCore(nuint page, nuint pageSize)
+	{
+		byte status;
+
+		if (QueryResidency((void*)page, pageSize, &status) is not 0)
+		{
+			throw new InvalidOperationException($"mincore failed with errno {Marshal.GetLastPInvokeError()}.");
+		}
+
+		return (status & 1) is not 0;
+	}
 
 	public void Dispose()
 	{
@@ -108,4 +160,17 @@ public sealed unsafe partial class GuardPageBuffer : IDisposable
 
 	[LibraryImport("libc", EntryPoint = "munmap", SetLastError = true)]
 	private static partial int UnmapMemory(void* address, nuint length);
+
+	[LibraryImport("kernel32", EntryPoint = "K32QueryWorkingSetEx", SetLastError = true)]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static partial bool QueryWorkingSetEx(nint process, WorkingSetExInformation* information, uint length);
+
+	[LibraryImport("libc", EntryPoint = "madvise", SetLastError = true)]
+	private static partial int AdviseMemory(void* address, nuint length, int advice);
+
+	[LibraryImport("libc", EntryPoint = "mincore", SetLastError = true)]
+	private static partial int QueryResidency(void* address, nuint length, byte* vector);
+
+	// PSAPI_WORKING_SET_EX_INFORMATION.
+	private readonly record struct WorkingSetExInformation(nuint VirtualAddress, nuint VirtualAttributes);
 }

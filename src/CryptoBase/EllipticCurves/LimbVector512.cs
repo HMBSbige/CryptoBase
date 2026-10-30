@@ -30,9 +30,10 @@ internal readonly struct LimbVector512(Vector512<ulong> value) : ILimbVector<Lim
 		return new LimbVector512(left._value | right._value);
 	}
 
+	// Not a blend: under an AVX-512 mask, the load would skip the limbs that the mask turns off.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static LimbVector512 MergeWhereEqual(LimbVector512 accumulator, LimbVector512 position, LimbVector512 target, ref readonly ulong source)
 	{
-		return new LimbVector512(Vector512.ConditionalSelect(Vector512.Equals(position._value, target._value), Vector512.LoadUnsafe(in source), accumulator._value));
+		return new LimbVector512(accumulator._value | Vector512.LoadUnsafe(in source) & Vector512.Equals(position._value, target._value));
 	}
 }
