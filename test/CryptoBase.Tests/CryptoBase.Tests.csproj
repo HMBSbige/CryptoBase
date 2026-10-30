@@ -6,6 +6,10 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
 
+  <ItemGroup Condition="$(RuntimeIdentifier.EndsWith('-x86')) Or $(RuntimeIdentifier.EndsWith('-arm'))">
+    <RuntimeHostConfigurationOption Include="System.GC.HeapCount" Value="8" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="TUnit" />
   </ItemGroup>
