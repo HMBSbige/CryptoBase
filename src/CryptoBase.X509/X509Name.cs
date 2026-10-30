@@ -1,6 +1,6 @@
 namespace CryptoBase.X509;
 
-// A Name of RFC 5280, Sec. 4.1.2.4: SEQUENCE OF RelativeDistinguishedName, each a nonempty SET OF SEQUENCE { type OBJECT IDENTIFIER, value ANY }.
+// A Name of RFC 5280, Sec. 4.1.2.4: SEQUENCE OF RelativeDistinguishedName, each a nonempty SET OF SEQUENCE { type OBJECT IDENTIFIER, value ANY }. Each value is read whole, as one DER element, without checking its contents.
 internal static class X509Name
 {
 	// The Name whole, a slice of the reader's memory.

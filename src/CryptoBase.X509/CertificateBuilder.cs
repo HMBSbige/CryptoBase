@@ -15,7 +15,7 @@ public sealed class CertificateBuilder
 	/// <summary>
 	/// Initializes a builder for certificates with a subject name.
 	/// </summary>
-	/// <param name="subjectName">The DER-encoded Name of the subject, which must not be empty; the builder holds a copy.</param>
+	/// <param name="subjectName">The DER-encoded Name of the subject, which must not be empty and whose attribute values are checked only as single DER elements; the builder holds a copy.</param>
 	/// <exception cref="ArgumentException"><paramref name="subjectName" /> is not a DER-encoded Name or is empty.</exception>
 	public CertificateBuilder(ReadOnlySpan<byte> subjectName)
 	{

@@ -8,7 +8,7 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Decoding accepts only DER and checks the structure of RFC 5280, Sec. 4.1: the signature fields inside and outside the TBSCertificate must match, the issuer and subject must be Names, the version must allow the fields that are present, an extension may appear only once, and the signature and the subjectPublicKey must be whole bytes.
+/// Decoding accepts only DER and checks the structure of RFC 5280, Sec. 4.1: the signature fields inside and outside the TBSCertificate must match, the issuer and subject must be Names, the version must allow the fields that are present, an extension may appear only once, and the signature and the subjectPublicKey must be whole bytes. The attribute values of the Names and the parameters of the algorithm identifiers need only be single DER elements; their contents are not checked.
 /// It decodes the key usage extension, and does not check whether the algorithms are supported, what the other extensions hold or whether the certificate is valid now; a certificate with an unrecognized critical extension decodes, and leaves the decision to the validator.
 /// </para>
 /// <para>
