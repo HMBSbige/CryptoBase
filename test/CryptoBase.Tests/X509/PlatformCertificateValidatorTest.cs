@@ -215,12 +215,13 @@ public class PlatformCertificateValidatorTest
 
 		public TestPki()
 		{
-			CertificateRequest rootRequest = new("CN=Test Root", _rootKey, HashAlgorithmName.SHA256);
+			string unique = Guid.NewGuid().ToString("N");
+			CertificateRequest rootRequest = new($"CN=Test Root {unique}", _rootKey, HashAlgorithmName.SHA256);
 			rootRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
 			rootRequest.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));
 			_root = rootRequest.CreateSelfSigned(Now.AddDays(-10), Now.AddDays(10));
 
-			CertificateRequest intermediateRequest = new("CN=Test Intermediate", _intermediateKey, HashAlgorithmName.SHA384);
+			CertificateRequest intermediateRequest = new($"CN=Test Intermediate {unique}", _intermediateKey, HashAlgorithmName.SHA384);
 			intermediateRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, true, 0, true));
 			intermediateRequest.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));
 			using X509Certificate2 intermediate = intermediateRequest.Create(_root, Now.AddDays(-9), Now.AddDays(9), [1]);
