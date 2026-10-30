@@ -29,6 +29,7 @@
     <File Path="docs\key-encapsulation.md" />
     <File Path="docs\key-agreement.md" />
     <File Path="docs\digital-signatures.md" />
+    <File Path="docs\x509.md" />
     <File Path="docs\stream-ciphers.md" />
     <File Path="docs\block-ciphers-and-modes.md" />
     <File Path="docs\authenticated-encryption.md" />

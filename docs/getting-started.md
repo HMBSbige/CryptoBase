@@ -9,12 +9,14 @@
 | `CryptoBase` | Algorithms and implementations; includes `CryptoBase.Abstractions`. |
 | `CryptoBase.Abstractions` | Interfaces only, for libraries that take an algorithm as a type argument. |
 | `CryptoBase.IO` | Stream and file helpers; depends only on `CryptoBase.Abstractions`, so add `CryptoBase` for the algorithms. |
+| `CryptoBase.X509` | X.509 certificates; depends only on `CryptoBase.Abstractions`, so add `CryptoBase` for the algorithms. |
 
 ```shell
 dotnet add package CryptoBase
 
 # Optional.
 dotnet add package CryptoBase.IO
+dotnet add package CryptoBase.X509
 ```
 
 ## A first example

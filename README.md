@@ -4,6 +4,7 @@ Package | NuGet
 CryptoBase | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase/)
 CryptoBase.Abstractions | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.Abstractions.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.Abstractions/)
 CryptoBase.IO | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.IO.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.IO/)
+CryptoBase.X509 | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.X509.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.X509/)
 
 A fast crypto library for .NET
 
@@ -160,3 +161,15 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ML-DSA | ✅ |
 | SLH-DSA | ⚠️ |
 | FN-DSA | ⚠️ |
+
+### X.509
+
+| Features | Status |
+| -------- |:------:|
+| Certificate decoding | ✅ |
+| Self-signed certificates | ✅ |
+| Chain validation through the platform | ✅ |
+| Path validation (RFC 5280) | ⚠️ |
+| Certificate signing requests | ⚠️ |
+| CRL | ⚠️ |
+| OCSP | ⚠️ |
