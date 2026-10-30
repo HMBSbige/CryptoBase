@@ -45,8 +45,6 @@ if (!cipher.TryDecrypt(nonce, ciphertext, tag, recovered, associatedData))
 
 ## Generic code
 
-All the types implement `IAeadCipher<TSelf>`:
-
 ```csharp
 using System.Security.Cryptography;
 using CryptoBase.Abstractions.Ciphers;
@@ -54,6 +52,7 @@ using CryptoBase.Ciphers.Aead;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 
+// All the types implement IAeadCipher<TSelf>.
 static byte[] Encrypt<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> plaintext, out byte[] nonce, out byte[] tag) where T : IAeadCipher<T>
 {
     using T cipher = T.Create(key);

@@ -31,8 +31,6 @@ aes.DecryptBlocks(blocks, blocks);
 
 ## XTS
 
-`XtsMode<AesCipher>` and `XtsMode<SM4Cipher>` take data units of at least 16 bytes, not necessarily whole blocks.
-
 ```csharp
 using System.Security.Cryptography;
 using CryptoBase.Ciphers.Blocks.Aes;
@@ -48,7 +46,7 @@ using XtsMode<AesCipher> xts = XtsMode<AesCipher>.Create(dataKey, tweakKey);
 byte[] combinedKey = [.. dataKey, .. tweakKey];
 using XtsMode<AesCipher> sameXts = XtsMode<AesCipher>.Create(combinedKey);
 
-// Encrypt sector 42 of a disk image.
+// Encrypt sector 42 of a disk image. A data unit has at least 16 bytes, not necessarily whole blocks.
 byte[] sector = RandomNumberGenerator.GetBytes(512);
 Span<byte> tweak = stackalloc byte[XtsMode<AesCipher>.TweakSize];
 XtsMode.GetTweak(tweak, dataUnitNumber: 42);
@@ -64,14 +62,13 @@ To encrypt files and streams, see [Stream and file helpers](io.md).
 
 ## Padding
 
-`SymmetricPadding` applies and removes every `PaddingMode`.
-
 ```csharp
 using System.Security.Cryptography;
 using CryptoBase.Ciphers.Padding;
 
 byte[] plaintext = "Hello"u8.ToArray();
 const int blockSize = 16;
+// Any PaddingMode. Zeros leaves aligned input unchanged and None requires it; for both, TryGetUnpaddedLength keeps the whole input.
 const PaddingMode mode = PaddingMode.PKCS7;
 
 // Pad.
@@ -86,5 +83,3 @@ if (!SymmetricPadding.TryGetUnpaddedLength(padded.AsSpan(0, written), blockSize,
 
 ReadOnlySpan<byte> recovered = padded.AsSpan(0, length);
 ```
-
-`Zeros` leaves aligned input unchanged and `None` requires it; for both, `TryGetUnpaddedLength` keeps the whole input.

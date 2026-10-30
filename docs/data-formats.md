@@ -4,8 +4,6 @@
 
 ## Base32
 
-`Base32Encoding` encodes to and decodes from `char` or UTF-8 buffers. Like `Base64`, it returns `OperationStatus` instead of throwing for bad input or short buffers.
-
 | Instance | Alphabet | Padding |
 | --- | --- | --- |
 | `Base32Encoding.Rfc4648` | `A`–`Z`, `2`–`7` | `=` |
@@ -19,6 +17,8 @@
 using System.Buffers;
 using CryptoBase.Encodings;
 
+// Like Base64, the methods return OperationStatus instead of throwing for bad input or short buffers.
+// EncodeToUtf8 and DecodeFromUtf8 do the same with UTF-8 bytes. The source and destination must not overlap.
 static string ToBase32(Base32Encoding encoding, ReadOnlySpan<byte> data)
 {
     char[] encoded = new char[encoding.GetEncodedLength(data.Length)];
@@ -50,19 +50,15 @@ Base32Encoding lowercase = Base32Encoding.Create("abcdefghijklmnopqrstuvwxyz2345
 string lower = ToBase32(lowercase, "hello"u8); // "nbswy3dp"
 ```
 
-`EncodeToUtf8` and `DecodeFromUtf8` do the same with UTF-8 bytes.
-
-The source and destination must not overlap, such as two slices of one array; otherwise the output may be wrong.
-
 ### Encoding in pieces
-
-With `isFinalBlock: false`, a call processes whole 5-byte groups (8 characters when decoding) and leaves the rest of the input unconsumed. Carry the rest over to the next call, and pass `isFinalBlock: true` with the last piece; when decoding, a group with padding is accepted only there:
 
 ```csharp
 using System.Buffers;
 using System.Text;
 using CryptoBase.Encodings;
 
+// With isFinalBlock: false, a call processes whole 5-byte groups (8 characters when decoding) and leaves the rest unconsumed.
+// Pass isFinalBlock: true with the last piece; when decoding, a group with padding is accepted only there.
 static void EncodeStream(Base32Encoding encoding, Stream source, TextWriter destination)
 {
     byte[] input = new byte[4096];
