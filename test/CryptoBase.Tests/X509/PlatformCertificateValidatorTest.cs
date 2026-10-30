@@ -131,6 +131,21 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
+	[Test]
+	[Arguments(CertificateUsage.ServerAuthentication, ServerAuthenticationOid)]
+	[Arguments(CertificateUsage.ClientAuthentication, ClientAuthenticationOid)]
+	public async Task AcceptsAPolicyThatAlreadyAsksForTheUsage(CertificateUsage usage, string eku)
+	{
+		using TestPki pki = new();
+		using X509Certificate2 leaf = pki.IssueLeaf(eku: eku);
+		X509ChainPolicy policy = pki.Policy();
+		policy.ApplicationPolicy.Add(new Oid(eku));
+
+		CertificateValidationResult result = await new PlatformCertificateValidator(policy).ValidateAsync(pki.Context(leaf, usage));
+
+		await Assert.That(result.IsValid).IsTrue().Because($"{result.Error} {result.Message}");
+	}
+
 	// The flags of the policy apply to every check of the platform, the usage included, but not to the host name, which the validator checks itself.
 	[Test]
 	public async Task TheFlagsOfThePolicyRelaxOnlyThePlatformChecks()

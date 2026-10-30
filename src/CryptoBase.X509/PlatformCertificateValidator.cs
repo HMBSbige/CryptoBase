@@ -7,7 +7,7 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The platform builds the chain from the peer's first certificate, with the others as extra certificates, under a copy of the policy to whose <see cref="X509ChainPolicy.ApplicationPolicy" /> the extended key usage of <see cref="CertificateValidationContext.Usage" /> is added.
+/// The platform builds the chain from the peer's first certificate, with the others as extra certificates, under a copy of the policy to whose <see cref="X509ChainPolicy.ApplicationPolicy" /> the extended key usage of <see cref="CertificateValidationContext.Usage" /> is added unless it is there already.
 /// The <see cref="X509ChainPolicy.VerificationFlags" /> of the policy apply to every check of the platform, that extended key usage included: <see cref="X509VerificationFlags.IgnoreWrongUsage" />, for example, accepts a certificate without it.
 /// A host name, with any trailing dot removed and a DNS name converted to its ASCII form, must match a DNS name, with wildcards allowed, or an IP address in the subject alternative name extension; as RFC 9525 requires, the common name of the subject is not used.
 /// The validator checks the host name itself, so no flag skips that check.
@@ -115,7 +115,13 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 				policy.ExtraStore.Add(certificates[i]);
 			}
 
-			policy.ApplicationPolicy.Add(context.Usage is CertificateUsage.ServerAuthentication ? ServerAuthenticationUsage : ClientAuthenticationUsage);
+			Oid usage = context.Usage is CertificateUsage.ServerAuthentication ? ServerAuthenticationUsage : ClientAuthenticationUsage;
+
+			if (!Contains(policy.ApplicationPolicy, usage))
+			{
+				policy.ApplicationPolicy.Add(usage);
+			}
+
 			return Build(certificates[0], policy, context.HostName);
 		}
 		finally
@@ -125,6 +131,20 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 				certificate.Dispose();
 			}
 		}
+	}
+
+	// Windows rejects a chain for a usage that the policy lists twice.
+	private static bool Contains(OidCollection oids, Oid oid)
+	{
+		foreach (Oid other in oids)
+		{
+			if (other.Value == oid.Value)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private static CertificateValidationResult Build(X509Certificate2 leaf, X509ChainPolicy policy, string? hostName)
