@@ -179,10 +179,10 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 	}
 
 	/// <summary>
-	/// Writes the whole data unit <paramref name="unit" /> at <paramref name="offset" />, encrypting it in place unless a gap precedes it.
+	/// Writes the whole data unit <paramref name="unit" /> at <paramref name="offset" />, encrypting it into <paramref name="ciphertext" /> unless a gap precedes it.
 	/// </summary>
-	/// <remarks><paramref name="unit" /> may hold ciphertext afterwards; if the backend write fails, it holds the plaintext again.</remarks>
-	public void WriteUnitInPlace(Span<byte> unit, long offset)
+	/// <remarks><paramref name="unit" /> stays unchanged. <paramref name="ciphertext" />, a data unit that must not overlap it, is cleared if the write fails.</remarks>
+	public void WriteUnit(ReadOnlySpan<byte> unit, Span<byte> ciphertext, long offset)
 	{
 		if (offset > GetValidatedLength())
 		{
@@ -190,21 +190,21 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 			return;
 		}
 
-		EncryptUnit(unit, offset);
-
 		try
 		{
-			_storage.Write(unit, offset);
+			EncryptUnit(unit, ciphertext, offset);
+			_storage.Write(ciphertext, offset);
 		}
 		catch
 		{
-			DecryptUnits(unit, offset);
+			// A failed encryption may leave plaintext in it.
+			CryptographicOperations.ZeroMemory(ciphertext);
 			throw;
 		}
 	}
 
-	/// <inheritdoc cref="WriteUnitInPlace" />
-	public async ValueTask WriteUnitInPlaceAsync(Memory<byte> unit, long offset, CancellationToken cancellationToken)
+	/// <inheritdoc cref="WriteUnit" />
+	public async ValueTask WriteUnitAsync(ReadOnlyMemory<byte> unit, Memory<byte> ciphertext, long offset, CancellationToken cancellationToken)
 	{
 		if (offset > GetValidatedLength())
 		{
@@ -212,15 +212,14 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 			return;
 		}
 
-		EncryptUnit(unit.Span, offset);
-
 		try
 		{
-			await _storage.WriteAsync(unit, offset, cancellationToken).ConfigureAwait(false);
+			EncryptUnit(unit.Span, ciphertext.Span, offset);
+			await _storage.WriteAsync(ciphertext, offset, cancellationToken).ConfigureAwait(false);
 		}
 		catch
 		{
-			DecryptUnits(unit.Span, offset);
+			CryptographicOperations.ZeroMemory(ciphertext.Span);
 			throw;
 		}
 	}
@@ -507,11 +506,11 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 		return (lastUnitIndex < (ulong)maxUnits ? (long)lastUnitIndex + 1 : maxUnits) * dataUnitSize;
 	}
 
-	private void EncryptUnit(Span<byte> unit, long offset)
+	private void EncryptUnit(ReadOnlySpan<byte> unit, Span<byte> ciphertext, long offset)
 	{
 		Span<byte> tweak = stackalloc byte[TweakLength];
 		BinaryPrimitives.WriteUInt128LittleEndian(tweak, GetDataUnitNumber(offset));
-		_cipher.Encrypt(tweak, unit, unit);
+		_cipher.Encrypt(tweak, unit, ciphertext);
 	}
 
 	private void DecryptUnits(Span<byte> units, long offset)

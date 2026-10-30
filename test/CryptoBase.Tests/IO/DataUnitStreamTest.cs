@@ -4,6 +4,7 @@ using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.IO;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.IO.XtsTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -297,6 +298,35 @@ public class DataUnitStreamTest
 		inner.FailNextWrite = true;
 
 		await Assert.That(async () => await target.WriteAsync(data, 0, 1, unit + 3, useAsync)).ThrowsExactly<IOException>();
+
+		await FlushAsync(xts, useAsync);
+
+		using (Assert.Multiple())
+		{
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
+			await Assert.That(await target.ReadAsync(actual, 0, actual.Length, 0, useAsync)).IsEqualTo(unit);
+			await AssertBytesEqual(actual, padded);
+		}
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task FailedEncryptionOfReplacedDataUnitKeepsItCached([Matrix] bool useAsync)
+	{
+		const int unit = 64;
+		byte[] data = CreateDeterministicSource(10);
+		byte[] padded = new byte[unit];
+		data.CopyTo(padded, 5);
+		using MemoryStream inner = new();
+		FailingEncryptXtsCipher cipher = FailingEncryptXtsCipher.Create(Key);
+		await using DataUnitStream<FailingEncryptXtsCipher> xts = DataUnitStream.Create(inner, cipher, unit, leaveOpen: true);
+		DataUnitStreamTarget target = new(xts, inner.ToArray);
+		byte[] actual = new byte[unit];
+
+		await target.WriteAsync(data, 0, data.Length, 5, useAsync);
+		cipher.FailNextEncrypt = true;
+
+		await Assert.That(async () => await target.WriteAsync(data, 0, 1, unit + 3, useAsync)).ThrowsExactly<CryptographicException>();
 
 		await FlushAsync(xts, useAsync);
 
@@ -776,6 +806,48 @@ public class DataUnitStreamTest
 			}
 
 			base.Write(buffer, offset, count);
+		}
+	}
+
+	/// <summary>Wraps XTS-AES; once <see cref="FailNextEncrypt" /> is set, the next encryption overwrites its destination and throws.</summary>
+	private sealed class FailingEncryptXtsCipher : IDataUnitCipher<FailingEncryptXtsCipher>
+	{
+		private readonly XtsMode<AesCipher> _inner;
+
+		private FailingEncryptXtsCipher(XtsMode<AesCipher> inner)
+		{
+			_inner = inner;
+		}
+
+		public bool FailNextEncrypt { get; set; }
+
+		public static int TweakSize => 16;
+
+		public static FailingEncryptXtsCipher Create(scoped ReadOnlySpan<byte> key)
+		{
+			return new FailingEncryptXtsCipher(XtsMode<AesCipher>.Create(key));
+		}
+
+		public void Dispose()
+		{
+			_inner.Dispose();
+		}
+
+		public void Encrypt(scoped ReadOnlySpan<byte> tweak, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
+		{
+			if (FailNextEncrypt)
+			{
+				FailNextEncrypt = false;
+				destination.Fill(0xA5);
+				throw new CryptographicException("Simulated encryption failure.");
+			}
+
+			_inner.Encrypt(tweak, source, destination);
+		}
+
+		public void Decrypt(scoped ReadOnlySpan<byte> tweak, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
+		{
+			_inner.Decrypt(tweak, source, destination);
 		}
 	}
 

@@ -30,6 +30,8 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	private readonly DataUnitTransform<TCipher> _transform;
 	private readonly bool _leaveOpen;
 	private readonly byte[] _unit;
+	// The ciphertext of _unit as it is written, kept apart so that a failed write leaves the plaintext cached.
+	private byte[]? _ciphertext;
 	private long? _unitStart;
 	private bool _unitDirty;
 	private long _position;
@@ -345,7 +347,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 
 		try
 		{
-			await EvictUnitAsync(CancellationToken.None).ConfigureAwait(false);
+			await FlushUnitAsync(CancellationToken.None).ConfigureAwait(false);
 		}
 		finally
 		{
@@ -366,7 +368,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 		{
 			try
 			{
-				EvictUnit();
+				FlushUnit();
 			}
 			finally
 			{
@@ -518,8 +520,9 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	/// </summary>
 	private bool LoadUnit(long position, bool create)
 	{
-		EvictUnit();
+		FlushUnit();
 		long unitStart = position - position % DataUnitSize;
+		_unitStart = null;
 
 		if (_transform.Read(_unit, unitStart) is 0)
 		{
@@ -537,8 +540,9 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 
 	private async ValueTask<bool> LoadUnitAsync(long position, bool create, CancellationToken cancellationToken)
 	{
-		await EvictUnitAsync(cancellationToken).ConfigureAwait(false);
+		await FlushUnitAsync(cancellationToken).ConfigureAwait(false);
 		long unitStart = position - position % DataUnitSize;
+		_unitStart = null;
 
 		if (await _transform.ReadAsync(_unit, unitStart, cancellationToken).ConfigureAwait(false) is 0)
 		{
@@ -558,7 +562,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	{
 		if (DirtyUnitStart is { } unitStart)
 		{
-			_transform.Write(_unit, unitStart);
+			_transform.WriteUnit(_unit, _ciphertext ??= new byte[DataUnitSize], unitStart);
 			_unitDirty = false;
 		}
 	}
@@ -567,34 +571,9 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	{
 		if (DirtyUnitStart is { } unitStart)
 		{
-			await _transform.WriteAsync(_unit, unitStart, cancellationToken).ConfigureAwait(false);
+			await _transform.WriteUnitAsync(_unit, _ciphertext ??= new byte[DataUnitSize], unitStart, cancellationToken).ConfigureAwait(false);
 			_unitDirty = false;
 		}
-	}
-
-	/// <summary>
-	/// Writes a changed cached data unit before the cache is reused, encrypting it in the cache, and leaves no unit cached.
-	/// </summary>
-	private void EvictUnit()
-	{
-		if (DirtyUnitStart is { } unitStart)
-		{
-			_transform.WriteUnitInPlace(_unit, unitStart);
-			_unitDirty = false;
-		}
-
-		_unitStart = null;
-	}
-
-	private async ValueTask EvictUnitAsync(CancellationToken cancellationToken)
-	{
-		if (DirtyUnitStart is { } unitStart)
-		{
-			await _transform.WriteUnitInPlaceAsync(_unit, unitStart, cancellationToken).ConfigureAwait(false);
-			_unitDirty = false;
-		}
-
-		_unitStart = null;
 	}
 
 	/// <summary>
