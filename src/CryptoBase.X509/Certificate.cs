@@ -266,18 +266,15 @@ public sealed class Certificate
 	internal static X509KeyUsageFlags? CheckExtensions(IReadOnlyList<CertificateExtension> extensions)
 	{
 		X509KeyUsageFlags? keyUsage = null;
+		HashSet<string> oids = new(extensions.Count, StringComparer.Ordinal);
 
 		for (int i = 0; i < extensions.Count; ++i)
 		{
 			string oid = extensions[i].Oid;
 
-			// A certificate has few extensions, so a linear search finds a repeated one.
-			for (int j = 0; j < i; ++j)
+			if (!oids.Add(oid))
 			{
-				if (extensions[j].Oid == oid)
-				{
-					throw new AsnContentException($"The extensions include {oid} more than once.");
-				}
+				throw new AsnContentException($"The extensions include {oid} more than once.");
 			}
 
 			if (oid == KeyUsageOid)
