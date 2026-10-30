@@ -94,7 +94,7 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, EncapsulationKeyLength, nameof(source));
 
-		_polynomials = new short[(K * K + K) * N];
+		_polynomials = GC.AllocateUninitializedArray<short>((K * K + K) * N);
 
 		if (!ImportEncapsulationKey<MLKemKernelDispatch>(source))
 		{
@@ -108,7 +108,7 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, DecapsulationKeyLength, nameof(source));
 
-		_polynomials = new short[(K * K + 2 * K) * N];
+		_polynomials = GC.AllocateUninitializedArray<short>((K * K + 2 * K) * N);
 
 		if (!ImportDecapsulationKey<MLKemKernelDispatch>(source))
 		{
@@ -238,7 +238,7 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		int k = K;
 		int prfLength = 64 * TParameters.Eta1;
 		ReadOnlySpan<byte> d = seed.Slice(0, SymmetricLength);
-		_polynomials = new short[(k * k + 2 * k) * N];
+		_polynomials = GC.AllocateUninitializedArray<short>((k * k + 2 * k) * N);
 
 		// (ρ, σ) ← G(d ‖ k) (Algorithm 13, line 1).
 		using CryptoBuffer<byte> rhoSigma = new(stackalloc byte[2 * SymmetricLength]);

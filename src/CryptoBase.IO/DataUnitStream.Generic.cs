@@ -60,7 +60,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 		_inner = inner;
 		_transform = new DataUnitTransform<TCipher>(new SeekableStreamStorage(inner), cipher, dataUnitSize, firstDataUnitNumber, nameof(inner));
 		_leaveOpen = leaveOpen;
-		_unit = new byte[dataUnitSize];
+		_unit = GC.AllocateUninitializedArray<byte>(dataUnitSize);
 	}
 
 	/// <summary>
@@ -562,7 +562,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	{
 		if (DirtyUnitStart is { } unitStart)
 		{
-			_transform.WriteUnit(_unit, _ciphertext ??= new byte[DataUnitSize], unitStart);
+			_transform.WriteUnit(_unit, _ciphertext ??= GC.AllocateUninitializedArray<byte>(DataUnitSize), unitStart);
 			_unitDirty = false;
 		}
 	}
@@ -571,7 +571,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	{
 		if (DirtyUnitStart is { } unitStart)
 		{
-			await _transform.WriteUnitAsync(_unit, _ciphertext ??= new byte[DataUnitSize], unitStart, cancellationToken).ConfigureAwait(false);
+			await _transform.WriteUnitAsync(_unit, _ciphertext ??= GC.AllocateUninitializedArray<byte>(DataUnitSize), unitStart, cancellationToken).ConfigureAwait(false);
 			_unitDirty = false;
 		}
 	}

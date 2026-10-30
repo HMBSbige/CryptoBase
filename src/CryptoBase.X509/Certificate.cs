@@ -244,7 +244,7 @@ public sealed class Certificate
 	// The block decodes into the array that the certificate keeps.
 	private static Certificate DecodePemBlock(ReadOnlySpan<char> base64Data, int decodedLength, string parameterName)
 	{
-		byte[] encoded = new byte[decodedLength];
+		byte[] encoded = GC.AllocateUninitializedArray<byte>(decodedLength);
 		PemReader.Decode(base64Data, encoded);
 		return Decode(encoded, parameterName);
 	}
