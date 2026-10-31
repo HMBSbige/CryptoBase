@@ -145,7 +145,7 @@ jobs:
         if: steps.probe.outputs.native
         run: bash .github/test.sh
         env:
-          DISABLE: none AVX512v2 Vector512 VAES GFNI AVX512
+          DISABLE: none AVX512v2 Vector512 VAES GFNI AVX512 AVX2
 
   avx512_sde:
     name: avx512 sde (${{ matrix.disable && format('no {0}, ', matrix.disable) }}${{ matrix.shard }})
@@ -156,7 +156,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        disable: ['', AVX512v2, Vector512, VAES, GFNI, AVX512]
+        disable: ['', AVX512v2, Vector512, VAES, GFNI, AVX512, AVX2]
         shard: [hashes, ciphers, ec, rest]
 
     steps:
