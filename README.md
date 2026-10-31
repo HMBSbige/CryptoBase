@@ -76,6 +76,14 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | HKDF | ✅ |
 | TLS 1.2 PRF | ✅ |
 
+### One-time passwords
+
+| Algorithms | Status |
+| ---------- |:------:|
+| HOTP | ✅ |
+| TOTP | ✅ |
+| Steam Guard | ✅ |
+
 ### Symmetric-key algorithms
 
 #### Stream ciphers

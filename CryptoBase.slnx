@@ -26,6 +26,7 @@
     <File Path="docs\data-formats.md" />
     <File Path="docs\hashes.md" />
     <File Path="docs\macs-and-key-derivation.md" />
+    <File Path="docs\one-time-passwords.md" />
     <File Path="docs\key-encapsulation.md" />
     <File Path="docs\key-agreement.md" />
     <File Path="docs\digital-signatures.md" />

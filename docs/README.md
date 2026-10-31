@@ -6,6 +6,7 @@
 - [Authenticated encryption](authenticated-encryption.md)
 - [Hashes](hashes.md)
 - [MACs and key derivation](macs-and-key-derivation.md)
+- [One-time passwords](one-time-passwords.md)
 - [Key encapsulation](key-encapsulation.md)
 - [Key agreement](key-agreement.md)
 - [Digital signatures](digital-signatures.md)

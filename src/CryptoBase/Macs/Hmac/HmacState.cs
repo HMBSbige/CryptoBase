@@ -92,6 +92,27 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 		}
 	}
 
+	// Starts from the seeds and leaves the state unchanged, so concurrent calls on a shared state are safe.
+	[SkipLocalsInit]
+	internal readonly int MacFromSeeds(ReadOnlySpan<byte> source, Span<byte> destination)
+	{
+		Debug.Assert(destination.Length >= TCore.HashLength);
+
+		TCore inner = _innerSeed;
+		TCore outer = _outerSeed;
+
+		try
+		{
+			inner.Append(source);
+			return FinalizeMac(ref inner, ref outer, destination);
+		}
+		finally
+		{
+			inner.ZeroMemory();
+			outer.ZeroMemory();
+		}
+	}
+
 	internal int GetMacAndReset(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
