@@ -69,11 +69,6 @@ internal partial struct AesCipherSoftware
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong Interleave(uint low, uint high)
 	{
-		if (Bmi2.X64.IsSupported)
-		{
-			return Bmi2.X64.ParallelBitDeposit(low, 0x00FF00FF00FF00FF) | Bmi2.X64.ParallelBitDeposit(high, 0xFF00FF00FF00FF00);
-		}
-
 		ulong value = low | (ulong)high << 32;
 		value = DeltaSwap(value, 16, 0x00000000FFFF0000);
 		return DeltaSwap(value, 8, 0x0000FF000000FF00);
@@ -82,13 +77,6 @@ internal partial struct AesCipherSoftware
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Deinterleave(ulong value, out uint low, out uint high)
 	{
-		if (Bmi2.X64.IsSupported)
-		{
-			low = (uint)Bmi2.X64.ParallelBitExtract(value, 0x00FF00FF00FF00FF);
-			high = (uint)Bmi2.X64.ParallelBitExtract(value, 0xFF00FF00FF00FF00);
-			return;
-		}
-
 		value = DeltaSwap(value, 8, 0x0000FF000000FF00);
 		value = DeltaSwap(value, 16, 0x00000000FFFF0000);
 		low = (uint)value;
