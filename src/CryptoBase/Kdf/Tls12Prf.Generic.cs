@@ -65,7 +65,7 @@ public static class Tls12Prf<TMac> where TMac : class, IMacAlgorithm<TMac>
 
 		TMac.Mac(secret, labelAndSeed, blockInput.Slice(0, macLength));
 
-		if (output.Length == macLength && !secret.Overlaps(output))
+		if (output.Length == macLength && !CipherBufferGuard.Overlaps(secret, output))
 		{
 			TMac.Mac(secret, blockInput, output);
 			return;

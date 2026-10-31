@@ -213,7 +213,7 @@ internal struct ECMLKemKey<TCurve, TField, TOrder, TParameters>
 		ArgumentOutOfRangeException.ThrowIfLessThan(ciphertext.Length, CiphertextLength, nameof(ciphertext));
 		ArgumentOutOfRangeException.ThrowIfLessThan(sharedSecret.Length, SharedSecretLength, nameof(sharedSecret));
 
-		if (ciphertext.Slice(0, CiphertextLength).Overlaps(sharedSecret.Slice(0, SharedSecretLength)))
+		if (CipherBufferGuard.Overlaps(ciphertext.Slice(0, CiphertextLength), sharedSecret.Slice(0, SharedSecretLength)))
 		{
 			ThrowHelper.ThrowOutputsOverlap(nameof(sharedSecret));
 		}

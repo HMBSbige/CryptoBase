@@ -59,7 +59,7 @@ public static class Hkdf
 	internal static void ExpandCore<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		// Only info needs copying: the key is consumed before the first write, and a single-block output is written after the last read.
-		if (output.Length <= TCore.HashLength || !info.Overlaps(output))
+		if (output.Length <= TCore.HashLength || !CipherBufferGuard.Overlaps(info, output))
 		{
 			ExpandBlocks<TCore>(prk, output, info);
 			return;

@@ -39,7 +39,7 @@ public static class Tls12Prf
 		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));
 
 		// Only the label and seed need copying: the secret is consumed before the first write, and a single-block output is written after the last read.
-		if (output.Length > TCore.HashLength && (label.Overlaps(output) || seed1.Overlaps(output) || seed2.Overlaps(output)))
+		if (output.Length > TCore.HashLength && (CipherBufferGuard.Overlaps(label, output) || CipherBufferGuard.Overlaps(seed1, output) || CipherBufferGuard.Overlaps(seed2, output)))
 		{
 			DeriveOverlapping<TCore>(secret, label, seed1, seed2, output);
 			return;

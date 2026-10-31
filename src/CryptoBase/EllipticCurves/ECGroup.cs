@@ -183,6 +183,7 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 	// For a point P on the curve and k in [1, n − 1], writes the encoding of k·G to encoded and the x-coordinate of k·P to x. Neither product is the point at infinity, as the group has prime order n, so one inversion of the product of their Z gives both Z⁻¹. Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
 	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void MultiplyEncodeExportX(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> encoded, Span<byte> x)
 	{
 		Debug.Assert(encoded.Length == EncodedLength && x.Length == TField.ByteLength);

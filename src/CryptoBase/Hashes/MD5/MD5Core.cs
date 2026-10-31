@@ -187,8 +187,7 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 	{
 		bool subsequentBlockOverlapsState =
 			blockCount > 1
-			&& MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref source, BlockSizeInBytes), (blockCount - 1) * BlockSizeInBytes)
-				.Overlaps(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref _a), 4 * sizeof(uint)));
+			&& CipherBufferGuard.Overlaps(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref source, BlockSizeInBytes), (blockCount - 1) * BlockSizeInBytes), MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref _a), 4 * sizeof(uint)));
 
 		if (!subsequentBlockOverlapsState && ArmBase.Arm64.IsSupported)
 		{

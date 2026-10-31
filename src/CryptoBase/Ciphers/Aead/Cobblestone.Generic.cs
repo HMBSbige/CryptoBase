@@ -184,7 +184,7 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 
 	private static void ThrowIfOverlap(ReadOnlySpan<byte> input, ReadOnlySpan<byte> output, string paramName)
 	{
-		if (input.Overlaps(output))
+		if (CipherBufferGuard.Overlaps(input, output))
 		{
 			ThrowHelper.ThrowInputOutputOverlap(paramName);
 		}
