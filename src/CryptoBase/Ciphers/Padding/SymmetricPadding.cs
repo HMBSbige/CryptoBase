@@ -86,7 +86,7 @@ public static class SymmetricPadding
 
 		Span<byte> output = destination.Slice(0, paddedLength);
 
-		if (CipherBufferGuard.Overlaps(source, output) && !Unsafe.AreSame(ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(output)))
+		if (ByteSpans.Overlaps(source, output) && !Unsafe.AreSame(ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(output)))
 		{
 			throw new ArgumentException("Input and output must be disjoint or start at the same address.", nameof(destination));
 		}

@@ -72,7 +72,7 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 	{
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
-		bool associatedDataOverlapsDestination = CipherBufferGuard.Overlaps(associatedData, destination);
+		bool associatedDataOverlapsDestination = ByteSpans.Overlaps(associatedData, destination);
 
 		Vector128<byte> counter = Begin(nonce, out Vector128<byte> j0);
 		GHash hash = GHash.Create(ref _hashKey);

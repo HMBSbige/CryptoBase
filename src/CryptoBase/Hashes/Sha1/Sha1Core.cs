@@ -136,7 +136,7 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 			if
 			(
 				source.Length > BlockSizeInBytes
-				&& CipherBufferGuard.Overlaps(source.Slice(BlockSizeInBytes), MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref _h0), 5 * sizeof(uint)))
+				&& ByteSpans.Overlaps(source.Slice(BlockSizeInBytes), MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref _h0), 5 * sizeof(uint)))
 			)
 			{
 				ProcessBlocksSoftware(source);

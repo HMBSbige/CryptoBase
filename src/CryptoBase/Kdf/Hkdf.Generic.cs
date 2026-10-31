@@ -23,7 +23,7 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(prk.Length, TMac.MacLength, nameof(prk));
 
-		if (CipherBufferGuard.Overlaps(ikm, prk) || CipherBufferGuard.Overlaps(salt, prk))
+		if (ByteSpans.Overlaps(ikm, prk) || ByteSpans.Overlaps(salt, prk))
 		{
 			return ExtractOverlapping(ikm, salt, prk);
 		}
@@ -108,7 +108,7 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 		info.CopyTo(input);
 		input[^1] = 1;
 
-		if (output.Length == macLength && !CipherBufferGuard.Overlaps(prk, output))
+		if (output.Length == macLength && !ByteSpans.Overlaps(prk, output))
 		{
 			TMac.Mac(prk, input, output);
 			return;
