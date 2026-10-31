@@ -8,15 +8,8 @@ internal static class EcdsaEncoding<TOrder> where TOrder : unmanaged, IMontgomer
 	private const byte SequenceTag = 0x30;
 	private const byte IntegerTag = 0x02;
 
-	internal static int ConcatenatedLength => 2 * TOrder.ByteLength;
-
 	// A value below 2^BitLength takes at most BitLength / 8 + 1 bytes as an INTEGER, the sign bit included.
 	internal static int MaxDerLength => KeyInfoDer.GetEncodedLength(2 * KeyInfoDer.GetEncodedLength(TOrder.BitLength / 8 + 1));
-
-	internal static int GetMaxLength(EcdsaSignatureFormat format)
-	{
-		return format is EcdsaSignatureFormat.Der ? MaxDerLength : ConcatenatedLength;
-	}
 
 	// Takes the leftmost BitLength bits of value, or all of value if it is shorter.
 	internal static void Truncate(ReadOnlySpan<byte> value, Span<byte> destination)
@@ -55,41 +48,9 @@ internal static class EcdsaEncoding<TOrder> where TOrder : unmanaged, IMontgomer
 		FieldElement<TOrder>.ImportReduced(value, out result);
 	}
 
-	// r and s lie in [1, n − 1], and destination is at least GetMaxLength long.
-	internal static int Write(EcdsaSignatureFormat format, in FieldElement<TOrder> r, in FieldElement<TOrder> s, Span<byte> destination)
-	{
-		if (format is EcdsaSignatureFormat.Der)
-		{
-			return WriteDer(in r, in s, destination);
-		}
-
-		int length = TOrder.ByteLength;
-		FieldElement<TOrder>.Export(in r, destination.Slice(0, length));
-		FieldElement<TOrder>.Export(in s, destination.Slice(length, length));
-		return 2 * length;
-	}
-
-	internal static bool TryRead(EcdsaSignatureFormat format, ReadOnlySpan<byte> signature, out FieldElement<TOrder> r, out FieldElement<TOrder> s)
-	{
-		if (format is EcdsaSignatureFormat.Der)
-		{
-			return TryReadDer(signature, out r, out s);
-		}
-
-		int length = TOrder.ByteLength;
-
-		if (signature.Length != 2 * length)
-		{
-			r = default;
-			s = default;
-			return false;
-		}
-
-		return FieldElement<TOrder>.TryImportNonzero(signature.Slice(0, length), out r) & FieldElement<TOrder>.TryImportNonzero(signature.Slice(length), out s);
-	}
-
+	// r and s lie in [1, n − 1], and destination is at least MaxDerLength long.
 	[SkipLocalsInit]
-	private static int WriteDer(in FieldElement<TOrder> r, in FieldElement<TOrder> s, Span<byte> destination)
+	internal static int Write(in FieldElement<TOrder> r, in FieldElement<TOrder> s, Span<byte> destination)
 	{
 		int length = TOrder.ByteLength;
 		Span<byte> values = stackalloc byte[2 * length];
@@ -147,7 +108,7 @@ internal static class EcdsaEncoding<TOrder> where TOrder : unmanaged, IMontgomer
 		return 3;
 	}
 
-	private static bool TryReadDer(ReadOnlySpan<byte> signature, out FieldElement<TOrder> r, out FieldElement<TOrder> s)
+	internal static bool TryRead(ReadOnlySpan<byte> signature, out FieldElement<TOrder> r, out FieldElement<TOrder> s)
 	{
 		s = default;
 

@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.EllipticCurves;
+using System.Formats.Asn1;
 using System.Numerics;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
@@ -60,23 +61,43 @@ internal static class EcdsaTestUtils
 		return publicKey;
 	}
 
-	public static int MaxLength<T>(T key, SignatureAlgorithm algorithm, EcdsaSignatureFormat format) where T : class, IEcdsa<T>
+	public static byte[] Sign<T>(T key, SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData) where T : class, IEcdsa<T>
 	{
-		return format is EcdsaSignatureFormat.Der ? key.GetMaxSignatureLength(algorithm) : 2 * T.PrivateKeyLength;
-	}
-
-	public static byte[] Sign<T>(T key, SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format) where T : class, IEcdsa<T>
-	{
-		byte[] signature = new byte[MaxLength(key, algorithm, format)];
-		int written = key.Sign(algorithm, message, additionalData, format, signature);
+		byte[] signature = new byte[key.GetMaxSignatureLength(algorithm)];
+		int written = key.Sign(algorithm, message, additionalData, signature);
 		return signature.AsSpan(0, written).ToArray();
 	}
 
-	public static byte[] SignHash<T>(T key, SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format) where T : class, IEcdsa<T>
+	public static byte[] SignHash<T>(T key, SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData) where T : class, IEcdsa<T>
 	{
-		byte[] signature = new byte[MaxLength(key, algorithm, format)];
-		int written = key.SignHash(algorithm, hash, additionalData, format, signature);
+		byte[] signature = new byte[key.GetMaxSignatureLength(algorithm)];
+		int written = key.SignHash(algorithm, hash, additionalData, signature);
 		return signature.AsSpan(0, written).ToArray();
+	}
+
+	// Encoded here rather than by the code under test, so that r and s may lie outside [1, n − 1].
+	public static byte[] DerSignature(BigInteger r, BigInteger s)
+	{
+		AsnWriter writer = new(AsnEncodingRules.DER);
+
+		using (writer.PushSequence())
+		{
+			writer.WriteInteger(r);
+			writer.WriteInteger(s);
+		}
+
+		return writer.Encode();
+	}
+
+	public static (BigInteger R, BigInteger S) ReadDerSignature(byte[] signature)
+	{
+		AsnReader reader = new(signature, AsnEncodingRules.DER);
+		AsnReader sequence = reader.ReadSequence();
+		BigInteger r = sequence.ReadInteger();
+		BigInteger s = sequence.ReadInteger();
+		sequence.ThrowIfNotEmpty();
+		reader.ThrowIfNotEmpty();
+		return (r, s);
 	}
 
 	public static byte[] Integer(BigInteger value)

@@ -38,7 +38,7 @@ public class WycheproofEcdsaTest
 	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp256r1_sha512_test.json")]
 	public Task DerVerificationP256(EcdsaVerifyTestVector vector)
 	{
-		return VerifyVerification<EcdsaP256>(vector, EcdsaSignatureFormat.Der);
+		return VerifyVerification<EcdsaP256>(vector);
 	}
 
 	[Test]
@@ -47,37 +47,14 @@ public class WycheproofEcdsaTest
 	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp384r1_sha512_test.json")]
 	public Task DerVerificationP384(EcdsaVerifyTestVector vector)
 	{
-		return VerifyVerification<EcdsaP384>(vector, EcdsaSignatureFormat.Der);
+		return VerifyVerification<EcdsaP384>(vector);
 	}
 
 	[Test]
 	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp521r1_sha512_test.json")]
 	public Task DerVerificationP521(EcdsaVerifyTestVector vector)
 	{
-		return VerifyVerification<EcdsaP521>(vector, EcdsaSignatureFormat.Der);
-	}
-
-	[Test]
-	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp256r1_sha256_p1363_test.json")]
-	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp256r1_sha512_p1363_test.json")]
-	public Task ConcatenatedVerificationP256(EcdsaVerifyTestVector vector)
-	{
-		return VerifyVerification<EcdsaP256>(vector, EcdsaSignatureFormat.Concatenated);
-	}
-
-	[Test]
-	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp384r1_sha384_p1363_test.json")]
-	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp384r1_sha512_p1363_test.json")]
-	public Task ConcatenatedVerificationP384(EcdsaVerifyTestVector vector)
-	{
-		return VerifyVerification<EcdsaP384>(vector, EcdsaSignatureFormat.Concatenated);
-	}
-
-	[Test]
-	[WycheproofVectors<EcdsaVerifyTestGroup, EcdsaVerifyTestVector>("ecdsa_secp521r1_sha512_p1363_test.json")]
-	public Task ConcatenatedVerificationP521(EcdsaVerifyTestVector vector)
-	{
-		return VerifyVerification<EcdsaP521>(vector, EcdsaSignatureFormat.Concatenated);
+		return VerifyVerification<EcdsaP521>(vector);
 	}
 
 	[Test]
@@ -165,7 +142,7 @@ public class WycheproofEcdsaTest
 
 	// Every group key is valid, and the files have no acceptable vectors. The first verification with an instance goes without the table of its public key, and the later ones use it.
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
-	private static async Task VerifyVerification<T>(EcdsaVerifyTestVector vector, EcdsaSignatureFormat format) where T : class, IEcdsa<T>
+	private static async Task VerifyVerification<T>(EcdsaVerifyTestVector vector) where T : class, IEcdsa<T>
 	{
 		SignatureAlgorithm algorithm = AlgorithmOf(vector);
 		using T key = T.ImportSubjectPublicKeyInfo(vector.PublicKeyDer);
@@ -176,16 +153,11 @@ public class WycheproofEcdsaTest
 		{
 			await Assert.That(vector.Result).IsNotEqualTo(WycheproofResult.Acceptable);
 			await Assert.That(ExportPublicKey(key)).IsEquivalentTo(vector.PublicKey, CollectionOrdering.Matching);
-			await Assert.That(fromPublicKey.Verify(algorithm, vector.Msg, vector.Sig, format)).IsEqualTo(valid);
+			await Assert.That(fromPublicKey.Verify(algorithm, vector.Msg, vector.Sig)).IsEqualTo(valid);
 
 			for (int i = 0; i < 3; ++i)
 			{
-				await Assert.That(key.Verify(algorithm, vector.Msg, vector.Sig, format)).IsEqualTo(valid).Because($"verification {i}");
-			}
-
-			if (format is EcdsaSignatureFormat.Der)
-			{
-				await Assert.That(key.Verify(algorithm, vector.Msg, vector.Sig)).IsEqualTo(valid);
+				await Assert.That(key.Verify(algorithm, vector.Msg, vector.Sig)).IsEqualTo(valid).Because($"verification {i}");
 			}
 		}
 	}

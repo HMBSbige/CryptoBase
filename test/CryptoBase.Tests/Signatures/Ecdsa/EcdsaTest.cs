@@ -20,8 +20,6 @@ namespace CryptoBase.Tests.Signatures.Ecdsa;
 [GenerateGenericTest(typeof(EcdsaP521))]
 internal class EcdsaTest<T> where T : class, IEcdsa<T>
 {
-	private static EcdsaSignatureFormat[] Formats => [EcdsaSignatureFormat.Der, EcdsaSignatureFormat.Concatenated];
-
 	[Test]
 	public async Task LengthsFollowTheCurve()
 	{
@@ -140,22 +138,18 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		{
 			foreach (SignatureAlgorithm algorithm in Algorithms)
 			{
-				foreach (EcdsaSignatureFormat format in Formats)
-				{
-					byte[] deterministic = Sign(key, algorithm, message, [], format);
-					byte[] hedged = Sign(key, algorithm, message, additionalData, format);
-
-					await Assert.That(Sign(key, algorithm, message, [], format)).IsEquivalentTo(deterministic, CollectionOrdering.Matching);
-					await Assert.That(Sign(key, algorithm, message, additionalData, format)).IsEquivalentTo(hedged, CollectionOrdering.Matching);
-					await Assert.That(hedged).IsNotEquivalentTo(deterministic);
-					await Assert.That(Sign(key, algorithm, message, Flip(additionalData, 31), format)).IsNotEquivalentTo(hedged);
-					await Assert.That(key.Verify(algorithm, message, deterministic, format)).IsTrue();
-					await Assert.That(key.Verify(algorithm, message, hedged, format)).IsTrue();
-				}
-
+				byte[] deterministic = Sign(key, algorithm, message, []);
+				byte[] hedged = Sign(key, algorithm, message, additionalData);
 				byte[] randomized = Sign(key, algorithm, message);
-				await Assert.That(randomized).IsNotEquivalentTo(Sign(key, algorithm, message, [], EcdsaSignatureFormat.Der));
-				await Assert.That(key.Verify(algorithm, message, randomized, EcdsaSignatureFormat.Der)).IsTrue();
+
+				await Assert.That(Sign(key, algorithm, message, [])).IsEquivalentTo(deterministic, CollectionOrdering.Matching);
+				await Assert.That(Sign(key, algorithm, message, additionalData)).IsEquivalentTo(hedged, CollectionOrdering.Matching);
+				await Assert.That(hedged).IsNotEquivalentTo(deterministic);
+				await Assert.That(Sign(key, algorithm, message, Flip(additionalData, 31))).IsNotEquivalentTo(hedged);
+				await Assert.That(randomized).IsNotEquivalentTo(deterministic);
+				await Assert.That(key.Verify(algorithm, message, deterministic)).IsTrue();
+				await Assert.That(key.Verify(algorithm, message, hedged)).IsTrue();
+				await Assert.That(key.Verify(algorithm, message, randomized)).IsTrue();
 			}
 		}
 	}
@@ -177,8 +171,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 			byte[] hash = CreateDeterministicSource(32 + i % 33);
 			hash[0] ^= (byte)i;
 			hash[1] ^= (byte)(i >> 8);
-			byte[] der = SignHash(key, SignatureAlgorithm.EcdsaSha256, hash, [], EcdsaSignatureFormat.Der);
-			byte[] concatenated = SignHash(key, SignatureAlgorithm.EcdsaSha256, hash, [], EcdsaSignatureFormat.Concatenated);
+			byte[] der = SignHash(key, SignatureAlgorithm.EcdsaSha256, hash, []);
 			AsnDecoder.ReadSequence(der, AsnEncodingRules.DER, out int offset, out int contentLength, out int consumed);
 			ReadOnlySpan<byte> contents = der.AsSpan(offset, contentLength);
 			ReadOnlySpan<byte> r = AsnDecoder.ReadIntegerBytes(contents, AsnEncodingRules.DER, out int rLength);
@@ -186,7 +179,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 			longest = Math.Max(longest, der.Length);
 			shortestInteger = Math.Min(shortestInteger, Math.Min(r.Length, s.Length));
 
-			if (consumed != der.Length || rLength + sLength != contents.Length || !Matches(r, concatenated.AsSpan(0, length)) || !Matches(s, concatenated.AsSpan(length)))
+			if (consumed != der.Length || rLength + sLength != contents.Length || !key.VerifyHash(hash, der))
 			{
 				++mismatches;
 			}
@@ -198,11 +191,6 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 			await Assert.That(longest).IsEqualTo(maxLength);
 			await Assert.That(shortestInteger).IsLessThan(length);
 		}
-
-		static bool Matches(ReadOnlySpan<byte> integer, ReadOnlySpan<byte> fixedLength)
-		{
-			return new BigInteger(integer, isBigEndian: true) == new BigInteger(fixedLength, isUnsigned: true, isBigEndian: true);
-		}
 	}
 
 	// The message gives an r and s that need no leading 0, so that adding one is the only fault.
@@ -211,9 +199,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 	{
 		BigInteger n = CurveOf<T>().Order;
 		using T key = T.GenerateKey();
-		int length = T.PrivateKeyLength;
 		byte[] message;
-		byte[] concatenated;
 		BigInteger r;
 		BigInteger s;
 		int attempt = 0;
@@ -221,9 +207,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		do
 		{
 			message = CreateDeterministicSource(20 + attempt++);
-			concatenated = Sign(key, SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Concatenated);
-			r = new BigInteger(concatenated.AsSpan(0, length), isUnsigned: true, isBigEndian: true);
-			s = new BigInteger(concatenated.AsSpan(length), isUnsigned: true, isBigEndian: true);
+			(r, s) = ReadDerSignature(Sign(key, SignatureAlgorithm.EcdsaSha256, message, []));
 		}
 		while (Integer(r)[2] is 0 || Integer(s)[2] is 0);
 
@@ -244,27 +228,15 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 			[0x30, 0x84, 0xFF, 0xFF, 0xFF, 0xFF, .. rInteger, .. sInteger], [0x30, 0xFF, .. rInteger, .. sInteger], signature.AsSpan(0, signature.Length - 1).ToArray(),
 			[0x30], [.. Header(0x30, rInteger.Length + sInteger.Length + 1), .. rInteger, .. sInteger], [], [0x30, 0x00]
 		];
-		byte[][] invalidConcatenated =
-		[
-			concatenated.AsSpan(0, concatenated.Length - 1).ToArray(), [.. concatenated, 0], [0, .. concatenated], [.. new byte[length], .. concatenated.AsSpan(length)],
-			[.. concatenated.AsSpan(0, length), .. new byte[length]], [.. CurveCase.EncodeInteger(n, length), .. concatenated.AsSpan(length)],
-			[.. concatenated.AsSpan(0, length), .. CurveCase.EncodeInteger(n, length)], [.. Enumerable.Repeat((byte)0xFF, length), .. concatenated.AsSpan(length)]
-		];
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(key.Verify(SignatureAlgorithm.EcdsaSha256, message, signature)).IsTrue();
 			await Assert.That(key.Verify(SignatureAlgorithm.EcdsaSha256, message, Element(0x30, [.. rInteger, .. Integer(n - s)]))).IsTrue();
-			await Assert.That(key.Verify(SignatureAlgorithm.EcdsaSha256, message, concatenated, EcdsaSignatureFormat.Concatenated)).IsTrue();
 
 			for (int i = 0; i < invalid.Length; ++i)
 			{
 				await Assert.That(key.Verify(SignatureAlgorithm.EcdsaSha256, message, invalid[i])).IsFalse().Because($"DER case {i}");
-			}
-
-			for (int i = 0; i < invalidConcatenated.Length; ++i)
-			{
-				await Assert.That(key.Verify(SignatureAlgorithm.EcdsaSha256, message, invalidConcatenated[i], EcdsaSignatureFormat.Concatenated)).IsFalse().Because($"r ‖ s case {i}");
 			}
 		}
 	}
@@ -297,7 +269,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 
 			foreach (SignatureAlgorithm algorithm in Algorithms)
 			{
-				cases.Add((e, SignHash(key, algorithm, hash, CreateDeterministicSource(3), EcdsaSignatureFormat.Concatenated)));
+				cases.Add((e, SignHash(key, algorithm, hash, CreateDeterministicSource(3))));
 			}
 		}
 
@@ -308,13 +280,13 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		{
 			int i = j / Algorithms.Length;
 
-			if (!expected[j] || !key.VerifyHash(hashes[i], cases[j].Signature, EcdsaSignatureFormat.Concatenated))
+			if (!expected[j] || !key.VerifyHash(hashes[i], cases[j].Signature))
 			{
 				failed.Add(i);
 			}
 		}
 
-		byte[] zeroSignature = SignHash(key, SignatureAlgorithm.EcdsaSha256, new byte[length], [], EcdsaSignatureFormat.Der);
+		byte[] zeroSignature = SignHash(key, SignatureAlgorithm.EcdsaSha256, new byte[length], []);
 
 		using (Assert.Multiple())
 		{
@@ -322,10 +294,10 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 
 			foreach (byte[] hash in hashes.Slice(hashes.Count - 3, 3))
 			{
-				await Assert.That(key.VerifyHash(hash, zeroSignature, EcdsaSignatureFormat.Der)).IsTrue();
+				await Assert.That(key.VerifyHash(hash, zeroSignature)).IsTrue();
 			}
 
-			await Assert.That(key.VerifyHash([1], zeroSignature, EcdsaSignatureFormat.Der)).IsFalse();
+			await Assert.That(key.VerifyHash([1], zeroSignature)).IsFalse();
 		}
 	}
 
@@ -349,10 +321,10 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 				BigInteger e = (n - r * d % n) % n;
 				BigInteger w = BigInteger.ModPow(s, n - 2, n);
 				byte[] hash = CurveCase.EncodeInteger(e << shift, length);
-				byte[] signature = [.. curve.EncodeScalar(r), .. curve.EncodeScalar(s)];
+				byte[] signature = DerSignature(r, s);
 
 				await Assert.That(reference.Add(reference.Multiply(reference.Generator, e * w % n), reference.Multiply(q, r * w % n))).IsNull();
-				await Assert.That(key.VerifyHash(hash, signature, EcdsaSignatureFormat.Concatenated)).IsFalse().Because($"r = {r}, s = {s}");
+				await Assert.That(key.VerifyHash(hash, signature)).IsFalse().Because($"r = {r}, s = {s}");
 			}
 		}
 	}
@@ -372,7 +344,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		for (int i = 0; i < 4; ++i)
 		{
 			BigInteger e = ECReference.RandomBelow(random, n);
-			byte[] signature = SignHash(signer, SignatureAlgorithm.EcdsaSha256, HashOf(curve, e), [], EcdsaSignatureFormat.Concatenated);
+			byte[] signature = SignHash(signer, SignatureAlgorithm.EcdsaSha256, HashOf(curve, e), []);
 			cases.Add((e, signature));
 			cases.Add(((e + 1) % n, signature));
 		}
@@ -381,7 +353,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		{
 			foreach (BigInteger s in (BigInteger[])[1, n - 1])
 			{
-				byte[] signature = [.. curve.EncodeScalar(r), .. curve.EncodeScalar(s)];
+				byte[] signature = DerSignature(r, s);
 				cases.Add((0, signature));
 				cases.Add((ECReference.RandomBelow(random, n), signature));
 				cases.Add(((n - r * d % n) % n, signature));
@@ -394,7 +366,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 
 		for (int i = 0; i < 2; ++i)
 		{
-			_ = later.VerifyHash(HashOf(curve, cases[0].E), cases[0].Signature, EcdsaSignatureFormat.Concatenated);
+			_ = later.VerifyHash(HashOf(curve, cases[0].E), cases[0].Signature);
 		}
 
 		for (int i = 0; i < cases.Count; ++i)
@@ -403,9 +375,9 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 			using T first = T.ImportPublicKey(publicKey);
 			byte[] hash = HashOf(curve, e);
 
-			if (first.VerifyHash(hash, signature, EcdsaSignatureFormat.Concatenated) != expected[i] || later.VerifyHash(hash, signature, EcdsaSignatureFormat.Concatenated) != expected[i])
+			if (first.VerifyHash(hash, signature) != expected[i] || later.VerifyHash(hash, signature) != expected[i])
 			{
-				failures.Add($"e = {e:X}, r ‖ s = {Convert.ToHexString(signature)}, expected {expected[i]}");
+				failures.Add($"e = {e:X}, signature = {Convert.ToHexString(signature)}, expected {expected[i]}");
 			}
 		}
 
@@ -425,7 +397,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		byte[] publicKey = ExportPublicKey(signer);
 		byte[] message = CreateDeterministicSource(30);
 		byte[] other = CreateDeterministicSource(31);
-		byte[] signature = Sign(signer, SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Der);
+		byte[] signature = Sign(signer, SignatureAlgorithm.EcdsaSha256, message, []);
 		int failures = 0;
 
 		for (int round = 0; round < 4; ++round)
@@ -538,17 +510,17 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 	{
 		T key = T.GenerateKey();
 		byte[] message = CreateDeterministicSource(10);
-		byte[] signature = Sign(key, SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Concatenated);
+		byte[] signature = Sign(key, SignatureAlgorithm.EcdsaSha256, message, []);
 		key.Dispose();
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(() => key.ExportPrivateKey(new byte[T.PrivateKeyLength])).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => key.ExportPublicKey(new byte[T.PublicKeyLength])).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => key.Sign(SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Der, new byte[100])).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => key.SignHash(SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Der, new byte[100])).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => key.Verify(SignatureAlgorithm.EcdsaSha256, message, signature, EcdsaSignatureFormat.Concatenated)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => key.VerifyHash(message, signature, EcdsaSignatureFormat.Concatenated)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => key.Sign(SignatureAlgorithm.EcdsaSha256, message, [], new byte[100])).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => key.SignHash(SignatureAlgorithm.EcdsaSha256, message, [], new byte[100])).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => key.Verify(SignatureAlgorithm.EcdsaSha256, message, signature)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => key.VerifyHash(message, signature)).ThrowsExactly<ObjectDisposedException>();
 		}
 	}
 
@@ -587,8 +559,8 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 			{
 				int written = key.Sign(algorithm, message, signature);
 				valid &= key.Verify(algorithm, message, signature.AsSpan(0, written));
-				written = key.Sign(algorithm, message, [], EcdsaSignatureFormat.Concatenated, signature);
-				valid &= key.Verify(algorithm, message, signature.AsSpan(0, written), EcdsaSignatureFormat.Concatenated);
+				written = key.Sign(algorithm, message, [], signature);
+				valid &= key.Verify(algorithm, message, signature.AsSpan(0, written));
 			}
 
 			return valid;
@@ -601,14 +573,14 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		return CurveCase.EncodeInteger(e << 8 * curve.ScalarLength - curve.ScalarBitLength, curve.ScalarLength);
 	}
 
-	// Whether each r ‖ s verifies over its e, with the multiplications of all of them at once.
+	// Whether each signature verifies over its e, with the multiplications of all of them at once.
 	private static bool[] ReferenceVerifies(CurveCase curve, byte[] publicKey, IReadOnlyList<(BigInteger E, byte[] Signature)> cases)
 	{
 		ECReference reference = curve.Reference;
-		int length = curve.ScalarLength;
 		BigInteger n = reference.N;
-		BigInteger[] r = [.. cases.Select(c => new BigInteger(c.Signature.AsSpan(0, length), isUnsigned: true, isBigEndian: true))];
-		BigInteger[] s = [.. cases.Select(c => new BigInteger(c.Signature.AsSpan(length), isUnsigned: true, isBigEndian: true))];
+		(BigInteger R, BigInteger S)[] values = [.. cases.Select(c => ReadDerSignature(c.Signature))];
+		BigInteger[] r = [.. values.Select(value => value.R)];
+		BigInteger[] s = [.. values.Select(value => value.S)];
 		BigInteger[] w = [.. s.Select(value => BigInteger.ModPow(value, n - 2, n))];
 		CurvePoint q = curve.DecodePoint(publicKey);
 		CurvePoint?[] points = reference.Add(reference.Multiply(reference.Generator, [.. cases.Select((c, i) => c.E * w[i] % n)]), reference.Multiply(q, [.. r.Select((value, i) => value * w[i] % n)]));
@@ -644,7 +616,7 @@ internal class EcdsaTest
 		CurveCase curve = CurveOf<EcdsaP521>();
 		using EcdsaP521 key = EcdsaP521.ImportPrivateKey(curve.EncodeScalar(curve.Order / 3));
 		byte[] message = CreateDeterministicSource(10);
-		byte[] signature = Sign(key, SignatureAlgorithm.EcdsaSha512, message, [], EcdsaSignatureFormat.Der);
+		byte[] signature = Sign(key, SignatureAlgorithm.EcdsaSha512, message, []);
 		byte[] contents = signature.AsSpan(3).ToArray();
 
 		using (Assert.Multiple())
@@ -669,8 +641,8 @@ internal class EcdsaTest
 		using EcdsaP256 second = EcdsaP256.GenerateKey();
 		byte[] message = CreateDeterministicSource(20);
 		byte[] firstPublicKey = ExportPublicKey(first);
-		byte[] firstSignature = Sign(first, SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Der);
-		byte[] secondSignature = Sign(second, SignatureAlgorithm.EcdsaSha256, message, [], EcdsaSignatureFormat.Der);
+		byte[] firstSignature = Sign(first, SignatureAlgorithm.EcdsaSha256, message, []);
+		byte[] secondSignature = Sign(second, SignatureAlgorithm.EcdsaSha256, message, []);
 		byte[] secondPublicKey = ExportPublicKey(second);
 		byte[] secondPrivateKey = ExportPrivateKey(second);
 		byte[] subjectPublicKeyInfo = ExportSubjectPublicKeyInfo(second);

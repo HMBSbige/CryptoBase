@@ -175,43 +175,38 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 	[SkipLocalsInit]
 	internal readonly int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
-		ThrowIfCannotSign(algorithm, EcdsaSignatureFormat.Der, destination);
+		ThrowIfCannotSign(algorithm, destination);
 
 		using CryptoBuffer<byte> additionalData = new(stackalloc byte[AdditionalDataLength]);
 		SystemRandom.Fill(additionalData.Span);
-		return SignMessage(algorithm, message, additionalData.Span, EcdsaSignatureFormat.Der, destination);
+		return SignMessage(algorithm, message, additionalData.Span, destination);
 	}
 
-	internal readonly int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	internal readonly int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 	{
-		ThrowIfCannotSign(algorithm, format, destination);
-		return SignMessage(algorithm, message, additionalData, format, destination);
+		ThrowIfCannotSign(algorithm, destination);
+		return SignMessage(algorithm, message, additionalData, destination);
 	}
 
-	internal readonly int SignHash(SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	internal readonly int SignHash(SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 	{
-		ThrowIfCannotSign(algorithm, format, destination);
-		return SignHashCore(algorithm, hash, additionalData, format, destination);
-	}
-
-	internal bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
-	{
-		return Verify(algorithm, message, signature, EcdsaSignatureFormat.Der);
+		ThrowIfCannotSign(algorithm, destination);
+		return SignHashCore(algorithm, hash, additionalData, destination);
 	}
 
 	[SkipLocalsInit]
-	internal bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
+	internal bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
 	{
 		ThrowIfUnsupported(algorithm);
 
 		Span<byte> hash = stackalloc byte[Sha512Core.HashSizeInBytes];
 		int hashLength = Hash(algorithm, message, hash);
-		return VerifyHash(hash.Slice(0, hashLength), signature, format);
+		return VerifyHash(hash.Slice(0, hashLength), signature);
 	}
 
-	internal bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
+	internal bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
 	{
-		return EcdsaEncoding<TOrder>.TryRead(format, signature, out FieldElement<TOrder> r, out FieldElement<TOrder> s) && Verify(hash, in r, in s);
+		return EcdsaEncoding<TOrder>.TryRead(signature, out FieldElement<TOrder> r, out FieldElement<TOrder> s) && Verify(hash, in r, in s);
 	}
 
 	internal void Clear()
@@ -253,7 +248,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		};
 	}
 
-	private readonly void ThrowIfCannotSign(SignatureAlgorithm algorithm, EcdsaSignatureFormat format, Span<byte> destination)
+	private readonly void ThrowIfCannotSign(SignatureAlgorithm algorithm, Span<byte> destination)
 	{
 		ThrowIfUnsupported(algorithm);
 
@@ -262,7 +257,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 			ThrowHelper.ThrowMissingKey("private key");
 		}
 
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, EcdsaEncoding<TOrder>.GetMaxLength(format), nameof(destination));
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, EcdsaEncoding<TOrder>.MaxDerLength, nameof(destination));
 	}
 
 	private bool TryImportECPrivateKey(ReadOnlySpan<byte> curve, ReadOnlySpan<byte> source)
@@ -339,26 +334,26 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 
 	// The algorithm is supported.
 	[SkipLocalsInit]
-	private readonly int SignMessage(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	private readonly int SignMessage(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 	{
 		Span<byte> hash = stackalloc byte[Sha512Core.HashSizeInBytes];
 		int hashLength = Hash(algorithm, message, hash);
-		return SignHashCore(algorithm, hash.Slice(0, hashLength), additionalData, format, destination);
+		return SignHashCore(algorithm, hash.Slice(0, hashLength), additionalData, destination);
 	}
 
 	// The algorithm is supported.
-	private readonly int SignHashCore(SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	private readonly int SignHashCore(SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 	{
 		return algorithm switch
 		{
-			SignatureAlgorithm.EcdsaSha256 => SignHash<Sha256Core>(hash, additionalData, format, destination),
-			SignatureAlgorithm.EcdsaSha384 => SignHash<Sha384Core>(hash, additionalData, format, destination),
-			_ => SignHash<Sha512Core>(hash, additionalData, format, destination)
+			SignatureAlgorithm.EcdsaSha256 => SignHash<Sha256Core>(hash, additionalData, destination),
+			SignatureAlgorithm.EcdsaSha384 => SignHash<Sha384Core>(hash, additionalData, destination),
+			_ => SignHash<Sha512Core>(hash, additionalData, destination)
 		};
 	}
 
 	[SkipLocalsInit]
-	private readonly int SignHash<THash>(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	private readonly int SignHash<THash>(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 		where THash : unmanaged, IHmacHashCore<THash>
 	{
 		int length = TOrder.ByteLength;
@@ -393,7 +388,7 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 			}
 			while ((FieldElement<TOrder>.IsZero(in r) | FieldElement<TOrder>.IsZero(in s)) is not 0);
 
-			return EcdsaEncoding<TOrder>.Write(format, in r, in s, destination);
+			return EcdsaEncoding<TOrder>.Write(in r, in s, destination);
 		}
 		finally
 		{

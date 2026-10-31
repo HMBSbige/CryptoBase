@@ -36,7 +36,7 @@ internal class EcdsaBclTest<T> where T : class, IEcdsa<T>
 				HashAlgorithmName hashName = HashName(algorithm);
 
 				if (!bcl.VerifyData(message, Sign(key, algorithm, message), hashName, DSASignatureFormat.Rfc3279DerSequence)
-					|| !bcl.VerifyData(message, Sign(key, algorithm, message, [], EcdsaSignatureFormat.Concatenated), hashName, DSASignatureFormat.IeeeP1363FixedFieldConcatenation))
+					|| !bcl.VerifyData(message, Sign(key, algorithm, message, []), hashName, DSASignatureFormat.Rfc3279DerSequence))
 				{
 					failed.Add($"{i}: {algorithm}");
 				}
@@ -63,7 +63,6 @@ internal class EcdsaBclTest<T> where T : class, IEcdsa<T>
 				HashAlgorithmName hashName = HashName(algorithm);
 
 				if (!key.Verify(algorithm, message, bcl.SignData(message, hashName, DSASignatureFormat.Rfc3279DerSequence))
-					|| !key.Verify(algorithm, message, bcl.SignData(message, hashName, DSASignatureFormat.IeeeP1363FixedFieldConcatenation), EcdsaSignatureFormat.Concatenated)
 					|| key.Verify(algorithm, Flip(message, 0), bcl.SignData(message, hashName, DSASignatureFormat.Rfc3279DerSequence)))
 				{
 					failed.Add($"{i}: {algorithm}");
@@ -89,11 +88,11 @@ internal class EcdsaBclTest<T> where T : class, IEcdsa<T>
 		foreach (int length in (int[])[20, 28, T.PrivateKeyLength - 1, T.PrivateKeyLength, T.PrivateKeyLength + 1, 48, 64])
 		{
 			byte[] hash = CreateDeterministicSource(length);
-			byte[] signature = SignHash(key, SignatureAlgorithm.EcdsaSha256, hash, [], EcdsaSignatureFormat.Der);
+			byte[] signature = SignHash(key, SignatureAlgorithm.EcdsaSha256, hash, []);
 
 			if (!bcl.VerifyHash(hash, signature, DSASignatureFormat.Rfc3279DerSequence)
-				|| !verifier.VerifyHash(hash, signature, EcdsaSignatureFormat.Der)
-				|| !bclKey.VerifyHash(hash, bclSigner.SignHash(hash, DSASignatureFormat.Rfc3279DerSequence), EcdsaSignatureFormat.Der))
+				|| !verifier.VerifyHash(hash, signature)
+				|| !bclKey.VerifyHash(hash, bclSigner.SignHash(hash, DSASignatureFormat.Rfc3279DerSequence)))
 			{
 				failed.Add(length);
 			}

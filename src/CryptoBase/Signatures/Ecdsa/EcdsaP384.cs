@@ -194,28 +194,22 @@ public sealed class EcdsaP384 : IEcdsa<EcdsaP384>
 		return _key.Verify(algorithm, message, signature);
 	}
 
-	int IEcdsa<EcdsaP384>.Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	int IEcdsa<EcdsaP384>.Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return _key.Sign(algorithm, message, additionalData, format, destination);
+		return _key.Sign(algorithm, message, additionalData, destination);
 	}
 
-	int IEcdsa<EcdsaP384>.SignHash(SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, EcdsaSignatureFormat format, Span<byte> destination)
+	int IEcdsa<EcdsaP384>.SignHash(SignatureAlgorithm algorithm, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return _key.SignHash(algorithm, hash, additionalData, format, destination);
+		return _key.SignHash(algorithm, hash, additionalData, destination);
 	}
 
-	bool IEcdsa<EcdsaP384>.Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
+	bool IEcdsa<EcdsaP384>.VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		return _key.Verify(algorithm, message, signature, format);
-	}
-
-	bool IEcdsa<EcdsaP384>.VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, EcdsaSignatureFormat format)
-	{
-		ObjectDisposedException.ThrowIf(_disposed, this);
-		return _key.VerifyHash(hash, signature, format);
+		return _key.VerifyHash(hash, signature);
 	}
 
 	/// <inheritdoc />

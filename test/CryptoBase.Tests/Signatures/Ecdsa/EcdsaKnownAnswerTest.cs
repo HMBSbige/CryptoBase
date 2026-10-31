@@ -4,7 +4,6 @@ using CryptoBase.EllipticCurves;
 using CryptoBase.Hashes.Sha2;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.EllipticCurves;
-using System.Formats.Asn1;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -358,19 +357,12 @@ internal class EcdsaKnownAnswerTest
 		using T signer = T.ImportPrivateKey(FromHex(key.PrivateKey, length));
 		using T verifier = T.ImportPublicKey([0x04, .. FromHex(key.PublicKeyX, length), .. FromHex(key.PublicKeyY, length)]);
 		byte[] message = Encoding.UTF8.GetBytes(vector.Message);
-		byte[] concatenated = Sign(signer, vector.Algorithm, message, [], EcdsaSignatureFormat.Concatenated);
-		byte[] der = Sign(signer, vector.Algorithm, message, [], EcdsaSignatureFormat.Der);
-		AsnDecoder.ReadSequence(der, AsnEncodingRules.DER, out int offset, out int contentLength, out _);
-		ReadOnlySpan<byte> contents = der.AsSpan(offset, contentLength);
-		BigInteger r = AsnDecoder.ReadInteger(contents, AsnEncodingRules.DER, out int consumed);
-		BigInteger s = AsnDecoder.ReadInteger(contents.Slice(consumed), AsnEncodingRules.DER, out _);
+		byte[] signature = Sign(signer, vector.Algorithm, message, []);
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(Convert.ToHexString(concatenated)).IsEqualTo(Padded(vector.R, length) + Padded(vector.S, length));
-			await Assert.That((r, s)).IsEqualTo((ModulusCase.Decode(FromHex(vector.R, length)), ModulusCase.Decode(FromHex(vector.S, length))));
-			await Assert.That(verifier.Verify(vector.Algorithm, message, der)).IsTrue();
-			await Assert.That(verifier.Verify(vector.Algorithm, message, concatenated, EcdsaSignatureFormat.Concatenated)).IsTrue();
+			await Assert.That(ReadDerSignature(signature)).IsEqualTo((ModulusCase.Decode(FromHex(vector.R, length)), ModulusCase.Decode(FromHex(vector.S, length))));
+			await Assert.That(verifier.Verify(vector.Algorithm, message, signature)).IsTrue();
 		}
 	}
 
