@@ -56,7 +56,7 @@ jobs:
         include:
           # Linux x64 covers the x86 instruction-set levels below the ones that the avx512 jobs cover, in two parts since its runs take the longest.
           - { os: ubuntu-latest, part: 1, disable: 'AVX512,GFNI,VAES AVX2 AVX' }
-          - { os: ubuntu-latest, part: 2, disable: 'SSE42 AES HWIntrinsic' }
+          - { os: ubuntu-latest, part: 2, disable: 'SSE42 AES SSE42,AES HWIntrinsic' }
           # Linux ARM64 covers the ARM64 switches.
           - { os: ubuntu-26.04-arm, disable: 'none Arm64Aes Arm64Crc32 Arm64Sha1 Arm64Sha256 HWIntrinsic' }
           # Other platforms: default dispatch and the portable path.
