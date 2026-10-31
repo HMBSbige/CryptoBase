@@ -9,6 +9,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 	private BackendState _state;
 	private readonly BitsliceState? _bitslice;
+	private readonly SoftwareState? _software;
 
 	/// <inheritdoc />
 	public static int BlockSize => 16;
@@ -43,11 +44,11 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		}
 		else if (AesCipherBitslice.IsSupported)
 		{
-			_bitslice = new BitsliceState(key, out _state.Software);
+			_bitslice = new BitsliceState(key, out _software);
 		}
 		else
 		{
-			_state.Software = AesCipherSoftware.Create(key);
+			_software = new SoftwareState(key);
 		}
 	}
 
@@ -74,7 +75,8 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		}
 		else
 		{
-			_state.Software.Dispose();
+			Debug.Assert(_software is not null);
+			_software.Cipher.Dispose();
 		}
 
 		_bitslice?.Cipher.Dispose();
@@ -125,7 +127,8 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 			if (!source.IsEmpty)
 			{
-				_state.Software.EncryptBlocks(source, destination);
+				Debug.Assert(_software is not null);
+				_software.Cipher.EncryptBlocks(source, destination);
 			}
 		}
 	}
@@ -177,7 +180,8 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 				}
 				else
 				{
-					_state.Software.DecryptBlocks(source, destination);
+					Debug.Assert(_software is not null);
+					_software.Cipher.DecryptBlocks(source, destination);
 				}
 			}
 		}
@@ -291,6 +295,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 			return;
 		}
 
+		Debug.Assert(_software is not null);
 		ref byte src = ref MemoryMarshal.GetReference(source);
 		ref byte dst = ref MemoryMarshal.GetReference(destination);
 		int length = source.Length - offset;
@@ -306,11 +311,11 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 			if (TDirection.IsDecrypt)
 			{
-				_state.Software.DecryptBlocks(scratch, scratch);
+				_software.Cipher.DecryptBlocks(scratch, scratch);
 			}
 			else
 			{
-				_state.Software.EncryptBlocks(scratch, scratch);
+				_software.Cipher.EncryptBlocks(scratch, scratch);
 			}
 
 			for (int i = 0; i < length; i += BlockSize)
@@ -335,9 +340,6 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 		[FieldOffset(0)]
 		public AesCipherVpaes Vpaes;
-
-		[FieldOffset(0)]
-		public AesCipherSoftware Software;
 	}
 
 	private sealed class BitsliceState
@@ -353,13 +355,28 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 			words.ZeroMemory();
 		}
 
-		public BitsliceState(ReadOnlySpan<byte> key, out AesCipherSoftware software)
+		public BitsliceState(ReadOnlySpan<byte> key, out SoftwareState software)
 		{
 			Span<uint> words = stackalloc uint[60];
 			int rounds = AesKeySchedule.Expand<AesCipherSoftware>(key, words);
-			software = AesCipherSoftware.Create(words, rounds);
+			software = new SoftwareState(words, rounds);
 			Cipher = AesCipherBitslice.Create(words, rounds);
 			words.ZeroMemory();
+		}
+	}
+
+	private sealed class SoftwareState
+	{
+		public AesCipherSoftware Cipher;
+
+		public SoftwareState(ReadOnlySpan<byte> key)
+		{
+			Cipher = AesCipherSoftware.Create(key);
+		}
+
+		public SoftwareState(ReadOnlySpan<uint> words, int rounds)
+		{
+			Cipher = AesCipherSoftware.Create(words, rounds);
 		}
 	}
 }
