@@ -24,6 +24,12 @@ internal static class ThrowHelper
 	}
 
 	[DoesNotReturn]
+	public static void ThrowInputOutputOverlap(string parameterName)
+	{
+		throw new ArgumentException("The input and output buffers must not overlap.", parameterName);
+	}
+
+	[DoesNotReturn]
 	public static void ThrowOutputsOverlap(string parameterName)
 	{
 		throw new ArgumentException("The output buffers must not overlap.", parameterName);

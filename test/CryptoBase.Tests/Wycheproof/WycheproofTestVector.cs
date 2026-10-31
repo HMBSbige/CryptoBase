@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json.Serialization;
 
 namespace CryptoBase.Tests.Wycheproof;
@@ -59,6 +60,18 @@ public sealed record KmacTestGroup(int TagSize) : WycheproofTestGroup<KmacTestVe
 }
 
 public sealed record HkdfTestVector(byte[] Ikm, byte[] Salt, byte[] Info, int Size, byte[] Okm) : WycheproofTestVector;
+
+// Ct is zlib-compressed. Only the valid and PartialPlaintext vectors describe a message: all of it, or the longest valid prefix.
+public sealed record ChunkedEncryptionTestVector(byte[] Key, byte[] Ctx, byte[] Ct, int? MsgLength = null, byte[]? MsgSha512 = null) : WycheproofTestVector
+{
+	public byte[] DecompressCiphertext()
+	{
+		using ZLibStream zlib = new(new MemoryStream(Ct, false), CompressionMode.Decompress);
+		using MemoryStream ciphertext = new();
+		zlib.CopyTo(ciphertext);
+		return ciphertext.ToArray();
+	}
+}
 
 public sealed record ECCurveTestVector(string Name, string Oid, byte[] P, byte[] N, byte[] A, byte[] B, byte[] Gx, byte[] Gy, int H) : WycheproofTestVector;
 

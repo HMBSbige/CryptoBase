@@ -127,6 +127,8 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | AES-CCM | ✅ |
 | AES-GCM | ✅ |
 | ChaCha20-Poly1305 | ✅ |
+| Cobblestone-128 | ✅ |
+| Cobblestone-256 | ✅ |
 | SM4-CCM | ✅ |
 | SM4-GCM | ✅ |
 | XChaCha20-Poly1305 | ✅ |

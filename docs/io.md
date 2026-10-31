@@ -160,3 +160,68 @@ xts.ReadExactly(buffer);
 // Flush before reading the inner stream directly or opening the file elsewhere.
 xts.Flush();
 ```
+
+## ChunkedEncryptionStream
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Ciphers.Aead;
+using CryptoBase.IO;
+
+// Cobblestone, c2sp.org/chunked-encryption. Cobblestone256Cipher takes a 32-byte key.
+byte[] key = RandomNumberGenerator.GetBytes(Cobblestone128Cipher.KeySize);
+
+// Optional. It is not stored in the message, so decryption needs the same context.
+byte[] context = "backup.tar"u8.ToArray();
+
+await using (FileStream input = File.OpenRead(path))
+await using (FileStream output = File.Create(encryptedPath))
+{
+    // Write-only. The stream owns the file stream unless leaveOpen is set.
+    await using ChunkedEncryptionStream<Cobblestone128Cipher> encryptor = ChunkedEncryptionStream.Create<Cobblestone128Cipher>(output, key, context);
+    await input.CopyToAsync(encryptor);
+
+    // Required: writes the last chunk, which completes the message. Disposal does not,
+    // so a copy that fails partway leaves a message that decryption rejects.
+    await encryptor.FlushFinalChunkAsync();
+}
+```
+
+## ChunkedDecryptionStream
+
+```csharp
+using CryptoBase.Ciphers.Aead;
+using CryptoBase.IO;
+
+await using (FileStream input = File.OpenRead(encryptedPath))
+await using (FileStream output = File.Create(decryptedPath))
+{
+    // Reads the header first; a wrong key or context throws AuthenticationTagMismatchException here.
+    // Create is the synchronous form.
+    await using ChunkedDecryptionStream<Cobblestone128Cipher> decryptor = await ChunkedDecryptionStream.CreateAsync<Cobblestone128Cipher>(input, key, context);
+
+    // A damaged message throws AuthenticationTagMismatchException, possibly after earlier chunks reached the output,
+    // so treat the output as incomplete until the copy completes.
+    await decryptor.CopyToAsync(output);
+}
+```
+
+## ChunkedRandomAccess
+
+```csharp
+using CryptoBase.Ciphers.Aead;
+using CryptoBase.IO;
+using Microsoft.Win32.SafeHandles;
+
+using SafeFileHandle handle = File.OpenHandle(encryptedPath);
+
+// Checks the header and the message length before returning; a seekable stream works too.
+// Instances are not thread-safe: use one per thread over a shared handle.
+using ChunkedRandomAccess<Cobblestone128Cipher> reader = ChunkedRandomAccess.Create<Cobblestone128Cipher>(handle, key, context, leaveOpen: true);
+
+// Each read authenticates the chunks it touches, so reads of intact chunks succeed even if others are damaged.
+// A read returns fewer bytes than requested only at the end of the message.
+byte[] buffer = new byte[4096];
+int read = reader.Read(buffer, offset: 100_000);
+read = await reader.ReadAsync(buffer, offset: reader.Length - 10);
+```

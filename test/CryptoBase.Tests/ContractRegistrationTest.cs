@@ -1,6 +1,8 @@
+using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Abstractions.Kems;
 using CryptoBase.Abstractions.KeyAgreements;
 using CryptoBase.Abstractions.Signatures;
+using CryptoBase.Tests.Ciphers.Aead;
 using CryptoBase.Tests.Kems;
 using CryptoBase.Tests.KeyAgreements;
 using CryptoBase.Tests.Signatures;
@@ -15,6 +17,7 @@ public class ContractRegistrationTest
 	[Arguments(typeof(ISignatureKey<>), typeof(SignatureKeyContractTest<>))]
 	[Arguments(typeof(IKeyAgreement<>), typeof(KeyAgreementContractTest<>))]
 	[Arguments(typeof(IKem<>), typeof(KemContractTest<>))]
+	[Arguments(typeof(IChunkedCipher<>), typeof(ChunkedCipherContractTest<>))]
 	public async Task EveryPublicImplementationIsListed(Type contract, Type contractTest)
 	{
 		Type[] implementations = [.. LibraryAssemblies().SelectMany(static assembly => assembly.GetExportedTypes()).Where(type => type is { IsClass: true, IsAbstract: false } && type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == contract))];

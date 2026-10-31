@@ -56,7 +56,7 @@ public static class Hkdf
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 	}
 
-	private static void ExpandCore<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
+	internal static void ExpandCore<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		// Only info needs copying: the key is consumed before the first write, and a single-block output is written after the last read.
 		if (output.Length <= TCore.HashLength || !info.Overlaps(output))

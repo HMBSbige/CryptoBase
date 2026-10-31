@@ -217,12 +217,14 @@ internal static class StreamTestUtils
 		}
 	}
 
-	/// <summary>Writes <paramref name="source" /> to <paramref name="stream" /> in calls of varying sizes.</summary>
-	public static async Task WriteInChunksAsync(Stream stream, byte[] source, bool useAsync)
+	/// <summary>Writes <paramref name="source" /> to <paramref name="stream" /> in calls of varying sizes, which cycle through <paramref name="sizes" /> if given.</summary>
+	public static async Task WriteInChunksAsync(Stream stream, byte[] source, bool useAsync, int[]? sizes = null)
 	{
+		sizes ??= ChunkSizes;
+
 		for (int offset = 0, i = 0; offset < source.Length; ++i)
 		{
-			int size = Math.Min(ChunkSizes[i % ChunkSizes.Length], source.Length - offset);
+			int size = Math.Min(sizes[i % sizes.Length], source.Length - offset);
 			await WriteAsync(stream, source.AsMemory(offset, size), useAsync);
 			offset += size;
 		}

@@ -22,11 +22,11 @@ internal static class CipherBufferGuard
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static void SourceDestinationOverlap(ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination)
+	internal static void SourceDestinationOverlap(ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination, string paramName = "destination")
 	{
 		if (source.Overlaps(destination, out int offset) && offset is not 0)
 		{
-			ThrowHelper.ThrowSourceDestinationOverlap(nameof(destination));
+			ThrowHelper.ThrowSourceDestinationOverlap(paramName);
 		}
 	}
 }
