@@ -1,10 +1,10 @@
-namespace CryptoBase.IO.DataUnits;
+namespace CryptoBase.IO.Storage;
 
 /// <summary>
-/// Provides positional access to the ciphertext backend of a data-unit transform.
+/// Provides positional access to a ciphertext backend, such as a file handle or a seekable stream.
 /// </summary>
 /// <remarks>
-/// Reads may return fewer bytes than requested; callers loop until the request is satisfied or the backend ends.
+/// Reads may return fewer bytes than requested; <see cref="PositionalStorageExtensions.TryReadExactly" /> loops until the request is satisfied or the backend ends.
 /// </remarks>
 internal interface IPositionalStorage
 {

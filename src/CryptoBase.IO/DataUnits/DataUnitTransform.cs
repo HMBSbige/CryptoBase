@@ -1,3 +1,4 @@
+using CryptoBase.IO.Storage;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.IO.DataUnits;
@@ -528,33 +529,17 @@ internal sealed class DataUnitTransform<TCipher> : IDisposable where TCipher : c
 
 	private void ReadExactly(Span<byte> buffer, long offset)
 	{
-		while (!buffer.IsEmpty)
+		if (!_storage.TryReadExactly(buffer, offset))
 		{
-			int read = _storage.Read(buffer, offset);
-
-			if (read is 0)
-			{
-				ThrowPartialDataUnit();
-			}
-
-			buffer = buffer.Slice(read);
-			offset += read;
+			ThrowPartialDataUnit();
 		}
 	}
 
 	private async ValueTask ReadExactlyAsync(Memory<byte> buffer, long offset, CancellationToken cancellationToken)
 	{
-		while (!buffer.IsEmpty)
+		if (!await _storage.TryReadExactlyAsync(buffer, offset, cancellationToken).ConfigureAwait(false))
 		{
-			int read = await _storage.ReadAsync(buffer, offset, cancellationToken).ConfigureAwait(false);
-
-			if (read is 0)
-			{
-				ThrowPartialDataUnit();
-			}
-
-			buffer = buffer.Slice(read);
-			offset += read;
+			ThrowPartialDataUnit();
 		}
 	}
 
