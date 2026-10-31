@@ -18,13 +18,13 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ⏳ | Underway |
 | ✅ | Done |
 
-### Data formats
+### [Data formats](docs/data-formats.md)
 
 | Formats | Status |
 | ------- |:------:|
 | Base32 | ✅ |
 
-### Hash algorithms and checksums
+### [Hash algorithms and checksums](docs/hashes.md)
 
 #### Cryptographic hash algorithms
 
@@ -55,7 +55,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | CRC-32 | ✅ |
 | CRC-32C | ✅ |
 
-### Message authentication codes
+### [Message authentication codes](docs/macs-and-key-derivation.md)
 
 | Algorithms | Status |
 | ---------- |:------:|
@@ -66,7 +66,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | KMACXOF128 | ✅ |
 | KMACXOF256 | ✅ |
 
-### Key derivation functions
+### [Key derivation functions](docs/macs-and-key-derivation.md)
 
 | Algorithms | Status |
 | ---------- |:------:|
@@ -76,7 +76,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | HKDF | ✅ |
 | TLS 1.2 PRF | ✅ |
 
-### One-time passwords
+### [One-time passwords](docs/one-time-passwords.md)
 
 | Algorithms | Status |
 | ---------- |:------:|
@@ -86,7 +86,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 ### Symmetric-key algorithms
 
-#### Stream ciphers
+#### [Stream ciphers](docs/stream-ciphers.md)
 
 | Algorithms | Status |
 | ---------- |:------:|
@@ -96,7 +96,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | XChaCha20 | ✅ |
 | XSalsa20 | ✅ |
 
-#### Block ciphers
+#### [Block ciphers](docs/block-ciphers-and-modes.md)
 
 | Algorithms | Status |
 | ---------- |:------:|
@@ -114,13 +114,12 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Modes | Status |
 | ----- |:------:|
-| None | ✅ |
 | Zeros | ✅ |
 | PKCS #7 | ✅ |
 | ANSI X9.23 | ✅ |
 | ISO 10126 | ✅ |
 
-#### Authenticated encryption algorithms
+#### [Authenticated encryption algorithms](docs/authenticated-encryption.md)
 
 | Algorithms | Status |
 | ---------- |:------:|
@@ -137,34 +136,34 @@ See the [documentation](docs/README.md) for installation and usage guides.
 
 | Algorithms | Status |
 | ---------- |:------:|
-| ECDH | ✅ |
-| ECDSA | ✅ |
-| RSA | ⚠️ |
-| X25519 | ⚠️ |
-| X448 | ⚠️ |
-| Ed25519 | ⚠️ |
-| Ed448 | ⚠️ |
-| SM2 | ⚠️ |
-| SM9 | ⚠️ |
+| [ECDH](docs/key-agreement.md) | ✅ |
+| [ECDSA](docs/digital-signatures.md) | ✅ |
+| RSA | ⏳ |
+| X25519 | ⏳ |
+| X448 | ⏳ |
+| Ed25519 | ⏳ |
+| Ed448 | ⏳ |
+| SM2 | ⏳ |
+| SM9 | ⏳ |
 
 ### Post-quantum cryptography
 
-#### Key encapsulation mechanisms
+#### [Key encapsulation mechanisms](docs/key-encapsulation.md)
 
 | Algorithms | Status |
 | ---------- |:------:|
 | ML-KEM | ✅ |
 | HQC | ⚠️ |
 
-#### Hybrid key agreement mechanisms
+#### [Hybrid key agreement mechanisms](docs/key-encapsulation.md#hybrid-kems)
 
 | Algorithms | Status |
 | ---------- |:------:|
 | SecP256r1MLKEM768 | ✅ |
 | SecP384r1MLKEM1024 | ✅ |
-| X25519MLKEM768 | ⚠️ |
+| X25519MLKEM768 | ⏳ |
 
-#### Digital signature algorithms
+#### [Digital signature algorithms](docs/digital-signatures.md)
 
 | Algorithms | Status |
 | ---------- |:------:|
@@ -172,14 +171,24 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | SLH-DSA | ⚠️ |
 | FN-DSA | ⚠️ |
 
-### X.509
+### [X.509](docs/x509.md)
 
 | Features | Status |
 | -------- |:------:|
 | Certificate decoding | ✅ |
 | Self-signed certificates | ✅ |
 | Chain validation through the platform | ✅ |
-| Path validation (RFC 5280) | ⚠️ |
-| Certificate signing requests | ⚠️ |
-| CRL | ⚠️ |
+| Path validation (RFC 5280) | ⏳ |
+| Certificate signing requests | ⏳ |
+| CRL | ⏳ |
 | OCSP | ⚠️ |
+
+### [Stream and file I/O](docs/io.md)
+
+| Features | Status |
+| -------- |:------:|
+| Stream hashing | ✅ |
+| Stream MACs | ✅ |
+| XTS random access and streams | ✅ |
+| Cobblestone encryption and decryption streams | ✅ |
+| Cobblestone random access | ✅ |
