@@ -13,7 +13,7 @@ internal static class AeadBufferGuard
 
 		CipherBufferGuard.SourceDestinationOverlap(source, destination);
 
-		if (tag.Overlaps(destination))
+		if (CipherBufferGuard.Overlaps(tag, destination))
 		{
 			ThrowHelper.ThrowTagDestinationOverlap(nameof(tag));
 		}

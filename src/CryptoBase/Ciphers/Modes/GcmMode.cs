@@ -114,6 +114,12 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 			return authenticated;
 		}
 
+		return TryDecryptSeparated(nonce, source, tag, destination, associatedData);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private bool TryDecryptSeparated(scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<byte> tag, scoped Span<byte> destination, scoped ReadOnlySpan<byte> associatedData)
+	{
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
