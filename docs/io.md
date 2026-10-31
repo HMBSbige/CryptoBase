@@ -105,13 +105,14 @@ byte[] plaintext = RandomNumberGenerator.GetBytes(10000);
 
 using SafeFileHandle handle = File.OpenHandle(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
-// Any data-unit cipher with a 16-byte tweak, such as XtsMode<AesCipher> or XtsMode<SM4Cipher>. The file holds whole data units;
-// the unit at offset n * dataUnitSize uses the tweak that XtsMode.GetTweak gives for firstDataUnitNumber + n.
+// Any data-unit cipher with a 16-byte tweak, such as XtsMode<AesCipher> or XtsMode<SM4Cipher>. The file holds whole data units,
+// so Create throws ArgumentException if its length is not a multiple of dataUnitSize; the unit at offset n * dataUnitSize
+// uses the tweak that XtsMode.GetTweak gives for firstDataUnitNumber + n.
 // The instance owns the cipher; the handle stays open. Instances are not thread-safe: use one per thread over a shared handle.
 using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(dataKey, tweakKey), dataUnitSize: 4096, leaveOpen: true);
 
-// Write at any offset. A partial-unit write re-encrypts the whole unit, so the handle must be readable;
-// a write past the end zero-pads its last unit and fills any gap with encrypted zero units.
+// Write at any offset; the data reaches the file before Write returns. Writing part of a data unit reads that unit first,
+// so the handle must be readable. A write past the end zero-pads its last unit, and any gap reads back as zeros.
 xts.Write(plaintext, offset: 100);
 
 // Read at any offset.
@@ -122,7 +123,7 @@ int read = xts.Read(buffer, offset: 100);
 await xts.WriteAsync(plaintext, offset: 20000);
 read = await xts.ReadAsync(buffer, offset: 20000);
 
-// Lengths are multiples of the data unit size.
+// Lengths are multiples of the data unit size; others throw ArgumentException.
 xts.SetLength(8192);
 
 // Flush data and metadata to disk.
@@ -141,7 +142,8 @@ byte[] dataKey = RandomNumberGenerator.GetBytes(32);
 byte[] tweakKey = RandomNumberGenerator.GetBytes(32);
 XtsMode<AesCipher> cipher = XtsMode<AesCipher>.Create(dataKey, tweakKey);
 
-// The same layout as a seekable Stream over a seekable inner stream. The stream owns the cipher and the file stream.
+// The same layout as DataUnitRandomAccess, as a Stream over a seekable inner stream; partial-unit writes also need it readable.
+// The stream owns the cipher and, unless leaveOpen is set, the inner stream. Instances are not thread-safe.
 using DataUnitStream<XtsMode<AesCipher>> xts = DataUnitStream.Create(File.Open(path, FileMode.OpenOrCreate), cipher, dataUnitSize: 512);
 
 // Write at a position.
@@ -153,7 +155,8 @@ xts.Position = 1000;
 byte[] buffer = new byte[11];
 xts.ReadExactly(buffer);
 
-// A changed data unit reaches the inner stream when the stream moves to another unit or is flushed or disposed;
-// Length already includes it. Flush before reading the inner stream directly or opening the file elsewhere.
+// Whole aligned data units reach the inner stream at once. A partial write stays in the stream until a read or write
+// touches another unit or the stream is flushed or disposed; Length already includes it.
+// Flush before reading the inner stream directly or opening the file elsewhere.
 xts.Flush();
 ```

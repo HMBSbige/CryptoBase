@@ -9,16 +9,16 @@ namespace CryptoBase.IO;
 /// <typeparam name="TCipher">The data-unit cipher.</typeparam>
 /// <remarks>
 /// <para>
-/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16. The tweak of each data unit is its data unit number encoded as a 128-bit little-endian integer, the same convention as XTS in IEEE 1619, so a cipher such as <c>XtsMode&lt;AesCipher&gt;</c> can be used directly.
+/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16, such as <c>XtsMode&lt;AesCipher&gt;</c>. The tweak of each data unit is its data unit number as a 128-bit little-endian integer.
 /// </para>
 /// <para>
-/// The inner stream holds whole data units only, because the cipher preserves length and so the ciphertext cannot record where the plaintext ends. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>. The stream position maps directly to the inner stream offset, starts at zero, and is applied to the inner stream before each access to it, so the inner stream position is not preserved.
+/// The inner stream holds whole data units only. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>. The stream position is the inner stream offset and starts at zero; the stream seeks the inner stream before each access, so the inner stream position is not preserved.
 /// </para>
 /// <para>
-/// Writes past the end pad their last data unit with zeros, and any gap between the old end and the write is filled with encrypted zero data units, so the gap reads back as zeros. Writing part of an existing data unit that is not cached reads and decrypts that unit, so the inner stream must also be readable. Reads never extend the inner stream.
+/// A write past the end pads its last data unit with zeros, and any gap between the old end and the write reads back as zeros. Writing part of an existing data unit reads that unit first, so the inner stream must also be readable. Reads never extend the inner stream.
 /// </para>
 /// <para>
-/// The stream keeps the plaintext of the data unit that the last partial read or write touched. Further partial reads and writes of that unit use it without touching the inner stream, so small sequential reads decrypt each unit once and small sequential writes encrypt each unit once. A changed unit is written to the inner stream when the stream moves to another unit, reads outside it, or is flushed or disposed; call <see cref="Flush" /> before using the inner stream directly. Reads and writes of whole aligned data units go straight to the inner stream.
+/// Writes of whole aligned data units reach the inner stream before they return. A partial write stays in the stream until a read or write touches another data unit or the stream is flushed or disposed; call <see cref="Flush" /> before using the inner stream directly. Do not change the inner stream elsewhere while the stream uses it.
 /// </para>
 /// <para>
 /// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the inner stream.
