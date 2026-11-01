@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Aead;
+using CryptoBase.Platform;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
@@ -17,7 +18,7 @@ internal class CobblestoneTest<TCipher> where TCipher : class, ICobblestoneCiphe
 
 	[Test]
 	[MatrixDataSource]
-	public async Task OneShotRoundTripsAndMatchesTheChunks([Matrix(0, 1, ChunkSize - 1, ChunkSize, ChunkSize + 1, 3 * ChunkSize, 3 * ChunkSize + 5)] int length)
+	public async Task OneShotRoundTripsAndMatchesTheChunks([Matrix(0, 1, ChunkSize - 1, ChunkSize, ChunkSize + 1, 3 * ChunkSize, 3 * ChunkSize + 5, 4 * ChunkSize - 1, 4 * ChunkSize + 5)] int length)
 	{
 		byte[] key = CreateDeterministicSource(TCipher.KeySize);
 		byte[] context = "file name"u8.ToArray();
@@ -38,6 +39,53 @@ internal class CobblestoneTest<TCipher> where TCipher : class, ICobblestoneCiphe
 			await Assert.That(decrypted).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
 			await Assert.That(fromChunks).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
 			await Assert.That(TCipher.TryDecrypt(key, ciphertext, decrypted, "file name 2"u8)).IsFalse();
+		}
+	}
+
+	[Test]
+	public async Task OneShotMessagesUseThePlatformFromFourFullChunks()
+	{
+		using (Assert.Multiple())
+		{
+			await Assert.That(Cobblestone.PlatformPreferred).IsEqualTo(PlatformAesGcm.IsPreferredFor(ChunkSize));
+			await Assert.That(Cobblestone.UsesPlatform(0)).IsFalse();
+			await Assert.That(Cobblestone.UsesPlatform(4L * ChunkSize - 1)).IsFalse();
+			await Assert.That(Cobblestone.UsesPlatform(4L * ChunkSize)).IsEqualTo(Cobblestone.PlatformPreferred);
+			await Assert.That(Cobblestone.UsesPlatform(Cobblestone.MaxMessageLength)).IsEqualTo(Cobblestone.PlatformPreferred);
+		}
+	}
+
+	// The platform takes the full chunks only where it is preferred, so this forces it in to check it against the managed chunks.
+	[Test]
+	public async Task PlatformChunksMatchTheManagedChunks()
+	{
+		if (!AesGcm.IsSupported)
+		{
+			Skip.Test("The platform AES-GCM is not supported.");
+		}
+
+		byte[] aeadKey = CreateDeterministicSource(TCipher.KeySize);
+		byte[] baseNonce = CreateDeterministicSource(12);
+		using CobblestoneKeys managed = new(aeadKey, baseNonce, platform: false);
+		using CobblestoneKeys platform = new(aeadKey, baseNonce, platform: true);
+
+		foreach (int length in (int[])[0, 1, ChunkSize - 1, ChunkSize])
+		{
+			byte[] plaintext = CreateDeterministicSource(length);
+			byte[] expected = new byte[length + TagSize];
+			byte[] actual = new byte[length + TagSize];
+			managed.EncryptChunk(257, plaintext, expected);
+			platform.EncryptChunk(257, plaintext, actual);
+			await Assert.That(actual).IsEquivalentTo(expected, CollectionOrdering.Matching);
+
+			byte[] decrypted = new byte[length];
+			await Assert.That(platform.TryDecryptChunk(257, actual, decrypted)).IsTrue();
+			await Assert.That(decrypted).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
+
+			actual[^1] ^= 1;
+			PrepareDestination(decrypted);
+			await Assert.That(platform.TryDecryptChunk(257, actual, decrypted)).IsFalse();
+			await Assert.That(decrypted).All(static value => value is 0);
 		}
 	}
 

@@ -27,7 +27,7 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 	public static TCipher CreateEncryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> context, Span<byte> header)
 	{
 		ValidateKey(key);
-		return TCipher.Create(DeriveEncryptor(key, salt, context, header));
+		return TCipher.Create(DeriveEncryptor(key, salt, context, header, PlatformPreferred));
 	}
 
 	public static TCipher CreateDecryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> context, ReadOnlySpan<byte> header)
@@ -35,7 +35,7 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 		ValidateKey(key);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(header.Length, HeaderSize, nameof(header));
 
-		if (!TryDeriveDecryptor(key, context, header, out CobblestoneKeys keys))
+		if (!TryDeriveDecryptor(key, context, header, PlatformPreferred, out CobblestoneKeys keys))
 		{
 			throw new AuthenticationTagMismatchException(CommitmentMismatchMessage);
 		}
@@ -60,7 +60,7 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 		ThrowIfOverlap(plaintext, ciphertext, nameof(ciphertext));
 
 		// The derivation reads the key and context before anything is written.
-		using CobblestoneKeys keys = DeriveEncryptor(key, salt, context, ciphertext);
+		using CobblestoneKeys keys = DeriveEncryptor(key, salt, context, ciphertext, UsesPlatform(plaintext.Length));
 		EncryptChunks(keys, plaintext, ciphertext.Slice(HeaderSize));
 	}
 
@@ -76,7 +76,7 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 		plaintext = SliceOutput(plaintext, length, nameof(plaintext));
 		ThrowIfOverlap(ciphertext, plaintext, nameof(plaintext));
 
-		if (!TryDeriveDecryptor(key, context, ciphertext.Slice(0, HeaderSize), out CobblestoneKeys keys))
+		if (!TryDeriveDecryptor(key, context, ciphertext.Slice(0, HeaderSize), UsesPlatform(length), out CobblestoneKeys keys))
 		{
 			plaintext.ZeroMemory();
 			return false;
@@ -103,14 +103,14 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 	/// Derives the keys of a new message from a validated key and writes its header; the inputs are read before the header is written, so they may overlap it.
 	/// </summary>
 	[SkipLocalsInit]
-	private static CobblestoneKeys DeriveEncryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> context, Span<byte> header)
+	private static CobblestoneKeys DeriveEncryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> context, Span<byte> header, bool platform)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(salt.Length, SaltSize, nameof(salt));
 		ArgumentOutOfRangeException.ThrowIfLessThan(header.Length, HeaderSize, nameof(header));
 
 		using CryptoBuffer<byte> okm = new(stackalloc byte[MaxOkmLength].Slice(0, GetOkmLength(key)));
 		Expand(key, salt, context, okm.Span);
-		CobblestoneKeys keys = CreateKeys(okm.Span);
+		CobblestoneKeys keys = CreateKeys(okm.Span, platform);
 		salt.CopyTo(header);
 		GetCommitment(okm.Span).CopyTo(header.Slice(SaltSize));
 		return keys;
@@ -120,7 +120,7 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 	/// Derives the keys of the message that starts with <paramref name="header" />, or fails when its commitment does not match.
 	/// </summary>
 	[SkipLocalsInit]
-	private static bool TryDeriveDecryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> context, ReadOnlySpan<byte> header, out CobblestoneKeys keys)
+	private static bool TryDeriveDecryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> context, ReadOnlySpan<byte> header, bool platform, out CobblestoneKeys keys)
 	{
 		Debug.Assert(header.Length is HeaderSize);
 
@@ -133,7 +133,7 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 			return false;
 		}
 
-		keys = CreateKeys(okm.Span);
+		keys = CreateKeys(okm.Span, platform);
 		return true;
 	}
 
@@ -146,10 +146,10 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 		return key.Length + NonceSize + CommitmentSize;
 	}
 
-	private static CobblestoneKeys CreateKeys(ReadOnlySpan<byte> okm)
+	private static CobblestoneKeys CreateKeys(ReadOnlySpan<byte> okm, bool platform)
 	{
 		int keySize = okm.Length - NonceSize - CommitmentSize;
-		return new CobblestoneKeys(okm.Slice(0, keySize), okm.Slice(keySize, NonceSize));
+		return new CobblestoneKeys(okm.Slice(0, keySize), okm.Slice(keySize, NonceSize), platform);
 	}
 
 	private static ReadOnlySpan<byte> GetCommitment(ReadOnlySpan<byte> okm)

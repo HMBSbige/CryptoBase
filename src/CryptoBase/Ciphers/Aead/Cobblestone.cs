@@ -1,3 +1,5 @@
+using CryptoBase.Platform;
+
 namespace CryptoBase.Ciphers.Aead;
 
 /// <summary>
@@ -17,6 +19,22 @@ internal static class Cobblestone
 	public const int EncryptedChunkSize = ChunkSize + TagSize;
 	public const long MaxChunkCount = 1L << 38;
 	public const long MaxMessageLength = MaxChunkCount * ChunkSize - 1;
+
+	// From this many full chunks, a message repays the key setup of the platform AES-GCM on every measured configuration.
+	private const int MinPlatformChunks = 4;
+
+	/// <summary>
+	/// Gets whether the full chunks of a stream, whose length is unknown, go through the platform AES-GCM.
+	/// </summary>
+	public static readonly bool PlatformPreferred = PlatformAesGcm.IsPreferredFor(ChunkSize);
+
+	/// <summary>
+	/// Gets whether the full chunks of a one-shot message of <paramref name="plaintextLength" /> bytes go through the platform AES-GCM.
+	/// </summary>
+	public static bool UsesPlatform(long plaintextLength)
+	{
+		return PlatformPreferred && plaintextLength / ChunkSize >= MinPlatformChunks;
+	}
 
 	public static long GetCiphertextLength(long plaintextLength, [CallerArgumentExpression(nameof(plaintextLength))] string? paramName = null)
 	{

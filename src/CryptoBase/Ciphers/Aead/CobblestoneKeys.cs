@@ -1,5 +1,6 @@
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
+using CryptoBase.Platform;
 
 namespace CryptoBase.Ciphers.Aead;
 
@@ -11,14 +12,31 @@ internal struct CobblestoneKeys : IDisposable
 {
 	private readonly GcmMode<AesCipher> _aead;
 
+	// Takes the full chunks when present; the shorter last chunk stays with _aead, below the fixed cost of a call to the platform.
+	private readonly PlatformAesGcm? _platform;
+
 	// The base nonce in the first 12 bytes; the chunk index is XOR'd into the big-endian 64-bit suffix in bytes 4 to 11.
 	private Vector128<byte> _baseNonce;
 
-	public CobblestoneKeys(ReadOnlySpan<byte> aeadKey, ReadOnlySpan<byte> baseNonce)
+	public CobblestoneKeys(ReadOnlySpan<byte> aeadKey, ReadOnlySpan<byte> baseNonce, bool platform)
 	{
 		Debug.Assert(baseNonce.Length is Cobblestone.NonceSize);
 
 		_aead = GcmMode<AesCipher>.Create(aeadKey);
+
+		if (platform)
+		{
+			try
+			{
+				_platform = PlatformAesGcm.Create(aeadKey);
+			}
+			catch
+			{
+				_aead.Dispose();
+				throw;
+			}
+		}
+
 		baseNonce.CopyTo(_baseNonce.AsSpan());
 	}
 
@@ -31,7 +49,15 @@ internal struct CobblestoneKeys : IDisposable
 		CipherBufferGuard.SourceDestinationOverlap(plaintext, ciphertext, nameof(ciphertext));
 
 		Vector128<byte> nonce = GetNonce(index);
-		_aead.Encrypt(nonce.AsReadOnlySpan().Slice(0, Cobblestone.NonceSize), plaintext, ciphertext.Slice(0, plaintext.Length), ciphertext.Slice(plaintext.Length));
+		ReadOnlySpan<byte> chunkNonce = nonce.AsReadOnlySpan().Slice(0, Cobblestone.NonceSize);
+
+		if (_platform is { } platform && plaintext.Length is Cobblestone.ChunkSize)
+		{
+			platform.Encrypt(chunkNonce, plaintext, ciphertext.Slice(0, plaintext.Length), ciphertext.Slice(plaintext.Length));
+			return;
+		}
+
+		_aead.Encrypt(chunkNonce, plaintext, ciphertext.Slice(0, plaintext.Length), ciphertext.Slice(plaintext.Length));
 	}
 
 	public readonly bool TryDecryptChunk(long index, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext)
@@ -45,12 +71,20 @@ internal struct CobblestoneKeys : IDisposable
 		CipherBufferGuard.SourceDestinationOverlap(ciphertext, plaintext, nameof(plaintext));
 
 		Vector128<byte> nonce = GetNonce(index);
-		return _aead.TryDecrypt(nonce.AsReadOnlySpan().Slice(0, Cobblestone.NonceSize), ciphertext.Slice(0, length), ciphertext.Slice(length), plaintext);
+		ReadOnlySpan<byte> chunkNonce = nonce.AsReadOnlySpan().Slice(0, Cobblestone.NonceSize);
+
+		if (_platform is { } platform && length is Cobblestone.ChunkSize)
+		{
+			return platform.TryDecrypt(chunkNonce, ciphertext.Slice(0, length), ciphertext.Slice(length), plaintext);
+		}
+
+		return _aead.TryDecrypt(chunkNonce, ciphertext.Slice(0, length), ciphertext.Slice(length), plaintext);
 	}
 
 	public void Dispose()
 	{
 		_aead.Dispose();
+		_platform?.Dispose();
 		_baseNonce = default;
 	}
 
