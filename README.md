@@ -161,7 +161,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ---------- |:------:|
 | SecP256r1MLKEM768 | ✅ |
 | SecP384r1MLKEM1024 | ✅ |
-| X25519MLKEM768 | ⏳ |
+| X25519MLKEM768 | ✅ |
 
 #### [Digital signature algorithms](docs/digital-signatures.md)
 

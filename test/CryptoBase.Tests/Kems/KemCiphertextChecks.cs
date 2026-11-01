@@ -3,6 +3,7 @@ using CryptoBase.Abstractions.KeyAgreements;
 using CryptoBase.Kems.Hybrid;
 using CryptoBase.Kems.MLKem;
 using CryptoBase.KeyAgreements.Ecdh;
+using CryptoBase.KeyAgreements.Xdh;
 using CryptoBase.Tests.KeyAgreements;
 using static CryptoBase.Tests.TestUtils;
 
@@ -29,6 +30,11 @@ internal sealed record KemCiphertextChecks((int Offset, int Length)[] CheckedRan
 			return ECMLKem<EcdhP384>(T.CiphertextLength);
 		}
 
+		if (typeof(T) == typeof(X25519MLKem768))
+		{
+			return MLKemX25519(T.CiphertextLength);
+		}
+
 		throw new NotSupportedException(typeof(T).Name);
 	}
 
@@ -50,5 +56,14 @@ internal sealed record KemCiphertextChecks((int Offset, int Length)[] CheckedRan
 		byte[] mlKemCiphertext = CreateDeterministicSource(ciphertextLength - TEcdh.PublicKeyLength);
 		byte[][] invalid = [.. KeyAgreementChecks.Of<TEcdh>().InvalidPublicKeys.Select(publicKey => Concat(publicKey, mlKemCiphertext))];
 		return new KemCiphertextChecks([(0, TEcdh.PublicKeyLength)], invalid);
+	}
+
+	// The X25519 part follows the ML-KEM ciphertext.
+	private static KemCiphertextChecks MLKemX25519(int ciphertextLength)
+	{
+		int offset = ciphertextLength - X25519.PublicKeyLength;
+		byte[] mlKemCiphertext = CreateDeterministicSource(offset);
+		byte[][] invalid = [.. KeyAgreementChecks.Of<X25519>().InvalidPublicKeys.Select(publicKey => Concat(mlKemCiphertext, publicKey))];
+		return new KemCiphertextChecks([(offset, X25519.PublicKeyLength)], invalid);
 	}
 }

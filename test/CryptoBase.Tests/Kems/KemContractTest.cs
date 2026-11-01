@@ -14,6 +14,7 @@ namespace CryptoBase.Tests.Kems;
 [GenerateGenericTest(typeof(MLKem1024))]
 [GenerateGenericTest(typeof(SecP256r1MLKem768))]
 [GenerateGenericTest(typeof(SecP384r1MLKem1024))]
+[GenerateGenericTest(typeof(X25519MLKem768))]
 public class KemContractTest<T> where T : class, IKem<T>
 {
 	[Test]

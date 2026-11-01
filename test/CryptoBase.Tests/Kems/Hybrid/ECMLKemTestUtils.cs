@@ -22,6 +22,11 @@ internal static class ECMLKemTestUtils
 				secP384r1MLKem1024.Encapsulate(ephemeralPrivateKey, message, ciphertext, sharedSecret);
 				break;
 			}
+			case X25519MLKem768 x25519MLKem768:
+			{
+				x25519MLKem768.Encapsulate(ephemeralPrivateKey, message, ciphertext, sharedSecret);
+				break;
+			}
 			default:
 			{
 				throw new NotSupportedException(typeof(T).Name);

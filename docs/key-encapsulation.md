@@ -9,6 +9,7 @@
 | `MLKem1024` | `CryptoBase.Kems.MLKem` | 1568 bytes | 3168 bytes | 1568 bytes | 32 bytes | 64 bytes |
 | `SecP256r1MLKem768` | `CryptoBase.Kems.Hybrid` | 1249 bytes | 2432 bytes | 1153 bytes | 64 bytes | 96 bytes |
 | `SecP384r1MLKem1024` | `CryptoBase.Kems.Hybrid` | 1665 bytes | 3216 bytes | 1665 bytes | 80 bytes | 112 bytes |
+| `X25519MLKem768` | `CryptoBase.Kems.Hybrid` | 1216 bytes | 2432 bytes | 1120 bytes | 64 bytes | 96 bytes |
 
 ## ML-KEM
 
@@ -65,7 +66,7 @@ bool hasDecapsulationKey = key.HasDecapsulationKey; // also ImportDecapsulationK
 
 ## Hybrid KEMs
 
-The encodings and shared secrets are those of the TLS groups SecP256r1MLKEM768 and SecP384r1MLKEM1024. Each value is its elliptic curve part followed by its ML-KEM part:
+The encodings and shared secrets are those of the TLS groups SecP256r1MLKEM768, SecP384r1MLKEM1024 and X25519MLKEM768. In `SecP256r1MLKem768` and `SecP384r1MLKem1024`, each value is its elliptic curve part followed by its ML-KEM part:
 
 | Value | Elliptic curve part | ML-KEM part |
 | --- | --- | --- |
@@ -74,6 +75,16 @@ The encodings and shared secrets are those of the TLS groups SecP256r1MLKEM768 a
 | Shared secret | The x-coordinate of the shared point, 32 or 48 big-endian bytes | The shared secret |
 | Private seed | The private key, a big-endian integer | The private seed |
 | Decapsulation key | The private key, a big-endian integer | The decapsulation key |
+
+`X25519MLKem768` puts the ML-KEM part first, as the TLS group X25519MLKEM768 does:
+
+| Value | ML-KEM part | X25519 part |
+| --- | --- | --- |
+| Encapsulation key | The encapsulation key | The public key, 32 bytes |
+| Ciphertext | The ciphertext | An ephemeral public key, 32 bytes |
+| Shared secret | The shared secret | The X25519 shared secret, 32 bytes |
+| Private seed | The private seed | The private key, any 32 bytes |
+| Decapsulation key | The decapsulation key | The private key, any 32 bytes |
 
 ```csharp
 using CryptoBase.Kems.Hybrid;
@@ -86,6 +97,11 @@ bool valid = receiver.TryDecapsulate(ciphertext, sharedSecret);
 
 // The private seed and the decapsulation key are formats of this library; not every private seed of the right length is valid.
 using SecP256r1MLKem768 fromSeed = SecP256r1MLKem768.ImportPrivateSeed(seed);
+
+// X25519MLKem768: ImportEncapsulationKey throws ArgumentException for an X25519 public key of small order, and
+// TryDecapsulate returns false for such an ephemeral public key. Any 32 bytes are a valid X25519 private key.
+using X25519MLKem768 x25519Receiver = X25519MLKem768.GenerateKey();
+bool x25519Valid = x25519Receiver.TryDecapsulate(x25519Ciphertext, x25519SharedSecret);
 ```
 
 ## Generic code
