@@ -13,6 +13,9 @@ namespace CryptoBase.Abstractions.Signatures;
 /// <para>
 /// Outputs have lengths the instance reports, as a maximum for signatures: a longer destination receives the output at its start, and a shorter one throws before anything is written. Disposal erases the key material and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
+/// <para>
+/// Implementations must allow concurrent calls on one instance, such as signatures on several threads while others verify; the caller disposes the instance only once no other call on it is running.
+/// </para>
 /// </remarks>
 public interface ISignatureKey : IDisposable
 {
