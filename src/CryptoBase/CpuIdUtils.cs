@@ -70,14 +70,6 @@ public static class CpuIdUtils
 		return X86Base.IsSupported && ((uint)X86Base.CpuId(7, 0).Ebx >> 29 & 1) is 1;
 	}
 
-	/// <summary>
-	/// Gets a value indicating whether the processor supports vector AES instructions.
-	/// </summary>
-	public static bool IsSupportX86VAes()
-	{
-		return X86Base.IsSupported && ((uint)X86Base.CpuId(7, 0).Ecx >> 9 & 1) is 1;
-	}
-
 	private static readonly (int Family, int Model)? AmdFamilyAndModel = X86Base.IsSupported && IsAuthenticAmd(X86Base.CpuId(0, 0)) ? DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax) : null;
 
 	internal static bool IsAmdZen5()

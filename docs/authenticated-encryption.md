@@ -12,6 +12,7 @@
 | `Ccm8Mode<SM4Cipher>` | `CryptoBase.Ciphers.Modes` | 16 bytes | 12 bytes | 8 bytes |
 | `ChaCha20Poly1305Cipher` | `CryptoBase.Ciphers.Aead` | 32 bytes | 12 bytes | 16 bytes |
 | `XChaCha20Poly1305Cipher` | `CryptoBase.Ciphers.Aead` | 32 bytes | 24 bytes | 16 bytes |
+| `PlatformAesGcm` | `CryptoBase.Platform` | 16, 24, or 32 bytes | 12 bytes | 16 bytes |
 
 `AesCipher` is in `CryptoBase.Ciphers.Blocks.Aes` and `SM4Cipher` in `CryptoBase.Ciphers.Blocks.SM4`.
 
@@ -66,6 +67,34 @@ static byte[] Encrypt<T>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> plaintext, o
 
 byte[] sm4Ciphertext = Encrypt<CcmMode<SM4Cipher>>(RandomNumberGenerator.GetBytes(16), "message"u8, out byte[] sm4Nonce, out byte[] sm4Tag);
 byte[] chachaCiphertext = Encrypt<ChaCha20Poly1305Cipher>(RandomNumberGenerator.GetBytes(32), "message"u8, out byte[] chachaNonce, out byte[] chachaTag);
+```
+
+## Platform-backed AES-GCM
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Ciphers.Blocks.Aes;
+using CryptoBase.Ciphers.Modes;
+using CryptoBase.Platform;
+
+byte[] key = RandomNumberGenerator.GetBytes(32);
+
+// AES-GCM through the operating system's cryptographic library.
+using PlatformAesGcm platform = PlatformAesGcm.Create(key);
+using GcmMode<AesCipher> managed = GcmMode<AesCipher>.Create(key);
+
+// IsPreferredFor: whether it is expected to be faster than the managed implementation for a message of that length.
+void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, Span<byte> tag)
+{
+    if (PlatformAesGcm.IsPreferredFor(plaintext.Length))
+    {
+        platform.Encrypt(nonce, plaintext, ciphertext, tag);
+    }
+    else
+    {
+        managed.Encrypt(nonce, plaintext, ciphertext, tag);
+    }
+}
 ```
 
 ## Chunked encryption

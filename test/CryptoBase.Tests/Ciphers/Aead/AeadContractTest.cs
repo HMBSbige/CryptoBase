@@ -3,6 +3,7 @@ using CryptoBase.Ciphers.Aead;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
+using CryptoBase.Platform;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
@@ -31,6 +32,9 @@ public class ChaCha20Poly1305ContractTest() : AeadContractTest<ChaCha20Poly1305C
 
 [InheritsTests]
 public class XChaCha20Poly1305ContractTest() : AeadContractTest<XChaCha20Poly1305Cipher>(32);
+
+[InheritsTests]
+public class PlatformAesGcmContractTest() : AeadContractTest<PlatformAesGcm>(32);
 
 [SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]
 public abstract class AeadContractTest<T>(int keyLength) where T : IAeadCipher<T>
