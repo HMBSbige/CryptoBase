@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <AssemblyMetadata Include="WycheproofTestVectors" Value="$(MSBuildThisFileDirectory)../wycheproof/testvectors_v1" />
+    <AssemblyMetadata Include="X509LimboTestcases" Value="$(MSBuildThisFileDirectory)../x509-limbo/limbo.json" />
   </ItemGroup>
 
   <ItemGroup>

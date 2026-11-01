@@ -2,3 +2,7 @@
 	path = test/wycheproof
 	url = https://github.com/C2SP/wycheproof.git
 	shallow = true
+[submodule "test/x509-limbo"]
+	path = test/x509-limbo
+	url = https://github.com/C2SP/x509-limbo.git
+	shallow = true
