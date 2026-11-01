@@ -91,7 +91,6 @@ internal class CertificateBuilderTest
 		}
 	}
 
-	// A platform RSA key signs its own certificate, which CryptoBase.X509 verifies with the key and with its public key alone, and the BCL loads, verifies and builds a chain for.
 	[Test]
 	[MethodDataSource(nameof(RsaSigningCases))]
 	public async Task TheBclAcceptsRsaCertificates(SignatureAlgorithm algorithm)
@@ -216,6 +215,49 @@ internal class CertificateBuilderTest
 			await Assert.That(() => duplicate.CreateSelfSigned(key, SignatureAlgorithm.EcdsaSha256, Now, Now)).ThrowsExactly<InvalidOperationException>();
 			await Assert.That(() => withNull.CreateSelfSigned(key, SignatureAlgorithm.EcdsaSha256, Now, Now)).ThrowsExactly<InvalidOperationException>();
 			await Assert.That(() => emptyKeyUsage.CreateSelfSigned(key, SignatureAlgorithm.EcdsaSha256, Now, Now)).ThrowsExactly<InvalidOperationException>();
+		}
+	}
+
+	// The builder writes the key usage as it is given, which must be DER: the BIT STRING of the defined bits without trailing zero bits (X.690, Sec. 11.2.2).
+	[Test]
+	[Arguments(new byte[] { 0x03, 0x02, 0x07, 0x80 }, X509KeyUsageFlags.DigitalSignature)]
+	[Arguments(new byte[] { 0x03, 0x02, 0x01, 0x06 }, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign)]
+	[Arguments(new byte[] { 0x03, 0x03, 0x07, 0x00, 0x80 }, X509KeyUsageFlags.DecipherOnly)]
+	[Arguments(new byte[] { 0x03, 0x03, 0x07, 0x80, 0x80 }, X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.DecipherOnly)]
+	public async Task WritesAKeyUsageInDer(byte[] value, X509KeyUsageFlags usage)
+	{
+		using EcdsaP256 key = EcdsaP256.GenerateKey();
+		CertificateBuilder builder = new(Name("CN=Key usage"));
+		builder.Extensions.Add(new CertificateExtension("2.5.29.15", true, value));
+
+		Certificate certificate = builder.CreateSelfSigned(key, SignatureAlgorithm.EcdsaSha256, Now, Now);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(certificate.KeyUsage).IsEqualTo(usage);
+			await Assert.That(certificate.Extensions[0].Value.ToArray()).IsEquivalentTo(value, CollectionOrdering.Matching);
+		}
+	}
+
+	// Trailing zero bits, in the last byte or in whole bytes, which decoding accepts but DER forbids.
+	[Test]
+	[Arguments(new byte[] { 0x03, 0x02, 0x00, 0x80 })]
+	[Arguments(new byte[] { 0x03, 0x02, 0x00, 0x06 })]
+	[Arguments(new byte[] { 0x03, 0x03, 0x00, 0x80, 0x00 })]
+	[Arguments(new byte[] { 0x03, 0x03, 0x07, 0x80, 0x00 })]
+	[Arguments(new byte[] { 0x03, 0x03, 0x00, 0x86, 0x00 })]
+	[Arguments(new byte[] { 0x03, 0x04, 0x00, 0x01, 0x80, 0x00 })]
+	public async Task RejectsAKeyUsageThatIsNotDer(byte[] value)
+	{
+		using EcdsaP256 key = EcdsaP256.GenerateKey();
+		CertificateBuilder builder = new(Name("CN=Key usage"));
+		builder.Extensions.Add(new CertificateExtension("2.5.29.15", true, value));
+		CertificateParts parts = new() { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", value))] };
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => builder.CreateSelfSigned(key, SignatureAlgorithm.EcdsaSha256, Now, Now)).ThrowsExactly<InvalidOperationException>();
+			await Assert.That(Certificate.Decode(parts.Encode()).KeyUsage).IsNotNull();
 		}
 	}
 

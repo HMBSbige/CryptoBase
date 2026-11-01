@@ -3,6 +3,7 @@ using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.X509;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -58,6 +59,21 @@ public class CertificateTest
 		byte[] value = new X509KeyUsageExtension(usage, true).RawData;
 
 		Certificate certificate = Certificate.Decode((parts with { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", value, [0x01, 0x01, 0xFF]))] }).Encode());
+
+		await Assert.That(certificate.KeyUsage).IsEqualTo(usage);
+	}
+
+	// Trailing zero bits, which DER forbids (X.690, Sec. 11.2.2), decode, in the bits of a byte or in whole bytes, as some trusted CA certificates have them.
+	[Test]
+	[Arguments(new byte[] { 0x03, 0x02, 0x00, 0x80 }, X509KeyUsageFlags.DigitalSignature)]
+	[Arguments(new byte[] { 0x03, 0x02, 0x00, 0x06 }, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign)]
+	[Arguments(new byte[] { 0x03, 0x03, 0x00, 0x86, 0x00 }, X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign)]
+	[Arguments(new byte[] { 0x03, 0x04, 0x00, 0x01, 0x80, 0x00 }, X509KeyUsageFlags.EncipherOnly | X509KeyUsageFlags.DecipherOnly)]
+	public async Task KeyUsageAcceptsTrailingZeroBits(byte[] value, X509KeyUsageFlags usage)
+	{
+		CertificateParts parts = new();
+
+		Certificate certificate = Certificate.Decode((parts with { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", value))] }).Encode());
 
 		await Assert.That(certificate.KeyUsage).IsEqualTo(usage);
 	}
@@ -219,7 +235,6 @@ public class CertificateTest
 		yield return () => ("extension value that is not an OCTET STRING", (parts with { AfterSubjectPublicKeyInfo = [Extensions(Sequence(Oid("2.5.29.19"), [0x30, 0x00]))] }).Encode());
 		yield return () => ("key usage with no bit set", (parts with { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", [0x03, 0x01, 0x00]))] }).Encode());
 		yield return () => ("key usage with zero bits", (parts with { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", [0x03, 0x02, 0x07, 0x00]))] }).Encode());
-		yield return () => ("key usage with trailing zero bits", (parts with { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", [0x03, 0x02, 0x00, 0x80]))] }).Encode());
 		yield return () => ("key usage with a nonzero unused bit", (parts with { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", [0x03, 0x02, 0x07, 0x81]))] }).Encode());
 		yield return () => ("key usage with an undefined bit", (parts with { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", [0x03, 0x03, 0x06, 0x00, 0x40]))] }).Encode());
 		yield return () => ("key usage of three bytes", (parts with { AfterSubjectPublicKeyInfo = [Extensions(Extension("2.5.29.15", [0x03, 0x04, 0x07, 0x80, 0x00, 0x80]))] }).Encode());
@@ -245,5 +260,143 @@ public class CertificateTest
 		Array.Clear(encoding);
 
 		await Assert.That(certificate.Encoded.ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	public async Task ExtensionsDecodeOnFirstUse()
+	{
+		using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+		using X509Certificate2 expected = BclSelfSigned(key, HashAlgorithmName.SHA256, "CN=Extensions", static request =>
+		{
+			request.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, true, 2, true));
+			request.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension([0x01, 0x02, 0x03], false));
+			request.CertificateExtensions.Add(X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier([0x01, 0x02, 0x03]));
+			request.CertificateExtensions.Add(SubjectAlternativeName("example.com", "192.0.2.1"));
+			request.CertificateExtensions.Add(EnhancedKeyUsage(ServerAuthenticationOid));
+		});
+
+		Certificate certificate = Certificate.Decode(expected.RawData);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(certificate.GetSubjectKeyIdentifier()?.ToArray()).IsEquivalentTo((byte[])[0x01, 0x02, 0x03], CollectionOrdering.Matching);
+			await Assert.That(certificate.GetAuthorityKeyIdentifier()?.KeyIdentifier?.ToArray()).IsEquivalentTo((byte[])[0x01, 0x02, 0x03], CollectionOrdering.Matching);
+			await Assert.That(certificate.GetSubjectAlternativeName()?.DnsNames).IsEquivalentTo(["example.com"], CollectionOrdering.Matching);
+			await Assert.That(certificate.MatchHostName("192.0.2.1")).IsEqualTo(HostNameMatch.Match);
+			await Assert.That(certificate.MatchHostName("example.org")).IsEqualTo(HostNameMatch.Mismatch);
+			await Assert.That(certificate.GetBasicConstraints() is { CertificateAuthority: true, PathLengthConstraint: 2 }).IsTrue();
+			await Assert.That(certificate.GetExtendedKeyUsage()?.Purposes).IsEquivalentTo([ServerAuthenticationOid], CollectionOrdering.Matching);
+		}
+	}
+
+	[Test]
+	public async Task ExtensionsAreNullWithoutThem()
+	{
+		CertificateParts parts = new();
+		Certificate[] certificates = [Certificate.Decode((parts with { Version = null }).Encode()), Certificate.Decode(parts.Encode()), WithExtensions(Extension("2.5.29.15", [0x03, 0x02, 0x07, 0x80]))];
+
+		using (Assert.Multiple())
+		{
+			foreach (Certificate certificate in certificates)
+			{
+				await Assert.That(certificate.GetAuthorityKeyIdentifier()).IsNull();
+				await Assert.That(certificate.GetSubjectKeyIdentifier()).IsNull();
+				await Assert.That(certificate.GetSubjectAlternativeName()).IsNull();
+				await Assert.That(certificate.MatchHostName("example.com")).IsEqualTo(HostNameMatch.Mismatch);
+				await Assert.That(certificate.GetBasicConstraints()).IsNull();
+				await Assert.That(certificate.GetExtendedKeyUsage()).IsNull();
+			}
+		}
+	}
+
+	// Decoding the certificate accepts what 7.0.0 accepted: an extension that decodes on first use reports its error there, and only for itself.
+	[Test]
+	[Arguments("2.5.29.35")]
+	[Arguments("2.5.29.14")]
+	[Arguments("2.5.29.17")]
+	[Arguments("2.5.29.19")]
+	[Arguments("2.5.29.37")]
+	public async Task AMalformedExtensionFailsOnlyWhenUsed(string oid)
+	{
+		(string Oid, byte[] Value)[] valid =
+		[
+			("2.5.29.35", Sequence(Tlv(0x80, [0x01, 0x02]))),
+			("2.5.29.14", Tlv(0x04, [0x01, 0x02])),
+			("2.5.29.17", GeneralNames(DnsName("example.com"))),
+			("2.5.29.19", Sequence()),
+			("2.5.29.37", Sequence(Oid(ServerAuthenticationOid))),
+		];
+		Certificate certificate = WithExtensions([.. valid.Select(extension => extension.Oid == oid ? Extension(oid, [0x05, 0x00], [0x01, 0x01, 0xFF]) : Extension(extension.Oid, extension.Value))]);
+		(string Oid, Func<object?> Get)[] getters =
+		[
+			("2.5.29.35", certificate.GetAuthorityKeyIdentifier),
+			("2.5.29.14", () => certificate.GetSubjectKeyIdentifier()),
+			("2.5.29.17", certificate.GetSubjectAlternativeName),
+			("2.5.29.19", certificate.GetBasicConstraints),
+			("2.5.29.37", certificate.GetExtendedKeyUsage),
+		];
+
+		using (Assert.Multiple())
+		{
+			foreach ((string other, Func<object?> get) in getters)
+			{
+				if (other == oid)
+				{
+					await Assert.That(get).ThrowsExactly<CryptographicException>().WithInnerException<System.Formats.Asn1.AsnContentException>();
+				}
+				else
+				{
+					await Assert.That(get).ThrowsNothing().Because(other);
+				}
+			}
+
+			await Assert.That(certificate.MatchHostName("example.com")).IsEqualTo(oid == "2.5.29.17" ? HostNameMatch.MalformedExtension : HostNameMatch.Match);
+		}
+	}
+
+	// The host name is checked first, so the same host name throws whatever the extension holds.
+	[Test]
+	public async Task MatchHostNameChecksTheHostNameFirst()
+	{
+		Certificate certificate = WithExtensions(Extension("2.5.29.17", GeneralNames()));
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(certificate.MatchHostName("example.com")).IsEqualTo(HostNameMatch.MalformedExtension);
+			await Assert.That(() => certificate.MatchHostName("not a host")).Throws<ArgumentException>().WithParameterName("hostName");
+		}
+	}
+
+	// Threads that ask at once all get the instance decoded first, and each its own exception.
+	[Test]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
+	public async Task ExtensionsDecodeOnceForConcurrentCallers()
+	{
+		const int threads = 16;
+		Certificate certificate = WithExtensions(Extension("2.5.29.35", Sequence(Tlv(0x80, [0x01, 0x02]))), Extension("2.5.29.14", [0x05, 0x00]));
+		using Barrier barrier = new(threads);
+
+		(object? Value, Exception? Error)[] results = await Task.WhenAll(Enumerable.Range(0, threads).Select(_ => Task.Factory.StartNew(() =>
+		{
+			barrier.SignalAndWait();
+			object? value = certificate.GetAuthorityKeyIdentifier();
+
+			try
+			{
+				certificate.GetSubjectKeyIdentifier();
+				return (value, null);
+			}
+			catch (CryptographicException e)
+			{
+				return (value, (Exception?)e);
+			}
+		}, TaskCreationOptions.LongRunning)));
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(results[0].Value).IsNotNull();
+			await Assert.That(results.Select(static result => result.Value).Distinct(ReferenceEqualityComparer.Instance).Count()).IsEqualTo(1);
+			await Assert.That(results.Select(static result => result.Error).OfType<CryptographicException>().Distinct(ReferenceEqualityComparer.Instance).Count()).IsEqualTo(threads);
+		}
 	}
 }

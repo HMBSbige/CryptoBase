@@ -5,6 +5,8 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// An implementation decides trust, validity and identity however it chooses, such as by building a chain to trusted roots or by comparing a fingerprint, and reports problems with the certificates as an invalid result rather than by throwing.
+/// The result holds every problem that the implementation found, and the certification path that it built or matched, if any; <see cref="CertificateValidationResult.Create" /> makes one.
+/// An implementation that waits for the network observes <see cref="CertificateValidationContext.Deadline" />.
 /// Implementations must allow concurrent calls on one instance.
 /// A validator does not check <see cref="Certificate.KeyUsage" />; the caller checks it.
 /// </remarks>

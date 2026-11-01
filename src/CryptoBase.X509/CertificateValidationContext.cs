@@ -49,4 +49,29 @@ public sealed class CertificateValidationContext
 	/// </summary>
 	/// <remarks><see langword="null" /> does not authenticate the peer: a result that accepts the certificates then says nothing about whom the peer's certificate identifies, so the caller must bind the identity another way, such as a server that authorizes the client's certificate itself or an expected digest from a trusted source.</remarks>
 	public string? HostName { get; init; }
+
+	/// <summary>
+	/// Gets the time, on the clock of <see cref="TimeProvider" />, after which the validator must not wait for the network, or <see langword="null" /> for no deadline.
+	/// </summary>
+	/// <remarks>
+	/// A validator that retrieves certificates, revocation lists or OCSP responses limits each retrieval to the time left until the deadline, where its platform lets it, so that a caller's own timeout, such as a handshake's, also covers the retrievals; once the deadline has passed, it retrieves nothing.
+	/// <see cref="PlatformCertificateValidator" /> describes what each platform lets it do.
+	/// The deadline does not bound the work that is not waiting for the network; a caller that must have the result by a time enforces it itself.
+	/// </remarks>
+	public DateTimeOffset? Deadline { get; init; }
+
+	/// <summary>
+	/// Gets the clock against which the validator measures <see cref="Deadline" />; <see cref="TimeProvider.System" /> by default.
+	/// </summary>
+	/// <remarks>The validator may read the clock on any thread.</remarks>
+	/// <exception cref="ArgumentNullException">The value set is <see langword="null" />.</exception>
+	public TimeProvider TimeProvider
+	{
+		get;
+		init
+		{
+			ArgumentNullException.ThrowIfNull(value);
+			field = value;
+		}
+	} = TimeProvider.System;
 }

@@ -87,7 +87,7 @@ public sealed class CertificateBuilder
 	/// <exception cref="ArgumentNullException"><paramref name="key" /> is <see langword="null" />.</exception>
 	/// <exception cref="ArgumentException"><paramref name="key" /> does not support <paramref name="algorithm" /> or has an invalid SubjectPublicKeyInfo, or <paramref name="notAfter" /> is earlier than <paramref name="notBefore" /> to the second.</exception>
 	/// <exception cref="NotSupportedException"><paramref name="algorithm" /> has no X.509 identifier in this version; see <see cref="AlgorithmIdentifier.FromSignatureAlgorithm" />.</exception>
-	/// <exception cref="InvalidOperationException"><see cref="Extensions" /> holds <see langword="null" />, two extensions with one identifier or a key usage extension that does not decode as <see cref="Certificate.KeyUsage" /> requires, or <paramref name="key" /> does not hold the private key.</exception>
+	/// <exception cref="InvalidOperationException"><see cref="Extensions" /> holds <see langword="null" />, two extensions with one identifier or a key usage extension that is not a DER BIT STRING of the nine defined bits with at least one set, as <see cref="Certificate.KeyUsage" /> describes them, or <paramref name="key" /> does not hold the private key.</exception>
 	/// <exception cref="CryptographicException">The key store or device that holds the private key failed to sign.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="key" /> has been disposed.</exception>
 	public Certificate CreateSelfSigned(ISignatureKey key, SignatureAlgorithm algorithm, DateTimeOffset notBefore, DateTimeOffset notAfter)
@@ -118,10 +118,10 @@ public sealed class CertificateBuilder
 			}
 		}
 
-		// Decoding the certificate checks the extensions, so they are checked before signing.
+		// Decoding the certificate checks the extensions, so they are checked before signing, the key usage in DER.
 		try
 		{
-			Certificate.CheckExtensions(extensions);
+			Certificate.CheckExtensions(extensions, derKeyUsage: true);
 		}
 		catch (AsnContentException e)
 		{

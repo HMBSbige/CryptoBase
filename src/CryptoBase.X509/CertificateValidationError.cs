@@ -36,7 +36,7 @@ public enum CertificateValidationError
 	Revoked = 5,
 
 	/// <summary>
-	/// The chain does not lead to a trusted root.
+	/// The certificates do not lead to a trust anchor, such as a chain that ends at a root that is not trusted or that is partial, which <see cref="CertificateValidationResult.PathEnd" /> tells apart.
 	/// </summary>
 	UntrustedRoot = 6,
 
@@ -53,5 +53,11 @@ public enum CertificateValidationError
 	/// <summary>
 	/// Whether a certificate is revoked could not be determined.
 	/// </summary>
-	RevocationUnknown = 9
+	RevocationUnknown = 9,
+
+	/// <summary>
+	/// A certificate uses a signature algorithm or a public key that the validator's policy refuses, such as a signature with MD5 or SHA-1, or an RSA key shorter than the policy's minimum.
+	/// </summary>
+	/// <remarks>Unlike <see cref="UnsupportedAlgorithm" />, the validator knows the algorithm and refuses it by its policy; TLS and DTLS answer such a certificate with bad_certificate (RFC 9846, Sec. 4.5.1.3).</remarks>
+	WeakAlgorithm = 10
 }
