@@ -129,7 +129,7 @@ public class CertificateTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(certificate.SignatureAlgorithm.Oid).IsEqualTo("1.2.840.113549.1.1.11");
-			await Assert.That(certificate.SignatureAlgorithm.TryGetSignatureAlgorithm(out _)).IsFalse();
+			await Assert.That(certificate.SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) ? algorithm : default).IsEqualTo(SignatureAlgorithm.RsaPkcs1Sha256);
 			await Assert.That(certificate.VerifySignature(ecdsa)).IsFalse();
 			await Assert.That(() => EcdsaP256.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span)).Throws<ArgumentException>();
 			await Assert.That(() => SignatureKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span)).ThrowsExactly<NotSupportedException>();

@@ -1,7 +1,10 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
+using System.Collections.Concurrent;
 using System.Formats.Asn1;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -13,8 +16,21 @@ internal static class X509TestUtils
 {
 	public const string ServerAuthenticationOid = "1.3.6.1.5.5.7.3.1";
 	public const string ClientAuthenticationOid = "1.3.6.1.5.5.7.3.2";
+	public const string Sha256Oid = "2.16.840.1.101.3.4.2.1";
+	public const string Sha384Oid = "2.16.840.1.101.3.4.2.2";
+	public const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
+	public const string Mgf1Oid = "1.2.840.113549.1.1.8";
 
 	public static readonly DateTimeOffset Now = X509Time.TruncateToSeconds(DateTimeOffset.UtcNow);
+
+	public static readonly SignatureAlgorithm[] RsaAlgorithms =
+	[
+		SignatureAlgorithm.RsaPkcs1Sha256, SignatureAlgorithm.RsaPkcs1Sha384, SignatureAlgorithm.RsaPkcs1Sha512,
+		SignatureAlgorithm.RsaPssSha256, SignatureAlgorithm.RsaPssSha384, SignatureAlgorithm.RsaPssSha512
+	];
+
+	// The private keys of each size, generated once, so that tests do not wait for key generation.
+	private static readonly ConcurrentDictionary<int, RSAParameters> RsaKeys = new();
 
 	public static byte[] Name(string distinguishedName)
 	{
@@ -104,13 +120,111 @@ internal static class X509TestUtils
 		return request.CreateSelfSigned(Now.AddDays(-1), Now.AddDays(30));
 	}
 
+	// A new platform key, the same for each size.
+	public static RSA CreateRsa(int bits = 2048)
+	{
+		RSA key = RSA.Create();
+		key.ImportParameters(RsaPrivateParameters(bits));
+		return key;
+	}
+
+	public static RSAParameters RsaPrivateParameters(int bits = 2048)
+	{
+		return RsaKeys.GetOrAdd(bits, static size =>
+		{
+			using RSA key = RSA.Create(size);
+			return key.ExportParameters(true);
+		});
+	}
+
+	public static (HashAlgorithmName Hash, RSASignaturePadding Padding) RsaParametersOf(SignatureAlgorithm algorithm)
+	{
+		return algorithm switch
+		{
+			SignatureAlgorithm.RsaPkcs1Sha256 => (HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+			SignatureAlgorithm.RsaPkcs1Sha384 => (HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1),
+			SignatureAlgorithm.RsaPkcs1Sha512 => (HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1),
+			SignatureAlgorithm.RsaPssSha256 => (HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
+			SignatureAlgorithm.RsaPssSha384 => (HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
+			SignatureAlgorithm.RsaPssSha512 => (HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+			_ => throw new ArgumentOutOfRangeException(nameof(algorithm))
+		};
+	}
+
+	public static X509Certificate2 BclSelfSigned(RSA key, SignatureAlgorithm algorithm, string subject = "CN=Test")
+	{
+		(HashAlgorithmName hash, RSASignaturePadding padding) = RsaParametersOf(algorithm);
+		return new CertificateRequest(subject, key, hash, padding).CreateSelfSigned(Now.AddDays(-1), Now.AddDays(30));
+	}
+
+	// id-RSASSA-PSS (RFC 4055, Sec. 3.1) with RSASSA-PSS-params, whose fields are left out where null, and whose hash AlgorithmIdentifiers have NULL parameters where nullParameters is set; or without parameters.
+	public static byte[] RsassaPssIdentifier(bool withParameters = true, string? hash = Sha256Oid, string? maskHash = Sha256Oid, int? saltLength = 32, int? trailerField = null, bool nullParameters = true, bool maskNullParameters = true, string maskGenerationFunction = Mgf1Oid)
+	{
+		AsnWriter writer = new(AsnEncodingRules.DER);
+
+		using (writer.PushSequence())
+		{
+			writer.WriteObjectIdentifier("1.2.840.113549.1.1.10");
+
+			if (withParameters)
+			{
+				using (writer.PushSequence())
+				{
+					if (hash is not null)
+					{
+						using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, true)))
+						{
+							WriteHashIdentifier(writer, hash, nullParameters);
+						}
+					}
+
+					if (maskHash is not null)
+					{
+						using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1, true)))
+						using (writer.PushSequence())
+						{
+							writer.WriteObjectIdentifier(maskGenerationFunction);
+							WriteHashIdentifier(writer, maskHash, maskNullParameters);
+						}
+					}
+
+					foreach ((int tagNumber, int? value) in (ReadOnlySpan<(int, int?)>)[(2, saltLength), (3, trailerField)])
+					{
+						if (value is { } integer)
+						{
+							using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, tagNumber, true)))
+							{
+								writer.WriteInteger(integer);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return writer.Encode();
+	}
+
+	private static void WriteHashIdentifier(AsnWriter writer, string hash, bool nullParameters)
+	{
+		using (writer.PushSequence())
+		{
+			writer.WriteObjectIdentifier(hash);
+
+			if (nullParameters)
+			{
+				writer.WriteNull();
+			}
+		}
+	}
+
 	public static X509Extension SubjectAlternativeName(params string[] dnsNames)
 	{
 		SubjectAlternativeNameBuilder builder = new();
 
 		foreach (string name in dnsNames)
 		{
-			if (System.Net.IPAddress.TryParse(name, out System.Net.IPAddress? address))
+			if (IPAddress.TryParse(name, out IPAddress? address))
 			{
 				builder.AddIpAddress(address);
 			}
@@ -126,6 +240,213 @@ internal static class X509TestUtils
 	public static X509EnhancedKeyUsageExtension EnhancedKeyUsage(string oid)
 	{
 		return new X509EnhancedKeyUsageExtension([new Oid(oid)], false);
+	}
+
+	// Self-signed RSA certificates, valid until 2036, whose RSASSA-PSS-params have hash AlgorithmIdentifiers with NULL parameters.
+	public static class OpenSslCertificates
+	{
+		// RSASSA-PSS with SHA-256 by an rsaEncryption key.
+		public const string RsaPssSha256 = """
+			-----BEGIN CERTIFICATE-----
+			MIIDgzCCAjegAwIBAgIUECNFbiwCZAfdH+fahKDSUL11y6wwQQYJKoZIhvcNAQEK
+			MDSgDzANBglghkgBZQMEAgEFAKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgEF
+			AKIDAgEgMB0xGzAZBgNVBAMMEk9wZW5TU0wtUFNTLVNIQTI1NjAeFw0yNjExMDEw
+			MDM2MThaFw0zNjEwMjkwMDM2MThaMB0xGzAZBgNVBAMMEk9wZW5TU0wtUFNTLVNI
+			QTI1NjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKnDe32xyFExkBSJ
+			J+UhlzMpDmWSF1Lt+tNeViN6y93j9lntyTMen7htw2wE+PLuPp+8pRewfCtlpSrb
+			zUCfFpnvQYAkICEC2/H8v5GYpSUyIKxp59kZ6z1PtLr1kw0WD5WC+zeykvO/xZrp
+			pquq4VVHj9yK3rtZslH3gLVaZqSy+3xhfh31NmTBE+1ImVs/WVTwOF4hliWm65J4
+			PuEopSZb+Cw5uoJm/hWgXW3OiSu2CakScRYgDKJYgWFM9c33y1cTepzab2HwfNBJ
+			HqWVQUsnlWCspGnaOjjoEvhtLXW6Mm0EudSQpqzt/EsoTUcPAQAlOvla2U7GLo8l
+			5ghHzEUCAwEAAaNTMFEwHQYDVR0OBBYEFLz2HopzO8TsvKCgaFeihYM3NnOQMB8G
+			A1UdIwQYMBaAFLz2HopzO8TsvKCgaFeihYM3NnOQMA8GA1UdEwEB/wQFMAMBAf8w
+			QQYJKoZIhvcNAQEKMDSgDzANBglghkgBZQMEAgEFAKEcMBoGCSqGSIb3DQEBCDAN
+			BglghkgBZQMEAgEFAKIDAgEgA4IBAQABVGx79gpKhOfEcHMmJiS6Mk57Vncbs+U7
+			a5YwqUwgNpcNtwUbhX+BsyfDLagDgjacPkx7qP7rEqS0MyvCCqHm5E7Lc58cZYgC
+			H/dXRwsdLQaEGlB5hRjd0TEtYQyBGxN+k+ndxSdoy5OhOF3ZpRlVye7YskcpQVDb
+			guxgs2d23aVkleQimQ7SPU7jqDAxPgQQ+Tpd/PeFqQPmVQJsqcv+LttMfXxUrhNW
+			O64upaoq4ev7iNiMAbbsvVgUvJbyEEOZgDF4G4ONYkFK3ZWAB7V0vyJlVB1KhCgj
+			8gGL4mCLyaViMh3Qve0LzE51tEWKeHzJSgpIhiKpX6NyAkzPqbBu
+			-----END CERTIFICATE-----
+			""";
+
+		// sha384WithRSAEncryption by the same key.
+		public const string RsaPkcs1Sha384 = """
+			-----BEGIN CERTIFICATE-----
+			MIIDHzCCAgegAwIBAgIUdmsPDQ85wbVnZoWgkVEfLpYS2TEwDQYJKoZIhvcNAQEM
+			BQAwHzEdMBsGA1UEAwwUT3BlblNTTC1QS0NTMS1TSEEzODQwHhcNMjYxMTAxMDAz
+			NjE4WhcNMzYxMDI5MDAzNjE4WjAfMR0wGwYDVQQDDBRPcGVuU1NMLVBLQ1MxLVNI
+			QTM4NDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKnDe32xyFExkBSJ
+			J+UhlzMpDmWSF1Lt+tNeViN6y93j9lntyTMen7htw2wE+PLuPp+8pRewfCtlpSrb
+			zUCfFpnvQYAkICEC2/H8v5GYpSUyIKxp59kZ6z1PtLr1kw0WD5WC+zeykvO/xZrp
+			pquq4VVHj9yK3rtZslH3gLVaZqSy+3xhfh31NmTBE+1ImVs/WVTwOF4hliWm65J4
+			PuEopSZb+Cw5uoJm/hWgXW3OiSu2CakScRYgDKJYgWFM9c33y1cTepzab2HwfNBJ
+			HqWVQUsnlWCspGnaOjjoEvhtLXW6Mm0EudSQpqzt/EsoTUcPAQAlOvla2U7GLo8l
+			5ghHzEUCAwEAAaNTMFEwHQYDVR0OBBYEFLz2HopzO8TsvKCgaFeihYM3NnOQMB8G
+			A1UdIwQYMBaAFLz2HopzO8TsvKCgaFeihYM3NnOQMA8GA1UdEwEB/wQFMAMBAf8w
+			DQYJKoZIhvcNAQEMBQADggEBABPvwVbcHdvrIKCK01g16E0c7IhV+QyhtiZewqLM
+			M3yAseFF7Rp9CRhNoQfScCRKncsc4O1xrGqL7/U5He2sDqHr/CHIymZgJ/gTbrpK
+			AaRo/kAuGTRwPfzkmsYS1YI83laDsEp2x6gZF5SDQYo2hm6thOt9MQNa3ZRSnxDJ
+			3yJe9mRYvMsnaV+8j1McP96AnrqgJIOhhuwBAqIWuL/8pgYAs54KIkCS65BXWdWl
+			ozJ/C7Eh/KFCTuEB9G6dVTfPePAjx9Z0tOc9Wgv7jrnYX9YIJvcHJApiQi0/UNzO
+			y/7E5uqhKVJ9lIEnhU/L2O5W1+Y+wzZYJD/uyo7NH9RWfh4=
+			-----END CERTIFICATE-----
+			""";
+
+		// RSASSA-PSS with SHA-512 by an id-RSASSA-PSS key whose parameters name SHA-512, MGF1 with SHA-512 and a salt of 64 bytes.
+		public const string RsassaPssKeySha512 = """
+			-----BEGIN CERTIFICATE-----
+			MIIDxTCCAnmgAwIBAgIUdsNJorrCJijrLylCwMrArcym23MwQQYJKoZIhvcNAQEK
+			MDSgDzANBglghkgBZQMEAgMFAKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgMF
+			AKIDAgFAMCQxIjAgBgNVBAMMGU9wZW5TU0wtUlNBU1NBLVBTUy1TSEE1MTIwHhcN
+			MjYxMTAxMDAzNjE4WhcNMzYxMDI5MDAzNjE4WjAkMSIwIAYDVQQDDBlPcGVuU1NM
+			LVJTQVNTQS1QU1MtU0hBNTEyMIIBVjBBBgkqhkiG9w0BAQowNKAPMA0GCWCGSAFl
+			AwQCAwUAoRwwGgYJKoZIhvcNAQEIMA0GCWCGSAFlAwQCAwUAogMCAUADggEPADCC
+			AQoCggEBAKHx/pYzLHlBiBWhYvqj8vZatnMXIapTFSs5f8gy5gUdSTS79j+E1cWk
+			Qxj7MlfbbRjWOpPobCQddCQEBogrQmM/9kj5R1IjYIXzH2A0UmPxZDaAWfDfc6x4
+			9YCMrLJ0ECnFDz/wjxx84svF6ECp6XB8FKZXnyieJHU30cZkldnIb6QLK/NMty70
+			U2vXu1dadY0eHW6uaTb3C68hk4dcQt5+QmH9/5oYPYObFTcPM9FpF9j8YOYPTaze
+			PEjZnqxSl1RbwsFQSnIrWDAcf706MqJZo8/ggkTG2xyjsHqSXA8vixEJioILOuU9
+			G+mFdZfVpB+wwbAnXK8ymUTgvaJi7pECAwEAAaNTMFEwHQYDVR0OBBYEFIChNRrk
+			0+1J4cBqKhT6IlQcKB3bMB8GA1UdIwQYMBaAFIChNRrk0+1J4cBqKhT6IlQcKB3b
+			MA8GA1UdEwEB/wQFMAMBAf8wQQYJKoZIhvcNAQEKMDSgDzANBglghkgBZQMEAgMF
+			AKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgMFAKIDAgFAA4IBAQBKMnJYSR16
+			qlW51OzK3CdcsMCvWFP/MpZ5ULZbJZA8lYBAdqW+iPuFGFC7O4QaTol2VdLiTbi+
+			wOk0YubQqdQ670z8hjchIDBMoW6Q/otjizvpU5ndQujJQG5M+/5bDj1RaL5ZptYI
+			Vxo8JAqN0omNBTncLQOzGDNidsRlpwosnZ4vqXulVD3ltCv4mrJyvcSGPEnCJxcz
+			sF/WcuqXA2xxhPEUNbzwFmtlOtEvTvXS5Q+viZ3y4q3lyDbjytsZYey4echUeVZZ
+			1JFUXqDR9jTDBdoxwH5j0hz9hwne51qf0HQ4OVuE0DZB7lxLUmzNtVOWRSe9HoRX
+			XgZSkcN1xzGr
+			-----END CERTIFICATE-----
+			""";
+
+		// RSASSA-PSS with SHA-384 by an id-RSASSA-PSS key without parameters.
+		public const string RsassaPssKeyWithoutParametersSha384 = """
+			-----BEGIN CERTIFICATE-----
+			MIIDgTCCAjWgAwIBAgIUZkNRhnuqdbr8KwM2WRSloYgkf+QwQQYJKoZIhvcNAQEK
+			MDSgDzANBglghkgBZQMEAgIFAKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgIF
+			AKIDAgEwMB0xGzAZBgNVBAMMEk9wZW5TU0wtUlNBU1NBLVBTUzAeFw0yNjExMDEw
+			MDM2MThaFw0zNjEwMjkwMDM2MThaMB0xGzAZBgNVBAMMEk9wZW5TU0wtUlNBU1NB
+			LVBTUzCCASAwCwYJKoZIhvcNAQEKA4IBDwAwggEKAoIBAQDHUr4eb92LY4AqMxC6
+			0fk7AX3Hdjvy2cgjE0RYcOSuDZcat4zXhawwaZTSK55iwcpAM/nDoxbMy8qX5Dh+
+			OHqekv571p0B4hSOgplgUwJDyaRSiBT/dONSOrtASxP9K+2gPkFZC93axSuaOLXI
+			eOHa+fDa1xPSPx68K2PXbDS5Ag46WF+4OWLstODRHrn0kZPcm/xGsH6g057FC6mW
+			Ayo2e0JO5RlrkXsTAi5xNejr3Ick28KyJ7Nsvk0acIY/EcX2NEKI/M8pP14kEjpr
+			2i2fXnyc/IswYsRT0aKGIZ5tWisbyCAEiBizcOs8DTmZ+vziBy/mg5x9c2sL5pwQ
+			Yqo3AgMBAAGjUzBRMB0GA1UdDgQWBBQsi1FrbMGBRnq3zIzSfV7gn8Y/5zAfBgNV
+			HSMEGDAWgBQsi1FrbMGBRnq3zIzSfV7gn8Y/5zAPBgNVHRMBAf8EBTADAQH/MEEG
+			CSqGSIb3DQEBCjA0oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0BAQgwDQYJ
+			YIZIAWUDBAICBQCiAwIBMAOCAQEAH88nBD0tlUUlUwbkLmmIzIwO1gDV/PWJ2cCV
+			48ybAdmjKD+SWSwGJwpzLbBrCxXPvaE9DBP/YevttVWgGngN6773Qnos8WAk+r0W
+			PeASgecmyfUrvIMUJTphEkp2zdaexocgrTNjP/YCRE6Lbbdy990WmiVDZ5odkYw6
+			+ii66pc0Oe1VXywWNRdTQ2/IUJKTt9NV3yY7CH+S4piJbPPQ9dU+h2tBBajgMdkh
+			/PepijOW/JDbbTNn8XSQHYlFne1cVZfoGPECCRQkPKQvqTsNX7ofju17Z4mSJ0Q3
+			KPI0PCwVVfgntapKVkjI+Nr2gA0ZpeayAXQUv5N7MQ8jaxLMvg==
+			-----END CERTIFICATE-----
+			""";
+	}
+
+	// A dNSName with the bytes of the string as they are, so that the tests can make entries that SubjectAlternativeNameBuilder refuses.
+	public static byte[] DnsName(string name)
+	{
+		return Tlv(0x82, System.Text.Encoding.Latin1.GetBytes(name));
+	}
+
+	public static byte[] IPAddressName(string address)
+	{
+		return Tlv(0x87, IPAddress.Parse(address).GetAddressBytes());
+	}
+
+	// The value of a subject alternative name extension that holds the names.
+	public static byte[] GeneralNames(params byte[][] names)
+	{
+		return Sequence(names);
+	}
+
+	// A certificate of CertificateParts with the extensions, each the DER of an Extension.
+	public static Certificate WithExtensions(params byte[][] extensions)
+	{
+		return Certificate.Decode((new CertificateParts() with { AfterSubjectPublicKeyInfo = [Extensions(extensions)] }).Encode());
+	}
+
+	// NameConstraints (RFC 5280, Sec. 4.2.1.10) with one dNSName subtree, permitted or excluded.
+	public static X509Extension NameConstraints(string dnsName, bool excluded = false)
+	{
+		AsnWriter writer = new(AsnEncodingRules.DER);
+
+		using (writer.PushSequence())
+		using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, excluded ? 1 : 0, true)))
+		using (writer.PushSequence())
+		{
+			writer.WriteCharacterString(UniversalTagNumber.IA5String, dnsName, new Asn1Tag(TagClass.ContextSpecific, 2));
+		}
+
+		return new X509Extension("2.5.29.30", writer.Encode(), true);
+	}
+
+	public sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+	{
+		public override DateTimeOffset GetUtcNow()
+		{
+			return now;
+		}
+	}
+
+	// A loopback server that accepts connections and never answers, as an unreachable responder would, without the network.
+	public sealed class SilentServer : IDisposable
+	{
+		private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
+		private readonly List<Socket> _sockets = [];
+		private int _connections;
+
+		public SilentServer()
+		{
+			_listener.Start();
+			_ = AcceptAsync();
+		}
+
+		public int Connections => Volatile.Read(ref _connections);
+
+		public string Url(string path)
+		{
+			return $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}/{path}";
+		}
+
+		public void Dispose()
+		{
+			_listener.Stop();
+
+			lock (_sockets)
+			{
+				foreach (Socket socket in _sockets)
+				{
+					socket.Dispose();
+				}
+			}
+		}
+
+		private async Task AcceptAsync()
+		{
+			try
+			{
+				while (true)
+				{
+					Socket socket = await _listener.AcceptSocketAsync();
+					Interlocked.Increment(ref _connections);
+
+					lock (_sockets)
+					{
+						_sockets.Add(socket);
+					}
+				}
+			}
+			catch (SocketException)
+			{
+			}
+			catch (ObjectDisposedException)
+			{
+			}
+		}
 	}
 
 	// The fields of a certificate, each a DER TLV, which the tests replace to make the encodings to check.
