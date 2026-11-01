@@ -155,7 +155,7 @@ public class AesGcmFusionTest
 
 			foreach (string counterHex in counters)
 			{
-				foreach (int length in new[] { 0, batchSize - 1, batchSize, batchSize + 1, 2 * batchSize, 2 * batchSize + 1, 3 * batchSize + 1 })
+				foreach (int length in new[] { 0, batchSize - 1, batchSize, batchSize + 1, 2 * batchSize, 2 * batchSize + 1, 3 * batchSize + 1, 5 * batchSize + 1 })
 				{
 					yield return (blocksPerBatch, length, counterHex);
 				}

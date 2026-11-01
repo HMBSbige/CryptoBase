@@ -30,19 +30,26 @@ internal static partial class AesGcmX86
 		Vector128<byte> prefix = Ssse3.IsSupported ? counter.ReverseEndianness128() : GetCounterPrefix(counter);
 		uint value = BinaryPrimitives.ReadUInt32BigEndian(counter.AsReadOnlySpan().Slice(12));
 		Vector128<byte> v0 = default, v1 = default, v2 = default, v3 = default, v4 = default, v5 = default, v6 = default, v7 = default;
+		nint start = 0;
 
 		if (!TDirection.IsDecrypt)
 		{
-			v0 = NextCounter(ref prefix, ref value);
-			v1 = NextCounter(ref prefix, ref value);
-			v2 = NextCounter(ref prefix, ref value);
-			v3 = NextCounter(ref prefix, ref value);
-			v4 = NextCounter(ref prefix, ref value);
-			v5 = NextCounter(ref prefix, ref value);
-			v6 = NextCounter(ref prefix, ref value);
-			v7 = NextCounter(ref prefix, ref value);
-			aes.Encrypt8(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
-			BlockXor.XorStore8(ref input, ref output, 0, ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
+			// Encryption hashes each batch two batches after storing it. One batch later, a wide reload of its narrow stores cannot be store-forwarded.
+			start = Math.Min(length, 2 * 128);
+
+			for (nint offset = 0; offset < start; offset += 128)
+			{
+				v0 = NextCounter(ref prefix, ref value);
+				v1 = NextCounter(ref prefix, ref value);
+				v2 = NextCounter(ref prefix, ref value);
+				v3 = NextCounter(ref prefix, ref value);
+				v4 = NextCounter(ref prefix, ref value);
+				v5 = NextCounter(ref prefix, ref value);
+				v6 = NextCounter(ref prefix, ref value);
+				v7 = NextCounter(ref prefix, ref value);
+				aes.Encrypt8(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
+				BlockXor.XorStore8(ref input, ref output, (nuint)offset, ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
+			}
 		}
 
 		Vector512<byte> key8 = default, reductionKey8 = default, key4 = default, reductionKey4 = default;
@@ -56,18 +63,9 @@ internal static partial class AesGcmX86
 		Vector128<byte> hash = accumulator;
 		ref byte hashInput = ref TDirection.IsDecrypt ? ref input : ref output;
 
-		for (nint offset = TDirection.IsDecrypt ? 0 : 128; offset < length; offset += 128)
+		for (nint offset = start; offset < length; offset += 128)
 		{
-			nint hashOffset = TDirection.IsDecrypt ? offset : offset - 128;
-			Vector512<byte> ciphertext0 = default, ciphertext1 = default;
-
-			if (!TDirection.IsDecrypt && GHashX86.IsSupported512)
-			{
-				// Build from registers: a wide load right after the previous batch's narrow stores cannot be store-forwarded.
-				ciphertext0 = Vector512.Create(Vector256.Create(v0, v1), Vector256.Create(v2, v3));
-				ciphertext1 = Vector512.Create(Vector256.Create(v4, v5), Vector256.Create(v6, v7));
-			}
-
+			nint hashOffset = TDirection.IsDecrypt ? offset : offset - 2 * 128;
 			v0 = NextCounter(ref prefix, ref value) ^ roundKeys.K0;
 			v1 = NextCounter(ref prefix, ref value) ^ roundKeys.K0;
 			v2 = NextCounter(ref prefix, ref value) ^ roundKeys.K0;
@@ -83,7 +81,7 @@ internal static partial class AesGcmX86
 
 			if (GHashX86.IsSupported512)
 			{
-				Vector512<byte> block = (TDirection.IsDecrypt ? Vector512.LoadUnsafe(ref hashInput, (nuint)hashOffset) : ciphertext0).ReverseEndianness128() ^ hash.ToVector256().ToVector512();
+				Vector512<byte> block = Vector512.LoadUnsafe(ref hashInput, (nuint)hashOffset).ReverseEndianness128() ^ hash.ToVector256().ToVector512();
 				GHashX86.GFMultiplyPreparedUnreduced(block, key8, reductionKey8, out lo512, out hi512);
 			}
 			else
@@ -105,7 +103,7 @@ internal static partial class AesGcmX86
 
 			if (GHashX86.IsSupported512)
 			{
-				GHashX86.GFMultiplyPreparedUnreduced((TDirection.IsDecrypt ? Vector512.LoadUnsafe(ref hashInput, (nuint)(hashOffset + 64)) : ciphertext1).ReverseEndianness128(), key4, reductionKey4, out Vector512<byte> nextLo, out Vector512<byte> nextHi);
+				GHashX86.GFMultiplyPreparedUnreduced(Vector512.LoadUnsafe(ref hashInput, (nuint)(hashOffset + 64)).ReverseEndianness128(), key4, reductionKey4, out Vector512<byte> nextLo, out Vector512<byte> nextHi);
 				lo512 ^= nextLo;
 				hi512 ^= nextHi;
 			}
@@ -132,12 +130,35 @@ internal static partial class AesGcmX86
 
 		if (!TDirection.IsDecrypt)
 		{
+			if (length > 128)
+			{
+				hash = HashBlocks8(hash, ref Unsafe.Add(ref output, length - 2 * 128), in powers, key8, reductionKey8, key4, reductionKey4);
+			}
+
 			hash = HashBlocks8(hash, v0, v1, v2, v3, v4, v5, v6, v7, in powers);
 		}
 
 		accumulator = hash;
 		counter = Ssse3.IsSupported ? prefix.ReverseEndianness128() : CreateCounter(prefix, value);
 		return length;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<byte> HashBlocks8(Vector128<byte> hash, ref byte blocks, in GHashVector128PrecomputedKey powers, Vector512<byte> key8, Vector512<byte> reductionKey8, Vector512<byte> key4, Vector512<byte> reductionKey4)
+	{
+		if (GHashX86.IsSupported512)
+		{
+			Vector512<byte> block = Vector512.LoadUnsafe(ref blocks).ReverseEndianness128() ^ hash.ToVector256().ToVector512();
+			GHashX86.GFMultiplyPreparedUnreduced(block, key8, reductionKey8, out Vector512<byte> lo512, out Vector512<byte> hi512);
+			GHashX86.GFMultiplyPreparedUnreduced(Vector512.LoadUnsafe(ref blocks, 64).ReverseEndianness128(), key4, reductionKey4, out Vector512<byte> nextLo, out Vector512<byte> nextHi);
+			return GHashX86.ReducePreparedTo128(lo512 ^ nextLo, hi512 ^ nextHi);
+		}
+
+		MultiplyPair(Vector256.LoadUnsafe(ref blocks).ReverseEndianness128() ^ hash.ToVector256(), in powers, 8, out Vector256<byte> lo, out Vector256<byte> hi);
+		AccumulatePair(ref Unsafe.Add(ref blocks, 32), in powers, 6, ref lo, ref hi);
+		AccumulatePair(ref Unsafe.Add(ref blocks, 64), in powers, 4, ref lo, ref hi);
+		AccumulatePair(ref Unsafe.Add(ref blocks, 96), in powers, 2, ref lo, ref hi);
+		return GHashX86.ReducePreparedTo128(lo, hi);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
