@@ -13,10 +13,17 @@ public class MontgomeryModulusTest
 		await Assert.That(ModulusCase.All().Select(static modulus => modulus.ModulusType)).IsEquivalentTo(ImplementationsOf(typeof(IMontgomeryModulus)));
 	}
 
+	// The prime-order curves come from Wycheproof; Curve25519 is not one of them, and its field is that of 2^255 − 19 and its base point of order 2^252 + 27742317777372353535851937790883648493 (RFC 8032, Sec. 5.1).
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task ModulusIsTheCurveConstant(ModulusCase modulus)
 	{
+		if (modulus.Curve is "curve25519")
+		{
+			await Assert.That(modulus.Modulus).IsEqualTo(modulus.IsOrder ? (BigInteger.One << 252) + BigInteger.Parse("27742317777372353535851937790883648493") : (BigInteger.One << 255) - 19);
+			return;
+		}
+
 		ECCurveTestVector curve = WycheproofVectors.Load<ECCurveTestVector>("ec_prime_order_curves_test.json").Single(curve => curve.Name == modulus.Curve);
 
 		await Assert.That(modulus.Modulus).IsEqualTo(ModulusCase.Decode(modulus.IsOrder ? curve.N : curve.P));
