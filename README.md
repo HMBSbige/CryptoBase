@@ -177,8 +177,10 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | -------- |:------:|
 | Certificate decoding | ✅ |
 | Self-signed certificates | ✅ |
+| Host name matching (RFC 9525) | ✅ |
 | Chain validation through the platform | ✅ |
-| Path validation (RFC 5280) | ⏳ |
+| Path validation (RFC 5280) | ✅ |
+| Certificate fingerprints (RFC 8122) | ✅ |
 | Certificate signing requests | ⏳ |
 | CRL | ⏳ |
 | OCSP | ⚠️ |
