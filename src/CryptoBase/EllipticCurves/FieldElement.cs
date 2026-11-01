@@ -2,7 +2,7 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// Always below m. Whether it is in Montgomery form is up to the caller: Multiply and the inversions work in that form, the encodings take and give the plain value, and the other operations work in either. No operation but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
+// Always below m. Whether it is in Montgomery form is up to the caller: Multiply and the inversions work in that form, the encodings take and give the plain value, and the other operations work in either. No operation but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. The operations erase the sums and products they keep on the stack. Any result may be the same variable as an input.
 internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModulus
 {
 	private TModulus _limbs;
@@ -20,6 +20,7 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		ulong carry = AddLimbs(ref Limbs(in left), ref Limbs(in right), ulong.MaxValue, ref s, TModulus.LimbCount);
 		Unsafe.SkipInit(out result);
 		ReduceOnce(ref s, carry, ref Limbs(ref result));
+		MemoryMarshal.CreateSpan(ref s, TModulus.LimbCount).ZeroMemory();
 	}
 
 	internal static void Multiply(in FieldElement<TModulus> left, in FieldElement<TModulus> right, out FieldElement<TModulus> result)
@@ -106,6 +107,7 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		ReadBigEndian(source, ref Limbs(ref value));
 		Unsafe.SkipInit(out result);
 		MontgomeryMultiply(ref Limbs(ref value), ref MemoryMarshal.GetReference(TModulus.MontgomeryOne), ref Limbs(ref result));
+		MemoryMarshal.CreateSpan(ref Limbs(ref value), TModulus.LimbCount).ZeroMemory();
 	}
 
 	internal static void Export(in FieldElement<TModulus> value, Span<byte> destination)
@@ -217,6 +219,7 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		}
 
 		Reduce(ref t, ref result);
+		MemoryMarshal.CreateSpan(ref t, 2 * TModulus.LimbCount).ZeroMemory();
 	}
 
 	// The limbs of the product from i + LimbCount on are not yet set.
@@ -304,6 +307,7 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		ulong borrow = SubtractLimbs(ref low, ref MemoryMarshal.GetReference(TModulus.Modulus), ref d, TModulus.LimbCount);
 		_ = SubtractWithBorrow(high, 0, ref borrow);
 		SelectLimbs(0 - borrow, ref low, ref d, ref result, TModulus.LimbCount);
+		MemoryMarshal.CreateSpan(ref d, TModulus.LimbCount).ZeroMemory();
 	}
 
 	[InlineArray(2)]
