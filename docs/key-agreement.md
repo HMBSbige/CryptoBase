@@ -7,6 +7,7 @@
 | `EcdhP256` | `CryptoBase.KeyAgreements.Ecdh` | 32 bytes | 65 bytes | 32 bytes |
 | `EcdhP384` | `CryptoBase.KeyAgreements.Ecdh` | 48 bytes | 97 bytes | 48 bytes |
 | `EcdhP521` | `CryptoBase.KeyAgreements.Ecdh` | 66 bytes | 133 bytes | 66 bytes |
+| `X25519` | `CryptoBase.KeyAgreements.Xdh` | 32 bytes | 32 bytes | 32 bytes |
 
 ## ECDH
 
@@ -47,6 +48,46 @@ key.ExportPrivateKey(privateKey);
 using EcdhP256 restored = EcdhP256.ImportPrivateKey(privateKey);
 ```
 
+## X25519
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.KeyAgreements.Xdh;
+
+using X25519 alice = X25519.GenerateKey();
+using X25519 bob = X25519.GenerateKey();
+
+// Public key: the u-coordinate, 32 little-endian bytes.
+byte[] alicePublicKey = new byte[X25519.PublicKeyLength];
+byte[] bobPublicKey = new byte[X25519.PublicKeyLength];
+alice.ExportPublicKey(alicePublicKey);
+bob.ExportPublicKey(bobPublicKey);
+
+// One instance may export and derive on several threads at once.
+byte[] aliceSecret = new byte[X25519.SharedSecretLength];
+
+if (!alice.TryDeriveSharedSecret(bobPublicKey, aliceSecret))
+{
+    // The peer public key has the wrong length or a point of small order; aliceSecret is unchanged.
+    // Any other 32 bytes are accepted.
+    throw new CryptographicException("Invalid public key.");
+}
+
+byte[] bobSecret = new byte[X25519.SharedSecretLength];
+bob.TryDeriveSharedSecret(alicePublicKey, bobSecret); // true; bobSecret equals aliceSecret
+```
+
+### Keys
+
+```csharp
+// Private key: any 32 bytes. It is clamped when used; ExportPrivateKey writes back the bytes that were imported.
+byte[] privateKey = new byte[X25519.PrivateKeyLength];
+key.ExportPrivateKey(privateKey);
+
+// Only the wrong length throws ArgumentException.
+using X25519 restored = X25519.ImportPrivateKey(privateKey);
+```
+
 ## Generic code
 
 ```csharp
@@ -54,7 +95,7 @@ using System.Security.Cryptography;
 using CryptoBase.Abstractions.KeyAgreements;
 using CryptoBase.KeyAgreements.Ecdh;
 
-// The ECDH types implement IKeyAgreement<TSelf>.
+// The ECDH types and X25519 implement IKeyAgreement<TSelf>.
 static byte[] ExportPublicKey<T>(T key) where T : class, IKeyAgreement<T>
 {
     byte[] publicKey = new byte[T.PublicKeyLength];

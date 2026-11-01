@@ -79,6 +79,9 @@ public sealed record EcdhEcpointTestVector(byte[] Public, byte[] Private, byte[]
 
 public sealed record EcdhTestVector(byte[] Public, byte[] Private, byte[] Shared) : WycheproofTestVector;
 
+// The raw keys and shared secret of an XDH computation, as RFC 7748 encodes them.
+public sealed record XdhTestVector(byte[] Public, byte[] Private, byte[] Shared) : WycheproofTestVector;
+
 public sealed record EcdsaVerifyTestVector(byte[] Msg, byte[] Sig) : WycheproofTestVector
 {
 	[JsonIgnore]

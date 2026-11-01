@@ -139,7 +139,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | [ECDH](docs/key-agreement.md) | ✅ |
 | [ECDSA](docs/digital-signatures.md) | ✅ |
 | RSA | ⏳ |
-| X25519 | ⏳ |
+| [X25519](docs/key-agreement.md) | ✅ |
 | X448 | ⏳ |
 | Ed25519 | ⏳ |
 | Ed448 | ⏳ |

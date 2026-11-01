@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.KeyAgreements;
 using CryptoBase.KeyAgreements.Ecdh;
+using CryptoBase.KeyAgreements.Xdh;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.KeyAgreements.KeyAgreementTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -10,6 +11,7 @@ namespace CryptoBase.Tests.KeyAgreements;
 [GenerateGenericTest(typeof(EcdhP256))]
 [GenerateGenericTest(typeof(EcdhP384))]
 [GenerateGenericTest(typeof(EcdhP521))]
+[GenerateGenericTest(typeof(X25519))]
 public class KeyAgreementContractTest<T> where T : class, IKeyAgreement<T>
 {
 	[Test]

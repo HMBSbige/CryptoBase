@@ -1,5 +1,7 @@
 using CryptoBase.Abstractions.KeyAgreements;
+using CryptoBase.KeyAgreements.Xdh;
 using CryptoBase.Tests.EllipticCurves;
+using CryptoBase.Tests.KeyAgreements.Xdh;
 using System.Numerics;
 using static CryptoBase.Tests.KeyAgreements.Ecdh.EcdhTestUtils;
 
@@ -10,6 +12,12 @@ internal sealed record KeyAgreementChecks(byte[][] InvalidPrivateKeys, byte[][] 
 {
 	public static KeyAgreementChecks Of<T>() where T : class, IKeyAgreement<T>
 	{
+		if (typeof(T) == typeof(X25519))
+		{
+			// Every private key is valid; only the points of small order fail.
+			return new KeyAgreementChecks([], X25519TestUtils.SmallOrderPublicKeys());
+		}
+
 		return Ecdh(CurveOf<T>());
 	}
 
