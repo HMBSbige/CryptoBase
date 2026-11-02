@@ -73,6 +73,20 @@ public class StructBlockCipherDisposeTest
 	}
 
 	[Test]
+	public async Task XtsDisposesTweakCipherWhenDataCipherDisposeThrows()
+	{
+		XtsMode<ThrowingDisposeBlockCipher> mode = XtsMode<ThrowingDisposeBlockCipher>.Create(Key);
+
+		await Assert.That(mode.Dispose).ThrowsExactly<InvalidOperationException>();
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(CipherFields<ThrowingDisposeBlockCipher>.XtsData(mode).IsWiped).IsTrue();
+			await Assert.That(CipherFields<ThrowingDisposeBlockCipher>.XtsTweak(mode).IsWiped).IsTrue();
+		}
+	}
+
+	[Test]
 	public async Task DisposingTwiceReleasesEachStoredCipherOnce()
 	{
 		using (Assert.Multiple())
@@ -168,6 +182,47 @@ public class StructBlockCipherDisposeTest
 		public void Dispose()
 		{
 			((Span<byte>)_key).Clear();
+		}
+	}
+
+	// Violates the Dispose contract on purpose: wipes its key, then throws.
+	private struct ThrowingDisposeBlockCipher : IBlockCipher<ThrowingDisposeBlockCipher>
+	{
+		private InlineKeyBlockCipher _inner;
+
+		public static int BlockSize => 16;
+
+		public readonly bool IsWiped => _inner.IsWiped;
+
+		public static ThrowingDisposeBlockCipher Create(scoped ReadOnlySpan<byte> key)
+		{
+			return new ThrowingDisposeBlockCipher { _inner = InlineKeyBlockCipher.Create(key) };
+		}
+
+		public readonly void EncryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
+		{
+			_inner.EncryptBlock(source, destination);
+		}
+
+		public readonly void EncryptBlocks(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
+		{
+			_inner.EncryptBlocks(source, destination);
+		}
+
+		public readonly void DecryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
+		{
+			_inner.DecryptBlock(source, destination);
+		}
+
+		public readonly void DecryptBlocks(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
+		{
+			_inner.DecryptBlocks(source, destination);
+		}
+
+		public void Dispose()
+		{
+			_inner.Dispose();
+			throw new InvalidOperationException();
 		}
 	}
 

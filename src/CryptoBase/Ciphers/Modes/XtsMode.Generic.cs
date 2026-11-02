@@ -73,8 +73,15 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 		}
 
 		_disposed = true;
-		_dataCipher.Dispose();
-		_tweakCipher.Dispose();
+
+		try
+		{
+			_dataCipher.Dispose();
+		}
+		finally
+		{
+			_tweakCipher.Dispose();
+		}
 	}
 
 	/// <inheritdoc />
