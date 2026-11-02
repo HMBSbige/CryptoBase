@@ -43,6 +43,68 @@ internal static class EdwardsBaseTable
 		Field25519.ConditionalNegate(negative, ref result.TwoDXY);
 	}
 
+	// Select for a kernel that turns the entry into lanes itself, in registers: y + x, y − x and 2dxy in the four 64-bit limbs of the entry, with y + x and y − x swapped for a negative digit and (1, 1, 0) for a digit of 0. 2dxy keeps its sign, which the caller negates where digit is negative.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void SelectPacked(int window, int digit, out Vector256<ulong> yPlusX, out Vector256<ulong> yMinusX, out Vector256<ulong> twoDXY)
+	{
+		Debug.Assert(Vector256.IsHardwareAccelerated);
+
+		int sign = digit >> 31;
+		uint index = (uint)((digit ^ sign) - sign) - 1;
+		Vector256<ulong> plus;
+		Vector256<ulong> minus;
+
+		if (Vector512.IsHardwareAccelerated)
+		{
+			Lookup512(ref Unsafe.AsRef(in Window(window)), index, out Vector512<ulong> sums, out twoDXY);
+			plus = sums.GetLower();
+			minus = sums.GetUpper();
+		}
+		else
+		{
+			Lookup256(ref Unsafe.AsRef(in Window(window)), index, out plus, out minus, out twoDXY);
+		}
+
+		Vector256<ulong> one = Vector256.CreateScalar(ZeroMask((uint)digit) & 1);
+		plus |= one;
+		minus |= one;
+		Vector256<ulong> swap = (plus ^ minus) & Vector256.Create((ulong)sign);
+		yPlusX = plus ^ swap;
+		yMinusX = minus ^ swap;
+	}
+
+	// As above with y + x in the low half of sums and y − x in the high half.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void SelectPacked(int window, int digit, out Vector512<ulong> sums, out Vector256<ulong> twoDXY)
+	{
+		Debug.Assert(Vector512.IsHardwareAccelerated);
+
+		int sign = digit >> 31;
+		Lookup512(ref Unsafe.AsRef(in Window(window)), (uint)((digit ^ sign) - sign) - 1, out Vector512<ulong> entry, out twoDXY);
+		entry |= Vector512.Create(ZeroMask((uint)digit)) & Vector512.Create(1UL, 0, 0, 0, 1, 0, 0, 0);
+		sums = Vector512.ConditionalSelect(Vector512.Create((ulong)sign), Avx512F.Shuffle4x128(entry, entry, 0b01_00_11_10), entry);
+	}
+
+	// As above in pairs of limbs: y + x in plus0 and plus1, y − x in minus0 and minus1, and 2dxy in product0 and product1.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void SelectPacked(int window, int digit, out Vector128<ulong> plus0, out Vector128<ulong> plus1, out Vector128<ulong> minus0, out Vector128<ulong> minus1, out Vector128<ulong> product0, out Vector128<ulong> product1)
+	{
+		Debug.Assert(Vector128.IsHardwareAccelerated);
+
+		int sign = digit >> 31;
+		Lookup128(ref Unsafe.AsRef(in Window(window)), (uint)((digit ^ sign) - sign) - 1, out Vector128<ulong> l0, out Vector128<ulong> l1, out Vector128<ulong> l2, out Vector128<ulong> l3, out product0, out product1);
+		Vector128<ulong> one = Vector128.CreateScalar(ZeroMask((uint)digit) & 1);
+		l0 |= one;
+		l2 |= one;
+		Vector128<ulong> negative = Vector128.Create((ulong)sign);
+		Vector128<ulong> swap0 = (l0 ^ l2) & negative;
+		Vector128<ulong> swap1 = (l1 ^ l3) & negative;
+		plus0 = l0 ^ swap0;
+		plus1 = l1 ^ swap1;
+		minus0 = l2 ^ swap0;
+		minus1 = l3 ^ swap1;
+	}
+
 	// index counts entries across the windows and must be public, as the address read depends on it.
 	internal static void Read(int index, out EdwardsNielsPoint result)
 	{
@@ -57,15 +119,26 @@ internal static class EdwardsBaseTable
 	{
 		if (Vector512.IsHardwareAccelerated)
 		{
-			Lookup512(ref Unsafe.AsRef(in window), index, ref result);
+			Lookup512(ref Unsafe.AsRef(in window), index, out Vector512<ulong> low, out Vector256<ulong> high);
+			low.StoreUnsafe(ref result);
+			high.StoreUnsafe(ref result, 8);
 		}
 		else if (Vector256.IsHardwareAccelerated)
 		{
-			Lookup256(ref Unsafe.AsRef(in window), index, ref result);
+			Lookup256(ref Unsafe.AsRef(in window), index, out Vector256<ulong> low, out Vector256<ulong> middle, out Vector256<ulong> high);
+			low.StoreUnsafe(ref result);
+			middle.StoreUnsafe(ref result, 4);
+			high.StoreUnsafe(ref result, 8);
 		}
 		else if (Vector128.IsHardwareAccelerated)
 		{
-			Lookup128(ref Unsafe.AsRef(in window), index, ref result);
+			Lookup128(ref Unsafe.AsRef(in window), index, out Vector128<ulong> l0, out Vector128<ulong> l1, out Vector128<ulong> l2, out Vector128<ulong> l3, out Vector128<ulong> l4, out Vector128<ulong> l5);
+			l0.StoreUnsafe(ref result);
+			l1.StoreUnsafe(ref result, 2);
+			l2.StoreUnsafe(ref result, 4);
+			l3.StoreUnsafe(ref result, 6);
+			l4.StoreUnsafe(ref result, 8);
+			l5.StoreUnsafe(ref result, 10);
 		}
 		else
 		{
@@ -75,7 +148,7 @@ internal static class EdwardsBaseTable
 
 	// The even and the odd entries merge into accumulators of their own, which halves the chain of merges.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Lookup512(ref ulong entry, uint index, ref ulong result)
+	private static void Lookup512(ref ulong entry, uint index, out Vector512<ulong> low, out Vector256<ulong> high)
 	{
 		Vector512<ulong> target = Vector512.Create((ulong)index);
 		Vector512<ulong> two = Vector512.Create(2UL);
@@ -99,13 +172,13 @@ internal static class EdwardsBaseTable
 			entry = ref Unsafe.Add(ref entry, 2 * EntryLength);
 		}
 
-		(lowEven | lowOdd).StoreUnsafe(ref result);
-		(highEven | highOdd).StoreUnsafe(ref result, 8);
+		low = lowEven | lowOdd;
+		high = highEven | highOdd;
 	}
 
 	// The even and the odd entries merge into accumulators of their own, which halves the chain of merges.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Lookup256(ref ulong entry, uint index, ref ulong result)
+	private static void Lookup256(ref ulong entry, uint index, out Vector256<ulong> low, out Vector256<ulong> middle, out Vector256<ulong> high)
 	{
 		Vector256<ulong> target = Vector256.Create((ulong)index);
 		Vector256<ulong> two = Vector256.Create(2UL);
@@ -133,22 +206,22 @@ internal static class EdwardsBaseTable
 			entry = ref Unsafe.Add(ref entry, 2 * EntryLength);
 		}
 
-		(evenLow | oddLow).StoreUnsafe(ref result);
-		(evenMiddle | oddMiddle).StoreUnsafe(ref result, 4);
-		(evenHigh | oddHigh).StoreUnsafe(ref result, 8);
+		low = evenLow | oddLow;
+		middle = evenMiddle | oddMiddle;
+		high = evenHigh | oddHigh;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Lookup128(ref ulong entry, uint index, ref ulong result)
+	private static void Lookup128(ref ulong entry, uint index, out Vector128<ulong> l0, out Vector128<ulong> l1, out Vector128<ulong> l2, out Vector128<ulong> l3, out Vector128<ulong> l4, out Vector128<ulong> l5)
 	{
 		Vector128<ulong> target = Vector128.Create((ulong)index);
 		Vector128<ulong> position = Vector128<ulong>.Zero;
-		Vector128<ulong> l0 = Vector128<ulong>.Zero;
-		Vector128<ulong> l1 = Vector128<ulong>.Zero;
-		Vector128<ulong> l2 = Vector128<ulong>.Zero;
-		Vector128<ulong> l3 = Vector128<ulong>.Zero;
-		Vector128<ulong> l4 = Vector128<ulong>.Zero;
-		Vector128<ulong> l5 = Vector128<ulong>.Zero;
+		l0 = Vector128<ulong>.Zero;
+		l1 = Vector128<ulong>.Zero;
+		l2 = Vector128<ulong>.Zero;
+		l3 = Vector128<ulong>.Zero;
+		l4 = Vector128<ulong>.Zero;
+		l5 = Vector128<ulong>.Zero;
 
 		for (int j = 0; j < WindowLength; ++j)
 		{
@@ -162,13 +235,6 @@ internal static class EdwardsBaseTable
 			position += Vector128<ulong>.One;
 			entry = ref Unsafe.Add(ref entry, EntryLength);
 		}
-
-		l0.StoreUnsafe(ref result);
-		l1.StoreUnsafe(ref result, 2);
-		l2.StoreUnsafe(ref result, 4);
-		l3.StoreUnsafe(ref result, 6);
-		l4.StoreUnsafe(ref result, 8);
-		l5.StoreUnsafe(ref result, 10);
 	}
 
 	// accumulator with value where mask is set. The accumulators start at zero and at most one entry of a window matches, so an OR merges as well as a select: ARM64 takes the select, one instruction there, and x64 the AND and the OR, where the select takes three.

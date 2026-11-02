@@ -51,7 +51,7 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 		z3.ZeroMemory();
 	}
 
-	// The windows of EdwardsBaseTable, as Curve25519Scalar.MultiplyBase takes them, each entry cached after its constant-time lookup.
+	// The windows of EdwardsBaseTable, as Curve25519Scalar.MultiplyBase takes them: the first entry starts the point, and each later one goes from its constant-time lookup into lanes by TField.SelectBase, without coordinates in memory between them.
 	[SkipLocalsInit]
 	internal static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{
@@ -74,8 +74,7 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 
 		for (int i = 1; i < digits.Length; ++i)
 		{
-			EdwardsBaseTable.Select(i, digits[i], out entry);
-			Cache(in entry, out cached);
+			TField.SelectBase(i, digits[i], out cached);
 			EdwardsLanes.Add(ref point, in cached, ref left, ref right);
 		}
 

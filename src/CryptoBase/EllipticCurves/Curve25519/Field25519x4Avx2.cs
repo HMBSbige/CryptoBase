@@ -81,6 +81,19 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		result.L9 = l4 >> 26;
 	}
 
+	// The limbs of y + x and y − x go into columns (y − x, y + x) of limbs 0 and 2 and of limbs 1 and 3 within each 128-bit half, those of 2dxy into (2, 2dxy) likewise, and the halves then pair up into the four 64-bit limbs of (y − x, y + x, 2, 2dxy), which Split takes.
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	public static void SelectBase(int window, int digit, out Field25519x4Avx2 result)
+	{
+		EdwardsBaseTable.SelectPacked(window, digit, out Vector256<ulong> yPlusX, out Vector256<ulong> yMinusX, out Vector256<ulong> twoDXY);
+		Vector256<ulong> evenSums = Avx2.UnpackLow(yMinusX, yPlusX);
+		Vector256<ulong> oddSums = Avx2.UnpackHigh(yMinusX, yPlusX);
+		Vector256<ulong> evenProducts = Avx2.UnpackLow(Vector256.CreateScalar(2UL), twoDXY);
+		Vector256<ulong> oddProducts = twoDXY & Vector256.Create(0, ulong.MaxValue, 0, ulong.MaxValue);
+		Vector256<ulong> negate = Vector256.Create((ulong)(digit >> 31)) & Vector256.Create(0, 0, 0, ulong.MaxValue);
+		Split(Avx2.Permute2x128(evenSums, evenProducts, 0x20), Avx2.Permute2x128(oddSums, oddProducts, 0x20), Avx2.Permute2x128(evenSums, evenProducts, 0x31), Avx2.Permute2x128(oddSums, oddProducts, 0x31), negate, out result);
+	}
+
 	// Each pair of limbs joins into a limb of radix 2^51 below 2^52, which Field25519.Carry leaves tight.
 	public static void Extract(in Field25519x4Avx2 value, out Field25519 a, out Field25519 b, out Field25519 c, out Field25519 d)
 	{
@@ -696,6 +709,27 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		result.L7 = (r7 & mask25) + (r6 >> 26);
 		result.L8 = (r8 & mask26) + (r7 >> 25);
 		result.L9 = (r9 & mask25) + (r8 >> 26);
+	}
+
+	// The ten limbs of canonical values given in four 64-bit limbs w0 to w3, lane by lane: limb k takes bits ⌈25.5k⌉ to ⌈25.5(k + 1)⌉ − 1, which leaves the value reduced. A lane that negate, all ones there and 0 elsewhere, selects becomes 2p less that: (x ^ m) + (m & (2p + 1)) is x for m = 0 and ~x + 2p + 1 = 2p − x modulo 2^64 for m all ones.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Split(Vector256<ulong> w0, Vector256<ulong> w1, Vector256<ulong> w2, Vector256<ulong> w3, Vector256<ulong> negate, out Field25519x4Avx2 result)
+	{
+		Vector256<ulong> mask25 = Vector256.Create(Mask25);
+		Vector256<ulong> mask26 = Vector256.Create(Mask26);
+		Vector256<ulong> addend0 = negate & Vector256.Create(TwoP0 + 1);
+		Vector256<ulong> addendEven = negate & Vector256.Create(TwoPEven + 1);
+		Vector256<ulong> addendOdd = negate & Vector256.Create(TwoPOdd + 1);
+		result.L0 = (w0 & mask26 ^ negate) + addend0;
+		result.L1 = (w0 >> 26 & mask25 ^ negate) + addendOdd;
+		result.L2 = ((w0 >> 51 | w1 << 13) & mask26 ^ negate) + addendEven;
+		result.L3 = (w1 >> 13 & mask25 ^ negate) + addendOdd;
+		result.L4 = (w1 >> 38 ^ negate) + addendEven;
+		result.L5 = (w2 & mask25 ^ negate) + addendOdd;
+		result.L6 = (w2 >> 25 & mask26 ^ negate) + addendEven;
+		result.L7 = ((w2 >> 51 | w3 << 13) & mask25 ^ negate) + addendOdd;
+		result.L8 = (w3 >> 12 & mask26 ^ negate) + addendEven;
+		result.L9 = (w3 >> 38 ^ negate) + addendOdd;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

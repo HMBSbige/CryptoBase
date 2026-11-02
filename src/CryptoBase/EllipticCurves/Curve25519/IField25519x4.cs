@@ -9,6 +9,9 @@ internal interface IField25519x4<TSelf> : IEdwardsField25519x4<TSelf> where TSel
 	// The four lanes of a value that a product gives, as tight elements.
 	static abstract void Extract(in TSelf value, out Field25519 a, out Field25519 b, out Field25519 c, out Field25519 d);
 
+	// The cached form (y − x, y + x, 2, 2dxy) of EdwardsBaseTable.Select(window, digit), its lookup and conversion kept in registers. Neither the time nor the addresses read depend on digit. Lane D is reduced or the negation of a reduced lane, and the others reduced.
+	static abstract void SelectBase(int window, int digit, out TSelf result);
+
 	// (Y − X, Y + X, Z, T) from a reduced (X, Y, Z, T).
 	static abstract void DiffSum(in TSelf point, out TSelf result);
 

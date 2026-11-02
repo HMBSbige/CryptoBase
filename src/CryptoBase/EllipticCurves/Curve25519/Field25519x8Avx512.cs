@@ -70,6 +70,44 @@ internal struct Field25519x8Avx512 : IEdwardsField25519x4<Field25519x8Avx512>
 		result.L9 = l4 >> 26;
 	}
 
+	// The cached forms (y − x, y + x, 2, 2dxy) of two entries that EdwardsBaseTable.SelectPacked gives, the first in group 0 and the second in group 1, with 2dxy negated where the sign of its digit, 0 or ulong.MaxValue, is set; as Field25519x4Avx2.SelectBase converts one. The halves of the entries pair up so that each 128-bit block takes the columns of one group, and a permutation of two vectors gathers each 64-bit limb of both groups.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void CreateCached(Vector512<ulong> firstSums, Vector256<ulong> firstProduct, ulong firstSign, Vector512<ulong> secondSums, Vector256<ulong> secondProduct, ulong secondSign, out Field25519x8Avx512 result)
+	{
+		Vector512<ulong> plus = Avx512F.Shuffle4x128(firstSums, secondSums, 0b01_00_01_00);
+		Vector512<ulong> minus = Avx512F.Shuffle4x128(firstSums, secondSums, 0b11_10_11_10);
+		Vector512<ulong> products = Avx512F.InsertVector256(firstProduct.ToVector512Unsafe(), secondProduct, 1);
+		Vector512<ulong> evenSums = Avx512F.UnpackLow(minus, plus);
+		Vector512<ulong> oddSums = Avx512F.UnpackHigh(minus, plus);
+		Vector512<ulong> evenProducts = Avx512F.UnpackLow(Vector512.Create(2UL, 0, 0, 0, 2, 0, 0, 0), products);
+		Vector512<ulong> oddProducts = products & Vector512.Create(0, ulong.MaxValue, 0, ulong.MaxValue, 0, ulong.MaxValue, 0, ulong.MaxValue);
+		Vector512<ulong> low = Vector512.Create(0UL, 1, 8, 9, 4, 5, 12, 13);
+		Vector512<ulong> high = Vector512.Create(2UL, 3, 10, 11, 6, 7, 14, 15);
+		Vector512<ulong> negate = Avx512F.InsertVector256(Vector256.Create(firstSign).ToVector512Unsafe(), Vector256.Create(secondSign), 1) & LaneMask(LaneD);
+		Split(Avx512F.PermuteVar8x64x2(evenSums, low, evenProducts), Avx512F.PermuteVar8x64x2(oddSums, low, oddProducts), Avx512F.PermuteVar8x64x2(evenSums, high, evenProducts), Avx512F.PermuteVar8x64x2(oddSums, high, oddProducts), negate, out result);
+	}
+
+	// As Field25519x4Avx2.Split.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Split(Vector512<ulong> w0, Vector512<ulong> w1, Vector512<ulong> w2, Vector512<ulong> w3, Vector512<ulong> negate, out Field25519x8Avx512 result)
+	{
+		Vector512<ulong> mask25 = Vector512.Create(Mask25);
+		Vector512<ulong> mask26 = Vector512.Create(Mask26);
+		Vector512<ulong> addend0 = negate & Vector512.Create(TwoP0 + 1);
+		Vector512<ulong> addendEven = negate & Vector512.Create(TwoPEven + 1);
+		Vector512<ulong> addendOdd = negate & Vector512.Create(TwoPOdd + 1);
+		result.L0 = (w0 & mask26 ^ negate) + addend0;
+		result.L1 = (w0 >> 26 & mask25 ^ negate) + addendOdd;
+		result.L2 = ((w0 >> 51 | w1 << 13) & mask26 ^ negate) + addendEven;
+		result.L3 = (w1 >> 13 & mask25 ^ negate) + addendOdd;
+		result.L4 = (w1 >> 38 ^ negate) + addendEven;
+		result.L5 = (w2 & mask25 ^ negate) + addendOdd;
+		result.L6 = (w2 >> 25 & mask26 ^ negate) + addendEven;
+		result.L7 = ((w2 >> 51 | w3 << 13) & mask25 ^ negate) + addendOdd;
+		result.L8 = (w3 >> 12 & mask26 ^ negate) + addendEven;
+		result.L9 = (w3 >> 38 ^ negate) + addendOdd;
+	}
+
 	// The four lanes of group 0 or 1 as tight elements.
 	public static void Extract(in Field25519x8Avx512 value, int group, out Field25519 a, out Field25519 b, out Field25519 c, out Field25519 d)
 	{

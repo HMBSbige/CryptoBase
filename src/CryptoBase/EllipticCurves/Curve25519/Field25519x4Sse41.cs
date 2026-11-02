@@ -34,6 +34,31 @@ internal struct Field25519x4Sse41 : IField25519x4<Field25519x4Sse41>
 		Pair.Create(in c, in d, out result.CD);
 	}
 
+	// The limbs of y + x and y − x pair up into (y − x, y + x) and those of 2dxy into (2, 2dxy), which Pair.Split takes; only the second lane of CD is negated.
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	public static void SelectBase(int window, int digit, out Field25519x4Sse41 result)
+	{
+		EdwardsBaseTable.SelectPacked(window, digit, out Vector128<ulong> plus0, out Vector128<ulong> plus1, out Vector128<ulong> minus0, out Vector128<ulong> minus1, out Vector128<ulong> product0, out Vector128<ulong> product1);
+		Vector128<ulong> second = Vector128.Create(0, ulong.MaxValue);
+		Pair.Split(Sse2.UnpackLow(minus0, plus0), Sse2.UnpackHigh(minus0, plus0), Sse2.UnpackLow(minus1, plus1), Sse2.UnpackHigh(minus1, plus1), out result.AB);
+		Pair.Split(Sse2.UnpackLow(Vector128.CreateScalar(2UL), product0), product0 & second, Sse2.UnpackLow(Vector128<ulong>.Zero, product1), product1 & second, out result.CD);
+		// 2p − D as Field25519x4Avx2.Split negates.
+		Vector128<ulong> negate = Vector128.Create((ulong)(digit >> 31)) & second;
+		Vector128<ulong> addend0 = negate & Vector128.Create(TwoP0 + 1);
+		Vector128<ulong> addendEven = negate & Vector128.Create(TwoPEven + 1);
+		Vector128<ulong> addendOdd = negate & Vector128.Create(TwoPOdd + 1);
+		result.CD.L0 = (result.CD.L0 ^ negate) + addend0;
+		result.CD.L1 = (result.CD.L1 ^ negate) + addendOdd;
+		result.CD.L2 = (result.CD.L2 ^ negate) + addendEven;
+		result.CD.L3 = (result.CD.L3 ^ negate) + addendOdd;
+		result.CD.L4 = (result.CD.L4 ^ negate) + addendEven;
+		result.CD.L5 = (result.CD.L5 ^ negate) + addendOdd;
+		result.CD.L6 = (result.CD.L6 ^ negate) + addendEven;
+		result.CD.L7 = (result.CD.L7 ^ negate) + addendOdd;
+		result.CD.L8 = (result.CD.L8 ^ negate) + addendEven;
+		result.CD.L9 = (result.CD.L9 ^ negate) + addendOdd;
+	}
+
 	public static void Extract(in Field25519x4Sse41 value, out Field25519 a, out Field25519 b, out Field25519 c, out Field25519 d)
 	{
 		Pair.Extract(in value.AB, out a, out b);
@@ -390,6 +415,24 @@ internal struct Field25519x4Sse41 : IField25519x4<Field25519x4Sse41>
 			result.L7 = l3 >> 26;
 			result.L8 = l4 & mask26;
 			result.L9 = l4 >> 26;
+		}
+
+		// The ten limbs of canonical values given in four 64-bit limbs w0 to w3, as Field25519x4Avx2.Split takes them, which leaves both lanes reduced.
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static void Split(Vector128<ulong> w0, Vector128<ulong> w1, Vector128<ulong> w2, Vector128<ulong> w3, out Pair result)
+		{
+			Vector128<ulong> mask25 = Vector128.Create(Mask25);
+			Vector128<ulong> mask26 = Vector128.Create(Mask26);
+			result.L0 = w0 & mask26;
+			result.L1 = w0 >> 26 & mask25;
+			result.L2 = (w0 >> 51 | w1 << 13) & mask26;
+			result.L3 = w1 >> 13 & mask25;
+			result.L4 = w1 >> 38;
+			result.L5 = w2 & mask25;
+			result.L6 = w2 >> 25 & mask26;
+			result.L7 = (w2 >> 51 | w3 << 13) & mask25;
+			result.L8 = w3 >> 12 & mask26;
+			result.L9 = w3 >> 38;
 		}
 
 		internal static void Extract(in Pair value, out Field25519 a, out Field25519 b)

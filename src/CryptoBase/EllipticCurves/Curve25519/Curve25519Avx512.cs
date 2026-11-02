@@ -12,7 +12,7 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 		Curve25519Avx2.Ladder(scalar, in u, out x, out z);
 	}
 
-	// Window 0 starts group 0 and window 1 group 1, and each later pair adds to both; the last window, alone, pairs with the identity.
+	// Window 0 starts group 0 and window 1 group 1, and each later pair adds to both, from their constant-time lookups into lanes by Field25519x8Avx512.CreateCached; the last window, alone, pairs with the identity.
 	[SkipLocalsInit]
 	public static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{
@@ -37,20 +37,23 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 		Curve25519Scalar.FromNiels(in second, out EdwardsPoint other);
 		Field25519x8Avx512.Create(in result.X, in result.Y, in result.Z, in result.T, in other.X, in other.Y, in other.Z, in other.T, out point);
 
-		for (int i = 2; i < digits.Length; i += 2)
+		int i = 2;
+
+		for (; i + 1 < digits.Length; i += 2)
 		{
-			EdwardsBaseTable.Select(i, digits[i], out first);
+			int firstDigit = digits[i];
+			int secondDigit = digits[i + 1];
+			EdwardsBaseTable.SelectPacked(i, firstDigit, out Vector512<ulong> firstSums, out Vector256<ulong> firstProduct);
+			EdwardsBaseTable.SelectPacked(i + 1, secondDigit, out Vector512<ulong> secondSums, out Vector256<ulong> secondProduct);
+			Field25519x8Avx512.CreateCached(firstSums, firstProduct, (ulong)(firstDigit >> 31), secondSums, secondProduct, (ulong)(secondDigit >> 31), out cached);
+			EdwardsLanes.Add(ref point, in cached, ref left, ref right);
+		}
 
-			if (i + 1 < digits.Length)
-			{
-				EdwardsBaseTable.Select(i + 1, digits[i + 1], out second);
-			}
-			else
-			{
-				Identity(out second);
-			}
-
-			Cache(in first, in second, out cached);
+		if (i < digits.Length)
+		{
+			int digit = digits[i];
+			EdwardsBaseTable.SelectPacked(i, digit, out Vector512<ulong> sums, out Vector256<ulong> product);
+			Field25519x8Avx512.CreateCached(sums, product, (ulong)(digit >> 31), Vector512.Create(1UL, 0, 0, 0, 1, 0, 0, 0), Vector256<ulong>.Zero, 0, out cached);
 			EdwardsLanes.Add(ref point, in cached, ref left, ref right);
 		}
 
@@ -190,14 +193,7 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 		result.YMinusX.L0 = 1;
 	}
 
-	// (y − x, y + x, 2, 2dxy) of two Niels points, one per group.
-	private static void Cache(in EdwardsNielsPoint first, in EdwardsNielsPoint second, out Field25519x8Avx512 result)
-	{
-		ref readonly Field25519 two = ref Field25519.FromConstant(TwoLimbs);
-		Field25519x8Avx512.Create(in first.YMinusX, in first.YPlusX, in two, in first.TwoDXY, in second.YMinusX, in second.YPlusX, in two, in second.TwoDXY, out result);
-	}
-
-	// As Cache, each point negated, to (y + x, y − x, 2, −2dxy), for a public negative digit.
+	// (y − x, y + x, 2, 2dxy) of two Niels points, one per group, each negated to (y + x, y − x, 2, −2dxy) for a public negative digit.
 	private static void CacheVariableTime(in EdwardsNielsPoint first, bool firstNegative, in EdwardsNielsPoint second, bool secondNegative, out Field25519x8Avx512 result)
 	{
 		ref readonly Field25519 two = ref Field25519.FromConstant(TwoLimbs);
