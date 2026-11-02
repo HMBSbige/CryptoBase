@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions.Kems;
+using CryptoBase.Hpke;
 using CryptoBase.Kems.Hybrid;
 using CryptoBase.Kems.MLKem;
 using System.Diagnostics.CodeAnalysis;
@@ -15,6 +16,10 @@ namespace CryptoBase.Tests.Kems;
 [GenerateGenericTest(typeof(SecP256r1MLKem768))]
 [GenerateGenericTest(typeof(SecP384r1MLKem1024))]
 [GenerateGenericTest(typeof(X25519MLKem768))]
+[GenerateGenericTest(typeof(DhKemP256))]
+[GenerateGenericTest(typeof(DhKemP384))]
+[GenerateGenericTest(typeof(DhKemP521))]
+[GenerateGenericTest(typeof(DhKemX25519))]
 public class KemContractTest<T> where T : class, IKem<T>
 {
 	[Test]

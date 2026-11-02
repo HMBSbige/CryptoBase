@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace CryptoBase.KeyAgreements.Xdh;
 
 // The private key is any 32 bytes, kept as imported and clamped where it is used. The public key is a u-coordinate: canonical where the key derives it, the bytes as given where it was imported alone. Keep a key in one writable location and do not copy it: a copy keeps the private key where Clear cannot reach it.
-internal struct X25519Key
+internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 {
 	internal const int PrivateKeyLength = 32;
 	internal const int PublicKeyLength = 32;
@@ -212,6 +212,77 @@ internal struct X25519Key
 		}
 
 		return Field25519.IsZero(in z) is not 0;
+	}
+
+	// The DHKEM view of the key. Every 32-byte string is a private key, exported as imported. A public key comes from TryImportPublicKey, which rejects the points of small order, or from a private key, so the shared secrets below are never all zeros.
+	static int IDiffieHellmanKey<X25519Key>.PrivateKeyLength => PrivateKeyLength;
+
+	static int IDiffieHellmanKey<X25519Key>.PublicKeyLength => PublicKeyLength;
+
+	static int IDiffieHellmanKey<X25519Key>.SharedSecretLength => SharedSecretLength;
+
+	static bool IDiffieHellmanKey<X25519Key>.IsEveryPrivateKeyValid => true;
+
+	static byte IDiffieHellmanKey<X25519Key>.PrivateKeyMask => 0xFF;
+
+	readonly bool IDiffieHellmanKey<X25519Key>.HasPrivateKey => HasPrivateKey;
+
+	readonly bool IDiffieHellmanKey<X25519Key>.HasPublicKey => HasPublicKey;
+
+	bool IDiffieHellmanKey<X25519Key>.TryImportPrivateKey(ReadOnlySpan<byte> source)
+	{
+		if (source.Length is not PrivateKeyLength)
+		{
+			Clear();
+			return false;
+		}
+
+		SetKey(source);
+		return true;
+	}
+
+	bool IDiffieHellmanKey<X25519Key>.TryImportPublicKey(ReadOnlySpan<byte> source)
+	{
+		return TryImportPublicKey(source);
+	}
+
+	// Unclamped, as draft-ietf-hpke-hpke serializes it; RFC 9180, Sec. 7.1.2 and its erratum 7121 clamp it instead, which gives the same key.
+	readonly int IDiffieHellmanKey<X25519Key>.ExportPrivateKey(Span<byte> destination)
+	{
+		return ExportPrivateKey(destination);
+	}
+
+	readonly int IDiffieHellmanKey<X25519Key>.ExportPublicKey(Span<byte> destination)
+	{
+		return ExportPublicKey(destination);
+	}
+
+	readonly bool IDiffieHellmanKey<X25519Key>.TryDeriveSharedSecret(ReadOnlySpan<byte> peerPublicKey, Span<byte> sharedSecret)
+	{
+		return TryDeriveSharedSecret(peerPublicKey, sharedSecret);
+	}
+
+	static void IDiffieHellmanKey<X25519Key>.DeriveSharedSecret(in X25519Key privateKey, in X25519Key publicKey, Span<byte> destination)
+	{
+		Debug.Assert(privateKey.HasPrivateKey && publicKey.HasPublicKey);
+
+		bool derived = TryDeriveSharedSecret(privateKey._privateKey, publicKey._publicKey, destination.Slice(0, SharedSecretLength));
+		Debug.Assert(derived);
+	}
+
+	[SkipLocalsInit]
+	static void IDiffieHellmanKey<X25519Key>.GenerateEphemeral(in X25519Key publicKey, Span<byte> ephemeralPublicKey, Span<byte> sharedSecret)
+	{
+		Debug.Assert(publicKey.HasPublicKey);
+
+		using CryptoBuffer<byte> ephemeral = new(stackalloc byte[PrivateKeyLength]);
+		SystemRandom.Fill(ephemeral.Span);
+		DerivePublicKeyAndSharedSecret(ephemeral.Span, publicKey._publicKey, ephemeralPublicKey.Slice(0, PublicKeyLength), sharedSecret.Slice(0, SharedSecretLength));
+	}
+
+	void IDiffieHellmanKey<X25519Key>.Clear()
+	{
+		Clear();
 	}
 
 	// Without a branch on the contents.

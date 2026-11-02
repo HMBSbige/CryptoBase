@@ -9,6 +9,7 @@
 - [One-time passwords](one-time-passwords.md)
 - [Key encapsulation](key-encapsulation.md)
 - [Key agreement](key-agreement.md)
+- [Hybrid public key encryption](hpke.md)
 - [Digital signatures](digital-signatures.md)
 - [X.509 certificates](x509.md)
 - [Data formats](data-formats.md)

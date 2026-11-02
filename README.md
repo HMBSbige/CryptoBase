@@ -146,6 +146,19 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | SM2 | ⏳ |
 | SM9 | ⏳ |
 
+### [Hybrid public key encryption](docs/hpke.md)
+
+| Features | Status |
+| -------- |:------:|
+| Base, PSK, auth and auth_psk modes | ✅ |
+| HKDF-SHA256, HKDF-SHA384, HKDF-SHA512 | ✅ |
+| AES-128-GCM, AES-256-GCM, ChaCha20Poly1305, export-only | ✅ |
+| DHKEM(P-256, HKDF-SHA256) | ✅ |
+| DHKEM(P-384, HKDF-SHA384) | ✅ |
+| DHKEM(P-521, HKDF-SHA512) | ✅ |
+| DHKEM(X25519, HKDF-SHA256) | ✅ |
+| DHKEM(X448, HKDF-SHA512) | ⚠️ |
+
 ### Post-quantum cryptography
 
 #### [Key encapsulation mechanisms](docs/key-encapsulation.md)

@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.Kems;
 using CryptoBase.Abstractions.KeyAgreements;
+using CryptoBase.Hpke;
 using CryptoBase.Kems.Hybrid;
 using CryptoBase.Kems.MLKem;
 using CryptoBase.KeyAgreements.Ecdh;
@@ -35,6 +36,26 @@ internal sealed record KemCiphertextChecks((int Offset, int Length)[] CheckedRan
 			return MLKemX25519(T.CiphertextLength);
 		}
 
+		if (typeof(T) == typeof(DhKemP256))
+		{
+			return DhKem<EcdhP256>();
+		}
+
+		if (typeof(T) == typeof(DhKemP384))
+		{
+			return DhKem<EcdhP384>();
+		}
+
+		if (typeof(T) == typeof(DhKemP521))
+		{
+			return DhKem<EcdhP521>();
+		}
+
+		if (typeof(T) == typeof(DhKemX25519))
+		{
+			return DhKem<X25519>();
+		}
+
 		throw new NotSupportedException(typeof(T).Name);
 	}
 
@@ -49,6 +70,12 @@ internal sealed record KemCiphertextChecks((int Offset, int Length)[] CheckedRan
 		}
 
 		return false;
+	}
+
+	// The ciphertext is an ephemeral public key.
+	private static KemCiphertextChecks DhKem<TEcdh>() where TEcdh : class, IKeyAgreement<TEcdh>
+	{
+		return new KemCiphertextChecks([(0, TEcdh.PublicKeyLength)], KeyAgreementChecks.Of<TEcdh>().InvalidPublicKeys);
 	}
 
 	private static KemCiphertextChecks ECMLKem<TEcdh>(int ciphertextLength) where TEcdh : class, IKeyAgreement<TEcdh>

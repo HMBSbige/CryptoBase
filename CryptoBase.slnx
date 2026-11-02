@@ -29,6 +29,7 @@
     <File Path="docs\one-time-passwords.md" />
     <File Path="docs\key-encapsulation.md" />
     <File Path="docs\key-agreement.md" />
+    <File Path="docs\hpke.md" />
     <File Path="docs\digital-signatures.md" />
     <File Path="docs\x509.md" />
     <File Path="docs\stream-ciphers.md" />
