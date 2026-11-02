@@ -5,7 +5,7 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The validator trusts the given certificates alone: it reads no certificate store and holds no roots of its own, which suits private PKIs, ML-DSA chains, and roots or certificates that the caller pins.
+/// The validator trusts the given certificates alone: it reads no certificate store and holds no roots of its own, which suits private PKIs, Ed25519 and ML-DSA chains, and roots or certificates that the caller pins.
 /// Each given certificate is a trust anchor (RFC 5280, Sec. 6.1.1), a version 1 certificate included, whose key the validator trusts without verifying its own signature; a peer's certificate that is one of them, byte for byte, is a path of its own.
 /// The validator uses no network: it neither retrieves missing issuers nor checks revocation, so <see cref="CertificateValidationContext.Deadline" /> has no effect, and validation completes synchronously.
 /// </para>
@@ -33,7 +33,7 @@ namespace CryptoBase.X509;
 /// </para>
 /// <para>
 /// Signatures are verified with the key of the issuer, imported with the importer given to the constructor; an RSA key that it does not support is imported with <see cref="PlatformRsaKey.ImportSubjectPublicKeyInfo" />.
-/// The algorithms are those of <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" />, ML-DSA among them; Ed25519 and Ed448 signatures are not supported yet. Signatures with MD2, MD4, MD5, SHA-1 or SHA-224, and DSA signatures, fail with <see cref="CertificateValidationError.WeakAlgorithm" />, and any other algorithm, Ed25519 and Ed448 included, with <see cref="CertificateValidationError.UnsupportedAlgorithm" />.
+/// The algorithms are those of <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" />, Ed25519 and ML-DSA among them; Ed448 signatures are not supported yet. Signatures with MD2, MD4, MD5, SHA-1 or SHA-224, and DSA signatures, fail with <see cref="CertificateValidationError.WeakAlgorithm" />, and any other algorithm, Ed448 included, with <see cref="CertificateValidationError.UnsupportedAlgorithm" />.
 /// The key of every certificate, the peer's and the trust anchor's included, must also pass the policy: an RSA modulus of <see cref="MinRsaKeySize" /> to 16384 bits that is a multiple of 8, as the CA/Browser Forum Baseline Requirements, Sec. 6.1.5, require, with a public exponent of at most 33 bits; and an EC key on the named curve P-256, P-384 or P-521.
 /// A key that fails gives <see cref="CertificateValidationError.WeakAlgorithm" />, as does a DSA key; an EC key with explicit parameters, or a key that the importer does not support, gives <see cref="CertificateValidationError.UnsupportedAlgorithm" />.
 /// </para>

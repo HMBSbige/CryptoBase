@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
+using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.X509;
 using System.Diagnostics.CodeAnalysis;
@@ -129,6 +130,32 @@ public class CertificateTest
 			await Assert.That(certificate.VerifySignature(otherCurve)).IsFalse();
 			await Assert.That(Certificate.Decode(tampered).VerifySignature(key)).IsFalse();
 			await Assert.That(() => certificate.VerifySignature(null!)).ThrowsExactly<ArgumentNullException>();
+		}
+	}
+
+	// RFC 8410, Sec. 6: id-Ed25519 without parameters signs the TBSCertificate with Ed25519, whose 64-byte signature fills the BIT STRING.
+	[Test]
+	public async Task VerifiesEd25519CertificatesOfOpenSsl()
+	{
+		Certificate root = Certificate.DecodePem(OpenSslCertificates.Ed25519Root);
+		Certificate leaf = Certificate.DecodePem(OpenSslCertificates.Ed25519Leaf);
+		using ISignatureKey rootKey = SignatureKey.ImportSubjectPublicKeyInfo(root.PublicKeyInfo.Encoded.Span);
+		using ISignatureKey leafKey = SignatureKey.ImportSubjectPublicKeyInfo(leaf.PublicKeyInfo.Encoded.Span);
+		using EcdsaP256 ecdsa = EcdsaP256.GenerateKey();
+		byte[] tampered = leaf.Encoded.ToArray();
+		tampered[leaf.Encoded.Length - leaf.Signature.Length] ^= 1;
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(root.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.Ed25519).Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(leaf.SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) ? algorithm : default).IsEqualTo(SignatureAlgorithm.Ed25519);
+			await Assert.That(leaf.Signature.Length).IsEqualTo(64);
+			await Assert.That(rootKey.GetType()).IsEqualTo(typeof(Ed25519));
+			await Assert.That(root.VerifySignature(rootKey)).IsTrue();
+			await Assert.That(leaf.VerifySignature(rootKey)).IsTrue();
+			await Assert.That(leaf.VerifySignature(leafKey)).IsFalse();
+			await Assert.That(leaf.VerifySignature(ecdsa)).IsFalse();
+			await Assert.That(Certificate.Decode(tampered).VerifySignature(rootKey)).IsFalse();
 		}
 	}
 

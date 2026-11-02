@@ -242,7 +242,7 @@ internal static class X509TestUtils
 		return new X509EnhancedKeyUsageExtension([new Oid(oid)], false);
 	}
 
-	// Self-signed RSA certificates, valid until 2036, whose RSASSA-PSS-params have hash AlgorithmIdentifiers with NULL parameters.
+	// Certificates valid until 2036: self-signed RSA certificates, whose RSASSA-PSS-params have hash AlgorithmIdentifiers with NULL parameters, and an Ed25519 root and leaf.
 	public static class OpenSslCertificates
 	{
 		// RSASSA-PSS with SHA-256 by an rsaEncryption key.
@@ -342,6 +342,34 @@ internal static class X509TestUtils
 			+ii66pc0Oe1VXywWNRdTQ2/IUJKTt9NV3yY7CH+S4piJbPPQ9dU+h2tBBajgMdkh
 			/PepijOW/JDbbTNn8XSQHYlFne1cVZfoGPECCRQkPKQvqTsNX7ofju17Z4mSJ0Q3
 			KPI0PCwVVfgntapKVkjI+Nr2gA0ZpeayAXQUv5N7MQ8jaxLMvg==
+			-----END CERTIFICATE-----
+			""";
+
+		// A self-signed Ed25519 root with critical basic constraints that assert cA, a critical key usage of keyCertSign and cRLSign, and a subject key identifier.
+		public const string Ed25519Root = """
+			-----BEGIN CERTIFICATE-----
+			MIIBQTCB9KADAgECAhRSsMChHTV5vmF0ov1X/6u8K5IXmzAFBgMrZXAwHzEdMBsG
+			A1UEAwwUT3BlblNTTCBFZDI1NTE5IFJvb3QwHhcNMjYxMTAyMDgzOTU5WhcNMzYx
+			MDMwMDgzOTU5WjAfMR0wGwYDVQQDDBRPcGVuU1NMIEVkMjU1MTkgUm9vdDAqMAUG
+			AytlcAMhAOucB59Pm68J206TQiZ5ob3z0NiF9+GmQiQJYmQ5FZX9o0IwQDAPBgNV
+			HRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUA0X0BWC0qjNl
+			tDhIfuw7UsdTF78wBQYDK2VwA0EA0wG+OGPye3By7Kfcez69PavtXKW2vdaX2wvw
+			4PxY7KXgQGmflxowZ6c+mn93opWWgYbltD4naR5vr5wX/SRaCg==
+			-----END CERTIFICATE-----
+			""";
+
+		// An Ed25519 leaf that the root signs, for the DNS name example.com and id-kp-serverAuth, with a critical key usage of digitalSignature.
+		public const string Ed25519Leaf = """
+			-----BEGIN CERTIFICATE-----
+			MIIBjzCCAUGgAwIBAgIUIt4kuGxQSU4tELAO6YOZvMWNDZQwBQYDK2VwMB8xHTAb
+			BgNVBAMMFE9wZW5TU0wgRWQyNTUxOSBSb290MB4XDTI2MTEwMjA4Mzk1OVoXDTM2
+			MTAzMDA4Mzk1OVowHzEdMBsGA1UEAwwUT3BlblNTTCBFZDI1NTE5IExlYWYwKjAF
+			BgMrZXADIQAKDnARRID+EDfxJoWPxZNRKZdtOH2f9CJiM3dnW0PHPaOBjjCBizAM
+			BgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcD
+			ATAWBgNVHREEDzANggtleGFtcGxlLmNvbTAdBgNVHQ4EFgQUPhZSRdp+LNe3QLl2
+			HiV8i7k5VsowHwYDVR0jBBgwFoAUA0X0BWC0qjNltDhIfuw7UsdTF78wBQYDK2Vw
+			A0EADnympdDvHmHNgCtUGaHyZAzGpS90vOZAf0YrjuB1wHH5NDqr5dMdylayfFeD
+			VeTpOkdiRR3yKJuHygbiC87+Aw==
 			-----END CERTIFICATE-----
 			""";
 	}
