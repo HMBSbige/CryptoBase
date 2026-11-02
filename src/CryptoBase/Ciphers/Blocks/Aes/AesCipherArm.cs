@@ -59,14 +59,6 @@ internal struct AesCipherArm : IDisposable, IAesVectorCore, IAesSubWord
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static AesCipherArm Create(ReadOnlySpan<byte> key)
-	{
-		AesCipherArm cipher = default;
-		cipher.Initialize(key);
-		return cipher;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public readonly Vector128<byte> Encrypt(Vector128<byte> source)
 	{
 		Vector128<byte> value = source;

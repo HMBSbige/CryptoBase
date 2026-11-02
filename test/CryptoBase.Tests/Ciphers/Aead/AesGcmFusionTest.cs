@@ -261,7 +261,8 @@ public class AesGcmFusionTest
 
 	private static int TransformArmKernel<TDirection>(int blocksPerBatch, byte[] key, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, Vector128<byte> hashKey) where TDirection : struct, IBlockDirection
 	{
-		AesCipherArm cipher = AesCipherArm.Create(key);
+		AesCipherArm cipher = default;
+		cipher.Initialize(key);
 		Vector128<byte> tagMask = default;
 		GHashArmPrecomputedKey powers = default;
 		powers.Initialize(AdvSimd.Arm64.ReverseElementBits(hashKey));
@@ -284,7 +285,8 @@ public class AesGcmFusionTest
 
 	private static int TransformX86Kernel<TDirection>(int blocksPerBatch, byte[] key, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination, ref Vector128<byte> accumulator, Vector128<byte> hashKey) where TDirection : struct, IBlockDirection
 	{
-		AesCipherX86 cipher = AesCipherX86.Create(key);
+		AesCipherX86 cipher = default;
+		cipher.Initialize(key);
 		GHashVector128PrecomputedKey powers = default;
 		powers.Initialize(hashKey.ReverseEndianness128());
 		accumulator = accumulator.ReverseEndianness128();

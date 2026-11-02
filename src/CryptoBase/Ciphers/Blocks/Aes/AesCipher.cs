@@ -24,11 +24,10 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	{
 		if (AesCipherX86.IsSupported)
 		{
-			_state.X86 = AesCipherX86.Create(key);
+			_state.X86.Initialize(key);
 		}
 		else if (AesCipherArm.IsSupported)
 		{
-			// Only the ARM64 backend is initialized in place, which skips a stack copy here but slows AES-NI.
 			_state.Arm.Initialize(key);
 		}
 		else if (AesCipherVpaes.IsSupported)

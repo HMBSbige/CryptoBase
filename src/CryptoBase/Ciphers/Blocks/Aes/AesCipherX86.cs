@@ -7,7 +7,7 @@ internal struct AesCipherX86 : IDisposable, IAesVectorCore
 {
 	public static bool IsSupported => AesX86.IsSupported;
 
-	internal int RoundKeyCount { get; }
+	internal int RoundKeyCount { get; private set; }
 
 	private AesKeys _roundKeys;
 	private AesKeys _reverseRoundKeys;
@@ -26,241 +26,230 @@ internal struct AesCipherX86 : IDisposable, IAesVectorCore
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private AesCipherX86(ReadOnlySpan<byte> key)
+	internal void Initialize(ReadOnlySpan<byte> key)
+	{
+		RoundKeyCount = Ssse3.IsSupported
+			? ExpandKey<EncryptLastSubWord>(key, ref _roundKeys, ref _reverseRoundKeys)
+			: ExpandKey<KeygenAssistSubWord>(key, ref _roundKeys, ref _reverseRoundKeys);
+	}
+
+	private interface IAesNiSubWord
+	{
+		static abstract Vector128<byte> SubRotWord3(Vector128<byte> value, [ConstantExpected] byte rcon);
+
+		static abstract Vector128<byte> SubRotWord1(Vector128<byte> value, [ConstantExpected] byte rcon);
+
+		static abstract Vector128<byte> SubWord3(Vector128<byte> value);
+	}
+
+	private readonly struct EncryptLastSubWord : IAesNiSubWord
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<byte> SubRotWord3(Vector128<byte> value, [ConstantExpected] byte rcon)
+		{
+			Vector128<byte> t = Ssse3.Shuffle(value, Vector128.Create(0x0C0F0E0Du).AsByte());
+			return AesX86.EncryptLast(t, Vector128.Create((uint)rcon).AsByte());
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<byte> SubRotWord1(Vector128<byte> value, [ConstantExpected] byte rcon)
+		{
+			Vector128<byte> t = Ssse3.Shuffle(value, Vector128.Create(0x04070605u).AsByte());
+			return AesX86.EncryptLast(t, Vector128.Create((uint)rcon).AsByte());
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<byte> SubWord3(Vector128<byte> value)
+		{
+			Vector128<byte> t = Sse2.Shuffle(value.AsUInt32(), 0b11_11_11_11).AsByte();
+			return AesX86.EncryptLast(t, Vector128<byte>.Zero);
+		}
+	}
+
+	private readonly struct KeygenAssistSubWord : IAesNiSubWord
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<byte> SubRotWord3(Vector128<byte> value, [ConstantExpected] byte rcon)
+		{
+			Vector128<byte> t = AesX86.KeygenAssist(value, rcon);
+			return Sse2.Shuffle(t.AsUInt32(), 0b11_11_11_11).AsByte();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<byte> SubRotWord1(Vector128<byte> value, [ConstantExpected] byte rcon)
+		{
+			Vector128<byte> t = AesX86.KeygenAssist(value, rcon);
+			return Sse2.Shuffle(t.AsUInt32(), 0b01_01_01_01).AsByte();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<byte> SubWord3(Vector128<byte> value)
+		{
+			Vector128<byte> t = AesX86.KeygenAssist(value, AesKeySchedule.Rcon0);
+			return Sse2.Shuffle(t.AsUInt32(), 0b10_10_10_10).AsByte();
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static int ExpandKey<T>(ReadOnlySpan<byte> key, ref AesKeys roundKeys, ref AesKeys inverseKeys) where T : struct, IAesNiSubWord
 	{
 		switch (key.Length)
 		{
 			case 16:
 			{
-				RoundKeyCount = 11;
-				ExpandKey128(key, ref _roundKeys);
-				InverseExpandedKey128(_roundKeys, ref _reverseRoundKeys);
-				break;
+				ExpandKey128<T>(key, ref roundKeys, ref inverseKeys);
+				return 11;
 			}
 			case 24:
 			{
-				RoundKeyCount = 13;
-				ExpandKey192(key, ref _roundKeys);
-				InverseExpandedKey192(_roundKeys, ref _reverseRoundKeys);
-				break;
+				ExpandKey192<T>(key, ref roundKeys, ref inverseKeys);
+				return 13;
 			}
 			case 32:
 			{
-				RoundKeyCount = 15;
-				ExpandKey256(key, ref _roundKeys);
-				InverseExpandedKey256(_roundKeys, ref _reverseRoundKeys);
-				break;
+				ExpandKey256<T>(key, ref roundKeys, ref inverseKeys);
+				return 15;
 			}
 			default:
 			{
-				ThrowHelper.ThrowArgumentOutOfRangeException<int>(nameof(key), "Key length must be 16/24/32 bytes");
-				break;
+				return ThrowHelper.ThrowArgumentOutOfRangeException<int>(nameof(key), "Key length must be 16/24/32 bytes");
 			}
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ExpandKey128(ReadOnlySpan<byte> key, ref AesKeys roundKeys)
+	private static Vector128<byte> PrefixXor(Vector128<byte> value)
 	{
-		roundKeys.K0 = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(key));
+		value ^= Sse2.ShiftLeftLogical128BitLane(value, 4);
+		value ^= Sse2.ShiftLeftLogical128BitLane(value, 8);
+		return value;
+	}
 
-		roundKeys.K1 = KeyRound(roundKeys.K0, AesKeySchedule.Rcon1);
-		roundKeys.K2 = KeyRound(roundKeys.K1, AesKeySchedule.Rcon2);
-		roundKeys.K3 = KeyRound(roundKeys.K2, AesKeySchedule.Rcon3);
-		roundKeys.K4 = KeyRound(roundKeys.K3, AesKeySchedule.Rcon4);
-		roundKeys.K5 = KeyRound(roundKeys.K4, AesKeySchedule.Rcon5);
-		roundKeys.K6 = KeyRound(roundKeys.K5, AesKeySchedule.Rcon6);
-		roundKeys.K7 = KeyRound(roundKeys.K6, AesKeySchedule.Rcon7);
-		roundKeys.K8 = KeyRound(roundKeys.K7, AesKeySchedule.Rcon8);
-		roundKeys.K9 = KeyRound(roundKeys.K8, AesKeySchedule.Rcon9);
-		roundKeys.K10 = KeyRound(roundKeys.K9, AesKeySchedule.Rcon10);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void StoreRoundKey(Vector128<byte> key, out Vector128<byte> roundKey, out Vector128<byte> inverseKey)
+	{
+		roundKey = key;
+		inverseKey = AesX86.InverseMixColumns(key);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ExpandKey128<T>(ReadOnlySpan<byte> key, ref AesKeys roundKeys, ref AesKeys inverseKeys) where T : struct, IAesNiSubWord
+	{
+		Vector128<byte> k = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(key));
+		roundKeys.K0 = inverseKeys.K10 = k;
+
+		Round(ref k, AesKeySchedule.Rcon1, out roundKeys.K1, out inverseKeys.K9);
+		Round(ref k, AesKeySchedule.Rcon2, out roundKeys.K2, out inverseKeys.K8);
+		Round(ref k, AesKeySchedule.Rcon3, out roundKeys.K3, out inverseKeys.K7);
+		Round(ref k, AesKeySchedule.Rcon4, out roundKeys.K4, out inverseKeys.K6);
+		Round(ref k, AesKeySchedule.Rcon5, out roundKeys.K5, out inverseKeys.K5);
+		Round(ref k, AesKeySchedule.Rcon6, out roundKeys.K6, out inverseKeys.K4);
+		Round(ref k, AesKeySchedule.Rcon7, out roundKeys.K7, out inverseKeys.K3);
+		Round(ref k, AesKeySchedule.Rcon8, out roundKeys.K8, out inverseKeys.K2);
+		Round(ref k, AesKeySchedule.Rcon9, out roundKeys.K9, out inverseKeys.K1);
+		roundKeys.K10 = inverseKeys.K0 = Next(k, AesKeySchedule.Rcon10);
 
 		return;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static Vector128<byte> KeyRound(Vector128<byte> key, [ConstantExpected] byte rcon)
+		static Vector128<byte> Next(Vector128<byte> k, [ConstantExpected] byte rcon)
 		{
-			Vector128<byte> t = AesX86.KeygenAssist(key, rcon);
-			t = Sse2.Shuffle(t.AsUInt32(), 0b11_11_11_11).AsByte();
+			Vector128<byte> t = T.SubRotWord3(k, rcon);
+			return PrefixXor(k) ^ t;
+		}
 
-			key ^= Sse2.ShiftLeftLogical128BitLane(key, 4);
-			key ^= Sse2.ShiftLeftLogical128BitLane(key, 8);
-
-			return key ^ t;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static void Round(ref Vector128<byte> k, [ConstantExpected] byte rcon, out Vector128<byte> roundKey, out Vector128<byte> inverseKey)
+		{
+			k = Next(k, rcon);
+			StoreRoundKey(k, out roundKey, out inverseKey);
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ExpandKey192(ReadOnlySpan<byte> key, ref AesKeys roundKeys)
+	private static void ExpandKey192<T>(ReadOnlySpan<byte> key, ref AesKeys roundKeys, ref AesKeys inverseKeys) where T : struct, IAesNiSubWord
 	{
 		ref byte keyRef = ref MemoryMarshal.GetReference(key);
+		Vector128<byte> a = Vector128.LoadUnsafe(ref keyRef);
+		Vector128<byte> c = Vector128.CreateScalar(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref keyRef, 16))).AsByte();
+		roundKeys.K0 = inverseKeys.K12 = a;
 
-		roundKeys.K12 = Vector128.LoadUnsafe(ref keyRef);// 0,15
-
-		ref readonly ulong t = ref Unsafe.As<byte, ulong>(ref Unsafe.Add(ref keyRef, 16));
-		Vector128<byte> t1 = Vector128.CreateScalar(t).AsByte();// 16,23
-
-		KeyRound(out roundKeys.K0, out roundKeys.K1, out roundKeys.K2, ref roundKeys.K12, ref t1, AesKeySchedule.Rcon1, AesKeySchedule.Rcon2);
-		KeyRound(out roundKeys.K3, out roundKeys.K4, out roundKeys.K5, ref roundKeys.K12, ref t1, AesKeySchedule.Rcon3, AesKeySchedule.Rcon4);
-		KeyRound(out roundKeys.K6, out roundKeys.K7, out roundKeys.K8, ref roundKeys.K12, ref t1, AesKeySchedule.Rcon5, AesKeySchedule.Rcon6);
-		KeyRound(out roundKeys.K9, out roundKeys.K10, out roundKeys.K11, ref roundKeys.K12, ref t1, AesKeySchedule.Rcon7, AesKeySchedule.Rcon8);
+		Round(ref a, ref c, AesKeySchedule.Rcon1, out roundKeys.K1, out inverseKeys.K11, out roundKeys.K2, out inverseKeys.K10);
+		Next(ref a, ref c, AesKeySchedule.Rcon2);
+		StoreRoundKey(a, out roundKeys.K3, out inverseKeys.K9);
+		Round(ref a, ref c, AesKeySchedule.Rcon3, out roundKeys.K4, out inverseKeys.K8, out roundKeys.K5, out inverseKeys.K7);
+		Next(ref a, ref c, AesKeySchedule.Rcon4);
+		StoreRoundKey(a, out roundKeys.K6, out inverseKeys.K6);
+		Round(ref a, ref c, AesKeySchedule.Rcon5, out roundKeys.K7, out inverseKeys.K5, out roundKeys.K8, out inverseKeys.K4);
+		Next(ref a, ref c, AesKeySchedule.Rcon6);
+		StoreRoundKey(a, out roundKeys.K9, out inverseKeys.K3);
+		Round(ref a, ref c, AesKeySchedule.Rcon7, out roundKeys.K10, out inverseKeys.K2, out roundKeys.K11, out inverseKeys.K1);
+		Next(ref a, ref c, AesKeySchedule.Rcon8);
+		roundKeys.K12 = inverseKeys.K0 = a;
 
 		return;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void KeyRound0(ref Vector128<byte> a, ref Vector128<byte> b, ref Vector128<byte> c)
+		static void Next(ref Vector128<byte> a, ref Vector128<byte> c, [ConstantExpected] byte rcon)
 		{
-			Vector128<byte> t = Sse2.ShiftLeftLogical128BitLane(a, 4);
-			b = Sse2.Shuffle(b.AsUInt32(), 0b01_01_01_01).AsByte();
-			a ^= t;
-			t = Sse2.ShiftLeftLogical128BitLane(t, 4);
-			a ^= t;
-			t = Sse2.ShiftLeftLogical128BitLane(t, 4);
-			a ^= t;
-			a ^= b;
-			b = Sse2.Shuffle(a.AsUInt32(), 0b11_11_11_11).AsByte();
-			t = Sse2.ShiftLeftLogical128BitLane(c, 4);
-			c ^= t;
-			c ^= b;
+			Vector128<byte> t = T.SubRotWord1(c, rcon);
+			a = PrefixXor(a) ^ t;
+			c ^= Sse2.ShiftLeftLogical128BitLane(c, 4);
+			c ^= Sse2.Shuffle(a.AsUInt32(), 0b11_11_11_11).AsByte();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void KeyRound
+		static void Round
 		(
-			out Vector128<byte> a, out Vector128<byte> b, out Vector128<byte> c,
-			ref Vector128<byte> t0, ref Vector128<byte> t1,
-			[ConstantExpected] byte rcon0, [ConstantExpected] byte rcon1
+			ref Vector128<byte> a, ref Vector128<byte> c, [ConstantExpected] byte rcon,
+			out Vector128<byte> roundKey0, out Vector128<byte> inverseKey0,
+			out Vector128<byte> roundKey1, out Vector128<byte> inverseKey1
 		)
 		{
-			a = t0;
-			b = t1;
-			Vector128<byte> t2 = AesX86.KeygenAssist(t1, rcon0);
-			KeyRound0(ref t0, ref t2, ref t1);
-
-			b = Sse2.Shuffle(b.AsDouble(), t0.AsDouble(), 0b0_0).AsByte();
-			c = Sse2.Shuffle(t0.AsDouble(), t1.AsDouble(), 0b0_1).AsByte();
-			t2 = AesX86.KeygenAssist(t1, rcon1);
-			KeyRound0(ref t0, ref t2, ref t1);
+			Vector128<byte> previous = c;
+			Next(ref a, ref c, rcon);
+			StoreRoundKey(Sse2.Shuffle(previous.AsDouble(), a.AsDouble(), 0b0_0).AsByte(), out roundKey0, out inverseKey0);
+			StoreRoundKey(Sse2.Shuffle(a.AsDouble(), c.AsDouble(), 0b0_1).AsByte(), out roundKey1, out inverseKey1);
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ExpandKey256(ReadOnlySpan<byte> key, ref AesKeys roundKeys)
+	private static void ExpandKey256<T>(ReadOnlySpan<byte> key, ref AesKeys roundKeys, ref AesKeys inverseKeys) where T : struct, IAesNiSubWord
 	{
 		ref byte keyRef = ref MemoryMarshal.GetReference(key);
+		Vector128<byte> a = Vector128.LoadUnsafe(ref keyRef);
+		Vector128<byte> b = Vector128.LoadUnsafe(ref keyRef, 16);
+		roundKeys.K0 = inverseKeys.K14 = a;
+		StoreRoundKey(b, out roundKeys.K1, out inverseKeys.K13);
 
-		roundKeys.K0 = roundKeys.K14 = Vector128.LoadUnsafe(ref keyRef);// 0,15
-		roundKeys.K13 = Vector128.LoadUnsafe(ref keyRef, 16);// 15,31
+		Round(ref a, ref b, AesKeySchedule.Rcon1, out roundKeys.K2, out inverseKeys.K12, out roundKeys.K3, out inverseKeys.K11);
+		Round(ref a, ref b, AesKeySchedule.Rcon2, out roundKeys.K4, out inverseKeys.K10, out roundKeys.K5, out inverseKeys.K9);
+		Round(ref a, ref b, AesKeySchedule.Rcon3, out roundKeys.K6, out inverseKeys.K8, out roundKeys.K7, out inverseKeys.K7);
+		Round(ref a, ref b, AesKeySchedule.Rcon4, out roundKeys.K8, out inverseKeys.K6, out roundKeys.K9, out inverseKeys.K5);
+		Round(ref a, ref b, AesKeySchedule.Rcon5, out roundKeys.K10, out inverseKeys.K4, out roundKeys.K11, out inverseKeys.K3);
+		Round(ref a, ref b, AesKeySchedule.Rcon6, out roundKeys.K12, out inverseKeys.K2, out roundKeys.K13, out inverseKeys.K1);
 
-		KeyRound(out roundKeys.K1, out roundKeys.K2, ref roundKeys.K14, ref roundKeys.K13, AesKeySchedule.Rcon1);
-		KeyRound(out roundKeys.K3, out roundKeys.K4, ref roundKeys.K14, ref roundKeys.K13, AesKeySchedule.Rcon2);
-		KeyRound(out roundKeys.K5, out roundKeys.K6, ref roundKeys.K14, ref roundKeys.K13, AesKeySchedule.Rcon3);
-		KeyRound(out roundKeys.K7, out roundKeys.K8, ref roundKeys.K14, ref roundKeys.K13, AesKeySchedule.Rcon4);
-		KeyRound(out roundKeys.K9, out roundKeys.K10, ref roundKeys.K14, ref roundKeys.K13, AesKeySchedule.Rcon5);
-		KeyRound(out roundKeys.K11, out roundKeys.K12, ref roundKeys.K14, ref roundKeys.K13, AesKeySchedule.Rcon6);
-
-		Vector128<byte> t2 = AesX86.KeygenAssist(roundKeys.K13, AesKeySchedule.Rcon7);
-		KeyRound1(ref roundKeys.K14, ref t2);
+		Vector128<byte> t = T.SubRotWord3(b, AesKeySchedule.Rcon7);
+		roundKeys.K14 = inverseKeys.K0 = PrefixXor(a) ^ t;
 
 		return;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void KeyRound1(ref Vector128<byte> a, ref Vector128<byte> b)
+		static void Round
+		(
+			ref Vector128<byte> a, ref Vector128<byte> b, [ConstantExpected] byte rcon,
+			out Vector128<byte> roundKey0, out Vector128<byte> inverseKey0,
+			out Vector128<byte> roundKey1, out Vector128<byte> inverseKey1
+		)
 		{
-			Vector128<byte> t = Sse2.ShiftLeftLogical128BitLane(a, 4);
-			b = Sse2.Shuffle(b.AsUInt32(), 0b11_11_11_11).AsByte();
-			a ^= t;
-			t = Sse2.ShiftLeftLogical128BitLane(t, 4);
-			a ^= t;
-			t = Sse2.ShiftLeftLogical128BitLane(t, 4);
-			a ^= t;
-			a ^= b;
+			Vector128<byte> t = T.SubRotWord3(b, rcon);
+			a = PrefixXor(a) ^ t;
+			StoreRoundKey(a, out roundKey0, out inverseKey0);
+
+			t = T.SubWord3(a);
+			b = PrefixXor(b) ^ t;
+			StoreRoundKey(b, out roundKey1, out inverseKey1);
 		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void KeyRound2(ref Vector128<byte> a, ref Vector128<byte> b)
-		{
-			Vector128<byte> t0 = AesX86.KeygenAssist(a, AesKeySchedule.Rcon0);
-			Vector128<byte> t1 = Sse2.Shuffle(t0.AsUInt32(), 0b10_10_10_10).AsByte();
-
-			t0 = Sse2.ShiftLeftLogical128BitLane(b, 4);
-			b ^= t0;
-			t0 = Sse2.ShiftLeftLogical128BitLane(t0, 4);
-			b ^= t0;
-			t0 = Sse2.ShiftLeftLogical128BitLane(t0, 4);
-			b ^= t0;
-			b ^= t1;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void KeyRound(out Vector128<byte> a, out Vector128<byte> b, ref Vector128<byte> t0, ref Vector128<byte> t1, [ConstantExpected] byte rcon)
-		{
-			a = t1;
-			Vector128<byte> t2 = AesX86.KeygenAssist(t1, rcon);
-			KeyRound1(ref t0, ref t2);
-			b = t0;
-			KeyRound2(ref t0, ref t1);
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void InverseExpandedKey128(in AesKeys roundKeys, ref AesKeys keys)
-	{
-		keys.K0 = roundKeys.K10;
-		keys.K1 = AesX86.InverseMixColumns(roundKeys.K9);
-		keys.K2 = AesX86.InverseMixColumns(roundKeys.K8);
-		keys.K3 = AesX86.InverseMixColumns(roundKeys.K7);
-		keys.K4 = AesX86.InverseMixColumns(roundKeys.K6);
-		keys.K5 = AesX86.InverseMixColumns(roundKeys.K5);
-		keys.K6 = AesX86.InverseMixColumns(roundKeys.K4);
-		keys.K7 = AesX86.InverseMixColumns(roundKeys.K3);
-		keys.K8 = AesX86.InverseMixColumns(roundKeys.K2);
-		keys.K9 = AesX86.InverseMixColumns(roundKeys.K1);
-		keys.K10 = roundKeys.K0;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void InverseExpandedKey192(in AesKeys roundKeys, ref AesKeys keys)
-	{
-		keys.K0 = roundKeys.K12;
-		keys.K1 = AesX86.InverseMixColumns(roundKeys.K11);
-		keys.K2 = AesX86.InverseMixColumns(roundKeys.K10);
-		keys.K3 = AesX86.InverseMixColumns(roundKeys.K9);
-		keys.K4 = AesX86.InverseMixColumns(roundKeys.K8);
-		keys.K5 = AesX86.InverseMixColumns(roundKeys.K7);
-		keys.K6 = AesX86.InverseMixColumns(roundKeys.K6);
-		keys.K7 = AesX86.InverseMixColumns(roundKeys.K5);
-		keys.K8 = AesX86.InverseMixColumns(roundKeys.K4);
-		keys.K9 = AesX86.InverseMixColumns(roundKeys.K3);
-		keys.K10 = AesX86.InverseMixColumns(roundKeys.K2);
-		keys.K11 = AesX86.InverseMixColumns(roundKeys.K1);
-		keys.K12 = roundKeys.K0;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void InverseExpandedKey256(in AesKeys roundKeys, ref AesKeys keys)
-	{
-		keys.K0 = roundKeys.K14;
-		keys.K1 = AesX86.InverseMixColumns(roundKeys.K13);
-		keys.K2 = AesX86.InverseMixColumns(roundKeys.K12);
-		keys.K3 = AesX86.InverseMixColumns(roundKeys.K11);
-		keys.K4 = AesX86.InverseMixColumns(roundKeys.K10);
-		keys.K5 = AesX86.InverseMixColumns(roundKeys.K9);
-		keys.K6 = AesX86.InverseMixColumns(roundKeys.K8);
-		keys.K7 = AesX86.InverseMixColumns(roundKeys.K7);
-		keys.K8 = AesX86.InverseMixColumns(roundKeys.K6);
-		keys.K9 = AesX86.InverseMixColumns(roundKeys.K5);
-		keys.K10 = AesX86.InverseMixColumns(roundKeys.K4);
-		keys.K11 = AesX86.InverseMixColumns(roundKeys.K3);
-		keys.K12 = AesX86.InverseMixColumns(roundKeys.K2);
-		keys.K13 = AesX86.InverseMixColumns(roundKeys.K1);
-		keys.K14 = roundKeys.K0;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static AesCipherX86 Create(ReadOnlySpan<byte> key)
-	{
-		return new AesCipherX86(key);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
