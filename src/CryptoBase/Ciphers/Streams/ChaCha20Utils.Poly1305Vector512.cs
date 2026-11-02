@@ -29,7 +29,6 @@ internal static partial class ChaCha20Utils
 
 	// Double rounds interleave 128-byte groups, one Poly1305 block per lane: encryption hashes the ciphertext written before this batch, decryption this batch before storing over it.
 	[SkipLocalsInit]
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static int XorVector512Poly1305<TDirection>(ref uint stateRef, ref byte input, ref byte output, int length, ref Poly1305Avx512 mac, int processed, ref int hashedLength) where TDirection : struct, IBlockDirection
 	{
 		Debug.Assert(TDirection.IsDecrypt ? hashedLength == processed : hashedLength <= processed);
