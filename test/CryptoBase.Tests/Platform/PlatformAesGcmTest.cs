@@ -55,10 +55,10 @@ public class PlatformAesGcmTest
 	}
 
 	[Test]
-	public async Task IsPreferredForNeedsVaesAndAvx512OnWindowsOrLinuxFrom8KiB()
+	public async Task IsPreferredForNeedsVaesAndAvx512From8KiB()
 	{
 		bool vaes = X86Base.IsSupported && (X86Base.CpuId(7, 0).Ecx & 1 << 9) is not 0;
-		bool preferred = vaes && Avx512BW.IsSupported && Avx512DQ.IsSupported && Avx512F.VL.IsSupported && Pclmulqdq.V512.IsSupported && AesGcm.IsSupported && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux());
+		bool preferred = vaes && Avx512BW.IsSupported && Avx512DQ.IsSupported && Avx512F.VL.IsSupported && Pclmulqdq.V512.IsSupported && AesGcm.IsSupported;
 
 		using (Assert.Multiple())
 		{

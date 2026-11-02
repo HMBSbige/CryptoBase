@@ -33,15 +33,15 @@ public sealed class PlatformAesGcm : IAeadCipher<PlatformAesGcm>
 	/// <param name="length">The length of the message, in bytes.</param>
 	/// <returns><see langword="true" /> if this type is expected to be faster; otherwise, <see langword="false" />.</returns>
 	/// <remarks>
-	/// It is <see langword="true" /> only on Windows and Linux, on x86 and x64 processors with VAES and AVX-512, from 8 KiB.
+	/// It is <see langword="true" /> only on x86 and x64 processors with VAES and AVX-512, from 8 KiB.
 	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="length" /> is negative.</exception>
 	public static bool IsPreferredFor(int length)
 	{
 		ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-		// The runtime reports Pclmulqdq.V512 only with VAES and AVX-512, which the platform libraries need for the 512-bit kernels they were measured with.
-		return length >= MinPreferredLength && Pclmulqdq.V512.IsSupported && AesGcm.IsSupported && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux());
+		// The runtime reports Pclmulqdq.V512 only with VAES and AVX-512, which the platform library uses for its 512-bit kernels.
+		return length >= MinPreferredLength && Pclmulqdq.V512.IsSupported && AesGcm.IsSupported;
 	}
 
 	/// <inheritdoc />
