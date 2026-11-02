@@ -13,7 +13,7 @@ namespace CryptoBase.X509;
 /// </para>
 /// <para>
 /// The platform signs, and the instance verifies each signature before it returns it, so a key that signs otherwise, such as with another salt length, throws <see cref="CryptographicException" /> rather than giving a signature that does not verify.
-/// Verification is managed and never reaches the platform, so it gives the same result on every platform: RSASSA-PKCS1-v1_5 as RFC 8017, Sec. 8.2.2, describes, comparing the encoded message byte for byte with the one expected, whose DigestInfo has NULL parameters (RFC 8017, Sec. 9.2, Note 1); and RSASSA-PSS with EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) and a salt as long as the hash.
+/// Verification is managed and never reaches the platform, so it gives the same result on every platform: RSASSA-PKCS1-v1_5 as RFC 8017, Sec. 8.2.2, describes, comparing the encoded message byte for byte with the one expected, whose DigestInfo has NULL or, as TLS 1.2 also requires a verifier to accept (RFC 5246, Sec. 4.7), absent parameters; and RSASSA-PSS with EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) and a salt as long as the hash.
 /// It handles public data alone, so it does not take constant time; its work is bounded by the key, whose modulus must have 512 to 16384 bits and whose public exponent, odd and at least 3 (RFC 8017, Sec. 3.1), must have at most 33 bits.
 /// </para>
 /// <para>
@@ -160,6 +160,13 @@ public sealed class PlatformRsaKey : ISignatureKey
 	private static ReadOnlySpan<byte> Sha384DigestInfo => [0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30];
 
 	private static ReadOnlySpan<byte> Sha512DigestInfo => [0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40];
+
+	// The same without parameters.
+	private static ReadOnlySpan<byte> Sha256DigestInfoWithoutParameters => [0x30, 0x2F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x04, 0x20];
+
+	private static ReadOnlySpan<byte> Sha384DigestInfoWithoutParameters => [0x30, 0x3F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x04, 0x30];
+
+	private static ReadOnlySpan<byte> Sha512DigestInfoWithoutParameters => [0x30, 0x4F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x04, 0x40];
 
 	// rsaEncryption with the NULL parameters that RFC 4055, Sec. 1.2, requires.
 	private static ReadOnlySpan<byte> RsaEncryption => [0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01, 0x05, 0x00];
@@ -546,15 +553,19 @@ public sealed class PlatformRsaKey : ISignatureKey
 			return pss ? IsPssEncoding(encoded, hash, digest) : IsPkcs1Encoding(encoded, algorithm, digest);
 		}
 
-		// EM = 0x00 || 0x01 || PS || 0x00 || T (RFC 8017, Sec. 9.2), compared with the encoded message byte for byte: the lengths of PS and T follow from k and the hash, so nothing is parsed.
+		// EM = 0x00 || 0x01 || PS || 0x00 || T (RFC 8017, Sec. 9.2), compared with the encoded message byte for byte for each DigestInfo: the lengths of PS and T follow from k and the hash, so nothing is parsed.
 		private static bool IsPkcs1Encoding(ReadOnlySpan<byte> encoded, SignatureAlgorithm algorithm, ReadOnlySpan<byte> digest)
 		{
-			ReadOnlySpan<byte> digestInfo = algorithm switch
+			return algorithm switch
 			{
-				SignatureAlgorithm.RsaPkcs1Sha256 => Sha256DigestInfo,
-				SignatureAlgorithm.RsaPkcs1Sha384 => Sha384DigestInfo,
-				_ => Sha512DigestInfo
+				SignatureAlgorithm.RsaPkcs1Sha256 => IsPkcs1Encoding(encoded, Sha256DigestInfo, digest) || IsPkcs1Encoding(encoded, Sha256DigestInfoWithoutParameters, digest),
+				SignatureAlgorithm.RsaPkcs1Sha384 => IsPkcs1Encoding(encoded, Sha384DigestInfo, digest) || IsPkcs1Encoding(encoded, Sha384DigestInfoWithoutParameters, digest),
+				_ => IsPkcs1Encoding(encoded, Sha512DigestInfo, digest) || IsPkcs1Encoding(encoded, Sha512DigestInfoWithoutParameters, digest)
 			};
+		}
+
+		private static bool IsPkcs1Encoding(ReadOnlySpan<byte> encoded, ReadOnlySpan<byte> digestInfo, ReadOnlySpan<byte> digest)
+		{
 			int separator = encoded.Length - digestInfo.Length - digest.Length - 1;
 
 			return encoded[0] is 0x00

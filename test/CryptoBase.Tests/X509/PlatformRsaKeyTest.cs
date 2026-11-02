@@ -595,7 +595,7 @@ public class PlatformRsaKeyTest
 		}
 	}
 
-	// RFC 8017, Sec. 8.2.2: the encoded message must equal EMSA-PKCS1-V1_5-ENCODE of the message, whose DigestInfo has NULL parameters.
+	// RFC 8017, Sec. 8.2.2: the encoded message must equal EMSA-PKCS1-V1_5-ENCODE of the message, whose DigestInfo has NULL or absent parameters (RFC 5246, Sec. 4.7).
 	[Test]
 	[Arguments(2048)]
 	[Arguments(1025)]
@@ -611,7 +611,7 @@ public class PlatformRsaKeyTest
 		byte[] valid = EncodePkcs1(length, digestInfo);
 		(string Case, byte[] EncodedMessage)[] invalid =
 		[
-			("DigestInfo without NULL parameters", EncodePkcs1(length, withoutNull)),
+			("DigestInfo without parameters, with a long-form length", EncodePkcs1(length, WithRedundantLengthByte(withoutNull))),
 			("DigestInfo with a long-form length", EncodePkcs1(length, WithRedundantLengthByte(digestInfo))),
 			("DigestInfo of SHA-384", EncodePkcs1(length, DigestInfo(Sha384Oid, SHA384.HashData(message)))),
 			("hash of another message", EncodePkcs1(length, DigestInfo(Sha256Oid, SHA256.HashData("massage"u8)))),
@@ -625,6 +625,7 @@ public class PlatformRsaKeyTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(key.Verify(SignatureAlgorithm.RsaPkcs1Sha256, message, RawSign(parameters, valid))).IsTrue();
+			await Assert.That(key.Verify(SignatureAlgorithm.RsaPkcs1Sha256, message, RawSign(parameters, EncodePkcs1(length, withoutNull)))).IsTrue();
 
 			foreach ((string @case, byte[] encodedMessage) in invalid)
 			{
@@ -635,7 +636,7 @@ public class PlatformRsaKeyTest
 
 	// Wycheproof RSASSA-PKCS1-v1_5 and RSASSA-PSS vectors. A vector verifies only with the SignatureAlgorithm of its hash, MGF1 with the same hash and a salt as long as the hash: in a group with another salt
 	// length, only the invalid vector that the file made with a salt as long as the hash. An id-RSASSA-PSS key with parameters is supported if they allow such an algorithm (RFC 4055, Sec. 3.3). The
-	// acceptable vectors, whose DigestInfo lacks the NULL parameters, do not verify.
+	// acceptable vectors, whose DigestInfo lacks the NULL parameters, verify.
 	[Test]
 	[Arguments("rsa_signature_2048_sha256_test.json")]
 	[Arguments("rsa_signature_2048_sha384_test.json")]
@@ -705,7 +706,7 @@ public class PlatformRsaKeyTest
 				{
 					string result = test.GetProperty("result").GetString() ?? "";
 					string[] flags = [.. test.GetProperty("flags").EnumerateArray().Select(static flag => flag.GetString() ?? "")];
-					bool expected = sameHashes && (!pss || saltLength == hashLength ? result is "valid" : test.GetProperty("comment").GetString() == $"s_len changed to {hashLength}");
+					bool expected = sameHashes && (!pss || saltLength == hashLength ? result is "valid" or "acceptable" : test.GetProperty("comment").GetString() == $"s_len changed to {hashLength}");
 					byte[] message = Convert.FromHexString(test.GetProperty("msg").GetString() ?? "");
 					byte[] signature = Convert.FromHexString(test.GetProperty("sig").GetString() ?? "");
 
