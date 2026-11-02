@@ -83,16 +83,12 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 	/// <summary>
 	/// Initializes a validator.
 	/// </summary>
-	/// <param name="policy">The chain policy, which the validator copies with its certificates; <see langword="null" /> for the system's trusted roots without revocation checks or certificate downloads.</param>
+	/// <param name="policy">The chain policy, which the validator copies with its certificates; <see langword="null" /> for the system's trusted roots without revocation checks, downloading missing certificates.</param>
 	public PlatformCertificateValidator(X509ChainPolicy? policy = null)
 	{
 		if (policy is null)
 		{
-			_policy = new X509ChainPolicy
-			{
-				RevocationMode = X509RevocationMode.NoCheck,
-				DisableCertificateDownloads = true
-			};
+			_policy = new X509ChainPolicy { RevocationMode = X509RevocationMode.NoCheck };
 			return;
 		}
 
