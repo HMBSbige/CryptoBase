@@ -12,11 +12,14 @@ public class Ed25519ScalarTest
 
 	private static readonly BigInteger Two512 = BigInteger.One << 512;
 
+	// The edges include those of the folds at 2^252, whose remainders reach 2^386, 2^260 and 2L: values just around 2^252 and its multiples by L, high halves of all ones, and the most a remainder may hold before each fold.
 	[Test]
 	public async Task ReduceWideMatchesBigInteger()
 	{
 		Random random = new(1);
+		BigInteger two252 = BigInteger.One << 252;
 		List<BigInteger> values = [0, 1, L - 1, L, L + 1, 2 * L, Two256 - 1, Two256, Two256 + 1, Two256 * L - 1, Two256 * L, (Two256 - 1) * L, Two512 - L, Two512 - 1];
+		values.AddRange([two252 - 1, two252, two252 + 1, two252 * L - 1, two252 * L, two252 * L + L - 1, (BigInteger.One << 260) - 1, (BigInteger.One << 386) - 1, Two512 - two252, (Two256 - 1) * Two256, 2 * L - 1 + two252 * (two252 - 1)]);
 		values.AddRange(Enumerable.Range(0, 200).Select(_ => RandomBelow(random, Two512)));
 		values.AddRange(Enumerable.Range(0, 100).Select(_ => PatternedValue(random, 8)));
 		List<string> failures = [];
