@@ -99,7 +99,7 @@ public static class Argon2PasswordHasher
 		phcString.DecodeHash(expected);
 		Argon2Core.DeriveKey(password, salt, secret, default, phcString.Type, phcString.Parameters, -1, actual);
 
-		return CryptographicOperations.FixedTimeEquals(actual, expected);
+		return FixedTime.Equals(actual, expected);
 	}
 
 	/// <summary>
