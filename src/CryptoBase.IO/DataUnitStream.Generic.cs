@@ -247,19 +247,18 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 
 		while (!buffer.IsEmpty)
 		{
-			int written = WriteToUnit(buffer, position);
+			int written;
 
-			if (written is 0)
+			if (TryGetWholeUnits(buffer.Length, position, out int units))
 			{
-				if (TryGetWholeUnits(buffer.Length, position, out int units))
-				{
-					// Write a cached unit outside the range first, so the transform does not fill it as a gap.
-					DropUnitWithin(position, units);
-					FlushUnit();
-					_transform.Write(buffer.Slice(0, units), position);
-					written = units;
-				}
-				else
+				WriteUnits(buffer.Slice(0, units), position);
+				written = units;
+			}
+			else
+			{
+				written = WriteToUnit(buffer, position);
+
+				if (written is 0)
 				{
 					LoadUnit(position, create: true);
 					written = WriteToUnit(buffer, position);
@@ -303,7 +302,8 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 		}
 
 		_transform.ValidateRange(_position, buffer.Length);
-		int written = WriteToUnit(buffer.Span, _position);
+		// Whole aligned data units bypass the cache, so they reach the inner stream before the write completes.
+		int written = TryGetWholeUnits(buffer.Length, _position, out _) ? 0 : WriteToUnit(buffer.Span, _position);
 
 		if (written == buffer.Length)
 		{
@@ -420,18 +420,18 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	{
 		while (!buffer.IsEmpty)
 		{
-			int written = WriteToUnit(buffer.Span, position);
+			int written;
 
-			if (written is 0)
+			if (TryGetWholeUnits(buffer.Length, position, out int units))
 			{
-				if (TryGetWholeUnits(buffer.Length, position, out int units))
-				{
-					DropUnitWithin(position, units);
-					await FlushUnitAsync(cancellationToken).ConfigureAwait(false);
-					await _transform.WriteAsync(buffer.Slice(0, units), position, cancellationToken).ConfigureAwait(false);
-					written = units;
-				}
-				else
+				await WriteUnitsAsync(buffer.Slice(0, units), position, cancellationToken).ConfigureAwait(false);
+				written = units;
+			}
+			else
+			{
+				written = WriteToUnit(buffer.Span, position);
+
+				if (written is 0)
 				{
 					await LoadUnitAsync(position, create: true, cancellationToken).ConfigureAwait(false);
 					written = WriteToUnit(buffer.Span, position);
@@ -578,14 +578,48 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	}
 
 	/// <summary>
-	/// Discards the cached data unit when a write of whole units at <paramref name="position" /> replaces it.
+	/// Writes whole data units at <paramref name="position" /> to the inner stream, bypassing the cache.
 	/// </summary>
-	private void DropUnitWithin(long position, int length)
+	/// <remarks>
+	/// A cached data unit outside the range is written first, so the transform does not fill it as a gap. A cached data unit inside the range is discarded only after the write succeeds, so a failed write keeps it.
+	/// </remarks>
+	private void WriteUnits(ReadOnlySpan<byte> buffer, long position)
 	{
-		if (_unitStart >= position && _unitStart < position + length)
+		bool replacesCachedUnit = IsCachedUnitWithin(position, buffer.Length);
+
+		if (!replacesCachedUnit)
+		{
+			FlushUnit();
+		}
+
+		_transform.Write(buffer, position);
+
+		if (replacesCachedUnit)
 		{
 			DropUnit();
 		}
+	}
+
+	private async ValueTask WriteUnitsAsync(ReadOnlyMemory<byte> buffer, long position, CancellationToken cancellationToken)
+	{
+		bool replacesCachedUnit = IsCachedUnitWithin(position, buffer.Length);
+
+		if (!replacesCachedUnit)
+		{
+			await FlushUnitAsync(cancellationToken).ConfigureAwait(false);
+		}
+
+		await _transform.WriteAsync(buffer, position, cancellationToken).ConfigureAwait(false);
+
+		if (replacesCachedUnit)
+		{
+			DropUnit();
+		}
+	}
+
+	private bool IsCachedUnitWithin(long position, int length)
+	{
+		return _unitStart >= position && _unitStart < position + length;
 	}
 
 	private void DropUnit()

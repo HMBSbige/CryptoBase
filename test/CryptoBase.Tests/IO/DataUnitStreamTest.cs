@@ -339,6 +339,69 @@ public class DataUnitStreamTest
 	}
 
 	[Test]
+	[MatrixDataSource]
+	public async Task WholeDataUnitWriteOverCachedDataUnitReachesInnerStream([Matrix] bool cachedByWrite, [Matrix] bool useAsync)
+	{
+		const int unit = 64;
+		byte[] data = CreateDeterministicSource(unit);
+		byte[] padded = new byte[2 * unit];
+		data.CopyTo(padded, unit);
+		using MemoryStream inner = new();
+		await using DataUnitStream<XtsMode<AesCipher>> xts = DataUnitStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		DataUnitStreamTarget target = new(xts, inner.ToArray);
+		byte[] actual = new byte[unit];
+
+		xts.SetLength(2 * unit);
+
+		// Cache the second data unit, changed or unchanged.
+		if (cachedByWrite)
+		{
+			await target.WriteAsync(data, 0, 1, unit + 3, useAsync);
+		}
+		else
+		{
+			await Assert.That(await target.ReadAsync(actual, 0, 1, unit + 3, useAsync)).IsEqualTo(1);
+		}
+
+		await target.WriteAsync(data, 0, data.Length, unit, useAsync);
+
+		using (Assert.Multiple())
+		{
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
+			await Assert.That(await target.ReadAsync(actual, 0, actual.Length, unit, useAsync)).IsEqualTo(unit);
+			await AssertBytesEqual(actual, data);
+		}
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task FailedWholeDataUnitWriteKeepsReplacedDataUnitCached([Matrix] bool useAsync)
+	{
+		const int unit = 64;
+		byte[] data = CreateDeterministicSource(unit);
+		byte[] padded = new byte[unit];
+		data.AsSpan(0, 10).CopyTo(padded.AsSpan(5));
+		using FailingWriteMemoryStream inner = new();
+		await using DataUnitStream<XtsMode<AesCipher>> xts = DataUnitStream.Create(inner, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+		DataUnitStreamTarget target = new(xts, inner.ToArray);
+		byte[] actual = new byte[unit];
+
+		await target.WriteAsync(data, 0, 10, 5, useAsync);
+		inner.FailNextWrite = true;
+
+		await Assert.That(async () => await target.WriteAsync(data, 0, unit, 0, useAsync)).ThrowsExactly<IOException>();
+
+		await FlushAsync(xts, useAsync);
+
+		using (Assert.Multiple())
+		{
+			await AssertBytesEqual(inner.ToArray(), Encrypt<XtsMode<AesCipher>>(padded, unit));
+			await Assert.That(await target.ReadAsync(actual, 0, actual.Length, 0, useAsync)).IsEqualTo(unit);
+			await AssertBytesEqual(actual, padded);
+		}
+	}
+
+	[Test]
 	public async Task SetLengthDiscardsCachedDataUnitPastNewEnd()
 	{
 		const int unit = 64;
