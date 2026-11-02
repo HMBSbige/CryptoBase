@@ -44,7 +44,8 @@ internal readonly ref struct CryptoBuffer<T> : IDisposable where T : unmanaged
 
 	internal static bool ShouldUsePool(int length)
 	{
-		return length > MaxSmallArrayBytes / Unsafe.SizeOf<T>();
+		// Negative lengths go to the throwing constructor, not stackalloc.
+		return (uint)length > MaxSmallArrayBytes / Unsafe.SizeOf<T>();
 	}
 
 	/// <inheritdoc />

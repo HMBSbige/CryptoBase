@@ -99,7 +99,7 @@ internal static class HpkeLabels
 	[SkipLocalsInit]
 	private static void ExpandBlocks<TKdf>(ReadOnlySpan<byte> pseudorandomKey, ReadOnlySpan<byte> prefix, ReadOnlySpan<byte> info, Span<byte> output) where TKdf : unmanaged, IHmacHashCore<TKdf>
 	{
-		int length = prefix.Length + info.Length;
+		int length = checked(prefix.Length + info.Length);
 		using CryptoBuffer<byte> labeledInfo = CryptoBuffer<byte>.ShouldUsePool(length) ? new CryptoBuffer<byte>(length) : new CryptoBuffer<byte>(stackalloc byte[length]);
 		prefix.CopyTo(labeledInfo.Span);
 		info.CopyTo(labeledInfo.Span.Slice(prefix.Length));
