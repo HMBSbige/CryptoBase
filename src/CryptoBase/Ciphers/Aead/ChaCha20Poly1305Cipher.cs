@@ -23,6 +23,7 @@ public sealed class ChaCha20Poly1305Cipher : IAeadCipher<ChaCha20Poly1305Cipher>
 	public static int TagSize => 16;
 
 	private readonly ChaCha20Cipher _chacha20;
+	private bool _disposed;
 
 	/// <summary>
 	/// Initializes a new instance with the specified key.
@@ -38,6 +39,7 @@ public sealed class ChaCha20Poly1305Cipher : IAeadCipher<ChaCha20Poly1305Cipher>
 	/// <inheritdoc />
 	public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData = default)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
@@ -48,6 +50,7 @@ public sealed class ChaCha20Poly1305Cipher : IAeadCipher<ChaCha20Poly1305Cipher>
 	/// <inheritdoc />
 	public bool TryDecrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData = default)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
@@ -58,6 +61,12 @@ public sealed class ChaCha20Poly1305Cipher : IAeadCipher<ChaCha20Poly1305Cipher>
 	/// <inheritdoc />
 	public void Dispose()
 	{
+		if (_disposed)
+		{
+			return;
+		}
+
+		_disposed = true;
 		_chacha20.Dispose();
 	}
 }

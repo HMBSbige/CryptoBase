@@ -3,6 +3,7 @@ namespace CryptoBase.Abstractions.Ciphers;
 /// <summary>
 /// Defines a stream cipher.
 /// </summary>
+/// <remarks>Disposal erases the key and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.</remarks>
 public interface IStreamCipher : IDisposable
 {
 	/// <summary>

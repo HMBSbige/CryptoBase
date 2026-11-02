@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
+using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Modes;
@@ -27,6 +28,28 @@ public class XtsModeTest
 	public Task BatchAndStealingBoundariesMatchScalarTweaks<TCipher>(int length) where TCipher : IBlockCipher<TCipher>
 	{
 		return VerifyScalarTweaks<TCipher>(16, length);
+	}
+
+	[Test]
+	[GenerateGenericTest(typeof(AesCipher))]
+	[GenerateGenericTest(typeof(SM4Cipher))]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The cipher is used after disposal on purpose.")]
+	public async Task DisposalIsIdempotentAndEndsOperations<TCipher>() where TCipher : IBlockCipher<TCipher>
+	{
+		XtsMode<TCipher> cipher = XtsMode<TCipher>.Create(CreateDeterministicSource(32));
+		cipher.Dispose();
+		cipher.Dispose();
+		byte[] tweak = new byte[16];
+		byte[] source = CreateDeterministicSource(33);
+		byte[] output = new byte[source.Length];
+		PrepareDestination(output);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => cipher.Encrypt(tweak, source, output)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => cipher.Decrypt(tweak, source, output)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(output).All(static x => x is DestinationSentinel);
+		}
 	}
 
 	[Test]

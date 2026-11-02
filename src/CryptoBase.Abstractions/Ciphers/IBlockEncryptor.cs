@@ -3,6 +3,7 @@ namespace CryptoBase.Abstractions.Ciphers;
 /// <summary>
 /// Defines block encryption operations.
 /// </summary>
+/// <remarks>Disposal erases the key and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.</remarks>
 public interface IBlockEncryptor<out TSelf> : IDisposable where TSelf : IBlockEncryptor<TSelf>, allows ref struct
 {
 	/// <summary>

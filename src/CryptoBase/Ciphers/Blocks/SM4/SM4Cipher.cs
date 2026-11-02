@@ -14,6 +14,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 
 	private RoundKeys _roundKeys;
 	private RoundKeys _reverseRoundKeys;
+	private bool _disposed;
 
 	/// <inheritdoc />
 	public static int BlockSize => 16;
@@ -36,6 +37,12 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public void Dispose()
 	{
+		if (_disposed)
+		{
+			return;
+		}
+
+		_disposed = true;
 		_roundKeys.ZeroMemory();
 		_reverseRoundKeys.ZeroMemory();
 	}
@@ -43,6 +50,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public void EncryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
 		CipherBufferGuard.Output(source, destination);
 		ProcessBlocks(ref _roundKeys[0], source, destination, true);
@@ -51,6 +59,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public void EncryptBlocks(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		CipherBufferGuard.Blocks(source, destination, BlockSize);
 		ProcessBlocks(ref _roundKeys[0], source, destination, false);
 	}
@@ -58,6 +67,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public void DecryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
 		CipherBufferGuard.Output(source, destination);
 		ProcessBlocks(ref _reverseRoundKeys[0], source, destination, true);
@@ -66,6 +76,7 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	/// <inheritdoc />
 	public void DecryptBlocks(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		CipherBufferGuard.Blocks(source, destination, BlockSize);
 		ProcessBlocks(ref _reverseRoundKeys[0], source, destination, false);
 	}

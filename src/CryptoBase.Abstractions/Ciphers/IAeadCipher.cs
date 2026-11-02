@@ -3,6 +3,7 @@ namespace CryptoBase.Abstractions.Ciphers;
 /// <summary>
 /// Defines authenticated encryption with associated data.
 /// </summary>
+/// <remarks>Disposal erases the key and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.</remarks>
 public interface IAeadCipher<out TSelf> : IDisposable where TSelf : IAeadCipher<TSelf>, allows ref struct
 {
 	/// <summary>

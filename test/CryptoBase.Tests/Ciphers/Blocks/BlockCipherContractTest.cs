@@ -11,6 +11,27 @@ namespace CryptoBase.Tests.Ciphers.Blocks;
 public class BlockCipherContractTest<T> where T : IBlockCipher<T>
 {
 	[Test]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The cipher is used after disposal on purpose.")]
+	public async Task DisposalIsIdempotentAndEndsBlockOperations()
+	{
+		T cipher = T.Create(CreateDeterministicSource(16));
+		cipher.Dispose();
+		cipher.Dispose();
+		byte[] source = CreateDeterministicSource(32);
+		byte[] output = new byte[32];
+		PrepareDestination(output);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => cipher.EncryptBlock(source.AsSpan(0, 16), output)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => cipher.EncryptBlocks(source, output)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => cipher.DecryptBlock(source.AsSpan(0, 16), output)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => cipher.DecryptBlocks(source, output)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(output).All(static x => x is DestinationSentinel);
+		}
+	}
+
+	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]

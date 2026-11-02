@@ -43,6 +43,50 @@ public class StreamCipherContractTest
 	}
 
 	[Test]
+	[MethodDataSource(nameof(CipherCases))]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The cipher is used after disposal on purpose.")]
+	public async Task DisposalIsIdempotentAndEndsXor(StreamCipherCase cipher)
+	{
+		IStreamCipher subject = cipher.Create();
+		subject.Dispose();
+		subject.Dispose();
+		byte[] source = CreateDeterministicSource(65);
+		byte[] output = new byte[source.Length];
+		PrepareDestination(output);
+
+		await Assert.That(() => subject.Xor(source, output)).ThrowsExactly<ObjectDisposedException>();
+		await Assert.That(output).All(static value => value is DestinationSentinel);
+	}
+
+	[Test]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The ciphers are used after disposal on purpose.")]
+	public async Task DisposalEndsCounterChanges()
+	{
+		ChaCha20Cipher chaCha20 = new(CreateDeterministicSource(ChaCha20Cipher.KeySize), CreateDeterministicSource(ChaCha20Cipher.IVSize));
+		ChaCha20OriginalCipher chaCha20Original = new(CreateDeterministicSource(32), CreateDeterministicSource(ChaCha20OriginalCipher.IVSize));
+		XChaCha20Cipher xChaCha20 = new(CreateDeterministicSource(XChaCha20Cipher.KeySize), CreateDeterministicSource(XChaCha20Cipher.IVSize));
+		Salsa20Cipher salsa20 = new(CreateDeterministicSource(32), CreateDeterministicSource(Salsa20Cipher.IVSize));
+		XSalsa20Cipher xSalsa20 = new(CreateDeterministicSource(XSalsa20Cipher.KeySize), CreateDeterministicSource(XSalsa20Cipher.IVSize));
+		CtrMode128<AesCipher> ctr = CtrMode128<AesCipher>.Create(CreateDeterministicSource(16), new byte[16]);
+		chaCha20.Dispose();
+		chaCha20Original.Dispose();
+		xChaCha20.Dispose();
+		salsa20.Dispose();
+		xSalsa20.Dispose();
+		ctr.Dispose();
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => chaCha20.SetCounter(1)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => chaCha20Original.SetCounter(1)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => xChaCha20.SetCounter(1)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => salsa20.SetCounter(1)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => xSalsa20.SetCounter(1)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => ctr.Reset(new byte[16])).ThrowsExactly<ObjectDisposedException>();
+		}
+	}
+
+	[Test]
 	public async Task SnuffleConstructorsRejectInvalidKeyAndNonceLengths()
 	{
 		await Assert.That(static () => new ChaCha20Cipher(new byte[31], new byte[12]).Dispose()).ThrowsExactly<ArgumentOutOfRangeException>();

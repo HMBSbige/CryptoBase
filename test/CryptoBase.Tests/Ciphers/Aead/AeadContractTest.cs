@@ -40,6 +40,29 @@ public class PlatformAesGcmContractTest() : AeadContractTest<PlatformAesGcm>(32)
 public abstract class AeadContractTest<T>(int keyLength) where T : IAeadCipher<T>
 {
 	[Test]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The cipher is used after disposal on purpose.")]
+	public async Task DisposalIsIdempotentAndEndsOperations()
+	{
+		T cipher = T.Create(CreateDeterministicSource(keyLength));
+		cipher.Dispose();
+		cipher.Dispose();
+		byte[] nonce = CreateDeterministicSource(T.NonceSize);
+		byte[] source = CreateDeterministicSource(17);
+		byte[] output = new byte[source.Length];
+		byte[] tag = new byte[T.TagSize];
+		PrepareDestination(output);
+		PrepareDestination(tag);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => cipher.Encrypt(nonce, source, output, tag)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => cipher.TryDecrypt(nonce, source, tag, output)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(output).All(static x => x is DestinationSentinel);
+			await Assert.That(tag).All(static x => x is DestinationSentinel);
+		}
+	}
+
+	[Test]
 	[MatrixDataSource]
 	public async Task InvalidArgumentsDoNotWriteAndAllowRetry([Matrix(0, 1, 16, 257, 4096, 4097)] int length)
 	{

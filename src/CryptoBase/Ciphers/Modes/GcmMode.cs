@@ -39,6 +39,7 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 	// Not readonly: a readonly field would make Dispose run on a defensive copy when TBlockCipher is a struct.
 	private TBlockCipher _blockCipher;
 	private GHashKey _hashKey;
+	private bool _disposed;
 
 	private GcmMode(TBlockCipher blockCipher)
 	{
@@ -59,6 +60,8 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 	/// <inheritdoc/>
 	public void Encrypt(scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData = default)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		if (BlockModeDispatch.TryEncryptGcm(_blockCipher, ref _hashKey, nonce, source, destination, tag, associatedData))
 		{
 			return;
@@ -109,6 +112,8 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 	/// <inheritdoc/>
 	public bool TryDecrypt(scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<byte> tag, scoped Span<byte> destination, scoped ReadOnlySpan<byte> associatedData = default)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		if (BlockModeDispatch.TryDecryptGcm(_blockCipher, ref _hashKey, nonce, source, tag, destination, associatedData, out bool authenticated))
 		{
 			return authenticated;
@@ -253,6 +258,12 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 	/// <inheritdoc/>
 	public void Dispose()
 	{
+		if (_disposed)
+		{
+			return;
+		}
+
+		_disposed = true;
 		_hashKey.Dispose();
 		_blockCipher.Dispose();
 	}

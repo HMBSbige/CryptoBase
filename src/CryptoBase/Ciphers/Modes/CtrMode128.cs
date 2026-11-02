@@ -16,6 +16,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 	private Vector128<byte> _counter;
 	private Vector128<byte> _keyStream;
 	private int _index;
+	private bool _disposed;
 
 	private CtrMode128(TBlockCipher blockCipher, ReadOnlySpan<byte> initialCounter)
 	{
@@ -48,6 +49,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 	/// <param name="initialCounter">The new 16-byte big-endian counter block.</param>
 	public void Reset(scoped ReadOnlySpan<byte> initialCounter)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(initialCounter.Length, BlockSize, nameof(initialCounter));
 
 		_counter = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(initialCounter));
@@ -59,6 +61,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Xor(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		CipherBufferGuard.Output(source, destination);
 
 		int offset = 0;
@@ -107,6 +110,12 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 	/// <inheritdoc />
 	public void Dispose()
 	{
+		if (_disposed)
+		{
+			return;
+		}
+
+		_disposed = true;
 		_counter.ZeroMemory();
 		_keyStream.ZeroMemory();
 		_index = 0;

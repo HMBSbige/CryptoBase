@@ -74,6 +74,7 @@ public class Salsa20Cipher : SnuffleCipher
 	/// <param name="counter">The counter value for the next 64-byte keystream block.</param>
 	public void SetCounter(ulong counter)
 	{
+		ThrowIfDisposed();
 		CounterRemaining = GetBlocksRemaining(counter);
 		Index = 0;
 		Salsa20Utils.GetCounter(ref StateRef) = counter;

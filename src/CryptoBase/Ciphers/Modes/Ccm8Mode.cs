@@ -24,6 +24,7 @@ public sealed class Ccm8Mode<TBlockCipher> : IAeadCipher<Ccm8Mode<TBlockCipher>>
 
 	// Not readonly: a readonly field would make Dispose run on a defensive copy when TBlockCipher is a struct.
 	private TBlockCipher _blockCipher;
+	private bool _disposed;
 
 	private Ccm8Mode(TBlockCipher blockCipher)
 	{
@@ -33,18 +34,26 @@ public sealed class Ccm8Mode<TBlockCipher> : IAeadCipher<Ccm8Mode<TBlockCipher>>
 	/// <inheritdoc/>
 	public void Encrypt(scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData = default)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		CcmModeCore<TBlockCipher, CcmTag8>.Encrypt(_blockCipher, nonce, source, destination, tag, associatedData);
 	}
 
 	/// <inheritdoc/>
 	public bool TryDecrypt(scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<byte> tag, scoped Span<byte> destination, scoped ReadOnlySpan<byte> associatedData = default)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		return CcmModeCore<TBlockCipher, CcmTag8>.TryDecrypt(_blockCipher, nonce, source, tag, destination, associatedData);
 	}
 
 	/// <inheritdoc/>
 	public void Dispose()
 	{
+		if (_disposed)
+		{
+			return;
+		}
+
+		_disposed = true;
 		_blockCipher.Dispose();
 	}
 }

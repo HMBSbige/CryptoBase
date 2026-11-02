@@ -73,6 +73,7 @@ public class ChaCha20OriginalCipher : SnuffleCipher
 	/// <param name="counter">The counter value for the next 64-byte keystream block.</param>
 	public void SetCounter(ulong counter)
 	{
+		ThrowIfDisposed();
 		CounterRemaining = GetBlocksRemaining(counter);
 		Index = 0;
 		ChaCha20Utils.GetCounterOriginal(ref StateRef) = counter;

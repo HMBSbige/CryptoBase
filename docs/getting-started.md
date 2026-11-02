@@ -49,6 +49,6 @@ cipher.Encrypt(nonce, message, ciphertext, tag);
 ## Conventions
 
 - Methods write into caller-supplied `Span<byte>` buffers. Static length properties, such as `HashLength`, `TagSize` or `SignatureLength`, give the size to allocate; a destination that is too short throws `ArgumentException`, except in `Base32Encoding`, which returns `OperationStatus`.
-- Types that hold a key implement `IDisposable`, and disposing them erases the key.
+- Types that hold a key implement `IDisposable`, and disposing them erases the key; using them afterwards throws `ObjectDisposedException`.
 - Static methods such as `HashData` and `Mac` handle one complete input. For input that arrives in pieces, `Create` an instance and call `Append`.
 - Generic code can take any algorithm of a kind through the interfaces in `CryptoBase.Abstractions`, such as `IHashAlgorithm<TSelf>`, `IAeadCipher<TSelf>` or `IKem<TSelf>`.

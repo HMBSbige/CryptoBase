@@ -10,6 +10,7 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 	// Not readonly: readonly fields would make Dispose run on defensive copies when TBlockCipher is a struct.
 	private TBlockCipher _dataCipher;
 	private TBlockCipher _tweakCipher;
+	private bool _disposed;
 
 	/// <inheritdoc />
 	public static int TweakSize => BlockSize;
@@ -66,6 +67,12 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 	/// <inheritdoc />
 	public void Dispose()
 	{
+		if (_disposed)
+		{
+			return;
+		}
+
+		_disposed = true;
 		_dataCipher.Dispose();
 		_tweakCipher.Dispose();
 	}
@@ -73,12 +80,14 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 	/// <inheritdoc />
 	public void Encrypt(scoped ReadOnlySpan<byte> tweak, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		Transform<Encryption>(tweak, source, destination);
 	}
 
 	/// <inheritdoc />
 	public void Decrypt(scoped ReadOnlySpan<byte> tweak, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		Transform<Decryption>(tweak, source, destination);
 	}
 

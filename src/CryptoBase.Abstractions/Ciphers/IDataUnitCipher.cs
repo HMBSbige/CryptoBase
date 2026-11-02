@@ -3,7 +3,7 @@ namespace CryptoBase.Abstractions.Ciphers;
 /// <summary>
 /// Defines data-unit encryption and decryption.
 /// </summary>
-/// <remarks>Each operation writes exactly as many bytes as the source holds to the start of the destination.</remarks>
+/// <remarks>Each operation writes exactly as many bytes as the source holds to the start of the destination. Disposal erases the key and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.</remarks>
 public interface IDataUnitCipher<out TSelf> : IDisposable where TSelf : IDataUnitCipher<TSelf>, allows ref struct
 {
 	/// <summary>

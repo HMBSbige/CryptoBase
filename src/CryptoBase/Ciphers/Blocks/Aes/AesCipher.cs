@@ -10,6 +10,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	private BackendState _state;
 	private readonly BitsliceState? _bitslice;
 	private readonly SoftwareState? _software;
+	private bool _disposed;
 
 	/// <inheritdoc />
 	public static int BlockSize => 16;
@@ -61,6 +62,13 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	/// <inheritdoc />
 	public void Dispose()
 	{
+		if (_disposed)
+		{
+			return;
+		}
+
+		_disposed = true;
+
 		if (AesCipherX86.IsSupported)
 		{
 			_state.X86.Dispose();
@@ -85,6 +93,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	/// <inheritdoc />
 	public void EncryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
 
 		if (AesCipherX86.IsSupported)
@@ -101,6 +110,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	/// <inheritdoc />
 	public void EncryptBlocks(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		CipherBufferGuard.Blocks(source, destination, BlockSize);
 
 		if (AesCipherX86.IsSupported)
@@ -136,6 +146,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	/// <inheritdoc />
 	public void DecryptBlock(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
 
 		if (AesCipherX86.IsSupported)
@@ -152,6 +163,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 	/// <inheritdoc />
 	public void DecryptBlocks(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		CipherBufferGuard.Blocks(source, destination, BlockSize);
 
 		if (AesCipherX86.IsSupported)

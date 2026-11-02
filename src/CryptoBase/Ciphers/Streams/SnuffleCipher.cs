@@ -70,6 +70,8 @@ public abstract class SnuffleCipher : IStreamCipher
 	/// </summary>
 	protected ulong CounterRemaining;
 
+	private bool _disposed;
+
 	/// <summary>
 	/// Gets the last valid block counter.
 	/// </summary>
@@ -88,6 +90,7 @@ public abstract class SnuffleCipher : IStreamCipher
 	/// <inheritdoc />
 	public void Xor(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
+		ThrowIfDisposed();
 		CipherBufferGuard.Output(source, destination);
 
 		long blocksNeeded = ((uint)source.Length + Index + BlockSize - 1) / BlockSize - ((Index | -Index) >> 31 & 1);
@@ -197,9 +200,15 @@ public abstract class SnuffleCipher : IStreamCipher
 	/// <param name="state">The cipher state.</param>
 	protected abstract void IncrementCounter(Span<uint> state);
 
+	private protected void ThrowIfDisposed()
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+	}
+
 	/// <inheritdoc />
 	public virtual void Dispose()
 	{
+		_disposed = true;
 		State.ZeroMemory();
 		KeyStream.ZeroMemory();
 
