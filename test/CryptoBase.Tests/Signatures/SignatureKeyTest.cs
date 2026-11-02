@@ -83,7 +83,8 @@ internal class SignatureKeyTest
 		yield return () => ("explicit curve", Sequence(Sequence(Oid("1.2.840.10045.2.1"), Sequence([0x02, 0x01, 0x01])), key));
 		yield return () => ("no curve", Sequence(Sequence(Oid("1.2.840.10045.2.1")), key));
 		yield return () => ("ML-DSA with parameters", Sequence(Sequence(Oid("2.16.840.1.101.3.4.3.17"), [0x05, 0x00]), [0x03, 0x01, 0x00]));
-		yield return () => ("Ed25519", Sequence(Sequence(Oid("1.3.101.112")), [0x03, 0x21, 0x00, .. new byte[32]]));
+		yield return () => ("Ed25519 with parameters", Sequence(Sequence(Oid("1.3.101.112"), [0x05, 0x00]), [0x03, 0x21, 0x00, .. new byte[32]]));
+		yield return () => ("Ed448", Sequence(Sequence(Oid("1.3.101.113")), [0x03, 0x3A, 0x00, .. new byte[57]]));
 		yield return () => ("RSA", RSA.Create(2048).ExportSubjectPublicKeyInfo());
 	}
 

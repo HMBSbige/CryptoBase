@@ -104,6 +104,25 @@ public sealed record EcdsaVerifyTestGroup(ECPublicKey PublicKey, byte[] PublicKe
 	}
 }
 
+public sealed record EddsaVerifyTestVector(byte[] Msg, byte[] Sig) : WycheproofTestVector
+{
+	[JsonIgnore]
+	public byte[] PublicKey { get; init; } = [];
+
+	[JsonIgnore]
+	public byte[] PublicKeyDer { get; init; } = [];
+}
+
+public sealed record EddsaPublicKey(string Curve, byte[] Pk);
+
+public sealed record EddsaVerifyTestGroup(EddsaPublicKey PublicKey, byte[] PublicKeyDer) : WycheproofTestGroup<EddsaVerifyTestVector>
+{
+	public override EddsaVerifyTestVector Complete(EddsaVerifyTestVector test)
+	{
+		return test with { PublicKey = PublicKey.Pk, PublicKeyDer = PublicKeyDer };
+	}
+}
+
 // Decapsulation after key generation from a seed; ek is missing where the seed has the wrong length.
 public sealed record MLKemTestVector(byte[] Seed, byte[] C, byte[] K, byte[]? Ek = null) : WycheproofTestVector;
 

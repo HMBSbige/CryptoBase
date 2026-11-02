@@ -1,4 +1,5 @@
 using CryptoBase.Signatures.Ecdsa;
+using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -11,7 +12,7 @@ namespace CryptoBase.Signatures;
 /// </summary>
 /// <remarks>
 /// <para>
-/// id-ecPublicKey with the named curve P-256, P-384 or P-521 gives <see cref="EcdsaP256" />, <see cref="EcdsaP384" /> or <see cref="EcdsaP521" />, and id-ml-dsa-44, id-ml-dsa-65 or id-ml-dsa-87 gives <see cref="MLDsa44" />, <see cref="MLDsa65" /> or <see cref="MLDsa87" />.
+/// id-ecPublicKey with the named curve P-256, P-384 or P-521 gives <see cref="EcdsaP256" />, <see cref="EcdsaP384" /> or <see cref="EcdsaP521" />, id-Ed25519 gives <see cref="Ed25519" />, and id-ml-dsa-44, id-ml-dsa-65 or id-ml-dsa-87 gives <see cref="MLDsa44" />, <see cref="MLDsa65" /> or <see cref="MLDsa87" />.
 /// The AlgorithmIdentifier must match one of these in DER whole, so a key of another algorithm, or of one of these with other parameters such as an explicit curve, throws <see cref="NotSupportedException" />.
 /// </para>
 /// <para>
@@ -170,6 +171,7 @@ public static class SignatureKey
 			_ when algorithm.SequenceEqual(EcdsaP256.AlgorithmIdentifier) => Import<EcdsaP256>(source, privateKey),
 			_ when algorithm.SequenceEqual(EcdsaP384.AlgorithmIdentifier) => Import<EcdsaP384>(source, privateKey),
 			_ when algorithm.SequenceEqual(EcdsaP521.AlgorithmIdentifier) => Import<EcdsaP521>(source, privateKey),
+			_ when algorithm.SequenceEqual(Ed25519Key.AlgorithmIdentifier) => Import<Ed25519>(source, privateKey),
 			_ when algorithm.SequenceEqual(MLDsa44Parameters.AlgorithmIdentifier) => Import<MLDsa44>(source, privateKey),
 			_ when algorithm.SequenceEqual(MLDsa65Parameters.AlgorithmIdentifier) => Import<MLDsa65>(source, privateKey),
 			_ when algorithm.SequenceEqual(MLDsa87Parameters.AlgorithmIdentifier) => Import<MLDsa87>(source, privateKey),

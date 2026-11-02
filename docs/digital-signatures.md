@@ -10,6 +10,7 @@
 | `EcdsaP256` | `CryptoBase.Signatures.Ecdsa` | 65 bytes | 32 bytes | at most 72 bytes |
 | `EcdsaP384` | `CryptoBase.Signatures.Ecdsa` | 97 bytes | 48 bytes | at most 104 bytes |
 | `EcdsaP521` | `CryptoBase.Signatures.Ecdsa` | 133 bytes | 66 bytes | at most 139 bytes |
+| `Ed25519` | `CryptoBase.Signatures.EdDsa` | 32 bytes | 32 bytes | 64 bytes |
 
 ## ML-DSA
 
@@ -127,6 +128,54 @@ using EcdsaP256 fromPkcs8 = EcdsaP256.ImportPkcs8PrivateKey(pkcs8);
 // EC PRIVATE KEY: SignatureKey.ImportFromPem, below.
 ```
 
+## Ed25519
+
+```csharp
+using CryptoBase.Signatures.EdDsa;
+using System.Security.Cryptography;
+
+using Ed25519 signer = Ed25519.GenerateKey();
+byte[] publicKey = new byte[Ed25519.PublicKeyLength];
+signer.ExportPublicKey(publicKey);
+
+byte[] message = "message"u8.ToArray();
+byte[] signature = new byte[Ed25519.SignatureLength];
+signer.Sign(message, signature);
+
+// ImportPublicKey throws ArgumentException for a key that is not the canonical encoding of a point.
+// One instance may sign and verify on several threads at once; to verify many signatures with one key, keep one instance.
+using Ed25519 verifier = Ed25519.ImportPublicKey(publicKey);
+bool valid = verifier.Verify(message, signature); // true; false for a non-canonical signature
+
+// Ed25519ctx: a context of 1 to MaxContextLength bytes. The empty default gives Ed25519.
+signer.Sign(message, signature, "example.com/v1"u8);
+bool sameContext = verifier.Verify(message, signature, "example.com/v1"u8); // true
+
+// Ed25519ph: the SHA-512 hash of the message, with an optional context.
+byte[] hash = SHA512.HashData(message);
+signer.SignPreHash(hash, signature);
+bool validPreHash = verifier.VerifyPreHash(hash, signature); // true
+```
+
+### Keys
+
+```csharp
+// Private key: the 32-byte secret of RFC 8032; any value is valid. Public key: 32 bytes.
+byte[] privateKey = new byte[Ed25519.PrivateKeyLength];
+key.ExportPrivateKey(privateKey);
+using Ed25519 restored = Ed25519.ImportPrivateKey(privateKey);
+
+// SubjectPublicKeyInfo and PKCS #8 (RFC 8410). The PKCS #8 export holds only the private key;
+// the import also accepts a key with the public key, but throws if it does not match.
+byte[] spki = new byte[key.SubjectPublicKeyInfoLength];
+key.ExportSubjectPublicKeyInfo(spki);
+byte[] pkcs8 = new byte[key.Pkcs8PrivateKeyLength];
+key.ExportPkcs8PrivateKey(pkcs8);
+
+using Ed25519 fromSpki = Ed25519.ImportSubjectPublicKeyInfo(spki);
+using Ed25519 fromPkcs8 = Ed25519.ImportPkcs8PrivateKey(pkcs8);
+```
+
 ## Keys of any algorithm
 
 ```csharp
@@ -134,7 +183,7 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using System.Security.Cryptography.X509Certificates;
 
-// SignatureKey imports as the type that the encoding names: EcdsaP256, EcdsaP384, EcdsaP521, MLDsa44, MLDsa65 or MLDsa87.
+// SignatureKey imports as the type that the encoding names: EcdsaP256, EcdsaP384, EcdsaP521, Ed25519, MLDsa44, MLDsa65 or MLDsa87.
 // Another algorithm or curve throws NotSupportedException; a malformed encoding or an invalid key throws ArgumentException.
 using ISignatureKey fromSpki = SignatureKey.ImportSubjectPublicKeyInfo(spki);
 using ISignatureKey fromPkcs8 = SignatureKey.ImportPkcs8PrivateKey(pkcs8);
@@ -143,7 +192,7 @@ using ISignatureKey fromPkcs8 = SignatureKey.ImportPkcs8PrivateKey(pkcs8);
 // EC PRIVATE KEY must name its curve. Encrypted keys are not supported.
 using ISignatureKey key = SignatureKey.ImportFromPem(File.ReadAllText("key.pem"));
 
-// An ML-DSA type supports only the algorithm of its name; an ECDSA type supports EcdsaSha256, EcdsaSha384 and EcdsaSha512.
+// An ML-DSA type and Ed25519 support only the algorithm of their name; an ECDSA type supports EcdsaSha256, EcdsaSha384 and EcdsaSha512.
 SignatureAlgorithm algorithm = SignatureAlgorithm.EcdsaSha256;
 
 if (key.HasPrivateKey && key.Supports(algorithm))

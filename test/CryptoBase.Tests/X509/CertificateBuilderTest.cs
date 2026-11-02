@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
+using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.X509;
 using System.Diagnostics.CodeAnalysis;
@@ -15,9 +16,10 @@ namespace CryptoBase.Tests.X509;
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 internal class CertificateBuilderTest
 {
+	// The package names no Ed25519 signature algorithm yet.
 	public static IEnumerable<Func<(KeyType Type, SignatureAlgorithm Algorithm)>> SigningCases()
 	{
-		foreach (KeyType type in KeyTypes)
+		foreach (KeyType type in KeyTypes.Where(static type => type.Type != typeof(Ed25519)))
 		{
 			foreach (SignatureAlgorithm algorithm in type.Algorithms)
 			{

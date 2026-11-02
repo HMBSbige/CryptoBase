@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
+using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -15,6 +16,7 @@ namespace CryptoBase.Tests.Signatures;
 [GenerateGenericTest(typeof(EcdsaP256))]
 [GenerateGenericTest(typeof(EcdsaP384))]
 [GenerateGenericTest(typeof(EcdsaP521))]
+[GenerateGenericTest(typeof(Ed25519))]
 public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 {
 	[Test]
@@ -251,8 +253,9 @@ public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 		}
 	}
 
+	// GenerateKey always draws randomness, and Sign does unless the algorithm is deterministic.
 	[Test]
-	public async Task GenerateKeyAndSignAreRandomized()
+	public async Task GenerateKeyAndRandomizedSigningDrawRandomness()
 	{
 		using T first = GenerateKey<T>();
 		using T second = GenerateKey<T>();
@@ -267,7 +270,15 @@ public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 				byte[] firstSignature = Sign(first, algorithm, message);
 				byte[] secondSignature = Sign(first, algorithm, message);
 
-				await Assert.That(firstSignature).IsNotEquivalentTo(secondSignature);
+				if (IsDeterministic<T>())
+				{
+					await Assert.That(secondSignature).IsEquivalentTo(firstSignature, CollectionOrdering.Matching);
+				}
+				else
+				{
+					await Assert.That(firstSignature).IsNotEquivalentTo(secondSignature);
+				}
+
 				await Assert.That(first.Verify(algorithm, message, firstSignature)).IsTrue();
 				await Assert.That(first.Verify(algorithm, message, secondSignature)).IsTrue();
 			}

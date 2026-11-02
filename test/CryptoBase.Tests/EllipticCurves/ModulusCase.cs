@@ -1,5 +1,6 @@
 using CryptoBase.EllipticCurves;
 using CryptoBase.EllipticCurves.Curve25519;
+using CryptoBase.Signatures.EdDsa;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -27,6 +28,7 @@ public abstract class ModulusCase
 		yield return new Case<P521Field>("secp521r1", false);
 		yield return new Case<P521Order>("secp521r1", true);
 		yield return new Case<Curve25519Modulus>("curve25519", false);
+		yield return new Case<Ed25519Order>("curve25519", true);
 	}
 
 	public abstract Type ModulusType { get; }

@@ -1,5 +1,6 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
+using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using System.Security.Cryptography;
@@ -17,6 +18,7 @@ internal static class SignatureTestUtils
 		new(typeof(EcdsaP256), EcdsaTestUtils.Algorithms, EcdsaP256.GenerateKey),
 		new(typeof(EcdsaP384), EcdsaTestUtils.Algorithms, EcdsaP384.GenerateKey),
 		new(typeof(EcdsaP521), EcdsaTestUtils.Algorithms, EcdsaP521.GenerateKey),
+		new(typeof(Ed25519), [SignatureAlgorithm.Ed25519], Ed25519.GenerateKey, IsDeterministic: true),
 	];
 
 	public static T GenerateKey<T>() where T : class, ISignatureKey<T>
@@ -27,6 +29,11 @@ internal static class SignatureTestUtils
 	public static SignatureAlgorithm[] AlgorithmsOf<T>() where T : class, ISignatureKey<T>
 	{
 		return KeyTypeOf<T>().Algorithms;
+	}
+
+	public static bool IsDeterministic<T>() where T : class, ISignatureKey<T>
+	{
+		return KeyTypeOf<T>().IsDeterministic;
 	}
 
 	// The ECDSA key type for a curve size, and its curve in the BCL.
@@ -78,5 +85,6 @@ internal static class SignatureTestUtils
 		return KeyTypes.FirstOrDefault(static type => type.Type == typeof(T)) ?? throw new NotSupportedException(typeof(T).Name);
 	}
 
-	public sealed record KeyType(Type Type, SignatureAlgorithm[] Algorithms, Func<ISignatureKey> GenerateKey);
+	// A deterministic algorithm gives one signature for one key and message; the others draw randomness for each.
+	public sealed record KeyType(Type Type, SignatureAlgorithm[] Algorithms, Func<ISignatureKey> GenerateKey, bool IsDeterministic = false);
 }

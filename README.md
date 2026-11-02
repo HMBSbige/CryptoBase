@@ -141,7 +141,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | RSA | ⏳ |
 | [X25519](docs/key-agreement.md) | ✅ |
 | X448 | ⏳ |
-| Ed25519 | ⏳ |
+| [Ed25519](docs/digital-signatures.md) | ✅ |
 | Ed448 | ⏳ |
 | SM2 | ⏳ |
 | SM9 | ⏳ |
