@@ -45,6 +45,46 @@ public class AesXtsTest
 	}
 
 	[Test]
+	[Arguments(16)]
+	[Arguments(24)]
+	[Arguments(32)]
+	public async Task EqualKeysAreRejected(int keyLength)
+	{
+		byte[] key = CreateDeterministicSource(keyLength);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => XtsMode<AesCipher>.Create(key, key)).ThrowsExactly<ArgumentException>().WithParameterName("tweakKey");
+			await Assert.That(() => XtsMode<AesCipher>.Create([.. key, .. key])).ThrowsExactly<ArgumentException>().WithParameterName("key");
+		}
+	}
+
+	[Test]
+	public async Task InvalidKeyLengthTakesPrecedenceOverEqualKeys()
+	{
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => XtsMode<AesCipher>.Create([], [])).ThrowsExactly<ArgumentOutOfRangeException>();
+			await Assert.That(() => XtsMode<AesCipher>.Create(new byte[20], new byte[20])).ThrowsExactly<ArgumentOutOfRangeException>();
+			await Assert.That(() => XtsMode<AesCipher>.Create(new byte[40])).ThrowsExactly<ArgumentOutOfRangeException>();
+		}
+	}
+
+	[Test]
+	public async Task KeysDifferingInLastByteAreAccepted()
+	{
+		byte[] dataKey = CreateDeterministicSource(32);
+		byte[] tweakKey = dataKey.ToArray();
+		tweakKey[^1] ^= 1;
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => XtsMode<AesCipher>.Create(dataKey, tweakKey).Dispose()).ThrowsNothing();
+			await Assert.That(() => XtsMode<AesCipher>.Create([.. dataKey, .. tweakKey]).Dispose()).ThrowsNothing();
+		}
+	}
+
+	[Test]
 	[Arguments(false, 0, 1)]
 	[Arguments(false, 1, 0)]
 	[Arguments(true, 0, 1)]

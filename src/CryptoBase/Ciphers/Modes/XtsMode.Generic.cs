@@ -22,6 +22,7 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 	}
 
 	/// <summary>Creates XTS from the concatenated data and tweak keys.</summary>
+	/// <exception cref="ArgumentException"><paramref name="key" /> is empty, has an odd length, or its two halves are equal.</exception>
 	public static XtsMode<TBlockCipher> Create(scoped ReadOnlySpan<byte> key)
 	{
 		if (key.Length is 0 || key.Length % 2 is not 0)
@@ -29,11 +30,18 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 			throw new ArgumentException("XTS requires two equally sized keys.", nameof(key));
 		}
 
-		return Create(key.Slice(0, key.Length / 2), key.Slice(key.Length / 2));
+		return Create(key.Slice(0, key.Length / 2), key.Slice(key.Length / 2), nameof(key));
 	}
 
-	/// <summary>Creates XTS from equally sized data and tweak keys.</summary>
+	/// <summary>Creates XTS from equally sized, different data and tweak keys.</summary>
+	/// <exception cref="ArgumentOutOfRangeException">The key lengths differ.</exception>
+	/// <exception cref="ArgumentException"><paramref name="dataKey" /> and <paramref name="tweakKey" /> are equal.</exception>
 	public static XtsMode<TBlockCipher> Create(scoped ReadOnlySpan<byte> dataKey, scoped ReadOnlySpan<byte> tweakKey)
+	{
+		return Create(dataKey, tweakKey, nameof(tweakKey));
+	}
+
+	private static XtsMode<TBlockCipher> Create(scoped ReadOnlySpan<byte> dataKey, scoped ReadOnlySpan<byte> tweakKey, string paramName)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(TBlockCipher.BlockSize, BlockSize);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(dataKey.Length, tweakKey.Length, nameof(tweakKey));
@@ -41,6 +49,11 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 
 		try
 		{
+			if (FixedTime.Equals(dataKey, tweakKey))
+			{
+				throw new ArgumentException("XTS requires different data and tweak keys.", paramName);
+			}
+
 			return new XtsMode<TBlockCipher>(data, TBlockCipher.Create(tweakKey));
 		}
 		catch

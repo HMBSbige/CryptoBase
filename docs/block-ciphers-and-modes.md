@@ -39,7 +39,7 @@ using CryptoBase.Ciphers.Modes;
 byte[] dataKey = RandomNumberGenerator.GetBytes(32);
 byte[] tweakKey = RandomNumberGenerator.GetBytes(32);
 
-// Separate data and tweak keys of equal length.
+// Separate data and tweak keys of equal length. Equal keys are rejected.
 using XtsMode<AesCipher> xts = XtsMode<AesCipher>.Create(dataKey, tweakKey);
 
 // Or one key: the data key followed by the tweak key.
