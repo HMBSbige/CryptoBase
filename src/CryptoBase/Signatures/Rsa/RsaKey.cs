@@ -283,7 +283,7 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 		RsaPrivateOperation privateKey = GetSigningKey(algorithm, destination);
 
 		Span<byte> salt = stackalloc byte[RsaPadding.MaxHashLength].Slice(0, RsaAlgorithms.IsPss(algorithm) ? RsaAlgorithms.HashLength(algorithm) : 0);
-		RandomNumberGenerator.Fill(salt);
+		SystemRandom.Fill(salt);
 		return SignCore(privateKey, algorithm, message, salt, destination);
 	}
 
