@@ -42,14 +42,39 @@ internal static class MaskedSelect
 		Lookup<TVector>(in Unsafe.As<T, ulong>(ref Unsafe.AsRef(in table)), Unsafe.SizeOf<T>() / sizeof(ulong), count, index, ref Unsafe.As<T, ulong>(ref result));
 	}
 
-	// If an entry is not a whole number of vectors, the last block overlaps the one before it; both write the same values to the shared limbs. The even and the odd entries merge into accumulators of their own, which halves the chain of merges.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Lookup<TVector>(ref readonly ulong table, int length, int count, uint index, ref ulong result) where TVector : struct, ILimbVector<TVector>
+	{
+		Lookup(in table, length, count, TVector.Create(index), ref result);
+	}
+
+	// As Lookup for entries that interleave two values: the limbs at even indices come from entry first, and the others from entry second. Only vectors of an even number of limbs are used, as they line up with the pairs.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void LookupPair(ref readonly ulong table, int length, int count, uint first, uint second, ref ulong result)
+	{
+		Debug.Assert(length % 2 is 0 && Vector128.IsHardwareAccelerated);
+
+		if (Vector512.IsHardwareAccelerated && length >= Vector512<ulong>.Count)
+		{
+			Lookup(in table, length, count, LimbVector512.Create(first, second), ref result);
+		}
+		else if (Vector256.IsHardwareAccelerated && length >= Vector256<ulong>.Count)
+		{
+			Lookup(in table, length, count, LimbVector256.Create(first, second), ref result);
+		}
+		else
+		{
+			Lookup(in table, length, count, LimbVector128.Create(first, second), ref result);
+		}
+	}
+
+	// If an entry is not a whole number of vectors, the last block overlaps the one before it; both write the same values to the shared limbs. The even and the odd entries merge into accumulators of their own, which halves the chain of merges.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Lookup<TVector>(ref readonly ulong table, int length, int count, TVector target, ref ulong result) where TVector : struct, ILimbVector<TVector>
 	{
 		Debug.Assert(length >= TVector.Count);
 
 		ref ulong entries = ref Unsafe.AsRef(in table);
-		TVector target = TVector.Create(index);
 		TVector one = TVector.Create(1);
 		TVector two = TVector.Create(2);
 

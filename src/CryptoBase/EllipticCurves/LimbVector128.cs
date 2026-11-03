@@ -13,6 +13,12 @@ internal readonly struct LimbVector128(Vector128<ulong> value) : ILimbVector<Lim
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static LimbVector128 Create(ulong even, ulong odd)
+	{
+		return new LimbVector128(Vector128.Create(even, odd));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Store(ref ulong destination)
 	{
 		_value.StoreUnsafe(ref destination);
