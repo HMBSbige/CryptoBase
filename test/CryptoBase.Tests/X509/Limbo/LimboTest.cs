@@ -1,4 +1,6 @@
+using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
+using CryptoBase.Signatures.Rsa;
 using CryptoBase.X509;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -28,7 +30,7 @@ public class LimboTest
 		ConcurrentDictionary<string, Outcome> outcomes = new();
 		Stopwatch stopwatch = Stopwatch.StartNew();
 
-		await Parallel.ForEachAsync(testcases.Where(static testcase => !IsDenialOfService(testcase)), async (testcase, _) => outcomes[testcase.Id] = await EvaluateAsync(testcase));
+		await Parallel.ForEachAsync(testcases.Where(static testcase => !IsDenialOfService(testcase)), async (testcase, _) => outcomes[testcase.Id] = await EvaluateAsync(testcase, SignatureKey.ImportSubjectPublicKeyInfo));
 
 		// One at a time, so that no other testcase slows them.
 		foreach (LimboTestcase testcase in testcases.Where(IsDenialOfService))
@@ -37,7 +39,7 @@ public class LimboTest
 
 			try
 			{
-				outcomes[testcase.Id] = await Task.Run(() => EvaluateAsync(testcase)).WaitAsync(DenialOfServiceTimeout);
+				outcomes[testcase.Id] = await Task.Run(() => EvaluateAsync(testcase, SignatureKey.ImportSubjectPublicKeyInfo)).WaitAsync(DenialOfServiceTimeout);
 			}
 			catch (TimeoutException)
 			{
@@ -121,12 +123,68 @@ public class LimboTest
 		}
 	}
 
+	// The testcases with an RSA key have the same outcomes with RsaKey, which SignatureKey imports, as with PlatformRsaKey, to which an importer without RSA leaves the keys.
+	[Test]
+	public async Task RsaTestcasesHaveTheSameOutcomesWithPlatformRsaKey()
+	{
+		LimboTestcase[] testcases = [.. LimboTestcases.All.Where(static testcase => !IsDenialOfService(testcase) && HasRsaKey(testcase))];
+		ConcurrentDictionary<string, string> differences = new();
+
+		await Parallel.ForEachAsync(testcases, async (testcase, _) =>
+		{
+			Outcome core = await EvaluateAsync(testcase, SignatureKey.ImportSubjectPublicKeyInfo);
+			Outcome platform = await EvaluateAsync(testcase, ImportWithoutRsa);
+
+			if (core != platform)
+			{
+				differences[testcase.Id] = $"RsaKey: {core.Result}, {core.Detail}; PlatformRsaKey: {platform.Result}, {platform.Detail}";
+			}
+		});
+
+		Console.WriteLine($"x509-limbo: {testcases.Length} testcases with an RSA key.");
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(testcases).IsNotEmpty();
+			await Assert.That(differences).IsEmpty().Because(string.Join(Environment.NewLine, differences.Select(static difference => $"{difference.Key}: {difference.Value}")));
+		}
+
+		static ISignatureKey ImportWithoutRsa(ReadOnlySpan<byte> subjectPublicKeyInfo)
+		{
+			ISignatureKey key = SignatureKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
+
+			if (key is RsaKey)
+			{
+				key.Dispose();
+				throw new NotSupportedException("No RSA.");
+			}
+
+			return key;
+		}
+	}
+
 	private static bool IsDenialOfService(LimboTestcase testcase)
 	{
 		return testcase.Features.Contains("denial-of-service") || testcase.Id.StartsWith("pathological::", StringComparison.Ordinal);
 	}
 
-	private static async Task<Outcome> EvaluateAsync(LimboTestcase testcase)
+	// Whether a certificate of the testcase that decodes has an rsaEncryption or id-RSASSA-PSS key.
+	private static bool HasRsaKey(LimboTestcase testcase)
+	{
+		return testcase.TrustedCerts.Concat(testcase.UntrustedIntermediates).Append(testcase.PeerCertificate).Any(static pem =>
+		{
+			try
+			{
+				return Certificate.DecodePem(pem).PublicKeyInfo.Algorithm.Oid is "1.2.840.113549.1.1.1" or "1.2.840.113549.1.1.10";
+			}
+			catch (ArgumentException)
+			{
+				return false;
+			}
+		});
+	}
+
+	private static async Task<Outcome> EvaluateAsync(LimboTestcase testcase, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey)
 	{
 		if (testcase.Features.FirstOrDefault(static feature => !SupportedFeatures.Contains(feature)) is { } feature)
 		{
@@ -166,7 +224,7 @@ public class LimboTest
 			return new Outcome(Failure, $"A certificate does not decode: {e.InnerException?.Message ?? e.Message}");
 		}
 
-		using TrustAnchorCertificateValidator validator = new(trusted, SignatureKey.ImportSubjectPublicKeyInfo) { MaxPathLength = testcase.MaxChainDepth ?? 8 };
+		using TrustAnchorCertificateValidator validator = new(trusted, importPublicKey) { MaxPathLength = testcase.MaxChainDepth ?? 8 };
 		CertificateValidationContext context = new([peer, .. intermediates], usage)
 		{
 			HostName = usage is CertificateUsage.ServerAuthentication ? testcase.ExpectedPeerName?.Value : null,

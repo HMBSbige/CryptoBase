@@ -1,21 +1,14 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
-using CryptoBase.X509;
 
 namespace CryptoBase.Tests.X509;
 
-// An importer of public keys for TrustAnchorCertificateValidator that counts the keys that it imports, their verifications and their disposals, over CryptoBase's SignatureKey and, for RSA, PlatformRsaKey.
+// An importer of public keys for TrustAnchorCertificateValidator that counts the keys that it imports, their verifications and their disposals, over CryptoBase's SignatureKey.
 internal sealed class KeyLog
 {
-	private readonly Func<ReadOnlySpan<byte>, ISignatureKey> _import;
 	private int _imports;
 	private int _verifications;
 	private int _disposals;
-
-	public KeyLog(bool importsRsa = false)
-	{
-		_import = importsRsa ? ImportWithRsa : SignatureKey.ImportSubjectPublicKeyInfo;
-	}
 
 	public int Imports => Volatile.Read(ref _imports);
 
@@ -28,7 +21,7 @@ internal sealed class KeyLog
 
 	public ISignatureKey Import(ReadOnlySpan<byte> subjectPublicKeyInfo)
 	{
-		ISignatureKey key = _import(subjectPublicKeyInfo);
+		ISignatureKey key = SignatureKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
 		Interlocked.Increment(ref _imports);
 		return new TrackingKey(key, this);
 	}
@@ -42,18 +35,6 @@ internal sealed class KeyLog
 	private void CountDisposal()
 	{
 		Interlocked.Increment(ref _disposals);
-	}
-
-	private static ISignatureKey ImportWithRsa(ReadOnlySpan<byte> subjectPublicKeyInfo)
-	{
-		try
-		{
-			return SignatureKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
-		}
-		catch (NotSupportedException)
-		{
-			return PlatformRsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
-		}
 	}
 
 	private sealed class TrackingKey(ISignatureKey inner, KeyLog log) : ISignatureKey

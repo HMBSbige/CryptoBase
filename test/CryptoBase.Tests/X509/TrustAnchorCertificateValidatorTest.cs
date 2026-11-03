@@ -4,6 +4,7 @@ using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Signatures.Rsa;
+using CryptoBase.Tests.Signatures.Rsa;
 using CryptoBase.X509;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -626,15 +627,79 @@ public class TrustAnchorCertificateValidatorTest
 			await AssertInvalid(await Validate([root.Certificate], [ReissuedBy(Tamper(intermediate.Certificate), root)], importPublicKey: ImportWithoutRsa), [CertificateValidationError.InvalidSignature], CertificatePathEnd.TrustAnchor, null, root.Certificate);
 			await AssertInvalid(await Validate([root.Certificate], [tampered, intermediate.Certificate], importPublicKey: ImportWithoutRsa), [CertificateValidationError.InvalidSignature], CertificatePathEnd.TrustAnchor, tampered, intermediate.Certificate, root.Certificate);
 		}
+	}
 
-		static ISignatureKey ImportWithoutRsa(ReadOnlySpan<byte> subjectPublicKeyInfo)
+	// Paths of RSA CAs, whose keys are rsaEncryption or id-RSASSA-PSS, without parameters or with those of one hash: RsaKey, which SignatureKey imports, and PlatformRsaKey, to which an importer
+	// without RSA leaves them, give the same results. The keys of a CA also sign the certificates below with an algorithm that their AlgorithmIdentifier does not allow, which fails the path.
+	[Test]
+	[Arguments(false, null, SignatureAlgorithm.RsaPkcs1Sha256, null)]
+	[Arguments(false, null, SignatureAlgorithm.RsaPkcs1Sha512, null)]
+	[Arguments(false, null, SignatureAlgorithm.RsaPssSha384, null)]
+	[Arguments(true, null, SignatureAlgorithm.RsaPssSha512, SignatureAlgorithm.RsaPkcs1Sha512)]
+	[Arguments(true, Sha256Oid, SignatureAlgorithm.RsaPssSha256, SignatureAlgorithm.RsaPssSha384)]
+	public async Task RsaKeyAndPlatformRsaKeyValidateAlike(bool rsassaPss, string? hash, SignatureAlgorithm algorithm, SignatureAlgorithm? refused)
+	{
+		byte[] identifier = (rsassaPss, hash) switch
+		{
+			(false, _) => RsaTestUtils.RsaEncryption,
+			(true, null) => RsassaPssIdentifier(withParameters: false),
+			(true, { } name) => RsassaPssIdentifier(hash: name, maskHash: name)
+		};
+
+		using RsaKey rootKey = ImportRsaKey(RsaTestUtils.Pkcs8PrivateKey(), identifier);
+		using RsaKey intermediateKey = ImportRsaKey(RsaTestUtils.OtherKey2048, identifier);
+		using EcdsaP256 leafKey = EcdsaP256.GenerateKey();
+		byte[] rootName = Name("CN=RSA root");
+		byte[] intermediateName = Name("CN=RSA intermediate");
+		byte[] rootPublicKey = ExportSubjectPublicKeyInfo(rootKey);
+		byte[] intermediatePublicKey = ExportSubjectPublicKeyInfo(intermediateKey);
+		Certificate root = Sign(new Template { Subject = rootName, SubjectPublicKeyInfo = rootPublicKey, Extensions = CaExtensions(rootPublicKey) }, rootName, rootKey, algorithm);
+		Certificate intermediate = Sign(new Template { Subject = intermediateName, SubjectPublicKeyInfo = intermediatePublicKey, Extensions = [.. CaExtensions(intermediatePublicKey), AuthorityKeyIdentifier(KeyIdentifierOf(rootPublicKey))] }, rootName, rootKey, algorithm);
+		Template leafTemplate = new() { Subject = Name("CN=Leaf"), SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(leafKey), Extensions = [SubjectAlternativeNames("example.com"), AuthorityKeyIdentifier(KeyIdentifierOf(intermediatePublicKey))] };
+		Certificate leaf = Sign(leafTemplate, intermediateName, intermediateKey, algorithm);
+		List<(string Case, Certificate[] Presented, CertificateValidationError[] Errors)> cases =
+		[
+			("valid", [leaf, intermediate], []),
+			("leaf tampered", [Tamper(leaf), intermediate], [CertificateValidationError.InvalidSignature]),
+			("intermediate tampered", [leaf, Tamper(intermediate)], [CertificateValidationError.InvalidSignature])
+		];
+
+		if (refused is { } other)
+		{
+			// The same private key with rsaEncryption makes a valid signature of the algorithm that the CA's key refuses.
+			using RsaKey unrestricted = ImportRsaKey(RsaTestUtils.OtherKey2048, RsaTestUtils.RsaEncryption);
+			cases.Add(("refused algorithm", [Sign(leafTemplate, intermediateName, unrestricted, other), intermediate], [CertificateValidationError.InvalidSignature]));
+		}
+
+		int rsaKeys = 0;
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => ImportWithoutRsa(rootPublicKey)).ThrowsExactly<NotSupportedException>();
+
+			foreach ((string @case, Certificate[] presented, CertificateValidationError[] errors) in cases)
+			{
+				CertificateValidationResult core = await Validate([root], presented, hostName: "example.com", importPublicKey: ImportCountingRsaKeys);
+				CertificateValidationResult platform = await Validate([root], presented, hostName: "example.com", importPublicKey: ImportWithoutRsa);
+
+				await Assert.That(core.Errors).IsEquivalentTo(errors, CollectionOrdering.Matching).Because($"{@case}: {core.Message}");
+				await Assert.That(platform.Errors).IsEquivalentTo(core.Errors, CollectionOrdering.Matching).Because($"{@case}: {platform.Message}");
+				await Assert.That(platform.PathEnd).IsEqualTo(core.PathEnd).Because(@case);
+				await Assert.That(platform.Path.Select(static certificate => Convert.ToHexString(certificate.Encoded.Span))).IsEquivalentTo(core.Path.Select(static certificate => Convert.ToHexString(certificate.Encoded.Span)), CollectionOrdering.Matching).Because(@case);
+				await Assert.That(platform.Message).IsEqualTo(core.Message).Because(@case);
+			}
+
+			// SignatureKey imported the keys of the root and of the intermediate as RsaKey.
+			await Assert.That(rsaKeys).IsGreaterThanOrEqualTo(2);
+		}
+
+		ISignatureKey ImportCountingRsaKeys(ReadOnlySpan<byte> subjectPublicKeyInfo)
 		{
 			ISignatureKey key = SignatureKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
 
 			if (key is RsaKey)
 			{
-				key.Dispose();
-				throw new NotSupportedException("No RSA.");
+				Interlocked.Increment(ref rsaKeys);
 			}
 
 			return key;
@@ -647,7 +712,7 @@ public class TrustAnchorCertificateValidatorTest
 	{
 		using Authority root = RsaRoot(2048, SignatureAlgorithm.RsaPssSha256);
 		Certificate leaf = root.IssueLeaf();
-		KeyLog log = new(importsRsa: true);
+		KeyLog log = new();
 		using Authority ecRoot = Authority.CreateRoot();
 		Certificate leafOfEcRoot = ecRoot.IssueLeaf();
 
@@ -1113,6 +1178,27 @@ public class TrustAnchorCertificateValidatorTest
 		byte[] subjectPublicKeyInfo = key.ExportSubjectPublicKeyInfo();
 		Template template = new() { Subject = name, SubjectPublicKeyInfo = subjectPublicKeyInfo, Extensions = CaExtensions(subjectPublicKeyInfo) };
 		return Sign(template, name, AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), tbs => key.SignData(tbs, hash, padding));
+	}
+
+	// The RSAPrivateKey of a PKCS #8 key, imported with another AlgorithmIdentifier.
+	private static RsaKey ImportRsaKey(byte[] pkcs8, byte[] identifier)
+	{
+		using RsaKey key = RsaKey.ImportPkcs8PrivateKey(pkcs8);
+		return RsaKey.ImportPkcs8PrivateKey(RsaTestUtils.PrivateKeyInfo(identifier, RsaTestUtils.ExportRsaPrivateKey(key)));
+	}
+
+	// SignatureKey without RSA, so that the validator imports RSA keys with PlatformRsaKey.
+	private static ISignatureKey ImportWithoutRsa(ReadOnlySpan<byte> subjectPublicKeyInfo)
+	{
+		ISignatureKey key = SignatureKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
+
+		if (key is RsaKey)
+		{
+			key.Dispose();
+			throw new NotSupportedException("No RSA.");
+		}
+
+		return key;
 	}
 
 	private static byte[] RsaSubjectPublicKeyInfo(byte[] modulus, byte[] exponent)

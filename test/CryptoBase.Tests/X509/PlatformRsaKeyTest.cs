@@ -1,4 +1,5 @@
 using CryptoBase.Abstractions.Signatures;
+using CryptoBase.Tests.Wycheproof;
 using CryptoBase.X509;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -10,6 +11,7 @@ using System.Text.Json;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using static CryptoBase.Tests.X509.X509TestUtils;
+using RsaKey = CryptoBase.Signatures.Rsa.RsaKey;
 
 namespace CryptoBase.Tests.X509;
 
@@ -359,7 +361,8 @@ public class PlatformRsaKeyTest
 		}
 	}
 
-	// The modulus must be 512 to 16384 bits long and the public exponent at most 33 bits, which bound the work of verification; otherwise the key must be valid (RFC 8017, Sec. 3.1).
+	// The modulus must be 512 to 16384 bits long and the public exponent at most 33 bits, which bound the work of verification; otherwise the key must be valid (RFC 8017, Sec. 3.1). RsaKey imports
+	// and refuses the same keys.
 	[Test]
 	public async Task PublicKeysMustBeValidAndWithinTheBounds()
 	{
@@ -402,16 +405,20 @@ public class PlatformRsaKeyTest
 				using PlatformRsaKey key = PlatformRsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
 				await Assert.That(ExportSubjectPublicKeyInfo(key)).IsEquivalentTo(subjectPublicKeyInfo, CollectionOrdering.Matching).Because(@case);
 				await Assert.That(key.Verify(SignatureAlgorithm.RsaPkcs1Sha256, [1], CreateDeterministicSource(key.GetMaxSignatureLength(SignatureAlgorithm.RsaPkcs1Sha256)))).IsFalse().Because(@case);
+				using RsaKey rsaKey = RsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
+				await Assert.That(RsaAlgorithms.Where(rsaKey.Supports)).IsEquivalentTo(RsaAlgorithms.Where(key.Supports), CollectionOrdering.Matching).Because(@case);
 			}
 
 			foreach ((string @case, byte[] subjectPublicKeyInfo) in unsupported)
 			{
 				await Assert.That(() => PlatformRsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo)).ThrowsExactly<NotSupportedException>().Because(@case);
+				await Assert.That(() => RsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo)).ThrowsExactly<NotSupportedException>().Because(@case);
 			}
 
 			foreach ((string @case, byte[] subjectPublicKeyInfo) in invalid)
 			{
 				await Assert.That(() => PlatformRsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo)).Throws<ArgumentException>().WithParameterName("source").Because(@case);
+				await Assert.That(() => RsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo)).Throws<ArgumentException>().WithParameterName("source").Because(@case);
 			}
 		}
 	}
@@ -472,7 +479,8 @@ public class PlatformRsaKeyTest
 		await Assert.That(string.Join(' ', RsaAlgorithms.Where(key.Supports))).IsEqualTo(expected);
 	}
 
-	// An id-RSASSA-PSS key signs with RSASSA-PSS alone; with parameters, only with their hash and MGF1 with it, and a salt at least as long as their saltLength (RFC 4055, Sec. 3.3).
+	// An id-RSASSA-PSS key signs with RSASSA-PSS alone; with parameters, only with their hash and MGF1 with it, and a salt at least as long as their saltLength (RFC 4055, Sec. 3.3). RsaKey
+	// imports and refuses the same keys.
 	[Test]
 	public async Task RsassaPssKeysAllowWhatTheirParametersAllow()
 	{
@@ -508,11 +516,15 @@ public class PlatformRsaKeyTest
 				using PlatformRsaKey key = PlatformRsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
 				await Assert.That(RsaAlgorithms.Where(key.Supports)).IsEquivalentTo(allowed, CollectionOrdering.Matching).Because(@case);
 				await Assert.That(ExportSubjectPublicKeyInfo(key)).IsEquivalentTo(subjectPublicKeyInfo, CollectionOrdering.Matching).Because(@case);
+				using RsaKey rsaKey = RsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
+				await Assert.That(RsaAlgorithms.Where(rsaKey.Supports)).IsEquivalentTo(allowed, CollectionOrdering.Matching).Because(@case);
+				await Assert.That(ExportSubjectPublicKeyInfo(rsaKey)).IsEquivalentTo(subjectPublicKeyInfo, CollectionOrdering.Matching).Because(@case);
 			}
 
 			foreach ((string @case, byte[] algorithm) in unsupported)
 			{
 				await Assert.That(() => PlatformRsaKey.ImportSubjectPublicKeyInfo(RsaSubjectPublicKeyInfo(modulus, 65537, algorithm))).ThrowsExactly<NotSupportedException>().Because(@case);
+				await Assert.That(() => RsaKey.ImportSubjectPublicKeyInfo(RsaSubjectPublicKeyInfo(modulus, 65537, algorithm))).ThrowsExactly<NotSupportedException>().Because(@case);
 			}
 		}
 	}
@@ -723,7 +735,97 @@ public class PlatformRsaKeyTest
 		}
 	}
 
-	// Certificates whose RSASSA-PSS-params have hash AlgorithmIdentifiers with NULL parameters and without parameters.
+	// The RSA signature files of Wycheproof: RSASSA-PKCS1-v1_5 generation and verification, and RSASSA-PSS verification.
+	public static IEnumerable<Func<string>> WycheproofSignatureFiles()
+	{
+		return Directory.EnumerateFiles(WycheproofPath(""), "rsa_*_test.json")
+			.Select(Path.GetFileName)
+			.OfType<string>()
+			.Where(static fileName => fileName.StartsWith("rsa_signature_", StringComparison.Ordinal) || fileName.StartsWith("rsa_pss_", StringComparison.Ordinal) || fileName.EndsWith("_sig_gen_test.json", StringComparison.Ordinal))
+			.Order(StringComparer.Ordinal)
+			.Select(static fileName => (Func<string>)(() => fileName));
+	}
+
+	// PlatformRsaKey and RsaKey import the same keys of every vector, or both throw the same exception, support the same algorithms, export the same SubjectPublicKeyInfo, and verify each signature
+	// alike with each algorithm that they support.
+	[Test]
+	[MethodDataSource(nameof(WycheproofSignatureFiles))]
+	public async Task VerifiesWycheproofVectorsAsRsaKeyDoes(string fileName)
+	{
+		IEnumerable<RsaSignatureTestVector> vectors = fileName.EndsWith("_sig_gen_test.json", StringComparison.Ordinal)
+			? WycheproofVectors.Load<RsaSignTestGroup, RsaSignatureTestVector>(fileName)
+			: WycheproofVectors.Load<RsaVerifyTestGroup, RsaSignatureTestVector>(fileName);
+		List<string> differences = [];
+		int groups = 0;
+
+		// The vectors of a group share its SubjectPublicKeyInfo.
+		foreach (IGrouping<byte[], RsaSignatureTestVector> group in vectors.GroupBy(static vector => vector.PublicKeyDer))
+		{
+			string context = $"{fileName}, {group.First()}";
+			++groups;
+			(PlatformRsaKey? platformKey, Type? platformException) = Import(static subjectPublicKeyInfo => PlatformRsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo), group.Key);
+			(RsaKey? key, Type? exception) = Import(static subjectPublicKeyInfo => RsaKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo), group.Key);
+
+			using (platformKey)
+			using (key)
+			{
+				if (platformKey is null || key is null)
+				{
+					if (platformException != exception)
+					{
+						differences.Add($"{context}: PlatformRsaKey {platformException?.Name ?? "imports"}, RsaKey {exception?.Name ?? "imports"}");
+					}
+
+					continue;
+				}
+
+				SignatureAlgorithm[] algorithms = [.. RsaAlgorithms.Where(platformKey.Supports)];
+
+				if (!algorithms.SequenceEqual(RsaAlgorithms.Where(key.Supports)))
+				{
+					differences.Add($"{context}: PlatformRsaKey supports [{string.Join(", ", algorithms)}], RsaKey [{string.Join(", ", RsaAlgorithms.Where(key.Supports))}]");
+				}
+
+				if (!ExportSubjectPublicKeyInfo(platformKey).AsSpan().SequenceEqual(ExportSubjectPublicKeyInfo(key)))
+				{
+					differences.Add($"{context}: the SubjectPublicKeyInfo differs");
+				}
+
+				foreach (RsaSignatureTestVector vector in group)
+				{
+					foreach (SignatureAlgorithm algorithm in algorithms)
+					{
+						bool platform = platformKey.Verify(algorithm, vector.Msg, vector.Sig);
+
+						if (platform != key.Verify(algorithm, vector.Msg, vector.Sig))
+						{
+							differences.Add($"{vector}, {algorithm}: PlatformRsaKey {platform}, RsaKey {!platform}");
+						}
+					}
+				}
+			}
+		}
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(groups).IsGreaterThan(0);
+			await Assert.That(differences).IsEmpty().Because(string.Join(Environment.NewLine, differences.Take(20)));
+		}
+
+		static (T? Key, Type? Exception) Import<T>(Func<byte[], T> import, byte[] subjectPublicKeyInfo) where T : class
+		{
+			try
+			{
+				return (import(subjectPublicKeyInfo), null);
+			}
+			catch (Exception e) when (e is ArgumentException or NotSupportedException or CryptographicException)
+			{
+				return (null, e.GetType());
+			}
+		}
+	}
+
+	// Certificates whose RSASSA-PSS-params have hash AlgorithmIdentifiers with NULL parameters and without parameters; RsaKey imports their keys with the same algorithms, and verifies them too.
 	[Test]
 	public async Task VerifiesCertificatesOfOpenSslAndTheBcl()
 	{
@@ -747,12 +849,16 @@ public class PlatformRsaKeyTest
 			foreach ((string @case, Certificate certificate, SignatureAlgorithm[] keyAlgorithms) in certificates)
 			{
 				using PlatformRsaKey key = PlatformRsaKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span);
+				using RsaKey rsaKey = RsaKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span);
 				byte[] tampered = certificate.Encoded.ToArray();
 				tampered[^1] ^= 1;
 
 				await Assert.That(RsaAlgorithms.Where(key.Supports)).IsEquivalentTo(keyAlgorithms, CollectionOrdering.Matching).Because(@case);
+				await Assert.That(RsaAlgorithms.Where(rsaKey.Supports)).IsEquivalentTo(keyAlgorithms, CollectionOrdering.Matching).Because(@case);
 				await Assert.That(certificate.VerifySignature(key)).IsTrue().Because(@case);
+				await Assert.That(certificate.VerifySignature(rsaKey)).IsTrue().Because(@case);
 				await Assert.That(Certificate.Decode(tampered).VerifySignature(key)).IsFalse().Because(@case);
+				await Assert.That(Certificate.Decode(tampered).VerifySignature(rsaKey)).IsFalse().Because(@case);
 			}
 		}
 	}

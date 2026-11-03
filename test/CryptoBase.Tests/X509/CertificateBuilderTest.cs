@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
+using CryptoBase.Tests.Signatures.Rsa;
 using CryptoBase.X509;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
@@ -9,6 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using static CryptoBase.Tests.X509.X509TestUtils;
+using RsaKey = CryptoBase.Signatures.Rsa.RsaKey;
 
 namespace CryptoBase.Tests.X509;
 
@@ -83,25 +85,33 @@ internal class CertificateBuilderTest
 		}
 	}
 
-	public static IEnumerable<Func<SignatureAlgorithm>> RsaSigningCases()
+	public static IEnumerable<Func<(SignatureAlgorithm Algorithm, bool PlatformKey)>> RsaSigningCases()
 	{
-		foreach (SignatureAlgorithm algorithm in RsaAlgorithms)
+		foreach (bool platformKey in (bool[])[false, true])
 		{
-			yield return () => algorithm;
+			foreach (SignatureAlgorithm algorithm in RsaAlgorithms)
+			{
+				yield return () => (algorithm, platformKey);
+			}
 		}
 	}
 
+	// A certificate of RsaKey or of PlatformRsaKey loads on the platform, which verifies it, and both public keys verify it; a changed signature verifies with neither.
 	[Test]
 	[MethodDataSource(nameof(RsaSigningCases))]
-	public async Task TheBclAcceptsRsaCertificates(SignatureAlgorithm algorithm)
+	public async Task TheBclAcceptsRsaCertificates(SignatureAlgorithm algorithm, bool platformKey)
 	{
-		using PlatformRsaKey key = new(CreateRsa());
+		using ISignatureKey key = platformKey ? new PlatformRsaKey(CreateRsa()) : RsaTestUtils.ImportKey();
 		CertificateBuilder builder = new(Name("CN=rsa.example"));
 		builder.Extensions.Add(new CertificateExtension("2.5.29.19", true, new X509BasicConstraintsExtension(true, false, 0, true).RawData));
 		builder.Extensions.Add(new CertificateExtension("2.5.29.17", false, SubjectAlternativeName("rsa.example").RawData));
 
 		Certificate certificate = Certificate.Decode(builder.CreateSelfSigned(key, algorithm, Now.AddDays(-1), Now.AddDays(1)).Encoded.Span);
-		using PlatformRsaKey publicKey = PlatformRsaKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span);
+		using PlatformRsaKey platformPublicKey = PlatformRsaKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span);
+		using RsaKey publicKey = RsaKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span);
+		byte[] tamperedEncoding = certificate.Encoded.ToArray();
+		tamperedEncoding[^1] ^= 1;
+		Certificate tampered = Certificate.Decode(tamperedEncoding);
 		using X509Certificate2 loaded = X509CertificateLoader.LoadCertificate(certificate.Encoded.Span);
 		using RSA? bclKey = loaded.GetRSAPublicKey();
 		(HashAlgorithmName hash, RSASignaturePadding padding) = RsaParametersOf(algorithm);
@@ -112,7 +122,10 @@ internal class CertificateBuilderTest
 			await Assert.That(certificate.PublicKeyInfo.Encoded.ToArray()).IsEquivalentTo(ExportSubjectPublicKeyInfo(key), CollectionOrdering.Matching);
 			await Assert.That(certificate.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(certificate.VerifySignature(key)).IsTrue();
+			await Assert.That(certificate.VerifySignature(platformPublicKey)).IsTrue();
 			await Assert.That(certificate.VerifySignature(publicKey)).IsTrue();
+			await Assert.That(tampered.VerifySignature(platformPublicKey)).IsFalse();
+			await Assert.That(tampered.VerifySignature(publicKey)).IsFalse();
 			await Assert.That(loaded.SignatureAlgorithm.Value).IsEqualTo(certificate.SignatureAlgorithm.Oid);
 			await Assert.That(bclKey is not null && bclKey.VerifyData(certificate.TbsCertificate.Span, certificate.Signature.Span, hash, padding)).IsTrue();
 			await Assert.That(loaded.MatchesHostname("rsa.example")).IsTrue();
@@ -132,6 +145,48 @@ internal class CertificateBuilderTest
 			await Assert.That(() => builder.CreateSelfSigned(pkcs1Only, SignatureAlgorithm.RsaPssSha256, Now, Now)).Throws<ArgumentException>().WithParameterName("algorithm");
 			await Assert.That(() => builder.CreateSelfSigned(publicOnly, SignatureAlgorithm.RsaPkcs1Sha256, Now, Now)).ThrowsExactly<InvalidOperationException>();
 			await Assert.That(builder.CreateSelfSigned(pkcs1Only, SignatureAlgorithm.RsaPkcs1Sha256, Now, Now).VerifySignature(publicOnly)).IsTrue();
+		}
+	}
+
+	// A PKCS #8 key with id-RSASSA-PSS, without parameters or with those of one hash and a salt no longer than it, signs certificates only with the RSASSA-PSS algorithms that they allow (RFC 4055,
+	// Sec. 3.3), and the certificate keeps the AlgorithmIdentifier; RsaKey and PlatformRsaKey import its public key with the same algorithms, and verify it.
+	[Test]
+	[Arguments(null, null, null)]
+	[Arguments(Sha256Oid, 32, SignatureAlgorithm.RsaPssSha256)]
+	[Arguments(Sha256Oid, 20, SignatureAlgorithm.RsaPssSha256)]
+	[Arguments(Sha384Oid, 48, SignatureAlgorithm.RsaPssSha384)]
+	[Arguments(Sha512Oid, 64, SignatureAlgorithm.RsaPssSha512)]
+	public async Task RsassaPssKeysSignOnlyWithTheirAlgorithms(string? hash, int? saltLength, SignatureAlgorithm? allowed)
+	{
+		byte[] identifier = hash is null ? RsassaPssIdentifier(withParameters: false) : RsassaPssIdentifier(hash: hash, maskHash: hash, saltLength: saltLength);
+		SignatureAlgorithm[] expected = allowed is { } only ? [only] : RsaTestUtils.PssAlgorithms;
+		using RsaKey rsaEncryptionKey = RsaTestUtils.ImportKey();
+		using RsaKey key = RsaKey.ImportPkcs8PrivateKey(RsaTestUtils.PrivateKeyInfo(identifier, RsaTestUtils.ExportRsaPrivateKey(rsaEncryptionKey)));
+		CertificateBuilder builder = new(Name("CN=RSASSA-PSS"));
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(RsaAlgorithms.Where(key.Supports)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+
+			foreach (SignatureAlgorithm algorithm in RsaAlgorithms)
+			{
+				if (!expected.Contains(algorithm))
+				{
+					await Assert.That(() => builder.CreateSelfSigned(key, algorithm, Now, Now)).Throws<ArgumentException>().WithParameterName("algorithm").Because(algorithm.ToString());
+					continue;
+				}
+
+				Certificate certificate = builder.CreateSelfSigned(key, algorithm, Now, Now);
+				using RsaKey publicKey = RsaKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span);
+				using PlatformRsaKey platformPublicKey = PlatformRsaKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span);
+
+				await Assert.That(certificate.PublicKeyInfo.Algorithm.Encoded.ToArray()).IsEquivalentTo(identifier, CollectionOrdering.Matching).Because(algorithm.ToString());
+				await Assert.That(certificate.PublicKeyInfo.Encoded.ToArray()).IsEquivalentTo(ExportSubjectPublicKeyInfo(key), CollectionOrdering.Matching).Because(algorithm.ToString());
+				await Assert.That(RsaAlgorithms.Where(publicKey.Supports)).IsEquivalentTo(expected, CollectionOrdering.Matching).Because(algorithm.ToString());
+				await Assert.That(RsaAlgorithms.Where(platformPublicKey.Supports)).IsEquivalentTo(expected, CollectionOrdering.Matching).Because(algorithm.ToString());
+				await Assert.That(certificate.VerifySignature(publicKey)).IsTrue().Because(algorithm.ToString());
+				await Assert.That(certificate.VerifySignature(platformPublicKey)).IsTrue().Because(algorithm.ToString());
+			}
 		}
 	}
 
