@@ -2,7 +2,9 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
+using CryptoBase.Signatures.Rsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
+using CryptoBase.Tests.Signatures.Rsa;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 
@@ -18,7 +20,8 @@ internal static class SignatureTestUtils
 		new(typeof(EcdsaP256), EcdsaTestUtils.Algorithms, EcdsaP256.GenerateKey),
 		new(typeof(EcdsaP384), EcdsaTestUtils.Algorithms, EcdsaP384.GenerateKey),
 		new(typeof(EcdsaP521), EcdsaTestUtils.Algorithms, EcdsaP521.GenerateKey),
-		new(typeof(Ed25519), [SignatureAlgorithm.Ed25519], Ed25519.GenerateKey, IsDeterministic: true),
+		new(typeof(Ed25519), [SignatureAlgorithm.Ed25519], Ed25519.GenerateKey, DeterministicAlgorithms: [SignatureAlgorithm.Ed25519]),
+		new(typeof(RsaKey), RsaTestUtils.Algorithms, static () => RsaTestUtils.ImportKey(), RsaTestUtils.Pkcs1Algorithms, static () => RsaKey.GenerateKey(2048)),
 	];
 
 	public static T GenerateKey<T>() where T : class, ISignatureKey<T>
@@ -31,9 +34,15 @@ internal static class SignatureTestUtils
 		return KeyTypeOf<T>().Algorithms;
 	}
 
-	public static bool IsDeterministic<T>() where T : class, ISignatureKey<T>
+	public static T GenerateNewKey<T>() where T : class, ISignatureKey<T>
 	{
-		return KeyTypeOf<T>().IsDeterministic;
+		KeyType type = KeyTypeOf<T>();
+		return (T)(type.GenerateNewKey ?? type.GenerateKey)();
+	}
+
+	public static bool IsDeterministic<T>(SignatureAlgorithm algorithm) where T : class, ISignatureKey<T>
+	{
+		return KeyTypeOf<T>().DeterministicAlgorithms?.Contains(algorithm) is true;
 	}
 
 	// The ECDSA key type for a curve size, and its curve in the BCL.
@@ -85,6 +94,7 @@ internal static class SignatureTestUtils
 		return KeyTypes.FirstOrDefault(static type => type.Type == typeof(T)) ?? throw new NotSupportedException(typeof(T).Name);
 	}
 
-	// A deterministic algorithm gives one signature for one key and message; the others draw randomness for each.
-	public sealed record KeyType(Type Type, SignatureAlgorithm[] Algorithms, Func<ISignatureKey> GenerateKey, bool IsDeterministic = false);
+	// GenerateKey gives a key to test with, which is a fixed one where generation is slow, and GenerateNewKey, where set, generates one. A deterministic algorithm gives one signature for one key and message;
+	// the others draw randomness for each.
+	public sealed record KeyType(Type Type, SignatureAlgorithm[] Algorithms, Func<ISignatureKey> GenerateKey, SignatureAlgorithm[]? DeterministicAlgorithms = null, Func<ISignatureKey>? GenerateNewKey = null);
 }

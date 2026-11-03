@@ -3,6 +3,7 @@ using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
+using CryptoBase.Signatures.Rsa;
 using CryptoBase.X509;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -607,7 +608,7 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// CryptoBase's SignatureKey has no RSA yet, so the validator imports RSA keys with PlatformRsaKey; RSASSA-PKCS1-v1_5 and RSASSA-PSS verify.
+	// An importer without RSA leaves RSA keys to PlatformRsaKey; RSASSA-PKCS1-v1_5 and RSASSA-PSS verify.
 	[Test]
 	[Arguments(SignatureAlgorithm.RsaPkcs1Sha256)]
 	[Arguments(SignatureAlgorithm.RsaPssSha384)]
@@ -620,10 +621,23 @@ public class TrustAnchorCertificateValidatorTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => SignatureKey.ImportSubjectPublicKeyInfo(root.Certificate.PublicKeyInfo.Encoded.Span)).ThrowsExactly<NotSupportedException>();
-			await AssertValid(await Validate([root.Certificate], [leaf, intermediate.Certificate]), leaf, intermediate.Certificate, root.Certificate);
-			await AssertInvalid(await Validate([root.Certificate], [ReissuedBy(Tamper(intermediate.Certificate), root)]), [CertificateValidationError.InvalidSignature], CertificatePathEnd.TrustAnchor, null, root.Certificate);
-			await AssertInvalid(await Validate([root.Certificate], [tampered, intermediate.Certificate]), [CertificateValidationError.InvalidSignature], CertificatePathEnd.TrustAnchor, tampered, intermediate.Certificate, root.Certificate);
+			await Assert.That(() => ImportWithoutRsa(root.Certificate.PublicKeyInfo.Encoded.Span)).ThrowsExactly<NotSupportedException>();
+			await AssertValid(await Validate([root.Certificate], [leaf, intermediate.Certificate], importPublicKey: ImportWithoutRsa), leaf, intermediate.Certificate, root.Certificate);
+			await AssertInvalid(await Validate([root.Certificate], [ReissuedBy(Tamper(intermediate.Certificate), root)], importPublicKey: ImportWithoutRsa), [CertificateValidationError.InvalidSignature], CertificatePathEnd.TrustAnchor, null, root.Certificate);
+			await AssertInvalid(await Validate([root.Certificate], [tampered, intermediate.Certificate], importPublicKey: ImportWithoutRsa), [CertificateValidationError.InvalidSignature], CertificatePathEnd.TrustAnchor, tampered, intermediate.Certificate, root.Certificate);
+		}
+
+		static ISignatureKey ImportWithoutRsa(ReadOnlySpan<byte> subjectPublicKeyInfo)
+		{
+			ISignatureKey key = SignatureKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo);
+
+			if (key is RsaKey)
+			{
+				key.Dispose();
+				throw new NotSupportedException("No RSA.");
+			}
+
+			return key;
 		}
 	}
 

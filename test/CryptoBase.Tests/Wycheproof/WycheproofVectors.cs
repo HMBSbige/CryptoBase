@@ -71,6 +71,8 @@ internal static partial class WycheproofVectors
 	[JsonSerializable(typeof(GroupFile<KmacTestGroup>))]
 	[JsonSerializable(typeof(GroupFile<EcdsaVerifyTestGroup>))]
 	[JsonSerializable(typeof(GroupFile<EddsaVerifyTestGroup>))]
+	[JsonSerializable(typeof(GroupFile<RsaSignTestGroup>))]
+	[JsonSerializable(typeof(GroupFile<RsaVerifyTestGroup>))]
 	[JsonSerializable(typeof(GroupFile<MLDsaVerifyTestGroup>))]
 	[JsonSerializable(typeof(GroupFile<MLDsaSignSeedTestGroup>))]
 	[JsonSerializable(typeof(GroupFile<MLDsaSignNoSeedTestGroup>))]

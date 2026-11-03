@@ -104,6 +104,53 @@ public sealed record EcdsaVerifyTestGroup(ECPublicKey PublicKey, byte[] PublicKe
 	}
 }
 
+// A test of an RSA signature group, which holds the key and the hash: RSASSA-PKCS1-v1_5 generation and verification, and RSASSA-PSS verification, whose groups also hold the MGF1 hash and the salt length.
+public sealed record RsaSignatureTestVector(string Comment, byte[] Msg, byte[] Sig) : WycheproofTestVector
+{
+	[JsonIgnore]
+	public string GroupType { get; init; } = "";
+
+	[JsonIgnore]
+	public string Sha { get; init; } = "";
+
+	[JsonIgnore]
+	public string? MgfSha { get; init; }
+
+	[JsonIgnore]
+	public int? SaltLength { get; init; }
+
+	// The SubjectPublicKeyInfo, with the RSASSA-PSS parameters in the files whose names end with _params.
+	[JsonIgnore]
+	public byte[] PublicKeyDer { get; init; } = [];
+
+	// The RSAPublicKey.
+	[JsonIgnore]
+	public byte[] PublicKeyAsn { get; init; } = [];
+
+	[JsonIgnore]
+	public byte[]? PrivateKeyPkcs8 { get; init; }
+
+	// An RSA PRIVATE KEY block.
+	[JsonIgnore]
+	public string? PrivateKeyPem { get; init; }
+}
+
+public sealed record RsaSignTestGroup(string Type, string Sha, byte[] KeyDer, byte[] KeyAsn, byte[] PrivateKeyPkcs8, string PrivateKeyPem) : WycheproofTestGroup<RsaSignatureTestVector>
+{
+	public override RsaSignatureTestVector Complete(RsaSignatureTestVector test)
+	{
+		return test with { GroupType = Type, Sha = Sha, PublicKeyDer = KeyDer, PublicKeyAsn = KeyAsn, PrivateKeyPkcs8 = PrivateKeyPkcs8, PrivateKeyPem = PrivateKeyPem };
+	}
+}
+
+public sealed record RsaVerifyTestGroup(string Type, string Sha, byte[] PublicKeyDer, byte[] PublicKeyAsn, string? MgfSha = null, int? SLen = null) : WycheproofTestGroup<RsaSignatureTestVector>
+{
+	public override RsaSignatureTestVector Complete(RsaSignatureTestVector test)
+	{
+		return test with { GroupType = Type, Sha = Sha, MgfSha = MgfSha, SaltLength = SLen, PublicKeyDer = PublicKeyDer, PublicKeyAsn = PublicKeyAsn };
+	}
+}
+
 public sealed record EddsaVerifyTestVector(byte[] Msg, byte[] Sig) : WycheproofTestVector
 {
 	[JsonIgnore]

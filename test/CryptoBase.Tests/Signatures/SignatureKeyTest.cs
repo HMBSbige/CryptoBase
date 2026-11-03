@@ -1,12 +1,17 @@
+#pragma warning disable SYSLIB5006
+
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
+using CryptoBase.Signatures.Rsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
+using CryptoBase.Tests.Signatures.Rsa;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
+using BclMLDsa = System.Security.Cryptography.MLDsa;
 
 namespace CryptoBase.Tests.Signatures;
 
@@ -71,11 +76,58 @@ internal class SignatureKeyTest
 		}
 	}
 
+	// Platform keys import as RsaKey from each encoding and PEM label, whose exports match the platform's.
+	[Test]
+	public async Task ImportsBclRsaKeys()
+	{
+		using RSA platform = RsaTestUtils.CreateBclKey();
+		byte[] subjectPublicKeyInfo = platform.ExportSubjectPublicKeyInfo();
+		byte[] pkcs8 = platform.ExportPkcs8PrivateKey();
+		(string Case, ISignatureKey Key, bool HasPrivateKey)[] keys =
+		[
+			("SubjectPublicKeyInfo", SignatureKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo), false),
+			("PKCS #8", SignatureKey.ImportPkcs8PrivateKey(pkcs8), true),
+			("PUBLIC KEY", SignatureKey.ImportFromPem(platform.ExportSubjectPublicKeyInfoPem()), false),
+			("PRIVATE KEY", SignatureKey.ImportFromPem(platform.ExportPkcs8PrivateKeyPem()), true),
+			("RSA PUBLIC KEY", SignatureKey.ImportFromPem(platform.ExportRSAPublicKeyPem()), false),
+			("RSA PRIVATE KEY", SignatureKey.ImportFromPem($"text before\n{platform.ExportRSAPrivateKeyPem()}\ntext after"), true),
+		];
+		byte[] message = "message"u8.ToArray();
+		byte[] signature = platform.SignData(message, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+
+		try
+		{
+			using (Assert.Multiple())
+			{
+				foreach ((string @case, ISignatureKey key, bool hasPrivateKey) in keys)
+				{
+					await Assert.That(key.GetType()).IsEqualTo(typeof(RsaKey)).Because(@case);
+					await Assert.That(key.HasPrivateKey).IsEqualTo(hasPrivateKey).Because(@case);
+					await Assert.That(ExportSubjectPublicKeyInfo(key)).IsEquivalentTo(subjectPublicKeyInfo, CollectionOrdering.Matching).Because(@case);
+					await Assert.That(key.Verify(SignatureAlgorithm.RsaPssSha256, message, signature)).IsTrue().Because(@case);
+
+					if (hasPrivateKey)
+					{
+						await Assert.That(ExportPkcs8PrivateKey(key)).IsEquivalentTo(pkcs8, CollectionOrdering.Matching).Because(@case);
+					}
+				}
+			}
+		}
+		finally
+		{
+			foreach ((_, ISignatureKey key, _) in keys)
+			{
+				key.Dispose();
+			}
+		}
+	}
+
 	public static IEnumerable<Func<(string Case, byte[] SubjectPublicKeyInfo)>> UnsupportedPublicKeys()
 	{
 		byte[] point = new byte[65];
 		point[0] = 0x04;
 		byte[] key = [0x03, 0x42, 0x00, .. point];
+		byte[] rsaPublicKey = RsaTestUtils.RsaPublicKey(RsaTestUtils.Modulus(2048), 65537);
 
 		yield return () => ("secp256k1", Sequence(EcdsaTestUtils.AlgorithmIdentifier("1.3.132.0.10"), key));
 		yield return () => ("brainpoolP256r1", Sequence(EcdsaTestUtils.AlgorithmIdentifier("1.3.36.3.3.2.8.1.1.7"), key));
@@ -85,7 +137,9 @@ internal class SignatureKeyTest
 		yield return () => ("ML-DSA with parameters", Sequence(Sequence(Oid("2.16.840.1.101.3.4.3.17"), [0x05, 0x00]), [0x03, 0x01, 0x00]));
 		yield return () => ("Ed25519 with parameters", Sequence(Sequence(Oid("1.3.101.112"), [0x05, 0x00]), [0x03, 0x21, 0x00, .. new byte[32]]));
 		yield return () => ("Ed448", Sequence(Sequence(Oid("1.3.101.113")), [0x03, 0x3A, 0x00, .. new byte[57]]));
-		yield return () => ("RSA", RSA.Create(2048).ExportSubjectPublicKeyInfo());
+		yield return () => ("rsaEncryption without parameters", RsaTestUtils.SubjectPublicKeyInfo(Sequence(Oid(RsaTestUtils.RsaEncryptionOid)), rsaPublicKey));
+		yield return () => ("id-RSASSA-PSS with SHA-1", RsaTestUtils.SubjectPublicKeyInfo(X509.X509TestUtils.RsassaPssIdentifier(hash: null, maskHash: null, saltLength: null), rsaPublicKey));
+		yield return static () => ("RSA modulus of 16385 bits", RsaTestUtils.SubjectPublicKeyInfo(RsaTestUtils.RsaEncryption, RsaTestUtils.RsaPublicKey(RsaTestUtils.Modulus(16385), 65537)));
 	}
 
 	[Test]
@@ -102,13 +156,15 @@ internal class SignatureKeyTest
 	[Test]
 	public async Task OtherPrivateKeyAlgorithmsAreNotSupported()
 	{
-		using RSA rsa = RSA.Create(2048);
+		byte[] ed448 = Sequence([0x02, 0x01, 0x00], Sequence(Oid("1.3.101.113")), Tlv(0x04, Tlv(0x04, new byte[57])));
 		byte[] secp256k1 = EcdsaTestUtils.Pkcs8("1.3.132.0.10", EcdsaTestUtils.ECPrivateKey(1, new byte[32], null, null));
+		byte[] rsaWithoutParameters = RsaTestUtils.PrivateKeyInfo(Sequence(Oid(RsaTestUtils.RsaEncryptionOid)), RsaTestUtils.RsaPrivateKey(RsaTestUtils.PrivateParameters()));
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => SignatureKey.ImportPkcs8PrivateKey(rsa.ExportPkcs8PrivateKey())).ThrowsExactly<NotSupportedException>();
+			await Assert.That(() => SignatureKey.ImportPkcs8PrivateKey(ed448)).ThrowsExactly<NotSupportedException>();
 			await Assert.That(() => SignatureKey.ImportPkcs8PrivateKey(secp256k1)).ThrowsExactly<NotSupportedException>();
+			await Assert.That(() => SignatureKey.ImportPkcs8PrivateKey(rsaWithoutParameters)).ThrowsExactly<NotSupportedException>();
 		}
 	}
 
@@ -155,6 +211,30 @@ internal class SignatureKeyTest
 			await Assert.That(() => SignatureKey.ImportFromPem(publicPem + publicPem)).Throws<ArgumentException>().WithParameterName("source");
 			await Assert.That(() => SignatureKey.ImportFromPem(ecPrivatePem + privatePem)).Throws<ArgumentException>().WithParameterName("source");
 			await Assert.That(() => SignatureKey.ImportFromPem(PemEncoding.WriteString("PRIVATE KEY", subjectPublicKeyInfo))).Throws<ArgumentException>().WithParameterName("source");
+		}
+	}
+
+	[Test]
+	public async Task PemNeedsExactlyOneKeyOfAnyLabel()
+	{
+		using RSA platform = RsaTestUtils.CreateBclKey();
+		string rsaPublicPem = platform.ExportRSAPublicKeyPem();
+		string rsaPrivatePem = platform.ExportRSAPrivateKeyPem();
+		string publicPem = platform.ExportSubjectPublicKeyInfoPem();
+		string privatePem = platform.ExportPkcs8PrivateKeyPem();
+		// The headers of RFC 1421 make the block not one of RFC 7468, whatever follows them.
+		string encrypted = $"-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-256-CBC,F3C51F304AD3B1D4A1E3777FC27F3EC7\n\n{Convert.ToBase64String(platform.ExportRSAPrivateKey())}\n-----END RSA PRIVATE KEY-----\n";
+
+		using (Assert.Multiple())
+		{
+			foreach (string text in (string[])[rsaPublicPem + rsaPrivatePem, rsaPrivatePem + rsaPrivatePem, publicPem + rsaPublicPem, rsaPrivatePem + privatePem, encrypted, encrypted + encrypted])
+			{
+				await Assert.That(() => SignatureKey.ImportFromPem(text)).Throws<ArgumentException>().WithParameterName("source");
+			}
+
+			await Assert.That(() => SignatureKey.ImportFromPem(PemEncoding.WriteString("RSA PRIVATE KEY", platform.ExportPkcs8PrivateKey()))).Throws<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => SignatureKey.ImportFromPem(PemEncoding.WriteString("RSA PUBLIC KEY", platform.ExportSubjectPublicKeyInfo()))).Throws<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => SignatureKey.ImportFromPem(PemEncoding.WriteString("RSA PRIVATE KEY", platform.ExportRSAPublicKey()))).Throws<ArgumentException>().WithParameterName("source");
 		}
 	}
 
@@ -259,6 +339,30 @@ internal class SignatureKeyTest
 	}
 
 	[Test]
+	[Arguments(2048)]
+	[Arguments(3072)]
+	public async Task ImportsExportableRsaPrivateKeysOfCertificates(int bits)
+	{
+		using RSA platform = RsaTestUtils.CreateBclKey(bits);
+		using X509Certificate2 created = SelfSigned(platform);
+		using X509Certificate2 certificate = LoadPkcs12(created, exportable: true);
+
+		await Assert.That(SignatureKey.TryImportPrivateKey(certificate, out ISignatureKey? imported)).IsTrue();
+		using ISignatureKey key = await Assert.That(imported).IsNotNull();
+		byte[] message = "message"u8.ToArray();
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(key.GetType()).IsEqualTo(typeof(RsaKey));
+			await Assert.That(key.HasPrivateKey).IsTrue();
+			await Assert.That(ExportSubjectPublicKeyInfo(key)).IsEquivalentTo(certificate.PublicKey.ExportSubjectPublicKeyInfo(), CollectionOrdering.Matching);
+			await Assert.That(ExportPkcs8PrivateKey(key)).IsEquivalentTo(RsaTestUtils.Pkcs8PrivateKey(bits), CollectionOrdering.Matching);
+			await Assert.That(platform.VerifyData(message, Sign(key, SignatureAlgorithm.RsaPssSha256, message), HashAlgorithmName.SHA256, RSASignaturePadding.Pss)).IsTrue();
+			await Assert.That(platform.VerifyData(message, Sign(key, SignatureAlgorithm.RsaPkcs1Sha384, message), HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1)).IsTrue();
+		}
+	}
+
+	[Test]
 	public async Task NonExportablePrivateKeysOfCertificatesAreNotImported()
 	{
 		if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
@@ -267,13 +371,20 @@ internal class SignatureKeyTest
 			return;
 		}
 
-		using ECDsa platform = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-		using X509Certificate2 certificate = LoadPkcs12(platform, exportable: false);
+		using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+		using RSA rsa = RsaTestUtils.CreateBclKey();
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(SignatureKey.TryImportPrivateKey(certificate, out ISignatureKey? key)).IsFalse();
-			await Assert.That(key).IsNull();
+			foreach (X509Certificate2 created in (X509Certificate2[])[SelfSigned(ecdsa), SelfSigned(rsa)])
+			{
+				using (created)
+				using (X509Certificate2 certificate = LoadPkcs12(created, exportable: false))
+				{
+					await Assert.That(SignatureKey.TryImportPrivateKey(certificate, out ISignatureKey? key)).IsFalse().Because(created.GetKeyAlgorithm());
+					await Assert.That(key).IsNull();
+				}
+			}
 		}
 	}
 
@@ -294,26 +405,54 @@ internal class SignatureKeyTest
 	}
 
 	[Test]
-	public async Task OnlyEcdsaPrivateKeysOfCertificatesAreSupported()
+	public async Task CertificatesWithoutPrivateKeysThrow()
 	{
 		using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-		using X509Certificate2 withKey = LoadPkcs12(ecdsa, exportable: true);
+		using X509Certificate2 withKey = SelfSigned(ecdsa);
 		using X509Certificate2 withoutKey = X509CertificateLoader.LoadCertificate(withKey.RawData);
-		using RSA rsa = RSA.Create(2048);
-		using X509Certificate2 rsaCertificate = new CertificateRequest("CN=RSA", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1).CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(() => SignatureKey.TryImportPrivateKey(withoutKey, out _)).Throws<ArgumentException>().WithParameterName("certificate");
-			await Assert.That(() => SignatureKey.TryImportPrivateKey(rsaCertificate, out _)).ThrowsExactly<NotSupportedException>();
 			await Assert.That(() => SignatureKey.TryImportPrivateKey(null!, out _)).ThrowsExactly<ArgumentNullException>();
 		}
+	}
+
+	// ML-DSA stands for the keys that are neither ECDSA nor RSA.
+	[Test]
+	public async Task OnlyEcdsaAndRsaPrivateKeysOfCertificatesAreSupported()
+	{
+		if (!BclMLDsa.IsSupported)
+		{
+			Skip.Test("The platform has no ML-DSA.");
+			return;
+		}
+
+		using BclMLDsa key = BclMLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44);
+		using X509Certificate2 certificate = new CertificateRequest("CN=ML-DSA", key).CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+
+		await Assert.That(() => SignatureKey.TryImportPrivateKey(certificate, out _)).ThrowsExactly<NotSupportedException>();
+	}
+
+	private static X509Certificate2 SelfSigned(ECDsa key)
+	{
+		return new CertificateRequest("CN=Test", key, HashAlgorithmName.SHA256).CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+	}
+
+	private static X509Certificate2 SelfSigned(RSA key)
+	{
+		return new CertificateRequest("CN=Test", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1).CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
 	}
 
 	// A self-signed certificate with key as its private key, from a PKCS #12 file as a server loads one; macOS has no ephemeral key sets.
 	private static X509Certificate2 LoadPkcs12(ECDsa key, bool exportable)
 	{
-		using X509Certificate2 created = new CertificateRequest("CN=Test", key, HashAlgorithmName.SHA256).CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+		using X509Certificate2 created = SelfSigned(key);
+		return LoadPkcs12(created, exportable);
+	}
+
+	private static X509Certificate2 LoadPkcs12(X509Certificate2 created, bool exportable)
+	{
 		X509KeyStorageFlags flags = OperatingSystem.IsMacOS() ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.EphemeralKeySet;
 		return X509CertificateLoader.LoadPkcs12(created.Export(X509ContentType.Pkcs12, "password"), "password", exportable ? flags | X509KeyStorageFlags.Exportable : flags);
 	}

@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
+using CryptoBase.Signatures.Rsa;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -17,6 +18,7 @@ namespace CryptoBase.Tests.Signatures;
 [GenerateGenericTest(typeof(EcdsaP384))]
 [GenerateGenericTest(typeof(EcdsaP521))]
 [GenerateGenericTest(typeof(Ed25519))]
+[GenerateGenericTest(typeof(RsaKey))]
 public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 {
 	[Test]
@@ -257,8 +259,8 @@ public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 	[Test]
 	public async Task GenerateKeyAndRandomizedSigningDrawRandomness()
 	{
-		using T first = GenerateKey<T>();
-		using T second = GenerateKey<T>();
+		using T first = GenerateNewKey<T>();
+		using T second = GenerateNewKey<T>();
 		byte[] message = CreateDeterministicSource(20);
 
 		using (Assert.Multiple())
@@ -270,7 +272,7 @@ public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 				byte[] firstSignature = Sign(first, algorithm, message);
 				byte[] secondSignature = Sign(first, algorithm, message);
 
-				if (IsDeterministic<T>())
+				if (IsDeterministic<T>(algorithm))
 				{
 					await Assert.That(secondSignature).IsEquivalentTo(firstSignature, CollectionOrdering.Matching);
 				}

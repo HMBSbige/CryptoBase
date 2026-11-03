@@ -175,7 +175,6 @@ public class CertificateTest
 			await Assert.That(certificate.SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) ? algorithm : default).IsEqualTo(SignatureAlgorithm.RsaPkcs1Sha256);
 			await Assert.That(certificate.VerifySignature(ecdsa)).IsFalse();
 			await Assert.That(() => EcdsaP256.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span)).Throws<ArgumentException>();
-			await Assert.That(() => SignatureKey.ImportSubjectPublicKeyInfo(certificate.PublicKeyInfo.Encoded.Span)).ThrowsExactly<NotSupportedException>();
 		}
 	}
 

@@ -1,6 +1,7 @@
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
+using CryptoBase.Signatures.Rsa;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -12,8 +13,9 @@ namespace CryptoBase.Signatures;
 /// </summary>
 /// <remarks>
 /// <para>
-/// id-ecPublicKey with the named curve P-256, P-384 or P-521 gives <see cref="EcdsaP256" />, <see cref="EcdsaP384" /> or <see cref="EcdsaP521" />, id-Ed25519 gives <see cref="Ed25519" />, and id-ml-dsa-44, id-ml-dsa-65 or id-ml-dsa-87 gives <see cref="MLDsa44" />, <see cref="MLDsa65" /> or <see cref="MLDsa87" />.
-/// The AlgorithmIdentifier must match one of these in DER whole, so a key of another algorithm, or of one of these with other parameters such as an explicit curve, throws <see cref="NotSupportedException" />.
+/// id-ecPublicKey with the named curve P-256, P-384 or P-521 gives <see cref="EcdsaP256" />, <see cref="EcdsaP384" /> or <see cref="EcdsaP521" />, id-Ed25519 gives <see cref="Ed25519" />, id-ml-dsa-44, id-ml-dsa-65 or id-ml-dsa-87 gives <see cref="MLDsa44" />, <see cref="MLDsa65" /> or <see cref="MLDsa87" />,
+/// and rsaEncryption with NULL parameters or id-RSASSA-PSS gives <see cref="RsaKey" />.
+/// The AlgorithmIdentifier must match one of these in DER whole, so a key of another algorithm, or of one of these with other parameters such as an explicit curve, throws <see cref="NotSupportedException" />; id-RSASSA-PSS alone matches by its OID, and <see cref="RsaKey" /> checks its parameters.
 /// </para>
 /// <para>
 /// The type then imports the key and checks the rest of the encoding, as its own import method does.
@@ -24,6 +26,8 @@ public static class SignatureKey
 	private const string PublicKeyLabel = "PUBLIC KEY";
 	private const string PrivateKeyLabel = "PRIVATE KEY";
 	private const string ECPrivateKeyLabel = "EC PRIVATE KEY";
+	private const string RsaPublicKeyLabel = "RSA PUBLIC KEY";
+	private const string RsaPrivateKeyLabel = "RSA PRIVATE KEY";
 	private const string ECPublicKeyOid = "1.2.840.10045.2.1";
 
 	private static Asn1Tag ParametersTag => new(TagClass.ContextSpecific, 0, true);
@@ -34,7 +38,7 @@ public static class SignatureKey
 	/// <param name="source">The SubjectPublicKeyInfo, with nothing after it.</param>
 	/// <returns>An instance that holds only the public key.</returns>
 	/// <exception cref="ArgumentException"><paramref name="source" /> is not valid DER or holds an invalid key.</exception>
-	/// <exception cref="NotSupportedException">The key algorithm is not supported.</exception>
+	/// <exception cref="NotSupportedException">The key algorithm is not supported, or <see cref="RsaKey.ImportSubjectPublicKeyInfo" /> does not support the RSA key.</exception>
 	public static ISignatureKey ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
 	{
 		return Import(source, privateKey: false);
@@ -47,27 +51,28 @@ public static class SignatureKey
 	/// <param name="source">The PrivateKeyInfo, with nothing after it.</param>
 	/// <returns>An instance that holds the private key and the public key.</returns>
 	/// <exception cref="ArgumentException"><paramref name="source" /> is not valid DER or holds an invalid key.</exception>
-	/// <exception cref="NotSupportedException">The key algorithm is not supported.</exception>
+	/// <exception cref="NotSupportedException">The key algorithm is not supported, or <see cref="RsaKey.ImportPkcs8PrivateKey" /> does not support the RSA key.</exception>
 	public static ISignatureKey ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
 	{
 		return Import(source, privateKey: true);
 	}
 
 	/// <summary>
-	/// Imports a key from the one PEM block (RFC 7468) labeled PUBLIC KEY, PRIVATE KEY or EC PRIVATE KEY in a text.
+	/// Imports a key from the one PEM block (RFC 7468) labeled PUBLIC KEY, PRIVATE KEY, RSA PUBLIC KEY, RSA PRIVATE KEY or EC PRIVATE KEY in a text.
 	/// </summary>
 	/// <remarks>
 	/// <para>
+	/// An RSA PUBLIC KEY or RSA PRIVATE KEY block holds a PKCS #1 RSAPublicKey or RSAPrivateKey (RFC 8017, Appendices A.1.1 and A.1.2), which <see cref="RsaKey.ImportRsaPublicKey" /> or <see cref="RsaKey.ImportRsaPrivateKey" /> imports.
 	/// An EC PRIVATE KEY block holds an ECPrivateKey (RFC 5915, Sec. 4), which is imported as the PrivateKeyInfo that carries it with id-ecPublicKey and its parameters (Sec. 1). Its parameters, which RFC 5915 requires, must therefore name P-256, P-384 or P-521.
 	/// </para>
 	/// <para>
-	/// Other blocks, such as EC PARAMETERS, and the text around the blocks are ignored. Encrypted keys are not supported: neither the label ENCRYPTED PRIVATE KEY nor an EC PRIVATE KEY block with the Proc-Type and DEK-Info headers of RFC 1421, which RFC 7468 does not permit. The decoded key is erased after the import.
+	/// Other blocks, such as EC PARAMETERS, and the text around the blocks are ignored. Encrypted keys are not supported: neither the label ENCRYPTED PRIVATE KEY nor an RSA PRIVATE KEY or EC PRIVATE KEY block with the Proc-Type and DEK-Info headers of RFC 1421, which RFC 7468 does not permit. The decoded key is erased after the import.
 	/// </para>
 	/// </remarks>
 	/// <param name="source">The text.</param>
-	/// <returns>An instance that holds only the public key for PUBLIC KEY, or the private key and the public key for PRIVATE KEY and EC PRIVATE KEY.</returns>
+	/// <returns>An instance that holds only the public key for PUBLIC KEY and RSA PUBLIC KEY, or the private key and the public key for the other labels.</returns>
 	/// <exception cref="ArgumentException"><paramref name="source" /> has no such block or more than one, or the block is not valid DER, holds an invalid key or, for EC PRIVATE KEY, has no parameters.</exception>
-	/// <exception cref="NotSupportedException">The key algorithm, or the curve of an EC PRIVATE KEY, is not supported.</exception>
+	/// <exception cref="NotSupportedException">The key algorithm, the RSA key, or the curve of an EC PRIVATE KEY is not supported.</exception>
 	public static ISignatureKey ImportFromPem(ReadOnlySpan<char> source)
 	{
 		PemReader reader = new(source);
@@ -77,14 +82,14 @@ public static class SignatureKey
 
 		while (reader.TryRead(out ReadOnlySpan<char> label, out ReadOnlySpan<char> base64Data, out int decodedLength))
 		{
-			if (label is not (PublicKeyLabel or PrivateKeyLabel or ECPrivateKeyLabel))
+			if (label is not (PublicKeyLabel or PrivateKeyLabel or RsaPublicKeyLabel or RsaPrivateKeyLabel or ECPrivateKeyLabel))
 			{
 				continue;
 			}
 
 			if (!keyLabel.IsEmpty)
 			{
-				throw new ArgumentException("The text holds more than one PUBLIC KEY, PRIVATE KEY or EC PRIVATE KEY block.", nameof(source));
+				throw new ArgumentException("The text holds more than one PUBLIC KEY, PRIVATE KEY, RSA PUBLIC KEY, RSA PRIVATE KEY or EC PRIVATE KEY block.", nameof(source));
 			}
 
 			keyLabel = label;
@@ -94,7 +99,7 @@ public static class SignatureKey
 
 		if (keyLabel.IsEmpty)
 		{
-			throw new ArgumentException("The text holds no PUBLIC KEY, PRIVATE KEY or EC PRIVATE KEY block. Encrypted keys are not supported.", nameof(source));
+			throw new ArgumentException("The text holds no PUBLIC KEY, PRIVATE KEY, RSA PUBLIC KEY, RSA PRIVATE KEY or EC PRIVATE KEY block. Encrypted keys are not supported.", nameof(source));
 		}
 
 		using CryptoBuffer<byte> der = new(keyLength);
@@ -104,6 +109,8 @@ public static class SignatureKey
 		{
 			PublicKeyLabel => Import(der.Span, privateKey: false),
 			PrivateKeyLabel => Import(der.Span, privateKey: true),
+			RsaPublicKeyLabel => RsaKey.ImportRsaPublicKey(der.Span),
+			RsaPrivateKeyLabel => RsaKey.ImportRsaPrivateKey(der.Span),
 			_ => ImportECPrivateKey(der.Span)
 		};
 	}
@@ -113,7 +120,7 @@ public static class SignatureKey
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The certificate's key must be ECDSA on P-256, P-384 or P-521. The platform exports it as a PKCS #8 PrivateKeyInfo, which <see cref="ImportPkcs8PrivateKey" /> imports, and the exported encoding is erased after the import.
+	/// The certificate's key must be ECDSA on P-256, P-384 or P-521, or RSA. The platform exports it as a PKCS #8 PrivateKeyInfo, which <see cref="ImportPkcs8PrivateKey" /> imports, and the exported encoding is erased after the import.
 	/// The result holds a copy of the private key, so it does not depend on <paramref name="certificate" />.
 	/// </para>
 	/// <para>
@@ -125,7 +132,7 @@ public static class SignatureKey
 	/// <returns><see langword="true" /> if the platform exports the private key; otherwise, <see langword="false" />.</returns>
 	/// <exception cref="ArgumentNullException"><paramref name="certificate" /> is <see langword="null" />.</exception>
 	/// <exception cref="ArgumentException"><paramref name="certificate" /> has no private key.</exception>
-	/// <exception cref="NotSupportedException">The key is not ECDSA, or the platform exports a key that is not on P-256, P-384 or P-521.</exception>
+	/// <exception cref="NotSupportedException">The key is neither ECDSA nor RSA, or the platform exports a key that <see cref="ImportPkcs8PrivateKey" /> does not support, such as an ECDSA key that is not on P-256, P-384 or P-521.</exception>
 	/// <exception cref="CryptographicException">The platform cannot open the private key.</exception>
 	public static bool TryImportPrivateKey(X509Certificate2 certificate, [NotNullWhen(true)] out ISignatureKey? key)
 	{
@@ -136,7 +143,7 @@ public static class SignatureKey
 			throw new ArgumentException("The certificate has no private key.", nameof(certificate));
 		}
 
-		using ECDsa platform = certificate.GetECDsaPrivateKey() ?? throw new NotSupportedException("Only ECDSA private keys are supported.");
+		using AsymmetricAlgorithm platform = (AsymmetricAlgorithm?)certificate.GetECDsaPrivateKey() ?? certificate.GetRSAPrivateKey() ?? throw new NotSupportedException("Only ECDSA and RSA private keys are supported.");
 		byte[] pkcs8;
 
 		try
@@ -175,6 +182,7 @@ public static class SignatureKey
 			_ when algorithm.SequenceEqual(MLDsa44Parameters.AlgorithmIdentifier) => Import<MLDsa44>(source, privateKey),
 			_ when algorithm.SequenceEqual(MLDsa65Parameters.AlgorithmIdentifier) => Import<MLDsa65>(source, privateKey),
 			_ when algorithm.SequenceEqual(MLDsa87Parameters.AlgorithmIdentifier) => Import<MLDsa87>(source, privateKey),
+			_ when algorithm.SequenceEqual(RsaKeyDer.RsaEncryption) || RsaKeyDer.IsRsassaPss(algorithm) => Import<RsaKey>(source, privateKey),
 			_ => throw new NotSupportedException("The key algorithm is not supported.")
 		};
 	}
