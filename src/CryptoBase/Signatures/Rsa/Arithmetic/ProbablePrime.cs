@@ -112,6 +112,7 @@ internal static class ProbablePrime
 		using CryptoBuffer<ulong> buffer = CryptoBuffer<ulong>.ShouldUsePool(bufferLength) ? new CryptoBuffer<ulong>(bufferLength) : new CryptoBuffer<ulong>(stackalloc ulong[bufferLength]);
 		Span<ulong> draws = buffer.Span;
 		ulong found = 0;
+		Span<ulong> two = [2];
 
 		Debug.Assert(limbs == (bits + 63) / 64);
 
@@ -128,7 +129,7 @@ internal static class ProbablePrime
 					draw[^1] &= (1UL << bits % 64) - 1;
 				}
 
-				ulong inRange = ~Limbs.LessThan(draw, [2]) & Limbs.LessThan(draw, wMinusOne);
+				ulong inRange = ~Limbs.LessThan(draw, two) & Limbs.LessThan(draw, wMinusOne);
 				Limbs.Select(inRange & ~found, draw, b, b);
 				found |= inRange;
 			}
