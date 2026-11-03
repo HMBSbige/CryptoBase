@@ -74,7 +74,7 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 			ref ulong x = ref MemoryMarshal.GetReference(left);
 			ref ulong n = ref MemoryMarshal.GetReference(moduli);
 			ref ulong rows = ref MemoryMarshal.GetReference(scratch);
-			ref ulong staging = ref Stage(ref x, ref n, words, vectors, ref Unsafe.Add(ref rows, 2 * RowWords * vectors));
+			ref ulong staging = ref Avx2Window.Stage(ref x, ref n, words, vectors, ref Unsafe.Add(ref rows, 2 * RowWords * vectors));
 			Vector256<double> high = Vector256.Create(BitConverter.UInt64BitsToDouble(HighBits));
 			Vector256<double> low = Vector256.Create(BitConverter.UInt64BitsToDouble(HighBits + 3));
 			Products(ref x, ref MemoryMarshal.GetReference(right), words, ref rows, high, low);
@@ -161,24 +161,6 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 		}
 	}
 
-	// The blocks of MontgomeryKernelAvx2.Stage, of interleaved words.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ref ulong Stage(ref ulong x, ref ulong n, int words, int vectors, ref ulong start)
-	{
-		nuint address = (nuint)Unsafe.AsPointer(ref start);
-		ref ulong staging = ref Unsafe.AddByteOffset(ref start, (address + 63 & ~(nuint)63) - address);
-
-		for (int v = 1; v < vectors; ++v)
-		{
-			Vector256<ulong> lanes = Vector256.LessThan(Vector256.Create(0UL, 1, 2, 3), Vector256.Create((ulong)Math.Clamp(words - 4 * v, 0, 4)));
-			ref ulong block = ref Unsafe.Add(ref staging, Avx2Window.BlockWords * (v - 1));
-			Avx2Window.ToDouble(Avx2.MaskLoad((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref x, 4 * v)), lanes)).AsUInt64().StoreUnsafe(ref block);
-			Avx2Window.ToDouble(Avx2.MaskLoad((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref n, 4 * v)), lanes)).AsUInt64().StoreUnsafe(ref block, 4);
-			Vector256<ulong>.Zero.StoreUnsafe(ref block, 8);
-		}
-
-		return ref staging;
-	}
 
 	// The row of each digit: b of each modulus as a double, then the parts of lanes 0 to 3 of each that come from it, as MontgomeryPairKernelAvx512.Products takes them, interleaved likewise: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a2·b_i). Two digits of each modulus at a time.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

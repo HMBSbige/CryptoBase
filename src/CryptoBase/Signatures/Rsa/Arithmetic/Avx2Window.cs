@@ -67,6 +67,25 @@ internal struct Avx2Window : IAvx2Window<Avx2Window>
 		Vector256<ulong> bits = Vector256.Create(0x4330000000000000UL);
 		return (digits | bits).AsDouble() - bits.AsDouble();
 	}
+
+	// The blocks of vectors 1 and up of x and n, of words words each, from the first 64-byte boundary at or after start, which it returns, with the lanes zero. If the scratch moves meanwhile, only the speed changes.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static unsafe ref ulong Stage(ref ulong x, ref ulong n, int words, int vectors, ref ulong start)
+	{
+		nuint address = (nuint)Unsafe.AsPointer(ref start);
+		ref ulong staging = ref Unsafe.AddByteOffset(ref start, (address + 63 & ~(nuint)63) - address);
+
+		for (int v = 1; v < vectors; ++v)
+		{
+			Vector256<ulong> lanes = Vector256.LessThan(Vector256.Create(0UL, 1, 2, 3), Vector256.Create((ulong)Math.Clamp(words - 4 * v, 0, 4)));
+			ref ulong block = ref Unsafe.Add(ref staging, BlockWords * (v - 1));
+			ToDouble(Avx2.MaskLoad((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref x, 4 * v)), lanes)).AsUInt64().StoreUnsafe(ref block);
+			ToDouble(Avx2.MaskLoad((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref n, 4 * v)), lanes)).AsUInt64().StoreUnsafe(ref block, 4);
+			Vector256<ulong>.Zero.StoreUnsafe(ref block, 8);
+		}
+
+		return ref staging;
+	}
 }
 
 internal struct Avx2WindowPair<TLow, THigh> : IAvx2Window<Avx2WindowPair<TLow, THigh>> where TLow : struct, IAvx2Window<TLow> where THigh : struct, IAvx2Window<THigh>

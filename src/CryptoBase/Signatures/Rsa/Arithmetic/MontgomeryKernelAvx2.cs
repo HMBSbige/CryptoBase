@@ -73,7 +73,7 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 			ref ulong x = ref MemoryMarshal.GetReference(left);
 			ref ulong n = ref MemoryMarshal.GetReference(modulus);
 			ref ulong rows = ref MemoryMarshal.GetReference(scratch);
-			ref ulong staging = ref Stage(ref x, ref n, count, vectors, ref Unsafe.Add(ref rows, 4 * RowWords * vectors));
+			ref ulong staging = ref Avx2Window.Stage(ref x, ref n, count, vectors, ref Unsafe.Add(ref rows, 4 * RowWords * vectors));
 			Vector256<double> high = Vector256.Create(BitConverter.UInt64BitsToDouble(HighBits));
 			Vector256<double> low = Vector256.Create(BitConverter.UInt64BitsToDouble(HighBits + 3));
 			Products(ref x, ref MemoryMarshal.GetReference(right), count, ref rows, high, low);
@@ -148,24 +148,6 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 		}
 	}
 
-	// The blocks of vectors 1 and up from the first 64-byte boundary at or after start, which it returns, with the lanes zero. If the scratch moves meanwhile, only the speed changes.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ref ulong Stage(ref ulong x, ref ulong n, int count, int vectors, ref ulong start)
-	{
-		nuint address = (nuint)Unsafe.AsPointer(ref start);
-		ref ulong staging = ref Unsafe.AddByteOffset(ref start, (address + 63 & ~(nuint)63) - address);
-
-		for (int v = 1; v < vectors; ++v)
-		{
-			Vector256<ulong> lanes = Vector256.LessThan(Vector256.Create(0UL, 1, 2, 3), Vector256.Create((ulong)Math.Clamp(count - 4 * v, 0, 4)));
-			ref ulong block = ref Unsafe.Add(ref staging, Avx2Window.BlockWords * (v - 1));
-			Avx2Window.ToDouble(Avx2.MaskLoad((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref x, 4 * v)), lanes)).AsUInt64().StoreUnsafe(ref block);
-			Avx2Window.ToDouble(Avx2.MaskLoad((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref n, 4 * v)), lanes)).AsUInt64().StoreUnsafe(ref block, 4);
-			Vector256<ulong>.Zero.StoreUnsafe(ref block, 8);
-		}
-
-		return ref staging;
-	}
 
 	// The row of each digit b_i of the right operand: b_i as a double, then the parts of its products with the first four digits of the left one that lanes 0 to 4 gain at iteration i, lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a3·b_i). Four digits at a time, transposed from vectors of a part each.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

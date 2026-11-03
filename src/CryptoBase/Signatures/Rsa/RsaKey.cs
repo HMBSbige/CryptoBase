@@ -126,16 +126,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	/// <exception cref="CryptographicException">Four runs in a row of FIPS 186-5, Appendix A.1.3, found no primes, which is vanishingly unlikely.</exception>
 	public static RsaKey GenerateKey(int modulusBits, ulong publicExponent = 65537)
 	{
-		if (modulusBits is < 2048 or > RsaPublicOperation.MaxModulusBits || modulusBits % 8 is not 0)
-		{
-			throw new ArgumentOutOfRangeException(nameof(modulusBits), modulusBits, "The modulus must have a multiple of 8 bits from 2048 to 16384.");
-		}
-
-		if ((publicExponent & 1) is 0 || publicExponent <= 1 << 16 || publicExponent >= 1UL << RsaPublicOperation.MaxPublicExponentBits)
-		{
-			throw new ArgumentException("The public exponent must be odd, above 2^16 and below 2^33.", nameof(publicExponent));
-		}
-
 		return Create(RsaPrivateOperation.Generate(modulusBits, publicExponent), RsaEncryption, RsaAlgorithms.All, default);
 	}
 

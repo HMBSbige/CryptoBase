@@ -159,6 +159,7 @@ internal sealed class RsaPrivateOperation : IDisposable
 		ArgumentOutOfRangeException.ThrowIfNotEqual(input.Length, length, nameof(input));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(output.Length, length, nameof(output));
 
+		// Not CipherBufferGuard, whose inlined check would use up the inlining budget that keeps Recombine in this method.
 		if (input.Overlaps(output, out int offset) && offset is not 0)
 		{
 			ThrowHelper.ThrowSourceDestinationOverlap(nameof(output));

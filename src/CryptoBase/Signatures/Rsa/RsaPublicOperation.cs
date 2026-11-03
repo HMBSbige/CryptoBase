@@ -107,10 +107,7 @@ internal sealed class RsaPublicOperation
 		ArgumentOutOfRangeException.ThrowIfNotEqual(input.Length, ModulusLength, nameof(input));
 		ArgumentOutOfRangeException.ThrowIfNotEqual(output.Length, ModulusLength, nameof(output));
 
-		if (input.Overlaps(output, out int offset) && offset is not 0)
-		{
-			ThrowHelper.ThrowSourceDestinationOverlap(nameof(output));
-		}
+		CipherBufferGuard.SourceDestinationOverlap(input, output, nameof(output));
 
 		MontgomeryContext modulus = _modulus;
 		int limbs = modulus.LimbCount;
