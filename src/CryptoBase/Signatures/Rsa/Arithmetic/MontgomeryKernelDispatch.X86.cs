@@ -88,7 +88,7 @@ internal static partial class MontgomeryKernelDispatch
 		};
 	}
 
-	// Windows of one to ten vectors, then of 12 to 20 by twos, the larger ones from those of two and three.
+	// Windows of one to seven vectors; MontgomeryKernelAvx512Staged takes the larger ones.
 	private static MontgomeryContext CreateAvx512<TWindow2, TWindow3>(ReadOnlySpan<ulong> modulus, int vectors, bool secret) where TWindow2 : struct, IAvx512Window<TWindow2> where TWindow3 : struct, IAvx512Window<TWindow3>
 	{
 		return vectors switch
@@ -99,19 +99,11 @@ internal static partial class MontgomeryKernelDispatch
 			4 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<TWindow2, TWindow2>>>(modulus, secret),
 			5 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<TWindow2, TWindow3>>>(modulus, secret),
 			6 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<TWindow3, TWindow3>>>(modulus, secret),
-			7 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<TWindow3, Avx512WindowPair<TWindow2, TWindow2>>>>(modulus, secret),
-			8 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow2>, Avx512WindowPair<TWindow2, TWindow2>>>>(modulus, secret),
-			9 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow2>, Avx512WindowPair<TWindow2, TWindow3>>>>(modulus, secret),
-			10 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow3>, Avx512WindowPair<TWindow2, TWindow3>>>>(modulus, secret),
-			<= 12 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<Avx512WindowPair<TWindow3, TWindow3>, Avx512WindowPair<TWindow3, TWindow3>>>>(modulus, secret),
-			<= 14 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<Avx512WindowPair<TWindow3, Avx512WindowPair<TWindow2, TWindow2>>, Avx512WindowPair<TWindow3, Avx512WindowPair<TWindow2, TWindow2>>>>>(modulus, secret),
-			<= 16 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow2>, Avx512WindowPair<TWindow2, TWindow2>>, Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow2>, Avx512WindowPair<TWindow2, TWindow2>>>>>(modulus, secret),
-			<= 18 => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow2>, Avx512WindowPair<TWindow2, TWindow3>>, Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow2>, Avx512WindowPair<TWindow2, TWindow3>>>>>(modulus, secret),
-			_ => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow3>, Avx512WindowPair<TWindow2, TWindow3>>, Avx512WindowPair<Avx512WindowPair<TWindow2, TWindow3>, Avx512WindowPair<TWindow2, TWindow3>>>>>(modulus, secret)
+			_ => new MontgomeryContext<MontgomeryKernelAvx512<Avx512WindowPair<TWindow3, Avx512WindowPair<TWindow2, TWindow2>>>>(modulus, secret)
 		};
 	}
 
-	// Windows of eight to ten vectors, then of 12 to 20 by twos, as CreateAvx512 builds them.
+	// Windows of eight to ten vectors, then of 12 to 20 by twos, from those of two and three.
 	private static MontgomeryContext CreateAvx512Staged<TWindow2, TWindow3>(ReadOnlySpan<ulong> modulus, int vectors, bool secret) where TWindow2 : struct, IAvx512StagedWindow<TWindow2> where TWindow3 : struct, IAvx512StagedWindow<TWindow3>
 	{
 		return vectors switch

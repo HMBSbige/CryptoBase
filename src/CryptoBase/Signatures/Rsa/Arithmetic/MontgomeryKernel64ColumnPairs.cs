@@ -103,18 +103,6 @@ internal readonly struct MontgomeryKernel64ColumnPairs<TRadix> : IMontgomeryKern
 				v = ref Unsafe.Subtract(ref v, 2);
 			}
 
-			if (count > 0)
-			{
-				high0 += LimbArithmetic.Multiply(x, y, out product);
-				low0 += product >> shift;
-				high1 += LimbArithmetic.Multiply(x, yNext, out product);
-				low1 += product >> shift;
-				reductionHigh0 += LimbArithmetic.Multiply(u, v, out product);
-				reductionLow0 += product >> shift;
-				reductionHigh1 += LimbArithmetic.Multiply(u, vNext, out product);
-				reductionLow1 += product >> shift;
-			}
-
 			ulong first = Unsafe.Add(ref a, c);
 			high0 += LimbArithmetic.Multiply(first, b, out product);
 			low0 += product >> shift;
@@ -179,18 +167,6 @@ internal readonly struct MontgomeryKernel64ColumnPairs<TRadix> : IMontgomeryKern
 				u = ref Unsafe.Add(ref u, 2);
 				y = ref Unsafe.Subtract(ref y, 2);
 				v = ref Unsafe.Subtract(ref v, 2);
-			}
-
-			if (count > 0)
-			{
-				high0 += LimbArithmetic.Multiply(x, y, out product);
-				low0 += product >> shift;
-				high1 += LimbArithmetic.Multiply(x, yNext, out product);
-				low1 += product >> shift;
-				reductionHigh0 += LimbArithmetic.Multiply(u, v, out product);
-				reductionLow0 += product >> shift;
-				reductionHigh1 += LimbArithmetic.Multiply(u, vNext, out product);
-				reductionLow1 += product >> shift;
 			}
 
 			(carryLow, carryHigh) = OutputPair(ref output, c - digits, low0 + reductionLow0 + carryLow, high0 + reductionHigh0 + carryHigh, low1 + reductionLow1, high1 + reductionHigh1, bits, mask);
