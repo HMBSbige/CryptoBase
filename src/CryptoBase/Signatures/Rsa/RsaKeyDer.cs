@@ -191,41 +191,16 @@ internal static class RsaKeyDer
 		return offset;
 	}
 
-	// The components of RSAPrivateKey that need a zero byte before them to stay positive, as bits by the RsaPrivateComponent value; the copy that this takes of each is erased.
-	[SkipLocalsInit]
-	internal static int GetPaddedComponents(RsaPrivateOperation key)
+	internal static int GetRsaPrivateKeyLength(RsaPrivateOperation key)
 	{
-		int padded = 0;
-		int maxLength = 0;
-
-		foreach (RsaPrivateComponent component in PrivateComponents)
-		{
-			maxLength = Math.Max(maxLength, key.GetLength(component));
-		}
-
-		using CryptoBuffer<byte> value = new(stackalloc byte[maxLength]);
-
-		foreach (RsaPrivateComponent component in PrivateComponents)
-		{
-			Span<byte> span = value.Span.Slice(0, key.GetLength(component));
-			key.Write(component, span);
-			padded |= span[0] >> 7 << (int)component;
-		}
-
-		return padded;
-	}
-
-	// The length of RSAPrivateKey, whose padded components are those of GetPaddedComponents.
-	internal static int GetRsaPrivateKeyLength(RsaPrivateOperation key, int paddedComponents)
-	{
-		return KeyInfoDer.GetEncodedLength(GetRsaPrivateKeyContentLength(key, paddedComponents));
+		return KeyInfoDer.GetEncodedLength(GetRsaPrivateKeyContentLength(key));
 	}
 
 	// destination is at least GetRsaPrivateKeyLength long, and receives the private values directly.
-	internal static int WriteRsaPrivateKey(RsaPrivateOperation key, int paddedComponents, Span<byte> destination)
+	internal static int WriteRsaPrivateKey(RsaPrivateOperation key, Span<byte> destination)
 	{
 		RsaPublicOperation publicKey = key.PublicKey;
-		int offset = WriteHeader(0x30, GetRsaPrivateKeyContentLength(key, paddedComponents), destination);
+		int offset = WriteHeader(0x30, GetRsaPrivateKeyContentLength(key), destination);
 		destination[offset++] = 0x02;
 		destination[offset++] = 0x01;
 		destination[offset++] = 0x00;
@@ -235,8 +210,7 @@ internal static class RsaKeyDer
 		foreach (RsaPrivateComponent component in PrivateComponents)
 		{
 			int length = key.GetLength(component);
-			bool padded = IsPadded(paddedComponents, component);
-			offset += WriteIntegerHeader(length, padded, destination.Slice(offset));
+			offset += WriteIntegerHeader(length, key.IsTopBitSet(component), destination.Slice(offset));
 			key.Write(component, destination.Slice(offset, length));
 			offset += length;
 		}
@@ -332,21 +306,16 @@ internal static class RsaKeyDer
 		};
 	}
 
-	private static int GetRsaPrivateKeyContentLength(RsaPrivateOperation key, int paddedComponents)
+	private static int GetRsaPrivateKeyContentLength(RsaPrivateOperation key)
 	{
 		int length = VersionLength + GetModulusIntegerLength(key.PublicKey) + GetExponentIntegerLength(key.PublicKey);
 
 		foreach (RsaPrivateComponent component in PrivateComponents)
 		{
-			length += GetIntegerLength(key.GetLength(component), IsPadded(paddedComponents, component));
+			length += GetIntegerLength(key.GetLength(component), key.IsTopBitSet(component));
 		}
 
 		return length;
-	}
-
-	private static bool IsPadded(int paddedComponents, RsaPrivateComponent component)
-	{
-		return (paddedComponents >> (int)component & 1) is not 0;
 	}
 
 	// The modulus has its top bit set where its length in bits is a multiple of 8.

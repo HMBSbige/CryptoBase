@@ -14,9 +14,8 @@ internal sealed class RsaPrivateOperation : IDisposable
 	private readonly MontgomeryPairContext? _primes;
 	private readonly ulong _publicExponent;
 
-	// d, dP, dQ and qInv, with the limbs of n, p, q and p; pinned only so that the GC leaves no copy of them for Dispose to miss.
+	// d, dP, dQ and qInv, with the limbs of n, p, q and p, then the bit lengths of the six components; pinned only so that the GC leaves no copy of them for Dispose to miss.
 	private readonly ulong[] _secrets;
-	private readonly int[] _lengths = new int[ComponentCount];
 	private bool _disposed;
 
 	private RsaPrivateOperation(RsaPublicOperation publicKey, ReadOnlySpan<ulong> modulus, ulong publicExponent, ReadOnlySpan<ulong> d, ReadOnlySpan<ulong> p, ReadOnlySpan<ulong> q, ReadOnlySpan<ulong> dP, ReadOnlySpan<ulong> dQ, ReadOnlySpan<ulong> qInv)
@@ -25,7 +24,7 @@ internal sealed class RsaPrivateOperation : IDisposable
 		_publicExponent = publicExponent;
 		_modulus = MontgomeryKernelDispatch.Create(modulus);
 		_primes = MontgomeryKernelDispatch.CreatePair(p, q, out _prime1, out _prime2);
-		_secrets = GC.AllocateArray<ulong>(d.Length + 2 * p.Length + q.Length, true);
+		_secrets = GC.AllocateArray<ulong>(d.Length + 2 * p.Length + q.Length + ComponentCount, true);
 		d.CopyTo(PrivateExponent);
 		dP.CopyTo(Exponent1);
 		dQ.CopyTo(Exponent2);
@@ -34,7 +33,7 @@ internal sealed class RsaPrivateOperation : IDisposable
 		// The lengths of a generated key are not public until it is exported.
 		for (int i = 0; i < ComponentCount; ++i)
 		{
-			_lengths[i] = (Limbs.GetSecretBitLength(GetValue((RsaPrivateComponent)i)) + 7) / 8;
+			BitLengths[i] = (ulong)Limbs.GetSecretBitLength(GetValue((RsaPrivateComponent)i));
 		}
 	}
 
@@ -47,6 +46,8 @@ internal sealed class RsaPrivateOperation : IDisposable
 	private Span<ulong> Exponent2 => _secrets.AsSpan(_modulus.LimbCount + _prime1.LimbCount, _prime2.LimbCount);
 
 	private Span<ulong> Coefficient => _secrets.AsSpan(_modulus.LimbCount + _prime1.LimbCount + _prime2.LimbCount, _prime1.LimbCount);
+
+	private Span<ulong> BitLengths => _secrets.AsSpan(_secrets.Length - ComponentCount);
 
 	// Components are unsigned big-endian and may have leading zero bytes; the instance keeps its own copies and does not change the caller's buffers.
 	// ArgumentException if the key is invalid; copies owned by the implementation are erased before it throws.
@@ -295,13 +296,15 @@ internal sealed class RsaPrivateOperation : IDisposable
 		ModularInverse.Invert(divisorResidue, dividendResidue, context.Modulus, result);
 	}
 
-	// For RSAPrivateKey (RFC 8017, Appendix A.1.2): length without leading zeros, and the value written into exactly that many bytes.
+	// For RSAPrivateKey (RFC 8017, Appendix A.1.2): length without leading zeros, whether its top bit is set, which an INTEGER pads with a zero byte, and the value written into exactly that many bytes.
 	internal int GetLength(RsaPrivateComponent component)
 	{
-		ObjectDisposedException.ThrowIf(_disposed, this);
-		ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)component, (uint)RsaPrivateComponent.Coefficient, nameof(component));
+		return (GetBitLength(component) + 7) / 8;
+	}
 
-		return _lengths[(int)component];
+	internal bool IsTopBitSet(RsaPrivateComponent component)
+	{
+		return GetBitLength(component) % 8 is 0;
 	}
 
 	internal void Write(RsaPrivateComponent component, Span<byte> destination)
@@ -324,6 +327,14 @@ internal sealed class RsaPrivateOperation : IDisposable
 		_prime1.Dispose();
 		_prime2.Dispose();
 		_modulus.Dispose();
+	}
+
+	private int GetBitLength(RsaPrivateComponent component)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)component, (uint)RsaPrivateComponent.Coefficient, nameof(component));
+
+		return (int)BitLengths[(int)component];
 	}
 
 	private ReadOnlySpan<ulong> GetValue(RsaPrivateComponent component)

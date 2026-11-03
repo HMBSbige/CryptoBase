@@ -2,6 +2,7 @@ using CryptoBase.Signatures.Rsa;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Signatures.Rsa.Arithmetic.RsaArithmeticTestUtils;
 
@@ -495,12 +496,17 @@ public class RsaOperationTest
 		RsaPrivateOperation operation = key.Import();
 		RsaPublicOperation publicKey = operation.PublicKey;
 		int length = publicKey.ModulusLength;
+		ulong[] secrets = Secrets(operation);
+		ulong[] bitLengths = [.. new[] { key.D, key.P, key.Q, key.DP, key.DQ, key.QInv }.Select(static value => (ulong)value.GetBitLength())];
+		// The bit lengths, which a generated key keeps secret until it is exported, lie with the values that Dispose erases.
+		await Assert.That(secrets[^bitLengths.Length..]).IsEquivalentTo(bitLengths, CollectionOrdering.Matching);
 		operation.Dispose();
 		operation.Dispose();
 		byte[] output = new byte[length];
 
 		using (Assert.Multiple())
 		{
+			await Assert.That(Array.TrueForAll(secrets, static value => value is 0)).IsTrue();
 			await Assert.That(() => operation.Apply(new byte[length], output)).Throws<ObjectDisposedException>();
 			await Assert.That(() => operation.GetLength(RsaPrivateComponent.Prime1)).Throws<ObjectDisposedException>();
 			await Assert.That(() => operation.Write(RsaPrivateComponent.Prime1, new byte[64])).Throws<ObjectDisposedException>();
@@ -631,6 +637,9 @@ public class RsaOperationTest
 			await Assert.That(Read(key, RsaPrivateComponent.Coefficient)).IsEqualTo(FromBigEndian(parameters.InverseQ));
 		}
 	}
+
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_secrets")]
+	private static extern ref ulong[] Secrets(RsaPrivateOperation key);
 
 	private static BigInteger Read(RsaPrivateOperation key, RsaPrivateComponent component)
 	{

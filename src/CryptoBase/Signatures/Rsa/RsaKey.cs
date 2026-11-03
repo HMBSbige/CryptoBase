@@ -34,7 +34,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	private readonly RsaPrivateOperation? _privateKey;
 	private readonly byte[] _algorithmIdentifier;
 	private readonly int _algorithms;
-	private readonly int _paddedComponents;
 	private bool _disposed;
 
 	// privateKey, if any, has publicKey, and the instance owns it.
@@ -44,11 +43,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 		_privateKey = privateKey;
 		_algorithmIdentifier = algorithmIdentifier;
 		_algorithms = allowedAlgorithms & RsaAlgorithms.Fitting(publicKey.ModulusBits);
-
-		if (privateKey is not null)
-		{
-			_paddedComponents = RsaKeyDer.GetPaddedComponents(privateKey);
-		}
 	}
 
 	/// <summary>
@@ -90,7 +84,7 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 		get
 		{
 			ObjectDisposedException.ThrowIf(_disposed, this);
-			return KeyInfoDer.GetPrivateKeyInfoLength(_algorithmIdentifier, RsaKeyDer.GetRsaPrivateKeyLength(GetPrivateKey(), _paddedComponents));
+			return KeyInfoDer.GetPrivateKeyInfoLength(_algorithmIdentifier, RsaKeyDer.GetRsaPrivateKeyLength(GetPrivateKey()));
 		}
 	}
 
@@ -117,7 +111,7 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 		get
 		{
 			ObjectDisposedException.ThrowIf(_disposed, this);
-			return RsaKeyDer.GetRsaPrivateKeyLength(GetPrivateKey(), _paddedComponents);
+			return RsaKeyDer.GetRsaPrivateKeyLength(GetPrivateKey());
 		}
 	}
 
@@ -227,8 +221,8 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		RsaPrivateOperation privateKey = GetPrivateKey();
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, RsaKeyDer.GetRsaPrivateKeyLength(privateKey, _paddedComponents), nameof(destination));
-		return RsaKeyDer.WriteRsaPrivateKey(privateKey, _paddedComponents, destination);
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, RsaKeyDer.GetRsaPrivateKeyLength(privateKey), nameof(destination));
+		return RsaKeyDer.WriteRsaPrivateKey(privateKey, destination);
 	}
 
 	/// <inheritdoc />
@@ -251,11 +245,11 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
 		RsaPrivateOperation privateKey = GetPrivateKey();
-		int privateKeyLength = RsaKeyDer.GetRsaPrivateKeyLength(privateKey, _paddedComponents);
+		int privateKeyLength = RsaKeyDer.GetRsaPrivateKeyLength(privateKey);
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, KeyInfoDer.GetPrivateKeyInfoLength(_algorithmIdentifier, privateKeyLength), nameof(destination));
 
 		using CryptoBuffer<byte> rsaPrivateKey = new(privateKeyLength);
-		RsaKeyDer.WriteRsaPrivateKey(privateKey, _paddedComponents, rsaPrivateKey.Span);
+		RsaKeyDer.WriteRsaPrivateKey(privateKey, rsaPrivateKey.Span);
 		return KeyInfoDer.WritePrivateKeyInfo(_algorithmIdentifier, rsaPrivateKey.Span, destination);
 	}
 
