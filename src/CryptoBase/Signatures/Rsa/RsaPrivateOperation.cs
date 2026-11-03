@@ -129,8 +129,8 @@ internal sealed class RsaPrivateOperation : IDisposable
 
 		int nLimbs = (modulusBits + 63) / 64;
 		int limbs = (modulusBits / 2 + 63) / 64;
-		int bufferLength = 2 * nLimbs + 5 * limbs;
-		using CryptoBuffer<ulong> buffer = CryptoBuffer<ulong>.ShouldUsePool(bufferLength) ? new CryptoBuffer<ulong>(bufferLength) : new CryptoBuffer<ulong>(stackalloc ulong[bufferLength]);
+		// Pinned, as p stays here while q is searched for.
+		using CryptoBuffer<ulong> buffer = new(GC.AllocateUninitializedArray<ulong>(2 * nLimbs + 5 * limbs, true));
 		Span<ulong> rest = buffer.Span;
 		Span<ulong> n = Take(ref rest, nLimbs);
 		Span<ulong> d = Take(ref rest, nLimbs);

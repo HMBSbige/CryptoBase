@@ -185,6 +185,9 @@ internal readonly unsafe struct MontgomeryKernelAvx512<TWindow> : IMontgomeryKer
 		}
 
 		TWindow.Store(in acc, 0, generate, ref result, count);
+		// Erased, as the scratch is.
+		generate.ZeroMemory();
+		propagate.ZeroMemory();
 	}
 
 	[InlineArray(3)]

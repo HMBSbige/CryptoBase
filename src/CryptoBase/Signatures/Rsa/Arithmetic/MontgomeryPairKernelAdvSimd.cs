@@ -424,6 +424,8 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 			}
 		}
 
+		// Erased, as the scratch is.
+		sums.ZeroMemory();
 		return Vector128.Create(firstCarry, secondCarry);
 	}
 }

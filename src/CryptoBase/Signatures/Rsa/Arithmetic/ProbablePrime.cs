@@ -304,7 +304,7 @@ internal static class ProbablePrime
 		private readonly int _limbs;
 		private readonly int _digits;
 
-		// w, w − 1, m and b in limbs, then z, 1 and −1 as elements and the scratch of a square.
+		// w, w − 1, m and b in limbs, then z, 1 and −1 as elements and the scratch of a square; pinned, as the prime that is kept is one of them.
 		private readonly ulong[] _data;
 		private int _a;
 
@@ -314,7 +314,7 @@ internal static class ProbablePrime
 			_bits = bits;
 			_limbs = context.LimbCount;
 			_digits = context.DigitCount;
-			_data = new ulong[4 * _limbs + 3 * _digits + context.ScratchLength];
+			_data = GC.AllocateUninitializedArray<ulong>(4 * _limbs + 3 * _digits + context.ScratchLength, true);
 		}
 
 		internal MontgomeryContext Context { get; }

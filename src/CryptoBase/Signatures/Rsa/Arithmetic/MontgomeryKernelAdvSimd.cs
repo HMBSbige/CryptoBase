@@ -465,6 +465,8 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 			carry = sum >> TRadix.Bits;
 		}
 
+		// Erased, as the scratch is.
+		sums.ZeroMemory();
 		return Vector128.CreateScalar(carry);
 	}
 }
