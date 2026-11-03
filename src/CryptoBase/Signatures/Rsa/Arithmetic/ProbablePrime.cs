@@ -183,27 +183,10 @@ internal static class ProbablePrime
 		{
 			_rounds = GetRounds(bits);
 			_source = source;
-			// Contexts of the limb count of the candidates, for a modulus that the first candidate of each slot replaces.
+			// Contexts of the limb count of the candidates, for a modulus that the first candidate of each slot replaces; the candidate that passes runs most of its tests alone.
 			ulong[] placeholder = new ulong[limbs];
 			placeholder.AsSpan().Fill(ulong.MaxValue);
-			_pair = MontgomeryKernelDispatch.CreatePair(placeholder, placeholder, out MontgomeryContext first, out MontgomeryContext second);
-			MontgomeryContext single = MontgomeryKernelDispatch.Create(placeholder);
-
-			// The candidate that passes runs most of its tests alone, which the contexts of a pair slow down where their digits are those of the pair kernel rather than the best for one modulus (see MontgomeryKernelDispatch.CreatePair): those take no pair.
-			if (_pair is null || first.GetType() != single.GetType())
-			{
-				_pair?.Dispose();
-				_pair = null;
-				first.Dispose();
-				second.Dispose();
-				first = single;
-				second = MontgomeryKernelDispatch.Create(placeholder);
-			}
-			else
-			{
-				single.Dispose();
-			}
-
+			_pair = MontgomeryKernelDispatch.CreatePair(placeholder, placeholder, out MontgomeryContext first, out MontgomeryContext second, mostlyAlone: true);
 			_first = new Candidate(first, bits);
 			_second = new Candidate(second, bits);
 		}

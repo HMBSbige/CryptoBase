@@ -18,11 +18,11 @@ internal sealed class RsaPrivateOperation : IDisposable
 	private readonly ulong[] _secrets;
 	private bool _disposed;
 
-	private RsaPrivateOperation(RsaPublicOperation publicKey, ReadOnlySpan<ulong> modulus, ulong publicExponent, ReadOnlySpan<ulong> d, ReadOnlySpan<ulong> p, ReadOnlySpan<ulong> q, ReadOnlySpan<ulong> dP, ReadOnlySpan<ulong> dQ, ReadOnlySpan<ulong> qInv)
+	private RsaPrivateOperation(RsaPublicOperation publicKey, ulong publicExponent, ReadOnlySpan<ulong> d, ReadOnlySpan<ulong> p, ReadOnlySpan<ulong> q, ReadOnlySpan<ulong> dP, ReadOnlySpan<ulong> dQ, ReadOnlySpan<ulong> qInv)
 	{
 		PublicKey = publicKey;
 		_publicExponent = publicExponent;
-		_modulus = MontgomeryKernelDispatch.Create(modulus, secret: false);
+		_modulus = publicKey.Context;
 		_primes = MontgomeryKernelDispatch.CreatePair(p, q, out _prime1, out _prime2);
 		_secrets = GC.AllocateUninitializedArray<ulong>(d.Length + 2 * p.Length + q.Length + ComponentCount, true);
 		d.CopyTo(PrivateExponent);
@@ -107,7 +107,7 @@ internal sealed class RsaPrivateOperation : IDisposable
 			ThrowInvalidKey();
 		}
 
-		return new RsaPrivateOperation(publicKey, nValue, e, dValue, pValue, qValue, dPValue, dQValue, qInvValue);
+		return new RsaPrivateOperation(publicKey, e, dValue, pValue, qValue, dPValue, dQValue, qInvValue);
 	}
 
 	// FIPS 186-5, Appendix A.1.3.
@@ -146,7 +146,7 @@ internal sealed class RsaPrivateOperation : IDisposable
 		Limbs.ToBigEndian(n, modulusBytes);
 		BinaryPrimitives.WriteUInt64BigEndian(exponentBytes, publicExponent);
 		RsaPublicOperation publicKey = RsaPublicOperation.Create(modulusBytes, exponentBytes);
-		return new RsaPrivateOperation(publicKey, n, publicExponent, d, p, q, dP, dQ, qInv);
+		return new RsaPrivateOperation(publicKey, publicExponent, d, p, q, dP, dQ, qInv);
 	}
 
 	// RSASP1 with CRT and blinding, then checked with RSAVP1: input and output are PublicKey.ModulusLength bytes, big-endian; same span allowed, no partial overlap.
@@ -327,7 +327,6 @@ internal sealed class RsaPrivateOperation : IDisposable
 		_primes?.Dispose();
 		_prime1.Dispose();
 		_prime2.Dispose();
-		_modulus.Dispose();
 	}
 
 	private int GetBitLength(RsaPrivateComponent component)

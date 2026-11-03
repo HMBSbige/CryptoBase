@@ -9,7 +9,6 @@ internal sealed class RsaPublicOperation
 	internal const int MaxModulusBits = 16384;
 	internal const int MaxPublicExponentBits = 33;
 
-	private readonly MontgomeryContext _modulus;
 	private readonly ulong _exponent;
 
 	// R^e mod n, as the digits of an element: the e-th power of x taken as an element is x^e·R^(1−e) in plain form, which a product with these digits brings to x^e, so that the input needs no conversion into Montgomery form.
@@ -17,7 +16,7 @@ internal sealed class RsaPublicOperation
 
 	private RsaPublicOperation(MontgomeryContext modulus, ulong exponent, int modulusBits, int exponentLength)
 	{
-		_modulus = modulus;
+		Context = modulus;
 		_exponent = exponent;
 		ModulusBits = modulusBits;
 		ExponentLength = exponentLength;
@@ -32,6 +31,9 @@ internal sealed class RsaPublicOperation
 	}
 
 	internal int ModulusBits { get; }
+
+	// The context of n, which RsaPrivateOperation shares.
+	internal MontgomeryContext Context { get; }
 
 	// k = ⌈ModulusBits/8⌉.
 	internal int ModulusLength => (ModulusBits + 7) / 8;
@@ -83,7 +85,7 @@ internal sealed class RsaPublicOperation
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, ModulusLength, nameof(destination));
 
-		Limbs.ToBigEndian(_modulus.Modulus, destination);
+		Limbs.ToBigEndian(Context.Modulus, destination);
 	}
 
 	// destination is exactly ExponentLength bytes.
@@ -109,7 +111,7 @@ internal sealed class RsaPublicOperation
 
 		CipherBufferGuard.SourceDestinationOverlap(input, output, nameof(output));
 
-		MontgomeryContext modulus = _modulus;
+		MontgomeryContext modulus = Context;
 		int limbs = modulus.LimbCount;
 		int digits = modulus.DigitCount;
 		int bufferLength = limbs + digits;

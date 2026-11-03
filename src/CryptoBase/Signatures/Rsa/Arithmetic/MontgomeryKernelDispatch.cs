@@ -57,12 +57,12 @@ internal static partial class MontgomeryKernelDispatch
 		return new MontgomeryContext<MontgomeryKernel32<Radix27>>(modulus, secret);
 	}
 
-	// The contexts of two moduli that exponentiate side by side, and the pair context that exponentiates them at once where the platform has a pair kernel for them that is faster than one after the other, which takes moduli of one limb count; null otherwise, with the contexts that Create makes. Only the limb counts decide.
-	internal static MontgomeryPairContext? CreatePair(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, out MontgomeryContext firstContext, out MontgomeryContext secondContext)
+	// The contexts of two moduli that exponentiate side by side, and the pair context that exponentiates them at once where the platform has a pair kernel for them that is faster than one after the other, which takes moduli of one limb count; null otherwise, with the contexts that Create makes. Moduli that run most of their operations alone take a pair only where its contexts are those that Create makes. Only the limb counts decide.
+	internal static MontgomeryPairContext? CreatePair(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, out MontgomeryContext firstContext, out MontgomeryContext secondContext, bool mostlyAlone = false)
 	{
 		int limbs = first.Length;
 
-		if (limbs == second.Length && MontgomeryPairKernelAdvSimd<Radix28>.IsSupported && limbs is >= MinAdvSimdPairLimbs and <= MaxAdvSimdPairLimbs)
+		if (limbs == second.Length && MontgomeryPairKernelAdvSimd<Radix28>.IsSupported && limbs is >= MinAdvSimdPairLimbs and <= MaxAdvSimdPairLimbs && (!mostlyAlone || limbs >= AdvSimdLimbs))
 		{
 			Debug.Assert(Fits<MontgomeryKernelAdvSimd<Radix28>>(limbs));
 
