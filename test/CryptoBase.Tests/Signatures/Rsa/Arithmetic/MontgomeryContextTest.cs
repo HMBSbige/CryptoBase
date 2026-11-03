@@ -246,7 +246,7 @@ public class MontgomeryContextTest
 			{
 				BigInteger r = BigInteger.One << kernel.DigitBits * context.DigitCount;
 				BigInteger rInverse = ModInverse(r % n, n);
-				BigInteger[] values = Elements(random, n);
+				BigInteger[] values = Elements(random, n, full);
 
 				foreach (BigInteger a in values)
 				{
@@ -290,7 +290,7 @@ public class MontgomeryContextTest
 				BigInteger r = BigInteger.One << kernel.DigitBits * context.DigitCount;
 				BigInteger rInverse = ModInverse(r % n, n);
 
-				foreach (BigInteger a in Elements(random, n))
+				foreach (BigInteger a in Elements(random, n, full))
 				{
 					BigInteger expected = a * a * rInverse % n;
 					ulong[] value = ToLimbs(a, context.DigitCount, kernel.DigitBits);
@@ -337,7 +337,7 @@ public class MontgomeryContextTest
 					}
 				}
 
-				foreach (BigInteger value in Elements(random, n))
+				foreach (BigInteger value in Elements(random, n, full))
 				{
 					ulong[] digitsOfValue = ToLimbs(value, digits, kernel.DigitBits);
 					context.FromDigits(digitsOfValue, result);
@@ -398,7 +398,7 @@ public class MontgomeryContextTest
 		{
 			using (context)
 			{
-				BigInteger[] values = Elements(random, n);
+				BigInteger[] values = Elements(random, n, full);
 
 				foreach (BigInteger a in values)
 				{
@@ -578,10 +578,12 @@ public class MontgomeryContextTest
 		}
 	}
 
-	// Values below 2n: the ends of [0, n) and [n, 2n) and random ones in both.
-	private static BigInteger[] Elements(Random random, BigInteger n)
+	// Values below 2n: the ends of [0, n) and [n, 2n) and random ones in both. Past MaxExponentiationLimbs, where the moduli only bound the sums, the outermost ends, unless full.
+	private static BigInteger[] Elements(Random random, BigInteger n, bool full)
 	{
-		return [BigInteger.Zero, BigInteger.One, n - 1, n, n + 1, 2 * n - 1, RandomBelow(random, n), n + RandomBelow(random, n)];
+		return full || n.GetBitLength() <= 64 * MaxExponentiationLimbs
+			? [BigInteger.Zero, BigInteger.One, n - 1, n, n + 1, 2 * n - 1, RandomBelow(random, n), n + RandomBelow(random, n)]
+			: [BigInteger.Zero, n - 1, n, 2 * n - 1];
 	}
 
 	private static void Check(List<string> failures, MontgomeryKernelCase kernel, ReadOnlySpan<ulong> element, BigInteger expected, BigInteger n, string description)

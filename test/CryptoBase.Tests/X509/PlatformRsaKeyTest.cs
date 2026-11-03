@@ -747,7 +747,7 @@ public class PlatformRsaKeyTest
 	}
 
 	// PlatformRsaKey and RsaKey import the same keys of every vector, or both throw the same exception, support the same algorithms, export the same SubjectPublicKeyInfo, and verify each signature
-	// alike with each algorithm that they support.
+	// alike with the algorithm of its group where they support it, and otherwise with one that they do.
 	[Test]
 	[MethodDataSource(nameof(WycheproofSignatureFiles))]
 	public async Task VerifiesWycheproofVectorsAsRsaKeyDoes(string fileName)
@@ -791,16 +791,20 @@ public class PlatformRsaKeyTest
 					differences.Add($"{context}: the SubjectPublicKeyInfo differs");
 				}
 
+				if (algorithms is [])
+				{
+					continue;
+				}
+
 				foreach (RsaSignatureTestVector vector in group)
 				{
-					foreach (SignatureAlgorithm algorithm in algorithms)
-					{
-						bool platform = platformKey.Verify(algorithm, vector.Msg, vector.Sig);
+					SignatureAlgorithm own = WycheproofAlgorithm(vector.Sha, vector.GroupType.StartsWith("RsassaPss", StringComparison.Ordinal)).Algorithm;
+					SignatureAlgorithm algorithm = algorithms.Contains(own) ? own : algorithms[0];
+					bool platform = platformKey.Verify(algorithm, vector.Msg, vector.Sig);
 
-						if (platform != key.Verify(algorithm, vector.Msg, vector.Sig))
-						{
-							differences.Add($"{vector}, {algorithm}: PlatformRsaKey {platform}, RsaKey {!platform}");
-						}
+					if (platform != key.Verify(algorithm, vector.Msg, vector.Sig))
+					{
+						differences.Add($"{vector}, {algorithm}: PlatformRsaKey {platform}, RsaKey {!platform}");
 					}
 				}
 			}

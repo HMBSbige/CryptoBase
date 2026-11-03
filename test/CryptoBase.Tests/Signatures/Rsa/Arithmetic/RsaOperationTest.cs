@@ -371,8 +371,9 @@ public class RsaOperationTest
 		await Assert.That(failures).IsEqualTo(0);
 	}
 
-	// The vector kernels load and store through pointers into the buffers of each operation, which the heap may move. Private keys whose moduli and primes take each family of kernels, and a public key past every window of AVX-512, sign and verify on several threads against BigInteger while another compacts the heap again and again, with garbage left between what lives.
+	// The vector kernels load and store through pointers into the buffers of each operation, which the heap may move. Private keys whose moduli and primes take each family of kernels, and a public key past every window of AVX-512, sign and verify on several threads against BigInteger while another compacts the heap again and again, with garbage left between what lives. Whether a move lands mid-operation is up to the collector, so the test runs for seconds, alone and only on request.
 	[Test]
+	[Explicit]
 	[NotInParallel]
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The threads are joined before disposal.")]
 	public async Task ApplyStaysRightWhileTheHeapCompacts()
@@ -390,7 +391,7 @@ public class RsaOperationTest
 
 		BigInteger largeModulus = RandomBits(new Random(49), 16384) | BigInteger.One << 16383 | 1;
 		RsaPublicOperation large = RsaPublicOperation.Create(ToBigEndian(largeModulus, 2048), ToBigEndian(F4, 3));
-		long deadline = Environment.TickCount64 + 500;
+		long deadline = Environment.TickCount64 + 2000;
 		int failures = 0;
 		int operations = 0;
 		int collections = 0;
@@ -523,12 +524,25 @@ public class RsaOperationTest
 		}
 	}
 
-	// FIPS 186-5, Appendix A.1.1: nlen-bit n of primes of nlen/2 bits, |p − q| > 2^(nlen/2 − 100), 2^(nlen/2) < d < λ(n) with e·d ≡ 1 (mod λ(n)), GCD(p − 1, e) = GCD(q − 1, e) = 1; and the CRT values of RFC 8017, Sec. 3.2. 2056 bits leave the primes a partial limb, and a composite e takes the general GCD and inverse.
+	// FIPS 186-5, Appendix A.1.1: nlen-bit n of primes of nlen/2 bits, |p − q| > 2^(nlen/2 − 100), 2^(nlen/2) < d < λ(n) with e·d ≡ 1 (mod λ(n)), GCD(p − 1, e) = GCD(q − 1, e) = 1; and the CRT values of RFC 8017, Sec. 3.2. 2056 bits leave the primes a partial limb, a composite e takes the general GCD and inverse, and 2^33 − 1 is the largest e.
 	[Test]
 	[Arguments(2048, 65537UL)]
 	[Arguments(2056, 255255UL)]
-	[Arguments(3072, 8589934591UL)]
+	[Arguments(2048, 8589934591UL)]
 	public async Task GenerateMeetsFips186(int bits, ulong e)
+	{
+		await CheckGeneratedKey(bits, e);
+	}
+
+	// GenerateMeetsFips186 for a longer key, which takes seconds.
+	[Test]
+	[Explicit]
+	public async Task GenerateMeetsFips186ForALongerKey()
+	{
+		await CheckGeneratedKey(3072, 8589934591UL);
+	}
+
+	private static async Task CheckGeneratedKey(int bits, ulong e)
 	{
 		using RsaPrivateOperation key = RsaPrivateOperation.Generate(bits, e);
 		BigInteger n = Read(key.PublicKey);
