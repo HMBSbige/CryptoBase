@@ -5,7 +5,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// The vector kernels against the scalar kernel of the platform and BigInteger, in plain form after a round trip through Montgomery form: random products, and chains of products and squares in which each output feeds the next operation, as in an exponentiation.
+// The vector kernels against the scalar kernel of the platform and BigInteger, in plain form after a round trip through Montgomery form: random products, and chains of products and squares in which each output feeds the next operation, as in an exponentiation, at the limb counts of MontgomeryKernelCase.LimbCountsToTest with the moduli of ModuliToTest.
 public class VectorKernelTest
 {
 	private const int ChainLength = 64;
@@ -24,9 +24,9 @@ public class VectorKernelTest
 		List<string> failures = [];
 		Random random = new(11);
 
-		foreach (int limbs in LimbCounts.Where(kernel.Fits))
+		foreach (int limbs in kernel.LimbCountsToTest)
 		{
-			foreach (BigInteger n in Moduli(random, limbs))
+			foreach (BigInteger n in ModuliToTest(random, limbs))
 			{
 				ulong[] modulus = ToLimbs(n, limbs);
 				using MontgomeryContext vector = kernel.Create(modulus);
@@ -60,9 +60,9 @@ public class VectorKernelTest
 		List<string> failures = [];
 		Random random = new(12);
 
-		foreach (int limbs in LimbCounts.Where(kernel.Fits))
+		foreach (int limbs in kernel.LimbCountsToTest)
 		{
-			foreach (BigInteger n in Moduli(random, limbs))
+			foreach (BigInteger n in ModuliToTest(random, limbs))
 			{
 				ulong[] modulus = ToLimbs(n, limbs);
 				using MontgomeryContext vector = kernel.Create(modulus);

@@ -5,7 +5,15 @@ namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 // A kernel under test with a digit size, which MontgomeryContext pairs with a modulus.
 public abstract class MontgomeryKernelCase : IKernelCase
 {
+	private static readonly MontgomeryKernelCase[] Cases = [.. Create()];
+
 	public static IEnumerable<MontgomeryKernelCase> All()
+	{
+		return Cases;
+	}
+
+	// The families, each in the order in which MontgomeryKernelDispatch tries its kernels, and in which IsDispatched looks for the first that holds a modulus.
+	private static IEnumerable<MontgomeryKernelCase> Create()
 	{
 		yield return new Case<MontgomeryKernel64<Radix57>>();
 		yield return new Case<MontgomeryKernel64<Radix56>>();
@@ -39,6 +47,13 @@ public abstract class MontgomeryKernelCase : IKernelCase
 		yield return new Case<MontgomeryKernelAvx2<Avx2WindowPair<Avx2WindowPair<Avx2Window, Avx2Window>, Avx2WindowPair<Avx2Window, Avx2Window>>>>();
 	}
 
+	// The kernel of a context.
+	internal static MontgomeryKernelCase Of(MontgomeryContext context)
+	{
+		Type kernelType = context.GetType().GetGenericArguments()[0];
+		return Cases.Single(kernel => kernel.KernelType == kernelType);
+	}
+
 	// The families of vector kernels: the windows of those of AVX-512 set the digits they hold, those of MontgomeryKernelAvx2 only the vectors that stay in registers.
 	public static bool IsVector(Type kernelType)
 	{
@@ -54,14 +69,22 @@ public abstract class MontgomeryKernelCase : IKernelCase
 
 	public abstract Type KernelType { get; }
 
+	// The limb counts that the tests take for the kernel: those of one to three limbs that it holds, the ends of the range of limb counts up to 256 for which MontgomeryKernelDispatch takes it, and the RSA sizes of CommonLimbCounts within the range. MontgomeryKernelAdvSimd<Radix28> also takes the limb counts of MontgomeryKernelDispatch.CreatePair, from MinAdvSimdPairLimbs, below those that Create gives it, to MaxAdvSimdPairLimbs.
+	internal int[] LimbCountsToTest => field ??= GetLimbCountsToTest();
+
 	public abstract bool IsSupported { get; }
 
 	internal abstract int DigitBits { get; }
 
 	internal abstract int MaxDigitCount { get; }
 
+	internal abstract int GetDigitCount(int limbs);
+
 	// Whether a modulus of limbs limbs needs no more digits than the kernel holds.
-	internal abstract bool Fits(int limbs);
+	internal bool Fits(int limbs)
+	{
+		return GetDigitCount(limbs) <= MaxDigitCount;
+	}
 
 	internal abstract MontgomeryContext Create(ReadOnlySpan<ulong> modulus);
 
@@ -82,6 +105,48 @@ public abstract class MontgomeryKernelCase : IKernelCase
 			{ } type when type == typeof(MontgomeryKernelAvx2<>) => $"{family}<{WindowVectors(KernelType)} vectors in registers>",
 			_ => $"{family}<{KernelType.GetGenericArguments()[0].Name}>"
 		};
+	}
+
+	private int[] GetLimbCountsToTest()
+	{
+		int[] dispatched = [.. Enumerable.Range(1, 256).Where(IsDispatched)];
+		IEnumerable<int> limbCounts = dispatched is [] ? [] : [dispatched[0], dispatched[^1], .. RsaArithmeticTestUtils.CommonLimbCounts.Intersect(dispatched)];
+
+		if (KernelType == typeof(MontgomeryKernelAdvSimd<Radix28>))
+		{
+			limbCounts = limbCounts.Append(MontgomeryKernelDispatch.MinAdvSimdPairLimbs).Append(MontgomeryKernelDispatch.MaxAdvSimdPairLimbs);
+		}
+
+		return [.. limbCounts.Concat(Enumerable.Range(1, 3).Where(Fits)).Distinct().Order()];
+	}
+
+	// Whether MontgomeryKernelDispatch takes the kernel for a modulus of limbs limbs where it takes the family: the first kernel of the family in Cases that holds the modulus, with the windows of MontgomeryKernelAvx512 and MontgomeryKernelAvx512Staged as one family, or the window of MontgomeryKernelAvx2 that GetAvx2WindowVectors gives. Of MontgomeryKernel64ColumnPairs, it takes only the 57-bit digits.
+	private bool IsDispatched(int limbs)
+	{
+		if (!Fits(limbs))
+		{
+			return false;
+		}
+
+		Type family = Family(KernelType);
+
+		if (family == typeof(MontgomeryKernelAvx2<>))
+		{
+			return WindowVectors(KernelType) == MontgomeryKernelDispatch.GetAvx2WindowVectors(GetDigitCount(limbs));
+		}
+
+		if (family == typeof(MontgomeryKernel64ColumnPairs<>) && KernelType != typeof(MontgomeryKernel64ColumnPairs<Radix57>))
+		{
+			return false;
+		}
+
+		return Cases.TakeWhile(kernel => kernel != this).All(kernel => Family(kernel.KernelType) != family || !kernel.Fits(limbs));
+	}
+
+	private static Type Family(Type kernelType)
+	{
+		Type family = kernelType.GetGenericTypeDefinition();
+		return family == typeof(MontgomeryKernelAvx512Staged<>) ? typeof(MontgomeryKernelAvx512<>) : family;
 	}
 
 	// The windows that MontgomeryKernelDispatch builds, one to seven vectors.
@@ -119,9 +184,9 @@ public abstract class MontgomeryKernelCase : IKernelCase
 
 		internal override int MaxDigitCount => TKernel.MaxDigitCount;
 
-		internal override bool Fits(int limbs)
+		internal override int GetDigitCount(int limbs)
 		{
-			return MontgomeryContext<TKernel>.GetDigitCount(limbs) <= TKernel.MaxDigitCount;
+			return MontgomeryContext<TKernel>.GetDigitCount(limbs);
 		}
 
 		internal override MontgomeryContext Create(ReadOnlySpan<ulong> modulus)

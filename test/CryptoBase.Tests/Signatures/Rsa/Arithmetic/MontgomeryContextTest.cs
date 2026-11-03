@@ -6,6 +6,7 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
 // Checks every kernel, through MontgomeryContext, against BigInteger. Elements below 2n pass if they are congruent to the reference and every digit is below the radix, as IMontgomeryKernel allows.
+// Each kernel is checked at the limb counts of MontgomeryKernelCase.LimbCountsToTest with the moduli of ModuliToTest, and exponentiations up to MaxExponentiationLimbs; EveryOperationMatchesAtEveryLimbCount checks every limb count of LimbCounts that the kernel holds with every modulus of Moduli, on request.
 public class MontgomeryContextTest
 {
 	[Test]
@@ -63,17 +64,132 @@ public class MontgomeryContextTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Chains of products and squares of random values, through each kernel and through the scalar kernel of the platform, give the same values as BigInteger: the representations differ, so the chains meet in plain form.
 	[Test]
 	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
 	public async Task ChainsMatchTheScalarKernel(MontgomeryKernelCase kernel)
 	{
 		SkipUnlessSupported(kernel);
+		await Assert.That(Chains(kernel, false)).IsEmpty();
+	}
 
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task MultiplyMatchesReference(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+		await Assert.That(Multiply(kernel, false)).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task SquareMatchesReference(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+		await Assert.That(Square(kernel, false)).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task ConversionsMatchReference(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+		await Assert.That(Conversions(kernel, false)).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task SubtractMatchesReference(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+		await Assert.That(Subtract(kernel, false)).IsEmpty();
+	}
+
+	// MontgomeryContext exponentiates alike with every kernel, so ExponentiateThroughTheDispatchMatchesReference takes every way to exponentiate; here each kernel takes a random exponent of a few windows per modulus, into another element and in place.
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task ExponentiateMatchesReference(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+		await Assert.That(Exponentiate(kernel, false)).IsEmpty();
+	}
+
+	// Every way to exponentiate of Exponentiate, through the kernel that MontgomeryKernelDispatch takes for the limb count.
+	[Test]
+	[MethodDataSource(nameof(ExponentiationLimbCounts))]
+	public async Task ExponentiateThroughTheDispatchMatchesReference(int limbs)
+	{
+		List<string> failures = [];
+		Random random = new(limbs);
+
+		foreach (BigInteger n in ModuliToTest(random, limbs))
+		{
+			using MontgomeryContext context = MontgomeryKernelDispatch.Create(ToLimbs(n, limbs));
+			ExponentiateEveryWay(failures, MontgomeryKernelCase.Of(context), context, n, random);
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task ExponentiateVariableTimeMatchesReference(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+		await Assert.That(ExponentiateVariableTime(kernel, false)).IsEmpty();
+	}
+
+	// A context that takes another modulus works as a new one of it would, bit for bit, through moduli of every shape and back to the first. Reset exponentiates to find R², so moduli stay within MaxExponentiationLimbs.
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task ResetMatchesANewContext(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+		await Assert.That(Reset(kernel, false)).IsEmpty();
+	}
+
+	// The checks above at every limb count of LimbCounts that the kernel holds, with every modulus of Moduli and every way to exponentiate: minutes for all kernels.
+	[Test]
+	[Explicit]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task EveryOperationMatchesAtEveryLimbCount(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+		await Assert.That(Chains(kernel, true).Concat(Multiply(kernel, true)).Concat(Square(kernel, true)).Concat(Conversions(kernel, true)).Concat(Subtract(kernel, true)).Concat(Exponentiate(kernel, true)).Concat(ExponentiateVariableTime(kernel, true)).Concat(Reset(kernel, true))).IsEmpty();
+	}
+
+	// Dispose erases what a context holds of its modulus, which may be a secret prime: the data and −n⁻¹ mod 2^DigitBits, whose bits are those of the low bits of the modulus.
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task DisposeErasesWhatTheModulusGives(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+
+		List<string> failures = [];
+		Random random = new(9);
+
+		foreach (int limbs in LimbCounts.Where(kernel.Fits).Take(3))
+		{
+			MontgomeryContext context = kernel.Create(ToLimbs(RandomBits(random, 64 * limbs) | BigInteger.One << 64 * limbs - 1 | 1, limbs));
+			context.Dispose();
+			failures.AddRange(NonZeroWords(context).Select(field => $"{limbs} limbs: {field}"));
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
+	// Limb counts around powers of two up to MaxExponentiationLimbs.
+	public static IEnumerable<int> ExponentiationLimbCounts()
+	{
+		return [1, 2, 3, 5, 8, 9, 16, 17, 32, 33, 64];
+	}
+
+	// Chains of products and squares of random values, through the kernel and through the scalar kernel of the platform, give the same values as BigInteger: the representations differ, so the chains meet in plain form.
+	private static List<string> Chains(MontgomeryKernelCase kernel, bool full)
+	{
 		List<string> failures = [];
 		Random random = new(7);
 
-		foreach (int limbs in LimbCounts.Where(kernel.Fits))
+		foreach (int limbs in LimbCountsOf(kernel, full))
 		{
 			BigInteger n = RandomBits(random, 64 * limbs) | BigInteger.One << 64 * limbs - 1 | 1;
 			ulong[] modulus = ToLimbs(n, limbs);
@@ -116,19 +232,15 @@ public class MontgomeryContextTest
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
-	[Test]
-	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
-	public async Task MultiplyMatchesReference(MontgomeryKernelCase kernel)
+	private static List<string> Multiply(MontgomeryKernelCase kernel, bool full)
 	{
-		SkipUnlessSupported(kernel);
-
 		List<string> failures = [];
 		Random random = new(1);
 
-		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random))
+		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random, full))
 		{
 			using (context)
 			{
@@ -163,19 +275,15 @@ public class MontgomeryContextTest
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
-	[Test]
-	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
-	public async Task SquareMatchesReference(MontgomeryKernelCase kernel)
+	private static List<string> Square(MontgomeryKernelCase kernel, bool full)
 	{
-		SkipUnlessSupported(kernel);
-
 		List<string> failures = [];
 		Random random = new(2);
 
-		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random))
+		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random, full))
 		{
 			using (context)
 			{
@@ -195,19 +303,15 @@ public class MontgomeryContextTest
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
-	[Test]
-	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
-	public async Task ConversionsMatchReference(MontgomeryKernelCase kernel)
+	private static List<string> Conversions(MontgomeryKernelCase kernel, bool full)
 	{
-		SkipUnlessSupported(kernel);
-
 		List<string> failures = [];
 		Random random = new(3);
 
-		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random))
+		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random, full))
 		{
 			using (context)
 			{
@@ -282,19 +386,15 @@ public class MontgomeryContextTest
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
-	[Test]
-	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
-	public async Task SubtractMatchesReference(MontgomeryKernelCase kernel)
+	private static List<string> Subtract(MontgomeryKernelCase kernel, bool full)
 	{
-		SkipUnlessSupported(kernel);
-
 		List<string> failures = [];
 		Random random = new(4);
 
-		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random))
+		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random, full))
 		{
 			using (context)
 			{
@@ -313,59 +413,70 @@ public class MontgomeryContextTest
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
-	// Exponents of one limb up to the length of the modulus cover every window size and a first window of every width.
-	[Test]
-	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
-	public async Task ExponentiateMatchesReference(MontgomeryKernelCase kernel)
+	private static List<string> Exponentiate(MontgomeryKernelCase kernel, bool full)
 	{
-		SkipUnlessSupported(kernel);
-
 		List<string> failures = [];
 		Random random = new(5);
 
-		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random))
+		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random, full, MaxExponentiationLimbs))
 		{
 			using (context)
 			{
-				int limbs = context.LimbCount;
-				BigInteger r = BigInteger.One << kernel.DigitBits * context.DigitCount;
-				BigInteger rInverse = ModInverse(r % n, n);
-				int[] lengths = limbs <= 32 ? [1, 2, (limbs + 1) / 2, limbs] : [1, 4];
-
-				foreach (int length in lengths.Distinct())
+				if (full)
 				{
-					BigInteger a = RandomBelow(random, 2 * n);
-
-					foreach (BigInteger exponent in (ReadOnlySpan<BigInteger>)[BigInteger.Zero, BigInteger.One, 2, (BigInteger.One << 64 * length) - 1, RandomBits(random, 64 * length)])
-					{
-						ulong[] element = ToLimbs(a, context.DigitCount, kernel.DigitBits);
-						ulong[] result = new ulong[context.DigitCount];
-						BigInteger expected = BigInteger.ModPow(a * rInverse % n, exponent, n) * r % n;
-						context.Exponentiate(element, ToLimbs(exponent, length), result);
-						Check(failures, kernel, result, expected, n, $"{n:X}: {a:X}^{exponent:X}");
-						context.Exponentiate(element, ToLimbs(exponent, length), element);
-						Check(failures, kernel, element, expected, n, $"{n:X}: {a:X}^{exponent:X} in place");
-					}
+					ExponentiateEveryWay(failures, kernel, context, n, random);
+				}
+				else
+				{
+					int length = Math.Min(context.LimbCount, 2);
+					ExponentiateAndCheck(failures, kernel, context, n, RandomBelow(random, 2 * n), RandomBits(random, 64 * length), length);
 				}
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
-	[Test]
-	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
-	public async Task ExponentiateVariableTimeMatchesReference(MontgomeryKernelCase kernel)
+	// Exponents of one limb up to the length of the modulus cover every window size and a first window of every width.
+	private static void ExponentiateEveryWay(List<string> failures, MontgomeryKernelCase kernel, MontgomeryContext context, BigInteger n, Random random)
 	{
-		SkipUnlessSupported(kernel);
+		int limbs = context.LimbCount;
+		int[] lengths = limbs <= 32 ? [1, 2, (limbs + 1) / 2, limbs] : [1, 4];
 
+		foreach (int length in lengths.Distinct())
+		{
+			BigInteger a = RandomBelow(random, 2 * n);
+
+			foreach (BigInteger exponent in (ReadOnlySpan<BigInteger>)[BigInteger.Zero, BigInteger.One, 2, (BigInteger.One << 64 * length) - 1, RandomBits(random, 64 * length)])
+			{
+				ExponentiateAndCheck(failures, kernel, context, n, a, exponent, length);
+			}
+		}
+	}
+
+	// a^exponent, with the exponent in length limbs, into another element and in place.
+	private static void ExponentiateAndCheck(List<string> failures, MontgomeryKernelCase kernel, MontgomeryContext context, BigInteger n, BigInteger a, BigInteger exponent, int length)
+	{
+		BigInteger r = BigInteger.One << kernel.DigitBits * context.DigitCount;
+		BigInteger rInverse = ModInverse(r % n, n);
+		ulong[] element = ToLimbs(a, context.DigitCount, kernel.DigitBits);
+		ulong[] result = new ulong[context.DigitCount];
+		BigInteger expected = BigInteger.ModPow(a * rInverse % n, exponent, n) * r % n;
+		context.Exponentiate(element, ToLimbs(exponent, length), result);
+		Check(failures, kernel, result, expected, n, $"{n:X}: {a:X}^{exponent:X}");
+		context.Exponentiate(element, ToLimbs(exponent, length), element);
+		Check(failures, kernel, element, expected, n, $"{n:X}: {a:X}^{exponent:X} in place");
+	}
+
+	private static List<string> ExponentiateVariableTime(MontgomeryKernelCase kernel, bool full)
+	{
 		List<string> failures = [];
 		Random random = new(6);
 
-		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random))
+		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random, full, MaxExponentiationLimbs))
 		{
 			using (context)
 			{
@@ -383,20 +494,15 @@ public class MontgomeryContextTest
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
-	// A context that takes another modulus works as a new one of it would, bit for bit, through moduli of every shape and back to the first.
-	[Test]
-	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
-	public async Task ResetMatchesANewContext(MontgomeryKernelCase kernel)
+	private static List<string> Reset(MontgomeryKernelCase kernel, bool full)
 	{
-		SkipUnlessSupported(kernel);
-
 		List<string> failures = [];
 		Random random = new(8);
 
-		foreach (int limbs in LimbCounts.Where(kernel.Fits))
+		foreach (int limbs in LimbCountsOf(kernel, full).Where(limbs => full || limbs <= MaxExponentiationLimbs))
 		{
 			BigInteger[] moduli = [.. Moduli(random, limbs)];
 			using MontgomeryContext context = kernel.Create(ToLimbs(moduli[0], limbs));
@@ -414,27 +520,7 @@ public class MontgomeryContextTest
 			}
 		}
 
-		await Assert.That(failures).IsEmpty();
-	}
-
-	// Dispose erases what a context holds of its modulus, which may be a secret prime: the data and −n⁻¹ mod 2^DigitBits, whose bits are those of the low bits of the modulus.
-	[Test]
-	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
-	public async Task DisposeErasesWhatTheModulusGives(MontgomeryKernelCase kernel)
-	{
-		SkipUnlessSupported(kernel);
-
-		List<string> failures = [];
-		Random random = new(9);
-
-		foreach (int limbs in LimbCounts.Where(kernel.Fits).Take(3))
-		{
-			MontgomeryContext context = kernel.Create(ToLimbs(RandomBits(random, 64 * limbs) | BigInteger.One << 64 * limbs - 1 | 1, limbs));
-			context.Dispose();
-			failures.AddRange(NonZeroWords(context).Select(field => $"{limbs} limbs: {field}"));
-		}
-
-		await Assert.That(failures).IsEmpty();
+		return failures;
 	}
 
 	// The modulus, its constants, and the results of each operation on the same values.
@@ -474,12 +560,18 @@ public class MontgomeryContextTest
 		return results[0].AsSpan().SequenceEqual(results[1]);
 	}
 
-	// Contexts for the moduli of RsaArithmeticTestUtils.Moduli at every limb count of LimbCounts that the kernel holds.
-	private static IEnumerable<(MontgomeryContext Context, BigInteger Modulus)> Contexts(MontgomeryKernelCase kernel, Random random)
+	// The limb counts of the kernel's LimbCountsToTest, or in full every one of LimbCounts that it holds.
+	private static IEnumerable<int> LimbCountsOf(MontgomeryKernelCase kernel, bool full)
 	{
-		foreach (int limbs in LimbCounts.Where(kernel.Fits))
+		return full ? LimbCounts.Where(kernel.Fits) : kernel.LimbCountsToTest;
+	}
+
+	// Contexts for the moduli of ModuliToTest at the limb counts of LimbCountsOf up to maxLimbs, or in full for every modulus of Moduli at those of any length.
+	private static IEnumerable<(MontgomeryContext Context, BigInteger Modulus)> Contexts(MontgomeryKernelCase kernel, Random random, bool full, int maxLimbs = int.MaxValue)
+	{
+		foreach (int limbs in LimbCountsOf(kernel, full).Where(limbs => full || limbs <= maxLimbs))
 		{
-			foreach (BigInteger n in Moduli(random, limbs))
+			foreach (BigInteger n in full ? Moduli(random, limbs) : ModuliToTest(random, limbs))
 			{
 				yield return (kernel.Create(ToLimbs(n, limbs)), n);
 			}

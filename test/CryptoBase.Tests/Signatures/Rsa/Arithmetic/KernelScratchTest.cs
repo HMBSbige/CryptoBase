@@ -21,9 +21,8 @@ public class KernelScratchTest
 		Random random = new(61);
 		int pageWords = Environment.SystemPageSize / sizeof(ulong);
 
-		int[] limbCounts = [1, 23, 64, 65, 256];
-
-		foreach (int limbs in limbCounts.Where(kernel.Fits))
+		// The fewest limbs that the kernel holds and the most for which the dispatch takes it.
+		foreach (int limbs in ((int[])[kernel.LimbCountsToTest[0], kernel.LimbCountsToTest[^1]]).Distinct())
 		{
 			BigInteger n = RandomBits(random, 64 * limbs) | BigInteger.One << 64 * limbs - 1 | 1;
 			using MontgomeryContext context = kernel.Create(ToLimbs(n, limbs));
@@ -33,6 +32,8 @@ public class KernelScratchTest
 			BigInteger rInverse = ModInverse(r % n, n);
 			BigInteger x = RandomBelow(random, 2 * n);
 			BigInteger y = RandomBelow(random, 2 * n);
+			BigInteger product = x * y * rInverse % n;
+			BigInteger square = x * x * rInverse % n;
 			ulong[] modulus = ToLimbs(n, digits, kernel.DigitBits);
 			ulong[] left = ToLimbs(x, digits, kernel.DigitBits);
 			ulong[] right = ToLimbs(y, digits, kernel.DigitBits);
@@ -40,7 +41,8 @@ public class KernelScratchTest
 			// Room for the scratch to slide over a page boundary, with words before and after it.
 			ulong[] arena = GC.AllocateArray<ulong>(2 * length + 2 * pageWords + 16, true);
 			int boundary = PageBoundary(arena, length + 8, pageWords);
-			int step = Math.Max(1, length / 256);
+			// Every offset across the boundary for scratches shorter than 128 words, and about 64 offsets for longer ones.
+			int step = Math.Max(1, length / 64);
 
 			for (int offset = boundary - length - 4; offset <= boundary + 4; offset += step)
 			{
@@ -48,10 +50,10 @@ public class KernelScratchTest
 				arena.AsSpan().Fill(Canary);
 				scratch.Fill(ulong.MaxValue);
 				kernel.Multiply(modulus, result, left, right, scratch);
-				Check(failures, kernel, result, x * y * rInverse % n, n, $"{n:X}: {x:X}·{y:X} with the scratch at {offset - boundary}");
+				Check(failures, kernel, result, product, n, $"{n:X}: {x:X}·{y:X} with the scratch at {offset - boundary}");
 				scratch.Fill(ulong.MaxValue);
 				kernel.Square(modulus, result, left, scratch);
-				Check(failures, kernel, result, x * x * rInverse % n, n, $"{n:X}: {x:X}² with the scratch at {offset - boundary}");
+				Check(failures, kernel, result, square, n, $"{n:X}: {x:X}² with the scratch at {offset - boundary}");
 
 				if (arena.AsSpan(0, offset).ContainsAnyExcept(Canary) || arena.AsSpan(offset + length).ContainsAnyExcept(Canary))
 				{

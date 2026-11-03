@@ -25,15 +25,16 @@ public class ModularInverseTest
 		await Assert.That(failures).IsEmpty();
 	}
 
+	// The fewest limbs, the RSA sizes of CommonLimbCounts, and the moduli of RSA-8192 and RSA-16384, the most.
 	[Test]
 	public async Task InverseMatchesReference()
 	{
 		List<string> failures = [];
 		Random random = new(31);
 
-		foreach (int limbs in LimbCounts)
+		foreach (int limbs in (int[])[1, 2, 3, .. CommonLimbCounts, 128, 256])
 		{
-			foreach (BigInteger m in Moduli(random, limbs))
+			foreach (BigInteger m in ModuliToTest(random, limbs))
 			{
 				foreach (BigInteger value in (ReadOnlySpan<BigInteger>)[BigInteger.One, m - 1, 2, RandomBelow(random, m)])
 				{

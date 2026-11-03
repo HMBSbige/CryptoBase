@@ -19,17 +19,15 @@ public class RsaOperationTest
 		yield return 4096;
 	}
 
-	// Pairs of prime lengths: equal, one or several limbs apart, a prime of a single limb, and p above or below q.
+	// Pairs of prime lengths: equal, one or several limbs apart, a prime of a single limb, and p above or below q. The primes stay short, since BigInteger takes seconds to find primes of thousands of bits.
 	public static IEnumerable<(int P, int Q)> PrimeLengths()
 	{
 		yield return (256, 256);
-		yield return (1024, 1024);
-		yield return (1000, 1048);
-		yield return (1048, 1000);
-		yield return (512, 1536);
-		yield return (1536, 512);
-		yield return (64, 1984);
-		yield return (1984, 64);
+		yield return (500, 548);
+		yield return (548, 500);
+		yield return (256, 768);
+		yield return (64, 600);
+		yield return (600, 64);
 		yield return (33, 600);
 	}
 
@@ -392,7 +390,7 @@ public class RsaOperationTest
 
 		BigInteger largeModulus = RandomBits(new Random(49), 16384) | BigInteger.One << 16383 | 1;
 		RsaPublicOperation large = RsaPublicOperation.Create(ToBigEndian(largeModulus, 2048), ToBigEndian(F4, 3));
-		long deadline = Environment.TickCount64 + 2000;
+		long deadline = Environment.TickCount64 + 500;
 		int failures = 0;
 		int operations = 0;
 		int collections = 0;

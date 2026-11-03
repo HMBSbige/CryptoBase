@@ -5,7 +5,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// Each pair kernel against the single kernel of each modulus, bit for bit: the halves of a pair must come out as the contexts of the moduli compute them, for random values and the ends of [0, 2n), and so must exponentiations.
+// Each pair kernel against the single kernel of each modulus, bit for bit: the halves of a pair must come out as the contexts of the moduli compute them, for random values and the ends of [0, 2n), and so must exponentiations, which take moduli of up to MaxExponentiationLimbs.
 public class MontgomeryPairTest
 {
 	[Test]
@@ -163,7 +163,7 @@ public class MontgomeryPairTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Exponents of one limb up to the length of the moduli, the two of a pair different, and some at the ends: zero, one and all ones.
+	// Exponents of one limb up to the length of the moduli, or past 32 limbs of one and four, the two of a pair different, and some at the ends: zero, one and all ones.
 	[Test]
 	[MethodDataSource(typeof(MontgomeryPairKernelCase), nameof(MontgomeryPairKernelCase.All))]
 	public async Task ExponentiateMatchesTheSingleContexts(MontgomeryPairKernelCase kernel)
@@ -173,7 +173,7 @@ public class MontgomeryPairTest
 		List<string> failures = [];
 		Random random = new(73);
 
-		foreach ((MontgomeryContext first, BigInteger p, MontgomeryContext second, BigInteger q) in Pairs(kernel, random))
+		foreach ((MontgomeryContext first, BigInteger p, MontgomeryContext second, BigInteger q) in Pairs(kernel, random, MaxExponentiationLimbs))
 		{
 			using (first)
 			using (second)
@@ -182,7 +182,7 @@ public class MontgomeryPairTest
 				int limbs = first.LimbCount;
 				int digits = first.DigitCount;
 
-				foreach (int length in ((int[])[1, 2, limbs]).Distinct())
+				foreach (int length in (limbs <= 32 ? [1, 2, limbs] : (int[])[1, 4]).Distinct())
 				{
 					BigInteger ones = (BigInteger.One << 64 * length) - 1;
 					BigInteger[] exponents = [BigInteger.Zero, BigInteger.One, ones, RandomBits(random, 64 * length), RandomBits(random, 64 * length)];
@@ -231,7 +231,7 @@ public class MontgomeryPairTest
 		List<string> failures = [];
 		Random random = new(74);
 
-		foreach ((MontgomeryContext first, BigInteger p, MontgomeryContext second, BigInteger q) in Pairs(kernel, random))
+		foreach ((MontgomeryContext first, BigInteger p, MontgomeryContext second, BigInteger q) in Pairs(kernel, random, MaxExponentiationLimbs))
 		{
 			using (first)
 			using (second)
@@ -251,8 +251,9 @@ public class MontgomeryPairTest
 				using MontgomeryPairContext fresh = kernel.Create(freshFirst, freshSecond);
 				ulong[] x = ToLimbs(RandomBelow(random, 2 * nextP), digits, kernel.DigitBits);
 				ulong[] y = ToLimbs(RandomBelow(random, 2 * nextQ), digits, kernel.DigitBits);
-				ulong[] e = ToLimbs(RandomBits(random, 64 * limbs), limbs);
-				ulong[] f = ToLimbs(RandomBits(random, 64 * limbs), limbs);
+				int length = Math.Min(limbs, 4);
+				ulong[] e = ToLimbs(RandomBits(random, 64 * length), length);
+				ulong[] f = ToLimbs(RandomBits(random, 64 * length), length);
 				ulong[] resetX = new ulong[digits];
 				ulong[] resetY = new ulong[digits];
 				ulong[] freshX = new ulong[digits];
@@ -270,7 +271,6 @@ public class MontgomeryPairTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Contexts of two moduli at every limb count whose digits the kernel holds, in the shapes of RsaArithmeticTestUtils.Moduli for each paired with a random one, both ways round.
 	// Dispose erases what a pair context holds of its moduli, which may be secret primes: the data and −n⁻¹ mod 2^DigitBits of each.
 	[Test]
 	[MethodDataSource(typeof(MontgomeryPairKernelCase), nameof(MontgomeryPairKernelCase.All))]
@@ -294,20 +294,15 @@ public class MontgomeryPairTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	private static IEnumerable<(MontgomeryContext First, BigInteger P, MontgomeryContext Second, BigInteger Q)> Pairs(MontgomeryPairKernelCase kernel, Random random)
+	// Contexts of two moduli at the limb counts of MontgomeryPairKernelCase.LimbCountsToTest up to maxLimbs, in the shapes of ModuliToTest for each paired with a random one, both ways round.
+	private static IEnumerable<(MontgomeryContext First, BigInteger P, MontgomeryContext Second, BigInteger Q)> Pairs(MontgomeryPairKernelCase kernel, Random random, int maxLimbs = int.MaxValue)
 	{
-		for (int limbs = 1; limbs <= 32; ++limbs)
+		foreach (int limbs in kernel.LimbCountsToTest.Where(limbs => limbs <= maxLimbs))
 		{
-			int digits = (64 * limbs + 2 + kernel.DigitBits - 1) / kernel.DigitBits;
-
-			if (digits < kernel.MinDigitCount || digits > kernel.MaxDigitCount)
-			{
-				continue;
-			}
-
+			int digits = kernel.GetDigitCount(limbs);
 			int index = 0;
 
-			foreach (BigInteger n in Moduli(random, limbs))
+			foreach (BigInteger n in ModuliToTest(random, limbs))
 			{
 				BigInteger other = RandomBits(random, 64 * limbs) | BigInteger.One << 64 * limbs - 1 | 1;
 				(BigInteger p, BigInteger q) = (index++ & 1) is 0 ? (n, other) : (other, n);

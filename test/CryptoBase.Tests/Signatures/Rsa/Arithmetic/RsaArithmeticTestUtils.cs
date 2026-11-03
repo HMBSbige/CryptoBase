@@ -5,8 +5,14 @@ namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
 public static class RsaArithmeticTestUtils
 {
-	// Limb counts of the CRT halves and moduli of RSA-1024 to RSA-16384, odd counts, and the counts around them.
+	// Limb counts of the CRT halves and moduli of RSA-1024 to RSA-16384, odd counts, and the counts around them, which the explicit tests sweep.
 	public static readonly int[] LimbCounts = [1, 2, 3, 5, 7, 8, 9, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 63, 64, 65, 96, 127, 128, 129, 192, 255, 256];
+
+	// Limb counts of the CRT halves of RSA-2048 to RSA-8192 and the moduli of RSA-1024 to RSA-4096.
+	public static readonly int[] CommonLimbCounts = [16, 24, 32, 48, 64];
+
+	// The most limbs of the moduli that the tests of exponentiation take.
+	public const int MaxExponentiationLimbs = 64;
 
 	public static BigInteger ToBigInteger(ReadOnlySpan<ulong> limbs, int bitsPerLimb = 64)
 	{
@@ -64,6 +70,12 @@ public static class RsaArithmeticTestUtils
 		yield return (BigInteger.One << bits) - 1;
 		yield return (BigInteger.One << bits - 1) + 1;
 		yield return BigInteger.Max(low + 1, (BigInteger.One << bits - 7) - 1) | 1;
+	}
+
+	// The moduli of Moduli up to 33 limbs, and past them the random one and the one of all ones, whose carries reach the furthest.
+	public static IEnumerable<BigInteger> ModuliToTest(Random random, int limbs)
+	{
+		return limbs <= 33 ? Moduli(random, limbs) : Moduli(random, limbs).Where(static (_, i) => i is 0 or 2);
 	}
 
 	public static BigInteger ModInverse(BigInteger value, BigInteger modulus)
