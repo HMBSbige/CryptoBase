@@ -142,13 +142,11 @@ internal static class RsaPadding
 		return h.SequenceEqual(expected);
 	}
 
-	// destination = Hash(0x00 × 8 ‖ mHash ‖ salt), the hash of M' (RFC 8017, Sec. 9.1.1, step 5).
+	// destination = Hash(0x00 × 8 ‖ mHash ‖ salt), the hash of M' (RFC 8017, Sec. 9.1.1, step 5), for a salt no longer than the hash.
 	[SkipLocalsInit]
 	private static void HashPrefixed<THash>(ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> salt, Span<byte> destination) where THash : unmanaged, IHashCore<THash>
 	{
-		const int MaxStackLength = 8 + 2 * MaxHashLength;
-		int length = 8 + mHash.Length + salt.Length;
-		Span<byte> prefixed = length <= MaxStackLength ? stackalloc byte[MaxStackLength].Slice(0, length) : new byte[length];
+		Span<byte> prefixed = stackalloc byte[8 + 2 * MaxHashLength].Slice(0, 8 + mHash.Length + salt.Length);
 
 		prefixed.Slice(0, 8).Clear();
 		mHash.CopyTo(prefixed.Slice(8));
