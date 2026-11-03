@@ -22,6 +22,7 @@ public class RsaBenchmark
 	private readonly byte[] _message = RandomNumberGenerator.GetBytes(32);
 	private byte[] _destination = [];
 	private byte[] _signature = [];
+	private byte[] _subjectPublicKeyInfo = [];
 	private HashAlgorithmName _bclHash;
 	private RSASignaturePadding _bclPadding = RSASignaturePadding.Pkcs1;
 	private RsaKey _cryptoBase = null!;
@@ -40,7 +41,7 @@ public class RsaBenchmark
 	{
 		_bcl = RSA.Create(ModulusBits);
 		byte[] pkcs8PrivateKey = _bcl.ExportPkcs8PrivateKey();
-		byte[] subjectPublicKeyInfo = _bcl.ExportSubjectPublicKeyInfo();
+		_subjectPublicKeyInfo = _bcl.ExportSubjectPublicKeyInfo();
 		_cryptoBase = RsaKey.ImportPkcs8PrivateKey(pkcs8PrivateKey);
 		_destination = new byte[_cryptoBase.GetMaxSignatureLength(Algorithm)];
 
@@ -58,10 +59,10 @@ public class RsaBenchmark
 		_bouncyCastleSigner = CreateBouncyCastleSigner();
 		_bouncyCastleSigner.Init(true, PrivateKeyFactory.CreateKey(pkcs8PrivateKey));
 		_bouncyCastleVerifier = CreateBouncyCastleSigner();
-		_bouncyCastleVerifier.Init(false, PublicKeyFactory.CreateKey(subjectPublicKeyInfo));
+		_bouncyCastleVerifier.Init(false, PublicKeyFactory.CreateKey(_subjectPublicKeyInfo));
 
 		Func<byte[]>[] signers = [() => _destination.AsSpan(0, BclSign()).ToArray(), BouncyCastleSign, () => _destination.AsSpan(0, CryptoBaseSign()).ToArray()];
-		Func<bool>[] verifiers = [BclVerify, BouncyCastleVerify, CryptoBaseVerify];
+		Func<bool>[] verifiers = [BclVerify, BouncyCastleVerify, CryptoBaseVerify, BclImportAndVerify, BouncyCastleImportAndVerify, CryptoBaseImportAndVerify];
 
 		foreach (Func<byte[]> sign in signers)
 		{
@@ -126,6 +127,33 @@ public class RsaBenchmark
 	{
 		_bouncyCastleVerifier.BlockUpdate(_message);
 		return _bouncyCastleVerifier.VerifySignature(_signature);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("ImportSubjectPublicKeyInfo+Verify")]
+	public bool CryptoBaseImportAndVerify()
+	{
+		using RsaKey key = RsaKey.ImportSubjectPublicKeyInfo(_subjectPublicKeyInfo);
+		return key.Verify(Algorithm, _message, _signature);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("ImportSubjectPublicKeyInfo+Verify")]
+	public bool BclImportAndVerify()
+	{
+		using RSA key = RSA.Create();
+		key.ImportSubjectPublicKeyInfo(_subjectPublicKeyInfo, out _);
+		return key.VerifyData(_message, _signature, _bclHash, _bclPadding);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("ImportSubjectPublicKeyInfo+Verify")]
+	public bool BouncyCastleImportAndVerify()
+	{
+		ISigner verifier = CreateBouncyCastleSigner();
+		verifier.Init(false, PublicKeyFactory.CreateKey(_subjectPublicKeyInfo));
+		verifier.BlockUpdate(_message);
+		return verifier.VerifySignature(_signature);
 	}
 
 	private ISigner CreateBouncyCastleSigner()

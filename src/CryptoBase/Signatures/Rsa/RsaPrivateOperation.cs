@@ -22,9 +22,9 @@ internal sealed class RsaPrivateOperation : IDisposable
 	{
 		PublicKey = publicKey;
 		_publicExponent = publicExponent;
-		_modulus = MontgomeryKernelDispatch.Create(modulus);
+		_modulus = MontgomeryKernelDispatch.Create(modulus, secret: false);
 		_primes = MontgomeryKernelDispatch.CreatePair(p, q, out _prime1, out _prime2);
-		_secrets = GC.AllocateArray<ulong>(d.Length + 2 * p.Length + q.Length + ComponentCount, true);
+		_secrets = GC.AllocateUninitializedArray<ulong>(d.Length + 2 * p.Length + q.Length + ComponentCount, true);
 		d.CopyTo(PrivateExponent);
 		dP.CopyTo(Exponent1);
 		dQ.CopyTo(Exponent2);

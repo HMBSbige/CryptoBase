@@ -82,15 +82,15 @@ internal abstract class MontgomeryContext : IDisposable
 
 internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKernel : IMontgomeryKernel
 {
-	// The limbs of n, its digits, the digits that the kernel takes, R² mod n, R mod n and 2n, each below n but the last. Pinned only so that the GC leaves no copy of a secret modulus for Dispose to miss: the kernels pin what they reach through pointers themselves.
+	// The limbs of n, its digits, the digits that the kernel takes, R² mod n, R mod n and 2n, each below n but the last, all written by Reset. Pinned only for a secret modulus, so that the GC leaves no copy for Dispose to miss: the kernels pin what they reach through pointers themselves.
 	private readonly ulong[] _data;
 	private ulong _negativeInverse;
 
-	internal MontgomeryContext(ReadOnlySpan<ulong> modulus) : base(modulus.Length, GetDigitCount(modulus.Length))
+	internal MontgomeryContext(ReadOnlySpan<ulong> modulus, bool secret = true) : base(modulus.Length, GetDigitCount(modulus.Length))
 	{
 		Debug.Assert(TKernel.IsSupported && DigitCount <= TKernel.MaxDigitCount);
 
-		_data = GC.AllocateArray<ulong>(LimbCount + 5 * DigitCount, true);
+		_data = GC.AllocateUninitializedArray<ulong>(LimbCount + 5 * DigitCount, secret);
 		Reset(modulus);
 	}
 

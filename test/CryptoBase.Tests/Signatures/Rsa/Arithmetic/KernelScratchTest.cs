@@ -39,7 +39,7 @@ public class KernelScratchTest
 			ulong[] right = ToLimbs(y, digits, kernel.DigitBits);
 			ulong[] result = new ulong[digits];
 			// Room for the scratch to slide over a page boundary, with words before and after it.
-			ulong[] arena = GC.AllocateArray<ulong>(2 * length + 2 * pageWords + 16, true);
+			ulong[] arena = GC.AllocateUninitializedArray<ulong>(2 * length + 2 * pageWords + 16, true);
 			int boundary = PageBoundary(arena, length + 8, pageWords);
 			// Every offset across the boundary for scratches shorter than 128 words, and about 64 offsets for longer ones.
 			int step = Math.Max(1, length / 64);
@@ -150,7 +150,7 @@ public class KernelScratchTest
 			ulong[] left = Interleave(ToLimbs(x, digits, kernel.DigitBits), ToLimbs(y, digits, kernel.DigitBits));
 			ulong[] right = Interleave(ToLimbs(u, digits, kernel.DigitBits), ToLimbs(v, digits, kernel.DigitBits));
 			ulong[] result = new ulong[2 * digits];
-			ulong[] arena = GC.AllocateArray<ulong>(2 * length + 2 * pageWords + 16, true);
+			ulong[] arena = GC.AllocateUninitializedArray<ulong>(2 * length + 2 * pageWords + 16, true);
 			int boundary = PageBoundary(arena, length + 8, pageWords);
 			int step = Math.Max(1, length / 256);
 

@@ -9,9 +9,10 @@ internal static partial class MontgomeryKernelDispatch
 	internal const int MinAdvSimdPairLimbs = 15;
 	internal const int MaxAdvSimdPairLimbs = 27;
 
-	internal static MontgomeryContext Create(ReadOnlySpan<ulong> modulus)
+	// A public modulus, such as n, needs no pinned context.
+	internal static MontgomeryContext Create(ReadOnlySpan<ulong> modulus, bool secret = true)
 	{
-		if (CreateX86(modulus) is { } vector)
+		if (CreateX86(modulus, secret) is { } vector)
 		{
 			return vector;
 		}
@@ -20,40 +21,40 @@ internal static partial class MontgomeryKernelDispatch
 
 		if (MontgomeryKernelAdvSimd<Radix28>.IsSupported)
 		{
-			return CreateArm64(modulus);
+			return CreateArm64(modulus, secret);
 		}
 
 		if (MontgomeryKernel64<Radix57>.IsSupported)
 		{
 			if (Fits<MontgomeryKernel64<Radix57>>(limbs))
 			{
-				return new MontgomeryContext<MontgomeryKernel64<Radix57>>(modulus);
+				return new MontgomeryContext<MontgomeryKernel64<Radix57>>(modulus, secret);
 			}
 
 			if (Fits<MontgomeryKernel64<Radix56>>(limbs))
 			{
-				return new MontgomeryContext<MontgomeryKernel64<Radix56>>(modulus);
+				return new MontgomeryContext<MontgomeryKernel64<Radix56>>(modulus, secret);
 			}
 
 			if (Fits<MontgomeryKernel64<Radix55>>(limbs))
 			{
-				return new MontgomeryContext<MontgomeryKernel64<Radix55>>(modulus);
+				return new MontgomeryContext<MontgomeryKernel64<Radix55>>(modulus, secret);
 			}
 
-			return new MontgomeryContext<MontgomeryKernel64<Radix54>>(modulus);
+			return new MontgomeryContext<MontgomeryKernel64<Radix54>>(modulus, secret);
 		}
 
 		if (Fits<MontgomeryKernel32<Radix29>>(limbs))
 		{
-			return new MontgomeryContext<MontgomeryKernel32<Radix29>>(modulus);
+			return new MontgomeryContext<MontgomeryKernel32<Radix29>>(modulus, secret);
 		}
 
 		if (Fits<MontgomeryKernel32<Radix28>>(limbs))
 		{
-			return new MontgomeryContext<MontgomeryKernel32<Radix28>>(modulus);
+			return new MontgomeryContext<MontgomeryKernel32<Radix28>>(modulus, secret);
 		}
 
-		return new MontgomeryContext<MontgomeryKernel32<Radix27>>(modulus);
+		return new MontgomeryContext<MontgomeryKernel32<Radix27>>(modulus, secret);
 	}
 
 	// The contexts of two moduli that exponentiate side by side, and the pair context that exponentiates them at once where the platform has a pair kernel for them that is faster than one after the other, which takes moduli of one limb count; null otherwise, with the contexts that Create makes. Only the limb counts decide.
@@ -75,26 +76,26 @@ internal static partial class MontgomeryKernelDispatch
 		return limbs == second.Length ? CreatePairX86(firstContext, secondContext) : null;
 	}
 
-	private static MontgomeryContext CreateArm64(ReadOnlySpan<ulong> modulus)
+	private static MontgomeryContext CreateArm64(ReadOnlySpan<ulong> modulus, bool secret)
 	{
 		int limbs = modulus.Length;
 
 		if (limbs < AdvSimdLimbs)
 		{
-			return new MontgomeryContext<MontgomeryKernel64ColumnPairs<Radix57>>(modulus);
+			return new MontgomeryContext<MontgomeryKernel64ColumnPairs<Radix57>>(modulus, secret);
 		}
 
 		if (Fits<MontgomeryKernelAdvSimd<Radix28>>(limbs))
 		{
-			return new MontgomeryContext<MontgomeryKernelAdvSimd<Radix28>>(modulus);
+			return new MontgomeryContext<MontgomeryKernelAdvSimd<Radix28>>(modulus, secret);
 		}
 
 		if (Fits<MontgomeryKernelAdvSimd<Radix27>>(limbs))
 		{
-			return new MontgomeryContext<MontgomeryKernelAdvSimd<Radix27>>(modulus);
+			return new MontgomeryContext<MontgomeryKernelAdvSimd<Radix27>>(modulus, secret);
 		}
 
-		return new MontgomeryContext<MontgomeryKernelAdvSimd<Radix26>>(modulus);
+		return new MontgomeryContext<MontgomeryKernelAdvSimd<Radix26>>(modulus, secret);
 	}
 
 	private static bool Fits<TKernel>(int limbs) where TKernel : IMontgomeryKernel

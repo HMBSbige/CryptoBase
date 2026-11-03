@@ -75,7 +75,7 @@ internal sealed class RsaPublicOperation
 			value = value << 8 | b;
 		}
 
-		return new RsaPublicOperation(MontgomeryKernelDispatch.Create(limbs), value, modulusBits, exponent.Length);
+		return new RsaPublicOperation(MontgomeryKernelDispatch.Create(limbs, secret: false), value, modulusBits, exponent.Length);
 	}
 
 	// destination is exactly ModulusLength bytes.

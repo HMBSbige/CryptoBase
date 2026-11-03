@@ -27,7 +27,7 @@ internal sealed class MontgomeryPairContext<TKernel> : MontgomeryPairContext whe
 		Debug.Assert(TKernel.IsSupported && first.DigitCount >= TKernel.MinDigitCount && first.DigitCount <= TKernel.MaxDigitCount);
 
 		_digits = first.DigitCount;
-		_data = GC.AllocateArray<ulong>(4 * _digits, true);
+		_data = GC.AllocateUninitializedArray<ulong>(4 * _digits, true);
 		Reset(first, second);
 	}
 
