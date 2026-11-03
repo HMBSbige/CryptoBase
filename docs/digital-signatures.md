@@ -11,6 +11,7 @@
 | `EcdsaP384` | `CryptoBase.Signatures.Ecdsa` | 97 bytes | 48 bytes | at most 104 bytes |
 | `EcdsaP521` | `CryptoBase.Signatures.Ecdsa` | 133 bytes | 66 bytes | at most 139 bytes |
 | `Ed25519` | `CryptoBase.Signatures.EdDsa` | 32 bytes | 32 bytes | 64 bytes |
+| `RsaKey` | `CryptoBase.Signatures.Rsa` | modulus of 512 to 16384 bits | two primes | as long as the modulus |
 
 ## ML-DSA
 
@@ -176,6 +177,78 @@ using Ed25519 fromSpki = Ed25519.ImportSubjectPublicKeyInfo(spki);
 using Ed25519 fromPkcs8 = Ed25519.ImportPkcs8PrivateKey(pkcs8);
 ```
 
+## RSA
+
+```csharp
+using CryptoBase.Abstractions.Signatures;
+using CryptoBase.Signatures.Rsa;
+
+// The modulus has a multiple of 8 bits from 2048 to 16384; the public exponent defaults to 65537.
+using RsaKey signer = RsaKey.GenerateKey(3072);
+
+// The algorithm picks the padding and the hash: RsaPkcs1Sha256, RsaPkcs1Sha384, RsaPkcs1Sha512,
+// RsaPssSha256, RsaPssSha384 or RsaPssSha512. RSASSA-PSS uses MGF1 with the same hash and a salt as long as the hash.
+// A signature is as long as the modulus, the length that GetMaxSignatureLength gives.
+byte[] message = "message"u8.ToArray();
+byte[] signature = new byte[signer.GetMaxSignatureLength(SignatureAlgorithm.RsaPssSha256)];
+signer.Sign(SignatureAlgorithm.RsaPssSha256, message, signature);
+
+// One instance may sign and verify on several threads at once.
+byte[] spki = new byte[signer.SubjectPublicKeyInfoLength];
+signer.ExportSubjectPublicKeyInfo(spki);
+using RsaKey verifier = RsaKey.ImportSubjectPublicKeyInfo(spki);
+bool valid = verifier.Verify(SignatureAlgorithm.RsaPssSha256, message, signature); // true
+
+// RSASSA-PKCS1-v1_5 verification also accepts a DigestInfo without the NULL parameters; Sign writes them.
+// An algorithm that does not fit the modulus is not supported: RsaPssSha512 needs at least 1034 bits.
+bool supported = verifier.Supports(SignatureAlgorithm.RsaPssSha512); // true for 3072 bits
+```
+
+### Keys
+
+```csharp
+using System.Security.Cryptography;
+
+// The modulus has 512 to 16384 bits, and the public exponent at most 33 bits; other keys throw NotSupportedException.
+int modulusBits = key.ModulusBits;
+
+// PKCS #1 RSAPublicKey and RSAPrivateKey (RFC 8017), the contents of RSA PUBLIC KEY and RSA PRIVATE KEY blocks.
+// The private key has two primes; a multi-prime key throws NotSupportedException.
+byte[] rsaPublicKey = new byte[key.RsaPublicKeyLength];
+key.ExportRsaPublicKey(rsaPublicKey);
+byte[] rsaPrivateKey = new byte[key.RsaPrivateKeyLength];
+key.ExportRsaPrivateKey(rsaPrivateKey);
+
+using RsaKey fromRsaPublicKey = RsaKey.ImportRsaPublicKey(rsaPublicKey);
+using RsaKey fromRsaPrivateKey = RsaKey.ImportRsaPrivateKey(rsaPrivateKey);
+string rsaPrivatePem = PemEncoding.WriteString("RSA PRIVATE KEY", rsaPrivateKey);
+
+// SubjectPublicKeyInfo and PKCS #8 with rsaEncryption and NULL parameters, or with id-RSASSA-PSS (below).
+// The PKCS #8 import also accepts the public key beside the private key, but throws if it does not match.
+byte[] spki = new byte[key.SubjectPublicKeyInfoLength];
+key.ExportSubjectPublicKeyInfo(spki);
+byte[] pkcs8 = new byte[key.Pkcs8PrivateKeyLength];
+key.ExportPkcs8PrivateKey(pkcs8);
+
+using RsaKey fromSpki = RsaKey.ImportSubjectPublicKeyInfo(spki);
+using RsaKey fromPkcs8 = RsaKey.ImportPkcs8PrivateKey(pkcs8);
+```
+
+### RSASSA-PSS keys
+
+```csharp
+// A SubjectPublicKeyInfo or PKCS #8 key with id-RSASSA-PSS (RFC 4055) supports RSASSA-PSS alone:
+// - without parameters: RsaPssSha256, RsaPssSha384 and RsaPssSha512;
+// - with RSASSA-PSS-params: the algorithm of their hash, which must be SHA-256, SHA-384 or SHA-512, if MGF1 has the same hash
+//   and their saltLength is at most the length of the hash. Parameters that allow none, such as SHA-1, throw NotSupportedException.
+using RsaKey pssKey = RsaKey.ImportSubjectPublicKeyInfo(pssSpki);
+bool pss = pssKey.Supports(SignatureAlgorithm.RsaPssSha256); // true if the parameters are absent or name SHA-256
+bool pkcs1 = pssKey.Supports(SignatureAlgorithm.RsaPkcs1Sha256); // false
+
+// ExportSubjectPublicKeyInfo and ExportPkcs8PrivateKey write the AlgorithmIdentifier of the import unchanged.
+// RSAPublicKey and RSAPrivateKey hold no AlgorithmIdentifier: a key imported from them, or generated, has rsaEncryption.
+```
+
 ## Keys of any algorithm
 
 ```csharp
@@ -183,16 +256,18 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using System.Security.Cryptography.X509Certificates;
 
-// SignatureKey imports as the type that the encoding names: EcdsaP256, EcdsaP384, EcdsaP521, Ed25519, MLDsa44, MLDsa65 or MLDsa87.
-// Another algorithm or curve throws NotSupportedException; a malformed encoding or an invalid key throws ArgumentException.
+// SignatureKey imports as the type that the encoding names: EcdsaP256, EcdsaP384, EcdsaP521, Ed25519, MLDsa44, MLDsa65, MLDsa87,
+// or RsaKey for rsaEncryption and id-RSASSA-PSS. Another algorithm or curve throws NotSupportedException, as do RSA keys and
+// RSASSA-PSS parameters that RsaKey does not support; a malformed encoding or an invalid key throws ArgumentException.
 using ISignatureKey fromSpki = SignatureKey.ImportSubjectPublicKeyInfo(spki);
 using ISignatureKey fromPkcs8 = SignatureKey.ImportPkcs8PrivateKey(pkcs8);
 
-// The text must hold exactly one PUBLIC KEY, PRIVATE KEY or EC PRIVATE KEY block; other blocks, such as EC PARAMETERS, are ignored.
-// EC PRIVATE KEY must name its curve. Encrypted keys are not supported.
+// The text must hold exactly one PUBLIC KEY, PRIVATE KEY, RSA PUBLIC KEY, RSA PRIVATE KEY or EC PRIVATE KEY block;
+// other blocks, such as EC PARAMETERS, are ignored. EC PRIVATE KEY must name its curve. Encrypted keys are not supported.
 using ISignatureKey key = SignatureKey.ImportFromPem(File.ReadAllText("key.pem"));
 
-// An ML-DSA type and Ed25519 support only the algorithm of their name; an ECDSA type supports EcdsaSha256, EcdsaSha384 and EcdsaSha512.
+// An ML-DSA type and Ed25519 support only the algorithm of their name; an ECDSA type supports EcdsaSha256, EcdsaSha384 and EcdsaSha512;
+// RsaKey supports the RSA algorithms that its modulus fits and its AlgorithmIdentifier allows.
 SignatureAlgorithm algorithm = SignatureAlgorithm.EcdsaSha256;
 
 if (key.HasPrivateKey && key.Supports(algorithm))
@@ -202,7 +277,7 @@ if (key.HasPrivateKey && key.Supports(algorithm))
     bool valid = key.Verify(algorithm, "content"u8, buffer.AsSpan(0, written)); // true
 }
 
-// The ECDSA private key of an X509Certificate2, or false if the platform does not export it.
+// The ECDSA or RSA private key of an X509Certificate2, or false if the platform does not export it.
 // On Windows and macOS, load a PKCS #12 file with X509KeyStorageFlags.Exportable.
 using X509Certificate2 certificate = X509CertificateLoader.LoadPkcs12FromFile("server.pfx", password, X509KeyStorageFlags.Exportable);
 

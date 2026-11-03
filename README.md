@@ -138,7 +138,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ---------- |:------:|
 | [ECDH](docs/key-agreement.md) | ✅ |
 | [ECDSA](docs/digital-signatures.md) | ✅ |
-| RSA | ⏳ |
+| [RSA](docs/digital-signatures.md) | ✅ |
 | [X25519](docs/key-agreement.md) | ✅ |
 | X448 | ⏳ |
 | [Ed25519](docs/digital-signatures.md) | ✅ |
