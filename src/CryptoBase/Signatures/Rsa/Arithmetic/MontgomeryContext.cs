@@ -433,26 +433,29 @@ internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKern
 		ConditionalSubtract(value, Twice, carry);
 	}
 
-	// Subtracts subtrahend from value + carry·R if that does not go below zero.
+	// Subtracts subtrahend from value + carry·R if that does not go below zero: a first pass finds the sign of the difference, and a second takes its digits or keeps those of value, so that no buffer holds them. Not inlined, as the loops of larger callers, such as that of the Miller-Rabin test, would spill its counters.
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void ConditionalSubtract(Span<ulong> value, ReadOnlySpan<ulong> subtrahend, ulong carry)
 	{
 		ulong mask = (1UL << TKernel.DigitBits) - 1;
 		int digits = DigitCount;
-		int bufferLength = digits;
-		using CryptoBuffer<ulong> buffer = CryptoBuffer<ulong>.ShouldUsePool(bufferLength) ? new CryptoBuffer<ulong>(bufferLength) : new CryptoBuffer<ulong>(stackalloc ulong[bufferLength]);
-		Span<ulong> difference = buffer.Span;
 		long borrow = 0;
 
 		for (int i = 0; i < digits; ++i)
 		{
-			long digit = (long)value[i] - (long)subtrahend[i] + borrow;
-			difference[i] = (ulong)digit & mask;
-			borrow = digit >> TKernel.DigitBits;
+			borrow = (long)value[i] - (long)subtrahend[i] + borrow >> TKernel.DigitBits;
 		}
 
 		// The difference is negative if borrow + carry is −1.
 		ulong keep = (ulong)(borrow + (long)carry >> 63);
-		Limbs.Select(keep, value, difference, value);
+		borrow = 0;
+
+		for (int i = 0; i < digits; ++i)
+		{
+			long digit = (long)value[i] - (long)subtrahend[i] + borrow;
+			borrow = digit >> TKernel.DigitBits;
+			value[i] = LimbArithmetic.Select(keep, value[i], (ulong)digit & mask);
+		}
 	}
 
 	// value = 2·value mod n for value below n, in limbs.
