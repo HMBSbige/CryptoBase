@@ -12,8 +12,8 @@ internal interface IDiffieHellmanKey<TSelf> where TSelf : struct, IDiffieHellman
 	// Ndh, the length of a shared secret.
 	static abstract int SharedSecretLength { get; }
 
-	// Selects the DeriveKeyPair of RFC 9180, Section 7.1.3: one expansion with the label "sk" where every PrivateKeyLength-byte string is a private key, and otherwise candidates, their first byte masked with PrivateKeyMask, until one is.
-	static abstract bool IsEveryPrivateKeyValid { get; }
+	// Whether the private key is a string that is clamped into a scalar. Selects the DeriveKeyPair of RFC 9180, Section 7.1.3: if set, one expansion with the label "sk", which fails if the string does not import; if not, candidates, their first byte masked with PrivateKeyMask, until one imports.
+	static abstract bool ClampsPrivateKey { get; }
 
 	static abstract byte PrivateKeyMask { get; }
 
@@ -40,6 +40,28 @@ internal interface IDiffieHellmanKey<TSelf> where TSelf : struct, IDiffieHellman
 
 	// Draws an ephemeral key pair and writes its public key and DH(ephemeral, publicKey). If drawing fails, neither buffer is written.
 	static abstract void GenerateEphemeral(in TSelf publicKey, Span<byte> ephemeralPublicKey, Span<byte> sharedSecret);
+
+	// GenerateEphemeral for AuthEncap: DH(ephemeral, publicKey) ‖ DH(sender, publicKey). If drawing fails, neither buffer is written. An implementation may share work between the two.
+	static virtual void GenerateEphemeral(in TSelf publicKey, in TSelf sender, Span<byte> ephemeralPublicKey, Span<byte> sharedSecrets)
+	{
+		int length = TSelf.SharedSecretLength;
+		TSelf.GenerateEphemeral(in publicKey, ephemeralPublicKey, sharedSecrets.Slice(0, length));
+		TSelf.DeriveSharedSecret(in sender, in publicKey, sharedSecrets.Slice(length));
+	}
+
+	// The DH of AuthDecap: DH(privateKey, peerPublicKey) ‖ DH(privateKey, publicKey), or false, with sharedSecrets unchanged, if peerPublicKey fails the checks of TryDeriveSharedSecret. privateKey is by reference so that TryDeriveSharedSecret is called through a writable location. An implementation may share work between the two.
+	static virtual bool TryDeriveSharedSecrets(ref TSelf privateKey, ReadOnlySpan<byte> peerPublicKey, in TSelf publicKey, Span<byte> sharedSecrets)
+	{
+		int length = TSelf.SharedSecretLength;
+
+		if (!privateKey.TryDeriveSharedSecret(peerPublicKey, sharedSecrets.Slice(0, length)))
+		{
+			return false;
+		}
+
+		TSelf.DeriveSharedSecret(in privateKey, in publicKey, sharedSecrets.Slice(length));
+		return true;
+	}
 
 	void Clear();
 }

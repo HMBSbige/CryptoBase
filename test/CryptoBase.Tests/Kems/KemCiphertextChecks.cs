@@ -56,6 +56,11 @@ internal sealed record KemCiphertextChecks((int Offset, int Length)[] CheckedRan
 			return DhKem<X25519>();
 		}
 
+		if (typeof(T) == typeof(DhKemX448))
+		{
+			return DhKem<X448>();
+		}
+
 		throw new NotSupportedException(typeof(T).Name);
 	}
 

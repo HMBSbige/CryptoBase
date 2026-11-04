@@ -13,6 +13,7 @@ namespace CryptoBase.Tests.Hpke;
 [GenerateGenericTest(typeof(DhKemP384))]
 [GenerateGenericTest(typeof(DhKemP521))]
 [GenerateGenericTest(typeof(DhKemX25519))]
+[GenerateGenericTest(typeof(DhKemX448))]
 [SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the keys and contexts are disposed.")]
 public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 {

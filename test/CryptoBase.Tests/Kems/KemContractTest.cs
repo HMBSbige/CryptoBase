@@ -20,6 +20,7 @@ namespace CryptoBase.Tests.Kems;
 [GenerateGenericTest(typeof(DhKemP384))]
 [GenerateGenericTest(typeof(DhKemP521))]
 [GenerateGenericTest(typeof(DhKemX25519))]
+[GenerateGenericTest(typeof(DhKemX448))]
 public class KemContractTest<T> where T : class, IKem<T>
 {
 	[Test]
@@ -238,13 +239,16 @@ public class KemContractTest<T> where T : class, IKem<T>
 		using T kem = T.GenerateKey();
 		(byte[] ciphertext, byte[] sharedSecret) = Encapsulate(kem);
 
-		foreach (int offset in (int[])[0, 1, T.CiphertextLength - T.SharedSecretLength, T.CiphertextLength - 1])
+		int difference = T.CiphertextLength - T.SharedSecretLength;
+
+		// The last case puts the whole ciphertext inside a longer secret, as with DHKEM(X448).
+		foreach ((int ciphertextOffset, int secretOffset) in ((int, int)[])[(0, 0), (0, 1), (1, 0), (0, T.CiphertextLength - 1), (Math.Max(0, -difference), Math.Max(0, difference))])
 		{
 			byte[] buffer = new byte[T.CiphertextLength + T.SharedSecretLength];
-			ciphertext.CopyTo(buffer, 0);
-			bool result = kem.TryDecapsulate(buffer.AsSpan(0, T.CiphertextLength), buffer.AsSpan(offset, T.SharedSecretLength));
+			ciphertext.CopyTo(buffer, ciphertextOffset);
+			bool result = kem.TryDecapsulate(buffer.AsSpan(ciphertextOffset, T.CiphertextLength), buffer.AsSpan(secretOffset, T.SharedSecretLength));
 			await Assert.That(result).IsTrue();
-			await Assert.That(buffer.AsSpan(offset, T.SharedSecretLength).ToArray()).IsEquivalentTo(sharedSecret, CollectionOrdering.Matching);
+			await Assert.That(buffer.AsSpan(secretOffset, T.SharedSecretLength).ToArray()).IsEquivalentTo(sharedSecret, CollectionOrdering.Matching);
 		}
 	}
 

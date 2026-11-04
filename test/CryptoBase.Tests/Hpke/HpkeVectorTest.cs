@@ -20,6 +20,7 @@ public class HpkeVectorTest
 			0x0011 => KeyPairsDeriveFromTheirInputKeyMaterial<DhKemP384>(vector),
 			0x0012 => KeyPairsDeriveFromTheirInputKeyMaterial<DhKemP521>(vector),
 			0x0020 => KeyPairsDeriveFromTheirInputKeyMaterial<DhKemX25519>(vector),
+			0x0021 => KeyPairsDeriveFromTheirInputKeyMaterial<DhKemX448>(vector),
 			_ => throw new NotSupportedException(vector.ToString())
 		};
 	}
@@ -35,6 +36,7 @@ public class HpkeVectorTest
 			0x0011 => EncapsulationsMatch<DhKemP384>(vector),
 			0x0012 => EncapsulationsMatch<DhKemP521>(vector),
 			0x0020 => EncapsulationsMatch<DhKemX25519>(vector),
+			0x0021 => EncapsulationsMatch<DhKemX448>(vector),
 			_ => throw new NotSupportedException(vector.ToString())
 		};
 	}
@@ -48,6 +50,7 @@ public class HpkeVectorTest
 			0x0010 => RecipientsOpenAndExport<DhKemP256>(vector),
 			0x0012 => RecipientsOpenAndExport<DhKemP521>(vector),
 			0x0020 => RecipientsOpenAndExport<DhKemX25519>(vector),
+			0x0021 => RecipientsOpenAndExport<DhKemX448>(vector),
 			_ => throw new NotSupportedException(vector.ToString())
 		};
 	}

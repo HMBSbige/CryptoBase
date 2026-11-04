@@ -221,7 +221,7 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 
 	static int IDiffieHellmanKey<X25519Key>.SharedSecretLength => SharedSecretLength;
 
-	static bool IDiffieHellmanKey<X25519Key>.IsEveryPrivateKeyValid => true;
+	static bool IDiffieHellmanKey<X25519Key>.ClampsPrivateKey => true;
 
 	static byte IDiffieHellmanKey<X25519Key>.PrivateKeyMask => 0xFF;
 

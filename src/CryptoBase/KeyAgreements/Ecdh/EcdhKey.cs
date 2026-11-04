@@ -16,7 +16,7 @@ internal struct EcdhKey<TCurve, TField, TOrder> : IDiffieHellmanKey<EcdhKey<TCur
 
 	public static int SharedSecretLength => ECKey<TCurve, TField, TOrder>.SharedSecretLength;
 
-	public static bool IsEveryPrivateKeyValid => false;
+	public static bool ClampsPrivateKey => false;
 
 	// Clears the bits above the bit length of n, as GeneratePrivateScalar does.
 	public static byte PrivateKeyMask => (byte)(0xFF >> 8 * TOrder.ByteLength - TOrder.BitLength);

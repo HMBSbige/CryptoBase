@@ -135,6 +135,118 @@ public class X448Test
 		}
 	}
 
+	// The clamped 4L fails even with a twist point, whose shared secret is not 0.
+	[Test]
+	public async Task OneInversionGivesBothEphemeralResults()
+	{
+		Random random = new(5);
+		List<string> failures = [];
+
+		for (int i = 0; i < 2 * Iterations; ++i)
+		{
+			byte[] privateKey = i is 0 ? Enumerable.Repeat((byte)0xFF, 56).ToArray() : RandomBytes(random);
+			byte[] peer = i switch
+			{
+				0 => Five,
+				1 => EncodeInteger(6),
+				2 => EncodeInteger(P + 2),
+				3 => EncodeInteger(P + 6),
+				_ => RandomBytes(random)
+			};
+			byte[] publicKey = new byte[X448.PublicKeyLength];
+			byte[] sharedSecret = new byte[X448.SharedSecretLength];
+			byte[] separateSecret = new byte[X448.SharedSecretLength];
+			bool derived = X448Key.TryDerivePublicKeyAndSharedSecret(privateKey, peer, publicKey, sharedSecret);
+			bool separate = X448Key.TryDeriveSharedSecret(privateKey, peer, separateSecret);
+
+			if (!derived || !separate || !publicKey.AsSpan().SequenceEqual(X448Function(privateKey, Five)) || !sharedSecret.AsSpan().SequenceEqual(separateSecret))
+			{
+				failures.Add($"private key {Convert.ToHexString(privateKey)}, peer {Convert.ToHexString(peer)}");
+			}
+		}
+
+		byte[] multiple = EncodeInteger(4 * L);
+		byte[] twistPoint = EncodeInteger(6);
+		byte[] untouchedPublicKey = CreateGuardedBuffer(0, X448.PublicKeyLength, 0);
+		byte[] untouchedSecret = CreateGuardedBuffer(0, X448.SharedSecretLength, 0);
+		bool derivedForMultiple = X448Key.TryDerivePublicKeyAndSharedSecret(multiple, twistPoint, untouchedPublicKey, untouchedSecret);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(failures).IsEmpty();
+			await Assert.That(X448Function(multiple, twistPoint).AsSpan().ContainsAnyExcept((byte)0)).IsTrue();
+			await Assert.That(derivedForMultiple).IsFalse();
+			await Assert.That(untouchedPublicKey).All(static value => value is DestinationSentinel);
+			await Assert.That(untouchedSecret).All(static value => value is DestinationSentinel);
+		}
+	}
+
+	// The ephemeral one fails for the clamped 4L, the static one for a peer of small order, whatever the sender's key.
+	[Test]
+	public async Task OneInversionGivesTheAuthenticatedResults()
+	{
+		Random random = new(6);
+		List<string> failures = [];
+
+		for (int i = 0; i < 2 * Iterations; ++i)
+		{
+			byte[] privateKey = RandomBytes(random);
+			byte[] senderPrivateKey = RandomBytes(random);
+			byte[] peer = i switch
+			{
+				0 => Five,
+				1 => EncodeInteger(6),
+				2 => EncodeInteger(P + 2),
+				3 => EncodeInteger(P + 6),
+				_ => RandomBytes(random)
+			};
+			byte[] sender = i switch
+			{
+				2 => EncodeInteger(6),
+				3 => EncodeInteger(P + 2),
+				4 => EncodeInteger((BigInteger.One << 448) - 1),
+				_ => RandomBytes(random)
+			};
+			byte[] publicKey = new byte[X448.PublicKeyLength];
+			byte[] sharedSecrets = new byte[2 * X448.SharedSecretLength];
+			byte[] staticSecrets = new byte[2 * X448.SharedSecretLength];
+			bool derived = X448Key.TryDerivePublicKeyAndSharedSecrets(privateKey, senderPrivateKey, peer, publicKey, sharedSecrets);
+			bool derivedStatic = X448Key.TryDeriveSharedSecrets(privateKey, peer, sender, staticSecrets);
+			byte[] expected = [.. X448Function(privateKey, peer), .. X448Function(senderPrivateKey, peer)];
+			byte[] expectedStatic = [.. X448Function(privateKey, peer), .. X448Function(privateKey, sender)];
+
+			if (!derived || !derivedStatic || !publicKey.AsSpan().SequenceEqual(X448Function(privateKey, Five)) || !sharedSecrets.AsSpan().SequenceEqual(expected) || !staticSecrets.AsSpan().SequenceEqual(expectedStatic))
+			{
+				failures.Add($"private key {Convert.ToHexString(privateKey)}, sender's {Convert.ToHexString(senderPrivateKey)}, peer {Convert.ToHexString(peer)}, sender {Convert.ToHexString(sender)}");
+			}
+		}
+
+		byte[] key = RandomBytes(random);
+		byte[] untouchedPublicKey = CreateGuardedBuffer(0, X448.PublicKeyLength, 0);
+		byte[] untouchedSecrets = CreateGuardedBuffer(0, 2 * X448.SharedSecretLength, 0);
+		bool derivedForMultiple = X448Key.TryDerivePublicKeyAndSharedSecrets(EncodeInteger(4 * L), key, EncodeInteger(6), untouchedPublicKey, untouchedSecrets);
+		List<string> accepted = [];
+
+		foreach (byte[] peer in SmallOrderPublicKeys())
+		{
+			byte[] output = CreateGuardedBuffer(0, 2 * X448.SharedSecretLength, 0);
+
+			if (X448Key.TryDeriveSharedSecrets(key, peer, Five, output) || output.AsSpan().ContainsAnyExcept(DestinationSentinel))
+			{
+				accepted.Add(Convert.ToHexString(peer));
+			}
+		}
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(failures).IsEmpty();
+			await Assert.That(derivedForMultiple).IsFalse();
+			await Assert.That(untouchedPublicKey).All(static value => value is DestinationSentinel);
+			await Assert.That(untouchedSecrets).All(static value => value is DestinationSentinel);
+			await Assert.That(accepted).IsEmpty();
+		}
+	}
+
 	[Test]
 	public async Task KeyOperationsDoNotAllocate()
 	{

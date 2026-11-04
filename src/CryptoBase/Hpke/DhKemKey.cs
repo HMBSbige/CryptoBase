@@ -28,22 +28,27 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 
 	internal bool HasDecapsulationKey => _key.HasPrivateKey;
 
+	// A seed from which no key pair derives is drawn again.
 	[SkipLocalsInit]
 	internal void GenerateKey()
 	{
 		using CryptoBuffer<byte> seed = new(stackalloc byte[PrivateSeedLength]);
-		SystemRandom.Fill(seed.Span);
-		ImportPrivateSeed(seed.Span);
+
+		do
+		{
+			SystemRandom.Fill(seed.Span);
+		}
+		while (!TryDeriveKeyPair(seed.Span));
+
+		SetSeed(seed.Span);
 	}
 
 	internal void ImportPrivateSeed(ReadOnlySpan<byte> source)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, PrivateSeedLength, nameof(source));
-		Debug.Assert(PrivateSeedLength <= Unsafe.SizeOf<InlineArray128<byte>>());
 
 		DeriveKeyPair(source, nameof(source));
-		source.CopyTo(_seed);
-		HasPrivateSeed = true;
+		SetSeed(source);
 	}
 
 	internal void DeriveKeyPair(ReadOnlySpan<byte> inputKeyMaterial)
@@ -134,8 +139,17 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 		int dhLength = TDhKey.SharedSecretLength;
 		using CryptoBuffer<byte> dh = new(stackalloc byte[2 * dhLength]);
 		Span<byte> kemContext = stackalloc byte[3 * length];
-		GenerateEphemeral(derive, ephemeralInputKeyMaterial, kemContext.Slice(0, length), dh.Span.Slice(0, dhLength));
-		TDhKey.DeriveSharedSecret(in sender._key, in _key, dh.Span.Slice(dhLength));
+
+		if (derive)
+		{
+			GenerateEphemeral(true, ephemeralInputKeyMaterial, kemContext.Slice(0, length), dh.Span.Slice(0, dhLength));
+			TDhKey.DeriveSharedSecret(in sender._key, in _key, dh.Span.Slice(dhLength));
+		}
+		else
+		{
+			TDhKey.GenerateEphemeral(in _key, in sender._key, kemContext.Slice(0, length), dh.Span);
+		}
+
 		_key.ExportPublicKey(kemContext.Slice(length, length));
 		sender._key.ExportPublicKey(kemContext.Slice(2 * length));
 
@@ -185,12 +199,11 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 		int dhLength = TDhKey.SharedSecretLength;
 		using CryptoBuffer<byte> dh = new(stackalloc byte[2 * dhLength]);
 
-		if (!_key.TryDeriveSharedSecret(ciphertext, dh.Span.Slice(0, dhLength)))
+		if (!TDhKey.TryDeriveSharedSecrets(ref _key, ciphertext, in sender._key, dh.Span))
 		{
 			return false;
 		}
 
-		TDhKey.DeriveSharedSecret(in _key, in sender._key, dh.Span.Slice(dhLength));
 		Span<byte> kemContext = stackalloc byte[3 * length];
 		ciphertext.CopyTo(kemContext);
 		_key.ExportPublicKey(kemContext.Slice(length, length));
@@ -207,9 +220,17 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 		HasPrivateSeed = false;
 	}
 
-	// DeriveKeyPair of RFC 9180, Section 7.1.3, with the KDF of the KEM.
-	[SkipLocalsInit]
 	private void DeriveKeyPair(ReadOnlySpan<byte> inputKeyMaterial, string parameterName)
+	{
+		if (!TryDeriveKeyPair(inputKeyMaterial))
+		{
+			ThrowHelper.ThrowInvalidKey(parameterName);
+		}
+	}
+
+	// DeriveKeyPair of RFC 9180, Section 7.1.3, with the KDF of the KEM: false, with the key cleared, if no candidate imports.
+	[SkipLocalsInit]
+	private bool TryDeriveKeyPair(ReadOnlySpan<byte> inputKeyMaterial)
 	{
 		Span<byte> suiteId = stackalloc byte[SuiteIdLength];
 		WriteSuiteId(suiteId);
@@ -217,12 +238,10 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 		using CryptoBuffer<byte> candidate = new(stackalloc byte[TDhKey.PrivateKeyLength]);
 		HpkeLabels.Extract<TKdf>(suiteId, default, "dkp_prk"u8, inputKeyMaterial, prk.Span);
 
-		if (TDhKey.IsEveryPrivateKeyValid)
+		if (TDhKey.ClampsPrivateKey)
 		{
 			HpkeLabels.Expand<TKdf>(suiteId, prk.Span, "sk"u8, default, candidate.Span);
-			bool imported = _key.TryImportPrivateKey(candidate.Span);
-			Debug.Assert(imported);
-			return;
+			return _key.TryImportPrivateKey(candidate.Span);
 		}
 
 		for (int counter = 0; counter <= byte.MaxValue; ++counter)
@@ -233,11 +252,19 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 
 			if (_key.TryImportPrivateKey(candidate.Span))
 			{
-				return;
+				return true;
 			}
 		}
 
-		ThrowHelper.ThrowInvalidKey(parameterName);
+		return false;
+	}
+
+	private void SetSeed(ReadOnlySpan<byte> seed)
+	{
+		Debug.Assert(seed.Length <= Unsafe.SizeOf<InlineArray128<byte>>());
+
+		seed.CopyTo(_seed);
+		HasPrivateSeed = true;
 	}
 
 	// Writes enc and DH(skE, pkR). A derived ephemeral key goes through a key of its own, which is cleared.

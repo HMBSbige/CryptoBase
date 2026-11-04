@@ -58,6 +58,9 @@ internal static class HpkeTestUtils
 			case DhKemX25519 kem:
 				kem.Encapsulate(ephemeralInputKeyMaterial, enc, sharedSecret);
 				break;
+			case DhKemX448 kem:
+				kem.Encapsulate(ephemeralInputKeyMaterial, enc, sharedSecret);
+				break;
 			default:
 				throw new NotSupportedException(typeof(TKem).Name);
 		}
@@ -82,6 +85,9 @@ internal static class HpkeTestUtils
 				r.AuthEncapsulate(ephemeralInputKeyMaterial, s, enc, sharedSecret);
 				break;
 			case (DhKemX25519 r, DhKemX25519 s):
+				r.AuthEncapsulate(ephemeralInputKeyMaterial, s, enc, sharedSecret);
+				break;
+			case (DhKemX448 r, DhKemX448 s):
 				r.AuthEncapsulate(ephemeralInputKeyMaterial, s, enc, sharedSecret);
 				break;
 			default:

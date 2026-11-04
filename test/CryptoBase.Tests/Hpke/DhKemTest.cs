@@ -3,6 +3,7 @@ using CryptoBase.Hpke;
 using CryptoBase.KeyAgreements.Ecdh;
 using CryptoBase.KeyAgreements.Xdh;
 using CryptoBase.Tests.EllipticCurves;
+using CryptoBase.Tests.EllipticCurves.Curve448;
 using CryptoBase.Tests.Kems;
 using CryptoBase.Tests.KeyAgreements;
 using System.Diagnostics.CodeAnalysis;
@@ -17,11 +18,12 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hpke;
 
-// The DHKEM behavior that KemContractTest does not cover: the RFC 9180 formulas on random keys, key derivation, key validation and the authenticated operations. DhKemX25519Test has what is particular to X25519.
+// The DHKEM behavior that KemContractTest does not cover: the RFC 9180 formulas on random keys, key derivation, key validation and the authenticated operations. DhKemX25519Test and DhKemX448Test have what is particular to X25519 and X448.
 [GenerateGenericTest(typeof(DhKemP256), typeof(EcdhP256))]
 [GenerateGenericTest(typeof(DhKemP384), typeof(EcdhP384))]
 [GenerateGenericTest(typeof(DhKemP521), typeof(EcdhP521))]
 [GenerateGenericTest(typeof(DhKemX25519), typeof(X25519))]
+[GenerateGenericTest(typeof(DhKemX448), typeof(X448))]
 [SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the keys are disposed.")]
 public class DhKemTest<TKem, TEcdh> where TKem : class, IHpkeAuthKem<TKem> where TEcdh : class, IKeyAgreement<TEcdh>
 {
@@ -34,6 +36,7 @@ public class DhKemTest<TKem, TEcdh> where TKem : class, IHpkeAuthKem<TKem> where
 		nameof(DhKemP384) => (0x0011, HashAlgorithmName.SHA384),
 		nameof(DhKemP521) => (0x0012, HashAlgorithmName.SHA512),
 		nameof(DhKemX25519) => (0x0020, HashAlgorithmName.SHA256),
+		nameof(DhKemX448) => (0x0021, HashAlgorithmName.SHA512),
 		_ => throw new NotSupportedException(typeof(TKem).Name)
 	};
 
@@ -228,13 +231,19 @@ public class DhKemTest<TKem, TEcdh> where TKem : class, IHpkeAuthKem<TKem> where
 		}
 	}
 
-	// Decapsulation keys at the ends of their range, with their encapsulation keys: d = 1 and n − 1 on a curve, and for X25519 the keys of all zeros and all ones.
+	// Decapsulation keys at the ends of their range, with their encapsulation keys: d = 1 and n − 1 on a curve, and for X25519 and X448 the keys of all zeros and all ones.
 	private static (byte[] PrivateKey, byte[] PublicKey)[] ExtremeKeyPairs()
 	{
 		if (typeof(TEcdh) == typeof(X25519))
 		{
 			byte[] nine = EncodeInteger(9);
 			return [.. ((byte[][])[new byte[32], Enumerable.Repeat((byte)0xFF, 32).ToArray()]).Select(privateKey => (privateKey, X25519Function(privateKey, nine)))];
+		}
+
+		if (typeof(TEcdh) == typeof(X448))
+		{
+			byte[] five = Curve448Reference.EncodeInteger(5);
+			return [.. ((byte[][])[new byte[56], Enumerable.Repeat((byte)0xFF, 56).ToArray()]).Select(privateKey => (privateKey, Curve448Reference.X448Function(privateKey, five)))];
 		}
 
 		CurveCase curve = CurveOf<TEcdh>();

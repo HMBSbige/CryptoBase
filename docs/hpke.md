@@ -10,6 +10,7 @@ HPKE (RFC 9180) in the base, PSK, auth and auth_psk modes. The types are in `Cry
 | `DhKemP384` | `0x0011` | 97 bytes | 48 bytes | 97 bytes | 48 bytes | 48 bytes |
 | `DhKemP521` | `0x0012` | 133 bytes | 66 bytes | 133 bytes | 64 bytes | 66 bytes |
 | `DhKemX25519` | `0x0020` | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes |
+| `DhKemX448` | `0x0021` | 56 bytes | 56 bytes | 56 bytes | 64 bytes | 56 bytes |
 
 | `HpkeKdf` | ID | `HashLength` |
 | --- | ---: | ---: |
@@ -132,6 +133,10 @@ using DhKemX25519 fromSeed = DhKemX25519.ImportPrivateSeed(seed);
 byte[] privateKey = new byte[DhKemX25519.DecapsulationKeyLength];
 key.ExportDecapsulationKey(privateKey);
 using DhKemX25519 fromPrivateKey = DhKemX25519.ImportDecapsulationKey(privateKey);
+
+// DhKemX448: the same with 56 bytes, except that ImportDecapsulationKey also throws ArgumentException for a key
+// whose clamped value is 4L, four times the order of the base point.
+using DhKemX448 x448Key = DhKemX448.ImportDecapsulationKey(x448PrivateKey);
 
 // DhKemP256, DhKemP384 and DhKemP521: the decapsulation key is the private key, big-endian, in [1, n − 1], and the
 // encapsulation key is 0x04 ‖ x ‖ y. Imports throw ArgumentException for the wrong length, a private key out of range
