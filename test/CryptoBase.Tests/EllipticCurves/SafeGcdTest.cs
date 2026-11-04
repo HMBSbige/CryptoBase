@@ -1,5 +1,6 @@
 using CryptoBase.EllipticCurves;
 using CryptoBase.EllipticCurves.Curve25519;
+using CryptoBase.EllipticCurves.Curve448;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
@@ -16,6 +17,7 @@ public class SafeGcdTest
 		await Check<P521Field>(1201);
 		await Check<P521Order>(1201);
 		await Check<Curve25519Modulus>(588);
+		await Check<Curve448Modulus>(1033);
 	}
 
 	private static async Task Check<TModulus>(int expectedBound) where TModulus : struct, IMontgomeryModulus
