@@ -21,6 +21,7 @@ internal static class SignatureTestUtils
 		new(typeof(EcdsaP384), EcdsaTestUtils.Algorithms, EcdsaP384.GenerateKey),
 		new(typeof(EcdsaP521), EcdsaTestUtils.Algorithms, EcdsaP521.GenerateKey),
 		new(typeof(Ed25519), [SignatureAlgorithm.Ed25519], Ed25519.GenerateKey, DeterministicAlgorithms: [SignatureAlgorithm.Ed25519]),
+		new(typeof(Ed448), [SignatureAlgorithm.Ed448], Ed448.GenerateKey, DeterministicAlgorithms: [SignatureAlgorithm.Ed448]),
 		new(typeof(RsaKey), RsaTestUtils.Algorithms, static () => RsaTestUtils.ImportKey(), RsaTestUtils.Pkcs1Algorithms, static () => RsaKey.GenerateKey(2048)),
 	];
 

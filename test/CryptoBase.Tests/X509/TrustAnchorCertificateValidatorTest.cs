@@ -833,7 +833,7 @@ public class TrustAnchorCertificateValidatorTest
 		byte[] secp256k1 = Sequence(Sequence(Oid("1.2.840.10045.2.1"), Oid("1.3.132.0.10")), Tlv(0x03, [0x00, 0x04, .. new byte[64]]));
 		byte[] explicitCurve = Sequence(Sequence(Oid("1.2.840.10045.2.1"), Sequence([0x02, 0x01, 0x01])), Tlv(0x03, [0x00, 0x04, .. new byte[64]]));
 		byte[] dsa = Sequence(Sequence(Oid("1.2.840.10040.4.1"), Sequence([0x02, 0x01, 0x03], [0x02, 0x01, 0x05], [0x02, 0x01, 0x07])), Tlv(0x03, [0x00, 0x02, 0x01, 0x09]));
-		byte[] ed448 = Sequence(Sequence(Oid("1.3.101.113")), Tlv(0x03, [0x00, .. new byte[57]]));
+		byte[] x448 = Sequence(Sequence(Oid("1.3.101.111")), Tlv(0x03, [0x00, .. new byte[56]]));
 		using EcdsaP384 p384 = EcdsaP384.GenerateKey();
 
 		using (Assert.Multiple())
@@ -850,7 +850,7 @@ public class TrustAnchorCertificateValidatorTest
 			await AssertKey(root, secp256k1, CertificateValidationError.WeakAlgorithm);
 			await AssertKey(root, explicitCurve, CertificateValidationError.UnsupportedAlgorithm);
 			await AssertKey(root, dsa, CertificateValidationError.WeakAlgorithm);
-			await AssertKey(root, ed448, CertificateValidationError.UnsupportedAlgorithm);
+			await AssertKey(root, x448, CertificateValidationError.UnsupportedAlgorithm);
 			await AssertKey(root, ExportSubjectPublicKeyInfo(p384), null);
 			await Assert.That(() => new TrustAnchorCertificateValidator([root.Certificate], SignatureKey.ImportSubjectPublicKeyInfo) { MinRsaKeySize = 1023 }).ThrowsExactly<ArgumentOutOfRangeException>();
 			await Assert.That(() => new TrustAnchorCertificateValidator([root.Certificate], SignatureKey.ImportSubjectPublicKeyInfo) { MinRsaKeySize = 16385 }).ThrowsExactly<ArgumentOutOfRangeException>();

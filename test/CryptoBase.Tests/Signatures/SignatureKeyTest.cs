@@ -136,7 +136,8 @@ internal class SignatureKeyTest
 		yield return () => ("no curve", Sequence(Sequence(Oid("1.2.840.10045.2.1")), key));
 		yield return () => ("ML-DSA with parameters", Sequence(Sequence(Oid("2.16.840.1.101.3.4.3.17"), [0x05, 0x00]), [0x03, 0x01, 0x00]));
 		yield return () => ("Ed25519 with parameters", Sequence(Sequence(Oid("1.3.101.112"), [0x05, 0x00]), [0x03, 0x21, 0x00, .. new byte[32]]));
-		yield return () => ("Ed448", Sequence(Sequence(Oid("1.3.101.113")), [0x03, 0x3A, 0x00, .. new byte[57]]));
+		yield return () => ("Ed448 with parameters", Sequence(Sequence(Oid("1.3.101.113"), [0x05, 0x00]), [0x03, 0x3A, 0x00, .. new byte[57]]));
+		yield return () => ("X448", Sequence(Sequence(Oid("1.3.101.111")), [0x03, 0x39, 0x00, .. new byte[56]]));
 		yield return () => ("rsaEncryption without parameters", RsaTestUtils.SubjectPublicKeyInfo(Sequence(Oid(RsaTestUtils.RsaEncryptionOid)), rsaPublicKey));
 		yield return () => ("id-RSASSA-PSS with SHA-1", RsaTestUtils.SubjectPublicKeyInfo(X509.X509TestUtils.RsassaPssIdentifier(hash: null, maskHash: null, saltLength: null), rsaPublicKey));
 		yield return static () => ("RSA modulus of 16385 bits", RsaTestUtils.SubjectPublicKeyInfo(RsaTestUtils.RsaEncryption, RsaTestUtils.RsaPublicKey(RsaTestUtils.Modulus(16385), 65537)));
@@ -156,13 +157,13 @@ internal class SignatureKeyTest
 	[Test]
 	public async Task OtherPrivateKeyAlgorithmsAreNotSupported()
 	{
-		byte[] ed448 = Sequence([0x02, 0x01, 0x00], Sequence(Oid("1.3.101.113")), Tlv(0x04, Tlv(0x04, new byte[57])));
+		byte[] x448 = Sequence([0x02, 0x01, 0x00], Sequence(Oid("1.3.101.111")), Tlv(0x04, Tlv(0x04, new byte[56])));
 		byte[] secp256k1 = EcdsaTestUtils.Pkcs8("1.3.132.0.10", EcdsaTestUtils.ECPrivateKey(1, new byte[32], null, null));
 		byte[] rsaWithoutParameters = RsaTestUtils.PrivateKeyInfo(Sequence(Oid(RsaTestUtils.RsaEncryptionOid)), RsaTestUtils.RsaPrivateKey(RsaTestUtils.PrivateParameters()));
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => SignatureKey.ImportPkcs8PrivateKey(ed448)).ThrowsExactly<NotSupportedException>();
+			await Assert.That(() => SignatureKey.ImportPkcs8PrivateKey(x448)).ThrowsExactly<NotSupportedException>();
 			await Assert.That(() => SignatureKey.ImportPkcs8PrivateKey(secp256k1)).ThrowsExactly<NotSupportedException>();
 			await Assert.That(() => SignatureKey.ImportPkcs8PrivateKey(rsaWithoutParameters)).ThrowsExactly<NotSupportedException>();
 		}

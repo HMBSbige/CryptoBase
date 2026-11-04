@@ -31,6 +31,7 @@ public abstract class ModulusCase
 		yield return new Case<Curve25519Modulus>("curve25519", false);
 		yield return new Case<Ed25519Order>("curve25519", true);
 		yield return new Case<Curve448Modulus>("curve448", false);
+		yield return new Case<Ed448Order>("curve448", true);
 	}
 
 	public abstract Type ModulusType { get; }

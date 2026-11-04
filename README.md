@@ -142,7 +142,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | [X25519](docs/key-agreement.md) | ✅ |
 | [X448](docs/key-agreement.md) | ✅ |
 | [Ed25519](docs/digital-signatures.md) | ✅ |
-| Ed448 | ⏳ |
+| [Ed448](docs/digital-signatures.md) | ✅ |
 | SM2 | ⏳ |
 | SM9 | ⏳ |
 

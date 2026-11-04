@@ -11,6 +11,7 @@
 | `EcdsaP384` | `CryptoBase.Signatures.Ecdsa` | 97 bytes | 48 bytes | at most 104 bytes |
 | `EcdsaP521` | `CryptoBase.Signatures.Ecdsa` | 133 bytes | 66 bytes | at most 139 bytes |
 | `Ed25519` | `CryptoBase.Signatures.EdDsa` | 32 bytes | 32 bytes | 64 bytes |
+| `Ed448` | `CryptoBase.Signatures.EdDsa` | 57 bytes | 57 bytes | 114 bytes |
 | `RsaKey` | `CryptoBase.Signatures.Rsa` | modulus of 512 to 16384 bits | two primes | as long as the modulus |
 
 ## ML-DSA
@@ -177,6 +178,57 @@ using Ed25519 fromSpki = Ed25519.ImportSubjectPublicKeyInfo(spki);
 using Ed25519 fromPkcs8 = Ed25519.ImportPkcs8PrivateKey(pkcs8);
 ```
 
+## Ed448
+
+```csharp
+using CryptoBase.Hashes;
+using CryptoBase.Hashes.Sha3;
+using CryptoBase.Signatures.EdDsa;
+
+using Ed448 signer = Ed448.GenerateKey();
+byte[] publicKey = new byte[Ed448.PublicKeyLength];
+signer.ExportPublicKey(publicKey);
+
+byte[] message = "message"u8.ToArray();
+byte[] signature = new byte[Ed448.SignatureLength];
+signer.Sign(message, signature);
+
+// ImportPublicKey throws ArgumentException for a key that is not the canonical encoding of a point.
+// One instance may sign and verify on several threads at once; to verify many signatures with one key, keep one instance.
+using Ed448 verifier = Ed448.ImportPublicKey(publicKey);
+bool valid = verifier.Verify(message, signature); // true; false for a non-canonical signature
+
+// A context of up to MaxContextLength bytes, empty by default; Verify needs the same one.
+signer.Sign(message, signature, "example.com/v1"u8);
+bool sameContext = verifier.Verify(message, signature, "example.com/v1"u8); // true
+bool noContext = verifier.Verify(message, signature); // false
+
+// Ed448ph: the 64-byte SHAKE256 hash of the message, with an optional context.
+byte[] hash = new byte[64];
+Xof<Shake256Core>.HashData(message, hash);
+signer.SignPreHash(hash, signature);
+bool validPreHash = verifier.VerifyPreHash(hash, signature); // true
+```
+
+### Keys
+
+```csharp
+// Private key: the 57-byte secret of RFC 8032; any value is valid. Public key: 57 bytes.
+byte[] privateKey = new byte[Ed448.PrivateKeyLength];
+key.ExportPrivateKey(privateKey);
+using Ed448 restored = Ed448.ImportPrivateKey(privateKey);
+
+// SubjectPublicKeyInfo and PKCS #8 (RFC 8410). The PKCS #8 export holds only the private key;
+// the import also accepts a key with the public key, but throws if it does not match.
+byte[] spki = new byte[key.SubjectPublicKeyInfoLength];
+key.ExportSubjectPublicKeyInfo(spki);
+byte[] pkcs8 = new byte[key.Pkcs8PrivateKeyLength];
+key.ExportPkcs8PrivateKey(pkcs8);
+
+using Ed448 fromSpki = Ed448.ImportSubjectPublicKeyInfo(spki);
+using Ed448 fromPkcs8 = Ed448.ImportPkcs8PrivateKey(pkcs8);
+```
+
 ## RSA
 
 ```csharp
@@ -256,7 +308,7 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using System.Security.Cryptography.X509Certificates;
 
-// SignatureKey imports as the type that the encoding names: EcdsaP256, EcdsaP384, EcdsaP521, Ed25519, MLDsa44, MLDsa65, MLDsa87,
+// SignatureKey imports as the type that the encoding names: EcdsaP256, EcdsaP384, EcdsaP521, Ed25519, Ed448, MLDsa44, MLDsa65, MLDsa87,
 // or RsaKey for rsaEncryption and id-RSASSA-PSS. Another algorithm or curve throws NotSupportedException, as do RSA keys and
 // RSASSA-PSS parameters that RsaKey does not support; a malformed encoding or an invalid key throws ArgumentException.
 using ISignatureKey fromSpki = SignatureKey.ImportSubjectPublicKeyInfo(spki);
@@ -266,7 +318,7 @@ using ISignatureKey fromPkcs8 = SignatureKey.ImportPkcs8PrivateKey(pkcs8);
 // other blocks, such as EC PARAMETERS, are ignored. EC PRIVATE KEY must name its curve. Encrypted keys are not supported.
 using ISignatureKey key = SignatureKey.ImportFromPem(File.ReadAllText("key.pem"));
 
-// An ML-DSA type and Ed25519 support only the algorithm of their name; an ECDSA type supports EcdsaSha256, EcdsaSha384 and EcdsaSha512;
+// An ML-DSA type, Ed25519 and Ed448 support only the algorithm of their name; an ECDSA type supports EcdsaSha256, EcdsaSha384 and EcdsaSha512;
 // RsaKey supports the RSA algorithms that its modulus fits and its AlgorithmIdentifier allows.
 SignatureAlgorithm algorithm = SignatureAlgorithm.EcdsaSha256;
 

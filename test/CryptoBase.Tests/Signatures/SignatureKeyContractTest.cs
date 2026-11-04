@@ -18,6 +18,7 @@ namespace CryptoBase.Tests.Signatures;
 [GenerateGenericTest(typeof(EcdsaP384))]
 [GenerateGenericTest(typeof(EcdsaP521))]
 [GenerateGenericTest(typeof(Ed25519))]
+[GenerateGenericTest(typeof(Ed448))]
 [GenerateGenericTest(typeof(RsaKey))]
 public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 {
