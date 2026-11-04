@@ -1,3 +1,4 @@
+using CryptoBase.EllipticCurves;
 using CryptoBase.EllipticCurves.Curve448;
 using System.Numerics;
 using static CryptoBase.Tests.EllipticCurves.Curve448.Curve448Reference;
@@ -62,7 +63,7 @@ public class ScalarDigitsTest
 			foreach (int width in (int[])[2, 5, 6, 8])
 			{
 				sbyte[] digits = new sbyte[449];
-				int top = ScalarDigits.NonAdjacentForm(limbs, 0, 448, width, digits);
+				int top = NonAdjacentForm.Recode(limbs, 0, 448, width, digits);
 				BigInteger sum = digits.Select(static (digit, i) => (BigInteger)digit << i).Aggregate(BigInteger.Add);
 				bool odd = digits.All(digit => digit is 0 || (digit & 1) is not 0 && Math.Abs((int)digit) < 1 << width - 1);
 

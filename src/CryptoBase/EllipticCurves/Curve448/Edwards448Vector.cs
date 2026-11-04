@@ -84,9 +84,9 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 		Span<sbyte> pointDigits = stackalloc sbyte[digitCount];
 		Span<sbyte> baseDigits = stackalloc sbyte[digitCount];
 		ScalarDigits.ReadLimbs(a, limbs);
-		int top = ScalarDigits.NonAdjacentForm(limbs, 0, digitCount - 1, PointWidth, pointDigits);
+		int top = NonAdjacentForm.Recode(limbs, 0, digitCount - 1, PointWidth, pointDigits);
 		ScalarDigits.ReadLimbs(b, limbs);
-		top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, 0, digitCount - 1, EdwardsVariableTimeBaseTable.Width, baseDigits));
+		top = Math.Max(top, NonAdjacentForm.Recode(limbs, 0, digitCount - 1, EdwardsVariableTimeBaseTable.Width, baseDigits));
 
 		if (top < 0)
 		{
@@ -134,14 +134,14 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 
 		for (int c = 0; c < parts; ++c)
 		{
-			top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, c * partLength, partLength, EdwardsVariableTimePointTable.Width, pointDigits.Slice(c * stride, stride)));
+			top = Math.Max(top, NonAdjacentForm.Recode(limbs, c * partLength, partLength, EdwardsVariableTimePointTable.Width, pointDigits.Slice(c * stride, stride)));
 		}
 
 		ScalarDigits.ReadLimbs(b, limbs);
 
 		for (int c = 0; c < parts; ++c)
 		{
-			top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, c * partLength, partLength, EdwardsVariableTimeBaseTable.PartWidth, baseDigits.Slice(c * stride, stride)));
+			top = Math.Max(top, NonAdjacentForm.Recode(limbs, c * partLength, partLength, EdwardsVariableTimeBaseTable.PartWidth, baseDigits.Slice(c * stride, stride)));
 		}
 
 		ReadOnlySpan<EdwardsAffinePoint> baseTable = EdwardsVariableTimeBaseTable.Parts;

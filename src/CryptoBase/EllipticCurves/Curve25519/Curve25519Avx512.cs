@@ -93,7 +93,7 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 
 		for (int c = 0; c < parts; ++c)
 		{
-			top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, c * partLength, partLength, EdwardsVariableTimePointTable.Width, pointDigits.Slice(c * stride, stride)));
+			top = Math.Max(top, NonAdjacentForm.Recode(limbs, c * partLength, partLength, EdwardsVariableTimePointTable.Width, pointDigits.Slice(c * stride, stride)));
 		}
 
 		Identity(out EdwardsNielsPoint identity);

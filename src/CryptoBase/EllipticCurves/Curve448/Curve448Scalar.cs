@@ -122,9 +122,9 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 		Span<sbyte> pointDigits = stackalloc sbyte[digitCount];
 		Span<sbyte> baseDigits = stackalloc sbyte[digitCount];
 		ScalarDigits.ReadLimbs(a, limbs);
-		int top = ScalarDigits.NonAdjacentForm(limbs, 0, digitCount - 1, PointWidth, pointDigits);
+		int top = NonAdjacentForm.Recode(limbs, 0, digitCount - 1, PointWidth, pointDigits);
 		ScalarDigits.ReadLimbs(b, limbs);
-		top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, 0, digitCount - 1, EdwardsVariableTimeBaseTable.Width, baseDigits));
+		top = Math.Max(top, NonAdjacentForm.Recode(limbs, 0, digitCount - 1, EdwardsVariableTimeBaseTable.Width, baseDigits));
 		Edwards448.Identity(out result);
 
 		if (top < 0)
@@ -199,14 +199,14 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 
 		for (int c = 0; c < parts; ++c)
 		{
-			top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, c * partLength, partLength, EdwardsVariableTimePointTable.Width, pointDigits.Slice(c * stride, stride)));
+			top = Math.Max(top, NonAdjacentForm.Recode(limbs, c * partLength, partLength, EdwardsVariableTimePointTable.Width, pointDigits.Slice(c * stride, stride)));
 		}
 
 		ScalarDigits.ReadLimbs(b, limbs);
 
 		for (int c = 0; c < parts; ++c)
 		{
-			top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, c * partLength, partLength, EdwardsVariableTimeBaseTable.PartWidth, baseDigits.Slice(c * stride, stride)));
+			top = Math.Max(top, NonAdjacentForm.Recode(limbs, c * partLength, partLength, EdwardsVariableTimeBaseTable.PartWidth, baseDigits.Slice(c * stride, stride)));
 		}
 
 		ReadOnlySpan<EdwardsAffinePoint> baseTable = EdwardsVariableTimeBaseTable.Parts;

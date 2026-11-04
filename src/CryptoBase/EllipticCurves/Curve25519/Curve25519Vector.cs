@@ -94,9 +94,9 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 		Span<sbyte> pointDigits = stackalloc sbyte[digitCount];
 		Span<sbyte> baseDigits = stackalloc sbyte[digitCount];
 		ScalarDigits.ReadLimbs(a, limbs);
-		int top = ScalarDigits.NonAdjacentForm(limbs, 0, digitCount - 1, PointWidth, pointDigits);
+		int top = NonAdjacentForm.Recode(limbs, 0, digitCount - 1, PointWidth, pointDigits);
 		ScalarDigits.ReadLimbs(b, limbs);
-		top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, 0, digitCount - 1, EdwardsVariableTimeBaseTable.Width, baseDigits));
+		top = Math.Max(top, NonAdjacentForm.Recode(limbs, 0, digitCount - 1, EdwardsVariableTimeBaseTable.Width, baseDigits));
 
 		if (top < 0)
 		{
@@ -166,7 +166,7 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 
 		for (int c = 0; c < parts; ++c)
 		{
-			top = Math.Max(top, ScalarDigits.NonAdjacentForm(limbs, c * partLength, partLength, EdwardsVariableTimePointTable.Width, pointDigits.Slice(c * stride, stride)));
+			top = Math.Max(top, NonAdjacentForm.Recode(limbs, c * partLength, partLength, EdwardsVariableTimePointTable.Width, pointDigits.Slice(c * stride, stride)));
 		}
 
 		Identity(out sum);
