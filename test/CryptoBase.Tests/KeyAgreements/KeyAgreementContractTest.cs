@@ -12,6 +12,7 @@ namespace CryptoBase.Tests.KeyAgreements;
 [GenerateGenericTest(typeof(EcdhP384))]
 [GenerateGenericTest(typeof(EcdhP521))]
 [GenerateGenericTest(typeof(X25519))]
+[GenerateGenericTest(typeof(X448))]
 public class KeyAgreementContractTest<T> where T : class, IKeyAgreement<T>
 {
 	[Test]

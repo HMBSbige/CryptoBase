@@ -37,7 +37,14 @@ public class WycheproofKeyAgreementTest
 		return VerifyXdh<X25519>(vector);
 	}
 
-	// Every vector, valid or acceptable, gives its shared secret, twist points and non-canonical u-coordinates included, except the ZeroSharedSecret ones: their all-zero secret must give false.
+	[Test]
+	[WycheproofVectors<XdhTestVector>("x448_test.json")]
+	public Task X448(XdhTestVector vector)
+	{
+		return VerifyXdh<X448>(vector);
+	}
+
+	// Every vector, valid or acceptable, gives its shared secret, twist points and non-canonical u-coordinates included, except the ZeroSharedSecret ones: their all-zero secret must give false. The invalid ones, only in X448, have public keys of the wrong length.
 	private static async Task VerifyXdh<T>(XdhTestVector vector) where T : class, IKeyAgreement<T>
 	{
 		using T key = T.ImportPrivateKey(vector.Private);
@@ -45,6 +52,14 @@ public class WycheproofKeyAgreementTest
 
 		using (Assert.Multiple())
 		{
+			if (vector.Result is WycheproofResult.Invalid)
+			{
+				await Assert.That(vector.Public.Length).IsNotEqualTo(T.PublicKeyLength);
+				await Assert.That(result).IsFalse();
+				await Assert.That(output).All(static value => value is DestinationSentinel);
+				return;
+			}
+
 			if (vector.Shared.AsSpan().ContainsAnyExcept((byte)0))
 			{
 				await Assert.That(result).IsTrue();

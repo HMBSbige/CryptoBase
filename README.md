@@ -140,7 +140,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | [ECDSA](docs/digital-signatures.md) | ✅ |
 | [RSA](docs/digital-signatures.md) | ✅ |
 | [X25519](docs/key-agreement.md) | ✅ |
-| X448 | ⏳ |
+| [X448](docs/key-agreement.md) | ✅ |
 | [Ed25519](docs/digital-signatures.md) | ✅ |
 | Ed448 | ⏳ |
 | SM2 | ⏳ |

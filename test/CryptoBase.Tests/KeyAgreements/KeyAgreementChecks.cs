@@ -18,6 +18,12 @@ internal sealed record KeyAgreementChecks(byte[][] InvalidPrivateKeys, byte[][] 
 			return new KeyAgreementChecks([], X25519TestUtils.SmallOrderPublicKeys());
 		}
 
+		if (typeof(T) == typeof(X448))
+		{
+			// Every private key is valid; only the points of small order fail.
+			return new KeyAgreementChecks([], X448TestUtils.SmallOrderPublicKeys());
+		}
+
 		return Ecdh(CurveOf<T>());
 	}
 

@@ -71,7 +71,7 @@ public interface IKeyAgreement<out TSelf> : IDisposable where TSelf : class, IKe
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The method returns <see langword="false" /> if <paramref name="peerPublicKey" /> does not have exactly <see cref="PublicKeyLength" /> bytes or fails a public check of the algorithm, for example because it is not a point on the curve or gives a degenerate result with every private key. The result depends only on <paramref name="peerPublicKey" />, never on the private key.
+	/// The method returns <see langword="false" /> if <paramref name="peerPublicKey" /> does not have exactly <see cref="PublicKeyLength" /> bytes or fails a public check of the algorithm, for example because it is not a point on the curve or gives a degenerate result with every private key, or if the algorithm rejects the derived shared secret; the implementing type documents its conditions. The result depends only on <paramref name="peerPublicKey" /> and the public key of the instance, never on secret information.
 	/// </para>
 	/// <para>
 	/// The shared secret is not uniformly random: derive keys from it with a key derivation function. It need not bind the public keys, so a protocol that relies on that binding must include both public keys in its key derivation or transcript.
@@ -82,7 +82,7 @@ public interface IKeyAgreement<out TSelf> : IDisposable where TSelf : class, IKe
 	/// </remarks>
 	/// <param name="peerPublicKey">The public key of the other party.</param>
 	/// <param name="sharedSecret">The buffer that receives the shared secret.</param>
-	/// <returns><see langword="false" /> if <paramref name="peerPublicKey" /> fails the public checks; otherwise, <see langword="true" />.</returns>
+	/// <returns><see langword="false" /> if <paramref name="peerPublicKey" /> or the derived shared secret fails the algorithm's checks; otherwise, <see langword="true" />.</returns>
 	/// <exception cref="ArgumentException"><paramref name="sharedSecret" /> is too short.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	bool TryDeriveSharedSecret(ReadOnlySpan<byte> peerPublicKey, Span<byte> sharedSecret);
