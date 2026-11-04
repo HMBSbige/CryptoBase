@@ -13,7 +13,7 @@ internal static class EdwardsVariableTimePointTable
 
 	internal const int Length = PartCount * PartEntryCount;
 
-	// Each part starts at its base P and adds 2P; the double of a base, doubled L − 1 more times, is the next base.
+	// Each part starts at its base P and adds 2P; the double of a base, doubled L − 1 more times, is the next base, which the last part does not need.
 	internal static EdwardsNielsPoint[] Build(in EdwardsPoint point)
 	{
 		EdwardsPoint[] multiples = new EdwardsPoint[Length];
@@ -32,9 +32,12 @@ internal static class EdwardsVariableTimePointTable
 				Edwards25519.ToExtended(in sum, out multiples[j]);
 			}
 
-			for (int k = 1; k < PartLength; ++k)
+			if (c < PartCount - 1)
 			{
-				Edwards25519.Double(in partBase, out partBase);
+				for (int k = 1; k < PartLength; ++k)
+				{
+					Edwards25519.Double(in partBase, out partBase);
+				}
 			}
 		}
 
