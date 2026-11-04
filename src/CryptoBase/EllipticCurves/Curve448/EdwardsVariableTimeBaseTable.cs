@@ -11,7 +11,7 @@ internal static class EdwardsVariableTimeBaseTable
 
 	internal static readonly EdwardsAffinePoint[] Entries = Build();
 
-	internal static EdwardsAffinePoint[] Parts => PartTable.Entries;
+	internal static EdwardsAffinePoint[] Parts => PartTable.Points;
 
 	// Each entry after B is (j − 2)·B + 2B for odd j ≥ 3.
 	private static EdwardsAffinePoint[] Build()
@@ -35,6 +35,6 @@ internal static class EdwardsVariableTimeBaseTable
 	// Only the products with a point table use Parts, so it has a type initializer of its own.
 	private static class PartTable
 	{
-		internal static readonly EdwardsAffinePoint[] Entries = EdwardsVariableTimePointTable.Build(in Edwards448.Base, PartWidth);
+		internal static readonly EdwardsAffinePoint[] Points = EdwardsVariableTimePointTable.Build(in Edwards448.Base, PartWidth);
 	}
 }
