@@ -374,6 +374,37 @@ internal static class X509TestUtils
 			""";
 	}
 
+	public static class ExternalCertificates
+	{
+		public const string Ed448Root = """
+			-----BEGIN CERTIFICATE-----
+			MIIBZTCB5qADAgECAgEBMAUGAytlcTAVMRMwEQYDVQQDDApFZDQ0OCBSb290MB4X
+			DTI2MDEwMTAwMDAwMFoXDTM2MDEwMTAwMDAwMFowFTETMBEGA1UEAwwKRWQ0NDgg
+			Um9vdDBDMAUGAytlcQM6AALn+iBOGvlpQqkoTbMZ9WP0KUQNO4xaR3qOtCIKPefM
+			1X/XRpsaTdGufRFsDJtFKiuWBoDTgSJiAKNCMEAwDwYDVR0TAQH/BAUwAwEB/zAO
+			BgNVHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFIEv5/t9ujcI347q5sBJH+SG+nR7MAUG
+			AytlcQNzADPQgdTGIFsZ78F6muK+UJ6X0gNQH/bt2J9rfYUKKCLHZBeegtFuGwwl
+			OQSOAqphm0qQAIHufmGrgIf5NOeuH4+RsZWYYRTzqn7rXJMpub69PmkHaxGS4kHI
+			qAw/wLr+ebw7v6o/u0G1BvaLlCkM5J0YAA==
+			-----END CERTIFICATE-----
+			""";
+
+		public const string Ed448Leaf = """
+			-----BEGIN CERTIFICATE-----
+			MIIBszCCATOgAwIBAgIBAjAFBgMrZXEwFTETMBEGA1UEAwwKRWQ0NDggUm9vdDAe
+			Fw0yNjAxMDEwMDAwMDBaFw0zNjAxMDEwMDAwMDBaMBUxEzARBgNVBAMMCkVkNDQ4
+			IExlYWYwQzAFBgMrZXEDOgBYdbwRc0amQ3kKbDYkVCLjM5G47B/PHwjaRu7sZVvP
+			M75m0bl0RSoaX1OioM733gUAsCzBKSlyiYCjgY4wgYswDAYDVR0TAQH/BAIwADAO
+			BgNVHQ8BAf8EBAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUHAwEwFgYDVR0RBA8wDYIL
+			ZXhhbXBsZS5jb20wHQYDVR0OBBYEFEMbBkUXM1b0nGPxppu4ZMZw7oayMB8GA1Ud
+			IwQYMBaAFIEv5/t9ujcI347q5sBJH+SG+nR7MAUGAytlcQNzAJRwGriNOhlqrGEU
+			PYamNYaAQIV/T8c4HBH+LvXNdJh/k31e4Bgnz7Fqc/E5EwDaFLpYUzdrBsu3AMmh
+			LMX+XMC7bAeYRzbtYWEEkcyoWM8M3XYlhaXfqW9/Lfe5gtoyHXHrfNZjg/badk5M
+			/7ArucoJAA==
+			-----END CERTIFICATE-----
+			""";
+	}
+
 	// A dNSName with the bytes of the string as they are, so that the tests can make entries that SubjectAlternativeNameBuilder refuses.
 	public static byte[] DnsName(string name)
 	{

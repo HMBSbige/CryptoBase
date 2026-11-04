@@ -99,7 +99,7 @@ public class TrustAnchorCertificateValidatorTest
 		Template ca = new() { Subject = name, SubjectPublicKeyInfo = newKeyInfo, Extensions = [BasicConstraints(true), KeyUsage(X509KeyUsageFlags.KeyCertSign)] };
 		Certificate withoutIdentifiers = Sign(ca, name, oldKey, SignatureAlgorithm.EcdsaSha256);
 		Certificate withMisleadingIdentifiers = Sign(ca with { Extensions = [.. CaExtensions(newKeyInfo), AuthorityKeyIdentifier(KeyIdentifierOf(newKeyInfo))] }, name, oldKey, SignatureAlgorithm.EcdsaSha256);
-		Certificate unsupported = Sign(ca, name, Sequence(Oid("1.3.101.113")), static _ => new byte[114]);
+		Certificate unsupported = Sign(ca, name, Sequence(Oid("1.3.101.113"), [0x05, 0x00]), static _ => new byte[114]);
 		Certificate selfSigned = Sign(ca, name, newKey, SignatureAlgorithm.EcdsaSha256);
 		Certificate leaf = Sign(new Template { Subject = Name("CN=Leaf"), SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(EcdsaP256.GenerateKey()), Extensions = [SubjectAlternativeNames("example.com")] }, name, newKey, SignatureAlgorithm.EcdsaSha256);
 
@@ -726,7 +726,7 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// MD2, MD4 and MD5 are forbidden, and SHA-1, SHA-224 and DSA refused, as WeakAlgorithm; algorithms that are not known are unsupported, as is id-Ed25519 with parameters, which RFC 8410, Sec. 6, forbids. A trust anchor's own signature does not count.
+	// MD2, MD4 and MD5 are forbidden, and SHA-1, SHA-224 and DSA refused, as WeakAlgorithm; algorithms that are not known are unsupported, as are id-Ed25519 and id-Ed448 with parameters, which RFC 8410, Sec. 6, forbids. A trust anchor's own signature does not count.
 	[Test]
 	[Arguments("1.2.840.113549.1.1.4", true, CertificateValidationError.WeakAlgorithm)]
 	[Arguments("1.2.840.113549.1.1.2", true, CertificateValidationError.WeakAlgorithm)]
@@ -740,7 +740,7 @@ public class TrustAnchorCertificateValidatorTest
 	[Arguments("1.2.840.113549.1.1.10", false, CertificateValidationError.WeakAlgorithm)]
 	[Arguments("2.16.840.1.101.3.4.3.10", false, CertificateValidationError.UnsupportedAlgorithm)]
 	[Arguments("1.3.101.112", true, CertificateValidationError.UnsupportedAlgorithm)]
-	[Arguments("1.3.101.113", false, CertificateValidationError.UnsupportedAlgorithm)]
+	[Arguments("1.3.101.113", true, CertificateValidationError.UnsupportedAlgorithm)]
 	public async Task RefusesSignatureAlgorithmsThatItDoesNotVerify(string oid, bool nullParameters, CertificateValidationError error)
 	{
 		using Authority root = Authority.CreateRoot();
@@ -820,6 +820,26 @@ public class TrustAnchorCertificateValidatorTest
 			await AssertValid(await Validate([root], [leaf], hostName: "example.com"), leaf, root);
 			await AssertInvalid(await Validate([root], [tampered]), [CertificateValidationError.InvalidSignature], CertificatePathEnd.TrustAnchor, tampered, root);
 			await AssertValid(await Validate([openSslRoot], [openSslLeaf], hostName: "example.com", time: openSslLeaf.NotBefore), openSslLeaf, openSslRoot);
+		}
+	}
+
+	[Test]
+	public async Task VerifiesEd448Chains()
+	{
+		using Ed448 rootKey = Ed448.GenerateKey();
+		using Ed448 leafKey = Ed448.GenerateKey();
+		byte[] name = Name("CN=Ed448 root");
+		Certificate root = Sign(new Template { Subject = name, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(rootKey), Extensions = CaExtensions(ExportSubjectPublicKeyInfo(rootKey)) }, name, rootKey, SignatureAlgorithm.Ed448);
+		Certificate leaf = Sign(new Template { Subject = Name("CN=Leaf"), SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(leafKey), Extensions = [SubjectAlternativeNames("example.com")] }, name, rootKey, SignatureAlgorithm.Ed448);
+		Certificate tampered = Tamper(leaf);
+		Certificate externalRoot = Certificate.DecodePem(ExternalCertificates.Ed448Root);
+		Certificate externalLeaf = Certificate.DecodePem(ExternalCertificates.Ed448Leaf);
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate([root], [leaf], hostName: "example.com"), leaf, root);
+			await AssertInvalid(await Validate([root], [tampered]), [CertificateValidationError.InvalidSignature], CertificatePathEnd.TrustAnchor, tampered, root);
+			await AssertValid(await Validate([externalRoot], [externalLeaf], hostName: "example.com", time: externalLeaf.NotBefore), externalLeaf, externalRoot);
 		}
 	}
 

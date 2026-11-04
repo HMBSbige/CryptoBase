@@ -16,6 +16,7 @@ public class AlgorithmIdentifierTest
 		(SignatureAlgorithm.EcdsaSha384, "1.2.840.10045.4.3.3"),
 		(SignatureAlgorithm.EcdsaSha512, "1.2.840.10045.4.3.4"),
 		(SignatureAlgorithm.Ed25519, "1.3.101.112"),
+		(SignatureAlgorithm.Ed448, "1.3.101.113"),
 		(SignatureAlgorithm.MLDsa44, "2.16.840.1.101.3.4.3.17"),
 		(SignatureAlgorithm.MLDsa65, "2.16.840.1.101.3.4.3.18"),
 		(SignatureAlgorithm.MLDsa87, "2.16.840.1.101.3.4.3.19"),
@@ -233,9 +234,10 @@ public class AlgorithmIdentifierTest
 			await Assert.That(algorithm).IsEqualTo((SignatureAlgorithm)0);
 			await Assert.That(other.TryGetSignatureAlgorithm(out _)).IsFalse();
 
-			// RFC 8410, Sec. 6: id-Ed25519 names a signature algorithm only without parameters; id-Ed448 is not supported.
+			// RFC 8410, Sec. 6: id-Ed25519 and id-Ed448 name a signature algorithm only without parameters; id-X448 names none.
 			await Assert.That(MappedAlgorithm(Sequence(Oid("1.3.101.112"), [0x05, 0x00]))).IsEqualTo((SignatureAlgorithm)0);
-			await Assert.That(MappedAlgorithm(Sequence(Oid("1.3.101.113")))).IsEqualTo((SignatureAlgorithm)0);
+			await Assert.That(MappedAlgorithm(Sequence(Oid("1.3.101.113"), [0x05, 0x00]))).IsEqualTo((SignatureAlgorithm)0);
+			await Assert.That(MappedAlgorithm(Sequence(Oid("1.3.101.111")))).IsEqualTo((SignatureAlgorithm)0);
 		}
 	}
 

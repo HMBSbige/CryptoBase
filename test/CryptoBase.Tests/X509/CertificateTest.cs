@@ -159,6 +159,34 @@ public class CertificateTest
 		}
 	}
 
+	// RFC 8410, Sec. 6: Ed448 with an empty context.
+	[Test]
+	public async Task VerifiesExternalEd448Certificates()
+	{
+		Certificate root = Certificate.DecodePem(ExternalCertificates.Ed448Root);
+		Certificate leaf = Certificate.DecodePem(ExternalCertificates.Ed448Leaf);
+		using ISignatureKey rootKey = SignatureKey.ImportSubjectPublicKeyInfo(root.PublicKeyInfo.Encoded.Span);
+		using ISignatureKey leafKey = SignatureKey.ImportSubjectPublicKeyInfo(leaf.PublicKeyInfo.Encoded.Span);
+		using EcdsaP256 ecdsa = EcdsaP256.GenerateKey();
+		using Ed25519 ed25519 = Ed25519.GenerateKey();
+		byte[] tampered = leaf.Encoded.ToArray();
+		tampered[leaf.Encoded.Length - leaf.Signature.Length] ^= 1;
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(root.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.Ed448).Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(leaf.SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) ? algorithm : default).IsEqualTo(SignatureAlgorithm.Ed448);
+			await Assert.That(leaf.Signature.Length).IsEqualTo(114);
+			await Assert.That(rootKey.GetType()).IsEqualTo(typeof(Ed448));
+			await Assert.That(root.VerifySignature(rootKey)).IsTrue();
+			await Assert.That(leaf.VerifySignature(rootKey)).IsTrue();
+			await Assert.That(leaf.VerifySignature(leafKey)).IsFalse();
+			await Assert.That(leaf.VerifySignature(ecdsa)).IsFalse();
+			await Assert.That(leaf.VerifySignature(ed25519)).IsFalse();
+			await Assert.That(Certificate.Decode(tampered).VerifySignature(rootKey)).IsFalse();
+		}
+	}
+
 	[Test]
 	public async Task OtherAlgorithmsDecodeButDoNotVerify()
 	{
