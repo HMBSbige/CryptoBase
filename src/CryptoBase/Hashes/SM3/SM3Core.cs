@@ -194,26 +194,18 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		ProcessBlocksSoftware(ref hashAlgorithm, source);
 	}
 
-	[SkipLocalsInit]
 	private static void ProcessBlocksSoftware(ref SM3Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
-		Unsafe.SkipInit(out InlineArray16<uint> schedule);
-		ref byte block = ref MemoryMarshal.GetReference(source);
-		int remaining = source.Length;
-
-		do
-		{
-			ProcessSoftware(ref hashAlgorithm, ref block, ref schedule);
-			block = ref Unsafe.Add(ref block, BlockSizeInBytes);
-			remaining -= BlockSizeInBytes;
-		} while (remaining is not 0);
+		ProcessBlocksSoftware(ref hashAlgorithm, ref MemoryMarshal.GetReference(source), source.Length, 23, 15);
 	}
 
-	private static void ProcessSoftware(ref SM3Core hashAlgorithm, ref byte block, ref InlineArray16<uint> schedule)
+	// The schedule holds W[0..67] in order, so each access is a constant offset from words.
+	// rotate23 and rotate15 are 23 and 15, passed in for P0Software.
+	[SkipLocalsInit]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ProcessBlocksSoftware(ref SM3Core hashAlgorithm, ref byte block, int remaining, int rotate23, int rotate15)
 	{
-		ref uint words = ref schedule[0];
-		HashCoreUtils.LoadSixteenBigEndianWords(out words, ref block);
-
+		Unsafe.SkipInit(out SM3Schedule schedule);
 		uint a = hashAlgorithm._v0;
 		uint b = hashAlgorithm._v1;
 		uint c = hashAlgorithm._v2;
@@ -222,107 +214,111 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		uint f = hashAlgorithm._v5;
 		uint g = hashAlgorithm._v6;
 		uint h = hashAlgorithm._v7;
-		ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
-		for (int round = 0; round < 16; round += 4)
+		do
 		{
-			uint word = Unsafe.Add(ref words, (uint)round);
-			d = RoundSoftware(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, (uint)(round + 4 & 15)), Unsafe.Add(ref roundConstants, (uint)round), false, out h);
-			b = BitOperations.RotateLeft(b, 9);
-			f = BitOperations.RotateLeft(f, 19);
-			ExpandSoftware(ref words, round + 16);
+			ref uint words = ref schedule[0];
+			HashCoreUtils.LoadSixteenBigEndianWords(out words, ref block);
+			ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
-			word = Unsafe.Add(ref words, (uint)(round + 1 & 15));
-			c = RoundSoftware(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, (uint)(round + 5 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 1)), false, out g);
-			a = BitOperations.RotateLeft(a, 9);
-			e = BitOperations.RotateLeft(e, 19);
-			ExpandSoftware(ref words, round + 17);
+			for (int round = 0; round < 16; round += 4)
+			{
+				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, false, true, rotate23, rotate15);
+				words = ref Unsafe.Add(ref words, 4);
+				roundConstants = ref Unsafe.Add(ref roundConstants, 4);
+			}
 
-			word = Unsafe.Add(ref words, (uint)(round + 2 & 15));
-			b = RoundSoftware(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, (uint)(round + 6 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 2)), false, out f);
-			d = BitOperations.RotateLeft(d, 9);
-			h = BitOperations.RotateLeft(h, 19);
-			ExpandSoftware(ref words, round + 18);
+			for (int round = 16; round < 52; round += 4)
+			{
+				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, true, true, rotate23, rotate15);
+				words = ref Unsafe.Add(ref words, 4);
+				roundConstants = ref Unsafe.Add(ref roundConstants, 4);
+			}
 
-			word = Unsafe.Add(ref words, (uint)(round + 3 & 15));
-			a = RoundSoftware(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, (uint)(round + 7 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 3)), false, out e);
-			c = BitOperations.RotateLeft(c, 9);
-			g = BitOperations.RotateLeft(g, 19);
-			ExpandSoftware(ref words, round + 19);
-		}
+			for (int round = 52; round < 64; round += 4)
+			{
+				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, true, false, rotate23, rotate15);
+				words = ref Unsafe.Add(ref words, 4);
+				roundConstants = ref Unsafe.Add(ref roundConstants, 4);
+			}
 
-		for (int round = 16; round < 52; round += 4)
-		{
-			uint word = Unsafe.Add(ref words, (uint)(round & 15));
-			d = RoundSoftware(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, (uint)(round + 4 & 15)), Unsafe.Add(ref roundConstants, (uint)round), true, out h);
-			b = BitOperations.RotateLeft(b, 9);
-			f = BitOperations.RotateLeft(f, 19);
-			ExpandSoftware(ref words, round + 16);
+			hashAlgorithm._v0 = a ^= hashAlgorithm._v0;
+			hashAlgorithm._v1 = b ^= hashAlgorithm._v1;
+			hashAlgorithm._v2 = c ^= hashAlgorithm._v2;
+			hashAlgorithm._v3 = d ^= hashAlgorithm._v3;
+			hashAlgorithm._v4 = e ^= hashAlgorithm._v4;
+			hashAlgorithm._v5 = f ^= hashAlgorithm._v5;
+			hashAlgorithm._v6 = g ^= hashAlgorithm._v6;
+			hashAlgorithm._v7 = h ^= hashAlgorithm._v7;
 
-			word = Unsafe.Add(ref words, (uint)(round + 1 & 15));
-			c = RoundSoftware(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, (uint)(round + 5 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 1)), true, out g);
-			a = BitOperations.RotateLeft(a, 9);
-			e = BitOperations.RotateLeft(e, 19);
-			ExpandSoftware(ref words, round + 17);
-
-			word = Unsafe.Add(ref words, (uint)(round + 2 & 15));
-			b = RoundSoftware(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, (uint)(round + 6 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 2)), true, out f);
-			d = BitOperations.RotateLeft(d, 9);
-			h = BitOperations.RotateLeft(h, 19);
-			ExpandSoftware(ref words, round + 18);
-
-			word = Unsafe.Add(ref words, (uint)(round + 3 & 15));
-			a = RoundSoftware(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, (uint)(round + 7 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 3)), true, out e);
-			c = BitOperations.RotateLeft(c, 9);
-			g = BitOperations.RotateLeft(g, 19);
-			ExpandSoftware(ref words, round + 19);
-		}
-
-		for (int round = 52; round < 64; round += 4)
-		{
-			uint word = Unsafe.Add(ref words, (uint)(round & 15));
-			d = RoundSoftware(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, (uint)(round + 4 & 15)), Unsafe.Add(ref roundConstants, (uint)round), true, out h);
-			b = BitOperations.RotateLeft(b, 9);
-			f = BitOperations.RotateLeft(f, 19);
-
-			word = Unsafe.Add(ref words, (uint)(round + 1 & 15));
-			c = RoundSoftware(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, (uint)(round + 5 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 1)), true, out g);
-			a = BitOperations.RotateLeft(a, 9);
-			e = BitOperations.RotateLeft(e, 19);
-
-			word = Unsafe.Add(ref words, (uint)(round + 2 & 15));
-			b = RoundSoftware(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, (uint)(round + 6 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 2)), true, out f);
-			d = BitOperations.RotateLeft(d, 9);
-			h = BitOperations.RotateLeft(h, 19);
-
-			word = Unsafe.Add(ref words, (uint)(round + 3 & 15));
-			a = RoundSoftware(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, (uint)(round + 7 & 15)), Unsafe.Add(ref roundConstants, (uint)(round + 3)), true, out e);
-			c = BitOperations.RotateLeft(c, 9);
-			g = BitOperations.RotateLeft(g, 19);
-		}
-
-		hashAlgorithm._v0 ^= a;
-		hashAlgorithm._v1 ^= b;
-		hashAlgorithm._v2 ^= c;
-		hashAlgorithm._v3 ^= d;
-		hashAlgorithm._v4 ^= e;
-		hashAlgorithm._v5 ^= f;
-		hashAlgorithm._v6 ^= g;
-		hashAlgorithm._v7 ^= h;
+			block = ref Unsafe.Add(ref block, BlockSizeInBytes);
+			remaining -= BlockSizeInBytes;
+		} while (remaining is not 0);
 	}
 
+	// Rounds j..j+3 with words = &W[j] and roundConstants = &T[j]; expand also writes W[j+16..j+19].
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ExpandSoftware(ref uint words, int round)
+	private static void Round4Software(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h, ref uint words, ref uint roundConstants, bool late, bool expand, int rotate23, int rotate15)
 	{
-		int index = round & 15;
-		uint word = P1(Unsafe.Add(ref words, index) ^ Unsafe.Add(ref words, (uint)(round - 9 & 15)) ^ BitOperations.RotateLeft(Unsafe.Add(ref words, (uint)(round - 3 & 15)), 15))
-					^ BitOperations.RotateLeft(Unsafe.Add(ref words, (uint)(round - 13 & 15)), 7)
-					^ Unsafe.Add(ref words, (uint)(round - 6 & 15));
-		Unsafe.Add(ref words, index) = word;
+		uint word = words;
+		d = RoundSoftware(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, 4), roundConstants, late, rotate23, rotate15, out h);
+		b = BitOperations.RotateLeft(b, 9);
+		f = BitOperations.RotateLeft(f, 19);
+
+		if (expand)
+		{
+			ExpandSoftware(ref words);
+		}
+
+		word = Unsafe.Add(ref words, 1);
+		c = RoundSoftware(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, 5), Unsafe.Add(ref roundConstants, 1), late, rotate23, rotate15, out g);
+		a = BitOperations.RotateLeft(a, 9);
+		e = BitOperations.RotateLeft(e, 19);
+
+		if (expand)
+		{
+			ExpandSoftware(ref Unsafe.Add(ref words, 1));
+		}
+
+		word = Unsafe.Add(ref words, 2);
+		b = RoundSoftware(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, 6), Unsafe.Add(ref roundConstants, 2), late, rotate23, rotate15, out f);
+		d = BitOperations.RotateLeft(d, 9);
+		h = BitOperations.RotateLeft(h, 19);
+
+		if (expand)
+		{
+			ExpandSoftware(ref Unsafe.Add(ref words, 2));
+		}
+
+		word = Unsafe.Add(ref words, 3);
+		a = RoundSoftware(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, 7), Unsafe.Add(ref roundConstants, 3), late, rotate23, rotate15, out e);
+		c = BitOperations.RotateLeft(c, 9);
+		g = BitOperations.RotateLeft(g, 19);
+
+		if (expand)
+		{
+			ExpandSoftware(ref Unsafe.Add(ref words, 3));
+		}
 	}
 
+	// W[j+16] for words = &W[j].
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ExpandSoftware(ref uint words)
+	{
+		Unsafe.Add(ref words, 16) = P1(words ^ Unsafe.Add(ref words, 7) ^ BitOperations.RotateLeft(Unsafe.Add(ref words, 13), 15))
+			^ BitOperations.RotateLeft(Unsafe.Add(ref words, 3), 7)
+			^ Unsafe.Add(ref words, 10);
+	}
+
+	// For the x86 kernel, which never takes the ARM64 branch of P0Software.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint RoundSoftware(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, bool late, out uint nextH)
+	{
+		return RoundSoftware(a, b, c, d, e, f, g, h, word, mixed, constant, late, 23, 15, out nextH);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static uint RoundSoftware(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, bool late, int rotate23, int rotate15, out uint nextH)
 	{
 		// e arrives last: one add before the rotate, and SS1 added last.
 		// Within one expression the JIT re-associates these sums, so they are separate statements, none directly before its only use (forward substitution).
@@ -336,7 +332,20 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		uint ff = late ? FF1(a, b, c) : FF0(a, b, c);
 		uint tt2Partial = gg + hW;
 		uint tt1Partial = ff + dW;
-		nextH = P0(tt2Partial + ss1);
+		nextH = P0Software(tt2Partial + ss1, rotate23, rotate15);
 		return (ss1 ^ a12) + tt1Partial;
+	}
+
+	// ARM64 folds rotates by constants into eor with a rotated operand, which can take 2 cycles each, so P0 would take 4 instead of 3.
+	// The amounts must therefore come from arguments of a method that is never inlined.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static uint P0Software(uint x, int rotate23, int rotate15)
+	{
+		if (ArmBase.Arm64.IsSupported)
+		{
+			return x ^ BitOperations.RotateRight(x, rotate23) ^ BitOperations.RotateRight(x, rotate15);
+		}
+
+		return P0(x);
 	}
 }
