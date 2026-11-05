@@ -114,19 +114,20 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint FF1(uint x, uint y, uint z)
 	{
-		return x & y | (x | y) & z;
+		return x & (y | z) | y & z;
+	}
+
+	// yz = y ^ z is ready before x.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static uint GG0(uint x, uint yz)
+	{
+		return x ^ yz;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint GG0(uint x, uint y, uint z)
+	private static uint GG1(uint x, uint yz, uint z)
 	{
-		return x ^ y ^ z;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint GG1(uint x, uint y, uint z)
-	{
-		return (y ^ z) & x ^ z;
+		return yz & x ^ z;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -323,9 +324,19 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint RoundSoftware(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, bool late, out uint nextH)
 	{
+		// e arrives last: one add before the rotate, and SS1 added last.
+		// Within one expression the JIT re-associates these sums, so they are separate statements, none directly before its only use (forward substitution).
 		uint a12 = BitOperations.RotateLeft(a, 12);
-		uint ss1 = BitOperations.RotateLeft(a12 + e + constant, 7);
-		nextH = P0((late ? GG1(e, f, g) : GG0(e, f, g)) + h + ss1 + word);
-		return (late ? FF1(a, b, c) : FF0(a, b, c)) + d + (ss1 ^ a12) + mixed;
+		uint fg = f ^ g;
+		uint a12K = a12 + constant;
+		uint hW = h + word;
+		uint dW = d + mixed;
+		uint ss1 = BitOperations.RotateLeft(e + a12K, 7);
+		uint gg = late ? GG1(e, fg, g) : GG0(e, fg);
+		uint ff = late ? FF1(a, b, c) : FF0(a, b, c);
+		uint tt2Partial = gg + hW;
+		uint tt1Partial = ff + dW;
+		nextH = P0(tt2Partial + ss1);
+		return (ss1 ^ a12) + tt1Partial;
 	}
 }

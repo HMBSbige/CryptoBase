@@ -210,10 +210,7 @@ public partial struct SM3Core
 		uint constant
 	)
 	{
-		uint a12 = BitOperations.RotateLeft(a, 12);
-		uint ss1 = BitOperations.RotateLeft(a12 + e + constant, 7);
-		uint tt1 = FF1(a, b, c) + d + (ss1 ^ a12) + mixed;
-		uint tt2 = GG1(e, f, g) + h + ss1 + word;
+		uint tt1 = RoundSoftware(a, b, c, d, e, f, g, h, word, mixed, constant, true, out uint nextE);
 		d = c;
 		c = BitOperations.RotateLeft(b, 9);
 		b = a;
@@ -221,6 +218,6 @@ public partial struct SM3Core
 		h = g;
 		g = BitOperations.RotateLeft(f, 19);
 		f = e;
-		e = P0(tt2);
+		e = nextE;
 	}
 }
