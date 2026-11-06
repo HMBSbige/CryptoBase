@@ -196,14 +196,14 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 
 	private static void ProcessBlocksSoftware(ref SM3Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{
-		ProcessBlocksSoftware(ref hashAlgorithm, ref MemoryMarshal.GetReference(source), source.Length, 23, 15);
+		ProcessBlocksSoftware(ref hashAlgorithm, ref MemoryMarshal.GetReference(source), source.Length, 15);
 	}
 
 	// The schedule holds W[0..67] in order, so each access is a constant offset from words.
-	// rotate23 and rotate15 are 23 and 15, passed in for P0Software.
+	// rotate15 is 15, passed in for P0Software.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void ProcessBlocksSoftware(ref SM3Core hashAlgorithm, ref byte block, int remaining, int rotate23, int rotate15)
+	private static void ProcessBlocksSoftware(ref SM3Core hashAlgorithm, ref byte block, int remaining, int rotate15)
 	{
 		Unsafe.SkipInit(out SM3Schedule schedule);
 		uint a = hashAlgorithm._v0;
@@ -223,21 +223,21 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 
 			for (int round = 0; round < 16; round += 4)
 			{
-				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, false, true, rotate23, rotate15);
+				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, false, true, rotate15);
 				words = ref Unsafe.Add(ref words, 4);
 				roundConstants = ref Unsafe.Add(ref roundConstants, 4);
 			}
 
 			for (int round = 16; round < 52; round += 4)
 			{
-				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, true, true, rotate23, rotate15);
+				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, true, true, rotate15);
 				words = ref Unsafe.Add(ref words, 4);
 				roundConstants = ref Unsafe.Add(ref roundConstants, 4);
 			}
 
 			for (int round = 52; round < 64; round += 4)
 			{
-				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, true, false, rotate23, rotate15);
+				Round4Software(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref words, ref roundConstants, true, false, rotate15);
 				words = ref Unsafe.Add(ref words, 4);
 				roundConstants = ref Unsafe.Add(ref roundConstants, 4);
 			}
@@ -258,10 +258,10 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 
 	// Rounds j..j+3 with words = &W[j] and roundConstants = &T[j]; expand also writes W[j+16..j+19].
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Round4Software(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h, ref uint words, ref uint roundConstants, bool late, bool expand, int rotate23, int rotate15)
+	private static void Round4Software(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h, ref uint words, ref uint roundConstants, bool late, bool expand, int rotate15)
 	{
 		uint word = words;
-		d = RoundSoftware(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, 4), roundConstants, late, rotate23, rotate15, out h);
+		d = RoundSoftware(a, b, c, d, e, f, g, h, word, word ^ Unsafe.Add(ref words, 4), roundConstants, late, rotate15, out h);
 		b = BitOperations.RotateLeft(b, 9);
 		f = BitOperations.RotateLeft(f, 19);
 
@@ -271,7 +271,7 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		}
 
 		word = Unsafe.Add(ref words, 1);
-		c = RoundSoftware(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, 5), Unsafe.Add(ref roundConstants, 1), late, rotate23, rotate15, out g);
+		c = RoundSoftware(d, a, b, c, h, e, f, g, word, word ^ Unsafe.Add(ref words, 5), Unsafe.Add(ref roundConstants, 1), late, rotate15, out g);
 		a = BitOperations.RotateLeft(a, 9);
 		e = BitOperations.RotateLeft(e, 19);
 
@@ -281,7 +281,7 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		}
 
 		word = Unsafe.Add(ref words, 2);
-		b = RoundSoftware(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, 6), Unsafe.Add(ref roundConstants, 2), late, rotate23, rotate15, out f);
+		b = RoundSoftware(c, d, a, b, g, h, e, f, word, word ^ Unsafe.Add(ref words, 6), Unsafe.Add(ref roundConstants, 2), late, rotate15, out f);
 		d = BitOperations.RotateLeft(d, 9);
 		h = BitOperations.RotateLeft(h, 19);
 
@@ -291,7 +291,7 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		}
 
 		word = Unsafe.Add(ref words, 3);
-		a = RoundSoftware(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, 7), Unsafe.Add(ref roundConstants, 3), late, rotate23, rotate15, out e);
+		a = RoundSoftware(b, c, d, a, f, g, h, e, word, word ^ Unsafe.Add(ref words, 7), Unsafe.Add(ref roundConstants, 3), late, rotate15, out e);
 		c = BitOperations.RotateLeft(c, 9);
 		g = BitOperations.RotateLeft(g, 19);
 
@@ -314,11 +314,11 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint RoundSoftware(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, bool late, out uint nextH)
 	{
-		return RoundSoftware(a, b, c, d, e, f, g, h, word, mixed, constant, late, 23, 15, out nextH);
+		return RoundSoftware(a, b, c, d, e, f, g, h, word, mixed, constant, late, 15, out nextH);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint RoundSoftware(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, bool late, int rotate23, int rotate15, out uint nextH)
+	private static uint RoundSoftware(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, bool late, int rotate15, out uint nextH)
 	{
 		// e arrives last: one add before the rotate, and SS1 added last.
 		// Within one expression the JIT re-associates these sums, so they are separate statements, none directly before its only use (forward substitution).
@@ -332,18 +332,19 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		uint ff = late ? FF1(a, b, c) : FF0(a, b, c);
 		uint tt2Partial = gg + hW;
 		uint tt1Partial = ff + dW;
-		nextH = P0Software(tt2Partial + ss1, rotate23, rotate15);
+		nextH = P0Software(tt2Partial + ss1, rotate15);
 		return (ss1 ^ a12) + tt1Partial;
 	}
 
-	// ARM64 folds rotates by constants into eor with a rotated operand, which can take 2 cycles each, so P0 would take 4 instead of 3.
-	// The amounts must therefore come from arguments of a method that is never inlined.
+	// ARM64 folds a rotate by a constant into eor with a rotated operand, which takes 2 cycles on some cores and 1 on others.
+	// Folding only the first rotate lets that eor run alongside the second, so P0 takes 3 cycles instead of 4 on the former and still 2 on the latter.
+	// The second amount must therefore come from an argument of a method that is never inlined, and its rotate must be xored last.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint P0Software(uint x, int rotate23, int rotate15)
+	private static uint P0Software(uint x, int rotate15)
 	{
 		if (ArmBase.Arm64.IsSupported)
 		{
-			return x ^ BitOperations.RotateRight(x, rotate23) ^ BitOperations.RotateRight(x, rotate15);
+			return x ^ BitOperations.RotateRight(x, 23) ^ BitOperations.RotateRight(x, rotate15);
 		}
 
 		return P0(x);
