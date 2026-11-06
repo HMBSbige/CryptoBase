@@ -142,12 +142,6 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		return x ^ BitOperations.RotateLeft(x, 15) ^ BitOperations.RotateLeft(x, 23);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> P1(Vector128<uint> value)
-	{
-		return value ^ (value ^ value.RotateLeftUInt32(8)).RotateLeftUInt32(15);
-	}
-
 	[SkipLocalsInit]
 	private static void Finalize(ref SM3Core hashAlgorithm, Span<byte> destination)
 	{
@@ -308,13 +302,6 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		Unsafe.Add(ref words, 16) = P1(words ^ Unsafe.Add(ref words, 7) ^ BitOperations.RotateLeft(Unsafe.Add(ref words, 13), 15))
 			^ BitOperations.RotateLeft(Unsafe.Add(ref words, 3), 7)
 			^ Unsafe.Add(ref words, 10);
-	}
-
-	// For the x86 kernel, which never takes the ARM64 branch of P0Software.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint RoundSoftware(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint word, uint mixed, uint constant, bool late, out uint nextH)
-	{
-		return RoundSoftware(a, b, c, d, e, f, g, h, word, mixed, constant, late, 15, out nextH);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
