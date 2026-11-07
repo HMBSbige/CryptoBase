@@ -6,7 +6,7 @@ CryptoBase.Abstractions | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBas
 CryptoBase.IO | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.IO.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.IO/)
 CryptoBase.X509 | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.X509.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.X509/)
 
-A fast crypto library for .NET
+High-performance, modern cryptography in pure C#
 
 See the [documentation](docs/README.md) for installation and usage guides.
 
