@@ -12,6 +12,7 @@
 | KMACXOF128, KMACXOF256 | `KmacXof128Algorithm`, `KmacXof256Algorithm` | `CryptoBase.Macs.Kmac` |
 | HKDF | `Hkdf`, `Hkdf<TMac>` | `CryptoBase.Kdf` |
 | TLS 1.2 PRF | `Tls12Prf`, `Tls12Prf<TMac>` | `CryptoBase.Kdf` |
+| SM3 KDF (GB/T 32918.4) | `SM3Kdf` | `CryptoBase.Kdf` |
 | Argon2 | `Argon2id`, `Argon2i`, `Argon2d`, `Argon2PasswordHasher` | `CryptoBase.Kdf` |
 
 ## HMAC
@@ -209,6 +210,20 @@ byte[] serverRandom = RandomNumberGenerator.GetBytes(32);
 byte[] masterSecret = new byte[48];
 
 Tls12Prf<PlatformHmacSha256>.DeriveKey(preMasterSecret, "master secret"u8, clientRandom, serverRandom, masterSecret);
+```
+
+## SM3 KDF
+
+```csharp
+using System.Security.Cryptography;
+using CryptoBase.Kdf;
+
+// The secret Z, such as the coordinates of a shared point. It may be empty.
+byte[] z = RandomNumberGenerator.GetBytes(64);
+
+// The key fills the destination, which must not be empty. Z may overlap the destination.
+byte[] key = new byte[48];
+SM3Kdf.DeriveKey(z, key);
 ```
 
 ## BLAKE3 key derivation

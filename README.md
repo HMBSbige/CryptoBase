@@ -74,6 +74,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | Argon2i | ✅ |
 | Argon2id | ✅ |
 | HKDF | ✅ |
+| SM3 KDF | ✅ |
 | TLS 1.2 PRF | ✅ |
 
 ### [One-time passwords](docs/one-time-passwords.md)

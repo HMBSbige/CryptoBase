@@ -9,7 +9,7 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	private const int LengthOffset = 56;
 	private const int HashSizeInBytes = 32;
 
-	private static ReadOnlySpan<uint> RoundConstants =>
+	internal static ReadOnlySpan<uint> RoundConstants =>
 	[
 		0x79CC4519U, 0xF3988A32U, 0xE7311465U, 0xCE6228CBU, 0x9CC45197U, 0x3988A32FU, 0x7311465EU, 0xE6228CBCU,
 		0xCC451979U, 0x988A32F3U, 0x311465E7U, 0x6228CBCEU, 0xC451979CU, 0x88A32F39U, 0x11465E73U, 0x228CBCE6U,
