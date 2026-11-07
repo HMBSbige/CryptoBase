@@ -5,6 +5,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>Stream and file I/O for CryptoBase.</Description>
+    <PackageTags>$(PackageTags);stream;file-encryption;random-access;xts</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

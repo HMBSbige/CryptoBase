@@ -5,6 +5,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>X.509 certificates for CryptoBase.</Description>
+    <PackageTags>$(PackageTags);x509;certificate;pki</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

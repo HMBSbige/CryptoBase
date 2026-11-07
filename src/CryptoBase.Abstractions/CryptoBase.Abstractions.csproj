@@ -5,6 +5,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>Abstractions for CryptoBase.</Description>
+    <PackageTags>$(PackageTags);interfaces</PackageTags>
   </PropertyGroup>
 
 </Project>

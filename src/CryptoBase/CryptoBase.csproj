@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <Description>A fast crypto library for .NET.</Description>
+    <PackageTags>$(PackageTags);encryption;hash;aead;post-quantum;simd;blake2b;blake3;sha2;sha3;sm3;hmac;poly1305;kmac;argon2;hkdf;hotp;totp;chacha20;salsa20;xchacha20;aes;sm4;xts;aes-gcm;chacha20-poly1305;ecdh;ecdsa;rsa;x25519;x448;ed25519;ed448;sm2;sm9;hpke;ml-kem;ml-dsa</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
