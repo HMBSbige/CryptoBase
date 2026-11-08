@@ -13,7 +13,7 @@ namespace CryptoBase.X509;
 /// </remarks>
 public sealed class AuthorityKeyIdentifier
 {
-	private static readonly Asn1Tag KeyIdentifierTag = new(TagClass.ContextSpecific, 0);
+	internal static readonly Asn1Tag KeyIdentifierTag = new(TagClass.ContextSpecific, 0);
 	private static readonly Asn1Tag AuthorityCertIssuerTag = new(TagClass.ContextSpecific, 1, true);
 	private static readonly Asn1Tag AuthorityCertSerialNumberTag = new(TagClass.ContextSpecific, 2);
 

@@ -195,7 +195,8 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | Chain validation through the platform | ✅ |
 | Path validation (RFC 5280) | ✅ |
 | Certificate fingerprints (RFC 8122) | ✅ |
-| Certificate signing requests | ⏳ |
+| Certificate signing requests | ✅ |
+| Certificate issuance | ✅ |
 | CRL | ⏳ |
 | OCSP | ⚠️ |
 

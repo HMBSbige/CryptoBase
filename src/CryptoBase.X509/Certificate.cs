@@ -403,12 +403,19 @@ public sealed class Certificate
 		return usage is not X509KeyUsageFlags.None ? usage : throw new AsnContentException();
 	}
 
-	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension.
+	// extensions [3] EXPLICIT Extensions.
 	private static ReadOnlyCollection<CertificateExtension> ReadExtensions(ref DerReader tbs)
 	{
 		DerReader wrapper = tbs.ReadSequence(ExtensionsTag);
-		DerReader sequence = wrapper.ReadSequence();
+		ReadOnlyCollection<CertificateExtension> extensions = ReadExtensionSequence(ref wrapper);
 		wrapper.ThrowIfNotEmpty();
+		return extensions;
+	}
+
+	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension.
+	internal static ReadOnlyCollection<CertificateExtension> ReadExtensionSequence(ref DerReader reader)
+	{
+		DerReader sequence = reader.ReadSequence();
 		sequence.ThrowIfEmpty();
 		List<CertificateExtension> extensions = [];
 

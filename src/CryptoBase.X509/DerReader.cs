@@ -41,10 +41,10 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return ReadSequence(out _, tag);
 	}
 
-	// A SET OF whose elements are in the order that DER requires.
-	public DerReader ReadSetOf()
+	// A SET OF, or the constructed value with tag, whose elements are in the order that DER requires.
+	public DerReader ReadSetOf(Asn1Tag? tag = null)
 	{
-		AsnDecoder.ReadSetOf(_remaining.Span, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
+		AsnDecoder.ReadSetOf(_remaining.Span, AsnEncodingRules.DER, out int offset, out int length, out int consumed, expectedTag: tag);
 		return new DerReader(Take(consumed).Slice(offset, length));
 	}
 
