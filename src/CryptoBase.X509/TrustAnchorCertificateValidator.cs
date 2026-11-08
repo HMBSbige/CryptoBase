@@ -15,8 +15,8 @@ namespace CryptoBase.X509;
 /// </para>
 /// <para>
 /// Every certificate of the path, the trust anchor included, must be valid at the time of <see cref="CertificateValidationContext.TimeProvider" />, truncated to the second, with both ends of its validity period included,
-/// must have no critical extension other than basic constraints, key usage, extended key usage, subject alternative name and name constraints, which must decode, as must the authority and subject key identifier extensions, which must not be critical;
-/// critical certificate policy extensions are refused, as certificate policies are not processed. Every certificate but the trust anchor must have a nonempty issuer name (RFC 5280, Sec. 4.1.2.4).
+/// must have no critical extension other than basic constraints, key usage, extended key usage, subject alternative name, name constraints and the certificate policy extensions, which must decode, as must the authority and subject key identifier extensions, which must not be critical.
+/// Every certificate but the trust anchor must have a nonempty issuer name (RFC 5280, Sec. 4.1.2.4), and must mark a policy constraints or inhibit anyPolicy extension critical (RFC 5280, Secs. 4.2.1.11 and 4.2.1.14).
 /// </para>
 /// <para>
 /// Each certificate that issues another in the path must assert keyCertSign if it has a key usage extension (RFC 5280, Sec. 6.1.4 (n)), and must have id-kp-serverAuth or id-kp-clientAuth, as <see cref="CertificateValidationContext.Usage" /> requires, or anyExtendedKeyUsage, if it has an extended key usage extension.
@@ -26,10 +26,18 @@ namespace CryptoBase.X509;
 /// The validator does not check <see cref="Certificate.KeyUsage" /> of the peer's certificate; the caller checks it.
 /// </para>
 /// <para>
-/// Name constraints (RFC 5280, Sec. 4.2.1.10) of every CA of the path, the trust anchor's included, apply to the subject alternative names of every certificate below it but the self-issued intermediate ones, and, for a certificate without that extension, to the emailAddress attributes of its subject.
-/// dNSName, iPAddress and rfc822Name subtrees are matched; a dNSName subtree must be a DNS name or empty, without a wildcard or a leading period, an iPAddress subtree an address and a mask of contiguous ones, and the extension must have permitted or excluded subtrees, neither list empty.
+/// Name constraints (RFC 5280, Sec. 4.2.1.10) of every CA of the path, the trust anchor's included, apply to the subject alternative names and the subject of every certificate below it but the self-issued intermediate ones, and, for a certificate without that extension, to the emailAddress attributes of its subject.
+/// dNSName, iPAddress, rfc822Name and directoryName subtrees are matched; a dNSName subtree must be a DNS name or empty, without a wildcard or a leading period, an iPAddress subtree an address and a mask of contiguous ones, and the extension must have permitted or excluded subtrees, neither list empty.
 /// A wildcard name is within a permitted subtree if every name that it stands for is, and within an excluded one if any is. A name of these forms that is not valid, under a subtree of its form, fails the path.
-/// A CA with directoryName subtrees in a critical extension fails any path; subtrees of the other forms that are not matched, uniformResourceIdentifier among them, fail a path whose certificates below have a name of that form. The peer's certificate must not have the extension.
+/// A directoryName subtree applies to a nonempty subject and to the directory names of the subject alternative name extension: a name is within it, as RFC 5280, Sec. 7.1, describes, if its first relative names match all those of the subtree, in order, each with the same attributes in any order. An attribute matches if it has the same type and its value is the same byte for byte or, for a value of a string type (PrintableString, UTF8String, TeletexString, BMPString, UniversalString, IA5String or VisibleString), the same after preparation:
+/// letters of ASCII are compared regardless of case, the characters that RFC 4518, Sec. 2.2, maps to nothing are removed and those that it maps to a space become one, and spaces are removed at the ends and reduced to one inside (Sec. 2.6.1); other characters are compared by code point, without case folding of those beyond ASCII or normalization, so that the result does not depend on the globalization mode. A value of another type, or one that does not decode, is compared byte for byte.
+/// Subtrees of the other forms that are not matched, uniformResourceIdentifier among them, fail a path whose certificates below have a name of that form. The peer's certificate must not have the extension.
+/// </para>
+/// <para>
+/// Certificate policies are processed as in RFC 5280, Sec. 6.1, with the policy graph of RFC 9618, whose size is linear in the policies and mappings of the path; the trust anchor takes no part, and <see cref="InitialPolicies" />, <see cref="RequireExplicitPolicy" />, <see cref="InhibitPolicyMapping" /> and <see cref="InhibitAnyPolicy" /> are the inputs of Sec. 6.1.1.
+/// A path is valid for its policies if no explicit policy is required of it, or if a policy of <see cref="InitialPolicies" /> is valid for it; an explicit policy is required by <see cref="RequireExplicitPolicy" /> or by a policy constraints extension whose requireExplicitPolicy has been reached.
+/// A certificate policies extension must have at least one policy, each once; a policy mappings extension at least one mapping, and neither of its policies may be anyPolicy; a policy constraints extension at least one field.
+/// The path that the strict search accepts must also pass this check, so a path that fails it gives way to the next candidate. A qualifier other than id-qt-cps and id-qt-unotice, which change nothing, fails a critical certificate policies extension (Sec. 4.2.1.4); the qualifiers of an extension that is not critical are not read.
 /// </para>
 /// <para>
 /// Signatures are verified with the key of the issuer, imported with the importer given to the constructor; an RSA key that it does not support is imported with <see cref="PlatformRsaKey.ImportSubjectPublicKeyInfo" />.
@@ -47,12 +55,12 @@ namespace CryptoBase.X509;
 /// A certificate is self-signed if it is self-issued and its own key verifies its signature; one whose signature cannot be verified, as its algorithm or key is not supported, is not, and neither is one that rolls over a CA key, which the old key signs, whatever its key identifiers say.
 /// The errors are <see cref="CertificateValidationError.Malformed" /> for an extension that does not decode or breaks the rules of its syntax, an empty issuer name, a key that does not decode, or a name that name constraints cannot be checked against;
 /// <see cref="CertificateValidationError.WeakAlgorithm" /> and <see cref="CertificateValidationError.UnsupportedAlgorithm" /> as above; <see cref="CertificateValidationError.InvalidSignature" />; <see cref="CertificateValidationError.Expired" />;
-/// <see cref="CertificateValidationError.UntrustedRoot" /> for a path that does not reach a trust anchor; <see cref="CertificateValidationError.NotValidForUsage" /> for an extended key usage, basic constraints, key usage, path length or name that the rules above refuse, or an extension that the validator does not process;
+/// <see cref="CertificateValidationError.UntrustedRoot" /> for a path that does not reach a trust anchor; <see cref="CertificateValidationError.NotValidForUsage" /> for an extended key usage, basic constraints, key usage, path length, name or certificate policy that the rules above refuse, or an extension that the validator does not process;
 /// <see cref="CertificateValidationError.Unspecified" /> for a search that a limit stopped; and <see cref="CertificateValidationError.NameMismatch" /> for a host name that the certificate does not identify or that is neither a DNS name nor an IP address.
 /// <see cref="CertificateValidationResult.Message" /> describes each problem; the text that it takes from the certificates, such as their subjects, and from the host name has each control character, line or paragraph separator and unpaired surrogate written as \uXXXX, so that the message is one line that any encoding can write.
 /// </para>
 /// <para>
-/// So that a peer cannot make it work without bound, each search considers at most 100 candidate issuers, each counted as a signature check whether or not it is verified, the check of whether the last certificate of a path is self-signed counting as one more, once for each certificate, and makes at most 2^20 comparisons of a name with a subtree, so a validation considers at most 200 and makes at most 2^21.
+/// So that a peer cannot make it work without bound, each search considers at most 100 candidate issuers, each counted as a signature check whether or not it is verified, the check of whether the last certificate of a path is self-signed counting as one more, once for each certificate, makes at most 2^20 comparisons of a name with a subtree, a directoryName counting by its attributes and length, and handles at most 2^16 entries of the policy graphs of the paths that reach a trust anchor, so a validation considers at most 200 candidates, makes at most 2^21 comparisons and handles at most 2^17 entries.
 /// A limit that stops the first search fails the validation, and one that stops either search adds <see cref="CertificateValidationError.Unspecified" /> to the errors.
 /// Cancellation is observed between candidates.
 /// </para>
@@ -64,6 +72,7 @@ namespace CryptoBase.X509;
 public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDisposable
 {
 	private const int MinRsaKeySizeAllowed = 1024;
+	private const string AnyPolicyOid = "2.5.29.32.0";
 
 	private readonly TrustAnchorEntry[] _anchors;
 	private readonly Dictionary<ReadOnlyMemory<byte>, TrustAnchorEntry[]> _anchorsBySubject;
@@ -168,6 +177,67 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 			field = value;
 		}
 	} = 2048;
+
+	/// <summary>
+	/// Gets the certificate policies that are acceptable to the caller, the user-initial-policy-set of RFC 5280, Sec. 6.1.1 (c), as object identifiers in dotted decimal; by default anyPolicy, 2.5.29.32.0, alone.
+	/// </summary>
+	/// <remarks>
+	/// The policies matter only for a path that must have an explicit policy, because of <see cref="RequireExplicitPolicy" /> or a policy constraints extension of the path; RFC 5280, Sec. 6.1.5, accepts any other path whatever its policies are.
+	/// The validator holds a copy of the collection; anyPolicy among other policies means anyPolicy.
+	/// </remarks>
+	/// <exception cref="ArgumentNullException">The value set is <see langword="null" />.</exception>
+	/// <exception cref="ArgumentException">The value set is empty, or holds <see langword="null" /> or something other than an object identifier.</exception>
+	public IReadOnlyCollection<string> InitialPolicies
+	{
+		get;
+		init
+		{
+			ArgumentNullException.ThrowIfNull(value);
+
+			string[] policies = [.. value];
+
+			if (policies.Length is 0)
+			{
+				throw new ArgumentException("The initial policies must include at least one policy.", nameof(value));
+			}
+
+			HashSet<ReadOnlyMemory<byte>> contents = new(ByteMemoryComparer.Instance);
+
+			foreach (string policy in policies)
+			{
+				if (policy is null)
+				{
+					throw new ArgumentException("The initial policies must not include null.", nameof(value));
+				}
+
+				AsnWriter writer = new(AsnEncodingRules.DER);
+				writer.WriteObjectIdentifier(policy);
+				DerReader reader = new(writer.Encode());
+				contents.Add(reader.ReadObjectIdentifierContents());
+			}
+
+			field = policies;
+			InitialPolicySet = contents.Contains(PolicyGraph.AnyPolicy) ? null : contents;
+		}
+	} = [AnyPolicyOid];
+
+	/// <summary>
+	/// Gets whether every path must be valid for one of <see cref="InitialPolicies" />, the initial-explicit-policy of RFC 5280, Sec. 6.1.1 (f); <see langword="false" /> by default.
+	/// </summary>
+	public bool RequireExplicitPolicy { get; init; }
+
+	/// <summary>
+	/// Gets whether the policy mappings of the certificates of a path are not honored, the initial-policy-mapping-inhibit of RFC 5280, Sec. 6.1.1 (e); <see langword="false" /> by default.
+	/// </summary>
+	public bool InhibitPolicyMapping { get; init; }
+
+	/// <summary>
+	/// Gets whether anyPolicy in the certificates of a path does not match other policies, the initial-any-policy-inhibit of RFC 5280, Sec. 6.1.1 (g); <see langword="false" /> by default.
+	/// </summary>
+	public bool InhibitAnyPolicy { get; init; }
+
+	// The contents of the object identifiers of InitialPolicies, or null for anyPolicy.
+	internal HashSet<ReadOnlyMemory<byte>>? InitialPolicySet { get; private init; }
 
 	internal Func<ReadOnlySpan<byte>, ISignatureKey> ImportPublicKey { get; }
 

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace CryptoBase.X509;
 
-// The value of a name constraints extension (RFC 5280, Sec. 4.2.1.10), for certification path validation: the subtrees of the forms that are matched, dNSName, iPAddress and rfc822Name, and which other forms the subtrees name.
+// The value of a name constraints extension (RFC 5280, Sec. 4.2.1.10), for certification path validation: the subtrees of the forms that are matched, dNSName, iPAddress, rfc822Name and directoryName, and which other forms the subtrees name.
 // Decoding checks every subtree: its base must be a GeneralName whose form is valid, its minimum and maximum absent as the profile requires, and at least one of the two lists present, neither empty. The values are slices of the extension's memory, and the instance is immutable.
 internal sealed class NameConstraints
 {
@@ -20,15 +20,26 @@ internal sealed class NameConstraints
 
 	public NameSubtrees Excluded { get; }
 
-	// Whether a subtree of either list is a directoryName.
-	public bool HasDirectoryName => Permitted.HasForm(GeneralNameType.DirectoryName) || Excluded.HasForm(GeneralNameType.DirectoryName);
-
-	// The comparisons that Check makes at most for the names.
+	// The comparisons that Check makes at most for the names. A directoryName and a subtree can compare every attribute of one with every attribute of the other, within a relative name of equal size, so the product of their costs bounds them, without walking them here.
 	public long CountComparisons(ConstrainedNames names)
 	{
 		long subtrees = (long)names.DnsNames.Length * (Permitted.DnsNames.Length + Excluded.DnsNames.Length);
 		subtrees += (long)names.IPAddresses.Length * (Permitted.IPAddresses.Length + Excluded.IPAddresses.Length);
-		return subtrees + (long)names.Mailboxes.Length * (Permitted.Mailboxes.Length + Excluded.Mailboxes.Length);
+		subtrees += (long)names.Mailboxes.Length * (Permitted.Mailboxes.Length + Excluded.Mailboxes.Length);
+
+		if (Permitted.DirectoryNames.Length + Excluded.DirectoryNames.Length is 0)
+		{
+			return subtrees;
+		}
+
+		long nameWork = 0;
+
+		foreach (DistinguishedName name in names.DirectoryNames)
+		{
+			nameWork += name.Work;
+		}
+
+		return subtrees + nameWork * (Permitted.DirectoryNameWork + Excluded.DirectoryNameWork);
 	}
 
 	// Whether the names are within the constraints (RFC 5280, Sec. 6.1.3 (b) and (c)): each name of a matched form must be within a permitted subtree of its form, if there is one, and within no excluded subtree; a name of another form that a subtree also names cannot be checked.
@@ -88,8 +99,26 @@ internal sealed class NameConstraints
 			}
 		}
 
-		// directoryName subtrees are not matched: a name constraints extension that is critical and has one fails the CA itself, and one that is not fails a certificate with a name of that form, as do the other forms that are not matched, which RFC 5280 asks to process or reject (Sec. 4.2.1.10).
-		foreach (GeneralNameType form in (ReadOnlySpan<GeneralNameType>)[GeneralNameType.DirectoryName, GeneralNameType.OtherName, GeneralNameType.X400Address, GeneralNameType.EdiPartyName, GeneralNameType.UniformResourceIdentifier, GeneralNameType.RegisteredId])
+		foreach (DistinguishedName name in Permitted.DirectoryNames.Length + Excluded.DirectoryNames.Length > 0 ? names.DirectoryNames : [])
+		{
+			if (Permitted.DirectoryNames.Length > 0 && !NameSubtrees.ContainsDirectoryName(Permitted.DirectoryNames, name))
+			{
+				text = $"has the directory name \"{name.Describe()}\", which the name constraints of {{1}} do not permit";
+				return CertificateValidationError.NotValidForUsage;
+			}
+
+			// RFC 5280, Sec. 7.1, compares by all of RFC 4518: a name that a complete comparison could find within an excluded subtree must not escape it, while one that a permitted subtree misses is only left outside it.
+			if (NameSubtrees.MightContainDirectoryName(Excluded.DirectoryNames, name, out bool certain))
+			{
+				text = certain
+					? $"has the directory name \"{name.Describe()}\", which the name constraints of {{1}} exclude"
+					: $"has the directory name \"{name.Describe()}\", which might be within a subtree that the name constraints of {{1}} exclude and cannot be compared exactly";
+				return CertificateValidationError.NotValidForUsage;
+			}
+		}
+
+		// The other forms are not matched: a certificate with a name of one that a subtree names fails, as RFC 5280 asks to process it or reject the certificate (Sec. 4.2.1.10).
+		foreach (GeneralNameType form in (ReadOnlySpan<GeneralNameType>)[GeneralNameType.OtherName, GeneralNameType.X400Address, GeneralNameType.EdiPartyName, GeneralNameType.UniformResourceIdentifier, GeneralNameType.RegisteredId])
 		{
 			if (names.HasForm(form) && (Permitted.HasForm(form) || Excluded.HasForm(form)))
 			{
@@ -135,16 +164,22 @@ internal sealed class NameConstraints
 // The subtrees of one list of a name constraints extension.
 internal sealed class NameSubtrees
 {
-	public static readonly NameSubtrees Empty = new([], [], [], 0);
+	public static readonly NameSubtrees Empty = new([], [], [], [], 0);
 
 	private readonly int _forms;
 
-	private NameSubtrees(string[] dnsNames, ReadOnlyMemory<byte>[] addresses, MailboxConstraint[] mailboxes, int forms)
+	private NameSubtrees(string[] dnsNames, ReadOnlyMemory<byte>[] addresses, MailboxConstraint[] mailboxes, DistinguishedName[] directoryNames, int forms)
 	{
 		DnsNames = dnsNames;
 		IPAddresses = addresses;
 		Mailboxes = mailboxes;
+		DirectoryNames = directoryNames;
 		_forms = forms;
+
+		foreach (DistinguishedName directoryName in directoryNames)
+		{
+			DirectoryNameWork += directoryName.Work;
+		}
 	}
 
 	// The dNSName subtrees: DNS names, or empty for every name.
@@ -154,6 +189,10 @@ internal sealed class NameSubtrees
 	public ReadOnlyMemory<byte>[] IPAddresses { get; }
 
 	public MailboxConstraint[] Mailboxes { get; }
+
+	public DistinguishedName[] DirectoryNames { get; }
+
+	public long DirectoryNameWork { get; }
 
 	public bool HasForm(GeneralNameType form)
 	{
@@ -231,6 +270,44 @@ internal sealed class NameSubtrees
 		return false;
 	}
 
+	public static bool ContainsDirectoryName(DistinguishedName[] subtrees, DistinguishedName name)
+	{
+		foreach (DistinguishedName subtree in subtrees)
+		{
+			if (name.IsWithin(subtree))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	// Whether a subtree may hold the name, as DistinguishedName.MightBeWithin decides; certain tells whether one does, as IsWithin decides, which only a name that may be within one needs.
+	public static bool MightContainDirectoryName(DistinguishedName[] subtrees, DistinguishedName name, out bool certain)
+	{
+		bool might = false;
+
+		foreach (DistinguishedName subtree in subtrees)
+		{
+			if (!name.MightBeWithin(subtree))
+			{
+				continue;
+			}
+
+			might = true;
+
+			if (name.IsWithin(subtree))
+			{
+				certain = true;
+				return true;
+			}
+		}
+
+		certain = false;
+		return might;
+	}
+
 	// GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree, implicitly tagged.
 	public static NameSubtrees Read(ref DerReader reader, Asn1Tag tag)
 	{
@@ -239,6 +316,7 @@ internal sealed class NameSubtrees
 		List<string> dnsNames = [];
 		List<ReadOnlyMemory<byte>> addresses = [];
 		List<MailboxConstraint> mailboxes = [];
+		List<DistinguishedName> directoryNames = [];
 		int forms = 0;
 
 		while (subtrees.HasData)
@@ -279,10 +357,15 @@ internal sealed class NameSubtrees
 					mailboxes.Add(MailboxConstraint.Parse(Encoding.ASCII.GetString(name.Value.Span)) ?? throw new AsnContentException("An rfc822Name subtree is neither a mailbox, a host nor a domain."));
 					break;
 				}
+				case GeneralNameType.DirectoryName:
+				{
+					directoryNames.Add(DistinguishedName.Read(name.Value));
+					break;
+				}
 			}
 		}
 
-		return new NameSubtrees([.. dnsNames], [.. addresses], [.. mailboxes], forms);
+		return new NameSubtrees([.. dnsNames], [.. addresses], [.. mailboxes], [.. directoryNames], forms);
 	}
 
 	// Whether a DNS name is within a subtree, ignoring the case of ASCII letters. Both are valid, or the subtree empty.
@@ -437,17 +520,23 @@ internal readonly struct MailboxConstraint
 }
 
 // The names of a certificate that name constraints apply to (RFC 5280, Sec. 6.1.3 (b) and (c)): those of the subject alternative name extension, the subject, and without that extension the emailAddress attributes of the subject (Sec. 4.2.1.10).
+// An instance serves one validation, on one thread.
 internal sealed class ConstrainedNames
 {
-	private const string EmailAddressOid = "1.2.840.113549.1.9.1";
-
 	private readonly int _forms;
+	private readonly ReadOnlyMemory<byte> _subject;
+	private readonly ReadOnlyMemory<byte>[] _alternativeDirectoryNames;
 
-	private ConstrainedNames(DnsNamePattern[] dnsNames, ReadOnlyMemory<byte>[] addresses, Mailbox?[] mailboxes, int forms)
+	// The contents of the object identifier of emailAddress, 1.2.840.113549.1.9.1.
+	private static ReadOnlySpan<byte> EmailAddressOid => [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01];
+
+	private ConstrainedNames(DnsNamePattern[] dnsNames, ReadOnlyMemory<byte>[] addresses, Mailbox?[] mailboxes, ReadOnlyMemory<byte> subject, ReadOnlyMemory<byte>[] alternativeDirectoryNames, int forms)
 	{
 		DnsNames = dnsNames;
 		IPAddresses = addresses;
 		Mailboxes = mailboxes;
+		_subject = subject;
+		_alternativeDirectoryNames = alternativeDirectoryNames;
 		_forms = forms;
 	}
 
@@ -459,7 +548,9 @@ internal sealed class ConstrainedNames
 	// The mail addresses, or null for one that is not a valid mailbox.
 	public Mailbox?[] Mailboxes { get; }
 
-	// Whether the certificate has a name of the form; a nonempty subject is a directoryName.
+	// The directory names: a nonempty subject, then those of the subject alternative name extension. They are read the first time that directoryName subtrees apply, which few paths have.
+	public DistinguishedName[] DirectoryNames => field ??= ReadDirectoryNames();
+
 	public bool HasForm(GeneralNameType form)
 	{
 		return (_forms & 1 << (int)form) is not 0;
@@ -469,15 +560,16 @@ internal sealed class ConstrainedNames
 	public static ConstrainedNames Create(Certificate certificate, SubjectAlternativeName? alternativeName)
 	{
 		List<Mailbox?> mailboxes = [];
-		int forms = certificate.Subject.Span is [0x30, 0x00] ? 0 : 1 << (int)GeneralNameType.DirectoryName;
+		int forms = 0;
 
 		if (alternativeName is null)
 		{
 			AddEmailAddresses(certificate.Subject, mailboxes);
-			return new ConstrainedNames([], [], [.. mailboxes], forms);
+			return new ConstrainedNames([], [], [.. mailboxes], certificate.Subject, [], forms);
 		}
 
 		IReadOnlyList<GeneralName> names = alternativeName.Names;
+		List<ReadOnlyMemory<byte>> directoryNames = [];
 
 		for (int i = 0; i < names.Count; ++i)
 		{
@@ -487,6 +579,10 @@ internal sealed class ConstrainedNames
 			if (name.Type is GeneralNameType.Rfc822Name)
 			{
 				mailboxes.Add(Mailbox.Parse(Encoding.ASCII.GetString(name.Value.Span)));
+			}
+			else if (name.Type is GeneralNameType.DirectoryName)
+			{
+				directoryNames.Add(name.Value);
 			}
 		}
 
@@ -498,7 +594,26 @@ internal sealed class ConstrainedNames
 			patterns[i] = new DnsNamePattern(dnsNames[i]);
 		}
 
-		return new ConstrainedNames(patterns, [.. alternativeName.IPAddresses], [.. mailboxes], forms);
+		return new ConstrainedNames(patterns, [.. alternativeName.IPAddresses], [.. mailboxes], certificate.Subject, [.. directoryNames], forms);
+	}
+
+	private DistinguishedName[] ReadDirectoryNames()
+	{
+		bool hasSubject = !_subject.Span.SequenceEqual((ReadOnlySpan<byte>)[0x30, 0x00]);
+		DistinguishedName[] names = new DistinguishedName[(hasSubject ? 1 : 0) + _alternativeDirectoryNames.Length];
+		int count = 0;
+
+		if (hasSubject)
+		{
+			names[count++] = DistinguishedName.Read(_subject);
+		}
+
+		foreach (ReadOnlyMemory<byte> name in _alternativeDirectoryNames)
+		{
+			names[count++] = DistinguishedName.Read(name);
+		}
+
+		return names;
 	}
 
 	// The emailAddress attributes, EmailAddress ::= IA5String (RFC 5280, Appendix A.1), of a Name that decodes, as Certificate requires.
@@ -515,7 +630,7 @@ internal sealed class ConstrainedNames
 			{
 				DerReader attribute = relativeName.ReadSequence();
 
-				if (attribute.ReadObjectIdentifier() is not EmailAddressOid)
+				if (!attribute.ReadObjectIdentifierContents().Span.SequenceEqual(EmailAddressOid))
 				{
 					continue;
 				}

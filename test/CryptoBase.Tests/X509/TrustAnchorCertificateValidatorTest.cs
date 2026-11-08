@@ -467,7 +467,7 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// RFC 5280, Sec. 4.2: a critical extension that the validator does not process fails the path, wherever it is in the path; one in a certificate off the path does not.
+	// RFC 5280, Sec. 4.2: a critical extension that the validator does not process fails the path, wherever it is in the path; one in a certificate off the path does not. Certificate policies extensions are processed.
 	[Test]
 	public async Task RefusesCriticalExtensionsThatItDoesNotProcess()
 	{
@@ -488,7 +488,7 @@ public class TrustAnchorCertificateValidatorTest
 		using (Assert.Multiple())
 		{
 			await AssertInvalid(await Validate([root.Certificate], [unknownLeaf]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, unknownLeaf, root.Certificate);
-			await AssertInvalid(await Validate([root.Certificate], [policyLeaf]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, policyLeaf, root.Certificate);
+			await AssertValid(await Validate([root.Certificate], [policyLeaf]), policyLeaf, root.Certificate);
 			await AssertInvalid(await Validate([root.Certificate], [leafOfIntermediate, intermediate.Certificate]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, leafOfIntermediate, intermediate.Certificate, root.Certificate);
 			await AssertInvalid(await Validate([criticalRoot.Certificate], [leafOfCriticalRoot]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, leafOfCriticalRoot, criticalRoot.Certificate);
 			await AssertValid(await Validate([root.Certificate], [nonCriticalLeaf]), nonCriticalLeaf, root.Certificate);

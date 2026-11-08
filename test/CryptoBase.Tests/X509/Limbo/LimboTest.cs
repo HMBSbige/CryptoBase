@@ -17,8 +17,8 @@ public class LimboTest
 	private const string Skipped = "SKIPPED";
 
 	// The features that the validator implements; a testcase with any other feature is skipped, whether limbo-schema.json knows it or not.
-	// Skipped are has-crl, name-constraint-dn, pedantic-public-suffix-wildcard, pedantic-rfc5280, rfc5280-incompatible-with-webpki, has-policy-constraints, pedantic-serial-number and pedantic-webpki-eku, and the certificate policy features.
-	private static readonly HashSet<string> SupportedFeatures = ["max-chain-depth", "denial-of-service", "has-mldsa", "pedantic-webpki-subscriber-key"];
+	// Skipped are has-crl, pedantic-public-suffix-wildcard, pedantic-rfc5280, rfc5280-incompatible-with-webpki, pedantic-serial-number and pedantic-webpki-eku.
+	private static readonly HashSet<string> SupportedFeatures = ["max-chain-depth", "denial-of-service", "has-mldsa", "pedantic-webpki-subscriber-key", "name-constraint-dn", "has-policy-constraints", "has-cert-policies", "no-cert-policies"];
 
 	// The most that a denial-of-service testcase may take, which only a search without limits exceeds; generous for emulated and Debug runs.
 	private static readonly TimeSpan DenialOfServiceTimeout = TimeSpan.FromSeconds(30);

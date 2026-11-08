@@ -17,6 +17,10 @@ internal static class TestPki
 	public const string AnyExtendedKeyUsageOid = "2.5.29.37.0";
 	public const string NameConstraintsOid = "2.5.29.30";
 	public const string CertificatePoliciesOid = "2.5.29.32";
+	public const string PolicyMappingsOid = "2.5.29.33";
+	public const string PolicyConstraintsOid = "2.5.29.36";
+	public const string InhibitAnyPolicyOid = "2.5.29.54";
+	public const string AnyPolicyOid = "2.5.29.32.0";
 
 	// The fields of a certificate; the subject and issuer are DER Names, and Extensions are written as they are.
 	public sealed record Template
@@ -246,6 +250,43 @@ internal static class TestPki
 		return new CertificateExtension(NameConstraintsOid, critical, value);
 	}
 
+	public static CertificateExtension CertificatePolicies(params string[] policies)
+	{
+		return new CertificateExtension(CertificatePoliciesOid, false, Sequence([.. policies.Select(static policy => Sequence(Oid(policy)))]));
+	}
+
+	public static CertificateExtension PolicyMappings(params (string Issuer, string Subject)[] mappings)
+	{
+		return new CertificateExtension(PolicyMappingsOid, false, Sequence([.. mappings.Select(static mapping => Sequence(Oid(mapping.Issuer), Oid(mapping.Subject)))]));
+	}
+
+	public static CertificateExtension PolicyConstraints(int? requireExplicitPolicy = null, int? inhibitPolicyMapping = null, bool critical = true)
+	{
+		AsnWriter writer = new(AsnEncodingRules.DER);
+
+		using (writer.PushSequence())
+		{
+			if (requireExplicitPolicy is { } require)
+			{
+				writer.WriteInteger(require, new Asn1Tag(TagClass.ContextSpecific, 0));
+			}
+
+			if (inhibitPolicyMapping is { } inhibit)
+			{
+				writer.WriteInteger(inhibit, new Asn1Tag(TagClass.ContextSpecific, 1));
+			}
+		}
+
+		return new CertificateExtension(PolicyConstraintsOid, critical, writer.Encode());
+	}
+
+	public static CertificateExtension InhibitAnyPolicy(int skipCerts, bool critical = true)
+	{
+		AsnWriter writer = new(AsnEncodingRules.DER);
+		writer.WriteInteger(skipCerts);
+		return new CertificateExtension(InhibitAnyPolicyOid, critical, writer.Encode());
+	}
+
 	public static byte[] Rfc822Name(string name)
 	{
 		return Tlv(0x81, System.Text.Encoding.Latin1.GetBytes(name));
@@ -258,7 +299,13 @@ internal static class TestPki
 
 	public static byte[] DirectoryName(string name)
 	{
-		return Tlv(0xA4, Name(name));
+		return DirectoryName(Name(name));
+	}
+
+	// A directoryName of a DER Name.
+	public static byte[] DirectoryName(byte[] name)
+	{
+		return Tlv(0xA4, name);
 	}
 
 	// An otherName of a private type with a NULL value.

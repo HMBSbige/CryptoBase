@@ -9,9 +9,10 @@ namespace CryptoBase.X509;
 // An instance serves one call on one thread, and owns the keys that it imports for the presented certificates.
 internal sealed class CertificatePathSearch : IDisposable
 {
-	// The candidate issuers that each search considers, each a signature check whether or not its signature is verified, with each check of whether a certificate that ends a path is self-signed; and the name and subtree pairs that name constraints compare.
+	// The candidate issuers that each search considers, each a signature check whether or not its signature is verified, with each check of whether a certificate that ends a path is self-signed; the name and subtree pairs that name constraints compare, a directoryName counting by its attributes and length; and the entries of the policy graphs of the paths that reach a trust anchor.
 	public const int MaxCandidates = 100;
 	public const long MaxNameComparisons = 1 << 20;
+	public const long MaxPolicyGraphEntries = 1 << 16;
 
 	private const string BasicConstraintsOid = "2.5.29.19";
 	private const string KeyUsageOid = "2.5.29.15";
@@ -51,6 +52,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 	private int _candidatesLeft = MaxCandidates;
 	private long _comparisonsLeft = MaxNameComparisons;
+	private long _policyEntriesLeft = MaxPolicyGraphEntries;
 	private int _nextIndex;
 
 	private bool _relaxed;
@@ -105,7 +107,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 		// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search; it accepts none, as only the strict search decides.
 		PathProblem? strictLimit = GetLimit();
-		(_relaxed, _stopped, _limit, _candidatesLeft, _comparisonsLeft) = (true, false, null, MaxCandidates, MaxNameComparisons);
+		(_relaxed, _stopped, _limit, _candidatesLeft, _comparisonsLeft, _policyEntriesLeft) = (true, false, null, MaxCandidates, MaxNameComparisons, MaxPolicyGraphEntries);
 		_ = Search(relaxed: true);
 
 		// A limit stopped the relaxed search before it ended a path, so the peer's certificate ends the one reported.
@@ -195,13 +197,19 @@ internal sealed class CertificatePathSearch : IDisposable
 					return path;
 				}
 			}
-			else if (relaxed)
-			{
-				Record(CertificatePathEnd.TrustAnchor, null);
-			}
 			else
 			{
-				return [.. _path];
+				// RFC 5280, Sec. 6.1, needs the whole path, so its policies are checked when the path reaches a trust anchor; a path that fails gives way to the next candidate.
+				PathProblem? policyProblem = CheckPolicies();
+
+				if (relaxed)
+				{
+					Record(CertificatePathEnd.TrustAnchor, policyProblem);
+				}
+				else if (policyProblem is null && !_stopped)
+				{
+					return [.. _path];
+				}
 			}
 
 			Pop();
@@ -416,6 +424,19 @@ internal sealed class CertificatePathSearch : IDisposable
 		return problem;
 	}
 
+	// The certificate policies of the path, which has just reached a trust anchor; stops the search, and returns null, if the entries of the graph would exceed the limit.
+	private PathProblem? CheckPolicies()
+	{
+		PathProblem? problem = PolicyGraph.Check(_path, _validator, ref _policyEntriesLeft, out bool limitReached);
+
+		if (limitReached)
+		{
+			Stop($"{MaxPolicyGraphEntries} entries of the policy graphs");
+		}
+
+		return problem;
+	}
+
 	// The problems of a certificate whatever path it is in, found once.
 	private List<PathProblem> GetProblems(PathNode node)
 	{
@@ -495,8 +516,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		return problems;
 	}
 
-	// RFC 5280, Sec. 4.2: a critical extension must be one that the validator processes. The authority and subject key identifier extensions must not be critical (Secs. 4.2.1.1 and 4.2.1.2), and the extensions that decode on first use must decode.
-	private static void CheckExtensions(PathNode node, List<PathProblem> problems)
+	// RFC 5280, Sec. 4.2: a critical extension must be one that the validator processes. The authority and subject key identifier extensions must not be critical (Secs. 4.2.1.1 and 4.2.1.2), the policy constraints and inhibit anyPolicy extensions of a certificate that takes part in policy processing must be (Secs. 4.2.1.11 and 4.2.1.14), and the extensions that decode on first use must decode.
+	private void CheckExtensions(PathNode node, List<PathProblem> problems)
 	{
 		IReadOnlyList<CertificateExtension> extensions = node.Certificate.Extensions;
 
@@ -507,23 +528,33 @@ internal sealed class CertificatePathSearch : IDisposable
 
 			if (!extension.Critical)
 			{
+				if (node.Role is not PathRole.Anchor && _leafAnchor is null && extension.Oid is PolicyConstraintsOid or InhibitAnyPolicyOid)
+				{
+					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} does not mark its {(extension.Oid is PolicyConstraintsOid ? "policy constraints" : "inhibit anyPolicy")} extension critical, which RFC 5280 requires.", node));
+				}
+
 				continue;
 			}
 
 			switch (extension.Oid)
 			{
-				case BasicConstraintsOid or KeyUsageOid or ExtendedKeyUsageOid or SubjectAlternativeNameOid or NameConstraintsOid:
+				case BasicConstraintsOid or KeyUsageOid or ExtendedKeyUsageOid or SubjectAlternativeNameOid or NameConstraintsOid or PolicyMappingsOid or PolicyConstraintsOid or InhibitAnyPolicyOid:
 				{
+					break;
+				}
+				case CertificatePoliciesOid:
+				{
+					// RFC 5280, Sec. 4.2.1.4: the qualifiers of a critical extension must be ones that the validator interprets, unless the certificate takes no part in policy processing.
+					if (node.Role is not PathRole.Anchor && _leafAnchor is null && node.Certificate.DecodedExtensions.CertificatePolicies.Value is { HasUnrecognizedQualifier: true })
+					{
+						problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, "{0} has a critical certificate policies extension with a qualifier that the validator does not interpret.", node));
+					}
+
 					break;
 				}
 				case AuthorityKeyIdentifierOid or SubjectKeyIdentifierOid:
 				{
 					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} marks its {(extension.Oid is AuthorityKeyIdentifierOid ? "authority" : "subject")} key identifier extension critical, which RFC 5280 forbids.", node));
-					break;
-				}
-				case CertificatePoliciesOid or PolicyMappingsOid or PolicyConstraintsOid or InhibitAnyPolicyOid:
-				{
-					problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, $"{{0}} has the critical policy extension {extension.Oid}, and the validator does not process certificate policies.", node));
 					break;
 				}
 				default:
@@ -536,7 +567,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 		DecodedExtensions decoded = node.Certificate.DecodedExtensions;
 
-		foreach ((AsnContentException? error, string name) in (ReadOnlySpan<(AsnContentException?, string)>)[(decoded.BasicConstraints.Error, "basic constraints"), (decoded.ExtendedKeyUsage.Error, "extended key usage"), (decoded.SubjectAlternativeName.Error, "subject alternative name"), (decoded.NameConstraints.Error, "name constraints"), (decoded.AuthorityKeyIdentifier.Error, "authority key identifier"), (decoded.SubjectKeyIdentifier.Error, "subject key identifier")])
+		foreach ((AsnContentException? error, string name) in (ReadOnlySpan<(AsnContentException?, string)>)[(decoded.BasicConstraints.Error, "basic constraints"), (decoded.ExtendedKeyUsage.Error, "extended key usage"), (decoded.SubjectAlternativeName.Error, "subject alternative name"), (decoded.NameConstraints.Error, "name constraints"), (decoded.AuthorityKeyIdentifier.Error, "authority key identifier"), (decoded.SubjectKeyIdentifier.Error, "subject key identifier"), (decoded.CertificatePolicies.Error, "certificate policies"), (decoded.PolicyMappings.Error, "policy mappings"), (decoded.PolicyConstraints.Error, "policy constraints"), (decoded.InhibitAnyPolicy.Error, "inhibit anyPolicy")])
 		{
 			if (error is not null)
 			{
@@ -562,25 +593,6 @@ internal sealed class CertificatePathSearch : IDisposable
 		{
 			problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, $"{{0}} has an extended key usage extension with neither {PurposeName} nor anyExtendedKeyUsage.", node));
 		}
-
-		// directoryName subtrees in a critical extension, which apply to every subject and which the validator cannot check, whatever the names below.
-		if (decoded.NameConstraints.Value is { HasDirectoryName: true } && IsCritical(certificate, NameConstraintsOid))
-		{
-			problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, "{0} has critical directoryName name constraints, which the validator does not support.", node));
-		}
-	}
-
-	private static bool IsCritical(Certificate certificate, string oid)
-	{
-		foreach (CertificateExtension extension in certificate.Extensions)
-		{
-			if (extension.Oid == oid)
-			{
-				return extension.Critical;
-			}
-		}
-
-		return false;
 	}
 
 	// The signature algorithm of a certificate other than a trust anchor, which an issuer must verify.

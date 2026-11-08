@@ -111,22 +111,105 @@ public class TrustAnchorNameConstraintsTest
 		await AssertInvalid(await Validate([root.Certificate], [leaf]), [CertificateValidationError.Malformed], CertificatePathEnd.TrustAnchor, @case, [leaf, root.Certificate]);
 	}
 
-	// directoryName subtrees are not matched: a critical extension with one fails any path, and one that is not fails a certificate with a subject or a directoryName.
-	[Test]
-	public async Task RefusesDirectoryNameConstraintsThatApply()
+	public static IEnumerable<Func<(string Case, byte[]? Permitted, byte[]? Excluded, byte[] Subject, byte[]? AlternativeName, CertificateValidationError? Error)>> DirectoryNameCases()
 	{
-		using Authority critical = Authority.CreateRoot("CN=Critical", more: [NameConstraints([DirectoryName("O=Example")])]);
-		using Authority nonCritical = Authority.CreateRoot("CN=Noncritical", more: [NameConstraints([DirectoryName("O=Example")], critical: false)]);
-		Certificate leafOfCritical = critical.IssueLeaf();
-		Certificate leafOfNonCritical = nonCritical.IssueLeaf();
+		byte[] example = Name("O=Example");
+		byte[] other = Name("O=Other");
+
+		yield return () => ("subject in the permitted subtree", example, null, example, null, null);
+		yield return () => ("subject outside the permitted subtree", other, null, example, null, CertificateValidationError.NotValidForUsage);
+		yield return () => ("subject in the excluded subtree", null, example, example, null, CertificateValidationError.NotValidForUsage);
+		yield return () => ("subject outside the excluded subtree", null, other, example, null, null);
+		yield return () => ("excluded beats permitted", example, example, example, null, CertificateValidationError.NotValidForUsage);
+		yield return () => ("alternative name also permitted", example, null, example, example, null);
+		yield return () => ("alternative name outside the permitted subtree, with the subject within it", example, null, example, other, CertificateValidationError.NotValidForUsage);
+		yield return () => ("subject outside the permitted subtree, with the alternative name within it", other, null, example, other, CertificateValidationError.NotValidForUsage);
+		yield return () => ("alternative name in the excluded subtree, with the subject outside it", null, example, other, example, CertificateValidationError.NotValidForUsage);
+		yield return () => ("subject in the excluded subtree, with the alternative name outside it", null, example, example, other, CertificateValidationError.NotValidForUsage);
+		yield return () => ("empty subject, without an alternative directory name", example, null, [0x30, 0x00], null, null);
+		yield return () => ("empty subject, with an alternative directory name outside the permitted subtree", example, null, [0x30, 0x00], other, CertificateValidationError.NotValidForUsage);
+	}
+
+	// RFC 5280, Sec. 4.2.1.10: a directoryName subtree applies to a nonempty subject and to the directory names of the subject alternative name extension; an empty subject is not a directory name.
+	[Test]
+	[MethodDataSource(nameof(DirectoryNameCases))]
+	public async Task ChecksTheDirectoryNamesAgainstTheSubtrees(string @case, byte[]? permitted, byte[]? excluded, byte[] subject, byte[]? alternativeName, CertificateValidationError? error)
+	{
+		using Authority root = Authority.CreateRoot(more: [NameConstraints(permitted is null ? null : [DirectoryName(permitted)], excluded is null ? null : [DirectoryName(excluded)])]);
 		using EcdsaP256 key = EcdsaP256.GenerateKey();
-		Certificate withoutSubject = nonCritical.Issue(new Template { Subject = [0x30, 0x00], SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key), Extensions = [SubjectAlternativeNames(true, DnsName("example.com"))] });
+		Certificate leaf = root.Issue(new Template { Subject = subject, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key), Extensions = [SubjectAlternativeNames(true, [.. alternativeName is null ? [DnsName("example.com")] : (byte[][])[DnsName("example.com"), DirectoryName(alternativeName)]]), AuthorityKeyIdentifier(root.KeyIdentifier)] });
+
+		CertificateValidationResult result = await Validate([root.Certificate], [leaf], hostName: "example.com");
+
+		if (error is { } expected)
+		{
+			await AssertInvalid(result, [expected], CertificatePathEnd.TrustAnchor, @case, [leaf, root.Certificate]);
+		}
+		else
+		{
+			await AssertValid(result, leaf, root.Certificate);
+		}
+	}
+
+	// The critical or noncritical extension is processed alike, for every certificate below, the intermediate ones included; self-issued intermediate certificates are skipped, but not the peer's certificate.
+	[Test]
+	public async Task AppliesDirectoryNameConstraintsAsItDoesOtherConstraints()
+	{
+		byte[] example = Name("O=Example");
+		using Authority critical = Authority.CreateRoot("CN=Critical", more: [NameConstraints([DirectoryName(example)])]);
+		using Authority nonCritical = Authority.CreateRoot("CN=Noncritical", more: [NameConstraints([DirectoryName(example)], critical: false)]);
+		using Authority outsideIntermediate = critical.CreateIntermediate("O=Other");
+		using Authority insideIntermediate = critical.CreateIntermediate(subject: example);
+		using Authority rollover = insideIntermediate.CreateIntermediate(subject: example, more: [SubjectAlternativeNames(false, DirectoryName(Name("O=Other")))]);
+		Certificate leafOfRollover = rollover.IssueLeaf("O=Example");
+		Certificate leafOfOutside = outsideIntermediate.IssueLeaf("O=Example");
+		Certificate plain = nonCritical.IssueLeaf("CN=Outside");
+		using EcdsaP256 key = EcdsaP256.GenerateKey();
+		Certificate selfIssuedLeaf = critical.Issue(new Template { Subject = critical.Name, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key), Extensions = [SubjectAlternativeNames("example.com")] });
 
 		using (Assert.Multiple())
 		{
-			await AssertInvalid(await Validate([critical.Certificate], [leafOfCritical]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, leafOfCritical, critical.Certificate);
-			await AssertInvalid(await Validate([nonCritical.Certificate], [leafOfNonCritical]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, leafOfNonCritical, nonCritical.Certificate);
-			await AssertValid(await Validate([nonCritical.Certificate], [withoutSubject], hostName: "example.com"), withoutSubject, nonCritical.Certificate);
+			await AssertValid(await Validate([critical.Certificate], [leafOfRollover, rollover.Certificate, insideIntermediate.Certificate]), leafOfRollover, rollover.Certificate, insideIntermediate.Certificate, critical.Certificate);
+			await AssertInvalid(await Validate([critical.Certificate], [leafOfOutside, outsideIntermediate.Certificate]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, leafOfOutside, outsideIntermediate.Certificate, critical.Certificate);
+			await AssertInvalid(await Validate([nonCritical.Certificate], [plain]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, plain, nonCritical.Certificate);
+			await AssertInvalid(await Validate([critical.Certificate], [selfIssuedLeaf]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, selfIssuedLeaf, critical.Certificate);
+		}
+	}
+
+	// A permitted subtree of another form says nothing about directory names, and the reverse.
+	[Test]
+	public async Task LeavesOtherFormsAlone()
+	{
+		using Authority root = Authority.CreateRoot(more: [NameConstraints([DnsName("example.com")])]);
+		using Authority directory = Authority.CreateRoot("CN=Directory", more: [NameConstraints([DirectoryName(Name("O=Example"))])]);
+		Certificate leaf = root.IssueLeaf("O=Whatever");
+		Certificate dnsLeaf = directory.IssueLeaf("O=Example", [SubjectAlternativeNames("anything.test")]);
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate([root.Certificate], [leaf]), leaf, root.Certificate);
+			await AssertValid(await Validate([directory.Certificate], [dnsLeaf]), dnsLeaf, directory.Certificate);
+		}
+	}
+
+	// A directoryName and a subtree count by their attributes and length, as many as 2^20 before the search stops.
+	[Test]
+	public async Task StopsBeforeTooManyDirectoryNameComparisons()
+	{
+		byte[] relativeName = Tlv(0x31, Sequence(Oid("2.5.4.3"), Tlv(0x13, [(byte)'a'])));
+		byte[] under = Sequence([.. Enumerable.Repeat(relativeName, 1000)]);
+		byte[] over = Sequence([.. Enumerable.Repeat(relativeName, 1100)]);
+		using Authority underRoot = Authority.CreateRoot("CN=Under", more: [NameConstraints([DirectoryName(under)])]);
+		using Authority overRoot = Authority.CreateRoot("CN=Over", more: [NameConstraints([DirectoryName(over)])]);
+		using EcdsaP256 underKey = EcdsaP256.GenerateKey();
+		using EcdsaP256 overKey = EcdsaP256.GenerateKey();
+		Certificate underLeaf = underRoot.Issue(new Template { Subject = under, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(underKey), Extensions = [SubjectAlternativeNames("example.com")] });
+		Certificate overLeaf = overRoot.Issue(new Template { Subject = over, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(overKey), Extensions = [SubjectAlternativeNames("example.com")] });
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate([underRoot.Certificate], [underLeaf]), underLeaf, underRoot.Certificate);
+			await Assert.That((await Validate([overRoot.Certificate], [overLeaf])).Errors).Contains(CertificateValidationError.Unspecified);
 		}
 	}
 

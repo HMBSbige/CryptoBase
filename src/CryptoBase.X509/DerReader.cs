@@ -62,10 +62,37 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return value;
 	}
 
-	// The contents of an INTEGER, which DER requires to be minimal.
-	public ReadOnlyMemory<byte> ReadIntegerBytes()
+	// The contents of an OBJECT IDENTIFIER, without the string that ReadObjectIdentifier builds; DER has one encoding of each, so equal identifiers have equal contents. X.690, Sec. 8.19: each subidentifier is in base 128 with no leading zero.
+	public ReadOnlyMemory<byte> ReadObjectIdentifierContents()
 	{
-		ReadOnlySpan<byte> value = AsnDecoder.ReadIntegerBytes(_remaining.Span, AsnEncodingRules.DER, out int consumed);
+		Asn1Tag tag = AsnDecoder.ReadEncodedValue(_remaining.Span, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
+		ReadOnlyMemory<byte> value = Take(consumed).Slice(offset, length);
+		ReadOnlySpan<byte> contents = value.Span;
+
+		if (tag != Asn1Tag.ObjectIdentifier || contents.IsEmpty || contents[^1] >= 0x80)
+		{
+			throw new AsnContentException();
+		}
+
+		bool first = true;
+
+		foreach (byte b in contents)
+		{
+			if (first && b is 0x80)
+			{
+				throw new AsnContentException();
+			}
+
+			first = b < 0x80;
+		}
+
+		return value;
+	}
+
+	// The contents of an INTEGER, which DER requires to be minimal, under tag if it is implicitly tagged.
+	public ReadOnlyMemory<byte> ReadIntegerBytes(Asn1Tag? tag = null)
+	{
+		ReadOnlySpan<byte> value = AsnDecoder.ReadIntegerBytes(_remaining.Span, AsnEncodingRules.DER, out int consumed, tag);
 		return TakeContents(consumed, value.Length);
 	}
 

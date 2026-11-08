@@ -7,8 +7,12 @@ internal sealed class DecodedExtensions
 	private const string SubjectAlternativeNameOid = "2.5.29.17";
 	private const string BasicConstraintsOid = "2.5.29.19";
 	private const string NameConstraintsOid = "2.5.29.30";
+	private const string CertificatePoliciesOid = "2.5.29.32";
+	private const string PolicyMappingsOid = "2.5.29.33";
 	internal const string AuthorityKeyIdentifierOid = "2.5.29.35";
+	private const string PolicyConstraintsOid = "2.5.29.36";
 	private const string ExtendedKeyUsageOid = "2.5.29.37";
+	private const string InhibitAnyPolicyOid = "2.5.29.54";
 
 	// Certificate allows each extension once.
 	public DecodedExtensions(IReadOnlyList<CertificateExtension> extensions)
@@ -50,6 +54,26 @@ internal sealed class DecodedExtensions
 					NameConstraints = DecodedExtension<NameConstraints>.Decode(extension.Value, X509.NameConstraints.Read);
 					break;
 				}
+				case CertificatePoliciesOid:
+				{
+					CertificatePolicies = DecodedExtension<CertificatePolicies>.Decode(extension.Value, X509.CertificatePolicies.Read);
+					break;
+				}
+				case PolicyMappingsOid:
+				{
+					PolicyMappings = DecodedExtension<PolicyMappings>.Decode(extension.Value, X509.PolicyMappings.Read);
+					break;
+				}
+				case PolicyConstraintsOid:
+				{
+					PolicyConstraints = DecodedExtension<PolicyConstraints>.Decode(extension.Value, X509.PolicyConstraints.Read);
+					break;
+				}
+				case InhibitAnyPolicyOid:
+				{
+					InhibitAnyPolicy = DecodedExtension<int?>.Decode(extension.Value, static value => X509.PolicyConstraints.ReadInhibitAnyPolicy(value));
+					break;
+				}
 			}
 		}
 	}
@@ -65,6 +89,14 @@ internal sealed class DecodedExtensions
 	public DecodedExtension<ExtendedKeyUsage> ExtendedKeyUsage { get; }
 
 	public DecodedExtension<NameConstraints> NameConstraints { get; }
+
+	public DecodedExtension<CertificatePolicies> CertificatePolicies { get; }
+
+	public DecodedExtension<PolicyMappings> PolicyMappings { get; }
+
+	public DecodedExtension<PolicyConstraints> PolicyConstraints { get; }
+
+	public DecodedExtension<int?> InhibitAnyPolicy { get; }
 
 	// SubjectKeyIdentifier ::= KeyIdentifier, and KeyIdentifier ::= OCTET STRING (RFC 5280, Sec. 4.2.1.2).
 	private static ReadOnlyMemory<byte> ReadSubjectKeyIdentifier(ReadOnlyMemory<byte> value)
