@@ -3,6 +3,7 @@ using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Signatures.Rsa;
+using CryptoBase.SM2;
 using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -20,6 +21,7 @@ namespace CryptoBase.Tests.Signatures;
 [GenerateGenericTest(typeof(Ed25519))]
 [GenerateGenericTest(typeof(Ed448))]
 [GenerateGenericTest(typeof(RsaKey))]
+[GenerateGenericTest(typeof(SM2Key))]
 public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 {
 	[Test]

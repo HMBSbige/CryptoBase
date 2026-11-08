@@ -7,6 +7,7 @@
 | `EcdhP256` | `CryptoBase.KeyAgreements.Ecdh` | 32 bytes | 65 bytes | 32 bytes |
 | `EcdhP384` | `CryptoBase.KeyAgreements.Ecdh` | 48 bytes | 97 bytes | 48 bytes |
 | `EcdhP521` | `CryptoBase.KeyAgreements.Ecdh` | 66 bytes | 133 bytes | 66 bytes |
+| `EcdhSM2` ([SM2](sm2.md#ecdh)) | `CryptoBase.KeyAgreements.Ecdh` | 32 bytes | 65 bytes | 32 bytes |
 | `X25519` | `CryptoBase.KeyAgreements.Xdh` | 32 bytes | 32 bytes | 32 bytes |
 | `X448` | `CryptoBase.KeyAgreements.Xdh` | 56 bytes | 56 bytes | 56 bytes |
 

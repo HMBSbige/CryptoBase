@@ -8,23 +8,54 @@ namespace CryptoBase.Tests.EllipticCurves;
 // Points go in and come out with plain coordinates, scalars as plain values.
 public abstract class CurveCase
 {
-	private protected CurveCase(string name)
+	// Wycheproof names the curves except SM2, which it lacks.
+	internal const string SM2Name = "sm2p256v1";
+
+	// The recommended curve of GB/T 32918.5-2017, Sec. 2.
+	private static readonly ECCurveTestVector SM2Parameters = new
+	(
+		SM2Name,
+		"1.2.156.10197.1.301",
+		Convert.FromHexString("FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF"),
+		Convert.FromHexString("FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123"),
+		Convert.FromHexString("FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC"),
+		Convert.FromHexString("28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93"),
+		Convert.FromHexString("32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7"),
+		Convert.FromHexString("BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0"),
+		1
+	)
 	{
-		Name = name;
-		Parameters = WycheproofVectors.Load<ECCurveTestVector>("ec_prime_order_curves_test.json").Single(curve => curve.Name == name);
+		TcId = 0,
+		Result = WycheproofResult.Valid
+	};
+
+	private protected CurveCase(ECCurveTestVector parameters)
+	{
+		Name = parameters.Name;
+		Parameters = parameters;
 		Reference = new ECReference(Parameters);
 	}
 
 	public static IEnumerable<CurveCase> All()
 	{
-		yield return new Case<P256Curve, P256Field52, P256Order>("secp256r1");
-		yield return new Case<P384Curve, P384Field56, P384Order>("secp384r1");
-		yield return new Case<P521Curve, P521Field58, P521Order>("secp521r1");
+		yield return new Case<P256Curve, P256Field52, P256Order>(ParametersOf("secp256r1"));
+		yield return new Case<P384Curve, P384Field56, P384Order>(ParametersOf("secp384r1"));
+		yield return new Case<P521Curve, P521Field58, P521Order>(ParametersOf("secp521r1"));
+		yield return new Case<SM2Curve, SM2Field52, SM2Order>(ParametersOf(SM2Name));
+		// The SM2 curve again with the windows of 8 bits that verification takes, so that the products of ECGroup cover that width too.
+		yield return new Case<SM2VerificationCurve, SM2Field52, SM2Order>(ParametersOf(SM2Name));
 	}
 
+	// The prime-order curves of Wycheproof, and the SM2 curve.
+	internal static ECCurveTestVector ParametersOf(string name)
+	{
+		return name is SM2Name ? SM2Parameters : WycheproofVectors.Load<ECCurveTestVector>("ec_prime_order_curves_test.json").Single(curve => curve.Name == name);
+	}
+
+	// The first case of the curve, so that SM2 gives SM2Curve.
 	public static CurveCase Named(string name)
 	{
-		return All().Single(curve => curve.Name == name);
+		return All().First(curve => curve.Name == name);
 	}
 
 	public abstract Type CurveType { get; }
@@ -71,6 +102,8 @@ public abstract class CurveCase
 
 	internal abstract JacobianValue Add(JacobianValue left, CurvePoint right, bool inPlace = false);
 
+	internal abstract JacobianValue Add(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None);
+
 	// The sum and the mask that tells equal points.
 	internal abstract (JacobianValue Sum, ulong Equal) AddDistinct(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None);
 
@@ -89,6 +122,18 @@ public abstract class CurveCase
 	internal abstract bool TryMultiplyExportX(CurvePoint point, BigInteger scalar, byte[] destination);
 
 	internal abstract (byte[] Encoded, byte[] X) MultiplyEncodeExportX(CurvePoint point, BigInteger scalar);
+
+	// The ECPointTable of point, which MultiplyEncode takes.
+	internal abstract object PointWindows(CurvePoint point);
+
+	// The encodings of k·G and k·P from the table of P.
+	internal abstract (byte[] Base, byte[] Product) MultiplyEncode(object pointWindows, BigInteger scalar);
+
+	// The encoding of k·P + l·Q from the table of P, or null for the point at infinity.
+	internal abstract byte[]? MultiplyAddEncode(object pointWindows, BigInteger scalar, CurvePoint point, BigInteger otherScalar);
+
+	// The encoding of k·P + l·Q, or null for the point at infinity.
+	internal abstract byte[]? MultiplyAddEncode(CurvePoint point, BigInteger scalar, CurvePoint otherPoint, BigInteger otherScalar);
 
 	internal abstract CurvePoint ToAffine(JacobianValue value);
 
@@ -181,10 +226,10 @@ public abstract class CurveCase
 
 	public override string ToString()
 	{
-		return Name;
+		return CurveType == typeof(SM2VerificationCurve) ? $"{Name} with {CurveType.Name}" : Name;
 	}
 
-	private sealed class Case<TCurve, TField, TOrder>(string name) : CurveCase(name)
+	private sealed class Case<TCurve, TField, TOrder>(ECCurveTestVector parameters) : CurveCase(parameters)
 		where TCurve : struct, IECCurve
 		where TField : unmanaged, IECField<TField>
 		where TOrder : unmanaged, IMontgomeryModulus
@@ -230,6 +275,25 @@ public abstract class CurveCase
 
 			ECGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
 			return ToValue(result);
+		}
+
+		internal override JacobianValue Add(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None)
+		{
+			JacobianPoint<TField> x = ToPoint(left);
+			JacobianPoint<TField> y = ToPoint(right);
+
+			switch (aliasing)
+			{
+				case ResultAliasing.Left:
+					ECGroup<TCurve, TField, TOrder>.Add(in x, in y, out x);
+					return ToValue(x);
+				case ResultAliasing.Right:
+					ECGroup<TCurve, TField, TOrder>.Add(in x, in y, out y);
+					return ToValue(y);
+				default:
+					ECGroup<TCurve, TField, TOrder>.Add(in x, in y, out JacobianPoint<TField> result);
+					return ToValue(result);
+			}
 		}
 
 		internal override (JacobianValue Sum, ulong Equal) AddDistinct(JacobianValue left, JacobianValue right, ResultAliasing aliasing = ResultAliasing.None)
@@ -319,6 +383,31 @@ public abstract class CurveCase
 			return (encoded, x);
 		}
 
+		internal override object PointWindows(CurvePoint point)
+		{
+			return new ECPointTable<TCurve, TField, TOrder>(ToPoint(point));
+		}
+
+		internal override (byte[] Base, byte[] Product) MultiplyEncode(object pointWindows, BigInteger scalar)
+		{
+			byte[] encodedBase = new byte[ECGroup<TCurve, TField, TOrder>.EncodedLength];
+			byte[] encodedProduct = new byte[ECGroup<TCurve, TField, TOrder>.EncodedLength];
+			ECGroup<TCurve, TField, TOrder>.MultiplyEncode((ECPointTable<TCurve, TField, TOrder>)pointWindows, ToScalar(scalar), encodedBase, encodedProduct);
+			return (encodedBase, encodedProduct);
+		}
+
+		internal override byte[]? MultiplyAddEncode(object pointWindows, BigInteger scalar, CurvePoint point, BigInteger otherScalar)
+		{
+			byte[] encoded = new byte[ECGroup<TCurve, TField, TOrder>.EncodedLength];
+			return ECGroup<TCurve, TField, TOrder>.TryMultiplyAddEncode((ECPointTable<TCurve, TField, TOrder>)pointWindows, ToScalar(scalar), ToPoint(point), ToScalar(otherScalar), encoded) ? encoded : null;
+		}
+
+		internal override byte[]? MultiplyAddEncode(CurvePoint point, BigInteger scalar, CurvePoint otherPoint, BigInteger otherScalar)
+		{
+			byte[] encoded = new byte[ECGroup<TCurve, TField, TOrder>.EncodedLength];
+			return ECGroup<TCurve, TField, TOrder>.TryMultiplyAddEncode(ToPoint(point), ToScalar(scalar), ToPoint(otherPoint), ToScalar(otherScalar), encoded) ? encoded : null;
+		}
+
 		internal override CurvePoint ToAffine(JacobianValue value)
 		{
 			ECGroup<TCurve, TField, TOrder>.ToAffine(ToPoint(value), out AffinePoint<TField> result);
@@ -374,7 +463,7 @@ public abstract class CurveCase
 
 		internal override CurvePoint SelectFromGeneratorTable(int window, int digit)
 		{
-			ECGroup<TCurve, TField, TOrder>.SelectBase(window, digit, out AffinePoint<TField> result);
+			ECGroup<TCurve, TField, TOrder>.SelectWindow(ECGeneratorTable<TCurve, TField, TOrder>.Windows, window, digit, out AffinePoint<TField> result);
 			return ToValue(result);
 		}
 

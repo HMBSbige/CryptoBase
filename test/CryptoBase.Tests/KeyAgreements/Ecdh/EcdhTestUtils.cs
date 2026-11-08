@@ -14,6 +14,7 @@ internal static class EcdhTestUtils
 			nameof(EcdhP256) => "secp256r1",
 			nameof(EcdhP384) => "secp384r1",
 			nameof(EcdhP521) => "secp521r1",
+			nameof(EcdhSM2) => CurveCase.SM2Name,
 			_ => throw new NotSupportedException(typeof(T).Name)
 		});
 	}

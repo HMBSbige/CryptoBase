@@ -7,6 +7,8 @@ public sealed class AlgorithmIdentifier
 {
 	internal const string RsassaPssOid = "1.2.840.113549.1.1.10";
 
+	private const string SM2SM3Oid = "1.2.156.10197.1.501";
+
 	private const string Mgf1Oid = "1.2.840.113549.1.1.8";
 
 	private static readonly Asn1Tag HashAlgorithmTag = new(TagClass.ContextSpecific, 0, true);
@@ -15,7 +17,8 @@ public sealed class AlgorithmIdentifier
 	private static readonly Asn1Tag TrailerFieldTag = new(TagClass.ContextSpecific, 3, true);
 
 	// The identifiers that FromSignatureAlgorithm gives: ecdsa-with-SHA256, -SHA384 and -SHA512 without parameters (RFC 5758, Sec. 3.2); sha256WithRSAEncryption, sha384WithRSAEncryption and sha512WithRSAEncryption with NULL parameters (RFC 4055, Sec. 5);
-	// id-RSASSA-PSS with the RSASSA-PSS-params of each hash (RFC 4055, Sec. 3.1); id-Ed25519 and id-Ed448 without parameters (RFC 8410, Sec. 6); and id-ml-dsa-44, -65 and -87 without parameters (RFC 9881).
+	// id-RSASSA-PSS with the RSASSA-PSS-params of each hash (RFC 4055, Sec. 3.1); id-Ed25519 and id-Ed448 without parameters (RFC 8410, Sec. 6); id-ml-dsa-44, -65 and -87 without parameters (RFC 9881);
+	// and SM2-with-SM3, 1.2.156.10197.1.501, without parameters (GB/T 20518-2018, Sec. 5.2.2).
 	private static readonly (SignatureAlgorithm Algorithm, AlgorithmIdentifier Identifier)[] SignatureAlgorithms =
 	[
 		(SignatureAlgorithm.RsaPkcs1Sha256, FromDer([0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B, 0x05, 0x00])),
@@ -32,6 +35,7 @@ public sealed class AlgorithmIdentifier
 		(SignatureAlgorithm.MLDsa44, FromDer([0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x11])),
 		(SignatureAlgorithm.MLDsa65, FromDer([0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12])),
 		(SignatureAlgorithm.MLDsa87, FromDer([0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x13])),
+		(SignatureAlgorithm.SM2SM3, FromDer([0x30, 0x0A, 0x06, 0x08, 0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x83, 0x75])),
 	];
 
 	private AlgorithmIdentifier(string oid, ReadOnlyMemory<byte> parameters, ReadOnlyMemory<byte> encoded)
@@ -60,10 +64,10 @@ public sealed class AlgorithmIdentifier
 	/// Gets the identifier that names a signature algorithm in X.509.
 	/// </summary>
 	/// <remarks>
-	/// ECDSA, Ed25519, Ed448 and ML-DSA identifiers have no parameters (RFC 5758, Sec. 3.2; RFC 8410, Sec. 6; RFC 9881), and RSASSA-PKCS1-v1_5 identifiers have NULL parameters (RFC 4055, Sec. 5).
+	/// ECDSA, Ed25519, Ed448, ML-DSA and SM2-with-SM3 identifiers have no parameters (RFC 5758, Sec. 3.2; RFC 8410, Sec. 6; RFC 9881; GB/T 20518-2018, Sec. 5.2.2), and RSASSA-PKCS1-v1_5 identifiers have NULL parameters (RFC 4055, Sec. 5).
 	/// An RSASSA-PSS identifier is id-RSASSA-PSS with RSASSA-PSS-params (RFC 4055, Sec. 3.1) that name the hash, MGF1 with the hash, and a saltLength as long as the hash, and omit the default trailer field; the hash AlgorithmIdentifiers have NULL parameters, as RFC 4055, Sec. 2.1, defines them.
 	/// </remarks>
-	/// <param name="algorithm">The signature algorithm: one of <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />, <see cref="SignatureAlgorithm.EcdsaSha256" />, <see cref="SignatureAlgorithm.EcdsaSha384" />, <see cref="SignatureAlgorithm.EcdsaSha512" />, <see cref="SignatureAlgorithm.Ed25519" />, <see cref="SignatureAlgorithm.Ed448" />, <see cref="SignatureAlgorithm.MLDsa44" />, <see cref="SignatureAlgorithm.MLDsa65" /> or <see cref="SignatureAlgorithm.MLDsa87" />.</param>
+	/// <param name="algorithm">The signature algorithm: one of <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />, <see cref="SignatureAlgorithm.EcdsaSha256" />, <see cref="SignatureAlgorithm.EcdsaSha384" />, <see cref="SignatureAlgorithm.EcdsaSha512" />, <see cref="SignatureAlgorithm.Ed25519" />, <see cref="SignatureAlgorithm.Ed448" />, <see cref="SignatureAlgorithm.MLDsa44" />, <see cref="SignatureAlgorithm.MLDsa65" />, <see cref="SignatureAlgorithm.MLDsa87" /> or <see cref="SignatureAlgorithm.SM2SM3" />.</param>
 	/// <returns>The identifier.</returns>
 	/// <exception cref="NotSupportedException"><paramref name="algorithm" /> is another value.</exception>
 	public static AlgorithmIdentifier FromSignatureAlgorithm(SignatureAlgorithm algorithm)
@@ -86,6 +90,7 @@ public sealed class AlgorithmIdentifier
 	/// <para>
 	/// An ECDSA, Ed25519, Ed448 or ML-DSA identifier matches only in the DER that the specification of the algorithm requires, without parameters.
 	/// An RSASSA-PKCS1-v1_5 identifier, sha256WithRSAEncryption, sha384WithRSAEncryption or sha512WithRSAEncryption, matches with NULL or absent parameters, as RFC 4055, Sec. 5, requires.
+	/// An SM2-with-SM3 identifier, 1.2.156.10197.1.501, matches with absent parameters, as GB/T 20518-2018, Sec. 5.2.2, requires, or with NULL parameters, as GM/T 0015-2012 gives them.
 	/// </para>
 	/// <para>
 	/// An id-RSASSA-PSS identifier matches with DER-encoded RSASSA-PSS-params (RFC 4055, Sec. 3.1) that name SHA-256, SHA-384 or SHA-512, MGF1 with the same hash, a saltLength as long as the hash and the trailer field 1, the only combinations that <see cref="SignatureAlgorithm" /> defines.
@@ -112,6 +117,7 @@ public sealed class AlgorithmIdentifier
 			"1.2.840.113549.1.1.11" when Parameters.IsEmpty => SignatureAlgorithm.RsaPkcs1Sha256,
 			"1.2.840.113549.1.1.12" when Parameters.IsEmpty => SignatureAlgorithm.RsaPkcs1Sha384,
 			"1.2.840.113549.1.1.13" when Parameters.IsEmpty => SignatureAlgorithm.RsaPkcs1Sha512,
+			SM2SM3Oid when Parameters.Span is [0x05, 0x00] => SignatureAlgorithm.SM2SM3,
 			RsassaPssOid => ReadRsassaPssSignatureAlgorithm(Parameters),
 			_ => default
 		};

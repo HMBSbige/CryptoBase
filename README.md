@@ -144,7 +144,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | [X448](docs/key-agreement.md) | ✅ |
 | [Ed25519](docs/digital-signatures.md) | ✅ |
 | [Ed448](docs/digital-signatures.md) | ✅ |
-| SM2 | ⏳ |
+| [SM2](docs/sm2.md) | ✅ |
 | SM9 | ⏳ |
 
 ### [Hybrid public key encryption](docs/hpke.md)

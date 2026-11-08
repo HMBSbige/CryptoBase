@@ -12,6 +12,9 @@ internal readonly record struct JacobianValue(BigInteger X, BigInteger Y, BigInt
 // Affine arithmetic from the curve parameters alone, to check ECGroup against.
 internal sealed class ECReference(ECCurveTestVector curve)
 {
+	// From this many scalars of one point, a table of the multiples of its windows pays for itself.
+	private const int MinScalarsForWindows = 64;
+
 	internal BigInteger P { get; } = ModulusCase.Decode(curve.P);
 
 	internal BigInteger A { get; } = ModulusCase.Decode(curve.A);
@@ -124,7 +127,32 @@ internal sealed class ECReference(ECCurveTestVector curve)
 
 	internal CurvePoint?[] Multiply(CurvePoint? point, IReadOnlyCollection<BigInteger> scalars)
 	{
-		return Multiply([.. scalars.Select(_ => point)], [.. scalars]);
+		return point is null || scalars.Count < MinScalarsForWindows ? Multiply([.. scalars.Select(_ => point)], [.. scalars]) : MultiplyByWindows(point, scalars);
+	}
+
+	// Adds to each product the multiple j·2^(4i)·P for window i of its scalar, the additions of each window taking a single inversion.
+	private CurvePoint?[] MultiplyByWindows(CurvePoint point, IReadOnlyCollection<BigInteger> scalars)
+	{
+		BigInteger[] values = [.. scalars];
+		long bits = values.Max(static scalar => scalar.GetBitLength());
+		CurvePoint?[] products = new CurvePoint?[values.Length];
+		CurvePoint? windowBase = point;
+
+		for (int shift = 0; shift < bits; shift += 4)
+		{
+			CurvePoint?[] multiples = new CurvePoint?[16];
+
+			for (int j = 1; j < multiples.Length; ++j)
+			{
+				multiples[j] = Add(multiples[j - 1], windowBase);
+			}
+
+			int windowShift = shift;
+			products = Add(products, [.. values.Select(value => multiples[(int)(value >> windowShift & 15)])]);
+			windowBase = Add(multiples[^1], windowBase);
+		}
+
+		return products;
 	}
 
 	// Multiplies pairwise, doubling and adding for all the pairs at once, so that each step takes a single inversion.
@@ -161,6 +189,18 @@ internal sealed class ECReference(ECCurveTestVector curve)
 		BigInteger inverse = Inverse(value.Z);
 		BigInteger square = Mod(inverse * inverse);
 		return new CurvePoint(Mod(value.X * square), Mod(value.Y * square * inverse));
+	}
+
+	// Whether value, whose coordinates are below p, is the same point as expected: X = x·Z² and Y = y·Z³ for a Z other than 0, without its inverse.
+	internal bool Represents(JacobianValue value, CurvePoint? expected)
+	{
+		if (value.Z.IsZero || expected is null)
+		{
+			return value.Z.IsZero && expected is null;
+		}
+
+		BigInteger square = Mod(value.Z * value.Z);
+		return value.X == Mod(expected.X * square) && value.Y == Mod(expected.Y * square * value.Z);
 	}
 
 	// The point at infinity gets random X and Y with Z = 0.
@@ -202,32 +242,37 @@ internal sealed class ECReference(ECCurveTestVector curve)
 		}
 	}
 
-	// Takes the first y whose cubic x³ + ax + b − y² has a single root: its gcd with X^p − X is the product of X − x over the roots, so it is then linear.
+	// Takes the first y whose cubic x³ + ax + b − y² has a single root.
 	internal CurvePoint PointWithYFrom(BigInteger start)
 	{
 		for (BigInteger y = start; ; ++y)
 		{
-			BigInteger[] cubic = [Mod(B - y * y), A, 0, 1];
-			BigInteger[] power = [1];
-
-			for (long bit = P.GetBitLength() - 1; bit >= 0; --bit)
+			if (PointWithY(y) is { } point)
 			{
-				power = Remainder(Product(power, power), cubic);
-
-				if (!(P >> (int)bit).IsEven)
-				{
-					power = Remainder(Product(power, [0, 1]), cubic);
-				}
-			}
-
-			BigInteger[] difference = [.. power, 0, 0];
-			--difference[1];
-
-			if (Gcd(cubic, Trim(difference)) is [var constant, var linear])
-			{
-				return new CurvePoint(Mod(-constant * Inverse(linear)), y);
+				return point;
 			}
 		}
+	}
+
+	// The point with y-coordinate y if its cubic x³ + ax + b − y² has a single root, or null: its gcd with X^p − X is the product of X − x over the roots, so it is then linear.
+	internal CurvePoint? PointWithY(BigInteger y)
+	{
+		BigInteger[] cubic = [Mod(B - y * y), A, 0, 1];
+		BigInteger[] power = [1];
+
+		for (long bit = P.GetBitLength() - 1; bit >= 0; --bit)
+		{
+			power = Remainder(Product(power, power), cubic);
+
+			if (!(P >> (int)bit).IsEven)
+			{
+				power = Remainder(Product(power, [0, 1]), cubic);
+			}
+		}
+
+		BigInteger[] difference = [.. power, 0, 0];
+		--difference[1];
+		return Gcd(cubic, Trim(difference)) is [var constant, var linear] ? new CurvePoint(Mod(-constant * Inverse(linear)), y) : null;
 	}
 
 	internal static BigInteger RandomBelow(Random random, BigInteger bound)
@@ -270,7 +315,7 @@ internal sealed class ECReference(ECCurveTestVector curve)
 	}
 
 	// Returns null if square has no root.
-	private BigInteger? SquareRoot(BigInteger square)
+	internal BigInteger? SquareRoot(BigInteger square)
 	{
 		if (P % 4 != 3)
 		{

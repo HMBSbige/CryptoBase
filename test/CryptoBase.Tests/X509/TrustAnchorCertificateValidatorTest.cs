@@ -4,6 +4,7 @@ using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Signatures.Rsa;
+using CryptoBase.SM2;
 using CryptoBase.Tests.Signatures.Rsa;
 using CryptoBase.X509;
 using System.Diagnostics.CodeAnalysis;
@@ -843,7 +844,7 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// The policy on keys, for the peer's certificate and the trust anchor as well: RSA moduli of MinRsaKeySize to 16384 bits in whole bytes with exponents of at most 33 bits, and EC keys on P-256, P-384 or P-521 by name.
+	// The policy on keys, for the peer's certificate and the trust anchor as well: RSA moduli of MinRsaKeySize to 16384 bits in whole bytes with exponents of at most 33 bits, and EC keys on P-256, P-384, P-521 or the curve of SM2 by name.
 	[Test]
 	public async Task AppliesThePolicyToTheKeys()
 	{
@@ -855,6 +856,7 @@ public class TrustAnchorCertificateValidatorTest
 		byte[] dsa = Sequence(Sequence(Oid("1.2.840.10040.4.1"), Sequence([0x02, 0x01, 0x03], [0x02, 0x01, 0x05], [0x02, 0x01, 0x07])), Tlv(0x03, [0x00, 0x02, 0x01, 0x09]));
 		byte[] x448 = Sequence(Sequence(Oid("1.3.101.111")), Tlv(0x03, [0x00, .. new byte[56]]));
 		using EcdsaP384 p384 = EcdsaP384.GenerateKey();
+		using SM2Key sm2 = SM2Key.GenerateKey();
 
 		using (Assert.Multiple())
 		{
@@ -872,6 +874,7 @@ public class TrustAnchorCertificateValidatorTest
 			await AssertKey(root, dsa, CertificateValidationError.WeakAlgorithm);
 			await AssertKey(root, x448, CertificateValidationError.UnsupportedAlgorithm);
 			await AssertKey(root, ExportSubjectPublicKeyInfo(p384), null);
+			await AssertKey(root, ExportSubjectPublicKeyInfo(sm2), null);
 			await Assert.That(() => new TrustAnchorCertificateValidator([root.Certificate], SignatureKey.ImportSubjectPublicKeyInfo) { MinRsaKeySize = 1023 }).ThrowsExactly<ArgumentOutOfRangeException>();
 			await Assert.That(() => new TrustAnchorCertificateValidator([root.Certificate], SignatureKey.ImportSubjectPublicKeyInfo) { MinRsaKeySize = 16385 }).ThrowsExactly<ArgumentOutOfRangeException>();
 		}

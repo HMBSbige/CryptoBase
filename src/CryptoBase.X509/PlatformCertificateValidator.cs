@@ -12,6 +12,7 @@ namespace CryptoBase.X509;
 /// </para>
 /// <para>
 /// The platform also verifies the signatures, so a chain with an algorithm that the platform does not support, such as ML-DSA on an older system, fails validation.
+/// The platforms do not verify SM2 signatures with the default ID of GB/T 35276-2017, so SM2 chains fail validation; <see cref="TrustAnchorCertificateValidator" /> validates them.
 /// The validator does not check <see cref="Certificate.KeyUsage" />.
 /// </para>
 /// <para>

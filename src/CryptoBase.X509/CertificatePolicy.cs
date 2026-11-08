@@ -21,6 +21,9 @@ internal static class CertificatePolicy
 
 	private static ReadOnlySpan<byte> P521 => [0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x23];
 
+	// The named curve of SM2, 1.2.156.10197.1.301 (GB/T 35275-2017), with which id-ecPublicKey names an SM2 key.
+	private static ReadOnlySpan<byte> SM2 => [0x06, 0x08, 0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x82, 0x2D];
+
 	// Whether a certificate's signature can be verified: null for an algorithm that AlgorithmIdentifier names, WeakAlgorithm for one that the policy refuses whatever the key, and UnsupportedAlgorithm for any other.
 	// MD2, MD4 and MD5 are forbidden, and SHA-1, SHA-224 and DSA refused, as SignatureAlgorithm has none of them: RSASSA-PKCS1-v1_5 and ECDSA with those hashes, the OIW identifiers, RSASSA-PSS whose hash or MGF1 hash is one of them, the default SHA-1 included, and DSA with any hash.
 	public static CertificateValidationError? CheckSignatureAlgorithm(AlgorithmIdentifier identifier)
@@ -51,7 +54,7 @@ internal static class CertificatePolicy
 
 	// Whether the policy accepts a public key, before it is imported: null if so or if the importer decides, and otherwise the reason, with its description in reason.
 	// RSA keys need a modulus of minRsaKeySize to 16384 bits that is a multiple of 8, as CA/Browser Forum Baseline Requirements, Sec. 6.1.5, require, and a public exponent of at most 33 bits, which bound the work of a verification;
-	// EC keys a named curve, P-256, P-384 or P-521, with explicit parameters not supported (RFC 5480, Sec. 2.1.1); and DSA keys are refused.
+	// EC keys a named curve, P-256, P-384, P-521 or that of SM2, with explicit parameters not supported (RFC 5480, Sec. 2.1.1); and DSA keys are refused.
 	public static CertificateValidationError? CheckPublicKey(SubjectPublicKeyInfo info, int minRsaKeySize, out string? reason)
 	{
 		switch (info.Algorithm.Oid)
@@ -64,7 +67,7 @@ internal static class CertificatePolicy
 			{
 				ReadOnlySpan<byte> parameters = info.Algorithm.Parameters.Span;
 
-				if (parameters.SequenceEqual(P256) || parameters.SequenceEqual(P384) || parameters.SequenceEqual(P521))
+				if (parameters.SequenceEqual(P256) || parameters.SequenceEqual(P384) || parameters.SequenceEqual(P521) || parameters.SequenceEqual(SM2))
 				{
 					break;
 				}
@@ -72,7 +75,7 @@ internal static class CertificatePolicy
 				// A namedCurve other than these; specifiedCurve and implicitCurve, which RFC 5480 forbids, are not supported.
 				if (parameters is [0x06, ..])
 				{
-					reason = "has an EC key on a curve other than P-256, P-384 and P-521";
+					reason = "has an EC key on a curve other than P-256, P-384, P-521 and that of SM2";
 					return CertificateValidationError.WeakAlgorithm;
 				}
 

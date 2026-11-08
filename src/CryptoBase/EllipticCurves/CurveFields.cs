@@ -2,3 +2,4 @@
 global using P256CurveField = CryptoBase.EllipticCurves.P256Field52;
 global using P384CurveField = CryptoBase.EllipticCurves.P384Field56;
 global using P521CurveField = CryptoBase.EllipticCurves.P521Field58;
+global using SM2CurveField = CryptoBase.EllipticCurves.SM2Field52;

@@ -29,6 +29,24 @@ public class ECGroupTest
 		await Assert.That(failures).IsEmpty();
 	}
 
+	// Any two points, equal, opposite or at infinity, in Jacobian form on both sides.
+	[Test]
+	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
+	public async Task JacobianAddMatchesTheReference(CurveCase curve)
+	{
+		ECReference reference = curve.Reference;
+		Random random = new(7);
+		List<string> failures = [];
+
+		foreach ((CurvePoint? left, CurvePoint? right) in Pairs(reference, random))
+		{
+			JacobianValue sum = curve.Add(reference.RandomizeJacobian(left, random), reference.RandomizeJacobian(right, random));
+			CheckPoint(failures, reference, $"{Show(left)} + {Show(right)}", sum, reference.Add(left, right));
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
 	// Equal points give (0, 0, 0) and set the mask; any other two points not at infinity give their sum, the point at infinity for opposite points.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
@@ -124,6 +142,7 @@ public class ECGroupTest
 			foreach (ResultAliasing aliasing in (ResultAliasing[])[ResultAliasing.Left, ResultAliasing.Right])
 			{
 				CheckSame(failures, $"AddDistinct over {aliasing}", curve.AddDistinct(left, right, aliasing), curve.AddDistinct(left, right));
+				CheckSame(failures, $"Add over {aliasing}", curve.Add(left, right, aliasing), curve.Add(left, right));
 			}
 
 			CheckSame(failures, "mixed Add in place", curve.Add(left, affine, true), curve.Add(left, affine));

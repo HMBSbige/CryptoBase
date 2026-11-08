@@ -23,6 +23,17 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		MemoryMarshal.CreateSpan(ref s, TModulus.LimbCount).ZeroMemory();
 	}
 
+	[SkipLocalsInit]
+	internal static void Subtract(in FieldElement<TModulus> left, in FieldElement<TModulus> right, out FieldElement<TModulus> result)
+	{
+		Unsafe.SkipInit(out FieldElement<TModulus> difference);
+		ref ulong d = ref Limbs(ref difference);
+		ulong borrow = SubtractLimbs(ref Limbs(in left), ref Limbs(in right), ref d, TModulus.LimbCount);
+		Unsafe.SkipInit(out result);
+		_ = AddLimbs(ref d, ref MemoryMarshal.GetReference(TModulus.Modulus), 0 - borrow, ref Limbs(ref result), TModulus.LimbCount);
+		MemoryMarshal.CreateSpan(ref d, TModulus.LimbCount).ZeroMemory();
+	}
+
 	internal static void Multiply(in FieldElement<TModulus> left, in FieldElement<TModulus> right, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out result);

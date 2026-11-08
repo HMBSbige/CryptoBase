@@ -20,6 +20,7 @@ public class AlgorithmIdentifierTest
 		(SignatureAlgorithm.MLDsa44, "2.16.840.1.101.3.4.3.17"),
 		(SignatureAlgorithm.MLDsa65, "2.16.840.1.101.3.4.3.18"),
 		(SignatureAlgorithm.MLDsa87, "2.16.840.1.101.3.4.3.19"),
+		(SignatureAlgorithm.SM2SM3, "1.2.156.10197.1.501"),
 	];
 
 	// sha256WithRSAEncryption, sha384WithRSAEncryption and sha512WithRSAEncryption (RFC 4055, Sec. 5).
@@ -238,6 +239,34 @@ public class AlgorithmIdentifierTest
 			await Assert.That(MappedAlgorithm(Sequence(Oid("1.3.101.112"), [0x05, 0x00]))).IsEqualTo((SignatureAlgorithm)0);
 			await Assert.That(MappedAlgorithm(Sequence(Oid("1.3.101.113"), [0x05, 0x00]))).IsEqualTo((SignatureAlgorithm)0);
 			await Assert.That(MappedAlgorithm(Sequence(Oid("1.3.101.111")))).IsEqualTo((SignatureAlgorithm)0);
+		}
+	}
+
+	// GB/T 20518-2018, Sec. 5.2.2, gives no parameters, and GM/T 0015-2012 NULL ones; any other parameters do not match.
+	[Test]
+	public async Task SM2IdentifiersMatchWithoutOrWithNullParameters()
+	{
+		const string oid = "1.2.156.10197.1.501";
+		(string Case, byte[] Encoded)[] others =
+		[
+			("the SM2 curve", Sequence(Oid(oid), Oid("1.2.156.10197.1.301"))),
+			("an empty OCTET STRING", Sequence(Oid(oid), [0x04, 0x00])),
+			("an empty SEQUENCE", Sequence(Oid(oid), [0x30, 0x00])),
+			("NULL in a SEQUENCE", Sequence(Oid(oid), Sequence([0x05, 0x00]))),
+			("SM2 encryption", Sequence(Oid("1.2.156.10197.1.301.3"))),
+			("SM3", Sequence(Oid("1.2.156.10197.1.401"))),
+		];
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.SM2SM3).Encoded.ToArray()).IsEquivalentTo((byte[])[0x30, 0x0A, 0x06, 0x08, 0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x83, 0x75], CollectionOrdering.Matching);
+			await Assert.That(MappedAlgorithm(Sequence(Oid(oid)))).IsEqualTo(SignatureAlgorithm.SM2SM3);
+			await Assert.That(MappedAlgorithm(Sequence(Oid(oid), [0x05, 0x00]))).IsEqualTo(SignatureAlgorithm.SM2SM3);
+
+			foreach ((string @case, byte[] encoded) in others)
+			{
+				await Assert.That(MappedAlgorithm(encoded)).IsEqualTo((SignatureAlgorithm)0).Because(@case);
+			}
 		}
 	}
 

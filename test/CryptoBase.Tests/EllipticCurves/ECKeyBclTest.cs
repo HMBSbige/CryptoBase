@@ -78,6 +78,7 @@ public class ECKeyBclTest
 		}
 	}
 
+	// A platform without the curve throws PlatformNotSupportedException, and one with it may still refuse ECDH or ECDSA on it with a CryptographicException.
 	private static void SkipUnlessSupported(CurveCase curve)
 	{
 		try
@@ -85,8 +86,9 @@ public class ECKeyBclTest
 			using ECDiffieHellman key = ECDiffieHellman.Create(BclCurve(curve));
 			_ = key.DeriveRawSecretAgreement(key.PublicKey);
 			using ECDsa signer = ECDsa.Create(BclCurve(curve));
+			_ = signer.SignData(Message, HashAlgorithmName.SHA256);
 		}
-		catch (PlatformNotSupportedException e)
+		catch (Exception e) when (e is PlatformNotSupportedException or CryptographicException)
 		{
 			Skip.Test($"The platform has no raw ECDH or ECDSA on {curve.Name}: {e.Message}");
 		}

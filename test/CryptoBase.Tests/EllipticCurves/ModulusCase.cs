@@ -32,6 +32,8 @@ public abstract class ModulusCase
 		yield return new Case<Ed25519Order>("curve25519", true);
 		yield return new Case<Curve448Modulus>("curve448", false);
 		yield return new Case<Ed448Order>("curve448", true);
+		yield return new Case<SM2Field>(CurveCase.SM2Name, false);
+		yield return new Case<SM2Order>(CurveCase.SM2Name, true);
 	}
 
 	public abstract Type ModulusType { get; }
@@ -63,6 +65,8 @@ public abstract class ModulusCase
 	internal BigInteger R => BigInteger.One << 64 * LimbCount;
 
 	internal abstract BigInteger Add(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None);
+
+	internal abstract BigInteger Subtract(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None);
 
 	internal abstract BigInteger Multiply(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None);
 
@@ -212,6 +216,11 @@ public abstract class ModulusCase
 		internal override BigInteger Add(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None)
 		{
 			return Run(FieldElement<TModulus>.Add, left, right, aliasing);
+		}
+
+		internal override BigInteger Subtract(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None)
+		{
+			return Run(FieldElement<TModulus>.Subtract, left, right, aliasing);
 		}
 
 		internal override BigInteger Multiply(BigInteger left, BigInteger right, ResultAliasing aliasing = ResultAliasing.None)

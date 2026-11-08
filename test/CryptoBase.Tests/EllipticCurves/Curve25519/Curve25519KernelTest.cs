@@ -1,4 +1,5 @@
 using CryptoBase.EllipticCurves.Curve25519;
+using System.Collections.Concurrent;
 using System.Numerics;
 using static CryptoBase.Tests.EllipticCurves.Curve25519.Curve25519Reference;
 using static CryptoBase.Tests.EllipticCurves.Curve25519.Curve25519TestUtils;
@@ -13,6 +14,8 @@ public class Curve25519KernelTest
 	private const int RandomCount = 10;
 
 	private static readonly BigInteger A = 486662;
+
+	private static readonly ConcurrentDictionary<(EdwardsValue Value, BigInteger A, BigInteger B), Lazy<EdwardsValue>> DoubleProducts = new();
 
 	[Test]
 	public async Task EveryKernelIsListed()
@@ -106,7 +109,7 @@ public class Curve25519KernelTest
 				BigInteger a = scalars[i];
 				BigInteger b = scalars[(i * 5 + 1) % scalars.Count];
 				kernel.DoubleScalarMultiplyVariableTime(Scalar(a), in point, Scalar(b), out EdwardsPoint result);
-				EdwardsValue expected = Add(Multiply(value, a), Multiply(Base, b));
+				EdwardsValue expected = DoubleProduct(value, a, b);
 
 				if (ToValue(result) != expected)
 				{
@@ -139,7 +142,7 @@ public class Curve25519KernelTest
 				BigInteger a = scalars[i];
 				BigInteger b = scalars[(i * 7 + 3) % scalars.Count];
 				kernel.DoubleScalarMultiplyVariableTime(Scalar(a), table, Scalar(b), out EdwardsPoint result);
-				EdwardsValue expected = Add(Multiply(value, a), Multiply(Base, b));
+				EdwardsValue expected = DoubleProduct(value, a, b);
 
 				if (ToValue(result) != expected)
 				{
@@ -185,6 +188,11 @@ public class Curve25519KernelTest
 	}
 
 	// Each point with a random Z, then with the largest tight limbs in Z.
+	private static EdwardsValue DoubleProduct(EdwardsValue value, BigInteger a, BigInteger b)
+	{
+		return DoubleProducts.GetOrAdd((value, a, b), static key => new Lazy<EdwardsValue>(() => Add(Multiply(key.Value, key.A), Multiply(Base, key.B)))).Value;
+	}
+
 	private static IEnumerable<(EdwardsValue Value, EdwardsPoint Point)> Representations(EdwardsValue[] points, Random random)
 	{
 		foreach (EdwardsValue value in points)

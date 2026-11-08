@@ -8,7 +8,7 @@ internal static class ECTestUtils
 		{
 			failures.Add($"{operation} gave {actual}, which is not on the curve");
 		}
-		else if (reference.ToAffine(actual) != expected)
+		else if (!reference.Represents(actual, expected))
 		{
 			failures.Add($"{operation} gave {Show(reference.ToAffine(actual))}, expected {Show(expected)}");
 		}

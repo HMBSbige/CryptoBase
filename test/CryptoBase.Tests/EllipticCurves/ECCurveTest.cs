@@ -1,4 +1,5 @@
 using CryptoBase.EllipticCurves;
+using CryptoBase.KeyAgreements.Ecdh;
 using CryptoBase.Signatures.Ecdsa;
 using System.Reflection;
 
@@ -18,9 +19,9 @@ public class ECCurveTest
 	[Test]
 	public async Task CasesUseTheFieldsOfTheLibrary()
 	{
-		Type[] fields = [.. new[] { typeof(EcdsaP256), typeof(EcdsaP384), typeof(EcdsaP521) }.Select(static type => type.GetField("_key", BindingFlags.NonPublic | BindingFlags.Instance)!.FieldType.GetGenericArguments()[1])];
+		Type[] fields = [.. new[] { typeof(EcdsaP256), typeof(EcdsaP384), typeof(EcdsaP521), typeof(EcdhSM2) }.Select(static type => type.GetField("_key", BindingFlags.NonPublic | BindingFlags.Instance)!.FieldType.GetGenericArguments()[1])];
 
-		await Assert.That(CurveCase.All().Select(static curve => curve.FieldType)).IsEquivalentTo(fields);
+		await Assert.That(CurveCase.All().Select(static curve => curve.FieldType).Distinct()).IsEquivalentTo(fields);
 	}
 
 	[Test]

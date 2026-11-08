@@ -19,7 +19,7 @@ internal abstract class ECFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 
 	private protected static readonly int LimbCount = Unsafe.SizeOf<TField>() / sizeof(ulong);
 
-	private static readonly CurveCase Curve = CurveCase.All().Single(curve => curve.FieldType == typeof(TField));
+	private static readonly CurveCase Curve = CurveCase.All().First(curve => curve.FieldType == typeof(TField));
 
 	private protected readonly ulong Low = 1UL << limbBits;
 

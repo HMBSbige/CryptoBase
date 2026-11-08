@@ -7,7 +7,8 @@ public class WycheproofEcdhTest
 {
 	public static IEnumerable<(CurveCase Curve, EcdhEcpointTestVector Vector)> Vectors()
 	{
-		foreach (CurveCase curve in CurveCase.All())
+		// Wycheproof has no vectors for SM2.
+		foreach (CurveCase curve in CurveCase.All().Where(static curve => curve.Name is not CurveCase.SM2Name))
 		{
 			foreach (EcdhEcpointTestVector vector in WycheproofVectors.Load<EcdhEcpointTestVector>($"ecdh_{curve.Name}_ecpoint_test.json"))
 			{

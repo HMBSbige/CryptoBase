@@ -16,7 +16,7 @@ shard_filter() {
 		case $shard in
 			hashes) names+=(Hashes) ;;
 			ciphers) names+=(Ciphers) ;;
-			ec) names+=(EllipticCurves KeyAgreements Signatures) ;;
+			ec) names+=(EllipticCurves KeyAgreements Signatures SM2) ;;
 			rest) names+=('' Cavp Encodings Hpke IO Kdf Kems Macs Otp Platform Vectors Wycheproof X509) ;;
 			*) echo "Unknown shard: $shard" >&2; return 1 ;;
 		esac

@@ -21,6 +21,22 @@ public class FieldElementTest
 		await Assert.That(failures).IsEmpty();
 	}
 
+	// A difference below 0 borrows out of the top limb and takes m back.
+	[Test]
+	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
+	public async Task SubtractMatchesBigInteger(ModulusCase modulus)
+	{
+		BigInteger m = modulus.Modulus;
+		List<string> failures = [];
+
+		foreach ((BigInteger left, BigInteger right) in Pairs(modulus, 17))
+		{
+			Check(failures, $"{left:X} − {right:X}", modulus.Subtract(left, right), ((left - right) % m + m) % m);
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task MultiplyMatchesBigInteger(ModulusCase modulus)
@@ -257,6 +273,7 @@ public class FieldElementTest
 			{
 				string over = $"{left:X}, {right:X} over {aliasing}";
 				Check(failures, $"Add {over}", modulus.Add(left, right, aliasing), modulus.Add(left, right));
+				Check(failures, $"Subtract {over}", modulus.Subtract(left, right, aliasing), modulus.Subtract(left, right));
 				Check(failures, $"Multiply {over}", modulus.Multiply(left, right, aliasing), modulus.Multiply(left, right));
 			}
 

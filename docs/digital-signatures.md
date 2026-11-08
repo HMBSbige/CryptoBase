@@ -13,6 +13,7 @@
 | `Ed25519` | `CryptoBase.Signatures.EdDsa` | 32 bytes | 32 bytes | 64 bytes |
 | `Ed448` | `CryptoBase.Signatures.EdDsa` | 57 bytes | 57 bytes | 114 bytes |
 | `RsaKey` | `CryptoBase.Signatures.Rsa` | modulus of 512 to 16384 bits | two primes | as long as the modulus |
+| `SM2Key` ([SM2](sm2.md)) | `CryptoBase.SM2` | 65 bytes | 32 bytes | at most 72 bytes |
 
 ## ML-DSA
 
@@ -309,17 +310,17 @@ using CryptoBase.Signatures;
 using System.Security.Cryptography.X509Certificates;
 
 // SignatureKey imports as the type that the encoding names: EcdsaP256, EcdsaP384, EcdsaP521, Ed25519, Ed448, MLDsa44, MLDsa65, MLDsa87,
-// or RsaKey for rsaEncryption and id-RSASSA-PSS. Another algorithm or curve throws NotSupportedException, as do RSA keys and
-// RSASSA-PSS parameters that RsaKey does not support; a malformed encoding or an invalid key throws ArgumentException.
+// SM2Key for id-ecPublicKey on the SM2 curve, or RsaKey for rsaEncryption and id-RSASSA-PSS. Another algorithm or curve throws NotSupportedException,
+// as do RSA keys and RSASSA-PSS parameters that RsaKey does not support; a malformed encoding or an invalid key throws ArgumentException.
 using ISignatureKey fromSpki = SignatureKey.ImportSubjectPublicKeyInfo(spki);
 using ISignatureKey fromPkcs8 = SignatureKey.ImportPkcs8PrivateKey(pkcs8);
 
-// The text must hold exactly one PUBLIC KEY, PRIVATE KEY, RSA PUBLIC KEY, RSA PRIVATE KEY or EC PRIVATE KEY block;
-// other blocks, such as EC PARAMETERS, are ignored. EC PRIVATE KEY must name its curve. Encrypted keys are not supported.
+// The text must hold exactly one PUBLIC KEY, PRIVATE KEY, RSA PUBLIC KEY, RSA PRIVATE KEY, EC PRIVATE KEY or SM2 PRIVATE KEY block;
+// other blocks, such as EC PARAMETERS, are ignored. EC PRIVATE KEY must name its curve, and SM2 PRIVATE KEY the SM2 curve. Encrypted keys are not supported.
 using ISignatureKey key = SignatureKey.ImportFromPem(File.ReadAllText("key.pem"));
 
 // An ML-DSA type, Ed25519 and Ed448 support only the algorithm of their name; an ECDSA type supports EcdsaSha256, EcdsaSha384 and EcdsaSha512;
-// RsaKey supports the RSA algorithms that its modulus fits and its AlgorithmIdentifier allows.
+// SM2Key supports SM2SM3; RsaKey supports the RSA algorithms that its modulus fits and its AlgorithmIdentifier allows.
 SignatureAlgorithm algorithm = SignatureAlgorithm.EcdsaSha256;
 
 if (key.HasPrivateKey && key.Supports(algorithm))

@@ -73,5 +73,10 @@ public enum SignatureAlgorithm
 	/// <summary>
 	/// ML-DSA-87 with an empty context.
 	/// </summary>
-	MLDsa87 = 14
+	MLDsa87 = 14,
+
+	/// <summary>
+	/// SM2 with SM3 (GB/T 32918.2-2016) and the default ID "1234567812345678" of GB/T 35276-2017, the signature DER-encoded.
+	/// </summary>
+	SM2SM3 = 15
 }

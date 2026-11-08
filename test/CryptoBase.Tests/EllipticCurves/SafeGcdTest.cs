@@ -18,6 +18,8 @@ public class SafeGcdTest
 		await Check<P521Order>(1201);
 		await Check<Curve25519Modulus>(588);
 		await Check<Curve448Modulus>(1033);
+		await Check<SM2Field>(591);
+		await Check<SM2Order>(591);
 	}
 
 	private static async Task Check<TModulus>(int expectedBound) where TModulus : struct, IMontgomeryModulus

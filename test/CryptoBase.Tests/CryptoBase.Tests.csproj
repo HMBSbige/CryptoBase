@@ -30,6 +30,7 @@
     <EmbeddedResource Include="Hpke/Vectors/*.json" LogicalName="%(Filename)%(Extension)" />
     <EmbeddedResource Include="Signatures/Rsa/Vectors/*.txt" LogicalName="%(Filename)%(Extension)" />
     <EmbeddedResource Include="X509/Rfc9881/*.pem" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="X509/SM2/*.pem" LogicalName="%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@ using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Signatures.Rsa;
+using CryptoBase.SM2;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.Tests.Signatures.Rsa;
 using System.Security.Cryptography;
@@ -23,6 +24,7 @@ internal static class SignatureTestUtils
 		new(typeof(Ed25519), [SignatureAlgorithm.Ed25519], Ed25519.GenerateKey, DeterministicAlgorithms: [SignatureAlgorithm.Ed25519]),
 		new(typeof(Ed448), [SignatureAlgorithm.Ed448], Ed448.GenerateKey, DeterministicAlgorithms: [SignatureAlgorithm.Ed448]),
 		new(typeof(RsaKey), RsaTestUtils.Algorithms, static () => RsaTestUtils.ImportKey(), RsaTestUtils.Pkcs1Algorithms, static () => RsaKey.GenerateKey(2048)),
+		new(typeof(SM2Key), [SignatureAlgorithm.SM2SM3], SM2Key.GenerateKey),
 	];
 
 	public static T GenerateKey<T>() where T : class, ISignatureKey<T>

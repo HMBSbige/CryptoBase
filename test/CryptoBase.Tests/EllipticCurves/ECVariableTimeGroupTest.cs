@@ -202,7 +202,7 @@ public class ECVariableTimeGroupTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// With n < p < 2n, x mod n is x − n for x in [n, p): the least such x above n here, where r = x − n fails the comparison of x with r and passes that with r + n, and the least x from n, which may be n itself, with x mod n = 0 below every r. A small x leaves r + n < p for r near x, so a wrong r there reaches the second comparison and fails it; an x near p − n leaves r + n ≥ p, as does r = x + p − n, whose r + n ≡ x would match without the bound.
+	// With n < p < 2n, x mod n is x − n for x in [n, p): the least such x above n here, where r = x − n fails the comparison of x with r and passes that with r + n, and the least x from n, which may be n itself. A small x leaves r + n < p for r near x, so a wrong r there reaches the second comparison and fails it; an x near p − n leaves r + n ≥ p, as does r = x + p − n, whose r + n ≡ x would match without the bound. r may be 0, which SM2 verification passes for r − e: the least x from 0 is 0 itself on P-256 and SM2, which have a point there.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task XModOrderEqualsMatchesTheReference(CurveCase curve)
@@ -212,7 +212,7 @@ public class ECVariableTimeGroupTest
 		BigInteger p = reference.P;
 		Random random = new(6);
 		CurvePoint above = reference.PointWithXFrom(n + 1);
-		List<CurvePoint> points = [reference.Generator, above, reference.PointWithXFrom(n), reference.PointWithXFrom(1), reference.PointWithXFrom(p - n)];
+		List<CurvePoint> points = [reference.Generator, above, reference.PointWithXFrom(n), reference.PointWithXFrom(0), reference.PointWithXFrom(1), reference.PointWithXFrom(p - n)];
 		List<string> failures = [];
 		int wrapping = 0;
 
@@ -229,7 +229,7 @@ public class ECVariableTimeGroupTest
 
 			foreach (BigInteger r in (BigInteger[])[x, x - 1, x + 1, point.X + p - n, wrapped])
 			{
-				if (r < 1 || r >= n)
+				if (r < 0 || r >= n)
 				{
 					continue;
 				}
@@ -249,7 +249,7 @@ public class ECVariableTimeGroupTest
 			}
 		}
 
-		foreach (BigInteger r in (BigInteger[])[1, n - 1])
+		foreach (BigInteger r in (BigInteger[])[0, 1, n - 1])
 		{
 			if (curve.XModOrderEqualsVariableTime(reference.RandomizeJacobian(null, random), r))
 			{

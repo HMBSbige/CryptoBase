@@ -13,7 +13,8 @@ public class ECKernelBenchmark
 	{
 		P256,
 		P384,
-		P521
+		P521,
+		SM2
 	}
 
 	[ParamsAllValues]
@@ -27,6 +28,7 @@ public class ECKernelBenchmark
 			CurveKind.P256 => new Kernel<P256Curve, P256Field52, P256Order>(),
 			CurveKind.P384 => new Kernel<P384Curve, P384Field56, P384Order>(),
 			CurveKind.P521 => new Kernel<P521Curve, P521Field58, P521Order>(),
+			CurveKind.SM2 => new Kernel<SM2Curve, SM2Field52, SM2Order>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(Curve))
 		};
 	}

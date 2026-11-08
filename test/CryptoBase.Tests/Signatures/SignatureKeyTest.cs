@@ -4,6 +4,7 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.Rsa;
+using CryptoBase.SM2;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.Tests.Signatures.Rsa;
 using System.Diagnostics.CodeAnalysis;
@@ -19,6 +20,7 @@ namespace CryptoBase.Tests.Signatures;
 internal class SignatureKeyTest
 {
 	private const string P256Oid = "1.2.840.10045.3.1.7";
+	private const string SM2CurveOid = "1.2.156.10197.1.301";
 
 	public static IEnumerable<Func<KeyType>> KeyTypeCases()
 	{
@@ -314,6 +316,31 @@ internal class SignatureKeyTest
 			}
 
 			await Assert.That(() => SignatureKey.ImportFromPem(encrypted)).Throws<ArgumentException>().WithParameterName("source");
+		}
+	}
+
+	// The label names the curve, so the parameters must name it too: a P-256 key, a key without parameters and one on another curve are invalid under it.
+	[Test]
+	public async Task SM2PrivateKeyBlocksNameTheCurveOfSM2()
+	{
+		using SM2Key key = SM2Key.GenerateKey();
+		using EcdsaP256 p256 = EcdsaP256.GenerateKey();
+		byte[] d = new byte[SM2Key.PrivateKeyLength];
+		key.ExportPrivateKey(d);
+		byte[][] invalid = [EcdsaTestUtils.ECPrivateKey(1, EcdsaTestUtils.ExportPrivateKey(p256), P256Oid, null), EcdsaTestUtils.ECPrivateKey(1, d, null, null), EcdsaTestUtils.ECPrivateKey(1, d, "1.3.132.0.10", null)];
+
+		using ISignatureKey imported = SignatureKey.ImportFromPem(PemEncoding.WriteString("SM2 PRIVATE KEY", EcdsaTestUtils.ECPrivateKey(1, d, SM2CurveOid, null)));
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(imported).IsTypeOf<SM2Key>();
+			await Assert.That(imported.HasPrivateKey).IsTrue();
+			await Assert.That(ExportSubjectPublicKeyInfo(imported)).IsEquivalentTo(ExportSubjectPublicKeyInfo(key), CollectionOrdering.Matching);
+
+			foreach (byte[] encoding in invalid)
+			{
+				await Assert.That(() => SignatureKey.ImportFromPem(PemEncoding.WriteString("SM2 PRIVATE KEY", encoding))).ThrowsExactly<ArgumentException>().WithParameterName("source").Because(Convert.ToHexString(encoding));
+			}
 		}
 	}
 

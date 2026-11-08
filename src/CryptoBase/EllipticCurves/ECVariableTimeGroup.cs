@@ -12,9 +12,31 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 
 	internal static int DigitCount => TOrder.BitLength + 1;
 
-	// Sets result to u1·G + u2·Q for u1 and u2 below n and a point Q on the curve.
-	[SkipLocalsInit]
+	// Sets result to u1·G + u2·Q for u1 and u2 below n and a point Q on the curve, by the kernels of TCurve where it has them and MultiplyAddWindows otherwise.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void MultiplyAdd(in FieldElement<TOrder> u1, in AffinePoint<TField> point, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
+	{
+		if (!TCurve.TryMultiplyAdd(in u1, in point, in u2, out result))
+		{
+			MultiplyAddWindows(in u1, in point, in u2, out result);
+		}
+	}
+
+	// Whether u1·G + u2·Q for u1 and u2 below n and a point Q on the curve is not the point at infinity and its x is r mod n, by the kernels of TCurve where it has them and MultiplyAdd and XModOrderEquals otherwise.
+	internal static bool MultiplyAddXModOrderEquals(in FieldElement<TOrder> u1, in AffinePoint<TField> point, in FieldElement<TOrder> u2, in FieldElement<TOrder> r)
+	{
+		if (TCurve.TryMultiplyAddXModOrderEquals(in u1, in point, in u2, in r, out bool equals))
+		{
+			return equals;
+		}
+
+		MultiplyAdd(in u1, in point, in u2, out JacobianPoint<TField> result);
+		return XModOrderEquals(in result, in r);
+	}
+
+	// As MultiplyAdd, by the NAF of u1 and u2 alone.
+	[SkipLocalsInit]
+	internal static void MultiplyAddWindows(in FieldElement<TOrder> u1, in AffinePoint<TField> point, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
 	{
 		Span<sbyte> baseDigits = stackalloc sbyte[DigitCount];
 		Span<sbyte> pointDigits = stackalloc sbyte[DigitCount];
@@ -59,9 +81,19 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		}
 	}
 
-	// As above, with the table that ECVariableTimePointTable builds for Q. Each part of u2 has a NAF of its own, which needs only the doublings of one part; u1·G follows from the windows of ECGeneratorTable, which need none.
-	[SkipLocalsInit]
+	// As above, with the table that ECVariableTimePointTable builds for Q, by the kernels of TCurve where it has them and MultiplyAddWindows otherwise.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void MultiplyAdd(in FieldElement<TOrder> u1, ReadOnlySpan<AffinePoint<TField>> pointTable, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
+	{
+		if (!TCurve.TryMultiplyAdd(in u1, pointTable, in u2, out result))
+		{
+			MultiplyAddWindows(in u1, pointTable, in u2, out result);
+		}
+	}
+
+	// As MultiplyAdd with the table. Each part of u2 has a NAF of its own, which needs only the doublings of one part; u1·G follows from the windows of ECGeneratorTable, which need none.
+	[SkipLocalsInit]
+	internal static void MultiplyAddWindows(in FieldElement<TOrder> u1, ReadOnlySpan<AffinePoint<TField>> pointTable, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
 	{
 		Debug.Assert(pointTable.Length == ECVariableTimePointTable<TCurve, TField, TOrder>.Length);
 
@@ -106,6 +138,14 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		}
 
 		int width = TCurve.GeneratorWindowWidth;
+
+		// Where w divides N, ECGroup.RecodeSpanning takes the digits from k or k − n.
+		if (TOrder.BitLength % width is 0)
+		{
+			AddWindows(ECGeneratorTable<TCurve, TField, TOrder>.Windows, in u1, ref result);
+			return;
+		}
+
 		int windowCount = ECGeneratorTable<TCurve, TField, TOrder>.WindowCount;
 		int windowLength = ECGeneratorTable<TCurve, TField, TOrder>.WindowLength;
 		ReadOnlySpan<ulong> limbs = FieldElement<TOrder>.GetLimbs(in u1);
@@ -122,6 +162,62 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 			if (digit is not 0)
 			{
 				ECGeneratorTable<TCurve, TField, TOrder>.Read(i * windowLength + Math.Abs(digit) - 1, out AffinePoint<TField> entry);
+
+				if (digit < 0)
+				{
+					TField.Negate(in entry.Y, out entry.Y);
+				}
+
+				Add(in result, in entry, out result);
+			}
+		}
+	}
+
+	// As MultiplyAdd with the windows of Q that ECPointTable holds, by the kernels of TCurve where it has them and MultiplyAddFixedWindows otherwise.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void MultiplyAdd(in FieldElement<TOrder> u1, ECPointTable<TCurve, TField, TOrder> table, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
+	{
+		ReadOnlySpan<ulong> windows = table.Windows;
+
+		if (!TCurve.TryMultiplyAddFixed(windows, in u1, in u2, out result))
+		{
+			MultiplyAddFixedWindows(windows, in u1, in u2, out result);
+		}
+	}
+
+	// As MultiplyAdd with the windows of Q, which need no doublings: u1·G from the windows of G in ECGeneratorTable and u2·Q from those of Q.
+	internal static void MultiplyAddFixedWindows(ReadOnlySpan<ulong> windows, in FieldElement<TOrder> u1, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
+	{
+		// Z = 0, the point at infinity.
+		result = default;
+		AddWindows(ECGeneratorTable<TCurve, TField, TOrder>.Windows, in u1, ref result);
+		AddWindows(windows, in u2, ref result);
+	}
+
+	// Adds k·P to result from the windows of P as ECGeneratorTable lays them out, each entry read in place at a digit of ECGroup.Recode or RecodeSpanning.
+	[SkipLocalsInit]
+	private static void AddWindows(ReadOnlySpan<ulong> windows, in FieldElement<TOrder> scalar, ref JacobianPoint<TField> result)
+	{
+		int windowCount = ECGeneratorTable<TCurve, TField, TOrder>.WindowCount;
+		int windowLength = ECGeneratorTable<TCurve, TField, TOrder>.WindowLength;
+		Span<sbyte> digits = stackalloc sbyte[windowCount];
+
+		if (TOrder.BitLength % TCurve.GeneratorWindowWidth is 0)
+		{
+			ECGroup<TCurve, TField, TOrder>.RecodeSpanning(in scalar, TCurve.GeneratorWindowWidth, digits);
+		}
+		else
+		{
+			ECGroup<TCurve, TField, TOrder>.Recode(in scalar, TCurve.GeneratorWindowWidth, digits);
+		}
+
+		for (int i = 0; i < windowCount; ++i)
+		{
+			int digit = digits[i];
+
+			if (digit is not 0)
+			{
+				ECGeneratorTable<TCurve, TField, TOrder>.Read(windows, i * windowLength + Math.Abs(digit) - 1, out AffinePoint<TField> entry);
 
 				if (digit < 0)
 				{
@@ -153,7 +249,7 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		ECGroup<TCurve, TField, TOrder>.ToAffineVariableTime(sums, multiples.Slice(1));
 	}
 
-	// For r in [1, n − 1]. As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p, and x = t means X = t·Z².
+	// For r below n, 0 included. As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p, and x = t means X = t·Z².
 	[SkipLocalsInit]
 	internal static bool XModOrderEquals(in JacobianPoint<TField> point, in FieldElement<TOrder> r)
 	{
@@ -191,6 +287,25 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		return TField.AreEqual(in x, in product) is not 0;
 	}
 
+	// Whether two points, neither the point at infinity, have the same x, so that they are equal or opposite: X1·Z2² = X2·Z1².
+	internal static bool XEquals(in JacobianPoint<TField> left, in JacobianPoint<TField> right)
+	{
+		TField.Square(in left.Z, out TField leftSquare);
+		TField.Square(in right.Z, out TField rightSquare);
+		TField.Multiply(in left.X, in rightSquare, out rightSquare);
+		TField.Multiply(in right.X, in leftSquare, out leftSquare);
+		return TField.AreEqual(in rightSquare, in leftSquare) is not 0;
+	}
+
+	// sum − point for points on the curve, of which sum may be the point at infinity.
+	internal static void Subtract(ref JacobianPoint<TField> sum, in AffinePoint<TField> point)
+	{
+		AffinePoint<TField> negated;
+		negated.X = point.X;
+		TField.Negate(in point.Y, out negated.Y);
+		Add(in sum, in negated, out sum);
+	}
+
 	// The result may be left.
 	internal static void Add(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
 	{
@@ -205,6 +320,30 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		{
 			JacobianPoint<TField>.FromAffine(in right, out result);
 			ECGroup<TCurve, TField, TOrder>.Double(in result, out result);
+		}
+	}
+
+	// sum + addend for points on the curve, either of them the point at infinity.
+	[SkipLocalsInit]
+	internal static void Add(ref JacobianPoint<TField> sum, in JacobianPoint<TField> addend)
+	{
+		if (addend.IsInfinity)
+		{
+			return;
+		}
+
+		if (sum.IsInfinity)
+		{
+			sum = addend;
+			return;
+		}
+
+		JacobianPoint<TField> left = sum;
+
+		// Opposite points give Z = 0 by themselves; equal ones need the double.
+		if (ECGroup<TCurve, TField, TOrder>.AddDistinct(in left, in addend, out sum) is not 0)
+		{
+			ECGroup<TCurve, TField, TOrder>.Double(in left, out sum);
 		}
 	}
 
