@@ -13,7 +13,7 @@ public class MontgomeryModulusTest
 		await Assert.That(ModulusCase.All().Select(static modulus => modulus.ModulusType)).IsEquivalentTo(ImplementationsOf(typeof(IMontgomeryModulus)));
 	}
 
-	// The prime-order curves come from Wycheproof and SM2 from GB/T 32918.5, as CurveCase gives them; Curve25519 and Curve448 are not among them. The field of Curve25519 is that of 2^255 − 19 and its base point of order 2^252 + 27742317777372353535851937790883648493 (RFC 8032, Sec. 5.1); those of Curve448 are from RFC 7748, Sec. 4.2 and RFC 8032, Sec. 5.2.
+	// The prime-order curves come from Wycheproof and SM2 from GB/T 32918.5, as CurveCase gives them; Curve25519, Curve448 and SM9 are not among them. The field of Curve25519 is that of 2^255 − 19 and its base point of order 2^252 + 27742317777372353535851937790883648493 (RFC 8032, Sec. 5.1); those of Curve448 are from RFC 7748, Sec. 4.2 and RFC 8032, Sec. 5.2.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task ModulusIsTheCurveConstant(ModulusCase modulus)
@@ -27,6 +27,13 @@ public class MontgomeryModulusTest
 		if (modulus.Curve is "curve448")
 		{
 			await Assert.That(modulus.Modulus).IsEqualTo(modulus.IsOrder ? (BigInteger.One << 446) - BigInteger.Parse("13818066809895115352007386748515426880336692474882178609894547503885") : (BigInteger.One << 448) - (BigInteger.One << 224) - 1);
+			return;
+		}
+
+		// SM9 takes p and N from t = 0x600000000058F98A (GM/T 0044.5, Sec. 3.1).
+		if (modulus.Curve is "sm9")
+		{
+			await Assert.That(modulus.Modulus).IsEqualTo(modulus.IsOrder ? SM9.SM9Reference.N : SM9.SM9Reference.P);
 			return;
 		}
 

@@ -1,6 +1,7 @@
 using CryptoBase.EllipticCurves;
 using CryptoBase.EllipticCurves.Curve25519;
 using CryptoBase.EllipticCurves.Curve448;
+using CryptoBase.EllipticCurves.SM9;
 using CryptoBase.Signatures.EdDsa;
 using System.Buffers.Binary;
 using System.Numerics;
@@ -34,6 +35,8 @@ public abstract class ModulusCase
 		yield return new Case<Ed448Order>("curve448", true);
 		yield return new Case<SM2Field>(CurveCase.SM2Name, false);
 		yield return new Case<SM2Order>(CurveCase.SM2Name, true);
+		yield return new Case<SM9Modulus>("sm9", false);
+		yield return new Case<SM9Order>("sm9", true);
 	}
 
 	public abstract Type ModulusType { get; }
