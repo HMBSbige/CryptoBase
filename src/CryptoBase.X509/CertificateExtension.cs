@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -5,6 +7,8 @@ namespace CryptoBase.X509;
 /// </summary>
 public sealed class CertificateExtension
 {
+	private static readonly string?[] IdCeIdentifiers = new string?[128];
+
 	/// <summary>
 	/// Initializes an extension.
 	/// </summary>
@@ -57,7 +61,7 @@ public sealed class CertificateExtension
 	internal static CertificateExtension Read(ref DerReader reader)
 	{
 		DerReader contents = reader.ReadSequence();
-		string oid = contents.ReadObjectIdentifier();
+		string oid = ReadIdentifier(ref contents);
 		bool critical = contents.PeekTagIs(Asn1Tag.Boolean);
 
 		if (critical && !contents.ReadBoolean())
@@ -68,6 +72,43 @@ public sealed class CertificateExtension
 		ReadOnlyMemory<byte> value = contents.ReadOctetString();
 		contents.ThrowIfNotEmpty();
 		return new CertificateExtension(oid, critical, value);
+	}
+
+	// Nearly all extensions are under id-ce (2.5.29), so their identifiers have one string each, kept as they are first read. Threads that race write equal strings.
+	private static string ReadIdentifier(ref DerReader reader)
+	{
+		if (reader.GetRemaining().Span is [0x06, 0x03, 0x55, 0x1D, var last and < 0x80, ..])
+		{
+			reader.ReadEncodedValue();
+			return IdCeIdentifiers[last] ??= string.Create(CultureInfo.InvariantCulture, $"2.5.29.{last}");
+		}
+
+		return reader.ReadObjectIdentifier();
+	}
+
+	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension under an explicit tag, each extnID at most once, as a CRL and an OCSP response hold them. The values are slices of the reader's memory.
+	internal static IReadOnlyList<CertificateExtension> ReadList(ref DerReader reader, Asn1Tag tag)
+	{
+		DerReader wrapper = reader.ReadSequence(tag);
+		DerReader sequence = wrapper.ReadSequence();
+		wrapper.ThrowIfNotEmpty();
+		sequence.ThrowIfEmpty();
+		List<CertificateExtension> extensions = [];
+		HashSet<string> oids = new(StringComparer.Ordinal);
+
+		while (sequence.HasData)
+		{
+			CertificateExtension extension = Read(ref sequence);
+
+			if (!oids.Add(extension.Oid))
+			{
+				throw new AsnContentException($"The extensions include {extension.Oid} more than once.");
+			}
+
+			extensions.Add(extension);
+		}
+
+		return extensions.AsReadOnly();
 	}
 
 	internal void Write(AsnWriter writer)

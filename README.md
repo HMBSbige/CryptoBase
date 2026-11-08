@@ -197,8 +197,8 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | Certificate fingerprints (RFC 8122) | ✅ |
 | Certificate signing requests | ✅ |
 | Certificate issuance | ✅ |
-| CRL | ⏳ |
-| OCSP | ⚠️ |
+| CRL | ✅ |
+| OCSP | ✅ |
 
 ### [Stream and file I/O](docs/io.md)
 

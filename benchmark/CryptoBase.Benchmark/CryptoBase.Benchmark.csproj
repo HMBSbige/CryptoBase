@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CryptoBase\CryptoBase.csproj" />
     <ProjectReference Include="..\..\src\CryptoBase.IO\CryptoBase.IO.csproj" />
+    <ProjectReference Include="..\..\src\CryptoBase.X509\CryptoBase.X509.csproj" />
   </ItemGroup>
 
 </Project>

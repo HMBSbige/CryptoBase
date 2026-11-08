@@ -17,8 +17,8 @@ public class LimboTest
 	private const string Skipped = "SKIPPED";
 
 	// The features that the validator implements; a testcase with any other feature is skipped, whether limbo-schema.json knows it or not.
-	// Skipped are has-crl, pedantic-public-suffix-wildcard, pedantic-rfc5280, rfc5280-incompatible-with-webpki, pedantic-serial-number and pedantic-webpki-eku.
-	private static readonly HashSet<string> SupportedFeatures = ["max-chain-depth", "denial-of-service", "has-mldsa", "pedantic-webpki-subscriber-key", "name-constraint-dn", "has-policy-constraints", "has-cert-policies", "no-cert-policies"];
+	// Skipped are pedantic-public-suffix-wildcard, pedantic-rfc5280, rfc5280-incompatible-with-webpki, pedantic-serial-number and pedantic-webpki-eku.
+	private static readonly HashSet<string> SupportedFeatures = ["max-chain-depth", "denial-of-service", "has-mldsa", "pedantic-webpki-subscriber-key", "name-constraint-dn", "has-policy-constraints", "has-cert-policies", "no-cert-policies", "has-crl"];
 
 	// The most that a denial-of-service testcase may take, which only a search without limits exceeds; generous for emulated and Debug runs.
 	private static readonly TimeSpan DenialOfServiceTimeout = TimeSpan.FromSeconds(30);
@@ -101,10 +101,13 @@ public class LimboTest
 			Console.WriteLine($"tolerated: {line}");
 		}
 
+		int crlTestcases = testcases.Count(testcase => testcase.Crls.Length > 0 && outcomes[testcase.Id].Result is not Skipped);
+
 		using (Assert.Multiple())
 		{
 			await Assert.That(nonconformant).IsEmpty().Because(string.Join(Environment.NewLine, nonconformant.Take(50)));
 			await Assert.That(stale).IsEmpty().Because(string.Join(Environment.NewLine, stale));
+			await Assert.That(crlTestcases).IsEqualTo(17);
 		}
 	}
 
@@ -191,9 +194,9 @@ public class LimboTest
 			return new Outcome(Skipped, $"The feature {feature} is not supported.");
 		}
 
-		if (testcase.SignatureAlgorithms.Length > 0 || testcase.Crls.Length > 0)
+		if (testcase.SignatureAlgorithms.Length > 0)
 		{
-			return new Outcome(Skipped, "Constraints on signature algorithms and CRLs are not supported.");
+			return new Outcome(Skipped, "Constraints on signature algorithms are not supported.");
 		}
 
 		(CertificateUsage usage, string purpose) = testcase.ValidationKind switch
@@ -212,19 +215,26 @@ public class LimboTest
 		Certificate peer;
 		Certificate[] trusted;
 		Certificate[] intermediates;
+		CertificateRevocationList[] revocationLists;
 
 		try
 		{
 			peer = Certificate.DecodePem(testcase.PeerCertificate);
 			trusted = [.. testcase.TrustedCerts.Select(static pem => Certificate.DecodePem(pem))];
 			intermediates = [.. testcase.UntrustedIntermediates.Select(static pem => Certificate.DecodePem(pem))];
+			revocationLists = [.. testcase.Crls.Select(static pem => CertificateRevocationList.DecodePem(pem))];
 		}
 		catch (ArgumentException e)
 		{
-			return new Outcome(Failure, $"A certificate does not decode: {e.InnerException?.Message ?? e.Message}");
+			return new Outcome(Failure, $"A certificate or CRL does not decode: {e.InnerException?.Message ?? e.Message}");
 		}
 
-		using TrustAnchorCertificateValidator validator = new(trusted, importPublicKey) { MaxPathLength = testcase.MaxChainDepth ?? 8 };
+		using TrustAnchorCertificateValidator validator = new(trusted, importPublicKey)
+		{
+			MaxPathLength = testcase.MaxChainDepth ?? 8,
+			RevocationMode = revocationLists.Length > 0 ? X509RevocationMode.Offline : X509RevocationMode.NoCheck,
+			RevocationLists = revocationLists
+		};
 		CertificateValidationContext context = new([peer, .. intermediates], usage)
 		{
 			HostName = usage is CertificateUsage.ServerAuthentication ? testcase.ExpectedPeerName?.Value : null,

@@ -5,11 +5,11 @@ using System.Text;
 namespace CryptoBase.X509;
 
 // One validation of TrustAnchorCertificateValidator. It builds certification paths from the peer's certificate towards the trust anchors depth first, and checks each issuer as it adds it (RFC 5280, Sec. 6.1), so that a failed check moves on to the next candidate.
-// The first search follows only the issuers that pass every check and returns the first path that reaches a trust anchor; if there is none, a second search, with limits of its own, also follows those that fail, to report the best of the paths that it ends, as Run describes.
-// An instance serves one call on one thread, and owns the keys that it imports for the presented certificates.
-internal sealed class CertificatePathSearch : IDisposable
+// The first search follows only the issuers that pass every check and returns the first path that reaches a trust anchor; if there is none, a second search, with limits of its own, also follows those that fail, to report the best of the paths that it ends, as RunAsync describes.
+// An instance serves one call, which a retrieval may move to another thread, and owns the keys that it imports for the certificates other than the trust anchors.
+internal sealed partial class CertificatePathSearch : IDisposable
 {
-	// The candidate issuers that each search considers, each a signature check whether or not its signature is verified, with each check of whether a certificate that ends a path is self-signed; the name and subtree pairs that name constraints compare, a directoryName counting by its attributes and length; and the entries of the policy graphs of the paths that reach a trust anchor.
+	// The limits of each search: the candidate issuers, each a signature check whether or not its signature is verified; the name and subtree comparisons, a directoryName counting by its attributes and length; and the entries of the policy graphs.
 	public const int MaxCandidates = 100;
 	public const long MaxNameComparisons = 1 << 20;
 	public const long MaxPolicyGraphEntries = 1 << 16;
@@ -25,6 +25,7 @@ internal sealed class CertificatePathSearch : IDisposable
 	private const string PolicyMappingsOid = "2.5.29.33";
 	private const string PolicyConstraintsOid = "2.5.29.36";
 	private const string InhibitAnyPolicyOid = "2.5.29.54";
+	private const string CrlDistributionPointsOid = "2.5.29.31";
 	private const string ServerAuthenticationOid = "1.3.6.1.5.5.7.3.1";
 	private const string ClientAuthenticationOid = "1.3.6.1.5.5.7.3.2";
 
@@ -32,11 +33,13 @@ internal sealed class CertificatePathSearch : IDisposable
 	private readonly CertificateValidationContext _context;
 	private readonly CancellationToken _cancellationToken;
 	private readonly DateTimeOffset _time;
-	private readonly string _purpose;
 	private readonly PathNode _leaf;
 	private readonly TrustAnchorEntry? _leafAnchor;
 	private readonly List<PathNode> _pool = [];
 	private readonly Dictionary<TrustAnchorEntry, PathNode> _anchorNodes = [];
+
+	// Null for a validation that neither retrieves nor checks revocation, so that it allocates nothing for them.
+	private readonly RetrievalState? _retrieval;
 
 	// The candidates that GetCandidates finds, before it orders them; reused by each call.
 	private readonly List<PathNode> _found = [];
@@ -66,7 +69,6 @@ internal sealed class CertificatePathSearch : IDisposable
 		_context = context;
 		_cancellationToken = cancellationToken;
 		_time = X509Time.TruncateToSeconds(context.TimeProvider.GetUtcNow());
-		_purpose = context.Usage is CertificateUsage.ServerAuthentication ? ServerAuthenticationOid : ClientAuthenticationOid;
 
 		IReadOnlyList<Certificate> presented = context.PresentedCertificates;
 		_leafAnchor = validator.FindAnchor(presented[0]);
@@ -83,10 +85,18 @@ internal sealed class CertificatePathSearch : IDisposable
 				_pool.Add(new PathNode(certificate, PathRole.Intermediate, _nextIndex++));
 			}
 		}
+
+		if (validator.Retriever is not null || validator.RevocationMode is not X509RevocationMode.NoCheck)
+		{
+			_retrieval = new RetrievalState(encodings, retrievesIssuers: validator is { Retriever: not null, DisableCertificateDownloads: false });
+		}
 	}
+
+	private string Purpose => _context.Usage is CertificateUsage.ServerAuthentication ? ServerAuthenticationOid : ClientAuthenticationOid;
 
 	private string PurposeName => _context.Usage is CertificateUsage.ServerAuthentication ? "id-kp-serverAuth" : "id-kp-clientAuth";
 
+	// For a validator that neither retrieves nor checks revocation, which never waits.
 	public CertificateValidationResult Run()
 	{
 		List<PathProblem> leafProblems = GetProblems(_leaf);
@@ -99,25 +109,87 @@ internal sealed class CertificatePathSearch : IDisposable
 		}
 
 		Push(_leaf, [], 0);
+		return Search(relaxed: false) is { } path ? CreateResult(path, CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]) : ReportBestPath(identity);
+	}
 
-		if (Search(relaxed: false) is { } path)
+	// As Run, with the retrievals and the revocation checks, which complete synchronously unless they wait for the network.
+	public async ValueTask<CertificateValidationResult> RunAsync()
+	{
+		List<PathProblem> leafProblems = GetProblems(_leaf);
+		PathProblem? identity = CheckHostName();
+
+		if (_leafAnchor is not null)
 		{
-			return CreateResult(path, CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]);
+			return CreateResult([_leaf], CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]);
 		}
 
-		// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search; it accepts none, as only the strict search decides.
-		PathProblem? strictLimit = GetLimit();
-		(_relaxed, _stopped, _limit, _candidatesLeft, _comparisonsLeft, _policyEntriesLeft) = (true, false, null, MaxCandidates, MaxNameComparisons, MaxPolicyGraphEntries);
-		_ = Search(relaxed: true);
+		Push(_leaf, [], 0);
 
-		// A limit stopped the relaxed search before it ended a path, so the peer's certificate ends the one reported.
+		// The problems of the peer's certificate alone hold for every path, so that nothing retrieved could make it acceptable.
+		bool acceptable = leafProblems.Count is 0 && identity is null;
+		bool checksRevocation = acceptable && _validator.RevocationMode is not X509RevocationMode.NoCheck;
+
+		while (true)
+		{
+			_retrieval?.DeadEnds?.Clear();
+
+			if (Search(relaxed: false) is { } path)
+			{
+				KeepRetrievedIssuers(path);
+
+				if (!checksRevocation)
+				{
+					return CreateResult(path, CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]);
+				}
+
+				// A certificate that is revoked, or whose status no source determines, gives way to another path, such as through a cross-certificate. If none is valid, the first revoked path is reported, or else the first whose status is not known.
+				if (await CheckRevocationAsync(path).ConfigureAwait(false) is not { } problem)
+				{
+					return CreateResult(path, CertificatePathEnd.TrustAnchor, []);
+				}
+
+				if (_best is null || problem.Error is CertificateValidationError.Revoked && _best.Problems[0].Error is not CertificateValidationError.Revoked)
+				{
+					_best = new Attempt(path, CertificatePathEnd.TrustAnchor, [problem], 0, 1);
+				}
+
+				if (_retrieval?.RejectedEdges?.Count > MaxRejectedEdges)
+				{
+					Stop($"{MaxRejectedEdges} revoked certificates or certificates of unknown status");
+					break;
+				}
+			}
+			else if (!acceptable || _stopped || !await RetrieveIssuersAsync().ConfigureAwait(false))
+			{
+				break;
+			}
+
+			RestartSearch();
+		}
+
+		return ReportBestPath(identity);
+	}
+
+	// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search; it accepts none, as only the strict search decides. A path that only revocation fails is already the best.
+	private CertificateValidationResult ReportBestPath(PathProblem? identity)
+	{
+		PathProblem? strictLimit = GetLimit();
+
 		if (_best is null)
 		{
-			RecordDeadEnd(_leaf);
+			RestartSearch();
+			_relaxed = true;
+			_ = Search(relaxed: true);
+
+			// A limit stopped the relaxed search before it ended a path, so the peer's certificate ends the one reported.
+			if (_best is null)
+			{
+				RecordDeadEnd(_leaf);
+			}
 		}
 
 		Attempt best = _best ?? throw new InvalidOperationException();
-		return CreateResult(best.Path, best.End, [.. best.Problems, .. Optional(strictLimit), .. Optional(GetLimit()), .. Optional(identity)]);
+		return CreateResult(best.Path, best.End, [.. best.Problems, .. Optional(strictLimit), .. Optional(GetLimit()), .. Optional(_retrieval?.Limit), .. Optional(identity)]);
 	}
 
 	public void Dispose()
@@ -142,10 +214,11 @@ internal sealed class CertificatePathSearch : IDisposable
 		PathNode child = _path[^1];
 		int below = _intermediates[^1];
 		bool considered = false;
+		bool extended = false;
 
 		foreach (PathNode candidate in GetCandidates(child))
 		{
-			if (IsInPath(candidate))
+			if (IsInPath(candidate) || _retrieval?.RejectedEdges?.Contains(EdgeOf(child, candidate)) is true)
 			{
 				continue;
 			}
@@ -189,6 +262,7 @@ internal sealed class CertificatePathSearch : IDisposable
 			}
 
 			Push(candidate, edge, intermediates);
+			extended = true;
 
 			if (candidate.Role is not PathRole.Anchor)
 			{
@@ -220,9 +294,16 @@ internal sealed class CertificatePathSearch : IDisposable
 			}
 		}
 
-		if (relaxed && !considered)
+		if (relaxed)
 		{
-			RecordDeadEnd(child);
+			if (!considered)
+			{
+				RecordDeadEnd(child);
+			}
+		}
+		else if (!extended && _retrieval?.DeadEnds is { } deadEnds && !deadEnds.Contains(child))
+		{
+			deadEnds.Add(child);
 		}
 
 		return null;
@@ -424,7 +505,7 @@ internal sealed class CertificatePathSearch : IDisposable
 		return problem;
 	}
 
-	// The certificate policies of the path, which has just reached a trust anchor; stops the search, and returns null, if the entries of the graph would exceed the limit.
+	// Stops the search, and returns null, if the entries of the graph would exceed the limit.
 	private PathProblem? CheckPolicies()
 	{
 		PathProblem? problem = PolicyGraph.Check(_path, _validator, ref _policyEntriesLeft, out bool limitReached);
@@ -468,7 +549,7 @@ internal sealed class CertificatePathSearch : IDisposable
 			case PathRole.Leaf:
 			{
 				// RFC 5280, Sec. 4.2.1.12: the peer's certificate needs the usage itself if it has the extension; anyExtendedKeyUsage does not stand for it.
-				if (decoded.ExtendedKeyUsage.Value is { } usage && !usage.Contains(_purpose))
+				if (decoded.ExtendedKeyUsage.Value is { } usage && !usage.Contains(Purpose))
 				{
 					problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, $"{{0}} has an extended key usage extension without {PurposeName}.", node));
 				}
@@ -520,6 +601,10 @@ internal sealed class CertificatePathSearch : IDisposable
 	private void CheckExtensions(PathNode node, List<PathProblem> problems)
 	{
 		IReadOnlyList<CertificateExtension> extensions = node.Certificate.Extensions;
+		DecodedExtensions decoded = node.Certificate.DecodedExtensions;
+
+		// Most certificates have neither extension, and their other extensions are not compared with the two.
+		bool hasPolicyExtensions = decoded.PolicyConstraints.Value is not null || decoded.PolicyConstraints.Error is not null || decoded.InhibitAnyPolicy.Value is not null || decoded.InhibitAnyPolicy.Error is not null;
 
 		// Indexed, as an enumerator of the interface would be allocated.
 		for (int i = 0; i < extensions.Count; ++i)
@@ -528,7 +613,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 			if (!extension.Critical)
 			{
-				if (node.Role is not PathRole.Anchor && _leafAnchor is null && extension.Oid is PolicyConstraintsOid or InhibitAnyPolicyOid)
+				if (hasPolicyExtensions && node.Role is not PathRole.Anchor && _leafAnchor is null && extension.Oid is PolicyConstraintsOid or InhibitAnyPolicyOid)
 				{
 					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} does not mark its {(extension.Oid is PolicyConstraintsOid ? "policy constraints" : "inhibit anyPolicy")} extension critical, which RFC 5280 requires.", node));
 				}
@@ -552,6 +637,16 @@ internal sealed class CertificatePathSearch : IDisposable
 
 					break;
 				}
+				case CrlDistributionPointsOid:
+				{
+					// RFC 5280, Sec. 4.2.1.13: the extension should not be critical, but is understood; revocation checks use it.
+					if (node.Certificate.DecodedExtensions.CrlDistributionPoints.Error is not null)
+					{
+						problems.Add(new PathProblem(CertificateValidationError.Malformed, "{0} has a critical CRL distribution points extension that does not decode.", node));
+					}
+
+					break;
+				}
 				case AuthorityKeyIdentifierOid or SubjectKeyIdentifierOid:
 				{
 					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} marks its {(extension.Oid is AuthorityKeyIdentifierOid ? "authority" : "subject")} key identifier extension critical, which RFC 5280 forbids.", node));
@@ -565,7 +660,16 @@ internal sealed class CertificatePathSearch : IDisposable
 			}
 		}
 
-		DecodedExtensions decoded = node.Certificate.DecodedExtensions;
+		if (node.Role is not PathRole.Anchor && _leafAnchor is null)
+		{
+			CheckRevocationExemption(node, problems);
+		}
+
+		// Nearly every certificate gets here with all of them decoded, for which the list below is not built.
+		if ((decoded.BasicConstraints.Error ?? decoded.ExtendedKeyUsage.Error ?? decoded.SubjectAlternativeName.Error ?? decoded.NameConstraints.Error ?? decoded.AuthorityKeyIdentifier.Error ?? decoded.SubjectKeyIdentifier.Error ?? decoded.CertificatePolicies.Error ?? decoded.PolicyMappings.Error ?? decoded.PolicyConstraints.Error ?? decoded.InhibitAnyPolicy.Error) is null)
+		{
+			return;
+		}
 
 		foreach ((AsnContentException? error, string name) in (ReadOnlySpan<(AsnContentException?, string)>)[(decoded.BasicConstraints.Error, "basic constraints"), (decoded.ExtendedKeyUsage.Error, "extended key usage"), (decoded.SubjectAlternativeName.Error, "subject alternative name"), (decoded.NameConstraints.Error, "name constraints"), (decoded.AuthorityKeyIdentifier.Error, "authority key identifier"), (decoded.SubjectKeyIdentifier.Error, "subject key identifier"), (decoded.CertificatePolicies.Error, "certificate policies"), (decoded.PolicyMappings.Error, "policy mappings"), (decoded.PolicyConstraints.Error, "policy constraints"), (decoded.InhibitAnyPolicy.Error, "inhibit anyPolicy")])
 		{
@@ -573,6 +677,27 @@ internal sealed class CertificatePathSearch : IDisposable
 			{
 				problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} has a {name} extension that does not decode.", node));
 			}
+		}
+	}
+
+	// RFC 9608, Sec. 3: a certificate that breaks these rules is invalid, whether or not revocation is checked. A value that is not NULL exempts nothing and is an error too.
+	private static void CheckRevocationExemption(PathNode node, List<PathProblem> problems)
+	{
+		DecodedExtensions decoded = node.Certificate.DecodedExtensions;
+
+		if (decoded.OcspNoCheck.Error is not null)
+		{
+			problems.Add(new PathProblem(CertificateValidationError.Malformed, "{0} has an ocsp-nocheck extension whose value is not NULL.", node));
+		}
+
+		if (decoded.NoRevocationAvailable.Error is not null)
+		{
+			problems.Add(new PathProblem(CertificateValidationError.Malformed, "{0} has a noRevAvail extension whose value is not NULL.", node));
+		}
+
+		if (decoded.FindNoRevocationAvailableProblem() is { } problem)
+		{
+			problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} {problem}.", node));
 		}
 	}
 
@@ -589,7 +714,7 @@ internal sealed class CertificatePathSearch : IDisposable
 		}
 
 		// A CA's extended key usage extension, if any, restricts the certificates below it: it must have the usage or anyExtendedKeyUsage.
-		if (decoded.ExtendedKeyUsage.Value is { } usage && !usage.Contains(_purpose) && !usage.Contains(ExtendedKeyUsage.AnyExtendedKeyUsage))
+		if (decoded.ExtendedKeyUsage.Value is { } usage && !usage.Contains(Purpose) && !usage.Contains(ExtendedKeyUsage.AnyExtendedKeyUsage))
 		{
 			problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, $"{{0}} has an extended key usage extension with neither {PurposeName} nor anyExtendedKeyUsage.", node));
 		}
@@ -687,6 +812,17 @@ internal sealed class CertificatePathSearch : IDisposable
 		_path.RemoveAt(_path.Count - 1);
 		_edges.RemoveAt(_edges.Count - 1);
 		_intermediates.RemoveAt(_intermediates.Count - 1);
+	}
+
+	// Back to the peer's certificate, with new limits: a search that follows a retrieval or a revocation repeats the checks from their caches.
+	private void RestartSearch()
+	{
+		while (_path.Count > 1)
+		{
+			Pop();
+		}
+
+		(_stopped, _limit, _candidatesLeft, _comparisonsLeft, _policyEntriesLeft) = (false, null, MaxCandidates, MaxNameComparisons, MaxPolicyGraphEntries);
 	}
 
 	// A limit stops the search, which the result reports: one that stops the strict search fails the validation, as a valid path may be among those left, and one that stops the relaxed search leaves out the paths that it did not end.

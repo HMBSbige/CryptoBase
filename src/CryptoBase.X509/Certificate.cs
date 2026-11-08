@@ -322,6 +322,28 @@ public sealed class Certificate
 		return subjectAlternativeName.Value?.Matches(reference) is true ? HostNameMatch.Match : HostNameMatch.Mismatch;
 	}
 
+	/// <summary>
+	/// Gets the value of the authority information access extension (RFC 5280, Sec. 4.2.2.1), which locates the issuer's certificates and its OCSP responders.
+	/// </summary>
+	/// <remarks>The first call decodes the extension, and later calls return the same instance. Calls may be concurrent.</remarks>
+	/// <returns>The value, or <see langword="null" /> if the certificate has no such extension.</returns>
+	/// <exception cref="CryptographicException">The extension is not a DER-encoded AuthorityInfoAccessSyntax.</exception>
+	public AuthorityInformationAccess? GetAuthorityInformationAccess()
+	{
+		return DecodedExtensions.AuthorityInformationAccess.GetValueOrThrow("authority information access");
+	}
+
+	/// <summary>
+	/// Gets the value of the CRL distribution points extension (RFC 5280, Sec. 4.2.1.13), which locates the CRLs that cover the certificate.
+	/// </summary>
+	/// <remarks>The first call decodes the extension, and later calls return the same list. Calls may be concurrent.</remarks>
+	/// <returns>The distribution points, in the order of the encoding, or <see langword="null" /> if the certificate has no such extension.</returns>
+	/// <exception cref="CryptographicException">The extension is not a DER-encoded CRLDistributionPoints.</exception>
+	public IReadOnlyList<CrlDistributionPoint>? GetCrlDistributionPoints()
+	{
+		return DecodedExtensions.CrlDistributionPoints.GetValueOrThrow("CRL distribution points");
+	}
+
 	// The value of the basic constraints extension (RFC 5280, Sec. 4.2.1.9), decoded on first use, or null without it; CryptographicException if it does not decode.
 	internal BasicConstraints? GetBasicConstraints()
 	{
@@ -340,6 +362,12 @@ public sealed class Certificate
 		byte[] encoded = GC.AllocateUninitializedArray<byte>(decodedLength);
 		PemReader.Decode(base64Data, encoded);
 		return Decode(encoded, parameterName);
+	}
+
+	// A certificate that holds a slice of memory that outlives it, without a copy; AsnContentException if it is not DER-encoded.
+	internal static Certificate Read(ReadOnlyMemory<byte> encoded)
+	{
+		return new Certificate(encoded);
 	}
 
 	// encoded is owned by the new instance.
@@ -417,7 +445,9 @@ public sealed class Certificate
 	{
 		DerReader sequence = reader.ReadSequence();
 		sequence.ThrowIfEmpty();
-		List<CertificateExtension> extensions = [];
+
+		// Enough for nearly every certificate, so that the list grows at most once.
+		List<CertificateExtension> extensions = new(16);
 
 		while (sequence.HasData)
 		{

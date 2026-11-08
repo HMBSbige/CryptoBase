@@ -16,7 +16,7 @@ internal static class X509Name
 			while (relativeName.HasData)
 			{
 				DerReader attribute = relativeName.ReadSequence();
-				attribute.ReadObjectIdentifier();
+				attribute.SkipObjectIdentifier();
 				attribute.ReadEncodedValue();
 				attribute.ThrowIfNotEmpty();
 			}

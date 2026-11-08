@@ -35,11 +35,14 @@ internal static class LimboTolerances
 		["webpki::cn::not-in-san"] = CommonName,
 		["webpki::cn::case-mismatch"] = CommonName,
 		["webpki::san::san-critical-with-nonempty-subject"] = "CA/Browser Forum Baseline Requirements, Sec. 7.1.2.7.12, forbid a critical subject alternative name extension beside a subject; the validator processes the extension whatever its criticality.",
-		["webpki::malformed-aia"] = "CA/Browser Forum Baseline Requirements profile the authority information access extension; the validator retrieves nothing, and does not read a noncritical extension that it does not process.",
+		["webpki::malformed-aia"] = "CA/Browser Forum Baseline Requirements profile the authority information access extension; the validator reads it only when it retrieves an issuer or checks revocation online, and a malformed one then names nothing to retrieve.",
 		["webpki::ee-basicconstraints-ca"] = CertificateAuthorityAsLeaf,
 		["webpki::ca-as-leaf"] = CertificateAuthorityAsLeaf,
 	};
 
 	// Testcases that the validator rejects although limbo expects a success.
-	public static readonly IReadOnlyDictionary<string, string> UnexpectedFailures = new Dictionary<string, string>(StringComparer.Ordinal);
+	public static readonly IReadOnlyDictionary<string, string> UnexpectedFailures = new Dictionary<string, string>(StringComparer.Ordinal)
+	{
+		["crl::issuer-no-keyusage-extension"] = "RFC 10007, Sec. 4, amends RFC 5280, Sec. 6.3.3 (f), to require the key usage extension with cRLSign in a version 3 CRL issuer's certificate; limbo expects the result under the earlier text, which checked the bit only if the extension was present."
+	};
 }

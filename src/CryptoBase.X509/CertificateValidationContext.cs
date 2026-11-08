@@ -55,7 +55,7 @@ public sealed class CertificateValidationContext
 	/// </summary>
 	/// <remarks>
 	/// A validator that retrieves certificates, revocation lists or OCSP responses limits each retrieval to the time left until the deadline, where its platform lets it, so that a caller's own timeout, such as a handshake's, also covers the retrievals; once the deadline has passed, it retrieves nothing.
-	/// <see cref="PlatformCertificateValidator" /> describes what each platform lets it do.
+	/// <see cref="PlatformCertificateValidator" /> describes what each platform lets it do; <see cref="TrustAnchorCertificateValidator" /> cancels each retrieval at the deadline, on the clock of <see cref="TimeProvider" />, so an issuer that it could not retrieve is missing and a revocation status that it could not retrieve is unknown.
 	/// The deadline does not bound the work that is not waiting for the network; a caller that must have the result by a time enforces it itself.
 	/// </remarks>
 	public DateTimeOffset? Deadline { get; init; }

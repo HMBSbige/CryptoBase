@@ -1,5 +1,6 @@
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
+using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using static CryptoBase.Tests.X509.TestPki;
@@ -151,6 +152,93 @@ public class TrustAnchorNameConstraintsTest
 		}
 	}
 
+	public static IEnumerable<Func<(string Case, byte[]? Permitted, byte[]? Excluded, byte[] Subject, CertificateValidationError? Error, string? Message)>> UnstableNameCases()
+	{
+		const string might = "might be within";
+		const string certain = "exclude";
+		const string notPermitted = "do not permit";
+
+		// Case folding and normalization, which the comparison does not make, could put these in the excluded subtree.
+		yield return () => ("excluded, another case outside ASCII", null, Organization("É"), Organization("é"), CertificateValidationError.NotValidForUsage, might);
+		yield return () => ("excluded, a full-width form", null, Organization("ＡＢＣ"), Organization("ABC"), CertificateValidationError.NotValidForUsage, might);
+		yield return () => ("excluded, a decomposed form", null, Organization("\u00E9"), Organization("e\u0301"), CertificateValidationError.NotValidForUsage, might);
+		yield return () => ("excluded, the subtree of ASCII and the name beyond it", null, Organization("abc"), Organization("É"), CertificateValidationError.NotValidForUsage, might);
+		yield return () => ("excluded, other unstable characters between the same ends", null, Organization("Möller GmbH"), Organization("Müller GmbH"), CertificateValidationError.NotValidForUsage, might);
+
+		// What the comparison decides exactly.
+		yield return () => ("excluded, the identical name", null, Organization("é"), Organization("é"), CertificateValidationError.NotValidForUsage, certain);
+		yield return () => ("excluded, different ideographs", null, Organization("北京"), Organization("上海"), null, null);
+		yield return () => ("excluded, an unstable character and another end", null, Organization("Evil Corp"), Organization("Müller GmbH"), null, null);
+		yield return () => ("excluded, the same ideographs", null, Organization("北京"), Organization("北京"), CertificateValidationError.NotValidForUsage, certain);
+		yield return () => ("excluded, another type of attribute", null, Organization("É"), Sequence(Tlv(0x31, Sequence(Oid("2.5.4.3"), Tlv(0x0C, System.Text.Encoding.UTF8.GetBytes("é"))))), null, null);
+		yield return () => ("excluded, a longer subtree", null, Sequence(Tlv(0x31, Sequence(Oid("2.5.4.10"), Tlv(0x0C, System.Text.Encoding.UTF8.GetBytes("É")))), Tlv(0x31, Sequence(Oid("2.5.4.3"), Tlv(0x13, [(byte)'x'])))), Organization("é"), null, null);
+
+		// A permitted subtree stays exact, as a comparison that fails only leaves the name outside it.
+		yield return () => ("permitted, another case outside ASCII", Organization("É"), null, Organization("é"), CertificateValidationError.NotValidForUsage, notPermitted);
+		yield return () => ("permitted, the identical name", Organization("é"), null, Organization("é"), null, null);
+		yield return () => ("permitted, the same ideographs", Organization("北京"), null, Organization("北京"), null, null);
+		yield return () => ("permitted, different ideographs", Organization("北京"), null, Organization("上海"), CertificateValidationError.NotValidForUsage, notPermitted);
+	}
+
+	// RFC 5280, Sec. 7.1, asks for all of RFC 4518, and the comparison leaves out its case folding and normalization: a name that it could not compare exactly must not escape an excluded subtree.
+	[Test]
+	[MethodDataSource(nameof(UnstableNameCases))]
+	public async Task FailsClosedForExcludedDirectoryNamesThatCannotBeComparedExactly(string @case, byte[]? permitted, byte[]? excluded, byte[] subject, CertificateValidationError? error, string? message)
+	{
+		using Authority root = Authority.CreateRoot(more: [NameConstraints(permitted is null ? null : [DirectoryName(permitted)], excluded is null ? null : [DirectoryName(excluded)])]);
+		using EcdsaP256 key = EcdsaP256.GenerateKey();
+		Certificate leaf = root.Issue(new Template { Subject = subject, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key), Extensions = [SubjectAlternativeNames("example.com"), AuthorityKeyIdentifier(root.KeyIdentifier)] });
+
+		CertificateValidationResult result = await Validate([root.Certificate], [leaf], hostName: "example.com");
+
+		if (error is { } expected)
+		{
+			using (Assert.Multiple())
+			{
+				await AssertInvalid(result, [expected], CertificatePathEnd.TrustAnchor, @case, [leaf, root.Certificate]);
+				await Assert.That(result.Message).Contains(message ?? "").Because(@case);
+			}
+		}
+		else
+		{
+			await AssertValid(result, leaf, root.Certificate);
+		}
+	}
+
+	// An identifier beyond what AsnDecoder reads does not decode, so that nothing further in a validation meets one: a CA of the peer's own, with name constraints, needs no trust anchor to reach the check of the names.
+	[Test]
+	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the authority and the key are disposed.")]
+	public async Task ANameWithAnObjectIdentifierBeyondTheLimitsOfTheBclDoesNotDecode()
+	{
+		using Authority attacker = Authority.CreateRoot("CN=Attacker", more: [NameConstraints([DnsName("example.com")])]);
+		using EcdsaP256 key = EcdsaP256.GenerateKey();
+		byte[] subject = Sequence(Tlv(0x31, Sequence(Tlv(0x06, [.. Enumerable.Repeat((byte)0x2A, 64)]), Tlv(0x13, [(byte)'x']))), Tlv(0x31, Sequence(Oid("2.5.4.3"), Tlv(0x13, [(byte)'L']))));
+
+		await Assert.That(() => attacker.Issue(new Template { Subject = subject, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key) })).Throws<ArgumentException>();
+	}
+
+	// emailAddress is recognized by its identifier alone, after an identifier as long as AsnDecoder reads, and not by one that begins alike.
+	[Test]
+	public async Task FindsTheEmailAddressesOfTheSubjectByTheirIdentifier()
+	{
+		using Authority root = Authority.CreateRoot(more: [NameConstraints([Rfc822Name("example.com")])]);
+		using EcdsaP256 key = EcdsaP256.GenerateKey();
+		byte[] longIdentifier = Tlv(0x31, Sequence(Tlv(0x06, [.. Enumerable.Repeat((byte)0x2A, 63)]), Tlv(0x13, [(byte)'x'])));
+		byte[] outside = Sequence(longIdentifier, Tlv(0x31, Sequence(Oid("1.2.840.113549.1.9.1"), Tlv(0x16, "user@other.test"u8.ToArray()))));
+		byte[] inside = Sequence(longIdentifier, Tlv(0x31, Sequence(Oid("1.2.840.113549.1.9.1"), Tlv(0x16, "user@example.com"u8.ToArray()))));
+		byte[] notAnAddress = Sequence(longIdentifier, Tlv(0x31, Sequence(Oid("1.2.840.113549.1.9.10"), Tlv(0x16, "user@other.test"u8.ToArray()))));
+		Certificate outsideLeaf = root.Issue(new Template { Subject = outside, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key) });
+		Certificate insideLeaf = root.Issue(new Template { Subject = inside, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key) });
+		Certificate otherLeaf = root.Issue(new Template { Subject = notAnAddress, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key) });
+
+		using (Assert.Multiple())
+		{
+			await AssertInvalid(await Validate([root.Certificate], [outsideLeaf]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, outsideLeaf, root.Certificate);
+			await AssertValid(await Validate([root.Certificate], [insideLeaf]), insideLeaf, root.Certificate);
+			await AssertValid(await Validate([root.Certificate], [otherLeaf]), otherLeaf, root.Certificate);
+		}
+	}
+
 	// The critical or noncritical extension is processed alike, for every certificate below, the intermediate ones included; self-issued intermediate certificates are skipped, but not the peer's certificate.
 	[Test]
 	public async Task AppliesDirectoryNameConstraintsAsItDoesOtherConstraints()
@@ -267,5 +355,10 @@ public class TrustAnchorNameConstraintsTest
 			await AssertInvalid(await Validate([root.Certificate], [leaf, wider.Certificate], hostName: "www.example.net"), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, leaf, wider.Certificate, root.Certificate);
 			await AssertValid(await Validate([root.Certificate], [inside, wider.Certificate], hostName: "www.example.com"), inside, wider.Certificate, root.Certificate);
 		}
+	}
+
+	private static byte[] Organization(string value)
+	{
+		return Sequence(Tlv(0x31, Sequence(Oid("2.5.4.10"), Tlv(0x0C, System.Text.Encoding.UTF8.GetBytes(value)))));
 	}
 }

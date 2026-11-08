@@ -302,7 +302,6 @@ internal static class TestPki
 		return DirectoryName(Name(name));
 	}
 
-	// A directoryName of a DER Name.
 	public static byte[] DirectoryName(byte[] name)
 	{
 		return Tlv(0xA4, name);
