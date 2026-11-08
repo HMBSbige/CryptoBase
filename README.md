@@ -145,7 +145,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | [Ed25519](docs/digital-signatures.md) | ✅ |
 | [Ed448](docs/digital-signatures.md) | ✅ |
 | [SM2](docs/sm2.md) | ✅ |
-| SM9 | ⏳ |
+| [SM9](docs/sm9.md) | ✅ |
 
 ### [Hybrid public key encryption](docs/hpke.md)
 
