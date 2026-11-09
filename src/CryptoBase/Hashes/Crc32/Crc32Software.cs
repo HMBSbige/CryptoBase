@@ -124,76 +124,13 @@ internal static class Crc32Software
 					crc4 = Unsafe.Add(ref braidLookup, (byte)word4);
 				}
 
-				crc0 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup1, (byte)(word0 >> 8), 1 * TableSize * sizeof(uint));
-				crc1 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup1, (byte)(word1 >> 8), 1 * TableSize * sizeof(uint));
-				crc2 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup1, (byte)(word2 >> 8), 1 * TableSize * sizeof(uint));
-				crc3 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup1, (byte)(word3 >> 8), 1 * TableSize * sizeof(uint));
-
-				if (!useFourWayBraid)
-				{
-					crc4 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup1, (byte)(word4 >> 8), 1 * TableSize * sizeof(uint));
-				}
-
-				crc0 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup2, (byte)(word0 >> 16), 2 * TableSize * sizeof(uint));
-				crc1 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup2, (byte)(word1 >> 16), 2 * TableSize * sizeof(uint));
-				crc2 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup2, (byte)(word2 >> 16), 2 * TableSize * sizeof(uint));
-				crc3 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup2, (byte)(word3 >> 16), 2 * TableSize * sizeof(uint));
-
-				if (!useFourWayBraid)
-				{
-					crc4 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup2, (byte)(word4 >> 16), 2 * TableSize * sizeof(uint));
-				}
-
-				crc0 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup3, (int)word0 >>> 24, 3 * TableSize * sizeof(uint));
-				crc1 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup3, (int)word1 >>> 24, 3 * TableSize * sizeof(uint));
-				crc2 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup3, (int)word2 >>> 24, 3 * TableSize * sizeof(uint));
-				crc3 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup3, (int)word3 >>> 24, 3 * TableSize * sizeof(uint));
-
-				if (!useFourWayBraid)
-				{
-					crc4 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup3, (int)word4 >>> 24, 3 * TableSize * sizeof(uint));
-				}
-
-				crc0 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup4, (byte)(word0 >> 32), 4 * TableSize * sizeof(uint));
-				crc1 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup4, (byte)(word1 >> 32), 4 * TableSize * sizeof(uint));
-				crc2 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup4, (byte)(word2 >> 32), 4 * TableSize * sizeof(uint));
-				crc3 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup4, (byte)(word3 >> 32), 4 * TableSize * sizeof(uint));
-
-				if (!useFourWayBraid)
-				{
-					crc4 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup4, (byte)(word4 >> 32), 4 * TableSize * sizeof(uint));
-				}
-
-				crc0 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup5, (byte)(word0 >> 40), 5 * TableSize * sizeof(uint));
-				crc1 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup5, (byte)(word1 >> 40), 5 * TableSize * sizeof(uint));
-				crc2 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup5, (byte)(word2 >> 40), 5 * TableSize * sizeof(uint));
-				crc3 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup5, (byte)(word3 >> 40), 5 * TableSize * sizeof(uint));
-
-				if (!useFourWayBraid)
-				{
-					crc4 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup5, (byte)(word4 >> 40), 5 * TableSize * sizeof(uint));
-				}
-
-				crc0 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup6, (byte)(word0 >> 48), 6 * TableSize * sizeof(uint));
-				crc1 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup6, (byte)(word1 >> 48), 6 * TableSize * sizeof(uint));
-				crc2 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup6, (byte)(word2 >> 48), 6 * TableSize * sizeof(uint));
-				crc3 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup6, (byte)(word3 >> 48), 6 * TableSize * sizeof(uint));
-
-				if (!useFourWayBraid)
-				{
-					crc4 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup6, (byte)(word4 >> 48), 6 * TableSize * sizeof(uint));
-				}
-
-				crc0 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup7, (int)(word0 >> 56), 7 * TableSize * sizeof(uint));
-				crc1 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup7, (int)(word1 >> 56), 7 * TableSize * sizeof(uint));
-				crc2 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup7, (int)(word2 >> 56), 7 * TableSize * sizeof(uint));
-				crc3 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup7, (int)(word3 >> 56), 7 * TableSize * sizeof(uint));
-
-				if (!useFourWayBraid)
-				{
-					crc4 ^= GetBraidLookup<TMode>(ref braidLookup, ref braidLookup7, (int)(word4 >> 56), 7 * TableSize * sizeof(uint));
-				}
-
+				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 8), (byte)(word1 >> 8), (byte)(word2 >> 8), (byte)(word3 >> 8), (byte)(word4 >> 8), ref braidLookup, ref braidLookup1, 1 * TableSize * sizeof(uint));
+				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 16), (byte)(word1 >> 16), (byte)(word2 >> 16), (byte)(word3 >> 16), (byte)(word4 >> 16), ref braidLookup, ref braidLookup2, 2 * TableSize * sizeof(uint));
+				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (int)word0 >>> 24, (int)word1 >>> 24, (int)word2 >>> 24, (int)word3 >>> 24, (int)word4 >>> 24, ref braidLookup, ref braidLookup3, 3 * TableSize * sizeof(uint));
+				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 32), (byte)(word1 >> 32), (byte)(word2 >> 32), (byte)(word3 >> 32), (byte)(word4 >> 32), ref braidLookup, ref braidLookup4, 4 * TableSize * sizeof(uint));
+				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 40), (byte)(word1 >> 40), (byte)(word2 >> 40), (byte)(word3 >> 40), (byte)(word4 >> 40), ref braidLookup, ref braidLookup5, 5 * TableSize * sizeof(uint));
+				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 48), (byte)(word1 >> 48), (byte)(word2 >> 48), (byte)(word3 >> 48), (byte)(word4 >> 48), ref braidLookup, ref braidLookup6, 6 * TableSize * sizeof(uint));
+				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (int)(word0 >> 56), (int)(word1 >> 56), (int)(word2 >> 56), (int)(word3 >> 56), (int)(word4 >> 56), ref braidLookup, ref braidLookup7, 7 * TableSize * sizeof(uint));
 				sourceRef = ref Unsafe.Add(ref sourceRef, braidBlockSize);
 			}
 
@@ -201,14 +138,11 @@ internal static class Crc32Software
 			combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 8)) ^ crc1 ^ combined, ref lookup, ref slicingLookup);
 			combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 16)) ^ crc2 ^ combined, ref lookup, ref slicingLookup);
 
-			if (useFourWayBraid)
+			state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3 ^ combined, ref lookup, ref slicingLookup);
+
+			if (!useFourWayBraid)
 			{
-				state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3 ^ combined, ref lookup, ref slicingLookup);
-			}
-			else
-			{
-				combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3 ^ combined, ref lookup, ref slicingLookup);
-				state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4 ^ combined, ref lookup, ref slicingLookup);
+				state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4 ^ state, ref lookup, ref slicingLookup);
 			}
 
 			sourceRef = ref Unsafe.Add(ref sourceRef, braidBlockSize);
@@ -230,6 +164,20 @@ internal static class Crc32Software
 		}
 
 		return state;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void XorBraidLookups<TMode>(ref ulong crc0, ref ulong crc1, ref ulong crc2, ref ulong crc3, ref ulong crc4, int index0, int index1, int index2, int index3, int index4, ref uint baseLookup, ref uint tableLookup, nuint byteOffset)
+	{
+		crc0 ^= GetBraidLookup<TMode>(ref baseLookup, ref tableLookup, index0, byteOffset);
+		crc1 ^= GetBraidLookup<TMode>(ref baseLookup, ref tableLookup, index1, byteOffset);
+		crc2 ^= GetBraidLookup<TMode>(ref baseLookup, ref tableLookup, index2, byteOffset);
+		crc3 ^= GetBraidLookup<TMode>(ref baseLookup, ref tableLookup, index3, byteOffset);
+
+		if (typeof(TMode) != typeof(FourWayBraid))
+		{
+			crc4 ^= GetBraidLookup<TMode>(ref baseLookup, ref tableLookup, index4, byteOffset);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

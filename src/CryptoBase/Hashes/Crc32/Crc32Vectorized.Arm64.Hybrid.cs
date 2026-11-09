@@ -146,21 +146,10 @@ internal static partial class Crc32Vectorized
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void UpdateWideScalarStripes(ref uint crc0, ref uint crc1, ref uint crc2, ref byte stripe0, ref byte stripe1, ref byte stripe2)
 	{
-		ulong value00 = Unsafe.ReadUnaligned<ulong>(ref stripe0);
-		ulong value01 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref stripe0, 8));
+		UpdateNarrowScalarStripes(ref crc0, ref crc1, ref crc2, ref stripe0, ref stripe1, ref stripe2);
 		ulong value02 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref stripe0, 16));
-		ulong value10 = Unsafe.ReadUnaligned<ulong>(ref stripe1);
-		ulong value11 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref stripe1, 8));
 		ulong value12 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref stripe1, 16));
-		ulong value20 = Unsafe.ReadUnaligned<ulong>(ref stripe2);
-		ulong value21 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref stripe2, 8));
 		ulong value22 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref stripe2, 16));
-		crc0 = Crc32Arm.Arm64.ComputeCrc32(crc0, value00);
-		crc1 = Crc32Arm.Arm64.ComputeCrc32(crc1, value10);
-		crc2 = Crc32Arm.Arm64.ComputeCrc32(crc2, value20);
-		crc0 = Crc32Arm.Arm64.ComputeCrc32(crc0, value01);
-		crc1 = Crc32Arm.Arm64.ComputeCrc32(crc1, value11);
-		crc2 = Crc32Arm.Arm64.ComputeCrc32(crc2, value21);
 		crc0 = Crc32Arm.Arm64.ComputeCrc32(crc0, value02);
 		crc1 = Crc32Arm.Arm64.ComputeCrc32(crc1, value12);
 		crc2 = Crc32Arm.Arm64.ComputeCrc32(crc2, value22);

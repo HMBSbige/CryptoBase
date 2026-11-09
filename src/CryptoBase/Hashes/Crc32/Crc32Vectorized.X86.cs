@@ -63,19 +63,7 @@ internal static partial class Crc32Vectorized
 			length -= Vector512<byte>.Count;
 		}
 
-		Vector256<ulong> fold256 = constants.Fold256Vector256;
-		Vector256<ulong> folded256 = Fold256(x1.GetUpper(), x1.GetLower(), fold256);
-
-		if (length >= Vector256<byte>.Count)
-		{
-			folded256 = Fold256(Vector256.LoadUnsafe(ref sourceRef).AsUInt64(), folded256, fold256);
-			sourceRef = ref Unsafe.Add(ref sourceRef, Vector256<byte>.Count);
-			length -= Vector256<byte>.Count;
-		}
-
-		Vector128<ulong> fold128 = constants.Fold128Vector128;
-		Vector128<ulong> folded = Fold128(folded256.GetUpper(), folded256.GetLower(), fold128);
-		folded = FoldRemainingX86(folded, ref sourceRef, ref length, in constants);
+		Vector128<ulong> folded = FoldLast256X86(x1.GetUpper(), x1.GetLower(), ref sourceRef, ref length, in constants);
 		bytesConsumed = source.Length - length;
 		return folded;
 	}
@@ -156,19 +144,7 @@ internal static partial class Crc32Vectorized
 			length -= 2 * Vector256<byte>.Count;
 		}
 
-		Vector256<ulong> fold256 = constants.Fold256Vector256;
-		x1 = Fold256(x2, x1, fold256);
-
-		if (length >= Vector256<byte>.Count)
-		{
-			x1 = Fold256(Vector256.LoadUnsafe(ref sourceRef).AsUInt64(), x1, fold256);
-			sourceRef = ref Unsafe.Add(ref sourceRef, Vector256<byte>.Count);
-			length -= Vector256<byte>.Count;
-		}
-
-		Vector128<ulong> fold128 = constants.Fold128Vector128;
-		Vector128<ulong> folded = Fold128(x1.GetUpper(), x1.GetLower(), fold128);
-		folded = FoldRemainingX86(folded, ref sourceRef, ref length, in constants);
+		Vector128<ulong> folded = FoldLast256X86(x2, x1, ref sourceRef, ref length, in constants);
 		bytesConsumed = source.Length - length;
 		return folded;
 	}
@@ -183,11 +159,10 @@ internal static partial class Crc32Vectorized
 		int length = source.Length;
 		Vector128<ulong> fold512 = constants.Fold512Vector128;
 		Vector128<ulong> fold128 = constants.Fold128Vector128;
-		Vector128<ulong> x1;
+		Vector128<ulong> x1 = Load(ref sourceRef, 0) ^ Vector128.CreateScalar(state).AsUInt64();
 
 		if (length >= 8 * Vector128<byte>.Count)
 		{
-			x1 = Load(ref sourceRef, 0) ^ Vector128.CreateScalar(state).AsUInt64();
 			Vector128<ulong> x2 = Load(ref sourceRef, 16);
 			Vector128<ulong> x3 = Load(ref sourceRef, 32);
 			Vector128<ulong> x4 = Load(ref sourceRef, 48);
@@ -210,7 +185,6 @@ internal static partial class Crc32Vectorized
 		}
 		else
 		{
-			x1 = Load(ref sourceRef, 0) ^ Vector128.CreateScalar(state).AsUInt64();
 			sourceRef = ref Unsafe.Add(ref sourceRef, Vector128<byte>.Count);
 			length -= Vector128<byte>.Count;
 		}
@@ -260,6 +234,23 @@ internal static partial class Crc32Vectorized
 	private static Vector128<ulong> Fold128(Vector128<ulong> target, Vector128<ulong> source, Vector128<ulong> constants)
 	{
 		return target ^ Pclmulqdq.CarrylessMultiply(source, constants, 0x11) ^ Pclmulqdq.CarrylessMultiply(source, constants, 0x00);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<ulong> FoldLast256X86(Vector256<ulong> target, Vector256<ulong> source, ref byte sourceRef, ref int length, in Crc32X86FoldingConstants constants)
+	{
+		Vector256<ulong> fold256 = constants.Fold256Vector256;
+		Vector256<ulong> folded = Fold256(target, source, fold256);
+
+		if (length >= Vector256<byte>.Count)
+		{
+			folded = Fold256(Vector256.LoadUnsafe(ref sourceRef).AsUInt64(), folded, fold256);
+			sourceRef = ref Unsafe.Add(ref sourceRef, Vector256<byte>.Count);
+			length -= Vector256<byte>.Count;
+		}
+
+		Vector128<ulong> fold128 = constants.Fold128Vector128;
+		return FoldRemainingX86(Fold128(folded.GetUpper(), folded.GetLower(), fold128), ref sourceRef, ref length, in constants);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
