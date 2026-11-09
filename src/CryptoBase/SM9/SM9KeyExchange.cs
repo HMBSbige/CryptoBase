@@ -129,17 +129,7 @@ public sealed class SM9KeyExchange : IDisposable
 	public bool TryDeriveKey(ReadOnlySpan<byte> peerEphemeralPublicKey, Span<byte> sharedKey, Span<byte> confirmation, Span<byte> peerConfirmation)
 	{
 		ThrowIfCannotDerive(sharedKey);
-		ArgumentOutOfRangeException.ThrowIfLessThan(confirmation.Length, ConfirmationLength, nameof(confirmation));
-		ArgumentOutOfRangeException.ThrowIfLessThan(peerConfirmation.Length, ConfirmationLength, nameof(peerConfirmation));
-
-		confirmation = confirmation.Slice(0, ConfirmationLength);
-		peerConfirmation = peerConfirmation.Slice(0, ConfirmationLength);
-
-		if (sharedKey.Overlaps(confirmation) || sharedKey.Overlaps(peerConfirmation) || confirmation.Overlaps(peerConfirmation))
-		{
-			ThrowHelper.ThrowOutputsOverlap(nameof(sharedKey));
-		}
-
+		SM3KeyConfirmation.CheckOutputs(sharedKey, ref confirmation, ref peerConfirmation, ConfirmationLength);
 		return Derive(peerEphemeralPublicKey, sharedKey, confirmation, peerConfirmation);
 	}
 
@@ -254,8 +244,8 @@ public sealed class SM9KeyExchange : IDisposable
 				HashCore.Append(ref hash, ephemeralB);
 				HashCore.Finalize(ref hash, inner.Span);
 				// S_B and S_1 take 0x82, S_A and S_2 take 0x83.
-				Confirm(initiator ? (byte)0x83 : (byte)0x82, g1, inner.Span, confirmation);
-				Confirm(initiator ? (byte)0x82 : (byte)0x83, g1, inner.Span, peerConfirmation);
+				SM3KeyConfirmation.Compute(initiator ? (byte)0x83 : (byte)0x82, g1, inner.Span, confirmation);
+				SM3KeyConfirmation.Compute(initiator ? (byte)0x82 : (byte)0x83, g1, inner.Span, peerConfirmation);
 			}
 
 			// A7 or B5: SK = KDF(ID_A ‖ ID_B ‖ R_A ‖ R_B ‖ g1 ‖ g2 ‖ g3, klen).
@@ -279,18 +269,6 @@ public sealed class SM9KeyExchange : IDisposable
 		_power.ZeroMemory();
 		_derived = true;
 		return true;
-	}
-
-	// Hv(tag ‖ g1 ‖ inner).
-	[SkipLocalsInit]
-	private static void Confirm(byte tag, ReadOnlySpan<byte> g1, ReadOnlySpan<byte> inner, Span<byte> destination)
-	{
-		SM3Core hash = HashCore.Create<SM3Core>();
-		HashCore.Append(ref hash, new ReadOnlySpan<byte>(in tag));
-		HashCore.Append(ref hash, g1);
-		HashCore.Append(ref hash, inner);
-		HashCore.Finalize(ref hash, destination);
-		hash.ZeroMemory();
 	}
 
 	private void ThrowIfCannotDerive(Span<byte> sharedKey)

@@ -151,7 +151,7 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 		x.ZeroMemory();
 		z.ZeroMemory();
 
-		if (IsAllZeros(secret.Span))
+		if (FixedTime.Accumulate(secret.Span) is 0)
 		{
 			return false;
 		}
@@ -283,13 +283,6 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 	void IDiffieHellmanKey<X25519Key>.Clear()
 	{
 		Clear();
-	}
-
-	// Without a branch on the contents.
-	private static bool IsAllZeros(ReadOnlySpan<byte> value)
-	{
-		ulong bits = BinaryPrimitives.ReadUInt64LittleEndian(value) | BinaryPrimitives.ReadUInt64LittleEndian(value.Slice(8)) | BinaryPrimitives.ReadUInt64LittleEndian(value.Slice(16)) | BinaryPrimitives.ReadUInt64LittleEndian(value.Slice(24));
-		return bits is 0;
 	}
 
 	private void SetKey(ReadOnlySpan<byte> privateKey)

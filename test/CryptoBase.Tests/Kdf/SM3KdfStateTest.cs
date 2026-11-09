@@ -1,3 +1,4 @@
+using CryptoBase.Internal;
 using CryptoBase.Kdf;
 using System.Buffers.Binary;
 using static CryptoBase.Tests.SM2.SM2TestUtils;
@@ -191,7 +192,7 @@ public class SM3KdfStateTest
 				Span<byte> bytes = buffer.AsSpan(start, length);
 				bytes.Clear();
 
-				if (SM3KdfState.Accumulate(bytes) is not 0)
+				if (FixedTime.Accumulate(bytes) is not 0)
 				{
 					failures.Add($"{length} zero bytes at {start}");
 				}
@@ -200,7 +201,7 @@ public class SM3KdfStateTest
 				{
 					bytes[position] = (byte)(1 << position % 8);
 
-					if (SM3KdfState.Accumulate(bytes) is 0)
+					if (FixedTime.Accumulate(bytes) is 0)
 					{
 						failures.Add($"{length} bytes at {start}, nonzero at {position}");
 					}

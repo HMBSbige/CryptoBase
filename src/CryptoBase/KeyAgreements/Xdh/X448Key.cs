@@ -124,7 +124,7 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		x.ZeroMemory();
 		z.ZeroMemory();
 
-		if (IsAllZeros(secret.Span))
+		if (FixedTime.Accumulate(secret.Span) is 0)
 		{
 			return false;
 		}
@@ -241,7 +241,7 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		senderZ.ZeroMemory();
 		inverse.ZeroMemory();
 
-		if (IsAllZeros(secrets.Span))
+		if (FixedTime.Accumulate(secrets.Span.Slice(0, SharedSecretLength)) is 0)
 		{
 			return false;
 		}
@@ -272,7 +272,7 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		{
 			SetKey(source);
 
-			if (!IsAllZeros(_publicKey))
+			if (FixedTime.Accumulate(_publicKey) is not 0)
 			{
 				return true;
 			}
@@ -373,19 +373,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		Field448.Subtract(in product, in Field448.One, out product);
 		Field448.Multiply(in u, in product, out product);
 		return Field448.IsZero(in product) is not 0;
-	}
-
-	// Without a branch on the contents.
-	private static bool IsAllZeros(ReadOnlySpan<byte> value)
-	{
-		ulong bits = 0;
-
-		for (int i = 0; i < SharedSecretLength; i += sizeof(ulong))
-		{
-			bits |= BinaryPrimitives.ReadUInt64LittleEndian(value.Slice(i));
-		}
-
-		return bits is 0;
 	}
 
 	private void SetKey(ReadOnlySpan<byte> privateKey)

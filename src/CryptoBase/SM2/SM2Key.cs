@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace CryptoBase.SM2;
 
 /// <summary>
@@ -447,71 +445,16 @@ public sealed class SM2Key : ISignatureKey<SM2Key>
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
-		int length = GetCheckedCiphertextLength(plaintext, destination);
-		_key.Encrypt(plaintext, destination.Slice(0, length), fill);
-		return length;
+		int length = plaintext.Length > int.MaxValue - SM2KeyState.CiphertextOverhead ? -1 : SM2KeyState.CiphertextOverhead + plaintext.Length;
+		ThrowHelper.ThrowIfInvalidEncryptionBuffers(plaintext, destination, length);
+		return _key.Encrypt(plaintext, destination.Slice(0, length), fill, false);
 	}
 
 	internal int EncryptDer(ReadOnlySpan<byte> plaintext, Span<byte> destination, Action<Span<byte>> fill)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-
-		if (plaintext.IsEmpty)
-		{
-			ThrowEmptyPlaintext(nameof(plaintext));
-		}
-
-		int maxLength = SM2CipherDer.GetMaxLength(plaintext.Length);
-
-		if (maxLength < 0)
-		{
-			ThrowPlaintextTooLong(nameof(plaintext));
-		}
-
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, maxLength, nameof(destination));
-
-		if (plaintext.Overlaps(destination))
-		{
-			ThrowHelper.ThrowInputOutputOverlap(nameof(destination));
-		}
-
-		return _key.EncryptDer(plaintext, destination, fill);
-	}
-
-	// The length of the ciphertext of Encrypt, once its arguments pass the checks.
-	private static int GetCheckedCiphertextLength(ReadOnlySpan<byte> plaintext, Span<byte> destination)
-	{
-		if (plaintext.IsEmpty)
-		{
-			ThrowEmptyPlaintext(nameof(plaintext));
-		}
-
-		if (plaintext.Length > int.MaxValue - SM2KeyState.CiphertextOverhead)
-		{
-			ThrowPlaintextTooLong(nameof(plaintext));
-		}
-
-		int length = SM2KeyState.CiphertextOverhead + plaintext.Length;
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, length, nameof(destination));
-
-		if (plaintext.Overlaps(destination))
-		{
-			ThrowHelper.ThrowInputOutputOverlap(nameof(destination));
-		}
-
-		return length;
-	}
-
-	[DoesNotReturn]
-	private static void ThrowEmptyPlaintext(string paramName)
-	{
-		throw new ArgumentException("The plaintext must not be empty.", paramName);
-	}
-
-	[DoesNotReturn]
-	private static void ThrowPlaintextTooLong(string paramName)
-	{
-		throw new ArgumentException("The ciphertext would be longer than int.MaxValue bytes.", paramName);
+		ThrowHelper.ThrowIfInvalidEncryptionBuffers(plaintext, destination, SM2CipherDer.GetMaxLength(plaintext.Length));
+		return _key.Encrypt(plaintext, destination, fill, true);
 	}
 
 	private void ThrowIfNoPrivateKey()

@@ -44,7 +44,7 @@ internal static class SM9Encryption
 				kdf.Append(id);
 				kdf.WriteBlock(1, first);
 
-				if (SM3KdfState.Accumulate(first.Slice(0, Math.Min(SM3KdfState.BlockLength, zeroCheckLength))) is not 0 || !IsKeyStreamZero(in kdf, zeroCheckLength))
+				if (!kdf.IsZero(first, zeroCheckLength))
 				{
 					return;
 				}
@@ -100,7 +100,7 @@ internal static class SM9Encryption
 		using CryptoBuffer<byte> first = new(stackalloc byte[SM3KdfState.BlockLength]);
 		kdf.WriteBlock(1, first.Span);
 
-		if (SM3KdfState.Accumulate(first.Span.Slice(0, Math.Min(SM3KdfState.BlockLength, key.Length))) is 0 && IsKeyStreamZero(in kdf, key.Length))
+		if (kdf.IsZero(first.Span, key.Length))
 		{
 			return false;
 		}
@@ -178,12 +178,6 @@ internal static class SM9Encryption
 			kdf.Clear();
 			mac.Clear();
 		}
-	}
-
-	// Whether the blocks of K from 2 on are all zero within length bytes.
-	private static bool IsKeyStreamZero(in SM3KdfState kdf, int length)
-	{
-		return length <= SM3KdfState.BlockLength || kdf.IsZero(2, length - SM3KdfState.BlockLength);
 	}
 
 	// Writes the bytes of the key stream of kdf from offset on, which fill destination: K2 from mlen on. It spans at most two blocks, which only offset decides.

@@ -77,6 +77,27 @@ internal static class ThrowHelper
 		throw new ArgumentOutOfRangeException(paramName, "Data limit exceeded!");
 	}
 
+	// length is that of the ciphertext, or −1 if it would exceed int.MaxValue.
+	public static void ThrowIfInvalidEncryptionBuffers(ReadOnlySpan<byte> plaintext, ReadOnlySpan<byte> destination, int length)
+	{
+		if (plaintext.IsEmpty)
+		{
+			throw new ArgumentException("The plaintext must not be empty.", nameof(plaintext));
+		}
+
+		if (length < 0)
+		{
+			throw new ArgumentException("The ciphertext would be longer than int.MaxValue bytes.", nameof(plaintext));
+		}
+
+		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, length, nameof(destination));
+
+		if (plaintext.Overlaps(destination))
+		{
+			ThrowInputOutputOverlap(nameof(destination));
+		}
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void ThrowIfXofReading([DoesNotReturnIf(true)] bool reading)
 	{

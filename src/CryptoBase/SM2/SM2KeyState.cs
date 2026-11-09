@@ -285,7 +285,7 @@ internal struct SM2KeyState
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private bool MultiplyAddXModOrderEquals(in FieldElement<SM2Order> u1, in FieldElement<SM2Order> u2, in FieldElement<SM2Order> r)
 	{
-		if (GetVerificationTable() is not { } table)
+		if (GetTable(ref _verificationTable, ref _verifications, VerificationTableThreshold) is not { } table)
 		{
 			return _key.MultiplyAddXModOrderEquals(in u1, in u2, in r);
 		}
@@ -322,11 +322,11 @@ internal struct SM2KeyState
 		return rejected is 0;
 	}
 
-	// GB/T 32918.4-2016, Sec. 6.1: C1 ‖ C3 ‖ C2 with C1 = k·G, (x2, y2) = k·P, t = KDF(x2 ‖ y2, klen), C2 = M ⊕ t and C3 = SM3(x2 ‖ M ‖ y2), for a k from fill. destination is CiphertextOverhead bytes longer than plaintext, which is not empty and does not overlap it. If fill throws, destination remains unchanged.
+	// GB/T 32918.4-2016, Sec. 6.1: C1 ‖ C3 ‖ C2 with C1 = k·G, (x2, y2) = k·P, t = KDF(x2 ‖ y2, klen), C2 = M ⊕ t and C3 = SM3(x2 ‖ M ‖ y2), for a k from fill, or if der is set the DER of SM2Cipher. destination is CiphertextOverhead bytes longer than plaintext, or if der is set at least SM2CipherDer.GetMaxLength long; plaintext is not empty and does not overlap it. If fill throws, destination remains unchanged. Returns the length.
 	[SkipLocalsInit]
-	internal void Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> destination, Action<Span<byte>> fill)
+	internal int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> destination, Action<Span<byte>> fill, bool der)
 	{
-		Debug.Assert(!plaintext.IsEmpty && destination.Length == CiphertextOverhead + plaintext.Length && !plaintext.Overlaps(destination));
+		Debug.Assert(!plaintext.IsEmpty && (der ? destination.Length >= SM2CipherDer.GetMaxLength(plaintext.Length) : destination.Length == CiphertextOverhead + plaintext.Length) && !plaintext.Overlaps(destination));
 
 		Span<byte> c1 = stackalloc byte[PublicKeyLength];
 		using CryptoBuffer<byte> point = new(stackalloc byte[PublicKeyLength]);
@@ -335,31 +335,18 @@ internal struct SM2KeyState
 
 		try
 		{
-			DrawEphemeral(GetTable(ref _encryptions, EncryptionTableThreshold), plaintext.Length, fill, c1, point.Span, ref kdf, first.Span);
-			c1.CopyTo(destination);
-			Seal(plaintext, in kdf, point.Span, first.Span, destination.Slice(PublicKeyLength, HashLength), destination.Slice(CiphertextOverhead));
-		}
-		finally
-		{
-			kdf.Clear();
-		}
-	}
+			DrawEphemeral(GetTable(ref _table, ref _encryptions, EncryptionTableThreshold), plaintext.Length, fill, c1, point.Span, ref kdf, first.Span);
+			(int written, int hashOffset, int cipherTextOffset) = (CiphertextOverhead + plaintext.Length, PublicKeyLength, CiphertextOverhead);
 
-	// As Encrypt, as the DER of SM2Cipher, into a destination at least SM2CipherDer.GetMaxLength long. Returns the length.
-	[SkipLocalsInit]
-	internal int EncryptDer(ReadOnlySpan<byte> plaintext, Span<byte> destination, Action<Span<byte>> fill)
-	{
-		Debug.Assert(!plaintext.IsEmpty && destination.Length >= SM2CipherDer.GetMaxLength(plaintext.Length) && !plaintext.Overlaps(destination));
+			if (der)
+			{
+				written = SM2CipherDer.Write(c1, plaintext.Length, destination, out hashOffset, out cipherTextOffset);
+			}
+			else
+			{
+				c1.CopyTo(destination);
+			}
 
-		Span<byte> c1 = stackalloc byte[PublicKeyLength];
-		using CryptoBuffer<byte> point = new(stackalloc byte[PublicKeyLength]);
-		using CryptoBuffer<byte> first = new(stackalloc byte[SM3KdfState.BlockLength]);
-		Unsafe.SkipInit(out SM3KdfState kdf);
-
-		try
-		{
-			DrawEphemeral(GetTable(ref _encryptions, EncryptionTableThreshold), plaintext.Length, fill, c1, point.Span, ref kdf, first.Span);
-			int written = SM2CipherDer.Write(c1, plaintext.Length, destination, out int hashOffset, out int cipherTextOffset);
 			Seal(plaintext, in kdf, point.Span, first.Span, destination.Slice(hashOffset, HashLength), destination.Slice(cipherTextOffset, plaintext.Length));
 			return written;
 		}
@@ -537,7 +524,7 @@ internal struct SM2KeyState
 				kdf.Append(point.Slice(1));
 				kdf.WriteBlock(1, first);
 
-				if (SM3KdfState.Accumulate(first.Slice(0, Math.Min(SM3KdfState.BlockLength, length))) is not 0 || !IsKeyStreamZero(in kdf, length))
+				if (!kdf.IsZero(first, length))
 				{
 					return;
 				}
@@ -552,41 +539,24 @@ internal struct SM2KeyState
 	// The windows of P for a key exchange with P as the static key of the peer, from KeyExchangeTableThreshold on, or null before.
 	internal ECPointTable<SM2Curve, SM2CurveField, SM2Order>? GetExchangeTable()
 	{
-		return GetTable(ref _exchanges, KeyExchangeTableThreshold);
+		return GetTable(ref _table, ref _exchanges, KeyExchangeTableThreshold);
 	}
 
-	// The windows of P for encryption and key exchange from operation threshold on of those that count counts, or null before. The count is atomic, so that operations at once still reach the threshold, and it stops once the windows are there, which either count may have built. Threads that reach it at once may each build the windows, but only the first to finish publishes them, the others discard theirs, and the products with and without them agree. Whether an operation takes the windows depends on the counts alone.
-	private ECPointTable<SM2Curve, SM2CurveField, SM2Order>? GetTable(ref int count, int threshold)
+	// The windows of P in slot from operation threshold on of those that count counts, or null before. The count is atomic, so that operations at once still reach the threshold, and it stops once the windows are there, which another count may have built. Threads that reach it at once may each build the windows, but only the first to finish publishes them, the others discard theirs, and the products with and without them agree. Whether an operation takes the windows depends on the counts alone.
+	private ECPointTable<TCurve, SM2CurveField, SM2Order>? GetTable<TCurve>(ref ECPointTable<TCurve, SM2CurveField, SM2Order>? slot, ref int count, int threshold) where TCurve : struct, IECCurve
 	{
-		if (_table is { } table)
+		if (slot is { } table)
 		{
 			return table;
 		}
 
-		return Interlocked.Increment(ref count) < threshold ? null : PublishTable();
+		return Interlocked.Increment(ref count) < threshold ? null : PublishTable(ref slot);
 	}
 
-	private ECPointTable<SM2Curve, SM2CurveField, SM2Order> PublishTable()
+	private ECPointTable<TCurve, SM2CurveField, SM2Order> PublishTable<TCurve>(ref ECPointTable<TCurve, SM2CurveField, SM2Order>? slot) where TCurve : struct, IECCurve
 	{
-		ECPointTable<SM2Curve, SM2CurveField, SM2Order> table = new(in _key.Key.PublicPoint);
-		return Interlocked.CompareExchange(ref _table, table, null) ?? table;
-	}
-
-	// The windows of SM2VerificationCurve for verification from verification VerificationTableThreshold on, or null before, as GetTable gives the others.
-	private ECPointTable<SM2VerificationCurve, SM2CurveField, SM2Order>? GetVerificationTable()
-	{
-		if (_verificationTable is { } table)
-		{
-			return table;
-		}
-
-		return Interlocked.Increment(ref _verifications) < VerificationTableThreshold ? null : PublishVerificationTable();
-	}
-
-	private ECPointTable<SM2VerificationCurve, SM2CurveField, SM2Order> PublishVerificationTable()
-	{
-		ECPointTable<SM2VerificationCurve, SM2CurveField, SM2Order> table = new(in _key.Key.PublicPoint);
-		return Interlocked.CompareExchange(ref _verificationTable, table, null) ?? table;
+		ECPointTable<TCurve, SM2CurveField, SM2Order> table = new(in _key.Key.PublicPoint);
+		return Interlocked.CompareExchange(ref slot, table, null) ?? table;
 	}
 
 	// The windows follow from the public key and (1 + d)⁻¹ from the private key, so whatever replaces or clears the key drops them and erases the latter.
@@ -599,12 +569,6 @@ internal struct SM2KeyState
 		_encryptions = 0;
 		_verifications = 0;
 		_exchanges = 0;
-	}
-
-	// Whether the blocks of t from 2 on are all zero within length bytes.
-	private static bool IsKeyStreamZero(in SM3KdfState kdf, int length)
-	{
-		return length <= SM3KdfState.BlockLength || kdf.IsZero(2, length - SM3KdfState.BlockLength);
 	}
 
 	// A6 to A8: C3 = SM3(x2 ‖ M ‖ y2) and C2 = M ⊕ t, from block 1 of t in first and the next ones from kdf.

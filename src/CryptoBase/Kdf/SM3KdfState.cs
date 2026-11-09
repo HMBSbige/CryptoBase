@@ -75,7 +75,7 @@ internal struct SM3KdfState
 		{
 			Span<byte> key = chunk.Span.Slice(0, Math.Min(ChunkLength, length - offset));
 			Write(counter, key);
-			accumulated |= Accumulate(key);
+			accumulated |= FixedTime.Accumulate(key);
 			FastUtils.Xor(key, source.Slice(offset), destination.Slice(offset), key.Length);
 			offset += key.Length;
 		}
@@ -94,7 +94,7 @@ internal struct SM3KdfState
 			Span<byte> key = chunk.Span.Slice(0, Math.Min(ChunkLength, length - offset));
 			Write(counter, key);
 
-			if (Accumulate(key) is not 0)
+			if (FixedTime.Accumulate(key) is not 0)
 			{
 				return false;
 			}
@@ -103,6 +103,12 @@ internal struct SM3KdfState
 		}
 
 		return true;
+	}
+
+	// Whether length bytes of the key are all zero, for block 1 in first; the blocks after it are written only if the bytes of block 1 are.
+	internal readonly bool IsZero(ReadOnlySpan<byte> first, int length)
+	{
+		return FixedTime.Accumulate(first.Slice(0, Math.Min(BlockLength, length))) is 0 && (length <= BlockLength || IsZero(2, length - BlockLength));
 	}
 
 	// Writes the key of destination.Length bytes, which may be empty, from block 1 on.
@@ -116,56 +122,6 @@ internal struct SM3KdfState
 	internal void Clear()
 	{
 		_hash.ZeroMemory();
-	}
-
-	// The OR of the bytes in words, which is 0 just if every byte is, without an early exit, so that the time depends on the length alone. Four vectors take turns, so that the ORs do not wait on one another.
-	internal static ulong Accumulate(ReadOnlySpan<byte> bytes)
-	{
-		ref byte start = ref MemoryMarshal.GetReference(bytes);
-		nuint length = (nuint)bytes.Length;
-		nuint i = 0;
-		ulong accumulated = 0;
-
-		if (Vector.IsHardwareAccelerated)
-		{
-			nuint count = (nuint)Vector<byte>.Count;
-			Vector<byte> vector0 = Vector<byte>.Zero;
-			Vector<byte> vector1 = Vector<byte>.Zero;
-			Vector<byte> vector2 = Vector<byte>.Zero;
-			Vector<byte> vector3 = Vector<byte>.Zero;
-
-			for (; length - i >= 4 * count; i += 4 * count)
-			{
-				vector0 |= Vector.LoadUnsafe(ref start, i);
-				vector1 |= Vector.LoadUnsafe(ref start, i + count);
-				vector2 |= Vector.LoadUnsafe(ref start, i + 2 * count);
-				vector3 |= Vector.LoadUnsafe(ref start, i + 3 * count);
-			}
-
-			for (; length - i >= count; i += count)
-			{
-				vector0 |= Vector.LoadUnsafe(ref start, i);
-			}
-
-			Vector<ulong> words = Vector.AsVectorUInt64(vector0 | vector1 | vector2 | vector3);
-
-			for (int j = 0; j < Vector<ulong>.Count; ++j)
-			{
-				accumulated |= words[j];
-			}
-		}
-
-		for (; length - i >= sizeof(ulong); i += sizeof(ulong))
-		{
-			accumulated |= Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref start, i));
-		}
-
-		for (; i < length; ++i)
-		{
-			accumulated |= Unsafe.Add(ref start, i);
-		}
-
-		return accumulated;
 	}
 
 	private readonly void WriteBlocks(uint counter, Span<byte> destination)

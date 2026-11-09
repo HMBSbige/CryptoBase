@@ -130,17 +130,7 @@ public sealed class SM2KeyExchange : IDisposable
 	public bool TryDeriveKey(SM2Key peerKey, ReadOnlySpan<byte> peerId, ReadOnlySpan<byte> peerEphemeralPublicKey, Span<byte> sharedKey, Span<byte> confirmation, Span<byte> peerConfirmation)
 	{
 		ThrowIfCannotDerive(peerKey, peerId, sharedKey);
-		ArgumentOutOfRangeException.ThrowIfLessThan(confirmation.Length, ConfirmationLength, nameof(confirmation));
-		ArgumentOutOfRangeException.ThrowIfLessThan(peerConfirmation.Length, ConfirmationLength, nameof(peerConfirmation));
-
-		confirmation = confirmation.Slice(0, ConfirmationLength);
-		peerConfirmation = peerConfirmation.Slice(0, ConfirmationLength);
-
-		if (sharedKey.Overlaps(confirmation) || sharedKey.Overlaps(peerConfirmation) || confirmation.Overlaps(peerConfirmation))
-		{
-			ThrowHelper.ThrowOutputsOverlap(nameof(sharedKey));
-		}
-
+		SM3KeyConfirmation.CheckOutputs(sharedKey, ref confirmation, ref peerConfirmation, ConfirmationLength);
 		return Derive(peerKey, peerId, peerEphemeralPublicKey, sharedKey, confirmation, peerConfirmation);
 	}
 
@@ -257,8 +247,8 @@ public sealed class SM2KeyExchange : IDisposable
 				HashCore.Append(ref hash, initiator ? peerCoordinates : ownEphemeral);
 				HashCore.Finalize(ref hash, inner.Span);
 				// S_B and S_1 take 0x02, S_A and S_2 take 0x03.
-				Confirm(initiator ? (byte)0x03 : (byte)0x02, y, inner.Span, confirmation);
-				Confirm(initiator ? (byte)0x02 : (byte)0x03, y, inner.Span, peerConfirmation);
+				SM3KeyConfirmation.Compute(initiator ? (byte)0x03 : (byte)0x02, y, inner.Span, confirmation);
+				SM3KeyConfirmation.Compute(initiator ? (byte)0x02 : (byte)0x03, y, inner.Span, peerConfirmation);
 			}
 
 			// A8 or B7: K = KDF(x ‖ y ‖ Z_A ‖ Z_B, klen).
@@ -311,18 +301,6 @@ public sealed class SM2KeyExchange : IDisposable
 		{
 			product.ZeroMemory();
 		}
-	}
-
-	// SM3(tag ‖ y ‖ inner).
-	[SkipLocalsInit]
-	private static void Confirm(byte tag, ReadOnlySpan<byte> y, ReadOnlySpan<byte> inner, Span<byte> destination)
-	{
-		SM3Core hash = HashCore.Create<SM3Core>();
-		HashCore.Append(ref hash, new ReadOnlySpan<byte>(in tag));
-		HashCore.Append(ref hash, y);
-		HashCore.Append(ref hash, inner);
-		HashCore.Finalize(ref hash, destination);
-		hash.ZeroMemory();
 	}
 
 	// x̄ = 2^w + (x mod 2^w) for w = 127, from the 32 big-endian bytes of x (GB/T 32918.3-2016, Sec. 6.1, A4).

@@ -15,6 +15,14 @@ internal sealed class SM9GTBase : IDisposable
 		_value = value;
 	}
 
+	// The base e(p, q), or the one that another thread published in slot first.
+	internal static SM9GTBase Publish(ref SM9GTBase? slot, in SM9AffinePoint<SM9Fp> p, in SM9AffinePoint<SM9Fp2> q)
+	{
+		SM9Pairing.Pair(in p, in q, out SM9Fp12 g);
+		SM9GTBase value = new(in g);
+		return Interlocked.CompareExchange(ref slot, value, null) ?? value;
+	}
+
 	// g^k. Neither the time nor the addresses depend on k; whether the table is used depends on the number of powers alone.
 	internal void Power(in FieldElement<SM9Order> exponent, out SM9Fp12 result)
 	{

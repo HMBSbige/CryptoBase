@@ -1,7 +1,6 @@
 using CryptoBase.EllipticCurves;
 using CryptoBase.EllipticCurves.SM9;
 using CryptoBase.Kdf;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.SM9;
 
@@ -352,63 +351,24 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 	}
 
 	// Encrypt with the randomness of fill. If fill throws, destination remains unchanged.
-	[SkipLocalsInit]
 	internal int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> destination, ReadOnlySpan<byte> id, Action<Span<byte>> fill)
 	{
-		ObjectDisposedException.ThrowIf(_disposed, this);
-		ThrowIfInvalidPlaintext(plaintext);
-
-		if (plaintext.Length > int.MaxValue - SM9Encryption.CiphertextOverhead)
-		{
-			ThrowPlaintextTooLong(nameof(plaintext));
-		}
-
-		int length = SM9Encryption.CiphertextOverhead + plaintext.Length;
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, length, nameof(destination));
-
-		if (plaintext.Overlaps(destination))
-		{
-			ThrowHelper.ThrowInputOutputOverlap(nameof(destination));
-		}
-
-		SM9Hash.H1(id, _hid, out FieldElement<SM9Order> h1);
-		Span<byte> c1 = stackalloc byte[SM9G1.EncodedLength];
-		using CryptoBuffer<byte> first = new(stackalloc byte[SM3KdfState.BlockLength]);
-		Unsafe.SkipInit(out SM3KdfState kdf);
-
-		try
-		{
-			SM9Encryption.DrawEphemeral(_publicKey, in h1, GetBase(), id, plaintext.Length, fill, c1, ref kdf, first.Span);
-			c1.Slice(1).CopyTo(destination);
-			SM9Encryption.Seal(plaintext, in kdf, first.Span, destination.Slice(SM9Encryption.PointLength, SM9Encryption.HashLength), destination.Slice(SM9Encryption.CiphertextOverhead, plaintext.Length));
-			return length;
-		}
-		finally
-		{
-			kdf.Clear();
-		}
+		return Encrypt(plaintext, destination, id, fill, false);
 	}
 
 	// EncryptDer with the randomness of fill. If fill throws, destination remains unchanged.
-	[SkipLocalsInit]
 	internal int EncryptDer(ReadOnlySpan<byte> plaintext, Span<byte> destination, ReadOnlySpan<byte> id, Action<Span<byte>> fill)
 	{
+		return Encrypt(plaintext, destination, id, fill, true);
+	}
+
+	[SkipLocalsInit]
+	private int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> destination, ReadOnlySpan<byte> id, Action<Span<byte>> fill, bool der)
+	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
-		ThrowIfInvalidPlaintext(plaintext);
 
-		int length = SM9Der.GetCipherLength(plaintext.Length);
-
-		if (length < 0)
-		{
-			ThrowPlaintextTooLong(nameof(plaintext));
-		}
-
-		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, length, nameof(destination));
-
-		if (plaintext.Overlaps(destination))
-		{
-			ThrowHelper.ThrowInputOutputOverlap(nameof(destination));
-		}
+		int length = der ? SM9Der.GetCipherLength(plaintext.Length) : plaintext.Length > int.MaxValue - SM9Encryption.CiphertextOverhead ? -1 : SM9Encryption.CiphertextOverhead + plaintext.Length;
+		ThrowHelper.ThrowIfInvalidEncryptionBuffers(plaintext, destination, length);
 
 		SM9Hash.H1(id, _hid, out FieldElement<SM9Order> h1);
 		Span<byte> c1 = stackalloc byte[SM9G1.EncodedLength];
@@ -418,9 +378,19 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 		try
 		{
 			SM9Encryption.DrawEphemeral(_publicKey, in h1, GetBase(), id, plaintext.Length, fill, c1, ref kdf, first.Span);
-			int written = SM9Der.WriteCipher(c1, plaintext.Length, destination, out int hashOffset, out int cipherTextOffset);
+			(int hashOffset, int cipherTextOffset) = (SM9Encryption.PointLength, SM9Encryption.CiphertextOverhead);
+
+			if (der)
+			{
+				_ = SM9Der.WriteCipher(c1, plaintext.Length, destination, out hashOffset, out cipherTextOffset);
+			}
+			else
+			{
+				c1.Slice(1).CopyTo(destination);
+			}
+
 			SM9Encryption.Seal(plaintext, in kdf, first.Span, destination.Slice(hashOffset, SM9Encryption.HashLength), destination.Slice(cipherTextOffset, plaintext.Length));
-			return written;
+			return length;
 		}
 		finally
 		{
@@ -450,14 +420,7 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 
 	private SM9GTBase GetBase()
 	{
-		return _base ?? PublishBase();
-	}
-
-	private SM9GTBase PublishBase()
-	{
-		SM9Pairing.Pair(in _publicKey.Point, in SM9G2.Generator, out SM9Fp12 g);
-		SM9GTBase value = new(in g);
-		return Interlocked.CompareExchange(ref _base, value, null) ?? value;
+		return _base ?? SM9GTBase.Publish(ref _base, in _publicKey.Point, in SM9G2.Generator);
 	}
 
 	// The master key of ke, with Ppub-e = [ke]P1. Neither the time nor the addresses depend on ke.
@@ -476,19 +439,5 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 		{
 			ThrowHelper.ThrowMissingKey("master private key");
 		}
-	}
-
-	private static void ThrowIfInvalidPlaintext(ReadOnlySpan<byte> plaintext)
-	{
-		if (plaintext.IsEmpty)
-		{
-			throw new ArgumentException("The plaintext must not be empty.", nameof(plaintext));
-		}
-	}
-
-	[DoesNotReturn]
-	private static void ThrowPlaintextTooLong(string paramName)
-	{
-		throw new ArgumentException("The ciphertext would be longer than int.MaxValue bytes.", paramName);
 	}
 }

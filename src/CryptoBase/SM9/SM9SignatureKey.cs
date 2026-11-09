@@ -270,13 +270,6 @@ public sealed class SM9SignatureKey : IDisposable
 
 	internal SM9GTBase GetBase()
 	{
-		return _base ?? PublishBase();
-	}
-
-	private SM9GTBase PublishBase()
-	{
-		SM9Pairing.Pair(in SM9G1.Generator, in _masterPublicKey, out SM9Fp12 g);
-		SM9GTBase value = new(in g);
-		return Interlocked.CompareExchange(ref _base, value, null) ?? value;
+		return _base ?? SM9GTBase.Publish(ref _base, in SM9G1.Generator, in _masterPublicKey);
 	}
 }
