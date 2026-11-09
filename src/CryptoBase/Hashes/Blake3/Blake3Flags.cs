@@ -1,3 +1,5 @@
+using static CryptoBase.Hashes.Blake3.Blake3Constants;
+
 namespace CryptoBase.Hashes.Blake3;
 
 internal static class Blake3Flags
@@ -14,5 +16,15 @@ internal static class Blake3Flags
 	internal static bool IsSecret(uint flags)
 	{
 		return (flags & (KeyedHash | DeriveKeyMaterial)) is not 0;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void LaneShape(uint flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags)
+	{
+		chunks = (flags & Parent) is 0;
+		blockCount = chunks ? (nuint)ChunkBlocks : 1;
+		stride = blockCount * BlockLength;
+		startFlags = chunks ? ChunkStart : 0;
+		endFlags = chunks ? ChunkEnd : 0;
 	}
 }

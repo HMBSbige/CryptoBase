@@ -98,11 +98,7 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 	{
 		Debug.Assert(count is > 1 and <= 4);
 
-		bool chunks = (flags & Blake3Flags.Parent) is 0;
-		nuint blockCount = chunks ? (nuint)ChunkBlocks : 1;
-		nuint stride = blockCount * BlockLength;
-		uint startFlags = chunks ? Blake3Flags.ChunkStart : 0;
-		uint endFlags = chunks ? Blake3Flags.ChunkEnd : 0;
+		Blake3Flags.LaneShape(flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags);
 
 		nuint offset1 = count > 2 ? stride : 0;
 		nuint offset2 = count > 3 ? 2 * stride : 0;
@@ -153,11 +149,7 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 	{
 		Debug.Assert(count is > 4 and <= 8);
 
-		bool chunks = (flags & Blake3Flags.Parent) is 0;
-		nuint blockCount = chunks ? (nuint)ChunkBlocks : 1;
-		nuint stride = blockCount * BlockLength;
-		uint startFlags = chunks ? Blake3Flags.ChunkStart : 0;
-		uint endFlags = chunks ? Blake3Flags.ChunkEnd : 0;
+		Blake3Flags.LaneShape(flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags);
 
 		nuint offset4 = count > 5 ? 4 * stride : 0;
 		nuint offset5 = count > 6 ? 5 * stride : 0;

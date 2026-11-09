@@ -72,6 +72,18 @@ internal static class Blake3Compressor
 		CompressLastBlock(in cv[0], ref Unsafe.Add(ref input, lastBlockOffset), (uint)(length - lastBlockOffset), counter, flags | startFlag, ref output);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void HashLast<TKernel>(ref byte input, nuint count, nuint tailLength, ref readonly uint key, ulong counter, uint flags, ref byte output) where TKernel : struct, IBlake3LaneKernel
+	{
+		nuint tailBlocks = tailLength is 0 ? 0 : (tailLength - 1) / BlockLength;
+		TKernel.Hash(ref input, tailBlocks is 0 ? count : count + 1, tailBlocks, in key, counter, flags, ref output);
+
+		if (tailLength is not 0)
+		{
+			FinishChunk(ref Unsafe.Add(ref input, count * ChunkLength), tailLength, in key, counter + count, flags, ref Unsafe.Add(ref output, count * OutLength));
+		}
+	}
+
 	[SkipLocalsInit]
 	internal static void FinishChunk(ref byte chunk, nuint length, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{

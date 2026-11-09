@@ -38,15 +38,7 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash(ref byte input, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
-		ref uint k = ref Unsafe.AsRef(in key);
-		Vector512<uint> h0 = Vector512.Create(k);
-		Vector512<uint> h1 = Vector512.Create(Unsafe.Add(ref k, 1));
-		Vector512<uint> h2 = Vector512.Create(Unsafe.Add(ref k, 2));
-		Vector512<uint> h3 = Vector512.Create(Unsafe.Add(ref k, 3));
-		Vector512<uint> h4 = Vector512.Create(Unsafe.Add(ref k, 4));
-		Vector512<uint> h5 = Vector512.Create(Unsafe.Add(ref k, 5));
-		Vector512<uint> h6 = Vector512.Create(Unsafe.Add(ref k, 6));
-		Vector512<uint> h7 = Vector512.Create(Unsafe.Add(ref k, 7));
+		Blake3Vector512.BroadcastKey(in key, out Vector512<uint> h0, out Vector512<uint> h1, out Vector512<uint> h2, out Vector512<uint> h3, out Vector512<uint> h4, out Vector512<uint> h5, out Vector512<uint> h6, out Vector512<uint> h7);
 		Vector512<uint> g0 = h0;
 		Vector512<uint> g1 = h1;
 		Vector512<uint> g2 = h2;

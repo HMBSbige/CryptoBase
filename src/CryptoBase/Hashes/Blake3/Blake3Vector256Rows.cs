@@ -108,11 +108,7 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash2(ref byte input, nuint tailLength, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
-		bool chunks = (flags & Blake3Flags.Parent) is 0;
-		nuint blockCount = chunks ? (nuint)ChunkBlocks : 1;
-		nuint stride = blockCount * BlockLength;
-		uint startFlags = chunks ? Blake3Flags.ChunkStart : 0;
-		uint endFlags = chunks ? Blake3Flags.ChunkEnd : 0;
+		Blake3Flags.LaneShape(flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags);
 
 		Unsafe.SkipInit(out InlineArray64<byte> lastBlock);
 		Blake3LastLane last = new(ref Unsafe.Add(ref input, stride), blockCount, tailLength, ref lastBlock);
@@ -161,11 +157,7 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 	{
 		Debug.Assert(count is 3 or 4);
 
-		bool chunks = (flags & Blake3Flags.Parent) is 0;
-		nuint blockCount = chunks ? (nuint)ChunkBlocks : 1;
-		nuint stride = blockCount * BlockLength;
-		uint startFlags = chunks ? Blake3Flags.ChunkStart : 0;
-		uint endFlags = chunks ? Blake3Flags.ChunkEnd : 0;
+		Blake3Flags.LaneShape(flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags);
 
 		nuint offset2 = count > 3 ? 2 * stride : 0;
 		Unsafe.SkipInit(out InlineArray64<byte> lastBlock);

@@ -2,7 +2,7 @@ using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
 
-internal readonly partial struct Blake3Vector128 : IBlake3XofKernel
+internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3LaneKernel
 {
 	public static bool IsSupported => Sse2.IsSupported || AdvSimd.Arm64.IsSupported;
 
@@ -24,7 +24,7 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel
 		// Next to a single full chunk, a partial one hashes faster on its own than in the lanes, except on ARM64 from fifteen blocks.
 		if (count > 1 || count is 1 && AdvSimd.Arm64.IsSupported && tailLength > 14 * BlockLength)
 		{
-			HashLast(ref input, count, tailLength, in key, counter, flags, ref output);
+			Blake3Compressor.HashLast<Blake3Vector128>(ref input, count, tailLength, in key, counter, flags, ref output);
 			return;
 		}
 
@@ -77,26 +77,11 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel
 		}
 	}
 
-	private static void HashLast(ref byte input, nuint count, nuint tailLength, ref readonly uint key, ulong counter, uint flags, ref byte output)
-	{
-		nuint tailBlocks = tailLength is 0 ? 0 : (tailLength - 1) / BlockLength;
-		Hash(ref input, tailBlocks is 0 ? count : count + 1, tailBlocks, in key, counter, flags, ref output);
-
-		if (tailLength is not 0)
-		{
-			Blake3Compressor.FinishChunk(ref Unsafe.Add(ref input, count * ChunkLength), tailLength, in key, counter + count, flags, ref Unsafe.Add(ref output, count * OutLength));
-		}
-	}
-
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
+	public static void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
-		bool chunks = (flags & Blake3Flags.Parent) is 0;
-		nuint blockCount = chunks ? (nuint)ChunkBlocks : 1;
-		nuint stride = blockCount * BlockLength;
-		uint startFlags = chunks ? Blake3Flags.ChunkStart : 0;
-		uint endFlags = chunks ? Blake3Flags.ChunkEnd : 0;
+		Blake3Flags.LaneShape(flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags);
 
 		Debug.Assert(count is > 1 and <= 4);
 		Debug.Assert(tailBlocks < blockCount);
