@@ -9,16 +9,16 @@ public abstract class MontgomeryPairKernelCase : IKernelCase
 	public static IEnumerable<MontgomeryPairKernelCase> All()
 	{
 		yield return new Case<MontgomeryPairKernelAdvSimd<Radix28>, MontgomeryKernelAdvSimd<Radix28>>();
-		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>>();
-		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>>>();
-		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512PairWindowPair<Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>>>();
-		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512PairWindowPair<Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
-		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512PairWindowPair<Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
-		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512PairWindowPair<Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>, Avx512PairWindowPair<Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>, Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>, Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
 		yield return new Avx2Case<MontgomeryPairKernelAvx2<Avx2PairWindow>>();
-		yield return new Avx2Case<MontgomeryPairKernelAvx2<Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindow>>>();
-		yield return new Avx2Case<MontgomeryPairKernelAvx2<Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindow>>>>();
-		yield return new Avx2Case<MontgomeryPairKernelAvx2<Avx2PairWindowPair<Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindow>, Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindow>>>>();
+		yield return new Avx2Case<MontgomeryPairKernelAvx2<Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>>();
+		yield return new Avx2Case<MontgomeryPairKernelAvx2<Avx2WindowPair<Avx2PairWindow, Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>>>();
+		yield return new Avx2Case<MontgomeryPairKernelAvx2<Avx2WindowPair<Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>, Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>>>();
 	}
 
 	public abstract Type KernelType { get; }
@@ -157,14 +157,14 @@ public abstract class MontgomeryPairKernelCase : IKernelCase
 		internal override void Multiply(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, Span<ulong> scratch)
 		{
 			ulong[] moduli = new ulong[2 * first.Length];
-			TKernel.Prepare(first, second, moduli);
+			MontgomeryPairContext.Interleave(first, second, moduli);
 			TKernel.Multiply(result, left, right, moduli, NegativeInverse(first), NegativeInverse(second), scratch);
 		}
 
 		internal override void Square(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> result, ReadOnlySpan<ulong> value, Span<ulong> scratch)
 		{
 			ulong[] moduli = new ulong[2 * first.Length];
-			TKernel.Prepare(first, second, moduli);
+			MontgomeryPairContext.Interleave(first, second, moduli);
 			TKernel.Square(result, value, moduli, NegativeInverse(first), NegativeInverse(second), scratch);
 		}
 

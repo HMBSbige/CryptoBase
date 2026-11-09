@@ -288,9 +288,9 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 
 		return algorithm switch
 		{
-			SignatureAlgorithm.RsaPkcs1Sha256 => VerifyPkcs1Core<Sha256Core>(RsaPadding.Sha256DigestInfo, RsaPadding.Sha256DigestInfoWithoutParameters, message, signature),
-			SignatureAlgorithm.RsaPkcs1Sha384 => VerifyPkcs1Core<Sha384Core>(RsaPadding.Sha384DigestInfo, RsaPadding.Sha384DigestInfoWithoutParameters, message, signature),
-			SignatureAlgorithm.RsaPkcs1Sha512 => VerifyPkcs1Core<Sha512Core>(RsaPadding.Sha512DigestInfo, RsaPadding.Sha512DigestInfoWithoutParameters, message, signature),
+			SignatureAlgorithm.RsaPkcs1Sha256 => VerifyPkcs1Core<Sha256Core>(Pkcs1DigestInfo.Sha256, Pkcs1DigestInfo.Sha256WithoutParameters, message, signature),
+			SignatureAlgorithm.RsaPkcs1Sha384 => VerifyPkcs1Core<Sha384Core>(Pkcs1DigestInfo.Sha384, Pkcs1DigestInfo.Sha384WithoutParameters, message, signature),
+			SignatureAlgorithm.RsaPkcs1Sha512 => VerifyPkcs1Core<Sha512Core>(Pkcs1DigestInfo.Sha512, Pkcs1DigestInfo.Sha512WithoutParameters, message, signature),
 			SignatureAlgorithm.RsaPssSha256 => VerifyPssCore<Sha256Core>(message, signature, Sha256Core.HashLength),
 			SignatureAlgorithm.RsaPssSha384 => VerifyPssCore<Sha384Core>(message, signature, Sha384Core.HashLength),
 			_ => VerifyPssCore<Sha512Core>(message, signature, Sha512Core.HashLength)
@@ -340,9 +340,9 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	{
 		return algorithm switch
 		{
-			SignatureAlgorithm.RsaPkcs1Sha256 => SignPkcs1Core<Sha256Core>(privateKey, RsaPadding.Sha256DigestInfo, message, destination),
-			SignatureAlgorithm.RsaPkcs1Sha384 => SignPkcs1Core<Sha384Core>(privateKey, RsaPadding.Sha384DigestInfo, message, destination),
-			SignatureAlgorithm.RsaPkcs1Sha512 => SignPkcs1Core<Sha512Core>(privateKey, RsaPadding.Sha512DigestInfo, message, destination),
+			SignatureAlgorithm.RsaPkcs1Sha256 => SignPkcs1Core<Sha256Core>(privateKey, Pkcs1DigestInfo.Sha256, message, destination),
+			SignatureAlgorithm.RsaPkcs1Sha384 => SignPkcs1Core<Sha384Core>(privateKey, Pkcs1DigestInfo.Sha384, message, destination),
+			SignatureAlgorithm.RsaPkcs1Sha512 => SignPkcs1Core<Sha512Core>(privateKey, Pkcs1DigestInfo.Sha512, message, destination),
 			SignatureAlgorithm.RsaPssSha256 => SignPssCore<Sha256Core>(privateKey, message, salt, destination),
 			SignatureAlgorithm.RsaPssSha384 => SignPssCore<Sha384Core>(privateKey, message, salt, destination),
 			_ => SignPssCore<Sha512Core>(privateKey, message, salt, destination)
@@ -393,7 +393,7 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 		// Steps 3 and 4.
 		Span<byte> hash = stackalloc byte[RsaPadding.MaxHashLength].Slice(0, THash.HashLength);
 		RsaPadding.Hash<THash>(message, hash);
-		return RsaPadding.IsPkcs1Encoding(encoded, digestInfo, hash) || RsaPadding.IsPkcs1Encoding(encoded, digestInfoWithoutParameters, hash);
+		return Pkcs1DigestInfo.IsEncoding(encoded, digestInfo, hash) || Pkcs1DigestInfo.IsEncoding(encoded, digestInfoWithoutParameters, hash);
 	}
 
 	// RSASSA-PSS-VERIFY (RFC 8017, Sec. 8.1.2).

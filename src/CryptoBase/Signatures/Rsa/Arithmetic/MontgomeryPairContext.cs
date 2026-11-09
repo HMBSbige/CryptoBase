@@ -12,6 +12,18 @@ internal abstract class MontgomeryPairContext : IDisposable
 	internal abstract void Reset(MontgomeryContext first, MontgomeryContext second);
 
 	public abstract void Dispose();
+
+	// The elements or moduli of two moduli as the pair that IMontgomeryPairKernel describes.
+	internal static void Interleave(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> pair)
+	{
+		Debug.Assert(first.Length == second.Length && pair.Length == 2 * first.Length);
+
+		for (int i = 0; i < first.Length; ++i)
+		{
+			pair[2 * i] = first[i];
+			pair[2 * i + 1] = second[i];
+		}
+	}
 }
 
 internal sealed class MontgomeryPairContext<TKernel> : MontgomeryPairContext where TKernel : IMontgomeryPairKernel
@@ -46,7 +58,7 @@ internal sealed class MontgomeryPairContext<TKernel> : MontgomeryPairContext whe
 		Span<ulong> secondDigits = buffer.Span.Slice(digits, digits);
 		first.ToDigits(first.Modulus, firstDigits);
 		second.ToDigits(second.Modulus, secondDigits);
-		TKernel.Prepare(firstDigits, secondDigits, Moduli);
+		Interleave(firstDigits, secondDigits, Moduli);
 		first.WriteOne(firstDigits);
 		second.WriteOne(secondDigits);
 		Interleave(firstDigits, secondDigits, One);
@@ -97,7 +109,7 @@ internal sealed class MontgomeryPairContext<TKernel> : MontgomeryPairContext whe
 
 		// The windows of MontgomeryContext.Exponentiate, from the same positions in both exponents.
 		int position = bits - (bits % window is 0 ? window : bits % window);
-		Lookup(table, count, ReadWindow(firstExponent, position, bits - position), ReadWindow(secondExponent, position, bits - position), accumulator);
+		Lookup(table, count, MontgomeryContext.ReadWindow(firstExponent, position, bits - position), MontgomeryContext.ReadWindow(secondExponent, position, bits - position), accumulator);
 
 		while (position > 0)
 		{
@@ -108,7 +120,7 @@ internal sealed class MontgomeryPairContext<TKernel> : MontgomeryPairContext whe
 				TKernel.Square(accumulator, accumulator, moduli, firstInverse, secondInverse, scratch);
 			}
 
-			Lookup(table, count, ReadWindow(firstExponent, position, window), ReadWindow(secondExponent, position, window), entry);
+			Lookup(table, count, MontgomeryContext.ReadWindow(firstExponent, position, window), MontgomeryContext.ReadWindow(secondExponent, position, window), entry);
 			TKernel.Multiply(accumulator, accumulator, entry, moduli, firstInverse, secondInverse, scratch);
 		}
 
@@ -124,20 +136,6 @@ internal sealed class MontgomeryPairContext<TKernel> : MontgomeryPairContext whe
 		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(_data.AsSpan()));
 		_firstInverse = 0;
 		_secondInverse = 0;
-	}
-
-	private static void Interleave(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> pair)
-	{
-		for (int i = 0; i < first.Length; ++i)
-		{
-			pair[2 * i] = first[i];
-			pair[2 * i + 1] = second[i];
-		}
-	}
-
-	private static ulong ReadWindow(ReadOnlySpan<ulong> exponent, int position, int bits)
-	{
-		return LimbArithmetic.ReadBits(exponent, position) & (1UL << bits) - 1;
 	}
 
 	private static void Lookup(ReadOnlySpan<ulong> table, int count, ulong first, ulong second, Span<ulong> entry)

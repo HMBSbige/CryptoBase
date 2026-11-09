@@ -78,6 +78,11 @@ internal abstract class MontgomeryContext : IDisposable
 			_ => 1
 		};
 	}
+
+	internal static ulong ReadWindow(ReadOnlySpan<ulong> exponent, int position, int bits)
+	{
+		return LimbArithmetic.ReadBits(exponent, position) & (1UL << bits) - 1;
+	}
 }
 
 internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKernel : IMontgomeryKernel
@@ -387,11 +392,6 @@ internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKern
 	{
 		CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(_data.AsSpan()));
 		_negativeInverse = 0;
-	}
-
-	private static ulong ReadWindow(ReadOnlySpan<ulong> exponent, int position, int bits)
-	{
-		return LimbArithmetic.ReadBits(exponent, position) & (1UL << bits) - 1;
 	}
 
 	private void Lookup(ReadOnlySpan<ulong> table, int count, ulong index, Span<ulong> entry)

@@ -1,3 +1,4 @@
+using CryptoBase.Internal;
 using System.Buffers.Binary;
 using System.Numerics;
 
@@ -152,20 +153,6 @@ public sealed class PlatformRsaKey : ISignatureKey
 			throw NotExportable();
 		}
 	}
-
-	// The DER encoding of the DigestInfo of each hash up to the hash value, with NULL parameters (RFC 8017, Sec. 9.2, Note 1).
-	private static ReadOnlySpan<byte> Sha256DigestInfo => [0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20];
-
-	private static ReadOnlySpan<byte> Sha384DigestInfo => [0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30];
-
-	private static ReadOnlySpan<byte> Sha512DigestInfo => [0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40];
-
-	// The same without parameters.
-	private static ReadOnlySpan<byte> Sha256DigestInfoWithoutParameters => [0x30, 0x2F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x04, 0x20];
-
-	private static ReadOnlySpan<byte> Sha384DigestInfoWithoutParameters => [0x30, 0x3F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x04, 0x30];
-
-	private static ReadOnlySpan<byte> Sha512DigestInfoWithoutParameters => [0x30, 0x4F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x04, 0x40];
 
 	// rsaEncryption with the NULL parameters that RFC 4055, Sec. 1.2, requires.
 	private static ReadOnlySpan<byte> RsaEncryption => [0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01, 0x05, 0x00];
@@ -363,7 +350,7 @@ public sealed class PlatformRsaKey : ISignatureKey
 
 		try
 		{
-			allowed = AlgorithmIdentifier.TryReadRsassaPssParameters(algorithm.Parameters, out pss, out int hashLength, out int saltLength) && saltLength <= hashLength;
+			allowed = RsassaPssParameters.TryRead(algorithm.Parameters.Span, out pss, out int hashLength, out int saltLength) && saltLength <= hashLength;
 		}
 		catch (AsnContentException e)
 		{
@@ -555,22 +542,10 @@ public sealed class PlatformRsaKey : ISignatureKey
 		{
 			return algorithm switch
 			{
-				SignatureAlgorithm.RsaPkcs1Sha256 => IsPkcs1Encoding(encoded, Sha256DigestInfo, digest) || IsPkcs1Encoding(encoded, Sha256DigestInfoWithoutParameters, digest),
-				SignatureAlgorithm.RsaPkcs1Sha384 => IsPkcs1Encoding(encoded, Sha384DigestInfo, digest) || IsPkcs1Encoding(encoded, Sha384DigestInfoWithoutParameters, digest),
-				_ => IsPkcs1Encoding(encoded, Sha512DigestInfo, digest) || IsPkcs1Encoding(encoded, Sha512DigestInfoWithoutParameters, digest)
+				SignatureAlgorithm.RsaPkcs1Sha256 => Pkcs1DigestInfo.IsEncoding(encoded, Pkcs1DigestInfo.Sha256, digest) || Pkcs1DigestInfo.IsEncoding(encoded, Pkcs1DigestInfo.Sha256WithoutParameters, digest),
+				SignatureAlgorithm.RsaPkcs1Sha384 => Pkcs1DigestInfo.IsEncoding(encoded, Pkcs1DigestInfo.Sha384, digest) || Pkcs1DigestInfo.IsEncoding(encoded, Pkcs1DigestInfo.Sha384WithoutParameters, digest),
+				_ => Pkcs1DigestInfo.IsEncoding(encoded, Pkcs1DigestInfo.Sha512, digest) || Pkcs1DigestInfo.IsEncoding(encoded, Pkcs1DigestInfo.Sha512WithoutParameters, digest)
 			};
-		}
-
-		private static bool IsPkcs1Encoding(ReadOnlySpan<byte> encoded, ReadOnlySpan<byte> digestInfo, ReadOnlySpan<byte> digest)
-		{
-			int separator = encoded.Length - digestInfo.Length - digest.Length - 1;
-
-			return encoded[0] is 0x00
-				&& encoded[1] is 0x01
-				&& !encoded.Slice(2, separator - 2).ContainsAnyExcept((byte)0xFF)
-				&& encoded[separator] is 0x00
-				&& encoded.Slice(separator + 1, digestInfo.Length).SequenceEqual(digestInfo)
-				&& encoded.Slice(encoded.Length - digest.Length).SequenceEqual(digest);
 		}
 
 		// EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) with emBits = modBits − 1, MGF1 with the hash, and sLen = hLen; Fits passed step 3. encoded is changed.

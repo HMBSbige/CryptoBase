@@ -10,20 +10,6 @@ internal static class RsaPadding
 {
 	internal const int MaxHashLength = 64;
 
-	// The DER encoding of the DigestInfo of each hash up to the hash value, with NULL parameters (RFC 8017, Sec. 9.2, Note 1).
-	internal static ReadOnlySpan<byte> Sha256DigestInfo => [0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20];
-
-	internal static ReadOnlySpan<byte> Sha384DigestInfo => [0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30];
-
-	internal static ReadOnlySpan<byte> Sha512DigestInfo => [0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40];
-
-	// The same without parameters.
-	internal static ReadOnlySpan<byte> Sha256DigestInfoWithoutParameters => [0x30, 0x2F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x04, 0x20];
-
-	internal static ReadOnlySpan<byte> Sha384DigestInfoWithoutParameters => [0x30, 0x3F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x04, 0x30];
-
-	internal static ReadOnlySpan<byte> Sha512DigestInfoWithoutParameters => [0x30, 0x4F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x04, 0x40];
-
 	// emLen = ⌈(modBits − 1)/8⌉ (RFC 8017, Sec. 8.1.1, step 1), one byte short of k where modBits − 1 is a multiple of 8.
 	internal static int GetPssEncodedLength(int modulusBits)
 	{
@@ -54,19 +40,6 @@ internal static class RsaPadding
 		encoded[separator] = 0x00;
 		digestInfo.CopyTo(encoded.Slice(separator + 1));
 		hash.CopyTo(encoded.Slice(encoded.Length - hash.Length));
-	}
-
-	// Whether encoded is EMSA-PKCS1-v1_5-ENCODE of hash with digestInfo, compared byte for byte (RFC 8017, Sec. 8.2.2, step 4): the lengths of PS and T follow from k and the hash, so nothing is parsed.
-	internal static bool IsPkcs1Encoding(ReadOnlySpan<byte> encoded, ReadOnlySpan<byte> digestInfo, ReadOnlySpan<byte> hash)
-	{
-		int separator = encoded.Length - digestInfo.Length - hash.Length - 1;
-
-		return encoded[0] is 0x00
-			&& encoded[1] is 0x01
-			&& !encoded.Slice(2, separator - 2).ContainsAnyExcept((byte)0xFF)
-			&& encoded[separator] is 0x00
-			&& encoded.Slice(separator + 1, digestInfo.Length).SequenceEqual(digestInfo)
-			&& encoded.Slice(encoded.Length - hash.Length).SequenceEqual(hash);
 	}
 
 	// EMSA-PSS-ENCODE (RFC 8017, Sec. 9.1.1) of mHash with MGF1, both with THash, and salt, for emBits = modBits − 1: EM fills the last emLen bytes of encoded, after a zero byte where emLen = k − 1.

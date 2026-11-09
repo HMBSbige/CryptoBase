@@ -40,10 +40,10 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 		Debug.Assert(result.Length == digits && left.Length == digits && right.Length == digits && scratch.Length >= GetScratchLength(digits));
 
 		int stride = digits + 2 * Pad;
-		ref uint a = ref Place(ref Unsafe.As<ulong, uint>(ref MemoryMarshal.GetReference(scratch)), stride);
-		ref uint b = ref Place(ref Unsafe.Add(ref a, stride - Pad), stride);
-		ref uint n = ref Place(ref Unsafe.Add(ref b, stride - Pad), stride);
-		ref uint m = ref Place(ref Unsafe.Add(ref n, stride - Pad), stride);
+		ref uint a = ref Place(ref Unsafe.As<ulong, uint>(ref MemoryMarshal.GetReference(scratch)), stride, Pad);
+		ref uint b = ref Place(ref Unsafe.Add(ref a, stride - Pad), stride, Pad);
+		ref uint n = ref Place(ref Unsafe.Add(ref b, stride - Pad), stride, Pad);
+		ref uint m = ref Place(ref Unsafe.Add(ref n, stride - Pad), stride, Pad);
 		Narrow(left, ref a, 0);
 		Narrow(right, ref b, 0);
 		Narrow(modulus, ref n, 0);
@@ -59,10 +59,10 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 		Debug.Assert(result.Length == digits && value.Length == digits && scratch.Length >= GetScratchLength(digits));
 
 		int stride = digits + 2 * Pad;
-		ref uint a = ref Place(ref Unsafe.As<ulong, uint>(ref MemoryMarshal.GetReference(scratch)), stride);
-		ref uint twice = ref Place(ref Unsafe.Add(ref a, stride - Pad), stride);
-		ref uint n = ref Place(ref Unsafe.Add(ref twice, stride - Pad), stride);
-		ref uint m = ref Place(ref Unsafe.Add(ref n, stride - Pad), stride);
+		ref uint a = ref Place(ref Unsafe.As<ulong, uint>(ref MemoryMarshal.GetReference(scratch)), stride, Pad);
+		ref uint twice = ref Place(ref Unsafe.Add(ref a, stride - Pad), stride, Pad);
+		ref uint n = ref Place(ref Unsafe.Add(ref twice, stride - Pad), stride, Pad);
+		ref uint m = ref Place(ref Unsafe.Add(ref n, stride - Pad), stride, Pad);
 		Narrow(value, ref a, 0);
 		Narrow(value, ref twice, 1);
 		Narrow(modulus, ref n, 0);
@@ -70,16 +70,16 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 		SquareCore(result, ref a, ref twice, ref n, ref m, (uint)negativeInverse);
 	}
 
-	// The digits of an operand of stride words, zeros included, from the first 16-byte boundary at or after start, or from the page boundary after it where the operand would cross it and a page holds the operand. If the scratch moves meanwhile, only the speed changes.
+	// The digits of an operand of stride words, zeros included with pad of them before the digits, from the first 16-byte boundary at or after start, or from the page boundary after it where the operand would cross it and a page holds the operand. If the scratch moves meanwhile, only the speed changes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe ref uint Place(ref uint start, int stride)
+	internal static unsafe ref uint Place(ref uint start, int stride, int pad)
 	{
 		nuint address = (nuint)Unsafe.AsPointer(ref start);
 		nuint aligned = address + 15 & ~(nuint)15;
 		nuint bytes = (nuint)stride * sizeof(uint);
 		nuint boundary = (aligned | PageMask) + 1;
 		nuint placed = aligned + bytes > boundary && bytes <= PageMask + 1 ? boundary : aligned;
-		return ref Unsafe.Add(ref Unsafe.AddByteOffset(ref start, placed - address), Pad);
+		return ref Unsafe.Add(ref Unsafe.AddByteOffset(ref start, placed - address), pad);
 	}
 
 	// The digits as words shifted left by shift, with Pad zeros on either side.
@@ -416,7 +416,7 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 
 	// usra and ushr by the digit size, a constant of each instantiation.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> ShiftRightAdd(Vector128<ulong> addend, Vector128<ulong> value)
+	internal static Vector128<ulong> ShiftRightAdd(Vector128<ulong> addend, Vector128<ulong> value)
 	{
 #pragma warning disable CA1857
 		// ReSharper disable once ConstantExpected
@@ -425,7 +425,7 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> ShiftRight(Vector128<ulong> value)
+	internal static Vector128<ulong> ShiftRight(Vector128<ulong> value)
 	{
 #pragma warning disable CA1857
 		// ReSharper disable once ConstantExpected

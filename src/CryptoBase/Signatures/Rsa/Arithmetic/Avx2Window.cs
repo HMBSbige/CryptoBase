@@ -5,7 +5,7 @@ internal interface IAvx2Window<TSelf> where TSelf : struct, IAvx2Window<TSelf>
 {
 	static abstract int Count { get; }
 
-	// Every vector from the top down, with the block of the lowest one at index of blocks: its lanes gain lo(a·b) + lo(n·m), shift down by one lane, taking lane 0 of above, the lanes of the vector above after the low parts, and gain hi(a·b) + hi(n·m). Returns the lanes of the lowest vector after the low parts.
+	// Every vector from the top down, with the block of the lowest one at index of blocks: its lanes gain lo(a·b) + lo(n·m), shift down by one digit, a lane or two in Avx2PairWindow, taking the first digit of above, the lanes of the vector above after the low parts, and gain hi(a·b) + hi(n·m). Returns the lanes of the lowest vector after the low parts.
 	static abstract Vector256<ulong> Step(ref TSelf acc, ref ulong blocks, nint index, Vector256<ulong> above, Vector256<double> b, Vector256<double> m, Vector256<double> high, Vector256<double> low);
 
 	// Stores the lanes less offset, those of the lowest vector at lanes.
@@ -14,6 +14,12 @@ internal interface IAvx2Window<TSelf> where TSelf : struct, IAvx2Window<TSelf>
 
 internal struct Avx2Window : IAvx2Window<Avx2Window>
 {
+	// The bits of 2^103 and of 1.5·2^52; the lane shifted in at iteration i carries LowOffset + i·Offset, as in Avx512Window.
+	internal const ulong HighBits = 0x4660000000000000UL;
+	internal const ulong LowBits = 0x4338000000000000UL;
+	internal const ulong LowOffset = 2 * LowBits;
+	internal const ulong Offset = unchecked(2 * LowBits + 2 * HighBits);
+
 	// A block of staging: the digits of the left operand and of the modulus as doubles, then the lanes of a vector of the accumulator that is not in a window.
 	internal const int BlockWords = 12;
 

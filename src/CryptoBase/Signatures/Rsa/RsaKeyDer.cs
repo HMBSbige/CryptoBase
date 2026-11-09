@@ -7,16 +7,10 @@ namespace CryptoBase.Signatures.Rsa;
 internal static class RsaKeyDer
 {
 	private const string RsassaPssOid = "1.2.840.113549.1.1.10";
-	private const string Mgf1Oid = "1.2.840.113549.1.1.8";
 	private const string SourceName = "source";
 
 	// The length of INTEGER 0, the version of RSAPrivateKey.
 	private const int VersionLength = 3;
-
-	private static readonly Asn1Tag HashAlgorithmTag = new(TagClass.ContextSpecific, 0, true);
-	private static readonly Asn1Tag MaskGenAlgorithmTag = new(TagClass.ContextSpecific, 1, true);
-	private static readonly Asn1Tag SaltLengthTag = new(TagClass.ContextSpecific, 2, true);
-	private static readonly Asn1Tag TrailerFieldTag = new(TagClass.ContextSpecific, 3, true);
 
 	private static readonly RsaPrivateComponent[] PrivateComponents =
 	[
@@ -92,7 +86,7 @@ internal static class RsaKeyDer
 
 			ReadOnlySpan<byte> parameters = contents.ReadEncodedValue();
 			contents.ThrowIfNotEmpty();
-			allowed = TryReadPssParameters(parameters, out algorithm);
+			allowed = RsassaPssParameters.TryRead(parameters, out algorithm, out int hashLength, out int saltLength) && saltLength <= hashLength;
 		}
 		catch (AsnContentException e)
 		{
@@ -230,82 +224,6 @@ internal static class RsaKeyDer
 		}
 	}
 
-	// RSASSA-PSS-params (RFC 4055, Sec. 3.1) give algorithm if the hash is SHA-256, SHA-384 or SHA-512, MGF1 has the same hash, each hash AlgorithmIdentifier has NULL or absent parameters (Sec. 2.1),
-	// the saltLength is at most the length of the hash, and the trailer field is 1. A field that holds its default value is accepted, as Sec. 3.1 requires of the trailer field, so that keys read the
-	// parameters as CryptoBase.X509 does. Throws AsnContentException if the parameters are otherwise not DER.
-	private static bool TryReadPssParameters(ReadOnlySpan<byte> parameters, out SignatureAlgorithm algorithm)
-	{
-		DerSpanReader reader = new(parameters);
-		DerSpanReader fields = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
-		(algorithm, int hashLength) = (default, 0);
-		(SignatureAlgorithm maskAlgorithm, int saltLength, int trailerField) = (default, 20, 1);
-
-		if (fields.PeekTagIs(HashAlgorithmTag))
-		{
-			DerSpanReader field = fields.ReadSequence(HashAlgorithmTag);
-			(algorithm, hashLength) = ReadHashAlgorithm(ref field);
-			field.ThrowIfNotEmpty();
-		}
-
-		if (fields.PeekTagIs(MaskGenAlgorithmTag))
-		{
-			DerSpanReader field = fields.ReadSequence(MaskGenAlgorithmTag);
-			DerSpanReader maskGenAlgorithm = field.ReadSequence();
-			field.ThrowIfNotEmpty();
-
-			if (maskGenAlgorithm.ReadObjectIdentifier() is Mgf1Oid)
-			{
-				(maskAlgorithm, _) = ReadHashAlgorithm(ref maskGenAlgorithm);
-			}
-			else if (maskGenAlgorithm.HasData)
-			{
-				maskGenAlgorithm.ReadEncodedValue();
-			}
-
-			maskGenAlgorithm.ThrowIfNotEmpty();
-		}
-
-		if (fields.PeekTagIs(SaltLengthTag))
-		{
-			DerSpanReader field = fields.ReadSequence(SaltLengthTag);
-			saltLength = field.ReadInt32();
-			field.ThrowIfNotEmpty();
-		}
-
-		if (fields.PeekTagIs(TrailerFieldTag))
-		{
-			DerSpanReader field = fields.ReadSequence(TrailerFieldTag);
-			trailerField = field.ReadInt32();
-			field.ThrowIfNotEmpty();
-		}
-
-		fields.ThrowIfNotEmpty();
-		return algorithm is not default(SignatureAlgorithm) && maskAlgorithm == algorithm && saltLength >= 0 && saltLength <= hashLength && trailerField is 1;
-	}
-
-	// A hash AlgorithmIdentifier, as the RSASSA-PSS algorithm of the hash and its length, or default for another hash or parameters other than NULL.
-	private static (SignatureAlgorithm Algorithm, int HashLength) ReadHashAlgorithm(ref DerSpanReader reader)
-	{
-		DerSpanReader contents = reader.ReadSequence();
-		string oid = contents.ReadObjectIdentifier();
-		ReadOnlySpan<byte> parameters = contents.HasData ? contents.ReadEncodedValue() : default;
-		contents.ThrowIfNotEmpty();
-
-		if (parameters is not ([] or [0x05, 0x00]))
-		{
-			return default;
-		}
-
-		return oid switch
-		{
-			"2.16.840.1.101.3.4.2.1" => (SignatureAlgorithm.RsaPssSha256, 32),
-			"2.16.840.1.101.3.4.2.2" => (SignatureAlgorithm.RsaPssSha384, 48),
-			"2.16.840.1.101.3.4.2.3" => (SignatureAlgorithm.RsaPssSha512, 64),
-			_ => default
-		};
-	}
-
 	private static int GetRsaPrivateKeyContentLength(RsaPrivateOperation key)
 	{
 		int length = VersionLength + GetModulusIntegerLength(key.PublicKey) + GetExponentIntegerLength(key.PublicKey);
@@ -366,88 +284,5 @@ internal static class RsaKeyDer
 		}
 
 		return offset;
-	}
-
-	// Reads DER values in order, as slices of the source. Malformed input throws AsnContentException.
-	private ref struct DerSpanReader(ReadOnlySpan<byte> source)
-	{
-		private ReadOnlySpan<byte> _remaining = source;
-
-		public readonly bool HasData => !_remaining.IsEmpty;
-
-		public readonly bool PeekTagIs(Asn1Tag tag)
-		{
-			return HasData && Asn1Tag.Decode(_remaining, out _) == tag;
-		}
-
-		public readonly void ThrowIfNotEmpty()
-		{
-			if (HasData)
-			{
-				throw new AsnContentException();
-			}
-		}
-
-		// A SEQUENCE, or the constructed value with tag; returns a reader of its contents.
-		public DerSpanReader ReadSequence(Asn1Tag? tag = null)
-		{
-			AsnDecoder.ReadSequence(_remaining, AsnEncodingRules.DER, out int offset, out int length, out int consumed, tag);
-			DerSpanReader contents = new(_remaining.Slice(offset, length));
-			_remaining = _remaining.Slice(consumed);
-			return contents;
-		}
-
-		// A SEQUENCE, whole.
-		public ReadOnlySpan<byte> ReadEncodedSequence()
-		{
-			AsnDecoder.ReadSequence(_remaining, AsnEncodingRules.DER, out _, out _, out int consumed);
-			return Take(consumed);
-		}
-
-		// One value of any type, whole.
-		public ReadOnlySpan<byte> ReadEncodedValue()
-		{
-			AsnDecoder.ReadEncodedValue(_remaining, AsnEncodingRules.DER, out _, out _, out int consumed);
-			return Take(consumed);
-		}
-
-		public string ReadObjectIdentifier()
-		{
-			string value = AsnDecoder.ReadObjectIdentifier(_remaining, AsnEncodingRules.DER, out int consumed);
-			Take(consumed);
-			return value;
-		}
-
-		public int ReadInt32()
-		{
-			if (!AsnDecoder.TryReadInt32(_remaining, AsnEncodingRules.DER, out int value, out int consumed))
-			{
-				throw new AsnContentException();
-			}
-
-			Take(consumed);
-			return value;
-		}
-
-		// The contents of an INTEGER that is not negative, which DER requires to be minimal.
-		public ReadOnlySpan<byte> ReadUnsignedInteger()
-		{
-			ReadOnlySpan<byte> value = AsnDecoder.ReadIntegerBytes(_remaining, AsnEncodingRules.DER, out int consumed);
-
-			if (value[0] >= 0x80)
-			{
-				throw new AsnContentException();
-			}
-
-			Take(consumed);
-			return value;
-		}
-
-		private ReadOnlySpan<byte> Take(int length)
-		{
-			ReadOnlySpan<byte> value = _remaining.Slice(0, length);
-			_remaining = _remaining.Slice(length);
-			return value;
-		}
 	}
 }

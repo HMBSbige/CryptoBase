@@ -56,22 +56,15 @@ internal sealed class RsaPrivateOperation : IDisposable
 		ArgumentNullException.ThrowIfNull(publicKey);
 
 		int length = publicKey.ModulusLength;
-		Span<byte> exponentBytes = stackalloc byte[publicKey.ExponentLength];
-		publicKey.WriteExponent(exponentBytes);
-		ulong e = 0;
-
-		foreach (byte b in exponentBytes)
-		{
-			e = e << 8 | b;
-		}
+		ulong e = publicKey.Exponent;
 
 		// The lengths of the components are public, as their encodings show them; only their values are secret. p·q has p.Length + q.Length bytes or one fewer, and the others are below n, p, q and p.
-		ReadOnlySpan<byte> p = TrimLeadingZeros(prime1);
-		ReadOnlySpan<byte> q = TrimLeadingZeros(prime2);
-		ReadOnlySpan<byte> d = TrimLeadingZeros(privateExponent);
-		ReadOnlySpan<byte> dP = TrimLeadingZeros(exponent1);
-		ReadOnlySpan<byte> dQ = TrimLeadingZeros(exponent2);
-		ReadOnlySpan<byte> qInv = TrimLeadingZeros(coefficient);
+		ReadOnlySpan<byte> p = RsaPublicOperation.TrimLeadingZeros(prime1);
+		ReadOnlySpan<byte> q = RsaPublicOperation.TrimLeadingZeros(prime2);
+		ReadOnlySpan<byte> d = RsaPublicOperation.TrimLeadingZeros(privateExponent);
+		ReadOnlySpan<byte> dP = RsaPublicOperation.TrimLeadingZeros(exponent1);
+		ReadOnlySpan<byte> dQ = RsaPublicOperation.TrimLeadingZeros(exponent2);
+		ReadOnlySpan<byte> qInv = RsaPublicOperation.TrimLeadingZeros(coefficient);
 
 		if (p.IsEmpty || q.IsEmpty || p.Length + q.Length - 1 > length || p.Length + q.Length < length || d.Length > length || dP.Length > p.Length || dQ.Length > q.Length || qInv.Length > p.Length)
 		{
@@ -432,12 +425,6 @@ internal sealed class RsaPrivateOperation : IDisposable
 		Span<ulong> taken = rest.Slice(0, length);
 		rest = rest.Slice(length);
 		return taken;
-	}
-
-	private static ReadOnlySpan<byte> TrimLeadingZeros(ReadOnlySpan<byte> value)
-	{
-		int start = value.IndexOfAnyExcept((byte)0);
-		return start < 0 ? default : value.Slice(start);
 	}
 
 	[System.Diagnostics.CodeAnalysis.DoesNotReturn]

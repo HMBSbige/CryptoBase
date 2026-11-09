@@ -5,7 +5,7 @@ namespace CryptoBase.Signatures.Rsa.Arithmetic;
 //   fma(a, b, (2^104 + 2^52) − t) = a·b − h + 2^52, in [2^52, 2^53), whose bits less those of 2^52 are the low digit a·b mod 2^52.
 // Both stay integers in the bits of a double, so that the sums run on 64-bit integer lanes without conversions.
 // The multiplication scans the right operand digit by digit as in MontgomeryKernel64, with the window of the sum in a window of vectors (see IAvx512Window): at iteration i lane j holds digit i + j, gains the low parts of a·b_i and n·m_i, shifts down by one lane and gains the high parts. Every lane thus gains the bits of 2^52 and 2^104 twice per iteration; the lane shifted in at the top carries the offset of the others, so that all lanes share one offset, removed at the end.
-// m_i = (digit i of the sum)·(−n⁻¹) mod 2^52 must not wait for the vectors: the scalar side keeps lanes 0 to 3 exactly and takes lane 4 after the low parts from the vector, which four iterations of the scalar side separate from its use in m. The parts of those lanes that come from b_i are taken for every i before the loop, with the vectors (see Products); the products of m_i with the first digits of n take m_i·2^12 as their second operand, so that the high word of a 64 × 64-bit product is the high digit and the low word shifted right by 12 bits the low digit.
+// m_i = (digit i of the sum)·(−n⁻¹) mod 2^52 must not wait for the vectors: the scalar side keeps lanes 0 to 3 exactly and takes lane 4 after the low parts from the vector, which four iterations of the scalar side separate from its use in m. The parts of those lanes that come from b_i are taken for every i before the loop, with the vectors (see Avx512Window.Products); the products of m_i with the first digits of n take m_i·2^12 as their second operand, so that the high word of a 64 × 64-bit product is the high digit and the low word shifted right by 12 bits the low digit.
 // At the end one carry pass leaves every lane below 2^52 + 2^9, so that a lane at or above 2^52 carries exactly 1 and one equal to 2^52 − 1 passes on what it receives: the carries then ripple as in an addition of masks of those lanes.
 internal readonly unsafe struct MontgomeryKernelAvx512<TWindow> : IMontgomeryKernel where TWindow : struct, IAvx512Window<TWindow>
 {
@@ -16,12 +16,6 @@ internal readonly unsafe struct MontgomeryKernelAvx512<TWindow> : IMontgomeryKer
 	private const int ScalarLanes = 4;
 	private const int Rows = ScalarLanes + 2;
 
-	// The bits of 2^104 and of 2^52; the lane shifted in at iteration i carries LowOffset + i·Offset, the offset of every lane after the low parts of that iteration.
-	private const ulong HighBits = 0x4670000000000000UL;
-	private const ulong LowBits = 0x4330000000000000UL;
-	private const ulong LowOffset = 2 * LowBits;
-	private const ulong Offset = unchecked(2 * LowBits + 2 * HighBits);
-
 	public static bool IsSupported => Vector512.IsHardwareAccelerated && Avx512DQ.IsSupported && Bmi2.X64.IsSupported;
 
 	public static int DigitBits => R;
@@ -30,7 +24,7 @@ internal readonly unsafe struct MontgomeryKernelAvx512<TWindow> : IMontgomeryKer
 	public static int MaxDigitCount
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Math.Min(8 * TWindow.Count, 64 * MaskWords.Length);
+		get => Math.Min(8 * TWindow.Count, 64 * Avx512Window.MaskWords.Length);
 	}
 
 	// Rows of MaxDigitCount words, so that they lie at fixed offsets.
@@ -73,17 +67,17 @@ internal readonly unsafe struct MontgomeryKernelAvx512<TWindow> : IMontgomeryKer
 			Unsafe.SkipInit(out TWindow nn);
 			TWindow.Load(ref a, ref x, count, 0);
 			TWindow.Load(ref nn, ref n, count, 0);
-			Vector512<double> high = Vector512.Create(BitConverter.UInt64BitsToDouble(HighBits));
-			Vector512<double> low = Vector512.Create(BitConverter.UInt64BitsToDouble(HighBits + 1));
-			Products(ref x, ref MemoryMarshal.GetReference(right), count, ref rows, high, low);
+			Vector512<double> high = Vector512.Create(BitConverter.UInt64BitsToDouble(Avx512Window.HighBits));
+			Vector512<double> low = Vector512.Create(BitConverter.UInt64BitsToDouble(Avx512Window.HighBits + 1));
+			Avx512Window.Products(ref x, ref MemoryMarshal.GetReference(right), count, ref rows, row, high, low);
 
 			TWindow acc = default;
-			Vector512<ulong> next = Vector512.Create(LowOffset);
-			Vector512<ulong> step = Vector512.Create(Offset);
+			Vector512<ulong> next = Vector512.Create(Avx512Window.LowOffset);
+			Vector512<ulong> step = Vector512.Create(Avx512Window.Offset);
 			ulong n0 = n;
-			ulong n1 = Digit(ref n, count, 1);
-			ulong n2 = Digit(ref n, count, 2);
-			ulong n3 = Digit(ref n, count, 3);
+			ulong n1 = Avx512Window.Digit(ref n, count, 1);
+			ulong n2 = Avx512Window.Digit(ref n, count, 2);
+			ulong n3 = Avx512Window.Digit(ref n, count, 3);
 			// u·(−n⁻¹·2^12) mod 2^64 is m·2^12.
 			ulong inverse = negativeInverse << S;
 			ulong s0 = 0;
@@ -111,90 +105,10 @@ internal readonly unsafe struct MontgomeryKernelAvx512<TWindow> : IMontgomeryKer
 				s0 = t0 + Bmi2.X64.MultiplyNoFlags(m, n0) + (m * n1 >> S) + (u + (m * n0 >> S) >> R);
 			}
 
-			Vector512<ulong> shared = next - Vector512.Create(LowOffset);
+			Vector512<ulong> shared = next - Vector512.Create(Avx512Window.LowOffset);
 			TWindow.ReplaceLow(ref acc, Vector512.Create(s0, s1, s2, s3, 0, 0, 0, 0) + shared, Vector512.Create(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 0, 0, 0, 0));
 			TWindow.Pass(ref acc, shared, Vector512<ulong>.Zero);
-			Normalize(ref acc, ref MemoryMarshal.GetReference(result), count);
+			Avx512Window.Normalize(ref acc, ref MemoryMarshal.GetReference(result), count);
 		}
-	}
-
-	// Row 0: each digit b_i of the right operand as a double. Rows 1 to 5: the parts of its products with the first four digits of the left one that lanes 0 to 4 gain at iteration i: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a3·b_i). Eight digits at a time.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Products(ref ulong x, ref ulong y, int count, ref ulong rows, Vector512<double> high, Vector512<double> low)
-	{
-		int row = MaxDigitCount;
-		Vector512<double> a0 = Vector512.Create((double)x);
-		Vector512<double> a1 = Vector512.Create((double)Digit(ref x, count, 1));
-		Vector512<double> a2 = Vector512.Create((double)Digit(ref x, count, 2));
-		Vector512<double> a3 = Vector512.Create((double)Digit(ref x, count, 3));
-		Vector512<ulong> highBits = Vector512.Create(HighBits);
-		Vector512<ulong> lowBits = Vector512.Create(LowBits);
-
-		for (int j = 0; j < count; j += 8)
-		{
-			Vector512<ulong> lanes = Vector512.LessThan(Vector512<ulong>.Indices, Vector512.Create((ulong)Math.Min(count - j, 8)));
-			Vector512<double> b = Avx512DQ.ConvertToVector512Double(Avx512F.MaskLoad((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref y, j)), lanes, Vector512<ulong>.Zero));
-			Vector512<double> t0 = Avx512F.FusedMultiplyAdd(a0, b, high, FloatRoundingMode.ToNegativeInfinity);
-			Vector512<double> t1 = Avx512F.FusedMultiplyAdd(a1, b, high, FloatRoundingMode.ToNegativeInfinity);
-			Vector512<double> t2 = Avx512F.FusedMultiplyAdd(a2, b, high, FloatRoundingMode.ToNegativeInfinity);
-			Vector512<double> t3 = Avx512F.FusedMultiplyAdd(a3, b, high, FloatRoundingMode.ToNegativeInfinity);
-			Vector512<ulong> l0 = Avx512F.FusedMultiplyAdd(a0, b, low - t0).AsUInt64() - lowBits;
-			Vector512<ulong> l1 = Avx512F.FusedMultiplyAdd(a1, b, low - t1).AsUInt64() - lowBits;
-			Vector512<ulong> l2 = Avx512F.FusedMultiplyAdd(a2, b, low - t2).AsUInt64() - lowBits;
-			Vector512<ulong> l3 = Avx512F.FusedMultiplyAdd(a3, b, low - t3).AsUInt64() - lowBits;
-			Store(b.AsUInt64(), ref rows, j, lanes);
-			Store(l0, ref rows, row + j, lanes);
-			Store(t0.AsUInt64() - highBits + l1, ref rows, 2 * row + j, lanes);
-			Store(t1.AsUInt64() - highBits + l2, ref rows, 3 * row + j, lanes);
-			Store(t2.AsUInt64() - highBits + l3, ref rows, 4 * row + j, lanes);
-			Store(t3.AsUInt64() - highBits, ref rows, 5 * row + j, lanes);
-		}
-	}
-
-	// Digit index of a value of count digits, zero past them.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong Digit(ref ulong digits, int count, int index)
-	{
-		return index < count ? Unsafe.Add(ref digits, index) : 0;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Store(Vector512<ulong> value, ref ulong output, int index, Vector512<ulong> lanes)
-	{
-		Avx512F.MaskStore((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref output, index)), lanes, value);
-	}
-
-	// The ripple of carries, a word of 64 lanes at a time, then the stores.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Normalize(ref TWindow acc, ref ulong result, int count)
-	{
-		int words = (count + 63) / 64;
-		MaskWords generateWords = default;
-		MaskWords propagateWords = default;
-		Span<ulong> generate = generateWords;
-		Span<ulong> propagate = propagateWords;
-		TWindow.Masks(in acc, 0, generate, propagate);
-		ulong carry = 0;
-
-		for (int w = 0; w < words; ++w)
-		{
-			ulong shifted = generate[w] << 1 | carry;
-			ulong sum = shifted + propagate[w];
-			carry = generate[w] >> 63 | (shifted & propagate[w] | (shifted | propagate[w]) & ~sum) >> 63;
-			generate[w] = sum ^ propagate[w];
-		}
-
-		TWindow.Store(in acc, 0, generate, ref result, count);
-		// Erased, as the scratch is.
-		generate.ZeroMemory();
-		propagate.ZeroMemory();
-	}
-
-	[InlineArray(3)]
-	private struct MaskWords
-	{
-		public const int Length = 3;
-
-		private ulong _element;
 	}
 }

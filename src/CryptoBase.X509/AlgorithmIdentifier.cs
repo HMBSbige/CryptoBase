@@ -1,3 +1,5 @@
+using CryptoBase.Internal;
+
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -11,12 +13,7 @@ public sealed class AlgorithmIdentifier
 
 	private const string SM2SM3Oid = "1.2.156.10197.1.501";
 
-	internal const string Mgf1Oid = "1.2.840.113549.1.1.8";
-
-	private static readonly Asn1Tag HashAlgorithmTag = new(TagClass.ContextSpecific, 0, true);
-	private static readonly Asn1Tag MaskGenAlgorithmTag = new(TagClass.ContextSpecific, 1, true);
-	private static readonly Asn1Tag SaltLengthTag = new(TagClass.ContextSpecific, 2, true);
-	private static readonly Asn1Tag TrailerFieldTag = new(TagClass.ContextSpecific, 3, true);
+	internal const string Mgf1Oid = RsassaPssParameters.Mgf1Oid;
 
 	// The identifiers that FromSignatureAlgorithm gives: ecdsa-with-SHA256, -SHA384 and -SHA512 without parameters (RFC 5758, Sec. 3.2); sha256WithRSAEncryption, sha384WithRSAEncryption and sha512WithRSAEncryption with NULL parameters (RFC 4055, Sec. 5);
 	// id-RSASSA-PSS with the RSASSA-PSS-params of each hash (RFC 4055, Sec. 3.1); id-Ed25519 and id-Ed448 without parameters (RFC 8410, Sec. 6); id-ml-dsa-44, -65 and -87 without parameters (RFC 9881);
@@ -137,59 +134,6 @@ public sealed class AlgorithmIdentifier
 		return new AlgorithmIdentifier(oid, parameters, encoded);
 	}
 
-	// RSASSA-PSS-params (RFC 4055, Sec. 3.1), whose fields default to SHA-1, MGF1 with SHA-1, a saltLength of 20 and the trailer field 1, as the RSASSA-PSS algorithm of their hash, its length in bytes and the saltLength.
-	// They name one if the hash is SHA-256, SHA-384 or SHA-512, MGF1 has the same hash, each hash AlgorithmIdentifier has NULL or absent parameters (Sec. 2.1), the saltLength is not negative and the trailer field is 1;
-	// otherwise the result is false. A field with its default value is accepted, as Sec. 3.1 requires of the trailer field. Throws AsnContentException if the parameters are not DER.
-	internal static bool TryReadRsassaPssParameters(ReadOnlyMemory<byte> parameters, out SignatureAlgorithm algorithm, out int hashLength, out int saltLength)
-	{
-		DerReader fields = DerReader.ReadSoleSequence(parameters);
-		(algorithm, hashLength) = (default, 0);
-		(SignatureAlgorithm maskAlgorithm, int trailerField) = (default, 1);
-		saltLength = 20;
-
-		if (fields.PeekTagIs(HashAlgorithmTag))
-		{
-			DerReader field = fields.ReadSequence(HashAlgorithmTag);
-			(algorithm, hashLength) = ReadHashAlgorithm(ref field);
-			field.ThrowIfNotEmpty();
-		}
-
-		if (fields.PeekTagIs(MaskGenAlgorithmTag))
-		{
-			DerReader field = fields.ReadSequence(MaskGenAlgorithmTag);
-			DerReader maskGenAlgorithm = field.ReadSequence();
-			field.ThrowIfNotEmpty();
-
-			if (maskGenAlgorithm.ReadObjectIdentifier() is Mgf1Oid)
-			{
-				(maskAlgorithm, _) = ReadHashAlgorithm(ref maskGenAlgorithm);
-			}
-			else if (maskGenAlgorithm.HasData)
-			{
-				maskGenAlgorithm.ReadEncodedValue();
-			}
-
-			maskGenAlgorithm.ThrowIfNotEmpty();
-		}
-
-		if (fields.PeekTagIs(SaltLengthTag))
-		{
-			DerReader field = fields.ReadSequence(SaltLengthTag);
-			saltLength = field.ReadInt32();
-			field.ThrowIfNotEmpty();
-		}
-
-		if (fields.PeekTagIs(TrailerFieldTag))
-		{
-			DerReader field = fields.ReadSequence(TrailerFieldTag);
-			trailerField = field.ReadInt32();
-			field.ThrowIfNotEmpty();
-		}
-
-		fields.ThrowIfNotEmpty();
-		return algorithm is not default(SignatureAlgorithm) && maskAlgorithm == algorithm && saltLength >= 0 && trailerField is 1;
-	}
-
 	private static AlgorithmIdentifier FromDer(byte[] encoded)
 	{
 		DerReader reader = new(encoded);
@@ -215,26 +159,11 @@ public sealed class AlgorithmIdentifier
 	{
 		try
 		{
-			return TryReadRsassaPssParameters(parameters, out SignatureAlgorithm algorithm, out int hashLength, out int saltLength) && saltLength == hashLength ? algorithm : default;
+			return RsassaPssParameters.TryRead(parameters.Span, out SignatureAlgorithm algorithm, out int hashLength, out int saltLength) && saltLength == hashLength ? algorithm : default;
 		}
 		catch (AsnContentException)
 		{
 			return default;
 		}
-	}
-
-	// A hash AlgorithmIdentifier, as the RSASSA-PSS algorithm of the hash and its length, or default for another hash or parameters other than NULL.
-	private static (SignatureAlgorithm Algorithm, int HashLength) ReadHashAlgorithm(ref DerReader reader)
-	{
-		AlgorithmIdentifier hash = Read(ref reader);
-
-		return hash switch
-		{
-			{ Parameters.Span: not ([] or [0x05, 0x00]) } => default,
-			{ Oid: "2.16.840.1.101.3.4.2.1" } => (SignatureAlgorithm.RsaPssSha256, 32),
-			{ Oid: "2.16.840.1.101.3.4.2.2" } => (SignatureAlgorithm.RsaPssSha384, 48),
-			{ Oid: "2.16.840.1.101.3.4.2.3" } => (SignatureAlgorithm.RsaPssSha512, 64),
-			_ => default
-		};
 	}
 }

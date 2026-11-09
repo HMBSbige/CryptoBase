@@ -55,7 +55,7 @@ internal static partial class MontgomeryKernelDispatch
 			Debug.Assert(first.DigitCount == MontgomeryContext<MontgomeryKernelAvx512<Avx512Window>>.GetDigitCount(first.LimbCount));
 
 			int vectors = (first.DigitCount + 3) / 4;
-			return vectors is >= MinAvx512PairVectors and <= MaxAvx512PairVectors ? CreatePairAvx512<Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindowPair<Avx512PairWindow, Avx512PairWindow>>>(first, second, vectors) : null;
+			return vectors is >= MinAvx512PairVectors and <= MaxAvx512PairVectors ? CreatePairAvx512<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>(first, second, vectors) : null;
 		}
 
 		if (!MontgomeryPairKernelAvx2<Avx2PairWindow>.IsSupported || !Fits<MontgomeryKernelAvx2<Avx2Window>>(first.LimbCount) || first.DigitCount < MontgomeryPairKernelAvx2<Avx2PairWindow>.MinDigitCount)
@@ -68,23 +68,23 @@ internal static partial class MontgomeryKernelDispatch
 		return GetAvx2PairWindowVectors(first.DigitCount) switch
 		{
 			1 => new MontgomeryPairContext<MontgomeryPairKernelAvx2<Avx2PairWindow>>(first, second),
-			2 => new MontgomeryPairContext<MontgomeryPairKernelAvx2<Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindow>>>(first, second),
-			3 => new MontgomeryPairContext<MontgomeryPairKernelAvx2<Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindow>>>>(first, second),
-			_ => new MontgomeryPairContext<MontgomeryPairKernelAvx2<Avx2PairWindowPair<Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindow>, Avx2PairWindowPair<Avx2PairWindow, Avx2PairWindow>>>>(first, second)
+			2 => new MontgomeryPairContext<MontgomeryPairKernelAvx2<Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>>(first, second),
+			3 => new MontgomeryPairContext<MontgomeryPairKernelAvx2<Avx2WindowPair<Avx2PairWindow, Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>>>(first, second),
+			_ => new MontgomeryPairContext<MontgomeryPairKernelAvx2<Avx2WindowPair<Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>, Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>>>(first, second)
 		};
 	}
 
 	// Windows of two to seven vectors, from those of two and three.
-	private static MontgomeryPairContext CreatePairAvx512<TWindow2, TWindow3>(MontgomeryContext first, MontgomeryContext second, int vectors) where TWindow2 : struct, IAvx512PairWindow<TWindow2> where TWindow3 : struct, IAvx512PairWindow<TWindow3>
+	private static MontgomeryPairContext CreatePairAvx512<TWindow2, TWindow3>(MontgomeryContext first, MontgomeryContext second, int vectors) where TWindow2 : struct, IAvx512Window<TWindow2> where TWindow3 : struct, IAvx512Window<TWindow3>
 	{
 		return vectors switch
 		{
 			2 => new MontgomeryPairContext<MontgomeryPairKernelAvx512<TWindow2>>(first, second),
 			3 => new MontgomeryPairContext<MontgomeryPairKernelAvx512<TWindow3>>(first, second),
-			4 => new MontgomeryPairContext<MontgomeryPairKernelAvx512<Avx512PairWindowPair<TWindow2, TWindow2>>>(first, second),
-			5 => new MontgomeryPairContext<MontgomeryPairKernelAvx512<Avx512PairWindowPair<TWindow2, TWindow3>>>(first, second),
-			6 => new MontgomeryPairContext<MontgomeryPairKernelAvx512<Avx512PairWindowPair<TWindow3, TWindow3>>>(first, second),
-			_ => new MontgomeryPairContext<MontgomeryPairKernelAvx512<Avx512PairWindowPair<TWindow3, Avx512PairWindowPair<TWindow2, TWindow2>>>>(first, second)
+			4 => new MontgomeryPairContext<MontgomeryPairKernelAvx512<Avx512WindowPair<TWindow2, TWindow2>>>(first, second),
+			5 => new MontgomeryPairContext<MontgomeryPairKernelAvx512<Avx512WindowPair<TWindow2, TWindow3>>>(first, second),
+			6 => new MontgomeryPairContext<MontgomeryPairKernelAvx512<Avx512WindowPair<TWindow3, TWindow3>>>(first, second),
+			_ => new MontgomeryPairContext<MontgomeryPairKernelAvx512<Avx512WindowPair<TWindow3, Avx512WindowPair<TWindow2, TWindow2>>>>(first, second)
 		};
 	}
 

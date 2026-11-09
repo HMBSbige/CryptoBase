@@ -2,7 +2,7 @@ namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
 // MontgomeryKernelAvx2 on two moduli at once (see IMontgomeryPairKernel): lane 2j of vector v holds digit 2v + j of the first and lane 2j + 1 digit 2v + j of the second, as the words of a pair lie, so that a digit moves by half a vector and every broadcast is one of 128 bits. The vectors do as much for two moduli as they would for one, and the two chains of the scalar side, from a sum to m and back, overlap.
 // Each chain keeps digits 0 to 2 of its modulus, so that the vectors leave out vector 0, and takes digit 3 from the upper half of vector 1. The window, the staging and the rows are those of MontgomeryKernelAvx2, with the words of the two moduli interleaved in each.
-internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryPairKernel where TWindow : struct, IAvx2PairWindow<TWindow>
+internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryPairKernel where TWindow : struct, IAvx2Window<TWindow>
 {
 	private const int R = 51;
 	private const int S = 64 - R;
@@ -10,12 +10,6 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 
 	// A row: b_i of each modulus as a double, then the parts of lanes 0 to 3 of each that come from b_i, and two words of padding.
 	private const int RowWords = 12;
-
-	// As in MontgomeryKernelAvx2.
-	private const ulong HighBits = 0x4660000000000000UL;
-	private const ulong LowBits = 0x4338000000000000UL;
-	private const ulong LowOffset = 2 * LowBits;
-	private const ulong Offset = unchecked(2 * LowBits + 2 * HighBits);
 
 	public static bool IsSupported => MontgomeryKernelAvx2<Avx2Window>.IsSupported;
 
@@ -36,17 +30,6 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 	private static int GetVectors(int digitCount)
 	{
 		return Math.Max(digitCount + 1 >> 1, TWindow.Count + 1);
-	}
-
-	public static void Prepare(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> moduli)
-	{
-		Debug.Assert(first.Length == second.Length && moduli.Length == 2 * first.Length);
-
-		for (int i = 0; i < first.Length; ++i)
-		{
-			moduli[2 * i] = first[i];
-			moduli[2 * i + 1] = second[i];
-		}
 	}
 
 	public static void Square(Span<ulong> result, ReadOnlySpan<ulong> value, ReadOnlySpan<ulong> moduli, ulong firstInverse, ulong secondInverse, Span<ulong> scratch)
@@ -75,12 +58,12 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 			ref ulong n = ref MemoryMarshal.GetReference(moduli);
 			ref ulong rows = ref MemoryMarshal.GetReference(scratch);
 			ref ulong staging = ref Avx2Window.Stage(ref x, ref n, words, vectors, ref Unsafe.Add(ref rows, 2 * RowWords * vectors));
-			Vector256<double> high = Vector256.Create(BitConverter.UInt64BitsToDouble(HighBits));
-			Vector256<double> low = Vector256.Create(BitConverter.UInt64BitsToDouble(HighBits + 3));
+			Vector256<double> high = Vector256.Create(BitConverter.UInt64BitsToDouble(Avx2Window.HighBits));
+			Vector256<double> low = Vector256.Create(BitConverter.UInt64BitsToDouble(Avx2Window.HighBits + 3));
 			Products(ref x, ref MemoryMarshal.GetReference(right), words, ref rows, high, low);
 
 			TWindow acc = default;
-			Vector256<ulong> next = Vector256.Create(LowOffset);
+			Vector256<ulong> next = Vector256.Create(Avx2Window.LowOffset);
 			ulong p0 = n;
 			ulong q0 = Unsafe.Add(ref n, 1);
 			ulong p1 = Unsafe.Add(ref n, 2);
@@ -119,7 +102,7 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 				}
 
 				Vector128<ulong> digit3 = TWindow.Step(ref acc, ref staging, 0, above, b, d, high, low).GetUpper() - next.GetLower();
-				next += Vector256.Create(Offset);
+				next += Vector256.Create(Avx2Window.Offset);
 				s0 = s1 + Unsafe.Add(ref row, 4) + Bmi2.X64.MultiplyNoFlags(m, p0) + (m * p1 >> S) + (ulong)((long)(u + (m * p0 >> S)) >> R);
 				r0 = r1 + Unsafe.Add(ref row, 5) + Bmi2.X64.MultiplyNoFlags(k, q0) + (k * q1 >> S) + (ulong)((long)(v + (k * q0 >> S)) >> R);
 				s1 = s2 + Unsafe.Add(ref row, 6) + Bmi2.X64.MultiplyNoFlags(m, p1) + (m * p2 >> S);
@@ -131,7 +114,7 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 			while (Unsafe.IsAddressLessThan(ref row, ref end));
 
 			// The lanes less their offset into the rows, as MontgomeryKernelAvx2 takes them, with digits 0 to 2 of each modulus from the scalar side.
-			Vector256<ulong> shared = next - Vector256.Create(LowOffset);
+			Vector256<ulong> shared = next - Vector256.Create(Avx2Window.LowOffset);
 			TWindow.Store(in acc, ref Unsafe.Add(ref rows, 4), shared);
 
 			for (nint w = TWindow.Count + 1; w < vectors; ++w)
@@ -172,8 +155,8 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 		Vector256<double> a0 = Vector256.Create(x0, x0);
 		Vector256<double> a1 = Vector256.Create(x1, x1);
 		Vector256<double> a2 = Vector256.Create(x2, x2);
-		Vector256<ulong> highBits = Vector256.Create(HighBits);
-		Vector256<ulong> lowBits = Vector256.Create(LowBits);
+		Vector256<ulong> highBits = Vector256.Create(Avx2Window.HighBits);
+		Vector256<ulong> lowBits = Vector256.Create(Avx2Window.LowBits);
 
 		for (int j = 0; j < words; j += 4)
 		{

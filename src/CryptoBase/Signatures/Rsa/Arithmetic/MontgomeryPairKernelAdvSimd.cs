@@ -9,9 +9,6 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 	// Pairs of zeros on either side of each operand, more than a block reads past the ends.
 	private const int Pad = 8;
 
-	// 4 KB, the smallest page of the platforms, whose boundaries are also those of larger pages.
-	private const nuint PageMask = 4095;
-
 	public static bool IsSupported => MontgomeryKernelAdvSimd<TRadix>.IsSupported;
 
 	public static int DigitBits => TRadix.Bits;
@@ -26,17 +23,6 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 		return 10 * (digitCount + 2 * Pad) + 10;
 	}
 
-	public static void Prepare(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> moduli)
-	{
-		Debug.Assert(first.Length == second.Length && moduli.Length == 2 * first.Length);
-
-		for (int i = 0; i < first.Length; ++i)
-		{
-			moduli[2 * i] = first[i];
-			moduli[2 * i + 1] = second[i];
-		}
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, ReadOnlySpan<ulong> moduli, ulong firstInverse, ulong secondInverse, Span<ulong> scratch)
 	{
@@ -45,10 +31,10 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 		Debug.Assert(digits >= MinDigitCount && result.Length == 2 * digits && left.Length == 2 * digits && right.Length == 2 * digits && scratch.Length >= GetScratchLength(digits));
 
 		int stride = 2 * (digits + 2 * Pad);
-		ref uint a = ref Place(ref Unsafe.As<ulong, uint>(ref MemoryMarshal.GetReference(scratch)), stride);
-		ref uint b = ref Place(ref Unsafe.Add(ref a, stride - 2 * Pad), stride);
-		ref uint n = ref Place(ref Unsafe.Add(ref b, stride - 2 * Pad), stride);
-		ref uint m = ref Place(ref Unsafe.Add(ref n, stride - 2 * Pad), stride);
+		ref uint a = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.As<ulong, uint>(ref MemoryMarshal.GetReference(scratch)), stride, 2 * Pad);
+		ref uint b = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.Add(ref a, stride - 2 * Pad), stride, 2 * Pad);
+		ref uint n = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.Add(ref b, stride - 2 * Pad), stride, 2 * Pad);
+		ref uint m = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.Add(ref n, stride - 2 * Pad), stride, 2 * Pad);
 		Narrow(left, ref a, digits, false, 0);
 		Narrow(right, ref b, digits, true, 0);
 		Narrow(moduli, ref n, digits, true, 0);
@@ -65,29 +51,17 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 		Debug.Assert(digits >= MinDigitCount && result.Length == 2 * digits && value.Length == 2 * digits && scratch.Length >= GetScratchLength(digits));
 
 		int stride = 2 * (digits + 2 * Pad);
-		ref uint a = ref Place(ref Unsafe.As<ulong, uint>(ref MemoryMarshal.GetReference(scratch)), stride);
-		ref uint reversed = ref Place(ref Unsafe.Add(ref a, stride - 2 * Pad), stride);
-		ref uint twice = ref Place(ref Unsafe.Add(ref reversed, stride - 2 * Pad), stride);
-		ref uint n = ref Place(ref Unsafe.Add(ref twice, stride - 2 * Pad), stride);
-		ref uint m = ref Place(ref Unsafe.Add(ref n, stride - 2 * Pad), stride);
+		ref uint a = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.As<ulong, uint>(ref MemoryMarshal.GetReference(scratch)), stride, 2 * Pad);
+		ref uint reversed = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.Add(ref a, stride - 2 * Pad), stride, 2 * Pad);
+		ref uint twice = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.Add(ref reversed, stride - 2 * Pad), stride, 2 * Pad);
+		ref uint n = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.Add(ref twice, stride - 2 * Pad), stride, 2 * Pad);
+		ref uint m = ref MontgomeryKernelAdvSimd<TRadix>.Place(ref Unsafe.Add(ref n, stride - 2 * Pad), stride, 2 * Pad);
 		Narrow(value, ref a, digits, false, 0);
 		Narrow(value, ref reversed, digits, true, 0);
 		Narrow(value, ref twice, digits, true, 1);
 		Narrow(moduli, ref n, digits, true, 0);
 		ClearPad(ref Unsafe.Add(ref m, 2 * digits));
 		SquareCore(result, ref a, ref reversed, ref twice, ref n, ref m, moduli, Vector64.Create((uint)firstInverse, (uint)secondInverse), digits);
-	}
-
-	// The pairs of an operand of stride words, zeros included, from the first 16-byte boundary at or after start, or from the page boundary after it where the operand would cross it; as in MontgomeryKernelAdvSimd.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe ref uint Place(ref uint start, int stride)
-	{
-		nuint address = (nuint)Unsafe.AsPointer(ref start);
-		nuint aligned = address + 15 & ~(nuint)15;
-		nuint bytes = (nuint)stride * sizeof(uint);
-		nuint boundary = (aligned | PageMask) + 1;
-		nuint placed = aligned + bytes > boundary && bytes <= PageMask + 1 ? boundary : aligned;
-		return ref Unsafe.Add(ref Unsafe.AddByteOffset(ref start, placed - address), 2 * Pad);
 	}
 
 	// The pairs of digits as pairs of words shifted left by shift, backwards if reversed, with Pad pairs of zeros on either side.
@@ -309,29 +283,29 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 			s1 = AdvSimd.MultiplyWideningLowerAndAdd(s1, q0, n1);
 			s2 = AdvSimd.MultiplyWideningLowerAndAdd(s2, q0, n2);
 			s3 = AdvSimd.MultiplyWideningLowerAndAdd(s3, q0, n3);
-			s1 = ShiftRightAdd(s1, s0);
+			s1 = MontgomeryKernelAdvSimd<TRadix>.ShiftRightAdd(s1, s0);
 			Vector64<uint> q1 = AdvSimd.Multiply(AdvSimd.ExtractNarrowingLower(s1), inverse) & mask;
 			s1 = AdvSimd.MultiplyWideningLowerAndAdd(s1, q1, n0);
 			s2 = AdvSimd.MultiplyWideningLowerAndAdd(s2, q1, n1);
 			s3 = AdvSimd.MultiplyWideningLowerAndAdd(s3, q1, n2);
-			s2 = ShiftRightAdd(s2, s1);
+			s2 = MontgomeryKernelAdvSimd<TRadix>.ShiftRightAdd(s2, s1);
 			Vector64<uint> q2 = AdvSimd.Multiply(AdvSimd.ExtractNarrowingLower(s2), inverse) & mask;
 			s2 = AdvSimd.MultiplyWideningLowerAndAdd(s2, q2, n0);
 			s3 = AdvSimd.MultiplyWideningLowerAndAdd(s3, q2, n1);
-			s3 = ShiftRightAdd(s3, s2);
+			s3 = MontgomeryKernelAdvSimd<TRadix>.ShiftRightAdd(s3, s2);
 			Vector64<uint> q3 = AdvSimd.Multiply(AdvSimd.ExtractNarrowingLower(s3), inverse) & mask;
 			s3 = AdvSimd.MultiplyWideningLowerAndAdd(s3, q3, n0);
 			Vector128.Create(q0, q1).StoreUnsafe(ref m, (nuint)(2 * k));
 			Vector128.Create(q2, q3).StoreUnsafe(ref m, (nuint)(2 * k + 4));
-			return ShiftRight(s3);
+			return MontgomeryKernelAdvSimd<TRadix>.ShiftRight(s3);
 		}
 
 		if (k >= digits)
 		{
 			Vector128<ulong> mask = Vector128.Create(digitMask);
-			s1 = ShiftRightAdd(s1, s0);
-			s2 = ShiftRightAdd(s2, s1);
-			s3 = ShiftRightAdd(s3, s2);
+			s1 = MontgomeryKernelAdvSimd<TRadix>.ShiftRightAdd(s1, s0);
+			s2 = MontgomeryKernelAdvSimd<TRadix>.ShiftRightAdd(s2, s1);
+			s3 = MontgomeryKernelAdvSimd<TRadix>.ShiftRightAdd(s3, s2);
 			int index = k - digits;
 			(s0 & mask).StoreUnsafe(ref output, (nuint)(2 * index));
 
@@ -351,28 +325,10 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 				(s3 & mask).StoreUnsafe(ref output, (nuint)(2 * index + 6));
 			}
 
-			return ShiftRight(s3);
+			return MontgomeryKernelAdvSimd<TRadix>.ShiftRight(s3);
 		}
 
 		return Straddle(s0, s1, s2, s3, moduli, ref m, ref output, k, digits, inverse);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> ShiftRightAdd(Vector128<ulong> addend, Vector128<ulong> value)
-	{
-#pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
-		return AdvSimd.ShiftRightLogicalAdd(addend, value, (byte)TRadix.Bits);
-#pragma warning restore CA1857
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> ShiftRight(Vector128<ulong> value)
-	{
-#pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
-		return AdvSimd.ShiftRightLogical(value, (byte)TRadix.Bits);
-#pragma warning restore CA1857
 	}
 
 	// The block across digitCount, column by column on each lane.

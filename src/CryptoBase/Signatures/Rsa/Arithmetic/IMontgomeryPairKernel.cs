@@ -14,10 +14,7 @@ internal interface IMontgomeryPairKernel
 
 	static abstract int GetScratchLength(int digitCount);
 
-	// moduli interleaves the digits of the two moduli, as the kernel takes them.
-	static abstract void Prepare(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> moduli);
-
-	// result = left·right·R⁻¹ modulo each modulus, whose −n⁻¹ mod 2^DigitBits are firstInverse and secondInverse. In and out as IMontgomeryKernel.Multiply.
+	// result = left·right·R⁻¹ modulo each modulus, interleaved as a pair is, whose −n⁻¹ mod 2^DigitBits are firstInverse and secondInverse. In and out as IMontgomeryKernel.Multiply.
 	static abstract void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, ReadOnlySpan<ulong> moduli, ulong firstInverse, ulong secondInverse, Span<ulong> scratch);
 
 	static abstract void Square(Span<ulong> result, ReadOnlySpan<ulong> value, ReadOnlySpan<ulong> moduli, ulong firstInverse, ulong secondInverse, Span<ulong> scratch);

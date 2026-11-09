@@ -9,15 +9,13 @@ internal sealed class RsaPublicOperation
 	internal const int MaxModulusBits = 16384;
 	internal const int MaxPublicExponentBits = 33;
 
-	private readonly ulong _exponent;
-
 	// R^e mod n, as the digits of an element: the e-th power of x taken as an element is x^e·R^(1−e) in plain form, which a product with these digits brings to x^e, so that the input needs no conversion into Montgomery form.
 	private readonly ulong[] _correction;
 
 	private RsaPublicOperation(MontgomeryContext modulus, ulong exponent, int modulusBits, int exponentLength)
 	{
 		Context = modulus;
-		_exponent = exponent;
+		Exponent = exponent;
 		ModulusBits = modulusBits;
 		ExponentLength = exponentLength;
 
@@ -37,6 +35,8 @@ internal sealed class RsaPublicOperation
 
 	// k = ⌈ModulusBits/8⌉.
 	internal int ModulusLength => (ModulusBits + 7) / 8;
+
+	internal ulong Exponent { get; }
 
 	// The length of e without leading zeros.
 	internal int ExponentLength { get; }
@@ -93,7 +93,7 @@ internal sealed class RsaPublicOperation
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(destination.Length, ExponentLength, nameof(destination));
 
-		ulong value = _exponent;
+		ulong value = Exponent;
 
 		for (int i = destination.Length - 1; i >= 0; --i)
 		{
@@ -126,14 +126,14 @@ internal sealed class RsaPublicOperation
 		}
 
 		modulus.ToDigits(value, element);
-		modulus.ExponentiateVariableTime(element, _exponent, element);
+		modulus.ExponentiateVariableTime(element, Exponent, element);
 		modulus.Multiply(element, element, _correction);
 		modulus.FromDigits(element, value);
 		Limbs.ToBigEndian(value, output);
 		return true;
 	}
 
-	private static ReadOnlySpan<byte> TrimLeadingZeros(ReadOnlySpan<byte> value)
+	internal static ReadOnlySpan<byte> TrimLeadingZeros(ReadOnlySpan<byte> value)
 	{
 		int start = value.IndexOfAnyExcept((byte)0);
 		return start < 0 ? default : value.Slice(start);

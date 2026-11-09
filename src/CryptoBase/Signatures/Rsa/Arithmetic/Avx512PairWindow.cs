@@ -1,32 +1,7 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
 // The vectors of MontgomeryPairKernelAvx512, as IAvx512Window describes them for MontgomeryKernelAvx512, with the digits of two moduli in alternate lanes: a digit is two lanes wide, so that the shift and the carries move by two lanes. Load and Store take pointers as there, to words and result that the kernel pins.
-internal interface IAvx512PairWindow<TSelf> where TSelf : struct, IAvx512PairWindow<TSelf>
-{
-	static abstract int Count { get; }
-
-	// The words from vector index on, as doubles, zero past length words.
-	static abstract void Load(ref TSelf window, ref ulong words, int length, int index);
-
-	static abstract void Accumulate(ref TSelf acc, ref readonly TSelf a, ref readonly TSelf n, Vector512<double> b, Vector512<double> m, Vector512<double> high, Vector512<double> low);
-
-	// acc shifted down by two lanes, with lanes 0 and 1 of next on top, plus the high parts that Accumulate kept.
-	static abstract void Shift(ref TSelf acc, Vector512<ulong> next);
-
-	static abstract Vector512<ulong> First(ref readonly TSelf acc);
-
-	// The lanes of the first vector where mask is set replaced by those of low.
-	static abstract void ReplaceLow(ref TSelf acc, Vector512<ulong> low, Vector512<ulong> mask);
-
-	// acc −= offset, then the carries of each lane added to the next digit of its modulus; previous holds the carries of the vector before, and the carries of the last vector come back.
-	static abstract Vector512<ulong> Pass(ref TSelf acc, Vector512<ulong> offset, Vector512<ulong> previous);
-
-	static abstract void Masks(ref readonly TSelf acc, int index, Span<ulong> generate, Span<ulong> propagate);
-
-	static abstract void Store(ref readonly TSelf acc, int index, ReadOnlySpan<ulong> carries, ref ulong result, int length);
-}
-
-internal struct Avx512PairWindow : IAvx512PairWindow<Avx512PairWindow>
+internal struct Avx512PairWindow : IAvx512Window<Avx512PairWindow>
 {
 	private const ulong Mask = (1UL << 52) - 1;
 
@@ -113,70 +88,5 @@ internal struct Avx512PairWindow : IAvx512PairWindow<Avx512PairWindow>
 	private static Vector512<ulong> LaneMask(int count)
 	{
 		return Vector512.LessThan(Vector512<ulong>.Indices, Vector512.Create((ulong)Math.Max(count, 0)));
-	}
-}
-
-internal struct Avx512PairWindowPair<TLow, THigh> : IAvx512PairWindow<Avx512PairWindowPair<TLow, THigh>> where TLow : struct, IAvx512PairWindow<TLow> where THigh : struct, IAvx512PairWindow<THigh>
-{
-	private TLow _low;
-	private THigh _high;
-
-	public static int Count
-	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => TLow.Count + THigh.Count;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Load(ref Avx512PairWindowPair<TLow, THigh> window, ref ulong words, int length, int index)
-	{
-		TLow.Load(ref window._low, ref words, length, index);
-		THigh.Load(ref window._high, ref words, length, index + TLow.Count);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Accumulate(ref Avx512PairWindowPair<TLow, THigh> acc, ref readonly Avx512PairWindowPair<TLow, THigh> a, ref readonly Avx512PairWindowPair<TLow, THigh> n, Vector512<double> b, Vector512<double> m, Vector512<double> high, Vector512<double> low)
-	{
-		TLow.Accumulate(ref acc._low, in a._low, in n._low, b, m, high, low);
-		THigh.Accumulate(ref acc._high, in a._high, in n._high, b, m, high, low);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Shift(ref Avx512PairWindowPair<TLow, THigh> acc, Vector512<ulong> next)
-	{
-		TLow.Shift(ref acc._low, THigh.First(in acc._high));
-		THigh.Shift(ref acc._high, next);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<ulong> First(ref readonly Avx512PairWindowPair<TLow, THigh> acc)
-	{
-		return TLow.First(in acc._low);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void ReplaceLow(ref Avx512PairWindowPair<TLow, THigh> acc, Vector512<ulong> low, Vector512<ulong> mask)
-	{
-		TLow.ReplaceLow(ref acc._low, low, mask);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<ulong> Pass(ref Avx512PairWindowPair<TLow, THigh> acc, Vector512<ulong> offset, Vector512<ulong> previous)
-	{
-		return THigh.Pass(ref acc._high, offset, TLow.Pass(ref acc._low, offset, previous));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Masks(ref readonly Avx512PairWindowPair<TLow, THigh> acc, int index, Span<ulong> generate, Span<ulong> propagate)
-	{
-		TLow.Masks(in acc._low, index, generate, propagate);
-		THigh.Masks(in acc._high, index + TLow.Count, generate, propagate);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Store(ref readonly Avx512PairWindowPair<TLow, THigh> acc, int index, ReadOnlySpan<ulong> carries, ref ulong result, int length)
-	{
-		TLow.Store(in acc._low, index, carries, ref result, length);
-		THigh.Store(in acc._high, index + TLow.Count, carries, ref result, length);
 	}
 }

@@ -3,7 +3,16 @@ namespace CryptoBase.Signatures.Rsa.Arithmetic;
 // The vectors of MontgomeryKernelAvx512, as fields that the JIT keeps in registers: Avx512Window is one vector of eight lanes, and Avx512WindowPair joins two windows, so that every size is a type and its operations inline into straight-line code.
 // A window holds three things per vector: digits of an operand as doubles, the lanes of the accumulator, and the high parts of the products that a step keeps between Accumulate and Shift. Operand windows use only the first, accumulators only the others.
 // Load and Store reach the lanes below length with masked loads and stores, which take pointers: the kernel keeps digits and result pinned.
-internal interface IAvx512Window<TSelf> where TSelf : struct, IAvx512Window<TSelf>
+internal interface IAvx512Accumulator<TSelf> where TSelf : struct, IAvx512Accumulator<TSelf>
+{
+	// Bit j of word index/8, shifted by 8·(index mod 8), set in generate for lane j of vector index at or above 2^52, and in propagate for one equal to 2^52 − 1.
+	static abstract void Masks(ref readonly TSelf acc, int index, Span<ulong> generate, Span<ulong> propagate);
+
+	// Adds the carry that reaches each lane, as the bits of carries in the layout of Masks give it, reduces to 52 bits and stores the lanes below length.
+	static abstract void Store(ref readonly TSelf acc, int index, ReadOnlySpan<ulong> carries, ref ulong result, int length);
+}
+
+internal interface IAvx512Window<TSelf> : IAvx512Accumulator<TSelf> where TSelf : struct, IAvx512Window<TSelf>
 {
 	static abstract int Count { get; }
 
@@ -13,7 +22,7 @@ internal interface IAvx512Window<TSelf> where TSelf : struct, IAvx512Window<TSel
 	// acc += lo(a·b) + lo(n·m), keeping hi(a·b) + hi(n·m) for Shift; see MontgomeryKernelAvx512.
 	static abstract void Accumulate(ref TSelf acc, ref readonly TSelf a, ref readonly TSelf n, Vector512<double> b, Vector512<double> m, Vector512<double> high, Vector512<double> low);
 
-	// acc shifted down by one lane, with lane 0 of next in its top lane, plus the high parts that Accumulate kept.
+	// acc shifted down by one digit, with the first digit of next on top, plus the high parts that Accumulate kept. A digit is one lane, or two in Avx512PairWindow.
 	static abstract void Shift(ref TSelf acc, Vector512<ulong> next);
 
 	static abstract Vector512<ulong> First(ref readonly TSelf acc);
@@ -21,18 +30,18 @@ internal interface IAvx512Window<TSelf> where TSelf : struct, IAvx512Window<TSel
 	// The lanes of the first vector where mask is set replaced by those of low.
 	static abstract void ReplaceLow(ref TSelf acc, Vector512<ulong> low, Vector512<ulong> mask);
 
-	// acc −= offset, then the carries of each lane added to the next, which leaves every lane below 2^52 + 2^9. previous holds the carries of the vector before; returns those of the last vector.
+	// acc −= offset, then the carries of each lane added to the next digit of its modulus, which leaves every lane below 2^52 + 2^9. previous holds the carries of the vector before; returns those of the last vector.
 	static abstract Vector512<ulong> Pass(ref TSelf acc, Vector512<ulong> offset, Vector512<ulong> previous);
-
-	// Bit j of word index/8, shifted by 8·(index mod 8), set in generate for lane j of vector index at or above 2^52, and in propagate for one equal to 2^52 − 1.
-	static abstract void Masks(ref readonly TSelf acc, int index, Span<ulong> generate, Span<ulong> propagate);
-
-	// Adds the carry that reaches each lane, as the bits of carries in the layout of Masks give it, reduces to 52 bits and stores the lanes below length.
-	static abstract void Store(ref readonly TSelf acc, int index, ReadOnlySpan<ulong> carries, ref ulong result, int length);
 }
 
 internal struct Avx512Window : IAvx512Window<Avx512Window>
 {
+	// The bits of 2^104 and of 2^52; the lane shifted in at iteration i carries LowOffset + i·Offset, the offset of every lane after the low parts of that iteration.
+	internal const ulong HighBits = 0x4670000000000000UL;
+	internal const ulong LowBits = 0x4330000000000000UL;
+	internal const ulong LowOffset = 2 * LowBits;
+	internal const ulong Offset = unchecked(2 * LowBits + 2 * HighBits);
+
 	private const ulong Mask = (1UL << 52) - 1;
 
 	private Vector512<double> _digits;
@@ -120,6 +129,85 @@ internal struct Avx512Window : IAvx512Window<Avx512Window>
 	{
 		return Vector512.LessThan(Vector512<ulong>.Indices, Vector512.Create((ulong)Math.Max(count, 0)));
 	}
+
+	// Row 0: each digit b_i of the right operand as a double. Rows 1 to 5, each of row words: the parts of its products with the first four digits of the left one that lanes 0 to 4 gain at iteration i: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a3·b_i). Eight digits at a time.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static unsafe void Products(ref ulong x, ref ulong y, int count, ref ulong rows, int row, Vector512<double> high, Vector512<double> low)
+	{
+		Vector512<double> a0 = Vector512.Create((double)x);
+		Vector512<double> a1 = Vector512.Create((double)Digit(ref x, count, 1));
+		Vector512<double> a2 = Vector512.Create((double)Digit(ref x, count, 2));
+		Vector512<double> a3 = Vector512.Create((double)Digit(ref x, count, 3));
+		Vector512<ulong> highBits = Vector512.Create(HighBits);
+		Vector512<ulong> lowBits = Vector512.Create(LowBits);
+
+		for (int j = 0; j < count; j += 8)
+		{
+			Vector512<ulong> lanes = Vector512.LessThan(Vector512<ulong>.Indices, Vector512.Create((ulong)Math.Min(count - j, 8)));
+			Vector512<double> b = Avx512DQ.ConvertToVector512Double(Avx512F.MaskLoad((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref y, j)), lanes, Vector512<ulong>.Zero));
+			Vector512<double> t0 = Avx512F.FusedMultiplyAdd(a0, b, high, FloatRoundingMode.ToNegativeInfinity);
+			Vector512<double> t1 = Avx512F.FusedMultiplyAdd(a1, b, high, FloatRoundingMode.ToNegativeInfinity);
+			Vector512<double> t2 = Avx512F.FusedMultiplyAdd(a2, b, high, FloatRoundingMode.ToNegativeInfinity);
+			Vector512<double> t3 = Avx512F.FusedMultiplyAdd(a3, b, high, FloatRoundingMode.ToNegativeInfinity);
+			Vector512<ulong> l0 = Avx512F.FusedMultiplyAdd(a0, b, low - t0).AsUInt64() - lowBits;
+			Vector512<ulong> l1 = Avx512F.FusedMultiplyAdd(a1, b, low - t1).AsUInt64() - lowBits;
+			Vector512<ulong> l2 = Avx512F.FusedMultiplyAdd(a2, b, low - t2).AsUInt64() - lowBits;
+			Vector512<ulong> l3 = Avx512F.FusedMultiplyAdd(a3, b, low - t3).AsUInt64() - lowBits;
+			StoreLanes(b.AsUInt64(), ref rows, j, lanes);
+			StoreLanes(l0, ref rows, row + j, lanes);
+			StoreLanes(t0.AsUInt64() - highBits + l1, ref rows, 2 * row + j, lanes);
+			StoreLanes(t1.AsUInt64() - highBits + l2, ref rows, 3 * row + j, lanes);
+			StoreLanes(t2.AsUInt64() - highBits + l3, ref rows, 4 * row + j, lanes);
+			StoreLanes(t3.AsUInt64() - highBits, ref rows, 5 * row + j, lanes);
+		}
+	}
+
+	// Digit index of a value of count digits, zero past them.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static ulong Digit(ref ulong digits, int count, int index)
+	{
+		return index < count ? Unsafe.Add(ref digits, index) : 0;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static unsafe void StoreLanes(Vector512<ulong> value, ref ulong output, int index, Vector512<ulong> lanes)
+	{
+		Avx512F.MaskStore((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref output, index)), lanes, value);
+	}
+
+	// The ripple of carries, a word of 64 lanes at a time, then the stores.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void Normalize<TWindow>(ref TWindow acc, ref ulong result, int count) where TWindow : struct, IAvx512Accumulator<TWindow>
+	{
+		int words = (count + 63) / 64;
+		MaskWords generateWords = default;
+		MaskWords propagateWords = default;
+		Span<ulong> generate = generateWords;
+		Span<ulong> propagate = propagateWords;
+		TWindow.Masks(in acc, 0, generate, propagate);
+		ulong carry = 0;
+
+		for (int w = 0; w < words; ++w)
+		{
+			ulong shifted = generate[w] << 1 | carry;
+			ulong sum = shifted + propagate[w];
+			carry = generate[w] >> 63 | (shifted & propagate[w] | (shifted | propagate[w]) & ~sum) >> 63;
+			generate[w] = sum ^ propagate[w];
+		}
+
+		TWindow.Store(in acc, 0, generate, ref result, count);
+		// Erased, as the scratch is.
+		generate.ZeroMemory();
+		propagate.ZeroMemory();
+	}
+
+	[InlineArray(3)]
+	internal struct MaskWords
+	{
+		public const int Length = 3;
+
+		private ulong _element;
+	}
 }
 
 internal struct Avx512WindowPair<TLow, THigh> : IAvx512Window<Avx512WindowPair<TLow, THigh>> where TLow : struct, IAvx512Window<TLow> where THigh : struct, IAvx512Window<THigh>
@@ -147,7 +235,7 @@ internal struct Avx512WindowPair<TLow, THigh> : IAvx512Window<Avx512WindowPair<T
 		THigh.Accumulate(ref acc._high, in a._high, in n._high, b, m, high, low);
 	}
 
-	// The low window takes the first lane of the high one before the high one shifts.
+	// The low window takes the first digit of the high one before the high one shifts.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Shift(ref Avx512WindowPair<TLow, THigh> acc, Vector512<ulong> next)
 	{

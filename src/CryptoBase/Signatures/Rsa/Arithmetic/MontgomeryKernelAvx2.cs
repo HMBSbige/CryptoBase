@@ -15,12 +15,6 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 	// A row: b_i as a double, then the parts of lanes 0 to 4 that come from b_i, and two words of padding.
 	private const int RowWords = 8;
 
-	// The bits of 2^103 and of 1.5·2^52; the lane shifted in at iteration i carries LowOffset + i·Offset, as in MontgomeryKernelAvx512.
-	private const ulong HighBits = 0x4660000000000000UL;
-	private const ulong LowBits = 0x4338000000000000UL;
-	private const ulong LowOffset = 2 * LowBits;
-	private const ulong Offset = unchecked(2 * LowBits + 2 * HighBits);
-
 	public static bool IsSupported => Vector256.IsHardwareAccelerated && Avx2.IsSupported && Fma.IsSupported && Bmi2.X64.IsSupported;
 
 	public static int DigitBits => R;
@@ -74,16 +68,16 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 			ref ulong n = ref MemoryMarshal.GetReference(modulus);
 			ref ulong rows = ref MemoryMarshal.GetReference(scratch);
 			ref ulong staging = ref Avx2Window.Stage(ref x, ref n, count, vectors, ref Unsafe.Add(ref rows, 4 * RowWords * vectors));
-			Vector256<double> high = Vector256.Create(BitConverter.UInt64BitsToDouble(HighBits));
-			Vector256<double> low = Vector256.Create(BitConverter.UInt64BitsToDouble(HighBits + 3));
+			Vector256<double> high = Vector256.Create(BitConverter.UInt64BitsToDouble(Avx2Window.HighBits));
+			Vector256<double> low = Vector256.Create(BitConverter.UInt64BitsToDouble(Avx2Window.HighBits + 3));
 			Products(ref x, ref MemoryMarshal.GetReference(right), count, ref rows, high, low);
 
 			TWindow acc = default;
-			Vector256<ulong> next = Vector256.Create(LowOffset);
+			Vector256<ulong> next = Vector256.Create(Avx2Window.LowOffset);
 			ulong n0 = n;
-			ulong n1 = Digit(ref n, count, 1);
-			ulong n2 = Digit(ref n, count, 2);
-			ulong n3 = Digit(ref n, count, 3);
+			ulong n1 = Avx512Window.Digit(ref n, count, 1);
+			ulong n2 = Avx512Window.Digit(ref n, count, 2);
+			ulong n3 = Avx512Window.Digit(ref n, count, 3);
 			// u·(−n⁻¹·2^13) mod 2^64 is m·2^13.
 			ulong inverse = negativeInverse << S;
 			ulong s0 = 0;
@@ -113,7 +107,7 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 
 				// The lanes before the shift carry the offset that the lane shifted in starts with.
 				ulong lane4 = (TWindow.Step(ref acc, ref staging, 0, above, b, d, high, low) - next).ToScalar();
-				next += Vector256.Create(Offset);
+				next += Vector256.Create(Avx2Window.Offset);
 				// Each lane from the one above it, so that no old lane outlives the new one below it.
 				s0 = s1 + Unsafe.Add(ref row, 2) + Bmi2.X64.MultiplyNoFlags(m, n0) + (m * n1 >> S) + (ulong)((long)(u + (m * n0 >> S)) >> R);
 				s1 = s2 + Unsafe.Add(ref row, 3) + Bmi2.X64.MultiplyNoFlags(m, n1) + (m * n2 >> S);
@@ -124,7 +118,7 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 			while (Unsafe.IsAddressLessThan(ref row, ref end));
 
 			// The lanes less their offset into the rows, which the loop no longer reads, with those of vector 0 from the scalar side.
-			Vector256<ulong> shared = next - Vector256.Create(LowOffset);
+			Vector256<ulong> shared = next - Vector256.Create(Avx2Window.LowOffset);
 			TWindow.Store(in acc, ref Unsafe.Add(ref rows, 4), shared);
 
 			for (nint v = TWindow.Count + 1; v < vectors; ++v)
@@ -154,11 +148,11 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 	private static void Products(ref ulong x, ref ulong y, int count, ref ulong rows, Vector256<double> high, Vector256<double> low)
 	{
 		Vector256<double> a0 = Vector256.Create((double)(long)x);
-		Vector256<double> a1 = Vector256.Create((double)(long)Digit(ref x, count, 1));
-		Vector256<double> a2 = Vector256.Create((double)(long)Digit(ref x, count, 2));
-		Vector256<double> a3 = Vector256.Create((double)(long)Digit(ref x, count, 3));
-		Vector256<ulong> highBits = Vector256.Create(HighBits);
-		Vector256<ulong> lowBits = Vector256.Create(LowBits);
+		Vector256<double> a1 = Vector256.Create((double)(long)Avx512Window.Digit(ref x, count, 1));
+		Vector256<double> a2 = Vector256.Create((double)(long)Avx512Window.Digit(ref x, count, 2));
+		Vector256<double> a3 = Vector256.Create((double)(long)Avx512Window.Digit(ref x, count, 3));
+		Vector256<ulong> highBits = Vector256.Create(Avx2Window.HighBits);
+		Vector256<ulong> lowBits = Vector256.Create(Avx2Window.LowBits);
 
 		for (int j = 0; j < count; j += 4)
 		{
@@ -192,12 +186,5 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 			Avx2.Permute2x128(odd01, odd23, 0x31).StoreUnsafe(ref row, 3 * RowWords);
 			odd45.GetUpper().StoreUnsafe(ref row, 3 * RowWords + 4);
 		}
-	}
-
-	// Digit index of a value of count digits, zero past them.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong Digit(ref ulong digits, int count, int index)
-	{
-		return index < count ? Unsafe.Add(ref digits, index) : 0;
 	}
 }
