@@ -69,17 +69,10 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 
 		ref ulong state = ref _state[0][0];
 		ref byte seed = ref MemoryMarshal.GetReference(prefix);
-		FillRow(ref state, lanes, Unsafe.ReadUnaligned<ulong>(ref seed));
-		FillRow(ref Unsafe.Add(ref state, lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 8)));
-		FillRow(ref Unsafe.Add(ref state, 2 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 16)));
-		FillRow(ref Unsafe.Add(ref state, 3 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 24)));
 
-		if (suffixRowIndex > ShortPrefixLength / sizeof(ulong))
+		for (int row = 0; row < suffixRowIndex; ++row)
 		{
-			FillRow(ref Unsafe.Add(ref state, 4 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 32)));
-			FillRow(ref Unsafe.Add(ref state, 5 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 40)));
-			FillRow(ref Unsafe.Add(ref state, 6 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 48)));
-			FillRow(ref Unsafe.Add(ref state, 7 * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, 56)));
+			FillRow(ref Unsafe.Add(ref state, row * lanes), lanes, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref seed, row * sizeof(ulong))));
 		}
 
 		ref ulong suffixRow = ref Unsafe.Add(ref state, suffixRowIndex * lanes);

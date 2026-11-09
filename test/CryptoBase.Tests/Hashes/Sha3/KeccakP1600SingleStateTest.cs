@@ -1,5 +1,6 @@
 using CryptoBase.Hashes.Sha3;
 using CryptoBase.Internal;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using static CryptoBase.Tests.TestUtils;
 
@@ -216,12 +217,12 @@ public class KeccakP1600SingleStateTest
 
 		internal override int Absorb<TRate>(ref InlineArray25<ulong> state, ReadOnlySpan<byte> source)
 		{
-			return KeccakP1600.AbsorbLane128<TRate>(ref state, source);
+			return KeccakP1600.PermuteBlocksLane128<KeccakP1600AbsorbBlocks<TRate>>(ref state, ref MemoryMarshal.GetReference(source), source.Length);
 		}
 
 		internal override int Squeeze<TRate>(ref InlineArray25<ulong> state, Span<byte> destination)
 		{
-			return KeccakP1600.SqueezeLane128<TRate>(ref state, destination);
+			return KeccakP1600.PermuteBlocksLane128<KeccakP1600SqueezeBlocks<TRate>>(ref state, ref MemoryMarshal.GetReference(destination), destination.Length);
 		}
 
 		public override string ToString()
@@ -241,12 +242,12 @@ public class KeccakP1600SingleStateTest
 
 		internal override int Absorb<TRate>(ref InlineArray25<ulong> state, ReadOnlySpan<byte> source)
 		{
-			return KeccakP1600.AbsorbAvx512<TRate>(ref state, source);
+			return KeccakP1600.PermuteBlocksAvx512<KeccakP1600AbsorbBlocks<TRate>>(ref state, ref MemoryMarshal.GetReference(source), source.Length);
 		}
 
 		internal override int Squeeze<TRate>(ref InlineArray25<ulong> state, Span<byte> destination)
 		{
-			return KeccakP1600.SqueezeAvx512<TRate>(ref state, destination);
+			return KeccakP1600.PermuteBlocksAvx512<KeccakP1600SqueezeBlocks<TRate>>(ref state, ref MemoryMarshal.GetReference(destination), destination.Length);
 		}
 
 		public override string ToString()

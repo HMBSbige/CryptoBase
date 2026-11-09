@@ -58,18 +58,10 @@ internal readonly struct KeccakP1600Times4 : IKeccakP1600Kernel, IKeccakP1600Lan
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<ulong> RotateLeft(Vector256<ulong> value, [ConstantExpected(Min = 1, Max = 63)] byte offset)
 	{
-		if (Avx512F.VL.IsSupported)
-		{
-			return Avx512F.VL.RotateLeft(value, offset);
-		}
-
-		return offset switch
-		{
-			1 => value + value | value >>> 63,
-			8 => Avx2.Shuffle(value.AsByte(), Vector256.Create((byte)7, 0, 1, 2, 3, 4, 5, 6, 15, 8, 9, 10, 11, 12, 13, 14, 7, 0, 1, 2, 3, 4, 5, 6, 15, 8, 9, 10, 11, 12, 13, 14)).AsUInt64(),
-			56 => Avx2.Shuffle(value.AsByte(), Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 0, 9, 10, 11, 12, 13, 14, 15, 8, 1, 2, 3, 4, 5, 6, 7, 0, 9, 10, 11, 12, 13, 14, 15, 8)).AsUInt64(),
-			_ => value << offset | value >>> 64 - offset
-		};
+#pragma warning disable CA1857
+		// ReSharper disable once ConstantExpected
+		return value.RotateRightUInt64((byte)(64 - offset));
+#pragma warning restore CA1857
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

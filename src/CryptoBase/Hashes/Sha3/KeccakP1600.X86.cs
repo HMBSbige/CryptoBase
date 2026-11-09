@@ -15,28 +15,14 @@ internal static partial class KeccakP1600
 		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128>(ref state[0]);
 	}
 
-	// XORs each whole block of source into the state and permutes it, and returns the number of bytes absorbed.
-	internal static int AbsorbLane128<TRate>(ref InlineArray25<ulong> state, ReadOnlySpan<byte> source) where TRate : IKeccakRate
+	internal static int PermuteBlocksLane128<TBlocks>(ref InlineArray25<ulong> state, ref byte data, int length) where TBlocks : IKeccakP1600Blocks
 	{
 		Debug.Assert(KeccakP1600Lane128.IsSupported);
-		Debug.Assert(source.Length >= TRate.RateInBytes);
+		Debug.Assert(length >= TBlocks.RateInBytes);
 
-		int blocks = source.Length / TRate.RateInBytes;
-		ref ulong block = ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(source));
-		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128, KeccakP1600AbsorbBlocks<TRate>>(ref state[0], ref block, blocks);
-		return blocks * TRate.RateInBytes;
-	}
-
-	// Permutes the state and writes its first rate bytes for each whole block that fits in destination, and returns the number of bytes written; the state then holds the last block written.
-	internal static int SqueezeLane128<TRate>(ref InlineArray25<ulong> state, Span<byte> destination) where TRate : IKeccakRate
-	{
-		Debug.Assert(KeccakP1600Lane128.IsSupported);
-		Debug.Assert(destination.Length >= TRate.RateInBytes);
-
-		int blocks = destination.Length / TRate.RateInBytes;
-		ref ulong block = ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetReference(destination));
-		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128, KeccakP1600SqueezeBlocks<TRate>>(ref state[0], ref block, blocks);
-		return blocks * TRate.RateInBytes;
+		int blocks = length / TBlocks.RateInBytes;
+		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128, TBlocks>(ref state[0], ref Unsafe.As<byte, ulong>(ref data), blocks);
+		return blocks * TBlocks.RateInBytes;
 	}
 
 	[SkipLocalsInit]
@@ -50,66 +36,49 @@ internal static partial class KeccakP1600
 		StoreRows(ref state, a0, a1, a2, a3, a4);
 	}
 
-	// XORs each whole block of source into the state and permutes it, and returns the number of bytes absorbed.
+	// Runs the whole blocks that fit in length bytes through the state as TBlocks says, and returns the number of bytes they span; a squeeze leaves the state holding the last block written.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static unsafe int AbsorbAvx512<TRate>(ref InlineArray25<ulong> state, ReadOnlySpan<byte> source) where TRate : IKeccakRate
+	internal static unsafe int PermuteBlocksAvx512<TBlocks>(ref InlineArray25<ulong> state, ref byte data, int length) where TBlocks : IKeccakP1600Blocks
 	{
 		Debug.Assert(IsAvx512Supported);
-		Debug.Assert(source.Length >= TRate.RateInBytes);
+		Debug.Assert(length >= TBlocks.RateInBytes);
 
-		int blocks = source.Length / TRate.RateInBytes;
+		int blocks = length / TBlocks.RateInBytes;
 		LoadRows(ref state, out Vector512<ulong> a0, out Vector512<ulong> a1, out Vector512<ulong> a2, out Vector512<ulong> a3, out Vector512<ulong> a4);
 
-		fixed (byte* input = source)
+		fixed (byte* first = &data)
 		{
-			ulong* block = (ulong*)input;
+			ulong* block = (ulong*)first;
 
 			for (int i = 0; i < blocks; ++i)
 			{
-				a0 ^= LoadBlockRow<TRate>(block, 0);
-				a1 ^= LoadBlockRow<TRate>(block, 1);
-				a2 ^= LoadBlockRow<TRate>(block, 2);
-				a3 ^= LoadBlockRow<TRate>(block, 3);
-				a4 ^= LoadBlockRow<TRate>(block, 4);
+				if (TBlocks.Absorbs)
+				{
+					a0 ^= LoadBlockRow<TBlocks>(block, 0);
+					a1 ^= LoadBlockRow<TBlocks>(block, 1);
+					a2 ^= LoadBlockRow<TBlocks>(block, 2);
+					a3 ^= LoadBlockRow<TBlocks>(block, 3);
+					a4 ^= LoadBlockRow<TBlocks>(block, 4);
+				}
+
 				PermuteRows(ref a0, ref a1, ref a2, ref a3, ref a4);
-				block += TRate.RateInBytes / sizeof(ulong);
+
+				if (TBlocks.Squeezes)
+				{
+					StoreBlockRow<TBlocks>(block, 0, a0);
+					StoreBlockRow<TBlocks>(block, 1, a1);
+					StoreBlockRow<TBlocks>(block, 2, a2);
+					StoreBlockRow<TBlocks>(block, 3, a3);
+					StoreBlockRow<TBlocks>(block, 4, a4);
+				}
+
+				block += TBlocks.RateInBytes / sizeof(ulong);
 			}
 		}
 
 		StoreRows(ref state, a0, a1, a2, a3, a4);
-		return blocks * TRate.RateInBytes;
-	}
-
-	// Permutes the state and writes its first rate bytes for each whole block that fits in destination, and returns the number of bytes written; the state then holds the last block written.
-	[SkipLocalsInit]
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static unsafe int SqueezeAvx512<TRate>(ref InlineArray25<ulong> state, Span<byte> destination) where TRate : IKeccakRate
-	{
-		Debug.Assert(IsAvx512Supported);
-		Debug.Assert(destination.Length >= TRate.RateInBytes);
-
-		int blocks = destination.Length / TRate.RateInBytes;
-		LoadRows(ref state, out Vector512<ulong> a0, out Vector512<ulong> a1, out Vector512<ulong> a2, out Vector512<ulong> a3, out Vector512<ulong> a4);
-
-		fixed (byte* output = destination)
-		{
-			ulong* block = (ulong*)output;
-
-			for (int i = 0; i < blocks; ++i)
-			{
-				PermuteRows(ref a0, ref a1, ref a2, ref a3, ref a4);
-				StoreBlockRow<TRate>(block, 0, a0);
-				StoreBlockRow<TRate>(block, 1, a1);
-				StoreBlockRow<TRate>(block, 2, a2);
-				StoreBlockRow<TRate>(block, 3, a3);
-				StoreBlockRow<TRate>(block, 4, a4);
-				block += TRate.RateInBytes / sizeof(ulong);
-			}
-		}
-
-		StoreRows(ref state, a0, a1, a2, a3, a4);
-		return blocks * TRate.RateInBytes;
+		return blocks * TBlocks.RateInBytes;
 	}
 
 	// Hashes an input shorter than the rate to an output of at most the rate: the padded block is loaded straight into the rows and the output stored straight from them, so the state never passes through memory. All input is loaded before any output is stored, so the two may overlap.
