@@ -30,7 +30,7 @@ internal struct GHashVector128PrecomputedKey : IGHashPowers
 	private Vector128<byte> _keyX8;
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal void Initialize(Vector128<byte> key)
+	public void Initialize(Vector128<byte> key)
 	{
 		_key1 = PrepareKey(key);
 		_keyK1 = GHashX86.GetReductionKey(_key1);

@@ -18,71 +18,39 @@ internal struct GHashKey
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashFourBlockPrecomputedKey> GetFourBlock()
 	{
-		return _fourBlock ?? InitializeFourBlock();
+		return _fourBlock ?? Initialize(ref _fourBlock);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashVector128PrecomputedKey> GetVector128()
 	{
-		return _vector128 ?? InitializeVector128();
+		return _vector128 ?? Initialize(ref _vector128);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashVector256PrecomputedKey> GetVector256()
 	{
-		return _vector256 ?? InitializeVector256();
+		return _vector256 ?? Initialize(ref _vector256);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashVector512PrecomputedKey> GetVector512()
 	{
-		return _vector512 ?? InitializeVector512();
+		return _vector512 ?? Initialize(ref _vector512);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashArmPrecomputedKey> GetArm()
 	{
-		return _arm ?? InitializeArm();
+		return _arm ?? Initialize(ref _arm);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private GHashKeyTable<GHashArmPrecomputedKey> InitializeArm()
+	private GHashKeyTable<T> Initialize<T>(ref GHashKeyTable<T>? slot) where T : unmanaged, IGHashPrecomputedKey
 	{
-		GHashKeyTable<GHashArmPrecomputedKey> table = new();
-		table.Value.Initialize(AdvSimd.Arm64.ReverseElementBits(Value));
-		return _arm = table;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private GHashKeyTable<GHashFourBlockPrecomputedKey> InitializeFourBlock()
-	{
-		GHashKeyTable<GHashFourBlockPrecomputedKey> table = new();
-		table.Value.Initialize(Value.ReverseEndianness128());
-		return _fourBlock = table;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private GHashKeyTable<GHashVector128PrecomputedKey> InitializeVector128()
-	{
-		GHashKeyTable<GHashVector128PrecomputedKey> table = new();
-		table.Value.Initialize(Value.ReverseEndianness128());
-		return _vector128 = table;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private GHashKeyTable<GHashVector256PrecomputedKey> InitializeVector256()
-	{
-		GHashKeyTable<GHashVector256PrecomputedKey> table = new();
-		table.Value.Initialize(Value.ReverseEndianness128());
-		return _vector256 = table;
-	}
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private GHashKeyTable<GHashVector512PrecomputedKey> InitializeVector512()
-	{
-		GHashKeyTable<GHashVector512PrecomputedKey> table = new();
-		table.Value.Initialize(Value.ReverseEndianness128());
-		return _vector512 = table;
+		GHashKeyTable<T> table = new();
+		table.Value.Initialize(typeof(T) == typeof(GHashArmPrecomputedKey) ? AdvSimd.Arm64.ReverseElementBits(Value) : Value.ReverseEndianness128());
+		return slot = table;
 	}
 
 	internal void Dispose()

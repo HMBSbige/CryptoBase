@@ -95,6 +95,42 @@ internal static partial class GHashX86
 		}
 	}
 
+	internal static void AppendPaddedSegmentFolded<T>(ref T powers, ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock) where T : struct, IGHashFoldedPowers
+	{
+		int completeLength = source.Length & -BlockSize;
+		ReadOnlySpan<byte> remaining = source.Slice(completeLength);
+
+		if (remaining.IsEmpty)
+		{
+			if (completeLength is not 0)
+			{
+				powers.AppendBlocks(ref accumulator, source);
+			}
+
+			return;
+		}
+
+		finalBlock = GHash.PadFinalBlock(remaining);
+
+		int batchOffset = completeLength & (T.BatchBlocks - 1) * BlockSize;
+		int tailBlocks = batchOffset == (T.BatchBlocks / 2 - 1) * BlockSize ? T.BatchBlocks / 2 : batchOffset == (T.BatchBlocks - 1) * BlockSize ? T.BatchBlocks : 0;
+
+		if (tailBlocks is not 0)
+		{
+			int prefixLength = completeLength - (tailBlocks - 1) * BlockSize;
+			powers.AppendBlocks(ref accumulator, source.Slice(0, prefixLength));
+			powers.AppendFoldedTail(ref accumulator, source.Slice(prefixLength, (tailBlocks - 1) * BlockSize), ref finalBlock, tailBlocks);
+			return;
+		}
+
+		if (completeLength is not 0)
+		{
+			powers.AppendBlocks(ref accumulator, source.Slice(0, completeLength));
+		}
+
+		powers.AppendBlocks(ref accumulator, finalBlock.AsReadOnlySpan());
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void AppendSequential(ref Vector128<byte> accumulator, in Vector128<byte> key, scoped ReadOnlySpan<byte> source)
 	{

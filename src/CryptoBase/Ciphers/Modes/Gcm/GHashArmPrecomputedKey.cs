@@ -1,6 +1,6 @@
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal struct GHashArmPrecomputedKey
+internal struct GHashArmPrecomputedKey : IGHashPrecomputedKey
 {
 	internal Vector128<byte> Key1;
 	internal Vector128<byte> Key2;
@@ -12,7 +12,7 @@ internal struct GHashArmPrecomputedKey
 	internal Vector128<byte> Key8;
 
 	// internalKey must already have the bits in each byte reversed.
-	internal void Initialize(Vector128<byte> internalKey)
+	public void Initialize(Vector128<byte> internalKey)
 	{
 		Key1 = internalKey;
 		Key2 = GHashArm.GFSquare(Key1);

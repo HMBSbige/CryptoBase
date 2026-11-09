@@ -2,7 +2,7 @@ using static CryptoBase.Ciphers.Modes.Gcm.GHashX86;
 
 namespace CryptoBase.Ciphers.Modes.Gcm;
 
-internal struct GHashVector512PrecomputedKey : IGHashPowers
+internal struct GHashVector512PrecomputedKey : IGHashFoldedPowers
 {
 	private Vector128<byte> _key1;
 	private Vector512<byte> _key4321;
@@ -22,8 +22,10 @@ internal struct GHashVector512PrecomputedKey : IGHashPowers
 	private Vector512<byte> _key60595857;
 	private Vector512<byte> _key64636261;
 
+	public static int BatchBlocks => 64;
+
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal void Initialize(Vector128<byte> key)
+	public void Initialize(Vector128<byte> key)
 	{
 		_key1 = key;
 		GetFirstFourPowers(_key1, out Vector256<byte> key21, out Vector256<byte> key43);
@@ -59,7 +61,7 @@ internal struct GHashVector512PrecomputedKey : IGHashPowers
 		_key64636261 = GFMultiply(_key32313029, key32323232);
 	}
 
-	private readonly void AppendBlocks(ref Vector128<byte> accumulatorDestination, scoped ReadOnlySpan<byte> source)
+	public readonly void AppendBlocks(ref Vector128<byte> accumulatorDestination, scoped ReadOnlySpan<byte> source)
 	{
 		Vector128<byte> accumulator = accumulatorDestination;
 		int length = source.Length;
@@ -217,47 +219,12 @@ internal struct GHashVector512PrecomputedKey : IGHashPowers
 		accumulatorDestination = accumulator;
 	}
 
-	public readonly void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
+	public void AppendPaddedSegment(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock)
 	{
-		int completeLength = source.Length & -BlockSize;
-		ReadOnlySpan<byte> remaining = source.Slice(completeLength);
-
-		if (remaining.IsEmpty)
-		{
-			if (completeLength is not 0)
-			{
-				AppendBlocks(ref accumulator, source);
-			}
-
-			return;
-		}
-
-		finalBlock = GHash.PadFinalBlock(remaining);
-
-		int tailBlocks = (completeLength & 63 * BlockSize) switch
-		{
-			31 * BlockSize => 32,
-			63 * BlockSize => 64,
-			_ => 0
-		};
-
-		if (tailBlocks is not 0)
-		{
-			int prefixLength = completeLength - (tailBlocks - 1) * BlockSize;
-			AppendBlocks(ref accumulator, source.Slice(0, prefixLength));
-			AppendFoldedTail(ref accumulator, source.Slice(prefixLength, (tailBlocks - 1) * BlockSize), ref finalBlock, tailBlocks);
-			return;
-		}
-
-		if (completeLength is not 0)
-		{
-			AppendBlocks(ref accumulator, source.Slice(0, completeLength));
-		}
-
-		AppendBlocks(ref accumulator, finalBlock.AsReadOnlySpan());
+		AppendPaddedSegmentFolded(ref this, ref accumulator, source, ref finalBlock);
 	}
 
-	private readonly void AppendFoldedTail(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
+	public readonly void AppendFoldedTail(ref Vector128<byte> accumulator, scoped ReadOnlySpan<byte> source, ref Vector128<byte> finalBlock, int blockCount)
 	{
 		ref byte ptr = ref MemoryMarshal.GetReference(source);
 		Vector512<byte> blocks = Vector512.LoadUnsafe(ref ptr).ReverseEndianness128();
