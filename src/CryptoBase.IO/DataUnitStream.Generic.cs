@@ -525,18 +525,7 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 		long unitStart = position - position % DataUnitSize;
 		_unitStart = null;
 
-		if (_transform.Read(_unit, unitStart) is 0)
-		{
-			if (!create)
-			{
-				return false;
-			}
-
-			Array.Clear(_unit);
-		}
-
-		_unitStart = unitStart;
-		return true;
+		return CompleteLoad(unitStart, _transform.Read(_unit, unitStart), create);
 	}
 
 	private async ValueTask<bool> LoadUnitAsync(long position, bool create, CancellationToken cancellationToken)
@@ -545,7 +534,12 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 		long unitStart = position - position % DataUnitSize;
 		_unitStart = null;
 
-		if (await _transform.ReadAsync(_unit, unitStart, cancellationToken).ConfigureAwait(false) is 0)
+		return CompleteLoad(unitStart, await _transform.ReadAsync(_unit, unitStart, cancellationToken).ConfigureAwait(false), create);
+	}
+
+	private bool CompleteLoad(long unitStart, int read, bool create)
+	{
+		if (read is 0)
 		{
 			if (!create)
 			{

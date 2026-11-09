@@ -55,7 +55,7 @@ public sealed class ChunkedDecryptionStream<TCipher> : Stream where TCipher : cl
 		ValidateInner(inner);
 		ChunkLayout<TCipher>.Validate(key, nameof(key));
 
-		byte[] buffer = AllocateBuffer();
+		byte[] buffer = ChunkLayout<TCipher>.AllocateReadBuffer();
 		Span<byte> header = buffer.AsSpan(0, TCipher.HeaderSize);
 
 		if (inner.ReadAtLeast(header, header.Length, throwOnEndOfStream: false) < header.Length)
@@ -260,7 +260,7 @@ public sealed class ChunkedDecryptionStream<TCipher> : Stream where TCipher : cl
 
 	private static async Task<ChunkedDecryptionStream<TCipher>> CreateCoreAsync(Stream inner, ReadOnlyMemory<byte> key, ReadOnlyMemory<byte> context, bool leaveOpen, CancellationToken cancellationToken)
 	{
-		byte[] buffer = AllocateBuffer();
+		byte[] buffer = ChunkLayout<TCipher>.AllocateReadBuffer();
 		Memory<byte> header = buffer.AsMemory(0, TCipher.HeaderSize);
 
 		if (await inner.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false) < header.Length)
@@ -370,10 +370,5 @@ public sealed class ChunkedDecryptionStream<TCipher> : Stream where TCipher : cl
 		{
 			throw new ArgumentException("The stream must support reading.", nameof(inner));
 		}
-	}
-
-	private static byte[] AllocateBuffer()
-	{
-		return GC.AllocateUninitializedArray<byte>(Math.Max(TCipher.HeaderSize, ChunkLayout<TCipher>.EncryptedChunkSize));
 	}
 }

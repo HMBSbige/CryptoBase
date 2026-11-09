@@ -54,7 +54,7 @@ public sealed class ChunkedRandomAccess<TCipher> : IDisposable where TCipher : c
 	{
 		ChunkLayout<TCipher>.Validate(key, nameof(key));
 		long length = GetPlaintextLength(storage);
-		byte[] buffer = AllocateBuffer();
+		byte[] buffer = ChunkLayout<TCipher>.AllocateReadBuffer();
 		Span<byte> header = buffer.AsSpan(0, TCipher.HeaderSize);
 		ReadExactly(storage, header, 0);
 		ChunkedRandomAccess<TCipher> instance = new(storage, owner, TCipher.CreateDecryptor(key, context, header), buffer, length, leaveOpen);
@@ -178,7 +178,7 @@ public sealed class ChunkedRandomAccess<TCipher> : IDisposable where TCipher : c
 	private static async Task<ChunkedRandomAccess<TCipher>> CreateCoreAsync(IPositionalStorage storage, IDisposable owner, ReadOnlyMemory<byte> key, ReadOnlyMemory<byte> context, bool leaveOpen, CancellationToken cancellationToken)
 	{
 		long length = GetPlaintextLength(storage);
-		byte[] buffer = AllocateBuffer();
+		byte[] buffer = ChunkLayout<TCipher>.AllocateReadBuffer();
 		Memory<byte> header = buffer.AsMemory(0, TCipher.HeaderSize);
 		await ReadExactlyAsync(storage, header, 0, cancellationToken).ConfigureAwait(false);
 		ChunkedRandomAccess<TCipher> instance = new(storage, owner, TCipher.CreateDecryptor(key.Span, context.Span, header.Span), buffer, length, leaveOpen);
@@ -349,10 +349,5 @@ public sealed class ChunkedRandomAccess<TCipher> : IDisposable where TCipher : c
 		{
 			ChunkLayout<TCipher>.Throw(ChunkFailure.Truncated);
 		}
-	}
-
-	private static byte[] AllocateBuffer()
-	{
-		return GC.AllocateUninitializedArray<byte>(Math.Max(TCipher.HeaderSize, ChunkLayout<TCipher>.EncryptedChunkSize));
 	}
 }

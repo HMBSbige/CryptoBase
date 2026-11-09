@@ -22,6 +22,11 @@ internal static class ChunkLayout<TCipher> where TCipher : class, IChunkedCipher
 
 	public static ChunkSizes Sizes => new(TCipher.HeaderSize, TCipher.ChunkSize, TCipher.TagSize, TCipher.MaxChunkCount);
 
+	public static byte[] AllocateReadBuffer()
+	{
+		return GC.AllocateUninitializedArray<byte>(Math.Max(TCipher.HeaderSize, EncryptedChunkSize));
+	}
+
 	/// <summary>
 	/// Throws unless the sizes of <typeparamref name="TCipher" /> can be laid out.
 	/// </summary>
