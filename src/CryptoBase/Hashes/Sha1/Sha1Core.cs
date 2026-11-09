@@ -172,26 +172,26 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 			ChooseFiveRounds(ref a, ref b, ref c, ref d, ref e, ref Unsafe.Add(ref schedule0, 5));
 			ChooseFiveRounds(ref a, ref b, ref c, ref d, ref e, ref Unsafe.Add(ref schedule0, 10));
 
-			ChooseRoundInput(ref a, ref b, ref c, ref d, ref e, Unsafe.Add(ref schedule0, 15) + ChooseConstant);
-			ChooseRoundInput(ref e, ref a, ref b, ref c, ref d, Expand(ref schedule0, 16) + ChooseConstant);
-			ChooseRoundInput(ref d, ref e, ref a, ref b, ref c, Expand(ref schedule0, 17) + ChooseConstant);
-			ChooseRoundInput(ref c, ref d, ref e, ref a, ref b, Expand(ref schedule0, 18) + ChooseConstant);
-			ChooseRoundInput(ref b, ref c, ref d, ref e, ref a, Expand(ref schedule0, 19) + ChooseConstant);
+			Round<Choose>(ref a, ref b, ref c, ref d, ref e, Unsafe.Add(ref schedule0, 15) + ChooseConstant);
+			Round<Choose>(ref e, ref a, ref b, ref c, ref d, Expand(ref schedule0, 16) + ChooseConstant);
+			Round<Choose>(ref d, ref e, ref a, ref b, ref c, Expand(ref schedule0, 17) + ChooseConstant);
+			Round<Choose>(ref c, ref d, ref e, ref a, ref b, Expand(ref schedule0, 18) + ChooseConstant);
+			Round<Choose>(ref b, ref c, ref d, ref e, ref a, Expand(ref schedule0, 19) + ChooseConstant);
 
-			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 20, ParityConstant1);
-			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 25, ParityConstant1);
-			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 30, ParityConstant1);
-			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 35, ParityConstant1);
+			ExpandedFiveRounds<Parity>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 20, ParityConstant1);
+			ExpandedFiveRounds<Parity>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 25, ParityConstant1);
+			ExpandedFiveRounds<Parity>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 30, ParityConstant1);
+			ExpandedFiveRounds<Parity>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 35, ParityConstant1);
 
-			MajorityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 40);
-			MajorityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 45);
-			MajorityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 50);
-			MajorityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 55);
+			ExpandedFiveRounds<Majority>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 40, MajorityConstant);
+			ExpandedFiveRounds<Majority>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 45, MajorityConstant);
+			ExpandedFiveRounds<Majority>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 50, MajorityConstant);
+			ExpandedFiveRounds<Majority>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 55, MajorityConstant);
 
-			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 60, ParityConstant2);
-			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 65, ParityConstant2);
-			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 70, ParityConstant2);
-			ParityFiveRounds(ref a, ref b, ref c, ref d, ref e, ref schedule0, 75, ParityConstant2);
+			ExpandedFiveRounds<Parity>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 60, ParityConstant2);
+			ExpandedFiveRounds<Parity>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 65, ParityConstant2);
+			ExpandedFiveRounds<Parity>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 70, ParityConstant2);
+			ExpandedFiveRounds<Parity>(ref a, ref b, ref c, ref d, ref e, ref schedule0, 75, ParityConstant2);
 
 			_h0 += a;
 			_h1 += b;
@@ -222,57 +222,61 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ChooseFiveRounds(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint word0)
 	{
-		ChooseRoundInput(ref a, ref b, ref c, ref d, ref e, word0 + ChooseConstant);
-		ChooseRoundInput(ref e, ref a, ref b, ref c, ref d, Unsafe.Add(ref word0, 1) + ChooseConstant);
-		ChooseRoundInput(ref d, ref e, ref a, ref b, ref c, Unsafe.Add(ref word0, 2) + ChooseConstant);
-		ChooseRoundInput(ref c, ref d, ref e, ref a, ref b, Unsafe.Add(ref word0, 3) + ChooseConstant);
-		ChooseRoundInput(ref b, ref c, ref d, ref e, ref a, Unsafe.Add(ref word0, 4) + ChooseConstant);
+		Round<Choose>(ref a, ref b, ref c, ref d, ref e, word0 + ChooseConstant);
+		Round<Choose>(ref e, ref a, ref b, ref c, ref d, Unsafe.Add(ref word0, 1) + ChooseConstant);
+		Round<Choose>(ref d, ref e, ref a, ref b, ref c, Unsafe.Add(ref word0, 2) + ChooseConstant);
+		Round<Choose>(ref c, ref d, ref e, ref a, ref b, Unsafe.Add(ref word0, 3) + ChooseConstant);
+		Round<Choose>(ref b, ref c, ref d, ref e, ref a, Unsafe.Add(ref word0, 4) + ChooseConstant);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ParityFiveRounds(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint words, int round, uint roundConstant)
+	private static void ExpandedFiveRounds<TFunction>(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint words, int round, uint roundConstant) where TFunction : IRoundFunction
 	{
-		ParityRoundInput(ref a, ref b, ref c, ref d, ref e, Expand(ref words, round) + roundConstant);
-		ParityRoundInput(ref e, ref a, ref b, ref c, ref d, Expand(ref words, round + 1) + roundConstant);
-		ParityRoundInput(ref d, ref e, ref a, ref b, ref c, Expand(ref words, round + 2) + roundConstant);
-		ParityRoundInput(ref c, ref d, ref e, ref a, ref b, Expand(ref words, round + 3) + roundConstant);
-		ParityRoundInput(ref b, ref c, ref d, ref e, ref a, Expand(ref words, round + 4) + roundConstant);
+		Round<TFunction>(ref a, ref b, ref c, ref d, ref e, Expand(ref words, round) + roundConstant);
+		Round<TFunction>(ref e, ref a, ref b, ref c, ref d, Expand(ref words, round + 1) + roundConstant);
+		Round<TFunction>(ref d, ref e, ref a, ref b, ref c, Expand(ref words, round + 2) + roundConstant);
+		Round<TFunction>(ref c, ref d, ref e, ref a, ref b, Expand(ref words, round + 3) + roundConstant);
+		Round<TFunction>(ref b, ref c, ref d, ref e, ref a, Expand(ref words, round + 4) + roundConstant);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void MajorityFiveRounds(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint words, int round)
-	{
-		MajorityRoundInput(ref a, ref b, ref c, ref d, ref e, Expand(ref words, round) + MajorityConstant);
-		MajorityRoundInput(ref e, ref a, ref b, ref c, ref d, Expand(ref words, round + 1) + MajorityConstant);
-		MajorityRoundInput(ref d, ref e, ref a, ref b, ref c, Expand(ref words, round + 2) + MajorityConstant);
-		MajorityRoundInput(ref c, ref d, ref e, ref a, ref b, Expand(ref words, round + 3) + MajorityConstant);
-		MajorityRoundInput(ref b, ref c, ref d, ref e, ref a, Expand(ref words, round + 4) + MajorityConstant);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ChooseRoundInput(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, uint roundInput)
+	private static void Round<TFunction>(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, uint roundInput) where TFunction : IRoundFunction
 	{
 		e += roundInput;
-		e += (c ^ d) & b ^ d;
+		e += TFunction.Mix(b, c, d);
 		e += BitOperations.RotateLeft(a, 5);
 		b = BitOperations.RotateLeft(b, 30);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ParityRoundInput(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, uint roundInput)
+	private interface IRoundFunction
 	{
-		e += roundInput;
-		e += b ^ c ^ d;
-		e += BitOperations.RotateLeft(a, 5);
-		b = BitOperations.RotateLeft(b, 30);
+		static abstract uint Mix(uint b, uint c, uint d);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void MajorityRoundInput(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, uint roundInput)
+	private readonly struct Choose : IRoundFunction
 	{
-		e += roundInput;
-		e += b & c | d & (b | c);
-		e += BitOperations.RotateLeft(a, 5);
-		b = BitOperations.RotateLeft(b, 30);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static uint Mix(uint b, uint c, uint d)
+		{
+			return (c ^ d) & b ^ d;
+		}
+	}
+
+	private readonly struct Parity : IRoundFunction
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static uint Mix(uint b, uint c, uint d)
+		{
+			return b ^ c ^ d;
+		}
+	}
+
+	private readonly struct Majority : IRoundFunction
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static uint Mix(uint b, uint c, uint d)
+		{
+			return b & c | d & (b | c);
+		}
 	}
 }

@@ -32,61 +32,61 @@ public partial struct Sha1Core
 			StoreRoundInputsX86(words2, ChooseConstant, ref roundInputs[8]);
 			StoreRoundInputsX86(words3, ChooseConstant, ref roundInputs[12]);
 
-			ChooseRoundsX86(ref a, ref b, ref c, ref d, ref e, ref roundInputs[0]);
+			RoundsX86<Choose>(ref a, ref b, ref c, ref d, ref e, ref roundInputs[0]);
 			Vector128<uint> words4 = UpdateX86Schedule(words0, words1, words2, words3);
 			StoreRoundInputsX86(words4, ChooseConstant, ref roundInputs[0]);
-			ChooseRoundsX86(ref b, ref c, ref d, ref e, ref a, ref roundInputs[4]);
+			RoundsX86<Choose>(ref b, ref c, ref d, ref e, ref a, ref roundInputs[4]);
 			Vector128<uint> words5 = UpdateX86Schedule(words1, words2, words3, words4);
 			StoreRoundInputsX86(words5, ParityConstant1, ref roundInputs[4]);
-			ChooseRoundsX86(ref c, ref d, ref e, ref a, ref b, ref roundInputs[8]);
+			RoundsX86<Choose>(ref c, ref d, ref e, ref a, ref b, ref roundInputs[8]);
 			Vector128<uint> words6 = UpdateX86Schedule(words2, words3, words4, words5);
 			StoreRoundInputsX86(words6, ParityConstant1, ref roundInputs[8]);
-			ChooseRoundsX86(ref d, ref e, ref a, ref b, ref c, ref roundInputs[12]);
+			RoundsX86<Choose>(ref d, ref e, ref a, ref b, ref c, ref roundInputs[12]);
 			Vector128<uint> words7 = UpdateX86Schedule(words3, words4, words5, words6);
 			StoreRoundInputsX86(words7, ParityConstant1, ref roundInputs[12]);
-			ChooseRoundsX86(ref e, ref a, ref b, ref c, ref d, ref roundInputs[0]);
+			RoundsX86<Choose>(ref e, ref a, ref b, ref c, ref d, ref roundInputs[0]);
 			words0 = UpdateX86Schedule32(words0, words1, words4, words6, words7);
 			StoreRoundInputsX86(words0, ParityConstant1, ref roundInputs[0]);
 
-			ParityRoundsX86(ref a, ref b, ref c, ref d, ref e, ref roundInputs[4]);
+			RoundsX86<Parity>(ref a, ref b, ref c, ref d, ref e, ref roundInputs[4]);
 			words1 = UpdateX86Schedule32(words1, words2, words5, words7, words0);
 			StoreRoundInputsX86(words1, ParityConstant1, ref roundInputs[4]);
-			ParityRoundsX86(ref b, ref c, ref d, ref e, ref a, ref roundInputs[8]);
+			RoundsX86<Parity>(ref b, ref c, ref d, ref e, ref a, ref roundInputs[8]);
 			words2 = UpdateX86Schedule32(words2, words3, words6, words0, words1);
 			StoreRoundInputsX86(words2, MajorityConstant, ref roundInputs[8]);
-			ParityRoundsX86(ref c, ref d, ref e, ref a, ref b, ref roundInputs[12]);
+			RoundsX86<Parity>(ref c, ref d, ref e, ref a, ref b, ref roundInputs[12]);
 			words3 = UpdateX86Schedule32(words3, words4, words7, words1, words2);
 			StoreRoundInputsX86(words3, MajorityConstant, ref roundInputs[12]);
-			ParityRoundsX86(ref d, ref e, ref a, ref b, ref c, ref roundInputs[0]);
+			RoundsX86<Parity>(ref d, ref e, ref a, ref b, ref c, ref roundInputs[0]);
 			words4 = UpdateX86Schedule32(words4, words5, words0, words2, words3);
 			StoreRoundInputsX86(words4, MajorityConstant, ref roundInputs[0]);
-			ParityRoundsX86(ref e, ref a, ref b, ref c, ref d, ref roundInputs[4]);
+			RoundsX86<Parity>(ref e, ref a, ref b, ref c, ref d, ref roundInputs[4]);
 			words5 = UpdateX86Schedule32(words5, words6, words1, words3, words4);
 			StoreRoundInputsX86(words5, MajorityConstant, ref roundInputs[4]);
 
-			MajorityRoundsX86(ref a, ref b, ref c, ref d, ref e, ref roundInputs[8]);
+			RoundsX86<Majority>(ref a, ref b, ref c, ref d, ref e, ref roundInputs[8]);
 			words6 = UpdateX86Schedule32(words6, words7, words2, words4, words5);
 			StoreRoundInputsX86(words6, MajorityConstant, ref roundInputs[8]);
-			MajorityRoundsX86(ref b, ref c, ref d, ref e, ref a, ref roundInputs[12]);
+			RoundsX86<Majority>(ref b, ref c, ref d, ref e, ref a, ref roundInputs[12]);
 			words7 = UpdateX86Schedule32(words7, words0, words3, words5, words6);
 			StoreRoundInputsX86(words7, ParityConstant2, ref roundInputs[12]);
-			MajorityRoundsX86(ref c, ref d, ref e, ref a, ref b, ref roundInputs[0]);
+			RoundsX86<Majority>(ref c, ref d, ref e, ref a, ref b, ref roundInputs[0]);
 			words0 = UpdateX86Schedule32(words0, words1, words4, words6, words7);
 			StoreRoundInputsX86(words0, ParityConstant2, ref roundInputs[0]);
-			MajorityRoundsX86(ref d, ref e, ref a, ref b, ref c, ref roundInputs[4]);
+			RoundsX86<Majority>(ref d, ref e, ref a, ref b, ref c, ref roundInputs[4]);
 			words1 = UpdateX86Schedule32(words1, words2, words5, words7, words0);
 			StoreRoundInputsX86(words1, ParityConstant2, ref roundInputs[4]);
-			MajorityRoundsX86(ref e, ref a, ref b, ref c, ref d, ref roundInputs[8]);
+			RoundsX86<Majority>(ref e, ref a, ref b, ref c, ref d, ref roundInputs[8]);
 			words2 = UpdateX86Schedule32(words2, words3, words6, words0, words1);
 			StoreRoundInputsX86(words2, ParityConstant2, ref roundInputs[8]);
 
-			ParityRoundsX86(ref a, ref b, ref c, ref d, ref e, ref roundInputs[12]);
+			RoundsX86<Parity>(ref a, ref b, ref c, ref d, ref e, ref roundInputs[12]);
 			words3 = UpdateX86Schedule32(words3, words4, words7, words1, words2);
 			StoreRoundInputsX86(words3, ParityConstant2, ref roundInputs[12]);
-			ParityRoundsX86(ref b, ref c, ref d, ref e, ref a, ref roundInputs[0]);
-			ParityRoundsX86(ref c, ref d, ref e, ref a, ref b, ref roundInputs[4]);
-			ParityRoundsX86(ref d, ref e, ref a, ref b, ref c, ref roundInputs[8]);
-			ParityRoundsX86(ref e, ref a, ref b, ref c, ref d, ref roundInputs[12]);
+			RoundsX86<Parity>(ref b, ref c, ref d, ref e, ref a, ref roundInputs[0]);
+			RoundsX86<Parity>(ref c, ref d, ref e, ref a, ref b, ref roundInputs[4]);
+			RoundsX86<Parity>(ref d, ref e, ref a, ref b, ref c, ref roundInputs[8]);
+			RoundsX86<Parity>(ref e, ref a, ref b, ref c, ref d, ref roundInputs[12]);
 
 			a += savedA;
 			b += savedB;
@@ -129,29 +129,11 @@ public partial struct Sha1Core
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ChooseRoundsX86(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint roundInput0)
+	private static void RoundsX86<TFunction>(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint roundInput0) where TFunction : IRoundFunction
 	{
-		ChooseRoundInput(ref a, ref b, ref c, ref d, ref e, roundInput0);
-		ChooseRoundInput(ref e, ref a, ref b, ref c, ref d, Unsafe.Add(ref roundInput0, 1));
-		ChooseRoundInput(ref d, ref e, ref a, ref b, ref c, Unsafe.Add(ref roundInput0, 2));
-		ChooseRoundInput(ref c, ref d, ref e, ref a, ref b, Unsafe.Add(ref roundInput0, 3));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ParityRoundsX86(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint roundInput0)
-	{
-		ParityRoundInput(ref a, ref b, ref c, ref d, ref e, roundInput0);
-		ParityRoundInput(ref e, ref a, ref b, ref c, ref d, Unsafe.Add(ref roundInput0, 1));
-		ParityRoundInput(ref d, ref e, ref a, ref b, ref c, Unsafe.Add(ref roundInput0, 2));
-		ParityRoundInput(ref c, ref d, ref e, ref a, ref b, Unsafe.Add(ref roundInput0, 3));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void MajorityRoundsX86(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint roundInput0)
-	{
-		MajorityRoundInput(ref a, ref b, ref c, ref d, ref e, roundInput0);
-		MajorityRoundInput(ref e, ref a, ref b, ref c, ref d, Unsafe.Add(ref roundInput0, 1));
-		MajorityRoundInput(ref d, ref e, ref a, ref b, ref c, Unsafe.Add(ref roundInput0, 2));
-		MajorityRoundInput(ref c, ref d, ref e, ref a, ref b, Unsafe.Add(ref roundInput0, 3));
+		Round<TFunction>(ref a, ref b, ref c, ref d, ref e, roundInput0);
+		Round<TFunction>(ref e, ref a, ref b, ref c, ref d, Unsafe.Add(ref roundInput0, 1));
+		Round<TFunction>(ref d, ref e, ref a, ref b, ref c, Unsafe.Add(ref roundInput0, 2));
+		Round<TFunction>(ref c, ref d, ref e, ref a, ref b, Unsafe.Add(ref roundInput0, 3));
 	}
 }
