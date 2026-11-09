@@ -1,6 +1,6 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The Miller loop, the powers of GT with a fixed table and the builds of those tables on SM9Lanes over SM9VectorAdvSimd and the products of G1 from fixed-base tables on SM9PointLanes; the rest, which SM9KernelDispatch does not take here, forwards to SM9Scalar.
+// The Miller loop on two points, the powers of GT with a fixed table and the builds of those tables on SM9Lanes over SM9VectorAdvSimd and the products of G1 from fixed-base tables on SM9PointLanes; the rest, which SM9KernelDispatch does not take here, forwards to SM9Scalar.
 internal readonly struct SM9AdvSimd : ISM9Kernel
 {
 	public static bool IsSupported => SM9VectorAdvSimd.IsSupported;
@@ -12,12 +12,12 @@ internal readonly struct SM9AdvSimd : ISM9Kernel
 
 	public static void MillerLoop(in SM9Fp alpha, in SM9Fp beta, ReadOnlySpan<SM9PrecomputedLine> lines, out SM9Fp12 result)
 	{
-		SM9LaneKernel<SM9VectorAdvSimd>.MillerLoop(in alpha, in beta, lines, out result);
+		SM9Scalar.MillerLoop(in alpha, in beta, lines, out result);
 	}
 
 	public static void MillerLoop(in SM9Fp alpha, in SM9Fp beta, ReadOnlySpan<SM9PrecomputedLine> lines, in SM9Fp otherAlpha, in SM9Fp otherBeta, ReadOnlySpan<SM9PrecomputedLine> otherLines, out SM9Fp12 result)
 	{
-		SM9LaneKernel<SM9VectorAdvSimd>.MillerLoop(in alpha, in beta, lines, in otherAlpha, in otherBeta, otherLines, out result);
+		SM9Scalar.MillerLoop(in alpha, in beta, lines, in otherAlpha, in otherBeta, otherLines, out result);
 	}
 
 	public static void FinalExponentiation(in SM9Fp12 value, out SM9Fp12 result)
