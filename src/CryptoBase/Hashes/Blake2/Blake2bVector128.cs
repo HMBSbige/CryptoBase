@@ -42,12 +42,6 @@ internal readonly partial struct Blake2bVector128 : IBlake2bKernel
 		Debug.Assert(IsSupported);
 		Debug.Assert(!blocks.IsEmpty && blocks.Length % BlockSizeInBytes is 0);
 
-		if (Ssse3.IsSupported)
-		{
-			CompressSsse3(ref state, blocks, counter, finalFlag);
-			return;
-		}
-
 		ref byte block = ref MemoryMarshal.GetReference(blocks);
 		nuint remainingBlocks = (uint)blocks.Length / BlockSizeInBytes;
 		ulong counterLow = (ulong)counter;
@@ -68,33 +62,41 @@ internal readonly partial struct Blake2bVector128 : IBlake2bKernel
 			Vector128<ulong> c1 = Vector128.Create(IV2, IV3);
 			Vector128<ulong> d0 = Vector128.CreateUInt64(IV4 ^ counterLow, IV5 ^ counterHigh);
 			Vector128<ulong> d1 = flags;
-			ref byte indices = ref MemoryMarshal.GetReference(Indices);
 
-			for (int round = 0; round < Rounds; ++round)
+			if (Ssse3.IsSupported)
 			{
-				Vector128<ulong> x0 = LoadMessagePair(ref block, indices, Unsafe.Add(ref indices, 1));
-				Vector128<ulong> x1 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 2), Unsafe.Add(ref indices, 3));
-				Vector128<ulong> y0 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 4), Unsafe.Add(ref indices, 5));
-				Vector128<ulong> y1 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 6), Unsafe.Add(ref indices, 7));
-				G(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, x0, x1, y0, y1);
+				RoundsSsse3(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, ref block);
+			}
+			else
+			{
+				ref byte indices = ref MemoryMarshal.GetReference(Indices);
 
-				Vector128<ulong> rotatedA0 = Concat(a1, a0);
-				Vector128<ulong> rotatedA1 = Concat(a0, a1);
-				Vector128<ulong> rotatedC0 = Concat(c0, c1);
-				Vector128<ulong> rotatedC1 = Concat(c1, c0);
+				for (int round = 0; round < Rounds; ++round)
+				{
+					Vector128<ulong> x0 = LoadMessagePair(ref block, indices, Unsafe.Add(ref indices, 1));
+					Vector128<ulong> x1 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 2), Unsafe.Add(ref indices, 3));
+					Vector128<ulong> y0 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 4), Unsafe.Add(ref indices, 5));
+					Vector128<ulong> y1 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 6), Unsafe.Add(ref indices, 7));
+					G(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, x0, x1, y0, y1);
 
-				x0 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 8), Unsafe.Add(ref indices, 9));
-				x1 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 10), Unsafe.Add(ref indices, 11));
-				y0 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 12), Unsafe.Add(ref indices, 13));
-				y1 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 14), Unsafe.Add(ref indices, 15));
+					Vector128<ulong> rotatedA0 = Concat(a1, a0);
+					Vector128<ulong> rotatedA1 = Concat(a0, a1);
+					Vector128<ulong> rotatedC0 = Concat(c0, c1);
+					Vector128<ulong> rotatedC1 = Concat(c1, c0);
 
-				G(ref rotatedA0, ref rotatedA1, ref b0, ref b1, ref rotatedC0, ref rotatedC1, ref d1, ref d0, x0, x1, y0, y1);
+					x0 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 8), Unsafe.Add(ref indices, 9));
+					x1 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 10), Unsafe.Add(ref indices, 11));
+					y0 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 12), Unsafe.Add(ref indices, 13));
+					y1 = LoadMessagePair(ref block, Unsafe.Add(ref indices, 14), Unsafe.Add(ref indices, 15));
 
-				a0 = Concat(rotatedA0, rotatedA1);
-				a1 = Concat(rotatedA1, rotatedA0);
-				c0 = Concat(rotatedC1, rotatedC0);
-				c1 = Concat(rotatedC0, rotatedC1);
-				indices = ref Unsafe.Add(ref indices, 16);
+					G(ref rotatedA0, ref rotatedA1, ref b0, ref b1, ref rotatedC0, ref rotatedC1, ref d1, ref d0, x0, x1, y0, y1);
+
+					a0 = Concat(rotatedA0, rotatedA1);
+					a1 = Concat(rotatedA1, rotatedA0);
+					c0 = Concat(rotatedC1, rotatedC0);
+					c1 = Concat(rotatedC0, rotatedC1);
+					indices = ref Unsafe.Add(ref indices, 16);
+				}
 			}
 
 			h0 ^= a0 ^ c0;
