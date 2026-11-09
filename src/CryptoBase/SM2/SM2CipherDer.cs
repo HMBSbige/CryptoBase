@@ -6,7 +6,6 @@ namespace CryptoBase.SM2;
 internal static class SM2CipherDer
 {
 	private const byte SequenceTag = 0x30;
-	private const byte IntegerTag = 0x02;
 	private const byte OctetStringTag = 0x04;
 
 	private const int CoordinateLength = 32;
@@ -21,8 +20,8 @@ internal static class SM2CipherDer
 	{
 		Debug.Assert(plaintextLength >= 0);
 
-		long content = MaxFixedLength + GetEncodedLength(plaintextLength);
-		long total = GetEncodedLength(content);
+		long content = MaxFixedLength + KeyInfoDer.GetLongEncodedLength(plaintextLength);
+		long total = KeyInfoDer.GetLongEncodedLength(content);
 		return total <= int.MaxValue ? (int)total : -1;
 	}
 
@@ -33,14 +32,14 @@ internal static class SM2CipherDer
 
 		ReadOnlySpan<byte> x = TrimLeadingZeros(c1.Slice(1, CoordinateLength));
 		ReadOnlySpan<byte> y = TrimLeadingZeros(c1.Slice(1 + CoordinateLength, CoordinateLength));
-		long content = GetIntegerLength(x) + GetIntegerLength(y) + 2 + HashLength + GetEncodedLength(plaintextLength);
-		int written = WriteHeader(SequenceTag, (int)content, destination);
-		written += WriteInteger(x, destination.Slice(written));
-		written += WriteInteger(y, destination.Slice(written));
-		written += WriteHeader(OctetStringTag, HashLength, destination.Slice(written));
+		long content = GetIntegerLength(x) + GetIntegerLength(y) + 2 + HashLength + KeyInfoDer.GetLongEncodedLength(plaintextLength);
+		int written = KeyInfoDer.WriteHeader(SequenceTag, (int)content, destination);
+		written += KeyInfoDer.WriteInteger(x, destination.Slice(written));
+		written += KeyInfoDer.WriteInteger(y, destination.Slice(written));
+		written += KeyInfoDer.WriteHeader(OctetStringTag, HashLength, destination.Slice(written));
 		hashOffset = written;
 		written += HashLength;
-		written += WriteHeader(OctetStringTag, plaintextLength, destination.Slice(written));
+		written += KeyInfoDer.WriteHeader(OctetStringTag, plaintextLength, destination.Slice(written));
 		cipherTextOffset = written;
 		return written + plaintextLength;
 	}
@@ -119,48 +118,5 @@ internal static class SM2CipherDer
 	private static int GetIntegerLength(ReadOnlySpan<byte> magnitude)
 	{
 		return 2 + magnitude.Length + (magnitude[0] >> 7);
-	}
-
-	private static int WriteInteger(ReadOnlySpan<byte> magnitude, Span<byte> destination)
-	{
-		int padding = magnitude[0] >> 7;
-		int written = WriteHeader(IntegerTag, padding + magnitude.Length, destination);
-
-		if (padding is not 0)
-		{
-			destination[written++] = 0;
-		}
-
-		magnitude.CopyTo(destination.Slice(written));
-		return written + magnitude.Length;
-	}
-
-	// The length of a TLV with a one-byte tag around contentLength bytes, which may exceed int.MaxValue.
-	private static long GetEncodedLength(long contentLength)
-	{
-		int lengthLength = contentLength < 0x80 ? 1 : 1 + (71 - BitOperations.LeadingZeroCount((ulong)contentLength)) / 8;
-		return 1 + lengthLength + contentLength;
-	}
-
-	private static int WriteHeader(byte tag, int length, Span<byte> destination)
-	{
-		destination[0] = tag;
-
-		if (length < 0x80)
-		{
-			destination[1] = (byte)length;
-			return 2;
-		}
-
-		int lengthLength = (39 - BitOperations.LeadingZeroCount((uint)length)) / 8;
-		destination[1] = (byte)(0x80 | lengthLength);
-
-		for (int i = lengthLength; i > 0; --i)
-		{
-			destination[1 + i] = (byte)length;
-			length >>= 8;
-		}
-
-		return 2 + lengthLength;
 	}
 }

@@ -60,8 +60,8 @@ internal static class EcdsaEncoding<TOrder> where TOrder : unmanaged, IMontgomer
 		ReadOnlySpan<byte> sMagnitude = TrimLeadingZeros(values.Slice(length));
 		int contentLength = GetIntegerLength(rMagnitude) + GetIntegerLength(sMagnitude);
 		int written = WriteHeader(SequenceTag, contentLength, destination);
-		written += WriteInteger(rMagnitude, destination.Slice(written));
-		written += WriteInteger(sMagnitude, destination.Slice(written));
+		written += KeyInfoDer.WriteInteger(rMagnitude, destination.Slice(written));
+		written += KeyInfoDer.WriteInteger(sMagnitude, destination.Slice(written));
 		return written;
 	}
 
@@ -74,20 +74,6 @@ internal static class EcdsaEncoding<TOrder> where TOrder : unmanaged, IMontgomer
 	private static int GetIntegerLength(ReadOnlySpan<byte> magnitude)
 	{
 		return KeyInfoDer.GetEncodedLength(magnitude.Length + (magnitude[0] >> 7));
-	}
-
-	private static int WriteInteger(ReadOnlySpan<byte> magnitude, Span<byte> destination)
-	{
-		int padding = magnitude[0] >> 7;
-		int written = WriteHeader(IntegerTag, padding + magnitude.Length, destination);
-
-		if (padding is not 0)
-		{
-			destination[written++] = 0;
-		}
-
-		magnitude.CopyTo(destination.Slice(written));
-		return written + magnitude.Length;
 	}
 
 	// No content of a signature reaches 256 bytes, so a long length takes one byte.

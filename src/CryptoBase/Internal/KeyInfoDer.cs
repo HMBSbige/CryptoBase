@@ -17,6 +17,48 @@ internal static class KeyInfoDer
 		return 1 + lengthLength + contentLength;
 	}
 
+	// The length of a TLV with a one-byte tag around contentLength bytes, which may exceed int.MaxValue.
+	internal static long GetLongEncodedLength(long contentLength)
+	{
+		int lengthLength = contentLength < 0x80 ? 1 : 1 + (71 - BitOperations.LeadingZeroCount((ulong)contentLength)) / 8;
+		return 1 + lengthLength + contentLength;
+	}
+
+	internal static int WriteHeader(byte tag, int length, Span<byte> destination)
+	{
+		destination[0] = tag;
+
+		if (length < 0x80)
+		{
+			destination[1] = (byte)length;
+			return 2;
+		}
+
+		int lengthLength = (39 - BitOperations.LeadingZeroCount((uint)length)) / 8;
+		destination[1] = (byte)(0x80 | lengthLength);
+
+		for (int i = lengthLength; i > 0; --i)
+		{
+			destination[1 + i] = (byte)length;
+			length >>= 8;
+		}
+
+		return 2 + lengthLength;
+	}
+
+	// The INTEGER of a minimal positive magnitude of fewer than 127 bytes, whose length takes one byte.
+	internal static int WriteInteger(ReadOnlySpan<byte> magnitude, Span<byte> destination)
+	{
+		Debug.Assert(magnitude.Length < 0x7F);
+
+		int padding = magnitude[0] >> 7;
+		destination[0] = 0x02;
+		destination[1] = (byte)(padding + magnitude.Length);
+		destination[2] = 0;
+		magnitude.CopyTo(destination.Slice(2 + padding));
+		return 2 + padding + magnitude.Length;
+	}
+
 	// SEQUENCE { algorithm, BIT STRING with no unused bits }.
 	internal static int GetSubjectPublicKeyInfoLength(ReadOnlySpan<byte> algorithmIdentifier, int publicKeyLength)
 	{

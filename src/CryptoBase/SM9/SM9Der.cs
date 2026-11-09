@@ -53,7 +53,7 @@ internal static class SM9Der
 	{
 		Debug.Assert(plaintextLength >= 0);
 
-		long total = GetEncodedLength(CipherFixedLength + GetEncodedLength(plaintextLength));
+		long total = KeyInfoDer.GetLongEncodedLength(CipherFixedLength + KeyInfoDer.GetLongEncodedLength(plaintextLength));
 		return total <= int.MaxValue ? (int)total : -1;
 	}
 
@@ -62,17 +62,17 @@ internal static class SM9Der
 	{
 		Debug.Assert(c1.Length is SM9G1.EncodedLength && c1[0] is 0x04);
 
-		int written = WriteHeader(SequenceTag, (int)(CipherFixedLength + GetEncodedLength(plaintextLength)), destination);
+		int written = KeyInfoDer.WriteHeader(SequenceTag, (int)(CipherFixedLength + KeyInfoDer.GetLongEncodedLength(plaintextLength)), destination);
 		EnTypePrefix.CopyTo(destination.Slice(written));
 		written += EnTypePrefix.Length;
 		PointPrefix.CopyTo(destination.Slice(written));
 		written += PointPrefix.Length;
 		c1.CopyTo(destination.Slice(written));
 		written += c1.Length;
-		written += WriteHeader(OctetStringTag, HashLength, destination.Slice(written));
+		written += KeyInfoDer.WriteHeader(OctetStringTag, HashLength, destination.Slice(written));
 		hashOffset = written;
 		written += HashLength;
-		written += WriteHeader(OctetStringTag, plaintextLength, destination.Slice(written));
+		written += KeyInfoDer.WriteHeader(OctetStringTag, plaintextLength, destination.Slice(written));
 		cipherTextOffset = written;
 		return written + plaintextLength;
 	}
@@ -121,34 +121,5 @@ internal static class SM9Der
 		{
 			return false;
 		}
-	}
-
-	// The length of a TLV with a one-byte tag around contentLength bytes, which may exceed int.MaxValue.
-	private static long GetEncodedLength(long contentLength)
-	{
-		int lengthLength = contentLength < 0x80 ? 1 : 1 + (71 - BitOperations.LeadingZeroCount((ulong)contentLength)) / 8;
-		return 1 + lengthLength + contentLength;
-	}
-
-	private static int WriteHeader(byte tag, int length, Span<byte> destination)
-	{
-		destination[0] = tag;
-
-		if (length < 0x80)
-		{
-			destination[1] = (byte)length;
-			return 2;
-		}
-
-		int lengthLength = (39 - BitOperations.LeadingZeroCount((uint)length)) / 8;
-		destination[1] = (byte)(0x80 | lengthLength);
-
-		for (int i = lengthLength; i > 0; --i)
-		{
-			destination[1 + i] = (byte)length;
-			length >>= 8;
-		}
-
-		return 2 + lengthLength;
 	}
 }

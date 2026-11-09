@@ -185,7 +185,7 @@ internal static class RsaKeyDer
 	[SkipLocalsInit]
 	internal static int WriteRsaPublicKey(RsaPublicOperation key, Span<byte> destination)
 	{
-		int offset = WriteHeader(0x30, GetModulusIntegerLength(key) + GetExponentIntegerLength(key), destination);
+		int offset = KeyInfoDer.WriteHeader(0x30, GetModulusIntegerLength(key) + GetExponentIntegerLength(key), destination);
 		offset += WriteModulus(key, destination.Slice(offset));
 		offset += WriteExponent(key, destination.Slice(offset));
 		return offset;
@@ -200,7 +200,7 @@ internal static class RsaKeyDer
 	internal static int WriteRsaPrivateKey(RsaPrivateOperation key, Span<byte> destination)
 	{
 		RsaPublicOperation publicKey = key.PublicKey;
-		int offset = WriteHeader(0x30, GetRsaPrivateKeyContentLength(key), destination);
+		int offset = KeyInfoDer.WriteHeader(0x30, GetRsaPrivateKeyContentLength(key), destination);
 		destination[offset++] = 0x02;
 		destination[offset++] = 0x01;
 		destination[offset++] = 0x00;
@@ -358,7 +358,7 @@ internal static class RsaKeyDer
 	// The header of such an INTEGER and its zero byte; the value follows.
 	private static int WriteIntegerHeader(int valueLength, bool padded, Span<byte> destination)
 	{
-		int offset = WriteHeader(0x02, valueLength + (padded ? 1 : 0), destination);
+		int offset = KeyInfoDer.WriteHeader(0x02, valueLength + (padded ? 1 : 0), destination);
 
 		if (padded)
 		{
@@ -366,29 +366,6 @@ internal static class RsaKeyDer
 		}
 
 		return offset;
-	}
-
-	// The one-byte tag and the DER length of contentLength bytes.
-	private static int WriteHeader(byte tag, int contentLength, Span<byte> destination)
-	{
-		int headerLength = KeyInfoDer.GetEncodedLength(contentLength) - contentLength;
-		destination[0] = tag;
-
-		if (headerLength is 2)
-		{
-			destination[1] = (byte)contentLength;
-			return 2;
-		}
-
-		destination[1] = (byte)(0x80 | headerLength - 2);
-
-		for (int i = headerLength - 1; i >= 2; --i)
-		{
-			destination[i] = (byte)contentLength;
-			contentLength >>= 8;
-		}
-
-		return headerLength;
 	}
 
 	// Reads DER values in order, as slices of the source. Malformed input throws AsnContentException.
