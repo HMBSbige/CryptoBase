@@ -80,7 +80,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		z7 = AdvSimd.MultiplyWideningLowerAndAdd(z7, a6, y);
 		z8 = AdvSimd.MultiplyWideningLowerAndAdd(z8, a7, y);
 		Vector128<ulong> z9 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.BiasMiddle), a8, y);
-		z1 += z0 >> SM2Field29.Bits;
+		z1 = CarryInto<TCarry>(z1, z0);
 		Vector128<ulong> q1 = z1 & mask;
 
 		y = AdvSimd.ExtractNarrowingLower(right.L2);
@@ -94,7 +94,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		z9 = AdvSimd.MultiplyWideningLowerAndAdd(z9, a7, y);
 		Vector128<ulong> z10 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.Bias10), a8, y);
 		z2 += q0 << 6;
-		z2 += z1 >> SM2Field29.Bits;
+		z2 = CarryInto<TCarry>(z2, z1);
 		Vector128<ulong> q2 = z2 & mask;
 
 		y = AdvSimd.ExtractNarrowingLower(right.L3);
@@ -109,7 +109,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z11 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.Bias11), a8, y);
 		z3 += q1 << 6;
 		z3 -= q0 << 9;
-		z3 += z2 >> SM2Field29.Bits;
+		z3 = CarryInto<TCarry>(z3, z2);
 		Vector128<ulong> q3 = z3 & mask;
 
 		y = AdvSimd.ExtractNarrowingLower(right.L4);
@@ -124,7 +124,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z12 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.BiasMiddle), a8, y);
 		z4 += q2 << 6;
 		z4 -= q1 << 9;
-		z4 += z3 >> SM2Field29.Bits;
+		z4 = CarryInto<TCarry>(z4, z3);
 		Vector128<ulong> q4 = z4 & mask;
 
 		y = AdvSimd.ExtractNarrowingLower(right.L5);
@@ -139,7 +139,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z13 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.BiasMiddle), a8, y);
 		z5 += q3 << 6;
 		z5 -= q2 << 9;
-		z5 += z4 >> SM2Field29.Bits;
+		z5 = CarryInto<TCarry>(z5, z4);
 		Vector128<ulong> q5 = z5 & mask;
 
 		y = AdvSimd.ExtractNarrowingLower(right.L6);
@@ -154,7 +154,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z14 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.BiasMiddle), a8, y);
 		z6 += q4 << 6;
 		z6 -= q3 << 9;
-		z6 += z5 >> SM2Field29.Bits;
+		z6 = CarryInto<TCarry>(z6, z5);
 		Vector128<ulong> q6 = z6 & mask;
 
 		y = AdvSimd.ExtractNarrowingLower(right.L7);
@@ -170,7 +170,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		z7 += q5 << 6;
 		z7 -= q4 << 9;
 		z7 -= q0 << 21;
-		z7 += z6 >> SM2Field29.Bits;
+		z7 = CarryInto<TCarry>(z7, z6);
 		Vector128<ulong> q7 = z7 & mask;
 
 		y = AdvSimd.ExtractNarrowingLower(right.L8);
@@ -187,14 +187,14 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		z8 -= q5 << 9;
 		z8 -= q1 << 21;
 		z8 += q0 << 24;
-		z8 += z7 >> SM2Field29.Bits;
+		z8 = CarryInto<TCarry>(z8, z7);
 		Vector128<ulong> q8 = z8 & mask;
 
 		z9 += q7 << 6;
 		z9 -= q6 << 9;
 		z9 -= q2 << 21;
 		z9 += q1 << 24;
-		z9 += z8 >> SM2Field29.Bits;
+		z9 = CarryInto<TCarry>(z9, z8);
 		z10 += q8 << 6;
 		z10 -= q7 << 9;
 		z10 -= q3 << 21;
@@ -214,19 +214,19 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 
 		if (TCarry.Ripples)
 		{
-			z10 += z9 >> SM2Field29.Bits;
+			z10 = CarryInto<TCarry>(z10, z9);
 			result.L0 = z9 & mask;
-			z11 += z10 >> SM2Field29.Bits;
+			z11 = CarryInto<TCarry>(z11, z10);
 			result.L1 = z10 & mask;
-			z12 += z11 >> SM2Field29.Bits;
+			z12 = CarryInto<TCarry>(z12, z11);
 			result.L2 = z11 & mask;
-			z13 += z12 >> SM2Field29.Bits;
+			z13 = CarryInto<TCarry>(z13, z12);
 			result.L3 = z12 & mask;
-			z14 += z13 >> SM2Field29.Bits;
+			z14 = CarryInto<TCarry>(z14, z13);
 			result.L4 = z13 & mask;
-			z15 += z14 >> SM2Field29.Bits;
+			z15 = CarryInto<TCarry>(z15, z14);
 			result.L5 = z14 & mask;
-			z16 += z15 >> SM2Field29.Bits;
+			z16 = CarryInto<TCarry>(z16, z15);
 			result.L6 = z15 & mask;
 			result.L7 = z16 & mask;
 			result.L8 = z16 >> SM2Field29.Bits;
@@ -299,7 +299,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector64<uint> twice = AdvSimd.Add(a1, a1);
 		Vector128<ulong> z1 = AdvSimd.MultiplyWideningLower(a0, twice);
 		Vector128<ulong> z2 = AdvSimd.MultiplyWideningLower(a1, a1);
-		z1 += z0 >> SM2Field29.Bits;
+		z1 = CarryInto<TCarry>(z1, z0);
 		Vector128<ulong> q1 = z1 & mask;
 
 		twice = AdvSimd.Add(a2, a2);
@@ -307,7 +307,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z3 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.Bias3), a1, twice);
 		Vector128<ulong> z4 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.BiasMiddle), a2, a2);
 		z2 += q0 << 6;
-		z2 += z1 >> SM2Field29.Bits;
+		z2 = CarryInto<TCarry>(z2, z1);
 		Vector128<ulong> q2 = z2 & mask;
 
 		twice = AdvSimd.Add(a3, a3);
@@ -317,7 +317,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z6 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.BiasMiddle), a3, a3);
 		z3 += q1 << 6;
 		z3 -= q0 << 9;
-		z3 += z2 >> SM2Field29.Bits;
+		z3 = CarryInto<TCarry>(z3, z2);
 		Vector128<ulong> q3 = z3 & mask;
 
 		twice = AdvSimd.Add(a4, a4);
@@ -328,7 +328,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z8 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.BiasMiddle), a4, a4);
 		z4 += q2 << 6;
 		z4 -= q1 << 9;
-		z4 += z3 >> SM2Field29.Bits;
+		z4 = CarryInto<TCarry>(z4, z3);
 		Vector128<ulong> q4 = z4 & mask;
 
 		twice = AdvSimd.Add(a5, a5);
@@ -340,7 +340,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z10 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.Bias10), a5, a5);
 		z5 += q3 << 6;
 		z5 -= q2 << 9;
-		z5 += z4 >> SM2Field29.Bits;
+		z5 = CarryInto<TCarry>(z5, z4);
 		Vector128<ulong> q5 = z5 & mask;
 
 		twice = AdvSimd.Add(a6, a6);
@@ -353,7 +353,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		Vector128<ulong> z12 = AdvSimd.MultiplyWideningLowerAndAdd(Vector128.Create(SM2Field29.BiasMiddle), a6, a6);
 		z6 += q4 << 6;
 		z6 -= q3 << 9;
-		z6 += z5 >> SM2Field29.Bits;
+		z6 = CarryInto<TCarry>(z6, z5);
 		Vector128<ulong> q6 = z6 & mask;
 
 		twice = AdvSimd.Add(a7, a7);
@@ -368,7 +368,7 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		z7 += q5 << 6;
 		z7 -= q4 << 9;
 		z7 -= q0 << 21;
-		z7 += z6 >> SM2Field29.Bits;
+		z7 = CarryInto<TCarry>(z7, z6);
 		Vector128<ulong> q7 = z7 & mask;
 
 		twice = AdvSimd.Add(a8, a8);
@@ -385,14 +385,14 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		z8 -= q5 << 9;
 		z8 -= q1 << 21;
 		z8 += q0 << 24;
-		z8 += z7 >> SM2Field29.Bits;
+		z8 = CarryInto<TCarry>(z8, z7);
 		Vector128<ulong> q8 = z8 & mask;
 
 		z9 += q7 << 6;
 		z9 -= q6 << 9;
 		z9 -= q2 << 21;
 		z9 += q1 << 24;
-		z9 += z8 >> SM2Field29.Bits;
+		z9 = CarryInto<TCarry>(z9, z8);
 		z10 += q8 << 6;
 		z10 -= q7 << 9;
 		z10 -= q3 << 21;
@@ -412,19 +412,19 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 
 		if (TCarry.Ripples)
 		{
-			z10 += z9 >> SM2Field29.Bits;
+			z10 = CarryInto<TCarry>(z10, z9);
 			result.L0 = z9 & mask;
-			z11 += z10 >> SM2Field29.Bits;
+			z11 = CarryInto<TCarry>(z11, z10);
 			result.L1 = z10 & mask;
-			z12 += z11 >> SM2Field29.Bits;
+			z12 = CarryInto<TCarry>(z12, z11);
 			result.L2 = z11 & mask;
-			z13 += z12 >> SM2Field29.Bits;
+			z13 = CarryInto<TCarry>(z13, z12);
 			result.L3 = z12 & mask;
-			z14 += z13 >> SM2Field29.Bits;
+			z14 = CarryInto<TCarry>(z14, z13);
 			result.L4 = z13 & mask;
-			z15 += z14 >> SM2Field29.Bits;
+			z15 = CarryInto<TCarry>(z15, z14);
 			result.L5 = z14 & mask;
-			z16 += z15 >> SM2Field29.Bits;
+			z16 = CarryInto<TCarry>(z16, z15);
 			result.L6 = z15 & mask;
 			result.L7 = z16 & mask;
 			result.L8 = z16 >> SM2Field29.Bits;
@@ -494,20 +494,21 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		result.L8 = left.L8 + Vector128.Create(SM2Field29.FourP8) - right.L8;
 	}
 
+	// The carries ripple from limb 0 up, the order in which a product reads the limbs it takes, so they take the USRA.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Reduce(in SM2Field29x2AdvSimd value, out SM2Field29x2AdvSimd result)
 	{
 		Vector128<ulong> mask = Vector128.Create(SM2Field29.Mask);
 		Vector128<ulong> h = value.L8 >> 24;
 		Vector128<ulong> t0 = value.L0 + h;
-		Vector128<ulong> t1 = value.L1 + (t0 >> SM2Field29.Bits);
-		Vector128<ulong> t2 = value.L2 + (h << 38) - (h << 6) + (t1 >> SM2Field29.Bits);
-		Vector128<ulong> t3 = value.L3 + (t2 >> SM2Field29.Bits);
-		Vector128<ulong> t4 = value.L4 + (t3 >> SM2Field29.Bits);
-		Vector128<ulong> t5 = value.L5 + (t4 >> SM2Field29.Bits);
-		Vector128<ulong> t6 = value.L6 + (t5 >> SM2Field29.Bits);
-		Vector128<ulong> t7 = value.L7 + (h << 21) + (t6 >> SM2Field29.Bits);
-		result.L8 = (value.L8 & Vector128.Create(SM2Field29.TopMask)) + (t7 >> SM2Field29.Bits);
+		Vector128<ulong> t1 = CarryInto(value.L1, t0);
+		Vector128<ulong> t2 = CarryInto(value.L2 + (h << 38) - (h << 6), t1);
+		Vector128<ulong> t3 = CarryInto(value.L3, t2);
+		Vector128<ulong> t4 = CarryInto(value.L4, t3);
+		Vector128<ulong> t5 = CarryInto(value.L5, t4);
+		Vector128<ulong> t6 = CarryInto(value.L6, t5);
+		Vector128<ulong> t7 = CarryInto(value.L7 + (h << 21), t6);
+		result.L8 = CarryInto(value.L8 & Vector128.Create(SM2Field29.TopMask), t7);
 		result.L0 = t0 & mask;
 		result.L1 = t1 & mask;
 		result.L2 = t2 & mask;
@@ -516,6 +517,20 @@ internal struct SM2Field29x2AdvSimd : ISM2Field29Lanes<SM2Field29x2AdvSimd>
 		result.L5 = t5 & mask;
 		result.L6 = t6 & mask;
 		result.L7 = t7 & mask;
+	}
+
+	// limb + (from >> Bits) in one USRA, which saves an instruction over a shift and an add but takes longer through its shifted operand.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<ulong> CarryInto(Vector128<ulong> limb, Vector128<ulong> from)
+	{
+		return AdvSimd.ShiftRightLogicalAdd(limb, from, SM2Field29.Bits);
+	}
+
+	// As CarryInto in a product that ripples, among products that need not wait for each other; a product that carries in two steps, which the next step waits for, keeps the shift and the add.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<ulong> CarryInto<TCarry>(Vector128<ulong> limb, Vector128<ulong> from) where TCarry : struct, ISM2Carry
+	{
+		return TCarry.Ripples ? AdvSimd.ShiftRightLogicalAdd(limb, from, SM2Field29.Bits) : limb + (from >> SM2Field29.Bits);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
