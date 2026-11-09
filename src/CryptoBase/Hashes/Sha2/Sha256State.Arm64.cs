@@ -42,40 +42,11 @@ internal partial struct Sha256State
 		Vector128<uint> savedState1 = state1;
 		ref uint roundConstants = ref MemoryMarshal.GetReference(RoundConstants);
 
-		(Vector128<uint> roundConstants0, Vector128<uint> roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 0);
-		state0 = RoundArm64(state0, ref state1, words0, roundConstants0);
-		words0 = UpdateArm64Schedule(words0, words1, words2, words3);
-		state0 = RoundArm64(state0, ref state1, words1, roundConstants1);
-		words1 = UpdateArm64Schedule(words1, words2, words3, words0);
-		(roundConstants0, roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 8);
-		state0 = RoundArm64(state0, ref state1, words2, roundConstants0);
-		words2 = UpdateArm64Schedule(words2, words3, words0, words1);
-		state0 = RoundArm64(state0, ref state1, words3, roundConstants1);
-		words3 = UpdateArm64Schedule(words3, words0, words1, words2);
+		UpdateScheduleAndCompressSixteenRoundsArm64(ref state0, ref state1, ref words0, ref words1, ref words2, ref words3, ref roundConstants, 0);
+		UpdateScheduleAndCompressSixteenRoundsArm64(ref state0, ref state1, ref words0, ref words1, ref words2, ref words3, ref roundConstants, 16);
+		UpdateScheduleAndCompressSixteenRoundsArm64(ref state0, ref state1, ref words0, ref words1, ref words2, ref words3, ref roundConstants, 32);
 
-		(roundConstants0, roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 16);
-		state0 = RoundArm64(state0, ref state1, words0, roundConstants0);
-		words0 = UpdateArm64Schedule(words0, words1, words2, words3);
-		state0 = RoundArm64(state0, ref state1, words1, roundConstants1);
-		words1 = UpdateArm64Schedule(words1, words2, words3, words0);
-		(roundConstants0, roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 24);
-		state0 = RoundArm64(state0, ref state1, words2, roundConstants0);
-		words2 = UpdateArm64Schedule(words2, words3, words0, words1);
-		state0 = RoundArm64(state0, ref state1, words3, roundConstants1);
-		words3 = UpdateArm64Schedule(words3, words0, words1, words2);
-
-		(roundConstants0, roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 32);
-		state0 = RoundArm64(state0, ref state1, words0, roundConstants0);
-		words0 = UpdateArm64Schedule(words0, words1, words2, words3);
-		state0 = RoundArm64(state0, ref state1, words1, roundConstants1);
-		words1 = UpdateArm64Schedule(words1, words2, words3, words0);
-		(roundConstants0, roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 40);
-		state0 = RoundArm64(state0, ref state1, words2, roundConstants0);
-		words2 = UpdateArm64Schedule(words2, words3, words0, words1);
-		state0 = RoundArm64(state0, ref state1, words3, roundConstants1);
-		words3 = UpdateArm64Schedule(words3, words0, words1, words2);
-
-		(roundConstants0, roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 48);
+		(Vector128<uint> roundConstants0, Vector128<uint> roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 48);
 		state0 = RoundArm64(state0, ref state1, words0, roundConstants0);
 		state0 = RoundArm64(state0, ref state1, words1, roundConstants1);
 		(roundConstants0, roundConstants1) = LoadArm64RoundConstants(ref roundConstants, 56);
@@ -84,6 +55,21 @@ internal partial struct Sha256State
 
 		state0 += savedState0;
 		state1 += savedState1;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void UpdateScheduleAndCompressSixteenRoundsArm64(ref Vector128<uint> state0, ref Vector128<uint> state1, ref Vector128<uint> words0, ref Vector128<uint> words1, ref Vector128<uint> words2, ref Vector128<uint> words3, ref uint roundConstants, int round)
+	{
+		(Vector128<uint> roundConstants0, Vector128<uint> roundConstants1) = LoadArm64RoundConstants(ref roundConstants, round);
+		state0 = RoundArm64(state0, ref state1, words0, roundConstants0);
+		words0 = UpdateArm64Schedule(words0, words1, words2, words3);
+		state0 = RoundArm64(state0, ref state1, words1, roundConstants1);
+		words1 = UpdateArm64Schedule(words1, words2, words3, words0);
+		(roundConstants0, roundConstants1) = LoadArm64RoundConstants(ref roundConstants, round + 8);
+		state0 = RoundArm64(state0, ref state1, words2, roundConstants0);
+		words2 = UpdateArm64Schedule(words2, words3, words0, words1);
+		state0 = RoundArm64(state0, ref state1, words3, roundConstants1);
+		words3 = UpdateArm64Schedule(words3, words0, words1, words2);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

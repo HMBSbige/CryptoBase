@@ -2,7 +2,7 @@ using Sha256Arm = System.Runtime.Intrinsics.Arm.Sha256;
 
 namespace CryptoBase.Hashes.Sha2;
 
-internal partial struct Sha256State
+internal partial struct Sha256State : ISha2SoftwareRounds<uint>
 {
 	private ulong _byteCount;
 	private uint _h0;
@@ -218,57 +218,37 @@ internal partial struct Sha256State
 			uint h = _h7;
 			ref uint roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
 
-			CompressLoadedEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 0);
-			CompressLoadedEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 8);
+			Sha2SoftwareRounds.CompressEightRounds<uint, Sha256State>(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 0, false);
+			Sha2SoftwareRounds.CompressEightRounds<uint, Sha256State>(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 8, false);
 
 			for (int round = 16; round < 64; round += 16)
 			{
 				ref uint currentRoundConstant = ref Unsafe.Add(ref roundConstant0, round);
-				ExpandAndCompressEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref currentRoundConstant, 0);
-				ExpandAndCompressEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref currentRoundConstant, 8);
+				Sha2SoftwareRounds.CompressEightRounds<uint, Sha256State>(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref currentRoundConstant, 0, true);
+				Sha2SoftwareRounds.CompressEightRounds<uint, Sha256State>(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref currentRoundConstant, 8, true);
 			}
 
-			_h0 += a;
-			_h1 += b;
-			_h2 += c;
-			_h3 += d;
-			_h4 += e;
-			_h5 += f;
-			_h6 += g;
-			_h7 += h;
+			AddToState(a, b, c, d, e, f, g, h);
 			block0 = ref Unsafe.Add(ref block0, BlockSizeInBytes);
 			remainingLength -= BlockSizeInBytes;
 		} while (remainingLength is not 0);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void CompressLoadedEightSoftwareRounds(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h, ref uint schedule, ref uint roundConstants, int round)
+	private void AddToState(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h)
 	{
-		CompressSoftwareRound(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, LoadedRoundInput(ref schedule, ref roundConstants, round));
-		CompressSoftwareRound(ref h, ref a, ref b, ref c, ref d, ref e, ref f, ref g, LoadedRoundInput(ref schedule, ref roundConstants, round + 1));
-		CompressSoftwareRound(ref g, ref h, ref a, ref b, ref c, ref d, ref e, ref f, LoadedRoundInput(ref schedule, ref roundConstants, round + 2));
-		CompressSoftwareRound(ref f, ref g, ref h, ref a, ref b, ref c, ref d, ref e, LoadedRoundInput(ref schedule, ref roundConstants, round + 3));
-		CompressSoftwareRound(ref e, ref f, ref g, ref h, ref a, ref b, ref c, ref d, LoadedRoundInput(ref schedule, ref roundConstants, round + 4));
-		CompressSoftwareRound(ref d, ref e, ref f, ref g, ref h, ref a, ref b, ref c, LoadedRoundInput(ref schedule, ref roundConstants, round + 5));
-		CompressSoftwareRound(ref c, ref d, ref e, ref f, ref g, ref h, ref a, ref b, LoadedRoundInput(ref schedule, ref roundConstants, round + 6));
-		CompressSoftwareRound(ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref a, LoadedRoundInput(ref schedule, ref roundConstants, round + 7));
+		_h0 += a;
+		_h1 += b;
+		_h2 += c;
+		_h3 += d;
+		_h4 += e;
+		_h5 += f;
+		_h6 += g;
+		_h7 += h;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ExpandAndCompressEightSoftwareRounds(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h, ref uint schedule, ref uint roundConstants, int round)
-	{
-		CompressSoftwareRound(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ExpandedRoundInput(ref schedule, ref roundConstants, round));
-		CompressSoftwareRound(ref h, ref a, ref b, ref c, ref d, ref e, ref f, ref g, ExpandedRoundInput(ref schedule, ref roundConstants, round + 1));
-		CompressSoftwareRound(ref g, ref h, ref a, ref b, ref c, ref d, ref e, ref f, ExpandedRoundInput(ref schedule, ref roundConstants, round + 2));
-		CompressSoftwareRound(ref f, ref g, ref h, ref a, ref b, ref c, ref d, ref e, ExpandedRoundInput(ref schedule, ref roundConstants, round + 3));
-		CompressSoftwareRound(ref e, ref f, ref g, ref h, ref a, ref b, ref c, ref d, ExpandedRoundInput(ref schedule, ref roundConstants, round + 4));
-		CompressSoftwareRound(ref d, ref e, ref f, ref g, ref h, ref a, ref b, ref c, ExpandedRoundInput(ref schedule, ref roundConstants, round + 5));
-		CompressSoftwareRound(ref c, ref d, ref e, ref f, ref g, ref h, ref a, ref b, ExpandedRoundInput(ref schedule, ref roundConstants, round + 6));
-		CompressSoftwareRound(ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref a, ExpandedRoundInput(ref schedule, ref roundConstants, round + 7));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void CompressSoftwareRound(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h, uint roundInput)
+	public static void CompressSoftwareRound(ref uint a, ref uint b, ref uint c, ref uint d, ref uint e, ref uint f, ref uint g, ref uint h, uint roundInput)
 	{
 		h = h + roundInput + Choose(e, f, g) + BigSigma1Software(e);
 		d += h;
@@ -276,21 +256,19 @@ internal partial struct Sha256State
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint LoadedRoundInput(ref uint schedule, ref uint roundConstants, int round)
+	public static uint RoundInput(ref uint schedule, ref uint roundConstants, int round, bool expand)
 	{
-		return Unsafe.Add(ref schedule, round) + Unsafe.Add(ref roundConstants, round);
-	}
+		uint word = Unsafe.Add(ref schedule, round);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint ExpandedRoundInput(ref uint schedule, ref uint roundConstants, int round)
-	{
-		int index = round & 15;
-		uint word =
-			Unsafe.Add(ref schedule, index)
-			+ SmallSigma0Software(Unsafe.Add(ref schedule, index + 1 & 15))
-			+ Unsafe.Add(ref schedule, index + 9 & 15)
-			+ SmallSigma1Software(Unsafe.Add(ref schedule, index + 14 & 15));
-		Unsafe.Add(ref schedule, index) = word;
+		if (expand)
+		{
+			word = word
+				+ SmallSigma0Software(Unsafe.Add(ref schedule, round + 1 & 15))
+				+ Unsafe.Add(ref schedule, round + 9 & 15)
+				+ SmallSigma1Software(Unsafe.Add(ref schedule, round + 14 & 15));
+			Unsafe.Add(ref schedule, round) = word;
+		}
+
 		return word + Unsafe.Add(ref roundConstants, round);
 	}
 

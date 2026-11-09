@@ -112,14 +112,7 @@ internal partial struct Sha512State
 			CompressTwoRounds(ref c, ref d, ref e, ref f, ref g, ref h, ref a, ref b, StoreSecondBlockRoundInputAvx2(words7, ref schedule10, constants7.GetUpper(), 78), ref sigma0Carry, ref bcXor);
 			a += sigma0Carry;
 
-			_h0 += a;
-			_h1 += b;
-			_h2 += c;
-			_h3 += d;
-			_h4 += e;
-			_h5 += f;
-			_h6 += g;
-			_h7 += h;
+			AddToState(a, b, c, d, e, f, g, h);
 			CompressRoundInputs(ref schedule10);
 			sourceRef = ref Unsafe.Add(ref sourceRef, (nuint)(2 * BlockSizeInBytes));
 		} while (Unsafe.IsAddressLessThan(ref sourceRef, ref sourceEnd));
@@ -180,27 +173,12 @@ internal partial struct Sha512State
 					}
 				}
 
-				ref ulong word0 = ref Unsafe.Add(ref schedule0, i & 15);
-				CompressDeferredRound(ref a, ref b, ref d, ref e, ref f, ref g, ref h, word0, ref sigma0Carry, ref bcXor);
-				CompressDeferredRound(ref h, ref a, ref c, ref d, ref e, ref f, ref g, Unsafe.Add(ref word0, 1), ref sigma0Carry, ref bcXor);
-				CompressDeferredRound(ref g, ref h, ref b, ref c, ref d, ref e, ref f, Unsafe.Add(ref word0, 2), ref sigma0Carry, ref bcXor);
-				CompressDeferredRound(ref f, ref g, ref a, ref b, ref c, ref d, ref e, Unsafe.Add(ref word0, 3), ref sigma0Carry, ref bcXor);
-				CompressDeferredRound(ref e, ref f, ref h, ref a, ref b, ref c, ref d, Unsafe.Add(ref word0, 4), ref sigma0Carry, ref bcXor);
-				CompressDeferredRound(ref d, ref e, ref g, ref h, ref a, ref b, ref c, Unsafe.Add(ref word0, 5), ref sigma0Carry, ref bcXor);
-				CompressDeferredRound(ref c, ref d, ref f, ref g, ref h, ref a, ref b, Unsafe.Add(ref word0, 6), ref sigma0Carry, ref bcXor);
-				CompressDeferredRound(ref b, ref c, ref e, ref f, ref g, ref h, ref a, Unsafe.Add(ref word0, 7), ref sigma0Carry, ref bcXor);
+				CompressEightRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref Unsafe.Add(ref schedule0, i & 15), ref sigma0Carry, ref bcXor);
 			}
 
 			a += sigma0Carry;
 
-			_h0 += a;
-			_h1 += b;
-			_h2 += c;
-			_h3 += d;
-			_h4 += e;
-			_h5 += f;
-			_h6 += g;
-			_h7 += h;
+			AddToState(a, b, c, d, e, f, g, h);
 			sourceRef = ref Unsafe.Add(ref sourceRef, (nuint)BlockSizeInBytes);
 		} while (Unsafe.IsAddressLessThan(ref sourceRef, ref sourceEnd));
 	}
@@ -244,27 +222,25 @@ internal partial struct Sha512State
 
 		for (nuint i = 0; i < 80; i += 8)
 		{
-			ref ulong word0 = ref Unsafe.Add(ref roundInput0, i);
-			CompressDeferredRound(ref a, ref b, ref d, ref e, ref f, ref g, ref h, word0, ref sigma0Carry, ref bcXor);
-			CompressDeferredRound(ref h, ref a, ref c, ref d, ref e, ref f, ref g, Unsafe.Add(ref word0, 1), ref sigma0Carry, ref bcXor);
-			CompressDeferredRound(ref g, ref h, ref b, ref c, ref d, ref e, ref f, Unsafe.Add(ref word0, 2), ref sigma0Carry, ref bcXor);
-			CompressDeferredRound(ref f, ref g, ref a, ref b, ref c, ref d, ref e, Unsafe.Add(ref word0, 3), ref sigma0Carry, ref bcXor);
-			CompressDeferredRound(ref e, ref f, ref h, ref a, ref b, ref c, ref d, Unsafe.Add(ref word0, 4), ref sigma0Carry, ref bcXor);
-			CompressDeferredRound(ref d, ref e, ref g, ref h, ref a, ref b, ref c, Unsafe.Add(ref word0, 5), ref sigma0Carry, ref bcXor);
-			CompressDeferredRound(ref c, ref d, ref f, ref g, ref h, ref a, ref b, Unsafe.Add(ref word0, 6), ref sigma0Carry, ref bcXor);
-			CompressDeferredRound(ref b, ref c, ref e, ref f, ref g, ref h, ref a, Unsafe.Add(ref word0, 7), ref sigma0Carry, ref bcXor);
+			CompressEightRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref Unsafe.Add(ref roundInput0, i), ref sigma0Carry, ref bcXor);
 		}
 
 		a += sigma0Carry;
 
-		_h0 += a;
-		_h1 += b;
-		_h2 += c;
-		_h3 += d;
-		_h4 += e;
-		_h5 += f;
-		_h6 += g;
-		_h7 += h;
+		AddToState(a, b, c, d, e, f, g, h);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void CompressEightRounds(ref ulong a, ref ulong b, ref ulong c, ref ulong d, ref ulong e, ref ulong f, ref ulong g, ref ulong h, ref ulong word0, ref ulong sigma0Carry, ref ulong bcXor)
+	{
+		CompressDeferredRound(ref a, ref b, ref d, ref e, ref f, ref g, ref h, word0, ref sigma0Carry, ref bcXor);
+		CompressDeferredRound(ref h, ref a, ref c, ref d, ref e, ref f, ref g, Unsafe.Add(ref word0, 1), ref sigma0Carry, ref bcXor);
+		CompressDeferredRound(ref g, ref h, ref b, ref c, ref d, ref e, ref f, Unsafe.Add(ref word0, 2), ref sigma0Carry, ref bcXor);
+		CompressDeferredRound(ref f, ref g, ref a, ref b, ref c, ref d, ref e, Unsafe.Add(ref word0, 3), ref sigma0Carry, ref bcXor);
+		CompressDeferredRound(ref e, ref f, ref h, ref a, ref b, ref c, ref d, Unsafe.Add(ref word0, 4), ref sigma0Carry, ref bcXor);
+		CompressDeferredRound(ref d, ref e, ref g, ref h, ref a, ref b, ref c, Unsafe.Add(ref word0, 5), ref sigma0Carry, ref bcXor);
+		CompressDeferredRound(ref c, ref d, ref f, ref g, ref h, ref a, ref b, Unsafe.Add(ref word0, 6), ref sigma0Carry, ref bcXor);
+		CompressDeferredRound(ref b, ref c, ref e, ref f, ref g, ref h, ref a, Unsafe.Add(ref word0, 7), ref sigma0Carry, ref bcXor);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

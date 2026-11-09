@@ -52,14 +52,7 @@ internal partial struct Sha256State
 			CompressFourRounds(ref e, ref f, ref g, ref h, ref a, ref b, ref c, ref d, ref schedule0[12], ref sigma0Carry, ref bcXor);
 			a += sigma0Carry;
 
-			_h0 += a;
-			_h1 += b;
-			_h2 += c;
-			_h3 += d;
-			_h4 += e;
-			_h5 += f;
-			_h6 += g;
-			_h7 += h;
+			AddToState(a, b, c, d, e, f, g, h);
 
 			CompressSchedule(ref schedule1[0]);
 			sourceRef = ref Unsafe.Add(ref sourceRef, 2 * BlockSizeInBytes);
@@ -158,13 +151,6 @@ internal partial struct Sha256State
 
 		a += sigma0Carry;
 
-		_h0 += a;
-		_h1 += b;
-		_h2 += c;
-		_h3 += d;
-		_h4 += e;
-		_h5 += f;
-		_h6 += g;
-		_h7 += h;
+		AddToState(a, b, c, d, e, f, g, h);
 	}
 }

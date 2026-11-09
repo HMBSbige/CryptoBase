@@ -1,6 +1,6 @@
 namespace CryptoBase.Hashes.Sha2;
 
-internal partial struct Sha512State
+internal partial struct Sha512State : ISha2SoftwareRounds<ulong>
 {
 	private UInt128 _byteCount;
 	private ulong _h0;
@@ -216,27 +216,33 @@ internal partial struct Sha512State
 			ulong h = _h7;
 			ref ulong roundConstant0 = ref MemoryMarshal.GetReference(RoundConstants);
 
-			CompressLoadedEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 0);
-			CompressLoadedEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 8);
+			Sha2SoftwareRounds.CompressEightRounds<ulong, Sha512State>(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 0, false);
+			Sha2SoftwareRounds.CompressEightRounds<ulong, Sha512State>(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref roundConstant0, 8, false);
 
 			for (int round = 16; round < 80; round += 16)
 			{
 				ref ulong currentRoundConstant = ref Unsafe.Add(ref roundConstant0, round);
-				ExpandAndCompressEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref currentRoundConstant, 0);
-				ExpandAndCompressEightSoftwareRounds(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref currentRoundConstant, 8);
+				Sha2SoftwareRounds.CompressEightRounds<ulong, Sha512State>(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref currentRoundConstant, 0, true);
+				Sha2SoftwareRounds.CompressEightRounds<ulong, Sha512State>(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref schedule0, ref currentRoundConstant, 8, true);
 			}
 
-			_h0 += a;
-			_h1 += b;
-			_h2 += c;
-			_h3 += d;
-			_h4 += e;
-			_h5 += f;
-			_h6 += g;
-			_h7 += h;
+			AddToState(a, b, c, d, e, f, g, h);
 			block0 = ref Unsafe.Add(ref block0, BlockSizeInBytes);
 			remainingLength -= BlockSizeInBytes;
 		} while (remainingLength is not 0);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void AddToState(ulong a, ulong b, ulong c, ulong d, ulong e, ulong f, ulong g, ulong h)
+	{
+		_h0 += a;
+		_h1 += b;
+		_h2 += c;
+		_h3 += d;
+		_h4 += e;
+		_h5 += f;
+		_h6 += g;
+		_h7 += h;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -249,33 +255,7 @@ internal partial struct Sha512State
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void CompressLoadedEightSoftwareRounds(ref ulong a, ref ulong b, ref ulong c, ref ulong d, ref ulong e, ref ulong f, ref ulong g, ref ulong h, ref ulong schedule, ref ulong roundConstants, int round)
-	{
-		CompressSoftwareRound(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, LoadedRoundInput(ref schedule, ref roundConstants, round));
-		CompressSoftwareRound(ref h, ref a, ref b, ref c, ref d, ref e, ref f, ref g, LoadedRoundInput(ref schedule, ref roundConstants, round + 1));
-		CompressSoftwareRound(ref g, ref h, ref a, ref b, ref c, ref d, ref e, ref f, LoadedRoundInput(ref schedule, ref roundConstants, round + 2));
-		CompressSoftwareRound(ref f, ref g, ref h, ref a, ref b, ref c, ref d, ref e, LoadedRoundInput(ref schedule, ref roundConstants, round + 3));
-		CompressSoftwareRound(ref e, ref f, ref g, ref h, ref a, ref b, ref c, ref d, LoadedRoundInput(ref schedule, ref roundConstants, round + 4));
-		CompressSoftwareRound(ref d, ref e, ref f, ref g, ref h, ref a, ref b, ref c, LoadedRoundInput(ref schedule, ref roundConstants, round + 5));
-		CompressSoftwareRound(ref c, ref d, ref e, ref f, ref g, ref h, ref a, ref b, LoadedRoundInput(ref schedule, ref roundConstants, round + 6));
-		CompressSoftwareRound(ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref a, LoadedRoundInput(ref schedule, ref roundConstants, round + 7));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ExpandAndCompressEightSoftwareRounds(ref ulong a, ref ulong b, ref ulong c, ref ulong d, ref ulong e, ref ulong f, ref ulong g, ref ulong h, ref ulong schedule, ref ulong roundConstants, int round)
-	{
-		CompressSoftwareRound(ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, ExpandedRoundInput(ref schedule, ref roundConstants, round));
-		CompressSoftwareRound(ref h, ref a, ref b, ref c, ref d, ref e, ref f, ref g, ExpandedRoundInput(ref schedule, ref roundConstants, round + 1));
-		CompressSoftwareRound(ref g, ref h, ref a, ref b, ref c, ref d, ref e, ref f, ExpandedRoundInput(ref schedule, ref roundConstants, round + 2));
-		CompressSoftwareRound(ref f, ref g, ref h, ref a, ref b, ref c, ref d, ref e, ExpandedRoundInput(ref schedule, ref roundConstants, round + 3));
-		CompressSoftwareRound(ref e, ref f, ref g, ref h, ref a, ref b, ref c, ref d, ExpandedRoundInput(ref schedule, ref roundConstants, round + 4));
-		CompressSoftwareRound(ref d, ref e, ref f, ref g, ref h, ref a, ref b, ref c, ExpandedRoundInput(ref schedule, ref roundConstants, round + 5));
-		CompressSoftwareRound(ref c, ref d, ref e, ref f, ref g, ref h, ref a, ref b, ExpandedRoundInput(ref schedule, ref roundConstants, round + 6));
-		CompressSoftwareRound(ref b, ref c, ref d, ref e, ref f, ref g, ref h, ref a, ExpandedRoundInput(ref schedule, ref roundConstants, round + 7));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void CompressSoftwareRound(ref ulong a, ref ulong b, ref ulong c, ref ulong d, ref ulong e, ref ulong f, ref ulong g, ref ulong h, ulong roundInput)
+	public static void CompressSoftwareRound(ref ulong a, ref ulong b, ref ulong c, ref ulong d, ref ulong e, ref ulong f, ref ulong g, ref ulong h, ulong roundInput)
 	{
 		h = h + roundInput + Choose(e, f, g) + BigSigma1Software(e);
 		d += h;
@@ -283,20 +263,19 @@ internal partial struct Sha512State
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong LoadedRoundInput(ref ulong schedule, ref ulong roundConstants, int round)
+	public static ulong RoundInput(ref ulong schedule, ref ulong roundConstants, int round, bool expand)
 	{
-		return Unsafe.Add(ref schedule, round) + Unsafe.Add(ref roundConstants, round);
-	}
+		ulong word = Unsafe.Add(ref schedule, round);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong ExpandedRoundInput(ref ulong schedule, ref ulong roundConstants, int round)
-	{
-		int index = round & 15;
-		ulong word = Unsafe.Add(ref schedule, index)
-					+ SmallSigma0Software(Unsafe.Add(ref schedule, index + 1 & 15))
-					+ Unsafe.Add(ref schedule, index + 9 & 15)
-					+ SmallSigma1Software(Unsafe.Add(ref schedule, index + 14 & 15));
-		Unsafe.Add(ref schedule, index) = word;
+		if (expand)
+		{
+			word = word
+				+ SmallSigma0Software(Unsafe.Add(ref schedule, round + 1 & 15))
+				+ Unsafe.Add(ref schedule, round + 9 & 15)
+				+ SmallSigma1Software(Unsafe.Add(ref schedule, round + 14 & 15));
+			Unsafe.Add(ref schedule, round) = word;
+		}
+
 		return word + Unsafe.Add(ref roundConstants, round);
 	}
 

@@ -51,7 +51,8 @@ internal partial struct Sha256State
 
 			for (int round = 16; round < 64; round += 16)
 			{
-				LoadFourRoundConstantsAdvSimd(ref roundConstant0, round, out Vector128<uint> roundConstants0, out Vector128<uint> roundConstants1, out Vector128<uint> roundConstants2, out Vector128<uint> roundConstants3);
+				(Vector128<uint> roundConstants0, Vector128<uint> roundConstants1) = LoadArm64RoundConstants(ref roundConstant0, round);
+				(Vector128<uint> roundConstants2, Vector128<uint> roundConstants3) = LoadArm64RoundConstants(ref roundConstant0, round + 8);
 				words0 = UpdateScheduleAndCompressFourRoundsAdvSimd(words0, words1, words2, words3, ref e, ref f, ref g, ref h, ref a, ref b, ref c, ref d, roundConstants0, ref roundInput0, ref sigma0Carry, ref bcXor, zero);
 				words1 = UpdateScheduleAndCompressFourRoundsAdvSimd(words1, words2, words3, words0, ref a, ref b, ref c, ref d, ref e, ref f, ref g, ref h, roundConstants1, ref roundInput0, ref sigma0Carry, ref bcXor, zero);
 				words2 = UpdateScheduleAndCompressFourRoundsAdvSimd(words2, words3, words0, words1, ref e, ref f, ref g, ref h, ref a, ref b, ref c, ref d, roundConstants2, ref roundInput0, ref sigma0Carry, ref bcXor, zero);
@@ -81,14 +82,6 @@ internal partial struct Sha256State
 		_h5 = h5;
 		_h6 = h6;
 		_h7 = h7;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe void LoadFourRoundConstantsAdvSimd(ref uint source, int offset, out Vector128<uint> roundConstants0, out Vector128<uint> roundConstants1, out Vector128<uint> roundConstants2, out Vector128<uint> roundConstants3)
-	{
-		uint* address = (uint*)Unsafe.AsPointer(ref Unsafe.Add(ref source, offset));
-		(roundConstants0, roundConstants1) = AdvSimd.Arm64.LoadPairVector128(address);
-		(roundConstants2, roundConstants3) = AdvSimd.Arm64.LoadPairVector128(address + 8);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
