@@ -230,27 +230,20 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		return exceeded.ExtractMostSignificantBits() is not 0;
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static bool AddReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound)
 	{
-		Debug.Assert(left.Length is N && right.Length is N && destination.Length is N && bound is > 0 and <= 2097409);
-
-		ref int x = ref MemoryMarshal.GetReference(left);
-		ref int y = ref MemoryMarshal.GetReference(right);
-		ref int z = ref MemoryMarshal.GetReference(destination);
-		Vector256<int> limit = Vector256.Create(bound - 1);
-		Vector256<int> exceeded = Vector256<int>.Zero;
-
-		for (nuint i = 0; i < N; i += 8)
-		{
-			Vector256<int> value = Reduce(Vector256.LoadUnsafe(ref x, i) + Vector256.LoadUnsafe(ref y, i));
-			value.StoreUnsafe(ref z, i);
-			exceeded |= limit - Vector256.Abs(value);
-		}
-
-		return exceeded.ExtractMostSignificantBits() is not 0;
+		return CombineReduceExceedsBound(left, right, destination, bound, false);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static bool SubtractReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound)
+	{
+		return CombineReduceExceedsBound(left, right, destination, bound, true);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool CombineReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound, bool subtract)
 	{
 		Debug.Assert(left.Length is N && right.Length is N && destination.Length is N && bound is > 0 and <= 2097409);
 
@@ -262,7 +255,9 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 
 		for (nuint i = 0; i < N; i += 8)
 		{
-			Vector256<int> value = Reduce(Vector256.LoadUnsafe(ref x, i) - Vector256.LoadUnsafe(ref y, i));
+			Vector256<int> a = Vector256.LoadUnsafe(ref x, i);
+			Vector256<int> b = Vector256.LoadUnsafe(ref y, i);
+			Vector256<int> value = Reduce(subtract ? a - b : a + b);
 			value.StoreUnsafe(ref z, i);
 			exceeded |= limit - Vector256.Abs(value);
 		}
@@ -485,10 +480,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 			target = ref Unsafe.Add(ref target, 13);
 		}
 
-		Vector128<byte> last = Pack13(ref source, shifts, biases, evenFields, oddFields);
-		Unsafe.WriteUnaligned(ref target, last.AsUInt64().ToScalar());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref target, 8), last.AsUInt32().GetElement(2));
-		Unsafe.Add(ref target, 12) = last.GetElement(12);
+		Pack13(ref source, shifts, biases, evenFields, oddFields).StorePartialUnsafe(ref target, 0, 13);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -901,8 +893,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 			}
 			else
 			{
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 84), packed.AsUInt64().ToScalar());
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 92), packed.AsUInt32().GetElement(2));
+				packed.StorePartialUnsafe(ref destination, 84, 12);
 			}
 		}
 	}

@@ -210,13 +210,7 @@ internal struct ECMLKemKey<TCurve, TField, TOrder, TParameters>
 			ThrowHelper.ThrowMissingKey("encapsulation key");
 		}
 
-		ArgumentOutOfRangeException.ThrowIfLessThan(ciphertext.Length, CiphertextLength, nameof(ciphertext));
-		ArgumentOutOfRangeException.ThrowIfLessThan(sharedSecret.Length, SharedSecretLength, nameof(sharedSecret));
-
-		if (ByteSpans.Overlaps(ciphertext.Slice(0, CiphertextLength), sharedSecret.Slice(0, SharedSecretLength)))
-		{
-			ThrowHelper.ThrowOutputsOverlap(nameof(sharedSecret));
-		}
+		KemOutputs.ThrowIfInvalid(ciphertext, CiphertextLength, sharedSecret, SharedSecretLength);
 	}
 
 	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. Q was checked to be on the curve when it was imported, and the ephemeral key lies in [1, n − 1].

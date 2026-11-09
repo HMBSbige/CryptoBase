@@ -546,10 +546,8 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 		}
 
 		Vector512<byte> last = Compress11(Vector512.LoadUnsafe(ref source, 224));
-		Vector128<byte> tail = last.GetUpper().GetLower();
 		last.GetLower().StoreUnsafe(ref destination, 308);
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 340), tail.AsUInt64().ToScalar());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 348), tail.AsUInt32().GetElement(2));
+		last.GetUpper().GetLower().StorePartialUnsafe(ref destination, 340, 12);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

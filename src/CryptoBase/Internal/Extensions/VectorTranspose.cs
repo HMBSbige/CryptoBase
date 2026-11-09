@@ -48,6 +48,38 @@ internal static class VectorTranspose
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector128<uint> UnzipEven(Vector128<uint> left, Vector128<uint> right)
+	{
+		return Sse.IsSupported ? Sse.Shuffle(left.AsSingle(), right.AsSingle(), 0b10_00_10_00).AsUInt32() : AdvSimd.Arm64.UnzipEven(left, right);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector128<uint> UnzipOdd(Vector128<uint> left, Vector128<uint> right)
+	{
+		return Sse.IsSupported ? Sse.Shuffle(left.AsSingle(), right.AsSingle(), 0b11_01_11_01).AsUInt32() : AdvSimd.Arm64.UnzipOdd(left, right);
+	}
+
+	// Taken as four 32-bit units each: (a, b) ← ([a0, b0, a1, b1], [a2, b2, a3, b3]).
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Interleave<T>(ref Vector128<T> a, ref Vector128<T> b)
+	{
+		Vector128<uint> x = a.As<T, uint>();
+		Vector128<uint> y = b.As<T, uint>();
+		a = ZipLow(x, y).As<uint, T>();
+		b = ZipHigh(x, y).As<uint, T>();
+	}
+
+	// The inverse of Interleave: (a, b) ← ([a0, a2, b0, b2], [a1, a3, b1, b3]).
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Deinterleave<T>(ref Vector128<T> a, ref Vector128<T> b)
+	{
+		Vector128<uint> x = a.As<T, uint>();
+		Vector128<uint> y = b.As<T, uint>();
+		a = UnzipEven(x, y).As<uint, T>();
+		b = UnzipOdd(x, y).As<uint, T>();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Transpose(ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3)
 	{
 		Vector128<uint> t0 = ZipLow(x0, x1);

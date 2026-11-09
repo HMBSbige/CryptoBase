@@ -557,7 +557,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 
 		Vector256<byte> last = Compress5(ref Unsafe.Add(ref source, 224));
 		last.GetLower().StoreUnsafe(ref destination, 140);
-		StoreChunk(ref Unsafe.Add(ref destination, 150), last.GetUpper(), 2);
+		last.GetUpper().StorePartialUnsafe(ref destination, 150, 10);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -584,7 +584,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 
 		Vector256<byte> last = Compress10(Vector256.LoadUnsafe(ref source, 240));
 		last.GetLower().StoreUnsafe(ref destination, 300);
-		StoreChunk(ref Unsafe.Add(ref destination, 310), last.GetUpper(), 2);
+		last.GetUpper().StorePartialUnsafe(ref destination, 310, 10);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -607,7 +607,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 
 		Vector256<byte> last = Compress11(Vector256.LoadUnsafe(ref source, 240));
 		last.GetLower().StoreUnsafe(ref destination, 330);
-		StoreChunk(ref Unsafe.Add(ref destination, 341), last.GetUpper(), 3);
+		last.GetUpper().StorePartialUnsafe(ref destination, 341, 11);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -631,14 +631,6 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 
 	// The five low bytes of each 64-bit unit, ten to a 128-bit lane.
 	private static Vector256<byte> FortyBitChunks => Vector256.Create(Vector128.Create(0, 1, 2, 3, 4, 8, 9, 10, 11, 12, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80));
-
-	// The first 8 + excess bytes of chunk as two overlapping 8-byte stores.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StoreChunk(ref byte destination, Vector128<byte> chunk, [ConstantExpected(Min = 1, Max = 7)] byte excess)
-	{
-		Unsafe.WriteUnaligned(ref destination, chunk.AsUInt64().ToScalar());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, excess), Sse2.ShiftRightLogical128BitLane(chunk, excess).AsUInt64().ToScalar());
-	}
 
 	// Decompress_d(y) is the rounded product of y · 2^(12 − d) and 8q over 2^15, so the decoders below place each field at bit 12 − d.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

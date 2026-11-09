@@ -69,20 +69,20 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 			Butterfly(ref f1, ref f3, ref zetas);
 			Butterfly(ref f0, ref f1, ref Unsafe.Add(ref zetas, 16));
 			Butterfly(ref f2, ref f3, ref Unsafe.Add(ref zetas, 32));
-			Interleave(ref f0, ref f1);
-			Interleave(ref f2, ref f3);
+			VectorTranspose.Interleave(ref f0, ref f1);
+			VectorTranspose.Interleave(ref f2, ref f3);
 			Butterfly(ref f0, ref f1, ref Unsafe.Add(ref zetas, 48));
 			Butterfly(ref f2, ref f3, ref Unsafe.Add(ref zetas, 64));
-			Interleave(ref f0, ref f1);
-			Interleave(ref f2, ref f3);
+			VectorTranspose.Interleave(ref f0, ref f1);
+			VectorTranspose.Interleave(ref f2, ref f3);
 			Butterfly(ref f0, ref f1, ref Unsafe.Add(ref zetas, 80));
 			Butterfly(ref f2, ref f3, ref Unsafe.Add(ref zetas, 96));
 			f0 = BarrettReduce(f0);
 			f1 = BarrettReduce(f1);
 			f2 = BarrettReduce(f2);
 			f3 = BarrettReduce(f3);
-			Interleave(ref f0, ref f1);
-			Interleave(ref f2, ref f3);
+			VectorTranspose.Interleave(ref f0, ref f1);
+			VectorTranspose.Interleave(ref f2, ref f3);
 			f0.StoreUnsafe(ref p);
 			f1.StoreUnsafe(ref p, 8);
 			f2.StoreUnsafe(ref p, 16);
@@ -105,16 +105,16 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 			Vector128<short> f1 = Vector128.LoadUnsafe(ref p, 8);
 			Vector128<short> f2 = Vector128.LoadUnsafe(ref p, 16);
 			Vector128<short> f3 = Vector128.LoadUnsafe(ref p, 24);
-			Deinterleave(ref f0, ref f1);
-			Deinterleave(ref f2, ref f3);
+			VectorTranspose.Deinterleave(ref f0, ref f1);
+			VectorTranspose.Deinterleave(ref f2, ref f3);
 			InverseButterfly(ref f0, ref f1, ref zetas);
 			InverseButterfly(ref f2, ref f3, ref Unsafe.Add(ref zetas, 16));
-			Deinterleave(ref f0, ref f1);
-			Deinterleave(ref f2, ref f3);
+			VectorTranspose.Deinterleave(ref f0, ref f1);
+			VectorTranspose.Deinterleave(ref f2, ref f3);
 			InverseButterfly(ref f0, ref f1, ref Unsafe.Add(ref zetas, 32));
 			InverseButterfly(ref f2, ref f3, ref Unsafe.Add(ref zetas, 48));
-			Deinterleave(ref f0, ref f1);
-			Deinterleave(ref f2, ref f3);
+			VectorTranspose.Deinterleave(ref f0, ref f1);
+			VectorTranspose.Deinterleave(ref f2, ref f3);
 			InverseButterflyReduced(ref f0, ref f1, ref Unsafe.Add(ref zetas, 64));
 			InverseButterflyReduced(ref f2, ref f3, ref Unsafe.Add(ref zetas, 80));
 			InverseButterfly(ref f0, ref f2, ref Unsafe.Add(ref zetas, 96));
@@ -575,36 +575,6 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 		return bits;
 	}
 
-	// Taken as four 32-bit units each: (a, b) ← ([a0, b0, a1, b1], [a2, b2, a3, b3]).
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Interleave(ref Vector128<short> a, ref Vector128<short> b)
-	{
-		Vector128<uint> x = a.AsUInt32();
-		Vector128<uint> y = b.AsUInt32();
-		a = VectorTranspose.ZipLow(x, y).AsInt16();
-		b = VectorTranspose.ZipHigh(x, y).AsInt16();
-	}
-
-	// The inverse of Interleave: (a, b) ← ([a0, a2, b0, b2], [a1, a3, b1, b3]).
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Deinterleave(ref Vector128<short> a, ref Vector128<short> b)
-	{
-		if (Sse.IsSupported)
-		{
-			Vector128<float> x = a.AsSingle();
-			Vector128<float> y = b.AsSingle();
-			a = Sse.Shuffle(x, y, 0b10_00_10_00).AsInt16();
-			b = Sse.Shuffle(x, y, 0b11_01_11_01).AsInt16();
-		}
-		else
-		{
-			Vector128<uint> x = a.AsUInt32();
-			Vector128<uint> y = b.AsUInt32();
-			a = AdvSimd.Arm64.UnzipEven(x, y).AsInt16();
-			b = AdvSimd.Arm64.UnzipOdd(x, y).AsInt16();
-		}
-	}
-
 	// Bytes index to index + 15 of right followed by left.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> AlignRight(Vector128<byte> left, Vector128<byte> right, [ConstantExpected(Max = 15)] byte index)
@@ -720,7 +690,7 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 			Pack5(ref f, i).StoreUnsafe(ref destination, offset);
 		}
 
-		StorePartial(Pack5(ref f, N - 16), ref Unsafe.Add(ref destination, offset), 10);
+		Pack5(ref f, N - 16).StorePartialUnsafe(ref destination, offset, 10);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -744,7 +714,7 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 			Pack10(Vector128.LoadUnsafe(ref f, i)).StoreUnsafe(ref destination, offset);
 		}
 
-		StorePartial(Pack10(Vector128.LoadUnsafe(ref f, N - 8)), ref Unsafe.Add(ref destination, offset), 10);
+		Pack10(Vector128.LoadUnsafe(ref f, N - 8)).StorePartialUnsafe(ref destination, offset, 10);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -766,7 +736,7 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 			Pack11(Vector128.LoadUnsafe(ref f, i)).StoreUnsafe(ref destination, offset);
 		}
 
-		StorePartial(Pack11(Vector128.LoadUnsafe(ref f, N - 8)), ref Unsafe.Add(ref destination, offset), 11);
+		Pack11(Vector128.LoadUnsafe(ref f, N - 8)).StorePartialUnsafe(ref destination, offset, 11);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -777,19 +747,6 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 		Vector128<byte> lanes = MultiplyAddAdjacent(y, weights).AsByte();
 		return Vector128.Shuffle(lanes, Vector128.Create(0, 1, 2, Zero, Zero, 8, 9, 10, 11, Zero, Zero, Zero, Zero, Zero, Zero, Zero))
 			| Vector128.Shuffle(lanes, Vector128.Create(Zero, Zero, 4, 5, 6, 7, Zero, Zero, 12, 13, 14, Zero, Zero, Zero, Zero, Zero));
-	}
-
-	// The first length bytes of value.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StorePartial(Vector128<byte> value, ref byte destination, [ConstantExpected(Min = 10, Max = 11)] int length)
-	{
-		Unsafe.WriteUnaligned(ref destination, value.AsUInt64().ToScalar());
-		Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 8), value.AsUInt16().GetElement(4));
-
-		if (length is 11)
-		{
-			Unsafe.Add(ref destination, 10) = value.GetElement(10);
-		}
 	}
 
 	// Each vector comes from d bytes; near the end the load moves back rather than read past it.

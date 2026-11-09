@@ -297,19 +297,9 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// ML-DSA.Verify (Algorithm 3).
-	[SkipLocalsInit]
 	internal bool Verify(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context)
 	{
-		ArgumentOutOfRangeException.ThrowIfGreaterThan(context.Length, MaxContextLength, nameof(context));
-
-		if (signature.Length != SignatureLength)
-		{
-			return false;
-		}
-
-		Span<byte> mu = stackalloc byte[MuLength];
-		ComputeMu(PureDomain, context, [], message, mu);
-		return VerifyMu<MLDsaKernelDispatch>(mu, signature);
+		return Verify(PureDomain, [], message, signature, context);
 	}
 
 	// HashML-DSA.Sign (Algorithm 4) of a hash that the caller computed, hedged with rnd from the system.
@@ -338,6 +328,12 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
 
 		ReadOnlySpan<byte> oid = [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, GetHashAlgorithmArc(hashAlgorithmOid, hash.Length)];
+		return Verify(PreHashDomain, oid, hash, signature, context);
+	}
+
+	[SkipLocalsInit]
+	private bool Verify(byte domain, ReadOnlySpan<byte> oid, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context)
+	{
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(context.Length, MaxContextLength, nameof(context));
 
 		if (signature.Length != SignatureLength)
@@ -346,7 +342,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		}
 
 		Span<byte> mu = stackalloc byte[MuLength];
-		ComputeMu(PreHashDomain, context, oid, hash, mu);
+		ComputeMu(domain, context, oid, message, mu);
 		return VerifyMu<MLDsaKernelDispatch>(mu, signature);
 	}
 

@@ -169,7 +169,7 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	[SkipLocalsInit]
 	internal void Encapsulate(Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
-		ThrowIfInvalidEncapsulationBuffers(ciphertext, sharedSecret);
+		KemOutputs.ThrowIfInvalid(ciphertext, CiphertextLength, sharedSecret, SharedSecretLength);
 
 		using CryptoBuffer<byte> message = new(stackalloc byte[SymmetricLength]);
 		SystemRandom.Fill(message.Span);
@@ -181,7 +181,7 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	internal void Encapsulate(ReadOnlySpan<byte> message, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(message.Length, SymmetricLength, nameof(message));
-		ThrowIfInvalidEncapsulationBuffers(ciphertext, sharedSecret);
+		KemOutputs.ThrowIfInvalid(ciphertext, CiphertextLength, sharedSecret, SharedSecretLength);
 
 		using CryptoBuffer<byte> messageCopy = new(stackalloc byte[SymmetricLength]);
 		message.CopyTo(messageCopy.Span);
@@ -218,17 +218,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		_d.ZeroMemory();
 		HasPrivateSeed = false;
 		HasDecapsulationKey = false;
-	}
-
-	private static void ThrowIfInvalidEncapsulationBuffers(Span<byte> ciphertext, Span<byte> sharedSecret)
-	{
-		ArgumentOutOfRangeException.ThrowIfLessThan(ciphertext.Length, CiphertextLength, nameof(ciphertext));
-		ArgumentOutOfRangeException.ThrowIfLessThan(sharedSecret.Length, SharedSecretLength, nameof(sharedSecret));
-
-		if (ByteSpans.Overlaps(ciphertext.Slice(0, CiphertextLength), sharedSecret.Slice(0, SharedSecretLength)))
-		{
-			ThrowHelper.ThrowOutputsOverlap(nameof(sharedSecret));
-		}
 	}
 
 	// ML-KEM.KeyGen_internal (Algorithm 16) with K-PKE.KeyGen (Algorithm 13); seed is d ‖ z.

@@ -79,10 +79,10 @@ internal readonly partial struct Blake3Vector128 : IBlake3Compressor
 		Vector128<uint> m2 = Vector128.LoadUnsafe(ref block, 32).AsUInt32();
 		Vector128<uint> m3 = Vector128.LoadUnsafe(ref block, 48).AsUInt32();
 
-		Vector128<uint> x0 = UnzipEven(m0, m1);
-		Vector128<uint> y0 = UnzipOdd(m0, m1);
-		Vector128<uint> x1 = UnzipEven(m2, m3).RotateWordsLeft(3);
-		Vector128<uint> y1 = UnzipOdd(m2, m3).RotateWordsLeft(3);
+		Vector128<uint> x0 = VectorTranspose.UnzipEven(m0, m1);
+		Vector128<uint> y0 = VectorTranspose.UnzipOdd(m0, m1);
+		Vector128<uint> x1 = VectorTranspose.UnzipEven(m2, m3).RotateWordsLeft(3);
+		Vector128<uint> y1 = VectorTranspose.UnzipOdd(m2, m3).RotateWordsLeft(3);
 		Round(ref row0, ref row1, ref row2, ref row3, x0, y0, x1, y1);
 
 		for (int round = 1; round < Blake3Constants.Rounds; ++round)
@@ -143,18 +143,6 @@ internal readonly partial struct Blake3Vector128 : IBlake3Compressor
 		y0 = nextY0;
 		x1 = nextX1;
 		y1 = nextY1;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> UnzipEven(Vector128<uint> left, Vector128<uint> right)
-	{
-		return AdvSimd.Arm64.IsSupported ? AdvSimd.Arm64.UnzipEven(left, right) : Shuffle(left, right, 0b10_00_10_00);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> UnzipOdd(Vector128<uint> left, Vector128<uint> right)
-	{
-		return AdvSimd.Arm64.IsSupported ? AdvSimd.Arm64.UnzipOdd(left, right) : Shuffle(left, right, 0b11_01_11_01);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,3 +1,4 @@
+using CryptoBase.Kems;
 using CryptoBase.KeyAgreements;
 
 namespace CryptoBase.Hpke;
@@ -312,13 +313,7 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 	{
 		Debug.Assert(_key.HasPublicKey);
 
-		ArgumentOutOfRangeException.ThrowIfLessThan(ciphertext.Length, CiphertextLength, nameof(ciphertext));
-		ArgumentOutOfRangeException.ThrowIfLessThan(sharedSecret.Length, SharedSecretLength, nameof(sharedSecret));
-
-		if (ByteSpans.Overlaps(ciphertext.Slice(0, CiphertextLength), sharedSecret.Slice(0, SharedSecretLength)))
-		{
-			ThrowHelper.ThrowOutputsOverlap(nameof(sharedSecret));
-		}
+		KemOutputs.ThrowIfInvalid(ciphertext, CiphertextLength, sharedSecret, SharedSecretLength);
 	}
 
 	private void ThrowIfCannotDecapsulate(Span<byte> sharedSecret)

@@ -265,27 +265,20 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 		return Vector128.LessThanAny(exceeded, Vector128<int>.Zero);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static bool AddReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound)
 	{
-		Debug.Assert(left.Length is N && right.Length is N && destination.Length is N && bound is > 0 and <= 2097409);
-
-		ref int x = ref MemoryMarshal.GetReference(left);
-		ref int y = ref MemoryMarshal.GetReference(right);
-		ref int z = ref MemoryMarshal.GetReference(destination);
-		Vector128<int> limit = Vector128.Create(bound - 1);
-		Vector128<int> exceeded = Vector128<int>.Zero;
-
-		for (nuint i = 0; i < N; i += 4)
-		{
-			Vector128<int> value = Reduce(Vector128.LoadUnsafe(ref x, i) + Vector128.LoadUnsafe(ref y, i));
-			value.StoreUnsafe(ref z, i);
-			exceeded |= limit - Vector128.Abs(value);
-		}
-
-		return Vector128.LessThanAny(exceeded, Vector128<int>.Zero);
+		return CombineReduceExceedsBound(left, right, destination, bound, false);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static bool SubtractReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound)
+	{
+		return CombineReduceExceedsBound(left, right, destination, bound, true);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool CombineReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound, bool subtract)
 	{
 		Debug.Assert(left.Length is N && right.Length is N && destination.Length is N && bound is > 0 and <= 2097409);
 
@@ -297,7 +290,9 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 
 		for (nuint i = 0; i < N; i += 4)
 		{
-			Vector128<int> value = Reduce(Vector128.LoadUnsafe(ref x, i) - Vector128.LoadUnsafe(ref y, i));
+			Vector128<int> a = Vector128.LoadUnsafe(ref x, i);
+			Vector128<int> b = Vector128.LoadUnsafe(ref y, i);
+			Vector128<int> value = Reduce(subtract ? a - b : a + b);
 			value.StoreUnsafe(ref z, i);
 			exceeded |= limit - Vector128.Abs(value);
 		}
@@ -611,22 +606,22 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void NttPair(ref Vector128<int> a, ref Vector128<int> b, ref int zetas)
 	{
-		Interleave(ref a, ref b);
+		VectorTranspose.Interleave(ref a, ref b);
 		Butterfly(ref a, ref b, ref zetas);
-		Interleave(ref a, ref b);
+		VectorTranspose.Interleave(ref a, ref b);
 		Butterfly(ref a, ref b, ref Unsafe.Add(ref zetas, 16));
-		Interleave(ref a, ref b);
+		VectorTranspose.Interleave(ref a, ref b);
 	}
 
 	// Layers 1 and 2 of NTT⁻¹ on the eight coefficients of a and b, each Deinterleave undoing an Interleave of NttPair.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void InverseNttPair(ref Vector128<int> a, ref Vector128<int> b, ref int zetas)
 	{
-		Deinterleave(ref a, ref b);
+		VectorTranspose.Deinterleave(ref a, ref b);
 		InverseButterfly(ref a, ref b, ref zetas);
-		Deinterleave(ref a, ref b);
+		VectorTranspose.Deinterleave(ref a, ref b);
 		InverseButterfly(ref a, ref b, ref Unsafe.Add(ref zetas, 16));
-		Deinterleave(ref a, ref b);
+		VectorTranspose.Deinterleave(ref a, ref b);
 	}
 
 	// The butterfly of NTT (Algorithm 41) with Zetas[index] in every lane.
@@ -810,35 +805,6 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 		return a1;
 	}
 
-	// Taken as four 32-bit units each: (a, b) ← ([a0, b0, a1, b1], [a2, b2, a3, b3]).
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Interleave(ref Vector128<int> a, ref Vector128<int> b)
-	{
-		Vector128<uint> x = a.AsUInt32();
-		Vector128<uint> y = b.AsUInt32();
-		a = VectorTranspose.ZipLow(x, y).AsInt32();
-		b = VectorTranspose.ZipHigh(x, y).AsInt32();
-	}
-
-	// The inverse of Interleave: (a, b) ← ([a0, a2, b0, b2], [a1, a3, b1, b3]).
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Deinterleave(ref Vector128<int> a, ref Vector128<int> b)
-	{
-		if (Sse.IsSupported)
-		{
-			Vector128<float> x = a.AsSingle();
-			Vector128<float> y = b.AsSingle();
-			a = Sse.Shuffle(x, y, 0b10_00_10_00).AsInt32();
-			b = Sse.Shuffle(x, y, 0b11_01_11_01).AsInt32();
-		}
-		else
-		{
-			Vector128<int> x = a;
-			a = AdvSimd.Arm64.UnzipEven(x, b);
-			b = AdvSimd.Arm64.UnzipOdd(x, b);
-		}
-	}
-
 	// Bit i set for each lane i of the mask that is set.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint ExtractMask(Vector128<int> mask)
@@ -947,40 +913,7 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 			return;
 		}
 
-		StorePartial(lane, ref Unsafe.Add(ref destination, offset), bits / 2);
-	}
-
-	// The first length bytes of value.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void StorePartial(Vector128<byte> value, ref byte destination, int length)
-	{
-		if (length is 5)
-		{
-			Unsafe.WriteUnaligned(ref destination, value.AsUInt32().ToScalar());
-			Unsafe.Add(ref destination, 4) = value.GetElement(4);
-			return;
-		}
-
-		Unsafe.WriteUnaligned(ref destination, value.AsUInt64().ToScalar());
-
-		switch (length)
-		{
-			case 9:
-			{
-				Unsafe.Add(ref destination, 8) = value.GetElement(8);
-				break;
-			}
-			case 10:
-			{
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 8), value.AsUInt16().GetElement(4));
-				break;
-			}
-			default:
-			{
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 8), value.AsUInt32().GetElement(2));
-				break;
-			}
-		}
+		lane.StorePartialUnsafe(ref destination, (nuint)offset, bits / 2);
 	}
 
 	// The 16 values at source in order as bytes, bias − f_i or f_i without subtract, each below 256.
@@ -1020,7 +953,7 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 			}
 			else
 			{
-				StorePartial(packed, ref Unsafe.Add(ref destination, 84), 12);
+				packed.StorePartialUnsafe(ref destination, 84, 12);
 			}
 		}
 	}
@@ -1071,7 +1004,7 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 			}
 			else
 			{
-				StorePartial(packed, ref Unsafe.Add(ref destination, 180), 12);
+				packed.StorePartialUnsafe(ref destination, 180, 12);
 			}
 		}
 	}

@@ -180,13 +180,7 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 			ThrowHelper.ThrowMissingKey("encapsulation key");
 		}
 
-		ArgumentOutOfRangeException.ThrowIfLessThan(ciphertext.Length, CiphertextLength, nameof(ciphertext));
-		ArgumentOutOfRangeException.ThrowIfLessThan(sharedSecret.Length, SharedSecretLength, nameof(sharedSecret));
-
-		if (ByteSpans.Overlaps(ciphertext.Slice(0, CiphertextLength), sharedSecret.Slice(0, SharedSecretLength)))
-		{
-			ThrowHelper.ThrowOutputsOverlap(nameof(sharedSecret));
-		}
+		KemOutputs.ThrowIfInvalid(ciphertext, CiphertextLength, sharedSecret, SharedSecretLength);
 	}
 
 	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. The public key is not of small order, so the shared secret is not all zeros and the derivation cannot fail.

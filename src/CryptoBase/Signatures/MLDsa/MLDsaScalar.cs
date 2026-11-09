@@ -143,24 +143,20 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 		return exceeded < 0;
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static bool AddReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound)
 	{
-		Debug.Assert(left.Length is N && right.Length is N && destination.Length is N && bound is > 0 and <= 2097409);
-
-		int exceeded = 0;
-
-		for (int i = 0; i < destination.Length; ++i)
-		{
-			int value = Reduce32(left[i] + right[i]);
-			destination[i] = value;
-			int sign = value >> 31;
-			exceeded |= bound - 1 - ((value ^ sign) - sign);
-		}
-
-		return exceeded < 0;
+		return CombineReduceExceedsBound(left, right, destination, bound, false);
 	}
 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static bool SubtractReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound)
+	{
+		return CombineReduceExceedsBound(left, right, destination, bound, true);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool CombineReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound, bool subtract)
 	{
 		Debug.Assert(left.Length is N && right.Length is N && destination.Length is N && bound is > 0 and <= 2097409);
 
@@ -168,7 +164,7 @@ internal readonly struct MLDsaScalar : IMLDsaKernel
 
 		for (int i = 0; i < destination.Length; ++i)
 		{
-			int value = Reduce32(left[i] - right[i]);
+			int value = Reduce32(subtract ? left[i] - right[i] : left[i] + right[i]);
 			destination[i] = value;
 			int sign = value >> 31;
 			exceeded |= bound - 1 - ((value ^ sign) - sign);
