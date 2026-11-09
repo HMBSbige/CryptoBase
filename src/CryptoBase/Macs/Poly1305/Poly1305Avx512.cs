@@ -321,8 +321,8 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	(
 		bool accumulate,
 		Vector512<uint> x0, Vector512<uint> x1, Vector512<uint> x2, Vector512<uint> x3, Vector512<uint> x4,
-		Vector512<uint> r0, Vector512<uint> r1, Vector512<uint> r2, Vector512<uint> r3, Vector512<uint> r4,
-		Vector512<uint> s1, Vector512<uint> s2, Vector512<uint> s3, Vector512<uint> s4,
+		in Vector512<uint> r0, in Vector512<uint> r1, in Vector512<uint> r2, in Vector512<uint> r3, in Vector512<uint> r4,
+		in Vector512<uint> s1, in Vector512<uint> s2, in Vector512<uint> s3, in Vector512<uint> s4,
 		ref Vector512<ulong> d0, ref Vector512<ulong> d1, ref Vector512<ulong> d2, ref Vector512<ulong> d3, ref Vector512<ulong> d4
 	)
 	{
@@ -369,32 +369,12 @@ internal ref struct Poly1305Avx512 : IPoly1305State<Poly1305Avx512>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void SetAccumulatorFromLanes(Vector512<uint> a0, Vector512<uint> a1, Vector512<uint> a2, Vector512<uint> a3, Vector512<uint> a4)
 	{
-		Vector512<ulong> d2 = Avx512F.Multiply(a2, _r0);
-		Vector512<ulong> d3 = Avx512F.Multiply(a2, _r1);
-		Vector512<ulong> d4 = Avx512F.Multiply(a2, _r2);
-		Vector512<ulong> d0 = Avx512F.Multiply(a2, _s3);
-		Vector512<ulong> d1 = Avx512F.Multiply(a2, _s4);
-
-		d1 += Avx512F.Multiply(a0, _r1);
-		d2 += Avx512F.Multiply(a1, _r1);
-		d4 += Avx512F.Multiply(a3, _r1);
-		d0 += Avx512F.Multiply(a4, _s1);
-		d0 += Avx512F.Multiply(a0, _r0);
-		d1 += Avx512F.Multiply(a1, _r0);
-		d3 += Avx512F.Multiply(a3, _r0);
-		d4 += Avx512F.Multiply(a4, _r0);
-		d0 += Avx512F.Multiply(a3, _s2);
-		d1 += Avx512F.Multiply(a4, _s2);
-		d3 += Avx512F.Multiply(a1, _r2);
-		d2 += Avx512F.Multiply(a0, _r2);
-		d4 += Avx512F.Multiply(a1, _r3);
-		d3 += Avx512F.Multiply(a0, _r3);
-		d1 += Avx512F.Multiply(a3, _s3);
-		d2 += Avx512F.Multiply(a4, _s3);
-		d2 += Avx512F.Multiply(a3, _s4);
-		d3 += Avx512F.Multiply(a4, _s4);
-		d4 += Avx512F.Multiply(a0, _r4);
-		d0 += Avx512F.Multiply(a1, _s4);
+		Vector512<ulong> d0 = Vector512<ulong>.Zero;
+		Vector512<ulong> d1 = Vector512<ulong>.Zero;
+		Vector512<ulong> d2 = Vector512<ulong>.Zero;
+		Vector512<ulong> d3 = Vector512<ulong>.Zero;
+		Vector512<ulong> d4 = Vector512<ulong>.Zero;
+		MultiplyLanes(false, a0, a1, a2, a3, a4, _r0, _r1, _r2, _r3, _r4, _s1, _s2, _s3, _s4, ref d0, ref d1, ref d2, ref d3, ref d4);
 
 		// Passing the sums straight to the call makes x86 spill more.
 		ulong sum0 = Vector512.Sum(d0);

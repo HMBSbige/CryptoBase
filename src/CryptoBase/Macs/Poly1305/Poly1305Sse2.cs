@@ -86,6 +86,76 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 		m4 = high >>> 40 | Vector128.Create((ulong)Poly1305State26.FullBlockHighBit);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<uint> Broadcast(ref Vector128<uint> value, bool fourthPower)
+	{
+		return fourthPower ? BroadcastFourth(ref value) : BroadcastFirst(ref value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void Multiply
+	(
+		bool fourthPower, bool accumulate,
+		Vector128<ulong> x0, Vector128<ulong> x1, Vector128<ulong> x2, Vector128<ulong> x3, Vector128<ulong> x4,
+		ref Vector128<ulong> d0, ref Vector128<ulong> d1, ref Vector128<ulong> d2, ref Vector128<ulong> d3, ref Vector128<ulong> d4
+	)
+	{
+		Vector128<uint> coefficient = Broadcast(ref _ru0, fourthPower);
+
+		if (accumulate)
+		{
+			d0 += Sse2.Multiply(x0.AsUInt32(), coefficient);
+			d1 += Sse2.Multiply(x1.AsUInt32(), coefficient);
+			d2 += Sse2.Multiply(x2.AsUInt32(), coefficient);
+			d3 += Sse2.Multiply(x3.AsUInt32(), coefficient);
+			d4 += Sse2.Multiply(x4.AsUInt32(), coefficient);
+		}
+		else
+		{
+			d0 = Sse2.Multiply(x0.AsUInt32(), coefficient);
+			d1 = Sse2.Multiply(x1.AsUInt32(), coefficient);
+			d2 = Sse2.Multiply(x2.AsUInt32(), coefficient);
+			d3 = Sse2.Multiply(x3.AsUInt32(), coefficient);
+			d4 = Sse2.Multiply(x4.AsUInt32(), coefficient);
+		}
+
+		coefficient = Broadcast(ref _ru1, fourthPower);
+		d1 += Sse2.Multiply(x0.AsUInt32(), coefficient);
+		d2 += Sse2.Multiply(x1.AsUInt32(), coefficient);
+		d3 += Sse2.Multiply(x2.AsUInt32(), coefficient);
+		d4 += Sse2.Multiply(x3.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _ru2, fourthPower);
+		d2 += Sse2.Multiply(x0.AsUInt32(), coefficient);
+		d3 += Sse2.Multiply(x1.AsUInt32(), coefficient);
+		d4 += Sse2.Multiply(x2.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _ru3, fourthPower);
+		d3 += Sse2.Multiply(x0.AsUInt32(), coefficient);
+		d4 += Sse2.Multiply(x1.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _ru4, fourthPower);
+		d4 += Sse2.Multiply(x0.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _sv1, fourthPower);
+		d0 += Sse2.Multiply(x4.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _sv2, fourthPower);
+		d0 += Sse2.Multiply(x3.AsUInt32(), coefficient);
+		d1 += Sse2.Multiply(x4.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _sv3, fourthPower);
+		d0 += Sse2.Multiply(x2.AsUInt32(), coefficient);
+		d1 += Sse2.Multiply(x3.AsUInt32(), coefficient);
+		d2 += Sse2.Multiply(x4.AsUInt32(), coefficient);
+
+		coefficient = Broadcast(ref _sv4, fourthPower);
+		d0 += Sse2.Multiply(x1.AsUInt32(), coefficient);
+		d1 += Sse2.Multiply(x2.AsUInt32(), coefficient);
+		d2 += Sse2.Multiply(x3.AsUInt32(), coefficient);
+		d3 += Sse2.Multiply(x4.AsUInt32(), coefficient);
+	}
+
 	private void AppendTwoWay(scoped ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(source.Length >= BlockSize2 && source.Length % BlockSize2 is 0);
@@ -109,91 +179,13 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 		while (remaining >= BlockSize2 * 2)
 		{
 			LoadTwo(ref input, out m0, out m1, out m2, out m3, out m4);
-			Vector128<uint> coefficient = BroadcastFirst(ref _ru0);
-			Vector128<ulong> d0 = Sse2.Multiply(m0.AsUInt32(), coefficient);
-			Vector128<ulong> d1 = Sse2.Multiply(m1.AsUInt32(), coefficient);
-			Vector128<ulong> d2 = Sse2.Multiply(m2.AsUInt32(), coefficient);
-			Vector128<ulong> d3 = Sse2.Multiply(m3.AsUInt32(), coefficient);
-			Vector128<ulong> d4 = Sse2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ru1);
-			d1 += Sse2.Multiply(m0.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(m1.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(m2.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(m3.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ru2);
-			d2 += Sse2.Multiply(m0.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(m1.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(m2.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ru3);
-			d3 += Sse2.Multiply(m0.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(m1.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ru4);
-			d4 += Sse2.Multiply(m0.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _sv1);
-			d0 += Sse2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _sv2);
-			d0 += Sse2.Multiply(m3.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _sv3);
-			d0 += Sse2.Multiply(m2.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(m3.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _sv4);
-			d0 += Sse2.Multiply(m1.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(m2.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(m3.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(m4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _ru0);
-			d0 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _ru1);
-			d1 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _ru2);
-			d2 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _ru3);
-			d3 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _ru4);
-			d4 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _sv1);
-			d0 += Sse2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _sv2);
-			d0 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _sv3);
-			d0 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFourth(ref _sv4);
-			d0 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(h4.AsUInt32(), coefficient);
+			Vector128<ulong> d0 = Vector128<ulong>.Zero;
+			Vector128<ulong> d1 = Vector128<ulong>.Zero;
+			Vector128<ulong> d2 = Vector128<ulong>.Zero;
+			Vector128<ulong> d3 = Vector128<ulong>.Zero;
+			Vector128<ulong> d4 = Vector128<ulong>.Zero;
+			Multiply(false, false, m0, m1, m2, m3, m4, ref d0, ref d1, ref d2, ref d3, ref d4);
+			Multiply(true, true, h0, h1, h2, h3, h4, ref d0, ref d1, ref d2, ref d3, ref d4);
 
 			ref byte secondPair = ref Unsafe.Add(ref input, BlockSize2);
 			LoadTwo(ref secondPair, out m0, out m1, out m2, out m3, out m4);
@@ -212,48 +204,12 @@ internal ref struct Poly1305Sse2 : IPoly1305State<Poly1305Sse2>
 
 		if (remaining is not 0)
 		{
-			Vector128<uint> coefficient = BroadcastFirst(ref _ru0);
-			Vector128<ulong> d0 = Sse2.Multiply(h0.AsUInt32(), coefficient);
-			Vector128<ulong> d1 = Sse2.Multiply(h1.AsUInt32(), coefficient);
-			Vector128<ulong> d2 = Sse2.Multiply(h2.AsUInt32(), coefficient);
-			Vector128<ulong> d3 = Sse2.Multiply(h3.AsUInt32(), coefficient);
-			Vector128<ulong> d4 = Sse2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ru1);
-			d1 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ru2);
-			d2 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ru3);
-			d3 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-			d4 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _ru4);
-			d4 += Sse2.Multiply(h0.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _sv1);
-			d0 += Sse2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _sv2);
-			d0 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _sv3);
-			d0 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(h4.AsUInt32(), coefficient);
-
-			coefficient = BroadcastFirst(ref _sv4);
-			d0 += Sse2.Multiply(h1.AsUInt32(), coefficient);
-			d1 += Sse2.Multiply(h2.AsUInt32(), coefficient);
-			d2 += Sse2.Multiply(h3.AsUInt32(), coefficient);
-			d3 += Sse2.Multiply(h4.AsUInt32(), coefficient);
+			Vector128<ulong> d0 = Vector128<ulong>.Zero;
+			Vector128<ulong> d1 = Vector128<ulong>.Zero;
+			Vector128<ulong> d2 = Vector128<ulong>.Zero;
+			Vector128<ulong> d3 = Vector128<ulong>.Zero;
+			Vector128<ulong> d4 = Vector128<ulong>.Zero;
+			Multiply(false, false, h0, h1, h2, h3, h4, ref d0, ref d1, ref d2, ref d3, ref d4);
 
 			Vector128<ulong> mask = Vector128.Create((ulong)Poly1305State26.LimbMask);
 			Poly1305Utils.Reduce(d0, d1, d2, d3, d4, mask, out h0, out h1, out h2, out h3, out h4);

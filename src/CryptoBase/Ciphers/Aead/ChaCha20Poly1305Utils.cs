@@ -1,3 +1,4 @@
+using CryptoBase.Ciphers.Modes;
 using CryptoBase.Ciphers.Streams;
 using CryptoBase.Macs.Poly1305;
 
@@ -10,42 +11,17 @@ internal static class ChaCha20Poly1305Utils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void EncryptAndComputeTag(ChaCha20Cipher cipher, ReadOnlySpan<byte> source, Span<byte> destination, Span<byte> tag, ReadOnlySpan<byte> associatedData)
 	{
-		Debug.Assert(tag.Length == Poly1305Algorithm.MacLength);
-
-		ref byte sourceStart = ref MemoryMarshal.GetReference(source);
-		ref byte destinationStart = ref MemoryMarshal.GetReference(destination);
-		ref byte tagStart = ref MemoryMarshal.GetReference(tag);
-		ref byte associatedDataStart = ref MemoryMarshal.GetReference(associatedData);
-
-		if (ChaCha20Utils.CanFusePoly1305<Poly1305Avx512>() && ExceedsFirstBatch(source.Length) || Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length))
-		{
-			Encrypt<Poly1305Avx512>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
-			return;
-		}
-
-		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length))
-		{
-			Encrypt<Poly1305Avx2>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
-			return;
-		}
-
-		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length))
-		{
-			Encrypt<Poly1305Sse2>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
-			return;
-		}
-
-		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length))
-		{
-			Encrypt<Poly1305AdvSimd>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
-			return;
-		}
-
-		Encrypt<Poly1305Software>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
+		Transform<Encryption>(cipher, source, destination, tag.AsReadOnlySpan(), associatedData);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryDecrypt(ChaCha20Cipher cipher, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData)
+	{
+		return Transform<Decryption>(cipher, source, destination, tag, associatedData);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool Transform<TDirection>(ChaCha20Cipher cipher, ReadOnlySpan<byte> source, Span<byte> destination, ReadOnlySpan<byte> tag, ReadOnlySpan<byte> associatedData) where TDirection : struct, IBlockDirection
 	{
 		Debug.Assert(tag.Length == Poly1305Algorithm.MacLength);
 
@@ -56,25 +32,37 @@ internal static class ChaCha20Poly1305Utils
 
 		if (ChaCha20Utils.CanFusePoly1305<Poly1305Avx512>() && ExceedsFirstBatch(source.Length) || Poly1305Algorithm.ShouldUseAvx512(associatedData.Length, source.Length))
 		{
-			return Decrypt<Poly1305Avx512>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
+			return Run<Poly1305Avx512, TDirection>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 		}
 
 		if (Poly1305Algorithm.ShouldUseAvx2(associatedData.Length, source.Length))
 		{
-			return Decrypt<Poly1305Avx2>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
+			return Run<Poly1305Avx2, TDirection>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 		}
 
 		if (Poly1305Algorithm.ShouldUseSse2(associatedData.Length, source.Length))
 		{
-			return Decrypt<Poly1305Sse2>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
+			return Run<Poly1305Sse2, TDirection>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 		}
 
 		if (Poly1305Algorithm.ShouldUseAdvSimd(associatedData.Length, source.Length))
 		{
-			return Decrypt<Poly1305AdvSimd>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
+			return Run<Poly1305AdvSimd, TDirection>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
 		}
 
-		return Decrypt<Poly1305Software>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
+		return Run<Poly1305Software, TDirection>(cipher, ref sourceStart, ref destinationStart, source.Length, ref tagStart, ref associatedDataStart, associatedData.Length);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool Run<TState, TDirection>(ChaCha20Cipher cipher, ref byte sourceStart, ref byte destinationStart, int length, ref byte tagStart, ref byte associatedDataStart, int associatedDataLength) where TState : unmanaged, IPoly1305State<TState>, allows ref struct where TDirection : struct, IBlockDirection
+	{
+		if (TDirection.IsDecrypt)
+		{
+			return Decrypt<TState>(cipher, ref sourceStart, ref destinationStart, length, ref tagStart, ref associatedDataStart, associatedDataLength);
+		}
+
+		Encrypt<TState>(cipher, ref sourceStart, ref destinationStart, length, ref tagStart, ref associatedDataStart, associatedDataLength);
+		return true;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
