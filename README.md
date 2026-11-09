@@ -184,6 +184,7 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | ML-DSA | ✅ |
 | SLH-DSA | ⚠️ |
 | FN-DSA | ⚠️ |
+| Composite ML-DSA | ⚠️ |
 
 ### [X.509](docs/x509.md)
 
