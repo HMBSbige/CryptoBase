@@ -10,7 +10,7 @@ internal readonly struct SM3Vector128 : ISM3Lanes<Vector128<uint>>
 	public static int Lanes => 4;
 
 	// One instruction rotates by any amount, or none rotates by 8 in one.
-	private static bool RotatesDirectly
+	public static bool RotatesDirectly
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Avx512F.VL.IsSupported || !Ssse3.IsSupported && !AdvSimd.IsSupported;
@@ -98,29 +98,7 @@ internal readonly struct SM3Vector128 : ISM3Lanes<Vector128<uint>>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<uint> P0(Vector128<uint> value)
-	{
-		if (RotatesDirectly)
-		{
-			return Xor(value, RotateLeft(value, 9), RotateLeft(value, 17));
-		}
-
-		return value ^ RotateLeft(value ^ RotateLeftByte(value), 9);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<uint> P1(Vector128<uint> value)
-	{
-		if (RotatesDirectly)
-		{
-			return Xor(value, RotateLeft(value, 15), RotateLeft(value, 23));
-		}
-
-		return value ^ RotateLeft(value ^ RotateLeftByte(value), 15);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<uint> RotateLeftByte(Vector128<uint> value)
+	public static Vector128<uint> RotateLeftByte(Vector128<uint> value)
 	{
 		return Vector128.Shuffle(value.AsByte(), Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14)).AsUInt32();
 	}

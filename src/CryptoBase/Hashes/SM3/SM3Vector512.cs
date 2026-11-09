@@ -10,6 +10,8 @@ internal readonly struct SM3Vector512 : ISM3Lanes<Vector512<uint>>
 
 	public static int Lanes => 16;
 
+	public static bool RotatesDirectly => true;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<uint> Create(uint value)
 	{
@@ -78,15 +80,9 @@ internal readonly struct SM3Vector512 : ISM3Lanes<Vector512<uint>>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<uint> P0(Vector512<uint> value)
+	public static Vector512<uint> RotateLeftByte(Vector512<uint> value)
 	{
-		return Xor(value, RotateLeft(value, 9), RotateLeft(value, 17));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector512<uint> P1(Vector512<uint> value)
-	{
-		return Xor(value, RotateLeft(value, 15), RotateLeft(value, 23));
+		return RotateLeft(value, 8);
 	}
 
 	// Within each 128-bit block b, the interleaves turn words 0 to 3 and 4 to 7 of the state into those of lane 4b + i in q[i] and q[4 + i]. One permutation of q[i] and q[4 + i] then gives lanes i and 4 + i, blocks 4i and 4i + 1, and another lanes 8 + i and 12 + i, blocks 4i + 2 and 4i + 3.

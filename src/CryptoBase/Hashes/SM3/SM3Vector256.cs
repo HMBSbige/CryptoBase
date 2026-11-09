@@ -9,6 +9,12 @@ internal readonly struct SM3Vector256 : ISM3Lanes<Vector256<uint>>
 
 	public static int Lanes => 8;
 
+	public static bool RotatesDirectly
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Avx512F.VL.IsSupported;
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<uint> Create(uint value)
 	{
@@ -77,29 +83,7 @@ internal readonly struct SM3Vector256 : ISM3Lanes<Vector256<uint>>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<uint> P0(Vector256<uint> value)
-	{
-		if (Avx512F.VL.IsSupported)
-		{
-			return Xor(value, RotateLeft(value, 9), RotateLeft(value, 17));
-		}
-
-		return value ^ RotateLeft(value ^ RotateLeftByte(value), 9);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector256<uint> P1(Vector256<uint> value)
-	{
-		if (Avx512F.VL.IsSupported)
-		{
-			return Xor(value, RotateLeft(value, 15), RotateLeft(value, 23));
-		}
-
-		return value ^ RotateLeft(value ^ RotateLeftByte(value), 15);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<uint> RotateLeftByte(Vector256<uint> value)
+	public static Vector256<uint> RotateLeftByte(Vector256<uint> value)
 	{
 		Vector128<byte> indices = Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
 		return Avx2.Shuffle(value.AsByte(), Vector256.Create(indices, indices)).AsUInt32();

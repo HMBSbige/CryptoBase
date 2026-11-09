@@ -34,9 +34,9 @@ internal interface ISM3Lanes<TVector> where TVector : unmanaged
 
 	static abstract TVector ShiftRightLogical(TVector value, int count);
 
-	static abstract TVector P0(TVector value);
+	static abstract bool RotatesDirectly { get; }
 
-	static abstract TVector P1(TVector value);
+	static abstract TVector RotateLeftByte(TVector value);
 
 	// Writes the state words s0 to s7 of each lane as 32 big-endian bytes to the block of that lane, Lanes blocks from destination on.
 	static abstract void Store(TVector s0, TVector s1, TVector s2, TVector s3, TVector s4, TVector s5, TVector s6, TVector s7, ref byte destination);

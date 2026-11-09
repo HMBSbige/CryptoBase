@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CryptoBase.Hashes.SM3;
 
 // The compression function of SM3 over the lanes of TLanes, and the blocks SM3(prefix ‖ ct) of the KDF of GB/T 32918.4-2016, Sec. 5.4.3, for consecutive counters ct, one counter to a lane. The rounds follow those of SM3Core: the eight state vectors take new roles each round rather than moving, so that four rounds bring them back to their places.
@@ -35,48 +37,22 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 		Unsafe.SkipInit(out InlineArray16<TVector> state);
 		Unsafe.SkipInit(out SM3LaneSchedule<TVector> schedule);
 		int groupLength = TLanes.Lanes * BlockLength;
+		int passLength = PassLength;
 		ref byte output = ref MemoryMarshal.GetReference(destination);
 		int remaining = destination.Length;
 
-		if (TakesPairs)
+		for (; remaining >= passLength; remaining -= passLength)
 		{
-			for (; remaining >= 2 * groupLength; remaining -= 2 * groupLength)
-			{
-				HashPair(in blocks, counter, ref state[0], ref schedule[0]);
-				Store(ref state[0], ref output);
-				Store(ref state[8], ref Unsafe.Add(ref output, groupLength));
-				output = ref Unsafe.Add(ref output, 2 * groupLength);
-				counter += (uint)(2 * TLanes.Lanes);
-			}
-		}
-		else
-		{
-			for (; remaining >= groupLength; remaining -= groupLength)
-			{
-				Hash(in blocks, counter, ref state[0], ref schedule[0]);
-				Store(ref state[0], ref output);
-				output = ref Unsafe.Add(ref output, groupLength);
-				counter += (uint)TLanes.Lanes;
-			}
+			HashAndStore(in blocks, counter, ref state[0], ref schedule[0], ref output, true);
+			output = ref Unsafe.Add(ref output, passLength);
+			counter += (uint)(passLength / BlockLength);
 		}
 
 		if (remaining is not 0)
 		{
 			// The blocks of two groups take 16 vectors, which the schedule frees once the rounds are done.
 			ref byte rest = ref Unsafe.As<TVector, byte>(ref schedule[0]);
-
-			if (TakesPairs && remaining > groupLength)
-			{
-				HashPair(in blocks, counter, ref state[0], ref schedule[0]);
-				Store(ref state[0], ref rest);
-				Store(ref state[8], ref Unsafe.Add(ref rest, groupLength));
-			}
-			else
-			{
-				Hash(in blocks, counter, ref state[0], ref schedule[0]);
-				Store(ref state[0], ref rest);
-			}
-
+			HashAndStore(in blocks, counter, ref state[0], ref schedule[0], ref rest, remaining > groupLength);
 			Unsafe.CopyBlockUnaligned(ref output, ref rest, (uint)remaining);
 		}
 
@@ -218,6 +194,22 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 		Unsafe.Add(ref destination, 5) = feedForward ? TLanes.Xor(Unsafe.Add(ref destination, 5), f) : f;
 		Unsafe.Add(ref destination, 6) = feedForward ? TLanes.Xor(Unsafe.Add(ref destination, 6), g) : g;
 		Unsafe.Add(ref destination, 7) = feedForward ? TLanes.Xor(Unsafe.Add(ref destination, 7), h) : h;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void HashAndStore(ref readonly SM3CounterBlocks blocks, uint counter, ref TVector state, ref TVector schedule, ref byte destination, bool pair)
+	{
+		if (TakesPairs && pair)
+		{
+			HashPair(in blocks, counter, ref state, ref schedule);
+			Store(ref state, ref destination);
+			Store(ref Unsafe.Add(ref state, 8), ref Unsafe.Add(ref destination, TLanes.Lanes * BlockLength));
+		}
+		else
+		{
+			Hash(in blocks, counter, ref state, ref schedule);
+			Store(ref state, ref destination);
+		}
 	}
 
 	// The state of the chaining value of the prefix in every lane, then the last one or two blocks with the counters of the lanes from counter on, compressed into it.
@@ -399,7 +391,7 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 	private static void Expand(ref TVector words)
 	{
 		TVector mixed = TLanes.Xor(words, Unsafe.Add(ref words, 7), TLanes.RotateLeft(Unsafe.Add(ref words, 13), 15));
-		Unsafe.Add(ref words, 16) = TLanes.Xor(TLanes.P1(mixed), TLanes.RotateLeft(Unsafe.Add(ref words, 3), 7), Unsafe.Add(ref words, 10));
+		Unsafe.Add(ref words, 16) = TLanes.Xor(P(mixed, 15, 23), TLanes.RotateLeft(Unsafe.Add(ref words, 3), 7), Unsafe.Add(ref words, 10));
 	}
 
 	// TT1, which takes the place of D, and P0(TT2) in nextH, for word = W[j] and mixed = W[j] ^ W[j+4].
@@ -411,7 +403,19 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 		TVector ss1 = TLanes.RotateLeft(TLanes.Add(e, TLanes.Add(a12, TLanes.Create(constant))), 7);
 		TVector gg = late ? TLanes.Choose(e, f, g) : TLanes.Xor(e, f, g);
 		TVector ff = late ? TLanes.Majority(a, b, c) : TLanes.Xor(a, b, c);
-		nextH = TLanes.P0(TLanes.Add(TLanes.Add(gg, TLanes.Add(h, word)), ss1));
+		nextH = P(TLanes.Add(TLanes.Add(gg, TLanes.Add(h, word)), ss1), 9, 17);
 		return TLanes.Add(TLanes.Xor(ss1, a12), TLanes.Add(ff, TLanes.Add(d, mixed)));
+	}
+
+	// P0 for rotations 9 and 17, P1 for 15 and 23: x ^ (x <<< first) ^ (x <<< second), where second = first + 8.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static TVector P(TVector value, [ConstantExpected(Min = 1, Max = 31)] byte first, [ConstantExpected(Min = 1, Max = 31)] byte second)
+	{
+		if (TLanes.RotatesDirectly)
+		{
+			return TLanes.Xor(value, TLanes.RotateLeft(value, first), TLanes.RotateLeft(value, second));
+		}
+
+		return TLanes.Xor(value, TLanes.RotateLeft(TLanes.Xor(value, TLanes.RotateLeftByte(value)), first));
 	}
 }
