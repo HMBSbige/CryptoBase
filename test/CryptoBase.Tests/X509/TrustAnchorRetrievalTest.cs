@@ -2510,8 +2510,8 @@ public class TrustAnchorRetrievalTest
 	[Test]
 	public async Task TheExtensionsOfATrustAnchorDoNotCount()
 	{
-		CertificateExtension[] extensions = [NullExtension(NoRevAvailOid), new (OcspNoCheckOid, false, [0x04, 0x00]), Cdp(CrlUri), new (FreshestCrlOid, false, [0x30, 0x01]), Aia(ocsp: [OcspUri])];
-		CertificateExtension[] notDecoding = [new (NoRevAvailOid, false, [0x04, 0x00]), new (AiaOid, false, [0x30, 0x01])];
+		CertificateExtension[] extensions = [NullExtension(NoRevAvailOid), new(OcspNoCheckOid, false, [0x04, 0x00]), Cdp(CrlUri), new(FreshestCrlOid, false, [0x30, 0x01]), Aia(ocsp: [OcspUri])];
+		CertificateExtension[] notDecoding = [new(NoRevAvailOid, false, [0x04, 0x00]), new(AiaOid, false, [0x30, 0x01])];
 
 		foreach (CertificateExtension[] more in (CertificateExtension[][])[extensions, notDecoding])
 		{
