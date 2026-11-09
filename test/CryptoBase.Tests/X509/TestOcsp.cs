@@ -10,6 +10,9 @@ internal static class TestOcsp
 	public const string BasicOid = "1.3.6.1.5.5.7.48.1.1";
 	public const string NonceOid = "1.3.6.1.5.5.7.48.1.2";
 	public const string NoCheckOid = "1.3.6.1.5.5.7.48.1.5";
+	public const string CrlReferenceOid = "1.3.6.1.5.5.7.48.1.3";
+	public const string ArchiveCutoffOid = "1.3.6.1.5.5.7.48.1.6";
+	public const string ExtendedRevokeOid = "1.3.6.1.5.5.7.48.1.9";
 	public const string OcspSigningOid = "1.3.6.1.5.5.7.3.9";
 
 	public static readonly byte[] Good = [0x80, 0x00];

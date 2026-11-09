@@ -43,17 +43,7 @@ internal static class RevocationChecker
 	// The candidates for a delegated responder that a response may make the checker verify, each costing two signature checks, so that a response with many certificates of one name cannot make it work without bound.
 	private const int MaxResponderCandidates = 8;
 
-	private const string AuthorityKeyIdentifierOid = "2.5.29.35";
 	private const string IssuerAlternativeNameOid = "2.5.29.18";
-	private const string DeltaCrlIndicatorOid = "2.5.29.27";
-	private const string IssuingDistributionPointOid = "2.5.29.28";
-	private const string BasicConstraintsOid = "2.5.29.19";
-	private const string KeyUsageOid = "2.5.29.15";
-	private const string ExtendedKeyUsageOid = "2.5.29.37";
-	private const string SubjectAlternativeNameOid = "2.5.29.17";
-	private const string ReasonCodeOid = "2.5.29.21";
-	private const string InvalidityDateOid = "2.5.29.24";
-	private const string OcspNoCheckOid = "1.3.6.1.5.5.7.48.1.5";
 	private const string OcspExtendedRevokeOid = "1.3.6.1.5.5.7.48.1.9";
 	private const string OcspCrlReferenceOid = "1.3.6.1.5.5.7.48.1.3";
 	private const string OcspArchiveCutoffOid = "1.3.6.1.5.5.7.48.1.6";
@@ -77,7 +67,8 @@ internal static class RevocationChecker
 		}
 
 		// Sec. 5.2 and 5.3: a critical extension that is not understood forbids using the CRL for any certificate.
-		if (FindUnrecognizedCriticalExtension(crl.Extensions) is { } unrecognized)
+		// The critical CRL extensions that the checker processes; nothing else may be critical (RFC 5280, Sec. 5.2). The CRL number, the freshest CRL and the authority information access extensions must not be critical (Secs. 5.2.3, 5.2.6 and 5.2.7), so a critical one is refused.
+		if (FindUnrecognizedCriticalExtension(crl.Extensions, [DecodedExtensions.AuthorityKeyIdentifierOid, IssuerAlternativeNameOid, DecodedCrlExtensions.DeltaCrlIndicatorOid, DecodedCrlExtensions.IssuingDistributionPointOid]) is { } unrecognized)
 		{
 			return Invalid($"The CRL has the critical extension {unrecognized}, which the checker does not process.");
 		}
@@ -197,7 +188,8 @@ internal static class RevocationChecker
 			return Invalid($"The response has the type {response.ResponseType}, not id-pkix-ocsp-basic.");
 		}
 
-		if (FindUnrecognizedCriticalExtension(response.Extensions, single: false) is { } unrecognized)
+		// RFC 6960, Sec. 4.1.2: an extension may be critical if it is one that the checker understands, whose meaning is to inform; the others are refused.
+		if (FindUnrecognizedCriticalExtension(response.Extensions, [OcspRequest.NonceOid, OcspExtendedRevokeOid]) is { } unrecognized)
 		{
 			return Invalid($"The response has the critical extension {unrecognized}, which the checker does not process.");
 		}
@@ -210,7 +202,7 @@ internal static class RevocationChecker
 			return Invalid("The response has no status for the certificate.");
 		}
 
-		if (FindUnrecognizedCriticalExtension(selected.Extensions, single: true) is { } unrecognizedSingle)
+		if (FindUnrecognizedCriticalExtension(selected.Extensions, [OcspCrlReferenceOid, OcspArchiveCutoffOid, CertificateRevocationList.ReasonCodeOid, CertificateRevocationList.InvalidityDateOid]) is { } unrecognizedSingle)
 		{
 			return Invalid($"The response for the certificate has the critical extension {unrecognizedSingle}, which the checker does not process.");
 		}
@@ -271,39 +263,13 @@ internal static class RevocationChecker
 		return new RevocationResult(RevocationStatus.Invalid, detail);
 	}
 
-	// The critical CRL extensions that the checker processes; nothing else may be critical (RFC 5280, Sec. 5.2). The CRL number, the freshest CRL and the authority information access extensions must not be critical (Secs. 5.2.3, 5.2.6 and 5.2.7), so a critical one is refused.
-	private static string? FindUnrecognizedCriticalExtension(IReadOnlyList<CertificateExtension> extensions)
+	private static string? FindUnrecognizedCriticalExtension(IReadOnlyList<CertificateExtension> extensions, ReadOnlySpan<string> understood)
 	{
 		for (int i = 0; i < extensions.Count; ++i)
 		{
 			CertificateExtension extension = extensions[i];
 
-			if (extension.Critical && extension.Oid is not (AuthorityKeyIdentifierOid or IssuerAlternativeNameOid or DeltaCrlIndicatorOid or IssuingDistributionPointOid))
-			{
-				return extension.Oid;
-			}
-		}
-
-		return null;
-	}
-
-	// RFC 6960, Sec. 4.1.2: an extension may be critical if it is one that the checker understands, whose meaning is to inform; the others are refused.
-	private static string? FindUnrecognizedCriticalExtension(IReadOnlyList<CertificateExtension> extensions, bool single)
-	{
-		for (int i = 0; i < extensions.Count; ++i)
-		{
-			CertificateExtension extension = extensions[i];
-
-			if (!extension.Critical)
-			{
-				continue;
-			}
-
-			bool understood = single
-				? extension.Oid is OcspCrlReferenceOid or OcspArchiveCutoffOid or ReasonCodeOid or InvalidityDateOid
-				: extension.Oid is OcspRequest.NonceOid or OcspExtendedRevokeOid;
-
-			if (!understood)
+			if (extension.Critical && !understood.Contains(extension.Oid))
 			{
 				return extension.Oid;
 			}
@@ -536,14 +502,9 @@ internal static class RevocationChecker
 			return "The key usage extension of the responder's certificate does not assert digitalSignature.";
 		}
 
-		IReadOnlyList<CertificateExtension> extensions = candidate.Extensions;
-
-		for (int i = 0; i < extensions.Count; ++i)
+		if (FindUnrecognizedCriticalExtension(candidate.Extensions, [DecodedExtensions.BasicConstraintsOid, Certificate.KeyUsageOid, DecodedExtensions.ExtendedKeyUsageOid, DecodedExtensions.SubjectAlternativeNameOid, DecodedExtensions.OcspNoCheckOid]) is { } oid)
 		{
-			if (extensions[i].Critical && extensions[i].Oid is not (BasicConstraintsOid or KeyUsageOid or ExtendedKeyUsageOid or SubjectAlternativeNameOid or OcspNoCheckOid))
-			{
-				return $"The responder's certificate has the critical extension {extensions[i].Oid}, which the checker does not process.";
-			}
+			return $"The responder's certificate has the critical extension {oid}, which the checker does not process.";
 		}
 
 		if (CertificatePolicy.CheckSignatureAlgorithm(candidate.SignatureAlgorithm) is not null)

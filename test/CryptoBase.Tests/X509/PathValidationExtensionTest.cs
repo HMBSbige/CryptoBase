@@ -1,4 +1,5 @@
 using CryptoBase.X509;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.TestUtils;
@@ -65,6 +66,71 @@ public class PathValidationExtensionTest
 		{
 			await Assert.That(decoded?.CertificateAuthority).IsEqualTo(certificateAuthority).Because(@case);
 			await Assert.That(decoded?.PathLengthConstraint).IsEqualTo(pathLengthConstraint).Because(@case);
+		}
+	}
+
+	public static IEnumerable<Func<(string Case, byte[] Contents, int Expected)>> PathLimits()
+	{
+		yield return () => ("0", [0x00], 0);
+		yield return () => ("127", [0x7F], 127);
+		yield return () => ("128", [0x00, 0x80], 128);
+		yield return () => ("255", [0x00, 0xFF], 255);
+		yield return () => ("256", [0x01, 0x00], 256);
+		yield return () => ("2^31 - 2", [0x7F, 0xFF, 0xFF, 0xFE], int.MaxValue - 1);
+		yield return () => ("2^31 - 1", [0x7F, 0xFF, 0xFF, 0xFF], int.MaxValue);
+		yield return () => ("2^31", [0x00, 0x80, 0x00, 0x00, 0x00], int.MaxValue);
+		yield return () => ("2^64", [0x01, 0, 0, 0, 0, 0, 0, 0, 0], int.MaxValue);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(PathLimits))]
+	public async Task PathLimitsSaturateAtIntMaxValue(string @case, byte[] contents, int expected)
+	{
+		PolicyConstraints constraints = PolicyConstraints.Read(Sequence(Tlv(0x80, contents), Tlv(0x81, contents)));
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(BasicConstraints.Read(Sequence(Tlv(0x02, contents))).PathLengthConstraint).IsEqualTo(expected).Because(@case);
+			await Assert.That(constraints.RequireExplicitPolicy).IsEqualTo(expected).Because(@case);
+			await Assert.That(constraints.InhibitPolicyMapping).IsEqualTo(expected).Because(@case);
+			await Assert.That(PolicyConstraints.ReadInhibitAnyPolicy(Tlv(0x02, contents))).IsEqualTo(expected).Because(@case);
+		}
+	}
+
+	public static IEnumerable<Func<(string Case, byte[] Contents)>> NegativePathLimits()
+	{
+		yield return () => ("-1", [0xFF]);
+		yield return () => ("-128", [0x80]);
+		yield return () => ("-2^31", [0x80, 0x00, 0x00, 0x00]);
+		yield return () => ("-2^63", [0x80, 0, 0, 0, 0, 0, 0, 0]);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(NegativePathLimits))]
+	public async Task NegativePathLimitsThrow(string @case, byte[] contents)
+	{
+		const string NegativeSkipCerts = "A SkipCerts value is negative.";
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => BasicConstraints.Read(Sequence(Tlv(0x02, contents)))).ThrowsExactly<AsnContentException>().WithMessage("The pathLenConstraint is negative.").Because(@case);
+			await Assert.That(() => PolicyConstraints.Read(Sequence(Tlv(0x80, contents)))).ThrowsExactly<AsnContentException>().WithMessage(NegativeSkipCerts).Because(@case);
+			await Assert.That(() => PolicyConstraints.Read(Sequence(Tlv(0x81, contents)))).ThrowsExactly<AsnContentException>().WithMessage(NegativeSkipCerts).Because(@case);
+			await Assert.That(() => PolicyConstraints.ReadInhibitAnyPolicy(Tlv(0x02, contents))).ThrowsExactly<AsnContentException>().WithMessage(NegativeSkipCerts).Because(@case);
+		}
+	}
+
+	[Test]
+	public async Task PathLimitsMustBeMinimal()
+	{
+		byte[] contents = [0x00, 0x00, 0x00, 0x00, 0x01];
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => BasicConstraints.Read(Sequence(Tlv(0x02, contents)))).ThrowsExactly<AsnContentException>();
+			await Assert.That(() => PolicyConstraints.Read(Sequence(Tlv(0x80, contents)))).ThrowsExactly<AsnContentException>();
+			await Assert.That(() => PolicyConstraints.Read(Sequence(Tlv(0x81, contents)))).ThrowsExactly<AsnContentException>();
+			await Assert.That(() => PolicyConstraints.ReadInhibitAnyPolicy(Tlv(0x02, contents))).ThrowsExactly<AsnContentException>();
 		}
 	}
 

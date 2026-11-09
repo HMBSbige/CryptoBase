@@ -56,9 +56,7 @@ public sealed class CrlDistributionPoint
 	// CRLDistributionPoints ::= SEQUENCE SIZE (1..MAX) OF DistributionPoint.
 	internal static IReadOnlyList<CrlDistributionPoint> ReadList(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 		sequence.ThrowIfEmpty();
 		List<CrlDistributionPoint> points = [];
 

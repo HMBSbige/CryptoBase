@@ -106,8 +106,24 @@ public class CertificateTest
 			await Assert.That(all.Select(static certificate => Convert.ToHexString(certificate.Encoded.Span))).IsEquivalentTo([Convert.ToHexString(first.Encoded.Span), Convert.ToHexString(second.Encoded.Span)], CollectionOrdering.Matching);
 			await Assert.That(Certificate.DecodePemAll("no blocks")).IsEmpty();
 			await Assert.That(() => Certificate.DecodePem(PemEncoding.WriteString("PUBLIC KEY", first.PublicKeyInfo.Encoded.Span))).Throws<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => Certificate.DecodePem(PemEncoding.WriteString("PUBLIC KEY", first.PublicKeyInfo.Encoded.Span))).Throws<ArgumentException>().WithMessageContaining("The text holds no CERTIFICATE block.");
 			await Assert.That(() => Certificate.DecodePem(PemEncoding.WriteString("CERTIFICATE", [0x30, 0x00]))).Throws<ArgumentException>().WithParameterName("source");
 			await Assert.That(() => Certificate.DecodePemAll(PemEncoding.WriteString("CERTIFICATE", [0x30, 0x00]))).Throws<ArgumentException>().WithParameterName("source");
+		}
+	}
+
+	[Test]
+	public async Task PemLabelsMatchExactlyAndMalformedBlocksAreNotSkipped()
+	{
+		Certificate certificate = SelfSignedP256();
+		string good = PemEncoding.WriteString("CERTIFICATE", certificate.Encoded.Span);
+		string malformed = PemEncoding.WriteString("CERTIFICATE", [0x30, 0x03, 0x02, 0x01, 0x01]);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(() => Certificate.DecodePem(PemEncoding.WriteString("certificate", certificate.Encoded.Span))).Throws<ArgumentException>().WithMessageContaining("The text holds no CERTIFICATE block.");
+			await Assert.That(() => Certificate.DecodePem($"{malformed}\n{good}")).Throws<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => Certificate.DecodePemAll($"{good}\n{malformed}")).Throws<ArgumentException>().WithParameterName("source");
 		}
 	}
 

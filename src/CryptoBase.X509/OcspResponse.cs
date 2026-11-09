@@ -30,9 +30,7 @@ public sealed class OcspResponse
 		Certificates = [];
 		Extensions = [];
 
-		DerReader reader = new(encoded);
-		DerReader response = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader response = DerReader.ReadSoleSequence(encoded);
 		Status = ReadStatus(response.ReadEnumeratedBytes().Span);
 
 		if (Status is OcspResponseStatus.Successful)
@@ -158,9 +156,7 @@ public sealed class OcspResponse
 	// BasicOCSPResponse ::= SEQUENCE { tbsResponseData ResponseData, signatureAlgorithm AlgorithmIdentifier, signature BIT STRING, certs [0] EXPLICIT SEQUENCE OF Certificate OPTIONAL }.
 	private void ReadBasicResponse(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader basic = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader basic = DerReader.ReadSoleSequence(value);
 
 		DerReader data = basic.ReadSequence(out ReadOnlyMemory<byte> tbsResponseData);
 		TbsResponseData = tbsResponseData;

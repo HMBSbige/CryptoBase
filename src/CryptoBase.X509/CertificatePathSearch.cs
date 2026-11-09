@@ -14,18 +14,6 @@ internal sealed partial class CertificatePathSearch : IDisposable
 	public const long MaxNameComparisons = 1 << 20;
 	public const long MaxPolicyGraphEntries = 1 << 16;
 
-	private const string BasicConstraintsOid = "2.5.29.19";
-	private const string KeyUsageOid = "2.5.29.15";
-	private const string ExtendedKeyUsageOid = "2.5.29.37";
-	private const string SubjectAlternativeNameOid = "2.5.29.17";
-	private const string NameConstraintsOid = "2.5.29.30";
-	private const string AuthorityKeyIdentifierOid = "2.5.29.35";
-	private const string SubjectKeyIdentifierOid = "2.5.29.14";
-	private const string CertificatePoliciesOid = "2.5.29.32";
-	private const string PolicyMappingsOid = "2.5.29.33";
-	private const string PolicyConstraintsOid = "2.5.29.36";
-	private const string InhibitAnyPolicyOid = "2.5.29.54";
-	private const string CrlDistributionPointsOid = "2.5.29.31";
 	private const string ServerAuthenticationOid = "1.3.6.1.5.5.7.3.1";
 	private const string ClientAuthenticationOid = "1.3.6.1.5.5.7.3.2";
 
@@ -613,9 +601,9 @@ internal sealed partial class CertificatePathSearch : IDisposable
 
 			if (!extension.Critical)
 			{
-				if (hasPolicyExtensions && node.Role is not PathRole.Anchor && _leafAnchor is null && extension.Oid is PolicyConstraintsOid or InhibitAnyPolicyOid)
+				if (hasPolicyExtensions && node.Role is not PathRole.Anchor && _leafAnchor is null && extension.Oid is DecodedExtensions.PolicyConstraintsOid or DecodedExtensions.InhibitAnyPolicyOid)
 				{
-					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} does not mark its {(extension.Oid is PolicyConstraintsOid ? "policy constraints" : "inhibit anyPolicy")} extension critical, which RFC 5280 requires.", node));
+					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} does not mark its {(extension.Oid is DecodedExtensions.PolicyConstraintsOid ? "policy constraints" : "inhibit anyPolicy")} extension critical, which RFC 5280 requires.", node));
 				}
 
 				continue;
@@ -623,11 +611,11 @@ internal sealed partial class CertificatePathSearch : IDisposable
 
 			switch (extension.Oid)
 			{
-				case BasicConstraintsOid or KeyUsageOid or ExtendedKeyUsageOid or SubjectAlternativeNameOid or NameConstraintsOid or PolicyMappingsOid or PolicyConstraintsOid or InhibitAnyPolicyOid:
+				case DecodedExtensions.BasicConstraintsOid or Certificate.KeyUsageOid or DecodedExtensions.ExtendedKeyUsageOid or DecodedExtensions.SubjectAlternativeNameOid or DecodedExtensions.NameConstraintsOid or DecodedExtensions.PolicyMappingsOid or DecodedExtensions.PolicyConstraintsOid or DecodedExtensions.InhibitAnyPolicyOid:
 				{
 					break;
 				}
-				case CertificatePoliciesOid:
+				case DecodedExtensions.CertificatePoliciesOid:
 				{
 					// RFC 5280, Sec. 4.2.1.4: the qualifiers of a critical extension must be ones that the validator interprets, unless the certificate takes no part in policy processing.
 					if (node.Role is not PathRole.Anchor && _leafAnchor is null && node.Certificate.DecodedExtensions.CertificatePolicies.Value is { HasUnrecognizedQualifier: true })
@@ -637,7 +625,7 @@ internal sealed partial class CertificatePathSearch : IDisposable
 
 					break;
 				}
-				case CrlDistributionPointsOid:
+				case DecodedExtensions.CrlDistributionPointsOid:
 				{
 					// RFC 5280, Sec. 4.2.1.13: the extension should not be critical, but is understood; revocation checks use it.
 					if (node.Certificate.DecodedExtensions.CrlDistributionPoints.Error is not null)
@@ -647,9 +635,9 @@ internal sealed partial class CertificatePathSearch : IDisposable
 
 					break;
 				}
-				case AuthorityKeyIdentifierOid or SubjectKeyIdentifierOid:
+				case DecodedExtensions.AuthorityKeyIdentifierOid or DecodedExtensions.SubjectKeyIdentifierOid:
 				{
-					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} marks its {(extension.Oid is AuthorityKeyIdentifierOid ? "authority" : "subject")} key identifier extension critical, which RFC 5280 forbids.", node));
+					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} marks its {(extension.Oid is DecodedExtensions.AuthorityKeyIdentifierOid ? "authority" : "subject")} key identifier extension critical, which RFC 5280 forbids.", node));
 					break;
 				}
 				default:

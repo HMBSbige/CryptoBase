@@ -58,9 +58,7 @@ public sealed class AuthorityInformationAccess
 	// AuthorityInfoAccessSyntax ::= SEQUENCE SIZE (1..MAX) OF AccessDescription, and AccessDescription ::= SEQUENCE { accessMethod OBJECT IDENTIFIER, accessLocation GeneralName }.
 	internal static AuthorityInformationAccess Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 		sequence.ThrowIfEmpty();
 		List<AccessDescription> descriptions = [];
 

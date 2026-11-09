@@ -1,4 +1,3 @@
-using CryptoBase.Internal;
 using System.Runtime.InteropServices;
 
 namespace CryptoBase.X509;
@@ -21,8 +20,8 @@ namespace CryptoBase.X509;
 public sealed class CertificateRevocationList
 {
 	private const string PemLabel = "X509 CRL";
-	private const string ReasonCodeOid = "2.5.29.21";
-	private const string InvalidityDateOid = "2.5.29.24";
+	internal const string ReasonCodeOid = "2.5.29.21";
+	internal const string InvalidityDateOid = "2.5.29.24";
 
 	private static readonly Asn1Tag ExtensionsTag = new(TagClass.ContextSpecific, 0, true);
 
@@ -37,9 +36,7 @@ public sealed class CertificateRevocationList
 	private CertificateRevocationList(ReadOnlyMemory<byte> encoded)
 	{
 		Encoded = encoded;
-		DerReader reader = new(encoded);
-		DerReader crl = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader crl = DerReader.ReadSoleSequence(encoded);
 
 		DerReader tbs = crl.ReadSequence(out ReadOnlyMemory<byte> tbsCertList);
 		TbsCertList = tbsCertList;
@@ -185,17 +182,8 @@ public sealed class CertificateRevocationList
 	/// <exception cref="ArgumentException"><paramref name="source" /> has no X509 CRL block, or the first one is not a DER-encoded CRL.</exception>
 	public static CertificateRevocationList DecodePem(ReadOnlySpan<char> source)
 	{
-		PemReader reader = new(source);
-
-		while (reader.TryRead(out ReadOnlySpan<char> label, out ReadOnlySpan<char> base64Data, out int decodedLength))
-		{
-			if (label.SequenceEqual(PemLabel))
-			{
-				return DecodePemBlock(base64Data, decodedLength, nameof(source));
-			}
-		}
-
-		throw new ArgumentException("The text holds no X509 CRL block.", nameof(source));
+		X509PemReader reader = new(source, PemLabel);
+		return reader.TryRead(out byte[]? encoded) ? Decode(encoded, nameof(source)) : throw new ArgumentException("The text holds no X509 CRL block.", nameof(source));
 	}
 
 	/// <summary>
@@ -207,15 +195,12 @@ public sealed class CertificateRevocationList
 	/// <exception cref="ArgumentException">An X509 CRL block is not a DER-encoded CRL.</exception>
 	public static CertificateRevocationList[] DecodePemAll(ReadOnlySpan<char> source)
 	{
-		PemReader reader = new(source);
+		X509PemReader reader = new(source, PemLabel);
 		List<CertificateRevocationList> lists = [];
 
-		while (reader.TryRead(out ReadOnlySpan<char> label, out ReadOnlySpan<char> base64Data, out int decodedLength))
+		while (reader.TryRead(out byte[]? encoded))
 		{
-			if (label.SequenceEqual(PemLabel))
-			{
-				lists.Add(DecodePemBlock(base64Data, decodedLength, nameof(source)));
-			}
+			lists.Add(Decode(encoded, nameof(source)));
 		}
 
 		return [.. lists];
@@ -307,13 +292,6 @@ public sealed class CertificateRevocationList
 	internal static X509RevocationReason ReadReason(ReadOnlySpan<byte> contents)
 	{
 		return contents is [var value] && value <= 10 && value is not 7 ? (X509RevocationReason)value : throw new AsnContentException("A CRLReason has a value that is not defined.");
-	}
-
-	private static CertificateRevocationList DecodePemBlock(ReadOnlySpan<char> base64Data, int decodedLength, string parameterName)
-	{
-		byte[] encoded = GC.AllocateUninitializedArray<byte>(decodedLength);
-		PemReader.Decode(base64Data, encoded);
-		return Decode(encoded, parameterName);
 	}
 
 	// encoded is owned by the new instance.
@@ -419,13 +397,7 @@ public sealed class CertificateRevocationList
 		{
 			DerReader extension = sequence.ReadSequence();
 			ReadOnlySpan<byte> oid = extension.ReadEncodedValue().Span;
-			bool critical = extension.PeekTagIs(Asn1Tag.Boolean);
-
-			if (critical && !extension.ReadBoolean())
-			{
-				throw new AsnContentException();
-			}
-
+			bool critical = extension.ReadTrueOrAbsent();
 			ReadOnlyMemory<byte> value = extension.ReadOctetString();
 			extension.ThrowIfNotEmpty();
 

@@ -236,6 +236,20 @@ public class RevocationCheckerCrlTest
 		}
 	}
 
+	[Test]
+	public async Task CriticalExtensionsThatTheCheckerProcessesAreAccepted()
+	{
+		using Fixture fixture = new();
+		Template authorityKey = new() { Issuer = fixture.Authority.Name, Extensions = [AuthorityKeyIdentifier(fixture.Authority.KeyIdentifier, Critical), CrlNumber(1)] };
+		Template issuerName = Conforming(fixture.Authority, null, Extension(IssuerAlternativeNameOid, GeneralNames(TestPki.DirectoryName("CN=Other")), Critical));
+
+		using (Assert.Multiple())
+		{
+			await AssertStatusAsync(Check(authorityKey.Decode(fixture.Authority), fixture.Leaf, fixture.Authority), RevocationStatus.Good);
+			await AssertStatusAsync(Check(issuerName.Decode(fixture.Authority), fixture.Leaf, fixture.Authority), RevocationStatus.Good);
+		}
+	}
+
 	// Sec. 5.3: a critical entry extension that is not understood forbids the use of the CRL for any certificate, not just the entry's.
 	[Test]
 	public async Task EntryExtensionsAreCheckedForEveryEntry()

@@ -78,6 +78,15 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return ReadSequence(out _, tag);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static DerReader ReadSoleSequence(ReadOnlyMemory<byte> source)
+	{
+		DerReader reader = new(source);
+		DerReader sequence = reader.ReadSequence();
+		reader.ThrowIfNotEmpty();
+		return sequence;
+	}
+
 	// A SET OF, or the constructed value with tag, whose elements are in the order that DER requires.
 	public DerReader ReadSetOf(Asn1Tag? tag = null)
 	{
@@ -156,6 +165,32 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return TakeContents(consumed, value.Length);
 	}
 
+	// An INTEGER (0..MAX), or the value with tag, that limits the length of a certification path. A value too large for an int is as good as int.MaxValue, as no path is that long.
+	public int ReadSaturatedInt32(string negativeMessage, Asn1Tag? tag = null)
+	{
+		ReadOnlySpan<byte> contents = ReadIntegerBytes(tag).Span;
+
+		if (contents[0] >= 0x80)
+		{
+			throw new AsnContentException(negativeMessage);
+		}
+
+		// The encoding is minimal, so a value of more than four octets is at least 2^31.
+		if (contents.Length > sizeof(int))
+		{
+			return int.MaxValue;
+		}
+
+		int value = 0;
+
+		foreach (byte b in contents)
+		{
+			value = value << 8 | b;
+		}
+
+		return value;
+	}
+
 	public int ReadInt32()
 	{
 		if (!AsnDecoder.TryReadInt32(_remaining.Span, AsnEncodingRules.DER, out int value, out int consumed))
@@ -167,11 +202,25 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return value;
 	}
 
-	public bool ReadBoolean(Asn1Tag? tag = null)
+	private bool ReadBoolean(Asn1Tag? tag)
 	{
 		bool value = AsnDecoder.ReadBoolean(_remaining.Span, AsnEncodingRules.DER, out int consumed, tag);
 		Take(consumed);
 		return value;
+	}
+
+	// A BOOLEAN DEFAULT FALSE, or the value with tag; DER omits it when it is FALSE, so one that is present must be TRUE.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool ReadTrueOrAbsent(Asn1Tag? tag = null)
+	{
+		bool present = PeekTagIs(tag ?? Asn1Tag.Boolean);
+
+		if (present && !ReadBoolean(tag))
+		{
+			throw new AsnContentException();
+		}
+
+		return present;
 	}
 
 	// A NULL, or the primitive value with tag.

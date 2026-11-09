@@ -5,11 +5,13 @@ namespace CryptoBase.X509;
 /// </summary>
 public sealed class AlgorithmIdentifier
 {
+	internal const string RsaEncryptionOid = "1.2.840.113549.1.1.1";
+
 	internal const string RsassaPssOid = "1.2.840.113549.1.1.10";
 
 	private const string SM2SM3Oid = "1.2.156.10197.1.501";
 
-	private const string Mgf1Oid = "1.2.840.113549.1.1.8";
+	internal const string Mgf1Oid = "1.2.840.113549.1.1.8";
 
 	private static readonly Asn1Tag HashAlgorithmTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag MaskGenAlgorithmTag = new(TagClass.ContextSpecific, 1, true);
@@ -140,9 +142,7 @@ public sealed class AlgorithmIdentifier
 	// otherwise the result is false. A field with its default value is accepted, as Sec. 3.1 requires of the trailer field. Throws AsnContentException if the parameters are not DER.
 	internal static bool TryReadRsassaPssParameters(ReadOnlyMemory<byte> parameters, out SignatureAlgorithm algorithm, out int hashLength, out int saltLength)
 	{
-		DerReader reader = new(parameters);
-		DerReader fields = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader fields = DerReader.ReadSoleSequence(parameters);
 		(algorithm, hashLength) = (default, 0);
 		(SignatureAlgorithm maskAlgorithm, int trailerField) = (default, 1);
 		saltLength = 20;

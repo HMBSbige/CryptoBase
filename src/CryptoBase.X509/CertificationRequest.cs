@@ -1,5 +1,3 @@
-using CryptoBase.Internal;
-
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -25,9 +23,7 @@ public sealed class CertificationRequest
 	private CertificationRequest(ReadOnlyMemory<byte> encoded)
 	{
 		Encoded = encoded;
-		DerReader reader = new(encoded);
-		DerReader request = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader request = DerReader.ReadSoleSequence(encoded);
 
 		DerReader info = request.ReadSequence(out ReadOnlyMemory<byte> certificationRequestInfo);
 		CertificationRequestInfo = certificationRequestInfo;
@@ -101,19 +97,8 @@ public sealed class CertificationRequest
 	/// <exception cref="ArgumentException"><paramref name="source" /> has no CERTIFICATE REQUEST block, or the first one is not a DER-encoded certification request.</exception>
 	public static CertificationRequest DecodePem(ReadOnlySpan<char> source)
 	{
-		PemReader reader = new(source);
-
-		while (reader.TryRead(out ReadOnlySpan<char> label, out ReadOnlySpan<char> base64Data, out int decodedLength))
-		{
-			if (label.SequenceEqual(PemLabel))
-			{
-				byte[] encoded = GC.AllocateUninitializedArray<byte>(decodedLength);
-				PemReader.Decode(base64Data, encoded);
-				return Decode(encoded, nameof(source));
-			}
-		}
-
-		throw new ArgumentException("The text holds no CERTIFICATE REQUEST block.", nameof(source));
+		X509PemReader reader = new(source, PemLabel);
+		return reader.TryRead(out byte[]? encoded) ? Decode(encoded, nameof(source)) : throw new ArgumentException("The text holds no CERTIFICATE REQUEST block.", nameof(source));
 	}
 
 	/// <summary>

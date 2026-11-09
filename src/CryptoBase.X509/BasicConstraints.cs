@@ -18,35 +18,13 @@ internal sealed class BasicConstraints
 	// BasicConstraints ::= SEQUENCE { cA BOOLEAN DEFAULT FALSE, pathLenConstraint INTEGER (0..MAX) OPTIONAL }; DER omits cA when it is FALSE.
 	public static BasicConstraints Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
-		bool certificateAuthority = sequence.PeekTagIs(Asn1Tag.Boolean);
-
-		if (certificateAuthority && !sequence.ReadBoolean())
-		{
-			throw new AsnContentException();
-		}
-
+		DerReader sequence = DerReader.ReadSoleSequence(value);
+		bool certificateAuthority = sequence.ReadTrueOrAbsent();
 		int? pathLengthConstraint = null;
 
 		if (sequence.HasData)
 		{
-			ReadOnlySpan<byte> integer = sequence.ReadIntegerBytes().Span;
-
-			if (integer[0] >= 0x80)
-			{
-				throw new AsnContentException("The pathLenConstraint is negative.");
-			}
-
-			long limit = 0;
-
-			foreach (byte octet in integer)
-			{
-				limit = Math.Min(limit << 8 | octet, int.MaxValue);
-			}
-
-			pathLengthConstraint = (int)limit;
+			pathLengthConstraint = sequence.ReadSaturatedInt32("The pathLenConstraint is negative.");
 		}
 
 		sequence.ThrowIfNotEmpty();

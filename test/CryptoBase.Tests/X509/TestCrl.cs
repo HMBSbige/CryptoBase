@@ -8,6 +8,7 @@ namespace CryptoBase.Tests.X509;
 internal static class TestCrl
 {
 	public const string AuthorityKeyIdentifierOid = "2.5.29.35";
+	public const string IssuerAlternativeNameOid = "2.5.29.18";
 	public const string CrlNumberOid = "2.5.29.20";
 	public const string DeltaCrlIndicatorOid = "2.5.29.27";
 	public const string IssuingDistributionPointOid = "2.5.29.28";
@@ -93,9 +94,9 @@ internal static class TestCrl
 		return extensions.Length is 0 ? Sequence(Tlv(0x02, serialNumber), time) : Sequence(Tlv(0x02, serialNumber), time, Sequence(extensions));
 	}
 
-	public static byte[] AuthorityKeyIdentifier(byte[] keyIdentifier)
+	public static byte[] AuthorityKeyIdentifier(byte[] keyIdentifier, byte[]? critical = null)
 	{
-		return Extension(AuthorityKeyIdentifierOid, Sequence(Tlv(0x80, keyIdentifier)));
+		return Extension(AuthorityKeyIdentifierOid, Sequence(Tlv(0x80, keyIdentifier)), critical);
 	}
 
 	public static byte[] CrlNumber(byte number, byte[]? critical = null)

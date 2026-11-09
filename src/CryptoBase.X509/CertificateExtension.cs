@@ -62,13 +62,7 @@ public sealed class CertificateExtension
 	{
 		DerReader contents = reader.ReadSequence();
 		string oid = ReadIdentifier(ref contents);
-		bool critical = contents.PeekTagIs(Asn1Tag.Boolean);
-
-		if (critical && !contents.ReadBoolean())
-		{
-			throw new AsnContentException();
-		}
-
+		bool critical = contents.ReadTrueOrAbsent();
 		ReadOnlyMemory<byte> value = contents.ReadOctetString();
 		contents.ThrowIfNotEmpty();
 		return new CertificateExtension(oid, critical, value);

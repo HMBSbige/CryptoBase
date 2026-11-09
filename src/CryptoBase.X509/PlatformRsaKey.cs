@@ -27,7 +27,6 @@ public sealed class PlatformRsaKey : ISignatureKey
 	private const int MaxModulusBits = 16384;
 	private const int MaxPublicExponentBits = 33;
 	private const int MaxHashLength = 64;
-	private const string RsaEncryptionOid = "1.2.840.113549.1.1.1";
 
 	private static readonly SignatureAlgorithm[] AllAlgorithms =
 	[
@@ -200,9 +199,7 @@ public sealed class PlatformRsaKey : ISignatureKey
 		// RSAPublicKey ::= SEQUENCE { modulus INTEGER, publicExponent INTEGER }, whose INTEGERs are positive.
 		try
 		{
-			DerReader reader = new(info.PublicKey);
-			DerReader sequence = reader.ReadSequence();
-			reader.ThrowIfNotEmpty();
+			DerReader sequence = DerReader.ReadSoleSequence(info.PublicKey);
 			modulus = sequence.ReadIntegerBytes().Span;
 			exponent = sequence.ReadIntegerBytes().Span;
 			sequence.ThrowIfNotEmpty();
@@ -346,7 +343,7 @@ public sealed class PlatformRsaKey : ISignatureKey
 	// The algorithms that the AlgorithmIdentifier of a SubjectPublicKeyInfo allows, whatever the modulus.
 	private static SignatureAlgorithm[] AllowedBy(AlgorithmIdentifier algorithm, string parameterName)
 	{
-		if (algorithm is { Oid: RsaEncryptionOid, Parameters.Span: [0x05, 0x00] })
+		if (algorithm is { Oid: AlgorithmIdentifier.RsaEncryptionOid, Parameters.Span: [0x05, 0x00] })
 		{
 			return AllAlgorithms;
 		}

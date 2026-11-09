@@ -351,8 +351,10 @@ public class CertificateRevocationListTest
 			await Assert.That(CertificateRevocationList.DecodePem(text).RevokedCount).IsEqualTo(0);
 			await Assert.That(CertificateRevocationList.DecodePemAll(text).Select(static crl => crl.RevokedCount)).IsEquivalentTo((int[])[0, 1], CollectionOrdering.Matching);
 			await Assert.That(CertificateRevocationList.DecodePemAll(certificate)).IsEmpty();
-			await Assert.That(() => CertificateRevocationList.DecodePem(certificate)).Throws<ArgumentException>();
-			await Assert.That(() => CertificateRevocationList.DecodePem(PemEncoding.WriteString("X509 CRL", (byte[])[0x30, 0x00]))).Throws<ArgumentException>();
+			await Assert.That(() => CertificateRevocationList.DecodePem(certificate)).Throws<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => CertificateRevocationList.DecodePem(certificate)).Throws<ArgumentException>().WithMessageContaining("The text holds no X509 CRL block.");
+			await Assert.That(() => CertificateRevocationList.DecodePem(PemEncoding.WriteString("X509 CRL", (byte[])[0x30, 0x00]))).Throws<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => CertificateRevocationList.DecodePemAll(PemEncoding.WriteString("X509 CRL", (byte[])[0x30, 0x00]))).Throws<ArgumentException>().WithParameterName("source");
 		}
 	}
 }

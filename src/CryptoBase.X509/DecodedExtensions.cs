@@ -7,20 +7,20 @@ namespace CryptoBase.X509;
 internal sealed class DecodedExtensions
 {
 	internal const string SubjectKeyIdentifierOid = "2.5.29.14";
-	private const string SubjectAlternativeNameOid = "2.5.29.17";
-	private const string BasicConstraintsOid = "2.5.29.19";
-	private const string NameConstraintsOid = "2.5.29.30";
-	private const string CertificatePoliciesOid = "2.5.29.32";
-	private const string PolicyMappingsOid = "2.5.29.33";
+	internal const string SubjectAlternativeNameOid = "2.5.29.17";
+	internal const string BasicConstraintsOid = "2.5.29.19";
+	internal const string NameConstraintsOid = "2.5.29.30";
+	internal const string CertificatePoliciesOid = "2.5.29.32";
+	internal const string PolicyMappingsOid = "2.5.29.33";
 	internal const string AuthorityKeyIdentifierOid = "2.5.29.35";
-	private const string PolicyConstraintsOid = "2.5.29.36";
-	private const string ExtendedKeyUsageOid = "2.5.29.37";
-	private const string InhibitAnyPolicyOid = "2.5.29.54";
+	internal const string PolicyConstraintsOid = "2.5.29.36";
+	internal const string ExtendedKeyUsageOid = "2.5.29.37";
+	internal const string InhibitAnyPolicyOid = "2.5.29.54";
 	private const string AuthorityInformationAccessOid = "1.3.6.1.5.5.7.1.1";
-	private const string CrlDistributionPointsOid = "2.5.29.31";
+	internal const string CrlDistributionPointsOid = "2.5.29.31";
 	private const string FreshestCrlOid = "2.5.29.46";
 	private const string NoRevocationAvailableOid = "2.5.29.56";
-	private const string OcspNoCheckOid = "1.3.6.1.5.5.7.48.1.5";
+	internal const string OcspNoCheckOid = "1.3.6.1.5.5.7.48.1.5";
 
 	private readonly CertificateExtension? _authorityInformationAccess;
 	private readonly CertificateExtension? _crlDistributionPoints;

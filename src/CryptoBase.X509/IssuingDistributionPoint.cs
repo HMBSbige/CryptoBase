@@ -56,14 +56,12 @@ public sealed class IssuingDistributionPoint
 	// IssuingDistributionPoint ::= SEQUENCE { distributionPoint [0] DistributionPointName OPTIONAL, onlyContainsUserCerts [1] BOOLEAN DEFAULT FALSE, onlyContainsCACerts [2] BOOLEAN DEFAULT FALSE, onlySomeReasons [3] ReasonFlags OPTIONAL, indirectCRL [4] BOOLEAN DEFAULT FALSE, onlyContainsAttributeCerts [5] BOOLEAN DEFAULT FALSE }, with implicit tags.
 	internal static IssuingDistributionPoint Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 		sequence.ThrowIfEmpty();
 
 		DistributionPointName? distributionPoint = sequence.PeekTagIs(DistributionPointTag) ? DistributionPointName.Read(ref sequence, DistributionPointTag) : null;
-		bool onlyContainsUserCertificates = ReadFlag(ref sequence, OnlyContainsUserCertsTag);
-		bool onlyContainsCACertificates = ReadFlag(ref sequence, OnlyContainsCACertsTag);
+		bool onlyContainsUserCertificates = sequence.ReadTrueOrAbsent(OnlyContainsUserCertsTag);
+		bool onlyContainsCACertificates = sequence.ReadTrueOrAbsent(OnlyContainsCACertsTag);
 		CrlReasonFlags? onlySomeReasons = null;
 
 		if (sequence.PeekTagIs(OnlySomeReasonsTag))
@@ -71,8 +69,8 @@ public sealed class IssuingDistributionPoint
 			onlySomeReasons = CrlDistributionPoint.ReadReasons(ref sequence, OnlySomeReasonsTag);
 		}
 
-		bool indirectCrl = ReadFlag(ref sequence, IndirectCrlTag);
-		bool onlyContainsAttributeCertificates = ReadFlag(ref sequence, OnlyContainsAttributeCertsTag);
+		bool indirectCrl = sequence.ReadTrueOrAbsent(IndirectCrlTag);
+		bool onlyContainsAttributeCertificates = sequence.ReadTrueOrAbsent(OnlyContainsAttributeCertsTag);
 		sequence.ThrowIfNotEmpty();
 
 		if (onlyContainsUserCertificates && onlyContainsCACertificates || onlyContainsUserCertificates && onlyContainsAttributeCertificates || onlyContainsCACertificates && onlyContainsAttributeCertificates)
@@ -81,16 +79,5 @@ public sealed class IssuingDistributionPoint
 		}
 
 		return new IssuingDistributionPoint(distributionPoint, onlyContainsUserCertificates, onlyContainsCACertificates, onlySomeReasons, indirectCrl, onlyContainsAttributeCertificates);
-	}
-
-	// A BOOLEAN DEFAULT FALSE under tag, which DER omits when it is FALSE.
-	private static bool ReadFlag(ref DerReader reader, Asn1Tag tag)
-	{
-		if (!reader.PeekTagIs(tag))
-		{
-			return false;
-		}
-
-		return reader.ReadBoolean(tag) ? true : throw new AsnContentException();
 	}
 }

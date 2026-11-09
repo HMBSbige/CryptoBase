@@ -134,9 +134,7 @@ internal sealed class NameConstraints
 	// NameConstraints ::= SEQUENCE { permittedSubtrees [0] GeneralSubtrees OPTIONAL, excludedSubtrees [1] GeneralSubtrees OPTIONAL }, with implicit tags; RFC 5280 requires one of them.
 	public static NameConstraints Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 		NameSubtrees? permitted = null;
 		NameSubtrees? excluded = null;
 

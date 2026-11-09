@@ -1,4 +1,3 @@
-using CryptoBase.Internal;
 using System.Collections.ObjectModel;
 
 namespace CryptoBase.X509;
@@ -20,7 +19,7 @@ namespace CryptoBase.X509;
 /// </remarks>
 public sealed class Certificate
 {
-	private const string KeyUsageOid = "2.5.29.15";
+	internal const string KeyUsageOid = "2.5.29.15";
 	private const string PemLabel = "CERTIFICATE";
 
 	internal static readonly Asn1Tag VersionTag = new(TagClass.ContextSpecific, 0, true);
@@ -32,9 +31,7 @@ public sealed class Certificate
 	private Certificate(ReadOnlyMemory<byte> encoded)
 	{
 		Encoded = encoded;
-		DerReader reader = new(encoded);
-		DerReader certificate = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader certificate = DerReader.ReadSoleSequence(encoded);
 
 		DerReader tbs = certificate.ReadSequence(out ReadOnlyMemory<byte> tbsCertificate);
 		TbsCertificate = tbsCertificate;
@@ -206,17 +203,8 @@ public sealed class Certificate
 	/// <exception cref="ArgumentException"><paramref name="source" /> has no CERTIFICATE block, or the first one is not a DER-encoded certificate.</exception>
 	public static Certificate DecodePem(ReadOnlySpan<char> source)
 	{
-		PemReader reader = new(source);
-
-		while (reader.TryRead(out ReadOnlySpan<char> label, out ReadOnlySpan<char> base64Data, out int decodedLength))
-		{
-			if (label.SequenceEqual(PemLabel))
-			{
-				return DecodePemBlock(base64Data, decodedLength, nameof(source));
-			}
-		}
-
-		throw new ArgumentException("The text holds no CERTIFICATE block.", nameof(source));
+		X509PemReader reader = new(source, PemLabel);
+		return reader.TryRead(out byte[]? encoded) ? Decode(encoded, nameof(source)) : throw new ArgumentException("The text holds no CERTIFICATE block.", nameof(source));
 	}
 
 	/// <summary>
@@ -228,15 +216,12 @@ public sealed class Certificate
 	/// <exception cref="ArgumentException">A CERTIFICATE block is not a DER-encoded certificate.</exception>
 	public static Certificate[] DecodePemAll(ReadOnlySpan<char> source)
 	{
-		PemReader reader = new(source);
+		X509PemReader reader = new(source, PemLabel);
 		List<Certificate> certificates = [];
 
-		while (reader.TryRead(out ReadOnlySpan<char> label, out ReadOnlySpan<char> base64Data, out int decodedLength))
+		while (reader.TryRead(out byte[]? encoded))
 		{
-			if (label.SequenceEqual(PemLabel))
-			{
-				certificates.Add(DecodePemBlock(base64Data, decodedLength, nameof(source)));
-			}
+			certificates.Add(Decode(encoded, nameof(source)));
 		}
 
 		return [.. certificates];
@@ -354,14 +339,6 @@ public sealed class Certificate
 	internal ExtendedKeyUsage? GetExtendedKeyUsage()
 	{
 		return DecodedExtensions.ExtendedKeyUsage.GetValueOrThrow("extended key usage");
-	}
-
-	// The block decodes into the array that the certificate keeps.
-	private static Certificate DecodePemBlock(ReadOnlySpan<char> base64Data, int decodedLength, string parameterName)
-	{
-		byte[] encoded = GC.AllocateUninitializedArray<byte>(decodedLength);
-		PemReader.Decode(base64Data, encoded);
-		return Decode(encoded, parameterName);
 	}
 
 	// A certificate that holds a slice of memory that outlives it, without a copy; AsnContentException if it is not DER-encoded.

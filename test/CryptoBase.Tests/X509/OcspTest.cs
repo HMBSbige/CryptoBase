@@ -406,6 +406,48 @@ public class OcspTest
 		}
 	}
 
+	// RFC 6960, Sec. 4.1.2: what the checker understands differs between the two levels, so an extension of the single responses is refused on the response.
+	[Test]
+	[Arguments(ExtendedRevokeOid, true)]
+	[Arguments(CrlReferenceOid, false)]
+	[Arguments(ArchiveCutoffOid, false)]
+	[Arguments(ReasonCodeOid, false)]
+	[Arguments(InvalidityDateOid, false)]
+	public async Task CriticalExtensionsOfTheResponseMustBeUnderstoodThere(string oid, bool understood)
+	{
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
+		Certificate leaf = authority.IssueLeaf();
+		Basic basic = new() { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = CertificateIdOf(leaf, authority.Certificate) }.Encode()], Extensions = [Extension(oid, NullValue, Critical)] };
+		RevocationResult result = Check(basic.Decode(authority.Key), leaf, authority);
+
+		using (Assert.Multiple())
+		{
+			await AssertStatusAsync(result, understood ? RevocationStatus.Good : RevocationStatus.Invalid);
+			await Assert.That(result.Detail).IsEqualTo(understood ? null : $"The response has the critical extension {oid}, which the checker does not process.");
+		}
+	}
+
+	[Test]
+	[Arguments(CrlReferenceOid, true)]
+	[Arguments(ArchiveCutoffOid, true)]
+	[Arguments(ReasonCodeOid, true)]
+	[Arguments(InvalidityDateOid, true)]
+	[Arguments(NonceOid, false)]
+	[Arguments(ExtendedRevokeOid, false)]
+	public async Task CriticalExtensionsOfASingleResponseMustBeUnderstoodThere(string oid, bool understood)
+	{
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
+		Certificate leaf = authority.IssueLeaf();
+		Basic basic = new() { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = CertificateIdOf(leaf, authority.Certificate), Extensions = [Extension(oid, NullValue, Critical)] }.Encode()] };
+		RevocationResult result = Check(basic.Decode(authority.Key), leaf, authority);
+
+		using (Assert.Multiple())
+		{
+			await AssertStatusAsync(result, understood ? RevocationStatus.Good : RevocationStatus.Invalid);
+			await Assert.That(result.Detail).IsEqualTo(understood ? null : $"The response for the certificate has the critical extension {oid}, which the checker does not process.");
+		}
+	}
+
 	// A response's nonce is read if it is well formed; any other is reported as absent, and a client that sent none ignores it.
 	[Test]
 	public async Task MalformedNoncesAreIgnored()
@@ -504,6 +546,34 @@ public class OcspTest
 
 			Certificate wrongSignature = Certificate.Decode(WithCorruptedSignature(valid));
 			await AssertStatusAsync(Evaluate(wrongSignature), RevocationStatus.Invalid);
+		}
+	}
+
+	[Test]
+	public async Task ADelegatedResponderMayHaveCriticalExtensionsThatTheCheckerProcesses()
+	{
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
+		using EcdsaP256 responderKey = EcdsaP256.GenerateKey();
+		Certificate leaf = authority.IssueLeaf();
+		CertificateExtension signing = TestPki.ExtendedKeyUsage(OcspSigningOid);
+		TestPki.Template template = new() { Subject = Name("CN=Delegated Responder"), SubjectPublicKeyInfo = Signatures.SignatureTestUtils.ExportSubjectPublicKeyInfo(responderKey) };
+
+		RevocationResult Evaluate(params CertificateExtension[] extensions)
+		{
+			Certificate responder = authority.Issue(template with { Extensions = extensions });
+			Basic basic = new() { ResponderId = ResponderByKey(responder), Responses = [new SingleEntry { CertificateId = CertificateIdOf(leaf, authority.Certificate) }.Encode()], Certificates = [responder.Encoded.ToArray()] };
+			return Check(basic.Decode(responderKey), leaf, authority);
+		}
+
+		RevocationResult unknown = Evaluate(signing, new CertificateExtension(PrivateOid, true, NullValue));
+
+		using (Assert.Multiple())
+		{
+			await AssertStatusAsync(Evaluate(signing, TestPki.BasicConstraints(false)), RevocationStatus.Good);
+			await AssertStatusAsync(Evaluate(new CertificateExtension(signing.Oid, true, signing.Value.Span)), RevocationStatus.Good);
+			await AssertStatusAsync(Evaluate(signing, TestPki.SubjectAlternativeNames(true, TestPki.Rfc822Name("ocsp@example.test"))), RevocationStatus.Good);
+			await AssertStatusAsync(Evaluate(signing, new CertificateExtension(NoCheckOid, true, NullValue)), RevocationStatus.Good);
+			await Assert.That(unknown.Detail).IsEqualTo($"The responder's certificate has the critical extension {PrivateOid}, which the checker does not process.");
 		}
 	}
 

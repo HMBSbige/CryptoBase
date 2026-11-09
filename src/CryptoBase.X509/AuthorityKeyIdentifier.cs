@@ -57,9 +57,7 @@ public sealed class AuthorityKeyIdentifier
 	// AuthorityKeyIdentifier ::= SEQUENCE { keyIdentifier [0] KeyIdentifier OPTIONAL, authorityCertIssuer [1] GeneralNames OPTIONAL, authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL }, with implicit tags; the results are slices of value.
 	internal static AuthorityKeyIdentifier Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 
 		// Each field is assigned only when present: a null in a conditional with a ReadOnlyMemory<byte> would convert, through byte[], to an empty value.
 		ReadOnlyMemory<byte>? keyIdentifier = null;

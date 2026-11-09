@@ -6,10 +6,8 @@ internal static class CertificatePolicy
 	public const int MaxRsaKeySize = 16384;
 
 	private const int MaxRsaPublicExponentSize = 33;
-	private const string RsaEncryptionOid = "1.2.840.113549.1.1.1";
 	private const string ECPublicKeyOid = "1.2.840.10045.2.1";
 	private const string DsaOid = "1.2.840.10040.4.1";
-	private const string Mgf1Oid = "1.2.840.113549.1.1.8";
 
 	private static readonly Asn1Tag HashAlgorithmTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag MaskGenAlgorithmTag = new(TagClass.ContextSpecific, 1, true);
@@ -59,7 +57,7 @@ internal static class CertificatePolicy
 	{
 		switch (info.Algorithm.Oid)
 		{
-			case RsaEncryptionOid or AlgorithmIdentifier.RsassaPssOid:
+			case AlgorithmIdentifier.RsaEncryptionOid or AlgorithmIdentifier.RsassaPssOid:
 			{
 				return CheckRsaPublicKey(info.PublicKey, minRsaKeySize, out reason);
 			}
@@ -96,7 +94,7 @@ internal static class CertificatePolicy
 	// Whether an algorithm identifier of a key is RSA, which PlatformRsaKey imports when the caller's importer does not.
 	public static bool IsRsa(AlgorithmIdentifier identifier)
 	{
-		return identifier.Oid is RsaEncryptionOid or AlgorithmIdentifier.RsassaPssOid;
+		return identifier.Oid is AlgorithmIdentifier.RsaEncryptionOid or AlgorithmIdentifier.RsassaPssOid;
 	}
 
 	// RSAPublicKey ::= SEQUENCE { modulus INTEGER, publicExponent INTEGER } (RFC 8017, Appendix A.1.1), whose integers are positive; an odd modulus and an odd exponent of at least 3 (RFC 8017, Sec. 3.1) make a valid key.
@@ -107,9 +105,7 @@ internal static class CertificatePolicy
 
 		try
 		{
-			DerReader reader = new(publicKey);
-			DerReader sequence = reader.ReadSequence();
-			reader.ThrowIfNotEmpty();
+			DerReader sequence = DerReader.ReadSoleSequence(publicKey);
 			modulus = sequence.ReadIntegerBytes().Span;
 			exponent = sequence.ReadIntegerBytes().Span;
 			sequence.ThrowIfNotEmpty();
@@ -159,9 +155,7 @@ internal static class CertificatePolicy
 
 		try
 		{
-			DerReader reader = new(parameters);
-			DerReader fields = reader.ReadSequence();
-			reader.ThrowIfNotEmpty();
+			DerReader fields = DerReader.ReadSoleSequence(parameters);
 			string hash = "1.3.14.3.2.26";
 			string maskHash = hash;
 
@@ -175,7 +169,7 @@ internal static class CertificatePolicy
 			{
 				DerReader field = fields.ReadSequence(MaskGenAlgorithmTag);
 				DerReader maskGenAlgorithm = field.ReadSequence();
-				maskHash = maskGenAlgorithm.ReadObjectIdentifier() is Mgf1Oid ? maskGenAlgorithm.ReadSequence().ReadObjectIdentifier() : "";
+				maskHash = maskGenAlgorithm.ReadObjectIdentifier() is AlgorithmIdentifier.Mgf1Oid ? maskGenAlgorithm.ReadSequence().ReadObjectIdentifier() : "";
 			}
 
 			return IsWeakHash(hash) || IsWeakHash(maskHash);

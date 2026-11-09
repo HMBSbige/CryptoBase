@@ -30,9 +30,7 @@ internal sealed class CertificatePolicies
 	// PolicyInformation ::= SEQUENCE { policyIdentifier CertPolicyId, policyQualifiers SEQUENCE SIZE (1..MAX) OF PolicyQualifierInfo OPTIONAL }.
 	public static CertificatePolicies Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 		sequence.ThrowIfEmpty();
 		List<ReadOnlyMemory<byte>> policies = [];
 		bool hasAnyPolicy = false;
@@ -115,9 +113,7 @@ internal sealed class PolicyMappings
 
 	public static PolicyMappings Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 		sequence.ThrowIfEmpty();
 		List<(ReadOnlyMemory<byte>, ReadOnlyMemory<byte>)> mappings = [];
 
@@ -152,9 +148,7 @@ internal sealed class PolicyConstraints(int? requireExplicitPolicy, int? inhibit
 
 	public static PolicyConstraints Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 		int? requireExplicitPolicy = null;
 		int? inhibitPolicyMapping = null;
 
@@ -187,33 +181,9 @@ internal sealed class PolicyConstraints(int? requireExplicitPolicy, int? inhibit
 		return skipCerts;
 	}
 
-	// SkipCerts ::= INTEGER (0..MAX). A value too large for an int is as good as the largest, as no path is that long.
+	// SkipCerts ::= INTEGER (0..MAX).
 	private static int ReadSkipCerts(ref DerReader reader, Asn1Tag? tag = null)
 	{
-		ReadOnlySpan<byte> contents = reader.ReadIntegerBytes(tag).Span;
-
-		if (contents[0] >= 0x80)
-		{
-			throw new AsnContentException("A SkipCerts value is negative.");
-		}
-
-		if (contents[0] is 0 && contents.Length > 1)
-		{
-			contents = contents.Slice(1);
-		}
-
-		return contents.Length > sizeof(int) || contents.Length is sizeof(int) && contents[0] >= 0x80 ? int.MaxValue : ReadPositive(contents);
-	}
-
-	private static int ReadPositive(ReadOnlySpan<byte> contents)
-	{
-		int value = 0;
-
-		foreach (byte b in contents)
-		{
-			value = value << 8 | b;
-		}
-
-		return value;
+		return reader.ReadSaturatedInt32("A SkipCerts value is negative.", tag);
 	}
 }

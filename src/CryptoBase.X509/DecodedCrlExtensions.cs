@@ -3,10 +3,9 @@ namespace CryptoBase.X509;
 // The extensions that CertificateRevocationList decodes on first use, so that an error in one appears only to the caller that asks for it. The values are slices of the CRL's memory, and the instance is immutable.
 internal sealed class DecodedCrlExtensions
 {
-	private const string AuthorityKeyIdentifierOid = "2.5.29.35";
 	private const string CrlNumberOid = "2.5.29.20";
-	private const string DeltaCrlIndicatorOid = "2.5.29.27";
-	private const string IssuingDistributionPointOid = "2.5.29.28";
+	internal const string DeltaCrlIndicatorOid = "2.5.29.27";
+	internal const string IssuingDistributionPointOid = "2.5.29.28";
 
 	// CertificateRevocationList allows each extension once.
 	public DecodedCrlExtensions(IReadOnlyList<CertificateExtension> extensions)
@@ -18,7 +17,7 @@ internal sealed class DecodedCrlExtensions
 
 			switch (extension.Oid)
 			{
-				case AuthorityKeyIdentifierOid:
+				case DecodedExtensions.AuthorityKeyIdentifierOid:
 				{
 					AuthorityKeyIdentifier = DecodedExtension<AuthorityKeyIdentifier>.Decode(extension.Value, X509.AuthorityKeyIdentifier.Read);
 					break;

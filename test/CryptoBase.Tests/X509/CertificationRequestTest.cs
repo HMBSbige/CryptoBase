@@ -267,6 +267,7 @@ internal class CertificationRequestTest
 		{
 			await Assert.That(decoded.Encoded.ToArray()).IsEquivalentTo(request.Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(() => CertificationRequest.DecodePem(certificateBlock + otherRequest)).Throws<ArgumentException>().WithParameterName("source");
+			await Assert.That(() => CertificationRequest.DecodePem(certificateBlock + otherRequest)).Throws<ArgumentException>().WithMessageContaining("The text holds no CERTIFICATE REQUEST block.");
 			await Assert.That(() => CertificationRequest.DecodePem(invalid)).Throws<ArgumentException>().WithParameterName("source");
 		}
 	}

@@ -32,9 +32,7 @@ internal sealed class ExtendedKeyUsage
 	// ExtKeyUsageSyntax ::= SEQUENCE SIZE (1..MAX) OF KeyPurposeId, and KeyPurposeId ::= OBJECT IDENTIFIER.
 	public static ExtendedKeyUsage Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader reader = new(value);
-		DerReader sequence = reader.ReadSequence();
-		reader.ThrowIfNotEmpty();
+		DerReader sequence = DerReader.ReadSoleSequence(value);
 		sequence.ThrowIfEmpty();
 		List<string> purposes = [];
 
