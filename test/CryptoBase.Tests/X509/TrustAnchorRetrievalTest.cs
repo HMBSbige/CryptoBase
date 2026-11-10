@@ -323,6 +323,26 @@ public class TrustAnchorRetrievalTest
 		}
 	}
 
+	// A validation less than the lifetime of a kept issuer before the last time that DateTimeOffset holds keeps it until that time, rather than failing a path that it found.
+	[Test]
+	public async Task KeepsAnIssuerAtTheEndOfTime()
+	{
+		DateTimeOffset last = new(9999, 12, 31, 23, 59, 59, TimeSpan.Zero);
+		using Authority root = Authority.CreateRoot(notAfter: last);
+		using Authority intermediate = root.CreateIntermediate(notAfter: last);
+		Certificate leaf = intermediate.IssueLeaf(notAfter: last, more: [Aia(caIssuers: [IssuerUri])]);
+		FakeRetriever retriever = new() { [IssuerUri] = Encoded(intermediate.Certificate) };
+		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
+		FixedTimeProvider clock = new(DateTimeOffset.MaxValue);
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate(validator, clock, presented: [leaf]), leaf, intermediate.Certificate, root.Certificate);
+			await AssertValid(await Validate(validator, clock, presented: [leaf]), leaf, intermediate.Certificate, root.Certificate);
+			await Assert.That(retriever.Requests.Count).IsEqualTo(1);
+		}
+	}
+
 	// Certificates that no path used are not kept, as the peer chooses their URIs.
 	[Test]
 	public async Task DoesNotKeepIssuersThatNoPathUsed()
@@ -666,6 +686,68 @@ public class TrustAnchorRetrievalTest
 			await AssertInvalid(result, [CertificateValidationError.RevocationUnknown], CertificatePathEnd.TrustAnchor, leaf, root.Certificate);
 			await Assert.That(retriever.Requests.Count).IsEqualTo((int)(RetrievalBudget.MaxRetrievedBytes / RetrievalBudget.MaxCrlLength));
 		}
+	}
+
+	// The peer chooses how many URIs its certificate names and how long its issuer's name is. A request has a key of fixed size, and the validation prepares a bounded number of them before the limits of retrieval apply, so that what it allocates does not grow with the product of the two.
+	[Test]
+	public async Task PreparesABoundedNumberOfRequestsForIssuers()
+	{
+		using Authority root = Authority.CreateRoot();
+		using Authority longNamed = root.CreateIntermediate(subject: LongName());
+		Certificate leaf = longNamed.IssueLeaf(more: [Aia(caIssuers: ManyUris("http://ca.test/"))]);
+		using TrustAnchorCertificateValidator validator = WithRetriever(new FakeRetriever(), root.Certificate);
+
+		(CertificateValidationResult result, long allocated) = await MeasureAsync(validator, leaf);
+
+		using (Assert.Multiple())
+		{
+			await AssertInvalid(result, [CertificateValidationError.UntrustedRoot, CertificateValidationError.Unspecified], CertificatePathEnd.MissingIssuer, leaf);
+			await Assert.That(result.Message).Contains("requests");
+			await Assert.That(allocated).IsLessThan(MaxAllocatedForManyUris);
+		}
+	}
+
+	// As PreparesABoundedNumberOfRequestsForIssuers, for the OCSP responders and the CRL distribution points of a certificate whose status is checked.
+	[Test]
+	public async Task PreparesABoundedNumberOfRequestsForRevocation()
+	{
+		using Authority root = Authority.CreateRoot();
+		using Authority longNamed = root.CreateIntermediate(subject: LongName());
+		Certificate leaf = longNamed.IssueLeaf(more: [Aia(ocsp: ManyUris("http://ocsp.test/")), Cdp(ManyUris("http://crl.test/"))]);
+		using TrustAnchorCertificateValidator validator = Online(new FakeRetriever(), longNamed.Certificate);
+
+		(CertificateValidationResult result, long allocated) = await MeasureAsync(validator, leaf);
+
+		using (Assert.Multiple())
+		{
+			await AssertInvalid(result, [CertificateValidationError.RevocationUnknown], CertificatePathEnd.TrustAnchor, leaf, longNamed.Certificate);
+			await Assert.That(allocated).IsLessThan(MaxAllocatedForManyUris);
+		}
+	}
+
+	// Far less than what a key that grows with the name, for each URI, would take.
+	private const long MaxAllocatedForManyUris = 8L << 20;
+
+	private static byte[] LongName()
+	{
+		return Sequence(Tlv(0x31, Sequence(Oid("2.5.4.3"), Tlv(0x0C, System.Text.Encoding.ASCII.GetBytes(new string('n', 8192))))));
+	}
+
+	private static string[] ManyUris(string prefix)
+	{
+		return [.. Enumerable.Range(0, 600).Select(i => $"{prefix}{i}")];
+	}
+
+	// The bytes that a validation allocates, which completes on this thread, as the retriever answers at once.
+	private static async Task<(CertificateValidationResult Result, long Allocated)> MeasureAsync(TrustAnchorCertificateValidator validator, Certificate leaf)
+	{
+		CertificateValidationContext context = new([leaf], CertificateUsage.ServerAuthentication) { TimeProvider = new FixedTimeProvider(Now) };
+		long before = GC.GetAllocatedBytesForCurrentThread();
+		ValueTask<CertificateValidationResult> validation = validator.ValidateAsync(context);
+		long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+		await Assert.That(validation.IsCompletedSuccessfully).IsTrue();
+		return (await validation, allocated);
 	}
 
 	[Test]
@@ -1594,6 +1676,31 @@ public class TrustAnchorRetrievalTest
 		}
 	}
 
+	// RFC 6960, Appendix A.1: {url}/{request}, with the URI of the responder kept whole and a slash added only if its path does not end with one, so that a path that ends with several keeps them.
+	[Test]
+	[Arguments("http://ocsp.test/status//", "http://ocsp.test/status//")]
+	[Arguments("http://ocsp.test/ocsp/", "http://ocsp.test/ocsp/")]
+	[Arguments("http://ocsp.test/ocsp", "http://ocsp.test/ocsp/")]
+	[Arguments("http://ocsp.test", "http://ocsp.test/")]
+	public async Task AppendsTheRequestToThePathOfTheResponder(string responder, string prefix)
+	{
+		using Authority root = Authority.CreateRoot();
+		Certificate leaf = root.IssueLeaf(more: [Aia(ocsp: [responder])]);
+		FakeRetriever retriever = new() { Responder = Ocsp(leaf, root, TestOcsp.Good) };
+		using TrustAnchorCertificateValidator validator = Online(retriever, root.Certificate);
+
+		await AssertValid(await Validate(validator, presented: [leaf]), leaf, root.Certificate);
+
+		FakeRetriever.Request get = retriever.Requests.Single();
+		string request = Uri.EscapeDataString(Convert.ToBase64String(OcspRequest.Create(leaf, root.Certificate).Encoded.Span));
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(get.Method).IsEqualTo("GET");
+			await Assert.That(get.Uri.AbsoluteUri).IsEqualTo(prefix + request);
+		}
+	}
+
 	// RFC 9919, Sec. 7.1: a response is kept once validated, until its nextUpdate; and so is a CRL.
 	[Test]
 	public async Task KeepsWhatItVerifiedUntilItsNextUpdate()
@@ -1947,6 +2054,122 @@ public class TrustAnchorRetrievalTest
 		}
 	}
 
+	// Anyone on the path of a plain http URI can add certificates to what it gives. Only the issuer that a path verified is kept, so that what was added does not fill, in a later validation, the room for the retrieved certificates that it needs.
+	[Test]
+	public async Task KeepsOnlyTheIssuerThatAPathVerifiedOfWhatAUriGave()
+	{
+		const string lowerUri = "http://ca.test/lower.p7c";
+		const string middleUri = "http://ca.test/middle.p7c";
+		const string upperUri = "http://ca.test/upper.cer";
+		using Authority root = Authority.CreateRoot();
+		using Authority upper = root.CreateIntermediate("CN=Upper");
+		using Authority middle = upper.CreateIntermediate("CN=Middle", more: [Aia(caIssuers: [upperUri])]);
+		using Authority lower = middle.CreateIntermediate("CN=Lower", more: [Aia(caIssuers: [middleUri])]);
+		Certificate leaf = lower.IssueLeaf(more: [Aia(caIssuers: [lowerUri])]);
+
+		// Each message fills half the room, so that two kept whole would fill it.
+		byte[] Padded(Authority issuer)
+		{
+			return CertsOnly([Encoded(issuer.Certificate), .. Enumerable.Range(1, RetrievalBudget.MaxRetrievedIssuers / 2 - 1).Select(i => Encoded(root.IssueLeaf($"CN=Added {i}")))]);
+		}
+
+		FakeRetriever retriever = new()
+		{
+			[lowerUri] = Padded(lower),
+			[middleUri] = Padded(middle),
+			[upperUri] = Encoded(upper.Certificate)
+		};
+		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
+
+		await AssertValid(await Validate(validator, presented: [leaf, middle.Certificate, upper.Certificate]), leaf, lower.Certificate, middle.Certificate, upper.Certificate, root.Certificate);
+		await AssertValid(await Validate(validator, presented: [lower.Certificate, upper.Certificate]), lower.Certificate, middle.Certificate, upper.Certificate, root.Certificate);
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate(validator, presented: [leaf]), leaf, lower.Certificate, middle.Certificate, upper.Certificate, root.Certificate);
+			await Assert.That(retriever.Requests.Select(static request => request.Uri.AbsoluteUri)).IsEquivalentTo((string[])[lowerUri, middleUri, upperUri], CollectionOrdering.Matching);
+		}
+	}
+
+	// A URI that gives the issuer with the certificates above it, which name no URI of their own, is retrieved once: every certificate of the message that the path used is kept.
+	[Test]
+	public async Task KeepsEveryCertificateThatAPathUsedOfWhatAUriGave()
+	{
+		using Authority root = Authority.CreateRoot();
+		using Authority intermediate = root.CreateIntermediate();
+		using Authority subCa = intermediate.CreateIntermediate("CN=Sub CA");
+		Certificate leaf = subCa.IssueLeaf(more: [Aia(caIssuers: [IssuerUri])]);
+		FakeRetriever retriever = new() { [IssuerUri] = CertsOnly(Encoded(subCa.Certificate), Encoded(intermediate.Certificate)) };
+		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate(validator, presented: [leaf]), leaf, subCa.Certificate, intermediate.Certificate, root.Certificate);
+			await AssertValid(await Validate(validator, presented: [leaf]), leaf, subCa.Certificate, intermediate.Certificate, root.Certificate);
+			await Assert.That(retriever.Requests.Count).IsEqualTo(1);
+		}
+	}
+
+	// A URI can give the certificate of a new key of the issuer, which the old key issues, with the old key's own certificate: both are kept.
+	[Test]
+	public async Task KeepsTheCertificatesOfAKeyRolloverThatAUriGave()
+	{
+		using Authority root = Authority.CreateRoot();
+		using Authority oldKey = root.CreateIntermediate("CN=CA");
+		using Authority newKey = oldKey.CreateIntermediate("CN=CA");
+		Certificate leaf = newKey.IssueLeaf(more: [Aia(caIssuers: [IssuerUri])]);
+		FakeRetriever retriever = new() { [IssuerUri] = CertsOnly(Encoded(newKey.Certificate), Encoded(oldKey.Certificate)) };
+		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate(validator, presented: [leaf]), leaf, newKey.Certificate, oldKey.Certificate, root.Certificate);
+			await AssertValid(await Validate(validator, presented: [leaf]), leaf, newKey.Certificate, oldKey.Certificate, root.Certificate);
+			await Assert.That(retriever.Requests.Count).IsEqualTo(1);
+		}
+	}
+
+	// A certificate that the URI gave is kept though the peer presented it too, so that a validation without it need not retrieve the URI again.
+	[Test]
+	public async Task KeepsWhatAUriGaveThatThePeerAlsoPresented()
+	{
+		using Authority root = Authority.CreateRoot();
+		using Authority intermediate = root.CreateIntermediate();
+		using Authority subCa = intermediate.CreateIntermediate("CN=Sub CA");
+		Certificate leaf = subCa.IssueLeaf(more: [Aia(caIssuers: [IssuerUri])]);
+		FakeRetriever retriever = new() { [IssuerUri] = CertsOnly(Encoded(subCa.Certificate), Encoded(intermediate.Certificate)) };
+		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate(validator, presented: [leaf, subCa.Certificate]), leaf, subCa.Certificate, intermediate.Certificate, root.Certificate);
+			await AssertValid(await Validate(validator, presented: [leaf]), leaf, subCa.Certificate, intermediate.Certificate, root.Certificate);
+			await AssertValid(await Validate(validator, presented: [leaf, subCa.Certificate]), leaf, subCa.Certificate, intermediate.Certificate, root.Certificate);
+			await Assert.That(retriever.Requests.Count).IsEqualTo(1);
+		}
+	}
+
+	// Of a message that the path used several certificates of, those that it did not use are still not kept: a certificate of another key of the name, which the URI gave too, takes a retrieval.
+	[Test]
+	public async Task DoesNotKeepWhatAUriGaveBesidesThePath()
+	{
+		using Authority root = Authority.CreateRoot();
+		using Authority intermediate = root.CreateIntermediate();
+		using Authority subCa = intermediate.CreateIntermediate("CN=Sub CA");
+		using Authority otherKey = intermediate.CreateIntermediate("CN=Sub CA");
+		Certificate leaf = subCa.IssueLeaf(more: [Aia(caIssuers: [IssuerUri])]);
+		Certificate otherLeaf = otherKey.IssueLeaf("CN=Other", more: [Aia(caIssuers: [IssuerUri])]);
+		FakeRetriever retriever = new() { [IssuerUri] = CertsOnly(Encoded(subCa.Certificate), Encoded(intermediate.Certificate), Encoded(otherKey.Certificate), Encoded(root.IssueLeaf("CN=Added"))) };
+		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate(validator, presented: [leaf]), leaf, subCa.Certificate, intermediate.Certificate, root.Certificate);
+			await AssertValid(await Validate(validator, presented: [otherLeaf]), otherLeaf, otherKey.Certificate, intermediate.Certificate, root.Certificate);
+			await Assert.That(retriever.Requests.Count).IsEqualTo(2);
+		}
+	}
+
 	// A signature is verified once for each key of the issuer, however many validations use the CRL.
 	[Test]
 	public async Task VerifiesTheSignatureOfACrlOnce()
@@ -2041,6 +2264,41 @@ public class TrustAnchorRetrievalTest
 		using TrustAnchorCertificateValidator validator = Online(retriever, root.Certificate);
 
 		await Assert.That(async () => await Validate(validator, cancellationToken: source.Token, presented: [leaf])).Throws<OperationCanceledException>();
+	}
+
+	// A timer cannot be as long as any deadline, so that one beyond what it can be waits for as long as it can; the retrieval then learns nothing, as at the deadline.
+	[Test]
+	public async Task CancelsARetrievalBeforeADeadlineBeyondTheLongestTimer()
+	{
+		using Authority root = Authority.CreateRoot();
+		Certificate leaf = root.IssueLeaf(more: [Aia(ocsp: [OcspUri])]);
+		TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+		FakeRetriever retriever = new()
+		{
+			Hook = async (_, token) =>
+			{
+				if (started.TrySetResult())
+				{
+					await Task.Delay(Timeout.Infinite, token);
+				}
+			}
+		};
+		using TrustAnchorCertificateValidator validator = Online(retriever, root.Certificate);
+		ManualTimers clock = new();
+		using CancellationTokenSource abandon = new();
+
+		try
+		{
+			Task<CertificateValidationResult> validation = Validate(validator, clock, Now.AddDays(40), cancellationToken: abandon.Token, presented: [leaf]);
+			await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+			clock.Advance(TimeSpan.FromDays(30));
+
+			await AssertInvalid(await validation.WaitAsync(TimeSpan.FromSeconds(10)), [CertificateValidationError.RevocationUnknown], CertificatePathEnd.TrustAnchor, leaf, root.Certificate);
+		}
+		finally
+		{
+			await abandon.CancelAsync();
+		}
 	}
 
 	// Only the cancellation of the validation throws; the retriever's own, such as a timeout, is a failed source.
@@ -2286,6 +2544,28 @@ public class TrustAnchorRetrievalTest
 			await Assert.That(second.IsEmpty).IsTrue();
 			await Assert.That(undeclared.Consumed).IsEqualTo(1025);
 			await Assert.That(declared.Consumed).IsEqualTo(0);
+		}
+	}
+
+	// A limit beyond the longest array: a body that fills the longest buffer is whole only if nothing follows it, and fails otherwise rather than give its prefix.
+	[Test]
+	[Arguments(5000, false)]
+	[Arguments(5000, true)]
+	[Arguments(5001, false)]
+	[Arguments(5001, true)]
+	public async Task HttpRetrieverFailsPastTheLongestArray(int length, bool declared)
+	{
+		const int capacityLimit = 5000;
+		byte[] body = new byte[length];
+		Random.Shared.NextBytes(body);
+		CountingStream stream = new(body);
+
+		ReadOnlyMemory<byte> read = await HttpCertificateDataRetriever.ReadBodyAsync(stream, declared ? length : null, int.MaxValue, capacityLimit, default);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(length <= capacityLimit ? read.Span.SequenceEqual(body) : read.IsEmpty).IsTrue();
+			await Assert.That(stream.Consumed).IsEqualTo(Math.Min(length, capacityLimit + 1));
 		}
 	}
 
@@ -2653,6 +2933,83 @@ public class TrustAnchorRetrievalTest
 		public override DateTimeOffset GetUtcNow()
 		{
 			return Time;
+		}
+	}
+
+	// A clock whose time stands still for the validation, and whose timers fire only as the test advances them.
+	private sealed class ManualTimers : TimeProvider
+	{
+		private readonly Lock _lock = new();
+		private readonly List<Timer> _timers = [];
+		private TimeSpan _elapsed;
+
+		public override DateTimeOffset GetUtcNow()
+		{
+			return Now;
+		}
+
+		public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+		{
+			Timer timer = new(this, callback, state);
+			timer.Change(dueTime, period);
+			return timer;
+		}
+
+		public void Advance(TimeSpan by)
+		{
+			List<Timer> due;
+
+			lock (_lock)
+			{
+				_elapsed += by;
+				due = [.. _timers.Where(timer => timer.Due <= _elapsed)];
+				_timers.RemoveAll(due.Contains);
+			}
+
+			foreach (Timer timer in due)
+			{
+				timer.Fire();
+			}
+		}
+
+		private sealed class Timer(ManualTimers clock, TimerCallback callback, object? state) : ITimer
+		{
+			public TimeSpan Due { get; private set; }
+
+			public bool Change(TimeSpan dueTime, TimeSpan period)
+			{
+				lock (clock._lock)
+				{
+					clock._timers.Remove(this);
+
+					if (dueTime != Timeout.InfiniteTimeSpan)
+					{
+						Due = clock._elapsed + dueTime;
+						clock._timers.Add(this);
+					}
+				}
+
+				return true;
+			}
+
+			public void Fire()
+			{
+				callback(state);
+			}
+
+			public void Dispose()
+			{
+				lock (clock._lock)
+				{
+					clock._timers.Remove(this);
+				}
+			}
+
+			public ValueTask DisposeAsync()
+			{
+				Dispose();
+				return ValueTask.CompletedTask;
+			}
 		}
 	}
 

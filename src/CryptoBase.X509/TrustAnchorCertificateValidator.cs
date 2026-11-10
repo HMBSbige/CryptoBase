@@ -61,7 +61,7 @@ namespace CryptoBase.X509;
 /// A revoked certificate, and a certificate whose status no source determines unless <see cref="IgnoreRevocationUnknown" /> accepts it, fail that path, and the validator tries the others; if none is valid, the result reports the first path that was revoked, with <see cref="CertificateValidationError.Revoked" />, or otherwise the first whose status was not determined, with <see cref="CertificateValidationError.RevocationUnknown" />.
 /// </para>
 /// <para>
-/// The validator caches what it retrieves once verified, in memory bounded in entries and bytes: an issuer for an hour, and CRLs and OCSP responses until their nextUpdate. A cached CRL that decides nothing about a certificate, and cached issuers that lead to no valid path, give way to one retrieval of what the URI gives now.
+/// The validator caches what it retrieves once verified, in memory bounded in entries and bytes: for an hour, the certificates that a path used above the certificate whose URI gave them, without the others that the URI gave, and CRLs and OCSP responses until their nextUpdate. A cached CRL that decides nothing about a certificate, and cached issuers that lead to no valid path, give way to one retrieval of what the URI gives now.
 /// The retriever and the importer of public keys are called on any thread, concurrently.
 /// </para>
 /// <para>
@@ -78,7 +78,7 @@ namespace CryptoBase.X509;
 /// <para>
 /// Each search considers at most 100 candidate issuers, makes at most 2^20 comparisons of a name with a subtree, and handles at most 2^16 entries of the policy graphs of the paths that reach a trust anchor, so a validation considers at most 200 candidates, makes at most 2^21 comparisons and handles at most 2^17 entries.
 /// A limit that stops the first search fails the validation, and one that stops either search adds <see cref="CertificateValidationError.Unspecified" /> to the errors.
-/// A validation that retrieves repeats the first search at most once for each of 8 rounds of retrieving issuers and of 8 certificates revoked or of unknown status. It makes at most 32 retrievals of at most 64 MiB in all, adds at most 32 retrieved certificates to the candidates, and takes at most 64 KiB of a certificate, a certs-only message of at most 16 certificates or an OCSP response, and 32 MiB of a CRL. A retrieval of issuers that reaches a limit adds <see cref="CertificateValidationError.Unspecified" />; a certificate whose status it then cannot learn is <see cref="CertificateValidationError.RevocationUnknown" /> instead.
+/// A validation that retrieves repeats the first search at most once for each of 8 rounds of retrieving issuers and of 8 certificates revoked or of unknown status. It prepares at most 128 requests from the URIs of the certificates, whether retrieved or answered from the cache, and leaves out the URIs beyond them; it makes at most 32 retrievals, whether they fail or not, takes at most 64 MiB of what they return in all, adds at most 32 retrieved certificates to the candidates, and takes at most 64 KiB of a certificate, a certs-only message of at most 16 certificates or an OCSP response, and 32 MiB of a CRL. A retrieval of issuers that reaches a limit adds <see cref="CertificateValidationError.Unspecified" />; a certificate whose status it then cannot learn is <see cref="CertificateValidationError.RevocationUnknown" /> instead.
 /// Cancellation is observed between candidates and during a retrieval.
 /// </para>
 /// <para>

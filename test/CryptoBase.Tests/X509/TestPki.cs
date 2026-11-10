@@ -166,8 +166,8 @@ internal static class TestPki
 
 			using (writer.PushSequence())
 			{
-				writer.WriteUtcTime(template.NotBefore, 2049);
-				writer.WriteUtcTime(template.NotAfter, 2049);
+				WriteTime(writer, template.NotBefore);
+				WriteTime(writer, template.NotAfter);
 			}
 
 			writer.WriteEncodedValue(template.Subject);
@@ -197,6 +197,19 @@ internal static class TestPki
 		}
 
 		return writer.Encode();
+	}
+
+	// RFC 5280, Sec. 4.1.2.5: UTCTime for the years 1950 through 2049 and GeneralizedTime for the others.
+	private static void WriteTime(AsnWriter writer, DateTimeOffset value)
+	{
+		if (value.Year is >= 1950 and <= 2049)
+		{
+			writer.WriteUtcTime(value, 2049);
+		}
+		else
+		{
+			writer.WriteGeneralizedTime(value, omitFractionalSeconds: true);
+		}
 	}
 
 	public static CertificateExtension BasicConstraints(bool certificateAuthority, int? pathLength = null, bool critical = true)

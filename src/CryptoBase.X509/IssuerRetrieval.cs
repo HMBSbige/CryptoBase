@@ -4,13 +4,10 @@ namespace CryptoBase.X509;
 // The search fills DeadEnds, tells RetrieveAsync which certificates have an issuer to find, as that check counts towards its own limits, adds what RetrieveAsync returns to its candidates, and gives Keep each path that its strict search returns.
 internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator, RetrievalCaches caches, RetrievalBudget budget, HashSet<ReadOnlyMemory<byte>> encodings, DateTimeOffset time)
 {
-	// Certificates at a URI change rarely, and each is checked at every use.
-	private static readonly TimeSpan CacheLifetime = TimeSpan.FromHours(1);
+	// The first retrieval that gave each certificate, by its encoding, to cache it once a path has used it above the certificate whose URI gave it.
+	private Dictionary<ReadOnlyMemory<byte>, IssuerSource>? _sources;
 
-	// The retrievals that gave the retrieved certificates that the cache does not hold, each with the certificate whose URI caused it, to cache them once a path has used them as the issuer of that certificate.
-	private Dictionary<Certificate, (RetrievedIssuers Retrieved, PathNode Requester)>? _sources;
-
-	private HashSet<string>? _triedKeys;
+	private HashSet<RetrievalKey>? _triedKeys;
 
 	private List<IssuerRequest>? _cachedRequests;
 
@@ -54,31 +51,22 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 		return added;
 	}
 
-	// Only an issuer that a path verified, for the very certificate that named its URI, is cached: what a certificate off the path retrieved says nothing, as the peer chooses its URIs and its name.
 	public void Keep(PathNode[] path)
 	{
-		if (_sources is not { } sources)
+		if (_sources is { } sources)
 		{
-			return;
-		}
-
-		for (int i = 1; i < path.Length; ++i)
-		{
-			if (sources.TryGetValue(path[i].Certificate, out (RetrievedIssuers Retrieved, PathNode Requester) source) && source.Requester == path[i - 1])
-			{
-				sources.Remove(path[i].Certificate);
-				caches.Issuers.Add(source.Retrieved.Key, source.Retrieved, source.Retrieved.Size, time + CacheLifetime, time);
-			}
+			caches.Issuers.Keep(path, sources, time);
 		}
 	}
 
-	private async ValueTask RetrieveAsync(List<IssuerRequest> requests, RetrievalCache<string, RetrievedIssuers>? cache, List<Certificate> added)
+	private async ValueTask RetrieveAsync(List<IssuerRequest> requests, IssuerCache? cache, List<Certificate> added)
 	{
 		foreach (IssuerRequest request in requests)
 		{
-			if (cache is not null && cache.TryGet(request.Key, time, out RetrievedIssuers? cached))
+			// A kept issuer counts towards the retrieved certificates like any other, as each costs the search a key and its checks; an entry holds only the certificates of a path that its key gave, at most those of one retrieval.
+			if (cache is not null && cache.TryGet(request.Key, time, out Certificate[]? cached))
 			{
-				Add(cached, requester: null, added);
+				Add(cached, source: null, added);
 				(_cachedRequests ??= []).Add(request);
 				continue;
 			}
@@ -92,12 +80,12 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 
 			if (!data.IsEmpty && RetrievedCertificates.Read(data, RetrievalBudget.MaxCertificatesPerRetrieval) is { } certificates)
 			{
-				Add(new RetrievedIssuers(request.Key, certificates, data.Length), request.Requester, added);
+				Add(certificates, new IssuerSource(request.Key, request.Requester), added);
 			}
 		}
 	}
 
-	// A certificate without an issuer to find, such as a self-signed one, names none.
+	// A certificate without an issuer to find, such as a self-signed one, names none. Once the budget has no request left, the URIs that follow are left out, as are those of every later round.
 	private List<IssuerRequest> GetRequests(List<PathNode> nodes, Func<PathNode, bool> hasIssuerToFind)
 	{
 		List<IssuerRequest> requests = [];
@@ -110,6 +98,7 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 			}
 
 			IReadOnlyList<string> locations = node.Certificate.DecodedExtensions.AuthorityInformationAccess.Value?.CAIssuersUris ?? [];
+			byte[]? issuerDigest = null;
 
 			for (int i = 0; i < locations.Count; ++i)
 			{
@@ -118,12 +107,20 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 					continue;
 				}
 
-				string key = RetrievalCaches.GetKey(node.Certificate.Issuer, uri);
+				RetrievalKey key = RetrievalKey.Create(issuerDigest ??= RetrievalKey.DigestIssuer(node.Certificate.Issuer.Span), uri);
 
-				if ((_triedKeys ??= new HashSet<string>(StringComparer.Ordinal)).Add(key))
+				if ((_triedKeys ??= []).Contains(key))
 				{
-					requests.Add(new IssuerRequest(uri, key, node));
+					continue;
 				}
+
+				if (!budget.TryPrepareIssuerRequest())
+				{
+					return requests;
+				}
+
+				_triedKeys.Add(key);
+				requests.Add(new IssuerRequest(uri, key, node));
 			}
 		}
 
@@ -138,29 +135,35 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 		return requests;
 	}
 
-	// The requester is the certificate whose URI gave these issuers, null if they come from the cache.
-	private void Add(RetrievedIssuers retrieved, PathNode? requester, List<Certificate> added)
+	// The source is the retrieval that gave these certificates, null if they come from the cache.
+	// A certificate that the validation already has, from the peer or from the cache, still takes the source, so that the entry of a path holds every certificate of it that the URI gives: a validation that lacks one need not retrieve the URI again.
+	private void Add(Certificate[] certificates, IssuerSource? source, List<Certificate> added)
 	{
-		foreach (Certificate certificate in retrieved.Certificates)
+		foreach (Certificate certificate in certificates)
 		{
-			if (validator.FindAnchor(certificate) is not null || !encodings.Add(certificate.Encoded))
+			if (validator.FindAnchor(certificate) is not null)
 			{
 				continue;
 			}
 
-			if (!budget.TryAddIssuer())
+			bool isNew = encodings.Add(certificate.Encoded);
+
+			if (isNew && !budget.TryAddIssuer())
 			{
 				return;
 			}
 
-			added.Add(certificate);
-
-			if (requester is not null)
+			if (source is { } value)
 			{
-				(_sources ??= [])[certificate] = (retrieved, requester);
+				(_sources ??= new Dictionary<ReadOnlyMemory<byte>, IssuerSource>(ByteMemoryComparer.Instance)).TryAdd(certificate.Encoded, value);
+			}
+
+			if (isNew)
+			{
+				added.Add(certificate);
 			}
 		}
 	}
 
-	private readonly record struct IssuerRequest(Uri Uri, string Key, PathNode Requester);
+	private readonly record struct IssuerRequest(Uri Uri, RetrievalKey Key, PathNode Requester);
 }

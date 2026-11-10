@@ -9,17 +9,22 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 	public const long MaxRetrievedBytes = 64L << 20;
 	public const int MaxRetrievedIssuers = 32;
 
+	// The requests that a validation prepares from the URIs of its certificates, as a certificate may name any number: each URI of the issuers that is new to the validation, each OCSP responder asked and each CRL URI looked up, whether retrieved or answered from a cache.
+	// The URIs beyond the limit are left out; four times the retrievals leaves room for those that a cache answers.
+	public const int MaxRequests = 4 * MaxRetrievals;
+
 	// The limits of each retrieval; a CRL has its own, as those of large public CAs are long.
 	public const int MaxCertificatesPerRetrieval = 16;
 	public const int MaxCertificateLength = 1 << 16;
 	public const int MaxOcspResponseLength = 1 << 16;
 	public const int MaxCrlLength = 32 << 20;
 
-	// A timer cannot be longer than about 49 days; a deadline beyond this needs none.
+	// A timer cannot be longer than about 49 days; a retrieval toward a deadline beyond this is canceled once it has waited this long, as what it would give is then worth nothing.
 	private static readonly TimeSpan MaxDeadlineTimer = TimeSpan.FromDays(30);
 
 	private int _issuerRoundsLeft = MaxIssuerRounds;
 	private int _retrievedIssuersLeft = MaxRetrievedIssuers;
+	private int _requestsLeft = MaxRequests;
 	private int _retrievalsLeft = MaxRetrievals;
 	private long _retrievedBytesLeft = MaxRetrievedBytes;
 
@@ -53,6 +58,23 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 
 		--_retrievedIssuersLeft;
 		return true;
+	}
+
+	public bool TryPrepareIssuerRequest()
+	{
+		if (!TryPrepareRequest())
+		{
+			Reach($"{MaxRequests} requests from the URIs of the certificates");
+			return false;
+		}
+
+		return true;
+	}
+
+	// For an OCSP responder or a CRL, the limit is not reported: a status that the URIs left out could have told is unknown.
+	public bool TryPrepareRevocationRequest()
+	{
+		return TryPrepareRequest();
 	}
 
 	// Whether the retrieval of issuers may retrieve once more; GetAsync counts the retrieval.
@@ -98,7 +120,7 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 
 		--_retrievalsLeft;
 
-		using CancellationTokenSource? timeout = left is { } time && time <= MaxDeadlineTimer ? new CancellationTokenSource(time, context.TimeProvider) : null;
+		using CancellationTokenSource? timeout = left is { } time ? new CancellationTokenSource(time <= MaxDeadlineTimer ? time : MaxDeadlineTimer, context.TimeProvider) : null;
 		using CancellationTokenSource? linked = timeout is null ? null : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
 		CancellationToken token = linked?.Token ?? cancellationToken;
 
@@ -120,6 +142,17 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 		{
 			return default;
 		}
+	}
+
+	private bool TryPrepareRequest()
+	{
+		if (_requestsLeft is 0)
+		{
+			return false;
+		}
+
+		--_requestsLeft;
+		return true;
 	}
 
 	private void Reach(string limit)

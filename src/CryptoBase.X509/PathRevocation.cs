@@ -10,12 +10,14 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	private const int MaxOcspGetLength = 255;
 	private const string OcspRequestMediaType = "application/ocsp-request";
 
+	private static readonly string RequestLimitDetail = $"The validation reached its limit of {RetrievalBudget.MaxRequests} requests from the URIs of the certificates.";
+
 	private Dictionary<long, RevocationResult>? _results;
 
 	private HashSet<long>? _rejectedEdges;
 
 	// Null for a retrieval that failed.
-	private Dictionary<string, CertificateRevocationList?>? _retrievedCrls;
+	private Dictionary<RetrievalKey, CertificateRevocationList?>? _retrievedCrls;
 
 	public int RejectedEdgeCount => _rejectedEdges?.Count ?? 0;
 
@@ -75,6 +77,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	}
 
 	// RFC 6960, Appendix A.1: {url}/{url-encoding of base-64 encoding of the request}, if short enough for RFC 9919, Sec. 6; a URI with a query or a fragment has no place to append it.
+	// The URI is kept whole, with a slash added only if it does not end with one, as the OCSP client of the .NET runtime on OpenSSL appends it: removing slashes would ask another resource of a responder whose path ends with several.
 	private static Uri? GetOcspGetUri(Uri responder, OcspRequest request)
 	{
 		if (responder.Query.Length > 0 || responder.Fragment.Length > 0)
@@ -82,7 +85,8 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 			return null;
 		}
 
-		string uri = $"{responder.AbsoluteUri.TrimEnd('/')}/{Uri.EscapeDataString(Convert.ToBase64String(request.Encoded.Span))}";
+		string url = responder.AbsoluteUri;
+		string uri = $"{url}{(url.EndsWith('/') ? "" : "/")}{Uri.EscapeDataString(Convert.ToBase64String(request.Encoded.Span))}";
 		return uri.Length <= MaxOcspGetLength ? new Uri(uri) : null;
 	}
 
@@ -194,6 +198,12 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 				continue;
 			}
 
+			if (!budget.TryPrepareRevocationRequest())
+			{
+				detail ??= RequestLimitDetail;
+				break;
+			}
+
 			(RevocationResult Result, OcspResponse? Response, int Length)? answer = await AskOcspAsync(responder, request, certificate, issuer).ConfigureAwait(false);
 
 			// RFC 9919, Sec. 3.1.1, still allows for SHA-1 in older implementations, and a responder may refuse a SHA-256 CertID or not know it. One that could not be reached is not asked again.
@@ -257,6 +267,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	private async ValueTask<RevocationResult> CheckDistributionPointsAsync(Certificate certificate, Certificate issuer, ISignatureKey key, CrlReasonFlags covered)
 	{
 		string? detail = null;
+		byte[]? issuerDigest = null;
 
 		foreach (CrlDistributionPoint point in certificate.DecodedExtensions.CrlDistributionPoints.Value ?? [])
 		{
@@ -273,7 +284,12 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 					continue;
 				}
 
-				string cacheKey = RetrievalCaches.GetKey(certificate.Issuer, uri);
+				if (!budget.TryPrepareRevocationRequest())
+				{
+					return new RevocationResult(RevocationStatus.Unknown, detail ?? RequestLimitDetail);
+				}
+
+				RetrievalKey cacheKey = RetrievalKey.Create(issuerDigest ??= RetrievalKey.DigestIssuer(certificate.Issuer.Span), uri);
 
 				if (await GetCrlAsync(uri, cacheKey, certificate, issuer, key).ConfigureAwait(false) is not ({ } crl, var result))
 				{
@@ -308,7 +324,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	}
 
 	// Only a verified CRL is kept, so that nobody can hide the real one behind a bad copy.
-	private void KeepCrl(string cacheKey, CertificateRevocationList crl)
+	private void KeepCrl(RetrievalKey cacheKey, CertificateRevocationList crl)
 	{
 		if (validator.Caches is { } caches && crl.NextUpdate is { } nextUpdate)
 		{
@@ -317,7 +333,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	}
 
 	// A kept CRL that decides nothing, as it may be of another key of the same name, gives way to the one at the URI.
-	private async ValueTask<(CertificateRevocationList Crl, RevocationResult Result)?> GetCrlAsync(Uri uri, string cacheKey, Certificate certificate, Certificate issuer, ISignatureKey key)
+	private async ValueTask<(CertificateRevocationList Crl, RevocationResult Result)?> GetCrlAsync(Uri uri, RetrievalKey cacheKey, Certificate certificate, Certificate issuer, ISignatureKey key)
 	{
 		if (validator.Caches is { } caches && caches.Crls.TryGet(cacheKey, time, out CertificateRevocationList? cached))
 		{
@@ -333,7 +349,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	}
 
 	// Retrieved once in a validation for each of its keys in the cache, whether or not it decoded.
-	private async ValueTask<CertificateRevocationList?> RetrieveCrlAsync(Uri uri, string cacheKey)
+	private async ValueTask<CertificateRevocationList?> RetrieveCrlAsync(Uri uri, RetrievalKey cacheKey)
 	{
 		if (_retrievedCrls is not null && _retrievedCrls.TryGetValue(cacheKey, out CertificateRevocationList? known))
 		{
@@ -354,7 +370,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 			}
 		}
 
-		(_retrievedCrls ??= new Dictionary<string, CertificateRevocationList?>(StringComparer.Ordinal))[cacheKey] = crl;
+		(_retrievedCrls ??= [])[cacheKey] = crl;
 		return crl;
 	}
 }

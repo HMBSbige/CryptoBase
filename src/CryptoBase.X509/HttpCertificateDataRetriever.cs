@@ -108,10 +108,16 @@ public sealed class HttpCertificateDataRetriever : ICertificateDataRetriever
 		}
 	}
 
-	// Reads at most maxLength + 1 bytes, the one beyond the limit telling that the body is too long.
-	private static async ValueTask<ReadOnlyMemory<byte>> ReadBodyAsync(Stream body, long? declared, int maxLength, CancellationToken cancellationToken)
+	private static ValueTask<ReadOnlyMemory<byte>> ReadBodyAsync(Stream body, long? declared, int maxLength, CancellationToken cancellationToken)
 	{
-		int ceiling = (int)Math.Min(maxLength + 1L, Array.MaxLength);
+		return ReadBodyAsync(body, declared, maxLength, Array.MaxLength, cancellationToken);
+	}
+
+	// Reads at most maxLength + 1 bytes, the one beyond the limit telling that the body is too long.
+	// The longest array is a parameter so that tests can reach it without allocating gigabytes.
+	internal static async ValueTask<ReadOnlyMemory<byte>> ReadBodyAsync(Stream body, long? declared, int maxLength, int capacityLimit, CancellationToken cancellationToken)
+	{
+		int ceiling = (int)Math.Min(maxLength + 1L, capacityLimit);
 		byte[] buffer = GC.AllocateUninitializedArray<byte>((int)Math.Min(declared + 1 ?? InitialCapacity, ceiling));
 		int filled = 0;
 
@@ -133,6 +139,12 @@ public sealed class HttpCertificateDataRetriever : ICertificateDataRetriever
 
 			if (filled == buffer.Length)
 			{
+				// Full at the longest array, with the limit beyond it: no room is left for the byte past the limit, and an empty read would pass for the end, so probe for one apart.
+				if (filled == ceiling)
+				{
+					return await body.ReadAsync(new byte[1], cancellationToken).ConfigureAwait(false) is 0 ? buffer.AsMemory() : default;
+				}
+
 				Array.Resize(ref buffer, (int)Math.Min(buffer.Length * 2L, ceiling));
 			}
 		}
