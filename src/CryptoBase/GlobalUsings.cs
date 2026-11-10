@@ -7,6 +7,7 @@ global using CryptoBase.Internal;
 global using CryptoBase.Internal.Extensions;
 global using System.Buffers.Binary;
 global using System.Diagnostics;
+global using System.Formats.Asn1;
 global using System.Numerics;
 global using System.Runtime.CompilerServices;
 global using System.Runtime.InteropServices;

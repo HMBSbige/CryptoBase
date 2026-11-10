@@ -1,5 +1,3 @@
-using System.Formats.Asn1;
-
 namespace CryptoBase.Internal;
 
 // The DER envelopes of keys: SubjectPublicKeyInfo (RFC 5280, Sec. 4.1) and PrivateKeyInfo or OneAsymmetricKey (RFC 5958), for one AlgorithmIdentifier given whole in DER, so that a key of another algorithm or with other parameters does not match.

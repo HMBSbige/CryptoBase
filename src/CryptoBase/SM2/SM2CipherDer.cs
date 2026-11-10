@@ -1,5 +1,3 @@
-using System.Formats.Asn1;
-
 namespace CryptoBase.SM2;
 
 // The DER of SM2Cipher, GB/T 35276-2017, Sec. 7.2 (GM/T 0009-2012): SEQUENCE { XCoordinate INTEGER, YCoordinate INTEGER, HASH OCTET STRING (SIZE(32)), CipherText OCTET STRING }, holding C1 = (x1, y1), C3 and C2. A ciphertext is public, so the encoding and parsing may branch on it.

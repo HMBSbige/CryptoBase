@@ -1,5 +1,3 @@
-using System.Formats.Asn1;
-
 namespace CryptoBase.Signatures.Rsa;
 
 // The DER encodings of RSA keys: RSAPublicKey and RSAPrivateKey (RFC 8017, Appendices A.1.1 and A.1.2), and the AlgorithmIdentifiers that SubjectPublicKeyInfo and PKCS #8 carry them with (RFC 4055).

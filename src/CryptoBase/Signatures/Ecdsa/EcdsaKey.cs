@@ -3,7 +3,6 @@ using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha2;
 using CryptoBase.Platform;
 using System.Diagnostics.CodeAnalysis;
-using System.Formats.Asn1;
 
 namespace CryptoBase.Signatures.Ecdsa;
 

@@ -1,5 +1,3 @@
-using System.Formats.Asn1;
-
 namespace CryptoBase.Internal;
 
 // Reads DER values in order, as slices of the source. Malformed input throws AsnContentException.
