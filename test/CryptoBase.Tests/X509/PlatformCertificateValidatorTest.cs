@@ -257,7 +257,7 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// What each flag ignores on Windows, Linux and macOS. The chain fails for another reason too, which the flag does not ignore: it ends at a root that the validator does not trust, or, as Windows checks no name constraints under an untrusted root, the leaf is for client authentication.
+	// A status that each flag ignores on Windows, Linux and macOS. The chain fails for another reason too, which the flag does not ignore: it ends at a root that the validator does not trust, or, as Windows checks no name constraints under an untrusted root, the leaf is for client authentication.
 	public static IEnumerable<(string Scenario, X509VerificationFlags Flag, CertificateValidationError Ignored, CertificateValidationError Remaining)> IgnoredStatuses()
 	{
 		yield return ("expired leaf", X509VerificationFlags.IgnoreNotTimeValid, CertificateValidationError.Expired, CertificateValidationError.UntrustedRoot);
@@ -271,7 +271,7 @@ public class PlatformCertificateValidatorTest
 
 	[Test]
 	[MethodDataSource(nameof(IgnoredStatuses))]
-	public async Task TheFlagsLeaveOutWhatTheyIgnore(string scenario, X509VerificationFlags flag, CertificateValidationError ignored, CertificateValidationError remaining)
+	public async Task TheErrorsHoldWhatTheFlagsIgnoreWhenTheChainFails(string scenario, X509VerificationFlags flag, CertificateValidationError ignored, CertificateValidationError remaining)
 	{
 		using TestPki pki = scenario switch
 		{
@@ -308,13 +308,13 @@ public class PlatformCertificateValidatorTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(strict.Errors).IsEquivalentTo([ignored, remaining]).Because(strict.Message ?? "");
-			await Assert.That(relaxed.Errors).IsEquivalentTo([remaining], CollectionOrdering.Matching).Because(relaxed.Message ?? "");
-			await Assert.That(relaxed.Error).IsEqualTo(remaining);
+			await Assert.That(relaxed.Errors).IsEquivalentTo([ignored, remaining]).Because(relaxed.Message ?? "");
 		}
 	}
 
+	// The flag makes the platform ignore the partial chain, which the errors still hold, as the leaf is not for the usage.
 	[Test]
-	public async Task AllowUnknownCertificateAuthorityLeavesOutAPartialChain()
+	public async Task AllowUnknownCertificateAuthorityKeepsAPartialChainInTheErrors()
 	{
 		using TestPki pki = new();
 		using X509Certificate2 leaf = pki.IssueLeaf(eku: ClientAuthenticationOid);
@@ -328,24 +328,23 @@ public class PlatformCertificateValidatorTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(strict.Errors).IsEquivalentTo([CertificateValidationError.UntrustedRoot, CertificateValidationError.NotValidForUsage], CollectionOrdering.Matching).Because(strict.Message ?? "");
-			await Assert.That(relaxed.Errors).IsEquivalentTo([CertificateValidationError.NotValidForUsage], CollectionOrdering.Matching).Because(relaxed.Message ?? "");
+			await Assert.That(relaxed.Errors).IsEquivalentTo([CertificateValidationError.UntrustedRoot, CertificateValidationError.NotValidForUsage], CollectionOrdering.Matching).Because(relaxed.Message ?? "");
 			await Assert.That(relaxed.PathEnd).IsEqualTo(CertificatePathEnd.MissingIssuer);
 		}
 	}
 
-	// A CA whose name constraints permit a registeredID, a form that the platforms do not support, and an expired leaf below it. Windows and Linux report HasNotSupportedNameConstraint for a leaf with a registeredID, and macOS InvalidNameConstraints for the CA whatever names the leaf has; IgnoreInvalidName leaves out either, and not the expiry.
+	// A CA whose name constraints permit a registeredID, a form that the platforms do not support, and an expired leaf below it. Windows and Linux report HasNotSupportedNameConstraint for a leaf with a registeredID, and macOS InvalidNameConstraints for the CA whatever names the leaf has; IgnoreInvalidName makes the platform ignore either, which the errors still hold while the expiry fails the chain.
 	[Test]
 	[Arguments(true)]
 	[Arguments(false)]
-	public async Task IgnoreInvalidNameLeavesOutANameConstraintOfAFormThatThePlatformDoesNotSupport(bool registeredIdName)
+	public async Task IgnoreInvalidNameAcceptsANameConstraintOfAFormThatThePlatformDoesNotSupport(bool registeredIdName)
 	{
 		using TestPki pki = new(configureIntermediate: static request => request.CertificateExtensions.Add(new X509Extension("2.5.29.30", [0x30, 0x08, 0xA0, 0x06, 0x30, 0x04, 0x88, 0x02, 0x2A, 0x03], true)));
 		byte[] alternativeName = registeredIdName ? [0x30, 0x04, 0x88, 0x02, 0x2A, 0x03] : SubjectAlternativeName("a.example").RawData;
 		using X509Certificate2 leaf = pki.IssueLeaf(request => request.CertificateExtensions.Add(new X509Extension("2.5.29.17", alternativeName, false)), notAfter: Now.AddDays(-1));
 		CertificateValidationContext context = pki.Context(leaf, CertificateUsage.ServerAuthentication);
 		X509ChainPolicy policy = pki.Policy();
-		CertificateValidationError[] expired = [CertificateValidationError.Expired];
-		CertificateValidationError[] expiredAndUnsupported = [CertificateValidationError.Expired, CertificateValidationError.Unspecified];
+		CertificateValidationError[] expected = registeredIdName || OperatingSystem.IsMacOS() ? [CertificateValidationError.Expired, CertificateValidationError.Unspecified] : [CertificateValidationError.Expired];
 
 		CertificateValidationResult strict = await new PlatformCertificateValidator(policy).ValidateAsync(context);
 		policy.VerificationFlags = X509VerificationFlags.IgnoreInvalidName;
@@ -355,29 +354,33 @@ public class PlatformCertificateValidatorTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(strict.Errors).IsEquivalentTo(registeredIdName || OperatingSystem.IsMacOS() ? expiredAndUnsupported : expired, CollectionOrdering.Matching).Because(strict.Message ?? "");
-			await Assert.That(relaxed.Errors).IsEquivalentTo(expired, CollectionOrdering.Matching).Because(relaxed.Message ?? "");
+			await Assert.That(strict.Errors).IsEquivalentTo(expected, CollectionOrdering.Matching).Because(strict.Message ?? "");
+			await Assert.That(relaxed.Errors).IsEquivalentTo(expected, CollectionOrdering.Matching).Because(relaxed.Message ?? "");
 			await Assert.That(accepted.IsValid).IsTrue().Because($"{accepted.Error} {accepted.Message}");
 		}
 	}
 
-	// IgnoreInvalidName leaves out every status of a name constraint, of the chain and of its certificates, and nothing else.
+	// The flags decide only whether the platform accepts the chain: a root that the validator does not trust, which AllowUnknownCertificateAuthority makes the platform ignore, stays in the errors while the expired leaf fails the chain, and alone does not fail it.
 	[Test]
-	[Arguments(X509ChainStatusFlags.InvalidNameConstraints)]
-	[Arguments(X509ChainStatusFlags.HasNotSupportedNameConstraint)]
-	[Arguments(X509ChainStatusFlags.HasNotDefinedNameConstraint)]
-	[Arguments(X509ChainStatusFlags.HasNotPermittedNameConstraint)]
-	[Arguments(X509ChainStatusFlags.HasExcludedNameConstraint)]
-	public async Task IgnoreInvalidNameLeavesOutEveryNameConstraintStatus(X509ChainStatusFlags status)
+	public async Task TheFlagsDecideOnlyWhetherThePlatformAcceptsTheChain()
 	{
-		const X509ChainStatusFlags expired = X509ChainStatusFlags.NotTimeValid;
-		X509ChainStatusFlags[] elementStatus = [expired, status, X509ChainStatusFlags.NoError];
-		X509VerificationFlags[] revocationFlags = [IgnoreEnd, IgnoreAuthority, IgnoreRoot];
+		using TestPki pki = new();
+		using TestPki other = new();
+		using X509Certificate2 expired = pki.IssueLeaf(notAfter: Now.AddDays(-1));
+		using X509Certificate2 current = pki.IssueLeaf();
+		X509ChainPolicy policy = TrustOnly(other.Root);
+		policy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+		PlatformCertificateValidator validator = new(policy);
+
+		CertificateValidationResult failed = await validator.ValidateAsync(pki.Context(expired, CertificateUsage.ServerAuthentication, withRoot: true));
+		CertificateValidationResult accepted = await validator.ValidateAsync(pki.Context(current, CertificateUsage.ServerAuthentication, withRoot: true));
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(status | expired, elementStatus, revocationFlags, X509VerificationFlags.IgnoreInvalidName)).IsEqualTo(expired);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(status | expired, elementStatus, revocationFlags, X509VerificationFlags.NoFlag)).IsEqualTo(status | expired);
+			await Assert.That(failed.Errors).IsEquivalentTo([CertificateValidationError.Expired, CertificateValidationError.UntrustedRoot], CollectionOrdering.Matching).Because(failed.Message ?? "");
+			await Assert.That(failed.PathEnd).IsEqualTo(CertificatePathEnd.UntrustedRoot);
+			await Assert.That(accepted.IsValid).IsTrue().Because($"{accepted.Error} {accepted.Message}");
+			await Assert.That(accepted.PathEnd).IsEqualTo(CertificatePathEnd.UntrustedRoot);
 		}
 	}
 
@@ -654,6 +657,14 @@ public class PlatformCertificateValidatorTest
 			await Assert.That(PlatformCertificateValidator.ApplyRetrievalLimit(subMillisecond, TimeSpan.FromMilliseconds(500))).IsFalse();
 			await Assert.That(subMillisecond.UrlRetrievalTimeout).IsEqualTo(TimeSpan.FromMilliseconds(1));
 
+			// A negative timeout stands for the platform's longest, a minute, which the time left shortens.
+			X509ChainPolicy negative = new() { UrlRetrievalTimeout = TimeSpan.FromSeconds(-1) };
+			X509ChainPolicy negativeFarOff = new() { UrlRetrievalTimeout = TimeSpan.FromSeconds(-1) };
+			await Assert.That(PlatformCertificateValidator.ApplyRetrievalLimit(negative, TimeSpan.FromSeconds(30))).IsFalse();
+			await Assert.That(negative.UrlRetrievalTimeout).IsEqualTo(TimeSpan.FromSeconds(30));
+			await Assert.That(PlatformCertificateValidator.ApplyRetrievalLimit(negativeFarOff, TimeSpan.FromSeconds(90))).IsFalse();
+			await Assert.That(negativeFarOff.UrlRetrievalTimeout).IsEqualTo(TimeSpan.FromSeconds(-1));
+
 			// No time left: no retrieval at all, and the revocation check, offline too, is skipped.
 			await Assert.That(PlatformCertificateValidator.ApplyRetrievalLimit(online, TimeSpan.Zero)).IsTrue();
 			await Assert.That(online.RevocationMode).IsEqualTo(X509RevocationMode.NoCheck);
@@ -669,106 +680,46 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// Windows takes the last certificate of a complete path for the root; Linux and macOS every certificate after the peer's whose issuer is its subject. SelfIssued gives that of each certificate, from the peer's.
-	public static IEnumerable<Func<(bool Windows, bool[] SelfIssued, bool Complete, X509VerificationFlags[] Expected)>> RevocationFlagCases()
-	{
-		yield return () => (true, [false, false, true], true, [IgnoreEnd, IgnoreAuthority, IgnoreRoot]);
-		yield return () => (true, [false, false, false], false, [IgnoreEnd, IgnoreAuthority, IgnoreAuthority]);
-		yield return () => (true, [false, true, true], true, [IgnoreEnd, IgnoreAuthority, IgnoreRoot]);
-		yield return () => (true, [false, true], false, [IgnoreEnd, IgnoreAuthority]);
-		yield return () => (true, [false, false], true, [IgnoreEnd, IgnoreRoot]);
-		yield return () => (true, [true], true, [IgnoreEnd]);
-		yield return () => (false, [false, false, true], true, [IgnoreEnd, IgnoreAuthority, IgnoreRoot]);
-		yield return () => (false, [false, false, false], false, [IgnoreEnd, IgnoreAuthority, IgnoreAuthority]);
-		yield return () => (false, [false, true, true], true, [IgnoreEnd, IgnoreRoot, IgnoreRoot]);
-		yield return () => (false, [false, false, true, true], true, [IgnoreEnd, IgnoreAuthority, IgnoreRoot, IgnoreRoot]);
-		yield return () => (false, [false, true], false, [IgnoreEnd, IgnoreRoot]);
-		yield return () => (false, [false, false], true, [IgnoreEnd, IgnoreAuthority]);
-		yield return () => (false, [true], true, [IgnoreEnd]);
-	}
-
+	// A revocation check that the deadline skipped needs the flags for every kind of certificate that the revocation flag covers, whatever the path.
 	[Test]
-	[MethodDataSource(nameof(RevocationFlagCases))]
-	public async Task AssignsTheRevocationFlagsAsThePlatformDoes(bool windows, bool[] selfIssued, bool complete, X509VerificationFlags[] expected)
+	[Arguments(X509RevocationFlag.EndCertificateOnly, X509VerificationFlags.IgnoreEndRevocationUnknown)]
+	[Arguments(X509RevocationFlag.ExcludeRoot, X509VerificationFlags.IgnoreEndRevocationUnknown | X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown)]
+	[Arguments(X509RevocationFlag.EntireChain, X509VerificationFlags.IgnoreEndRevocationUnknown | X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown | X509VerificationFlags.IgnoreRootRevocationUnknown)]
+	public async Task CountsTheRevocationChecksThatTheDeadlineSkippedByThePolicy(X509RevocationFlag revocationFlag, X509VerificationFlags required)
 	{
-		X509VerificationFlags[] revocationFlags = PlatformCertificateValidator.GetRevocationUnknownFlags(selfIssued, complete, windows);
-
-		await Assert.That(revocationFlags).IsEquivalentTo(expected, CollectionOrdering.Matching);
-	}
-
-	// The cases that the platforms do not produce: a revocation status of the chain alone, and one of the root.
-	[Test]
-	public async Task IgnoresRevocationStatusesPerCertificate()
-	{
-		const X509ChainStatusFlags unknown = X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
-		X509ChainStatusFlags[] leafAndIntermediate = [unknown, unknown, X509ChainStatusFlags.NoError];
-		X509ChainStatusFlags[] rootOnly = [X509ChainStatusFlags.NoError, X509ChainStatusFlags.NoError, unknown];
-		X509ChainStatusFlags[] none = [X509ChainStatusFlags.NoError, X509ChainStatusFlags.NoError];
-		X509VerificationFlags[] path = [IgnoreEnd, IgnoreAuthority, IgnoreRoot];
-		X509VerificationFlags[] partial = [IgnoreEnd, IgnoreAuthority, IgnoreAuthority];
-		X509VerificationFlags[] rollover = [IgnoreEnd, IgnoreRoot, IgnoreRoot];
-
 		using (Assert.Multiple())
 		{
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, leafAndIntermediate, path, IgnoreEnd)).IsEqualTo(unknown);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, leafAndIntermediate, path, IgnoreEnd | IgnoreAuthority)).IsEqualTo(X509ChainStatusFlags.NoError);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, rootOnly, path, IgnoreEnd | IgnoreAuthority)).IsEqualTo(unknown);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, rootOnly, path, IgnoreRoot)).IsEqualTo(X509ChainStatusFlags.NoError);
+			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(revocationFlag, required)).IsFalse();
+			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(revocationFlag, required | X509VerificationFlags.IgnoreNotTimeValid)).IsFalse();
+			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(revocationFlag, X509VerificationFlags.AllFlags)).IsFalse();
+			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(revocationFlag, X509VerificationFlags.NoFlag)).IsTrue();
 
-			// Each certificate by its own flag, whatever its place.
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, rootOnly, partial, IgnoreRoot)).IsEqualTo(unknown);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, rootOnly, partial, IgnoreAuthority)).IsEqualTo(X509ChainStatusFlags.NoError);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, leafAndIntermediate, rollover, IgnoreEnd | IgnoreAuthority)).IsEqualTo(unknown);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, leafAndIntermediate, rollover, IgnoreEnd | IgnoreRoot)).IsEqualTo(X509ChainStatusFlags.NoError);
-
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, none, path, IgnoreEnd | IgnoreAuthority)).IsEqualTo(unknown);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown, none, path, IgnoreEnd | IgnoreAuthority | IgnoreRoot)).IsEqualTo(X509ChainStatusFlags.NoError);
-			await Assert.That(PlatformCertificateValidator.ReportedStatuses(unknown | X509ChainStatusFlags.UntrustedRoot, leafAndIntermediate, path, IgnoreEnd | IgnoreAuthority)).IsEqualTo(X509ChainStatusFlags.UntrustedRoot);
-		}
-	}
-
-	[Test]
-	public async Task CountsTheRevocationChecksThatTheDeadlineSkipped()
-	{
-		X509VerificationFlags[] path = [IgnoreEnd, IgnoreAuthority, IgnoreRoot];
-		X509VerificationFlags[] rollover = [IgnoreEnd, IgnoreRoot, IgnoreRoot];
-
-		using (Assert.Multiple())
-		{
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(path, true, X509RevocationFlag.ExcludeRoot, X509VerificationFlags.NoFlag)).IsTrue();
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(path, true, X509RevocationFlag.ExcludeRoot, IgnoreEnd)).IsTrue();
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(path, true, X509RevocationFlag.EntireChain, IgnoreEnd | IgnoreAuthority)).IsFalse();
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(path, true, X509RevocationFlag.EndCertificateOnly, IgnoreEnd)).IsFalse();
-
-			// An issuer by the flag that the platform applies to it.
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(rollover, true, X509RevocationFlag.ExcludeRoot, IgnoreEnd | IgnoreAuthority)).IsTrue();
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(rollover, true, X509RevocationFlag.ExcludeRoot, IgnoreEnd | IgnoreRoot)).IsFalse();
-
-			// The root is not counted, nor is a self-signed certificate of the peer taken for one.
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters([IgnoreEnd, IgnoreRoot], true, X509RevocationFlag.EntireChain, IgnoreEnd)).IsFalse();
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters([IgnoreEnd], true, X509RevocationFlag.EntireChain, IgnoreAuthority)).IsTrue();
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters([IgnoreEnd], true, X509RevocationFlag.EntireChain, IgnoreEnd)).IsFalse();
-
-			// The last certificate of a partial chain is an issuer.
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters([IgnoreEnd, IgnoreAuthority], false, X509RevocationFlag.ExcludeRoot, IgnoreEnd)).IsTrue();
-			await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters([IgnoreEnd], false, X509RevocationFlag.ExcludeRoot, IgnoreEnd)).IsFalse();
+			// Each flag that the revocation flag needs, missing alone.
+			foreach (X509VerificationFlags flag in (X509VerificationFlags[])[IgnoreEnd, IgnoreAuthority, IgnoreRoot])
+			{
+				if ((required & flag) is not X509VerificationFlags.NoFlag)
+				{
+					await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(revocationFlag, (required & ~flag) | X509VerificationFlags.IgnoreNotTimeValid)).IsTrue().Because(flag.ToString());
+				}
+			}
 		}
 	}
 
 	// A trusted root, a CA certificate that rolls over its key and whose issuer is therefore its subject, and an expired leaf; an offline revocation check finds no CRL, so the status of each certificate checked is unknown.
-	// Windows checks the CA certificate only below a root that it does not trust, and takes it for a CA; Linux checks it and takes it for a root; macOS checks the leaf alone offline.
+	// Windows checks the CA certificate only below a root that it does not trust, and takes it for a CA; Linux checks it and takes it for a root; macOS checks the leaf alone offline. While the expiry fails the chain, the errors hold the unknown status and, under AllowUnknownCertificateAuthority, the untrusted root, whatever the flags; once IgnoreNotTimeValid accepts the expiry, the platform's flags decide, and on Linux those for the peer and the CAs do not accept the CA certificate.
 	public static IEnumerable<Func<(bool Trusted, X509VerificationFlags Flags, CertificateValidationError[] Windows, CertificateValidationError[] Linux, CertificateValidationError[] MacOS)>> KeyRolloverCases()
 	{
 		const CertificateValidationError expired = CertificateValidationError.Expired;
+		const CertificateValidationError untrustedRoot = CertificateValidationError.UntrustedRoot;
 		const CertificateValidationError unknown = CertificateValidationError.RevocationUnknown;
 		const X509VerificationFlags untrusted = X509VerificationFlags.AllowUnknownCertificateAuthority;
 
-		yield return () => (true, IgnoreEnd | IgnoreAuthority, [expired], [expired, unknown], [expired]);
-		yield return () => (true, IgnoreEnd | IgnoreRoot, [expired], [expired], [expired]);
-		yield return () => (true, IgnoreEnd | IgnoreAuthority | X509VerificationFlags.IgnoreNotTimeValid, [], [unknown], []);
+		yield return () => (true, IgnoreEnd | IgnoreAuthority, [expired, unknown], [expired, unknown], [expired, unknown]);
+		yield return () => (true, IgnoreEnd | IgnoreRoot, [expired, unknown], [expired, unknown], [expired, unknown]);
+		yield return () => (true, IgnoreEnd | IgnoreAuthority | X509VerificationFlags.IgnoreNotTimeValid, [], [expired, unknown], []);
 		yield return () => (true, IgnoreEnd | IgnoreRoot | X509VerificationFlags.IgnoreNotTimeValid, [], [], []);
-		yield return () => (false, untrusted | IgnoreEnd | IgnoreAuthority, [expired], [expired, unknown], [expired]);
-		yield return () => (false, untrusted | IgnoreEnd | IgnoreRoot, [expired, unknown], [expired], [expired]);
+		yield return () => (false, untrusted | IgnoreEnd | IgnoreAuthority, [expired, untrustedRoot, unknown], [expired, untrustedRoot, unknown], [expired, untrustedRoot, unknown]);
+		yield return () => (false, untrusted | IgnoreEnd | IgnoreRoot, [expired, untrustedRoot, unknown], [expired, untrustedRoot, unknown], [expired, untrustedRoot, unknown]);
 	}
 
 	[Test]
@@ -792,9 +743,9 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// A revocation check that the deadline skipped counts the CA certificate that rolls over the root's key as the platform would: Windows as a CA, and Linux and macOS as a root.
+	// A revocation check that the deadline skipped reads the policy alone: under ExcludeRoot, the flags for the peer and the CAs suffice on every platform, though Linux and macOS take the CA certificate that rolls over the root's key for a root, and those for the peer and the roots do not.
 	[Test]
-	public async Task CountsASkippedRevocationCheckOfACertificateWhoseIssuerIsItsSubjectAsThePlatformDoes()
+	public async Task CountsASkippedRevocationCheckOfACertificateWhoseIssuerIsItsSubjectByThePolicy()
 	{
 		using KeyRolloverPki pki = new(expiredLeaf: false);
 		X509ChainPolicy authority = TrustOnly(pki.Root);
@@ -811,8 +762,8 @@ public class PlatformCertificateValidatorTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(ignoringAuthorities.Errors).IsEquivalentTo(OperatingSystem.IsWindows() ? [] : unknown, CollectionOrdering.Matching).Because(ignoringAuthorities.Message ?? "");
-			await Assert.That(ignoringRoots.Errors).IsEquivalentTo(OperatingSystem.IsWindows() ? unknown : [], CollectionOrdering.Matching).Because(ignoringRoots.Message ?? "");
+			await Assert.That(ignoringAuthorities.IsValid).IsTrue().Because($"{ignoringAuthorities.Error} {ignoringAuthorities.Message}");
+			await Assert.That(ignoringRoots.Errors).IsEquivalentTo(unknown, CollectionOrdering.Matching).Because(ignoringRoots.Message ?? "");
 		}
 	}
 

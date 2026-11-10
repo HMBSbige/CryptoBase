@@ -18,13 +18,13 @@ namespace CryptoBase.X509;
 /// <para>
 /// The result accepts the certificates when the platform accepts the chain and nothing below rejects them, and otherwise holds every error that applies:
 /// <see cref="CertificateValidationError.UnsupportedAlgorithm" /> for a certificate that the platform does not load, which ends validation, or for a chain that the platform fails to build, such as one with a DSA signature on Windows;
-/// for each status of a chain that the platform does not accept, <see cref="CertificateValidationError.InvalidSignature" />, <see cref="CertificateValidationError.Expired" />, <see cref="CertificateValidationError.Revoked" />, <see cref="CertificateValidationError.UntrustedRoot" /> (including a partial chain), <see cref="CertificateValidationError.NotValidForUsage" /> (including an issuance policy that the chain does not meet), <see cref="CertificateValidationError.RevocationUnknown" /> (including offline revocation) or <see cref="CertificateValidationError.Unspecified" />, leaving out the statuses that <see cref="X509ChainPolicy.VerificationFlags" /> ignores;
+/// for each status that the platform reports for a chain that it does not accept, <see cref="CertificateValidationError.InvalidSignature" />, <see cref="CertificateValidationError.Expired" />, <see cref="CertificateValidationError.Revoked" />, <see cref="CertificateValidationError.UntrustedRoot" /> (including a partial chain), <see cref="CertificateValidationError.NotValidForUsage" /> (including an issuance policy that the chain does not meet), <see cref="CertificateValidationError.RevocationUnknown" /> (including offline revocation) or, for any other status or when the platform reports none, <see cref="CertificateValidationError.Unspecified" />;
 /// <see cref="CertificateValidationError.Malformed" /> for a subject alternative name extension that does not decode when a host name is given;
 /// and <see cref="CertificateValidationError.NameMismatch" /> for a host name that the certificate does not identify, or that is neither a DNS name nor an IP address.
 /// </para>
 /// <para>
-/// On every platform, the flags leave out these statuses: <see cref="X509VerificationFlags.IgnoreNotTimeValid" /> NotTimeValid of any certificate; <see cref="X509VerificationFlags.AllowUnknownCertificateAuthority" /> UntrustedRoot and PartialChain; <see cref="X509VerificationFlags.IgnoreWrongUsage" /> NotValidForUsage; <see cref="X509VerificationFlags.IgnoreInvalidBasicConstraints" /> InvalidBasicConstraints; <see cref="X509VerificationFlags.IgnoreInvalidName" /> InvalidNameConstraints, HasNotSupportedNameConstraint, HasNotDefinedNameConstraint, HasNotPermittedNameConstraint and HasExcludedNameConstraint; <see cref="X509VerificationFlags.IgnoreInvalidPolicy" /> NoIssuanceChainPolicy; and RevocationStatusUnknown and OfflineRevocation, per certificate, <see cref="X509VerificationFlags.IgnoreEndRevocationUnknown" /> of the peer's, <see cref="X509VerificationFlags.IgnoreRootRevocationUnknown" /> of a root and <see cref="X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown" /> of the others.
-/// Each platform decides which certificates are roots: Windows the last certificate of a complete path, and Linux and macOS every certificate after the peer's whose issuer is its subject, such as one that rolls over a CA key.
+/// The flags decide only whether the platform accepts the chain. When it does not, the errors hold every status that the platform reports, those that the flags make it ignore included, so a caller that tolerates a kind of problem sets the flag that ignores it rather than filtering the errors.
+/// For <see cref="X509VerificationFlags.IgnoreRootRevocationUnknown" />, each platform decides which certificates are roots: Windows the last certificate of a complete path, and Linux and macOS every certificate after the peer's whose issuer is its subject, such as one that rolls over a CA key.
 /// The platforms do not report the same statuses for every chain: Windows reports a certificate policy that the chain does not meet as NoIssuanceChainPolicy where Linux and macOS report NotValidForUsage, macOS reports a signature that does not verify as a partial chain, Linux reports a leaf whose subject alternative name extension does not decode as a partial chain, Windows and Linux report a name constraint of a form that they do not support, such as registeredID, as HasNotSupportedNameConstraint for a certificate with a name of that form where macOS reports InvalidNameConstraints for an intermediate CA with such a constraint, whatever names the certificates below it have, and the platforms check the revocation of different certificates.
 /// </para>
 /// <para>
@@ -34,7 +34,7 @@ namespace CryptoBase.X509;
 /// <para>
 /// Validation runs on the thread pool when the policy checks revocation, online or offline, or allows certificate downloads, and the deadline has not passed, as macOS retrieves for an offline check too; it completes synchronously otherwise.
 /// <see cref="X509ChainPolicy.UrlRetrievalTimeout" />, or 15 seconds when it is zero, bounds each retrieval, shortened to the time left until <see cref="CertificateValidationContext.Deadline" /> in whole milliseconds. On Windows and Linux the timeout applies to each retrieval in turn, so a chain that needs several retrievals can take longer than the time left; on macOS it does not apply, and the system bounds each retrieval itself.
-/// Once less than a millisecond is left, the validator neither downloads certificates nor checks revocation, offline included; a policy that checks revocation then gives <see cref="CertificateValidationError.RevocationUnknown" /> unless its flags ignore an unknown status for every certificate that <see cref="X509ChainPolicy.RevocationFlag" /> covers, each by the flag that the platform applies to it as above; as on every platform, the last certificate of a complete path is not covered.
+/// Once less than a millisecond is left, the validator neither downloads certificates nor checks revocation, offline included; a policy that checks revocation then gives <see cref="CertificateValidationError.RevocationUnknown" /> unless its flags ignore an unknown status of every kind of certificate that <see cref="X509ChainPolicy.RevocationFlag" /> covers, whatever the path: <see cref="X509VerificationFlags.IgnoreEndRevocationUnknown" /> for <see cref="X509RevocationFlag.EndCertificateOnly" />, that and <see cref="X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown" /> for <see cref="X509RevocationFlag.ExcludeRoot" />, and those and <see cref="X509VerificationFlags.IgnoreRootRevocationUnknown" /> for <see cref="X509RevocationFlag.EntireChain" />.
 /// Cancellation is observed until the platform starts building the chain. The platform cannot stop a build that has started, so the returned task then completes when the build ends, and no work for the call is left running afterwards.
 /// The validator holds its own copies of the certificates in the stores of its policy, so the caller may dispose them after construction.
 /// </para>
@@ -45,28 +45,17 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 
 	private const X509VerificationFlags RevocationUnknownFlags = X509VerificationFlags.IgnoreEndRevocationUnknown | X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown | X509VerificationFlags.IgnoreRootRevocationUnknown;
 
-	// Every status of a name constraint, which IgnoreInvalidName ignores: one that is invalid, has a form or syntax that the platform does not support or define, or excludes or does not permit a name.
-	private const X509ChainStatusFlags NameConstraintStatuses = X509ChainStatusFlags.InvalidNameConstraints | X509ChainStatusFlags.HasNotSupportedNameConstraint | X509ChainStatusFlags.HasNotDefinedNameConstraint | X509ChainStatusFlags.HasNotPermittedNameConstraint | X509ChainStatusFlags.HasExcludedNameConstraint;
-
 	// The timeout of each retrieval on Windows and Linux when X509ChainPolicy.UrlRetrievalTimeout is zero.
 	private static readonly TimeSpan PlatformUrlRetrievalTimeout = TimeSpan.FromSeconds(15);
+
+	// The longest timeout of each retrieval on Windows and Linux, which a negative X509ChainPolicy.UrlRetrievalTimeout stands for.
+	private static readonly TimeSpan PlatformMaxUrlRetrievalTimeout = TimeSpan.FromMinutes(1);
 
 	private static readonly TimeSpan OneMillisecond = TimeSpan.FromMilliseconds(1);
 
 	// id-kp-serverAuth and id-kp-clientAuth, made once with the constructor that skips the friendly-name lookup of Oid(string).
 	private static readonly Oid ServerAuthenticationUsage = new("1.3.6.1.5.5.7.3.1", null);
 	private static readonly Oid ClientAuthenticationUsage = new("1.3.6.1.5.5.7.3.2", null);
-
-	// The statuses that each flag ignores on every platform. The revocation flags apply per certificate, by GetRevocationUnknownFlags.
-	private static readonly (X509VerificationFlags Flag, X509ChainStatusFlags Statuses)[] IgnoredStatuses =
-	[
-		(X509VerificationFlags.IgnoreNotTimeValid, X509ChainStatusFlags.NotTimeValid),
-		(X509VerificationFlags.IgnoreInvalidBasicConstraints, X509ChainStatusFlags.InvalidBasicConstraints),
-		(X509VerificationFlags.AllowUnknownCertificateAuthority, X509ChainStatusFlags.UntrustedRoot | X509ChainStatusFlags.PartialChain),
-		(X509VerificationFlags.IgnoreWrongUsage, X509ChainStatusFlags.NotValidForUsage),
-		(X509VerificationFlags.IgnoreInvalidName, NameConstraintStatuses),
-		(X509VerificationFlags.IgnoreInvalidPolicy, X509ChainStatusFlags.NoIssuanceChainPolicy),
-	];
 
 	// Any other status is Unspecified. Windows reports NoIssuanceChainPolicy where Linux and macOS report NotValidForUsage.
 	private static readonly (X509ChainStatusFlags Statuses, CertificateValidationError Error)[] ChainErrors =
@@ -149,8 +138,9 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 
 		if (left > TimeSpan.Zero)
 		{
-			// Zero means the platform's default; Windows takes whole milliseconds, so a timeout below one would mean the default there too, and becomes one.
-			TimeSpan timeout = policy.UrlRetrievalTimeout <= TimeSpan.Zero ? PlatformUrlRetrievalTimeout
+			// Zero means the platform's default, and a negative timeout its longest; Windows takes whole milliseconds, so a timeout below one would mean the default there too, and becomes one.
+			TimeSpan timeout = policy.UrlRetrievalTimeout == TimeSpan.Zero ? PlatformUrlRetrievalTimeout
+				: policy.UrlRetrievalTimeout < TimeSpan.Zero ? PlatformMaxUrlRetrievalTimeout
 				: policy.UrlRetrievalTimeout < OneMillisecond ? OneMillisecond
 				: policy.UrlRetrievalTimeout;
 
@@ -171,77 +161,17 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 		return checksRevocation;
 	}
 
-	// The flag that ignores an unknown revocation status of each certificate of the path, by the rule of the platform: the peer's certificate is the end certificate; the root is, on Windows, the last certificate of a complete path, and elsewhere every certificate whose issuer is its subject, such as one that rolls over a CA key; the others are certificate authorities.
-	internal static X509VerificationFlags[] GetRevocationUnknownFlags(ReadOnlySpan<bool> selfIssued, bool complete, bool windows)
+	// Whether a revocation check that the deadline skipped leaves unknown a status that the flags do not ignore, by the policy alone: the flags must ignore an unknown status of every kind of certificate that revocationFlag covers, whatever the path.
+	internal static bool SkippedRevocationMatters(X509RevocationFlag revocationFlag, X509VerificationFlags flags)
 	{
-		X509VerificationFlags[] revocationFlags = new X509VerificationFlags[selfIssued.Length];
-
-		for (int i = 0; i < revocationFlags.Length; ++i)
+		X509VerificationFlags required = revocationFlag switch
 		{
-			bool root = windows ? complete && i == revocationFlags.Length - 1 : selfIssued[i];
+			X509RevocationFlag.EndCertificateOnly => X509VerificationFlags.IgnoreEndRevocationUnknown,
+			X509RevocationFlag.ExcludeRoot => X509VerificationFlags.IgnoreEndRevocationUnknown | X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown,
+			_ => RevocationUnknownFlags
+		};
 
-			revocationFlags[i] = i is 0 ? X509VerificationFlags.IgnoreEndRevocationUnknown
-				: root ? X509VerificationFlags.IgnoreRootRevocationUnknown
-				: X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown;
-		}
-
-		return revocationFlags;
-	}
-
-	// The statuses that fail the chain: those that the flags do not ignore. The revocation statuses of each certificate are ignored by the flag of revocationFlags at its index; one of the chain alone, which no platform reports, only by all three.
-	internal static X509ChainStatusFlags ReportedStatuses(X509ChainStatusFlags chainStatus, ReadOnlySpan<X509ChainStatusFlags> elementStatus, ReadOnlySpan<X509VerificationFlags> revocationFlags, X509VerificationFlags flags)
-	{
-		X509ChainStatusFlags reported = chainStatus & ~RevocationUnknownStatuses;
-
-		foreach ((X509VerificationFlags flag, X509ChainStatusFlags statuses) in IgnoredStatuses)
-		{
-			if ((flags & flag) is not X509VerificationFlags.NoFlag)
-			{
-				reported &= ~statuses;
-			}
-		}
-
-		bool perCertificate = false;
-
-		for (int i = 0; i < elementStatus.Length; ++i)
-		{
-			X509ChainStatusFlags revocation = elementStatus[i] & RevocationUnknownStatuses;
-
-			if (revocation is not X509ChainStatusFlags.NoError)
-			{
-				perCertificate = true;
-
-				if ((flags & revocationFlags[i]) is X509VerificationFlags.NoFlag)
-				{
-					reported |= revocation;
-				}
-			}
-		}
-
-		if (!perCertificate && (flags & RevocationUnknownFlags) != RevocationUnknownFlags)
-		{
-			reported |= chainStatus & RevocationUnknownStatuses;
-		}
-
-		return reported;
-	}
-
-	// Whether a revocation check that the deadline skipped leaves unknown a status that the flags do not ignore: of the peer's certificate, and of the issuers before the root unless the policy checks only the peer's, each ignored by the flag of revocationFlags at its index, which holds one flag at least. Like the platforms, it does not count the root, and takes a self-signed certificate of the peer for the peer's, not a root.
-	internal static bool SkippedRevocationMatters(ReadOnlySpan<X509VerificationFlags> revocationFlags, bool complete, X509RevocationFlag revocationFlag, X509VerificationFlags flags)
-	{
-		int count = revocationFlag is X509RevocationFlag.EndCertificateOnly ? 1
-			: complete ? Math.Max(revocationFlags.Length - 1, 1)
-			: revocationFlags.Length;
-
-		foreach (X509VerificationFlags revocationUnknownFlag in revocationFlags.Slice(0, count))
-		{
-			if ((flags & revocationUnknownFlag) is X509VerificationFlags.NoFlag)
-			{
-				return true;
-			}
-		}
-
-		return false;
+		return (flags & required) != required;
 	}
 
 	internal static CertificatePathEnd GetPathEnd(X509ChainStatusFlags chainStatus, int count)
@@ -373,26 +303,12 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 
 			X509ChainElementCollection elements = chain.ChainElements;
 			X509ChainStatusFlags chainStatus = Combine(chain.ChainStatus);
-			X509ChainStatusFlags[] elementStatus = new X509ChainStatusFlags[elements.Count];
-
-			// Without a path, the peer's certificate stands alone.
-			bool[] selfIssued = new bool[Math.Max(elements.Count, 1)];
-
-			for (int i = 0; i < elementStatus.Length; ++i)
-			{
-				X509Certificate2 certificate = elements[i].Certificate;
-				elementStatus[i] = Combine(elements[i].ChainElementStatus);
-				selfIssued[i] = certificate.SubjectName.RawData.AsSpan().SequenceEqual(certificate.IssuerName.RawData);
-			}
-
 			CertificatePathEnd pathEnd = GetPathEnd(chainStatus, elements.Count);
-			bool complete = pathEnd is not CertificatePathEnd.MissingIssuer;
-			X509VerificationFlags[] revocationFlags = GetRevocationUnknownFlags(selfIssued, complete, OperatingSystem.IsWindows());
 
+			// Every status that the platform reports, those that the flags make it ignore included.
 			if (!built)
 			{
-				X509ChainStatusFlags reported = ReportedStatuses(chainStatus, elementStatus, revocationFlags, policy.VerificationFlags);
-				AddChainErrors(errors, reported);
+				AddChainErrors(errors, chainStatus);
 
 				if (errors.Count is 0)
 				{
@@ -401,14 +317,11 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 
 				foreach (X509ChainStatus status in chain.ChainStatus)
 				{
-					if ((status.Status & reported) is not X509ChainStatusFlags.NoError)
-					{
-						messages.Add(status.StatusInformation.Trim());
-					}
+					messages.Add(status.StatusInformation.Trim());
 				}
 			}
 
-			if (revocationSkipped && SkippedRevocationMatters(revocationFlags, complete, policy.RevocationFlag, policy.VerificationFlags))
+			if (revocationSkipped && SkippedRevocationMatters(policy.RevocationFlag, policy.VerificationFlags))
 			{
 				errors.Add(CertificateValidationError.RevocationUnknown);
 				messages.Add("The deadline passed before revocation was checked.");
