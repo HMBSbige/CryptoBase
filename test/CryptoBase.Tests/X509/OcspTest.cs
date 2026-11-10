@@ -70,14 +70,22 @@ public class OcspTest
 		}
 	}
 
+	// RFC 9654, Sec. 2.1: a nonce of 1 to 128 bytes. The longest takes the long form of the lengths, and the nonce ends the request.
 	[Test]
-	public async Task RequestsAcceptNoncesOfOneToThirtyTwoBytes()
+	public async Task RequestsAcceptNoncesOfOneTo128Bytes()
 	{
+		byte[] longest = [.. Enumerable.Range(0, 128).Select(static i => (byte)i)];
+		byte[] end = [0x04, 0x81, 0x83, 0x04, 0x81, 0x80, .. longest];
+		OcspRequest withLongest = OcspRequest.Create(GoodLeaf, CA, longest);
+
 		using (Assert.Multiple())
 		{
 			await Assert.That(OcspRequest.Create(GoodLeaf, CA, new byte[1]).Nonce?.Length).IsEqualTo(1);
 			await Assert.That(OcspRequest.Create(GoodLeaf, CA, new byte[32]).Nonce?.Length).IsEqualTo(32);
-			await Assert.That(() => OcspRequest.Create(GoodLeaf, CA, new byte[33])).Throws<ArgumentException>();
+			await Assert.That(OcspRequest.Create(GoodLeaf, CA, new byte[33]).Nonce?.Length).IsEqualTo(33);
+			await Assert.That(withLongest.Nonce?.ToArray()).IsEquivalentTo(longest, CollectionOrdering.Matching);
+			await Assert.That(withLongest.Encoded.Span.EndsWith(end)).IsTrue();
+			await Assert.That(() => OcspRequest.Create(GoodLeaf, CA, new byte[129])).Throws<ArgumentException>();
 			await Assert.That(() => OcspRequest.Create(GoodLeaf, CA, default, HashAlgorithmName.SHA384)).Throws<NotSupportedException>();
 			await Assert.That(() => OcspRequest.Create(null!, CA)).Throws<ArgumentNullException>();
 			await Assert.That(() => OcspRequest.Create(GoodLeaf, null!)).Throws<ArgumentNullException>();
@@ -601,7 +609,7 @@ public class OcspTest
 		};
 	}
 
-	// A response's nonce is read if it is well formed; any other is reported as absent, and a client that sent none ignores it.
+	// A response's nonce is read if it is well formed, which is 1 to 128 bytes (RFC 9654, Sec. 2.1); any other is reported as absent, and a client that sent none ignores it.
 	[Test]
 	public async Task MalformedNoncesAreIgnored()
 	{
@@ -610,15 +618,19 @@ public class OcspTest
 		byte[] certificateId = CertificateIdOf(leaf, authority.Certificate);
 		Basic basic = new() { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = certificateId }.Encode()] };
 		byte[] nonce = new byte[16];
+		byte[] longestNonce = [.. Enumerable.Range(0, 128).Select(static i => (byte)i)];
 		OcspResponse notWrapped = (basic with { Extensions = [Extension(NonceOid, nonce)] }).Decode(authority.Key);
 		OcspResponse empty = (basic with { Extensions = [Nonce([])] }).Decode(authority.Key);
-		OcspResponse tooLong = (basic with { Extensions = [Nonce(new byte[33])] }).Decode(authority.Key);
+		OcspResponse tooLong = (basic with { Extensions = [Nonce(new byte[129])] }).Decode(authority.Key);
 		OcspResponse matching = (basic with { Extensions = [Nonce(nonce)] }).Decode(authority.Key);
+		OcspResponse longest = (basic with { Extensions = [Nonce(longestNonce)] }).Decode(authority.Key);
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(matching.Nonce?.ToArray()).IsEquivalentTo(nonce, CollectionOrdering.Matching);
 			await AssertStatusAsync(Check(matching, leaf, authority), RevocationStatus.Good);
+			await Assert.That(longest.Nonce?.ToArray()).IsEquivalentTo(longestNonce, CollectionOrdering.Matching);
+			await AssertStatusAsync(Check(longest, leaf, authority), RevocationStatus.Good);
 
 			foreach (OcspResponse response in (OcspResponse[])[notWrapped, empty, tooLong])
 			{

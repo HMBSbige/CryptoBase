@@ -139,7 +139,7 @@ internal static class TestOcsp
 			Tlv(0x02, certificate.SerialNumber.ToArray()));
 	}
 
-	// The nonce extension: extnValue holds the DER of an OCTET STRING (RFC 8954).
+	// The nonce extension: extnValue holds the DER of an OCTET STRING (RFC 9654).
 	public static byte[] Nonce(byte[] nonce)
 	{
 		return Extension(NonceOid, Tlv(0x04, nonce));

@@ -97,7 +97,7 @@ public sealed class OcspResponse
 	public IReadOnlyList<Certificate> Certificates { get; private set; }
 
 	/// <summary>
-	/// Gets the nonce, or <see langword="null" /> if the response has none or the nonce is not an OCTET STRING of 1 to 32 bytes.
+	/// Gets the nonce, or <see langword="null" /> if the response has none or the nonce is not an OCTET STRING of 1 to 128 bytes.
 	/// </summary>
 	public ReadOnlyMemory<byte>? Nonce { get; private set; }
 
@@ -243,7 +243,7 @@ public sealed class OcspResponse
 		return certificates.AsReadOnly();
 	}
 
-	// Nonce ::= OCTET STRING (SIZE(1..32)) (RFC 8954, Sec. 2.1), which is left null if it has another form.
+	// Nonce ::= OCTET STRING(SIZE(1..128)) (RFC 9654, Sec. 2.1), which is left null if it has another form.
 	private void ReadNonce()
 	{
 		IReadOnlyList<CertificateExtension> extensions = Extensions;
@@ -262,7 +262,7 @@ public sealed class OcspResponse
 				DerReader reader = new(extension.Value);
 				ReadOnlyMemory<byte> nonce = reader.ReadOctetString();
 
-				if (!reader.HasData && nonce.Length is >= 1 and <= 32)
+				if (!reader.HasData && nonce.Length is >= 1 and <= OcspRequest.MaxNonceLength)
 				{
 					Nonce = nonce;
 				}
