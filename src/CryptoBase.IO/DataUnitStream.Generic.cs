@@ -348,12 +348,17 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 
 		try
 		{
-			await FlushUnitAsync(CancellationToken.None).ConfigureAwait(false);
+			try
+			{
+				await FlushUnitAsync(CancellationToken.None).ConfigureAwait(false);
+			}
+			finally
+			{
+				Release();
+			}
 		}
 		finally
 		{
-			Release();
-
 			if (!_leaveOpen)
 			{
 				await _inner.DisposeAsync().ConfigureAwait(false);
@@ -369,12 +374,17 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 		{
 			try
 			{
-				FlushUnit();
+				try
+				{
+					FlushUnit();
+				}
+				finally
+				{
+					Release();
+				}
 			}
 			finally
 			{
-				Release();
-
 				if (!_leaveOpen)
 				{
 					_inner.Dispose();

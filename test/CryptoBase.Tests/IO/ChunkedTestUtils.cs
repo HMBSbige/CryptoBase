@@ -188,6 +188,53 @@ internal sealed class LimitedChunkCipher : IChunkedCipher<LimitedChunkCipher>
 	}
 }
 
+/// <summary>Cobblestone-128 whose disposal throws.</summary>
+internal sealed class DisposeFailingChunkCipher : IChunkedCipher<DisposeFailingChunkCipher>
+{
+	private readonly Cobblestone128Cipher _inner;
+
+	private DisposeFailingChunkCipher(Cobblestone128Cipher inner)
+	{
+		_inner = inner;
+	}
+
+	public static int KeySize => Cobblestone128Cipher.KeySize;
+
+	public static int HeaderSize => Cobblestone128Cipher.HeaderSize;
+
+	public static int ChunkSize => Cobblestone128Cipher.ChunkSize;
+
+	public static int TagSize => Cobblestone128Cipher.TagSize;
+
+	public static long MaxChunkCount => Cobblestone128Cipher.MaxChunkCount;
+
+	public static DisposeFailingChunkCipher CreateEncryptor(scoped ReadOnlySpan<byte> key, scoped ReadOnlySpan<byte> context, scoped Span<byte> header)
+	{
+		return new DisposeFailingChunkCipher(Cobblestone128Cipher.CreateEncryptor(key, context, header));
+	}
+
+	public static DisposeFailingChunkCipher CreateDecryptor(scoped ReadOnlySpan<byte> key, scoped ReadOnlySpan<byte> context, scoped ReadOnlySpan<byte> header)
+	{
+		return new DisposeFailingChunkCipher(Cobblestone128Cipher.CreateDecryptor(key, context, header));
+	}
+
+	public void EncryptChunk(long index, scoped ReadOnlySpan<byte> plaintext, scoped Span<byte> ciphertext)
+	{
+		_inner.EncryptChunk(index, plaintext, ciphertext);
+	}
+
+	public bool TryDecryptChunk(long index, scoped ReadOnlySpan<byte> ciphertext, scoped Span<byte> plaintext)
+	{
+		return _inner.TryDecryptChunk(index, ciphertext, plaintext);
+	}
+
+	public void Dispose()
+	{
+		_inner.Dispose();
+		throw new InvalidOperationException("Disposal failed.");
+	}
+}
+
 /// <summary>A memory stream whose writes throw <see cref="IOException" /> after <c>allowedWrites</c> successful ones.</summary>
 internal sealed class FailingWriteMemoryStream(int allowedWrites) : MemoryStream
 {

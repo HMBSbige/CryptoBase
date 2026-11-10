@@ -766,6 +766,29 @@ public class DataUnitStreamTest
 		}
 	}
 
+	[Test]
+	[MatrixDataSource]
+	public async Task DisposeClosesTheInnerStreamWhenTheCipherFailsToDispose([Matrix] bool leaveOpen, [Matrix] bool useAsync)
+	{
+		using CountingMemoryStream inner = new();
+		TrackingXtsCipher cipher = TrackingXtsCipher.Create(Key);
+		cipher.FailsDisposal = true;
+		DataUnitStream<TrackingXtsCipher> xts = DataUnitStream.Create(inner, cipher, DefaultDataUnitSize, leaveOpen: leaveOpen);
+		xts.Write(CreateDeterministicSource(DefaultDataUnitSize));
+
+		await Assert.That(() => DisposeAsync(xts, useAsync)).ThrowsExactly<InvalidOperationException>();
+		await DisposeAsync(xts, useAsync);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(cipher.IsDisposed).IsTrue();
+			await Assert.That(inner.CanRead).IsEqualTo(leaveOpen);
+			await Assert.That(inner.DisposeCount).IsEqualTo(leaveOpen ? 0 : 1);
+			await Assert.That(inner.DisposeAsyncCount).IsEqualTo(!leaveOpen && useAsync ? 1 : 0);
+			await Assert.That(() => xts.Write(new byte[1])).ThrowsExactly<ObjectDisposedException>();
+		}
+	}
+
 	private sealed class DataUnitStreamTarget(Stream xts, Func<byte[]> readBackend) : IDataUnitTarget
 	{
 		public long GetLength()

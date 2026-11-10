@@ -203,6 +203,24 @@ public class ChunkedRandomAccessTest
 	}
 
 	[Test]
+	[MatrixDataSource]
+	public async Task DisposalClosesTheStorageWhenTheCipherFailsToDispose([Matrix] ChunkedStorageKind kind, [Matrix] bool leaveOpen)
+	{
+		byte[] key = NewKey();
+		using ChunkedStorage storage = new(kind, Encrypt(key, CreateDeterministicSource(ChunkSize + 100)), false);
+		ChunkedRandomAccess<DisposeFailingChunkCipher> access = await storage.OpenAsync<DisposeFailingChunkCipher>(key, MessageContext, false, leaveOpen);
+
+		await Assert.That(access.Dispose).ThrowsExactly<InvalidOperationException>();
+		access.Dispose();
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(storage.IsOpen).IsEqualTo(leaveOpen);
+			await Assert.That(() => access.Read(new byte[1], 0)).ThrowsExactly<ObjectDisposedException>();
+		}
+	}
+
+	[Test]
 	public async Task FactoriesValidateTheStorage()
 	{
 		byte[] key = NewKey();

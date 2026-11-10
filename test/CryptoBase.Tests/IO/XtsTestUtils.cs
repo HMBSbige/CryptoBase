@@ -292,6 +292,8 @@ internal sealed class TrackingXtsCipher : IDataUnitCipher<TrackingXtsCipher>
 
 	public bool IsDisposed { get; private set; }
 
+	public bool FailsDisposal { get; set; }
+
 	public static int TweakSize => 16;
 
 	public static TrackingXtsCipher Create(scoped ReadOnlySpan<byte> key)
@@ -303,6 +305,11 @@ internal sealed class TrackingXtsCipher : IDataUnitCipher<TrackingXtsCipher>
 	{
 		IsDisposed = true;
 		_inner.Dispose();
+
+		if (FailsDisposal)
+		{
+			throw new InvalidOperationException("Disposal failed.");
+		}
 	}
 
 	public void Encrypt(scoped ReadOnlySpan<byte> tweak, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination)

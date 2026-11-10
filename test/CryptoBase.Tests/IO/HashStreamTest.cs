@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes.Blake3;
 using CryptoBase.IO;
 using System.Diagnostics.CodeAnalysis;
@@ -289,6 +290,23 @@ public class HashStreamTest
 	}
 
 	[Test]
+	[MatrixDataSource]
+	public async Task DisposeClosesTheInnerStreamWhenTheHasherFailsToDispose([Matrix] bool leaveOpen, [Matrix] bool useAsync)
+	{
+		using MemoryStream inner = new();
+		HashStream<DisposeFailingHasher> hashing = HashStream.Create(inner, DisposeFailingHasher.Create(), leaveOpen);
+
+		await Assert.That(() => DisposeAsync(hashing, useAsync)).ThrowsExactly<InvalidOperationException>();
+		await DisposeAsync(hashing, useAsync);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(inner.CanRead).IsEqualTo(leaveOpen);
+			await Assert.That(() => hashing.Write([1])).ThrowsExactly<ObjectDisposedException>();
+		}
+	}
+
+	[Test]
 	public async Task OperationsAfterDisposeThrow()
 	{
 		using MemoryStream inner = new([1, 2, 3], true);
@@ -327,6 +345,50 @@ public class HashStreamTest
 			await Assert.That(() => new HashStream<Sha256Hasher>(null!, hasher)).ThrowsExactly<ArgumentNullException>().WithParameterName("inner");
 			await Assert.That(() => new HashStream<Sha256Hasher>(inner, null!)).ThrowsExactly<ArgumentNullException>().WithParameterName("hasher");
 			await Assert.That(inner.CanRead).IsTrue();
+		}
+	}
+
+	/// <summary>SHA-256 whose disposal throws.</summary>
+	private sealed class DisposeFailingHasher : IHashAlgorithm<DisposeFailingHasher>
+	{
+		private readonly Sha256Hasher _inner = Sha256Hasher.Create();
+
+		public static int HashLength => Sha256Hasher.HashLength;
+
+		public static DisposeFailingHasher Create()
+		{
+			return new DisposeFailingHasher();
+		}
+
+		public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+		{
+			return Sha256Hasher.HashData(source, destination);
+		}
+
+		public void Append(ReadOnlySpan<byte> source)
+		{
+			_inner.Append(source);
+		}
+
+		public void Reset()
+		{
+			_inner.Reset();
+		}
+
+		public int GetCurrentHash(Span<byte> destination)
+		{
+			return _inner.GetCurrentHash(destination);
+		}
+
+		public int GetHashAndReset(Span<byte> destination)
+		{
+			return _inner.GetHashAndReset(destination);
+		}
+
+		public void Dispose()
+		{
+			_inner.Dispose();
+			throw new InvalidOperationException("Disposal failed.");
 		}
 	}
 }

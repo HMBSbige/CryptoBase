@@ -184,6 +184,24 @@ public class ChunkedEncryptionStreamTest
 	}
 
 	[Test]
+	[MatrixDataSource]
+	public async Task DisposalClosesTheInnerStreamWhenTheCipherFailsToDispose([Matrix] bool leaveOpen, [Matrix] bool useAsync)
+	{
+		using MemoryStream inner = new();
+		ChunkedEncryptionStream<DisposeFailingChunkCipher> stream = ChunkedEncryptionStream.Create<DisposeFailingChunkCipher>(inner, NewKey(), MessageContext, leaveOpen);
+		stream.Write([1, 2, 3]);
+
+		await Assert.That(() => DisposeAsync(stream, useAsync)).ThrowsExactly<InvalidOperationException>();
+		await DisposeAsync(stream, useAsync);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(inner.CanWrite).IsEqualTo(leaveOpen);
+			await Assert.That(() => stream.Write([1])).ThrowsExactly<ObjectDisposedException>();
+		}
+	}
+
+	[Test]
 	public async Task MembersFollowStreamConventions()
 	{
 		byte[] key = NewKey();

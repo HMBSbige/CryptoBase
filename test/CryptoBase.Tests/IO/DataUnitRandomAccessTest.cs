@@ -412,4 +412,25 @@ public class DataUnitRandomAccessTest
 			await Assert.That(xts.Flush).ThrowsExactly<ObjectDisposedException>();
 		}
 	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task DisposeClosesTheHandleWhenTheCipherFailsToDispose([Matrix] bool leaveOpen)
+	{
+		using TempFile file = new();
+		using SafeFileHandle handle = file.OpenHandle();
+		TrackingXtsCipher cipher = TrackingXtsCipher.Create(Key);
+		cipher.FailsDisposal = true;
+		DataUnitRandomAccess<TrackingXtsCipher> xts = DataUnitRandomAccess.Create(handle, cipher, DefaultDataUnitSize, leaveOpen: leaveOpen);
+
+		await Assert.That(xts.Dispose).ThrowsExactly<InvalidOperationException>();
+		xts.Dispose();
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(cipher.IsDisposed).IsTrue();
+			await Assert.That(handle.IsClosed).IsEqualTo(!leaveOpen);
+			await Assert.That(xts.GetLength).ThrowsExactly<ObjectDisposedException>();
+		}
+	}
 }

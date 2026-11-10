@@ -166,11 +166,17 @@ public sealed class DataUnitRandomAccess<TCipher> : IDisposable where TCipher : 
 		}
 
 		_disposed = true;
-		_transform.Dispose();
 
-		if (!_leaveOpen)
+		try
 		{
-			_handle.Dispose();
+			_transform.Dispose();
+		}
+		finally
+		{
+			if (!_leaveOpen)
+			{
+				_handle.Dispose();
+			}
 		}
 	}
 }

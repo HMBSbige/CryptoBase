@@ -248,15 +248,24 @@ public sealed class ChunkedEncryptionStream<TCipher> : Stream where TCipher : cl
 	/// </summary>
 	/// <remarks>Does not write the last chunk: without <see cref="FlushFinalChunkAsync" />, the message stays incomplete.</remarks>
 	/// <returns>A task that represents the asynchronous dispose operation.</returns>
-	public override ValueTask DisposeAsync()
+	public override async ValueTask DisposeAsync()
 	{
 		if (_disposed)
 		{
-			return ValueTask.CompletedTask;
+			return;
 		}
 
-		Release();
-		return _leaveOpen ? ValueTask.CompletedTask : _inner.DisposeAsync();
+		try
+		{
+			Release();
+		}
+		finally
+		{
+			if (!_leaveOpen)
+			{
+				await _inner.DisposeAsync().ConfigureAwait(false);
+			}
+		}
 	}
 
 	/// <summary>
@@ -268,11 +277,16 @@ public sealed class ChunkedEncryptionStream<TCipher> : Stream where TCipher : cl
 	{
 		if (disposing && !_disposed)
 		{
-			Release();
-
-			if (!_leaveOpen)
+			try
 			{
-				_inner.Dispose();
+				Release();
+			}
+			finally
+			{
+				if (!_leaveOpen)
+				{
+					_inner.Dispose();
+				}
 			}
 		}
 

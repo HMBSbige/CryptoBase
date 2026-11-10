@@ -167,11 +167,16 @@ public sealed class ChunkedRandomAccess<TCipher> : IDisposable where TCipher : c
 			return;
 		}
 
-		Release();
-
-		if (!_leaveOpen)
+		try
 		{
-			_owner.Dispose();
+			Release();
+		}
+		finally
+		{
+			if (!_leaveOpen)
+			{
+				_owner.Dispose();
+			}
 		}
 	}
 

@@ -228,15 +228,24 @@ public sealed class ChunkedDecryptionStream<TCipher> : Stream where TCipher : cl
 	/// Erases the buffered plaintext and disposes the cipher and, unless <c>leaveOpen</c> was set, asynchronously disposes the inner stream.
 	/// </summary>
 	/// <returns>A task that represents the asynchronous dispose operation.</returns>
-	public override ValueTask DisposeAsync()
+	public override async ValueTask DisposeAsync()
 	{
 		if (_disposed)
 		{
-			return ValueTask.CompletedTask;
+			return;
 		}
 
-		Release();
-		return _leaveOpen ? ValueTask.CompletedTask : _inner.DisposeAsync();
+		try
+		{
+			Release();
+		}
+		finally
+		{
+			if (!_leaveOpen)
+			{
+				await _inner.DisposeAsync().ConfigureAwait(false);
+			}
+		}
 	}
 
 	/// <summary>
@@ -247,11 +256,16 @@ public sealed class ChunkedDecryptionStream<TCipher> : Stream where TCipher : cl
 	{
 		if (disposing && !_disposed)
 		{
-			Release();
-
-			if (!_leaveOpen)
+			try
 			{
-				_inner.Dispose();
+				Release();
+			}
+			finally
+			{
+				if (!_leaveOpen)
+				{
+					_inner.Dispose();
+				}
 			}
 		}
 

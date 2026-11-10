@@ -211,11 +211,17 @@ public abstract class AppendStream<TAlgorithm> : Stream where TAlgorithm : class
 		if (disposing && !_disposed)
 		{
 			_disposed = true;
-			_algorithm.Dispose();
 
-			if (!_leaveOpen)
+			try
 			{
-				_inner.Dispose();
+				_algorithm.Dispose();
+			}
+			finally
+			{
+				if (!_leaveOpen)
+				{
+					_inner.Dispose();
+				}
 			}
 		}
 
@@ -224,16 +230,26 @@ public abstract class AppendStream<TAlgorithm> : Stream where TAlgorithm : class
 
 	/// <summary>Disposes the algorithm and, unless <c>leaveOpen</c> was specified, asynchronously disposes the inner stream.</summary>
 	/// <returns>A task that represents the asynchronous dispose operation.</returns>
-	public override ValueTask DisposeAsync()
+	public override async ValueTask DisposeAsync()
 	{
 		if (_disposed)
 		{
-			return ValueTask.CompletedTask;
+			return;
 		}
 
 		_disposed = true;
-		_algorithm.Dispose();
-		return _leaveOpen ? ValueTask.CompletedTask : _inner.DisposeAsync();
+
+		try
+		{
+			_algorithm.Dispose();
+		}
+		finally
+		{
+			if (!_leaveOpen)
+			{
+				await _inner.DisposeAsync().ConfigureAwait(false);
+			}
+		}
 	}
 
 	private async ValueTask<int> AwaitReadAsync(ValueTask<int> task, Memory<byte> buffer)
