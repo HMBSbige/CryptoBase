@@ -24,7 +24,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// Gets the KDF of the context.
 	/// </summary>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	public HpkeKdf Kdf
+	public HpkeKdfId Kdf
 	{
 		get
 		{
@@ -37,7 +37,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// Gets the AEAD of the context.
 	/// </summary>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	public HpkeAead Aead
+	public HpkeAeadId Aead
 	{
 		get
 		{
@@ -82,7 +82,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="kdf" /> or <paramref name="aead" /> is not supported.</exception>
 	/// <exception cref="InvalidOperationException"><paramref name="recipient" /> does not hold the decapsulation key.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="recipient" /> has been disposed.</exception>
-	public static bool TryCreate<TKem>(TKem recipient, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeKem<TKem>
+	public static bool TryCreate<TKem>(TKem recipient, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeKem<TKem>
 	{
 		ArgumentNullException.ThrowIfNull(recipient);
 		HpkeContextState.ValidateSuite(kdf, aead);
@@ -107,7 +107,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// <exception cref="ArgumentException"><paramref name="psk" /> is shorter than 32 bytes, or <paramref name="pskId" /> is empty.</exception>
 	/// <exception cref="InvalidOperationException"><paramref name="recipient" /> does not hold the decapsulation key.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="recipient" /> has been disposed.</exception>
-	public static bool TryCreate<TKem>(TKem recipient, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeKem<TKem>
+	public static bool TryCreate<TKem>(TKem recipient, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeKem<TKem>
 	{
 		ArgumentNullException.ThrowIfNull(recipient);
 		HpkeContextState.ValidateSuite(kdf, aead);
@@ -131,7 +131,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="kdf" /> or <paramref name="aead" /> is not supported.</exception>
 	/// <exception cref="InvalidOperationException"><paramref name="recipient" /> does not hold the decapsulation key.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="recipient" /> or <paramref name="sender" /> has been disposed.</exception>
-	public static bool TryCreateAuthenticated<TKem>(TKem recipient, TKem sender, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeAuthKem<TKem>
+	public static bool TryCreateAuthenticated<TKem>(TKem recipient, TKem sender, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		ArgumentNullException.ThrowIfNull(recipient);
 		ArgumentNullException.ThrowIfNull(sender);
@@ -158,7 +158,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// <exception cref="ArgumentException"><paramref name="psk" /> is shorter than 32 bytes, or <paramref name="pskId" /> is empty.</exception>
 	/// <exception cref="InvalidOperationException"><paramref name="recipient" /> does not hold the decapsulation key.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="recipient" /> or <paramref name="sender" /> has been disposed.</exception>
-	public static bool TryCreateAuthenticated<TKem>(TKem recipient, TKem sender, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeAuthKem<TKem>
+	public static bool TryCreateAuthenticated<TKem>(TKem recipient, TKem sender, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		ArgumentNullException.ThrowIfNull(recipient);
 		ArgumentNullException.ThrowIfNull(sender);
@@ -168,7 +168,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	}
 
 	// The key schedule of a shared secret that the KEM of kemId decapsulated; known-answer tests start here.
-	internal static HpkeRecipientContext Create(ushort kemId, HpkeMode mode, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> sharedSecret, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+	internal static HpkeRecipientContext Create(ushort kemId, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> sharedSecret, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
 	{
 		HpkeRecipientContext context = new();
 		context._state.Initialize(kemId, mode, kdf, aead, sharedSecret, info, psk, pskId);
@@ -191,7 +191,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// <param name="associatedData">The associated data that the message was sealed with.</param>
 	/// <returns><see langword="true" /> if the message was opened; otherwise, <see langword="false" />.</returns>
 	/// <exception cref="ArgumentException"><paramref name="plaintext" /> is too short or overlaps <paramref name="ciphertext" /> without starting at the same byte.</exception>
-	/// <exception cref="InvalidOperationException">The AEAD of the context is <see cref="HpkeAead.ExportOnly" />.</exception>
+	/// <exception cref="InvalidOperationException">The AEAD of the context is <see cref="HpkeAeadId.ExportOnly" />.</exception>
 	/// <exception cref="CryptographicException">The sequence number has reached its limit, <see cref="ulong.MaxValue" />.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public bool TryOpen(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> associatedData = default)
@@ -227,7 +227,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	}
 
 	[SkipLocalsInit]
-	private static bool TryDecapsulate<TKem>(TKem recipient, HpkeMode mode, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeKem<TKem>
+	private static bool TryDecapsulate<TKem>(TKem recipient, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeKem<TKem>
 	{
 		int length = TKem.SharedSecretLength;
 		using CryptoBuffer<byte> sharedSecret = CryptoBuffer<byte>.ShouldUsePool(length) ? new CryptoBuffer<byte>(length) : new CryptoBuffer<byte>(stackalloc byte[length]);
@@ -236,7 +236,7 @@ public sealed class HpkeRecipientContext : IDisposable
 	}
 
 	[SkipLocalsInit]
-	private static bool TryAuthDecapsulate<TKem>(TKem recipient, TKem sender, HpkeMode mode, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeAuthKem<TKem>
+	private static bool TryAuthDecapsulate<TKem>(TKem recipient, TKem sender, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		int length = TKem.SharedSecretLength;
 		using CryptoBuffer<byte> sharedSecret = CryptoBuffer<byte>.ShouldUsePool(length) ? new CryptoBuffer<byte>(length) : new CryptoBuffer<byte>(stackalloc byte[length]);

@@ -12,13 +12,13 @@ HPKE (RFC 9180) in the base, PSK, auth and auth_psk modes. The types are in `Cry
 | `DhKemX25519` | `0x0020` | 32 bytes | 32 bytes | 32 bytes | 32 bytes | 32 bytes |
 | `DhKemX448` | `0x0021` | 56 bytes | 56 bytes | 56 bytes | 64 bytes | 56 bytes |
 
-| `HpkeKdf` | ID | `HashLength` |
+| `HpkeKdfId` | ID | `HashLength` |
 | --- | ---: | ---: |
 | `HkdfSha256` | `0x0001` | 32 bytes |
 | `HkdfSha384` | `0x0002` | 48 bytes |
 | `HkdfSha512` | `0x0003` | 64 bytes |
 
-| `HpkeAead` | ID | `KeySize` | `NonceSize` | `TagSize` |
+| `HpkeAeadId` | ID | `KeySize` | `NonceSize` | `TagSize` |
 | --- | ---: | ---: | ---: | ---: |
 | `Aes128Gcm` | `0x0001` | 16 bytes | 12 bytes | 16 bytes |
 | `Aes256Gcm` | `0x0002` | 32 bytes | 12 bytes | 16 bytes |
@@ -41,7 +41,7 @@ recipientKey.ExportEncapsulationKey(publicKey);
 // Sender: set up a context, which writes the encapsulated key to send along.
 using DhKemX25519 recipientPublicKey = DhKemX25519.ImportEncapsulationKey(publicKey);
 byte[] enc = new byte[DhKemX25519.CiphertextLength];
-using HpkeSenderContext sender = HpkeSenderContext.Create(recipientPublicKey, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, enc, info);
+using HpkeSenderContext sender = HpkeSenderContext.Create(recipientPublicKey, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, enc, info);
 
 byte[] plaintext = "message"u8.ToArray();
 byte[] associatedData = "header"u8.ToArray();
@@ -49,7 +49,7 @@ byte[] ciphertext = new byte[plaintext.Length + sender.Aead.TagSize];
 sender.Seal(plaintext, ciphertext, associatedData);
 
 // Recipient: set up the matching context from enc.
-if (!HpkeRecipientContext.TryCreate(recipientKey, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, enc, info, out HpkeRecipientContext? recipient))
+if (!HpkeRecipientContext.TryCreate(recipientKey, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, enc, info, out HpkeRecipientContext? recipient))
 {
     // enc has the wrong length or is a point of small order.
     throw new CryptographicException("Invalid encapsulated key.");
@@ -80,22 +80,22 @@ byte[] recipientSecret = new byte[32];
 recipient.Export("exporter context"u8, recipientSecret);
 
 // A context that only exports: Seal and TryOpen throw InvalidOperationException.
-using HpkeSenderContext exporter = HpkeSenderContext.Create(recipientPublicKey, HpkeKdf.HkdfSha256, HpkeAead.ExportOnly, enc, info);
+using HpkeSenderContext exporter = HpkeSenderContext.Create(recipientPublicKey, HpkeKdfId.HkdfSha256, HpkeAeadId.ExportOnly, enc, info);
 ```
 
 ## Pre-shared keys and sender authentication
 
 ```csharp
 // PSK mode: the PSK must be at least 32 bytes long and the PSK ID must not be empty.
-using HpkeSenderContext pskSender = HpkeSenderContext.Create(recipientPublicKey, HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305, enc, info, psk, pskId);
-bool created = HpkeRecipientContext.TryCreate(recipientKey, HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305, enc, info, psk, pskId, out HpkeRecipientContext? pskRecipient);
+using HpkeSenderContext pskSender = HpkeSenderContext.Create(recipientPublicKey, HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305, enc, info, psk, pskId);
+bool created = HpkeRecipientContext.TryCreate(recipientKey, HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305, enc, info, psk, pskId, out HpkeRecipientContext? pskRecipient);
 
 // Auth mode: the sender authenticates with its key pair; the recipient needs the sender's encapsulation key.
 using DhKemX25519 senderKey = DhKemX25519.GenerateKey();
-using HpkeSenderContext authSender = HpkeSenderContext.CreateAuthenticated(recipientPublicKey, senderKey, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, enc, info);
+using HpkeSenderContext authSender = HpkeSenderContext.CreateAuthenticated(recipientPublicKey, senderKey, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, enc, info);
 
 using DhKemX25519 senderPublicKey = DhKemX25519.ImportEncapsulationKey(senderEncapsulationKey);
-bool authenticated = HpkeRecipientContext.TryCreateAuthenticated(recipientKey, senderPublicKey, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, enc, info, out HpkeRecipientContext? authRecipient);
+bool authenticated = HpkeRecipientContext.TryCreateAuthenticated(recipientKey, senderPublicKey, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, enc, info, out HpkeRecipientContext? authRecipient);
 
 // Auth_psk mode: CreateAuthenticated and TryCreateAuthenticated with psk and pskId.
 ```
@@ -105,7 +105,7 @@ bool authenticated = HpkeRecipientContext.TryCreateAuthenticated(recipientKey, s
 ```csharp
 // A context set up again from the same enc starts at sequence number 0; set SequenceNumber to continue
 // where the previous context stopped.
-if (HpkeRecipientContext.TryCreate(recipientKey, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, enc, info, out HpkeRecipientContext? again))
+if (HpkeRecipientContext.TryCreate(recipientKey, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, enc, info, out HpkeRecipientContext? again))
 {
     using (again)
     {
@@ -156,6 +156,6 @@ static (HpkeSenderContext Context, byte[] Enc) SetUpSender<TKem>(ReadOnlySpan<by
 {
     using TKem recipient = TKem.ImportEncapsulationKey(publicKey);
     byte[] enc = new byte[TKem.CiphertextLength];
-    return (HpkeSenderContext.Create(recipient, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, enc, info), enc);
+    return (HpkeSenderContext.Create(recipient, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, enc, info), enc);
 }
 ```

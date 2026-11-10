@@ -15,10 +15,10 @@ public sealed record HpkeVector
 	public required ushort KemId { get; init; }
 
 	[JsonPropertyName("kdf_id")]
-	public HpkeKdf? Kdf { get; init; }
+	public HpkeKdfId? Kdf { get; init; }
 
 	[JsonPropertyName("aead_id")]
-	public HpkeAead? Aead { get; init; }
+	public HpkeAeadId? Aead { get; init; }
 
 	public byte[] Info { get; init; } = [];
 

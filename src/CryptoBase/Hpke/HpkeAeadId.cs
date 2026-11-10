@@ -3,7 +3,7 @@ namespace CryptoBase.Hpke;
 /// <summary>
 /// Specifies the authenticated encryption with associated data (AEAD) of an HPKE suite, by its identifier in RFC 9180, Section 7.3.
 /// </summary>
-public enum HpkeAead : ushort
+public enum HpkeAeadId : ushort
 {
 	/// <summary>AES-128-GCM.</summary>
 	Aes128Gcm = 0x0001,

@@ -48,7 +48,7 @@ public class DhKemX448Test
 	public async Task DecapsulationKeysExportAsImportedAndClampingKeepsThem()
 	{
 		HpkeVector[] vectors = [.. HpkeVectors.Full().Where(static vector => vector.KemId is 0x0021)];
-		HpkeVector first = vectors.First(static vector => vector is { Source: "RFC 9180", Mode: 0, Kdf: HpkeKdf.HkdfSha512, Aead: HpkeAead.ChaCha20Poly1305 });
+		HpkeVector first = vectors.First(static vector => vector is { Source: "RFC 9180", Mode: 0, Kdf: HpkeKdfId.HkdfSha512, Aead: HpkeAeadId.ChaCha20Poly1305 });
 
 		using (Assert.Multiple())
 		{
@@ -159,7 +159,7 @@ public class DhKemX448Test
 
 				foreach (HpkeTestMode mode in Enum.GetValues<HpkeTestMode>())
 				{
-					await Assert.That(TryCreateRecipient(mode, recipient, sender, HpkeKdf.HkdfSha512, HpkeAead.ChaCha20Poly1305, publicKey, info, psk, pskId)).IsNull().Because($"{because} in {mode}");
+					await Assert.That(TryCreateRecipient(mode, recipient, sender, HpkeKdfId.HkdfSha512, HpkeAeadId.ChaCha20Poly1305, publicKey, info, psk, pskId)).IsNull().Because($"{because} in {mode}");
 				}
 			}
 		}

@@ -3,7 +3,7 @@ namespace CryptoBase.Hpke;
 /// <summary>
 /// Specifies the key derivation function (KDF) of an HPKE suite, by its identifier in RFC 9180, Section 7.2.
 /// </summary>
-public enum HpkeKdf : ushort
+public enum HpkeKdfId : ushort
 {
 	/// <summary>HKDF-SHA256.</summary>
 	HkdfSha256 = 0x0001,

@@ -7,21 +7,21 @@ public class HpkeApiTest
 {
 	// Nk, Nn and Nt of RFC 9180, Section 7.3.
 	[Test]
-	[Arguments(HpkeAead.Aes128Gcm, 16, 12, 16)]
-	[Arguments(HpkeAead.Aes256Gcm, 32, 12, 16)]
-	[Arguments(HpkeAead.ChaCha20Poly1305, 32, 12, 16)]
-	[Arguments(HpkeAead.ExportOnly, 0, 0, 0)]
-	public async Task AeadSizesAreThoseOfTheRfc(HpkeAead aead, int keySize, int nonceSize, int tagSize)
+	[Arguments(HpkeAeadId.Aes128Gcm, 16, 12, 16)]
+	[Arguments(HpkeAeadId.Aes256Gcm, 32, 12, 16)]
+	[Arguments(HpkeAeadId.ChaCha20Poly1305, 32, 12, 16)]
+	[Arguments(HpkeAeadId.ExportOnly, 0, 0, 0)]
+	public async Task AeadSizesAreThoseOfTheRfc(HpkeAeadId aead, int keySize, int nonceSize, int tagSize)
 	{
 		await Assert.That((aead.KeySize, aead.NonceSize, aead.TagSize)).IsEqualTo((keySize, nonceSize, tagSize));
 	}
 
 	// Nh of RFC 9180, Section 7.2.
 	[Test]
-	[Arguments(HpkeKdf.HkdfSha256, 32)]
-	[Arguments(HpkeKdf.HkdfSha384, 48)]
-	[Arguments(HpkeKdf.HkdfSha512, 64)]
-	public async Task KdfHashLengthsAreThoseOfTheRfc(HpkeKdf kdf, int hashLength)
+	[Arguments(HpkeKdfId.HkdfSha256, 32)]
+	[Arguments(HpkeKdfId.HkdfSha384, 48)]
+	[Arguments(HpkeKdfId.HkdfSha512, 64)]
+	public async Task KdfHashLengthsAreThoseOfTheRfc(HpkeKdfId kdf, int hashLength)
 	{
 		await Assert.That(kdf.HashLength).IsEqualTo(hashLength);
 	}
@@ -31,10 +31,10 @@ public class HpkeApiTest
 	{
 		using (Assert.Multiple())
 		{
-			await Assert.That(static () => ((HpkeKdf)0).HashLength).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("kdf");
-			await Assert.That(static () => ((HpkeAead)0).KeySize).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
-			await Assert.That(static () => ((HpkeAead)4).NonceSize).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
-			await Assert.That(static () => ((HpkeAead)0xFFFE).TagSize).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
+			await Assert.That(static () => ((HpkeKdfId)0).HashLength).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("kdf");
+			await Assert.That(static () => ((HpkeAeadId)0).KeySize).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
+			await Assert.That(static () => ((HpkeAeadId)4).NonceSize).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
+			await Assert.That(static () => ((HpkeAeadId)0xFFFE).TagSize).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
 		}
 	}
 

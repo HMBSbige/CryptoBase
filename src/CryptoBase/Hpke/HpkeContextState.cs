@@ -26,13 +26,13 @@ internal struct HpkeContextState
 	private ulong _baseNonceLow;
 	private ushort _kemId;
 
-	internal HpkeKdf Kdf { readonly get; private set; }
+	internal HpkeKdfId Kdf { readonly get; private set; }
 
-	internal HpkeAead Aead { readonly get; private set; }
+	internal HpkeAeadId Aead { readonly get; private set; }
 
 	internal ulong SequenceNumber { readonly get; set; }
 
-	internal static void ValidateSuite(HpkeKdf kdf, HpkeAead aead)
+	internal static void ValidateSuite(HpkeKdfId kdf, HpkeAeadId aead)
 	{
 		_ = kdf.HashLength;
 		_ = aead.TagSize;
@@ -52,7 +52,7 @@ internal struct HpkeContextState
 		}
 	}
 
-	internal void Initialize(ushort kemId, HpkeMode mode, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> sharedSecret, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+	internal void Initialize(ushort kemId, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> sharedSecret, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
 	{
 		_kemId = kemId;
 		Kdf = kdf;
@@ -60,14 +60,14 @@ internal struct HpkeContextState
 
 		switch (kdf)
 		{
-			case HpkeKdf.HkdfSha256:
+			case HpkeKdfId.HkdfSha256:
 				KeySchedule<Sha256Core>(mode, sharedSecret, info, psk, pskId);
 				break;
-			case HpkeKdf.HkdfSha384:
+			case HpkeKdfId.HkdfSha384:
 				KeySchedule<Sha384Core>(mode, sharedSecret, info, psk, pskId);
 				break;
 			default:
-				Debug.Assert(kdf is HpkeKdf.HkdfSha512);
+				Debug.Assert(kdf is HpkeKdfId.HkdfSha512);
 				KeySchedule<Sha512Core>(mode, sharedSecret, info, psk, pskId);
 				break;
 		}
@@ -158,10 +158,10 @@ internal struct HpkeContextState
 
 		switch (Kdf)
 		{
-			case HpkeKdf.HkdfSha256:
+			case HpkeKdfId.HkdfSha256:
 				HpkeLabels.Expand<Sha256Core>(suiteId, secret, "sec"u8, exporterContext, destination);
 				break;
-			case HpkeKdf.HkdfSha384:
+			case HpkeKdfId.HkdfSha384:
 				HpkeLabels.Expand<Sha384Core>(suiteId, secret, "sec"u8, exporterContext, destination);
 				break;
 			default:
@@ -203,7 +203,7 @@ internal struct HpkeContextState
 			keyed.Initialize(secret.Span, false);
 			HpkeLabels.Expand(ref keyed, suiteId, "exp"u8, context, ((Span<byte>)_exporterSecret).Slice(0, hashLength));
 
-			if (Aead is HpkeAead.ExportOnly)
+			if (Aead is HpkeAeadId.ExportOnly)
 			{
 				return;
 			}
@@ -214,7 +214,7 @@ internal struct HpkeContextState
 			HpkeLabels.Expand(ref keyed, suiteId, "base_nonce"u8, context, baseNonce.Span);
 			_baseNonceHigh = BinaryPrimitives.ReadUInt32BigEndian(baseNonce.Span);
 			_baseNonceLow = BinaryPrimitives.ReadUInt64BigEndian(baseNonce.Span.Slice(sizeof(uint)));
-			_cipher = Aead is HpkeAead.ChaCha20Poly1305 ? ChaCha20Poly1305Cipher.Create(key.Span) : GcmMode<AesCipher>.Create(key.Span);
+			_cipher = Aead is HpkeAeadId.ChaCha20Poly1305 ? ChaCha20Poly1305Cipher.Create(key.Span) : GcmMode<AesCipher>.Create(key.Span);
 		}
 		finally
 		{
@@ -259,7 +259,7 @@ internal struct HpkeContextState
 	[DoesNotReturn]
 	private static void ThrowExportOnly()
 	{
-		throw new InvalidOperationException("The context has no AEAD: it was set up with HpkeAead.ExportOnly.");
+		throw new InvalidOperationException("The context has no AEAD: it was set up with HpkeAeadId.ExportOnly.");
 	}
 
 	[DoesNotReturn]

@@ -98,7 +98,7 @@ internal static class HpkeTestUtils
 	}
 
 	// sender is used only in the authenticated modes, which need it.
-	public static HpkeSenderContext CreateSender<TKem>(HpkeTestMode mode, TKem recipient, TKem? sender, HpkeKdf kdf, HpkeAead aead, byte[] encapsulatedKey, byte[] info, byte[] psk, byte[] pskId) where TKem : class, IHpkeAuthKem<TKem>
+	public static HpkeSenderContext CreateSender<TKem>(HpkeTestMode mode, TKem recipient, TKem? sender, HpkeKdfId kdf, HpkeAeadId aead, byte[] encapsulatedKey, byte[] info, byte[] psk, byte[] pskId) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		return mode switch
 		{
@@ -109,7 +109,7 @@ internal static class HpkeTestUtils
 		};
 	}
 
-	public static HpkeRecipientContext? TryCreateRecipient<TKem>(HpkeTestMode mode, TKem recipient, TKem? sender, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> encapsulatedKey, byte[] info, byte[] psk, byte[] pskId) where TKem : class, IHpkeAuthKem<TKem>
+	public static HpkeRecipientContext? TryCreateRecipient<TKem>(HpkeTestMode mode, TKem recipient, TKem? sender, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, byte[] info, byte[] psk, byte[] pskId) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		HpkeRecipientContext? context;
 		bool created = mode switch

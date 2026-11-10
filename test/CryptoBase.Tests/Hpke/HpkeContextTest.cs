@@ -26,7 +26,7 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 
 	[Test]
 	[MatrixDataSource]
-	public async Task MessagesOpenInOrderAndExportsAgree([Matrix] HpkeTestMode mode, [Matrix] HpkeKdf kdf, [Matrix(HpkeAead.Aes128Gcm, HpkeAead.Aes256Gcm, HpkeAead.ChaCha20Poly1305)] HpkeAead aead)
+	public async Task MessagesOpenInOrderAndExportsAgree([Matrix] HpkeTestMode mode, [Matrix] HpkeKdfId kdf, [Matrix(HpkeAeadId.Aes128Gcm, HpkeAeadId.Aes256Gcm, HpkeAeadId.ChaCha20Poly1305)] HpkeAeadId aead)
 	{
 		using Session session = new(mode, kdf, aead);
 		byte[][] messages = [[], CreateDeterministicSource(1), CreateDeterministicSource(100), CreateDeterministicSource(1000)];
@@ -59,7 +59,7 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 	[MatrixDataSource]
 	public async Task ExportOnlyContextsOnlyExport([Matrix] HpkeTestMode mode)
 	{
-		using Session session = new(mode, HpkeKdf.HkdfSha384, HpkeAead.ExportOnly);
+		using Session session = new(mode, HpkeKdfId.HkdfSha384, HpkeAeadId.ExportOnly);
 		byte[] ciphertext = CreateGuardedBuffer(0, 32);
 		byte[] plaintext = CreateGuardedBuffer(0, 32);
 
@@ -78,7 +78,7 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 	[Test]
 	public async Task RecipientsSetUpAgainResumeAtTheirSequenceNumber()
 	{
-		using Session session = new(HpkeTestMode.Base, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm);
+		using Session session = new(HpkeTestMode.Base, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm);
 		byte[][] messages = [CreateDeterministicSource(10), CreateDeterministicSource(20), CreateDeterministicSource(30)];
 		byte[][] ciphertexts = [.. messages.Select(message => Seal(session.Sender, message, Info))];
 		byte[]? opened = Open(session.Recipient, ciphertexts[0], Info);
@@ -100,9 +100,9 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 
 	[Test]
 	[MatrixDataSource]
-	public async Task TamperedMessagesFailAndKeepTheSequenceNumber([Matrix(HpkeAead.Aes128Gcm, HpkeAead.Aes256Gcm, HpkeAead.ChaCha20Poly1305)] HpkeAead aead)
+	public async Task TamperedMessagesFailAndKeepTheSequenceNumber([Matrix(HpkeAeadId.Aes128Gcm, HpkeAeadId.Aes256Gcm, HpkeAeadId.ChaCha20Poly1305)] HpkeAeadId aead)
 	{
-		using Session session = new(HpkeTestMode.Base, HpkeKdf.HkdfSha256, aead);
+		using Session session = new(HpkeTestMode.Base, HpkeKdfId.HkdfSha256, aead);
 		byte[] message = CreateDeterministicSource(40);
 		byte[] associatedData = "header"u8.ToArray();
 		byte[] ciphertext = Seal(session.Sender, message, associatedData);
@@ -145,27 +145,27 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 	[MatrixDataSource]
 	public async Task OtherInputsSetUpContextsThatOpenNothing([Matrix] HpkeTestMode mode)
 	{
-		using Session session = new(mode, HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305);
+		using Session session = new(mode, HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305);
 		using TKem otherRecipient = TKem.GenerateKey();
 		using TKem otherSender = TKem.GenerateKey();
 		byte[] ciphertext = Seal(session.Sender, CreateDeterministicSource(16), []);
 		byte[] otherPsk = Flip(Psk, 0);
 		List<(HpkeRecipientContext? Context, string Change)> others =
 		[
-			(TryCreateRecipient(mode, session.RecipientKey, session.SenderPublicKey, HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305, session.Enc, [.. Info, 0], Psk, PskId), "info"),
-			(TryCreateRecipient(mode, otherRecipient, session.SenderPublicKey, HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305, session.Enc, Info, Psk, PskId), "recipient"),
-			(TryCreateRecipient(mode, session.RecipientKey, session.SenderPublicKey, HpkeKdf.HkdfSha512, HpkeAead.ChaCha20Poly1305, session.Enc, Info, Psk, PskId), "KDF")
+			(TryCreateRecipient(mode, session.RecipientKey, session.SenderPublicKey, HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305, session.Enc, [.. Info, 0], Psk, PskId), "info"),
+			(TryCreateRecipient(mode, otherRecipient, session.SenderPublicKey, HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305, session.Enc, Info, Psk, PskId), "recipient"),
+			(TryCreateRecipient(mode, session.RecipientKey, session.SenderPublicKey, HpkeKdfId.HkdfSha512, HpkeAeadId.ChaCha20Poly1305, session.Enc, Info, Psk, PskId), "KDF")
 		];
 
 		if (mode.HasPsk())
 		{
-			others.Add((TryCreateRecipient(mode, session.RecipientKey, session.SenderPublicKey, HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305, session.Enc, Info, otherPsk, PskId), "PSK"));
-			others.Add((TryCreateRecipient(mode, session.RecipientKey, session.SenderPublicKey, HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305, session.Enc, Info, Psk, [.. PskId, 0]), "PSK ID"));
+			others.Add((TryCreateRecipient(mode, session.RecipientKey, session.SenderPublicKey, HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305, session.Enc, Info, otherPsk, PskId), "PSK"));
+			others.Add((TryCreateRecipient(mode, session.RecipientKey, session.SenderPublicKey, HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305, session.Enc, Info, Psk, [.. PskId, 0]), "PSK ID"));
 		}
 
 		if (mode.IsAuthenticated())
 		{
-			others.Add((TryCreateRecipient(mode, session.RecipientKey, otherSender, HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305, session.Enc, Info, Psk, PskId), "sender"));
+			others.Add((TryCreateRecipient(mode, session.RecipientKey, otherSender, HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305, session.Enc, Info, Psk, PskId), "sender"));
 		}
 
 		try
@@ -196,13 +196,13 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 		using TKem recipient = TKem.GenerateKey();
 		using TKem sender = TKem.GenerateKey();
 		byte[] enc = new byte[TKem.CiphertextLength];
-		using HpkeSenderContext context = CreateSender(mode, recipient, sender, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, enc, Info, Psk, PskId);
+		using HpkeSenderContext context = CreateSender(mode, recipient, sender, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, enc, Info, Psk, PskId);
 
 		using (Assert.Multiple())
 		{
 			foreach (byte[] invalid in (byte[][])[[], Resize(enc, -1), Resize(enc, 1), .. KemCiphertextChecks.Of<TKem>().InvalidCiphertexts])
 			{
-				await Assert.That(TryCreateRecipient(mode, recipient, sender, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, invalid, Info, Psk, PskId)).IsNull();
+				await Assert.That(TryCreateRecipient(mode, recipient, sender, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, invalid, Info, Psk, PskId)).IsNull();
 			}
 		}
 	}
@@ -222,8 +222,8 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 			{
 				foreach (HpkeTestMode mode in (HpkeTestMode[])[HpkeTestMode.Psk, HpkeTestMode.AuthPsk])
 				{
-					await Assert.That(() => CreateSender(mode, recipient, sender, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, enc, Info, psk, pskId)).ThrowsExactly<ArgumentException>().WithParameterName(parameterName);
-					await Assert.That(() => TryCreateRecipient(mode, recipient, sender, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[TKem.CiphertextLength], Info, psk, pskId)).ThrowsExactly<ArgumentException>().WithParameterName(parameterName);
+					await Assert.That(() => CreateSender(mode, recipient, sender, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, enc, Info, psk, pskId)).ThrowsExactly<ArgumentException>().WithParameterName(parameterName);
+					await Assert.That(() => TryCreateRecipient(mode, recipient, sender, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[TKem.CiphertextLength], Info, psk, pskId)).ThrowsExactly<ArgumentException>().WithParameterName(parameterName);
 				}
 			}
 
@@ -232,8 +232,8 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 
 		// The shortest inputs that pass.
 		byte[] shortest = new byte[TKem.CiphertextLength];
-		using HpkeSenderContext context = HpkeSenderContext.Create(recipient, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, shortest, Info, new byte[32], [0]);
-		using HpkeRecipientContext? opened = TryCreateRecipient(HpkeTestMode.Psk, recipient, null, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, shortest, Info, new byte[32], [0]);
+		using HpkeSenderContext context = HpkeSenderContext.Create(recipient, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, shortest, Info, new byte[32], [0]);
+		using HpkeRecipientContext? opened = TryCreateRecipient(HpkeTestMode.Psk, recipient, null, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, shortest, Info, new byte[32], [0]);
 		HpkeRecipientContext created = await Assert.That(opened).IsNotNull();
 		await Assert.That(Open(created, Seal(context, Info, []), [])).IsEquivalentTo(Info, CollectionOrdering.Matching);
 	}
@@ -246,16 +246,16 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 
 		using (Assert.Multiple())
 		{
-			foreach (HpkeKdf kdf in (HpkeKdf[])[0, (HpkeKdf)4])
+			foreach (HpkeKdfId kdf in (HpkeKdfId[])[0, (HpkeKdfId)4])
 			{
-				await Assert.That(() => HpkeSenderContext.Create(recipient, kdf, HpkeAead.Aes128Gcm, enc)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("kdf");
-				await Assert.That(() => HpkeRecipientContext.TryCreate(recipient, kdf, HpkeAead.Aes128Gcm, enc.AsSpan(0, TKem.CiphertextLength), Info, out _)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("kdf");
+				await Assert.That(() => HpkeSenderContext.Create(recipient, kdf, HpkeAeadId.Aes128Gcm, enc)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("kdf");
+				await Assert.That(() => HpkeRecipientContext.TryCreate(recipient, kdf, HpkeAeadId.Aes128Gcm, enc.AsSpan(0, TKem.CiphertextLength), Info, out _)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("kdf");
 			}
 
-			foreach (HpkeAead aead in (HpkeAead[])[0, (HpkeAead)4, (HpkeAead)0xFFFE])
+			foreach (HpkeAeadId aead in (HpkeAeadId[])[0, (HpkeAeadId)4, (HpkeAeadId)0xFFFE])
 			{
-				await Assert.That(() => HpkeSenderContext.Create(recipient, HpkeKdf.HkdfSha256, aead, enc)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
-				await Assert.That(() => HpkeRecipientContext.TryCreate(recipient, HpkeKdf.HkdfSha256, aead, enc.AsSpan(0, TKem.CiphertextLength), Info, out _)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
+				await Assert.That(() => HpkeSenderContext.Create(recipient, HpkeKdfId.HkdfSha256, aead, enc)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
+				await Assert.That(() => HpkeRecipientContext.TryCreate(recipient, HpkeKdfId.HkdfSha256, aead, enc.AsSpan(0, TKem.CiphertextLength), Info, out _)).ThrowsExactly<ArgumentOutOfRangeException>().WithParameterName("aead");
 			}
 
 			await Assert.That(enc).All(static value => value is DestinationSentinel);
@@ -275,25 +275,25 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(() => HpkeSenderContext.Create<TKem>(null!, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[length])).ThrowsExactly<ArgumentNullException>().WithParameterName("recipient");
-			await Assert.That(() => HpkeSenderContext.CreateAuthenticated(recipientPublic, null!, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[length])).ThrowsExactly<ArgumentNullException>().WithParameterName("sender");
-			await Assert.That(() => HpkeRecipientContext.TryCreate<TKem>(null!, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[length], Info, out _)).ThrowsExactly<ArgumentNullException>().WithParameterName("recipient");
-			await Assert.That(() => HpkeRecipientContext.TryCreateAuthenticated(recipient, null!, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[length], Info, out _)).ThrowsExactly<ArgumentNullException>().WithParameterName("sender");
-			await Assert.That(() => HpkeSenderContext.CreateAuthenticated(recipientPublic, recipientPublic, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[length])).ThrowsExactly<ArgumentException>().WithParameterName("sender");
-			await Assert.That(() => HpkeRecipientContext.TryCreate(recipientPublic, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[length], Info, out _)).ThrowsExactly<InvalidOperationException>();
-			await Assert.That(() => HpkeSenderContext.Create(disposed, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[length])).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => HpkeRecipientContext.TryCreate(disposed, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, new byte[length], Info, out _)).ThrowsExactly<ObjectDisposedException>();
-			await Assert.That(() => HpkeSenderContext.Create(recipientPublic, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, shortEnc)).Throws<ArgumentException>().WithParameterName("encapsulatedKey");
-			await Assert.That(() => HpkeSenderContext.Create(recipientPublic, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, overlapping.AsSpan(0, length), overlapping.AsSpan(length - 1, Info.Length))).Throws<ArgumentException>().WithParameterName("encapsulatedKey");
-			await Assert.That(() => HpkeSenderContext.Create(recipientPublic, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, overlapping.AsSpan(1, length), overlapping.AsSpan(0, Info.Length), Psk, PskId)).Throws<ArgumentException>().WithParameterName("encapsulatedKey");
+			await Assert.That(() => HpkeSenderContext.Create<TKem>(null!, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[length])).ThrowsExactly<ArgumentNullException>().WithParameterName("recipient");
+			await Assert.That(() => HpkeSenderContext.CreateAuthenticated(recipientPublic, null!, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[length])).ThrowsExactly<ArgumentNullException>().WithParameterName("sender");
+			await Assert.That(() => HpkeRecipientContext.TryCreate<TKem>(null!, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[length], Info, out _)).ThrowsExactly<ArgumentNullException>().WithParameterName("recipient");
+			await Assert.That(() => HpkeRecipientContext.TryCreateAuthenticated(recipient, null!, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[length], Info, out _)).ThrowsExactly<ArgumentNullException>().WithParameterName("sender");
+			await Assert.That(() => HpkeSenderContext.CreateAuthenticated(recipientPublic, recipientPublic, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[length])).ThrowsExactly<ArgumentException>().WithParameterName("sender");
+			await Assert.That(() => HpkeRecipientContext.TryCreate(recipientPublic, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[length], Info, out _)).ThrowsExactly<InvalidOperationException>();
+			await Assert.That(() => HpkeSenderContext.Create(disposed, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[length])).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => HpkeRecipientContext.TryCreate(disposed, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, new byte[length], Info, out _)).ThrowsExactly<ObjectDisposedException>();
+			await Assert.That(() => HpkeSenderContext.Create(recipientPublic, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, shortEnc)).Throws<ArgumentException>().WithParameterName("encapsulatedKey");
+			await Assert.That(() => HpkeSenderContext.Create(recipientPublic, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, overlapping.AsSpan(0, length), overlapping.AsSpan(length - 1, Info.Length))).Throws<ArgumentException>().WithParameterName("encapsulatedKey");
+			await Assert.That(() => HpkeSenderContext.Create(recipientPublic, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, overlapping.AsSpan(1, length), overlapping.AsSpan(0, Info.Length), Psk, PskId)).Throws<ArgumentException>().WithParameterName("encapsulatedKey");
 			await Assert.That(shortEnc).All(static value => value is DestinationSentinel);
 			await Assert.That(overlapping).All(static value => value is DestinationSentinel);
 		}
 
 		// A longer buffer receives the encapsulated key at its start.
 		byte[] longer = CreateGuardedBuffer(1, length);
-		using HpkeSenderContext context = HpkeSenderContext.Create(recipientPublic, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, longer.AsSpan(1), Info);
-		using HpkeRecipientContext? opened = TryCreateRecipient(HpkeTestMode.Base, recipient, null, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm, longer.AsSpan(1, length), Info, [], []);
+		using HpkeSenderContext context = HpkeSenderContext.Create(recipientPublic, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, longer.AsSpan(1), Info);
+		using HpkeRecipientContext? opened = TryCreateRecipient(HpkeTestMode.Base, recipient, null, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm, longer.AsSpan(1, length), Info, [], []);
 		HpkeRecipientContext created = await Assert.That(opened).IsNotNull();
 
 		using (Assert.Multiple())
@@ -307,7 +307,7 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 	[Test]
 	public async Task SealAndOpenCheckTheirBuffers()
 	{
-		using Session session = new(HpkeTestMode.Base, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm);
+		using Session session = new(HpkeTestMode.Base, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm);
 		const int tagSize = 16;
 		byte[] message = CreateDeterministicSource(33);
 		int length = message.Length + tagSize;
@@ -363,9 +363,9 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 
 	[Test]
 	[MatrixDataSource]
-	public async Task ExportsCheckTheirLengthAndMayOverlapTheirContext([Matrix] HpkeKdf kdf)
+	public async Task ExportsCheckTheirLengthAndMayOverlapTheirContext([Matrix] HpkeKdfId kdf)
 	{
-		using Session session = new(HpkeTestMode.Base, kdf, HpkeAead.ExportOnly);
+		using Session session = new(HpkeTestMode.Base, kdf, HpkeAeadId.ExportOnly);
 		int hashLength = kdf.HashLength;
 		byte[] exporterContext = CreateDeterministicSource(40);
 
@@ -395,7 +395,7 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 	[Test]
 	public async Task OpeningStopsAtTheMessageLimit()
 	{
-		using Session session = new(HpkeTestMode.Base, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm);
+		using Session session = new(HpkeTestMode.Base, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm);
 		byte[] ciphertext = Seal(session.Sender, Info, []);
 		byte[] plaintext = CreateGuardedBuffer(0, Info.Length);
 		session.Recipient.SequenceNumber = ulong.MaxValue - 1;
@@ -419,7 +419,7 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 	[Test]
 	public async Task DisposedContextsThrow()
 	{
-		Session session = new(HpkeTestMode.Base, HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm);
+		Session session = new(HpkeTestMode.Base, HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm);
 		HpkeSenderContext sender = session.Sender;
 		HpkeRecipientContext recipient = session.Recipient;
 		session.Dispose();
@@ -447,12 +447,12 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 	private sealed class Session : IDisposable
 	{
 		private readonly HpkeTestMode _mode;
-		private readonly HpkeKdf _kdf;
-		private readonly HpkeAead _aead;
+		private readonly HpkeKdfId _kdf;
+		private readonly HpkeAeadId _aead;
 		private readonly TKem _senderKey = TKem.GenerateKey();
 		private readonly TKem _recipientPublicKey;
 
-		public Session(HpkeTestMode mode, HpkeKdf kdf, HpkeAead aead)
+		public Session(HpkeTestMode mode, HpkeKdfId kdf, HpkeAeadId aead)
 		{
 			_mode = mode;
 			_kdf = kdf;

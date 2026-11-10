@@ -22,7 +22,7 @@ public sealed class HpkeSenderContext : IDisposable
 	/// Gets the KDF of the context.
 	/// </summary>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	public HpkeKdf Kdf
+	public HpkeKdfId Kdf
 	{
 		get
 		{
@@ -35,7 +35,7 @@ public sealed class HpkeSenderContext : IDisposable
 	/// Gets the AEAD of the context.
 	/// </summary>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	public HpkeAead Aead
+	public HpkeAeadId Aead
 	{
 		get
 		{
@@ -71,7 +71,7 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="kdf" /> or <paramref name="aead" /> is not supported.</exception>
 	/// <exception cref="ArgumentException"><paramref name="encapsulatedKey" /> is too short or overlaps another input.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="recipient" /> has been disposed.</exception>
-	public static HpkeSenderContext Create<TKem>(TKem recipient, HpkeKdf kdf, HpkeAead aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info = default) where TKem : class, IHpkeKem<TKem>
+	public static HpkeSenderContext Create<TKem>(TKem recipient, HpkeKdfId kdf, HpkeAeadId aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info = default) where TKem : class, IHpkeKem<TKem>
 	{
 		ArgumentNullException.ThrowIfNull(recipient);
 		HpkeContextState.ValidateSuite(kdf, aead);
@@ -96,7 +96,7 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <paramref name="psk" /> is shorter than 32 bytes, <paramref name="pskId" /> is empty, or <paramref name="encapsulatedKey" /> is too short or overlaps another input.
 	/// </exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="recipient" /> has been disposed.</exception>
-	public static HpkeSenderContext Create<TKem>(TKem recipient, HpkeKdf kdf, HpkeAead aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeKem<TKem>
+	public static HpkeSenderContext Create<TKem>(TKem recipient, HpkeKdfId kdf, HpkeAeadId aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeKem<TKem>
 	{
 		ArgumentNullException.ThrowIfNull(recipient);
 		HpkeContextState.ValidateSuite(kdf, aead);
@@ -121,7 +121,7 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <paramref name="sender" /> does not hold the decapsulation key, or <paramref name="encapsulatedKey" /> is too short or overlaps another input.
 	/// </exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="recipient" /> or <paramref name="sender" /> has been disposed.</exception>
-	public static HpkeSenderContext CreateAuthenticated<TKem>(TKem recipient, TKem sender, HpkeKdf kdf, HpkeAead aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info = default) where TKem : class, IHpkeAuthKem<TKem>
+	public static HpkeSenderContext CreateAuthenticated<TKem>(TKem recipient, TKem sender, HpkeKdfId kdf, HpkeAeadId aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info = default) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		ArgumentNullException.ThrowIfNull(recipient);
 		ArgumentNullException.ThrowIfNull(sender);
@@ -148,7 +148,7 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <paramref name="sender" /> does not hold the decapsulation key, <paramref name="psk" /> is shorter than 32 bytes, <paramref name="pskId" /> is empty, or <paramref name="encapsulatedKey" /> is too short or overlaps another input.
 	/// </exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="recipient" /> or <paramref name="sender" /> has been disposed.</exception>
-	public static HpkeSenderContext CreateAuthenticated<TKem>(TKem recipient, TKem sender, HpkeKdf kdf, HpkeAead aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeAuthKem<TKem>
+	public static HpkeSenderContext CreateAuthenticated<TKem>(TKem recipient, TKem sender, HpkeKdfId kdf, HpkeAeadId aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		ArgumentNullException.ThrowIfNull(recipient);
 		ArgumentNullException.ThrowIfNull(sender);
@@ -158,7 +158,7 @@ public sealed class HpkeSenderContext : IDisposable
 	}
 
 	// The key schedule of a shared secret that the KEM of kemId encapsulated; known-answer tests start here.
-	internal static HpkeSenderContext Create(ushort kemId, HpkeMode mode, HpkeKdf kdf, HpkeAead aead, ReadOnlySpan<byte> sharedSecret, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+	internal static HpkeSenderContext Create(ushort kemId, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> sharedSecret, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
 	{
 		HpkeSenderContext context = new();
 		context._state.Initialize(kemId, mode, kdf, aead, sharedSecret, info, psk, pskId);
@@ -176,7 +176,7 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <param name="associatedData">The associated data.</param>
 	/// <returns>The length of the ciphertext.</returns>
 	/// <exception cref="ArgumentException"><paramref name="ciphertext" /> is too short or overlaps <paramref name="plaintext" /> without starting at the same byte.</exception>
-	/// <exception cref="InvalidOperationException">The AEAD of the context is <see cref="HpkeAead.ExportOnly" />.</exception>
+	/// <exception cref="InvalidOperationException">The AEAD of the context is <see cref="HpkeAeadId.ExportOnly" />.</exception>
 	/// <exception cref="CryptographicException">The sequence number has reached its limit, <see cref="ulong.MaxValue" />.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public int Seal(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, ReadOnlySpan<byte> associatedData = default)
@@ -212,7 +212,7 @@ public sealed class HpkeSenderContext : IDisposable
 	}
 
 	[SkipLocalsInit]
-	private static HpkeSenderContext Encapsulate<TKem>(TKem recipient, HpkeMode mode, HpkeKdf kdf, HpkeAead aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeKem<TKem>
+	private static HpkeSenderContext Encapsulate<TKem>(TKem recipient, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeKem<TKem>
 	{
 		encapsulatedKey = SliceEncapsulatedKey(encapsulatedKey, TKem.CiphertextLength, info, psk, pskId);
 		int length = TKem.SharedSecretLength;
@@ -222,7 +222,7 @@ public sealed class HpkeSenderContext : IDisposable
 	}
 
 	[SkipLocalsInit]
-	private static HpkeSenderContext AuthEncapsulate<TKem>(TKem recipient, TKem sender, HpkeMode mode, HpkeKdf kdf, HpkeAead aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeAuthKem<TKem>
+	private static HpkeSenderContext AuthEncapsulate<TKem>(TKem recipient, TKem sender, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		encapsulatedKey = SliceEncapsulatedKey(encapsulatedKey, TKem.CiphertextLength, info, psk, pskId);
 		int length = TKem.SharedSecretLength;

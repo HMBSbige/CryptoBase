@@ -3,23 +3,23 @@ using CryptoBase.Hpke;
 
 namespace CryptoBase.Benchmark.Hpke;
 
-public class HpkeDhKemX25519SetupBenchmark() : HpkeSetupBenchmark<DhKemX25519>(HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm);
+public class HpkeDhKemX25519SetupBenchmark() : HpkeSetupBenchmark<DhKemX25519>(HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm);
 
-public class HpkeDhKemX25519ChaCha20Poly1305SetupBenchmark() : HpkeSetupBenchmark<DhKemX25519>(HpkeKdf.HkdfSha256, HpkeAead.ChaCha20Poly1305);
+public class HpkeDhKemX25519ChaCha20Poly1305SetupBenchmark() : HpkeSetupBenchmark<DhKemX25519>(HpkeKdfId.HkdfSha256, HpkeAeadId.ChaCha20Poly1305);
 
-public class HpkeDhKemX448SetupBenchmark() : HpkeSetupBenchmark<DhKemX448>(HpkeKdf.HkdfSha512, HpkeAead.Aes256Gcm);
+public class HpkeDhKemX448SetupBenchmark() : HpkeSetupBenchmark<DhKemX448>(HpkeKdfId.HkdfSha512, HpkeAeadId.Aes256Gcm);
 
-public class HpkeDhKemX448ChaCha20Poly1305SetupBenchmark() : HpkeSetupBenchmark<DhKemX448>(HpkeKdf.HkdfSha512, HpkeAead.ChaCha20Poly1305);
+public class HpkeDhKemX448ChaCha20Poly1305SetupBenchmark() : HpkeSetupBenchmark<DhKemX448>(HpkeKdfId.HkdfSha512, HpkeAeadId.ChaCha20Poly1305);
 
-public class HpkeDhKemP256SetupBenchmark() : HpkeSetupBenchmark<DhKemP256>(HpkeKdf.HkdfSha256, HpkeAead.Aes128Gcm);
+public class HpkeDhKemP256SetupBenchmark() : HpkeSetupBenchmark<DhKemP256>(HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm);
 
-public class HpkeDhKemP384SetupBenchmark() : HpkeSetupBenchmark<DhKemP384>(HpkeKdf.HkdfSha384, HpkeAead.Aes256Gcm);
+public class HpkeDhKemP384SetupBenchmark() : HpkeSetupBenchmark<DhKemP384>(HpkeKdfId.HkdfSha384, HpkeAeadId.Aes256Gcm);
 
-public class HpkeDhKemP521SetupBenchmark() : HpkeSetupBenchmark<DhKemP521>(HpkeKdf.HkdfSha512, HpkeAead.Aes256Gcm);
+public class HpkeDhKemP521SetupBenchmark() : HpkeSetupBenchmark<DhKemP521>(HpkeKdfId.HkdfSha512, HpkeAeadId.Aes256Gcm);
 
 // A context setup in the base mode: one encapsulation or decapsulation, then the key schedule.
 [MemoryDiagnoser]
-public abstract class HpkeSetupBenchmark<TKem>(HpkeKdf kdf, HpkeAead aead) where TKem : class, IHpkeKem<TKem>
+public abstract class HpkeSetupBenchmark<TKem>(HpkeKdfId kdf, HpkeAeadId aead) where TKem : class, IHpkeKem<TKem>
 {
 	private readonly byte[] _info = "HPKE benchmark"u8.ToArray();
 	private readonly byte[] _enc = new byte[TKem.CiphertextLength];
@@ -77,8 +77,8 @@ public class HpkeSealOpenBenchmark
 	private byte[] _ciphertext = null!;
 	private byte[] _output = null!;
 
-	[Params(HpkeAead.Aes128Gcm, HpkeAead.Aes256Gcm, HpkeAead.ChaCha20Poly1305)]
-	public HpkeAead Aead { get; set; }
+	[Params(HpkeAeadId.Aes128Gcm, HpkeAeadId.Aes256Gcm, HpkeAeadId.ChaCha20Poly1305)]
+	public HpkeAeadId Aead { get; set; }
 
 	[Params(64, 1024, 16384)]
 	public int Length { get; set; }
@@ -88,9 +88,9 @@ public class HpkeSealOpenBenchmark
 	{
 		_recipientKey = DhKemP256.GenerateKey();
 		byte[] enc = new byte[DhKemP256.CiphertextLength];
-		_sender = HpkeSenderContext.Create(_recipientKey, HpkeKdf.HkdfSha256, Aead, enc);
+		_sender = HpkeSenderContext.Create(_recipientKey, HpkeKdfId.HkdfSha256, Aead, enc);
 
-		if (!HpkeRecipientContext.TryCreate(_recipientKey, HpkeKdf.HkdfSha256, Aead, enc, default, out HpkeRecipientContext? recipient))
+		if (!HpkeRecipientContext.TryCreate(_recipientKey, HpkeKdfId.HkdfSha256, Aead, enc, default, out HpkeRecipientContext? recipient))
 		{
 			throw new InvalidOperationException("The recipient context was not set up.");
 		}

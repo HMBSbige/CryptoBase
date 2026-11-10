@@ -59,13 +59,13 @@ public class HpkeVectorTest
 	[MethodDataSource(typeof(HpkeVectors), nameof(HpkeVectors.WithKeySchedule))]
 	public async Task KeySchedulesSealOpenAndExport(HpkeVector vector)
 	{
-		(HpkeKdf kdf, HpkeAead aead) = Suite(vector);
+		(HpkeKdfId kdf, HpkeAeadId aead) = Suite(vector);
 		using HpkeSenderContext sender = HpkeSenderContext.Create(vector.KemId, (HpkeMode)vector.Mode, kdf, aead, vector.SharedSecret, vector.Info, vector.Psk, vector.PskId);
 		using HpkeRecipientContext recipient = HpkeRecipientContext.Create(vector.KemId, (HpkeMode)vector.Mode, kdf, aead, vector.SharedSecret, vector.Info, vector.Psk, vector.PskId);
 
 		using (Assert.Multiple())
 		{
-			if (aead is HpkeAead.ExportOnly)
+			if (aead is HpkeAeadId.ExportOnly)
 			{
 				await Assert.That(vector.Encryptions).IsEmpty();
 				await Assert.That(() => sender.Seal([], new byte[16])).ThrowsExactly<InvalidOperationException>();
@@ -134,7 +134,7 @@ public class HpkeVectorTest
 
 	private static async Task RecipientsOpenAndExport<TKem>(HpkeVector vector) where TKem : class, IHpkeAuthKem<TKem>
 	{
-		(HpkeKdf kdf, HpkeAead aead) = Suite(vector);
+		(HpkeKdfId kdf, HpkeAeadId aead) = Suite(vector);
 		using TKem recipient = TKem.ImportDecapsulationKey(Required(vector.SkRm));
 		using TKem? sender = vector.IsAuthenticated ? TKem.ImportEncapsulationKey(Required(vector.PkSm)) : null;
 		using HpkeRecipientContext? context = TryCreateRecipient((HpkeTestMode)vector.Mode, recipient, sender, kdf, aead, Required(vector.Enc), vector.Info, vector.Psk, vector.PskId);
@@ -172,7 +172,7 @@ public class HpkeVectorTest
 		}
 	}
 
-	private static (HpkeKdf Kdf, HpkeAead Aead) Suite(HpkeVector vector)
+	private static (HpkeKdfId Kdf, HpkeAeadId Aead) Suite(HpkeVector vector)
 	{
 		return (vector.Kdf ?? throw new InvalidOperationException($"{vector} has no KDF."), vector.Aead ?? throw new InvalidOperationException($"{vector} has no AEAD."));
 	}
