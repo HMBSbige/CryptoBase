@@ -224,14 +224,20 @@ public sealed class CertificateRevocationList
 	}
 
 	// Kept for the last key asked about: a long CRL covers many certificates, and should not be hashed for each.
+	// Only a verification is kept: whether a key supports the algorithm depends on its implementation, which may differ for the same SubjectPublicKeyInfo.
 	internal bool VerifySignature(ISignatureKey issuerKey, ReadOnlyMemory<byte> issuerPublicKeyInfo)
 	{
+		if (!SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) || !issuerKey.Supports(algorithm))
+		{
+			return false;
+		}
+
 		if (Volatile.Read(ref _lastSignatureCheck) is { } last && last.PublicKeyInfo.Span.SequenceEqual(issuerPublicKeyInfo.Span))
 		{
 			return last.Valid;
 		}
 
-		bool valid = VerifySignature(issuerKey);
+		bool valid = issuerKey.Verify(algorithm, TbsCertList.Span, Signature.Span);
 		Volatile.Write(ref _lastSignatureCheck, new SignatureCheck(issuerPublicKeyInfo, valid));
 		return valid;
 	}

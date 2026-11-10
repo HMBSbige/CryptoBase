@@ -198,6 +198,28 @@ public class OcspTest
 		}
 	}
 
+	// The skew is compared with the distance to each end of the interval, which a time within the skew of the limits of DateTimeOffset cannot overflow.
+	[Test]
+	public async Task TheClockSkewHoldsAtTheLimitsOfTime()
+	{
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
+		Certificate leaf = authority.IssueLeaf();
+		byte[] certificateId = CertificateIdOf(leaf, authority.Certificate);
+		DateTimeOffset last = new(9999, 12, 31, 23, 59, 59, TimeSpan.Zero);
+		DateTimeOffset first = new(1, 1, 1, 0, 0, 0, TimeSpan.Zero);
+		TimeSpan interval = TimeSpan.FromMinutes(10);
+		OcspResponse late = new Basic { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = certificateId, ThisUpdate = Time(last - interval, generalized: true), NextUpdate = Time(last, generalized: true) }.Encode()] }.Decode(authority.Key);
+		OcspResponse early = new Basic { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = certificateId, ThisUpdate = Time(first, generalized: true), NextUpdate = Time(first + interval, generalized: true) }.Encode()] }.Decode(authority.Key);
+
+		using (Assert.Multiple())
+		{
+			await AssertStatusAsync(Check(late, leaf, authority, DateTimeOffset.MaxValue), RevocationStatus.Good);
+			await AssertStatusAsync(Check(late, leaf, authority, last - interval - RevocationChecker.OcspClockSkew - TimeSpan.FromSeconds(1)), RevocationStatus.Invalid);
+			await AssertStatusAsync(Check(early, leaf, authority, DateTimeOffset.MinValue), RevocationStatus.Good);
+			await AssertStatusAsync(Check(early, leaf, authority, first + interval + RevocationChecker.OcspClockSkew + TimeSpan.FromSeconds(1)), RevocationStatus.Invalid);
+		}
+	}
+
 	// RFC 9919, Sec. 5: a client that sent no nonce ignores one in the response.
 	[Test]
 	public async Task ANonceInTheResponseIsIgnored()
@@ -346,6 +368,30 @@ public class OcspTest
 		await AssertStatusAsync(Check(response.Decode(authority.Key), leaf, authority), RevocationStatus.Invalid);
 	}
 
+	// Each end is within the clock skew of now, which would accept it alone; together they end before they begin.
+	[Test]
+	public async Task AValidityIntervalThatEndsBeforeItBeginsIsInvalid()
+	{
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
+		Certificate leaf = authority.IssueLeaf();
+		byte[] certificateId = CertificateIdOf(leaf, authority.Certificate);
+
+		RevocationResult Evaluate(DateTimeOffset thisUpdate, DateTimeOffset nextUpdate)
+		{
+			SingleEntry single = new() { CertificateId = certificateId, ThisUpdate = Time(thisUpdate, generalized: true), NextUpdate = Time(nextUpdate, generalized: true) };
+			return Check(new Basic { ResponderId = ResponderByName(authority.Name), Responses = [single.Encode()] }.Decode(authority.Key), leaf, authority);
+		}
+
+		RevocationResult inverted = Evaluate(Now.AddMinutes(4), Now.AddMinutes(-4));
+
+		using (Assert.Multiple())
+		{
+			await AssertStatusAsync(inverted, RevocationStatus.Invalid);
+			await Assert.That(inverted.Detail).IsEqualTo("The response's nextUpdate is before its thisUpdate.");
+			await AssertStatusAsync(Evaluate(Now, Now), RevocationStatus.Good);
+		}
+	}
+
 	[Test]
 	public async Task RevokedResponsesWithoutAReasonAreUnspecified()
 	{
@@ -381,6 +427,56 @@ public class OcspTest
 			await AssertStatusAsync(Check(new Basic { ResponderId = ResponderByName(authority.Name), Responses = [good, revoked] }.Decode(authority.Key), leaf, authority), RevocationStatus.Revoked);
 			await AssertStatusAsync(Check(new Basic { ResponderId = ResponderByName(authority.Name), Responses = [unknown, good] }.Decode(authority.Key), leaf, authority), RevocationStatus.Unknown);
 			await AssertStatusAsync(Check(new Basic { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = otherId, Status = Revoked(Now, 1) }.Encode(), good] }.Decode(authority.Key), leaf, authority), RevocationStatus.Good);
+		}
+	}
+
+	// Sec. 4.2.2.1: a response for the certificate that is not current tells nothing, so of several, the most severe of those that are current stands, whatever their order; one of those with a critical extension that is not understood makes the response invalid. Without a current one, the problem of the most severe stands.
+	[Test]
+	public async Task SeveralResponsesTakeTheMostSevereThatIsCurrent()
+	{
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
+		Certificate leaf = authority.IssueLeaf();
+		byte[] certificateId = CertificateIdOf(leaf, authority.Certificate);
+		SingleEntry current = new() { CertificateId = certificateId };
+		SingleEntry expired = current with { ThisUpdate = Time(Now.AddDays(-3), generalized: true), NextUpdate = Time(Now.AddDays(-2), generalized: true) };
+		SingleEntry notYetValid = current with { ThisUpdate = Time(Now.AddDays(1), generalized: true), NextUpdate = Time(Now.AddDays(2), generalized: true) };
+		byte[] unknownCritical = Extension(PrivateOid, [0x05, 0x00], Critical);
+		byte[] good = current.Encode();
+		byte[] goodSooner = (current with { NextUpdate = Time(Now.AddMinutes(30), generalized: true) }).Encode();
+		byte[] expiredGood = expired.Encode();
+		byte[] expiredRevoked = (expired with { Status = Revoked(Now.AddDays(-4), 1) }).Encode();
+		byte[] notYetRevoked = (notYetValid with { Status = Revoked(Now.AddDays(-4), 1) }).Encode();
+		byte[] revokedWithCritical = (current with { Status = Revoked(Now.AddDays(-1), 1), Extensions = [unknownCritical] }).Encode();
+		byte[] goodWithCritical = (current with { Extensions = [unknownCritical] }).Encode();
+		byte[] expiredWithCritical = (expired with { Extensions = [unknownCritical] }).Encode();
+
+		RevocationResult Evaluate(params byte[][] responses)
+		{
+			return Check(new Basic { ResponderId = ResponderByName(authority.Name), Responses = responses }.Decode(authority.Key), leaf, authority);
+		}
+
+		async Task AssertEitherOrder(byte[] first, byte[] second, RevocationStatus expected)
+		{
+			await AssertStatusAsync(Evaluate(first, second), expected);
+			await AssertStatusAsync(Evaluate(second, first), expected);
+		}
+
+		using (Assert.Multiple())
+		{
+			await AssertEitherOrder(expiredGood, good, RevocationStatus.Good);
+			await AssertEitherOrder(expiredRevoked, good, RevocationStatus.Good);
+			await AssertEitherOrder(notYetRevoked, good, RevocationStatus.Good);
+			await AssertEitherOrder(expiredWithCritical, good, RevocationStatus.Good);
+			await AssertEitherOrder(revokedWithCritical, good, RevocationStatus.Invalid);
+			await AssertEitherOrder(goodWithCritical, good, RevocationStatus.Invalid);
+			await AssertEitherOrder(expiredRevoked, expiredGood, RevocationStatus.Invalid);
+			await Assert.That(Evaluate(good, goodSooner).NextUpdate).IsEqualTo(Now.AddMinutes(30));
+			await Assert.That(Evaluate(goodSooner, good).NextUpdate).IsEqualTo(Now.AddMinutes(30));
+
+			// The problem of the most severe that is not current, its critical extension before its times.
+			await Assert.That(Evaluate(expiredGood, notYetRevoked).Detail).IsEqualTo("The response is not yet valid.");
+			await Assert.That(Evaluate(expiredGood).Detail).IsEqualTo("The response has expired.");
+			await Assert.That(Evaluate(expiredWithCritical).Detail).StartsWith("The response for the certificate");
 		}
 	}
 
@@ -438,7 +534,7 @@ public class OcspTest
 	{
 		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
 		Certificate leaf = authority.IssueLeaf();
-		Basic basic = new() { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = CertificateIdOf(leaf, authority.Certificate), Extensions = [Extension(oid, NullValue, Critical)] }.Encode()] };
+		Basic basic = new() { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = CertificateIdOf(leaf, authority.Certificate), Extensions = [Extension(oid, WellFormedValueOf(oid), Critical)] }.Encode()] };
 		RevocationResult result = Check(basic.Decode(authority.Key), leaf, authority);
 
 		using (Assert.Multiple())
@@ -446,6 +542,63 @@ public class OcspTest
 			await AssertStatusAsync(result, understood ? RevocationStatus.Good : RevocationStatus.Invalid);
 			await Assert.That(result.Detail).IsEqualTo(understood ? null : $"The response for the certificate has the critical extension {oid}, which the checker does not process.");
 		}
+	}
+
+	public static IEnumerable<Func<(string Case, bool Single, string Oid, byte[] Value)>> MalformedExtensions()
+	{
+		yield return () => ("extendedRevoke as an OCTET STRING", false, ExtendedRevokeOid, Tlv(0x04, []));
+		yield return () => ("extendedRevoke empty", false, ExtendedRevokeOid, []);
+		yield return () => ("crlID as NULL", true, CrlReferenceOid, NullValue);
+		yield return () => ("crlID with a URL beyond ASCII", true, CrlReferenceOid, Sequence(Tlv(0xA0, Tlv(0x16, [0x80]))));
+		yield return () => ("crlID with a number that is not minimal", true, CrlReferenceOid, Sequence(Tlv(0xA1, Tlv(0x02, [0x00, 0x01]))));
+		yield return () => ("crlID with a field that it does not have", true, CrlReferenceOid, Sequence(Tlv(0xA3, NullValue)));
+		yield return () => ("archiveCutoff as NULL", true, ArchiveCutoffOid, NullValue);
+		yield return () => ("archiveCutoff empty", true, ArchiveCutoffOid, []);
+		yield return () => ("archiveCutoff as a UTCTime", true, ArchiveCutoffOid, Time(Now));
+		yield return () => ("archiveCutoff followed by another value", true, ArchiveCutoffOid, [.. Time(Now, generalized: true), .. NullValue]);
+		yield return () => ("reasonCode as NULL", true, ReasonCodeOid, NullValue);
+		yield return () => ("reasonCode with a value that is not defined", true, ReasonCodeOid, [0x0A, 0x01, 0x07]);
+		yield return () => ("invalidityDate as NULL", true, InvalidityDateOid, NullValue);
+	}
+
+	// RFC 6960, Sec. 4.1.2: an extension that the checker understands by its type is processed only if its value decodes as that type; a noncritical one that does not is ignored, as one not understood.
+	[Test]
+	[MethodDataSource(nameof(MalformedExtensions))]
+	public async Task CriticalExtensionsMustDecodeAsTheirType(string @case, bool single, string oid, byte[] value)
+	{
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
+		Certificate leaf = authority.IssueLeaf();
+		byte[] certificateId = CertificateIdOf(leaf, authority.Certificate);
+
+		RevocationResult Evaluate(byte[]? critical)
+		{
+			byte[] extension = Extension(oid, value, critical);
+			Basic basic = single
+				? new Basic { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = certificateId, Extensions = [extension] }.Encode()] }
+				: new Basic { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = certificateId }.Encode()], Extensions = [extension] };
+			return Check(basic.Decode(authority.Key), leaf, authority);
+		}
+
+		RevocationResult critical = Evaluate(Critical);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(critical.Status).IsEqualTo(RevocationStatus.Invalid).Because(@case);
+			await Assert.That(critical.Detail).IsEqualTo($"{(single ? "The response for the certificate" : "The response")} has the critical extension {oid}, whose value does not decode.").Because(@case);
+			await Assert.That(Evaluate(null).Status).IsEqualTo(RevocationStatus.Good).Because(@case);
+		}
+	}
+
+	// A value of the type of each extension that the checker understands, which it decodes before it accepts one that is critical.
+	private static byte[] WellFormedValueOf(string oid)
+	{
+		return oid switch
+		{
+			CrlReferenceOid => Sequence(Tlv(0xA0, Tlv(0x16, "http://crl.example/ca.crl"u8.ToArray())), Tlv(0xA1, Tlv(0x02, [0x01])), Tlv(0xA2, Time(Now, generalized: true))),
+			ArchiveCutoffOid or InvalidityDateOid => Time(Now, generalized: true),
+			ReasonCodeOid => [0x0A, 0x01, 0x01],
+			_ => NullValue
+		};
 	}
 
 	// A response's nonce is read if it is well formed; any other is reported as absent, and a client that sent none ignores it.
@@ -549,6 +702,20 @@ public class OcspTest
 		}
 	}
 
+	// The responder's certificate is checked against its issuer alone, so a name that the issuer's constraints exclude does not make it invalid: its names give it no authority.
+	[Test]
+	public async Task NameConstraintsDoNotApplyToADelegatedResponder()
+	{
+		byte[] subject = Name("CN=Delegated Responder");
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA", more: [TestPki.NameConstraints(null, [TestPki.DirectoryName(subject)])]);
+		using EcdsaP256 responderKey = EcdsaP256.GenerateKey();
+		Certificate leaf = authority.IssueLeaf();
+		Certificate responder = authority.Issue(new TestPki.Template { Subject = subject, SubjectPublicKeyInfo = Signatures.SignatureTestUtils.ExportSubjectPublicKeyInfo(responderKey), Extensions = [TestPki.ExtendedKeyUsage(OcspSigningOid)] });
+		Basic basic = new() { ResponderId = ResponderByKey(responder), Responses = [new SingleEntry { CertificateId = CertificateIdOf(leaf, authority.Certificate) }.Encode()], Certificates = [responder.Encoded.ToArray()] };
+
+		await AssertStatusAsync(Check(basic.Decode(responderKey), leaf, authority), RevocationStatus.Good);
+	}
+
 	[Test]
 	public async Task ADelegatedResponderMayHaveCriticalExtensionsThatTheCheckerProcesses()
 	{
@@ -572,6 +739,7 @@ public class OcspTest
 			await AssertStatusAsync(Evaluate(signing, TestPki.BasicConstraints(false)), RevocationStatus.Good);
 			await AssertStatusAsync(Evaluate(new CertificateExtension(signing.Oid, true, signing.Value.Span)), RevocationStatus.Good);
 			await AssertStatusAsync(Evaluate(signing, TestPki.SubjectAlternativeNames(true, TestPki.Rfc822Name("ocsp@example.test"))), RevocationStatus.Good);
+			await AssertStatusAsync(Evaluate(signing, TestPki.SubjectAlternativeNames(true, Tlv(0xA3, Sequence()), Tlv(0xA5, Tlv(0xA1, [0x0C, 0x01, 0x61])))), RevocationStatus.Good);
 			await AssertStatusAsync(Evaluate(signing, new CertificateExtension(NoCheckOid, true, NullValue)), RevocationStatus.Good);
 			await Assert.That(unknown.Detail).IsEqualTo($"The responder's certificate has the critical extension {PrivateOid}, which the checker does not process.");
 		}

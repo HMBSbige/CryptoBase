@@ -30,7 +30,7 @@ internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory
 		return [.. names];
 	}
 
-	// The implicit tags of RFC 5280 leave the IA5String, OCTET STRING and OBJECT IDENTIFIER alternatives primitive, and the SEQUENCE ones constructed; directoryName is explicit, as Name is a CHOICE. The contents of an x400Address and the values in an otherName and an ediPartyName need only be single DER elements.
+	// The implicit tags of RFC 5280 leave the IA5String, OCTET STRING and OBJECT IDENTIFIER alternatives primitive, and the SEQUENCE ones constructed; directoryName is explicit, as Name is a CHOICE. The values in an otherName and an ediPartyName need only be single DER elements, and the components of an x400Address DER elements.
 	public static GeneralName Read(ref DerReader reader)
 	{
 		ReadOnlyMemory<byte> element = reader.ReadEncodedValue();
@@ -70,6 +70,19 @@ internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory
 				otherName.ReadObjectIdentifier();
 				ReadExplicit(ref otherName, ExplicitTag0);
 				otherName.ThrowIfNotEmpty();
+				break;
+			}
+			case GeneralNameType.X400Address:
+			{
+				// ORAddress ::= SEQUENCE { built-in-standard-attributes BuiltInStandardAttributes, built-in-domain-defined-attributes BuiltInDomainDefinedAttributes OPTIONAL, extension-attributes ExtensionAttributes OPTIONAL } (RFC 5280, Appendix A.1), of which the first is required.
+				DerReader address = new(contents);
+				address.ThrowIfEmpty();
+
+				while (address.HasData)
+				{
+					address.ReadEncodedValue();
+				}
+
 				break;
 			}
 			case GeneralNameType.DirectoryName:

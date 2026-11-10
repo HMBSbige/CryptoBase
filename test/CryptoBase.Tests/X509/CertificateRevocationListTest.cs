@@ -1,3 +1,4 @@
+using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
 using System.Security.Cryptography;
@@ -64,6 +65,27 @@ public class CertificateRevocationListTest
 			await Assert.That(crl.VerifySignature(other)).IsFalse();
 			await Assert.That(CertificateRevocationList.Decode(rsaSigned).VerifySignature(authority.Key)).IsFalse();
 			await Assert.That(() => crl.VerifySignature(null!)).Throws<ArgumentNullException>();
+		}
+	}
+
+	// A key that does not support the algorithm learns nothing of the signature, and so leaves no check for another key of the same SubjectPublicKeyInfo; that of a key that does is kept.
+	[Test]
+	public async Task KeepsNoSignatureCheckOfAKeyThatDoesNotSupportTheAlgorithm()
+	{
+		using TestPki.Authority authority = CreateAuthority();
+		CertificateRevocationList crl = Conforming(authority).Decode(authority);
+		ReadOnlyMemory<byte> publicKeyInfo = authority.Certificate.PublicKeyInfo.Encoded;
+		CapabilityKey unsupporting = new(authority.Key, false);
+		CapabilityKey supporting = new(authority.Key, true);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(crl.VerifySignature(unsupporting, publicKeyInfo)).IsFalse();
+			await Assert.That(crl.VerifySignature(supporting, publicKeyInfo)).IsTrue();
+			await Assert.That(crl.VerifySignature(unsupporting, publicKeyInfo)).IsFalse();
+			await Assert.That(crl.VerifySignature(supporting, publicKeyInfo)).IsTrue();
+			await Assert.That(supporting.Verifications).IsEqualTo(1);
+			await Assert.That(unsupporting.Verifications).IsEqualTo(0);
 		}
 	}
 
@@ -355,6 +377,53 @@ public class CertificateRevocationListTest
 			await Assert.That(() => CertificateRevocationList.DecodePem(certificate)).Throws<ArgumentException>().WithMessageContaining("The text holds no X509 CRL block.");
 			await Assert.That(() => CertificateRevocationList.DecodePem(PemEncoding.WriteString("X509 CRL", (byte[])[0x30, 0x00]))).Throws<ArgumentException>().WithParameterName("source");
 			await Assert.That(() => CertificateRevocationList.DecodePemAll(PemEncoding.WriteString("X509 CRL", (byte[])[0x30, 0x00]))).Throws<ArgumentException>().WithParameterName("source");
+		}
+	}
+
+	// A key whose support of the algorithms is set, as that of two implementations of the same key can differ; it counts its verifications, and leaves the inner key to its owner.
+	private sealed class CapabilityKey(ISignatureKey inner, bool supports) : ISignatureKey
+	{
+		public int Verifications { get; private set; }
+
+		public bool HasPrivateKey => false;
+
+		public int SubjectPublicKeyInfoLength => inner.SubjectPublicKeyInfoLength;
+
+		public int Pkcs8PrivateKeyLength => throw new InvalidOperationException();
+
+		public bool Supports(SignatureAlgorithm algorithm)
+		{
+			return supports && inner.Supports(algorithm);
+		}
+
+		public int GetMaxSignatureLength(SignatureAlgorithm algorithm)
+		{
+			return inner.GetMaxSignatureLength(algorithm);
+		}
+
+		public int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination)
+		{
+			throw new InvalidOperationException();
+		}
+
+		public bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+		{
+			++Verifications;
+			return inner.Verify(algorithm, message, signature);
+		}
+
+		public int ExportSubjectPublicKeyInfo(Span<byte> destination)
+		{
+			return inner.ExportSubjectPublicKeyInfo(destination);
+		}
+
+		public int ExportPkcs8PrivateKey(Span<byte> destination)
+		{
+			throw new InvalidOperationException();
+		}
+
+		public void Dispose()
+		{
 		}
 	}
 }

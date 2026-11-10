@@ -241,12 +241,61 @@ public class RevocationCheckerCrlTest
 	{
 		using Fixture fixture = new();
 		Template authorityKey = new() { Issuer = fixture.Authority.Name, Extensions = [AuthorityKeyIdentifier(fixture.Authority.KeyIdentifier, Critical), CrlNumber(1)] };
-		Template issuerName = Conforming(fixture.Authority, null, Extension(IssuerAlternativeNameOid, GeneralNames(TestPki.DirectoryName("CN=Other")), Critical));
+		byte[] processedForms = GeneralNames(TestPki.OtherName(), TestPki.Rfc822Name("crl@example.com"), DnsName("crl.example"), TestPki.DirectoryName("CN=Other"), TestPki.UniformResourceIdentifier("http://crl.example/"), IPAddressName("192.0.2.1"), Tlv(0x88, [0x2A, 0x03]));
+		Template issuerName = Conforming(fixture.Authority, null, Extension(IssuerAlternativeNameOid, processedForms, Critical));
 
 		using (Assert.Multiple())
 		{
 			await AssertStatusAsync(Check(authorityKey.Decode(fixture.Authority), fixture.Leaf, fixture.Authority), RevocationStatus.Good);
 			await AssertStatusAsync(Check(issuerName.Decode(fixture.Authority), fixture.Leaf, fixture.Authority), RevocationStatus.Good);
+		}
+	}
+
+	// Sec. 5.2: a critical issuer alternative name is processed only if it decodes as GeneralNames; a noncritical one that does not is ignored, as one not understood.
+	[Test]
+	[Arguments(new byte[] { 0x05, 0x00 })]
+	[Arguments(new byte[] { })]
+	[Arguments(new byte[] { 0x30, 0x00 })]
+	public async Task CriticalIssuerAlternativeNamesMustDecode(byte[] value)
+	{
+		using Fixture fixture = new();
+		RevocationResult critical = Check(Conforming(fixture.Authority, null, Extension(IssuerAlternativeNameOid, value, Critical)).Decode(fixture.Authority), fixture.Leaf, fixture.Authority);
+		RevocationResult noncritical = Check(Conforming(fixture.Authority, null, Extension(IssuerAlternativeNameOid, value)).Decode(fixture.Authority), fixture.Leaf, fixture.Authority);
+
+		using (Assert.Multiple())
+		{
+			await AssertStatusAsync(critical, RevocationStatus.Invalid);
+			await Assert.That(critical.Detail).IsEqualTo($"The CRL has the critical extension {IssuerAlternativeNameOid}, whose value does not decode.");
+			await AssertStatusAsync(noncritical, RevocationStatus.Good);
+		}
+	}
+
+	public static IEnumerable<Func<(string Case, string Form, byte[] Value)>> UnprocessedIssuerAlternativeNames()
+	{
+		byte[] partyName = Tlv(0xA1, Tlv(0x0C, "EDI party"u8.ToArray()));
+
+		yield return () => ("x400Address", "X400Address", GeneralNames(Tlv(0xA3, Sequence())));
+		yield return () => ("x400Address holding NULL", "X400Address", GeneralNames(Tlv(0xA3, NullValue)));
+		yield return () => ("ediPartyName", "EdiPartyName", GeneralNames(Tlv(0xA5, partyName)));
+		yield return () => ("ediPartyName with a NULL partyName", "EdiPartyName", GeneralNames(Tlv(0xA5, Tlv(0xA1, NullValue))));
+		yield return () => ("ediPartyName with a BMPString of an odd length", "EdiPartyName", GeneralNames(Tlv(0xA5, Tlv(0xA1, Tlv(0x1E, [0x00, 0x41, 0x00])))));
+		yield return () => ("ediPartyName after a dNSName", "EdiPartyName", GeneralNames(DnsName("crl.example"), Tlv(0xA5, partyName)));
+	}
+
+	// Sec. 5.2.2: the checker does not process the ORAddress of an x400Address or the DirectoryStrings of an ediPartyName, so a critical issuer alternative name with either is refused, well formed or not; a noncritical one is ignored.
+	[Test]
+	[MethodDataSource(nameof(UnprocessedIssuerAlternativeNames))]
+	public async Task CriticalIssuerAlternativeNamesMustHaveOnlyProcessedForms(string @case, string form, byte[] value)
+	{
+		using Fixture fixture = new();
+		RevocationResult critical = Check(Conforming(fixture.Authority, null, Extension(IssuerAlternativeNameOid, value, Critical)).Decode(fixture.Authority), fixture.Leaf, fixture.Authority);
+		RevocationResult noncritical = Check(Conforming(fixture.Authority, null, Extension(IssuerAlternativeNameOid, value)).Decode(fixture.Authority), fixture.Leaf, fixture.Authority);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(critical.Status).IsEqualTo(RevocationStatus.Invalid).Because(@case);
+			await Assert.That(critical.Detail).IsEqualTo($"The CRL has the critical extension {IssuerAlternativeNameOid}, with a name of the form {form}, which the checker does not process.").Because(@case);
+			await Assert.That(noncritical.Status).IsEqualTo(RevocationStatus.Good).Because(@case);
 		}
 	}
 

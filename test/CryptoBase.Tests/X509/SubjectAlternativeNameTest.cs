@@ -108,6 +108,9 @@ public class SubjectAlternativeNameTest
 		yield return () => ("otherName without a type", GeneralNames(Tlv(0xA0, Tlv(0xA0, [0x05, 0x00]))));
 		yield return () => ("primitive otherName", GeneralNames(Tlv(0x80, [0x05, 0x00])));
 		yield return () => ("primitive x400Address", GeneralNames(Tlv(0x83)));
+		yield return () => ("x400Address without built-in-standard-attributes", GeneralNames(Tlv(0xA3)));
+		yield return () => ("x400Address holding a byte that is not an element", GeneralNames(Tlv(0xA3, [0xFF])));
+		yield return () => ("x400Address holding a truncated element", GeneralNames(Tlv(0xA3, Sequence(), [0x30, 0x02, 0x05])));
 		yield return () => ("directoryName that is not a Name", GeneralNames(Tlv(0xA4, [0x02, 0x01, 0x01])));
 		yield return () => ("directoryName with an empty relative distinguished name", GeneralNames(Tlv(0xA4, Sequence(Tlv(0x31)))));
 		yield return () => ("directoryName with two Names", GeneralNames(Tlv(0xA4, Name("CN=a"), Name("CN=b"))));
