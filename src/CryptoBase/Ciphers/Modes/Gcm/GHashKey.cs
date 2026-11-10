@@ -18,35 +18,35 @@ internal struct GHashKey
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashFourBlockPrecomputedKey> GetFourBlock()
 	{
-		return _fourBlock ?? Initialize(ref _fourBlock);
+		return _fourBlock ?? Initialize(out _fourBlock);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashVector128PrecomputedKey> GetVector128()
 	{
-		return _vector128 ?? Initialize(ref _vector128);
+		return _vector128 ?? Initialize(out _vector128);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashVector256PrecomputedKey> GetVector256()
 	{
-		return _vector256 ?? Initialize(ref _vector256);
+		return _vector256 ?? Initialize(out _vector256);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashVector512PrecomputedKey> GetVector512()
 	{
-		return _vector512 ?? Initialize(ref _vector512);
+		return _vector512 ?? Initialize(out _vector512);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal GHashKeyTable<GHashArmPrecomputedKey> GetArm()
 	{
-		return _arm ?? Initialize(ref _arm);
+		return _arm ?? Initialize(out _arm);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private GHashKeyTable<T> Initialize<T>(ref GHashKeyTable<T>? slot) where T : unmanaged, IGHashPrecomputedKey
+	private GHashKeyTable<T> Initialize<T>(out GHashKeyTable<T>? slot) where T : unmanaged, IGHashPrecomputedKey
 	{
 		GHashKeyTable<T> table = new();
 		table.Value.Initialize(typeof(T) == typeof(GHashArmPrecomputedKey) ? AdvSimd.Arm64.ReverseElementBits(Value) : Value.ReverseEndianness128());
