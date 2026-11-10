@@ -68,6 +68,8 @@ public class KeyIdentifierTest
 		yield return () => ("serial number with a redundant leading byte", Sequence(Tlv(0x82, [0x00, 0x01])));
 		yield return () => ("empty serial number", Sequence(Tlv(0x82)));
 		yield return () => ("constructed serial number", Sequence(Tlv(0xA2, [0x02, 0x01, 0x01])));
+		yield return () => ("authorityCertIssuer without a serial number", Sequence(Tlv(0xA1, Tlv(0xA4, Name("CN=Issuer")))));
+		yield return () => ("serial number without authorityCertIssuer", Sequence(Tlv(0x80, [0x01]), Tlv(0x82, [0x01])));
 		yield return () => ("fields out of order", Sequence(Tlv(0x82, [0x01]), Tlv(0x80, [0x01])));
 		yield return () => ("unknown field", Sequence(Tlv(0x80, [0x01]), Tlv(0x83, [0x01])));
 	}

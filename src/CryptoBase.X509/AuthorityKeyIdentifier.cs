@@ -5,7 +5,7 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Decoding accepts only DER and checks the structure of every field, including authorityCertIssuer, whose GeneralNames are checked as those of a subject alternative name, and authorityCertSerialNumber; this version does not expose those two fields.
+/// Decoding accepts only DER and checks the structure of every field, including authorityCertIssuer, whose GeneralNames are checked as those of a subject alternative name, and authorityCertSerialNumber, which must be both present or both absent; this version does not expose those two fields.
 /// </para>
 /// <para>
 /// An instance holds its own copy of the encoding, and the members return slices of it. Instances are immutable, so they may be used concurrently.
@@ -80,6 +80,13 @@ public sealed class AuthorityKeyIdentifier
 		}
 
 		sequence.ThrowIfNotEmpty();
+
+		// RFC 5280, Appendix A.2: authorityCertIssuer and authorityCertSerialNumber are both present or both absent, which RFC 5912 makes a constraint of the type.
+		if (authorityCertIssuer is null != authorityCertSerialNumber is null)
+		{
+			throw new AsnContentException("The authority key identifier has only one of authorityCertIssuer and authorityCertSerialNumber.");
+		}
+
 		return new AuthorityKeyIdentifier(keyIdentifier, authorityCertIssuer, authorityCertSerialNumber);
 	}
 }

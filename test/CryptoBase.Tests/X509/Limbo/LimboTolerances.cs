@@ -21,8 +21,6 @@ internal static class LimboTolerances
 		["rfc5280::san::noncritical-with-empty-subject"] = "RFC 5280, Sec. 4.2.1.6, requires a CA to mark the extension critical for an empty subject, so that a user that does not process it rejects the certificate; the validator processes it whatever its criticality.",
 		["rfc5280::san::underscore-dns"] = "Host names may hold underscores, which names outside the Web PKI use, as SubjectAlternativeName.MatchesHostName accepts.",
 		["webpki::aki::root-with-aki-missing-keyidentifier"] = RootAuthorityKeyIdentifier,
-		["webpki::aki::root-with-aki-authoritycertissuer"] = RootAuthorityKeyIdentifier,
-		["webpki::aki::root-with-aki-authoritycertserialnumber"] = RootAuthorityKeyIdentifier,
 		["webpki::aki::root-with-aki-all-fields"] = RootAuthorityKeyIdentifier,
 		["webpki::aki::root-with-aki-ski-mismatch"] = RootAuthorityKeyIdentifier,
 		["webpki::cn::ipv4-hex-mismatch"] = CommonName,

@@ -197,7 +197,7 @@ public class RevocationCheckerCrlTest
 		Template mismatch = new() { Issuer = fixture.Authority.Name, Extensions = [AuthorityKeyIdentifier(new byte[20]), CrlNumber(1)] };
 		Template absent = new() { Issuer = fixture.Authority.Name, Extensions = [CrlNumber(1)] };
 		Template malformed = new() { Issuer = fixture.Authority.Name, Extensions = [Extension(AuthorityKeyIdentifierOid, [0x05, 0x00]), CrlNumber(1)] };
-		Template issuerSerialOnly = new() { Issuer = fixture.Authority.Name, Extensions = [Extension(AuthorityKeyIdentifierOid, Sequence(Tlv(0x82, [0x09]))), CrlNumber(1)] };
+		Template issuerSerialOnly = new() { Issuer = fixture.Authority.Name, Extensions = [Extension(AuthorityKeyIdentifierOid, Sequence(Tlv(0xA1, Tlv(0xA4, fixture.Authority.Name)), Tlv(0x82, [0x09]))), CrlNumber(1)] };
 
 		using (Assert.Multiple())
 		{
