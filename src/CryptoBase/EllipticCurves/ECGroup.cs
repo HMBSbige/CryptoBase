@@ -435,10 +435,10 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		{
 			TField.Multiply(in inverse, in result[i - 1].X, out zInverse);
 			TField.Multiply(in inverse, in points[i].Z, out inverse);
-			Scale(in points[i], in zInverse, out result[i]);
+			Scale(in points[i], in zInverse, variableTime, out result[i]);
 		}
 
-		Scale(in points[0], in inverse, out result[0]);
+		Scale(in points[0], in inverse, variableTime, out result[0]);
 
 		if (!variableTime)
 		{
@@ -624,13 +624,18 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		ConditionalNegate((ulong)sign, ref result.Y);
 	}
 
-	// Sets result to (X·Z⁻², Y·Z⁻³) from zInverse = Z⁻¹.
-	private static void Scale(in JacobianPoint<TField> point, in TField zInverse, out AffinePoint<TField> result)
+	// Sets result to (X·Z⁻², Y·Z⁻³) from zInverse = Z⁻¹, clearing the powers of Z⁻¹ unless variableTime is set.
+	private static void Scale(in JacobianPoint<TField> point, in TField zInverse, bool variableTime, out AffinePoint<TField> result)
 	{
 		TField.Square(in zInverse, out TField power);
 		TField.Multiply(in point.X, in power, out result.X);
 		TField.Multiply(in power, in zInverse, out power);
 		TField.Multiply(in point.Y, in power, out result.Y);
+
+		if (!variableTime)
+		{
+			power.ZeroMemory();
+		}
 	}
 
 	// The element of a plain value below p, in Montgomery form.
