@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net11.0;net10.0</TargetFrameworks>
     <IsAotCompatible>true</IsAotCompatible>
     <Authors>HMBSbige</Authors>
     <Copyright>Copyright © HMBSbige</Copyright>

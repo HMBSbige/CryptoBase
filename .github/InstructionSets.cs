@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-// .NET 10 has no public IsSupported property for VAES.
+// .NET 11 has no public IsSupported property for VAES.
 bool vaes = Aes.IsSupported && Avx.IsSupported && (X86Base.CpuId(7, 0).Ecx & 1 << 9) is not 0 && IsEnabled("VAES");
 
 (string Name, bool Supported)[] features =
