@@ -290,47 +290,29 @@ internal static class SM2OctoFormulas
 	// The states low and high in the halves.
 	private static void Join(in SM2QuadState low, in SM2QuadState high, out SM2OctoState result)
 	{
-		result.P.L0 = Vector512.Create(low.P.L0, high.P.L0);
-		result.P.L1 = Vector512.Create(low.P.L1, high.P.L1);
-		result.P.L2 = Vector512.Create(low.P.L2, high.P.L2);
-		result.P.L3 = Vector512.Create(low.P.L3, high.P.L3);
-		result.P.L4 = Vector512.Create(low.P.L4, high.P.L4);
-		result.P.L5 = Vector512.Create(low.P.L5, high.P.L5);
-		result.P.L6 = Vector512.Create(low.P.L6, high.P.L6);
-		result.P.L7 = Vector512.Create(low.P.L7, high.P.L7);
-		result.P.L8 = Vector512.Create(low.P.L8, high.P.L8);
-		result.Q.L0 = Vector512.Create(low.Q.L0, high.Q.L0);
-		result.Q.L1 = Vector512.Create(low.Q.L1, high.Q.L1);
-		result.Q.L2 = Vector512.Create(low.Q.L2, high.Q.L2);
-		result.Q.L3 = Vector512.Create(low.Q.L3, high.Q.L3);
-		result.Q.L4 = Vector512.Create(low.Q.L4, high.Q.L4);
-		result.Q.L5 = Vector512.Create(low.Q.L5, high.Q.L5);
-		result.Q.L6 = Vector512.Create(low.Q.L6, high.Q.L6);
-		result.Q.L7 = Vector512.Create(low.Q.L7, high.Q.L7);
-		result.Q.L8 = Vector512.Create(low.Q.L8, high.Q.L8);
+		Join(in low.P, in high.P, out result.P);
+		Join(in low.Q, in high.Q, out result.Q);
 	}
 
 	// The entries low and high in the halves.
 	private static void Join(in SM2QuadEntry low, in SM2QuadEntry high, out SM2OctoEntry result)
 	{
-		result.EA.L0 = Vector512.Create(low.EA.L0, high.EA.L0);
-		result.EA.L1 = Vector512.Create(low.EA.L1, high.EA.L1);
-		result.EA.L2 = Vector512.Create(low.EA.L2, high.EA.L2);
-		result.EA.L3 = Vector512.Create(low.EA.L3, high.EA.L3);
-		result.EA.L4 = Vector512.Create(low.EA.L4, high.EA.L4);
-		result.EA.L5 = Vector512.Create(low.EA.L5, high.EA.L5);
-		result.EA.L6 = Vector512.Create(low.EA.L6, high.EA.L6);
-		result.EA.L7 = Vector512.Create(low.EA.L7, high.EA.L7);
-		result.EA.L8 = Vector512.Create(low.EA.L8, high.EA.L8);
-		result.EB.L0 = Vector512.Create(low.EB.L0, high.EB.L0);
-		result.EB.L1 = Vector512.Create(low.EB.L1, high.EB.L1);
-		result.EB.L2 = Vector512.Create(low.EB.L2, high.EB.L2);
-		result.EB.L3 = Vector512.Create(low.EB.L3, high.EB.L3);
-		result.EB.L4 = Vector512.Create(low.EB.L4, high.EB.L4);
-		result.EB.L5 = Vector512.Create(low.EB.L5, high.EB.L5);
-		result.EB.L6 = Vector512.Create(low.EB.L6, high.EB.L6);
-		result.EB.L7 = Vector512.Create(low.EB.L7, high.EB.L7);
-		result.EB.L8 = Vector512.Create(low.EB.L8, high.EB.L8);
+		Join(in low.EA, in high.EA, out result.EA);
+		Join(in low.EB, in high.EB, out result.EB);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Join(in SM2Field29x4Avx2 low, in SM2Field29x4Avx2 high, out SM2Field29x8Avx512 result)
+	{
+		result.L0 = Vector512.Create(low.L0, high.L0);
+		result.L1 = Vector512.Create(low.L1, high.L1);
+		result.L2 = Vector512.Create(low.L2, high.L2);
+		result.L3 = Vector512.Create(low.L3, high.L3);
+		result.L4 = Vector512.Create(low.L4, high.L4);
+		result.L5 = Vector512.Create(low.L5, high.L5);
+		result.L6 = Vector512.Create(low.L6, high.L6);
+		result.L7 = Vector512.Create(low.L7, high.L7);
+		result.L8 = Vector512.Create(low.L8, high.L8);
 	}
 
 	// The rounds of SM2QuadFormulas.AddState in each half.
@@ -622,42 +604,31 @@ internal static class SM2OctoFormulas
 	// The states of the halves.
 	private static void Split(in SM2OctoState state, out SM2QuadState low, out SM2QuadState high)
 	{
-		low.P.L0 = state.P.L0.GetLower();
-		high.P.L0 = state.P.L0.GetUpper();
-		low.P.L1 = state.P.L1.GetLower();
-		high.P.L1 = state.P.L1.GetUpper();
-		low.P.L2 = state.P.L2.GetLower();
-		high.P.L2 = state.P.L2.GetUpper();
-		low.P.L3 = state.P.L3.GetLower();
-		high.P.L3 = state.P.L3.GetUpper();
-		low.P.L4 = state.P.L4.GetLower();
-		high.P.L4 = state.P.L4.GetUpper();
-		low.P.L5 = state.P.L5.GetLower();
-		high.P.L5 = state.P.L5.GetUpper();
-		low.P.L6 = state.P.L6.GetLower();
-		high.P.L6 = state.P.L6.GetUpper();
-		low.P.L7 = state.P.L7.GetLower();
-		high.P.L7 = state.P.L7.GetUpper();
-		low.P.L8 = state.P.L8.GetLower();
-		high.P.L8 = state.P.L8.GetUpper();
-		low.Q.L0 = state.Q.L0.GetLower();
-		high.Q.L0 = state.Q.L0.GetUpper();
-		low.Q.L1 = state.Q.L1.GetLower();
-		high.Q.L1 = state.Q.L1.GetUpper();
-		low.Q.L2 = state.Q.L2.GetLower();
-		high.Q.L2 = state.Q.L2.GetUpper();
-		low.Q.L3 = state.Q.L3.GetLower();
-		high.Q.L3 = state.Q.L3.GetUpper();
-		low.Q.L4 = state.Q.L4.GetLower();
-		high.Q.L4 = state.Q.L4.GetUpper();
-		low.Q.L5 = state.Q.L5.GetLower();
-		high.Q.L5 = state.Q.L5.GetUpper();
-		low.Q.L6 = state.Q.L6.GetLower();
-		high.Q.L6 = state.Q.L6.GetUpper();
-		low.Q.L7 = state.Q.L7.GetLower();
-		high.Q.L7 = state.Q.L7.GetUpper();
-		low.Q.L8 = state.Q.L8.GetLower();
-		high.Q.L8 = state.Q.L8.GetUpper();
+		Split(in state.P, out low.P, out high.P);
+		Split(in state.Q, out low.Q, out high.Q);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Split(in SM2Field29x8Avx512 value, out SM2Field29x4Avx2 low, out SM2Field29x4Avx2 high)
+	{
+		low.L0 = value.L0.GetLower();
+		high.L0 = value.L0.GetUpper();
+		low.L1 = value.L1.GetLower();
+		high.L1 = value.L1.GetUpper();
+		low.L2 = value.L2.GetLower();
+		high.L2 = value.L2.GetUpper();
+		low.L3 = value.L3.GetLower();
+		high.L3 = value.L3.GetUpper();
+		low.L4 = value.L4.GetLower();
+		high.L4 = value.L4.GetUpper();
+		low.L5 = value.L5.GetLower();
+		high.L5 = value.L5.GetUpper();
+		low.L6 = value.L6.GetLower();
+		high.L6 = value.L6.GetUpper();
+		low.L7 = value.L7.GetLower();
+		high.L7 = value.L7.GetUpper();
+		low.L8 = value.L8.GetLower();
+		high.L8 = value.L8.GetUpper();
 	}
 
 	// The rounds of SM2QuadFormulas.FromEntry in each half.
@@ -752,54 +723,7 @@ internal static class SM2OctoFormulas
 		ref SM2Field29x8Avx512 first = ref Unsafe.Add(ref left, 2);
 		ref SM2Field29x8Avx512 second = ref Unsafe.Add(ref left, 3);
 		ref SM2Field29x8Avx512 third = ref Unsafe.Add(ref left, 4);
-		left.L0 = Avx512F.Permute4x64(state.P.L0, 0x44);
-		left.L1 = Avx512F.Permute4x64(state.P.L1, 0x44);
-		left.L2 = Avx512F.Permute4x64(state.P.L2, 0x44);
-		left.L3 = Avx512F.Permute4x64(state.P.L3, 0x44);
-		left.L4 = Avx512F.Permute4x64(state.P.L4, 0x44);
-		left.L5 = Avx512F.Permute4x64(state.P.L5, 0x44);
-		left.L6 = Avx512F.Permute4x64(state.P.L6, 0x44);
-		left.L7 = Avx512F.Permute4x64(state.P.L7, 0x44);
-		left.L8 = Avx512F.Permute4x64(state.P.L8, 0x44);
-		SM2Field29x8Avx512.Multiply(in left, in state.P, out first);
-		// The right of E1, [8γ, 4γ, 4γ, A], carried; T takes 2γ from it before.
-		Vector512<ulong> a0 = first.L0;
-		Vector512<ulong> g0 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a0, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L0 = Blend2(state.Q.L0, a0 + (a0 << 1) + Vector512.Create(2 * SM2Field29.FourP0) - (g0 >> 1));
-		right.L0 = g0 & Vector512.Create(SM2Field29.Mask);
-		Vector512<ulong> a1 = first.L1;
-		Vector512<ulong> g1 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a1, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L1 = Blend2(state.Q.L1, a1 + (a1 << 1) + Vector512.Create(2 * SM2Field29.FourP1) - (g1 >> 1));
-		right.L1 = (g1 & Vector512.Create(SM2Field29.Mask)) + (g0 >> SM2Field29.Bits);
-		Vector512<ulong> a2 = first.L2;
-		Vector512<ulong> g2 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a2, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L2 = Blend2(state.Q.L2, a2 + (a2 << 1) + Vector512.Create(2 * SM2Field29.FourP2) - (g2 >> 1));
-		right.L2 = (g2 & Vector512.Create(SM2Field29.Mask)) + (g1 >> SM2Field29.Bits);
-		Vector512<ulong> a3 = first.L3;
-		Vector512<ulong> g3 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a3, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L3 = Blend2(state.Q.L3, a3 + (a3 << 1) + Vector512.Create(2 * SM2Field29.FourP3) - (g3 >> 1));
-		right.L3 = (g3 & Vector512.Create(SM2Field29.Mask)) + (g2 >> SM2Field29.Bits);
-		Vector512<ulong> a4 = first.L4;
-		Vector512<ulong> g4 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a4, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L4 = Blend2(state.Q.L4, a4 + (a4 << 1) + Vector512.Create(2 * SM2Field29.FourPMiddle) - (g4 >> 1));
-		right.L4 = (g4 & Vector512.Create(SM2Field29.Mask)) + (g3 >> SM2Field29.Bits);
-		Vector512<ulong> a5 = first.L5;
-		Vector512<ulong> g5 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a5, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L5 = Blend2(state.Q.L5, a5 + (a5 << 1) + Vector512.Create(2 * SM2Field29.FourPMiddle) - (g5 >> 1));
-		right.L5 = (g5 & Vector512.Create(SM2Field29.Mask)) + (g4 >> SM2Field29.Bits);
-		Vector512<ulong> a6 = first.L6;
-		Vector512<ulong> g6 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a6, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L6 = Blend2(state.Q.L6, a6 + (a6 << 1) + Vector512.Create(2 * SM2Field29.FourPMiddle) - (g6 >> 1));
-		right.L6 = (g6 & Vector512.Create(SM2Field29.Mask)) + (g5 >> SM2Field29.Bits);
-		Vector512<ulong> a7 = first.L7;
-		Vector512<ulong> g7 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a7, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L7 = Blend2(state.Q.L7, a7 + (a7 << 1) + Vector512.Create(2 * SM2Field29.FourP7) - (g7 >> 1));
-		right.L7 = (g7 & Vector512.Create(SM2Field29.Mask)) + (g6 >> SM2Field29.Bits);
-		Vector512<ulong> a8 = first.L8;
-		Vector512<ulong> g8 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a8, 0x15), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
-		left.L8 = Blend2(state.Q.L8, a8 + (a8 << 1) + Vector512.Create(2 * SM2Field29.FourP8) - (g8 >> 1));
-		right.L8 = g8 + (g7 >> SM2Field29.Bits);
-		SM2Field29x8Avx512.Multiply(in left, in right, out second);
+		DoubleRoundsE0E1(ref state, ref left, ref right, out first, out second, Vector512.Create(SM2Field29.Mask), Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0));
 		// X′ and Y′ folded, and the right of O0, [3(X′ + δ′), X′, Y′, Z′], carried.
 		Vector512<ulong> s8 = Swap(second.L8);
 		Vector512<ulong> v8 = Blend23(first.L8, second.L8) + Vector512.Create(SM2Field29.FourP8) - Blend23(second.L8, s8);
@@ -1063,16 +987,11 @@ internal static class SM2OctoFormulas
 		state.Q.L8 = Blend3(z8, f8);
 	}
 
-	// The rounds of SM2QuadFormulas.DoubleAdd in each half, without its masks: every lane takes the sum.
+	// mask and evenShifts are arguments so that each caller keeps how it loads them.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	[SkipLocalsInit]
-	internal static void DoubleAdd(ref SM2OctoState state, in SM2OctoEntry entry)
+	private static void DoubleRoundsE0E1(ref SM2OctoState state, ref SM2Field29x8Avx512 left, ref SM2Field29x8Avx512 right, out SM2Field29x8Avx512 first, out SM2Field29x8Avx512 second, Vector512<ulong> mask, Vector512<ulong> evenShifts)
 	{
-		Unsafe.SkipInit(out SM2Field29x8Avx512 left);
-		Unsafe.SkipInit(out SM2Field29x8Avx512 right);
-		Unsafe.SkipInit(out SM2Field29x8Avx512 next);
-		Vector512<ulong> mask = Vector512.Create(SM2Field29.Mask);
-		Vector512<ulong> top = Vector512.Create(SM2Field29.TopMask);
-		Vector512<ulong> evenShifts = Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0);
 		left.L0 = Avx512F.Permute4x64(state.P.L0, 0x44);
 		left.L1 = Avx512F.Permute4x64(state.P.L1, 0x44);
 		left.L2 = Avx512F.Permute4x64(state.P.L2, 0x44);
@@ -1082,7 +1001,8 @@ internal static class SM2OctoFormulas
 		left.L6 = Avx512F.Permute4x64(state.P.L6, 0x44);
 		left.L7 = Avx512F.Permute4x64(state.P.L7, 0x44);
 		left.L8 = Avx512F.Permute4x64(state.P.L8, 0x44);
-		SM2Field29x8Avx512.Multiply(in left, in state.P, out SM2Field29x8Avx512 first);
+		SM2Field29x8Avx512.Multiply(in left, in state.P, out first);
+		// The right of E1, [8γ, 4γ, 4γ, A], carried; T takes 2γ from it before.
 		Vector512<ulong> a0 = first.L0;
 		Vector512<ulong> g0 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a0, 0x15), evenShifts);
 		left.L0 = Blend2(state.Q.L0, a0 + (a0 << 1) + Vector512.Create(2 * SM2Field29.FourP0) - (g0 >> 1));
@@ -1119,7 +1039,20 @@ internal static class SM2OctoFormulas
 		Vector512<ulong> g8 = Avx512F.ShiftLeftLogicalVariable(Avx512F.Permute4x64(a8, 0x15), evenShifts);
 		left.L8 = Blend2(state.Q.L8, a8 + (a8 << 1) + Vector512.Create(2 * SM2Field29.FourP8) - (g8 >> 1));
 		right.L8 = g8 + (g7 >> SM2Field29.Bits);
-		SM2Field29x8Avx512.Multiply(in left, in right, out SM2Field29x8Avx512 second);
+		SM2Field29x8Avx512.Multiply(in left, in right, out second);
+	}
+
+	// The rounds of SM2QuadFormulas.DoubleAdd in each half, without its masks: every lane takes the sum.
+	[SkipLocalsInit]
+	internal static void DoubleAdd(ref SM2OctoState state, in SM2OctoEntry entry)
+	{
+		Unsafe.SkipInit(out SM2Field29x8Avx512 left);
+		Unsafe.SkipInit(out SM2Field29x8Avx512 right);
+		Unsafe.SkipInit(out SM2Field29x8Avx512 next);
+		Vector512<ulong> mask = Vector512.Create(SM2Field29.Mask);
+		Vector512<ulong> top = Vector512.Create(SM2Field29.TopMask);
+		Vector512<ulong> evenShifts = Vector512.Create(3UL, 2, 2, 0, 3, 2, 2, 0);
+		DoubleRoundsE0E1(ref state, ref left, ref right, out SM2Field29x8Avx512 first, out SM2Field29x8Avx512 second, mask, evenShifts);
 		Vector512<ulong> s8 = Swap(second.L8);
 		Vector512<ulong> v8 = Blend23(first.L8, second.L8) + Vector512.Create(SM2Field29.FourP8) - Blend23(second.L8, s8);
 		Vector512<ulong> h = v8 >> 24;

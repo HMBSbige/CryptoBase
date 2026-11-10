@@ -2,7 +2,7 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// k·P and u1·G + u2·Q for one point at a time on the two lanes of TField, SM2Field29x2Sse41 on x64 and SM2Field29x2AdvSimd on ARM64: each round of a formula takes two products that need only those of the rounds before, one in each lane. A point keeps X in both lanes of XX and Y and Z in the lanes of YZ; [a | b] holds a in lane 0 and b in lane 1, and a lane that no later step reads may hold anything. Both fields hold their nine limbs as nine vectors in a row, which the formulas read through Limbs.
+// k·P and u1·G + u2·Q for one point at a time on the two lanes of TField, SM2Field29x2: each round of a formula takes two products that need only those of the rounds before, one in each lane. A point keeps X in both lanes of XX and Y and Z in the lanes of YZ; [a | b] holds a in lane 0 and b in lane 1, and a lane that no later step reads may hold anything. The field holds its nine limbs as nine vectors in a row, which the formulas read through Limbs.
 // Bounds, with those of SM2Field29: a point that a formula takes has X and Z below 2p in limbs 0 to 7 below 2^29 and limb 8 below 2^24 + 2^5, as Reduce, which ends every formula, leaves them, and Y as Reduce leaves it or, from an entry, 4p − Y as ConditionalNegate leaves it, in limbs at most those of 4p, below 2^30; AddAffine takes Y as Reduce leaves it. An entry holds such X, Y, negated or not, and Z, and Z² and Z³ from products; joining limbs 2m and 2m + 1 into one ulong and splitting them again adds at most 1 to limbs 1, 3, 5 and 7. The values that go into products are below 9.4p, so every product is below 2.8p, its limb 8 below 2^26 − 2, and every subtrahend is a product, a product doubled, the sum of three products or a coordinate that Reduce left, with limbs at most those of the 4p, 8p or 12p added to it. A product or a coordinate plus 4p less such a subtrahend has limbs below 3·2^29 + 2^6, and the formulas multiply such a difference only by a product, a coordinate or a value carried by one step: each limb but limb 8 keeps its low 29 bits and passes the rest to the limb above, which leaves limbs below 2^29 + 8 for limbs below 2^32. With the bounds of each formula below, the limbs of the operands of every product have bounds whose product is below 6.1·2^58, within the 9·X·Y ≤ 2^64 − 2^54 of Multiply, every input of Square has limbs below 2^30 + 2^8, and every input of Reduce has limbs below 7·2^29 + 2^6 and limb 8 below 2^28.
 internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Field29Lanes<TField>
 {
@@ -1183,38 +1183,7 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ToPoint(in SM2PairEntry<TField> entry, out SM2PairPoint<TField> result)
 	{
-		Unsafe.SkipInit(out result);
-		ref Vector128<ulong> exy = ref Limbs(in entry.XY);
-		ref Vector128<ulong> ec = ref Limbs(in entry.CubeZ);
-		ref Vector128<ulong> xx = ref Limbs(in result.XX);
-		ref Vector128<ulong> yz = ref Limbs(in result.YZ);
-		Vector128<ulong> xy0 = Unsafe.Add(ref exy, 0);
-		Unsafe.Add(ref xx, 0) = Low(xy0, xy0);
-		Unsafe.Add(ref yz, 0) = High(xy0, Unsafe.Add(ref ec, 0));
-		Vector128<ulong> xy1 = Unsafe.Add(ref exy, 1);
-		Unsafe.Add(ref xx, 1) = Low(xy1, xy1);
-		Unsafe.Add(ref yz, 1) = High(xy1, Unsafe.Add(ref ec, 1));
-		Vector128<ulong> xy2 = Unsafe.Add(ref exy, 2);
-		Unsafe.Add(ref xx, 2) = Low(xy2, xy2);
-		Unsafe.Add(ref yz, 2) = High(xy2, Unsafe.Add(ref ec, 2));
-		Vector128<ulong> xy3 = Unsafe.Add(ref exy, 3);
-		Unsafe.Add(ref xx, 3) = Low(xy3, xy3);
-		Unsafe.Add(ref yz, 3) = High(xy3, Unsafe.Add(ref ec, 3));
-		Vector128<ulong> xy4 = Unsafe.Add(ref exy, 4);
-		Unsafe.Add(ref xx, 4) = Low(xy4, xy4);
-		Unsafe.Add(ref yz, 4) = High(xy4, Unsafe.Add(ref ec, 4));
-		Vector128<ulong> xy5 = Unsafe.Add(ref exy, 5);
-		Unsafe.Add(ref xx, 5) = Low(xy5, xy5);
-		Unsafe.Add(ref yz, 5) = High(xy5, Unsafe.Add(ref ec, 5));
-		Vector128<ulong> xy6 = Unsafe.Add(ref exy, 6);
-		Unsafe.Add(ref xx, 6) = Low(xy6, xy6);
-		Unsafe.Add(ref yz, 6) = High(xy6, Unsafe.Add(ref ec, 6));
-		Vector128<ulong> xy7 = Unsafe.Add(ref exy, 7);
-		Unsafe.Add(ref xx, 7) = Low(xy7, xy7);
-		Unsafe.Add(ref yz, 7) = High(xy7, Unsafe.Add(ref ec, 7));
-		Vector128<ulong> xy8 = Unsafe.Add(ref exy, 8);
-		Unsafe.Add(ref xx, 8) = Low(xy8, xy8);
-		Unsafe.Add(ref yz, 8) = High(xy8, Unsafe.Add(ref ec, 8));
+		ToPoint(in entry.XY, in entry.CubeZ, out result);
 	}
 
 	// The point (x, y, 1) of an affine [x | y].
@@ -1222,39 +1191,47 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	[SkipLocalsInit]
 	private static void ToPoint(in TField affine, out SM2PairPoint<TField> result)
 	{
-		Unsafe.SkipInit(out result);
 		TField.One(out TField one);
-		ref Vector128<ulong> e = ref Limbs(in affine);
-		ref Vector128<ulong> o = ref Limbs(in one);
+		ToPoint(in affine, in one, out result);
+	}
+
+	// z holds Z in its upper lane, as CubeZ and one do.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[SkipLocalsInit]
+	private static void ToPoint(in TField xy, in TField z, out SM2PairPoint<TField> result)
+	{
+		Unsafe.SkipInit(out result);
+		ref Vector128<ulong> exy = ref Limbs(in xy);
+		ref Vector128<ulong> ez = ref Limbs(in z);
 		ref Vector128<ulong> xx = ref Limbs(in result.XX);
 		ref Vector128<ulong> yz = ref Limbs(in result.YZ);
-		Vector128<ulong> xy0 = Unsafe.Add(ref e, 0);
+		Vector128<ulong> xy0 = Unsafe.Add(ref exy, 0);
 		Unsafe.Add(ref xx, 0) = Low(xy0, xy0);
-		Unsafe.Add(ref yz, 0) = High(xy0, Unsafe.Add(ref o, 0));
-		Vector128<ulong> xy1 = Unsafe.Add(ref e, 1);
+		Unsafe.Add(ref yz, 0) = High(xy0, Unsafe.Add(ref ez, 0));
+		Vector128<ulong> xy1 = Unsafe.Add(ref exy, 1);
 		Unsafe.Add(ref xx, 1) = Low(xy1, xy1);
-		Unsafe.Add(ref yz, 1) = High(xy1, Unsafe.Add(ref o, 1));
-		Vector128<ulong> xy2 = Unsafe.Add(ref e, 2);
+		Unsafe.Add(ref yz, 1) = High(xy1, Unsafe.Add(ref ez, 1));
+		Vector128<ulong> xy2 = Unsafe.Add(ref exy, 2);
 		Unsafe.Add(ref xx, 2) = Low(xy2, xy2);
-		Unsafe.Add(ref yz, 2) = High(xy2, Unsafe.Add(ref o, 2));
-		Vector128<ulong> xy3 = Unsafe.Add(ref e, 3);
+		Unsafe.Add(ref yz, 2) = High(xy2, Unsafe.Add(ref ez, 2));
+		Vector128<ulong> xy3 = Unsafe.Add(ref exy, 3);
 		Unsafe.Add(ref xx, 3) = Low(xy3, xy3);
-		Unsafe.Add(ref yz, 3) = High(xy3, Unsafe.Add(ref o, 3));
-		Vector128<ulong> xy4 = Unsafe.Add(ref e, 4);
+		Unsafe.Add(ref yz, 3) = High(xy3, Unsafe.Add(ref ez, 3));
+		Vector128<ulong> xy4 = Unsafe.Add(ref exy, 4);
 		Unsafe.Add(ref xx, 4) = Low(xy4, xy4);
-		Unsafe.Add(ref yz, 4) = High(xy4, Unsafe.Add(ref o, 4));
-		Vector128<ulong> xy5 = Unsafe.Add(ref e, 5);
+		Unsafe.Add(ref yz, 4) = High(xy4, Unsafe.Add(ref ez, 4));
+		Vector128<ulong> xy5 = Unsafe.Add(ref exy, 5);
 		Unsafe.Add(ref xx, 5) = Low(xy5, xy5);
-		Unsafe.Add(ref yz, 5) = High(xy5, Unsafe.Add(ref o, 5));
-		Vector128<ulong> xy6 = Unsafe.Add(ref e, 6);
+		Unsafe.Add(ref yz, 5) = High(xy5, Unsafe.Add(ref ez, 5));
+		Vector128<ulong> xy6 = Unsafe.Add(ref exy, 6);
 		Unsafe.Add(ref xx, 6) = Low(xy6, xy6);
-		Unsafe.Add(ref yz, 6) = High(xy6, Unsafe.Add(ref o, 6));
-		Vector128<ulong> xy7 = Unsafe.Add(ref e, 7);
+		Unsafe.Add(ref yz, 6) = High(xy6, Unsafe.Add(ref ez, 6));
+		Vector128<ulong> xy7 = Unsafe.Add(ref exy, 7);
 		Unsafe.Add(ref xx, 7) = Low(xy7, xy7);
-		Unsafe.Add(ref yz, 7) = High(xy7, Unsafe.Add(ref o, 7));
-		Vector128<ulong> xy8 = Unsafe.Add(ref e, 8);
+		Unsafe.Add(ref yz, 7) = High(xy7, Unsafe.Add(ref ez, 7));
+		Vector128<ulong> xy8 = Unsafe.Add(ref exy, 8);
 		Unsafe.Add(ref xx, 8) = Low(xy8, xy8);
-		Unsafe.Add(ref yz, 8) = High(xy8, Unsafe.Add(ref o, 8));
+		Unsafe.Add(ref yz, 8) = High(xy8, Unsafe.Add(ref ez, 8));
 	}
 
 	// [x | y] for an affine point of the form E of SM2Field52, reduced: each coordinate a·2^260 as a·2^261, its limbs of radix 2^52 doubled and cut into limbs of radix 2^29, limbs 2m + 1 taking the bits of a limb of radix 2^52 that cross into the next as a sum, below 2^30, for Reduce.
@@ -1289,15 +1266,9 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		TField.Reduce(in x, out x);
 		TField.Halve(in point.YZ, out TField yz);
 		TField.Reduce(in yz, out yz);
-		Lane(in x, 0, out result.X);
-		Lane(in yz, 0, out result.Y);
-		Lane(in yz, 1, out result.Z);
-	}
-
-	// Lane of a value that Reduce left, in the form E of SM2Field52, as SM2Field29.ToField52 joins its limbs.
-	private static void Lane(in TField value, int lane, out SM2Field52 result)
-	{
-		SM2Field29.ToField52(in Unsafe.Add(ref Unsafe.As<TField, ulong>(ref Unsafe.AsRef(in value)), lane), TField.LaneCount, out result);
+		SM2Field29.ToField52(in x, 0, out result.X);
+		SM2Field29.ToField52(in yz, 0, out result.Y);
+		SM2Field29.ToField52(in yz, 1, out result.Z);
 	}
 
 	// The nine limbs of a value, each the vector of both lanes. The formulas write through it only to the values they own.

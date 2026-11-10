@@ -8,8 +8,7 @@ public abstract class SM2Field29LanesCase : IKernelCase
 	{
 		yield return new Case<SM2Field29x8Avx512>();
 		yield return new Case<SM2Field29x4Avx2>();
-		yield return new Case<SM2Field29x2Sse41>();
-		yield return new Case<SM2Field29x2AdvSimd>();
+		yield return new Case<SM2Field29x2>();
 	}
 
 	public abstract Type FieldType { get; }

@@ -23,8 +23,7 @@ public class SM2KernelBenchmark
 		Scalar,
 		Avx2,
 		Avx512,
-		Sse41,
-		AdvSimd,
+		Vector128,
 		Dispatch
 	}
 
@@ -39,8 +38,7 @@ public class SM2KernelBenchmark
 			KernelKind.Scalar => new Kernel<SM2Scalar>(),
 			KernelKind.Avx2 => new Kernel<SM2Avx2>(),
 			KernelKind.Avx512 => new Kernel<SM2Avx512>(),
-			KernelKind.Sse41 => new Kernel<SM2Sse41>(),
-			KernelKind.AdvSimd => new Kernel<SM2AdvSimd>(),
+			KernelKind.Vector128 => new Kernel<SM2Vector128>(),
 			KernelKind.Dispatch => new Kernel<SM2KernelDispatch>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(Backend))
 		};

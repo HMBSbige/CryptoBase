@@ -434,7 +434,7 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 
 		for (int lane = 0; lane < lanes; ++lane)
 		{
-			ToField52(in reduced, lane, out elements[lane]);
+			SM2Field29.ToField52(in reduced, lane, out elements[lane]);
 			prefixes[lane] = elements[lane];
 
 			if (lane is not 0)
@@ -533,13 +533,6 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 		}
 	}
 
-	// Lane lane of a value as Reduce leaves it in the limbs of SM2Field52, the same integer, as SM2Field29.ToField52 joins them: limb i of every lane lies in the LaneCount ulongs from i·LaneCount on, as the nine vectors of SM2Field29 hold them.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ToField52(in TField value, int lane, out SM2Field52 result)
-	{
-		SM2Field29.ToField52(in Unsafe.Add(ref Unsafe.As<TField, ulong>(ref Unsafe.AsRef(in value)), lane), TField.LaneCount, out result);
-	}
-
 	// The sum of a table whose folds have left its blocks in lanes first and first + 1, or in lane first alone for one block, with their infinity masks at the same lanes of infinity. The formulas of SM2Field52 add the two lanes, as a fold of single lanes would cost as much as one of all of them. The coordinates must be as Halve and Reduce leave them, which ToField52 reads from each lane as it lies in memory. The point at infinity, for k = 0, comes out as (0, 0, 0), as from ECGroup.MultiplyBase.
 	// Like Fold, not inlined, so that one copy serves one table and two, and optimized from the first call, as profile-guided inlining would leave the selects calls.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
@@ -572,9 +565,9 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ToJacobian(in SM2JacobianLanes<TField> point, int lane, out JacobianPoint<SM2Field52> result)
 	{
-		ToField52(in point.X, lane, out result.X);
-		ToField52(in point.Y, lane, out result.Y);
-		ToField52(in point.Z, lane, out result.Z);
+		SM2Field29.ToField52(in point.X, lane, out result.X);
+		SM2Field29.ToField52(in point.Y, lane, out result.Y);
+		SM2Field29.ToField52(in point.Z, lane, out result.Z);
 	}
 
 	// The first window of the block of each lane of a table of blocks lanes, lane l taking the block whose index is l with its bits reversed: of 43 windows, blocks of 6, 6, 6, 5, 5, 5, 5 and 5 windows for eight, 11, 11, 11 and 10 for four, 22 and 21 for two and all 43 for one; of 32, blocks of 4, 8, 16 and all 32.

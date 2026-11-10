@@ -9,8 +9,7 @@ public abstract class SM2KernelCase : IKernelCase
 		yield return new Kernel<SM2Scalar>();
 		yield return new Kernel<SM2Avx512>();
 		yield return new Kernel<SM2Avx2>();
-		yield return new Kernel<SM2Sse41>();
-		yield return new Kernel<SM2AdvSimd>();
+		yield return new Kernel<SM2Vector128>();
 		yield return new Kernel<SM2KernelDispatch>();
 	}
 

@@ -16,8 +16,7 @@ public unsafe class SM2VectorFieldBenchmark
 	{
 		Avx512,
 		Avx2,
-		Sse41,
-		AdvSimd
+		Vector128
 	}
 
 	[ParamsAllValues]
@@ -31,8 +30,7 @@ public unsafe class SM2VectorFieldBenchmark
 		{
 			FieldKind.Avx512 => new Field<SM2Field29x8Avx512>(),
 			FieldKind.Avx2 => new Field<SM2Field29x4Avx2>(),
-			FieldKind.Sse41 => new Field<SM2Field29x2Sse41>(),
-			FieldKind.AdvSimd => new Field<SM2Field29x2AdvSimd>(),
+			FieldKind.Vector128 => new Field<SM2Field29x2>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(Backend))
 		};
 

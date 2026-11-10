@@ -65,6 +65,13 @@ internal static class SM2Field29
 		result.L3 = (w5 >> 11 | Unsafe.Add(ref w, 6 * stride) << 18 | w7 << 47) & Mask52;
 		result.L4 = w7 >> 5 | Unsafe.Add(ref w, 8 * stride) << 24;
 	}
+
+	// Limb i of every lane lies in the LaneCount ulongs from i·LaneCount on, as the nine vectors hold them.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void ToField52<TField>(in TField value, int lane, out SM2Field52 result) where TField : unmanaged, ISM2Field29Lanes<TField>
+	{
+		ToField52(in Unsafe.Add(ref Unsafe.As<TField, ulong>(ref Unsafe.AsRef(in value)), lane), TField.LaneCount, out result);
+	}
 }
 
 // How a product carries columns 9 to 16 into the limbs of the result: in two steps that carry every column at once, or in one pass from limb 0 up, which takes fewer operations but gives the top limbs later. A product that the next step waits for takes the first, and one among products that need not wait for each other the second.

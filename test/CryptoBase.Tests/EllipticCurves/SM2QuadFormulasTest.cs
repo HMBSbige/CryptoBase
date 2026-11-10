@@ -235,13 +235,9 @@ public class SM2QuadFormulasTest
 	{
 		List<string> failures = [];
 
-		if (SM2Field29x2Sse41.IsSupported)
+		if (SM2Field29x2.IsSupported)
 		{
-			CheckPairAdditions<SM2Field29x2Sse41>(failures);
-		}
-		else if (SM2Field29x2AdvSimd.IsSupported)
-		{
-			CheckPairAdditions<SM2Field29x2AdvSimd>(failures);
+			CheckPairAdditions<SM2Field29x2>(failures);
 		}
 		else
 		{

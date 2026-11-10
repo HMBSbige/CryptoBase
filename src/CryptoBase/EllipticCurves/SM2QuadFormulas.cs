@@ -375,54 +375,7 @@ internal static class SM2QuadFormulas
 
 		for (int i = 0; i < count; ++i)
 		{
-			left.L0 = Avx2.Permute4x64(state.P.L0, 0x44);
-			left.L1 = Avx2.Permute4x64(state.P.L1, 0x44);
-			left.L2 = Avx2.Permute4x64(state.P.L2, 0x44);
-			left.L3 = Avx2.Permute4x64(state.P.L3, 0x44);
-			left.L4 = Avx2.Permute4x64(state.P.L4, 0x44);
-			left.L5 = Avx2.Permute4x64(state.P.L5, 0x44);
-			left.L6 = Avx2.Permute4x64(state.P.L6, 0x44);
-			left.L7 = Avx2.Permute4x64(state.P.L7, 0x44);
-			left.L8 = Avx2.Permute4x64(state.P.L8, 0x44);
-			SM2Field29x4Avx2.Multiply(in left, in state.P, out first);
-			// The right of E1, [8γ, 4γ, 4γ, A], carried; T takes 2γ from it before.
-			Vector256<ulong> a0 = first.L0;
-			Vector256<ulong> g0 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a0, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L0 = MaskedBlend2(state.Q.L0, a0 + (a0 << 1) + Vector256.Create(2 * SM2Field29.FourP0) - (g0 >> 1));
-			right.L0 = g0 & Vector256.Create(SM2Field29.Mask);
-			Vector256<ulong> a1 = first.L1;
-			Vector256<ulong> g1 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a1, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L1 = MaskedBlend2(state.Q.L1, a1 + (a1 << 1) + Vector256.Create(2 * SM2Field29.FourP1) - (g1 >> 1));
-			right.L1 = (g1 & Vector256.Create(SM2Field29.Mask)) + (g0 >> SM2Field29.Bits);
-			Vector256<ulong> a2 = first.L2;
-			Vector256<ulong> g2 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a2, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L2 = MaskedBlend2(state.Q.L2, a2 + (a2 << 1) + Vector256.Create(2 * SM2Field29.FourP2) - (g2 >> 1));
-			right.L2 = (g2 & Vector256.Create(SM2Field29.Mask)) + (g1 >> SM2Field29.Bits);
-			Vector256<ulong> a3 = first.L3;
-			Vector256<ulong> g3 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a3, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L3 = MaskedBlend2(state.Q.L3, a3 + (a3 << 1) + Vector256.Create(2 * SM2Field29.FourP3) - (g3 >> 1));
-			right.L3 = (g3 & Vector256.Create(SM2Field29.Mask)) + (g2 >> SM2Field29.Bits);
-			Vector256<ulong> a4 = first.L4;
-			Vector256<ulong> g4 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a4, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L4 = MaskedBlend2(state.Q.L4, a4 + (a4 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g4 >> 1));
-			right.L4 = (g4 & Vector256.Create(SM2Field29.Mask)) + (g3 >> SM2Field29.Bits);
-			Vector256<ulong> a5 = first.L5;
-			Vector256<ulong> g5 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a5, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L5 = MaskedBlend2(state.Q.L5, a5 + (a5 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g5 >> 1));
-			right.L5 = (g5 & Vector256.Create(SM2Field29.Mask)) + (g4 >> SM2Field29.Bits);
-			Vector256<ulong> a6 = first.L6;
-			Vector256<ulong> g6 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a6, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L6 = MaskedBlend2(state.Q.L6, a6 + (a6 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g6 >> 1));
-			right.L6 = (g6 & Vector256.Create(SM2Field29.Mask)) + (g5 >> SM2Field29.Bits);
-			Vector256<ulong> a7 = first.L7;
-			Vector256<ulong> g7 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a7, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L7 = MaskedBlend2(state.Q.L7, a7 + (a7 << 1) + Vector256.Create(2 * SM2Field29.FourP7) - (g7 >> 1));
-			right.L7 = (g7 & Vector256.Create(SM2Field29.Mask)) + (g6 >> SM2Field29.Bits);
-			Vector256<ulong> a8 = first.L8;
-			Vector256<ulong> g8 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a8, 0x15), Vector256.Create(3UL, 2, 2, 0));
-			left.L8 = MaskedBlend2(state.Q.L8, a8 + (a8 << 1) + Vector256.Create(2 * SM2Field29.FourP8) - (g8 >> 1));
-			right.L8 = g8 + (g7 >> SM2Field29.Bits);
-			SM2Field29x4Avx2.Multiply(in left, in right, out second);
+			DoubleRoundsE0E1(ref state, ref left, ref right, out first, out second);
 			// X′ and Y′ folded, and the right of O0, [3(X′ + δ′), X′, Y′, Z′], carried.
 			Vector256<ulong> s8 = Swap(second.L8);
 			Vector256<ulong> v8 = MaskedBlend23(first.L8, second.L8) + Vector256.Create(SM2Field29.FourP8) - MaskedBlend23(second.L8, s8);
@@ -685,6 +638,60 @@ internal static class SM2QuadFormulas
 			state.P.L8 = MaskedBlend3(MaskedBlend2(Avx2.Permute4x64(MaskedBlend2(y8 + (y7 >> SM2Field29.Bits), c8), 0xE2), z8), third.L8 << 1);
 			state.Q.L8 = MaskedBlend3(z8, f8);
 		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[SkipLocalsInit]
+	private static void DoubleRoundsE0E1(ref SM2QuadState state, ref SM2Field29x4Avx2 left, ref SM2Field29x4Avx2 right, out SM2Field29x4Avx2 first, out SM2Field29x4Avx2 second)
+	{
+		left.L0 = Avx2.Permute4x64(state.P.L0, 0x44);
+		left.L1 = Avx2.Permute4x64(state.P.L1, 0x44);
+		left.L2 = Avx2.Permute4x64(state.P.L2, 0x44);
+		left.L3 = Avx2.Permute4x64(state.P.L3, 0x44);
+		left.L4 = Avx2.Permute4x64(state.P.L4, 0x44);
+		left.L5 = Avx2.Permute4x64(state.P.L5, 0x44);
+		left.L6 = Avx2.Permute4x64(state.P.L6, 0x44);
+		left.L7 = Avx2.Permute4x64(state.P.L7, 0x44);
+		left.L8 = Avx2.Permute4x64(state.P.L8, 0x44);
+		SM2Field29x4Avx2.Multiply(in left, in state.P, out first);
+		// The right of E1, [8γ, 4γ, 4γ, A], carried; T takes 2γ from it before.
+		Vector256<ulong> a0 = first.L0;
+		Vector256<ulong> g0 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a0, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L0 = MaskedBlend2(state.Q.L0, a0 + (a0 << 1) + Vector256.Create(2 * SM2Field29.FourP0) - (g0 >> 1));
+		right.L0 = g0 & Vector256.Create(SM2Field29.Mask);
+		Vector256<ulong> a1 = first.L1;
+		Vector256<ulong> g1 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a1, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L1 = MaskedBlend2(state.Q.L1, a1 + (a1 << 1) + Vector256.Create(2 * SM2Field29.FourP1) - (g1 >> 1));
+		right.L1 = (g1 & Vector256.Create(SM2Field29.Mask)) + (g0 >> SM2Field29.Bits);
+		Vector256<ulong> a2 = first.L2;
+		Vector256<ulong> g2 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a2, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L2 = MaskedBlend2(state.Q.L2, a2 + (a2 << 1) + Vector256.Create(2 * SM2Field29.FourP2) - (g2 >> 1));
+		right.L2 = (g2 & Vector256.Create(SM2Field29.Mask)) + (g1 >> SM2Field29.Bits);
+		Vector256<ulong> a3 = first.L3;
+		Vector256<ulong> g3 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a3, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L3 = MaskedBlend2(state.Q.L3, a3 + (a3 << 1) + Vector256.Create(2 * SM2Field29.FourP3) - (g3 >> 1));
+		right.L3 = (g3 & Vector256.Create(SM2Field29.Mask)) + (g2 >> SM2Field29.Bits);
+		Vector256<ulong> a4 = first.L4;
+		Vector256<ulong> g4 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a4, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L4 = MaskedBlend2(state.Q.L4, a4 + (a4 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g4 >> 1));
+		right.L4 = (g4 & Vector256.Create(SM2Field29.Mask)) + (g3 >> SM2Field29.Bits);
+		Vector256<ulong> a5 = first.L5;
+		Vector256<ulong> g5 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a5, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L5 = MaskedBlend2(state.Q.L5, a5 + (a5 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g5 >> 1));
+		right.L5 = (g5 & Vector256.Create(SM2Field29.Mask)) + (g4 >> SM2Field29.Bits);
+		Vector256<ulong> a6 = first.L6;
+		Vector256<ulong> g6 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a6, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L6 = MaskedBlend2(state.Q.L6, a6 + (a6 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g6 >> 1));
+		right.L6 = (g6 & Vector256.Create(SM2Field29.Mask)) + (g5 >> SM2Field29.Bits);
+		Vector256<ulong> a7 = first.L7;
+		Vector256<ulong> g7 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a7, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L7 = MaskedBlend2(state.Q.L7, a7 + (a7 << 1) + Vector256.Create(2 * SM2Field29.FourP7) - (g7 >> 1));
+		right.L7 = (g7 & Vector256.Create(SM2Field29.Mask)) + (g6 >> SM2Field29.Bits);
+		Vector256<ulong> a8 = first.L8;
+		Vector256<ulong> g8 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a8, 0x15), Vector256.Create(3UL, 2, 2, 0));
+		left.L8 = MaskedBlend2(state.Q.L8, a8 + (a8 << 1) + Vector256.Create(2 * SM2Field29.FourP8) - (g8 >> 1));
+		right.L8 = g8 + (g7 >> SM2Field29.Bits);
+		SM2Field29x4Avx2.Multiply(in left, in right, out second);
 	}
 
 
@@ -1180,9 +1187,9 @@ internal static class SM2QuadFormulas
 	{
 		SM2Field29x4Avx2.Halve(in state.P, out SM2Field29x4Avx2 p);
 		SM2Field29x4Avx2.Reduce(in p, out p);
-		Lane(in p, 2, out result.X);
-		Lane(in p, 1, out result.Y);
-		Lane(in p, 3, out result.Z);
+		SM2Field29.ToField52(in p, 2, out result.X);
+		SM2Field29.ToField52(in p, 1, out result.Y);
+		SM2Field29.ToField52(in p, 3, out result.Z);
 	}
 
 	// k·Q for a public k below n by the NAF of u2 in ECVariableTimeGroup.MultiplyAdd, with the odd multiples of Q that BuildOddMultiples gives. The time and the branches depend on k and Q.
@@ -1615,54 +1622,7 @@ internal static class SM2QuadFormulas
 		ref SM2Field29x4Avx2 first = ref Unsafe.Add(ref left, 3);
 		ref SM2Field29x4Avx2 second = ref Unsafe.Add(ref left, 4);
 		ref SM2Field29x4Avx2 third = ref Unsafe.Add(ref left, 5);
-		left.L0 = Avx2.Permute4x64(state.P.L0, 0x44);
-		left.L1 = Avx2.Permute4x64(state.P.L1, 0x44);
-		left.L2 = Avx2.Permute4x64(state.P.L2, 0x44);
-		left.L3 = Avx2.Permute4x64(state.P.L3, 0x44);
-		left.L4 = Avx2.Permute4x64(state.P.L4, 0x44);
-		left.L5 = Avx2.Permute4x64(state.P.L5, 0x44);
-		left.L6 = Avx2.Permute4x64(state.P.L6, 0x44);
-		left.L7 = Avx2.Permute4x64(state.P.L7, 0x44);
-		left.L8 = Avx2.Permute4x64(state.P.L8, 0x44);
-		SM2Field29x4Avx2.Multiply(in left, in state.P, out first);
-		// The right of E1 carried.
-		Vector256<ulong> a0 = first.L0;
-		Vector256<ulong> g0 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a0, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L0 = MaskedBlend2(state.Q.L0, a0 + (a0 << 1) + Vector256.Create(2 * SM2Field29.FourP0) - (g0 >> 1));
-		right.L0 = g0 & Vector256.Create(SM2Field29.Mask);
-		Vector256<ulong> a1 = first.L1;
-		Vector256<ulong> g1 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a1, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L1 = MaskedBlend2(state.Q.L1, a1 + (a1 << 1) + Vector256.Create(2 * SM2Field29.FourP1) - (g1 >> 1));
-		right.L1 = (g1 & Vector256.Create(SM2Field29.Mask)) + (g0 >> SM2Field29.Bits);
-		Vector256<ulong> a2 = first.L2;
-		Vector256<ulong> g2 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a2, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L2 = MaskedBlend2(state.Q.L2, a2 + (a2 << 1) + Vector256.Create(2 * SM2Field29.FourP2) - (g2 >> 1));
-		right.L2 = (g2 & Vector256.Create(SM2Field29.Mask)) + (g1 >> SM2Field29.Bits);
-		Vector256<ulong> a3 = first.L3;
-		Vector256<ulong> g3 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a3, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L3 = MaskedBlend2(state.Q.L3, a3 + (a3 << 1) + Vector256.Create(2 * SM2Field29.FourP3) - (g3 >> 1));
-		right.L3 = (g3 & Vector256.Create(SM2Field29.Mask)) + (g2 >> SM2Field29.Bits);
-		Vector256<ulong> a4 = first.L4;
-		Vector256<ulong> g4 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a4, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L4 = MaskedBlend2(state.Q.L4, a4 + (a4 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g4 >> 1));
-		right.L4 = (g4 & Vector256.Create(SM2Field29.Mask)) + (g3 >> SM2Field29.Bits);
-		Vector256<ulong> a5 = first.L5;
-		Vector256<ulong> g5 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a5, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L5 = MaskedBlend2(state.Q.L5, a5 + (a5 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g5 >> 1));
-		right.L5 = (g5 & Vector256.Create(SM2Field29.Mask)) + (g4 >> SM2Field29.Bits);
-		Vector256<ulong> a6 = first.L6;
-		Vector256<ulong> g6 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a6, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L6 = MaskedBlend2(state.Q.L6, a6 + (a6 << 1) + Vector256.Create(2 * SM2Field29.FourPMiddle) - (g6 >> 1));
-		right.L6 = (g6 & Vector256.Create(SM2Field29.Mask)) + (g5 >> SM2Field29.Bits);
-		Vector256<ulong> a7 = first.L7;
-		Vector256<ulong> g7 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a7, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L7 = MaskedBlend2(state.Q.L7, a7 + (a7 << 1) + Vector256.Create(2 * SM2Field29.FourP7) - (g7 >> 1));
-		right.L7 = (g7 & Vector256.Create(SM2Field29.Mask)) + (g6 >> SM2Field29.Bits);
-		Vector256<ulong> a8 = first.L8;
-		Vector256<ulong> g8 = Avx2.ShiftLeftLogicalVariable(Avx2.Permute4x64(a8, 0x15), Vector256.Create(3UL, 2, 2, 0));
-		left.L8 = MaskedBlend2(state.Q.L8, a8 + (a8 << 1) + Vector256.Create(2 * SM2Field29.FourP8) - (g8 >> 1));
-		right.L8 = g8 + (g7 >> SM2Field29.Bits);
-		SM2Field29x4Avx2.Multiply(in left, in right, out second);
+		DoubleRoundsE0E1(ref state, ref left, ref right, out first, out second);
 		// X′ and Y′ folded and carried into xs, for the state, and the right of [α′, ·, ·, ·] carried.
 		Vector256<ulong> s8 = Swap(second.L8);
 		Vector256<ulong> v8 = MaskedBlend23(first.L8, second.L8) + Vector256.Create(SM2Field29.FourP8) - MaskedBlend23(second.L8, s8);
@@ -1836,15 +1796,9 @@ internal static class SM2QuadFormulas
 	{
 		SM2Field29x4Avx2.Halve(in entry.EA, out SM2Field29x4Avx2 a);
 		SM2Field29x4Avx2.Reduce(in a, out a);
-		Lane(in a, 1, out result.X);
-		Lane(in a, 2, out result.Y);
-		Lane(in a, 3, out result.Z);
-	}
-
-	// Lane of a value that Reduce left, in the form E of SM2Field52, as SM2Field29.ToField52 joins its limbs.
-	private static void Lane(in SM2Field29x4Avx2 value, int lane, out SM2Field52 result)
-	{
-		SM2Field29.ToField52(in Unsafe.Add(ref Unsafe.As<SM2Field29x4Avx2, ulong>(ref Unsafe.AsRef(in value)), lane), LaneCount, out result);
+		SM2Field29.ToField52(in a, 1, out result.X);
+		SM2Field29.ToField52(in a, 2, out result.Y);
+		SM2Field29.ToField52(in a, 3, out result.Z);
 	}
 
 	// Lane 0 of b, the others of a.
