@@ -174,7 +174,7 @@ internal partial struct Field448x4AdvSimd : IEdwardsField448x4<Field448x4AdvSimd
 		Unsafe.Add(ref doubled, i + 16) = low + high << 1;
 	}
 
-	// As Field448x4Avx2.SquareProduct, two columns at a time as Product takes them, lanes A and B and lanes C and D by umlal into separate columns.
+	// As Field448Blocks.SquareProduct, two columns at a time as Product takes them, lanes A and B and lanes C and D by umlal into separate columns.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void SquareProduct(ref Vector128<uint> operands, ref Vector128<uint> result)
 	{
@@ -315,7 +315,7 @@ internal partial struct Field448x4AdvSimd : IEdwardsField448x4<Field448x4AdvSimd
 		Unsafe.Add(ref sums, 1) = limb1 + limb9;
 	}
 
-	// As Field448x4Avx2.CarryLeft, in 32-bit lanes.
+	// As Field448Blocks.CarryLeft, in 32-bit lanes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void CarryLeft(ref Vector128<uint> operands)
 	{

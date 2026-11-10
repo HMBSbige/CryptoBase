@@ -1,3 +1,5 @@
+using static CryptoBase.EllipticCurves.Curve448.Field448Blocks<System.Runtime.Intrinsics.Vector128<ulong>, CryptoBase.EllipticCurves.Curve448.Field448Vector128>;
+
 namespace CryptoBase.EllipticCurves.Curve448;
 
 // The point formulas of Field448x4Avx2 pair by pair: lanes A and B of each operand go to the products of pair AB and lanes C and D to those of pair CD, so the shuffles of a formula move values between the pairs by unpacking.
@@ -61,8 +63,8 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 
 		for (nint i = 0; i < 8; ++i)
 		{
-			Pair.PrepareRight(ref operands, i, DiffSum(Unsafe.Add(ref ab, i), Vector128.Create(TwoP)), DiffSum(Unsafe.Add(ref ab, i + 8), twoPHigh));
-			Pair.PrepareRight(ref second, i, Unsafe.Add(ref cd, i), Unsafe.Add(ref cd, i + 8));
+			PrepareRight(ref operands, i, DiffSum(Unsafe.Add(ref ab, i), Vector128.Create(TwoP)), DiffSum(Unsafe.Add(ref ab, i + 8), twoPHigh));
+			PrepareRight(ref second, i, Unsafe.Add(ref cd, i), Unsafe.Add(ref cd, i + 8));
 			twoPHigh = Vector128.Create(TwoP);
 		}
 
@@ -75,8 +77,8 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 		{
 			FinishTwistedAdd(Unsafe.Add(ref products, i), Unsafe.Add(ref productsCD, i), Vector128.Create(TwoP), out Vector128<ulong> leftLowAB, out Vector128<ulong> leftLowCD, out Vector128<ulong> rightLowAB, out Vector128<ulong> rightLowCD);
 			FinishTwistedAdd(Unsafe.Add(ref products, i + 8), Unsafe.Add(ref productsCD, i + 8), twoPHigh, out Vector128<ulong> leftHighAB, out Vector128<ulong> leftHighCD, out Vector128<ulong> rightHighAB, out Vector128<ulong> rightHighCD);
-			Pair.WriteOperands(ref operands, i, leftLowAB, leftHighAB, rightLowAB, rightHighAB);
-			Pair.WriteOperands(ref second, i, leftLowCD, leftHighCD, rightLowCD, rightHighCD);
+			WriteOperands(ref operands, i, leftLowAB, leftHighAB, rightLowAB, rightHighAB);
+			WriteOperands(ref second, i, leftLowCD, leftHighCD, rightLowCD, rightHighCD);
 			twoPHigh = Vector128.Create(TwoP);
 		}
 
@@ -93,8 +95,8 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 		ref Vector128<ulong> productsCD = ref Unsafe.Add(ref products, 16);
 		ref Vector128<ulong> doubled = ref Unsafe.Add(ref operands, Doubled);
 		PrepareDouble(ref point, ref operands);
-		Pair.SquareProduct(ref operands, ref doubled, ref products);
-		Pair.SquareProduct(ref second, ref Unsafe.Add(ref doubled, DoubledLength), ref productsCD);
+		SquareProduct(ref operands, ref doubled, ref products);
+		SquareProduct(ref second, ref Unsafe.Add(ref doubled, DoubledLength), ref productsCD);
 		Vector128<ulong> twoPHigh = Vector128.Create(TwoP8);
 		Vector128<ulong> threePHigh = Vector128.Create(ThreeP8);
 
@@ -108,8 +110,8 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 			threePHigh = Vector128.Create(ThreeP);
 		}
 
-		Pair.CarryLeft(ref operands);
-		Pair.CarryLeft(ref second);
+		CarryLeft(ref operands);
+		CarryLeft(ref second);
 		Pair.Product(ref operands, ref point.AB.L0);
 		Pair.Product(ref second, ref point.CD.L0);
 	}
@@ -128,8 +130,8 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 		{
 			Vector128<ulong> low = Unsafe.Add(ref ab, i);
 			Vector128<ulong> high = Unsafe.Add(ref ab, i + 8);
-			Pair.PrepareRight(ref operands, i, low, high);
-			Pair.PrepareRight(ref second, i, Previous(Unsafe.Add(ref cd, i), low + Swap(low)), Previous(Unsafe.Add(ref cd, i + 8), high + Swap(high)));
+			PrepareRight(ref operands, i, low, high);
+			PrepareRight(ref second, i, Previous(Unsafe.Add(ref cd, i), low + Swap(low)), Previous(Unsafe.Add(ref cd, i + 8), high + Swap(high)));
 		}
 
 		Pair.Product(ref operands, ref products);
@@ -147,8 +149,8 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 			threePHigh = Vector128.Create(ThreeP);
 		}
 
-		Pair.CarryLeft(ref operands);
-		Pair.CarryLeft(ref second);
+		CarryLeft(ref operands);
+		CarryLeft(ref second);
 		Pair.Product(ref operands, ref ab);
 		Pair.Product(ref second, ref cd);
 	}
@@ -162,8 +164,8 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 		ref Vector128<ulong> productsCD = ref Unsafe.Add(ref products, 16);
 		ref Vector128<ulong> doubled = ref Unsafe.Add(ref operands, Doubled);
 		PrepareDouble(ref point, ref operands);
-		Pair.SquareProduct(ref operands, ref doubled, ref products);
-		Pair.SquareProduct(ref second, ref Unsafe.Add(ref doubled, DoubledLength), ref productsCD);
+		SquareProduct(ref operands, ref doubled, ref products);
+		SquareProduct(ref second, ref Unsafe.Add(ref doubled, DoubledLength), ref productsCD);
 		Vector128<ulong> twoPHigh = Vector128.Create(TwoP8);
 		Vector128<ulong> threePHigh = Vector128.Create(ThreeP8);
 
@@ -177,8 +179,8 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 			threePHigh = Vector128.Create(ThreeP);
 		}
 
-		Pair.CarryLeft(ref operands);
-		Pair.CarryLeft(ref second);
+		CarryLeft(ref operands);
+		CarryLeft(ref second);
 		Pair.Product(ref operands, ref point.AB.L0);
 		Pair.Product(ref second, ref point.CD.L0);
 	}
@@ -227,33 +229,13 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 		}
 	}
 
-	// Limbs i, i + 1, i + 8 and i + 9 of the left operand and the sums of its halves from a 56-bit limb of the low half and the one of the high half, each lane where negate is set taken from 2p.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void WriteEntryLimbs(ref Vector128<ulong> operands, nint i, Vector128<ulong> low, Vector128<ulong> high, Vector128<ulong> negate)
-	{
-		Vector128<ulong> mask = Vector128.Create(Mask);
-		Vector128<ulong> twoP = Vector128.Create(TwoP);
-		Vector128<ulong> limb0 = NegateUnder(low & mask, twoP, negate);
-		Vector128<ulong> limb1 = NegateUnder(low >> Bits, twoP, negate);
-		Vector128<ulong> limb8 = NegateUnder(high & mask, Vector128.Create(i is 0 ? TwoP8 : TwoP), negate);
-		Vector128<ulong> limb9 = NegateUnder(high >> Bits, twoP, negate);
-		ref Vector128<ulong> left = ref Unsafe.Add(ref operands, Left + i);
-		left = limb0;
-		Unsafe.Add(ref left, 1) = limb1;
-		Unsafe.Add(ref left, 8) = limb8;
-		Unsafe.Add(ref left, 9) = limb9;
-		ref Vector128<ulong> sums = ref Unsafe.Add(ref operands, Sums + i);
-		sums = limb0 + limb8;
-		Unsafe.Add(ref sums, 1) = limb1 + limb9;
-	}
-
 	// Limbs i and i + 8 of the left operand, to be carried, and of the right one.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WriteUncarried(ref Vector128<ulong> operands, nint i, Vector128<ulong> leftLow, Vector128<ulong> leftHigh, Vector128<ulong> rightLow, Vector128<ulong> rightHigh)
 	{
 		Unsafe.Add(ref operands, Left + i) = leftLow;
 		Unsafe.Add(ref operands, Left + i + 8) = leftHigh;
-		Pair.PrepareRight(ref operands, i, rightLow, rightHigh);
+		PrepareRight(ref operands, i, rightLow, rightHigh);
 	}
 
 	// (X − Y, X + Y) from (X, Y).
@@ -325,13 +307,6 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 		rightCD = Sse2.UnpackLow(t, y);
 	}
 
-	// value, or 2p − value where negate is set: (value ^ m) + (m & (2p + 1)) is 2p − value modulo 2^64 for m all ones.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> NegateUnder(Vector128<ulong> value, Vector128<ulong> twoP, Vector128<ulong> negate)
-	{
-		return (value ^ negate) + (negate & twoP + Vector128<ulong>.One);
-	}
-
 	internal partial struct Pair
 	{
 		// Limbs i and i + 8 of the operand of a square, as WriteOperands writes them for both sides, and doubled.
@@ -342,90 +317,6 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 			Unsafe.Add(ref doubled, i) = low + low;
 			Unsafe.Add(ref doubled, i + 8) = high + high;
 			Unsafe.Add(ref doubled, i + 16) = low + high << 1;
-		}
-
-		// As Field448x4Avx2.SquareProduct on two lanes, with the doubled operand at doubled.
-		[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-		internal static void SquareProduct(ref Vector128<ulong> operands, ref Vector128<ulong> doubled, ref Vector128<ulong> result)
-		{
-			ref Vector128<ulong> x = ref Unsafe.Add(ref operands, Left);
-			ref Vector128<ulong> d = ref doubled;
-			ref Vector128<ulong> y = ref Unsafe.Add(ref operands, Right);
-			Vector128<ulong> carryLow = Vector128<ulong>.Zero;
-			Vector128<ulong> carryHigh = Vector128<ulong>.Zero;
-			Vector128<ulong> p0 = Vector128<ulong>.Zero, q0 = Vector128<ulong>.Zero, r0 = Vector128<ulong>.Zero;
-			Vector128<ulong> p1 = Vector128<ulong>.Zero, q1 = Vector128<ulong>.Zero, r1 = Vector128<ulong>.Zero;
-			Term(ref x, 0, ref y, 8, ref p0, ref q0, ref r0);
-			Term(ref d, 0, ref y, 9, ref p1, ref q1, ref r1);
-			Term(ref d, 1, ref y, 7, ref p0, ref q0, ref r0);
-			Term(ref d, 2, ref y, 6, ref p0, ref q0, ref r0);
-			Term(ref d, 2, ref y, 7, ref p1, ref q1, ref r1);
-			Term(ref d, 3, ref y, 5, ref p0, ref q0, ref r0);
-			Term(ref d, 3, ref y, 6, ref p1, ref q1, ref r1);
-			Term(ref x, 4, ref y, 4, ref p0, ref q0, ref r0);
-			Term(ref d, 4, ref y, 5, ref p1, ref q1, ref r1);
-			Column(ref result, 0, p0, q0, r0, ref carryLow, ref carryHigh);
-			Column(ref result, 1, p1, q1, r1, ref carryLow, ref carryHigh);
-			p0 = Vector128<ulong>.Zero;
-			q0 = Vector128<ulong>.Zero;
-			r0 = Vector128<ulong>.Zero;
-			p1 = Vector128<ulong>.Zero;
-			q1 = Vector128<ulong>.Zero;
-			r1 = Vector128<ulong>.Zero;
-			Term(ref d, 0, ref y, 10, ref p0, ref q0, ref r0);
-			Term(ref d, 0, ref y, 11, ref p1, ref q1, ref r1);
-			Term(ref x, 1, ref y, 9, ref p0, ref q0, ref r0);
-			Term(ref d, 1, ref y, 10, ref p1, ref q1, ref r1);
-			Term(ref d, 3, ref y, 7, ref p0, ref q0, ref r0);
-			Term(ref d, 4, ref y, 6, ref p0, ref q0, ref r0);
-			Term(ref d, 4, ref y, 7, ref p1, ref q1, ref r1);
-			Term(ref x, 5, ref y, 5, ref p0, ref q0, ref r0);
-			Term(ref d, 5, ref y, 6, ref p1, ref q1, ref r1);
-			Column(ref result, 2, p0, q0, r0, ref carryLow, ref carryHigh);
-			Column(ref result, 3, p1, q1, r1, ref carryLow, ref carryHigh);
-			p0 = Vector128<ulong>.Zero;
-			q0 = Vector128<ulong>.Zero;
-			r0 = Vector128<ulong>.Zero;
-			p1 = Vector128<ulong>.Zero;
-			q1 = Vector128<ulong>.Zero;
-			r1 = Vector128<ulong>.Zero;
-			Term(ref d, 0, ref y, 12, ref p0, ref q0, ref r0);
-			Term(ref d, 0, ref y, 13, ref p1, ref q1, ref r1);
-			Term(ref d, 1, ref y, 11, ref p0, ref q0, ref r0);
-			Term(ref d, 1, ref y, 12, ref p1, ref q1, ref r1);
-			Term(ref x, 2, ref y, 10, ref p0, ref q0, ref r0);
-			Term(ref d, 2, ref y, 11, ref p1, ref q1, ref r1);
-			Term(ref d, 5, ref y, 7, ref p0, ref q0, ref r0);
-			Term(ref x, 6, ref y, 6, ref p0, ref q0, ref r0);
-			Term(ref d, 6, ref y, 7, ref p1, ref q1, ref r1);
-			Column(ref result, 4, p0, q0, r0, ref carryLow, ref carryHigh);
-			Column(ref result, 5, p1, q1, r1, ref carryLow, ref carryHigh);
-			p0 = Vector128<ulong>.Zero;
-			q0 = Vector128<ulong>.Zero;
-			r0 = Vector128<ulong>.Zero;
-			p1 = Vector128<ulong>.Zero;
-			q1 = Vector128<ulong>.Zero;
-			r1 = Vector128<ulong>.Zero;
-			Term(ref d, 0, ref y, 14, ref p0, ref q0, ref r0);
-			Term(ref d, 0, ref y, 15, ref p1, ref q1, ref r1);
-			Term(ref d, 1, ref y, 13, ref p0, ref q0, ref r0);
-			Term(ref d, 1, ref y, 14, ref p1, ref q1, ref r1);
-			Term(ref d, 2, ref y, 12, ref p0, ref q0, ref r0);
-			Term(ref d, 2, ref y, 13, ref p1, ref q1, ref r1);
-			Term(ref x, 3, ref y, 11, ref p0, ref q0, ref r0);
-			Term(ref d, 3, ref y, 12, ref p1, ref q1, ref r1);
-			Term(ref x, 7, ref y, 7, ref p0, ref q0, ref r0);
-			Column(ref result, 6, p0, q0, r0, ref carryLow, ref carryHigh);
-			Column(ref result, 7, p1, q1, r1, ref carryLow, ref carryHigh);
-			Wrap(ref result, carryLow, carryHigh);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void Term(ref Vector128<ulong> x, nint k, ref Vector128<ulong> y, nint n, ref Vector128<ulong> p, ref Vector128<ulong> q, ref Vector128<ulong> r)
-		{
-			p += M(Unsafe.Add(ref x, k), Unsafe.Add(ref y, n + 16));
-			q += M(Unsafe.Add(ref x, k + 8), Unsafe.Add(ref y, n + 8));
-			r += M(Unsafe.Add(ref x, k + 16), Unsafe.Add(ref y, n));
 		}
 	}
 }

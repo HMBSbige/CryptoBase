@@ -13,6 +13,7 @@ internal static class ScalarDigits
 	// L = 2^446 − 13818066809895115352007386748515426880336692474882178609894547503885, the order of the base points.
 	private static ReadOnlySpan<ulong> Order => [0x2378C292AB5844F3, 0x216CC2728DC58F55, 0xC44EDB49AED63690, 0xFFFFFFFF7CCA23E9, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x3FFFFFFFFFFFFFFF];
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void ReadLimbs(ReadOnlySpan<byte> scalar, Span<ulong> limbs)
 	{
 		Debug.Assert(scalar.Length is 8 * LimbCount && limbs.Length is LimbCount);

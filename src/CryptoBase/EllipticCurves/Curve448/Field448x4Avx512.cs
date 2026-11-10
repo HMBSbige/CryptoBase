@@ -1,7 +1,7 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
 // The limbs of Field448x4Avx2 two to a 512-bit vector: vector k holds limb k of lanes A, B, C, D in its low half and limb k + 8 of the same lanes in its high half, the halves x_lo,k and x_hi,k of x = x_lo + φ·x_hi, so that each lane of a half is a lane of Field448x4Avx2 and the four-lane formulas run on both halves at once. The members take and give the bounds of Field448x4Avx2.
-internal partial struct Field448x4Avx512
+internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 {
 	internal Vector512<ulong> L0;
 	internal Vector512<ulong> L1;
@@ -73,37 +73,16 @@ internal partial struct Field448x4Avx512
 
 	public static void Extract(in Field448x4Avx512 value, out Field448 a, out Field448 b, out Field448 c, out Field448 d)
 	{
-		ReadOnlySpan<Vector512<ulong>> limbs = MemoryMarshal.CreateReadOnlySpan(in value.L0, 8);
-		Join(limbs, 0, out a);
-		Join(limbs, 1, out b);
-		Join(limbs, 2, out c);
-		Join(limbs, 3, out d);
+		Field448.FromRadix28(in value, 0, out a);
+		Field448.FromRadix28(in value, 1, out b);
+		Field448.FromRadix28(in value, 2, out c);
+		Field448.FromRadix28(in value, 3, out d);
 	}
 
-	// As Field448x4Avx2.Join.
-	private static void Join(ReadOnlySpan<Vector512<ulong>> limbs, int lane, out Field448 result)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ulong Limb(in Field448x4Avx512 value, int limb, int lane)
 	{
-		Span<ulong> carried = stackalloc ulong[16];
-		ulong carry = 0;
-
-		for (int i = 0; i < carried.Length; ++i)
-		{
-			ulong sum = limbs[i & 7].GetElement(lane + (i >> 3 << 2)) + carry;
-			carried[i] = sum & Mask;
-			carry = sum >> Bits;
-		}
-
-		carried[0] += carry;
-		carried[8] += carry;
-		result.L0 = carried[0] + (carried[1] << Bits);
-		result.L1 = carried[2] + (carried[3] << Bits);
-		result.L2 = carried[4] + (carried[5] << Bits);
-		result.L3 = carried[6] + (carried[7] << Bits);
-		result.L4 = carried[8] + (carried[9] << Bits);
-		result.L5 = carried[10] + (carried[11] << Bits);
-		result.L6 = carried[12] + (carried[13] << Bits);
-		result.L7 = carried[14] + (carried[15] << Bits);
-		carried.ZeroMemory();
+		return Unsafe.Add(ref Unsafe.AsRef(in value.L0), limb & 7).GetElement(lane + (limb >> 3 << 2));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -119,46 +98,17 @@ internal partial struct Field448x4Avx512
 		}
 	}
 
-	// The factors of Field448x4Avx2.CreateMultiplier, eight columns to a vector: vector i holds those of limb i for columns 0 to 7 and vector 16 + i those for columns 8 to 15.
+	// The factors of IField448x4.CreateMultiplier, eight columns to a vector: vector i holds those of limb i for columns 0 to 7 and vector 16 + i those for columns 8 to 15.
 	public static int MultiplierLength => 4;
 
-	public static void CreateMultiplier(in Field448 u, Span<Field448x4Avx512> multiplier)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ulong LaneALimb(in Field448x4Avx512 value, int limb)
 	{
-		Debug.Assert(multiplier.Length is 4);
-
-		Create(in u, in u, in u, in u, out Field448x4Avx512 limbs);
-		ReadOnlySpan<Vector512<ulong>> uLimbs = MemoryMarshal.CreateReadOnlySpan(ref limbs.L0, 8);
-		Span<ulong> factors = MemoryMarshal.Cast<Field448x4Avx512, ulong>(multiplier);
-		factors.Clear();
-
-		for (int i = 0; i < 16; ++i)
-		{
-			for (int j = 0; j < 16; ++j)
-			{
-				ulong term = uLimbs[j & 7].GetElement(j >> 3 << 2);
-				int s = i + j;
-
-				if (s < 16)
-				{
-					AddFactor(factors, i, s, term);
-				}
-				else if (s < 24)
-				{
-					AddFactor(factors, i, s - 8, term);
-					AddFactor(factors, i, s - 16, term);
-				}
-				else
-				{
-					AddFactor(factors, i, s - 16, 2 * term);
-					AddFactor(factors, i, s - 24, term);
-				}
-			}
-		}
-
-		limbs.ZeroMemory();
+		return Unsafe.Add(ref Unsafe.AsRef(in value.L0), limb & 7).GetElement(limb >> 3 << 2);
 	}
 
-	private static void AddFactor(Span<ulong> factors, int limb, int column, ulong term)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void AddFactor(Span<ulong> factors, int limb, int column, ulong term)
 	{
 		factors[(column >> 3) * 128 + limb * 8 + (column & 7)] += term;
 	}
@@ -278,7 +228,7 @@ internal partial struct Field448x4Avx512
 		return Avx512F.Shuffle4x128(even, odd, LowHalves) + Avx512F.Shuffle4x128(even, odd, HighHalves);
 	}
 
-	// The right operand y, after φ times its vectors 1 to 7, (y_hi, y_lo + y_hi), and the pairs of sums of the halves of the fifteen: vector q − 2 of Pairs holds sum_q and sum_(q−1), where sum_n is low_n + high_n of the right operand y_n of Field448x4Avx2.Product. g_k holds (sum_(k+8), sum_k), the sums of y_k and of φ·y_k.
+	// The right operand y, after φ times its vectors 1 to 7, (y_hi, y_lo + y_hi), and the pairs of sums of the halves of the fifteen: vector q − 2 of Pairs holds sum_q and sum_(q−1), where sum_n is low_n + high_n of the right operand y_n of Field448Blocks.Product. g_k holds (sum_(k+8), sum_k), the sums of y_k and of φ·y_k.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WriteRight(ref Vector512<ulong> operands, Vector512<ulong> y0, Vector512<ulong> y1, Vector512<ulong> y2, Vector512<ulong> y3, Vector512<ulong> y4, Vector512<ulong> y5, Vector512<ulong> y6, Vector512<ulong> y7)
 	{
@@ -338,7 +288,7 @@ internal partial struct Field448x4Avx512
 		return Vector512.Create(0, 0, 0, 0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
 	}
 
-	// The lane products of Field448x4Avx2.Product, both halves of a column in one vector: x_k holds (x_lo,k, x_hi,k) and y_n (low_n, high_n), so one product of the two gives P in the low half and Q in the high one, and one product of a vector of Sums and one of Pairs gives R for two values of k, one in each half. Column j of x_lo takes P + Q and column j of x_hi R − P, both in vector j, so the carries of the two halves run side by side; the low halves of pq and of r − pq, one shuffle, and the high halves of pq and of r, another, add up to (P + Q, R − P).
+	// The lane products of Field448Blocks.Product, both halves of a column in one vector: x_k holds (x_lo,k, x_hi,k) and y_n (low_n, high_n), so one product of the two gives P in the low half and Q in the high one, and one product of a vector of Sums and one of Pairs gives R for two values of k, one in each half. Column j of x_lo takes P + Q and column j of x_hi R − P, both in vector j, so the carries of the two halves run side by side; the low halves of pq and of r − pq, one shuffle, and the high halves of pq and of r, another, add up to (P + Q, R − P).
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void Product(ref Vector512<ulong> operands, ref Vector512<ulong> result)
 	{

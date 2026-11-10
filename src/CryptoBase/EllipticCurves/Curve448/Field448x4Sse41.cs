@@ -1,25 +1,19 @@
+using static CryptoBase.EllipticCurves.Curve448.Field448Blocks<System.Runtime.Intrinsics.Vector128<ulong>, CryptoBase.EllipticCurves.Curve448.Field448Vector128>;
+
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The limbs of Field448x4Avx2 in 128-bit vectors, lanes A and B in one pair of sixteen and lanes C and D in another, with the same bounds. A product is two products of two lanes, each the block product of Field448x4Avx2.Product.
+// The limbs of Field448x4Avx2 in 128-bit vectors, lanes A and B in one pair of sixteen and lanes C and D in another, with the same bounds. A product is two products of two lanes, each the block product of Field448Blocks.Product.
 internal partial struct Field448x4Sse41
 {
 	internal Pair AB;
 	internal Pair CD;
 
-	private const int Bits = 28;
-	private const ulong Mask = (1UL << Bits) - 1;
-
-	private const ulong TwoP = (1UL << 29) - 2;
-	private const ulong TwoP8 = (1UL << 29) - 4;
 	private const ulong EightP = (1UL << 31) - 8;
 	private const ulong EightP8 = (1UL << 31) - 16;
 
 	private const ulong SixteenA24 = 16 * 39081;
 
-	// The operands of Pair.Product in its scratch, in vectors, as Field448x4Avx2 lays them out for each pair; a step keeps the operands of the second pair at Second and its products at Products.
-	private const int Left = 0;
-	private const int Sums = 16;
-	private const int Right = 24;
+	// A step keeps the operands of Pair.Product for the second pair at Second, laid out as those of the first, and its products at Products.
 	private const int Second = 56;
 	private const int Products = 112;
 
@@ -56,46 +50,17 @@ internal partial struct Field448x4Sse41
 		}
 	}
 
-	// The factors of Field448x4Avx2.CreateMultiplier two columns to a vector: limb i of value g holds the factors of columns 2g and 2g + 1 for limb i in pair AB and those of columns 2g + 8 and 2g + 9 in pair CD.
+	// The factors of IField448x4.CreateMultiplier two columns to a vector: limb i of value g holds the factors of columns 2g and 2g + 1 for limb i in pair AB and those of columns 2g + 8 and 2g + 9 in pair CD.
 	public static int MultiplierLength => 4;
 
-	public static void CreateMultiplier(in Field448 u, Span<Field448x4Sse41> multiplier)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ulong LaneALimb(in Field448x4Sse41 value, int limb)
 	{
-		Debug.Assert(multiplier.Length is 4);
-
-		Create(in u, in u, in u, in u, out Field448x4Sse41 limbs);
-		ReadOnlySpan<Vector128<ulong>> uLimbs = MemoryMarshal.CreateReadOnlySpan(ref limbs.AB.L0, 16);
-		Span<ulong> factors = MemoryMarshal.Cast<Field448x4Sse41, ulong>(multiplier);
-		factors.Clear();
-
-		for (int i = 0; i < 16; ++i)
-		{
-			for (int j = 0; j < 16; ++j)
-			{
-				ulong term = uLimbs[j].ToScalar();
-				int s = i + j;
-
-				if (s < 16)
-				{
-					AddFactor(factors, i, s, term);
-				}
-				else if (s < 24)
-				{
-					AddFactor(factors, i, s - 8, term);
-					AddFactor(factors, i, s - 16, term);
-				}
-				else
-				{
-					AddFactor(factors, i, s - 16, 2 * term);
-					AddFactor(factors, i, s - 24, term);
-				}
-			}
-		}
-
-		limbs.ZeroMemory();
+		return Unsafe.Add(ref Unsafe.AsRef(in value.AB.L0), limb).ToScalar();
 	}
 
-	private static void AddFactor(Span<ulong> factors, int limb, int column, ulong term)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void AddFactor(Span<ulong> factors, int limb, int column, ulong term)
 	{
 		factors[(column & 7) >> 1 << 6 | column >> 3 << 5 | limb << 1 | column & 1] += term;
 	}
@@ -132,8 +97,8 @@ internal partial struct Field448x4Sse41
 		{
 			PrepareLadder(Unsafe.Add(ref ab, i), Unsafe.Add(ref cd, i), select, Vector128.Create(TwoP), out Vector128<ulong> leftLow, out Vector128<ulong> leftLowCD, out Vector128<ulong> rightLow, out Vector128<ulong> rightLowCD);
 			PrepareLadder(Unsafe.Add(ref ab, i + 8), Unsafe.Add(ref cd, i + 8), select, twoPHigh, out Vector128<ulong> leftHigh, out Vector128<ulong> leftHighCD, out Vector128<ulong> rightHigh, out Vector128<ulong> rightHighCD);
-			Pair.WriteOperands(ref operands, i, leftLow, leftHigh, rightLow, rightHigh);
-			Pair.WriteOperands(ref second, i, leftLowCD, leftHighCD, rightLowCD, rightHighCD);
+			WriteOperands(ref operands, i, leftLow, leftHigh, rightLow, rightHigh);
+			WriteOperands(ref second, i, leftLowCD, leftHighCD, rightLowCD, rightHighCD);
 			twoPHigh = Vector128.Create(TwoP);
 		}
 	}
@@ -174,14 +139,14 @@ internal partial struct Field448x4Sse41
 			Unsafe.Add(ref operands, Left + i + 8) = leftHigh;
 			Unsafe.Add(ref second, Left + i) = leftLowCD;
 			Unsafe.Add(ref second, Left + i + 8) = leftHighCD;
-			Pair.PrepareRight(ref operands, i, Unsafe.Add(ref products, i), Unsafe.Add(ref products, i + 8));
-			Pair.PrepareRight(ref second, i, leftLowCD, leftHighCD);
+			PrepareRight(ref operands, i, Unsafe.Add(ref products, i), Unsafe.Add(ref products, i + 8));
+			PrepareRight(ref second, i, leftLowCD, leftHighCD);
 			twoPHigh = Vector128.Create(TwoP);
 			eightPHigh = Vector128.Create(EightP);
 		}
 
-		Pair.CarryLeft(ref operands);
-		Pair.CarryLeft(ref second);
+		CarryLeft(ref operands);
+		CarryLeft(ref second);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -299,7 +264,7 @@ internal partial struct Field448x4Sse41
 	}
 
 	// Two of the four lanes: limb i of each in vector i.
-	internal partial struct Pair
+	internal partial struct Pair : IField448Lanes<Pair>
 	{
 		internal Vector128<ulong> L0;
 		internal Vector128<ulong> L1;
@@ -318,183 +283,29 @@ internal partial struct Field448x4Sse41
 		internal Vector128<ulong> L14;
 		internal Vector128<ulong> L15;
 
-		// As Field448x4Avx2.Create.
 		internal static void Create(in Field448 a, in Field448 b, out Pair result)
 		{
-			Vector128<ulong> mask = Vector128.Create(Mask);
-			Vector128<ulong> w0 = Vector128.Create(a.L0, b.L0);
-			Vector128<ulong> w1 = Vector128.Create(a.L1, b.L1);
-			Vector128<ulong> w2 = Vector128.Create(a.L2, b.L2);
-			Vector128<ulong> w3 = Vector128.Create(a.L3, b.L3);
-			Vector128<ulong> w4 = Vector128.Create(a.L4, b.L4);
-			Vector128<ulong> w5 = Vector128.Create(a.L5, b.L5);
-			Vector128<ulong> w6 = Vector128.Create(a.L6, b.L6);
-			Vector128<ulong> w7 = Vector128.Create(a.L7, b.L7);
-			Vector128<ulong> top = w7 >> 2 * Bits;
-			result.L0 = (w0 & mask) + top;
-			result.L1 = w0 >> Bits & mask;
-			result.L2 = (w1 & mask) + (w0 >> 2 * Bits);
-			result.L3 = w1 >> Bits & mask;
-			result.L4 = (w2 & mask) + (w1 >> 2 * Bits);
-			result.L5 = w2 >> Bits & mask;
-			result.L6 = (w3 & mask) + (w2 >> 2 * Bits);
-			result.L7 = w3 >> Bits & mask;
-			result.L8 = (w4 & mask) + (w3 >> 2 * Bits) + top;
-			result.L9 = w4 >> Bits & mask;
-			result.L10 = (w5 & mask) + (w4 >> 2 * Bits);
-			result.L11 = w5 >> Bits & mask;
-			result.L12 = (w6 & mask) + (w5 >> 2 * Bits);
-			result.L13 = w6 >> Bits & mask;
-			result.L14 = (w7 & mask) + (w6 >> 2 * Bits);
-			result.L15 = w7 >> Bits & mask;
+			Unsafe.SkipInit(out result);
+			Field448.ToRadix28(Vector128.Create(a.L0, b.L0), Vector128.Create(a.L1, b.L1), Vector128.Create(a.L2, b.L2), Vector128.Create(a.L3, b.L3), Vector128.Create(a.L4, b.L4), Vector128.Create(a.L5, b.L5), Vector128.Create(a.L6, b.L6), Vector128.Create(a.L7, b.L7), ref result.L0);
 		}
 
 		internal static void Extract(in Pair value, out Field448 a, out Field448 b)
 		{
-			ReadOnlySpan<Vector128<ulong>> limbs = MemoryMarshal.CreateReadOnlySpan(in value.L0, 16);
-			Join(limbs, 0, out a);
-			Join(limbs, 1, out b);
-		}
-
-		// As Field448x4Avx2.Join.
-		private static void Join(ReadOnlySpan<Vector128<ulong>> limbs, int lane, out Field448 result)
-		{
-			Span<ulong> carried = stackalloc ulong[16];
-			ulong carry = 0;
-
-			for (int i = 0; i < carried.Length; ++i)
-			{
-				ulong sum = limbs[i].GetElement(lane) + carry;
-				carried[i] = sum & Mask;
-				carry = sum >> Bits;
-			}
-
-			carried[0] += carry;
-			carried[8] += carry;
-			result.L0 = carried[0] + (carried[1] << Bits);
-			result.L1 = carried[2] + (carried[3] << Bits);
-			result.L2 = carried[4] + (carried[5] << Bits);
-			result.L3 = carried[6] + (carried[7] << Bits);
-			result.L4 = carried[8] + (carried[9] << Bits);
-			result.L5 = carried[10] + (carried[11] << Bits);
-			result.L6 = carried[12] + (carried[13] << Bits);
-			result.L7 = carried[14] + (carried[15] << Bits);
-			carried.ZeroMemory();
-		}
-
-		// Limbs i and i + 8 of the left operand, the sum of its halves, and those of the right one as Field448x4Avx2.PrepareRight writes them.
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		internal static void WriteOperands(ref Vector128<ulong> operands, nint i, Vector128<ulong> leftLow, Vector128<ulong> leftHigh, Vector128<ulong> rightLow, Vector128<ulong> rightHigh)
-		{
-			Unsafe.Add(ref operands, Left + i) = leftLow;
-			Unsafe.Add(ref operands, Left + i + 8) = leftHigh;
-			Unsafe.Add(ref operands, Sums + i) = leftLow + leftHigh;
-			PrepareRight(ref operands, i, rightLow, rightHigh);
+			Field448.FromRadix28(in value, 0, out a);
+			Field448.FromRadix28(in value, 1, out b);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		internal static void PrepareRight(ref Vector128<ulong> operands, nint i, Vector128<ulong> low, Vector128<ulong> high)
+		public static ulong Limb(in Pair value, int limb, int lane)
 		{
-			ref Vector128<ulong> right = ref Unsafe.Add(ref operands, Right);
-			Vector128<ulong> sum = low + high;
-			Unsafe.Add(ref right, i) = sum + high;
-			Unsafe.Add(ref right, 8 + i) = sum;
-			Unsafe.Add(ref right, 16 + i) = high;
-			Unsafe.Add(ref right, 24 + i) = low;
+			return Unsafe.Add(ref Unsafe.AsRef(in value.L0), limb).GetElement(lane);
 		}
 
-		// One carry from each limb of the left operand into the next, from the values before it, with the one out of limb 15 into limbs 0 and 8, and then the sums of its halves.
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		internal static void CarryLeft(ref Vector128<ulong> operands)
-		{
-			Vector128<ulong> mask = Vector128.Create(Mask);
-			ref Vector128<ulong> left = ref Unsafe.Add(ref operands, Left);
-			Vector128<ulong> carryLow = Unsafe.Add(ref left, 15) >> Bits;
-			Vector128<ulong> carryHigh = (Unsafe.Add(ref left, 7) >> Bits) + carryLow;
-
-			for (nint i = 0; i < 8; ++i)
-			{
-				Vector128<ulong> low = Unsafe.Add(ref left, i);
-				Vector128<ulong> high = Unsafe.Add(ref left, i + 8);
-				Vector128<ulong> carriedLow = (low & mask) + carryLow;
-				Vector128<ulong> carriedHigh = (high & mask) + carryHigh;
-				Unsafe.Add(ref left, i) = carriedLow;
-				Unsafe.Add(ref left, i + 8) = carriedHigh;
-				Unsafe.Add(ref operands, Sums + i) = carriedLow + carriedHigh;
-				carryLow = low >> Bits;
-				carryHigh = high >> Bits;
-			}
-		}
-
-		// The block product of Field448x4Avx2.Product on two lanes.
+		// The block product of Field448Blocks.Product on two lanes.
 		[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 		internal static void Product(ref Vector128<ulong> operands, ref Vector128<ulong> result)
 		{
-			ref Vector128<ulong> right = ref Unsafe.Add(ref operands, Right);
-			Vector128<ulong> carryLow = Vector128<ulong>.Zero;
-			Vector128<ulong> carryHigh = Vector128<ulong>.Zero;
-
-			for (nint j = 0; j < 8; j += 4)
-			{
-				Vector128<ulong> p0 = Vector128<ulong>.Zero, q0 = Vector128<ulong>.Zero, r0 = Vector128<ulong>.Zero;
-				Vector128<ulong> p1 = Vector128<ulong>.Zero, q1 = Vector128<ulong>.Zero, r1 = Vector128<ulong>.Zero;
-				Vector128<ulong> p2 = Vector128<ulong>.Zero, q2 = Vector128<ulong>.Zero, r2 = Vector128<ulong>.Zero;
-				Vector128<ulong> p3 = Vector128<ulong>.Zero, q3 = Vector128<ulong>.Zero, r3 = Vector128<ulong>.Zero;
-				ref Vector128<ulong> x = ref Unsafe.Add(ref operands, Left);
-				ref Vector128<ulong> y = ref Unsafe.Add(ref right, j + 8);
-
-				for (nint k = 0; k < 8; ++k)
-				{
-					Vector128<ulong> low = x;
-					Vector128<ulong> high = Unsafe.Add(ref x, 8);
-					Vector128<ulong> sum = Unsafe.Add(ref x, 16);
-					Accumulate(ref y, 0, low, high, sum, ref p0, ref q0, ref r0);
-					Accumulate(ref y, 1, low, high, sum, ref p1, ref q1, ref r1);
-					Accumulate(ref y, 2, low, high, sum, ref p2, ref q2, ref r2);
-					Accumulate(ref y, 3, low, high, sum, ref p3, ref q3, ref r3);
-					x = ref Unsafe.Add(ref x, 1);
-					y = ref Unsafe.Subtract(ref y, 1);
-				}
-
-				Column(ref result, j, p0, q0, r0, ref carryLow, ref carryHigh);
-				Column(ref result, j + 1, p1, q1, r1, ref carryLow, ref carryHigh);
-				Column(ref result, j + 2, p2, q2, r2, ref carryLow, ref carryHigh);
-				Column(ref result, j + 3, p3, q3, r3, ref carryLow, ref carryHigh);
-			}
-
-			Wrap(ref result, carryLow, carryHigh);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void Accumulate(ref Vector128<ulong> y, nint c, Vector128<ulong> low, Vector128<ulong> high, Vector128<ulong> sum, ref Vector128<ulong> p, ref Vector128<ulong> q, ref Vector128<ulong> r)
-		{
-			p += M(low, Unsafe.Add(ref y, c + 16));
-			q += M(high, Unsafe.Add(ref y, c + 8));
-			r += M(sum, Unsafe.Add(ref y, c));
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void Column(ref Vector128<ulong> result, nint j, Vector128<ulong> p, Vector128<ulong> q, Vector128<ulong> r, ref Vector128<ulong> carryLow, ref Vector128<ulong> carryHigh)
-		{
-			Vector128<ulong> mask = Vector128.Create(Mask);
-			Vector128<ulong> low = p + q + carryLow;
-			Vector128<ulong> high = r - p + carryHigh;
-			Unsafe.Add(ref result, j) = low & mask;
-			Unsafe.Add(ref result, j + 8) = high & mask;
-			carryLow = low >> Bits;
-			carryHigh = high >> Bits;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void Wrap(ref Vector128<ulong> limbs, Vector128<ulong> carryLow, Vector128<ulong> carryHigh)
-		{
-			Vector128<ulong> mask = Vector128.Create(Mask);
-			Vector128<ulong> low = limbs + carryHigh;
-			Vector128<ulong> high = Unsafe.Add(ref limbs, 8) + carryLow + carryHigh;
-			limbs = low & mask;
-			Unsafe.Add(ref limbs, 1) += low >> Bits;
-			Unsafe.Add(ref limbs, 8) = high & mask;
-			Unsafe.Add(ref limbs, 9) += high >> Bits;
+			Field448Blocks<Vector128<ulong>, Field448Vector128>.Product(ref operands, ref result);
 		}
 	}
 }

@@ -1,7 +1,7 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
 // The point formulas of Edwards448Vector, on reduced points (X, Y, Z, T) in lanes A to D. Each addition and doubling takes two lane products (Hisil, Wong, Carter and Dawson, "Twisted Edwards curves revisited", 2008, §3 and §4): the first gives the four products of the formula's first round, the second the coordinates of the result. scratch holds ScratchLength values in whatever form the products take, and SelectBase and LoadAffine write the right operand of an addition there.
-internal interface IEdwardsField448x4<TSelf> : IField448x4<TSelf> where TSelf : struct, IEdwardsField448x4<TSelf>
+internal interface IEdwardsField448x4<TSelf> : IField448x4<TSelf> where TSelf : unmanaged, IEdwardsField448x4<TSelf>
 {
 	// Writes entry index of comb of TwistedBaseTable into scratch for TwistedAdd: (y − x, y + x, 2, 2d'xy), or (y + x, y − x, 2, −2d'xy), its negation, where negative is set, which is 0 or ulong.MaxValue. Neither the time nor the addresses read depend on index or negative.
 	static abstract void SelectBase(int comb, uint index, ulong negative, ref TSelf scratch);

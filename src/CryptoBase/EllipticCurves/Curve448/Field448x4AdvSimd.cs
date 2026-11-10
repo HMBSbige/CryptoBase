@@ -1,7 +1,7 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
 // The limbs of Field448x4Avx2 in 128-bit vectors of 32-bit lanes: vector i holds limb i of lanes A, B, C, D, each of which fits 32 bits. umlal multiplies lanes A and B into 64-bit lanes and umlal2 lanes C and D, so the columns of a product take two vectors each, and its limbs narrow back once carried. The members take and give the bounds of Field448x4Avx2.
-internal partial struct Field448x4AdvSimd
+internal partial struct Field448x4AdvSimd : IField448Lanes<Field448x4AdvSimd>
 {
 	internal Vector128<uint> L0;
 	// ReSharper disable UnassignedField.Compiler
@@ -43,8 +43,10 @@ internal partial struct Field448x4AdvSimd
 	// As Field448x4Avx2.Create, lanes A and B in one vector of 64-bit lanes and C and D in another.
 	public static void Create(in Field448 a, in Field448 b, in Field448 c, in Field448 d, out Field448x4AdvSimd result)
 	{
-		Split(Vector128.Create(a.L0, b.L0), Vector128.Create(a.L1, b.L1), Vector128.Create(a.L2, b.L2), Vector128.Create(a.L3, b.L3), Vector128.Create(a.L4, b.L4), Vector128.Create(a.L5, b.L5), Vector128.Create(a.L6, b.L6), Vector128.Create(a.L7, b.L7), out Wide low);
-		Split(Vector128.Create(c.L0, d.L0), Vector128.Create(c.L1, d.L1), Vector128.Create(c.L2, d.L2), Vector128.Create(c.L3, d.L3), Vector128.Create(c.L4, d.L4), Vector128.Create(c.L5, d.L5), Vector128.Create(c.L6, d.L6), Vector128.Create(c.L7, d.L7), out Wide high);
+		Unsafe.SkipInit(out Wide low);
+		Unsafe.SkipInit(out Wide high);
+		Field448.ToRadix28(Vector128.Create(a.L0, b.L0), Vector128.Create(a.L1, b.L1), Vector128.Create(a.L2, b.L2), Vector128.Create(a.L3, b.L3), Vector128.Create(a.L4, b.L4), Vector128.Create(a.L5, b.L5), Vector128.Create(a.L6, b.L6), Vector128.Create(a.L7, b.L7), ref low[0]);
+		Field448.ToRadix28(Vector128.Create(c.L0, d.L0), Vector128.Create(c.L1, d.L1), Vector128.Create(c.L2, d.L2), Vector128.Create(c.L3, d.L3), Vector128.Create(c.L4, d.L4), Vector128.Create(c.L5, d.L5), Vector128.Create(c.L6, d.L6), Vector128.Create(c.L7, d.L7), ref high[0]);
 		Unsafe.SkipInit(out result);
 		ref Vector128<uint> limbs = ref result.L0;
 
@@ -57,63 +59,18 @@ internal partial struct Field448x4AdvSimd
 		high.ZeroMemory();
 	}
 
-	// The limbs of two lanes from their 56-bit limbs w0 to w7, carried as Field448x4Avx2.Create carries them.
-	private static void Split(Vector128<ulong> w0, Vector128<ulong> w1, Vector128<ulong> w2, Vector128<ulong> w3, Vector128<ulong> w4, Vector128<ulong> w5, Vector128<ulong> w6, Vector128<ulong> w7, out Wide result)
-	{
-		Vector128<ulong> mask = Vector128.Create((ulong)Mask);
-		Vector128<ulong> top = w7 >> 2 * Bits;
-		Unsafe.SkipInit(out result);
-		result[0] = (w0 & mask) + top;
-		result[1] = w0 >> Bits & mask;
-		result[2] = (w1 & mask) + (w0 >> 2 * Bits);
-		result[3] = w1 >> Bits & mask;
-		result[4] = (w2 & mask) + (w1 >> 2 * Bits);
-		result[5] = w2 >> Bits & mask;
-		result[6] = (w3 & mask) + (w2 >> 2 * Bits);
-		result[7] = w3 >> Bits & mask;
-		result[8] = (w4 & mask) + (w3 >> 2 * Bits) + top;
-		result[9] = w4 >> Bits & mask;
-		result[10] = (w5 & mask) + (w4 >> 2 * Bits);
-		result[11] = w5 >> Bits & mask;
-		result[12] = (w6 & mask) + (w5 >> 2 * Bits);
-		result[13] = w6 >> Bits & mask;
-		result[14] = (w7 & mask) + (w6 >> 2 * Bits);
-		result[15] = w7 >> Bits & mask;
-	}
-
 	public static void Extract(in Field448x4AdvSimd value, out Field448 a, out Field448 b, out Field448 c, out Field448 d)
 	{
-		ReadOnlySpan<Vector128<uint>> limbs = MemoryMarshal.CreateReadOnlySpan(in value.L0, 16);
-		Join(limbs, 0, out a);
-		Join(limbs, 1, out b);
-		Join(limbs, 2, out c);
-		Join(limbs, 3, out d);
+		Field448.FromRadix28(in value, 0, out a);
+		Field448.FromRadix28(in value, 1, out b);
+		Field448.FromRadix28(in value, 2, out c);
+		Field448.FromRadix28(in value, 3, out d);
 	}
 
-	// As Field448x4Avx2.Join.
-	private static void Join(ReadOnlySpan<Vector128<uint>> limbs, int lane, out Field448 result)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ulong Limb(in Field448x4AdvSimd value, int limb, int lane)
 	{
-		Span<ulong> carried = stackalloc ulong[16];
-		ulong carry = 0;
-
-		for (int i = 0; i < carried.Length; ++i)
-		{
-			ulong sum = limbs[i].GetElement(lane) + carry;
-			carried[i] = sum & Mask;
-			carry = sum >> Bits;
-		}
-
-		carried[0] += carry;
-		carried[8] += carry;
-		result.L0 = carried[0] + (carried[1] << Bits);
-		result.L1 = carried[2] + (carried[3] << Bits);
-		result.L2 = carried[4] + (carried[5] << Bits);
-		result.L3 = carried[6] + (carried[7] << Bits);
-		result.L4 = carried[8] + (carried[9] << Bits);
-		result.L5 = carried[10] + (carried[11] << Bits);
-		result.L6 = carried[12] + (carried[13] << Bits);
-		result.L7 = carried[14] + (carried[15] << Bits);
-		carried.ZeroMemory();
+		return Unsafe.Add(ref Unsafe.AsRef(in value.L0), limb).GetElement(lane);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -129,48 +86,19 @@ internal partial struct Field448x4AdvSimd
 		}
 	}
 
-	// The factors of Field448x4Avx2.CreateMultiplier, in 32-bit lanes: lane l of limb i of value g holds the factor of column 4g + l for limb i.
+	// The factors of IField448x4.CreateMultiplier, in 32-bit lanes: lane l of limb i of value g holds the factor of column 4g + l for limb i.
 	public static int MultiplierLength => 4;
 
-	public static void CreateMultiplier(in Field448 u, Span<Field448x4AdvSimd> multiplier)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ulong LaneALimb(in Field448x4AdvSimd value, int limb)
 	{
-		Debug.Assert(multiplier.Length is 4);
-
-		Create(in u, in u, in u, in u, out Field448x4AdvSimd limbs);
-		ReadOnlySpan<Vector128<uint>> uLimbs = MemoryMarshal.CreateReadOnlySpan(ref limbs.L0, 16);
-		Span<uint> factors = MemoryMarshal.Cast<Field448x4AdvSimd, uint>(multiplier);
-		factors.Clear();
-
-		for (int i = 0; i < 16; ++i)
-		{
-			for (int j = 0; j < 16; ++j)
-			{
-				uint term = uLimbs[j].ToScalar();
-				int s = i + j;
-
-				if (s < 16)
-				{
-					AddFactor(factors, i, s, term);
-				}
-				else if (s < 24)
-				{
-					AddFactor(factors, i, s - 8, term);
-					AddFactor(factors, i, s - 16, term);
-				}
-				else
-				{
-					AddFactor(factors, i, s - 16, 2 * term);
-					AddFactor(factors, i, s - 24, term);
-				}
-			}
-		}
-
-		limbs.ZeroMemory();
+		return Unsafe.Add(ref Unsafe.AsRef(in value.L0), limb).ToScalar();
 	}
 
-	private static void AddFactor(Span<uint> factors, int limb, int column, uint term)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void AddFactor(Span<ulong> factors, int limb, int column, ulong term)
 	{
-		factors[(column >> 2) * 64 + limb * 4 + (column & 3)] += term;
+		MemoryMarshal.Cast<ulong, uint>(factors)[(column >> 2) * 64 + limb * 4 + (column & 3)] += (uint)term;
 	}
 
 	// The operands and the products of a step in five values, and the doubled operand of a square in a sixth.
@@ -268,7 +196,7 @@ internal partial struct Field448x4AdvSimd
 		right = Vector128.ConditionalSelect(Vector128.Create(0, 0, uint.MaxValue, uint.MaxValue), tail, limb);
 	}
 
-	// Writes limbs i and i + 8 of y in the form that Field448x4Avx2.Product takes.
+	// Writes limbs i and i + 8 of y in the form that Field448Blocks.Product takes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PrepareRight(ref Vector128<uint> operands, nint i, Vector128<uint> low, Vector128<uint> high)
 	{
@@ -280,7 +208,7 @@ internal partial struct Field448x4AdvSimd
 		Unsafe.Add(ref right, 24 + i) = low;
 	}
 
-	// The products of Field448x4Avx2.Product, lanes A and B and lanes C and D by umlal into separate columns of 64-bit lanes, two columns at a time. Each operand reads its halves as two 64-bit vectors, as taking the lower half of a 128-bit vector costs a move.
+	// The products of Field448Blocks.Product, lanes A and B and lanes C and D by umlal into separate columns of 64-bit lanes, two columns at a time. Each operand reads its halves as two 64-bit vectors, as taking the lower half of a 128-bit vector costs a move.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void Product(ref Vector128<uint> operands, ref Vector128<uint> result)
 	{
@@ -356,7 +284,7 @@ internal partial struct Field448x4AdvSimd
 		carryHighUpper = highUpper >> Bits;
 	}
 
-	// As Field448x4Avx2.Wrap, the carries in 64-bit lanes added to limbs 0 and 8 widened.
+	// As Field448Blocks.Wrap, the carries in 64-bit lanes added to limbs 0 and 8 widened.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Wrap(ref Vector128<uint> limbs, Vector128<ulong> carryLow, Vector128<ulong> carryLowUpper, Vector128<ulong> carryHigh, Vector128<ulong> carryHighUpper)
 	{

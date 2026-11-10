@@ -1,3 +1,5 @@
+using static CryptoBase.EllipticCurves.Curve448.Field448Blocks<System.Runtime.Intrinsics.Vector256<ulong>, CryptoBase.EllipticCurves.Curve448.Field448Vector256>;
+
 namespace CryptoBase.EllipticCurves.Curve448;
 
 // The point formulas of IEdwardsField448x4: each step writes the operands of its products into the scratch as LadderStep does, the entry of an addition, which SelectBase or LoadAffine writes, being the left operand of the first. Every right operand has m_y ≤ 5 and every pair of lanes m_x·m_y ≤ 6, within what Product takes; where a sum takes 3p, the left operand of the second product is carried once first.
@@ -88,7 +90,7 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		ref Vector256<ulong> operands = ref scratch.L0;
 		ref Vector256<ulong> products = ref Unsafe.Add(ref operands, Products);
 		PrepareDouble(ref point.L0, ref operands);
-		SquareProduct(ref operands, ref products);
+		SquareProduct(ref operands, ref Unsafe.Add(ref operands, Doubled), ref products);
 
 		for (nint i = 0; i < 8; ++i)
 		{
@@ -138,7 +140,7 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		ref Vector256<ulong> operands = ref scratch.L0;
 		ref Vector256<ulong> products = ref Unsafe.Add(ref operands, Products);
 		PrepareDouble(ref point.L0, ref operands);
-		SquareProduct(ref operands, ref products);
+		SquareProduct(ref operands, ref Unsafe.Add(ref operands, Doubled), ref products);
 
 		for (nint i = 0; i < 8; ++i)
 		{
@@ -170,93 +172,6 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		}
 	}
 
-	// The square of the left operand by Product's golden-ratio Karatsuba: column j sums x_k·y_n over k with n = j − k + 8, and as y_n is x_(n − 8) for n ≥ 8 and φ·x_n below, the terms of k and n − 8, or of k and n, are equal. Each pair takes one lane product of the doubled operand, and the term where they meet, for even j, one of the operand: 36 lane products where Product takes 64. Each column sums what Product's does, within its bounds; the doubled operand stays below 2^32 for m ≤ 4.
-	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-	private static void SquareProduct(ref Vector256<ulong> operands, ref Vector256<ulong> result)
-	{
-		ref Vector256<ulong> x = ref Unsafe.Add(ref operands, Left);
-		ref Vector256<ulong> d = ref Unsafe.Add(ref operands, Doubled);
-		ref Vector256<ulong> y = ref Unsafe.Add(ref operands, Right);
-		Vector256<ulong> carryLow = Vector256<ulong>.Zero;
-		Vector256<ulong> carryHigh = Vector256<ulong>.Zero;
-		Vector256<ulong> p0 = Vector256<ulong>.Zero, q0 = Vector256<ulong>.Zero, r0 = Vector256<ulong>.Zero;
-		Vector256<ulong> p1 = Vector256<ulong>.Zero, q1 = Vector256<ulong>.Zero, r1 = Vector256<ulong>.Zero;
-
-		// Two columns at a time, the terms of each k together, so that the values that a term loads are not held across many others.
-		Term(ref x, 0, ref y, 8, ref p0, ref q0, ref r0);
-		Term(ref d, 0, ref y, 9, ref p1, ref q1, ref r1);
-		Term(ref d, 1, ref y, 7, ref p0, ref q0, ref r0);
-		Term(ref d, 2, ref y, 6, ref p0, ref q0, ref r0);
-		Term(ref d, 2, ref y, 7, ref p1, ref q1, ref r1);
-		Term(ref d, 3, ref y, 5, ref p0, ref q0, ref r0);
-		Term(ref d, 3, ref y, 6, ref p1, ref q1, ref r1);
-		Term(ref x, 4, ref y, 4, ref p0, ref q0, ref r0);
-		Term(ref d, 4, ref y, 5, ref p1, ref q1, ref r1);
-		Column(ref result, 0, p0, q0, r0, ref carryLow, ref carryHigh);
-		Column(ref result, 1, p1, q1, r1, ref carryLow, ref carryHigh);
-		p0 = Vector256<ulong>.Zero;
-		q0 = Vector256<ulong>.Zero;
-		r0 = Vector256<ulong>.Zero;
-		p1 = Vector256<ulong>.Zero;
-		q1 = Vector256<ulong>.Zero;
-		r1 = Vector256<ulong>.Zero;
-		Term(ref d, 0, ref y, 10, ref p0, ref q0, ref r0);
-		Term(ref d, 0, ref y, 11, ref p1, ref q1, ref r1);
-		Term(ref x, 1, ref y, 9, ref p0, ref q0, ref r0);
-		Term(ref d, 1, ref y, 10, ref p1, ref q1, ref r1);
-		Term(ref d, 3, ref y, 7, ref p0, ref q0, ref r0);
-		Term(ref d, 4, ref y, 6, ref p0, ref q0, ref r0);
-		Term(ref d, 4, ref y, 7, ref p1, ref q1, ref r1);
-		Term(ref x, 5, ref y, 5, ref p0, ref q0, ref r0);
-		Term(ref d, 5, ref y, 6, ref p1, ref q1, ref r1);
-		Column(ref result, 2, p0, q0, r0, ref carryLow, ref carryHigh);
-		Column(ref result, 3, p1, q1, r1, ref carryLow, ref carryHigh);
-		p0 = Vector256<ulong>.Zero;
-		q0 = Vector256<ulong>.Zero;
-		r0 = Vector256<ulong>.Zero;
-		p1 = Vector256<ulong>.Zero;
-		q1 = Vector256<ulong>.Zero;
-		r1 = Vector256<ulong>.Zero;
-		Term(ref d, 0, ref y, 12, ref p0, ref q0, ref r0);
-		Term(ref d, 0, ref y, 13, ref p1, ref q1, ref r1);
-		Term(ref d, 1, ref y, 11, ref p0, ref q0, ref r0);
-		Term(ref d, 1, ref y, 12, ref p1, ref q1, ref r1);
-		Term(ref x, 2, ref y, 10, ref p0, ref q0, ref r0);
-		Term(ref d, 2, ref y, 11, ref p1, ref q1, ref r1);
-		Term(ref d, 5, ref y, 7, ref p0, ref q0, ref r0);
-		Term(ref x, 6, ref y, 6, ref p0, ref q0, ref r0);
-		Term(ref d, 6, ref y, 7, ref p1, ref q1, ref r1);
-		Column(ref result, 4, p0, q0, r0, ref carryLow, ref carryHigh);
-		Column(ref result, 5, p1, q1, r1, ref carryLow, ref carryHigh);
-		p0 = Vector256<ulong>.Zero;
-		q0 = Vector256<ulong>.Zero;
-		r0 = Vector256<ulong>.Zero;
-		p1 = Vector256<ulong>.Zero;
-		q1 = Vector256<ulong>.Zero;
-		r1 = Vector256<ulong>.Zero;
-		Term(ref d, 0, ref y, 14, ref p0, ref q0, ref r0);
-		Term(ref d, 0, ref y, 15, ref p1, ref q1, ref r1);
-		Term(ref d, 1, ref y, 13, ref p0, ref q0, ref r0);
-		Term(ref d, 1, ref y, 14, ref p1, ref q1, ref r1);
-		Term(ref d, 2, ref y, 12, ref p0, ref q0, ref r0);
-		Term(ref d, 2, ref y, 13, ref p1, ref q1, ref r1);
-		Term(ref x, 3, ref y, 11, ref p0, ref q0, ref r0);
-		Term(ref d, 3, ref y, 12, ref p1, ref q1, ref r1);
-		Term(ref x, 7, ref y, 7, ref p0, ref q0, ref r0);
-		Column(ref result, 6, p0, q0, r0, ref carryLow, ref carryHigh);
-		Column(ref result, 7, p1, q1, r1, ref carryLow, ref carryHigh);
-		Wrap(ref result, carryLow, carryHigh);
-	}
-
-	// x_k, of the operand or of its double, times sum_n, high_n and low_n of the right operand.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Term(ref Vector256<ulong> x, nint k, ref Vector256<ulong> y, nint n, ref Vector256<ulong> p, ref Vector256<ulong> q, ref Vector256<ulong> r)
-	{
-		p += M(Unsafe.Add(ref x, k), Unsafe.Add(ref y, n + 16));
-		q += M(Unsafe.Add(ref x, k + 8), Unsafe.Add(ref y, n + 8));
-		r += M(Unsafe.Add(ref x, k + 16), Unsafe.Add(ref y, n));
-	}
-
 	// The left operand of an addition from lanes (A, B, C, D) of four values given four 56-bit limbs at a time: limbs m of the values in group 0 make limbs 2m and 2m + 1, and those in group 1 limbs 2m + 8 and 2m + 9, each transposed into the lanes of a vector and split into its low 28 bits and the rest. Lane D becomes 2p − D where negate is set.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WriteEntry(ref Vector256<ulong> operands, Vector256<ulong> a0, Vector256<ulong> b0, Vector256<ulong> c0, Vector256<ulong> d0, Vector256<ulong> a1, Vector256<ulong> b1, Vector256<ulong> c1, Vector256<ulong> d1, Vector256<ulong> negate)
@@ -273,43 +188,6 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		WriteEntryLimbs(ref operands, 2, Avx2.Permute2x128(ab1, cd1, 0x20), Avx2.Permute2x128(ab3, cd3, 0x20), negate);
 		WriteEntryLimbs(ref operands, 4, Avx2.Permute2x128(ab0, cd0, 0x31), Avx2.Permute2x128(ab2, cd2, 0x31), negate);
 		WriteEntryLimbs(ref operands, 6, Avx2.Permute2x128(ab1, cd1, 0x31), Avx2.Permute2x128(ab3, cd3, 0x31), negate);
-	}
-
-	// Limbs i and i + 1 from the 56-bit limbs low, of the low half, and high, of the high half, and those 8 above.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void WriteEntryLimbs(ref Vector256<ulong> operands, nint i, Vector256<ulong> low, Vector256<ulong> high, Vector256<ulong> negate)
-	{
-		Vector256<ulong> mask = Vector256.Create(Mask);
-		Vector256<ulong> twoP = Vector256.Create(TwoP);
-		Vector256<ulong> limb0 = NegateUnder(low & mask, twoP, negate);
-		Vector256<ulong> limb1 = NegateUnder(low >> Bits, twoP, negate);
-		Vector256<ulong> limb8 = NegateUnder(high & mask, Vector256.Create(i is 0 ? TwoP8 : TwoP), negate);
-		Vector256<ulong> limb9 = NegateUnder(high >> Bits, twoP, negate);
-		ref Vector256<ulong> left = ref Unsafe.Add(ref operands, Left + i);
-		left = limb0;
-		Unsafe.Add(ref left, 1) = limb1;
-		Unsafe.Add(ref left, 8) = limb8;
-		Unsafe.Add(ref left, 9) = limb9;
-		ref Vector256<ulong> sums = ref Unsafe.Add(ref operands, Sums + i);
-		sums = limb0 + limb8;
-		Unsafe.Add(ref sums, 1) = limb1 + limb9;
-	}
-
-	// value, or 2p − value where negate is set: (value ^ m) + (m & (2p + 1)) is 2p − value modulo 2^64 for m all ones.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<ulong> NegateUnder(Vector256<ulong> value, Vector256<ulong> twoP, Vector256<ulong> negate)
-	{
-		return (value ^ negate) + (negate & twoP + Vector256<ulong>.One);
-	}
-
-	// Limbs i and i + 8 of both operands.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void WriteOperands(ref Vector256<ulong> operands, nint i, Vector256<ulong> leftLow, Vector256<ulong> leftHigh, Vector256<ulong> rightLow, Vector256<ulong> rightHigh)
-	{
-		Unsafe.Add(ref operands, Left + i) = leftLow;
-		Unsafe.Add(ref operands, Left + i + 8) = leftHigh;
-		Unsafe.Add(ref operands, Sums + i) = leftLow + leftHigh;
-		PrepareRight(ref operands, i, rightLow, rightHigh);
 	}
 
 	// (X − Y, X + Y, Z, T) from (X, Y, Z, T), X − Y taking 2p.

@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
+using static CryptoBase.EllipticCurves.Curve448.Field448Blocks<System.Runtime.Intrinsics.Vector256<ulong>, CryptoBase.EllipticCurves.Curve448.Field448Vector256>;
 
 namespace CryptoBase.EllipticCurves.Curve448;
 
 // Four elements of the field of p = 2^448 − 2^224 − 1, one in each 64-bit lane A, B, C, D of the vectors, in sixteen limbs of radix 2^28: limb i weighs 2^(28i). With φ = 2^224, limbs 0 to 7 hold x_lo and limbs 8 to 15 x_hi of x = x_lo + φ·x_hi, and p = φ² − φ − 1, so φ² ≡ φ + 1.
 // Bounds are per limb, as a multiple m of 2^28. Every member that gives a value leaves it reduced, every limb below 2^28 + 2^9, so m < 1 + 2^−19; a product leaves limbs below 2^28 except limb 1, below 2^28 + 2^8, and limb 9.
 // Product takes operands with m_x·m_y ≤ 6.7, m_x < 8 and m_y < 5.3.
-internal partial struct Field448x4Avx2
+internal partial struct Field448x4Avx2 : IField448Lanes<Field448x4Avx2>
 {
 	internal Vector256<ulong> L0;
 	internal Vector256<ulong> L1;
@@ -24,22 +25,14 @@ internal partial struct Field448x4Avx2
 	internal Vector256<ulong> L14;
 	internal Vector256<ulong> L15;
 
-	private const int Bits = 28;
-	private const ulong Mask = (1UL << Bits) - 1;
-
-	// The limbs of 2p and 8p, each at least the largest limb of a reduced value or of four times one; limb 8 is the smaller.
-	private const ulong TwoP = (1UL << 29) - 2;
-	private const ulong TwoP8 = (1UL << 29) - 4;
+	// The limbs of 8p, each at least the largest limb of four times a reduced value; limb 8 is the smaller.
 	private const ulong EightP = (1UL << 31) - 8;
 	private const ulong EightP8 = (1UL << 31) - 16;
 
 	// 16·a24 for a24 = (A − 2)/4 = 39081.
 	private const ulong SixteenA24 = 16 * 39081;
 
-	// The operands of Product in its scratch, in vectors: the left one at Left, the sums of its halves at Sums and the right one, as Product takes it, at Right; a step keeps its products at Products.
-	private const int Left = 0;
-	private const int Sums = 16;
-	private const int Right = 24;
+	// A step keeps its products at Products, after the operands of Product.
 	private const int Products = 56;
 
 	// vpblendd masks of the 64-bit lanes.
@@ -93,37 +86,16 @@ internal partial struct Field448x4Avx2
 
 	public static void Extract(in Field448x4Avx2 value, out Field448 a, out Field448 b, out Field448 c, out Field448 d)
 	{
-		ReadOnlySpan<Vector256<ulong>> limbs = MemoryMarshal.CreateReadOnlySpan(in value.L0, 16);
-		Join(limbs, 0, out a);
-		Join(limbs, 1, out b);
-		Join(limbs, 2, out c);
-		Join(limbs, 3, out d);
+		Field448.FromRadix28(in value, 0, out a);
+		Field448.FromRadix28(in value, 1, out b);
+		Field448.FromRadix28(in value, 2, out c);
+		Field448.FromRadix28(in value, 3, out d);
 	}
 
-	// One lane, carried limb by limb from limb 0 to limb 15, whose carry, below 2^5, comes back into limbs 0 and 8; pairs of limbs then join into the 56-bit limbs.
-	private static void Join(ReadOnlySpan<Vector256<ulong>> limbs, int lane, out Field448 result)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ulong Limb(in Field448x4Avx2 value, int limb, int lane)
 	{
-		Span<ulong> carried = stackalloc ulong[16];
-		ulong carry = 0;
-
-		for (int i = 0; i < carried.Length; ++i)
-		{
-			ulong sum = limbs[i].GetElement(lane) + carry;
-			carried[i] = sum & Mask;
-			carry = sum >> Bits;
-		}
-
-		carried[0] += carry;
-		carried[8] += carry;
-		result.L0 = carried[0] + (carried[1] << Bits);
-		result.L1 = carried[2] + (carried[3] << Bits);
-		result.L2 = carried[4] + (carried[5] << Bits);
-		result.L3 = carried[6] + (carried[7] << Bits);
-		result.L4 = carried[8] + (carried[9] << Bits);
-		result.L5 = carried[10] + (carried[11] << Bits);
-		result.L6 = carried[12] + (carried[13] << Bits);
-		result.L7 = carried[14] + (carried[15] << Bits);
-		carried.ZeroMemory();
+		return Unsafe.Add(ref Unsafe.AsRef(in value.L0), limb).GetElement(lane);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -139,46 +111,17 @@ internal partial struct Field448x4Avx2
 		}
 	}
 
-	// Four values, for the columns of lane D four at a time: lane l of limb i of value g holds the factor f_ik by which column k = 4g + l takes limb i of the other operand, the sum of u_j·c over j, where c is how many times 2^(28(i + j)) counts column k once reduced: 2^(28s) for 16 ≤ s < 24 is 2^(28(s − 8)) + 2^(28(s − 16)) and for s ≥ 24 is 2·2^(28(s − 16)) + 2^(28(s − 24)). Each factor is at most 3·max u_j, below 2^30 for a reduced u, and each column sums 38 products of limbs at most.
+	// Four values, for the columns of lane D four at a time: lane l of limb i of value g holds the factor f_ik by which column k = 4g + l takes limb i of the other operand. Each column sums 38 products of limbs at most.
 	public static int MultiplierLength => 4;
 
-	public static void CreateMultiplier(in Field448 u, Span<Field448x4Avx2> multiplier)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ulong LaneALimb(in Field448x4Avx2 value, int limb)
 	{
-		Debug.Assert(multiplier.Length is 4);
-
-		Create(in u, in u, in u, in u, out Field448x4Avx2 limbs);
-		ReadOnlySpan<Vector256<ulong>> uLimbs = MemoryMarshal.CreateReadOnlySpan(ref limbs.L0, 16);
-		Span<ulong> factors = MemoryMarshal.Cast<Field448x4Avx2, ulong>(multiplier);
-		factors.Clear();
-
-		for (int i = 0; i < 16; ++i)
-		{
-			for (int j = 0; j < 16; ++j)
-			{
-				ulong term = uLimbs[j].ToScalar();
-				int s = i + j;
-
-				if (s < 16)
-				{
-					AddFactor(factors, i, s, term);
-				}
-				else if (s < 24)
-				{
-					AddFactor(factors, i, s - 8, term);
-					AddFactor(factors, i, s - 16, term);
-				}
-				else
-				{
-					AddFactor(factors, i, s - 16, 2 * term);
-					AddFactor(factors, i, s - 24, term);
-				}
-			}
-		}
-
-		limbs.ZeroMemory();
+		return Unsafe.Add(ref Unsafe.AsRef(in value.L0), limb).ToScalar();
 	}
 
-	private static void AddFactor(Span<ulong> factors, int limb, int column, ulong term)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void AddFactor(Span<ulong> factors, int limb, int column, ulong term)
 	{
 		factors[(column >> 2) * 64 + limb * 4 + (column & 3)] += term;
 	}
@@ -249,29 +192,6 @@ internal partial struct Field448x4Avx2
 		CarryLeft(ref operands);
 	}
 
-	// One carry from each limb of the left operand into the next, from the values before it, with the one out of limb 15 into limbs 0 and 8, then the sums of its halves.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void CarryLeft(ref Vector256<ulong> operands)
-	{
-		Vector256<ulong> mask = Vector256.Create(Mask);
-		ref Vector256<ulong> left = ref Unsafe.Add(ref operands, Left);
-		Vector256<ulong> carryLow = Unsafe.Add(ref left, 15) >> Bits;
-		Vector256<ulong> carryHigh = (Unsafe.Add(ref left, 7) >> Bits) + carryLow;
-
-		for (nint i = 0; i < 8; ++i)
-		{
-			Vector256<ulong> low = Unsafe.Add(ref left, i);
-			Vector256<ulong> high = Unsafe.Add(ref left, i + 8);
-			Vector256<ulong> carriedLow = (low & mask) + carryLow;
-			Vector256<ulong> carriedHigh = (high & mask) + carryHigh;
-			Unsafe.Add(ref left, i) = carriedLow;
-			Unsafe.Add(ref left, i + 8) = carriedHigh;
-			Unsafe.Add(ref operands, Sums + i) = carriedLow + carriedHigh;
-			carryLow = low >> Bits;
-			carryHigh = high >> Bits;
-		}
-	}
-
 	// (AA, w, DA, CB) and its swap (w, AA, CB, DA) to the lanes of the operands.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void FinishLadder(Vector256<ulong> limb, Vector256<ulong> twoP, Vector256<ulong> eightP, out Vector256<ulong> left, out Vector256<ulong> right)
@@ -285,97 +205,6 @@ internal partial struct Field448x4Avx2
 		Vector256<ulong> tail = Blend(sums, differences, LaneD);
 		left = Blend(Blend(first, second, LaneB), tail, LaneC | LaneD);
 		right = Blend(limb, tail, LaneC | LaneD);
-	}
-
-	// Writes limbs i and i + 8 of y in the form that Product takes: (low_n, high_n) for n ≥ 8 is y_(n−8) = y_lo,(n−8) + φ·y_hi,(n−8), and for n < 8 it is φ·y_n = y_hi,n + φ·(y_lo,n + y_hi,n), as φ² ≡ φ + 1; sum_n = low_n + high_n. As high_n is sum_(n+8) and low_n is high_(n+8) for n < 8, the 32 vectors at Right, sum_0 to sum_7, then sum_8 to sum_15, then high_8 to high_15, then low_8 to low_15, hold sum_n at n, high_n at n + 8 and low_n at n + 16; sum_0 goes unused.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void PrepareRight(ref Vector256<ulong> operands, nint i, Vector256<ulong> low, Vector256<ulong> high)
-	{
-		ref Vector256<ulong> right = ref Unsafe.Add(ref operands, Right);
-		Vector256<ulong> sum = low + high;
-		Unsafe.Add(ref right, i) = sum + high;
-		Unsafe.Add(ref right, 8 + i) = sum;
-		Unsafe.Add(ref right, 16 + i) = high;
-		Unsafe.Add(ref right, 24 + i) = low;
-	}
-
-	// The lane products by golden-ratio Karatsuba: with x = x_lo + φ·x_hi and y likewise, x·y ≡ x_lo·y_lo + x_hi·y_hi + φ·((x_lo + x_hi)·(y_lo + y_hi) − x_lo·y_lo). Taken limb by limb, column j of each half sums, for k from 0 to 7, the product of x_k = (x_lo,k, x_hi,k) and y_n = (low_n, high_n) for n = j − k + 8 (see PrepareRight), which is y_(j−k) where k ≤ j and φ·y_(j−k+8) where k > j, as φ moves a product of weight φ² down to φ and 1: with P = x_lo,k·low_n, Q = x_hi,k·high_n and R = (x_lo,k + x_hi,k)·sum_n, column j of x_lo takes P + Q and column j of x_hi takes R − P.
-	// R − P is x_lo·high + x_hi·low + x_hi·high, at most 3·m_x·m_y·2^56 for y_(j−k) and 5·m_x·m_y·2^56 for φ·y, whose high is y_lo + y_hi; P + Q is at most 2 and 3 times that. Column j of x_hi thus stays below (38 − 2j)·m_x·m_y·2^56 and column j of x_lo below (23 − j)·m_x·m_y·2^56, which with the carry, below 2^36, stay below 2^64 for m_x·m_y ≤ 6.7; the sums take x_lo + x_hi < 2^32 and low + 2·high < 2^32 to the multiplier. P, Q and R add up separately, modulo 2^64 like the result.
-	// The columns go four at a time, each block taking x_k into registers once for each k and the operands of y from memory, with a chain of carries from column 0 of each half to column 7 that the next block continues; the carry out of the top of x_lo goes into limb 8, and the one out of the top of x_hi, of weight φ², into limbs 0 and 8, after which limbs 0 and 8 carry once more into limbs 1 and 9.
-	// Inlined into the steps, so that the callee-saved vector registers of the Windows ABI, all of which the product needs without AVX-512, are saved once per step rather than once per product.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Product(ref Vector256<ulong> operands, ref Vector256<ulong> result)
-	{
-		ref Vector256<ulong> right = ref Unsafe.Add(ref operands, Right);
-		Vector256<ulong> carryLow = Vector256<ulong>.Zero;
-		Vector256<ulong> carryHigh = Vector256<ulong>.Zero;
-
-		for (nint j = 0; j < 8; j += 4)
-		{
-			Vector256<ulong> p0 = Vector256<ulong>.Zero, q0 = Vector256<ulong>.Zero, r0 = Vector256<ulong>.Zero;
-			Vector256<ulong> p1 = Vector256<ulong>.Zero, q1 = Vector256<ulong>.Zero, r1 = Vector256<ulong>.Zero;
-			Vector256<ulong> p2 = Vector256<ulong>.Zero, q2 = Vector256<ulong>.Zero, r2 = Vector256<ulong>.Zero;
-			Vector256<ulong> p3 = Vector256<ulong>.Zero, q3 = Vector256<ulong>.Zero, r3 = Vector256<ulong>.Zero;
-			ref Vector256<ulong> x = ref Unsafe.Add(ref operands, Left);
-
-			// y_n for n = j + c − k + 8 lies at index c of y.
-			ref Vector256<ulong> y = ref Unsafe.Add(ref right, j + 8);
-
-			for (nint k = 0; k < 8; ++k)
-			{
-				Vector256<ulong> low = x;
-				Vector256<ulong> high = Unsafe.Add(ref x, 8);
-				Vector256<ulong> sum = Unsafe.Add(ref x, 16);
-				Accumulate(ref y, 0, low, high, sum, ref p0, ref q0, ref r0);
-				Accumulate(ref y, 1, low, high, sum, ref p1, ref q1, ref r1);
-				Accumulate(ref y, 2, low, high, sum, ref p2, ref q2, ref r2);
-				Accumulate(ref y, 3, low, high, sum, ref p3, ref q3, ref r3);
-				x = ref Unsafe.Add(ref x, 1);
-				y = ref Unsafe.Subtract(ref y, 1);
-			}
-
-			Column(ref result, j, p0, q0, r0, ref carryLow, ref carryHigh);
-			Column(ref result, j + 1, p1, q1, r1, ref carryLow, ref carryHigh);
-			Column(ref result, j + 2, p2, q2, r2, ref carryLow, ref carryHigh);
-			Column(ref result, j + 3, p3, q3, r3, ref carryLow, ref carryHigh);
-		}
-
-		Wrap(ref result, carryLow, carryHigh);
-	}
-
-	// x_k times sum_n, high_n and low_n at index c of y.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Accumulate(ref Vector256<ulong> y, nint c, Vector256<ulong> low, Vector256<ulong> high, Vector256<ulong> sum, ref Vector256<ulong> p, ref Vector256<ulong> q, ref Vector256<ulong> r)
-	{
-		p += M(low, Unsafe.Add(ref y, c + 16));
-		q += M(high, Unsafe.Add(ref y, c + 8));
-		r += M(sum, Unsafe.Add(ref y, c));
-	}
-
-	// Columns j and j + 8 from their sums of P, Q and R and the carries into them.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Column(ref Vector256<ulong> result, nint j, Vector256<ulong> p, Vector256<ulong> q, Vector256<ulong> r, ref Vector256<ulong> carryLow, ref Vector256<ulong> carryHigh)
-	{
-		Vector256<ulong> mask = Vector256.Create(Mask);
-		Vector256<ulong> low = p + q + carryLow;
-		Vector256<ulong> high = r - p + carryHigh;
-		Unsafe.Add(ref result, j) = low & mask;
-		Unsafe.Add(ref result, j + 8) = high & mask;
-		carryLow = low >> Bits;
-		carryHigh = high >> Bits;
-	}
-
-	// The carry out of limb 7 into limb 8 and the one out of limb 15, of weight 2^448 ≡ φ + 1, into limbs 0 and 8, each below 2^36, then one carry out of limbs 0 and 8, below 2^8 + 1 and 2^9 + 1.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Wrap(ref Vector256<ulong> limbs, Vector256<ulong> carryLow, Vector256<ulong> carryHigh)
-	{
-		Vector256<ulong> mask = Vector256.Create(Mask);
-		Vector256<ulong> low = limbs + carryHigh;
-		Vector256<ulong> high = Unsafe.Add(ref limbs, 8) + carryLow + carryHigh;
-		limbs = low & mask;
-		Unsafe.Add(ref limbs, 1) += low >> Bits;
-		Unsafe.Add(ref limbs, 8) = high & mask;
-		Unsafe.Add(ref limbs, 9) += high >> Bits;
 	}
 
 	// The columns of lane D of the products times u, four at a time from the multiplier, each limb of lane D in every lane by Lane; column k, below 38·(2^28 + 2^9)², goes into lane D of limb k, and the limbs of all four lanes then carry as a product's columns do, which keeps their values.

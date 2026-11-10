@@ -28,6 +28,10 @@ internal struct Field448
 	private const ulong FourP = (1UL << 58) - 4;
 	private const ulong FourP4 = (1UL << 58) - 8;
 
+	// The radix of the limbs of IField448Lanes, two to each limb here.
+	private const int HalfBits = 28;
+	private const ulong HalfMask = (1UL << HalfBits) - 1;
+
 	internal static ref readonly Field448 One => ref FromConstant(OneLimbs);
 
 	private static ReadOnlySpan<ulong> OneLimbs => [1, 0, 0, 0, 0, 0, 0, 0];
@@ -91,6 +95,56 @@ internal struct Field448
 		result.L5 = (w4 >> 24 | w5 << 40) & Mask;
 		result.L6 = (w5 >> 16 | w6 << 48) & Mask;
 		result.L7 = w6 >> 8;
+	}
+
+	// The limbs of two lanes from their 56-bit limbs w0 to w7, carried as Field448x4Avx2.Create carries them.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void ToRadix28(Vector128<ulong> w0, Vector128<ulong> w1, Vector128<ulong> w2, Vector128<ulong> w3, Vector128<ulong> w4, Vector128<ulong> w5, Vector128<ulong> w6, Vector128<ulong> w7, ref Vector128<ulong> result)
+	{
+		Vector128<ulong> mask = Vector128.Create(HalfMask);
+		Vector128<ulong> top = w7 >> 2 * HalfBits;
+		result = (w0 & mask) + top;
+		Unsafe.Add(ref result, 1) = w0 >> HalfBits & mask;
+		Unsafe.Add(ref result, 2) = (w1 & mask) + (w0 >> 2 * HalfBits);
+		Unsafe.Add(ref result, 3) = w1 >> HalfBits & mask;
+		Unsafe.Add(ref result, 4) = (w2 & mask) + (w1 >> 2 * HalfBits);
+		Unsafe.Add(ref result, 5) = w2 >> HalfBits & mask;
+		Unsafe.Add(ref result, 6) = (w3 & mask) + (w2 >> 2 * HalfBits);
+		Unsafe.Add(ref result, 7) = w3 >> HalfBits & mask;
+		Unsafe.Add(ref result, 8) = (w4 & mask) + (w3 >> 2 * HalfBits) + top;
+		Unsafe.Add(ref result, 9) = w4 >> HalfBits & mask;
+		Unsafe.Add(ref result, 10) = (w5 & mask) + (w4 >> 2 * HalfBits);
+		Unsafe.Add(ref result, 11) = w5 >> HalfBits & mask;
+		Unsafe.Add(ref result, 12) = (w6 & mask) + (w5 >> 2 * HalfBits);
+		Unsafe.Add(ref result, 13) = w6 >> HalfBits & mask;
+		Unsafe.Add(ref result, 14) = (w7 & mask) + (w6 >> 2 * HalfBits);
+		Unsafe.Add(ref result, 15) = w7 >> HalfBits & mask;
+	}
+
+	// One lane, carried limb by limb from limb 0 to limb 15, whose carry, below 2^5, comes back into limbs 0 and 8; pairs of limbs then join into the 56-bit limbs.
+	internal static void FromRadix28<TLanes>(in TLanes value, int lane, out Field448 result) where TLanes : struct, IField448Lanes<TLanes>
+	{
+		Span<ulong> carried = stackalloc ulong[16];
+		ulong carry = 0;
+
+		for (int i = 0; i < carried.Length; ++i)
+		{
+			ulong sum = TLanes.Limb(in value, i, lane) + carry;
+			carried[i] = sum & HalfMask;
+			carry = sum >> HalfBits;
+		}
+
+		carried[0] += carry;
+		carried[8] += carry;
+		result.L0 = carried[0] + (carried[1] << HalfBits);
+		result.L1 = carried[2] + (carried[3] << HalfBits);
+		result.L2 = carried[4] + (carried[5] << HalfBits);
+		result.L3 = carried[6] + (carried[7] << HalfBits);
+		result.L4 = carried[8] + (carried[9] << HalfBits);
+		result.L5 = carried[10] + (carried[11] << HalfBits);
+		result.L6 = carried[12] + (carried[13] << HalfBits);
+		result.L7 = carried[14] + (carried[15] << HalfBits);
+		carried.ZeroMemory();
 	}
 
 	// For limbs below 2^56, as FromBytes gives: ulong.MaxValue if the value is below p and 0 otherwise. The values from p to 2^448 − 1 are those to which adding 2^224 + 1 carries out of bit 447.
