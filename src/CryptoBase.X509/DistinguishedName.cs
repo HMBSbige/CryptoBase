@@ -8,7 +8,17 @@ namespace CryptoBase.X509;
 // The instance is immutable, and its members are slices of the memory of the Name, which X509Name.Read has checked.
 internal sealed class DistinguishedName
 {
+	// The bound on the product of the costs of two Names that AreEqual compares: the product bounds the work of comparing the attributes of a relative name with each other's.
+	public const long MaxEqualityWork = 1 << 20;
+
 	private static readonly UTF32Encoding StrictUtf32BigEndian = new(bigEndian: true, byteOrderMark: false, throwOnInvalidCharacters: true);
+
+	// id-domainComponent, 0.9.2342.19200300.100.1.25 (RFC 5280, Appendix A.1), as the contents of the OBJECT IDENTIFIER.
+	private static ReadOnlySpan<byte> DomainComponentOid => [0x09, 0x92, 0x26, 0x89, 0x93, 0xF2, 0x2C, 0x64, 0x01, 0x19];
+
+	// emailAddress and unstructuredName, 1.2.840.113549.1.9.1 and 1.2.840.113549.1.9.2 (RFC 2985, Secs. 5.2.1 and 5.2.2), as the contents of the OBJECT IDENTIFIER.
+	private static ReadOnlySpan<byte> EmailAddressOid => [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01];
+	private static ReadOnlySpan<byte> UnstructuredNameOid => [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x02];
 
 	private readonly NameAttribute[][] _relativeNames;
 	private readonly ReadOnlyMemory<byte> _encoded;
@@ -40,7 +50,8 @@ internal sealed class DistinguishedName
 				DerReader attribute = relativeName.ReadSequence(out ReadOnlyMemory<byte> element);
 				ReadOnlyMemory<byte> type = attribute.ReadObjectIdentifierContents();
 				ReadOnlyMemory<byte> value = attribute.ReadEncodedValue();
-				attributes.Add(new NameAttribute(type, value, Prepare(value.Span)));
+				string? text = Prepare(type.Span, value.Span, out string? prepared, out bool shortened);
+				attributes.Add(new NameAttribute(type, value, text, prepared, shortened));
 				work += 1 + (element.Length >> 6);
 			}
 
@@ -51,13 +62,114 @@ internal sealed class DistinguishedName
 		return new DistinguishedName([.. parsed], name, work);
 	}
 
+	// RFC 5280, Sec. 7.1: two Names are the same if they have as many relative names, and each matches the other's at its place, by the exact comparison of IsWithin, so that names are never found the same that a complete comparison would tell apart.
+	// Names that are not identical are first compared without allocating, as Names that differ in the letters and digits of a value of an ASCII string type differ once prepared too. A Name that does not decode, or a pair whose comparison could take more than MaxEqualityWork, counts as different.
+	public static bool AreEqual(ReadOnlyMemory<byte> left, ReadOnlyMemory<byte> right)
+	{
+		if (left.Span.SequenceEqual(right.Span))
+		{
+			return true;
+		}
+
+		try
+		{
+			if (!MightBeEqual(left, right))
+			{
+				return false;
+			}
+
+			DistinguishedName first = Read(left);
+			DistinguishedName second = Read(right);
+			return first._relativeNames.Length == second._relativeNames.Length && first.Work <= MaxEqualityWork / second.Work && first.IsWithin(second);
+		}
+		catch (AsnContentException)
+		{
+			return false;
+		}
+	}
+
+	// Whether two Names could be the same: as many relative names, and in each pair of relative names of one attribute, the same type and values that are identical or of which the letters and digits could be the same once prepared.
+	private static bool MightBeEqual(ReadOnlyMemory<byte> left, ReadOnlyMemory<byte> right)
+	{
+		DerReader leftNames = new DerReader(left).ReadSequence();
+		DerReader rightNames = new DerReader(right).ReadSequence();
+
+		while (leftNames.HasData && rightNames.HasData)
+		{
+			DerReader leftName = leftNames.ReadSetOf();
+			DerReader rightName = rightNames.ReadSetOf();
+			DerReader leftAttribute = leftName.ReadSequence();
+			DerReader rightAttribute = rightName.ReadSequence();
+
+			// A relative name of several attributes compares as a set, which Read is left to.
+			if (leftName.HasData || rightName.HasData)
+			{
+				continue;
+			}
+
+			if (!leftAttribute.ReadObjectIdentifierContents().Span.SequenceEqual(rightAttribute.ReadObjectIdentifierContents().Span) || !MightBeEqualValues(leftAttribute.ReadEncodedValue().Span, rightAttribute.ReadEncodedValue().Span))
+			{
+				return false;
+			}
+		}
+
+		return leftNames.HasData == rightNames.HasData;
+	}
+
+	// Values that are not identical, of the string types whose ASCII characters are the bytes of their contents, are equal once prepared only if their ASCII letters and digits are the same but for case: Decode keeps them, as does every form in which a value compares, and a value that does not decode compares byte for byte. Values of the other types could be equal.
+	private static bool MightBeEqualValues(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
+	{
+		if (left.SequenceEqual(right) || !IsAsciiBytesString(left) || !IsAsciiBytesString(right))
+		{
+			return true;
+		}
+
+		AsnDecoder.ReadEncodedValue(left, AsnEncodingRules.DER, out int leftOffset, out int leftLength, out _);
+		AsnDecoder.ReadEncodedValue(right, AsnEncodingRules.DER, out int rightOffset, out int rightLength, out _);
+		ReadOnlySpan<byte> leftContents = left.Slice(leftOffset, leftLength);
+		ReadOnlySpan<byte> rightContents = right.Slice(rightOffset, rightLength);
+		int i = 0;
+		int j = 0;
+
+		while (true)
+		{
+			while (i < leftContents.Length && !char.IsAsciiLetterOrDigit((char)leftContents[i]))
+			{
+				++i;
+			}
+
+			while (j < rightContents.Length && !char.IsAsciiLetterOrDigit((char)rightContents[j]))
+			{
+				++j;
+			}
+
+			if (i == leftContents.Length || j == rightContents.Length)
+			{
+				return i == leftContents.Length && j == rightContents.Length;
+			}
+
+			if ((leftContents[i] | 0x20) != (rightContents[j] | 0x20))
+			{
+				return false;
+			}
+
+			++i;
+			++j;
+		}
+
+		static bool IsAsciiBytesString(ReadOnlySpan<byte> element)
+		{
+			return element.Length > 0 && (UniversalTagNumber)element[0] is UniversalTagNumber.UTF8String or UniversalTagNumber.PrintableString or UniversalTagNumber.IA5String or UniversalTagNumber.VisibleString;
+		}
+	}
+
 	// RFC 5280, Sec. 7.1: a Name is within a subtree if it has at least as many relative names, and those of the subtree match its first ones in order; the empty Name is the subtree of every Name.
 	public bool IsWithin(DistinguishedName subtree)
 	{
 		return IsWithin(subtree, exact: true);
 	}
 
-	// Whether the Name could be within the subtree if the comparison applied the case folding and the normalization of RFC 4518 that it leaves out: as IsWithin, with an attribute that holds a character that they could change compared only as far as MightMatch can.
+	// Whether the Name could be within the subtree if the comparison applied the case folding and the normalization of RFC 4518 that it leaves out, or for a type compared by a case-insensitive exact match the case folding beyond ASCII or the preparation of RFC 4518 that a relying party could apply instead: as IsWithin, with an attribute that holds a character that they could change compared only as far as MightMatch can.
 	public bool MightBeWithin(DistinguishedName subtree)
 	{
 		return IsWithin(subtree, exact: false);
@@ -133,6 +245,7 @@ internal sealed class DistinguishedName
 	}
 
 	// Whether two relative names could match if the comparison were complete. A lone attribute compares by the characters that an unstable one cannot change. Among several, an attribute with an unstable character may stand for any of its type, and one without only for its equal or such an attribute: pairing those without with their equals first, then with those with one, leaves the attributes with one to pair with what remains, so that a match is found if there is one.
+	// Equal here means equal once prepared by RFC 4518 (MatchesPrepared), which is an equivalence, as the pairing needs, and holds for every pair of stable attributes that Matches does.
 	private static bool MightMatch(NameAttribute[] left, NameAttribute[] right)
 	{
 		if (left.Length != right.Length)
@@ -161,7 +274,7 @@ internal sealed class DistinguishedName
 
 				int match = 0;
 
-				while (match < right.Length && (rightUsed[match] || !(pass is 0 ? !right[match].IsUnstable && left[i].Matches(right[match]) : left[i].MightMatch(right[match]))))
+				while (match < right.Length && (rightUsed[match] || !(pass is 0 ? !right[match].IsUnstable && left[i].MatchesPrepared(right[match]) : left[i].MightMatch(right[match]))))
 				{
 					++match;
 				}
@@ -181,10 +294,41 @@ internal sealed class DistinguishedName
 		return true;
 	}
 
-	// The prepared form of an attribute value of a string type, or null for a value of another type or one that does not decode, which only compares byte for byte.
-	private static string? Prepare(ReadOnlySpan<byte> element)
+	// The form in which an attribute value of a string type compares, or null for a value of another type or one that does not decode, which only compares byte for byte; shortened as Normalize gives it. prepared is the form that RFC 4518 gives the value where it differs, and null otherwise.
+	// RFC 5280, Sec. 7.1, leaves domainComponent to Sec. 7.3, which asks for a case-insensitive exact match: its value keeps every character, with only ASCII letters folded. The rule follows the type of the attribute, so a value in another string type than the IA5String that Appendix A.1 gives it, as some CAs encode it, compares by the same rule; a character beyond ASCII stays unstable, as case folding could reach it.
+	// LDAP compares the type by caseIgnoreIA5Match instead (RFC 4519), which ignores insignificant spaces (RFC 4517, Sec. 4.2.7), so that a relying party could take values equal once prepared by RFC 4518 for the same name: MightBeWithin compares those too, so that such a value cannot escape an excluded subtree. Its shortened is left out, as MightBeWithin only widens without it.
+	// emailAddress and unstructuredName compare the same way. RFC 2985, Secs. 5.2.1 and 5.2.2, gives them pkcs9CaseIgnoreMatch, which Sec. 6.1 defines as strings of the same length with the same characters but for case, so that white space is significant; RFC 5280, Sec. 4.1.2.6, also takes emailAddress values as not case-sensitive. RFC 5280, Sec. 7.1, only requires caseIgnoreMatch and makes other matching rules optional, so the exact match narrows permitted subtrees beyond what it asks, and a relying party with caseIgnoreMatch alone prepares these values by RFC 4518, which MightBeWithin compares too.
+	private static string? Prepare(ReadOnlySpan<byte> type, ReadOnlySpan<byte> element, out string? prepared, out bool shortened)
 	{
-		return Decode(element) is { } text ? Normalize(text) : null;
+		prepared = null;
+		shortened = false;
+
+		if (Decode(element) is not { } text)
+		{
+			return null;
+		}
+
+		if (!(type.SequenceEqual(DomainComponentOid) || type.SequenceEqual(EmailAddressOid) || type.SequenceEqual(UnstructuredNameOid)))
+		{
+			return Normalize(text, out shortened);
+		}
+
+		string folded = FoldAsciiCase(text);
+		string normalized = Normalize(text, out _);
+		prepared = normalized == folded ? null : normalized;
+		return folded;
+	}
+
+	private static string FoldAsciiCase(string text)
+	{
+		return string.Create(text.Length, text, static (buffer, source) =>
+		{
+			for (int i = 0; i < source.Length; ++i)
+			{
+				char c = source[i];
+				buffer[i] = char.IsAsciiLetterUpper(c) ? (char)(c | 0x20) : c;
+			}
+		});
 	}
 
 	// The text of a value of a string type that RFC 5280 uses in a Name, without checks beyond its encoding: the characters of the ASCII types may be outside their alphabets, as CAs put in them. TeletexString is read as UTF-8 if valid and otherwise as ISO 8859-1.
@@ -225,11 +369,13 @@ internal sealed class DistinguishedName
 
 	// The mapping of RFC 4518, Sec. 2.2, without the case folding of other than ASCII letters, and the insignificant space handling of Sec. 2.6.1: ASCII letters to lower case, the characters that Sec. 2.2 maps to nothing removed and those that it maps to a space taken as one, and spaces removed at both ends and reduced to one elsewhere.
 	// Other characters stay as they are, compared by code point; case folding of the others and normalization are not applied, so that the result does not depend on the globalization mode. MightBeWithin tells when applying them could change it.
-	private static string Normalize(string text)
+	// Sec. 2.6.1 keeps a space that a combining mark follows, and an unstable character could be one or begin with one once folded and normalized (U+FF9E becomes U+3099): before such a character, the spaces at the start and those after the first elsewhere could count. shortened tells whether any of those was removed, so that equal texts do not show the values equal.
+	private static string Normalize(string text, out bool shortened)
 	{
 		Span<char> buffer = text.Length <= 256 ? stackalloc char[256] : new char[text.Length];
 		int length = 0;
-		bool space = false;
+		int spaces = 0;
+		shortened = false;
 
 		for (int i = 0; i < text.Length; ++i)
 		{
@@ -249,14 +395,22 @@ internal sealed class DistinguishedName
 
 			if (IsMappedToSpace(c))
 			{
-				space = length > 0;
+				++spaces;
 				continue;
 			}
 
-			if (space)
+			if (spaces > 0)
 			{
-				buffer[length++] = ' ';
-				space = false;
+				// None of the spaces at the start is kept, and one of those elsewhere.
+				bool start = length is 0;
+				shortened |= (start || spaces > 1) && IsUnstableCharacter(c);
+
+				if (!start)
+				{
+					buffer[length++] = ' ';
+				}
+
+				spaces = 0;
 			}
 
 			buffer[length++] = char.IsAsciiLetterUpper(c) ? (char)(c | 0x20) : c;
@@ -328,29 +482,38 @@ internal sealed class DistinguishedName
 		return true;
 	}
 
-	// Type is the contents of the OBJECT IDENTIFIER, Value the DER of the value, and Text its prepared form, or null if it has none.
-	private readonly struct NameAttribute(ReadOnlyMemory<byte> type, ReadOnlyMemory<byte> value, string? text)
+	// Type is the contents of the OBJECT IDENTIFIER, Value the DER of the value, and Text the form in which it compares, or null if it has none; Prepared is the form that RFC 4518 gives it where that differs, as for a type compared by a case-insensitive exact match, and null otherwise; Shortened tells whether preparing Text removed spaces that a complete comparison could keep, which Normalize gives.
+	private readonly struct NameAttribute(ReadOnlyMemory<byte> type, ReadOnlyMemory<byte> value, string? text, string? prepared, bool shortened)
 	{
 		private readonly ReadOnlyMemory<byte> _type = type;
 		private readonly ReadOnlyMemory<byte> _value = value;
 		private readonly string? _text = text;
+		private readonly string? _prepared = prepared;
+		private readonly bool _shortened = shortened;
+		private readonly bool _preparedUnstable = prepared is not null && HasUnstableCharacter(prepared);
 
-		// Whether the prepared text has a character that the comparison cannot settle.
+		// Whether Text has a character that the comparison cannot settle. The form of RFC 4518 only removes characters of Text and turns some into spaces, so that it has such a character only if Text does.
 		public bool IsUnstable { get; } = text is not null && HasUnstableCharacter(text);
 
-		// RFC 5280, Sec. 7.1: the types are the same, and the values are identical or equal once prepared.
+		// RFC 5280, Sec. 7.1: the types are the same, and the values are identical or equal once prepared. Prepared texts of which either lost spaces before an unstable character do not show the values equal, as those spaces could make them differ.
 		public bool Matches(in NameAttribute other)
 		{
-			return _type.Span.SequenceEqual(other._type.Span) && (_value.Span.SequenceEqual(other._value.Span) || _text is not null && _text == other._text);
+			return _type.Span.SequenceEqual(other._type.Span) && (_value.Span.SequenceEqual(other._value.Span) || _text is not null && _text == other._text && !_shortened && !other._shortened);
 		}
 
-		// Matches, or could if the comparison were complete, whatever the rest of the value: an attribute with an unstable character may stand for any of its type, as the pairing of several attributes needs.
+		// Matches, or the values are equal in the form of RFC 4518, by which LDAP compares a domainComponent and a relying party with caseIgnoreMatch alone an emailAddress or unstructuredName. Between stable attributes, this is an equivalence that holds wherever Matches does: values identical or equal as Text are equal in that form, and a stable one shortens nothing.
+		public bool MatchesPrepared(in NameAttribute other)
+		{
+			return Matches(other) || (_prepared is not null || other._prepared is not null) && _type.Span.SequenceEqual(other._type.Span) && (_prepared ?? _text) is { } prepared && prepared == (other._prepared ?? other._text);
+		}
+
+		// MatchesPrepared, or could match if the comparison were complete, whatever the rest of the value: an attribute with an unstable character may stand for any of its type, as the pairing of several attributes needs.
 		public bool MightMatch(in NameAttribute other)
 		{
-			return (IsUnstable || other.IsUnstable) && _type.Span.SequenceEqual(other._type.Span) || Matches(other);
+			return (IsUnstable || other.IsUnstable) && _type.Span.SequenceEqual(other._type.Span) || MatchesPrepared(other);
 		}
 
-		// MightMatch for the only attribute of a relative name, where the prepared texts narrow it down to the values that MightEqual cannot tell apart.
+		// MightMatch for the only attribute of a relative name, where the texts narrow it down to the values that MightEqual cannot tell apart, in Text or in the form of RFC 4518.
 		public bool MightMatchAlone(in NameAttribute other)
 		{
 			if (_text is null || other._text is null || !IsUnstable && !other.IsUnstable)
@@ -358,7 +521,26 @@ internal sealed class DistinguishedName
 				return MightMatch(other);
 			}
 
-			return _type.Span.SequenceEqual(other._type.Span) && MightEqual(_text, other._text);
+			if (!_type.Span.SequenceEqual(other._type.Span))
+			{
+				return false;
+			}
+
+			if (MightEqual(_text, other._text))
+			{
+				return true;
+			}
+
+			if (_prepared is null && other._prepared is null)
+			{
+				return false;
+			}
+
+			// The form of RFC 4518, as for a type compared by a case-insensitive exact match: equal, or not told apart by MightEqual if either has an unstable character.
+			string left = _prepared ?? _text;
+			string right = other._prepared ?? other._text;
+			bool unstable = (_prepared is null ? IsUnstable : _preparedUnstable) || (other._prepared is null ? other.IsUnstable : other._preparedUnstable);
+			return unstable ? MightEqual(left, right) : left == right;
 		}
 	}
 }

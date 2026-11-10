@@ -9,6 +9,7 @@ using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using static CryptoBase.Tests.X509.TestPki;
 using static CryptoBase.Tests.X509.TrustAnchorCertificateValidatorTest;
+using static CryptoBase.Tests.X509.X509TestUtils;
 
 namespace CryptoBase.Tests.X509;
 
@@ -207,6 +208,8 @@ public class TrustAnchorCertificatePoliciesTest
 		using Authority requiresTwo = root.CreateIntermediate("CN=Two", more: [CertificatePolicies(P1), PolicyConstraints(requireExplicitPolicy: 2)]);
 		using Authority twoSelfIssued = requiresTwo.CreateIntermediate(subject: requiresTwo.Name);
 		Certificate twoLeaf = twoSelfIssued.IssueLeaf();
+		using Authority twoReencoded = requiresTwo.CreateIntermediate(subject: CommonName(Utf8StringTag, "two"));
+		Certificate twoReencodedLeaf = twoReencoded.IssueLeaf();
 		using Authority twoIntermediate = requiresTwo.CreateIntermediate("CN=Two more");
 		Certificate twoFar = twoIntermediate.IssueLeaf();
 
@@ -218,6 +221,7 @@ public class TrustAnchorCertificatePoliciesTest
 			await AssertRejected(await ValidateWith(root, [leafWithPolicy, requiresNow.Certificate], [P2]), leafWithPolicy, requiresNow.Certificate, root.Certificate);
 			await AssertRejected(await ValidateWith(root, [belowNoPolicy, noPolicy.Certificate, requiresLater.Certificate]), belowNoPolicy, noPolicy.Certificate, requiresLater.Certificate, root.Certificate);
 			await AssertValid(await ValidateWith(root, [twoLeaf, twoSelfIssued.Certificate, requiresTwo.Certificate]), twoLeaf, twoSelfIssued.Certificate, requiresTwo.Certificate, root.Certificate);
+			await AssertValid(await ValidateWith(root, [twoReencodedLeaf, twoReencoded.Certificate, requiresTwo.Certificate]), twoReencodedLeaf, twoReencoded.Certificate, requiresTwo.Certificate, root.Certificate);
 			await AssertRejected(await ValidateWith(root, [twoFar, twoIntermediate.Certificate, requiresTwo.Certificate]), twoFar, twoIntermediate.Certificate, requiresTwo.Certificate, root.Certificate);
 		}
 	}

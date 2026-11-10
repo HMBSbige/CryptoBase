@@ -406,6 +406,48 @@ public class TrustAnchorCertificateValidatorTest
 		await AssertValid(await Validate([root.Certificate], [leaf, rollover.Certificate], maxPathLength: 0), leaf, rollover.Certificate, root.Certificate);
 	}
 
+	// RFC 5280, Sec. 6.1: a certificate is self-issued if its subject and issuer match by the rules of Sec. 7.1, so that the certificate of a new key of a CA that now encodes its name in another string type or case does not count against pathLenConstraint or MaxPathLength. Names that the exact comparison cannot find the same, as they differ in the case of a letter beyond ASCII, still count.
+	[Test]
+	public async Task TakesACertificateWhoseNamesMatchAsSelfIssued()
+	{
+		using Authority root = Authority.CreateRoot();
+		using Authority zero = root.CreateIntermediate(extensions: CaExtensionsOf(0), subject: CommonName(PrintableStringTag, "Zero"));
+		using Authority reencoded = zero.CreateIntermediate(subject: CommonName(Utf8StringTag, "Zero"));
+		Certificate leafOfReencoded = reencoded.IssueLeaf();
+		using Authority recased = zero.CreateIntermediate(subject: CommonName(PrintableStringTag, "  ZERO "));
+		Certificate leafOfRecased = recased.IssueLeaf();
+		using Authority accented = root.CreateIntermediate(extensions: CaExtensionsOf(0), subject: CommonName(Utf8StringTag, "Zéro"));
+		using Authority otherCase = accented.CreateIntermediate(subject: CommonName(Utf8StringTag, "ZÉRO"));
+		Certificate leafOfOtherCase = otherCase.IssueLeaf();
+		using Authority rollover = root.CreateIntermediate(subject: CommonName(Utf8StringTag, "ROOT"));
+		Certificate leafOfRollover = rollover.IssueLeaf();
+
+		using (Assert.Multiple())
+		{
+			await AssertValid(await Validate([root.Certificate], [leafOfReencoded, reencoded.Certificate, zero.Certificate]), leafOfReencoded, reencoded.Certificate, zero.Certificate, root.Certificate);
+			await AssertValid(await Validate([root.Certificate], [leafOfRecased, recased.Certificate, zero.Certificate]), leafOfRecased, recased.Certificate, zero.Certificate, root.Certificate);
+			await AssertInvalid(await Validate([root.Certificate], [leafOfOtherCase, otherCase.Certificate, accented.Certificate]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, leafOfOtherCase, otherCase.Certificate, accented.Certificate, root.Certificate);
+			await AssertValid(await Validate([root.Certificate], [leafOfRollover, rollover.Certificate], maxPathLength: 0), leafOfRollover, rollover.Certificate, root.Certificate);
+		}
+	}
+
+	// A certificate whose names match by Sec. 7.1 and whose own key verifies its signature is self-signed, and ends a path at a root that is not trusted; one whose names the exact comparison cannot find the same ends a path whose issuer is missing.
+	[Test]
+	public async Task EndsAtASelfSignedCertificateWhoseNamesMatch()
+	{
+		using Authority trusted = Authority.CreateRoot("CN=Trusted");
+		using EcdsaP256 key = EcdsaP256.GenerateKey();
+		Template template = new() { Subject = CommonName(PrintableStringTag, "Self"), SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key), Extensions = [SubjectAlternativeNames("example.com")] };
+		Certificate reencoded = Sign(template, CommonName(Utf8StringTag, "SELF"), key, SignatureAlgorithm.EcdsaSha256);
+		Certificate accented = Sign(template with { Subject = CommonName(Utf8StringTag, "Sélf") }, CommonName(Utf8StringTag, "SÉLF"), key, SignatureAlgorithm.EcdsaSha256);
+
+		using (Assert.Multiple())
+		{
+			await AssertInvalid(await Validate([trusted.Certificate], [reencoded]), [CertificateValidationError.UntrustedRoot], CertificatePathEnd.UntrustedRoot, reencoded);
+			await AssertInvalid(await Validate([trusted.Certificate], [accented]), [CertificateValidationError.UntrustedRoot], CertificatePathEnd.MissingIssuer, accented);
+		}
+	}
+
 	// RFC 5280, Sec. 6.1.4 (n), for the trust anchor as well.
 	[Test]
 	public async Task RequiresKeyCertSignOfIssuers()

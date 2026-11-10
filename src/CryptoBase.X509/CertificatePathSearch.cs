@@ -965,7 +965,7 @@ internal sealed class PathNode
 		Role = role;
 		Index = index;
 		Anchor = anchor;
-		SelfIssued = certificate.Issuer.Span.SequenceEqual(certificate.Subject.Span);
+		SelfIssued = DistinguishedName.AreEqual(certificate.Issuer, certificate.Subject);
 		DecodedExtensions decoded = certificate.DecodedExtensions;
 		AuthorityKeyIdentifier = decoded.AuthorityKeyIdentifier.Value?.KeyIdentifier;
 		SubjectKeyIdentifier = decoded.SubjectKeyIdentifier.Value;
@@ -982,7 +982,7 @@ internal sealed class PathNode
 
 	public TrustAnchorEntry? Anchor { get; }
 
-	// RFC 5280, Sec. 6.1: the issuer is the subject, byte for byte.
+	// RFC 5280, Sec. 6.1: the issuer and the subject are the same name, by the rules of Sec. 7.1 rather than byte for byte, as a CA that rolls over its key may encode its name anew; names that the exact comparison of DistinguishedName cannot find the same are not.
 	public bool SelfIssued { get; }
 
 	public ReadOnlyMemory<byte>? AuthorityKeyIdentifier { get; }

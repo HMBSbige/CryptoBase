@@ -531,7 +531,19 @@ public class TrustAnchorRetrievalTest
 		FakeRetriever retriever = new();
 		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
 
+		// The same, with the issuer encoded in another string type and case, which RFC 5280, Sec. 7.1, takes for the same name.
+		Certificate reencoded = Sign
+		(
+			new Template
+			{
+				Subject = CommonName(PrintableStringTag, "Self"),
+				SubjectPublicKeyInfo = subjectPublicKeyInfo,
+				Extensions = [Aia(caIssuers: [IssuerUri])]
+			}, CommonName(Utf8StringTag, "SELF"), key, SignatureAlgorithm.EcdsaSha256
+		);
+
 		await AssertInvalid(await Validate(validator, presented: [selfSigned]), [CertificateValidationError.UntrustedRoot], CertificatePathEnd.UntrustedRoot, selfSigned);
+		await AssertInvalid(await Validate(validator, presented: [reencoded]), [CertificateValidationError.UntrustedRoot], CertificatePathEnd.UntrustedRoot, reencoded);
 		await Assert.That(retriever.Requests).IsEmpty();
 	}
 

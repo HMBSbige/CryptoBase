@@ -412,11 +412,12 @@ internal static class RevocationChecker
 		}
 	}
 
+	// A byName ResponderID matches the subject by RFC 5280, Sec. 7.1, as RFC 6960 asks no encoding of it: the match only picks the candidates whose key must verify the signature, of which MaxResponderCandidates bounds the certificates.
 	private static bool IsResponder(OcspResponderId responder, Certificate certificate)
 	{
 		if (responder.ByName is { } name)
 		{
-			return name.Span.SequenceEqual(certificate.Subject.Span);
+			return DistinguishedName.AreEqual(name, certificate.Subject);
 		}
 
 		Span<byte> digest = stackalloc byte[SHA1.HashSizeInBytes];

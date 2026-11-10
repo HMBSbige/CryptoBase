@@ -9,6 +9,9 @@ public class DistinguishedNameTest
 	private const string CommonName = "2.5.4.3";
 	private const string Organization = "2.5.4.10";
 	private const string Country = "2.5.4.6";
+	private const string DomainComponent = "0.9.2342.19200300.100.1.25";
+	private const string EmailAddress = "1.2.840.113549.1.9.1";
+	private const string UnstructuredName = "1.2.840.113549.1.9.2";
 
 	private const byte Utf8String = 0x0C;
 	private const byte NumericString = 0x12;
@@ -18,6 +21,9 @@ public class DistinguishedNameTest
 	private const byte VisibleString = 0x1A;
 	private const byte UniversalString = 0x1C;
 	private const byte BmpString = 0x1E;
+
+	// The types of RFC 2985 that pkcs9CaseIgnoreMatch compares, with a name for the cases.
+	private static readonly (string Type, string Label)[] CaseIgnoreTypes = [(EmailAddress, "an email address"), (UnstructuredName, "an unstructured name")];
 
 	public static IEnumerable<Func<(string Case, byte[] Name, byte[] Subtree, bool Within)>> Cases()
 	{
@@ -53,6 +59,17 @@ public class DistinguishedNameTest
 		yield return () => ("a musical format control removed", Dn(Rdn(Attribute(CommonName, Utf8String, "a\U0001D173b"))), Dn(Rdn(Attribute(CommonName, Utf8String, "ab"))), true);
 		yield return () => ("another supplementary character kept", Dn(Rdn(Attribute(CommonName, Utf8String, "a\U0001D100b"))), Dn(Rdn(Attribute(CommonName, Utf8String, "ab"))), false);
 
+		// RFC 4518, Sec. 2.6.1, keeps a space that a combining mark follows, and an unstable character could be or become one: values that differ by the spaces before one that the preparation removes are not found equal.
+		yield return () => ("a space at the start before a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, " \u0301a"))), Dn(Rdn(Attribute(CommonName, Utf8String, "\u0301a"))), false);
+		yield return () => ("a space at the start before a combining mark, in the subtree", Dn(Rdn(Attribute(CommonName, Utf8String, "\u0301a"))), Dn(Rdn(Attribute(CommonName, Utf8String, " \u0301a"))), false);
+		yield return () => ("a second space before a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, "x  \u0301"))), Dn(Rdn(Attribute(CommonName, Utf8String, "x \u0301"))), false);
+		yield return () => ("a space before a character that normalizes to a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, " \uFF9E"))), Dn(Rdn(Attribute(CommonName, Utf8String, "\uFF9E"))), false);
+		yield return () => ("a space and a character removed before a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, " \u200B\u0301a"))), Dn(Rdn(Attribute(CommonName, Utf8String, "\u0301a"))), false);
+		yield return () => ("identical spaces before a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, " \u0301a"))), Dn(Rdn(Attribute(CommonName, Utf8String, " \u0301a"))), true);
+		yield return () => ("one space before a combining mark, in another string type", Dn(Rdn(AttributeOf(CommonName, BmpString, Encoding.BigEndianUnicode.GetBytes("x \u0301")))), Dn(Rdn(Attribute(CommonName, Utf8String, "x\u00A0\u0301"))), true);
+		yield return () => ("spaces at the end after a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, "x\u0301  "))), Dn(Rdn(Attribute(CommonName, Utf8String, "x\u0301"))), true);
+		yield return () => ("spaces before a stable character after a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, "x\u0301   y"))), Dn(Rdn(Attribute(CommonName, Utf8String, "x\u0301 y"))), true);
+
 		// Other types and values that do not decode compare byte for byte.
 		yield return () => ("NumericString identical", Dn(Rdn(Attribute(CommonName, NumericString, "123"))), Dn(Rdn(Attribute(CommonName, NumericString, "123"))), true);
 		yield return () => ("NumericString against PrintableString", Dn(Rdn(Attribute(CommonName, NumericString, "123"))), Dn(Rdn(Attribute(CommonName, PrintableString, "123"))), false);
@@ -61,6 +78,42 @@ public class DistinguishedNameTest
 		yield return () => ("invalid UTF-8, another case of the rest", Dn(Rdn(AttributeOf(CommonName, Utf8String, [(byte)'a', 0xFF]))), Dn(Rdn(AttributeOf(CommonName, Utf8String, [(byte)'A', 0xFF]))), false);
 		yield return () => ("a BMPString of an odd length", Dn(Rdn(AttributeOf(CommonName, BmpString, [0x00]))), Dn(Rdn(AttributeOf(CommonName, BmpString, [0x00]))), true);
 		yield return () => ("a UniversalString that is not valid, against text", Dn(Rdn(AttributeOf(CommonName, UniversalString, [0x7F, 0xFF, 0xFF, 0xFF]))), Dn(Rdn(Attribute(CommonName, Utf8String, ""))), false);
+
+		// RFC 5280, Sec. 7.3: domainComponent values match by a case-insensitive exact match, without the preparation of RFC 4518, in whatever string type they come.
+		yield return () => ("a domain component of another case", Dn(Rdn(Attribute(DomainComponent, Ia5String, "Example"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "eXAMPLE"))), true);
+		yield return () => ("a domain component with a space at the end", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), false);
+		yield return () => ("a domain component with a space at the start", Dn(Rdn(Attribute(DomainComponent, Ia5String, " com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), false);
+		yield return () => ("a domain component with a space at the end, in the subtree", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "))), false);
+		yield return () => ("a domain component with spaces inside", Dn(Rdn(Attribute(DomainComponent, Ia5String, "a  b"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a b"))), false);
+		yield return () => ("a domain component with a tab for a space", Dn(Rdn(Attribute(DomainComponent, Ia5String, "a	b"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a b"))), false);
+		yield return () => ("a domain component with a control code", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), false);
+		yield return () => ("a domain component with a soft hyphen", Dn(Rdn(Attribute(DomainComponent, Utf8String, "c­om"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), false);
+		yield return () => ("identical domain components with a space", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "COM "))), true);
+		yield return () => ("a domain component in UTF8String", Dn(Rdn(Attribute(DomainComponent, Utf8String, "COM"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
+		yield return () => ("a domain component in PrintableString with a space", Dn(Rdn(Attribute(DomainComponent, PrintableString, " com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), false);
+		yield return () => ("a domain component of another case outside ASCII", Dn(Rdn(Attribute(DomainComponent, Utf8String, "É"))), Dn(Rdn(Attribute(DomainComponent, Utf8String, "é"))), false);
+		yield return () => ("a domain component with a space, among other attributes", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "), Attribute(CommonName, PrintableString, "x"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"), Attribute(CommonName, PrintableString, "x"))), false);
+		yield return () => ("a domain component and another attribute with a space", Dn(Rdn(Attribute(DomainComponent, Ia5String, "COM"), Attribute(CommonName, PrintableString, "x "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"), Attribute(CommonName, PrintableString, "x"))), true);
+
+		// RFC 2985, Secs. 5.2.1, 5.2.2 and 6.1: emailAddress and unstructuredName values match by pkcs9CaseIgnoreMatch, the same characters but for case, without the preparation of RFC 4518, in whatever string type they come.
+		foreach ((string type, string label) in CaseIgnoreTypes)
+		{
+			yield return () => ($"{label} of another case", Dn(Rdn(Attribute(type, Ia5String, "A@Example.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@eXAMPLE.COM"))), true);
+			yield return () => ($"{label} with a space at the end", Dn(Rdn(Attribute(type, Ia5String, "a@example.com "))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), false);
+			yield return () => ($"{label} with a space at the start", Dn(Rdn(Attribute(type, Ia5String, " a@example.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), false);
+			yield return () => ($"{label} with a space at the end, in the subtree", Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com "))), false);
+			yield return () => ($"{label} with spaces inside", Dn(Rdn(Attribute(type, Ia5String, "a  b"))), Dn(Rdn(Attribute(type, Ia5String, "a b"))), false);
+			yield return () => ($"{label} with a tab for a space", Dn(Rdn(Attribute(type, Ia5String, "a\tb"))), Dn(Rdn(Attribute(type, Ia5String, "a b"))), false);
+			yield return () => ($"{label} with a control code", Dn(Rdn(Attribute(type, Ia5String, "a@exa\u0001mple.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), false);
+			yield return () => ($"{label} with a soft hyphen", Dn(Rdn(Attribute(type, Utf8String, "a@exa\u00ADmple.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), false);
+			yield return () => ($"identical {label}s with a space", Dn(Rdn(Attribute(type, Ia5String, "a@example.com "))), Dn(Rdn(Attribute(type, Ia5String, "A@EXAMPLE.COM "))), true);
+			yield return () => ($"{label} in UTF8String", Dn(Rdn(Attribute(type, Utf8String, "A@EXAMPLE.COM"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
+			yield return () => ($"{label} in BMPString", Dn(Rdn(AttributeOf(type, BmpString, Encoding.BigEndianUnicode.GetBytes("A@Example.com")))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
+			yield return () => ($"{label} in BMPString with a space", Dn(Rdn(AttributeOf(type, BmpString, Encoding.BigEndianUnicode.GetBytes("a@example.com ")))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), false);
+			yield return () => ($"{label} of another case outside ASCII", Dn(Rdn(Attribute(type, Utf8String, "É"))), Dn(Rdn(Attribute(type, Utf8String, "é"))), false);
+			yield return () => ($"{label} with a space, among other attributes", Dn(Rdn(Attribute(type, Ia5String, "a@example.com "), Attribute(CommonName, PrintableString, "x"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"), Attribute(CommonName, PrintableString, "x"))), false);
+			yield return () => ($"{label} and another attribute with a space", Dn(Rdn(Attribute(type, Ia5String, "A@EXAMPLE.COM"), Attribute(CommonName, PrintableString, "x "))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"), Attribute(CommonName, PrintableString, "x"))), true);
+		}
 
 		// Types must be the same, and the subtree is a prefix of relative names, in order.
 		yield return () => ("another type of attribute", Dn(Rdn(Attribute(Organization, PrintableString, "a"))), Dn(Rdn(Attribute(CommonName, PrintableString, "a"))), false);
@@ -141,6 +194,10 @@ public class DistinguishedNameTest
 		yield return () => ("a Kelvin sign that folds to a letter", Dn(Rdn(Attribute(Organization, Utf8String, "\u212Ax"))), Dn(Rdn(Attribute(Organization, Utf8String, "kx"))), true);
 		yield return () => ("a circled digit that normalizes to a digit", Dn(Rdn(Attribute(Organization, Utf8String, "x\u2460"))), Dn(Rdn(Attribute(Organization, Utf8String, "x1"))), true);
 		yield return () => ("a space before a character that normalizes to one", Dn(Rdn(Attribute(Organization, Utf8String, "a \u00A8"))), Dn(Rdn(Attribute(Organization, Utf8String, "a\u00A8"))), true);
+		yield return () => ("spaces before a full-width form that normalizes to a letter", Dn(Rdn(Attribute(Organization, Utf8String, "x   \uFF41"))), Dn(Rdn(Attribute(Organization, Utf8String, "x a"))), true);
+
+		// Spaces that the preparation removes before an unstable character could count, so that an exact comparison cannot tell those values apart.
+		yield return () => ("a space at the start before a combining mark", Dn(Rdn(Attribute(Organization, Utf8String, " \u0301a"))), Dn(Rdn(Attribute(Organization, Utf8String, "\u0301a"))), true);
 
 		// A value without prepared text has no characters to compare, so an unstable one on the other side stands for it.
 		yield return () => ("a value that is not a string against an unstable one", Dn(Rdn(Attribute(Organization, 0x04, "Evil Corp"))), Dn(Rdn(Attribute(Organization, Utf8String, "M\u00FCller GmbH"))), true);
@@ -163,6 +220,49 @@ public class DistinguishedNameTest
 		yield return () => ("an unstable attribute for another with other ends", Dn(Rdn(Attribute(CommonName, Utf8String, "Müller"), Attribute(CommonName, PrintableString, "ab"))), Dn(Rdn(Attribute(CommonName, PrintableString, "ab"), Attribute(CommonName, PrintableString, "Schmidt"))), true);
 		yield return () => ("another number of attributes", Dn(Rdn(Attribute(CommonName, Utf8String, "É"))), Dn(Rdn(Attribute(CommonName, Utf8String, "é"), Attribute(CommonName, PrintableString, "cd"))), false);
 		yield return () => ("many attributes", Dn(Rdn([.. Enumerable.Range(0, 80).Select(static i => Attribute(CommonName, Utf8String, $"É{i}"))])), Dn(Rdn([.. Enumerable.Range(0, 80).Select(static i => Attribute(CommonName, Utf8String, $"é{i}"))])), true);
+
+		// RFC 5280, Sec. 7.3, asks for a case-insensitive exact match of domainComponent values, but LDAP compares them by caseIgnoreIA5Match (RFC 4519), which ignores insignificant spaces (RFC 4517, Sec. 4.2.7): values equal by either rule could match, while different labels stay apart; a character beyond ASCII could still fold to another.
+		yield return () => ("a domain component of another case", Dn(Rdn(Attribute(DomainComponent, Ia5String, "COM"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
+		yield return () => ("a domain component with a space at the end", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
+		yield return () => ("a domain component with a control code", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
+		yield return () => ("domain components with a space, among others", Dn(Rdn(Attribute(DomainComponent, Ia5String, "a "), Attribute(DomainComponent, Ia5String, "b"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a"), Attribute(DomainComponent, Ia5String, "b"))), true);
+		yield return () => ("a domain component of another case outside ASCII", Dn(Rdn(Attribute(DomainComponent, Utf8String, "É"))), Dn(Rdn(Attribute(DomainComponent, Utf8String, "é"))), true);
+		yield return () => ("a domain component with a Kelvin sign", Dn(Rdn(Attribute(DomainComponent, Utf8String, "K"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "k"))), true);
+		yield return () => ("a domain component with a space at the start", Dn(Rdn(Attribute(DomainComponent, Ia5String, " com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
+		yield return () => ("a domain component with a space at the end, in the subtree", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "))), true);
+		yield return () => ("a domain component with spaces inside", Dn(Rdn(Attribute(DomainComponent, Ia5String, "a  b"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a b"))), true);
+		yield return () => ("a domain component with a tab for a space", Dn(Rdn(Attribute(DomainComponent, Ia5String, "a\tb"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a b"))), true);
+		yield return () => ("a domain component in UTF8String with a space at the end", Dn(Rdn(Attribute(DomainComponent, Utf8String, "COM "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
+		yield return () => ("a domain component with a soft hyphen", Dn(Rdn(Attribute(DomainComponent, Utf8String, "c\u00ADom"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
+		yield return () => ("another domain component", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "org"))), false);
+		yield return () => ("a longer domain component", Dn(Rdn(Attribute(DomainComponent, Ia5String, "comx"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), false);
+		yield return () => ("a domain component split by a space", Dn(Rdn(Attribute(DomainComponent, Ia5String, "co m"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), false);
+		yield return () => ("a domain component that spaces bring within reach of an unstable character", Dn(Rdn(Attribute(DomainComponent, Utf8String, "é x "))), Dn(Rdn(Attribute(DomainComponent, Utf8String, "éz x"))), true);
+		yield return () => ("a domain component with spaces, among others of other types", Dn(Rdn(Attribute(DomainComponent, Ia5String, " com"), Attribute(CommonName, PrintableString, "x"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"), Attribute(CommonName, PrintableString, "x"))), true);
+		yield return () => ("domain components with a space, among others that differ", Dn(Rdn(Attribute(DomainComponent, Ia5String, "a "), Attribute(DomainComponent, Ia5String, "b"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a"), Attribute(DomainComponent, Ia5String, "c"))), false);
+		yield return () => ("a domain component with a space, beside an unstable one", Dn(Rdn(Attribute(DomainComponent, Utf8String, "É"), Attribute(DomainComponent, Ia5String, "a "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a"), Attribute(DomainComponent, Ia5String, "x"))), true);
+		yield return () => ("a domain component with a space, beside an unstable one, for others that differ", Dn(Rdn(Attribute(DomainComponent, Utf8String, "É"), Attribute(DomainComponent, Ia5String, "a "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "b"), Attribute(DomainComponent, Ia5String, "x"))), false);
+
+		// RFC 2985, Sec. 6.1, gives emailAddress and unstructuredName the same characters but for case, but RFC 5280, Sec. 7.1, only requires caseIgnoreMatch, by which a relying party would prepare them by RFC 4518: values equal by either rule could match, while different values stay apart; a character beyond ASCII could still fold to another.
+		foreach ((string type, string label) in CaseIgnoreTypes)
+		{
+			yield return () => ($"{label} of another case", Dn(Rdn(Attribute(type, Ia5String, "A@EXAMPLE.COM"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
+			yield return () => ($"{label} with a space at the end", Dn(Rdn(Attribute(type, Ia5String, "a@example.com "))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
+			yield return () => ($"{label} with a space at the start", Dn(Rdn(Attribute(type, Ia5String, " a@example.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
+			yield return () => ($"{label} with a space at the end, in the subtree", Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com "))), true);
+			yield return () => ($"{label} with spaces inside", Dn(Rdn(Attribute(type, Ia5String, "a  b"))), Dn(Rdn(Attribute(type, Ia5String, "a b"))), true);
+			yield return () => ($"{label} with a tab for a space", Dn(Rdn(Attribute(type, Ia5String, "a\tb"))), Dn(Rdn(Attribute(type, Ia5String, "a b"))), true);
+			yield return () => ($"{label} with a control code", Dn(Rdn(Attribute(type, Ia5String, "a@exa\u0001mple.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
+			yield return () => ($"{label} with a soft hyphen", Dn(Rdn(Attribute(type, Utf8String, "a@exa\u00ADmple.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
+			yield return () => ($"{label} in BMPString with a space at the end", Dn(Rdn(AttributeOf(type, BmpString, Encoding.BigEndianUnicode.GetBytes("A@EXAMPLE.COM ")))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
+			yield return () => ($"{label} of another case outside ASCII", Dn(Rdn(Attribute(type, Utf8String, "É"))), Dn(Rdn(Attribute(type, Utf8String, "é"))), true);
+			yield return () => ($"another {label}", Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), Dn(Rdn(Attribute(type, Ia5String, "b@example.com"))), false);
+			yield return () => ($"a longer {label}", Dn(Rdn(Attribute(type, Ia5String, "a@example.comx"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), false);
+			yield return () => ($"{label} split by a space", Dn(Rdn(Attribute(type, Ia5String, "a@exa mple.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), false);
+			yield return () => ($"{label} with spaces, among others of other types", Dn(Rdn(Attribute(type, Ia5String, " a@example.com"), Attribute(CommonName, PrintableString, "x"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"), Attribute(CommonName, PrintableString, "x"))), true);
+			yield return () => ($"{label} with a space, among others that differ", Dn(Rdn(Attribute(type, Ia5String, "a@example.com "), Attribute(CommonName, PrintableString, "x"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"), Attribute(CommonName, PrintableString, "y"))), false);
+			yield return () => ($"{label} with a space, beside an unstable one", Dn(Rdn(Attribute(type, Utf8String, "É"), Attribute(type, Ia5String, "a "))), Dn(Rdn(Attribute(type, Ia5String, "a"), Attribute(type, Ia5String, "x"))), true);
+		}
 	}
 
 	[Test]
@@ -173,6 +273,84 @@ public class DistinguishedNameTest
 		DistinguishedName parsedSubtree = DistinguishedName.Read(subtree);
 
 		await Assert.That(parsedName.MightBeWithin(parsedSubtree)).IsEqualTo(mightBeWithin).Because(@case);
+	}
+
+	public static IEnumerable<Func<(string Case, byte[] Left, byte[] Right, bool Equal)>> EqualityCases()
+	{
+		yield return () => ("identical", Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(CommonName, PrintableString, "Example"))), Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(CommonName, PrintableString, "Example"))), true);
+		yield return () => ("the empty name", Dn(), Dn(), true);
+
+		// Sec. 7.1, as IsWithin compares relative names.
+		yield return () => ("another string type and case", Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(CommonName, PrintableString, "Example CA"))), Dn(Rdn(Attribute(Country, Utf8String, "us")), Rdn(Attribute(CommonName, Utf8String, "EXAMPLE CA"))), true);
+		yield return () => ("insignificant spaces", Dn(Rdn(Attribute(CommonName, PrintableString, " Example  CA "))), Dn(Rdn(Attribute(CommonName, Utf8String, "Example CA"))), true);
+		yield return () => ("a BMPString", Dn(Rdn(AttributeOf(CommonName, BmpString, Encoding.BigEndianUnicode.GetBytes("Example")))), Dn(Rdn(Attribute(CommonName, PrintableString, "EXAMPLE"))), true);
+		yield return () => ("a domain component of another case", Dn(Rdn(Attribute(DomainComponent, Ia5String, "Example"))), Dn(Rdn(Attribute(DomainComponent, Utf8String, "eXAMPLE"))), true);
+		yield return () => ("two attributes in another order", Dn(Rdn(Attribute(CommonName, PrintableString, "a"), Attribute(Organization, PrintableString, "b"))), Dn(Rdn(Attribute(Organization, Utf8String, "B"), Attribute(CommonName, Utf8String, "A"))), true);
+
+		// The exact comparison tells them apart, as does the comparison of the letters and digits before it.
+		yield return () => ("another value", Dn(Rdn(Attribute(CommonName, PrintableString, "Example CA"))), Dn(Rdn(Attribute(CommonName, PrintableString, "Example CA 2"))), false);
+		yield return () => ("another letter beyond what the comparison before reads", Dn(Rdn(AttributeOf(CommonName, BmpString, Encoding.BigEndianUnicode.GetBytes("ab")))), Dn(Rdn(Attribute(CommonName, PrintableString, "ac"))), false);
+		yield return () => ("a space removed", Dn(Rdn(Attribute(CommonName, PrintableString, "Example CA"))), Dn(Rdn(Attribute(CommonName, PrintableString, "ExampleCA"))), false);
+		yield return () => ("another type", Dn(Rdn(Attribute(Organization, PrintableString, "Example"))), Dn(Rdn(Attribute(CommonName, PrintableString, "Example"))), false);
+		yield return () => ("another case outside ASCII", Dn(Rdn(Attribute(CommonName, Utf8String, "Éa"))), Dn(Rdn(Attribute(CommonName, Utf8String, "éA"))), false);
+		yield return () => ("a domain component with a space", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "COM"))), false);
+		yield return () => ("invalid UTF-8 of another case", Dn(Rdn(AttributeOf(CommonName, Utf8String, [(byte)'a', 0xFF]))), Dn(Rdn(AttributeOf(CommonName, Utf8String, [(byte)'A', 0xFF]))), false);
+		yield return () => ("another attribute among two", Dn(Rdn(Attribute(CommonName, PrintableString, "a"), Attribute(Organization, PrintableString, "b"))), Dn(Rdn(Attribute(CommonName, PrintableString, "a"), Attribute(Organization, PrintableString, "c"))), false);
+
+		// The names are the same, not one within the other.
+		yield return () => ("a longer name", Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(CommonName, PrintableString, "x"))), Dn(Rdn(Attribute(Country, Utf8String, "us"))), false);
+		yield return () => ("a shorter name", Dn(Rdn(Attribute(Country, Utf8String, "us"))), Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(CommonName, PrintableString, "x"))), false);
+		yield return () => ("the empty name and another", Dn(), Dn(Rdn(Attribute(CommonName, PrintableString, "x"))), false);
+		yield return () => ("a longer name with several attributes", Dn(Rdn(Attribute(CommonName, PrintableString, "a"), Attribute(Organization, PrintableString, "b")), Rdn(Attribute(CommonName, PrintableString, "x"))), Dn(Rdn(Attribute(CommonName, Utf8String, "A"), Attribute(Organization, Utf8String, "B"))), false);
+	}
+
+	// RFC 5280, Sec. 7.1: AreEqual finds two Names the same as IsWithin compares them, whichever comes first, and only with as many relative names.
+	[Test]
+	[MethodDataSource(nameof(EqualityCases))]
+	public async Task FindsNamesTheSameAsRfc5280Requires(string @case, byte[] left, byte[] right, bool equal)
+	{
+		using (Assert.Multiple())
+		{
+			await Assert.That(DistinguishedName.AreEqual(left, right)).IsEqualTo(equal).Because(@case);
+			await Assert.That(DistinguishedName.AreEqual(right, left)).IsEqualTo(equal).Because(@case);
+		}
+	}
+
+	// The path search compares the issuer and the subject of every certificate, which mostly differ in the letters of a value: that takes no allocation.
+	[Test]
+	public async Task TellsApartNamesOfOtherLettersWithoutAllocating()
+	{
+		byte[] issuer = Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(Organization, PrintableString, "Example")), Rdn(Attribute(CommonName, PrintableString, "Example Issuing CA")));
+		byte[] subject = Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(Organization, Utf8String, "Example")), Rdn(Attribute(CommonName, Utf8String, "www.example.com")));
+
+		await Assert.That(MeasureAllocation(issuer, subject)).IsEqualTo(0);
+
+		static long MeasureAllocation(byte[] left, byte[] right)
+		{
+			_ = DistinguishedName.AreEqual(left, right);
+			long before = GC.GetAllocatedBytesForCurrentThread();
+			bool equal = DistinguishedName.AreEqual(left, right);
+			long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+			return equal ? -1 : allocated;
+		}
+	}
+
+	// A pair of Names whose comparison could take more than MaxEqualityWork counts as different, unless identical; the work is that of Work.
+	[Test]
+	public async Task FindsNamesDifferentBeyondTheLimitOfWork()
+	{
+		byte[] large = Dn(Rdn([.. Enumerable.Range(0, 1023).Select(static i => Attribute(CommonName, PrintableString, $"v{i}"))]));
+		byte[] largeOtherCase = Dn(Rdn([.. Enumerable.Range(0, 1023).Select(static i => Attribute(CommonName, PrintableString, $"V{i}"))]));
+		byte[] larger = Dn(Rdn([.. Enumerable.Range(0, 1024).Select(static i => Attribute(CommonName, PrintableString, $"v{i}"))]));
+		byte[] largerOtherCase = Dn(Rdn([.. Enumerable.Range(0, 1024).Select(static i => Attribute(CommonName, PrintableString, $"V{i}"))]));
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(DistinguishedName.Read(large).Work * DistinguishedName.Read(largeOtherCase).Work).IsEqualTo(DistinguishedName.MaxEqualityWork);
+			await Assert.That(DistinguishedName.AreEqual(large, largeOtherCase)).IsTrue();
+			await Assert.That(DistinguishedName.AreEqual(larger, largerOtherCase)).IsFalse();
+			await Assert.That(DistinguishedName.AreEqual(larger, larger)).IsTrue();
+		}
 	}
 
 	// Each attribute and every 64 bytes of it count, once, so that the cost bounds the work of a comparison, whatever the shape of the Name.

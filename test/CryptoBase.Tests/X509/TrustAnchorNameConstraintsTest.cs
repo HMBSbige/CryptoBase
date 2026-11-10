@@ -12,6 +12,11 @@ namespace CryptoBase.Tests.X509;
 // Name constraints (RFC 5280, Sec. 4.2.1.10) in TrustAnchorCertificateValidator.
 public class TrustAnchorNameConstraintsTest
 {
+	private const string CommonNameType = "2.5.4.3";
+	private const string DomainComponentType = "0.9.2342.19200300.100.1.25";
+	private const string EmailAddressType = "1.2.840.113549.1.9.1";
+	private const string UnstructuredNameType = "1.2.840.113549.1.9.2";
+
 	public static IEnumerable<Func<(string Case, byte[][]? Permitted, byte[][]? Excluded, byte[][] Names, CertificateValidationError? Error)>> Cases()
 	{
 		// dNSName: the subtree with zero or more labels on the left, ignoring case; the empty subtree is every name.
@@ -178,12 +183,78 @@ public class TrustAnchorNameConstraintsTest
 		yield return () => ("permitted, the identical name", Organization("é"), null, Organization("é"), null, null);
 		yield return () => ("permitted, the same ideographs", Organization("北京"), null, Organization("北京"), null, null);
 		yield return () => ("permitted, different ideographs", Organization("北京"), null, Organization("上海"), CertificateValidationError.NotValidForUsage, notPermitted);
+
+		// RFC 4518, Sec. 2.6.1, keeps a space that a combining mark follows, so that a name cannot add one to enter a permitted subtree.
+		yield return () => ("permitted, a space at the start before a combining mark", Organization("\u0301a"), null, Organization(" \u0301a"), CertificateValidationError.NotValidForUsage, notPermitted);
+		yield return () => ("permitted, a second space before a combining mark", Organization("x \u0301"), null, Organization("x  \u0301"), CertificateValidationError.NotValidForUsage, notPermitted);
+		yield return () => ("permitted, spaces at the end after a combining mark", Organization("x\u0301"), null, Organization("x\u0301  "), null, null);
 	}
 
 	// RFC 5280, Sec. 7.1, asks for all of RFC 4518, and the comparison leaves out its case folding and normalization: a name that it could not compare exactly must not escape an excluded subtree.
 	[Test]
 	[MethodDataSource(nameof(UnstableNameCases))]
 	public async Task FailsClosedForExcludedDirectoryNamesThatCannotBeComparedExactly(string @case, byte[]? permitted, byte[]? excluded, byte[] subject, CertificateValidationError? error, string? message)
+	{
+		using Authority root = Authority.CreateRoot(more: [NameConstraints(permitted is null ? null : [DirectoryName(permitted)], excluded is null ? null : [DirectoryName(excluded)])]);
+		using EcdsaP256 key = EcdsaP256.GenerateKey();
+		Certificate leaf = root.Issue(new Template { Subject = subject, SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(key), Extensions = [SubjectAlternativeNames("example.com"), AuthorityKeyIdentifier(root.KeyIdentifier)] });
+
+		CertificateValidationResult result = await Validate([root.Certificate], [leaf], hostName: "example.com");
+
+		if (error is { } expected)
+		{
+			using (Assert.Multiple())
+			{
+				await AssertInvalid(result, [expected], CertificatePathEnd.TrustAnchor, @case, [leaf, root.Certificate]);
+				await Assert.That(result.Message).Contains(message ?? "").Because(@case);
+			}
+		}
+		else
+		{
+			await AssertValid(result, leaf, root.Certificate);
+		}
+	}
+
+	public static IEnumerable<Func<(string Case, byte[]? Permitted, byte[]? Excluded, byte[] Subject, CertificateValidationError? Error, string? Message)>> DomainComponentCases()
+	{
+		const byte ia5String = 0x16;
+		const byte utf8String = 0x0C;
+		const byte printableString = 0x13;
+		const string notPermitted = "do not permit";
+		const string certain = "which the name constraints of";
+		const string ignored = "differs from the subtree only in characters that the preparation of RFC 4518 ignores";
+
+		yield return () => ("permitted, the same label", DomainComponent(ia5String, "com"), null, DomainComponent(ia5String, "com"), null, null);
+		yield return () => ("permitted, another case", DomainComponent(ia5String, "com"), null, DomainComponent(ia5String, "COM"), null, null);
+		yield return () => ("permitted, a space at the end", DomainComponent(ia5String, "com"), null, DomainComponent(ia5String, "com "), CertificateValidationError.NotValidForUsage, notPermitted);
+		yield return () => ("permitted, a space at the end in UTF8String", DomainComponent(ia5String, "com"), null, DomainComponent(utf8String, "com "), CertificateValidationError.NotValidForUsage, notPermitted);
+		yield return () => ("permitted, a space among the attributes of a relative name", Dn(Rdn(Attribute(DomainComponentType, ia5String, "com"), Attribute(CommonNameType, printableString, "x"))), null, Dn(Rdn(Attribute(DomainComponentType, ia5String, "com "), Attribute(CommonNameType, printableString, "x"))), CertificateValidationError.NotValidForUsage, notPermitted);
+		yield return () => ("excluded, the same label", null, DomainComponent(ia5String, "com"), DomainComponent(ia5String, "com"), CertificateValidationError.NotValidForUsage, certain);
+		yield return () => ("excluded, another case in UTF8String", null, DomainComponent(ia5String, "com"), DomainComponent(utf8String, "COM"), CertificateValidationError.NotValidForUsage, certain);
+
+		// LDAP compares the type by caseIgnoreIA5Match (RFC 4519), which ignores insignificant spaces (RFC 4517, Sec. 4.2.7), so that a label that differs only in what RFC 4518 removes must not escape an excluded subtree.
+		yield return () => ("excluded, a space at the end", null, DomainComponent(ia5String, "com"), DomainComponent(ia5String, "com "), CertificateValidationError.NotValidForUsage, ignored);
+		yield return () => ("excluded, a control code", null, DomainComponent(ia5String, "com"), DomainComponent(ia5String, "c\u0001om"), CertificateValidationError.NotValidForUsage, ignored);
+		yield return () => ("excluded, a space among the attributes of a relative name", null, Dn(Rdn(Attribute(DomainComponentType, ia5String, "com"), Attribute(CommonNameType, printableString, "x"))), Dn(Rdn(Attribute(DomainComponentType, ia5String, "com "), Attribute(CommonNameType, printableString, "x"))), CertificateValidationError.NotValidForUsage, ignored);
+		yield return () => ("excluded, a space beside a domain component outside ASCII", null, Dn(Rdn(Attribute(DomainComponentType, ia5String, "com"), Attribute(DomainComponentType, ia5String, "x"))), Dn(Rdn(Attribute(DomainComponentType, ia5String, "com "), Attribute(DomainComponentType, utf8String, "É"))), CertificateValidationError.NotValidForUsage, ignored);
+		yield return () => ("excluded, a space in the last relative name", null, Dn(Rdn(Attribute(DomainComponentType, ia5String, "com")), Rdn(Attribute(DomainComponentType, ia5String, "example"))), Dn(Rdn(Attribute(DomainComponentType, ia5String, "com")), Rdn(Attribute(DomainComponentType, ia5String, "example "))), CertificateValidationError.NotValidForUsage, ignored);
+
+		// Labels that differ in other characters stay outside the subtree.
+		yield return () => ("excluded, another label", null, DomainComponent(ia5String, "com"), DomainComponent(ia5String, "org"), null, null);
+		yield return () => ("excluded, a label split by a space", null, DomainComponent(ia5String, "com"), DomainComponent(ia5String, "co m"), null, null);
+		yield return () => ("excluded, another label in the last relative name", null, Dn(Rdn(Attribute(DomainComponentType, ia5String, "com")), Rdn(Attribute(DomainComponentType, ia5String, "example"))), Dn(Rdn(Attribute(DomainComponentType, ia5String, "com")), Rdn(Attribute(DomainComponentType, ia5String, "examplex"))), null, null);
+	}
+
+	// RFC 5280, Sec. 7.3: domainComponent values match by a case-insensitive exact match, which a non-canonical label cannot pass to enter a permitted subtree; an excluded subtree also holds what the preparation of RFC 4518 would make equal, so that such a label cannot escape it either.
+	[Test]
+	[MethodDataSource(nameof(DomainComponentCases))]
+	public async Task ComparesDomainComponentsByACaseInsensitiveExactMatch(string @case, byte[]? permitted, byte[]? excluded, byte[] subject, CertificateValidationError? error, string? message)
+	{
+		await AssertDirectoryNameSubtree(@case, permitted, excluded, subject, error, message);
+	}
+
+	// A leaf with the subject, under a root whose name constraints have the directoryName subtree, fails with the error and a message that holds the text, or is valid.
+	private static async Task AssertDirectoryNameSubtree(string @case, byte[]? permitted, byte[]? excluded, byte[] subject, CertificateValidationError? error, string? message)
 	{
 		using Authority root = Authority.CreateRoot(more: [NameConstraints(permitted is null ? null : [DirectoryName(permitted)], excluded is null ? null : [DirectoryName(excluded)])]);
 		using EcdsaP256 key = EcdsaP256.GenerateKey();
@@ -318,7 +389,7 @@ public class TrustAnchorNameConstraintsTest
 		}
 	}
 
-	// The constraints of a CA apply to the alternative names of the intermediate certificates below it too, but not to self-issued ones, as for a key rollover; and only CAs may have the extension.
+	// The constraints of a CA apply to the alternative names of the intermediate certificates below it too, but not to self-issued ones, as for a key rollover, whose names may match by RFC 5280, Sec. 7.1, rather than byte for byte; and only CAs may have the extension.
 	[Test]
 	public async Task AppliesTheConstraintsToEveryCertificateBelow()
 	{
@@ -329,6 +400,8 @@ public class TrustAnchorNameConstraintsTest
 		using Authority rollover = inside.CreateIntermediate(subject: inside.Name, more: [SubjectAlternativeNames("other.test")]);
 		Certificate leafOfRollover = rollover.IssueLeaf();
 		Certificate outsideLeaf = rollover.IssueLeaf(extensions: [SubjectAlternativeNames("other.test")]);
+		using Authority reencoded = inside.CreateIntermediate(subject: CommonName(Utf8StringTag, "INSIDE"), more: [SubjectAlternativeNames("other.test")]);
+		Certificate leafOfReencoded = reencoded.IssueLeaf();
 		using Authority plain = Authority.CreateRoot("CN=Plain");
 		Certificate constrainingLeaf = plain.IssueLeaf(more: [NameConstraints([DnsName("example.com")])]);
 
@@ -337,6 +410,7 @@ public class TrustAnchorNameConstraintsTest
 			await AssertInvalid(await Validate([root.Certificate], [leafOfOutside, outside.Certificate]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, leafOfOutside, outside.Certificate, root.Certificate);
 			await AssertValid(await Validate([root.Certificate], [leafOfRollover, rollover.Certificate, inside.Certificate]), leafOfRollover, rollover.Certificate, inside.Certificate, root.Certificate);
 			await AssertInvalid(await Validate([root.Certificate], [outsideLeaf, rollover.Certificate, inside.Certificate]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, outsideLeaf, rollover.Certificate, inside.Certificate, root.Certificate);
+			await AssertValid(await Validate([root.Certificate], [leafOfReencoded, reencoded.Certificate, inside.Certificate]), leafOfReencoded, reencoded.Certificate, inside.Certificate, root.Certificate);
 			await AssertInvalid(await Validate([plain.Certificate], [constrainingLeaf]), [CertificateValidationError.NotValidForUsage], CertificatePathEnd.TrustAnchor, constrainingLeaf, plain.Certificate);
 		}
 	}
@@ -357,8 +431,76 @@ public class TrustAnchorNameConstraintsTest
 		}
 	}
 
+	public static IEnumerable<Func<(string Case, byte[]? Permitted, byte[]? Excluded, byte[] Subject, CertificateValidationError? Error, string? Message)>> CaseIgnoreCases()
+	{
+		const byte ia5String = 0x16;
+		const byte utf8String = 0x0C;
+		const byte printableString = 0x13;
+		const string notPermitted = "do not permit";
+		const string certain = "which the name constraints of";
+		const string ignored = "differs from the subtree only in characters that the preparation of RFC 4518 ignores";
+
+		foreach ((string type, string label) in new[] { (EmailAddressType, "emailAddress"), (UnstructuredNameType, "unstructuredName") })
+		{
+			byte[] Value(byte tag, string value)
+			{
+				return Dn(Rdn(Attribute(type, tag, value)));
+			}
+
+			byte[] WithCommonName(string value)
+			{
+				return Dn(Rdn(Attribute(type, ia5String, value), Attribute(CommonNameType, printableString, "x")));
+			}
+
+			yield return () => ($"{label}, permitted, the same value", Value(ia5String, "a@example.com"), null, Value(ia5String, "a@example.com"), null, null);
+			yield return () => ($"{label}, permitted, another case", Value(ia5String, "a@example.com"), null, Value(ia5String, "A@EXAMPLE.com"), null, null);
+			yield return () => ($"{label}, permitted, a space at the end", Value(ia5String, "a@example.com"), null, Value(ia5String, "a@example.com "), CertificateValidationError.NotValidForUsage, notPermitted);
+			yield return () => ($"{label}, permitted, a space among the attributes of a relative name", WithCommonName("a@example.com"), null, WithCommonName("a@example.com "), CertificateValidationError.NotValidForUsage, notPermitted);
+			yield return () => ($"{label}, excluded, the same value", null, Value(ia5String, "a@example.com"), Value(ia5String, "a@example.com"), CertificateValidationError.NotValidForUsage, certain);
+			yield return () => ($"{label}, excluded, another case in UTF8String", null, Value(ia5String, "a@example.com"), Value(utf8String, "A@EXAMPLE.COM"), CertificateValidationError.NotValidForUsage, certain);
+
+			// A relying party that supports only caseIgnoreMatch, as RFC 5280, Sec. 7.1, allows, prepares the values by RFC 4518, so that one that differs only in what it removes must not escape an excluded subtree.
+			yield return () => ($"{label}, excluded, a space at the end", null, Value(ia5String, "a@example.com"), Value(ia5String, "a@example.com "), CertificateValidationError.NotValidForUsage, ignored);
+			yield return () => ($"{label}, excluded, a control code", null, Value(ia5String, "a@example.com"), Value(ia5String, "a@exa\u0001mple.com"), CertificateValidationError.NotValidForUsage, ignored);
+			yield return () => ($"{label}, excluded, a space among the attributes of a relative name", null, WithCommonName("a@example.com"), WithCommonName("a@example.com "), CertificateValidationError.NotValidForUsage, ignored);
+
+			// Values that differ in other characters stay outside the subtree.
+			yield return () => ($"{label}, excluded, another value", null, Value(ia5String, "a@example.com"), Value(ia5String, "b@example.com"), null, null);
+			yield return () => ($"{label}, excluded, a value split by a space", null, Value(ia5String, "a@example.com"), Value(ia5String, "a@exa mple.com"), null, null);
+		}
+	}
+
+	// RFC 2985, Secs. 5.2.1, 5.2.2 and 6.1: emailAddress and unstructuredName values match by pkcs9CaseIgnoreMatch, which keeps every character but for case, so that a value with other white space or control codes cannot enter a permitted subtree; an excluded subtree also holds what the preparation of RFC 4518 would make equal, so that such a value cannot escape it either. The leaf has a subject alternative name, so that its emailAddress attributes are not matched as rfc822Name.
+	[Test]
+	[MethodDataSource(nameof(CaseIgnoreCases))]
+	public async Task ComparesEmailAddressesAndUnstructuredNamesByACaseInsensitiveExactMatch(string @case, byte[]? permitted, byte[]? excluded, byte[] subject, CertificateValidationError? error, string? message)
+	{
+		await AssertDirectoryNameSubtree(@case, permitted, excluded, subject, error, message);
+	}
+
 	private static byte[] Organization(string value)
 	{
 		return Sequence(Tlv(0x31, Sequence(Oid("2.5.4.10"), Tlv(0x0C, System.Text.Encoding.UTF8.GetBytes(value)))));
+	}
+
+	private static byte[] DomainComponent(byte tag, string value)
+	{
+		return Dn(Rdn(Attribute(DomainComponentType, tag, value)));
+	}
+
+	private static byte[] Dn(params byte[][] relativeNames)
+	{
+		return Sequence(relativeNames);
+	}
+
+	// A SET OF in DER order, its elements sorted as unsigned bytes.
+	private static byte[] Rdn(params byte[][] attributes)
+	{
+		return Tlv(0x31, [.. attributes.OrderBy(static attribute => attribute, Comparer<byte[]>.Create(static (a, b) => a.AsSpan().SequenceCompareTo(b)))]);
+	}
+
+	private static byte[] Attribute(string type, byte tag, string value)
+	{
+		return Sequence(Oid(type), Tlv(tag, System.Text.Encoding.UTF8.GetBytes(value)));
 	}
 }

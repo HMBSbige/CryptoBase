@@ -20,6 +20,8 @@ internal static class X509TestUtils
 	public const string Sha384Oid = "2.16.840.1.101.3.4.2.2";
 	public const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
 	public const string Mgf1Oid = "1.2.840.113549.1.1.8";
+	public const byte Utf8StringTag = 0x0C;
+	public const byte PrintableStringTag = 0x13;
 
 	public static readonly DateTimeOffset Now = X509Time.TruncateToSeconds(DateTimeOffset.UtcNow);
 
@@ -35,6 +37,12 @@ internal static class X509TestUtils
 	public static byte[] Name(string distinguishedName)
 	{
 		return new X500DistinguishedName(distinguishedName).RawData;
+	}
+
+	// A Name of one common name whose value has the string type of tag, which X500DistinguishedName chooses by itself.
+	public static byte[] CommonName(byte tag, string value)
+	{
+		return Sequence(Tlv(0x31, Sequence(Oid("2.5.4.3"), Tlv(tag, System.Text.Encoding.UTF8.GetBytes(value)))));
 	}
 
 	// The contents of a DER TLV with a one-byte tag.

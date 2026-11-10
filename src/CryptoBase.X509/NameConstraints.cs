@@ -107,12 +107,12 @@ internal sealed class NameConstraints
 				return CertificateValidationError.NotValidForUsage;
 			}
 
-			// RFC 5280, Sec. 7.1, compares by all of RFC 4518: a name that a complete comparison could find within an excluded subtree must not escape it, while one that a permitted subtree misses is only left outside it.
+			// RFC 5280, Sec. 7.1, compares by all of RFC 4518: a name that a complete comparison could find within an excluded subtree must not escape it, nor one whose domainComponent, emailAddress or unstructuredName differs only in what RFC 4518 removes, by which LDAP compares the first (RFC 4519) and a relying party with caseIgnoreMatch alone the others, while one that a permitted subtree misses is only left outside it.
 			if (NameSubtrees.MightContainDirectoryName(Excluded.DirectoryNames, name, out bool certain))
 			{
 				text = certain
 					? $"has the directory name \"{name.Describe()}\", which the name constraints of {{1}} exclude"
-					: $"has the directory name \"{name.Describe()}\", which might be within a subtree that the name constraints of {{1}} exclude and cannot be compared exactly";
+					: $"has the directory name \"{name.Describe()}\", which might be within a subtree that the name constraints of {{1}} exclude: it cannot be compared exactly, or differs from the subtree only in characters that the preparation of RFC 4518 ignores";
 				return CertificateValidationError.NotValidForUsage;
 			}
 		}

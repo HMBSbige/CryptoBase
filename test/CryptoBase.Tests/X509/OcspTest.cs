@@ -664,6 +664,30 @@ public class OcspTest
 		}
 	}
 
+	// RFC 6960, Sec. 4.2.2.3: a byName ResponderID is a Name, which matches the subject of the CA or of a delegated responder by RFC 5280, Sec. 7.1, in another string type, case or spacing; the signature is verified all the same. A name that the exact comparison cannot find the same, as it differs in the case of a letter beyond ASCII, names neither.
+	[Test]
+	public async Task AResponderNameMatchesTheSubjectByRfc5280()
+	{
+		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
+		using EcdsaP256 responderKey = EcdsaP256.GenerateKey();
+		Certificate leaf = authority.IssueLeaf();
+		TestPki.Template template = new() { Subject = CommonName(PrintableStringTag, "Delegated Responder"), SubjectPublicKeyInfo = Signatures.SignatureTestUtils.ExportSubjectPublicKeyInfo(responderKey), Extensions = [TestPki.ExtendedKeyUsage(OcspSigningOid)] };
+		Certificate responder = authority.Issue(template);
+		Certificate accented = authority.Issue(template with { Subject = CommonName(Utf8StringTag, "Répondeur") });
+		Basic basic = new() { ResponderId = ResponderByName(CommonName(Utf8StringTag, "ocsp  ca ")), Responses = [new SingleEntry { CertificateId = CertificateIdOf(leaf, authority.Certificate) }.Encode()] };
+		Basic delegated = basic with { ResponderId = ResponderByName(CommonName(Utf8StringTag, " DELEGATED responder")), Certificates = [responder.Encoded.ToArray()] };
+		Basic otherCase = basic with { ResponderId = ResponderByName(CommonName(Utf8StringTag, "RÉPONDEUR")), Certificates = [accented.Encoded.ToArray()] };
+
+		using (Assert.Multiple())
+		{
+			await AssertStatusAsync(Check(basic.Decode(authority.Key), leaf, authority), RevocationStatus.Good);
+			await AssertStatusAsync(Check(basic.Decode(responderKey), leaf, authority), RevocationStatus.Invalid);
+			await AssertStatusAsync(Check(delegated.Decode(responderKey), leaf, authority), RevocationStatus.Good);
+			await AssertStatusAsync(Check(otherCase.Decode(responderKey), leaf, authority), RevocationStatus.Invalid);
+			await AssertStatusAsync(Check((otherCase with { ResponderId = ResponderByName(CommonName(Utf8StringTag, "Répondeur")) }).Decode(responderKey), leaf, authority), RevocationStatus.Good);
+		}
+	}
+
 	[Test]
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the authority is disposed.")]
 	public async Task CertificateIdentifiersCheckTheirFields()
