@@ -32,7 +32,7 @@ secondsOption.Validators.Add
 			return;
 		}
 
-		if (!double.TryParse(result.Tokens[^1].Value, out double seconds)
+		if (!double.TryParse(result.Tokens[^1].Value, CultureInfo.CurrentCulture, out double seconds)
 			|| !double.IsFinite(seconds)
 			|| seconds < CryptoTest.MinimumSeconds)
 		{
