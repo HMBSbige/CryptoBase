@@ -25,13 +25,8 @@ internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vect
 		ref SM9LaneScratch scratch = ref Scratch(ref f, 4);
 		SM9Fp.Negate(in p.X, out SM9Fp negatedX);
 		SM9Fp y = p.Y;
-		SM9AffinePoint<SM9Fp2> negatedQ;
-		negatedQ.X = q.X;
-		SM9Fp2.Negate(in q.Y, out negatedQ.Y);
-		SM9Point<SM9Fp2> t;
-		t.X = q.X;
-		t.Y = q.Y;
-		t.Z = SM9Fp2.One;
+		SM9Curve<SM9Fp2>.Negate(in q, out SM9AffinePoint<SM9Fp2> negatedQ);
+		SM9Curve<SM9Fp2>.FromAffine(in q, out SM9Point<SM9Fp2> t);
 		SM9Lanes<TVector>.FromPoint(in t, ref point);
 		SM9Lanes<TVector>.FromFactors(in negatedX, in y, ref factors);
 		ReadOnlySpan<sbyte> digits = SM9MillerLoop.Digits;
@@ -85,13 +80,8 @@ internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vect
 		ref SM9LaneScratch scratch = ref Scratch(ref f, 2);
 		SM9Fp.Negate(in p.X, out SM9Fp negatedX);
 		SM9Fp y = p.Y;
-		SM9AffinePoint<SM9Fp2> negatedQ;
-		negatedQ.X = q.X;
-		SM9Fp2.Negate(in q.Y, out negatedQ.Y);
-		SM9Point<SM9Fp2> t;
-		t.X = q.X;
-		t.Y = q.Y;
-		t.Z = SM9Fp2.One;
+		SM9Curve<SM9Fp2>.Negate(in q, out SM9AffinePoint<SM9Fp2> negatedQ);
+		SM9Curve<SM9Fp2>.FromAffine(in q, out SM9Point<SM9Fp2> t);
 		ReadOnlySpan<sbyte> digits = SM9MillerLoop.Digits;
 		Debug.Assert(digits[^2] is 0);
 

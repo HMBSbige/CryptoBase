@@ -685,7 +685,7 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	{
 		if (TVector.RegisterCount >= 32)
 		{
-			AccumulateWide(ref left, ref right, terms, sources, termCount, v, ref wide);
+			AccumulateWide<LaneBroadcast>(ref left, ref right, terms, sources, termCount, v, ref wide);
 		}
 		else
 		{
@@ -700,7 +700,7 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	{
 		if (LineHalves)
 		{
-			AccumulateWide(ref left, ref right, NormalizedLineTerms, sources, 2, v, ref wide);
+			AccumulateWide<LaneBroadcast>(ref left, ref right, NormalizedLineTerms, sources, 2, v, ref wide);
 		}
 		else
 		{
@@ -727,9 +727,33 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		}
 	}
 
-	// The 19 columns of Σ_t x·y over the terms, the lanes that terms packs, four bits each, for vector v of the rows: x is the qword of left that sources packs, SourceBits each, in each of ten rows, broadcast, and y the ten extended rows of right from qword ExtendedOrigin − i for lane i, with the sums of their halves in rows 10 to 14. By Karatsuba on halves of five limbs, x·y = L + (M − L − H)·2^130 + H·2^260 with L = xL·yL, H = xH·yH and M = (xL + xH)(yL + yH), 75 lane products rather than 100: a first pass sums L and H over the terms in eighteen registers, and columns 5 to 13 of L + H·2^260 − (L + H)·2^130 then start the sums of M of a second pass. The columns are those of the whole products, as M − L − H is exact modulo 2^64.
+	private interface IBroadcast
+	{
+		static abstract TVector Load(ref readonly ulong source);
+	}
+
+	private readonly struct LaneBroadcast : IBroadcast
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static TVector Load(ref readonly ulong source)
+		{
+			return TVector.LoadBroadcast(in source);
+		}
+	}
+
+	// The terms of the square take the pair of lanes 2i and 2i + 1 of left.
+	private readonly struct PairBroadcast : IBroadcast
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static TVector Load(ref readonly ulong source)
+		{
+			return TVector.LoadPairBroadcast(in source);
+		}
+	}
+
+	// The 19 columns of Σ_t x·y over the terms, the lanes that terms packs, four bits each, for vector v of the rows: x is the qword of left that sources packs, SourceBits each, in each of ten rows, broadcast by TBroadcast, and y the ten extended rows of right from qword ExtendedOrigin − i for lane i, with the sums of their halves in rows 10 to 14. By Karatsuba on halves of five limbs, x·y = L + (M − L − H)·2^130 + H·2^260 with L = xL·yL, H = xH·yH and M = (xL + xH)(yL + yH), 75 lane products rather than 100: a first pass sums L and H over the terms in eighteen registers, and columns 5 to 13 of L + H·2^260 − (L + H)·2^130 then start the sums of M of a second pass. The columns are those of the whole products, as M − L − H is exact modulo 2^64.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-	private static void AccumulateWide(ref ulong left, ref ulong right, ulong terms, ulong sources, int termCount, int v, ref ulong wide)
+	private static void AccumulateWide<TBroadcast>(ref ulong left, ref ulong right, ulong terms, ulong sources, int termCount, int v, ref ulong wide) where TBroadcast : struct, IBroadcast
 	{
 		TVector l0 = TVector.Zero;
 		TVector l1 = TVector.Zero;
@@ -761,31 +785,31 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 			TVector y2 = TVector.Load(in Unsafe.Add(ref y, 32));
 			TVector y3 = TVector.Load(in Unsafe.Add(ref y, 48));
 			TVector y4 = TVector.Load(in Unsafe.Add(ref y, 64));
-			TVector x0 = TVector.LoadBroadcast(in x);
+			TVector x0 = TBroadcast.Load(in x);
 			l0 = TVector.MultiplyAdd(l0, x0, y0);
 			l1 = TVector.MultiplyAdd(l1, x0, y1);
 			l2 = TVector.MultiplyAdd(l2, x0, y2);
 			l3 = TVector.MultiplyAdd(l3, x0, y3);
 			l4 = TVector.MultiplyAdd(l4, x0, y4);
-			TVector x1 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 8));
+			TVector x1 = TBroadcast.Load(in Unsafe.Add(ref x, 8));
 			l1 = TVector.MultiplyAdd(l1, x1, y0);
 			l2 = TVector.MultiplyAdd(l2, x1, y1);
 			l3 = TVector.MultiplyAdd(l3, x1, y2);
 			l4 = TVector.MultiplyAdd(l4, x1, y3);
 			l5 = TVector.MultiplyAdd(l5, x1, y4);
-			TVector x2 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 16));
+			TVector x2 = TBroadcast.Load(in Unsafe.Add(ref x, 16));
 			l2 = TVector.MultiplyAdd(l2, x2, y0);
 			l3 = TVector.MultiplyAdd(l3, x2, y1);
 			l4 = TVector.MultiplyAdd(l4, x2, y2);
 			l5 = TVector.MultiplyAdd(l5, x2, y3);
 			l6 = TVector.MultiplyAdd(l6, x2, y4);
-			TVector x3 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 24));
+			TVector x3 = TBroadcast.Load(in Unsafe.Add(ref x, 24));
 			l3 = TVector.MultiplyAdd(l3, x3, y0);
 			l4 = TVector.MultiplyAdd(l4, x3, y1);
 			l5 = TVector.MultiplyAdd(l5, x3, y2);
 			l6 = TVector.MultiplyAdd(l6, x3, y3);
 			l7 = TVector.MultiplyAdd(l7, x3, y4);
-			TVector x4 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 32));
+			TVector x4 = TBroadcast.Load(in Unsafe.Add(ref x, 32));
 			l4 = TVector.MultiplyAdd(l4, x4, y0);
 			l5 = TVector.MultiplyAdd(l5, x4, y1);
 			l6 = TVector.MultiplyAdd(l6, x4, y2);
@@ -796,31 +820,31 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 			TVector y7 = TVector.Load(in Unsafe.Add(ref y, 112));
 			TVector y8 = TVector.Load(in Unsafe.Add(ref y, 128));
 			TVector y9 = TVector.Load(in Unsafe.Add(ref y, 144));
-			TVector x5 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 40));
+			TVector x5 = TBroadcast.Load(in Unsafe.Add(ref x, 40));
 			h0 = TVector.MultiplyAdd(h0, x5, y5);
 			h1 = TVector.MultiplyAdd(h1, x5, y6);
 			h2 = TVector.MultiplyAdd(h2, x5, y7);
 			h3 = TVector.MultiplyAdd(h3, x5, y8);
 			h4 = TVector.MultiplyAdd(h4, x5, y9);
-			TVector x6 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 48));
+			TVector x6 = TBroadcast.Load(in Unsafe.Add(ref x, 48));
 			h1 = TVector.MultiplyAdd(h1, x6, y5);
 			h2 = TVector.MultiplyAdd(h2, x6, y6);
 			h3 = TVector.MultiplyAdd(h3, x6, y7);
 			h4 = TVector.MultiplyAdd(h4, x6, y8);
 			h5 = TVector.MultiplyAdd(h5, x6, y9);
-			TVector x7 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 56));
+			TVector x7 = TBroadcast.Load(in Unsafe.Add(ref x, 56));
 			h2 = TVector.MultiplyAdd(h2, x7, y5);
 			h3 = TVector.MultiplyAdd(h3, x7, y6);
 			h4 = TVector.MultiplyAdd(h4, x7, y7);
 			h5 = TVector.MultiplyAdd(h5, x7, y8);
 			h6 = TVector.MultiplyAdd(h6, x7, y9);
-			TVector x8 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 64));
+			TVector x8 = TBroadcast.Load(in Unsafe.Add(ref x, 64));
 			h3 = TVector.MultiplyAdd(h3, x8, y5);
 			h4 = TVector.MultiplyAdd(h4, x8, y6);
 			h5 = TVector.MultiplyAdd(h5, x8, y7);
 			h6 = TVector.MultiplyAdd(h6, x8, y8);
 			h7 = TVector.MultiplyAdd(h7, x8, y9);
-			TVector x9 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 72));
+			TVector x9 = TBroadcast.Load(in Unsafe.Add(ref x, 72));
 			h4 = TVector.MultiplyAdd(h4, x9, y5);
 			h5 = TVector.MultiplyAdd(h5, x9, y6);
 			h6 = TVector.MultiplyAdd(h6, x9, y7);
@@ -858,203 +882,31 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 			TVector s2 = TVector.Load(in Unsafe.Add(ref y, 32));
 			TVector s3 = TVector.Load(in Unsafe.Add(ref y, 48));
 			TVector s4 = TVector.Load(in Unsafe.Add(ref y, 64));
-			TVector x0 = TVector.LoadBroadcast(in x) + TVector.LoadBroadcast(in Unsafe.Add(ref x, 40));
+			TVector x0 = TBroadcast.Load(in x) + TBroadcast.Load(in Unsafe.Add(ref x, 40));
 			m0 = TVector.MultiplyAdd(m0, x0, s0);
 			m1 = TVector.MultiplyAdd(m1, x0, s1);
 			m2 = TVector.MultiplyAdd(m2, x0, s2);
 			m3 = TVector.MultiplyAdd(m3, x0, s3);
 			m4 = TVector.MultiplyAdd(m4, x0, s4);
-			TVector x1 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 8)) + TVector.LoadBroadcast(in Unsafe.Add(ref x, 48));
+			TVector x1 = TBroadcast.Load(in Unsafe.Add(ref x, 8)) + TBroadcast.Load(in Unsafe.Add(ref x, 48));
 			m1 = TVector.MultiplyAdd(m1, x1, s0);
 			m2 = TVector.MultiplyAdd(m2, x1, s1);
 			m3 = TVector.MultiplyAdd(m3, x1, s2);
 			m4 = TVector.MultiplyAdd(m4, x1, s3);
 			m5 = TVector.MultiplyAdd(m5, x1, s4);
-			TVector x2 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 16)) + TVector.LoadBroadcast(in Unsafe.Add(ref x, 56));
+			TVector x2 = TBroadcast.Load(in Unsafe.Add(ref x, 16)) + TBroadcast.Load(in Unsafe.Add(ref x, 56));
 			m2 = TVector.MultiplyAdd(m2, x2, s0);
 			m3 = TVector.MultiplyAdd(m3, x2, s1);
 			m4 = TVector.MultiplyAdd(m4, x2, s2);
 			m5 = TVector.MultiplyAdd(m5, x2, s3);
 			m6 = TVector.MultiplyAdd(m6, x2, s4);
-			TVector x3 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 24)) + TVector.LoadBroadcast(in Unsafe.Add(ref x, 64));
+			TVector x3 = TBroadcast.Load(in Unsafe.Add(ref x, 24)) + TBroadcast.Load(in Unsafe.Add(ref x, 64));
 			m3 = TVector.MultiplyAdd(m3, x3, s0);
 			m4 = TVector.MultiplyAdd(m4, x3, s1);
 			m5 = TVector.MultiplyAdd(m5, x3, s2);
 			m6 = TVector.MultiplyAdd(m6, x3, s3);
 			m7 = TVector.MultiplyAdd(m7, x3, s4);
-			TVector x4 = TVector.LoadBroadcast(in Unsafe.Add(ref x, 32)) + TVector.LoadBroadcast(in Unsafe.Add(ref x, 72));
-			m4 = TVector.MultiplyAdd(m4, x4, s0);
-			m5 = TVector.MultiplyAdd(m5, x4, s1);
-			m6 = TVector.MultiplyAdd(m6, x4, s2);
-			m7 = TVector.MultiplyAdd(m7, x4, s3);
-			m8 = TVector.MultiplyAdd(m8, x4, s4);
-		}
-
-		m0.Store(ref Unsafe.Add(ref wide, 40));
-		m1.Store(ref Unsafe.Add(ref wide, 48));
-		m2.Store(ref Unsafe.Add(ref wide, 56));
-		m3.Store(ref Unsafe.Add(ref wide, 64));
-		m4.Store(ref Unsafe.Add(ref wide, 72));
-		m5.Store(ref Unsafe.Add(ref wide, 80));
-		m6.Store(ref Unsafe.Add(ref wide, 88));
-		m7.Store(ref Unsafe.Add(ref wide, 96));
-		m8.Store(ref Unsafe.Add(ref wide, 104));
-	}
-
-	// As AccumulateWide for the three terms of the square: x is the pair of lanes 2i and 2i + 1 of left, broadcast, and y the rows from qword ExtendedOrigin − 2i.
-	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-	private static void AccumulatePairsWide(ref ulong left, ref ulong right, int v, ref ulong wide)
-	{
-		TVector l0 = TVector.Zero;
-		TVector l1 = TVector.Zero;
-		TVector l2 = TVector.Zero;
-		TVector l3 = TVector.Zero;
-		TVector l4 = TVector.Zero;
-		TVector l5 = TVector.Zero;
-		TVector l6 = TVector.Zero;
-		TVector l7 = TVector.Zero;
-		TVector l8 = TVector.Zero;
-		TVector h0 = TVector.Zero;
-		TVector h1 = TVector.Zero;
-		TVector h2 = TVector.Zero;
-		TVector h3 = TVector.Zero;
-		TVector h4 = TVector.Zero;
-		TVector h5 = TVector.Zero;
-		TVector h6 = TVector.Zero;
-		TVector h7 = TVector.Zero;
-		TVector h8 = TVector.Zero;
-		wide = ref Unsafe.Add(ref wide, v * TVector.Count);
-
-		for (int i = 0; i < 3; ++i)
-		{
-			ref ulong x = ref Unsafe.Add(ref left, 2 * i);
-			ref ulong y = ref Unsafe.Add(ref right, ExtendedOrigin - 2 * i + v * TVector.Count);
-			TVector y0 = TVector.Load(in y);
-			TVector y1 = TVector.Load(in Unsafe.Add(ref y, 16));
-			TVector y2 = TVector.Load(in Unsafe.Add(ref y, 32));
-			TVector y3 = TVector.Load(in Unsafe.Add(ref y, 48));
-			TVector y4 = TVector.Load(in Unsafe.Add(ref y, 64));
-			TVector x0 = TVector.LoadPairBroadcast(in x);
-			l0 = TVector.MultiplyAdd(l0, x0, y0);
-			l1 = TVector.MultiplyAdd(l1, x0, y1);
-			l2 = TVector.MultiplyAdd(l2, x0, y2);
-			l3 = TVector.MultiplyAdd(l3, x0, y3);
-			l4 = TVector.MultiplyAdd(l4, x0, y4);
-			TVector x1 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 8));
-			l1 = TVector.MultiplyAdd(l1, x1, y0);
-			l2 = TVector.MultiplyAdd(l2, x1, y1);
-			l3 = TVector.MultiplyAdd(l3, x1, y2);
-			l4 = TVector.MultiplyAdd(l4, x1, y3);
-			l5 = TVector.MultiplyAdd(l5, x1, y4);
-			TVector x2 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 16));
-			l2 = TVector.MultiplyAdd(l2, x2, y0);
-			l3 = TVector.MultiplyAdd(l3, x2, y1);
-			l4 = TVector.MultiplyAdd(l4, x2, y2);
-			l5 = TVector.MultiplyAdd(l5, x2, y3);
-			l6 = TVector.MultiplyAdd(l6, x2, y4);
-			TVector x3 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 24));
-			l3 = TVector.MultiplyAdd(l3, x3, y0);
-			l4 = TVector.MultiplyAdd(l4, x3, y1);
-			l5 = TVector.MultiplyAdd(l5, x3, y2);
-			l6 = TVector.MultiplyAdd(l6, x3, y3);
-			l7 = TVector.MultiplyAdd(l7, x3, y4);
-			TVector x4 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 32));
-			l4 = TVector.MultiplyAdd(l4, x4, y0);
-			l5 = TVector.MultiplyAdd(l5, x4, y1);
-			l6 = TVector.MultiplyAdd(l6, x4, y2);
-			l7 = TVector.MultiplyAdd(l7, x4, y3);
-			l8 = TVector.MultiplyAdd(l8, x4, y4);
-			TVector y5 = TVector.Load(in Unsafe.Add(ref y, 80));
-			TVector y6 = TVector.Load(in Unsafe.Add(ref y, 96));
-			TVector y7 = TVector.Load(in Unsafe.Add(ref y, 112));
-			TVector y8 = TVector.Load(in Unsafe.Add(ref y, 128));
-			TVector y9 = TVector.Load(in Unsafe.Add(ref y, 144));
-			TVector x5 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 40));
-			h0 = TVector.MultiplyAdd(h0, x5, y5);
-			h1 = TVector.MultiplyAdd(h1, x5, y6);
-			h2 = TVector.MultiplyAdd(h2, x5, y7);
-			h3 = TVector.MultiplyAdd(h3, x5, y8);
-			h4 = TVector.MultiplyAdd(h4, x5, y9);
-			TVector x6 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 48));
-			h1 = TVector.MultiplyAdd(h1, x6, y5);
-			h2 = TVector.MultiplyAdd(h2, x6, y6);
-			h3 = TVector.MultiplyAdd(h3, x6, y7);
-			h4 = TVector.MultiplyAdd(h4, x6, y8);
-			h5 = TVector.MultiplyAdd(h5, x6, y9);
-			TVector x7 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 56));
-			h2 = TVector.MultiplyAdd(h2, x7, y5);
-			h3 = TVector.MultiplyAdd(h3, x7, y6);
-			h4 = TVector.MultiplyAdd(h4, x7, y7);
-			h5 = TVector.MultiplyAdd(h5, x7, y8);
-			h6 = TVector.MultiplyAdd(h6, x7, y9);
-			TVector x8 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 64));
-			h3 = TVector.MultiplyAdd(h3, x8, y5);
-			h4 = TVector.MultiplyAdd(h4, x8, y6);
-			h5 = TVector.MultiplyAdd(h5, x8, y7);
-			h6 = TVector.MultiplyAdd(h6, x8, y8);
-			h7 = TVector.MultiplyAdd(h7, x8, y9);
-			TVector x9 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 72));
-			h4 = TVector.MultiplyAdd(h4, x9, y5);
-			h5 = TVector.MultiplyAdd(h5, x9, y6);
-			h6 = TVector.MultiplyAdd(h6, x9, y7);
-			h7 = TVector.MultiplyAdd(h7, x9, y8);
-			h8 = TVector.MultiplyAdd(h8, x9, y9);
-		}
-
-		l0.Store(ref wide);
-		l1.Store(ref Unsafe.Add(ref wide, 8));
-		l2.Store(ref Unsafe.Add(ref wide, 16));
-		l3.Store(ref Unsafe.Add(ref wide, 24));
-		l4.Store(ref Unsafe.Add(ref wide, 32));
-		h4.Store(ref Unsafe.Add(ref wide, 112));
-		h5.Store(ref Unsafe.Add(ref wide, 120));
-		h6.Store(ref Unsafe.Add(ref wide, 128));
-		h7.Store(ref Unsafe.Add(ref wide, 136));
-		h8.Store(ref Unsafe.Add(ref wide, 144));
-		TVector m0 = l5 - l0 - h0;
-		TVector m1 = l6 - l1 - h1;
-		TVector m2 = l7 - l2 - h2;
-		TVector m3 = l8 - l3 - h3;
-		TVector m4 = TVector.Zero - l4 - h4;
-		TVector m5 = h0 - l5 - h5;
-		TVector m6 = h1 - l6 - h6;
-		TVector m7 = h2 - l7 - h7;
-		TVector m8 = h3 - l8 - h8;
-
-		for (int i = 0; i < 3; ++i)
-		{
-			ref ulong x = ref Unsafe.Add(ref left, 2 * i);
-			ref ulong y = ref Unsafe.Add(ref right, ExtendedOrigin - 2 * i + v * TVector.Count + ExtendedRowLength * LimbCount);
-			TVector s0 = TVector.Load(in y);
-			TVector s1 = TVector.Load(in Unsafe.Add(ref y, 16));
-			TVector s2 = TVector.Load(in Unsafe.Add(ref y, 32));
-			TVector s3 = TVector.Load(in Unsafe.Add(ref y, 48));
-			TVector s4 = TVector.Load(in Unsafe.Add(ref y, 64));
-			TVector x0 = TVector.LoadPairBroadcast(in x) + TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 40));
-			m0 = TVector.MultiplyAdd(m0, x0, s0);
-			m1 = TVector.MultiplyAdd(m1, x0, s1);
-			m2 = TVector.MultiplyAdd(m2, x0, s2);
-			m3 = TVector.MultiplyAdd(m3, x0, s3);
-			m4 = TVector.MultiplyAdd(m4, x0, s4);
-			TVector x1 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 8)) + TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 48));
-			m1 = TVector.MultiplyAdd(m1, x1, s0);
-			m2 = TVector.MultiplyAdd(m2, x1, s1);
-			m3 = TVector.MultiplyAdd(m3, x1, s2);
-			m4 = TVector.MultiplyAdd(m4, x1, s3);
-			m5 = TVector.MultiplyAdd(m5, x1, s4);
-			TVector x2 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 16)) + TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 56));
-			m2 = TVector.MultiplyAdd(m2, x2, s0);
-			m3 = TVector.MultiplyAdd(m3, x2, s1);
-			m4 = TVector.MultiplyAdd(m4, x2, s2);
-			m5 = TVector.MultiplyAdd(m5, x2, s3);
-			m6 = TVector.MultiplyAdd(m6, x2, s4);
-			TVector x3 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 24)) + TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 64));
-			m3 = TVector.MultiplyAdd(m3, x3, s0);
-			m4 = TVector.MultiplyAdd(m4, x3, s1);
-			m5 = TVector.MultiplyAdd(m5, x3, s2);
-			m6 = TVector.MultiplyAdd(m6, x3, s3);
-			m7 = TVector.MultiplyAdd(m7, x3, s4);
-			TVector x4 = TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 32)) + TVector.LoadPairBroadcast(in Unsafe.Add(ref x, 72));
+			TVector x4 = TBroadcast.Load(in Unsafe.Add(ref x, 32)) + TBroadcast.Load(in Unsafe.Add(ref x, 72));
 			m4 = TVector.MultiplyAdd(m4, x4, s0);
 			m5 = TVector.MultiplyAdd(m5, x4, s1);
 			m6 = TVector.MultiplyAdd(m6, x4, s2);
@@ -1372,13 +1224,7 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		ref ulong square = ref Unsafe.Add(ref work, Temporary);
 		ref ulong combined = ref Unsafe.Add(ref work, Combined);
 		PrepareCyclotomic(ref a, ref operands, ref square);
-
-		for (int v = 0; v < VectorCount; ++v)
-		{
-			AccumulateLanes(ref operands, ref Unsafe.Add(ref operands, 3 * ComponentLength), v, ref products);
-			AccumulateLanes(ref Unsafe.Add(ref operands, ComponentLength), ref Unsafe.Add(ref operands, 4 * ComponentLength), v, ref Unsafe.Add(ref products, WideLength));
-			AccumulateLanes(ref Unsafe.Add(ref operands, 2 * ComponentLength), ref Unsafe.Add(ref operands, 5 * ComponentLength), v, ref Unsafe.Add(ref products, 2 * WideLength));
-		}
+		AccumulateOperands(ref operands, ref products);
 
 		ref ulong r = ref result[0];
 
@@ -1881,6 +1727,7 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	}
 
 	// The three Karatsuba products of the six sets of operands, for every vector.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void AccumulateOperands(ref ulong operands, ref ulong products)
 	{
 		for (int v = 0; v < VectorCount; ++v)
@@ -2219,16 +2066,7 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void Reduce1(ref ulong columns, ref ulong result)
 	{
-		TVector t0 = TVector.Load(in columns);
-		TVector t1 = TVector.Load(in Unsafe.Add(ref columns, 8));
-		TVector t2 = TVector.Load(in Unsafe.Add(ref columns, 16));
-		TVector t3 = TVector.Load(in Unsafe.Add(ref columns, 24));
-		TVector t4 = TVector.Load(in Unsafe.Add(ref columns, 32));
-		TVector t5 = TVector.Load(in Unsafe.Add(ref columns, 40));
-		TVector t6 = TVector.Load(in Unsafe.Add(ref columns, 48));
-		TVector t7 = TVector.Load(in Unsafe.Add(ref columns, 56));
-		TVector t8 = TVector.Load(in Unsafe.Add(ref columns, 64));
-		TVector t9 = TVector.Load(in Unsafe.Add(ref columns, 72));
+		Load(ref columns, out TVector t0, out TVector t1, out TVector t2, out TVector t3, out TVector t4, out TVector t5, out TVector t6, out TVector t7, out TVector t8, out TVector t9);
 		ref ulong next = ref Unsafe.Add(ref columns, 80);
 
 		for (int k = 0; k < 10; ++k)
@@ -2335,9 +2173,9 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 
 		for (int v = 0; v < VectorCount; ++v)
 		{
-			AccumulatePairsWide(ref pairs, ref extended, v, ref products);
-			AccumulatePairsWide(ref Unsafe.Add(ref pairs, ComponentLength), ref Unsafe.Add(ref extended, ExtendedLength), v, ref Unsafe.Add(ref products, WideLength));
-			AccumulatePairsWide(ref leftSums, ref Unsafe.Add(ref extended, 2 * ExtendedLength), v, ref Unsafe.Add(ref products, 2 * WideLength));
+			AccumulateWide<PairBroadcast>(ref pairs, ref extended, EvenTerms, EvenSources, 3, v, ref products);
+			AccumulateWide<PairBroadcast>(ref Unsafe.Add(ref pairs, ComponentLength), ref Unsafe.Add(ref extended, ExtendedLength), EvenTerms, EvenSources, 3, v, ref Unsafe.Add(ref products, WideLength));
+			AccumulateWide<PairBroadcast>(ref leftSums, ref Unsafe.Add(ref extended, 2 * ExtendedLength), EvenTerms, EvenSources, 3, v, ref Unsafe.Add(ref products, 2 * WideLength));
 		}
 
 		CombineSquare(ref products, ref combined);
@@ -2496,6 +2334,21 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void Load(ref ulong rows, out TVector t0, out TVector t1, out TVector t2, out TVector t3, out TVector t4, out TVector t5, out TVector t6, out TVector t7, out TVector t8, out TVector t9)
+	{
+		t0 = TVector.Load(in rows);
+		t1 = TVector.Load(in Unsafe.Add(ref rows, 8));
+		t2 = TVector.Load(in Unsafe.Add(ref rows, 16));
+		t3 = TVector.Load(in Unsafe.Add(ref rows, 24));
+		t4 = TVector.Load(in Unsafe.Add(ref rows, 32));
+		t5 = TVector.Load(in Unsafe.Add(ref rows, 40));
+		t6 = TVector.Load(in Unsafe.Add(ref rows, 48));
+		t7 = TVector.Load(in Unsafe.Add(ref rows, 56));
+		t8 = TVector.Load(in Unsafe.Add(ref rows, 64));
+		t9 = TVector.Load(in Unsafe.Add(ref rows, 72));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Store(TVector t0, TVector t1, TVector t2, TVector t3, TVector t4, TVector t5, TVector t6, TVector t7, TVector t8, TVector t9, ref ulong result)
 	{
 		t0.Store(ref result);
@@ -2580,16 +2433,7 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		for (int v = 0; v < VectorCount; ++v)
 		{
 			ref ulong x = ref Unsafe.Add(ref rows, v * TVector.Count);
-			TVector t0 = TVector.Load(in x);
-			TVector t1 = TVector.Load(in Unsafe.Add(ref x, 8));
-			TVector t2 = TVector.Load(in Unsafe.Add(ref x, 16));
-			TVector t3 = TVector.Load(in Unsafe.Add(ref x, 24));
-			TVector t4 = TVector.Load(in Unsafe.Add(ref x, 32));
-			TVector t5 = TVector.Load(in Unsafe.Add(ref x, 40));
-			TVector t6 = TVector.Load(in Unsafe.Add(ref x, 48));
-			TVector t7 = TVector.Load(in Unsafe.Add(ref x, 56));
-			TVector t8 = TVector.Load(in Unsafe.Add(ref x, 64));
-			TVector t9 = TVector.Load(in Unsafe.Add(ref x, 72));
+			Load(ref x, out TVector t0, out TVector t1, out TVector t2, out TVector t3, out TVector t4, out TVector t5, out TVector t6, out TVector t7, out TVector t8, out TVector t9);
 			Carry(ref t0, ref t1, ref t2, ref t3, ref t4, ref t5, ref t6, ref t7, ref t8, ref t9);
 			WeakReduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, ref x);
 		}
@@ -2610,26 +2454,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		{
 			ref ulong x = ref Unsafe.Add(ref rows, v * TVector.Count);
 			ref ulong y = ref Unsafe.Add(ref x, ComponentLength);
-			TVector t0 = TVector.Load(in x);
-			TVector t1 = TVector.Load(in Unsafe.Add(ref x, 8));
-			TVector t2 = TVector.Load(in Unsafe.Add(ref x, 16));
-			TVector t3 = TVector.Load(in Unsafe.Add(ref x, 24));
-			TVector t4 = TVector.Load(in Unsafe.Add(ref x, 32));
-			TVector t5 = TVector.Load(in Unsafe.Add(ref x, 40));
-			TVector t6 = TVector.Load(in Unsafe.Add(ref x, 48));
-			TVector t7 = TVector.Load(in Unsafe.Add(ref x, 56));
-			TVector t8 = TVector.Load(in Unsafe.Add(ref x, 64));
-			TVector t9 = TVector.Load(in Unsafe.Add(ref x, 72));
-			TVector u0 = TVector.Load(in y);
-			TVector u1 = TVector.Load(in Unsafe.Add(ref y, 8));
-			TVector u2 = TVector.Load(in Unsafe.Add(ref y, 16));
-			TVector u3 = TVector.Load(in Unsafe.Add(ref y, 24));
-			TVector u4 = TVector.Load(in Unsafe.Add(ref y, 32));
-			TVector u5 = TVector.Load(in Unsafe.Add(ref y, 40));
-			TVector u6 = TVector.Load(in Unsafe.Add(ref y, 48));
-			TVector u7 = TVector.Load(in Unsafe.Add(ref y, 56));
-			TVector u8 = TVector.Load(in Unsafe.Add(ref y, 64));
-			TVector u9 = TVector.Load(in Unsafe.Add(ref y, 72));
+			Load(ref x, out TVector t0, out TVector t1, out TVector t2, out TVector t3, out TVector t4, out TVector t5, out TVector t6, out TVector t7, out TVector t8, out TVector t9);
+			Load(ref y, out TVector u0, out TVector u1, out TVector u2, out TVector u3, out TVector u4, out TVector u5, out TVector u6, out TVector u7, out TVector u8, out TVector u9);
 			Carry(ref t0, ref t1, ref t2, ref t3, ref t4, ref t5, ref t6, ref t7, ref t8, ref t9);
 			Carry(ref u0, ref u1, ref u2, ref u3, ref u4, ref u5, ref u6, ref u7, ref u8, ref u9);
 			WeakReduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, ref x);

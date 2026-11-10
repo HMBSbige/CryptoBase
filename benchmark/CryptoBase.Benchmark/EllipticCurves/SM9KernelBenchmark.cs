@@ -40,9 +40,9 @@ public class SM9KernelBenchmark
 		_kernel = Backend switch
 		{
 			KernelKind.Scalar => new Kernel<SM9Scalar>(),
-			KernelKind.Avx512 => new Kernel<SM9Avx512>(),
-			KernelKind.Avx2 => new Kernel<SM9Avx2>(),
-			KernelKind.Sse41 => new Kernel<SM9Sse41>(),
+			KernelKind.Avx512 => new Kernel<SM9VectorKernel<SM9VectorAvx512>>(),
+			KernelKind.Avx2 => new Kernel<SM9VectorKernel<SM9VectorAvx2>>(),
+			KernelKind.Sse41 => new Kernel<SM9VectorKernel<SM9VectorSse41>>(),
 			KernelKind.AdvSimd => new Kernel<SM9AdvSimd>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(Backend))
 		};

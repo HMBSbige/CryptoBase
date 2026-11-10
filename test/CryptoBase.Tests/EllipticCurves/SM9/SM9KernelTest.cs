@@ -51,7 +51,7 @@ public class SM9KernelTest
 	[Test]
 	public async Task EveryKernelIsListed()
 	{
-		await Assert.That(SM9KernelCase.All().Select(static kernel => kernel.KernelType)).IsEquivalentTo(ImplementationsOf(typeof(ISM9Kernel)));
+		await Assert.That(SM9KernelCase.All().Select(static kernel => kernel.KernelType is { IsGenericType: true } type ? type.GetGenericTypeDefinition() : kernel.KernelType).Distinct()).IsEquivalentTo(ImplementationsOf(typeof(ISM9Kernel)));
 	}
 
 	[Test]

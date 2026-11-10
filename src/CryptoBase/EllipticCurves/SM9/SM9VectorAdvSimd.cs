@@ -133,17 +133,12 @@ internal readonly struct SM9VectorAdvSimd : ISM9Vector<SM9VectorAdvSimd>
 		p2.StoreUnsafe(ref Unsafe.Add(ref destination, 4));
 	}
 
-	// As Permute with the fourth pair, lanes 6 and 7, as well.
+	// As Permute with the fourth pair, lanes 6 and 7, as well, read before Permute writes, as the destination may be a source.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void PermuteFull(ref readonly ulong first, ref readonly ulong second, ref ulong destination, ulong pattern)
 	{
-		Vector128<ulong> p0 = Pair(in first, in second, pattern & 15, pattern >> 4 & 15);
-		Vector128<ulong> p1 = Pair(in first, in second, pattern >> 8 & 15, pattern >> 12 & 15);
-		Vector128<ulong> p2 = Pair(in first, in second, pattern >> 16 & 15, pattern >> 20 & 15);
 		Vector128<ulong> p3 = Pair(in first, in second, pattern >> 24 & 15, pattern >> 28 & 15);
-		p0.StoreUnsafe(ref destination);
-		p1.StoreUnsafe(ref Unsafe.Add(ref destination, 2));
-		p2.StoreUnsafe(ref Unsafe.Add(ref destination, 4));
+		Permute(in first, in second, ref destination, pattern);
 		p3.StoreUnsafe(ref Unsafe.Add(ref destination, 6));
 	}
 

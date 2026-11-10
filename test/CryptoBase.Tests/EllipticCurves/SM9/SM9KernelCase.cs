@@ -8,9 +8,9 @@ public abstract class SM9KernelCase : IKernelCase
 	public static IEnumerable<SM9KernelCase> All()
 	{
 		yield return new Kernel<SM9Scalar>();
-		yield return new Kernel<SM9Avx512>();
-		yield return new Kernel<SM9Avx2>();
-		yield return new Kernel<SM9Sse41>();
+		yield return new Kernel<SM9VectorKernel<SM9VectorAvx512>>();
+		yield return new Kernel<SM9VectorKernel<SM9VectorAvx2>>();
+		yield return new Kernel<SM9VectorKernel<SM9VectorSse41>>();
 		yield return new Kernel<SM9AdvSimd>();
 		yield return new Kernel<SM9KernelDispatch>();
 	}
@@ -57,7 +57,7 @@ public abstract class SM9KernelCase : IKernelCase
 
 	public override string ToString()
 	{
-		return KernelType.Name;
+		return KernelType.GetGenericArguments() is [var vector] ? vector.Name : KernelType.Name;
 	}
 
 	private sealed class Kernel<TKernel> : SM9KernelCase where TKernel : ISM9Kernel

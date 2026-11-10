@@ -725,16 +725,7 @@ internal static partial class SM9Lanes<TVector>
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void WeakReduceLaneRows(ref ulong rows)
 	{
-		TVector t0 = TVector.Load(in rows);
-		TVector t1 = TVector.Load(in Unsafe.Add(ref rows, 8));
-		TVector t2 = TVector.Load(in Unsafe.Add(ref rows, 16));
-		TVector t3 = TVector.Load(in Unsafe.Add(ref rows, 24));
-		TVector t4 = TVector.Load(in Unsafe.Add(ref rows, 32));
-		TVector t5 = TVector.Load(in Unsafe.Add(ref rows, 40));
-		TVector t6 = TVector.Load(in Unsafe.Add(ref rows, 48));
-		TVector t7 = TVector.Load(in Unsafe.Add(ref rows, 56));
-		TVector t8 = TVector.Load(in Unsafe.Add(ref rows, 64));
-		TVector t9 = TVector.Load(in Unsafe.Add(ref rows, 72));
+		Load(ref rows, out TVector t0, out TVector t1, out TVector t2, out TVector t3, out TVector t4, out TVector t5, out TVector t6, out TVector t7, out TVector t8, out TVector t9);
 		Carry(ref t0, ref t1, ref t2, ref t3, ref t4, ref t5, ref t6, ref t7, ref t8, ref t9);
 		WeakReduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, ref rows);
 	}

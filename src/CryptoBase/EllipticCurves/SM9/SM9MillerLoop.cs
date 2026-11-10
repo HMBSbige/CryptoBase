@@ -24,13 +24,8 @@ internal static class SM9MillerLoop
 	{
 		SM9Fp.Negate(in p.X, out SM9Fp negatedX);
 		SM9Fp y = p.Y;
-		SM9AffinePoint<SM9Fp2> negatedQ;
-		negatedQ.X = q.X;
-		SM9Fp2.Negate(in q.Y, out negatedQ.Y);
-		SM9Point<SM9Fp2> t;
-		t.X = q.X;
-		t.Y = q.Y;
-		t.Z = SM9Fp2.One;
+		SM9Curve<SM9Fp2>.Negate(in q, out SM9AffinePoint<SM9Fp2> negatedQ);
+		SM9Curve<SM9Fp2>.FromAffine(in q, out SM9Point<SM9Fp2> t);
 		ReadOnlySpan<sbyte> digits = Digits;
 		Debug.Assert(digits[^2] is 0);
 
@@ -80,13 +75,8 @@ internal static class SM9MillerLoop
 		Debug.Assert(lines.Length is LineCount);
 
 		Span<SM9Point<SM9Fp2>> steps = stackalloc SM9Point<SM9Fp2>[LineCount];
-		SM9AffinePoint<SM9Fp2> negatedQ;
-		negatedQ.X = q.X;
-		SM9Fp2.Negate(in q.Y, out negatedQ.Y);
-		SM9Point<SM9Fp2> t;
-		t.X = q.X;
-		t.Y = q.Y;
-		t.Z = SM9Fp2.One;
+		SM9Curve<SM9Fp2>.Negate(in q, out SM9AffinePoint<SM9Fp2> negatedQ);
+		SM9Curve<SM9Fp2>.FromAffine(in q, out SM9Point<SM9Fp2> t);
 		ReadOnlySpan<sbyte> digits = Digits;
 		Unsafe.SkipInit(out SM9Line line);
 		int k = 0;
