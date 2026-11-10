@@ -23,7 +23,7 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 
 		Span<ulong> limbs = stackalloc ulong[ScalarDigits.LimbCount];
 		int count = 3 + TField.MultiplierLength;
-		Span<TField> values = EdwardsLanes.Align<TField>(stackalloc byte[EdwardsLanes.StorageLength<TField>(count)], count);
+		Span<TField> values = AlignedScratch.Align<TField>(stackalloc byte[AlignedScratch.StorageLength<TField>(count)], count);
 		ref TField state = ref values[0];
 		ref TField left = ref values[1];
 		ref TField right = ref values[2];
@@ -59,15 +59,15 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 
 		Span<ulong> limbs = stackalloc ulong[ScalarDigits.LimbCount];
 		Span<sbyte> digits = stackalloc sbyte[EdwardsBaseTable.WindowCount];
-		Span<TField> values = EdwardsLanes.Align<TField>(stackalloc byte[EdwardsLanes.StorageLength<TField>(4)], 4);
+		Span<TField> values = AlignedScratch.Align<TField>(stackalloc byte[AlignedScratch.StorageLength<TField>(4)], 4);
 		ref TField point = ref values[0];
 		ref TField cached = ref values[1];
 		ref TField left = ref values[2];
 		ref TField right = ref values[3];
-		Span<byte> entryStorage = stackalloc byte[EdwardsLanes.EntryStorageLength];
-		ref EdwardsNielsPoint entry = ref EdwardsLanes.AlignEntry(entryStorage);
+		Span<byte> entryStorage = stackalloc byte[AlignedScratch.StorageLength<EdwardsNielsPoint>(1)];
+		ref EdwardsNielsPoint entry = ref AlignedScratch.AlignEntry<EdwardsNielsPoint>(entryStorage);
 		ScalarDigits.ReadLimbs(scalar, limbs);
-		ScalarDigits.SignedWindows(limbs, EdwardsBaseTable.Width, digits);
+		LimbArithmetic.RecodeSignedWindows(limbs, EdwardsBaseTable.Width, digits);
 		EdwardsBaseTable.Select(0, digits[0], out entry);
 		Curve25519Scalar.FromNiels(in entry, out result);
 		TField.Create(in result.X, in result.Y, in result.Z, in result.T, out point);
@@ -104,7 +104,7 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 			return;
 		}
 
-		Span<TField> values = EdwardsLanes.Align<TField>(stackalloc byte[EdwardsLanes.StorageLength<TField>(PointMultipleCount + 4)], PointMultipleCount + 4);
+		Span<TField> values = AlignedScratch.Align<TField>(stackalloc byte[AlignedScratch.StorageLength<TField>(PointMultipleCount + 4)], PointMultipleCount + 4);
 		Span<TField> pointMultiples = values.Slice(0, PointMultipleCount);
 		ref TField sum = ref values[PointMultipleCount];
 		ref TField cached = ref values[PointMultipleCount + 1];
@@ -156,7 +156,7 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 		Span<ulong> limbs = stackalloc ulong[ScalarDigits.LimbCount];
 		Span<sbyte> pointDigits = stackalloc sbyte[parts * stride];
 		Span<sbyte> baseDigits = stackalloc sbyte[EdwardsBaseTable.WindowCount];
-		Span<TField> values = EdwardsLanes.Align<TField>(stackalloc byte[EdwardsLanes.StorageLength<TField>(4)], 4);
+		Span<TField> values = AlignedScratch.Align<TField>(stackalloc byte[AlignedScratch.StorageLength<TField>(4)], 4);
 		ref TField sum = ref values[0];
 		ref TField cached = ref values[1];
 		ref TField left = ref values[2];
@@ -191,7 +191,7 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 		}
 
 		ScalarDigits.ReadLimbs(b, limbs);
-		ScalarDigits.SignedWindows(limbs, EdwardsBaseTable.Width, baseDigits);
+		LimbArithmetic.RecodeSignedWindows(limbs, EdwardsBaseTable.Width, baseDigits);
 		int windowLength = EdwardsBaseTable.WindowLength;
 
 		for (int i = 0; i < baseDigits.Length; ++i)

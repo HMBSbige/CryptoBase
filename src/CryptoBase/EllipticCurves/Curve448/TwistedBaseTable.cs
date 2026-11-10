@@ -18,12 +18,10 @@ internal static class TwistedBaseTable
 
 	private const int EntryLength = 24;
 
-	private const int Alignment = 64;
-
 	// Pinned, so that the boundary stays where Start finds it.
 	private static readonly ulong[] Storage = Build();
 
-	private static readonly int Start = AlignedStart(Storage);
+	private static readonly int Start = AlignedScratch.AlignedStart(Storage);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ref readonly TwistedNielsPoint Comb(int comb)
@@ -165,18 +163,18 @@ internal static class TwistedBaseTable
 		for (int j = 0; j < CombLength; ++j)
 		{
 			Vector128<ulong> match = Vector128.Equals(position, target);
-			p0 = Merge(p0, Vector128.LoadUnsafe(ref entry), match);
-			p1 = Merge(p1, Vector128.LoadUnsafe(ref entry, 2), match);
-			p2 = Merge(p2, Vector128.LoadUnsafe(ref entry, 4), match);
-			p3 = Merge(p3, Vector128.LoadUnsafe(ref entry, 6), match);
-			m0 = Merge(m0, Vector128.LoadUnsafe(ref entry, 8), match);
-			m1 = Merge(m1, Vector128.LoadUnsafe(ref entry, 10), match);
-			m2 = Merge(m2, Vector128.LoadUnsafe(ref entry, 12), match);
-			m3 = Merge(m3, Vector128.LoadUnsafe(ref entry, 14), match);
-			d0 = Merge(d0, Vector128.LoadUnsafe(ref entry, 16), match);
-			d1 = Merge(d1, Vector128.LoadUnsafe(ref entry, 18), match);
-			d2 = Merge(d2, Vector128.LoadUnsafe(ref entry, 20), match);
-			d3 = Merge(d3, Vector128.LoadUnsafe(ref entry, 22), match);
+			p0 = MaskedSelect.Merge(p0, Vector128.LoadUnsafe(ref entry), match);
+			p1 = MaskedSelect.Merge(p1, Vector128.LoadUnsafe(ref entry, 2), match);
+			p2 = MaskedSelect.Merge(p2, Vector128.LoadUnsafe(ref entry, 4), match);
+			p3 = MaskedSelect.Merge(p3, Vector128.LoadUnsafe(ref entry, 6), match);
+			m0 = MaskedSelect.Merge(m0, Vector128.LoadUnsafe(ref entry, 8), match);
+			m1 = MaskedSelect.Merge(m1, Vector128.LoadUnsafe(ref entry, 10), match);
+			m2 = MaskedSelect.Merge(m2, Vector128.LoadUnsafe(ref entry, 12), match);
+			m3 = MaskedSelect.Merge(m3, Vector128.LoadUnsafe(ref entry, 14), match);
+			d0 = MaskedSelect.Merge(d0, Vector128.LoadUnsafe(ref entry, 16), match);
+			d1 = MaskedSelect.Merge(d1, Vector128.LoadUnsafe(ref entry, 18), match);
+			d2 = MaskedSelect.Merge(d2, Vector128.LoadUnsafe(ref entry, 20), match);
+			d3 = MaskedSelect.Merge(d3, Vector128.LoadUnsafe(ref entry, 22), match);
 			position += Vector128<ulong>.One;
 			entry = ref Unsafe.Add(ref entry, EntryLength);
 		}
@@ -198,13 +196,6 @@ internal static class TwistedBaseTable
 		product1 = d1;
 		product2 = d2;
 		product3 = d3;
-	}
-
-	// accumulator with value where mask is set. At most one entry matches and the accumulators start at zero, so an OR merges as well as a select, which ARM64 does in one instruction.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> Merge(Vector128<ulong> accumulator, Vector128<ulong> value, Vector128<ulong> mask)
-	{
-		return AdvSimd.IsSupported ? Vector128.ConditionalSelect(mask, value, accumulator) : accumulator | value & mask;
 	}
 
 	// The teeth of each comb come from the base by Spacing doublings each. Entry 0 of a comb is its top tooth less the others, and entry e adds twice the tooth of its highest set bit to the entry without that bit.
@@ -252,15 +243,8 @@ internal static class TwistedBaseTable
 
 		TwistedNielsPoint[] entries = new TwistedNielsPoint[Length];
 		TwistedEdwards448.ToNielsVariableTime(points, entries);
-		ulong[] storage = GC.AllocateUninitializedArray<ulong>(Length * EntryLength + Alignment / sizeof(ulong) - 1, true);
-		MemoryMarshal.Cast<TwistedNielsPoint, ulong>(entries).CopyTo(storage.AsSpan(AlignedStart(storage)));
+		ulong[] storage = AlignedScratch.AllocatePinned(Length * EntryLength);
+		MemoryMarshal.Cast<TwistedNielsPoint, ulong>(entries).CopyTo(storage.AsSpan(AlignedScratch.AlignedStart(storage)));
 		return storage;
-	}
-
-	// Array data is aligned to its 8-byte elements, so the boundary falls on a whole limb.
-	private static int AlignedStart(ulong[] storage)
-	{
-		nint address = Marshal.UnsafeAddrOfPinnedArrayElement(storage, 0);
-		return (int)(-address & Alignment - 1) / sizeof(ulong);
 	}
 }

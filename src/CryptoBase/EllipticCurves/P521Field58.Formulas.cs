@@ -39,6 +39,7 @@ internal partial struct P521Field58
 
 	// H and R go through WeakReduce, which IsReducedZero requires, and stay reduced afterwards, so that the products of H keep within the sizes.
 	// U1, U2, S1 and S2 are of E, so H = U2 − U1 is of size 3 and R = 2(S2 − S1) of 6; reduced, both are of E. 2H is of size 2, so Z3 = (Z1·Z2)·2H takes sizes 1 and 2, I = (2H)² sizes 2 and 2, and J, V and S1·J take E.
+	// ECFormulas.Combine takes R, J, V and SJ of E: R² − J − 2V is of size 7, V − X3 of 3 and R(V − X3) − 2·SJ of 5.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	[SkipLocalsInit]
 	public static ulong AddDistinct(in JacobianPoint<P521Field58> left, in JacobianPoint<P521Field58> right, out JacobianPoint<P521Field58> result)
@@ -64,7 +65,7 @@ internal partial struct P521Field58
 		Multiply(in h, in i, out P521Field58 j);
 		Multiply(in u1, in i, out P521Field58 v);
 		Multiply(in s1, in j, out s1);
-		Combine(in r, in j, in v, in s1, out result.X, out result.Y);
+		ECFormulas<P521Field58>.Combine(in r, in j, in v, in s1, out result.X, out result.Y);
 		return equal;
 	}
 
@@ -89,25 +90,7 @@ internal partial struct P521Field58
 		Multiply(in left.X, in i, out P521Field58 v);
 		Multiply(in left.Y, in j, out P521Field58 yj);
 		Multiply(in left.Z, in twoH, out result.Z);
-		Combine(in r, in j, in v, in yj, out result.X, out result.Y);
+		ECFormulas<P521Field58>.Combine(in r, in j, in v, in yj, out result.X, out result.Y);
 		return equal;
-	}
-
-	// X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ, for R, J, V and SJ of E. R² − J − 2V is of size 7, V − X3 of 3 and R(V − X3) − 2·SJ of 5.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	[SkipLocalsInit]
-	private static void Combine(in P521Field58 r, in P521Field58 j, in P521Field58 v, in P521Field58 sj, out P521Field58 x, out P521Field58 y)
-	{
-		Square(in r, out P521Field58 square);
-		SubtractUnreduced(in square, in j, out P521Field58 x3);
-		SubtractUnreduced(in x3, in v, out x3);
-		SubtractUnreduced(in x3, in v, out x3);
-		WeakReduce(in x3, out x3);
-		SubtractUnreduced(in v, in x3, out P521Field58 difference);
-		Multiply(in r, in difference, out P521Field58 product);
-		SubtractUnreduced(in product, in sj, out P521Field58 y3);
-		SubtractUnreduced(in y3, in sj, out y3);
-		WeakReduce(in y3, out y);
-		x = x3;
 	}
 }

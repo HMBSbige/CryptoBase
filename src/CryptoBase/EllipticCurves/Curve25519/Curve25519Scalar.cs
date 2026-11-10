@@ -55,10 +55,10 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 
 		Span<ulong> limbs = stackalloc ulong[ScalarDigits.LimbCount];
 		Span<sbyte> digits = stackalloc sbyte[EdwardsBaseTable.WindowCount];
-		Span<byte> entryStorage = stackalloc byte[EdwardsLanes.EntryStorageLength];
-		ref EdwardsNielsPoint entry = ref EdwardsLanes.AlignEntry(entryStorage);
+		Span<byte> entryStorage = stackalloc byte[AlignedScratch.StorageLength<EdwardsNielsPoint>(1)];
+		ref EdwardsNielsPoint entry = ref AlignedScratch.AlignEntry<EdwardsNielsPoint>(entryStorage);
 		ScalarDigits.ReadLimbs(scalar, limbs);
-		ScalarDigits.SignedWindows(limbs, EdwardsBaseTable.Width, digits);
+		LimbArithmetic.RecodeSignedWindows(limbs, EdwardsBaseTable.Width, digits);
 		EdwardsBaseTable.Select(0, digits[0], out entry);
 		FromNiels(in entry, out result);
 		Unsafe.SkipInit(out EdwardsCompletedPoint sum);
@@ -199,7 +199,7 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 		int width = EdwardsBaseTable.Width;
 		int windowLength = EdwardsBaseTable.WindowLength;
 		Span<sbyte> baseDigits = stackalloc sbyte[EdwardsBaseTable.WindowCount];
-		ScalarDigits.SignedWindows(limbs, width, baseDigits);
+		LimbArithmetic.RecodeSignedWindows(limbs, width, baseDigits);
 
 		for (int i = 0; i < baseDigits.Length; ++i)
 		{

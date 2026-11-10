@@ -3,8 +3,6 @@ namespace CryptoBase.EllipticCurves.SM9;
 // The pairing and the powers of GT on SM9Lanes, by the algorithms of SM9MillerLoop, SM9FinalExponentiation and SM9GTPower, with the same steps on the same values. The elements of Fp12 stay in lanes from the first operation to the last; only the steps of T that the Miller loop takes out of the lanes, the inversion of Fp6 of the final exponentiation and the entries of a fixed table come from SM9Fp2, SM9Fp6 and SM9Fp12. Each operation works in an aligned workspace on the stack, erased at its end, and neither its time nor its addresses depend on its inputs.
 internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vector<TVector>
 {
-	private const int Alignment = 64;
-
 	private const int TableLength = SM9FrobeniusRecoding.TableLength;
 
 	// T doubles in lanes by SM9Lanes.DoublingStep, which gives the line at P as it goes; the additions, one for each nonzero digit and the two of the end, take SM9MillerLoop's step on T taken out of the lanes. Vectors narrower than a row, which DoublingStep does not take, take MillerLoopScalarSteps.
@@ -519,16 +517,14 @@ internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vect
 	// The bytes for count elements and a scratch, with room to start them on a 64-byte line: the writes of a vector that straddles a line do not forward to the reads of the next product.
 	private static int StorageLength(int count)
 	{
-		return count * Unsafe.SizeOf<SM9Fp12Lanes>() + Unsafe.SizeOf<SM9LaneScratch>() + Alignment - 1;
+		return AlignedScratch.StorageLength<SM9Fp12Lanes>(count) + Unsafe.SizeOf<SM9LaneScratch>();
 	}
 
 	// The first element of storage from StorageLength, on its first 64-byte line.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe ref SM9Fp12Lanes Workspace(Span<byte> storage)
+	private static ref SM9Fp12Lanes Workspace(Span<byte> storage)
 	{
-		nint address = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(storage));
-		int offset = (int)(-address & Alignment - 1);
-		return ref Unsafe.As<byte, SM9Fp12Lanes>(ref storage[offset]);
+		return ref Unsafe.As<byte, SM9Fp12Lanes>(ref storage[AlignedScratch.Offset(storage)]);
 	}
 
 	// The scratch after count elements of a workspace.

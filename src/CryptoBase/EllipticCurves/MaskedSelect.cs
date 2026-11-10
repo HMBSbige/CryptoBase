@@ -48,6 +48,13 @@ internal static class MaskedSelect
 		Lookup(in table, length, count, TVector.Create(index), ref result);
 	}
 
+	// accumulator with value where mask is set. The accumulators start at zero and at most one entry of a window matches, so an OR merges as well as a select: ARM64 takes the select, one instruction there, and x64 the AND and the OR, where the select takes three.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static Vector128<ulong> Merge(Vector128<ulong> accumulator, Vector128<ulong> value, Vector128<ulong> mask)
+	{
+		return AdvSimd.IsSupported ? Vector128.ConditionalSelect(mask, value, accumulator) : accumulator | value & mask;
+	}
+
 	// As Lookup for entries that interleave two values: the limbs at even indices come from entry first, and the others from entry second. Only vectors of an even number of limbs are used, as they line up with the pairs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void LookupPair(ref readonly ulong table, int length, int count, uint first, uint second, ref ulong result)

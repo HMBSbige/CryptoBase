@@ -5,8 +5,6 @@ namespace CryptoBase.EllipticCurves;
 // The products of ISM2Kernel that lanes speed up, on the lanes of TField, with the point formulas of ECFormulas, which take and give the bounds of SM2Field29, for u = 2^29: Multiply and Square take limbs whose bounds X and Y have 9·X·Y ≤ 2^64 − 2^54, every subtrahend is a product or comes from Reduce or LoadEntries, with limbs no larger than those of 4p, and every input of Reduce has limbs below 2^32. Each formula keeps X and Y below 2p in limbs below u, limb 8 below 2^25, and Z, 1 or a doubled product, below 2.3p in limbs below 2u + 130, so that each product takes limbs below 2u + 130 on both sides, or below 4u + 260 against limbs below u + 65.
 internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lanes<TField>
 {
-	private const int Alignment = 64;
-
 	private const int EntryLength = 8;
 
 	// The values of MultiplyBase: two points and the scratch of the formulas. The rounds keep the coordinates of the entries and 1 in scratch 9 to 11, which MixedAdd does not touch; the folds, which come after the rounds and take the whole scratch, put their sums in scratch 0 to 2.
@@ -79,13 +77,13 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 		int windowCount = ECGeneratorTable<TCurve, SM2Field52, SM2Order>.WindowCount;
 		// The digits of secondScalar, where TSelector takes it, follow those of scalar.
 		Span<sbyte> digits = stackalloc sbyte[TSelector.TakesSecondScalar ? 2 * windowCount : windowCount];
-		// The entries and the masks, which vectors load after the stores of the lanes, start on a 64-byte line too, for the reason Align gives.
-		Span<byte> entryStorage = stackalloc byte[StorageLength<ulong>(EntryLength * lanes)];
-		Span<ulong> entries = Align<ulong>(entryStorage, EntryLength * lanes);
-		Span<byte> maskStorage = stackalloc byte[StorageLength<ulong>(4 * lanes)];
-		Span<ulong> masks = Align<ulong>(maskStorage, 4 * lanes);
-		Span<byte> storage = stackalloc byte[StorageLength<TField>(ValueCount)];
-		Span<TField> values = Align<TField>(storage, ValueCount);
+		// The entries and the masks, which vectors load after the stores of the lanes, start on a 64-byte line too, for the reason AlignedScratch.Align gives.
+		Span<byte> entryStorage = stackalloc byte[AlignedScratch.StorageLength<ulong>(EntryLength * lanes)];
+		Span<ulong> entries = AlignedScratch.Align<ulong>(entryStorage, EntryLength * lanes);
+		Span<byte> maskStorage = stackalloc byte[AlignedScratch.StorageLength<ulong>(4 * lanes)];
+		Span<ulong> masks = AlignedScratch.Align<ulong>(maskStorage, 4 * lanes);
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<TField>(ValueCount)];
+		Span<TField> values = AlignedScratch.Align<TField>(storage, ValueCount);
 		ref SM2JacobianLanes<TField> point = ref AsPoint(ref values[0]);
 		ref SM2JacobianLanes<TField> sum = ref AsPoint(ref values[3]);
 		ref TField scratch = ref values[6];
@@ -102,29 +100,12 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 		ref readonly ulong firstWindows = ref MemoryMarshal.GetReference(first);
 		ref readonly ulong secondWindows = ref MemoryMarshal.GetReference(second);
 		int windowLength = ECGeneratorTable<TCurve, SM2Field52, SM2Order>.WindowLength;
-		// The windows of 8 bits of SM2VerificationCurve divide 256 bits, those of SM2Curve do not.
-		if (256 % TCurve.GeneratorWindowWidth is 0)
-		{
-			ECGroup<SM2Curve, SM2Field52, SM2Order>.RecodeSpanning(in scalar, TCurve.GeneratorWindowWidth, digits.Slice(0, windowCount));
-		}
-		else
-		{
-			ECGroup<SM2Curve, SM2Field52, SM2Order>.Recode(in scalar, TCurve.GeneratorWindowWidth, digits.Slice(0, windowCount));
-		}
-
+		ECGroup<SM2Curve, SM2Field52, SM2Order>.RecodeWindows(in scalar, TCurve.GeneratorWindowWidth, digits.Slice(0, windowCount));
 		int secondDigits = 0;
 
 		if (TSelector.TakesSecondScalar && tables is 2)
 		{
-			if (256 % TCurve.GeneratorWindowWidth is 0)
-			{
-				ECGroup<SM2Curve, SM2Field52, SM2Order>.RecodeSpanning(in secondScalar, TCurve.GeneratorWindowWidth, digits.Slice(windowCount));
-			}
-			else
-			{
-				ECGroup<SM2Curve, SM2Field52, SM2Order>.Recode(in secondScalar, TCurve.GeneratorWindowWidth, digits.Slice(windowCount));
-			}
-
+			ECGroup<SM2Curve, SM2Field52, SM2Order>.RecodeWindows(in secondScalar, TCurve.GeneratorWindowWidth, digits.Slice(windowCount));
 			secondDigits = windowCount;
 		}
 
@@ -253,8 +234,8 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 		Span<ulong> firsts = stackalloc ulong[EntryLength * lanes];
 		Span<ulong> seconds = stackalloc ulong[EntryLength * lanes];
 		Span<ulong> doubling = stackalloc ulong[lanes];
-		Span<byte> storage = stackalloc byte[StorageLength<TField>(FillValueCount)];
-		Span<TField> values = Align<TField>(storage, FillValueCount);
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<TField>(FillValueCount)];
+		Span<TField> values = AlignedScratch.Align<TField>(storage, FillValueCount);
 		ref TField x1 = ref values[0];
 		ref TField y1 = ref values[1];
 		ref TField x2 = ref values[2];
@@ -443,7 +424,7 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 			}
 		}
 
-		SM2Field52.InvertVariableTime(in prefixes[lanes - 1], out SM2Field52 inverse);
+		InvertVariableTime(in prefixes[lanes - 1], out SM2Field52 inverse);
 		Unsafe.SkipInit(out AffinePoint<SM2Field52> point);
 
 		for (int lane = lanes - 1; lane >= 0; --lane)
@@ -463,6 +444,12 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 		}
 
 		TField.LoadEntries(in entries[0], out result, out _);
+	}
+
+	// IUnsaturatedField gives SM2Field52 its inversions, which only a type parameter reaches.
+	private static void InvertVariableTime<TElement>(in TElement value, out TElement result) where TElement : unmanaged, IECField<TElement>
+	{
+		TElement.InvertVariableTime(in value, out result);
 	}
 
 	// Writes the sums of group that are not spare to entry half + m of their window, as SM2Field52.Pack writes them, from the coordinates packed on the lanes.
@@ -802,20 +789,5 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	private static ref SM2JacobianLanes<TField> AsPoint(ref TField first)
 	{
 		return ref Unsafe.As<TField, SM2JacobianLanes<TField>>(ref first);
-	}
-
-	// The bytes of storage for count values, with room to start them on a 64-byte line.
-	private static int StorageLength<T>(int count) where T : unmanaged
-	{
-		return count * Unsafe.SizeOf<T>() + Alignment - 1;
-	}
-
-	// count values in storage of StorageLength<T>(count) bytes, from its first 64-byte line: the stack aligns locals to 16 bytes at most, and the writes of a vector that straddles a line do not forward to the reads of the next product.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe Span<T> Align<T>(Span<byte> storage, int count) where T : unmanaged
-	{
-		nint address = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(storage));
-		int offset = (int)(-address & Alignment - 1);
-		return MemoryMarshal.Cast<byte, T>(storage.Slice(offset, count * Unsafe.SizeOf<T>()));
 	}
 }

@@ -9,7 +9,7 @@ namespace CryptoBase.EllipticCurves;
 // In Double, γ, β and δ are below 2.1p, and 2γ, 4β and 8γ², each twice a product of inputs of E, are of E and below 4.1p. X − δ is below 9.1p in limbs below 2^55 and X + δ below 6.1p in limbs below 2^54. Their product is below 4.4p, so its limb 4 may exceed 2^50 and it is not of E; it goes only into α, below 13.2p in limbs below 2^54, which only Multiply and Square take. α² − 8β is below 21.8p in limbs below 2^55. 4β − X3 is below 9.1p in limbs below 2^55, α(4β − X3) below 8.4p, and that less 8γ² below 13.4p in limbs below 2^54.
 // In AddDistinct, U1, U2, S1 and S2 are below 1.6p, so H is below 6.6p in limbs below 2^54 and 2R below 12.8p in limbs below 2^55; reduced, both are below 1.1p in limbs below 2^52. Z1·Z2·H is below 1.2p, so Z3 is below 2.3p. I = 4H² is below 4.3p in limbs below 2^54, not of E, and goes only into Multiply; J, V and S1·J are below 1.4p. With an affine right, whose coordinates are of E as well, H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.3p, so Z3 is below 2.6p, and V = X1·I and Y1·J are below 2.1p.
 // X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ then take R below 1.1p and J, V and SJ below 2.1p, in limbs 0 to 3 below 2^52 and limb 4 below 2^50. R² is below 1.1p and R² − J − 2V below 16.1p in limbs below 2^56. V − X3 is below 7.1p in limbs below 2^54, R(V − X3) below 1.5p, and that less 2·SJ below 11.5p in limbs below 2^55.
-internal struct SM2Field52 : IECField<SM2Field52>
+internal struct SM2Field52 : IUnsaturatedField<SM2Field52, SM2Field>
 {
 	internal ulong L0;
 	internal ulong L1;
@@ -43,7 +43,7 @@ internal struct SM2Field52 : IECField<SM2Field52>
 	private static ReadOnlySpan<ulong> RSquaredLimbs => [0x0000020000000300, 0x000FFFFFFFF00000, 0x0000000100000002, 0x0000200000001000, 0x0000000004000000];
 
 	// 2^520 mod p in 64-bit limbs: the numerator for SafeGcd, which then takes aR to R²/(aR) = a⁻¹R.
-	private static ReadOnlySpan<ulong> InverseNumerator => [0x0000020000000300, 0x000002FFFFFFFF00, 0x0000010000000100, 0x0000040000000200];
+	public static ReadOnlySpan<ulong> InverseNumerator => [0x0000020000000300, 0x000002FFFFFFFF00, 0x0000010000000100, 0x0000040000000200];
 
 	// The canonical value in four 64-bit limbs, so that an affine point fills 64 bytes.
 	public static int PackedLength => 4;
@@ -78,20 +78,6 @@ internal struct SM2Field52 : IECField<SM2Field52>
 		ulong y3 = Unsafe.Add(ref limbs, 7);
 		FromLimbs(x0, x1, x2, x3, out point.X);
 		FromLimbs(y0, y1, y2, y3, out point.Y);
-	}
-
-	public static bool TryImport(ReadOnlySpan<byte> source, out SM2Field52 result)
-	{
-		bool valid = FieldElement<SM2Field>.TryImport(source, out FieldElement<SM2Field> value);
-		FromLimbs(FieldElement<SM2Field>.GetLimbs(in value), out result);
-		return valid;
-	}
-
-	public static void Export(in SM2Field52 value, Span<byte> destination)
-	{
-		ToSaturated(in value, out FieldElement<SM2Field> saturated);
-		FieldElement<SM2Field>.Export(in saturated, destination);
-		saturated.ZeroMemory();
 	}
 
 	// With a = x_i·2^6 and b = y_j·2^6, a·b = x_i·y_j·2^12 < 2^124 splits at bit 52 of x_i·y_j: the high word is x_i·y_j >> 52 and the low word is (x_i·y_j mod 2^52)·2^12. The column sums of these halves stay below 2^63, so they need no carries before Reduce.
@@ -161,22 +147,6 @@ internal struct SM2Field52 : IECField<SM2Field52>
 		SM2Field52 one = default;
 		one.L0 = 1;
 		Multiply(in value, in one, out result);
-	}
-
-	// SafeGcd works on the canonical value in 64-bit limbs.
-	public static void Invert(in SM2Field52 value, out SM2Field52 result)
-	{
-		ToSaturated(in value, out FieldElement<SM2Field> saturated);
-		SafeGcd<SM2Field>.Invert(in saturated, InverseNumerator, out saturated);
-		FromLimbs(FieldElement<SM2Field>.GetLimbs(in saturated), out result);
-		saturated.ZeroMemory();
-	}
-
-	public static void InvertVariableTime(in SM2Field52 value, out SM2Field52 result)
-	{
-		ToSaturated(in value, out FieldElement<SM2Field> saturated);
-		SafeGcd<SM2Field>.InvertVariableTime(in saturated, InverseNumerator, out saturated);
-		FromLimbs(FieldElement<SM2Field>.GetLimbs(in saturated), out result);
 	}
 
 	// Sets result to a square root of value and returns whether value is a square, both in Montgomery form, as products of Montgomery forms keep it: as p ≡ 3 (mod 4), a^((p + 1)/4) squares to a just for a square a, and (p + 1)/4 = 2^62·(2^32 − 1)·(2^160 − 1) takes 252 squarings and 13 products. Only the return value depends on value.
@@ -282,7 +252,7 @@ internal struct SM2Field52 : IECField<SM2Field52>
 	}
 
 	// The value mod p in four 64-bit limbs. After WeakReduce the value is below 2p, so one conditional subtraction of p makes it canonical; then limbs 0 to 3 below 2^52 and a value below 2^256 pack without overlap.
-	private static void ToSaturated(in SM2Field52 value, out FieldElement<SM2Field> result)
+	public static void ToSaturated(in SM2Field52 value, out FieldElement<SM2Field> result)
 	{
 		WeakReduce(in value, out SM2Field52 t);
 		ulong d0 = t.L0 - Mask;

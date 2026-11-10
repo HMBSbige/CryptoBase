@@ -5,7 +5,7 @@ namespace CryptoBase.EllipticCurves;
 // The field of p = 2^521 − 1 in nine unsaturated limbs, the value Σ L_i·2^(58i). Montgomery form takes R = 1, so it is the plain value, and as 2^521 ≡ 1 (mod p) the reduction needs no multiplication.
 // Every member takes and gives the form E: limbs 0 to 7 below 2^58 and limb 8 below 2^57 + 2^6, so values below 2^521 + 2^470 < 2p. An element is of size s if its limbs 0 to 7 are below s·2^58 and limb 8 below s·(2^57 + 2^6); E is size 1.
 // The formulas in P521Field58.Formulas.cs skip reductions between steps and keep the sizes within these limits: Multiply takes sizes a and b up to 6 with ab ≤ 6, so Square takes sizes up to √6, and both give E; AddUnreduced adds sizes; SubtractUnreduced adds 2p, so 2 to the size, for a subtrahend of E; WeakReduce takes limbs below 2^64 − 2^7, so sizes up to 63, to E.
-internal partial struct P521Field58 : IECField<P521Field58>
+internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 {
 	internal ulong L0;
 	internal ulong L1;
@@ -33,7 +33,7 @@ internal partial struct P521Field58 : IECField<P521Field58>
 	public static ref readonly P521Field58 One => ref Unsafe.As<ulong, P521Field58>(ref MemoryMarshal.GetReference(InverseNumerator));
 
 	// 1 in 64-bit limbs, the SafeGcd numerator R² for R = 1. The same limbs are 1 in this representation, so One reads them too.
-	private static ReadOnlySpan<ulong> InverseNumerator => [1, 0, 0, 0, 0, 0, 0, 0, 0];
+	public static ReadOnlySpan<ulong> InverseNumerator => [1, 0, 0, 0, 0, 0, 0, 0, 0];
 
 	public static void FromLimbs(ReadOnlySpan<ulong> limbs, out P521Field58 result)
 	{
@@ -57,20 +57,6 @@ internal partial struct P521Field58 : IECField<P521Field58>
 		result.L6 = (w5 >> 28 | w6 << 36) & Mask;
 		result.L7 = (w6 >> 22 | w7 << 42) & Mask;
 		result.L8 = w7 >> 16 | w8 << 48;
-	}
-
-	public static bool TryImport(ReadOnlySpan<byte> source, out P521Field58 result)
-	{
-		bool valid = FieldElement<P521Field>.TryImport(source, out FieldElement<P521Field> value);
-		FromLimbs(FieldElement<P521Field>.GetLimbs(in value), out result);
-		return valid;
-	}
-
-	public static void Export(in P521Field58 value, Span<byte> destination)
-	{
-		ToSaturated(in value, out FieldElement<P521Field> saturated);
-		FieldElement<P521Field>.Export(in saturated, destination);
-		saturated.ZeroMemory();
 	}
 
 	// Both operands are shifted left by 3: for limbs x_i and y_j below 2^61, x_i·2^3 · y_j·2^3 < 2^128, so High gives x_i·y_j >> 58 and Low gives x_i·y_j mod 2^58. Column k sums the Low of the pairs with i + j = k and the High of those with i + j = k − 1, at most nine of each. For sizes a and b, a High is below ab·2^58, or ab·2^58·(1/2 + 2^−52) with limb 8, which enters one column at most twice, so the Highs sum to below 8ab·2^58·(1 + 2^−50) and the column to below 58·2^58 for ab ≤ 6, within 64 bits. Columns 0 to 7 hold at most eight Lows and seven Highs, so below 50·2^58, and column 17 is below 2^60.
@@ -495,22 +481,6 @@ internal partial struct P521Field58 : IECField<P521Field58>
 		result = value;
 	}
 
-	// SafeGcd works on the canonical value in 64-bit limbs.
-	public static void Invert(in P521Field58 value, out P521Field58 result)
-	{
-		ToSaturated(in value, out FieldElement<P521Field> saturated);
-		SafeGcd<P521Field>.Invert(in saturated, InverseNumerator, out saturated);
-		FromLimbs(FieldElement<P521Field>.GetLimbs(in saturated), out result);
-		saturated.ZeroMemory();
-	}
-
-	public static void InvertVariableTime(in P521Field58 value, out P521Field58 result)
-	{
-		ToSaturated(in value, out FieldElement<P521Field> saturated);
-		SafeGcd<P521Field>.InvertVariableTime(in saturated, InverseNumerator, out saturated);
-		FromLimbs(FieldElement<P521Field>.GetLimbs(in saturated), out result);
-	}
-
 	// The limbs add without carries; the caller keeps them within what the next operation takes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void AddUnreduced(in P521Field58 left, in P521Field58 right, out P521Field58 result)
@@ -557,7 +527,7 @@ internal partial struct P521Field58 : IECField<P521Field58>
 	}
 
 	// The value mod p in nine 64-bit limbs. WeakReduce leaves a value below 2p, so one conditional subtraction of p makes it canonical; limbs 0 to 7 are then below 2^58 and limb 8 below 2^57, so they pack without overlap.
-	private static void ToSaturated(in P521Field58 value, out FieldElement<P521Field> result)
+	public static void ToSaturated(in P521Field58 value, out FieldElement<P521Field> result)
 	{
 		WeakReduce(in value, out P521Field58 t);
 		ulong d0 = t.L0 - Mask;

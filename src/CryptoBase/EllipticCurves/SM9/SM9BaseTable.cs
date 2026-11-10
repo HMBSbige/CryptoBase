@@ -2,7 +2,7 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The fixed-base table of a point G of prime order N: window i holds j·2^(wi)·G for j from 1 to 2^(w − 1), affine, for the digits of SM9Windows.Recode, so that a product takes one mixed addition per window and no doubling. G is a generator or a point that many products take, as a key may be.
+// The fixed-base table of a point G of prime order N: window i holds j·2^(wi)·G for j from 1 to 2^(w − 1), affine, for the digits of LimbArithmetic.RecodeSignedWindows, so that a product takes one mixed addition per window and no doubling. G is a generator or a point that many products take, as a key may be.
 internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<TField>
 {
 	private readonly SM9AffinePoint<TField>[] _entries;
@@ -67,7 +67,7 @@ internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<T
 	internal void Multiply(in FieldElement<SM9Order> scalar, out SM9Point<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[WindowCount];
-		SM9Windows.Recode(FieldElement<SM9Order>.GetLimbs(in scalar), Width, digits);
+		RecodeSignedWindows(FieldElement<SM9Order>.GetLimbs(in scalar), Width, digits);
 		SM9Curve<TField>.Infinity(out result);
 		ref SM9AffinePoint<TField> entries = ref MemoryMarshal.GetArrayDataReference(_entries);
 		Unsafe.SkipInit(out SM9AffinePoint<TField> entry);
@@ -93,7 +93,7 @@ internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<T
 	internal void MultiplyAddVariableTime(in FieldElement<SM9Order> scalar, in SM9Point<TField> addend, out SM9Point<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[WindowCount];
-		SM9Windows.Recode(FieldElement<SM9Order>.GetLimbs(in scalar), Width, digits);
+		RecodeSignedWindows(FieldElement<SM9Order>.GetLimbs(in scalar), Width, digits);
 		result = addend;
 
 		for (int i = 0; i < digits.Length; ++i)

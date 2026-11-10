@@ -356,6 +356,26 @@ internal static class LimbArithmetic
 		return low >> shift | high << 1 << 63 - shift;
 	}
 
+	// Writes digits d_i in [−2^(w − 1) + 1, 2^(w − 1)] with k = Σ d_i·2^(wi), for digits whose top window holds at most w − 1 bits of k. Window i of k plus the carry from below, v in [0, 2^w], gives d_i = v and no carry if v ≤ 2^(w − 1), and d_i = v − 2^w and a carry otherwise, so v ≤ 2^(w − 1) in the top window and no carry is lost. The carry and digits come from arithmetic on v, not comparisons, and only i decides which limbs are read.
+	internal static void RecodeSignedWindows(ReadOnlySpan<ulong> limbs, int width, Span<sbyte> digits)
+	{
+		// Digits up to 2^(w − 1) must fit in an sbyte.
+		Debug.Assert(width is > 1 and < 8);
+
+		uint mask = (1u << width) - 1;
+		uint half = 1u << width - 1;
+		uint carry = 0;
+
+		for (int i = 0; i < digits.Length; ++i)
+		{
+			uint value = ((uint)ReadBits(limbs, i * width) & mask) + carry;
+			carry = half - value >> 31;
+			digits[i] = (sbyte)(value - (carry << width));
+		}
+
+		Debug.Assert(carry is 0);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong Select(ulong mask, ulong whenSet, ulong whenClear)
 	{

@@ -6,14 +6,12 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 	where TField : unmanaged, IECField<TField>
 	where TOrder : unmanaged, IMontgomeryModulus
 {
-	private const int Alignment = 64;
-
 	// Pinned, so that the boundary stays where Start finds it.
 	// ReSharper disable once StaticMemberInGenericType
 	private static readonly ulong[] Storage = BuildGenerator();
 
 	// ReSharper disable once StaticMemberInGenericType
-	private static readonly int Start = AlignedStart(Storage);
+	private static readonly int Start = AlignedScratch.AlignedStart(Storage);
 
 	internal static int WindowCount => ECGroup<TCurve, TField, TOrder>.DigitCount(TCurve.GeneratorWindowWidth);
 
@@ -31,7 +29,7 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 		Read(Windows, index, out result);
 	}
 
-	// The windows of a point P on the curve, from AlignedStart on in the pinned array returned. P is public, so the time may depend on it. A chain of doublings gives the bases B = 2^(wi)·P, by the kernels of TCurve where it has them or FillBases otherwise, made affine at once, and the kernels of TCurve where it has them or FillWindows otherwise fill the windows from them.
+	// The windows of a point P on the curve, from AlignedScratch.AlignedStart on in the pinned array returned. P is public, so the time may depend on it. A chain of doublings gives the bases B = 2^(wi)·P, by the kernels of TCurve where it has them or FillBases otherwise, made affine at once, and the kernels of TCurve where it has them or FillWindows otherwise fill the windows from them.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	internal static ulong[] Build(in AffinePoint<TField> point)
 	{
@@ -39,8 +37,8 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 
 		int windowCount = WindowCount;
 		int windowLength = WindowLength;
-		ulong[] storage = GC.AllocateUninitializedArray<ulong>(Length + Alignment / sizeof(ulong) - 1, true);
-		Span<ulong> windows = storage.AsSpan(AlignedStart(storage), Length);
+		ulong[] storage = AlignedScratch.AllocatePinned(Length);
+		Span<ulong> windows = storage.AsSpan(AlignedScratch.AlignedStart(storage), Length);
 		JacobianPoint<TField>[] bases = new JacobianPoint<TField>[windowCount];
 		AffinePoint<TField>[] affineBases = new AffinePoint<TField>[windowCount];
 
@@ -92,13 +90,6 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 		{
 			AddRound(windows, half, products);
 		}
-	}
-
-	// Array data is aligned to its 8-byte elements, so the boundary falls on a whole limb.
-	internal static int AlignedStart(ulong[] storage)
-	{
-		nint address = Marshal.UnsafeAddrOfPinnedArrayElement(storage, 0);
-		return (int)(-address & Alignment - 1) / sizeof(ulong);
 	}
 
 	// Entry index of windows, which counts entries across the windows.

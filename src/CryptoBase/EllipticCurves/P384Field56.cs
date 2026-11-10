@@ -9,7 +9,7 @@ namespace CryptoBase.EllipticCurves;
 // In Double, γ, β and δ are below 1.1p in limbs below 2^56, and 2γ and 4β below 2.2p in limbs below 2^57. X − δ is below 9p in limbs below 5·2^56 and X + δ below 5.1p in limbs below 3·2^56, so their product is below 1.2p and α below 3.6p in limbs below 3·2^56. α² − 8β is below 11.1p in limbs below 2^59. 4β − X3 is below 7.1p in limbs below 5·2^56, α(4β − X3) below 1.1p, and that less 8γ² below 6.1p in limbs below 2^58.
 // In AddDistinct, U1, U2, S1 and S2 are below 1.1p in limbs below 2^56, so H is below 6.1p in limbs below 2^58 and 2R below 12.1p in limbs below 2^59; reduced, both are below 2^384 + 2^342 in limbs below 2^56. Z1·Z2·H is below 1.1p, so Z3 is below 2.1p. I = 4H² is below 4.1p in limbs below 2^58, and J, V and S1·J are below 1.1p. With an affine right, whose coordinates are of E as well, H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.1p, so Z3 is below 2.1p, and V = X1·I and Y1·J are below 1.1p.
 // X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ then take R below 2^384 + 2^342 and J, V and SJ below 1.1p, all in limbs below 2^56. R² is below 1.1p and R² − J − 2V below 16.1p in limbs below 10·2^56. V − X3 is below 6.1p in limbs below 2^58, R(V − X3) below 1.1p, and that less 2·SJ below 11.1p in limbs below 2^59.
-internal struct P384Field56 : IECField<P384Field56>
+internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 {
 	internal ulong L0;
 	internal ulong L1;
@@ -47,7 +47,7 @@ internal struct P384Field56 : IECField<P384Field56>
 	private static ReadOnlySpan<ulong> RSquaredLimbs => [0x00FE000000010000, 0x0000000000FFFFFF, 0x0000000000000002, 0x000000FFFFFFFE00, 0x0001000000020000, 0, 0];
 
 	// 2^784 mod p in 64-bit limbs: the numerator for SafeGcd, which then takes aR to R²/(aR) = a⁻¹R.
-	private static ReadOnlySpan<ulong> InverseNumerator => [0xFFFE000000010000, 0x000200000000FFFF, 0xFFFE000000000000, 0x000200000000FFFF, 0x0000000000010000, 0];
+	public static ReadOnlySpan<ulong> InverseNumerator => [0xFFFE000000010000, 0x000200000000FFFF, 0xFFFE000000000000, 0x000200000000FFFF, 0x0000000000010000, 0];
 
 	public static void FromLimbs(ReadOnlySpan<ulong> limbs, out P384Field56 result)
 	{
@@ -66,20 +66,6 @@ internal struct P384Field56 : IECField<P384Field56>
 		result.L4 = (w3 >> 32 | w4 << 32) & Mask;
 		result.L5 = (w4 >> 24 | w5 << 40) & Mask;
 		result.L6 = w5 >> 16;
-	}
-
-	public static bool TryImport(ReadOnlySpan<byte> source, out P384Field56 result)
-	{
-		bool valid = FieldElement<P384Field>.TryImport(source, out FieldElement<P384Field> value);
-		FromLimbs(FieldElement<P384Field>.GetLimbs(in value), out result);
-		return valid;
-	}
-
-	public static void Export(in P384Field56 value, Span<byte> destination)
-	{
-		ToSaturated(in value, out FieldElement<P384Field> saturated);
-		FieldElement<P384Field>.Export(in saturated, destination);
-		saturated.ZeroMemory();
 	}
 
 	// Carrying the left limbs first gives x_i below 2^56, x_6 too as the value is below 2^392. With a_i = x_i·2^8 and a right limb y_j below 2^60, a_i·y_j = x_i·y_j·2^8 < 2^124, so its high half is x_i·y_j >> 56, below 2^60, and its low half (x_i·y_j mod 2^56)·2^8. A column sums at most seven of each, below 2^63 with room for the Montgomery rounds, so all the columns come first without carries and the rounds after.
@@ -246,22 +232,6 @@ internal struct P384Field56 : IECField<P384Field56>
 		Multiply(in value, in one, out result);
 	}
 
-	// SafeGcd works on the canonical value in 64-bit limbs.
-	public static void Invert(in P384Field56 value, out P384Field56 result)
-	{
-		ToSaturated(in value, out FieldElement<P384Field> saturated);
-		SafeGcd<P384Field>.Invert(in saturated, InverseNumerator, out saturated);
-		FromLimbs(FieldElement<P384Field>.GetLimbs(in saturated), out result);
-		saturated.ZeroMemory();
-	}
-
-	public static void InvertVariableTime(in P384Field56 value, out P384Field56 result)
-	{
-		ToSaturated(in value, out FieldElement<P384Field> saturated);
-		SafeGcd<P384Field>.InvertVariableTime(in saturated, InverseNumerator, out saturated);
-		FromLimbs(FieldElement<P384Field>.GetLimbs(in saturated), out result);
-	}
-
 	// The limbs add without carries; the caller keeps them within what the next operation takes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void AddUnreduced(in P384Field56 left, in P384Field56 right, out P384Field56 result)
@@ -318,7 +288,7 @@ internal struct P384Field56 : IECField<P384Field56>
 	}
 
 	// The value mod p in six 64-bit limbs. WeakReduce leaves a value below 2p in limbs 0 to 5 below 2^56, so one conditional subtraction of p gives the canonical value, whose limbs pack without overlap.
-	private static void ToSaturated(in P384Field56 value, out FieldElement<P384Field> result)
+	public static void ToSaturated(in P384Field56 value, out FieldElement<P384Field> result)
 	{
 		WeakReduce(in value, out P384Field56 t);
 		ulong d0 = t.L0 - P0;

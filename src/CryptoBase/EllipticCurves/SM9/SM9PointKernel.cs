@@ -3,8 +3,6 @@ namespace CryptoBase.EllipticCurves.SM9;
 // The product of G1 with a variable point on the formulas of SM9PointLanes for one point: the algorithm of SM9G1Group.Multiply, with the same digits, tables and sums, each doubling and addition taking its products in two rows. The tables stay in SM9Point form, so that a masked scan reads as many bytes as there, and each entry goes into lanes after its selection. Neither the time nor the addresses depend on the scalar or the point, and the intermediates are cleared.
 internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vector<TVector>
 {
-	private const int Alignment = 64;
-
 	// k·P for P of G1, as SM9G1Group.Multiply.
 	[SkipLocalsInit]
 	internal static void MultiplyG1(in SM9AffinePoint<SM9Fp> point, in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp> result)
@@ -15,7 +13,7 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 		Span<SM9Point<SM9Fp>> multiples = stackalloc SM9Point<SM9Fp>[SM9G1Group.PointTableLength];
 		Span<SM9Point<SM9Fp>> images = stackalloc SM9Point<SM9Fp>[SM9G1Group.PointTableLength];
 		int e = SM9Lanes<TVector>.FpLanes.ElementLength;
-		Span<byte> storage = stackalloc byte[StorageLength(2 * e + SM9PointLanes<TVector, SM9Lanes<TVector>.FpLanes, SM9Fp>.SingleWorkLength)];
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<ulong>(2 * e + SM9PointLanes<TVector, SM9Lanes<TVector>.FpLanes, SM9Fp>.SingleWorkLength)];
 		ref ulong sum = ref Workspace(storage);
 		ref ulong entry = ref Unsafe.Add(ref sum, e);
 		ref ulong work = ref Unsafe.Add(ref entry, e);
@@ -54,7 +52,7 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 		Span<SM9Point<SM9Fp>> multiples = stackalloc SM9Point<SM9Fp>[SM9G1Group.VariableTimeTableLength];
 		Span<SM9Point<SM9Fp>> images = stackalloc SM9Point<SM9Fp>[SM9G1Group.VariableTimeTableLength];
 		int e = SM9Lanes<TVector>.FpLanes.ElementLength;
-		Span<byte> storage = stackalloc byte[StorageLength(2 * e + SM9PointLanes<TVector, SM9Lanes<TVector>.FpLanes, SM9Fp>.SingleWorkLength)];
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<ulong>(2 * e + SM9PointLanes<TVector, SM9Lanes<TVector>.FpLanes, SM9Fp>.SingleWorkLength)];
 		ref ulong sum = ref Workspace(storage);
 		ref ulong entry = ref Unsafe.Add(ref sum, e);
 		ref ulong work = ref Unsafe.Add(ref entry, e);
@@ -89,7 +87,7 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 	internal static void MultiplyByLoopScalarG2(in SM9Point<SM9Fp2> point, out SM9Point<SM9Fp2> result)
 	{
 		int e = SM9Lanes<TVector>.Fp2Lanes.ElementLength;
-		Span<byte> storage = stackalloc byte[StorageLength(3 * e + SM9PointLanes<TVector, SM9Lanes<TVector>.Fp2Lanes, SM9Fp2>.SingleWorkLength)];
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<ulong>(3 * e + SM9PointLanes<TVector, SM9Lanes<TVector>.Fp2Lanes, SM9Fp2>.SingleWorkLength)];
 		ref ulong sum = ref Workspace(storage);
 		ref ulong entry = ref Unsafe.Add(ref sum, e);
 		ref ulong negated = ref Unsafe.Add(ref entry, e);
@@ -173,17 +171,9 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 		selected.ZeroMemory();
 	}
 
-	// The bytes for count ulongs with room to start them on a 64-byte line.
-	private static int StorageLength(int count)
-	{
-		return count * sizeof(ulong) + Alignment - 1;
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe ref ulong Workspace(Span<byte> storage)
+	private static ref ulong Workspace(Span<byte> storage)
 	{
-		nint address = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(storage));
-		int offset = (int)(-address & Alignment - 1);
-		return ref Unsafe.As<byte, ulong>(ref storage[offset]);
+		return ref Unsafe.As<byte, ulong>(ref storage[AlignedScratch.Offset(storage)]);
 	}
 }

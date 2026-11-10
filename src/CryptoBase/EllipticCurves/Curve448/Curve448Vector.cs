@@ -5,8 +5,6 @@ internal static class Curve448Vector<TField> where TField : unmanaged, IField448
 {
 	internal const int ScalarLength = 56;
 
-	private const int Alignment = 64;
-
 	private const int LimbCount = ScalarLength / sizeof(ulong);
 
 	// Each step takes the bit of k from 447 down to 0. The values start on a 64-byte line: the stack aligns locals to 16 bytes at most, and the writes of a vector that straddles a line do not forward to the reads of the next product.
@@ -17,8 +15,8 @@ internal static class Curve448Vector<TField> where TField : unmanaged, IField448
 
 		Span<ulong> limbs = stackalloc ulong[LimbCount];
 		int count = 1 + TField.MultiplierLength + TField.ScratchLength;
-		Span<byte> storage = stackalloc byte[StorageLength(count)];
-		Span<TField> values = Align(storage, count);
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<TField>(count)];
+		Span<TField> values = AlignedScratch.Align<TField>(storage, count);
 		ref TField state = ref values[0];
 		ref TField multiplier = ref values[1];
 		ref TField scratch = ref values[1 + TField.MultiplierLength];
@@ -49,20 +47,5 @@ internal static class Curve448Vector<TField> where TField : unmanaged, IField448
 		storage.ZeroMemory();
 		x3.ZeroMemory();
 		z3.ZeroMemory();
-	}
-
-	// The bytes of storage for count values, with room to start them on a 64-byte line.
-	internal static int StorageLength(int count)
-	{
-		return count * Unsafe.SizeOf<TField>() + Alignment - 1;
-	}
-
-	// count values in storage of StorageLength(count) bytes, from its first 64-byte line.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static unsafe Span<TField> Align(Span<byte> storage, int count)
-	{
-		nint address = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(storage));
-		int offset = (int)(-address & Alignment - 1);
-		return MemoryMarshal.Cast<byte, TField>(storage.Slice(offset, count * Unsafe.SizeOf<TField>()));
 	}
 }

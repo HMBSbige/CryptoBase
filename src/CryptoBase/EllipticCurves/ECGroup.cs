@@ -118,15 +118,7 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 		Span<sbyte> digits = stackalloc sbyte[ECGeneratorTable<TCurve, TField, TOrder>.WindowCount];
 
-		if (TOrder.BitLength % TCurve.GeneratorWindowWidth is 0)
-		{
-			RecodeSpanning(in scalar, TCurve.GeneratorWindowWidth, digits);
-		}
-		else
-		{
-			Recode(in scalar, TCurve.GeneratorWindowWidth, digits);
-		}
-
+		RecodeWindows(in scalar, TCurve.GeneratorWindowWidth, digits);
 		SelectWindow(windows, 0, digits[0], out AffinePoint<TField> entry);
 		// A digit of 0 selects (0, 0), which is not a point: the first window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
 		result = default;
@@ -336,17 +328,7 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	internal static bool TryMultiplyEncode(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> destination)
 	{
 		Multiply(in point, in scalar, out JacobianPoint<TField> product);
-		bool valid = TField.IsZero(in product.Z) is 0;
-
-		if (valid)
-		{
-			ToAffine(in product, out AffinePoint<TField> affine);
-			Encode(in affine, destination);
-			affine.ZeroMemory();
-		}
-
-		product.ZeroMemory();
-		return valid;
+		return TryEncode(ref product, destination);
 	}
 
 	// For the table of a point P, a point Q on the curve and k and l below n, writes the encoding of k·P + l·Q. Returns false, leaving destination unchanged, if that is the point at infinity; the return value reveals that anyway, so it may decide a branch. Neither the time nor the addresses depend on k, l, P or Q, and the intermediates are cleared.
@@ -356,19 +338,9 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		MultiplyFixed(table, in scalar, out JacobianPoint<TField> first);
 		Multiply(in point, in otherScalar, out JacobianPoint<TField> second);
 		Add(in first, in second, out JacobianPoint<TField> sum);
-		bool valid = TField.IsZero(in sum.Z) is 0;
-
-		if (valid)
-		{
-			ToAffine(in sum, out AffinePoint<TField> affine);
-			Encode(in affine, destination);
-			affine.ZeroMemory();
-		}
-
 		first.ZeroMemory();
 		second.ZeroMemory();
-		sum.ZeroMemory();
-		return valid;
+		return TryEncode(ref sum, destination);
 	}
 
 	// As above, for points P and Q on the curve.
@@ -376,16 +348,24 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	internal static bool TryMultiplyAddEncode(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, in AffinePoint<TField> otherPoint, in FieldElement<TOrder> otherScalar, Span<byte> destination)
 	{
 		MultiplyAdd(in point, in scalar, in otherPoint, in otherScalar, out JacobianPoint<TField> sum);
-		bool valid = TField.IsZero(in sum.Z) is 0;
+		return TryEncode(ref sum, destination);
+	}
+
+	// Writes the encoding of point and returns true, or returns false, leaving destination unchanged, for the point at infinity; clears point and the intermediates either way.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[SkipLocalsInit]
+	private static bool TryEncode(ref JacobianPoint<TField> point, Span<byte> destination)
+	{
+		bool valid = TField.IsZero(in point.Z) is 0;
 
 		if (valid)
 		{
-			ToAffine(in sum, out AffinePoint<TField> affine);
+			ToAffine(in point, out AffinePoint<TField> affine);
 			Encode(in affine, destination);
 			affine.ZeroMemory();
 		}
 
-		sum.ZeroMemory();
+		point.ZeroMemory();
 		return valid;
 	}
 
@@ -533,17 +513,13 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 	private static bool IsOnCurve(in AffinePoint<TField> point)
 	{
-		TField.Square(in point.X, out TField right);
-		TField.Multiply(in right, in point.X, out right);
-		TField.Subtract(in right, in point.X, out right);
-		TField.Subtract(in right, in point.X, out right);
-		TField.Subtract(in right, in point.X, out right);
-		TField.Add(in right, in B, out right);
+		RightSide(in point.X, out TField right);
 		TField.Square(in point.Y, out TField left);
 		return TField.AreEqual(in left, in right) is not 0;
 	}
 
 	// x³ − 3x + b, which y² equals for a point (x, y) of the curve. The result must not be x.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void RightSide(in TField x, out TField result)
 	{
 		TField.Square(in x, out result);
@@ -560,7 +536,20 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		return (TOrder.BitLength + width - 1) / width;
 	}
 
-	// Writes digits d_i in [−2^(w − 1) + 1, 2^(w − 1)] with k = Σ d_i·2^(wi), for w that does not divide N. Window i of k plus the carry from below, v in [0, 2^w], gives d_i = v and no carry if v ≤ 2^(w − 1), and d_i = v − 2^w and a carry otherwise. The top window holds at most w − 1 bits of k, so v ≤ 2^(w − 1) there and no carry is lost. The carry and digits come from arithmetic on v, not comparisons, and only i decides which limbs are read.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void RecodeWindows(in FieldElement<TOrder> scalar, int width, Span<sbyte> digits)
+	{
+		if (TOrder.BitLength % width is 0)
+		{
+			RecodeSpanning(in scalar, width, digits);
+		}
+		else
+		{
+			Recode(in scalar, width, digits);
+		}
+	}
+
+	// The digits of LimbArithmetic.RecodeSignedWindows, for w that does not divide N, so that the top window holds at most w − 1 bits of k. The loop is repeated here, where the JIT knows the limb count of TOrder: a call to the shared one passes a span, which its loop rereads for every digit.
 	internal static void Recode(in FieldElement<TOrder> scalar, int width, Span<sbyte> digits)
 	{
 		// Digits up to 2^(w − 1) must fit in an sbyte.

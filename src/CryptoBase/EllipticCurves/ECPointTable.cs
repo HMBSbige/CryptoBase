@@ -14,7 +14,7 @@ internal sealed class ECPointTable<TCurve, TField, TOrder>
 	internal ECPointTable(in AffinePoint<TField> point)
 	{
 		_storage = ECGeneratorTable<TCurve, TField, TOrder>.Build(in point);
-		_start = ECGeneratorTable<TCurve, TField, TOrder>.AlignedStart(_storage);
+		_start = AlignedScratch.AlignedStart(_storage);
 	}
 
 	internal ReadOnlySpan<ulong> Windows => new(_storage, _start, ECGeneratorTable<TCurve, TField, TOrder>.Length);

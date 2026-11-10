@@ -2,6 +2,7 @@ using CryptoBase.EllipticCurves;
 using CryptoBase.Tests.Wycheproof;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
@@ -560,25 +561,6 @@ public abstract class CurveCase
 			return new Key();
 		}
 
-		private static TField ToElement(BigInteger value)
-		{
-			if (!TField.TryImport(EncodeInteger(value, TField.ByteLength), out TField element))
-			{
-				throw new ArgumentOutOfRangeException(nameof(value), value, "The value is not below p.");
-			}
-
-			TField.ToMontgomery(in element, out element);
-			return element;
-		}
-
-		private static BigInteger FieldValue(in TField element)
-		{
-			TField.FromMontgomery(in element, out TField plain);
-			byte[] bytes = new byte[TField.ByteLength];
-			TField.Export(in plain, bytes);
-			return ModulusCase.Decode(bytes);
-		}
-
 		private static FieldElement<TOrder> ToScalar(BigInteger value)
 		{
 			if (!FieldElement<TOrder>.TryImport(EncodeInteger(value, TOrder.ByteLength), out FieldElement<TOrder> scalar))
@@ -598,7 +580,7 @@ public abstract class CurveCase
 
 		private static AffinePoint<TField> ToPoint(CurvePoint point)
 		{
-			return new AffinePoint<TField> { X = ToElement(point.X), Y = ToElement(point.Y) };
+			return new AffinePoint<TField> { X = ToElement<TField>(point.X), Y = ToElement<TField>(point.Y) };
 		}
 
 		private static CurvePoint ToValue(in AffinePoint<TField> point)
@@ -608,7 +590,7 @@ public abstract class CurveCase
 
 		private static JacobianPoint<TField> ToPoint(JacobianValue value)
 		{
-			return new JacobianPoint<TField> { X = ToElement(value.X), Y = ToElement(value.Y), Z = ToElement(value.Z) };
+			return new JacobianPoint<TField> { X = ToElement<TField>(value.X), Y = ToElement<TField>(value.Y), Z = ToElement<TField>(value.Z) };
 		}
 
 		private static JacobianValue ToValue(in JacobianPoint<TField> point)

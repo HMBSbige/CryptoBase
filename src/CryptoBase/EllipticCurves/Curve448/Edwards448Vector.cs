@@ -19,8 +19,8 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 		Span<ulong> limbs = stackalloc ulong[ScalarDigits.LimbCount];
 		Span<ulong> digits = stackalloc ulong[ScalarDigits.CombLimbCount];
 		int count = 1 + TField.ScratchLength;
-		Span<byte> storage = stackalloc byte[Curve448Vector<TField>.StorageLength(count)];
-		Span<TField> values = Curve448Vector<TField>.Align(storage, count);
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<TField>(count)];
+		Span<TField> values = AlignedScratch.Align<TField>(storage, count);
 		ref TField point = ref values[0];
 		ref TField scratch = ref values[1];
 		ScalarDigits.ReadLimbs(scalar, limbs);
@@ -98,7 +98,7 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 		BuildOddMultiples(in point, pointMultiples);
 		ReadOnlySpan<EdwardsAffinePoint> baseMultiples = EdwardsVariableTimeBaseTable.Entries;
 		int count = 1 + TField.ScratchLength;
-		Span<TField> values = Curve448Vector<TField>.Align(stackalloc byte[Curve448Vector<TField>.StorageLength(count)], count);
+		Span<TField> values = AlignedScratch.Align<TField>(stackalloc byte[AlignedScratch.StorageLength<TField>(count)], count);
 		ref TField sum = ref values[0];
 		ref TField scratch = ref values[1];
 		Identity(out sum);
@@ -146,7 +146,7 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 
 		ReadOnlySpan<EdwardsAffinePoint> baseTable = EdwardsVariableTimeBaseTable.Parts;
 		int count = 1 + TField.ScratchLength;
-		Span<TField> values = Curve448Vector<TField>.Align(stackalloc byte[Curve448Vector<TField>.StorageLength(count)], count);
+		Span<TField> values = AlignedScratch.Align<TField>(stackalloc byte[AlignedScratch.StorageLength<TField>(count)], count);
 		ref TField sum = ref values[0];
 		ref TField scratch = ref values[1];
 		Identity(out sum);

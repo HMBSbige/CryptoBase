@@ -20,17 +20,17 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 
 		Span<ulong> limbs = stackalloc ulong[ScalarDigits.LimbCount];
 		Span<sbyte> digits = stackalloc sbyte[EdwardsBaseTable.WindowCount];
-		Span<Field25519x8Avx512> values = EdwardsLanes.Align<Field25519x8Avx512>(stackalloc byte[EdwardsLanes.StorageLength<Field25519x8Avx512>(4)], 4);
+		Span<Field25519x8Avx512> values = AlignedScratch.Align<Field25519x8Avx512>(stackalloc byte[AlignedScratch.StorageLength<Field25519x8Avx512>(4)], 4);
 		ref Field25519x8Avx512 point = ref values[0];
 		ref Field25519x8Avx512 cached = ref values[1];
 		ref Field25519x8Avx512 left = ref values[2];
 		ref Field25519x8Avx512 right = ref values[3];
-		Span<byte> firstStorage = stackalloc byte[EdwardsLanes.EntryStorageLength];
-		Span<byte> secondStorage = stackalloc byte[EdwardsLanes.EntryStorageLength];
-		ref EdwardsNielsPoint first = ref EdwardsLanes.AlignEntry(firstStorage);
-		ref EdwardsNielsPoint second = ref EdwardsLanes.AlignEntry(secondStorage);
+		Span<byte> firstStorage = stackalloc byte[AlignedScratch.StorageLength<EdwardsNielsPoint>(1)];
+		Span<byte> secondStorage = stackalloc byte[AlignedScratch.StorageLength<EdwardsNielsPoint>(1)];
+		ref EdwardsNielsPoint first = ref AlignedScratch.AlignEntry<EdwardsNielsPoint>(firstStorage);
+		ref EdwardsNielsPoint second = ref AlignedScratch.AlignEntry<EdwardsNielsPoint>(secondStorage);
 		ScalarDigits.ReadLimbs(scalar, limbs);
-		ScalarDigits.SignedWindows(limbs, EdwardsBaseTable.Width, digits);
+		LimbArithmetic.RecodeSignedWindows(limbs, EdwardsBaseTable.Width, digits);
 		EdwardsBaseTable.Select(0, digits[0], out first);
 		EdwardsBaseTable.Select(1, digits[1], out second);
 		Curve25519Scalar.FromNiels(in first, out result);
@@ -83,7 +83,7 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 		Span<ulong> limbs = stackalloc ulong[ScalarDigits.LimbCount];
 		Span<sbyte> pointDigits = stackalloc sbyte[parts * stride];
 		Span<sbyte> baseDigits = stackalloc sbyte[EdwardsBaseTable.WindowCount];
-		Span<Field25519x8Avx512> values = EdwardsLanes.Align<Field25519x8Avx512>(stackalloc byte[EdwardsLanes.StorageLength<Field25519x8Avx512>(4)], 4);
+		Span<Field25519x8Avx512> values = AlignedScratch.Align<Field25519x8Avx512>(stackalloc byte[AlignedScratch.StorageLength<Field25519x8Avx512>(4)], 4);
 		ref Field25519x8Avx512 sum = ref values[0];
 		ref Field25519x8Avx512 cached = ref values[1];
 		ref Field25519x8Avx512 left = ref values[2];
@@ -124,7 +124,7 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 		}
 
 		ScalarDigits.ReadLimbs(b, limbs);
-		ScalarDigits.SignedWindows(limbs, EdwardsBaseTable.Width, baseDigits);
+		LimbArithmetic.RecodeSignedWindows(limbs, EdwardsBaseTable.Width, baseDigits);
 		int windowLength = EdwardsBaseTable.WindowLength;
 		int pending = -1;
 

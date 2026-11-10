@@ -6,8 +6,6 @@ namespace CryptoBase.EllipticCurves.SM9;
 // A point in lanes is X, Y and Z, one element after the other, with components below 1.0001p in limbs 0 to 8 below 2^26, as Reduce leaves them; an entry, x and y of a point of a table, has x reduced, below 2.25p, and y reduced or negated as 3p − y, at most 3p in limbs below 2^27. The formulas keep these bounds, and the point at infinity is (0 : 1 : 0) in every lane, as in SM9Curve.
 internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unmanaged, ISM9Vector<TVector> where TLanes : struct, ISM9FieldLanes<TField> where TField : unmanaged, ISM9Field<TField>
 {
-	private const int Alignment = 64;
-
 	// The temporaries of the formulas.
 	private const int SlotCount = 8;
 
@@ -22,7 +20,7 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	internal static void MultiplyBase(SM9BaseTable<TField> table, in FieldElement<SM9Order> scalar, out SM9Point<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[table.WindowCount];
-		SM9Windows.Recode(FieldElement<SM9Order>.GetLimbs(in scalar), table.Width, digits);
+		RecodeSignedWindows(FieldElement<SM9Order>.GetLimbs(in scalar), table.Width, digits);
 		MultiplyBase(table, null, digits, out result);
 		digits.ZeroMemory();
 	}
@@ -33,8 +31,8 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	{
 		int split = first.WindowCount;
 		Span<sbyte> digits = stackalloc sbyte[split + second.WindowCount];
-		SM9Windows.Recode(FieldElement<SM9Order>.GetLimbs(in firstScalar), first.Width, digits.Slice(0, split));
-		SM9Windows.Recode(FieldElement<SM9Order>.GetLimbs(in secondScalar), second.Width, digits.Slice(split));
+		RecodeSignedWindows(FieldElement<SM9Order>.GetLimbs(in firstScalar), first.Width, digits.Slice(0, split));
+		RecodeSignedWindows(FieldElement<SM9Order>.GetLimbs(in secondScalar), second.Width, digits.Slice(split));
 		MultiplyBase(first, second, digits, out result);
 		digits.ZeroMemory();
 	}
@@ -51,7 +49,7 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		ref SM9AffinePoint<TField> lastEntries = ref MemoryMarshal.GetReference(last.Entries);
 		int firstLength = first.WindowLength;
 		int lastLength = last.WindowLength;
-		Span<byte> storage = stackalloc byte[StorageLength()];
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<ulong>(WorkspaceLength)];
 		ref ulong sum = ref Workspace(storage);
 		ref ulong acc = ref Unsafe.Add(ref sum, 3 * TLanes.ElementLength);
 		ref ulong entry = ref Unsafe.Add(ref acc, 3 * TLanes.ElementLength);
@@ -110,8 +108,8 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		int windowLength = table.WindowLength;
 		int lanes = TVector.Count;
 		Span<sbyte> digits = stackalloc sbyte[windows];
-		SM9Windows.Recode(FieldElement<SM9Order>.GetLimbs(in scalar), table.Width, digits);
-		Span<byte> storage = stackalloc byte[StorageLength()];
+		RecodeSignedWindows(FieldElement<SM9Order>.GetLimbs(in scalar), table.Width, digits);
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<ulong>(WorkspaceLength)];
 		ref ulong sum = ref Workspace(storage);
 		ref ulong acc = ref Unsafe.Add(ref sum, 3 * TLanes.ElementLength);
 		ref ulong entry = ref Unsafe.Add(ref acc, 3 * TLanes.ElementLength);
@@ -329,7 +327,7 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	{
 		int windows = bases.Length;
 		int lanes = TVector.Count;
-		Span<byte> storage = stackalloc byte[StorageLength()];
+		Span<byte> storage = stackalloc byte[AlignedScratch.StorageLength<ulong>(WorkspaceLength)];
 		ref ulong sum = ref Workspace(storage);
 		ref ulong acc = ref Unsafe.Add(ref sum, 3 * TLanes.ElementLength);
 		ref ulong windowBase = ref Unsafe.Add(ref acc, 3 * TLanes.ElementLength);
@@ -659,17 +657,9 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		TLanes.Join(ref Unsafe.Add(ref rows, 2 * e), lane, out result.Z);
 	}
 
-	// The bytes for the workspace with room to start it on a 64-byte line.
-	private static int StorageLength()
-	{
-		return WorkspaceLength * sizeof(ulong) + Alignment - 1;
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe ref ulong Workspace(Span<byte> storage)
+	private static ref ulong Workspace(Span<byte> storage)
 	{
-		nint address = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(storage));
-		int offset = (int)(-address & Alignment - 1);
-		return ref Unsafe.As<byte, ulong>(ref storage[offset]);
+		return ref Unsafe.As<byte, ulong>(ref storage[AlignedScratch.Offset(storage)]);
 	}
 }

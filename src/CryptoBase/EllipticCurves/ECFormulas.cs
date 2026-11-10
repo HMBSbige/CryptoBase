@@ -93,10 +93,10 @@ internal static class ECFormulas<TField> where TField : unmanaged, IECField<TFie
 		return equal;
 	}
 
-	// X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ.
+	// X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ. P521Field58 takes it too, within the sizes it states.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	[SkipLocalsInit]
-	private static void Combine(in TField r, in TField j, in TField v, in TField sj, out TField x, out TField y)
+	internal static void Combine(in TField r, in TField j, in TField v, in TField sj, out TField x, out TField y)
 	{
 		TField.Square(in r, out TField square);
 		TField.SubtractUnreduced(in square, in j, out TField x3);

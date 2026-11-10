@@ -57,12 +57,7 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 			{
 				AffinePoint<TField> entry = baseMultiples[Math.Abs(digit) >> 1];
 
-				if (digit < 0)
-				{
-					TField.Negate(in entry.Y, out entry.Y);
-				}
-
-				Add(in result, in entry, out result);
+				AddSigned(ref result, ref entry, digit);
 			}
 
 			digit = pointDigits[i];
@@ -71,12 +66,7 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 			{
 				AffinePoint<TField> entry = pointMultiples[Math.Abs(digit) >> 1];
 
-				if (digit < 0)
-				{
-					TField.Negate(in entry.Y, out entry.Y);
-				}
-
-				Add(in result, in entry, out result);
+				AddSigned(ref result, ref entry, digit);
 			}
 		}
 	}
@@ -127,12 +117,7 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 				{
 					AffinePoint<TField> entry = pointTable[c * partEntries + (Math.Abs(digit) >> 1)];
 
-					if (digit < 0)
-					{
-						TField.Negate(in entry.Y, out entry.Y);
-					}
-
-					Add(in result, in entry, out result);
+					AddSigned(ref result, ref entry, digit);
 				}
 			}
 		}
@@ -163,12 +148,7 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 			{
 				ECGeneratorTable<TCurve, TField, TOrder>.Read(i * windowLength + Math.Abs(digit) - 1, out AffinePoint<TField> entry);
 
-				if (digit < 0)
-				{
-					TField.Negate(in entry.Y, out entry.Y);
-				}
-
-				Add(in result, in entry, out result);
+				AddSigned(ref result, ref entry, digit);
 			}
 		}
 	}
@@ -194,7 +174,7 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		AddWindows(windows, in u2, ref result);
 	}
 
-	// Adds k·P to result from the windows of P as ECGeneratorTable lays them out, each entry read in place at a digit of ECGroup.Recode or RecodeSpanning.
+	// Adds k·P to result from the windows of P as ECGeneratorTable lays them out, each entry read in place at a digit of ECGroup.RecodeWindows.
 	[SkipLocalsInit]
 	private static void AddWindows(ReadOnlySpan<ulong> windows, in FieldElement<TOrder> scalar, ref JacobianPoint<TField> result)
 	{
@@ -202,14 +182,7 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		int windowLength = ECGeneratorTable<TCurve, TField, TOrder>.WindowLength;
 		Span<sbyte> digits = stackalloc sbyte[windowCount];
 
-		if (TOrder.BitLength % TCurve.GeneratorWindowWidth is 0)
-		{
-			ECGroup<TCurve, TField, TOrder>.RecodeSpanning(in scalar, TCurve.GeneratorWindowWidth, digits);
-		}
-		else
-		{
-			ECGroup<TCurve, TField, TOrder>.Recode(in scalar, TCurve.GeneratorWindowWidth, digits);
-		}
+		ECGroup<TCurve, TField, TOrder>.RecodeWindows(in scalar, TCurve.GeneratorWindowWidth, digits);
 
 		for (int i = 0; i < windowCount; ++i)
 		{
@@ -219,14 +192,21 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 			{
 				ECGeneratorTable<TCurve, TField, TOrder>.Read(windows, i * windowLength + Math.Abs(digit) - 1, out AffinePoint<TField> entry);
 
-				if (digit < 0)
-				{
-					TField.Negate(in entry.Y, out entry.Y);
-				}
-
-				Add(in result, in entry, out result);
+				AddSigned(ref result, ref entry, digit);
 			}
 		}
+	}
+
+	// entry must be a copy of the table's: a negative digit negates it in place.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void AddSigned(ref JacobianPoint<TField> result, ref AffinePoint<TField> entry, int digit)
+	{
+		if (digit < 0)
+		{
+			TField.Negate(in entry.Y, out entry.Y);
+		}
+
+		Add(in result, in entry, out result);
 	}
 
 	// Sets multiples[j] to (2j + 1)·Q for a point Q on the curve: 3Q = 2Q + Q and then (j + 2)·Q = j·Q + 2Q, additions of two points that are neither equal, opposite nor at infinity, as j + 2 < n.

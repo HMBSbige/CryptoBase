@@ -9,12 +9,7 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 	// The NAF width of the point in DoubleScalarMultiplyVariableTime.
 	private const int PointWidth = 5;
 
-	private const int Alignment = 64;
-
 	public static bool IsSupported => true;
-
-	// Room to start an entry of TwistedBaseTable on a 64-byte line, so that the vector stores of a lookup forward to the reads that follow them.
-	private static int EntryStorageLength => Unsafe.SizeOf<TwistedNielsPoint>() + Alignment - 1;
 
 	// Each step takes the bit of k from 447 down to 0. The swap mask is the XOR of the bit with the one before, so only arithmetic on k decides which pair each step doubles.
 	[SkipLocalsInit]
@@ -63,8 +58,8 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 		const int combs = TwistedBaseTable.CombCount;
 		Span<ulong> limbs = stackalloc ulong[ScalarDigits.LimbCount];
 		Span<ulong> digits = stackalloc ulong[ScalarDigits.CombLimbCount];
-		Span<byte> entryStorage = stackalloc byte[EntryStorageLength];
-		ref TwistedNielsPoint entry = ref AlignEntry(entryStorage);
+		Span<byte> entryStorage = stackalloc byte[AlignedScratch.StorageLength<TwistedNielsPoint>(1)];
+		ref TwistedNielsPoint entry = ref AlignedScratch.AlignEntry<TwistedNielsPoint>(entryStorage);
 		ScalarDigits.ReadLimbs(scalar, limbs);
 		ScalarDigits.SignedComb(limbs, TwistedBaseTable.DigitCount, digits);
 		Unsafe.SkipInit(out EdwardsPoint point);
@@ -286,13 +281,5 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 			Edwards448.ToExtended(in sum, out multiple);
 			Edwards448.ToCached(in multiple, out multiples[j]);
 		}
-	}
-
-	// The entry in storage of EntryStorageLength bytes, from its first 64-byte line.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static unsafe ref TwistedNielsPoint AlignEntry(Span<byte> storage)
-	{
-		nint address = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(storage));
-		return ref MemoryMarshal.AsRef<TwistedNielsPoint>(storage.Slice((int)(-address & Alignment - 1), Unsafe.SizeOf<TwistedNielsPoint>()));
 	}
 }

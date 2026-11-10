@@ -9,12 +9,10 @@ internal static class EdwardsBaseTable
 
 	internal const int EntryLength = 12;
 
-	private const int Alignment = 64;
-
 	// Pinned, so that the boundary stays where Start finds it.
 	private static readonly ulong[] Storage = Build();
 
-	private static readonly int Start = AlignedStart(Storage);
+	private static readonly int Start = AlignedScratch.AlignedStart(Storage);
 
 	internal static int WindowCount => ScalarDigits.SignedWindowCount(Width);
 
@@ -226,22 +224,15 @@ internal static class EdwardsBaseTable
 		for (int j = 0; j < WindowLength; ++j)
 		{
 			Vector128<ulong> mask = Vector128.Equals(position, target);
-			l0 = Merge(l0, Vector128.LoadUnsafe(ref entry), mask);
-			l1 = Merge(l1, Vector128.LoadUnsafe(ref entry, 2), mask);
-			l2 = Merge(l2, Vector128.LoadUnsafe(ref entry, 4), mask);
-			l3 = Merge(l3, Vector128.LoadUnsafe(ref entry, 6), mask);
-			l4 = Merge(l4, Vector128.LoadUnsafe(ref entry, 8), mask);
-			l5 = Merge(l5, Vector128.LoadUnsafe(ref entry, 10), mask);
+			l0 = MaskedSelect.Merge(l0, Vector128.LoadUnsafe(ref entry), mask);
+			l1 = MaskedSelect.Merge(l1, Vector128.LoadUnsafe(ref entry, 2), mask);
+			l2 = MaskedSelect.Merge(l2, Vector128.LoadUnsafe(ref entry, 4), mask);
+			l3 = MaskedSelect.Merge(l3, Vector128.LoadUnsafe(ref entry, 6), mask);
+			l4 = MaskedSelect.Merge(l4, Vector128.LoadUnsafe(ref entry, 8), mask);
+			l5 = MaskedSelect.Merge(l5, Vector128.LoadUnsafe(ref entry, 10), mask);
 			position += Vector128<ulong>.One;
 			entry = ref Unsafe.Add(ref entry, EntryLength);
 		}
-	}
-
-	// accumulator with value where mask is set. The accumulators start at zero and at most one entry of a window matches, so an OR merges as well as a select: ARM64 takes the select, one instruction there, and x64 the AND and the OR, where the select takes three.
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> Merge(Vector128<ulong> accumulator, Vector128<ulong> value, Vector128<ulong> mask)
-	{
-		return AdvSimd.IsSupported ? Vector128.ConditionalSelect(mask, value, accumulator) : accumulator | value & mask;
 	}
 
 	// Turns the packed limbs at the start of point into its coordinates in place; the coordinates overlap the limbs, so all twelve are read first.
@@ -292,8 +283,8 @@ internal static class EdwardsBaseTable
 
 		EdwardsNielsPoint[] entries = new EdwardsNielsPoint[multiples.Length];
 		Edwards25519.ToNielsVariableTime(multiples, entries);
-		ulong[] storage = GC.AllocateUninitializedArray<ulong>(entries.Length * EntryLength + Alignment / sizeof(ulong) - 1, true);
-		Span<ulong> packed = storage.AsSpan(AlignedStart(storage));
+		ulong[] storage = AlignedScratch.AllocatePinned(entries.Length * EntryLength);
+		Span<ulong> packed = storage.AsSpan(AlignedScratch.AlignedStart(storage));
 
 		for (int i = 0; i < entries.Length; ++i)
 		{
@@ -304,12 +295,5 @@ internal static class EdwardsBaseTable
 		}
 
 		return storage;
-	}
-
-	// Array data is aligned to its 8-byte elements, so the boundary falls on a whole limb.
-	private static int AlignedStart(ulong[] storage)
-	{
-		nint address = Marshal.UnsafeAddrOfPinnedArrayElement(storage, 0);
-		return (int)(-address & Alignment - 1) / sizeof(ulong);
 	}
 }

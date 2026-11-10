@@ -178,7 +178,7 @@ public class SM2QuadFormulasTest
 		}
 
 		CurvePoint point = Curve.Reference.RandomPoint(new Random(24));
-		AffinePoint<SM2Field52> other = new() { X = ToElement(point.X), Y = ToElement(point.Y) };
+		AffinePoint<SM2Field52> other = new() { X = ToElement<SM2Field52>(point.X), Y = ToElement<SM2Field52>(point.Y) };
 		ulong[] otherTable = new ulong[16 * 25];
 
 		using (Assert.Multiple())
@@ -199,7 +199,7 @@ public class SM2QuadFormulasTest
 		for (int i = 0; i < 2; ++i)
 		{
 			CurvePoint point = Curve.Reference.RandomPoint(random);
-			AffinePoint<SM2Field52> affine = new() { X = ToElement(point.X), Y = ToElement(point.Y) };
+			AffinePoint<SM2Field52> affine = new() { X = ToElement<SM2Field52>(point.X), Y = ToElement<SM2Field52>(point.Y) };
 			ulong[] table = new ulong[16 * 25];
 			build(in affine, table);
 
@@ -616,27 +616,8 @@ public class SM2QuadFormulasTest
 		}
 	}
 
-	private static SM2Field52 ToElement(BigInteger value)
-	{
-		if (!SM2Field52.TryImport(CurveCase.EncodeInteger(value, SM2Field52.ByteLength), out SM2Field52 element))
-		{
-			throw new ArgumentOutOfRangeException(nameof(value), value, "The value is not below p.");
-		}
-
-		SM2Field52.ToMontgomery(in element, out element);
-		return element;
-	}
-
 	private static JacobianValue ToValue(in JacobianPoint<SM2Field52> point)
 	{
 		return new JacobianValue(FieldValue(in point.X), FieldValue(in point.Y), FieldValue(in point.Z));
-	}
-
-	private static BigInteger FieldValue(in SM2Field52 element)
-	{
-		SM2Field52.FromMontgomery(in element, out SM2Field52 plain);
-		byte[] bytes = new byte[SM2Field52.ByteLength];
-		SM2Field52.Export(in plain, bytes);
-		return ModulusCase.Decode(bytes);
 	}
 }

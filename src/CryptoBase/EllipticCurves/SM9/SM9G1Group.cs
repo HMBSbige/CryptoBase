@@ -76,9 +76,9 @@ internal static class SM9G1Group
 		SM9Decomposition.DecomposeG1(in scalar, out UInt128 k1, out UInt128 k2);
 		Span<ulong> magnitude = stackalloc ulong[2];
 		sign1 = Magnitude(k1, magnitude);
-		SM9Windows.Recode(magnitude, PointWidth, digits1);
+		RecodeSignedWindows(magnitude, PointWidth, digits1);
 		sign2 = Magnitude(k2, magnitude);
-		SM9Windows.Recode(magnitude, PointWidth, digits2);
+		RecodeSignedWindows(magnitude, PointWidth, digits2);
 		magnitude.ZeroMemory();
 	}
 
