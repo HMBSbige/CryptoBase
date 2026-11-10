@@ -4,6 +4,7 @@ using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using static CryptoBase.Tests.X509.TestPki;
@@ -293,6 +294,8 @@ public class TrustAnchorCertificatePoliciesTest
 		yield return () => ("qualifiers that are not a SEQUENCE", new CertificateExtension(CertificatePoliciesOid, false, Sequence(Sequence(Oid(P1), [0x05, 0x00]))));
 		yield return () => ("empty qualifiers", new CertificateExtension(CertificatePoliciesOid, false, Sequence(Sequence(Oid(P1), Sequence()))));
 		yield return () => ("a qualifier without an identifier, in an extension that is not critical", new CertificateExtension(CertificatePoliciesOid, false, Sequence(Sequence(Oid(P1), Sequence(Sequence([0x05, 0x00]))))));
+		yield return () => ("a qualifier without a value, in an extension that is not critical", new CertificateExtension(CertificatePoliciesOid, false, Sequence(Sequence(Oid(P1), Sequence(Sequence(Oid("1.3.6.1.5.5.7.2.2")))))));
+		yield return () => ("a qualifier with a second value, in an extension that is not critical", new CertificateExtension(CertificatePoliciesOid, false, Sequence(Sequence(Oid(P1), Sequence(Sequence(Oid("1.3.6.1.5.5.7.2.1"), Tlv(0x16), Tlv(0x16)))))));
 		yield return () => ("another field after the qualifiers", new CertificateExtension(CertificatePoliciesOid, false, Sequence(Sequence(Oid(P1), Sequence(Sequence(Oid("1.3.6.1.5.5.7.2.1"), Tlv(0x16))), [0x05, 0x00]))));
 		yield return () => ("no mapping", new CertificateExtension(PolicyMappingsOid, false, Sequence()));
 		yield return () => ("a mapping from anyPolicy", PolicyMappings((AnyPolicyOid, P1)));
@@ -332,12 +335,80 @@ public class TrustAnchorCertificatePoliciesTest
 		await AssertValid(await ValidateWith(root, [leaf, issuing.Certificate], explicitPolicy: true), leaf, issuing.Certificate, root.Certificate);
 	}
 
-	// RFC 5280, Sec. 4.2.1.4: a validator must interpret the qualifiers of a critical extension or reject the certificate; those of an extension that is not critical do not matter.
+	// A PolicyQualifierInfo of id-qt-unotice whose UserNotice has these fields.
+	private static byte[] UserNotice(params byte[][] fields)
+	{
+		return Sequence(Oid("1.3.6.1.5.5.7.2.2"), Sequence(fields));
+	}
+
+	private static byte[] NoticeReference(byte[] organization, params byte[][] numbers)
+	{
+		return Sequence(organization, Sequence(numbers));
+	}
+
+	private static byte[] Utf8Text(string text)
+	{
+		return Tlv(0x0C, Encoding.UTF8.GetBytes(text));
+	}
+
+	public static IEnumerable<Func<(string Case, byte[] Qualifier)>> InterpretedQualifiers()
+	{
+		yield return () => ("a CPS pointer", Sequence(Oid("1.3.6.1.5.5.7.2.1"), Tlv(0x16, "http://cps.test/"u8.ToArray())));
+		yield return () => ("an empty CPS pointer", Sequence(Oid("1.3.6.1.5.5.7.2.1"), Tlv(0x16)));
+		yield return () => ("an empty user notice", UserNotice());
+		yield return () => ("an explicit text that is an IA5String", UserNotice(Tlv(0x16, "Notice"u8.ToArray())));
+		yield return () => ("an explicit text that is a VisibleString", UserNotice(Tlv(0x1A, "Notice"u8.ToArray())));
+		yield return () => ("an explicit text that is a BMPString", UserNotice(Tlv(0x1E, Encoding.BigEndianUnicode.GetBytes("通知"))));
+		yield return () => ("an explicit text that is a UTF8String", UserNotice(Utf8Text("通知")));
+		yield return () => ("an explicit text longer than 200 characters", UserNotice(Utf8Text(new string('n', 300))));
+		yield return () => ("a notice reference", UserNotice(NoticeReference(Utf8Text("Org"), [0x02, 0x01, 0x01], [0x02, 0x02, 0x00, 0x80])));
+		yield return () => ("a notice reference and an explicit text", UserNotice(NoticeReference(Tlv(0x1A, "Org"u8.ToArray()), [0x02, 0x01, 0x01]), Utf8Text("Notice")));
+	}
+
+	// RFC 5280, Sec. 4.2.1.4: the qualifiers that it defines may be in a critical extension, with an explicitText longer than its 200 characters, which the section asks users to accept.
 	[Test]
-	public async Task RefusesAnUnrecognizedQualifierOnlyInACriticalExtension()
+	[MethodDataSource(nameof(InterpretedQualifiers))]
+	public async Task AcceptsAnInterpretedQualifierInACriticalExtension(string @case, byte[] qualifier)
 	{
 		using Authority root = Authority.CreateRoot();
-		byte[] policies = Sequence(Sequence(Oid(P1), Sequence(Sequence(Oid("1.3.6.1.4.1.55738.77.9"), [0x05, 0x00]))));
+		using Authority issuing = root.CreateIntermediate(more: [new CertificateExtension(CertificatePoliciesOid, true, Sequence(Sequence(Oid(P1), Sequence(qualifier))))]);
+		Certificate leaf = issuing.IssueLeaf();
+
+		await AssertValid(await Validate([root.Certificate], [leaf, issuing.Certificate]), leaf, issuing.Certificate, root.Certificate);
+	}
+
+	public static IEnumerable<Func<(string Case, byte[] Qualifier)>> UninterpretedQualifiers()
+	{
+		yield return () => ("an unrecognized qualifier", Sequence(Oid("1.3.6.1.4.1.55738.77.9"), [0x05, 0x00]));
+		yield return () => ("a CPS pointer that is NULL", Sequence(Oid("1.3.6.1.5.5.7.2.1"), [0x05, 0x00]));
+		yield return () => ("a CPS pointer that is a UTF8String", Sequence(Oid("1.3.6.1.5.5.7.2.1"), Tlv(0x0C)));
+		yield return () => ("a CPS pointer that is a constructed IA5String", Sequence(Oid("1.3.6.1.5.5.7.2.1"), Tlv(0x36)));
+		yield return () => ("a CPS pointer with a byte above 0x7F", Sequence(Oid("1.3.6.1.5.5.7.2.1"), Tlv(0x16, [0x80])));
+		yield return () => ("a user notice that is NULL", Sequence(Oid("1.3.6.1.5.5.7.2.2"), [0x05, 0x00]));
+		yield return () => ("a user notice that is an IA5String", Sequence(Oid("1.3.6.1.5.5.7.2.2"), Tlv(0x16)));
+		yield return () => ("a user notice with a truncated explicit text", UserNotice([0x0C, 0x05, 0x4E]));
+		yield return () => ("a user notice with NULL for its notice reference", UserNotice([0x05, 0x00]));
+		yield return () => ("a user notice with two explicit texts", UserNotice(Utf8Text("A"), Utf8Text("B")));
+		yield return () => ("a user notice with its explicit text first", UserNotice(Utf8Text("Notice"), NoticeReference(Utf8Text("Org"), [0x02, 0x01, 0x01])));
+		yield return () => ("an explicit text that is an OCTET STRING", UserNotice(Tlv(0x04, "Notice"u8.ToArray())));
+		yield return () => ("an explicit text that is a constructed UTF8String", UserNotice(Tlv(0x2C, Utf8Text("Notice"))));
+		yield return () => ("an explicit text that is not UTF-8", UserNotice(Tlv(0x0C, [0xFF])));
+		yield return () => ("an explicit text that is a BMPString of odd length", UserNotice(Tlv(0x1E, [0x00])));
+		yield return () => ("an explicit text that is a VisibleString with a control character", UserNotice(Tlv(0x1A, [0x0A])));
+		yield return () => ("an empty notice reference", UserNotice(Sequence()));
+		yield return () => ("a notice reference without notice numbers", UserNotice(Sequence(Utf8Text("Org"))));
+		yield return () => ("a notice reference whose organization is an OCTET STRING", UserNotice(NoticeReference(Tlv(0x04, "Org"u8.ToArray()), [0x02, 0x01, 0x01])));
+		yield return () => ("a notice number that is not minimal", UserNotice(NoticeReference(Utf8Text("Org"), [0x02, 0x02, 0x00, 0x01])));
+		yield return () => ("a notice number that is NULL", UserNotice(NoticeReference(Utf8Text("Org"), [0x05, 0x00])));
+	}
+
+	// RFC 5280, Sec. 4.2.1.4: a validator must interpret the qualifiers of a critical extension or reject the certificate; those of an extension that is not critical do not matter.
+	[Test]
+	[MethodDataSource(nameof(UninterpretedQualifiers))]
+	public async Task RefusesAnUninterpretedQualifierOnlyInACriticalExtension(string @case, byte[] qualifier)
+	{
+		using Authority root = Authority.CreateRoot();
+		byte[] policies = Sequence(Sequence(Oid(P1), Sequence(qualifier)));
 		using Authority critical = root.CreateIntermediate(more: [new CertificateExtension(CertificatePoliciesOid, true, policies)]);
 		using Authority noncritical = root.CreateIntermediate("CN=Noncritical", more: [new CertificateExtension(CertificatePoliciesOid, false, policies)]);
 		Certificate leafOfCritical = critical.IssueLeaf();

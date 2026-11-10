@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CryptoBase.X509;
 
@@ -7,6 +8,12 @@ namespace CryptoBase.X509;
 internal sealed class CertificatePolicies
 {
 	private const int MaxDirectlyCompared = 8;
+
+	// The tags of the primitive string types that a qualifier can hold; DER does not allow the constructed forms.
+	private const byte Utf8StringTag = 0x0C;
+	private const byte IA5StringTag = 0x16;
+	private const byte VisibleStringTag = 0x1A;
+	private const byte BmpStringTag = 0x1E;
 
 	// The contents of the OBJECT IDENTIFIERs id-qt-cps and id-qt-unotice, the qualifiers of RFC 5280, Sec. 4.2.1.4, neither of which changes the outcome of path validation.
 	private static ReadOnlySpan<byte> CpsQualifier => [0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x02, 0x01];
@@ -24,7 +31,7 @@ internal sealed class CertificatePolicies
 
 	public bool HasAnyPolicy { get; }
 
-	// Whether a qualifier is neither of the above; Sec. 4.2.1.4 requires a validator to interpret those of a critical extension or to reject the certificate.
+	// Whether a qualifier is neither of the above or has a value that does not decode as the type that the section gives it; Sec. 4.2.1.4 requires a validator to interpret those of a critical extension or to reject the certificate.
 	public bool HasUnrecognizedQualifier { get; }
 
 	// PolicyInformation ::= SEQUENCE { policyIdentifier CertPolicyId, policyQualifiers SEQUENCE SIZE (1..MAX) OF PolicyQualifierInfo OPTIONAL }.
@@ -53,9 +60,9 @@ internal sealed class CertificatePolicies
 					// PolicyQualifierInfo ::= SEQUENCE { policyQualifierId PolicyQualifierId, qualifier ANY DEFINED BY policyQualifierId }.
 					DerReader qualifier = qualifiers.ReadSequence();
 					ReadOnlySpan<byte> identifier = qualifier.ReadObjectIdentifierContents().Span;
-					qualifier.ReadEncodedValue();
+					ReadOnlyMemory<byte> qualifierValue = qualifier.ReadEncodedValue();
 					qualifier.ThrowIfNotEmpty();
-					hasUnrecognizedQualifier |= !identifier.SequenceEqual(CpsQualifier) && !identifier.SequenceEqual(UserNoticeQualifier);
+					hasUnrecognizedQualifier |= !IsInterpreted(identifier, qualifierValue);
 				}
 			}
 
@@ -78,6 +85,81 @@ internal sealed class CertificatePolicies
 		}
 
 		return new CertificatePolicies([.. policies], hasAnyPolicy, hasUnrecognizedQualifier);
+	}
+
+	// Whether value, read whole, decodes as the type that Sec. 4.2.1.4 gives the qualifier, CPSuri ::= IA5String or UserNotice, which the validator then interprets; neither changes the outcome, so the text is not kept.
+	private static bool IsInterpreted(ReadOnlySpan<byte> identifier, ReadOnlyMemory<byte> value)
+	{
+		if (identifier.SequenceEqual(CpsQualifier))
+		{
+			ReadOnlySpan<byte> element = value.Span;
+
+			if (element[0] is not IA5StringTag)
+			{
+				return false;
+			}
+
+			AsnDecoder.ReadEncodedValue(element, AsnEncodingRules.DER, out int offset, out int length, out _);
+			return Ascii.IsValid(element.Slice(offset, length));
+		}
+
+		if (!identifier.SequenceEqual(UserNoticeQualifier))
+		{
+			return false;
+		}
+
+		try
+		{
+			ReadUserNotice(value);
+			return true;
+		}
+		catch (AsnContentException)
+		{
+			return false;
+		}
+	}
+
+	// UserNotice ::= SEQUENCE { noticeRef NoticeReference OPTIONAL, explicitText DisplayText OPTIONAL }, and NoticeReference ::= SEQUENCE { organization DisplayText, noticeNumbers SEQUENCE OF INTEGER }.
+	private static void ReadUserNotice(ReadOnlyMemory<byte> value)
+	{
+		DerReader notice = DerReader.ReadSoleSequence(value);
+
+		if (notice.PeekTagIs(Asn1Tag.Sequence))
+		{
+			DerReader reference = notice.ReadSequence();
+			ReadDisplayText(ref reference);
+			DerReader numbers = reference.ReadSequence();
+			reference.ThrowIfNotEmpty();
+
+			while (numbers.HasData)
+			{
+				numbers.ReadIntegerBytes();
+			}
+		}
+
+		if (notice.HasData)
+		{
+			ReadDisplayText(ref notice);
+		}
+
+		notice.ThrowIfNotEmpty();
+	}
+
+	// DisplayText ::= CHOICE { ia5String IA5String, visibleString VisibleString, bmpString BMPString, utf8String UTF8String }. The SIZE (1..200) of each is not checked: Sec. 4.2.1.4 asks users to handle the longer texts that some CAs issue.
+	private static void ReadDisplayText(ref DerReader reader)
+	{
+		ReadOnlySpan<byte> element = reader.ReadEncodedValue().Span;
+
+		UniversalTagNumber type = element[0] switch
+		{
+			IA5StringTag => UniversalTagNumber.IA5String,
+			VisibleStringTag => UniversalTagNumber.VisibleString,
+			BmpStringTag => UniversalTagNumber.BMPString,
+			Utf8StringTag => UniversalTagNumber.UTF8String,
+			_ => throw new AsnContentException("A DisplayText is not one of its string types.")
+		};
+
+		AsnDecoder.ReadCharacterString(element, AsnEncodingRules.DER, type, out _);
 	}
 
 	// Comparing directly costs less than a set for the few policies that an extension has; the set keeps the work linear for a long list.
