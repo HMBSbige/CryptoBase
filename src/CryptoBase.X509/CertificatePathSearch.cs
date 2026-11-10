@@ -6,13 +6,16 @@ namespace CryptoBase.X509;
 
 // One validation of TrustAnchorCertificateValidator. It builds certification paths from the peer's certificate towards the trust anchors depth first, and checks each issuer as it adds it (RFC 5280, Sec. 6.1), so that a failed check moves on to the next candidate.
 // The first search follows only the issuers that pass every check and returns the first path that reaches a trust anchor; if there is none, a second search, with limits of its own, also follows those that fail, to report the best of the paths that it ends, as RunAsync describes.
-// An instance serves one call, which a retrieval may move to another thread, and owns the keys that it imports for the certificates other than the trust anchors.
-internal sealed partial class CertificatePathSearch : IDisposable
+// An instance serves one call, which a retrieval may move to another thread, and owns the keys that it imports for the certificates other than the trust anchors. IssuerRetrieval finds certificates for its pool and PathRevocation checks its paths; each sees only what the search passes to it, and only the search changes its own state, which the check that it passes to IssuerRetrieval may do.
+internal sealed class CertificatePathSearch : IDisposable
 {
 	// The limits of each search: the candidate issuers, each a signature check whether or not its signature is verified; the name and subtree comparisons, a directoryName counting by its attributes and length; and the entries of the policy graphs.
 	public const int MaxCandidates = 100;
 	public const long MaxNameComparisons = 1 << 20;
 	public const long MaxPolicyGraphEntries = 1 << 16;
+
+	// The edges that revocation may reject, each of which repeats the search, before the validation gives up.
+	public const int MaxRejectedEdges = 8;
 
 	private const string ServerAuthenticationOid = "1.3.6.1.5.5.7.3.1";
 	private const string ClientAuthenticationOid = "1.3.6.1.5.5.7.3.2";
@@ -26,8 +29,10 @@ internal sealed partial class CertificatePathSearch : IDisposable
 	private readonly List<PathNode> _pool = [];
 	private readonly Dictionary<TrustAnchorEntry, PathNode> _anchorNodes = [];
 
-	// Null for a validation that neither retrieves nor checks revocation, so that it allocates nothing for them.
-	private readonly RetrievalState? _retrieval;
+	// Null for a validation that neither retrieves nor checks revocation, so that it allocates nothing for them; the retrieval of issuers is also null if the validator does not retrieve them, and the revocation checks if it does not check revocation.
+	private readonly RetrievalBudget? _budget;
+	private readonly IssuerRetrieval? _issuers;
+	private readonly PathRevocation? _revocation;
 
 	// The candidates that GetCandidates finds, before it orders them; reused by each call.
 	private readonly List<PathNode> _found = [];
@@ -76,7 +81,17 @@ internal sealed partial class CertificatePathSearch : IDisposable
 
 		if (validator.Retriever is not null || validator.RevocationMode is not X509RevocationMode.NoCheck)
 		{
-			_retrieval = new RetrievalState(encodings, retrievesIssuers: validator is { Retriever: not null, DisableCertificateDownloads: false });
+			_budget = new RetrievalBudget(validator.Retriever, context, cancellationToken);
+
+			if (validator is { Retriever: not null, DisableCertificateDownloads: false, Caches: { } caches })
+			{
+				_issuers = new IssuerRetrieval(validator, caches, _budget, encodings, _time);
+			}
+
+			if (validator.RevocationMode is not X509RevocationMode.NoCheck)
+			{
+				_revocation = new PathRevocation(validator, _budget, _time);
+			}
 		}
 	}
 
@@ -115,23 +130,23 @@ internal sealed partial class CertificatePathSearch : IDisposable
 
 		// The problems of the peer's certificate alone hold for every path, so that nothing retrieved could make it acceptable.
 		bool acceptable = leafProblems.Count is 0 && identity is null;
-		bool checksRevocation = acceptable && _validator.RevocationMode is not X509RevocationMode.NoCheck;
+		PathRevocation? revocation = acceptable ? _revocation : null;
 
 		while (true)
 		{
-			_retrieval?.DeadEnds?.Clear();
+			_issuers?.DeadEnds.Clear();
 
 			if (Search(relaxed: false) is { } path)
 			{
-				KeepRetrievedIssuers(path);
+				_issuers?.Keep(path);
 
-				if (!checksRevocation)
+				if (revocation is null)
 				{
 					return CreateResult(path, CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]);
 				}
 
 				// A certificate that is revoked, or whose status no source determines, gives way to another path, such as through a cross-certificate. If none is valid, the first revoked path is reported, or else the first whose status is not known.
-				if (await CheckRevocationAsync(path).ConfigureAwait(false) is not { } problem)
+				if (await revocation.CheckAsync(path).ConfigureAwait(false) is not { } problem)
 				{
 					return CreateResult(path, CertificatePathEnd.TrustAnchor, []);
 				}
@@ -141,7 +156,7 @@ internal sealed partial class CertificatePathSearch : IDisposable
 					_best = new Attempt(path, CertificatePathEnd.TrustAnchor, [problem], 0, 1);
 				}
 
-				if (_retrieval?.RejectedEdges?.Count > MaxRejectedEdges)
+				if (revocation.RejectedEdgeCount > MaxRejectedEdges)
 				{
 					Stop($"{MaxRejectedEdges} revoked certificates or certificates of unknown status");
 					break;
@@ -156,6 +171,42 @@ internal sealed partial class CertificatePathSearch : IDisposable
 		}
 
 		return ReportBestPath(identity);
+	}
+
+	// Adds to the pool what the retrieval of issuers finds, and returns whether the pool grew, so that the search is worth repeating.
+	private async ValueTask<bool> RetrieveIssuersAsync()
+	{
+		if (_issuers is null)
+		{
+			return false;
+		}
+
+		List<Certificate> found = await _issuers.RetrieveAsync(_leaf, _pool, HasIssuerToFind).ConfigureAwait(false);
+
+		if (found.Count is 0)
+		{
+			return false;
+		}
+
+		foreach (Certificate certificate in found)
+		{
+			_pool.Add(new PathNode(certificate, PathRole.Intermediate, _nextIndex++));
+		}
+
+		_leaf.Candidates = null;
+
+		foreach (PathNode node in _pool)
+		{
+			node.Candidates = null;
+		}
+
+		return true;
+	}
+
+	// A self-signed certificate has no other issuer to find. The check may stop the search at its limit of candidates, and a stopped search has no issuer to find for any certificate.
+	private bool HasIssuerToFind(PathNode node)
+	{
+		return !IsSelfSigned(node) && !_stopped;
 	}
 
 	// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search; it accepts none, as only the strict search decides. A path that only revocation fails is already the best.
@@ -177,7 +228,7 @@ internal sealed partial class CertificatePathSearch : IDisposable
 		}
 
 		Attempt best = _best ?? throw new InvalidOperationException();
-		return CreateResult(best.Path, best.End, [.. best.Problems, .. Optional(strictLimit), .. Optional(GetLimit()), .. Optional(_retrieval?.Limit), .. Optional(identity)]);
+		return CreateResult(best.Path, best.End, [.. best.Problems, .. Optional(strictLimit), .. Optional(GetLimit()), .. Optional(_budget?.Limit), .. Optional(identity)]);
 	}
 
 	public void Dispose()
@@ -206,7 +257,7 @@ internal sealed partial class CertificatePathSearch : IDisposable
 
 		foreach (PathNode candidate in GetCandidates(child))
 		{
-			if (IsInPath(candidate) || _retrieval?.RejectedEdges?.Contains(EdgeOf(child, candidate)) is true)
+			if (IsInPath(candidate) || _revocation?.IsRejected(child, candidate) is true)
 			{
 				continue;
 			}
@@ -289,7 +340,7 @@ internal sealed partial class CertificatePathSearch : IDisposable
 				RecordDeadEnd(child);
 			}
 		}
-		else if (!extended && _retrieval?.DeadEnds is { } deadEnds && !deadEnds.Contains(child))
+		else if (!extended && _issuers?.DeadEnds is { } deadEnds && !deadEnds.Contains(child))
 		{
 			deadEnds.Add(child);
 		}

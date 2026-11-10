@@ -10,6 +10,12 @@ internal sealed class RetrievalCaches
 	public RetrievalCache<string, CertificateRevocationList> Crls { get; } = new(64, 64L << 20, StringComparer.Ordinal);
 
 	public RetrievalCache<ReadOnlyMemory<byte>, OcspResponse> OcspResponses { get; } = new(4096, 32L << 20, ByteMemoryComparer.Instance);
+
+	// Another CA can name the same URI, and what it was answered must not stand in for what the certificates of this issuer find there.
+	public static string GetKey(ReadOnlyMemory<byte> issuer, Uri uri)
+	{
+		return $"{Convert.ToHexString(issuer.Span)} {uri.AbsoluteUri}";
+	}
 }
 
 internal sealed record RetrievedIssuers(string Key, Certificate[] Certificates, int Size);

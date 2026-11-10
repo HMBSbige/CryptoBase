@@ -158,7 +158,7 @@ public class TrustAnchorRetrievalTest
 		{
 			await AssertValid(result, leaf, intermediate.Certificate, root.Certificate);
 			await Assert.That(retriever.Requests.Single().Uri.AbsoluteUri).IsEqualTo(IssuerUri);
-			await Assert.That(retriever.Requests.Single().MaxLength).IsEqualTo(CertificatePathSearch.MaxCertificateLength);
+			await Assert.That(retriever.Requests.Single().MaxLength).IsEqualTo(RetrievalBudget.MaxCertificateLength);
 		}
 	}
 
@@ -579,7 +579,7 @@ public class TrustAnchorRetrievalTest
 		{
 			await Assert.That(result.Errors).IsEquivalentTo((CertificateValidationError[])[CertificateValidationError.UntrustedRoot, CertificateValidationError.Unspecified], CollectionOrdering.Matching).Because($"{result.Message}");
 			await Assert.That(result.PathEnd).IsEqualTo(CertificatePathEnd.MissingIssuer);
-			await Assert.That(retriever.Requests.Count).IsEqualTo(CertificatePathSearch.MaxIssuerRounds);
+			await Assert.That(retriever.Requests.Count).IsEqualTo(RetrievalBudget.MaxIssuerRounds);
 			await Assert.That(result.Message).Contains("rounds of retrieving issuers");
 		}
 	}
@@ -589,7 +589,7 @@ public class TrustAnchorRetrievalTest
 	{
 		using Authority root = Authority.CreateRoot();
 		using Authority intermediate = root.CreateIntermediate();
-		Certificate leaf = intermediate.IssueLeaf(more: [Aia(caIssuers: [.. Enumerable.Range(0, CertificatePathSearch.MaxRetrievals + 5).Select(static i => $"http://ca.test/{i}.cer")])]);
+		Certificate leaf = intermediate.IssueLeaf(more: [Aia(caIssuers: [.. Enumerable.Range(0, RetrievalBudget.MaxRetrievals + 5).Select(static i => $"http://ca.test/{i}.cer")])]);
 		FakeRetriever retriever = new();
 		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
 
@@ -597,7 +597,7 @@ public class TrustAnchorRetrievalTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(retriever.Requests.Count).IsEqualTo(CertificatePathSearch.MaxRetrievals);
+			await Assert.That(retriever.Requests.Count).IsEqualTo(RetrievalBudget.MaxRetrievals);
 			await Assert.That(result.Errors).Contains(CertificateValidationError.Unspecified);
 			await Assert.That(result.Errors).Contains(CertificateValidationError.UntrustedRoot);
 		}
@@ -615,7 +615,7 @@ public class TrustAnchorRetrievalTest
 		for (int i = 0; i < uris.Length; ++i)
 		{
 			int index = i;
-			retriever[uris[i]] = CertsOnly([.. Enumerable.Range(0, CertificatePathSearch.MaxCertificatesPerRetrieval).Select(j => Encoded(root.IssueLeaf($"CN=N{index}-{j}")))]);
+			retriever[uris[i]] = CertsOnly([.. Enumerable.Range(0, RetrievalBudget.MaxCertificatesPerRetrieval).Select(j => Encoded(root.IssueLeaf($"CN=N{index}-{j}")))]);
 		}
 
 		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
@@ -634,7 +634,7 @@ public class TrustAnchorRetrievalTest
 	public async Task IgnoresABodyLongerThanTheLimit()
 	{
 		using Authority root = Authority.CreateRoot();
-		using Authority intermediate = root.CreateIntermediate(more: [new CertificateExtension("1.3.6.1.4.1.55738.666.2", false, new byte[CertificatePathSearch.MaxCertificateLength + 16])]);
+		using Authority intermediate = root.CreateIntermediate(more: [new CertificateExtension("1.3.6.1.4.1.55738.666.2", false, new byte[RetrievalBudget.MaxCertificateLength + 16])]);
 		Certificate leaf = intermediate.IssueLeaf(more: [Aia(caIssuers: [IssuerUri])]);
 		FakeRetriever retriever = new() { [IssuerUri] = Encoded(intermediate.Certificate) };
 		using TrustAnchorCertificateValidator validator = WithRetriever(retriever, root.Certificate);
@@ -649,7 +649,7 @@ public class TrustAnchorRetrievalTest
 		using Authority root = Authority.CreateRoot();
 		string[] uris = ["http://crl.test/1", "http://crl.test/2", "http://crl.test/3"];
 		Certificate leaf = root.IssueLeaf(more: [Cdp(uris)]);
-		byte[] body = new byte[CertificatePathSearch.MaxCrlLength];
+		byte[] body = new byte[RetrievalBudget.MaxCrlLength];
 		FakeRetriever retriever = new();
 
 		foreach (string uri in uris)
@@ -664,7 +664,7 @@ public class TrustAnchorRetrievalTest
 		using (Assert.Multiple())
 		{
 			await AssertInvalid(result, [CertificateValidationError.RevocationUnknown], CertificatePathEnd.TrustAnchor, leaf, root.Certificate);
-			await Assert.That(retriever.Requests.Count).IsEqualTo((int)(CertificatePathSearch.MaxRetrievedBytes / CertificatePathSearch.MaxCrlLength));
+			await Assert.That(retriever.Requests.Count).IsEqualTo((int)(RetrievalBudget.MaxRetrievedBytes / RetrievalBudget.MaxCrlLength));
 		}
 	}
 
@@ -1115,7 +1115,7 @@ public class TrustAnchorRetrievalTest
 	{
 		using Authority root = Authority.CreateRoot();
 		using Authority intermediate = root.CreateIntermediate();
-		string[] hosts = [.. Enumerable.Range(0, CertificatePathSearch.MaxRetrievals).Select(static i => $"r{i}.test")];
+		string[] hosts = [.. Enumerable.Range(0, RetrievalBudget.MaxRetrievals).Select(static i => $"r{i}.test")];
 		Certificate leaf = intermediate.IssueLeaf(more: [Aia(caIssuers: [IssuerUri], ocsp: [.. hosts.Select(static host => $"http://{host}/")])]);
 		byte[] unknown = OcspSha256(leaf, intermediate, TestOcsp.UnknownStatus);
 		FakeRetriever retriever = new() { [IssuerUri] = Encoded(intermediate.Certificate) };
@@ -1133,8 +1133,8 @@ public class TrustAnchorRetrievalTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(result.Errors).Contains(CertificateValidationError.RevocationUnknown);
-			await Assert.That(retriever.Requests.Count).IsEqualTo(CertificatePathSearch.MaxRetrievals);
-			await Assert.That(last.Uri.Host).IsEqualTo(hosts[(CertificatePathSearch.MaxRetrievals - 2) / 2]);
+			await Assert.That(retriever.Requests.Count).IsEqualTo(RetrievalBudget.MaxRetrievals);
+			await Assert.That(last.Uri.Host).IsEqualTo(hosts[(RetrievalBudget.MaxRetrievals - 2) / 2]);
 			await Assert.That(CertIdHashOf(last)).IsEqualTo(Sha256Oid);
 		}
 	}
@@ -1183,7 +1183,7 @@ public class TrustAnchorRetrievalTest
 		using (Assert.Multiple())
 		{
 			await AssertValid(await Validate(goodValidator, presented: [leaf]), leaf, root.Certificate);
-			await Assert.That(good.Requests.Single().MaxLength).IsEqualTo(CertificatePathSearch.MaxCrlLength);
+			await Assert.That(good.Requests.Single().MaxLength).IsEqualTo(RetrievalBudget.MaxCrlLength);
 			await AssertInvalid(await Validate(revokedValidator, presented: [leaf]), [CertificateValidationError.Revoked], CertificatePathEnd.TrustAnchor, leaf, root.Certificate);
 		}
 	}
@@ -1588,7 +1588,7 @@ public class TrustAnchorRetrievalTest
 			await Assert.That(post.Uri.AbsoluteUri).IsEqualTo(longUri);
 			await Assert.That(post.ContentType).IsEqualTo("application/ocsp-request");
 			await Assert.That(post.Content?.AsSpan().SequenceEqual(OcspRequest.Create(longLeaf, root.Certificate).Encoded.Span)).IsTrue();
-			await Assert.That(post.MaxLength).IsEqualTo(CertificatePathSearch.MaxOcspResponseLength);
+			await Assert.That(post.MaxLength).IsEqualTo(RetrievalBudget.MaxOcspResponseLength);
 			await Assert.That(queryRetriever.Requests.Single().Method).IsEqualTo("POST");
 			await Assert.That(queryRetriever.Requests.Single().Uri.AbsoluteUri).IsEqualTo(queryUri);
 		}
@@ -2148,8 +2148,8 @@ public class TrustAnchorRetrievalTest
 		byte[] certificate = Encoded(root.IssueLeaf());
 		byte[] attributeCertificate = Tlv(0xA1, Sequence());
 		byte[] notACertificate = Sequence(Sequence());
-		byte[][] atTheLimit = [.. Enumerable.Repeat(notACertificate, CertificatePathSearch.MaxCertificatesPerRetrieval - 1), certificate];
-		byte[][] overTheLimit = [.. Enumerable.Repeat(notACertificate, CertificatePathSearch.MaxCertificatesPerRetrieval), certificate];
+		byte[][] atTheLimit = [.. Enumerable.Repeat(notACertificate, RetrievalBudget.MaxCertificatesPerRetrieval - 1), certificate];
+		byte[][] overTheLimit = [.. Enumerable.Repeat(notACertificate, RetrievalBudget.MaxCertificatesPerRetrieval), certificate];
 		byte[] wrongContent = Sequence(Oid("1.2.840.113549.1.7.1"), Tlv(0xA0, Sequence()));
 		byte[] noCertificates = Sequence(Oid("1.2.840.113549.1.7.2"), Tlv(0xA0, Sequence([0x02, 0x01, 0x01], Tlv(0x31), Sequence(Oid("1.2.840.113549.1.7.1")), Tlv(0x31))));
 
@@ -2170,7 +2170,7 @@ public class TrustAnchorRetrievalTest
 
 		static Certificate[]? Read(byte[] data)
 		{
-			return RetrievedCertificates.Read(data, CertificatePathSearch.MaxCertificatesPerRetrieval);
+			return RetrievedCertificates.Read(data, RetrievalBudget.MaxCertificatesPerRetrieval);
 		}
 	}
 
