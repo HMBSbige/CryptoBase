@@ -97,8 +97,7 @@ public sealed class CertificationRequest
 	/// <exception cref="ArgumentException"><paramref name="source" /> has no CERTIFICATE REQUEST block, or the first one is not a DER-encoded certification request.</exception>
 	public static CertificationRequest DecodePem(ReadOnlySpan<char> source)
 	{
-		X509PemReader reader = new(source, PemLabel);
-		return reader.TryRead(out byte[]? encoded) ? Decode(encoded, nameof(source)) : throw new ArgumentException("The text holds no CERTIFICATE REQUEST block.", nameof(source));
+		return Decode(X509PemReader.ReadFirst(source, PemLabel, nameof(source)), nameof(source));
 	}
 
 	/// <summary>
@@ -113,9 +112,7 @@ public sealed class CertificationRequest
 	{
 		ArgumentNullException.ThrowIfNull(key);
 
-		return SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm)
-			&& key.Supports(algorithm)
-			&& key.Verify(algorithm, CertificationRequestInfo.Span, Signature.Span);
+		return SignatureAlgorithm.VerifySignature(key, CertificationRequestInfo.Span, Signature.Span);
 	}
 
 	// encoded is owned by the new instance.

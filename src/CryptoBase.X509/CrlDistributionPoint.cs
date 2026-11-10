@@ -6,7 +6,6 @@ namespace CryptoBase.X509;
 /// <remarks>Instances are immutable, so they may be used concurrently.</remarks>
 public sealed class CrlDistributionPoint
 {
-	private static readonly Asn1Tag DistributionPointTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag ReasonsTag = new(TagClass.ContextSpecific, 1);
 	private static readonly Asn1Tag CrlIssuerTag = new(TagClass.ContextSpecific, 2, true);
 
@@ -56,54 +55,22 @@ public sealed class CrlDistributionPoint
 	// CRLDistributionPoints ::= SEQUENCE SIZE (1..MAX) OF DistributionPoint.
 	internal static IReadOnlyList<CrlDistributionPoint> ReadList(ReadOnlyMemory<byte> value)
 	{
-		DerReader sequence = DerReader.ReadSoleSequence(value);
-		sequence.ThrowIfEmpty();
-		List<CrlDistributionPoint> points = [];
-
-		while (sequence.HasData)
-		{
-			points.Add(Read(ref sequence));
-		}
-
-		return points.AsReadOnly();
+		return DerReader.ReadSoleSequenceOf(value, Read).AsReadOnly();
 	}
 
 	// ReasonFlags ::= BIT STRING { unused (0), keyCompromise (1), …, aACompromise (8) }, under tag. Only the nine defined bits may be set; as with the key usage extension, trailing zero bits, which DER drops, are accepted.
 	internal static CrlReasonFlags ReadReasons(ref DerReader reader, Asn1Tag tag)
 	{
-		ReadOnlySpan<byte> bits = reader.ReadBitString(tag, wholeBytes: false).Span;
-
-		if (bits.Length > 1 && ((bits[1] & 0x7F) is not 0 || bits.Slice(2).ContainsAnyExcept((byte)0)))
-		{
-			throw new AsnContentException();
-		}
-
-		return (CrlReasonFlags)((bits.Length > 0 ? bits[0] : 0) | (bits.Length > 1 ? bits[1] << 8 : 0));
+		return (CrlReasonFlags)DerReader.ReadNineNamedBits(reader.ReadBitString(tag, wholeBytes: false).Span);
 	}
 
 	// DistributionPoint ::= SEQUENCE { distributionPoint [0] DistributionPointName OPTIONAL, reasons [1] ReasonFlags OPTIONAL, cRLIssuer [2] GeneralNames OPTIONAL }, with implicit tags.
 	private static CrlDistributionPoint Read(ref DerReader reader)
 	{
 		DerReader sequence = reader.ReadSequence();
-		DistributionPointName? distributionPoint = null;
-		CrlReasonFlags? reasons = null;
-		GeneralName[]? crlIssuer = null;
-
-		if (sequence.PeekTagIs(DistributionPointTag))
-		{
-			distributionPoint = DistributionPointName.Read(ref sequence, DistributionPointTag);
-		}
-
-		if (sequence.PeekTagIs(ReasonsTag))
-		{
-			reasons = ReadReasons(ref sequence, ReasonsTag);
-		}
-
-		if (sequence.PeekTagIs(CrlIssuerTag))
-		{
-			crlIssuer = GeneralName.ReadGeneralNames(ref sequence, CrlIssuerTag);
-		}
-
+		DistributionPointName? distributionPoint = DistributionPointName.ReadOptional(ref sequence);
+		CrlReasonFlags? reasons = sequence.PeekTagIs(ReasonsTag) ? ReadReasons(ref sequence, ReasonsTag) : null;
+		GeneralName[]? crlIssuer = sequence.PeekTagIs(CrlIssuerTag) ? GeneralName.ReadGeneralNames(ref sequence, CrlIssuerTag) : null;
 		sequence.ThrowIfNotEmpty();
 
 		if (distributionPoint is null && crlIssuer is null)

@@ -121,35 +121,18 @@ public sealed class OcspCertificateId
 		}
 	}
 
+	// No digest is empty, so nothing written tells a hash that is not one of the four.
 	private static bool TryHash(string oid, ReadOnlySpan<byte> source, Span<byte> destination, out int written)
 	{
-		switch (oid)
+		written = oid switch
 		{
-			case Sha1Oid:
-			{
-				written = SHA1.HashData(source, destination);
-				return true;
-			}
-			case Sha256Oid:
-			{
-				written = SHA256.HashData(source, destination);
-				return true;
-			}
-			case Sha384Oid:
-			{
-				written = SHA384.HashData(source, destination);
-				return true;
-			}
-			case Sha512Oid:
-			{
-				written = SHA512.HashData(source, destination);
-				return true;
-			}
-			default:
-			{
-				written = 0;
-				return false;
-			}
-		}
+			Sha1Oid => SHA1.HashData(source, destination),
+			Sha256Oid => SHA256.HashData(source, destination),
+			Sha384Oid => SHA384.HashData(source, destination),
+			Sha512Oid => SHA512.HashData(source, destination),
+			_ => 0
+		};
+
+		return written > 0;
 	}
 }

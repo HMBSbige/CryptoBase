@@ -35,9 +35,7 @@ public sealed class OcspResponse
 
 		if (Status is OcspResponseStatus.Successful)
 		{
-			DerReader wrapper = response.ReadSequence(ResponseBytesTag);
-			DerReader responseBytes = wrapper.ReadSequence();
-			wrapper.ThrowIfNotEmpty();
+			DerReader responseBytes = response.ReadExplicit(ResponseBytesTag).ReadSequence();
 			ResponseType = responseBytes.ReadObjectIdentifier();
 			ReadOnlyMemory<byte> value = responseBytes.ReadOctetString();
 			responseBytes.ThrowIfNotEmpty();
@@ -141,10 +139,7 @@ public sealed class OcspResponse
 	{
 		ArgumentNullException.ThrowIfNull(responderKey);
 
-		return SignatureAlgorithm is { } identifier
-			&& identifier.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm)
-			&& responderKey.Supports(algorithm)
-			&& responderKey.Verify(algorithm, TbsResponseData.Span, Signature.Span);
+		return SignatureAlgorithm?.VerifySignature(responderKey, TbsResponseData.Span, Signature.Span) is true;
 	}
 
 	// OCSPResponseStatus ::= ENUMERATED { successful (0), malformedRequest (1), internalError (2), tryLater (3), sigRequired (5), unauthorized (6) }.
@@ -205,26 +200,18 @@ public sealed class OcspResponse
 	// ResponderID ::= CHOICE { byName [1] Name, byKey [2] KeyHash }, explicit as the module's default tagging and CHOICE require.
 	private static OcspResponderId ReadResponderId(ref DerReader data)
 	{
-		if (data.PeekTagIs(ByNameTag))
+		if (data.TryReadExplicit(ByNameTag, out DerReader name))
 		{
-			DerReader wrapper = data.ReadSequence(ByNameTag);
-			ReadOnlyMemory<byte> name = X509Name.Read(ref wrapper);
-			wrapper.ThrowIfNotEmpty();
-			return new OcspResponderId(name, null);
+			return new OcspResponderId(X509Name.Read(ref name), null);
 		}
 
-		DerReader key = data.ReadSequence(ByKeyTag);
-		ReadOnlyMemory<byte> hash = key.ReadOctetString();
-		key.ThrowIfNotEmpty();
-		return new OcspResponderId(null, hash);
+		return new OcspResponderId(null, data.ReadExplicit(ByKeyTag).ReadOctetString());
 	}
 
 	// The certs field: SEQUENCE OF Certificate, of which each element must be DER, and those that are not certificates are skipped.
 	private static IReadOnlyList<Certificate> ReadCertificates(ref DerReader basic)
 	{
-		DerReader wrapper = basic.ReadSequence(CertificatesTag);
-		DerReader sequence = wrapper.ReadSequence();
-		wrapper.ThrowIfNotEmpty();
+		DerReader sequence = basic.ReadExplicit(CertificatesTag).ReadSequence();
 		List<Certificate> certificates = [];
 
 		while (sequence.HasData)

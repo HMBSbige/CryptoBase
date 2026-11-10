@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -124,14 +125,10 @@ public sealed class CertificateFingerprint
 
 		for (int i = 0; i < digest.Length; ++i)
 		{
-			ReadOnlySpan<char> pair = hex.Slice(3 * i, 2);
-
-			if (!char.IsAsciiHexDigit(pair[0]) || !char.IsAsciiHexDigit(pair[1]) || i > 0 && hex[3 * i - 1] is not ':')
+			if (i > 0 && hex[3 * i - 1] is not ':' || Convert.FromHexString(hex.Slice(3 * i, 2), digest.AsSpan(i, 1), out _, out _) is not OperationStatus.Done)
 			{
 				return false;
 			}
-
-			digest[i] = (byte)(HexValue(pair[0]) << 4 | HexValue(pair[1]));
 		}
 
 		if (index >= 0 && digest.Length != Registered[index].Length)
@@ -219,10 +216,5 @@ public sealed class CertificateFingerprint
 		}
 
 		return true;
-	}
-
-	private static int HexValue(char c)
-	{
-		return c <= '9' ? c - '0' : (c | 0x20) - 'a' + 10;
 	}
 }

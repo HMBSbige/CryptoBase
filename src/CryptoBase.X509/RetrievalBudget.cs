@@ -38,55 +38,29 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 
 	public bool TryStartIssuerRound()
 	{
-		if (_issuerRoundsLeft is 0)
-		{
-			Reach($"{MaxIssuerRounds} rounds of retrieving issuers");
-			return false;
-		}
-
-		--_issuerRoundsLeft;
-		return true;
+		return TryCount(ref _issuerRoundsLeft) || Reach($"{MaxIssuerRounds} rounds of retrieving issuers");
 	}
 
 	public bool TryAddIssuer()
 	{
-		if (_retrievedIssuersLeft is 0)
-		{
-			Reach($"{MaxRetrievedIssuers} retrieved certificates");
-			return false;
-		}
-
-		--_retrievedIssuersLeft;
-		return true;
+		return TryCount(ref _retrievedIssuersLeft) || Reach($"{MaxRetrievedIssuers} retrieved certificates");
 	}
 
 	public bool TryPrepareIssuerRequest()
 	{
-		if (!TryPrepareRequest())
-		{
-			Reach($"{MaxRequests} requests from the URIs of the certificates");
-			return false;
-		}
-
-		return true;
+		return TryCount(ref _requestsLeft) || Reach($"{MaxRequests} requests from the URIs of the certificates");
 	}
 
 	// For an OCSP responder or a CRL, the limit is not reported: a status that the URIs left out could have told is unknown.
 	public bool TryPrepareRevocationRequest()
 	{
-		return TryPrepareRequest();
+		return TryCount(ref _requestsLeft);
 	}
 
 	// Whether the retrieval of issuers may retrieve once more; GetAsync counts the retrieval.
 	public bool CanRetrieveIssuers()
 	{
-		if (_retrievalsLeft is 0 || _retrievedBytesLeft is 0)
-		{
-			Reach($"{MaxRetrievals} retrievals or {MaxRetrievedBytes} bytes");
-			return false;
-		}
-
-		return true;
+		return _retrievalsLeft is not 0 && _retrievedBytesLeft is not 0 || Reach($"{MaxRetrievals} retrievals or {MaxRetrievedBytes} bytes");
 	}
 
 	public ValueTask<ReadOnlyMemory<byte>> GetAsync(Uri uri, int limit)
@@ -144,19 +118,20 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 		}
 	}
 
-	private bool TryPrepareRequest()
+	private static bool TryCount(ref int left)
 	{
-		if (_requestsLeft is 0)
+		if (left is 0)
 		{
 			return false;
 		}
 
-		--_requestsLeft;
+		--left;
 		return true;
 	}
 
-	private void Reach(string limit)
+	private bool Reach(string limit)
 	{
 		Limit ??= new PathProblem(CertificateValidationError.Unspecified, $"The retrieval of issuers stopped at the limit of {limit}.");
+		return false;
 	}
 }

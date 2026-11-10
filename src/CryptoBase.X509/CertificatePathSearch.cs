@@ -17,15 +17,11 @@ internal sealed class CertificatePathSearch : IDisposable
 	// The edges that revocation may reject, each of which repeats the search, before the validation gives up.
 	public const int MaxRejectedEdges = 8;
 
-	private const string ServerAuthenticationOid = "1.3.6.1.5.5.7.3.1";
-	private const string ClientAuthenticationOid = "1.3.6.1.5.5.7.3.2";
-
 	private readonly TrustAnchorCertificateValidator _validator;
 	private readonly CertificateValidationContext _context;
 	private readonly CancellationToken _cancellationToken;
 	private readonly DateTimeOffset _time;
 	private readonly PathNode _leaf;
-	private readonly TrustAnchorEntry? _leafAnchor;
 	private readonly List<PathNode> _pool = [];
 	private readonly Dictionary<TrustAnchorEntry, PathNode> _anchorNodes = [];
 
@@ -64,8 +60,7 @@ internal sealed class CertificatePathSearch : IDisposable
 		_time = X509Time.TruncateToSeconds(context.TimeProvider.GetUtcNow());
 
 		IReadOnlyList<Certificate> presented = context.PresentedCertificates;
-		_leafAnchor = validator.FindAnchor(presented[0]);
-		_leaf = new PathNode(presented[0], PathRole.Leaf, _nextIndex++);
+		_leaf = new PathNode(presented[0], PathRole.Leaf, _nextIndex++, validator.FindAnchor(presented[0]));
 		HashSet<ReadOnlyMemory<byte>> encodings = new(ByteMemoryComparer.Instance) { presented[0].Encoded };
 
 		// The others in their order, once each; a copy of a trust anchor is the trust anchor.
@@ -95,41 +90,35 @@ internal sealed class CertificatePathSearch : IDisposable
 		}
 	}
 
-	private string Purpose => _context.Usage is CertificateUsage.ServerAuthentication ? ServerAuthenticationOid : ClientAuthenticationOid;
-
-	private string PurposeName => _context.Usage is CertificateUsage.ServerAuthentication ? "id-kp-serverAuth" : "id-kp-clientAuth";
-
 	// For a validator that neither retrieves nor checks revocation, which never waits.
 	public CertificateValidationResult Run()
 	{
-		List<PathProblem> leafProblems = GetProblems(_leaf);
-		PathProblem? identity = CheckHostName();
+		PathProblem[] leafProblems = GetLeafProblems(out PathProblem? identity);
 
 		// A trust anchor presented as the peer's certificate is a path of its own: its key is trusted, so nothing signs it.
-		if (_leafAnchor is not null)
+		if (_leaf.Anchor is not null)
 		{
-			return CreateResult([_leaf], CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]);
+			return CreateResult([_leaf], CertificatePathEnd.TrustAnchor, leafProblems);
 		}
 
 		Push(_leaf, [], 0);
-		return Search(relaxed: false) is { } path ? CreateResult(path, CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]) : ReportBestPath(identity);
+		return Search(relaxed: false) is { } path ? CreateResult(path, CertificatePathEnd.TrustAnchor, leafProblems) : ReportBestPath(identity);
 	}
 
 	// As Run, with the retrievals and the revocation checks, which complete synchronously unless they wait for the network.
 	public async ValueTask<CertificateValidationResult> RunAsync()
 	{
-		List<PathProblem> leafProblems = GetProblems(_leaf);
-		PathProblem? identity = CheckHostName();
+		PathProblem[] leafProblems = GetLeafProblems(out PathProblem? identity);
 
-		if (_leafAnchor is not null)
+		if (_leaf.Anchor is not null)
 		{
-			return CreateResult([_leaf], CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]);
+			return CreateResult([_leaf], CertificatePathEnd.TrustAnchor, leafProblems);
 		}
 
 		Push(_leaf, [], 0);
 
 		// The problems of the peer's certificate alone hold for every path, so that nothing retrieved could make it acceptable.
-		bool acceptable = leafProblems.Count is 0 && identity is null;
+		bool acceptable = leafProblems.Length is 0;
 		PathRevocation? revocation = acceptable ? _revocation : null;
 
 		while (true)
@@ -142,7 +131,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 				if (revocation is null)
 				{
-					return CreateResult(path, CertificatePathEnd.TrustAnchor, [.. leafProblems, .. Optional(identity)]);
+					return CreateResult(path, CertificatePathEnd.TrustAnchor, leafProblems);
 				}
 
 				// A certificate that is revoked, or whose status no source determines, gives way to another path, such as through a cross-certificate. If none is valid, the first revoked path is reported, or else the first whose status is not known.
@@ -171,6 +160,14 @@ internal sealed class CertificatePathSearch : IDisposable
 		}
 
 		return ReportBestPath(identity);
+	}
+
+	// The problems of the peer's certificate whatever the path: its own, then that of its identity, which ReportBestPath adds after those of the path that it reports.
+	private PathProblem[] GetLeafProblems(out PathProblem? identity)
+	{
+		List<PathProblem> problems = GetProblems(_leaf);
+		identity = CheckHostName();
+		return identity is { } value ? [.. problems, value] : [.. problems];
 	}
 
 	// Adds to the pool what the retrieval of issuers finds, and returns whether the pool grew, so that the search is worth repeating.
@@ -273,13 +270,11 @@ internal sealed class CertificatePathSearch : IDisposable
 
 			_cancellationToken.ThrowIfCancellationRequested();
 
-			if (_candidatesLeft is 0)
+			if (!TryCountCandidate())
 			{
-				StopAtCandidateLimit();
 				return null;
 			}
 
-			--_candidatesLeft;
 			considered = true;
 			List<PathProblem> problems = GetProblems(candidate);
 
@@ -494,7 +489,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 	private bool Verify(PathNode child, PathNode issuer, ISignatureKey key)
 	{
-		long pair = (long)child.Index << 32 | (uint)issuer.Index;
+		long pair = child.PairWith(issuer);
 
 		if (!_signatures.TryGetValue(pair, out bool valid))
 		{
@@ -508,7 +503,7 @@ internal sealed class CertificatePathSearch : IDisposable
 	// The names of a certificate against the name constraints of a CA, once for each pair; stops the search, and returns null, if the comparisons would exceed the limit.
 	private PathProblem? CheckNames(PathNode issuer, NameConstraints constraints, PathNode node)
 	{
-		long pair = (long)issuer.Index << 32 | (uint)node.Index;
+		long pair = issuer.PairWith(node);
 		Dictionary<long, PathProblem?> nameChecks = _nameChecks ??= [];
 
 		if (nameChecks.TryGetValue(pair, out PathProblem? cached))
@@ -576,7 +571,7 @@ internal sealed class CertificatePathSearch : IDisposable
 		}
 
 		// RFC 5280, Sec. 4.1.2.4: the issuer, which links the certificate to the subject of the next, must not be empty. A trust anchor's issuer links nothing.
-		if (node.Role is not PathRole.Anchor && _leafAnchor is null && certificate.Issuer.Span is [0x30, 0x00])
+		if (node.Anchor is null && X509Name.IsEmpty(certificate.Issuer.Span))
 		{
 			problems.Add(new PathProblem(CertificateValidationError.Malformed, "{0} has an empty issuer name.", node));
 		}
@@ -588,9 +583,9 @@ internal sealed class CertificatePathSearch : IDisposable
 			case PathRole.Leaf:
 			{
 				// RFC 5280, Sec. 4.2.1.12: the peer's certificate needs the usage itself if it has the extension; anyExtendedKeyUsage does not stand for it.
-				if (decoded.ExtendedKeyUsage.Value is { } usage && !usage.Contains(Purpose))
+				if (decoded.ExtendedKeyUsage.Value is { } usage && !usage.Contains(_context.Usage.KeyPurposeId))
 				{
-					problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, $"{{0}} has an extended key usage extension without {PurposeName}.", node));
+					problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, $"{{0}} has an extended key usage extension without {_context.Usage.KeyPurposeName}.", node));
 				}
 
 				// RFC 5280, Sec. 4.2.1.10: only CAs constrain names, for the certificates that they issue.
@@ -599,7 +594,7 @@ internal sealed class CertificatePathSearch : IDisposable
 					problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, "{0} has a name constraints extension, which only a CA certificate may have.", node));
 				}
 
-				if (_leafAnchor is null)
+				if (node.Anchor is null)
 				{
 					CheckSignatureAlgorithm(node, problems);
 				}
@@ -652,7 +647,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 			if (!extension.Critical)
 			{
-				if (hasPolicyExtensions && node.Role is not PathRole.Anchor && _leafAnchor is null && extension.Oid is DecodedExtensions.PolicyConstraintsOid or DecodedExtensions.InhibitAnyPolicyOid)
+				if (hasPolicyExtensions && node.Anchor is null && extension.Oid is DecodedExtensions.PolicyConstraintsOid or DecodedExtensions.InhibitAnyPolicyOid)
 				{
 					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} does not mark its {(extension.Oid is DecodedExtensions.PolicyConstraintsOid ? "policy constraints" : "inhibit anyPolicy")} extension critical, which RFC 5280 requires.", node));
 				}
@@ -669,7 +664,7 @@ internal sealed class CertificatePathSearch : IDisposable
 				case DecodedExtensions.CertificatePoliciesOid:
 				{
 					// RFC 5280, Sec. 4.2.1.4: the qualifiers of a critical extension must be ones that the validator interprets, unless the certificate takes no part in policy processing.
-					if (node.Role is not PathRole.Anchor && _leafAnchor is null && node.Certificate.DecodedExtensions.CertificatePolicies.Value is { HasUnrecognizedQualifier: true })
+					if (node.Anchor is null && decoded.CertificatePolicies.Value is { HasUnrecognizedQualifier: true })
 					{
 						problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, "{0} has a critical certificate policies extension with a qualifier that the validator does not interpret.", node));
 					}
@@ -679,7 +674,7 @@ internal sealed class CertificatePathSearch : IDisposable
 				case DecodedExtensions.CrlDistributionPointsOid:
 				{
 					// RFC 5280, Sec. 4.2.1.13: the extension should not be critical, but is understood; revocation checks use it.
-					if (node.Certificate.DecodedExtensions.CrlDistributionPoints.Error is not null)
+					if (decoded.CrlDistributionPoints.Error is not null)
 					{
 						problems.Add(new PathProblem(CertificateValidationError.Malformed, "{0} has a critical CRL distribution points extension that does not decode.", node));
 					}
@@ -699,18 +694,23 @@ internal sealed class CertificatePathSearch : IDisposable
 			}
 		}
 
-		if (node.Role is not PathRole.Anchor && _leafAnchor is null)
+		if (node.Anchor is null)
 		{
 			CheckRevocationExemption(node, problems);
 		}
 
-		// Nearly every certificate gets here with all of them decoded, for which the list below is not built.
-		if ((decoded.BasicConstraints.Error ?? decoded.ExtendedKeyUsage.Error ?? decoded.SubjectAlternativeName.Error ?? decoded.NameConstraints.Error ?? decoded.AuthorityKeyIdentifier.Error ?? decoded.SubjectKeyIdentifier.Error ?? decoded.CertificatePolicies.Error ?? decoded.PolicyMappings.Error ?? decoded.PolicyConstraints.Error ?? decoded.InhibitAnyPolicy.Error) is null)
-		{
-			return;
-		}
+		AddIfUndecoded(decoded.BasicConstraints.Error, "basic constraints");
+		AddIfUndecoded(decoded.ExtendedKeyUsage.Error, "extended key usage");
+		AddIfUndecoded(decoded.SubjectAlternativeName.Error, "subject alternative name");
+		AddIfUndecoded(decoded.NameConstraints.Error, "name constraints");
+		AddIfUndecoded(decoded.AuthorityKeyIdentifier.Error, "authority key identifier");
+		AddIfUndecoded(decoded.SubjectKeyIdentifier.Error, "subject key identifier");
+		AddIfUndecoded(decoded.CertificatePolicies.Error, "certificate policies");
+		AddIfUndecoded(decoded.PolicyMappings.Error, "policy mappings");
+		AddIfUndecoded(decoded.PolicyConstraints.Error, "policy constraints");
+		AddIfUndecoded(decoded.InhibitAnyPolicy.Error, "inhibit anyPolicy");
 
-		foreach ((AsnContentException? error, string name) in (ReadOnlySpan<(AsnContentException?, string)>)[(decoded.BasicConstraints.Error, "basic constraints"), (decoded.ExtendedKeyUsage.Error, "extended key usage"), (decoded.SubjectAlternativeName.Error, "subject alternative name"), (decoded.NameConstraints.Error, "name constraints"), (decoded.AuthorityKeyIdentifier.Error, "authority key identifier"), (decoded.SubjectKeyIdentifier.Error, "subject key identifier"), (decoded.CertificatePolicies.Error, "certificate policies"), (decoded.PolicyMappings.Error, "policy mappings"), (decoded.PolicyConstraints.Error, "policy constraints"), (decoded.InhibitAnyPolicy.Error, "inhibit anyPolicy")])
+		void AddIfUndecoded(AsnContentException? error, string name)
 		{
 			if (error is not null)
 			{
@@ -753,9 +753,9 @@ internal sealed class CertificatePathSearch : IDisposable
 		}
 
 		// A CA's extended key usage extension, if any, restricts the certificates below it: it must have the usage or anyExtendedKeyUsage.
-		if (decoded.ExtendedKeyUsage.Value is { } usage && !usage.Contains(Purpose) && !usage.Contains(ExtendedKeyUsage.AnyExtendedKeyUsage))
+		if (decoded.ExtendedKeyUsage.Value is { } usage && !usage.Contains(_context.Usage.KeyPurposeId) && !usage.Contains(ExtendedKeyUsage.AnyExtendedKeyUsage))
 		{
-			problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, $"{{0}} has an extended key usage extension with neither {PurposeName} nor anyExtendedKeyUsage.", node));
+			problems.Add(new PathProblem(CertificateValidationError.NotValidForUsage, $"{{0}} has an extended key usage extension with neither {_context.Usage.KeyPurposeName} nor anyExtendedKeyUsage.", node));
 		}
 	}
 
@@ -767,12 +767,9 @@ internal sealed class CertificatePathSearch : IDisposable
 			return;
 		}
 
-		string text = error is CertificateValidationError.WeakAlgorithm
-			? $"{{0}} is signed with {node.Certificate.SignatureAlgorithm.Oid}, which the policy refuses."
-			: $"{{0}} is signed with {node.Certificate.SignatureAlgorithm.Oid}, which the validator does not support.";
-
-		node.SignatureProblem = new PathProblem(error, text, node);
-		problems.Add(node.SignatureProblem.Value);
+		PathProblem problem = new(error, $"{{0}} is signed with {node.Certificate.SignatureAlgorithm.Oid}, which the {(error is CertificateValidationError.WeakAlgorithm ? "policy refuses" : "validator does not support")}.", node);
+		node.SignatureProblem = problem;
+		problems.Add(problem);
 	}
 
 	// The key against the policy, and imported: an intermediate certificate's to verify the certificate below it, and the peer's, which the caller verifies with, to learn that it is supported.
@@ -790,7 +787,7 @@ internal sealed class CertificatePathSearch : IDisposable
 		CertificateValidationError error;
 		string? message;
 
-		if ((node.Anchor ?? (node.Role is PathRole.Leaf ? _leafAnchor : null)) is { } anchor)
+		if (node.Anchor is { } anchor)
 		{
 			(key, error, message) = (anchor.Key, anchor.ImportError, anchor.ImportMessage);
 		}
@@ -811,7 +808,7 @@ internal sealed class CertificatePathSearch : IDisposable
 			return;
 		}
 
-		if (node.Role is not PathRole.Leaf || _leafAnchor is null && node.SelfIssued)
+		if (node.Role is not PathRole.Leaf || node.Anchor is null && node.SelfIssued)
 		{
 			node.Key = key;
 		}
@@ -871,9 +868,16 @@ internal sealed class CertificatePathSearch : IDisposable
 		_limit ??= $"The search for {(_relaxed ? "the path to report" : "a valid path")} stopped at the limit of {limit}.";
 	}
 
-	private void StopAtCandidateLimit()
+	private bool TryCountCandidate()
 	{
-		Stop($"{MaxCandidates} candidate issuers");
+		if (_candidatesLeft is 0)
+		{
+			Stop($"{MaxCandidates} candidate issuers");
+			return false;
+		}
+
+		--_candidatesLeft;
+		return true;
 	}
 
 	private PathProblem? GetLimit()
@@ -883,12 +887,11 @@ internal sealed class CertificatePathSearch : IDisposable
 
 	private void RecordDeadEnd(PathNode last)
 	{
-		bool selfSigned = IsSelfSigned(last);
-		PathProblem end = selfSigned
-			? new PathProblem(CertificateValidationError.UntrustedRoot, "{0} is self-signed, but not a trust anchor.", last)
-			: new PathProblem(CertificateValidationError.UntrustedRoot, "No issuer of {0} was found that leads to a trust anchor.", last);
+		(CertificatePathEnd end, string text) = IsSelfSigned(last)
+			? (CertificatePathEnd.UntrustedRoot, "{0} is self-signed, but not a trust anchor.")
+			: (CertificatePathEnd.MissingIssuer, "No issuer of {0} was found that leads to a trust anchor.");
 
-		Record(selfSigned ? CertificatePathEnd.UntrustedRoot : CertificatePathEnd.MissingIssuer, end);
+		Record(end, new PathProblem(CertificateValidationError.UntrustedRoot, text, last));
 	}
 
 	// Whether a certificate is self-signed: self-issued, with a signature that its own key verifies. One whose signature cannot be verified, as its algorithm or key is not supported, is not.
@@ -900,15 +903,9 @@ internal sealed class CertificatePathSearch : IDisposable
 			return false;
 		}
 
-		if (!_signatures.ContainsKey((long)node.Index << 32 | (uint)node.Index))
+		if (!_signatures.ContainsKey(node.PairWith(node)) && !TryCountCandidate())
 		{
-			if (_candidatesLeft is 0)
-			{
-				StopAtCandidateLimit();
-				return false;
-			}
-
-			--_candidatesLeft;
+			return false;
 		}
 
 		return Verify(node, node, key);
@@ -957,9 +954,9 @@ internal sealed class CertificatePathSearch : IDisposable
 		return System.Numerics.BitOperations.PopCount((uint)seen);
 	}
 
-	private static CertificateValidationResult CreateResult(IReadOnlyList<PathNode> path, CertificatePathEnd end, IReadOnlyList<PathProblem> problems)
+	private static CertificateValidationResult CreateResult(PathNode[] path, CertificatePathEnd end, ReadOnlySpan<PathProblem> problems)
 	{
-		List<CertificateValidationError> errors = new(problems.Count);
+		List<CertificateValidationError> errors = new(problems.Length);
 		List<string> messages = [];
 
 		foreach (PathProblem problem in problems)
@@ -973,28 +970,10 @@ internal sealed class CertificatePathSearch : IDisposable
 			}
 		}
 
-		Certificate[] certificates = new Certificate[path.Count];
-
-		for (int i = 0; i < certificates.Length; ++i)
-		{
-			certificates[i] = path[i].Certificate;
-		}
-
-		return CertificateValidationResult.Create(errors, certificates, end, messages.Count > 0 ? string.Join(" ", messages) : null);
+		return CertificateValidationResult.Create(errors, Array.ConvertAll(path, static node => node.Certificate), end, messages.Count > 0 ? string.Join(" ", messages) : null);
 	}
 
-	private sealed class Attempt(PathNode[] path, CertificatePathEnd end, PathProblem[] problems, int rank, int errors)
-	{
-		public PathNode[] Path { get; } = path;
-
-		public CertificatePathEnd End { get; } = end;
-
-		public PathProblem[] Problems { get; } = problems;
-
-		public int Rank { get; } = rank;
-
-		public int Errors { get; } = errors;
-	}
+	private sealed record Attempt(PathNode[] Path, CertificatePathEnd End, PathProblem[] Problems, int Rank, int Errors);
 }
 
 internal enum PathRole
@@ -1031,6 +1010,7 @@ internal sealed class PathNode
 	// Unique within the validation, for the caches of pairs.
 	public int Index { get; }
 
+	// The trust anchor that the certificate is, as the peer's certificate may be too, byte for byte.
 	public TrustAnchorEntry? Anchor { get; }
 
 	// RFC 5280, Sec. 6.1: the issuer and the subject are the same name, by the rules of Sec. 7.1 rather than byte for byte, as a CA that rolls over its key may encode its name anew; names that the exact comparison of DistinguishedName cannot find the same are not.
@@ -1051,6 +1031,11 @@ internal sealed class PathNode
 	public ISignatureKey? Key { get; set; }
 
 	public PathNode[]? Candidates { get; set; }
+
+	public long PairWith(PathNode other)
+	{
+		return (long)Index << 32 | (uint)other.Index;
+	}
 
 	// The names that name constraints apply to, or null if the subject alternative name extension does not decode.
 	public ConstrainedNames? GetNames()
@@ -1103,26 +1088,20 @@ internal readonly record struct PathProblem(CertificateValidationError Error, st
 		return escaped?.ToString() ?? value;
 	}
 
-	public string Format(IReadOnlyList<PathNode> path)
+	public string Format(PathNode[] path)
 	{
 		string message = string.Format(CultureInfo.InvariantCulture, Text, Describe(Subject, path), Describe(Other, path));
 		return message.Length > 0 && char.IsAsciiLetterLower(message[0]) ? char.ToUpperInvariant(message[0]) + message.Substring(1) : message;
 	}
 
-	private static string Describe(PathNode? node, IReadOnlyList<PathNode> path)
+	private static string Describe(PathNode? node, PathNode[] path)
 	{
 		if (node is null)
 		{
 			return "";
 		}
 
-		int position = -1;
-
-		for (int i = 0; i < path.Count && position < 0; ++i)
-		{
-			position = path[i] == node ? i : -1;
-		}
-
+		int position = Array.IndexOf(path, node);
 		string description = position switch
 		{
 			0 => "the peer's certificate",

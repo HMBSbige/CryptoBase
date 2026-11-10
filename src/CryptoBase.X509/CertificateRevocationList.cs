@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace CryptoBase.X509;
@@ -182,8 +183,7 @@ public sealed class CertificateRevocationList
 	/// <exception cref="ArgumentException"><paramref name="source" /> has no X509 CRL block, or the first one is not a DER-encoded CRL.</exception>
 	public static CertificateRevocationList DecodePem(ReadOnlySpan<char> source)
 	{
-		X509PemReader reader = new(source, PemLabel);
-		return reader.TryRead(out byte[]? encoded) ? Decode(encoded, nameof(source)) : throw new ArgumentException("The text holds no X509 CRL block.", nameof(source));
+		return Decode(X509PemReader.ReadFirst(source, PemLabel, nameof(source)), nameof(source));
 	}
 
 	/// <summary>
@@ -195,15 +195,7 @@ public sealed class CertificateRevocationList
 	/// <exception cref="ArgumentException">An X509 CRL block is not a DER-encoded CRL.</exception>
 	public static CertificateRevocationList[] DecodePemAll(ReadOnlySpan<char> source)
 	{
-		X509PemReader reader = new(source, PemLabel);
-		List<CertificateRevocationList> lists = [];
-
-		while (reader.TryRead(out byte[]? encoded))
-		{
-			lists.Add(Decode(encoded, nameof(source)));
-		}
-
-		return [.. lists];
+		return X509PemReader.ReadAll(source, PemLabel, static encoded => Decode(encoded, nameof(source)));
 	}
 
 	/// <summary>
@@ -218,9 +210,7 @@ public sealed class CertificateRevocationList
 	{
 		ArgumentNullException.ThrowIfNull(issuerKey);
 
-		return SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm)
-			&& issuerKey.Supports(algorithm)
-			&& issuerKey.Verify(algorithm, TbsCertList.Span, Signature.Span);
+		return SignatureAlgorithm.VerifySignature(issuerKey, TbsCertList.Span, Signature.Span);
 	}
 
 	// Kept for the last key asked about: a long CRL covers many certificates, and should not be hashed for each.
@@ -251,9 +241,9 @@ public sealed class CertificateRevocationList
 	/// <returns><see langword="true" /> if the list has an entry with the serial number; otherwise, <see langword="false" />.</returns>
 	public bool TryGetEntry(ReadOnlySpan<byte> serialNumber, out RevokedCertificate entry)
 	{
-		if (FindSlot(serialNumber) is var slot and >= 0)
+		if (_slots.Length is not 0 && _slots[FindSlot(serialNumber, Hash(serialNumber))] is not 0 and var slot)
 		{
-			entry = ReadEntry((int)(uint)_slots[slot] - 1);
+			entry = ReadEntry((int)(uint)slot - 1);
 			return true;
 		}
 
@@ -457,27 +447,17 @@ public sealed class CertificateRevocationList
 		return date;
 	}
 
-	private int FindSlot(ReadOnlySpan<byte> serialNumber)
+	// The position of the slot that holds the entry of serialNumber, whose hash is given, or of the free slot that ends the search for it. _slots is not empty, and half of it at least is free.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private int FindSlot(ReadOnlySpan<byte> serialNumber, uint hash)
 	{
 		ulong[] slots = _slots;
-
-		if (slots.Length is 0)
-		{
-			return -1;
-		}
-
-		uint hash = Hash(serialNumber);
 
 		for (int i = (int)((ulong)hash * (uint)slots.Length >> 32); ; i = i + 1 == slots.Length ? 0 : i + 1)
 		{
 			ulong slot = slots[i];
 
-			if (slot is 0)
-			{
-				return -1;
-			}
-
-			if ((uint)(slot >> 32) == hash && SerialNumberAt((int)(uint)slot - 1).SequenceEqual(serialNumber))
+			if (slot is 0 || (uint)(slot >> 32) == hash && SerialNumberAt((int)(uint)slot - 1).SequenceEqual(serialNumber))
 			{
 				return i;
 			}
@@ -487,24 +467,15 @@ public sealed class CertificateRevocationList
 	// Inserts an entry whose offset in _entries is given; AsnContentException if its serial number is already in the table.
 	private void Add(ReadOnlySpan<byte> serialNumber, int offset)
 	{
-		ulong[] slots = _slots;
 		uint hash = Hash(serialNumber);
+		ref ulong slot = ref _slots[FindSlot(serialNumber, hash)];
 
-		for (int i = (int)((ulong)hash * (uint)slots.Length >> 32); ; i = i + 1 == slots.Length ? 0 : i + 1)
+		if (slot is not 0)
 		{
-			ulong slot = slots[i];
-
-			if (slot is 0)
-			{
-				slots[i] = (ulong)hash << 32 | (uint)(offset + 1);
-				return;
-			}
-
-			if ((uint)(slot >> 32) == hash && SerialNumberAt((int)(uint)slot - 1).SequenceEqual(serialNumber))
-			{
-				throw new AsnContentException("The revoked certificates include a serial number more than once.");
-			}
+			throw new AsnContentException("The revoked certificates include a serial number more than once.");
 		}
+
+		slot = (ulong)hash << 32 | (uint)(offset + 1);
 	}
 
 	private ReadOnlySpan<byte> SerialNumberAt(int offset)

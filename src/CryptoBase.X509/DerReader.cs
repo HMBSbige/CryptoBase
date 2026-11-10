@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 
 namespace CryptoBase.X509;
 
+internal delegate T DerElementReader<out T>(ref DerReader reader);
+
 // Reads DER values in order from memory that the caller owns, and returns slices of it rather than copies. Unlike AsnReader, a class, it allocates nothing for the structures that it enters. Malformed input throws AsnContentException.
 // The common forms are read here and everything else, valid or not, is left to AsnDecoder, which gives the same result and the error; a form that is read here is one that AsnDecoder accepts.
 internal struct DerReader(ReadOnlyMemory<byte> source)
@@ -78,6 +80,14 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return ReadSequence(out _, tag);
 	}
 
+	// The constructed value with tag if it is next, as a field that is OPTIONAL or has a default is when present; contents is then a reader of its contents.
+	public bool TryReadSequence(Asn1Tag tag, out DerReader contents)
+	{
+		bool present = PeekTagIs(tag);
+		contents = present ? ReadSequence(tag) : default;
+		return present;
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static DerReader ReadSoleSequence(ReadOnlyMemory<byte> source)
 	{
@@ -85,6 +95,21 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		DerReader sequence = reader.ReadSequence();
 		reader.ThrowIfNotEmpty();
 		return sequence;
+	}
+
+	// A SEQUENCE SIZE (1..MAX) OF with nothing after it, whose elements read reads one by one.
+	public static List<T> ReadSoleSequenceOf<T>(ReadOnlyMemory<byte> source, DerElementReader<T> read)
+	{
+		DerReader sequence = ReadSoleSequence(source);
+		sequence.ThrowIfEmpty();
+		List<T> elements = [];
+
+		while (sequence.HasData)
+		{
+			elements.Add(read(ref sequence));
+		}
+
+		return elements;
 	}
 
 	// A SET OF, or the constructed value with tag, whose elements are in the order that DER requires.
@@ -112,6 +137,28 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		}
 
 		return Take(offset + length);
+	}
+
+	// The value under an explicit tag, which must be the only one there, as a reader that holds it alone: the caller's read of it leaves nothing behind.
+	public DerReader ReadExplicit(Asn1Tag tag)
+	{
+		DerReader wrapper = ReadSequence(tag);
+		DerReader value = new(wrapper.ReadEncodedValue());
+		wrapper.ThrowIfNotEmpty();
+		return value;
+	}
+
+	// As ReadExplicit, for an OPTIONAL value: false, with nothing read, unless the next value has the tag.
+	public bool TryReadExplicit(Asn1Tag tag, out DerReader value)
+	{
+		if (!PeekTagIs(tag))
+		{
+			value = default;
+			return false;
+		}
+
+		value = ReadExplicit(tag);
+		return true;
 	}
 
 	public string ReadObjectIdentifier()
@@ -256,16 +303,28 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return TakeContents(consumed, value.Length);
 	}
 
-	public ReadOnlyMemory<byte> ReadOctetString()
+	// The bits of a BIT STRING that names bits 0 through 8, as flags: bits 0 through 7 are the first byte from its most significant bit, and bit 8 is the most significant bit of the second, as in X509KeyUsageFlags.
+	// Only those nine may be set. DER drops the trailing zero bits (X.690, Sec. 11.2.2), but they are accepted here, even in whole bytes; the callers that require DER check for them.
+	public static int ReadNineNamedBits(ReadOnlySpan<byte> bits)
+	{
+		if (bits.Length > 1 && ((bits[1] & 0x7F) is not 0 || bits.Slice(2).ContainsAnyExcept((byte)0)))
+		{
+			throw new AsnContentException();
+		}
+
+		return (bits.Length > 0 ? bits[0] : 0) | (bits.Length > 1 ? bits[1] << 8 : 0);
+	}
+
+	public ReadOnlyMemory<byte> ReadOctetString(Asn1Tag? tag = null)
 	{
 		ReadOnlySpan<byte> source = _remaining.Span;
 
-		if (TryReadHeader(source, OctetStringTag, out int offset, out int length))
+		if (tag is null && TryReadHeader(source, OctetStringTag, out int offset, out int length))
 		{
 			return TakeContents(offset + length, length);
 		}
 
-		if (!AsnDecoder.TryReadPrimitiveOctetString(source, AsnEncodingRules.DER, out ReadOnlySpan<byte> value, out int consumed))
+		if (!AsnDecoder.TryReadPrimitiveOctetString(source, AsnEncodingRules.DER, out ReadOnlySpan<byte> value, out int consumed, tag))
 		{
 			throw new AsnContentException();
 		}

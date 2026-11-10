@@ -29,14 +29,11 @@ public sealed class PlatformRsaKey : ISignatureKey
 	private const int MaxPublicExponentBits = 33;
 	private const int MaxHashLength = 64;
 
-	private static readonly SignatureAlgorithm[] AllAlgorithms =
-	[
-		SignatureAlgorithm.RsaPkcs1Sha256, SignatureAlgorithm.RsaPkcs1Sha384, SignatureAlgorithm.RsaPkcs1Sha512,
-		SignatureAlgorithm.RsaPssSha256, SignatureAlgorithm.RsaPssSha384, SignatureAlgorithm.RsaPssSha512
-	];
-
 	private static readonly SignatureAlgorithm[] Pkcs1Algorithms = [SignatureAlgorithm.RsaPkcs1Sha256, SignatureAlgorithm.RsaPkcs1Sha384, SignatureAlgorithm.RsaPkcs1Sha512];
 	private static readonly SignatureAlgorithm[] PssAlgorithms = [SignatureAlgorithm.RsaPssSha256, SignatureAlgorithm.RsaPssSha384, SignatureAlgorithm.RsaPssSha512];
+
+	// Static fields are initialized in the order of the text, so this one follows its parts.
+	private static readonly SignatureAlgorithm[] AllAlgorithms = [.. Pkcs1Algorithms, .. PssAlgorithms];
 
 	private readonly RSA? _key;
 	private readonly RsaPublicKey _publicKey;
@@ -91,12 +88,9 @@ public sealed class PlatformRsaKey : ISignatureKey
 	/// <exception cref="CryptographicException">The platform fails to export the public key.</exception>
 	public PlatformRsaKey(RSA key, ReadOnlySpan<SignatureAlgorithm> algorithms) : this(key, ExportPublicKey(key))
 	{
-		foreach (SignatureAlgorithm algorithm in algorithms)
+		if (algorithms.ContainsAnyExcept(AllAlgorithms))
 		{
-			if (Array.IndexOf(AllAlgorithms, algorithm) < 0)
-			{
-				throw new ArgumentException("The algorithms include one that is not RSASSA-PKCS1-v1_5 or RSASSA-PSS with SHA-256, SHA-384 or SHA-512.", nameof(algorithms));
-			}
+			throw new ArgumentException("The algorithms include one that is not RSASSA-PKCS1-v1_5 or RSASSA-PSS with SHA-256, SHA-384 or SHA-512.", nameof(algorithms));
 		}
 
 		_algorithms = Supported(algorithms, _publicKey);

@@ -8,7 +8,7 @@ internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory
 	private static readonly Asn1Tag ExplicitTag0 = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag ExplicitTag1 = new(TagClass.ContextSpecific, 1, true);
 
-	// GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName, under tag if it is implicitly tagged. Outside name constraints, an iPAddress holds an IPv4 or IPv6 address, so it has 4 or 16 octets.
+	// GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName, under tag if it is implicitly tagged, each as ReadWithAddress reads it.
 	public static GeneralName[] ReadGeneralNames(ref DerReader reader, Asn1Tag? tag = null)
 	{
 		DerReader sequence = reader.ReadSequence(tag);
@@ -17,17 +17,23 @@ internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory
 
 		while (sequence.HasData)
 		{
-			GeneralName name = Read(ref sequence);
-
-			if (name is { Type: GeneralNameType.IPAddress, Value.Length: not (4 or 16) })
-			{
-				throw new AsnContentException("An iPAddress has neither 4 nor 16 octets.");
-			}
-
-			names.Add(name);
+			names.Add(ReadWithAddress(ref sequence));
 		}
 
 		return [.. names];
+	}
+
+	// A GeneralName outside name constraints, where an iPAddress holds an IPv4 or IPv6 address, so it has 4 or 16 octets.
+	public static GeneralName ReadWithAddress(ref DerReader reader)
+	{
+		GeneralName name = Read(ref reader);
+
+		if (name is { Type: GeneralNameType.IPAddress, Value.Length: not (4 or 16) })
+		{
+			throw new AsnContentException("An iPAddress has neither 4 nor 16 octets.");
+		}
+
+		return name;
 	}
 
 	// The implicit tags of RFC 5280 leave the IA5String, OCTET STRING and OBJECT IDENTIFIER alternatives primitive, and the SEQUENCE ones constructed; directoryName is explicit, as Name is a CHOICE. The values in an otherName and an ediPartyName need only be single DER elements, and the components of an x400Address DER elements.
@@ -67,8 +73,8 @@ internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory
 			{
 				// OtherName ::= SEQUENCE { type-id OBJECT IDENTIFIER, value [0] EXPLICIT ANY DEFINED BY type-id }.
 				DerReader otherName = new(contents);
-				otherName.ReadObjectIdentifier();
-				ReadExplicit(ref otherName, ExplicitTag0);
+				otherName.SkipObjectIdentifier();
+				otherName.ReadExplicit(ExplicitTag0);
 				otherName.ThrowIfNotEmpty();
 				break;
 			}
@@ -97,24 +103,13 @@ internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory
 				// EDIPartyName ::= SEQUENCE { nameAssigner [0] DirectoryString OPTIONAL, partyName [1] DirectoryString }, explicit as DirectoryString is a CHOICE.
 				DerReader ediPartyName = new(contents);
 
-				if (ediPartyName.PeekTagIs(ExplicitTag0))
-				{
-					ReadExplicit(ref ediPartyName, ExplicitTag0);
-				}
-
-				ReadExplicit(ref ediPartyName, ExplicitTag1);
+				ediPartyName.TryReadExplicit(ExplicitTag0, out _);
+				ediPartyName.ReadExplicit(ExplicitTag1);
 				ediPartyName.ThrowIfNotEmpty();
 				break;
 			}
 		}
 
 		return new GeneralName(type, contents);
-	}
-
-	private static void ReadExplicit(ref DerReader reader, Asn1Tag tag)
-	{
-		DerReader value = reader.ReadSequence(tag);
-		value.ReadEncodedValue();
-		value.ThrowIfNotEmpty();
 	}
 }

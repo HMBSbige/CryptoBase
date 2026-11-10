@@ -458,33 +458,33 @@ public class OcspTest
 		byte[] goodWithCritical = (current with { Extensions = [unknownCritical] }).Encode();
 		byte[] expiredWithCritical = (expired with { Extensions = [unknownCritical] }).Encode();
 
-		RevocationResult Evaluate(params byte[][] responses)
+		static RevocationResult Evaluate(TestPki.Authority authority, Certificate leaf, params byte[][] responses)
 		{
 			return Check(new Basic { ResponderId = ResponderByName(authority.Name), Responses = responses }.Decode(authority.Key), leaf, authority);
 		}
 
-		async Task AssertEitherOrder(byte[] first, byte[] second, RevocationStatus expected)
+		static async Task AssertEitherOrder(TestPki.Authority authority, Certificate leaf, byte[] first, byte[] second, RevocationStatus expected)
 		{
-			await AssertStatusAsync(Evaluate(first, second), expected);
-			await AssertStatusAsync(Evaluate(second, first), expected);
+			await AssertStatusAsync(Evaluate(authority, leaf, first, second), expected);
+			await AssertStatusAsync(Evaluate(authority, leaf, second, first), expected);
 		}
 
 		using (Assert.Multiple())
 		{
-			await AssertEitherOrder(expiredGood, good, RevocationStatus.Good);
-			await AssertEitherOrder(expiredRevoked, good, RevocationStatus.Good);
-			await AssertEitherOrder(notYetRevoked, good, RevocationStatus.Good);
-			await AssertEitherOrder(expiredWithCritical, good, RevocationStatus.Good);
-			await AssertEitherOrder(revokedWithCritical, good, RevocationStatus.Invalid);
-			await AssertEitherOrder(goodWithCritical, good, RevocationStatus.Invalid);
-			await AssertEitherOrder(expiredRevoked, expiredGood, RevocationStatus.Invalid);
-			await Assert.That(Evaluate(good, goodSooner).NextUpdate).IsEqualTo(Now.AddMinutes(30));
-			await Assert.That(Evaluate(goodSooner, good).NextUpdate).IsEqualTo(Now.AddMinutes(30));
+			await AssertEitherOrder(authority, leaf, expiredGood, good, RevocationStatus.Good);
+			await AssertEitherOrder(authority, leaf, expiredRevoked, good, RevocationStatus.Good);
+			await AssertEitherOrder(authority, leaf, notYetRevoked, good, RevocationStatus.Good);
+			await AssertEitherOrder(authority, leaf, expiredWithCritical, good, RevocationStatus.Good);
+			await AssertEitherOrder(authority, leaf, revokedWithCritical, good, RevocationStatus.Invalid);
+			await AssertEitherOrder(authority, leaf, goodWithCritical, good, RevocationStatus.Invalid);
+			await AssertEitherOrder(authority, leaf, expiredRevoked, expiredGood, RevocationStatus.Invalid);
+			await Assert.That(Evaluate(authority, leaf, good, goodSooner).NextUpdate).IsEqualTo(Now.AddMinutes(30));
+			await Assert.That(Evaluate(authority, leaf, goodSooner, good).NextUpdate).IsEqualTo(Now.AddMinutes(30));
 
 			// The problem of the most severe that is not current, its critical extension before its times.
-			await Assert.That(Evaluate(expiredGood, notYetRevoked).Detail).IsEqualTo("The response is not yet valid.");
-			await Assert.That(Evaluate(expiredGood).Detail).IsEqualTo("The response has expired.");
-			await Assert.That(Evaluate(expiredWithCritical).Detail).StartsWith("The response for the certificate");
+			await Assert.That(Evaluate(authority, leaf, expiredGood, notYetRevoked).Detail).IsEqualTo("The response is not yet valid.");
+			await Assert.That(Evaluate(authority, leaf, expiredGood).Detail).IsEqualTo("The response has expired.");
+			await Assert.That(Evaluate(authority, leaf, expiredWithCritical).Detail).StartsWith("The response for the certificate");
 		}
 	}
 

@@ -6,18 +6,13 @@ namespace CryptoBase.X509;
 
 // The key of what a URI gives the certificates of one issuer, in a validation and in the caches: another CA can name the same URI, and what it was answered must not stand in for what the certificates of this issuer find there.
 // It is the SHA-256 digest of the digest of the issuer's name followed by the URI, so that its size depends on neither, as the peer chooses both; the digest of the name, of fixed length, keeps the two apart, and a collision, which would let one CA's answer stand for another's, is as hard to find as one of SHA-256.
-internal readonly record struct RetrievalKey
+internal readonly record struct RetrievalKey(UInt128 First, UInt128 Second)
 {
 	// Most URIs fit, as UTF-16, after the digest of the name.
 	private const int MaxStackInput = 512;
 
-	private readonly UInt128 _first;
-	private readonly UInt128 _second;
-
-	private RetrievalKey(ReadOnlySpan<byte> digest)
+	private RetrievalKey(ReadOnlySpan<byte> digest) : this(BinaryPrimitives.ReadUInt128LittleEndian(digest), BinaryPrimitives.ReadUInt128LittleEndian(digest.Slice(16)))
 	{
-		_first = BinaryPrimitives.ReadUInt128LittleEndian(digest);
-		_second = BinaryPrimitives.ReadUInt128LittleEndian(digest.Slice(16));
 	}
 
 	// The digest of an issuer's name, which the keys of the URIs that one certificate names share.

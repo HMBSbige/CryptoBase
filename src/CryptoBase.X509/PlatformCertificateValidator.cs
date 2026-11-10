@@ -54,8 +54,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 	private static readonly TimeSpan OneMillisecond = TimeSpan.FromMilliseconds(1);
 
 	// id-kp-serverAuth and id-kp-clientAuth, made once with the constructor that skips the friendly-name lookup of Oid(string).
-	private static readonly Oid ServerAuthenticationUsage = new("1.3.6.1.5.5.7.3.1", null);
-	private static readonly Oid ClientAuthenticationUsage = new("1.3.6.1.5.5.7.3.2", null);
+	private static readonly Oid ServerAuthenticationUsage = new(CertificateUsage.ServerAuthentication.KeyPurposeId, null);
+	private static readonly Oid ClientAuthenticationUsage = new(CertificateUsage.ClientAuthentication.KeyPurposeId, null);
 
 	// Any other status is Unspecified. Windows reports NoIssuanceChainPolicy where Linux and macOS report NotValidForUsage.
 	private static readonly (X509ChainStatusFlags Statuses, CertificateValidationError Error)[] ChainErrors =

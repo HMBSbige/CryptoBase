@@ -94,7 +94,7 @@ public sealed class HttpCertificateDataRetriever : ICertificateDataRetriever
 
 				await using (body.ConfigureAwait(false))
 				{
-					return await ReadBodyAsync(body, declared, maxLength, timeout.Token).ConfigureAwait(false);
+					return await ReadBodyAsync(body, declared, maxLength, Array.MaxLength, timeout.Token).ConfigureAwait(false);
 				}
 			}
 			catch (Exception e) when (e is HttpRequestException or IOException or InvalidDataException)
@@ -108,13 +108,8 @@ public sealed class HttpCertificateDataRetriever : ICertificateDataRetriever
 		}
 	}
 
-	private static ValueTask<ReadOnlyMemory<byte>> ReadBodyAsync(Stream body, long? declared, int maxLength, CancellationToken cancellationToken)
-	{
-		return ReadBodyAsync(body, declared, maxLength, Array.MaxLength, cancellationToken);
-	}
-
 	// Reads at most maxLength + 1 bytes, the one beyond the limit telling that the body is too long.
-	// The longest array is a parameter so that tests can reach it without allocating gigabytes.
+	// The longest array, Array.MaxLength, is a parameter so that tests can reach it without allocating gigabytes.
 	internal static async ValueTask<ReadOnlyMemory<byte>> ReadBodyAsync(Stream body, long? declared, int maxLength, int capacityLimit, CancellationToken cancellationToken)
 	{
 		int ceiling = (int)Math.Min(maxLength + 1L, capacityLimit);

@@ -105,6 +105,18 @@ public sealed class CertificateExtension
 		return extensions.AsReadOnly();
 	}
 
+	// SEQUENCE OF Extension, the form of the extensions of a certificate and of the value of an extensionRequest attribute.
+	internal static void WriteList(AsnWriter writer, CertificateExtension[] extensions)
+	{
+		using (writer.PushSequence())
+		{
+			foreach (CertificateExtension extension in extensions)
+			{
+				extension.Write(writer);
+			}
+		}
+	}
+
 	internal void Write(AsnWriter writer)
 	{
 		using (writer.PushSequence())

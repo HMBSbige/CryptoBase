@@ -6,7 +6,6 @@ namespace CryptoBase.X509;
 /// <remarks>Instances are immutable, so they may be used concurrently.</remarks>
 public sealed class IssuingDistributionPoint
 {
-	private static readonly Asn1Tag DistributionPointTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag OnlyContainsUserCertsTag = new(TagClass.ContextSpecific, 1);
 	private static readonly Asn1Tag OnlyContainsCACertsTag = new(TagClass.ContextSpecific, 2);
 	private static readonly Asn1Tag OnlySomeReasonsTag = new(TagClass.ContextSpecific, 3);
@@ -59,16 +58,10 @@ public sealed class IssuingDistributionPoint
 		DerReader sequence = DerReader.ReadSoleSequence(value);
 		sequence.ThrowIfEmpty();
 
-		DistributionPointName? distributionPoint = sequence.PeekTagIs(DistributionPointTag) ? DistributionPointName.Read(ref sequence, DistributionPointTag) : null;
+		DistributionPointName? distributionPoint = DistributionPointName.ReadOptional(ref sequence);
 		bool onlyContainsUserCertificates = sequence.ReadTrueOrAbsent(OnlyContainsUserCertsTag);
 		bool onlyContainsCACertificates = sequence.ReadTrueOrAbsent(OnlyContainsCACertsTag);
-		CrlReasonFlags? onlySomeReasons = null;
-
-		if (sequence.PeekTagIs(OnlySomeReasonsTag))
-		{
-			onlySomeReasons = CrlDistributionPoint.ReadReasons(ref sequence, OnlySomeReasonsTag);
-		}
-
+		CrlReasonFlags? onlySomeReasons = sequence.PeekTagIs(OnlySomeReasonsTag) ? CrlDistributionPoint.ReadReasons(ref sequence, OnlySomeReasonsTag) : null;
 		bool indirectCrl = sequence.ReadTrueOrAbsent(IndirectCrlTag);
 		bool onlyContainsAttributeCertificates = sequence.ReadTrueOrAbsent(OnlyContainsAttributeCertsTag);
 		sequence.ThrowIfNotEmpty();

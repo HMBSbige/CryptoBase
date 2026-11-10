@@ -5,7 +5,7 @@ namespace CryptoBase.X509;
 
 // The value of a certificate policies extension (RFC 5280, Sec. 4.2.1.4): certificatePolicies ::= SEQUENCE SIZE (1..MAX) OF PolicyInformation, without the qualifiers, which path validation does not use.
 // Policies are the contents of the OBJECT IDENTIFIERs other than anyPolicy, slices of the extension's memory; each appears once, as the section requires. The instance is immutable.
-internal sealed class CertificatePolicies
+internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool hasAnyPolicy, bool hasUnrecognizedQualifier)
 {
 	private const int MaxDirectlyCompared = 8;
 
@@ -20,19 +20,12 @@ internal sealed class CertificatePolicies
 
 	private static ReadOnlySpan<byte> UserNoticeQualifier => [0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x02, 0x02];
 
-	private CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool hasAnyPolicy, bool hasUnrecognizedQualifier)
-	{
-		Policies = policies;
-		HasAnyPolicy = hasAnyPolicy;
-		HasUnrecognizedQualifier = hasUnrecognizedQualifier;
-	}
+	public ReadOnlyMemory<byte>[] Policies { get; } = policies;
 
-	public ReadOnlyMemory<byte>[] Policies { get; }
-
-	public bool HasAnyPolicy { get; }
+	public bool HasAnyPolicy { get; } = hasAnyPolicy;
 
 	// Whether a qualifier is neither of the above or has a value that does not decode as the type that the section gives it; Sec. 4.2.1.4 requires a validator to interpret those of a critical extension or to reject the certificate.
-	public bool HasUnrecognizedQualifier { get; }
+	public bool HasUnrecognizedQualifier { get; } = hasUnrecognizedQualifier;
 
 	// PolicyInformation ::= SEQUENCE { policyIdentifier CertPolicyId, policyQualifiers SEQUENCE SIZE (1..MAX) OF PolicyQualifierInfo OPTIONAL }.
 	public static CertificatePolicies Read(ReadOnlyMemory<byte> value)
@@ -67,7 +60,7 @@ internal sealed class CertificatePolicies
 			}
 
 			// anyPolicy is not in the list; each is compared with the policies before it.
-			bool isAnyPolicy = policy.Span.SequenceEqual(PolicyGraph.AnyPolicy.Span);
+			bool isAnyPolicy = PolicyGraph.IsAnyPolicy(policy);
 
 			if (isAnyPolicy ? hasAnyPolicy : IsRepeated(policies, ref seen, policy))
 			{
@@ -184,37 +177,28 @@ internal sealed class CertificatePolicies
 }
 
 // The value of a policy mappings extension (RFC 5280, Sec. 4.2.1.5): SEQUENCE SIZE (1..MAX) OF SEQUENCE { issuerDomainPolicy CertPolicyId, subjectDomainPolicy CertPolicyId }, the pairs as slices of the extension's memory. Neither may be anyPolicy.
-internal sealed class PolicyMappings
+internal sealed class PolicyMappings((ReadOnlyMemory<byte> IssuerDomainPolicy, ReadOnlyMemory<byte> SubjectDomainPolicy)[] mappings)
 {
-	private PolicyMappings((ReadOnlyMemory<byte> IssuerDomainPolicy, ReadOnlyMemory<byte> SubjectDomainPolicy)[] mappings)
-	{
-		Mappings = mappings;
-	}
-
-	public (ReadOnlyMemory<byte> IssuerDomainPolicy, ReadOnlyMemory<byte> SubjectDomainPolicy)[] Mappings { get; }
+	public (ReadOnlyMemory<byte> IssuerDomainPolicy, ReadOnlyMemory<byte> SubjectDomainPolicy)[] Mappings { get; } = mappings;
 
 	public static PolicyMappings Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader sequence = DerReader.ReadSoleSequence(value);
-		sequence.ThrowIfEmpty();
-		List<(ReadOnlyMemory<byte>, ReadOnlyMemory<byte>)> mappings = [];
+		return new PolicyMappings([.. DerReader.ReadSoleSequenceOf(value, ReadMapping)]);
+	}
 
-		while (sequence.HasData)
+	private static (ReadOnlyMemory<byte> IssuerDomainPolicy, ReadOnlyMemory<byte> SubjectDomainPolicy) ReadMapping(ref DerReader reader)
+	{
+		DerReader mapping = reader.ReadSequence();
+		ReadOnlyMemory<byte> issuerDomainPolicy = mapping.ReadObjectIdentifierContents();
+		ReadOnlyMemory<byte> subjectDomainPolicy = mapping.ReadObjectIdentifierContents();
+		mapping.ThrowIfNotEmpty();
+
+		if (PolicyGraph.IsAnyPolicy(issuerDomainPolicy) || PolicyGraph.IsAnyPolicy(subjectDomainPolicy))
 		{
-			DerReader mapping = sequence.ReadSequence();
-			ReadOnlyMemory<byte> issuerDomainPolicy = mapping.ReadObjectIdentifierContents();
-			ReadOnlyMemory<byte> subjectDomainPolicy = mapping.ReadObjectIdentifierContents();
-			mapping.ThrowIfNotEmpty();
-
-			if (issuerDomainPolicy.Span.SequenceEqual(PolicyGraph.AnyPolicy.Span) || subjectDomainPolicy.Span.SequenceEqual(PolicyGraph.AnyPolicy.Span))
-			{
-				throw new AsnContentException("A policy mapping names anyPolicy.");
-			}
-
-			mappings.Add((issuerDomainPolicy, subjectDomainPolicy));
+			throw new AsnContentException("A policy mapping names anyPolicy.");
 		}
 
-		return new PolicyMappings([.. mappings]);
+		return (issuerDomainPolicy, subjectDomainPolicy);
 	}
 }
 
@@ -231,19 +215,8 @@ internal sealed class PolicyConstraints(int? requireExplicitPolicy, int? inhibit
 	public static PolicyConstraints Read(ReadOnlyMemory<byte> value)
 	{
 		DerReader sequence = DerReader.ReadSoleSequence(value);
-		int? requireExplicitPolicy = null;
-		int? inhibitPolicyMapping = null;
-
-		if (sequence.PeekTagIs(RequireExplicitPolicyTag))
-		{
-			requireExplicitPolicy = ReadSkipCerts(ref sequence, RequireExplicitPolicyTag);
-		}
-
-		if (sequence.PeekTagIs(InhibitPolicyMappingTag))
-		{
-			inhibitPolicyMapping = ReadSkipCerts(ref sequence, InhibitPolicyMappingTag);
-		}
-
+		int? requireExplicitPolicy = sequence.PeekTagIs(RequireExplicitPolicyTag) ? ReadSkipCerts(ref sequence, RequireExplicitPolicyTag) : null;
+		int? inhibitPolicyMapping = sequence.PeekTagIs(InhibitPolicyMappingTag) ? ReadSkipCerts(ref sequence, InhibitPolicyMappingTag) : null;
 		sequence.ThrowIfNotEmpty();
 
 		if (requireExplicitPolicy is null && inhibitPolicyMapping is null)

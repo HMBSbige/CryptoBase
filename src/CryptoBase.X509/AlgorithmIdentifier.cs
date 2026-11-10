@@ -124,6 +124,11 @@ public sealed class AlgorithmIdentifier
 		return algorithm is not default(SignatureAlgorithm);
 	}
 
+	internal bool VerifySignature(ISignatureKey key, ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
+	{
+		return TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) && key.Supports(algorithm) && key.Verify(algorithm, data, signature);
+	}
+
 	// SEQUENCE { algorithm OBJECT IDENTIFIER, parameters ANY OPTIONAL }; the results are slices of the reader's memory.
 	internal static AlgorithmIdentifier Read(ref DerReader reader)
 	{

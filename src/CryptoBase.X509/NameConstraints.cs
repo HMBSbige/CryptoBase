@@ -135,19 +135,8 @@ internal sealed class NameConstraints
 	public static NameConstraints Read(ReadOnlyMemory<byte> value)
 	{
 		DerReader sequence = DerReader.ReadSoleSequence(value);
-		NameSubtrees? permitted = null;
-		NameSubtrees? excluded = null;
-
-		if (sequence.PeekTagIs(PermittedSubtreesTag))
-		{
-			permitted = NameSubtrees.Read(ref sequence, PermittedSubtreesTag);
-		}
-
-		if (sequence.PeekTagIs(ExcludedSubtreesTag))
-		{
-			excluded = NameSubtrees.Read(ref sequence, ExcludedSubtreesTag);
-		}
-
+		NameSubtrees? permitted = sequence.PeekTagIs(PermittedSubtreesTag) ? NameSubtrees.Read(ref sequence, PermittedSubtreesTag) : null;
+		NameSubtrees? excluded = sequence.PeekTagIs(ExcludedSubtreesTag) ? NameSubtrees.Read(ref sequence, ExcludedSubtreesTag) : null;
 		sequence.ThrowIfNotEmpty();
 
 		if (permitted is null && excluded is null)
@@ -404,7 +393,7 @@ internal sealed class NameSubtrees
 	}
 }
 
-// A dNSName of a certificate that name constraints apply to: a DNS name, or a wildcard of "*" for the first label before a DNS name, Base; others are not valid, and cannot be checked.
+// A dNSName of a certificate, in the form in which it may match a host name (RFC 9525, Sec. 6.3) and in which name constraints apply to it: a DNS name, or a wildcard, a first label of "*" alone, before a DNS name, Base. Others are not valid, such as one with a trailing dot, an empty label, a space, a "*" in another place or "*" alone: they match nothing, and cannot be checked.
 internal readonly struct DnsNamePattern
 {
 	public DnsNamePattern(string value)
@@ -525,9 +514,6 @@ internal sealed class ConstrainedNames
 	private readonly ReadOnlyMemory<byte> _subject;
 	private readonly ReadOnlyMemory<byte>[] _alternativeDirectoryNames;
 
-	// The contents of the object identifier of emailAddress, 1.2.840.113549.1.9.1.
-	private static ReadOnlySpan<byte> EmailAddressOid => [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01];
-
 	private ConstrainedNames(DnsNamePattern[] dnsNames, ReadOnlyMemory<byte>[] addresses, Mailbox?[] mailboxes, ReadOnlyMemory<byte> subject, ReadOnlyMemory<byte>[] alternativeDirectoryNames, int forms)
 	{
 		DnsNames = dnsNames;
@@ -584,20 +570,12 @@ internal sealed class ConstrainedNames
 			}
 		}
 
-		IReadOnlyList<string> dnsNames = alternativeName.DnsNames;
-		DnsNamePattern[] patterns = dnsNames.Count is 0 ? [] : new DnsNamePattern[dnsNames.Count];
-
-		for (int i = 0; i < patterns.Length; ++i)
-		{
-			patterns[i] = new DnsNamePattern(dnsNames[i]);
-		}
-
-		return new ConstrainedNames(patterns, [.. alternativeName.IPAddresses], [.. mailboxes], certificate.Subject, [.. directoryNames], forms);
+		return new ConstrainedNames(alternativeName.DnsNamePatterns, [.. alternativeName.IPAddresses], [.. mailboxes], certificate.Subject, [.. directoryNames], forms);
 	}
 
 	private DistinguishedName[] ReadDirectoryNames()
 	{
-		bool hasSubject = !_subject.Span.SequenceEqual((ReadOnlySpan<byte>)[0x30, 0x00]);
+		bool hasSubject = !X509Name.IsEmpty(_subject.Span);
 		DistinguishedName[] names = new DistinguishedName[(hasSubject ? 1 : 0) + _alternativeDirectoryNames.Length];
 		int count = 0;
 
@@ -628,7 +606,7 @@ internal sealed class ConstrainedNames
 			{
 				DerReader attribute = relativeName.ReadSequence();
 
-				if (!attribute.ReadObjectIdentifierContents().Span.SequenceEqual(EmailAddressOid))
+				if (!attribute.ReadObjectIdentifierContents().Span.SequenceEqual(DistinguishedName.EmailAddressOid))
 				{
 					continue;
 				}

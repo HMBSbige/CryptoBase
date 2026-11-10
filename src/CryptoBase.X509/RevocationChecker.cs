@@ -29,6 +29,9 @@ internal readonly record struct RevocationResult(RevocationStatus Status, string
 	public CrlReasonFlags CoveredReasons { get; init; }
 
 	public DateTimeOffset? NextUpdate { get; init; }
+
+	// Whether the source settles the status, so that no other source need be asked.
+	public bool IsConclusive => Status is RevocationStatus.Good or RevocationStatus.Revoked;
 }
 
 // Decides what a CRL or an OCSP response says about a certificate whose issuer is known, without retrieving anything. Each call is about one source; combining sources is the caller's.
@@ -142,9 +145,9 @@ internal static class RevocationChecker
 			return Invalid("The CRL's authority key identifier is not the issuer's subject key identifier.");
 		}
 
-		if (CertificatePolicy.CheckSignatureAlgorithm(crl.SignatureAlgorithm) is { } algorithmError)
+		if (CheckSignatureAlgorithm(crl.SignatureAlgorithm, "The CRL") is { } algorithmProblem)
 		{
-			return Invalid(algorithmError is CertificateValidationError.WeakAlgorithm ? $"The CRL is signed with {crl.SignatureAlgorithm.Oid}, which the policy refuses." : $"The CRL is signed with {crl.SignatureAlgorithm.Oid}, which is not supported.");
+			return Invalid(algorithmProblem);
 		}
 
 		// Sec. 6.3.3 (g).
@@ -204,9 +207,9 @@ internal static class RevocationChecker
 			return Invalid(singleProblem ?? "The response has no status for the certificate.");
 		}
 
-		if (CertificatePolicy.CheckSignatureAlgorithm(signatureAlgorithm) is { } algorithmError)
+		if (CheckSignatureAlgorithm(signatureAlgorithm, "The response") is { } algorithmProblem)
 		{
-			return Invalid(algorithmError is CertificateValidationError.WeakAlgorithm ? $"The response is signed with {signatureAlgorithm.Oid}, which the policy refuses." : $"The response is signed with {signatureAlgorithm.Oid}, which is not supported.");
+			return Invalid(algorithmProblem);
 		}
 
 		using ISignatureKey? issuerKey = TrustAnchorCertificateValidator.ImportKey(importPublicKey, issuer.PublicKeyInfo, out _, out string? importMessage);
@@ -242,6 +245,17 @@ internal static class RevocationChecker
 	private static RevocationResult Invalid(string detail)
 	{
 		return new RevocationResult(RevocationStatus.Invalid, detail);
+	}
+
+	// The problem with the algorithm that signs the source that subject names, a CRL or a response, if its signature cannot be verified: the policy refuses the algorithm, or the package does not support it.
+	private static string? CheckSignatureAlgorithm(AlgorithmIdentifier algorithm, string subject)
+	{
+		return CertificatePolicy.CheckSignatureAlgorithm(algorithm) switch
+		{
+			null => null,
+			CertificateValidationError.WeakAlgorithm => $"{subject} is signed with {algorithm.Oid}, which the policy refuses.",
+			_ => $"{subject} is signed with {algorithm.Oid}, which is not supported."
+		};
 	}
 
 	// The problem with the first critical extension that the checker cannot process, for the source that subject names: one that it does not understand, or one whose value it cannot take as meant. A noncritical one is ignored, as it could be if it were not understood.
@@ -339,31 +353,25 @@ internal static class RevocationChecker
 	{
 		DerReader crlId = reader.ReadSequence();
 
-		if (crlId.PeekTagIs(CrlUrlTag))
+		if (crlId.TryReadExplicit(CrlUrlTag, out DerReader url))
 		{
-			DerReader url = crlId.ReadSequence(CrlUrlTag);
-			AsnDecoder.ReadCharacterString(url.ReadEncodedValue().Span, AsnEncodingRules.DER, UniversalTagNumber.IA5String, out _);
-			url.ThrowIfNotEmpty();
+			AsnDecoder.ReadCharacterString(url.GetRemaining().Span, AsnEncodingRules.DER, UniversalTagNumber.IA5String, out _);
 		}
 
-		if (crlId.PeekTagIs(CrlNumberTag))
+		if (crlId.TryReadExplicit(CrlNumberTag, out DerReader number))
 		{
-			DerReader number = crlId.ReadSequence(CrlNumberTag);
 			number.ReadIntegerBytes();
-			number.ThrowIfNotEmpty();
 		}
 
-		if (crlId.PeekTagIs(CrlTimeTag))
+		if (crlId.TryReadExplicit(CrlTimeTag, out DerReader time))
 		{
-			DerReader time = crlId.ReadSequence(CrlTimeTag);
 			X509Time.ReadGeneralizedTime(ref time);
-			time.ThrowIfNotEmpty();
 		}
 
 		crlId.ThrowIfNotEmpty();
 	}
 
-	// RFC 5280, Sec. 6.3.3 (b)(2) (ii) to (iv), and the indirect CRLs that the checker does not support.
+	// RFC 5280, Sec. 6.3.3 (b)(2) (ii) to (iv), and the indirect CRLs that the checker does not support. A certificate without basic constraints, as one of version 1 or 2, counts as an end entity certificate, which it is: the path search rejects an intermediate certificate that does not assert cA.
 	private static string? GetScopeProblem(IssuingDistributionPoint? point, Certificate certificate)
 	{
 		if (point is null)
@@ -644,7 +652,7 @@ internal static class RevocationChecker
 			return $"The responder's certificate {problem}.";
 		}
 
-		if (decoded.ExtendedKeyUsage.Value is null || !decoded.ExtendedKeyUsage.Value.Contains(OcspSigningOid))
+		if (decoded.ExtendedKeyUsage.Value?.Contains(OcspSigningOid) is not true)
 		{
 			return "The responder's certificate does not assert id-kp-OCSPSigning.";
 		}

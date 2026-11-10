@@ -42,9 +42,8 @@ public sealed class Certificate
 		Version = 1;
 
 		// DER omits the default version, v1.
-		if (tbs.PeekTagIs(VersionTag))
+		if (tbs.TryReadSequence(VersionTag, out DerReader version))
 		{
-			DerReader version = tbs.ReadSequence(VersionTag);
 			Version = version.ReadInt32() switch
 			{
 				1 => 2,
@@ -81,9 +80,11 @@ public sealed class Certificate
 			}
 		}
 
-		if (Version is 3 && tbs.PeekTagIs(ExtensionsTag))
+		// extensions [3] EXPLICIT Extensions.
+		if (Version is 3 && tbs.TryReadSequence(ExtensionsTag, out DerReader wrapper))
 		{
-			Extensions = ReadExtensions(ref tbs);
+			Extensions = ReadExtensionSequence(ref wrapper);
+			wrapper.ThrowIfNotEmpty();
 			KeyUsage = CheckExtensions(Extensions);
 		}
 		else
@@ -203,8 +204,7 @@ public sealed class Certificate
 	/// <exception cref="ArgumentException"><paramref name="source" /> has no CERTIFICATE block, or the first one is not a DER-encoded certificate.</exception>
 	public static Certificate DecodePem(ReadOnlySpan<char> source)
 	{
-		X509PemReader reader = new(source, PemLabel);
-		return reader.TryRead(out byte[]? encoded) ? Decode(encoded, nameof(source)) : throw new ArgumentException("The text holds no CERTIFICATE block.", nameof(source));
+		return Decode(X509PemReader.ReadFirst(source, PemLabel, nameof(source)), nameof(source));
 	}
 
 	/// <summary>
@@ -216,15 +216,7 @@ public sealed class Certificate
 	/// <exception cref="ArgumentException">A CERTIFICATE block is not a DER-encoded certificate.</exception>
 	public static Certificate[] DecodePemAll(ReadOnlySpan<char> source)
 	{
-		X509PemReader reader = new(source, PemLabel);
-		List<Certificate> certificates = [];
-
-		while (reader.TryRead(out byte[]? encoded))
-		{
-			certificates.Add(Decode(encoded, nameof(source)));
-		}
-
-		return [.. certificates];
+		return X509PemReader.ReadAll(source, PemLabel, static encoded => Decode(encoded, nameof(source)));
 	}
 
 	/// <summary>
@@ -239,9 +231,7 @@ public sealed class Certificate
 	{
 		ArgumentNullException.ThrowIfNull(issuerKey);
 
-		return SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm)
-			&& issuerKey.Supports(algorithm)
-			&& issuerKey.Verify(algorithm, TbsCertificate.Span, Signature.Span);
+		return SignatureAlgorithm.VerifySignature(issuerKey, TbsCertificate.Span, Signature.Span);
 	}
 
 	/// <summary>
@@ -398,23 +388,13 @@ public sealed class Certificate
 		if (!AsnDecoder.TryReadPrimitiveBitString(source, AsnEncodingRules.DER, out int unusedBits, out ReadOnlySpan<byte> bits, out int consumed)
 			|| consumed != source.Length
 			|| bits.Length is 0
-			|| bits.Length > 1 && ((bits[1] & 0x7F) is not 0 || bits.Slice(2).ContainsAnyExcept((byte)0))
 			|| der && (bits.Length > 2 || (bits[^1] >> unusedBits & 1) is 0))
 		{
 			throw new AsnContentException();
 		}
 
-		X509KeyUsageFlags usage = (X509KeyUsageFlags)(bits[0] | (bits.Length > 1 ? bits[1] << 8 : 0));
+		X509KeyUsageFlags usage = (X509KeyUsageFlags)DerReader.ReadNineNamedBits(bits);
 		return usage is not X509KeyUsageFlags.None ? usage : throw new AsnContentException();
-	}
-
-	// extensions [3] EXPLICIT Extensions.
-	private static ReadOnlyCollection<CertificateExtension> ReadExtensions(ref DerReader tbs)
-	{
-		DerReader wrapper = tbs.ReadSequence(ExtensionsTag);
-		ReadOnlyCollection<CertificateExtension> extensions = ReadExtensionSequence(ref wrapper);
-		wrapper.ThrowIfNotEmpty();
-		return extensions;
 	}
 
 	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension.

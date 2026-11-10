@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 
@@ -84,14 +85,6 @@ internal readonly struct HostName
 		}
 	}
 
-	// The form of a dNSName that may match (RFC 9525, Sec. 6.3): a DNS name, or a wildcard, a first label of "*" alone, before at least one more label. Returns the DNS name after the wildcard, or null if the entry matches nothing, such as one with a trailing dot, an empty label, a space, a "*" in another place or "*" alone.
-	public static string? GetPattern(string dnsName, out bool wildcard)
-	{
-		wildcard = dnsName.StartsWith("*.", StringComparison.Ordinal);
-		string name = wildcard ? dnsName.Substring(2) : dnsName;
-		return IsDnsName(name) ? name : null;
-	}
-
 	// Labels that are not ASCII to A-labels, with the platform's IDNA conversion, or null if one is not a label that the conversion accepts and leaves as it is. The other rules of IDNA2008 for U-labels (RFC 5890, Sec. 2.3.2.1), such as its Bidi rule, its contextual rules and the code points that it disallows, are not checked.
 	// The conversion maps characters, such as upper-case letters, before it encodes them, and the mapping depends on the platform's Unicode version and its globalization mode. So the name must be what the conversion leaves as it is, apart from the case of ASCII letters: besides letters, digits, hyphens and dots, only letters that are not upper or title case, marks that do not start a label (RFC 5891, Sec. 5.4) and decimal digits, the LetterDigits of RFC 5892, Sec. 2.1, that the conversion accepts and keeps. Every platform that accepts a name then gives the same A-labels, the Punycode of its labels.
 	public static string? ToAscii(string hostName)
@@ -142,15 +135,7 @@ internal readonly struct HostName
 				}
 
 				string aLabel = mapping.GetAscii(label);
-				string expected = string.Create(label.Length, label, static (destination, source) =>
-				{
-					for (int j = 0; j < source.Length; ++j)
-					{
-						destination[j] = char.IsAsciiLetterUpper(source[j]) ? (char)(source[j] | 0x20) : source[j];
-					}
-				});
-
-				if (mapping.GetUnicode(aLabel) != expected)
+				if (mapping.GetUnicode(aLabel) != DistinguishedName.FoldAsciiCase(label))
 				{
 					return null;
 				}
@@ -259,15 +244,12 @@ internal readonly struct HostName
 
 		for (int i = 0; i < headCount; ++i)
 		{
-			destination[2 * i] = (byte)(head[i] >> 8);
-			destination[2 * i + 1] = (byte)head[i];
+			BinaryPrimitives.WriteUInt16BigEndian(destination.Slice(2 * i), head[i]);
 		}
 
 		for (int i = 0; i < tailCount; ++i)
 		{
-			int position = destination.Length - 2 * (tailCount - i);
-			destination[position] = (byte)(tail[i] >> 8);
-			destination[position + 1] = (byte)tail[i];
+			BinaryPrimitives.WriteUInt16BigEndian(destination.Slice(destination.Length - 2 * (tailCount - i)), tail[i]);
 		}
 
 		return true;
@@ -292,8 +274,8 @@ internal readonly struct HostName
 					return false;
 				}
 
-				groups[count++] = (ushort)(address[0] << 8 | address[1]);
-				groups[count++] = (ushort)(address[2] << 8 | address[3]);
+				groups[count++] = BinaryPrimitives.ReadUInt16BigEndian(address);
+				groups[count++] = BinaryPrimitives.ReadUInt16BigEndian(address.Slice(2));
 				return true;
 			}
 

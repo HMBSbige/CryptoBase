@@ -17,7 +17,7 @@ internal sealed class DistinguishedName
 	private static ReadOnlySpan<byte> DomainComponentOid => [0x09, 0x92, 0x26, 0x89, 0x93, 0xF2, 0x2C, 0x64, 0x01, 0x19];
 
 	// emailAddress and unstructuredName, 1.2.840.113549.1.9.1 and 1.2.840.113549.1.9.2 (RFC 2985, Secs. 5.2.1 and 5.2.2), as the contents of the OBJECT IDENTIFIER.
-	private static ReadOnlySpan<byte> EmailAddressOid => [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01];
+	internal static ReadOnlySpan<byte> EmailAddressOid => [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01];
 	private static ReadOnlySpan<byte> UnstructuredNameOid => [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x02];
 
 	private readonly NameAttribute[][] _relativeNames;
@@ -124,10 +124,8 @@ internal sealed class DistinguishedName
 			return true;
 		}
 
-		AsnDecoder.ReadEncodedValue(left, AsnEncodingRules.DER, out int leftOffset, out int leftLength, out _);
-		AsnDecoder.ReadEncodedValue(right, AsnEncodingRules.DER, out int rightOffset, out int rightLength, out _);
-		ReadOnlySpan<byte> leftContents = left.Slice(leftOffset, leftLength);
-		ReadOnlySpan<byte> rightContents = right.Slice(rightOffset, rightLength);
+		ReadOnlySpan<byte> leftContents = GetContents(left);
+		ReadOnlySpan<byte> rightContents = GetContents(right);
 		int i = 0;
 		int j = 0;
 
@@ -319,16 +317,26 @@ internal sealed class DistinguishedName
 		return folded;
 	}
 
-	private static string FoldAsciiCase(string text)
+	internal static string FoldAsciiCase(string text)
 	{
 		return string.Create(text.Length, text, static (buffer, source) =>
 		{
 			for (int i = 0; i < source.Length; ++i)
 			{
-				char c = source[i];
-				buffer[i] = char.IsAsciiLetterUpper(c) ? (char)(c | 0x20) : c;
+				buffer[i] = FoldAsciiCase(source[i]);
 			}
 		});
+	}
+
+	private static char FoldAsciiCase(char c)
+	{
+		return char.IsAsciiLetterUpper(c) ? (char)(c | 0x20) : c;
+	}
+
+	private static ReadOnlySpan<byte> GetContents(ReadOnlySpan<byte> element)
+	{
+		AsnDecoder.ReadEncodedValue(element, AsnEncodingRules.DER, out int offset, out int length, out _);
+		return element.Slice(offset, length);
 	}
 
 	// The text of a value of a string type that RFC 5280 uses in a Name, without checks beyond its encoding: the characters of the ASCII types may be outside their alphabets, as CAs put in them. TeletexString is read as UTF-8 if valid and otherwise as ISO 8859-1.
@@ -348,8 +356,7 @@ internal sealed class DistinguishedName
 			return null;
 		}
 
-		AsnDecoder.ReadEncodedValue(element, AsnEncodingRules.DER, out int offset, out int length, out _);
-		ReadOnlySpan<byte> contents = element.Slice(offset, length);
+		ReadOnlySpan<byte> contents = GetContents(element);
 
 		try
 		{
@@ -413,7 +420,7 @@ internal sealed class DistinguishedName
 				spaces = 0;
 			}
 
-			buffer[length++] = char.IsAsciiLetterUpper(c) ? (char)(c | 0x20) : c;
+			buffer[length++] = FoldAsciiCase(c);
 		}
 
 		return new string(buffer.Slice(0, length));
@@ -498,19 +505,19 @@ internal sealed class DistinguishedName
 		// RFC 5280, Sec. 7.1: the types are the same, and the values are identical or equal once prepared. Prepared texts of which either lost spaces before an unstable character do not show the values equal, as those spaces could make them differ.
 		public bool Matches(in NameAttribute other)
 		{
-			return _type.Span.SequenceEqual(other._type.Span) && (_value.Span.SequenceEqual(other._value.Span) || _text is not null && _text == other._text && !_shortened && !other._shortened);
+			return HasTypeOf(other) && (_value.Span.SequenceEqual(other._value.Span) || _text is not null && _text == other._text && !_shortened && !other._shortened);
 		}
 
 		// Matches, or the values are equal in the form of RFC 4518, by which LDAP compares a domainComponent and a relying party with caseIgnoreMatch alone an emailAddress or unstructuredName. Between stable attributes, this is an equivalence that holds wherever Matches does: values identical or equal as Text are equal in that form, and a stable one shortens nothing.
 		public bool MatchesPrepared(in NameAttribute other)
 		{
-			return Matches(other) || (_prepared is not null || other._prepared is not null) && _type.Span.SequenceEqual(other._type.Span) && (_prepared ?? _text) is { } prepared && prepared == (other._prepared ?? other._text);
+			return Matches(other) || (_prepared is not null || other._prepared is not null) && HasTypeOf(other) && (_prepared ?? _text) is { } prepared && prepared == (other._prepared ?? other._text);
 		}
 
 		// MatchesPrepared, or could match if the comparison were complete, whatever the rest of the value: an attribute with an unstable character may stand for any of its type, as the pairing of several attributes needs.
 		public bool MightMatch(in NameAttribute other)
 		{
-			return (IsUnstable || other.IsUnstable) && _type.Span.SequenceEqual(other._type.Span) || MatchesPrepared(other);
+			return (IsUnstable || other.IsUnstable) && HasTypeOf(other) || MatchesPrepared(other);
 		}
 
 		// MightMatch for the only attribute of a relative name, where the texts narrow it down to the values that MightEqual cannot tell apart, in Text or in the form of RFC 4518.
@@ -521,7 +528,7 @@ internal sealed class DistinguishedName
 				return MightMatch(other);
 			}
 
-			if (!_type.Span.SequenceEqual(other._type.Span))
+			if (!HasTypeOf(other))
 			{
 				return false;
 			}
@@ -541,6 +548,11 @@ internal sealed class DistinguishedName
 			string right = other._prepared ?? other._text;
 			bool unstable = (_prepared is null ? IsUnstable : _preparedUnstable) || (other._prepared is null ? other.IsUnstable : other._preparedUnstable);
 			return unstable ? MightEqual(left, right) : left == right;
+		}
+
+		private bool HasTypeOf(in NameAttribute other)
+		{
+			return _type.Span.SequenceEqual(other._type.Span);
 		}
 	}
 }

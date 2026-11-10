@@ -1,3 +1,5 @@
+using CryptoBase.Internal;
+
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -222,9 +224,9 @@ public sealed class PlatformEcdsaKey : ISignatureKey
 	{
 		try
 		{
-			AsnDecoder.ReadSequence(signature, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
-			ReadOnlySpan<byte> contents = signature.Slice(offset, length);
-			return consumed == signature.Length && IsScalar(ref contents) && IsScalar(ref contents) && contents.IsEmpty;
+			DerSpanReader reader = new(signature);
+			DerSpanReader scalars = reader.ReadSequence();
+			return !reader.HasData && FitsField(scalars.ReadUnsignedInteger()) && FitsField(scalars.ReadUnsignedInteger()) && !scalars.HasData;
 		}
 		catch (AsnContentException)
 		{
@@ -233,11 +235,9 @@ public sealed class PlatformEcdsaKey : ISignatureKey
 	}
 
 	// DER has already rejected a redundant leading byte.
-	private bool IsScalar(ref ReadOnlySpan<byte> contents)
+	private bool FitsField(ReadOnlySpan<byte> scalar)
 	{
-		ReadOnlySpan<byte> value = AsnDecoder.ReadIntegerBytes(contents, AsnEncodingRules.DER, out int consumed);
-		contents = contents.Slice(consumed);
-		return value[0] < 0x80 && value.Length - (value[0] is 0 ? 1 : 0) <= _fieldLength;
+		return scalar.Length - (scalar[0] is 0 ? 1 : 0) <= _fieldLength;
 	}
 
 	private static InvalidOperationException NotExportable()

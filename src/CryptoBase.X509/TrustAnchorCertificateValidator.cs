@@ -157,12 +157,7 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 		}
 
 		_anchors = [.. anchors];
-		_anchorsBySubject = new Dictionary<ReadOnlyMemory<byte>, TrustAnchorEntry[]>(ByteMemoryComparer.Instance);
-
-		foreach (IGrouping<ReadOnlyMemory<byte>, TrustAnchorEntry> group in _anchors.GroupBy(static anchor => anchor.Certificate.Subject, ByteMemoryComparer.Instance))
-		{
-			_anchorsBySubject.Add(group.Key, [.. group]);
-		}
+		_anchorsBySubject = GroupByName(_anchors, static anchor => anchor.Certificate.Subject);
 	}
 
 	/// <summary>
@@ -335,7 +330,7 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 			}
 
 			field = lists;
-			_revocationListsByIssuer = lists.Length is 0 ? null : lists.GroupBy(static list => list.Issuer, ByteMemoryComparer.Instance).ToDictionary(static group => group.Key, static group => group.ToArray(), ByteMemoryComparer.Instance);
+			_revocationListsByIssuer = lists.Length is 0 ? null : GroupByName(lists, static list => list.Issuer);
 		}
 	} = [];
 
@@ -423,6 +418,11 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 	internal CertificateRevocationList[] FindRevocationLists(ReadOnlyMemory<byte> issuer)
 	{
 		return _revocationListsByIssuer is not null && _revocationListsByIssuer.TryGetValue(issuer, out CertificateRevocationList[]? lists) ? lists : [];
+	}
+
+	private static Dictionary<ReadOnlyMemory<byte>, T[]> GroupByName<T>(T[] items, Func<T, ReadOnlyMemory<byte>> getName)
+	{
+		return items.GroupBy(getName, ByteMemoryComparer.Instance).ToDictionary(static group => group.Key, static group => group.ToArray(), ByteMemoryComparer.Instance);
 	}
 
 	private async ValueTask<CertificateValidationResult> ValidateWithRetrievalAsync(CertificateValidationContext context, CancellationToken cancellationToken)

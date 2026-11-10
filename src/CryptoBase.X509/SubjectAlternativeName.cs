@@ -16,9 +16,6 @@ namespace CryptoBase.X509;
 /// </remarks>
 public sealed class SubjectAlternativeName
 {
-	private readonly string[] _dnsNamePatterns;
-	private readonly string[] _wildcardPatterns;
-
 	// The list that IPAddresses wraps, which Matches enumerates without allocating.
 	private readonly List<ReadOnlyMemory<byte>> _addresses;
 
@@ -27,8 +24,7 @@ public sealed class SubjectAlternativeName
 		Names = names;
 		List<string> dnsNames = [];
 		List<ReadOnlyMemory<byte>> addresses = [];
-		List<string> dnsNamePatterns = [];
-		List<string> wildcardPatterns = [];
+		List<DnsNamePattern> dnsNamePatterns = [];
 
 		foreach (GeneralName name in names)
 		{
@@ -40,19 +36,14 @@ public sealed class SubjectAlternativeName
 			{
 				string dnsName = Encoding.ASCII.GetString(name.Value.Span);
 				dnsNames.Add(dnsName);
-
-				if (HostName.GetPattern(dnsName, out bool wildcard) is { } pattern)
-				{
-					(wildcard ? wildcardPatterns : dnsNamePatterns).Add(pattern);
-				}
+				dnsNamePatterns.Add(new DnsNamePattern(dnsName));
 			}
 		}
 
 		DnsNames = dnsNames.AsReadOnly();
 		_addresses = addresses;
 		IPAddresses = addresses.AsReadOnly();
-		_dnsNamePatterns = [.. dnsNamePatterns];
-		_wildcardPatterns = [.. wildcardPatterns];
+		DnsNamePatterns = [.. dnsNamePatterns];
 	}
 
 	/// <summary>
@@ -68,6 +59,9 @@ public sealed class SubjectAlternativeName
 
 	// Every entry, in the order of the encoding.
 	internal IReadOnlyList<GeneralName> Names { get; }
+
+	// The dNSName entries, as DnsNames, each in the form in which it may match.
+	internal DnsNamePattern[] DnsNamePatterns { get; }
 
 	/// <summary>
 	/// Decodes the DER-encoded value of a subject alternative name extension.
@@ -134,30 +128,18 @@ public sealed class SubjectAlternativeName
 			return false;
 		}
 
-		string? dnsName = hostName.DnsName;
-		Debug.Assert(dnsName is not null);
+		Debug.Assert(hostName.DnsName is not null);
+		ReadOnlySpan<char> dnsName = hostName.DnsName;
 
-		foreach (string pattern in _dnsNamePatterns)
+		// A wildcard stands for the first label, which must not be all of the host name: the rest of a name of one label is empty, which no valid entry equals.
+		int dot = dnsName.IndexOf('.');
+		ReadOnlySpan<char> parent = dot > 0 ? dnsName.Slice(dot + 1) : [];
+
+		foreach (DnsNamePattern pattern in DnsNamePatterns)
 		{
-			if (Ascii.EqualsIgnoreCase(dnsName, pattern))
+			if (pattern.IsValid && Ascii.EqualsIgnoreCase(pattern.IsWildcard ? parent : dnsName, pattern.Base))
 			{
 				return true;
-			}
-		}
-
-		// A wildcard stands for the first label, which must not be all of the host name.
-		int dot = dnsName.IndexOf('.');
-
-		if (dot > 0)
-		{
-			ReadOnlySpan<char> parent = dnsName.AsSpan(dot + 1);
-
-			foreach (string pattern in _wildcardPatterns)
-			{
-				if (Ascii.EqualsIgnoreCase(parent, pattern))
-				{
-					return true;
-				}
 			}
 		}
 

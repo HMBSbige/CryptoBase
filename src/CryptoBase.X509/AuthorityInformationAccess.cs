@@ -55,30 +55,22 @@ public sealed class AuthorityInformationAccess
 
 	internal IReadOnlyList<AccessDescription> Descriptions { get; }
 
-	// AuthorityInfoAccessSyntax ::= SEQUENCE SIZE (1..MAX) OF AccessDescription, and AccessDescription ::= SEQUENCE { accessMethod OBJECT IDENTIFIER, accessLocation GeneralName }.
+	// AuthorityInfoAccessSyntax ::= SEQUENCE SIZE (1..MAX) OF AccessDescription.
 	internal static AuthorityInformationAccess Read(ReadOnlyMemory<byte> value)
 	{
-		DerReader sequence = DerReader.ReadSoleSequence(value);
-		sequence.ThrowIfEmpty();
-		List<AccessDescription> descriptions = [];
-
-		while (sequence.HasData)
-		{
-			DerReader description = sequence.ReadSequence();
-			string method = description.ReadObjectIdentifier();
-			GeneralName location = GeneralName.Read(ref description);
-			description.ThrowIfNotEmpty();
-
-			if (location is { Type: GeneralNameType.IPAddress, Value.Length: not (4 or 16) })
-			{
-				throw new AsnContentException("An iPAddress has neither 4 nor 16 octets.");
-			}
-
-			descriptions.Add(new AccessDescription(method, location));
-		}
-
-		return new AuthorityInformationAccess([.. descriptions]);
+		return new AuthorityInformationAccess([.. DerReader.ReadSoleSequenceOf(value, AccessDescription.Read)]);
 	}
 }
 
-internal readonly record struct AccessDescription(string Method, GeneralName Location);
+internal readonly record struct AccessDescription(string Method, GeneralName Location)
+{
+	// AccessDescription ::= SEQUENCE { accessMethod OBJECT IDENTIFIER, accessLocation GeneralName }.
+	public static AccessDescription Read(ref DerReader reader)
+	{
+		DerReader description = reader.ReadSequence();
+		string method = description.ReadObjectIdentifier();
+		GeneralName location = GeneralName.ReadWithAddress(ref description);
+		description.ThrowIfNotEmpty();
+		return new AccessDescription(method, location);
+	}
+}

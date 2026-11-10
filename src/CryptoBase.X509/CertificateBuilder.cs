@@ -22,7 +22,7 @@ public sealed class CertificateBuilder
 		byte[] name = CopyName(subjectName, nameof(subjectName));
 
 		// The subject is also the issuer of a self-signed certificate, which RFC 5280, Sec. 4.1.2.4, requires to be nonempty.
-		if (name is [0x30, 0x00])
+		if (X509Name.IsEmpty(name))
 		{
 			throw new ArgumentException("The subject name is empty.", nameof(subjectName));
 		}
@@ -145,7 +145,7 @@ public sealed class CertificateBuilder
 		}
 
 		// RFC 5280, Sec. 4.1.2.4, requires a nonempty issuer.
-		if (issuer.Subject.Span is [0x30, 0x00])
+		if (X509Name.IsEmpty(issuer.Subject.Span))
 		{
 			throw new ArgumentException("The issuer's subject is empty.", nameof(issuer));
 		}
@@ -368,12 +368,8 @@ public sealed class CertificateBuilder
 			if (extensions.Length > 0)
 			{
 				using (writer.PushSequence(Certificate.ExtensionsTag))
-				using (writer.PushSequence())
 				{
-					foreach (CertificateExtension extension in extensions)
-					{
-						extension.Write(writer);
-					}
+					CertificateExtension.WriteList(writer, extensions);
 				}
 			}
 		}

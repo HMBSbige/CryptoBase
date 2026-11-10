@@ -159,15 +159,13 @@ internal static class CertificatePolicy
 			string hash = "1.3.14.3.2.26";
 			string maskHash = hash;
 
-			if (fields.PeekTagIs(HashAlgorithmTag))
+			if (fields.TryReadSequence(HashAlgorithmTag, out DerReader field))
 			{
-				DerReader field = fields.ReadSequence(HashAlgorithmTag);
 				hash = field.ReadSequence().ReadObjectIdentifier();
 			}
 
-			if (fields.PeekTagIs(MaskGenAlgorithmTag))
+			if (fields.TryReadSequence(MaskGenAlgorithmTag, out field))
 			{
-				DerReader field = fields.ReadSequence(MaskGenAlgorithmTag);
 				DerReader maskGenAlgorithm = field.ReadSequence();
 				maskHash = maskGenAlgorithm.ReadObjectIdentifier() is AlgorithmIdentifier.Mgf1Oid ? maskGenAlgorithm.ReadSequence().ReadObjectIdentifier() : "";
 			}

@@ -8,6 +8,7 @@ namespace CryptoBase.X509;
 /// <remarks>Instances are immutable, so they may be used concurrently.</remarks>
 public sealed class DistributionPointName
 {
+	private static readonly Asn1Tag DistributionPointTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag FullNameTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag RelativeNameTag = new(TagClass.ContextSpecific, 1, true);
 
@@ -44,10 +45,15 @@ public sealed class DistributionPointName
 		return [new GeneralName(GeneralNameType.DirectoryName, AppendRelativeName(baseName, NameRelativeToCrlIssuer.Value))];
 	}
 
-	// distributionPoint [0] DistributionPointName, which the implicit tag leaves explicit as DistributionPointName is a CHOICE: fullName [0] GeneralNames or nameRelativeToCRLIssuer [1] RelativeDistinguishedName, both with implicit tags.
-	internal static DistributionPointName Read(ref DerReader reader, Asn1Tag tag)
+	// distributionPoint [0] DistributionPointName OPTIONAL, the first field of a DistributionPoint and of an IssuingDistributionPoint, or null if it is absent.
+	// The implicit tag leaves it explicit as DistributionPointName is a CHOICE: fullName [0] GeneralNames or nameRelativeToCRLIssuer [1] RelativeDistinguishedName, both with implicit tags.
+	internal static DistributionPointName? ReadOptional(ref DerReader reader)
 	{
-		DerReader wrapper = reader.ReadSequence(tag);
+		if (!reader.TryReadSequence(DistributionPointTag, out DerReader wrapper))
+		{
+			return null;
+		}
+
 		DistributionPointName name;
 
 		if (wrapper.PeekTagIs(FullNameTag))
@@ -99,7 +105,7 @@ public sealed class DistributionPointName
 		while (relativeName.HasData)
 		{
 			DerReader attribute = relativeName.ReadSequence();
-			attribute.ReadObjectIdentifier();
+			attribute.SkipObjectIdentifier();
 			attribute.ReadEncodedValue();
 			attribute.ThrowIfNotEmpty();
 		}

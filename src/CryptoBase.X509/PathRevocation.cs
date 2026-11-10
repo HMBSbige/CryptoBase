@@ -23,7 +23,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 
 	public bool IsRejected(PathNode certificate, PathNode issuer)
 	{
-		return _rejectedEdges?.Contains(EdgeOf(certificate, issuer)) is true;
+		return _rejectedEdges?.Contains(certificate.PairWith(issuer)) is true;
 	}
 
 	// The trust anchor is trusted as it is. Returns null if nothing keeps the path from being valid, the problem of the first revoked certificate, or that of the first whose status is unknown if that is an error. The edge of a certificate with a problem is rejected, so that the search does not follow it again.
@@ -47,7 +47,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 				}
 				case RevocationStatus.Revoked:
 				{
-					(_rejectedEdges ??= []).Add(EdgeOf(certificate, issuer));
+					(_rejectedEdges ??= []).Add(certificate.PairWith(issuer));
 					return new PathProblem(CertificateValidationError.Revoked, string.Create(CultureInfo.InvariantCulture, $"{{0}} was revoked on {result.RevocationTime:u} with the reason {result.Reason}."), certificate);
 				}
 				default:
@@ -55,7 +55,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 					if (!validator.IgnoreRevocationUnknown && unknown is null)
 					{
 						unknown = new PathProblem(CertificateValidationError.RevocationUnknown, $"The revocation status of {{0}} could not be determined: {PathProblem.Escape(result.Detail ?? "no source covers it.")}", certificate);
-						unknownEdge = EdgeOf(certificate, issuer);
+						unknownEdge = certificate.PairWith(issuer);
 					}
 
 					break;
@@ -69,11 +69,6 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		}
 
 		return unknown;
-	}
-
-	private static long EdgeOf(PathNode certificate, PathNode issuer)
-	{
-		return (long)certificate.Index << 32 | (uint)issuer.Index;
 	}
 
 	// RFC 6960, Appendix A.1: {url}/{url-encoding of base-64 encoding of the request}, if short enough for RFC 9919, Sec. 6; a URI with a query or a fragment has no place to append it.
@@ -93,7 +88,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	// Once for each pair, as a repeated search goes over the same edges again.
 	private async ValueTask<RevocationResult> GetRevocationAsync(PathNode certificate, PathNode issuer)
 	{
-		long edge = EdgeOf(certificate, issuer);
+		long edge = certificate.PairWith(issuer);
 
 		if (_results is not null && _results.TryGetValue(edge, out RevocationResult known))
 		{
@@ -146,7 +141,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		{
 			RevocationResult ocsp = await QueryOcspAsync(certificate, issuer.Certificate).ConfigureAwait(false);
 
-			if (ocsp.Status is RevocationStatus.Good or RevocationStatus.Revoked)
+			if (ocsp.IsConclusive)
 			{
 				return ocsp;
 			}
@@ -155,7 +150,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 
 			RevocationResult crls = await CheckDistributionPointsAsync(certificate, issuer.Certificate, key, covered).ConfigureAwait(false);
 
-			if (crls.Status is RevocationStatus.Good or RevocationStatus.Revoked)
+			if (crls.IsConclusive)
 			{
 				return crls;
 			}
@@ -182,7 +177,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		{
 			RevocationResult result = CheckOcsp(cached, certificate, issuer);
 
-			if (result.Status is RevocationStatus.Good or RevocationStatus.Revoked)
+			if (result.IsConclusive)
 			{
 				return result;
 			}
@@ -207,14 +202,14 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 			(RevocationResult Result, OcspResponse? Response, int Length)? answer = await AskOcspAsync(responder, request, certificate, issuer).ConfigureAwait(false);
 
 			// RFC 9919, Sec. 3.1.1, still allows for SHA-1 in older implementations, and a responder may refuse a SHA-256 CertID or not know it. One that could not be reached is not asked again.
-			if (answer is { Result.Status: not (RevocationStatus.Good or RevocationStatus.Revoked) } inconclusive)
+			if (answer is { Result.IsConclusive: false } inconclusive)
 			{
 				detail ??= inconclusive.Result.Detail;
 				sha1Request ??= OcspRequest.Create(certificate, issuer, hashAlgorithm: HashAlgorithmName.SHA1);
 				answer = await AskOcspAsync(responder, sha1Request, certificate, issuer).ConfigureAwait(false);
 			}
 
-			if (answer is not { Result: { Status: RevocationStatus.Good or RevocationStatus.Revoked } result, Response: { } response, Length: var length })
+			if (answer is not { Result: { IsConclusive: true } result, Response: { } response, Length: var length })
 			{
 				detail ??= answer?.Result.Detail ?? "An OCSP responder could not be reached.";
 				continue;

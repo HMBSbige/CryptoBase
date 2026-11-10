@@ -699,7 +699,7 @@ public class PlatformCertificateValidatorTest
 			{
 				if ((required & flag) is not X509VerificationFlags.NoFlag)
 				{
-					await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(revocationFlag, (required & ~flag) | X509VerificationFlags.IgnoreNotTimeValid)).IsTrue().Because(flag.ToString());
+					await Assert.That(PlatformCertificateValidator.SkippedRevocationMatters(revocationFlag, required & ~flag | X509VerificationFlags.IgnoreNotTimeValid)).IsTrue().Because(flag.ToString());
 				}
 			}
 		}

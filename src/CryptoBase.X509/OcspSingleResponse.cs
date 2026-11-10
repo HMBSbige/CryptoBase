@@ -66,15 +66,7 @@ public sealed class OcspSingleResponse
 		OcspCertificateId certificateId = OcspCertificateId.Read(ref sequence);
 		(OcspCertificateStatus status, DateTimeOffset? revocationTime, X509RevocationReason? revocationReason) = ReadCertificateStatus(ref sequence);
 		DateTimeOffset thisUpdate = X509Time.ReadGeneralizedTime(ref sequence);
-		DateTimeOffset? nextUpdate = null;
-
-		if (sequence.PeekTagIs(NextUpdateTag))
-		{
-			DerReader wrapper = sequence.ReadSequence(NextUpdateTag);
-			nextUpdate = X509Time.ReadGeneralizedTime(ref wrapper);
-			wrapper.ThrowIfNotEmpty();
-		}
-
+		DateTimeOffset? nextUpdate = sequence.TryReadExplicit(NextUpdateTag, out DerReader time) ? X509Time.ReadGeneralizedTime(ref time) : null;
 		IReadOnlyList<CertificateExtension> extensions = sequence.PeekTagIs(SingleExtensionsTag) ? CertificateExtension.ReadList(ref sequence, SingleExtensionsTag) : [];
 		sequence.ThrowIfNotEmpty();
 		return new OcspSingleResponse(certificateId, status, revocationTime, revocationReason, thisUpdate, nextUpdate, extensions);
@@ -97,15 +89,7 @@ public sealed class OcspSingleResponse
 
 		DerReader revoked = reader.ReadSequence(RevokedTag);
 		DateTimeOffset revocationTime = X509Time.ReadGeneralizedTime(ref revoked);
-		X509RevocationReason? revocationReason = null;
-
-		if (revoked.PeekTagIs(RevocationReasonTag))
-		{
-			DerReader wrapper = revoked.ReadSequence(RevocationReasonTag);
-			revocationReason = CertificateRevocationList.ReadReason(wrapper.ReadEnumeratedBytes().Span);
-			wrapper.ThrowIfNotEmpty();
-		}
-
+		X509RevocationReason? revocationReason = revoked.TryReadExplicit(RevocationReasonTag, out DerReader reason) ? CertificateRevocationList.ReadReason(reason.ReadEnumeratedBytes().Span) : null;
 		revoked.ThrowIfNotEmpty();
 		return (OcspCertificateStatus.Revoked, revocationTime, revocationReason);
 	}

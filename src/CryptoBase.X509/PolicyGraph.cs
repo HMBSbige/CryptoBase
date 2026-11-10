@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace CryptoBase.X509;
 
 // The certificate policy processing of RFC 5280, Sec. 6.1, for one certification path, with the valid_policy_graph of RFC 9618, Sec. 5, in place of the valid_policy_tree: the two accept the same paths, and the graph has at most one node per policy at each depth, so its size is linear in the policies and mappings of the path.
@@ -6,7 +8,7 @@ internal static class PolicyGraph
 {
 	public static readonly ReadOnlyMemory<byte> AnyPolicy = new byte[] { 0x55, 0x1D, 0x20, 0x00 };
 
-	private static bool IsAnyPolicy(ReadOnlyMemory<byte> policy)
+	public static bool IsAnyPolicy(ReadOnlyMemory<byte> policy)
 	{
 		return policy.Span.SequenceEqual(AnyPolicy.Span);
 	}
@@ -142,6 +144,12 @@ internal static class PolicyGraph
 		return false;
 	}
 
+	private static void AddToList<T>(Dictionary<ReadOnlyMemory<byte>, List<T>> lists, ReadOnlyMemory<byte> key, T value)
+	{
+		ref List<T>? list = ref CollectionsMarshal.GetValueRefOrAddDefault(lists, key, out _);
+		(list ??= []).Add(value);
+	}
+
 	private static long CountExpected(Dictionary<ReadOnlyMemory<byte>, Node> level)
 	{
 		long count = 0;
@@ -164,13 +172,7 @@ internal static class PolicyGraph
 		{
 			foreach (ReadOnlyMemory<byte> policy in node.Expected)
 			{
-				if (!expected.TryGetValue(policy, out List<Node>? parents))
-				{
-					parents = [];
-					expected.Add(policy, parents);
-				}
-
-				parents.Add(node);
+				AddToList(expected, policy, node);
 			}
 		}
 
@@ -213,13 +215,7 @@ internal static class PolicyGraph
 
 		foreach ((ReadOnlyMemory<byte> issuerDomainPolicy, ReadOnlyMemory<byte> subjectDomainPolicy) in mappings.Mappings)
 		{
-			if (!byIssuerPolicy.TryGetValue(issuerDomainPolicy, out List<ReadOnlyMemory<byte>>? subjects))
-			{
-				subjects = [];
-				byIssuerPolicy.Add(issuerDomainPolicy, subjects);
-			}
-
-			subjects.Add(subjectDomainPolicy);
+			AddToList(byIssuerPolicy, issuerDomainPolicy, subjectDomainPolicy);
 		}
 
 		level.TryGetValue(AnyPolicy, out Node? anyNode);

@@ -71,12 +71,8 @@ public sealed class CertificationRequestBuilder
 						writer.WriteObjectIdentifier(CertificationRequest.ExtensionRequestOid);
 
 						using (writer.PushSetOf())
-						using (writer.PushSequence())
 						{
-							foreach (CertificateExtension extension in extensions)
-							{
-								extension.Write(writer);
-							}
+							CertificateExtension.WriteList(writer, extensions);
 						}
 					}
 				}

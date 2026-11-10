@@ -66,7 +66,7 @@ public sealed class AuthorityKeyIdentifier
 
 		if (sequence.PeekTagIs(KeyIdentifierTag))
 		{
-			keyIdentifier = ReadPrimitive(ref sequence, KeyIdentifierTag);
+			keyIdentifier = sequence.ReadOctetString(KeyIdentifierTag);
 		}
 
 		if (sequence.PeekTagIs(AuthorityCertIssuerTag))
@@ -76,25 +76,10 @@ public sealed class AuthorityKeyIdentifier
 
 		if (sequence.PeekTagIs(AuthorityCertSerialNumberTag))
 		{
-			ReadOnlyMemory<byte> element = sequence.ReadEncodedValue();
-			int length = AsnDecoder.ReadIntegerBytes(element.Span, AsnEncodingRules.DER, out _, AuthorityCertSerialNumberTag).Length;
-			authorityCertSerialNumber = element.Slice(element.Length - length);
+			authorityCertSerialNumber = sequence.ReadIntegerBytes(AuthorityCertSerialNumberTag);
 		}
 
 		sequence.ThrowIfNotEmpty();
 		return new AuthorityKeyIdentifier(keyIdentifier, authorityCertIssuer, authorityCertSerialNumber);
-	}
-
-	// The contents of a primitive OCTET STRING under tag.
-	internal static ReadOnlyMemory<byte> ReadPrimitive(ref DerReader reader, Asn1Tag tag)
-	{
-		ReadOnlyMemory<byte> element = reader.ReadEncodedValue();
-
-		if (!AsnDecoder.TryReadPrimitiveOctetString(element.Span, AsnEncodingRules.DER, out ReadOnlySpan<byte> contents, out _, tag))
-		{
-			throw new AsnContentException();
-		}
-
-		return element.Slice(element.Length - contents.Length);
 	}
 }
