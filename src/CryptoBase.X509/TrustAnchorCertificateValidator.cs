@@ -128,7 +128,7 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 		}
 
 		ImportPublicKey = importPublicKey;
-		_anchorsByEncoding = new Dictionary<ReadOnlyMemory<byte>, TrustAnchorEntry>(ByteMemoryComparer.Instance);
+		_anchorsByEncoding = [with(ByteMemoryComparer.Instance)];
 		List<TrustAnchorEntry> anchors = [];
 
 		try

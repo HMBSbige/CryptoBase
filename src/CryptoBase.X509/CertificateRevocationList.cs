@@ -419,7 +419,7 @@ public sealed class CertificateRevocationList
 			}
 			else
 			{
-				if (!(others ??= new HashSet<string>(StringComparer.Ordinal)).Add(AsnDecoder.ReadObjectIdentifier(oid, AsnEncodingRules.DER, out _)))
+				if (!(others ??= [with(StringComparer.Ordinal)]).Add(AsnDecoder.ReadObjectIdentifier(oid, AsnEncodingRules.DER, out _)))
 				{
 					throw new AsnContentException();
 				}

@@ -155,7 +155,7 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 
 			if (source is { } value)
 			{
-				(_sources ??= new Dictionary<ReadOnlyMemory<byte>, IssuerSource>(ByteMemoryComparer.Instance)).TryAdd(certificate.Encoded, value);
+				(_sources ??= [with(ByteMemoryComparer.Instance)]).TryAdd(certificate.Encoded, value);
 			}
 
 			if (isNew)
