@@ -14,10 +14,7 @@ public class SM4GfniTest
 	[Before(Class)]
 	public static void SkipWhenUnavailable()
 	{
-		if (!SM4Gfni.IsSupported)
-		{
-			Skip.Test("GFNI is required.");
-		}
+		Skip.Unless(SM4Gfni.IsSupported, "GFNI is required.");
 	}
 
 	[Test]
@@ -40,10 +37,7 @@ public class SM4GfniTest
 	[Test]
 	public Task Sbox256CoversEveryByteValueInEveryPosition()
 	{
-		if (!Gfni.V256.IsSupported)
-		{
-			Skip.Test("GFNI with 256-bit vectors is required.");
-		}
+		Skip.Unless(Gfni.V256.IsSupported, "GFNI with 256-bit vectors is required.");
 
 		return SM4KernelTestUtils.SubstituteMatchesIndependentReference<Vector256<byte>>(SM4Gfni.Substitute);
 	}
@@ -51,10 +45,7 @@ public class SM4GfniTest
 	[Test]
 	public Task Sbox512CoversEveryByteValueInEveryPosition()
 	{
-		if (!Gfni.V512.IsSupported)
-		{
-			Skip.Test("GFNI with 512-bit vectors is required.");
-		}
+		Skip.Unless(Gfni.V512.IsSupported, "GFNI with 512-bit vectors is required.");
 
 		return SM4KernelTestUtils.SubstituteMatchesIndependentReference<Vector512<byte>>(SM4Gfni.Substitute);
 	}
@@ -63,10 +54,7 @@ public class SM4GfniTest
 	[MatrixDataSource]
 	public async Task Ctr32WrapsWithoutChangingNonce([Matrix(2u, 0xFFFFFFF1u, 0xFFFFFFF5u, 0xFFFFFFFCu, 0xFFFFFFC0u)] uint initialCounter, [Matrix(32, 112, 240, 1024, 1264, 2048, 4096)] int length, [Matrix] bool inPlace)
 	{
-		if (!SM4Gfni.SupportsModePolicy)
-		{
-			Skip.Test("GFNI with 256-bit vectors is required.");
-		}
+		Skip.Unless(SM4Gfni.SupportsModePolicy, "GFNI with 256-bit vectors is required.");
 
 		byte[] key = CreateDeterministicSource(16);
 		byte[] initial = CreateDeterministicSource(16);

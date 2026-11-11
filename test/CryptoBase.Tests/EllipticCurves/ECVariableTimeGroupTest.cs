@@ -260,7 +260,7 @@ public class ECVariableTimeGroupTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(n < p && p < 2 * n).IsTrue();
-			await Assert.That(above.X < p).IsTrue();
+			await Assert.That(above.X).IsLessThan(p);
 			await Assert.That(wrapping > 0).IsEqualTo(curve.ScalarLimbRange < 2 * n);
 			await Assert.That(failures).IsEmpty();
 		}

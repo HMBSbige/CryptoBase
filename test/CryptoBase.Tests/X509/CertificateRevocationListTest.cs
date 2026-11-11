@@ -38,9 +38,9 @@ public class CertificateRevocationListTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(crl.Encoded.ToArray()).IsEquivalentTo(encoded, CollectionOrdering.Matching);
+			await Assert.That(crl.Encoded).IsEquivalentTo(encoded, CollectionOrdering.Matching);
 			await Assert.That(crl.Version).IsEqualTo(2);
-			await Assert.That(crl.Issuer.ToArray()).IsEquivalentTo(authority.Name, CollectionOrdering.Matching);
+			await Assert.That(crl.Issuer).IsEquivalentTo(authority.Name, CollectionOrdering.Matching);
 			await Assert.That(crl.ThisUpdate).IsEqualTo(thisUpdate);
 			await Assert.That(crl.NextUpdate).IsEqualTo(nextUpdate);
 			await Assert.That(crl.RevokedCount).IsEqualTo(2);
@@ -85,7 +85,7 @@ public class CertificateRevocationListTest
 			await Assert.That(crl.VerifySignature(unsupporting, publicKeyInfo)).IsFalse();
 			await Assert.That(crl.VerifySignature(supporting, publicKeyInfo)).IsTrue();
 			await Assert.That(supporting.Verifications).IsEqualTo(1);
-			await Assert.That(unsupporting.Verifications).IsEqualTo(0);
+			await Assert.That(unsupporting.Verifications).IsZero();
 		}
 	}
 
@@ -102,7 +102,7 @@ public class CertificateRevocationListTest
 			foreach (byte[] serial in serials)
 			{
 				await Assert.That(crl.TryGetEntry(serial, out RevokedCertificate entry)).IsTrue();
-				await Assert.That(entry.SerialNumber.ToArray()).IsEquivalentTo(serial, CollectionOrdering.Matching);
+				await Assert.That(entry.SerialNumber).IsEquivalentTo(serial, CollectionOrdering.Matching);
 			}
 
 			// Not minimal, a different sign or a different length: none of these is a serial number of the list.
@@ -245,7 +245,7 @@ public class CertificateRevocationListTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(crl.RevokedCount).IsEqualTo(0);
+			await Assert.That(crl.RevokedCount).IsZero();
 			await Assert.That(crl.TryGetEntry((byte[])[0x01], out _)).IsFalse();
 		}
 	}
@@ -370,7 +370,7 @@ public class CertificateRevocationListTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(CertificateRevocationList.DecodePem(text).RevokedCount).IsEqualTo(0);
+			await Assert.That(CertificateRevocationList.DecodePem(text).RevokedCount).IsZero();
 			await Assert.That(CertificateRevocationList.DecodePemAll(text).Select(static crl => crl.RevokedCount)).IsEquivalentTo((int[])[0, 1], CollectionOrdering.Matching);
 			await Assert.That(CertificateRevocationList.DecodePemAll(certificate)).IsEmpty();
 			await Assert.That(() => CertificateRevocationList.DecodePem(certificate)).Throws<ArgumentException>().WithParameterName("source");

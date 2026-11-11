@@ -208,8 +208,8 @@ public class Edwards448Test
 		using (Assert.Multiple())
 		{
 			await Assert.That(Torsion.Distinct().Count()).IsEqualTo(4);
-			await Assert.That(Torsion.All(IsOnCurve)).IsTrue();
-			await Assert.That(Torsion.All(static point => Multiply(point, 4) == Identity)).IsTrue();
+			await Assert.That(Torsion).All(IsOnCurve);
+			await Assert.That(Torsion).All(static point => Multiply(point, 4) == Identity);
 			await Assert.That(Multiply(Torsion[1], 2)).IsNotEqualTo(Identity);
 		}
 	}

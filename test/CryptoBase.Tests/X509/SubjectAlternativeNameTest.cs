@@ -54,9 +54,9 @@ public class SubjectAlternativeNameTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(decoded.Names.Select(static entry => (int)entry.Type)).IsEquivalentTo(Enumerable.Range(0, 9), CollectionOrdering.Matching);
-			await Assert.That(decoded.Names[4].Value.ToArray()).IsEquivalentTo(name, CollectionOrdering.Matching);
-			await Assert.That(decoded.Names[7].Value.ToArray()).IsEquivalentTo((byte[])[192, 0, 2, 1], CollectionOrdering.Matching);
-			await Assert.That(decoded.Names[8].Value.ToArray()).IsEquivalentTo(Oid("1.2.3.4").AsSpan(2).ToArray(), CollectionOrdering.Matching);
+			await Assert.That(decoded.Names[4].Value).IsEquivalentTo(name, CollectionOrdering.Matching);
+			await Assert.That(decoded.Names[7].Value).IsEquivalentTo((byte[])[192, 0, 2, 1], CollectionOrdering.Matching);
+			await Assert.That(decoded.Names[8].Value).IsEquivalentTo(Oid("1.2.3.4").AsSpan(2).ToArray(), CollectionOrdering.Matching);
 			await Assert.That(decoded.DnsNames).IsEquivalentTo(["example.com"], CollectionOrdering.Matching);
 		}
 	}
@@ -137,7 +137,7 @@ public class SubjectAlternativeNameTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(decoded.DnsNames).IsEquivalentTo(["example.com"], CollectionOrdering.Matching);
-			await Assert.That(decoded.IPAddresses.Single().ToArray()).IsEquivalentTo((byte[])[192, 0, 2, 1], CollectionOrdering.Matching);
+			await Assert.That(decoded.IPAddresses.Single()).IsEquivalentTo((byte[])[192, 0, 2, 1], CollectionOrdering.Matching);
 		}
 	}
 }

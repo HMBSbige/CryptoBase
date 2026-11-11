@@ -435,7 +435,7 @@ public class SM9EncryptionTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(IsZero(in point)).IsTrue();
-			await Assert.That(stored.All(static line => SM9EllipticCurveTestUtils.RawValue(line.A.A0).IsZero && SM9EllipticCurveTestUtils.RawValue(line.A.A1).IsZero && SM9EllipticCurveTestUtils.RawValue(line.B.A0).IsZero && SM9EllipticCurveTestUtils.RawValue(line.B.A1).IsZero)).IsTrue();
+			await Assert.That(stored).All(static line => SM9EllipticCurveTestUtils.RawValue(line.A.A0).IsZero && SM9EllipticCurveTestUtils.RawValue(line.A.A1).IsZero && SM9EllipticCurveTestUtils.RawValue(line.B.A0).IsZero && SM9EllipticCurveTestUtils.RawValue(line.B.A1).IsZero);
 			await Assert.That(() => key.TryDecrypt(ciphertext, new byte[1], out _)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => key.TryDecryptDer(ciphertext, new byte[1], out _)).ThrowsExactly<ObjectDisposedException>();
 			await Assert.That(() => key.TryDecapsulate(new byte[65], new byte[1])).ThrowsExactly<ObjectDisposedException>();

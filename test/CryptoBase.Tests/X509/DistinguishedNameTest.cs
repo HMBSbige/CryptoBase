@@ -323,7 +323,7 @@ public class DistinguishedNameTest
 		byte[] issuer = Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(Organization, PrintableString, "Example")), Rdn(Attribute(CommonName, PrintableString, "Example Issuing CA")));
 		byte[] subject = Dn(Rdn(Attribute(Country, PrintableString, "US")), Rdn(Attribute(Organization, Utf8String, "Example")), Rdn(Attribute(CommonName, Utf8String, "www.example.com")));
 
-		await Assert.That(MeasureAllocation(issuer, subject)).IsEqualTo(0);
+		await Assert.That(MeasureAllocation(issuer, subject)).IsZero();
 
 		static long MeasureAllocation(byte[] left, byte[] right)
 		{

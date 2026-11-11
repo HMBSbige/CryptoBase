@@ -334,10 +334,7 @@ public class SM2KernelTest
 	[Test]
 	public async Task OctoVariableTimeMatchesTheReference()
 	{
-		if (!SM2Field29x8Avx512.IsSupported)
-		{
-			Skip.Test("AVX-512 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x8Avx512.IsSupported, "AVX-512 is not supported here.");
 
 		List<string> failures = [];
 
@@ -366,10 +363,7 @@ public class SM2KernelTest
 	[Test]
 	public async Task OctoMultiplyAddMatchesTheReference()
 	{
-		if (!SM2Field29x8Avx512.IsSupported)
-		{
-			Skip.Test("AVX-512 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x8Avx512.IsSupported, "AVX-512 is not supported here.");
 
 		BigInteger n = Curve.Order;
 		List<BigInteger> equal = TwiceLowDigitScalars();
@@ -483,10 +477,7 @@ public class SM2KernelTest
 	[Test]
 	public async Task OctoHalfChainsMatchTheReference()
 	{
-		if (!SM2Field29x8Avx512.IsSupported)
-		{
-			Skip.Test("AVX-512 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x8Avx512.IsSupported, "AVX-512 is not supported here.");
 
 		Random random = new(19);
 		CurvePoint point = Curve.Reference.RandomPoint(random);
@@ -539,10 +530,7 @@ public class SM2KernelTest
 	[Test]
 	public async Task OctoVerificationMatchesTheReference()
 	{
-		if (!SM2Field29x8Avx512.IsSupported)
-		{
-			Skip.Test("AVX-512 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x8Avx512.IsSupported, "AVX-512 is not supported here.");
 
 		BigInteger n = Curve.Order;
 		BigInteger p = Curve.Reference.P;

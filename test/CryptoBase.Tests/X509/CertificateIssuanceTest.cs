@@ -105,13 +105,13 @@ internal class CertificateIssuanceTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(certificate.Version).IsEqualTo(3);
-			await Assert.That(certificate.Issuer.ToArray()).IsEquivalentTo(authority.Certificate.Subject.ToArray(), CollectionOrdering.Matching);
-			await Assert.That(certificate.Subject.ToArray()).IsEquivalentTo(Name("CN=Subject"), CollectionOrdering.Matching);
-			await Assert.That(certificate.PublicKeyInfo.Encoded.ToArray()).IsEquivalentTo(subjectPublicKeyInfo.Encoded.ToArray(), CollectionOrdering.Matching);
-			await Assert.That(certificate.SerialNumber.ToArray()).IsEquivalentTo((byte[])[0x00, 0x80, 0x01], CollectionOrdering.Matching);
+			await Assert.That(certificate.Issuer).IsEquivalentTo(authority.Certificate.Subject.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(certificate.Subject).IsEquivalentTo(Name("CN=Subject"), CollectionOrdering.Matching);
+			await Assert.That(certificate.PublicKeyInfo.Encoded).IsEquivalentTo(subjectPublicKeyInfo.Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(certificate.SerialNumber).IsEquivalentTo((byte[])[0x00, 0x80, 0x01], CollectionOrdering.Matching);
 			await Assert.That(certificate.NotBefore).IsEqualTo(NotBefore);
 			await Assert.That(certificate.NotAfter).IsEqualTo(NotAfter);
-			await Assert.That(certificate.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.EcdsaSha256).Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(certificate.SignatureAlgorithm.Encoded).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.EcdsaSha256).Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(certificate.VerifySignature(authority.Key)).IsTrue();
 			await Assert.That(certificate.VerifySignature(subjectKey)).IsFalse();
 			await Assert.That(certificate.Extensions.Select(static extension => extension.Oid)).IsEquivalentTo(["1.3.6.1.4.1.99999.1", AuthorityKeyIdentifierOid, SubjectKeyIdentifierOid], CollectionOrdering.Matching);
@@ -418,8 +418,8 @@ internal class CertificateIssuanceTest
 		{
 			await Assert.That(writtenAuthority.Critical).IsFalse();
 			await Assert.That(writtenSubject.Critical).IsFalse();
-			await Assert.That(writtenAuthority.Value.ToArray()).IsEquivalentTo(authorityKeyIdentifier.RawData, CollectionOrdering.Matching);
-			await Assert.That(writtenSubject.Value.ToArray()).IsEquivalentTo(subjectKeyIdentifier.RawData, CollectionOrdering.Matching);
+			await Assert.That(writtenAuthority.Value).IsEquivalentTo(authorityKeyIdentifier.RawData, CollectionOrdering.Matching);
+			await Assert.That(writtenSubject.Value).IsEquivalentTo(subjectKeyIdentifier.RawData, CollectionOrdering.Matching);
 			await Assert.That(certificate.GetAuthorityKeyIdentifier()?.KeyIdentifier?.ToArray()).IsEquivalentTo(expectedAuthorityKeyIdentifier, CollectionOrdering.Matching);
 		}
 	}

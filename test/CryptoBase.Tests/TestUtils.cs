@@ -56,10 +56,7 @@ public static class TestUtils
 
 	public static void SkipUnlessOptimized<T>()
 	{
-		if (typeof(T).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled is true)
-		{
-			Skip.Test("The implementation is not optimized.");
-		}
+		Skip.When(typeof(T).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled is true, "The implementation is not optimized.");
 	}
 
 	public static void SkipUnlessSupported(IKernelCase kernel)

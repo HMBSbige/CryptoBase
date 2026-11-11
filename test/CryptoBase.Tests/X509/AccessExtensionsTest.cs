@@ -125,7 +125,7 @@ public class AccessExtensionsTest
 			await Assert.That((points[0].DistributionPoint as DistributionPointName.FullName)?.Names.Count).IsEqualTo(2);
 			await Assert.That(points[0].Reasons).IsEqualTo(CrlReasonFlags.KeyCompromise);
 			await Assert.That(points[0].CrlIssuer?.Count).IsEqualTo(1);
-			await Assert.That(points[0].CrlIssuerDirectoryNames.Single().ToArray()).IsEquivalentTo(Name("CN=CRL Issuer"), CollectionOrdering.Matching);
+			await Assert.That(points[0].CrlIssuerDirectoryNames.Single()).IsEquivalentTo(Name("CN=CRL Issuer"), CollectionOrdering.Matching);
 			await Assert.That(points[1].DistributionPoint?.Uris).IsEmpty();
 			await Assert.That((points[1].DistributionPoint as DistributionPointName.RelativeToCrlIssuer)?.RelativeName.ToArray()).IsEquivalentTo(TestCrl.CommonName("Partition 1"), CollectionOrdering.Matching);
 			await Assert.That(points[2].DistributionPoint).IsNull();

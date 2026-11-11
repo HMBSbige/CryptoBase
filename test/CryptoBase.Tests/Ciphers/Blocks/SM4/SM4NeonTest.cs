@@ -8,10 +8,7 @@ public class SM4NeonTest
 	[Before(Class)]
 	public static void SkipWhenUnavailable()
 	{
-		if (!SM4Neon.IsSupported)
-		{
-			Skip.Test("ARM64 NEON is required.");
-		}
+		Skip.Unless(SM4Neon.IsSupported, "ARM64 NEON is required.");
 	}
 
 	[Test]

@@ -48,10 +48,7 @@ public class Blake2bKernelTest
 	[MethodDataSource(nameof(KernelCases))]
 	public Task Vector128MatchesReference(int blockCount, UInt128 counter, ulong finalFlag)
 	{
-		if (!Blake2bVector128.IsSupported)
-		{
-			Skip.Test("SSE2 is required.");
-		}
+		Skip.Unless(Blake2bVector128.IsSupported, "SSE2 is required.");
 
 		return VerifyKernel<Blake2bVector128>(blockCount, counter, finalFlag);
 	}
@@ -60,10 +57,7 @@ public class Blake2bKernelTest
 	[MethodDataSource(nameof(KernelCases))]
 	public Task Vector256MatchesReference(int blockCount, UInt128 counter, ulong finalFlag)
 	{
-		if (!Blake2bVector256.IsSupported)
-		{
-			Skip.Test("AVX2 is required.");
-		}
+		Skip.Unless(Blake2bVector256.IsSupported, "AVX2 is required.");
 
 		return VerifyKernel<Blake2bVector256>(blockCount, counter, finalFlag);
 	}

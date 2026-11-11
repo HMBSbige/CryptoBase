@@ -27,10 +27,7 @@ public class ChaCha20Poly1305Test
 	[MatrixDataSource]
 	public async Task MatchesReferenceAtEveryLength([Matrix(0, 13, 4097)] int associatedDataLength, [MatrixMethod<ChaCha20Poly1305Test>(nameof(MessageCases))] (int Length, bool InPlace) scenario)
 	{
-		if (!ChaCha20Poly1305.IsSupported)
-		{
-			Skip.Test("The BCL ChaCha20-Poly1305 reference is not supported here.");
-		}
+		Skip.Unless(ChaCha20Poly1305.IsSupported, "The BCL ChaCha20-Poly1305 reference is not supported here.");
 
 		(int length, bool inPlace) = scenario;
 		byte[] key = TestUtils.CreateDeterministicSource(32);

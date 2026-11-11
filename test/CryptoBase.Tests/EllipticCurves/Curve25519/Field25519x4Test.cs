@@ -72,10 +72,7 @@ public class Field25519x4Test
 	[Arguments(1)]
 	public async Task EachGroupOfEightLanesHoldsTheBounds(int group)
 	{
-		if (!Field25519x8Avx512.IsSupported)
-		{
-			Skip.Test("Field25519x8Avx512 is not supported here.");
-		}
+		Skip.Unless(Field25519x8Avx512.IsSupported, "Field25519x8Avx512 is not supported here.");
 
 		// The other group holds other limbs, so that a result that crosses the halves shows.
 		ulong[][] other = [ReducedMaximum, LeftMaximum, Zero, RightMaximum];
@@ -89,10 +86,7 @@ public class Field25519x4Test
 	[Arguments(1)]
 	public async Task EachGroupOfEightLanesMatchesBigInteger(int group)
 	{
-		if (!Field25519x8Avx512.IsSupported)
-		{
-			Skip.Test("Field25519x8Avx512 is not supported here.");
-		}
+		Skip.Unless(Field25519x8Avx512.IsSupported, "Field25519x8Avx512 is not supported here.");
 
 		List<Field25519[]> all = Lanes();
 		List<string> failures = [];

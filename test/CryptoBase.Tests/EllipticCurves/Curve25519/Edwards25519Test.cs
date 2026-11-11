@@ -79,7 +79,7 @@ public class Edwards25519Test
 		using (Assert.Multiple())
 		{
 			await Assert.That(Torsion.Distinct().Count()).IsEqualTo(8);
-			await Assert.That(Torsion.All(static point => Multiply(point, 8) == Identity)).IsTrue();
+			await Assert.That(Torsion).All(static point => Multiply(point, 8) == Identity);
 		}
 	}
 

@@ -56,13 +56,13 @@ public class OcspTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(byDefault.Encoded.ToArray()).IsEquivalentTo(Convert.FromBase64String(OcspVectors.RequestSha256), CollectionOrdering.Matching);
-			await Assert.That(plain.Encoded.ToArray()).IsEquivalentTo(Convert.FromBase64String(OcspVectors.RequestGood), CollectionOrdering.Matching);
-			await Assert.That(withNonce.Encoded.ToArray()).IsEquivalentTo(Convert.FromBase64String(OcspVectors.RequestWithNonce), CollectionOrdering.Matching);
-			await Assert.That(sha256.Encoded.ToArray()).IsEquivalentTo(Convert.FromBase64String(OcspVectors.RequestSha256), CollectionOrdering.Matching);
+			await Assert.That(byDefault.Encoded).IsEquivalentTo(Convert.FromBase64String(OcspVectors.RequestSha256), CollectionOrdering.Matching);
+			await Assert.That(plain.Encoded).IsEquivalentTo(Convert.FromBase64String(OcspVectors.RequestGood), CollectionOrdering.Matching);
+			await Assert.That(withNonce.Encoded).IsEquivalentTo(Convert.FromBase64String(OcspVectors.RequestWithNonce), CollectionOrdering.Matching);
+			await Assert.That(sha256.Encoded).IsEquivalentTo(Convert.FromBase64String(OcspVectors.RequestSha256), CollectionOrdering.Matching);
 			await Assert.That(plain.Nonce).IsNull();
 			await Assert.That(withNonce.Nonce?.ToArray()).IsEquivalentTo(nonce, CollectionOrdering.Matching);
-			await Assert.That(plain.CertificateId.SerialNumber.ToArray()).IsEquivalentTo(GoodLeaf.SerialNumber.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(plain.CertificateId.SerialNumber).IsEquivalentTo(GoodLeaf.SerialNumber.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(plain.CertificateId.HashAlgorithm.Oid).IsEqualTo("1.3.14.3.2.26");
 			await Assert.That(sha256.CertificateId.HashAlgorithm.Oid).IsEqualTo("2.16.840.1.101.3.4.2.1");
 			await Assert.That(plain.CertificateId.Matches(GoodLeaf, CA)).IsTrue();
@@ -111,8 +111,8 @@ public class OcspTest
 			await Assert.That(byName.TbsResponseData.IsEmpty).IsFalse();
 			await Assert.That(byName.Signature.IsEmpty).IsFalse();
 			await Assert.That(byName.SignatureAlgorithm.Oid).IsEqualTo("1.2.840.10045.4.3.2");
-			await Assert.That(byName.Certificates.Single().Encoded.ToArray()).IsEquivalentTo(CA.Encoded.ToArray(), CollectionOrdering.Matching);
-			await Assert.That(byKey.Certificates.Single().Subject.ToArray()).IsEquivalentTo(Certificate.DecodePem(OcspVectors.Responder).Subject.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(byName.Certificates.Single().Encoded).IsEquivalentTo(CA.Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(byKey.Certificates.Single().Subject).IsEquivalentTo(Certificate.DecodePem(OcspVectors.Responder).Subject.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(single.CertificateId.Matches(GoodLeaf, CA)).IsTrue();
 			await Assert.That(single.Status).IsTypeOf<OcspCertificateStatus.Good>();
 			await Assert.That(single.NextUpdate).IsNotNull();
@@ -639,7 +639,7 @@ public class OcspTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(response.Certificates.Single().Encoded.ToArray()).IsEquivalentTo(leaf.Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(response.Certificates.Single().Encoded).IsEquivalentTo(leaf.Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(() => OcspResponse.Decode((basic with { Certificates = [[0xFF]] }).Encode(authority.Key))).Throws<ArgumentException>();
 		}
 	}

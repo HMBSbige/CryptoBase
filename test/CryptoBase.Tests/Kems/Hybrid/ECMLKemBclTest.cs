@@ -94,10 +94,7 @@ public class ECMLKemBclTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEc
 
 	private static void SkipUnlessSupported(CurveCase curve)
 	{
-		if (!BclMLKem.IsSupported)
-		{
-			Skip.Test("The platform does not support ML-KEM.");
-		}
+		Skip.Unless(BclMLKem.IsSupported, "The platform does not support ML-KEM.");
 
 		EcdhTestUtils.SkipUnlessSupported(curve);
 	}

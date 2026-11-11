@@ -87,7 +87,7 @@ public class Argon2LaneSchedulerTest
 			await Assert.That(lanesWhileWaiting).IsEqualTo(HelperThreadCount);
 			await Assert.That(callerLeft).IsTrue();
 			await Assert.That(failure).IsTypeOf<InvalidOperationException>();
-			await Assert.That(activeLanes).IsEqualTo(0);
+			await Assert.That(activeLanes).IsZero();
 			await Assert.That(interruptPending).IsEqualTo(interrupt);
 			await Assert.That(scheduler.HelpersTookPart).IsTrue();
 			await Assert.That(helpersLeft).IsTrue();

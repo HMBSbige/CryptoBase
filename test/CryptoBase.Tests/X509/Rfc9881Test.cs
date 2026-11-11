@@ -34,15 +34,15 @@ public class Rfc9881Test
 			await Assert.That(certificate.Version).IsEqualTo(3);
 			await Assert.That(certificate.SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm signatureAlgorithm)).IsTrue();
 			await Assert.That(signatureAlgorithm).IsEqualTo(algorithm);
-			await Assert.That(certificate.PublicKeyInfo.Algorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), CollectionOrdering.Matching);
-			await Assert.That(certificate.PublicKeyInfo.Encoded.ToArray()).IsEquivalentTo(subjectPublicKeyInfo, CollectionOrdering.Matching);
-			await Assert.That(certificate.Subject.ToArray()).IsEquivalentTo(certificate.Issuer.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(certificate.PublicKeyInfo.Algorithm.Encoded).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(certificate.PublicKeyInfo.Encoded).IsEquivalentTo(subjectPublicKeyInfo, CollectionOrdering.Matching);
+			await Assert.That(certificate.Subject).IsEquivalentTo(certificate.Issuer.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(certificate.NotBefore).IsEqualTo(new DateTimeOffset(2020, 2, 3, 4, 32, 10, TimeSpan.Zero));
 			await Assert.That(certificate.NotAfter).IsEqualTo(new DateTimeOffset(2040, 1, 29, 4, 32, 10, TimeSpan.Zero));
 
 			// digitalSignature, keyCertSign and cRLSign.
 			await Assert.That(keyUsage.Critical).IsTrue();
-			await Assert.That(keyUsage.Value.ToArray()).IsEquivalentTo((byte[])[0x03, 0x02, 0x01, 0x86], CollectionOrdering.Matching);
+			await Assert.That(keyUsage.Value).IsEquivalentTo((byte[])[0x03, 0x02, 0x01, 0x86], CollectionOrdering.Matching);
 			await Assert.That(certificate.KeyUsage).IsEqualTo(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign);
 
 			await Assert.That(publicKey.GetType()).IsEqualTo(type);
@@ -87,8 +87,8 @@ public class Rfc9881Test
 		using (Assert.Multiple())
 		{
 			await Assert.That(publicKey.GetType()).IsEqualTo(type);
-			await Assert.That(certificate.PublicKeyInfo.Encoded.ToArray()).IsEquivalentTo(example.PublicKeyInfo.Encoded.ToArray(), CollectionOrdering.Matching);
-			await Assert.That(certificate.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(example.SignatureAlgorithm.Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(certificate.PublicKeyInfo.Encoded).IsEquivalentTo(example.PublicKeyInfo.Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(certificate.SignatureAlgorithm.Encoded).IsEquivalentTo(example.SignatureAlgorithm.Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(certificate.VerifySignature(publicKey)).IsTrue();
 		}
 	}

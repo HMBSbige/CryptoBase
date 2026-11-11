@@ -53,9 +53,9 @@ public class SM2CertificateTest
 		{
 			foreach (Certificate certificate in (Certificate[])[root, intermediate, leaf, EmptyIdLeaf])
 			{
-				await Assert.That(certificate.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(identifier, CollectionOrdering.Matching);
+				await Assert.That(certificate.SignatureAlgorithm.Encoded).IsEquivalentTo(identifier, CollectionOrdering.Matching);
 				await Assert.That(certificate.PublicKeyInfo.Algorithm.Oid).IsEqualTo(ECPublicKeyOid);
-				await Assert.That(certificate.PublicKeyInfo.Algorithm.Parameters.ToArray()).IsEquivalentTo(Oid(SM2CurveOid), CollectionOrdering.Matching);
+				await Assert.That(certificate.PublicKeyInfo.Algorithm.Parameters).IsEquivalentTo(Oid(SM2CurveOid), CollectionOrdering.Matching);
 			}
 
 			await Assert.That(rootKey.GetType()).IsEqualTo(typeof(SM2Key));
@@ -92,7 +92,7 @@ public class SM2CertificateTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(root.SignatureAlgorithm.Oid).IsEqualTo(SM2SM3Oid);
-			await Assert.That(root.SignatureAlgorithm.Parameters.ToArray()).IsEquivalentTo((byte[])[0x05, 0x00], CollectionOrdering.Matching);
+			await Assert.That(root.SignatureAlgorithm.Parameters).IsEquivalentTo((byte[])[0x05, 0x00], CollectionOrdering.Matching);
 			await Assert.That(root.SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) ? algorithm : default).IsEqualTo(SignatureAlgorithm.SM2SM3);
 			await Assert.That(key.GetType()).IsEqualTo(typeof(SM2Key));
 			await Assert.That(root.VerifySignature(key)).IsTrue();

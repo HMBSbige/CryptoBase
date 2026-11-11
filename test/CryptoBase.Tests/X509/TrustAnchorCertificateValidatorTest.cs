@@ -1157,7 +1157,7 @@ public class TrustAnchorCertificateValidatorTest
 		{
 			if (path[i] is { } expected)
 			{
-				await Assert.That(result.Path[i].Encoded.Span.SequenceEqual(expected.Encoded.Span)).IsTrue().Because($"certificate {i} of the path");
+				await Assert.That(result.Path[i].Encoded).IsEquivalentTo(expected.Encoded.ToArray(), CollectionOrdering.Matching).Because($"certificate {i} of the path");
 			}
 		}
 	}

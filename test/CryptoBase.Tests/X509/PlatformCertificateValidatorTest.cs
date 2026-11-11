@@ -388,10 +388,7 @@ public class PlatformCertificateValidatorTest
 	[Test]
 	public async Task ReportsAnIssuancePolicyThatTheChainDoesNotMeetAsNotValidForUsage()
 	{
-		if (!OperatingSystem.IsWindows())
-		{
-			Skip.Test("Windows alone checks the issuance policies of a chain.");
-		}
+		Skip.Unless(OperatingSystem.IsWindows(), "Windows alone checks the issuance policies of a chain.");
 
 		using TestPki pki = new(configureRoot: static request => request.CertificateExtensions.Add(new X509Extension("2.5.29.36", [0x30, 0x03, 0x80, 0x01, 0x00], true)));
 		using X509Certificate2 leaf = pki.IssueLeaf();
@@ -424,7 +421,7 @@ public class PlatformCertificateValidatorTest
 			await Assert.That(trusted.Path).Count().IsEqualTo(3);
 			await Assert.That(trusted.Path[0]).IsSameReferenceAs(context.PresentedCertificates[0]);
 			await Assert.That(trusted.Path[1]).IsSameReferenceAs(context.PresentedCertificates[1]);
-			await Assert.That(trusted.Path[2].Encoded.ToArray()).IsEquivalentTo(pki.Root.RawData, CollectionOrdering.Matching);
+			await Assert.That(trusted.Path[2].Encoded).IsEquivalentTo(pki.Root.RawData, CollectionOrdering.Matching);
 			await Assert.That(trusted.PathEnd).IsEqualTo(CertificatePathEnd.TrustAnchor);
 
 			await Assert.That(untrusted.Errors).IsEquivalentTo([CertificateValidationError.UntrustedRoot], CollectionOrdering.Matching);
@@ -544,10 +541,7 @@ public class PlatformCertificateValidatorTest
 	[Test]
 	public async Task ReportsAChainThatThePlatformFailsToBuildAsUnsupported()
 	{
-		if (!OperatingSystem.IsWindows())
-		{
-			Skip.Test("Windows alone fails to build a chain with a DSA signature.");
-		}
+		Skip.Unless(OperatingSystem.IsWindows(), "Windows alone fails to build a chain with a DSA signature.");
 
 		using DSA rootKey = DSA.Create(2048);
 		DsaSignatureGenerator generator = new(rootKey);
@@ -600,7 +594,7 @@ public class PlatformCertificateValidatorTest
 			await Assert.That(ignored.IsValid).IsTrue().Because($"{ignored.Error} {ignored.Message}");
 			await Assert.That(download.Errors).IsEquivalentTo([CertificateValidationError.UntrustedRoot, CertificateValidationError.RevocationUnknown], CollectionOrdering.Matching).Because(download.Message ?? "");
 			await Assert.That(download.PathEnd).IsEqualTo(CertificatePathEnd.MissingIssuer);
-			await Assert.That(server.Connections).IsEqualTo(0);
+			await Assert.That(server.Connections).IsZero();
 		}
 	}
 

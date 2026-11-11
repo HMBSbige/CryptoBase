@@ -304,7 +304,7 @@ public class ECKeyTest
 			await Assert.That(heldKey).IsTrue();
 			await Assert.That(key.HasPrivateKey).IsFalse();
 			await Assert.That(key.HasPublicKey).IsFalse();
-			await Assert.That(key.Storage().All(static b => b is 0)).IsTrue();
+			await Assert.That(key.Storage()).All(static b => b is 0);
 		}
 	}
 

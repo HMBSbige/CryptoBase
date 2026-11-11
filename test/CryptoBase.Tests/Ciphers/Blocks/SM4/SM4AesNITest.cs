@@ -8,10 +8,7 @@ public class SM4AesNITest
 	[Before(Class)]
 	public static void SkipWhenUnavailable()
 	{
-		if (!SM4AesNI.IsSupported)
-		{
-			Skip.Test("AES-NI and SSSE3 are required.");
-		}
+		Skip.Unless(SM4AesNI.IsSupported, "AES-NI and SSSE3 are required.");
 	}
 
 	[Test]

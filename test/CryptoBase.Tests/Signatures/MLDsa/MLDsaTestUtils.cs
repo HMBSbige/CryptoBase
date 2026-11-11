@@ -174,10 +174,7 @@ internal static class MLDsaTestUtils
 
 	public static void SkipUnlessSupported()
 	{
-		if (!BclMLDsa.IsSupported)
-		{
-			Skip.Test("The platform does not support ML-DSA.");
-		}
+		Skip.Unless(BclMLDsa.IsSupported, "The platform does not support ML-DSA.");
 	}
 
 	private static byte[] MuOfFormattedMessage(ReadOnlySpan<byte> publicKey, ReadOnlySpan<byte> formattedMessage)

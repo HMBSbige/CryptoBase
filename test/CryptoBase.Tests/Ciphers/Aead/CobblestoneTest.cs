@@ -59,10 +59,7 @@ internal class CobblestoneTest<TCipher> where TCipher : class, ICobblestoneCiphe
 	[Test]
 	public async Task PlatformChunksMatchTheManagedChunks()
 	{
-		if (!AesGcm.IsSupported)
-		{
-			Skip.Test("The platform AES-GCM is not supported.");
-		}
+		Skip.Unless(AesGcm.IsSupported, "The platform AES-GCM is not supported.");
 
 		byte[] aeadKey = CreateDeterministicSource(TCipher.KeySize);
 		byte[] baseNonce = CreateDeterministicSource(12);

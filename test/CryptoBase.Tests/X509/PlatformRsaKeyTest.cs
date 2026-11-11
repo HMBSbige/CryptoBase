@@ -165,7 +165,7 @@ public class PlatformRsaKeyTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(pssRequests + pkcs1Requests).IsEqualTo(0);
+			await Assert.That(pssRequests + pkcs1Requests).IsZero();
 			await Assert.That(RsaAlgorithms.Where(declared.Supports)).IsEquivalentTo([SignatureAlgorithm.RsaPkcs1Sha256, SignatureAlgorithm.RsaPssSha256], CollectionOrdering.Matching);
 			await Assert.That(RsaAlgorithms.Where(shortModulus.Supports)).IsEquivalentTo([SignatureAlgorithm.RsaPssSha384], CollectionOrdering.Matching);
 			await Assert.That(declared.Verify(SignatureAlgorithm.RsaPkcs1Sha256, [1], Sign(declared, SignatureAlgorithm.RsaPkcs1Sha256, [1]))).IsTrue();

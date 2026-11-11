@@ -85,9 +85,6 @@ public class MLKemBclTest<T> where T : class, IKem<T>
 
 	private static void SkipUnlessSupported()
 	{
-		if (!BclMLKem.IsSupported)
-		{
-			Skip.Test("The platform does not support ML-KEM.");
-		}
+		Skip.Unless(BclMLKem.IsSupported, "The platform does not support ML-KEM.");
 	}
 }

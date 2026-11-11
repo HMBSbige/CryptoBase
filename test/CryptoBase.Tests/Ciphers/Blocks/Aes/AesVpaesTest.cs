@@ -9,10 +9,7 @@ public class AesVpaesTest
 	[Before(Class)]
 	public static void SkipWhenUnavailable()
 	{
-		if (!AesCipherVpaes.IsSupported)
-		{
-			Skip.Test("SSSE3 or ARM64 NEON is required.");
-		}
+		Skip.Unless(AesCipherVpaes.IsSupported, "SSSE3 or ARM64 NEON is required.");
 	}
 
 	[Test]

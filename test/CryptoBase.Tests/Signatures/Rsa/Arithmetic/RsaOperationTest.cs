@@ -159,7 +159,7 @@ public class RsaOperationTest
 		{
 			await Assert.That(() => operation.Apply(ToBigEndian(key.N, length), output)).Throws<ArgumentException>();
 			await Assert.That(() => operation.Apply(ToBigEndian((BigInteger.One << 8 * length) - 1, length), output)).Throws<ArgumentException>();
-			await Assert.That(output.All(static value => value is 0xA5)).IsTrue();
+			await Assert.That(output).All(static value => value is 0xA5);
 		}
 	}
 
@@ -223,7 +223,7 @@ public class RsaOperationTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(() => operation.Apply(input, output)).Throws<CryptographicException>();
-			await Assert.That(output.All(static value => value is 0xA5)).IsTrue();
+			await Assert.That(output).All(static value => value is 0xA5);
 		}
 	}
 
@@ -289,7 +289,7 @@ public class RsaOperationTest
 
 		for (int i = 0; i < components.Length; ++i)
 		{
-			await Assert.That(components[i].AsSpan().SequenceEqual(copies[i])).IsTrue();
+			await Assert.That(components[i]).IsEquivalentTo(copies[i], CollectionOrdering.Matching);
 		}
 	}
 
@@ -338,7 +338,7 @@ public class RsaOperationTest
 		BigInteger lambda = (key.P - 1) * (key.Q - 1) / BigInteger.GreatestCommonDivisor(key.P - 1, key.Q - 1);
 		TestKey larger = key with { D = key.D + lambda };
 
-		await Assert.That(larger.D < key.N).IsTrue();
+		await Assert.That(larger.D).IsLessThan(key.N);
 
 		using RsaPrivateOperation operation = larger.Import(leadingZeros: 3);
 		await AssertApplyMatches(operation, key.N, key.D, random);
@@ -369,7 +369,7 @@ public class RsaOperationTest
 			}
 		});
 
-		await Assert.That(failures).IsEqualTo(0);
+		await Assert.That(failures).IsZero();
 	}
 
 	// The vector kernels load and store through pointers into the buffers of each operation, which the heap may move. Private keys whose moduli and primes take each family of kernels, and a public key past every window of AVX-512, sign and verify on several threads against BigInteger while another compacts the heap again and again, with garbage left between what lives. Whether a move lands mid-operation is up to the collector, so the test runs for seconds, alone and only on request.
@@ -483,7 +483,7 @@ public class RsaOperationTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(failures).IsEqualTo(0);
+			await Assert.That(failures).IsZero();
 			await Assert.That(operations).IsGreaterThan(workers.Length);
 			await Assert.That(collections).IsGreaterThan(1);
 		}

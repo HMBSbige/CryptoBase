@@ -127,10 +127,7 @@ public class ChaCha20Poly1305FusionTest
 	[MatrixDataSource]
 	public async Task Vector512KernelMatchesSeparatePasses([MatrixMethod<ChaCha20Poly1305FusionTest>(nameof(KernelLengths))] int length, [MatrixMethod<ChaCha20Poly1305FusionTest>(nameof(PrefixLengths))] int prefixLength, [Matrix] bool nearCounterLimit)
 	{
-		if (!ChaCha20Utils.CanFusePoly1305<Poly1305Avx512>())
-		{
-			Skip.Test("The AVX-512 ChaCha20-Poly1305 kernel is not used here.");
-		}
+		Skip.Unless(ChaCha20Utils.CanFusePoly1305<Poly1305Avx512>(), "The AVX-512 ChaCha20-Poly1305 kernel is not used here.");
 
 		Random random = new(8439 + length);
 		byte[] key = new byte[32];

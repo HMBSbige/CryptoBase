@@ -26,7 +26,7 @@ public class ThreadPoolHelperBudgetTest
 		{
 			await Assert.That(first).IsEqualTo(3);
 			await Assert.That(second).IsEqualTo(1);
-			await Assert.That(exhausted).IsEqualTo(0);
+			await Assert.That(exhausted).IsZero();
 			await Assert.That(afterRelease).IsEqualTo(2);
 			await Assert.That(budget.Queued).IsEqualTo(4);
 		}
@@ -56,8 +56,8 @@ public class ThreadPoolHelperBudgetTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(exceeded).IsEqualTo(0);
-			await Assert.That(budget.Queued).IsEqualTo(0);
+			await Assert.That(exceeded).IsZero();
+			await Assert.That(budget.Queued).IsZero();
 		}
 	}
 
@@ -81,12 +81,12 @@ public class ThreadPoolHelperBudgetTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(firstQueued).IsEqualTo(2);
-			await Assert.That(secondQueuedWhileFull).IsEqualTo(0);
+			await Assert.That(secondQueuedWhileFull).IsZero();
 			await Assert.That(heldWhileFull).IsEqualTo(2);
 			await Assert.That(secondQueuedAfterStart).IsEqualTo(1);
 			await Assert.That(heldAfterStart).IsEqualTo(2);
 			await Assert.That(waiting).IsEqualTo(2);
-			await Assert.That(budget.Queued).IsEqualTo(0);
+			await Assert.That(budget.Queued).IsZero();
 		}
 	}
 
@@ -135,7 +135,7 @@ public class ThreadPoolHelperBudgetTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(held).IsBetween(waiting - 1, waiting);
-			await Assert.That(budget.Queued).IsEqualTo(0);
+			await Assert.That(budget.Queued).IsZero();
 		}
 	}
 

@@ -280,7 +280,7 @@ public class SymmetricPaddingTest
 
 		bool valid = SymmetricPadding.TryGetUnpaddedLength(expected, blockSize, mode, out int retained);
 		await Assert.That(valid).IsTrue();
-		await Assert.That(retained).IsEqualTo(0);
+		await Assert.That(retained).IsZero();
 		await Assert.That(expected).IsEquivalentTo(original, CollectionOrdering.Matching);
 	}
 
@@ -290,7 +290,7 @@ public class SymmetricPaddingTest
 		bool accepted = SymmetricPadding.TryGetUnpaddedLength(data, 16, mode, out int length);
 
 		await Assert.That(accepted).IsFalse();
-		await Assert.That(length).IsEqualTo(0);
+		await Assert.That(length).IsZero();
 		await Assert.That(data).IsEquivalentTo(original, CollectionOrdering.Matching);
 	}
 }

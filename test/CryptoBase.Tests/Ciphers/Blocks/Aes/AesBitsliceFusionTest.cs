@@ -9,10 +9,7 @@ public class AesBitsliceFusionTest
 	[Before(Class)]
 	public static void SkipWhenUnavailable()
 	{
-		if (!AesCipherBitslice.IsSupported)
-		{
-			Skip.Test("SSE2 is not supported.");
-		}
+		Skip.Unless(AesCipherBitslice.IsSupported, "SSE2 is not supported.");
 	}
 
 	[Test]

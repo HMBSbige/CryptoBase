@@ -205,9 +205,9 @@ public class SM9InteropTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(enType).IsEqualTo(0);
-			await Assert.That(unusedBits).IsEqualTo(0);
-			await Assert.That(c2.Zip(k, static (c, key) => (byte)(c ^ key)).ToArray()).IsEquivalentTo(message, CollectionOrdering.Matching);
+			await Assert.That(enType).IsZero();
+			await Assert.That(unusedBits).IsZero();
+			await Assert.That(c2.Zip(k, static (c, key) => (byte)(c ^ key))).IsEquivalentTo(message, CollectionOrdering.Matching);
 			await Assert.That(hmac).IsEquivalentTo(c3, CollectionOrdering.Matching);
 			await Assert.That(Sm3(c2, k.AsSpan(c2.Length).ToArray())).IsNotEquivalentTo(c3);
 			await Assert.That(DecryptDer(user, ciphertext)).IsNull();

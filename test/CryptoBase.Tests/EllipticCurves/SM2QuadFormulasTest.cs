@@ -44,10 +44,7 @@ public class SM2QuadFormulasTest
 	[Test]
 	public async Task QuadRoundsAtTheBoundsMatchTheReference()
 	{
-		if (!SM2Field29x4Avx2.IsSupported)
-		{
-			Skip.Test("AVX2 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x4Avx2.IsSupported, "AVX2 is not supported here.");
 
 		List<string> failures = [];
 		Random random = new(21);
@@ -103,10 +100,7 @@ public class SM2QuadFormulasTest
 	[Test]
 	public async Task OctoRoundsAtTheBoundsMatchTheReference()
 	{
-		if (!SM2Field29x8Avx512.IsSupported)
-		{
-			Skip.Test("AVX-512 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x8Avx512.IsSupported, "AVX-512 is not supported here.");
 
 		List<string> failures = [];
 		Random random = new(22);
@@ -149,10 +143,7 @@ public class SM2QuadFormulasTest
 	[Test]
 	public async Task QuadTableMatchesTheReference()
 	{
-		if (!SM2Field29x4Avx2.IsSupported)
-		{
-			Skip.Test("AVX2 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x4Avx2.IsSupported, "AVX2 is not supported here.");
 
 		await Assert.That(CheckTable(SM2QuadFormulas.BuildTable, static j => j + 1)).IsEmpty();
 	}
@@ -160,10 +151,7 @@ public class SM2QuadFormulasTest
 	[Test]
 	public async Task OctoTableMatchesTheReference()
 	{
-		if (!SM2Field29x8Avx512.IsSupported)
-		{
-			Skip.Test("AVX-512 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x8Avx512.IsSupported, "AVX-512 is not supported here.");
 
 		await Assert.That(CheckTable(SM2OctoFormulas.BuildTable, static j => 2 * j + 1)).IsEmpty();
 	}
@@ -172,10 +160,7 @@ public class SM2QuadFormulasTest
 	[Test]
 	public async Task OctoTablesMatchTheReference()
 	{
-		if (!SM2Field29x8Avx512.IsSupported)
-		{
-			Skip.Test("AVX-512 is not supported here.");
-		}
+		Skip.Unless(SM2Field29x8Avx512.IsSupported, "AVX-512 is not supported here.");
 
 		CurvePoint point = Curve.Reference.RandomPoint(new Random(24));
 		AffinePoint<SM2Field52> other = new() { X = ToElement<SM2Field52>(point.X), Y = ToElement<SM2Field52>(point.Y) };
@@ -256,7 +241,7 @@ public class SM2QuadFormulasTest
 		BigInteger lowest = SM2Field29.FourPFold2 - (Nominal + 64) - (h << 6);
 
 		await Assert.That(ValueOf(fold)).IsEqualTo(4 * P);
-		await Assert.That(lowest >= 0).IsTrue();
+		await Assert.That(lowest).IsGreaterThanOrEqualTo(0);
 	}
 
 	private static void CheckPairAdditions<TField>(List<string> failures) where TField : unmanaged, ISM2Field29Lanes<TField>

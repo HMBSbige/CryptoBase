@@ -33,15 +33,15 @@ public class CertificateTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(certificate.Encoded.ToArray()).IsEquivalentTo(expected.RawData, CollectionOrdering.Matching);
+			await Assert.That(certificate.Encoded).IsEquivalentTo(expected.RawData, CollectionOrdering.Matching);
 			await Assert.That(certificate.Version).IsEqualTo(expected.Version);
-			await Assert.That(certificate.SerialNumber.ToArray()).IsEquivalentTo(expected.SerialNumberBytes.ToArray(), CollectionOrdering.Matching);
-			await Assert.That(certificate.Issuer.ToArray()).IsEquivalentTo(expected.IssuerName.RawData, CollectionOrdering.Matching);
-			await Assert.That(certificate.Subject.ToArray()).IsEquivalentTo(expected.SubjectName.RawData, CollectionOrdering.Matching);
+			await Assert.That(certificate.SerialNumber).IsEquivalentTo(expected.SerialNumberBytes.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(certificate.Issuer).IsEquivalentTo(expected.IssuerName.RawData, CollectionOrdering.Matching);
+			await Assert.That(certificate.Subject).IsEquivalentTo(expected.SubjectName.RawData, CollectionOrdering.Matching);
 			await Assert.That(certificate.NotBefore.UtcDateTime).IsEqualTo(expected.NotBefore.ToUniversalTime());
 			await Assert.That(certificate.NotAfter.UtcDateTime).IsEqualTo(expected.NotAfter.ToUniversalTime());
 			await Assert.That(certificate.NotBefore.Offset).IsEqualTo(TimeSpan.Zero);
-			await Assert.That(certificate.PublicKeyInfo.Encoded.ToArray()).IsEquivalentTo(expected.PublicKey.ExportSubjectPublicKeyInfo(), CollectionOrdering.Matching);
+			await Assert.That(certificate.PublicKeyInfo.Encoded).IsEquivalentTo(expected.PublicKey.ExportSubjectPublicKeyInfo(), CollectionOrdering.Matching);
 			await Assert.That(certificate.PublicKeyInfo.Algorithm.Oid).IsEqualTo("1.2.840.10045.2.1");
 			await Assert.That(certificate.SignatureAlgorithm.Oid).IsEqualTo(expected.SignatureAlgorithm.Value);
 			await Assert.That(certificate.SignatureAlgorithm.Parameters.IsEmpty).IsTrue();
@@ -102,7 +102,7 @@ public class CertificateTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(Certificate.DecodePem(text).Encoded.ToArray()).IsEquivalentTo(first.Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(Certificate.DecodePem(text).Encoded).IsEquivalentTo(first.Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(all.Select(static certificate => Convert.ToHexString(certificate.Encoded.Span))).IsEquivalentTo([Convert.ToHexString(first.Encoded.Span), Convert.ToHexString(second.Encoded.Span)], CollectionOrdering.Matching);
 			await Assert.That(Certificate.DecodePemAll("no blocks")).IsEmpty();
 			await Assert.That(() => Certificate.DecodePem(PemEncoding.WriteString("PUBLIC KEY", first.PublicKeyInfo.Encoded.Span))).Throws<ArgumentException>().WithParameterName("source");
@@ -163,7 +163,7 @@ public class CertificateTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(root.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.Ed25519).Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(root.SignatureAlgorithm.Encoded).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.Ed25519).Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(leaf.SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) ? algorithm : default).IsEqualTo(SignatureAlgorithm.Ed25519);
 			await Assert.That(leaf.Signature.Length).IsEqualTo(64);
 			await Assert.That(rootKey.GetType()).IsEqualTo(typeof(Ed25519));
@@ -190,7 +190,7 @@ public class CertificateTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(root.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.Ed448).Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(root.SignatureAlgorithm.Encoded).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.Ed448).Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(leaf.SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) ? algorithm : default).IsEqualTo(SignatureAlgorithm.Ed448);
 			await Assert.That(leaf.Signature.Length).IsEqualTo(114);
 			await Assert.That(rootKey.GetType()).IsEqualTo(typeof(Ed448));
@@ -238,11 +238,11 @@ public class CertificateTest
 			await Assert.That(version1.Version).IsEqualTo(1);
 			await Assert.That(version1.Extensions).IsEmpty();
 			await Assert.That(version2.Version).IsEqualTo(2);
-			await Assert.That(negative.SerialNumber.ToArray()).IsEquivalentTo((byte[])[0xFF], CollectionOrdering.Matching);
-			await Assert.That(zero.SerialNumber.ToArray()).IsEquivalentTo((byte[])[0x00], CollectionOrdering.Matching);
-			await Assert.That(emptySubject.Subject.ToArray()).IsEquivalentTo((byte[])[0x30, 0x00], CollectionOrdering.Matching);
+			await Assert.That(negative.SerialNumber).IsEquivalentTo((byte[])[0xFF], CollectionOrdering.Matching);
+			await Assert.That(zero.SerialNumber).IsEquivalentTo((byte[])[0x00], CollectionOrdering.Matching);
+			await Assert.That(emptySubject.Subject).IsEquivalentTo((byte[])[0x30, 0x00], CollectionOrdering.Matching);
 			await Assert.That(unknownCritical.Extensions.Single().Critical).IsTrue();
-			await Assert.That(unknownCritical.Extensions.Single().Value.ToArray()).IsEquivalentTo((byte[])[0x05, 0x00], CollectionOrdering.Matching);
+			await Assert.That(unknownCritical.Extensions.Single().Value).IsEquivalentTo((byte[])[0x05, 0x00], CollectionOrdering.Matching);
 		}
 	}
 
@@ -329,7 +329,7 @@ public class CertificateTest
 		byte[] expected = encoding.ToArray();
 		Array.Clear(encoding);
 
-		await Assert.That(certificate.Encoded.ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		await Assert.That(certificate.Encoded).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
 	[Test]

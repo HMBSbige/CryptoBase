@@ -359,7 +359,7 @@ internal class RsaKeyTest
 			}
 		});
 
-		await Assert.That(failures).IsEqualTo(0);
+		await Assert.That(failures).IsZero();
 	}
 
 	[Test]

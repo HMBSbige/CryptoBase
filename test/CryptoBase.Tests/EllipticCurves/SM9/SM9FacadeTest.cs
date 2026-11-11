@@ -169,6 +169,6 @@ public class SM9FacadeTest
 		SM9PairingLines lines = new(in key);
 		lines.Dispose();
 		SM9PrecomputedLine[] stored = (SM9PrecomputedLine[])typeof(SM9PairingLines).GetField("_lines", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(lines)!;
-		await Assert.That(stored.All(static line => RawValue(line.A.A0).IsZero && RawValue(line.A.A1).IsZero && RawValue(line.B.A0).IsZero && RawValue(line.B.A1).IsZero)).IsTrue();
+		await Assert.That(stored).All(static line => RawValue(line.A.A0).IsZero && RawValue(line.A.A1).IsZero && RawValue(line.B.A0).IsZero && RawValue(line.B.A1).IsZero);
 	}
 }

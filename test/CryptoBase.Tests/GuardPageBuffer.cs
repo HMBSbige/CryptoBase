@@ -28,10 +28,7 @@ public sealed unsafe partial class GuardPageBuffer : IDisposable
 
 	public static void SkipUnlessSupported()
 	{
-		if (!IsSupported)
-		{
-			Skip.Test("Guard pages are not supported here.");
-		}
+		Skip.Unless(IsSupported, "Guard pages are not supported here.");
 	}
 
 	public GuardPageBuffer(int length)

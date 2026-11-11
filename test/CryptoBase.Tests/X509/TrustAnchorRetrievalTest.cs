@@ -2351,7 +2351,7 @@ public class TrustAnchorRetrievalTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(results.Count).IsEqualTo(64);
-			await Assert.That(results.All(static result => result.IsValid)).IsTrue();
+			await Assert.That(results).All(static result => result.IsValid);
 		}
 	}
 
@@ -2480,8 +2480,8 @@ public class TrustAnchorRetrievalTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(first.Span.SequenceEqual(body)).IsTrue();
-			await Assert.That(second.Span.SequenceEqual(body)).IsTrue();
+			await Assert.That(first).IsEquivalentTo(body, CollectionOrdering.Matching);
+			await Assert.That(second).IsEquivalentTo(body, CollectionOrdering.Matching);
 		}
 	}
 
@@ -2509,7 +2509,7 @@ public class TrustAnchorRetrievalTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(response.ToArray()).IsEquivalentTo(new byte[] { 1, 2, 3 }, CollectionOrdering.Matching);
+			await Assert.That(response).IsEquivalentTo(new byte[] { 1, 2, 3 }, CollectionOrdering.Matching);
 			await Assert.That(method).IsEqualTo(HttpMethod.Post);
 			await Assert.That(mediaType).IsEqualTo("application/ocsp-request");
 			await Assert.That(posted).IsEquivalentTo(new byte[] { 9, 8 }, CollectionOrdering.Matching);
@@ -2543,7 +2543,7 @@ public class TrustAnchorRetrievalTest
 			await Assert.That(first.IsEmpty).IsTrue();
 			await Assert.That(second.IsEmpty).IsTrue();
 			await Assert.That(undeclared.Consumed).IsEqualTo(1025);
-			await Assert.That(declared.Consumed).IsEqualTo(0);
+			await Assert.That(declared.Consumed).IsZero();
 		}
 	}
 
@@ -2611,7 +2611,7 @@ public class TrustAnchorRetrievalTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(finished == retrieval).IsTrue();
+			await Assert.That(finished).IsSameReferenceAs(retrieval);
 			await Assert.That(retrieval.IsCompletedSuccessfully && retrieval.Result.IsEmpty).IsTrue();
 		}
 	}

@@ -269,7 +269,7 @@ internal class ProbablePrimeTest
 			using (Assert.Multiple())
 			{
 				await Assert.That(runs).IsEqualTo(4);
-				await Assert.That(p.Concat(q).All(static word => word is 0)).IsTrue();
+				await Assert.That(p.Concat(q)).All(static word => word is 0);
 			}
 		}
 	}
@@ -303,8 +303,8 @@ internal class ProbablePrimeTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(outOfRange).IsEqualTo(0);
-			await Assert.That(tops[3]).IsEqualTo(0);
+			await Assert.That(outOfRange).IsZero();
+			await Assert.That(tops[3]).IsZero();
 			await Assert.That(topChiSquare).IsLessThan(28);
 			await Assert.That(lowChiSquare).IsLessThan(58);
 		}

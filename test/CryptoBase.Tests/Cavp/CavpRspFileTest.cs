@@ -56,7 +56,7 @@ public class CavpRspFileTest
 		{
 			await Assert.That(file.Records[0].Contains("Seed")).IsTrue();
 			await Assert.That(file.Records[0].Contains("COUNT")).IsFalse();
-			await Assert.That(file.Records[1].GetInt32("COUNT")).IsEqualTo(0);
+			await Assert.That(file.Records[1].GetInt32("COUNT")).IsZero();
 			await Assert.That(file.Records[2].GetInt32("COUNT")).IsEqualTo(1);
 			await Assert.That(file.Records[2].GetHeaderInt32("L")).IsEqualTo(256);
 		}
@@ -86,7 +86,7 @@ public class CavpRspFileTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(record.Headers.ContainsKey("Tested for Output of byte-oriented messages")).IsTrue();
+			await Assert.That(record.Headers).ContainsKey("Tested for Output of byte-oriented messages");
 			await Assert.That(record.GetHeaderInt32("Input Length")).IsEqualTo(128);
 			await Assert.That(record.GetHeaderInt32("Minimum Output Length (bits)")).IsEqualTo(125);
 			await Assert.That(record.GetHeaderInt32("Maximum Output Length (bits)")).IsEqualTo(1120);

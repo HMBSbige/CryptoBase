@@ -49,10 +49,10 @@ internal class CertificationRequestTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(builder.SubjectName.ToArray()).IsEquivalentTo(name, CollectionOrdering.Matching);
-			await Assert.That(decoded.Subject.ToArray()).IsEquivalentTo(name, CollectionOrdering.Matching);
-			await Assert.That(decoded.PublicKeyInfo.Encoded.ToArray()).IsEquivalentTo(ExportSubjectPublicKeyInfo(key), CollectionOrdering.Matching);
-			await Assert.That(decoded.SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(builder.SubjectName).IsEquivalentTo(name, CollectionOrdering.Matching);
+			await Assert.That(decoded.Subject).IsEquivalentTo(name, CollectionOrdering.Matching);
+			await Assert.That(decoded.PublicKeyInfo.Encoded).IsEquivalentTo(ExportSubjectPublicKeyInfo(key), CollectionOrdering.Matching);
+			await Assert.That(decoded.SignatureAlgorithm.Encoded).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(decoded.RequestedExtensions.Select(static extension => (extension.Oid, extension.Critical, Convert.ToHexString(extension.Value.Span)))).IsEquivalentTo([(SubjectAlternativeNameOid, false, Convert.ToHexString(subjectAlternativeName)), (BasicConstraintsOid, true, "3000")], CollectionOrdering.Matching);
 			await Assert.That(decoded.VerifySignature(key)).IsTrue();
 			await Assert.That(decoded.VerifySignature(publicKey)).IsTrue();
@@ -119,10 +119,7 @@ internal class CertificationRequestTest
 	[Arguments(SignatureAlgorithm.MLDsa87)]
 	public async Task DecodesBclMLDsaRequests(SignatureAlgorithm algorithm)
 	{
-		if (!BclMLDsa.IsSupported)
-		{
-			Skip.Test("The platform does not support ML-DSA.");
-		}
+		Skip.Unless(BclMLDsa.IsSupported, "The platform does not support ML-DSA.");
 
 		MLDsaAlgorithm bclAlgorithm = algorithm switch
 		{
@@ -178,7 +175,7 @@ internal class CertificationRequestTest
 			await Assert.That(other.RequestedExtensions).IsEmpty();
 			await Assert.That(multiple.RequestedExtensions).IsEmpty();
 			await Assert.That(both.RequestedExtensions.Select(static extension => extension.Oid)).IsEquivalentTo([BasicConstraintsOid], CollectionOrdering.Matching);
-			await Assert.That(noSubject.Subject.ToArray()).IsEquivalentTo(Sequence(), CollectionOrdering.Matching);
+			await Assert.That(noSubject.Subject).IsEquivalentTo(Sequence(), CollectionOrdering.Matching);
 			await Assert.That(trailingKeyUsageBits.RequestedExtensions.Count).IsEqualTo(1);
 		}
 	}
@@ -265,7 +262,7 @@ internal class CertificationRequestTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(decoded.Encoded.ToArray()).IsEquivalentTo(request.Encoded.ToArray(), CollectionOrdering.Matching);
+			await Assert.That(decoded.Encoded).IsEquivalentTo(request.Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(() => CertificationRequest.DecodePem(certificateBlock + otherRequest)).Throws<ArgumentException>().WithParameterName("source");
 			await Assert.That(() => CertificationRequest.DecodePem(certificateBlock + otherRequest)).Throws<ArgumentException>().WithMessageContaining("The text holds no CERTIFICATE REQUEST block.");
 			await Assert.That(() => CertificationRequest.DecodePem(invalid)).Throws<ArgumentException>().WithParameterName("source");
@@ -335,7 +332,7 @@ internal class CertificationRequestTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(request.CertificationRequestInfo.ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
+			await Assert.That(request.CertificationRequestInfo).IsEquivalentTo(expected, CollectionOrdering.Matching);
 			await Assert.That(request.RequestedExtensions).IsEmpty();
 		}
 	}
@@ -349,7 +346,7 @@ internal class CertificationRequestTest
 		byte[] attributes = Tlv(0xA0, Attribute(ExtensionRequestOid, Sequence(Extension(BasicConstraintsOid, [0x30, 0x00], [0x01, 0x01, 0xFF]))));
 		byte[] expected = Sequence([0x02, 0x01, 0x00], Name("CN=Extensions"), ExportSubjectPublicKeyInfo(key), attributes);
 
-		await Assert.That(builder.Create(key, SignatureAlgorithm.EcdsaSha256).CertificationRequestInfo.ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
+		await Assert.That(builder.Create(key, SignatureAlgorithm.EcdsaSha256).CertificationRequestInfo).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
 	[Test]
@@ -362,7 +359,7 @@ internal class CertificationRequestTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(new X500DistinguishedName(builder.SubjectName.Span).Name).IsEqualTo("CN=Copy");
-			await Assert.That(new CertificationRequestBuilder(Sequence()).SubjectName.ToArray()).IsEquivalentTo(Sequence(), CollectionOrdering.Matching);
+			await Assert.That(new CertificationRequestBuilder(Sequence()).SubjectName).IsEquivalentTo(Sequence(), CollectionOrdering.Matching);
 
 			foreach (byte[] invalid in (byte[][])[[], [0x02, 0x01, 0x01], [.. Name("CN=Trailing"), 0x00], Sequence(Tlv(0x31))])
 			{
@@ -424,7 +421,7 @@ internal class CertificationRequestTest
 			await Assert.That(signatureAlgorithm).IsEqualTo(algorithm);
 			await Assert.That(decoded.VerifySignature(publicKey)).IsTrue();
 			await Assert.That(CertificationRequest.Decode(FlipSignature(decoded)).VerifySignature(publicKey)).IsFalse();
-			await Assert.That(decoded.Subject.ToArray()).IsEquivalentTo(request.SubjectName.RawData, CollectionOrdering.Matching);
+			await Assert.That(decoded.Subject).IsEquivalentTo(request.SubjectName.RawData, CollectionOrdering.Matching);
 			await Assert.That(decoded.RequestedExtensions.Select(static extension => (extension.Oid, extension.Critical, Convert.ToHexString(extension.Value.Span)))).IsEquivalentTo([(SubjectAlternativeNameOid, false, Convert.ToHexString(subjectAlternativeName)), (BasicConstraintsOid, true, "3000")], CollectionOrdering.Matching);
 			await Assert.That(decoded.Encoded.Span.IndexOf(password) >= 0).IsTrue();
 		}

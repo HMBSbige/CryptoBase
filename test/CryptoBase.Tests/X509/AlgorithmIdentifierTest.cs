@@ -49,7 +49,7 @@ public class AlgorithmIdentifierTest
 
 				await Assert.That(identifier.Oid).IsEqualTo(oid);
 				await Assert.That(identifier.Parameters.IsEmpty).IsTrue();
-				await Assert.That(identifier.Encoded.ToArray()).IsEquivalentTo(Sequence(Oid(oid)), CollectionOrdering.Matching);
+				await Assert.That(identifier.Encoded).IsEquivalentTo(Sequence(Oid(oid)), CollectionOrdering.Matching);
 				await Assert.That(identifier.TryGetSignatureAlgorithm(out SignatureAlgorithm mapped)).IsTrue();
 				await Assert.That(mapped).IsEqualTo(algorithm);
 			}
@@ -67,8 +67,8 @@ public class AlgorithmIdentifierTest
 				AlgorithmIdentifier identifier = AlgorithmIdentifier.FromSignatureAlgorithm(algorithm);
 
 				await Assert.That(identifier.Oid).IsEqualTo(oid);
-				await Assert.That(identifier.Parameters.ToArray()).IsEquivalentTo((byte[])[0x05, 0x00], CollectionOrdering.Matching);
-				await Assert.That(identifier.Encoded.ToArray()).IsEquivalentTo(Sequence(Oid(oid), [0x05, 0x00]), CollectionOrdering.Matching);
+				await Assert.That(identifier.Parameters).IsEquivalentTo((byte[])[0x05, 0x00], CollectionOrdering.Matching);
+				await Assert.That(identifier.Encoded).IsEquivalentTo(Sequence(Oid(oid), [0x05, 0x00]), CollectionOrdering.Matching);
 				await Assert.That(MappedAlgorithm(identifier.Encoded.ToArray())).IsEqualTo(algorithm);
 				await Assert.That(MappedAlgorithm(Sequence(Oid(oid)))).IsEqualTo(algorithm);
 			}
@@ -92,7 +92,7 @@ public class AlgorithmIdentifierTest
 			foreach ((SignatureAlgorithm algorithm, string certificate) in openSsl)
 			{
 				AlgorithmIdentifier identifier = AlgorithmIdentifier.FromSignatureAlgorithm(algorithm);
-				await Assert.That(identifier.Encoded.ToArray()).IsEquivalentTo(Certificate.DecodePem(certificate).SignatureAlgorithm.Encoded.ToArray(), CollectionOrdering.Matching).Because(algorithm.ToString());
+				await Assert.That(identifier.Encoded).IsEquivalentTo(Certificate.DecodePem(certificate).SignatureAlgorithm.Encoded.ToArray(), CollectionOrdering.Matching).Because(algorithm.ToString());
 			}
 
 			foreach ((SignatureAlgorithm algorithm, string hash, int saltLength) in RsaPss)
@@ -101,8 +101,8 @@ public class AlgorithmIdentifierTest
 				byte[] expected = RsassaPssIdentifier(hash: hash, maskHash: hash, saltLength: saltLength);
 
 				await Assert.That(identifier.Oid).IsEqualTo("1.2.840.113549.1.1.10");
-				await Assert.That(identifier.Encoded.ToArray()).IsEquivalentTo(expected, CollectionOrdering.Matching);
-				await Assert.That(identifier.Parameters.ToArray()).IsEquivalentTo(expected.AsSpan(2 + 11).ToArray(), CollectionOrdering.Matching);
+				await Assert.That(identifier.Encoded).IsEquivalentTo(expected, CollectionOrdering.Matching);
+				await Assert.That(identifier.Parameters).IsEquivalentTo(expected.AsSpan(2 + 11).ToArray(), CollectionOrdering.Matching);
 				await Assert.That(identifier.TryGetSignatureAlgorithm(out SignatureAlgorithm mapped)).IsTrue();
 				await Assert.That(mapped).IsEqualTo(algorithm);
 			}
@@ -199,7 +199,7 @@ public class AlgorithmIdentifierTest
 			foreach (SignatureAlgorithm algorithm in EcdsaTestUtils.Algorithms)
 			{
 				using X509Certificate2 certificate = BclSelfSigned(key, EcdsaTestUtils.HashName(algorithm));
-				await Assert.That(Certificate.Decode(certificate.RawData).SignatureAlgorithm.Encoded.ToArray()).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), CollectionOrdering.Matching);
+				await Assert.That(Certificate.Decode(certificate.RawData).SignatureAlgorithm.Encoded).IsEquivalentTo(AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), CollectionOrdering.Matching);
 			}
 		}
 	}
@@ -230,7 +230,7 @@ public class AlgorithmIdentifierTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(nullParameters.Oid).IsEqualTo("1.2.840.10045.4.3.2");
-			await Assert.That(nullParameters.Parameters.ToArray()).IsEquivalentTo((byte[])[0x05, 0x00], CollectionOrdering.Matching);
+			await Assert.That(nullParameters.Parameters).IsEquivalentTo((byte[])[0x05, 0x00], CollectionOrdering.Matching);
 			await Assert.That(nullParameters.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm)).IsFalse();
 			await Assert.That(algorithm).IsEqualTo((SignatureAlgorithm)0);
 			await Assert.That(other.TryGetSignatureAlgorithm(out _)).IsFalse();
@@ -259,7 +259,7 @@ public class AlgorithmIdentifierTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.SM2SM3).Encoded.ToArray()).IsEquivalentTo((byte[])[0x30, 0x0A, 0x06, 0x08, 0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x83, 0x75], CollectionOrdering.Matching);
+			await Assert.That(AlgorithmIdentifier.FromSignatureAlgorithm(SignatureAlgorithm.SM2SM3).Encoded).IsEquivalentTo((byte[])[0x30, 0x0A, 0x06, 0x08, 0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x83, 0x75], CollectionOrdering.Matching);
 			await Assert.That(MappedAlgorithm(Sequence(Oid(oid)))).IsEqualTo(SignatureAlgorithm.SM2SM3);
 			await Assert.That(MappedAlgorithm(Sequence(Oid(oid), [0x05, 0x00]))).IsEqualTo(SignatureAlgorithm.SM2SM3);
 

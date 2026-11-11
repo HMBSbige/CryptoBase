@@ -96,7 +96,7 @@ public class SM2AnnexTest
 		{
 			await Assert.That(kP).IsEqualTo(new CurvePoint(Integer("335E18D7 51E51F04 0E27D468 138B7AB1 DC86AD7F 981D7D41 6222FD6A B3ED230D"), Integer("AB743EBC FB22D64F 7B6AB791 F70658F2 5B48FA93 E54064FD BFBED3F0 BD847AC9")));
 			await Assert.That(t).IsEquivalentTo(Hex("44E60FDB F0BAE814 37665374 BEF26749 046C9E"), CollectionOrdering.Matching);
-			await Assert.That(message.Zip(t, static (m, key) => (byte)(m ^ key)).ToArray()).IsEquivalentTo(Hex("21886CA9 89CA9C7D 58087307 CA93092D 651EFA"), CollectionOrdering.Matching);
+			await Assert.That(message.Zip(t, static (m, key) => (byte)(m ^ key))).IsEquivalentTo(Hex("21886CA9 89CA9C7D 58087307 CA93092D 651EFA"), CollectionOrdering.Matching);
 			await Assert.That(Sm3(Encode(kP.X), message, Encode(kP.Y))).IsEquivalentTo(Hex("59983C18 F809E262 923C53AE C295D303 83B54E39 D609D160 AFCB1908 D0BD8766"), CollectionOrdering.Matching);
 		}
 	}
