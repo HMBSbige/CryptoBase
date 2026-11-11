@@ -8,6 +8,6 @@
     <PackageVersion Include="System.CommandLine" Version="3.0.0" />
     <PackageVersion Include="System.IO.Hashing" Version="11.0.0" />
     <PackageVersion Include="System.Numerics.Tensors" Version="11.0.0" />
-    <PackageVersion Include="TUnit" Version="1.81.16" />
+    <PackageVersion Include="TUnit" Version="1.83.0" />
   </ItemGroup>
 </Project>
