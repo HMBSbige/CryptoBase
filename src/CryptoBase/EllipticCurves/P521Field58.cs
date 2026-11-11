@@ -614,7 +614,17 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong High(ulong a, ulong b)
 	{
-		return MultiplyOutOfLine(a, b, out _);
+		if (Bmi2.X64.IsSupported)
+		{
+			return Bmi2.X64.MultiplyNoFlags(a, b);
+		}
+
+		if (ArmBase.Arm64.IsSupported)
+		{
+			return ArmBase.Arm64.MultiplyHigh(a, b);
+		}
+
+		return Math.BigMul(a, b, out _);
 	}
 
 	// ⌊t/2^58⌋ for a t that may be negative.

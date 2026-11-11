@@ -483,6 +483,11 @@ internal struct Field25519
 			return ArmBase.Arm64.MultiplyHigh(a, b);
 		}
 
+		if (IsMultiplyAccelerated)
+		{
+			return Math.BigMul(a, b, out _);
+		}
+
 		// Math.BigMul would call its software fallback here rather than inline it. Both a and b are below 2^62, so the two cross products of their 32-bit halves and the carry out of the low product sum below 2^64 without a carry.
 		ulong aHigh = a >> 32;
 		ulong aLow = (uint)a;

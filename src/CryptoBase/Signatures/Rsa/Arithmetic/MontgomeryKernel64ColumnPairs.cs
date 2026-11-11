@@ -10,7 +10,7 @@ internal readonly struct MontgomeryKernel64ColumnPairs<TRadix> : IMontgomeryKern
 {
 	private static int Shift => 64 - TRadix.Bits;
 
-	public static bool IsSupported => Bmi2.X64.IsSupported || ArmBase.Arm64.IsSupported;
+	public static bool IsSupported => LimbArithmetic.IsMultiplyAccelerated;
 
 	public static int DigitBits => TRadix.Bits;
 

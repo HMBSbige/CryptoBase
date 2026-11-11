@@ -1,9 +1,15 @@
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// Each operation tries the vector kernels before the scalar one, which supports every platform. Curve25519Avx512 only adds a second chain where the additions fall into two, so the ladder and the double-base product stay on Curve25519Avx2. Curve25519Sse41 serves x64 without AVX2, where the scalar products also lack BMI2.
+// Each operation tries the vector kernels before the scalar one, which supports every platform. Curve25519Avx512 only adds a second chain where the additions fall into two, so the ladder and the double-base product stay on Curve25519Avx2. Curve25519Sse41 serves x86 without AVX2 where LimbArithmetic.IsMultiplyAccelerated is false and the scalar products fall back to software; where it is true the scalar kernel serves.
 internal readonly struct Curve25519KernelDispatch : ICurve25519Kernel
 {
 	public static bool IsSupported => true;
+
+	private static bool UseSse41
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Curve25519Sse41.IsSupported && !LimbArithmetic.IsMultiplyAccelerated;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Ladder(ReadOnlySpan<byte> scalar, in Field25519 u, out Field25519 x, out Field25519 z)
@@ -12,7 +18,7 @@ internal readonly struct Curve25519KernelDispatch : ICurve25519Kernel
 		{
 			Curve25519Avx2.Ladder(scalar, in u, out x, out z);
 		}
-		else if (Curve25519Sse41.IsSupported)
+		else if (UseSse41)
 		{
 			Curve25519Sse41.Ladder(scalar, in u, out x, out z);
 		}
@@ -33,7 +39,7 @@ internal readonly struct Curve25519KernelDispatch : ICurve25519Kernel
 		{
 			Curve25519Avx2.MultiplyBase(scalar, out result);
 		}
-		else if (Curve25519Sse41.IsSupported)
+		else if (UseSse41)
 		{
 			Curve25519Sse41.MultiplyBase(scalar, out result);
 		}
@@ -50,7 +56,7 @@ internal readonly struct Curve25519KernelDispatch : ICurve25519Kernel
 		{
 			Curve25519Avx2.DoubleScalarMultiplyVariableTime(a, in point, b, out result);
 		}
-		else if (Curve25519Sse41.IsSupported)
+		else if (UseSse41)
 		{
 			Curve25519Sse41.DoubleScalarMultiplyVariableTime(a, in point, b, out result);
 		}
@@ -71,7 +77,7 @@ internal readonly struct Curve25519KernelDispatch : ICurve25519Kernel
 		{
 			Curve25519Avx2.DoubleScalarMultiplyVariableTime(a, pointTable, b, out result);
 		}
-		else if (Curve25519Sse41.IsSupported)
+		else if (UseSse41)
 		{
 			Curve25519Sse41.DoubleScalarMultiplyVariableTime(a, pointTable, b, out result);
 		}

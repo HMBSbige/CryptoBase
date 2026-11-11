@@ -5,6 +5,17 @@ internal static class LimbArithmetic
 {
 	internal const int MaxLimbCount = 9;
 
+	// Whether Multiply compiles to one or two multiplication instructions rather than to MultiplyPortable: with mulx or on Arm64, and on any x64 from .NET 11 on, where Math.BigMul compiles to mul. A method that the JIT must fold before it decides what to inline names the instruction sets instead.
+	internal static bool IsMultiplyAccelerated
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET11_0_OR_GREATER
+		get => X86Base.X64.IsSupported || ArmBase.Arm64.IsSupported;
+#else
+		get => Bmi2.X64.IsSupported || ArmBase.Arm64.IsSupported;
+#endif
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong AddWithCarry(ulong x, ulong y, ref ulong carry)
 	{
@@ -31,7 +42,7 @@ internal static class LimbArithmetic
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong Multiply(ulong x, ulong y, out ulong low)
 	{
-		// With BMI2, Math.BigMul passes the low limb through memory; a separate multiplication keeps both limbs in registers.
+		// With BMI2, Math.BigMul passes the low limb through memory before .NET 11 and compiles to mul from there on, which holds rax and rdx and so spills the values around a row of products; mulx and a separate multiplication keep them in registers.
 		if (Bmi2.X64.IsSupported)
 		{
 			low = x * y;
@@ -45,10 +56,17 @@ internal static class LimbArithmetic
 			return ArmBase.Arm64.MultiplyHigh(x, y);
 		}
 
+#if NET11_0_OR_GREATER
+		if (X86Base.X64.IsSupported)
+		{
+			return Math.BigMul(x, y, out low);
+		}
+#endif
+
 		return MultiplyPortable(x, y, out low);
 	}
 
-	// Without BMI2 or Arm64, Math.BigMul calls a fallback that passes the low limb through memory; the same four 32-bit products inlined need neither the call nor the memory. They are kept out of Multiply, whose IL counts against the inlining budget of every caller, so that it stays small.
+	// Without a 64-bit multiplier that it compiles to, Math.BigMul calls a fallback that passes the low limb through memory; the same four 32-bit products inlined need neither the call nor the memory. They are kept out of Multiply, whose IL counts against the inlining budget of every caller, so that it stays small.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong MultiplyPortable(ulong x, ulong y, out ulong low)
 	{
@@ -65,10 +83,17 @@ internal static class LimbArithmetic
 		return xHigh * yHigh + (cross1 >> 32) + (cross2 >> 32) + (middle >> 32);
 	}
 
-	// As Multiply, but without BMI2 or Arm64 a call to Math.BigMul, for code with many products at once, such as the matrix steps of SafeGcd and the column sums of P384Field56 and P521Field58, where the inlined portable products would leave so many values live that most of them would spill.
+	// As Multiply, but without BMI2 or Arm64 a call to Math.BigMul, for code with many products at once, such as the matrix steps of SafeGcd, where the inlined portable products would leave so many values live that most of them would spill. From .NET 11 on, x64 takes Math.BigMul with BMI2 too: its one mul serves products that are summed one at a time better than mulx and a separate multiplication.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong MultiplyOutOfLine(ulong x, ulong y, out ulong low)
 	{
+#if NET11_0_OR_GREATER
+		if (X86Base.X64.IsSupported)
+		{
+			return Math.BigMul(x, y, out low);
+		}
+#endif
+
 		if (Bmi2.X64.IsSupported || ArmBase.Arm64.IsSupported)
 		{
 			return Multiply(x, y, out low);

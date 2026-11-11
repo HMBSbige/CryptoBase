@@ -11,7 +11,7 @@ internal readonly struct MontgomeryKernel64<TRadix> : IMontgomeryKernel where TR
 	private const int KaratsubaDigits = 256;
 	private const int KaratsubaBaseDigits = 128;
 
-	public static bool IsSupported => Bmi2.X64.IsSupported || ArmBase.Arm64.IsSupported;
+	public static bool IsSupported => LimbArithmetic.IsMultiplyAccelerated;
 
 	public static int DigitBits => TRadix.Bits;
 

@@ -367,7 +367,17 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong High(ulong a, ulong b)
 	{
-		return MultiplyOutOfLine(a, b, out _);
+		if (Bmi2.X64.IsSupported)
+		{
+			return Bmi2.X64.MultiplyNoFlags(a, b);
+		}
+
+		if (ArmBase.Arm64.IsSupported)
+		{
+			return ArmBase.Arm64.MultiplyHigh(a, b);
+		}
+
+		return Math.BigMul(a, b, out _);
 	}
 
 	// ⌊t/2^56⌋ for a t that may be negative.

@@ -4,16 +4,16 @@ using SM9Sse41 = CryptoBase.EllipticCurves.SM9.SM9VectorKernel<CryptoBase.Ellipt
 
 namespace CryptoBase.EllipticCurves.SM9;
 
-// Each operation takes the vector kernel chosen for it on the platform, if any, and otherwise the scalar one. SM9Avx512 and SM9Avx2 take every heavy operation of GT. SM9Sse41 serves x64 without AVX2 and without BMI2, where the scalar products fall back to software; with BMI2 the scalar kernel serves. On ARM64, SM9AdvSimd takes the Miller loop on two points, with its products by the lines, and the powers with a fixed table with the builds of those tables, while the Miller loops on precomputed lines, the other powers and the final exponentiation stay in the scalar kernel. The products of G1 and G2 from fixed-base tables, the builds of those tables, the products of G1 with a variable point and the product of the subgroup check of G2 take the lanes on x64, and the products of G1 from fixed-base tables on ARM64 too; ARM64 keeps the others scalar. The affine forms over Fp2 that divide the precomputed lines take the lanes on x64. A kernel member that the dispatch never takes forwards to SM9Scalar.
+// Each operation takes the vector kernel chosen for it on the platform, if any, and otherwise the scalar one. SM9Avx512 and SM9Avx2 take every heavy operation of GT. SM9Sse41 serves x86 without AVX2 where LimbArithmetic.IsMultiplyAccelerated is false and the scalar products fall back to software; where it is true the scalar kernel serves. On ARM64, SM9AdvSimd takes the Miller loop on two points, with its products by the lines, and the powers with a fixed table with the builds of those tables, while the Miller loops on precomputed lines, the other powers and the final exponentiation stay in the scalar kernel. The products of G1 and G2 from fixed-base tables, the builds of those tables, the products of G1 with a variable point and the product of the subgroup check of G2 take the lanes on x64, and the products of G1 from fixed-base tables on ARM64 too; ARM64 keeps the others scalar. The affine forms over Fp2 that divide the precomputed lines take the lanes on x64. A kernel member that the dispatch never takes forwards to SM9Scalar.
 internal readonly struct SM9KernelDispatch : ISM9Kernel
 {
 	public static bool IsSupported => true;
 
-	// SSE4.1 without BMI2; a CPU with AVX2 or AVX-512 takes those first.
+	// SSE4.1 where the scalar products fall back to software; a CPU with AVX2 or AVX-512 takes those first.
 	private static bool UseSse41
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => SM9Sse41.IsSupported && !Bmi2.X64.IsSupported;
+		get => SM9Sse41.IsSupported && !LimbArithmetic.IsMultiplyAccelerated;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
