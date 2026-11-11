@@ -8,7 +8,7 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hpke;
 
-// The contexts through the public API, with every KEM. HpkeVectorTest checks the values.
+// The contexts through the public API, with every KEM. HpkeVectorTest checks the values, and WycheproofHpkeTest what a context does with a message that does not open.
 [GenerateGenericTest(typeof(DhKemP256))]
 [GenerateGenericTest(typeof(DhKemP384))]
 [GenerateGenericTest(typeof(DhKemP521))]
@@ -95,49 +95,6 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 			await Assert.That(Open(resumed, ciphertexts[2], Info)).IsEquivalentTo(messages[2], CollectionOrdering.Matching);
 			await Assert.That(resumed.SequenceNumber).IsEqualTo(3UL);
 			await Assert.That(Export(resumed, Info, 32)).IsEquivalentTo(Export(session.Recipient, Info, 32), CollectionOrdering.Matching);
-		}
-	}
-
-	[Test]
-	[MatrixDataSource]
-	public async Task TamperedMessagesFailAndKeepTheSequenceNumber([Matrix(HpkeAeadId.Aes128Gcm, HpkeAeadId.Aes256Gcm, HpkeAeadId.ChaCha20Poly1305)] HpkeAeadId aead)
-	{
-		using Session session = new(HpkeTestMode.Base, HpkeKdfId.HkdfSha256, aead);
-		byte[] message = CreateDeterministicSource(40);
-		byte[] associatedData = "header"u8.ToArray();
-		byte[] ciphertext = Seal(session.Sender, message, associatedData);
-		(byte[] Ciphertext, byte[] AssociatedData, string Change)[] tampered =
-		[
-			(Flip(ciphertext, 0), associatedData, "first byte"),
-			(Flip(ciphertext, message.Length - 1), associatedData, "last byte of the message"),
-			(Flip(ciphertext, message.Length), associatedData, "first byte of the tag"),
-			(Flip(ciphertext, ciphertext.Length - 1), associatedData, "last byte of the tag"),
-			(ciphertext, Flip(associatedData, 0), "associated data"),
-			(ciphertext, [], "no associated data"),
-			(Resize(ciphertext, -1), associatedData, "one byte less"),
-			(Resize(ciphertext, 1), associatedData, "one byte more"),
-			(ciphertext.AsSpan(0, aead.TagSize).ToArray(), associatedData, "tag length"),
-			(ciphertext.AsSpan(0, aead.TagSize - 1).ToArray(), associatedData, "shorter than the tag"),
-			([], associatedData, "empty")
-		];
-
-		using (Assert.Multiple())
-		{
-			foreach ((byte[] input, byte[] inputAssociatedData, string change) in tampered)
-			{
-				int length = Math.Max(0, input.Length - aead.TagSize);
-				byte[] plaintext = CreateGuardedBuffer(0, length);
-				bool opened = session.Recipient.TryOpen(input, plaintext, inputAssociatedData);
-
-				await Assert.That(opened).IsFalse().Because(change);
-				await Assert.That(session.Recipient.SequenceNumber).IsEqualTo(0UL).Because(change);
-				// The part that would have received the message is cleared, and the rest is left alone.
-				await Assert.That(plaintext.AsSpan(0, length).ContainsAnyExcept((byte)0)).IsFalse().Because(change);
-				await Assert.That(plaintext.AsSpan(length).ToArray()).All(static value => value is DestinationSentinel).Because(change);
-			}
-
-			await Assert.That(Open(session.Recipient, ciphertext, associatedData)).IsEquivalentTo(message, CollectionOrdering.Matching);
-			await Assert.That(session.Recipient.SequenceNumber).IsEqualTo(1UL);
 		}
 	}
 

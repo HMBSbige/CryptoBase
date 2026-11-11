@@ -1,3 +1,4 @@
+using CryptoBase.Hpke;
 using System.IO.Compression;
 using System.Text.Json.Serialization;
 
@@ -44,6 +45,21 @@ public sealed record IndCpaTestVector(byte[] Key, byte[] Iv, byte[] Msg, byte[] 
 
 public sealed record MacTestVector(byte[] Key, byte[] Msg, byte[] Tag) : WycheproofTestVector;
 
+// A keystream from the block counter of the vector, which is in little-endian order. A message that needs a block past the last counter is invalid and has no ciphertext.
+public sealed record StreamCipherTestVector(byte[] Key, byte[] Iv, byte[] InitialCounter, byte[] Msg, byte[]? Ct = null) : WycheproofTestVector
+{
+	[JsonIgnore]
+	public string Algorithm { get; init; } = "";
+}
+
+public sealed record StreamCipherTestGroup(string Algorithm) : WycheproofTestGroup<StreamCipherTestVector>
+{
+	public override StreamCipherTestVector Complete(StreamCipherTestVector test)
+	{
+		return test with { Algorithm = Algorithm };
+	}
+}
+
 // KMAC encodes the output length L into its input, so the group's tag size, in bits, is the length the tag is computed for.
 public sealed record KmacTestVector(byte[] Key, byte[] Msg, byte[] Tag) : WycheproofTestVector
 {
@@ -60,6 +76,50 @@ public sealed record KmacTestGroup(int TagSize) : WycheproofTestGroup<KmacTestVe
 }
 
 public sealed record HkdfTestVector(byte[] Ikm, byte[] Salt, byte[] Info, int Size, byte[] Okm) : WycheproofTestVector;
+
+// A message of HPKE in base mode, of an encapsulation or a decryption file: the group holds the suite. Only a decryption vector has skRm, and only a vector that an honest sender sealed has ikmE, the input of the DeriveKeyPair that gives the ephemeral key.
+public sealed record HpkeTestVector(byte[] PkRm, byte[] Info, byte[] Aad, byte[] Pt, byte[] Enc, byte[] Ct, byte[]? SkRm = null, byte[]? IkmE = null) : WycheproofTestVector
+{
+	[JsonIgnore]
+	public int KemId { get; init; }
+
+	[JsonIgnore]
+	public HpkeKdfId Kdf { get; init; }
+
+	[JsonIgnore]
+	public HpkeAeadId Aead { get; init; }
+}
+
+public sealed record HpkeTestGroup(int KemId, int KdfId, int AeadId) : WycheproofTestGroup<HpkeTestVector>
+{
+	public override HpkeTestVector Complete(HpkeTestVector test)
+	{
+		return test with { KemId = KemId, Kdf = (HpkeKdfId)KdfId, Aead = (HpkeAeadId)AeadId };
+	}
+}
+
+// What one recipient context opens, in order. A decryption that fails is followed by one with the same sequence number.
+public sealed record HpkeSequenceTestVector(byte[] SkRm, byte[] PkRm, byte[] Info, byte[] Enc, HpkeDecryption[] Decryptions, byte[]? IkmE = null) : WycheproofTestVector
+{
+	[JsonIgnore]
+	public int KemId { get; init; }
+
+	[JsonIgnore]
+	public HpkeKdfId Kdf { get; init; }
+
+	[JsonIgnore]
+	public HpkeAeadId Aead { get; init; }
+}
+
+public sealed record HpkeDecryption(ulong SequenceNumber, byte[] Aad, byte[] Ct, byte[] Pt, WycheproofResult Result);
+
+public sealed record HpkeSequenceTestGroup(int KemId, int KdfId, int AeadId) : WycheproofTestGroup<HpkeSequenceTestVector>
+{
+	public override HpkeSequenceTestVector Complete(HpkeSequenceTestVector test)
+	{
+		return test with { KemId = KemId, Kdf = (HpkeKdfId)KdfId, Aead = (HpkeAeadId)AeadId };
+	}
+}
 
 // Ct is zlib-compressed. Only the valid and PartialPlaintext vectors describe a message: all of it, or the longest valid prefix.
 public sealed record ChunkedEncryptionTestVector(byte[] Key, byte[] Ctx, byte[] Ct, int? MsgLength = null, byte[]? MsgSha512 = null) : WycheproofTestVector
