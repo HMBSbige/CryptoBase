@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the tests from the repository root: optimized Release by default, "tiered" for tiered compilation, "debug" for Debug. "probe" prints the instruction sets that SDE adds, and "shards" checks that each namespace is in exactly one shard.
+# Runs the tests from the repository root: Release without quick JIT by default, "tiered" for the default tiered compilation, "debug" for Debug. "probe" prints the instruction sets that SDE adds, and "shards" checks that each namespace is in exactly one shard.
 #   DISABLE   Comma-separated DOTNET_Enable<name> switches to turn off; Vector512 caps vectors at 256 bits instead. Spaces separate test runs, in which "none" turns nothing off.
 #   SDE_PATH  Intel SDE kit; the default mode runs under "sde64 -spr" when SDE adds instruction sets this runner lacks.
 #   SHARD     Comma-separated shards out of hashes, ciphers, ec and rest: runs only those.
@@ -63,7 +63,7 @@ turn_off() {
 run() {
 	case $1 in
 		'') "${runner[@]}" "$tests" --minimum-expected-tests 1 "${filter[@]}" ;;
-		tiered) DOTNET_TieredCompilation=1 dotnet "$tests" --minimum-expected-tests 1 "${filter[@]}" ;;
+		tiered) DOTNET_TC_QuickJit=1 dotnet "$tests" --minimum-expected-tests 1 "${filter[@]}" ;;
 		debug) dotnet test --project test/CryptoBase.Tests -c Debug -p:RunAnalyzers=false --minimum-expected-tests 1 "${filter[@]}" ;;
 	esac
 }
