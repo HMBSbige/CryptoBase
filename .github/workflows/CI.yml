@@ -86,11 +86,11 @@ jobs:
 
       # The trim analysis would warn of every IsEquivalentTo of TUnit, and of the reflection of the tests that run on the JIT alone.
       - name: Publish (Native AOT)
-        if: endsWith(matrix.os, '-latest') && matrix.part != 2
+        if: matrix.part != 2
         run: dotnet publish test/CryptoBase.Tests -c Release --ucr -p:PublishAot=true -p:RunAnalyzers=false -p:SuppressTrimAnalysisWarnings=true -o artifacts/publish/aot
 
       - name: Test (Native AOT)
-        if: endsWith(matrix.os, '-latest') && matrix.part != 2
+        if: matrix.part != 2
         run: artifacts/publish/aot/CryptoBase.Tests --minimum-expected-tests 1
 
   debug:
