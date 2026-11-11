@@ -48,7 +48,7 @@ internal sealed class CertificatePathSearch : IDisposable
 	private int _nextIndex;
 
 	private bool _relaxed;
-	private bool _stopped;
+	// The limit that stopped the search, or null while it runs.
 	private string? _limit;
 	private Attempt? _best;
 
@@ -151,7 +151,7 @@ internal sealed class CertificatePathSearch : IDisposable
 					break;
 				}
 			}
-			else if (!acceptable || _stopped || !await RetrieveIssuersAsync().ConfigureAwait(false))
+			else if (!acceptable || IsStopped || !await RetrieveIssuersAsync().ConfigureAwait(false))
 			{
 				break;
 			}
@@ -203,7 +203,7 @@ internal sealed class CertificatePathSearch : IDisposable
 	// A self-signed certificate has no other issuer to find. The check may stop the search at its limit of candidates, and a stopped search has no issuer to find for any certificate.
 	private bool HasIssuerToFind(PathNode node)
 	{
-		return !IsSelfSigned(node) && !_stopped;
+		return !IsSelfSigned(node) && !IsStopped;
 	}
 
 	// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search; it accepts none, as only the strict search decides. A path that only revocation fails is already the best.
@@ -285,7 +285,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 			List<PathProblem> edge = CheckEdge(child, candidate, below, tooLong, complete: relaxed);
 
-			if (_stopped)
+			if (IsStopped)
 			{
 				return null;
 			}
@@ -314,7 +314,7 @@ internal sealed class CertificatePathSearch : IDisposable
 				{
 					Record(CertificatePathEnd.TrustAnchor, policyProblem);
 				}
-				else if (policyProblem is null && !_stopped)
+				else if (policyProblem is null && !IsStopped)
 				{
 					return [.. _path];
 				}
@@ -322,7 +322,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 			Pop();
 
-			if (_stopped)
+			if (IsStopped)
 			{
 				return null;
 			}
@@ -457,7 +457,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 				PathProblem? problem = CheckNames(issuer, constraints, node);
 
-				if (_stopped)
+				if (IsStopped)
 				{
 					return problems;
 				}
@@ -858,13 +858,14 @@ internal sealed class CertificatePathSearch : IDisposable
 			Pop();
 		}
 
-		(_stopped, _limit, _candidatesLeft, _comparisonsLeft, _policyEntriesLeft) = (false, null, MaxCandidates, MaxNameComparisons, MaxPolicyGraphEntries);
+		(_limit, _candidatesLeft, _comparisonsLeft, _policyEntriesLeft) = (null, MaxCandidates, MaxNameComparisons, MaxPolicyGraphEntries);
 	}
+
+	private bool IsStopped => _limit is not null;
 
 	// A limit stops the search, which the result reports: one that stops the strict search fails the validation, as a valid path may be among those left, and one that stops the relaxed search leaves out the paths that it did not end.
 	private void Stop(string limit)
 	{
-		_stopped = true;
 		_limit ??= $"The search for {(_relaxed ? "the path to report" : "a valid path")} stopped at the limit of {limit}.";
 	}
 
