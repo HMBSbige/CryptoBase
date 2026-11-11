@@ -159,6 +159,9 @@ See the [documentation](docs/README.md) for installation and usage guides.
 | DHKEM(P-521, HKDF-SHA512) | ✅ |
 | DHKEM(X25519, HKDF-SHA256) | ✅ |
 | DHKEM(X448, HKDF-SHA512) | ✅ |
+| ML-KEM-512 | ⚠️ |
+| ML-KEM-768 | ⚠️ |
+| ML-KEM-1024 | ⚠️ |
 
 ### Post-quantum cryptography
 
