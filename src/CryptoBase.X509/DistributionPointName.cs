@@ -3,47 +3,23 @@ using System.Text;
 namespace CryptoBase.X509;
 
 /// <summary>
-/// Represents a DistributionPointName (RFC 5280, Sec. 4.2.1.13): the names of a CRL distribution point, as general names or as a name relative to the CRL issuer.
+/// Represents a DistributionPointName (RFC 5280, Sec. 4.2.1.13): the names of a CRL distribution point, as general names, a <see cref="FullName" />, or as a name relative to the CRL issuer, a <see cref="RelativeToCrlIssuer" />.
 /// </summary>
 /// <remarks>Instances are immutable, so they may be used concurrently.</remarks>
-public sealed class DistributionPointName
+public closed class DistributionPointName
 {
 	private static readonly Asn1Tag DistributionPointTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag FullNameTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag RelativeNameTag = new(TagClass.ContextSpecific, 1, true);
 
-	private DistributionPointName(GeneralName[]? fullName, ReadOnlyMemory<byte>? nameRelativeToCrlIssuer)
-	{
-		FullName = fullName;
-		NameRelativeToCrlIssuer = nameRelativeToCrlIssuer;
-		Uris = fullName is null ? [] : Array.AsReadOnly(GetUris(fullName));
-	}
-
 	/// <summary>
 	/// Gets the uniformResourceIdentifier entries of fullName, in the order of the encoding, as they are encoded; empty if there are none.
 	/// </summary>
-	/// <remarks>The entries are of any scheme, and <see cref="NameRelativeToCrlIssuer" /> has none.</remarks>
-	public IReadOnlyList<string> Uris { get; }
-
-	/// <summary>
-	/// Gets the AttributeTypeAndValue elements of nameRelativeToCRLIssuer, the contents of its RelativeDistinguishedName, or <see langword="null" /> if the name is a fullName.
-	/// </summary>
-	public ReadOnlyMemory<byte>? NameRelativeToCrlIssuer { get; }
-
-	// fullName, or null if the name is a nameRelativeToCRLIssuer.
-	internal IReadOnlyList<GeneralName>? FullName { get; }
+	/// <remarks>The entries are of any scheme, and a <see cref="RelativeToCrlIssuer" /> has none.</remarks>
+	public abstract IReadOnlyList<string> Uris { get; }
 
 	// The names as RFC 5280, Sec. 6.3.3 (b)(2)(i), compares them: those of fullName, or the Name of a nameRelativeToCRLIssuer, a fragment appended to the DER of the base Name (Sec. 4.2.1.13).
-	internal IReadOnlyList<GeneralName> GetNames(ReadOnlyMemory<byte> baseName)
-	{
-		if (FullName is { } names)
-		{
-			return names;
-		}
-
-		Debug.Assert(NameRelativeToCrlIssuer is not null);
-		return [new GeneralName(GeneralNameType.DirectoryName, AppendRelativeName(baseName, NameRelativeToCrlIssuer.Value))];
-	}
+	internal abstract IReadOnlyList<GeneralName> GetNames(ReadOnlyMemory<byte> baseName);
 
 	// distributionPoint [0] DistributionPointName OPTIONAL, the first field of a DistributionPoint and of an IssuingDistributionPoint, or null if it is absent.
 	// The implicit tag leaves it explicit as DistributionPointName is a CHOICE: fullName [0] GeneralNames or nameRelativeToCRLIssuer [1] RelativeDistinguishedName, both with implicit tags.
@@ -58,12 +34,12 @@ public sealed class DistributionPointName
 
 		if (wrapper.PeekTagIs(FullNameTag))
 		{
-			name = new DistributionPointName(GeneralName.ReadGeneralNames(ref wrapper, FullNameTag), null);
+			name = new FullName(GeneralName.ReadGeneralNames(ref wrapper, FullNameTag));
 		}
 		else
 		{
 			DerReader relativeName = wrapper.ReadSetOf(RelativeNameTag);
-			name = new DistributionPointName(null, ReadRelativeName(relativeName));
+			name = new RelativeToCrlIssuer(ReadRelativeName(relativeName));
 		}
 
 		wrapper.ThrowIfNotEmpty();
@@ -138,6 +114,52 @@ public sealed class DistributionPointName
 		while (reader.HasData)
 		{
 			writer.WriteEncodedValue(reader.ReadEncodedValue().Span);
+		}
+	}
+
+	/// <summary>
+	/// Represents a fullName: the general names of the distribution point.
+	/// </summary>
+	public sealed class FullName : DistributionPointName
+	{
+		internal FullName(GeneralName[] names)
+		{
+			Names = names;
+			Uris = Array.AsReadOnly(GetUris(names));
+		}
+
+		/// <inheritdoc />
+		public override IReadOnlyList<string> Uris { get; }
+
+		internal IReadOnlyList<GeneralName> Names { get; }
+
+		internal override IReadOnlyList<GeneralName> GetNames(ReadOnlyMemory<byte> baseName)
+		{
+			return Names;
+		}
+	}
+
+	/// <summary>
+	/// Represents a nameRelativeToCRLIssuer: a name relative to that of the CRL issuer.
+	/// </summary>
+	public sealed class RelativeToCrlIssuer : DistributionPointName
+	{
+		internal RelativeToCrlIssuer(ReadOnlyMemory<byte> relativeName)
+		{
+			RelativeName = relativeName;
+		}
+
+		/// <summary>
+		/// Gets the AttributeTypeAndValue elements of nameRelativeToCRLIssuer, the contents of its RelativeDistinguishedName.
+		/// </summary>
+		public ReadOnlyMemory<byte> RelativeName { get; }
+
+		/// <inheritdoc />
+		public override IReadOnlyList<string> Uris => [];
+
+		internal override IReadOnlyList<GeneralName> GetNames(ReadOnlyMemory<byte> baseName)
+		{
+			return [new GeneralName(GeneralNameType.DirectoryName, AppendRelativeName(baseName, RelativeName))];
 		}
 	}
 }

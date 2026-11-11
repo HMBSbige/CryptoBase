@@ -202,10 +202,10 @@ public sealed class OcspResponse
 	{
 		if (data.TryReadExplicit(ByNameTag, out DerReader name))
 		{
-			return new OcspResponderId(X509Name.Read(ref name), null);
+			return new OcspResponderId.ByName(X509Name.Read(ref name));
 		}
 
-		return new OcspResponderId(null, data.ReadExplicit(ByKeyTag).ReadOctetString());
+		return new OcspResponderId.ByKey(data.ReadExplicit(ByKeyTag).ReadOctetString());
 	}
 
 	// The certs field: SEQUENCE OF Certificate, of which each element must be DER, and those that are not certificates are skipped.

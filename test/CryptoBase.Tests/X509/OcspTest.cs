@@ -106,10 +106,8 @@ public class OcspTest
 		{
 			await Assert.That(byName.Status).IsEqualTo(OcspResponseStatus.Successful);
 			await Assert.That(byName.ResponseType).IsEqualTo(BasicOid);
-			await Assert.That(byName.Responder?.ByName?.ToArray()).IsEquivalentTo(CA.Subject.ToArray(), CollectionOrdering.Matching);
-			await Assert.That(byName.Responder?.ByKey).IsNull();
-			await Assert.That(byKey.Responder?.ByName).IsNull();
-			await Assert.That(byKey.Responder?.ByKey?.Length).IsEqualTo(20);
+			await Assert.That((byName.Responder as OcspResponderId.ByName)?.Name.ToArray()).IsEquivalentTo(CA.Subject.ToArray(), CollectionOrdering.Matching);
+			await Assert.That((byKey.Responder as OcspResponderId.ByKey)?.KeyHash.Length).IsEqualTo(20);
 			await Assert.That(byName.ProducedAt).IsNotNull();
 			await Assert.That(byName.TbsResponseData.IsEmpty).IsFalse();
 			await Assert.That(byName.Signature.IsEmpty).IsFalse();

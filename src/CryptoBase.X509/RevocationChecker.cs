@@ -573,14 +573,18 @@ internal static class RevocationChecker
 	// A byName ResponderID matches the subject by RFC 5280, Sec. 7.1, as RFC 6960 asks no encoding of it: the match only picks the candidates whose key must verify the signature, of which MaxResponderCandidates bounds the certificates.
 	private static bool IsResponder(OcspResponderId responder, Certificate certificate)
 	{
-		if (responder.ByName is { } name)
+		return responder switch
 		{
-			return DistinguishedName.AreEqual(name, certificate.Subject);
-		}
+			OcspResponderId.ByName byName => DistinguishedName.AreEqual(byName.Name, certificate.Subject),
+			OcspResponderId.ByKey byKey => HasKeyHash(certificate, byKey.KeyHash.Span)
+		};
+	}
 
+	private static bool HasKeyHash(Certificate certificate, ReadOnlySpan<byte> keyHash)
+	{
 		Span<byte> digest = stackalloc byte[SHA1.HashSizeInBytes];
 		SHA1.HashData(certificate.PublicKeyInfo.PublicKey.Span, digest);
-		return responder.ByKey is { } key && key.Span.SequenceEqual(digest);
+		return keyHash.SequenceEqual(digest);
 	}
 
 	// RFC 6960, Sec. 4.2.2.2: the signer must be the CA that issued the certificate, or a certificate in the response that it issued directly, which holds id-kp-OCSPSigning.

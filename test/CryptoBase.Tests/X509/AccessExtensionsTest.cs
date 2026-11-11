@@ -45,7 +45,7 @@ public class AccessExtensionsTest
 			await Assert.That(points[0].Reasons).IsNull();
 			await Assert.That(points[0].CrlIssuerDirectoryNames).IsEmpty();
 			await Assert.That(points[0].CrlIssuer).IsNull();
-			await Assert.That(points[0].DistributionPoint?.NameRelativeToCrlIssuer).IsNull();
+			await Assert.That(points[0].DistributionPoint).IsTypeOf<DistributionPointName.FullName>();
 		}
 	}
 
@@ -122,12 +122,12 @@ public class AccessExtensionsTest
 		{
 			await Assert.That(points.Count).IsEqualTo(4);
 			await Assert.That(points[0].DistributionPoint?.Uris).IsEquivalentTo((string[])["http://crl.example.test/ca.crl"], CollectionOrdering.Matching);
-			await Assert.That(points[0].DistributionPoint?.FullName?.Count).IsEqualTo(2);
+			await Assert.That((points[0].DistributionPoint as DistributionPointName.FullName)?.Names.Count).IsEqualTo(2);
 			await Assert.That(points[0].Reasons).IsEqualTo(CrlReasonFlags.KeyCompromise);
 			await Assert.That(points[0].CrlIssuer?.Count).IsEqualTo(1);
 			await Assert.That(points[0].CrlIssuerDirectoryNames.Single().ToArray()).IsEquivalentTo(Name("CN=CRL Issuer"), CollectionOrdering.Matching);
 			await Assert.That(points[1].DistributionPoint?.Uris).IsEmpty();
-			await Assert.That(points[1].DistributionPoint?.NameRelativeToCrlIssuer?.ToArray()).IsEquivalentTo(TestCrl.CommonName("Partition 1"), CollectionOrdering.Matching);
+			await Assert.That((points[1].DistributionPoint as DistributionPointName.RelativeToCrlIssuer)?.RelativeName.ToArray()).IsEquivalentTo(TestCrl.CommonName("Partition 1"), CollectionOrdering.Matching);
 			await Assert.That(points[2].DistributionPoint).IsNull();
 			await Assert.That(points[3].Reasons).IsEqualTo(CrlReasonFlags.KeyCompromise | CrlReasonFlags.CACompromise | CrlReasonFlags.AffiliationChanged | CrlReasonFlags.Superseded | CrlReasonFlags.CessationOfOperation | CrlReasonFlags.CertificateHold | CrlReasonFlags.PrivilegeWithdrawn | CrlReasonFlags.AACompromise);
 		}
