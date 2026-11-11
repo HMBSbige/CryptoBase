@@ -804,8 +804,6 @@ public class Ed448Test
 	}
 
 	[Test]
-	// Background GC can overcount unused allocation-context space, causing intermittent allocation assertion failures.
-	// https://github.com/dotnet/runtime/pull/134855
 	public async Task SigningAndVerificationDoNotAllocate()
 	{
 		// Without optimization, every read of a constant ReadOnlySpan<ulong> allocates a field handle.

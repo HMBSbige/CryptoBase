@@ -4,6 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TieredCompilationQuickJit>false</TieredCompilationQuickJit>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <!-- Background GC can overcount unused allocation-context space, which fails the tests that assert no allocation now and then. Remove once https://github.com/dotnet/runtime/pull/134855 ships. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup Condition="$(RuntimeIdentifier.EndsWith('-x86')) Or $(RuntimeIdentifier.EndsWith('-arm'))">
