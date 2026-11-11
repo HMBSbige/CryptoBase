@@ -17,8 +17,8 @@ internal struct HpkeContextState
 	// Section 5.1.2 requires 32 bytes of entropy, which no shorter PSK has.
 	private const int MinPskLength = 32;
 
-	// GcmMode<AesCipher> or ChaCha20Poly1305Cipher; null for ExportOnly and after Clear.
-	private IDisposable? _cipher;
+	// Empty for ExportOnly and after Clear.
+	private AeadCipher _cipher;
 	private InlineArray64<byte> _exporterSecret;
 
 	// The big-endian base nonce: its first 4 bytes, and its last 8, into which the sequence number is XORed.
@@ -76,7 +76,7 @@ internal struct HpkeContextState
 	[SkipLocalsInit]
 	internal int Seal(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, ReadOnlySpan<byte> associatedData)
 	{
-		IDisposable cipher = GetCipher();
+		AeadCipher cipher = GetCipher();
 		ThrowIfMessageLimitReached();
 
 		if ((uint)ciphertext.Length < (uint)plaintext.Length + TagSize)
@@ -92,13 +92,16 @@ internal struct HpkeContextState
 		Span<byte> body = ciphertext.Slice(0, plaintext.Length);
 		Span<byte> tag = ciphertext.Slice(plaintext.Length, TagSize);
 
-		if (cipher is GcmMode<AesCipher> gcm)
+		switch (cipher)
 		{
-			gcm.Encrypt(nonce.Span, plaintext, body, tag, associatedData);
-		}
-		else
-		{
-			((ChaCha20Poly1305Cipher)cipher).Encrypt(nonce.Span, plaintext, body, tag, associatedData);
+			case GcmMode<AesCipher> gcm:
+				gcm.Encrypt(nonce.Span, plaintext, body, tag, associatedData);
+				break;
+			case ChaCha20Poly1305Cipher chacha:
+				chacha.Encrypt(nonce.Span, plaintext, body, tag, associatedData);
+				break;
+			default:
+				throw new UnreachableException();
 		}
 
 		++SequenceNumber;
@@ -108,7 +111,7 @@ internal struct HpkeContextState
 	[SkipLocalsInit]
 	internal bool TryOpen(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> associatedData)
 	{
-		IDisposable cipher = GetCipher();
+		AeadCipher cipher = GetCipher();
 		ThrowIfMessageLimitReached();
 
 		if (ciphertext.Length < TagSize)
@@ -127,9 +130,11 @@ internal struct HpkeContextState
 		ReadOnlySpan<byte> body = ciphertext.Slice(0, length);
 		ReadOnlySpan<byte> tag = ciphertext.Slice(length);
 
-		bool opened = cipher is GcmMode<AesCipher> gcm
-			? gcm.TryDecrypt(nonce.Span, body, tag, output, associatedData)
-			: ((ChaCha20Poly1305Cipher)cipher).TryDecrypt(nonce.Span, body, tag, output, associatedData);
+		bool opened = cipher switch
+		{
+			GcmMode<AesCipher> gcm => gcm.TryDecrypt(nonce.Span, body, tag, output, associatedData),
+			ChaCha20Poly1305Cipher chacha => chacha.TryDecrypt(nonce.Span, body, tag, output, associatedData)
+		};
 
 		if (opened)
 		{
@@ -172,8 +177,12 @@ internal struct HpkeContextState
 
 	internal void Clear()
 	{
-		_cipher?.Dispose();
-		_cipher = null;
+		if (_cipher is IDisposable cipher)
+		{
+			cipher.Dispose();
+		}
+
+		_cipher = default;
 		((Span<byte>)_exporterSecret).ZeroMemory();
 		_baseNonceHigh = 0;
 		_baseNonceLow = 0;
@@ -238,7 +247,7 @@ internal struct HpkeContextState
 		BinaryPrimitives.WriteUInt64BigEndian(nonce.Slice(sizeof(uint)), _baseNonceLow ^ SequenceNumber);
 	}
 
-	private readonly IDisposable GetCipher()
+	private readonly AeadCipher GetCipher()
 	{
 		if (_cipher is null)
 		{
@@ -267,4 +276,6 @@ internal struct HpkeContextState
 	{
 		throw new CryptographicException("The context has reached its message limit.");
 	}
+
+	private union AeadCipher(GcmMode<AesCipher>, ChaCha20Poly1305Cipher);
 }
