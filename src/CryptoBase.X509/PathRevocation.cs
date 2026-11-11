@@ -199,7 +199,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 				break;
 			}
 
-			(RevocationResult Result, OcspResponse? Response, int Length)? answer = await AskOcspAsync(responder, request, certificate, issuer).ConfigureAwait(false);
+			(RevocationResult Result, OcspResponse? Response)? answer = await AskOcspAsync(responder, request, certificate, issuer).ConfigureAwait(false);
 
 			// RFC 9919, Sec. 3.1.1, still allows for SHA-1 in older implementations, and a responder may refuse a SHA-256 CertID or not know it. One that could not be reached is not asked again.
 			if (answer is { Result.IsConclusive: false } inconclusive)
@@ -209,7 +209,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 				answer = await AskOcspAsync(responder, sha1Request, certificate, issuer).ConfigureAwait(false);
 			}
 
-			if (answer is not { Result: { IsConclusive: true } result, Response: { } response, Length: var length })
+			if (answer is not { Result: { IsConclusive: true } result, Response: { } response })
 			{
 				detail ??= answer?.Result.Detail ?? "An OCSP responder could not be reached.";
 				continue;
@@ -217,7 +217,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 
 			if (result.NextUpdate is { } nextUpdate)
 			{
-				caches.OcspResponses.Add(request.Encoded, response, length, nextUpdate, time);
+				caches.OcspResponses.Add(request.Encoded, response, response.Encoded.Length, nextUpdate, time);
 			}
 
 			return result;
@@ -227,7 +227,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	}
 
 	// Asks a responder once. Null if nothing came back; a Response of null if what came back does not decode.
-	private async ValueTask<(RevocationResult Result, OcspResponse? Response, int Length)?> AskOcspAsync(Uri responder, OcspRequest request, Certificate certificate, Certificate issuer)
+	private async ValueTask<(RevocationResult Result, OcspResponse? Response)?> AskOcspAsync(Uri responder, OcspRequest request, Certificate certificate, Certificate issuer)
 	{
 		ReadOnlyMemory<byte> data = GetOcspGetUri(responder, request) is { } get
 			? await budget.GetAsync(get, RetrievalBudget.MaxOcspResponseLength).ConfigureAwait(false)
@@ -246,11 +246,11 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		}
 		catch (ArgumentException)
 		{
-			return (new RevocationResult(RevocationStatus.Invalid, "An OCSP response does not decode."), null, data.Length);
+			return (new RevocationResult(RevocationStatus.Invalid, "An OCSP response does not decode."), null);
 		}
 
 		RevocationResult result = CheckOcsp(response, certificate, issuer);
-		return (result.Status is RevocationStatus.Unknown ? result with { Detail = "An OCSP responder does not know the certificate." } : result, response, data.Length);
+		return (result.Status is RevocationStatus.Unknown ? result with { Detail = "An OCSP responder does not know the certificate." } : result, response);
 	}
 
 	private RevocationResult CheckOcsp(OcspResponse response, Certificate certificate, Certificate issuer)
