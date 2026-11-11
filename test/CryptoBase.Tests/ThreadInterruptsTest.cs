@@ -7,7 +7,7 @@ public class ThreadInterruptsTest
 	private const int TimeoutMilliseconds = 10_000;
 	private const int StepMilliseconds = 100;
 
-	// The interrupting thread holds the lock, so the waiting thread blocks to take it back. Once pulsed, it is doing so when the interrupt arrives.
+	// The interrupting thread holds the lock, so the waiting thread has to block to take it back. A pulsed thread is interrupted while it does, unless it is slow to block: it then takes the lock and returns.
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
@@ -72,7 +72,7 @@ public class ThreadInterruptsTest
 		{
 			await Assert.That(waited).IsTrue();
 			await Assert.That(left).IsTrue();
-			await Assert.That(heldWhenThrown).IsTrue();
+			await Assert.That(heldWhenThrown ?? pulsed).IsTrue();
 			await Assert.That(failure).IsNull();
 			await Assert.That(released).IsTrue();
 		}
