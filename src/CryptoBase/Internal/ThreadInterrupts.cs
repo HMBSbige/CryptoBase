@@ -18,7 +18,7 @@ internal static class ThreadInterrupts
 		}
 	}
 
-	// Monitor.Wait for a thread that has entered gate once. Some runtimes let it throw ThreadInterruptedException without the lock, which is taken back here first: https://github.com/dotnet/runtime/issues/137329
+	// Monitor.Wait for a thread that has entered gate once and waits in a loop on its condition. Some runtimes let it throw ThreadInterruptedException without the lock and still queued as a waiter; the lock is taken back here first, and every waiter woken to empty the queue: https://github.com/dotnet/runtime/issues/137329
 	// The check is in the catch block, since an exception filter would run before Monitor.Wait has tried to take the lock back.
 	internal static void WaitHoldingLock(object gate)
 	{
@@ -32,6 +32,7 @@ internal static class ThreadInterrupts
 			{
 				bool interrupted = false;
 				Uninterruptibly(static gate => Monitor.Enter(gate), gate, ref interrupted);
+				Monitor.PulseAll(gate);
 				RestoreInterrupt(interrupted);
 			}
 

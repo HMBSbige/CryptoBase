@@ -77,4 +77,68 @@ public class ThreadInterruptsTest
 			await Assert.That(released).IsTrue();
 		}
 	}
+
+	// A wait that loses the lock leaves the thread queued as a waiter, ahead of the wait it starts next, where a single pulse would wake the stale waiter alone.
+	[Test]
+	public async Task PulseReachesTheThreadAfterAnInterruptedWait()
+	{
+		object gate = new();
+		bool done = false;
+		int waits = 0;
+
+		Thread thread = new
+		(() =>
+			{
+				while (true)
+				{
+					try
+					{
+						lock (gate)
+						{
+							while (!Volatile.Read(ref done))
+							{
+								Interlocked.Increment(ref waits);
+								ThreadInterrupts.WaitHoldingLock(gate);
+							}
+						}
+
+						return;
+					}
+					catch (ThreadInterruptedException)
+					{
+					}
+				}
+			}
+		)
+		{ IsBackground = true };
+
+		thread.Start();
+		bool waited = SpinWait.SpinUntil(() => Volatile.Read(ref waits) >= 1, TimeoutMilliseconds);
+
+		lock (gate)
+		{
+			thread.Interrupt();
+			Thread.Sleep(StepMilliseconds);
+			thread.Interrupt();
+			Thread.Sleep(StepMilliseconds);
+		}
+
+		bool waitedAgain = SpinWait.SpinUntil(() => Volatile.Read(ref waits) >= 2, TimeoutMilliseconds);
+
+		// Entered once the thread has released the gate inside its wait.
+		lock (gate)
+		{
+			Volatile.Write(ref done, true);
+			Monitor.Pulse(gate);
+		}
+
+		bool left = thread.Join(TimeoutMilliseconds);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(waited).IsTrue();
+			await Assert.That(waitedAgain).IsTrue();
+			await Assert.That(left).IsTrue();
+		}
+	}
 }

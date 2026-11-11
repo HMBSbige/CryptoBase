@@ -408,7 +408,7 @@ internal static unsafe class Blake3Parallel
 				{
 					lock (job)
 					{
-						Monitor.PulseAll(job);
+						Monitor.Pulse(job);
 					}
 				}, this, ref interrupted
 			);
