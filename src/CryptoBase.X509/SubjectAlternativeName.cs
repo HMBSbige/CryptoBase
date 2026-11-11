@@ -115,22 +115,15 @@ public sealed class SubjectAlternativeName
 
 	internal bool Matches(HostName hostName)
 	{
-		if (hostName.Address is { } address)
+		return hostName switch
 		{
-			foreach (ReadOnlyMemory<byte> entry in _addresses)
-			{
-				if (entry.Span.SequenceEqual(address))
-				{
-					return true;
-				}
-			}
+			string dnsName => MatchesDnsName(dnsName),
+			byte[] address => MatchesAddress(address)
+		};
+	}
 
-			return false;
-		}
-
-		Debug.Assert(hostName.DnsName is not null);
-		ReadOnlySpan<char> dnsName = hostName.DnsName;
-
+	private bool MatchesDnsName(ReadOnlySpan<char> dnsName)
+	{
 		// A wildcard stands for the first label, which must not be all of the host name: the rest of a name of one label is empty, which no valid entry equals.
 		int dot = dnsName.IndexOf('.');
 		ReadOnlySpan<char> parent = dot > 0 ? dnsName.Slice(dot + 1) : [];
@@ -138,6 +131,19 @@ public sealed class SubjectAlternativeName
 		foreach (DnsNamePattern pattern in DnsNamePatterns)
 		{
 			if (pattern.IsValid && Ascii.EqualsIgnoreCase(pattern.IsWildcard ? parent : dnsName, pattern.Base))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private bool MatchesAddress(ReadOnlySpan<byte> address)
+	{
+		foreach (ReadOnlyMemory<byte> entry in _addresses)
+		{
+			if (entry.Span.SequenceEqual(address))
 			{
 				return true;
 			}

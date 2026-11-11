@@ -5,8 +5,8 @@ using System.Text;
 
 namespace CryptoBase.X509;
 
-// A host name to match against a certificate, the reference identifier of RFC 9525, Sec. 6.1: a DNS name in A-labels without the dot of the root, or the octets of an IPv4 or IPv6 address. The static members give the syntax of host names, for reference identifiers and for the dNSName entries that certificates present.
-internal readonly struct HostName
+// A host name to match against a certificate, the reference identifier of RFC 9525, Sec. 6.1: a DNS name in A-labels without the dot of the root, or the octets of an IPv4 or IPv6 address. The string case is the DNS name, and the byte[] case is the 4 or 16 octets of the IP address. The static members give the syntax of host names, for reference identifiers and for the dNSName entries that certificates present.
+internal union HostName(string, byte[])
 {
 	private const int MaxNameLength = 253;
 	private const int MaxLabelLength = 63;
@@ -20,24 +20,12 @@ internal readonly struct HostName
 	// Whether the platform's IDNA conversion maps and normalizes names, as ProbeIdnaMapping finds.
 	private static readonly bool MapsIdna = ProbeIdnaMapping();
 
-	private HostName(string? dnsName, byte[]? address)
-	{
-		DnsName = dnsName;
-		Address = address;
-	}
-
-	// The DNS name, or null for an IP address.
-	public string? DnsName { get; }
-
-	// The 4 or 16 octets of the IP address, or null for a DNS name.
-	public byte[]? Address { get; }
-
 	// A host name is an IP address if it is one in a notation that RFC 9525 recognizes: dotted decimal for IPv4, as in RFC 3986, Sec. 3.2.2, and the text of RFC 4291, Sec. 2.2, for IPv6, optionally in the brackets of a URI. Otherwise it must be a DNS name: one trailing dot is removed, and labels that are not ASCII are converted to A-labels.
 	public static HostName Parse(string hostName, string parameterName)
 	{
 		if (ParseIPAddress(hostName) is { } address)
 		{
-			return new HostName(null, address);
+			return address;
 		}
 
 		string? ascii = Ascii.IsValid(hostName) ? hostName : ToAscii(hostName);
@@ -53,7 +41,7 @@ internal readonly struct HostName
 			throw new ArgumentException("The host name is neither a DNS name nor an IP address.", parameterName);
 		}
 
-		return new HostName(name.Length == ascii.Length ? ascii : name.ToString(), null);
+		return name.Length == ascii.Length ? ascii : name.ToString();
 	}
 
 	// The preferred name syntax of RFC 1034, Sec. 3.5, with a digit allowed first as in RFC 1123, Sec. 2.1, which RFC 5280, Sec. 4.2.1.6, requires of a dNSName: labels of 1 to 63 letters, digits and hyphens that neither start nor end with a hyphen, 253 characters at most, without the dot of the root.
