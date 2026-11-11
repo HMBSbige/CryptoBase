@@ -13,10 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Shared\DerSpanReader.cs" Link="Shared\DerSpanReader.cs" />
-    <Compile Include="..\Shared\RsassaPssParameters.cs" Link="Shared\RsassaPssParameters.cs" />
-    <Compile Include="..\Shared\PemReader.cs" Link="Shared\PemReader.cs" />
-    <Compile Include="..\Shared\Pkcs1DigestInfo.cs" Link="Shared\Pkcs1DigestInfo.cs" />
+    <Compile Include="..\Shared\**\*.cs" LinkBase="Shared" />
   </ItemGroup>
 
   <ItemGroup>
