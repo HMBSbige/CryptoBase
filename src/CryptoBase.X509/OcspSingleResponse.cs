@@ -13,12 +13,10 @@ public sealed class OcspSingleResponse
 	private static readonly Asn1Tag NextUpdateTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag SingleExtensionsTag = new(TagClass.ContextSpecific, 1, true);
 
-	private OcspSingleResponse(OcspCertificateId certificateId, OcspCertificateStatus status, DateTimeOffset? revocationTime, X509RevocationReason? revocationReason, DateTimeOffset thisUpdate, DateTimeOffset? nextUpdate, IReadOnlyList<CertificateExtension> extensions)
+	private OcspSingleResponse(OcspCertificateId certificateId, OcspCertificateStatus status, DateTimeOffset thisUpdate, DateTimeOffset? nextUpdate, IReadOnlyList<CertificateExtension> extensions)
 	{
 		CertificateId = certificateId;
 		Status = status;
-		RevocationTime = revocationTime;
-		RevocationReason = revocationReason;
 		ThisUpdate = thisUpdate;
 		NextUpdate = nextUpdate;
 		Extensions = extensions;
@@ -33,16 +31,6 @@ public sealed class OcspSingleResponse
 	/// Gets the status of the certificate.
 	/// </summary>
 	public OcspCertificateStatus Status { get; }
-
-	/// <summary>
-	/// Gets the time at which the certificate was revoked or placed on hold, in UTC, or <see langword="null" /> unless <see cref="Status" /> is <see cref="OcspCertificateStatus.Revoked" />.
-	/// </summary>
-	public DateTimeOffset? RevocationTime { get; }
-
-	/// <summary>
-	/// Gets the reason for the revocation, or <see langword="null" /> if the response gives none.
-	/// </summary>
-	public X509RevocationReason? RevocationReason { get; }
 
 	/// <summary>
 	/// Gets the most recent time at which the responder knew the status to be correct, in UTC.
@@ -64,33 +52,33 @@ public sealed class OcspSingleResponse
 	{
 		DerReader sequence = reader.ReadSequence();
 		OcspCertificateId certificateId = OcspCertificateId.Read(ref sequence);
-		(OcspCertificateStatus status, DateTimeOffset? revocationTime, X509RevocationReason? revocationReason) = ReadCertificateStatus(ref sequence);
+		OcspCertificateStatus status = ReadCertificateStatus(ref sequence);
 		DateTimeOffset thisUpdate = X509Time.ReadGeneralizedTime(ref sequence);
 		DateTimeOffset? nextUpdate = sequence.TryReadExplicit(NextUpdateTag, out DerReader time) ? X509Time.ReadGeneralizedTime(ref time) : null;
 		IReadOnlyList<CertificateExtension> extensions = sequence.PeekTagIs(SingleExtensionsTag) ? CertificateExtension.ReadList(ref sequence, SingleExtensionsTag) : [];
 		sequence.ThrowIfNotEmpty();
-		return new OcspSingleResponse(certificateId, status, revocationTime, revocationReason, thisUpdate, nextUpdate, extensions);
+		return new OcspSingleResponse(certificateId, status, thisUpdate, nextUpdate, extensions);
 	}
 
 	// CertStatus ::= CHOICE { good [0] IMPLICIT NULL, revoked [1] IMPLICIT RevokedInfo, unknown [2] IMPLICIT UnknownInfo }, and RevokedInfo ::= SEQUENCE { revocationTime GeneralizedTime, revocationReason [0] EXPLICIT CRLReason OPTIONAL }.
-	private static (OcspCertificateStatus Status, DateTimeOffset? RevocationTime, X509RevocationReason? RevocationReason) ReadCertificateStatus(ref DerReader reader)
+	private static OcspCertificateStatus ReadCertificateStatus(ref DerReader reader)
 	{
 		if (reader.PeekTagIs(GoodTag))
 		{
 			reader.ReadNull(GoodTag);
-			return (OcspCertificateStatus.Good, null, null);
+			return OcspCertificateStatus.Good.Instance;
 		}
 
 		if (reader.PeekTagIs(UnknownTag))
 		{
 			reader.ReadNull(UnknownTag);
-			return (OcspCertificateStatus.Unknown, null, null);
+			return OcspCertificateStatus.Unknown.Instance;
 		}
 
 		DerReader revoked = reader.ReadSequence(RevokedTag);
 		DateTimeOffset revocationTime = X509Time.ReadGeneralizedTime(ref revoked);
 		X509RevocationReason? revocationReason = revoked.TryReadExplicit(RevocationReasonTag, out DerReader reason) ? CertificateRevocationList.ReadReason(reason.ReadEnumeratedBytes().Span) : null;
 		revoked.ThrowIfNotEmpty();
-		return (OcspCertificateStatus.Revoked, revocationTime, revocationReason);
+		return new OcspCertificateStatus.Revoked(revocationTime, revocationReason);
 	}
 }

@@ -115,13 +115,11 @@ public class OcspTest
 			await Assert.That(byName.Certificates.Single().Encoded.ToArray()).IsEquivalentTo(CA.Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(byKey.Certificates.Single().Subject.ToArray()).IsEquivalentTo(Certificate.DecodePem(OcspVectors.Responder).Subject.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(single.CertificateId.Matches(GoodLeaf, CA)).IsTrue();
-			await Assert.That(single.Status).IsEqualTo(OcspCertificateStatus.Good);
+			await Assert.That(single.Status).IsTypeOf<OcspCertificateStatus.Good>();
 			await Assert.That(single.NextUpdate).IsNotNull();
-			await Assert.That(single.RevocationTime).IsNull();
-			await Assert.That(revokedSingle.Status).IsEqualTo(OcspCertificateStatus.Revoked);
-			await Assert.That(revokedSingle.RevocationTime).IsNotNull();
-			await Assert.That(revokedSingle.RevocationReason).IsEqualTo(X509RevocationReason.KeyCompromise);
-			await Assert.That(unknown.Responses.Single().Status).IsEqualTo(OcspCertificateStatus.Unknown);
+			await Assert.That(revokedSingle.Status).IsTypeOf<OcspCertificateStatus.Revoked>();
+			await Assert.That((revokedSingle.Status as OcspCertificateStatus.Revoked)?.RevocationReason).IsEqualTo(X509RevocationReason.KeyCompromise);
+			await Assert.That(unknown.Responses.Single().Status).IsTypeOf<OcspCertificateStatus.Unknown>();
 		}
 	}
 

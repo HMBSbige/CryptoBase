@@ -1,22 +1,54 @@
 namespace CryptoBase.X509;
 
 /// <summary>
-/// Specifies the status of a certificate in an OCSP response (RFC 6960, Sec. 4.2.1).
+/// Represents a CertStatus (RFC 6960, Sec. 4.2.1): the status of a certificate in an OCSP response, a <see cref="Good" />, a <see cref="Revoked" />, or an <see cref="Unknown" />.
 /// </summary>
-public enum OcspCertificateStatus
+/// <remarks>Instances are immutable, so they may be used concurrently.</remarks>
+public closed class OcspCertificateStatus
 {
 	/// <summary>
-	/// The responder knows no revocation of the certificate.
+	/// Represents the good status: the responder knows no revocation of the certificate.
 	/// </summary>
-	Good = 0,
+	public sealed class Good : OcspCertificateStatus
+	{
+		private Good()
+		{
+		}
+
+		internal static Good Instance { get; } = new();
+	}
 
 	/// <summary>
-	/// The certificate has been revoked, temporarily or permanently, or was never issued.
+	/// Represents the revoked status: the certificate has been revoked, temporarily or permanently, or was never issued.
 	/// </summary>
-	Revoked = 1,
+	public sealed class Revoked : OcspCertificateStatus
+	{
+		internal Revoked(DateTimeOffset revocationTime, X509RevocationReason? revocationReason)
+		{
+			RevocationTime = revocationTime;
+			RevocationReason = revocationReason;
+		}
+
+		/// <summary>
+		/// Gets the time at which the certificate was revoked or placed on hold, in UTC.
+		/// </summary>
+		public DateTimeOffset RevocationTime { get; }
+
+		/// <summary>
+		/// Gets the reason for the revocation, or <see langword="null" /> if the response gives none.
+		/// </summary>
+		public X509RevocationReason? RevocationReason { get; }
+	}
 
 	/// <summary>
-	/// The responder does not know about the certificate.
+	/// Represents the unknown status: the responder does not know about the certificate.
 	/// </summary>
-	Unknown = 2,
+	public sealed class Unknown : OcspCertificateStatus
+	{
+		private Unknown()
+		{
+		}
+
+		internal static Unknown Instance { get; } = new();
+	}
 }

@@ -228,10 +228,10 @@ internal static class RevocationChecker
 		{
 			OcspCertificateStatus.Good => new RevocationResult(RevocationStatus.Good) { NextUpdate = nextUpdate },
 			OcspCertificateStatus.Unknown => new RevocationResult(RevocationStatus.Unknown) { NextUpdate = nextUpdate },
-			_ => new RevocationResult(RevocationStatus.Revoked)
+			OcspCertificateStatus.Revoked revoked => new RevocationResult(RevocationStatus.Revoked)
 			{
-				Reason = selected.RevocationReason ?? X509RevocationReason.Unspecified,
-				RevocationTime = selected.RevocationTime,
+				Reason = revoked.RevocationReason ?? X509RevocationReason.Unspecified,
+				RevocationTime = revoked.RevocationTime,
 				NextUpdate = nextUpdate
 			}
 		};
@@ -537,7 +537,7 @@ internal static class RevocationChecker
 			{
 				OcspCertificateStatus.Revoked => 2,
 				OcspCertificateStatus.Unknown => 1,
-				_ => 0
+				OcspCertificateStatus.Good => 0
 			};
 		}
 	}
