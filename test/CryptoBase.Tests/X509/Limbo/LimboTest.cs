@@ -101,13 +101,15 @@ public class LimboTest
 			Console.WriteLine($"tolerated: {line}");
 		}
 
-		int crlTestcases = testcases.Count(testcase => testcase.Crls.Length > 0 && outcomes[testcase.Id].Result is not Skipped);
+		string[] crlTestcases = [.. testcases.Where(static testcase => testcase.Crls.Length > 0).Select(static testcase => testcase.Id)];
+		string[] skippedCrlTestcases = [.. crlTestcases.Where(id => outcomes[id].Result is Skipped)];
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(nonconformant).IsEmpty().Because(string.Join(Environment.NewLine, nonconformant.Take(50)));
 			await Assert.That(stale).IsEmpty().Because(string.Join(Environment.NewLine, stale));
-			await Assert.That(crlTestcases).IsEqualTo(17);
+			await Assert.That(crlTestcases).IsNotEmpty();
+			await Assert.That(skippedCrlTestcases).IsEmpty().Because(string.Join(Environment.NewLine, skippedCrlTestcases));
 		}
 	}
 
