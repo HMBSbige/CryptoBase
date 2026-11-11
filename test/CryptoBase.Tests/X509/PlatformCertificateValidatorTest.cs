@@ -600,6 +600,7 @@ public class PlatformCertificateValidatorTest
 
 	// The deadline bounds each retrieval from the silent server, which would otherwise wait for the platform's own timeout.
 	[Test]
+	[NotInParallel]
 	public async Task ShortensEachRetrievalToTheDeadline()
 	{
 		using SilentServer server = new();
