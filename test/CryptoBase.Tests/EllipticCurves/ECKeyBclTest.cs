@@ -33,7 +33,7 @@ public class ECKeyBclTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task SharedSecretsMatchThePlatform(CurveCase curve)
 	{
-		SkipUnlessSupported(curve);
+		SkipUnlessSupported(curve, true);
 
 		for (int i = 0; i < Iterations; ++i)
 		{
@@ -57,7 +57,7 @@ public class ECKeyBclTest
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task PlatformTakesGeneratedKeys(CurveCase curve)
 	{
-		SkipUnlessSupported(curve);
+		SkipUnlessSupported(curve, true);
 
 		for (int i = 0; i < Iterations; ++i)
 		{
@@ -78,8 +78,8 @@ public class ECKeyBclTest
 		}
 	}
 
-	// A platform without the curve throws PlatformNotSupportedException, and one with it may still refuse ECDH or ECDSA on it with a CryptographicException.
-	private static void SkipUnlessSupported(CurveCase curve)
+	// A platform without the curve throws PlatformNotSupportedException, and one with it may still refuse ECDH or ECDSA on it with a CryptographicException. OpenSSL generates keys on sm2p256v1 but refuses to import them.
+	private static void SkipUnlessSupported(CurveCase curve, bool importsKeys = false)
 	{
 		try
 		{
@@ -87,10 +87,15 @@ public class ECKeyBclTest
 			_ = key.DeriveRawSecretAgreement(key.PublicKey);
 			using ECDsa signer = ECDsa.Create(BclCurve(curve));
 			_ = signer.SignData(Message, HashAlgorithmName.SHA256);
+
+			if (importsKeys)
+			{
+				using ECDiffieHellman imported = ECDiffieHellman.Create(key.ExportParameters(true));
+			}
 		}
 		catch (Exception e) when (e is PlatformNotSupportedException or CryptographicException)
 		{
-			Skip.Test($"The platform has no raw ECDH or ECDSA on {curve.Name}: {e.Message}");
+			Skip.Test($"The platform has no raw ECDH or ECDSA on {curve.Name}, or does not import its keys: {e.Message}");
 		}
 	}
 }
