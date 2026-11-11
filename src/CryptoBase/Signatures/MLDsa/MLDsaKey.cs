@@ -756,11 +756,21 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		mu.CopyTo(commitment.Span);
 		Span<byte> commitmentHash = stackalloc byte[commitmentHashLength];
 
-		// y ← ExpandMask(ρ″, κ).
-		ExpandMask<TKernel>(rhoPrimePrime.Span, 0, y, [], []);
-
+	attempt:
 		for (int kappa = 0; ; kappa += l)
 		{
+			// y ← ExpandMask(ρ″, κ), which the attempt before has expanded where it hashed c̃ in the batch.
+			if (pipelined && kappa is not 0)
+			{
+				Span<int> expanded = y;
+				y = nextY;
+				nextY = expanded;
+			}
+			else
+			{
+				ExpandMask<TKernel>(rhoPrimePrime.Span, kappa, y, [], []);
+			}
+
 			// w ← NTT⁻¹(Â ∘ NTT(y)), then w1 and w0 by Decompose; z holds ŷ meanwhile.
 			y.CopyTo(z);
 
@@ -799,7 +809,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 				TKernel.InverseNtt(product);
 				if (TKernel.AddReduceExceedsBound(product, y.Slice(r * N, N), polynomial, (1 << TParameters.Gamma1Bits) - beta))
 				{
-					goto reject;
+					continue attempt;
 				}
 			}
 
@@ -811,7 +821,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 				TKernel.InverseNtt(product);
 				if (TKernel.SubtractReduceExceedsBound(polynomial, product, polynomial, gamma2 - beta))
 				{
-					goto reject;
+					continue attempt;
 				}
 			}
 
@@ -825,7 +835,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 				TKernel.InverseNtt(product);
 				if (TKernel.ReduceExceedsBound(product, gamma2))
 				{
-					goto reject;
+					continue attempt;
 				}
 
 				TKernel.Add(polynomial, product, polynomial);
@@ -835,18 +845,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 			if (hints <= TParameters.Omega)
 			{
 				break;
-			}
-
-		reject:
-			if (pipelined)
-			{
-				Span<int> expanded = y;
-				y = nextY;
-				nextY = expanded;
-			}
-			else
-			{
-				ExpandMask<TKernel>(rhoPrimePrime.Span, kappa + l, y, [], []);
 			}
 		}
 
