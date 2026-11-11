@@ -18,6 +18,27 @@ internal static class ThreadInterrupts
 		}
 	}
 
+	// Monitor.Wait for a caller that has entered gate once. Some runtimes throw ThreadInterruptedException from it without the lock; this takes the lock back first: https://github.com/dotnet/runtime/issues/137329
+	// A catch block, not an exception filter, which would run before the wait has tried to take the lock back.
+	internal static void WaitHoldingLock(object gate)
+	{
+		try
+		{
+			Monitor.Wait(gate);
+		}
+		catch (ThreadInterruptedException)
+		{
+			if (!Monitor.IsEntered(gate))
+			{
+				bool interrupted = false;
+				Uninterruptibly(static gate => Monitor.Enter(gate), gate, ref interrupted);
+				RestoreInterrupt(interrupted);
+			}
+
+			throw;
+		}
+	}
+
 	// Spinning, yielding and then sleeping, the wait needs nothing that may fail, and sleeping lets threads of any priority run on the processor.
 	internal static void SpinUntilZero(ref int value)
 	{

@@ -375,7 +375,7 @@ internal static unsafe class Blake3Parallel
 
 							while (Volatile.Read(ref job._pendingItems) is not 0)
 							{
-								Monitor.Wait(job);
+								WaitHoldingLock(job);
 							}
 						}
 					}, this, ref interrupted
@@ -408,7 +408,7 @@ internal static unsafe class Blake3Parallel
 				{
 					lock (job)
 					{
-						Monitor.Pulse(job);
+						Monitor.PulseAll(job);
 					}
 				}, this, ref interrupted
 			);

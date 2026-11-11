@@ -134,7 +134,7 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 				{
 					while (keepWaiting(this, state))
 					{
-						Monitor.Wait(_gate);
+						WaitHoldingLock(_gate);
 					}
 				}
 				finally
