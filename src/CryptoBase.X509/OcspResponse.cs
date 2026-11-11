@@ -1,18 +1,18 @@
 namespace CryptoBase.X509;
 
 /// <summary>
-/// Represents an OCSP response (RFC 6960, Sec. 4.2).
+/// Represents an OCSP response (RFC 6960, Sec. 4.2): an <see cref="Error" />, an <see cref="Other" />, or a <see cref="Basic" />.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Decoding accepts only DER and checks the structure of RFC 6960, Sec. 4.2.1: an error status has no responseBytes and a successful one does.
-/// Decoding does not check the signature, or whether the response is current; a response of another type decodes, with <see cref="ResponseType" /> to tell it apart, and only the members of the status are set.
+/// Decoding does not check the signature, or whether the response is current; a response with an error status decodes as an <see cref="Error" />, which has the status alone, a successful one of the basic type as a <see cref="Basic" />, and a successful one of another type as an <see cref="Other" />, with <see cref="Other.ResponseType" /> to tell it apart and its response left unread.
 /// </para>
 /// <para>
 /// Instances are immutable, so they may be used concurrently.
 /// </para>
 /// </remarks>
-public sealed class OcspResponse
+public closed class OcspResponse
 {
 	private const string BasicResponseOid = "1.3.6.1.5.5.7.48.1.1";
 
@@ -23,30 +23,10 @@ public sealed class OcspResponse
 	private static readonly Asn1Tag ResponseExtensionsTag = new(TagClass.ContextSpecific, 1, true);
 	private static readonly Asn1Tag CertificatesTag = new(TagClass.ContextSpecific, 0, true);
 
-	private OcspResponse(ReadOnlyMemory<byte> encoded)
+	private protected OcspResponse(ReadOnlyMemory<byte> encoded, OcspResponseStatus status)
 	{
 		Encoded = encoded;
-		Responses = [];
-		Certificates = [];
-		Extensions = [];
-
-		DerReader response = DerReader.ReadSoleSequence(encoded);
-		Status = ReadStatus(response.ReadEnumeratedBytes().Span);
-
-		if (Status is OcspResponseStatus.Successful)
-		{
-			DerReader responseBytes = response.ReadExplicit(ResponseBytesTag).ReadSequence();
-			ResponseType = responseBytes.ReadObjectIdentifier();
-			ReadOnlyMemory<byte> value = responseBytes.ReadOctetString();
-			responseBytes.ThrowIfNotEmpty();
-
-			if (ResponseType is BasicResponseOid)
-			{
-				ReadBasicResponse(value);
-			}
-		}
-
-		response.ThrowIfNotEmpty();
+		Status = status;
 	}
 
 	/// <summary>
@@ -60,56 +40,6 @@ public sealed class OcspResponse
 	public OcspResponseStatus Status { get; }
 
 	/// <summary>
-	/// Gets the responseType as a dotted-decimal object identifier, or <see langword="null" /> unless <see cref="Status" /> is <see cref="OcspResponseStatus.Successful" />.
-	/// </summary>
-	public string? ResponseType { get; }
-
-	/// <summary>
-	/// Gets the DER encoding of the ResponseData, which the signature covers, or an empty value unless the response is of the basic type.
-	/// </summary>
-	public ReadOnlyMemory<byte> TbsResponseData { get; private set; }
-
-	/// <summary>
-	/// Gets the identifier of the responder, or <see langword="null" /> unless the response is of the basic type.
-	/// </summary>
-	public OcspResponderId? Responder { get; private set; }
-
-	/// <summary>
-	/// Gets the time at which the responder signed the response, in UTC, or <see langword="null" /> unless the response is of the basic type.
-	/// </summary>
-	public DateTimeOffset? ProducedAt { get; private set; }
-
-	/// <summary>
-	/// Gets the status of each certificate, in the order of the encoding; empty unless the response is of the basic type.
-	/// </summary>
-	public IReadOnlyList<OcspSingleResponse> Responses { get; private set; }
-
-	/// <summary>
-	/// Gets the responseExtensions, in the order of the encoding; empty if there are none.
-	/// </summary>
-	public IReadOnlyList<CertificateExtension> Extensions { get; private set; }
-
-	/// <summary>
-	/// Gets the certificates of the certs field that decode, in the order of the encoding; empty if there are none. They are not checked.
-	/// </summary>
-	public IReadOnlyList<Certificate> Certificates { get; private set; }
-
-	/// <summary>
-	/// Gets the nonce, or <see langword="null" /> if the response has none or the nonce is not an OCTET STRING of 1 to 128 bytes.
-	/// </summary>
-	public ReadOnlyMemory<byte>? Nonce { get; private set; }
-
-	/// <summary>
-	/// Gets the algorithm of the responder's signature, or <see langword="null" /> unless the response is of the basic type.
-	/// </summary>
-	public AlgorithmIdentifier? SignatureAlgorithm { get; private set; }
-
-	/// <summary>
-	/// Gets the responder's signature, the bytes of its BIT STRING, or an empty value unless the response is of the basic type.
-	/// </summary>
-	public ReadOnlyMemory<byte> Signature { get; private set; }
-
-	/// <summary>
 	/// Decodes a DER-encoded OCSP response.
 	/// </summary>
 	/// <param name="source">The response, with nothing after it.</param>
@@ -119,7 +49,7 @@ public sealed class OcspResponse
 	{
 		try
 		{
-			return new OcspResponse(source.ToArray());
+			return Read(source.ToArray());
 		}
 		catch (AsnContentException e)
 		{
@@ -127,74 +57,34 @@ public sealed class OcspResponse
 		}
 	}
 
-	/// <summary>
-	/// Verifies the responder's signature on the ResponseData.
-	/// </summary>
-	/// <remarks>To tell an algorithm that the package does not support from a wrong signature, call <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" /> on <see cref="SignatureAlgorithm" />.</remarks>
-	/// <param name="responderKey">The responder's public key.</param>
-	/// <returns><see langword="true" /> if the response is of the basic type, <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="responderKey" /> supports and the signature is valid with it; otherwise, <see langword="false" />.</returns>
-	/// <exception cref="ArgumentNullException"><paramref name="responderKey" /> is <see langword="null" />.</exception>
-	/// <exception cref="ObjectDisposedException"><paramref name="responderKey" /> has been disposed.</exception>
-	public bool VerifySignature(ISignatureKey responderKey)
+	// OCSPResponse ::= SEQUENCE { responseStatus OCSPResponseStatus, responseBytes [0] EXPLICIT ResponseBytes OPTIONAL }, and ResponseBytes ::= SEQUENCE { responseType OBJECT IDENTIFIER, response OCTET STRING }.
+	private static OcspResponse Read(ReadOnlyMemory<byte> encoded)
 	{
-		ArgumentNullException.ThrowIfNull(responderKey);
+		DerReader reader = DerReader.ReadSoleSequence(encoded);
+		OcspResponseStatus status = ReadStatus(reader.ReadEnumeratedBytes().Span);
+		OcspResponse response;
 
-		return SignatureAlgorithm?.VerifySignature(responderKey, TbsResponseData.Span, Signature.Span) is true;
+		if (status is OcspResponseStatus.Successful)
+		{
+			DerReader responseBytes = reader.ReadExplicit(ResponseBytesTag).ReadSequence();
+			string responseType = responseBytes.ReadObjectIdentifier();
+			ReadOnlyMemory<byte> value = responseBytes.ReadOctetString();
+			responseBytes.ThrowIfNotEmpty();
+			response = responseType is BasicResponseOid ? new Basic(encoded, value) : new Other(encoded, responseType);
+		}
+		else
+		{
+			response = new Error(encoded, status);
+		}
+
+		reader.ThrowIfNotEmpty();
+		return response;
 	}
 
 	// OCSPResponseStatus ::= ENUMERATED { successful (0), malformedRequest (1), internalError (2), tryLater (3), sigRequired (5), unauthorized (6) }.
 	private static OcspResponseStatus ReadStatus(ReadOnlySpan<byte> contents)
 	{
 		return contents is [var value] && value <= 6 && value is not 4 ? (OcspResponseStatus)value : throw new AsnContentException("The response status is not defined.");
-	}
-
-	// BasicOCSPResponse ::= SEQUENCE { tbsResponseData ResponseData, signatureAlgorithm AlgorithmIdentifier, signature BIT STRING, certs [0] EXPLICIT SEQUENCE OF Certificate OPTIONAL }.
-	private void ReadBasicResponse(ReadOnlyMemory<byte> value)
-	{
-		DerReader basic = DerReader.ReadSoleSequence(value);
-
-		DerReader data = basic.ReadSequence(out ReadOnlyMemory<byte> tbsResponseData);
-		TbsResponseData = tbsResponseData;
-		SignatureAlgorithm = AlgorithmIdentifier.Read(ref basic);
-		Signature = basic.ReadBitString();
-
-		if (basic.PeekTagIs(CertificatesTag))
-		{
-			Certificates = ReadCertificates(ref basic);
-		}
-
-		basic.ThrowIfNotEmpty();
-		ReadResponseData(ref data);
-	}
-
-	// ResponseData ::= SEQUENCE { version [0] EXPLICIT Version DEFAULT v1, responderID ResponderID, producedAt GeneralizedTime, responses SEQUENCE OF SingleResponse, responseExtensions [1] EXPLICIT Extensions OPTIONAL }. The only version, v1, is the default, which DER omits, so a version is an error.
-	private void ReadResponseData(ref DerReader data)
-	{
-		if (data.PeekTagIs(VersionTag))
-		{
-			throw new AsnContentException();
-		}
-
-		Responder = ReadResponderId(ref data);
-		ProducedAt = X509Time.ReadGeneralizedTime(ref data);
-
-		DerReader responses = data.ReadSequence();
-		List<OcspSingleResponse> list = [];
-
-		while (responses.HasData)
-		{
-			list.Add(OcspSingleResponse.Read(ref responses));
-		}
-
-		Responses = list.AsReadOnly();
-
-		if (data.PeekTagIs(ResponseExtensionsTag))
-		{
-			Extensions = CertificateExtension.ReadList(ref data, ResponseExtensionsTag);
-			ReadNonce();
-		}
-
-		data.ThrowIfNotEmpty();
 	}
 
 	// ResponderID ::= CHOICE { byName [1] Name, byKey [2] KeyHash }, explicit as the module's default tagging and CHOICE require.
@@ -230,11 +120,9 @@ public sealed class OcspResponse
 		return certificates.AsReadOnly();
 	}
 
-	// Nonce ::= OCTET STRING(SIZE(1..128)) (RFC 9654, Sec. 2.1), which is left null if it has another form.
-	private void ReadNonce()
+	// Nonce ::= OCTET STRING(SIZE(1..128)) (RFC 9654, Sec. 2.1), which is null if it has another form.
+	private static ReadOnlyMemory<byte>? ReadNonce(IReadOnlyList<CertificateExtension> extensions)
 	{
-		IReadOnlyList<CertificateExtension> extensions = Extensions;
-
 		for (int i = 0; i < extensions.Count; ++i)
 		{
 			CertificateExtension extension = extensions[i];
@@ -251,14 +139,143 @@ public sealed class OcspResponse
 
 				if (!reader.HasData && nonce.Length is >= 1 and <= OcspRequest.MaxNonceLength)
 				{
-					Nonce = nonce;
+					return nonce;
 				}
 			}
 			catch (AsnContentException)
 			{
 			}
 
-			return;
+			return null;
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Represents a response with an error status: <see cref="Status" /> is not <see cref="OcspResponseStatus.Successful" />, and the response has nothing else.
+	/// </summary>
+	public sealed class Error : OcspResponse
+	{
+		internal Error(ReadOnlyMemory<byte> encoded, OcspResponseStatus status) : base(encoded, status)
+		{
+		}
+	}
+
+	/// <summary>
+	/// Represents a successful response of another type than the basic, whose response is not read.
+	/// </summary>
+	public sealed class Other : OcspResponse
+	{
+		internal Other(ReadOnlyMemory<byte> encoded, string responseType) : base(encoded, OcspResponseStatus.Successful)
+		{
+			ResponseType = responseType;
+		}
+
+		/// <summary>
+		/// Gets the responseType as a dotted-decimal object identifier.
+		/// </summary>
+		public string ResponseType { get; }
+	}
+
+	/// <summary>
+	/// Represents a successful response of the basic type, id-pkix-ocsp-basic: a BasicOCSPResponse (RFC 6960, Sec. 4.2.1).
+	/// </summary>
+	public sealed class Basic : OcspResponse
+	{
+		// BasicOCSPResponse ::= SEQUENCE { tbsResponseData ResponseData, signatureAlgorithm AlgorithmIdentifier, signature BIT STRING, certs [0] EXPLICIT SEQUENCE OF Certificate OPTIONAL }.
+		internal Basic(ReadOnlyMemory<byte> encoded, ReadOnlyMemory<byte> value) : base(encoded, OcspResponseStatus.Successful)
+		{
+			DerReader basic = DerReader.ReadSoleSequence(value);
+
+			DerReader data = basic.ReadSequence(out ReadOnlyMemory<byte> tbsResponseData);
+			TbsResponseData = tbsResponseData;
+			SignatureAlgorithm = AlgorithmIdentifier.Read(ref basic);
+			Signature = basic.ReadBitString();
+			Certificates = basic.PeekTagIs(CertificatesTag) ? ReadCertificates(ref basic) : [];
+			basic.ThrowIfNotEmpty();
+
+			// ResponseData ::= SEQUENCE { version [0] EXPLICIT Version DEFAULT v1, responderID ResponderID, producedAt GeneralizedTime, responses SEQUENCE OF SingleResponse, responseExtensions [1] EXPLICIT Extensions OPTIONAL }. The only version, v1, is the default, which DER omits, so a version is an error.
+			if (data.PeekTagIs(VersionTag))
+			{
+				throw new AsnContentException();
+			}
+
+			Responder = ReadResponderId(ref data);
+			ProducedAt = X509Time.ReadGeneralizedTime(ref data);
+
+			DerReader responses = data.ReadSequence();
+			List<OcspSingleResponse> list = [];
+
+			while (responses.HasData)
+			{
+				list.Add(OcspSingleResponse.Read(ref responses));
+			}
+
+			Responses = list.AsReadOnly();
+			Extensions = data.PeekTagIs(ResponseExtensionsTag) ? CertificateExtension.ReadList(ref data, ResponseExtensionsTag) : [];
+			Nonce = ReadNonce(Extensions);
+			data.ThrowIfNotEmpty();
+		}
+
+		/// <summary>
+		/// Gets the DER encoding of the ResponseData, which the signature covers.
+		/// </summary>
+		public ReadOnlyMemory<byte> TbsResponseData { get; }
+
+		/// <summary>
+		/// Gets the identifier of the responder.
+		/// </summary>
+		public OcspResponderId Responder { get; }
+
+		/// <summary>
+		/// Gets the time at which the responder signed the response, in UTC.
+		/// </summary>
+		public DateTimeOffset ProducedAt { get; }
+
+		/// <summary>
+		/// Gets the status of each certificate, in the order of the encoding.
+		/// </summary>
+		public IReadOnlyList<OcspSingleResponse> Responses { get; }
+
+		/// <summary>
+		/// Gets the responseExtensions, in the order of the encoding; empty if there are none.
+		/// </summary>
+		public IReadOnlyList<CertificateExtension> Extensions { get; }
+
+		/// <summary>
+		/// Gets the certificates of the certs field that decode, in the order of the encoding; empty if there are none. They are not checked.
+		/// </summary>
+		public IReadOnlyList<Certificate> Certificates { get; }
+
+		/// <summary>
+		/// Gets the nonce, or <see langword="null" /> if the response has none or the nonce is not an OCTET STRING of 1 to 128 bytes.
+		/// </summary>
+		public ReadOnlyMemory<byte>? Nonce { get; }
+
+		/// <summary>
+		/// Gets the algorithm of the responder's signature.
+		/// </summary>
+		public AlgorithmIdentifier SignatureAlgorithm { get; }
+
+		/// <summary>
+		/// Gets the responder's signature, the bytes of its BIT STRING.
+		/// </summary>
+		public ReadOnlyMemory<byte> Signature { get; }
+
+		/// <summary>
+		/// Verifies the responder's signature on the ResponseData.
+		/// </summary>
+		/// <remarks>To tell an algorithm that the package does not support from a wrong signature, call <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" /> on <see cref="SignatureAlgorithm" />.</remarks>
+		/// <param name="responderKey">The responder's public key.</param>
+		/// <returns><see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="responderKey" /> supports and the signature is valid with it; otherwise, <see langword="false" />.</returns>
+		/// <exception cref="ArgumentNullException"><paramref name="responderKey" /> is <see langword="null" />.</exception>
+		/// <exception cref="ObjectDisposedException"><paramref name="responderKey" /> has been disposed.</exception>
+		public bool VerifySignature(ISignatureKey responderKey)
+		{
+			ArgumentNullException.ThrowIfNull(responderKey);
+
+			return SignatureAlgorithm.VerifySignature(responderKey, TbsResponseData.Span, Signature.Span);
 		}
 	}
 }

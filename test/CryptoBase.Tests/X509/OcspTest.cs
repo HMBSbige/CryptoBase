@@ -22,9 +22,10 @@ public class OcspTest
 	private static readonly Certificate RevokedLeaf = Certificate.DecodePem(OcspVectors.Revoked);
 	private static readonly Certificate UnknownLeaf = Certificate.DecodePem(OcspVectors.Unknown);
 
-	private static OcspResponse Vector(string response)
+	// Every vector is of the basic type.
+	private static OcspResponse.Basic Vector(string response)
 	{
-		return OcspResponse.Decode(Convert.FromBase64String(response));
+		return OcspResponse.Decode(Convert.FromBase64String(response)) as OcspResponse.Basic ?? throw new InvalidOperationException("The vector is not of the basic type.");
 	}
 
 	private static RevocationResult CheckVector(string response, Certificate certificate, DateTimeOffset? time = null)
@@ -95,23 +96,21 @@ public class OcspTest
 	[Test]
 	public async Task OpenSslResponsesDecode()
 	{
-		OcspResponse byName = Vector(OcspVectors.ResponseIssuerByName);
-		OcspResponse byKey = Vector(OcspVectors.ResponseDelegateByKey);
-		OcspResponse revoked = Vector(OcspVectors.ResponseRevoked);
-		OcspResponse unknown = Vector(OcspVectors.ResponseUnknown);
+		OcspResponse.Basic byName = Vector(OcspVectors.ResponseIssuerByName);
+		OcspResponse.Basic byKey = Vector(OcspVectors.ResponseDelegateByKey);
+		OcspResponse.Basic revoked = Vector(OcspVectors.ResponseRevoked);
+		OcspResponse.Basic unknown = Vector(OcspVectors.ResponseUnknown);
 		OcspSingleResponse single = byName.Responses.Single();
 		OcspSingleResponse revokedSingle = revoked.Responses.Single();
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(byName.Status).IsEqualTo(OcspResponseStatus.Successful);
-			await Assert.That(byName.ResponseType).IsEqualTo(BasicOid);
 			await Assert.That((byName.Responder as OcspResponderId.ByName)?.Name.ToArray()).IsEquivalentTo(CA.Subject.ToArray(), CollectionOrdering.Matching);
 			await Assert.That((byKey.Responder as OcspResponderId.ByKey)?.KeyHash.Length).IsEqualTo(20);
-			await Assert.That(byName.ProducedAt).IsNotNull();
 			await Assert.That(byName.TbsResponseData.IsEmpty).IsFalse();
 			await Assert.That(byName.Signature.IsEmpty).IsFalse();
-			await Assert.That(byName.SignatureAlgorithm?.Oid).IsEqualTo("1.2.840.10045.4.3.2");
+			await Assert.That(byName.SignatureAlgorithm.Oid).IsEqualTo("1.2.840.10045.4.3.2");
 			await Assert.That(byName.Certificates.Single().Encoded.ToArray()).IsEquivalentTo(CA.Encoded.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(byKey.Certificates.Single().Subject.ToArray()).IsEquivalentTo(Certificate.DecodePem(OcspVectors.Responder).Subject.ToArray(), CollectionOrdering.Matching);
 			await Assert.That(single.CertificateId.Matches(GoodLeaf, CA)).IsTrue();
@@ -126,7 +125,7 @@ public class OcspTest
 	[Test]
 	public async Task VerifySignatureUsesTheResponseData()
 	{
-		OcspResponse response = Vector(OcspVectors.ResponseIssuerByName);
+		OcspResponse.Basic response = Vector(OcspVectors.ResponseIssuerByName);
 		using ISignatureKey key = SignatureKey.ImportSubjectPublicKeyInfo(CA.PublicKeyInfo.Encoded.Span);
 		using EcdsaP256 other = EcdsaP256.GenerateKey();
 
@@ -239,19 +238,12 @@ public class OcspTest
 	[Arguments((byte)0x06, OcspResponseStatus.Unauthorized)]
 	public async Task ErrorStatusesDecodeAndAreInvalid(byte status, OcspResponseStatus expected)
 	{
-		using EcdsaP256 key = EcdsaP256.GenerateKey();
 		OcspResponse response = OcspResponse.Decode(Sequence([0x0A, 0x01, status]));
 
 		using (Assert.Multiple())
 		{
+			await Assert.That(response).IsTypeOf<OcspResponse.Error>();
 			await Assert.That(response.Status).IsEqualTo(expected);
-			await Assert.That(response.ResponseType).IsNull();
-			await Assert.That(response.Responses).IsEmpty();
-			await Assert.That(response.Certificates).IsEmpty();
-			await Assert.That(response.ProducedAt).IsNull();
-			await Assert.That(response.Responder).IsNull();
-			await Assert.That(response.SignatureAlgorithm).IsNull();
-			await Assert.That(response.VerifySignature(key)).IsFalse();
 			await AssertStatusAsync(RevocationChecker.CheckOcsp(response, GoodLeaf, CA, SignatureKey.ImportSubjectPublicKeyInfo, VectorTime), RevocationStatus.Invalid);
 		}
 	}
@@ -312,8 +304,7 @@ public class OcspTest
 
 		using (Assert.Multiple())
 		{
-			await Assert.That(response.ResponseType).IsEqualTo("1.3.6.1.5.5.7.48.1.99");
-			await Assert.That(response.Responses).IsEmpty();
+			await Assert.That((response as OcspResponse.Other)?.ResponseType).IsEqualTo("1.3.6.1.5.5.7.48.1.99");
 			await AssertStatusAsync(RevocationChecker.CheckOcsp(response, GoodLeaf, CA, SignatureKey.ImportSubjectPublicKeyInfo, VectorTime), RevocationStatus.Invalid);
 		}
 	}
@@ -615,11 +606,11 @@ public class OcspTest
 		Basic basic = new() { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = certificateId }.Encode()] };
 		byte[] nonce = new byte[16];
 		byte[] longestNonce = [.. Enumerable.Range(0, 128).Select(static i => (byte)i)];
-		OcspResponse notWrapped = (basic with { Extensions = [Extension(NonceOid, nonce)] }).Decode(authority.Key);
-		OcspResponse empty = (basic with { Extensions = [Nonce([])] }).Decode(authority.Key);
-		OcspResponse tooLong = (basic with { Extensions = [Nonce(new byte[129])] }).Decode(authority.Key);
-		OcspResponse matching = (basic with { Extensions = [Nonce(nonce)] }).Decode(authority.Key);
-		OcspResponse longest = (basic with { Extensions = [Nonce(longestNonce)] }).Decode(authority.Key);
+		OcspResponse.Basic notWrapped = (basic with { Extensions = [Extension(NonceOid, nonce)] }).Decode(authority.Key);
+		OcspResponse.Basic empty = (basic with { Extensions = [Nonce([])] }).Decode(authority.Key);
+		OcspResponse.Basic tooLong = (basic with { Extensions = [Nonce(new byte[129])] }).Decode(authority.Key);
+		OcspResponse.Basic matching = (basic with { Extensions = [Nonce(nonce)] }).Decode(authority.Key);
+		OcspResponse.Basic longest = (basic with { Extensions = [Nonce(longestNonce)] }).Decode(authority.Key);
 
 		using (Assert.Multiple())
 		{
@@ -628,7 +619,7 @@ public class OcspTest
 			await Assert.That(longest.Nonce?.ToArray()).IsEquivalentTo(longestNonce, CollectionOrdering.Matching);
 			await AssertStatusAsync(Check(longest, leaf, authority), RevocationStatus.Good);
 
-			foreach (OcspResponse response in (OcspResponse[])[notWrapped, empty, tooLong])
+			foreach (OcspResponse.Basic response in (OcspResponse.Basic[])[notWrapped, empty, tooLong])
 			{
 				await Assert.That(response.Nonce).IsNull();
 				await AssertStatusAsync(Check(response, leaf, authority), RevocationStatus.Good);
@@ -644,7 +635,7 @@ public class OcspTest
 		Certificate leaf = authority.IssueLeaf();
 		byte[] certificateId = CertificateIdOf(leaf, authority.Certificate);
 		Basic basic = new() { ResponderId = ResponderByName(authority.Name), Responses = [new SingleEntry { CertificateId = certificateId }.Encode()] };
-		OcspResponse response = (basic with { Certificates = [[0x30, 0x00], leaf.Encoded.ToArray(), [0x04, 0x01, 0xFF]] }).Decode(authority.Key);
+		OcspResponse.Basic response = (basic with { Certificates = [[0x30, 0x00], leaf.Encoded.ToArray(), [0x04, 0x01, 0xFF]] }).Decode(authority.Key);
 
 		using (Assert.Multiple())
 		{

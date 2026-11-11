@@ -89,9 +89,9 @@ internal static class TestOcsp
 			return Successful(BasicOid, basic);
 		}
 
-		public OcspResponse Decode(ISignatureKey key)
+		public OcspResponse.Basic Decode(ISignatureKey key)
 		{
-			return OcspResponse.Decode(Encode(key));
+			return OcspResponse.Decode(Encode(key)) as OcspResponse.Basic ?? throw new InvalidOperationException("The response is not of the basic type.");
 		}
 	}
 

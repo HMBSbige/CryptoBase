@@ -185,16 +185,16 @@ internal static class RevocationChecker
 	// The response's certificates are not trusted by themselves: a delegated responder must be issued directly by issuer, as Sec. 4.2.2.2 requires.
 	public static RevocationResult CheckOcsp(OcspResponse response, Certificate certificate, Certificate issuer, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize = 2048)
 	{
-		if (response.Status is not OcspResponseStatus.Successful)
+		return response switch
 		{
-			return Invalid($"The responder answered {response.Status}.");
-		}
+			OcspResponse.Error => Invalid($"The responder answered {response.Status}."),
+			OcspResponse.Other other => Invalid($"The response has the type {other.ResponseType}, not id-pkix-ocsp-basic."),
+			OcspResponse.Basic basic => CheckBasicOcsp(basic, certificate, issuer, importPublicKey, time, minRsaKeySize)
+		};
+	}
 
-		if (response.Responder is not { } responderId || response.SignatureAlgorithm is not { } signatureAlgorithm)
-		{
-			return Invalid($"The response has the type {response.ResponseType}, not id-pkix-ocsp-basic.");
-		}
-
+	private static RevocationResult CheckBasicOcsp(OcspResponse.Basic response, Certificate certificate, Certificate issuer, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
+	{
 		// RFC 6960, Sec. 4.1.2: an extension may be critical if it is one that the checker understands, whose meaning is to inform; the others are refused.
 		if (CheckCriticalExtensions(response.Extensions, [OcspRequest.NonceOid, OcspExtendedRevokeOid], "The response") is { } criticalProblem)
 		{
@@ -207,7 +207,7 @@ internal static class RevocationChecker
 			return Invalid(singleProblem ?? "The response has no status for the certificate.");
 		}
 
-		if (CheckSignatureAlgorithm(signatureAlgorithm, "The response") is { } algorithmProblem)
+		if (CheckSignatureAlgorithm(response.SignatureAlgorithm, "The response") is { } algorithmProblem)
 		{
 			return Invalid(algorithmProblem);
 		}
@@ -219,7 +219,7 @@ internal static class RevocationChecker
 			return Invalid($"The issuer's key cannot be imported: {importMessage}");
 		}
 
-		if (CheckSigner(response, responderId, issuer, issuerKey, importPublicKey, time, minRsaKeySize) is { } signerProblem)
+		if (CheckSigner(response, issuer, issuerKey, importPublicKey, time, minRsaKeySize) is { } signerProblem)
 		{
 			return Invalid(signerProblem);
 		}
@@ -479,7 +479,7 @@ internal static class RevocationChecker
 
 	// The response for the certificate that stands, or null with the problem that makes the response invalid. A response that is not current tells nothing, so the most severe of those that are current stands, and of those as severe, the one with the earliest nextUpdate; one of them with a critical extension that the checker cannot process makes the response invalid, so that the result does not depend on their order.
 	// Without a current one, the problem of the most severe stands, that of its extensions before that of its times.
-	private static OcspSingleResponse? FindSingleResponse(OcspResponse response, Certificate certificate, Certificate issuer, DateTimeOffset time, out string? problem)
+	private static OcspSingleResponse? FindSingleResponse(OcspResponse.Basic response, Certificate certificate, Certificate issuer, DateTimeOffset time, out string? problem)
 	{
 		IReadOnlyList<OcspSingleResponse> responses = response.Responses;
 		OcspSingleResponse? selected = null;
@@ -588,11 +588,11 @@ internal static class RevocationChecker
 	}
 
 	// RFC 6960, Sec. 4.2.2.2: the signer must be the CA that issued the certificate, or a certificate in the response that it issued directly, which holds id-kp-OCSPSigning.
-	private static string? CheckSigner(OcspResponse response, OcspResponderId responderId, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
+	private static string? CheckSigner(OcspResponse.Basic response, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
 	{
 		string? problem = null;
 
-		if (IsResponder(responderId, issuer))
+		if (IsResponder(response.Responder, issuer))
 		{
 			if (response.VerifySignature(issuerKey))
 			{
@@ -610,7 +610,7 @@ internal static class RevocationChecker
 		{
 			Certificate candidate = certificates[i];
 
-			if (!IsResponder(responderId, candidate))
+			if (!IsResponder(response.Responder, candidate))
 			{
 				continue;
 			}
@@ -632,7 +632,7 @@ internal static class RevocationChecker
 	}
 
 	// The responder's certificate is checked against its issuer alone, as Sec. 4.2.2.2 asks, not on a path of its own, so no name constraints or policies, the issuer's or those above it, apply to it. Its names give it no authority: it answers only for the certificates of that issuer, which could sign the response itself.
-	private static string? CheckDelegatedResponder(OcspResponse response, Certificate candidate, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
+	private static string? CheckDelegatedResponder(OcspResponse.Basic response, Certificate candidate, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
 	{
 		if (!candidate.Issuer.Span.SequenceEqual(issuer.Subject.Span))
 		{
