@@ -57,7 +57,7 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 	private static readonly Oid ServerAuthenticationUsage = new(CertificateUsage.ServerAuthentication.KeyPurposeId, null);
 	private static readonly Oid ClientAuthenticationUsage = new(CertificateUsage.ClientAuthentication.KeyPurposeId, null);
 
-	// Any other status is Unspecified. Windows reports NoIssuanceChainPolicy where Linux and macOS report NotValidForUsage.
+	// Any other status is Unspecified. Windows alone reports NoIssuanceChainPolicy.
 	private static readonly (X509ChainStatusFlags Statuses, CertificateValidationError Error)[] ChainErrors =
 	[
 		(X509ChainStatusFlags.NotSignatureValid, CertificateValidationError.InvalidSignature),

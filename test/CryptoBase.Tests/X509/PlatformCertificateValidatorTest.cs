@@ -384,10 +384,15 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// Windows reports NoIssuanceChainPolicy where Linux and macOS report NotValidForUsage.
+	// Windows reports NoIssuanceChainPolicy. Linux and macOS do not check issuance policies.
 	[Test]
 	public async Task ReportsAnIssuancePolicyThatTheChainDoesNotMeetAsNotValidForUsage()
 	{
+		if (!OperatingSystem.IsWindows())
+		{
+			Skip.Test("Windows alone checks the issuance policies of a chain.");
+		}
+
 		using TestPki pki = new(configureRoot: static request => request.CertificateExtensions.Add(new X509Extension("2.5.29.36", [0x30, 0x03, 0x80, 0x01, 0x00], true)));
 		using X509Certificate2 leaf = pki.IssueLeaf();
 
