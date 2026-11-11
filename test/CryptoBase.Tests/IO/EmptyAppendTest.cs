@@ -1,7 +1,13 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
+using CryptoBase.Hashes.Blake2;
 using CryptoBase.Hashes.Blake3;
+using CryptoBase.Hashes.Crc32;
+using CryptoBase.Hashes.MD5;
+using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha2;
+using CryptoBase.Hashes.Sha3;
+using CryptoBase.Hashes.SM3;
 using CryptoBase.Macs.Hmac;
 using CryptoBase.Tests.Hashes.Blake3;
 using System.Diagnostics.CodeAnalysis;
@@ -33,33 +39,75 @@ public class EmptyAppendTest
 
 	private static readonly FieldInfo ChunkModeField = typeof(Blake3HashAlgorithm).GetField("_chunkMode", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
+	// The cores, each with its run; EveryHashCoreIsCovered keeps them complete.
+	private static readonly Dictionary<Type, Func<int[], bool, List<byte[]>>> HashAlgorithmRuns = new()
+	{
+		[typeof(Blake2b256Core)] = RunHashAlgorithm<Blake2b256Core>,
+		[typeof(Blake2b512Core)] = RunHashAlgorithm<Blake2b512Core>,
+		[typeof(Crc32CCore)] = RunHashAlgorithm<Crc32CCore>,
+		[typeof(Crc32Core)] = RunHashAlgorithm<Crc32Core>,
+		[typeof(MD5Core)] = RunHashAlgorithm<MD5Core>,
+		[typeof(SM3Core)] = RunHashAlgorithm<SM3Core>,
+		[typeof(Sha1Core)] = RunHashAlgorithm<Sha1Core>,
+		[typeof(Sha224Core)] = RunHashAlgorithm<Sha224Core>,
+		[typeof(Sha256Core)] = RunHashAlgorithm<Sha256Core>,
+		[typeof(Sha384Core)] = RunHashAlgorithm<Sha384Core>,
+		[typeof(Sha512Core)] = RunHashAlgorithm<Sha512Core>,
+		[typeof(Sha3_224Core)] = RunHashAlgorithm<Sha3_224Core>,
+		[typeof(Sha3_256Core)] = RunHashAlgorithm<Sha3_256Core>,
+		[typeof(Sha3_384Core)] = RunHashAlgorithm<Sha3_384Core>,
+		[typeof(Sha3_512Core)] = RunHashAlgorithm<Sha3_512Core>
+	};
+
+	private static readonly Dictionary<Type, Func<byte[], int[], bool, List<byte[]>>> HmacAlgorithmRuns = new()
+	{
+		[typeof(Blake2b256Core)] = RunHmacAlgorithm<Blake2b256Core>,
+		[typeof(Blake2b512Core)] = RunHmacAlgorithm<Blake2b512Core>,
+		[typeof(MD5Core)] = RunHmacAlgorithm<MD5Core>,
+		[typeof(SM3Core)] = RunHmacAlgorithm<SM3Core>,
+		[typeof(Sha1Core)] = RunHmacAlgorithm<Sha1Core>,
+		[typeof(Sha224Core)] = RunHmacAlgorithm<Sha224Core>,
+		[typeof(Sha256Core)] = RunHmacAlgorithm<Sha256Core>,
+		[typeof(Sha384Core)] = RunHmacAlgorithm<Sha384Core>,
+		[typeof(Sha512Core)] = RunHmacAlgorithm<Sha512Core>,
+		[typeof(Sha3_224Core)] = RunHmacAlgorithm<Sha3_224Core>,
+		[typeof(Sha3_256Core)] = RunHmacAlgorithm<Sha3_256Core>,
+		[typeof(Sha3_384Core)] = RunHmacAlgorithm<Sha3_384Core>,
+		[typeof(Sha3_512Core)] = RunHmacAlgorithm<Sha3_512Core>
+	};
+
 	public static IEnumerable<Func<Type>> HashCores()
 	{
-		return ImplementationsOfSelf(typeof(IHashCore<>)).Select(static type => (Func<Type>)(() => type));
+		return HashAlgorithmRuns.Keys.Select(static type => (Func<Type>)(() => type));
 	}
 
 	public static IEnumerable<Func<Type>> HmacHashCores()
 	{
-		return ImplementationsOfSelf(typeof(IHmacHashCore<>)).Select(static type => (Func<Type>)(() => type));
+		return HmacAlgorithmRuns.Keys.Select(static type => (Func<Type>)(() => type));
 	}
 
 	[Test]
 	public async Task EveryHashCoreIsCovered()
 	{
-		await Assert.That(HashCores().Select(static core => core())).Contains(typeof(Sha256Core));
-		await Assert.That(HmacHashCores().Select(static core => core())).Contains(typeof(Sha256Core));
+		SkipUnlessJit();
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(HashAlgorithmRuns.Keys).IsEquivalentTo(ImplementationsOfSelf(typeof(IHashCore<>)));
+			await Assert.That(HmacAlgorithmRuns.Keys).IsEquivalentTo(ImplementationsOfSelf(typeof(IHmacHashCore<>)));
+		}
 	}
 
 	[Test]
 	[MethodDataSource(nameof(HashCores))]
 	public async Task HashAlgorithmIgnoresEmptyAppend(Type core)
 	{
-		MethodInfo run = typeof(EmptyAppendTest).GetMethod(nameof(RunHashAlgorithm), BindingFlags.Static | BindingFlags.NonPublic)!.MakeGenericMethod(core);
+		Func<int[], bool, List<byte[]>> run = HashAlgorithmRuns[core];
 
 		foreach (int[] operations in Operations)
 		{
-			List<byte[]> expected = (List<byte[]>)run.Invoke(null, [operations, false])!;
-			List<byte[]> actual = (List<byte[]>)run.Invoke(null, [operations, true])!;
+			List<byte[]> expected = run(operations, false);
+			List<byte[]> actual = run(operations, true);
 			await AssertSameOutputs(actual, expected);
 		}
 	}
@@ -68,7 +116,7 @@ public class EmptyAppendTest
 	[MethodDataSource(nameof(HmacHashCores))]
 	public async Task HmacAlgorithmIgnoresEmptyAppend(Type core)
 	{
-		MethodInfo run = typeof(EmptyAppendTest).GetMethod(nameof(RunHmacAlgorithm), BindingFlags.Static | BindingFlags.NonPublic)!.MakeGenericMethod(core);
+		Func<byte[], int[], bool, List<byte[]>> run = HmacAlgorithmRuns[core];
 
 		foreach (int keyLength in new[] { 0, 32, 200 })
 		{
@@ -76,8 +124,8 @@ public class EmptyAppendTest
 
 			foreach (int[] operations in Operations)
 			{
-				List<byte[]> expected = (List<byte[]>)run.Invoke(null, [key, operations, false])!;
-				List<byte[]> actual = (List<byte[]>)run.Invoke(null, [key, operations, true])!;
+				List<byte[]> expected = run(key, operations, false);
+				List<byte[]> actual = run(key, operations, true);
 				await AssertSameOutputs(actual, expected);
 			}
 		}

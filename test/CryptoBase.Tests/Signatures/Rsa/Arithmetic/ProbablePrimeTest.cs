@@ -1,4 +1,5 @@
 using CryptoBase.Signatures.Rsa;
+using CryptoBase.Signatures.Rsa.Arithmetic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
@@ -11,6 +12,10 @@ namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 // ProbablePrime.Search on scripted candidates, which pass or fail the tests before Miller-Rabin, or are drawn again, as the script says: whether the platform tests two at once or not, the prime it keeps and the failures that make it give up are those of testing one candidate after the other. Two lengths, of which every platform takes pairs at one at least and some take none at one.
 internal class ProbablePrimeTest
 {
+	// ProbablePrime.Candidate, which the tests cannot name.
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+	private static readonly Type CandidateType = Type.GetType("CryptoBase.Signatures.Rsa.Arithmetic.ProbablePrime+Candidate, CryptoBase", true) ?? throw new TypeLoadException();
+
 	// Primes and composites of each length of Lengths, whose top two bits are set as those of the candidates are: the first that Miller-Rabin on BigInteger kept, after 40 rounds, or rejected, from the seeds 91 to 93 and 95 to 102.
 	private static readonly BigInteger[] Primes1024 =
 	[
@@ -188,19 +193,19 @@ internal class ProbablePrimeTest
 
 		foreach (string slot in (string[])["_first", "_second"])
 		{
-			object candidate = GetField(search, slot) ?? throw new InvalidOperationException($"{slot} is null.");
-			object context = candidate.GetType().GetProperty("Context", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(candidate) ?? throw new InvalidOperationException($"{slot} has no context.");
-			failures.AddRange(NonZeroWords(candidate).Concat(NonZeroWords(context)).Select(field => $"{slot}: {field}"));
+			object candidate = GetField(search, typeof(Search), slot) ?? throw new InvalidOperationException($"{slot} is null.");
+			MontgomeryContext context = CandidateType.GetProperty("Context", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(candidate) as MontgomeryContext ?? throw new InvalidOperationException($"{slot} has no context.");
+			failures.AddRange(NonZeroWords(candidate, CandidateType).Concat(MontgomeryKernelCase.Of(context).NonZeroWords(context)).Select(field => $"{slot}: {field}"));
 
-			if (GetField(candidate, "_a") is not 0)
+			if (GetField(candidate, CandidateType, "_a") is not 0)
 			{
 				failures.Add($"{slot}: _a");
 			}
 		}
 
-		if (GetField(search, "_pair") is { } pair)
+		if (GetField(search, typeof(Search), "_pair") is MontgomeryPairContext pair)
 		{
-			failures.AddRange(NonZeroWords(pair).Select(field => $"_pair: {field}"));
+			failures.AddRange(MontgomeryPairKernelCase.All().Single(kernel => kernel.KernelType == pair.GetType().GetGenericArguments()[0]).NonZeroWords(pair).Select(field => $"_pair: {field}"));
 		}
 
 		await Assert.That(failures).IsEmpty();

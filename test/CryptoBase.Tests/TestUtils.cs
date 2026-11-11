@@ -2,6 +2,7 @@ using CryptoBase.Abstractions.Ciphers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace CryptoBase.Tests;
 
@@ -57,6 +58,12 @@ public static class TestUtils
 	public static void SkipUnlessOptimized<T>()
 	{
 		Skip.When(typeof(T).Assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled is true, "The implementation is not optimized.");
+	}
+
+	// Native AOT keeps of a type only the interfaces and members that compiled code uses, and of an assembly no references, so the checks of what the assemblies declare run on the JIT.
+	public static void SkipUnlessJit()
+	{
+		Skip.When(!RuntimeFeature.IsDynamicCodeSupported, "Native AOT keeps only the metadata that compiled code uses.");
 	}
 
 	public static void SkipUnlessSupported(IKernelCase kernel)

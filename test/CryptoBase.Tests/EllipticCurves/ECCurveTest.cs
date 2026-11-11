@@ -1,6 +1,7 @@
 using CryptoBase.EllipticCurves;
 using CryptoBase.KeyAgreements.Ecdh;
 using CryptoBase.Signatures.Ecdsa;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace CryptoBase.Tests.EllipticCurves;
@@ -19,7 +20,7 @@ public class ECCurveTest
 	[Test]
 	public async Task CasesUseTheFieldsOfTheLibrary()
 	{
-		Type[] fields = [.. new[] { typeof(EcdsaP256), typeof(EcdsaP384), typeof(EcdsaP521), typeof(EcdhSM2) }.Select(static type => type.GetField("_key", BindingFlags.NonPublic | BindingFlags.Instance)!.FieldType.GetGenericArguments()[1])];
+		Type[] fields = [FieldOf(typeof(EcdsaP256)), FieldOf(typeof(EcdsaP384)), FieldOf(typeof(EcdsaP521)), FieldOf(typeof(EcdhSM2))];
 
 		await Assert.That(CurveCase.All().Select(static curve => curve.FieldType).Distinct()).IsEquivalentTo(fields);
 	}
@@ -66,5 +67,10 @@ public class ECCurveTest
 			await Assert.That(reference.IsOnCurve(reference.Generator)).IsTrue();
 			await Assert.That(reference.Multiply(reference.Generator, reference.N)).IsNull();
 		}
+	}
+
+	private static Type FieldOf([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type)
+	{
+		return type.GetField("_key", BindingFlags.NonPublic | BindingFlags.Instance)!.FieldType.GetGenericArguments()[1];
 	}
 }

@@ -41,10 +41,10 @@ public abstract class MontgomeryKernelCase : IKernelCase
 		}
 
 		// The windows of one to four vectors that MontgomeryKernelDispatch builds.
-		yield return new Case<MontgomeryKernelAvx2<Avx2Window>>();
-		yield return new Case<MontgomeryKernelAvx2<Avx2WindowPair<Avx2Window, Avx2Window>>>();
-		yield return new Case<MontgomeryKernelAvx2<Avx2WindowPair<Avx2Window, Avx2WindowPair<Avx2Window, Avx2Window>>>>();
-		yield return new Case<MontgomeryKernelAvx2<Avx2WindowPair<Avx2WindowPair<Avx2Window, Avx2Window>, Avx2WindowPair<Avx2Window, Avx2Window>>>>();
+		yield return new Avx2Case<Avx2Window>();
+		yield return new Avx2Case<Avx2WindowPair<Avx2Window, Avx2Window>>();
+		yield return new Avx2Case<Avx2WindowPair<Avx2Window, Avx2WindowPair<Avx2Window, Avx2Window>>>();
+		yield return new Avx2Case<Avx2WindowPair<Avx2WindowPair<Avx2Window, Avx2Window>, Avx2WindowPair<Avx2Window, Avx2Window>>>();
 	}
 
 	// The kernel of a context.
@@ -61,13 +61,10 @@ public abstract class MontgomeryKernelCase : IKernelCase
 		return family == typeof(MontgomeryKernelAvx512<>) || family == typeof(MontgomeryKernelAvx512Staged<>) || family == typeof(MontgomeryKernelAvx2<>);
 	}
 
-	// The vectors that the window of a kernel of MontgomeryKernelAvx2 keeps in registers.
-	public static int WindowVectors(Type kernelType)
-	{
-		return kernelType.GetGenericArguments()[0].GetProperty("Count")?.GetValue(null) is int count ? count : throw new ArgumentException("The kernel has no window.", nameof(kernelType));
-	}
-
 	public abstract Type KernelType { get; }
+
+	// The vectors that the window of a kernel of MontgomeryKernelAvx2 keeps in registers.
+	internal virtual int WindowVectors => throw new InvalidOperationException($"{KernelType.Name} has no window.");
 
 	// The limb counts that the tests take for the kernel: those of one to three limbs that it holds, the ends of the range of limb counts up to 256 for which MontgomeryKernelDispatch takes it, and the RSA sizes of CommonLimbCounts within the range. MontgomeryKernelAdvSimd<Radix28> also takes the limb counts of MontgomeryKernelDispatch.CreatePair, from MinAdvSimdPairLimbs, below those that Create gives it, to MaxAdvSimdPairLimbs.
 	internal int[] LimbCountsToTest => field ??= GetLimbCountsToTest();
@@ -95,6 +92,9 @@ public abstract class MontgomeryKernelCase : IKernelCase
 
 	internal abstract void Square(ReadOnlySpan<ulong> modulusDigits, Span<ulong> result, ReadOnlySpan<ulong> value, Span<ulong> scratch);
 
+	// The words of a context of the kernel that are not zero, as RsaArithmeticTestUtils.NonZeroWords gives them.
+	internal abstract IEnumerable<string> NonZeroWords(MontgomeryContext context);
+
 	public override string ToString()
 	{
 		string family = KernelType.Name[..KernelType.Name.IndexOf('`')];
@@ -102,7 +102,7 @@ public abstract class MontgomeryKernelCase : IKernelCase
 		return KernelType.GetGenericTypeDefinition() switch
 		{
 			{ } type when type == typeof(MontgomeryKernelAvx512<>) || type == typeof(MontgomeryKernelAvx512Staged<>) => $"{family}<{MaxDigitCount / 8} vectors>",
-			{ } type when type == typeof(MontgomeryKernelAvx2<>) => $"{family}<{WindowVectors(KernelType)} vectors in registers>",
+			{ } type when type == typeof(MontgomeryKernelAvx2<>) => $"{family}<{WindowVectors} vectors in registers>",
 			_ => $"{family}<{KernelType.GetGenericArguments()[0].Name}>"
 		};
 	}
@@ -132,7 +132,7 @@ public abstract class MontgomeryKernelCase : IKernelCase
 
 		if (family == typeof(MontgomeryKernelAvx2<>))
 		{
-			return WindowVectors(KernelType) == MontgomeryKernelDispatch.GetAvx2WindowVectors(GetDigitCount(limbs));
+			return WindowVectors == MontgomeryKernelDispatch.GetAvx2WindowVectors(GetDigitCount(limbs));
 		}
 
 		if (family == typeof(MontgomeryKernel64ColumnPairs<>) && KernelType != typeof(MontgomeryKernel64ColumnPairs<Radix57>))
@@ -174,7 +174,12 @@ public abstract class MontgomeryKernelCase : IKernelCase
 		yield return new Case<MontgomeryKernelAvx512Staged<Avx512StagedWindowPair<Avx512StagedWindowPair<Avx512StagedWindowPair<TWindow2, TWindow3>, Avx512StagedWindowPair<TWindow2, TWindow3>>, Avx512StagedWindowPair<Avx512StagedWindowPair<TWindow2, TWindow3>, Avx512StagedWindowPair<TWindow2, TWindow3>>>>>();
 	}
 
-	private sealed class Case<TKernel> : MontgomeryKernelCase where TKernel : IMontgomeryKernel
+	private sealed class Avx2Case<TWindow> : Case<MontgomeryKernelAvx2<TWindow>> where TWindow : struct, IAvx2Window<TWindow>
+	{
+		internal override int WindowVectors => TWindow.Count;
+	}
+
+	private class Case<TKernel> : MontgomeryKernelCase where TKernel : IMontgomeryKernel
 	{
 		public override Type KernelType => typeof(TKernel);
 
@@ -211,6 +216,11 @@ public abstract class MontgomeryKernelCase : IKernelCase
 			ulong[] prepared = new ulong[modulusDigits.Length];
 			TKernel.Prepare(modulusDigits, prepared);
 			TKernel.Square(result, value, prepared, NegativeInverse(modulusDigits), scratch);
+		}
+
+		internal override IEnumerable<string> NonZeroWords(MontgomeryContext context)
+		{
+			return RsaArithmeticTestUtils.NonZeroWords(context, typeof(MontgomeryContext<TKernel>));
 		}
 
 		// −n⁻¹ mod 2^DigitBits, from the lowest digit, which n is congruent to modulo the radix.

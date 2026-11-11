@@ -1,4 +1,5 @@
 using CryptoBase.X509;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.X509;
 
@@ -8,6 +9,7 @@ public class DependencyTest
 	[Test]
 	public async Task ReferencesOnlyTheAbstractionsAndTheBcl()
 	{
+		SkipUnlessJit();
 		string[] references = [.. typeof(Certificate).Assembly.GetReferencedAssemblies().Select(static name => name.Name ?? "")];
 
 		using (Assert.Multiple())

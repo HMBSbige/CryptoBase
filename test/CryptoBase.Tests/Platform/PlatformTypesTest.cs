@@ -1,5 +1,6 @@
 using CryptoBase.Platform;
 using System.Reflection;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Platform;
 
@@ -9,6 +10,7 @@ public class PlatformTypesTest
 	[Test]
 	public async Task EveryPlatformTypeSaysWhereItIsPreferred()
 	{
+		SkipUnlessJit();
 		Type[] types = typeof(PlatformSha256).Assembly.GetTypes()
 			.Where(static type => type is { IsPublic: true, Namespace: "CryptoBase.Platform" })
 			.OrderBy(static type => type.FullName, StringComparer.Ordinal)

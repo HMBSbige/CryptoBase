@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 
@@ -186,26 +187,23 @@ public static class RsaArithmeticTestUtils
 		return new BigInteger(bytes, true, true);
 	}
 
-	// The fields of an instance, its base classes' included, that hold a ulong or ulong values that are not all zero: what Dispose must have erased from an instance that holds nothing else of the kind.
-	public static IEnumerable<string> NonZeroWords(object instance)
+	// The fields of an instance of type that hold a ulong or ulong values that are not all zero: what Dispose must have erased from an instance that holds nothing else of the kind.
+	public static IEnumerable<string> NonZeroWords(object instance, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] Type type)
 	{
-		for (Type? type = instance.GetType(); type is not null; type = type.BaseType)
+		foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
 		{
-			foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
-			{
-				object? value = field.GetValue(instance);
+			object? value = field.GetValue(instance);
 
-				if (value is ulong and not 0 || value is ulong[] words && words.Any(static word => word is not 0))
-				{
-					yield return $"{type.Name}.{field.Name}";
-				}
+			if (value is ulong and not 0 || value is ulong[] words && words.Any(static word => word is not 0))
+			{
+				yield return $"{type.Name}.{field.Name}";
 			}
 		}
 	}
 
-	public static object? GetField(object instance, string name)
+	public static object? GetField(object instance, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type, string name)
 	{
-		FieldInfo field = instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new MissingFieldException(instance.GetType().Name, name);
+		FieldInfo field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new MissingFieldException(type.Name, name);
 		return field.GetValue(instance);
 	}
 }

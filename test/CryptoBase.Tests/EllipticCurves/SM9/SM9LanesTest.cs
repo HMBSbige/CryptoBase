@@ -22,6 +22,7 @@ public class SM9LanesTest
 	[Test]
 	public async Task EveryVectorIsListed()
 	{
+		SkipUnlessJit();
 		Type[] implementations = typeof(ISM9Vector<>).Assembly.GetTypes().Where(static type => type is { IsInterface: false, IsAbstract: false } && type.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISM9Vector<>))).ToArray();
 
 		await Assert.That(SM9LanesCase.All().Select(static vector => vector.VectorType)).IsEquivalentTo(implementations);

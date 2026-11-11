@@ -1,4 +1,5 @@
 using CryptoBase.Hpke;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace CryptoBase.Tests.Hpke;
@@ -49,7 +50,7 @@ public class HpkeApiTest
 		}
 	}
 
-	private static string[] PublicInstanceMethods<T>()
+	private static string[] PublicInstanceMethods<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
 	{
 		return [.. typeof(T).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(static method => method.Name)];
 	}

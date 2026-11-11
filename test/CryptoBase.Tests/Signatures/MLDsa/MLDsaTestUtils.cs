@@ -2,6 +2,7 @@
 
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Tests.Hashes.Sha3;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using BclMLDsa = System.Security.Cryptography.MLDsa;
 
@@ -9,6 +10,15 @@ namespace CryptoBase.Tests.Signatures.MLDsa;
 
 internal static class MLDsaTestUtils
 {
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_key")]
+	public static extern ref MLDsaKey<MLDsa44Parameters> KeyOf(MLDsa44 key);
+
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_key")]
+	public static extern ref MLDsaKey<MLDsa65Parameters> KeyOf(MLDsa65 key);
+
+	[UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_key")]
+	public static extern ref MLDsaKey<MLDsa87Parameters> KeyOf(MLDsa87 key);
+
 	// The DER encoding of 2.16.840.1.101.3.4.2.x without its last byte, x (FIPS 204, Sec. 5.4).
 	private static ReadOnlySpan<byte> HashOidPrefix => [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02];
 

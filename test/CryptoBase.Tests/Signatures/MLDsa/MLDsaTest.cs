@@ -735,11 +735,21 @@ internal class MLDsaTest<T> where T : class, IMLDsa<T>
 	// The number of nonzero elements or set flags in each field of the key an instance holds; arrays receives the arrays it references.
 	private static Dictionary<string, int> KeyContents(T key, List<Array> arrays)
 	{
-		FieldInfo? keyField = typeof(T).GetField("_key", BindingFlags.Instance | BindingFlags.NonPublic);
-		object state = keyField?.GetValue(key) ?? throw new InvalidOperationException($"{typeof(T).Name} has no key field.");
+		return key switch
+		{
+			MLDsa44 mlDsa44 => KeyContents(KeyOf(mlDsa44), arrays),
+			MLDsa65 mlDsa65 => KeyContents(KeyOf(mlDsa65), arrays),
+			MLDsa87 mlDsa87 => KeyContents(KeyOf(mlDsa87), arrays),
+			_ => throw new InvalidOperationException($"{typeof(T).Name} has no key field.")
+		};
+	}
+
+	private static Dictionary<string, int> KeyContents<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] TKey>(TKey key, List<Array> arrays) where TKey : struct
+	{
+		object state = key;
 		Dictionary<string, int> contents = [];
 
-		foreach (FieldInfo field in state.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+		foreach (FieldInfo field in typeof(TKey).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
 		{
 			switch (field.GetValue(state))
 			{

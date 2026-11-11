@@ -53,7 +53,7 @@ public class MontgomeryContextTest
 			}
 
 			int vectors = Math.Max((context.DigitCount + 3) / 4, 2);
-			bool better = family == typeof(MontgomeryKernelAvx2<>) ? MontgomeryKernelCase.WindowVectors(chosen.KernelType) != Math.Min(vectors - 1, MontgomeryKernelDispatch.MaxAvx2WindowVectors) : vector ? fitting.Any(kernel => kernel.MaxDigitCount < chosen.MaxDigitCount) : fitting.Any(kernel => kernel.DigitBits > chosen.DigitBits);
+			bool better = family == typeof(MontgomeryKernelAvx2<>) ? chosen.WindowVectors != Math.Min(vectors - 1, MontgomeryKernelDispatch.MaxAvx2WindowVectors) : vector ? fitting.Any(kernel => kernel.MaxDigitCount < chosen.MaxDigitCount) : fitting.Any(kernel => kernel.DigitBits > chosen.DigitBits);
 
 			if (!chosen.Fits(limbs) || !expectedFamily || better)
 			{
@@ -171,7 +171,7 @@ public class MontgomeryContextTest
 		{
 			MontgomeryContext context = kernel.Create(ToLimbs(RandomBits(random, 64 * limbs) | BigInteger.One << 64 * limbs - 1 | 1, limbs));
 			context.Dispose();
-			failures.AddRange(NonZeroWords(context).Select(field => $"{limbs} limbs: {field}"));
+			failures.AddRange(kernel.NonZeroWords(context).Select(field => $"{limbs} limbs: {field}"));
 		}
 
 		await Assert.That(failures).IsEmpty();

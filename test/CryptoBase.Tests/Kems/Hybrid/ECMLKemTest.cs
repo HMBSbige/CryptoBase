@@ -7,9 +7,6 @@ using CryptoBase.Tests.EllipticCurves;
 using CryptoBase.Tests.Kems.MLKem;
 using CryptoBase.Tests.KeyAgreements;
 using System.Numerics;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Kems.Hybrid.ECMLKemTestUtils;
 using static CryptoBase.Tests.Kems.KemTestUtils;
@@ -346,50 +343,6 @@ public class ECMLKemTest<T, TEcdh, TMLKem> where T : class, IKem<T> where TEcdh 
 		result[offset] = 0xFF;
 		result[offset + 1] |= 0x0F;
 		return result;
-	}
-
-	private static Dictionary<string, byte[]> KeyContents(object kem)
-	{
-		object key = kem.GetType().GetField("_key", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(kem) ?? throw new InvalidOperationException($"{kem.GetType().Name} has no key field.");
-		return key.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ToDictionary(static field => field.Name, field => Contents(field.GetValue(key)));
-	}
-
-	private static byte[] Contents(object? value)
-	{
-		switch (value)
-		{
-			case null:
-			{
-				return [];
-			}
-			case short[] array:
-			{
-				return MemoryMarshal.AsBytes(array.AsSpan()).ToArray();
-			}
-			default:
-			{
-				Type type = value.GetType();
-
-				if (!type.IsValueType)
-				{
-					throw new InvalidOperationException($"The test does not know how to check {type.Name}.");
-				}
-
-				MethodInfo bytes = typeof(ECMLKemTest<T, TEcdh, TMLKem>).GetMethod(nameof(Bytes), BindingFlags.Static | BindingFlags.NonPublic) ?? throw new MissingMethodException(nameof(ECMLKemTest), nameof(Bytes));
-				return bytes.MakeGenericMethod(type).Invoke(null, [value]) as byte[] ?? [.. type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SelectMany(field => Contents(field.GetValue(value)))];
-			}
-		}
-	}
-
-	private static byte[]? Bytes<TValue>(object value) where TValue : struct
-	{
-		if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-		{
-			return null;
-		}
-
-		TValue copy = (TValue)value;
-		return MemoryMarshal.AsBytes(new ReadOnlySpan<TValue>(in copy)).ToArray();
 	}
 }
 

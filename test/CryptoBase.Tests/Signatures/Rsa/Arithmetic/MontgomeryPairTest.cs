@@ -37,7 +37,7 @@ public class MontgomeryPairTest
 			using (second)
 			{
 				MontgomeryPairKernelCase? chosen = pair is null ? null : kernels.Single(kernel => kernel.KernelType == pair.GetType().GetGenericArguments()[0]);
-				bool otherWindow = chosen is not null && (chosen.KernelType.GetGenericTypeDefinition() == typeof(MontgomeryPairKernelAvx2<>) ? MontgomeryKernelCase.WindowVectors(chosen.KernelType) != Math.Min(Math.Max((first.DigitCount + 1) / 2, 2) - 1, MontgomeryKernelDispatch.MaxAvx2WindowVectors) : kernels.Any(kernel => kernel.MaxDigitCount >= first.DigitCount && kernel.MaxDigitCount < chosen.MaxDigitCount));
+				bool otherWindow = chosen is not null && (chosen.KernelType.GetGenericTypeDefinition() == typeof(MontgomeryPairKernelAvx2<>) ? chosen.WindowVectors != Math.Min(Math.Max((first.DigitCount + 1) / 2, 2) - 1, MontgomeryKernelDispatch.MaxAvx2WindowVectors) : kernels.Any(kernel => kernel.MaxDigitCount >= first.DigitCount && kernel.MaxDigitCount < chosen.MaxDigitCount));
 
 				if (pair is null == expected || chosen is not null && (chosen.MaxDigitCount < first.DigitCount || otherWindow))
 				{
@@ -287,7 +287,7 @@ public class MontgomeryPairTest
 			{
 				MontgomeryPairContext pair = kernel.Create(first, second);
 				pair.Dispose();
-				failures.AddRange(NonZeroWords(pair).Select(field => $"{first.LimbCount} limbs: {field}"));
+				failures.AddRange(kernel.NonZeroWords(pair).Select(field => $"{first.LimbCount} limbs: {field}"));
 			}
 		}
 

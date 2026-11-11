@@ -359,7 +359,7 @@ public class SM9SignatureTest
 		using SM9SignatureMasterKey master = SM9SignatureMasterKey.GenerateKey();
 		SM9SignatureKey key = master.ExtractKey("Alice"u8);
 		object privateKey = typeof(SM9SignatureKey).GetField("_privateKey", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(key)!;
-		FieldInfo tableField = privateKey.GetType().GetField("_table", BindingFlags.NonPublic | BindingFlags.Instance)!;
+		FieldInfo tableField = typeof(SM9G1FixedBase).GetField("_table", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
 		while (tableField.GetValue(privateKey) is null)
 		{
@@ -370,7 +370,7 @@ public class SM9SignatureTest
 		bool filled = !table.Entries.ToArray().All(static entry => IsZero(in entry));
 		key.Dispose();
 		key.Dispose();
-		SM9AffinePoint<SM9Fp> stored = (SM9AffinePoint<SM9Fp>)privateKey.GetType().GetField("_point", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(privateKey)!;
+		SM9AffinePoint<SM9Fp> stored = (SM9AffinePoint<SM9Fp>)typeof(SM9G1FixedBase).GetField("_point", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(privateKey)!;
 
 		using (Assert.Multiple())
 		{

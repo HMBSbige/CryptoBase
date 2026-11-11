@@ -2,9 +2,6 @@ using CryptoBase.Kems.Hybrid;
 using CryptoBase.Kems.MLKem;
 using CryptoBase.KeyAgreements.Xdh;
 using CryptoBase.Tests.Kems.MLKem;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.EllipticCurves.Curve25519.Curve25519Reference;
 using static CryptoBase.Tests.Kems.Hybrid.ECMLKemTestUtils;
@@ -373,50 +370,5 @@ public class X25519MLKemTest
 		result[offset] = 0xFF;
 		result[offset + 1] |= 0x0F;
 		return result;
-	}
-
-	private static Dictionary<string, byte[]> KeyContents(X25519MLKem768 kem)
-	{
-		object key = typeof(X25519MLKem768).GetField("_key", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(kem) ?? throw new InvalidOperationException("X25519MLKem768 has no key field.");
-		return key.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ToDictionary(static field => field.Name, field => Contents(field.GetValue(key)));
-	}
-
-	// The polynomials of ML-KEM are an array; everything else is a struct without references.
-	private static byte[] Contents(object? value)
-	{
-		switch (value)
-		{
-			case null:
-			{
-				return [];
-			}
-			case short[] array:
-			{
-				return MemoryMarshal.AsBytes(array.AsSpan()).ToArray();
-			}
-			default:
-			{
-				Type type = value.GetType();
-
-				if (!type.IsValueType)
-				{
-					throw new InvalidOperationException($"The test does not know how to check {type.Name}.");
-				}
-
-				MethodInfo bytes = typeof(X25519MLKemTest).GetMethod(nameof(Bytes), BindingFlags.Static | BindingFlags.NonPublic) ?? throw new MissingMethodException(nameof(X25519MLKemTest), nameof(Bytes));
-				return bytes.MakeGenericMethod(type).Invoke(null, [value]) as byte[] ?? [.. type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SelectMany(field => Contents(field.GetValue(value)))];
-			}
-		}
-	}
-
-	private static byte[]? Bytes<TValue>(object value) where TValue : struct
-	{
-		if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-		{
-			return null;
-		}
-
-		TValue copy = (TValue)value;
-		return MemoryMarshal.AsBytes(new ReadOnlySpan<TValue>(in copy)).ToArray();
 	}
 }

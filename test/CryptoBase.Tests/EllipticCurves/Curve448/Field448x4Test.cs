@@ -34,6 +34,7 @@ public class Field448x4Test
 	[Test]
 	public async Task EveryFieldIsListed()
 	{
+		SkipUnlessJit();
 		Type[] implementations = typeof(IField448x4<>).Assembly.GetTypes().Where(static type => type is { IsInterface: false, IsAbstract: false } && type.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IField448x4<>))).ToArray();
 
 		await Assert.That(Field448VectorCase.All().Select(static field => field.FieldType)).IsEquivalentTo(implementations);

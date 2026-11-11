@@ -7,6 +7,7 @@ using CryptoBase.Tests.Kems;
 using CryptoBase.Tests.KeyAgreements;
 using CryptoBase.Tests.Signatures;
 using System.Reflection;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests;
 
@@ -20,6 +21,7 @@ public class ContractRegistrationTest
 	[Arguments(typeof(IChunkedCipher<>), typeof(ChunkedCipherContractTest<>))]
 	public async Task EveryPublicImplementationIsListed(Type contract, Type contractTest)
 	{
+		SkipUnlessJit();
 		Type[] implementations = [.. LibraryAssemblies().SelectMany(static assembly => assembly.GetExportedTypes()).Where(type => type is { IsClass: true, IsAbstract: false } && type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == contract))];
 		Type[] listed = [.. contractTest.GetCustomAttributes<GenerateGenericTestAttribute>().Select(static attribute => attribute.TypeArguments.Single())];
 

@@ -33,6 +33,7 @@ public class SM2Field29LanesTest
 	[Test]
 	public async Task EveryFieldIsListed()
 	{
+		SkipUnlessJit();
 		Type[] implementations = typeof(ISM2Field29Lanes<>).Assembly.GetTypes().Where(static type => type is { IsInterface: false, IsAbstract: false } && type.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISM2Field29Lanes<>))).ToArray();
 
 		await Assert.That(SM2Field29LanesCase.All().Select(static field => field.FieldType)).IsEquivalentTo(implementations);

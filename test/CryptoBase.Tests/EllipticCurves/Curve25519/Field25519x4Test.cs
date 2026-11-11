@@ -17,6 +17,7 @@ public class Field25519x4Test
 	[Test]
 	public async Task EveryFieldIsListed()
 	{
+		SkipUnlessJit();
 		Type[] implementations = ImplementationsOf(typeof(IField25519x4<>));
 		Type[] pointFields = ImplementationsOf(typeof(IEdwardsField25519x4<>));
 

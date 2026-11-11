@@ -15,6 +15,7 @@ public class SM3LanesTest
 	[Test]
 	public async Task EveryKernelIsListed()
 	{
+		SkipUnlessJit();
 		Type[] kernels = [.. typeof(ISM3Lanes<>).Assembly.GetTypes().Where(static type => !type.IsInterface && type.GetInterfaces().Any(static face => face.IsGenericType && face.GetGenericTypeDefinition() == typeof(ISM3Lanes<>)))];
 
 		await Assert.That(SM3LanesCase.All().Select(static kernel => kernel.KernelType)).IsEquivalentTo(kernels);

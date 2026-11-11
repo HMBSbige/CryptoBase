@@ -1,4 +1,5 @@
 using CryptoBase.EllipticCurves;
+using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
@@ -10,6 +11,7 @@ public class MaskedSelectTest
 	[Test]
 	public async Task EveryWidthIsListed()
 	{
+		SkipUnlessJit();
 		Type[] widths = [.. typeof(ILimbVector<>).Assembly.GetTypes().Where(static type => type.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ILimbVector<>)))];
 
 		await Assert.That(LookupCase.WidthTypes()).IsEquivalentTo(widths);

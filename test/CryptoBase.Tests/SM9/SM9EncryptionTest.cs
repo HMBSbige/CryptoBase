@@ -426,11 +426,11 @@ public class SM9EncryptionTest
 		byte[] ciphertext = Encrypt(master, [1], Bob);
 		_ = Decrypt(key, ciphertext);
 		object privateKey = typeof(SM9EncryptionKey).GetField("_key", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(key)!;
-		object lines = privateKey.GetType().GetField("_lines", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(privateKey)!;
-		SM9PrecomputedLine[] stored = (SM9PrecomputedLine[])lines.GetType().GetField("_lines", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(lines)!;
+		object lines = typeof(SM9G2PrivateKey).GetField("_lines", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(privateKey)!;
+		SM9PrecomputedLine[] stored = (SM9PrecomputedLine[])typeof(SM9PairingLines).GetField("_lines", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(lines)!;
 		key.Dispose();
 		key.Dispose();
-		SM9AffinePoint<SM9Fp2> point = (SM9AffinePoint<SM9Fp2>)privateKey.GetType().GetField("_point", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(privateKey)!;
+		SM9AffinePoint<SM9Fp2> point = (SM9AffinePoint<SM9Fp2>)typeof(SM9G2PrivateKey).GetField("_point", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(privateKey)!;
 
 		using (Assert.Multiple())
 		{

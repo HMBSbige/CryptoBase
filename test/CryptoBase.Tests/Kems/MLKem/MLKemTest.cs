@@ -5,6 +5,7 @@ using CryptoBase.Internal;
 using CryptoBase.Kems.MLKem;
 using CryptoBase.Tests.Hashes.Sha3;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using static CryptoBase.Tests.Kems.KemTestUtils;
@@ -293,13 +294,23 @@ public class MLKemTest<T> where T : class, IKem<T>
 	// The number of nonzero elements or set flags in each field of the key an instance holds; arrays receives the arrays it references.
 	private static Dictionary<string, int> KeyContents(T kem, List<short[]> arrays)
 	{
-		FieldInfo? keyField = typeof(T).GetField("_key", BindingFlags.Instance | BindingFlags.NonPublic);
-		object key = keyField?.GetValue(kem) ?? throw new InvalidOperationException($"{typeof(T).Name} has no key field.");
+		return kem switch
+		{
+			MLKem512 mlKem512 => KeyContents(MLKemTestUtils.KeyOf(mlKem512), arrays),
+			MLKem768 mlKem768 => KeyContents(MLKemTestUtils.KeyOf(mlKem768), arrays),
+			MLKem1024 mlKem1024 => KeyContents(MLKemTestUtils.KeyOf(mlKem1024), arrays),
+			_ => throw new InvalidOperationException($"{typeof(T).Name} has no key field.")
+		};
+	}
+
+	private static Dictionary<string, int> KeyContents<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] TKey>(TKey key, List<short[]> arrays) where TKey : struct
+	{
+		object state = key;
 		Dictionary<string, int> contents = [];
 
-		foreach (FieldInfo field in key.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+		foreach (FieldInfo field in typeof(TKey).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
 		{
-			object? value = field.GetValue(key);
+			object? value = field.GetValue(state);
 
 			switch (value)
 			{
