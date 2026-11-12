@@ -59,9 +59,12 @@ internal static class ReportFormat
 	public static string DescribeSettings(RunInfo run)
 	{
 		MeasurementSettings settings = run.Settings;
-		string warmup = settings.WarmupSeconds > 0
-			? FormattableString.Invariant($"warm-up per row of at least {settings.WarmupSeconds:0.###} s and until the JIT settles")
-			: "no warm-up";
+		string warmup = settings.WarmupSeconds switch
+		{
+			<= 0 => "no warm-up",
+			_ when RuntimeFeature.IsDynamicCodeCompiled => FormattableString.Invariant($"warm-up per row of at least {settings.WarmupSeconds:0.###} s and until the JIT settles"),
+			_ => FormattableString.Invariant($"warm-up of {settings.WarmupSeconds:0.###} s per row")
+		};
 		string threads = settings.Threads is 1 ? "1 thread" : FormattableString.Invariant($"{settings.Threads} threads");
 
 		return FormattableString.Invariant($"{settings.Seconds:0.###} s per cell, {warmup}, {threads}{(run.Decrypt ? ", decryption" : "")}; at least {FormatDuration(run.EstimatedDuration)} in all");

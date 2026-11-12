@@ -27,7 +27,7 @@ Option<double> secondsOption = new("--seconds", "-s")
 
 Option<double> warmupOption = new("--warmup", "-w")
 {
-	Description = "Least warm-up time of each row, or of each operation, in seconds. The warm-up goes on until the JIT has compiled nothing for a while, up to 5 s longer; 0 skips it.",
+	Description = "Least warm-up time of each row, or of each operation, in seconds. The warm-up goes on until the JIT, if any, has compiled nothing for a while, up to 5 s longer; 0 skips it.",
 	DefaultValueFactory = _ => 0.5,
 	CustomParser = result => ParseSeconds(result, allowZero: true)
 };

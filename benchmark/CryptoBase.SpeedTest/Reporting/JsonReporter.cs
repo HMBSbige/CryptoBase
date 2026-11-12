@@ -192,7 +192,12 @@ internal sealed class JsonReporter(Stream output, TextWriter progress) : IReport
 		{
 			json.WriteStartObject("warmup");
 			json.WriteNumber("seconds", Math.Round(warmup.Elapsed.TotalSeconds, 3));
-			json.WriteBoolean("jitSettled", warmup.JitSettled);
+
+			if (RuntimeFeature.IsDynamicCodeCompiled)
+			{
+				json.WriteBoolean("jitSettled", warmup.JitSettled);
+			}
+
 			json.WriteEndObject();
 		}
 

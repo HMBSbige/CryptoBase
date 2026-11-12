@@ -33,7 +33,7 @@ internal sealed record GroupLayout(AlgorithmGroup Group, ImmutableArray<Algorith
 /// <param name="Warmup">The warm-up before the cell, shared by the cells of a throughput row, or <see langword="null" /> if there was none.</param>
 internal sealed record CellResult(string Group, string Algorithm, string Operation, int? InputSize, Metric Metric, CellOutcome Outcome, WarmupSummary? Warmup);
 
-/// <param name="JitSettled">Whether the JIT had settled when the warm-up ended, rather than the warm-up running out of time.</param>
+/// <param name="JitSettled">Whether the JIT had settled when the warm-up ended, rather than the warm-up running out of time; always true under Native AOT.</param>
 internal sealed record WarmupSummary(TimeSpan Elapsed, bool JitSettled);
 
 internal closed class CellOutcome
