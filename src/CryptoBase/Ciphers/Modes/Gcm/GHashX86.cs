@@ -9,7 +9,11 @@ internal static partial class GHashX86
 	private const int Vector512ParallelBlockSize = 64 * BlockSize;
 	internal const int Vector512Threshold = 128 * BlockSize;
 
-	internal static bool IsSupported => Sse2.IsSupported && Pclmulqdq.IsSupported;
+	internal static bool IsSupported
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Sse2.IsSupported && Pclmulqdq.IsSupported;
+	}
 
 	internal static bool IsSupported256
 	{
