@@ -132,13 +132,13 @@ public class SM2KernelBenchmark
 		public void MultiplyBase(in FieldElement<SM2Order> scalar)
 		{
 			TKernel.MultiplyBase(in scalar, out JacobianPoint<SM2Field52> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void MultiplyAdd(in FieldElement<SM2Order> u1, ReadOnlySpan<AffinePoint<SM2Field52>> pointTable, in FieldElement<SM2Order> u2)
 		{
 			TKernel.MultiplyAdd(in u1, pointTable, in u2, out JacobianPoint<SM2Field52> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void FillWindows(Span<ulong> windows)
@@ -149,26 +149,26 @@ public class SM2KernelBenchmark
 		public void MultiplyAddFixed(ReadOnlySpan<ulong> windows, in FieldElement<SM2Order> u1, in FieldElement<SM2Order> u2)
 		{
 			TKernel.MultiplyAddFixed(windows, in u1, in u2, out JacobianPoint<SM2Field52> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void MultiplyBaseAndFixed(ReadOnlySpan<ulong> windows, in FieldElement<SM2Order> scalar)
 		{
 			TKernel.MultiplyBaseAndFixed(windows, in scalar, out JacobianPoint<SM2Field52> baseResult, out JacobianPoint<SM2Field52> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in baseResult);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in baseResult);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void Multiply(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar)
 		{
 			TKernel.Multiply(in point, in scalar, out JacobianPoint<SM2Field52> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void MultiplyAdd(in FieldElement<SM2Order> u1, in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> u2)
 		{
 			TKernel.MultiplyAdd(in u1, in point, in u2, out JacobianPoint<SM2Field52> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 	}
 }

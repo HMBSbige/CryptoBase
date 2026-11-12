@@ -43,7 +43,7 @@ public class SM9FieldBenchmark
 			SM9Fp.Multiply(in value, in _right, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -56,7 +56,7 @@ public class SM9FieldBenchmark
 			SM9Fp.Square(in value, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -69,7 +69,7 @@ public class SM9FieldBenchmark
 			SM9Fp2.Multiply(in value, in _right2, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -82,7 +82,7 @@ public class SM9FieldBenchmark
 			SM9Fp2.Square(in value, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -95,7 +95,7 @@ public class SM9FieldBenchmark
 			SM9Fp12.Multiply(in value, in _right12, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -108,7 +108,7 @@ public class SM9FieldBenchmark
 			SM9Fp12.Square(in value, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -121,7 +121,7 @@ public class SM9FieldBenchmark
 			SM9Fp12.CyclotomicSquare(in value, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -134,7 +134,7 @@ public class SM9FieldBenchmark
 			SM9Fp12.MultiplyByLine(in value, in _line.L0, in _line.L2, in _line.L3, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -147,14 +147,14 @@ public class SM9FieldBenchmark
 			SM9Fp12.MultiplyByNormalizedLine(in value, in _line.L0, in _line.L2, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark]
 	public void FpInvert()
 	{
 		SM9Fp.Invert(in _left, out SM9Fp result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	private static SM9Fp Random()
@@ -217,63 +217,63 @@ public class SM9Benchmark
 	public void Pairing()
 	{
 		SM9Pairing.Pair(in _p, in _q, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void PairingWithLines()
 	{
 		_lines.PairVariableTime(in _p, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MillerLoop()
 	{
 		SM9KernelDispatch.MillerLoop(in _p, in _q, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void FinalExponentiation()
 	{
 		SM9KernelDispatch.FinalExponentiation(in _f, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void GTPower()
 	{
 		SM9GT.Power(in _g, in _scalar, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void GTPowerWithTable()
 	{
 		_table.Power(in _scalar, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void G1MultiplyBase()
 	{
 		SM9G1.MultiplyBase(in _scalar, out SM9AffinePoint<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void G1Multiply()
 	{
 		SM9G1.Multiply(in _p, in _scalar, out SM9AffinePoint<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void G1MultiplyFixed()
 	{
 		SM9G1.Multiply(_pointTable, in _scalar, out SM9AffinePoint<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
@@ -304,7 +304,7 @@ public class SM9Benchmark
 	public void G2MultiplyBase()
 	{
 		SM9G2.MultiplyBase(in _scalar, out SM9AffinePoint<SM9Fp2> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]

@@ -195,75 +195,75 @@ public class ECKernelBenchmark
 		public void FieldMultiply()
 		{
 			TField.Multiply(in _fieldLeft, in _fieldRight, out TField result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void FieldSquare()
 		{
 			TField.Square(in _fieldLeft, out TField result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void FieldInvert()
 		{
 			TField.Invert(in _fieldLeft, out TField result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void OrderMultiply()
 		{
 			FieldElement<TOrder>.Multiply(in _orderLeft, in _orderRight, out FieldElement<TOrder> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void OrderInvert()
 		{
 			FieldElement<TOrder>.Invert(in _orderLeft, out FieldElement<TOrder> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void AddAffine()
 		{
 			ECGroup<TCurve, TField, TOrder>.Add(in _jacobian, in _affine, out JacobianPoint<TField> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void AddDistinct()
 		{
 			ulong equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in _jacobian, in _otherJacobian, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(equal);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void AddDistinctAffine()
 		{
 			ulong equal = ECGroup<TCurve, TField, TOrder>.AddDistinct(in _jacobian, in _affine, out JacobianPoint<TField> result);
 			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(equal);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void Double()
 		{
 			ECGroup<TCurve, TField, TOrder>.Double(in _jacobian, out JacobianPoint<TField> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void MultiplyBase()
 		{
 			ECGroup<TCurve, TField, TOrder>.MultiplyBase(in _orderLeft, out JacobianPoint<TField> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void Multiply()
 		{
 			ECGroup<TCurve, TField, TOrder>.Multiply(in _affine, in _orderLeft, out JacobianPoint<TField> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void MultiplyAdd()
 		{
 			ECVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in _orderLeft, in _affine, in _orderRight, out JacobianPoint<TField> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public int BuildPointTable()
@@ -274,13 +274,13 @@ public class ECKernelBenchmark
 		public void MultiplyAddWithTable()
 		{
 			ECVariableTimeGroup<TCurve, TField, TOrder>.MultiplyAdd(in _orderLeft, _pointTable, in _orderRight, out JacobianPoint<TField> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public bool TryDecode()
 		{
 			bool decoded = ECGroup<TCurve, TField, TOrder>.TryDecode(_encoded, out AffinePoint<TField> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 			return decoded;
 		}
 

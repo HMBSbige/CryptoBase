@@ -67,13 +67,13 @@ public class FieldElementBenchmark
 		public void Invert()
 		{
 			FieldElement<TModulus>.Invert(in Next(), out FieldElement<TModulus> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void InvertVariableTime()
 		{
 			FieldElement<TModulus>.InvertVariableTime(in Next(), out FieldElement<TModulus> result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		private ref readonly FieldElement<TModulus> Next()

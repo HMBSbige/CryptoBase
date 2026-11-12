@@ -69,7 +69,7 @@ public class FieldArithmeticBenchmark
 				FieldElement<TModulus>.Multiply(in value, in _right, out value);
 			}
 
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 		}
 
 		public void Add(int count)
@@ -81,7 +81,7 @@ public class FieldArithmeticBenchmark
 				FieldElement<TModulus>.Add(in value, in _right, out value);
 			}
 
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 		}
 	}
 }

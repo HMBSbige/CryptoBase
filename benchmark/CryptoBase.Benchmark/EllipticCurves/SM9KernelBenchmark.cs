@@ -72,91 +72,91 @@ public class SM9KernelBenchmark
 	public void MillerLoop()
 	{
 		_kernel.MillerLoop(in _p, in _q, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MillerLoopWithLines()
 	{
 		_kernel.MillerLoop(in _p, _lines, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void FinalExponentiation()
 	{
 		_kernel.FinalExponentiation(in _f, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void Power()
 	{
 		_kernel.Power(in _g, in _scalar, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void PowerWithTable()
 	{
 		_kernel.Power(_table, in _inverse, in _scalar, out SM9Fp12 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MultiplyBaseG1()
 	{
 		_kernel.MultiplyBaseG1(SM9G1Group.BaseTable, in _scalar, out SM9Point<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MultiplyFixedG1()
 	{
 		_kernel.MultiplyBaseG1(_pointTable, in _scalar, out SM9Point<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MultiplyBaseSumG1()
 	{
 		_kernel.MultiplyBaseSumG1(SM9G1Group.BaseTable, in _scalar, _pointTable, in _scalar, out SM9Point<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MultiplyG1()
 	{
 		_kernel.MultiplyG1(in _p, in _scalar, out SM9Point<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MultiplyVariableTimeG1()
 	{
 		_kernel.MultiplyVariableTimeG1(in _p, in _scalar, out SM9Point<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MultiplyBaseAddVariableTimeG1()
 	{
 		_kernel.MultiplyBaseAddVariableTimeG1(in _scalar, in _addendG1, out SM9Point<SM9Fp> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MultiplyBaseG2()
 	{
 		_kernel.MultiplyBaseG2(in _scalar, out SM9Point<SM9Fp2> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void MultiplyBaseAddVariableTimeG2()
 	{
 		_kernel.MultiplyBaseAddVariableTimeG2(in _scalar, in _addendG2, out SM9Point<SM9Fp2> result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	private interface IKernel

@@ -37,7 +37,7 @@ public class Curve25519FieldBenchmark
 			Field25519.Multiply(in value, in _right, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -50,7 +50,7 @@ public class Curve25519FieldBenchmark
 			Field25519.Square(in value, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -63,7 +63,7 @@ public class Curve25519FieldBenchmark
 			Field25519.MultiplySmall(in value, 121665, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark(OperationsPerInvoke = Operations)]
@@ -76,14 +76,14 @@ public class Curve25519FieldBenchmark
 			FieldElement<Curve25519Modulus>.Multiply(in value, in _saturatedRight, out value);
 		}
 
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in value);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in value);
 	}
 
 	[Benchmark]
 	public void Invert()
 	{
 		Field25519.Invert(in _left, out Field25519 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	// The conversions to and from four 64-bit limbs are part of what an inversion by SafeGcd would cost.
@@ -96,14 +96,14 @@ public class Curve25519FieldBenchmark
 		SafeGcd<Curve25519Modulus>.Invert(in Unsafe.As<ulong, FieldElement<Curve25519Modulus>>(ref MemoryMarshal.GetReference(limbs)), Curve25519Modulus.One, out FieldElement<Curve25519Modulus> inverse);
 		ReadOnlySpan<ulong> inverseLimbs = FieldElement<Curve25519Modulus>.GetLimbs(in inverse);
 		Field25519.FromLimbs(inverseLimbs[0], inverseLimbs[1], inverseLimbs[2], inverseLimbs[3], out Field25519 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void InvertVariableTime()
 	{
 		Field25519.InvertVariableTime(in _left, out Field25519 result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
@@ -212,7 +212,7 @@ public class Curve25519KernelBenchmark
 	{
 		Edwards25519.Add(in _point, in _cached, out EdwardsCompletedPoint sum);
 		Edwards25519.ToExtended(in sum, out EdwardsPoint result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
@@ -220,21 +220,21 @@ public class Curve25519KernelBenchmark
 	{
 		Edwards25519.AddNiels(in _point, in _niels, out EdwardsCompletedPoint sum);
 		Edwards25519.ToExtended(in sum, out EdwardsPoint result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public void Double()
 	{
 		Edwards25519.Double(in _point, out EdwardsPoint result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 	}
 
 	[Benchmark]
 	public bool TryDecode()
 	{
 		bool decoded = Edwards25519.TryDecode(_encoded, out EdwardsPoint result);
-		DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+		DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		return decoded;
 	}
 
@@ -270,26 +270,26 @@ public class Curve25519KernelBenchmark
 		public void Ladder(ReadOnlySpan<byte> scalar, in Field25519 u)
 		{
 			TKernel.Ladder(scalar, in u, out Field25519 x, out Field25519 z);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in x);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in z);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in x);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in z);
 		}
 
 		public void MultiplyBase(ReadOnlySpan<byte> scalar)
 		{
 			TKernel.MultiplyBase(scalar, out EdwardsPoint result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, in EdwardsPoint point, ReadOnlySpan<byte> b)
 		{
 			TKernel.DoubleScalarMultiplyVariableTime(a, in point, b, out EdwardsPoint result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 
 		public void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, ReadOnlySpan<EdwardsNielsPoint> pointTable, ReadOnlySpan<byte> b)
 		{
 			TKernel.DoubleScalarMultiplyVariableTime(a, pointTable, b, out EdwardsPoint result);
-			DeadCodeEliminationHelper.KeepAliveWithoutBoxingReadonly(in result);
+			DeadCodeEliminationHelper.KeepAliveWithoutBoxing(in result);
 		}
 	}
 }
