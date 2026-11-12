@@ -610,18 +610,6 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 		return AdvSimd.ExtractNarrowingSaturateUnsignedUpper(AdvSimd.ExtractNarrowingSaturateUnsignedLower(low), high);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<sbyte> ZipLow(Vector128<sbyte> left, Vector128<sbyte> right)
-	{
-		return Sse2.IsSupported ? Sse2.UnpackLow(left, right) : AdvSimd.Arm64.ZipLow(left, right);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<sbyte> ZipHigh(Vector128<sbyte> left, Vector128<sbyte> right)
-	{
-		return Sse2.IsSupported ? Sse2.UnpackHigh(left, right) : AdvSimd.Arm64.ZipHigh(left, right);
-	}
-
 	// The coefficients mod q in [0, q), combined in pairs into the 24 low bits of each 32-bit lane.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> Pack12(Vector128<short> f)
@@ -823,8 +811,8 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 			Vector128<byte> bytes = Vector128.LoadUnsafe(ref source, i);
 			Vector128<sbyte> low = Vector128.ShuffleNative(values, (bytes & Vector128.Create((byte)0x0F)).AsSByte());
 			Vector128<sbyte> high = Vector128.ShuffleNative(values, (bytes >>> 4).AsSByte());
-			Vector128<sbyte> first = ZipLow(low, high);
-			Vector128<sbyte> second = ZipHigh(low, high);
+			Vector128<sbyte> first = Vector128.ZipLower(low, high);
+			Vector128<sbyte> second = Vector128.ZipUpper(low, high);
 			Vector128.WidenLower(first).StoreUnsafe(ref f, 2 * i);
 			Vector128.WidenUpper(first).StoreUnsafe(ref f, 2 * i + 8);
 			Vector128.WidenLower(second).StoreUnsafe(ref f, 2 * i + 16);

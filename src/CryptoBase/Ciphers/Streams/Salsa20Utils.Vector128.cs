@@ -43,15 +43,15 @@ internal static partial class Salsa20Utils
 		c = c.RotateWordsLeft(1);
 		d = d.RotateWordsLeft(2);
 
-		Vector128<uint> t0 = VectorTranspose.ZipLow(b, c);
-		Vector128<uint> t1 = VectorTranspose.ZipLow(d, a);
-		Vector128<uint> t2 = VectorTranspose.ZipHigh(b, c);
-		Vector128<uint> t3 = VectorTranspose.ZipHigh(d, a);
+		Vector128<uint> t0 = Vector128.ZipLower(b, c);
+		Vector128<uint> t1 = Vector128.ZipLower(d, a);
+		Vector128<uint> t2 = Vector128.ZipUpper(b, c);
+		Vector128<uint> t3 = Vector128.ZipUpper(d, a);
 
-		a = VectorTranspose.ZipLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-		b = Vector128.Shuffle(VectorTranspose.ZipHigh(t0, t1), Vector128.Create(3u, 0, 2, 1));
-		c = VectorTranspose.ZipLow(t3.AsUInt64(), t2.AsUInt64()).AsUInt32();
-		d = Vector128.Shuffle(VectorTranspose.ZipHigh(t2, t3), Vector128.Create(2u, 1, 3, 0));
+		a = Vector128.ZipLower(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+		b = Vector128.Shuffle(Vector128.ZipUpper(t0, t1), Vector128.Create(3u, 0, 2, 1));
+		c = Vector128.ZipLower(t3.AsUInt64(), t2.AsUInt64()).AsUInt32();
+		d = Vector128.Shuffle(Vector128.ZipUpper(t2, t3), Vector128.Create(2u, 1, 3, 0));
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -137,14 +137,14 @@ internal static partial class Salsa20Utils
 		Vector128<uint> a2 = s1.RotateWordsLeft(1);
 		Vector128<uint> a3 = s2.RotateWordsLeft(2);
 		Vector128<uint> a0 = s3.RotateWordsLeft(3);
-		Vector128<uint> t0 = VectorTranspose.ZipLow(a1, a2);
-		Vector128<uint> t1 = VectorTranspose.ZipHigh(a1, a2);
-		Vector128<uint> t2 = VectorTranspose.ZipLow(a3, a0);
-		Vector128<uint> t3 = VectorTranspose.ZipHigh(a3, a0);
-		a1 = VectorTranspose.ZipLow(t0.AsUInt64(), t2.AsUInt64()).AsUInt32();
-		a2 = VectorTranspose.ZipHigh(t0.AsUInt64(), t2.AsUInt64()).AsUInt32().RotateWordsLeft(3);
-		a3 = VectorTranspose.ZipLow(t1.AsUInt64(), t3.AsUInt64()).AsUInt32().RotateWordsLeft(2);
-		a0 = VectorTranspose.ZipHigh(t1.AsUInt64(), t3.AsUInt64()).AsUInt32().RotateWordsLeft(1);
+		Vector128<uint> t0 = Vector128.ZipLower(a1, a2);
+		Vector128<uint> t1 = Vector128.ZipUpper(a1, a2);
+		Vector128<uint> t2 = Vector128.ZipLower(a3, a0);
+		Vector128<uint> t3 = Vector128.ZipUpper(a3, a0);
+		a1 = Vector128.ZipLower(t0.AsUInt64(), t2.AsUInt64()).AsUInt32();
+		a2 = Vector128.ZipUpper(t0.AsUInt64(), t2.AsUInt64()).AsUInt32().RotateWordsLeft(3);
+		a3 = Vector128.ZipLower(t1.AsUInt64(), t3.AsUInt64()).AsUInt32().RotateWordsLeft(2);
+		a0 = Vector128.ZipUpper(t1.AsUInt64(), t3.AsUInt64()).AsUInt32().RotateWordsLeft(1);
 		Vector128<uint> b0 = a0;
 		Vector128<uint> b1 = a1;
 		Vector128<uint> b2 = a2;

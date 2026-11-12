@@ -52,15 +52,7 @@ internal static class VectorCreationExtensions
 
 	extension(Vector256)
 	{
-		// vinserti128 matches vperm2i128 and vshufi64x2 on Intel P-cores and has lower latency on AMD and Intel E-cores.
-		// The JIT copies right before taking its lower half while right is still live, so call ConcatUpper first when both halves are needed.
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static Vector256<T> ConcatLower<T>(Vector256<T> left, Vector256<T> right) where T : unmanaged
-		{
-			return left.WithUpper(right.GetLower());
-		}
-
-		// ConcatUpper requires AVX2. vperm2i128 has no EVEX form and can only use ymm0-15, so prefer vshufi64x2 when AVX-512VL allows ymm16-31.
+		// One instruction, where Vector256.ConcatUpperUpper takes vextracti128 and vinserti128. vperm2i128 has no EVEX form and reaches only ymm0-15, so take vshufi64x2 with AVX-512VL.
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Vector256<T> ConcatUpper<T>(Vector256<T> left, Vector256<T> right) where T : unmanaged
 		{

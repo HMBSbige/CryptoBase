@@ -39,7 +39,7 @@ internal struct GHashVector256PrecomputedKey : IGHashFoldedPowers
 		_key43 = key43;
 		_keyK43 = GetReductionKey(key43);
 
-		Vector256<byte> key44 = Vector256.ConcatLower(key43, key43);
+		Vector256<byte> key44 = Vector256.ConcatLowerLower(key43, key43);
 		Vector256<byte> keyK44 = GetReductionKey(key44);
 		_key65 = GFMultiplyPrepared(_key21, key44, keyK44);
 		_keyK65 = GetReductionKey(_key65);
@@ -47,7 +47,7 @@ internal struct GHashVector256PrecomputedKey : IGHashFoldedPowers
 		_key87 = key87;
 		_keyK87 = GetReductionKey(key87);
 
-		Vector256<byte> key88 = Vector256.ConcatLower(key87, key87);
+		Vector256<byte> key88 = Vector256.ConcatLowerLower(key87, key87);
 		Vector256<byte> keyK88 = GetReductionKey(key88);
 		_key1009 = GFMultiplyPrepared(_key21, key88, keyK88);
 		_keyK1009 = GetReductionKey(_key1009);

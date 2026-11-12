@@ -23,50 +23,14 @@ internal static class VectorTranspose
 		}
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<uint> ZipLow(Vector128<uint> left, Vector128<uint> right)
-	{
-		return Sse2.IsSupported ? Sse2.UnpackLow(left, right) : AdvSimd.Arm64.ZipLow(left, right);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<uint> ZipHigh(Vector128<uint> left, Vector128<uint> right)
-	{
-		return Sse2.IsSupported ? Sse2.UnpackHigh(left, right) : AdvSimd.Arm64.ZipHigh(left, right);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<ulong> ZipLow(Vector128<ulong> left, Vector128<ulong> right)
-	{
-		return Sse2.IsSupported ? Sse2.UnpackLow(left, right) : AdvSimd.Arm64.ZipLow(left, right);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<ulong> ZipHigh(Vector128<ulong> left, Vector128<ulong> right)
-	{
-		return Sse2.IsSupported ? Sse2.UnpackHigh(left, right) : AdvSimd.Arm64.ZipHigh(left, right);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<uint> UnzipEven(Vector128<uint> left, Vector128<uint> right)
-	{
-		return Sse.IsSupported ? Sse.Shuffle(left.AsSingle(), right.AsSingle(), 0b10_00_10_00).AsUInt32() : AdvSimd.Arm64.UnzipEven(left, right);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector128<uint> UnzipOdd(Vector128<uint> left, Vector128<uint> right)
-	{
-		return Sse.IsSupported ? Sse.Shuffle(left.AsSingle(), right.AsSingle(), 0b11_01_11_01).AsUInt32() : AdvSimd.Arm64.UnzipOdd(left, right);
-	}
-
 	// Taken as four 32-bit units each: (a, b) ← ([a0, b0, a1, b1], [a2, b2, a3, b3]).
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Interleave<T>(ref Vector128<T> a, ref Vector128<T> b)
 	{
 		Vector128<uint> x = a.As<T, uint>();
 		Vector128<uint> y = b.As<T, uint>();
-		a = ZipLow(x, y).As<uint, T>();
-		b = ZipHigh(x, y).As<uint, T>();
+		a = Vector128.ZipLower(x, y).As<uint, T>();
+		b = Vector128.ZipUpper(x, y).As<uint, T>();
 	}
 
 	// The inverse of Interleave: (a, b) ← ([a0, a2, b0, b2], [a1, a3, b1, b3]).
@@ -75,22 +39,22 @@ internal static class VectorTranspose
 	{
 		Vector128<uint> x = a.As<T, uint>();
 		Vector128<uint> y = b.As<T, uint>();
-		a = UnzipEven(x, y).As<uint, T>();
-		b = UnzipOdd(x, y).As<uint, T>();
+		a = Vector128.UnzipEven(x, y).As<uint, T>();
+		b = Vector128.UnzipOdd(x, y).As<uint, T>();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Transpose(ref Vector128<uint> x0, ref Vector128<uint> x1, ref Vector128<uint> x2, ref Vector128<uint> x3)
 	{
-		Vector128<uint> t0 = ZipLow(x0, x1);
-		Vector128<uint> t1 = ZipLow(x2, x3);
-		Vector128<uint> t2 = ZipHigh(x0, x1);
-		Vector128<uint> t3 = ZipHigh(x2, x3);
+		Vector128<uint> t0 = Vector128.ZipLower(x0, x1);
+		Vector128<uint> t1 = Vector128.ZipLower(x2, x3);
+		Vector128<uint> t2 = Vector128.ZipUpper(x0, x1);
+		Vector128<uint> t3 = Vector128.ZipUpper(x2, x3);
 
-		x0 = ZipLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-		x1 = ZipHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-		x2 = ZipLow(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
-		x3 = ZipHigh(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+		x0 = Vector128.ZipLower(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+		x1 = Vector128.ZipUpper(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
+		x2 = Vector128.ZipLower(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
+		x3 = Vector128.ZipUpper(t2.AsUInt64(), t3.AsUInt64()).AsUInt32();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -214,30 +178,30 @@ internal static class VectorTranspose
 		Vector256<uint> b7 = Avx2.UnpackHigh(t6.AsUInt64(), t7.AsUInt64()).AsUInt32();
 
 		x4 = Vector256.ConcatUpper(b0, b4);
-		x0 = Vector256.ConcatLower(b0, b4);
+		x0 = Vector256.ConcatLowerLower(b0, b4);
 		x5 = Vector256.ConcatUpper(b1, b5);
-		x1 = Vector256.ConcatLower(b1, b5);
+		x1 = Vector256.ConcatLowerLower(b1, b5);
 		x6 = Vector256.ConcatUpper(b2, b6);
-		x2 = Vector256.ConcatLower(b2, b6);
+		x2 = Vector256.ConcatLowerLower(b2, b6);
 		x7 = Vector256.ConcatUpper(b3, b7);
-		x3 = Vector256.ConcatLower(b3, b7);
+		x3 = Vector256.ConcatLowerLower(b3, b7);
 	}
 
 	// Transpose four word-major vectors into one 16-byte chunk per stream block.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void TransposeXorStore(Vector128<uint> a, Vector128<uint> b, Vector128<uint> c, Vector128<uint> d, ref byte input, ref byte output, nuint offset, bool storeFourthBlock)
 	{
-		Vector128<uint> t0 = ZipLow(a, b);
-		Vector128<uint> t1 = ZipLow(c, d);
-		Vector128<uint> t2 = ZipHigh(a, b);
-		Vector128<uint> t3 = ZipHigh(c, d);
-		(ZipLow(t0.AsUInt64(), t1.AsUInt64()).AsByte() ^ Vector128.LoadUnsafe(ref input, offset)).StoreUnsafe(ref output, offset);
-		(ZipHigh(t0.AsUInt64(), t1.AsUInt64()).AsByte() ^ Vector128.LoadUnsafe(ref input, offset + 64u)).StoreUnsafe(ref output, offset + 64u);
-		(ZipLow(t2.AsUInt64(), t3.AsUInt64()).AsByte() ^ Vector128.LoadUnsafe(ref input, offset + 128u)).StoreUnsafe(ref output, offset + 128u);
+		Vector128<uint> t0 = Vector128.ZipLower(a, b);
+		Vector128<uint> t1 = Vector128.ZipLower(c, d);
+		Vector128<uint> t2 = Vector128.ZipUpper(a, b);
+		Vector128<uint> t3 = Vector128.ZipUpper(c, d);
+		(Vector128.ZipLower(t0.AsUInt64(), t1.AsUInt64()).AsByte() ^ Vector128.LoadUnsafe(ref input, offset)).StoreUnsafe(ref output, offset);
+		(Vector128.ZipUpper(t0.AsUInt64(), t1.AsUInt64()).AsByte() ^ Vector128.LoadUnsafe(ref input, offset + 64u)).StoreUnsafe(ref output, offset + 64u);
+		(Vector128.ZipLower(t2.AsUInt64(), t3.AsUInt64()).AsByte() ^ Vector128.LoadUnsafe(ref input, offset + 128u)).StoreUnsafe(ref output, offset + 128u);
 
 		if (storeFourthBlock)
 		{
-			(ZipHigh(t2.AsUInt64(), t3.AsUInt64()).AsByte() ^ Vector128.LoadUnsafe(ref input, offset + 192u)).StoreUnsafe(ref output, offset + 192u);
+			(Vector128.ZipUpper(t2.AsUInt64(), t3.AsUInt64()).AsByte() ^ Vector128.LoadUnsafe(ref input, offset + 192u)).StoreUnsafe(ref output, offset + 192u);
 		}
 	}
 }

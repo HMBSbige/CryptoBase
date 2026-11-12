@@ -79,10 +79,10 @@ internal readonly partial struct Blake3Vector128 : IBlake3Compressor
 		Vector128<uint> m2 = Vector128.LoadUnsafe(ref block, 32).AsUInt32();
 		Vector128<uint> m3 = Vector128.LoadUnsafe(ref block, 48).AsUInt32();
 
-		Vector128<uint> x0 = VectorTranspose.UnzipEven(m0, m1);
-		Vector128<uint> y0 = VectorTranspose.UnzipOdd(m0, m1);
-		Vector128<uint> x1 = VectorTranspose.UnzipEven(m2, m3).RotateWordsLeft(3);
-		Vector128<uint> y1 = VectorTranspose.UnzipOdd(m2, m3).RotateWordsLeft(3);
+		Vector128<uint> x0 = Vector128.UnzipEven(m0, m1);
+		Vector128<uint> y0 = Vector128.UnzipOdd(m0, m1);
+		Vector128<uint> x1 = Vector128.UnzipEven(m2, m3).RotateWordsLeft(3);
+		Vector128<uint> y1 = Vector128.UnzipOdd(m2, m3).RotateWordsLeft(3);
 		Round(ref row0, ref row1, ref row2, ref row3, x0, y0, x1, y1);
 
 		for (int round = 1; round < Blake3Constants.Rounds; ++round)

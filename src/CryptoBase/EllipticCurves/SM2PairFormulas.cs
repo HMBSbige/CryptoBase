@@ -1289,14 +1289,14 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> Low(Vector128<ulong> a, Vector128<ulong> b)
 	{
-		return Sse2.IsSupported ? Sse2.UnpackLow(a, b) : AdvSimd.Arm64.ZipLow(a, b);
+		return Vector128.ZipLower(a, b);
 	}
 
 	// [a.hi | b.hi].
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> High(Vector128<ulong> a, Vector128<ulong> b)
 	{
-		return Sse2.IsSupported ? Sse2.UnpackHigh(a, b) : AdvSimd.Arm64.ZipHigh(a, b);
+		return Vector128.ZipUpper(a, b);
 	}
 
 	// [b.hi | a.lo].

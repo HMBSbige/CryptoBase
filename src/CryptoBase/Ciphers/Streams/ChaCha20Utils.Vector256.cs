@@ -130,8 +130,8 @@ internal static partial class ChaCha20Utils
 		d += initial3;
 		(Vector256.ConcatUpper(a, b).AsByte() ^ Vector256.LoadUnsafe(ref input, 64)).StoreUnsafe(ref output, 64);
 		(Vector256.ConcatUpper(c, d).AsByte() ^ Vector256.LoadUnsafe(ref input, 96)).StoreUnsafe(ref output, 96);
-		(Vector256.ConcatLower(a, b).AsByte() ^ Vector256.LoadUnsafe(ref input)).StoreUnsafe(ref output);
-		(Vector256.ConcatLower(c, d).AsByte() ^ Vector256.LoadUnsafe(ref input, 32)).StoreUnsafe(ref output, 32);
+		(Vector256.ConcatLowerLower(a, b).AsByte() ^ Vector256.LoadUnsafe(ref input)).StoreUnsafe(ref output);
+		(Vector256.ConcatLowerLower(c, d).AsByte() ^ Vector256.LoadUnsafe(ref input, 32)).StoreUnsafe(ref output, 32);
 		GetCounterOriginal(ref stateRef) += 2;
 	}
 
@@ -188,15 +188,15 @@ internal static partial class ChaCha20Utils
 		b3 += initial.AddUInt32LE22();
 		(Vector256.ConcatUpper(a0, a1).AsByte() ^ Vector256.LoadUnsafe(ref input, 64)).StoreUnsafe(ref output, 64);
 		(Vector256.ConcatUpper(a2, a3).AsByte() ^ Vector256.LoadUnsafe(ref input, 96)).StoreUnsafe(ref output, 96);
-		(Vector256.ConcatLower(a0, a1).AsByte() ^ Vector256.LoadUnsafe(ref input)).StoreUnsafe(ref output);
-		(Vector256.ConcatLower(a2, a3).AsByte() ^ Vector256.LoadUnsafe(ref input, 32)).StoreUnsafe(ref output, 32);
+		(Vector256.ConcatLowerLower(a0, a1).AsByte() ^ Vector256.LoadUnsafe(ref input)).StoreUnsafe(ref output);
+		(Vector256.ConcatLowerLower(a2, a3).AsByte() ^ Vector256.LoadUnsafe(ref input, 32)).StoreUnsafe(ref output, 32);
 		if (blocks > 3)
 		{
 			(Vector256.ConcatUpper(b0, b1).AsByte() ^ Vector256.LoadUnsafe(ref input, 192)).StoreUnsafe(ref output, 192);
 			(Vector256.ConcatUpper(b2, b3).AsByte() ^ Vector256.LoadUnsafe(ref input, 224)).StoreUnsafe(ref output, 224);
 		}
-		(Vector256.ConcatLower(b0, b1).AsByte() ^ Vector256.LoadUnsafe(ref input, 128)).StoreUnsafe(ref output, 128);
-		(Vector256.ConcatLower(b2, b3).AsByte() ^ Vector256.LoadUnsafe(ref input, 160)).StoreUnsafe(ref output, 160);
+		(Vector256.ConcatLowerLower(b0, b1).AsByte() ^ Vector256.LoadUnsafe(ref input, 128)).StoreUnsafe(ref output, 128);
+		(Vector256.ConcatLowerLower(b2, b3).AsByte() ^ Vector256.LoadUnsafe(ref input, 160)).StoreUnsafe(ref output, 160);
 		GetCounterOriginal(ref stateRef) += (uint)blocks;
 	}
 

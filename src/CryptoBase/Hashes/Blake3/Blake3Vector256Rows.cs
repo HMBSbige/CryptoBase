@@ -249,7 +249,7 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 
 		if (count is 2)
 		{
-			Vector256.ConcatLower(h0, h1).AsByte().StoreUnsafe(ref output);
+			Vector256.ConcatLowerLower(h0, h1).AsByte().StoreUnsafe(ref output);
 			output = ref Unsafe.Add(ref output, OutLength);
 		}
 
