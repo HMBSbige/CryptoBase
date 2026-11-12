@@ -26,7 +26,7 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 			return;
 		}
 
-		ProcessFullBlocks(ref rk, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
+		ProcessFullBlocks(ref rk, ref MemoryMarshal.GetReference(source), source.Length, ref MemoryMarshal.GetReference(destination));
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -66,7 +66,7 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void ProcessFullBlocks(ref uint rk, ref byte source, ref byte destination, int length)
+	private static void ProcessFullBlocks(ref uint rk, ref byte source, int length, ref byte destination)
 	{
 		int batchLength = TKernel.MaxBlocks * 16;
 		int offset = 0;
