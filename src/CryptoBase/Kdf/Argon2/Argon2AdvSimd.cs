@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CryptoBase.Kdf.Argon2;
 
 // Two rows or two columns per iteration: the 32 NEON registers hold both, and their four independent chains hide the multiply latency.
@@ -5,8 +7,23 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 {
 	public static bool IsSupported => AdvSimd.Arm64.IsSupported;
 
-	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+	// XAR takes each rotation of G together with the XOR before it wherever the ARMv8.2 SHA3 instructions are present, not only where CpuIdUtils.PreferArmSha3. By LLVM's scheduling models, the 16 XARs of a G shorten its dependency chains on the Neoverse V1 and V2, and on the Neoverse N2 they leave V0 with 48 instructions where the two pipelines had 50 each.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Compress(ref Argon2Block previous, ref Argon2Block reference, ref Argon2Block destination, ref Argon2Block scratch, bool xorDestination)
+	{
+#if NET11_0_OR_GREATER
+		if (Sha3.IsSupported)
+		{
+			Compress<Sha3Rotations>(ref previous, ref reference, ref destination, ref scratch, xorDestination);
+			return;
+		}
+#endif
+
+		Compress<NeonRotations>(ref previous, ref reference, ref destination, ref scratch, xorDestination);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+	private static void Compress<TRotations>(ref Argon2Block previous, ref Argon2Block reference, ref Argon2Block destination, ref Argon2Block scratch, bool xorDestination) where TRotations : IRotations
 	{
 		Debug.Assert(IsSupported);
 
@@ -73,7 +90,7 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 				d3.StoreUnsafe(ref final, offset + 30);
 			}
 
-			Round(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, ref a2, ref a3, ref b2, ref b3, ref c2, ref c3, ref d2, ref d3);
+			Round<TRotations>(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, ref a2, ref a3, ref b2, ref b3, ref c2, ref c3, ref d2, ref d3);
 
 			a0.StoreUnsafe(ref state, offset);
 			a1.StoreUnsafe(ref state, offset + 2);
@@ -112,7 +129,7 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 			Vector128<ulong> d2 = Vector128.LoadUnsafe(ref state, offset + 98);
 			Vector128<ulong> d3 = Vector128.LoadUnsafe(ref state, offset + 114);
 
-			Round(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, ref a2, ref a3, ref b2, ref b3, ref c2, ref c3, ref d2, ref d3);
+			Round<TRotations>(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, ref a2, ref a3, ref b2, ref b3, ref c2, ref c3, ref d2, ref d3);
 
 			(a0 ^ Vector128.LoadUnsafe(ref final, offset)).StoreUnsafe(ref state, offset);
 			(a1 ^ Vector128.LoadUnsafe(ref final, offset + 16)).StoreUnsafe(ref state, offset + 16);
@@ -134,15 +151,15 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void Round
+	private static void Round<TRotations>
 	(
 		ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1,
 		ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1,
 		ref Vector128<ulong> a2, ref Vector128<ulong> a3, ref Vector128<ulong> b2, ref Vector128<ulong> b3,
 		ref Vector128<ulong> c2, ref Vector128<ulong> c3, ref Vector128<ulong> d2, ref Vector128<ulong> d3
-	)
+	) where TRotations : IRotations
 	{
-		G(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, ref a2, ref a3, ref b2, ref b3, ref c2, ref c3, ref d2, ref d3);
+		G<TRotations>(ref a0, ref a1, ref b0, ref b1, ref c0, ref c1, ref d0, ref d1, ref a2, ref a3, ref b2, ref b3, ref c2, ref c3, ref d2, ref d3);
 
 		// Diagonalizing a, c and d leaves b, which G finishes last, off the shuffle path.
 		Vector128<ulong> rotatedA0 = AdvSimd.ExtractVector128(a1, a0, 1);
@@ -154,7 +171,7 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 		Vector128<ulong> rotatedC2 = AdvSimd.ExtractVector128(c2, c3, 1);
 		Vector128<ulong> rotatedC3 = AdvSimd.ExtractVector128(c3, c2, 1);
 
-		G(ref rotatedA0, ref rotatedA1, ref b0, ref b1, ref rotatedC0, ref rotatedC1, ref d1, ref d0, ref rotatedA2, ref rotatedA3, ref b2, ref b3, ref rotatedC2, ref rotatedC3, ref d3, ref d2);
+		G<TRotations>(ref rotatedA0, ref rotatedA1, ref b0, ref b1, ref rotatedC0, ref rotatedC1, ref d1, ref d0, ref rotatedA2, ref rotatedA3, ref b2, ref b3, ref rotatedC2, ref rotatedC3, ref d3, ref d2);
 
 		a0 = AdvSimd.ExtractVector128(rotatedA0, rotatedA1, 1);
 		a1 = AdvSimd.ExtractVector128(rotatedA1, rotatedA0, 1);
@@ -167,38 +184,38 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void G
+	private static void G<TRotations>
 	(
 		ref Vector128<ulong> a0, ref Vector128<ulong> a1, ref Vector128<ulong> b0, ref Vector128<ulong> b1,
 		ref Vector128<ulong> c0, ref Vector128<ulong> c1, ref Vector128<ulong> d0, ref Vector128<ulong> d1,
 		ref Vector128<ulong> a2, ref Vector128<ulong> a3, ref Vector128<ulong> b2, ref Vector128<ulong> b3,
 		ref Vector128<ulong> c2, ref Vector128<ulong> c3, ref Vector128<ulong> d2, ref Vector128<ulong> d3
-	)
+	) where TRotations : IRotations
 	{
 		BlaMka(ref a0, ref a1, b0, b1);
 		BlaMka(ref a2, ref a3, b2, b3);
-		d0 = AdvSimd.ReverseElement32(d0 ^ a0);
-		d1 = AdvSimd.ReverseElement32(d1 ^ a1);
-		d2 = AdvSimd.ReverseElement32(d2 ^ a2);
-		d3 = AdvSimd.ReverseElement32(d3 ^ a3);
+		d0 = TRotations.XorRotateRight(d0, a0, 32);
+		d1 = TRotations.XorRotateRight(d1, a1, 32);
+		d2 = TRotations.XorRotateRight(d2, a2, 32);
+		d3 = TRotations.XorRotateRight(d3, a3, 32);
 		BlaMka(ref c0, ref c1, d0, d1);
 		BlaMka(ref c2, ref c3, d2, d3);
-		b0 = RotateRight24(b0 ^ c0);
-		b1 = RotateRight24(b1 ^ c1);
-		b2 = RotateRight24(b2 ^ c2);
-		b3 = RotateRight24(b3 ^ c3);
+		b0 = TRotations.XorRotateRight(b0, c0, 24);
+		b1 = TRotations.XorRotateRight(b1, c1, 24);
+		b2 = TRotations.XorRotateRight(b2, c2, 24);
+		b3 = TRotations.XorRotateRight(b3, c3, 24);
 		BlaMka(ref a0, ref a1, b0, b1);
 		BlaMka(ref a2, ref a3, b2, b3);
-		d0 = RotateRight16(d0 ^ a0);
-		d1 = RotateRight16(d1 ^ a1);
-		d2 = RotateRight16(d2 ^ a2);
-		d3 = RotateRight16(d3 ^ a3);
+		d0 = TRotations.XorRotateRight(d0, a0, 16);
+		d1 = TRotations.XorRotateRight(d1, a1, 16);
+		d2 = TRotations.XorRotateRight(d2, a2, 16);
+		d3 = TRotations.XorRotateRight(d3, a3, 16);
 		BlaMka(ref c0, ref c1, d0, d1);
 		BlaMka(ref c2, ref c3, d2, d3);
-		b0 = RotateRight63(b0 ^ c0);
-		b1 = RotateRight63(b1 ^ c1);
-		b2 = RotateRight63(b2 ^ c2);
-		b3 = RotateRight63(b3 ^ c3);
+		b0 = TRotations.XorRotateRight(b0, c0, 63);
+		b1 = TRotations.XorRotateRight(b1, c1, 63);
+		b2 = TRotations.XorRotateRight(b2, c2, 63);
+		b3 = TRotations.XorRotateRight(b3, c3, 63);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -213,21 +230,36 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 		x1 = AdvSimd.MultiplyWideningUpperAndAdd(sum1, xLow, yLow);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> RotateRight24(Vector128<ulong> value)
+	private interface IRotations
 	{
-		return Vector128.Shuffle(value.AsByte(), Vector128.Create((byte)3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10)).AsUInt64();
+		static abstract Vector128<ulong> XorRotateRight(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected] byte offset);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> RotateRight16(Vector128<ulong> value)
+	private readonly struct NeonRotations : IRotations
 	{
-		return Vector128.Shuffle(value.AsByte(), Vector128.Create((byte)2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9)).AsUInt64();
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<ulong> XorRotateRight(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected] byte offset)
+		{
+			Vector128<ulong> value = left ^ right;
+			return offset switch
+			{
+				32 => AdvSimd.ReverseElement32(value),
+				24 => Vector128.Shuffle(value.AsByte(), Vector128.Create((byte)3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10)).AsUInt64(),
+				16 => Vector128.Shuffle(value.AsByte(), Vector128.Create((byte)2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9)).AsUInt64(),
+				63 => AdvSimd.ShiftRightAndInsert(value + value, value, 63),
+				_ => throw new UnreachableException()
+			};
+		}
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> RotateRight63(Vector128<ulong> value)
+#if NET11_0_OR_GREATER
+	private readonly struct Sha3Rotations : IRotations
 	{
-		return AdvSimd.ShiftRightAndInsert(value + value, value, 63);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<ulong> XorRotateRight(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected] byte offset)
+		{
+			return Sha3.XorRotateRight(left, right, offset);
+		}
 	}
+#endif
 }

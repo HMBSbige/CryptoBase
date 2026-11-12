@@ -20,6 +20,7 @@ public class KeccakP1600KernelTest
 
 	[Test]
 	[MethodDataSource(typeof(KeccakP1600KernelCase), nameof(KeccakP1600KernelCase.All))]
+	[MethodDataSource(typeof(KeccakP1600KernelCase), nameof(KeccakP1600KernelCase.Variants))]
 	public async Task PermuteMatchesKeccakTeamValues(KeccakP1600KernelCase kernel)
 	{
 		SkipUnlessSupported(kernel);
@@ -36,6 +37,7 @@ public class KeccakP1600KernelTest
 	// Distinct random states catch lanes of one state leaking into another, which identical states would hide.
 	[Test]
 	[MethodDataSource(typeof(KeccakP1600KernelCase), nameof(KeccakP1600KernelCase.All))]
+	[MethodDataSource(typeof(KeccakP1600KernelCase), nameof(KeccakP1600KernelCase.Variants))]
 	public async Task PermuteMatchesReference(KeccakP1600KernelCase kernel)
 	{
 		SkipUnlessSupported(kernel);

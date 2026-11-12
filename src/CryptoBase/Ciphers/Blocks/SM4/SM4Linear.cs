@@ -35,6 +35,13 @@ internal static class SM4Linear
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static Vector128<uint> XorTransform<TXor>(Vector128<uint> r, Vector128<uint> x) where TXor : IVectorXor3
+	{
+		Vector128<uint> t = TXor.Xor(x, x.RotateLeftUInt32(8), x.RotateLeftUInt32(16));
+		return TXor.Xor(r, x, x.RotateLeftUInt32(24)) ^ t.RotateLeftUInt32(2);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static Vector256<uint> XorTransform(Vector256<uint> r, Vector256<uint> x)
 	{
 		if (Avx512F.VL.IsSupported)

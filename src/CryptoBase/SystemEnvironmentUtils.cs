@@ -113,6 +113,9 @@ public static class SystemEnvironmentUtils
 		Append(ref handler, "Arm.Rdm", Rdm.IsSupported);
 		Append(ref handler, "Arm.Sha1", Sha1.IsSupported);
 		Append(ref handler, "Arm.Sha256", Sha256.IsSupported);
+#if NET11_0_OR_GREATER
+		Append(ref handler, "Arm.Sha3", Sha3.IsSupported);
+#endif
 	}
 
 	private static void AppendInstructionSetSwitches(ref DefaultInterpolatedStringHandler handler)

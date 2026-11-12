@@ -40,6 +40,18 @@ internal readonly struct KeccakP1600Times8 : IKeccakP1600Kernel, IKeccakP1600Lan
 		return Avx512F.TernaryLogic(Avx512F.TernaryLogic(a, b, c, 0x96), d, e, 0x96);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<ulong> RotateLeftBy1AndXor(Vector512<ulong> xor, Vector512<ulong> rotated)
+	{
+		return xor ^ RotateLeft(rotated, 1);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector512<ulong> XorRotateLeft(Vector512<ulong> left, Vector512<ulong> right, [ConstantExpected(Min = 1, Max = 63)] byte offset)
+	{
+		return RotateLeft(left ^ right, offset);
+	}
+
 	// 0xD2 is 0xF0 ^ (~0xCC & 0xAA).
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector512<ulong> XorAndNot(Vector512<ulong> value, Vector512<ulong> left, Vector512<ulong> right)

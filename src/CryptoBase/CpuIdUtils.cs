@@ -70,6 +70,12 @@ public static class CpuIdUtils
 		return X86Base.IsSupported && ((uint)X86Base.CpuId(7, 0).Ebx >> 29 & 1) is 1;
 	}
 
+#if NET11_0_OR_GREATER
+	// Whether Keccak-p[1600] and the CRC-32 folds take the ARMv8.2 SHA3 instructions. Apple's cores run them four a cycle, but the Neoverse N2, V1 and V2 only one, which makes these kernels slower.
+	// A kernel tests this once where it starts, after Sha3.IsSupported, and runs a separate generic instantiation for each answer.
+	internal static readonly bool PreferArmSha3 = Sha3.IsSupported && (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS());
+#endif
+
 	private static readonly (int Family, int Model)? AmdFamilyAndModel = X86Base.IsSupported && IsAuthenticAmd(X86Base.CpuId(0, 0)) ? DecodeFamilyAndModel(X86Base.CpuId(1, 0).Eax) : null;
 
 	internal static bool IsAmdZen5()

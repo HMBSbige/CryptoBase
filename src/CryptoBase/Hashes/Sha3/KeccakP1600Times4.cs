@@ -45,6 +45,18 @@ internal readonly struct KeccakP1600Times4 : IKeccakP1600Kernel, IKeccakP1600Lan
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector256<ulong> RotateLeftBy1AndXor(Vector256<ulong> xor, Vector256<ulong> rotated)
+	{
+		return xor ^ RotateLeft(rotated, 1);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector256<ulong> XorRotateLeft(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected(Min = 1, Max = 63)] byte offset)
+	{
+		return RotateLeft(left ^ right, offset);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector256<ulong> XorAndNot(Vector256<ulong> value, Vector256<ulong> left, Vector256<ulong> right)
 	{
 		if (Avx512F.VL.IsSupported)

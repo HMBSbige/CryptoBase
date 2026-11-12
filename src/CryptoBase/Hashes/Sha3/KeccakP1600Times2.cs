@@ -1,9 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
+#if NET11_0_OR_GREATER
+using Sha3Arm = System.Runtime.Intrinsics.Arm.Sha3;
+#endif
 
 namespace CryptoBase.Hashes.Sha3;
 
-// Two states in the 64-bit elements of 128-bit vectors.
-// .NET does not expose the ARMv8.2 SHA3 instructions (EOR3, RAX1, XAR, BCAX), so ARM64 builds them from plain NEON.
+// Two states in the 64-bit elements of 128-bit vectors. Where CpuIdUtils.PreferArmSha3, Permute runs the round on KeccakP1600Times2Sha3 instead, which takes each step in one ARMv8.2 SHA3 instruction.
 internal readonly struct KeccakP1600Times2 : IKeccakP1600Kernel, IKeccakP1600Lanes<Vector128<ulong>>
 {
 	public static bool IsSupported => Sse2.IsSupported || AdvSimd.Arm64.IsSupported;
@@ -13,6 +15,14 @@ internal readonly struct KeccakP1600Times2 : IKeccakP1600Kernel, IKeccakP1600Lan
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Permute(ref ulong state)
 	{
+#if NET11_0_OR_GREATER
+		if (Sha3Arm.IsSupported && CpuIdUtils.PreferArmSha3)
+		{
+			KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Times2Sha3>(ref state);
+			return;
+		}
+#endif
+
 		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Times2>(ref state);
 	}
 
@@ -43,6 +53,18 @@ internal readonly struct KeccakP1600Times2 : IKeccakP1600Kernel, IKeccakP1600Lan
 		}
 
 		return a ^ b ^ (c ^ d) ^ e;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector128<ulong> RotateLeftBy1AndXor(Vector128<ulong> xor, Vector128<ulong> rotated)
+	{
+		return xor ^ RotateLeft(rotated, 1);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vector128<ulong> XorRotateLeft(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 1, Max = 63)] byte offset)
+	{
+		return RotateLeft(left ^ right, offset);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -22,6 +22,24 @@ internal static partial class KeccakP1600
 		PermuteScalar(ref state);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void PermuteLane128(ref InlineArray25<ulong> state)
+	{
+		Debug.Assert(KeccakP1600Lane128.IsSupported);
+
+		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128>(ref state[0]);
+	}
+
+	internal static int PermuteBlocksLane128<TBlocks>(ref InlineArray25<ulong> state, ref byte data, int length) where TBlocks : IKeccakP1600Blocks
+	{
+		Debug.Assert(KeccakP1600Lane128.IsSupported);
+		Debug.Assert(length >= TBlocks.RateInBytes);
+
+		int blocks = length / TBlocks.RateInBytes;
+		KeccakP1600Interleaved.Permute<Vector128<ulong>, KeccakP1600Lane128, TBlocks>(ref state[0], ref Unsafe.As<byte, ulong>(ref data), blocks);
+		return blocks * TBlocks.RateInBytes;
+	}
+
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void PermuteScalar(ref InlineArray25<ulong> state)

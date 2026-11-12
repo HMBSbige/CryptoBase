@@ -1,11 +1,27 @@
 using AesArm = System.Runtime.Intrinsics.Arm.Aes;
+#if NET11_0_OR_GREATER
+using Sha3Arm = System.Runtime.Intrinsics.Arm.Sha3;
+#endif
 
 namespace CryptoBase.Hashes.Crc32;
 
 internal static partial class Crc32Vectorized
 {
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static uint UpdateArm<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
+	{
+#if NET11_0_OR_GREATER
+		if (Sha3Arm.IsSupported && CpuIdUtils.PreferArmSha3)
+		{
+			return UpdateArm<TAlgorithm, VectorXor3.Eor3>(state, source);
+		}
+#endif
+
+		return UpdateArm<TAlgorithm, VectorXor3.Plain>(state, source);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static uint UpdateArm<TAlgorithm, TXor>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged where TXor : IVectorXor3
 	{
 		Debug.Assert(AesArm.IsSupported && AdvSimd.IsSupported);
 		Debug.Assert(source.Length >= Vector128<byte>.Count);
@@ -45,17 +61,17 @@ internal static partial class Crc32Vectorized
 				Vector128<ulong> l2 = AesArm.PolynomialMultiplyWideningLower(x2.GetLower(), k1Lower);
 				Vector128<ulong> l3 = AesArm.PolynomialMultiplyWideningLower(x3.GetLower(), k1Lower);
 				Vector128<ulong> l4 = AesArm.PolynomialMultiplyWideningLower(x4.GetLower(), k1Lower);
-				x1 = y5 ^ h1 ^ l1;
-				x2 = y6 ^ h2 ^ l2;
-				x3 = y7 ^ h3 ^ l3;
-				x4 = y8 ^ h4 ^ l4;
+				x1 = TXor.Xor(y5, h1, l1);
+				x2 = TXor.Xor(y6, h2, l2);
+				x3 = TXor.Xor(y7, h3, l3);
+				x4 = TXor.Xor(y8, h4, l4);
 				sourceRef = ref Unsafe.Add(ref sourceRef, Vector128<byte>.Count * 4);
 				length -= Vector128<byte>.Count * 4;
 			}
 
-			x1 = FoldArm(x2, x1, k3k4, k3Lower);
-			x1 = FoldArm(x3, x1, k3k4, k3Lower);
-			x1 = FoldArm(x4, x1, k3k4, k3Lower);
+			x1 = FoldArm<TXor>(x2, x1, k3k4, k3Lower);
+			x1 = FoldArm<TXor>(x3, x1, k3k4, k3Lower);
+			x1 = FoldArm<TXor>(x4, x1, k3k4, k3Lower);
 		}
 		else
 		{
@@ -66,7 +82,7 @@ internal static partial class Crc32Vectorized
 
 		while (length >= Vector128<byte>.Count)
 		{
-			x1 = FoldArm(Load(ref sourceRef, 0), x1, k3k4, k3Lower);
+			x1 = FoldArm<TXor>(Load(ref sourceRef, 0), x1, k3k4, k3Lower);
 			sourceRef = ref Unsafe.Add(ref sourceRef, Vector128<byte>.Count);
 			length -= Vector128<byte>.Count;
 		}
@@ -89,9 +105,16 @@ internal static partial class Crc32Vectorized
 		return Vector128.LoadUnsafe(ref source, (nuint)offset).AsUInt64();
 	}
 
+	// The hybrid kernel ran no faster with EOR3 on the M2, so its folds keep the plain XORs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> FoldArm(Vector128<ulong> target, Vector128<ulong> source, Vector128<ulong> constants, Vector64<ulong> lowerConstant)
 	{
-		return target ^ AesArm.PolynomialMultiplyWideningUpper(source, constants) ^ AesArm.PolynomialMultiplyWideningLower(source.GetLower(), lowerConstant);
+		return FoldArm<VectorXor3.Plain>(target, source, constants, lowerConstant);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<ulong> FoldArm<TXor>(Vector128<ulong> target, Vector128<ulong> source, Vector128<ulong> constants, Vector64<ulong> lowerConstant) where TXor : IVectorXor3
+	{
+		return TXor.Xor(target, AesArm.PolynomialMultiplyWideningUpper(source, constants), AesArm.PolynomialMultiplyWideningLower(source.GetLower(), lowerConstant));
 	}
 }
