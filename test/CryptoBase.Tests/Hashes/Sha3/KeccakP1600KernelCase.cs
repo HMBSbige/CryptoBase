@@ -23,7 +23,9 @@ public abstract class KeccakP1600KernelCase : IKernelCase
 	public static IEnumerable<KeccakP1600KernelCase> Variants()
 	{
 		yield return new Variant<KeccakP1600Times2>(KeccakP1600Times2.IsSupported);
+#if NET11_0_OR_GREATER
 		yield return new Variant<KeccakP1600Times2Sha3>(KeccakP1600Times2Sha3.IsSupported);
+#endif
 	}
 
 	public abstract Type KernelType { get; }

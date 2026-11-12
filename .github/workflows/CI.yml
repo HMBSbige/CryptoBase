@@ -47,9 +47,11 @@ jobs:
         run: bash .github/test.sh shards
 
   test:
-    name: test (${{ matrix.os }}${{ matrix.part && format(', part {0}', matrix.part) }})
+    name: test (${{ matrix.os }}${{ matrix.part && format(', part {0}', matrix.part) }}${{ matrix.tfm && format(', {0}', matrix.tfm) }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    env:
+      TFM: ${{ matrix.tfm }}
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +64,8 @@ jobs:
           # Other platforms: default dispatch and the portable path.
           - { os: windows-latest, disable: 'none HWIntrinsic' }
           - { os: macos-latest }
+          - { os: ubuntu-latest, tfm: net10.0, disable: 'none AVX2 HWIntrinsic' }
+          - { os: ubuntu-26.04-arm, tfm: net10.0, disable: 'none HWIntrinsic' }
 
     steps:
       - uses: actions/checkout@v7
@@ -72,7 +76,7 @@ jobs:
           dotnet-version: ${{ env.NET_VERSION }}
 
       - name: Build
-        run: dotnet build test/CryptoBase.Tests -c Release -p:RunAnalyzers=false
+        run: bash .github/test.sh build
 
       - name: Test (Release)
         run: bash .github/test.sh
@@ -84,13 +88,12 @@ jobs:
         if: matrix.part != 2
         run: bash .github/test.sh tiered
 
-      # The trim analysis would warn of every IsEquivalentTo of TUnit, and of the reflection of the tests that run on the JIT alone.
       - name: Publish (Native AOT)
-        if: matrix.part != 2
-        run: dotnet publish test/CryptoBase.Tests -c Release --ucr -p:PublishAot=true -p:RunAnalyzers=false -p:SuppressTrimAnalysisWarnings=true -o artifacts/publish/aot
+        if: matrix.part != 2 && !matrix.tfm
+        run: bash .github/test.sh publish
 
       - name: Test (Native AOT)
-        if: matrix.part != 2
+        if: matrix.part != 2 && !matrix.tfm
         run: artifacts/publish/aot/CryptoBase.Tests --minimum-expected-tests 1
 
   debug:
@@ -147,7 +150,7 @@ jobs:
 
       - name: Build
         if: steps.probe.outputs.native
-        run: dotnet build test/CryptoBase.Tests -c Release -p:RunAnalyzers=false
+        run: bash .github/test.sh build
 
       # The runs match the avx512_sde matrix; Vector512 still takes the AVX-512VL paths.
       - name: Test (Release)
@@ -178,7 +181,7 @@ jobs:
       - uses: petarpetrovt/setup-sde@v6.0
 
       - name: Build
-        run: dotnet build test/CryptoBase.Tests -c Release -p:RunAnalyzers=false
+        run: bash .github/test.sh build
 
       - name: Test (Release)
         run: bash .github/test.sh

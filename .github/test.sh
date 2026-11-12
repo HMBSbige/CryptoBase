@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Runs the tests from the repository root: Release without quick JIT by default, "tiered" for the default tiered compilation, "debug" for Debug. "probe" prints the instruction sets that SDE adds, and "shards" checks that each namespace is in exactly one shard.
+# Runs the tests from the repository root: Release without quick JIT by default, "tiered" for the default tiered compilation, "debug" for Debug. "build" builds them for the Release runs, and "publish" compiles them with Native AOT into artifacts/publish/aot. "probe" prints the instruction sets that SDE adds, and "shards" checks that each namespace is in exactly one shard.
 #   DISABLE   Comma-separated DOTNET_Enable<name> switches to turn off; Vector512 caps vectors at 256 bits instead. Spaces separate test runs, in which "none" turns nothing off.
 #   SDE_PATH  Intel SDE kit; the default mode runs under "sde64 -spr" when SDE adds instruction sets this runner lacks.
 #   SHARD     Comma-separated shards out of hashes, ciphers, ec and rest: runs only those.
+#   TFM       Target framework; the first of the project's by default.
 set -eo pipefail
 
-tests=artifacts/bin/CryptoBase.Tests/release/CryptoBase.Tests.dll
+project=test/CryptoBase.Tests
+tfm=${TFM:-$(dotnet msbuild $project -getProperty:TargetFrameworks | tr -d '' | cut -d';' -f1)}
+tests=artifacts/bin/CryptoBase.Tests/release_$tfm/CryptoBase.Tests.dll
 sde=("$SDE_PATH/sde64" -spr --)
 
 # Selects the tests in the comma-separated shards. Filters cannot negate, so rest lists every other namespace, the root one first.
@@ -64,12 +67,21 @@ run() {
 	case $1 in
 		'') "${runner[@]}" "$tests" --minimum-expected-tests 1 "${filter[@]}" ;;
 		tiered) DOTNET_TC_QuickJit=1 dotnet "$tests" --minimum-expected-tests 1 "${filter[@]}" ;;
-		debug) dotnet test --project test/CryptoBase.Tests -c Debug -p:RunAnalyzers=false --minimum-expected-tests 1 "${filter[@]}" ;;
+		debug) dotnet test --project $project -c Debug -f "$tfm" -p:RunAnalyzers=false --minimum-expected-tests 1 "${filter[@]}" ;;
 	esac
 }
 
 case $1 in
 	''|tiered|debug) ;;
+	build)
+		dotnet build $project -c Release -f "$tfm" -p:RunAnalyzers=false
+		exit
+		;;
+	publish)
+		# The trim analysis would warn of every IsEquivalentTo of TUnit, and of the reflection of the tests that run on the JIT alone.
+		dotnet publish $project -c Release -f "$tfm" --ucr -p:PublishAot=true -p:RunAnalyzers=false -p:SuppressTrimAnalysisWarnings=true -o artifacts/publish/aot
+		exit
+		;;
 	probe)
 		probe
 		echo "$missing"
