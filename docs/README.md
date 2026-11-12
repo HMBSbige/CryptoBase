@@ -18,3 +18,4 @@
 - [Stream ciphers](stream-ciphers.md)
 - [Block ciphers and modes](block-ciphers-and-modes.md)
 - [Stream and file helpers](io.md)
+- [Speed test](speed-test.md)

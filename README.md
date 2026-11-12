@@ -5,10 +5,13 @@ CryptoBase | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.svg?logo=nu
 CryptoBase.Abstractions | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.Abstractions.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.Abstractions/)
 CryptoBase.IO | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.IO.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.IO/)
 CryptoBase.X509 | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.X509.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.X509/)
+CryptoBase.SpeedTest | [![NuGet.org](https://img.shields.io/nuget/v/CryptoBase.SpeedTest.svg?logo=nuget)](https://www.nuget.org/packages/CryptoBase.SpeedTest/)
 
 High-performance, modern cryptography in pure C#
 
 See the [documentation](docs/README.md) for installation and usage guides.
+
+To measure the speed of the algorithms on your machine, run the [speed test](docs/speed-test.md): `dnx CryptoBase.SpeedTest`.
 
 ## Status
 

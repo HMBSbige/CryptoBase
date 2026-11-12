@@ -1,8 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="../../src/Package.props" />
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>cryptobase-speedtest</ToolCommandName>
+    <!-- The help is in English alone, rather than with the headings of System.CommandLine translated. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <Description>Measures the speed of the CryptoBase algorithms.</Description>
+    <PackageTags>$(PackageTags);benchmark;speedtest</PackageTags>
+    <PackageReadmeFile>speed-test.md</PackageReadmeFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Keeps the XML documentation of the referenced projects out of the tool. -->
+    <AllowedReferenceRelatedFileExtensions>.pdb</AllowedReferenceRelatedFileExtensions>
   </PropertyGroup>
+
+  <!-- The tool has its own guide for a readme, in place of the one of the libraries. -->
+  <ItemGroup>
+    <None Remove="../../README.md" />
+    <None Include="../../docs/speed-test.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="CryptoBase.Tests" />
