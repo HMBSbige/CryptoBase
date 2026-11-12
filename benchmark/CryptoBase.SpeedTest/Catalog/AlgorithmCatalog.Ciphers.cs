@@ -48,12 +48,14 @@ internal static partial class AlgorithmCatalog
 			Aead<GcmMode<AesCipher>>("aes-256-gcm", keySize: 32),
 			Aead<GcmMode<SM4Cipher>>("sm4-gcm", keySize: 16),
 			Aead<PlatformAesGcm>("platform-aes-128-gcm", keySize: 16),
+			Aead<PlatformAesGcm>("platform-aes-192-gcm", keySize: 24),
 			Aead<PlatformAesGcm>("platform-aes-256-gcm", keySize: 32),
 			Aead<CcmMode<AesCipher>>("aes-128-ccm", keySize: 16, CcmMaximumInputSize),
 			Aead<CcmMode<AesCipher>>("aes-192-ccm", keySize: 24, CcmMaximumInputSize),
 			Aead<CcmMode<AesCipher>>("aes-256-ccm", keySize: 32, CcmMaximumInputSize),
 			Aead<CcmMode<SM4Cipher>>("sm4-ccm", keySize: 16, CcmMaximumInputSize),
 			Aead<Ccm8Mode<AesCipher>>("aes-128-ccm8", keySize: 16, CcmMaximumInputSize),
+			Aead<Ccm8Mode<AesCipher>>("aes-192-ccm8", keySize: 24, CcmMaximumInputSize),
 			Aead<Ccm8Mode<AesCipher>>("aes-256-ccm8", keySize: 32, CcmMaximumInputSize),
 			Aead<ChaCha20Poly1305Cipher>("chacha20-ietf-poly1305", keySize: 32),
 			Aead<XChaCha20Poly1305Cipher>("xchacha20-ietf-poly1305", keySize: 32),
@@ -68,7 +70,8 @@ internal static partial class AlgorithmCatalog
 		return
 		[
 			DataUnit<XtsMode<AesCipher>>("aes-128-xts", keySize: 32, minimumInputSize: 16),
-			DataUnit<XtsMode<AesCipher>>("aes-256-xts", keySize: 64, minimumInputSize: 16)
+			DataUnit<XtsMode<AesCipher>>("aes-256-xts", keySize: 64, minimumInputSize: 16),
+			DataUnit<XtsMode<SM4Cipher>>("sm4-xts", keySize: 32, minimumInputSize: 16)
 		];
 	}
 

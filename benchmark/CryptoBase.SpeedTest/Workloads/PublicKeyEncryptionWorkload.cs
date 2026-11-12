@@ -167,43 +167,59 @@ internal sealed class SM9EncryptionWorkload : PublicKeyEncryptionWorkload
 /// <summary>
 /// HPKE in the base mode, one message per context: the ciphertext is the encapsulated key followed by the sealed message.
 /// </summary>
-internal sealed class HpkeWorkload<TKem> : PublicKeyEncryptionWorkload where TKem : class, IHpkeKem<TKem>
+internal class HpkeWorkload<TKem> : PublicKeyEncryptionWorkload where TKem : class, IHpkeKem<TKem>
 {
-	private readonly HpkeKdfId _kdf;
-	private readonly HpkeAeadId _aead;
 	private readonly TKem _recipient = TKem.GenerateKey();
-	private readonly TKem _sender;
+	private readonly TKem _recipientPublicKey;
 
 	public HpkeWorkload(HpkeKdfId kdf, HpkeAeadId aead, bool decrypt) : base(decrypt)
 	{
-		_kdf = kdf;
-		_aead = aead;
-
-		byte[] publicKey = new byte[TKem.EncapsulationKeyLength];
-		_recipient.ExportEncapsulationKey(publicKey);
-		_sender = TKem.ImportEncapsulationKey(publicKey);
+		Kdf = kdf;
+		Aead = aead;
+		_recipientPublicKey = PublicKeyOf(_recipient);
 		Initialize(TKem.CiphertextLength + MessageLength + aead.TagSize);
 	}
+
+	protected HpkeKdfId Kdf { get; }
+
+	protected HpkeAeadId Aead { get; }
 
 	public override void Dispose()
 	{
 		_recipient.Dispose();
-		_sender.Dispose();
+		_recipientPublicKey.Dispose();
 	}
 
-	protected override int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext)
+	protected static TKem PublicKeyOf(TKem key)
+	{
+		byte[] publicKey = new byte[TKem.EncapsulationKeyLength];
+		key.ExportEncapsulationKey(publicKey);
+		return TKem.ImportEncapsulationKey(publicKey);
+	}
+
+	protected virtual HpkeSenderContext CreateSenderContext(TKem recipientPublicKey, Span<byte> encapsulatedKey)
+	{
+		return HpkeSenderContext.Create(recipientPublicKey, Kdf, Aead, encapsulatedKey);
+	}
+
+	protected virtual bool TryCreateRecipientContext(TKem recipient, ReadOnlySpan<byte> encapsulatedKey, [NotNullWhen(true)] out HpkeRecipientContext? context)
+	{
+		return HpkeRecipientContext.TryCreate(recipient, Kdf, Aead, encapsulatedKey, default, out context);
+	}
+
+	protected sealed override int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext)
 	{
 		int encapsulatedKeyLength = TKem.CiphertextLength;
-		using HpkeSenderContext context = HpkeSenderContext.Create(_sender, _kdf, _aead, ciphertext.Slice(0, encapsulatedKeyLength));
+		using HpkeSenderContext context = CreateSenderContext(_recipientPublicKey, ciphertext.Slice(0, encapsulatedKeyLength));
 		return encapsulatedKeyLength + context.Seal(plaintext, ciphertext.Slice(encapsulatedKeyLength));
 	}
 
-	protected override bool TryDecrypt(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, out int bytesWritten)
+	protected sealed override bool TryDecrypt(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, out int bytesWritten)
 	{
 		int encapsulatedKeyLength = TKem.CiphertextLength;
 		bytesWritten = 0;
 
-		if (!HpkeRecipientContext.TryCreate(_recipient, _kdf, _aead, ciphertext.Slice(0, encapsulatedKeyLength), default, out HpkeRecipientContext? context))
+		if (!TryCreateRecipientContext(_recipient, ciphertext.Slice(0, encapsulatedKeyLength), out HpkeRecipientContext? context))
 		{
 			return false;
 		}
@@ -211,7 +227,7 @@ internal sealed class HpkeWorkload<TKem> : PublicKeyEncryptionWorkload where TKe
 		using (context)
 		{
 			ReadOnlySpan<byte> sealedMessage = ciphertext.Slice(encapsulatedKeyLength);
-			int length = sealedMessage.Length - _aead.TagSize;
+			int length = sealedMessage.Length - Aead.TagSize;
 
 			if (!context.TryOpen(sealedMessage, plaintext.Slice(0, length)))
 			{
@@ -221,5 +237,37 @@ internal sealed class HpkeWorkload<TKem> : PublicKeyEncryptionWorkload where TKe
 			bytesWritten = length;
 			return true;
 		}
+	}
+}
+
+/// <summary>
+/// HPKE in the auth mode, which authenticates the sender with its key pair, one message per context.
+/// </summary>
+internal sealed class HpkeAuthWorkload<TKem> : HpkeWorkload<TKem> where TKem : class, IHpkeAuthKem<TKem>
+{
+	// An initializer, so that it is set before the base constructor encrypts the first message.
+	private readonly TKem _sender = TKem.GenerateKey();
+	private readonly TKem _senderPublicKey;
+
+	public HpkeAuthWorkload(HpkeKdfId kdf, HpkeAeadId aead, bool decrypt) : base(kdf, aead, decrypt)
+	{
+		_senderPublicKey = PublicKeyOf(_sender);
+	}
+
+	public override void Dispose()
+	{
+		base.Dispose();
+		_sender.Dispose();
+		_senderPublicKey.Dispose();
+	}
+
+	protected override HpkeSenderContext CreateSenderContext(TKem recipientPublicKey, Span<byte> encapsulatedKey)
+	{
+		return HpkeSenderContext.CreateAuthenticated(recipientPublicKey, _sender, Kdf, Aead, encapsulatedKey);
+	}
+
+	protected override bool TryCreateRecipientContext(TKem recipient, ReadOnlySpan<byte> encapsulatedKey, [NotNullWhen(true)] out HpkeRecipientContext? context)
+	{
+		return HpkeRecipientContext.TryCreateAuthenticated(recipient, _senderPublicKey, Kdf, Aead, encapsulatedKey, default, out context);
 	}
 }

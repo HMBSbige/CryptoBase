@@ -54,7 +54,12 @@ internal static partial class AlgorithmCatalog
 			Hpke<DhKemP256>("hpke-p256", HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm),
 			Hpke<DhKemP384>("hpke-p384", HpkeKdfId.HkdfSha384, HpkeAeadId.Aes256Gcm),
 			Hpke<DhKemP521>("hpke-p521", HpkeKdfId.HkdfSha512, HpkeAeadId.Aes256Gcm),
-			Hpke<DhKemX448>("hpke-x448", HpkeKdfId.HkdfSha512, HpkeAeadId.Aes256Gcm)
+			Hpke<DhKemX448>("hpke-x448", HpkeKdfId.HkdfSha512, HpkeAeadId.Aes256Gcm),
+			HpkeAuth<DhKemX25519>("hpke-x25519-auth", HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm),
+			HpkeAuth<DhKemP256>("hpke-p256-auth", HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm),
+			HpkeAuth<DhKemP384>("hpke-p384-auth", HpkeKdfId.HkdfSha384, HpkeAeadId.Aes256Gcm),
+			HpkeAuth<DhKemP521>("hpke-p521-auth", HpkeKdfId.HkdfSha512, HpkeAeadId.Aes256Gcm),
+			HpkeAuth<DhKemX448>("hpke-x448-auth", HpkeKdfId.HkdfSha512, HpkeAeadId.Aes256Gcm)
 		];
 	}
 
@@ -117,6 +122,19 @@ internal static partial class AlgorithmCatalog
 	/// </summary>
 	private static AlgorithmEntry Hpke<TKem>(string name, HpkeKdfId kdf, HpkeAeadId aead) where TKem : class, IHpkeKem<TKem>
 	{
+		return Hpke(name, typeof(TKem), "base mode", kdf, aead, decrypt => new HpkeWorkload<TKem>(kdf, aead, decrypt));
+	}
+
+	/// <summary>
+	/// Creates an entry like <see cref="Hpke{TKem}" /> in the auth mode, which authenticates the sender with its key pair.
+	/// </summary>
+	private static AlgorithmEntry HpkeAuth<TKem>(string name, HpkeKdfId kdf, HpkeAeadId aead) where TKem : class, IHpkeAuthKem<TKem>
+	{
+		return Hpke(name, typeof(TKem), "auth mode", kdf, aead, decrypt => new HpkeAuthWorkload<TKem>(kdf, aead, decrypt));
+	}
+
+	private static AlgorithmEntry Hpke(string name, Type kemType, string mode, HpkeKdfId kdf, HpkeAeadId aead, Func<bool, Workload> createWorkload)
+	{
 		string kdfName = kdf switch
 		{
 			HpkeKdfId.HkdfSha256 => "HKDF-SHA256",
@@ -124,6 +142,7 @@ internal static partial class AlgorithmCatalog
 			HpkeKdfId.HkdfSha512 => "HKDF-SHA512",
 			_ => throw new ArgumentOutOfRangeException(nameof(kdf), kdf, null)
 		};
+
 		string aeadName = aead switch
 		{
 			HpkeAeadId.Aes128Gcm => "AES-128-GCM",
@@ -136,9 +155,9 @@ internal static partial class AlgorithmCatalog
 		(
 			name,
 			typeof(HpkeSenderContext),
-			[typeof(HpkeRecipientContext), typeof(HpkeAlgorithmExtensions), typeof(TKem)],
-			decrypt => new HpkeWorkload<TKem>(kdf, aead, decrypt),
-			$"base mode, {kdfName}, {aeadName}; empty info and associated data; 32-byte message"
+			[typeof(HpkeRecipientContext), typeof(HpkeAlgorithmExtensions), kemType],
+			createWorkload,
+			$"{mode}, {kdfName}, {aeadName}; empty info and associated data; 32-byte message"
 		);
 	}
 }
