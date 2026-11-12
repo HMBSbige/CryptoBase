@@ -40,11 +40,12 @@ jobs:
       - name: Build
         run: dotnet build -c Release
 
-      # Checks each workload of the speed test once, without timing; slow algorithms are left out.
-      - name: Check speed test workloads
+      # Installs the speed test as the tool that a release publishes, and checks each of its workloads once, without timing; slow algorithms are left out.
+      - name: Check speed test tool
         run: |
-          tfm=$(dotnet msbuild benchmark/CryptoBase.SpeedTest -getProperty:TargetFrameworks | cut -d';' -f1)
-          dotnet artifacts/bin/CryptoBase.SpeedTest/release_$tfm/CryptoBase.SpeedTest.dll --test
+          dotnet pack benchmark/CryptoBase.SpeedTest --no-build -o artifacts/tool/package
+          dotnet tool install CryptoBase.SpeedTest --tool-path artifacts/tool --source artifacts/tool/package
+          artifacts/tool/cryptobase-speedtest --test
 
       - name: Check .NET format
         run: dotnet format --no-restore -v diag --verify-no-changes
