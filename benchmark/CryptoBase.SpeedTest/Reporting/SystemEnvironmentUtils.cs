@@ -67,6 +67,9 @@ internal static class SystemEnvironmentUtils
 		Append(ref handler, "X86.Avx10v2", Avx10v2.IsSupported);
 		Append(ref handler, "X86.Avx10v2.V512", Avx10v2.V512.IsSupported);
 		Append(ref handler, "X86.Avx2", Avx2.IsSupported);
+#if NET11_0_OR_GREATER
+		Append(ref handler, "X86.Avx512Bmm", Avx512Bmm.IsSupported);
+#endif
 		Append(ref handler, "X86.Avx512BW", Avx512BW.IsSupported);
 		Append(ref handler, "X86.Avx512BW.VL", Avx512BW.VL.IsSupported);
 		Append(ref handler, "X86.Avx512CD", Avx512CD.IsSupported);
@@ -80,6 +83,9 @@ internal static class SystemEnvironmentUtils
 		Append(ref handler, "X86.Avx512Vbmi2", Avx512Vbmi2.IsSupported);
 		Append(ref handler, "X86.Avx512Vbmi2.VL", Avx512Vbmi2.VL.IsSupported);
 		Append(ref handler, "X86.AvxVnni", AvxVnni.IsSupported);
+#if NET11_0_OR_GREATER
+		Append(ref handler, "X86.AvxVnni.V512", AvxVnni.V512.IsSupported);
+#endif
 		Append(ref handler, "X86.AvxVnniInt16", AvxVnniInt16.IsSupported);
 		Append(ref handler, "X86.AvxVnniInt16.V512", AvxVnniInt16.V512.IsSupported);
 		Append(ref handler, "X86.AvxVnniInt8", AvxVnniInt8.IsSupported);
@@ -119,6 +125,7 @@ internal static class SystemEnvironmentUtils
 		Append(ref handler, "Arm.Sha256", Sha256.IsSupported);
 #if NET11_0_OR_GREATER
 		Append(ref handler, "Arm.Sha3", Sha3.IsSupported);
+		Append(ref handler, "Arm.Sm4", Sm4.IsSupported);
 #endif
 	}
 
