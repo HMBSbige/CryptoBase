@@ -7,6 +7,8 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <!-- Background GC can overcount unused allocation-context space, which fails the tests that assert no allocation now and then. Remove once https://github.com/dotnet/runtime/pull/134855 ships. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <!-- See the reference to the speed test. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
   </PropertyGroup>
 
   <ItemGroup Condition="$(RuntimeIdentifier.EndsWith('-x86')) Or $(RuntimeIdentifier.EndsWith('-arm'))">
@@ -18,6 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The catalog test reads the speed test's catalog. Building the speed test without the publish properties of the tests keeps a publish of the tests from rebuilding it in place as a self-contained or native executable;
+         the tests only load its assembly, so a self-contained publish of them can reference it as it is. -->
+    <ProjectReference Include="..\..\benchmark\CryptoBase.SpeedTest\CryptoBase.SpeedTest.csproj" GlobalPropertiesToRemove="RuntimeIdentifier;UseCurrentRuntimeIdentifier;SelfContained;PublishAot;_IsPublishing" />
     <ProjectReference Include="..\..\src\CryptoBase\CryptoBase.csproj" />
     <ProjectReference Include="..\..\src\CryptoBase.IO\CryptoBase.IO.csproj" />
     <ProjectReference Include="..\..\src\CryptoBase.X509\CryptoBase.X509.csproj" />
