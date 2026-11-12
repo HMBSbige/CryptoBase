@@ -340,6 +340,15 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		}
 	}
 
+#if NET11_0_OR_GREATER
+	[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+	private struct BackendState
+	{
+		public AesCipherX86 X86;
+		public AesCipherArm Arm;
+		public AesCipherVpaes Vpaes;
+	}
+#else
 	[StructLayout(LayoutKind.Explicit)]
 	private struct BackendState
 	{
@@ -352,6 +361,7 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		[FieldOffset(0)]
 		public AesCipherVpaes Vpaes;
 	}
+#endif
 
 	private sealed class BitsliceState
 	{
