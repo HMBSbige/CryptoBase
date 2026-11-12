@@ -90,6 +90,14 @@ public sealed class SM4Cipher : IBlockCipher<SM4Cipher>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ProcessBlocks(ref uint rk, ReadOnlySpan<byte> source, Span<byte> destination, bool singleBlock)
 	{
+#if NET11_0_OR_GREATER
+		if (SM4Arm.IsSupported)
+		{
+			SM4BlockDriver<SM4Arm>.ProcessBlocks(ref rk, source, destination, singleBlock);
+			return;
+		}
+#endif
+
 		if (SM4Neon.IsSupported)
 		{
 			SM4BlockDriver<SM4Neon>.ProcessBlocks(ref rk, source, destination, singleBlock);

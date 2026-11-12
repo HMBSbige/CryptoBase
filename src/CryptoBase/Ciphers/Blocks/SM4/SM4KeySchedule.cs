@@ -2,6 +2,11 @@ namespace CryptoBase.Ciphers.Blocks.SM4;
 
 internal static class SM4KeySchedule
 {
+	private const uint FK0 = 0xa3b1bac6;
+	private const uint FK1 = 0x56aa3350;
+	private const uint FK2 = 0x677d9197;
+	private const uint FK3 = 0xb27022dc;
+
 	private static ReadOnlySpan<uint> CK =>
 	[
 		0x00070e15, 0x1c232a31, 0x383f464d, 0x545b6269,
@@ -23,10 +28,18 @@ internal static class SM4KeySchedule
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void InitRoundKeys(ref byte key, ref uint rk)
 	{
-		uint k0 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref key)) ^ 0xa3b1bac6;
-		uint k1 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 4))) ^ 0x56aa3350;
-		uint k2 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 8))) ^ 0x677d9197;
-		uint k3 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 12))) ^ 0xb27022dc;
+#if NET11_0_OR_GREATER
+		if (SM4Arm.IsSupported)
+		{
+			InitRoundKeysArm(ref key, ref rk);
+			return;
+		}
+#endif
+
+		uint k0 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref key)) ^ FK0;
+		uint k1 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 4))) ^ FK1;
+		uint k2 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 8))) ^ FK2;
+		uint k3 = BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref key, 12))) ^ FK3;
 
 		if (SM4Neon.IsSupported)
 		{
@@ -51,6 +64,22 @@ internal static class SM4KeySchedule
 			Unsafe.Add(ref rk, i + 3) = k3;
 		}
 	}
+
+#if NET11_0_OR_GREATER
+	// SM4EKEY takes the previous four round keys, K0 to K3 at first, and the next four CK words, and returns the next four round keys, all in element order.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void InitRoundKeysArm(ref byte key, ref uint rk)
+	{
+		Vector128<uint> k = Vector128.LoadUnsafe(ref key).AsUInt32().ReverseEndianness32() ^ Vector128.Create(FK0, FK1, FK2, FK3);
+		ref uint ck = ref MemoryMarshal.GetReference(CK);
+
+		for (nuint i = 0; i < 8; ++i)
+		{
+			k = Sm4.KeyUpdate(k, Vector128.LoadUnsafe(ref ck, i * 4));
+			k.StoreUnsafe(ref rk, i * 4);
+		}
+	}
+#endif
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static unsafe void InitRoundKeysNeon(uint k0, uint k1, uint k2, uint k3, ref uint rk)
