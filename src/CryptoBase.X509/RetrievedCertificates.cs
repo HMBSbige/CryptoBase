@@ -13,12 +13,12 @@ internal static class RetrievedCertificates
 	{
 		try
 		{
-			AsnReader message = new(data, AsnEncodingRules.BER);
-			AsnReader outer = message.ReadSequence();
+			ValueAsnReader message = new(data.Span, AsnEncodingRules.BER);
+			ValueAsnReader outer = message.ReadSequence();
 			message.ThrowIfNotEmpty();
 
 			// A Certificate starts with its TBSCertificate, and a ContentInfo with the type of its content.
-			return outer.PeekTag() == Asn1Tag.ObjectIdentifier ? ReadCertsOnly(outer, maxElements) : [Certificate.Decode(data.Span)];
+			return outer.PeekTag() == Asn1Tag.ObjectIdentifier ? ReadCertsOnly(ref outer, maxElements) : [Certificate.Decode(data.Span)];
 		}
 		catch (Exception e) when (e is AsnContentException or ArgumentException)
 		{
@@ -27,16 +27,16 @@ internal static class RetrievedCertificates
 	}
 
 	// ContentInfo ::= SEQUENCE { contentType ContentType, content [0] EXPLICIT ANY DEFINED BY contentType }, and SignedData ::= SEQUENCE { version CMSVersion, digestAlgorithms DigestAlgorithmIdentifiers, encapContentInfo EncapsulatedContentInfo, certificates [0] IMPLICIT CertificateSet OPTIONAL, ... } (RFC 5652, Secs. 3 and 5.1). The fields after certificates are not read: a certs-only message signs nothing, and the path checks each certificate.
-	private static Certificate[]? ReadCertsOnly(AsnReader contentInfo, int maxElements)
+	private static Certificate[]? ReadCertsOnly(ref ValueAsnReader contentInfo, int maxElements)
 	{
 		if (contentInfo.ReadObjectIdentifier() is not SignedDataOid)
 		{
 			return null;
 		}
 
-		AsnReader content = contentInfo.ReadSequence(ContentTag);
+		ValueAsnReader content = contentInfo.ReadSequence(ContentTag);
 		contentInfo.ThrowIfNotEmpty();
-		AsnReader signedData = content.ReadSequence();
+		ValueAsnReader signedData = content.ReadSequence();
 		content.ThrowIfNotEmpty();
 		signedData.ReadEncodedValue();
 		signedData.ReadEncodedValue();
@@ -47,7 +47,7 @@ internal static class RetrievedCertificates
 			return null;
 		}
 
-		AsnReader elements = signedData.ReadSetOf(CertificatesTag);
+		ValueAsnReader elements = signedData.ReadSetOf(CertificatesTag);
 		List<Certificate> certificates = [];
 
 		// CertificateChoices has other alternatives, with context-specific tags (RFC 5652, Sec. 10.2.2). Every element counts towards the limit, as each that fails to decode costs an exception.
@@ -59,7 +59,7 @@ internal static class RetrievedCertificates
 			}
 
 			Asn1Tag tag = elements.PeekTag();
-			ReadOnlyMemory<byte> element = elements.ReadEncodedValue();
+			ReadOnlySpan<byte> element = elements.ReadEncodedValue();
 
 			if (tag != Asn1Tag.Sequence)
 			{
@@ -68,7 +68,7 @@ internal static class RetrievedCertificates
 
 			try
 			{
-				certificates.Add(Certificate.Decode(element.Span));
+				certificates.Add(Certificate.Decode(element));
 			}
 			catch (ArgumentException)
 			{

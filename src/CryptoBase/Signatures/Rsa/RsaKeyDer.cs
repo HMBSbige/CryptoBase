@@ -23,7 +23,7 @@ internal static class RsaKeyDer
 	{
 		try
 		{
-			DerSpanReader reader = new(algorithmIdentifier);
+			ValueAsnReader reader = new(algorithmIdentifier, AsnEncodingRules.DER);
 			return reader.ReadSequence().ReadObjectIdentifier() is RsassaPssOid;
 		}
 		catch (AsnContentException)
@@ -37,8 +37,8 @@ internal static class RsaKeyDer
 	{
 		try
 		{
-			DerSpanReader reader = new(source);
-			DerSpanReader contents = reader.ReadSequence();
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
 			reader.ThrowIfNotEmpty();
 
 			if (privateKey)
@@ -68,8 +68,8 @@ internal static class RsaKeyDer
 
 		try
 		{
-			DerSpanReader reader = new(algorithmIdentifier);
-			DerSpanReader contents = reader.ReadSequence();
+			ValueAsnReader reader = new(algorithmIdentifier, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
 			reader.ThrowIfNotEmpty();
 
 			if (contents.ReadObjectIdentifier() is not RsassaPssOid)
@@ -102,8 +102,8 @@ internal static class RsaKeyDer
 
 		try
 		{
-			DerSpanReader reader = new(source);
-			DerSpanReader sequence = reader.ReadSequence();
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader sequence = reader.ReadSequence();
 			reader.ThrowIfNotEmpty();
 			modulus = sequence.ReadUnsignedInteger();
 			exponent = sequence.ReadUnsignedInteger();
@@ -125,8 +125,8 @@ internal static class RsaKeyDer
 
 		try
 		{
-			DerSpanReader reader = new(source);
-			DerSpanReader sequence = reader.ReadSequence();
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader sequence = reader.ReadSequence();
 			reader.ThrowIfNotEmpty();
 
 			int version = sequence.ReadInt32();

@@ -224,8 +224,8 @@ public sealed class PlatformEcdsaKey : ISignatureKey
 	{
 		try
 		{
-			DerSpanReader reader = new(signature);
-			DerSpanReader scalars = reader.ReadSequence();
+			ValueAsnReader reader = new(signature, AsnEncodingRules.DER);
+			ValueAsnReader scalars = reader.ReadSequence();
 			return !reader.HasData && FitsField(scalars.ReadUnsignedInteger()) && FitsField(scalars.ReadUnsignedInteger()) && !scalars.HasData;
 		}
 		catch (AsnContentException)

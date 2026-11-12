@@ -419,7 +419,7 @@ public sealed class CertificateRevocationList
 			}
 			else
 			{
-				if (!(others ??= [with(StringComparer.Ordinal)]).Add(AsnDecoder.ReadObjectIdentifier(oid, AsnEncodingRules.DER, out _)))
+				if (!(others ??= [with(StringComparer.Ordinal)]).Add(new ValueAsnReader(oid, AsnEncodingRules.DER).ReadObjectIdentifier()))
 				{
 					throw new AsnContentException();
 				}
@@ -480,9 +480,7 @@ public sealed class CertificateRevocationList
 
 	private ReadOnlySpan<byte> SerialNumberAt(int offset)
 	{
-		ReadOnlySpan<byte> source = _entries.Span.Slice(offset);
-		AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int contentsOffset, out int contentsLength, out _);
-		return AsnDecoder.ReadIntegerBytes(source.Slice(contentsOffset, contentsLength), AsnEncodingRules.DER, out _);
+		return new ValueAsnReader(_entries.Span.Slice(offset), AsnEncodingRules.DER).ReadSequence().ReadIntegerBytes();
 	}
 
 	private RevokedCertificate ReadEntry(int offset)

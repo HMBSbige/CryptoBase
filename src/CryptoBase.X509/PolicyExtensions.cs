@@ -92,8 +92,7 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 				return false;
 			}
 
-			AsnDecoder.ReadEncodedValue(element, AsnEncodingRules.DER, out int offset, out int length, out _);
-			return Ascii.IsValid(element.Slice(offset, length));
+			return Ascii.IsValid(new ValueAsnReader(element, AsnEncodingRules.DER).PeekContentBytes());
 		}
 
 		if (!identifier.SequenceEqual(UserNoticeQualifier))
@@ -152,7 +151,7 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 			_ => throw new AsnContentException("A DisplayText is not one of its string types.")
 		};
 
-		AsnDecoder.ReadCharacterString(element, AsnEncodingRules.DER, type, out _);
+		new ValueAsnReader(element, AsnEncodingRules.DER).ReadCharacterString(type);
 	}
 
 	// Comparing directly costs less than a set for the few policies that an extension has; the set keeps the work linear for a long list.

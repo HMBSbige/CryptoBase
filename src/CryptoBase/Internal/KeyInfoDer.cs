@@ -112,19 +112,14 @@ internal static class KeyInfoDer
 
 		try
 		{
-			AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
-			ReadOnlySpan<byte> contents = source.Slice(offset, length);
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
 
-			if (consumed != source.Length || !contents.StartsWith(algorithmIdentifier))
-			{
-				return false;
-			}
-
-			contents = contents.Slice(algorithmIdentifier.Length);
-
-			return AsnDecoder.TryReadPrimitiveBitString(contents, AsnEncodingRules.DER, out int unusedBits, out publicKey, out consumed)
+			return !reader.HasData
+				&& contents.ReadEncodedValue().SequenceEqual(algorithmIdentifier)
+				&& contents.TryReadPrimitiveBitString(out int unusedBits, out publicKey)
 				&& unusedBits is 0
-				&& consumed == contents.Length;
+				&& !contents.HasData;
 		}
 		catch (AsnContentException)
 		{
@@ -140,52 +135,31 @@ internal static class KeyInfoDer
 
 		try
 		{
-			AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
-			ReadOnlySpan<byte> contents = source.Slice(offset, length);
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
 
-			if (consumed != source.Length || !AsnDecoder.TryReadInt32(contents, AsnEncodingRules.DER, out int version, out consumed) || version is not (0 or 1))
+			if (reader.HasData || !contents.TryReadInt32(out int version) || version is not (0 or 1))
 			{
 				return false;
 			}
 
-			contents = contents.Slice(consumed);
-
-			if (!contents.StartsWith(algorithmIdentifier))
+			if (!contents.ReadEncodedValue().SequenceEqual(algorithmIdentifier) || !contents.TryReadPrimitiveOctetString(out privateKey))
 			{
 				return false;
 			}
 
-			contents = contents.Slice(algorithmIdentifier.Length);
-
-			if (!AsnDecoder.TryReadPrimitiveOctetString(contents, AsnEncodingRules.DER, out privateKey, out consumed))
+			if (contents.PeekTagIs(AttributesTag))
 			{
-				return false;
-			}
-
-			contents = contents.Slice(consumed);
-
-			if (!contents.IsEmpty && Asn1Tag.Decode(contents, out _) == AttributesTag)
-			{
-				if (!TrySkipAttributes(contents, out consumed))
-				{
-					return false;
-				}
-
-				contents = contents.Slice(consumed);
+				SkipAttributes(ref contents);
 			}
 
 			// Empty means absent, so an empty publicKey is invalid.
-			if (version is 1 && !contents.IsEmpty)
+			if (version is 1 && contents.HasData && (!contents.TryReadPrimitiveBitString(out int unusedBits, out publicKey, PublicKeyTag) || unusedBits is not 0 || publicKey.IsEmpty))
 			{
-				if (!AsnDecoder.TryReadPrimitiveBitString(contents, AsnEncodingRules.DER, out int unusedBits, out publicKey, out consumed, PublicKeyTag) || unusedBits is not 0 || publicKey.IsEmpty)
-				{
-					return false;
-				}
-
-				contents = contents.Slice(consumed);
+				return false;
 			}
 
-			return contents.IsEmpty;
+			return !contents.HasData;
 		}
 		catch (AsnContentException)
 		{
@@ -194,34 +168,21 @@ internal static class KeyInfoDer
 	}
 
 	// SET OF SEQUENCE { OBJECT IDENTIFIER, SET OF ANY } in DER; the values, of unknown types, are skipped whole.
-	private static bool TrySkipAttributes(ReadOnlySpan<byte> source, out int consumed)
+	private static void SkipAttributes(ref ValueAsnReader reader)
 	{
-		AsnDecoder.ReadSetOf(source, AsnEncodingRules.DER, out int offset, out int length, out consumed, expectedTag: AttributesTag);
-		ReadOnlySpan<byte> attributes = source.Slice(offset, length);
+		ValueAsnReader attributes = reader.ReadSetOf(AttributesTag);
 
-		while (!attributes.IsEmpty)
+		while (attributes.HasData)
 		{
-			AsnDecoder.ReadSequence(attributes, AsnEncodingRules.DER, out offset, out length, out int attributeLength);
-			ReadOnlySpan<byte> attribute = attributes.Slice(offset, length);
-			AsnDecoder.ReadObjectIdentifier(attribute, AsnEncodingRules.DER, out int typeLength);
-			AsnDecoder.ReadSetOf(attribute.Slice(typeLength), AsnEncodingRules.DER, out offset, out length, out int valuesLength);
+			ValueAsnReader attribute = attributes.ReadSequence();
+			attribute.ReadObjectIdentifier();
+			ValueAsnReader values = attribute.ReadSetOf();
+			attribute.ThrowIfNotEmpty();
 
-			if (typeLength + valuesLength != attribute.Length)
+			while (values.HasData)
 			{
-				return false;
+				values.ReadEncodedValue();
 			}
-
-			ReadOnlySpan<byte> values = attribute.Slice(typeLength + offset, length);
-
-			while (!values.IsEmpty)
-			{
-				AsnDecoder.ReadEncodedValue(values, AsnEncodingRules.DER, out _, out _, out int valueLength);
-				values = values.Slice(valueLength);
-			}
-
-			attributes = attributes.Slice(attributeLength);
 		}
-
-		return true;
 	}
 }

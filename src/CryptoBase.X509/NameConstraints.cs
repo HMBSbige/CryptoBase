@@ -615,8 +615,9 @@ internal sealed class ConstrainedNames
 
 				try
 				{
-					string address = AsnDecoder.ReadCharacterString(value, AsnEncodingRules.DER, UniversalTagNumber.IA5String, out int consumed);
-					mailboxes.Add(consumed == value.Length ? Mailbox.Parse(address) : null);
+					ValueAsnReader text = new(value, AsnEncodingRules.DER);
+					string address = text.ReadCharacterString(UniversalTagNumber.IA5String);
+					mailboxes.Add(text.HasData ? null : Mailbox.Parse(address));
 				}
 				catch (AsnContentException)
 				{

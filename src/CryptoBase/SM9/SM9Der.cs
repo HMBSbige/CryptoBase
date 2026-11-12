@@ -85,36 +85,25 @@ internal static class SM9Der
 
 		try
 		{
-			AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
 
-			if (consumed != source.Length)
+			if (reader.HasData || !contents.TryReadInt32(out int enType) || enType is not 0)
 			{
 				return false;
 			}
 
-			ReadOnlySpan<byte> contents = source.Slice(offset, length);
-
-			if (!AsnDecoder.TryReadInt32(contents, AsnEncodingRules.DER, out int enType, out consumed) || enType is not 0)
+			if (!contents.TryReadPrimitiveBitString(out int unusedBitCount, out c1) || unusedBitCount is not 0 || c1.Length is not SM9G1.EncodedLength)
 			{
 				return false;
 			}
 
-			contents = contents.Slice(consumed);
-
-			if (!AsnDecoder.TryReadPrimitiveBitString(contents, AsnEncodingRules.DER, out int unusedBitCount, out c1, out consumed) || unusedBitCount is not 0 || c1.Length is not SM9G1.EncodedLength)
+			if (!contents.TryReadPrimitiveOctetString(out c3) || c3.Length is not HashLength)
 			{
 				return false;
 			}
 
-			contents = contents.Slice(consumed);
-
-			if (!AsnDecoder.TryReadPrimitiveOctetString(contents, AsnEncodingRules.DER, out c3, out consumed) || c3.Length is not HashLength)
-			{
-				return false;
-			}
-
-			contents = contents.Slice(consumed);
-			return AsnDecoder.TryReadPrimitiveOctetString(contents, AsnEncodingRules.DER, out c2, out consumed) && consumed == contents.Length;
+			return contents.TryReadPrimitiveOctetString(out c2) && !contents.HasData;
 		}
 		catch (AsnContentException)
 		{

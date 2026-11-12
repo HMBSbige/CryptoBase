@@ -544,14 +544,14 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	{
 		try
 		{
-			Asn1Tag tag = Asn1Tag.Decode(source, out _);
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			Asn1Tag tag = reader.PeekTag();
 			ReadOnlySpan<byte> seed;
 			ReadOnlySpan<byte> expandedKey;
-			int consumed;
 
 			if (tag == SeedTag)
 			{
-				if (!TryReadOctetString(source, SeedTag, SeedLength, out seed, out consumed) || consumed != source.Length)
+				if (!TryReadOctetString(ref reader, SeedTag, SeedLength, out seed) || reader.HasData)
 				{
 					return false;
 				}
@@ -562,8 +562,8 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 
 			if (tag == Asn1Tag.PrimitiveOctetString)
 			{
-				return TryReadOctetString(source, Asn1Tag.PrimitiveOctetString, PrivateKeyLength, out expandedKey, out consumed)
-					&& consumed == source.Length
+				return TryReadOctetString(ref reader, Asn1Tag.PrimitiveOctetString, PrivateKeyLength, out expandedKey)
+					&& !reader.HasData
 					&& ImportPrivateKey<MLDsaKernelDispatch>(expandedKey);
 			}
 
@@ -572,17 +572,14 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 				return false;
 			}
 
-			AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int offset, out int length, out consumed);
-			ReadOnlySpan<byte> contents = source.Slice(offset, length);
+			ValueAsnReader contents = reader.ReadSequence();
 
-			if (consumed != source.Length || !TryReadOctetString(contents, Asn1Tag.PrimitiveOctetString, SeedLength, out seed, out consumed))
+			if (reader.HasData || !TryReadOctetString(ref contents, Asn1Tag.PrimitiveOctetString, SeedLength, out seed))
 			{
 				return false;
 			}
 
-			contents = contents.Slice(consumed);
-
-			if (!TryReadOctetString(contents, Asn1Tag.PrimitiveOctetString, PrivateKeyLength, out expandedKey, out consumed) || consumed != contents.Length)
+			if (!TryReadOctetString(ref contents, Asn1Tag.PrimitiveOctetString, PrivateKeyLength, out expandedKey) || contents.HasData)
 			{
 				return false;
 			}
@@ -596,9 +593,9 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		}
 	}
 
-	private static bool TryReadOctetString(ReadOnlySpan<byte> source, Asn1Tag tag, int length, out ReadOnlySpan<byte> value, out int consumed)
+	private static bool TryReadOctetString(scoped ref ValueAsnReader reader, Asn1Tag tag, int length, out ReadOnlySpan<byte> value)
 	{
-		return AsnDecoder.TryReadPrimitiveOctetString(source, AsnEncodingRules.DER, out value, out consumed, tag) && value.Length == length;
+		return reader.TryReadPrimitiveOctetString(out value, tag) && value.Length == length;
 	}
 
 	// BitPack(s, η, η) of s1 then s2 (Algorithm 24).

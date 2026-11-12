@@ -269,52 +269,40 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 
 		try
 		{
-			AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
-			ReadOnlySpan<byte> contents = source.Slice(offset, length);
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
 
-			if (consumed != source.Length || !AsnDecoder.TryReadInt32(contents, AsnEncodingRules.DER, out int version, out consumed) || version is not 1)
+			if (reader.HasData || !contents.TryReadInt32(out int version) || version is not 1)
 			{
 				return false;
 			}
 
-			contents = contents.Slice(consumed);
-
-			if (!AsnDecoder.TryReadPrimitiveOctetString(contents, AsnEncodingRules.DER, out ReadOnlySpan<byte> privateKey, out consumed) || privateKey.Length != PrivateKeyLength)
+			if (!contents.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> privateKey) || privateKey.Length != PrivateKeyLength)
 			{
 				return false;
 			}
 
-			contents = contents.Slice(consumed);
-
-			if (!contents.IsEmpty && Asn1Tag.Decode(contents, out _) == ParametersTag)
+			if (contents.PeekTagIs(ParametersTag))
 			{
-				AsnDecoder.ReadSequence(contents, AsnEncodingRules.DER, out offset, out length, out consumed, ParametersTag);
-
-				if (!contents.Slice(offset, length).SequenceEqual(curve))
+				if (!contents.PeekContentBytes().SequenceEqual(curve))
 				{
 					return false;
 				}
 
-				contents = contents.Slice(consumed);
+				contents.ReadEncodedValue();
 			}
 
-			if (!contents.IsEmpty)
+			if (contents.HasData)
 			{
-				AsnDecoder.ReadSequence(contents, AsnEncodingRules.DER, out offset, out length, out consumed, PublicKeyTag);
-				ReadOnlySpan<byte> bitString = contents.Slice(offset, length);
+				ValueAsnReader bitString = contents.ReadSequence(PublicKeyTag);
 
-				if (!AsnDecoder.TryReadPrimitiveBitString(bitString, AsnEncodingRules.DER, out int unusedBits, out publicKey, out int bitStringLength)
-					|| unusedBits is not 0
-					|| bitStringLength != bitString.Length
-					|| publicKey.IsEmpty)
+				if (!bitString.TryReadPrimitiveBitString(out int unusedBits, out publicKey) || unusedBits is not 0 || bitString.HasData || publicKey.IsEmpty)
 				{
 					return false;
 				}
-
-				contents = contents.Slice(consumed);
 			}
 
-			if (!contents.IsEmpty || !_key.TryImportPrivateKey(privateKey))
+			if (contents.HasData || !_key.TryImportPrivateKey(privateKey))
 			{
 				return false;
 			}

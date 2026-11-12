@@ -11,7 +11,7 @@ internal static class X509Time
 	private const int UtcTimeLength = 13;
 	private const int GeneralizedTimeLength = 15;
 
-	// The days of each month in a year that is not a leap year; the 29th of February is left to AsnDecoder.
+	// The days of each month in a year that is not a leap year; the 29th of February is left to ValueAsnReader.
 	private static ReadOnlySpan<byte> DaysInMonth => [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 	// DER requires UTC with seconds, and puts a fraction of GeneralizedTime after a period, which RFC 5280 forbids.
@@ -45,7 +45,7 @@ internal static class X509Time
 		if (tag == Asn1Tag.UtcTime)
 		{
 			// The default two-digit year maximum is TwoDigitYearMax.
-			return AsnDecoder.ReadUtcTime(encoded, AsnEncodingRules.DER, out _);
+			return new ValueAsnReader(encoded, AsnEncodingRules.DER).ReadUtcTime();
 		}
 
 		if (tag != Asn1Tag.GeneralizedTime)
@@ -69,10 +69,11 @@ internal static class X509Time
 			return value;
 		}
 
-		value = AsnDecoder.ReadGeneralizedTime(encoded, AsnEncodingRules.DER, out _);
-		AsnDecoder.ReadEncodedValue(encoded, AsnEncodingRules.DER, out int offset, out int length, out _);
+		ValueAsnReader reader = new(encoded, AsnEncodingRules.DER);
+		ReadOnlySpan<byte> contents = reader.PeekContentBytes();
+		value = reader.ReadGeneralizedTime();
 
-		if (encoded.Slice(offset, length).Contains((byte)'.'))
+		if (contents.Contains((byte)'.'))
 		{
 			throw new AsnContentException();
 		}
@@ -86,7 +87,7 @@ internal static class X509Time
 		return utc.AddTicks(-(utc.Ticks % TimeSpan.TicksPerSecond));
 	}
 
-	// A whole UTCTime in the form YYMMDDHHMMSSZ, the only one that DER allows, with the date and time that TryParseDateAndTime accepts; anything else, valid or not, is left to AsnDecoder.
+	// A whole UTCTime in the form YYMMDDHHMMSSZ, the only one that DER allows, with the date and time that TryParseDateAndTime accepts; anything else, valid or not, is left to ValueAsnReader.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool TryReadUtcTime(ReadOnlySpan<byte> encoded, out int year, out int month, out int day, out int hour, out int minute, out int second)
 	{
@@ -108,7 +109,7 @@ internal static class X509Time
 		return true;
 	}
 
-	// The contents of a GeneralizedTime in the form that RFC 5280, Sec. 4.1.2.5.2, requires, YYYYMMDDHHMMSSZ, with the date and time that TryParseDateAndTime accepts; anything else, valid or not, is left to AsnDecoder.
+	// The contents of a GeneralizedTime in the form that RFC 5280, Sec. 4.1.2.5.2, requires, YYYYMMDDHHMMSSZ, with the date and time that TryParseDateAndTime accepts; anything else, valid or not, is left to ValueAsnReader.
 	private static bool TryParseGeneralizedTime(ReadOnlySpan<byte> contents, out DateTimeOffset value)
 	{
 		value = default;
@@ -130,7 +131,7 @@ internal static class X509Time
 		return true;
 	}
 
-	// The ten digits MMDDHHMMSS of a date that every year has and a time of 00:00:00 to 23:59:59; the 29th of February and anything else, valid or not, are left to AsnDecoder.
+	// The ten digits MMDDHHMMSS of a date that every year has and a time of 00:00:00 to 23:59:59; the 29th of February and anything else, valid or not, are left to ValueAsnReader.
 	private static bool TryParseDateAndTime(ReadOnlySpan<byte> digits, out int month, out int day, out int hour, out int minute, out int second)
 	{
 		month = ReadTwoDigits(digits[0], digits[1]);

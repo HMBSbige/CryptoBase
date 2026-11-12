@@ -52,27 +52,23 @@ internal static class SM2CipherDer
 
 		try
 		{
-			AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
 
-			if (consumed != source.Length)
+			if (reader.HasData)
 			{
 				return false;
 			}
 
-			ReadOnlySpan<byte> contents = source.Slice(offset, length);
-			ReadOnlySpan<byte> x = AsnDecoder.ReadIntegerBytes(contents, AsnEncodingRules.DER, out consumed);
-			contents = contents.Slice(consumed);
-			ReadOnlySpan<byte> y = AsnDecoder.ReadIntegerBytes(contents, AsnEncodingRules.DER, out consumed);
-			contents = contents.Slice(consumed);
+			ReadOnlySpan<byte> x = contents.ReadIntegerBytes();
+			ReadOnlySpan<byte> y = contents.ReadIntegerBytes();
 
-			if (!AsnDecoder.TryReadPrimitiveOctetString(contents, AsnEncodingRules.DER, out hash, out consumed) || hash.Length is not HashLength)
+			if (!contents.TryReadPrimitiveOctetString(out hash) || hash.Length is not HashLength)
 			{
 				return false;
 			}
 
-			contents = contents.Slice(consumed);
-
-			if (!AsnDecoder.TryReadPrimitiveOctetString(contents, AsnEncodingRules.DER, out cipherText, out consumed) || consumed != contents.Length)
+			if (!contents.TryReadPrimitiveOctetString(out cipherText) || contents.HasData)
 			{
 				return false;
 			}

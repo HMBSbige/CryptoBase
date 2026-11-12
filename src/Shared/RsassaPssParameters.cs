@@ -14,8 +14,8 @@ internal static class RsassaPssParameters
 	// otherwise the result is false. A field with its default value is accepted, as Sec. 3.1 requires of the trailer field. Throws AsnContentException if the parameters are not DER.
 	internal static bool TryRead(ReadOnlySpan<byte> parameters, out SignatureAlgorithm algorithm, out int hashLength, out int saltLength)
 	{
-		DerSpanReader reader = new(parameters);
-		DerSpanReader fields = reader.ReadSequence();
+		ValueAsnReader reader = new(parameters, AsnEncodingRules.DER);
+		ValueAsnReader fields = reader.ReadSequence();
 		reader.ThrowIfNotEmpty();
 		(algorithm, hashLength) = (default, 0);
 		(SignatureAlgorithm maskAlgorithm, int trailerField) = (default, 1);
@@ -23,15 +23,15 @@ internal static class RsassaPssParameters
 
 		if (fields.PeekTagIs(HashAlgorithmTag))
 		{
-			DerSpanReader field = fields.ReadSequence(HashAlgorithmTag);
+			ValueAsnReader field = fields.ReadSequence(HashAlgorithmTag);
 			(algorithm, hashLength) = ReadHashAlgorithm(ref field);
 			field.ThrowIfNotEmpty();
 		}
 
 		if (fields.PeekTagIs(MaskGenAlgorithmTag))
 		{
-			DerSpanReader field = fields.ReadSequence(MaskGenAlgorithmTag);
-			DerSpanReader maskGenAlgorithm = field.ReadSequence();
+			ValueAsnReader field = fields.ReadSequence(MaskGenAlgorithmTag);
+			ValueAsnReader maskGenAlgorithm = field.ReadSequence();
 			field.ThrowIfNotEmpty();
 
 			if (maskGenAlgorithm.ReadObjectIdentifier() is Mgf1Oid)
@@ -48,14 +48,14 @@ internal static class RsassaPssParameters
 
 		if (fields.PeekTagIs(SaltLengthTag))
 		{
-			DerSpanReader field = fields.ReadSequence(SaltLengthTag);
+			ValueAsnReader field = fields.ReadSequence(SaltLengthTag);
 			saltLength = field.ReadInt32();
 			field.ThrowIfNotEmpty();
 		}
 
 		if (fields.PeekTagIs(TrailerFieldTag))
 		{
-			DerSpanReader field = fields.ReadSequence(TrailerFieldTag);
+			ValueAsnReader field = fields.ReadSequence(TrailerFieldTag);
 			trailerField = field.ReadInt32();
 			field.ThrowIfNotEmpty();
 		}
@@ -65,9 +65,9 @@ internal static class RsassaPssParameters
 	}
 
 	// A hash AlgorithmIdentifier, as the RSASSA-PSS algorithm of the hash and its length, or default for another hash or parameters other than NULL.
-	private static (SignatureAlgorithm Algorithm, int HashLength) ReadHashAlgorithm(ref DerSpanReader reader)
+	private static (SignatureAlgorithm Algorithm, int HashLength) ReadHashAlgorithm(ref ValueAsnReader reader)
 	{
-		DerSpanReader contents = reader.ReadSequence();
+		ValueAsnReader contents = reader.ReadSequence();
 		string oid = contents.ReadObjectIdentifier();
 		ReadOnlySpan<byte> parameters = contents.HasData ? contents.ReadEncodedValue() : default;
 		contents.ThrowIfNotEmpty();

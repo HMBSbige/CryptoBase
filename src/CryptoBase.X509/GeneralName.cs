@@ -66,7 +66,7 @@ internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory
 			}
 			case GeneralNameType.RegisteredId:
 			{
-				AsnDecoder.ReadObjectIdentifier(element.Span, AsnEncodingRules.DER, out _, tag);
+				new ValueAsnReader(element.Span, AsnEncodingRules.DER).ReadObjectIdentifier(tag);
 				break;
 			}
 			case GeneralNameType.OtherName:

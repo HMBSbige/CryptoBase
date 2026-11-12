@@ -385,8 +385,10 @@ public sealed class Certificate
 	// DER drops the trailing zero bits (X.690, Sec. 11.2.2), but some CA certificates in use keep them, so trailing zeros are accepted, even in whole bytes, unless der asks for DER; the unused bits must still be zero.
 	private static X509KeyUsageFlags ReadKeyUsage(ReadOnlySpan<byte> source, bool der)
 	{
-		if (!AsnDecoder.TryReadPrimitiveBitString(source, AsnEncodingRules.DER, out int unusedBits, out ReadOnlySpan<byte> bits, out int consumed)
-			|| consumed != source.Length
+		ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+
+		if (!reader.TryReadPrimitiveBitString(out int unusedBits, out ReadOnlySpan<byte> bits)
+			|| reader.HasData
 			|| bits.Length is 0
 			|| der && (bits.Length > 2 || (bits[^1] >> unusedBits & 1) is 0))
 		{

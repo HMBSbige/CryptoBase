@@ -226,37 +226,26 @@ public static class SignatureKey
 	{
 		try
 		{
-			AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
-
-			if (consumed != source.Length)
-			{
-				throw new AsnContentException();
-			}
-
-			ReadOnlySpan<byte> contents = source.Slice(offset, length);
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
+			reader.ThrowIfNotEmpty();
 
 			if (privateKey)
 			{
-				AsnDecoder.ReadIntegerBytes(contents, AsnEncodingRules.DER, out consumed);
-				contents = contents.Slice(consumed);
+				contents.ReadIntegerBytes();
 			}
 
-			AsnDecoder.ReadSequence(contents, AsnEncodingRules.DER, out offset, out length, out consumed);
-			ReadOnlySpan<byte> fields = contents.Slice(offset, length);
-			AsnDecoder.ReadObjectIdentifier(fields, AsnEncodingRules.DER, out int oidLength);
-			fields = fields.Slice(oidLength);
+			ReadOnlySpan<byte> algorithmIdentifier = contents.PeekEncodedValue();
+			ValueAsnReader fields = contents.ReadSequence();
+			fields.ReadObjectIdentifier();
 
-			if (!fields.IsEmpty)
+			if (fields.HasData)
 			{
-				AsnDecoder.ReadEncodedValue(fields, AsnEncodingRules.DER, out _, out _, out int parametersLength);
-
-				if (parametersLength != fields.Length)
-				{
-					throw new AsnContentException();
-				}
+				fields.ReadEncodedValue();
+				fields.ThrowIfNotEmpty();
 			}
 
-			return contents.Slice(0, consumed);
+			return algorithmIdentifier;
 		}
 		catch (AsnContentException e)
 		{
@@ -269,28 +258,15 @@ public static class SignatureKey
 	{
 		try
 		{
-			AsnDecoder.ReadSequence(source, AsnEncodingRules.DER, out int offset, out int length, out int consumed);
-
-			if (consumed != source.Length)
-			{
-				throw new AsnContentException();
-			}
-
-			ReadOnlySpan<byte> contents = source.Slice(offset, length);
-			AsnDecoder.ReadEncodedValue(contents, AsnEncodingRules.DER, out _, out _, out consumed);
-			contents = contents.Slice(consumed);
-			AsnDecoder.ReadEncodedValue(contents, AsnEncodingRules.DER, out _, out _, out consumed);
-			contents = contents.Slice(consumed);
-			AsnDecoder.ReadSequence(contents, AsnEncodingRules.DER, out offset, out length, out _, ParametersTag);
-			ReadOnlySpan<byte> parameters = contents.Slice(offset, length);
-			AsnDecoder.ReadEncodedValue(parameters, AsnEncodingRules.DER, out _, out _, out consumed);
-
-			if (consumed != parameters.Length)
-			{
-				throw new AsnContentException();
-			}
-
-			return parameters;
+			ValueAsnReader reader = new(source, AsnEncodingRules.DER);
+			ValueAsnReader contents = reader.ReadSequence();
+			reader.ThrowIfNotEmpty();
+			contents.ReadEncodedValue();
+			contents.ReadEncodedValue();
+			ValueAsnReader parameters = contents.ReadSequence(ParametersTag);
+			ReadOnlySpan<byte> value = parameters.ReadEncodedValue();
+			parameters.ThrowIfNotEmpty();
+			return value;
 		}
 		catch (AsnContentException e)
 		{

@@ -335,8 +335,7 @@ internal sealed class DistinguishedName
 
 	private static ReadOnlySpan<byte> GetContents(ReadOnlySpan<byte> element)
 	{
-		AsnDecoder.ReadEncodedValue(element, AsnEncodingRules.DER, out int offset, out int length, out _);
-		return element.Slice(offset, length);
+		return new ValueAsnReader(element, AsnEncodingRules.DER).PeekContentBytes();
 	}
 
 	// The text of a value of a string type that RFC 5280 uses in a Name, without checks beyond its encoding: the characters of the ASCII types may be outside their alphabets, as CAs put in them. TeletexString is read as UTF-8 if valid and otherwise as ISO 8859-1.
@@ -365,7 +364,7 @@ internal sealed class DistinguishedName
 				UniversalTagNumber.UTF8String => Utf8.IsValid(contents) ? Encoding.UTF8.GetString(contents) : null,
 				UniversalTagNumber.PrintableString or UniversalTagNumber.IA5String or UniversalTagNumber.VisibleString => Ascii.IsValid(contents) ? Encoding.ASCII.GetString(contents) : null,
 				UniversalTagNumber.UniversalString => StrictUtf32BigEndian.GetString(contents),
-				_ => AsnDecoder.ReadCharacterString(element, AsnEncodingRules.DER, number, out _)
+				_ => new ValueAsnReader(element, AsnEncodingRules.DER).ReadCharacterString(number)
 			};
 		}
 		catch (Exception e) when (e is AsnContentException or DecoderFallbackException)

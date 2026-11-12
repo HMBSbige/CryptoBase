@@ -355,7 +355,7 @@ internal static class RevocationChecker
 
 		if (crlId.TryReadExplicit(CrlUrlTag, out DerReader url))
 		{
-			AsnDecoder.ReadCharacterString(url.GetRemaining().Span, AsnEncodingRules.DER, UniversalTagNumber.IA5String, out _);
+			new ValueAsnReader(url.GetRemaining().Span, AsnEncodingRules.DER).ReadCharacterString(UniversalTagNumber.IA5String);
 		}
 
 		if (crlId.TryReadExplicit(CrlNumberTag, out DerReader number))
