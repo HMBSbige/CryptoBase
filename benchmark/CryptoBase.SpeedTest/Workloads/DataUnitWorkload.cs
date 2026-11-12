@@ -28,24 +28,29 @@ internal sealed class DataUnitWorkload<T> : Workload where T : IDataUnitCipher<T
 
 	public override void Run(long iterations)
 	{
-		T cipher = _cipher;
-		ReadOnlySpan<byte> tweak = _tweak;
-		Span<byte> output = _output;
-		ReadOnlySpan<byte> source = _decrypt ? _ciphertext : _plaintext;
-
 		if (_decrypt)
 		{
-			for (long i = 0; i < iterations; ++i)
-			{
-				cipher.Decrypt(tweak, source, output);
-			}
+			Decrypt(_cipher, _tweak, _ciphertext, _output, iterations);
 		}
 		else
 		{
-			for (long i = 0; i < iterations; ++i)
-			{
-				cipher.Encrypt(tweak, source, output);
-			}
+			Encrypt(_cipher, _tweak, _plaintext, _output, iterations);
+		}
+	}
+
+	private static void Encrypt<TCipher>(TCipher cipher, ReadOnlySpan<byte> tweak, ReadOnlySpan<byte> plaintext, Span<byte> output, long iterations) where TCipher : IDataUnitCipher<TCipher>
+	{
+		for (long i = 0; i < iterations; ++i)
+		{
+			cipher.Encrypt(tweak, plaintext, output);
+		}
+	}
+
+	private static void Decrypt<TCipher>(TCipher cipher, ReadOnlySpan<byte> tweak, ReadOnlySpan<byte> ciphertext, Span<byte> output, long iterations) where TCipher : IDataUnitCipher<TCipher>
+	{
+		for (long i = 0; i < iterations; ++i)
+		{
+			cipher.Decrypt(tweak, ciphertext, output);
 		}
 	}
 

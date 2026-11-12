@@ -15,13 +15,14 @@ internal sealed class MacWorkload<T>(int inputSize, int keySize) : Workload wher
 
 	public override void Run(long iterations)
 	{
-		ReadOnlySpan<byte> key = _key;
-		ReadOnlySpan<byte> source = _source;
-		Span<byte> mac = _mac;
+		Mac<T>(_key, _source, _mac, iterations);
+	}
 
+	private static void Mac<TMac>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> mac, long iterations) where TMac : IOneShotMacAlgorithm
+	{
 		for (long i = 0; i < iterations; ++i)
 		{
-			T.Mac(key, source, mac);
+			TMac.Mac(key, source, mac);
 		}
 	}
 }

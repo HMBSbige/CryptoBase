@@ -27,26 +27,29 @@ internal sealed class BlockWorkload<T> : Workload where T : IBlockCipher<T>
 
 	public override void Run(long iterations)
 	{
-		T cipher = _cipher;
-		Span<byte> output = _output;
-
 		if (_decrypt)
 		{
-			ReadOnlySpan<byte> ciphertext = _ciphertext;
-
-			for (long i = 0; i < iterations; ++i)
-			{
-				cipher.DecryptBlocks(ciphertext, output);
-			}
+			Decrypt(_cipher, _ciphertext, _output, iterations);
 		}
 		else
 		{
-			ReadOnlySpan<byte> plaintext = _plaintext;
+			Encrypt(_cipher, _plaintext, _output, iterations);
+		}
+	}
 
-			for (long i = 0; i < iterations; ++i)
-			{
-				cipher.EncryptBlocks(plaintext, output);
-			}
+	private static void Encrypt<TCipher>(TCipher cipher, ReadOnlySpan<byte> plaintext, Span<byte> output, long iterations) where TCipher : IBlockCipher<TCipher>
+	{
+		for (long i = 0; i < iterations; ++i)
+		{
+			cipher.EncryptBlocks(plaintext, output);
+		}
+	}
+
+	private static void Decrypt<TCipher>(TCipher cipher, ReadOnlySpan<byte> ciphertext, Span<byte> output, long iterations) where TCipher : IBlockCipher<TCipher>
+	{
+		for (long i = 0; i < iterations; ++i)
+		{
+			cipher.DecryptBlocks(ciphertext, output);
 		}
 	}
 

@@ -34,31 +34,31 @@ internal sealed class AeadWorkload<T> : Workload where T : IAeadCipher<T>
 
 	public override void Run(long iterations)
 	{
-		T cipher = _cipher;
-		ReadOnlySpan<byte> nonce = _nonce;
-		Span<byte> output = _output;
-
 		if (_decrypt)
 		{
-			ReadOnlySpan<byte> ciphertext = _ciphertext;
-			ReadOnlySpan<byte> tag = _tag;
-
-			for (long i = 0; i < iterations; ++i)
-			{
-				if (!cipher.TryDecrypt(nonce, ciphertext, tag, output))
-				{
-					SelfTestException.Throw("Decryption rejected a valid tag.");
-				}
-			}
+			Decrypt(_cipher, _nonce, _ciphertext, _tag, _output, iterations);
 		}
 		else
 		{
-			ReadOnlySpan<byte> plaintext = _plaintext;
-			Span<byte> tag = _outputTag;
+			Encrypt(_cipher, _nonce, _plaintext, _output, _outputTag, iterations);
+		}
+	}
 
-			for (long i = 0; i < iterations; ++i)
+	private static void Encrypt<TCipher>(TCipher cipher, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> plaintext, Span<byte> output, Span<byte> tag, long iterations) where TCipher : IAeadCipher<TCipher>
+	{
+		for (long i = 0; i < iterations; ++i)
+		{
+			cipher.Encrypt(nonce, plaintext, output, tag);
+		}
+	}
+
+	private static void Decrypt<TCipher>(TCipher cipher, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> tag, Span<byte> output, long iterations) where TCipher : IAeadCipher<TCipher>
+	{
+		for (long i = 0; i < iterations; ++i)
+		{
+			if (!cipher.TryDecrypt(nonce, ciphertext, tag, output))
 			{
-				cipher.Encrypt(nonce, plaintext, output, tag);
+				SelfTestException.Throw("Decryption rejected a valid tag.");
 			}
 		}
 	}

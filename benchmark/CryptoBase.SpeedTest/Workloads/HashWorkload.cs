@@ -22,12 +22,14 @@ internal sealed class HashWorkload<T>(int inputSize) : Workload where T : class,
 
 	public override void Run(long iterations)
 	{
-		ReadOnlySpan<byte> source = _source;
-		Span<byte> hash = _hash;
+		HashData<T>(_source, _hash, iterations);
+	}
 
+	private static void HashData<THash>(ReadOnlySpan<byte> source, Span<byte> hash, long iterations) where THash : class, IHashAlgorithm<THash>
+	{
 		for (long i = 0; i < iterations; ++i)
 		{
-			T.HashData(source, hash);
+			THash.HashData(source, hash);
 		}
 	}
 }

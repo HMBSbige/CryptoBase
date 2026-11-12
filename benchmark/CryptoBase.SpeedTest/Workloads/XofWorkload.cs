@@ -23,12 +23,14 @@ internal sealed class XofWorkload<T>(int inputSize, int outputLength) : Workload
 
 	public override void Run(long iterations)
 	{
-		ReadOnlySpan<byte> source = _source;
-		Span<byte> output = _output;
+		HashData<T>(_source, _output, iterations);
+	}
 
+	private static void HashData<TXof>(ReadOnlySpan<byte> source, Span<byte> output, long iterations) where TXof : class, IXof<TXof>
+	{
 		for (long i = 0; i < iterations; ++i)
 		{
-			T.HashData(source, output);
+			TXof.HashData(source, output);
 		}
 	}
 }

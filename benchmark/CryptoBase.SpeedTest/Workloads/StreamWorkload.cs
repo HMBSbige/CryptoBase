@@ -50,13 +50,7 @@ internal sealed class StreamWorkload<T>(int inputSize, Func<T> factory) : Worklo
 			}
 
 			long count = Math.Min(iterations, _iterationsLeft);
-			T cipher = _cipher;
-
-			for (long i = 0; i < count; ++i)
-			{
-				cipher.Xor(source, destination);
-			}
-
+			Xor(_cipher, source, destination, count);
 			iterations -= count;
 			_iterationsLeft -= count;
 		}
@@ -70,5 +64,13 @@ internal sealed class StreamWorkload<T>(int inputSize, Func<T> factory) : Worklo
 	private static long GetIterationsPerInstance(int inputSize)
 	{
 		return Math.Max(1, BytesPerInstance / inputSize);
+	}
+
+	private static void Xor<TCipher>(TCipher cipher, ReadOnlySpan<byte> source, Span<byte> destination, long count) where TCipher : class, IStreamCipher
+	{
+		for (long i = 0; i < count; ++i)
+		{
+			cipher.Xor(source, destination);
+		}
 	}
 }
