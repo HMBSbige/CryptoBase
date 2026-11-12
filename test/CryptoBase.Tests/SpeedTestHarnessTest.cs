@@ -20,10 +20,10 @@ public class SpeedTestHarnessTest
 	[Test]
 	public async Task OperationColumnsLeaveOutUnusedOperations()
 	{
-		ImmutableArray<AlgorithmEntry> selected = AlgorithmSelector.Select(["sm9-kem"], includeSlow: false, out _);
+		ImmutableArray<AlgorithmEntry> selected = AlgorithmSelector.Select(["rsa-2048"], includeSlow: false, out _);
 		ImmutableArray<GroupLayout> groups = BenchmarkSession.Plan(selected, [16]);
 
-		await Assert.That(groups.Single().Columns).IsEquivalentTo([OperationNames.Encapsulate, OperationNames.Decapsulate], CollectionOrdering.Matching);
+		await Assert.That(groups.Single().Columns).IsEquivalentTo([OperationNames.Sign, OperationNames.Verify], CollectionOrdering.Matching);
 	}
 
 	[Test]

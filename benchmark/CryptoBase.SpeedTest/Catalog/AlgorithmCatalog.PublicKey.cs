@@ -40,7 +40,7 @@ internal static partial class AlgorithmCatalog
 			KeyAgreement<EcdhP521>("ecdh-p521"),
 			KeyAgreement<EcdhSM2>("ecdh-sm2"),
 			KeyExchange("sm2-kex", typeof(SM2KeyExchange), [typeof(SM2Key)], static () => new SM2KeyExchangeWorkload(), "initiator: static keys and IDs, 16-byte key, no confirmations"),
-			KeyExchange("sm9-kex", typeof(SM9KeyExchange), [typeof(SM9KeyExchangeKey)], static () => new SM9KeyExchangeWorkload(), "initiator: 16-byte key, no confirmations")
+			KeyExchange("sm9-kex", typeof(SM9KeyExchange), [typeof(SM9KeyExchangeKey)], static () => new SM9KeyExchangeWorkload(), "keygen: extracts the private key of an ID; initiator: 16-byte key, no confirmations", SM9KeyExtractionWorkload.ForKeyExchange)
 		];
 	}
 
@@ -71,24 +71,23 @@ internal static partial class AlgorithmCatalog
 			Group = AlgorithmGroups.Kem,
 			ImplementationType = typeof(SM9EncryptionMasterKey),
 			RelatedTypes = [typeof(SM9EncryptionKey)],
-			Operations = [OperationNames.Encapsulate, OperationNames.Decapsulate],
-			Notes = "encapsulates to an ID under the master public key; 32-byte key",
-			CreateWorkload = static (operation, _) => new SM9KemWorkload
-			(
-				operation switch
-				{
-					OperationNames.Encapsulate => false,
-					OperationNames.Decapsulate => true,
-					_ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null)
-				}
-			)
+			Operations = [OperationNames.KeyGen, OperationNames.Encapsulate, OperationNames.Decapsulate],
+			Notes = "keygen: extracts the private key of an ID; encapsulates to an ID under the master public key; 32-byte key",
+			CreateWorkload = static (operation, _) => operation switch
+			{
+				OperationNames.KeyGen => SM9KeyExtractionWorkload.ForEncryption(),
+				OperationNames.Encapsulate => new SM9KemWorkload(decapsulate: false),
+				OperationNames.Decapsulate => new SM9KemWorkload(decapsulate: true),
+				_ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null)
+			}
 		};
 	}
 
 	/// <summary>
-	/// Creates an entry whose single operation is one party's side of a whole key exchange.
+	/// Creates an entry whose derive operation is one party's side of a whole key exchange.
 	/// </summary>
-	private static AlgorithmEntry KeyExchange(string name, Type implementationType, ImmutableArray<Type> relatedTypes, Func<Workload> createWorkload, string notes)
+	/// <param name="createKeyGenWorkload">Creates the workload of key generation, if the entry measures it.</param>
+	private static AlgorithmEntry KeyExchange(string name, Type implementationType, ImmutableArray<Type> relatedTypes, Func<Workload> createWorkload, string notes, Func<Workload>? createKeyGenWorkload = null)
 	{
 		return new AlgorithmEntry
 		{
@@ -96,9 +95,14 @@ internal static partial class AlgorithmCatalog
 			Group = AlgorithmGroups.Kex,
 			ImplementationType = implementationType,
 			RelatedTypes = relatedTypes,
-			Operations = [OperationNames.Derive],
+			Operations = createKeyGenWorkload is null ? [OperationNames.Derive] : [OperationNames.KeyGen, OperationNames.Derive],
 			Notes = notes,
-			CreateWorkload = (_, _) => createWorkload()
+			CreateWorkload = (operation, _) => operation switch
+			{
+				OperationNames.KeyGen when createKeyGenWorkload is not null => createKeyGenWorkload(),
+				OperationNames.Derive => createWorkload(),
+				_ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null)
+			}
 		};
 	}
 

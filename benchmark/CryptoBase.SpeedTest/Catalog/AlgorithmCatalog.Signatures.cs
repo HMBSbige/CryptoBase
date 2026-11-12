@@ -101,19 +101,15 @@ internal static partial class AlgorithmCatalog
 			Group = AlgorithmGroups.Sign,
 			ImplementationType = typeof(SM9SignatureKey),
 			RelatedTypes = [typeof(SM9SignatureMasterKey)],
-			Operations = [OperationNames.Sign, OperationNames.Verify],
-			Notes = "verify: with the master public key and the ID of the signer; 32-byte message",
-			CreateWorkload = static (operation, _) => new SM9SignatureWorkload(IsVerify(operation))
-		};
-	}
-
-	private static bool IsVerify(string operation)
-	{
-		return operation switch
-		{
-			OperationNames.Sign => false,
-			OperationNames.Verify => true,
-			_ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null)
+			Operations = [OperationNames.KeyGen, OperationNames.Sign, OperationNames.Verify],
+			Notes = "keygen: extracts the private key of an ID; verify: with the master public key and the ID of the signer; 32-byte message",
+			CreateWorkload = static (operation, _) => operation switch
+			{
+				OperationNames.KeyGen => SM9KeyExtractionWorkload.ForSignature(),
+				OperationNames.Sign => new SM9SignatureWorkload(verify: false),
+				OperationNames.Verify => new SM9SignatureWorkload(verify: true),
+				_ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null)
+			}
 		};
 	}
 }
