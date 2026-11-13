@@ -2,6 +2,10 @@ namespace CryptoBase.Ciphers.Streams;
 
 internal static partial class ChaCha20Utils
 {
+#if !NET11_0_OR_GREATER
+	// .NET 10 inlines it into a caller as small as UpdateBlocks and then lacks the inlining budget for PermuteScalar, whose words go through memory; .NET 11 raises the budget at the IsSupported check of XorBlocks.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+#endif
 	private static int XorScalar(ref uint stateRef, ref byte input, ref byte output, int length)
 	{
 		int processed = length & -64;
