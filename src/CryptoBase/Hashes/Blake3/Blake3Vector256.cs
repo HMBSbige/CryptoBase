@@ -337,13 +337,15 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		}
 
 		ref byte schedule = ref MemoryMarshal.GetReference(MessageSchedule);
+		// Reusing scratch reduces AVX2 rotation spills.
+		Unsafe.SkipInit(out Vector256<uint> scratch);
 
 		// A loop keeps the kernel small enough for the JIT to inline every step and rotation, whatever instructions the rotations take.
 		for (int round = 0; round < Blake3Constants.Rounds; ++round)
 		{
 			ref byte words = ref Unsafe.Add(ref schedule, round * 16);
-			Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, ref words);
-			Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, ref Unsafe.Add(ref words, 8));
+			Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref scratch, ref message, ref words);
+			Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref scratch, ref message, ref Unsafe.Add(ref words, 8));
 		}
 	}
 
@@ -433,7 +435,7 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		ref Vector256<uint> b0, ref Vector256<uint> b1, ref Vector256<uint> b2, ref Vector256<uint> b3,
 		ref Vector256<uint> c0, ref Vector256<uint> c1, ref Vector256<uint> c2, ref Vector256<uint> c3,
 		ref Vector256<uint> d0, ref Vector256<uint> d1, ref Vector256<uint> d2, ref Vector256<uint> d3,
-		ref Vector256<uint> message, ref byte words
+		ref Vector256<uint> scratch, ref Vector256<uint> message, ref byte words
 	)
 	{
 		a0 = a0 + Word(ref message, ref words, 0) + b0;
@@ -448,10 +450,14 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		c1 += d1;
 		c2 += d2;
 		c3 += d3;
-		b0 = (b0 ^ c0).RotateRightUInt32(12);
-		b1 = (b1 ^ c1).RotateRightUInt32(12);
-		b2 = (b2 ^ c2).RotateRightUInt32(12);
-		b3 = (b3 ^ c3).RotateRightUInt32(12);
+		scratch = b0 ^ c0;
+		b0 = scratch >>> 12 | scratch << 20;
+		scratch = b1 ^ c1;
+		b1 = scratch >>> 12 | scratch << 20;
+		scratch = b2 ^ c2;
+		b2 = scratch >>> 12 | scratch << 20;
+		scratch = b3 ^ c3;
+		b3 = scratch >>> 12 | scratch << 20;
 		a0 = a0 + Word(ref message, ref words, 4) + b0;
 		a1 = a1 + Word(ref message, ref words, 5) + b1;
 		a2 = a2 + Word(ref message, ref words, 6) + b2;
@@ -464,9 +470,13 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		c1 += d1;
 		c2 += d2;
 		c3 += d3;
-		b0 = (b0 ^ c0).RotateRightUInt32(7);
-		b1 = (b1 ^ c1).RotateRightUInt32(7);
-		b2 = (b2 ^ c2).RotateRightUInt32(7);
-		b3 = (b3 ^ c3).RotateRightUInt32(7);
+		scratch = b0 ^ c0;
+		b0 = scratch >>> 7 | scratch << 25;
+		scratch = b1 ^ c1;
+		b1 = scratch >>> 7 | scratch << 25;
+		scratch = b2 ^ c2;
+		b2 = scratch >>> 7 | scratch << 25;
+		scratch = b3 ^ c3;
+		b3 = scratch >>> 7 | scratch << 25;
 	}
 }
