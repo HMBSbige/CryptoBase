@@ -104,11 +104,13 @@ internal struct Field25519
 		MultiplyCore(in left, in right, out result, true);
 	}
 
-	// Multiply inlined, for formulas that keep the values between their products in registers, where the high word of a 64-bit product takes one instruction, mulx or umulh. Elsewhere it takes four multiplications and spills, so the formulas call Multiply there, whose copy alone sets outOfLine. The test names the instruction sets rather than a property so that the JIT folds it before it reads the call, and the address of result never reaches a call where the product is inlined. With a = x_i·2^6 and b = y_j·2^7, a·b = x_i·y_j·2^13 splits at bit 51 of x_i·y_j: the high word is x_i·y_j >> 51 and the low word is (x_i·y_j mod 2^51)·2^13. For limbs below 2^54 the high words are below 2^57, so the columns t_k of the product, each a sum of at most nine halves, stay below 5·2^57 + 2^53, and the folded t_k + 19·t_(k+5) below 97·2^57 < 2^64.
+	// Multiply inlined, for formulas that keep the values between their products in registers. With a = x_i·2^6 and b = y_j·2^7, a·b = x_i·y_j·2^13 splits at bit 51 of x_i·y_j: the high word is x_i·y_j >> 51 and the low word is (x_i·y_j mod 2^51)·2^13. For limbs below 2^54 the high words are below 2^57, so the columns t_k of the product, each a sum of at most nine halves, stay below 5·2^57 + 2^53, and the folded t_k + 19·t_(k+5) below 97·2^57 < 2^64.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	[SuppressMessage("ReSharper", "ArrangeRedundantParentheses", Justification = "The parentheses balance the column sums, and the JIT adds in the order they give.")]
 	internal static void MultiplyCore(in Field25519 left, in Field25519 right, out Field25519 result, bool outOfLine = false)
 	{
+		// The product inlines only where its high word is one instruction, mulx or umulh. Elsewhere the inlined products use up the inlining budget of the formula, which then spills and calls its other helpers, even from .NET 11 on, where the high word is a mul on x64; so the formulas call Multiply there, whose copy alone sets outOfLine.
+		// The test names the instruction sets rather than a property so that the JIT folds it before it reads the call, and the address of result never reaches a call where the product is inlined.
 		if (!outOfLine && !(Bmi2.X64.IsSupported || ArmBase.Arm64.IsSupported))
 		{
 			Multiply(in left, in right, out result);
