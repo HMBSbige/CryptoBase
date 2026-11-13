@@ -27,7 +27,16 @@ internal struct Blake3Output
 		}
 
 		Span<byte> block = output.Block;
-		blocks.CopyTo(block);
+
+		if (Vector128.IsHardwareAccelerated && blocks.Length == Vector128<byte>.Count)
+		{
+			Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(blocks)).StoreUnsafe(ref block[0]);
+		}
+		else
+		{
+			blocks.CopyTo(block);
+		}
+
 		block.Slice(blocks.Length).Clear();
 		output.UsedBlockLength = (uint)blocks.Length;
 		output.Counter = chunkCounter;
