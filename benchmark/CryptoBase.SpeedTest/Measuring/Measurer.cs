@@ -33,11 +33,10 @@ internal sealed class Measurer(MeasurementSettings settings)
 	/// How long the JIT must have compiled nothing for a warm-up to end.
 	/// </summary>
 	/// <remarks>
-	/// Between two steps of tiered compilation the count of compiled methods stands still while the runtime waits out its call-counting delay,
-	/// 100 ms by default, which methods called for the first time extend. Measured on every row, such a pause lasts about 200 to 230 ms, and rarely
-	/// up to 300 ms, so a shorter quiet time could end the warm-up before the code it runs reaches Tier1.
+	/// CoreCLR's default call-counting delay is 100 ms, multiplied by ten when the process has one processor.
+	/// Keep the quiet window longer than that delay so a pause between tiers does not end the warm-up.
 	/// </remarks>
-	private static readonly long JitQuietTicks = 3 * Stopwatch.Frequency / 10;
+	private static readonly long JitQuietTicks = Environment.ProcessorCount is 1 ? 3 * Stopwatch.Frequency : 3 * Stopwatch.Frequency / 10;
 
 	/// <summary>
 	/// How far past the warm-up time a warm-up can run while the JIT is still compiling, so that it ends even if the JIT never settles.
@@ -46,7 +45,7 @@ internal sealed class Measurer(MeasurementSettings settings)
 
 	private readonly long _sampleTicks = Math.Max(1, (long)(settings.Seconds * Stopwatch.Frequency / MeasurementSettings.SampleCount));
 
-	private bool AwaitsJit { get; init; } = true;
+	private bool AwaitsJit { get; init; } = RuntimeFeature.IsDynamicCodeCompiled;
 
 	/// <summary>
 	/// Runs the measuring code once on a workload that does nothing, so that its first compilation does not happen in the middle of the first row
@@ -65,8 +64,8 @@ internal sealed class Measurer(MeasurementSettings settings)
 	/// but no longer than <see cref="MaximumWarmupExtensionTicks" /> past the warm-up time.
 	/// </summary>
 	/// <remarks>
-	/// The count of compiled methods includes the recompilations that tiered compilation makes on its background thread, so it stops changing
-	/// once the code that the runners call has reached its final tier. Native AOT compiles nothing at run time, so its warm-up takes the warm-up time.
+	/// Compilation-count stability is a heuristic, not proof that every hot method has reached Tier1.
+	/// Native AOT compiles nothing at run time, so its warm-up takes the warm-up time.
 	/// </remarks>
 	public WarmupResult Warmup(IReadOnlyList<IBatchRunner> runners)
 	{
@@ -120,7 +119,7 @@ internal sealed class Measurer(MeasurementSettings settings)
 			}
 		}
 
-		return new WarmupResult(ticksPerIteration, new WarmupSummary(Stopwatch.GetElapsedTime(start, now), now - lastCompilation >= JitQuietTicks));
+		return new WarmupResult(ticksPerIteration, new WarmupSummary(Stopwatch.GetElapsedTime(start, now), !AwaitsJit || now - lastCompilation >= JitQuietTicks));
 	}
 
 	/// <param name="unitsPerIteration">The bytes or operations of one iteration of one worker.</param>
