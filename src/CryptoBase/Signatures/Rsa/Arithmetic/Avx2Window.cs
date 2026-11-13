@@ -78,8 +78,7 @@ internal struct Avx2Window : IAvx2Window<Avx2Window>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static unsafe ref ulong Stage(ref ulong x, ref ulong n, int words, int vectors, ref ulong start)
 	{
-		nuint address = (nuint)Unsafe.AsPointer(ref start);
-		ref ulong staging = ref Unsafe.AddByteOffset(ref start, (address + 63 & ~(nuint)63) - address);
+		ref ulong staging = ref AlignedScratch.Start<ulong, ulong>(ref start);
 
 		for (int v = 1; v < vectors; ++v)
 		{

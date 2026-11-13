@@ -107,8 +107,7 @@ internal readonly unsafe struct MontgomeryKernelAvx512Staged<TWindow> : IMontgom
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ref double Stage(ref ulong x, ref ulong n, int count, ref ulong start)
 	{
-		nuint address = (nuint)Unsafe.AsPointer(ref start);
-		ref double staging = ref Unsafe.As<ulong, double>(ref Unsafe.AddByteOffset(ref start, (address + 63 & ~(nuint)63) - address));
+		ref double staging = ref AlignedScratch.Start<ulong, double>(ref start);
 
 		for (int v = 0; v < TWindow.Count; ++v)
 		{
