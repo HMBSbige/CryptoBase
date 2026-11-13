@@ -51,8 +51,16 @@ internal static class SM4Linear
 			return Avx512F.VL.TernaryLogic(left, right, x.RotateLeftUInt32(24), Xor3);
 		}
 
+#if NET11_0_OR_GREATER
+		// .NET 11 keeps the shuffle masks in registers through the rounds, where a third mask spills the 16-block rounds when only 16 vector registers exist, so the 24-bit rotation reuses the 8-bit one on x16.
+		Vector256<uint> x16 = x.RotateLeftUInt32(16);
+		Vector256<uint> t = x ^ x.RotateLeftUInt32(8) ^ x16;
+		return r ^ x ^ x16.RotateLeftUInt32(8) ^ t.RotateLeftUInt32(2);
+#else
+		// Before .NET 11 the masks stay in memory, and the direct rotation, which does not wait for x16, is the faster one.
 		Vector256<uint> t = x ^ x.RotateLeftUInt32(8) ^ x.RotateLeftUInt32(16);
 		return r ^ x ^ x.RotateLeftUInt32(24) ^ t.RotateLeftUInt32(2);
+#endif
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
