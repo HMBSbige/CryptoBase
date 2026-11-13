@@ -48,6 +48,8 @@ internal readonly struct SM2Scalar : ISM2Kernel
 
 	public static void MultiplyAdd(in FieldElement<SM2Order> u1, in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> u2, out JacobianPoint<SM2Field52> result)
 	{
+		// As in ECVariableTimeGroup.MultiplyAdd, Entries is built before MultiplyAddWindows compiles.
+		_ = ECVariableTimeGeneratorTable<SM2Curve, SM2Field52, SM2Order>.Entries;
 		ECVariableTimeGroup<SM2Curve, SM2Field52, SM2Order>.MultiplyAddWindows(in u1, in point, in u2, out result);
 	}
 }

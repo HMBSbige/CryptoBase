@@ -18,6 +18,8 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	{
 		if (!TCurve.TryMultiplyAdd(in u1, in point, in u2, out result))
 		{
+			// MultiplyAddWindows loops and allocates on the stack, so it compiles once, with full optimization; building Entries first keeps the check of its class initialization out of it.
+			_ = ECVariableTimeGeneratorTable<TCurve, TField, TOrder>.Entries;
 			MultiplyAddWindows(in u1, in point, in u2, out result);
 		}
 	}

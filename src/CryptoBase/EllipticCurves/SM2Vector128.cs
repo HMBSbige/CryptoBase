@@ -47,6 +47,8 @@ internal readonly struct SM2Vector128 : ISM2Kernel
 
 	public static void MultiplyAdd(in FieldElement<SM2Order> u1, in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> u2, out JacobianPoint<SM2Field52> result)
 	{
+		// As in ECVariableTimeGroup.MultiplyAdd, Entries is built before SM2PairFormulas.MultiplyAdd, which reads it, compiles.
+		_ = ECVariableTimeGeneratorTable<SM2Curve, SM2Field52, SM2Order>.Entries;
 		SM2PairFormulas<SM2Field29x2>.MultiplyAdd(in u1, in point, in u2, out result);
 	}
 }

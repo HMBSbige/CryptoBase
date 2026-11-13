@@ -44,6 +44,8 @@ internal static class Edwards448
 	{
 		Debug.Assert(a.Length is ScalarLength && b.Length is ScalarLength);
 
+		// The kernels loop and allocate on the stack, so they compile once, with full optimization; building Entries first keeps the check of its class initialization out of them.
+		_ = EdwardsVariableTimeBaseTable.Entries;
 		Curve448KernelDispatch.DoubleScalarMultiplyVariableTime(a, in point, b, out result);
 	}
 
