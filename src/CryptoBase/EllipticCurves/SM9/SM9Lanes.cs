@@ -2319,12 +2319,15 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 			nextB = ref Unsafe.Add(ref nextB, 8);
 		}
 
+#if !NET11_0_OR_GREATER
+		// The AVX-512 tails carry and reduce in registers before .NET 11; from .NET 11 on they spill limbs and constants, and the limbs take the path of the narrower vectors below.
 		if (typeof(TVector) == typeof(SM9VectorAvx512))
 		{
 			CarryAndReduce(Avx512(t0), Avx512(t1), Avx512(t2), Avx512(t3), Avx512(t4), Avx512(t5), Avx512(t6), Avx512(t7), Avx512(t8), Avx512(t9), ref result);
 			CarryAndReduce(Avx512(u0), Avx512(u1), Avx512(u2), Avx512(u3), Avx512(u4), Avx512(u5), Avx512(u6), Avx512(u7), Avx512(u8), Avx512(u9), ref resultB);
 			return;
 		}
+#endif
 
 		Carry(ref t0, ref t1, ref t2, ref t3, ref t4, ref t5, ref t6, ref t7, ref t8, ref t9);
 		Carry(ref u0, ref u1, ref u2, ref u3, ref u4, ref u5, ref u6, ref u7, ref u8, ref u9);
