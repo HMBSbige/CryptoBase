@@ -73,7 +73,7 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	public static void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
+	public static unsafe void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
 		Blake3Flags.LaneShape(flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags);
 
@@ -107,7 +107,8 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		}
 
 		Vector256<uint> counterHigh = Vector256.Create((uint)(counter >> 32)) - Vector256.LessThan(counterLow, Vector256.Create((uint)counter));
-		Unsafe.SkipInit(out InlineArray16<Vector256<uint>> message);
+		Unsafe.SkipInit(out MessageBuffer storage);
+		Vector256<uint>* message = (Vector256<uint>*)Unsafe.AsPointer(ref AlignedScratch.Start<MessageBuffer, Vector256<uint>>(ref storage, (nuint)sizeof(Vector256<uint>)));
 		uint blockFlags = flags | startFlags;
 
 		// Near its end, an input would prefetch the start of the next input, which another lane has already read; it prefetches the input that its lane hashes in the next batch instead.
@@ -478,5 +479,11 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		b2 = scratch >>> 7 | scratch << 25;
 		scratch = b3 ^ c3;
 		b3 = scratch >>> 7 | scratch << 25;
+	}
+
+	[InlineArray(17)]
+	private struct MessageBuffer
+	{
+		private Vector256<uint> element;
 	}
 }
