@@ -201,7 +201,7 @@ internal partial struct Field448x4Avx512 : IEdwardsField448x4<Field448x4Avx512>
 	private static Vector512<ulong> DiffSum(Vector512<ulong> limb, Vector512<ulong> twoP)
 	{
 		Vector512<ulong> swapped = Swap(limb);
-		return Blend(limb + Blend(twoP - swapped, swapped, LaneMask(LaneB)), limb, LaneMask(LaneC | LaneD));
+		return Blend(limb + NegateLanes(swapped, twoP, LaneMask(LaneA)), limb, LaneMask(LaneC | LaneD));
 	}
 
 	// (X, Y, T, X + Y) from (X, Y, Z, T).

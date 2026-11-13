@@ -748,15 +748,14 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<ulong> NegateD(Vector256<ulong> column, Vector256<ulong> multiple)
 	{
-		return Blend(column, multiple - column, LaneD);
+		return NegateLanes(column, multiple, LaneD);
 	}
 
 	// (B, A, C, 2p − D).
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<ulong> NegateCached(Vector256<ulong> limb, Vector256<ulong> twoP)
 	{
-		Vector256<ulong> swapped = Avx2.Permute4x64(limb, Bacd);
-		return Blend(swapped, twoP - swapped, LaneD);
+		return NegateLanes(Avx2.Permute4x64(limb, Bacd), twoP, LaneD);
 	}
 
 	// (X, Y, Z, X + Y).
@@ -774,7 +773,7 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		Vector256<ulong> s2 = Avx2.Permute4x64(limb, Bbbb);
 		Vector256<ulong> lanesCD = Blend(Vector256<ulong>.Zero, limb, LaneC | LaneD);
 		Vector256<ulong> laneC = Blend(Vector256<ulong>.Zero, limb, LaneC);
-		Vector256<ulong> sums = Avx2.Permute4x64(limb, Aaaa) + Blend(s2, twoP - s2, LaneB | LaneC) + lanesCD + laneC;
+		Vector256<ulong> sums = Avx2.Permute4x64(limb, Aaaa) + NegateLanes(s2, twoP, LaneB | LaneC) + lanesCD + laneC;
 		left = Avx2.Permute4x64(sums, Caca);
 		right = Avx2.Permute4x64(sums, Dbbd);
 	}
@@ -803,7 +802,7 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 	{
 		Vector256<ulong> x = Avx2.PermuteVar8x32(limb.AsInt32(), xs).AsUInt64();
 		Vector256<ulong> z = Avx2.PermuteVar8x32(limb.AsInt32(), zs).AsUInt64();
-		Vector256<ulong> sums = x + Blend(z, twoP - z, LaneB | LaneD);
+		Vector256<ulong> sums = x + NegateLanes(z, twoP, LaneB | LaneD);
 		return Avx2.Permute4x64(sums, Abdc);
 	}
 
@@ -830,6 +829,20 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 	private static Vector256<ulong> Swap(Vector256<ulong> limb)
 	{
 		return Avx2.Shuffle(limb.AsUInt32(), Badc).AsUInt64();
+	}
+
+	// twoP − value in the lanes that lanes sets and value in the others.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector256<ulong> NegateLanes(Vector256<ulong> value, Vector256<ulong> twoP, [ConstantExpected] byte lanes)
+	{
+#if NET11_0_OR_GREATER
+		// From .NET 11 on, a constant minus a vector compiles to a subtraction from zero and an add, so the lanes take ~value + twoP + 1, an xor and an add of a constant that the mask folds into.
+		Vector256<ulong> mask = Vector256.Create(0 - (ulong)(lanes & 1), 0 - (ulong)(lanes >> 2 & 1), 0 - (ulong)(lanes >> 4 & 1), 0 - (ulong)(lanes >> 6 & 1));
+		return (value ^ mask) + (twoP + Vector256<ulong>.One & mask);
+#else
+		// Before .NET 11 the difference is one subtraction, and the xor form copies the mask before each xor.
+		return Blend(value, twoP - value, lanes);
+#endif
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

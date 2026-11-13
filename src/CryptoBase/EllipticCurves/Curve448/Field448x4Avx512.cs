@@ -156,7 +156,7 @@ internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 		Vector512<ulong> laneB = LaneMask(LaneB);
 		Vector512<ulong> x = Avx512F.PermuteVar8x64(limb, xs);
 		Vector512<ulong> z = Avx512F.PermuteVar8x64(limb, zs);
-		Vector512<ulong> sums = x + Blend(z, twoP - z, LaneMask(LaneB | LaneD));
+		Vector512<ulong> sums = x + NegateLanes(z, twoP, LaneMask(LaneB | LaneD));
 		left = Blend(Avx512F.Permute4x64(sums, Abdc), x, laneB);
 		right = Blend(Avx512F.Permute4x64(sums, Aaab), z, laneB);
 	}
@@ -189,7 +189,11 @@ internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 		Vector512<ulong> tail = LaneMask(LaneC | LaneD);
 		Vector512<ulong> swapped = Avx512F.Shuffle(limb.AsUInt32(), Badc).AsUInt64();
 		Vector512<ulong> four = swapped << 2;
+#if NET11_0_OR_GREATER
+		Vector512<ulong> lanes = swapped + NegateLanes(limb, twoP, LaneMask(LaneD));
+#else
 		Vector512<ulong> lanes = Blend(limb + swapped, swapped + twoP - limb, LaneMask(LaneD));
+#endif
 		left = Blend(Blend(limb + eightP - four, four + M(limb, Vector512.Create(0, SixteenA24, 0, 0, 0, SixteenA24, 0, 0)), LaneMask(LaneB)), lanes, tail);
 		right = Blend(limb, lanes, tail);
 	}
@@ -388,6 +392,19 @@ internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 		ulong c = (lanes & LaneC) is 0 ? 0 : ulong.MaxValue;
 		ulong d = (lanes & LaneD) is 0 ? 0 : ulong.MaxValue;
 		return Vector512.Create(a, b, c, d, a, b, c, d);
+	}
+
+	// twoP − value in the lanes that mask sets and value in the others.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector512<ulong> NegateLanes(Vector512<ulong> value, Vector512<ulong> twoP, Vector512<ulong> mask)
+	{
+#if NET11_0_OR_GREATER
+		// From .NET 11 on, a constant minus a vector compiles to a subtraction from zero and an add, so the lanes take ~value + twoP + 1, an xor and an add of a constant that the mask folds into.
+		return (value ^ mask) + (twoP + Vector512<ulong>.One & mask);
+#else
+		// Before .NET 11 the difference is one subtraction.
+		return Blend(value, twoP - value, mask);
+#endif
 	}
 
 	// The bits of right where mask is set and of left elsewhere.
