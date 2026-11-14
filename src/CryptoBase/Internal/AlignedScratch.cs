@@ -48,7 +48,8 @@ internal static class AlignedScratch
 		return (int)(-address & Alignment - 1) / sizeof(ulong);
 	}
 
-	// The first value of T at the first aligned address in buffer, a local of the caller.
+	// The first value of T at the first address in buffer that is a multiple of alignment, a power of two.
+	// If buffer moves meanwhile, only the speed changes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static unsafe ref T Start<TBuffer, T>(ref TBuffer buffer, nuint alignment = Alignment) where TBuffer : unmanaged where T : unmanaged
 	{
