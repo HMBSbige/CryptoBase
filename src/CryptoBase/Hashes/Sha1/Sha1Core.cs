@@ -14,12 +14,19 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 	private const uint MajorityConstant = 0x8F1BBCDCU;
 	private const uint ParityConstant2 = 0xCA62C1D6U;
 
+#if !NET11_0_OR_GREATER
+	// Before .NET 11 the count takes a store of its own wherever it sits.
 	private ulong _byteCount;
+#endif
 	private uint _h0;
 	private uint _h1;
 	private uint _h2;
 	private uint _h3;
 	private uint _h4;
+#if NET11_0_OR_GREATER
+	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state; after the words, the count, which Append reads right away, takes an integer store of its own rather than part of a vector store.
+	private ulong _byteCount;
+#endif
 	private InlineArray64<byte> _buffer;
 
 	private const int BlockSizeInBytes = 64;

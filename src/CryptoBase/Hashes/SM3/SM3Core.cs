@@ -21,7 +21,10 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		0x8A7A879DU, 0x14F50F3BU, 0x29EA1E76U, 0x53D43CECU, 0xA7A879D8U, 0x4F50F3B1U, 0x9EA1E762U, 0x3D43CEC5U,
 	];
 
+#if !NET11_0_OR_GREATER
+	// Before .NET 11 the count takes a store of its own wherever it sits.
 	private ulong _byteCount;
+#endif
 	private uint _v0;
 	private uint _v1;
 	private uint _v2;
@@ -30,6 +33,10 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	private uint _v5;
 	private uint _v6;
 	private uint _v7;
+#if NET11_0_OR_GREATER
+	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state; after the words, the count, which Append reads right away, takes an integer store of its own rather than part of a vector store.
+	private ulong _byteCount;
+#endif
 	private InlineArray64<byte> _buffer;
 
 	private const int BlockSizeInBytes = 64;
