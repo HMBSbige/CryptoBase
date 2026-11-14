@@ -80,7 +80,7 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	public static void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
+	public static unsafe void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
 		Blake3Flags.LaneShape(flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags);
 
@@ -110,7 +110,8 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 		}
 
 		Vector128<uint> counterHigh = Vector128.Create((uint)(counter >> 32)) - Vector128.LessThan(counterLow, Vector128.Create((uint)counter));
-		Unsafe.SkipInit(out InlineArray16<Vector128<uint>> message);
+		Unsafe.SkipInit(out MessageBuffer storage);
+		Vector128<uint>* message = MessageStart(ref storage);
 		uint blockFlags = flags | startFlags;
 
 		do
@@ -194,11 +195,12 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Xof(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, nuint count, ref byte output)
+	private static unsafe void Xof(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, nuint count, ref byte output)
 	{
 		Debug.Assert(count is > 1 and <= 4);
 
-		Unsafe.SkipInit(out InlineArray16<Vector128<uint>> message);
+		Unsafe.SkipInit(out MessageBuffer storage);
+		Vector128<uint>* message = MessageStart(ref storage);
 
 		for (int i = 0; i < 16; ++i)
 		{
@@ -271,11 +273,19 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 			Vector128<uint> m2 = Vector128.LoadUnsafe(ref block, offset2 + i * sizeof(uint)).AsUInt32();
 			Vector128<uint> m3 = Vector128.LoadUnsafe(ref block, offset3 + i * sizeof(uint)).AsUInt32();
 			VectorTranspose.Transpose(ref m0, ref m1, ref m2, ref m3);
-			Unsafe.Add(ref message, i) = m0;
-			Unsafe.Add(ref message, i + 1) = m1;
-			Unsafe.Add(ref message, i + 2) = m2;
-			Unsafe.Add(ref message, i + 3) = m3;
+			ref Vector128<uint> words = ref Unsafe.Add(ref message, i);
+			words = m0;
+			Unsafe.Add(ref words, 1) = m1;
+			Unsafe.Add(ref words, 2) = m2;
+			Unsafe.Add(ref words, 3) = m3;
 		}
+	}
+
+	// The message vectors as a pointer computed at run time, which stays in a register; the JIT forms the address of a frame local again at every access.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe Vector128<uint>* MessageStart(ref MessageBuffer storage)
+	{
+		return (Vector128<uint>*)Unsafe.AsPointer(ref AlignedScratch.Start<MessageBuffer, Vector128<uint>>(ref storage, (nuint)sizeof(Vector128<uint>)));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -303,7 +313,7 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 			return;
 		}
 
-		ref byte schedule = ref MemoryMarshal.GetReference(MessageSchedule);
+		ref byte schedule = ref MemoryMarshal.GetReference(MessageByteOffsets128);
 		Unsafe.SkipInit(out Vector128<uint> scratch);
 
 		// A loop keeps the kernel small enough for the JIT to inline every step and rotation, whatever instructions the rotations take.
@@ -391,7 +401,7 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<uint> Word(ref Vector128<uint> message, ref byte words, int i)
 	{
-		return Unsafe.Add(ref message, Unsafe.Add(ref words, i));
+		return Unsafe.AddByteOffset(ref message, Unsafe.Add(ref words, i));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -450,5 +460,12 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 
 		scratch = b ^ c;
 		return scratch >>> count | scratch << 32 - count;
+	}
+
+	// Sixteen message vectors and room for Start to align them.
+	[InlineArray(17)]
+	private struct MessageBuffer
+	{
+		private Vector128<uint> element;
 	}
 }

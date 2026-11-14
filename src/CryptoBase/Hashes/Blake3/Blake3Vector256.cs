@@ -73,7 +73,7 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	public static void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
+	public static unsafe void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
 		Blake3Flags.LaneShape(flags, out bool chunks, out nuint blockCount, out nuint stride, out uint startFlags, out uint endFlags);
 
@@ -107,7 +107,8 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		}
 
 		Vector256<uint> counterHigh = Vector256.Create((uint)(counter >> 32)) - Vector256.LessThan(counterLow, Vector256.Create((uint)counter));
-		Unsafe.SkipInit(out InlineArray16<Vector256<uint>> message);
+		Unsafe.SkipInit(out MessageBuffer storage);
+		Vector256<uint>* message = (Vector256<uint>*)Unsafe.AsPointer(ref AlignedScratch.Start<MessageBuffer, Vector256<uint>>(ref storage, (nuint)sizeof(Vector256<uint>)));
 		uint blockFlags = flags | startFlags;
 
 		// Near its end, an input would prefetch the start of the next input, which another lane has already read; it prefetches the input that its lane hashes in the next batch instead.
@@ -198,11 +199,12 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Xof(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, nuint count, ref byte output)
+	private static unsafe void Xof(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, nuint count, ref byte output)
 	{
 		Debug.Assert(count is > 4 and <= 8);
 
-		Unsafe.SkipInit(out InlineArray16<Vector256<uint>> message);
+		Unsafe.SkipInit(out MessageBuffer storage);
+		Vector256<uint>* message = (Vector256<uint>*)Unsafe.AsPointer(ref AlignedScratch.Start<MessageBuffer, Vector256<uint>>(ref storage, (nuint)sizeof(Vector256<uint>)));
 
 		for (int i = 0; i < 16; ++i)
 		{
@@ -337,14 +339,14 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 			return;
 		}
 
-		ref byte schedule = ref MemoryMarshal.GetReference(MessageSchedule);
+		ref ushort schedule = ref MemoryMarshal.GetReference(MessageByteOffsets256);
 		// Reusing scratch reduces AVX2 rotation spills.
 		Unsafe.SkipInit(out Vector256<uint> scratch);
 
 		// A loop keeps the kernel small enough for the JIT to inline every step and rotation, whatever instructions the rotations take.
 		for (int round = 0; round < Blake3Constants.Rounds; ++round)
 		{
-			ref byte words = ref Unsafe.Add(ref schedule, round * 16);
+			ref ushort words = ref Unsafe.Add(ref schedule, round * 16);
 			Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref scratch, ref message, ref words);
 			Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref scratch, ref message, ref Unsafe.Add(ref words, 8));
 		}
@@ -424,9 +426,9 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector256<uint> Word(ref Vector256<uint> message, ref byte words, int i)
+	private static Vector256<uint> Word(ref Vector256<uint> message, ref ushort words, int i)
 	{
-		return Unsafe.Add(ref message, Unsafe.Add(ref words, i));
+		return Unsafe.AddByteOffset(ref message, (nuint)Unsafe.Add(ref words, i));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -436,7 +438,7 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		ref Vector256<uint> b0, ref Vector256<uint> b1, ref Vector256<uint> b2, ref Vector256<uint> b3,
 		ref Vector256<uint> c0, ref Vector256<uint> c1, ref Vector256<uint> c2, ref Vector256<uint> c3,
 		ref Vector256<uint> d0, ref Vector256<uint> d1, ref Vector256<uint> d2, ref Vector256<uint> d3,
-		ref Vector256<uint> scratch, ref Vector256<uint> message, ref byte words
+		ref Vector256<uint> scratch, ref Vector256<uint> message, ref ushort words
 	)
 	{
 		a0 = a0 + Word(ref message, ref words, 0) + b0;
@@ -479,5 +481,11 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		b2 = scratch >>> 7 | scratch << 25;
 		scratch = b3 ^ c3;
 		b3 = scratch >>> 7 | scratch << 25;
+	}
+
+	[InlineArray(17)]
+	private struct MessageBuffer
+	{
+		private Vector256<uint> element;
 	}
 }
