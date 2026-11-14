@@ -10,6 +10,8 @@ internal static class AesGcmFusion
 		get => X86Base.X64.IsSupported && AesCipherX86.IsSupported && GHashX86.IsSupported || AdvSimd.Arm64.IsSupported && AesCipherArm.IsSupported && GHashArm.IsSupported;
 	}
 
+	// The JIT inlines this entry into GcmMode on its own, while Native AOT leaves it a call unless it optimizes for speed.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryDecrypt(AesCipher aes, ref GHashKey hashKey, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> source, ReadOnlySpan<byte> tag, Span<byte> destination, ReadOnlySpan<byte> associatedData)
 	{
 		Debug.Assert(IsSupported);
@@ -17,6 +19,8 @@ internal static class AesGcmFusion
 		return Transform<Decryption>(aes, ref hashKey, ref MemoryMarshal.GetReference(nonce), ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length, ref MemoryMarshal.GetReference(tag), ref MemoryMarshal.GetReference(associatedData), associatedData.Length);
 	}
 
+	// The JIT inlines this entry into GcmMode on its own, while Native AOT leaves it a call unless it optimizes for speed.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Encrypt(AesCipher aes, ref GHashKey hashKey, scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData)
 	{
 		Debug.Assert(IsSupported);
