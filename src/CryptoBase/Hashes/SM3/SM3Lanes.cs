@@ -66,10 +66,31 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Compress(ref TVector state, ref TVector schedule)
 	{
+#if !NET11_0_OR_GREATER
+		// On x64, the 16-byte lanes run all the rounds in one method without spilling, which on Windows saves the callee-saved vector registers once rather than in each of three methods.
+		// From .NET 11 on, that method spills in the middle rounds and runs no faster, so the rounds stay in three methods there.
+		if (X86Base.X64.IsSupported && Unsafe.SizeOf<TVector>() is 16)
+		{
+			CompressInOne(ref state, ref schedule);
+			return;
+		}
+#endif
+
 		RoundsEarly(ref state, ref schedule);
 		RoundsMiddle(ref schedule);
 		RoundsLate(ref state, ref schedule);
 	}
+
+#if !NET11_0_OR_GREATER
+	// All the rounds of Compress in one method.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void CompressInOne(ref TVector state, ref TVector schedule)
+	{
+		Rounds(ref state, ref schedule, ref schedule, 0, 16, false, true, false);
+		Rounds(ref schedule, ref schedule, ref schedule, 16, 52, true, true, false);
+		Rounds(ref schedule, ref state, ref schedule, 52, 64, true, false, true);
+	}
+#endif
 
 	// Rounds 0 to 15, from state into W[0..7].
 	[MethodImpl(MethodImplOptions.NoInlining)]
