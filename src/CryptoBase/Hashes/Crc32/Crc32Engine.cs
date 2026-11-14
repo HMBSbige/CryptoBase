@@ -59,17 +59,29 @@ internal static class Crc32Engine
 		{
 			if (source.Length >= X86Avx512Threshold && UseX86Vector512)
 			{
+#if NET11_0_OR_GREATER
+				return UpdateX86512<TAlgorithm>(state, source);
+#else
 				return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86512(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
+#endif
 			}
 
 			if (source.Length >= X86Avx2Threshold && Avx2.IsSupported && Pclmulqdq.V256.IsSupported)
 			{
+#if NET11_0_OR_GREATER
+				return UpdateX86256<TAlgorithm>(state, source);
+#else
 				return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86256(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
+#endif
 			}
 
 			if (source.Length >= VectorThresholdWithoutCrcInstruction)
 			{
+#if NET11_0_OR_GREATER
+				return UpdateX86128<TAlgorithm>(state, source);
+#else
 				return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86128(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
+#endif
 			}
 		}
 
@@ -144,6 +156,31 @@ internal static class Crc32Engine
 		Debug.Assert(isIeee || typeof(TAlgorithm) == typeof(Crc32CCore));
 		return isIeee;
 	}
+
+#if NET11_0_OR_GREATER
+	// .NET 11 keeps the constants of a reduction inlined into the caller in callee-saved vector registers, so each width folds and reduces in a call of its own.
+
+	// Folds and reduces with 512-bit vectors.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static uint UpdateX86512<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
+	{
+		return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86512(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
+	}
+
+	// Folds and reduces with 256-bit vectors.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static uint UpdateX86256<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
+	{
+		return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86256(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
+	}
+
+	// Folds and reduces with 128-bit vectors.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static uint UpdateX86128<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
+	{
+		return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86128(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
+	}
+#endif
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint FinishX86<TAlgorithm>(Vector128<ulong> folded, ReadOnlySpan<byte> source, int bytesConsumed) where TAlgorithm : unmanaged

@@ -8,7 +8,15 @@ internal static partial class Crc32Vectorized
 
 	internal static readonly Crc32X86FoldingConstants CastagnoliX86Constants = new(0x00dcb17aa4UL, 0x00b9e02b86UL, 0x006992cea2UL, 0x0206e38d70UL, 0x00740eef02UL, 0x009e4addf8UL, 0x003da6d0cbUL, 0x00ba4fc28eUL, 0x0ec1068c50UL, 0x00493c7d27UL);
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
+#if NET11_0_OR_GREATER
+	// From .NET 11 on, Crc32Engine wraps each fold with its reduction in a call of its own.
+	private const MethodImplOptions FoldX86Options = MethodImplOptions.AggressiveInlining;
+#else
+	// Before .NET 11 the caller keeps the constants of the reduction in registers that need no saving, so only the fold takes a call.
+	private const MethodImplOptions FoldX86Options = MethodImplOptions.NoInlining;
+#endif
+
+	[MethodImpl(FoldX86Options)]
 	internal static Vector128<ulong> FoldX86512(uint state, ReadOnlySpan<byte> source, in Crc32X86FoldingConstants constants, out int bytesConsumed)
 	{
 		Debug.Assert(Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported);
@@ -68,7 +76,7 @@ internal static partial class Crc32Vectorized
 		return folded;
 	}
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(FoldX86Options)]
 	internal static Vector128<ulong> FoldX86256(uint state, ReadOnlySpan<byte> source, in Crc32X86FoldingConstants constants, out int bytesConsumed)
 	{
 		Debug.Assert(Avx2.IsSupported && Pclmulqdq.V256.IsSupported);
@@ -149,7 +157,7 @@ internal static partial class Crc32Vectorized
 		return folded;
 	}
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
+	[MethodImpl(FoldX86Options)]
 	internal static Vector128<ulong> FoldX86128(uint state, ReadOnlySpan<byte> source, in Crc32X86FoldingConstants constants, out int bytesConsumed)
 	{
 		Debug.Assert(Pclmulqdq.IsSupported);
