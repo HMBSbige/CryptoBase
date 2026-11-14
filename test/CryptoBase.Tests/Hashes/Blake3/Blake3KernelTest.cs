@@ -10,7 +10,11 @@ public class Blake3KernelTest
 
 	private static readonly uint[] ModeFlags = [0, KeyedHash, DeriveKeyMaterial];
 
-	private static readonly int[] PartialChunkLengths = [.. Enumerable.Range(1, ChunkLength / BlockLength).SelectMany(static blocks => (int[])[(blocks - 1) * BlockLength + 1, Math.Min(blocks * BlockLength, ChunkLength - 1)])];
+	// Last-block lengths that take every path through the padding: partial loads of each size, and pieces that are whole, cut or past the end.
+	private static readonly int[] LastBlockLengths = [1, 2, 3, 4, 7, 8, 9, 15, 16, 17, 31, 32, 33, 47, 48, 49, 63, 64];
+
+	// Those lengths in the first two blocks of a chunk, and the shortest and longest in the others.
+	private static readonly int[] PartialChunkLengths = [.. Enumerable.Range(1, ChunkLength / BlockLength).SelectMany(static blocks => blocks <= 2 ? LastBlockLengths.Select(length => (blocks - 1) * BlockLength + length) : [(blocks - 1) * BlockLength + 1, Math.Min(blocks * BlockLength, ChunkLength - 1)])];
 
 	[Test]
 	public async Task EveryKernelIsListed()

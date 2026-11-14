@@ -35,7 +35,46 @@ internal static class VectorMemoryExtensions
 
 			return Vector128.CreateScalar(input);
 		}
+
+		// The 16 bytes at offset, a multiple of 16, of the input zero-padded past length, without reading past the input.
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector128<byte> LoadZeroPaddedUnsafe(ref byte source, int offset, int length)
+		{
+			Debug.Assert(offset >= 0 && offset % 16 is 0 && length >= 0);
+
+			if (offset is 0)
+			{
+				return length switch
+				{
+					>= 16 => Vector128.LoadUnsafe(ref source),
+					0 => Vector128<byte>.Zero,
+					_ => Vector128.LoadPartialUnsafe(ref source, 0, length)
+				};
+			}
+
+			if (length >= offset + 16)
+			{
+				return Vector128.LoadUnsafe(ref source, (uint)offset);
+			}
+
+			if (length <= offset)
+			{
+				return Vector128<byte>.Zero;
+			}
+
+			// The input is at least 16 bytes long here, so its last 16 bytes hold the piece shift = offset + 16 - length places higher;
+			// the indices that start shift places into ShiftDownIndices move them down and zero the rest.
+			Vector128<byte> indices = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(ShiftDownIndices), (uint)(offset + 16 - length));
+			return Vector128.ShuffleNative(Vector128.LoadUnsafe(ref source, (uint)(length - 16)), indices);
+		}
 	}
+
+	// Sixteen indices in order, then indices with the high bit set, which select zero on x86 and, being out of range, on ARM64.
+	private static ReadOnlySpan<byte> ShiftDownIndices =>
+	[
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+		0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80
+	];
 
 	extension(Vector128<byte> value)
 	{

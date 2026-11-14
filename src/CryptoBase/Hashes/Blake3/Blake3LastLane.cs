@@ -29,9 +29,7 @@ internal ref struct Blake3LastLane
 		nuint lastBlockOffset = (TailBlocks - 1) * BlockLength;
 		LastLength = (uint)(tailLength - lastBlockOffset);
 
-		Span<byte> lastBlock = buffer;
-		MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref input, lastBlockOffset), (int)LastLength).CopyTo(lastBlock);
-		lastBlock.Slice((int)LastLength).Clear();
+		Blake3PaddedBlock.Store(ref buffer[0], in Unsafe.Add(ref input, lastBlockOffset), (int)LastLength);
 
 		_block = ref Unsafe.Subtract(ref input, (blockCount - TailBlocks) * BlockLength);
 		_lastBlock = ref buffer[0];

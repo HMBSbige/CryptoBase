@@ -26,9 +26,7 @@ internal struct Blake3Output
 			blocks = blocks.Slice(lastBlockOffset);
 		}
 
-		Span<byte> block = output.Block;
-		blocks.CopyTo(block);
-		block.Slice(blocks.Length).Clear();
+		Blake3PaddedBlock.Store(ref output.Block[0], in MemoryMarshal.GetReference(blocks), blocks.Length);
 		output.UsedBlockLength = (uint)blocks.Length;
 		output.Counter = chunkCounter;
 		output.Flags = flags | startFlag | Blake3Flags.ChunkEnd;

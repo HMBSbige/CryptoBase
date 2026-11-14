@@ -106,10 +106,8 @@ internal static class Blake3Compressor
 	[SkipLocalsInit]
 	private static void CompressLastBlock(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, ref byte output)
 	{
-		Unsafe.SkipInit(out InlineArray64<byte> buffer);
-		Span<byte> padded = buffer;
-		MemoryMarshal.CreateReadOnlySpan(ref block, (int)blockLength).CopyTo(padded);
-		padded.Slice((int)blockLength).Clear();
+		Unsafe.SkipInit(out InlineArray64<byte> padded);
+		Blake3PaddedBlock.Store(ref padded[0], in block, (int)blockLength);
 		Compress(in cv, ref padded[0], blockLength, counter, flags | Blake3Flags.ChunkEnd, ref output);
 	}
 }

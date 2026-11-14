@@ -45,6 +45,9 @@ public class Blake3Test
 		(4194305, @"0eae828075680cd4dde0b137b5ba7ec21a20025dcd8c870f7bb5e39789e50746")
 	];
 
+	// Where the last block starts: alone, after other blocks of its chunk, in a chunk hashed after one full chunk, in the lane that joins a row kernel late, and after the lanes of a column kernel, both after other blocks of its chunk and at the start of one.
+	public static IEnumerable<int> LastBlockOffsets => [0, 64, 15 * 64, 1024, 1024 + 12 * 64, 2048, 8 * 1024 + 6 * 64, 9 * 1024];
+
 	[Test]
 	[Arguments("", "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262")]
 	[Arguments("abc", "6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85")]
@@ -63,6 +66,33 @@ public class Blake3Test
 		using Blake3HashAlgorithm hasher = Blake3HashAlgorithm.Create();
 		AppendInPieces(hasher, CreateDeterministicSource(length), 1024 * 5 + 3);
 		await Blake3TestUtils.VerifyCurrentHash(hasher, Convert.FromHexString(expectedHex));
+	}
+
+	// Every length up to a block takes its own path through the padding.
+	[Test]
+	[MethodDataSource(nameof(LastBlockOffsets))]
+	public async Task EveryLastBlockLengthMatchesReference(int lastBlockOffset)
+	{
+		byte[] source = CreateDeterministicSource(lastBlockOffset + Blake3Reference.BlockLength);
+
+		for (int length = lastBlockOffset is 0 ? 0 : lastBlockOffset + 1; length <= source.Length; ++length)
+		{
+			ReadOnlySpan<byte> input = source.AsSpan(0, length);
+			byte[] expected = Blake3TestUtils.ReferenceHash(Blake3Mode.Hash, input, Blake3HashAlgorithm.HashLength);
+			byte[] oneShot = new byte[Blake3HashAlgorithm.HashLength];
+			Blake3HashAlgorithm.HashData(input, oneShot);
+
+			using Blake3HashAlgorithm hasher = Blake3HashAlgorithm.Create();
+			hasher.Append(input);
+			byte[] incremental = new byte[Blake3HashAlgorithm.HashLength];
+			hasher.GetCurrentHash(incremental);
+
+			using (Assert.Multiple())
+			{
+				await Assert.That(oneShot).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"{length} bytes, one-shot");
+				await Assert.That(incremental).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"{length} bytes, incremental");
+			}
+		}
 	}
 
 	[Test]
