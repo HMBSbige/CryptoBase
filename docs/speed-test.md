@@ -34,6 +34,8 @@ Algorithms that process data report MiB/s at each input size, and the others, su
 
 Each run starts with the runtime, the processor and the instruction sets in use, so include it when you share results.
 
+The default 0.5-second warm-up is a minimum. On the JIT, it also waits for compilation activity to stop, with a longer quiet window when the process has only one processor available. This is a heuristic, not a guarantee that every method has reached its final compilation tier. Use `--warmup` to increase the minimum, or `--warmup 0` to skip it.
+
 ## Other commands
 
 ```shell

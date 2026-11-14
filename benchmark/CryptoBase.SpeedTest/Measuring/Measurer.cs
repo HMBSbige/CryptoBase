@@ -29,22 +29,29 @@ internal sealed class Measurer(MeasurementSettings settings)
 	private static readonly long WarmupBatchTicks = Math.Max(1, Stopwatch.Frequency / 4000);
 
 	/// <summary>
+	/// The call-counting delay of tiered compilation: 100 ms, or 1 s with one processor.
+	/// </summary>
+	private static readonly long TieringDelayTicks = Environment.ProcessorCount is 1 ? Stopwatch.Frequency : Stopwatch.Frequency / 10;
+
+	/// <summary>
 	/// How long the JIT must have compiled nothing for a warm-up to end.
 	/// </summary>
 	/// <remarks>
-	/// Between two steps of tiered compilation the count of compiled methods stands still while the runtime waits out its call-counting delay, 100 ms by default, which methods called for the first time extend.
-	/// Measured on every row, such a pause lasts about 200 to 230 ms, and rarely up to 300 ms, so a shorter quiet time could end the warm-up before the code it runs reaches Tier1.
+	/// Between two steps of tiered compilation the JIT can stay quiet for up to two delays plus the time to compile, which three delays cover.
 	/// </remarks>
-	private static readonly long JitQuietTicks = 3 * Stopwatch.Frequency / 10;
+	private static readonly long JitQuietTicks = 3 * TieringDelayTicks;
 
 	/// <summary>
 	/// How far past the warm-up time a warm-up can run while the JIT is still compiling, so that it ends even if the JIT never settles.
 	/// </summary>
-	private static readonly long MaximumWarmupExtensionTicks = 5 * Stopwatch.Frequency;
+	/// <remarks>
+	/// Ten delays leave room for a few steps of tiered compilation after the quiet window.
+	/// </remarks>
+	private static readonly long MaximumWarmupExtensionTicks = Math.Max(5 * Stopwatch.Frequency, 10 * TieringDelayTicks);
 
 	private readonly long _sampleTicks = Math.Max(1, (long)(settings.Seconds * Stopwatch.Frequency / MeasurementSettings.SampleCount));
 
-	private bool AwaitsJit { get; init; } = true;
+	private bool AwaitsJit { get; init; } = RuntimeFeature.IsDynamicCodeCompiled;
 
 	/// <summary>
 	/// Runs the measuring code once on a workload that does nothing, so that its first compilation does not happen in the middle of the first row and restart the delay of tiered compilation there.
@@ -61,7 +68,7 @@ internal sealed class Measurer(MeasurementSettings settings)
 	/// Runs short batches of every runner in turn for at least the warm-up time and until the JIT has compiled nothing for <see cref="JitQuietTicks" />, but no longer than <see cref="MaximumWarmupExtensionTicks" /> past the warm-up time.
 	/// </summary>
 	/// <remarks>
-	/// The count of compiled methods includes the recompilations that tiered compilation makes on its background thread, so it stops changing once the code that the runners call has reached its final tier.
+	/// Compilation-count stability is a heuristic, not proof that every hot method has reached Tier1.
 	/// Native AOT compiles nothing at run time, so its warm-up takes the warm-up time.
 	/// </remarks>
 	public WarmupResult Warmup(IReadOnlyList<IBatchRunner> runners)
@@ -116,7 +123,7 @@ internal sealed class Measurer(MeasurementSettings settings)
 			}
 		}
 
-		return new WarmupResult(ticksPerIteration, new WarmupSummary(Stopwatch.GetElapsedTime(start, now), now - lastCompilation >= JitQuietTicks));
+		return new WarmupResult(ticksPerIteration, new WarmupSummary(Stopwatch.GetElapsedTime(start, now), !AwaitsJit || now - lastCompilation >= JitQuietTicks));
 	}
 
 	/// <param name="unitsPerIteration">The bytes or operations of one iteration of one worker.</param>
