@@ -69,7 +69,8 @@ public sealed partial class Base32Encoding
 		Vector512.WidenUpper(value).StoreUnsafe(ref destinationReference, 32);
 	}
 
-	// Char input is narrowed with saturation, which turns every char above U+00FF into a byte the decoders reject, so no ASCII check is needed. These loads only feed fixed alphabets, so x86 uses the cheaper signed pack: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
+	// Char input is narrowed with saturation, which turns every char above U+00FF into a byte the decoders reject, so no ASCII check is needed.
+	// These loads only feed fixed alphabets, so x86 uses the cheaper signed pack: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> LoadSymbols128<T>(ref T source) where T : unmanaged
 	{
@@ -128,7 +129,8 @@ public sealed partial class Base32Encoding
 		return Vector512.IsHardwareAccelerated && Avx512BW.IsSupported;
 	}
 
-	// SIMD encoders cover every whole block: after the full vectors, one more vector ends at the last whole block and rewrites the symbols it overlaps with identical values. That vector spans minimumBlocks blocks, so fewer blocks are left to the scalar loop.
+	// SIMD encoders cover every whole block: after the full vectors, one more vector ends at the last whole block and rewrites the symbols it overlaps with identical values.
+	// That vector spans minimumBlocks blocks, so fewer blocks are left to the scalar loop.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static int GetEncodeBlockCount(int sourceLength, int destinationLength, int minimumBlocks)
 	{

@@ -14,7 +14,9 @@ public class MontgomeryPairTest
 		await Assert.That(MontgomeryPairKernelCase.All().Select(static kernel => kernel.KernelType.GetGenericTypeDefinition()).Distinct()).IsEquivalentTo(ImplementationsOf(typeof(IMontgomeryPairKernel)));
 	}
 
-	// A pair where the platform has a pair kernel that holds the digits of both moduli, of one limb count, within the window or limb bounds that MontgomeryKernelDispatch sets for pairs; the smallest such window, or with AVX2 alone the window of every vector past vector 0 as far as MaxAvx2WindowVectors. The contexts of the moduli have the digits of the pair kernel, or are those of Create without a pair.
+	// A pair where the platform has a pair kernel that holds the digits of both moduli, of one limb count, within the window or limb bounds that MontgomeryKernelDispatch sets for pairs;
+	// the smallest such window, or with AVX2 alone the window of every vector past vector 0 as far as MaxAvx2WindowVectors.
+	// The contexts of the moduli have the digits of the pair kernel, or are those of Create without a pair.
 	[Test]
 	public async Task DispatchPairsWhereItIsFaster()
 	{

@@ -291,7 +291,8 @@ internal class EcdsaKnownAnswerTest
 		}
 	}
 
-	// The nonce of call index of Next, counting from 0. privateKey and hash are as long as n, the hash already truncated.
+	// The nonce of call index of Next, counting from 0.
+	// privateKey and hash are as long as n, the hash already truncated.
 	internal static byte[] DeriveNonce<TOrder>(SignatureAlgorithm algorithm, byte[] privateKey, byte[] hash, byte[] additionalData, int index) where TOrder : unmanaged, IMontgomeryModulus
 	{
 		return algorithm switch

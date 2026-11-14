@@ -16,11 +16,9 @@ namespace CryptoBase.Tests.X509;
 
 // SM2 certificates with the default ID "1234567812345678" of GB/T 35276-2017.
 //
-// The files of X509/SM2 that start with sm2- are a chain valid from 2026-01-01 to 2036-01-01: sm2-root.pem, sm2-intermediate.pem and sm2-leaf.pem,
-// signed with the default ID, and sm2-leaf-empty-id.pem, a leaf of the same key that the intermediate signed with the empty ID.
+// The files of X509/SM2 that start with sm2- are a chain valid from 2026-01-01 to 2036-01-01: sm2-root.pem, sm2-intermediate.pem and sm2-leaf.pem, signed with the default ID, and sm2-leaf-empty-id.pem, a leaf of the same key that the intermediate signed with the empty ID.
 //
-// nrcac-root.pem is the self-signed root C=CN, O=NRCAC, CN=ROOTCA of 2012 (SHA-256 fingerprint
-// 9C28D3847414BFFF1A5749E7E2381146F82842083E8C592E16A612D04A5BA8CD), whose SM2-with-SM3 identifiers have NULL parameters.
+// nrcac-root.pem is the self-signed root C=CN, O=NRCAC, CN=ROOTCA of 2012 (SHA-256 fingerprint 9C28D3847414BFFF1A5749E7E2381146F82842083E8C592E16A612D04A5BA8CD), whose SM2-with-SM3 identifiers have NULL parameters.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class SM2CertificateTest
 {

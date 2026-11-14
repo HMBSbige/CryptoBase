@@ -10,7 +10,10 @@ public static class ChunkedRandomAccess
 	/// <summary>
 	/// Creates authenticated positional reads of the encrypted message in a file.
 	/// </summary>
-	/// <remarks>Checks the header against the key and context, then authenticates the last chunk, before the instance is returned. If the method throws, <paramref name="handle" /> is not disposed.</remarks>
+	/// <remarks>
+	/// Checks the header against the key and context, then authenticates the last chunk, before the instance is returned.
+	/// If the method throws, <paramref name="handle" /> is not disposed.
+	/// </remarks>
 	/// <typeparam name="TCipher">The chunked cipher, such as <c>Cobblestone128Cipher</c>.</typeparam>
 	/// <param name="handle">The readable file handle whose file holds exactly the encrypted message.</param>
 	/// <param name="key">The input key, <see cref="IChunkedCipher{TSelf}.KeySize" /> bytes long.</param>
@@ -30,7 +33,11 @@ public static class ChunkedRandomAccess
 	/// <summary>
 	/// Creates authenticated positional reads of the encrypted message in a seekable stream.
 	/// </summary>
-	/// <remarks>Checks the header against the key and context, then authenticates the last chunk, before the instance is returned. Each access positions the stream first, so its position is not preserved. If the method throws, <paramref name="inner" /> is not disposed.</remarks>
+	/// <remarks>
+	/// Checks the header against the key and context, then authenticates the last chunk, before the instance is returned.
+	/// Each access positions the stream first, so its position is not preserved.
+	/// If the method throws, <paramref name="inner" /> is not disposed.
+	/// </remarks>
 	/// <typeparam name="TCipher">The chunked cipher, such as <c>Cobblestone128Cipher</c>.</typeparam>
 	/// <param name="inner">The readable, seekable stream that holds exactly the encrypted message.</param>
 	/// <param name="key">The input key, <see cref="IChunkedCipher{TSelf}.KeySize" /> bytes long.</param>
@@ -50,7 +57,11 @@ public static class ChunkedRandomAccess
 	/// <summary>
 	/// Asynchronously creates authenticated positional reads of the encrypted message in a file.
 	/// </summary>
-	/// <remarks>Checks the header against the key and context, then authenticates the last chunk, before the instance is returned. The key and context must not change until the task completes. If the task fails, <paramref name="handle" /> is not disposed.</remarks>
+	/// <remarks>
+	/// Checks the header against the key and context, then authenticates the last chunk, before the instance is returned.
+	/// The key and context must not change until the task completes.
+	/// If the task fails, <paramref name="handle" /> is not disposed.
+	/// </remarks>
 	/// <typeparam name="TCipher">The chunked cipher, such as <c>Cobblestone128Cipher</c>.</typeparam>
 	/// <param name="handle">The readable file handle whose file holds exactly the encrypted message.</param>
 	/// <param name="key">The input key, <see cref="IChunkedCipher{TSelf}.KeySize" /> bytes long.</param>
@@ -71,7 +82,12 @@ public static class ChunkedRandomAccess
 	/// <summary>
 	/// Asynchronously creates authenticated positional reads of the encrypted message in a seekable stream.
 	/// </summary>
-	/// <remarks>Checks the header against the key and context, then authenticates the last chunk, before the instance is returned. Each access positions the stream first, so its position is not preserved. The key and context must not change until the task completes. If the task fails, <paramref name="inner" /> is not disposed.</remarks>
+	/// <remarks>
+	/// Checks the header against the key and context, then authenticates the last chunk, before the instance is returned.
+	/// Each access positions the stream first, so its position is not preserved.
+	/// The key and context must not change until the task completes.
+	/// If the task fails, <paramref name="inner" /> is not disposed.
+	/// </remarks>
 	/// <typeparam name="TCipher">The chunked cipher, such as <c>Cobblestone128Cipher</c>.</typeparam>
 	/// <param name="inner">The readable, seekable stream that holds exactly the encrypted message.</param>
 	/// <param name="key">The input key, <see cref="IChunkedCipher{TSelf}.KeySize" /> bytes long.</param>

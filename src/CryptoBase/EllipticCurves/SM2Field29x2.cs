@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
-// The lanes of SM2Field29 in the two lanes of Vector128, on x64 and ARM64. The multiplier of ARM64 reads 32-bit lanes packed in 64 bits, so there the products take the limbs narrowed, and each product accumulates in the same instruction.
+// The lanes of SM2Field29 in the two lanes of Vector128, on x64 and ARM64.
+// The multiplier of ARM64 reads 32-bit lanes packed in 64 bits, so there the products take the limbs narrowed, and each product accumulates in the same instruction.
 internal struct SM2Field29x2 : ISM2Field29Lanes<SM2Field29x2>
 {
 	internal Vector128<ulong> L0;
@@ -31,7 +32,8 @@ internal struct SM2Field29x2 : ISM2Field29Lanes<SM2Field29x2>
 		result.L8 = zero;
 	}
 
-	// The rows and rounds of SM2Field29; on ARM64, on the limbs narrowed once each, a column takes the terms of the rounds before just ahead of its own round, the carry last, so that its products do not wait on them.
+	// The rows and rounds of SM2Field29;
+	// on ARM64, on the limbs narrowed once each, a column takes the terms of the rounds before just ahead of its own round, the carry last, so that its products do not wait on them.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Multiply(in SM2Field29x2 left, in SM2Field29x2 right, out SM2Field29x2 result)
 	{

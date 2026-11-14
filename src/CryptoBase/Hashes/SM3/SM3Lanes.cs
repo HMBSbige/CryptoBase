@@ -2,7 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Hashes.SM3;
 
-// The compression function of SM3 over the lanes of TLanes, and the blocks SM3(prefix ‖ ct) of the KDF of GB/T 32918.4-2016, Sec. 5.4.3, for consecutive counters ct, one counter to a lane. The rounds follow those of SM3Core: the eight state vectors take new roles each round rather than moving, so that four rounds bring them back to their places.
+// The compression function of SM3 over the lanes of TLanes, and the blocks SM3(prefix ‖ ct) of the KDF of GB/T 32918.4-2016, Sec. 5.4.3, for consecutive counters ct, one counter to a lane.
+// The rounds follow those of SM3Core: the eight state vectors take new roles each round rather than moving, so that four rounds bring them back to their places.
 // A round waits on six dependent vector steps, so one group of lanes leaves most of the vector pipelines idle: where there are 32 vector registers, which two states and the temporaries fill, Write takes two groups at a time, their rounds in turn, and one group only for the rest of the key that fits in it.
 internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector> where TVector : unmanaged
 {
@@ -24,7 +25,10 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 		get => (TakesPairs ? 2 : 1) * TLanes.Lanes * BlockLength;
 	}
 
-	// Writes SM3(prefix ‖ ct) for ct = counter, counter + 1, … to destination, which is not empty, 32 bytes each, the last cut to fit, for the prefix that blocks finish. The counters do not wrap: counter + ⌈destination.Length / 32⌉ − 1 is at most 2^32 − 1. Every lane of the last groups is computed, but only the blocks within destination are written. The words of the prefix that the method copies are erased.
+	// Writes SM3(prefix ‖ ct) for ct = counter, counter + 1, … to destination, which is not empty, 32 bytes each, the last cut to fit, for the prefix that blocks finish.
+	// The counters do not wrap: counter + ⌈destination.Length / 32⌉ − 1 is at most 2^32 − 1.
+	// Every lane of the last groups is computed, but only the blocks within destination are written.
+	// The words of the prefix that the method copies are erased.
 	// Inlined where it is hot, it would leave the JIT no budget for its own steps, so it stays a call.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -62,7 +66,8 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 	}
 
 	// Compresses the block of each lane, its 16 words at schedule, into the state of the lane, its 8 words at state, and leaves the working state and then W[8..67] of the expanded block at schedule, which the caller erases.
-	// The JIT tracks a limited number of locals, which the inlined steps of all 64 rounds would come near, and over it would leave the state on the stack; so the rounds run in three methods, which pass the working state through W[0..7], which no round reads past round 15, as for two groups.
+	// The JIT tracks a limited number of locals, which the inlined steps of all 64 rounds would come near, and over it would leave the state on the stack;
+	// so the rounds run in three methods, which pass the working state through W[0..7], which no round reads past round 15, as for two groups.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Compress(ref TVector state, ref TVector schedule)
 	{

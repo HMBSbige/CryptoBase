@@ -15,7 +15,8 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 
 	private static ReadOnlySpan<ulong> TwoLimbs => [2, 0, 0, 0, 0];
 
-	// Each step takes the bit of k from 254 down to 0, as Curve25519Scalar.Ladder does: the state (x2, z2, x3, z3) is swapped to (x3, z3, x2, z2) where the bit differs from the one before. A step is three products of four lanes: (A², B², DA, CB), then (AA·BB, E·(AA + a24·E), (DA + CB)², (DA − CB)²), whose lane D the third, by (1, 1, 1, u), turns into z3.
+	// Each step takes the bit of k from 254 down to 0, as Curve25519Scalar.Ladder does: the state (x2, z2, x3, z3) is swapped to (x3, z3, x2, z2) where the bit differs from the one before.
+	// A step is three products of four lanes: (A², B², DA, CB), then (AA·BB, E·(AA + a24·E), (DA + CB)², (DA − CB)²), whose lane D the third, by (1, 1, 1, u), turns into z3.
 	[SkipLocalsInit]
 	internal static void Ladder(ReadOnlySpan<byte> scalar, in Field25519 u, out Field25519 x, out Field25519 z)
 	{

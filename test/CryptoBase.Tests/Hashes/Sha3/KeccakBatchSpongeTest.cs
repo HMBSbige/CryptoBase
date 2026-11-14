@@ -48,7 +48,8 @@ public class KeccakBatchSpongeTest
 		}
 	}
 
-	// The vector paths store whole words of every stream four or eight at a time, so outputs that end at an inaccessible page must squeeze without faulting; the last stream of the last group reaches the page.
+	// The vector paths store whole words of every stream four or eight at a time, so outputs that end at an inaccessible page must squeeze without faulting;
+	// the last stream of the last group reaches the page.
 	[Test]
 	[CombinedDataSources]
 	public Task SqueezeStaysWithinOutputs([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(Lanes))] int lanes)
@@ -129,7 +130,8 @@ public class KeccakBatchSpongeTest
 		}
 	}
 
-	// The seeds of ML-KEM and ML-DSA, squeezed for whole and partial word tiles. Groups of the forced kernel width leave a partial group where it does not divide the streams.
+	// The seeds of ML-KEM and ML-DSA, squeezed for whole and partial word tiles.
+	// Groups of the forced kernel width leave a partial group where it does not divide the streams.
 	private static async Task VerifyBeforeGuardPages<TRate>(int lanes) where TRate : IKeccakRate
 	{
 		int rate = TRate.RateInBytes;

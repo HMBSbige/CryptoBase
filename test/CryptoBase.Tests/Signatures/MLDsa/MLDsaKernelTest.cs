@@ -5,7 +5,9 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.MLDsa;
 
-// Checks every kernel operation against MLDsaReference. Where IMLDsaKernel allows lazy reduction, an output passes if it is congruent modulo q and within the range the contract states, so that the same tests hold vector kernels that reduce differently; elsewhere it must be the exact value.
+// Checks every kernel operation against MLDsaReference.
+// Where IMLDsaKernel allows lazy reduction, an output passes if it is congruent modulo q and within the range the contract states, so that the same tests hold vector kernels that reduce differently;
+// elsewhere it must be the exact value.
 public class MLDsaKernelTest
 {
 	// The bound of Reduce, and the magnitude below which its result is the centered representative.
@@ -469,7 +471,8 @@ public class MLDsaKernelTest
 		await Assert.That(mismatches).IsEmpty();
 	}
 
-	// Algorithm 39 for r = high · 2γ2 + low with z = −low, so that r + z = high · 2γ2 has the HighBits high, over every high and every |low| < 2γ2. high varies across the lanes, so that over all shifts each low meets every high.
+	// Algorithm 39 for r = high · 2γ2 + low with z = −low, so that r + z = high · 2γ2 has the HighBits high, over every high and every |low| < 2γ2.
+	// high varies across the lanes, so that over all shifts each low meets every high.
 	[Test]
 	[MethodDataSource(typeof(MLDsaKernelCase), nameof(MLDsaKernelCase.All))]
 	public async Task MakeHintMatchesReferenceForEveryInput(MLDsaKernelCase kernel)

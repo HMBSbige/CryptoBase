@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The limbs of Field448x4Avx2 in 128-bit vectors of 32-bit lanes: vector i holds limb i of lanes A, B, C, D, each of which fits 32 bits. umlal multiplies lanes A and B into 64-bit lanes and umlal2 lanes C and D, so the columns of a product take two vectors each, and its limbs narrow back once carried. The members take and give the bounds of Field448x4Avx2.
+// The limbs of Field448x4Avx2 in 128-bit vectors of 32-bit lanes: vector i holds limb i of lanes A, B, C, D, each of which fits 32 bits.
+// umlal multiplies lanes A and B into 64-bit lanes and umlal2 lanes C and D, so the columns of a product take two vectors each, and its limbs narrow back once carried.
+// The members take and give the bounds of Field448x4Avx2.
 internal partial struct Field448x4AdvSimd : IField448Lanes<Field448x4AdvSimd>
 {
 	internal Vector128<uint> L0;
@@ -150,7 +152,8 @@ internal partial struct Field448x4AdvSimd : IField448Lanes<Field448x4AdvSimd>
 		right = Vector128.ConditionalSelect(laneB, z, AdvSimd.Arm64.VectorTableLookup(sums, Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7)).AsUInt32());
 	}
 
-	// The operands of the second product, as Field448x4Avx2.FinishLadder takes them. The left one carries in 64-bit lanes, as 16a24·w in lane B is below 2^47.3; limbs 7 and 15 go first, as limbs 0 and 8 take their carries.
+	// The operands of the second product, as Field448x4Avx2.FinishLadder takes them.
+	// The left one carries in 64-bit lanes, as 16a24·w in lane B is below 2^47.3; limbs 7 and 15 go first, as limbs 0 and 8 take their carries.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void FinishLadder(ref Vector128<uint> products, ref Vector128<uint> operands)
 	{
@@ -208,7 +211,8 @@ internal partial struct Field448x4AdvSimd : IField448Lanes<Field448x4AdvSimd>
 		Unsafe.Add(ref right, 24 + i) = low;
 	}
 
-	// The products of Field448Blocks.Product, lanes A and B and lanes C and D by umlal into separate columns of 64-bit lanes, two columns at a time. Each operand reads its halves as two 64-bit vectors, as taking the lower half of a 128-bit vector costs a move.
+	// The products of Field448Blocks.Product, lanes A and B and lanes C and D by umlal into separate columns of 64-bit lanes, two columns at a time.
+	// Each operand reads its halves as two 64-bit vectors, as taking the lower half of a 128-bit vector costs a move.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void Product(ref Vector128<uint> operands, ref Vector128<uint> result)
 	{

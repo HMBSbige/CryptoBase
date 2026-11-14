@@ -8,13 +8,16 @@ namespace CryptoBase.SM9;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The private key de is a point of G2 in the uncompressed encoding, 0x04 ‖ x ‖ y with each coordinate in Fp2 written as its u-coefficient and then its constant coefficient. The instance holds the ID of the user with it.
+/// The private key de is a point of G2 in the uncompressed encoding, 0x04 ‖ x ‖ y with each coordinate in Fp2 written as its u-coefficient and then its constant coefficient.
+/// The instance holds the ID of the user with it.
 /// </para>
 /// <para>
-/// Decryption takes C1 ‖ C3 ‖ C2 of GM/T 0044.4 with C1 as x ‖ y, or the SM9Cipher of GB/T 41389-2022 (GM/T 0080-2020) in DER with EnType 0, and rejects an empty C2 and any other encoding. Decapsulation takes the point C in the uncompressed encoding.
+/// Decryption takes C1 ‖ C3 ‖ C2 of GM/T 0044.4 with C1 as x ‖ y, or the SM9Cipher of GB/T 41389-2022 (GM/T 0080-2020) in DER with EnType 0, and rejects an empty C2 and any other encoding.
+/// Decapsulation takes the point C in the uncompressed encoding.
 /// </para>
 /// <para>
-/// Decryption and decapsulation may run concurrently on one instance; to decrypt or decapsulate repeatedly, keep one instance. Disposal erases the private key and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// Decryption and decapsulation may run concurrently on one instance; to decrypt or decapsulate repeatedly, keep one instance.
+/// Disposal erases the private key and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class SM9EncryptionKey : IDisposable
@@ -73,7 +76,10 @@ public sealed class SM9EncryptionKey : IDisposable
 	/// Recovers the key that <paramref name="encapsulation" /> encapsulates (GB/T 38635.2-2020, GM/T 0044.4-2016, Sec. 6.2).
 	/// </summary>
 	/// <remarks>
-	/// The method returns <see langword="false" /> if <paramref name="encapsulation" /> is not a point on the curve in the uncompressed encoding or the key it gives is all zero. <see langword="true" /> does not mean that <paramref name="encapsulation" /> was made for this key: another one gives another key, which the protocol must confirm. <paramref name="encapsulation" /> may overlap <paramref name="key" />. If the method returns <see langword="false" /> or throws, <paramref name="key" /> remains unchanged.
+	/// The method returns <see langword="false" /> if <paramref name="encapsulation" /> is not a point on the curve in the uncompressed encoding or the key it gives is all zero.
+	/// <see langword="true" /> does not mean that <paramref name="encapsulation" /> was made for this key: another one gives another key, which the protocol must confirm.
+	/// <paramref name="encapsulation" /> may overlap <paramref name="key" />.
+	/// If the method returns <see langword="false" /> or throws, <paramref name="key" /> remains unchanged.
 	/// </remarks>
 	/// <param name="encapsulation">The encapsulation.</param>
 	/// <param name="key">The buffer that receives the key; its length is that of the key, which must not be 0.</param>
@@ -111,7 +117,8 @@ public sealed class SM9EncryptionKey : IDisposable
 	/// Decrypts a ciphertext C1 ‖ C3 ‖ C2 (GB/T 38635.2-2020, GM/T 0044.4-2016, Sec. 7.2), with C1 as x ‖ y.
 	/// </summary>
 	/// <remarks>
-	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is too short to hold a plaintext, C1 is not a point on the curve, K1 is all zero or C3 does not match. It then writes nothing to <paramref name="destination" />, which may overlap <paramref name="ciphertext" />.
+	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is too short to hold a plaintext, C1 is not a point on the curve, K1 is all zero or C3 does not match.
+	/// It then writes nothing to <paramref name="destination" />, which may overlap <paramref name="ciphertext" />.
 	/// </remarks>
 	/// <param name="ciphertext">The ciphertext.</param>
 	/// <param name="destination">The buffer that receives the plaintext, at least as long as the plaintext: 96 bytes shorter than <paramref name="ciphertext" />.</param>
@@ -151,7 +158,8 @@ public sealed class SM9EncryptionKey : IDisposable
 	/// Decrypts the DER of an SM9Cipher (GB/T 41389-2022), which holds C1, C3 and C2 (GB/T 38635.2-2020, GM/T 0044.4-2016, Sec. 7.2).
 	/// </summary>
 	/// <remarks>
-	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is not the DER of an SM9Cipher with EnType 0 and a C2 of at least one byte, C1 is not a point on the curve in the uncompressed encoding, K1 is all zero or C3 does not match. It then writes nothing to <paramref name="destination" />, which may overlap <paramref name="ciphertext" />.
+	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is not the DER of an SM9Cipher with EnType 0 and a C2 of at least one byte, C1 is not a point on the curve in the uncompressed encoding, K1 is all zero or C3 does not match.
+	/// It then writes nothing to <paramref name="destination" />, which may overlap <paramref name="ciphertext" />.
 	/// </remarks>
 	/// <param name="ciphertext">The ciphertext.</param>
 	/// <param name="destination">The buffer that receives the plaintext, at least as long as the C2 of the SM9Cipher; a buffer as long as <paramref name="ciphertext" /> suffices.</param>
@@ -193,7 +201,8 @@ public sealed class SM9EncryptionKey : IDisposable
 		_disposed = true;
 	}
 
-	// The checks of ImportPrivateKey for the identifier hid: de lies in G2 and Ppub-e on the curve, and de = [ke/(h1 + ke)]P2 just if e(Q, de) = e([h1 + ke]P1, de) = e(P1, P2)^ke = e(Ppub-e, P2) = g for h1 = H1(ID ‖ hid, N) and Q = [h1]P1 + Ppub-e, which is the point at infinity only for an ID that has no key. Returns de, whose lines the first pairing built, with Ppub-e and g.
+	// The checks of ImportPrivateKey for the identifier hid: de lies in G2 and Ppub-e on the curve, and de = [ke/(h1 + ke)]P2 just if e(Q, de) = e([h1 + ke]P1, de) = e(P1, P2)^ke = e(Ppub-e, P2) = g for h1 = H1(ID ‖ hid, N) and Q = [h1]P1 + Ppub-e, which is the point at infinity only for an ID that has no key.
+	// Returns de, whose lines the first pairing built, with Ppub-e and g.
 	[SkipLocalsInit]
 	internal static SM9G2PrivateKey Import(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> masterPublicKey, ReadOnlySpan<byte> id, byte hid, out (SM9AffinePoint<SM9Fp> PublicKey, SM9Fp12 G) master)
 	{

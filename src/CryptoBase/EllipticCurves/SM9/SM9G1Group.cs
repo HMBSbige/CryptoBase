@@ -2,7 +2,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The scalar arithmetic of G1 = E(Fp), E: y² = x³ + 5, of prime order N with the generator P1 of GM/T 0044.5 §3.1. Scalars are plain values below N. The products give projective points whose coordinates depend on the scalar and not only on the product, so a caller makes them affine or erases them.
+// The scalar arithmetic of G1 = E(Fp), E: y² = x³ + 5, of prime order N with the generator P1 of GM/T 0044.5 §3.1.
+// Scalars are plain values below N.
+// The products give projective points whose coordinates depend on the scalar and not only on the product, so a caller makes them affine or erases them.
 internal static class SM9G1Group
 {
 	// The windows of the product with a variable point: the two parts of GLV, below 2^127 in magnitude, take 26 digits each.
@@ -25,7 +27,8 @@ internal static class SM9G1Group
 	// Windows of width 6, 43 of 32 entries.
 	internal static readonly SM9BaseTable<SM9Fp> BaseTable = new(in Generator, 6);
 
-	// k·P for a point P of G1, by GLV: k = k1 + k2·λ with |k1|, |k2| < 2^127, and k1·P + k2·φ(P) by windows of width 5 over both, from tables of 0·P to 16·P and their images under φ, with the point at infinity as entry 0, which the complete formulas add. Neither the time nor the addresses depend on k or P.
+	// k·P for a point P of G1, by GLV: k = k1 + k2·λ with |k1|, |k2| < 2^127, and k1·P + k2·φ(P) by windows of width 5 over both, from tables of 0·P to 16·P and their images under φ, with the point at infinity as entry 0, which the complete formulas add.
+	// Neither the time nor the addresses depend on k or P.
 	[SkipLocalsInit]
 	internal static void Multiply(in SM9AffinePoint<SM9Fp> point, in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp> result)
 	{
@@ -96,7 +99,8 @@ internal static class SM9G1Group
 
 	internal const int VariableTimeTableLength = 1 << VariableTimeWidth - 2;
 
-	// k·P for a public P of G1 and a public k, by GLV: k = k1 + k2·λ, and k1·P + k2·φ(P) by the NAF of width 5 of |k1| and |k2|, which share the doublings, from the odd multiples of ±P and their images under φ. The time depends on k.
+	// k·P for a public P of G1 and a public k, by GLV: k = k1 + k2·λ, and k1·P + k2·φ(P) by the NAF of width 5 of |k1| and |k2|, which share the doublings, from the odd multiples of ±P and their images under φ.
+	// The time depends on k.
 	[SkipLocalsInit]
 	internal static void MultiplyVariableTime(in SM9AffinePoint<SM9Fp> point, in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp> result)
 	{

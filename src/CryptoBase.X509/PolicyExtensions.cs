@@ -4,7 +4,8 @@ using System.Text;
 namespace CryptoBase.X509;
 
 // The value of a certificate policies extension (RFC 5280, Sec. 4.2.1.4): certificatePolicies ::= SEQUENCE SIZE (1..MAX) OF PolicyInformation, without the qualifiers, which path validation does not use.
-// Policies are the contents of the OBJECT IDENTIFIERs other than anyPolicy, slices of the extension's memory; each appears once, as the section requires. The instance is immutable.
+// Policies are the contents of the OBJECT IDENTIFIERs other than anyPolicy, slices of the extension's memory; each appears once, as the section requires.
+// The instance is immutable.
 internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool hasAnyPolicy, bool hasUnrecognizedQualifier)
 {
 	private const int MaxDirectlyCompared = 8;
@@ -24,7 +25,8 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 
 	public bool HasAnyPolicy { get; } = hasAnyPolicy;
 
-	// Whether a qualifier is neither of the above or has a value that does not decode as the type that the section gives it; Sec. 4.2.1.4 requires a validator to interpret those of a critical extension or to reject the certificate.
+	// Whether a qualifier is neither of the above or has a value that does not decode as the type that the section gives it;
+	// Sec. 4.2.1.4 requires a validator to interpret those of a critical extension or to reject the certificate.
 	public bool HasUnrecognizedQualifier { get; } = hasUnrecognizedQualifier;
 
 	// PolicyInformation ::= SEQUENCE { policyIdentifier CertPolicyId, policyQualifiers SEQUENCE SIZE (1..MAX) OF PolicyQualifierInfo OPTIONAL }.
@@ -80,7 +82,8 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 		return new CertificatePolicies([.. policies], hasAnyPolicy, hasUnrecognizedQualifier);
 	}
 
-	// Whether value, read whole, decodes as the type that Sec. 4.2.1.4 gives the qualifier, CPSuri ::= IA5String or UserNotice, which the validator then interprets; neither changes the outcome, so the text is not kept.
+	// Whether value, read whole, decodes as the type that Sec. 4.2.1.4 gives the qualifier, CPSuri ::= IA5String or UserNotice, which the validator then interprets;
+	// neither changes the outcome, so the text is not kept.
 	private static bool IsInterpreted(ReadOnlySpan<byte> identifier, ReadOnlyMemory<byte> value)
 	{
 		if (identifier.SequenceEqual(CpsQualifier))
@@ -137,7 +140,8 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 		notice.ThrowIfNotEmpty();
 	}
 
-	// DisplayText ::= CHOICE { ia5String IA5String, visibleString VisibleString, bmpString BMPString, utf8String UTF8String }. The SIZE (1..200) of each is not checked: Sec. 4.2.1.4 asks users to handle the longer texts that some CAs issue.
+	// DisplayText ::= CHOICE { ia5String IA5String, visibleString VisibleString, bmpString BMPString, utf8String UTF8String }.
+	// The SIZE (1..200) of each is not checked: Sec. 4.2.1.4 asks users to handle the longer texts that some CAs issue.
 	private static void ReadDisplayText(ref DerReader reader)
 	{
 		ReadOnlySpan<byte> element = reader.ReadEncodedValue().Span;
@@ -175,7 +179,8 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 	}
 }
 
-// The value of a policy mappings extension (RFC 5280, Sec. 4.2.1.5): SEQUENCE SIZE (1..MAX) OF SEQUENCE { issuerDomainPolicy CertPolicyId, subjectDomainPolicy CertPolicyId }, the pairs as slices of the extension's memory. Neither may be anyPolicy.
+// The value of a policy mappings extension (RFC 5280, Sec. 4.2.1.5): SEQUENCE SIZE (1..MAX) OF SEQUENCE { issuerDomainPolicy CertPolicyId, subjectDomainPolicy CertPolicyId }, the pairs as slices of the extension's memory.
+// Neither may be anyPolicy.
 internal sealed class PolicyMappings((ReadOnlyMemory<byte> IssuerDomainPolicy, ReadOnlyMemory<byte> SubjectDomainPolicy)[] mappings)
 {
 	public (ReadOnlyMemory<byte> IssuerDomainPolicy, ReadOnlyMemory<byte> SubjectDomainPolicy)[] Mappings { get; } = mappings;

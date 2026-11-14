@@ -2,7 +2,8 @@ using CryptoBase.Signatures;
 
 namespace CryptoBase.EllipticCurves.SM9;
 
-// N = 36t⁴ + 36t³ + 18t² + 6t + 1 for t = 0x600000000058F98A, the prime order of G1, G2 and GT (GM/T 0044.5 §3.1). Scalars and exponents are elements of FieldElement<SM9Order>.
+// N = 36t⁴ + 36t³ + 18t² + 6t + 1 for t = 0x600000000058F98A, the prime order of G1, G2 and GT (GM/T 0044.5 §3.1).
+// Scalars and exponents are elements of FieldElement<SM9Order>.
 [InlineArray(4)]
 internal struct SM9Order : ISM3NonceOrder
 {

@@ -1,6 +1,7 @@
 namespace CryptoBase.Hashes.SM3;
 
-// What the blocks SM3(prefix ‖ ct) share for the 32-bit big-endian counters ct of the KDF: the chaining value after the whole blocks of the prefix, and the last one or two blocks, the rest of the prefix, ct, the padding and the length, with the bytes of ct zero, which alone differ from one counter to the next. It holds words of the prefix, so erase it once done.
+// What the blocks SM3(prefix ‖ ct) share for the 32-bit big-endian counters ct of the KDF: the chaining value after the whole blocks of the prefix, and the last one or two blocks, the rest of the prefix, ct, the padding and the length, with the bytes of ct zero, which alone differ from one counter to the next.
+// It holds words of the prefix, so erase it once done.
 internal struct SM3CounterBlocks
 {
 	internal InlineArray8<uint> ChainingValue;

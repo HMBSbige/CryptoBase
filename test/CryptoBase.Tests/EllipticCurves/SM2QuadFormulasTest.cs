@@ -5,7 +5,8 @@ using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-// The rounds of SM2QuadFormulas and SM2OctoFormulas against the reference, and the additions of SM2PairFormulas at the largest differences that they carry, on states and entries at the bounds that SM2QuadFormulas states: a coordinate keeps its value mod p, takes the largest value below its bound by adding multiples of p, and the largest limbs below theirs by borrowing 2^29 from the limb above as often as both limbs allow. Each result must be the reference point, in a state within the same bounds whose δ and α agree with its X and Z.
+// The rounds of SM2QuadFormulas and SM2OctoFormulas against the reference, and the additions of SM2PairFormulas at the largest differences that they carry, on states and entries at the bounds that SM2QuadFormulas states: a coordinate keeps its value mod p, takes the largest value below its bound by adding multiples of p, and the largest limbs below theirs by borrowing 2^29 from the limb above as often as both limbs allow.
+// Each result must be the reference point, in a state within the same bounds whose δ and α agree with its X and Z.
 public class SM2QuadFormulasTest
 {
 	private const int LimbCount = 9;
@@ -22,7 +23,10 @@ public class SM2QuadFormulasTest
 
 	private static readonly BigInteger RInverse = BigInteger.ModPow(R, P - 2, P);
 
-	// X of a state below 2p in limbs below 3·2^29 + 2^22, limb 8 below 2^24 + 2^5; Y below 4p in limbs below 2^30, limb 8 below 2^26 + 2; Z below 2.7p in limbs below 2^30 + 2^8; δ a product below 1.25p and α a product below 2.9p.
+	// X of a state below 2p in limbs below 3·2^29 + 2^22, limb 8 below 2^24 + 2^5;
+	// Y below 4p in limbs below 2^30, limb 8 below 2^26 + 2;
+	// Z below 2.7p in limbs below 2^30 + 2^8;
+	// δ a product below 1.25p and α a product below 2.9p.
 	private static readonly Bound Abscissa = new(2 * P, [.. Repeat(3 * Nominal + (1UL << 22)).Take(LimbCount - 1), (1UL << 24) + (1UL << 5)]);
 
 	private static readonly Bound Ordinate = new(4 * P, [.. Repeat(2 * Nominal).Take(LimbCount - 1), (1UL << 26) + 2]);
@@ -214,7 +218,11 @@ public class SM2QuadFormulasTest
 		return failures;
 	}
 
-	// The additions of SM2PairFormulas take H = U2 − U1 + 4p, limb by limb, into H·H once carried. Its limbs come nearest 3·2^29 where the limbs of the product U2 are largest and those of U1 smallest, which the inputs steer to: residues u and v with limbs 0 to 7 of 2^20, whose products Multiply gives without the borrows that limbs of 0 would take, or of 2^29 − 1, and limb 8 of 2^23, above every multiple of p that a product may add; x2/x1 = v/u, and λ with x1·λ²·R = u gives U1 = u and U2 = v for Z1·Z2 = λ in Add and Z1 = λ in AddAffine. Add takes R = S2 − S1 + 4p into R·R the same way, for S1 = Y1·Z2³ and S2 = Y2·Z1³, which y2/y1 = v/u and λ with y1·λ³·R = u steer to in a case of their own. Uncarried, column 7 of H·H or R·R would then exceed 2^64, which each case checks before it adds.
+	// The additions of SM2PairFormulas take H = U2 − U1 + 4p, limb by limb, into H·H once carried.
+	// Its limbs come nearest 3·2^29 where the limbs of the product U2 are largest and those of U1 smallest, which the inputs steer to: residues u and v with limbs 0 to 7 of 2^20, whose products Multiply gives without the borrows that limbs of 0 would take, or of 2^29 − 1, and limb 8 of 2^23, above every multiple of p that a product may add;
+	// x2/x1 = v/u, and λ with x1·λ²·R = u gives U1 = u and U2 = v for Z1·Z2 = λ in Add and Z1 = λ in AddAffine.
+	// Add takes R = S2 − S1 + 4p into R·R the same way, for S1 = Y1·Z2³ and S2 = Y2·Z1³, which y2/y1 = v/u and λ with y1·λ³·R = u steer to in a case of their own.
+	// Uncarried, column 7 of H·H or R·R would then exceed 2^64, which each case checks before it adds.
 	[Test]
 	public async Task PairAdditionsAtTheLargestDifferencesMatchTheReference()
 	{
@@ -308,7 +316,8 @@ public class SM2QuadFormulasTest
 		}
 	}
 
-	// Points P1 and P2 on the curve with y2/y1 = v/u and λ with y1·λ³·R = u, for P1 random and P2 the one point of its y-coordinate; p ≡ 2 (mod 3), so every residue has the one cube root w^((2p − 1)/3).
+	// Points P1 and P2 on the curve with y2/y1 = v/u and λ with y1·λ³·R = u, for P1 random and P2 the one point of its y-coordinate;
+	// p ≡ 2 (mod 3), so every residue has the one cube root w^((2p − 1)/3).
 	private static (CurvePoint First, CurvePoint Second, BigInteger Lambda) ExtremeOrdinates(Random random, BigInteger u, BigInteger v)
 	{
 		BigInteger ratio = v * Curve.Reference.Inverse(u) % P;

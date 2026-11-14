@@ -9,11 +9,13 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// An SDP token (RFC 4566, Sec. 9) names the hash function. The names of the Hash Function Textual Names registry, "sha-1", "sha-224", "sha-256", "sha-384", "sha-512", "md5" and "md2", in letters of either case, name the registered hash functions, whose <see cref="HashAlgorithm" /> is <see cref="HashAlgorithmName.SHA1" />, <c>SHA224</c>, <see cref="HashAlgorithmName.SHA256" />, <see cref="HashAlgorithmName.SHA384" />, <see cref="HashAlgorithmName.SHA512" />, <see cref="HashAlgorithmName.MD5" /> or <c>MD2</c>, and whose digests must have their lengths.
+/// An SDP token (RFC 4566, Sec. 9) names the hash function.
+/// The names of the Hash Function Textual Names registry, "sha-1", "sha-224", "sha-256", "sha-384", "sha-512", "md5" and "md2", in letters of either case, name the registered hash functions, whose <see cref="HashAlgorithm" /> is <see cref="HashAlgorithmName.SHA1" />, <c>SHA224</c>, <see cref="HashAlgorithmName.SHA256" />, <see cref="HashAlgorithmName.SHA384" />, <see cref="HashAlgorithmName.SHA512" />, <see cref="HashAlgorithmName.MD5" /> or <c>MD2</c>, and whose digests must have their lengths.
 /// Any other token names a hash function that is not registered, whose <see cref="HashAlgorithm" /> is the token as it is, and whose digest must not be empty.
 /// </para>
 /// <para>
-/// The constructor also takes the <see cref="HashAlgorithm" /> of a registered hash function, such as <see cref="HashAlgorithmName.SHA256" />, for that function. <see cref="Parse" /> does not: there a token such as SHA256, which is such a name but not a registered name, is invalid.
+/// The constructor also takes the <see cref="HashAlgorithm" /> of a registered hash function, such as <see cref="HashAlgorithmName.SHA256" />, for that function.
+/// <see cref="Parse" /> does not: there a token such as SHA256, which is such a name but not a registered name, is invalid.
 /// So <see cref="HashAlgorithm" /> tells the hash functions apart, and <c>CertificateFingerprint.Parse(fingerprint.ToString())</c> and <c>new CertificateFingerprint(fingerprint.HashAlgorithm, fingerprint.Digest.Span)</c> have the hash function and digest of <c>fingerprint</c>.
 /// </para>
 /// <para>

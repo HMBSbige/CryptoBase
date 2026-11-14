@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
-// For a public point Q. The N = TOrder.BitLength bits of a scalar split into PartCount parts of L = PartLength bits, and part c holds the odd multiples B, 3B, …, (2^(w − 1) − 1)·B of B = 2^(cL)·Q for the NAF of width w = Width, so that a product with Q takes L doublings instead of N.
+// For a public point Q.
+// The N = TOrder.BitLength bits of a scalar split into PartCount parts of L = PartLength bits, and part c holds the odd multiples B, 3B, …, (2^(w − 1) − 1)·B of B = 2^(cL)·Q for the NAF of width w = Width, so that a product with Q takes L doublings instead of N.
 internal static class ECVariableTimePointTable<TCurve, TField, TOrder>
 	where TCurve : struct, IECCurve
 	where TField : unmanaged, IECField<TField>
@@ -16,7 +17,8 @@ internal static class ECVariableTimePointTable<TCurve, TField, TOrder>
 
 	internal static int Length => PartCount * PartEntryCount;
 
-	// One chain of doublings gives each base B and its double, which are made affine together, so that each later entry (j + 2)·B = j·B + 2B is a mixed addition. The two points are neither equal, opposite nor at infinity, as j + 2 < n.
+	// One chain of doublings gives each base B and its double, which are made affine together, so that each later entry (j + 2)·B = j·B + 2B is a mixed addition.
+	// The two points are neither equal, opposite nor at infinity, as j + 2 < n.
 	internal static AffinePoint<TField>[] Build(in AffinePoint<TField> point)
 	{
 		Debug.Assert(PartLength >= 2);

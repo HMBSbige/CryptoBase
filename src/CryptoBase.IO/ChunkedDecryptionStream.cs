@@ -8,7 +8,10 @@ public static class ChunkedDecryptionStream
 	/// <summary>
 	/// Reads the message header from a readable stream and creates a stream that decrypts the message.
 	/// </summary>
-	/// <remarks>The header is checked against the key and context before the stream is returned. If the method throws, <paramref name="inner" /> is not disposed.</remarks>
+	/// <remarks>
+	/// The header is checked against the key and context before the stream is returned.
+	/// If the method throws, <paramref name="inner" /> is not disposed.
+	/// </remarks>
 	/// <typeparam name="TCipher">The chunked cipher, such as <c>Cobblestone128Cipher</c>.</typeparam>
 	/// <param name="inner">The readable stream that holds the encrypted message from its current position to its end.</param>
 	/// <param name="key">The input key, <see cref="IChunkedCipher{TSelf}.KeySize" /> bytes long.</param>
@@ -27,7 +30,11 @@ public static class ChunkedDecryptionStream
 	/// <summary>
 	/// Asynchronously reads the message header from a readable stream and creates a stream that decrypts the message.
 	/// </summary>
-	/// <remarks>The header is checked against the key and context before the stream is returned. The key and context must not change until the task completes. If the task fails, <paramref name="inner" /> is not disposed.</remarks>
+	/// <remarks>
+	/// The header is checked against the key and context before the stream is returned.
+	/// The key and context must not change until the task completes.
+	/// If the task fails, <paramref name="inner" /> is not disposed.
+	/// </remarks>
 	/// <typeparam name="TCipher">The chunked cipher, such as <c>Cobblestone128Cipher</c>.</typeparam>
 	/// <param name="inner">The readable stream that holds the encrypted message from its current position to its end.</param>
 	/// <param name="key">The input key, <see cref="IChunkedCipher{TSelf}.KeySize" /> bytes long.</param>

@@ -4,7 +4,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Signatures;
 
-// A kernel the processor lacks throws in Setup and reports no result. The sizes are those of ML-DSA-65 where an operation has no parameter of its own.
+// A kernel the processor lacks throws in Setup and reports no result.
+// The sizes are those of ML-DSA-65 where an operation has no parameter of its own.
 public class MLDsaKernelBenchmark
 {
 	private const int N = 256;

@@ -5,10 +5,13 @@ using Sha3Arm = System.Runtime.Intrinsics.Arm.Sha3;
 
 namespace CryptoBase.Hashes.Sha3;
 
-// One state with each lane in the low element of its own 128-bit vector, so that the 32 vector registers of AVX-512 or ARM64 hold nearly all of the round and VPTERNLOGQ, or an ARMv8.2 SHA3 instruction, takes each three-way XOR of θ and each lane of χ in one instruction. The round is KeccakP1600Times2's, or on ARM64 KeccakP1600Times2Sha3's, whose upper element is simply left unused: no lane is ever shuffled across vectors, which is what costs the single-state 512-bit kernel on cores that split 512-bit instructions in two.
+// One state with each lane in the low element of its own 128-bit vector, so that the 32 vector registers of AVX-512 or ARM64 hold nearly all of the round and VPTERNLOGQ, or an ARMv8.2 SHA3 instruction, takes each three-way XOR of θ and each lane of χ in one instruction.
+// The round is KeccakP1600Times2's, or on ARM64 KeccakP1600Times2Sha3's, whose upper element is simply left unused: no lane is ever shuffled across vectors, which is what costs the single-state 512-bit kernel on cores that split 512-bit instructions in two.
 internal readonly struct KeccakP1600Lane128 : IKeccakP1600Lanes<Vector128<ulong>>
 {
-	// Without AVX-512VL most rotations take three instructions where the scalar kernel takes one, and nothing else is cheaper than scalar on x64. 32-bit x86 takes it anyway: the scalar kernel splits each lane over two of its few general-purpose registers. ARM64 takes it where CpuIdUtils.PreferArmSha3: for each lane its instructions take the place of two of the scalar kernel, the EOR and ROR of θ and ρ, and the BIC and EOR of χ.
+	// Without AVX-512VL most rotations take three instructions where the scalar kernel takes one, and nothing else is cheaper than scalar on x64.
+	// 32-bit x86 takes it anyway: the scalar kernel splits each lane over two of its few general-purpose registers.
+	// ARM64 takes it where CpuIdUtils.PreferArmSha3: for each lane its instructions take the place of two of the scalar kernel, the EOR and ROR of θ and ρ, and the BIC and EOR of χ.
 	public static bool IsSupported
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

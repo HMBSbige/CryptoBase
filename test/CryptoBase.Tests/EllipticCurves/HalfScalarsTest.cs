@@ -9,7 +9,10 @@ public class HalfScalarsTest
 
 	private static readonly BigInteger Half = BigInteger.One << 128;
 
-	// HalfScalars splits u below n into v1 ≡ v2·u (mod n) with 0 ≤ v1 < 2^128 and 0 < |v2| < 2^128, for the orders of SM2 and P-256: the ends of the range; values around 2^128, the first remainder below which ends the steps, and 2^192; values that n divides by about 2^64 to 2^127 and values that n is near a multiple of, whose first quotients the leading bits of the remainders cannot take; and random values.
+	// HalfScalars splits u below n into v1 ≡ v2·u (mod n) with 0 ≤ v1 < 2^128 and 0 < |v2| < 2^128, for the orders of SM2 and P-256: the ends of the range;
+	// values around 2^128, the first remainder below which ends the steps, and 2^192;
+	// values that n divides by about 2^64 to 2^127 and values that n is near a multiple of, whose first quotients the leading bits of the remainders cannot take;
+	// and random values.
 	[Test]
 	public async Task SplitGivesHalfScalars()
 	{

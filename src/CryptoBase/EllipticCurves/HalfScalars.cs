@@ -2,7 +2,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// Splits a scalar u below an order n of 256 bits into v1 ≡ v2·u (mod n) with v1 and v2 below 2^128 in magnitude, v2 not 0: the extended Euclidean algorithm on (n, u) keeps each remainder r_i ≡ t_i·u (mod n), r_0 = n with t_0 = 0 and r_1 = u with t_1 = 1, the signs of t_i alternating, and stops at the first r_i below 2^128, where |t_i| ≤ n/r_(i − 1) < 2^128. Lehmer's algorithm (Knuth, TAOCP 4.5.2, Algorithm L) takes the steps on the leading 63 bits of the remainders where those fix the quotient and keep the next remainder at least 2^128, and a step on the whole remainders otherwise. The time depends on u, which must be public.
+// Splits a scalar u below an order n of 256 bits into v1 ≡ v2·u (mod n) with v1 and v2 below 2^128 in magnitude, v2 not 0: the extended Euclidean algorithm on (n, u) keeps each remainder r_i ≡ t_i·u (mod n), r_0 = n with t_0 = 0 and r_1 = u with t_1 = 1, the signs of t_i alternating, and stops at the first r_i below 2^128, where |t_i| ≤ n/r_(i − 1) < 2^128.
+// Lehmer's algorithm (Knuth, TAOCP 4.5.2, Algorithm L) takes the steps on the leading 63 bits of the remainders where those fix the quotient and keep the next remainder at least 2^128, and a step on the whole remainders otherwise.
+// The time depends on u, which must be public.
 internal static class HalfScalars<TOrder> where TOrder : unmanaged, IMontgomeryModulus
 {
 	private const int Length = 4;
@@ -90,7 +92,8 @@ internal static class HalfScalars<TOrder> where TOrder : unmanaged, IMontgomeryM
 				continue;
 			}
 
-			// The signs of A, B, C and D alternate with the steps: A > 0 > B, C < 0 < D after an even count, and the other way after an odd one. The remainders are not negative, and the magnitudes of the t_i add.
+			// The signs of A, B, C and D alternate with the steps: A > 0 > B, C < 0 < D after an even count, and the other way after an odd one.
+			// The remainders are not negative, and the magnitudes of the t_i add.
 			ulong ax = (ulong)Math.Abs(x0);
 			ulong ay = (ulong)Math.Abs(y0);
 			ulong bx = (ulong)Math.Abs(x1);

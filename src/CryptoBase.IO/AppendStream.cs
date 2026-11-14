@@ -3,12 +3,15 @@ namespace CryptoBase.IO;
 /// <summary>Provides a pass-through stream that appends every byte read from or written to the inner stream to an incremental algorithm.</summary>
 /// <remarks>
 /// <para>
-/// Data is appended in the order it passes through, whether it is read or written. Mixing reads and writes on one instance therefore appends the interleaving.
+/// Data is appended in the order it passes through, whether it is read or written.
+/// Mixing reads and writes on one instance therefore appends the interleaving.
 /// The stream does not buffer: reads go directly into the caller's buffer and only the bytes actually read are appended; writes are appended after the inner stream accepts them.
-/// A write buffer must therefore not overlap the inner stream's storage, such as the array returned by <see cref="MemoryStream.GetBuffer" />; otherwise the appended bytes may differ from the written ones.
+/// A write buffer must therefore not overlap the inner stream's storage, such as the array returned by <see cref="MemoryStream.GetBuffer" />;
+/// otherwise the appended bytes may differ from the written ones.
 /// </para>
 /// <para>
-/// The stream is not seekable. The instance owns the algorithm and disposes it on disposal; <c>leaveOpen</c> only controls the inner stream.
+/// The stream is not seekable.
+/// The instance owns the algorithm and disposes it on disposal; <c>leaveOpen</c> only controls the inner stream.
 /// Callers may still append data such as a header through their own algorithm reference before or between pass-through operations.
 /// </para>
 /// <para>Instances are not thread safe.</para>

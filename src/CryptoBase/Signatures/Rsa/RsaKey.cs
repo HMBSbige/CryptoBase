@@ -7,23 +7,30 @@ namespace CryptoBase.Signatures.Rsa;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The key signs and verifies with <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />. RSASSA-PSS uses MGF1 with the message hash and a salt as long as the hash; it draws a new salt for each signature.
-/// An algorithm whose encoded message does not fit the modulus (RFC 8017, Secs. 9.1.1 and 9.2) is not supported, and neither is one that the AlgorithmIdentifier of an imported key rules out. A signature is as long as the modulus.
+/// The key signs and verifies with <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />.
+/// RSASSA-PSS uses MGF1 with the message hash and a salt as long as the hash; it draws a new salt for each signature.
+/// An algorithm whose encoded message does not fit the modulus (RFC 8017, Secs. 9.1.1 and 9.2) is not supported, and neither is one that the AlgorithmIdentifier of an imported key rules out.
+/// A signature is as long as the modulus.
 /// </para>
 /// <para>
 /// Signing throws <see cref="CryptographicException" /> rather than return a signature that does not verify.
-/// RSASSA-PKCS1-v1_5 signing writes a DigestInfo with NULL parameters, and verification also accepts one without parameters (RFC 5246, Sec. 4.7). RSASSA-PSS verification accepts only a salt as long as the hash.
+/// RSASSA-PKCS1-v1_5 signing writes a DigestInfo with NULL parameters, and verification also accepts one without parameters (RFC 5246, Sec. 4.7).
+/// RSASSA-PSS verification accepts only a salt as long as the hash.
 /// Signing and verification may run concurrently on one instance.
 /// </para>
 /// <para>
-/// The modulus must have 512 to 16384 bits, and the public exponent, odd and at least 3 (RFC 8017, Sec. 3.1), at most 33 bits. A private key has two primes; importing one checks that its values are consistent with each other and with the public key, but not that the primes are prime.
+/// The modulus must have 512 to 16384 bits, and the public exponent, odd and at least 3 (RFC 8017, Sec. 3.1), at most 33 bits.
+/// A private key has two primes; importing one checks that its values are consistent with each other and with the public key, but not that the primes are prime.
 /// </para>
 /// <para>
 /// SubjectPublicKeyInfo and PKCS #8 name the algorithm rsaEncryption with NULL parameters (RFC 4055, Sec. 1.2), which allows every algorithm, or id-RSASSA-PSS (RFC 4055, Sec. 3.1), which allows RSASSA-PSS alone: with each hash if the parameters are absent, and otherwise with the hash that RSASSA-PSS-params name, if MGF1 names the same one and the hash is at least saltLength bytes long (RFC 4055, Sec. 3.3).
-/// In RSASSA-PSS-params, a hash AlgorithmIdentifier may have NULL or absent parameters (RFC 4055, Sec. 2.1), and the trailer field must be 1 or absent. An instance exports the AlgorithmIdentifier of the key it imports unchanged; a generated key, and one imported from PKCS #1, has rsaEncryption.
+/// In RSASSA-PSS-params, a hash AlgorithmIdentifier may have NULL or absent parameters (RFC 4055, Sec. 2.1), and the trailer field must be 1 or absent.
+/// An instance exports the AlgorithmIdentifier of the key it imports unchanged; a generated key, and one imported from PKCS #1, has rsaEncryption.
 /// </para>
 /// <para>
-/// A PKCS #8 export holds the RSAPrivateKey (RFC 8017, Appendix A.1.2) alone. A PKCS #8 import also accepts a key with the public key, but throws if it does not match. RSAPrivateKey must have version 0, for two primes; a multi-prime key throws <see cref="NotSupportedException" />.
+/// A PKCS #8 export holds the RSAPrivateKey (RFC 8017, Appendix A.1.2) alone.
+/// A PKCS #8 import also accepts a key with the public key, but throws if it does not match.
+/// RSAPrivateKey must have version 0, for two primes; a multi-prime key throws <see cref="NotSupportedException" />.
 /// </para>
 /// </remarks>
 public sealed class RsaKey : ISignatureKey<RsaKey>

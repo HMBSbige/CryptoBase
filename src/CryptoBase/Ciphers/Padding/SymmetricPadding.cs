@@ -19,7 +19,8 @@ public static class SymmetricPadding
 	/// Both modes return zero for empty input.
 	/// </para>
 	/// <para>
-	/// <see cref="PaddingMode.PKCS7"/>, <see cref="PaddingMode.ANSIX923"/>, and <see cref="PaddingMode.ISO10126"/> add 1 to <paramref name="blockSizeInBytes"/> bytes. Input that already contains a whole number of blocks, including empty input, receives a full block of padding.
+	/// <see cref="PaddingMode.PKCS7"/>, <see cref="PaddingMode.ANSIX923"/>, and <see cref="PaddingMode.ISO10126"/> add 1 to <paramref name="blockSizeInBytes"/> bytes.
+	/// Input that already contains a whole number of blocks, including empty input, receives a full block of padding.
 	/// </para>
 	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException">
@@ -138,7 +139,8 @@ public static class SymmetricPadding
 	/// When only the final block is supplied, <paramref name="unpaddedLength"/> refers to that block, not the whole message.
 	/// </para>
 	/// <para>
-	/// <see cref="PaddingMode.None"/> and <see cref="PaddingMode.Zeros"/> check only alignment and retain the entire input, including empty input. Trailing zeros are not removed because they may belong to the original data.
+	/// <see cref="PaddingMode.None"/> and <see cref="PaddingMode.Zeros"/> check only alignment and retain the entire input, including empty input.
+	/// Trailing zeros are not removed because they may belong to the original data.
 	/// </para>
 	/// <para>
 	/// <see cref="PaddingMode.PKCS7"/>, <see cref="PaddingMode.ANSIX923"/>, and <see cref="PaddingMode.ISO10126"/> require nonempty input whose final byte specifies a padding length from 1 to <paramref name="blockSizeInBytes"/>.

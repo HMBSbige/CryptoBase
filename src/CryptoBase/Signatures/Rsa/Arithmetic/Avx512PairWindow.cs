@@ -1,6 +1,7 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// The vectors of MontgomeryPairKernelAvx512, as IAvx512Window describes them for MontgomeryKernelAvx512, with the digits of two moduli in alternate lanes: a digit is two lanes wide, so that the shift and the carries move by two lanes. Load and Store take pointers as there, to words and result that the kernel pins.
+// The vectors of MontgomeryPairKernelAvx512, as IAvx512Window describes them for MontgomeryKernelAvx512, with the digits of two moduli in alternate lanes: a digit is two lanes wide, so that the shift and the carries move by two lanes.
+// Load and Store take pointers as there, to words and result that the kernel pins.
 internal struct Avx512PairWindow : IAvx512Window<Avx512PairWindow>
 {
 	private const ulong Mask = (1UL << 52) - 1;

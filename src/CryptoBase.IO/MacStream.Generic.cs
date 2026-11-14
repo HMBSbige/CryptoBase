@@ -1,7 +1,10 @@
 namespace CryptoBase.IO;
 
 /// <summary>Provides a pass-through stream that appends every byte read from or written to the inner stream to a MAC algorithm.</summary>
-/// <remarks>Disposal erases the key. See <see cref="AppendStream{TAlgorithm}" /> for the pass-through behavior.</remarks>
+/// <remarks>
+/// Disposal erases the key.
+/// See <see cref="AppendStream{TAlgorithm}" /> for the pass-through behavior.
+/// </remarks>
 /// <typeparam name="TAlgorithm">The MAC algorithm.</typeparam>
 public sealed class MacStream<TAlgorithm> : AppendStream<TAlgorithm> where TAlgorithm : class, IMacAlgorithm<TAlgorithm>
 {

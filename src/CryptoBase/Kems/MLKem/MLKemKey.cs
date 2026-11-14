@@ -3,7 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Kems.MLKem;
 
-// ML-KEM (FIPS 203) with Â sampled once and kept transposed. ŝ and t̂ keep the ranges of IMLKemKernel rather than [0, q). Encapsulation and decapsulation write to the key only to cache H(ek).
+// ML-KEM (FIPS 203) with Â sampled once and kept transposed.
+// ŝ and t̂ keep the ranges of IMLKemKernel rather than [0, q).
+// Encapsulation and decapsulation write to the key only to cache H(ek).
 internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParameters
 {
 	internal const int PrivateSeedLength = 2 * SymmetricLength;
@@ -362,7 +364,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		keyAndRandomness.Span.Slice(0, SharedSecretLength).CopyTo(sharedSecret);
 	}
 
-	// ML-KEM.Decaps_internal (Algorithm 18). The ciphertext is read in full before the shared secret is written, so the two may overlap.
+	// ML-KEM.Decaps_internal (Algorithm 18).
+	// The ciphertext is read in full before the shared secret is written, so the two may overlap.
 	[SkipLocalsInit]
 	private void Decapsulate<TKernel>(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) where TKernel : IMLKemKernel
 	{
@@ -511,7 +514,9 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		TKernel.Compress(w, message, 1);
 	}
 
-	// Samples the entries of Â^T from first on that one batch takes, and returns how many. Â[j, i] = SampleNTT(ρ ‖ i ‖ j) is entry j · k + i, so the columns complete in order. Waiting PRF streams, or else hash, take the free lanes.
+	// Samples the entries of Â^T from first on that one batch takes, and returns how many.
+	// Â[j, i] = SampleNTT(ρ ‖ i ‖ j) is entry j · k + i, so the columns complete in order.
+	// Waiting PRF streams, or else hash, take the free lanes.
 	[SkipLocalsInit]
 	private readonly int SampleMatrixGroup<TKernel>(scoped ref KeccakBatchSponge<KeccakRate168> sponge, int first, int end, scoped ref OverlappedHash hash, scoped ref PrfGuests prf) where TKernel : IMLKemKernel
 	{
@@ -680,7 +685,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		return valid;
 	}
 
-	// The PRF streams of key generation (Algorithm 13, lines 8 to 15), run in free lanes of the matrix sampling. A default instance has no streams.
+	// The PRF streams of key generation (Algorithm 13, lines 8 to 15), run in free lanes of the matrix sampling.
+	// A default instance has no streams.
 	private ref struct PrfGuests
 	{
 		private readonly ReadOnlySpan<byte> _seed;
@@ -753,7 +759,9 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		}
 	}
 
-	// J(z ‖ c) or H(ek), permuted a block at a time beside other permutations. Only the first Available bytes of the message need be known. A default instance hashes nothing.
+	// J(z ‖ c) or H(ek), permuted a block at a time beside other permutations.
+	// Only the first Available bytes of the message need be known.
+	// A default instance hashes nothing.
 	private ref struct OverlappedHash
 	{
 		private readonly ReadOnlySpan<byte> _message;

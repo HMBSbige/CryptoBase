@@ -79,8 +79,8 @@ public class PlatformRsaKeyTest
 		}
 	}
 
-	// The constructor signs once with RSASSA-PSS and SHA-256; a key that refuses RSASSA-PSS, as some smart cards and TPMs do, or makes it with a salt of another length, here the longest, signs once
-	// more with RSASSA-PKCS1-v1_5 and supports that alone.
+	// The constructor signs once with RSASSA-PSS and SHA-256;
+	// a key that refuses RSASSA-PSS, as some smart cards and TPMs do, or makes it with a salt of another length, here the longest, signs once more with RSASSA-PKCS1-v1_5 and supports that alone.
 	[Test]
 	[Arguments(PssBehavior.Sign, true, 0)]
 	[Arguments(PssBehavior.Refuse, false, 1)]
@@ -361,8 +361,8 @@ public class PlatformRsaKeyTest
 		}
 	}
 
-	// The modulus must be 512 to 16384 bits long and the public exponent at most 33 bits, which bound the work of verification; otherwise the key must be valid (RFC 8017, Sec. 3.1). RsaKey imports
-	// and refuses the same keys.
+	// The modulus must be 512 to 16384 bits long and the public exponent at most 33 bits, which bound the work of verification; otherwise the key must be valid (RFC 8017, Sec. 3.1).
+	// RsaKey imports and refuses the same keys.
 	[Test]
 	public async Task PublicKeysMustBeValidAndWithinTheBounds()
 	{
@@ -479,8 +479,8 @@ public class PlatformRsaKeyTest
 		await Assert.That(string.Join(' ', RsaAlgorithms.Where(key.Supports))).IsEqualTo(expected);
 	}
 
-	// An id-RSASSA-PSS key signs with RSASSA-PSS alone; with parameters, only with their hash and MGF1 with it, and a salt at least as long as their saltLength (RFC 4055, Sec. 3.3). RsaKey
-	// imports and refuses the same keys.
+	// An id-RSASSA-PSS key signs with RSASSA-PSS alone; with parameters, only with their hash and MGF1 with it, and a salt at least as long as their saltLength (RFC 4055, Sec. 3.3).
+	// RsaKey imports and refuses the same keys.
 	[Test]
 	public async Task RsassaPssKeysAllowWhatTheirParametersAllow()
 	{
@@ -646,9 +646,10 @@ public class PlatformRsaKeyTest
 		}
 	}
 
-	// Wycheproof RSASSA-PKCS1-v1_5 and RSASSA-PSS vectors. A vector verifies only with the SignatureAlgorithm of its hash, MGF1 with the same hash and a salt as long as the hash: in a group with another salt
-	// length, only the invalid vector that the file made with a salt as long as the hash. An id-RSASSA-PSS key with parameters is supported if they allow such an algorithm (RFC 4055, Sec. 3.3). The
-	// acceptable vectors, whose DigestInfo lacks the NULL parameters, verify.
+	// Wycheproof RSASSA-PKCS1-v1_5 and RSASSA-PSS vectors.
+	// A vector verifies only with the SignatureAlgorithm of its hash, MGF1 with the same hash and a salt as long as the hash: in a group with another salt length, only the invalid vector that the file made with a salt as long as the hash.
+	// An id-RSASSA-PSS key with parameters is supported if they allow such an algorithm (RFC 4055, Sec. 3.3).
+	// The acceptable vectors, whose DigestInfo lacks the NULL parameters, verify.
 	[Test]
 	[Arguments("rsa_signature_2048_sha256_test.json")]
 	[Arguments("rsa_signature_2048_sha384_test.json")]
@@ -746,8 +747,7 @@ public class PlatformRsaKeyTest
 			.Select(static fileName => (Func<string>)(() => fileName));
 	}
 
-	// PlatformRsaKey and RsaKey import the same keys of every vector, or both throw the same exception, support the same algorithms, export the same SubjectPublicKeyInfo, and verify each signature
-	// alike with the algorithm of its group where they support it, and otherwise with one that they do.
+	// PlatformRsaKey and RsaKey import the same keys of every vector, or both throw the same exception, support the same algorithms, export the same SubjectPublicKeyInfo, and verify each signature alike with the algorithm of its group where they support it, and otherwise with one that they do.
 	[Test]
 	[MethodDataSource(nameof(WycheproofSignatureFiles))]
 	public async Task VerifiesWycheproofVectorsAsRsaKeyDoes(string fileName)
@@ -969,7 +969,8 @@ public class PlatformRsaKeyTest
 		return [.. db, .. h, trailer];
 	}
 
-	// A platform key that signs with an RSA key of the BCL and calls OnSign during each signature, and records how many signatures overlap, as a key store or device that needs one signature at a time would see them. It records too whether it is disposed during a signature.
+	// A platform key that signs with an RSA key of the BCL and calls OnSign during each signature, and records how many signatures overlap, as a key store or device that needs one signature at a time would see them.
+	// It records too whether it is disposed during a signature.
 	private sealed class ObservedRsa(RSAParameters parameters) : RSA
 	{
 		private readonly RSA _key = Create(parameters);
@@ -1044,8 +1045,9 @@ public class PlatformRsaKeyTest
 		}
 	}
 
-	// A platform key whose signatures a test controls, as a device's may differ: one that refuses RSASSA-PSS or makes it with the largest salt, or one whose signatures are corrupt. It counts the
-	// signatures that it is asked for. Without a private exponent, it only reports its public key.
+	// A platform key whose signatures a test controls, as a device's may differ: one that refuses RSASSA-PSS or makes it with the largest salt, or one whose signatures are corrupt.
+	// It counts the signatures that it is asked for.
+	// Without a private exponent, it only reports its public key.
 	private sealed class TestRsa : RSA
 	{
 		private readonly RSAParameters _parameters;

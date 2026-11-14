@@ -257,7 +257,8 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// A status that each flag ignores on Windows, Linux and macOS. The chain fails for another reason too, which the flag does not ignore: it ends at a root that the validator does not trust, or, as Windows checks no name constraints under an untrusted root, the leaf is for client authentication.
+	// A status that each flag ignores on Windows, Linux and macOS.
+	// The chain fails for another reason too, which the flag does not ignore: it ends at a root that the validator does not trust, or, as Windows checks no name constraints under an untrusted root, the leaf is for client authentication.
 	public static IEnumerable<(string Scenario, X509VerificationFlags Flag, CertificateValidationError Ignored, CertificateValidationError Remaining)> IgnoredStatuses()
 	{
 		yield return ("expired leaf", X509VerificationFlags.IgnoreNotTimeValid, CertificateValidationError.Expired, CertificateValidationError.UntrustedRoot);
@@ -333,7 +334,9 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// A CA whose name constraints permit a registeredID, a form that the platforms do not support, and an expired leaf below it. Windows and Linux report HasNotSupportedNameConstraint for a leaf with a registeredID, and macOS InvalidNameConstraints for the CA whatever names the leaf has; IgnoreInvalidName makes the platform ignore either, which the errors still hold while the expiry fails the chain.
+	// A CA whose name constraints permit a registeredID, a form that the platforms do not support, and an expired leaf below it.
+	// Windows and Linux report HasNotSupportedNameConstraint for a leaf with a registeredID, and macOS InvalidNameConstraints for the CA whatever names the leaf has;
+	// IgnoreInvalidName makes the platform ignore either, which the errors still hold while the expiry fails the chain.
 	[Test]
 	[Arguments(true)]
 	[Arguments(false)]
@@ -461,7 +464,8 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// With a host name, the validator reads the names and reports the extension; without one, the platform alone judges the leaf, and Linux reports it as a partial chain where the other platforms accept it.
+	// With a host name, the validator reads the names and reports the extension;
+	// without one, the platform alone judges the leaf, and Linux reports it as a partial chain where the other platforms accept it.
 	[Test]
 	public async Task ReportsASubjectAlternativeNameThatDoesNotDecodeAsMalformed()
 	{
@@ -705,8 +709,11 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// A trusted root, a CA certificate that rolls over its key and whose issuer is therefore its subject, and an expired leaf; an offline revocation check finds no CRL, so the status of each certificate checked is unknown.
-	// Windows checks the CA certificate only below a root that it does not trust, and takes it for a CA; Linux checks it and takes it for a root; macOS checks the leaf alone offline. While the expiry fails the chain, the errors hold the unknown status and, under AllowUnknownCertificateAuthority, the untrusted root, whatever the flags; once IgnoreNotTimeValid accepts the expiry, the platform's flags decide, and on Linux those for the peer and the CAs do not accept the CA certificate.
+	// A trusted root, a CA certificate that rolls over its key and whose issuer is therefore its subject, and an expired leaf;
+	// an offline revocation check finds no CRL, so the status of each certificate checked is unknown.
+	// Windows checks the CA certificate only below a root that it does not trust, and takes it for a CA; Linux checks it and takes it for a root; macOS checks the leaf alone offline.
+	// While the expiry fails the chain, the errors hold the unknown status and, under AllowUnknownCertificateAuthority, the untrusted root, whatever the flags;
+	// once IgnoreNotTimeValid accepts the expiry, the platform's flags decide, and on Linux those for the peer and the CAs do not accept the CA certificate.
 	public static IEnumerable<Func<(bool Trusted, X509VerificationFlags Flags, CertificateValidationError[] Windows, CertificateValidationError[] Linux, CertificateValidationError[] MacOS)>> KeyRolloverCases()
 	{
 		const CertificateValidationError expired = CertificateValidationError.Expired;
@@ -773,7 +780,8 @@ public class PlatformCertificateValidatorTest
 		await Assert.That(result.Error).IsEqualTo(error).Because(result.Message ?? "");
 	}
 
-	// A root and an intermediate CA, and leaves that the intermediate issues for server authentication by default. The issuers sign through generators, which let a validity period outlast the issuer's.
+	// A root and an intermediate CA, and leaves that the intermediate issues for server authentication by default.
+	// The issuers sign through generators, which let a validity period outlast the issuer's.
 	private sealed class TestPki : IDisposable
 	{
 		private readonly ECDsa _rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);

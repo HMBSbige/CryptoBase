@@ -3,14 +3,18 @@ using CryptoBase.Hashes.SM3;
 
 namespace CryptoBase.Kdf;
 
-// The key derivation function of GB/T 32918.4-2016, Sec. 5.4.3, with SM3, which SM2 and SM9 share: the key is SM3(Z ‖ ct) for the 32-bit big-endian counters ct = 1, 2, … in order, cut to its length. The state absorbs Z once, through Append, and each block finishes a copy of it: WriteBlock one, and Write several at once in vector lanes, which share the chaining value and the bytes of Z after its last whole block. Z may be secret: the methods erase the copies they make, and Clear erases the state. Keep a state in one writable location and do not copy it.
+// The key derivation function of GB/T 32918.4-2016, Sec. 5.4.3, with SM3, which SM2 and SM9 share: the key is SM3(Z ‖ ct) for the 32-bit big-endian counters ct = 1, 2, … in order, cut to its length.
+// The state absorbs Z once, through Append, and each block finishes a copy of it: WriteBlock one, and Write several at once in vector lanes, which share the chaining value and the bytes of Z after its last whole block.
+// Z may be secret: the methods erase the copies they make, and Clear erases the state.
+// Keep a state in one writable location and do not copy it.
 internal struct SM3KdfState
 {
 	internal const int BlockLength = 32;
 
 	private SM3Core _hash;
 
-	// The fewest blocks that take lanes, as a group computes every lane however few blocks fill it; fewer take SM3 one block at a time. Four lanes whose rotations take three instructions need one block more.
+	// The fewest blocks that take lanes, as a group computes every lane however few blocks fill it; fewer take SM3 one block at a time.
+	// Four lanes whose rotations take three instructions need one block more.
 	private static int MinLaneBlocks => SM3Vector256.IsSupported || Avx512F.VL.IsSupported || AdvSimd.Arm64.IsSupported ? 3 : 4;
 
 	// As MinLaneBlocks for the blocks past a pass of lanes, whose group shares the call of the pass: one block fewer where rotations take one instruction.
@@ -46,7 +50,8 @@ internal struct SM3KdfState
 		block.ZeroMemory();
 	}
 
-	// Writes the key from block counter on to destination, which may be empty: blocks counter, counter + 1, …, the last cut to fit, which must not run past block 2^32 − 1. Several blocks at once take vector lanes.
+	// Writes the key from block counter on to destination, which may be empty: blocks counter, counter + 1, …, the last cut to fit, which must not run past block 2^32 − 1.
+	// Several blocks at once take vector lanes.
 	internal readonly void Write(uint counter, Span<byte> destination)
 	{
 		Debug.Assert(counter is not 0 && counter + ((ulong)destination.Length + BlockLength - 1) / BlockLength - 1 <= uint.MaxValue);
@@ -60,7 +65,9 @@ internal struct SM3KdfState
 		WriteBlocks(counter, destination);
 	}
 
-	// destination = source ⊕ the key from block counter on, source.Length bytes of each, taking the key a chunk at a time on the stack. Returns a value that is 0 just if every byte of the key is, without branching on them. destination is source or does not overlap it.
+	// destination = source ⊕ the key from block counter on, source.Length bytes of each, taking the key a chunk at a time on the stack.
+	// Returns a value that is 0 just if every byte of the key is, without branching on them.
+	// destination is source or does not overlap it.
 	[SkipLocalsInit]
 	internal readonly ulong Xor(uint counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{

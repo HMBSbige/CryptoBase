@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The Miller loop on two points, the powers of GT with a fixed table and the builds of those tables on SM9Lanes over SM9VectorAdvSimd and the products of G1 from fixed-base tables on SM9PointLanes; the rest, which SM9KernelDispatch does not take here, forwards to SM9Scalar.
+// The Miller loop on two points, the powers of GT with a fixed table and the builds of those tables on SM9Lanes over SM9VectorAdvSimd and the products of G1 from fixed-base tables on SM9PointLanes;
+// the rest, which SM9KernelDispatch does not take here, forwards to SM9Scalar.
 internal readonly struct SM9AdvSimd : ISM9Kernel
 {
 	public static bool IsSupported => SM9VectorAdvSimd.IsSupported;

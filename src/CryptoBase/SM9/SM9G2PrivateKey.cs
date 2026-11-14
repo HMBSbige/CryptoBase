@@ -2,7 +2,8 @@ using CryptoBase.EllipticCurves.SM9;
 
 namespace CryptoBase.SM9;
 
-// The private key de of G2 of a user of an encryption master key, with the lines of the Miller loop for it, which the first pairing builds, so that each later pairing e(P, de) costs less. The lines are as secret as de: threads that pair at once may each build them, but only the first to finish publishes them and the others erase theirs, and Dispose erases de and the lines.
+// The private key de of G2 of a user of an encryption master key, with the lines of the Miller loop for it, which the first pairing builds, so that each later pairing e(P, de) costs less.
+// The lines are as secret as de: threads that pair at once may each build them, but only the first to finish publishes them and the others erase theirs, and Dispose erases de and the lines.
 internal sealed class SM9G2PrivateKey : IDisposable
 {
 	private SM9AffinePoint<SM9Fp2> _point;

@@ -6,7 +6,8 @@ namespace CryptoBase.Kdf;
 /// Implements the TLS 1.2 pseudorandom function as specified by RFC 5246, section 5.
 /// </summary>
 /// <remarks>
-/// The output is <c>P_hash(secret, label || seed)</c> truncated to the output length, with the hash that the cipher suite selects. Any input may overlap the output.
+/// The output is <c>P_hash(secret, label || seed)</c> truncated to the output length, with the hash that the cipher suite selects.
+/// Any input may overlap the output.
 /// </remarks>
 public static class Tls12Prf
 {
@@ -17,7 +18,10 @@ public static class Tls12Prf
 	/// <param name="secret">The secret. It may be empty.</param>
 	/// <param name="label">The ASCII label, such as <c>"master secret"u8</c>, without a length prefix or a trailing null.</param>
 	/// <param name="seed">The seed.</param>
-	/// <param name="output">The buffer that receives the derived key material. Its length selects how many bytes are derived.</param>
+	/// <param name="output">
+	/// The buffer that receives the derived key material.
+	/// Its length selects how many bytes are derived.
+	/// </param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="output" /> is empty.</exception>
 	public static void DeriveKey<TCore>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
@@ -32,7 +36,10 @@ public static class Tls12Prf
 	/// <param name="label">The ASCII label, such as <c>"master secret"u8</c>, without a length prefix or a trailing null.</param>
 	/// <param name="seed1">The first part of the seed.</param>
 	/// <param name="seed2">The second part of the seed.</param>
-	/// <param name="output">The buffer that receives the derived key material. Its length selects how many bytes are derived.</param>
+	/// <param name="output">
+	/// The buffer that receives the derived key material.
+	/// Its length selects how many bytes are derived.
+	/// </param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="output" /> is empty.</exception>
 	public static void DeriveKey<TCore>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{

@@ -97,7 +97,8 @@ internal static class CertificatePolicy
 		return identifier.Oid is AlgorithmIdentifier.RsaEncryptionOid or AlgorithmIdentifier.RsassaPssOid;
 	}
 
-	// RSAPublicKey ::= SEQUENCE { modulus INTEGER, publicExponent INTEGER } (RFC 8017, Appendix A.1.1), whose integers are positive; an odd modulus and an odd exponent of at least 3 (RFC 8017, Sec. 3.1) make a valid key.
+	// RSAPublicKey ::= SEQUENCE { modulus INTEGER, publicExponent INTEGER } (RFC 8017, Appendix A.1.1), whose integers are positive;
+	// an odd modulus and an odd exponent of at least 3 (RFC 8017, Sec. 3.1) make a valid key.
 	private static CertificateValidationError? CheckRsaPublicKey(ReadOnlyMemory<byte> publicKey, int minRsaKeySize, out string? reason)
 	{
 		ReadOnlySpan<byte> modulus;

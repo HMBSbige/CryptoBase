@@ -7,7 +7,8 @@ using static CryptoBase.Tests.IO.ChunkedTestUtils;
 
 namespace CryptoBase.Tests.IO;
 
-// Random access takes the message length from ChunkLayout and the encryption stream its limit, while the one-shot API takes both from the cipher. The two assemblies each follow the layout that IChunkedCipher documents, so they must agree, above all on the lengths that end on a chunk boundary.
+// Random access takes the message length from ChunkLayout and the encryption stream its limit, while the one-shot API takes both from the cipher.
+// The two assemblies each follow the layout that IChunkedCipher documents, so they must agree, above all on the lengths that end on a chunk boundary.
 public class ChunkLayoutTest
 {
 	[Test]

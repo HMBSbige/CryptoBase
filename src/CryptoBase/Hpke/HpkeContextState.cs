@@ -7,7 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Hpke;
 
-// The context of RFC 9180, Section 5.2, set up by the key schedule of Section 5.1. The sequence number has 64 bits, as Section 5.2 allows, so its last value is the message limit.
+// The context of RFC 9180, Section 5.2, set up by the key schedule of Section 5.1.
+// The sequence number has 64 bits, as Section 5.2 allows, so its last value is the message limit.
 internal struct HpkeContextState
 {
 	private const int NonceSize = 12;

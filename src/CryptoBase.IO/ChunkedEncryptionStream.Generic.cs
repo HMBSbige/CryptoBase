@@ -8,10 +8,14 @@ namespace CryptoBase.IO;
 /// <typeparam name="TCipher">The chunked cipher.</typeparam>
 /// <remarks>
 /// <para>
-/// The stream is write-only and not seekable. It buffers one chunk of plaintext and writes each chunk to the inner stream as soon as it is full, after the message header for the first one. Each chunk reaches the inner stream in a single write.
+/// The stream is write-only and not seekable.
+/// It buffers one chunk of plaintext and writes each chunk to the inner stream as soon as it is full, after the message header for the first one.
+/// Each chunk reaches the inner stream in a single write.
 /// </para>
 /// <para>
-/// The message is complete only once <see cref="FlushFinalChunk" /> or <see cref="FlushFinalChunkAsync" /> writes the last chunk, which is shorter than a full chunk and may be empty. Disposal does not write it: it discards any buffered plaintext and leaves the ciphertext without a last chunk, which decryption rejects as truncated, so that a write abandoned partway, such as by an exception, cannot leave a valid shorter message. <see cref="Flush" /> only flushes the inner stream, because a chunk cannot be written before it is full or the message ends.
+/// The message is complete only once <see cref="FlushFinalChunk" /> or <see cref="FlushFinalChunkAsync" /> writes the last chunk, which is shorter than a full chunk and may be empty.
+/// Disposal does not write it: it discards any buffered plaintext and leaves the ciphertext without a last chunk, which decryption rejects as truncated, so that a write abandoned partway, such as by an exception, cannot leave a valid shorter message.
+/// <see cref="Flush" /> only flushes the inner stream, because a chunk cannot be written before it is full or the message ends.
 /// </para>
 /// <para>
 /// A write to the inner stream that fails leaves the ciphertext in an unknown state, so later writes and <see cref="FlushFinalChunk" /> throw <see cref="InvalidOperationException" />.

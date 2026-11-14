@@ -125,7 +125,9 @@ internal readonly struct SM9VectorSse41 : ISM9Vector<SM9VectorSse41>
 		return new SM9VectorSse41(Vector128.ConditionalSelect(mask._value, whenSet._value, whenClear._value));
 	}
 
-	// Each pair of lanes of the destination row from the two pairs that hold its sources, by one shufpd; the pattern is a constant, so the addresses and the controls fold. Every source is read before the destination is written. Lanes 6 and 7, padding, are left as they were.
+	// Each pair of lanes of the destination row from the two pairs that hold its sources, by one shufpd; the pattern is a constant, so the addresses and the controls fold.
+	// Every source is read before the destination is written.
+	// Lanes 6 and 7, padding, are left as they were.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Permute(ref readonly ulong first, ref readonly ulong second, ref ulong destination, ulong pattern)
 	{

@@ -9,7 +9,8 @@ namespace CryptoBase.X509;
 /// A responder that follows RFC 9919 may answer a request with a nonce with a response without one.
 /// </para>
 /// <para>
-/// RFC 9654, Sec. 2.1, has a requester use a nonce of at least 32 bytes. A responder that follows it may answer a longer nonce without one, and a responder that follows RFC 8954 rejects a longer nonce as malformed, so 32 bytes is the length to use.
+/// RFC 9654, Sec. 2.1, has a requester use a nonce of at least 32 bytes.
+/// A responder that follows it may answer a longer nonce without one, and a responder that follows RFC 8954 rejects a longer nonce as malformed, so 32 bytes is the length to use.
 /// </para>
 /// <para>
 /// Instances are immutable, so they may be used concurrently.

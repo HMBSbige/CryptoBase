@@ -2,10 +2,15 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The field of p, as SM9Modulus gives it, in five unsaturated limbs, the value Σ L_i·2^(52i), with Montgomery form for R = 2^260. p is just above 0.7119·2^256, so R/p is just above 22.47.
-// An element is reduced if limbs 0 to 3 are below 2^52 and its value is below 2.25p, which puts limb 4 below 2^48.7. Every member that gives an element gives a reduced one, except AddUnreduced and SubtractUnreduced, whose callers keep the limbs and values within what the next operation takes; the constants are reduced. Two reduced elements of the same value have the same limbs.
+// The field of p, as SM9Modulus gives it, in five unsaturated limbs, the value Σ L_i·2^(52i), with Montgomery form for R = 2^260.
+// p is just above 0.7119·2^256, so R/p is just above 22.47.
+// An element is reduced if limbs 0 to 3 are below 2^52 and its value is below 2.25p, which puts limb 4 below 2^48.7.
+// Every member that gives an element gives a reduced one, except AddUnreduced and SubtractUnreduced, whose callers keep the limbs and values within what the next operation takes;
+// the constants are reduced.
+// Two reduced elements of the same value have the same limbs.
 // The products end in Montgomery reduction of a value t, x·y or a sum of products in an SM9FpWide, which gives a value below t/R + p, so below 2.25p for t below 28p²: the product of two reduced elements is below 5.1p², and every other caller states its bound against 28p².
-// No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
+// No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
+// Any result may be the same variable as an input.
 internal struct SM9Fp : ISM9Field<SM9Fp>
 {
 	internal ulong L0;
@@ -30,14 +35,16 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 	private const ulong TwoP3 = 0x0004DE3AC07569FE;
 	private const ulong TwoP4 = 0x00016C8000000547;
 
-	// 3p in limbs that cover those of a reduced element, limbs 0 to 3 above 2^52 and limb 4 above 2.25p/2^208, so that SubtractUnreduced leaves no limb negative. Each is below 2^53.
+	// 3p in limbs that cover those of a reduced element, limbs 0 to 3 above 2^52 and limb 4 above 2.25p/2^208, so that SubtractUnreduced leaves no limb negative.
+	// Each is below 2^53.
 	private const ulong ThreeP0 = 0x001ED177A9F3D077;
 	private const ulong ThreeP1 = 0x001E14F70CC93B03;
 	private const ulong ThreeP2 = 0x0010AC55CF65D7B8;
 	private const ulong ThreeP3 = 0x001F4D5820B01EFD;
 	private const ulong ThreeP4 = 0x000222C0000007E9;
 
-	// 6p in limbs that cover twice those of a reduced element, limbs 0 to 3 at least 2^53 − 2 and limb 4 above 4.5p/2^208, for SumMinusTwice. Each is below 2^54.
+	// 6p in limbs that cover twice those of a reduced element, limbs 0 to 3 at least 2^53 − 2 and limb 4 above 4.5p/2^208, for SumMinusTwice.
+	// Each is below 2^54.
 	private const ulong SixP0 = 0x002DA2EF53E7A0EE;
 	private const ulong SixP1 = 0x002C29EE19927607;
 	private const ulong SixP2 = 0x002158AB9ECBAF71;
@@ -66,7 +73,9 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 	// 2^520 mod p in 64-bit limbs: the numerator for SafeGcd, which then takes aR to R²/(aR) = a⁻¹R.
 	private static ReadOnlySpan<ulong> InverseNumerator => [0x9D4CAD9360402D43, 0x5978F99C61269952, 0x22C6A389172DE2FB, 0x6155A6564AA25A7D];
 
-	// With a = x_i·2^6 and b = y_j·2^6, a·b = x_i·y_j·2^12 splits at bit 52 of x_i·y_j: the high word is x_i·y_j >> 52 and the low word (x_i·y_j mod 2^52)·2^12. For limbs below 2^55 each high word is below 2^58, so a column of at most five low and five high words is below 2^61. The columns need no carries before Reduce.
+	// With a = x_i·2^6 and b = y_j·2^6, a·b = x_i·y_j·2^12 splits at bit 52 of x_i·y_j: the high word is x_i·y_j >> 52 and the low word (x_i·y_j mod 2^52)·2^12.
+	// For limbs below 2^55 each high word is below 2^58, so a column of at most five low and five high words is below 2^61.
+	// The columns need no carries before Reduce.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(in SM9Fp left, in SM9Fp right, out SM9Fp result)
 	{
@@ -92,7 +101,8 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 		Reduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, High(a4, b4), out result);
 	}
 
-	// As Multiply with right = value. The cross products take d = x_i·2^7 for 2·x_i·x_j, so limbs must be below 2^55 here too.
+	// As Multiply with right = value.
+	// The cross products take d = x_i·2^7 for 2·x_i·x_j, so limbs must be below 2^55 here too.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Square(in SM9Fp value, out SM9Fp result)
 	{
@@ -140,7 +150,8 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 		Reduce(value.T0, value.T1, value.T2, value.T3, value.T4, value.T5, value.T6, value.T7, value.T8, value.T9, out result);
 	}
 
-	// The reduced element of a sum of products whose value lies in (−128p², 342p²), with columns below 2^61.9 in magnitude: Reduce takes it with 128p² added, below 470p², and gives a value below 470p²/R + p < 21.95p, which WeakReduce takes. Not inlined: the tower reduces many sums in each operation, and one copy of the reduction keeps the code of those operations small.
+	// The reduced element of a sum of products whose value lies in (−128p², 342p²), with columns below 2^61.9 in magnitude: Reduce takes it with 128p² added, below 470p², and gives a value below 470p²/R + p < 21.95p, which WeakReduce takes.
+	// Not inlined: the tower reduces many sums in each operation, and one copy of the reduction keeps the code of those operations small.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	internal static void ReduceWide(in SM9FpWide value, out SM9Fp result)
 	{
@@ -227,7 +238,10 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 		MultiplySmall(in result, 5, out result);
 	}
 
-	// For limbs below 2^62 and a value below 2^260. Carrying leaves limbs 0 to 3 below 2^52 and limb 4 = ⌊v/2^208⌋ below 2^52. q is ⌊L4/(P4 + 1)⌋ or one less, as the multiplier falls short of 2^59/(P4 + 1) by under 1 and L4 < 2^52: since p < (P4 + 1)·2^208, qp is at most the value, and the remainder is below 2^208·(1 + L4/(P4 + 1)) + 2p, under 2p + 2^213. The limbs of qp are below 2^57, and the borrows shift arithmetically.
+	// For limbs below 2^62 and a value below 2^260.
+	// Carrying leaves limbs 0 to 3 below 2^52 and limb 4 = ⌊v/2^208⌋ below 2^52.
+	// q is ⌊L4/(P4 + 1)⌋ or one less, as the multiplier falls short of 2^59/(P4 + 1) by under 1 and L4 < 2^52: since p < (P4 + 1)·2^208, qp is at most the value, and the remainder is below 2^208·(1 + L4/(P4 + 1)) + 2p, under 2p + 2^213.
+	// The limbs of qp are below 2^57, and the borrows shift arithmetically.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void WeakReduce(in SM9Fp value, out SM9Fp result)
 	{
@@ -248,7 +262,8 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 		result.L4 = l4 - q * P4 + SignedCarry(t3);
 	}
 
-	// ulong.MaxValue if the value is 0 mod p and 0 otherwise. Below 2.25p a reduced element is 0 mod p just if its limbs are those of 0, p or 2p.
+	// ulong.MaxValue if the value is 0 mod p and 0 otherwise.
+	// Below 2.25p a reduced element is 0 mod p just if its limbs are those of 0, p or 2p.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ulong IsZero(in SM9Fp value)
 	{
@@ -335,7 +350,8 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 		saturated.ZeroMemory();
 	}
 
-	// The canonical value in four 64-bit limbs. A reduced element is below 2.25p, so two conditional subtractions of p leave it below p.
+	// The canonical value in four 64-bit limbs.
+	// A reduced element is below 2.25p, so two conditional subtractions of p leave it below p.
 	private static void ToSaturated(in SM9Fp value, out FieldElement<SM9Modulus> result)
 	{
 		SubtractModulus(in value, out SM9Fp t);
@@ -398,7 +414,11 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 		t9 = High(a4, a4);
 	}
 
-	// Five Montgomery rounds on t = Σ t_k·2^(52k). Round k takes q = −t_k/p mod 2^52 and adds q·p·2^(52k), whose low word clears column k: as that word is (−t_k) mod 2^52, column k carries ⌈t_k/2^52⌉ = ⌊(t_k + 2^52 − 1)/2^52⌋ out, which the arithmetic shift gives for either sign of t_k, so the low word of q·p0 is not needed. Columns 5 to 9, carried, are the result, (t + Q·p)/2^260 for some 0 ≤ Q < 2^260, below t/R + p. The rounds add below 2^53 + 2^11 to a column each, at most five times, so columns below 2^62 in magnitude stay below 2^63; the last carries shift arithmetically too, and a value that is not negative leaves limb 4 not negative.
+	// Five Montgomery rounds on t = Σ t_k·2^(52k).
+	// Round k takes q = −t_k/p mod 2^52 and adds q·p·2^(52k), whose low word clears column k: as that word is (−t_k) mod 2^52, column k carries ⌈t_k/2^52⌉ = ⌊(t_k + 2^52 − 1)/2^52⌋ out, which the arithmetic shift gives for either sign of t_k, so the low word of q·p0 is not needed.
+	// Columns 5 to 9, carried, are the result, (t + Q·p)/2^260 for some 0 ≤ Q < 2^260, below t/R + p.
+	// The rounds add below 2^53 + 2^11 to a column each, at most five times, so columns below 2^62 in magnitude stay below 2^63;
+	// the last carries shift arithmetically too, and a value that is not negative leaves limb 4 not negative.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Reduce(ulong t0, ulong t1, ulong t2, ulong t3, ulong t4, ulong t5, ulong t6, ulong t7, ulong t8, ulong t9, out SM9Fp result)
 	{
@@ -475,7 +495,8 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 			return Math.BigMul(a, b, out _);
 		}
 
-		// Math.BigMul would call its software fallback here rather than inline it. One of a and b is below 2^61 and the other below 2^62, so the two cross products of their 32-bit halves and the carry out of the low product sum below 2^64 without a carry.
+		// Math.BigMul would call its software fallback here rather than inline it.
+		// One of a and b is below 2^61 and the other below 2^62, so the two cross products of their 32-bit halves and the carry out of the low product sum below 2^64 without a carry.
 		ulong aHigh = a >> 32;
 		ulong aLow = (uint)a;
 		ulong bHigh = b >> 32;

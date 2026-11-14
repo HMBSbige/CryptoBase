@@ -280,7 +280,8 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		LoadWords(ref Unsafe.Add(ref block, 48), o1, o2, o3, o4, o5, o6, o7, ref Unsafe.Add(ref message, 12));
 	}
 
-	// Loads four words of each input as four vectors. Inputs i and i + 4 share a row, input i + 4 in the high lane, which leaves only a 4x4 transpose within each lane: the loads, not lane-crossing shuffles, put the inputs into place.
+	// Loads four words of each input as four vectors.
+	// Inputs i and i + 4 share a row, input i + 4 in the high lane, which leaves only a 4x4 transpose within each lane: the loads, not lane-crossing shuffles, put the inputs into place.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void LoadWords(ref byte block, nuint o1, nuint o2, nuint o3, nuint o4, nuint o5, nuint o6, nuint o7, ref Vector256<uint> message)
 	{

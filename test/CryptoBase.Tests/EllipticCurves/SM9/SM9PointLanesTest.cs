@@ -7,7 +7,9 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves.SM9;
 
-// The point formulas of SM9PointLanes for every vector type the CPU supports, against those of SM9Curve. Both compute the same polynomials of the coordinates, so the coordinates agree as values, not only the points; that holds for inputs that are no points too, which takes the lazy reductions to their bounds.
+// The point formulas of SM9PointLanes for every vector type the CPU supports, against those of SM9Curve.
+// Both compute the same polynomials of the coordinates, so the coordinates agree as values, not only the points;
+// that holds for inputs that are no points too, which takes the lazy reductions to their bounds.
 public class SM9PointLanesTest
 {
 	[Test]

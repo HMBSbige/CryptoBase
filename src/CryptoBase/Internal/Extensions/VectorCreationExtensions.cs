@@ -52,7 +52,8 @@ internal static class VectorCreationExtensions
 
 	extension(Vector256)
 	{
-		// One instruction, where Vector256.ConcatUpperUpper takes vextracti128 and vinserti128. vperm2i128 has no EVEX form and reaches only ymm0-15, so take vshufi64x2 with AVX-512VL.
+		// One instruction, where Vector256.ConcatUpperUpper takes vextracti128 and vinserti128.
+		// vperm2i128 has no EVEX form and reaches only ymm0-15, so take vshufi64x2 with AVX-512VL.
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Vector256<T> ConcatUpper<T>(Vector256<T> left, Vector256<T> right) where T : unmanaged
 		{

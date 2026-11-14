@@ -7,8 +7,10 @@ namespace CryptoBase.X509;
 /// <para>
 /// The platform builds the chain from the peer's first certificate, with the others as extra certificates, under a copy of the policy to whose <see cref="X509ChainPolicy.ApplicationPolicy" /> the extended key usage of <see cref="CertificateValidationContext.Usage" /> is added unless it is there already.
 /// The <see cref="X509ChainPolicy.VerificationFlags" /> of the policy apply to every check of the platform, that extended key usage included: <see cref="X509VerificationFlags.IgnoreWrongUsage" />, for example, accepts a certificate without it.
-/// A host name must be one that the subject alternative name extension identifies, as <see cref="Certificate.MatchHostName" /> specifies, so that every platform matches names alike; as RFC 9525 requires, the common name of the subject is not used.
-/// The validator checks the host name itself, whether or not the chain is valid, so no flag skips that check. Otherwise the platform alone decides whether the chain is acceptable.
+/// A host name must be one that the subject alternative name extension identifies, as <see cref="Certificate.MatchHostName" /> specifies, so that every platform matches names alike;
+/// as RFC 9525 requires, the common name of the subject is not used.
+/// The validator checks the host name itself, whether or not the chain is valid, so no flag skips that check.
+/// Otherwise the platform alone decides whether the chain is acceptable.
 /// </para>
 /// <para>
 /// The platform also verifies the signatures, so a chain with an algorithm that the platform does not support, such as ML-DSA on an older system, fails validation.
@@ -23,19 +25,27 @@ namespace CryptoBase.X509;
 /// and <see cref="CertificateValidationError.NameMismatch" /> for a host name that the certificate does not identify, or that is neither a DNS name nor an IP address.
 /// </para>
 /// <para>
-/// The flags decide only whether the platform accepts the chain. When it does not, the errors hold every status that the platform reports, those that the flags make it ignore included, so a caller that tolerates a kind of problem sets the flag that ignores it rather than filtering the errors.
+/// The flags decide only whether the platform accepts the chain.
+/// When it does not, the errors hold every status that the platform reports, those that the flags make it ignore included, so a caller that tolerates a kind of problem sets the flag that ignores it rather than filtering the errors.
 /// For <see cref="X509VerificationFlags.IgnoreRootRevocationUnknown" />, each platform decides which certificates are roots: Windows the last certificate of a complete path, and Linux and macOS every certificate after the peer's whose issuer is its subject, such as one that rolls over a CA key.
 /// The platforms do not report the same statuses for every chain: Windows reports a certificate policy that the chain does not meet as NoIssuanceChainPolicy where Linux and macOS report NotValidForUsage, macOS reports a signature that does not verify as a partial chain, Linux reports a leaf whose subject alternative name extension does not decode as a partial chain, Windows and Linux report a name constraint of a form that they do not support, such as registeredID, as HasNotSupportedNameConstraint for a certificate with a name of that form where macOS reports InvalidNameConstraints for an intermediate CA with such a constraint, whatever names the certificates below it have, and the platforms check the revocation of different certificates.
 /// </para>
 /// <para>
-/// <see cref="CertificateValidationResult.Path" /> is the path that the platform built, whether or not it is valid, with the certificates of the context where they appear in it; <see cref="CertificateValidationResult.PathEnd" /> is <see cref="CertificatePathEnd.MissingIssuer" /> for a partial chain, <see cref="CertificatePathEnd.UntrustedRoot" /> for one that ends at a root that is not trusted, and <see cref="CertificatePathEnd.TrustAnchor" /> otherwise; the flags change none of these, so a partial chain that <see cref="X509VerificationFlags.AllowUnknownCertificateAuthority" /> accepts still ends at <see cref="CertificatePathEnd.MissingIssuer" />.
+/// <see cref="CertificateValidationResult.Path" /> is the path that the platform built, whether or not it is valid, with the certificates of the context where they appear in it;
+/// <see cref="CertificateValidationResult.PathEnd" /> is <see cref="CertificatePathEnd.MissingIssuer" /> for a partial chain, <see cref="CertificatePathEnd.UntrustedRoot" /> for one that ends at a root that is not trusted, and <see cref="CertificatePathEnd.TrustAnchor" /> otherwise;
+/// the flags change none of these, so a partial chain that <see cref="X509VerificationFlags.AllowUnknownCertificateAuthority" /> accepts still ends at <see cref="CertificatePathEnd.MissingIssuer" />.
 /// If a certificate of the platform's path does not decode as a <see cref="Certificate" />, the result has no path, and the platform's decision stands.
 /// </para>
 /// <para>
-/// Validation runs on the thread pool when the policy checks revocation, online or offline, or allows certificate downloads, and the deadline has not passed, as macOS retrieves for an offline check too; it completes synchronously otherwise.
-/// <see cref="X509ChainPolicy.UrlRetrievalTimeout" />, or 15 seconds when it is zero, bounds each retrieval, shortened to the time left until <see cref="CertificateValidationContext.Deadline" /> in whole milliseconds. On Windows and Linux the timeout applies to each retrieval in turn, so a chain that needs several retrievals can take longer than the time left; on macOS it does not apply, and the system bounds each retrieval itself.
-/// Once less than a millisecond is left, the validator neither downloads certificates nor checks revocation, offline included; a policy that checks revocation then gives <see cref="CertificateValidationError.RevocationUnknown" /> unless its flags ignore an unknown status of every kind of certificate that <see cref="X509ChainPolicy.RevocationFlag" /> covers, whatever the path: <see cref="X509VerificationFlags.IgnoreEndRevocationUnknown" /> for <see cref="X509RevocationFlag.EndCertificateOnly" />, that and <see cref="X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown" /> for <see cref="X509RevocationFlag.ExcludeRoot" />, and those and <see cref="X509VerificationFlags.IgnoreRootRevocationUnknown" /> for <see cref="X509RevocationFlag.EntireChain" />.
-/// Cancellation is observed until the platform starts building the chain. The platform cannot stop a build that has started, so the returned task then completes when the build ends, and no work for the call is left running afterwards.
+/// Validation runs on the thread pool when the policy checks revocation, online or offline, or allows certificate downloads, and the deadline has not passed, as macOS retrieves for an offline check too;
+/// it completes synchronously otherwise.
+/// <see cref="X509ChainPolicy.UrlRetrievalTimeout" />, or 15 seconds when it is zero, bounds each retrieval, shortened to the time left until <see cref="CertificateValidationContext.Deadline" /> in whole milliseconds.
+/// On Windows and Linux the timeout applies to each retrieval in turn, so a chain that needs several retrievals can take longer than the time left;
+/// on macOS it does not apply, and the system bounds each retrieval itself.
+/// Once less than a millisecond is left, the validator neither downloads certificates nor checks revocation, offline included;
+/// a policy that checks revocation then gives <see cref="CertificateValidationError.RevocationUnknown" /> unless its flags ignore an unknown status of every kind of certificate that <see cref="X509ChainPolicy.RevocationFlag" /> covers, whatever the path: <see cref="X509VerificationFlags.IgnoreEndRevocationUnknown" /> for <see cref="X509RevocationFlag.EndCertificateOnly" />, that and <see cref="X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown" /> for <see cref="X509RevocationFlag.ExcludeRoot" />, and those and <see cref="X509VerificationFlags.IgnoreRootRevocationUnknown" /> for <see cref="X509RevocationFlag.EntireChain" />.
+/// Cancellation is observed until the platform starts building the chain.
+/// The platform cannot stop a build that has started, so the returned task then completes when the build ends, and no work for the call is left running afterwards.
 /// The validator holds its own copies of the certificates in the stores of its policy, so the caller may dispose them after construction.
 /// </para>
 /// </remarks>
@@ -73,7 +83,10 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 	/// <summary>
 	/// Initializes a validator.
 	/// </summary>
-	/// <param name="policy">The chain policy, which the validator copies with its certificates; <see langword="null" /> for the system's trusted roots without revocation checks, downloading missing certificates.</param>
+	/// <param name="policy">
+	/// The chain policy, which the validator copies with its certificates;
+	/// <see langword="null" /> for the system's trusted roots without revocation checks, downloading missing certificates.
+	/// </param>
 	public PlatformCertificateValidator(X509ChainPolicy? policy = null)
 	{
 		if (policy is null)
@@ -128,7 +141,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 		return milliseconds > 0 ? TimeSpan.FromMilliseconds(milliseconds) : TimeSpan.Zero;
 	}
 
-	// Shortens each retrieval to the limit, or stops all of them once it is zero; returns whether the policy checked revocation, which then goes unchecked. Offline checks retrieve on macOS, so revocation is not checked at all.
+	// Shortens each retrieval to the limit, or stops all of them once it is zero; returns whether the policy checked revocation, which then goes unchecked.
+	// Offline checks retrieve on macOS, so revocation is not checked at all.
 	internal static bool ApplyRetrievalLimit(X509ChainPolicy policy, TimeSpan? limit)
 	{
 		if (limit is not { } left)
@@ -393,7 +407,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 		return path;
 	}
 
-	// The host name of the context, matched by the package rather than the platform, so that every platform matches names alike; without one, the names are not read, and the platform alone judges the extension.
+	// The host name of the context, matched by the package rather than the platform, so that every platform matches names alike;
+	// without one, the names are not read, and the platform alone judges the extension.
 	private static void CheckNames(Certificate leaf, string? hostName, List<CertificateValidationError> errors, List<string> messages)
 	{
 		if (hostName is null)

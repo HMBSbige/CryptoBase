@@ -3,7 +3,9 @@ using CryptoBase.EllipticCurves.SM9;
 
 namespace CryptoBase.SM9;
 
-// The public base g of the powers of a master public key, e(P1, Ppub-s) of a signature one or e(Ppub-e, P2) of an encryption one. The first power goes without a table, which a key that takes one power has no use for, and a later one builds it. Threads that take powers at once may each build one, but only the first to finish publishes it, and the powers with and without it agree.
+// The public base g of the powers of a master public key, e(P1, Ppub-s) of a signature one or e(Ppub-e, P2) of an encryption one.
+// The first power goes without a table, which a key that takes one power has no use for, and a later one builds it.
+// Threads that take powers at once may each build one, but only the first to finish publishes it, and the powers with and without it agree.
 internal sealed class SM9GTBase : IDisposable
 {
 	private readonly SM9Fp12 _value;
@@ -23,7 +25,8 @@ internal sealed class SM9GTBase : IDisposable
 		return Interlocked.CompareExchange(ref slot, value, null) ?? value;
 	}
 
-	// g^k. Neither the time nor the addresses depend on k; whether the table is used depends on the number of powers alone.
+	// g^k.
+	// Neither the time nor the addresses depend on k; whether the table is used depends on the number of powers alone.
 	internal void Power(in FieldElement<SM9Order> exponent, out SM9Fp12 result)
 	{
 		if (GetTable() is { } table)

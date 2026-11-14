@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// G2, the subgroup of order N of E'(Fp2) for the twist E': y² = x³ + 5u, with the generator P2 of GM/T 0044.5 §3.1, for the protocols of GM/T 0044.2 to 0044.4. Points are affine, with reduced coordinates in Montgomery form, and never the point at infinity; scalars are plain values below N.
+// G2, the subgroup of order N of E'(Fp2) for the twist E': y² = x³ + 5u, with the generator P2 of GM/T 0044.5 §3.1, for the protocols of GM/T 0044.2 to 0044.4.
+// Points are affine, with reduced coordinates in Montgomery form, and never the point at infinity; scalars are plain values below N.
 internal static class SM9G2
 {
 	// 04 ‖ x ‖ y with each coordinate a1 ‖ a0, the u-coefficient first, the uncompressed form of GM/T 0044.1 §7.2.8 with the field elements of §7.2.6.
@@ -8,7 +9,8 @@ internal static class SM9G2
 
 	internal static ref readonly SM9AffinePoint<SM9Fp2> Generator => ref SM9G2Group.Generator;
 
-	// The form must be 04 ‖ x ‖ y with every coefficient below p, and the point on the twist and in G2, which E'(Fp2) does not fill. The checks branch on whether the encoding is valid alone, so the input may be a private key, whose coordinates in plain form are erased.
+	// The form must be 04 ‖ x ‖ y with every coefficient below p, and the point on the twist and in G2, which E'(Fp2) does not fill.
+	// The checks branch on whether the encoding is valid alone, so the input may be a private key, whose coordinates in plain form are erased.
 	[SkipLocalsInit]
 	internal static bool TryDecode(ReadOnlySpan<byte> source, out SM9AffinePoint<SM9Fp2> result)
 	{
@@ -42,7 +44,8 @@ internal static class SM9G2
 		SM9Fp2.ExportPlain(in point.Y, destination.Slice(1 + SM9Fp2.ByteLength));
 	}
 
-	// k·P2 for k in [1, N − 1]; k = 0 gives (0, 0), not a point. Neither the time nor the addresses depend on k, and the projective product is erased.
+	// k·P2 for k in [1, N − 1]; k = 0 gives (0, 0), not a point.
+	// Neither the time nor the addresses depend on k, and the projective product is erased.
 	internal static void MultiplyBase(in FieldElement<SM9Order> scalar, out SM9AffinePoint<SM9Fp2> result)
 	{
 		SM9KernelDispatch.MultiplyBaseG2(in scalar, out SM9Point<SM9Fp2> product);

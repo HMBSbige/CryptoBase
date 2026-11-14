@@ -29,8 +29,7 @@ internal static class RsaAlgorithms
 		};
 	}
 
-	// The algorithms whose encoded message fits the modulus (RFC 8017): EMSA-PSS needs emLen ≥ hLen + sLen + 2 (Sec. 9.1.1, step 3), and EMSA-PKCS1-v1_5 needs k ≥ tLen + 11, where the DigestInfo T has 19
-	// bytes before the hash (Sec. 9.2, step 3).
+	// The algorithms whose encoded message fits the modulus (RFC 8017): EMSA-PSS needs emLen ≥ hLen + sLen + 2 (Sec. 9.1.1, step 3), and EMSA-PKCS1-v1_5 needs k ≥ tLen + 11, where the DigestInfo T has 19 bytes before the hash (Sec. 9.2, step 3).
 	internal static int Fitting(int modulusBits)
 	{
 		int encodedLength = RsaPadding.GetPssEncodedLength(modulusBits);

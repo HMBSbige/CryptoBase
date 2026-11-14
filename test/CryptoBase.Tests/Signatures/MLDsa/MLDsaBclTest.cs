@@ -12,7 +12,8 @@ using BclMLDsa = System.Security.Cryptography.MLDsa;
 
 namespace CryptoBase.Tests.Signatures.MLDsa;
 
-// Differential tests against the platform implementation, where there is one. Not every platform signs or verifies μ itself, so μ is checked through its message methods.
+// Differential tests against the platform implementation, where there is one.
+// Not every platform signs or verifies μ itself, so μ is checked through its message methods.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 [GenerateGenericTest(typeof(MLDsa44))]
 [GenerateGenericTest(typeof(MLDsa65))]

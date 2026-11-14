@@ -6,7 +6,8 @@ namespace CryptoBase.Tests.Kdf;
 
 public class SM3KdfTest
 {
-	// The keys that the examples of the standards print, from the inputs that they print: GB/T 32918.5-2017, C.2, t = KDF(x2 ‖ y2, klen) of the encryption, and B.2, K = KDF(xU ‖ yU ‖ ZA ‖ ZB, 128) of the key exchange; GM/T 0044.5-2016, C.2, K = KDF(C ‖ w ‖ IDB, 256) of the key encapsulation, D.2, K = KDF(C1 ‖ w ‖ IDB, 416) of the encryption, and B.2, SK = KDF(IDA ‖ IDB ‖ RA ‖ RB ‖ g1 ‖ g2 ‖ g3, 128) of the key exchange.
+	// The keys that the examples of the standards print, from the inputs that they print: GB/T 32918.5-2017, C.2, t = KDF(x2 ‖ y2, klen) of the encryption, and B.2, K = KDF(xU ‖ yU ‖ ZA ‖ ZB, 128) of the key exchange;
+	// GM/T 0044.5-2016, C.2, K = KDF(C ‖ w ‖ IDB, 256) of the key encapsulation, D.2, K = KDF(C1 ‖ w ‖ IDB, 416) of the encryption, and B.2, SK = KDF(IDA ‖ IDB ‖ RA ‖ RB ‖ g1 ‖ g2 ‖ g3, 128) of the key exchange.
 	[Test]
 	public async Task KeysOfTheStandardExamples()
 	{

@@ -2,7 +2,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// Window i holds j·2^(wi)·B for j from 1 to 2^(w − 1), w = Width, with a window for every signed digit of a 256-bit scalar. Each entry is (y + x, y − x, 2dxy) as canonical values in four 64-bit limbs each. The entries start on a 64-byte boundary.
+// Window i holds j·2^(wi)·B for j from 1 to 2^(w − 1), w = Width, with a window for every signed digit of a 256-bit scalar.
+// Each entry is (y + x, y − x, 2dxy) as canonical values in four 64-bit limbs each.
+// The entries start on a 64-byte boundary.
 internal static class EdwardsBaseTable
 {
 	internal const int Width = 6;
@@ -24,7 +26,8 @@ internal static class EdwardsBaseTable
 		return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Storage), Start + index * WindowLength * EntryLength);
 	}
 
-	// digit·2^(wi)·B from window i, and the identity for a digit of 0. The lookup reads every entry of the window, so neither the time nor the addresses depend on the digit.
+	// digit·2^(wi)·B from window i, and the identity for a digit of 0.
+	// The lookup reads every entry of the window, so neither the time nor the addresses depend on the digit.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	internal static void Select(int window, int digit, out EdwardsNielsPoint result)
 	{
@@ -41,7 +44,8 @@ internal static class EdwardsBaseTable
 		Field25519.ConditionalNegate(negative, ref result.TwoDXY);
 	}
 
-	// Select for a kernel that turns the entry into lanes itself, in registers: y + x, y − x and 2dxy in the four 64-bit limbs of the entry, with y + x and y − x swapped for a negative digit and (1, 1, 0) for a digit of 0. 2dxy keeps its sign, which the caller negates where digit is negative.
+	// Select for a kernel that turns the entry into lanes itself, in registers: y + x, y − x and 2dxy in the four 64-bit limbs of the entry, with y + x and y − x swapped for a negative digit and (1, 1, 0) for a digit of 0.
+	// 2dxy keeps its sign, which the caller negates where digit is negative.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void SelectPacked(int window, int digit, out Vector256<ulong> yPlusX, out Vector256<ulong> yMinusX, out Vector256<ulong> twoDXY)
 	{
@@ -111,7 +115,11 @@ internal static class EdwardsBaseTable
 		Unpack(ref result);
 	}
 
-	// The twelve limbs of the entry at index of a window, or zeros for an index past it. Every limb of every entry is read and merged under a mask, 0 or all ones from the index alone, which each entry takes once for all its limbs; the masks come from comparing vectors of entry positions with the index. Only hardware-accelerated vectors are used, as the software fallback of the others may branch on the values. Each width has a method of its own, which keeps the locals of the others out of the inlinee.
+	// The twelve limbs of the entry at index of a window, or zeros for an index past it.
+	// Every limb of every entry is read and merged under a mask, 0 or all ones from the index alone, which each entry takes once for all its limbs;
+	// the masks come from comparing vectors of entry positions with the index.
+	// Only hardware-accelerated vectors are used, as the software fallback of the others may branch on the values.
+	// Each width has a method of its own, which keeps the locals of the others out of the inlinee.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Lookup(ref readonly ulong window, uint index, ref ulong result)
 	{

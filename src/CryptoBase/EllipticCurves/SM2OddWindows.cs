@@ -2,7 +2,10 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// The windows of k·P on the two chains of SM2OctoFormulas, whose digits are all odd: for s below 2^260 with bits s_j, the sum of (2s_j − 1)·2^j over j < 260 is 2s − (2^260 − 1), and window i of 5 bits of s, of value w_i, makes the digit d_i = 2w_i − 31, odd and in [−31, 31], so that K = Σ d_i·32^i = 2s − (2^260 − 1). For s = (k + 2^260 − 1)/2 mod n, K ≡ k (mod n). A digit d takes entry (|d| − 1)/2 of a table of P, 3P, …, 31P, negated below 0. No digit is 0, and the digits from the top of a chain down to any window sum to an odd value, never 0, so the windows need no masks for a digit of 0 or for the point at infinity.
+// The windows of k·P on the two chains of SM2OctoFormulas, whose digits are all odd: for s below 2^260 with bits s_j, the sum of (2s_j − 1)·2^j over j < 260 is 2s − (2^260 − 1), and window i of 5 bits of s, of value w_i, makes the digit d_i = 2w_i − 31, odd and in [−31, 31], so that K = Σ d_i·32^i = 2s − (2^260 − 1).
+// For s = (k + 2^260 − 1)/2 mod n, K ≡ k (mod n).
+// A digit d takes entry (|d| − 1)/2 of a table of P, 3P, …, 31P, negated below 0.
+// No digit is 0, and the digits from the top of a chain down to any window sum to an odd value, never 0, so the windows need no masks for a digit of 0 or for the point at infinity.
 internal static class SM2OddWindows
 {
 	internal const int Width = 5;
@@ -21,7 +24,8 @@ internal static class SM2OddWindows
 	// The one k at which the sums of the chains of SM2OctoFormulas are equal points for s below n.
 	private static ReadOnlySpan<ulong> Exception => [0xD0069914C6FDA21AUL, 0x5C742E8DF5349B13UL, 0x0000000000000007UL, 0x0000000000000000UL];
 
-	// Writes the Count digits of k from s = (k + 2^260 − 1)/2 mod n, which takes n more at Exception: s stays below 2n < 2^260 and K moves by 2n, so K ≡ k (mod n) still. The arithmetic takes the same steps for every k, with masks for the reduction and the exception, and the intermediates are cleared.
+	// Writes the Count digits of k from s = (k + 2^260 − 1)/2 mod n, which takes n more at Exception: s stays below 2n < 2^260 and K moves by 2n, so K ≡ k (mod n) still.
+	// The arithmetic takes the same steps for every k, with masks for the reduction and the exception, and the intermediates are cleared.
 	[SkipLocalsInit]
 	internal static void Recode(in FieldElement<SM2Order> scalar, Span<sbyte> digits)
 	{

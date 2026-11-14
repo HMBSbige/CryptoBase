@@ -1,6 +1,7 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// MontgomeryKernelAvx512 on two moduli at once (see IMontgomeryPairKernel): lane 2j of vector v holds digit 4v + j of the first and lane 2j + 1 digit 4v + j of the second, as the words of a pair lie, so that a digit moves by two lanes and every broadcast is one of 128 bits. The vectors do as much for two moduli as they would for one, and the two chains of the scalar side, from a sum to m and back, overlap.
+// MontgomeryKernelAvx512 on two moduli at once (see IMontgomeryPairKernel): lane 2j of vector v holds digit 4v + j of the first and lane 2j + 1 digit 4v + j of the second, as the words of a pair lie, so that a digit moves by two lanes and every broadcast is one of 128 bits.
+// The vectors do as much for two moduli as they would for one, and the two chains of the scalar side, from a sum to m and back, overlap.
 // Each chain keeps lanes 0 to 2 of its modulus and takes lane 3 from the first vector after the low parts, which two iterations separate from its use in m, enough with the chains overlapped to hide the latency of the vectors.
 internal readonly unsafe struct MontgomeryPairKernelAvx512<TWindow> : IMontgomeryPairKernel where TWindow : struct, IAvx512Window<TWindow>
 {
@@ -109,7 +110,8 @@ internal readonly unsafe struct MontgomeryPairKernelAvx512<TWindow> : IMontgomer
 		}
 	}
 
-	// Row 0: the words of the right operand as doubles. Rows 1 to 4: the parts of lanes 0 to 3 of each modulus that come from them, as Avx512Window.Products takes them, interleaved likewise: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a2·b_i).
+	// Row 0: the words of the right operand as doubles.
+	// Rows 1 to 4: the parts of lanes 0 to 3 of each modulus that come from them, as Avx512Window.Products takes them, interleaved likewise: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a2·b_i).
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Products(ref ulong x, ref ulong y, int words, ref ulong rows, Vector512<double> high, Vector512<double> low)
 	{

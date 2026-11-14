@@ -3,7 +3,8 @@ namespace CryptoBase.EllipticCurves.Curve448;
 // The ladder of X448, four field elements at a time.
 internal static class Curve448Vector<TField> where TField : unmanaged, IField448x4<TField>
 {
-	// Each step takes the bit of k from 447 down to 0. The values start on a 64-byte line: the stack aligns locals to 16 bytes at most, and the writes of a vector that straddles a line do not forward to the reads of the next product.
+	// Each step takes the bit of k from 447 down to 0.
+	// The values start on a 64-byte line: the stack aligns locals to 16 bytes at most, and the writes of a vector that straddles a line do not forward to the reads of the next product.
 	[SkipLocalsInit]
 	internal static void Ladder(ReadOnlySpan<byte> scalar, in Field448 u, out Field448 x, out Field448 z)
 	{

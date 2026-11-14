@@ -18,7 +18,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hpke;
 
-// The DHKEM behavior that KemContractTest does not cover: the RFC 9180 formulas on random keys, key derivation, key validation and the authenticated operations. DhKemX25519Test and DhKemX448Test have what is particular to X25519 and X448.
+// The DHKEM behavior that KemContractTest does not cover: the RFC 9180 formulas on random keys, key derivation, key validation and the authenticated operations.
+// DhKemX25519Test and DhKemX448Test have what is particular to X25519 and X448.
 [GenerateGenericTest(typeof(DhKemP256), typeof(EcdhP256))]
 [GenerateGenericTest(typeof(DhKemP384), typeof(EcdhP384))]
 [GenerateGenericTest(typeof(DhKemP521), typeof(EcdhP521))]

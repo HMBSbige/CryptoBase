@@ -10,11 +10,13 @@ public static class X509Certificate2Extensions
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The certificate's key must be ECDSA on P-256, P-384 or P-521, or RSA whose algorithm is rsaEncryption. The result is a <see cref="PlatformEcdsaKey" /> or a <see cref="PlatformRsaKey" /> whether or not the platform exports the private key, so the private key stays with the platform.
+	/// The certificate's key must be ECDSA on P-256, P-384 or P-521, or RSA whose algorithm is rsaEncryption.
+	/// The result is a <see cref="PlatformEcdsaKey" /> or a <see cref="PlatformRsaKey" /> whether or not the platform exports the private key, so the private key stays with the platform.
 	/// To sign with another implementation, the caller exports the private key, where the platform allows it, and imports it as that implementation, as SignatureKey.TryImportPrivateKey of CryptoBase does for its types.
 	/// </para>
 	/// <para>
-	/// An RSA key signs once, or twice if it fails to make an RSASSA-PSS signature, to learn whether it makes RSASSA-PSS signatures, as <see cref="PlatformRsaKey(RSA)" /> describes; a key store or device may ask the user for a PIN or consent then, or count the signatures.
+	/// An RSA key signs once, or twice if it fails to make an RSASSA-PSS signature, to learn whether it makes RSASSA-PSS signatures, as <see cref="PlatformRsaKey(RSA)" /> describes;
+	/// a key store or device may ask the user for a PIN or consent then, or count the signatures.
 	/// To sign nothing, the caller passes the key of <see cref="RSACertificateExtensions.GetRSAPrivateKey" /> to <see cref="PlatformRsaKey(RSA, ReadOnlySpan{SignatureAlgorithm})" /> with the algorithms that it signs with.
 	/// </para>
 	/// <para>

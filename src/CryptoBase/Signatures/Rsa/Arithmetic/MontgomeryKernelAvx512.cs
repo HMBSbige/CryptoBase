@@ -1,11 +1,15 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Digits of 52 bits with FP64 FMA on AVX-512, after Emmart, Zheng and Weems, "Faster Modular Exponentiation Using Double Precision Floating Point Arithmetic on the GPU" (IEEE ARITH 2018). A digit is exact as a double, and a product a·b < 2^104 splits into two digits with two FMAs rounded toward −∞:
+// Digits of 52 bits with FP64 FMA on AVX-512, after Emmart, Zheng and Weems, "Faster Modular Exponentiation Using Double Precision Floating Point Arithmetic on the GPU" (IEEE ARITH 2018).
+// A digit is exact as a double, and a product a·b < 2^104 splits into two digits with two FMAs rounded toward −∞:
 //   t = fma(a, b, 2^104) = 2^104 + h with h = ⌊a·b/2^52⌋·2^52, whose bits less those of 2^104 are the high digit h/2^52;
 //   fma(a, b, (2^104 + 2^52) − t) = a·b − h + 2^52, in [2^52, 2^53), whose bits less those of 2^52 are the low digit a·b mod 2^52.
 // Both stay integers in the bits of a double, so that the sums run on 64-bit integer lanes without conversions.
-// The multiplication scans the right operand digit by digit as in MontgomeryKernel64, with the window of the sum in a window of vectors (see IAvx512Window): at iteration i lane j holds digit i + j, gains the low parts of a·b_i and n·m_i, shifts down by one lane and gains the high parts. Every lane thus gains the bits of 2^52 and 2^104 twice per iteration; the lane shifted in at the top carries the offset of the others, so that all lanes share one offset, removed at the end.
-// m_i = (digit i of the sum)·(−n⁻¹) mod 2^52 must not wait for the vectors: the scalar side keeps lanes 0 to 3 exactly and takes lane 4 after the low parts from the vector, which four iterations of the scalar side separate from its use in m. The parts of those lanes that come from b_i are taken for every i before the loop, with the vectors (see Avx512Window.Products); the products of m_i with the first digits of n take m_i·2^12 as their second operand, so that the high word of a 64 × 64-bit product is the high digit and the low word shifted right by 12 bits the low digit.
+// The multiplication scans the right operand digit by digit as in MontgomeryKernel64, with the window of the sum in a window of vectors (see IAvx512Window): at iteration i lane j holds digit i + j, gains the low parts of a·b_i and n·m_i, shifts down by one lane and gains the high parts.
+// Every lane thus gains the bits of 2^52 and 2^104 twice per iteration; the lane shifted in at the top carries the offset of the others, so that all lanes share one offset, removed at the end.
+// m_i = (digit i of the sum)·(−n⁻¹) mod 2^52 must not wait for the vectors: the scalar side keeps lanes 0 to 3 exactly and takes lane 4 after the low parts from the vector, which four iterations of the scalar side separate from its use in m.
+// The parts of those lanes that come from b_i are taken for every i before the loop, with the vectors (see Avx512Window.Products);
+// the products of m_i with the first digits of n take m_i·2^12 as their second operand, so that the high word of a 64 × 64-bit product is the high digit and the low word shifted right by 12 bits the low digit.
 // At the end one carry pass leaves every lane below 2^52 + 2^9, so that a lane at or above 2^52 carries exactly 1 and one equal to 2^52 − 1 passes on what it receives: the carries then ripple as in an addition of masks of those lanes.
 internal readonly unsafe struct MontgomeryKernelAvx512<TWindow> : IMontgomeryKernel where TWindow : struct, IAvx512Window<TWindow>
 {
@@ -43,7 +47,9 @@ internal readonly unsafe struct MontgomeryKernelAvx512<TWindow> : IMontgomeryKer
 		Multiply(result, value, value, modulus, negativeInverse, scratch);
 	}
 
-	// Kept out of its callers, where the window methods would no longer inline and the window would leave the registers, and optimized from the first call. The masked loads and stores take pointers into the spans, which stay pinned until it returns; the rest reaches them through the spans, as refs from the pointers would change how the loop takes its registers.
+	// Kept out of its callers, where the window methods would no longer inline and the window would leave the registers, and optimized from the first call.
+	// The masked loads and stores take pointers into the spans, which stay pinned until it returns;
+	// the rest reaches them through the spans, as refs from the pointers would change how the loop takes its registers.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, ReadOnlySpan<ulong> modulus, ulong negativeInverse, Span<ulong> scratch)
 	{

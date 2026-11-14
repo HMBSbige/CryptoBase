@@ -1,7 +1,9 @@
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// The twisted Edwards curve −x² + y² = 1 + dx²y² over the field of p = 2^255 − 19, d = −121665/121666, of order 8L. As −1 is a square and d is not, the addition formulas are complete: they hold for any two points, equal, opposite or of small order alike.
-// Nothing here branches on or indexes by a point or a scalar, except where a method says that its inputs must be public. The extended coordinates of a product depend on the scalar and not only on the point, so a caller with a secret scalar clears them once it has the encoding.
+// The twisted Edwards curve −x² + y² = 1 + dx²y² over the field of p = 2^255 − 19, d = −121665/121666, of order 8L.
+// As −1 is a square and d is not, the addition formulas are complete: they hold for any two points, equal, opposite or of small order alike.
+// Nothing here branches on or indexes by a point or a scalar, except where a method says that its inputs must be public.
+// The extended coordinates of a product depend on the scalar and not only on the point, so a caller with a secret scalar clears them once it has the encoding.
 // The formulas write a coordinate of the result only after their last read of the inputs, so the result may be an input.
 internal static class Edwards25519
 {
@@ -45,7 +47,8 @@ internal static class Edwards25519
 		Curve25519KernelDispatch.MultiplyBase(scalar, out result);
 	}
 
-	// [a]A + [b]B for any 32 little-endian bytes a and b and a point A. The time depends on all three, which must be public.
+	// [a]A + [b]B for any 32 little-endian bytes a and b and a point A.
+	// The time depends on all three, which must be public.
 	internal static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, in EdwardsPoint point, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		Debug.Assert(a.Length is ScalarLength && b.Length is ScalarLength);
@@ -79,7 +82,9 @@ internal static class Edwards25519
 		Encode(in point, in inverse, destination);
 	}
 
-	// RFC 8032 §5.1.3, strictly: false, with result default, for a y of p or more, a y for which x² = (y² − 1)/(dy² + 1) has no root, or x = 0 with the sign bit set. dy² + 1 is never 0, as −1/d is not a square. The checks take constant time, although the input is public.
+	// RFC 8032 §5.1.3, strictly: false, with result default, for a y of p or more, a y for which x² = (y² − 1)/(dy² + 1) has no root, or x = 0 with the sign bit set.
+	// dy² + 1 is never 0, as −1/d is not a square.
+	// The checks take constant time, although the input is public.
 	internal static bool TryDecode(ReadOnlySpan<byte> source, out EdwardsPoint result)
 	{
 		if (source.Length is not EncodedLength)
@@ -113,7 +118,8 @@ internal static class Edwards25519
 		return true;
 	}
 
-	// u = (1 + y)/(1 − y) = (Z + Y)/(Z − Y), the birational map to Curve25519, in 32 little-endian bytes. The identity, where 1 − y = 0, gives 0, as the inversion takes 0 to 0.
+	// u = (1 + y)/(1 − y) = (Z + Y)/(Z − Y), the birational map to Curve25519, in 32 little-endian bytes.
+	// The identity, where 1 − y = 0, gives 0, as the inversion takes 0 to 0.
 	internal static void ToMontgomeryU(in EdwardsPoint point, Span<byte> destination)
 	{
 		Field25519.Add(in point.Z, in point.Y, out Field25519 numerator);
@@ -151,7 +157,8 @@ internal static class Edwards25519
 		Field25519.Carry(in twice, out result.TwoZ);
 	}
 
-	// A = (Y1 − X1)(Y2 − X2), B = (Y1 + X1)(Y2 + X2), C = T1·2dT2 and D = Z1·2Z2 give x = (B − A)/(D + C) and y = (B + A)/(D − C). A, B, C and D are tight, so the four results are below 2^53.
+	// A = (Y1 − X1)(Y2 − X2), B = (Y1 + X1)(Y2 + X2), C = T1·2dT2 and D = Z1·2Z2 give x = (B − A)/(D + C) and y = (B + A)/(D − C).
+	// A, B, C and D are tight, so the four results are below 2^53.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	internal static void Add(in EdwardsPoint left, in EdwardsCachedPoint right, out EdwardsCompletedPoint result)
 	{
@@ -215,7 +222,8 @@ internal static class Edwards25519
 		Field25519.Add(in d, in c, out result.T);
 	}
 
-	// x = 2XY/(Y² − X²) and y = (Y² + X²)/(2Z² − Y² + X²), with 2XY = (X + Y)² − Y² − X². The two differences take 4p, as their right operands are sums or differences of two squares; the results are below 2^53.6.
+	// x = 2XY/(Y² − X²) and y = (Y² + X²)/(2Z² − Y² + X²), with 2XY = (X + Y)² − Y² − X².
+	// The two differences take 4p, as their right operands are sums or differences of two squares; the results are below 2^53.6.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	internal static void Double(in EdwardsProjectivePoint value, out EdwardsCompletedPoint result)
 	{
@@ -231,7 +239,8 @@ internal static class Edwards25519
 		Field25519.SubtractFromFourP(in zz, in result.Z, out result.T);
 	}
 
-	// Where Field25519.MultiplyCore inlines its products, the four of them go into a method of their own rather than into each caller; elsewhere they are four calls, made from the caller directly. Only that method sets outOfLine.
+	// Where Field25519.MultiplyCore inlines its products, the four of them go into a method of their own rather than into each caller; elsewhere they are four calls, made from the caller directly.
+	// Only that method sets outOfLine.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void ToExtended(in EdwardsCompletedPoint value, out EdwardsPoint result, bool outOfLine = false)
 	{
@@ -286,7 +295,8 @@ internal static class Edwards25519
 		return ref Unsafe.As<EdwardsPoint, EdwardsProjectivePoint>(ref Unsafe.AsRef(in value));
 	}
 
-	// Sets result[i] to (y + x, y − x, 2dxy) of points[i], with one inversion for all of them: result[i].YPlusX holds the product of the Z of points 0 to i until result[i] is written. The points must be public, as the inversion takes variable time.
+	// Sets result[i] to (y + x, y − x, 2dxy) of points[i], with one inversion for all of them: result[i].YPlusX holds the product of the Z of points 0 to i until result[i] is written.
+	// The points must be public, as the inversion takes variable time.
 	internal static void ToNielsVariableTime(ReadOnlySpan<EdwardsPoint> points, Span<EdwardsNielsPoint> result)
 	{
 		Debug.Assert(points.Length > 0 && result.Length == points.Length);

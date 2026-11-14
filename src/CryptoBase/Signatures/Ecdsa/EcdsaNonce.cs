@@ -6,7 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Signatures.Ecdsa;
 
-// K, V and the candidates are secret; only the retry after a rejected candidate branches on them. HMAC-SHA256 goes to HMACSHA256 where the platform is faster for these short messages.
+// K, V and the candidates are secret; only the retry after a rejected candidate branches on them.
+// HMAC-SHA256 goes to HMACSHA256 where the platform is faster for these short messages.
 internal struct EcdsaNonce<THash, TOrder> where THash : unmanaged, IHmacHashCore<THash> where TOrder : unmanaged, IMontgomeryModulus
 {
 	// The longest message to K that goes to HMACSHA256; it holds 32 bytes of additional data on every curve, and longer messages take the managed HMAC.

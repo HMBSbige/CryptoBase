@@ -2,8 +2,15 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// k·P and u1·G + u2·Q for one point at a time on the two lanes of TField, SM2Field29x2: each round of a formula takes two products that need only those of the rounds before, one in each lane. A point keeps X in both lanes of XX and Y and Z in the lanes of YZ; [a | b] holds a in lane 0 and b in lane 1, and a lane that no later step reads may hold anything. The field holds its nine limbs as nine vectors in a row, which the formulas read through Limbs.
-// Bounds, with those of SM2Field29: a point that a formula takes has X and Z below 2p in limbs 0 to 7 below 2^29 and limb 8 below 2^24 + 2^5, as Reduce, which ends every formula, leaves them, and Y as Reduce leaves it or, from an entry, 4p − Y as ConditionalNegate leaves it, in limbs at most those of 4p, below 2^30; AddAffine takes Y as Reduce leaves it. An entry holds such X, Y, negated or not, and Z, and Z² and Z³ from products; joining limbs 2m and 2m + 1 into one ulong and splitting them again adds at most 1 to limbs 1, 3, 5 and 7. The values that go into products are below 9.4p, so every product is below 2.8p, its limb 8 below 2^26 − 2, and every subtrahend is a product, a product doubled, the sum of three products or a coordinate that Reduce left, with limbs at most those of the 4p, 8p or 12p added to it. A product or a coordinate plus 4p less such a subtrahend has limbs below 3·2^29 + 2^6, and the formulas multiply such a difference only by a product, a coordinate or a value carried by one step: each limb but limb 8 keeps its low 29 bits and passes the rest to the limb above, which leaves limbs below 2^29 + 8 for limbs below 2^32. With the bounds of each formula below, the limbs of the operands of every product have bounds whose product is below 6.1·2^58, within the 9·X·Y ≤ 2^64 − 2^54 of Multiply, every input of Square has limbs below 2^30 + 2^8, and every input of Reduce has limbs below 7·2^29 + 2^6 and limb 8 below 2^28.
+// k·P and u1·G + u2·Q for one point at a time on the two lanes of TField, SM2Field29x2: each round of a formula takes two products that need only those of the rounds before, one in each lane.
+// A point keeps X in both lanes of XX and Y and Z in the lanes of YZ; [a | b] holds a in lane 0 and b in lane 1, and a lane that no later step reads may hold anything.
+// The field holds its nine limbs as nine vectors in a row, which the formulas read through Limbs.
+// Bounds, with those of SM2Field29: a point that a formula takes has X and Z below 2p in limbs 0 to 7 below 2^29 and limb 8 below 2^24 + 2^5, as Reduce, which ends every formula, leaves them, and Y as Reduce leaves it or, from an entry, 4p − Y as ConditionalNegate leaves it, in limbs at most those of 4p, below 2^30;
+// AddAffine takes Y as Reduce leaves it.
+// An entry holds such X, Y, negated or not, and Z, and Z² and Z³ from products; joining limbs 2m and 2m + 1 into one ulong and splitting them again adds at most 1 to limbs 1, 3, 5 and 7.
+// The values that go into products are below 9.4p, so every product is below 2.8p, its limb 8 below 2^26 − 2, and every subtrahend is a product, a product doubled, the sum of three products or a coordinate that Reduce left, with limbs at most those of the 4p, 8p or 12p added to it.
+// A product or a coordinate plus 4p less such a subtrahend has limbs below 3·2^29 + 2^6, and the formulas multiply such a difference only by a product, a coordinate or a value carried by one step: each limb but limb 8 keeps its low 29 bits and passes the rest to the limb above, which leaves limbs below 2^29 + 8 for limbs below 2^32.
+// With the bounds of each formula below, the limbs of the operands of every product have bounds whose product is below 6.1·2^58, within the 9·X·Y ≤ 2^64 − 2^54 of Multiply, every input of Square has limbs below 2^30 + 2^8, and every input of Reduce has limbs below 7·2^29 + 2^6 and limb 8 below 2^28.
 internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Field29Lanes<TField>
 {
 	// The windows of ECGroup.Multiply, whose digits Recode gives.
@@ -23,7 +30,10 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 
 	private const int OddLength = 1 << PointWidth - 2;
 
-	// The windows of ECGroup.Multiply: digits from Recode, the table of 1·P to 16·P and, for each digit, five doublings and the addition of its entry. As there, the points of an addition are neither equal nor opposite except where the masks cover them and in window 0 for k = n − 6, where they are equal and the double takes the place of the sum. The table holds Jacobian points with their Z² and Z³ instead of affine ones, so it needs no inversion. Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
+	// The windows of ECGroup.Multiply: digits from Recode, the table of 1·P to 16·P and, for each digit, five doublings and the addition of its entry.
+	// As there, the points of an addition are neither equal nor opposite except where the masks cover them and in window 0 for k = n − 6, where they are equal and the double takes the place of the sum.
+	// The table holds Jacobian points with their Z² and Z³ instead of affine ones, so it needs no inversion.
+	// Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
 	[SkipLocalsInit]
 	internal static void Multiply(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result)
 	{
@@ -46,7 +56,8 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		Unsafe.SkipInit(out SM2PairPoint<TField> total);
 		Select(table, digits[^1], packed, negative, out entry);
 		ToPoint(in entry, out total);
-		// A lane mask is set in both lanes. The sum is the point at infinity just while every digit so far is 0, as no sum of digits other than 0 is a multiple of n, which the masks track instead of Z.
+		// A lane mask is set in both lanes.
+		// The sum is the point at infinity just while every digit so far is 0, as no sum of digits other than 0 is a multiple of n, which the masks track instead of Z.
 		infinity.Fill(ZeroMask((ulong)digits[^1]));
 		ReadOnlySpan<ulong> limbs = FieldElement<SM2Order>.GetLimbs(in scalar);
 		ReadOnlySpan<ulong> n = SM2Order.Modulus;
@@ -91,7 +102,8 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		total.ZeroMemory();
 	}
 
-	// Sets result to u1·G + u2·Q for u1 and u2 below n and a point Q on the curve, by the digits of ECVariableTimeGroup.MultiplyAdd: the NAF of u1 of width 8 over the affine odd multiples of G in ECVariableTimeGeneratorTable, which AddAffine adds, and that of u2 of width 5 over Q, 3Q, …, 15Q, kept as entries with their Z² and Z³. Every input is public, so the time and the branches depend on them.
+	// Sets result to u1·G + u2·Q for u1 and u2 below n and a point Q on the curve, by the digits of ECVariableTimeGroup.MultiplyAdd: the NAF of u1 of width 8 over the affine odd multiples of G in ECVariableTimeGeneratorTable, which AddAffine adds, and that of u2 of width 5 over Q, 3Q, …, 15Q, kept as entries with their Z² and Z³.
+	// Every input is public, so the time and the branches depend on them.
 	[SkipLocalsInit]
 	internal static void MultiplyAdd(in FieldElement<SM2Order> u1, in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> u2, out JacobianPoint<SM2Field52> result)
 	{
@@ -153,7 +165,10 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		ToJacobian(in total, out result);
 	}
 
-	// total + entry, where total may be the point at infinity, which infinity tells, and the points may be equal or opposite. Z3 = Z1·Z2·H of Add is 0 just for H = 0, so for equal or opposite points, which its formulas do not cover; then the formulas of SM2Field52 tell them apart. The points are public, so the cases may branch. A point made of an entry goes through Reduce, as AddAffine takes its Y.
+	// total + entry, where total may be the point at infinity, which infinity tells, and the points may be equal or opposite.
+	// Z3 = Z1·Z2·H of Add is 0 just for H = 0, so for equal or opposite points, which its formulas do not cover; then the formulas of SM2Field52 tell them apart.
+	// The points are public, so the cases may branch.
+	// A point made of an entry goes through Reduce, as AddAffine takes its Y.
 	[SkipLocalsInit]
 	private static void AddVariableTime(ref SM2PairPoint<TField> total, ref bool infinity, in SM2PairEntry<TField> entry)
 	{
@@ -229,7 +244,11 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		return zero.GetElement(1) is 0 || modulus.GetElement(1) is 0;
 	}
 
-	// 2·point for a = −3 by the formulas of ECFormulas.Double with α = 3(X − δ)(X + δ), in four rounds: [γ | δ] = [Y² | Z²], [4β | α] = [X·4γ | (X − δ)·3(X + δ)], [α² | 4γ²] = [α² | (2γ)²] and [α·D | Y·Z] for D = 12β − α² = 4β − X3, which give X3 = α² − 8β, Y3 = α·D − 8γ² and Z3 = 2·Y·Z. The right of the second round, [4γ | 3(X + δ)] in limbs below 6·2^29 + 2^8, goes in carried, in limbs below 2^29 + 8, against [X | X − δ + 4p] in limbs below 3·2^29; 2γ has limbs below 2^30 + 2^8, D + 4p = 3·4β + 4p − α² limbs below 5·2^29 + 2^8 against α, and X3 + 8p and Y3 + 8p limbs below 5·2^29 + 2^6. The point at infinity gives some point, which the masks discard. The point is read before result is written, so result may be the point.
+	// 2·point for a = −3 by the formulas of ECFormulas.Double with α = 3(X − δ)(X + δ), in four rounds: [γ | δ] = [Y² | Z²], [4β | α] = [X·4γ | (X − δ)·3(X + δ)], [α² | 4γ²] = [α² | (2γ)²] and [α·D | Y·Z] for D = 12β − α² = 4β − X3, which give X3 = α² − 8β, Y3 = α·D − 8γ² and Z3 = 2·Y·Z.
+	// The right of the second round, [4γ | 3(X + δ)] in limbs below 6·2^29 + 2^8, goes in carried, in limbs below 2^29 + 8, against [X | X − δ + 4p] in limbs below 3·2^29;
+	// 2γ has limbs below 2^30 + 2^8, D + 4p = 3·4β + 4p − α² limbs below 5·2^29 + 2^8 against α, and X3 + 8p and Y3 + 8p limbs below 5·2^29 + 2^6.
+	// The point at infinity gives some point, which the masks discard.
+	// The point is read before result is written, so result may be the point.
 	[SkipLocalsInit]
 	private static void Double(in SM2PairPoint<TField> point, out SM2PairPoint<TField> result)
 	{
@@ -399,7 +418,12 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		TField.Reduce(in left, out result.YZ);
 	}
 
-	// point + entry by the formulas of ECFormulas.AddDistinct, without the factors 2 and 4 of R, I and Z3, for an entry (X2, Y2, Z2) neither equal nor opposite to the point, and neither of them the point at infinity: such lanes give some point, which the masks discard. Seven rounds: [Z1² | U1] = [Z1·Z1 | X1·Z2²], [U2 | Y2·Z1] = [X2·Z1² | Y2·Z1], [H² | S2] = [H·H | Y2·Z1·Z1²], [H³ | V] = [H·H² | U1·H²], [S1 | Z1·Z2] = [Y1·Z2³ | Z1·Z2], [R² | Z3] = [R·R | Z1·Z2·H] and [R·(V − X3) | S1·H³] for H = U2 − U1 and R = S2 − S1, which give X3 = R² − H³ − 2V and Y3 = R·(V − X3) − S1·H³; V − X3 = 3V + H³ − R² needs no X3. H + 4p and R + 4p, in limbs below 3·2^29 + 2^6, go into the products carried, in limbs below 2^29 + 3; V − X3 + 4p has limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and Y3 + 4p limbs below 3·2^29 + 2^6. The point is read before result is written, so result may be the point.
+	// point + entry by the formulas of ECFormulas.AddDistinct, without the factors 2 and 4 of R, I and Z3, for an entry (X2, Y2, Z2) neither equal nor opposite to the point, and neither of them the point at infinity: such lanes give some point, which the masks discard.
+	// Seven rounds: [Z1² | U1] = [Z1·Z1 | X1·Z2²], [U2 | Y2·Z1] = [X2·Z1² | Y2·Z1], [H² | S2] = [H·H | Y2·Z1·Z1²], [H³ | V] = [H·H² | U1·H²], [S1 | Z1·Z2] = [Y1·Z2³ | Z1·Z2], [R² | Z3] = [R·R | Z1·Z2·H] and [R·(V − X3) | S1·H³] for H = U2 − U1 and R = S2 − S1, which give X3 = R² − H³ − 2V and Y3 = R·(V − X3) − S1·H³;
+	// V − X3 = 3V + H³ − R² needs no X3.
+	// H + 4p and R + 4p, in limbs below 3·2^29 + 2^6, go into the products carried, in limbs below 2^29 + 3;
+	// V − X3 + 4p has limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and Y3 + 4p limbs below 3·2^29 + 2^6.
+	// The point is read before result is written, so result may be the point.
 	[SkipLocalsInit]
 	internal static void Add(in SM2PairPoint<TField> point, in SM2PairEntry<TField> entry, out SM2PairPoint<TField> result)
 	{
@@ -657,7 +681,9 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		TField.Reduce(in left, out result.YZ);
 	}
 
-	// point + (x2, y2) for an affine [x2 | y2] neither equal nor opposite to the point, and neither of them the point at infinity, with the formulas of Add for Z2 = 1, Y1 as Reduce leaves it: [Z1² | y2·Z1], [U2 | S2] = [x2·Z1² | y2·Z1·Z1²], [H² | R²] = [H·H | R·R] for [H | R] = [U2 − X1 | S2 − Y1], [H³ | V] = [H·H² | X1·H²] and [R·(V − X3) | Y1·H³], and Z3 = Z1·H, which needs only H, so that the rounds after it can overlap it. [H | R] + 4p, in limbs below 3·2^29 + 2^6, goes into the products carried, in limbs below 2^29 + 3, but for Z1·H; V − X3 + 4p has limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and Y3 + 4p limbs below 3·2^29 + 2^6.
+	// point + (x2, y2) for an affine [x2 | y2] neither equal nor opposite to the point, and neither of them the point at infinity, with the formulas of Add for Z2 = 1, Y1 as Reduce leaves it: [Z1² | y2·Z1], [U2 | S2] = [x2·Z1² | y2·Z1·Z1²], [H² | R²] = [H·H | R·R] for [H | R] = [U2 − X1 | S2 − Y1], [H³ | V] = [H·H² | X1·H²] and [R·(V − X3) | Y1·H³], and Z3 = Z1·H, which needs only H, so that the rounds after it can overlap it.
+	// [H | R] + 4p, in limbs below 3·2^29 + 2^6, goes into the products carried, in limbs below 2^29 + 3, but for Z1·H;
+	// V − X3 + 4p has limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and Y3 + 4p limbs below 3·2^29 + 2^6.
 	[SkipLocalsInit]
 	internal static void AddAffine(ref SM2PairPoint<TField> point, in TField affine)
 	{
@@ -877,7 +903,8 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		TField.Reduce(in left, out point.YZ);
 	}
 
-	// Writes j·P to entry j − 1 of the table: 2j·P = 2·(j·P) and (2j + 1)·P = 2j·P + P, an addition of points neither equal nor opposite, as 2j ± 1 < n. Only 1·P to 8·P stay as points, for the doublings: each pair 2j·P and (2j + 1)·P goes into the table as it comes, and 16·P with P.
+	// Writes j·P to entry j − 1 of the table: 2j·P = 2·(j·P) and (2j + 1)·P = 2j·P + P, an addition of points neither equal nor opposite, as 2j ± 1 < n.
+	// Only 1·P to 8·P stay as points, for the doublings: each pair 2j·P and (2j + 1)·P goes into the table as it comes, and 16·P with P.
 	[SkipLocalsInit]
 	internal static void BuildTable(in AffinePoint<SM2Field52> point, Span<ulong> table)
 	{
@@ -919,7 +946,8 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		affine.ZeroMemory();
 	}
 
-	// Sets bases[i] to 2^(wi)·P for w = width, each through ToJacobian, from one chain of doublings on the lanes; no base is the point at infinity, as 2^(wi) is no multiple of n. P is public, so nothing is cleared.
+	// Sets bases[i] to 2^(wi)·P for w = width, each through ToJacobian, from one chain of doublings on the lanes; no base is the point at infinity, as 2^(wi) is no multiple of n.
+	// P is public, so nothing is cleared.
 	internal static void FillBases(in AffinePoint<SM2Field52> point, int width, Span<JacobianPoint<SM2Field52>> bases)
 	{
 		FromAffine(in point, out TField affine);
@@ -1271,7 +1299,8 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		SM2Field29.ToField52(in yz, 1, out result.Z);
 	}
 
-	// The nine limbs of a value, each the vector of both lanes. The formulas write through it only to the values they own.
+	// The nine limbs of a value, each the vector of both lanes.
+	// The formulas write through it only to the values they own.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ref Vector128<ulong> Limbs(in TField value)
 	{

@@ -1,6 +1,7 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// The vector kernels of x86, which take precedence over the scalar ones where they hold the digits, with the smallest window that does: MontgomeryKernelAvx512 up to 20 vectors, 160 digits of 52 bits, which moduli of up to 8256 bits take, as MontgomeryKernelAvx512Staged from eight vectors on, where the operands no longer fit the registers. Past them, and without AVX-512 for every modulus, MontgomeryKernelAvx2, with 51-bit digits, the vectors past vector 0 in the window as far as MaxAvx2WindowVectors and the rest in staging.
+// The vector kernels of x86, which take precedence over the scalar ones where they hold the digits, with the smallest window that does: MontgomeryKernelAvx512 up to 20 vectors, 160 digits of 52 bits, which moduli of up to 8256 bits take, as MontgomeryKernelAvx512Staged from eight vectors on, where the operands no longer fit the registers.
+// Past them, and without AVX-512 for every modulus, MontgomeryKernelAvx2, with 51-bit digits, the vectors past vector 0 in the window as far as MaxAvx2WindowVectors and the rest in staging.
 internal static partial class MontgomeryKernelDispatch
 {
 	// The most vectors of a window that CreateX86 picks.
@@ -43,7 +44,8 @@ internal static partial class MontgomeryKernelDispatch
 		return Math.Clamp((digitCount + 1) / 2 - 1, 1, MaxAvx2WindowVectors);
 	}
 
-	// The windows of MontgomeryPairKernelAvx512 that CreatePairX86 picks: up to seven vectors, 28 digits of 52 bits each, which moduli of up to 1408 bits take. Without AVX-512, MontgomeryPairKernelAvx2 takes every size from its least digits on.
+	// The windows of MontgomeryPairKernelAvx512 that CreatePairX86 picks: up to seven vectors, 28 digits of 52 bits each, which moduli of up to 1408 bits take.
+	// Without AVX-512, MontgomeryPairKernelAvx2 takes every size from its least digits on.
 	internal const int MinAvx512PairVectors = 2;
 	internal const int MaxAvx512PairVectors = 7;
 

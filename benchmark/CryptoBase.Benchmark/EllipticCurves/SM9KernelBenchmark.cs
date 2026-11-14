@@ -6,7 +6,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The heavy operations of SM9 through each kernel of ISM9Kernel, on random secrets, so that the kernels compare in one process. A kernel adds its own KernelKind; one the CPU lacks fails its setup.
+// The heavy operations of SM9 through each kernel of ISM9Kernel, on random secrets, so that the kernels compare in one process.
+// A kernel adds its own KernelKind; one the CPU lacks fails its setup.
 public class SM9KernelBenchmark
 {
 	private IKernel _kernel = new Kernel<SM9Scalar>();

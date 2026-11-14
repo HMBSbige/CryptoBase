@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// Each operation tries the vector kernels before the scalar one, which supports every platform. Curve448Sse41 serves x64 without AVX2, where the scalar products also lack BMI2. On ARM64 the scalar kernel takes the double-base product without a table, as fast as Curve448AdvSimd.
+// Each operation tries the vector kernels before the scalar one, which supports every platform.
+// Curve448Sse41 serves x64 without AVX2, where the scalar products also lack BMI2.
+// On ARM64 the scalar kernel takes the double-base product without a table, as fast as Curve448AdvSimd.
 internal readonly struct Curve448KernelDispatch : ICurve448Kernel
 {
 	public static bool IsSupported => true;

@@ -4,7 +4,8 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.Signatures;
 
-// The order n of the group of a signature scheme whose nonces SM3Nonce draws. n − 1 lies in (2^255, 2^256), so its reciprocal ⌊2^512/(n − 1)⌋ lies in (2^256, 2^257).
+// The order n of the group of a signature scheme whose nonces SM3Nonce draws.
+// n − 1 lies in (2^255, 2^256), so its reciprocal ⌊2^512/(n − 1)⌋ lies in (2^256, 2^257).
 internal interface ISM3NonceOrder : IMontgomeryModulus
 {
 	// The tag of the scheme, which keeps its nonces apart from those of the others: at most 19 bytes, so that Z ‖ ct fits two blocks with 32 bytes of additional data.
@@ -14,9 +15,13 @@ internal interface ISM3NonceOrder : IMontgomeryModulus
 	static abstract ReadOnlySpan<ulong> NonceReciprocal { get; }
 }
 
-// The hedged nonces of SM2 and SM9 signatures. Candidate c is v = SM3(Z ‖ ct) ‖ SM3(Z ‖ ct + 1) for ct = 2c + 1, blocks 2c + 1 and 2c + 2 of the KDF of GB/T 32918.4-2016, Sec. 5.4.3, over Z = tag ‖ key ‖ hash ‖ additional data, and the nonce is (v mod (n − 1)) + 1 for v as a 512-bit big-endian integer, as FIPS 186-5, A.2.1, draws a scalar from extra bits: it lies in [1, n − 1], within n/2^512 < 2^−256 of uniform there. All of Z but the additional data has a fixed length, as has ct, so Z ‖ ct parses one way.
-// The state absorbs Z once, and each block finishes a copy of it: with a tag of 19 bytes and 32 bytes of additional data, Z ‖ ct is 119 bytes, so the first block of Z is compressed once for all candidates and each block of v takes one compression, three for a nonce. With empty additional data the nonces follow from the key and the hash alone.
-// The state and the candidates are as secret as the key: nothing branches on or indexes by them but the retries of the schemes, the copies are erased, and Clear erases the state. Keep a nonce in one writable location and do not copy it.
+// The hedged nonces of SM2 and SM9 signatures.
+// Candidate c is v = SM3(Z ‖ ct) ‖ SM3(Z ‖ ct + 1) for ct = 2c + 1, blocks 2c + 1 and 2c + 2 of the KDF of GB/T 32918.4-2016, Sec. 5.4.3, over Z = tag ‖ key ‖ hash ‖ additional data, and the nonce is (v mod (n − 1)) + 1 for v as a 512-bit big-endian integer, as FIPS 186-5, A.2.1, draws a scalar from extra bits: it lies in [1, n − 1], within n/2^512 < 2^−256 of uniform there.
+// All of Z but the additional data has a fixed length, as has ct, so Z ‖ ct parses one way.
+// The state absorbs Z once, and each block finishes a copy of it: with a tag of 19 bytes and 32 bytes of additional data, Z ‖ ct is 119 bytes, so the first block of Z is compressed once for all candidates and each block of v takes one compression, three for a nonce.
+// With empty additional data the nonces follow from the key and the hash alone.
+// The state and the candidates are as secret as the key: nothing branches on or indexes by them but the retries of the schemes, the copies are erased, and Clear erases the state.
+// Keep a nonce in one writable location and do not copy it.
 internal struct SM3Nonce<TOrder> where TOrder : unmanaged, ISM3NonceOrder
 {
 	private const int ValueLength = 2 * SM3KdfState.BlockLength;
@@ -25,7 +30,8 @@ internal struct SM3Nonce<TOrder> where TOrder : unmanaged, ISM3NonceOrder
 	// ct of the next candidate.
 	private uint _counter;
 
-	// key and hash are ByteLength bytes each. Not inlined, so that the appends stay out of the frames of the signatures.
+	// key and hash are ByteLength bytes each.
+	// Not inlined, so that the appends stay out of the frames of the signatures.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal void Initialize(ReadOnlySpan<byte> key, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData)
 	{
@@ -56,7 +62,11 @@ internal struct SM3Nonce<TOrder> where TOrder : unmanaged, ISM3NonceOrder
 		_counter = 0;
 	}
 
-	// (v mod M) + 1 for M = n − 1 and v of 64 big-endian bytes, by the reduction of Barrett, HAC 14.42 with b = 2^64 and k = 4. For μ = ⌊2^512/M⌋ = 2^256 + NonceReciprocal, q1 = ⌊v/2^192⌋ and q3 = ⌊q1·μ/2^320⌋, v/M − q1·μ/2^320 = (v mod 2^192)/M + q1·δ/2^320 < 2^−63 + δ for δ = 2^512/M − μ, so q3 lies in [q − 1, q] for q = ⌊v/M⌋ while δ < 1 − 2^−63, as it is for both orders, 0.12 for SM2 and 0.72 for SM9. v − q3·M then lies in [0, 2M), which its five low limbs hold, and one subtraction of M where it does not borrow leaves v mod M. The low limbs of v are read where the subtraction takes them. Neither the time nor the addresses depend on v.
+	// (v mod M) + 1 for M = n − 1 and v of 64 big-endian bytes, by the reduction of Barrett, HAC 14.42 with b = 2^64 and k = 4.
+	// For μ = ⌊2^512/M⌋ = 2^256 + NonceReciprocal, q1 = ⌊v/2^192⌋ and q3 = ⌊q1·μ/2^320⌋, v/M − q1·μ/2^320 = (v mod 2^192)/M + q1·δ/2^320 < 2^−63 + δ for δ = 2^512/M − μ, so q3 lies in [q − 1, q] for q = ⌊v/M⌋ while δ < 1 − 2^−63, as it is for both orders, 0.12 for SM2 and 0.72 for SM9.
+	// v − q3·M then lies in [0, 2M), which its five low limbs hold, and one subtraction of M where it does not borrow leaves v mod M.
+	// The low limbs of v are read where the subtraction takes them.
+	// Neither the time nor the addresses depend on v.
 	[SkipLocalsInit]
 	internal static void Reduce(ReadOnlySpan<byte> value, out FieldElement<TOrder> result)
 	{

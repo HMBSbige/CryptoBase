@@ -1,7 +1,11 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// Fp12 = Fp6[w]/(w² − v), the element C0 + C1·w. In the basis of the powers of w, w⁶ = u, its coefficients over Fp2 are C0.C0, C1.C0, C0.C1, C1.C1, C0.C2 and C1.C2 for w⁰ to w⁵. GM/T 0044.5 §3.2 builds the same field as Fp4 = Fp2[V]/(V² − u) and Fp12 = Fp4[w]/(w³ − V), so V = w³, and writes f = a·w² + b·w + c with a = a1·V + a0, b = b1·V + b0 and c = c1·V + c0: a1, a0, b1, b0, c1 and c0, in the order of its encoding, are the coefficients of w⁵, w², w⁴, w¹, w³ and w⁰.
-// Every member takes and gives reduced coefficients. No member branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
+// Fp12 = Fp6[w]/(w² − v), the element C0 + C1·w.
+// In the basis of the powers of w, w⁶ = u, its coefficients over Fp2 are C0.C0, C1.C0, C0.C1, C1.C1, C0.C2 and C1.C2 for w⁰ to w⁵.
+// GM/T 0044.5 §3.2 builds the same field as Fp4 = Fp2[V]/(V² − u) and Fp12 = Fp4[w]/(w³ − V), so V = w³, and writes f = a·w² + b·w + c with a = a1·V + a0, b = b1·V + b0 and c = c1·V + c0: a1, a0, b1, b0, c1 and c0, in the order of its encoding, are the coefficients of w⁵, w², w⁴, w¹, w³ and w⁰.
+// Every member takes and gives reduced coefficients.
+// No member branches on or indexes by a value; masks are 0 or ulong.MaxValue.
+// Any result may be the same variable as an input.
 internal struct SM9Fp12
 {
 	internal SM9Fp6 C0;
@@ -9,7 +13,9 @@ internal struct SM9Fp12
 
 	internal const int ByteLength = 12 * SM9Fp.ByteLength;
 
-	// Karatsuba over Fp6 with one reduction per coefficient: with t0 = a0·b0 and t1 = a1·b1, c0 = t0 + v·t1 and c1 = (a0 + a1)(b0 + b1) − t0 − t1 = a0b1 + a1b0. From the bounds of SM9Fp6.MultiplyWide, the coefficients of c0 lie in (−22B, 11B), and those of c1, whose first product takes the reduced sums rather than the sums themselves, in (−12B, 21B), within those of SM9Fp.ReduceWide, 128p² > 25B and 342p² > 67B. The three products are normalized first, so that their combinations keep small columns.
+	// Karatsuba over Fp6 with one reduction per coefficient: with t0 = a0·b0 and t1 = a1·b1, c0 = t0 + v·t1 and c1 = (a0 + a1)(b0 + b1) − t0 − t1 = a0b1 + a1b0.
+	// From the bounds of SM9Fp6.MultiplyWide, the coefficients of c0 lie in (−22B, 11B), and those of c1, whose first product takes the reduced sums rather than the sums themselves, in (−12B, 21B), within those of SM9Fp.ReduceWide, 128p² > 25B and 342p² > 67B.
+	// The three products are normalized first, so that their combinations keep small columns.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void Multiply(in SM9Fp12 left, in SM9Fp12 right, out SM9Fp12 result)
@@ -30,7 +36,8 @@ internal struct SM9Fp12
 		SM9Fp6Wide.Reduce(in m, out result.C1);
 	}
 
-	// With t = a0·a1, c0 = (a0 + a1)(a0 + v·a1) − t − v·t = a0² + v·a1² and c1 = 2t. Combining the reduced products costs no more than combining them unreduced, which needs normalized columns, and saves no reduction.
+	// With t = a0·a1, c0 = (a0 + a1)(a0 + v·a1) − t − v·t = a0² + v·a1² and c1 = 2t.
+	// Combining the reduced products costs no more than combining them unreduced, which needs normalized columns, and saves no reduction.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void Square(in SM9Fp12 value, out SM9Fp12 result)
@@ -47,7 +54,10 @@ internal struct SM9Fp12
 		SM9Fp6.Double(in t, out result.C1);
 	}
 
-	// The square of an element of the cyclotomic subgroup, of order p⁴ − p² + 1, which holds GT (Granger and Scott, "Faster squaring in the cyclotomic subgroup of sixth degree extensions", 2010). Over Fp4 = Fp2[V], V = w³, the element is c + b·w + a·w² with c = (w⁰, w³), b = (w¹, w⁴) and a = (w², w⁵), and its square is (3c² − 2c̄) + (3V·a² + 2b̄)·w + (3b² − 2ā)·w², where x̄ = x0 − x1·V. Each square of Fp4 is (x0² + u·x1², 2x0x1), three squares of Fp2. Other elements give wrong results.
+	// The square of an element of the cyclotomic subgroup, of order p⁴ − p² + 1, which holds GT (Granger and Scott, "Faster squaring in the cyclotomic subgroup of sixth degree extensions", 2010).
+	// Over Fp4 = Fp2[V], V = w³, the element is c + b·w + a·w² with c = (w⁰, w³), b = (w¹, w⁴) and a = (w², w⁵), and its square is (3c² − 2c̄) + (3V·a² + 2b̄)·w + (3b² − 2ā)·w², where x̄ = x0 − x1·V.
+	// Each square of Fp4 is (x0² + u·x1², 2x0x1), three squares of Fp2.
+	// Other elements give wrong results.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void CyclotomicSquare(in SM9Fp12 value, out SM9Fp12 result)
@@ -66,7 +76,8 @@ internal struct SM9Fp12
 		result = square;
 	}
 
-	// value·l for a line l = l0 + l2·w² + l3·w³ = (l0 + l2·v) + l3·v·w, by Karatsuba over Fp6 with one reduction per coefficient: with A = f0·(l0 + l2·v) and B = f1·l3·v, c0 = A + v·B and c1 = (f0 + f1)(l0 + (l2 + l3)·v) − A − B, thirteen products of Fp2. With f0 + f1 and l2 + l3 reduced, the coefficients of c0 lie in (−10B, 6B) and those of c1 in (−7B, 11B) for reduced inputs, and the columns, each a sum of at most three of MultiplyBy01Wide, stay below 2^61.2 in magnitude.
+	// value·l for a line l = l0 + l2·w² + l3·w³ = (l0 + l2·v) + l3·v·w, by Karatsuba over Fp6 with one reduction per coefficient: with A = f0·(l0 + l2·v) and B = f1·l3·v, c0 = A + v·B and c1 = (f0 + f1)(l0 + (l2 + l3)·v) − A − B, thirteen products of Fp2.
+	// With f0 + f1 and l2 + l3 reduced, the coefficients of c0 lie in (−10B, 6B) and those of c1 in (−7B, 11B) for reduced inputs, and the columns, each a sum of at most three of MultiplyBy01Wide, stay below 2^61.2 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void MultiplyByLine(in SM9Fp12 value, in SM9Fp2 l0, in SM9Fp2 l2, in SM9Fp2 l3, out SM9Fp12 result)
@@ -84,7 +95,8 @@ internal struct SM9Fp12
 		SM9Fp6Wide.Reduce(in c, out result.C1);
 	}
 
-	// value·(l0 + l2·w² + w³), the form of a line of SM9PrecomputedLine at P: with value = g + h·w and L = l0 + l2·v, as w³ = v·w, it is (g·L + v²·h) + (v·g + h·L)·w, ten products of Fp2 by SM9Fp6.MultiplyBy01Wide, while v·g = (u·g2, g0, g1) and v²·h = (u·h1, u·h2, h0) take no product: they go into the sums before the reduction as values times R, each reduced once with them. For reduced inputs, a coefficient with a term u·x then lies in (−30.4p², 145p²) and (−10.2p², 71p²), and one with a term x in (−20.3p², 60.8p²) and [0, 71p²), within those of SM9Fp.ReduceWide, and the columns stay below 2^59.7 in magnitude.
+	// value·(l0 + l2·w² + w³), the form of a line of SM9PrecomputedLine at P: with value = g + h·w and L = l0 + l2·v, as w³ = v·w, it is (g·L + v²·h) + (v·g + h·L)·w, ten products of Fp2 by SM9Fp6.MultiplyBy01Wide, while v·g = (u·g2, g0, g1) and v²·h = (u·h1, u·h2, h0) take no product: they go into the sums before the reduction as values times R, each reduced once with them.
+	// For reduced inputs, a coefficient with a term u·x then lies in (−30.4p², 145p²) and (−10.2p², 71p²), and one with a term x in (−20.3p², 60.8p²) and [0, 71p²), within those of SM9Fp.ReduceWide, and the columns stay below 2^59.7 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void MultiplyByNormalizedLine(in SM9Fp12 value, in SM9Fp2 l0, in SM9Fp2 l2, out SM9Fp12 result)
@@ -197,7 +209,8 @@ internal struct SM9Fp12
 		SM9Fp2.ExportPlain(in value.C0.C0, destination.Slice(5 * SM9Fp2.ByteLength, SM9Fp2.ByteLength));
 	}
 
-	// (x0 + x1·V)² = (x0² + u·x1², (x0 + x1)² − x0² − x1²), reduced once per coefficient. For reduced inputs x0² + u·x1² has coefficients in (−6B, B) and (−2B, 3B) and 2x0x1 in (−4B, 2B) and [0, 4B); the columns stay below 2^59.4 in magnitude.
+	// (x0 + x1·V)² = (x0² + u·x1², (x0 + x1)² − x0² − x1²), reduced once per coefficient.
+	// For reduced inputs x0² + u·x1² has coefficients in (−6B, B) and (−2B, 3B) and 2x0x1 in (−4B, 2B) and [0, 4B); the columns stay below 2^59.4 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	private static void SquareFp4(in SM9Fp2 x0, in SM9Fp2 x1, out SM9Fp2 s0, out SM9Fp2 s1)

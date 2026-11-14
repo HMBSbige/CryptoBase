@@ -94,7 +94,8 @@ internal class RsaBclTest
 		}
 	}
 
-	// A generated key works on the platform, which signs with it what the key verifies. The platform may hold another private exponent that is equivalent to the key's, so only the public key is compared.
+	// A generated key works on the platform, which signs with it what the key verifies.
+	// The platform may hold another private exponent that is equivalent to the key's, so only the public key is compared.
 	[Test]
 	public async Task TheBclUsesGeneratedKeys()
 	{

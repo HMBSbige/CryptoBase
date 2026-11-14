@@ -2,7 +2,9 @@ using CryptoBase.EllipticCurves;
 
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Natural numbers as 64-bit limbs, least significant first, of any number of limbs. A mask is all ones or zero. Unless a method says otherwise, neither the time nor the addresses depend on the values, only on the lengths, and a result may be the same span as an input but must not overlap one otherwise.
+// Natural numbers as 64-bit limbs, least significant first, of any number of limbs.
+// A mask is all ones or zero.
+// Unless a method says otherwise, neither the time nor the addresses depend on the values, only on the lengths, and a result may be the same span as an input but must not overlap one otherwise.
 internal static class Limbs
 {
 	// Reads big-endian bytes, which may have leading zeros, into limbs, which must hold them.
@@ -52,7 +54,8 @@ internal static class Limbs
 		}
 	}
 
-	// The number of limbs up to the most significant nonzero one. Variable time: the result is the length that a value occupies.
+	// The number of limbs up to the most significant nonzero one.
+	// Variable time: the result is the length that a value occupies.
 	internal static int GetLength(ReadOnlySpan<ulong> value)
 	{
 		int length = value.Length;
@@ -276,7 +279,9 @@ internal static class Limbs
 		return inverse;
 	}
 
-	// Sets remainder to dividend mod divisor, by shifting the dividend in bit by bit and subtracting the divisor whenever the remainder reaches it. divisor must have a nonzero top limb, and remainder its length. A zero divisor gives an unspecified remainder rather than an exception.
+	// Sets remainder to dividend mod divisor, by shifting the dividend in bit by bit and subtracting the divisor whenever the remainder reaches it.
+	// divisor must have a nonzero top limb, and remainder its length.
+	// A zero divisor gives an unspecified remainder rather than an exception.
 	internal static void Remainder(ReadOnlySpan<ulong> dividend, ReadOnlySpan<ulong> divisor, Span<ulong> remainder, Span<ulong> scratch)
 	{
 		int length = divisor.Length;
@@ -309,7 +314,8 @@ internal static class Limbs
 		}
 	}
 
-	// The number of trailing zero bits, 64·value.Length for zero. Bit by bit: the fallback of BitOperations without the instruction reads a table at an index that depends on the value.
+	// The number of trailing zero bits, 64·value.Length for zero.
+	// Bit by bit: the fallback of BitOperations without the instruction reads a table at an index that depends on the value.
 	internal static int TrailingZeroCount(ReadOnlySpan<ulong> value)
 	{
 		ulong found = 0;
@@ -349,7 +355,8 @@ internal static class Limbs
 		}
 	}
 
-	// quotient = dividend / divisor and remainder = dividend mod divisor, bit by bit from the top, for a divisor that is not zero; remainder and scratch have the length of the divisor, quotient that of the dividend.
+	// quotient = dividend / divisor and remainder = dividend mod divisor, bit by bit from the top, for a divisor that is not zero;
+	// remainder and scratch have the length of the divisor, quotient that of the dividend.
 	internal static void Divide(ReadOnlySpan<ulong> dividend, ReadOnlySpan<ulong> divisor, Span<ulong> quotient, Span<ulong> remainder, Span<ulong> scratch)
 	{
 		int length = divisor.Length;
@@ -384,7 +391,8 @@ internal static class Limbs
 		}
 	}
 
-	// The odd part of gcd(x, y) and the power of two in it, for values of one length, not both zero, by Stein's binary steps: subtract the smaller from the larger when both are odd, then halve each that is even, counting the halvings that both share. Every step halves one of them at least, so 128 steps per limb bring one to zero.
+	// The odd part of gcd(x, y) and the power of two in it, for values of one length, not both zero, by Stein's binary steps: subtract the smaller from the larger when both are odd, then halve each that is even, counting the halvings that both share.
+	// Every step halves one of them at least, so 128 steps per limb bring one to zero.
 	internal static int Gcd(ReadOnlySpan<ulong> x, ReadOnlySpan<ulong> y, Span<ulong> oddPart, Span<ulong> scratch)
 	{
 		int length = x.Length;

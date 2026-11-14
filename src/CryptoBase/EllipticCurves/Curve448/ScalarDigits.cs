@@ -24,7 +24,8 @@ internal static class ScalarDigits
 		}
 	}
 
-	// For the k of limbs and a digit count n of at least 450, writes the k' below 2^n whose bits b_i give k + eL = Σ (2b_i − 1)·2^i over i < n, with e = 1 if k is even and 0 otherwise, so that the sum is odd and ≡ k (mod L): k' = (k + eL − 1)/2 + 2^(n − 1), the first term below 2^448 as k + eL < 2^449. Neither the time nor the addresses depend on k.
+	// For the k of limbs and a digit count n of at least 450, writes the k' below 2^n whose bits b_i give k + eL = Σ (2b_i − 1)·2^i over i < n, with e = 1 if k is even and 0 otherwise, so that the sum is odd and ≡ k (mod L): k' = (k + eL − 1)/2 + 2^(n − 1), the first term below 2^448 as k + eL < 2^449.
+	// Neither the time nor the addresses depend on k.
 	internal static void SignedComb(ReadOnlySpan<ulong> limbs, int digitCount, Span<ulong> result)
 	{
 		Debug.Assert(limbs.Length is LimbCount && result.Length is CombLimbCount);
@@ -45,7 +46,8 @@ internal static class ScalarDigits
 		result[digitCount - 1 >> 6] |= 1UL << (digitCount - 1 & 63);
 	}
 
-	// The t bits of k' at position, position + spacing, …, position + (t − 1)·spacing, least significant first. Only the position decides which limbs are read.
+	// The t bits of k' at position, position + spacing, …, position + (t − 1)·spacing, least significant first.
+	// Only the position decides which limbs are read.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static uint CombIndex(ReadOnlySpan<ulong> limbs, int position, int spacing, int teeth)
 	{

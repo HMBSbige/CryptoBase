@@ -132,7 +132,8 @@ public class HostNameMatchingTest
 			"[192.0.2.1]", "[2001:db8::1]:443", "[2001:db8::1", "2001:db8::1]", "[]", "fe80::1%1", "fe80::1%eth0", "[fe80::1%25eth0]",
 			"2001:db8::1::2", "1:2:3:4:5:6:7:8:9", "1:2:3:4:5:6:7:8::", "12345::", ":1", "1:", ":::", "g::1", "::1.2.3.04", "1.2.3.4::", "::1.2.3", "1:2:3:4:5:6:7:192.0.2.1",
 
-			// Upper case, an ideographic and a full-width full stop, a decomposed letter, a mark first, an emoji, a zero width joiner, a soft hyphen, a letter number, an enclosed digit, an unassigned code point, a lone surrogate and full-width digits; then a numeric last label and an underscore, which IDNA refuses.
+			// Upper case, an ideographic and a full-width full stop, a decomposed letter, a mark first, an emoji, a zero width joiner, a soft hyphen, a letter number, an enclosed digit, an unassigned code point, a lone surrogate and full-width digits;
+			// then a numeric last label and an underscore, which IDNA refuses.
 			"BÜCHER.example", "bücher\u3002example", "bücher\uFF0Eexample", "bu\u0308cher.example", "\u0301a.example", "\U0001F600.example", "a\u200Db.example", "a\u00ADb.example", "\u2177.example", "\u2460.example", "\u0378.example", "\uD800.example", "\uFF11\uFF12\uFF17.\uFF10.\uFF10.\uFF11",
 			"bücher.1", "bü_cher.example", "a_b.bücher.example",
 		];

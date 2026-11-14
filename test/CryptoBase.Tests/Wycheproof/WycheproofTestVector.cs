@@ -45,7 +45,8 @@ public sealed record IndCpaTestVector(byte[] Key, byte[] Iv, byte[] Msg, byte[] 
 
 public sealed record MacTestVector(byte[] Key, byte[] Msg, byte[] Tag) : WycheproofTestVector;
 
-// A keystream from the block counter of the vector, which is in little-endian order. A message that needs a block past the last counter is invalid and has no ciphertext.
+// A keystream from the block counter of the vector, which is in little-endian order.
+// A message that needs a block past the last counter is invalid and has no ciphertext.
 public sealed record StreamCipherTestVector(byte[] Key, byte[] Iv, byte[] InitialCounter, byte[] Msg, byte[]? Ct = null) : WycheproofTestVector
 {
 	[JsonIgnore]
@@ -77,7 +78,8 @@ public sealed record KmacTestGroup(int TagSize) : WycheproofTestGroup<KmacTestVe
 
 public sealed record HkdfTestVector(byte[] Ikm, byte[] Salt, byte[] Info, int Size, byte[] Okm) : WycheproofTestVector;
 
-// A message of HPKE in base mode, of an encapsulation or a decryption file: the group holds the suite. Only a decryption vector has skRm, and only a vector that an honest sender sealed has ikmE, the input of the DeriveKeyPair that gives the ephemeral key.
+// A message of HPKE in base mode, of an encapsulation or a decryption file: the group holds the suite.
+// Only a decryption vector has skRm, and only a vector that an honest sender sealed has ikmE, the input of the DeriveKeyPair that gives the ephemeral key.
 public sealed record HpkeTestVector(byte[] PkRm, byte[] Info, byte[] Aad, byte[] Pt, byte[] Enc, byte[] Ct, byte[]? SkRm = null, byte[]? IkmE = null) : WycheproofTestVector
 {
 	[JsonIgnore]
@@ -121,7 +123,8 @@ public sealed record HpkeSequenceTestGroup(int KemId, int KdfId, int AeadId) : W
 	}
 }
 
-// Ct is zlib-compressed. Only the valid and PartialPlaintext vectors describe a message: all of it, or the longest valid prefix.
+// Ct is zlib-compressed.
+// Only the valid and PartialPlaintext vectors describe a message: all of it, or the longest valid prefix.
 public sealed record ChunkedEncryptionTestVector(byte[] Key, byte[] Ctx, byte[] Ct, int? MsgLength = null, byte[]? MsgSha512 = null) : WycheproofTestVector
 {
 	public byte[] DecompressCiphertext()
@@ -257,7 +260,8 @@ public sealed record MLDsaVerifyTestGroup(byte[] PublicKey, byte[] PublicKeyDer)
 	}
 }
 
-// The Internal vectors sign μ and have no message; the invalid ones have no μ and an empty signature. rnd is zero unless given.
+// The Internal vectors sign μ and have no message; the invalid ones have no μ and an empty signature.
+// rnd is zero unless given.
 public sealed record MLDsaSignTestVector(byte[] Sig, byte[]? Msg = null, byte[]? Mu = null, byte[]? Ctx = null, byte[]? Rnd = null) : WycheproofTestVector
 {
 	// The group has the seed or the private key, by file.

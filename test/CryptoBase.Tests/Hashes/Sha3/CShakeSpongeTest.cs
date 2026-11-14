@@ -62,7 +62,8 @@ public class CShakeSpongeTest
 		await Assert.That(state).All(static value => value is 0);
 	}
 
-	// Lengths of the function name and customization string: both empty, which is SHAKE, a few short ones, and those whose prefix ends one byte before, on, or one byte after the first or second block boundary. Equal lengths with unequal bytes catch a swap.
+	// Lengths of the function name and customization string: both empty, which is SHAKE, a few short ones, and those whose prefix ends one byte before, on, or one byte after the first or second block boundary.
+	// Equal lengths with unequal bytes catch a swap.
 	private static IEnumerable<(int NameLength, int CustomizationLength)> NameAndCustomizationLengths(int rate)
 	{
 		yield return (0, 0);
@@ -142,7 +143,8 @@ public class CShakeSpongeTest
 				CShakeSponge<TRate> sponge = default;
 				sponge.InitializeKmac(key, customization);
 
-				// Each round starts from the seed that Reset restores, as after the previous round's output. Messages of rate - 3 to rate - 1 bytes leave right_encode(L), of 2 or 3 bytes, to fill the block or to run into the next one.
+				// Each round starts from the seed that Reset restores, as after the previous round's output.
+				// Messages of rate - 3 to rate - 1 bytes leave right_encode(L), of 2 or 3 bytes, to fill the block or to run into the next one.
 				foreach (int messageLength in (int[])[0, 1, rate - 3, rate - 2, rate - 1, rate, rate + 1])
 				{
 					byte[] message = CreateDeterministicSource(messageLength);

@@ -3,11 +3,13 @@ using System.Numerics;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-// SM2Field52 against BigInteger, with inputs anywhere in the form that its members take, limbs 0 to 3 below 2^53 and limb 4 below 2^50, as well as canonical ones: a value v also stands as v + kp for every k that fits, with limbs as large as the form allows. Every result must be in that form, and some in the tighter forms that the formulas rely on.
+// SM2Field52 against BigInteger, with inputs anywhere in the form that its members take, limbs 0 to 3 below 2^53 and limb 4 below 2^50, as well as canonical ones: a value v also stands as v + kp for every k that fits, with limbs as large as the form allows.
+// Every result must be in that form, and some in the tighter forms that the formulas rely on.
 [InheritsTests]
 internal class SM2Field52Test() : ECFieldTest<SM2Curve, SM2Field52, SM2Order>(52, 1UL << 53, 1UL << 50, BigInteger.One << 260, 1UL << 48, 10)
 {
-	// The column sums and Montgomery rounds keep within 64 bits for limbs below 2^56, beyond the form. Limbs of only their low byte, or of all but their low four bits, make the most negative spreads at limb i + 1 and limb i + 4, which may take limbs of the product below 0 before their carries.
+	// The column sums and Montgomery rounds keep within 64 bits for limbs below 2^56, beyond the form.
+	// Limbs of only their low byte, or of all but their low four bits, make the most negative spreads at limb i + 1 and limb i + 4, which may take limbs of the product below 0 before their carries.
 	[Test]
 	public async Task MultiplyTakesLimbsBelow2To56()
 	{
@@ -40,7 +42,8 @@ internal class SM2Field52Test() : ECFieldTest<SM2Curve, SM2Field52, SM2Order>(52
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// For limbs below 2^62, limbs 0 to 3 come out below 2^52, limb 4 below 2^48 + 2^16·h + 2^10 for h = L4 >> 48, and the value below 2p. Every limb at its most, with h at its most, takes limb 1 and the carries to their largest.
+	// For limbs below 2^62, limbs 0 to 3 come out below 2^52, limb 4 below 2^48 + 2^16·h + 2^10 for h = L4 >> 48, and the value below 2p.
+	// Every limb at its most, with h at its most, takes limb 1 and the carries to their largest.
 	[Test]
 	public async Task WeakReduceTakesLimbsBelow2To62()
 	{

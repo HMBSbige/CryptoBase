@@ -6,7 +6,8 @@ namespace CryptoBase.IO.Chunked;
 /// Maps a chunked message onto its encrypted form and reports the ways its decryption fails.
 /// </summary>
 /// <remarks>
-/// The encrypted form is the header followed by the encrypted chunks. Every chunk but the last is full, and the last holds less than a full chunk, so a valid length never ends on a chunk boundary.
+/// The encrypted form is the header followed by the encrypted chunks.
+/// Every chunk but the last is full, and the last holds less than a full chunk, so a valid length never ends on a chunk boundary.
 /// </remarks>
 internal static class ChunkLayout<TCipher> where TCipher : class, IChunkedCipher<TCipher>
 {

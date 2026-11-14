@@ -4,12 +4,18 @@ using System.Text;
 
 namespace CryptoBase.X509;
 
-// One validation of TrustAnchorCertificateValidator. It builds certification paths from the peer's certificate towards the trust anchors depth first, and checks each issuer as it adds it (RFC 5280, Sec. 6.1), so that a failed check moves on to the next candidate.
-// The first search follows only the issuers that pass every check and returns the first path that reaches a trust anchor; if there is none, a second search, with limits of its own, also follows those that fail, to report the best of the paths that it ends, as RunAsync describes.
-// An instance serves one call, which a retrieval may move to another thread, and owns the keys that it imports for the certificates other than the trust anchors. IssuerRetrieval finds certificates for its pool and PathRevocation checks its paths; each sees only what the search passes to it, and only the search changes its own state, which the check that it passes to IssuerRetrieval may do.
+// One validation of TrustAnchorCertificateValidator.
+// It builds certification paths from the peer's certificate towards the trust anchors depth first, and checks each issuer as it adds it (RFC 5280, Sec. 6.1), so that a failed check moves on to the next candidate.
+// The first search follows only the issuers that pass every check and returns the first path that reaches a trust anchor;
+// if there is none, a second search, with limits of its own, also follows those that fail, to report the best of the paths that it ends, as RunAsync describes.
+// An instance serves one call, which a retrieval may move to another thread, and owns the keys that it imports for the certificates other than the trust anchors.
+// IssuerRetrieval finds certificates for its pool and PathRevocation checks its paths;
+// each sees only what the search passes to it, and only the search changes its own state, which the check that it passes to IssuerRetrieval may do.
 internal sealed class CertificatePathSearch : IDisposable
 {
-	// The limits of each search: the candidate issuers, each a signature check whether or not its signature is verified; the name and subtree comparisons, a directoryName counting by its attributes and length; and the entries of the policy graphs.
+	// The limits of each search: the candidate issuers, each a signature check whether or not its signature is verified;
+	// the name and subtree comparisons, a directoryName counting by its attributes and length;
+	// and the entries of the policy graphs.
 	public const int MaxCandidates = 100;
 	public const long MaxNameComparisons = 1 << 20;
 	public const long MaxPolicyGraphEntries = 1 << 16;
@@ -25,7 +31,8 @@ internal sealed class CertificatePathSearch : IDisposable
 	private readonly List<PathNode> _pool = [];
 	private readonly Dictionary<TrustAnchorEntry, PathNode> _anchorNodes = [];
 
-	// Null for a validation that neither retrieves nor checks revocation, so that it allocates nothing for them; the retrieval of issuers is also null if the validator does not retrieve them, and the revocation checks if it does not check revocation.
+	// Null for a validation that neither retrieves nor checks revocation, so that it allocates nothing for them;
+	// the retrieval of issuers is also null if the validator does not retrieve them, and the revocation checks if it does not check revocation.
 	private readonly RetrievalBudget? _budget;
 	private readonly IssuerRetrieval? _issuers;
 	private readonly PathRevocation? _revocation;
@@ -134,7 +141,8 @@ internal sealed class CertificatePathSearch : IDisposable
 					return CreateResult(path, CertificatePathEnd.TrustAnchor, leafProblems);
 				}
 
-				// A certificate that is revoked, or whose status no source determines, gives way to another path, such as through a cross-certificate. If none is valid, the first revoked path is reported, or else the first whose status is not known.
+				// A certificate that is revoked, or whose status no source determines, gives way to another path, such as through a cross-certificate.
+				// If none is valid, the first revoked path is reported, or else the first whose status is not known.
 				if (await revocation.CheckAsync(path).ConfigureAwait(false) is not { } problem)
 				{
 					return CreateResult(path, CertificatePathEnd.TrustAnchor, []);
@@ -200,13 +208,16 @@ internal sealed class CertificatePathSearch : IDisposable
 		return true;
 	}
 
-	// A self-signed certificate has no other issuer to find. The check may stop the search at its limit of candidates, and a stopped search has no issuer to find for any certificate.
+	// A self-signed certificate has no other issuer to find.
+	// The check may stop the search at its limit of candidates, and a stopped search has no issuer to find for any certificate.
 	private bool HasIssuerToFind(PathNode node)
 	{
 		return !IsSelfSigned(node) && !IsStopped;
 	}
 
-	// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search; it accepts none, as only the strict search decides. A path that only revocation fails is already the best.
+	// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search;
+	// it accepts none, as only the strict search decides.
+	// A path that only revocation fails is already the best.
 	private CertificateValidationResult ReportBestPath(PathProblem? identity)
 	{
 		PathProblem? strictLimit = GetLimit();
@@ -243,7 +254,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		return problem is { } value ? [value] : [];
 	}
 
-	// The candidates for the issuer of the last certificate, each tried with the path so far. The strict search follows only the candidates without problems, and returns the first path that reaches a trust anchor, which then has no problem other than those of the peer's certificate, or null.
+	// The candidates for the issuer of the last certificate, each tried with the path so far.
+	// The strict search follows only the candidates without problems, and returns the first path that reaches a trust anchor, which then has no problem other than those of the peer's certificate, or null.
 	// The relaxed search follows the candidates with problems too, one intermediate certificate beyond MaxPathLength at most, records the paths that they end, and returns null.
 	private PathNode[]? Search(bool relaxed)
 	{
@@ -421,7 +433,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		return false;
 	}
 
-	// The checks of the edge from the last certificate of the path to a candidate for its issuer, other than the candidate's own; complete makes every check, and otherwise the first problem ends them.
+	// The checks of the edge from the last certificate of the path to a candidate for its issuer, other than the candidate's own;
+	// complete makes every check, and otherwise the first problem ends them.
 	private List<PathProblem> CheckEdge(PathNode child, PathNode issuer, int below, bool tooLong, bool complete)
 	{
 		List<PathProblem> problems = [];
@@ -474,7 +487,8 @@ internal sealed class CertificatePathSearch : IDisposable
 			}
 		}
 
-		// RFC 5280, Sec. 6.1.3 (a)(1). A certificate whose algorithm cannot be verified, or an issuer whose key cannot be imported, has the problem already, so the edge fails without a signature.
+		// RFC 5280, Sec. 6.1.3 (a)(1).
+		// A certificate whose algorithm cannot be verified, or an issuer whose key cannot be imported, has the problem already, so the edge fails without a signature.
 		if (child.SignatureProblem is { } signatureProblem)
 		{
 			problems.Add(signatureProblem);
@@ -570,7 +584,8 @@ internal sealed class CertificatePathSearch : IDisposable
 			problems.Add(new PathProblem(CertificateValidationError.Expired, string.Create(CultureInfo.InvariantCulture, $"{{0}} is valid from {certificate.NotBefore:u} to {certificate.NotAfter:u}, which leaves out the validation time, {_time:u}."), node));
 		}
 
-		// RFC 5280, Sec. 4.1.2.4: the issuer, which links the certificate to the subject of the next, must not be empty. A trust anchor's issuer links nothing.
+		// RFC 5280, Sec. 4.1.2.4: the issuer, which links the certificate to the subject of the next, must not be empty.
+		// A trust anchor's issuer links nothing.
 		if (node.Anchor is null && X509Name.IsEmpty(certificate.Issuer.Span))
 		{
 			problems.Add(new PathProblem(CertificateValidationError.Malformed, "{0} has an empty issuer name.", node));
@@ -631,7 +646,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		return problems;
 	}
 
-	// RFC 5280, Sec. 4.2: a critical extension must be one that the validator processes. The authority and subject key identifier extensions must not be critical (Secs. 4.2.1.1 and 4.2.1.2), the policy constraints and inhibit anyPolicy extensions of a certificate that takes part in policy processing must be (Secs. 4.2.1.11 and 4.2.1.14), and the extensions that decode on first use must decode.
+	// RFC 5280, Sec. 4.2: a critical extension must be one that the validator processes.
+	// The authority and subject key identifier extensions must not be critical (Secs. 4.2.1.1 and 4.2.1.2), the policy constraints and inhibit anyPolicy extensions of a certificate that takes part in policy processing must be (Secs. 4.2.1.11 and 4.2.1.14), and the extensions that decode on first use must decode.
 	private void CheckExtensions(PathNode node, List<PathProblem> problems)
 	{
 		IReadOnlyList<CertificateExtension> extensions = node.Certificate.Extensions;
@@ -719,7 +735,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		}
 	}
 
-	// RFC 9608, Sec. 3: a certificate that breaks these rules is invalid, whether or not revocation is checked. A value that is not NULL exempts nothing and is an error too.
+	// RFC 9608, Sec. 3: a certificate that breaks these rules is invalid, whether or not revocation is checked.
+	// A value that is not NULL exempts nothing and is an error too.
 	private static void CheckRevocationExemption(PathNode node, List<PathProblem> problems)
 	{
 		DecodedExtensions decoded = node.Certificate.DecodedExtensions;
@@ -895,7 +912,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		Record(end, new PathProblem(CertificateValidationError.UntrustedRoot, text, last));
 	}
 
-	// Whether a certificate is self-signed: self-issued, with a signature that its own key verifies. One whose signature cannot be verified, as its algorithm or key is not supported, is not.
+	// Whether a certificate is self-signed: self-issued, with a signature that its own key verifies.
+	// One whose signature cannot be verified, as its algorithm or key is not supported, is not.
 	// The check counts as a candidate, once for each certificate; without a candidate left, it stops the search, and the certificate counts as not self-signed.
 	private bool IsSelfSigned(PathNode node)
 	{
@@ -1014,7 +1032,8 @@ internal sealed class PathNode
 	// The trust anchor that the certificate is, as the peer's certificate may be too, byte for byte.
 	public TrustAnchorEntry? Anchor { get; }
 
-	// RFC 5280, Sec. 6.1: the issuer and the subject are the same name, by the rules of Sec. 7.1 rather than byte for byte, as a CA that rolls over its key may encode its name anew; names that the exact comparison of DistinguishedName cannot find the same are not.
+	// RFC 5280, Sec. 6.1: the issuer and the subject are the same name, by the rules of Sec. 7.1 rather than byte for byte, as a CA that rolls over its key may encode its name anew;
+	// names that the exact comparison of DistinguishedName cannot find the same are not.
 	public bool SelfIssued { get; }
 
 	public ReadOnlyMemory<byte>? AuthorityKeyIdentifier { get; }
@@ -1052,7 +1071,8 @@ internal sealed class PathNode
 	}
 }
 
-// A reason why a certification path is not acceptable. Text is a composite format string whose argument {0} describes Subject and {1} Other, and whose other braces are doubled.
+// A reason why a certification path is not acceptable.
+// Text is a composite format string whose argument {0} describes Subject and {1} Other, and whose other braces are doubled.
 internal readonly record struct PathProblem(CertificateValidationError Error, string Text, PathNode? Subject = null, PathNode? Other = null)
 {
 	// Text to put in Text, the composite format string: as EscapeText makes it, with its braces doubled.

@@ -8,7 +8,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.SM2;
 
-// The key of SM2Key: d in [1, n − 2] with its public key P = d·G, and (1 + d)⁻¹ once a signature has computed it, or P alone. EcdsaKey holds d and P, in the encodings that SM2 shares with ECDSA, id-ecPublicKey and a named curve, and its table of P for verification; the state holds the windows of P for encryption and key exchange and those of SM2VerificationCurve for verification. Nothing on the signing and decryption paths branches on or indexes by a secret, except the retries that GB/T 32918 prescribes. As with ECKey, keep a state in one writable location and do not copy it.
+// The key of SM2Key: d in [1, n − 2] with its public key P = d·G, and (1 + d)⁻¹ once a signature has computed it, or P alone.
+// EcdsaKey holds d and P, in the encodings that SM2 shares with ECDSA, id-ecPublicKey and a named curve, and its table of P for verification;
+// the state holds the windows of P for encryption and key exchange and those of SM2VerificationCurve for verification.
+// Nothing on the signing and decryption paths branches on or indexes by a secret, except the retries that GB/T 32918 prescribes.
+// As with ECKey, keep a state in one writable location and do not copy it.
 internal struct SM2KeyState
 {
 	internal const int HashLength = 32;
@@ -75,7 +79,8 @@ internal struct SM2KeyState
 
 	internal readonly int Pkcs8PrivateKeyLength => _key.GetPkcs8PrivateKeyLength(AlgorithmIdentifier);
 
-	// Candidates in [1, n − 1] until one is not n − 1, so that d is uniform in [1, n − 2]; only that retry branches. If fill throws, the key stays as it was.
+	// Candidates in [1, n − 1] until one is not n − 1, so that d is uniform in [1, n − 2]; only that retry branches.
+	// If fill throws, the key stays as it was.
 	[SkipLocalsInit]
 	internal void GenerateKey(Action<Span<byte>> fill)
 	{
@@ -166,7 +171,8 @@ internal struct SM2KeyState
 		}
 	}
 
-	// Z = SM3(ENTL ‖ ID ‖ a ‖ b ‖ xG ‖ yG ‖ xA ‖ yA) of GB/T 32918.2-2016, Sec. 5.5, for the public key P = (xA, yA) of the state, with ENTL the bit length of ID in two big-endian bytes. Z of DefaultId is computed once and kept.
+	// Z = SM3(ENTL ‖ ID ‖ a ‖ b ‖ xG ‖ yG ‖ xA ‖ yA) of GB/T 32918.2-2016, Sec. 5.5, for the public key P = (xA, yA) of the state, with ENTL the bit length of ID in two big-endian bytes.
+	// Z of DefaultId is computed once and kept.
 	[SkipLocalsInit]
 	internal void ComputeZ(ReadOnlySpan<byte> id, Span<byte> destination)
 	{
@@ -256,7 +262,8 @@ internal struct SM2KeyState
 		}
 	}
 
-	// GB/T 32918.2-2016, Sec. 7.1, for a signature in DER. Every input is public, so the products may take variable time.
+	// GB/T 32918.2-2016, Sec. 7.1, for a signature in DER.
+	// Every input is public, so the products may take variable time.
 	[SkipLocalsInit]
 	internal bool Verify(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> id)
 	{
@@ -281,7 +288,9 @@ internal struct SM2KeyState
 		return MultiplyAddXModOrderEquals(in s, in t, in difference);
 	}
 
-	// Whether u1·G + u2·P is not the point at infinity and its x is r mod n, from the windows of P of SM2VerificationCurve from verification VerificationTableThreshold on, and from the products of EcdsaKey before. Every input is public. Not inlined, so that the frame of Verify keeps the size it has without the windows.
+	// Whether u1·G + u2·P is not the point at infinity and its x is r mod n, from the windows of P of SM2VerificationCurve from verification VerificationTableThreshold on, and from the products of EcdsaKey before.
+	// Every input is public.
+	// Not inlined, so that the frame of Verify keeps the size it has without the windows.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private bool MultiplyAddXModOrderEquals(in FieldElement<SM2Order> u1, in FieldElement<SM2Order> u2, in FieldElement<SM2Order> r)
 	{
@@ -306,7 +315,9 @@ internal struct SM2KeyState
 		return signed;
 	}
 
-	// One attempt of GB/T 32918.2-2016, Sec. 6.1, A4 to A6, with (1 + d)⁻¹·R, e mod n and the nonce k in [1, n − 1]: r = (e + x1) mod n for (x1, y1) = k·G, and s = (1 + d)⁻¹·(k − r·d) = (1 + d)⁻¹·(k + r) − r mod n. Returns false, so that the caller draws the next nonce, if r = 0, r + k = n or s = 0. Nothing branches on or indexes by k, e or (1 + d)⁻¹ before the result.
+	// One attempt of GB/T 32918.2-2016, Sec. 6.1, A4 to A6, with (1 + d)⁻¹·R, e mod n and the nonce k in [1, n − 1]: r = (e + x1) mod n for (x1, y1) = k·G, and s = (1 + d)⁻¹·(k − r·d) = (1 + d)⁻¹·(k + r) − r mod n.
+	// Returns false, so that the caller draws the next nonce, if r = 0, r + k = n or s = 0.
+	// Nothing branches on or indexes by k, e or (1 + d)⁻¹ before the result.
 	private static bool TrySign(in FieldElement<SM2Order> inverse, in FieldElement<SM2Order> e, in FieldElement<SM2Order> k, out FieldElement<SM2Order> r, out FieldElement<SM2Order> s)
 	{
 		ECGroup<SM2Curve, SM2CurveField, SM2Order>.MultiplyBaseReduceX(in k, out FieldElement<SM2Order> x);
@@ -322,7 +333,10 @@ internal struct SM2KeyState
 		return rejected is 0;
 	}
 
-	// GB/T 32918.4-2016, Sec. 6.1: C1 ‖ C3 ‖ C2 with C1 = k·G, (x2, y2) = k·P, t = KDF(x2 ‖ y2, klen), C2 = M ⊕ t and C3 = SM3(x2 ‖ M ‖ y2), for a k from fill, or if der is set the DER of SM2Cipher. destination is CiphertextOverhead bytes longer than plaintext, or if der is set at least SM2CipherDer.GetMaxLength long; plaintext is not empty and does not overlap it. If fill throws, destination remains unchanged. Returns the length.
+	// GB/T 32918.4-2016, Sec. 6.1: C1 ‖ C3 ‖ C2 with C1 = k·G, (x2, y2) = k·P, t = KDF(x2 ‖ y2, klen), C2 = M ⊕ t and C3 = SM3(x2 ‖ M ‖ y2), for a k from fill, or if der is set the DER of SM2Cipher.
+	// destination is CiphertextOverhead bytes longer than plaintext, or if der is set at least SM2CipherDer.GetMaxLength long; plaintext is not empty and does not overlap it.
+	// If fill throws, destination remains unchanged.
+	// Returns the length.
 	[SkipLocalsInit]
 	internal int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> destination, Action<Span<byte>> fill, bool der)
 	{
@@ -356,7 +370,9 @@ internal struct SM2KeyState
 		}
 	}
 
-	// GB/T 32918.4-2016, Sec. 7.1, for a ciphertext C1 ‖ C3 ‖ C2 with C2 not empty: writes M' to the first C2.Length bytes of destination and returns true if C1 is a point on the curve, t is not all zero and C3 = SM3(x2 ‖ M' ‖ y2), which it compares in fixed time; otherwise returns false and writes nothing. destination may overlap ciphertext: M' goes there only after the last read of ciphertext.
+	// GB/T 32918.4-2016, Sec. 7.1, for a ciphertext C1 ‖ C3 ‖ C2 with C2 not empty: writes M' to the first C2.Length bytes of destination and returns true if C1 is a point on the curve, t is not all zero and C3 = SM3(x2 ‖ M' ‖ y2), which it compares in fixed time;
+	// otherwise returns false and writes nothing.
+	// destination may overlap ciphertext: M' goes there only after the last read of ciphertext.
 	internal readonly bool Decrypt(ReadOnlySpan<byte> ciphertext, Span<byte> destination)
 	{
 		Debug.Assert(HasPrivateKey && ciphertext.Length > CiphertextOverhead && destination.Length >= ciphertext.Length - CiphertextOverhead);
@@ -385,7 +401,8 @@ internal struct SM2KeyState
 
 		try
 		{
-			// B3: d·C1, which d in [1, n − 2] keeps from the point at infinity; the check never fails, but it keeps the bytes of shared, which SkipLocalsInit leaves as they were, out of the KDF if it did.
+			// B3: d·C1, which d in [1, n − 2] keeps from the point at infinity;
+			// the check never fails, but it keeps the bytes of shared, which SkipLocalsInit leaves as they were, out of the KDF if it did.
 			if (!ECGroup<SM2Curve, SM2CurveField, SM2Order>.TryMultiplyEncode(in point, in _key.Key.PrivateScalar, shared.Span))
 			{
 				return false;
@@ -429,7 +446,8 @@ internal struct SM2KeyState
 		DropDerived();
 	}
 
-	// Whether d is n − 1, which SM2 leaves out of its private keys, as 1 + d then has no inverse: ulong.MaxValue or 0. n is odd, so n − 1 differs from n in limb 0 alone.
+	// Whether d is n − 1, which SM2 leaves out of its private keys, as 1 + d then has no inverse: ulong.MaxValue or 0.
+	// n is odd, so n − 1 differs from n in limb 0 alone.
 	private static ulong IsLast(in FieldElement<SM2Order> value)
 	{
 		ReadOnlySpan<ulong> limbs = FieldElement<SM2Order>.GetLimbs(in value);
@@ -447,7 +465,10 @@ internal struct SM2KeyState
 		}
 	}
 
-	// (1 + d)⁻¹·R, which the first signature computes, so that a key that only decrypts or exchanges keys never does. The thread that moves the stage from InverseMissing to InverseComputing is the only one that writes _inverse, and it sets InverseReady with a release once the value is whole; a signature reads _inverse only after it reads InverseReady with an acquire, so never in the middle of the write. A signature that comes while another computes the value computes it too, into copy, which the caller erases, and returns that.
+	// (1 + d)⁻¹·R, which the first signature computes, so that a key that only decrypts or exchanges keys never does.
+	// The thread that moves the stage from InverseMissing to InverseComputing is the only one that writes _inverse, and it sets InverseReady with a release once the value is whole;
+	// a signature reads _inverse only after it reads InverseReady with an acquire, so never in the middle of the write.
+	// A signature that comes while another computes the value computes it too, into copy, which the caller erases, and returns that.
 	[UnscopedRef]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private ref readonly FieldElement<SM2Order> GetInverse(ref FieldElement<SM2Order> copy)
@@ -500,7 +521,10 @@ internal struct SM2KeyState
 		HashCore.Finalize(ref hash, destination);
 	}
 
-	// A1 to A5 of GB/T 32918.4-2016, Sec. 6.1: draws k until t = KDF(x2 ‖ y2, length) is not all zero, and leaves C1 = k·G in c1, k·P = (x2, y2) encoded in point, the KDF over x2 ‖ y2 in kdf and block 1 of t in first; k·P comes from table, the table of P, unless it is null. With cofactor 1 and P on the curve, S = P is not the point at infinity. Whether t is all zero follows from block 1 unless that is all zero too, which for 32 bytes or more has odds 2^−256, and only that and the retry branch on it.
+	// A1 to A5 of GB/T 32918.4-2016, Sec. 6.1: draws k until t = KDF(x2 ‖ y2, length) is not all zero, and leaves C1 = k·G in c1, k·P = (x2, y2) encoded in point, the KDF over x2 ‖ y2 in kdf and block 1 of t in first;
+	// k·P comes from table, the table of P, unless it is null.
+	// With cofactor 1 and P on the curve, S = P is not the point at infinity.
+	// Whether t is all zero follows from block 1 unless that is all zero too, which for 32 bytes or more has odds 2^−256, and only that and the retry branch on it.
 	[SkipLocalsInit]
 	private readonly void DrawEphemeral(ECPointTable<SM2Curve, SM2CurveField, SM2Order>? table, int length, Action<Span<byte>> fill, Span<byte> c1, Span<byte> point, ref SM3KdfState kdf, Span<byte> first)
 	{
@@ -542,7 +566,10 @@ internal struct SM2KeyState
 		return GetTable(ref _table, ref _exchanges, KeyExchangeTableThreshold);
 	}
 
-	// The windows of P in slot from operation threshold on of those that count counts, or null before. The count is atomic, so that operations at once still reach the threshold, and it stops once the windows are there, which another count may have built. Threads that reach it at once may each build the windows, but only the first to finish publishes them, the others discard theirs, and the products with and without them agree. Whether an operation takes the windows depends on the counts alone.
+	// The windows of P in slot from operation threshold on of those that count counts, or null before.
+	// The count is atomic, so that operations at once still reach the threshold, and it stops once the windows are there, which another count may have built.
+	// Threads that reach it at once may each build the windows, but only the first to finish publishes them, the others discard theirs, and the products with and without them agree.
+	// Whether an operation takes the windows depends on the counts alone.
 	private ECPointTable<TCurve, SM2CurveField, SM2Order>? GetTable<TCurve>(ref ECPointTable<TCurve, SM2CurveField, SM2Order>? slot, ref int count, int threshold) where TCurve : struct, IECCurve
 	{
 		if (slot is { } table)

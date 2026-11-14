@@ -136,7 +136,8 @@ public class Ed25519Test
 		}
 	}
 
-	// Each of the eight points of small order is a public key, and a signature that meets the equation for it verifies. With such a key, [k]A takes at most 8 values whatever the message, so a signature also verifies for other messages, as the reference decides.
+	// Each of the eight points of small order is a public key, and a signature that meets the equation for it verifies.
+	// With such a key, [k]A takes at most 8 values whatever the message, so a signature also verifies for other messages, as the reference decides.
 	[Test]
 	public async Task SmallOrderPublicKeysVerify()
 	{
@@ -201,7 +202,8 @@ public class Ed25519Test
 		}
 	}
 
-	// The identity as R in its two other encodings: y = p + 1, and y = 1 with the sign bit, as x = 0. Each S meets the group equation for its own R bytes, so only the comparison of the encodings rejects them.
+	// The identity as R in its two other encodings: y = p + 1, and y = 1 with the sign bit, as x = 0.
+	// Each S meets the group equation for its own R bytes, so only the comparison of the encodings rejects them.
 	[Test]
 	public async Task NonCanonicalNoncesFail()
 	{

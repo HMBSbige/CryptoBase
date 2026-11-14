@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// An element W0 + W1·u of Fp2 as two sums of products before reduction, for the lazy reductions of the tower: the coefficients are signed integers, SM9Fp2.MultiplyWide and SquareWide give the products of their inputs as integer polynomials, a0b0 − 2a1b1 and a0b1 + a1b0, and the sums, differences and multiples by u combine them exactly, so that a combination is reduced once per coefficient by SM9Fp.ReduceWide. The callers state the bounds of the values against the (−128p², 342p²) that it takes, in multiples of B = (2.25p)², the largest product of two reduced elements: a product of elements below x and y has a0b0 − 2a1b1 in (−2xy, xy) and a0b1 + a1b0 in [0, 2xy). They also keep the columns below 2^61.9 in magnitude.
+// An element W0 + W1·u of Fp2 as two sums of products before reduction, for the lazy reductions of the tower: the coefficients are signed integers, SM9Fp2.MultiplyWide and SquareWide give the products of their inputs as integer polynomials, a0b0 − 2a1b1 and a0b1 + a1b0, and the sums, differences and multiples by u combine them exactly, so that a combination is reduced once per coefficient by SM9Fp.ReduceWide.
+// The callers state the bounds of the values against the (−128p², 342p²) that it takes, in multiples of B = (2.25p)², the largest product of two reduced elements: a product of elements below x and y has a0b0 − 2a1b1 in (−2xy, xy) and a0b1 + a1b0 in [0, 2xy).
+// They also keep the columns below 2^61.9 in magnitude.
 internal struct SM9Fp2Wide
 {
 	internal SM9FpWide W0;

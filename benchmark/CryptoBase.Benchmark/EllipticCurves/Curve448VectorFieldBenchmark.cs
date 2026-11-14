@@ -5,7 +5,9 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The steps of each four-lane field of p448, on values that start on a 64-byte line as the ladder keeps them: a chain of ladder steps gives the latency of one, and two chains side by side its throughput. The point formulas include the lookup or load of their entry, which SelectBase gives alone. A vector field adds its own FieldKind.
+// The steps of each four-lane field of p448, on values that start on a 64-byte line as the ladder keeps them: a chain of ladder steps gives the latency of one, and two chains side by side its throughput.
+// The point formulas include the lookup or load of their entry, which SelectBase gives alone.
+// A vector field adds its own FieldKind.
 public unsafe class Curve448VectorFieldBenchmark
 {
 	private const int Operations = 64;
@@ -109,7 +111,8 @@ public unsafe class Curve448VectorFieldBenchmark
 		void Double(int count);
 	}
 
-	// Two values, then the multiplier and the scratch of two steps. The point formulas take the first value as the point, and each addition a different table entry.
+	// Two values, then the multiplier and the scratch of two steps.
+	// The point formulas take the first value as the point, and each addition a different table entry.
 	private sealed class Field<TField> : IField where TField : unmanaged, IEdwardsField448x4<TField>
 	{
 		private readonly int _length = 2 + TField.MultiplierLength + 2 * TField.ScratchLength;

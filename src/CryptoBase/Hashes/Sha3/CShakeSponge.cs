@@ -1,6 +1,7 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// cSHAKE of SP 800-185, Sec. 3.3, over KeccakSponge. The seed is the state once the prefix has been absorbed: the bytepadded function name and customization string, followed for KMAC (Sec. 4.3) by the bytepadded key, so that a reset only copies it back.
+// cSHAKE of SP 800-185, Sec. 3.3, over KeccakSponge.
+// The seed is the state once the prefix has been absorbed: the bytepadded function name and customization string, followed for KMAC (Sec. 4.3) by the bytepadded key, so that a reset only copies it back.
 // One-shot computations need no seed, so the static members run the same steps on a lone sponge.
 internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 {
@@ -78,7 +79,8 @@ internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 		_sponge = _seed;
 	}
 
-	// With both strings empty, cSHAKE is SHAKE (Sec. 3.3): no prefix, and SHAKE's domain separator. Returns the domain separator to pad with.
+	// With both strings empty, cSHAKE is SHAKE (Sec. 3.3): no prefix, and SHAKE's domain separator.
+	// Returns the domain separator to pad with.
 	internal static byte Initialize(ref KeccakSponge<TRate> sponge, ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization)
 	{
 		sponge.Reset();
@@ -115,7 +117,8 @@ internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 		sponge.FinishBlock();
 	}
 
-	// left_encode(rate), with which bytepad starts, then left_encode of the length in bits of the string that follows, with which its encode_string starts. The rate takes 2 bytes and the length of a span at most 6, so one word holds both.
+	// left_encode(rate), with which bytepad starts, then left_encode of the length in bits of the string that follows, with which its encode_string starts.
+	// The rate takes 2 bytes and the length of a span at most 6, so one word holds both.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void AbsorbBytePadHeader(ref KeccakSponge<TRate> sponge, int stringLength)
 	{

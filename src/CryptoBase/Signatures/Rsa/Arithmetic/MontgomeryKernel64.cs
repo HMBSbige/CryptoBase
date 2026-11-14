@@ -2,10 +2,16 @@ using CryptoBase.EllipticCurves;
 
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Digits of r = TRadix.Bits bits with a 64 × 64 → 128-bit multiplier. The second operand of each product is shifted left by s = 64 − r beforehand, so that the high word of the product is its upper digit and the low word shifted right by s its lower digit: a column of the product scanning sums digits without carries. At the end of a column the low sum keeps its low digit, its rest and the low r bits of the high sum go to the next column, and the rest of the high sum to the one after. A column thus starts below 2^(r+1) + 2^(64−r) ≤ 2^(r+2) and adds at most 2·digitCount + 2 digits to the low sum, counting the doubled cross products and the diagonal of a square, so that (2·digitCount + 4)·2^r ≤ 2^64 bounds every sum.
-// The reduction is interleaved: column k below digitCount also gains m_k·n, with m_k = sum·(−n⁻¹) mod 2^r, which clears its low digit, and the columns from digitCount on hold the result. The products of the two operands and those of m and n run in the same loop on separate sums, which keeps the chains of additions short.
-// A loop of four product pairs, rather than one of each column unrolled in full, keeps the code small and its branches taken; each product is summed right after it is taken, so that its words need no stack.
-// From KaratsubaDigits digits on, Karatsuba's method takes the product of the operands from three products of half the size, recursively down to KaratsubaBaseDigits, and the reduction runs in a pass of its own on the product. Its sums of halves are normalized digits again before they are multiplied, so that every product above holds the same bounds.
+// Digits of r = TRadix.Bits bits with a 64 × 64 → 128-bit multiplier.
+// The second operand of each product is shifted left by s = 64 − r beforehand, so that the high word of the product is its upper digit and the low word shifted right by s its lower digit: a column of the product scanning sums digits without carries.
+// At the end of a column the low sum keeps its low digit, its rest and the low r bits of the high sum go to the next column, and the rest of the high sum to the one after.
+// A column thus starts below 2^(r+1) + 2^(64−r) ≤ 2^(r+2) and adds at most 2·digitCount + 2 digits to the low sum, counting the doubled cross products and the diagonal of a square, so that (2·digitCount + 4)·2^r ≤ 2^64 bounds every sum.
+// The reduction is interleaved: column k below digitCount also gains m_k·n, with m_k = sum·(−n⁻¹) mod 2^r, which clears its low digit, and the columns from digitCount on hold the result.
+// The products of the two operands and those of m and n run in the same loop on separate sums, which keeps the chains of additions short.
+// A loop of four product pairs, rather than one of each column unrolled in full, keeps the code small and its branches taken;
+// each product is summed right after it is taken, so that its words need no stack.
+// From KaratsubaDigits digits on, Karatsuba's method takes the product of the operands from three products of half the size, recursively down to KaratsubaBaseDigits, and the reduction runs in a pass of its own on the product.
+// Its sums of halves are normalized digits again before they are multiplied, so that every product above holds the same bounds.
 internal readonly struct MontgomeryKernel64<TRadix> : IMontgomeryKernel where TRadix : struct, IRadix
 {
 	private const int KaratsubaDigits = 256;
@@ -267,7 +273,8 @@ internal readonly struct MontgomeryKernel64<TRadix> : IMontgomeryKernel where TR
 		}
 	}
 
-	// The scratch of KaratsubaProduct and KaratsubaSquare for operands of count digits: the sums of the halves and the middle product, and what the products of the halves need in turn; a direct product needs a shifted copy of its right operand.
+	// The scratch of KaratsubaProduct and KaratsubaSquare for operands of count digits: the sums of the halves and the middle product, and what the products of the halves need in turn;
+	// a direct product needs a shifted copy of its right operand.
 	private static int GetKaratsubaScratchLength(int count)
 	{
 		if (count < KaratsubaBaseDigits)

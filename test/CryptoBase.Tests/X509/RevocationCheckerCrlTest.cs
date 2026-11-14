@@ -282,7 +282,8 @@ public class RevocationCheckerCrlTest
 		yield return () => ("ediPartyName after a dNSName", "EdiPartyName", GeneralNames(DnsName("crl.example"), Tlv(0xA5, partyName)));
 	}
 
-	// Sec. 5.2.2: the checker does not process the ORAddress of an x400Address or the DirectoryStrings of an ediPartyName, so a critical issuer alternative name with either is refused, well formed or not; a noncritical one is ignored.
+	// Sec. 5.2.2: the checker does not process the ORAddress of an x400Address or the DirectoryStrings of an ediPartyName, so a critical issuer alternative name with either is refused, well formed or not;
+	// a noncritical one is ignored.
 	[Test]
 	[MethodDataSource(nameof(UnprocessedIssuerAlternativeNames))]
 	public async Task CriticalIssuerAlternativeNamesMustHaveOnlyProcessedForms(string @case, string form, byte[] value)

@@ -44,7 +44,8 @@ public class MLKemTest<T> where T : class, IKem<T>
 		await Assert.That(mismatches).IsEmpty();
 	}
 
-	// An entry of Â that three SHAKE128 blocks leave short squeezes more after its group. Grouping depends on the parameter and instruction sets, so a seed is searched that leaves each entry short.
+	// An entry of Â that three SHAKE128 blocks leave short squeezes more after its group.
+	// Grouping depends on the parameter and instruction sets, so a seed is searched that leaves each entry short.
 	[Test]
 	public async Task MatrixEntriesThatNeedMoreBlocksMatchTheReference()
 	{

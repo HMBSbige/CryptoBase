@@ -85,7 +85,8 @@ internal readonly struct SM3Vector512 : ISM3Lanes<Vector512<uint>>
 		return RotateLeft(value, 8);
 	}
 
-	// Within each 128-bit block b, the interleaves turn words 0 to 3 and 4 to 7 of the state into those of lane 4b + i in q[i] and q[4 + i]. One permutation of q[i] and q[4 + i] then gives lanes i and 4 + i, blocks 4i and 4i + 1, and another lanes 8 + i and 12 + i, blocks 4i + 2 and 4i + 3.
+	// Within each 128-bit block b, the interleaves turn words 0 to 3 and 4 to 7 of the state into those of lane 4b + i in q[i] and q[4 + i].
+	// One permutation of q[i] and q[4 + i] then gives lanes i and 4 + i, blocks 4i and 4i + 1, and another lanes 8 + i and 12 + i, blocks 4i + 2 and 4i + 3.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Store(Vector512<uint> s0, Vector512<uint> s1, Vector512<uint> s2, Vector512<uint> s3, Vector512<uint> s4, Vector512<uint> s5, Vector512<uint> s6, Vector512<uint> s7, ref byte destination)
 	{

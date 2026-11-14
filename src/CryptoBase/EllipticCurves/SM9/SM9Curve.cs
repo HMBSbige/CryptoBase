@@ -1,7 +1,12 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The group law of y² = x³ + b over TField by the complete formulas of Renes, Costello and Batina ("Complete addition formulas for prime order elliptic curves", 2016, Algorithms 7 to 9 for a = 0). They hold for every pair of points, the point at infinity included, on a curve with no point of order 2, as E(Fp), of prime order N, and E'(Fp2), of odd order N·(2p − N), both are; the mixed addition takes any left and an affine right, which cannot be the point at infinity. Every output of TField's arithmetic is reduced, so each product here takes reduced inputs. The point at infinity has X = 0 and Y ≠ 0 in every form these formulas give.
-// Nothing here branches on or indexes by a point, except where a method says that its input is public. The results may be the same variables as the inputs.
+// The group law of y² = x³ + b over TField by the complete formulas of Renes, Costello and Batina ("Complete addition formulas for prime order elliptic curves", 2016, Algorithms 7 to 9 for a = 0).
+// They hold for every pair of points, the point at infinity included, on a curve with no point of order 2, as E(Fp), of prime order N, and E'(Fp2), of odd order N·(2p − N), both are;
+// the mixed addition takes any left and an affine right, which cannot be the point at infinity.
+// Every output of TField's arithmetic is reduced, so each product here takes reduced inputs.
+// The point at infinity has X = 0 and Y ≠ 0 in every form these formulas give.
+// Nothing here branches on or indexes by a point, except where a method says that its input is public.
+// The results may be the same variables as the inputs.
 internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TField>
 {
 	[SkipLocalsInit]
@@ -166,7 +171,8 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 		return TField.AreEqual(in x1, in x2) & TField.AreEqual(in y1, in y2);
 	}
 
-	// Returns ulong.MaxValue for the point at infinity, which gives (0, 0), not on the curve, and 0 otherwise. The inversion takes constant time, and Z⁻¹ is erased.
+	// Returns ulong.MaxValue for the point at infinity, which gives (0, 0), not on the curve, and 0 otherwise.
+	// The inversion takes constant time, and Z⁻¹ is erased.
 	[SkipLocalsInit]
 	internal static ulong ToAffine(in SM9Point<TField> value, out SM9AffinePoint<TField> result)
 	{
@@ -194,7 +200,8 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 		return true;
 	}
 
-	// None of the points may be the point at infinity. One inversion for all of them, which takes constant time unless variableTime is set, for public points: result[i].X holds the product of the Z of points 0 to i until result[i] is written.
+	// None of the points may be the point at infinity.
+	// One inversion for all of them, which takes constant time unless variableTime is set, for public points: result[i].X holds the product of the Z of points 0 to i until result[i] is written.
 	[SkipLocalsInit]
 	internal static void ToAffine(ReadOnlySpan<SM9Point<TField>> points, Span<SM9AffinePoint<TField>> result, bool variableTime)
 	{
@@ -252,7 +259,8 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 		return onCurve;
 	}
 
-	// Sets result to k·P for a scalar of up to four 64-bit limbs, least significant first, by its NAF of width 4. The time depends on the scalar, which must be public, but not on the point, as the formulas are complete: the point may be a private key, and the multiples in its locals are erased.
+	// Sets result to k·P for a scalar of up to four 64-bit limbs, least significant first, by its NAF of width 4.
+	// The time depends on the scalar, which must be public, but not on the point, as the formulas are complete: the point may be a private key, and the multiples in its locals are erased.
 	[SkipLocalsInit]
 	internal static void MultiplyVariableTime(in SM9Point<TField> point, ReadOnlySpan<ulong> scalar, out SM9Point<TField> result)
 	{

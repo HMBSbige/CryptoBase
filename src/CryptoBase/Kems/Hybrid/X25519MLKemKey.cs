@@ -3,7 +3,8 @@ using CryptoBase.KeyAgreements.Xdh;
 
 namespace CryptoBase.Kems.Hybrid;
 
-// The ML-KEM part goes first in every encoding and in the shared secret, unlike in ECMLKemKey. As with X25519Key and MLKemKey, keep a key in one writable location and do not copy it.
+// The ML-KEM part goes first in every encoding and in the shared secret, unlike in ECMLKemKey.
+// As with X25519Key and MLKemKey, keep a key in one writable location and do not copy it.
 internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemParameters
 {
 	private MLKemKey<TParameters> _mlKemKey;
@@ -135,7 +136,8 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 		WriteX25519Parts(ephemeral.Span, ciphertext, sharedSecret);
 	}
 
-	// Both parts are computed before sharedSecret is written, since ciphertext may overlap it. The X25519 part fails just for an ephemeral key of small order, which the ciphertext alone decides.
+	// Both parts are computed before sharedSecret is written, since ciphertext may overlap it.
+	// The X25519 part fails just for an ephemeral key of small order, which the ciphertext alone decides.
 	[SkipLocalsInit]
 	internal bool TryDecapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
 	{
@@ -183,7 +185,8 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 		KemOutputs.ThrowIfInvalid(ciphertext, CiphertextLength, sharedSecret, SharedSecretLength);
 	}
 
-	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. The public key is not of small order, so the shared secret is not all zeros and the derivation cannot fail.
+	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged.
+	// The public key is not of small order, so the shared secret is not all zeros and the derivation cannot fail.
 	private readonly void WriteX25519Parts(ReadOnlySpan<byte> ephemeral, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		X25519Key.DerivePublicKeyAndSharedSecret(ephemeral, _x25519Key.PublicKey, ciphertext.Slice(MLKemCiphertextLength, X25519Key.PublicKeyLength), sharedSecret.Slice(MLKemKey<TParameters>.SharedSecretLength, X25519Key.SharedSecretLength));

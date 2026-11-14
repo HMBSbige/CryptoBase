@@ -2,8 +2,10 @@ using System.Runtime.CompilerServices;
 
 namespace CryptoBase.X509;
 
-// The extensions that Certificate decodes on first use rather than when it decodes the certificate, so that an error in one appears only to the caller that asks for it. The values are slices of the certificate's memory, and the instance is immutable to its users.
-// The authority information access and CRL distribution points extensions are decoded when they are first read, for the validations that retrieve or check revocation; the others are all read by every validation.
+// The extensions that Certificate decodes on first use rather than when it decodes the certificate, so that an error in one appears only to the caller that asks for it.
+// The values are slices of the certificate's memory, and the instance is immutable to its users.
+// The authority information access and CRL distribution points extensions are decoded when they are first read, for the validations that retrieve or check revocation;
+// the others are all read by every validation.
 internal sealed class DecodedExtensions
 {
 	internal const string SubjectKeyIdentifierOid = "2.5.29.14";
@@ -151,7 +153,8 @@ internal sealed class DecodedExtensions
 
 	public DecodedExtension<IReadOnlyList<CrlDistributionPoint>> CrlDistributionPoints => GetOrDecode(ref _decodedCrlDistributionPoints, _crlDistributionPoints, CrlDistributionPoint.ReadList);
 
-	// RFC 9608, Sec. 3: how a certificate with the noRevAvail extension breaks the rules for it, which makes it invalid, as the end of a sentence about it; null if it does not, or has no such extension.
+	// RFC 9608, Sec. 3: how a certificate with the noRevAvail extension breaks the rules for it, which makes it invalid, as the end of a sentence about it;
+	// null if it does not, or has no such extension.
 	public string? FindNoRevocationAvailableProblem()
 	{
 		if (!NoRevocationAvailable.Value)

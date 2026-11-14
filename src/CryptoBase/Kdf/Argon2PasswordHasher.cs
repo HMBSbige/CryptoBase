@@ -11,7 +11,10 @@ namespace CryptoBase.Kdf;
 /// It does not hold the secret, which must be supplied again.
 /// </para>
 /// <para>
-/// Parsing is strict: the version must be 19; the parameters must be exactly <c>m</c>, <c>t</c> and <c>p</c> in that order, in decimal without leading zeros and within the ranges of <see cref="Argon2Parameters" />; the salt must be at least 8 bytes long and the hash at least 4 bytes long. The optional <c>keyid</c> and <c>data</c> parameters are not supported.
+/// Parsing is strict: the version must be 19;
+/// the parameters must be exactly <c>m</c>, <c>t</c> and <c>p</c> in that order, in decimal without leading zeros and within the ranges of <see cref="Argon2Parameters" />;
+/// the salt must be at least 8 bytes long and the hash at least 4 bytes long.
+/// The optional <c>keyid</c> and <c>data</c> parameters are not supported.
 /// </para>
 /// <para>
 /// Verification costs as much time and memory as the string specifies, so verify only strings from trusted storage.
@@ -28,7 +31,10 @@ public static class Argon2PasswordHasher
 	/// <param name="password">The password.</param>
 	/// <param name="parameters">The cost parameters.</param>
 	/// <param name="type">The type of Argon2. RFC 9106 recommends <see cref="Argon2Type.Argon2id" />.</param>
-	/// <param name="saltLength">The length of the random salt, in bytes. It must be at least 8; RFC 9106 recommends 16.</param>
+	/// <param name="saltLength">
+	/// The length of the random salt, in bytes.
+	/// It must be at least 8; RFC 9106 recommends 16.
+	/// </param>
 	/// <param name="hashLength">The length of the hash, in bytes. It must be at least 4.</param>
 	/// <param name="secret">The secret key, also known as a pepper, which is not stored in the string.</param>
 	/// <returns>The hash string.</returns>

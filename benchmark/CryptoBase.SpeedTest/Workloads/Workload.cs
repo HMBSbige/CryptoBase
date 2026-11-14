@@ -8,8 +8,7 @@ namespace CryptoBase.SpeedTest.Workloads;
 /// A throughput workload processes the same input size on every iteration; an operation workload performs one operation per iteration.
 /// An instance is used by one thread at a time.
 /// A workload generic over the algorithm runs its loop in a generic method of its own type parameter rather than in <see cref="Run" />:
-/// Native AOT compiles one copy of a generic class for all reference types, which finds the methods of the algorithm through the dictionary
-/// of the class on every iteration, at several nanoseconds per call, while a generic method finds them through its own at a fraction of that.
+/// Native AOT compiles one copy of a generic class for all reference types, which finds the methods of the algorithm through the dictionary of the class on every iteration, at several nanoseconds per call, while a generic method finds them through its own at a fraction of that.
 /// </remarks>
 internal abstract class Workload : IDisposable
 {

@@ -68,12 +68,17 @@ public sealed class Hotp<TCore> : IDisposable where TCore : unmanaged, IHmacHash
 	/// Verifies a code against a counter and the counters that follow it, in constant time.
 	/// </summary>
 	/// <remarks>
-	/// Every counter in the window is computed, so the cost grows with <paramref name="lookAhead" />. The window stops at <see cref="ulong.MaxValue" /> rather than wrapping.
-	/// On success, set the stored counter to <paramref name="matchedCounter" /> + 1 so that no code at or before it is accepted again, in one atomic step that fails if the stored counter changed since it was read. A match at <see cref="ulong.MaxValue" /> has no next counter, so refuse it rather than let the counter wrap.
+	/// Every counter in the window is computed, so the cost grows with <paramref name="lookAhead" />.
+	/// The window stops at <see cref="ulong.MaxValue" /> rather than wrapping.
+	/// On success, set the stored counter to <paramref name="matchedCounter" /> + 1 so that no code at or before it is accepted again, in one atomic step that fails if the stored counter changed since it was read.
+	/// A match at <see cref="ulong.MaxValue" /> has no next counter, so refuse it rather than let the counter wrap.
 	/// </remarks>
 	/// <param name="counter">The next counter the verifier expects.</param>
 	/// <param name="code">The code to verify. A code of the wrong length does not match.</param>
-	/// <param name="lookAhead">The number of counters after <paramref name="counter" /> also accepted, the look-ahead window s of RFC 4226 section 7.4. It must not be negative; 0 accepts <paramref name="counter" /> only.</param>
+	/// <param name="lookAhead">
+	/// The number of counters after <paramref name="counter" /> also accepted, the look-ahead window s of RFC 4226 section 7.4.
+	/// It must not be negative; 0 accepts <paramref name="counter" /> only.
+	/// </param>
 	/// <param name="matchedCounter">When this method returns <see langword="true" />, the lowest counter whose code matches; otherwise, 0.</param>
 	/// <returns><see langword="true" /> if the code matches a counter in the window; otherwise, <see langword="false" />.</returns>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="lookAhead" /> is negative.</exception>

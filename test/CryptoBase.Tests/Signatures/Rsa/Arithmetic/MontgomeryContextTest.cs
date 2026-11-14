@@ -5,8 +5,10 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// Checks every kernel, through MontgomeryContext, against BigInteger. Elements below 2n pass if they are congruent to the reference and every digit is below the radix, as IMontgomeryKernel allows.
-// Each kernel is checked at the limb counts of MontgomeryKernelCase.LimbCountsToTest with the moduli of ModuliToTest, and exponentiations up to MaxExponentiationLimbs; EveryOperationMatchesAtEveryLimbCount checks every limb count of LimbCounts that the kernel holds with every modulus of Moduli, on request.
+// Checks every kernel, through MontgomeryContext, against BigInteger.
+// Elements below 2n pass if they are congruent to the reference and every digit is below the radix, as IMontgomeryKernel allows.
+// Each kernel is checked at the limb counts of MontgomeryKernelCase.LimbCountsToTest with the moduli of ModuliToTest, and exponentiations up to MaxExponentiationLimbs;
+// EveryOperationMatchesAtEveryLimbCount checks every limb count of LimbCounts that the kernel holds with every modulus of Moduli, on request.
 public class MontgomeryContextTest
 {
 	[Test]
@@ -15,7 +17,9 @@ public class MontgomeryContextTest
 		await Assert.That(MontgomeryKernelCase.All().Select(static kernel => kernel.KernelType.GetGenericTypeDefinition()).Distinct()).IsEquivalentTo(ImplementationsOf(typeof(IMontgomeryKernel)));
 	}
 
-	// The dispatch takes a vector kernel where the platform has one whose windows hold the digits, with the smallest window that does, and otherwise the largest digits that fit in the family of kernels for the platform, so that a modulus of any size up to 16384 bits gets a kernel. With AVX-512, the windows of eight vectors or more keep the operands in staging. With AVX2, MontgomeryKernelAvx2 takes every modulus that AVX-512 does not, with every vector of four digits past vector 0 in its window as far as MaxAvx2WindowVectors.
+	// The dispatch takes a vector kernel where the platform has one whose windows hold the digits, with the smallest window that does, and otherwise the largest digits that fit in the family of kernels for the platform, so that a modulus of any size up to 16384 bits gets a kernel.
+	// With AVX-512, the windows of eight vectors or more keep the operands in staging.
+	// With AVX2, MontgomeryKernelAvx2 takes every modulus that AVX-512 does not, with every vector of four digits past vector 0 in its window as far as MaxAvx2WindowVectors.
 	// On ARM64 the family is MontgomeryKernel64ColumnPairs for the shorter moduli and MontgomeryKernelAdvSimd for the longer ones.
 	[Test]
 	public async Task DispatchTakesTheBestKernelThatFits()
@@ -104,7 +108,8 @@ public class MontgomeryContextTest
 		await Assert.That(Subtract(kernel, false)).IsEmpty();
 	}
 
-	// MontgomeryContext exponentiates alike with every kernel, so ExponentiateThroughTheDispatchMatchesReference takes every way to exponentiate; here each kernel takes a random exponent of a few windows per modulus, into another element and in place.
+	// MontgomeryContext exponentiates alike with every kernel, so ExponentiateThroughTheDispatchMatchesReference takes every way to exponentiate;
+	// here each kernel takes a random exponent of a few windows per modulus, into another element and in place.
 	[Test]
 	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
 	public async Task ExponentiateMatchesReference(MontgomeryKernelCase kernel)
@@ -138,7 +143,8 @@ public class MontgomeryContextTest
 		await Assert.That(ExponentiateVariableTime(kernel, false)).IsEmpty();
 	}
 
-	// A context that takes another modulus works as a new one of it would, bit for bit, through moduli of every shape and back to the first. Reset exponentiates to find R², so moduli stay within MaxExponentiationLimbs.
+	// A context that takes another modulus works as a new one of it would, bit for bit, through moduli of every shape and back to the first.
+	// Reset exponentiates to find R², so moduli stay within MaxExponentiationLimbs.
 	[Test]
 	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
 	public async Task ResetMatchesANewContext(MontgomeryKernelCase kernel)
@@ -578,7 +584,8 @@ public class MontgomeryContextTest
 		}
 	}
 
-	// Values below 2n: the ends of [0, n) and [n, 2n) and random ones in both. Past MaxExponentiationLimbs, where the moduli only bound the sums, the outermost ends, unless full.
+	// Values below 2n: the ends of [0, n) and [n, 2n) and random ones in both.
+	// Past MaxExponentiationLimbs, where the moduli only bound the sums, the outermost ends, unless full.
 	private static BigInteger[] Elements(Random random, BigInteger n, bool full)
 	{
 		return full || n.GetBitLength() <= 64 * MaxExponentiationLimbs

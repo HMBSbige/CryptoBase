@@ -5,7 +5,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The field operations of Field448, each taking the previous result as an input, so the time per operation is its latency. InvertByPower, value^(p − 2), is there to compare with Invert by SafeGcd.
+// The field operations of Field448, each taking the previous result as an input, so the time per operation is its latency.
+// InvertByPower, value^(p − 2), is there to compare with Invert by SafeGcd.
 public class Curve448FieldBenchmark
 {
 	private const int Operations = 64;

@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// Two points at once in the groups of Field25519x8Avx512, for the products whose additions fall into two independent chains: the windows of MultiplyBase, even ones in group 0 and odd ones in group 1, and the cached-table product, whose parts and windows the groups share out. Each chain is a point of its own, and the two add up at the end. The ladder and the double-base product have a single chain of doublings, which a second group would not shorten, and take Curve25519Avx2.
+// Two points at once in the groups of Field25519x8Avx512, for the products whose additions fall into two independent chains: the windows of MultiplyBase, even ones in group 0 and odd ones in group 1, and the cached-table product, whose parts and windows the groups share out.
+// Each chain is a point of its own, and the two add up at the end.
+// The ladder and the double-base product have a single chain of doublings, which a second group would not shorten, and take Curve25519Avx2.
 internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 {
 	private static ReadOnlySpan<ulong> TwoLimbs => [2, 0, 0, 0, 0];
@@ -12,7 +14,8 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 		Curve25519Avx2.Ladder(scalar, in u, out x, out z);
 	}
 
-	// Window 0 starts group 0 and window 1 group 1, and each later pair adds to both, from their constant-time lookups into lanes by Field25519x8Avx512.CreateCached; the last window, alone, pairs with the identity.
+	// Window 0 starts group 0 and window 1 group 1, and each later pair adds to both, from their constant-time lookups into lanes by Field25519x8Avx512.CreateCached;
+	// the last window, alone, pairs with the identity.
 	[SkipLocalsInit]
 	public static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{
@@ -71,7 +74,9 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 		Curve25519Avx2.DoubleScalarMultiplyVariableTime(a, in point, b, out result);
 	}
 
-	// Group 0 takes the parts in the low half of the table and group 1 those in the high half, both doubled together; at each digit position the nonzero digits of the two halves pair up, the rest with the identity. The windows of [b]B pair up in the order they come.
+	// Group 0 takes the parts in the low half of the table and group 1 those in the high half, both doubled together;
+	// at each digit position the nonzero digits of the two halves pair up, the rest with the identity.
+	// The windows of [b]B pair up in the order they come.
 	[SkipLocalsInit]
 	public static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, ReadOnlySpan<EdwardsNielsPoint> pointTable, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{

@@ -1,6 +1,7 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// An RSA key pair of FIPS 186-5, Appendix A.1: the primes of Appendix A.1.3, d = e⁻¹ mod λ(n) with 2^(nlen/2) < d < λ(n) (Appendix A.1.1, criterion 3), and the CRT values of RFC 8017, Sec. 3.2. Nothing depends on the secrets in time or addresses but the rejection of a pair whose d is too small, after which new primes are drawn.
+// An RSA key pair of FIPS 186-5, Appendix A.1: the primes of Appendix A.1.3, d = e⁻¹ mod λ(n) with 2^(nlen/2) < d < λ(n) (Appendix A.1.1, criterion 3), and the CRT values of RFC 8017, Sec. 3.2.
+// Nothing depends on the secrets in time or addresses but the rejection of a pair whose d is too small, after which new primes are drawn.
 // With e small and public, each inverse modulo an even m comes from k = −m⁻¹ mod e: 1 + k·m is then a multiple of e, and (1 + k·m)/e, below m, is e⁻¹ mod m.
 internal static class RsaKeyGeneration
 {

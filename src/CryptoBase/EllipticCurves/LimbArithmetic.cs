@@ -1,11 +1,15 @@
 namespace CryptoBase.EllipticCurves;
 
-// Carries and borrows are 0 or 1. A comparison taken as a value, as in Carry, compiles to a flag read such as setb or cset and not to a branch. The methods on limb sequences take count limbs, least significant first, and are unrolled up to MaxLimbCount so that a constant count drops the steps beyond it. A result may be the same sequence as an input unless a method says otherwise.
+// Carries and borrows are 0 or 1.
+// A comparison taken as a value, as in Carry, compiles to a flag read such as setb or cset and not to a branch.
+// The methods on limb sequences take count limbs, least significant first, and are unrolled up to MaxLimbCount so that a constant count drops the steps beyond it.
+// A result may be the same sequence as an input unless a method says otherwise.
 internal static class LimbArithmetic
 {
 	internal const int MaxLimbCount = 9;
 
-	// Whether Multiply compiles to one or two multiplication instructions rather than to MultiplyPortable: with mulx or on Arm64, and on any x64 from .NET 11 on, where Math.BigMul compiles to mul. A method that the JIT must fold before it decides what to inline names the instruction sets instead.
+	// Whether Multiply compiles to one or two multiplication instructions rather than to MultiplyPortable: with mulx or on Arm64, and on any x64 from .NET 11 on, where Math.BigMul compiles to mul.
+	// A method that the JIT must fold before it decides what to inline names the instruction sets instead.
 	internal static bool IsMultiplyAccelerated
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,7 +46,8 @@ internal static class LimbArithmetic
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong Multiply(ulong x, ulong y, out ulong low)
 	{
-		// With BMI2, Math.BigMul passes the low limb through memory before .NET 11 and compiles to mul from there on, which holds rax and rdx and so spills the values around a row of products; mulx and a separate multiplication keep them in registers.
+		// With BMI2, Math.BigMul passes the low limb through memory before .NET 11 and compiles to mul from there on, which holds rax and rdx and so spills the values around a row of products;
+		// mulx and a separate multiplication keep them in registers.
 		if (Bmi2.X64.IsSupported)
 		{
 			low = x * y;
@@ -66,7 +71,9 @@ internal static class LimbArithmetic
 		return MultiplyPortable(x, y, out low);
 	}
 
-	// Without a 64-bit multiplier that it compiles to, Math.BigMul calls a fallback that passes the low limb through memory; the same four 32-bit products inlined need neither the call nor the memory. They are kept out of Multiply, whose IL counts against the inlining budget of every caller, so that it stays small.
+	// Without a 64-bit multiplier that it compiles to, Math.BigMul calls a fallback that passes the low limb through memory;
+	// the same four 32-bit products inlined need neither the call nor the memory.
+	// They are kept out of Multiply, whose IL counts against the inlining budget of every caller, so that it stays small.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong MultiplyPortable(ulong x, ulong y, out ulong low)
 	{
@@ -83,7 +90,8 @@ internal static class LimbArithmetic
 		return xHigh * yHigh + (cross1 >> 32) + (cross2 >> 32) + (middle >> 32);
 	}
 
-	// As Multiply, but without BMI2 or Arm64 a call to Math.BigMul, for code with many products at once, such as the matrix steps of SafeGcd, where the inlined portable products would leave so many values live that most of them would spill. From .NET 11 on, x64 takes Math.BigMul with BMI2 too: its one mul serves products that are summed one at a time better than mulx and a separate multiplication.
+	// As Multiply, but without BMI2 or Arm64 a call to Math.BigMul, for code with many products at once, such as the matrix steps of SafeGcd, where the inlined portable products would leave so many values live that most of them would spill.
+	// From .NET 11 on, x64 takes Math.BigMul with BMI2 too: its one mul serves products that are summed one at a time better than mulx and a separate multiplication.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong MultiplyOutOfLine(ulong x, ulong y, out ulong low)
 	{
@@ -381,7 +389,9 @@ internal static class LimbArithmetic
 		return low >> shift | high << 1 << 63 - shift;
 	}
 
-	// Writes digits d_i in [−2^(w − 1) + 1, 2^(w − 1)] with k = Σ d_i·2^(wi), for digits whose top window holds at most w − 1 bits of k. Window i of k plus the carry from below, v in [0, 2^w], gives d_i = v and no carry if v ≤ 2^(w − 1), and d_i = v − 2^w and a carry otherwise, so v ≤ 2^(w − 1) in the top window and no carry is lost. The carry and digits come from arithmetic on v, not comparisons, and only i decides which limbs are read.
+	// Writes digits d_i in [−2^(w − 1) + 1, 2^(w − 1)] with k = Σ d_i·2^(wi), for digits whose top window holds at most w − 1 bits of k.
+	// Window i of k plus the carry from below, v in [0, 2^w], gives d_i = v and no carry if v ≤ 2^(w − 1), and d_i = v − 2^w and a carry otherwise, so v ≤ 2^(w − 1) in the top window and no carry is lost.
+	// The carry and digits come from arithmetic on v, not comparisons, and only i decides which limbs are read.
 	internal static void RecodeSignedWindows(ReadOnlySpan<ulong> limbs, int width, Span<sbyte> digits)
 	{
 		// Digits up to 2^(w − 1) must fit in an sbyte.

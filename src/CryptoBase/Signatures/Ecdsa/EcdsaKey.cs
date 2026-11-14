@@ -6,7 +6,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Signatures.Ecdsa;
 
-// algorithmIdentifier is the DER of id-ecPublicKey with the named curve. Nothing on the signing path branches on or indexes by a secret, except the retries of the nonce derivation. As with ECKey, keep a key in one writable location and do not copy it. SM2 keeps its keys here too, as they take the same encodings and the same products u1·G + u2·Q to verify.
+// algorithmIdentifier is the DER of id-ecPublicKey with the named curve.
+// Nothing on the signing path branches on or indexes by a secret, except the retries of the nonce derivation.
+// As with ECKey, keep a key in one writable location and do not copy it.
+// SM2 keeps its keys here too, as they take the same encodings and the same products u1·G + u2·Q to verify.
 internal struct EcdsaKey<TCurve, TField, TOrder>
 	where TCurve : struct, IECCurve
 	where TField : unmanaged, IECField<TField>
@@ -390,7 +393,10 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		}
 	}
 
-	// Whether u1·G + u2·Q for the public key Q and u1, u2 and r below n is not the point at infinity and its x is r mod n. Every input is public, so the product may take variable time. The first call goes without the table of Q, which a key that verifies once has no use for, and a later one builds it. Threads that call at once may each build one, but only the first to finish publishes it, the others discard theirs, and the paths with and without it give the same result.
+	// Whether u1·G + u2·Q for the public key Q and u1, u2 and r below n is not the point at infinity and its x is r mod n.
+	// Every input is public, so the product may take variable time.
+	// The first call goes without the table of Q, which a key that verifies once has no use for, and a later one builds it.
+	// Threads that call at once may each build one, but only the first to finish publishes it, the others discard theirs, and the paths with and without it give the same result.
 	internal bool MultiplyAddXModOrderEquals(in FieldElement<TOrder> u1, in FieldElement<TOrder> u2, in FieldElement<TOrder> r)
 	{
 		AffinePoint<TField>[]? table = _pointTable;

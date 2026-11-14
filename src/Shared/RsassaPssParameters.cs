@@ -11,7 +11,9 @@ internal static class RsassaPssParameters
 
 	// RSASSA-PSS-params (RFC 4055, Sec. 3.1), whose fields default to SHA-1, MGF1 with SHA-1, a saltLength of 20 and the trailer field 1, as the RSASSA-PSS algorithm of their hash, its length in bytes and the saltLength.
 	// They name one if the hash is SHA-256, SHA-384 or SHA-512, MGF1 has the same hash, each hash AlgorithmIdentifier has NULL or absent parameters (Sec. 2.1), the saltLength is not negative and the trailer field is 1;
-	// otherwise the result is false. A field with its default value is accepted, as Sec. 3.1 requires of the trailer field. Throws AsnContentException if the parameters are not DER.
+	// otherwise the result is false.
+	// A field with its default value is accepted, as Sec. 3.1 requires of the trailer field.
+	// Throws AsnContentException if the parameters are not DER.
 	internal static bool TryRead(ReadOnlySpan<byte> parameters, out SignatureAlgorithm algorithm, out int hashLength, out int saltLength)
 	{
 		ValueAsnReader reader = new(parameters, AsnEncodingRules.DER);

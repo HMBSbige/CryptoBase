@@ -6,7 +6,11 @@ using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-// The tests that every field of unsaturated limbs shares, against BigInteger. Limbs hold limbBits bits each when canonical; the form that the members take has every limb but the top one below formLow, which is 2^limbBits or twice that, and the top one below formTop. A value v also stands as v + kp for every k that fits, with limbs 2^limbBits or more where formLow allows. R is the Montgomery factor, 1 for a field that does not use it, and canonical elements have the top limb below canonicalTop. The two long chains take the seeds chainSeed and chainSeed + 1.
+// The tests that every field of unsaturated limbs shares, against BigInteger.
+// Limbs hold limbBits bits each when canonical; the form that the members take has every limb but the top one below formLow, which is 2^limbBits or twice that, and the top one below formTop.
+// A value v also stands as v + kp for every k that fits, with limbs 2^limbBits or more where formLow allows.
+// R is the Montgomery factor, 1 for a field that does not use it, and canonical elements have the top limb below canonicalTop.
+// The two long chains take the seeds chainSeed and chainSeed + 1.
 internal abstract class ECFieldTest<TCurve, TField, TOrder>(int limbBits, ulong formLow, ulong formTop, BigInteger r, ulong canonicalTop, int chainSeed)
 	where TCurve : struct, IECCurve
 	where TField : unmanaged, IECField<TField>

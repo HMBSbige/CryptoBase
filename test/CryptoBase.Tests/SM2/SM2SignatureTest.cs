@@ -216,7 +216,8 @@ public class SM2SignatureTest
 		}
 	}
 
-	// Import, decryption and the key exchange leave (1 + d)⁻¹ alone; the first signature computes it, plain (1 + d)⁻¹·R mod n, and keeps it, and disposal erases it. A signature that comes while another computes it computes its own, which neither stays in the state nor changes the stage.
+	// Import, decryption and the key exchange leave (1 + d)⁻¹ alone; the first signature computes it, plain (1 + d)⁻¹·R mod n, and keeps it, and disposal erases it.
+	// A signature that comes while another computes it computes its own, which neither stays in the state nor changes the stage.
 	[Test]
 	public async Task TheFirstSignatureComputesTheInverse()
 	{
@@ -310,7 +311,8 @@ public class SM2SignatureTest
 		}
 	}
 
-	// A key counts its verifications and builds the windows of its public key for verification at the threshold, and not those of encryption, which the encryption after them builds by its own count; before and after it, the key decides each signature, valid or with s off by one, as the reference does.
+	// A key counts its verifications and builds the windows of its public key for verification at the threshold, and not those of encryption, which the encryption after them builds by its own count;
+	// before and after it, the key decides each signature, valid or with s off by one, as the reference does.
 	[Test]
 	public async Task VerificationsBeforeAndAfterTheWindowsMatchTheReference()
 	{

@@ -6,7 +6,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-// The dispatch picks one single-state kernel from the CPU model, so on any one runner the other goes untested; these tests call each kernel directly wherever it is supported and check it against the reference.
+// The dispatch picks one single-state kernel from the CPU model, so on any one runner the other goes untested;
+// these tests call each kernel directly wherever it is supported and check it against the reference.
 public class KeccakP1600SingleStateTest
 {
 	public static IEnumerable<int> Rates => [72, 104, 136, 144, 168];

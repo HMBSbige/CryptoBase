@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// For a public point A. The 256 bits of a scalar split into PartCount parts of L = PartLength bits, and part c holds the odd multiples P, 3P, …, (2^(w − 1) − 1)·P of P = 2^(cL)·A for the NAF of width w = Width, so that a product with A takes L doublings instead of 256.
+// For a public point A.
+// The 256 bits of a scalar split into PartCount parts of L = PartLength bits, and part c holds the odd multiples P, 3P, …, (2^(w − 1) − 1)·P of P = 2^(cL)·A for the NAF of width w = Width, so that a product with A takes L doublings instead of 256.
 internal static class EdwardsVariableTimePointTable
 {
 	internal const int Width = 5;

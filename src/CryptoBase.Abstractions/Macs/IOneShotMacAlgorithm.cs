@@ -14,7 +14,10 @@ public interface IOneShotMacAlgorithm
 	/// <summary>
 	/// Computes the MAC of <paramref name="source" /> using <paramref name="key" />.
 	/// </summary>
-	/// <remarks>Implementations must erase temporary key material and state before returning or throwing. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// Implementations must erase temporary key material and state before returning or throwing.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="key">The key.</param>
 	/// <param name="source">The data to authenticate.</param>
 	/// <param name="destination">The output buffer.</param>

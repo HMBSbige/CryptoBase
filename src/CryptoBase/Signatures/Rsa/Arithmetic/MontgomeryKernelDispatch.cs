@@ -1,8 +1,12 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Each kernel has a representation of its own, so the choice is made once per modulus rather than per operation: the first kernel that the platform supports and whose sums hold the digits that the modulus needs, with digits as large as they can be, which makes the fewest products. A vector kernel of the platform comes first where it holds the digits (see CreateX86). With a 64 × 64 → 128-bit multiplier, MontgomeryKernel64 takes 57-bit digits up to 3520 bits, then 56, 55 and 54; without one, MontgomeryKernel32 takes 29-bit digits up to 1728 bits, then 28 and 27. The digit count follows from the limb count alone, which is all of a secret modulus that the choice reveals.
+// Each kernel has a representation of its own, so the choice is made once per modulus rather than per operation: the first kernel that the platform supports and whose sums hold the digits that the modulus needs, with digits as large as they can be, which makes the fewest products.
+// A vector kernel of the platform comes first where it holds the digits (see CreateX86).
+// With a 64 × 64 → 128-bit multiplier, MontgomeryKernel64 takes 57-bit digits up to 3520 bits, then 56, 55 and 54; without one, MontgomeryKernel32 takes 29-bit digits up to 1728 bits, then 28 and 27.
+// The digit count follows from the limb count alone, which is all of a secret modulus that the choice reveals.
 // On ARM64, MontgomeryKernel64ColumnPairs takes 57-bit digits below AdvSimdLimbs limbs, and MontgomeryKernelAdvSimd from there on, with 28-bit digits up to 3520 bits, then 27 up to 13760 bits and 26: its digits make more products, which its vector multiplications make up for, and longer tables to read for each window of an exponent, which only longer moduli make up for.
-// Two moduli of one limb count that exponentiate side by side take MontgomeryPairKernelAdvSimd on ARM64 from MinAdvSimdPairLimbs to MaxAdvSimdPairLimbs limbs, where making the products of both moduli at once makes up for the 28-bit digits of MontgomeryKernelAdvSimd. Their contexts take those digits as well, as the pair kernel requires, also below AdvSimdLimbs, at some cost to the operations of one modulus alone.
+// Two moduli of one limb count that exponentiate side by side take MontgomeryPairKernelAdvSimd on ARM64 from MinAdvSimdPairLimbs to MaxAdvSimdPairLimbs limbs, where making the products of both moduli at once makes up for the 28-bit digits of MontgomeryKernelAdvSimd.
+// Their contexts take those digits as well, as the pair kernel requires, also below AdvSimdLimbs, at some cost to the operations of one modulus alone.
 internal static partial class MontgomeryKernelDispatch
 {
 	private const int AdvSimdLimbs = 22;
@@ -57,7 +61,10 @@ internal static partial class MontgomeryKernelDispatch
 		return new MontgomeryContext<MontgomeryKernel32<Radix27>>(modulus, secret);
 	}
 
-	// The contexts of two moduli that exponentiate side by side, and the pair context that exponentiates them at once where the platform has a pair kernel for them that is faster than one after the other, which takes moduli of one limb count; null otherwise, with the contexts that Create makes. Moduli that run most of their operations alone take a pair only where its contexts are those that Create makes. Only the limb counts decide.
+	// The contexts of two moduli that exponentiate side by side, and the pair context that exponentiates them at once where the platform has a pair kernel for them that is faster than one after the other, which takes moduli of one limb count;
+	// null otherwise, with the contexts that Create makes.
+	// Moduli that run most of their operations alone take a pair only where its contexts are those that Create makes.
+	// Only the limb counts decide.
 	internal static MontgomeryPairContext? CreatePair(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, out MontgomeryContext firstContext, out MontgomeryContext secondContext, bool mostlyAlone = false)
 	{
 		int limbs = first.Length;

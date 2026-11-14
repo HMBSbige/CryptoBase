@@ -72,7 +72,8 @@ public class SM9LanesTest
 		await Assert.That(vector.Accept(new CyclotomicSquares(CyclotomicElements.Value))).IsEmpty();
 	}
 
-	// Elements whose cyclotomic square on AVX-512 takes the quotient of its weak reduction from F9 + ⌊F8/2^26⌋ one below the top limb of F carried, in lanes 3, 4 and 2 in turn: F8 lies just below a multiple of 2^26 there, and the limbs under it carry it past. The coefficients are raw values in the order of Pattern; the other vectors take them as any others.
+	// Elements whose cyclotomic square on AVX-512 takes the quotient of its weak reduction from F9 + ⌊F8/2^26⌋ one below the top limb of F carried, in lanes 3, 4 and 2 in turn: F8 lies just below a multiple of 2^26 there, and the limbs under it carry it past.
+	// The coefficients are raw values in the order of Pattern; the other vectors take them as any others.
 	[Test]
 	[MethodDataSource(typeof(SM9LanesCase), nameof(SM9LanesCase.All))]
 	public async Task CyclotomicSquaresHoldWhereTheQuotientIsEstimatedLow(SM9LanesCase vector)
@@ -146,7 +147,8 @@ public class SM9LanesTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The doubling step is an identity of the polynomials of its inputs, so coordinates of extreme raw values, which need not lie on the twist, take its lazy reductions to their bounds; so does its line, l0 unreduced, in a product with an extreme element.
+	// The doubling step is an identity of the polynomials of its inputs, so coordinates of extreme raw values, which need not lie on the twist, take its lazy reductions to their bounds;
+	// so does its line, l0 unreduced, in a product with an extreme element.
 	[Test]
 	[MethodDataSource(typeof(SM9LanesCase), nameof(SM9LanesCase.Rows))]
 	public async Task DoublingStepsHoldAtTheExtremes(SM9LanesCase vector)

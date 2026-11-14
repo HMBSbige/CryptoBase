@@ -7,10 +7,15 @@ namespace CryptoBase.Abstractions.Ciphers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// An encrypted message is a header of <see cref="HeaderSize" /> bytes followed by its encrypted chunks. Every chunk but the last holds exactly <see cref="ChunkSize" /> plaintext bytes, and the last holds fewer, possibly none, so a message whose length is a multiple of <see cref="ChunkSize" /> ends with an empty chunk. An encrypted chunk is its ciphertext, as long as its plaintext, followed by a <see cref="TagSize" />-byte tag. Chunks are numbered from zero, and each chunk is authenticated with its index, so a decrypter that follows these rules detects reordered, missing, truncated and appended chunks.
+/// An encrypted message is a header of <see cref="HeaderSize" /> bytes followed by its encrypted chunks.
+/// Every chunk but the last holds exactly <see cref="ChunkSize" /> plaintext bytes, and the last holds fewer, possibly none, so a message whose length is a multiple of <see cref="ChunkSize" /> ends with an empty chunk.
+/// An encrypted chunk is its ciphertext, as long as its plaintext, followed by a <see cref="TagSize" />-byte tag.
+/// Chunks are numbered from zero, and each chunk is authenticated with its index, so a decrypter that follows these rules detects reordered, missing, truncated and appended chunks.
 /// </para>
 /// <para>
-/// An instance holds the keys of one message, derived from the input key, the header and the context. The chunk methods take the index and do not know which chunk is the last; the caller applies the chunking rules. Disposal erases the keys and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// An instance holds the keys of one message, derived from the input key, the header and the context.
+/// The chunk methods take the index and do not know which chunk is the last; the caller applies the chunking rules.
+/// Disposal erases the keys and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 /// <typeparam name="TSelf">The implementing type.</typeparam>
@@ -45,7 +50,10 @@ public interface IChunkedCipher<out TSelf> : IDisposable where TSelf : IChunkedC
 	/// Creates an instance that encrypts a new message and writes the message header.
 	/// </summary>
 	/// <param name="key">The input key, <see cref="KeySize" /> bytes long.</param>
-	/// <param name="context">The context that the message is bound to. It may be empty, and is not stored in the message.</param>
+	/// <param name="context">
+	/// The context that the message is bound to.
+	/// It may be empty, and is not stored in the message.
+	/// </param>
 	/// <param name="header">The buffer that receives the header in its first <see cref="HeaderSize" /> bytes.</param>
 	/// <returns>The instance.</returns>
 	/// <exception cref="ArgumentException"><paramref name="key" /> has the wrong length, or <paramref name="header" /> is too short.</exception>
@@ -66,7 +74,8 @@ public interface IChunkedCipher<out TSelf> : IDisposable where TSelf : IChunkedC
 	/// Encrypts the chunk numbered <paramref name="index" /> and appends its tag.
 	/// </summary>
 	/// <remarks>
-	/// Encrypt each index at most once with an instance: a second plaintext under the same index exposes both. To change any part of a message, encrypt the whole message again with a new instance, which writes a new header.
+	/// Encrypt each index at most once with an instance: a second plaintext under the same index exposes both.
+	/// To change any part of a message, encrypt the whole message again with a new instance, which writes a new header.
 	/// If <paramref name="plaintext" /> and <paramref name="ciphertext" /> overlap, they must start at the same byte.
 	/// </remarks>
 	/// <param name="index">The chunk index, from zero to <see cref="MaxChunkCount" /> - 1.</param>

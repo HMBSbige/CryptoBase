@@ -234,7 +234,8 @@ internal static class SM2TestUtils
 		return typeof(SM2KeyState).GetField("_verificationTable", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(state) is not null;
 	}
 
-	// The stage of (1 + d)⁻¹ in the state of the key, and the value that the state holds for it, plain: (1 + d)⁻¹·R mod n once it is ready, 0 before. They are read through reflection, so also after disposal.
+	// The stage of (1 + d)⁻¹ in the state of the key, and the value that the state holds for it, plain: (1 + d)⁻¹·R mod n once it is ready, 0 before.
+	// They are read through reflection, so also after disposal.
 	public static (int Stage, BigInteger Inverse) InverseOf(SM2Key key)
 	{
 		object state = typeof(SM2Key).GetField("_key", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(key)!;

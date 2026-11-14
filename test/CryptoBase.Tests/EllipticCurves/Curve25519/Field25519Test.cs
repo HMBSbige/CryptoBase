@@ -5,7 +5,8 @@ using static CryptoBase.Tests.EllipticCurves.Curve25519.Field25519TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves.Curve25519;
 
-// Field25519 against BigInteger, with inputs anywhere in the ranges that its members take: limbs up to 2^54 for the products and up to 2^64 for the carries, as well as tight and canonical ones. Every result must also be in the form that its member gives.
+// Field25519 against BigInteger, with inputs anywhere in the ranges that its members take: limbs up to 2^54 for the products and up to 2^64 for the carries, as well as tight and canonical ones.
+// Every result must also be in the form that its member gives.
 public class Field25519Test
 {
 	private const int RandomCount = 48;
@@ -56,7 +57,8 @@ public class Field25519Test
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Subtract takes a right operand with limbs at most those of 2p, SubtractFromFourP one with limbs at most those of 4p and Negate one like Subtract; the left operands here stay below 2^54 after the differences.
+	// Subtract takes a right operand with limbs at most those of 2p, SubtractFromFourP one with limbs at most those of 4p and Negate one like Subtract;
+	// the left operands here stay below 2^54 after the differences.
 	[Test]
 	public async Task SumsAndDifferencesMatchBigInteger()
 	{

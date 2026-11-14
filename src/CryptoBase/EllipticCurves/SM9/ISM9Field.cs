@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The field of an SM9 curve with the arithmetic that SM9Curve takes, on reduced elements in Montgomery form: SM9Fp for E: y² = x³ + 5, which holds G1, and SM9Fp2 for the twist E': y² = x³ + 5u, which holds G2. No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
+// The field of an SM9 curve with the arithmetic that SM9Curve takes, on reduced elements in Montgomery form: SM9Fp for E: y² = x³ + 5, which holds G1, and SM9Fp2 for the twist E': y² = x³ + 5u, which holds G2.
+// No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
+// Any result may be the same variable as an input.
 internal interface ISM9Field<TSelf> where TSelf : unmanaged, ISM9Field<TSelf>
 {
 	static abstract ref readonly TSelf One { get; }

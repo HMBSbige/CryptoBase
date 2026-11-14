@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// p = 2^448 − 2^224 − 1 in seven 64-bit limbs, for the inversion by SafeGcd. R = 2^448 ≡ 2^224 + 1 (mod p), and p ≡ −1 (mod 2^64), so −p⁻¹ ≡ 1.
+// p = 2^448 − 2^224 − 1 in seven 64-bit limbs, for the inversion by SafeGcd.
+// R = 2^448 ≡ 2^224 + 1 (mod p), and p ≡ −1 (mod 2^64), so −p⁻¹ ≡ 1.
 [InlineArray(7)]
 internal struct Curve448Modulus : IMontgomeryModulus
 {

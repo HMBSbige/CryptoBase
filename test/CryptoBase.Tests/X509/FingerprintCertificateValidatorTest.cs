@@ -198,7 +198,8 @@ public class FingerprintCertificateValidatorTest
 		}
 	}
 
-	// A fingerprint names its hash function in any of the forms of the constructor, and with SHA-256 the validator uses it as the attribute value "sha-256" would be; an unregistered token whose letters spell another name is not that hash function.
+	// A fingerprint names its hash function in any of the forms of the constructor, and with SHA-256 the validator uses it as the attribute value "sha-256" would be;
+	// an unregistered token whose letters spell another name is not that hash function.
 	[Test]
 	public async Task NamesOfTheSameHashFunctionValidateAlike()
 	{

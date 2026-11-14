@@ -53,7 +53,9 @@ public class FieldElementTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Before its final subtraction a product is a value u below 2m, which Reduce gives. Where 2m > R, random operands give u below m and u of R or more, which carries out of the top limb, about equally often. u in [m, R) is rare for them; the next test builds operands that give it.
+	// Before its final subtraction a product is a value u below 2m, which Reduce gives.
+	// Where 2m > R, random operands give u below m and u of R or more, which carries out of the top limb, about equally often.
+	// u in [m, R) is rare for them; the next test builds operands that give it.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task MultiplyTakesBothSidesOfTheFinalSubtraction(ModulusCase modulus)
@@ -86,7 +88,8 @@ public class FieldElementTest
 		}
 	}
 
-	// A Reduce of Montgomery rounds adds Q·m for a Q below R, so x·y + Q·m = u·R. For u in [m, R) and a y, x = u·R·y⁻¹ mod m makes x·y ≡ u·R mod m, and then Q = (u·R − x·y) / m, which is below R if x·y > (u − m)·R.
+	// A Reduce of Montgomery rounds adds Q·m for a Q below R, so x·y + Q·m = u·R.
+	// For u in [m, R) and a y, x = u·R·y⁻¹ mod m makes x·y ≡ u·R mod m, and then Q = (u·R − x·y) / m, which is below R if x·y > (u − m)·R.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task MultiplySubtractsTheModulusFromAProductThatDoesNotCarry(ModulusCase modulus)

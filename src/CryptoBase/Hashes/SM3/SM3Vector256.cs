@@ -2,7 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Hashes.SM3;
 
-// Eight lanes in AVX2 vectors. Without AVX-512, a rotation takes two shifts and an OR, but one by 8 takes a byte shuffle, so P0 and P1 rotate x ^ (x <<< 8) once rather than x twice.
+// Eight lanes in AVX2 vectors.
+// Without AVX-512, a rotation takes two shifts and an OR, but one by 8 takes a byte shuffle, so P0 and P1 rotate x ^ (x <<< 8) once rather than x twice.
 internal readonly struct SM3Vector256 : ISM3Lanes<Vector256<uint>>
 {
 	public static bool IsSupported => Vector256.IsHardwareAccelerated && Avx2.IsSupported;

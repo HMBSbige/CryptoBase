@@ -3,7 +3,8 @@ using System.Numerics;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-// P256Field52 against BigInteger, with inputs anywhere in the form that its members take, limbs 0 to 3 below 2^53 and limb 4 below 2^50, as well as canonical ones: a value v also stands as v + kp for every k that fits, with limbs as large as the form allows. Every result must be in that form, and some in the tighter forms that the formulas rely on.
+// P256Field52 against BigInteger, with inputs anywhere in the form that its members take, limbs 0 to 3 below 2^53 and limb 4 below 2^50, as well as canonical ones: a value v also stands as v + kp for every k that fits, with limbs as large as the form allows.
+// Every result must be in that form, and some in the tighter forms that the formulas rely on.
 [InheritsTests]
 internal class P256Field52Test() : ECFieldTest<P256Curve, P256Field52, P256Order>(52, 1UL << 53, 1UL << 50, BigInteger.One << 260, 1UL << 48, 8)
 {
@@ -37,7 +38,8 @@ internal class P256Field52Test() : ECFieldTest<P256Curve, P256Field52, P256Order
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// For limbs below 2^62, limbs 0 to 3 come out below 2^52, limb 4 below 2^48 + 2^16·h + 2^10 for h = L4 >> 48, and the value below 2p. Limbs 1 and 3 at 0 with h at its most take them below 0 before the carries.
+	// For limbs below 2^62, limbs 0 to 3 come out below 2^52, limb 4 below 2^48 + 2^16·h + 2^10 for h = L4 >> 48, and the value below 2p.
+	// Limbs 1 and 3 at 0 with h at its most take them below 0 before the carries.
 	[Test]
 	public async Task WeakReduceTakesLimbsBelow2To62()
 	{

@@ -15,9 +15,14 @@ internal static class Field448Blocks<TVector, TOps> where TVector : unmanaged wh
 	internal const int Sums = 16;
 	internal const int Right = 24;
 
-	// The lane products by golden-ratio Karatsuba: with x = x_lo + φ·x_hi and y likewise, x·y ≡ x_lo·y_lo + x_hi·y_hi + φ·((x_lo + x_hi)·(y_lo + y_hi) − x_lo·y_lo). Taken limb by limb, column j of each half sums, for k from 0 to 7, the product of x_k = (x_lo,k, x_hi,k) and y_n = (low_n, high_n) for n = j − k + 8 (see PrepareRight), which is y_(j−k) where k ≤ j and φ·y_(j−k+8) where k > j, as φ moves a product of weight φ² down to φ and 1: with P = x_lo,k·low_n, Q = x_hi,k·high_n and R = (x_lo,k + x_hi,k)·sum_n, column j of x_lo takes P + Q and column j of x_hi takes R − P.
-	// R − P is x_lo·high + x_hi·low + x_hi·high, at most 3·m_x·m_y·2^56 for y_(j−k) and 5·m_x·m_y·2^56 for φ·y, whose high is y_lo + y_hi; P + Q is at most 2 and 3 times that. Column j of x_hi thus stays below (38 − 2j)·m_x·m_y·2^56 and column j of x_lo below (23 − j)·m_x·m_y·2^56, which with the carry, below 2^36, stay below 2^64 for m_x·m_y ≤ 6.7; the sums take x_lo + x_hi < 2^32 and low + 2·high < 2^32 to the multiplier. P, Q and R add up separately, modulo 2^64 like the result.
-	// The columns go four at a time, each block taking x_k into registers once for each k and the operands of y from memory, with a chain of carries from column 0 of each half to column 7 that the next block continues; the carry out of the top of x_lo goes into limb 8, and the one out of the top of x_hi, of weight φ², into limbs 0 and 8, after which limbs 0 and 8 carry once more into limbs 1 and 9.
+	// The lane products by golden-ratio Karatsuba: with x = x_lo + φ·x_hi and y likewise, x·y ≡ x_lo·y_lo + x_hi·y_hi + φ·((x_lo + x_hi)·(y_lo + y_hi) − x_lo·y_lo).
+	// Taken limb by limb, column j of each half sums, for k from 0 to 7, the product of x_k = (x_lo,k, x_hi,k) and y_n = (low_n, high_n) for n = j − k + 8 (see PrepareRight), which is y_(j−k) where k ≤ j and φ·y_(j−k+8) where k > j, as φ moves a product of weight φ² down to φ and 1: with P = x_lo,k·low_n, Q = x_hi,k·high_n and R = (x_lo,k + x_hi,k)·sum_n, column j of x_lo takes P + Q and column j of x_hi takes R − P.
+	// R − P is x_lo·high + x_hi·low + x_hi·high, at most 3·m_x·m_y·2^56 for y_(j−k) and 5·m_x·m_y·2^56 for φ·y, whose high is y_lo + y_hi; P + Q is at most 2 and 3 times that.
+	// Column j of x_hi thus stays below (38 − 2j)·m_x·m_y·2^56 and column j of x_lo below (23 − j)·m_x·m_y·2^56, which with the carry, below 2^36, stay below 2^64 for m_x·m_y ≤ 6.7;
+	// the sums take x_lo + x_hi < 2^32 and low + 2·high < 2^32 to the multiplier.
+	// P, Q and R add up separately, modulo 2^64 like the result.
+	// The columns go four at a time, each block taking x_k into registers once for each k and the operands of y from memory, with a chain of carries from column 0 of each half to column 7 that the next block continues;
+	// the carry out of the top of x_lo goes into limb 8, and the one out of the top of x_hi, of weight φ², into limbs 0 and 8, after which limbs 0 and 8 carry once more into limbs 1 and 9.
 	// Inlined into the steps of Field448x4Avx2, so that the callee-saved vector registers of the Windows ABI, all of which the product needs without AVX-512, are saved once per step rather than once per product.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Product(ref TVector operands, ref TVector result)
@@ -96,7 +101,9 @@ internal static class Field448Blocks<TVector, TOps> where TVector : unmanaged wh
 		limb9 = TOps.Add(limb9, TOps.ShiftRight(high, Bits));
 	}
 
-	// The square of the left operand by Product's golden-ratio Karatsuba: column j sums x_k·y_n over k with n = j − k + 8, and as y_n is x_(n − 8) for n ≥ 8 and φ·x_n below, the terms of k and n − 8, or of k and n, are equal. Each pair takes one lane product of the doubled operand, and the term where they meet, for even j, one of the operand: 36 lane products where Product takes 64. Each column sums what Product's does, within its bounds; the doubled operand stays below 2^32 for m ≤ 4.
+	// The square of the left operand by Product's golden-ratio Karatsuba: column j sums x_k·y_n over k with n = j − k + 8, and as y_n is x_(n − 8) for n ≥ 8 and φ·x_n below, the terms of k and n − 8, or of k and n, are equal.
+	// Each pair takes one lane product of the doubled operand, and the term where they meet, for even j, one of the operand: 36 lane products where Product takes 64.
+	// Each column sums what Product's does, within its bounds; the doubled operand stays below 2^32 for m ≤ 4.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	internal static void SquareProduct(ref TVector operands, ref TVector doubled, ref TVector result)
 	{
@@ -206,7 +213,10 @@ internal static class Field448Blocks<TVector, TOps> where TVector : unmanaged wh
 		}
 	}
 
-	// Writes limbs i and i + 8 of y in the form that Product takes: (low_n, high_n) for n ≥ 8 is y_(n−8) = y_lo,(n−8) + φ·y_hi,(n−8), and for n < 8 it is φ·y_n = y_hi,n + φ·(y_lo,n + y_hi,n), as φ² ≡ φ + 1; sum_n = low_n + high_n. As high_n is sum_(n+8) and low_n is high_(n+8) for n < 8, the 32 vectors at Right, sum_0 to sum_7, then sum_8 to sum_15, then high_8 to high_15, then low_8 to low_15, hold sum_n at n, high_n at n + 8 and low_n at n + 16; sum_0 goes unused.
+	// Writes limbs i and i + 8 of y in the form that Product takes: (low_n, high_n) for n ≥ 8 is y_(n−8) = y_lo,(n−8) + φ·y_hi,(n−8), and for n < 8 it is φ·y_n = y_hi,n + φ·(y_lo,n + y_hi,n), as φ² ≡ φ + 1;
+	// sum_n = low_n + high_n.
+	// As high_n is sum_(n+8) and low_n is high_(n+8) for n < 8, the 32 vectors at Right, sum_0 to sum_7, then sum_8 to sum_15, then high_8 to high_15, then low_8 to low_15, hold sum_n at n, high_n at n + 8 and low_n at n + 16;
+	// sum_0 goes unused.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void PrepareRight(ref TVector operands, nint i, TVector low, TVector high)
 	{

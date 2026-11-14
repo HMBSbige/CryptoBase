@@ -9,7 +9,8 @@ using static CryptoBase.Tests.Signatures.Rsa.Arithmetic.RsaArithmeticTestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// ProbablePrime.Search on scripted candidates, which pass or fail the tests before Miller-Rabin, or are drawn again, as the script says: whether the platform tests two at once or not, the prime it keeps and the failures that make it give up are those of testing one candidate after the other. Two lengths, of which every platform takes pairs at one at least and some take none at one.
+// ProbablePrime.Search on scripted candidates, which pass or fail the tests before Miller-Rabin, or are drawn again, as the script says: whether the platform tests two at once or not, the prime it keeps and the failures that make it give up are those of testing one candidate after the other.
+// Two lengths, of which every platform takes pairs at one at least and some take none at one.
 internal class ProbablePrimeTest
 {
 	// ProbablePrime.Candidate, which the tests cannot name.
@@ -130,7 +131,8 @@ internal class ProbablePrimeTest
 		}
 	}
 
-	// A search goes on from one prime to the next with the contexts of its slots, which take every candidate in turn, and passes the prime before to the source. Each search takes candidates of its own; the one after its prime may be drawn while the prime is pending, and is not kept.
+	// A search goes on from one prime to the next with the contexts of its slots, which take every candidate in turn, and passes the prime before to the source.
+	// Each search takes candidates of its own; the one after its prime may be drawn while the prime is pending, and is not kept.
 	[Test]
 	[MethodDataSource(nameof(Lengths))]
 	[SuppressMessage("ReSharper", "AccessToModifiedClosure", Justification = "Source reads the candidates and the prime that each turn of the loop sets.")]
@@ -211,7 +213,8 @@ internal class ProbablePrimeTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// A run of Appendix A.1.3 that reaches a limit returns FAILURE, here at q, and Generate runs it again from the start with a new source, up to four runs: the next run searches p anew, and the search of q takes the p of its own run. After the fourth, Generate throws, with p and q zero.
+	// A run of Appendix A.1.3 that reaches a limit returns FAILURE, here at q, and Generate runs it again from the start with a new source, up to four runs: the next run searches p anew, and the search of q takes the p of its own run.
+	// After the fourth, Generate throws, with p and q zero.
 	[Test]
 	[Arguments(0)]
 	[Arguments(1)]

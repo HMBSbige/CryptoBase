@@ -125,7 +125,8 @@ internal readonly struct SM9VectorAvx2 : ISM9Vector<SM9VectorAvx2>
 		return new SM9VectorAvx2(Vector256.ConditionalSelect(mask._value, whenSet._value, whenClear._value));
 	}
 
-	// Each half of the destination row from the four vectors of the two rows: one vpermd of each source it takes, blended by vpblendd. The pattern is a constant, so the indices, the masks and which sources a half takes all fold.
+	// Each half of the destination row from the four vectors of the two rows: one vpermd of each source it takes, blended by vpblendd.
+	// The pattern is a constant, so the indices, the masks and which sources a half takes all fold.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Permute(ref readonly ulong first, ref readonly ulong second, ref ulong destination, ulong pattern)
 	{

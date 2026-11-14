@@ -3,10 +3,14 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// The field of p = 2^255 − 19 in five unsaturated limbs, value Σ L_i·2^(51i). As 2^255 ≡ 19 (mod p), what carries out of limb 4 comes back into limb 0 times 19.
-// An element is tight if limb 0 is below 2^51 + 2^18 and limbs 1 to 4 below 2^51 + 2^13. Every member that gives an element gives a tight one, and the constants are tight, except Add, Subtract and SubtractFromFourP, which do not carry, and Reduce, which gives the canonical element: limbs below 2^51 and a value below p. Every limb of a tight element is below that of 2p, so Subtract may take it as its right operand.
+// The field of p = 2^255 − 19 in five unsaturated limbs, value Σ L_i·2^(51i).
+// As 2^255 ≡ 19 (mod p), what carries out of limb 4 comes back into limb 0 times 19.
+// An element is tight if limb 0 is below 2^51 + 2^18 and limbs 1 to 4 below 2^51 + 2^13.
+// Every member that gives an element gives a tight one, and the constants are tight, except Add, Subtract and SubtractFromFourP, which do not carry, and Reduce, which gives the canonical element: limbs below 2^51 and a value below p.
+// Every limb of a tight element is below that of 2p, so Subtract may take it as its right operand.
 // The callers of Add, Subtract and SubtractFromFourP keep the limbs within what the next operation takes: below 2^54 for Multiply, Square, MultiplySmall and PowerP58, and below 2^63 for the members that reduce first, which are Carry, Reduce, the zero and sign tests, the inversions and the encodings.
-// No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
+// No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
+// Any result may be the same variable as an input.
 internal struct Field25519
 {
 	internal ulong L0;
@@ -34,7 +38,8 @@ internal struct Field25519
 
 	private static ReadOnlySpan<ulong> SqrtMinusOneLimbs => [0x00061B274A0EA0B0, 0x0000D5A5FC8F189D, 0x0007EF5E9CBD0C60, 0x00078595A6804C9E, 0x0002B8324804FC1D];
 
-	// Reads 32 little-endian bytes without bit 255, which X25519 ignores and the Edwards encoding uses for the sign of x. A value of p or more is kept as it is, with limbs below 2^51; the arithmetic reduces it.
+	// Reads 32 little-endian bytes without bit 255, which X25519 ignores and the Edwards encoding uses for the sign of x.
+	// A value of p or more is kept as it is, with limbs below 2^51; the arithmetic reduces it.
 	internal static void FromBytes(ReadOnlySpan<byte> source, out Field25519 result)
 	{
 		Debug.Assert(source.Length is ByteLength);
@@ -87,7 +92,8 @@ internal struct Field25519
 		result.L4 = w3 >> 12;
 	}
 
-	// For limbs below 2^51, as FromBytes gives: ulong.MaxValue if the value is below p and 0 otherwise. The values from p to 2^255 − 1 are those to which adding 19 carries out of bit 254.
+	// For limbs below 2^51, as FromBytes gives: ulong.MaxValue if the value is below p and 0 otherwise.
+	// The values from p to 2^255 − 1 are those to which adding 19 carries out of bit 254.
 	internal static ulong IsBelowModulus(in Field25519 value)
 	{
 		ulong carry = value.L0 + 19 >> 51;
@@ -104,12 +110,16 @@ internal struct Field25519
 		MultiplyCore(in left, in right, out result, true);
 	}
 
-	// Multiply inlined, for formulas that keep the values between their products in registers. With a = x_i·2^6 and b = y_j·2^7, a·b = x_i·y_j·2^13 splits at bit 51 of x_i·y_j: the high word is x_i·y_j >> 51 and the low word is (x_i·y_j mod 2^51)·2^13. For limbs below 2^54 the high words are below 2^57, so the columns t_k of the product, each a sum of at most nine halves, stay below 5·2^57 + 2^53, and the folded t_k + 19·t_(k+5) below 97·2^57 < 2^64.
+	// Multiply inlined, for formulas that keep the values between their products in registers.
+	// With a = x_i·2^6 and b = y_j·2^7, a·b = x_i·y_j·2^13 splits at bit 51 of x_i·y_j: the high word is x_i·y_j >> 51 and the low word is (x_i·y_j mod 2^51)·2^13.
+	// For limbs below 2^54 the high words are below 2^57, so the columns t_k of the product, each a sum of at most nine halves, stay below 5·2^57 + 2^53, and the folded t_k + 19·t_(k+5) below 97·2^57 < 2^64.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	[SuppressMessage("ReSharper", "ArrangeRedundantParentheses", Justification = "The parentheses balance the column sums, and the JIT adds in the order they give.")]
 	internal static void MultiplyCore(in Field25519 left, in Field25519 right, out Field25519 result, bool outOfLine = false)
 	{
-		// The product inlines only where its high word is one instruction, mulx or umulh. Elsewhere the inlined products use up the inlining budget of the formula, which then spills and calls its other helpers, even from .NET 11 on, where the high word is a mul on x64; so the formulas call Multiply there, whose copy alone sets outOfLine.
+		// The product inlines only where its high word is one instruction, mulx or umulh.
+		// Elsewhere the inlined products use up the inlining budget of the formula, which then spills and calls its other helpers, even from .NET 11 on, where the high word is a mul on x64;
+		// so the formulas call Multiply there, whose copy alone sets outOfLine.
 		// The test names the instruction sets rather than a property so that the JIT folds it before it reads the call, and the address of result never reaches a call where the product is inlined.
 		if (!outOfLine && !(Bmi2.X64.IsSupported || ArmBase.Arm64.IsSupported))
 		{
@@ -162,7 +172,8 @@ internal struct Field25519
 		result = t;
 	}
 
-	// Square inlined where MultiplyCore is, and with outOfLine set; as MultiplyCore with right = value, a square takes a_i·b_i, and the doubled cross product 2·x_i·x_j takes b_i·b_j = x_i·x_j·2^14. The high words of those are below 2^58, and the columns keep the bounds of Multiply.
+	// Square inlined where MultiplyCore is, and with outOfLine set; as MultiplyCore with right = value, a square takes a_i·b_i, and the doubled cross product 2·x_i·x_j takes b_i·b_j = x_i·x_j·2^14.
+	// The high words of those are below 2^58, and the columns keep the bounds of Multiply.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	[SuppressMessage("ReSharper", "ArrangeRedundantParentheses", Justification = "The parentheses balance the column sums, and the JIT adds in the order they give.")]
 	internal static void SquareCore(in Field25519 value, out Field25519 result, bool outOfLine = false)
@@ -196,7 +207,8 @@ internal struct Field25519
 		Carry(t0 + 19 * t5, t1 + 19 * t6, t2 + 19 * t7, t3 + 19 * t8, t4 + 19 * t9, out result);
 	}
 
-	// value·c for c below 2^17 and limbs below 2^54. Each limb times c splits at bit 51 as in Multiply, into a part below 2^51 and one below 2^20, the part above limb 4 back at limb 0 times 19; one carry then leaves the limbs tight.
+	// value·c for c below 2^17 and limbs below 2^54.
+	// Each limb times c splits at bit 51 as in Multiply, into a part below 2^51 and one below 2^20, the part above limb 4 back at limb 0 times 19; one carry then leaves the limbs tight.
 	internal static void MultiplySmall(in Field25519 value, uint c, out Field25519 result)
 	{
 		Debug.Assert(c < 1u << 17);
@@ -262,7 +274,8 @@ internal struct Field25519
 		Carry(in difference, out result);
 	}
 
-	// Any limbs to a tight element: each limb keeps its low 51 bits and gains the carry out of the one below, limb 0 that of limb 4 times 19. The carries are below 2^13, so limb 0 ends below 2^51 + 19·2^13 and the others below 2^51 + 2^13.
+	// Any limbs to a tight element: each limb keeps its low 51 bits and gains the carry out of the one below, limb 0 that of limb 4 times 19.
+	// The carries are below 2^13, so limb 0 ends below 2^51 + 19·2^13 and the others below 2^51 + 2^13.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Carry(in Field25519 value, out Field25519 result)
 	{
@@ -278,7 +291,9 @@ internal struct Field25519
 		result.L4 = (value.L4 & Mask) + c3;
 	}
 
-	// The canonical value. Carry leaves a tight element, below 2p, and q = 1 just if it is p or more, which is where adding 19 carries out of bit 254 through the limbs. Adding 19q and dropping bit 255 then subtracts qp: the sum is below 2^256, and its bit 255 is q.
+	// The canonical value.
+	// Carry leaves a tight element, below 2p, and q = 1 just if it is p or more, which is where adding 19 carries out of bit 254 through the limbs.
+	// Adding 19q and dropping bit 255 then subtracts qp: the sum is below 2^256, and its bit 255 is q.
 	internal static void Reduce(in Field25519 value, out Field25519 result)
 	{
 		Carry(in value, out Field25519 t);
@@ -413,7 +428,10 @@ internal struct Field25519
 		t2.ZeroMemory();
 	}
 
-	// Sets result to an r with v·r² = u and returns ulong.MaxValue if there is one; returns 0 otherwise. For v ≠ 0 that is whether u/v is a square; for v = 0 only u = 0 has one, the root 0. u must be tight. As p ≡ 5 (mod 8), r = u·v³·(u·v⁷)^((p − 5)/8) = (u/v)^((p + 3)/8) has r⁴ = (u/v)²·(u/v)^((p − 1)/2), so for a square u/v, v·r² is u or −u, and in the second case r·sqrt(−1) is a root.
+	// Sets result to an r with v·r² = u and returns ulong.MaxValue if there is one; returns 0 otherwise.
+	// For v ≠ 0 that is whether u/v is a square; for v = 0 only u = 0 has one, the root 0.
+	// u must be tight.
+	// As p ≡ 5 (mod 8), r = u·v³·(u·v⁷)^((p − 5)/8) = (u/v)^((p + 3)/8) has r⁴ = (u/v)²·(u/v)^((p − 1)/2), so for a square u/v, v·r² is u or −u, and in the second case r·sqrt(−1) is a root.
 	internal static ulong SqrtRatio(in Field25519 u, in Field25519 v, out Field25519 result)
 	{
 		Square(in v, out Field25519 v3);
@@ -490,7 +508,8 @@ internal struct Field25519
 			return Math.BigMul(a, b, out _);
 		}
 
-		// Math.BigMul would call its software fallback here rather than inline it. Both a and b are below 2^62, so the two cross products of their 32-bit halves and the carry out of the low product sum below 2^64 without a carry.
+		// Math.BigMul would call its software fallback here rather than inline it.
+		// Both a and b are below 2^62, so the two cross products of their 32-bit halves and the carry out of the low product sum below 2^64 without a carry.
 		ulong aHigh = a >> 32;
 		ulong aLow = (uint)a;
 		ulong bHigh = b >> 32;

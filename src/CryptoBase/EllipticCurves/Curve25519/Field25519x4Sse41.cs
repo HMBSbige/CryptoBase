@@ -2,7 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// The limbs of Field25519x4Avx2 in 128-bit vectors, lanes A and B in one pair of ten and lanes C and D in another, with the same bounds. A product is two products of two lanes, each gathered row by row as in Field25519x4Avx2.Multiply.
+// The limbs of Field25519x4Avx2 in 128-bit vectors, lanes A and B in one pair of ten and lanes C and D in another, with the same bounds.
+// A product is two products of two lanes, each gathered row by row as in Field25519x4Avx2.Multiply.
 // Any result may be the same variable as an input: each member reads a limb of its inputs before it writes that limb of a result.
 internal struct Field25519x4Sse41 : IField25519x4<Field25519x4Sse41>
 {
@@ -461,7 +462,8 @@ internal struct Field25519x4Sse41 : IField25519x4<Field25519x4Sse41>
 			result.L9 = left.L9 + right.L9;
 		}
 
-		// The columns of Field25519x4Avx2.Multiply, with the same bounds, gathered row by row: limb j of the right operand meets every limb of the left one, so each row needs y_j only times 1, 2, 19 or 38, which takes the doubling of two odd limbs and the 19 of a column of 10 or more. 38·y_j for an odd j stays below 38·3.02·2^25 < 2^32.
+		// The columns of Field25519x4Avx2.Multiply, with the same bounds, gathered row by row: limb j of the right operand meets every limb of the left one, so each row needs y_j only times 1, 2, 19 or 38, which takes the doubling of two odd limbs and the 19 of a column of 10 or more.
+		// 38·y_j for an odd j stays below 38·3.02·2^25 < 2^32.
 		[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 		internal static void Multiply(in Pair left, in Pair right, out Pair result)
 		{
@@ -605,7 +607,9 @@ internal struct Field25519x4Sse41 : IField25519x4<Field25519x4Sse41>
 			Reduce(z0, z1, z2, z3, z4, z5, z6, z7, z8, z9, out result);
 		}
 
-		// The square row by row, limb j against limbs i ≤ j: a product with i < j counts twice, and the doubled factor goes on x_i where 38·x_j or 76·x_j would not fit 32 bits. For m ≤ 2.01 every multiplier stays below 2^31.3 and the columns are those of the square of Field25519x4Avx2. Where negateSecond is set, the second lane is subtracted from 2^37·p.
+		// The square row by row, limb j against limbs i ≤ j: a product with i < j counts twice, and the doubled factor goes on x_i where 38·x_j or 76·x_j would not fit 32 bits.
+		// For m ≤ 2.01 every multiplier stays below 2^31.3 and the columns are those of the square of Field25519x4Avx2.
+		// Where negateSecond is set, the second lane is subtracted from 2^37·p.
 		[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 		internal static void Square(in Pair value, bool negateSecond, out Pair result)
 		{
@@ -724,7 +728,8 @@ internal struct Field25519x4Sse41 : IField25519x4<Field25519x4Sse41>
 			Reduce(M(value.L0, c), M(value.L1, c), M(value.L2, c), M(value.L3, c), M(value.L4, c), M(value.L5, c), M(value.L6, c), M(value.L7, c), M(value.L8, c), M(value.L9, c), out result);
 		}
 
-		// Carries columns below 2^63, which leaves room for the carries a column takes before it is masked, to a reduced value in two chains, from limb 0 and from limb 4, that run side by side, with the carry out of limb 9, below 2^39, taken times 19 by shifts. Limb 1 takes the carry out of limb 0 last and ends below 2^25 + 2^17.3, limb 5 below 2^25 + 2^13 + 1 and the others below their nominal size, within the bounds that Field25519x4Avx2 gives a reduced value.
+		// Carries columns below 2^63, which leaves room for the carries a column takes before it is masked, to a reduced value in two chains, from limb 0 and from limb 4, that run side by side, with the carry out of limb 9, below 2^39, taken times 19 by shifts.
+		// Limb 1 takes the carry out of limb 0 last and ends below 2^25 + 2^17.3, limb 5 below 2^25 + 2^13 + 1 and the others below their nominal size, within the bounds that Field25519x4Avx2 gives a reduced value.
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void Reduce(Vector128<ulong> z0, Vector128<ulong> z1, Vector128<ulong> z2, Vector128<ulong> z3, Vector128<ulong> z4, Vector128<ulong> z5, Vector128<ulong> z6, Vector128<ulong> z7, Vector128<ulong> z8, Vector128<ulong> z9, out Pair result)
 		{

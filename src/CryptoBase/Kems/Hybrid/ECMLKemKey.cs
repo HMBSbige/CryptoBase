@@ -213,7 +213,8 @@ internal struct ECMLKemKey<TCurve, TField, TOrder, TParameters>
 		KemOutputs.ThrowIfInvalid(ciphertext, CiphertextLength, sharedSecret, SharedSecretLength);
 	}
 
-	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged. Q was checked to be on the curve when it was imported, and the ephemeral key lies in [1, n − 1].
+	// Called after the ML-KEM parts, which throw before writing if drawing m fails, so that a failure leaves both buffers unchanged.
+	// Q was checked to be on the curve when it was imported, and the ephemeral key lies in [1, n − 1].
 	private readonly void WriteECParts(in FieldElement<TOrder> ephemeral, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		ECGroup<TCurve, TField, TOrder>.MultiplyEncodeExportX(in _ecKey.PublicPoint, in ephemeral, ciphertext.Slice(0, ECPublicKeyLength), sharedSecret.Slice(0, ECSharedSecretLength));

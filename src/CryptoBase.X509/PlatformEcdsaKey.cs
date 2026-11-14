@@ -7,7 +7,8 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The key must be on the curve P-256, P-384 or P-521 and hold the private key; the platform cannot report a missing private key, so <see cref="Sign" /> then throws <see cref="CryptographicException" />.
+/// The key must be on the curve P-256, P-384 or P-521 and hold the private key;
+/// the platform cannot report a missing private key, so <see cref="Sign" /> then throws <see cref="CryptographicException" />.
 /// The instance supports <see cref="SignatureAlgorithm.EcdsaSha256" />, <see cref="SignatureAlgorithm.EcdsaSha384" /> and <see cref="SignatureAlgorithm.EcdsaSha512" />, and signs and verifies in DER through the platform.
 /// Verification uses a copy of the public key, so it does not reach the key store or device, and it accepts only strict DER: the platform alone also accepts an INTEGER without the zero byte that its sign needs.
 /// </para>

@@ -2,8 +2,16 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// k·P and u1·G + u2·Q for one point at a time on the four lanes of SM2Field29x4Avx2, which AVX2 runs, and AVX-512 for u1·G + u2·Q and the doublings, the table and the sum of SM2OctoFormulas: each round of a formula takes up to four products that need only those of the rounds before, one in each lane. Doubling for a = −3 with δ = Z², γ = Y² and α = 3(X − δ)(X + δ) gives X3 = α² − 8Xγ, Y3 = γ(12αX − 8γ) − α³, Z3 = 2YZ and δ3 = 4γδ, from which α3 needs one more product; a state carries α with the point, so that two doublings take five rounds and a window of ECGroup.Multiply, five doublings and an addition whose last round also gives the α of the next window, sixteen. A state holds P = [α, Y, X, Z] and Q = [X, δ, ·, α], an entry EA = [Z², X, Y, Z] and EB = [X, Z², Z³, Z³]; [a, b, c, d] holds a in lane 0 to d in lane 3, lanes 0 and 1 and lanes 2 and 3 sharing a half of 128 bits, which the unpacks and Shuffle stay within and Permute4x64 crosses, and a lane that no later step reads may hold anything.
-// Bounds, with those of SM2Field29: a state has X below 2p in limbs below 3·2^29 + 2^22, limb 8 below 2^24 + 2^5, Y below 4p in limbs below 2^30, limb 8 below 2^26 + 2, Z below 2.7p in limbs below 2^30 + 2^8, δ a product below 1.25p and α a product below 2.9p, or the coordinates of an entry: X, Y and Z as Reduce leaves them, Y negated as 4p − Y or not, and Z² and Z³ products, which joining limbs 2m and 2m + 1 into one ulong and splitting them again leaves in limbs at most 1 above those of a product. Every product stays below 3.2p, its limb 8 below 2^26 − 2, so that every subtrahend, a product, a sum of up to three products or a coordinate that Reduce left, has limbs at most those of the 4p, 8p or 12p added to it, and a product plus 4p less a product has limbs below 3·2^29 + 2^6. Such a difference goes into a product only against a product, a coordinate that Reduce left or a value carried by one step, each limb but limb 8 keeping its low 29 bits and passing the rest to the limb above, which leaves limbs below 2^29 + 2^4 for limbs below 2^33. A fold takes a difference a + 4p − b of products, a value below 7.2p, with FourPFold2 and FourPFold3 in place of limbs 2 and 3 of the 4p, to that value less h·p for h = L8 >> 24: it takes h·2^24 off limb 8 and h·2^6 off limb 2, which FourPFold2 keeps at least 2^29 + 190 before, and adds h to limb 0, h·2^9 to limb 3 and h·2^21 to limb 7, whose limb of 4p is 2^23 below the others, so that limb 8 is below 2^24, every limb below 3·2^29 + 2^23, and below 3·2^29 + 2^22 for the values below 5.3p that the folds of X take, and the value below p + 2^235. With the bounds of each formula below, the limbs of the operands of every product have bounds whose product is below 7.1·2^58, as Multiply takes them, and every input of Reduce has limbs below 7·2^29 + 2^6.
+// k·P and u1·G + u2·Q for one point at a time on the four lanes of SM2Field29x4Avx2, which AVX2 runs, and AVX-512 for u1·G + u2·Q and the doublings, the table and the sum of SM2OctoFormulas: each round of a formula takes up to four products that need only those of the rounds before, one in each lane.
+// Doubling for a = −3 with δ = Z², γ = Y² and α = 3(X − δ)(X + δ) gives X3 = α² − 8Xγ, Y3 = γ(12αX − 8γ) − α³, Z3 = 2YZ and δ3 = 4γδ, from which α3 needs one more product;
+// a state carries α with the point, so that two doublings take five rounds and a window of ECGroup.Multiply, five doublings and an addition whose last round also gives the α of the next window, sixteen.
+// A state holds P = [α, Y, X, Z] and Q = [X, δ, ·, α], an entry EA = [Z², X, Y, Z] and EB = [X, Z², Z³, Z³];
+// [a, b, c, d] holds a in lane 0 to d in lane 3, lanes 0 and 1 and lanes 2 and 3 sharing a half of 128 bits, which the unpacks and Shuffle stay within and Permute4x64 crosses, and a lane that no later step reads may hold anything.
+// Bounds, with those of SM2Field29: a state has X below 2p in limbs below 3·2^29 + 2^22, limb 8 below 2^24 + 2^5, Y below 4p in limbs below 2^30, limb 8 below 2^26 + 2, Z below 2.7p in limbs below 2^30 + 2^8, δ a product below 1.25p and α a product below 2.9p, or the coordinates of an entry: X, Y and Z as Reduce leaves them, Y negated as 4p − Y or not, and Z² and Z³ products, which joining limbs 2m and 2m + 1 into one ulong and splitting them again leaves in limbs at most 1 above those of a product.
+// Every product stays below 3.2p, its limb 8 below 2^26 − 2, so that every subtrahend, a product, a sum of up to three products or a coordinate that Reduce left, has limbs at most those of the 4p, 8p or 12p added to it, and a product plus 4p less a product has limbs below 3·2^29 + 2^6.
+// Such a difference goes into a product only against a product, a coordinate that Reduce left or a value carried by one step, each limb but limb 8 keeping its low 29 bits and passing the rest to the limb above, which leaves limbs below 2^29 + 2^4 for limbs below 2^33.
+// A fold takes a difference a + 4p − b of products, a value below 7.2p, with FourPFold2 and FourPFold3 in place of limbs 2 and 3 of the 4p, to that value less h·p for h = L8 >> 24: it takes h·2^24 off limb 8 and h·2^6 off limb 2, which FourPFold2 keeps at least 2^29 + 190 before, and adds h to limb 0, h·2^9 to limb 3 and h·2^21 to limb 7, whose limb of 4p is 2^23 below the others, so that limb 8 is below 2^24, every limb below 3·2^29 + 2^23, and below 3·2^29 + 2^22 for the values below 5.3p that the folds of X take, and the value below p + 2^235.
+// With the bounds of each formula below, the limbs of the operands of every product have bounds whose product is below 7.1·2^58, as Multiply takes them, and every input of Reduce has limbs below 7·2^29 + 2^6.
 internal static class SM2QuadFormulas
 {
 	// The windows of ECGroup.Multiply, whose digits Recode gives.
@@ -25,7 +33,9 @@ internal static class SM2QuadFormulas
 
 	private const int LaneCount = 4;
 
-	// The windows of ECGroup.Multiply on the table of BuildTable: a window is two DoubleTwice and a DoubleAdd. The points of an addition are neither equal nor opposite except where the masks cover them and in window 0 for k = n − 6, where they are equal and the double takes the place of the sum. Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
+	// The windows of ECGroup.Multiply on the table of BuildTable: a window is two DoubleTwice and a DoubleAdd.
+	// The points of an addition are neither equal nor opposite except where the masks cover them and in window 0 for k = n − 6, where they are equal and the double takes the place of the sum.
+	// Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
 	[SkipLocalsInit]
 	internal static void Multiply(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result)
 	{
@@ -44,7 +54,8 @@ internal static class SM2QuadFormulas
 		Unsafe.SkipInit(out SM2QuadState twice);
 		Select(table, digits[^1], packed, negative, out entry);
 		FromEntry(in entry, out state);
-		// A lane mask is set in every lane. The sum is the point at infinity just while every digit so far is 0, which the masks track instead of Z.
+		// A lane mask is set in every lane.
+		// The sum is the point at infinity just while every digit so far is 0, which the masks track instead of Z.
 		infinity.Fill(ZeroMask((ulong)digits[^1]));
 		ReadOnlySpan<ulong> limbs = FieldElement<SM2Order>.GetLimbs(in scalar);
 		ReadOnlySpan<ulong> n = SM2Order.Modulus;
@@ -85,7 +96,8 @@ internal static class SM2QuadFormulas
 		twice.ZeroMemory();
 	}
 
-	// Writes j·P to entry j − 1 of the table in the layout of SM2PairFormulas.BuildTable: 2j·P = 2·(j·P) by DoubleOnce and (2j + 1)·P = 2j·P + P by AddState, an addition of points neither equal nor opposite, as 2j ± 1 < n. Neither the time nor the addresses depend on P, and the intermediates are cleared.
+	// Writes j·P to entry j − 1 of the table in the layout of SM2PairFormulas.BuildTable: 2j·P = 2·(j·P) by DoubleOnce and (2j + 1)·P = 2j·P + P by AddState, an addition of points neither equal nor opposite, as 2j ± 1 < n.
+	// Neither the time nor the addresses depend on P, and the intermediates are cleared.
 	[SkipLocalsInit]
 	internal static void BuildTable(in AffinePoint<SM2Field52> point, Span<ulong> table)
 	{
@@ -118,7 +130,8 @@ internal static class SM2QuadFormulas
 		entry.ZeroMemory();
 	}
 
-	// Four states as entries of EntryLength limbs, with X, Y and Z as Reduce leaves them, Z² the δ of the state and Z³ = Z·δ, a product for all four in one round. Joining limbs 2m and 2m + 1 of a product adds the bits of limb 2m from 29 up to limb 2m + 1, at most 1, which splitting them again leaves there.
+	// Four states as entries of EntryLength limbs, with X, Y and Z as Reduce leaves them, Z² the δ of the state and Z³ = Z·δ, a product for all four in one round.
+	// Joining limbs 2m and 2m + 1 of a product adds the bits of limb 2m from 29 up to limb 2m + 1, at most 1, which splitting them again leaves there.
 	[SkipLocalsInit]
 	internal static void Pack(Span<SM2QuadState> states, Span<ulong> destination)
 	{
@@ -362,7 +375,14 @@ internal static class SM2QuadFormulas
 		DoubleTwice(ref state, 1);
 	}
 
-	// 4^count·point, each 4·point in five rounds, all on the same scratch: E0 = [A, γ, B, H] = [α·α, Y·Y, α·X, Y·Z]; E1 = [C8, G4, D, F] = [X·8γ, δ·4γ, T·4γ, α·A] for T = 3B − 2γ + 8p, which give X′ = A − C8 + 4p and Y′ = D − F + 4p, both folded, Z′ = 2H and δ′ = G4; O0 = [α′, ·, γ′, H′] = [(X′ − δ′ + 4p)·3(X′ + δ′), ·, Y′·Y′, Y′·Z′]; O1 = [B′, A′, C8′, G4′] = [α′·X′, α′·α′, 8γ′·X′, 4γ′·δ′], which give X″ = A′ − C8′ + 4p, folded, and δ″ = G4′; and O2 = [D′, F′, α″, ·] = [T′·4γ′, A′·α′, (X″ − δ″ + 4p)·3(X″ + δ″), ·] for T′ = 3B′ − 2γ′ + 8p, which give Y″ = D′ − F′ + 4p, folded and carried, and Z″ = 2H′. The right of E1, [8γ, 4γ, 4γ, A], of O0, [3(X′ + δ′), X′, Y′, Z′], and of O2, [4γ′, α′, 3(X″ + δ″), 4γ′], and the left of O1, [α′, α′, 8γ′, 4γ′], go in carried, in limbs below 2^29 + 2^4, against T and T′ in limbs below 7·2^29 + 2^8, X − δ + 4p in limbs below 5·2^29 + 2^22 and the folded X′ and Y′. A is below 1.3p, B below 1.2p, C8 below 1.8p, D below 3.2p, F below 1.2p, G4 below 1.25p and H below 1.3p, so the folds take values below 7.2p, those of X below 5.3p, and α′ and α″ are below 2.1p. The point at infinity gives some point, which the masks discard.
+	// 4^count·point, each 4·point in five rounds, all on the same scratch: E0 = [A, γ, B, H] = [α·α, Y·Y, α·X, Y·Z];
+	// E1 = [C8, G4, D, F] = [X·8γ, δ·4γ, T·4γ, α·A] for T = 3B − 2γ + 8p, which give X′ = A − C8 + 4p and Y′ = D − F + 4p, both folded, Z′ = 2H and δ′ = G4;
+	// O0 = [α′, ·, γ′, H′] = [(X′ − δ′ + 4p)·3(X′ + δ′), ·, Y′·Y′, Y′·Z′];
+	// O1 = [B′, A′, C8′, G4′] = [α′·X′, α′·α′, 8γ′·X′, 4γ′·δ′], which give X″ = A′ − C8′ + 4p, folded, and δ″ = G4′;
+	// and O2 = [D′, F′, α″, ·] = [T′·4γ′, A′·α′, (X″ − δ″ + 4p)·3(X″ + δ″), ·] for T′ = 3B′ − 2γ′ + 8p, which give Y″ = D′ − F′ + 4p, folded and carried, and Z″ = 2H′.
+	// The right of E1, [8γ, 4γ, 4γ, A], of O0, [3(X′ + δ′), X′, Y′, Z′], and of O2, [4γ′, α′, 3(X″ + δ″), 4γ′], and the left of O1, [α′, α′, 8γ′, 4γ′], go in carried, in limbs below 2^29 + 2^4, against T and T′ in limbs below 7·2^29 + 2^8, X − δ + 4p in limbs below 5·2^29 + 2^22 and the folded X′ and Y′.
+	// A is below 1.3p, B below 1.2p, C8 below 1.8p, D below 3.2p, F below 1.2p, G4 below 1.25p and H below 1.3p, so the folds take values below 7.2p, those of X below 5.3p, and α′ and α″ are below 2.1p.
+	// The point at infinity gives some point, which the masks discard.
 	[SkipLocalsInit]
 	internal static void DoubleTwice(ref SM2QuadState state, int count)
 	{
@@ -443,7 +463,9 @@ internal static class SM2QuadFormulas
 			Vector256<ulong> m8 = MaskedBlend3(MaskedBlend0(w8, t8 + (t8 << 1)), first.L8 << 1);
 			right.L8 = m8 + (m7 >> SM2Field29.Bits);
 			SM2Field29x4Avx2.Multiply(in left, in right, out third);
-			// gamma and fifth take the buffer of first, fourth that of second and carried that of left, each once no later step reads what it held, so that the frame stays under a page. gamma holds [α′, α′, 8γ′, 4γ′] as O2 takes it, and carried the same carried for O1. The right of O1, [X′, α′, X′, δ′], takes X′ from lane 1 of the left of O0 and δ′ from lane 1 of second.
+			// gamma and fifth take the buffer of first, fourth that of second and carried that of left, each once no later step reads what it held, so that the frame stays under a page.
+			// gamma holds [α′, α′, 8γ′, 4γ′] as O2 takes it, and carried the same carried for O1.
+			// The right of O1, [X′, α′, X′, δ′], takes X′ from lane 1 of the left of O0 and δ′ from lane 1 of second.
 			ref SM2Field29x4Avx2 gamma = ref first;
 			ref SM2Field29x4Avx2 carried = ref left;
 			Vector256<ulong> d0 = Avx2.UnpackLow(third.L0, third.L0);
@@ -695,7 +717,15 @@ internal static class SM2QuadFormulas
 	}
 
 
-	// 2·point + entry in six rounds, by the doubling of DoubleTwice and the formulas of ECFormulas.AddDistinct without the factors 2 and 4 of R, I and Z3, for an entry neither equal nor opposite to the double, and neither of them the point at infinity: such lanes give some point, which the masks discard. After E0 and E1: A0 = [U1, U2, K, L] = [X1·Z2², δ1·X2, Z1·Y2, Z1·Z2]; A1 = [Z3, HH, S2, S1] = [L·H, H·H, K·δ1, Y1·Z2³] for H = U2 − U1 + 4p; A2 = [V, H3, RR, d3] = [U1·HH, H·HH, R·R, Z3·Z3] for R = S2 − S1 + 4p, which give X3 = RR − H3 − 2V + 12p, reduced, and W = V − X3 = 3V + H3 − RR + 4p; and A3 = [α, ·, M1, M2] = [(X − δ + 4p)·3(X + δ), ·, R·W, S1·H3], which gives Y3 = M1 − M2 + 4p, folded. X and δ are those of the entry where zeroMask is clear and infinityMask set, of the double where zeroMask is set and of the sum otherwise, and so are Y and Z, which go to the state carried. The right of A1, [H, H, δ1, Z2³], and of A3, [3(X + δ), ·, W, H3], and R in lane 2 of both operands of A2 go in carried, in limbs below 2^29 + 2^4: H and R have limbs below 3·2^29 + 2^6, W limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and X − δ + 4p limbs below 5·2^29 + 2^22. The products of A0 and S1 and S2 are below 1.4p, so H and R are below 5.1p; HH and RR are below 1.9p, H3 below 1.3p and V below 1.1p, so W is below 8.5p, M1 below 2.4p and the fold takes a value below 6.4p, and α is below 2.9p.
+	// 2·point + entry in six rounds, by the doubling of DoubleTwice and the formulas of ECFormulas.AddDistinct without the factors 2 and 4 of R, I and Z3, for an entry neither equal nor opposite to the double, and neither of them the point at infinity: such lanes give some point, which the masks discard.
+	// After E0 and E1: A0 = [U1, U2, K, L] = [X1·Z2², δ1·X2, Z1·Y2, Z1·Z2];
+	// A1 = [Z3, HH, S2, S1] = [L·H, H·H, K·δ1, Y1·Z2³] for H = U2 − U1 + 4p;
+	// A2 = [V, H3, RR, d3] = [U1·HH, H·HH, R·R, Z3·Z3] for R = S2 − S1 + 4p, which give X3 = RR − H3 − 2V + 12p, reduced, and W = V − X3 = 3V + H3 − RR + 4p;
+	// and A3 = [α, ·, M1, M2] = [(X − δ + 4p)·3(X + δ), ·, R·W, S1·H3], which gives Y3 = M1 − M2 + 4p, folded.
+	// X and δ are those of the entry where zeroMask is clear and infinityMask set, of the double where zeroMask is set and of the sum otherwise, and so are Y and Z, which go to the state carried.
+	// The right of A1, [H, H, δ1, Z2³], and of A3, [3(X + δ), ·, W, H3], and R in lane 2 of both operands of A2 go in carried, in limbs below 2^29 + 2^4: H and R have limbs below 3·2^29 + 2^6, W limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and X − δ + 4p limbs below 5·2^29 + 2^22.
+	// The products of A0 and S1 and S2 are below 1.4p, so H and R are below 5.1p;
+	// HH and RR are below 1.9p, H3 below 1.3p and V below 1.1p, so W is below 8.5p, M1 below 2.4p and the fold takes a value below 6.4p, and α is below 2.9p.
 	[SkipLocalsInit]
 	internal static void DoubleAdd(ref SM2QuadState state, in SM2QuadEntry entry, ref readonly ulong zeroMask, ref readonly ulong infinityMask)
 	{
@@ -1093,7 +1123,9 @@ internal static class SM2QuadFormulas
 		SM2Field29x4Avx2.ConditionalNegate(in negative[0], ref entry.EA);
 	}
 
-	// Entry index of the table, to result, or zeros for an index beyond it, in one scan that reads every limb of every entry once and keeps what matches the index under a mask, so that neither the time nor the addresses depend on the index; each entry takes one comparison for all its blocks. The last block of an entry overlaps the one before it, and both write the same values to the shared limbs.
+	// Entry index of the table, to result, or zeros for an index beyond it, in one scan that reads every limb of every entry once and keeps what matches the index under a mask, so that neither the time nor the addresses depend on the index;
+	// each entry takes one comparison for all its blocks.
+	// The last block of an entry overlaps the one before it, and both write the same values to the shared limbs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Lookup(ref readonly ulong table, uint index, ref ulong result)
 	{
@@ -1192,7 +1224,8 @@ internal static class SM2QuadFormulas
 		SM2Field29.ToField52(in p, 3, out result.Z);
 	}
 
-	// k·Q for a public k below n by the NAF of u2 in ECVariableTimeGroup.MultiplyAdd, with the odd multiples of Q that BuildOddMultiples gives. The time and the branches depend on k and Q.
+	// k·Q for a public k below n by the NAF of u2 in ECVariableTimeGroup.MultiplyAdd, with the odd multiples of Q that BuildOddMultiples gives.
+	// The time and the branches depend on k and Q.
 	[SkipLocalsInit]
 	internal static void MultiplyVariableTime(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result)
 	{
@@ -1257,7 +1290,8 @@ internal static class SM2QuadFormulas
 		}
 	}
 
-	// Sets bases[i] to 2^(wi)·P for w = width, each through ToJacobian, from one chain of doublings on the lanes; no base is the point at infinity, as 2^(wi) is no multiple of n. P is public, so nothing is cleared.
+	// Sets bases[i] to 2^(wi)·P for w = width, each through ToJacobian, from one chain of doublings on the lanes; no base is the point at infinity, as 2^(wi) is no multiple of n.
+	// P is public, so nothing is cleared.
 	internal static void FillBases(in AffinePoint<SM2Field52> point, int width, Span<JacobianPoint<SM2Field52>> bases)
 	{
 		ToEntry(in point, out SM2QuadEntry entry);
@@ -1282,7 +1316,9 @@ internal static class SM2QuadFormulas
 		}
 	}
 
-	// total + entry, where total may be the point at infinity, which infinity tells, and the points may be equal or opposite. Z3 = Z1·Z2·H of AddState is 0 just for H = 0, so for equal or opposite points, which its formulas do not cover; then the formulas of SM2Field52 tell them apart. The points are public, so the cases may branch.
+	// total + entry, where total may be the point at infinity, which infinity tells, and the points may be equal or opposite.
+	// Z3 = Z1·Z2·H of AddState is 0 just for H = 0, so for equal or opposite points, which its formulas do not cover; then the formulas of SM2Field52 tell them apart.
+	// The points are public, so the cases may branch.
 	[SkipLocalsInit]
 	private static void AddVariableTime(ref SM2QuadState total, ref bool infinity, in SM2QuadEntry entry)
 	{
@@ -1324,7 +1360,9 @@ internal static class SM2QuadFormulas
 		return zero.GetElement(3) is 0 || modulus.GetElement(3) is 0;
 	}
 
-	// state + entry in four rounds, the rounds A0 to A3 of DoubleAdd with the point of the state for the double and no masks, for an entry neither equal nor opposite to the point, and neither of them the point at infinity. With X1, Y1 and Z1 of the state within its bounds, the products of A0 and S1 and S2 are below 1.3p, the other bounds of DoubleAdd hold, and α, of X3 as Reduce leaves it, is below 2p; Y3, folded, and Z3 go to the state carried.
+	// state + entry in four rounds, the rounds A0 to A3 of DoubleAdd with the point of the state for the double and no masks, for an entry neither equal nor opposite to the point, and neither of them the point at infinity.
+	// With X1, Y1 and Z1 of the state within its bounds, the products of A0 and S1 and S2 are below 1.3p, the other bounds of DoubleAdd hold, and α, of X3 as Reduce leaves it, is below 2p;
+	// Y3, folded, and Z3 go to the state carried.
 	[SkipLocalsInit]
 	internal static void AddState(ref SM2QuadState state, in SM2QuadEntry entry)
 	{
@@ -1836,7 +1874,8 @@ internal static class SM2QuadFormulas
 		return Avx2.Blend(a.AsUInt32(), b.AsUInt32(), 0xF0).AsUInt64();
 	}
 
-	// Lane 0 of b, the others of a, as Blend0, but under a mask register where AVX-512 has one, which lets the JIT merge the blend into the operation that computes b. DoubleTwice and DoubleOnce take these; the larger formulas take the plain ones, whose smaller bodies keep them within the inlining budget of the JIT.
+	// Lane 0 of b, the others of a, as Blend0, but under a mask register where AVX-512 has one, which lets the JIT merge the blend into the operation that computes b.
+	// DoubleTwice and DoubleOnce take these; the larger formulas take the plain ones, whose smaller bodies keep them within the inlining budget of the JIT.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector256<ulong> MaskedBlend0(Vector256<ulong> a, Vector256<ulong> b)
 	{

@@ -1,7 +1,9 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// MontgomeryKernelAvx2 on two moduli at once (see IMontgomeryPairKernel): lane 2j of vector v holds digit 2v + j of the first and lane 2j + 1 digit 2v + j of the second, as the words of a pair lie, so that a digit moves by half a vector and every broadcast is one of 128 bits. The vectors do as much for two moduli as they would for one, and the two chains of the scalar side, from a sum to m and back, overlap.
-// Each chain keeps digits 0 to 2 of its modulus, so that the vectors leave out vector 0, and takes digit 3 from the upper half of vector 1. The window, the staging and the rows are those of MontgomeryKernelAvx2, with the words of the two moduli interleaved in each.
+// MontgomeryKernelAvx2 on two moduli at once (see IMontgomeryPairKernel): lane 2j of vector v holds digit 2v + j of the first and lane 2j + 1 digit 2v + j of the second, as the words of a pair lie, so that a digit moves by half a vector and every broadcast is one of 128 bits.
+// The vectors do as much for two moduli as they would for one, and the two chains of the scalar side, from a sum to m and back, overlap.
+// Each chain keeps digits 0 to 2 of its modulus, so that the vectors leave out vector 0, and takes digit 3 from the upper half of vector 1.
+// The window, the staging and the rows are those of MontgomeryKernelAvx2, with the words of the two moduli interleaved in each.
 internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryPairKernel where TWindow : struct, IAvx2Window<TWindow>
 {
 	private const int R = 51;
@@ -145,7 +147,8 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 	}
 
 
-	// The row of each digit: b of each modulus as a double, then the parts of lanes 0 to 3 of each that come from it, as MontgomeryPairKernelAvx512.Products takes them, interleaved likewise: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a2·b_i). Two digits of each modulus at a time.
+	// The row of each digit: b of each modulus as a double, then the parts of lanes 0 to 3 of each that come from it, as MontgomeryPairKernelAvx512.Products takes them, interleaved likewise: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a2·b_i).
+	// Two digits of each modulus at a time.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Products(ref ulong x, ref ulong y, int words, ref ulong rows, Vector256<double> high, Vector256<double> low)
 	{

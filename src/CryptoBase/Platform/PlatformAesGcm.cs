@@ -6,7 +6,9 @@ namespace CryptoBase.Platform;
 /// Provides AES-GCM authenticated encryption backed by <see cref="AesGcm" />.
 /// </summary>
 /// <remarks>
-/// Authentication failures return <see langword="false" /> and clear the output. Other platform failures throw, clear the output and dispose the failing instance. Disposal releases the keyed platform state and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// Authentication failures return <see langword="false" /> and clear the output.
+/// Other platform failures throw, clear the output and dispose the failing instance.
+/// Disposal releases the keyed platform state and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </remarks>
 public sealed class PlatformAesGcm : IAeadCipher<PlatformAesGcm>
 {

@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// An element C0 + C1·v + C2·v² of Fp6 as sums of products before reduction, with the rules of SM9Fp2Wide. The operations are not inlined: each touches sixty columns, and inlined into the operations of Fp12 they would leave those too long for the op cache.
+// An element C0 + C1·v + C2·v² of Fp6 as sums of products before reduction, with the rules of SM9Fp2Wide.
+// The operations are not inlined: each touches sixty columns, and inlined into the operations of Fp12 they would leave those too long for the op cache.
 internal struct SM9Fp6Wide
 {
 	internal SM9Fp2Wide C0;

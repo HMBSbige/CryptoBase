@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves;
 
-// LaneCount elements of the field of p, one in each lane, as SM2Field29 describes them, with the bounds stated there. A lane mask is LaneCount consecutive ulongs, each 0 or ulong.MaxValue, so that the scalar code that derives masks from digits writes them as it goes. None of the members branches on or indexes by a value, and any result may be the same variable as an input.
+// LaneCount elements of the field of p, one in each lane, as SM2Field29 describes them, with the bounds stated there.
+// A lane mask is LaneCount consecutive ulongs, each 0 or ulong.MaxValue, so that the scalar code that derives masks from digits writes them as it goes.
+// None of the members branches on or indexes by a value, and any result may be the same variable as an input.
 internal interface ISM2Field29Lanes<TSelf> where TSelf : unmanaged, ISM2Field29Lanes<TSelf>
 {
 	static abstract bool IsSupported { get; }

@@ -6,7 +6,8 @@ using static CryptoBase.Tests.EllipticCurves.Curve25519.Curve25519TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves.Curve25519;
 
-// Edwards25519 against Curve25519Reference. Points of every order go in, with Z other than 1, since the formulas are complete and the torsion points are where incomplete ones fail.
+// Edwards25519 against Curve25519Reference.
+// Points of every order go in, with Z other than 1, since the formulas are complete and the torsion points are where incomplete ones fail.
 public class Edwards25519Test
 {
 	private const int RandomCount = 12;

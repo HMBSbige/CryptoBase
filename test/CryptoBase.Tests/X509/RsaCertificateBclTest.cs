@@ -18,9 +18,9 @@ public class RsaCertificateBclTest
 		return RsaAlgorithms.Select(static algorithm => (Func<SignatureAlgorithm>)(() => algorithm));
 	}
 
-	// A root and an intermediate with RsaKey, which issue with each algorithm, load on the platform, and PlatformCertificateValidator builds the chain to the root as a custom trust anchor; a leaf whose
-	// signature is changed fails, which macOS reports as a partial chain. macOS verifies no RSASSA-PSS signature in a chain, not even in one that it issues itself, so those cases are skipped there
-	// before they issue certificates with the names and keys of the others, which would keep it from building their chains too.
+	// A root and an intermediate with RsaKey, which issue with each algorithm, load on the platform, and PlatformCertificateValidator builds the chain to the root as a custom trust anchor;
+	// a leaf whose signature is changed fails, which macOS reports as a partial chain.
+	// macOS verifies no RSASSA-PSS signature in a chain, not even in one that it issues itself, so those cases are skipped there before they issue certificates with the names and keys of the others, which would keep it from building their chains too.
 	[Test]
 	[MethodDataSource(nameof(Algorithms))]
 	public async Task ThePlatformValidatesChainsOfRsaKeys(SignatureAlgorithm algorithm)

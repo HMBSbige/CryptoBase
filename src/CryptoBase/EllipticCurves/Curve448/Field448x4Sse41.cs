@@ -2,7 +2,8 @@ using static CryptoBase.EllipticCurves.Curve448.Field448Blocks<System.Runtime.In
 
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The limbs of Field448x4Avx2 in 128-bit vectors, lanes A and B in one pair of sixteen and lanes C and D in another, with the same bounds. A product is two products of two lanes, each the block product of Field448Blocks.Product.
+// The limbs of Field448x4Avx2 in 128-bit vectors, lanes A and B in one pair of sixteen and lanes C and D in another, with the same bounds.
+// A product is two products of two lanes, each the block product of Field448Blocks.Product.
 internal partial struct Field448x4Sse41
 {
 	internal Pair AB;
@@ -159,7 +160,8 @@ internal partial struct Field448x4Sse41
 		leftCD = Blend(cd + swappedCD, swappedCD + twoP - cd);
 	}
 
-	// The columns of lane D of the products times u, two at a time: lane D, the second lane of pair CD, in both lanes times the factors of columns 2g and 2g + 1 and of columns 2g + 8 and 2g + 9, in two rounds of carries in that form, through columns in the scratch; then column k goes into lane D of limb k.
+	// The columns of lane D of the products times u, two at a time: lane D, the second lane of pair CD, in both lanes times the factors of columns 2g and 2g + 1 and of columns 2g + 8 and 2g + 9, in two rounds of carries in that form, through columns in the scratch;
+	// then column k goes into lane D of limb k.
 	// ReSharper disable once RedundantAssignment
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void MultiplyLaneD(ref Vector128<ulong> products, ref Vector128<ulong> multiplier, ref Field448x4Sse41 state, ref Vector128<ulong> columns)

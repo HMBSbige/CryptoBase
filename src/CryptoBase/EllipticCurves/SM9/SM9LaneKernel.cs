@@ -1,11 +1,16 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The pairing and the powers of GT on SM9Lanes, by the algorithms of SM9MillerLoop, SM9FinalExponentiation and SM9GTPower, with the same steps on the same values. The elements of Fp12 stay in lanes from the first operation to the last; only the steps of T that the Miller loop takes out of the lanes, the inversion of Fp6 of the final exponentiation and the entries of a fixed table come from SM9Fp2, SM9Fp6 and SM9Fp12. Each operation works in an aligned workspace on the stack, erased at its end, and neither its time nor its addresses depend on its inputs.
+// The pairing and the powers of GT on SM9Lanes, by the algorithms of SM9MillerLoop, SM9FinalExponentiation and SM9GTPower, with the same steps on the same values.
+// The elements of Fp12 stay in lanes from the first operation to the last;
+// only the steps of T that the Miller loop takes out of the lanes, the inversion of Fp6 of the final exponentiation and the entries of a fixed table come from SM9Fp2, SM9Fp6 and SM9Fp12.
+// Each operation works in an aligned workspace on the stack, erased at its end, and neither its time nor its addresses depend on its inputs.
 internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vector<TVector>
 {
 	private const int TableLength = SM9FrobeniusRecoding.TableLength;
 
-	// T doubles in lanes by SM9Lanes.DoublingStep, which gives the line at P as it goes; the additions, one for each nonzero digit and the two of the end, take SM9MillerLoop's step on T taken out of the lanes. Vectors narrower than a row, which DoublingStep does not take, take MillerLoopScalarSteps.
+	// T doubles in lanes by SM9Lanes.DoublingStep, which gives the line at P as it goes;
+	// the additions, one for each nonzero digit and the two of the end, take SM9MillerLoop's step on T taken out of the lanes.
+	// Vectors narrower than a row, which DoublingStep does not take, take MillerLoopScalarSteps.
 	[SkipLocalsInit]
 	internal static void MillerLoop(in SM9AffinePoint<SM9Fp> p, in SM9AffinePoint<SM9Fp2> q, out SM9Fp12 result)
 	{
@@ -175,7 +180,8 @@ internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vect
 		storage.ZeroMemory();
 	}
 
-	// As SM9MillerLoop.Run for the factors of two points with their lines, each step multiplying f by the product of its two lines: the lines go into a batch for each point and their products into a batch of pairs by SM9Lanes.EvaluateLinePairs, a batch at a time, and each product of f takes its pair from its lane of the batch. The first pair is f itself.
+	// As SM9MillerLoop.Run for the factors of two points with their lines, each step multiplying f by the product of its two lines: the lines go into a batch for each point and their products into a batch of pairs by SM9Lanes.EvaluateLinePairs, a batch at a time, and each product of f takes its pair from its lane of the batch.
+	// The first pair is f itself.
 	[SkipLocalsInit]
 	internal static void MillerLoop(in SM9Fp alpha, in SM9Fp beta, ReadOnlySpan<SM9PrecomputedLine> lines, in SM9Fp otherAlpha, in SM9Fp otherBeta, ReadOnlySpan<SM9PrecomputedLine> otherLines, out SM9Fp12 result)
 	{
@@ -216,7 +222,8 @@ internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vect
 		storage.ZeroMemory();
 	}
 
-	// f = f·l·l′ for line k of each point, evaluating the batches that start at k first. Which lines a batch holds depends on k alone.
+	// f = f·l·l′ for line k of each point, evaluating the batches that start at k first.
+	// Which lines a batch holds depends on k alone.
 	private static void MultiplyByLinePair(ref SM9Fp12Lanes f, ReadOnlySpan<SM9PrecomputedLine> lines, ReadOnlySpan<SM9PrecomputedLine> otherLines, int k, ref ulong batch, ref ulong otherBatch, ref ulong pairs, ref SM9LaneScratch scratch)
 	{
 		int lane = k % SM9Lanes<TVector>.BatchLines;
@@ -272,7 +279,8 @@ internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vect
 		ref SM9Fp12Lanes y4 = ref Unsafe.Add(ref f, 7);
 		ref SM9Fp12Lanes y2 = ref Unsafe.Add(ref f, 8);
 		ref SM9LaneScratch scratch = ref Scratch(ref f, 9);
-		// f^(p⁶ − 1) = f̄/f = f̄²/N for N = f·f̄ = C0² − v·C1² of Fp6, so that it takes an inversion of Fp6 rather than of Fp12; MultiplyByFp6 reads the even lanes alone, so the odd ones of N, which are 0 mod p, go along.
+		// f^(p⁶ − 1) = f̄/f = f̄²/N for N = f·f̄ = C0² − v·C1² of Fp6, so that it takes an inversion of Fp6 rather than of Fp12;
+		// MultiplyByFp6 reads the even lanes alone, so the odd ones of N, which are 0 mod p, go along.
 		SM9Lanes<TVector>.FromFp12(in value, ref t0);
 		SM9Lanes<TVector>.Conjugate(ulong.MaxValue, ref t0, ref t1);
 		SM9Lanes<TVector>.Multiply(ref t0, ref t1, ref f, ref scratch);
@@ -494,7 +502,8 @@ internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vect
 		}
 	}
 
-	// The entry of digit, conjugated if the digit is negative. Every entry is read, so neither the time nor the addresses depend on the digit.
+	// The entry of digit, conjugated if the digit is negative.
+	// Every entry is read, so neither the time nor the addresses depend on the digit.
 	// ReSharper disable once RedundantAssignment
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Select(ref SM9Fp12Lanes table, byte digit, ref SM9Fp12Lanes result)

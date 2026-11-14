@@ -7,7 +7,8 @@ internal static class SmallModulus
 {
 	internal const int MaxBits = 34;
 
-	// value mod divisor for an odd divisor below 2^34, by Horner's rule over 16-bit pieces from the top. Each step is below 2^50, and a multiplication by ⌊(2^64 − 1)/divisor⌋ finds its quotient or one less, so that one conditional subtraction ends it.
+	// value mod divisor for an odd divisor below 2^34, by Horner's rule over 16-bit pieces from the top.
+	// Each step is below 2^50, and a multiplication by ⌊(2^64 − 1)/divisor⌋ finds its quotient or one less, so that one conditional subtraction ends it.
 	internal static ulong Remainder(ReadOnlySpan<ulong> value, ulong divisor)
 	{
 		Debug.Assert((divisor & 1) is 1 && divisor >> MaxBits is 0);
@@ -30,7 +31,8 @@ internal static class SmallModulus
 		return remainder;
 	}
 
-	// All ones if gcd(x, modulus) = 1, for an odd modulus and x below it, by binary steps on 64-bit words: u ← (u − v)/2 or u/2 with v odd throughout, swapping first when u is odd and below v. Each step halves u or the larger of the two, so 2·34 steps bring u to 0 and leave the gcd in v.
+	// All ones if gcd(x, modulus) = 1, for an odd modulus and x below it, by binary steps on 64-bit words: u ← (u − v)/2 or u/2 with v odd throughout, swapping first when u is odd and below v.
+	// Each step halves u or the larger of the two, so 2·34 steps bring u to 0 and leave the gcd in v.
 	internal static ulong IsCoprime(ulong x, ulong modulus)
 	{
 		Debug.Assert((modulus & 1) is 1 && x < modulus && modulus >> MaxBits is 0);

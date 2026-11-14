@@ -9,14 +9,19 @@ namespace CryptoBase.IO;
 /// <typeparam name="TCipher">The chunked cipher.</typeparam>
 /// <remarks>
 /// <para>
-/// The storage holds the encrypted message from offset zero to its end. Creating an instance checks the header against the key and context and then authenticates the last chunk, which authenticates the message <see cref="Length" />; truncated or extended storage fails there. Each read then authenticates every chunk it touches before it returns any plaintext, so a read of chunks that are intact succeeds even if other chunks were modified or reordered.
+/// The storage holds the encrypted message from offset zero to its end.
+/// Creating an instance checks the header against the key and context and then authenticates the last chunk, which authenticates the message <see cref="Length" />;
+/// truncated or extended storage fails there.
+/// Each read then authenticates every chunk it touches before it returns any plaintext, so a read of chunks that are intact succeeds even if other chunks were modified or reordered.
 /// </para>
 /// <para>
-/// The instance keeps the plaintext of the last chunk that a partial read touched. The storage must not change while the instance uses it; a chunk that changes fails authentication.
+/// The instance keeps the plaintext of the last chunk that a partial read touched.
+/// The storage must not change while the instance uses it; a chunk that changes fails authentication.
 /// </para>
 /// <para>
 /// The instance owns the cipher of the message and disposes it; <c>leaveOpen</c> controls only the storage.
-/// Instances are not thread-safe. For parallel reads of a file, create one instance per thread over the same handle with <c>leaveOpen: true</c>; instances over one stream share its position, so they must not read in parallel.
+/// Instances are not thread-safe.
+/// For parallel reads of a file, create one instance per thread over the same handle with <c>leaveOpen: true</c>; instances over one stream share its position, so they must not read in parallel.
 /// </para>
 /// </remarks>
 public sealed class ChunkedRandomAccess<TCipher> : IDisposable where TCipher : class, IChunkedCipher<TCipher>
@@ -90,7 +95,10 @@ public sealed class ChunkedRandomAccess<TCipher> : IDisposable where TCipher : c
 	/// <param name="offset">The message offset to read from.</param>
 	/// <returns>The number of bytes read; fewer than requested only at the end of the message, and zero at or past it.</returns>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> is negative.</exception>
-	/// <exception cref="AuthenticationTagMismatchException">A chunk in the range was modified or reordered, or the storage has become shorter. Chunks before it may already be in <paramref name="buffer" />.</exception>
+	/// <exception cref="AuthenticationTagMismatchException">
+	/// A chunk in the range was modified or reordered, or the storage has become shorter.
+	/// Chunks before it may already be in <paramref name="buffer" />.
+	/// </exception>
 	/// <exception cref="ObjectDisposedException">The instance is disposed.</exception>
 	public int Read(Span<byte> buffer, long offset)
 	{
@@ -135,7 +143,10 @@ public sealed class ChunkedRandomAccess<TCipher> : IDisposable where TCipher : c
 	/// <param name="cancellationToken">The token used to cancel the operation.</param>
 	/// <returns>A value task whose result is the number of bytes read; fewer than requested only at the end of the message, and zero at or past it.</returns>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> is negative.</exception>
-	/// <exception cref="AuthenticationTagMismatchException">A chunk in the range was modified or reordered, or the storage has become shorter. Chunks before it may already be in <paramref name="buffer" />.</exception>
+	/// <exception cref="AuthenticationTagMismatchException">
+	/// A chunk in the range was modified or reordered, or the storage has become shorter.
+	/// Chunks before it may already be in <paramref name="buffer" />.
+	/// </exception>
 	/// <exception cref="ObjectDisposedException">The instance is disposed.</exception>
 	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken cancellationToken = default)
 	{

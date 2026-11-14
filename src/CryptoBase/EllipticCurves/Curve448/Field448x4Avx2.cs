@@ -3,8 +3,10 @@ using static CryptoBase.EllipticCurves.Curve448.Field448Blocks<System.Runtime.In
 
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// Four elements of the field of p = 2^448 − 2^224 − 1, one in each 64-bit lane A, B, C, D of the vectors, in sixteen limbs of radix 2^28: limb i weighs 2^(28i). With φ = 2^224, limbs 0 to 7 hold x_lo and limbs 8 to 15 x_hi of x = x_lo + φ·x_hi, and p = φ² − φ − 1, so φ² ≡ φ + 1.
-// Bounds are per limb, as a multiple m of 2^28. Every member that gives a value leaves it reduced, every limb below 2^28 + 2^9, so m < 1 + 2^−19; a product leaves limbs below 2^28 except limb 1, below 2^28 + 2^8, and limb 9.
+// Four elements of the field of p = 2^448 − 2^224 − 1, one in each 64-bit lane A, B, C, D of the vectors, in sixteen limbs of radix 2^28: limb i weighs 2^(28i).
+// With φ = 2^224, limbs 0 to 7 hold x_lo and limbs 8 to 15 x_hi of x = x_lo + φ·x_hi, and p = φ² − φ − 1, so φ² ≡ φ + 1.
+// Bounds are per limb, as a multiple m of 2^28.
+// Every member that gives a value leaves it reduced, every limb below 2^28 + 2^9, so m < 1 + 2^−19; a product leaves limbs below 2^28 except limb 1, below 2^28 + 2^8, and limb 9.
 // Product takes operands with m_x·m_y ≤ 6.7, m_x < 8 and m_y < 5.3.
 internal partial struct Field448x4Avx2 : IField448Lanes<Field448x4Avx2>
 {
@@ -53,7 +55,8 @@ internal partial struct Field448x4Avx2 : IField448Lanes<Field448x4Avx2>
 
 	public static bool IsSupported => Avx2.IsSupported;
 
-	// The 56-bit limb i of each element splits into limbs 2i, its low 28 bits, and 2i + 1, the rest, below 2^29; one carry from each odd limb into the next, with the one out of limb 15 back into limbs 0 and 8, leaves every limb below 2^28 + 2.
+	// The 56-bit limb i of each element splits into limbs 2i, its low 28 bits, and 2i + 1, the rest, below 2^29;
+	// one carry from each odd limb into the next, with the one out of limb 15 back into limbs 0 and 8, leaves every limb below 2^28 + 2.
 	public static void Create(in Field448 a, in Field448 b, in Field448 c, in Field448 d, out Field448x4Avx2 result)
 	{
 		Vector256<ulong> mask = Vector256.Create(Mask);
@@ -111,7 +114,8 @@ internal partial struct Field448x4Avx2 : IField448Lanes<Field448x4Avx2>
 		}
 	}
 
-	// Four values, for the columns of lane D four at a time: lane l of limb i of value g holds the factor f_ik by which column k = 4g + l takes limb i of the other operand. Each column sums 38 products of limbs at most.
+	// Four values, for the columns of lane D four at a time: lane l of limb i of value g holds the factor f_ik by which column k = 4g + l takes limb i of the other operand.
+	// Each column sums 38 products of limbs at most.
 	public static int MultiplierLength => 4;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -129,7 +133,9 @@ internal partial struct Field448x4Avx2 : IField448Lanes<Field448x4Avx2>
 	// The operands and the products of a step in five values, and the doubled operand of a square in a sixth.
 	public static int ScratchLength => 6;
 
-	// The two products of four lanes and the product of lane D by u, each over operands that the step before writes into scratch. With w = x2·z2, E = 4w, so the first product is (A², w, DA, CB), whose operands need no carry: their lanes multiply to m ≤ 6, as A and C have m ≤ 2 and B and D m ≤ 3. The second, (AA·BB, E·(AA + a24·E), (DA + CB)², (DA − CB)²), takes BB as AA − 4w and E·(AA + a24·E) as w·(4AA + 16a24·w).
+	// The two products of four lanes and the product of lane D by u, each over operands that the step before writes into scratch.
+	// With w = x2·z2, E = 4w, so the first product is (A², w, DA, CB), whose operands need no carry: their lanes multiply to m ≤ 6, as A and C have m ≤ 2 and B and D m ≤ 3.
+	// The second, (AA·BB, E·(AA + a24·E), (DA + CB)², (DA − CB)²), takes BB as AA − 4w and E·(AA + a24·E) as w·(4AA + 16a24·w).
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void LadderStep(ref Field448x4Avx2 state, ulong swap, in Field448x4Avx2 multiplier, ref Field448x4Avx2 scratch)
 	{
@@ -142,7 +148,8 @@ internal partial struct Field448x4Avx2 : IField448Lanes<Field448x4Avx2>
 		MultiplyLaneD(ref products, ref Unsafe.AsRef(in multiplier.L0), ref state.L0);
 	}
 
-	// The left operand (A, x2, D, C) of the first product and the right one, (A, z2, A, B), from the lanes that the swap selects by the index of a vpermd, which takes the same time for every index. Limbs i and i + 8 go together, as Product takes the sums of the halves.
+	// The left operand (A, x2, D, C) of the first product and the right one, (A, z2, A, B), from the lanes that the swap selects by the index of a vpermd, which takes the same time for every index.
+	// Limbs i and i + 8 go together, as Product takes the sums of the halves.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PrepareLadder(ref Vector256<ulong> state, ulong swap, ref Vector256<ulong> operands)
 	{
@@ -173,7 +180,9 @@ internal partial struct Field448x4Avx2 : IField448Lanes<Field448x4Avx2>
 		right = Blend(Avx2.Permute4x64(sums, Aaab), z, LaneB);
 	}
 
-	// From (AA, w, DA, CB): the left operand of the second product, (AA + 8p − 4w, 4AA + 16a24·w, DA + CB, DA + 2p − CB), carried once from each limb into the next, and the right one, (AA, w, DA + CB, DA + 2p − CB). Before the carry the lanes of the left one are below 2^31.2, 2^47.3, 2^29.1 and 2^29.6, so the carries are below 2^19.3, limb 8 takes two, and the left operand has m < 1.005; the right one has m < 3 + 2^−18, so the lanes multiply to m_x·m_y < 3.02.
+	// From (AA, w, DA, CB): the left operand of the second product, (AA + 8p − 4w, 4AA + 16a24·w, DA + CB, DA + 2p − CB), carried once from each limb into the next, and the right one, (AA, w, DA + CB, DA + 2p − CB).
+	// Before the carry the lanes of the left one are below 2^31.2, 2^47.3, 2^29.1 and 2^29.6, so the carries are below 2^19.3, limb 8 takes two, and the left operand has m < 1.005;
+	// the right one has m < 3 + 2^−18, so the lanes multiply to m_x·m_y < 3.02.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void FinishLadder(ref Vector256<ulong> products, ref Vector256<ulong> operands)
 	{
@@ -207,7 +216,8 @@ internal partial struct Field448x4Avx2 : IField448Lanes<Field448x4Avx2>
 		right = Blend(limb, tail, LaneC | LaneD);
 	}
 
-	// The columns of lane D of the products times u, four at a time from the multiplier, each limb of lane D in every lane by Lane; column k, below 38·(2^28 + 2^9)², goes into lane D of limb k, and the limbs of all four lanes then carry as a product's columns do, which keeps their values.
+	// The columns of lane D of the products times u, four at a time from the multiplier, each limb of lane D in every lane by Lane;
+	// column k, below 38·(2^28 + 2^9)², goes into lane D of limb k, and the limbs of all four lanes then carry as a product's columns do, which keeps their values.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void MultiplyLaneD(ref Vector256<ulong> products, ref Vector256<ulong> multiplier, ref Vector256<ulong> result)
 	{

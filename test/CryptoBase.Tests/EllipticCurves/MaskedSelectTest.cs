@@ -51,7 +51,8 @@ public class MaskedSelectTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// A page of a new table becomes resident only when read. The table spans two pages or more, so index 0 selects nothing in the last, and count selects nothing at all.
+	// A page of a new table becomes resident only when read.
+	// The table spans two pages or more, so index 0 selects nothing in the last, and count selects nothing at all.
 	[Test]
 	[MethodDataSource(typeof(LookupCase), nameof(LookupCase.All))]
 	public async Task LookupReadsEveryEntry(LookupCase lookup)

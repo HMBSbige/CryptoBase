@@ -7,7 +7,9 @@ using static CryptoBase.Tests.SM2.SM2TestUtils;
 
 namespace CryptoBase.Tests.SM2;
 
-// The examples of GB/T 32918.5-2017 on the recommended curve, Annex A (the signature), Annex B (the key exchange) and Annex C (encryption), which are those of GM/T 0003.5-2012; both IDs are "1234567812345678". Each published value is also recomputed with the BigInteger reference, so that a mistyped constant cannot pass.
+// The examples of GB/T 32918.5-2017 on the recommended curve, Annex A (the signature), Annex B (the key exchange) and Annex C (encryption), which are those of GM/T 0003.5-2012;
+// both IDs are "1234567812345678".
+// Each published value is also recomputed with the BigInteger reference, so that a mistyped constant cannot pass.
 public class SM2AnnexTest
 {
 	private static readonly byte[] SignerPrivateKey = Hex("3945208F 7B2144B1 3F36E38A C6D39F95 88939369 2860B51A 42FB81EF 4DF7C5B8");
@@ -166,7 +168,8 @@ public class SM2AnnexTest
 		}
 	}
 
-	// B.2: both parties, with the ephemeral keys of the example and a key of 128 bits. The responder's confirmation is S_B, which the initiator expects as S_1, and the initiator's is S_A, which the responder expects as S_2.
+	// B.2: both parties, with the ephemeral keys of the example and a key of 128 bits.
+	// The responder's confirmation is S_B, which the initiator expects as S_1, and the initiator's is S_A, which the responder expects as S_2.
 	[Test]
 	public async Task KeyExchangeOfAnnexB()
 	{

@@ -1,8 +1,10 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
 // MontgomeryKernelAdvSimd on two moduli at once (see IMontgomeryPairKernel), the first in lane 0 and the second in lane 1 of every sum: umlal and umlal2 take a pair of 32-bit words, a digit of each modulus, from each operand, so that each instruction makes a product for each modulus and the reduction of a block runs once for both.
-// Operands are pairs of words, the left one and m ascending and the right one and n descending, so that a column is a dot product of the left operand with the right one at an offset, both ascending: the lower halves of two quads give the products of pair i and the upper halves those of pair i + 1. Blocks of four columns take the quads of the right operand at four offsets, two of which the next two pairs reuse.
-// A square takes the cross products below the diagonal once, from a doubled copy of the operand, and the squares on it from the plain copy, in the group around the diagonal; the reductions go on alone from there.
+// Operands are pairs of words, the left one and m ascending and the right one and n descending, so that a column is a dot product of the left operand with the right one at an offset, both ascending: the lower halves of two quads give the products of pair i and the upper halves those of pair i + 1.
+// Blocks of four columns take the quads of the right operand at four offsets, two of which the next two pairs reuse.
+// A square takes the cross products below the diagonal once, from a doubled copy of the operand, and the squares on it from the plain copy, in the group around the diagonal;
+// the reductions go on alone from there.
 // The tails and the bounds of the sums are those of MontgomeryKernelAdvSimd, and so is the placement of the operands, each within a page where it fits.
 internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKernel where TRadix : struct, IRadix
 {
@@ -95,7 +97,9 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 		return Vector128.LoadUnsafe(ref words, (nuint)(2 * pair));
 	}
 
-	// Block k has the columns k to k + 3. Below digitCount it takes the pairs i from 0 to k − 1 for both products and k to k + 3 for a·b alone, whose digits m the tail finds; from digitCount on, i from k − digitCount + 1, rounded down to an even pair, to digitCount, rounded up, which the zeros allow.
+	// Block k has the columns k to k + 3.
+	// Below digitCount it takes the pairs i from 0 to k − 1 for both products and k to k + 3 for a·b alone, whose digits m the tail finds;
+	// from digitCount on, i from k − digitCount + 1, rounded down to an even pair, to digitCount, rounded up, which the zeros allow.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void MultiplyCore(Span<ulong> result, ref uint a, ref uint b, ref uint n, ref uint m, ReadOnlySpan<ulong> moduli, Vector64<uint> inverse, int digits)
 	{
@@ -175,7 +179,9 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 		}
 	}
 
-	// As MultiplyCore for a·a: below half = k/2, the cross products with the doubled copy and the reductions; at pairs half and half + 1, lane k takes a_half² and lane k + 2 a_(half+1)² from the plain copy, lanes k + 1 and k + 3 the doubled cross products at half, and lane k + 3 also the one at half + 1; then the reductions alone.
+	// As MultiplyCore for a·a: below half = k/2, the cross products with the doubled copy and the reductions;
+	// at pairs half and half + 1, lane k takes a_half² and lane k + 2 a_(half+1)² from the plain copy, lanes k + 1 and k + 3 the doubled cross products at half, and lane k + 3 also the one at half + 1;
+	// then the reductions alone.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void SquareCore(Span<ulong> result, ref uint a, ref uint reversed, ref uint twice, ref uint n, ref uint m, ReadOnlySpan<ulong> moduli, Vector64<uint> inverse, int digits)
 	{
@@ -264,7 +270,8 @@ internal readonly struct MontgomeryPairKernelAdvSimd<TRadix> : IMontgomeryPairKe
 		}
 	}
 
-	// Columns k to k + 3 from their sums and the carry into column k, both moduli at once, as MontgomeryKernelAdvSimd.Tail does for one: below digitCount each column gains its digit m times n, from digitCount on each is a digit of the result. Returns the carry out of the block.
+	// Columns k to k + 3 from their sums and the carry into column k, both moduli at once, as MontgomeryKernelAdvSimd.Tail does for one: below digitCount each column gains its digit m times n, from digitCount on each is a digit of the result.
+	// Returns the carry out of the block.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> Tail(Vector128<ulong> s0, Vector128<ulong> s1, Vector128<ulong> s2, Vector128<ulong> s3, Vector128<ulong> carry, ReadOnlySpan<ulong> moduli, ref uint m, ref ulong output, int k, int digits, Vector64<uint> inverse, ulong digitMask)
 	{

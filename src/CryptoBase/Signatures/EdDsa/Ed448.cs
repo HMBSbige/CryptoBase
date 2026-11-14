@@ -5,22 +5,29 @@ namespace CryptoBase.Signatures.EdDsa;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The private key is the 57-byte secret of RFC 8032; every 57-byte value is a valid private key. The public key is a point encoded in 57 bytes, and a signature is R ‖ S in 114 bytes.
-/// Signing is deterministic: signing a message twice with one key gives the same signature. Signing and verification may run concurrently on one instance.
+/// The private key is the 57-byte secret of RFC 8032; every 57-byte value is a valid private key.
+/// The public key is a point encoded in 57 bytes, and a signature is R ‖ S in 114 bytes.
+/// Signing is deterministic: signing a message twice with one key gives the same signature.
+/// Signing and verification may run concurrently on one instance.
 /// </para>
 /// <para>
 /// Ed448 and Ed448ph take any context of up to <see cref="MaxContextLength" /> bytes, the empty one included.
 /// <see cref="SignatureAlgorithm.Ed448" /> is Ed448 with an empty context.
 /// </para>
 /// <para>
-/// Verification checks the cofactorless equation [S]B = R + [k]A of RFC 8032, Sec. 5.2.7 with k reduced modulo the group order: it rejects a signature whose S is not below the group order, and compares R byte for byte with the encoding of [S]B − [k]A, so that no other encoding of R verifies. For a public key with a component of small order, the result may differ from that of the unreduced equation; every signature that verifies satisfies the cofactored equation of RFC 8032.
-/// A public key must be the canonical encoding of a point. Points of small order are accepted, as the public key and as R.
+/// Verification checks the cofactorless equation [S]B = R + [k]A of RFC 8032, Sec. 5.2.7 with k reduced modulo the group order: it rejects a signature whose S is not below the group order, and compares R byte for byte with the encoding of [S]B − [k]A, so that no other encoding of R verifies.
+/// For a public key with a component of small order, the result may differ from that of the unreduced equation; every signature that verifies satisfies the cofactored equation of RFC 8032.
+/// A public key must be the canonical encoding of a point.
+/// Points of small order are accepted, as the public key and as R.
 /// </para>
 /// <para>
-/// From its second verification on, an instance keeps a table of about 25 KB built from the public key, which the later verifications use, until it is disposed. To verify many signatures with one key, keep one instance rather than import the key for each.
+/// From its second verification on, an instance keeps a table of about 25 KB built from the public key, which the later verifications use, until it is disposed.
+/// To verify many signatures with one key, keep one instance rather than import the key for each.
 /// </para>
 /// <para>
-/// The DER encodings are those of RFC 8410, with the parameters of the algorithm identifier absent. A PKCS #8 export holds the private key alone in a version 1 PrivateKeyInfo. A PKCS #8 import accepts version 1 and version 2, skips attributes, and rejects a public key that does not match the private key.
+/// The DER encodings are those of RFC 8410, with the parameters of the algorithm identifier absent.
+/// A PKCS #8 export holds the private key alone in a version 1 PrivateKeyInfo.
+/// A PKCS #8 import accepts version 1 and version 2, skips attributes, and rejects a public key that does not match the private key.
 /// </para>
 /// </remarks>
 public sealed class Ed448 : ISignatureKey<Ed448>
@@ -180,7 +187,8 @@ public sealed class Ed448 : ISignatureKey<Ed448>
 	/// Signs <paramref name="message" /> with Ed448 (RFC 8032, Sec. 5.2.6).
 	/// </summary>
 	/// <remarks>
-	/// <paramref name="message" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.
+	/// <paramref name="message" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
 	/// </remarks>
 	/// <param name="message">The message.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="SignatureLength" /> bytes long.</param>
@@ -214,7 +222,8 @@ public sealed class Ed448 : ISignatureKey<Ed448>
 	/// Signs the SHAKE256 hash of a message with Ed448ph (RFC 8032, Sec. 5.2.6).
 	/// </summary>
 	/// <remarks>
-	/// <paramref name="hash" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.
+	/// <paramref name="hash" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
 	/// </remarks>
 	/// <param name="hash">The SHAKE256 hash of the message (PH of RFC 8032, Sec. 5.2), exactly 64 bytes long.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="SignatureLength" /> bytes long.</param>

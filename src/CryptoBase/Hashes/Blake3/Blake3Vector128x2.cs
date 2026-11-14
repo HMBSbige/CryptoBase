@@ -169,7 +169,8 @@ internal readonly struct Blake3Vector128x2 : IBlake3LaneKernel
 			Vector128<uint> w14 = Vector128.Create((uint)BlockLength);
 			Vector128<uint> w15 = laneFlags1;
 
-			// The steps of Blake3Vector128.RoundsAvx512Vl, each running its first half on both groups, then its second half on both. Interleaving whole steps instead keeps too little independent work within reach of the core.
+			// The steps of Blake3Vector128.RoundsAvx512Vl, each running its first half on both groups, then its second half on both.
+			// Interleaving whole steps instead keeps too little independent work within reach of the core.
 			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref t, ref message0[0], 0, 2, 4, 6, true);
 			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref t, ref message1[0], 0, 2, 4, 6, true);
 			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref t, ref message0[0], 1, 3, 5, 7, false);
@@ -283,7 +284,8 @@ internal readonly struct Blake3Vector128x2 : IBlake3LaneKernel
 		}
 	}
 
-	// Every call shares the one temporary t: with a temporary of its own per call, the JIT spilled it between the two instructions of a rotation. Rotating by 8 shifts and inserts like the other rotations instead of looking up a table, whose indices would take one more vector register when the two groups already need more than ARM64 has.
+	// Every call shares the one temporary t: with a temporary of its own per call, the JIT spilled it between the two instructions of a rotation.
+	// Rotating by 8 shifts and inserts like the other rotations instead of looking up a table, whose indices would take one more vector register when the two groups already need more than ARM64 has.
 	// ReSharper disable once RedundantAssignment
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Half

@@ -22,7 +22,8 @@ internal static unsafe class Blake3Parallel
 		return TryCompressSubtrees(input, [0, input.Length], in key, 0, flags, output, maxDegreeOfParallelism, budget);
 	}
 
-	// A head, a subtree of several chunks that ends where the input starts, is hashed by the calling thread while pool threads start, writing its children to headOutput. Returns false, having hashed nothing, when no second thread would take part: the serial path then hashes faster, keeping its rows wide up to the top of the tree.
+	// A head, a subtree of several chunks that ends where the input starts, is hashed by the calling thread while pool threads start, writing its children to headOutput.
+	// Returns false, having hashed nothing, when no second thread would take part: the serial path then hashes faster, keeping its rows wide up to the top of the tree.
 	[SkipLocalsInit]
 	internal static bool TryCompressSubtrees(ReadOnlySpan<byte> input, ReadOnlySpan<int> boundaries, ref readonly InlineArray8<uint> key, ulong chunkCounter, uint flags, Span<byte> output, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget, ReadOnlySpan<byte> head = default, Span<byte> headOutput = default)
 	{
@@ -278,7 +279,8 @@ internal static unsafe class Blake3Parallel
 
 		protected abstract void ProcessItem(int index);
 
-		// Returns false, having queued nothing, when the budget grants no helper: the calling thread does better on its serial path than taking every item alone. Should queuing a helper fail for lack of memory, those queued before take items all the same, so every item is finished before it throws.
+		// Returns false, having queued nothing, when the budget grants no helper: the calling thread does better on its serial path than taking every item alone.
+		// Should queuing a helper fail for lack of memory, those queued before take items all the same, so every item is finished before it throws.
 		// Finish has to follow true.
 		internal bool TryStart(int threads)
 		{
@@ -342,7 +344,9 @@ internal static unsafe class Blake3Parallel
 			ProcessItems();
 		}
 
-		// Spinning and yielding keep the processor of the calling thread busy, so a helper that a thread of higher priority preempted elsewhere cannot move to it; once the spin runs out, blocking frees the processor. On an STA thread, blocking pumps COM and SendMessage messages, as the waits of Argon2LaneScheduler do.
+		// Spinning and yielding keep the processor of the calling thread busy, so a helper that a thread of higher priority preempted elsewhere cannot move to it;
+		// once the spin runs out, blocking frees the processor.
+		// On an STA thread, blocking pumps COM and SendMessage messages, as the waits of Argon2LaneScheduler do.
 		private void WaitForHelpers(ref bool interrupted)
 		{
 			long spinDeadline = Stopwatch.GetTimestamp() + SpinTicks;

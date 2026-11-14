@@ -1,6 +1,7 @@
 namespace CryptoBase.Tests.X509;
 
-// A P-256 CA, leaves and OCSP responders valid for ten years, and OCSP responses. ResponseWithNonce answers RequestWithNonce.
+// A P-256 CA, leaves and OCSP responders valid for ten years, and OCSP responses.
+// ResponseWithNonce answers RequestWithNonce.
 internal static class OcspVectors
 {
 	public const string CA = """

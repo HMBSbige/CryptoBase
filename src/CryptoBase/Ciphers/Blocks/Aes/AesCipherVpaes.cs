@@ -434,7 +434,8 @@ internal struct AesCipherVpaes : IDisposable, IAesSubWord
 
 	static uint IAesSubWord.SubWord(uint value)
 	{
-		// Only lane 0 is used. CreateScalar is a single movd on x86, but movi + ins on ARM64, where Create is a single dup.
+		// Only lane 0 is used.
+		// CreateScalar is a single movd on x86, but movi + ins on ARM64, where Create is a single dup.
 		return SubstituteBytes((Ssse3.IsSupported ? Vector128.CreateScalar(value) : Vector128.Create(value)).AsByte()).AsUInt32().GetElement(0);
 	}
 

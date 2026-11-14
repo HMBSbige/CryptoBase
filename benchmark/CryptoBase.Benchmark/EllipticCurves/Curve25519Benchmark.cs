@@ -8,7 +8,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The field operations of Field25519, each taking the previous result as an input, so the time per operation is its latency. The saturated Montgomery product of FieldElement and the constant-time inversion by SafeGcd are there to compare the representations.
+// The field operations of Field25519, each taking the previous result as an input, so the time per operation is its latency.
+// The saturated Montgomery product of FieldElement and the constant-time inversion by SafeGcd are there to compare the representations.
 public class Curve25519FieldBenchmark
 {
 	private const int Operations = 64;

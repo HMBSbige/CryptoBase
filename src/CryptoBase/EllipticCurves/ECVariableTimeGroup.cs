@@ -2,7 +2,8 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// For a = −3. The time, the branches and the table indices depend on the scalars and the points, so every input must be public: nothing that holds a secret may call it.
+// For a = −3.
+// The time, the branches and the table indices depend on the scalars and the points, so every input must be public: nothing that holds a secret may call it.
 internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	where TCurve : struct, IECCurve
 	where TField : unmanaged, IECField<TField>
@@ -83,7 +84,8 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		}
 	}
 
-	// As MultiplyAdd with the table. Each part of u2 has a NAF of its own, which needs only the doublings of one part; u1·G follows from the windows of ECGeneratorTable, which need none.
+	// As MultiplyAdd with the table.
+	// Each part of u2 has a NAF of its own, which needs only the doublings of one part; u1·G follows from the windows of ECGeneratorTable, which need none.
 	[SkipLocalsInit]
 	internal static void MultiplyAddWindows(in FieldElement<TOrder> u1, ReadOnlySpan<AffinePoint<TField>> pointTable, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
 	{
@@ -231,7 +233,8 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		ECGroup<TCurve, TField, TOrder>.ToAffineVariableTime(sums, multiples.Slice(1));
 	}
 
-	// For r below n, 0 included. As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p, and x = t means X = t·Z².
+	// For r below n, 0 included.
+	// As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p, and x = t means X = t·Z².
 	[SkipLocalsInit]
 	internal static bool XModOrderEquals(in JacobianPoint<TField> point, in FieldElement<TOrder> r)
 	{
@@ -297,7 +300,8 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 			return;
 		}
 
-		// Opposite points give Z = 0 by themselves. Equal ones need the double, taken of right, as result may be left and already hold the sum.
+		// Opposite points give Z = 0 by themselves.
+		// Equal ones need the double, taken of right, as result may be left and already hold the sum.
 		if (ECGroup<TCurve, TField, TOrder>.AddDistinct(in left, in right, out result) is not 0)
 		{
 			JacobianPoint<TField>.FromAffine(in right, out result);
@@ -335,7 +339,8 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		return Recode(in scalar, 0, TOrder.BitLength, width, digits);
 	}
 
-	// As above for the value of the bits of k from start to start + length − 1, with length + 1 digits. Inlined into MultiplyAdd, the NAF slows its main loop.
+	// As above for the value of the bits of k from start to start + length − 1, with length + 1 digits.
+	// Inlined into MultiplyAdd, the NAF slows its main loop.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static int Recode(in FieldElement<TOrder> scalar, int start, int length, int width, Span<sbyte> digits)
 	{

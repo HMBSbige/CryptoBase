@@ -22,7 +22,8 @@ internal sealed class AlgorithmEntry
 	public ImmutableArray<Type> RelatedTypes { get; init; } = [];
 
 	/// <summary>
-	/// Gets the operations that can be measured. A throughput entry measures the first one, or <see cref="OperationNames.Decrypt" /> when asked to and it has one; an operation entry measures them all.
+	/// Gets the operations that can be measured.
+	/// A throughput entry measures the first one, or <see cref="OperationNames.Decrypt" /> when asked to and it has one; an operation entry measures them all.
 	/// </summary>
 	public required ImmutableArray<string> Operations { get; init; }
 

@@ -1,6 +1,7 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// Up to eight sponges with one rate that absorb a shared prefix, each with a short suffix of its own, and squeeze in lockstep, permuted together by an interleaved kernel, for the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from. The Count outputs of a Squeeze lie back to back in one buffer, each a Count-th of its length.
+// Up to eight sponges with one rate that absorb a shared prefix, each with a short suffix of its own, and squeeze in lockstep, permuted together by an interleaved kernel, for the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from.
+// The Count outputs of a Squeeze lie back to back in one buffer, each a Count-th of its length.
 internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 {
 	// The lengths of the prefix that Reset takes.
@@ -9,7 +10,8 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 
 	private const byte LastPaddingBit = 0x80;
 
-	// Room for the widest kernel, in the layout of IKeccakP1600Kernel: word _lanes * i + j is lane i of stream j. Row i, lane i of every stream, is one vector to the kernel.
+	// Room for the widest kernel, in the layout of IKeccakP1600Kernel: word _lanes * i + j is lane i of stream j.
+	// Row i, lane i of every stream, is one vector to the kernel.
 	// ReSharper disable once UnassignedField.Compiler
 	private InlineArray25<InlineArray8<ulong>> _state;
 
@@ -25,7 +27,8 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 
 	internal readonly int FreeLanes => _lanes - Count;
 
-	// Takes as many of the remaining streams as KeccakP1600Batch assigns to one kernel, Count says how many, and leaves up to guests lanes free for Permute where the kernel has room. Guests never cost a stream: a guest only saves a permutation, while a stream left over can cost a batch.
+	// Takes as many of the remaining streams as KeccakP1600Batch assigns to one kernel, Count says how many, and leaves up to guests lanes free for Permute where the kernel has room.
+	// Guests never cost a stream: a guest only saves a permutation, while a stream left over can cost a batch.
 	// Stream j absorbs and pads prefix ‖ suffixes[j], the suffix suffixLength bytes little-endian, written straight into the state.
 	internal void ResetWithGuests(int streams, int guests, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator)
 	{
@@ -34,7 +37,9 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		Reset(streams, KeccakP1600Batch.ChooseLanes(streams + guests), prefix, suffixes, suffixLength, domainSeparator);
 	}
 
-	// The prefix takes rows 0 to 3, or 0 to 7 when it is 64 bytes long, and the next row each suffix with the domain separator. The free lanes are filled too, which is harmless: only ExtractLane and CopyStreams read the state back, and both stop at Count, and a guest overwrites its lane. The permutation is left to Squeeze, or to Permute to share.
+	// The prefix takes rows 0 to 3, or 0 to 7 when it is 64 bytes long, and the next row each suffix with the domain separator.
+	// The free lanes are filled too, which is harmless: only ExtractLane and CopyStreams read the state back, and both stop at Count, and a guest overwrites its lane.
+	// The permutation is left to Squeeze, or to Permute to share.
 	[SkipLocalsInit]
 	internal void Reset(int streams, int lanes, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator)
 	{

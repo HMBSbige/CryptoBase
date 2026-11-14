@@ -1,6 +1,7 @@
 namespace CryptoBase.X509;
 
-// The extensions that CertificateRevocationList decodes on first use, so that an error in one appears only to the caller that asks for it. The values are slices of the CRL's memory, and the instance is immutable.
+// The extensions that CertificateRevocationList decodes on first use, so that an error in one appears only to the caller that asks for it.
+// The values are slices of the CRL's memory, and the instance is immutable.
 internal sealed class DecodedCrlExtensions
 {
 	private const string CrlNumberOid = "2.5.29.20";
@@ -49,7 +50,8 @@ internal sealed class DecodedCrlExtensions
 
 	public DecodedExtension<IssuingDistributionPoint> IssuingDistributionPoint { get; }
 
-	// CRLNumber ::= INTEGER (0..MAX) (RFC 5280, Sec. 5.2.3), and BaseCRLNumber ::= CRLNumber (Sec. 5.2.4). A value longer than the 20 octets that conforming issuers keep to is accepted, as nothing computes with it.
+	// CRLNumber ::= INTEGER (0..MAX) (RFC 5280, Sec. 5.2.3), and BaseCRLNumber ::= CRLNumber (Sec. 5.2.4).
+	// A value longer than the 20 octets that conforming issuers keep to is accepted, as nothing computes with it.
 	private static ReadOnlyMemory<byte> ReadCrlNumber(ReadOnlyMemory<byte> value)
 	{
 		DerReader reader = new(value);

@@ -9,17 +9,22 @@ namespace CryptoBase.SM9;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The master private key ks is big-endian and must lie in [1, N − 1]. The master public key Ppub-s = [ks]P2 is a point of G2 in the uncompressed encoding, 0x04 ‖ x ‖ y with each coordinate in Fp2 written as its u-coefficient and then its constant coefficient, and must lie in G2.
-/// An instance that holds only the master public key verifies; extracting keys needs the master private key. Extraction and verification may run concurrently on one instance.
+/// The master private key ks is big-endian and must lie in [1, N − 1].
+/// The master public key Ppub-s = [ks]P2 is a point of G2 in the uncompressed encoding, 0x04 ‖ x ‖ y with each coordinate in Fp2 written as its u-coefficient and then its constant coefficient, and must lie in G2.
+/// An instance that holds only the master public key verifies; extracting keys needs the master private key.
+/// Extraction and verification may run concurrently on one instance.
 /// </para>
 /// <para>
-/// A signature is h ‖ S of GM/T 0044.2, 97 bytes with S uncompressed, or the SM9Signature of GB/T 41389-2022 (GM/T 0080-2020) in DER. Verification rejects any other encoding.
+/// A signature is h ‖ S of GM/T 0044.2, 97 bytes with S uncompressed, or the SM9Signature of GB/T 41389-2022 (GM/T 0080-2020) in DER.
+/// Verification rejects any other encoding.
 /// </para>
 /// <para>
-/// The key generation center chooses the identifier hid of the generating function of the signing keys and publishes it with the master public key. The instance holds it, 0x01 by default as GB/T 41389-2022 gives it, and takes it for extraction and verification, so a verifier imports the master public key with the hid of the master key that extracted the keys of the signers.
+/// The key generation center chooses the identifier hid of the generating function of the signing keys and publishes it with the master public key.
+/// The instance holds it, 0x01 by default as GB/T 41389-2022 gives it, and takes it for extraction and verification, so a verifier imports the master public key with the hid of the master key that extracted the keys of the signers.
 /// </para>
 /// <para>
-/// To verify many signatures, keep one instance rather than import the key for each. Disposal erases the master private key and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// To verify many signatures, keep one instance rather than import the key for each.
+/// Disposal erases the master private key and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class SM9SignatureMasterKey : IDisposable
@@ -165,7 +170,10 @@ public sealed class SM9SignatureMasterKey : IDisposable
 	/// </summary>
 	/// <param name="id">The ID of the user, which may have any length.</param>
 	/// <returns>The signing key of the user, which holds the master public key.</returns>
-	/// <exception cref="CryptographicException">No key exists for <paramref name="id" /> under the master key and its hid; GM/T 0044 has the key generation center generate a new master key in that case.</exception>
+	/// <exception cref="CryptographicException">
+	/// No key exists for <paramref name="id" /> under the master key and its hid;
+	/// GM/T 0044 has the key generation center generate a new master key in that case.
+	/// </exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the master private key.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	[SkipLocalsInit]
@@ -258,8 +266,12 @@ public sealed class SM9SignatureMasterKey : IDisposable
 		}
 	}
 
-	// GB/T 38635.2-2020, Sec. 7.1, for the 32 bytes of h and the encoding of S. Every input is public, so the products and the pairings may take variable time.
-	// For P = [h1]P2 + Ppub-s and g = e(P1, Ppub-s), bilinearity makes w' = e(S', P)·g^h' = e([h1]S', P2)·e(S' + [h']P1, Ppub-s), whose pairings take the lines of P2, which every key shares, and those of Ppub-s, which the instance keeps, and share their squares and one final exponentiation. [h1]S' is not the point at infinity, as h1 lies in [1, N − 1]; S' + [h']P1 may be, and its pairing is then 1. Both stay projective, as the factors of the lines take one inversion for both. For an ID that has no key, P is the point at infinity, e(S', P) = 1 and w' = g^h', so the signature verifies just if h' = H2(M' ‖ g^h', N), which nothing finds but by chance.
+	// GB/T 38635.2-2020, Sec. 7.1, for the 32 bytes of h and the encoding of S.
+	// Every input is public, so the products and the pairings may take variable time.
+	// For P = [h1]P2 + Ppub-s and g = e(P1, Ppub-s), bilinearity makes w' = e(S', P)·g^h' = e([h1]S', P2)·e(S' + [h']P1, Ppub-s), whose pairings take the lines of P2, which every key shares, and those of Ppub-s, which the instance keeps, and share their squares and one final exponentiation.
+	// [h1]S' is not the point at infinity, as h1 lies in [1, N − 1]; S' + [h']P1 may be, and its pairing is then 1.
+	// Both stay projective, as the factors of the lines take one inversion for both.
+	// For an ID that has no key, P is the point at infinity, e(S', P) = 1 and w' = g^h', so the signature verifies just if h' = H2(M' ‖ g^h', N), which nothing finds but by chance.
 	[SkipLocalsInit]
 	private bool Verify(ReadOnlySpan<byte> message, ReadOnlySpan<byte> h, ReadOnlySpan<byte> s, ReadOnlySpan<byte> id)
 	{

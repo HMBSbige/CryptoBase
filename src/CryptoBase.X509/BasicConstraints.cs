@@ -6,7 +6,9 @@ internal sealed class BasicConstraints(bool certificateAuthority, int? pathLengt
 	// cA: whether the subject's key may verify certificate signatures.
 	public bool CertificateAuthority { get; } = certificateAuthority;
 
-	// pathLenConstraint, or null if it is absent, which imposes no limit. A limit beyond int.MaxValue, which no path reaches, is int.MaxValue. It is returned whatever cA is, for the validator to judge.
+	// pathLenConstraint, or null if it is absent, which imposes no limit.
+	// A limit beyond int.MaxValue, which no path reaches, is int.MaxValue.
+	// It is returned whatever cA is, for the validator to judge.
 	public int? PathLengthConstraint { get; } = pathLengthConstraint;
 
 	// BasicConstraints ::= SEQUENCE { cA BOOLEAN DEFAULT FALSE, pathLenConstraint INTEGER (0..MAX) OPTIONAL }; DER omits cA when it is FALSE.

@@ -23,7 +23,8 @@ public class Blake3ParallelTest
 		// 2048 bytes in the group buffer and a read; the failing append switches to chunk mode, stacking both chunks and emptying the buffer, unless ChunkModeInterval is shorter, as with AVX-512.
 		BufferedTwoChunks,
 
-		// Reads after 8191 bytes and after 8192, with nothing appended in between but the byte that separates them; the failing append switches to chunk mode, stacking the eight chunks of the group buffer and emptying it, unless a longer ChunkModeInterval, as without hardware intrinsics, switched already.
+		// Reads after 8191 bytes and after 8192, with nothing appended in between but the byte that separates them;
+		// the failing append switches to chunk mode, stacking the eight chunks of the group buffer and emptying it, unless a longer ChunkModeInterval, as without hardware intrinsics, switched already.
 		BufferedEightChunksAfterReads
 	}
 
@@ -88,7 +89,8 @@ public class Blake3ParallelTest
 		}
 	}
 
-	// Array.MaxLength is less than a leaf short of 2^31 for every leaf length, so a whole last leaf ends past int.MaxValue. NumberLeaves and FindLeaf only compute offsets, so the split is checked without allocating the input.
+	// Array.MaxLength is less than a leaf short of 2^31 for every leaf length, so a whole last leaf ends past int.MaxValue.
+	// NumberLeaves and FindLeaf only compute offsets, so the split is checked without allocating the input.
 	[Test]
 	[Arguments(new[] { 0, int.MaxValue }, 16 * 1024)]
 	[Arguments(new[] { 0, int.MaxValue }, 1 << 27)]
@@ -521,7 +523,10 @@ public class Blake3ParallelTest
 		}
 	}
 
-	// On Windows a helper preempted by a busier thread of higher priority can only move to the calling thread's processor, which a caller above the pool's priority would keep busy for as long as it spins; blocking frees it. The busy thread ranks below the caller, so it never preempts the caller itself. The test narrows the affinity of the whole process, so it runs alone and only on request.
+	// On Windows a helper preempted by a busier thread of higher priority can only move to the calling thread's processor, which a caller above the pool's priority would keep busy for as long as it spins;
+	// blocking frees it.
+	// The busy thread ranks below the caller, so it never preempts the caller itself.
+	// The test narrows the affinity of the whole process, so it runs alone and only on request.
 	[Test]
 	[Explicit]
 	[NotInParallel]

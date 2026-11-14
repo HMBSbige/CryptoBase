@@ -1,6 +1,10 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// Fp2 = Fp[u]/(u² + 2) of GM/T 0044.5 §3.2, the element A0 + A1·u, both reduced SM9Fp elements. Every member takes and gives reduced coefficients. The sums, differences and small multiples are not inlined: each takes a weak reduction per coefficient, and inlined into the formulas of the twist and the Miller loop they would leave those too long for the op cache. No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
+// Fp2 = Fp[u]/(u² + 2) of GM/T 0044.5 §3.2, the element A0 + A1·u, both reduced SM9Fp elements.
+// Every member takes and gives reduced coefficients.
+// The sums, differences and small multiples are not inlined: each takes a weak reduction per coefficient, and inlined into the formulas of the twist and the Miller loop they would leave those too long for the op cache.
+// No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
+// Any result may be the same variable as an input.
 internal struct SM9Fp2 : ISM9Field<SM9Fp2>
 {
 	internal SM9Fp A0;
@@ -17,7 +21,8 @@ internal struct SM9Fp2 : ISM9Field<SM9Fp2>
 
 	public static ref readonly SM9Fp2 B => ref BValue;
 
-	// Karatsuba with one reduction per coefficient: a0b0 − 2a1b1 + 11p² and (a0 + a1)(b0 + b1) − a0b0 − a1b1 = a0b1 + a1b0. For reduced inputs each product is below 5.1p² and the sums below 4.5p, so the two values are below 16.1p² and 10.2p².
+	// Karatsuba with one reduction per coefficient: a0b0 − 2a1b1 + 11p² and (a0 + a1)(b0 + b1) − a0b0 − a1b1 = a0b1 + a1b0.
+	// For reduced inputs each product is below 5.1p² and the sums below 4.5p, so the two values are below 16.1p² and 10.2p².
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	[SkipLocalsInit]
 	public static void Multiply(in SM9Fp2 left, in SM9Fp2 right, out SM9Fp2 result)
@@ -52,7 +57,9 @@ internal struct SM9Fp2 : ISM9Field<SM9Fp2>
 		SM9Fp.Reduce(in s2, out result.A1);
 	}
 
-	// The product as integer polynomials before reduction, a0b0 − 2a1b1 and (a0 + a1)(b0 + b1) − a0b0 − a1b1 = a0b1 + a1b0. For limbs below 2^53, as a sum of two reduced elements has, the columns of a0b0 − 2a1b1 are below 2^58.2 and those of a0b1 + a1b0 below 2^58.9 in magnitude; for reduced inputs, below 2^56.9 and 2^57.3.
+	// The product as integer polynomials before reduction, a0b0 − 2a1b1 and (a0 + a1)(b0 + b1) − a0b0 − a1b1 = a0b1 + a1b0.
+	// For limbs below 2^53, as a sum of two reduced elements has, the columns of a0b0 − 2a1b1 are below 2^58.2 and those of a0b1 + a1b0 below 2^58.9 in magnitude;
+	// for reduced inputs, below 2^56.9 and 2^57.3.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	[SkipLocalsInit]
 	internal static void MultiplyWide(in SM9Fp2 left, in SM9Fp2 right, out SM9Fp2Wide result)
@@ -112,7 +119,8 @@ internal struct SM9Fp2 : ISM9Field<SM9Fp2>
 		SM9Fp.AddUnreduced(in left.A1, in right.A1, out result.A1);
 	}
 
-	// right may be a coefficient of result: the product into that coefficient comes last, after the other one has read right, and SM9Fp.Multiply reads its inputs before it writes. A1 comes first just for right = result.A0, out of line, so that the other callers copy nothing and pay a comparison at most, which the JIT drops where it tells right from result.
+	// right may be a coefficient of result: the product into that coefficient comes last, after the other one has read right, and SM9Fp.Multiply reads its inputs before it writes.
+	// A1 comes first just for right = result.A0, out of line, so that the other callers copy nothing and pay a comparison at most, which the JIT drops where it tells right from result.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void MultiplyByFp(in SM9Fp2 left, in SM9Fp right, out SM9Fp2 result)
 	{

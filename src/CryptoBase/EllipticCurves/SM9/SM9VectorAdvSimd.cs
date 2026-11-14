@@ -121,7 +121,9 @@ internal readonly struct SM9VectorAdvSimd : ISM9Vector<SM9VectorAdvSimd>
 		return new SM9VectorAdvSimd(AdvSimd.BitwiseSelect(mask._value, whenSet._value, whenClear._value));
 	}
 
-	// Each pair of lanes of the destination row from the two pairs that hold its sources, by one zip1, zip2, ext or ins; the pattern is a constant, so the addresses and the choice fold. Every source is read before the destination is written. Lanes 6 and 7, padding, are left as they were.
+	// Each pair of lanes of the destination row from the two pairs that hold its sources, by one zip1, zip2, ext or ins; the pattern is a constant, so the addresses and the choice fold.
+	// Every source is read before the destination is written.
+	// Lanes 6 and 7, padding, are left as they were.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Permute(ref readonly ulong first, ref readonly ulong second, ref ulong destination, ulong pattern)
 	{

@@ -6,7 +6,10 @@ namespace CryptoBase.Kdf;
 /// Implements the TLS 1.2 pseudorandom function as specified by RFC 5246, section 5, over an HMAC implementation.
 /// </summary>
 /// <remarks>
-/// The output is <c>P_hash(secret, label || seed)</c> truncated to the output length, with the HMAC that the cipher suite selects. A single-block output takes two calls to <c>TMac.Mac</c>. A longer output creates one keyed <typeparamref name="TMac" /> instance and computes every block with it. Any input may overlap the output.
+/// The output is <c>P_hash(secret, label || seed)</c> truncated to the output length, with the HMAC that the cipher suite selects.
+/// A single-block output takes two calls to <c>TMac.Mac</c>.
+/// A longer output creates one keyed <typeparamref name="TMac" /> instance and computes every block with it.
+/// Any input may overlap the output.
 /// </remarks>
 /// <typeparam name="TMac">The HMAC that P_hash uses.</typeparam>
 public static class Tls12Prf<TMac> where TMac : class, IMacAlgorithm<TMac>
@@ -17,7 +20,10 @@ public static class Tls12Prf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	/// <param name="secret">The secret. It may be empty.</param>
 	/// <param name="label">The ASCII label, such as <c>"master secret"u8</c>, without a length prefix or a trailing null.</param>
 	/// <param name="seed">The seed.</param>
-	/// <param name="output">The buffer that receives the derived key material. Its length selects how many bytes are derived.</param>
+	/// <param name="output">
+	/// The buffer that receives the derived key material.
+	/// Its length selects how many bytes are derived.
+	/// </param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="output" /> is empty.</exception>
 	public static void DeriveKey(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed, Span<byte> output)
 	{
@@ -31,7 +37,10 @@ public static class Tls12Prf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	/// <param name="label">The ASCII label, such as <c>"master secret"u8</c>, without a length prefix or a trailing null.</param>
 	/// <param name="seed1">The first part of the seed.</param>
 	/// <param name="seed2">The second part of the seed.</param>
-	/// <param name="output">The buffer that receives the derived key material. Its length selects how many bytes are derived.</param>
+	/// <param name="output">
+	/// The buffer that receives the derived key material.
+	/// Its length selects how many bytes are derived.
+	/// </param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="output" /> is empty.</exception>
 	public static void DeriveKey(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output)
 	{
@@ -76,7 +85,9 @@ public static class Tls12Prf<TMac> where TMac : class, IMacAlgorithm<TMac>
 		block.Span.Slice(0, output.Length).CopyTo(output);
 	}
 
-	// A(i) = MAC(secret, A(i - 1)) with A(0) = label || seed, and block i = MAC(secret, A(i) || label || seed). The buffer holds A(i) || label || seed, so no append reads the output and the label and seed may overlap it. Create consumes the secret before the first block is written, so the secret may overlap the output too.
+	// A(i) = MAC(secret, A(i - 1)) with A(0) = label || seed, and block i = MAC(secret, A(i) || label || seed).
+	// The buffer holds A(i) || label || seed, so no append reads the output and the label and seed may overlap it.
+	// Create consumes the secret before the first block is written, so the secret may overlap the output too.
 	[SkipLocalsInit]
 	private static void DeriveBlocks(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output)
 	{

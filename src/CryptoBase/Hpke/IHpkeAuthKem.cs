@@ -27,7 +27,8 @@ public interface IHpkeAuthKem<TSelf> : IHpkeKem<TSelf> where TSelf : class, IHpk
 	/// Recovers the shared secret from <paramref name="ciphertext" /> with the decapsulation key, for a ciphertext authenticated with the encapsulation key of <paramref name="sender" />.
 	/// </summary>
 	/// <remarks>
-	/// As with <see cref="IKem{TSelf}.TryDecapsulate" />, the method returns <see langword="false" /> only if <paramref name="ciphertext" /> fails the public checks, and <see langword="true" /> does not mean that it was encapsulated to this key by <paramref name="sender" />: a ciphertext from anyone else gives another shared secret. If the method returns <see langword="false" /> or throws, <paramref name="sharedSecret" /> remains unchanged.
+	/// As with <see cref="IKem{TSelf}.TryDecapsulate" />, the method returns <see langword="false" /> only if <paramref name="ciphertext" /> fails the public checks, and <see langword="true" /> does not mean that it was encapsulated to this key by <paramref name="sender" />: a ciphertext from anyone else gives another shared secret.
+	/// If the method returns <see langword="false" /> or throws, <paramref name="sharedSecret" /> remains unchanged.
 	/// </remarks>
 	/// <param name="ciphertext">The ciphertext.</param>
 	/// <param name="sender">The sender's encapsulation key.</param>

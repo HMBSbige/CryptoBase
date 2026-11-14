@@ -185,7 +185,8 @@ public class SM2KernelTest
 		}
 	}
 
-	// The windows of the table of P split into blocks as those of G do, so the scalars around the splits of MultiplyBaseMatchesTheReference serve for both products, each of which must match its reference; k·P must also match what Multiply gives without the table.
+	// The windows of the table of P split into blocks as those of G do, so the scalars around the splits of MultiplyBaseMatchesTheReference serve for both products, each of which must match its reference;
+	// k·P must also match what Multiply gives without the table.
 	[Test]
 	[MethodDataSource(typeof(SM2KernelCase), nameof(SM2KernelCase.All))]
 	public async Task MultiplyBaseAndFixedMatchesTheReference(SM2KernelCase kernel)
@@ -250,7 +251,8 @@ public class SM2KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Q = q·G for a known q, so that u1 = −q·u2 and u1 = q·u2 make the sum of u1·G and u2·Q the point at infinity and a double; with the scalars of the windows of 8 bits of SM2VerificationCurve, which u1·G takes, for u1 and edge cases for u2.
+	// Q = q·G for a known q, so that u1 = −q·u2 and u1 = q·u2 make the sum of u1·G and u2·Q the point at infinity and a double;
+	// with the scalars of the windows of 8 bits of SM2VerificationCurve, which u1·G takes, for u1 and edge cases for u2.
 	[Test]
 	[MethodDataSource(typeof(SM2KernelCase), nameof(SM2KernelCase.All))]
 	public async Task MultiplyAddMatchesTheReference(SM2KernelCase kernel)
@@ -269,7 +271,8 @@ public class SM2KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// As MultiplyAddMatchesTheReference with the windows of Q of SM2VerificationCurve, whose blocks split as those of G of that curve do, so that VerificationScalars serve for u1 and u2 alike, each with a random other; the edge cases of u2 also take u1 = ∓q·u2 and 0, and the results must be in the form E.
+	// As MultiplyAddMatchesTheReference with the windows of Q of SM2VerificationCurve, whose blocks split as those of G of that curve do, so that VerificationScalars serve for u1 and u2 alike, each with a random other;
+	// the edge cases of u2 also take u1 = ∓q·u2 and 0, and the results must be in the form E.
 	[Test]
 	[MethodDataSource(typeof(SM2KernelCase), nameof(SM2KernelCase.All))]
 	public async Task MultiplyAddFixedMatchesTheReference(SM2KernelCase kernel)
@@ -330,7 +333,8 @@ public class SM2KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The chains of SM2OctoFormulas from entries read at public digits, which u1·G + u2·Q without a table takes on AVX-512, for the scalars of MultiplyMatchesTheReference and their exceptions; the results must be in the form E as well, and (0, 0, 0) for k = 0.
+	// The chains of SM2OctoFormulas from entries read at public digits, which u1·G + u2·Q without a table takes on AVX-512, for the scalars of MultiplyMatchesTheReference and their exceptions;
+	// the results must be in the form E as well, and (0, 0, 0) for k = 0.
 	[Test]
 	public async Task OctoVariableTimeMatchesTheReference()
 	{
@@ -359,7 +363,11 @@ public class SM2KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// k·P + l·Q by SM2OctoFormulas.MultiplyAdd, which the key exchange takes on AVX-512 without the windows of the static key of the peer, for Q = c·P: the scalars of MultiplyMatchesTheReference and those at which window 0 of a chain over all the odd digits meets equal points, which must be n − 38 alone, the TwiceLowDigit of SM2OctoFormulas, with their neighbors, each with a random scalar in the other chain; those in both chains; l·Q equal and opposite to k·P; and 0 for k, l or both. The results must be in the form E as well.
+	// k·P + l·Q by SM2OctoFormulas.MultiplyAdd, which the key exchange takes on AVX-512 without the windows of the static key of the peer, for Q = c·P: the scalars of MultiplyMatchesTheReference and those at which window 0 of a chain over all the odd digits meets equal points, which must be n − 38 alone, the TwiceLowDigit of SM2OctoFormulas, with their neighbors, each with a random scalar in the other chain;
+	// those in both chains;
+	// l·Q equal and opposite to k·P;
+	// and 0 for k, l or both.
+	// The results must be in the form E as well.
 	[Test]
 	public async Task OctoMultiplyAddMatchesTheReference()
 	{
@@ -473,7 +481,8 @@ public class SM2KernelTest
 		}
 	}
 
-	// The chains of SM2OctoFormulas over the digits of RecodeHalf, which verification takes on AVX-512, k·P in one half and l·Q in the other for two random points, with the scalars of HalfWindowsSumToTheScalar for k, each with a random l, and the same the other way; the results must be in the form E as well.
+	// The chains of SM2OctoFormulas over the digits of RecodeHalf, which verification takes on AVX-512, k·P in one half and l·Q in the other for two random points, with the scalars of HalfWindowsSumToTheScalar for k, each with a random l, and the same the other way;
+	// the results must be in the form E as well.
 	[Test]
 	public async Task OctoHalfChainsMatchTheReference()
 	{
@@ -526,7 +535,9 @@ public class SM2KernelTest
 		await Assert.That(ModulusCase.FromLimbs(SM2Avx512.FieldGap)).IsEqualTo(Curve.Reference.P - Curve.Order);
 	}
 
-	// The comparison of the AVX-512 kernel that verification takes against the reference, for Q = u2⁻¹·(S − u1·G) with random u1 and u2 and a chosen sum S: S of x at r and at r + n for r below p − n, where the kernel goes to MultiplyAdd, and S of x at p − n and above; for each, r that is the x of S mod n, r + 1 and r − 1. Random Q with the x of the sum and with random r, which takes v1 and v2 of each parity, r with no point of x r, sums at the point at infinity, and u1 or u2 of 0 complete it.
+	// The comparison of the AVX-512 kernel that verification takes against the reference, for Q = u2⁻¹·(S − u1·G) with random u1 and u2 and a chosen sum S: S of x at r and at r + n for r below p − n, where the kernel goes to MultiplyAdd, and S of x at p − n and above;
+	// for each, r that is the x of S mod n, r + 1 and r − 1.
+	// Random Q with the x of the sum and with random r, which takes v1 and v2 of each parity, r with no point of x r, sums at the point at infinity, and u1 or u2 of 0 complete it.
 	[Test]
 	public async Task OctoVerificationMatchesTheReference()
 	{
@@ -618,7 +629,9 @@ public class SM2KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The lanes of the vector kernels fold sums of blocks of windows of w bits, and the last fold would add equal points at k = n − 2·(n mod 2^(wb)) for a split after b windows if bit wb − 1 of n were 0. The scalars of MultiplyBaseMatchesTheReference hold that k for every b; this test checks, for both widths, that the reference does meet equal points there for the splits that would be wrong, and that the last folds of eight, four and two blocks split elsewhere, so that those scalars keep their point.
+	// The lanes of the vector kernels fold sums of blocks of windows of w bits, and the last fold would add equal points at k = n − 2·(n mod 2^(wb)) for a split after b windows if bit wb − 1 of n were 0.
+	// The scalars of MultiplyBaseMatchesTheReference hold that k for every b;
+	// this test checks, for both widths, that the reference does meet equal points there for the splits that would be wrong, and that the last folds of eight, four and two blocks split elsewhere, so that those scalars keep their point.
 	[Test]
 	[Arguments(6)]
 	[Arguments(7)]
@@ -668,7 +681,9 @@ public class SM2KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The AVX-512 kernel adds 2^130·T·P to B·P for the sums T and B of the odd digits from 26 up and below, 2^130·T + B = 2s − (2^260 − 1), and equal points need 2^130·T − B = jn for an odd j. Over every such j within the bounds of 2^130·T − B, s below n meets equal points at one k, which must be the exception of SM2OddWindows, and s in [n, 2n), which the exception takes, at one other k; the scalars of PointScalars hold both, and also the bits of n that the bounds of SM2OctoFormulas.Multiply take.
+	// The AVX-512 kernel adds 2^130·T·P to B·P for the sums T and B of the odd digits from 26 up and below, 2^130·T + B = 2s − (2^260 − 1), and equal points need 2^130·T − B = jn for an odd j.
+	// Over every such j within the bounds of 2^130·T − B, s below n meets equal points at one k, which must be the exception of SM2OddWindows, and s in [n, 2n), which the exception takes, at one other k;
+	// the scalars of PointScalars hold both, and also the bits of n that the bounds of SM2OctoFormulas.Multiply take.
 	[Test]
 	public async Task OddWindowsMeetEqualPointsJustAtTheException()
 	{
@@ -854,7 +869,10 @@ public class SM2KernelTest
 		return [.. ((CurvePoint[])[Curve.Reference.Generator, other]).Select(point => (point, ((BigInteger, CurvePoint?)[])[.. scalars.Zip(Curve.Reference.Multiply(point, scalars))]))];
 	}
 
-	// Odd scalars below 2^128 for RecodeHalf: 1, 3 and 5; 2^128 − 1, 2^127 ± 1 and 2^125 ± 1, at the windows of the top digit; scalars of one window value v in every window below the top, for v = 0, 15, 16 and 31, the smallest, middle and largest digits; and random ones.
+	// Odd scalars below 2^128 for RecodeHalf: 1, 3 and 5;
+	// 2^128 − 1, 2^127 ± 1 and 2^125 ± 1, at the windows of the top digit;
+	// scalars of one window value v in every window below the top, for v = 0, 15, 16 and 31, the smallest, middle and largest digits;
+	// and random ones.
 	private static SortedSet<BigInteger> OddHalfScalars()
 	{
 		BigInteger half = BigInteger.One << 128;
@@ -883,7 +901,13 @@ public class SM2KernelTest
 		return scalars;
 	}
 
-	// For the windows of 5 bits of ECGroup.Multiply: 0, small scalars, whose top digits are 0, and the largest ones, n − 6 among them, whose window 0 adds equal points; 2^(5i) and n − 2^(5i) with their neighbors; n − 2·(n mod 2^130) and 2·(n mod 2^130) with their neighbors; windows of 16, 17 and 31, the largest digit and the most negative ones with carries. For the odd windows of SM2OddWindows: the scalars at which its chains would meet equal points, for s below n and for s in [n, 2n), with their neighbors; those of s = 0, s = n − 1 and s = 2^130 − 1 and 2^130, the extremes of the digits and of the bottom chain; and random scalars.
+	// For the windows of 5 bits of ECGroup.Multiply: 0, small scalars, whose top digits are 0, and the largest ones, n − 6 among them, whose window 0 adds equal points;
+	// 2^(5i) and n − 2^(5i) with their neighbors;
+	// n − 2·(n mod 2^130) and 2·(n mod 2^130) with their neighbors;
+	// windows of 16, 17 and 31, the largest digit and the most negative ones with carries.
+	// For the odd windows of SM2OddWindows: the scalars at which its chains would meet equal points, for s below n and for s in [n, 2n), with their neighbors;
+	// those of s = 0, s = n − 1 and s = 2^130 − 1 and 2^130, the extremes of the digits and of the bottom chain;
+	// and random scalars.
 	private static SortedSet<BigInteger> PointScalars()
 	{
 		const int width = 5;
@@ -960,7 +984,11 @@ public class SM2KernelTest
 		return scalars;
 	}
 
-	// 0 and the largest scalars; around each split after b windows, 2^(wb) and n − 2^(wb) with their neighbors and k = n − 2·(n mod 2^(wb)), at which a fold of the low and the high windows meets equal points where bit wb − 1 of n is 0; windows of h = 2^(w − 1), h + 1 and 2h − 1, the largest digit and the most negative ones with carries; where w divides 256, the largest k whose digits are those of k, every window h − 1, with its neighbors, and the k whose digits, those of k − n, are −h and then 1 − h in every window above, or h − 1 below a top one of −h; and random scalars.
+	// 0 and the largest scalars;
+	// around each split after b windows, 2^(wb) and n − 2^(wb) with their neighbors and k = n − 2·(n mod 2^(wb)), at which a fold of the low and the high windows meets equal points where bit wb − 1 of n is 0;
+	// windows of h = 2^(w − 1), h + 1 and 2h − 1, the largest digit and the most negative ones with carries;
+	// where w divides 256, the largest k whose digits are those of k, every window h − 1, with its neighbors, and the k whose digits, those of k − n, are −h and then 1 − h in every window above, or h − 1 below a top one of −h;
+	// and random scalars.
 	private static SortedSet<BigInteger> Scalars(int width)
 	{
 		BigInteger n = Curve.Order;

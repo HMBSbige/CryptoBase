@@ -2,7 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Hashes.SM3;
 
-// Four lanes in 128-bit vectors, on x64 and ARM64. Where a rotation by 8 takes one byte shuffle and others more, P0 and P1 rotate x ^ (x <<< 8) once rather than x twice.
+// Four lanes in 128-bit vectors, on x64 and ARM64.
+// Where a rotation by 8 takes one byte shuffle and others more, P0 and P1 rotate x ^ (x <<< 8) once rather than x twice.
 internal readonly struct SM3Vector128 : ISM3Lanes<Vector128<uint>>
 {
 	public static bool IsSupported => Vector128.IsHardwareAccelerated && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported);

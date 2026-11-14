@@ -7,16 +7,21 @@ namespace CryptoBase.Kems.Hybrid;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The encodings and the shared secret are those of the TLS group X25519MLKEM768. Unlike in the other hybrid KEMs, the ML-KEM part comes first in every encoding and in the shared secret. The encapsulation key is the ML-KEM-768 encapsulation key followed by the X25519 public key, a ciphertext is an ML-KEM-768 ciphertext followed by an ephemeral X25519 public key, and the shared secret is the ML-KEM-768 shared secret followed by the X25519 shared secret.
+/// The encodings and the shared secret are those of the TLS group X25519MLKEM768.
+/// Unlike in the other hybrid KEMs, the ML-KEM part comes first in every encoding and in the shared secret.
+/// The encapsulation key is the ML-KEM-768 encapsulation key followed by the X25519 public key, a ciphertext is an ML-KEM-768 ciphertext followed by an ephemeral X25519 public key, and the shared secret is the ML-KEM-768 shared secret followed by the X25519 shared secret.
 /// </para>
 /// <para>
 /// The private seed and the decapsulation key are formats of this library: the ML-KEM-768 private seed or decapsulation key followed by the X25519 private key, any 32 bytes.
 /// </para>
 /// <para>
-/// An X25519 public key is accepted in any encoding, as RFC 7748 requires, except a point of small order, which gives an all-zero shared secret: <see cref="ImportEncapsulationKey" /> rejects one, and <see cref="TryDecapsulate" /> returns <see langword="false" /> only for a ciphertext of the wrong length or one whose ephemeral public key is such a point; any other ciphertext that was not encapsulated to the key is rejected implicitly by ML-KEM. Encapsulation and decapsulation may run concurrently on one instance.
+/// An X25519 public key is accepted in any encoding, as RFC 7748 requires, except a point of small order, which gives an all-zero shared secret: <see cref="ImportEncapsulationKey" /> rejects one, and <see cref="TryDecapsulate" /> returns <see langword="false" /> only for a ciphertext of the wrong length or one whose ephemeral public key is such a point;
+/// any other ciphertext that was not encapsulated to the key is rejected implicitly by ML-KEM.
+/// Encapsulation and decapsulation may run concurrently on one instance.
 /// </para>
 /// <para>
-/// The shared secret does not bind the ciphertext: altering the ML-KEM ciphertext changes only the ML-KEM part, and setting the most significant bit of the ephemeral public key changes nothing. A protocol that relies on that binding must include the ciphertext in its key derivation or transcript.
+/// The shared secret does not bind the ciphertext: altering the ML-KEM ciphertext changes only the ML-KEM part, and setting the most significant bit of the ephemeral public key changes nothing.
+/// A protocol that relies on that binding must include the ciphertext in its key derivation or transcript.
 /// </para>
 /// </remarks>
 public sealed class X25519MLKem768 : IKem<X25519MLKem768>

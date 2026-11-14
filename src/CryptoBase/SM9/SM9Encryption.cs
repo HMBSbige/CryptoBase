@@ -6,7 +6,9 @@ using CryptoBase.Kdf;
 
 namespace CryptoBase.SM9;
 
-// The key encapsulation mechanism and the public key encryption of GB/T 38635.2-2020 (GM/T 0044.4-2016), Sec. 6 and 7, with the stream cipher of the KDF: K = KDF(C ‖ w ‖ ID_B, klen) for the point C, or C1, as x ‖ y, w = e(Ppub-e, P2)^r, K1 the first mlen bits of K and K2 the next 256, C2 = M ⊕ K1 and C3 = MAC(K2, C2) = SM3(C2 ‖ K2). K2 has 256 bits, as in GM/T 0044.5, D.2. Nothing on the paths of r, w, K and M branches on or indexes by them, except the retries that GM/T 0044.4 prescribes for an all-zero K or K1.
+// The key encapsulation mechanism and the public key encryption of GB/T 38635.2-2020 (GM/T 0044.4-2016), Sec. 6 and 7, with the stream cipher of the KDF: K = KDF(C ‖ w ‖ ID_B, klen) for the point C, or C1, as x ‖ y, w = e(Ppub-e, P2)^r, K1 the first mlen bits of K and K2 the next 256, C2 = M ⊕ K1 and C3 = MAC(K2, C2) = SM3(C2 ‖ K2).
+// K2 has 256 bits, as in GM/T 0044.5, D.2.
+// Nothing on the paths of r, w, K and M branches on or indexes by them, except the retries that GM/T 0044.4 prescribes for an all-zero K or K1.
 internal static class SM9Encryption
 {
 	private const int MacKeyLength = 32;
@@ -18,7 +20,10 @@ internal static class SM9Encryption
 
 	internal const int CiphertextOverhead = PointLength + HashLength;
 
-	// A2 to A6 of Sec. 6.1 and 7.1 for the user public key Q = [h1]P1 + Ppub-e of h1 = H1(ID_B ‖ hid, N) and g = e(Ppub-e, P2): draws r until the first zeroCheckLength bytes of K, K of the encapsulation or K1 of the encryption, are not all zero, and leaves C = [r]Q encoded in c, the KDF over C ‖ w ‖ ID in kdf, and block 1 of K in first. C is [r·h1]P1 + [r]Ppub-e, as SM9G1FixedBase.MultiplyBaseSum gives it; with r in [1, N − 1], it is the point at infinity just if Q is, for an ID that has no key, which throws. Whether those bytes are all zero follows from block 1 unless that is all zero too, which for 32 bytes or more has odds 2^−256, and only that, the retry and the throw branch on it. If fill throws, nothing secret is left behind.
+	// A2 to A6 of Sec. 6.1 and 7.1 for the user public key Q = [h1]P1 + Ppub-e of h1 = H1(ID_B ‖ hid, N) and g = e(Ppub-e, P2): draws r until the first zeroCheckLength bytes of K, K of the encapsulation or K1 of the encryption, are not all zero, and leaves C = [r]Q encoded in c, the KDF over C ‖ w ‖ ID in kdf, and block 1 of K in first.
+	// C is [r·h1]P1 + [r]Ppub-e, as SM9G1FixedBase.MultiplyBaseSum gives it; with r in [1, N − 1], it is the point at infinity just if Q is, for an ID that has no key, which throws.
+	// Whether those bytes are all zero follows from block 1 unless that is all zero too, which for 32 bytes or more has odds 2^−256, and only that, the retry and the throw branch on it.
+	// If fill throws, nothing secret is left behind.
 	[SkipLocalsInit]
 	internal static void DrawEphemeral(SM9G1FixedBase masterPublicKey, in FieldElement<SM9Order> h1, SM9GTBase g, ReadOnlySpan<byte> id, int zeroCheckLength, Action<Span<byte>> fill, Span<byte> c, ref SM3KdfState kdf, Span<byte> first)
 	{
@@ -58,7 +63,8 @@ internal static class SM9Encryption
 		}
 	}
 
-	// [r]Q = [r·h1]P1 + [r]Ppub-e encoded in c for Q = [h1]P1 + Ppub-e, from h1 in Montgomery form; throws if [r]Q, so Q, is the point at infinity. product takes r·h1, which the caller erases.
+	// [r]Q = [r·h1]P1 + [r]Ppub-e encoded in c for Q = [h1]P1 + Ppub-e, from h1 in Montgomery form; throws if [r]Q, so Q, is the point at infinity.
+	// product takes r·h1, which the caller erases.
 	[SkipLocalsInit]
 	internal static void MultiplyUserKey(SM9G1FixedBase masterPublicKey, in FieldElement<SM9Order> factor, in FieldElement<SM9Order> r, out FieldElement<SM9Order> product, Span<byte> c)
 	{
@@ -73,7 +79,8 @@ internal static class SM9Encryption
 		SM9G1.Encode(in point, c);
 	}
 
-	// B1 and B2 of Sec. 6.2 and 7.2 and the KDF of B3: C, encoded, lies on the curve, which has cofactor 1, so in G1, and kdf absorbs C ‖ w' ‖ ID with w' = e(C, de). Returns false, absorbing nothing, if C does not decode.
+	// B1 and B2 of Sec. 6.2 and 7.2 and the KDF of B3: C, encoded, lies on the curve, which has cofactor 1, so in G1, and kdf absorbs C ‖ w' ‖ ID with w' = e(C, de).
+	// Returns false, absorbing nothing, if C does not decode.
 	[SkipLocalsInit]
 	internal static bool TryStart(ReadOnlySpan<byte> c, SM9G2PrivateKey key, ReadOnlySpan<byte> id, ref SM3KdfState kdf)
 	{
@@ -121,7 +128,8 @@ internal static class SM9Encryption
 		}
 	}
 
-	// A6 to A8 of Sec. 7.1: C2 = M ⊕ K1 and C3 = SM3(C2 ‖ K2), from block 1 of K in first and the next ones from kdf. c2 does not overlap plaintext.
+	// A6 to A8 of Sec. 7.1: C2 = M ⊕ K1 and C3 = SM3(C2 ‖ K2), from block 1 of K in first and the next ones from kdf.
+	// c2 does not overlap plaintext.
 	[SkipLocalsInit]
 	internal static void Seal(ReadOnlySpan<byte> plaintext, in SM3KdfState kdf, ReadOnlySpan<byte> first, Span<byte> c3, Span<byte> c2)
 	{
@@ -138,7 +146,9 @@ internal static class SM9Encryption
 		Mac(c2, macKey.Span, c3);
 	}
 
-	// B1 to B5 of Sec. 7.2 for C1 encoded and a C2 that is not empty: writes M' to the first C2.Length bytes of destination and returns true if C1 lies on the curve, K1' is not all zero and C3 = SM3(C2 ‖ K2'), which it compares in fixed time; otherwise returns false and writes nothing. destination may overlap the ciphertext: M' goes there only after the last read of it.
+	// B1 to B5 of Sec. 7.2 for C1 encoded and a C2 that is not empty: writes M' to the first C2.Length bytes of destination and returns true if C1 lies on the curve, K1' is not all zero and C3 = SM3(C2 ‖ K2'), which it compares in fixed time;
+	// otherwise returns false and writes nothing.
+	// destination may overlap the ciphertext: M' goes there only after the last read of it.
 	[SkipLocalsInit]
 	internal static bool Open(ReadOnlySpan<byte> c1, ReadOnlySpan<byte> c3, ReadOnlySpan<byte> c2, SM9G2PrivateKey key, ReadOnlySpan<byte> id, Span<byte> destination)
 	{
@@ -180,7 +190,8 @@ internal static class SM9Encryption
 		}
 	}
 
-	// Writes the bytes of the key stream of kdf from offset on, which fill destination: K2 from mlen on. It spans at most two blocks, which only offset decides.
+	// Writes the bytes of the key stream of kdf from offset on, which fill destination: K2 from mlen on.
+	// It spans at most two blocks, which only offset decides.
 	[SkipLocalsInit]
 	private static void ReadKeyStream(in SM3KdfState kdf, int offset, Span<byte> destination)
 	{

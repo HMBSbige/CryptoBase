@@ -8,7 +8,8 @@ namespace CryptoBase.X509;
 /// A validator calls the methods on any thread, concurrently, and each URI that it passes is an absolute http or https URI from a certificate, which may not have been validated yet.
 /// </para>
 /// <para>
-/// A retrieval that fails returns an empty value, and the validator treats the source as unavailable. Other than <see cref="OperationCanceledException" />, an exception that a method throws escapes from <see cref="ICertificateValidator.ValidateAsync" />.
+/// A retrieval that fails returns an empty value, and the validator treats the source as unavailable.
+/// Other than <see cref="OperationCanceledException" />, an exception that a method throws escapes from <see cref="ICertificateValidator.ValidateAsync" />.
 /// </para>
 /// </remarks>
 public interface ICertificateDataRetriever

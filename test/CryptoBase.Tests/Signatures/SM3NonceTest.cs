@@ -40,7 +40,8 @@ public class SM3NonceTest
 		], CollectionOrdering.Matching);
 	}
 
-	// For both orders: ⌊2^512/(n − 1)⌋ = 2^256 + NonceReciprocal, with a fraction below 1 − 2^−63, which keeps the estimate of Reduce at most one short; and the values at the edges of the reduction and random ones.
+	// For both orders: ⌊2^512/(n − 1)⌋ = 2^256 + NonceReciprocal, with a fraction below 1 − 2^−63, which keeps the estimate of Reduce at most one short;
+	// and the values at the edges of the reduction and random ones.
 	[Test]
 	public async Task ReductionMatchesBigInteger()
 	{

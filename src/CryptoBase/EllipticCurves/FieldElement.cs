@@ -2,7 +2,11 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// Always below m. Whether it is in Montgomery form is up to the caller: Multiply and the inversions work in that form, the encodings take and give the plain value, and the other operations work in either. No operation but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. The operations erase the sums and products they keep on the stack. Any result may be the same variable as an input.
+// Always below m.
+// Whether it is in Montgomery form is up to the caller: Multiply and the inversions work in that form, the encodings take and give the plain value, and the other operations work in either.
+// No operation but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
+// The operations erase the sums and products they keep on the stack.
+// Any result may be the same variable as an input.
 internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModulus
 {
 	private TModulus _limbs;
@@ -180,7 +184,8 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		}
 	}
 
-	// x may be any value of LimbCount limbs if y < m, since the product is then below m·R, as Reduce needs. Not inlined: inlined into a small caller, it exceeds the inlining budget of that caller, and the helpers left over become calls.
+	// x may be any value of LimbCount limbs if y < m, since the product is then below m·R, as Reduce needs.
+	// Not inlined: inlined into a small caller, it exceeds the inlining budget of that caller, and the helpers left over become calls.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	private static void MontgomeryMultiply(ref ulong x, ref ulong y, ref ulong result)

@@ -1,8 +1,13 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The twisted curve −x² + y² = 1 + d'x²y², d' = d − 1 = −39082, which is 4-isogenous to edwards448: Twist, (x, y) ↦ (2xy/(y² − x²), (y² + x²)/(2 − y² − x²)), takes edwards448 to it and Untwist, (x, y) ↦ (2xy/(x² + y²), (y² − x²)/(2 − y² + x²)), takes it back, and either composition is multiplication by 4. Base = [1/4 mod L]·Twist(B), so Untwist([s]Base) = [s]B for every s. Its a = −1 saves a product in each addition and fills the four lanes of a vector kernel.
-// The formulas are not complete here, as −1 is not a square, but they are exact unless P1 + P2 or P1 − P2 is one of the points at infinity of the curve, which have order 2 or 4 (Bernstein and Lange, "A complete set of addition laws for incomplete Edwards curves", 2011; Hisil, Wong, Carter and Dawson, "Twisted Edwards curves revisited", 2008, §3). The fixed-base product meets only multiples of Base, of odd order L, so it never meets them; the same holds for the denominators of Untwist, x² + y², which is never 0 as −1 is not a square, and 2 − y² + x² = 1 − d'x²y², that of a doubling.
-// Points use the extended coordinates of EdwardsPoint. In the bounds below, a limb bound of m means m·2^56, as in Edwards448.
+// The twisted curve −x² + y² = 1 + d'x²y², d' = d − 1 = −39082, which is 4-isogenous to edwards448: Twist, (x, y) ↦ (2xy/(y² − x²), (y² + x²)/(2 − y² − x²)), takes edwards448 to it and Untwist, (x, y) ↦ (2xy/(x² + y²), (y² − x²)/(2 − y² + x²)), takes it back, and either composition is multiplication by 4.
+// Base = [1/4 mod L]·Twist(B), so Untwist([s]Base) = [s]B for every s.
+// Its a = −1 saves a product in each addition and fills the four lanes of a vector kernel.
+// The formulas are not complete here, as −1 is not a square, but they are exact unless P1 + P2 or P1 − P2 is one of the points at infinity of the curve, which have order 2 or 4 (Bernstein and Lange, "A complete set of addition laws for incomplete Edwards curves", 2011; Hisil, Wong, Carter and Dawson, "Twisted Edwards curves revisited", 2008, §3).
+// The fixed-base product meets only multiples of Base, of odd order L, so it never meets them;
+// the same holds for the denominators of Untwist, x² + y², which is never 0 as −1 is not a square, and 2 − y² + x² = 1 − d'x²y², that of a doubling.
+// Points use the extended coordinates of EdwardsPoint.
+// In the bounds below, a limb bound of m means m·2^56, as in Edwards448.
 internal static class TwistedEdwards448
 {
 	// −2d', the multiplier of MultiplySmall whose product the formulas negate.
@@ -18,7 +23,8 @@ internal static class TwistedEdwards448
 		0x00B570EB800EB906, 0x0059CCF727CA837F, 0x0078CA04585B0A97, 0x004334B4AF25C669, 0x00A7E5D7CF7065D1, 0x00F75A765A1F8473, 0x00CD5DDAEAD5F808, 0x005B1BEDD06A818D,
 	];
 
-	// A = (Y1 − X1)(y − x), B = (Y1 + X1)(y + x), C = T1·2d'xy and D = 2Z1 give x = (B − A)/(D + C) and y = (B + A)/(D − C). B − A and D + C are at 3 and D − C at 4, whose products by each other, the largest of ToExtended, are within the 12.25 that Multiply takes.
+	// A = (Y1 − X1)(y − x), B = (Y1 + X1)(y + x), C = T1·2d'xy and D = 2Z1 give x = (B − A)/(D + C) and y = (B + A)/(D − C).
+	// B − A and D + C are at 3 and D − C at 4, whose products by each other, the largest of ToExtended, are within the 12.25 that Multiply takes.
 	internal static void AddNiels(in EdwardsPoint left, in TwistedNielsPoint right, out EdwardsCompletedPoint result)
 	{
 		Field448.Add(in left.Y, in left.X, out Field448 sum);
@@ -61,7 +67,8 @@ internal static class TwistedEdwards448
 		Field448.Subtract(in d, in c, out result.T);
 	}
 
-	// x = 2XY/(Y² − X²) and y = (Y² + X²)/(2Z² − Y² + X²), with 2XY = (X + Y)² − Y² − X². 2XY and 2Z² − Y² + X² take 4p and a carry each, which leaves the products of ToExtended at most 6, Y² + X² at 2 by Y² − X² at 3.
+	// x = 2XY/(Y² − X²) and y = (Y² + X²)/(2Z² − Y² + X²), with 2XY = (X + Y)² − Y² − X².
+	// 2XY and 2Z² − Y² + X² take 4p and a carry each, which leaves the products of ToExtended at most 6, Y² + X² at 2 by Y² − X² at 3.
 	internal static void Double(in EdwardsProjectivePoint value, out EdwardsCompletedPoint result)
 	{
 		Field448.Add(in value.X, in value.Y, out Field448 sum);
@@ -78,7 +85,8 @@ internal static class TwistedEdwards448
 		Field448.Carry(in zz, out result.T);
 	}
 
-	// Untwist of a point in projective coordinates, as a point of edwards448: x = 2XY/(X² + Y²) and y = (Y² − X²)/(2Z² − Y² + X²), with 2XY as in Double. 2XY takes 4p and a carry, and 2Z² − (Y² − X²) stays at 6, which ToExtended multiplies by 1 and by X² + Y² at 2.
+	// Untwist of a point in projective coordinates, as a point of edwards448: x = 2XY/(X² + Y²) and y = (Y² − X²)/(2Z² − Y² + X²), with 2XY as in Double.
+	// 2XY takes 4p and a carry, and 2Z² − (Y² − X²) stays at 6, which ToExtended multiplies by 1 and by X² + Y² at 2.
 	internal static void Untwist(in EdwardsProjectivePoint value, out EdwardsCompletedPoint result)
 	{
 		Field448.Add(in value.X, in value.Y, out Field448 sum);
@@ -110,7 +118,8 @@ internal static class TwistedEdwards448
 		twoY.ZeroMemory();
 	}
 
-	// Sets result[i] to (y + x, y − x, 2d'xy) of points[i], each canonical, with one inversion for all of them: result[i].YPlusX holds the product of the Z of points 0 to i until result[i] is written. The points must be public, as the inversion takes variable time.
+	// Sets result[i] to (y + x, y − x, 2d'xy) of points[i], each canonical, with one inversion for all of them: result[i].YPlusX holds the product of the Z of points 0 to i until result[i] is written.
+	// The points must be public, as the inversion takes variable time.
 	internal static void ToNielsVariableTime(ReadOnlySpan<EdwardsPoint> points, Span<TwistedNielsPoint> result)
 	{
 		Debug.Assert(points.Length > 0 && result.Length == points.Length);

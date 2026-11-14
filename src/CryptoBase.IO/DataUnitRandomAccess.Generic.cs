@@ -9,17 +9,23 @@ namespace CryptoBase.IO;
 /// <typeparam name="TCipher">The data-unit cipher.</typeparam>
 /// <remarks>
 /// <para>
-/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16, such as <c>XtsMode&lt;AesCipher&gt;</c>. The tweak of each data unit is its data unit number as a 128-bit little-endian integer.
+/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16, such as <c>XtsMode&lt;AesCipher&gt;</c>.
+/// The tweak of each data unit is its data unit number as a 128-bit little-endian integer.
 /// </para>
 /// <para>
-/// The file holds whole data units only. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>.
+/// The file holds whole data units only.
+/// The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>.
 /// </para>
 /// <para>
-/// Writes reach the file before they return. A write past the end pads its last data unit with zeros, and any gap between the old end and the write reads back as zeros. Writing part of an existing data unit reads that unit first, so the handle must also be readable. Reads never extend the file.
+/// Writes reach the file before they return.
+/// A write past the end pads its last data unit with zeros, and any gap between the old end and the write reads back as zeros.
+/// Writing part of an existing data unit reads that unit first, so the handle must also be readable.
+/// Reads never extend the file.
 /// </para>
 /// <para>
 /// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the handle.
-/// Instances are not thread-safe. For parallel access, create one instance per thread over the same handle with <c>leaveOpen: true</c>, each with its own cipher.
+/// Instances are not thread-safe.
+/// For parallel access, create one instance per thread over the same handle with <c>leaveOpen: true</c>, each with its own cipher.
 /// </para>
 /// </remarks>
 public sealed class DataUnitRandomAccess<TCipher> : IDisposable where TCipher : class, IDataUnitCipher<TCipher>

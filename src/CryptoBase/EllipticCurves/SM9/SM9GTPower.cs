@@ -1,6 +1,9 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// Exponentiation in GT, the subgroup of order N of Fp12* that the pairing maps onto. Its elements lie in the cyclotomic subgroup, where SM9Fp12.CyclotomicSquare holds and inverses are conjugates, and the p-power Frobenius acts on it as the power p. A plain exponent k below N splits by SM9Decomposition.DecomposeFrobenius into k = Σ k_i·p^i (mod N) with non-negative parts of at most 67 bits, and SM9FrobeniusRecoding turns those into 67 signed digits of one table of the eight products x·Π_(j≥1) (x^(p^j))^(u_j). k0 must be odd for the recoding, so an even k0 takes 1 more, which one multiplication by x⁻¹ = x̄ takes back.
+// Exponentiation in GT, the subgroup of order N of Fp12* that the pairing maps onto.
+// Its elements lie in the cyclotomic subgroup, where SM9Fp12.CyclotomicSquare holds and inverses are conjugates, and the p-power Frobenius acts on it as the power p.
+// A plain exponent k below N splits by SM9Decomposition.DecomposeFrobenius into k = Σ k_i·p^i (mod N) with non-negative parts of at most 67 bits, and SM9FrobeniusRecoding turns those into 67 signed digits of one table of the eight products x·Π_(j≥1) (x^(p^j))^(u_j).
+// k0 must be odd for the recoding, so an even k0 takes 1 more, which one multiplication by x⁻¹ = x̄ takes back.
 // The tables of a fixed base hold the eight entries for each of Teeth combs, raised to 2^(c·Spacing) for comb c: position i of the digits is tooth i/Spacing of offset i mod Spacing, so a product takes Spacing − 1 squares rather than 66.
 internal static class SM9GTPower
 {
@@ -10,7 +13,8 @@ internal static class SM9GTPower
 
 	internal const int FixedTableLength = Teeth * SM9FrobeniusRecoding.TableLength;
 
-	// value^k for value in GT. Neither the time nor the addresses depend on value or k, and the intermediates are erased.
+	// value^k for value in GT.
+	// Neither the time nor the addresses depend on value or k, and the intermediates are erased.
 	[SkipLocalsInit]
 	internal static void Power(in SM9Fp12 value, in FieldElement<SM9Order> exponent, out SM9Fp12 result)
 	{
@@ -36,7 +40,8 @@ internal static class SM9GTPower
 		entry.ZeroMemory();
 	}
 
-	// The FixedTableLength entries of the combs of value in GT, and value⁻¹ for the correction. The time and the addresses do not depend on value, which may be secret.
+	// The FixedTableLength entries of the combs of value in GT, and value⁻¹ for the correction.
+	// The time and the addresses do not depend on value, which may be secret.
 	[SkipLocalsInit]
 	internal static void BuildFixedTable(in SM9Fp12 value, Span<SM9Fp12> table, out SM9Fp12 inverse)
 	{
@@ -61,7 +66,8 @@ internal static class SM9GTPower
 		toothBase.ZeroMemory();
 	}
 
-	// value^k from the table of BuildFixedTable and value⁻¹. Neither the time nor the addresses depend on the base or k.
+	// value^k from the table of BuildFixedTable and value⁻¹.
+	// Neither the time nor the addresses depend on the base or k.
 	[SkipLocalsInit]
 	internal static void Power(ReadOnlySpan<SM9Fp12> table, in SM9Fp12 inverse, in FieldElement<SM9Order> exponent, out SM9Fp12 result)
 	{
@@ -143,7 +149,8 @@ internal static class SM9GTPower
 		return even;
 	}
 
-	// The entry of digit, conjugated if the digit is negative. Every entry is read, so neither the time nor the addresses depend on the digit.
+	// The entry of digit, conjugated if the digit is negative.
+	// Every entry is read, so neither the time nor the addresses depend on the digit.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Select(ReadOnlySpan<SM9Fp12> table, byte digit, out SM9Fp12 result)
 	{

@@ -13,7 +13,8 @@ namespace CryptoBase.Otp;
 /// </para>
 /// </remarks>
 /// <typeparam name="TCore">
-/// The hash core of the HMAC: <c>Sha1Core</c>, <c>Sha256Core</c> or <c>Sha512Core</c> in RFC 6238, and <c>Sha1Core</c> for Steam Guard. Its output must be at least 20 bytes long.
+/// The hash core of the HMAC: <c>Sha1Core</c>, <c>Sha256Core</c> or <c>Sha512Core</c> in RFC 6238, and <c>Sha1Core</c> for Steam Guard.
+/// Its output must be at least 20 bytes long.
 /// </typeparam>
 public sealed class Totp<TCore> : IDisposable where TCore : unmanaged, IHmacHashCore<TCore>
 {
@@ -71,13 +72,20 @@ public sealed class Totp<TCore> : IDisposable where TCore : unmanaged, IHmacHash
 	/// Verifies a code against the time step of a time and the steps around it, in constant time.
 	/// </summary>
 	/// <remarks>
-	/// Every step in the window is computed, so the cost grows with the window. Steps before 0 are left out of the window.
+	/// Every step in the window is computed, so the cost grows with the window.
+	/// Steps before 0 are left out of the window.
 	/// To keep a code from being accepted twice, store <paramref name="timeStep" /> on success and reject a later match at or before it, checking and storing in one atomic step.
 	/// </remarks>
 	/// <param name="time">The time the code was received. Fractions of a second are discarded.</param>
 	/// <param name="code">The code to verify. A code of the wrong length does not match.</param>
-	/// <param name="stepsBefore">The number of steps before the current one also accepted, for clock drift and transmission delay. It must not be negative.</param>
-	/// <param name="stepsAfter">The number of steps after the current one also accepted, for a prover whose clock runs ahead. It must not be negative.</param>
+	/// <param name="stepsBefore">
+	/// The number of steps before the current one also accepted, for clock drift and transmission delay.
+	/// It must not be negative.
+	/// </param>
+	/// <param name="stepsAfter">
+	/// The number of steps after the current one also accepted, for a prover whose clock runs ahead.
+	/// It must not be negative.
+	/// </param>
 	/// <param name="timeStep">When this method returns <see langword="true" />, the earliest time step whose code matches; otherwise, 0.</param>
 	/// <returns><see langword="true" /> if the code matches a step in the window; otherwise, <see langword="false" />.</returns>
 	/// <exception cref="ArgumentOutOfRangeException">

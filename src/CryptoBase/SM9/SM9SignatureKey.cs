@@ -10,13 +10,17 @@ namespace CryptoBase.SM9;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The private key dsA is a point of G1 in the uncompressed encoding, 0x04 ‖ x ‖ y, and the instance holds the master public key with it. A verifier needs the master public key with its identifier hid and the ID of the signer; see <see cref="SM9SignatureMasterKey.Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />.
+/// The private key dsA is a point of G1 in the uncompressed encoding, 0x04 ‖ x ‖ y, and the instance holds the master public key with it.
+/// A verifier needs the master public key with its identifier hid and the ID of the signer;
+/// see <see cref="SM9SignatureMasterKey.Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />.
 /// </para>
 /// <para>
-/// A signature is h ‖ S of GM/T 0044.2, 97 bytes with S uncompressed, or the SM9Signature of GB/T 41389-2022 (GM/T 0080-2020) in DER, 104 bytes. Signing is randomized: signing a message twice gives two different signatures.
+/// A signature is h ‖ S of GM/T 0044.2, 97 bytes with S uncompressed, or the SM9Signature of GB/T 41389-2022 (GM/T 0080-2020) in DER, 104 bytes.
+/// Signing is randomized: signing a message twice gives two different signatures.
 /// </para>
 /// <para>
-/// Signing may run concurrently on one instance; to sign repeatedly, keep one instance. Disposal erases the private key and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// Signing may run concurrently on one instance; to sign repeatedly, keep one instance.
+/// Disposal erases the private key and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class SM9SignatureKey : IDisposable
@@ -132,7 +136,10 @@ public sealed class SM9SignatureKey : IDisposable
 	/// <summary>
 	/// Signs <paramref name="message" /> into h ‖ S (GB/T 38635.2-2020, GM/T 0044.2-2016, Sec. 6.1), with S uncompressed.
 	/// </summary>
-	/// <remarks><paramref name="message" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// <paramref name="message" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="message">The message.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="SignatureLength" /> bytes long.</param>
 	/// <returns>The value of <see cref="SignatureLength" />.</returns>
@@ -149,7 +156,10 @@ public sealed class SM9SignatureKey : IDisposable
 	/// <summary>
 	/// Signs <paramref name="message" /> into the DER of an SM9Signature (GB/T 41389-2022), which holds h and S (GB/T 38635.2-2020, GM/T 0044.2-2016, Sec. 6.1).
 	/// </summary>
-	/// <remarks><paramref name="message" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// <paramref name="message" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="message">The message.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="DerSignatureLength" /> bytes long.</param>
 	/// <returns>The value of <see cref="DerSignatureLength" />.</returns>
@@ -186,7 +196,8 @@ public sealed class SM9SignatureKey : IDisposable
 		return Sign(message, additionalData.Span, destination, der);
 	}
 
-	// GB/T 38635.2-2020, Sec. 6.1, with r from the nonces of SM3Nonce over the x-coordinate of dsA, which with one more bit fixes dsA, SM3(0x02 ‖ M ‖ 00000001) mod N and additionalData, which empty makes deterministic. A1 to A4 hash 0x02 ‖ M once, for every r.
+	// GB/T 38635.2-2020, Sec. 6.1, with r from the nonces of SM3Nonce over the x-coordinate of dsA, which with one more bit fixes dsA, SM3(0x02 ‖ M ‖ 00000001) mod N and additionalData, which empty makes deterministic.
+	// A1 to A4 hash 0x02 ‖ M once, for every r.
 	[SkipLocalsInit]
 	internal int Sign(ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, Span<byte> destination, bool der)
 	{
@@ -239,7 +250,9 @@ public sealed class SM9SignatureKey : IDisposable
 		}
 	}
 
-	// A3 to A6 for r in [1, N − 1] and the state of H2 after 0x02 ‖ M: w = g^r, h = H2(M ‖ w, N), l = (r − h) mod N and S = [l]dsA. Returns false, so that the caller draws the next r, if l = 0. Nothing branches on or indexes by r, w or l before the result.
+	// A3 to A6 for r in [1, N − 1] and the state of H2 after 0x02 ‖ M: w = g^r, h = H2(M ‖ w, N), l = (r − h) mod N and S = [l]dsA.
+	// Returns false, so that the caller draws the next r, if l = 0.
+	// Nothing branches on or indexes by r, w or l before the result.
 	[SkipLocalsInit]
 	internal bool TrySign(in SM3KdfState prefix, in FieldElement<SM9Order> r, SM9GTBase g, out FieldElement<SM9Order> h, out SM9AffinePoint<SM9Fp> s)
 	{

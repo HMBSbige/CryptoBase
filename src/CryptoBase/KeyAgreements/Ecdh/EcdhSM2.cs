@@ -7,10 +7,13 @@ namespace CryptoBase.KeyAgreements.Ecdh;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The private key is big-endian and must lie in [1, n − 1]. The public key is in the uncompressed encoding, and <see cref="TryDeriveSharedSecret" /> returns <see langword="false" /> unless the peer public key is in that encoding, has both coordinates below the field prime and lies on the curve.
+/// The private key is big-endian and must lie in [1, n − 1].
+/// The public key is in the uncompressed encoding, and <see cref="TryDeriveSharedSecret" /> returns <see langword="false" /> unless the peer public key is in that encoding, has both coordinates below the field prime and lies on the curve.
 /// </para>
 /// <para>
-/// The shared secret is the x-coordinate of the shared point as big-endian bytes, as ECDHE over curveSM2 in TLS 1.3 (RFC 8998) takes it. This is not the key exchange protocol of GB/T 32918.3, which <see cref="SM2.SM2KeyExchange" /> provides. Exports and derivations may run concurrently on one instance.
+/// The shared secret is the x-coordinate of the shared point as big-endian bytes, as ECDHE over curveSM2 in TLS 1.3 (RFC 8998) takes it.
+/// This is not the key exchange protocol of GB/T 32918.3, which <see cref="SM2.SM2KeyExchange" /> provides.
+/// Exports and derivations may run concurrently on one instance.
 /// </para>
 /// </remarks>
 public sealed class EcdhSM2 : IKeyAgreement<EcdhSM2>

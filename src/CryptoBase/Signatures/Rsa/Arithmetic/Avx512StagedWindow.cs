@@ -1,7 +1,8 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
 // The windows of MontgomeryKernelAvx512Staged, as IAvx512Window describes them, with only the accumulator in registers: the digits of the operands lie in staging, a vector of the left operand and then one of the modulus for each vector of the window, from vector 0 on.
-// The operations are written out rather than shared with Avx512Window: the largest windows inline so many of them that one more call per operation would exceed what the JIT inlines, and the accumulator would leave the registers. Store writes through a pointer, as that of Avx512Window does.
+// The operations are written out rather than shared with Avx512Window: the largest windows inline so many of them that one more call per operation would exceed what the JIT inlines, and the accumulator would leave the registers.
+// Store writes through a pointer, as that of Avx512Window does.
 internal interface IAvx512StagedWindow<TSelf> : IAvx512Accumulator<TSelf> where TSelf : struct, IAvx512StagedWindow<TSelf>
 {
 	static abstract int Count { get; }

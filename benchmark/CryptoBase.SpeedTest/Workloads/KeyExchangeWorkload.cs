@@ -4,8 +4,7 @@ using CryptoBase.SM9;
 namespace CryptoBase.SpeedTest.Workloads;
 
 /// <summary>
-/// Runs the initiator's side of one complete SM2 key exchange per iteration: it creates the exchange, which draws an ephemeral key, exports
-/// the ephemeral public key and derives a 16-byte key from the static and ephemeral public keys of the responder, without confirmations.
+/// Runs the initiator's side of one complete SM2 key exchange per iteration: it creates the exchange, which draws an ephemeral key, exports the ephemeral public key and derives a 16-byte key from the static and ephemeral public keys of the responder, without confirmations.
 /// </summary>
 internal sealed class SM2KeyExchangeWorkload : Workload
 {
@@ -91,8 +90,7 @@ internal sealed class SM2KeyExchangeWorkload : Workload
 }
 
 /// <summary>
-/// Runs the initiator's side of one complete SM9 key exchange per iteration: it creates the exchange, which draws an ephemeral key, exports
-/// the ephemeral public key and derives a 16-byte key from the ephemeral public key of the responder, without confirmations.
+/// Runs the initiator's side of one complete SM9 key exchange per iteration: it creates the exchange, which draws an ephemeral key, exports the ephemeral public key and derives a 16-byte key from the ephemeral public key of the responder, without confirmations.
 /// </summary>
 internal sealed class SM9KeyExchangeWorkload : Workload
 {

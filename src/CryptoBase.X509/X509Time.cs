@@ -109,7 +109,8 @@ internal static class X509Time
 		return true;
 	}
 
-	// The contents of a GeneralizedTime in the form that RFC 5280, Sec. 4.1.2.5.2, requires, YYYYMMDDHHMMSSZ, with the date and time that TryParseDateAndTime accepts; anything else, valid or not, is left to ValueAsnReader.
+	// The contents of a GeneralizedTime in the form that RFC 5280, Sec. 4.1.2.5.2, requires, YYYYMMDDHHMMSSZ, with the date and time that TryParseDateAndTime accepts;
+	// anything else, valid or not, is left to ValueAsnReader.
 	private static bool TryParseGeneralizedTime(ReadOnlySpan<byte> contents, out DateTimeOffset value)
 	{
 		value = default;

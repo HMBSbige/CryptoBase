@@ -54,8 +54,7 @@ internal static class RsaKeyDer
 		}
 	}
 
-	// The algorithms, as RsaAlgorithms bits, that an AlgorithmIdentifier of a key allows whatever the modulus (RFC 4055, Sec. 3.3): rsaEncryption with NULL parameters allows each one, and id-RSASSA-PSS
-	// RSASSA-PSS alone, with each hash if the parameters are absent, and otherwise with the hash that RSASSA-PSS-params allow.
+	// The algorithms, as RsaAlgorithms bits, that an AlgorithmIdentifier of a key allows whatever the modulus (RFC 4055, Sec. 3.3): rsaEncryption with NULL parameters allows each one, and id-RSASSA-PSS RSASSA-PSS alone, with each hash if the parameters are absent, and otherwise with the hash that RSASSA-PSS-params allow.
 	internal static int GetAllowedAlgorithms(ReadOnlySpan<byte> algorithmIdentifier)
 	{
 		if (algorithmIdentifier.SequenceEqual(RsaEncryption))
@@ -117,8 +116,8 @@ internal static class RsaKeyDer
 		return CreatePublicKey(modulus, exponent);
 	}
 
-	// RSAPrivateKey ::= SEQUENCE { version, modulus, publicExponent, privateExponent, prime1, prime2, exponent1, exponent2, coefficient, otherPrimeInfos OPTIONAL }, filling source: version 0 with two primes,
-	// as version 1 means more (RFC 8017, Appendix A.1.2), and positive INTEGERs. The key validates the values and copies them.
+	// RSAPrivateKey ::= SEQUENCE { version, modulus, publicExponent, privateExponent, prime1, prime2, exponent1, exponent2, coefficient, otherPrimeInfos OPTIONAL }, filling source: version 0 with two primes, as version 1 means more (RFC 8017, Appendix A.1.2), and positive INTEGERs.
+	// The key validates the values and copies them.
 	internal static RsaPrivateOperation ReadRsaPrivateKey(ReadOnlySpan<byte> source)
 	{
 		ReadOnlySpan<byte> modulus, exponent, privateExponent, prime1, prime2, exponent1, exponent2, coefficient;

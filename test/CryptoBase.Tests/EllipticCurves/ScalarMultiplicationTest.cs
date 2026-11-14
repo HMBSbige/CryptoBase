@@ -90,7 +90,8 @@ public class ScalarMultiplicationTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Follows the digits of both multiplications on the scalars alone to find the additions of equal points, which only P-521 and SM2 have, at k = n − 18 and k = n − 6: there the last addition of k·P adds −9·P or −3·P to itself. The tests above would miss a wrong result there if the scalars did not hold it.
+	// Follows the digits of both multiplications on the scalars alone to find the additions of equal points, which only P-521 and SM2 have, at k = n − 18 and k = n − 6: there the last addition of k·P adds −9·P or −3·P to itself.
+	// The tests above would miss a wrong result there if the scalars did not hold it.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task ExceptionalScalarsMeetEqualPointsOnlyWhereExpected(CurveCase curve)
@@ -517,7 +518,12 @@ public class ScalarMultiplicationTest
 		return points[pointIndex];
 	}
 
-	// Scalars around the additions that may meet equal points or the point at infinity. As k = 2^w·a + d for the low digit d of k·P, its last addition adds d·P to itself just if k ≡ 2d, which for d < 0 is n + 2d; n − 2^j ends in a run of carries; 2^(wi) leaves the point at infinity in the accumulator up to window i; and around the top window t of each width w come 2^(wt) and n − 2^(wt) with their neighbors, d·2^(wt), and 2d·2^(wt) − n, which would have the top addition of k·G add d·2^(wt)·G to itself; where w divides the bits of n, LargestOwnDigits, the largest k whose digits for G are those of k and not of k − n, comes with its neighbors.
+	// Scalars around the additions that may meet equal points or the point at infinity.
+	// As k = 2^w·a + d for the low digit d of k·P, its last addition adds d·P to itself just if k ≡ 2d, which for d < 0 is n + 2d;
+	// n − 2^j ends in a run of carries;
+	// 2^(wi) leaves the point at infinity in the accumulator up to window i;
+	// and around the top window t of each width w come 2^(wt) and n − 2^(wt) with their neighbors, d·2^(wt), and 2d·2^(wt) − n, which would have the top addition of k·G add d·2^(wt)·G to itself;
+	// where w divides the bits of n, LargestOwnDigits, the largest k whose digits for G are those of k and not of k − n, comes with its neighbors.
 	private static SortedSet<BigInteger> ExceptionalScalars(CurveCase curve)
 	{
 		BigInteger n = curve.Order;
@@ -572,7 +578,8 @@ public class ScalarMultiplicationTest
 		return scalars;
 	}
 
-	// The additions of equal points, neither at infinity, that the digits lead to: in k·P, of d·P to the accumulator 2^w·a·P left by the doublings, from the top window down; in k·G, of d·2^(wi)·G to the sum L·G of the windows below i.
+	// The additions of equal points, neither at infinity, that the digits lead to: in k·P, of d·P to the accumulator 2^w·a·P left by the doublings, from the top window down;
+	// in k·G, of d·2^(wi)·G to the sum L·G of the windows below i.
 	private static IEnumerable<string> EqualAdditions(CurveCase curve, BigInteger scalar)
 	{
 		BigInteger n = curve.Order;
@@ -613,7 +620,10 @@ public class ScalarMultiplicationTest
 		return !(left % n).IsZero && !(right % n).IsZero && ((left - right) % n).IsZero;
 	}
 
-	// 2^(w − 1) is the largest digit and carries nothing. 2^(w − 1) + 1 gives the most negative digit, 1 − 2^(w − 1), and then 2 − 2^(w − 1) in each window above, each with a carry out. 2^w − 1 gives −1 and then 0s, with a carry that runs through every window. The carry out of the last window is the digit above it.
+	// 2^(w − 1) is the largest digit and carries nothing.
+	// 2^(w − 1) + 1 gives the most negative digit, 1 − 2^(w − 1), and then 2 − 2^(w − 1) in each window above, each with a carry out.
+	// 2^w − 1 gives −1 and then 0s, with a carry that runs through every window.
+	// The carry out of the last window is the digit above it.
 	private static IEnumerable<(int Width, BigInteger Scalar, int[] Digits)> PatternScalars(CurveCase curve)
 	{
 		foreach (int width in PatternWidths)
@@ -678,7 +688,8 @@ public class ScalarMultiplicationTest
 		return digits;
 	}
 
-	// The digits of the windows of G: where w divides N, the bits of n, those in [−2^(w − 1), 2^(w − 1) − 1] of k up to LargestOwnDigits and of k − n above it, from 2^N + k − n; otherwise those of Recode.
+	// The digits of the windows of G: where w divides N, the bits of n, those in [−2^(w − 1), 2^(w − 1) − 1] of k up to LargestOwnDigits and of k − n above it, from 2^N + k − n;
+	// otherwise those of Recode.
 	private static int[] GeneratorDigits(CurveCase curve, BigInteger scalar)
 	{
 		int width = curve.GeneratorWindowWidth;

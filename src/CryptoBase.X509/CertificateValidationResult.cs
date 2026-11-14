@@ -9,10 +9,12 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A result is valid exactly when <see cref="Errors" /> is empty. The default value is invalid, with the single error <see cref="CertificateValidationError.Unspecified" /> and no path, so a result that is never set rejects the certificates.
+/// A result is valid exactly when <see cref="Errors" /> is empty.
+/// The default value is invalid, with the single error <see cref="CertificateValidationError.Unspecified" /> and no path, so a result that is never set rejects the certificates.
 /// </para>
 /// <para>
-/// A validator that wraps another can accept what the other rejects, or reject what it accepts, by passing the parts of its result that it keeps to <see cref="Create" />; keeping <see cref="Path" /> and <see cref="PathEnd" /> lets the caller still inspect the path, such as the signature algorithm of each certificate that the path relies on.
+/// A validator that wraps another can accept what the other rejects, or reject what it accepts, by passing the parts of its result that it keeps to <see cref="Create" />;
+/// keeping <see cref="Path" /> and <see cref="PathEnd" /> lets the caller still inspect the path, such as the signature algorithm of each certificate that the path relies on.
 /// </para>
 /// <para>
 /// Instances are immutable, so they may be used concurrently, and their collections are never <see langword="null" />.
@@ -80,7 +82,8 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 	public string? Message { get; }
 
 	/// <summary>
-	/// Gets the certification path that the validator found, the peer's certificate first and then each issuer, up to a trust anchor or the last certificate that the validator found; empty if the validator reports no path.
+	/// Gets the certification path that the validator found, the peer's certificate first and then each issuer, up to a trust anchor or the last certificate that the validator found;
+	/// empty if the validator reports no path.
 	/// </summary>
 	/// <remarks>A result that accepts the certificates may have a path that <see cref="PathEnd" /> reports as not ending at a trust anchor, when the validator's policy allows such a path.</remarks>
 	public IReadOnlyList<Certificate> Path => _path ?? ReadOnlyCollection<Certificate>.Empty;

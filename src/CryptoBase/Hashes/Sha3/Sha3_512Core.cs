@@ -3,7 +3,10 @@ namespace CryptoBase.Hashes.Sha3;
 /// <summary>
 /// Provides the SHA3-512 hash core.
 /// </summary>
-/// <remarks>Computes SHA3-512 as specified in FIPS 202. HMAC uses the 72-byte sponge rate as its block size, per FIPS 202, Table 3.</remarks>
+/// <remarks>
+/// Computes SHA3-512 as specified in FIPS 202.
+/// HMAC uses the 72-byte sponge rate as its block size, per FIPS 202, Table 3.
+/// </remarks>
 public struct Sha3_512Core : IHmacHashCore<Sha3_512Core>
 {
 	private const int HashSizeInBytes = 64;

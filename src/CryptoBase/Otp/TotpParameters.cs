@@ -19,7 +19,10 @@ public readonly record struct TotpParameters
 	/// </summary>
 	/// <param name="format">The code format.</param>
 	/// <param name="timeStepSeconds">The time step X, in seconds. It must be at least 1.</param>
-	/// <param name="initialUnixTime">The Unix time T0 from which time steps are counted, in seconds. It must lie within the range of <see cref="DateTimeOffset" />.</param>
+	/// <param name="initialUnixTime">
+	/// The Unix time T0 from which time steps are counted, in seconds.
+	/// It must lie within the range of <see cref="DateTimeOffset" />.
+	/// </param>
 	/// <exception cref="ArgumentException"><paramref name="format" /> is the default value.</exception>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="timeStepSeconds" /> is less than 1, or <paramref name="initialUnixTime" /> is outside the range of <see cref="DateTimeOffset" />.</exception>
 	public TotpParameters(OtpCodeFormat format, int timeStepSeconds = DefaultTimeStepSeconds, long initialUnixTime = 0)
@@ -40,7 +43,8 @@ public readonly record struct TotpParameters
 	public static TotpParameters Rfc6238 => new(OtpCodeFormat.Decimal(6));
 
 	/// <summary>
-	/// Gets the parameters of Steam Guard: <see cref="OtpCodeFormat.SteamGuard" />, X = 30 seconds and T0 = 0. Use them with <c>Totp&lt;Sha1Core&gt;</c>.
+	/// Gets the parameters of Steam Guard: <see cref="OtpCodeFormat.SteamGuard" />, X = 30 seconds and T0 = 0.
+	/// Use them with <c>Totp&lt;Sha1Core&gt;</c>.
 	/// </summary>
 	public static TotpParameters SteamGuard => new(OtpCodeFormat.SteamGuard);
 

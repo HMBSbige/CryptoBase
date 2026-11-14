@@ -25,8 +25,7 @@ internal static class RsaTestUtils
 	// rsaEncryption with NULL parameters.
 	public static readonly byte[] RsaEncryption = Sequence(Oid(RsaEncryptionOid), [0x05, 0x00]);
 
-	// PKCS #8 keys with e = 65537, so that tests need not generate keys: those of 2048, 3072 and 4096 bits are from rsa_pkcs1_2048_sig_gen_test.json, rsa_pkcs1_3072_sig_gen_test.json and
-	// rsa_pkcs1_4096_sig_gen_test.json of Wycheproof, and the one of 512 bits, the shortest modulus, was generated for these tests.
+	// PKCS #8 keys with e = 65537, so that tests need not generate keys: those of 2048, 3072 and 4096 bits are from rsa_pkcs1_2048_sig_gen_test.json, rsa_pkcs1_3072_sig_gen_test.json and rsa_pkcs1_4096_sig_gen_test.json of Wycheproof, and the one of 512 bits, the shortest modulus, was generated for these tests.
 	private static readonly Dictionary<int, byte[]> Keys = new()
 	{
 		[512] = Convert.FromBase64String("MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEA6MNvTD006kpg75inlHBwmzYLnWXIQOJwtHrtgC0FyorzdG5bx5RF5DmouYgqHl9/8vnDiAFPfUKcWPZuG1Wd7QIDAQABAkAF6oe+6pRYeyT9GgZyY6w9CbHgYYimO4stTy2PszVBOVv/dSWoD9pgosE7r25ogJ0W24/cRA4KQNnX2/z8Sw9JAiEA9gNY6XoCzyTNFToAnu4oilBG9QPersY2qOUrxhYKNVkCIQDyNmR2Exb8kf1xqIm4JrinuM5IYENQykYk6Aqc6YJWtQIgcV1pg21uDfZvavCniJVGqTYE/LMj0nYUig/Q9B8D5UECIFifNDTLmU6CcBQlEXbSnB+qC7gJmLe3uuCIElIFUk49AiEA6T6QjbTQXM0w+7zPiZ9HElJc5F2iLZT4wOsASRKVKNo="),
@@ -107,8 +106,7 @@ internal static class RsaTestUtils
 		return (int)Os2Ip(parameters.Modulus).GetBitLength();
 	}
 
-	// The examples of pss-vect.txt, the RSASSA-PSS test vectors of PKCS #1 v2.1: keys of 1024 to 1031, 1536 and 2048 bits, and for each, six signatures with SHA-1, MGF1 with SHA-1 and a given salt of 20
-	// bytes.
+	// The examples of pss-vect.txt, the RSASSA-PSS test vectors of PKCS #1 v2.1: keys of 1024 to 1031, 1536 and 2048 bits, and for each, six signatures with SHA-1, MGF1 with SHA-1 and a given salt of 20 bytes.
 	public static PssExample[] PssExamples => LazyPssExamples.Value;
 
 	private static readonly Lazy<PssExample[]> LazyPssExamples = new(LoadPssExamples);
@@ -198,8 +196,7 @@ internal static class RsaTestUtils
 		return [0x00, 0x01, .. Enumerable.Repeat((byte)0xFF, length - digestInfo.Length - 3), 0x00, .. digestInfo];
 	}
 
-	// EMSA-PSS-ENCODE (RFC 8017, Sec. 9.1.1) with emBits = modBits − 1 and MGF1, written apart from the code under test, with the changes that a case makes: DB before masking, the mask's hash, the bits
-	// beyond emBits and the trailer field.
+	// EMSA-PSS-ENCODE (RFC 8017, Sec. 9.1.1) with emBits = modBits − 1 and MGF1, written apart from the code under test, with the changes that a case makes: DB before masking, the mask's hash, the bits beyond emBits and the trailer field.
 	public static byte[] EncodePss(int modulusBits, HashAlgorithmName hash, byte[] mHash, byte[] salt, byte trailer = 0xBC, Action<byte[]>? changeDb = null, HashAlgorithmName? maskHash = null, byte topBits = 0)
 	{
 		int emBits = modulusBits - 1;
@@ -227,7 +224,8 @@ internal static class RsaTestUtils
 		return [.. db, .. h, trailer];
 	}
 
-	// Each field of the file is a heading that ends with a colon, then lines of hexadecimal bytes; a key's fields follow "# Private key" after a copy of its public fields, and "# PSS Example" starts a signature, which is skipped.
+	// Each field of the file is a heading that ends with a colon, then lines of hexadecimal bytes;
+	// a key's fields follow "# Private key" after a copy of its public fields, and "# PSS Example" starts a signature, which is skipped.
 	private static PssExample[] LoadPssExamples()
 	{
 		using Stream stream = typeof(RsaTestUtils).Assembly.GetManifestResourceStream("pss-vect.txt") ?? throw new FileNotFoundException("The PKCS #1 test vectors 'pss-vect.txt' are not embedded.");

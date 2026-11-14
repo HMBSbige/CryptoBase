@@ -1,6 +1,7 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// The digit size of a kernel, as a type so that shifts and masks are constants in its code. Code that uses them takes Bits into locals and derives the masks and shifts there: a property that derives them does not always inline without a profile, and then stays a call at every use.
+// The digit size of a kernel, as a type so that shifts and masks are constants in its code.
+// Code that uses them takes Bits into locals and derives the masks and shifts there: a property that derives them does not always inline without a profile, and then stays a call at every use.
 internal interface IRadix
 {
 	static abstract int Bits { get; }

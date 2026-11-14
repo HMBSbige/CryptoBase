@@ -73,7 +73,9 @@ public class SM3KdfStateTest
 		}
 	}
 
-	// Write, which takes lanes for several blocks, against WriteBlock one block at a time: Z of every length mod 64, a whole block before it or not, and of 703 bytes; keys of up to 72 blocks, whole or with the last cut, past two passes of the widest lanes; counters that carry into their second, third and fourth bytes within the key, and that end at the last counter.
+	// Write, which takes lanes for several blocks, against WriteBlock one block at a time: Z of every length mod 64, a whole block before it or not, and of 703 bytes;
+	// keys of up to 72 blocks, whole or with the last cut, past two passes of the widest lanes;
+	// counters that carry into their second, third and fourth bytes within the key, and that end at the last counter.
 	[Test]
 	public async Task WriteMatchesSingleBlocks()
 	{
@@ -119,7 +121,8 @@ public class SM3KdfStateTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Xor takes the key in chunks of 4096 bytes: source ⊕ the key from any counter, in place or not, and a nonzero OR of the key. IsZero finds a key of no bytes zero and those of the KDF not.
+	// Xor takes the key in chunks of 4096 bytes: source ⊕ the key from any counter, in place or not, and a nonzero OR of the key.
+	// IsZero finds a key of no bytes zero and those of the KDF not.
 	[Test]
 	public async Task XorAndIsZeroTakeTheKeyInChunks()
 	{
@@ -176,7 +179,8 @@ public class SM3KdfStateTest
 		}
 	}
 
-	// Accumulate gives 0 for zero bytes alone, and sees a single nonzero byte at every position: in a group of vectors, a single vector, a word or the last bytes, up to a chunk of Xor and IsZero. The bytes around the span are nonzero and must not count, and the span starts at three alignments.
+	// Accumulate gives 0 for zero bytes alone, and sees a single nonzero byte at every position: in a group of vectors, a single vector, a word or the last bytes, up to a chunk of Xor and IsZero.
+	// The bytes around the span are nonzero and must not count, and the span starts at three alignments.
 	[Test]
 	public async Task AccumulateSeesEveryByte()
 	{

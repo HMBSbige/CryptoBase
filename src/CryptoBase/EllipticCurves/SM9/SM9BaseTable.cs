@@ -2,7 +2,8 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The fixed-base table of a point G of prime order N: window i holds j·2^(wi)·G for j from 1 to 2^(w − 1), affine, for the digits of LimbArithmetic.RecodeSignedWindows, so that a product takes one mixed addition per window and no doubling. G is a generator or a point that many products take, as a key may be.
+// The fixed-base table of a point G of prime order N: window i holds j·2^(wi)·G for j from 1 to 2^(w − 1), affine, for the digits of LimbArithmetic.RecodeSignedWindows, so that a product takes one mixed addition per window and no doubling.
+// G is a generator or a point that many products take, as a key may be.
 internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<TField>
 {
 	private readonly SM9AffinePoint<TField>[] _entries;
@@ -24,7 +25,10 @@ internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<T
 		}
 	}
 
-	// The entries for G and the width, window after window, as the scalar kernel builds them: the base of each window doubles into 2B, and each later entry j·B is (j − 1)·B + B; the last entry, 2^(w − 1)·B, doubles into the base of the next window. A public G takes the inversion in variable time; a secret one takes it in constant time, and its projective multiples are erased. The formulas are complete, so nothing else depends on G.
+	// The entries for G and the width, window after window, as the scalar kernel builds them: the base of each window doubles into 2B, and each later entry j·B is (j − 1)·B + B;
+	// the last entry, 2^(w − 1)·B, doubles into the base of the next window.
+	// A public G takes the inversion in variable time; a secret one takes it in constant time, and its projective multiples are erased.
+	// The formulas are complete, so nothing else depends on G.
 	internal static void BuildEntries(in SM9AffinePoint<TField> generator, int width, bool secret, Span<SM9AffinePoint<TField>> entries)
 	{
 		int windowLength = 1 << width - 1;
@@ -62,7 +66,10 @@ internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<T
 	// The entries, window after window.
 	internal ReadOnlySpan<SM9AffinePoint<TField>> Entries => _entries;
 
-	// k·G for a plain k below N. Neither the time nor the addresses depend on k or G: each window reads all of its entries, takes the negation where the digit is negative, and keeps the sum only where the digit is not 0, whose lookup gives (0, 0), not a point. The complete formulas take every sum, the point at infinity included. The projective form of the result depends on k and not only on k·G, so a caller makes it affine or erases it.
+	// k·G for a plain k below N.
+	// Neither the time nor the addresses depend on k or G: each window reads all of its entries, takes the negation where the digit is negative, and keeps the sum only where the digit is not 0, whose lookup gives (0, 0), not a point.
+	// The complete formulas take every sum, the point at infinity included.
+	// The projective form of the result depends on k and not only on k·G, so a caller makes it affine or erases it.
 	[SkipLocalsInit]
 	internal void Multiply(in FieldElement<SM9Order> scalar, out SM9Point<TField> result)
 	{

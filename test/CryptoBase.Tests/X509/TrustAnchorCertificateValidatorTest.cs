@@ -88,7 +88,8 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// A path ends at a self-signed certificate only if the certificate is self-issued and its own key verifies its signature. A certificate for a new key of a CA, which the old key signs, ends a path whose issuer is missing, whether it lacks key identifiers or they name the new key, as does one whose algorithm the validator does not verify.
+	// A path ends at a self-signed certificate only if the certificate is self-issued and its own key verifies its signature.
+	// A certificate for a new key of a CA, which the old key signs, ends a path whose issuer is missing, whether it lacks key identifiers or they name the new key, as does one whose algorithm the validator does not verify.
 	[Test]
 	public async Task EndsAtASelfSignedCertificateOnlyIfItsOwnKeyVerifiesIt()
 	{
@@ -225,7 +226,8 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// RFC 5280, Sec. 4.2.1.1: the candidate whose subject key identifier matches the authority key identifier comes first, so a single verification finds the issuer. Both intermediates have the same default name.
+	// RFC 5280, Sec. 4.2.1.1: the candidate whose subject key identifier matches the authority key identifier comes first, so a single verification finds the issuer.
+	// Both intermediates have the same default name.
 	[Test]
 	public async Task TriesTheIssuerThatTheKeyIdentifierNamesFirst()
 	{
@@ -406,7 +408,8 @@ public class TrustAnchorCertificateValidatorTest
 		await AssertValid(await Validate([root.Certificate], [leaf, rollover.Certificate], maxPathLength: 0), leaf, rollover.Certificate, root.Certificate);
 	}
 
-	// RFC 5280, Sec. 6.1: a certificate is self-issued if its subject and issuer match by the rules of Sec. 7.1, so that the certificate of a new key of a CA that now encodes its name in another string type or case does not count against pathLenConstraint or MaxPathLength. Names that the exact comparison cannot find the same, as they differ in the case of a letter beyond ASCII, still count.
+	// RFC 5280, Sec. 6.1: a certificate is self-issued if its subject and issuer match by the rules of Sec. 7.1, so that the certificate of a new key of a CA that now encodes its name in another string type or case does not count against pathLenConstraint or MaxPathLength.
+	// Names that the exact comparison cannot find the same, as they differ in the case of a letter beyond ASCII, still count.
 	[Test]
 	public async Task TakesACertificateWhoseNamesMatchAsSelfIssued()
 	{
@@ -431,7 +434,8 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// A certificate whose names match by Sec. 7.1 and whose own key verifies its signature is self-signed, and ends a path at a root that is not trusted; one whose names the exact comparison cannot find the same ends a path whose issuer is missing.
+	// A certificate whose names match by Sec. 7.1 and whose own key verifies its signature is self-signed, and ends a path at a root that is not trusted;
+	// one whose names the exact comparison cannot find the same ends a path whose issuer is missing.
 	[Test]
 	public async Task EndsAtASelfSignedCertificateWhoseNamesMatch()
 	{
@@ -509,7 +513,8 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// RFC 5280, Sec. 4.2: a critical extension that the validator does not process fails the path, wherever it is in the path; one in a certificate off the path does not. Certificate policies extensions are processed.
+	// RFC 5280, Sec. 4.2: a critical extension that the validator does not process fails the path, wherever it is in the path; one in a certificate off the path does not.
+	// Certificate policies extensions are processed.
 	[Test]
 	public async Task RefusesCriticalExtensionsThatItDoesNotProcess()
 	{
@@ -672,8 +677,8 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// Paths of RSA CAs, whose keys are rsaEncryption or id-RSASSA-PSS, without parameters or with those of one hash: RsaKey, which SignatureKey imports, and PlatformRsaKey, to which an importer
-	// without RSA leaves them, give the same results. The keys of a CA also sign the certificates below with an algorithm that their AlgorithmIdentifier does not allow, which fails the path.
+	// Paths of RSA CAs, whose keys are rsaEncryption or id-RSASSA-PSS, without parameters or with those of one hash: RsaKey, which SignatureKey imports, and PlatformRsaKey, to which an importer without RSA leaves them, give the same results.
+	// The keys of a CA also sign the certificates below with an algorithm that their AlgorithmIdentifier does not allow, which fails the path.
 	[Test]
 	[Arguments(false, null, SignatureAlgorithm.RsaPkcs1Sha256, null)]
 	[Arguments(false, null, SignatureAlgorithm.RsaPkcs1Sha512, null)]
@@ -769,7 +774,9 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// MD2, MD4 and MD5 are forbidden, and SHA-1, SHA-224 and DSA refused, as WeakAlgorithm; algorithms that are not known are unsupported, as are id-Ed25519 and id-Ed448 with parameters, which RFC 8410, Sec. 6, forbids. A trust anchor's own signature does not count.
+	// MD2, MD4 and MD5 are forbidden, and SHA-1, SHA-224 and DSA refused, as WeakAlgorithm;
+	// algorithms that are not known are unsupported, as are id-Ed25519 and id-Ed448 with parameters, which RFC 8410, Sec. 6, forbids.
+	// A trust anchor's own signature does not count.
 	[Test]
 	[Arguments("1.2.840.113549.1.1.4", true, CertificateValidationError.WeakAlgorithm)]
 	[Arguments("1.2.840.113549.1.1.2", true, CertificateValidationError.WeakAlgorithm)]
@@ -957,7 +964,9 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// Each search has limits of its own. Expired certificates for the key of one intermediate CA, each the first of a path to the trust anchor, stop the first search at 101 and the second, which considers two candidates for each, at 51; a limit of either adds Unspecified to the errors of the best path that the second search ended.
+	// Each search has limits of its own.
+	// Expired certificates for the key of one intermediate CA, each the first of a path to the trust anchor, stop the first search at 101 and the second, which considers two candidates for each, at 51;
+	// a limit of either adds Unspecified to the errors of the best path that the second search ended.
 	[Test]
 	[Arguments(1, false)]
 	[Arguments(50, false)]

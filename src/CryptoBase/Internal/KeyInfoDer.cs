@@ -83,7 +83,9 @@ internal static class KeyInfoDer
 		return writer.Encode(destination);
 	}
 
-	// A version 1 PrivateKeyInfo whose privateKey holds privateKey. destination is at least GetPrivateKeyInfoLength long. The writer erases its copy.
+	// A version 1 PrivateKeyInfo whose privateKey holds privateKey.
+	// destination is at least GetPrivateKeyInfoLength long.
+	// The writer erases its copy.
 	internal static int WritePrivateKeyInfo(ReadOnlySpan<byte> algorithmIdentifier, ReadOnlySpan<byte> privateKey, Span<byte> destination)
 	{
 		AsnWriter writer = new(AsnEncodingRules.DER, GetPrivateKeyInfoLength(algorithmIdentifier, privateKey.Length));
@@ -127,7 +129,9 @@ internal static class KeyInfoDer
 		}
 	}
 
-	// The privateKey of the PrivateKeyInfo or OneAsymmetricKey that fills source, and the publicKey of a version 2 OneAsymmetricKey, or empty. Attributes are skipped. The results are slices of source.
+	// The privateKey of the PrivateKeyInfo or OneAsymmetricKey that fills source, and the publicKey of a version 2 OneAsymmetricKey, or empty.
+	// Attributes are skipped.
+	// The results are slices of source.
 	internal static bool TryReadPrivateKeyInfo(ReadOnlySpan<byte> algorithmIdentifier, ReadOnlySpan<byte> source, out ReadOnlySpan<byte> privateKey, out ReadOnlySpan<byte> publicKey)
 	{
 		privateKey = default;

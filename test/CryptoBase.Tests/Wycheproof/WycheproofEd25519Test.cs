@@ -8,7 +8,10 @@ namespace CryptoBase.Tests.Wycheproof;
 
 public class WycheproofEd25519Test
 {
-	// Every group key is valid. The acceptable vectors have a public key outside the prime-order subgroup and a signature that meets the equation, which the library takes as it accepts points of small order. The first verification with an instance goes without the table of its public key, and the later ones use it. The reference, which follows the verification policy of the library, decides every other vector as Wycheproof does.
+	// Every group key is valid.
+	// The acceptable vectors have a public key outside the prime-order subgroup and a signature that meets the equation, which the library takes as it accepts points of small order.
+	// The first verification with an instance goes without the table of its public key, and the later ones use it.
+	// The reference, which follows the verification policy of the library, decides every other vector as Wycheproof does.
 	[Test]
 	[WycheproofVectors<EddsaVerifyTestGroup, EddsaVerifyTestVector>("ed25519_test.json")]
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]

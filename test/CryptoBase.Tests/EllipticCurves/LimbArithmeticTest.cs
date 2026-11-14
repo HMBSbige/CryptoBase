@@ -2,7 +2,8 @@ using CryptoBase.EllipticCurves;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-// Without BMI2, as with DISABLE=AVX2 or HWIntrinsic, Multiply takes its portable path. The boundary limbs give every carry between the 32-bit halves of the products.
+// Without BMI2, as with DISABLE=AVX2 or HWIntrinsic, Multiply takes its portable path.
+// The boundary limbs give every carry between the 32-bit halves of the products.
 public class LimbArithmeticTest
 {
 	private const int RandomCount = 4096;

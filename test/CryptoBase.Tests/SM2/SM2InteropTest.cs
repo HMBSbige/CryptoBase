@@ -6,8 +6,7 @@ using static CryptoBase.Tests.SM2.SM2TestUtils;
 
 namespace CryptoBase.Tests.SM2;
 
-// Known-answer vectors, checked both ways: a key, signatures of "message" with the default ID, with ALICE123@YAHOO.COM and with the empty ID, and SM2Cipher ciphertexts,
-// and the ciphertext that the key writes below from a fixed nonce.
+// Known-answer vectors, checked both ways: a key, signatures of "message" with the default ID, with ALICE123@YAHOO.COM and with the empty ID, and SM2Cipher ciphertexts, and the ciphertext that the key writes below from a fixed nonce.
 public class SM2InteropTest
 {
 	private static readonly byte[] Pkcs8PrivateKey = Hex("308187020100301306072A8648CE3D020106082A811CCF5501822D046D306B0201010420FF43D8DAF6177147291CF12497B160B008BC941A90B2A1DC3E3D596CF5BC95AEA144034200046F3E8899A89B90ED470106D684468D2D4A2124B70F1BB880D27FCFB3101DF0F001A54CD9063C0F8026A90B69D2DB9AD040AC27BECE601021B54F909847A7FEC7");

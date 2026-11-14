@@ -5,7 +5,9 @@ namespace CryptoBase.Signatures.MLDsa;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Importing a private key checks that s1 and s2 lie in [−η, η] and that t0 and tr follow from ρ, s1 and s2. Every byte string of <see cref="PublicKeyLength" /> bytes is a public key, so importing one checks only its length. Signing and verification may run concurrently on one instance.
+/// Importing a private key checks that s1 and s2 lie in [−η, η] and that t0 and tr follow from ρ, s1 and s2.
+/// Every byte string of <see cref="PublicKeyLength" /> bytes is a public key, so importing one checks only its length.
+/// Signing and verification may run concurrently on one instance.
 /// </para>
 /// <para>
 /// Signing is hedged with 32 bytes of system randomness, so signing a message twice gives two different signatures.
@@ -222,7 +224,8 @@ public sealed class MLDsa87 : IMLDsa<MLDsa87>
 	/// Signs <paramref name="message" /> with ML-DSA.Sign (FIPS 204, Algorithm 2).
 	/// </summary>
 	/// <remarks>
-	/// <paramref name="message" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.
+	/// <paramref name="message" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
 	/// </remarks>
 	/// <param name="message">The message.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="SignatureLength" /> bytes long.</param>
@@ -263,7 +266,9 @@ public sealed class MLDsa87 : IMLDsa<MLDsa87>
 	/// Signs the hash of a message with HashML-DSA.Sign (FIPS 204, Algorithm 4).
 	/// </summary>
 	/// <remarks>
-	/// The hash algorithm needs a collision strength of at least 256 bits, that of ML-DSA-87: SHA-512, SHA3-512, or SHAKE256 with 64 bytes of output. <paramref name="hash" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.
+	/// The hash algorithm needs a collision strength of at least 256 bits, that of ML-DSA-87: SHA-512, SHA3-512, or SHAKE256 with 64 bytes of output.
+	/// <paramref name="hash" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
 	/// </remarks>
 	/// <param name="hash">The hash of the message, as long as the output of the hash algorithm.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="SignatureLength" /> bytes long.</param>
@@ -306,7 +311,9 @@ public sealed class MLDsa87 : IMLDsa<MLDsa87>
 	/// Signs the message representative μ with ML-DSA.Sign_internal (FIPS 204, Algorithm 7), which then skips computing μ.
 	/// </summary>
 	/// <remarks>
-	/// μ = H(tr ‖ M′, 64) for tr = H(pk, 64) and the M′ of ML-DSA.Sign or HashML-DSA.Sign; the caller computes it, so that the message need not pass through the instance. <paramref name="mu" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.
+	/// μ = H(tr ‖ M′, 64) for tr = H(pk, 64) and the M′ of ML-DSA.Sign or HashML-DSA.Sign; the caller computes it, so that the message need not pass through the instance.
+	/// <paramref name="mu" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
 	/// </remarks>
 	/// <param name="mu">The message representative, exactly <see cref="MuLength" /> bytes long.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="SignatureLength" /> bytes long.</param>

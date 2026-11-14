@@ -58,6 +58,9 @@ public enum CertificateValidationError
 	/// <summary>
 	/// A certificate uses a signature algorithm or a public key that the validator's policy refuses, such as a signature with MD5 or SHA-1, or an RSA key shorter than the policy's minimum.
 	/// </summary>
-	/// <remarks>Unlike <see cref="UnsupportedAlgorithm" />, the validator knows the algorithm and refuses it by its policy; TLS and DTLS answer such a certificate with bad_certificate (RFC 9846, Sec. 4.5.1.3).</remarks>
+	/// <remarks>
+	/// Unlike <see cref="UnsupportedAlgorithm" />, the validator knows the algorithm and refuses it by its policy;
+	/// TLS and DTLS answer such a certificate with bad_certificate (RFC 9846, Sec. 4.5.1.3).
+	/// </remarks>
 	WeakAlgorithm = 10
 }

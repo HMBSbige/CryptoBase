@@ -536,7 +536,8 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		byte[] message = CreateDeterministicSource(100);
 		byte[] signature = new byte[key.GetMaxSignatureLength(SignatureAlgorithm.EcdsaSha512)];
 
-		// Before the measurement, the second verification with key allocates the table of its public key; within it, key verifies with that table and verifier for the first time, without one. Native AOT allocates the first time a path runs from a call site, so verifier verifies through Verify, which otherVerifier takes first, also without a table.
+		// Before the measurement, the second verification with key allocates the table of its public key; within it, key verifies with that table and verifier for the first time, without one.
+		// Native AOT allocates the first time a path runs from a call site, so verifier verifies through Verify, which otherVerifier takes first, also without a table.
 		bool valid = Exercise(key, message, signature);
 		int written = key.Sign(SignatureAlgorithm.EcdsaSha256, message, signature);
 		valid &= Verify(otherVerifier, SignatureAlgorithm.EcdsaSha256, message, signature.AsSpan(0, written));

@@ -23,9 +23,8 @@ internal sealed class Measurer(MeasurementSettings settings)
 	/// The target length of a warm-up batch.
 	/// </summary>
 	/// <remarks>
-	/// Tiered compilation promotes a method in two steps, to instrumented code and then to Tier1 with PGO, each after about 30 calls and a delay
-	/// that restarts whenever a method is compiled for the first time. <see cref="Workload.Run" /> is itself a loop that is called once per batch,
-	/// so short batches call it thousands of times during the warm-up, and it reaches Tier1 along with the methods it calls.
+	/// Tiered compilation promotes a method in two steps, to instrumented code and then to Tier1 with PGO, each after about 30 calls and a delay that restarts whenever a method is compiled for the first time.
+	/// <see cref="Workload.Run" /> is itself a loop that is called once per batch, so short batches call it thousands of times during the warm-up, and it reaches Tier1 along with the methods it calls.
 	/// </remarks>
 	private static readonly long WarmupBatchTicks = Math.Max(1, Stopwatch.Frequency / 4000);
 
@@ -33,9 +32,8 @@ internal sealed class Measurer(MeasurementSettings settings)
 	/// How long the JIT must have compiled nothing for a warm-up to end.
 	/// </summary>
 	/// <remarks>
-	/// Between two steps of tiered compilation the count of compiled methods stands still while the runtime waits out its call-counting delay,
-	/// 100 ms by default, which methods called for the first time extend. Measured on every row, such a pause lasts about 200 to 230 ms, and rarely
-	/// up to 300 ms, so a shorter quiet time could end the warm-up before the code it runs reaches Tier1.
+	/// Between two steps of tiered compilation the count of compiled methods stands still while the runtime waits out its call-counting delay, 100 ms by default, which methods called for the first time extend.
+	/// Measured on every row, such a pause lasts about 200 to 230 ms, and rarely up to 300 ms, so a shorter quiet time could end the warm-up before the code it runs reaches Tier1.
 	/// </remarks>
 	private static readonly long JitQuietTicks = 3 * Stopwatch.Frequency / 10;
 
@@ -49,8 +47,7 @@ internal sealed class Measurer(MeasurementSettings settings)
 	private bool AwaitsJit { get; init; } = true;
 
 	/// <summary>
-	/// Runs the measuring code once on a workload that does nothing, so that its first compilation does not happen in the middle of the first row
-	/// and restart the delay of tiered compilation there.
+	/// Runs the measuring code once on a workload that does nothing, so that its first compilation does not happen in the middle of the first row and restart the delay of tiered compilation there.
 	/// </summary>
 	public static void PrimeHarness(int threads)
 	{
@@ -61,12 +58,11 @@ internal sealed class Measurer(MeasurementSettings settings)
 	}
 
 	/// <summary>
-	/// Runs short batches of every runner in turn for at least the warm-up time and until the JIT has compiled nothing for <see cref="JitQuietTicks" />,
-	/// but no longer than <see cref="MaximumWarmupExtensionTicks" /> past the warm-up time.
+	/// Runs short batches of every runner in turn for at least the warm-up time and until the JIT has compiled nothing for <see cref="JitQuietTicks" />, but no longer than <see cref="MaximumWarmupExtensionTicks" /> past the warm-up time.
 	/// </summary>
 	/// <remarks>
-	/// The count of compiled methods includes the recompilations that tiered compilation makes on its background thread, so it stops changing
-	/// once the code that the runners call has reached its final tier. Native AOT compiles nothing at run time, so its warm-up takes the warm-up time.
+	/// The count of compiled methods includes the recompilations that tiered compilation makes on its background thread, so it stops changing once the code that the runners call has reached its final tier.
+	/// Native AOT compiles nothing at run time, so its warm-up takes the warm-up time.
 	/// </remarks>
 	public WarmupResult Warmup(IReadOnlyList<IBatchRunner> runners)
 	{

@@ -1,6 +1,7 @@
 namespace CryptoBase.KeyAgreements;
 
-// A Diffie–Hellman key as a DHKEM (RFC 9180, Section 4.1) uses it: a private key and its public key, a public key alone, or nothing. Keep an implementation in one writable location and do not copy it, and call its members only through writable locations: a call through a readonly one copies the key where nothing erases it.
+// A Diffie–Hellman key as a DHKEM (RFC 9180, Section 4.1) uses it: a private key and its public key, a public key alone, or nothing.
+// Keep an implementation in one writable location and do not copy it, and call its members only through writable locations: a call through a readonly one copies the key where nothing erases it.
 internal interface IDiffieHellmanKey<TSelf> where TSelf : struct, IDiffieHellmanKey<TSelf>
 {
 	// Nsk, the length of a serialized private key.
@@ -12,7 +13,9 @@ internal interface IDiffieHellmanKey<TSelf> where TSelf : struct, IDiffieHellman
 	// Ndh, the length of a shared secret.
 	static abstract int SharedSecretLength { get; }
 
-	// Whether the private key is a string that is clamped into a scalar. Selects the DeriveKeyPair of RFC 9180, Section 7.1.3: if set, one expansion with the label "sk", which fails if the string does not import; if not, candidates, their first byte masked with PrivateKeyMask, until one imports.
+	// Whether the private key is a string that is clamped into a scalar.
+	// Selects the DeriveKeyPair of RFC 9180, Section 7.1.3: if set, one expansion with the label "sk", which fails if the string does not import;
+	// if not, candidates, their first byte masked with PrivateKeyMask, until one imports.
 	static abstract bool ClampsPrivateKey { get; }
 
 	static abstract byte PrivateKeyMask { get; }
@@ -25,23 +28,28 @@ internal interface IDiffieHellmanKey<TSelf> where TSelf : struct, IDiffieHellman
 	// On failure, the key is cleared.
 	bool TryImportPrivateKey(ReadOnlySpan<byte> source);
 
-	// Accepts only public keys with which DH succeeds for every private key, so that DeriveSharedSecret and GenerateEphemeral cannot fail. On failure, the key is cleared.
+	// Accepts only public keys with which DH succeeds for every private key, so that DeriveSharedSecret and GenerateEphemeral cannot fail.
+	// On failure, the key is cleared.
 	bool TryImportPublicKey(ReadOnlySpan<byte> source);
 
 	int ExportPrivateKey(Span<byte> destination);
 
 	int ExportPublicKey(Span<byte> destination);
 
-	// DH of the private key and a serialized public key. Returns false, leaving sharedSecret unchanged, if peerPublicKey fails the public checks; the result depends only on peerPublicKey.
+	// DH of the private key and a serialized public key.
+	// Returns false, leaving sharedSecret unchanged, if peerPublicKey fails the public checks; the result depends only on peerPublicKey.
 	bool TryDeriveSharedSecret(ReadOnlySpan<byte> peerPublicKey, Span<byte> sharedSecret);
 
 	// DH(privateKey, publicKey), for a privateKey that holds a private key.
 	static abstract void DeriveSharedSecret(in TSelf privateKey, in TSelf publicKey, Span<byte> destination);
 
-	// Draws an ephemeral key pair and writes its public key and DH(ephemeral, publicKey). If drawing fails, neither buffer is written.
+	// Draws an ephemeral key pair and writes its public key and DH(ephemeral, publicKey).
+	// If drawing fails, neither buffer is written.
 	static abstract void GenerateEphemeral(in TSelf publicKey, Span<byte> ephemeralPublicKey, Span<byte> sharedSecret);
 
-	// GenerateEphemeral for AuthEncap: DH(ephemeral, publicKey) ‖ DH(sender, publicKey). If drawing fails, neither buffer is written. An implementation may share work between the two.
+	// GenerateEphemeral for AuthEncap: DH(ephemeral, publicKey) ‖ DH(sender, publicKey).
+	// If drawing fails, neither buffer is written.
+	// An implementation may share work between the two.
 	static virtual void GenerateEphemeral(in TSelf publicKey, in TSelf sender, Span<byte> ephemeralPublicKey, Span<byte> sharedSecrets)
 	{
 		int length = TSelf.SharedSecretLength;
@@ -49,7 +57,9 @@ internal interface IDiffieHellmanKey<TSelf> where TSelf : struct, IDiffieHellman
 		TSelf.DeriveSharedSecret(in sender, in publicKey, sharedSecrets.Slice(length));
 	}
 
-	// The DH of AuthDecap: DH(privateKey, peerPublicKey) ‖ DH(privateKey, publicKey), or false, with sharedSecrets unchanged, if peerPublicKey fails the checks of TryDeriveSharedSecret. privateKey is by reference so that TryDeriveSharedSecret is called through a writable location. An implementation may share work between the two.
+	// The DH of AuthDecap: DH(privateKey, peerPublicKey) ‖ DH(privateKey, publicKey), or false, with sharedSecrets unchanged, if peerPublicKey fails the checks of TryDeriveSharedSecret.
+	// privateKey is by reference so that TryDeriveSharedSecret is called through a writable location.
+	// An implementation may share work between the two.
 	static virtual bool TryDeriveSharedSecrets(ref TSelf privateKey, ReadOnlySpan<byte> peerPublicKey, in TSelf publicKey, Span<byte> sharedSecrets)
 	{
 		int length = TSelf.SharedSecretLength;

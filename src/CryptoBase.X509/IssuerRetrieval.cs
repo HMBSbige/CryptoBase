@@ -14,8 +14,12 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 	// The certificates at which the strict search ended without an issuer, which it fills.
 	public List<PathNode> DeadEnds { get; } = [];
 
-	// The certificates that a round adds to the candidates, in order, each new to the validation and none a trust anchor; empty if the search is not worth repeating. A round goes through its sources until one adds a certificate:
-	// the certificates at which the strict search ended, as a retrieved issuer may be valid where one in the pool is not; what the URIs that the cache answered give now, as a kept certificate may be of another key of the same name; every known certificate, as a path can fail with no certificate left without an issuer; and again what the URIs that the cache answered in the previous source give now.
+	// The certificates that a round adds to the candidates, in order, each new to the validation and none a trust anchor; empty if the search is not worth repeating.
+	// A round goes through its sources until one adds a certificate:
+	// the certificates at which the strict search ended, as a retrieved issuer may be valid where one in the pool is not;
+	// what the URIs that the cache answered give now, as a kept certificate may be of another key of the same name;
+	// every known certificate, as a path can fail with no certificate left without an issuer;
+	// and again what the URIs that the cache answered in the previous source give now.
 	public async ValueTask<List<Certificate>> RetrieveAsync(PathNode leaf, IReadOnlyList<PathNode> pool, Func<PathNode, bool> hasIssuerToFind)
 	{
 		List<Certificate> added = [];
@@ -63,7 +67,8 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 	{
 		foreach (IssuerRequest request in requests)
 		{
-			// A kept issuer counts towards the retrieved certificates like any other, as each costs the search a key and its checks; an entry holds only the certificates of a path that its key gave, at most those of one retrieval.
+			// A kept issuer counts towards the retrieved certificates like any other, as each costs the search a key and its checks;
+			// an entry holds only the certificates of a path that its key gave, at most those of one retrieval.
 			if (cache is not null && cache.TryGet(request.Key, time, out Certificate[]? cached))
 			{
 				Add(cached, source: null, added);
@@ -85,7 +90,8 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 		}
 	}
 
-	// A certificate without an issuer to find, such as a self-signed one, names none. Once the budget has no request left, the URIs that follow are left out, as are those of every later round.
+	// A certificate without an issuer to find, such as a self-signed one, names none.
+	// Once the budget has no request left, the URIs that follow are left out, as are those of every later round.
 	private List<IssuerRequest> GetRequests(List<PathNode> nodes, Func<PathNode, bool> hasIssuerToFind)
 	{
 		List<IssuerRequest> requests = [];

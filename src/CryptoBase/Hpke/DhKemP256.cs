@@ -9,10 +9,14 @@ namespace CryptoBase.Hpke;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The encapsulation key is the public key in the uncompressed encoding, and a ciphertext, the encapsulated key, is an ephemeral public key in the same encoding. The decapsulation key is the private key as big-endian bytes, which must lie in [1, n − 1]. The private seed is the input keying material of <see cref="DeriveKeyPair" />, so a key pair from <see cref="GenerateKey" /> or <see cref="ImportPrivateSeed" /> is the one that <see cref="DeriveKeyPair" /> derives from its seed.
+/// The encapsulation key is the public key in the uncompressed encoding, and a ciphertext, the encapsulated key, is an ephemeral public key in the same encoding.
+/// The decapsulation key is the private key as big-endian bytes, which must lie in [1, n − 1].
+/// The private seed is the input keying material of <see cref="DeriveKeyPair" />, so a key pair from <see cref="GenerateKey" /> or <see cref="ImportPrivateSeed" /> is the one that <see cref="DeriveKeyPair" /> derives from its seed.
 /// </para>
 /// <para>
-/// A point is accepted only in the uncompressed encoding, with both coordinates below the field prime, and only if it lies on the curve. <see cref="TryDecapsulate" /> and <see cref="TryAuthDecapsulate" /> return <see langword="false" /> only for a ciphertext of the wrong length or one whose point fails this check. Encapsulation and decapsulation may run concurrently on one instance.
+/// A point is accepted only in the uncompressed encoding, with both coordinates below the field prime, and only if it lies on the curve.
+/// <see cref="TryDecapsulate" /> and <see cref="TryAuthDecapsulate" /> return <see langword="false" /> only for a ciphertext of the wrong length or one whose point fails this check.
+/// Encapsulation and decapsulation may run concurrently on one instance.
 /// </para>
 /// <para>
 /// The shared secret binds the ciphertext and the encapsulation key, and with authentication the sender's encapsulation key too.

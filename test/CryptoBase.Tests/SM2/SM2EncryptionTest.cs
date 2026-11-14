@@ -83,7 +83,8 @@ public class SM2EncryptionTest
 		}
 	}
 
-	// A flipped bit anywhere fails: in C1 it leaves the curve or gives another point, in C3 or C2 the hash. Decryption then writes nothing.
+	// A flipped bit anywhere fails: in C1 it leaves the curve or gives another point, in C3 or C2 the hash.
+	// Decryption then writes nothing.
 	[Test]
 	public async Task TamperedCiphertextsFailAndWriteNothing()
 	{
@@ -231,7 +232,8 @@ public class SM2EncryptionTest
 		}
 	}
 
-	// GB/T 32918.4-2016, Sec. 6.1, A5 draws another k if t is all zero, and Sec. 7.1, B4 rejects such a t. For one byte that is a k in 256, which the reference finds.
+	// GB/T 32918.4-2016, Sec. 6.1, A5 draws another k if t is all zero, and Sec. 7.1, B4 rejects such a t.
+	// For one byte that is a k in 256, which the reference finds.
 	[Test]
 	public async Task AllZeroKeyStreamsAreDrawnAgainAndRejected()
 	{
@@ -417,7 +419,8 @@ public class SM2EncryptionTest
 		}
 	}
 
-	// Threads that encrypt with a new key at once cross the threshold together and may each build the table; every ciphertext must still be that of the reference. Each thread meets the others once, at the barrier, before its share of the encryptions.
+	// Threads that encrypt with a new key at once cross the threshold together and may each build the table; every ciphertext must still be that of the reference.
+	// Each thread meets the others once, at the barrier, before its share of the encryptions.
 	[Test]
 	public async Task ConcurrentEncryptionsAcrossTheThresholdMatchTheReference()
 	{

@@ -11,7 +11,8 @@ namespace CryptoBase.X509;
 /// The DNS names need not be valid to decode; <see cref="MatchesHostName" /> ignores those that are not.
 /// </para>
 /// <para>
-/// An instance holds its own copy of the encoding, and the members return slices of it. Instances are immutable, so they may be used concurrently.
+/// An instance holds its own copy of the encoding, and the members return slices of it.
+/// Instances are immutable, so they may be used concurrently.
 /// </para>
 /// </remarks>
 public sealed class SubjectAlternativeName
@@ -86,15 +87,18 @@ public sealed class SubjectAlternativeName
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The host name is an IP address if it is one in dotted-decimal IPv4 notation, as in RFC 3986, Sec. 3.2.2, or in IPv6 text notation (RFC 4291, Sec. 2.2), optionally in brackets as in a URI; its octets must equal those of an iPAddress entry (RFC 9525, Sec. 6.4).
+	/// The host name is an IP address if it is one in dotted-decimal IPv4 notation, as in RFC 3986, Sec. 3.2.2, or in IPv6 text notation (RFC 4291, Sec. 2.2), optionally in brackets as in a URI;
+	/// its octets must equal those of an iPAddress entry (RFC 9525, Sec. 6.4).
 	/// Otherwise it is a DNS name, without the one trailing dot that it may have: labels of 1 to 63 letters, digits and hyphens that neither start nor end with a hyphen, 253 characters at most, whose last label is not numeric, so that no notation of an IP address, such as 127.1, 0x7f.1 or 0177.0.0.1, counts as one (RFC 9525, Sec. 7.4).
 	/// Labels may also hold underscores, in host names and dNSName entries alike, unless the name has labels that are not ASCII.
 	/// </para>
 	/// <para>
-	/// A DNS name may also have labels that are not ASCII, each converted to an A-label with <see cref="System.Globalization.IdnMapping" />, among labels in ASCII, such as A-labels, which stay as they are. Such a label must be one that the platform's IDNA conversion accepts and leaves as it is, apart from the case of ASCII letters: other than letters, digits and hyphens, it may hold only letters that are not upper or title case, marks that do not start it and decimal digits, so that the result is the same on every platform that accepts the name.
+	/// A DNS name may also have labels that are not ASCII, each converted to an A-label with <see cref="System.Globalization.IdnMapping" />, among labels in ASCII, such as A-labels, which stay as they are.
+	/// Such a label must be one that the platform's IDNA conversion accepts and leaves as it is, apart from the case of ASCII letters: other than letters, digits and hyphens, it may hold only letters that are not upper or title case, marks that do not start it and decimal digits, so that the result is the same on every platform that accepts the name.
 	/// Names that the conversion would change, such as those with upper-case non-ASCII letters, compatibility characters or full-width dots, are rejected, as are characters that the platform's Unicode version does not know.
 	/// The labels are not otherwise checked against the rules of IDNA2008 for U-labels: one that breaks its Bidi rule or a contextual rule, or that holds a code point that it disallows, may be accepted.
-	/// Where the conversion neither maps nor normalizes names as IDNA requires, as in invariant globalization mode, every name with a character that is not ASCII is rejected. A-labels avoid all of these.
+	/// Where the conversion neither maps nor normalizes names as IDNA requires, as in invariant globalization mode, every name with a character that is not ASCII is rejected.
+	/// A-labels avoid all of these.
 	/// </para>
 	/// <para>
 	/// A DNS name matches a dNSName entry that equals it in ASCII letters of either case (RFC 9525, Sec. 6.3), and a wildcard entry whose first label is "*" alone, which stands for exactly one label, if the rest of the host name equals the rest of the entry.

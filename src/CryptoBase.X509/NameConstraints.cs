@@ -4,7 +4,8 @@ using System.Text;
 namespace CryptoBase.X509;
 
 // The value of a name constraints extension (RFC 5280, Sec. 4.2.1.10), for certification path validation: the subtrees of the forms that are matched, dNSName, iPAddress, rfc822Name and directoryName, and which other forms the subtrees name.
-// Decoding checks every subtree: its base must be a GeneralName whose form is valid, its minimum and maximum absent as the profile requires, and at least one of the two lists present, neither empty. The values are slices of the extension's memory, and the instance is immutable.
+// Decoding checks every subtree: its base must be a GeneralName whose form is valid, its minimum and maximum absent as the profile requires, and at least one of the two lists present, neither empty.
+// The values are slices of the extension's memory, and the instance is immutable.
 internal sealed class NameConstraints
 {
 	private static readonly Asn1Tag PermittedSubtreesTag = new(TagClass.ContextSpecific, 0, true);
@@ -20,7 +21,8 @@ internal sealed class NameConstraints
 
 	public NameSubtrees Excluded { get; }
 
-	// The comparisons that Check makes at most for the names. A directoryName and a subtree can compare every attribute of one with every attribute of the other, within a relative name of equal size, so the product of their costs bounds them, without walking them here.
+	// The comparisons that Check makes at most for the names.
+	// A directoryName and a subtree can compare every attribute of one with every attribute of the other, within a relative name of equal size, so the product of their costs bounds them, without walking them here.
 	public long CountComparisons(ConstrainedNames names)
 	{
 		long subtrees = (long)names.DnsNames.Length * (Permitted.DnsNames.Length + Excluded.DnsNames.Length);
@@ -42,7 +44,8 @@ internal sealed class NameConstraints
 		return subtrees + nameWork * (Permitted.DirectoryNameWork + Excluded.DirectoryNameWork);
 	}
 
-	// Whether the names are within the constraints (RFC 5280, Sec. 6.1.3 (b) and (c)): each name of a matched form must be within a permitted subtree of its form, if there is one, and within no excluded subtree; a name of another form that a subtree also names cannot be checked.
+	// Whether the names are within the constraints (RFC 5280, Sec. 6.1.3 (b) and (c)): each name of a matched form must be within a permitted subtree of its form, if there is one, and within no excluded subtree;
+	// a name of another form that a subtree also names cannot be checked.
 	// Returns the reason why not, or null; text is the description for the reason's message.
 	public CertificateValidationError? Check(ConstrainedNames names, out string? text)
 	{
@@ -186,7 +189,8 @@ internal sealed class NameSubtrees
 		return (_forms & 1 << (int)form) is not 0;
 	}
 
-	// RFC 5280, Sec. 4.2.1.10: a DNS name is within a subtree if it is the subtree's name with zero or more labels added on the left; every name is within the empty subtree. A wildcard stands for every name of one label more than its base, all of which must be within one subtree.
+	// RFC 5280, Sec. 4.2.1.10: a DNS name is within a subtree if it is the subtree's name with zero or more labels added on the left; every name is within the empty subtree.
+	// A wildcard stands for every name of one label more than its base, all of which must be within one subtree.
 	public bool Permits(DnsNamePattern name)
 	{
 		foreach (string subtree in DnsNames)
@@ -308,7 +312,8 @@ internal sealed class NameSubtrees
 
 		while (subtrees.HasData)
 		{
-			// GeneralSubtree ::= SEQUENCE { base GeneralName, minimum [0] BaseDistance DEFAULT 0, maximum [1] BaseDistance OPTIONAL }. The profile requires a minimum of zero, which DER leaves out, and no maximum.
+			// GeneralSubtree ::= SEQUENCE { base GeneralName, minimum [0] BaseDistance DEFAULT 0, maximum [1] BaseDistance OPTIONAL }.
+			// The profile requires a minimum of zero, which DER leaves out, and no maximum.
 			DerReader subtree = subtrees.ReadSequence();
 			GeneralName name = GeneralName.Read(ref subtree);
 			subtree.ThrowIfNotEmpty();
@@ -393,7 +398,8 @@ internal sealed class NameSubtrees
 	}
 }
 
-// A dNSName of a certificate, in the form in which it may match a host name (RFC 9525, Sec. 6.3) and in which name constraints apply to it: a DNS name, or a wildcard, a first label of "*" alone, before a DNS name, Base. Others are not valid, such as one with a trailing dot, an empty label, a space, a "*" in another place or "*" alone: they match nothing, and cannot be checked.
+// A dNSName of a certificate, in the form in which it may match a host name (RFC 9525, Sec. 6.3) and in which name constraints apply to it: a DNS name, or a wildcard, a first label of "*" alone, before a DNS name, Base.
+// Others are not valid, such as one with a trailing dot, an empty label, a space, a "*" in another place or "*" alone: they match nothing, and cannot be checked.
 internal readonly struct DnsNamePattern
 {
 	public DnsNamePattern(string value)
@@ -413,7 +419,8 @@ internal readonly struct DnsNamePattern
 	public bool IsValid { get; }
 }
 
-// An Internet mail address of a certificate: Mailbox = Local-part "@" Domain (RFC 5321, Sec. 4.1.2), whose local part is a Dot-string and whose domain is a DNS name. A quoted local part or an address literal is not supported, and cannot be checked.
+// An Internet mail address of a certificate: Mailbox = Local-part "@" Domain (RFC 5321, Sec. 4.1.2), whose local part is a Dot-string and whose domain is a DNS name.
+// A quoted local part or an address literal is not supported, and cannot be checked.
 internal readonly record struct Mailbox(string LocalPart, string Domain)
 {
 	// atext (RFC 5322, Sec. 3.2.3).
@@ -532,7 +539,8 @@ internal sealed class ConstrainedNames
 	// The mail addresses, or null for one that is not a valid mailbox.
 	public Mailbox?[] Mailboxes { get; }
 
-	// The directory names: a nonempty subject, then those of the subject alternative name extension. They are read the first time that directoryName subtrees apply, which few paths have.
+	// The directory names: a nonempty subject, then those of the subject alternative name extension.
+	// They are read the first time that directoryName subtrees apply, which few paths have.
 	public DistinguishedName[] DirectoryNames => field ??= ReadDirectoryNames();
 
 	public bool HasForm(GeneralNameType form)
@@ -540,7 +548,8 @@ internal sealed class ConstrainedNames
 		return (_forms & 1 << (int)form) is not 0;
 	}
 
-	// The names of a certificate whose subject alternative name extension, if any, decodes. The DNS names and IP addresses are those that SubjectAlternativeName decoded, in the order of the extension.
+	// The names of a certificate whose subject alternative name extension, if any, decodes.
+	// The DNS names and IP addresses are those that SubjectAlternativeName decoded, in the order of the extension.
 	public static ConstrainedNames Create(Certificate certificate, SubjectAlternativeName? alternativeName)
 	{
 		List<Mailbox?> mailboxes = [];

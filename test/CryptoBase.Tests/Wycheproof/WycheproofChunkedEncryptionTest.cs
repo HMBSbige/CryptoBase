@@ -120,7 +120,9 @@ public class WycheproofChunkedEncryptionTest
 		await XtsTestUtils.AssertBytesEqual(reencrypted, ciphertext);
 	}
 
-	// A streaming decrypter may return the valid prefix that PartialPlaintext describes before it fails; this one returns every chunk it authenticates, so it returns exactly that prefix, and nothing for other invalid vectors. It must then keep failing.
+	// A streaming decrypter may return the valid prefix that PartialPlaintext describes before it fails;
+	// this one returns every chunk it authenticates, so it returns exactly that prefix, and nothing for other invalid vectors.
+	// It must then keep failing.
 	private static async Task VerifyStreamingDecryption<TCipher>(ChunkedEncryptionTestVector vector) where TCipher : class, IChunkedCipher<TCipher>
 	{
 		byte[] ciphertext = vector.DecompressCiphertext();
@@ -162,7 +164,8 @@ public class WycheproofChunkedEncryptionTest
 		}
 	}
 
-	// Creating an instance authenticates the length, which succeeds for the valid vectors and those with ValidFinalChunk only. Reading the whole message must still fail for the latter, while reading the valid prefix that PartialPlaintext describes may succeed.
+	// Creating an instance authenticates the length, which succeeds for the valid vectors and those with ValidFinalChunk only.
+	// Reading the whole message must still fail for the latter, while reading the valid prefix that PartialPlaintext describes may succeed.
 	private static async Task VerifyRandomAccess<TCipher>(ChunkedEncryptionTestVector vector) where TCipher : class, IChunkedCipher<TCipher>
 	{
 		byte[] ciphertext = vector.DecompressCiphertext();

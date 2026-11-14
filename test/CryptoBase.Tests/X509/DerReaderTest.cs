@@ -36,7 +36,8 @@ public class DerReaderTest
 		}
 	}
 
-	// Random contents that reach the limits of AsnDecoder: many subidentifiers of one octet, or a run of continuation octets as long as one of 126 to 133 bits, or what is often wrong in an identifier; then another value after it, or truncated, or with another tag.
+	// Random contents that reach the limits of AsnDecoder: many subidentifiers of one octet, or a run of continuation octets as long as one of 126 to 133 bits, or what is often wrong in an identifier;
+	// then another value after it, or truncated, or with another tag.
 	[Test]
 	public async Task ObjectIdentifierReadersAgreeWithTheBcl()
 	{

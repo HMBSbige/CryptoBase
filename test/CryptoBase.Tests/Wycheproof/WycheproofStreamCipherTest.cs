@@ -7,7 +7,8 @@ namespace CryptoBase.Tests.Wycheproof;
 
 public class WycheproofStreamCipherTest
 {
-	// The keystream from a counter next to the carry into its high word, which only XChaCha20 has, or next to its end: block 0xFFFFFFFF of the IETF variant, whose counter DTLS 1.3 and QUIC header protection take from ciphertext. A message that needs a block past the last counter is rejected whole.
+	// The keystream from a counter next to the carry into its high word, which only XChaCha20 has, or next to its end: block 0xFFFFFFFF of the IETF variant, whose counter DTLS 1.3 and QUIC header protection take from ciphertext.
+	// A message that needs a block past the last counter is rejected whole.
 	[Test]
 	[WycheproofVectors<StreamCipherTestGroup, StreamCipherTestVector>("chacha20_counter_test.json")]
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]

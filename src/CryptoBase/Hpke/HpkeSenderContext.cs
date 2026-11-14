@@ -5,10 +5,14 @@ namespace CryptoBase.Hpke;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <c>Create</c> sets up the base or PSK mode and <c>CreateAuthenticated</c> the auth or auth_psk mode, writing the encapsulated key, enc, which the recipient needs. The encapsulated key is <c>TKem.CiphertextLength</c> bytes long, and a longer buffer receives it at its start. In the PSK modes, the PSK must be at least 32 bytes long and the PSK ID must not be empty.
+/// <c>Create</c> sets up the base or PSK mode and <c>CreateAuthenticated</c> the auth or auth_psk mode, writing the encapsulated key, enc, which the recipient needs.
+/// The encapsulated key is <c>TKem.CiphertextLength</c> bytes long, and a longer buffer receives it at its start.
+/// In the PSK modes, the PSK must be at least 32 bytes long and the PSK ID must not be empty.
 /// </para>
 /// <para>
-/// Each sealed message takes the next sequence number, so the recipient must open the messages in the order they were sealed. An instance is not thread-safe. Disposal erases the keys and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// Each sealed message takes the next sequence number, so the recipient must open the messages in the order they were sealed.
+/// An instance is not thread-safe.
+/// Disposal erases the keys and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class HpkeSenderContext : IDisposable
@@ -64,7 +68,10 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <param name="recipient">The recipient's encapsulation key.</param>
 	/// <param name="kdf">The KDF.</param>
 	/// <param name="aead">The AEAD.</param>
-	/// <param name="encapsulatedKey">The buffer that receives the encapsulated key. It must not overlap the other inputs.</param>
+	/// <param name="encapsulatedKey">
+	/// The buffer that receives the encapsulated key.
+	/// It must not overlap the other inputs.
+	/// </param>
 	/// <param name="info">The application-supplied information.</param>
 	/// <returns>The context.</returns>
 	/// <exception cref="ArgumentNullException"><paramref name="recipient" /> is <see langword="null" />.</exception>
@@ -85,7 +92,10 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <param name="recipient">The recipient's encapsulation key.</param>
 	/// <param name="kdf">The KDF.</param>
 	/// <param name="aead">The AEAD.</param>
-	/// <param name="encapsulatedKey">The buffer that receives the encapsulated key. It must not overlap the other inputs.</param>
+	/// <param name="encapsulatedKey">
+	/// The buffer that receives the encapsulated key.
+	/// It must not overlap the other inputs.
+	/// </param>
 	/// <param name="info">The application-supplied information.</param>
 	/// <param name="psk">The pre-shared key, at least 32 bytes long.</param>
 	/// <param name="pskId">The identifier of the pre-shared key, not empty.</param>
@@ -112,7 +122,10 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <param name="sender">The sender's key pair, which must hold the decapsulation key.</param>
 	/// <param name="kdf">The KDF.</param>
 	/// <param name="aead">The AEAD.</param>
-	/// <param name="encapsulatedKey">The buffer that receives the encapsulated key. It must not overlap the other inputs.</param>
+	/// <param name="encapsulatedKey">
+	/// The buffer that receives the encapsulated key.
+	/// It must not overlap the other inputs.
+	/// </param>
 	/// <param name="info">The application-supplied information.</param>
 	/// <returns>The context.</returns>
 	/// <exception cref="ArgumentNullException"><paramref name="recipient" /> or <paramref name="sender" /> is <see langword="null" />.</exception>
@@ -137,7 +150,10 @@ public sealed class HpkeSenderContext : IDisposable
 	/// <param name="sender">The sender's key pair, which must hold the decapsulation key.</param>
 	/// <param name="kdf">The KDF.</param>
 	/// <param name="aead">The AEAD.</param>
-	/// <param name="encapsulatedKey">The buffer that receives the encapsulated key. It must not overlap the other inputs.</param>
+	/// <param name="encapsulatedKey">
+	/// The buffer that receives the encapsulated key.
+	/// It must not overlap the other inputs.
+	/// </param>
 	/// <param name="info">The application-supplied information.</param>
 	/// <param name="psk">The pre-shared key, at least 32 bytes long.</param>
 	/// <param name="pskId">The identifier of the pre-shared key, not empty.</param>
@@ -169,7 +185,8 @@ public sealed class HpkeSenderContext : IDisposable
 	/// Encrypts and authenticates a message, ContextS.Seal of RFC 9180, Section 5.2.
 	/// </summary>
 	/// <remarks>
-	/// <paramref name="plaintext" /> and <paramref name="ciphertext" /> may start at the same byte, to seal in place; otherwise they must not overlap. On failure, the sequence number remains unchanged.
+	/// <paramref name="plaintext" /> and <paramref name="ciphertext" /> may start at the same byte, to seal in place; otherwise they must not overlap.
+	/// On failure, the sequence number remains unchanged.
 	/// </remarks>
 	/// <param name="plaintext">The message.</param>
 	/// <param name="ciphertext">The buffer that receives the ciphertext, which is longer than the plaintext by the tag size of the AEAD, <c>Aead.TagSize</c>.</param>
@@ -190,7 +207,10 @@ public sealed class HpkeSenderContext : IDisposable
 	/// </summary>
 	/// <remarks><paramref name="exporterContext" /> may overlap <paramref name="destination" />.</remarks>
 	/// <param name="exporterContext">The exporter context.</param>
-	/// <param name="destination">The buffer that receives the secret. Its length, at most 255 times the hash length of the KDF, <c>Kdf.HashLength</c>, selects how many bytes are derived.</param>
+	/// <param name="destination">
+	/// The buffer that receives the secret.
+	/// Its length, at most 255 times the hash length of the KDF, <c>Kdf.HashLength</c>, selects how many bytes are derived.
+	/// </param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="destination" /> is too long.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public void Export(ReadOnlySpan<byte> exporterContext, Span<byte> destination)

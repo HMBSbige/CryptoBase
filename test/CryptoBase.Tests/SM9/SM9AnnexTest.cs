@@ -10,7 +10,9 @@ using static CryptoBase.Tests.SM9.SM9TestUtils;
 
 namespace CryptoBase.Tests.SM9;
 
-// The examples of GM/T 0044.5-2016, the same as those of GB/T 38635.2-2020: Annex A (the signature), B (the key exchange), C (the key encapsulation) and D (encryption), with the master keys and random numbers that they print. The values of the pairings and powers are those of SM9Vectors, which the tests of the mathematics check; the steps here check H1, H2, t1 and t2, the keys, the KDF inputs and outputs and the encodings.
+// The examples of GM/T 0044.5-2016, the same as those of GB/T 38635.2-2020: Annex A (the signature), B (the key exchange), C (the key encapsulation) and D (encryption), with the master keys and random numbers that they print.
+// The values of the pairings and powers are those of SM9Vectors, which the tests of the mathematics check;
+// the steps here check H1, H2, t1 and t2, the keys, the KDF inputs and outputs and the encodings.
 public class SM9AnnexTest
 {
 	private static readonly byte[] Alice = "Alice"u8.ToArray();
@@ -69,7 +71,9 @@ public class SM9AnnexTest
 		}
 	}
 
-	// B.2, for the key exchange keys of hid = 0x03 that the example extracts. Its steps A1 and B1 print ID ‖ hid as 426F6202 and 416C696365 02, but the H1 values they print are those of 03, as are the keys deA and deB of the example and so the RA, RB, g1, g2 and g3 that follow: GM/T 0044.3, Sec. 5.3, has one identifier hid of the encryption private key for the extraction and for QA and QB, and the protocol works only with that. The default hid of the key exchange keys is the 0x02 that steps A1 and B1 print, which gives other values for the same master key and random numbers, so the keys here are extracted and imported with 0x03.
+	// B.2, for the key exchange keys of hid = 0x03 that the example extracts.
+	// Its steps A1 and B1 print ID ‖ hid as 426F6202 and 416C696365 02, but the H1 values they print are those of 03, as are the keys deA and deB of the example and so the RA, RB, g1, g2 and g3 that follow: GM/T 0044.3, Sec. 5.3, has one identifier hid of the encryption private key for the extraction and for QA and QB, and the protocol works only with that.
+	// The default hid of the key exchange keys is the 0x02 that steps A1 and B1 print, which gives other values for the same master key and random numbers, so the keys here are extracted and imported with 0x03.
 	[Test]
 	public async Task KeyExchangeOfAnnexB()
 	{
@@ -201,7 +205,8 @@ public class SM9AnnexTest
 		}
 	}
 
-	// The master keys, r and ID of C.2 and D.2 with keys and plaintexts of many KDF blocks, around the groups of vector lanes and the chunks that take the key stream: w does not depend on the message, so K comes from the reference KDF, and C2 = M ⊕ K1 and C3 = SM3(C2 ‖ K2). The private key recovers K, as an encapsulation of C1 or of C, and the plaintext.
+	// The master keys, r and ID of C.2 and D.2 with keys and plaintexts of many KDF blocks, around the groups of vector lanes and the chunks that take the key stream: w does not depend on the message, so K comes from the reference KDF, and C2 = M ⊕ K1 and C3 = SM3(C2 ‖ K2).
+	// The private key recovers K, as an encapsulation of C1 or of C, and the plaintext.
 	[Test]
 	public async Task LongKeysAndPlaintextsWithTheValuesOfAnnexesCAndD()
 	{

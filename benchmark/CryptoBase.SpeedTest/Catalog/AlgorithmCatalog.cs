@@ -1,7 +1,8 @@
 namespace CryptoBase.SpeedTest.Catalog;
 
 /// <summary>
-/// Lists every algorithm the tool measures. Each category lives in its own partial file; adding an algorithm takes one line there.
+/// Lists every algorithm the tool measures.
+/// Each category lives in its own partial file; adding an algorithm takes one line there.
 /// </summary>
 internal static partial class AlgorithmCatalog
 {

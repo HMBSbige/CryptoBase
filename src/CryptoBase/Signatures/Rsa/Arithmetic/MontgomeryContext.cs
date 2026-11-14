@@ -2,8 +2,11 @@ using CryptoBase.EllipticCurves;
 
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// An odd modulus n > 1 with the constants of Montgomery arithmetic in the representation of a kernel, which MontgomeryKernelDispatch picks. Values outside are limbs (see Limbs); elements are the digits of the kernel, DigitCount of them, and stand in Montgomery form for x·R⁻¹ mod n, below 2n as IMontgomeryKernel describes.
-// The modulus may be secret: nothing depends on its value but the result, and only LimbCount decides the sizes. Instances are immutable until Reset or Dispose, which erases them, so that the other methods may run concurrently. Methods take inputs that do not overlap their outputs unless they say otherwise, and erase the temporary storage they use.
+// An odd modulus n > 1 with the constants of Montgomery arithmetic in the representation of a kernel, which MontgomeryKernelDispatch picks.
+// Values outside are limbs (see Limbs); elements are the digits of the kernel, DigitCount of them, and stand in Montgomery form for x·R⁻¹ mod n, below 2n as IMontgomeryKernel describes.
+// The modulus may be secret: nothing depends on its value but the result, and only LimbCount decides the sizes.
+// Instances are immutable until Reset or Dispose, which erases them, so that the other methods may run concurrently.
+// Methods take inputs that do not overlap their outputs unless they say otherwise, and erase the temporary storage they use.
 internal abstract class MontgomeryContext : IDisposable
 {
 	protected MontgomeryContext(int limbCount, int digitCount)
@@ -52,7 +55,8 @@ internal abstract class MontgomeryContext : IDisposable
 	// Reduces an element below 2n to below n in place.
 	internal abstract void Reduce(Span<ulong> element);
 
-	// result = element^exponent for a secret exponent of any number of limbs, all of whose bits count: the time depends on the length of the exponent, not on its value. result may be element.
+	// result = element^exponent for a secret exponent of any number of limbs, all of whose bits count: the time depends on the length of the exponent, not on its value.
+	// result may be element.
 	internal abstract void Exponentiate(ReadOnlySpan<ulong> element, ReadOnlySpan<ulong> exponent, Span<ulong> result);
 
 	// result = element^exponent for a public exponent, on which the time depends. result may be element.
@@ -66,7 +70,8 @@ internal abstract class MontgomeryContext : IDisposable
 
 	public abstract void Dispose();
 
-	// Window bits for an exponent of bits bits, which cost about bits/window multiplications, 2^window for the table and the reading of every entry for each window. 5 bits for the 1024-bit exponents of RSA-2048 make as many multiplications as 6 with half the table to read.
+	// Window bits for an exponent of bits bits, which cost about bits/window multiplications, 2^window for the table and the reading of every entry for each window.
+	// 5 bits for the 1024-bit exponents of RSA-2048 make as many multiplications as 6 with half the table to read.
 	internal static int GetWindowBits(int bits)
 	{
 		return bits switch
@@ -87,7 +92,8 @@ internal abstract class MontgomeryContext : IDisposable
 
 internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKernel : IMontgomeryKernel
 {
-	// The limbs of n, its digits, the digits that the kernel takes, R² mod n, R mod n and 2n, each below n but the last, all written by Reset. Pinned only for a secret modulus, so that the GC leaves no copy for Dispose to miss: the kernels pin what they reach through pointers themselves.
+	// The limbs of n, its digits, the digits that the kernel takes, R² mod n, R mod n and 2n, each below n but the last, all written by Reset.
+	// Pinned only for a secret modulus, so that the GC leaves no copy for Dispose to miss: the kernels pin what they reach through pointers themselves.
 	private readonly ulong[] _data;
 	private ulong _negativeInverse;
 
@@ -433,7 +439,8 @@ internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKern
 		ConditionalSubtract(value, Twice, carry);
 	}
 
-	// Subtracts subtrahend from value + carry·R if that does not go below zero: a first pass finds the sign of the difference, and a second takes its digits or keeps those of value, so that no buffer holds them. Not inlined, as the loops of larger callers, such as that of the Miller-Rabin test, would spill its counters.
+	// Subtracts subtrahend from value + carry·R if that does not go below zero: a first pass finds the sign of the difference, and a second takes its digits or keeps those of value, so that no buffer holds them.
+	// Not inlined, as the loops of larger callers, such as that of the Miller-Rabin test, would spill its counters.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void ConditionalSubtract(Span<ulong> value, ReadOnlySpan<ulong> subtrahend, ulong carry)
 	{

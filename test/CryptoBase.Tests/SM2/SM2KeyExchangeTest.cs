@@ -33,7 +33,8 @@ public class SM2KeyExchangeTest
 		}
 	}
 
-	// A key that serves as the static key of the peer often enough builds its windows, from which the later derivations take t·P; the keys of the vectors must not change across that threshold, which both keys reach at the same exchange.
+	// A key that serves as the static key of the peer often enough builds its windows, from which the later derivations take t·P;
+	// the keys of the vectors must not change across that threshold, which both keys reach at the same exchange.
 	[Test]
 	[MethodDataSource(nameof(ExternalVectors))]
 	public async Task KeysFromTheWindowsMatchExternalVectors(string initiator, string initiatorEphemeral, string responder, string responderEphemeral, string expected)
@@ -109,7 +110,8 @@ public class SM2KeyExchangeTest
 		}
 	}
 
-	// GB/T 32918.3-2016, Sec. 6.1, A6 and B5: the ephemeral key of the peer must be a point on the curve, here uncompressed. The derivation then fails, writes nothing and may be tried again.
+	// GB/T 32918.3-2016, Sec. 6.1, A6 and B5: the ephemeral key of the peer must be a point on the curve, here uncompressed.
+	// The derivation then fails, writes nothing and may be tried again.
 	[Test]
 	public async Task InvalidEphemeralKeysFail()
 	{
@@ -146,7 +148,8 @@ public class SM2KeyExchangeTest
 		}
 	}
 
-	// A7 and B6 fail where the shared point is the point at infinity: P + x̄·R of the peer is, for a static key of the peer that the reference picks as −x̄·r, or t = d + x̄·r of the party is 0, for a static key of the party picked as −x̄·r. Each derivation runs until the key of the peer has built its windows, which the later ones take.
+	// A7 and B6 fail where the shared point is the point at infinity: P + x̄·R of the peer is, for a static key of the peer that the reference picks as −x̄·r, or t = d + x̄·r of the party is 0, for a static key of the party picked as −x̄·r.
+	// Each derivation runs until the key of the peer has built its windows, which the later ones take.
 	[Test]
 	public async Task SharedPointsAtInfinityFail()
 	{
@@ -187,7 +190,8 @@ public class SM2KeyExchangeTest
 		}
 	}
 
-	// P + x̄·R = 2P for a static key of the peer that the reference picks as x̄·r, where t·P and (t·x̄)·R are equal points, which the products from the windows of P and those of k·P + l·Q without them add; the key of the initiator must be that of the reference before and after the windows.
+	// P + x̄·R = 2P for a static key of the peer that the reference picks as x̄·r, where t·P and (t·x̄)·R are equal points, which the products from the windows of P and those of k·P + l·Q without them add;
+	// the key of the initiator must be that of the reference before and after the windows.
 	[Test]
 	public async Task SharedPointsOfEqualTermsMatchTheReference()
 	{

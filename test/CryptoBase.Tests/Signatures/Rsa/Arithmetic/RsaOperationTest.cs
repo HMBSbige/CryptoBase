@@ -20,7 +20,8 @@ public class RsaOperationTest
 		yield return 4096;
 	}
 
-	// Pairs of prime lengths: equal, one or several limbs apart, a prime of a single limb, and p above or below q. The primes stay short, since BigInteger takes seconds to find primes of thousands of bits.
+	// Pairs of prime lengths: equal, one or several limbs apart, a prime of a single limb, and p above or below q.
+	// The primes stay short, since BigInteger takes seconds to find primes of thousands of bits.
 	public static IEnumerable<(int P, int Q)> PrimeLengths()
 	{
 		yield return (256, 256);
@@ -372,7 +373,9 @@ public class RsaOperationTest
 		await Assert.That(failures).IsZero();
 	}
 
-	// The vector kernels load and store through pointers into the buffers of each operation, which the heap may move. Private keys whose moduli and primes take each family of kernels, and a public key past every window of AVX-512, sign and verify on several threads against BigInteger while another compacts the heap again and again, with garbage left between what lives. Whether a move lands mid-operation is up to the collector, so the test runs for seconds, alone and only on request.
+	// The vector kernels load and store through pointers into the buffers of each operation, which the heap may move.
+	// Private keys whose moduli and primes take each family of kernels, and a public key past every window of AVX-512, sign and verify on several threads against BigInteger while another compacts the heap again and again, with garbage left between what lives.
+	// Whether a move lands mid-operation is up to the collector, so the test runs for seconds, alone and only on request.
 	[Test]
 	[Explicit]
 	[NotInParallel]
@@ -530,7 +533,9 @@ public class RsaOperationTest
 		}
 	}
 
-	// FIPS 186-5, Appendix A.1.1: nlen-bit n of primes of nlen/2 bits, |p − q| > 2^(nlen/2 − 100), 2^(nlen/2) < d < λ(n) with e·d ≡ 1 (mod λ(n)), GCD(p − 1, e) = GCD(q − 1, e) = 1; and the CRT values of RFC 8017, Sec. 3.2. 2056 bits leave the primes a partial limb, a composite e takes the general GCD and inverse, and 2^33 − 1 is the largest e.
+	// FIPS 186-5, Appendix A.1.1: nlen-bit n of primes of nlen/2 bits, |p − q| > 2^(nlen/2 − 100), 2^(nlen/2) < d < λ(n) with e·d ≡ 1 (mod λ(n)), GCD(p − 1, e) = GCD(q − 1, e) = 1;
+	// and the CRT values of RFC 8017, Sec. 3.2.
+	// 2056 bits leave the primes a partial limb, a composite e takes the general GCD and inverse, and 2^33 − 1 is the largest e.
 	[Test]
 	[Arguments(2048, 65537UL)]
 	[Arguments(2056, 255255UL)]

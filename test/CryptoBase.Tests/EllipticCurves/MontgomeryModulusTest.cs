@@ -13,7 +13,9 @@ public class MontgomeryModulusTest
 		await Assert.That(ModulusCase.All().Select(static modulus => modulus.ModulusType)).IsEquivalentTo(ImplementationsOf(typeof(IMontgomeryModulus)));
 	}
 
-	// The prime-order curves come from Wycheproof and SM2 from GB/T 32918.5, as CurveCase gives them; Curve25519, Curve448 and SM9 are not among them. The field of Curve25519 is that of 2^255 − 19 and its base point of order 2^252 + 27742317777372353535851937790883648493 (RFC 8032, Sec. 5.1); those of Curve448 are from RFC 7748, Sec. 4.2 and RFC 8032, Sec. 5.2.
+	// The prime-order curves come from Wycheproof and SM2 from GB/T 32918.5, as CurveCase gives them; Curve25519, Curve448 and SM9 are not among them.
+	// The field of Curve25519 is that of 2^255 − 19 and its base point of order 2^252 + 27742317777372353535851937790883648493 (RFC 8032, Sec. 5.1);
+	// those of Curve448 are from RFC 7748, Sec. 4.2 and RFC 8032, Sec. 5.2.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task ModulusIsTheCurveConstant(ModulusCase modulus)
@@ -80,7 +82,9 @@ public class MontgomeryModulusTest
 		}
 	}
 
-	// Reduce may give any value below 2m congruent to t·R⁻¹ modulo m, for any t below m·R. The generic reduction takes u·R − Q·m to u for any Q below R, so u next to m and 2m reach the extremes of its final subtraction. Patterned limbs make long carry and borrow chains.
+	// Reduce may give any value below 2m congruent to t·R⁻¹ modulo m, for any t below m·R.
+	// The generic reduction takes u·R − Q·m to u for any Q below R, so u next to m and 2m reach the extremes of its final subtraction.
+	// Patterned limbs make long carry and borrow chains.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task ReduceGivesTRInverseBelowTwiceTheModulus(ModulusCase modulus)

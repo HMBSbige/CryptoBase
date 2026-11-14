@@ -3,10 +3,16 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The field of p = 2^448 − 2^224 − 1 in eight unsaturated limbs, value Σ L_i·2^(56i). As 2^448 ≡ 2^224 + 1 (mod p), what carries out of limb 7 comes back into limbs 0 and 4.
-// An element is tight if every limb is below 2^56 + 2^9. Every member that gives an element gives a tight one, and the constants are tight, except Add, Subtract and SubtractFromFourP, which do not carry, and Reduce, which gives the canonical element: limbs below 2^56 and a value below p. Every limb of a tight element is below that of 2p, so Subtract may take it as its right operand.
-// Multiply takes limbs below x·2^56 on the left and y·2^56 on the right for any x, y ≤ 8 with xy ≤ 12.25, such as a sum of two tight elements, below 2^57 + 2^10, by a difference of two, below 3·2^56 + 2^9, or the latter by a sum of two less a third, below 4·2^56 + 2^10. Square takes limbs below 3.5·2^56, those of a difference included. The callers of Add, Subtract and SubtractFromFourP keep the limbs within what the next operation takes; Carry, Reduce, the zero and sign tests, the inversions and the encodings take any limbs.
-// No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue. Any result may be the same variable as an input.
+// The field of p = 2^448 − 2^224 − 1 in eight unsaturated limbs, value Σ L_i·2^(56i).
+// As 2^448 ≡ 2^224 + 1 (mod p), what carries out of limb 7 comes back into limbs 0 and 4.
+// An element is tight if every limb is below 2^56 + 2^9.
+// Every member that gives an element gives a tight one, and the constants are tight, except Add, Subtract and SubtractFromFourP, which do not carry, and Reduce, which gives the canonical element: limbs below 2^56 and a value below p.
+// Every limb of a tight element is below that of 2p, so Subtract may take it as its right operand.
+// Multiply takes limbs below x·2^56 on the left and y·2^56 on the right for any x, y ≤ 8 with xy ≤ 12.25, such as a sum of two tight elements, below 2^57 + 2^10, by a difference of two, below 3·2^56 + 2^9, or the latter by a sum of two less a third, below 4·2^56 + 2^10.
+// Square takes limbs below 3.5·2^56, those of a difference included.
+// The callers of Add, Subtract and SubtractFromFourP keep the limbs within what the next operation takes; Carry, Reduce, the zero and sign tests, the inversions and the encodings take any limbs.
+// No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
+// Any result may be the same variable as an input.
 internal struct Field448
 {
 	internal ulong L0;
@@ -22,7 +28,8 @@ internal struct Field448
 
 	private const ulong Mask = (1UL << 56) - 1;
 
-	// The limbs of 2p and 4p; limb 4 of p is 2^56 − 2, one less than the others. Each limb of 2p is at least the largest limb of a tight element, and each of 4p that of a sum of two.
+	// The limbs of 2p and 4p; limb 4 of p is 2^56 − 2, one less than the others.
+	// Each limb of 2p is at least the largest limb of a tight element, and each of 4p that of a sum of two.
 	private const ulong TwoP = (1UL << 57) - 2;
 	private const ulong TwoP4 = (1UL << 57) - 4;
 	private const ulong FourP = (1UL << 58) - 4;
@@ -36,7 +43,8 @@ internal struct Field448
 
 	private static ReadOnlySpan<ulong> OneLimbs => [1, 0, 0, 0, 0, 0, 0, 0];
 
-	// Reads 56 little-endian bytes, all 448 bits, as X448 takes them. A value of p or more is kept as it is, with limbs below 2^56; the arithmetic reduces it.
+	// Reads 56 little-endian bytes, all 448 bits, as X448 takes them.
+	// A value of p or more is kept as it is, with limbs below 2^56; the arithmetic reduces it.
 	internal static void FromBytes(ReadOnlySpan<byte> source, out Field448 result)
 	{
 		Debug.Assert(source.Length is ByteLength);
@@ -147,7 +155,8 @@ internal struct Field448
 		carried.ZeroMemory();
 	}
 
-	// For limbs below 2^56, as FromBytes gives: ulong.MaxValue if the value is below p and 0 otherwise. The values from p to 2^448 − 1 are those to which adding 2^224 + 1 carries out of bit 447.
+	// For limbs below 2^56, as FromBytes gives: ulong.MaxValue if the value is below p and 0 otherwise.
+	// The values from p to 2^448 − 1 are those to which adding 2^224 + 1 carries out of bit 447.
 	internal static ulong IsBelowModulus(in Field448 value)
 	{
 		ulong carry = value.L0 + 1 >> 56;
@@ -167,8 +176,13 @@ internal struct Field448
 		MultiplyCore(in left, in right, out result);
 	}
 
-	// Karatsuba over φ = 2^224, whose square is φ + 1 (mod p): with x = x0 + x1·φ and y = y0 + y1·φ, x·y ≡ x0·y0 + x1·y1 + ((x0 + x1)(y0 + y1) − x0·y0)·φ, three products P1 = x0·y0, P2 = x1·y1 and P3 = (x0 + x1)(y0 + y1) of four limbs each. Each limb product splits at bit 56: with a = x_i·2^4 and b = y_j·2^4, a·b = x_i·y_j·2^8, whose high word is x_i·y_j >> 56 and whose low word is (x_i·y_j mod 2^56)·2^8. Column k of a half product sums the low halves of degree k and the high halves of degree k − 1, and the columns r of the result are s_i(P1) − s_(i+4)(P1) + s_i(P2) + s_(i+4)(P3) and s_i(P3) − s_i(P1) + s_(i+4)(P2) + s_(i+4)(P3) for i < 4, the columns of (P3 − P1)·φ from 8 on coming back at 0 and 4.
-	// Each limb product of P3 is at least the one of P1 in its place, and so is its high half, so the only negative parts are low halves of P1, at most four in a column; the limbs of 4p, 4·(2^56 − 1), added in, cover them exactly. For limb bounds x·2^56 and y·2^56, the largest column, r_4, stays below (11 + 20xy)·2^56 ≤ 2^64, and x, y ≤ 8 keep the shifted sums of P3 below 2^64. Carry then leaves a tight element.
+	// Karatsuba over φ = 2^224, whose square is φ + 1 (mod p): with x = x0 + x1·φ and y = y0 + y1·φ, x·y ≡ x0·y0 + x1·y1 + ((x0 + x1)(y0 + y1) − x0·y0)·φ, three products P1 = x0·y0, P2 = x1·y1 and P3 = (x0 + x1)(y0 + y1) of four limbs each.
+	// Each limb product splits at bit 56: with a = x_i·2^4 and b = y_j·2^4, a·b = x_i·y_j·2^8, whose high word is x_i·y_j >> 56 and whose low word is (x_i·y_j mod 2^56)·2^8.
+	// Column k of a half product sums the low halves of degree k and the high halves of degree k − 1, and the columns r of the result are s_i(P1) − s_(i+4)(P1) + s_i(P2) + s_(i+4)(P3) and s_i(P3) − s_i(P1) + s_(i+4)(P2) + s_(i+4)(P3) for i < 4, the columns of (P3 − P1)·φ from 8 on coming back at 0 and 4.
+	// Each limb product of P3 is at least the one of P1 in its place, and so is its high half, so the only negative parts are low halves of P1, at most four in a column;
+	// the limbs of 4p, 4·(2^56 − 1), added in, cover them exactly.
+	// For limb bounds x·2^56 and y·2^56, the largest column, r_4, stays below (11 + 20xy)·2^56 ≤ 2^64, and x, y ≤ 8 keep the shifted sums of P3 below 2^64.
+	// Carry then leaves a tight element.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void MultiplyCore(in Field448 left, in Field448 right, out Field448 result)
 	{
@@ -200,7 +214,8 @@ internal struct Field448
 		result = t;
 	}
 
-	// MultiplyCore with right = value: the half products are squares, whose doubled cross products 2·x_i·x_j take d_i·a_j with d_i = x_i·2^5, so each needs one limb product; the columns keep the bounds of Multiply with x = y.
+	// MultiplyCore with right = value: the half products are squares, whose doubled cross products 2·x_i·x_j take d_i·a_j with d_i = x_i·2^5, so each needs one limb product;
+	// the columns keep the bounds of Multiply with x = y.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void SquareCore(in Field448 value, out Field448 result)
 	{
@@ -210,7 +225,8 @@ internal struct Field448
 		Combine(p0, p1, p2, p3, p4, p5, p6, p7, q0, q1, q2, q3, q4, q5, q6, q7, s0, s1, s2, s3, s4, s5, s6, s7, out result);
 	}
 
-	// value·c for c below 2^17 and limbs below 2^58. Each limb times c splits at bit 56 as in Multiply, into a part below 2^56 and one below 2^19, the part above limb 7 back at limbs 0 and 4; one carry then leaves the limbs tight.
+	// value·c for c below 2^17 and limbs below 2^58.
+	// Each limb times c splits at bit 56 as in Multiply, into a part below 2^56 and one below 2^19, the part above limb 7 back at limbs 0 and 4; one carry then leaves the limbs tight.
 	internal static void MultiplySmall(in Field448 value, uint c, out Field448 result)
 	{
 		Debug.Assert(c < 1u << 17);
@@ -277,14 +293,17 @@ internal struct Field448
 		Carry(TwoP - value.L0, TwoP - value.L1, TwoP - value.L2, TwoP - value.L3, TwoP4 - value.L4, TwoP - value.L5, TwoP - value.L6, TwoP - value.L7, out result);
 	}
 
-	// Any limbs to a tight element: each limb keeps its low 56 bits and gains the carry out of the one below, limbs 0 and 4 that of limb 7 as well. The carries are below 2^8, so limb 4 ends below 2^56 + 2^9 and the others below 2^56 + 2^8.
+	// Any limbs to a tight element: each limb keeps its low 56 bits and gains the carry out of the one below, limbs 0 and 4 that of limb 7 as well.
+	// The carries are below 2^8, so limb 4 ends below 2^56 + 2^9 and the others below 2^56 + 2^8.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Carry(in Field448 value, out Field448 result)
 	{
 		Carry(value.L0, value.L1, value.L2, value.L3, value.L4, value.L5, value.L6, value.L7, out result);
 	}
 
-	// The canonical value. Carry leaves a tight element, below 2^448 + 2^402 and so below 2p, and q = 1 just if it is p or more, which is where adding 2^224 + 1 carries out of bit 447 through the limbs. Adding q·(2^224 + 1) and dropping bit 448 then subtracts qp.
+	// The canonical value.
+	// Carry leaves a tight element, below 2^448 + 2^402 and so below 2p, and q = 1 just if it is p or more, which is where adding 2^224 + 1 carries out of bit 447 through the limbs.
+	// Adding q·(2^224 + 1) and dropping bit 448 then subtracts qp.
 	internal static void Reduce(in Field448 value, out Field448 result)
 	{
 		Carry(in value, out Field448 t);
@@ -323,7 +342,8 @@ internal struct Field448
 		return ZeroMask(bits);
 	}
 
-	// ulong.MaxValue if the canonical value is odd, which RFC 8032 calls negative, and 0 otherwise. The canonical copy is erased, as with IsZero.
+	// ulong.MaxValue if the canonical value is odd, which RFC 8032 calls negative, and 0 otherwise.
+	// The canonical copy is erased, as with IsZero.
 	internal static ulong IsNegative(in Field448 value)
 	{
 		Reduce(in value, out Field448 r);
@@ -446,7 +466,10 @@ internal struct Field448
 		t2.ZeroMemory();
 	}
 
-	// Sets result to an r with v·r² = u and returns ulong.MaxValue if there is one; returns 0 otherwise. For v ≠ 0 that is whether u/v is a square; for v = 0 only u = 0 has one, the root 0. u must be tight. As p ≡ 3 (mod 4), r = u³v·(u⁵v³)^((p − 3)/4) (RFC 8032 §5.2.3) has v·r² = u·(uv)^((p − 1)/2), which is u just when u/v is a square or u = 0.
+	// Sets result to an r with v·r² = u and returns ulong.MaxValue if there is one; returns 0 otherwise.
+	// For v ≠ 0 that is whether u/v is a square; for v = 0 only u = 0 has one, the root 0.
+	// u must be tight.
+	// As p ≡ 3 (mod 4), r = u³v·(u⁵v³)^((p − 3)/4) (RFC 8032 §5.2.3) has v·r² = u·(uv)^((p − 1)/2), which is u just when u/v is a square or u = 0.
 	internal static ulong SqrtRatio(in Field448 u, in Field448 v, out Field448 result)
 	{
 		Multiply(in u, in v, out Field448 uv);
@@ -481,7 +504,9 @@ internal struct Field448
 		FromLimbs(limbs[0], limbs[1], limbs[2], limbs[3], limbs[4], limbs[5], limbs[6], out result);
 	}
 
-	// The columns of a product of four limbs by four: column k sums the low halves of the limb products of degree k and the high halves of degree k − 1. The parentheses balance the sums, which the JIT adds in that order. ARM64 adds them row by row instead, which on x64 would spill the eight sums that the rows keep live.
+	// The columns of a product of four limbs by four: column k sums the low halves of the limb products of degree k and the high halves of degree k − 1.
+	// The parentheses balance the sums, which the JIT adds in that order.
+	// ARM64 adds them row by row instead, which on x64 would spill the eight sums that the rows keep live.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	[SuppressMessage("ReSharper", "ArrangeRedundantParentheses", Justification = "The parentheses balance the column sums, and the JIT adds in the order they give.")]
 	private static void HalfProduct(ulong a0, ulong a1, ulong a2, ulong a3, ulong b0, ulong b1, ulong b2, ulong b3, out ulong s0, out ulong s1, out ulong s2, out ulong s3, out ulong s4, out ulong s5, out ulong s6, out ulong s7)
@@ -595,7 +620,8 @@ internal struct Field448
 		return a * b >> 8;
 	}
 
-	// x·y >> 56 for a = x·2^4 and b = y·2^4. The intrinsics are called here rather than through LimbArithmetic, whose extra inlining level leads the JIT to spill more of the column sums.
+	// x·y >> 56 for a = x·2^4 and b = y·2^4.
+	// The intrinsics are called here rather than through LimbArithmetic, whose extra inlining level leads the JIT to spill more of the column sums.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong High(ulong a, ulong b)
 	{

@@ -7,7 +7,8 @@ public class ThreadInterruptsTest
 	private const int TimeoutMilliseconds = 10_000;
 	private const int StepMilliseconds = 100;
 
-	// The interrupting thread holds the lock, so the waiting thread has to block to take it back. A pulsed thread is interrupted while it does, unless it is slow to block: it then takes the lock and returns.
+	// The interrupting thread holds the lock, so the waiting thread has to block to take it back.
+	// A pulsed thread is interrupted while it does, unless it is slow to block: it then takes the lock and returns.
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]

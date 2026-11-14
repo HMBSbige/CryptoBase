@@ -54,7 +54,8 @@ internal struct KmacState<TRate> where TRate : IKeccakRate
 		sponge.Squeeze(destination);
 	}
 
-	// CShakeSponge.InitializeKmac and Finish on a lone sponge. All input is absorbed before the output is written, so the destination may overlap the key or the source.
+	// CShakeSponge.InitializeKmac and Finish on a lone sponge.
+	// All input is absorbed before the output is written, so the destination may overlap the key or the source.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void Compute(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> customization, ulong outputLengthInBits, Span<byte> destination)

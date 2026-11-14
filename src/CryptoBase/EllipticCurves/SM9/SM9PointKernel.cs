@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The product of G1 with a variable point on the formulas of SM9PointLanes for one point: the algorithm of SM9G1Group.Multiply, with the same digits, tables and sums, each doubling and addition taking its products in two rows. The tables stay in SM9Point form, so that a masked scan reads as many bytes as there, and each entry goes into lanes after its selection. Neither the time nor the addresses depend on the scalar or the point, and the intermediates are cleared.
+// The product of G1 with a variable point on the formulas of SM9PointLanes for one point: the algorithm of SM9G1Group.Multiply, with the same digits, tables and sums, each doubling and addition taking its products in two rows.
+// The tables stay in SM9Point form, so that a masked scan reads as many bytes as there, and each entry goes into lanes after its selection.
+// Neither the time nor the addresses depend on the scalar or the point, and the intermediates are cleared.
 internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vector<TVector>
 {
 	// k·P for P of G1, as SM9G1Group.Multiply.
@@ -82,7 +84,8 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 		SM9PointLanes<TVector, SM9Lanes<TVector>.FpLanes, SM9Fp>.JoinSingle(ref sum, out result);
 	}
 
-	// [a]Q for a = 6t + 2 and Q of E'(Fp2) with reduced coordinates, by the NAF of a, SM9MillerLoop.Digits, on the formulas for one point: Q for the top digit, then a doubling for each digit below it and an addition of Q or −Q for each nonzero one, the complete formulas taking every sum. The time depends on a alone, so Q may be a private key, and the workspace and −Q are erased.
+	// [a]Q for a = 6t + 2 and Q of E'(Fp2) with reduced coordinates, by the NAF of a, SM9MillerLoop.Digits, on the formulas for one point: Q for the top digit, then a doubling for each digit below it and an addition of Q or −Q for each nonzero one, the complete formulas taking every sum.
+	// The time depends on a alone, so Q may be a private key, and the workspace and −Q are erased.
 	[SkipLocalsInit]
 	internal static void MultiplyByLoopScalarG2(in SM9Point<SM9Fp2> point, out SM9Point<SM9Fp2> result)
 	{
@@ -159,7 +162,8 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 		}
 	}
 
-	// Adds the entry of digit, negated where the digit and the sign of the part differ, as SM9G1Group.AddDigit. Every entry is read.
+	// Adds the entry of digit, negated where the digit and the sign of the part differ, as SM9G1Group.AddDigit.
+	// Every entry is read.
 	[SkipLocalsInit]
 	private static void AddDigit(ref ulong sum, ReadOnlySpan<SM9Point<SM9Fp>> table, int digit, ulong partSign, ref ulong entry, ref ulong work)
 	{

@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The Miller loop of the R-ate pairing of GM/T 0044.1 B.6.2 for P of G1 and Q of G2, with a = 6t + 2 in its NAF: f_{a,Q}(P), then the lines to π(Q) and −π²(Q). The points of the twist stand for those of E(Fp12) through ψ6(x, y) = (x·w⁻², y·w⁻³), and the lines differ from those of the standard by factors in Fp2 and Fp4 = Fp2(w³), as do the vertical lines that the NAF and the projective coordinates leave out: the final exponentiation, (p¹² − 1)/N, is a multiple of p⁴ − 1 and of p⁶ − 1, so it maps all of them to 1, and the pairing comes out as the standard's.
+// The Miller loop of the R-ate pairing of GM/T 0044.1 B.6.2 for P of G1 and Q of G2, with a = 6t + 2 in its NAF: f_{a,Q}(P), then the lines to π(Q) and −π²(Q).
+// The points of the twist stand for those of E(Fp12) through ψ6(x, y) = (x·w⁻², y·w⁻³), and the lines differ from those of the standard by factors in Fp2 and Fp4 = Fp2(w³), as do the vertical lines that the NAF and the projective coordinates leave out: the final exponentiation, (p¹² − 1)/N, is a multiple of p⁴ − 1 and of p⁶ − 1, so it maps all of them to 1, and the pairing comes out as the standard's.
 // T runs through the multiples of Q in homogeneous projective coordinates, by the formulas of Costello, Lange and Naehrig ("Faster pairing computations on curves with high-degree twists", 2010) for a = 0, which need T ≠ ±Q: T is a multiple kQ with 2 ≤ k ≤ a < N − 1 in the loop, a + p ≢ 0 and a + p ± p² ≢ 0 (mod N) at the end, as a + p − p² ≡ −p³, so none of the points is at infinity and no addition meets its double or its negation, for Q of G2 other than the point at infinity.
 // Neither the time nor the addresses depend on P or Q, and the points and lines in its locals are erased.
 internal static class SM9MillerLoop
@@ -68,7 +69,9 @@ internal static class SM9MillerLoop
 		f.ZeroMemory();
 	}
 
-	// The LineCount lines of Q, in the order Run takes them, divided by their L3, for a Q of G2 other than the point at infinity: L3 is 2YZ for a doubling, where Y ≠ 0 as G2 has no point of order 2 and Z ≠ 0 as T is not the point at infinity, and λ = X − x_Q·Z for an addition, which is 0 only where T = ±Q, which no addition meets. (L0 : −L2 : L3) as a projective point has the affine form (L0/L3, −L2/L3), which the kernel's ToAffine writes into the lines, of the layout of SM9AffinePoint, for all of them with one inversion, in constant time. The time and the addresses do not depend on Q, and the steps in its locals are erased.
+	// The LineCount lines of Q, in the order Run takes them, divided by their L3, for a Q of G2 other than the point at infinity: L3 is 2YZ for a doubling, where Y ≠ 0 as G2 has no point of order 2 and Z ≠ 0 as T is not the point at infinity, and λ = X − x_Q·Z for an addition, which is 0 only where T = ±Q, which no addition meets.
+	// (L0 : −L2 : L3) as a projective point has the affine form (L0/L3, −L2/L3), which the kernel's ToAffine writes into the lines, of the layout of SM9AffinePoint, for all of them with one inversion, in constant time.
+	// The time and the addresses do not depend on Q, and the steps in its locals are erased.
 	[SkipLocalsInit]
 	internal static void Precompute(in SM9AffinePoint<SM9Fp2> q, Span<SM9PrecomputedLine> lines)
 	{
@@ -231,8 +234,11 @@ internal static class SM9MillerLoop
 		steps[k].Z = line.L3;
 	}
 
-	// T = 2T. With A = XY, B = Y², C = Z², E = 3b'·C, F = 3E and H = 2YZ, 2T = (2A(B − F) : (B + F)² − 12E² : 4BH), four times the point of the formula of Costello, Lange and Naehrig with A = XY/2, which needs no halving. The tangent at T, scaled by 2YZ² and by w³ in Fp4 and divided by Z, and with Y²Z = X³ + b'Z³ to remove X³, is (B − E) − 3X²·xP·w² + H·yP·w³.
-	// The factors 2, 3, 4 and 12 and the difference of Y3 act on the products before their reduction. For reduced X, Y, Z, so reduced A to F and H, and B − F as B + 3p − F below 5.25p in limbs below 2^54: 3X² has coefficients in (−31p², 31p²), 2YZ in (−21p², 21p²), 2A(B − F) in (−48p², 48p²), (B + F)² − 12E², with B + F below 4.5p in limbs below 2^53, in (−122p², 142p²), and 4BH in (−41p², 41p²), all within SM9Fp.ReduceWide, as are the columns, below 2^61.4.
+	// T = 2T.
+	// With A = XY, B = Y², C = Z², E = 3b'·C, F = 3E and H = 2YZ, 2T = (2A(B − F) : (B + F)² − 12E² : 4BH), four times the point of the formula of Costello, Lange and Naehrig with A = XY/2, which needs no halving.
+	// The tangent at T, scaled by 2YZ² and by w³ in Fp4 and divided by Z, and with Y²Z = X³ + b'Z³ to remove X³, is (B − E) − 3X²·xP·w² + H·yP·w³.
+	// The factors 2, 3, 4 and 12 and the difference of Y3 act on the products before their reduction.
+	// For reduced X, Y, Z, so reduced A to F and H, and B − F as B + 3p − F below 5.25p in limbs below 2^54: 3X² has coefficients in (−31p², 31p²), 2YZ in (−21p², 21p²), 2A(B − F) in (−48p², 48p²), (B + F)² − 12E², with B + F below 4.5p in limbs below 2^53, in (−122p², 142p²), and 4BH in (−41p², 41p²), all within SM9Fp.ReduceWide, as are the columns, below 2^61.4.
 	[SkipLocalsInit]
 	internal static void DoublingStep(ref SM9Point<SM9Fp2> t, out SM9Line line)
 	{
@@ -263,7 +269,9 @@ internal static class SM9MillerLoop
 		SM9Fp2Wide.Reduce(in wide, out t.Z);
 	}
 
-	// T = T + Q for an affine Q. With θ = Y − y_Q·Z, λ = X − x_Q·Z, C = θ², D = λ², E = λ³, F = Z·C, G = X·D and H = E + F − 2G, T + Q = (λH : θ(G − H) − Y·E : Z·E). The line through T and Q, scaled by λ and by w³, is (θ·x_Q − λ·y_Q) − θ·xP·w² + λ·yP·w³.
+	// T = T + Q for an affine Q.
+	// With θ = Y − y_Q·Z, λ = X − x_Q·Z, C = θ², D = λ², E = λ³, F = Z·C, G = X·D and H = E + F − 2G, T + Q = (λH : θ(G − H) − Y·E : Z·E).
+	// The line through T and Q, scaled by λ and by w³, is (θ·x_Q − λ·y_Q) − θ·xP·w² + λ·yP·w³.
 	// The differences of products act before their reduction: for reduced inputs θ·x_Q − λ·y_Q has coefficients in (−16p², 16p²) and θ(G − H) − Y·E, with G − H as G + 3p − H below 5.25p, in (−29p², 24p²).
 	[SkipLocalsInit]
 	internal static void AdditionStep(ref SM9Point<SM9Fp2> t, in SM9AffinePoint<SM9Fp2> q, out SM9Line line)

@@ -5,10 +5,14 @@ namespace CryptoBase.KeyAgreements.Xdh;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Every 32-byte value is a valid private key. It is clamped when used, and <see cref="ExportPrivateKey" /> writes back the bytes that were imported. The public key and the shared secret are 32-byte little-endian u-coordinates.
+/// Every 32-byte value is a valid private key.
+/// It is clamped when used, and <see cref="ExportPrivateKey" /> writes back the bytes that were imported.
+/// The public key and the shared secret are 32-byte little-endian u-coordinates.
 /// </para>
 /// <para>
-/// A peer public key of 32 bytes is accepted in any encoding: the most significant bit is ignored and a u-coordinate of the field prime or more is reduced, as RFC 7748 requires. <see cref="TryDeriveSharedSecret" /> returns <see langword="false" /> if the peer public key has the wrong length or a point of small order, which gives an all-zero shared secret. Exports and derivations may run concurrently on one instance.
+/// A peer public key of 32 bytes is accepted in any encoding: the most significant bit is ignored and a u-coordinate of the field prime or more is reduced, as RFC 7748 requires.
+/// <see cref="TryDeriveSharedSecret" /> returns <see langword="false" /> if the peer public key has the wrong length or a point of small order, which gives an all-zero shared secret.
+/// Exports and derivations may run concurrently on one instance.
 /// </para>
 /// </remarks>
 public sealed class X25519 : IKeyAgreement<X25519>

@@ -2,11 +2,14 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves.SM9;
 
-// Splits a plain scalar k below N into short parts by Babai rounding against short bases B of the lattices {v : Σ v_i·λ^i ≡ 0 (mod N)}, for the endomorphism of G1, φ(x, y) = (βx, y) = [λ]P, and for the Frobenius, which acts on GT as p. With r the first row of N·B⁻¹, the parts are (k, 0, …) − Σ_j β_j·B_j for β_j = round(k·r_j/N), which g_j = round(2^320·r_j/N) gives as ⌊(k·g_j + 2^319)/2^320⌋: k·g_j/2^320 lies within 2^−65 of k·r_j/N, so |k·r_j/N − β_j| ≤ 1/2 + 2^−65 and part i is at most (1/2 + 2^−65)·Σ_j |B_j,i| in magnitude. That keeps the parts within 128 bits, where they are computed modulo 2^128.
+// Splits a plain scalar k below N into short parts by Babai rounding against short bases B of the lattices {v : Σ v_i·λ^i ≡ 0 (mod N)}, for the endomorphism of G1, φ(x, y) = (βx, y) = [λ]P, and for the Frobenius, which acts on GT as p.
+// With r the first row of N·B⁻¹, the parts are (k, 0, …) − Σ_j β_j·B_j for β_j = round(k·r_j/N), which g_j = round(2^320·r_j/N) gives as ⌊(k·g_j + 2^319)/2^320⌋: k·g_j/2^320 lies within 2^−65 of k·r_j/N, so |k·r_j/N − β_j| ≤ 1/2 + 2^−65 and part i is at most (1/2 + 2^−65)·Σ_j |B_j,i| in magnitude.
+// That keeps the parts within 128 bits, where they are computed modulo 2^128.
 // Neither the time nor the addresses depend on k, and the products are erased.
 internal static class SM9Decomposition
 {
-	// The basis of G1 is (−c, −b) and (−b, a) for a = 6t² + 2t, b = 2t + 1 and c = 6t² + 4t + 1, as c + bλ ≡ 0 and b − aλ ≡ 0; r = (−a, −b), so with β0 = round(k·a/N) and β1 = round(k·b/N) the parts are k1 = k − β0·c − β1·b and k2 = β1·a − β0·b, at most (1/2 + 2^−65)·(b + c) and (1/2 + 2^−65)·(a + b) in magnitude, both below 2^126.76.
+	// The basis of G1 is (−c, −b) and (−b, a) for a = 6t² + 2t, b = 2t + 1 and c = 6t² + 4t + 1, as c + bλ ≡ 0 and b − aλ ≡ 0;
+	// r = (−a, −b), so with β0 = round(k·a/N) and β1 = round(k·b/N) the parts are k1 = k − β0·c − β1·b and k2 = β1·a − β0·b, at most (1/2 + 2^−65)·(b + c) and (1/2 + 2^−65)·(a + b) in magnitude, both below 2^126.76.
 	private static readonly UInt128 A = new(0xD8000000019062ED, 0xC000B98B0D64696C);
 
 	private static readonly UInt128 B = 0xC000000000B1F315;
@@ -17,7 +20,8 @@ internal static class SM9Decomposition
 
 	private static ReadOnlySpan<ulong> G1RoundB => [0x4B859AF419E19310, 0x0DB20A88F17B78D1, 0x0000000000000001, 0x0000000000000000];
 
-	// The basis of the Frobenius: B0 = (2t + 1, 0, 2t, 1), B1 = (2t, t + 1, −t, t), B2 = (t + 1, t, t, −2t) and B3 = (2t + 1, −t, −(t + 1), −t), each of Σ B_j,i·p^i ≡ 0 (mod N) and of determinant −N. The parts are then below 3.5t + 2, 1.5t + 1, 2.5t + 1 and 2t + 1 in magnitude.
+	// The basis of the Frobenius: B0 = (2t + 1, 0, 2t, 1), B1 = (2t, t + 1, −t, t), B2 = (t + 1, t, t, −2t) and B3 = (2t + 1, −t, −(t + 1), −t), each of Σ B_j,i·p^i ≡ 0 (mod N) and of determinant −N.
+	// The parts are then below 3.5t + 2, 1.5t + 1, 2.5t + 1 and 2t + 1 in magnitude.
 	private const ulong T = 0x600000000058F98A;
 
 	private static ReadOnlySpan<ulong> FrobeniusRound0 => [0x72EDBC8E210396A3, 0x7EE62E24005A094E, 0x097BA41AE3EC39C4, 0x71C71C71C6B2FE2D];

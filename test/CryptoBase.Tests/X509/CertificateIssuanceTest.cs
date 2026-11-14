@@ -49,7 +49,8 @@ internal class CertificateIssuanceTest
 		}
 	}
 
-	// The platform builds the chain only with its own root in the trust store and its intermediate, so the same certificates fail against another root. macOS verifies no RSASSA-PSS signature in a chain, so that case is skipped there.
+	// The platform builds the chain only with its own root in the trust store and its intermediate, so the same certificates fail against another root.
+	// macOS verifies no RSASSA-PSS signature in a chain, so that case is skipped there.
 	[Test]
 	[Arguments(SignatureAlgorithm.EcdsaSha256)]
 	[Arguments(SignatureAlgorithm.RsaPkcs1Sha256)]

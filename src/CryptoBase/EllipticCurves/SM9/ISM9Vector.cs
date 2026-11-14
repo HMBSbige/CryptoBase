@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The lane arithmetic of the vector kernels of SM9, on Count lanes of 64 bits each. A lane holds a limb of radix 2^26 or a column of a product, which the reductions read as signed; Multiply takes the low 32 bits of each lane, as vpmuludq and umull do. None branches on or indexes by a value.
+// The lane arithmetic of the vector kernels of SM9, on Count lanes of 64 bits each.
+// A lane holds a limb of radix 2^26 or a column of a product, which the reductions read as signed; Multiply takes the low 32 bits of each lane, as vpmuludq and umull do.
+// None branches on or indexes by a value.
 internal interface ISM9Vector<TSelf> where TSelf : unmanaged, ISM9Vector<TSelf>
 {
 	static abstract bool IsSupported { get; }
@@ -18,7 +20,8 @@ internal interface ISM9Vector<TSelf> where TSelf : unmanaged, ISM9Vector<TSelf>
 
 	static abstract TSelf LoadBroadcast(ref readonly ulong source);
 
-	// The two values at source in every pair of lanes. source must be in memory that does not move, as the stack and native memory, which hold every lane the kernels take.
+	// The two values at source in every pair of lanes.
+	// source must be in memory that does not move, as the stack and native memory, which hold every lane the kernels take.
 	static abstract TSelf LoadPairBroadcast(ref readonly ulong source);
 
 	void Store(ref ulong destination);
@@ -52,7 +55,8 @@ internal interface ISM9Vector<TSelf> where TSelf : unmanaged, ISM9Vector<TSelf>
 	// whenSet where mask is all ones and whenClear where it is 0, lane by lane.
 	static abstract TSelf ConditionalSelect(TSelf mask, TSelf whenSet, TSelf whenClear);
 
-	// The row of eight lanes at destination whose lane j is lane n_j of the sixteen lanes of the rows at first and second, n_j in bits 4j to 4j + 3 of pattern, which is a constant. destination may be first or second.
+	// The row of eight lanes at destination whose lane j is lane n_j of the sixteen lanes of the rows at first and second, n_j in bits 4j to 4j + 3 of pattern, which is a constant.
+	// destination may be first or second.
 	static abstract void Permute(ref readonly ulong first, ref readonly ulong second, ref ulong destination, ulong pattern);
 
 	// As above, writing every lane of the destination row, padding included.

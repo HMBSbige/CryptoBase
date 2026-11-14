@@ -3,7 +3,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.Signatures.EdDsa;
 
-// Integers modulo L in the elements of Ed25519Order, which RFC 8032 encodes in little-endian bytes. An element holds the plain value unless its name says Montgomery. Nothing branches on or indexes by a value, except IsCanonical, which takes a public one.
+// Integers modulo L in the elements of Ed25519Order, which RFC 8032 encodes in little-endian bytes.
+// An element holds the plain value unless its name says Montgomery.
+// Nothing branches on or indexes by a value, except IsCanonical, which takes a public one.
 internal static class Ed25519Scalar
 {
 	internal const int Length = 32;
@@ -21,7 +23,11 @@ internal static class Ed25519Scalar
 
 	private static ReadOnlySpan<ulong> SecondMultiple => [Delta0 << 7, Delta0 >> 57 | Delta1 << 7, Delta1 >> 57, 0, 8];
 
-	// h mod L for the 64 little-endian bytes of h, by folds: as 2^252 ≡ −δ (mod L), a + 2^252·b ≡ a − δ·b, and a multiple of L at least δ·b keeps that positive. h < 2^512 gives b < 2^260 and δ·b < 2^385, so adding 2^133·L leaves the first remainder below 2^386; then b < 2^134, δ·b < 2^259, and 2^7·L leaves the second below 2^260; then b < 2^8, δ·b < 2^133 < L, and L leaves the third below 2^252 + L < 2L, which a conditional subtraction takes below L. Neither the time nor the addresses depend on h.
+	// h mod L for the 64 little-endian bytes of h, by folds: as 2^252 ≡ −δ (mod L), a + 2^252·b ≡ a − δ·b, and a multiple of L at least δ·b keeps that positive.
+	// h < 2^512 gives b < 2^260 and δ·b < 2^385, so adding 2^133·L leaves the first remainder below 2^386;
+	// then b < 2^134, δ·b < 2^259, and 2^7·L leaves the second below 2^260;
+	// then b < 2^8, δ·b < 2^133 < L, and L leaves the third below 2^252 + L < 2L, which a conditional subtraction takes below L.
+	// Neither the time nor the addresses depend on h.
 	[SkipLocalsInit]
 	internal static void ReduceWide(ReadOnlySpan<byte> source, out FieldElement<Ed25519Order> result)
 	{
@@ -71,7 +77,8 @@ internal static class Ed25519Scalar
 		product.Clear();
 	}
 
-	// remainder + multiple − δ·b, for the count limbs of b that the caller has moved out of the remainder from bit 252 on, in max(count + 2, 4) limbs of remainder, which holds that sum; multiple is a multiple of L at least δ·b in as many limbs.
+	// remainder + multiple − δ·b, for the count limbs of b that the caller has moved out of the remainder from bit 252 on, in max(count + 2, 4) limbs of remainder, which holds that sum;
+	// multiple is a multiple of L at least δ·b in as many limbs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Fold(ref ulong remainder, ref ulong b, ref ulong product, ref readonly ulong multiple, int count)
 	{

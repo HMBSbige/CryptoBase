@@ -1,6 +1,8 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Digits of r = TRadix.Bits ≤ 29 bits with a 32 × 32 → 64-bit multiplier, for platforms whose 64-bit multiplier gives no high word: a product of two digits fits a word, and the products of a column, those of the operands and those of m and n on separate sums, add up without carries. At the end of a column the low digits of both sums make its digit, and the rest of both, with the carry of those low digits, the start of the next column, below 3·2^(64−r). A sum then gains at most digitCount + 2 products below 2^(2r), counting the doubled cross products and the diagonal of a square, so that (digitCount + 2)·2^(2r) + 3·2^(64−r) < 2^64 bounds every sum.
+// Digits of r = TRadix.Bits ≤ 29 bits with a 32 × 32 → 64-bit multiplier, for platforms whose 64-bit multiplier gives no high word: a product of two digits fits a word, and the products of a column, those of the operands and those of m and n on separate sums, add up without carries.
+// At the end of a column the low digits of both sums make its digit, and the rest of both, with the carry of those low digits, the start of the next column, below 3·2^(64−r).
+// A sum then gains at most digitCount + 2 products below 2^(2r), counting the doubled cross products and the diagonal of a square, so that (digitCount + 2)·2^(2r) + 3·2^(64−r) < 2^64 bounds every sum.
 // The reduction is interleaved as in MontgomeryKernel64.
 internal readonly struct MontgomeryKernel32<TRadix> : IMontgomeryKernel where TRadix : struct, IRadix
 {

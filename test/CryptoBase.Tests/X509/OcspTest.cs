@@ -71,7 +71,8 @@ public class OcspTest
 		}
 	}
 
-	// RFC 9654, Sec. 2.1: a nonce of 1 to 128 bytes. The longest takes the long form of the lengths, and the nonce ends the request.
+	// RFC 9654, Sec. 2.1: a nonce of 1 to 128 bytes.
+	// The longest takes the long form of the lengths, and the nonce ends the request.
 	[Test]
 	public async Task RequestsAcceptNoncesOfOneTo128Bytes()
 	{
@@ -425,7 +426,9 @@ public class OcspTest
 		}
 	}
 
-	// Sec. 4.2.2.1: a response for the certificate that is not current tells nothing, so of several, the most severe of those that are current stands, whatever their order; one of those with a critical extension that is not understood makes the response invalid. Without a current one, the problem of the most severe stands.
+	// Sec. 4.2.2.1: a response for the certificate that is not current tells nothing, so of several, the most severe of those that are current stands, whatever their order;
+	// one of those with a critical extension that is not understood makes the response invalid.
+	// Without a current one, the problem of the most severe stands.
 	[Test]
 	public async Task SeveralResponsesTakeTheMostSevereThatIsCurrent()
 	{
@@ -556,7 +559,8 @@ public class OcspTest
 		yield return () => ("invalidityDate as NULL", true, InvalidityDateOid, NullValue);
 	}
 
-	// RFC 6960, Sec. 4.1.2: an extension that the checker understands by its type is processed only if its value decodes as that type; a noncritical one that does not is ignored, as one not understood.
+	// RFC 6960, Sec. 4.1.2: an extension that the checker understands by its type is processed only if its value decodes as that type;
+	// a noncritical one that does not is ignored, as one not understood.
 	[Test]
 	[MethodDataSource(nameof(MalformedExtensions))]
 	public async Task CriticalExtensionsMustDecodeAsTheirType(string @case, bool single, string oid, byte[] value)
@@ -831,7 +835,9 @@ public class OcspTest
 		}
 	}
 
-	// RFC 6960, Sec. 4.2.2.3: a byName ResponderID is a Name, which matches the subject of the CA or of a delegated responder by RFC 5280, Sec. 7.1, in another string type, case or spacing; the signature is verified all the same. A name that the exact comparison cannot find the same, as it differs in the case of a letter beyond ASCII, names neither.
+	// RFC 6960, Sec. 4.2.2.3: a byName ResponderID is a Name, which matches the subject of the CA or of a delegated responder by RFC 5280, Sec. 7.1, in another string type, case or spacing;
+	// the signature is verified all the same.
+	// A name that the exact comparison cannot find the same, as it differs in the case of a letter beyond ASCII, names neither.
 	[Test]
 	public async Task AResponderNameMatchesTheSubjectByRfc5280()
 	{

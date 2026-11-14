@@ -2,13 +2,17 @@ using CryptoBase.EllipticCurves;
 
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Two odd moduli of one digit count that exponentiate at once with a pair kernel, which MontgomeryKernelDispatch.CreatePair takes where the platform has one and it is faster than one modulus after the other. The elements are those of the contexts of the moduli, whose kernel has the digits of the pair kernel; the moduli may be secret, and only their limb count decides the sizes. Immutable until Reset or Dispose, which erases it.
+// Two odd moduli of one digit count that exponentiate at once with a pair kernel, which MontgomeryKernelDispatch.CreatePair takes where the platform has one and it is faster than one modulus after the other.
+// The elements are those of the contexts of the moduli, whose kernel has the digits of the pair kernel; the moduli may be secret, and only their limb count decides the sizes.
+// Immutable until Reset or Dispose, which erases it.
 internal abstract class MontgomeryPairContext : IDisposable
 {
-	// firstResult = first^firstExponent and secondResult = second^secondExponent, each modulo its modulus, as MontgomeryContext.Exponentiate does for one: the time depends on the length of the exponents, which must be equal, and not on their values. A result may be its element.
+	// firstResult = first^firstExponent and secondResult = second^secondExponent, each modulo its modulus, as MontgomeryContext.Exponentiate does for one: the time depends on the length of the exponents, which must be equal, and not on their values.
+	// A result may be its element.
 	internal abstract void Exponentiate(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> firstExponent, ReadOnlySpan<ulong> second, ReadOnlySpan<ulong> secondExponent, Span<ulong> firstResult, Span<ulong> secondResult);
 
-	// Takes the moduli of two contexts of the limb count of the constructor in place of the old ones, as a new instance would, for contexts that MontgomeryContext.Reset changed; no other method may run meanwhile.
+	// Takes the moduli of two contexts of the limb count of the constructor in place of the old ones, as a new instance would, for contexts that MontgomeryContext.Reset changed;
+	// no other method may run meanwhile.
 	internal abstract void Reset(MontgomeryContext first, MontgomeryContext second);
 
 	public abstract void Dispose();

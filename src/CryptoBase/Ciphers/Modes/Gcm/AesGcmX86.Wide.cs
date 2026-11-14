@@ -34,7 +34,8 @@ internal static partial class AesGcmX86
 
 		if (!TDirection.IsDecrypt)
 		{
-			// Encryption hashes each batch two batches after storing it. One batch later, a wide reload of its narrow stores cannot be store-forwarded.
+			// Encryption hashes each batch two batches after storing it.
+			// One batch later, a wide reload of its narrow stores cannot be store-forwarded.
 			start = Math.Min(length, 2 * 128);
 
 			for (nint offset = 0; offset < start; offset += 128)

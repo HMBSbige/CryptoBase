@@ -5,7 +5,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Signatures.EdDsa;
 
-// Ed25519, Ed25519ctx and Ed25519ph of RFC 8032 §5.1, with the key expanded once: the private key, a 32-byte seed, gives s, kept in Montgomery form, and the prefix; the public key A is kept as its encoding and as −A, from which verification computes [S]B − [k]A. Nothing on the signing path branches on or indexes by the seed, s, the prefix or r. Keep a key in one writable location and do not copy it: a copy keeps the private key where Clear cannot reach it.
+// Ed25519, Ed25519ctx and Ed25519ph of RFC 8032 §5.1, with the key expanded once: the private key, a 32-byte seed, gives s, kept in Montgomery form, and the prefix;
+// the public key A is kept as its encoding and as −A, from which verification computes [S]B − [k]A.
+// Nothing on the signing path branches on or indexes by the seed, s, the prefix or r.
+// Keep a key in one writable location and do not copy it: a copy keeps the private key where Clear cannot reach it.
 internal struct Ed25519Key
 {
 	internal const int PrivateKeyLength = 32;
@@ -239,7 +242,8 @@ internal struct Ed25519Key
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, SignatureLength, nameof(destination));
 	}
 
-	// SHA-512(dom2(F, C) ‖ first ‖ second ‖ message), where header is F ‖ OLEN(C), or empty for Ed25519, whose dom2 is empty. The state, which may hold the prefix or the seed, is erased.
+	// SHA-512(dom2(F, C) ‖ first ‖ second ‖ message), where header is F ‖ OLEN(C), or empty for Ed25519, whose dom2 is empty.
+	// The state, which may hold the prefix or the seed, is erased.
 	private static void Hash(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
 		Hash<Sha512Core>(header, context, first, second, message, destination);
@@ -265,7 +269,8 @@ internal struct Ed25519Key
 		state.ZeroMemory();
 	}
 
-	// RFC 8032 §5.1.5: s is the first half of SHA-512(seed), pruned, A = [s]B, and the prefix is the second half. One inversion gives the affine A for both its encoding and −A, so that the coordinates of the product, which depend on s, need not be kept.
+	// RFC 8032 §5.1.5: s is the first half of SHA-512(seed), pruned, A = [s]B, and the prefix is the second half.
+	// One inversion gives the affine A for both its encoding and −A, so that the coordinates of the product, which depend on s, need not be kept.
 	[SkipLocalsInit]
 	private void SetPrivateKey(ReadOnlySpan<byte> seed)
 	{
@@ -309,7 +314,8 @@ internal struct Ed25519Key
 		return true;
 	}
 
-	// RFC 8032 §5.1.6. r is secret until R hides it, and the signature is written after the last read of the message, which may overlap destination.
+	// RFC 8032 §5.1.6.
+	// r is secret until R hides it, and the signature is written after the last read of the message, which may overlap destination.
 	[SkipLocalsInit]
 	private readonly void SignCore(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
@@ -340,7 +346,10 @@ internal struct Ed25519Key
 		}
 	}
 
-	// RFC 8032 §5.1.7 with the cofactorless equation and k mod L: S must be below L, and R must equal the canonical encoding of R' = [S]B − [k]A. Every input is public, so the product takes variable time. The first verification goes without the table of −A, which a key that verifies once has no use for, and a later one builds it. Threads that verify at once may each build one, but only the first to finish publishes it, and the paths with and without it give the same R'.
+	// RFC 8032 §5.1.7 with the cofactorless equation and k mod L: S must be below L, and R must equal the canonical encoding of R' = [S]B − [k]A.
+	// Every input is public, so the product takes variable time.
+	// The first verification goes without the table of −A, which a key that verifies once has no use for, and a later one builds it.
+	// Threads that verify at once may each build one, but only the first to finish publishes it, and the paths with and without it give the same R'.
 	[SkipLocalsInit]
 	private bool VerifyCore(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
 	{

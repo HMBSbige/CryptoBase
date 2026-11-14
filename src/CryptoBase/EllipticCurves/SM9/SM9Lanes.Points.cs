@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// ISM9FieldLanes on the rows of SM9Lanes, for the points of G1 over FpLanes and those of G2 over Fp2Lanes, and the shuffles of the formulas of SM9PointLanes on one point. The products are the lane products of AccumulateLanes, reduced by Reduce1 and Reduce2. A member that takes vectors works on that many vectors of each row from vector 0, which hold the lanes it needs; the others work on vector 0.
+// ISM9FieldLanes on the rows of SM9Lanes, for the points of G1 over FpLanes and those of G2 over Fp2Lanes, and the shuffles of the formulas of SM9PointLanes on one point.
+// The products are the lane products of AccumulateLanes, reduced by Reduce1 and Reduce2.
+// A member that takes vectors works on that many vectors of each row from vector 0, which hold the lanes it needs; the others work on vector 0.
 internal static partial class SM9Lanes<TVector>
 {
 	// The patterns of MoveDown: lane i takes lane i + d, the last lanes taking lanes of the row again.
@@ -172,7 +174,9 @@ internal static partial class SM9Lanes<TVector>
 		}
 	}
 
-	// An element of Fp2 in each lane, its real part in rows 0 to 9 and its u-part in rows 10 to 19. A product takes P0 = x0·y0, P1 = x1·y1 and Ps = (x0 + x1)(y0 + y1) into c0 = P0 − 2P1 + 128p² and c1 = Ps − P0 − P1, as u² = −2; columns hold c0 and then c1, and the scratch the sums x0 + x1 and y0 + y1 and then Ps.
+	// An element of Fp2 in each lane, its real part in rows 0 to 9 and its u-part in rows 10 to 19.
+	// A product takes P0 = x0·y0, P1 = x1·y1 and Ps = (x0 + x1)(y0 + y1) into c0 = P0 − 2P1 + 128p² and c1 = Ps − P0 − P1, as u² = −2;
+	// columns hold c0 and then c1, and the scratch the sums x0 + x1 and y0 + y1 and then Ps.
 	internal readonly struct Fp2Lanes : ISM9FieldLanes<SM9Fp2>
 	{
 		public static int ElementLength => 2 * ComponentLength;
@@ -351,7 +355,15 @@ internal static partial class SM9Lanes<TVector>
 		}
 	}
 
-	// The shuffles of the formulas on one point, X, Y and Z in lanes 0 to 2 of an element. The patterns: the operands of the doubling, (Y, Y, Z, X) and (Y, Z, Z, Y); of its second round, (w2, w1, w0, w0) and (w0, w0, w0, w3); its result, (q3, q0, q1); the left operand of the addition, (X, Y, Z, X, Y, Z, X, Z) and Y into lane 3; the terms of its second round, (q4, q3, q6, q1, q0, q1) and (q5, q0, q7, q2, ·, q2), and its right operand from the left one, (2, 3, 4, 5, 1, 0); and its result, (q1, q3, q5) and (q0, q2, q4). SpreadE broadcasts lane 2. Vectors of a whole row shuffle in registers; narrower ones through rows of permuted, as many as a shuffle takes.
+	// The shuffles of the formulas on one point, X, Y and Z in lanes 0 to 2 of an element.
+	// The patterns: the operands of the doubling, (Y, Y, Z, X) and (Y, Z, Z, Y);
+	// of its second round, (w2, w1, w0, w0) and (w0, w0, w0, w3);
+	// its result, (q3, q0, q1);
+	// the left operand of the addition, (X, Y, Z, X, Y, Z, X, Z) and Y into lane 3;
+	// the terms of its second round, (q4, q3, q6, q1, q0, q1) and (q5, q0, q7, q2, ·, q2), and its right operand from the left one, (2, 3, 4, 5, 1, 0);
+	// and its result, (q1, q3, q5) and (q0, q2, q4).
+	// SpreadE broadcasts lane 2.
+	// Vectors of a whole row shuffle in registers; narrower ones through rows of permuted, as many as a shuffle takes.
 	private const ulong DoublingLeftPattern = 0x76540211;
 
 	private const ulong DoublingRightPattern = 0x76541221;
@@ -430,7 +442,8 @@ internal static partial class SM9Lanes<TVector>
 		}
 	}
 
-	// From w = (Y², YZ, t2, XY), t2 = 3b·Z²: left = (t2, YZ, t0, t0) with t0 = Y² + 9p − 3t2, as 9p covers 3t2, and right = (8Y², 8Y², Y² + t2, XY). With reduced w, t0 is below 10.0001p in limbs below 2^28.3, 8Y² below 8.0008p in limbs below 2^29 and Y² + t2 below 2.0002p in limbs below 2^27.
+	// From w = (Y², YZ, t2, XY), t2 = 3b·Z²: left = (t2, YZ, t0, t0) with t0 = Y² + 9p − 3t2, as 9p covers 3t2, and right = (8Y², 8Y², Y² + t2, XY).
+	// With reduced w, t0 is below 10.0001p in limbs below 2^28.3, 8Y² below 8.0008p in limbs below 2^29 and Y² + t2 below 2.0002p in limbs below 2^27.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	internal static void DoublingMiddle(ref ulong w, ref ulong left, ref ulong right, int count, ref ulong permuted, int vectors)
 	{
@@ -519,7 +532,9 @@ internal static partial class SM9Lanes<TVector>
 		}
 	}
 
-	// From the products q of the first round, the operands of the second, left = (t4, t3, T3, t1 − T2, 3t0, t1 + T2) and right = (T3, t1 − T2, 3t0, t1 + T2, t3, t4), with t0 = q0, t1 = q1, T2 = q2 = 3b·Z1Z2, t3 = q3 + 9p − q0 − q1, t4 = q4 + q5 and T3 = 3b·y3 = q6 + q7, t1 − T2 taken as q1 + 3p − q2. For reduced q the terms are below 10.0001p, 4.0001p, 3.0003p and 2.0002p for t3, t1 − T2, 3t0 and the others, in limbs below 2^28.3, 2^27.6, 2^27.6 and 2^27. vectors covers lanes 0 to 5.
+	// From the products q of the first round, the operands of the second, left = (t4, t3, T3, t1 − T2, 3t0, t1 + T2) and right = (T3, t1 − T2, 3t0, t1 + T2, t3, t4), with t0 = q0, t1 = q1, T2 = q2 = 3b·Z1Z2, t3 = q3 + 9p − q0 − q1, t4 = q4 + q5 and T3 = 3b·y3 = q6 + q7, t1 − T2 taken as q1 + 3p − q2.
+	// For reduced q the terms are below 10.0001p, 4.0001p, 3.0003p and 2.0002p for t3, t1 − T2, 3t0 and the others, in limbs below 2^28.3, 2^27.6, 2^27.6 and 2^27.
+	// vectors covers lanes 0 to 5.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	internal static void AdditionSecondOperands(ref ulong q, ref ulong left, ref ulong right, int count, ref ulong permuted, int vectors)
 	{
@@ -594,7 +609,8 @@ internal static partial class SM9Lanes<TVector>
 		}
 	}
 
-	// left + right in count rows of vectors vectors. Rows that take every lane lie one after another, so they go as one run of vectors.
+	// left + right in count rows of vectors vectors.
+	// Rows that take every lane lie one after another, so they go as one run of vectors.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void AddLaneRows(ref ulong left, ref ulong right, ref ulong result, int count, int vectors)
 	{

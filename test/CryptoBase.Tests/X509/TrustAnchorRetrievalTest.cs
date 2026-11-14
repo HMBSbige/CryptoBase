@@ -379,7 +379,8 @@ public class TrustAnchorRetrievalTest
 		await Assert.That(retriever.Requests).IsEmpty();
 	}
 
-	// The certificate at which the search ended comes first, and a certificate whose issuer the search found once it adds nothing. The longest path that the validator allows keeps nothing from being retrieved, as a self-issued issuer would still fit, and the checks of the path decide.
+	// The certificate at which the search ended comes first, and a certificate whose issuer the search found once it adds nothing.
+	// The longest path that the validator allows keeps nothing from being retrieved, as a self-issued issuer would still fit, and the checks of the path decide.
 	[Test]
 	public async Task RetrievesWhereAnIssuerIsMissingFirst()
 	{
@@ -688,7 +689,8 @@ public class TrustAnchorRetrievalTest
 		}
 	}
 
-	// The peer chooses how many URIs its certificate names and how long its issuer's name is. A request has a key of fixed size, and the validation prepares a bounded number of them before the limits of retrieval apply, so that what it allocates does not grow with the product of the two.
+	// The peer chooses how many URIs its certificate names and how long its issuer's name is.
+	// A request has a key of fixed size, and the validation prepares a bounded number of them before the limits of retrieval apply, so that what it allocates does not grow with the product of the two.
 	[Test]
 	public async Task PreparesABoundedNumberOfRequestsForIssuers()
 	{
@@ -2054,7 +2056,8 @@ public class TrustAnchorRetrievalTest
 		}
 	}
 
-	// Anyone on the path of a plain http URI can add certificates to what it gives. Only the issuer that a path verified is kept, so that what was added does not fill, in a later validation, the room for the retrieved certificates that it needs.
+	// Anyone on the path of a plain http URI can add certificates to what it gives.
+	// Only the issuer that a path verified is kept, so that what was added does not fill, in a later validation, the room for the retrieved certificates that it needs.
 	[Test]
 	public async Task KeepsOnlyTheIssuerThatAPathVerifiedOfWhatAUriGave()
 	{

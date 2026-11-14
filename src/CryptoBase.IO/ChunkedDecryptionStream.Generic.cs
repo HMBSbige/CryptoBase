@@ -9,13 +9,18 @@ namespace CryptoBase.IO;
 /// <typeparam name="TCipher">The chunked cipher.</typeparam>
 /// <remarks>
 /// <para>
-/// The stream is read-only and not seekable, and reads the inner stream from its current position to its end. The header is read and checked against the key and context when the stream is created, before any chunk is decrypted.
+/// The stream is read-only and not seekable, and reads the inner stream from its current position to its end.
+/// The header is read and checked against the key and context when the stream is created, before any chunk is decrypted.
 /// </para>
 /// <para>
-/// A chunk becomes readable only once it has been read whole and authenticated, so a read waits for a full chunk or the end of the inner stream. The end of the inner stream marks the last chunk, which must be shorter than a full chunk; a read into a non-empty buffer returns zero, the end of the message, only after the last chunk has been authenticated. A read into an empty buffer returns zero without reading on.
+/// A chunk becomes readable only once it has been read whole and authenticated, so a read waits for a full chunk or the end of the inner stream.
+/// The end of the inner stream marks the last chunk, which must be shorter than a full chunk;
+/// a read into a non-empty buffer returns zero, the end of the message, only after the last chunk has been authenticated.
+/// A read into an empty buffer returns zero without reading on.
 /// </para>
 /// <para>
-/// Plaintext read before an error is authentic, but it may belong to a message that turns out truncated or modified further on, so act on the message only once a read into a non-empty buffer has returned zero. Once a read fails with <see cref="AuthenticationTagMismatchException" />, every later read fails the same way.
+/// Plaintext read before an error is authentic, but it may belong to a message that turns out truncated or modified further on, so act on the message only once a read into a non-empty buffer has returned zero.
+/// Once a read fails with <see cref="AuthenticationTagMismatchException" />, every later read fails the same way.
 /// </para>
 /// <para>
 /// The instance owns the cipher of the message and disposes it; <c>leaveOpen</c> controls only the inner stream.

@@ -65,7 +65,8 @@ public class KernelScratchTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Moduli of as few digits as a kernel takes, down to one, which no context makes: the last blocks of a kernel may hold columns past the result, which it must not write. The words around the result stay as they were.
+	// Moduli of as few digits as a kernel takes, down to one, which no context makes: the last blocks of a kernel may hold columns past the result, which it must not write.
+	// The words around the result stay as they were.
 	[Test]
 	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
 	public async Task FewDigitsStayWithinTheResult(MontgomeryKernelCase kernel)

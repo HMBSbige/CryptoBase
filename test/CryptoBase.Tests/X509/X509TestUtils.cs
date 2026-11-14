@@ -165,7 +165,8 @@ internal static class X509TestUtils
 		return new CertificateRequest(subject, key, hash, padding).CreateSelfSigned(Now.AddDays(-1), Now.AddDays(30));
 	}
 
-	// id-RSASSA-PSS (RFC 4055, Sec. 3.1) with RSASSA-PSS-params, whose fields are left out where null, and whose hash AlgorithmIdentifiers have NULL parameters where nullParameters is set; or without parameters.
+	// id-RSASSA-PSS (RFC 4055, Sec. 3.1) with RSASSA-PSS-params, whose fields are left out where null, and whose hash AlgorithmIdentifiers have NULL parameters where nullParameters is set;
+	// or without parameters.
 	public static byte[] RsassaPssIdentifier(bool withParameters = true, string? hash = Sha256Oid, string? maskHash = Sha256Oid, int? saltLength = 32, int? trailerField = null, bool nullParameters = true, bool maskNullParameters = true, string maskGenerationFunction = Mgf1Oid)
 	{
 		AsnWriter writer = new(AsnEncodingRules.DER);

@@ -2,7 +2,9 @@ using CryptoBase.EllipticCurves.Curve448;
 
 namespace CryptoBase.KeyAgreements.Xdh;
 
-// The private key is any 56 bytes, kept as imported and clamped where it is used. The public key is a u-coordinate: canonical where the key derives it, the bytes as given where it was imported alone. Keep a key in one writable location and do not copy it: a copy keeps the private key where Clear cannot reach it.
+// The private key is any 56 bytes, kept as imported and clamped where it is used.
+// The public key is a u-coordinate: canonical where the key derives it, the bytes as given where it was imported alone.
+// Keep a key in one writable location and do not copy it: a copy keeps the private key where Clear cannot reach it.
 internal struct X448Key : IDiffieHellmanKey<X448Key>
 {
 	internal const int PrivateKeyLength = 56;
@@ -89,7 +91,8 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		destination[PrivateKeyLength - 1] |= 0x80;
 	}
 
-	// X448(k, 5) by the fixed-base multiplication on edwards448 and the 4-isogeny of RFC 7748 §4.2, which takes B to u = 5. The product is the identity, which maps to 0, only for the clamped k = 4L, whose X448(k, 5) is 0 as well.
+	// X448(k, 5) by the fixed-base multiplication on edwards448 and the 4-isogeny of RFC 7748 §4.2, which takes B to u = 5.
+	// The product is the identity, which maps to 0, only for the clamped k = 4L, whose X448(k, 5) is 0 as well.
 	[SkipLocalsInit]
 	internal static void DerivePublicKey(ReadOnlySpan<byte> privateKey, Span<byte> publicKey)
 	{
@@ -102,7 +105,9 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		point.ZeroMemory();
 	}
 
-	// X448(k, u) into sharedSecret, unless the result is all zeros: then false, with sharedSecret unchanged. The result is zero when the order of the peer point divides 4, or for a point of the curve when k is the clamped 4L; checking the result covers both. The peer key is read in full before sharedSecret is written, so the two may overlap.
+	// X448(k, u) into sharedSecret, unless the result is all zeros: then false, with sharedSecret unchanged.
+	// The result is zero when the order of the peer point divides 4, or for a point of the curve when k is the clamped 4L; checking the result covers both.
+	// The peer key is read in full before sharedSecret is written, so the two may overlap.
 	[SkipLocalsInit]
 	internal static bool TryDeriveSharedSecret(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> sharedSecret)
 	{
@@ -133,7 +138,9 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		return true;
 	}
 
-	// X448(k, 5) into publicKey and X448(k, u) into sharedSecret, for a peer key not of small order, with one inversion: 1/(X·z) gives 1/X for the isogeny u = (Y/X)² and 1/z for the ladder. Unless k is the clamped 4L, neither factor is 0: X is 0 only for the identity, and z only if L | k on the curve or L' | k on the twist, whose prime L' > 2^446 divides no clamped k. For 4L, false, with neither buffer written.
+	// X448(k, 5) into publicKey and X448(k, u) into sharedSecret, for a peer key not of small order, with one inversion: 1/(X·z) gives 1/X for the isogeny u = (Y/X)² and 1/z for the ladder.
+	// Unless k is the clamped 4L, neither factor is 0: X is 0 only for the identity, and z only if L | k on the curve or L' | k on the twist, whose prime L' > 2^446 divides no clamped k.
+	// For 4L, false, with neither buffer written.
 	[SkipLocalsInit]
 	internal static bool TryDerivePublicKeyAndSharedSecret(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> publicKey, Span<byte> sharedSecret)
 	{
@@ -166,7 +173,8 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		return valid;
 	}
 
-	// As TryDerivePublicKeyAndSharedSecret, with X448(s, u) for AuthEncap's sender key s after X448(k, u) in sharedSecrets; 1/(X·z·z') gives all three inverses. z' is not 0, as the clamped s of a private key is not 4L.
+	// As TryDerivePublicKeyAndSharedSecret, with X448(s, u) for AuthEncap's sender key s after X448(k, u) in sharedSecrets; 1/(X·z·z') gives all three inverses.
+	// z' is not 0, as the clamped s of a private key is not 4L.
 	[SkipLocalsInit]
 	internal static bool TryDerivePublicKeyAndSharedSecrets(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> senderPrivateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> publicKey, Span<byte> sharedSecrets)
 	{
@@ -209,7 +217,9 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		return valid;
 	}
 
-	// X448(k, u) ‖ X448(k, u') into sharedSecrets, for a sender key u' not of small order, unless the first is all zeros: then false, with sharedSecrets unchanged. 1/(z·z') gives both inverses; z = 0, the one way for the first to fail, zeroes both results, and z' is not 0, as in TryDerivePublicKeyAndSharedSecret. The peer key is read in full before sharedSecrets is written, so the two may overlap.
+	// X448(k, u) ‖ X448(k, u') into sharedSecrets, for a sender key u' not of small order, unless the first is all zeros: then false, with sharedSecrets unchanged.
+	// 1/(z·z') gives both inverses; z = 0, the one way for the first to fail, zeroes both results, and z' is not 0, as in TryDerivePublicKeyAndSharedSecret.
+	// The peer key is read in full before sharedSecrets is written, so the two may overlap.
 	[SkipLocalsInit]
 	internal static bool TryDeriveSharedSecrets(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, ReadOnlySpan<byte> senderPublicKey, Span<byte> sharedSecrets)
 	{
@@ -250,7 +260,9 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		return true;
 	}
 
-	// The DHKEM view of the key. Every 56-byte string is a private key, exported as imported, except those whose clamped value is 4L. A public key comes from TryImportPublicKey, which rejects the points of small order, or from a private key, so the shared secrets below are never all zeros.
+	// The DHKEM view of the key.
+	// Every 56-byte string is a private key, exported as imported, except those whose clamped value is 4L.
+	// A public key comes from TryImportPublicKey, which rejects the points of small order, or from a private key, so the shared secrets below are never all zeros.
 	static int IDiffieHellmanKey<X448Key>.PrivateKeyLength => PrivateKeyLength;
 
 	static int IDiffieHellmanKey<X448Key>.PublicKeyLength => PublicKeyLength;
@@ -282,7 +294,8 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		return false;
 	}
 
-	// For a key that is used without a private key, as an encapsulation key is: false, with the key cleared, for the wrong length or a point whose shared secret is all zeros with every private key. The encoding is kept as given.
+	// For a key that is used without a private key, as an encapsulation key is: false, with the key cleared, for the wrong length or a point whose shared secret is all zeros with every private key.
+	// The encoding is kept as given.
 	bool IDiffieHellmanKey<X448Key>.TryImportPublicKey(ReadOnlySpan<byte> source)
 	{
 		Clear();
@@ -363,7 +376,8 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 		Clear();
 	}
 
-	// Whether every shared secret with publicKey is all zeros: [4]P is the point at infinity, which holds just for u = 0 and u = ±1, as u² + Au + 1 has no root. The test is u³ − u = 0 on the reduced u, in constant time.
+	// Whether every shared secret with publicKey is all zeros: [4]P is the point at infinity, which holds just for u = 0 and u = ±1, as u² + Au + 1 has no root.
+	// The test is u³ − u = 0 on the reduced u, in constant time.
 	private static bool IsSmallOrder(ReadOnlySpan<byte> publicKey)
 	{
 		Debug.Assert(publicKey.Length is PublicKeyLength);

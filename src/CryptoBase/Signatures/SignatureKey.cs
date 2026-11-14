@@ -13,9 +13,10 @@ namespace CryptoBase.Signatures;
 /// </summary>
 /// <remarks>
 /// <para>
-/// id-ecPublicKey with the named curve P-256, P-384 or P-521 gives <see cref="EcdsaP256" />, <see cref="EcdsaP384" /> or <see cref="EcdsaP521" />, and with the named curve of SM2, 1.2.156.10197.1.301, <see cref="SM2Key" />. id-Ed25519 or id-Ed448 gives <see cref="Ed25519" /> or <see cref="Ed448" />, id-ml-dsa-44, id-ml-dsa-65 or id-ml-dsa-87 gives <see cref="MLDsa44" />, <see cref="MLDsa65" /> or <see cref="MLDsa87" />,
-/// and rsaEncryption with NULL parameters or id-RSASSA-PSS gives <see cref="RsaKey" />.
-/// The AlgorithmIdentifier must match one of these in DER whole, so a key of another algorithm, or of one of these with other parameters such as an explicit curve, throws <see cref="NotSupportedException" />; id-RSASSA-PSS alone matches by its OID, and <see cref="RsaKey" /> checks its parameters.
+/// id-ecPublicKey with the named curve P-256, P-384 or P-521 gives <see cref="EcdsaP256" />, <see cref="EcdsaP384" /> or <see cref="EcdsaP521" />, and with the named curve of SM2, 1.2.156.10197.1.301, <see cref="SM2Key" />.
+/// id-Ed25519 or id-Ed448 gives <see cref="Ed25519" /> or <see cref="Ed448" />, id-ml-dsa-44, id-ml-dsa-65 or id-ml-dsa-87 gives <see cref="MLDsa44" />, <see cref="MLDsa65" /> or <see cref="MLDsa87" />, and rsaEncryption with NULL parameters or id-RSASSA-PSS gives <see cref="RsaKey" />.
+/// The AlgorithmIdentifier must match one of these in DER whole, so a key of another algorithm, or of one of these with other parameters such as an explicit curve, throws <see cref="NotSupportedException" />;
+/// id-RSASSA-PSS alone matches by its OID, and <see cref="RsaKey" /> checks its parameters.
 /// </para>
 /// <para>
 /// The type then imports the key and checks the rest of the encoding, as its own import method does.
@@ -64,11 +65,14 @@ public static class SignatureKey
 	/// <remarks>
 	/// <para>
 	/// An RSA PUBLIC KEY or RSA PRIVATE KEY block holds a PKCS #1 RSAPublicKey or RSAPrivateKey (RFC 8017, Appendices A.1.1 and A.1.2), which <see cref="RsaKey.ImportRsaPublicKey" /> or <see cref="RsaKey.ImportRsaPrivateKey" /> imports.
-	/// An EC PRIVATE KEY block holds an ECPrivateKey (RFC 5915, Sec. 4), which is imported as the PrivateKeyInfo that carries it with id-ecPublicKey and its parameters (Sec. 1). Its parameters, which RFC 5915 requires, must therefore name P-256, P-384, P-521 or the curve of SM2.
+	/// An EC PRIVATE KEY block holds an ECPrivateKey (RFC 5915, Sec. 4), which is imported as the PrivateKeyInfo that carries it with id-ecPublicKey and its parameters (Sec. 1).
+	/// Its parameters, which RFC 5915 requires, must therefore name P-256, P-384, P-521 or the curve of SM2.
 	/// An SM2 PRIVATE KEY block holds the same ECPrivateKey, and its parameters must name the curve of SM2.
 	/// </para>
 	/// <para>
-	/// Other blocks, such as EC PARAMETERS, and the text around the blocks are ignored. Encrypted keys are not supported: neither the label ENCRYPTED PRIVATE KEY nor an RSA PRIVATE KEY, EC PRIVATE KEY or SM2 PRIVATE KEY block with the Proc-Type and DEK-Info headers of RFC 1421, which RFC 7468 does not permit. The decoded key is erased after the import.
+	/// Other blocks, such as EC PARAMETERS, and the text around the blocks are ignored.
+	/// Encrypted keys are not supported: neither the label ENCRYPTED PRIVATE KEY nor an RSA PRIVATE KEY, EC PRIVATE KEY or SM2 PRIVATE KEY block with the Proc-Type and DEK-Info headers of RFC 1421, which RFC 7468 does not permit.
+	/// The decoded key is erased after the import.
 	/// </para>
 	/// </remarks>
 	/// <param name="source">The text.</param>
@@ -123,11 +127,13 @@ public static class SignatureKey
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The certificate's key must be an EC key on P-256, P-384, P-521 or the curve of SM2, or RSA. The platform exports it as a PKCS #8 PrivateKeyInfo, which <see cref="ImportPkcs8PrivateKey" /> imports, and the exported encoding is erased after the import.
+	/// The certificate's key must be an EC key on P-256, P-384, P-521 or the curve of SM2, or RSA.
+	/// The platform exports it as a PKCS #8 PrivateKeyInfo, which <see cref="ImportPkcs8PrivateKey" /> imports, and the exported encoding is erased after the import.
 	/// The result holds a copy of the private key, so it does not depend on <paramref name="certificate" />.
 	/// </para>
 	/// <para>
-	/// The platform does not export some keys, such as one in a smart card or TPM, or on Windows and macOS one of a PKCS #12 file loaded without <see cref="X509KeyStorageFlags.Exportable" />; such a key signs only through the platform, as GetSignaturePrivateKey of CryptoBase.X509 gives it.
+	/// The platform does not export some keys, such as one in a smart card or TPM, or on Windows and macOS one of a PKCS #12 file loaded without <see cref="X509KeyStorageFlags.Exportable" />;
+	/// such a key signs only through the platform, as GetSignaturePrivateKey of CryptoBase.X509 gives it.
 	/// </para>
 	/// </remarks>
 	/// <param name="certificate">The certificate.</param>
@@ -221,7 +227,8 @@ public static class SignatureKey
 		return Import(privateKeyInfo.Span, privateKey: true);
 	}
 
-	// The AlgorithmIdentifier, checked to be one, of the SubjectPublicKeyInfo or the PrivateKeyInfo that fills source. The importer checks the rest.
+	// The AlgorithmIdentifier, checked to be one, of the SubjectPublicKeyInfo or the PrivateKeyInfo that fills source.
+	// The importer checks the rest.
 	private static ReadOnlySpan<byte> ReadAlgorithmIdentifier(ReadOnlySpan<byte> source, bool privateKey)
 	{
 		try
@@ -253,7 +260,8 @@ public static class SignatureKey
 		}
 	}
 
-	// The parameters, checked to be one value, of the ECPrivateKey that fills source; version and privateKey before them are skipped. The importer checks the rest.
+	// The parameters, checked to be one value, of the ECPrivateKey that fills source; version and privateKey before them are skipped.
+	// The importer checks the rest.
 	private static ReadOnlySpan<byte> ReadParameters(ReadOnlySpan<byte> source)
 	{
 		try

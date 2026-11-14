@@ -1,10 +1,15 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// MontgomeryKernelAvx512 on AVX2 and FMA, with four lanes per vector and rounding to nearest, the only mode of FMA there. Digits have 51 bits, so that every constant of the split is exact:
+// MontgomeryKernelAvx512 on AVX2 and FMA, with four lanes per vector and rounding to nearest, the only mode of FMA there.
+// Digits have 51 bits, so that every constant of the split is exact:
 //   t = fma(a, b, 2^103) = 2^103 + h with h = a·b rounded to a multiple of 2^51, whose bits less those of 2^103 are the high digit h/2^51, from 0 to 2^51;
 //   fma(a, b, (2^103 + 1.5·2^52) − t) = a·b − h + 1.5·2^52, in [2^52, 2^53), whose bits less those of 1.5·2^52 are the low digit a·b − h, from −2^50 to 2^50.
-// The lanes therefore hold signed sums, and the scalar side shifts its carries arithmetically. Each product splits one way on the vector and the other way on the scalar side, which keeps the parts of its own products: both ways sum to the product. As AVX2 shifts no 64-bit lane arithmetically, the digits ripple out on the scalar side at the end.
-// The scalar side keeps lanes 0 to 3, all of vector 0, which the vectors therefore leave out, and takes lane 4 from vector 1. Vectors 1 to TWindow.Count of the accumulator stay in registers, and any past them in staging with the operands: staging starts on a 64-byte boundary and holds a block per vector from vector 1 up, of the digits of the left operand and of the modulus as doubles and of the lanes of a vector past the window, so that no vector crosses a cache line and none spills to a stack aligned for half of one. For each digit of the right operand the vectors run from the top down, each shifting in lane 0 of the one above it after the low parts.
+// The lanes therefore hold signed sums, and the scalar side shifts its carries arithmetically.
+// Each product splits one way on the vector and the other way on the scalar side, which keeps the parts of its own products: both ways sum to the product.
+// As AVX2 shifts no 64-bit lane arithmetically, the digits ripple out on the scalar side at the end.
+// The scalar side keeps lanes 0 to 3, all of vector 0, which the vectors therefore leave out, and takes lane 4 from vector 1.
+// Vectors 1 to TWindow.Count of the accumulator stay in registers, and any past them in staging with the operands: staging starts on a 64-byte boundary and holds a block per vector from vector 1 up, of the digits of the left operand and of the modulus as doubles and of the lanes of a vector past the window, so that no vector crosses a cache line and none spills to a stack aligned for half of one.
+// For each digit of the right operand the vectors run from the top down, each shifting in lane 0 of the one above it after the low parts.
 // The parts of lanes 0 to 4 that come from b_i lie in rows, a row of the words of each digit, so that the scalar side reads them from one pointer.
 internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKernel where TWindow : struct, IAvx2Window<TWindow>
 {
@@ -49,7 +54,8 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 		Multiply(result, value, value, modulus, negativeInverse, scratch);
 	}
 
-	// Kept out of its callers, where the window methods would no longer inline and the window would leave the registers, and optimized from the first call. The masked loads take pointers into the operands, which stay pinned as in MontgomeryKernelAvx512.Multiply.
+	// Kept out of its callers, where the window methods would no longer inline and the window would leave the registers, and optimized from the first call.
+	// The masked loads take pointers into the operands, which stay pinned as in MontgomeryKernelAvx512.Multiply.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, ReadOnlySpan<ulong> modulus, ulong negativeInverse, Span<ulong> scratch)
 	{
@@ -143,7 +149,8 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 	}
 
 
-	// The row of each digit b_i of the right operand: b_i as a double, then the parts of its products with the first four digits of the left one that lanes 0 to 4 gain at iteration i, lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a3·b_i). Four digits at a time, transposed from vectors of a part each.
+	// The row of each digit b_i of the right operand: b_i as a double, then the parts of its products with the first four digits of the left one that lanes 0 to 4 gain at iteration i, lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a3·b_i).
+	// Four digits at a time, transposed from vectors of a part each.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Products(ref ulong x, ref ulong y, int count, ref ulong rows, Vector256<double> high, Vector256<double> low)
 	{

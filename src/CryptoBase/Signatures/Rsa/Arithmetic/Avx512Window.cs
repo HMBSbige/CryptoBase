@@ -1,7 +1,8 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
 // The vectors of MontgomeryKernelAvx512, as fields that the JIT keeps in registers: Avx512Window is one vector of eight lanes, and Avx512WindowPair joins two windows, so that every size is a type and its operations inline into straight-line code.
-// A window holds three things per vector: digits of an operand as doubles, the lanes of the accumulator, and the high parts of the products that a step keeps between Accumulate and Shift. Operand windows use only the first, accumulators only the others.
+// A window holds three things per vector: digits of an operand as doubles, the lanes of the accumulator, and the high parts of the products that a step keeps between Accumulate and Shift.
+// Operand windows use only the first, accumulators only the others.
 // Load and Store reach the lanes below length with masked loads and stores, which take pointers: the kernel keeps digits and result pinned.
 internal interface IAvx512Accumulator<TSelf> where TSelf : struct, IAvx512Accumulator<TSelf>
 {
@@ -22,7 +23,8 @@ internal interface IAvx512Window<TSelf> : IAvx512Accumulator<TSelf> where TSelf 
 	// acc += lo(a·b) + lo(n·m), keeping hi(a·b) + hi(n·m) for Shift; see MontgomeryKernelAvx512.
 	static abstract void Accumulate(ref TSelf acc, ref readonly TSelf a, ref readonly TSelf n, Vector512<double> b, Vector512<double> m, Vector512<double> high, Vector512<double> low);
 
-	// acc shifted down by one digit, with the first digit of next on top, plus the high parts that Accumulate kept. A digit is one lane, or two in Avx512PairWindow.
+	// acc shifted down by one digit, with the first digit of next on top, plus the high parts that Accumulate kept.
+	// A digit is one lane, or two in Avx512PairWindow.
 	static abstract void Shift(ref TSelf acc, Vector512<ulong> next);
 
 	static abstract Vector512<ulong> First(ref readonly TSelf acc);
@@ -30,7 +32,8 @@ internal interface IAvx512Window<TSelf> : IAvx512Accumulator<TSelf> where TSelf 
 	// The lanes of the first vector where mask is set replaced by those of low.
 	static abstract void ReplaceLow(ref TSelf acc, Vector512<ulong> low, Vector512<ulong> mask);
 
-	// acc −= offset, then the carries of each lane added to the next digit of its modulus, which leaves every lane below 2^52 + 2^9. previous holds the carries of the vector before; returns those of the last vector.
+	// acc −= offset, then the carries of each lane added to the next digit of its modulus, which leaves every lane below 2^52 + 2^9.
+	// previous holds the carries of the vector before; returns those of the last vector.
 	static abstract Vector512<ulong> Pass(ref TSelf acc, Vector512<ulong> offset, Vector512<ulong> previous);
 }
 
@@ -130,7 +133,9 @@ internal struct Avx512Window : IAvx512Window<Avx512Window>
 		return Vector512.LessThan(Vector512<ulong>.Indices, Vector512.Create((ulong)Math.Max(count, 0)));
 	}
 
-	// Row 0: each digit b_i of the right operand as a double. Rows 1 to 5, each of row words: the parts of its products with the first four digits of the left one that lanes 0 to 4 gain at iteration i: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a3·b_i). Eight digits at a time.
+	// Row 0: each digit b_i of the right operand as a double.
+	// Rows 1 to 5, each of row words: the parts of its products with the first four digits of the left one that lanes 0 to 4 gain at iteration i: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a3·b_i).
+	// Eight digits at a time.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static unsafe void Products(ref ulong x, ref ulong y, int count, ref ulong rows, int row, Vector512<double> high, Vector512<double> low)
 	{

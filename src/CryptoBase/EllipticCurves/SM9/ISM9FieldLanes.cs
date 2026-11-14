@@ -1,7 +1,12 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// Elements of TField, SM9Fp or SM9Fp2, in the lanes of the rows of SM9Lanes, each lane its own element, for the point formulas of SM9PointLanes. A member that takes vectors works on that many vectors of each row from vector 0; the others on vector 0. An element of Fp takes ten rows, limb l of radix 2^26 in row l, and one of Fp2 twenty, its real part in rows 0 to 9 and its u-part in rows 10 to 19. A component is reduced if limbs 0 to 8 are below 2^26 and its value is below 2.25p, as SM9Lanes has it.
-// A product gives columns, twenty rows of signed columns for each component, whose values Reduce takes when they lie in [0, 400p²): Multiply gives non-negative ones, 128p² added to the real part of a product of Fp2, P0 − 2P1, and SubtractColumns adds 64p² to each component, so that sums and differences of products stay in range. None of the members branches on or indexes by a value. A result may be the same as an input, except where a member says otherwise.
+// Elements of TField, SM9Fp or SM9Fp2, in the lanes of the rows of SM9Lanes, each lane its own element, for the point formulas of SM9PointLanes.
+// A member that takes vectors works on that many vectors of each row from vector 0; the others on vector 0.
+// An element of Fp takes ten rows, limb l of radix 2^26 in row l, and one of Fp2 twenty, its real part in rows 0 to 9 and its u-part in rows 10 to 19.
+// A component is reduced if limbs 0 to 8 are below 2^26 and its value is below 2.25p, as SM9Lanes has it.
+// A product gives columns, twenty rows of signed columns for each component, whose values Reduce takes when they lie in [0, 400p²): Multiply gives non-negative ones, 128p² added to the real part of a product of Fp2, P0 − 2P1, and SubtractColumns adds 64p² to each component, so that sums and differences of products stay in range.
+// None of the members branches on or indexes by a value.
+// A result may be the same as an input, except where a member says otherwise.
 internal interface ISM9FieldLanes<TField> where TField : unmanaged, ISM9Field<TField>
 {
 	// The ulongs of an element, of the columns of a product and of the scratch that Multiply takes.
@@ -32,10 +37,12 @@ internal interface ISM9FieldLanes<TField> where TField : unmanaged, ISM9Field<TF
 	// columns + value·2^260, which adds value to the result of Reduce, for value reduced.
 	static abstract void AddShifted(ref ulong columns, ref ulong value);
 
-	// The Montgomery reduction of columns into reduced components below 1.0001p, for values below 400p² plus at most 1.0001p·2^260 that AddShifted adds. The columns are overwritten.
+	// The Montgomery reduction of columns into reduced components below 1.0001p, for values below 400p² plus at most 1.0001p·2^260 that AddShifted adds.
+	// The columns are overwritten.
 	static abstract void Reduce(ref ulong columns, ref ulong result, int vectors);
 
-	// The reduction of the product of left and right into result, as Multiply and then Reduce give it, for the first vectors vectors; columns and scratch as Multiply takes them, which this may leave unwritten.
+	// The reduction of the product of left and right into result, as Multiply and then Reduce give it, for the first vectors vectors;
+	// columns and scratch as Multiply takes them, which this may leave unwritten.
 	static abstract void MultiplyReduce(ref ulong left, ref ulong right, ref ulong result, ref ulong columns, ref ulong scratch, int vectors);
 
 	// Two reductions side by side, for vector 0.
@@ -47,7 +54,8 @@ internal interface ISM9FieldLanes<TField> where TField : unmanaged, ISM9Field<TF
 	// 3·value limb by limb.
 	static abstract void Triple(ref ulong value, ref ulong result);
 
-	// 3b·value, reduced, for components of value below 1.0001p with limbs 0 to 8 below 2^26: 15·value in Fp, 15u·value in Fp2. The result must not be value.
+	// 3b·value, reduced, for components of value below 1.0001p with limbs 0 to 8 below 2^26: 15·value in Fp, 15u·value in Fp2.
+	// The result must not be value.
 	static abstract void MultiplyByThreeB(ref ulong value, ref ulong result, int vectors);
 
 	// value in place, from components with limbs below 2^62 and values below 2^260, to components below 1.0001p.
@@ -71,6 +79,7 @@ internal interface ISM9FieldLanes<TField> where TField : unmanaged, ISM9Field<TF
 	// Lane 2 of value, reduced, times 3b where DoublingOperands left the factor out; scratch is an element.
 	static abstract void ThreeBLaneTwo(ref ulong value, ref ulong scratch, int vectors);
 
-	// Lane i takes lane i + distance of value for every lane i of vector 0 whose lane i + distance is in vector 0, distance 1, 2 or 4; the other lanes take lanes of value. The result must not be value.
+	// Lane i takes lane i + distance of value for every lane i of vector 0 whose lane i + distance is in vector 0, distance 1, 2 or 4; the other lanes take lanes of value.
+	// The result must not be value.
 	static abstract void MoveDown(ref ulong value, int distance, ref ulong result);
 }

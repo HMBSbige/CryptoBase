@@ -2,9 +2,13 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// Four elements of the field of p = 2^255 − 19, one in each 64-bit lane A, B, C, D of the vectors, in ten limbs of radix 2^25.5: limb i weighs 2^⌈25.5i⌉, so the even limbs nominally hold 26 bits and the odd ones 25. The product of limbs i and j weighs 2^⌈25.5(i + j)⌉, times 2 when both are odd, and what weighs 2^255 or more comes back times 19.
-// Bounds are per limb, as a multiple m of the nominal size: 2^26 for an even limb and 2^25 for an odd one. A value is reduced if m < 1.005, as every product leaves it: limb 0 below 2^26 + 2^17.3, limb 1 below 2^25 + 2^17.3 and every other below its nominal size plus 2^13 + 1. Every limb of a reduced value or of one with m ≤ 2 is at most that of 2p, so a difference adds 2p to stay positive and grows m by 2.
-// Multiply takes a left operand with m_x ≤ 5.02 and a right one with m_y ≤ 3.02; the steps of the formulas give no more. Any result may be the same variable as an input: each member reads a limb of its inputs before it writes that limb of a result.
+// Four elements of the field of p = 2^255 − 19, one in each 64-bit lane A, B, C, D of the vectors, in ten limbs of radix 2^25.5: limb i weighs 2^⌈25.5i⌉, so the even limbs nominally hold 26 bits and the odd ones 25.
+// The product of limbs i and j weighs 2^⌈25.5(i + j)⌉, times 2 when both are odd, and what weighs 2^255 or more comes back times 19.
+// Bounds are per limb, as a multiple m of the nominal size: 2^26 for an even limb and 2^25 for an odd one.
+// A value is reduced if m < 1.005, as every product leaves it: limb 0 below 2^26 + 2^17.3, limb 1 below 2^25 + 2^17.3 and every other below its nominal size plus 2^13 + 1.
+// Every limb of a reduced value or of one with m ≤ 2 is at most that of 2p, so a difference adds 2p to stay positive and grows m by 2.
+// Multiply takes a left operand with m_x ≤ 5.02 and a right one with m_y ≤ 3.02; the steps of the formulas give no more.
+// Any result may be the same variable as an input: each member reads a limb of its inputs before it writes that limb of a result.
 internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 {
 	internal Vector256<ulong> L0;
@@ -108,14 +112,18 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		Join(l0, l1, l2, l3, l4, 3, out d);
 	}
 
-	// The column of weight 2^⌈25.5k⌉ takes x_i·y_j for i + j = k and 19·x_i·y_j for i + j = k + 10, doubled where i and j are odd: each term is below 2·m_x·m_y·2^51 for two even limbs and m_x·m_y·2^51 otherwise, so column 0, the largest, stays below 249·m_x·m_y·2^51 < 2^64. The columns gather row by row: limb j of the right operand meets every limb of the left one, which vpmuludq can read from memory, so the ten columns and the multiples of y_j fit sixteen registers. Each row needs y_j only times 1, 2, 19 or 38, for the doubling of two odd limbs and the 19 of a column of 10 or more; 38·y_j for an odd j and 19·y_j for an even one stay below 19·3.02·2^26 < 2^32, which the multiplier takes.
+	// The column of weight 2^⌈25.5k⌉ takes x_i·y_j for i + j = k and 19·x_i·y_j for i + j = k + 10, doubled where i and j are odd: each term is below 2·m_x·m_y·2^51 for two even limbs and m_x·m_y·2^51 otherwise, so column 0, the largest, stays below 249·m_x·m_y·2^51 < 2^64.
+	// The columns gather row by row: limb j of the right operand meets every limb of the left one, which vpmuludq can read from memory, so the ten columns and the multiples of y_j fit sixteen registers.
+	// Each row needs y_j only times 1, 2, 19 or 38, for the doubling of two odd limbs and the 19 of a column of 10 or more;
+	// 38·y_j for an odd j and 19·y_j for an even one stay below 19·3.02·2^26 < 2^32, which the multiplier takes.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(in Field25519x4Avx2 left, in Field25519x4Avx2 right, out Field25519x4Avx2 result)
 	{
 		Product(in left, in right, false, out result);
 	}
 
-	// The first product of a step and the steps around it in one method, so that the values between them stay in registers. Its right operand, (A, B, A, B), is the first two lanes of its left one, (A, B, D, C), which each row takes in turn.
+	// The first product of a step and the steps around it in one method, so that the values between them stay in registers.
+	// Its right operand, (A, B, A, B), is the first two lanes of its left one, (A, B, D, C), which each row takes in turn.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void LadderOperands(in Field25519x4Avx2 state, ulong swap, out Field25519x4Avx2 left, out Field25519x4Avx2 right)
 	{
@@ -126,7 +134,9 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		right = second;
 	}
 
-	// Three values, for the columns of lane D four at a time: lane l of limb i of value g holds the factor u_j·f_ij by which column k = 4g + l takes limb i of the other operand, with j = k − i mod 10, f_ij = 2 where i and j are odd, times 19 where i + j ≥ 10; the lanes past column 9 hold 0. The limbs of u, reduced, times 38 stay below 2^32.
+	// Three values, for the columns of lane D four at a time: lane l of limb i of value g holds the factor u_j·f_ij by which column k = 4g + l takes limb i of the other operand, with j = k − i mod 10, f_ij = 2 where i and j are odd, times 19 where i + j ≥ 10;
+	// the lanes past column 9 hold 0.
+	// The limbs of u, reduced, times 38 stay below 2^32.
 	public static int MultiplierLength => 3;
 
 	public static void CreateMultiplier(in Field25519 u, Span<Field25519x4Avx2> multiplier)
@@ -152,7 +162,9 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		}
 	}
 
-	// The last two products of a step in one method: left·right, then that times (1, 1, 1, u). The second takes the columns of lane D, those of Multiply, four at a time from the multiplier of CreateMultiplier, with each limb of lane D in every lane, and puts each column into lane D of its limb; lanes A to C, reduced, go through the carries unchanged.
+	// The last two products of a step in one method: left·right, then that times (1, 1, 1, u).
+	// The second takes the columns of lane D, those of Multiply, four at a time from the multiplier of CreateMultiplier, with each limb of lane D in every lane, and puts each column into lane D of its limb;
+	// lanes A to C, reduced, go through the carries unchanged.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void LadderProducts(in Field25519x4Avx2 left, in Field25519x4Avx2 right, in Field25519x4Avx2 multiplier, out Field25519x4Avx2 result)
 	{
@@ -375,7 +387,9 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		right = second;
 	}
 
-	// As Multiply with right = value, row by row, limb j against limbs i ≤ j: a product with i < j counts twice, and the doubled factor goes on x_i where 38·x_j or 76·x_j would not fit 32 bits. For m ≤ 2.01 every multiplier stays below 2^31.3 and the columns below 249·2.01²·2^51 < 2^61.1. Lane D of each column is then subtracted from that of 2^37·p.
+	// As Multiply with right = value, row by row, limb j against limbs i ≤ j: a product with i < j counts twice, and the doubled factor goes on x_i where 38·x_j or 76·x_j would not fit 32 bits.
+	// For m ≤ 2.01 every multiplier stays below 2^31.3 and the columns below 249·2.01²·2^51 < 2^61.1.
+	// Lane D of each column is then subtracted from that of 2^37·p.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Square(in Field25519x4Avx2 value, out Field25519x4Avx2 result)
 	{
@@ -595,7 +609,9 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		FinishAdd(products.L9, twoPOdd, out left.L9, out right.L9);
 	}
 
-	// The left operand (A, B, D, C) of the first product of a step; the right one, (A, B, A, B), is its first two lanes twice. The swap selects the lanes by the index of a vpermd, which takes the same time for every index. From a reduced state the sums have m ≤ 2.01 and the differences m ≤ 3.01.
+	// The left operand (A, B, D, C) of the first product of a step; the right one, (A, B, A, B), is its first two lanes twice.
+	// The swap selects the lanes by the index of a vpermd, which takes the same time for every index.
+	// From a reduced state the sums have m ≤ 2.01 and the differences m ≤ 3.01.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void PrepareLadder(in Field25519x4Avx2 state, ulong swap, out Field25519x4Avx2 left)
 	{
@@ -617,7 +633,8 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		left.L9 = PrepareLadder(state.L9, xs, zs, twoPOdd);
 	}
 
-	// From (AA, BB, DA, CB), the operands (AA, E, DA + CB, DA − CB) and (BB, AA + a24·E, DA + CB, DA − CB) of the second product of a step: from reduced products, E and DA − CB have m ≤ 3.01 and DA + CB m ≤ 2.01. a24·E, with m ≤ 3.01 for E, has limbs below 2^44.5, which one carry from each limb into the next brings to m ≤ 1.11 in limb 0 and m ≤ 1.02 in the others; with AA the lane has m ≤ 2.12.
+	// From (AA, BB, DA, CB), the operands (AA, E, DA + CB, DA − CB) and (BB, AA + a24·E, DA + CB, DA − CB) of the second product of a step: from reduced products, E and DA − CB have m ≤ 3.01 and DA + CB m ≤ 2.01.
+	// a24·E, with m ≤ 3.01 for E, has limbs below 2^44.5, which one carry from each limb into the next brings to m ≤ 1.11 in limb 0 and m ≤ 1.02 in the others; with AA the lane has m ≤ 2.12.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void FinishLadder(in Field25519x4Avx2 products, out Field25519x4Avx2 left, out Field25519x4Avx2 right)
 	{
@@ -682,7 +699,9 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		Reduce(M(value.L0, c), M(value.L1, c), M(value.L2, c), M(value.L3, c), M(value.L4, c), M(value.L5, c), M(value.L6, c), M(value.L7, c), M(value.L8, c), M(value.L9, c), out result);
 	}
 
-	// Carries columns below 2^64 to a reduced value in two rounds, each limb at once, which take fewer steps one after another than a chain through the limbs. The first leaves limbs below 2^26 + 2^39, limb 0 below 2^26 + 2^43.3 once the carry out of limb 9, below 2^39, comes back times 19 by shifts; the second, whose carries are below 2^13 + 1 and 2^17.3 out of limb 0, leaves limb 0 below 2^26 + 2^17.3, limb 1 below 2^25 + 2^17.3 and the others below their nominal size plus 2^13 + 1, so m < 1.005.
+	// Carries columns below 2^64 to a reduced value in two rounds, each limb at once, which take fewer steps one after another than a chain through the limbs.
+	// The first leaves limbs below 2^26 + 2^39, limb 0 below 2^26 + 2^43.3 once the carry out of limb 9, below 2^39, comes back times 19 by shifts;
+	// the second, whose carries are below 2^13 + 1 and 2^17.3 out of limb 0, leaves limb 0 below 2^26 + 2^17.3, limb 1 below 2^25 + 2^17.3 and the others below their nominal size plus 2^13 + 1, so m < 1.005.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Reduce(Vector256<ulong> z0, Vector256<ulong> z1, Vector256<ulong> z2, Vector256<ulong> z3, Vector256<ulong> z4, Vector256<ulong> z5, Vector256<ulong> z6, Vector256<ulong> z7, Vector256<ulong> z8, Vector256<ulong> z9, out Field25519x4Avx2 result)
 	{
@@ -711,7 +730,8 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		result.L9 = (r9 & mask25) + (r8 >> 26);
 	}
 
-	// The ten limbs of canonical values given in four 64-bit limbs w0 to w3, lane by lane: limb k takes bits ⌈25.5k⌉ to ⌈25.5(k + 1)⌉ − 1, which leaves the value reduced. A lane that negate, all ones there and 0 elsewhere, selects becomes 2p less that: (x ^ m) + (m & (2p + 1)) is x for m = 0 and ~x + 2p + 1 = 2p − x modulo 2^64 for m all ones.
+	// The ten limbs of canonical values given in four 64-bit limbs w0 to w3, lane by lane: limb k takes bits ⌈25.5k⌉ to ⌈25.5(k + 1)⌉ − 1, which leaves the value reduced.
+	// A lane that negate, all ones there and 0 elsewhere, selects becomes 2p less that: (x ^ m) + (m & (2p + 1)) is x for m = 0 and ~x + 2p + 1 = 2p − x modulo 2^64 for m all ones.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Split(Vector256<ulong> w0, Vector256<ulong> w1, Vector256<ulong> w2, Vector256<ulong> w3, Vector256<ulong> negate, out Field25519x4Avx2 result)
 	{

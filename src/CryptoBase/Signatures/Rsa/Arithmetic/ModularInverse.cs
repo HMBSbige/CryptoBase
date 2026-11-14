@@ -2,14 +2,18 @@ using CryptoBase.EllipticCurves;
 
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Inversion modulo an odd m of any number of limbs, by the divsteps of SafeGcd: from δ = 1/2, f = m and g = x they bring g to 0 and f to ±gcd(x, m), while d and e, starting at 0 and a numerator N, go through the same linear maps modulo m, so that d·f ends at N/x. The bound of ⌊(45907·log₂M + 26313)/19929⌋ steps holds for 0 ≤ g ≤ f ≤ M at every size, and M = 2^(64·limbs) covers every modulus of that many limbs.
-// f, g, d and e are signed values in limbs of 62 bits, the top one a signed long that takes the rest, as in SafeGcd; batches of up to 62 steps run on the bottom limbs and give a matrix that then maps the full values. Neither the time nor the addresses depend on the values, only on the number of limbs.
+// Inversion modulo an odd m of any number of limbs, by the divsteps of SafeGcd: from δ = 1/2, f = m and g = x they bring g to 0 and f to ±gcd(x, m), while d and e, starting at 0 and a numerator N, go through the same linear maps modulo m, so that d·f ends at N/x.
+// The bound of ⌊(45907·log₂M + 26313)/19929⌋ steps holds for 0 ≤ g ≤ f ≤ M at every size, and M = 2^(64·limbs) covers every modulus of that many limbs.
+// f, g, d and e are signed values in limbs of 62 bits, the top one a signed long that takes the rest, as in SafeGcd;
+// batches of up to 62 steps run on the bottom limbs and give a matrix that then maps the full values.
+// Neither the time nor the addresses depend on the values, only on the number of limbs.
 // The steps and the updates are optimized from their first call, as the kernels are (see IMontgomeryKernel).
 internal static class ModularInverse
 {
 	private const ulong LimbMask = (1UL << 62) - 1;
 
-	// result = numerator/value mod m, below m, for value and numerator below m. A value that shares a factor with m gives a result that is not its inverse, and 0 gives 0.
+	// result = numerator/value mod m, below m, for value and numerator below m.
+	// A value that shares a factor with m gives a result that is not its inverse, and 0 gives 0.
 	internal static void Invert(ReadOnlySpan<ulong> value, ReadOnlySpan<ulong> numerator, ReadOnlySpan<ulong> modulus, Span<ulong> result)
 	{
 		int limbs = modulus.Length;
@@ -51,7 +55,8 @@ internal static class ModularInverse
 		Store(d, m, f[^1], result);
 	}
 
-	// Returns the bound on the steps for moduli of limbs limbs, and batches of equal size, at most 62 steps each, that cover it. No test reaches the inputs that need the most steps, so the batches must cover the bound by construction.
+	// Returns the bound on the steps for moduli of limbs limbs, and batches of equal size, at most 62 steps each, that cover it.
+	// No test reaches the inputs that need the most steps, so the batches must cover the bound by construction.
 	internal static int GetSchedule(int limbs, out int batchCount, out int batchSteps)
 	{
 		int stepBound = (int)((45907L * 64 * limbs + 26313) / 19929);
@@ -129,7 +134,8 @@ internal static class ModularInverse
 		high = (long)(packed - (ulong)low) >> 32;
 	}
 
-	// Replaces f and g with t·(f, g)/2^62; the low 62 bits of both sums are zero. The sums stay in locals, which keeps them in registers.
+	// Replaces f and g with t·(f, g)/2^62; the low 62 bits of both sums are zero.
+	// The sums stay in locals, which keeps them in registers.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void UpdateFG(Span<long> fLimbs, Span<long> gLimbs, in Transition t)
 	{
@@ -220,7 +226,8 @@ internal static class ModularInverse
 		Unsafe.Add(ref e, last) = (long)eSum.Low;
 	}
 
-	// d is in (−2m, m) and fTop, the top limb of f = ±1, has its sign. Sets result to d·f modulo m, as SafeGcd.Store does.
+	// d is in (−2m, m) and fTop, the top limb of f = ±1, has its sign.
+	// Sets result to d·f modulo m, as SafeGcd.Store does.
 	private static void Store(Span<long> d, ReadOnlySpan<long> m, long fTop, Span<ulong> result)
 	{
 		long add = d[^1] >> 63;

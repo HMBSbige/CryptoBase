@@ -11,7 +11,8 @@ namespace CryptoBase.Ciphers.Aead;
 /// The context is not stored in the message, so decryption needs the same context.
 /// </para>
 /// <para>
-/// <see cref="Encrypt" /> and <see cref="TryDecrypt" /> handle a whole message in memory. For streams and files, the CryptoBase.IO package builds on <see cref="CreateEncryptor" />, <see cref="CreateDecryptor" /> and the chunk methods of an instance, which holds the keys of one message.
+/// <see cref="Encrypt" /> and <see cref="TryDecrypt" /> handle a whole message in memory.
+/// For streams and files, the CryptoBase.IO package builds on <see cref="CreateEncryptor" />, <see cref="CreateDecryptor" /> and the chunk methods of an instance, which holds the keys of one message.
 /// </para>
 /// </remarks>
 public sealed class Cobblestone256Cipher : ICobblestoneCipher<Cobblestone256Cipher>
@@ -106,10 +107,15 @@ public sealed class Cobblestone256Cipher : ICobblestoneCipher<Cobblestone256Ciph
 	/// </summary>
 	/// <param name="key">The 32-byte input key.</param>
 	/// <param name="ciphertext">The encrypted message.</param>
-	/// <param name="plaintext">The buffer that receives the message in its first bytes, as many as <see cref="TryGetPlaintextLength" /> gives; it must not overlap <paramref name="ciphertext" />.</param>
+	/// <param name="plaintext">
+	/// The buffer that receives the message in its first bytes, as many as <see cref="TryGetPlaintextLength" /> gives;
+	/// it must not overlap <paramref name="ciphertext" />.
+	/// </param>
 	/// <param name="context">The context that the message was encrypted with.</param>
 	/// <returns>
-	/// <see langword="false" /> if the message fails authentication because it was truncated, extended or modified, or encrypted with a different key or context; if <paramref name="ciphertext" /> has a valid length, the output prefix of the message length is then cleared. <see langword="true" /> on success.
+	/// <see langword="false" /> if the message fails authentication because it was truncated, extended or modified, or encrypted with a different key or context;
+	/// if <paramref name="ciphertext" /> has a valid length, the output prefix of the message length is then cleared.
+	/// <see langword="true" /> on success.
 	/// </returns>
 	/// <exception cref="ArgumentException"><paramref name="key" /> has the wrong length, or <paramref name="ciphertext" /> has a valid length and <paramref name="plaintext" /> is too short or overlaps it.</exception>
 	public static bool TryDecrypt(ReadOnlySpan<byte> key, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> context = default)

@@ -7,14 +7,17 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Decoding accepts only DER and checks the structure of RFC 5280, Sec. 4.1: the signature fields inside and outside the TBSCertificate must match, the issuer and subject must be Names, the version must allow the fields that are present, an extension may appear only once, and the signature and the subjectPublicKey must be whole bytes. The attribute values of the Names and the parameters of the algorithm identifiers need only be single DER elements; their contents are not checked.
-/// It decodes the key usage extension, and does not check whether the algorithms are supported, what the other extensions hold or whether the certificate is valid now; a certificate with an unrecognized critical extension decodes, and leaves the decision to the validator.
+/// Decoding accepts only DER and checks the structure of RFC 5280, Sec. 4.1: the signature fields inside and outside the TBSCertificate must match, the issuer and subject must be Names, the version must allow the fields that are present, an extension may appear only once, and the signature and the subjectPublicKey must be whole bytes.
+/// The attribute values of the Names and the parameters of the algorithm identifiers need only be single DER elements; their contents are not checked.
+/// It decodes the key usage extension, and does not check whether the algorithms are supported, what the other extensions hold or whether the certificate is valid now;
+/// a certificate with an unrecognized critical extension decodes, and leaves the decision to the validator.
 /// </para>
 /// <para>
 /// The authority key identifier, subject key identifier and subject alternative name extensions decode on first use instead, so a certificate in which one of them is malformed still decodes, and the methods that return them report the error.
 /// </para>
 /// <para>
-/// An instance holds its own copy of the encoding, and the members return slices of it. Instances are immutable, so they may be used concurrently; the extensions that decode on first use are decoded once and kept, also when threads ask for them at once.
+/// An instance holds its own copy of the encoding, and the members return slices of it.
+/// Instances are immutable, so they may be used concurrently; the extensions that decode on first use are decoded once and kept, also when threads ask for them at once.
 /// </para>
 /// </remarks>
 public sealed class Certificate
@@ -155,7 +158,8 @@ public sealed class Certificate
 	/// </summary>
 	/// <remarks>
 	/// Certificate validators, including <see cref="PlatformCertificateValidator" />, do not check it; the caller checks the uses that it needs.
-	/// Decoding requires the extension to be a BIT STRING of the nine defined bits with at least one set. Trailing zero bits, which DER drops, are accepted.
+	/// Decoding requires the extension to be a BIT STRING of the nine defined bits with at least one set.
+	/// Trailing zero bits, which DER drops, are accepted.
 	/// </remarks>
 	public X509KeyUsageFlags? KeyUsage { get; }
 
@@ -169,7 +173,8 @@ public sealed class Certificate
 	/// </summary>
 	public ReadOnlyMemory<byte> Signature { get; }
 
-	// The extensions that decode on first use. Threads that race decode them alike, and all use the instance stored first.
+	// The extensions that decode on first use.
+	// Threads that race decode them alike, and all use the instance stored first.
 	internal DecodedExtensions DecodedExtensions
 	{
 		get
@@ -224,7 +229,10 @@ public sealed class Certificate
 	/// </summary>
 	/// <remarks>To tell an algorithm that the package does not support from a wrong signature, call <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" /> on <see cref="SignatureAlgorithm" />.</remarks>
 	/// <param name="issuerKey">The issuer's public key.</param>
-	/// <returns><see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="issuerKey" /> supports and the signature is valid with it; otherwise, <see langword="false" />.</returns>
+	/// <returns>
+	/// <see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="issuerKey" /> supports and the signature is valid with it;
+	/// otherwise, <see langword="false" />.
+	/// </returns>
 	/// <exception cref="ArgumentNullException"><paramref name="issuerKey" /> is <see langword="null" />.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="issuerKey" /> has been disposed.</exception>
 	public bool VerifySignature(ISignatureKey issuerKey)
@@ -237,7 +245,10 @@ public sealed class Certificate
 	/// <summary>
 	/// Gets the value of the authority key identifier extension (RFC 5280, Sec. 4.2.1.1), which identifies the issuer's key.
 	/// </summary>
-	/// <remarks>The first call decodes the extension, as <see cref="AuthorityKeyIdentifier.Decode" /> does, and later calls return the same instance. Calls may be concurrent.</remarks>
+	/// <remarks>
+	/// The first call decodes the extension, as <see cref="AuthorityKeyIdentifier.Decode" /> does, and later calls return the same instance.
+	/// Calls may be concurrent.
+	/// </remarks>
 	/// <returns>The value, whose members are slices of <see cref="Encoded" />, or <see langword="null" /> if the certificate has no such extension.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded AuthorityKeyIdentifier.</exception>
 	public AuthorityKeyIdentifier? GetAuthorityKeyIdentifier()
@@ -248,7 +259,10 @@ public sealed class Certificate
 	/// <summary>
 	/// Gets the subject key identifier extension (RFC 5280, Sec. 4.2.1.2), which identifies the subject's key.
 	/// </summary>
-	/// <remarks>The first call decodes the extension, and later calls return the same value. Calls may be concurrent.</remarks>
+	/// <remarks>
+	/// The first call decodes the extension, and later calls return the same value.
+	/// Calls may be concurrent.
+	/// </remarks>
 	/// <returns>The bytes of the OCTET STRING, a slice of <see cref="Encoded" />, or <see langword="null" /> if the certificate has no such extension.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded OCTET STRING.</exception>
 	public ReadOnlyMemory<byte>? GetSubjectKeyIdentifier()
@@ -259,7 +273,10 @@ public sealed class Certificate
 	/// <summary>
 	/// Gets the value of the subject alternative name extension (RFC 5280, Sec. 4.2.1.6), the identities bound to the subject.
 	/// </summary>
-	/// <remarks>The first call decodes the extension, as <see cref="SubjectAlternativeName.Decode" /> does, and later calls return the same instance. Calls may be concurrent.</remarks>
+	/// <remarks>
+	/// The first call decodes the extension, as <see cref="SubjectAlternativeName.Decode" /> does, and later calls return the same instance.
+	/// Calls may be concurrent.
+	/// </remarks>
 	/// <returns>The value, whose IP addresses are slices of <see cref="Encoded" />, or <see langword="null" /> if the certificate has no such extension.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded GeneralNames.</exception>
 	public SubjectAlternativeName? GetSubjectAlternativeName()
@@ -272,14 +289,21 @@ public sealed class Certificate
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The rules are those of <see cref="SubjectAlternativeName.MatchesHostName" />: a DNS name, in A-labels or labels that are not ASCII and that the platform's IDNA conversion accepts and leaves as they are, with one trailing dot allowed, matches a dNSName entry or a wildcard entry for one label, and an IP address matches an iPAddress entry; the subject's common name is not used.
+	/// The rules are those of <see cref="SubjectAlternativeName.MatchesHostName" />: a DNS name, in A-labels or labels that are not ASCII and that the platform's IDNA conversion accepts and leaves as they are, with one trailing dot allowed, matches a dNSName entry or a wildcard entry for one label, and an IP address matches an iPAddress entry;
+	/// the subject's common name is not used.
 	/// </para>
 	/// <para>
-	/// Unlike <see cref="GetSubjectAlternativeName" />, the method does not throw for an extension that does not decode. It checks <paramref name="hostName" /> first, so an invalid host name throws whatever the extension holds. Calls may be concurrent.
+	/// Unlike <see cref="GetSubjectAlternativeName" />, the method does not throw for an extension that does not decode.
+	/// It checks <paramref name="hostName" /> first, so an invalid host name throws whatever the extension holds.
+	/// Calls may be concurrent.
 	/// </para>
 	/// </remarks>
 	/// <param name="hostName">The host name: a DNS name or an IP address.</param>
-	/// <returns><see cref="HostNameMatch.Match" /> if an entry identifies <paramref name="hostName" />; <see cref="HostNameMatch.Mismatch" /> if none does or the certificate has no such extension; <see cref="HostNameMatch.MalformedExtension" /> if the extension does not decode.</returns>
+	/// <returns>
+	/// <see cref="HostNameMatch.Match" /> if an entry identifies <paramref name="hostName" />;
+	/// <see cref="HostNameMatch.Mismatch" /> if none does or the certificate has no such extension;
+	/// <see cref="HostNameMatch.MalformedExtension" /> if the extension does not decode.
+	/// </returns>
 	/// <exception cref="ArgumentNullException"><paramref name="hostName" /> is <see langword="null" />.</exception>
 	/// <exception cref="ArgumentException"><paramref name="hostName" /> is neither a DNS name nor an IP address.</exception>
 	public HostNameMatch MatchHostName(string hostName)
@@ -300,7 +324,10 @@ public sealed class Certificate
 	/// <summary>
 	/// Gets the value of the authority information access extension (RFC 5280, Sec. 4.2.2.1), which locates the issuer's certificates and its OCSP responders.
 	/// </summary>
-	/// <remarks>The first call decodes the extension, and later calls return the same instance. Calls may be concurrent.</remarks>
+	/// <remarks>
+	/// The first call decodes the extension, and later calls return the same instance.
+	/// Calls may be concurrent.
+	/// </remarks>
 	/// <returns>The value, or <see langword="null" /> if the certificate has no such extension.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded AuthorityInfoAccessSyntax.</exception>
 	public AuthorityInformationAccess? GetAuthorityInformationAccess()
@@ -311,7 +338,10 @@ public sealed class Certificate
 	/// <summary>
 	/// Gets the value of the CRL distribution points extension (RFC 5280, Sec. 4.2.1.13), which locates the CRLs that cover the certificate.
 	/// </summary>
-	/// <remarks>The first call decodes the extension, and later calls return the same list. Calls may be concurrent.</remarks>
+	/// <remarks>
+	/// The first call decodes the extension, and later calls return the same list.
+	/// Calls may be concurrent.
+	/// </remarks>
 	/// <returns>The distribution points, in the order of the encoding, or <see langword="null" /> if the certificate has no such extension.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded CRLDistributionPoints.</exception>
 	public IReadOnlyList<CrlDistributionPoint>? GetCrlDistributionPoints()
@@ -350,7 +380,8 @@ public sealed class Certificate
 		}
 	}
 
-	// Each extnID at most once, and a key usage extension that decodes, in DER alone with derKeyUsage; the result is its key usage, or null without it. CertificateBuilder checks its extensions with this before signing, so that it writes DER.
+	// Each extnID at most once, and a key usage extension that decodes, in DER alone with derKeyUsage; the result is its key usage, or null without it.
+	// CertificateBuilder checks its extensions with this before signing, so that it writes DER.
 	internal static X509KeyUsageFlags? CheckExtensions(IReadOnlyList<CertificateExtension> extensions, bool derKeyUsage = false)
 	{
 		X509KeyUsageFlags? keyUsage = null;
@@ -381,8 +412,10 @@ public sealed class Certificate
 		return keyUsage;
 	}
 
-	// KeyUsage ::= BIT STRING { digitalSignature (0), …, decipherOnly (8) }, of which RFC 5280 requires at least one. Bits 0 through 7 are the first byte from its most significant bit, and bit 8 is the most significant bit of the second, as in X509KeyUsageFlags.
-	// DER drops the trailing zero bits (X.690, Sec. 11.2.2), but some CA certificates in use keep them, so trailing zeros are accepted, even in whole bytes, unless der asks for DER; the unused bits must still be zero.
+	// KeyUsage ::= BIT STRING { digitalSignature (0), …, decipherOnly (8) }, of which RFC 5280 requires at least one.
+	// Bits 0 through 7 are the first byte from its most significant bit, and bit 8 is the most significant bit of the second, as in X509KeyUsageFlags.
+	// DER drops the trailing zero bits (X.690, Sec. 11.2.2), but some CA certificates in use keep them, so trailing zeros are accepted, even in whole bytes, unless der asks for DER;
+	// the unused bits must still be zero.
 	private static X509KeyUsageFlags ReadKeyUsage(ReadOnlySpan<byte> source, bool der)
 	{
 		ValueAsnReader reader = new(source, AsnEncodingRules.DER);

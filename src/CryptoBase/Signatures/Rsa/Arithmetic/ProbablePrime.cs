@@ -14,7 +14,10 @@ internal static class ProbablePrime
 	private const int MaxRuns = 4;
 
 	// Fills p and q, of ⌈nlen/128⌉ limbs, for nlen from 2048 to 16384, a multiple of 8, and an odd e with 2^16 < e < 2^33.
-	// A run of Appendix A.1.3 returns FAILURE once 5·nlen candidates for p fail (step 4.7), or 10·nlen for q (step 5.8). Some 20/ln 2 ≈ 28.9 of the candidates for p are prime at every nlen, and for e = 65537 almost every prime passes step 4.5, so that a run fails with probability about e^-28.9 ≈ 2^-41.6, and four in a row with about 2^-166; an e with small prime factors, which more primes share with p − 1, makes it likelier. Generate runs it again from the start, up to four runs in all, and throws CryptographicException after the fourth.
+	// A run of Appendix A.1.3 returns FAILURE once 5·nlen candidates for p fail (step 4.7), or 10·nlen for q (step 5.8).
+	// Some 20/ln 2 ≈ 28.9 of the candidates for p are prime at every nlen, and for e = 65537 almost every prime passes step 4.5, so that a run fails with probability about e^-28.9 ≈ 2^-41.6, and four in a row with about 2^-166;
+	// an e with small prime factors, which more primes share with p − 1, makes it likelier.
+	// Generate runs it again from the start, up to four runs in all, and throws CryptographicException after the fourth.
 	internal static void Generate(int nlen, ulong e, Span<ulong> p, Span<ulong> q)
 	{
 		int bits = nlen / 2;
@@ -53,7 +56,8 @@ internal static class ProbablePrime
 		throw new CryptographicException("No primes were found.");
 	}
 
-	// Table B.1 gives 5 rounds for 1024-bit primes (error probability 2^-112), and 4 for 1536 and 2048 bits (2^-128 and 2^-144); the bound of Appendix C.1 only falls as the primes grow, and gives at most 2^-192 for 3840 bits and 2^-256 for 7680 bits, the security strengths of 7680- and 15360-bit moduli, within 4 rounds.
+	// Table B.1 gives 5 rounds for 1024-bit primes (error probability 2^-112), and 4 for 1536 and 2048 bits (2^-128 and 2^-144);
+	// the bound of Appendix C.1 only falls as the primes grow, and gives at most 2^-192 for 3840 bits and 2^-256 for 7680 bits, the security strengths of 7680- and 15360-bit moduli, within 4 rounds.
 	internal static int GetRounds(int bits)
 	{
 		return bits < 1536 ? 5 : 4;
@@ -62,7 +66,9 @@ internal static class ProbablePrime
 	// Draws a candidate into value (steps 4.2 to 4.4, or 5.2 to 5.5 after p), and runs the tests of step 4.5 or 5.6 that come before the Miller-Rabin test on it.
 	private static CandidateOutcome DrawCandidate(Span<ulong> value, int bits, ulong e, TrialDivision trial, ReadOnlySpan<ulong> other)
 	{
-		// Step 4.2: bits random bits. Step 4.2.1: the top two set, which also makes p ≥ 3·2^(bits−2) > √2·2^(bits−1), as step 4.4 requires, and the modulus nlen bits long. Step 4.3: p odd.
+		// Step 4.2: bits random bits.
+		// Step 4.2.1: the top two set, which also makes p ≥ 3·2^(bits−2) > √2·2^(bits−1), as step 4.4 requires, and the modulus nlen bits long.
+		// Step 4.3: p odd.
 		DrawBits(value, bits);
 		value[(bits - 1) / 64] |= 1UL << (bits - 1) % 64;
 		value[(bits - 2) / 64] |= 1UL << (bits - 2) % 64;
@@ -103,7 +109,9 @@ internal static class ProbablePrime
 		return SmallModulus.IsCoprime(minusOne, e);
 	}
 
-	// Steps 4.1 and 4.2: a base b of bits random bits with 1 < b < w − 1. Taking the first of several draws that falls in range gives the distribution of drawing again until one does, but the selection runs through every draw of a batch. The number of batches depends on w only where all draws of one fall outside the range, each with probability at most 1/4 + 2^(1 − bits) by the top two bits of w, which leaves a batch of 33 draws a probability below 2^-65 of taking another.
+	// Steps 4.1 and 4.2: a base b of bits random bits with 1 < b < w − 1.
+	// Taking the first of several draws that falls in range gives the distribution of drawing again until one does, but the selection runs through every draw of a batch.
+	// The number of batches depends on w only where all draws of one fall outside the range, each with probability at most 1/4 + 2^(1 − bits) by the top two bits of w, which leaves a batch of 33 draws a probability below 2^-65 of taking another.
 	// The draws of a batch come from one call for random bytes, each in the limbs that hold bits bits, with the bits above them cleared.
 	internal static void SampleBase(Span<ulong> b, ReadOnlySpan<ulong> wMinusOne, int bits)
 	{
@@ -158,7 +166,9 @@ internal static class ProbablePrime
 		}
 	}
 
-	// What becomes of a candidate before the Miller-Rabin test: drawn again, as steps 4.4 and 5.5 go back to steps 4.2 and 5.2, which steps 4.6 and 5.7 do not count; failed, as steps 4.5 and 5.6 fail, which they count; or passed, for the Miller-Rabin test to decide.
+	// What becomes of a candidate before the Miller-Rabin test: drawn again, as steps 4.4 and 5.5 go back to steps 4.2 and 5.2, which steps 4.6 and 5.7 do not count;
+	// failed, as steps 4.5 and 5.6 fail, which they count;
+	// or passed, for the Miller-Rabin test to decide.
 	internal enum CandidateOutcome
 	{
 		Redraw,
@@ -191,7 +201,9 @@ internal static class ProbablePrime
 			_second = new Candidate(second, bits);
 		}
 
-		// Fills value with the first candidate that passes every test, after other if it is not empty, and returns false, for FAILURE, once limit candidates have failed, as one candidate after the other would; those drawn again do not count. The second of a pair is drawn while the first is pending, and only allowed the failures that would leave the first one to fail before the limit; its failures count after those of the first.
+		// Fills value with the first candidate that passes every test, after other if it is not empty, and returns false, for FAILURE, once limit candidates have failed, as one candidate after the other would;
+		// those drawn again do not count.
+		// The second of a pair is drawn while the first is pending, and only allowed the failures that would leave the first one to fail before the limit; its failures count after those of the first.
 		internal bool Find(Span<ulong> value, ReadOnlySpan<ulong> other, int limit)
 		{
 			int failures = 0;
@@ -258,7 +270,8 @@ internal static class ProbablePrime
 			_second.Dispose();
 		}
 
-		// Draws candidates into slot until one passes the tests before the Miller-Rabin test, which it prepares for, or until maxFailures fail them; failed counts those that fail, and not those drawn again.
+		// Draws candidates into slot until one passes the tests before the Miller-Rabin test, which it prepares for, or until maxFailures fail them;
+		// failed counts those that fail, and not those drawn again.
 		private bool Draw(Candidate slot, ReadOnlySpan<ulong> other, int maxFailures, out int failed)
 		{
 			failed = 0;
@@ -377,7 +390,9 @@ internal static class ProbablePrime
 			Context.Dispose();
 		}
 
-		// Steps 4.4 to 4.6 for an odd w of bits bits, whose top two bits are set, and z = b^m. A prime runs every step of every round: the loop of step 4.5 goes on to bits − 1 squarings, masking off those past a, which would reveal a, the number of trailing zeros of w − 1; only a composite stops early.
+		// Steps 4.4 to 4.6 for an odd w of bits bits, whose top two bits are set, and z = b^m.
+		// A prime runs every step of every round: the loop of step 4.5 goes on to bits − 1 squarings, masking off those past a, which would reveal a, the number of trailing zeros of w − 1;
+		// only a composite stops early.
 		private bool Round()
 		{
 			Span<ulong> z = Z;
@@ -385,7 +400,8 @@ internal static class ProbablePrime
 			ReadOnlySpan<ulong> minusOne = MinusOne;
 			Span<ulong> scratch = Scratch;
 			int a = _a;
-			// Step 4.4: z = 1 or z = w − 1 makes the base no witness. z stays reduced below w, which squares take as well.
+			// Step 4.4: z = 1 or z = w − 1 makes the base no witness.
+			// z stays reduced below w, which squares take as well.
 			Context.Reduce(z);
 			ulong possiblyPrime = Limbs.Equal(z, one) | Limbs.Equal(z, minusOne);
 

@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves;
 
-// k·P as two chains of the rounds of SM2QuadFormulas, one in each 256-bit half of SM2Field29x8Avx512, which AVX-512 runs: of the digits of SM2OddWindows, the top chain in lanes 0 to 3 takes digits 26 to 51 and the bottom chain in lanes 4 to 7 digits 0 to 25, each by windows of two DoubleTwice and a DoubleAdd, so that k·P = 2^130·T + B for the sums T and B of the chains. 2^130·T then takes 130 doublings on four lanes, and the rounds of SM2QuadFormulas.AddState add B to it on the same lanes. Each half holds the layouts and the bounds of SM2QuadFormulas, which the permutes and shuffles of Vector512 keep within it.
+// k·P as two chains of the rounds of SM2QuadFormulas, one in each 256-bit half of SM2Field29x8Avx512, which AVX-512 runs: of the digits of SM2OddWindows, the top chain in lanes 0 to 3 takes digits 26 to 51 and the bottom chain in lanes 4 to 7 digits 0 to 25, each by windows of two DoubleTwice and a DoubleAdd, so that k·P = 2^130·T + B for the sums T and B of the chains.
+// 2^130·T then takes 130 doublings on four lanes, and the rounds of SM2QuadFormulas.AddState add B to it on the same lanes.
+// Each half holds the layouts and the bounds of SM2QuadFormulas, which the permutes and shuffles of Vector512 keep within it.
 internal static class SM2OctoFormulas
 {
 	private const int WindowWidth = SM2OddWindows.Width;
@@ -25,13 +27,20 @@ internal static class SM2OctoFormulas
 	// n − 38, the one k at which window 0 of a chain over all the odd digits of k adds equal points, as k ≡ 2d_0 (mod n) for its low digit d_0, which is −19 there.
 	private static ReadOnlySpan<ulong> TwiceLowDigit => [0x53BBF40939D540FDUL, 0x7203DF6B21C6052BUL, 0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFEFFFFFFFFUL];
 
-	// No addition of a chain meets equal or opposite points or the point at infinity: before it adds d·P, |d| ≤ 31, a chain holds 32a·P for the sum a of its digits above, odd and at most 32^25 − 1 in size, so 32a ∓ d is odd and below 2^130 < n in size, never a multiple of n. The sums T and B are odd and below 2^130 in size, so neither T·P, 2^130·T·P nor B·P is the point at infinity, as n is prime, and they are opposite just for K ≡ 0, so k = 0, where the sum gives some point and the result is cleared. Equal points need 2^130·T − B = jn, for an odd j as B is odd. For s below n, ⌊s/2^130⌋ < 2^126, which bounds 2^130·T − B to [1 − 2^260, 2^257 − 2^260 − 1], whose only odd multiple of n is −15n; for s in [n, 2n), ⌊s/2^130⌋ lies in [2^126 − 2^95, 2^127), which bounds it to [2^257 − 2^260 − 2^226 + 1, 2^258 − 2^260 − 1], whose only odd multiple of n is −13n. A j leaves B ≡ −jn (mod 2^130) two values in (−2^130, 2^130), of which one makes T odd, so it fixes s and k: −15n gives the exception of SM2OddWindows, whose s takes n more and so falls under −13n, and −13n a k whose s is below n and so falls under −15n. Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
+	// No addition of a chain meets equal or opposite points or the point at infinity: before it adds d·P, |d| ≤ 31, a chain holds 32a·P for the sum a of its digits above, odd and at most 32^25 − 1 in size, so 32a ∓ d is odd and below 2^130 < n in size, never a multiple of n.
+	// The sums T and B are odd and below 2^130 in size, so neither T·P, 2^130·T·P nor B·P is the point at infinity, as n is prime, and they are opposite just for K ≡ 0, so k = 0, where the sum gives some point and the result is cleared.
+	// Equal points need 2^130·T − B = jn, for an odd j as B is odd.
+	// For s below n, ⌊s/2^130⌋ < 2^126, which bounds 2^130·T − B to [1 − 2^260, 2^257 − 2^260 − 1], whose only odd multiple of n is −15n;
+	// for s in [n, 2n), ⌊s/2^130⌋ lies in [2^126 − 2^95, 2^127), which bounds it to [2^257 − 2^260 − 2^226 + 1, 2^258 − 2^260 − 1], whose only odd multiple of n is −13n.
+	// A j leaves B ≡ −jn (mod 2^130) two values in (−2^130, 2^130), of which one makes T odd, so it fixes s and k: −15n gives the exception of SM2OddWindows, whose s takes n more and so falls under −13n, and −13n a k whose s is below n and so falls under −15n.
+	// Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
 	internal static void Multiply(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result)
 	{
 		Multiply<MaskedScan>(in point, in scalar, out result);
 	}
 
-	// As Multiply for a public k, from the entries read at the digits, with nothing cleared. The time and the addresses read depend on k.
+	// As Multiply for a public k, from the entries read at the digits, with nothing cleared.
+	// The time and the addresses read depend on k.
 	internal static void MultiplyVariableTime(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result)
 	{
 		Multiply<DirectRead>(in point, in scalar, out result);
@@ -89,7 +98,11 @@ internal static class SM2OctoFormulas
 	}
 
 	// Sets result to k·P + l·Q for points P and Q on the curve and k and l below n: a chain in each half, k·P in lanes 0 to 3 and l·Q in lanes 4 to 7, each over all 52 odd digits of its scalar from SM2OddWindows, by windows of two DoubleTwice and a DoubleAdd from the tables of BuildTables, and ECGroup.Add of the two sums.
-	// A chain holds a single point, so the argument of Multiply bounds its sums: before it adds d_i·P it holds 32a·P for the sum a of the digits above, and |32a ∓ d_i| < 32^(52 − i) is odd, so below n and never a multiple of n for i ≥ 1. Below that window no doubling meets the point at infinity, as 2^m·a would be a multiple of n with |a| < n. In window 0, 32a·P = −d_0·P just for K ≡ 0, so k = 0, whose opposite points give Z ≡ 0, the point at infinity, and 32a·P = d_0·P just for k ≡ 2d_0 (mod n), at TwiceLowDigit, where 2d_0·P = 64a·P, which DoubleTwice gives from the 16a·P that the chain holds before DoubleAdd, takes the place of the sum under a lane mask. ECGroup.Add takes the sums equal, opposite or at infinity. Neither the time nor the addresses depend on k, l, P or Q, and the intermediates are cleared.
+	// A chain holds a single point, so the argument of Multiply bounds its sums: before it adds d_i·P it holds 32a·P for the sum a of the digits above, and |32a ∓ d_i| < 32^(52 − i) is odd, so below n and never a multiple of n for i ≥ 1.
+	// Below that window no doubling meets the point at infinity, as 2^m·a would be a multiple of n with |a| < n.
+	// In window 0, 32a·P = −d_0·P just for K ≡ 0, so k = 0, whose opposite points give Z ≡ 0, the point at infinity, and 32a·P = d_0·P just for k ≡ 2d_0 (mod n), at TwiceLowDigit, where 2d_0·P = 64a·P, which DoubleTwice gives from the 16a·P that the chain holds before DoubleAdd, takes the place of the sum under a lane mask.
+	// ECGroup.Add takes the sums equal, opposite or at infinity.
+	// Neither the time nor the addresses depend on k, l, P or Q, and the intermediates are cleared.
 	[SkipLocalsInit]
 	internal static void MultiplyAdd(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, in AffinePoint<SM2Field52> otherPoint, in FieldElement<SM2Order> otherScalar, out JacobianPoint<SM2Field52> result)
 	{
@@ -145,7 +158,9 @@ internal static class SM2OctoFormulas
 		second.ZeroMemory();
 	}
 
-	// Sets first to k·P and second to l·Q for points P and Q on the curve and odd k and l whose ChainLength digits SM2OddWindows.RecodeHalf gives: a chain in each half, k·P in lanes 0 to 3 and l·Q in lanes 4 to 7, by the windows of Multiply from the tables of BuildTables, with the entries read at the digits. The argument of Multiply for each of its chains holds here: no addition meets equal or opposite points or the point at infinity, and neither sum is the point at infinity. Every input is public, so the time and the addresses read depend on them.
+	// Sets first to k·P and second to l·Q for points P and Q on the curve and odd k and l whose ChainLength digits SM2OddWindows.RecodeHalf gives: a chain in each half, k·P in lanes 0 to 3 and l·Q in lanes 4 to 7, by the windows of Multiply from the tables of BuildTables, with the entries read at the digits.
+	// The argument of Multiply for each of its chains holds here: no addition meets equal or opposite points or the point at infinity, and neither sum is the point at infinity.
+	// Every input is public, so the time and the addresses read depend on them.
 	[SkipLocalsInit]
 	internal static void MultiplyVariableTime(in AffinePoint<SM2Field52> point, ReadOnlySpan<sbyte> digits, in AffinePoint<SM2Field52> otherPoint, ReadOnlySpan<sbyte> otherDigits, out JacobianPoint<SM2Field52> first, out JacobianPoint<SM2Field52> second)
 	{
@@ -171,7 +186,9 @@ internal static class SM2OctoFormulas
 		SM2QuadFormulas.ToJacobian(in high, out second);
 	}
 
-	// Writes (2j + 1)·P to entry j of table and (2j + 1)·Q to entry j of otherTable, in the layout of BuildTable: P and Q, 2P and 2Q by DoubleOnce on four lanes each, and then (2j + 1)·P = (2j − 1)·P + 2P beside the same for Q, one in each half, additions of points neither equal nor opposite, as 2j ± 1 and 2 are below n and 2j − 1 is odd. Each HalfCount multiples of a table go to Pack as they are complete, and Start takes the first steps in a frame of its own, so that this frame stays small. Neither the time nor the addresses depend on P or Q, and the intermediates are cleared.
+	// Writes (2j + 1)·P to entry j of table and (2j + 1)·Q to entry j of otherTable, in the layout of BuildTable: P and Q, 2P and 2Q by DoubleOnce on four lanes each, and then (2j + 1)·P = (2j − 1)·P + 2P beside the same for Q, one in each half, additions of points neither equal nor opposite, as 2j ± 1 and 2 are below n and 2j − 1 is odd.
+	// Each HalfCount multiples of a table go to Pack as they are complete, and Start takes the first steps in a frame of its own, so that this frame stays small.
+	// Neither the time nor the addresses depend on P or Q, and the intermediates are cleared.
 	[SkipLocalsInit]
 	internal static void BuildTables(in AffinePoint<SM2Field52> point, in AffinePoint<SM2Field52> otherPoint, Span<ulong> table, Span<ulong> otherTable)
 	{
@@ -250,7 +267,8 @@ internal static class SM2OctoFormulas
 		return LimbArithmetic.ZeroMask(k[0] ^ twice[0] | k[1] ^ twice[1] | k[2] ^ twice[2] | k[3] ^ twice[3]);
 	}
 
-	// Writes (2j + 1)·P to entry j of the table in the layout of SM2QuadFormulas.BuildTable: P, 2P, 3P = 2P + P and 4P on four lanes, then (j + 4)·P = j·P + 4P for j ≡ 1 and j ≡ 3 (mod 4) side by side, one in each half, additions of points neither equal nor opposite, as j is odd and j + 4 below n. Neither the time nor the addresses depend on P, and the intermediates are cleared.
+	// Writes (2j + 1)·P to entry j of the table in the layout of SM2QuadFormulas.BuildTable: P, 2P, 3P = 2P + P and 4P on four lanes, then (j + 4)·P = j·P + 4P for j ≡ 1 and j ≡ 3 (mod 4) side by side, one in each half, additions of points neither equal nor opposite, as j is odd and j + 4 below n.
+	// Neither the time nor the addresses depend on P, and the intermediates are cleared.
 	[SkipLocalsInit]
 	internal static void BuildTable(in AffinePoint<SM2Field52> point, Span<ulong> table)
 	{
@@ -791,7 +809,9 @@ internal static class SM2OctoFormulas
 		Vector512<ulong> m8 = Blend3(Blend0(w8, t8 + (t8 << 1)), first.L8 << 1);
 		right.L8 = m8 + (m7 >> SM2Field29.Bits);
 		SM2Field29x8Avx512.Multiply(in left, in right, out third);
-		// gamma and fifth take the buffer of first, fourth that of second and carried that of left, each once no later step reads what it held, so that the frame stays under a page. gamma holds [α′, α′, 8γ′, 4γ′] as O2 takes it, and carried the same carried for O1. The right of O1, [X′, α′, X′, δ′], takes X′ from lane 1 of the left of O0 and δ′ from lane 1 of second.
+		// gamma and fifth take the buffer of first, fourth that of second and carried that of left, each once no later step reads what it held, so that the frame stays under a page.
+		// gamma holds [α′, α′, 8γ′, 4γ′] as O2 takes it, and carried the same carried for O1.
+		// The right of O1, [X′, α′, X′, δ′], takes X′ from lane 1 of the left of O0 and δ′ from lane 1 of second.
 		ref SM2Field29x8Avx512 gamma = ref first;
 		ref SM2Field29x8Avx512 carried = ref left;
 		Vector512<ulong> d0 = Avx512F.UnpackLow(third.L0, third.L0);
@@ -1447,7 +1467,8 @@ internal static class SM2OctoFormulas
 		b3.StoreUnsafe(ref high, EntryLength - 8);
 	}
 
-	// Entries first and second of the table, to low and high, in one scan that reads every limb of every entry once and keeps what matches each index under a mask, so that neither the time nor the addresses depend on the indices. The last block of an entry overlaps the one before it, and both write the same values to the shared limbs.
+	// Entries first and second of the table, to low and high, in one scan that reads every limb of every entry once and keeps what matches each index under a mask, so that neither the time nor the addresses depend on the indices.
+	// The last block of an entry overlaps the one before it, and both write the same values to the shared limbs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void LookupPair(ref readonly ulong table, uint first, uint second, ref ulong low, ref ulong high)
 	{
@@ -1574,7 +1595,8 @@ internal static class SM2OctoFormulas
 		}
 	}
 
-	// Lane 0 of each half of b, the others of a. A blend under a mask register, unlike a select by a mask vector, lets the JIT merge it into the operation that computes b.
+	// Lane 0 of each half of b, the others of a.
+	// A blend under a mask register, unlike a select by a mask vector, lets the JIT merge it into the operation that computes b.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<ulong> Blend0(Vector512<ulong> a, Vector512<ulong> b)
 	{

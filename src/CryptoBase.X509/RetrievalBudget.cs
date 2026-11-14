@@ -1,7 +1,9 @@
 namespace CryptoBase.X509;
 
-// What one validation may still retrieve, so that the URIs of the certificates cannot make it work or wait without bound. The limits are counted down here alone, and GetAsync and PostAsync are the only way that a validation retrieves, so that no retrieval goes uncounted.
-// The first limit that stops the retrieval of issuers becomes Limit, which the result of a validation without a valid path reports; a revocation check that reaches one learns nothing more, so that the status is unknown instead.
+// What one validation may still retrieve, so that the URIs of the certificates cannot make it work or wait without bound.
+// The limits are counted down here alone, and GetAsync and PostAsync are the only way that a validation retrieves, so that no retrieval goes uncounted.
+// The first limit that stops the retrieval of issuers becomes Limit, which the result of a validation without a valid path reports;
+// a revocation check that reaches one learns nothing more, so that the status is unknown instead.
 internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, CertificateValidationContext context, CancellationToken cancellationToken)
 {
 	public const int MaxIssuerRounds = 8;
@@ -73,7 +75,8 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 		return RetrieveAsync(uri, content, contentType, limit);
 	}
 
-	// Empty if nothing may be retrieved any more, as by the limits or the deadline, or if the retrieval fails or returns more than limit. Only the cancellation of the validation throws.
+	// Empty if nothing may be retrieved any more, as by the limits or the deadline, or if the retrieval fails or returns more than limit.
+	// Only the cancellation of the validation throws.
 	private async ValueTask<ReadOnlyMemory<byte>> RetrieveAsync(Uri uri, ReadOnlyMemory<byte> content, string? contentType, int limit)
 	{
 		int maxLength = (int)Math.Min(limit, _retrievedBytesLeft);

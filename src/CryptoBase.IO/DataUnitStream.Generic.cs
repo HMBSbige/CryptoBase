@@ -9,16 +9,23 @@ namespace CryptoBase.IO;
 /// <typeparam name="TCipher">The data-unit cipher.</typeparam>
 /// <remarks>
 /// <para>
-/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16, such as <c>XtsMode&lt;AesCipher&gt;</c>. The tweak of each data unit is its data unit number as a 128-bit little-endian integer.
+/// <typeparamref name="TCipher" /> must have a <see cref="IDataUnitCipher{TSelf}.TweakSize" /> of 16, such as <c>XtsMode&lt;AesCipher&gt;</c>.
+/// The tweak of each data unit is its data unit number as a 128-bit little-endian integer.
 /// </para>
 /// <para>
-/// The inner stream holds whole data units only. The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>. The stream position is the inner stream offset and starts at zero; the stream seeks the inner stream before each access, so the inner stream position is not preserved.
+/// The inner stream holds whole data units only.
+/// The data unit at byte offset <c>n * DataUnitSize</c> has data unit number <c>firstDataUnitNumber + n</c>.
+/// The stream position is the inner stream offset and starts at zero; the stream seeks the inner stream before each access, so the inner stream position is not preserved.
 /// </para>
 /// <para>
-/// A write past the end pads its last data unit with zeros, and any gap between the old end and the write reads back as zeros. Writing part of an existing data unit reads that unit first, so the inner stream must also be readable. Reads never extend the inner stream.
+/// A write past the end pads its last data unit with zeros, and any gap between the old end and the write reads back as zeros.
+/// Writing part of an existing data unit reads that unit first, so the inner stream must also be readable.
+/// Reads never extend the inner stream.
 /// </para>
 /// <para>
-/// Writes of whole aligned data units reach the inner stream before they return. A partial write stays in the stream until a read or write touches another data unit or the stream is flushed or disposed; call <see cref="Flush" /> before using the inner stream directly. Do not change the inner stream elsewhere while the stream uses it.
+/// Writes of whole aligned data units reach the inner stream before they return.
+/// A partial write stays in the stream until a read or write touches another data unit or the stream is flushed or disposed; call <see cref="Flush" /> before using the inner stream directly.
+/// Do not change the inner stream elsewhere while the stream uses it.
 /// </para>
 /// <para>
 /// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the inner stream.
@@ -130,7 +137,9 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 
 	/// <inheritdoc />
 	/// <remarks>
-	/// <paramref name="value" /> must be a multiple of <see cref="DataUnitSize" />. Growth appends encrypted zero data units. If the position is beyond the new length, it moves to the new end.
+	/// <paramref name="value" /> must be a multiple of <see cref="DataUnitSize" />.
+	/// Growth appends encrypted zero data units.
+	/// If the position is beyond the new length, it moves to the new end.
 	/// </remarks>
 	public override void SetLength(long value)
 	{
@@ -527,7 +536,8 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	}
 
 	/// <summary>
-	/// Caches the data unit that contains <paramref name="position" />. When it does not exist, returns <see langword="false" />, or starts it from zeros if <paramref name="create" /> is set.
+	/// Caches the data unit that contains <paramref name="position" />.
+	/// When it does not exist, returns <see langword="false" />, or starts it from zeros if <paramref name="create" /> is set.
 	/// </summary>
 	private bool LoadUnit(long position, bool create)
 	{
@@ -585,7 +595,8 @@ public sealed class DataUnitStream<TCipher> : Stream where TCipher : class, IDat
 	/// Writes whole data units at <paramref name="position" /> to the inner stream, bypassing the cache.
 	/// </summary>
 	/// <remarks>
-	/// A cached data unit outside the range is written first, so the transform does not fill it as a gap. A cached data unit inside the range is discarded only after the write succeeds, so a failed write keeps it.
+	/// A cached data unit outside the range is written first, so the transform does not fill it as a gap.
+	/// A cached data unit inside the range is discarded only after the write succeeds, so a failed write keeps it.
 	/// </remarks>
 	private void WriteUnits(ReadOnlySpan<byte> buffer, long position)
 	{

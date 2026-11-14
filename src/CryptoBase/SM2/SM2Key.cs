@@ -5,21 +5,28 @@ namespace CryptoBase.SM2;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The private key d is big-endian and must lie in [1, n − 2]. The public key is in the uncompressed encoding and must lie on the curve.
-/// An instance that holds only the public key verifies and encrypts; signing, decryption and the key exchange need the private key. Signing, verification, encryption and decryption may run concurrently on one instance.
+/// The private key d is big-endian and must lie in [1, n − 2].
+/// The public key is in the uncompressed encoding and must lie on the curve.
+/// An instance that holds only the public key verifies and encrypts; signing, decryption and the key exchange need the private key.
+/// Signing, verification, encryption and decryption may run concurrently on one instance.
 /// </para>
 /// <para>
-/// A signature is SEQUENCE { r INTEGER, s INTEGER } in DER, and verification rejects any other encoding. The ID of the signer goes into the signature: <see cref="SignatureAlgorithm.SM2SM3" /> and the methods without an ID take <see cref="DefaultId" />, and the overloads with an ID take any ID of up to <see cref="MaxIdLength" /> bytes, the empty one included.
+/// A signature is SEQUENCE { r INTEGER, s INTEGER } in DER, and verification rejects any other encoding.
+/// The ID of the signer goes into the signature: <see cref="SignatureAlgorithm.SM2SM3" /> and the methods without an ID take <see cref="DefaultId" />, and the overloads with an ID take any ID of up to <see cref="MaxIdLength" /> bytes, the empty one included.
 /// Signing a message twice gives two different signatures.
 /// </para>
 /// <para>
 /// To verify many signatures, encrypt many messages or exchange many keys with one key, keep one instance rather than import the key for each.
 /// </para>
 /// <para>
-/// Encryption writes C1 ‖ C3 ‖ C2 of GB/T 32918.4-2016 with C1 uncompressed, or the SM2Cipher of GB/T 35276-2017 in DER. The plaintext must not be empty, and encrypting a message twice gives two different ciphertexts. Decryption rejects other point encodings of C1, an empty C2 and an SM2Cipher in any encoding but DER.
+/// Encryption writes C1 ‖ C3 ‖ C2 of GB/T 32918.4-2016 with C1 uncompressed, or the SM2Cipher of GB/T 35276-2017 in DER.
+/// The plaintext must not be empty, and encrypting a message twice gives two different ciphertexts.
+/// Decryption rejects other point encodings of C1, an empty C2 and an SM2Cipher in any encoding but DER.
 /// </para>
 /// <para>
-/// SubjectPublicKeyInfo and PKCS #8 have the algorithm id-ecPublicKey with the named curve 1.2.156.10197.1.301 and hold the public key uncompressed; other parameters and point encodings are rejected. A PKCS #8 export holds the private key, the curve and the public key. A PKCS #8 import accepts a key without the curve or the public key, but rejects either, in the inner or the outer structure, if it does not match the private key.
+/// SubjectPublicKeyInfo and PKCS #8 have the algorithm id-ecPublicKey with the named curve 1.2.156.10197.1.301 and hold the public key uncompressed; other parameters and point encodings are rejected.
+/// A PKCS #8 export holds the private key, the curve and the public key.
+/// A PKCS #8 import accepts a key without the curve or the public key, but rejects either, in the inner or the outer structure, if it does not match the private key.
 /// </para>
 /// </remarks>
 public sealed class SM2Key : ISignatureKey<SM2Key>
@@ -218,7 +225,10 @@ public sealed class SM2Key : ISignatureKey<SM2Key>
 	/// <summary>
 	/// Signs <paramref name="message" /> with SM2 and SM3 (GB/T 32918.2-2016, Sec. 6.1) and the ID <see cref="DefaultId" />.
 	/// </summary>
-	/// <remarks><paramref name="message" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// <paramref name="message" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="message">The message.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="MaxSignatureLength" /> bytes long.</param>
 	/// <returns>The length of the signature, in bytes.</returns>
@@ -233,7 +243,10 @@ public sealed class SM2Key : ISignatureKey<SM2Key>
 	/// <summary>
 	/// Signs <paramref name="message" /> with SM2 and SM3 (GB/T 32918.2-2016, Sec. 6.1) and the ID of the signer.
 	/// </summary>
-	/// <remarks><paramref name="message" /> and <paramref name="id" /> may overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// <paramref name="message" /> and <paramref name="id" /> may overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="message">The message.</param>
 	/// <param name="destination">The buffer that receives the signature, at least <see cref="MaxSignatureLength" /> bytes long.</param>
 	/// <param name="id">The ID of the signer, at most <see cref="MaxIdLength" /> bytes long, which a verifier needs as well.</param>
@@ -315,7 +328,10 @@ public sealed class SM2Key : ISignatureKey<SM2Key>
 	/// <summary>
 	/// Encrypts <paramref name="plaintext" /> into C1 ‖ C3 ‖ C2 (GB/T 32918.4-2016, Sec. 6.1), with C1 uncompressed.
 	/// </summary>
-	/// <remarks><paramref name="plaintext" /> must not overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// <paramref name="plaintext" /> must not overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="plaintext">The plaintext, which must not be empty.</param>
 	/// <param name="destination">The buffer that receives the ciphertext, at least <see cref="GetCiphertextLength" /> bytes long.</param>
 	/// <returns>The length of the ciphertext, in bytes.</returns>
@@ -329,7 +345,10 @@ public sealed class SM2Key : ISignatureKey<SM2Key>
 	/// <summary>
 	/// Encrypts <paramref name="plaintext" /> into the DER of an SM2Cipher (GB/T 35276-2017), which holds C1, C3 and C2 (GB/T 32918.4-2016, Sec. 6.1).
 	/// </summary>
-	/// <remarks><paramref name="plaintext" /> must not overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// <paramref name="plaintext" /> must not overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="plaintext">The plaintext, which must not be empty.</param>
 	/// <param name="destination">The buffer that receives the ciphertext, at least <see cref="GetMaxDerCiphertextLength" /> bytes long.</param>
 	/// <returns>The length of the ciphertext, in bytes.</returns>
@@ -344,7 +363,8 @@ public sealed class SM2Key : ISignatureKey<SM2Key>
 	/// Decrypts a ciphertext C1 ‖ C3 ‖ C2 (GB/T 32918.4-2016, Sec. 7.1), with C1 uncompressed.
 	/// </summary>
 	/// <remarks>
-	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is too short to hold a plaintext, C1 is not a point on the curve or C3 does not match. It then writes nothing to <paramref name="destination" />, which may overlap <paramref name="ciphertext" />.
+	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is too short to hold a plaintext, C1 is not a point on the curve or C3 does not match.
+	/// It then writes nothing to <paramref name="destination" />, which may overlap <paramref name="ciphertext" />.
 	/// </remarks>
 	/// <param name="ciphertext">The ciphertext.</param>
 	/// <param name="destination">The buffer that receives the plaintext, at least as long as the plaintext: 97 bytes shorter than <paramref name="ciphertext" />.</param>
@@ -381,7 +401,8 @@ public sealed class SM2Key : ISignatureKey<SM2Key>
 	/// Decrypts the DER of an SM2Cipher (GB/T 35276-2017), which holds C1, C3 and C2 (GB/T 32918.4-2016, Sec. 7.1).
 	/// </summary>
 	/// <remarks>
-	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is not the DER of an SM2Cipher with a CipherText of at least one byte, C1 is not a point on the curve or C3 does not match. It then writes nothing to <paramref name="destination" />, which may overlap <paramref name="ciphertext" />.
+	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is not the DER of an SM2Cipher with a CipherText of at least one byte, C1 is not a point on the curve or C3 does not match.
+	/// It then writes nothing to <paramref name="destination" />, which may overlap <paramref name="ciphertext" />.
 	/// </remarks>
 	/// <param name="ciphertext">The ciphertext.</param>
 	/// <param name="destination">The buffer that receives the plaintext, at least as long as the CipherText of the SM2Cipher; a buffer as long as <paramref name="ciphertext" /> suffices.</param>

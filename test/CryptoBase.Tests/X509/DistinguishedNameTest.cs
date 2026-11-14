@@ -180,7 +180,8 @@ public class DistinguishedNameTest
 		yield return () => ("the unstable characters differ and the ends are the same", Dn(Rdn(Attribute(Organization, Utf8String, "M\u00FCller GmbH"))), Dn(Rdn(Attribute(Organization, Utf8String, "M\u00F6ller GmbH"))), true);
 		yield return () => ("no character out of reach", Dn(Rdn(Attribute(Organization, Utf8String, "\u0418\u0432\u0430\u043D\u043E\u0432"))), Dn(Rdn(Attribute(Organization, Utf8String, "\u041F\u0435\u0442\u0440\u043E\u0432"))), true);
 
-		// Pairs that RFC 4518 makes equal. A character before an unstable one could compose with it, though both sides have stable characters there.
+		// Pairs that RFC 4518 makes equal.
+		// A character before an unstable one could compose with it, though both sides have stable characters there.
 		yield return () => ("a combining mark composes a kana", Dn(Rdn(Attribute(Organization, Utf8String, "\u304B\u3099"))), Dn(Rdn(Attribute(Organization, Utf8String, "\u304C"))), true);
 		yield return () => ("a jamo composes a syllable", Dn(Rdn(Attribute(Organization, Utf8String, "\uAC00\u11A8"))), Dn(Rdn(Attribute(Organization, Utf8String, "\uAC01"))), true);
 		yield return () => ("a jamo composes a syllable of the name", Dn(Rdn(Attribute(Organization, Utf8String, "\uAC01"))), Dn(Rdn(Attribute(Organization, Utf8String, "\uAC00\u11A8"))), true);
@@ -221,7 +222,8 @@ public class DistinguishedNameTest
 		yield return () => ("another number of attributes", Dn(Rdn(Attribute(CommonName, Utf8String, "É"))), Dn(Rdn(Attribute(CommonName, Utf8String, "é"), Attribute(CommonName, PrintableString, "cd"))), false);
 		yield return () => ("many attributes", Dn(Rdn([.. Enumerable.Range(0, 80).Select(static i => Attribute(CommonName, Utf8String, $"É{i}"))])), Dn(Rdn([.. Enumerable.Range(0, 80).Select(static i => Attribute(CommonName, Utf8String, $"é{i}"))])), true);
 
-		// RFC 5280, Sec. 7.3, asks for a case-insensitive exact match of domainComponent values, but LDAP compares them by caseIgnoreIA5Match (RFC 4519), which ignores insignificant spaces (RFC 4517, Sec. 4.2.7): values equal by either rule could match, while different labels stay apart; a character beyond ASCII could still fold to another.
+		// RFC 5280, Sec. 7.3, asks for a case-insensitive exact match of domainComponent values, but LDAP compares them by caseIgnoreIA5Match (RFC 4519), which ignores insignificant spaces (RFC 4517, Sec. 4.2.7): values equal by either rule could match, while different labels stay apart;
+		// a character beyond ASCII could still fold to another.
 		yield return () => ("a domain component of another case", Dn(Rdn(Attribute(DomainComponent, Ia5String, "COM"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
 		yield return () => ("a domain component with a space at the end", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
 		yield return () => ("a domain component with a control code", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
@@ -243,7 +245,8 @@ public class DistinguishedNameTest
 		yield return () => ("a domain component with a space, beside an unstable one", Dn(Rdn(Attribute(DomainComponent, Utf8String, "É"), Attribute(DomainComponent, Ia5String, "a "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a"), Attribute(DomainComponent, Ia5String, "x"))), true);
 		yield return () => ("a domain component with a space, beside an unstable one, for others that differ", Dn(Rdn(Attribute(DomainComponent, Utf8String, "É"), Attribute(DomainComponent, Ia5String, "a "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "b"), Attribute(DomainComponent, Ia5String, "x"))), false);
 
-		// RFC 2985, Sec. 6.1, gives emailAddress and unstructuredName the same characters but for case, but RFC 5280, Sec. 7.1, only requires caseIgnoreMatch, by which a relying party would prepare them by RFC 4518: values equal by either rule could match, while different values stay apart; a character beyond ASCII could still fold to another.
+		// RFC 2985, Sec. 6.1, gives emailAddress and unstructuredName the same characters but for case, but RFC 5280, Sec. 7.1, only requires caseIgnoreMatch, by which a relying party would prepare them by RFC 4518: values equal by either rule could match, while different values stay apart;
+		// a character beyond ASCII could still fold to another.
 		foreach ((string type, string label) in CaseIgnoreTypes)
 		{
 			yield return () => ($"{label} of another case", Dn(Rdn(Attribute(type, Ia5String, "A@EXAMPLE.COM"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);

@@ -6,10 +6,12 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Wycheproof;
 
-// HPKE in base mode over DHKEM(X25519, HKDF-SHA256), through the public API. Where a vector has ikmE, the known-answer hooks also check the sender, which must give the enc and the ciphertexts of the vector.
+// HPKE in base mode over DHKEM(X25519, HKDF-SHA256), through the public API.
+// Where a vector has ikmE, the known-answer hooks also check the sender, which must give the enc and the ciphertexts of the vector.
 public class WycheproofHpkeTest
 {
-	// A key of small order or of the wrong length is no encapsulation key. The acceptable vector has a key with bit 255 set, which the library takes and binds as given, as a sender that follows RFC 9180 to the letter does.
+	// A key of small order or of the wrong length is no encapsulation key.
+	// The acceptable vector has a key with bit 255 set, which the library takes and binds as given, as a sender that follows RFC 9180 to the letter does.
 	[Test]
 	[WycheproofVectors<HpkeTestGroup, HpkeTestVector>("hpke_x25519_encap_test.json")]
 	public async Task Encapsulation(HpkeTestVector vector)
@@ -28,7 +30,8 @@ public class WycheproofHpkeTest
 		}
 	}
 
-	// An enc of small order or of the wrong length sets up no context; every other invalid vector sets one up that does not open the message. The acceptable vectors open: the library sets no limit on info, and takes an enc with bit 255 set or on the twist, as RFC 7748 does.
+	// An enc of small order or of the wrong length sets up no context; every other invalid vector sets one up that does not open the message.
+	// The acceptable vectors open: the library sets no limit on info, and takes an enc with bit 255 set or on the twist, as RFC 7748 does.
 	[Test]
 	[WycheproofVectors<HpkeTestGroup, HpkeTestVector>("hpke_x25519_decrypt_test.json")]
 	public async Task Decryption(HpkeTestVector vector)
@@ -99,7 +102,8 @@ public class WycheproofHpkeTest
 		}
 	}
 
-	// Opens ciphertext at sequenceNumber into expected, which advances the sequence number, or, with expected null, fails to: the sequence number then stays, and the part of the buffer that would have received the message is cleared. Nothing is written past that part.
+	// Opens ciphertext at sequenceNumber into expected, which advances the sequence number, or, with expected null, fails to: the sequence number then stays, and the part of the buffer that would have received the message is cleared.
+	// Nothing is written past that part.
 	private static async Task AssertOpens(HpkeRecipientContext context, ulong sequenceNumber, byte[] aad, byte[] ciphertext, byte[]? expected)
 	{
 		int length = Math.Max(0, ciphertext.Length - context.Aead.TagSize);

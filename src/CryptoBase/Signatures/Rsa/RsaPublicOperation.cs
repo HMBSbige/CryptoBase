@@ -103,7 +103,8 @@ internal sealed class RsaPublicOperation
 	}
 
 	// RSAVP1: input and output are ModulusLength bytes, big-endian; they may be the same span, but must not overlap partially.
-	// Returns false, leaving output unchanged, if input >= n; otherwise writes input^e mod n. The time depends on e alone: nothing branches on or indexes by the input, so that the private key may run this on a secret.
+	// Returns false, leaving output unchanged, if input >= n; otherwise writes input^e mod n.
+	// The time depends on e alone: nothing branches on or indexes by the input, so that the private key may run this on a secret.
 	internal bool TryApply(ReadOnlySpan<byte> input, Span<byte> output)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(input.Length, ModulusLength, nameof(input));

@@ -7,8 +7,10 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The client's timeout, handler, proxy and redirects apply, the timeout to the whole retrieval, the reading of the body included, and the caller owns the client; <see cref="CertificateValidationContext.Deadline" /> shortens each retrieval further.
-/// A URI that is not an absolute http or https URI, a status other than a success, a connection that fails, a timeout of the client and a body longer than the limit, which is not read beyond it, all give an empty value. Only the cancellation of the token throws.
+/// The client's timeout, handler, proxy and redirects apply, the timeout to the whole retrieval, the reading of the body included, and the caller owns the client;
+/// <see cref="CertificateValidationContext.Deadline" /> shortens each retrieval further.
+/// A URI that is not an absolute http or https URI, a status other than a success, a connection that fails, a timeout of the client and a body longer than the limit, which is not read beyond it, all give an empty value.
+/// Only the cancellation of the token throws.
 /// </para>
 /// </remarks>
 public sealed class HttpCertificateDataRetriever : ICertificateDataRetriever

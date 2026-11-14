@@ -172,7 +172,8 @@ public class Sha3SpongeTest
 		return Sha3TestUtils.AbsorbPadAndSqueeze<TRate>(buffer.Span, KeccakReference.Sha3DomainSeparator, TRate.RateInBytes);
 	}
 
-	// Each case discards the first skipped bytes, which leaves the sponge at the start, middle or end of a block, then squeezes into memory that ends at the guard page. Ending one byte into a block leaves the last whole block before it nowhere to spill but the guard page.
+	// Each case discards the first skipped bytes, which leaves the sponge at the start, middle or end of a block, then squeezes into memory that ends at the guard page.
+	// Ending one byte into a block leaves the last whole block before it nowhere to spill but the guard page.
 	private static async Task VerifySqueezeBeforeGuardPage<TRate>(int rate) where TRate : IKeccakRate
 	{
 		await Assert.That(TRate.RateInBytes).IsEqualTo(rate);

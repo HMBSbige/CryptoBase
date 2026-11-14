@@ -2,7 +2,8 @@ using static CryptoBase.EllipticCurves.Curve448.Field448Blocks<System.Runtime.In
 
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The point formulas of IEdwardsField448x4: each step writes the operands of its products into the scratch as LadderStep does, the entry of an addition, which SelectBase or LoadAffine writes, being the left operand of the first. Every right operand has m_y ≤ 5 and every pair of lanes m_x·m_y ≤ 6, within what Product takes; where a sum takes 3p, the left operand of the second product is carried once first.
+// The point formulas of IEdwardsField448x4: each step writes the operands of its products into the scratch as LadderStep does, the entry of an addition, which SelectBase or LoadAffine writes, being the left operand of the first.
+// Every right operand has m_y ≤ 5 and every pair of lanes m_x·m_y ≤ 6, within what Product takes; where a sum takes 3p, the left operand of the second product is carried once first.
 internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 {
 	// The limbs of 3p, each at least that of a sum of two products; limb 8 is the smaller.
@@ -23,7 +24,8 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 	private const byte Daca = 0b00_10_00_11;
 	private const byte Abda = 0b00_11_01_00;
 
-	// The entry of SelectBase, transposed four 56-bit limbs at a time: lanes (y − x, y + x, 2, 2d'xy), each limb then split in two, and lane D negated where negative is set. The entries are canonical, so every lane has m ≤ 1 but lane D negated, which has m ≤ 2.
+	// The entry of SelectBase, transposed four 56-bit limbs at a time: lanes (y − x, y + x, 2, 2d'xy), each limb then split in two, and lane D negated where negative is set.
+	// The entries are canonical, so every lane has m ≤ 1 but lane D negated, which has m ≤ 2.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void SelectBase(int comb, uint index, ulong negative, ref Field448x4Avx2 scratch)
 	{
@@ -57,7 +59,8 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		WriteEntry(ref scratch.L0, x0, y0, d0, x0 + y0, x1, y1, d1, x1 + y1, Vector256<ulong>.Zero);
 	}
 
-	// With (p0, p1, p2, p3) = ((X − Y)(y − x), (X + Y)(y + x), 2Z, T·2d'xy) from the first product, E = p1 + p0, H = p1 − p0, F = p2 − p3 and G = p2 + p3 give (E·F, G·H, F·G, E·H) = (X3, Y3, Z3, T3) for a = −1. The right operand (X − Y, X + Y, Z, T) of the first product has m ≤ 3; E and G have m ≤ 2 and F and H m ≤ 3, so no lane of the second exceeds 6.
+	// With (p0, p1, p2, p3) = ((X − Y)(y − x), (X + Y)(y + x), 2Z, T·2d'xy) from the first product, E = p1 + p0, H = p1 − p0, F = p2 − p3 and G = p2 + p3 give (E·F, G·H, F·G, E·H) = (X3, Y3, Z3, T3) for a = −1.
+	// The right operand (X − Y, X + Y, Z, T) of the first product has m ≤ 3; E and G have m ≤ 2 and F and H m ≤ 3, so no lane of the second exceeds 6.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void TwistedAdd(ref Field448x4Avx2 point, ref Field448x4Avx2 scratch)
 	{
@@ -83,7 +86,8 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		Product(ref operands, ref limbs);
 	}
 
-	// x = 2XY/(Y² − X²) and y = (Y² + X²)/(2Z² − Y² + X²), as TwistedEdwards448.Double takes them: with (XX, YY, ZZ, SS) = (X², Y², Z², (X + Y)²), E = SS − XX − YY, G = YY − XX, F = 2ZZ + XX − YY and H = XX + YY give (E·F, G·H, F·G, E·H). E takes 3p and has m ≤ 4, G and F 2p, with m ≤ 3 and m ≤ 5: the left operand (E, G, F, E) is carried, and the right one (F, H, G, H) has m ≤ 5.
+	// x = 2XY/(Y² − X²) and y = (Y² + X²)/(2Z² − Y² + X²), as TwistedEdwards448.Double takes them: with (XX, YY, ZZ, SS) = (X², Y², Z², (X + Y)²), E = SS − XX − YY, G = YY − XX, F = 2ZZ + XX − YY and H = XX + YY give (E·F, G·H, F·G, E·H).
+	// E takes 3p and has m ≤ 4, G and F 2p, with m ≤ 3 and m ≤ 5: the left operand (E, G, F, E) is carried, and the right one (F, H, G, H) has m ≤ 5.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void TwistedDouble(ref Field448x4Avx2 point, ref Field448x4Avx2 scratch)
 	{
@@ -105,7 +109,9 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		Product(ref operands, ref point.L0);
 	}
 
-	// With (A, B, C, S) = (X1x2, Y1y2, T1·dxy, (X1 + Y1)(x2 + y2)) from the first product, E = S − A − B, F = Z1 − C, G = Z1 + C and H = B − A give (E·F, G·H, F·G, E·H) = (X3, Y3, Z3, T3) for a = 1. The right operand (X1, Y1, T1, X1 + Y1) of the first has m ≤ 2 and the entry m ≤ 3, which multiply to at most 6. E takes 3p and has m ≤ 4, F and H 2p, with m ≤ 3: the left operand (E, G, F, E) is carried, and the right one (F, H, G, H) has m ≤ 3.
+	// With (A, B, C, S) = (X1x2, Y1y2, T1·dxy, (X1 + Y1)(x2 + y2)) from the first product, E = S − A − B, F = Z1 − C, G = Z1 + C and H = B − A give (E·F, G·H, F·G, E·H) = (X3, Y3, Z3, T3) for a = 1.
+	// The right operand (X1, Y1, T1, X1 + Y1) of the first has m ≤ 2 and the entry m ≤ 3, which multiply to at most 6.
+	// E takes 3p and has m ≤ 4, F and H 2p, with m ≤ 3: the left operand (E, G, F, E) is carried, and the right one (F, H, G, H) has m ≤ 3.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Add(ref Field448x4Avx2 point, ref Field448x4Avx2 scratch)
 	{
@@ -133,7 +139,8 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		Product(ref operands, ref limbs);
 	}
 
-	// x = 2XY/(X² + Y²) and y = (Y² − X²)/(2Z² − X² − Y²), as Edwards448.Double takes them: with (XX, YY, ZZ, SS) = (X², Y², Z², (X + Y)²), the completed point (SS − XX − YY, YY − XX, XX + YY, 2ZZ − XX − YY) goes to extended coordinates by the lanes (2XY, Y² − X², X² + Y², 2XY) times (T, Z, T, Y). The sums that take 3p have m ≤ 4 and 5, and Y² − X² m ≤ 3: the left operand is carried, and the right one has m ≤ 5.
+	// x = 2XY/(X² + Y²) and y = (Y² − X²)/(2Z² − X² − Y²), as Edwards448.Double takes them: with (XX, YY, ZZ, SS) = (X², Y², Z², (X + Y)²), the completed point (SS − XX − YY, YY − XX, XX + YY, 2ZZ − XX − YY) goes to extended coordinates by the lanes (2XY, Y² − X², X² + Y², 2XY) times (T, Z, T, Y).
+	// The sums that take 3p have m ≤ 4 and 5, and Y² − X² m ≤ 3: the left operand is carried, and the right one has m ≤ 5.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Double(ref Field448x4Avx2 point, ref Field448x4Avx2 scratch)
 	{
@@ -172,7 +179,8 @@ internal partial struct Field448x4Avx2 : IEdwardsField448x4<Field448x4Avx2>
 		}
 	}
 
-	// The left operand of an addition from lanes (A, B, C, D) of four values given four 56-bit limbs at a time: limbs m of the values in group 0 make limbs 2m and 2m + 1, and those in group 1 limbs 2m + 8 and 2m + 9, each transposed into the lanes of a vector and split into its low 28 bits and the rest. Lane D becomes 2p − D where negate is set.
+	// The left operand of an addition from lanes (A, B, C, D) of four values given four 56-bit limbs at a time: limbs m of the values in group 0 make limbs 2m and 2m + 1, and those in group 1 limbs 2m + 8 and 2m + 9, each transposed into the lanes of a vector and split into its low 28 bits and the rest.
+	// Lane D becomes 2p − D where negate is set.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WriteEntry(ref Vector256<ulong> operands, Vector256<ulong> a0, Vector256<ulong> b0, Vector256<ulong> c0, Vector256<ulong> d0, Vector256<ulong> a1, Vector256<ulong> b1, Vector256<ulong> c1, Vector256<ulong> d1, Vector256<ulong> negate)
 	{

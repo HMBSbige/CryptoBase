@@ -3,12 +3,14 @@ using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
 
-// Hashes 32 consecutive full chunks as two groups of 16, each laid out as in Blake3Vector512, with the steps of the two groups interleaved half by half: where vector additions and rotations take two cycles, as on Zen 5, one group alone leaves the vector pipelines waiting on the latency of each G, and the other group fills those cycles. Fewer chunks, and all parents, take Blake3Vector512.
+// Hashes 32 consecutive full chunks as two groups of 16, each laid out as in Blake3Vector512, with the steps of the two groups interleaved half by half: where vector additions and rotations take two cycles, as on Zen 5, one group alone leaves the vector pipelines waiting on the latency of each G, and the other group fills those cycles.
+// Fewer chunks, and all parents, take Blake3Vector512.
 internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 {
 	public static bool IsSupported => Blake3Vector512.IsSupported;
 
-	// Only Zen 5 with a 512-bit datapath leaves cycles for the second group to fill; cores that split 512-bit operations are bound by their throughput. Threads take it whether or not they share a core.
+	// Only Zen 5 with a 512-bit datapath leaves cycles for the second group to fill; cores that split 512-bit operations are bound by their throughput.
+	// Threads take it whether or not they share a core.
 	internal static readonly bool IsPreferred = IsSupported && CpuIdUtils.IsAmdZen5With512BitDatapath();
 
 	public static int Degree => 32;

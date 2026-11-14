@@ -97,7 +97,8 @@ public sealed partial class Base32Encoding
 	private const byte AdvSimdDecodeTableStart = 0x30;
 	private const byte AdvSimdDecodeValidBit = 0x20;
 
-	// Both built-in alphabets use symbols 0x30-0x6F, so one four-register TBL maps symbol - 0x30. Entries hold the value with bit 5 set; invalid symbols and the zeroes TBL returns for out-of-range indices both lack it, and the packer ignores bits above the low five.
+	// Both built-in alphabets use symbols 0x30-0x6F, so one four-register TBL maps symbol - 0x30.
+	// Entries hold the value with bit 5 set; invalid symbols and the zeroes TBL returns for out-of-range indices both lack it, and the packer ignores bits above the low five.
 	private static readonly byte[] AdvSimdRfcDecodeTable = CreateAdvSimdDecodeTable(Rfc4648Alphabet);
 	private static readonly byte[] AdvSimdHexDecodeTable = CreateAdvSimdDecodeTable(Rfc4648HexAlphabet);
 

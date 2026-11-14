@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// GT, the subgroup of order N of Fp12* that SM9Pairing maps onto, for the protocols of GM/T 0044.2 to 0044.4. Its elements are the values of the pairing and their products and powers; the powers take only such elements. Exponents are plain values below N.
+// GT, the subgroup of order N of Fp12* that SM9Pairing maps onto, for the protocols of GM/T 0044.2 to 0044.4.
+// Its elements are the values of the pairing and their products and powers; the powers take only such elements.
+// Exponents are plain values below N.
 internal static class SM9GT
 {
 	// The bytes of GM/T 0044.1 §7.2.6 for an element of Fp12, which the protocols hash.
@@ -24,7 +26,8 @@ internal static class SM9GT
 	}
 }
 
-// A base of GT with the tables of its powers that make value^k cheaper for each k, for a base used in many products, as g = e(P1, Ppub-s) is for a master public key. The base and its tables may be secret: Dispose erases them.
+// A base of GT with the tables of its powers that make value^k cheaper for each k, for a base used in many products, as g = e(P1, Ppub-s) is for a master public key.
+// The base and its tables may be secret: Dispose erases them.
 internal sealed class SM9GTTable : IDisposable
 {
 	private readonly SM9Fp12[] _table = new SM9Fp12[SM9GTPower.FixedTableLength];

@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The R-ate pairing e: G1 × G2 → GT of GM/T 0044.1 B.6.2 with a = 6t + 2, as GM/T 0044.2 to 0044.4 take it: e(P, Q) for P of G1 and Q of G2, neither the point at infinity. Its values match those of GM/T 0044.5. Neither the time nor the addresses depend on P or Q, so Q may be a private key.
+// The R-ate pairing e: G1 × G2 → GT of GM/T 0044.1 B.6.2 with a = 6t + 2, as GM/T 0044.2 to 0044.4 take it: e(P, Q) for P of G1 and Q of G2, neither the point at infinity.
+// Its values match those of GM/T 0044.5.
+// Neither the time nor the addresses depend on P or Q, so Q may be a private key.
 internal static class SM9Pairing
 {
 	internal static void Pair(in SM9AffinePoint<SM9Fp> p, in SM9AffinePoint<SM9Fp2> q, out SM9Fp12 result)
@@ -11,7 +13,8 @@ internal static class SM9Pairing
 	}
 }
 
-// The lines of the Miller loop for a fixed Q of G2, which make e(P, Q) cheaper for each P. Q may be a private key, whose lines are as secret as it is: Dispose erases them.
+// The lines of the Miller loop for a fixed Q of G2, which make e(P, Q) cheaper for each P.
+// Q may be a private key, whose lines are as secret as it is: Dispose erases them.
 internal sealed class SM9PairingLines : IDisposable
 {
 	private readonly SM9PrecomputedLine[] _lines = new SM9PrecomputedLine[SM9MillerLoop.LineCount];

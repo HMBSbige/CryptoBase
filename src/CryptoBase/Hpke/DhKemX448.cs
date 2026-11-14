@@ -8,10 +8,17 @@ namespace CryptoBase.Hpke;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The encapsulation key is an X448 public key, a little-endian u-coordinate of 56 bytes, and a ciphertext, the encapsulated key, is an ephemeral public key of the same form. Every 56-byte value is a decapsulation key except those whose clamped value is 4L, four times the order of the base point, whose encapsulation key is all zeros: <see cref="ImportDecapsulationKey" /> throws for one, <see cref="DeriveKeyPair" /> and <see cref="ImportPrivateSeed" /> throw if they derive one (probability 2^−445), and <see cref="GenerateKey" /> draws another seed. A decapsulation key is clamped when used, and <see cref="ExportDecapsulationKey" /> writes back the bytes that were imported or derived, unclamped; a key and its clamped form import as the same key, with the same encapsulation key and shared secrets. The private seed is the input keying material of <see cref="DeriveKeyPair" />, so a key pair from <see cref="GenerateKey" /> or <see cref="ImportPrivateSeed" /> is the one that <see cref="DeriveKeyPair" /> derives from its seed, and <see cref="ExportPrivateSeed" /> writes it back unchanged.
+/// The encapsulation key is an X448 public key, a little-endian u-coordinate of 56 bytes, and a ciphertext, the encapsulated key, is an ephemeral public key of the same form.
+/// Every 56-byte value is a decapsulation key except those whose clamped value is 4L, four times the order of the base point, whose encapsulation key is all zeros: <see cref="ImportDecapsulationKey" /> throws for one, <see cref="DeriveKeyPair" /> and <see cref="ImportPrivateSeed" /> throw if they derive one (probability 2^−445), and <see cref="GenerateKey" /> draws another seed.
+/// A decapsulation key is clamped when used, and <see cref="ExportDecapsulationKey" /> writes back the bytes that were imported or derived, unclamped;
+/// a key and its clamped form import as the same key, with the same encapsulation key and shared secrets.
+/// The private seed is the input keying material of <see cref="DeriveKeyPair" />, so a key pair from <see cref="GenerateKey" /> or <see cref="ImportPrivateSeed" /> is the one that <see cref="DeriveKeyPair" /> derives from its seed, and <see cref="ExportPrivateSeed" /> writes it back unchanged.
 /// </para>
 /// <para>
-/// A public key is accepted in any encoding, as RFC 7748 requires: no bit is ignored, and a u-coordinate of the field prime or more is reduced. The encoding is kept as given, and it is what the shared secret binds. A point of small order, which gives an all-zero shared secret, is rejected: <see cref="ImportEncapsulationKey" /> throws for it, and <see cref="TryDecapsulate" /> and <see cref="TryAuthDecapsulate" /> return <see langword="false" /> only for such a ciphertext or one of the wrong length. Encapsulation and decapsulation may run concurrently on one instance.
+/// A public key is accepted in any encoding, as RFC 7748 requires: no bit is ignored, and a u-coordinate of the field prime or more is reduced.
+/// The encoding is kept as given, and it is what the shared secret binds.
+/// A point of small order, which gives an all-zero shared secret, is rejected: <see cref="ImportEncapsulationKey" /> throws for it, and <see cref="TryDecapsulate" /> and <see cref="TryAuthDecapsulate" /> return <see langword="false" /> only for such a ciphertext or one of the wrong length.
+/// Encapsulation and decapsulation may run concurrently on one instance.
 /// </para>
 /// <para>
 /// The shared secret binds the ciphertext and the encapsulation key, and with authentication the sender's encapsulation key too.

@@ -24,7 +24,8 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 	private uint _h3;
 	private uint _h4;
 #if NET11_0_OR_GREATER
-	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state; after the words, the count, which Append reads right away, takes an integer store of its own rather than part of a vector store.
+	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state;
+	// after the words, the count, which Append reads right away, takes an integer store of its own rather than part of a vector store.
 	private ulong _byteCount;
 #endif
 	private InlineArray64<byte> _buffer;

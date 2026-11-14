@@ -1,6 +1,7 @@
 namespace CryptoBase.SM2;
 
-// The DER of SM2Cipher, GB/T 35276-2017, Sec. 7.2 (GM/T 0009-2012): SEQUENCE { XCoordinate INTEGER, YCoordinate INTEGER, HASH OCTET STRING (SIZE(32)), CipherText OCTET STRING }, holding C1 = (x1, y1), C3 and C2. A ciphertext is public, so the encoding and parsing may branch on it.
+// The DER of SM2Cipher, GB/T 35276-2017, Sec. 7.2 (GM/T 0009-2012): SEQUENCE { XCoordinate INTEGER, YCoordinate INTEGER, HASH OCTET STRING (SIZE(32)), CipherText OCTET STRING }, holding C1 = (x1, y1), C3 and C2.
+// A ciphertext is public, so the encoding and parsing may branch on it.
 internal static class SM2CipherDer
 {
 	private const byte SequenceTag = 0x30;
@@ -23,7 +24,8 @@ internal static class SM2CipherDer
 		return total <= int.MaxValue ? (int)total : -1;
 	}
 
-	// Writes the SM2Cipher of C1, an uncompressed point, and a C2 of plaintextLength bytes, but for the contents of HASH and CipherText, whose offsets it returns; returns the length. destination is at least GetMaxLength long.
+	// Writes the SM2Cipher of C1, an uncompressed point, and a C2 of plaintextLength bytes, but for the contents of HASH and CipherText, whose offsets it returns; returns the length.
+	// destination is at least GetMaxLength long.
 	internal static int Write(ReadOnlySpan<byte> c1, int plaintextLength, Span<byte> destination, out int hashOffset, out int cipherTextOffset)
 	{
 		Debug.Assert(c1.Length is 1 + 2 * CoordinateLength && c1[0] is 0x04);
@@ -42,7 +44,9 @@ internal static class SM2CipherDer
 		return written + plaintextLength;
 	}
 
-	// Reads the SM2Cipher that fills source: c1 receives C1 as an uncompressed point, of coordinates not yet checked against the field, and hash and cipherText are slices of source. DER only: the INTEGERs must be minimal and not negative, and HASH must hold 32 bytes. The CipherText may be empty; the caller decides on that.
+	// Reads the SM2Cipher that fills source: c1 receives C1 as an uncompressed point, of coordinates not yet checked against the field, and hash and cipherText are slices of source.
+	// DER only: the INTEGERs must be minimal and not negative, and HASH must hold 32 bytes.
+	// The CipherText may be empty; the caller decides on that.
 	internal static bool TryRead(ReadOnlySpan<byte> source, Span<byte> c1, out ReadOnlySpan<byte> hash, out ReadOnlySpan<byte> cipherText)
 	{
 		Debug.Assert(c1.Length is 1 + 2 * CoordinateLength);

@@ -1,7 +1,9 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Trial division of the candidates of ProbablePrime by the odd primes below Bound, one prime per lane of the widest vectors of the platform. The remainder by a prime p is that of Σ h_j·w_j over the 32-bit halves h_j of the candidate, with w_j = 2^(32j) mod p: each term is below 2^45 and a sum of up to 256 terms, for candidates of 8192 bits, below 2^53, so that the sums are exact in doubles and the halves broadcast to every lane.
-// The quotient ⌊s·(1/p)⌋ in doubles, with 1/p rounded, may be one off either way, which one correction in each direction undoes; nothing divides or branches on a sum. The lanes past the primes divide by 2 the lowest half alone, which an odd candidate leaves at 1.
+// Trial division of the candidates of ProbablePrime by the odd primes below Bound, one prime per lane of the widest vectors of the platform.
+// The remainder by a prime p is that of Σ h_j·w_j over the 32-bit halves h_j of the candidate, with w_j = 2^(32j) mod p: each term is below 2^45 and a sum of up to 256 terms, for candidates of 8192 bits, below 2^53, so that the sums are exact in doubles and the halves broadcast to every lane.
+// The quotient ⌊s·(1/p)⌋ in doubles, with 1/p rounded, may be one off either way, which one correction in each direction undoes; nothing divides or branches on a sum.
+// The lanes past the primes divide by 2 the lowest half alone, which an odd candidate leaves at 1.
 internal sealed class TrialDivision
 {
 	// Appendix B.3 of FIPS 186-5 suggests a bound from 10^3 to 10^5; 2^13 keeps the sums exact for every candidate.

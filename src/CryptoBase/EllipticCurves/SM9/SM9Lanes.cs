@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// An element of Fp12 for the vector kernels, as Fp12 = Fp2[W]/(W⁶ − u) with W = w: the Fp2 coefficient of W^k, the coefficient of w^k in SM9Fp12, in lane k of rows of eight 64-bit lanes, its real part in rows 0 to 9 and its u-part in rows 10 to 19, row l holding limb l of radix 2^26 with the Montgomery form of SM9Fp. Lanes 6 and 7 are padding, which the operations fill with values of no meaning. A coefficient is reduced if limbs 0 to 8 are below 2^26 and its value is below 2.25p, as for SM9Fp, so the five limbs of an SM9Fp are the pairs of these.
+// An element of Fp12 for the vector kernels, as Fp12 = Fp2[W]/(W⁶ − u) with W = w: the Fp2 coefficient of W^k, the coefficient of w^k in SM9Fp12, in lane k of rows of eight 64-bit lanes, its real part in rows 0 to 9 and its u-part in rows 10 to 19, row l holding limb l of radix 2^26 with the Montgomery form of SM9Fp.
+// Lanes 6 and 7 are padding, which the operations fill with values of no meaning.
+// A coefficient is reduced if limbs 0 to 8 are below 2^26 and its value is below 2.25p, as for SM9Fp, so the five limbs of an SM9Fp are the pairs of these.
 [InlineArray(Length)]
 internal struct SM9Fp12Lanes
 {
@@ -9,7 +11,8 @@ internal struct SM9Fp12Lanes
 	private ulong _element0;
 }
 
-// The working memory of SM9Lanes, which the operations overwrite: its regions end with the rows of the line of the doubling step, at LineRows + 2·ComponentLength = 1984. It holds secrets, so its owner erases it.
+// The working memory of SM9Lanes, which the operations overwrite: its regions end with the rows of the line of the doubling step, at LineRows + 2·ComponentLength = 1984.
+// It holds secrets, so its owner erases it.
 [InlineArray(Length)]
 internal struct SM9LaneScratch
 {
@@ -18,8 +21,12 @@ internal struct SM9LaneScratch
 	private ulong _element0;
 }
 
-// The arithmetic of Fp12 on SM9Fp12Lanes, which every vector kernel shares over its lanes. A product of two elements is the cyclic convolution c_k = Σ_i a_i·b'_(k−i) over the lanes, b'_j = b_j for j ≥ 0 and u·b_(j+6) otherwise, as W⁶ = u: term i broadcasts a_i to every lane and takes b rotated by i lanes, whose rows SM9Lanes reads at a shifted offset from an extended copy, so that no product needs a shuffle. Each lane takes the product of Fp2 by Karatsuba, P0 = x0·y0, P1 = x1·y1 and Ps = (x0 + x1)(y0 + y1), summed over the terms as 19 columns before one Montgomery reduction per coefficient.
-// Every member takes and gives reduced coefficients, except the line of DoublingStep, whose l0 MultiplyByLine takes as it is, and erases nothing: the callers own the elements and the scratch. None branches on or indexes by a value. Any result may be the same element as an input.
+// The arithmetic of Fp12 on SM9Fp12Lanes, which every vector kernel shares over its lanes.
+// A product of two elements is the cyclic convolution c_k = Σ_i a_i·b'_(k−i) over the lanes, b'_j = b_j for j ≥ 0 and u·b_(j+6) otherwise, as W⁶ = u: term i broadcasts a_i to every lane and takes b rotated by i lanes, whose rows SM9Lanes reads at a shifted offset from an extended copy, so that no product needs a shuffle.
+// Each lane takes the product of Fp2 by Karatsuba, P0 = x0·y0, P1 = x1·y1 and Ps = (x0 + x1)(y0 + y1), summed over the terms as 19 columns before one Montgomery reduction per coefficient.
+// Every member takes and gives reduced coefficients, except the line of DoublingStep, whose l0 MultiplyByLine takes as it is, and erases nothing: the callers own the elements and the scratch.
+// None branches on or indexes by a value.
+// Any result may be the same element as an input.
 internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9Vector<TVector>
 {
 	internal const int RowLength = 8;
@@ -84,7 +91,10 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	private const ulong PermuteImaginary = 0xFE9D8C2B;
 	private const ulong SpreadEven = 0x76221100;
 
-	// The patterns of the doubling step: (X, Y, Z, X, Y) and (Y, Y, Z, X, Z) for the first products, the latter with the other part of Z for u·Z; (A, B, B, E, 3X², 2YZ), E everywhere and (B, B, 2YZ, E) for the second; lane 3 into lane 1; and the line from lane 0 of the first row and lanes 4 and 5 of the second.
+	// The patterns of the doubling step: (X, Y, Z, X, Y) and (Y, Y, Z, X, Z) for the first products, the latter with the other part of Z for u·Z;
+	// (A, B, B, E, 3X², 2YZ), E everywhere and (B, B, 2YZ, E) for the second;
+	// lane 3 into lane 1;
+	// and the line from lane 0 of the first row and lanes 4 and 5 of the second.
 	private const ulong DoublingLeft = 0x76510210;
 	private const ulong DoublingRight = 0x76520A11;
 	private const ulong SecondLeft = 0x76432110;
@@ -265,7 +275,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		result.L4 = Unsafe.Add(ref rows, 64) | Unsafe.Add(ref rows, 72) << 26;
 	}
 
-	// The terms of a product, the lanes of the left operand, four bits each: every lane, or the lanes 0, 2 and 3 of a line. Each term broadcasts its coefficient from the qword of left that its source gives, SourceBits each, the lane itself here.
+	// The terms of a product, the lanes of the left operand, four bits each: every lane, or the lanes 0, 2 and 3 of a line.
+	// Each term broadcasts its coefficient from the qword of left that its source gives, SourceBits each, the lane itself here.
 	private const ulong AllTerms = 0x543210;
 
 	private const ulong AllSources = 1UL << SourceBits | 2UL << 2 * SourceBits | 3UL << 3 * SourceBits | 4UL << 4 * SourceBits | 5UL << 5 * SourceBits;
@@ -303,13 +314,16 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		Product(ref factor[0], ref value[0], EvenTerms, EvenSources, 3, ref result[0], ref scratch[0]);
 	}
 
-	// value·l for a line l = l0 + l2·w² + l3·w³ in lanes 0, 2 and 3, the terms of Product. A reduced line, from FromLine, has the bounds of Multiply over three terms rather than six. From DoublingStep, l0 is below 4.0001p with limbs below 2^27.6 and l2 and l3 below 1.0001p: c0 = x0·y0 − 2x1·y1 then lies in (−27p², 36p²) and c1 in [0, 50p²), and the columns of Ps, whose left sums for l0 are below 2^28.6, stay below 2^61.
+	// value·l for a line l = l0 + l2·w² + l3·w³ in lanes 0, 2 and 3, the terms of Product.
+	// A reduced line, from FromLine, has the bounds of Multiply over three terms rather than six.
+	// From DoublingStep, l0 is below 4.0001p with limbs below 2^27.6 and l2 and l3 below 1.0001p: c0 = x0·y0 − 2x1·y1 then lies in (−27p², 36p²) and c1 in [0, 50p²), and the columns of Ps, whose left sums for l0 are below 2^28.6, stay below 2^61.
 	internal static void MultiplyByLine(ref SM9Fp12Lanes value, ref SM9Fp12Lanes line, ref SM9Fp12Lanes result, ref SM9LaneScratch scratch)
 	{
 		Product(ref line[0], ref value[0], LineTerms, LineSources, 3, ref result[0], ref scratch[0]);
 	}
 
-	// value·(l0 + l2·w² + w³) for line j of a batch of EvaluateLines, l0 and l2 reduced: the terms of l0 and l2, at the lanes 0 and 2 of a line, from lane j of the batch rows, and value·w³, value rotated by three lanes as the extended rows hold it for lane 3, which ReduceProducts adds to c0 and c1 times R, so that its reduction adds it to the result. The two terms have the bounds of Multiply over two terms rather than six, so c0 lies in (−20.3p², 27p²) and c1 in [0, 37.2p²), and the rotated value has components below 6p and 2.25p, which add below 134.8p² and 50.6p²: c0 + 64p² and c1 are below 226p², which Reduce2 takes, and the columns stay below 2^61.4 in magnitude.
+	// value·(l0 + l2·w² + w³) for line j of a batch of EvaluateLines, l0 and l2 reduced: the terms of l0 and l2, at the lanes 0 and 2 of a line, from lane j of the batch rows, and value·w³, value rotated by three lanes as the extended rows hold it for lane 3, which ReduceProducts adds to c0 and c1 times R, so that its reduction adds it to the result.
+	// The two terms have the bounds of Multiply over two terms rather than six, so c0 lies in (−20.3p², 27p²) and c1 in [0, 37.2p²), and the rotated value has components below 6p and 2.25p, which add below 134.8p² and 50.6p²: c0 + 64p² and c1 are below 226p², which Reduce2 takes, and the columns stay below 2^61.4 in magnitude.
 	internal static void MultiplyByNormalizedLine(ref SM9Fp12Lanes value, ref ulong batch, int line, ref SM9Fp12Lanes result, ref SM9LaneScratch scratch)
 	{
 		Debug.Assert(line < BatchLines);
@@ -361,7 +375,9 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		}
 	}
 
-	// l0 = A·α and l2 = B·β of the lines, at most BatchLines of them, line j in lane j of the batch, as SM9MillerLoop.Evaluate gives them, by the lane products of Fp of Scale: the components of A and B go into lanes, each takes its factor, and Reduce2 takes the real and the u-part of each side by side, from products below 5.07p² to below 1.0001p in limbs below 2^26; the sums of the real and the u-parts follow, below 2.0002p in limbs below 2^27. Lanes past the lines hold values of no meaning.
+	// l0 = A·α and l2 = B·β of the lines, at most BatchLines of them, line j in lane j of the batch, as SM9MillerLoop.Evaluate gives them, by the lane products of Fp of Scale: the components of A and B go into lanes, each takes its factor, and Reduce2 takes the real and the u-part of each side by side, from products below 5.07p² to below 1.0001p in limbs below 2^26;
+	// the sums of the real and the u-parts follow, below 2.0002p in limbs below 2^27.
+	// Lanes past the lines hold values of no meaning.
 	internal static void EvaluateLines(ReadOnlySpan<SM9PrecomputedLine> lines, ref ulong batch, ref SM9LaneScratch scratch)
 	{
 		Debug.Assert(lines.Length <= BatchLines);
@@ -423,7 +439,11 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	// The limbs of the Montgomery form of 1.
 	private static ReadOnlySpan<ulong> MontgomeryOne => [0x3040742, 0x22AA49D, 0x391A486, 0x22EE5BD, 0x3152757, 0x16EB803, 0x2F4720E, 0x29CDE6E, 0x3FFC5EF, 0x159FFF];
 
-	// The products L = l·l′ of line j of batch and line j of otherBatch, two batches of EvaluateLines, into lane j of pairs. As w⁶ = u, (l0 + l2·w² + w³)(l0′ + l2′·w² + w³) = (l0·l0′ + u) + (l0·l2′ + l2·l0′)·w² + (l0 + l0′)·w³ + l2·l2′·w⁴ + (l2 + l2′)·w⁵. The three products of Fp2 take the lane products of Fp, by Karatsuba each, and l0·l2′ + l2·l0′ the columns of (l0 + l2)(l0′ + l2′) less those of l0·l0′ and l2·l2′, before one reduction: the lines are below 1.0001p in limbs below 2^26 and their sums below 2.0002p in limbs below 2^27, so each column of the three products stays below 2^60, and the values of the reductions, the real parts below 64p² + 2.0004p² and the u-parts below 4.0008p², stay within what Reduce2 takes. The coefficients that take an addition, the u-part of l0·l0′ + u, l0 + l0′ and l2 + l2′, are weakly reduced, so all of them end below 1.0001p in limbs below 2^26, and their sums below 2.0002p in limbs below 2^27, as those of a reduced line. Lanes past the lines of the batches hold values of no meaning.
+	// The products L = l·l′ of line j of batch and line j of otherBatch, two batches of EvaluateLines, into lane j of pairs.
+	// As w⁶ = u, (l0 + l2·w² + w³)(l0′ + l2′·w² + w³) = (l0·l0′ + u) + (l0·l2′ + l2·l0′)·w² + (l0 + l0′)·w³ + l2·l2′·w⁴ + (l2 + l2′)·w⁵.
+	// The three products of Fp2 take the lane products of Fp, by Karatsuba each, and l0·l2′ + l2·l0′ the columns of (l0 + l2)(l0′ + l2′) less those of l0·l0′ and l2·l2′, before one reduction: the lines are below 1.0001p in limbs below 2^26 and their sums below 2.0002p in limbs below 2^27, so each column of the three products stays below 2^60, and the values of the reductions, the real parts below 64p² + 2.0004p² and the u-parts below 4.0008p², stay within what Reduce2 takes.
+	// The coefficients that take an addition, the u-part of l0·l0′ + u, l0 + l0′ and l2 + l2′, are weakly reduced, so all of them end below 1.0001p in limbs below 2^26, and their sums below 2.0002p in limbs below 2^27, as those of a reduced line.
+	// Lanes past the lines of the batches hold values of no meaning.
 	internal static void EvaluateLinePairs(ref ulong batch, ref ulong otherBatch, ref ulong pairs, ref SM9LaneScratch scratch)
 	{
 		ref ulong work = ref scratch[0];
@@ -507,7 +527,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		}
 	}
 
-	// value·L for the product L of line j of a batch of pairs of EvaluateLinePairs, by the five terms of its coefficients from lane j of their rows. They are below 1.0001p in limbs below 2^26, as reduced coefficients are, so the terms have the bounds of Multiply over five terms rather than six.
+	// value·L for the product L of line j of a batch of pairs of EvaluateLinePairs, by the five terms of its coefficients from lane j of their rows.
+	// They are below 1.0001p in limbs below 2^26, as reduced coefficients are, so the terms have the bounds of Multiply over five terms rather than six.
 	internal static void MultiplyByLinePair(ref SM9Fp12Lanes value, ref ulong pairs, int line, ref SM9Fp12Lanes result, ref SM9LaneScratch scratch)
 	{
 		Debug.Assert(line < BatchLines);
@@ -571,7 +592,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		Split(in SM9Fp.One, ref Unsafe.Add(ref rows, 3));
 	}
 
-	// For reduced inputs, the lanes of the left sums have limbs below 2^27, those of the extended rows below 2^28 and 2^28.33 for the sums, so each column of P0, P1 and Ps over six terms is below 2^59.4, 2^57.8 and 2^60.8, and those of c0 = P0 − 2P1 and c1 = Ps − P0 − P1 below 2^60.1 and 2^61.4 in magnitude. As values, c0 = Σ x0·y0 − 2x1·y1 lies in (−60.75p², 81p²), the wrapped y0 = 2(3p − y1) being below 6p, and c1 = Σ x0·y1 + x1·y0 in [0, 111.4p²), so c0 + 64p² and c1 are below 145p², which Reduce2 takes to below 7.5p and then to below 1.0001p.
+	// For reduced inputs, the lanes of the left sums have limbs below 2^27, those of the extended rows below 2^28 and 2^28.33 for the sums, so each column of P0, P1 and Ps over six terms is below 2^59.4, 2^57.8 and 2^60.8, and those of c0 = P0 − 2P1 and c1 = Ps − P0 − P1 below 2^60.1 and 2^61.4 in magnitude.
+	// As values, c0 = Σ x0·y0 − 2x1·y1 lies in (−60.75p², 81p²), the wrapped y0 = 2(3p − y1) being below 6p, and c1 = Σ x0·y1 + x1·y0 in [0, 111.4p²), so c0 + 64p² and c1 are below 145p², which Reduce2 takes to below 7.5p and then to below 1.0001p.
 	[SkipLocalsInit]
 	private static void Product(ref ulong a, ref ulong b, ulong terms, ulong sources, int termCount, ref ulong result, ref ulong work)
 	{
@@ -604,7 +626,9 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		}
 	}
 
-	// The extended rows of b for its three Karatsuba components y0, y1 and y0 + y1: for each limb, u·b = −2y1 + y0·u, with −2y1 as 2(3p − y1), and b from qword ExtendedOrigin, so that the row at qword ExtendedOrigin − i holds b' with b'_k = b_(k−i) for k ≥ i and u·b_(k−i+6) otherwise. Vectors of a whole row store u·b two lanes up at qword 0 and b at qword 8, every store on its own line; narrower ones store u·b at qword 0 and then b over its padding at qword 6. Where halves is set, rows 10 to 14 of each component take the sums of rows m and m + 5, qword by qword, for the products by halves: below 2^30.33, as the rows are below 2^29.33.
+	// The extended rows of b for its three Karatsuba components y0, y1 and y0 + y1: for each limb, u·b = −2y1 + y0·u, with −2y1 as 2(3p − y1), and b from qword ExtendedOrigin, so that the row at qword ExtendedOrigin − i holds b' with b'_k = b_(k−i) for k ≥ i and u·b_(k−i+6) otherwise.
+	// Vectors of a whole row store u·b two lanes up at qword 0 and b at qword 8, every store on its own line; narrower ones store u·b at qword 0 and then b over its padding at qword 6.
+	// Where halves is set, rows 10 to 14 of each component take the sums of rows m and m + 5, qword by qword, for the products by halves: below 2^30.33, as the rows are below 2^29.33.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void Extend(ref ulong b, ref ulong extended, bool halves)
 	{
@@ -751,7 +775,9 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		}
 	}
 
-	// The 19 columns of Σ_t x·y over the terms, the lanes that terms packs, four bits each, for vector v of the rows: x is the qword of left that sources packs, SourceBits each, in each of ten rows, broadcast by TBroadcast, and y the ten extended rows of right from qword ExtendedOrigin − i for lane i, with the sums of their halves in rows 10 to 14. By Karatsuba on halves of five limbs, x·y = L + (M − L − H)·2^130 + H·2^260 with L = xL·yL, H = xH·yH and M = (xL + xH)(yL + yH), 75 lane products rather than 100: a first pass sums L and H over the terms in eighteen registers, and columns 5 to 13 of L + H·2^260 − (L + H)·2^130 then start the sums of M of a second pass. The columns are those of the whole products, as M − L − H is exact modulo 2^64.
+	// The 19 columns of Σ_t x·y over the terms, the lanes that terms packs, four bits each, for vector v of the rows: x is the qword of left that sources packs, SourceBits each, in each of ten rows, broadcast by TBroadcast, and y the ten extended rows of right from qword ExtendedOrigin − i for lane i, with the sums of their halves in rows 10 to 14.
+	// By Karatsuba on halves of five limbs, x·y = L + (M − L − H)·2^130 + H·2^260 with L = xL·yL, H = xH·yH and M = (xL + xH)(yL + yH), 75 lane products rather than 100: a first pass sums L and H over the terms in eighteen registers, and columns 5 to 13 of L + H·2^260 − (L + H)·2^130 then start the sums of M of a second pass.
+	// The columns are those of the whole products, as M − L − H is exact modulo 2^64.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void AccumulateWide<TBroadcast>(ref ulong left, ref ulong right, ulong terms, ulong sources, int termCount, int v, ref ulong wide) where TBroadcast : struct, IBroadcast
 	{
@@ -1067,14 +1093,16 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		m8.Store(ref Unsafe.Add(ref wide, 104));
 	}
 
-	// c0 = P0 − 2P1 + 64p² and c1 = Ps − P0 − P1 from the products at products, reduced into the two components of result, for vector v. With 32 registers the columns go into the rounds of Reduce2Wide as they form instead of through memory, the same columns and so the same results; the narrower vectors store them for Reduce2.
+	// c0 = P0 − 2P1 + 64p² and c1 = Ps − P0 − P1 from the products at products, reduced into the two components of result, for vector v.
+	// With 32 registers the columns go into the rounds of Reduce2Wide as they form instead of through memory, the same columns and so the same results; the narrower vectors store them for Reduce2.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ReduceProducts(ref ulong products, int v, ref ulong result)
 	{
 		ReduceProducts(ref products, false, ref products, v, ref result);
 	}
 
-	// As ReduceProducts with c0 and c1 taking x·R as well where hasUnit is set, for x the extended rows at unit, its real part in the first set and its u-part in the second, ExtendedLength apart: limb m of x goes into column 10 + m, R = 2^260, so that the reduction adds x to the result. For each width one unit of code serves both, its branches following hasUnit alone; the width picks the unit here, so that neither unit takes the code of the other into its budget of inlining.
+	// As ReduceProducts with c0 and c1 taking x·R as well where hasUnit is set, for x the extended rows at unit, its real part in the first set and its u-part in the second, ExtendedLength apart: limb m of x goes into column 10 + m, R = 2^260, so that the reduction adds x to the result.
+	// For each width one unit of code serves both, its branches following hasUnit alone; the width picks the unit here, so that neither unit takes the code of the other into its budget of inlining.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ReduceProducts(ref ulong products, bool hasUnit, ref ulong unit, int v, ref ulong result)
 	{
@@ -1131,7 +1159,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		Reduce2(ref x0, ref x1, ref Unsafe.Add(ref result, v * TVector.Count), ref Unsafe.Add(ref result, ComponentLength + v * TVector.Count));
 	}
 
-	// ReduceProducts with 32 registers: the rounds of Reduce2Wide on c0 = P0 − 2P1 + 64p² and c1 = Ps − P0 − P1, each column formed as the window takes it in, with the limbs of the unit term from column 10 on if there is one; column 19 of the products is 0, so its columns are the digit of 64p² and 0 with that of the unit term.
+	// ReduceProducts with 32 registers: the rounds of Reduce2Wide on c0 = P0 − 2P1 + 64p² and c1 = Ps − P0 − P1, each column formed as the window takes it in, with the limbs of the unit term from column 10 on if there is one;
+	// column 19 of the products is 0, so its columns are the digit of 64p² and 0 with that of the unit term.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void ReduceColumnsWide(ref ulong products, bool hasUnit, ref ulong unit, int v, ref ulong destination)
 	{
@@ -1212,8 +1241,12 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		c1 = TVector.Load(in Unsafe.Add(ref xs, RowLength * s)) - p0 - p1;
 	}
 
-	// The square of an element of the cyclotomic subgroup by the formula of SM9Fp12.CyclotomicSquare. Its Fp4 = Fp2[V], V = w³, are the pairs of lanes j and j + 3, X0 + X1·V, whose squares (X0² + u·X1², 2X0X1) take m = X0·X1 in lane j and n = (X0 + X1)(X0 + u·X1) in lane j + 3: X0² + u·X1² = n − (1 + u)·m. The square is then (3c² − 2c̄) + (3V·a² + 2b̄)·w + (3b² − 2ā)·w², so output lane k takes 3T_k + 2a_k for the odd lanes and 3T_k − 2a_k for the even ones, with T = (S0_0, u·S1_2, S0_1, S1_0, S0_2, S1_1) from S0_j = n_j − (1 + u)m_j and S1_j = 2m_j, which a permutation of the products gives before their reduction.
-	// The operands of n are below 4.5p and 8.25p, with limbs below 2^27 and 2^28.33, so the columns of the products stay below 2^60.3 in magnitude. AVX-512 permutes the columns into those of T, whose values lie in (−45.6p², 67.5p²), T + 64p² below 132p², and columns below 2^62 in magnitude, and reduces them in ReduceCyclotomic; the narrower vectors reduce m and n, products of reduced inputs and their sums, as any product, and permute their rows in CombineCyclotomicRows.
+	// The square of an element of the cyclotomic subgroup by the formula of SM9Fp12.CyclotomicSquare.
+	// Its Fp4 = Fp2[V], V = w³, are the pairs of lanes j and j + 3, X0 + X1·V, whose squares (X0² + u·X1², 2X0X1) take m = X0·X1 in lane j and n = (X0 + X1)(X0 + u·X1) in lane j + 3: X0² + u·X1² = n − (1 + u)·m.
+	// The square is then (3c² − 2c̄) + (3V·a² + 2b̄)·w + (3b² − 2ā)·w², so output lane k takes 3T_k + 2a_k for the odd lanes and 3T_k − 2a_k for the even ones, with T = (S0_0, u·S1_2, S0_1, S1_0, S0_2, S1_1) from S0_j = n_j − (1 + u)m_j and S1_j = 2m_j, which a permutation of the products gives before their reduction.
+	// The operands of n are below 4.5p and 8.25p, with limbs below 2^27 and 2^28.33, so the columns of the products stay below 2^60.3 in magnitude.
+	// AVX-512 permutes the columns into those of T, whose values lie in (−45.6p², 67.5p²), T + 64p² below 132p², and columns below 2^62 in magnitude, and reduces them in ReduceCyclotomic;
+	// the narrower vectors reduce m and n, products of reduced inputs and their sums, as any product, and permute their rows in CombineCyclotomicRows.
 	[SkipLocalsInit]
 	internal static void CyclotomicSquare(ref SM9Fp12Lanes value, ref SM9Fp12Lanes result, ref SM9LaneScratch scratch)
 	{
@@ -1244,7 +1277,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		WeakReduceElement(ref r);
 	}
 
-	// The rest of the cyclotomic square for AVX-512 from the columns of T that CombineCyclotomic leaves in memory: the rounds of Reduce2Wide keep their windows in registers, and their result S, below 132p²/R + p < 6.88p, goes on in registers to CompleteCyclotomic, without a weak reduction of its own, which would only change the representative of the same value. a is read before result is written, so they may be the same.
+	// The rest of the cyclotomic square for AVX-512 from the columns of T that CombineCyclotomic leaves in memory: the rounds of Reduce2Wide keep their windows in registers, and their result S, below 132p²/R + p < 6.88p, goes on in registers to CompleteCyclotomic, without a weak reduction of its own, which would only change the representative of the same value.
+	// a is read before result is written, so they may be the same.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void ReduceCyclotomic(ref ulong columns, ref ulong a, ref ulong result)
 	{
@@ -1322,7 +1356,12 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	}
 
 	// The rest of the cyclotomic square on one component of S in the limbs s, written to the same component of result, on AVX-512 itself: S carried, then F = 3S + 2(3p − a) on the even lanes and 3S + 2a on the odd ones, whose limbs 0 to 8 lie in [0, 7·2^26) and whose value is below 26.7p < 2^260.3, then F weakly reduced as WeakReduce does, the chain of its subtraction carrying F as it goes and the quotient taken from E = F9 + ⌊F8/2^26⌋ in place of the top limb L9 of F carried.
-	// The limbs below F8 add below 2^211 to F8·2^208, so L9 is E or E + 1. For E = L9 the bound of WeakReduce holds. For E = L9 − 1 = n'(P9 + 1) + m', with L9 = n(P9 + 1) + m: if m ≥ 1, then n' = n and m' = m − 1, so q = n leaves what it leaves there, and q = n − 1, only for m' < 36, at most (P9 + n + m + 1)·2^234 ≤ (P9 + 81)·2^234; if m = 0, then q = n − 1, as m' = P9 is not below 36, and leaves at most (P9 + n + 1)·2^234. The result is below 1.0001p either way, and as q is at most that of L9, q·p is at most the value. A limb of F below 2^28.9 with 2^32 − 2^6 − q·p_j above 2^31 keeps each limb of the chain positive and below 2^33.
+	// The limbs below F8 add below 2^211 to F8·2^208, so L9 is E or E + 1.
+	// For E = L9 the bound of WeakReduce holds.
+	// For E = L9 − 1 = n'(P9 + 1) + m', with L9 = n(P9 + 1) + m: if m ≥ 1, then n' = n and m' = m − 1, so q = n leaves what it leaves there, and q = n − 1, only for m' < 36, at most (P9 + n + m + 1)·2^234 ≤ (P9 + 81)·2^234;
+	// if m = 0, then q = n − 1, as m' = P9 is not below 36, and leaves at most (P9 + n + 1)·2^234.
+	// The result is below 1.0001p either way, and as q is at most that of L9, q·p is at most the value.
+	// A limb of F below 2^28.9 with 2^32 − 2^6 − q·p_j above 2^31 keeps each limb of the chain positive and below 2^33.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void CompleteCyclotomic(Vector512<ulong> s0, Vector512<ulong> s1, Vector512<ulong> s2, Vector512<ulong> s3, Vector512<ulong> s4, Vector512<ulong> s5, Vector512<ulong> s6, Vector512<ulong> s7, Vector512<ulong> s8, Vector512<ulong> s9, ref ulong a, ref ulong result)
 	{
@@ -1410,7 +1449,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		return Avx512F.Multiply(x.AsUInt32(), Vector512.Create((ulong)factor).AsUInt32());
 	}
 
-	// The operands of the lane products of the cyclotomic square into six sets of ten rows: L = (X0, X0 + X1) and R = (X1, X0 + u·X1) on lanes 0 to 2 and 3 to 5 for their real parts, u-parts and sums, with u·X1 = 2(3p − x1) + x0·u. rotated takes value rotated by three lanes.
+	// The operands of the lane products of the cyclotomic square into six sets of ten rows: L = (X0, X0 + X1) and R = (X1, X0 + u·X1) on lanes 0 to 2 and 3 to 5 for their real parts, u-parts and sums, with u·X1 = 2(3p − x1) + x0·u.
+	// rotated takes value rotated by three lanes.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void PrepareCyclotomic(ref ulong a, ref ulong operands, ref ulong rotated)
 	{
@@ -1474,7 +1514,9 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		}
 	}
 
-	// For vectors narrower than a row, whose permutations go through memory: from the reduced m and n of the cyclotomic square, in lanes 0 to 2 and 3 to 5 of square, T as CombineCyclotomic forms it on the columns, here on the ten rows of each component, 3p covering each subtrahend, and then F = 3T + 2(3p − a) on the even lanes and 3T + 2a on the odd ones. From m and n below 1.0001p in limbs below 2^26, T is below 12p in limbs below 2^29 and F below 40.5p in limbs below 2^31.1, which WeakReduceElement takes. permuted holds four rows; a is read before result is written, row by row.
+	// For vectors narrower than a row, whose permutations go through memory: from the reduced m and n of the cyclotomic square, in lanes 0 to 2 and 3 to 5 of square, T as CombineCyclotomic forms it on the columns, here on the ten rows of each component, 3p covering each subtrahend, and then F = 3T + 2(3p − a) on the even lanes and 3T + 2a on the odd ones.
+	// From m and n below 1.0001p in limbs below 2^26, T is below 12p in limbs below 2^29 and F below 40.5p in limbs below 2^31.1, which WeakReduceElement takes.
+	// permuted holds four rows; a is read before result is written, row by row.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void CombineCyclotomicRows(ref ulong square, ref ulong a, ref ulong result, ref ulong permuted)
 	{
@@ -1690,8 +1732,11 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		Split(in y, ref Unsafe.Add(ref rows, 5));
 	}
 
-	// For vectors of a whole row, T = 2T on the point in lanes 0 to 2, and the line of SM9MillerLoop's doubling step at P into lanes 0, 2 and 3 of line: l0 = B − E, below 4.0001p with limbs below 2^27.6, which MultiplyByLine takes, and l2 = 3X²·(−xP) and l3 = 2YZ·yP, reduced. The other lanes of line are 0, and those of point are left with values of no meaning.
-	// The first products, of reduced inputs, are A = XY, B = Y², 3uC = 3Z·uZ, 3X² = X·3X and 2YZ = Y·2Z, whose operands are below 6.75p with limbs below 2^28: their values lie within (−31p², 56p²) and their columns below 2^60.2 in magnitude. 5·3uC is E = 3b'·C for b' = 5u, reduced once more. The second products are 2A·(B + 9p − 3E), (B + 3E)², 4B·2YZ, E², 3X²·(−xP) and 2YZ·yP, of operands below 10.0001p with limbs below 2^29 and sums below 2^29.3, and Y3 takes (B + F)² − 12E² before the reduction: their values lie within (−44p², 40p²) and their columns below 2^62.1 in magnitude, which the reduction takes.
+	// For vectors of a whole row, T = 2T on the point in lanes 0 to 2, and the line of SM9MillerLoop's doubling step at P into lanes 0, 2 and 3 of line: l0 = B − E, below 4.0001p with limbs below 2^27.6, which MultiplyByLine takes, and l2 = 3X²·(−xP) and l3 = 2YZ·yP, reduced.
+	// The other lanes of line are 0, and those of point are left with values of no meaning.
+	// The first products, of reduced inputs, are A = XY, B = Y², 3uC = 3Z·uZ, 3X² = X·3X and 2YZ = Y·2Z, whose operands are below 6.75p with limbs below 2^28: their values lie within (−31p², 56p²) and their columns below 2^60.2 in magnitude.
+	// 5·3uC is E = 3b'·C for b' = 5u, reduced once more.
+	// The second products are 2A·(B + 9p − 3E), (B + 3E)², 4B·2YZ, E², 3X²·(−xP) and 2YZ·yP, of operands below 10.0001p with limbs below 2^29 and sums below 2^29.3, and Y3 takes (B + F)² − 12E² before the reduction: their values lie within (−44p², 40p²) and their columns below 2^62.1 in magnitude, which the reduction takes.
 	[SkipLocalsInit]
 	internal static void DoublingStep(ref SM9Fp12Lanes point, ref SM9Fp12Lanes factors, ref SM9Fp12Lanes line, ref SM9LaneScratch scratch)
 	{
@@ -1874,7 +1919,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		WeakReduceElement(ref value[0]);
 	}
 
-	// As AccumulateWide for sixteen registers, with right, wide and middle at the qword of the vector: by the same halves, each term takes three products of 25 lane products into nine columns, one at a time with nine sums, five limbs of y and one of x in registers: L into columns 0 to 8, H into 10 to 18 and M into the nine rows at middle, which CombineHalves then adds in. L and H share one copy of Block, so that the copies stay within the budget of the inliner.
+	// As AccumulateWide for sixteen registers, with right, wide and middle at the qword of the vector: by the same halves, each term takes three products of 25 lane products into nine columns, one at a time with nine sums, five limbs of y and one of x in registers: L into columns 0 to 8, H into 10 to 18 and M into the nine rows at middle, which CombineHalves then adds in.
+	// L and H share one copy of Block, so that the copies stay within the budget of the inliner.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void AccumulateNarrow(ref ulong left, ref ulong right, ulong terms, ulong sources, int termCount, ref ulong wide, ref ulong middle)
 	{
@@ -2089,7 +2135,10 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		WeakReduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, ref result);
 	}
 
-	// The lane products x·y of the ten rows of left and of right, as AccumulateLanes gives them, reduced as Reduce1 reduces them, for vector v: row k, limb k of y times every limb of x, adds to columns k to k + 9 alone, so column k is complete after it, and round k of the reduction, which adds to those columns too, follows it. A window of ten vectors holds columns k to k + 9, column k leaving it after round k and column k + 10 coming in at 0, and round k takes the column that Reduce1 takes in its round k, so the result is that of Reduce1, with the latency of the rounds overlapping the products. The limbs of x come from memory at each use, so the window, y_k, y_(k+1) and q fit in sixteen registers. Every addend of a column is a non-negative product or carry of Reduce1, so each partial column is at most the column there, and the carries shift logically.
+	// The lane products x·y of the ten rows of left and of right, as AccumulateLanes gives them, reduced as Reduce1 reduces them, for vector v: row k, limb k of y times every limb of x, adds to columns k to k + 9 alone, so column k is complete after it, and round k of the reduction, which adds to those columns too, follows it.
+	// A window of ten vectors holds columns k to k + 9, column k leaving it after round k and column k + 10 coming in at 0, and round k takes the column that Reduce1 takes in its round k, so the result is that of Reduce1, with the latency of the rounds overlapping the products.
+	// The limbs of x come from memory at each use, so the window, y_k, y_(k+1) and q fit in sixteen registers.
+	// Every addend of a column is a non-negative product or carry of Reduce1, so each partial column is at most the column there, and the carries shift logically.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void MultiplyReduceLanes(ref ulong left, ref ulong right, int v, ref ulong result)
 	{
@@ -2107,7 +2156,8 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		TVector t8 = TVector.Zero;
 		TVector q;
 
-		// Column k is complete as round k starts: x0·y_(k+1), the product of row k + 1 in column k + 1, joins it with the terms that do not wait for q, as in Reduce1. Column k + 9 is 0 before row k, which gives it its first product.
+		// Column k is complete as round k starts: x0·y_(k+1), the product of row k + 1 in column k + 1, joins it with the terms that do not wait for q, as in Reduce1.
+		// Column k + 9 is 0 before row k, which gives it its first product.
 		for (int k = 0; k < LimbCount - 1; ++k)
 		{
 			TVector next = TVector.Load(in Unsafe.Add(ref y, RowLength * (k + 1)));
@@ -2146,9 +2196,12 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		WeakReduce(t0 & mask, t1 & mask, t2 & mask, t3 & mask, t4 & mask, t5 & mask, t6 & mask, t7 & mask, t8 & mask, t8 >>> 26, ref Unsafe.Add(ref result, v * TVector.Count));
 	}
 
-	// The square as Fp12 = Fp6[W]/(W² − v), v = W², with A0 = (a0, a2, a4) on the even lanes and A1 = (a1, a3, a5) on the odd ones: with t = A0·A1 and s = (A0 + A1)(A0 + v·A1), the square is (s − t − v·t) + 2t·W. The two products of Fp6 = Fp2[v]/(v³ − u) go side by side, t_m in lane 2m and s_m in lane 2m + 1: term i broadcasts the pair (A0_i, (A0 + A1)_i) and takes Y = (A1_n, (A0 + v·A1)_n) rotated by i pairs, so three terms take what six take in Multiply.
-	// The pairs and Y, sums below 4.5p and 8.25p, are weakly reduced first, so every operand is below 1.0001p with limbs below 2^26, but u·Y below 6p with limbs below 2^28. Each term then adds to c0 a value in (−2.0004p², 6.0006p²) and to c1 one in [0, 7.0007p²), so the columns stay below 2^60.2 in magnitude, and s − t − v·t and 2t lie in (−42p², 66p²), 64p² added.
-	// Vectors narrower than a row take the square as Multiply does, as their permutations would go through memory. The formula below is for vectors of a whole row, with 32 registers.
+	// The square as Fp12 = Fp6[W]/(W² − v), v = W², with A0 = (a0, a2, a4) on the even lanes and A1 = (a1, a3, a5) on the odd ones: with t = A0·A1 and s = (A0 + A1)(A0 + v·A1), the square is (s − t − v·t) + 2t·W.
+	// The two products of Fp6 = Fp2[v]/(v³ − u) go side by side, t_m in lane 2m and s_m in lane 2m + 1: term i broadcasts the pair (A0_i, (A0 + A1)_i) and takes Y = (A1_n, (A0 + v·A1)_n) rotated by i pairs, so three terms take what six take in Multiply.
+	// The pairs and Y, sums below 4.5p and 8.25p, are weakly reduced first, so every operand is below 1.0001p with limbs below 2^26, but u·Y below 6p with limbs below 2^28.
+	// Each term then adds to c0 a value in (−2.0004p², 6.0006p²) and to c1 one in [0, 7.0007p²), so the columns stay below 2^60.2 in magnitude, and s − t − v·t and 2t lie in (−42p², 66p²), 64p² added.
+	// Vectors narrower than a row take the square as Multiply does, as their permutations would go through memory.
+	// The formula below is for vectors of a whole row, with 32 registers.
 	[SkipLocalsInit]
 	internal static void Square(ref SM9Fp12Lanes value, ref SM9Fp12Lanes result, ref SM9LaneScratch scratch)
 	{
@@ -2248,7 +2301,12 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		top.Store(ref Unsafe.Add(ref combined, WideLength + RowLength * (WideRows - 1)));
 	}
 
-	// The Montgomery reductions of two sets of twenty signed columns at row stride 8, each of a value in [0, 2^520), side by side so that each fills the latency of the other, then weak reductions: each result has limbs 0 to 8 below 2^26 and a value below 1.0001p if the value reduced is below 482p², whose reduction t/R + p is then below 2^260. Round k takes q = −t_k/p mod 2^26 and adds q·p·2^(26k): t_k + q·p0 is then a multiple of 2^26, which carries into column k + 1 exactly, and columns k + 1 to k + 9 take q·p_j. As the low limb of q·p0 is (−t_k) mod 2^26, that carry is ⌈t_k/2^26⌉ = ⌊(t_k + 2^26 − 1)/2^26⌋, which the arithmetic shift gives for either sign of t_k and which needs no q, plus ⌊q·p0/2^26⌋, so the next round waits only for that shift of q·p0, below 2^52, and one addition. A window of ten vectors holds columns k to k + 9; column k leaves it and column k + 10 comes in. The result, (t + Q·p)/2^260 for some Q below 2^260, is below t/R + p. Each round adds below 2^52 to a column and the carries below 2^37, so columns below 2^62.5 in magnitude stay below 2^63, and the arithmetic carries take them whatever their sign.
+	// The Montgomery reductions of two sets of twenty signed columns at row stride 8, each of a value in [0, 2^520), side by side so that each fills the latency of the other, then weak reductions: each result has limbs 0 to 8 below 2^26 and a value below 1.0001p if the value reduced is below 482p², whose reduction t/R + p is then below 2^260.
+	// Round k takes q = −t_k/p mod 2^26 and adds q·p·2^(26k): t_k + q·p0 is then a multiple of 2^26, which carries into column k + 1 exactly, and columns k + 1 to k + 9 take q·p_j.
+	// As the low limb of q·p0 is (−t_k) mod 2^26, that carry is ⌈t_k/2^26⌉ = ⌊(t_k + 2^26 − 1)/2^26⌋, which the arithmetic shift gives for either sign of t_k and which needs no q, plus ⌊q·p0/2^26⌋, so the next round waits only for that shift of q·p0, below 2^52, and one addition.
+	// A window of ten vectors holds columns k to k + 9; column k leaves it and column k + 10 comes in.
+	// The result, (t + Q·p)/2^260 for some Q below 2^260, is below t/R + p.
+	// Each round adds below 2^52 to a column and the carries below 2^37, so columns below 2^62.5 in magnitude stay below 2^63, and the arithmetic carries take them whatever their sign.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Reduce2(ref ulong columns, ref ulong columnsB, ref ulong result, ref ulong resultB)
 	{
@@ -2399,7 +2457,12 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		t8 &= mask;
 	}
 
-	// For limbs 0 to 8 below 2^26 and a value below 2^261, so limb 9 below 2^27: subtracts q·p for q = ⌊L9·M/2^40⌋, M = ⌊2^40/(P9 + 1)⌋, which is ⌊L9/(P9 + 1)⌋ or one less, as L9·ε/2^40 < 2^−16 for ε = 2^40/(P9 + 1) − M < 0.097. As p < (P9 + 1)·2^234, q·p is at most the value. With L9 = n·(P9 + 1) + m, q = n leaves at most (L9 + 1)·2^234 − n·P9·2^234 = (n + m + 1)·2^234 ≤ (P9 + 45)·2^234; q = n − 1 happens only for m < L9·(P9 + 1)·ε/2^40, below 36, and leaves at most (P9 + n + m + 1)·2^234 ≤ (P9 + 80)·2^234, so the result is below 1.0001p. q is below 45, so q·p_j is below 2^31.5; each limb takes 2^32 and gives 2^6 to the one above, which keeps every limb below the top one positive while the value stays, and the top limb ends as the top of the result, not negative.
+	// For limbs 0 to 8 below 2^26 and a value below 2^261, so limb 9 below 2^27: subtracts q·p for q = ⌊L9·M/2^40⌋, M = ⌊2^40/(P9 + 1)⌋, which is ⌊L9/(P9 + 1)⌋ or one less, as L9·ε/2^40 < 2^−16 for ε = 2^40/(P9 + 1) − M < 0.097.
+	// As p < (P9 + 1)·2^234, q·p is at most the value.
+	// With L9 = n·(P9 + 1) + m, q = n leaves at most (L9 + 1)·2^234 − n·P9·2^234 = (n + m + 1)·2^234 ≤ (P9 + 45)·2^234;
+	// q = n − 1 happens only for m < L9·(P9 + 1)·ε/2^40, below 36, and leaves at most (P9 + n + m + 1)·2^234 ≤ (P9 + 80)·2^234, so the result is below 1.0001p.
+	// q is below 45, so q·p_j is below 2^31.5;
+	// each limb takes 2^32 and gives 2^6 to the one above, which keeps every limb below the top one positive while the value stays, and the top limb ends as the top of the result, not negative.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WeakReduce(TVector t0, TVector t1, TVector t2, TVector t3, TVector t4, TVector t5, TVector t6, TVector t7, TVector t8, TVector t9, ref ulong result)
 	{

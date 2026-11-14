@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves;
 
-// Each product tries the vector kernels before the scalar one, which supports every platform: SM2Vector128 serves x64 without AVX2, where the scalar products also lack BMI2, and ARM64. k·P and u2·Q of u1·G + u2·Q without a table hold one point at a time, which SM2QuadFormulas spreads over four lanes where AVX2 is and SM2PairFormulas over two lanes elsewhere; where AVX-512 is, SM2OctoFormulas splits k·P into two chains, one in each half of eight lanes, and takes k·P + l·Q as a chain of each in one half, which fewer lanes have no room for.
+// Each product tries the vector kernels before the scalar one, which supports every platform: SM2Vector128 serves x64 without AVX2, where the scalar products also lack BMI2, and ARM64.
+// k·P and u2·Q of u1·G + u2·Q without a table hold one point at a time, which SM2QuadFormulas spreads over four lanes where AVX2 is and SM2PairFormulas over two lanes elsewhere;
+// where AVX-512 is, SM2OctoFormulas splits k·P into two chains, one in each half of eight lanes, and takes k·P + l·Q as a chain of each in one half, which fewer lanes have no room for.
 internal readonly struct SM2KernelDispatch : ISM2Kernel
 {
 	public static bool IsSupported => true;

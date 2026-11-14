@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
-// The curve y² = x³ − 3x + b over the field of p, with a group of prime order n. The constants are plain values below p, least significant limb of 64 bits first, so that they hold for any IECField of p.
+// The curve y² = x³ − 3x + b over the field of p, with a group of prime order n.
+// The constants are plain values below p, least significant limb of 64 bits first, so that they hold for any IECField of p.
 internal interface IECCurve
 {
 	static abstract ReadOnlySpan<ulong> B { get; }
@@ -14,7 +15,8 @@ internal interface IECCurve
 	// Whether TryMultiplyAdd of two points has kernels of the curve's own.
 	static virtual bool HasMultiplyAdd => false;
 
-	// Sets result to k·G for k below n by kernels of the curve's own, with the contract of ECGroup.MultiplyBase, and returns true; or returns false, leaving result unset, so that ECGroup takes its own windows.
+	// Sets result to k·G for k below n by kernels of the curve's own, with the contract of ECGroup.MultiplyBase, and returns true;
+	// or returns false, leaving result unset, so that ECGroup takes its own windows.
 	static virtual bool TryMultiplyBase<TField, TOrder>(in FieldElement<TOrder> scalar, out JacobianPoint<TField> result) where TField : unmanaged, IECField<TField> where TOrder : unmanaged, IMontgomeryModulus
 	{
 		Unsafe.SkipInit(out result);
@@ -28,13 +30,17 @@ internal interface IECCurve
 		return false;
 	}
 
-	// Sets the bases of the windows of a table, 2^(wi)·P for w = GeneratorWindowWidth, as ECGeneratorTable.FillBases does, by kernels of the curve's own, and returns true; or returns false, so that ECGeneratorTable sets them itself. P is public, so the time may depend on it.
+	// Sets the bases of the windows of a table, 2^(wi)·P for w = GeneratorWindowWidth, as ECGeneratorTable.FillBases does, by kernels of the curve's own, and returns true;
+	// or returns false, so that ECGeneratorTable sets them itself.
+	// P is public, so the time may depend on it.
 	static virtual bool TryFillBases<TField, TOrder>(in AffinePoint<TField> point, Span<JacobianPoint<TField>> bases) where TField : unmanaged, IECField<TField> where TOrder : unmanaged, IMontgomeryModulus
 	{
 		return false;
 	}
 
-	// Fills the windows of a table from their bases, as ECGeneratorTable.FillWindows does, by kernels of the curve's own, and returns true; or returns false, so that ECGeneratorTable fills them itself. The table is public, so the time may depend on it.
+	// Fills the windows of a table from their bases, as ECGeneratorTable.FillWindows does, by kernels of the curve's own, and returns true;
+	// or returns false, so that ECGeneratorTable fills them itself.
+	// The table is public, so the time may depend on it.
 	static virtual bool TryFillWindows<TField, TOrder>(Span<ulong> windows) where TField : unmanaged, IECField<TField> where TOrder : unmanaged, IMontgomeryModulus
 	{
 		return false;
@@ -76,7 +82,9 @@ internal interface IECCurve
 		return false;
 	}
 
-	// Sets equals to whether u1·G + u2·Q is not the point at infinity and its x is r mod n, for u1, u2 and r below n and a point Q on the curve, by kernels of the curve's own, and returns true; or returns false, so that ECVariableTimeGroup takes MultiplyAdd and XModOrderEquals. Every input is public.
+	// Sets equals to whether u1·G + u2·Q is not the point at infinity and its x is r mod n, for u1, u2 and r below n and a point Q on the curve, by kernels of the curve's own, and returns true;
+	// or returns false, so that ECVariableTimeGroup takes MultiplyAdd and XModOrderEquals.
+	// Every input is public.
 	static virtual bool TryMultiplyAddXModOrderEquals<TField, TOrder>(in FieldElement<TOrder> u1, in AffinePoint<TField> point, in FieldElement<TOrder> u2, in FieldElement<TOrder> r, out bool equals) where TField : unmanaged, IECField<TField> where TOrder : unmanaged, IMontgomeryModulus
 	{
 		equals = false;

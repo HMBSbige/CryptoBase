@@ -15,8 +15,11 @@ public sealed class AlgorithmIdentifier
 
 	internal const string Mgf1Oid = RsassaPssParameters.Mgf1Oid;
 
-	// The identifiers that FromSignatureAlgorithm gives: ecdsa-with-SHA256, -SHA384 and -SHA512 without parameters (RFC 5758, Sec. 3.2); sha256WithRSAEncryption, sha384WithRSAEncryption and sha512WithRSAEncryption with NULL parameters (RFC 4055, Sec. 5);
-	// id-RSASSA-PSS with the RSASSA-PSS-params of each hash (RFC 4055, Sec. 3.1); id-Ed25519 and id-Ed448 without parameters (RFC 8410, Sec. 6); id-ml-dsa-44, -65 and -87 without parameters (RFC 9881);
+	// The identifiers that FromSignatureAlgorithm gives: ecdsa-with-SHA256, -SHA384 and -SHA512 without parameters (RFC 5758, Sec. 3.2);
+	// sha256WithRSAEncryption, sha384WithRSAEncryption and sha512WithRSAEncryption with NULL parameters (RFC 4055, Sec. 5);
+	// id-RSASSA-PSS with the RSASSA-PSS-params of each hash (RFC 4055, Sec. 3.1);
+	// id-Ed25519 and id-Ed448 without parameters (RFC 8410, Sec. 6);
+	// id-ml-dsa-44, -65 and -87 without parameters (RFC 9881);
 	// and SM2-with-SM3, 1.2.156.10197.1.501, without parameters (GB/T 20518-2018, Sec. 5.2.2).
 	private static readonly (SignatureAlgorithm Algorithm, AlgorithmIdentifier Identifier)[] SignatureAlgorithms =
 	[
@@ -64,7 +67,8 @@ public sealed class AlgorithmIdentifier
 	/// </summary>
 	/// <remarks>
 	/// ECDSA, Ed25519, Ed448, ML-DSA and SM2-with-SM3 identifiers have no parameters (RFC 5758, Sec. 3.2; RFC 8410, Sec. 6; RFC 9881; GB/T 20518-2018, Sec. 5.2.2), and RSASSA-PKCS1-v1_5 identifiers have NULL parameters (RFC 4055, Sec. 5).
-	/// An RSASSA-PSS identifier is id-RSASSA-PSS with RSASSA-PSS-params (RFC 4055, Sec. 3.1) that name the hash, MGF1 with the hash, and a saltLength as long as the hash, and omit the default trailer field; the hash AlgorithmIdentifiers have NULL parameters, as RFC 4055, Sec. 2.1, defines them.
+	/// An RSASSA-PSS identifier is id-RSASSA-PSS with RSASSA-PSS-params (RFC 4055, Sec. 3.1) that name the hash, MGF1 with the hash, and a saltLength as long as the hash, and omit the default trailer field;
+	/// the hash AlgorithmIdentifiers have NULL parameters, as RFC 4055, Sec. 2.1, defines them.
 	/// </remarks>
 	/// <param name="algorithm">The signature algorithm: one of <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />, <see cref="SignatureAlgorithm.EcdsaSha256" />, <see cref="SignatureAlgorithm.EcdsaSha384" />, <see cref="SignatureAlgorithm.EcdsaSha512" />, <see cref="SignatureAlgorithm.Ed25519" />, <see cref="SignatureAlgorithm.Ed448" />, <see cref="SignatureAlgorithm.MLDsa44" />, <see cref="SignatureAlgorithm.MLDsa65" />, <see cref="SignatureAlgorithm.MLDsa87" /> or <see cref="SignatureAlgorithm.SM2SM3" />.</param>
 	/// <returns>The identifier.</returns>
@@ -93,7 +97,8 @@ public sealed class AlgorithmIdentifier
 	/// </para>
 	/// <para>
 	/// An id-RSASSA-PSS identifier matches with DER-encoded RSASSA-PSS-params (RFC 4055, Sec. 3.1) that name SHA-256, SHA-384 or SHA-512, MGF1 with the same hash, a saltLength as long as the hash and the trailer field 1, the only combinations that <see cref="SignatureAlgorithm" /> defines.
-	/// As RFC 4055 requires, each hash AlgorithmIdentifier may have NULL or absent parameters (Sec. 2.1), and the trailer field may be present as well as absent (Sec. 3.1); identifiers without parameters, which name no hash, do not match.
+	/// As RFC 4055 requires, each hash AlgorithmIdentifier may have NULL or absent parameters (Sec. 2.1), and the trailer field may be present as well as absent (Sec. 3.1);
+	/// identifiers without parameters, which name no hash, do not match.
 	/// </para>
 	/// </remarks>
 	/// <param name="algorithm">When this method returns <see langword="true" />, the signature algorithm.</param>

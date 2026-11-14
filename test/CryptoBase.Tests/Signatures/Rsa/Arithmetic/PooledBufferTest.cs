@@ -7,7 +7,9 @@ using static CryptoBase.Tests.Signatures.Rsa.Arithmetic.RsaArithmeticTestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// CryptoBuffer rents from the shared pools, whose arrays may hold anything that other code left in them. With every pooled array filled with ones before each operation, a result that relies on zeroed storage comes out wrong. The test runs alone, so that no other test receives those arrays meanwhile.
+// CryptoBuffer rents from the shared pools, whose arrays may hold anything that other code left in them.
+// With every pooled array filled with ones before each operation, a result that relies on zeroed storage comes out wrong.
+// The test runs alone, so that no other test receives those arrays meanwhile.
 [NotInParallel]
 public class PooledBufferTest
 {

@@ -29,7 +29,8 @@ internal static class MLDsaConstants
 
 	internal const int Gamma2Large = (Q - 1) / 32;
 
-	// ζ^BitRev8(k) · R mod q for ζ = 1753, centered on zero; entry 0 is unused. NTT (Algorithm 41) takes them from entry 1 up, NTT⁻¹ (Algorithm 42) negated from entry 255 down.
+	// ζ^BitRev8(k) · R mod q for ζ = 1753, centered on zero; entry 0 is unused.
+	// NTT (Algorithm 41) takes them from entry 1 up, NTT⁻¹ (Algorithm 42) negated from entry 255 down.
 	internal static ReadOnlySpan<int> Zetas =>
 	[
 		0, 25847, -2608894, -518909, 237124, -777960, -876248, 466468, 1826347, 2353451, -359251, -2091905, 3119733, -2884855, 3111497, 2680103,

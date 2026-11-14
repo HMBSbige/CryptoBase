@@ -19,7 +19,10 @@ internal enum RevocationStatus
 	Invalid,
 }
 
-// The result of RevocationChecker. Reason and RevocationTime are set for Revoked, Reason being Unspecified if the source gives none; CoveredReasons is the interim_reasons_mask of RFC 5280, Sec. 6.3.3, for a CRL, which is set only once the signature has been verified, as it is empty for a CRL that goes no further; NextUpdate is the nextUpdate of a response that the checker accepted.
+// The result of RevocationChecker.
+// Reason and RevocationTime are set for Revoked, Reason being Unspecified if the source gives none;
+// CoveredReasons is the interim_reasons_mask of RFC 5280, Sec. 6.3.3, for a CRL, which is set only once the signature has been verified, as it is empty for a CRL that goes no further;
+// NextUpdate is the nextUpdate of a response that the checker accepted.
 internal readonly record struct RevocationResult(RevocationStatus Status, string? Detail = null)
 {
 	public X509RevocationReason? Reason { get; init; }
@@ -34,7 +37,8 @@ internal readonly record struct RevocationResult(RevocationStatus Status, string
 	public bool IsConclusive => Status is RevocationStatus.Good or RevocationStatus.Revoked;
 }
 
-// Decides what a CRL or an OCSP response says about a certificate whose issuer is known, without retrieving anything. Each call is about one source; combining sources is the caller's.
+// Decides what a CRL or an OCSP response says about a certificate whose issuer is known, without retrieving anything.
+// Each call is about one source; combining sources is the caller's.
 internal static class RevocationChecker
 {
 	// The clock difference that an OCSP validity interval tolerates by default (RFC 9919, Sec. 5).
@@ -56,11 +60,13 @@ internal static class RevocationChecker
 	private static readonly Asn1Tag CrlNumberTag = new(TagClass.ContextSpecific, 1, true);
 	private static readonly Asn1Tag CrlTimeTag = new(TagClass.ContextSpecific, 2, true);
 
-	// Checks a certificate against one CRL at a time (RFC 5280, Sec. 6.3.3), for a complete CRL of the certificate's issuer. issuer is a certificate of the CRL's issuer whose validity the caller established, and issuerKey is its key; the caller keeps ownership of the key.
+	// Checks a certificate against one CRL at a time (RFC 5280, Sec. 6.3.3), for a complete CRL of the certificate's issuer.
+	// issuer is a certificate of the CRL's issuer whose validity the caller established, and issuerKey is its key; the caller keeps ownership of the key.
 	// Delta and indirect CRLs are refused as NotApplicable, never as Good: a delta CRL lists only changes (Sec. 5.2.4), and an indirect CRL attributes its entries to issuers that the checker does not track (Sec. 5.3.3).
 	public static RevocationResult CheckCrl(CertificateRevocationList crl, Certificate certificate, Certificate issuer, ISignatureKey issuerKey, DateTimeOffset time)
 	{
-		// Sec. 6.3.3 (b)(1). The names are compared byte for byte, as Sec. 5.2.5 and the path search compare them; a name in another encoding is out of scope, which never reports a certificate as good.
+		// Sec. 6.3.3 (b)(1).
+		// The names are compared byte for byte, as Sec. 5.2.5 and the path search compare them; a name in another encoding is out of scope, which never reports a certificate as good.
 		if (!crl.Issuer.Span.SequenceEqual(certificate.Issuer.Span))
 		{
 			return NotApplicable("The CRL's issuer is not the certificate's.");
@@ -74,7 +80,8 @@ internal static class RevocationChecker
 		}
 
 		// Sec. 5.2 and 5.3: a critical extension that is not understood forbids using the CRL for any certificate.
-		// The critical CRL extensions that the checker processes; nothing else may be critical (RFC 5280, Sec. 5.2). The CRL number, the freshest CRL and the authority information access extensions must not be critical (Secs. 5.2.3, 5.2.6 and 5.2.7), so a critical one is refused.
+		// The critical CRL extensions that the checker processes; nothing else may be critical (RFC 5280, Sec. 5.2).
+		// The CRL number, the freshest CRL and the authority information access extensions must not be critical (Secs. 5.2.3, 5.2.6 and 5.2.7), so a critical one is refused.
 		if (CheckCriticalExtensions(crl.Extensions, [DecodedExtensions.AuthorityKeyIdentifierOid, IssuerAlternativeNameOid, DecodedCrlExtensions.DeltaCrlIndicatorOid, DecodedCrlExtensions.IssuingDistributionPointOid], "The CRL") is { } criticalProblem)
 		{
 			return Invalid(criticalProblem);
@@ -85,7 +92,8 @@ internal static class RevocationChecker
 			return Invalid("A CRL entry has a critical extension that the checker does not process.");
 		}
 
-		// Sec. 5.2.3: a conforming CRL has a CRL number, and so must every version 2 CRL. A version 1 CRL has no extensions at all, and Sec. 5 requires applications to process it.
+		// Sec. 5.2.3: a conforming CRL has a CRL number, and so must every version 2 CRL.
+		// A version 1 CRL has no extensions at all, and Sec. 5 requires applications to process it.
 		if (crl.Version is 2 && extensions.CrlNumber.Value is null)
 		{
 			return Invalid("The CRL has no CRL number extension.");
@@ -181,7 +189,8 @@ internal static class RevocationChecker
 		return new RevocationResult(RevocationStatus.Good) { CoveredReasons = coveredReasons };
 	}
 
-	// Checks a certificate against an OCSP response (RFC 6960, Sec. 3.2 and 4.2.2.2). issuer is the certificate's issuer; importPublicKey is the importer of TrustAnchorCertificateValidator.
+	// Checks a certificate against an OCSP response (RFC 6960, Sec. 3.2 and 4.2.2.2).
+	// issuer is the certificate's issuer; importPublicKey is the importer of TrustAnchorCertificateValidator.
 	// The response's certificates are not trusted by themselves: a delegated responder must be issued directly by issuer, as Sec. 4.2.2.2 requires.
 	public static RevocationResult CheckOcsp(OcspResponse response, Certificate certificate, Certificate issuer, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize = 2048)
 	{
@@ -258,7 +267,8 @@ internal static class RevocationChecker
 		};
 	}
 
-	// The problem with the first critical extension that the checker cannot process, for the source that subject names: one that it does not understand, or one whose value it cannot take as meant. A noncritical one is ignored, as it could be if it were not understood.
+	// The problem with the first critical extension that the checker cannot process, for the source that subject names: one that it does not understand, or one whose value it cannot take as meant.
+	// A noncritical one is ignored, as it could be if it were not understood.
 	private static string? CheckCriticalExtensions(IReadOnlyList<CertificateExtension> extensions, ReadOnlySpan<string> understood, string subject)
 	{
 		for (int i = 0; i < extensions.Count; ++i)
@@ -284,7 +294,8 @@ internal static class RevocationChecker
 		return null;
 	}
 
-	// What keeps the checker from taking the value of an extension as meant, for those that it understands without reading them elsewhere: that the value, read whole, does not decode as its type, or that it has a part that the checker does not process. The checker reads the others where it processes them, and checks that they decode there.
+	// What keeps the checker from taking the value of an extension as meant, for those that it understands without reading them elsewhere: that the value, read whole, does not decode as its type, or that it has a part that the checker does not process.
+	// The checker reads the others where it processes them, and checks that they decode there.
 	private static string? CheckValue(CertificateExtension extension)
 	{
 		DerReader reader = new(extension.Value);
@@ -294,7 +305,8 @@ internal static class RevocationChecker
 			switch (extension.Oid)
 			{
 				// RFC 5280, Sec. 5.2.2: GeneralNames, which should not be critical.
-				// GeneralName reads the ORAddress of an x400Address and the DirectoryStrings of an ediPartyName only as DER elements, and nothing interprets these forms, so a name of either is refused whatever its value, as name constraints on them are. The value of an otherName is ANY, which a DER element is.
+				// GeneralName reads the ORAddress of an x400Address and the DirectoryStrings of an ediPartyName only as DER elements, and nothing interprets these forms, so a name of either is refused whatever its value, as name constraints on them are.
+				// The value of an otherName is ANY, which a DER element is.
 				case IssuerAlternativeNameOid:
 				{
 					GeneralName[] names = GeneralName.ReadGeneralNames(ref reader);
@@ -371,7 +383,8 @@ internal static class RevocationChecker
 		crlId.ThrowIfNotEmpty();
 	}
 
-	// RFC 5280, Sec. 6.3.3 (b)(2) (ii) to (iv), and the indirect CRLs that the checker does not support. A certificate without basic constraints, as one of version 1 or 2, counts as an end entity certificate, which it is: the path search rejects an intermediate certificate that does not assert cA.
+	// RFC 5280, Sec. 6.3.3 (b)(2) (ii) to (iv), and the indirect CRLs that the checker does not support.
+	// A certificate without basic constraints, as one of version 1 or 2, counts as an end entity certificate, which it is: the path search rejects an intermediate certificate that does not assert cA.
 	private static string? GetScopeProblem(IssuingDistributionPoint? point, Certificate certificate)
 	{
 		if (point is null)
@@ -399,7 +412,8 @@ internal static class RevocationChecker
 		return point.OnlyContainsCACertificates && !certificateAuthority ? "The CRL covers only CA certificates." : null;
 	}
 
-	// The interim_reasons_mask of Sec. 6.3.3 (d): the reasons of the distribution points of the certificate whose names match the CRL's, and of the distribution point that the last paragraph of Sec. 6.3.3 assumes for a CRL not specified in one, named by the certificate's issuer. A distribution point with a cRLIssuer is for an indirect CRL, which is not supported.
+	// The interim_reasons_mask of Sec. 6.3.3 (d): the reasons of the distribution points of the certificate whose names match the CRL's, and of the distribution point that the last paragraph of Sec. 6.3.3 assumes for a CRL not specified in one, named by the certificate's issuer.
+	// A distribution point with a cRLIssuer is for an indirect CRL, which is not supported.
 	private static CrlReasonFlags GetCoveredReasons(CertificateRevocationList crl, IssuingDistributionPoint? point, Certificate certificate, IReadOnlyList<CrlDistributionPoint>? distributionPoints)
 	{
 		CrlReasonFlags onlySomeReasons = point?.OnlySomeReasons ?? AllReasons;
@@ -477,7 +491,9 @@ internal static class RevocationChecker
 		return false;
 	}
 
-	// The response for the certificate that stands, or null with the problem that makes the response invalid. A response that is not current tells nothing, so the most severe of those that are current stands, and of those as severe, the one with the earliest nextUpdate; one of them with a critical extension that the checker cannot process makes the response invalid, so that the result does not depend on their order.
+	// The response for the certificate that stands, or null with the problem that makes the response invalid.
+	// A response that is not current tells nothing, so the most severe of those that are current stands, and of those as severe, the one with the earliest nextUpdate;
+	// one of them with a critical extension that the checker cannot process makes the response invalid, so that the result does not depend on their order.
 	// Without a current one, the problem of the most severe stands, that of its extensions before that of its times.
 	private static OcspSingleResponse? FindSingleResponse(OcspResponse.Basic response, Certificate certificate, Certificate issuer, DateTimeOffset time, out string? problem)
 	{
@@ -547,7 +563,8 @@ internal static class RevocationChecker
 		return CheckCriticalExtensions(single.Extensions, [OcspCrlReferenceOid, OcspArchiveCutoffOid, CertificateRevocationList.ReasonCodeOid, CertificateRevocationList.InvalidityDateOid], "The response for the certificate");
 	}
 
-	// Sec. 4.2.2.1, and RFC 9919, Sec. 5: thisUpdate at or before now and nextUpdate at or after now, within the skew. RFC 9919, Sec. 5, requires a client to reject a response without nextUpdate, as nothing else bounds its age.
+	// Sec. 4.2.2.1, and RFC 9919, Sec. 5: thisUpdate at or before now and nextUpdate at or after now, within the skew.
+	// RFC 9919, Sec. 5, requires a client to reject a response without nextUpdate, as nothing else bounds its age.
 	// The skew is compared with the differences, which a TimeSpan always holds, as moving a time by it could go beyond the range of DateTimeOffset.
 	private static string? CheckTimes(OcspSingleResponse single, DateTimeOffset time)
 	{
@@ -631,7 +648,8 @@ internal static class RevocationChecker
 		return problem ?? "The response's responder is neither the certificate's issuer nor a certificate in the response.";
 	}
 
-	// The responder's certificate is checked against its issuer alone, as Sec. 4.2.2.2 asks, not on a path of its own, so no name constraints or policies, the issuer's or those above it, apply to it. Its names give it no authority: it answers only for the certificates of that issuer, which could sign the response itself.
+	// The responder's certificate is checked against its issuer alone, as Sec. 4.2.2.2 asks, not on a path of its own, so no name constraints or policies, the issuer's or those above it, apply to it.
+	// Its names give it no authority: it answers only for the certificates of that issuer, which could sign the response itself.
 	private static string? CheckDelegatedResponder(OcspResponse.Basic response, Certificate candidate, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
 	{
 		if (!candidate.Issuer.Span.SequenceEqual(issuer.Subject.Span))

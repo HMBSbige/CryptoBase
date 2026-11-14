@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// Each operation tries the vector kernels before the scalar one, which supports every platform. Curve25519Avx512 only adds a second chain where the additions fall into two, so the ladder and the double-base product stay on Curve25519Avx2. Curve25519Sse41 serves x86 without AVX2 where LimbArithmetic.IsMultiplyAccelerated is false and the scalar products fall back to software; where it is true the scalar kernel serves.
+// Each operation tries the vector kernels before the scalar one, which supports every platform.
+// Curve25519Avx512 only adds a second chain where the additions fall into two, so the ladder and the double-base product stay on Curve25519Avx2.
+// Curve25519Sse41 serves x86 without AVX2 where LimbArithmetic.IsMultiplyAccelerated is false and the scalar products fall back to software; where it is true the scalar kernel serves.
 internal readonly struct Curve25519KernelDispatch : ICurve25519Kernel
 {
 	public static bool IsSupported => true;

@@ -2,8 +2,11 @@ using CryptoBase.Signatures.Rsa.Arithmetic;
 
 namespace CryptoBase.Signatures.Rsa;
 
-// An RSA private key and RSASP1 (RFC 8017, Sec. 5.2.1). Calls to Apply may be concurrent; Dispose erases the key and never runs concurrently with them.
-// Apply works with the CRT (RFC 8017, Sec. 5.2.1, step 2.b) on a blinded input: m·r^e for a fresh random r, whose inverse unblinds the result, then checks it with RSAVP1. Whether the exponentiations modulo p and q run as a pair (MontgomeryKernelDispatch.CreatePair) depends only on the limb counts of p and q. Nothing that the secrets reach branches on them or indexes by them; only the limb counts of n, p and q set the sizes.
+// An RSA private key and RSASP1 (RFC 8017, Sec. 5.2.1).
+// Calls to Apply may be concurrent; Dispose erases the key and never runs concurrently with them.
+// Apply works with the CRT (RFC 8017, Sec. 5.2.1, step 2.b) on a blinded input: m·r^e for a fresh random r, whose inverse unblinds the result, then checks it with RSAVP1.
+// Whether the exponentiations modulo p and q run as a pair (MontgomeryKernelDispatch.CreatePair) depends only on the limb counts of p and q.
+// Nothing that the secrets reach branches on them or indexes by them; only the limb counts of n, p and q set the sizes.
 internal sealed class RsaPrivateOperation : IDisposable
 {
 	private const int ComponentCount = 6;
@@ -58,7 +61,8 @@ internal sealed class RsaPrivateOperation : IDisposable
 		int length = publicKey.ModulusLength;
 		ulong e = publicKey.Exponent;
 
-		// The lengths of the components are public, as their encodings show them; only their values are secret. p·q has p.Length + q.Length bytes or one fewer, and the others are below n, p, q and p.
+		// The lengths of the components are public, as their encodings show them; only their values are secret.
+		// p·q has p.Length + q.Length bytes or one fewer, and the others are below n, p, q and p.
 		ReadOnlySpan<byte> p = RsaPublicOperation.TrimLeadingZeros(prime1);
 		ReadOnlySpan<byte> q = RsaPublicOperation.TrimLeadingZeros(prime2);
 		ReadOnlySpan<byte> d = RsaPublicOperation.TrimLeadingZeros(privateExponent);
@@ -143,7 +147,9 @@ internal sealed class RsaPrivateOperation : IDisposable
 	}
 
 	// RSASP1 with CRT and blinding, then checked with RSAVP1: input and output are PublicKey.ModulusLength bytes, big-endian; same span allowed, no partial overlap.
-	// ArgumentException if input >= n. CryptographicException if the check fails. On any failure output remains unchanged.
+	// ArgumentException if input >= n.
+	// CryptographicException if the check fails.
+	// On any failure output remains unchanged.
 	internal void Apply(ReadOnlySpan<byte> input, Span<byte> output)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -226,7 +232,8 @@ internal sealed class RsaPrivateOperation : IDisposable
 		q.FromMontgomery(modQ, sq);
 		Recombine(sp, sq, value, term, coefficient, h, product);
 
-		// Unblinding: R²/(r·R⁻¹) = r⁻¹·R is r⁻¹ in Montgomery form, and multiplying by it leaves plain form. R²/r comes from its residues modulo p and q, recombined as the signature is, as inversions of half the length take less than one of the whole.
+		// Unblinding: R²/(r·R⁻¹) = r⁻¹·R is r⁻¹ in Montgomery form, and multiplying by it leaves plain form.
+		// R²/r comes from its residues modulo p and q, recombined as the signature is, as inversions of half the length take less than one of the whole.
 		n.WriteRSquared(inverse);
 		Divide(p, inverse, divisorP, unblindingP, term, dividendP);
 		Divide(q, inverse, divisorQ, unblindingQ, modQ, dividendQ);
@@ -247,7 +254,8 @@ internal sealed class RsaPrivateOperation : IDisposable
 		signature.CopyTo(output);
 	}
 
-	// result = the value modulo n whose residues are element/R mod p, for an element of the context of p, and modQ mod q, by Garner's formula of RFC 8017, Sec. 5.2.1, step 2.b: h = (s1 − s2)·qInv mod p, s = s2 + q·h. element and the rest are scratch.
+	// result = the value modulo n whose residues are element/R mod p, for an element of the context of p, and modQ mod q, by Garner's formula of RFC 8017, Sec. 5.2.1, step 2.b: h = (s1 − s2)·qInv mod p, s = s2 + q·h.
+	// element and the rest are scratch.
 	private void Recombine(Span<ulong> element, ReadOnlySpan<ulong> modQ, Span<ulong> result, Span<ulong> term, Span<ulong> coefficient, Span<ulong> h, Span<ulong> product)
 	{
 		MontgomeryContext p = _prime1;
@@ -263,7 +271,8 @@ internal sealed class RsaPrivateOperation : IDisposable
 		_ = Limbs.AddInPlace(result, modQ);
 	}
 
-	// A uniform random r in [1, n) with its residues r·R mod p and mod q, which the unblinding divides by: an r that happens to be a multiple of p or of q has no inverse and is drawn again, which a key of two large primes makes negligibly likely. The residues are checked for zero with masks; elementP and elementQ are scratch.
+	// A uniform random r in [1, n) with its residues r·R mod p and mod q, which the unblinding divides by: an r that happens to be a multiple of p or of q has no inverse and is drawn again, which a key of two large primes makes negligibly likely.
+	// The residues are checked for zero with masks; elementP and elementQ are scratch.
 	// A method of its own, as a loop in Apply would have the JIT optimize Apply in full at once, without the tiers and their profile.
 	private void DrawBlinding(Span<ulong> random, Span<ulong> residueP, Span<ulong> residueQ, Span<ulong> elementP, Span<ulong> elementQ)
 	{
@@ -276,14 +285,17 @@ internal sealed class RsaPrivateOperation : IDisposable
 		while ((Limbs.IsZero(residueP) | Limbs.IsZero(residueQ)) is not 0);
 	}
 
-	// result = value·R modulo the modulus of context, below it, for a value of any length below 2^(64·n.LimbCount): the value taken into Montgomery form, then reduced. element is scratch.
+	// result = value·R modulo the modulus of context, below it, for a value of any length below 2^(64·n.LimbCount): the value taken into Montgomery form, then reduced.
+	// element is scratch.
 	private static void ToResidue(MontgomeryContext context, ReadOnlySpan<ulong> value, Span<ulong> result, Span<ulong> element)
 	{
 		context.ToMontgomery(value, element);
 		context.FromDigits(element, result);
 	}
 
-	// result = dividend/divisor modulo the modulus of context, for a dividend below 2^(64·n.LimbCount) and the residue of the divisor that ToResidue gives, which must not be zero: the factors R of the two residues cancel. A modulus that is not prime may still leave the divisor without an inverse, which gives a wrong result that the check after signing rejects. element and dividendResidue are scratch.
+	// result = dividend/divisor modulo the modulus of context, for a dividend below 2^(64·n.LimbCount) and the residue of the divisor that ToResidue gives, which must not be zero: the factors R of the two residues cancel.
+	// A modulus that is not prime may still leave the divisor without an inverse, which gives a wrong result that the check after signing rejects.
+	// element and dividendResidue are scratch.
 	private static void Divide(MontgomeryContext context, ReadOnlySpan<ulong> dividend, ReadOnlySpan<ulong> divisorResidue, Span<ulong> result, Span<ulong> element, Span<ulong> dividendResidue)
 	{
 		ToResidue(context, dividend, dividendResidue, element);
@@ -343,7 +355,11 @@ internal sealed class RsaPrivateOperation : IDisposable
 		};
 	}
 
-	// All ones if the key holds: p and q odd, above 1, with p·q = n; 0 < dP < p − 1 with e·dP ≡ 1 (mod p − 1), and likewise dQ; 0 < qInv < p with q·qInv ≡ 1 (mod p); and 0 < d < n with e·d ≡ 1 modulo p − 1 and q − 1. Every check runs, whatever the others give, and none branches on a value.
+	// All ones if the key holds: p and q odd, above 1, with p·q = n;
+	// 0 < dP < p − 1 with e·dP ≡ 1 (mod p − 1), and likewise dQ;
+	// 0 < qInv < p with q·qInv ≡ 1 (mod p);
+	// and 0 < d < n with e·d ≡ 1 modulo p − 1 and q − 1.
+	// Every check runs, whatever the others give, and none branches on a value.
 	private static ulong IsValid(ReadOnlySpan<ulong> n, ulong e, ReadOnlySpan<ulong> d, ReadOnlySpan<ulong> p, ReadOnlySpan<ulong> q, ReadOnlySpan<ulong> dP, ReadOnlySpan<ulong> dQ, ReadOnlySpan<ulong> qInv)
 	{
 		int nLimbs = n.Length;

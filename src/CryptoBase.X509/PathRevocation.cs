@@ -26,7 +26,9 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		return _rejectedEdges?.Contains(certificate.PairWith(issuer)) is true;
 	}
 
-	// The trust anchor is trusted as it is. Returns null if nothing keeps the path from being valid, the problem of the first revoked certificate, or that of the first whose status is unknown if that is an error. The edge of a certificate with a problem is rejected, so that the search does not follow it again.
+	// The trust anchor is trusted as it is.
+	// Returns null if nothing keeps the path from being valid, the problem of the first revoked certificate, or that of the first whose status is unknown if that is an error.
+	// The edge of a certificate with a problem is rejected, so that the search does not follow it again.
 	public async ValueTask<PathProblem?> CheckAsync(PathNode[] path)
 	{
 		int count = validator.RevocationFlag is X509RevocationFlag.EndCertificateOnly ? 1 : path.Length - 1;
@@ -100,7 +102,8 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		return result;
 	}
 
-	// A source that says Good or Revoked decides; otherwise the next is asked. CRLs for some reasons alone combine (RFC 5280, Sec. 6.3.3).
+	// A source that says Good or Revoked decides; otherwise the next is asked.
+	// CRLs for some reasons alone combine (RFC 5280, Sec. 6.3.3).
 	private async ValueTask<RevocationResult> FindRevocationAsync(Certificate certificate, PathNode issuer)
 	{
 		// RFC 9608, Sec. 4: with the noRevAvail or ocsp-nocheck extension, step (a)(3) of RFC 5280, Sec. 6.1.3, is skipped, so no source is asked, not even the CRLs that the caller gave.
@@ -161,7 +164,9 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		return new RevocationResult(RevocationStatus.Unknown, detail);
 	}
 
-	// RFC 9919, Sec. 7.1, has a client cache every response that it validated. Here only good and revoked end the responders and are cached, as another responder may know a certificate that one signs as unknown. Whichever request it answers, a response is kept under the key of the SHA-256 request, the only one looked up, so that the next validation does not first send a request that fails.
+	// RFC 9919, Sec. 7.1, has a client cache every response that it validated.
+	// Here only good and revoked end the responders and are cached, as another responder may know a certificate that one signs as unknown.
+	// Whichever request it answers, a response is kept under the key of the SHA-256 request, the only one looked up, so that the next validation does not first send a request that fails.
 	private async ValueTask<RevocationResult> QueryOcspAsync(Certificate certificate, Certificate issuer)
 	{
 		IReadOnlyList<string> locations = certificate.DecodedExtensions.AuthorityInformationAccess.Value?.OcspUris ?? [];
@@ -201,7 +206,8 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 
 			(RevocationResult Result, OcspResponse? Response)? answer = await AskOcspAsync(responder, request, certificate, issuer).ConfigureAwait(false);
 
-			// RFC 9919, Sec. 3.1.1, still allows for SHA-1 in older implementations, and a responder may refuse a SHA-256 CertID or not know it. One that could not be reached is not asked again.
+			// RFC 9919, Sec. 3.1.1, still allows for SHA-1 in older implementations, and a responder may refuse a SHA-256 CertID or not know it.
+			// One that could not be reached is not asked again.
 			if (answer is { Result.IsConclusive: false } inconclusive)
 			{
 				detail ??= inconclusive.Result.Detail;

@@ -4,7 +4,8 @@ using System.Text.Json.Serialization;
 
 namespace CryptoBase.Tests.Hpke;
 
-// A vector of Vectors/hpke-test-vectors.json, whose README gives the sources. A vector without kdf_id has only KEM values, and one without ikmR has only a key schedule.
+// A vector of Vectors/hpke-test-vectors.json, whose README gives the sources.
+// A vector without kdf_id has only KEM values, and one without ikmR has only a key schedule.
 public sealed record HpkeVector
 {
 	public required string Source { get; init; }

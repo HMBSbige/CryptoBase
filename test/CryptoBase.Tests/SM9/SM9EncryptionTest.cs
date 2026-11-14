@@ -262,7 +262,8 @@ public class SM9EncryptionTest
 		}
 	}
 
-	// For any hid, the keys are those of GM/T 0044.4, Sec. 5.3, and import with that hid, and a sender of that hid encrypts, as C1 ‖ C3 ‖ C2 and in DER, and encapsulates to them; a sender of another hid gives ciphertexts that do not decrypt and encapsulations of other keys, and the import with another hid throws.
+	// For any hid, the keys are those of GM/T 0044.4, Sec. 5.3, and import with that hid, and a sender of that hid encrypts, as C1 ‖ C3 ‖ C2 and in DER, and encapsulates to them;
+	// a sender of another hid gives ciphertexts that do not decrypt and encapsulations of other keys, and the import with another hid throws.
 	[Test]
 	public async Task OtherHidsEncryptAndDecrypt()
 	{

@@ -58,7 +58,8 @@ public sealed class CrlDistributionPoint
 		return DerReader.ReadSoleSequenceOf(value, Read).AsReadOnly();
 	}
 
-	// ReasonFlags ::= BIT STRING { unused (0), keyCompromise (1), …, aACompromise (8) }, under tag. Only the nine defined bits may be set; as with the key usage extension, trailing zero bits, which DER drops, are accepted.
+	// ReasonFlags ::= BIT STRING { unused (0), keyCompromise (1), …, aACompromise (8) }, under tag.
+	// Only the nine defined bits may be set; as with the key usage extension, trailing zero bits, which DER drops, are accepted.
 	internal static CrlReasonFlags ReadReasons(ref DerReader reader, Asn1Tag tag)
 	{
 		return (CrlReasonFlags)DerReader.ReadNineNamedBits(reader.ReadBitString(tag, wholeBytes: false).Span);

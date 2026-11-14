@@ -75,7 +75,8 @@ public class SM9KeyExchangeTest
 		}
 	}
 
-	// GM/T 0044.3-2016, Sec. 6.1, A5 and B4: the ephemeral key of the peer must be a point of G1, here uncompressed. The derivation then fails, writes nothing and may be tried again.
+	// GM/T 0044.3-2016, Sec. 6.1, A5 and B4: the ephemeral key of the peer must be a point of G1, here uncompressed.
+	// The derivation then fails, writes nothing and may be tried again.
 	[Test]
 	public async Task InvalidEphemeralKeysFail()
 	{
@@ -210,7 +211,8 @@ public class SM9KeyExchangeTest
 		}
 	}
 
-	// The KGC may choose any hid for the key exchange: keys of one hid agree, with and without confirmation, and import only with it; with keys of two hids, each party takes the user public key of its peer under its own hid, so the keys and the confirmations differ.
+	// The KGC may choose any hid for the key exchange: keys of one hid agree, with and without confirmation, and import only with it;
+	// with keys of two hids, each party takes the user public key of its peer under its own hid, so the keys and the confirmations differ.
 	[Test]
 	public async Task OtherHidsAgree()
 	{

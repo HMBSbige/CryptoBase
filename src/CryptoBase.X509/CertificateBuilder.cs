@@ -39,7 +39,8 @@ public sealed class CertificateBuilder
 	/// Gets or sets the serial number as an unsigned big-endian integer, or an empty value for a random one of 16 bytes for each certificate.
 	/// </summary>
 	/// <remarks>
-	/// The builder holds a copy of the value set. The INTEGER of a certificate holds it without leading zero bytes, and with the zero byte first that its sign may need, so a positive <see cref="Certificate.SerialNumber" /> sets the same serial number.
+	/// The builder holds a copy of the value set.
+	/// The INTEGER of a certificate holds it without leading zero bytes, and with the zero byte first that its sign may need, so a positive <see cref="Certificate.SerialNumber" /> sets the same serial number.
 	/// </remarks>
 	/// <exception cref="ArgumentException">The value set is zero or has more than 159 bits, which do not fit the 20 bytes of an INTEGER that RFC 5280, Sec. 4.1.2.2, allows.</exception>
 	public ReadOnlyMemory<byte> SerialNumber
@@ -96,7 +97,8 @@ public sealed class CertificateBuilder
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The authority key identifier and the subject key identifier extensions (RFC 5280, Sec. 4.2.1.1 and 4.2.1.2) are added, non-critical and in that order after <see cref="Extensions" />, unless <see cref="Extensions" /> holds one with the same identifier. The keyIdentifier of the former is the subject key identifier of <paramref name="issuer" /> and, if it has none, the SHA-1 hash of its subjectPublicKey, and the latter is the SHA-1 hash of the subjectPublicKey of <paramref name="subjectPublicKeyInfo" />, which is method (1) of Sec. 4.2.1.2.
+	/// The authority key identifier and the subject key identifier extensions (RFC 5280, Sec. 4.2.1.1 and 4.2.1.2) are added, non-critical and in that order after <see cref="Extensions" />, unless <see cref="Extensions" /> holds one with the same identifier.
+	/// The keyIdentifier of the former is the subject key identifier of <paramref name="issuer" /> and, if it has none, the SHA-1 hash of its subjectPublicKey, and the latter is the SHA-1 hash of the subjectPublicKey of <paramref name="subjectPublicKeyInfo" />, which is method (1) of Sec. 4.2.1.2.
 	/// </para>
 	/// <para>
 	/// The method does not read certification requests: the caller verifies one with <see cref="CertificationRequest.VerifySignature" /> and adds to <see cref="Extensions" /> what it accepts of <see cref="CertificationRequest.RequestedExtensions" />.

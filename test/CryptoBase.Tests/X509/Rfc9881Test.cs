@@ -8,7 +8,8 @@ using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 
 namespace CryptoBase.Tests.X509;
 
-// The examples of RFC 9881, Appendix C, for each parameter set: the private key in the seed form (C.1), its public key (C.2) and the self-signed certificate for it (C.3). OpenSSL 3.6.5 verifies each certificate and derives the public key from the private key.
+// The examples of RFC 9881, Appendix C, for each parameter set: the private key in the seed form (C.1), its public key (C.2) and the self-signed certificate for it (C.3).
+// OpenSSL 3.6.5 verifies each certificate and derives the public key from the private key.
 public class Rfc9881Test
 {
 	public static IEnumerable<(string File, Type Type, SignatureAlgorithm Algorithm)> Examples()

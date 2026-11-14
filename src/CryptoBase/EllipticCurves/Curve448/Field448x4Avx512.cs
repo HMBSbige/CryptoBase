@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The limbs of Field448x4Avx2 two to a 512-bit vector: vector k holds limb k of lanes A, B, C, D in its low half and limb k + 8 of the same lanes in its high half, the halves x_lo,k and x_hi,k of x = x_lo + φ·x_hi, so that each lane of a half is a lane of Field448x4Avx2 and the four-lane formulas run on both halves at once. The members take and give the bounds of Field448x4Avx2.
+// The limbs of Field448x4Avx2 two to a 512-bit vector: vector k holds limb k of lanes A, B, C, D in its low half and limb k + 8 of the same lanes in its high half, the halves x_lo,k and x_hi,k of x = x_lo + φ·x_hi, so that each lane of a half is a lane of Field448x4Avx2 and the four-lane formulas run on both halves at once.
+// The members take and give the bounds of Field448x4Avx2.
 internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 {
 	internal Vector512<ulong> L0;
@@ -22,7 +23,9 @@ internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 
 	private const ulong SixteenA24 = 16 * 39081;
 
-	// The operands of Product in its scratch, in vectors: the left one at Left and the sums of its halves, paired, at Sums; the right one at Right + 7 to Right + 14, after φ times its vectors 1 to 7, and the sums of the halves of those fifteen, paired, at Pairs; a step keeps its products at Products.
+	// The operands of Product in its scratch, in vectors: the left one at Left and the sums of its halves, paired, at Sums;
+	// the right one at Right + 7 to Right + 14, after φ times its vectors 1 to 7, and the sums of the halves of those fifteen, paired, at Pairs;
+	// a step keeps its products at Products.
 	private const int Left = 0;
 	private const int Sums = 8;
 	private const int Right = 12;
@@ -232,7 +235,8 @@ internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 		return Avx512F.Shuffle4x128(even, odd, LowHalves) + Avx512F.Shuffle4x128(even, odd, HighHalves);
 	}
 
-	// The right operand y, after φ times its vectors 1 to 7, (y_hi, y_lo + y_hi), and the pairs of sums of the halves of the fifteen: vector q − 2 of Pairs holds sum_q and sum_(q−1), where sum_n is low_n + high_n of the right operand y_n of Field448Blocks.Product. g_k holds (sum_(k+8), sum_k), the sums of y_k and of φ·y_k.
+	// The right operand y, after φ times its vectors 1 to 7, (y_hi, y_lo + y_hi), and the pairs of sums of the halves of the fifteen: vector q − 2 of Pairs holds sum_q and sum_(q−1), where sum_n is low_n + high_n of the right operand y_n of Field448Blocks.Product.
+	// g_k holds (sum_(k+8), sum_k), the sums of y_k and of φ·y_k.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WriteRight(ref Vector512<ulong> operands, Vector512<ulong> y0, Vector512<ulong> y1, Vector512<ulong> y2, Vector512<ulong> y3, Vector512<ulong> y4, Vector512<ulong> y5, Vector512<ulong> y6, Vector512<ulong> y7)
 	{
@@ -292,7 +296,9 @@ internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 		return Vector512.Create(0, 0, 0, 0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
 	}
 
-	// The lane products of Field448Blocks.Product, both halves of a column in one vector: x_k holds (x_lo,k, x_hi,k) and y_n (low_n, high_n), so one product of the two gives P in the low half and Q in the high one, and one product of a vector of Sums and one of Pairs gives R for two values of k, one in each half. Column j of x_lo takes P + Q and column j of x_hi R − P, both in vector j, so the carries of the two halves run side by side; the low halves of pq and of r − pq, one shuffle, and the high halves of pq and of r, another, add up to (P + Q, R − P).
+	// The lane products of Field448Blocks.Product, both halves of a column in one vector: x_k holds (x_lo,k, x_hi,k) and y_n (low_n, high_n), so one product of the two gives P in the low half and Q in the high one, and one product of a vector of Sums and one of Pairs gives R for two values of k, one in each half.
+	// Column j of x_lo takes P + Q and column j of x_hi R − P, both in vector j, so the carries of the two halves run side by side;
+	// the low halves of pq and of r − pq, one shuffle, and the high halves of pq and of r, another, add up to (P + Q, R − P).
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void Product(ref Vector512<ulong> operands, ref Vector512<ulong> result)
 	{
@@ -340,7 +346,8 @@ internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 		Unsafe.Add(ref limbs, 1) += column >> Bits;
 	}
 
-	// The columns of lane D of the products times u, columns 0 to 7 in one vector and 8 to 15 in another, each limb of lane D in every lane by a load that broadcasts it from the products, which takes no shuffle; two rounds of carries in that form, then column k goes into lane D of limb k, below 2^28 + 2^8.
+	// The columns of lane D of the products times u, columns 0 to 7 in one vector and 8 to 15 in another, each limb of lane D in every lane by a load that broadcasts it from the products, which takes no shuffle;
+	// two rounds of carries in that form, then column k goes into lane D of limb k, below 2^28 + 2^8.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void MultiplyLaneD(ref Vector512<ulong> products, in Field448x4Avx512 multiplier, ref Field448x4Avx512 state)
 	{

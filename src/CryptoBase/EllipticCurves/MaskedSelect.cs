@@ -3,7 +3,8 @@ namespace CryptoBase.EllipticCurves;
 // Every limb of every entry is read, so neither the time nor the addresses depend on the index.
 internal static class MaskedSelect
 {
-	// result is zero if index ≥ count. Only hardware-accelerated vectors are used: the software fallback of the others may branch on the values.
+	// result is zero if index ≥ count.
+	// Only hardware-accelerated vectors are used: the software fallback of the others may branch on the values.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Lookup<T>(ref readonly T table, int count, uint index, out T result) where T : unmanaged
 	{
@@ -48,14 +49,16 @@ internal static class MaskedSelect
 		Lookup(in table, length, count, TVector.Create(index), ref result);
 	}
 
-	// accumulator with value where mask is set. The accumulators start at zero and at most one entry of a window matches, so an OR merges as well as a select: ARM64 takes the select, one instruction there, and x64 the AND and the OR, where the select takes three.
+	// accumulator with value where mask is set.
+	// The accumulators start at zero and at most one entry of a window matches, so an OR merges as well as a select: ARM64 takes the select, one instruction there, and x64 the AND and the OR, where the select takes three.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static Vector128<ulong> Merge(Vector128<ulong> accumulator, Vector128<ulong> value, Vector128<ulong> mask)
 	{
 		return AdvSimd.IsSupported ? Vector128.ConditionalSelect(mask, value, accumulator) : accumulator | value & mask;
 	}
 
-	// As Lookup for entries that interleave two values: the limbs at even indices come from entry first, and the others from entry second. Only vectors of an even number of limbs are used, as they line up with the pairs.
+	// As Lookup for entries that interleave two values: the limbs at even indices come from entry first, and the others from entry second.
+	// Only vectors of an even number of limbs are used, as they line up with the pairs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void LookupPair(ref readonly ulong table, int length, int count, uint first, uint second, ref ulong result)
 	{
@@ -75,7 +78,8 @@ internal static class MaskedSelect
 		}
 	}
 
-	// If an entry is not a whole number of vectors, the last block overlaps the one before it; both write the same values to the shared limbs. The even and the odd entries merge into accumulators of their own, which halves the chain of merges.
+	// If an entry is not a whole number of vectors, the last block overlaps the one before it; both write the same values to the shared limbs.
+	// The even and the odd entries merge into accumulators of their own, which halves the chain of merges.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Lookup<TVector>(ref readonly ulong table, int length, int count, TVector target, ref ulong result) where TVector : struct, ILimbVector<TVector>
 	{

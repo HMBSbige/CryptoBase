@@ -2,7 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.EllipticCurves;
 
-// The private key d is a plain value in [1, n − 1]. Keep a key in one writable location and do not copy it: a copy keeps d where Clear cannot reach it.
+// The private key d is a plain value in [1, n − 1].
+// Keep a key in one writable location and do not copy it: a copy keeps d where Clear cannot reach it.
 internal struct ECKey<TCurve, TField, TOrder>
 	where TCurve : struct, IECCurve
 	where TField : unmanaged, IECField<TField>

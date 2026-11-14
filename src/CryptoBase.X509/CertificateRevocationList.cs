@@ -9,7 +9,8 @@ namespace CryptoBase.X509;
 /// <remarks>
 /// <para>
 /// Decoding accepts only DER and checks the structure of RFC 5280, Sec. 5.1: a CRL with extensions or entry extensions must be version 2, an extension may appear only once in a list, and the serial numbers must be distinct.
-/// The reason code and invalidity date entry extensions must decode, and a reason must be one that RFC 5280, Sec. 5.3.1, defines. The CRL extensions decode on first use instead, so the methods that return them report a malformed one.
+/// The reason code and invalidity date entry extensions must decode, and a reason must be one that RFC 5280, Sec. 5.3.1, defines.
+/// The CRL extensions decode on first use instead, so the methods that return them report a malformed one.
 /// </para>
 /// <para>
 /// Decoding does not check the signature, whether the CRL is current, or whether it is complete.
@@ -29,7 +30,9 @@ public sealed class CertificateRevocationList
 	// The contents of revokedCertificates.
 	private readonly ReadOnlyMemory<byte> _entries;
 
-	// The index of _entries, by serial number. Each slot holds the hash of the number in its upper half and one more than the offset of the entry in its lower half, zero being free; a slot's position is the scaled hash, and collisions take the next free slot.
+	// The index of _entries, by serial number.
+	// Each slot holds the hash of the number in its upper half and one more than the offset of the entry in its lower half, zero being free;
+	// a slot's position is the scaled hash, and collisions take the next free slot.
 	private readonly ulong[] _slots;
 
 	private SignatureCheck? _lastSignatureCheck;
@@ -148,7 +151,8 @@ public sealed class CertificateRevocationList
 	// Whether an entry has a critical extension other than a reason code or an invalidity date, for which RFC 5280, Sec. 5.3, forbids using the CRL at all.
 	internal bool HasUnrecognizedCriticalEntryExtension { get; private set; }
 
-	// The extensions that decode on first use. Threads that race decode them alike, and all use the instance stored first.
+	// The extensions that decode on first use.
+	// Threads that race decode them alike, and all use the instance stored first.
 	internal DecodedCrlExtensions DecodedExtensions
 	{
 		get
@@ -203,7 +207,10 @@ public sealed class CertificateRevocationList
 	/// </summary>
 	/// <remarks>To tell an algorithm that the package does not support from a wrong signature, call <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" /> on <see cref="SignatureAlgorithm" />.</remarks>
 	/// <param name="issuerKey">The issuer's public key.</param>
-	/// <returns><see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="issuerKey" /> supports and the signature is valid with it; otherwise, <see langword="false" />.</returns>
+	/// <returns>
+	/// <see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="issuerKey" /> supports and the signature is valid with it;
+	/// otherwise, <see langword="false" />.
+	/// </returns>
 	/// <exception cref="ArgumentNullException"><paramref name="issuerKey" /> is <see langword="null" />.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="issuerKey" /> has been disposed.</exception>
 	public bool VerifySignature(ISignatureKey issuerKey)
@@ -236,7 +243,10 @@ public sealed class CertificateRevocationList
 	/// Finds the entry of a serial number.
 	/// </summary>
 	/// <remarks>Calls may be concurrent.</remarks>
-	/// <param name="serialNumber">The big-endian two's-complement contents of the number's INTEGER, as those of <see cref="Certificate.SerialNumber" />; they must be minimal, as DER makes them, to match.</param>
+	/// <param name="serialNumber">
+	/// The big-endian two's-complement contents of the number's INTEGER, as those of <see cref="Certificate.SerialNumber" />;
+	/// they must be minimal, as DER makes them, to match.
+	/// </param>
 	/// <param name="entry">When this method returns <see langword="true" />, the entry, whose members are slices of <see cref="Encoded" />.</param>
 	/// <returns><see langword="true" /> if the list has an entry with the serial number; otherwise, <see langword="false" />.</returns>
 	public bool TryGetEntry(ReadOnlySpan<byte> serialNumber, out RevokedCertificate entry)
@@ -254,7 +264,10 @@ public sealed class CertificateRevocationList
 	/// <summary>
 	/// Gets the value of the authority key identifier extension (RFC 5280, Sec. 5.2.1), which identifies the key that signed the CRL.
 	/// </summary>
-	/// <remarks>The first call decodes the extension, and later calls return the same instance. Calls may be concurrent.</remarks>
+	/// <remarks>
+	/// The first call decodes the extension, and later calls return the same instance.
+	/// Calls may be concurrent.
+	/// </remarks>
 	/// <returns>The value, or <see langword="null" /> if the CRL has no such extension.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded AuthorityKeyIdentifier.</exception>
 	public AuthorityKeyIdentifier? GetAuthorityKeyIdentifier()
@@ -265,7 +278,10 @@ public sealed class CertificateRevocationList
 	/// <summary>
 	/// Gets the value of the CRL number extension (RFC 5280, Sec. 5.2.3), which orders the CRLs of a scope.
 	/// </summary>
-	/// <remarks>The first call decodes the extension, and later calls return the same value. Calls may be concurrent.</remarks>
+	/// <remarks>
+	/// The first call decodes the extension, and later calls return the same value.
+	/// Calls may be concurrent.
+	/// </remarks>
 	/// <returns>The big-endian two's-complement contents of the INTEGER, a slice of <see cref="Encoded" />, or <see langword="null" /> if the CRL has no such extension.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded INTEGER that is not negative.</exception>
 	public ReadOnlyMemory<byte>? GetCrlNumber()
@@ -276,7 +292,10 @@ public sealed class CertificateRevocationList
 	/// <summary>
 	/// Gets the value of the issuing distribution point extension (RFC 5280, Sec. 5.2.5), which states the scope of the CRL.
 	/// </summary>
-	/// <remarks>The first call decodes the extension, and later calls return the same instance. Calls may be concurrent.</remarks>
+	/// <remarks>
+	/// The first call decodes the extension, and later calls return the same instance.
+	/// Calls may be concurrent.
+	/// </remarks>
 	/// <returns>The value, or <see langword="null" /> if the CRL has no such extension.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded IssuingDistributionPoint, or breaks a rule of its syntax.</exception>
 	public IssuingDistributionPoint? GetIssuingDistributionPoint()
@@ -316,7 +335,8 @@ public sealed class CertificateRevocationList
 		return count;
 	}
 
-	// Randomized per process, so that a CRL cannot be built whose entries collide in the table. The hash takes chars, so the last byte of an odd length is mixed in separately.
+	// Randomized per process, so that a CRL cannot be built whose entries collide in the table.
+	// The hash takes chars, so the last byte of an odd length is mixed in separately.
 	private static uint Hash(ReadOnlySpan<byte> serialNumber)
 	{
 		uint hash = (uint)string.GetHashCode(MemoryMarshal.Cast<byte, char>(serialNumber));
@@ -360,7 +380,8 @@ public sealed class CertificateRevocationList
 		}
 	}
 
-	// The extensions of most entries that have any: one reason code extension, not critical, with a reason that Sec. 5.3.1 defines. Any others are left to CheckEntryExtensions, which decides whether they are valid.
+	// The extensions of most entries that have any: one reason code extension, not critical, with a reason that Sec. 5.3.1 defines.
+	// Any others are left to CheckEntryExtensions, which decides whether they are valid.
 	private static bool TryReadLoneReasonCode(ref DerReader entry)
 	{
 		ReadOnlySpan<byte> prefix = [0x30, 0x0C, 0x30, 0x0A, 0x06, 0x03, 0x55, 0x1D, 0x15, 0x04, 0x03, 0x0A, 0x01];
@@ -375,7 +396,8 @@ public sealed class CertificateRevocationList
 		return true;
 	}
 
-	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension, each extnID at most once. No string is created for the two identifiers that most entries hold; others is kept between entries so that it is created once.
+	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension, each extnID at most once.
+	// No string is created for the two identifiers that most entries hold; others is kept between entries so that it is created once.
 	private void CheckEntryExtensions(ref DerReader entry, ref HashSet<string>? others)
 	{
 		const int reasonCodeBit = 1;
@@ -447,7 +469,8 @@ public sealed class CertificateRevocationList
 		return date;
 	}
 
-	// The position of the slot that holds the entry of serialNumber, whose hash is given, or of the free slot that ends the search for it. _slots is not empty, and half of it at least is free.
+	// The position of the slot that holds the entry of serialNumber, whose hash is given, or of the free slot that ends the search for it.
+	// _slots is not empty, and half of it at least is free.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private int FindSlot(ReadOnlySpan<byte> serialNumber, uint hash)
 	{

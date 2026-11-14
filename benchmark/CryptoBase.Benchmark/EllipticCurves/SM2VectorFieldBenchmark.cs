@@ -5,7 +5,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The products of each lane field of SM2, on values that start on a 64-byte line as SM2Vector keeps them: a chain of products gives the latency of one, and four chains side by side its throughput, for all the lanes at once. A lane field adds its own FieldKind.
+// The products of each lane field of SM2, on values that start on a 64-byte line as SM2Vector keeps them: a chain of products gives the latency of one, and four chains side by side its throughput, for all the lanes at once.
+// A lane field adds its own FieldKind.
 public unsafe class SM2VectorFieldBenchmark
 {
 	private const int Operations = 64;

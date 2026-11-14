@@ -5,10 +5,12 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Decoding accepts only DER and checks the structure of every field, including authorityCertIssuer, whose GeneralNames are checked as those of a subject alternative name, and authorityCertSerialNumber, which must be both present or both absent; this version does not expose those two fields.
+/// Decoding accepts only DER and checks the structure of every field, including authorityCertIssuer, whose GeneralNames are checked as those of a subject alternative name, and authorityCertSerialNumber, which must be both present or both absent;
+/// this version does not expose those two fields.
 /// </para>
 /// <para>
-/// An instance holds its own copy of the encoding, and the members return slices of it. Instances are immutable, so they may be used concurrently.
+/// An instance holds its own copy of the encoding, and the members return slices of it.
+/// Instances are immutable, so they may be used concurrently.
 /// </para>
 /// </remarks>
 public sealed class AuthorityKeyIdentifier
@@ -27,7 +29,10 @@ public sealed class AuthorityKeyIdentifier
 	/// <summary>
 	/// Gets the keyIdentifier, the bytes of its OCTET STRING, or <see langword="null" /> if it is absent.
 	/// </summary>
-	/// <remarks>It equals the subject key identifier (RFC 5280, Sec. 4.2.1.2) of the issuer's certificate when the issuer follows RFC 5280; an empty value is a present but empty keyIdentifier.</remarks>
+	/// <remarks>
+	/// It equals the subject key identifier (RFC 5280, Sec. 4.2.1.2) of the issuer's certificate when the issuer follows RFC 5280;
+	/// an empty value is a present but empty keyIdentifier.
+	/// </remarks>
 	public ReadOnlyMemory<byte>? KeyIdentifier { get; }
 
 	// authorityCertIssuer, or null if it is absent.
@@ -54,7 +59,8 @@ public sealed class AuthorityKeyIdentifier
 		}
 	}
 
-	// AuthorityKeyIdentifier ::= SEQUENCE { keyIdentifier [0] KeyIdentifier OPTIONAL, authorityCertIssuer [1] GeneralNames OPTIONAL, authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL }, with implicit tags; the results are slices of value.
+	// AuthorityKeyIdentifier ::= SEQUENCE { keyIdentifier [0] KeyIdentifier OPTIONAL, authorityCertIssuer [1] GeneralNames OPTIONAL, authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL }, with implicit tags;
+	// the results are slices of value.
 	internal static AuthorityKeyIdentifier Read(ReadOnlyMemory<byte> value)
 	{
 		DerReader sequence = DerReader.ReadSoleSequence(value);

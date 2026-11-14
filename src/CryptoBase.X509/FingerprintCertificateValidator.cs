@@ -7,11 +7,13 @@ namespace CryptoBase.X509;
 /// <para>
 /// As RFC 8122, Sec. 5.1 requires, the validator selects the fingerprints of its most preferred hash function out of those given, SHA-512, then SHA-384, SHA-256 and SHA-1, and accepts the peer's first certificate if the digest of its DER encoding with that function equals one of them, such as one for each certificate that the peer may use.
 /// It does not consult the fingerprints of the other hash functions, so that a fingerprint with a weaker hash function cannot stand in for one with a stronger function that does not match.
-/// It ignores the fingerprints with MD5 and MD2, with which RFC 8122, Sec. 5 forbids verifying, and with SHA-224 or any other hash function; if none is left, validation gives <see cref="CertificateValidationError.UnsupportedAlgorithm" />.
+/// It ignores the fingerprints with MD5 and MD2, with which RFC 8122, Sec. 5 forbids verifying, and with SHA-224 or any other hash function;
+/// if none is left, validation gives <see cref="CertificateValidationError.UnsupportedAlgorithm" />.
 /// </para>
 /// <para>
 /// Only the digest is compared: the validity period, the extensions and the signature of the certificate, the other certificates that the peer presented, <see cref="CertificateValidationContext.Usage" /> and <see cref="CertificateValidationContext.HostName" /> are not checked, as the fingerprint, from a signaling channel that the caller trusts, binds the certificate to the peer.
-/// A certificate that matches no fingerprint gives <see cref="CertificateValidationError.UntrustedRoot" />, with no path; one that matches gives a path of the certificate alone, which ends at a trust anchor, as the fingerprint vouches for its public key and not its signature.
+/// A certificate that matches no fingerprint gives <see cref="CertificateValidationError.UntrustedRoot" />, with no path;
+/// one that matches gives a path of the certificate alone, which ends at a trust anchor, as the fingerprint vouches for its public key and not its signature.
 /// </para>
 /// <para>
 /// Validation completes synchronously and uses no network. Instances are immutable, so they may be used concurrently.

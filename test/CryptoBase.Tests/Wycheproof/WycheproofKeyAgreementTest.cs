@@ -44,7 +44,8 @@ public class WycheproofKeyAgreementTest
 		return VerifyXdh<X448>(vector);
 	}
 
-	// Every vector, valid or acceptable, gives its shared secret, twist points and non-canonical u-coordinates included, except the ZeroSharedSecret ones: their all-zero secret must give false. The invalid ones, only in X448, have public keys of the wrong length.
+	// Every vector, valid or acceptable, gives its shared secret, twist points and non-canonical u-coordinates included, except the ZeroSharedSecret ones: their all-zero secret must give false.
+	// The invalid ones, only in X448, have public keys of the wrong length.
 	private static async Task VerifyXdh<T>(XdhTestVector vector) where T : class, IKeyAgreement<T>
 	{
 		using T key = T.ImportPrivateKey(vector.Private);
@@ -73,7 +74,8 @@ public class WycheproofKeyAgreementTest
 		}
 	}
 
-	// The private keys, all in [1, n − 1], come in various lengths. The one acceptable vector has a compressed point, which is rejected like the invalid ones.
+	// The private keys, all in [1, n − 1], come in various lengths.
+	// The one acceptable vector has a compressed point, which is rejected like the invalid ones.
 	private static async Task VerifyEcdh<T>(EcdhEcpointTestVector vector) where T : class, IKeyAgreement<T>
 	{
 		using T key = T.ImportPrivateKey(CurveCase.EncodeInteger(ModulusCase.Decode(vector.Private), T.PrivateKeyLength));

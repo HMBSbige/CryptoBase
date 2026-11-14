@@ -4,8 +4,9 @@ using CryptoBase.Platform;
 
 namespace CryptoBase.Signatures.Rsa;
 
-// The encodings of RFC 8017 for signatures: EMSA-PKCS1-v1_5 (Sec. 9.2) and EMSA-PSS with MGF1 (Sec. 9.1, Appendix B.2.1). An encoded message spans the k bytes of the modulus, the input of RSASP1 and the output of
-// RSAVP1. Everything here is public: the message, its hash, the salt and the encoded message all follow from the signature and the public key.
+// The encodings of RFC 8017 for signatures: EMSA-PKCS1-v1_5 (Sec. 9.2) and EMSA-PSS with MGF1 (Sec. 9.1, Appendix B.2.1).
+// An encoded message spans the k bytes of the modulus, the input of RSASP1 and the output of RSAVP1.
+// Everything here is public: the message, its hash, the salt and the encoded message all follow from the signature and the public key.
 internal static class RsaPadding
 {
 	internal const int MaxHashLength = 64;

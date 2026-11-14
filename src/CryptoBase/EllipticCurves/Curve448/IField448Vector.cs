@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The arithmetic of Field448Blocks on the 64-bit lanes of a TVector, each a limb or a column of a product. Static members on the vectors rather than a wrapper type with operators: each result of a wrapper takes a local, too many for SquareProduct to inline its terms, and a wrapper operand in memory takes a load rather than folding into the multiplication.
+// The arithmetic of Field448Blocks on the 64-bit lanes of a TVector, each a limb or a column of a product.
+// Static members on the vectors rather than a wrapper type with operators: each result of a wrapper takes a local, too many for SquareProduct to inline its terms, and a wrapper operand in memory takes a load rather than folding into the multiplication.
 internal interface IField448Vector<TVector> where TVector : unmanaged
 {
 	static abstract TVector Create(ulong value);

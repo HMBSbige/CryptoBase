@@ -11,7 +11,9 @@ namespace CryptoBase.SM9;
 /// The key generation center chooses the hid of the key exchange, 0x02 by default; with a hid other than that of decryption, the key differs from the decryption key of the same ID.
 /// </para>
 /// <para>
-/// Key exchanges may run concurrently with one instance; to run many key exchanges, keep one instance. Disposal erases the private key and is idempotent; subsequent operations other than disposal, and the derivations of the key exchanges that take the key, throw <see cref="ObjectDisposedException" />.
+/// Key exchanges may run concurrently with one instance; to run many key exchanges, keep one instance.
+/// Disposal erases the private key and is idempotent;
+/// subsequent operations other than disposal, and the derivations of the key exchanges that take the key, throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class SM9KeyExchangeKey : IDisposable

@@ -11,14 +11,22 @@ namespace CryptoBase.SM9;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Both parties hold key exchange keys of their IDs under one encryption master key and one identifier hid, and each needs the ID of the other before the exchange starts. An instance draws an ephemeral key for the ID of its peer when it is created. The initiator sends its ephemeral public key R_A to the responder, and the responder sends R_B back; each party then derives the shared key from the ephemeral public key of its peer.
+/// Both parties hold key exchange keys of their IDs under one encryption master key and one identifier hid, and each needs the ID of the other before the exchange starts.
+/// An instance draws an ephemeral key for the ID of its peer when it is created.
+/// The initiator sends its ephemeral public key R_A to the responder, and the responder sends R_B back; each party then derives the shared key from the ephemeral public key of its peer.
 /// Both parties derive the same key of the length they choose.
 /// </para>
 /// <para>
-/// The key confirmation of the protocol is optional. A derivation gives the value that the party sends, S_B of the responder or S_A of the initiator, and the value it expects from its peer. The responder sends S_B with R_B, and the initiator sends S_A once it has checked S_B; compare each received value with the expected one.
+/// The key confirmation of the protocol is optional.
+/// A derivation gives the value that the party sends, S_B of the responder or S_A of the initiator, and the value it expects from its peer.
+/// The responder sends S_B with R_B, and the initiator sends S_A once it has checked S_B; compare each received value with the expected one.
 /// </para>
 /// <para>
-/// The key exchange key must not be disposed before the instance derives. An instance derives once: a successful derivation erases its secrets, and a later one throws <see cref="InvalidOperationException" />; a derivation that fails on the input of the peer leaves the instance as it was. An instance is not thread-safe. Disposal erases the secrets and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// The key exchange key must not be disposed before the instance derives.
+/// An instance derives once: a successful derivation erases its secrets, and a later one throws <see cref="InvalidOperationException" />;
+/// a derivation that fails on the input of the peer leaves the instance as it was.
+/// An instance is not thread-safe.
+/// Disposal erases the secrets and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class SM9KeyExchange : IDisposable
@@ -109,10 +117,12 @@ public sealed class SM9KeyExchange : IDisposable
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The method returns <see langword="false" /> if <paramref name="peerEphemeralPublicKey" /> is not a point on the curve in the uncompressed encoding; the outputs then remain unchanged. They also remain unchanged if the method throws.
+	/// The method returns <see langword="false" /> if <paramref name="peerEphemeralPublicKey" /> is not a point on the curve in the uncompressed encoding; the outputs then remain unchanged.
+	/// They also remain unchanged if the method throws.
 	/// </para>
 	/// <para>
-	/// The responder sends <paramref name="confirmation" />, S_B, with its ephemeral public key and expects <paramref name="peerConfirmation" />, S_2, to equal S_A of the initiator. The initiator sends <paramref name="confirmation" />, S_A, and expects <paramref name="peerConfirmation" />, S_1, to equal S_B of the responder.
+	/// The responder sends <paramref name="confirmation" />, S_B, with its ephemeral public key and expects <paramref name="peerConfirmation" />, S_2, to equal S_A of the initiator.
+	/// The initiator sends <paramref name="confirmation" />, S_A, and expects <paramref name="peerConfirmation" />, S_1, to equal S_B of the responder.
 	/// </para>
 	/// <para>
 	/// The input may overlap the outputs, but the outputs must not overlap one another.
@@ -166,7 +176,8 @@ public sealed class SM9KeyExchange : IDisposable
 		return exchange;
 	}
 
-	// A3 or B3: R = [r]Q = [r·h1]P1 + [r]Ppub-e by SM9Encryption.MultiplyUserKey, which r in [1, N − 1] keeps from the point at infinity unless Q is, for an ID that has no key, which throws with r erased, and g^r, of A5 or B4. Neither the time nor the addresses depend on r.
+	// A3 or B3: R = [r]Q = [r·h1]P1 + [r]Ppub-e by SM9Encryption.MultiplyUserKey, which r in [1, N − 1] keeps from the point at infinity unless Q is, for an ID that has no key, which throws with r erased, and g^r, of A5 or B4.
+	// Neither the time nor the addresses depend on r.
 	[SkipLocalsInit]
 	private void Start(SM9G1FixedBase masterPublicKey, in FieldElement<SM9Order> h1, SM9GTBase g, Action<Span<byte>> fill)
 	{

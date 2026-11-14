@@ -48,8 +48,14 @@ public class ChaCha20Cipher : SnuffleCipher
 	/// <param name="key">The 256-bit key.</param>
 	/// <param name="nonce">The 96-bit nonce.</param>
 	/// <param name="counter">The block counter.</param>
-	/// <param name="destination">The buffer for the keystream block. Its length must be <see cref="BlockSize" />.</param>
-	/// <remarks><paramref name="destination" /> may overlap <paramref name="key" /> or <paramref name="nonce" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <param name="destination">
+	/// The buffer for the keystream block.
+	/// Its length must be <see cref="BlockSize" />.
+	/// </param>
+	/// <remarks>
+	/// <paramref name="destination" /> may overlap <paramref name="key" /> or <paramref name="nonce" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException">A buffer has the wrong length.</exception>
 	[SkipLocalsInit]
 	public static void GenerateBlock(ReadOnlySpan<byte> key, ReadOnlySpan<byte> nonce, uint counter, Span<byte> destination)

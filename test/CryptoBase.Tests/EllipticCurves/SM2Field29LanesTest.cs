@@ -5,7 +5,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-// The lane fields of radix 2^29 against BigInteger, lane by lane, with inputs at the bounds that SM2Field29 states for each member: a product takes limbs up to 2^30 + 2^8 − 1 on both sides, or up to 7·2^29 − 1 against limbs up to those of a product, a subtrahend limbs up to those of the 4p that Subtract adds, Reduce limbs 0 to 7 up to 2^32 − 1 and limb 8 up to 2^36 − 1, and Halve limbs up to 2^62. The limbs are those of the lanes as they lie in memory, limb k of lane i at k·LaneCount + i.
+// The lane fields of radix 2^29 against BigInteger, lane by lane, with inputs at the bounds that SM2Field29 states for each member: a product takes limbs up to 2^30 + 2^8 − 1 on both sides, or up to 7·2^29 − 1 against limbs up to those of a product, a subtrahend limbs up to those of the 4p that Subtract adds, Reduce limbs 0 to 7 up to 2^32 − 1 and limb 8 up to 2^36 − 1, and Halve limbs up to 2^62.
+// The limbs are those of the lanes as they lie in memory, limb k of lane i at k·LaneCount + i.
 public class SM2Field29LanesTest
 {
 	private const int LimbCount = 9;
@@ -348,7 +349,8 @@ public class SM2Field29LanesTest
 		}
 	}
 
-	// For limbs 0 to 7 below 2^32 and limb 8 below 2^36, Reduce gives limbs 0 to 7 below 2^29, limb 8 below 2^24 + 2^5 and a value below 2p. Every limb at its most takes h and the carries to their largest.
+	// For limbs 0 to 7 below 2^32 and limb 8 below 2^36, Reduce gives limbs 0 to 7 below 2^29, limb 8 below 2^24 + 2^5 and a value below 2p.
+	// Every limb at its most takes h and the carries to their largest.
 	private sealed class Reductions : ISM2Field29LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TField>() where TField : unmanaged, ISM2Field29Lanes<TField>
@@ -491,7 +493,9 @@ public class SM2Field29LanesTest
 		}
 	}
 
-	// One in every lane; LoadEntries takes points as SM2Field52.Pack writes them, lane i from point i, and doubles them for R = 2^261, which Halve and Reduce take back; SM2Field29.ToField52 joins lane 0 as Reduce leaves it into the limbs of SM2Field52 as the same integer.
+	// One in every lane;
+	// LoadEntries takes points as SM2Field52.Pack writes them, lane i from point i, and doubles them for R = 2^261, which Halve and Reduce take back;
+	// SM2Field29.ToField52 joins lane 0 as Reduce leaves it into the limbs of SM2Field52 as the same integer.
 	private sealed class Conversions : ISM2Field29LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TField>() where TField : unmanaged, ISM2Field29Lanes<TField>

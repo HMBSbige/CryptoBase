@@ -1,6 +1,9 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The signed combs of the fixed-base product on the twisted curve (Hamburg, "Fast and compact elliptic-curve cryptography", 2012). ScalarDigits.SignedComb recodes a scalar into DigitCount digits ±1, which split into CombCount combs of Teeth digits Spacing bits apart: at offset i < Spacing, comb j holds the digits at i + Spacing·(m + Teeth·j) for m < Teeth. Its entry e is Σ ε_m·2^(Spacing·(m + Teeth·j))·Base with ε_(Teeth − 1) = 1 and ε_m = 2e_m − 1 for m below, the 2^(Teeth − 1) values whose top digit is 1; the others are their negations. A product then takes Spacing − 1 doublings and DigitCount/Teeth additions, one for each comb at each offset.
+// The signed combs of the fixed-base product on the twisted curve (Hamburg, "Fast and compact elliptic-curve cryptography", 2012).
+// ScalarDigits.SignedComb recodes a scalar into DigitCount digits ±1, which split into CombCount combs of Teeth digits Spacing bits apart: at offset i < Spacing, comb j holds the digits at i + Spacing·(m + Teeth·j) for m < Teeth.
+// Its entry e is Σ ε_m·2^(Spacing·(m + Teeth·j))·Base with ε_(Teeth − 1) = 1 and ε_m = 2e_m − 1 for m below, the 2^(Teeth − 1) values whose top digit is 1; the others are their negations.
+// A product then takes Spacing − 1 doublings and DigitCount/Teeth additions, one for each comb at each offset.
 // Each entry is a TwistedNielsPoint with canonical coordinates, 24 limbs that start on a 64-byte boundary.
 internal static class TwistedBaseTable
 {
@@ -29,7 +32,8 @@ internal static class TwistedBaseTable
 		return ref Unsafe.As<ulong, TwistedNielsPoint>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Storage), Start + comb * CombLength * EntryLength));
 	}
 
-	// Entry index of a comb, negated where negative is set, which is 0 or ulong.MaxValue. The lookup reads every entry of the comb, so neither the time nor the addresses depend on index or negative.
+	// Entry index of a comb, negated where negative is set, which is 0 or ulong.MaxValue.
+	// The lookup reads every entry of the comb, so neither the time nor the addresses depend on index or negative.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Select(int comb, uint index, ulong negative, out TwistedNielsPoint result)
 	{
@@ -78,7 +82,9 @@ internal static class TwistedBaseTable
 		Field448.ConditionalNegate(negative, ref result.TwoDXY);
 	}
 
-	// Select for a vector kernel that turns the entry into lanes itself, in registers: the 56-bit limbs of y + x, y − x and 2d'xy, four to a vector, with y + x and y − x swapped where negative is set. 2d'xy keeps its sign, which the kernel negates. Every entry of the comb is read and ORed, masked by whether its position matches the index, into accumulators that start at zero, so that only the matching entry remains.
+	// Select for a vector kernel that turns the entry into lanes itself, in registers: the 56-bit limbs of y + x, y − x and 2d'xy, four to a vector, with y + x and y − x swapped where negative is set.
+	// 2d'xy keeps its sign, which the kernel negates.
+	// Every entry of the comb is read and ORed, masked by whether its position matches the index, into accumulators that start at zero, so that only the matching entry remains.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void SelectPacked(int comb, uint index, ulong negative, out Vector256<ulong> plus0, out Vector256<ulong> plus1, out Vector256<ulong> minus0, out Vector256<ulong> minus1, out Vector256<ulong> product0, out Vector256<ulong> product1)
 	{
@@ -198,7 +204,8 @@ internal static class TwistedBaseTable
 		product3 = d3;
 	}
 
-	// The teeth of each comb come from the base by Spacing doublings each. Entry 0 of a comb is its top tooth less the others, and entry e adds twice the tooth of its highest set bit to the entry without that bit.
+	// The teeth of each comb come from the base by Spacing doublings each.
+	// Entry 0 of a comb is its top tooth less the others, and entry e adds twice the tooth of its highest set bit to the entry without that bit.
 	private static ulong[] Build()
 	{
 		EdwardsPoint[] points = new EdwardsPoint[Length];

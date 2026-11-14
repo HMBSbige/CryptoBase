@@ -9,13 +9,16 @@ namespace CryptoBase.X509;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The instance signs and verifies with RSASSA-PKCS1-v1_5 and RSASSA-PSS (RFC 8017) with SHA-256, SHA-384 or SHA-512: <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />. RSASSA-PSS uses MGF1 with the message hash and a salt as long as the hash.
+/// The instance signs and verifies with RSASSA-PKCS1-v1_5 and RSASSA-PSS (RFC 8017) with SHA-256, SHA-384 or SHA-512: <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />.
+/// RSASSA-PSS uses MGF1 with the message hash and a salt as long as the hash.
 /// An algorithm whose encoded message does not fit the modulus (RFC 8017, Secs. 9.1.1 and 9.2) is not supported, and neither is one that the constructor finds or is told the key does not make.
 /// </para>
 /// <para>
 /// The platform signs, and the instance verifies each signature before it returns it, so a key that signs otherwise, such as with another salt length, throws <see cref="CryptographicException" /> rather than giving a signature that does not verify.
-/// Verification is managed and never reaches the platform, so it gives the same result on every platform: RSASSA-PKCS1-v1_5 as RFC 8017, Sec. 8.2.2, describes, comparing the encoded message byte for byte with the one expected, whose DigestInfo has NULL or, as TLS 1.2 also requires a verifier to accept (RFC 5246, Sec. 4.7), absent parameters; and RSASSA-PSS with EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) and a salt as long as the hash.
-/// It handles public data alone, so it does not take constant time; its work is bounded by the key, whose modulus must have 512 to 16384 bits and whose public exponent, odd and at least 3 (RFC 8017, Sec. 3.1), must have at most 33 bits.
+/// Verification is managed and never reaches the platform, so it gives the same result on every platform: RSASSA-PKCS1-v1_5 as RFC 8017, Sec. 8.2.2, describes, comparing the encoded message byte for byte with the one expected, whose DigestInfo has NULL or, as TLS 1.2 also requires a verifier to accept (RFC 5246, Sec. 4.7), absent parameters;
+/// and RSASSA-PSS with EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) and a salt as long as the hash.
+/// It handles public data alone, so it does not take constant time;
+/// its work is bounded by the key, whose modulus must have 512 to 16384 bits and whose public exponent, odd and at least 3 (RFC 8017, Sec. 3.1), must have at most 33 bits.
 /// </para>
 /// <para>
 /// The private key is never exported: <see cref="Pkcs8PrivateKeyLength" /> and <see cref="ExportPkcs8PrivateKey" /> throw <see cref="InvalidOperationException" />.
@@ -47,11 +50,14 @@ public sealed class PlatformRsaKey : ISignatureKey
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The constructor signs a fixed message with <see cref="SignatureAlgorithm.RsaPssSha256" /> and verifies the signature. If that fails, or the modulus is too short for it, it signs with <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> instead, and the instance supports RSASSA-PKCS1-v1_5 alone, as a smart card or TPM that lacks RSASSA-PSS needs.
-	/// A key that makes the first signature is taken to make RSASSA-PKCS1-v1_5 signatures too, and a key that makes either one is taken to make it with SHA-384 and SHA-512 as well; a hash that a device lacks fails in <see cref="Sign" />.
+	/// The constructor signs a fixed message with <see cref="SignatureAlgorithm.RsaPssSha256" /> and verifies the signature.
+	/// If that fails, or the modulus is too short for it, it signs with <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> instead, and the instance supports RSASSA-PKCS1-v1_5 alone, as a smart card or TPM that lacks RSASSA-PSS needs.
+	/// A key that makes the first signature is taken to make RSASSA-PKCS1-v1_5 signatures too, and a key that makes either one is taken to make it with SHA-384 and SHA-512 as well;
+	/// a hash that a device lacks fails in <see cref="Sign" />.
 	/// </para>
 	/// <para>
-	/// These signatures have the side effects of any other: a key store or device may ask the user for a PIN or consent, which may then be cached, and may count or log them. A first signature that fails for another reason, such as a cancelled prompt, also counts as a lack of RSASSA-PSS if the second succeeds.
+	/// These signatures have the side effects of any other: a key store or device may ask the user for a PIN or consent, which may then be cached, and may count or log them.
+	/// A first signature that fails for another reason, such as a cancelled prompt, also counts as a lack of RSASSA-PSS if the second succeeds.
 	/// <see cref="PlatformRsaKey(RSA, ReadOnlySpan{SignatureAlgorithm})" /> takes the algorithms from the caller instead and signs nothing.
 	/// </para>
 	/// <para>
@@ -74,16 +80,23 @@ public sealed class PlatformRsaKey : ISignatureKey
 	/// <remarks>
 	/// <para>
 	/// The constructor signs nothing, so the key store or device is first used by <see cref="Sign" />, which throws <see cref="CryptographicException" /> if the key fails to make a signature with an algorithm named here.
-	/// The instance supports those of <paramref name="algorithms" /> that the modulus fits. The platform cannot report a missing private key, so <see cref="Sign" /> then throws <see cref="CryptographicException" /> as well.
+	/// The instance supports those of <paramref name="algorithms" /> that the modulus fits.
+	/// The platform cannot report a missing private key, so <see cref="Sign" /> then throws <see cref="CryptographicException" /> as well.
 	/// </para>
 	/// <para>
 	/// Once the constructor returns, the instance disposes <paramref name="key" /> when it is disposed; if the constructor throws, the caller still owns <paramref name="key" />.
 	/// </para>
 	/// </remarks>
 	/// <param name="key">The platform key, which must hold the private key.</param>
-	/// <param name="algorithms">The algorithms that the key signs with, each one of <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />; the instance keeps a copy.</param>
+	/// <param name="algorithms">
+	/// The algorithms that the key signs with, each one of <see cref="SignatureAlgorithm.RsaPkcs1Sha256" /> to <see cref="SignatureAlgorithm.RsaPssSha512" />;
+	/// the instance keeps a copy.
+	/// </param>
 	/// <exception cref="ArgumentNullException"><paramref name="key" /> is <see langword="null" />.</exception>
-	/// <exception cref="ArgumentException">The public key of <paramref name="key" /> is invalid: its modulus is not odd, or its public exponent is not odd and at least 3; or <paramref name="algorithms" /> holds another value.</exception>
+	/// <exception cref="ArgumentException">
+	/// The public key of <paramref name="key" /> is invalid: its modulus is not odd, or its public exponent is not odd and at least 3;
+	/// or <paramref name="algorithms" /> holds another value.
+	/// </exception>
 	/// <exception cref="NotSupportedException">The modulus of <paramref name="key" /> has fewer than 512 or more than 16384 bits, or its public exponent more than 33 bits.</exception>
 	/// <exception cref="CryptographicException">The platform fails to export the public key.</exception>
 	public PlatformRsaKey(RSA key, ReadOnlySpan<SignatureAlgorithm> algorithms) : this(key, ExportPublicKey(key))
@@ -501,7 +514,8 @@ public sealed class PlatformRsaKey : ISignatureKey
 				return false;
 			}
 
-			// Step 2: RSAVP1 (Sec. 5.2.2) on the signature representative, which must be below the modulus. The exponent bounds the work.
+			// Step 2: RSAVP1 (Sec. 5.2.2) on the signature representative, which must be below the modulus.
+			// The exponent bounds the work.
 			BigInteger representative = new(signature, isUnsigned: true, isBigEndian: true);
 
 			if (representative >= Modulus)
@@ -542,7 +556,8 @@ public sealed class PlatformRsaKey : ISignatureKey
 			};
 		}
 
-		// EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) with emBits = modBits − 1, MGF1 with the hash, and sLen = hLen; Fits passed step 3. encoded is changed.
+		// EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) with emBits = modBits − 1, MGF1 with the hash, and sLen = hLen; Fits passed step 3.
+		// encoded is changed.
 		private bool IsPssEncoding(Span<byte> encoded, HashAlgorithmName hash, ReadOnlySpan<byte> digest)
 		{
 			int hashLength = digest.Length;

@@ -92,7 +92,8 @@ internal static class FixedTime
 		return accumulated is 0;
 	}
 
-	// The OR of the bytes in words, which is 0 just if every byte is, without an early exit, so that the time depends on the length alone. Four vectors take turns, so that the ORs do not wait on one another.
+	// The OR of the bytes in words, which is 0 just if every byte is, without an early exit, so that the time depends on the length alone.
+	// Four vectors take turns, so that the ORs do not wait on one another.
 	internal static ulong Accumulate(ReadOnlySpan<byte> bytes)
 	{
 		ref byte start = ref MemoryMarshal.GetReference(bytes);

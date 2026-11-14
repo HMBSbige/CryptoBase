@@ -35,7 +35,8 @@ internal static class MLKemConstants
 
 	internal const int CompressShift = 34;
 
-	// ζ^BitRev7(i) · R mod q for ζ = 17, centered on zero. In MultiplyNTTs (Algorithm 11), pairs 4i and 4i + 1 multiply modulo X² − γ with γ at entry 64 + i, and pairs 4i + 2 and 4i + 3 modulo X² + γ.
+	// ζ^BitRev7(i) · R mod q for ζ = 17, centered on zero.
+	// In MultiplyNTTs (Algorithm 11), pairs 4i and 4i + 1 multiply modulo X² − γ with γ at entry 64 + i, and pairs 4i + 2 and 4i + 3 modulo X² + γ.
 	internal static ReadOnlySpan<short> Zetas =>
 	[
 		-1044, -758, -359, -1517, 1493, 1422, 287, 202, -171, 622, 1577, 182, 962, -1202, -1474, 1468,

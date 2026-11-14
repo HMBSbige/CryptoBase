@@ -8,7 +8,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hpke;
 
-// The contexts through the public API, with every KEM. HpkeVectorTest checks the values, and WycheproofHpkeTest what a context does with a message that does not open.
+// The contexts through the public API, with every KEM.
+// HpkeVectorTest checks the values, and WycheproofHpkeTest what a context does with a message that does not open.
 [GenerateGenericTest(typeof(DhKemP256))]
 [GenerateGenericTest(typeof(DhKemP384))]
 [GenerateGenericTest(typeof(DhKemP521))]
@@ -164,7 +165,8 @@ public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 		}
 	}
 
-	// VerifyPSKInputs of RFC 9180, Section 5.1, with the minimum length that this library sets. The checks come before encapsulation.
+	// VerifyPSKInputs of RFC 9180, Section 5.1, with the minimum length that this library sets.
+	// The checks come before encapsulation.
 	[Test]
 	public async Task PskInputsAreChecked()
 	{

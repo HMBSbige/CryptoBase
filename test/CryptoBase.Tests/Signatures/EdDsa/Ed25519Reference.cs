@@ -12,7 +12,8 @@ public enum Ed25519Variant
 	PreHash
 }
 
-// Ed25519, Ed25519ctx and Ed25519ph from RFC 8032 §5.1, with BigInteger and the platform's SHA-512, to check the library against. Verification follows the policy of the library: S below L, A decoded strictly, and R compared as bytes with the encoding of [S]B − [k]A.
+// Ed25519, Ed25519ctx and Ed25519ph from RFC 8032 §5.1, with BigInteger and the platform's SHA-512, to check the library against.
+// Verification follows the policy of the library: S below L, A decoded strictly, and R compared as bytes with the encoding of [S]B − [k]A.
 internal static class Ed25519Reference
 {
 	internal static byte[] Domain(Ed25519Variant variant, ReadOnlySpan<byte> context)

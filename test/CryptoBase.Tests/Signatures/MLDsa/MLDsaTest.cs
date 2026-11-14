@@ -882,7 +882,8 @@ internal class MLDsaTest<T> where T : class, IMLDsa<T>
 
 internal class MLDsaTest
 {
-	// ExpandS squeezes a stream on with its batch when its first two blocks leave it short of 256 coefficients. Each seed, found by search, leaves one stream of ML-DSA-65 short, whose η = 4 rejects enough candidates for that to happen; the reference takes each stream from as many blocks as it needs.
+	// ExpandS squeezes a stream on with its batch when its first two blocks leave it short of 256 coefficients.
+	// Each seed, found by search, leaves one stream of ML-DSA-65 short, whose η = 4 rejects enough candidates for that to happen; the reference takes each stream from as many blocks as it needs.
 	[Test]
 	[Arguments("dde351508bd727157e0810bb8a594f620ab46670b2ca6f14a1fe6dfeaa6edd96", 3)]
 	[Arguments("f407c06404e99af47d0c19f3a4db8ccf4d7963a4fc9dc263c2fba3f64ac3ebe3", 6)]
@@ -913,7 +914,8 @@ internal class MLDsaTest
 		}
 	}
 
-	// ExpandMask hashes a message in a free lane of its batches where the kernel leaves one. Whatever the lanes, y must be that of Algorithm 34 and the hash SHAKE256 of the message: for messages that end within, at and beyond the blocks the batches permute, for the μ ‖ w1Encode(w1) that signing hashes, and for κ at the start and the end of its range.
+	// ExpandMask hashes a message in a free lane of its batches where the kernel leaves one.
+	// Whatever the lanes, y must be that of Algorithm 34 and the hash SHAKE256 of the message: for messages that end within, at and beyond the blocks the batches permute, for the μ ‖ w1Encode(w1) that signing hashes, and for κ at the start and the end of its range.
 	[Test]
 	public async Task ExpandMaskHashesAMessageBesideItsStreams()
 	{

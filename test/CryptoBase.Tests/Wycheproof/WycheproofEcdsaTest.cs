@@ -18,7 +18,8 @@ public class WycheproofEcdsaTest
 		"ModifiedGenerator", "NoCofactor", "WrongOrder"
 	];
 
-	// Each file's acceptable SubjectPublicKeyInfo vectors carry these flags and are all rejected. A file with any other set fails, so that its vectors are decided anew.
+	// Each file's acceptable SubjectPublicKeyInfo vectors carry these flags and are all rejected.
+	// A file with any other set fails, so that its vectors are decided anew.
 	private static readonly Dictionary<string, string[]> AcceptableFlags = new()
 	{
 		["ecdh_secp256r1_test.json"] = KeyEncodingFlags,
@@ -140,7 +141,8 @@ public class WycheproofEcdsaTest
 		}
 	}
 
-	// Every group key is valid, and the files have no acceptable vectors. The first verification with an instance goes without the table of its public key, and the later ones use it.
+	// Every group key is valid, and the files have no acceptable vectors.
+	// The first verification with an instance goes without the table of its public key, and the later ones use it.
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifyVerification<T>(EcdsaVerifyTestVector vector) where T : class, IEcdsa<T>
 	{

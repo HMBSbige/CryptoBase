@@ -1,6 +1,7 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// MontgomeryKernelAvx512 for the windows that the registers do not hold with the operands: the JIT would spill vectors to a stack aligned for a quarter of one, and every spill would cross a cache line where the stack happened to lie so. The digits of the left operand and of the modulus go as doubles into staging, which starts on a 64-byte boundary, and each iteration reads them there; only the accumulator stays in registers.
+// MontgomeryKernelAvx512 for the windows that the registers do not hold with the operands: the JIT would spill vectors to a stack aligned for a quarter of one, and every spill would cross a cache line where the stack happened to lie so.
+// The digits of the left operand and of the modulus go as doubles into staging, which starts on a 64-byte boundary, and each iteration reads them there; only the accumulator stays in registers.
 internal readonly unsafe struct MontgomeryKernelAvx512Staged<TWindow> : IMontgomeryKernel where TWindow : struct, IAvx512StagedWindow<TWindow>
 {
 	private const int R = 52;
@@ -103,7 +104,8 @@ internal readonly unsafe struct MontgomeryKernelAvx512Staged<TWindow> : IMontgom
 		}
 	}
 
-	// The digits of x and of the modulus as doubles, a vector of each in turn, from the first 64-byte boundary at or after start, which it returns. If the scratch moves meanwhile, only the speed changes.
+	// The digits of x and of the modulus as doubles, a vector of each in turn, from the first 64-byte boundary at or after start, which it returns.
+	// If the scratch moves meanwhile, only the speed changes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ref double Stage(ref ulong x, ref ulong n, int count, ref ulong start)
 	{

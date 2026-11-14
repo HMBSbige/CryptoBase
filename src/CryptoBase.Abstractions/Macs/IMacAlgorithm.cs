@@ -3,7 +3,11 @@ namespace CryptoBase.Abstractions.Macs;
 /// <summary>
 /// Defines an incremental MAC algorithm with disposable keyed state.
 /// </summary>
-/// <remarks>Each instance owns its keyed state. Disposal erases it and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />. <see cref="IIncrementalAlgorithm.Reset" /> discards the message while retaining the key.</remarks>
+/// <remarks>
+/// Each instance owns its keyed state.
+/// Disposal erases it and is idempotent; subsequent instance operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// <see cref="IIncrementalAlgorithm.Reset" /> discards the message while retaining the key.
+/// </remarks>
 /// <typeparam name="TSelf">The implementing type.</typeparam>
 public interface IMacAlgorithm<out TSelf> : IOneShotMacAlgorithm, IIncrementalAlgorithm, IDisposable where TSelf : class, IMacAlgorithm<TSelf>
 {

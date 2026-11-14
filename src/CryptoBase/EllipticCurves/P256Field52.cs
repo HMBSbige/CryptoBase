@@ -2,13 +2,30 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// The field of p = 2^256 − 2^224 + 2^192 + 2^96 − 1 in five unsaturated limbs, value Σ L_i·2^(52i), with Montgomery R = 2^260. As p ≡ −1 (mod 2^52), Montgomery reduction needs no multiplication.
-// The form E: limbs 0 to 3 below 2^53 and limb 4 below 2^50, so values below 2^258 + 2^210, just over 4p. The IECField members take and give elements of E. The formulas of ECFormulas skip reductions between steps, within these limits:
-// Multiply and Square take limbs below 2^56 and give limbs 0 to 3 below 2^52 and a value below x·y/2^260 + p; for inputs of E that is below 2^257 − 2^223, so limb 4 is below 2^49. AddUnreduced adds limbs without carries. SubtractUnreduced adds 5p, so its subtrahend must be of E. WeakReduce takes limbs below 2^62 to limbs 0 to 3 below 2^52, limb 4 below 2^48 + 2^16·⌊L4/2^48⌋ + 2^10 and a value below 2p, so into E.
-// For inputs of E the steps of the formulas keep within these limits, and the outputs are of E: X3 and Y3 come from WeakReduce, and Z3 is twice a product of inputs of E, which has limbs 0 to 3 below 2^52 and limb 4 below 2^49. Every input of Multiply and Square has limbs below 2^55, every input of WeakReduce limbs below 2^56, and every subtrahend of SubtractUnreduced is of E. Other intermediate values need not be of E.
-// In Double, γ, β and δ are below 2.1p, and 2γ, 4β and 8γ², each twice a product of inputs of E, are of E and below 4.1p. X − δ is below 9.1p in limbs below 2^55 and X + δ below 6.1p in limbs below 2^54. Their product is below 4.4p, so its limb 4 may exceed 2^50 and it is not of E; it goes only into α, below 13.2p in limbs below 2^54, which only Multiply and Square take. α² − 8β is below 21.8p in limbs below 2^55. 4β − X3 is below 9.1p in limbs below 2^55, α(4β − X3) below 8.4p, and that less 8γ² below 13.4p in limbs below 2^54.
-// In AddDistinct, U1, U2, S1 and S2 are below 1.6p, so H is below 6.6p in limbs below 2^54 and 2R below 12.8p in limbs below 2^55; reduced, both are below 1.1p in limbs below 2^52. Z1·Z2·H is below 1.2p, so Z3 is below 2.3p. I = 4H² is below 4.3p in limbs below 2^54, not of E, and goes only into Multiply; J, V and S1·J are below 1.4p. With an affine right, whose coordinates are of E as well, H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.3p, so Z3 is below 2.6p, and V = X1·I and Y1·J are below 2.1p.
-// X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ then take R below 1.1p and J, V and SJ below 2.1p, in limbs 0 to 3 below 2^52 and limb 4 below 2^50. R² is below 1.1p and R² − J − 2V below 16.1p in limbs below 2^56. V − X3 is below 7.1p in limbs below 2^54, R(V − X3) below 1.5p, and that less 2·SJ below 11.5p in limbs below 2^55.
+// The field of p = 2^256 − 2^224 + 2^192 + 2^96 − 1 in five unsaturated limbs, value Σ L_i·2^(52i), with Montgomery R = 2^260.
+// As p ≡ −1 (mod 2^52), Montgomery reduction needs no multiplication.
+// The form E: limbs 0 to 3 below 2^53 and limb 4 below 2^50, so values below 2^258 + 2^210, just over 4p.
+// The IECField members take and give elements of E.
+// The formulas of ECFormulas skip reductions between steps, within these limits:
+// Multiply and Square take limbs below 2^56 and give limbs 0 to 3 below 2^52 and a value below x·y/2^260 + p; for inputs of E that is below 2^257 − 2^223, so limb 4 is below 2^49.
+// AddUnreduced adds limbs without carries.
+// SubtractUnreduced adds 5p, so its subtrahend must be of E.
+// WeakReduce takes limbs below 2^62 to limbs 0 to 3 below 2^52, limb 4 below 2^48 + 2^16·⌊L4/2^48⌋ + 2^10 and a value below 2p, so into E.
+// For inputs of E the steps of the formulas keep within these limits, and the outputs are of E: X3 and Y3 come from WeakReduce, and Z3 is twice a product of inputs of E, which has limbs 0 to 3 below 2^52 and limb 4 below 2^49.
+// Every input of Multiply and Square has limbs below 2^55, every input of WeakReduce limbs below 2^56, and every subtrahend of SubtractUnreduced is of E.
+// Other intermediate values need not be of E.
+// In Double, γ, β and δ are below 2.1p, and 2γ, 4β and 8γ², each twice a product of inputs of E, are of E and below 4.1p.
+// X − δ is below 9.1p in limbs below 2^55 and X + δ below 6.1p in limbs below 2^54.
+// Their product is below 4.4p, so its limb 4 may exceed 2^50 and it is not of E; it goes only into α, below 13.2p in limbs below 2^54, which only Multiply and Square take.
+// α² − 8β is below 21.8p in limbs below 2^55.
+// 4β − X3 is below 9.1p in limbs below 2^55, α(4β − X3) below 8.4p, and that less 8γ² below 13.4p in limbs below 2^54.
+// In AddDistinct, U1, U2, S1 and S2 are below 1.6p, so H is below 6.6p in limbs below 2^54 and 2R below 12.8p in limbs below 2^55; reduced, both are below 1.1p in limbs below 2^52.
+// Z1·Z2·H is below 1.2p, so Z3 is below 2.3p.
+// I = 4H² is below 4.3p in limbs below 2^54, not of E, and goes only into Multiply; J, V and S1·J are below 1.4p.
+// With an affine right, whose coordinates are of E as well, H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.3p, so Z3 is below 2.6p, and V = X1·I and Y1·J are below 2.1p.
+// X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ then take R below 1.1p and J, V and SJ below 2.1p, in limbs 0 to 3 below 2^52 and limb 4 below 2^50.
+// R² is below 1.1p and R² − J − 2V below 16.1p in limbs below 2^56.
+// V − X3 is below 7.1p in limbs below 2^54, R(V − X3) below 1.5p, and that less 2·SJ below 11.5p in limbs below 2^55.
 internal struct P256Field52 : IUnsaturatedField<P256Field52, P256Field>
 {
 	internal ulong L0;
@@ -82,7 +99,8 @@ internal struct P256Field52 : IUnsaturatedField<P256Field52, P256Field>
 		FromLimbs(y0, y1, y2, y3, out point.Y);
 	}
 
-	// With a = x_i·2^6 and b = y_j·2^6, a·b = x_i·y_j·2^12 < 2^124 splits at bit 52 of x_i·y_j: the high word is x_i·y_j >> 52 and the low word is (x_i·y_j mod 2^52)·2^12. The column sums of these halves stay below 2^63, so they need no carries before Reduce.
+	// With a = x_i·2^6 and b = y_j·2^6, a·b = x_i·y_j·2^12 < 2^124 splits at bit 52 of x_i·y_j: the high word is x_i·y_j >> 52 and the low word is (x_i·y_j mod 2^52)·2^12.
+	// The column sums of these halves stay below 2^63, so they need no carries before Reduce.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(in P256Field52 left, in P256Field52 right, out P256Field52 result)
 	{
@@ -167,7 +185,10 @@ internal struct P256Field52 : IUnsaturatedField<P256Field52, P256Field>
 		result.L4 = left.L4 + FiveP4 - right.L4;
 	}
 
-	// For limbs below 2^62: subtracts h·p for h = L4 >> 48, then carries. As h·p = h·2^256 − h·(2^224 − 2^192 − 2^96 + 1), h·2^256 comes off limb 4 and the rest goes in as h·2^16 at limb 4, −h·2^36 at limb 3, −h·2^44 at limb 1 and h at limb 0. The value stays non-negative, as it was at least h·2^256, but limbs 1 and 3 may go negative before the carries, so the carries shift arithmetically. Limbs 0 to 3 come out below 2^52 and the value below 2^256 + 2^218 + h·2^224, so limb 4 below 2^48 + 2^16·h + 2^10, and h < 2^14 puts the value below 2p.
+	// For limbs below 2^62: subtracts h·p for h = L4 >> 48, then carries.
+	// As h·p = h·2^256 − h·(2^224 − 2^192 − 2^96 + 1), h·2^256 comes off limb 4 and the rest goes in as h·2^16 at limb 4, −h·2^36 at limb 3, −h·2^44 at limb 1 and h at limb 0.
+	// The value stays non-negative, as it was at least h·2^256, but limbs 1 and 3 may go negative before the carries, so the carries shift arithmetically.
+	// Limbs 0 to 3 come out below 2^52 and the value below 2^256 + 2^218 + h·2^224, so limb 4 below 2^48 + 2^16·h + 2^10, and h < 2^14 puts the value below 2p.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void WeakReduce(in P256Field52 value, out P256Field52 result)
 	{
@@ -196,7 +217,8 @@ internal struct P256Field52 : IUnsaturatedField<P256Field52, P256Field>
 		return ZeroMask(zero) | ZeroMask(modulus);
 	}
 
-	// The value mod p in four 64-bit limbs. After WeakReduce the value is below 2p, so one conditional subtraction of p makes it canonical; then limbs 0 to 3 below 2^52 and a value below 2^256 pack without overlap.
+	// The value mod p in four 64-bit limbs.
+	// After WeakReduce the value is below 2p, so one conditional subtraction of p makes it canonical; then limbs 0 to 3 below 2^52 and a value below 2^256 pack without overlap.
 	public static void ToSaturated(in P256Field52 value, out FieldElement<P256Field> result)
 	{
 		WeakReduce(in value, out P256Field52 t);
@@ -232,7 +254,11 @@ internal struct P256Field52 : IUnsaturatedField<P256Field52, P256Field>
 		result.L4 = w3 >> 16;
 	}
 
-	// Five Montgomery rounds on t = Σ t_k·2^(52k). As p ≡ −1 (mod 2^52), round k takes q = t_k mod 2^52 and adds q·p = q·(p + 1) − q: the −q clears limb k, leaving its carry, and Spread adds q·(p + 1) to the limbs above. Limbs 5 to 9, carried, are the result. Limbs 0 to 3 of t never go negative, limbs 4 to 9 may, so their carries shift arithmetically; for inputs below 2^56 every limb stays below 2^63 in magnitude. The result is (t + Q·p)/2^260 for some 0 ≤ Q < 2^260, so non-negative and below t/2^260 + p, with limbs 0 to 3 below 2^52.
+	// Five Montgomery rounds on t = Σ t_k·2^(52k).
+	// As p ≡ −1 (mod 2^52), round k takes q = t_k mod 2^52 and adds q·p = q·(p + 1) − q: the −q clears limb k, leaving its carry, and Spread adds q·(p + 1) to the limbs above.
+	// Limbs 5 to 9, carried, are the result.
+	// Limbs 0 to 3 of t never go negative, limbs 4 to 9 may, so their carries shift arithmetically; for inputs below 2^56 every limb stays below 2^63 in magnitude.
+	// The result is (t + Q·p)/2^260 for some 0 ≤ Q < 2^260, so non-negative and below t/2^260 + p, with limbs 0 to 3 below 2^52.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Reduce(ulong t0, ulong t1, ulong t2, ulong t3, ulong t4, ulong t5, ulong t6, ulong t7, ulong t8, ulong t9, out P256Field52 result)
 	{
@@ -303,7 +329,8 @@ internal struct P256Field52 : IUnsaturatedField<P256Field52, P256Field>
 			return Math.BigMul(a, b, out _);
 		}
 
-		// Math.BigMul would call its software fallback here rather than inline it. One of a and b is below 2^62 and the other below 2^63, so the two cross products of their 32-bit halves and the carry out of the low product sum below 2^64 without a carry.
+		// Math.BigMul would call its software fallback here rather than inline it.
+		// One of a and b is below 2^62 and the other below 2^63, so the two cross products of their 32-bit halves and the carry out of the low product sum below 2^64 without a carry.
 		ulong aHigh = a >> 32;
 		ulong aLow = (uint)a;
 		ulong bHigh = b >> 32;
@@ -312,7 +339,8 @@ internal struct P256Field52 : IUnsaturatedField<P256Field52, P256Field>
 		return aHigh * bHigh + (middle >> 32);
 	}
 
-	// Spread1 to Spread5 give limbs i + 1 to i + 5 of q·(p + 1) for q below 2^52 at limb i: p + 1 = 2^96 + 2^192 + 2^256 − 2^224 is 2^44 at limb i + 1, 2^36 at limb i + 3 and 2^48 − 2^16 at limb i + 4, and each shifted q splits at the limb boundary. Only Spread4 can be negative.
+	// Spread1 to Spread5 give limbs i + 1 to i + 5 of q·(p + 1) for q below 2^52 at limb i: p + 1 = 2^96 + 2^192 + 2^256 − 2^224 is 2^44 at limb i + 1, 2^36 at limb i + 3 and 2^48 − 2^16 at limb i + 4, and each shifted q splits at the limb boundary.
+	// Only Spread4 can be negative.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong Spread1(ulong q)
 	{

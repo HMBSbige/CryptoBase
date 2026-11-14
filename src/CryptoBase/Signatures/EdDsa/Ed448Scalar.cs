@@ -4,7 +4,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.Signatures.EdDsa;
 
-// Integers modulo L in the elements of Ed448Order, which RFC 8032 encodes in little-endian bytes. An element holds the plain value unless its name says Montgomery. Nothing branches on or indexes by a value, except IsCanonical, which takes a public one.
+// Integers modulo L in the elements of Ed448Order, which RFC 8032 encodes in little-endian bytes.
+// An element holds the plain value unless its name says Montgomery.
+// Nothing branches on or indexes by a value, except IsCanonical, which takes a public one.
 internal static class Ed448Scalar
 {
 	// The encoding of S (RFC 8032 §5.2.6): the 56 bytes of the value and a last byte of 0.
@@ -21,7 +23,11 @@ internal static class Ed448Scalar
 
 	private static ReadOnlySpan<ulong> FourDelta => [0x721CF5B5529EEC34, 0x7A4CF635C8E9C2AB, 0xEEC492D944A725BF, 0x000000020CD77058];
 
-	// h mod L for the 114 little-endian bytes of h, by folds: as 2^446 ≡ δ (mod L), a + 2^446·b ≡ a + δ·b and a + 2^448·b ≡ a + 4δ·b, which stay positive, so no multiple of L is added. h < 2^912 gives b = ⌊h/2^448⌋ < 2^464 and 4δ·b < 2^690, so the first remainder is below 2^691; then b < 2^243, 4δ·b < 2^469, and the second is below 2^470; then, from bit 446, b < 2^24, δ·b < 2^248, and the third is below 2^446 + 2^248 < 2L, which a conditional subtraction takes below L. Neither the time nor the addresses depend on h.
+	// h mod L for the 114 little-endian bytes of h, by folds: as 2^446 ≡ δ (mod L), a + 2^446·b ≡ a + δ·b and a + 2^448·b ≡ a + 4δ·b, which stay positive, so no multiple of L is added.
+	// h < 2^912 gives b = ⌊h/2^448⌋ < 2^464 and 4δ·b < 2^690, so the first remainder is below 2^691;
+	// then b < 2^243, 4δ·b < 2^469, and the second is below 2^470;
+	// then, from bit 446, b < 2^24, δ·b < 2^248, and the third is below 2^446 + 2^248 < 2L, which a conditional subtraction takes below L.
+	// Neither the time nor the addresses depend on h.
 	[SkipLocalsInit]
 	internal static void ReduceWide(ReadOnlySpan<byte> source, out FieldElement<Ed448Order> result)
 	{
@@ -112,7 +118,8 @@ internal static class Ed448Scalar
 		}
 	}
 
-	// Whether 57 little-endian bytes are below L, as the S of a signature must be: the last byte is 0, and the other 56 are below L. The time depends on the value.
+	// Whether 57 little-endian bytes are below L, as the S of a signature must be: the last byte is 0, and the other 56 are below L.
+	// The time depends on the value.
 	internal static bool IsCanonical(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(source.Length is Length);

@@ -245,7 +245,8 @@ public class TrustAnchorNameConstraintsTest
 		yield return () => ("excluded, another label in the last relative name", null, Dn(Rdn(Attribute(DomainComponentType, ia5String, "com")), Rdn(Attribute(DomainComponentType, ia5String, "example"))), Dn(Rdn(Attribute(DomainComponentType, ia5String, "com")), Rdn(Attribute(DomainComponentType, ia5String, "examplex"))), null, null);
 	}
 
-	// RFC 5280, Sec. 7.3: domainComponent values match by a case-insensitive exact match, which a non-canonical label cannot pass to enter a permitted subtree; an excluded subtree also holds what the preparation of RFC 4518 would make equal, so that such a label cannot escape it either.
+	// RFC 5280, Sec. 7.3: domainComponent values match by a case-insensitive exact match, which a non-canonical label cannot pass to enter a permitted subtree;
+	// an excluded subtree also holds what the preparation of RFC 4518 would make equal, so that such a label cannot escape it either.
 	[Test]
 	[MethodDataSource(nameof(DomainComponentCases))]
 	public async Task ComparesDomainComponentsByACaseInsensitiveExactMatch(string @case, byte[]? permitted, byte[]? excluded, byte[] subject, CertificateValidationError? error, string? message)
@@ -310,7 +311,8 @@ public class TrustAnchorNameConstraintsTest
 		}
 	}
 
-	// The critical or noncritical extension is processed alike, for every certificate below, the intermediate ones included; self-issued intermediate certificates are skipped, but not the peer's certificate.
+	// The critical or noncritical extension is processed alike, for every certificate below, the intermediate ones included;
+	// self-issued intermediate certificates are skipped, but not the peer's certificate.
 	[Test]
 	public async Task AppliesDirectoryNameConstraintsAsItDoesOtherConstraints()
 	{
@@ -389,7 +391,8 @@ public class TrustAnchorNameConstraintsTest
 		}
 	}
 
-	// The constraints of a CA apply to the alternative names of the intermediate certificates below it too, but not to self-issued ones, as for a key rollover, whose names may match by RFC 5280, Sec. 7.1, rather than byte for byte; and only CAs may have the extension.
+	// The constraints of a CA apply to the alternative names of the intermediate certificates below it too, but not to self-issued ones, as for a key rollover, whose names may match by RFC 5280, Sec. 7.1, rather than byte for byte;
+	// and only CAs may have the extension.
 	[Test]
 	public async Task AppliesTheConstraintsToEveryCertificateBelow()
 	{
@@ -470,7 +473,9 @@ public class TrustAnchorNameConstraintsTest
 		}
 	}
 
-	// RFC 2985, Secs. 5.2.1, 5.2.2 and 6.1: emailAddress and unstructuredName values match by pkcs9CaseIgnoreMatch, which keeps every character but for case, so that a value with other white space or control codes cannot enter a permitted subtree; an excluded subtree also holds what the preparation of RFC 4518 would make equal, so that such a value cannot escape it either. The leaf has a subject alternative name, so that its emailAddress attributes are not matched as rfc822Name.
+	// RFC 2985, Secs. 5.2.1, 5.2.2 and 6.1: emailAddress and unstructuredName values match by pkcs9CaseIgnoreMatch, which keeps every character but for case, so that a value with other white space or control codes cannot enter a permitted subtree;
+	// an excluded subtree also holds what the preparation of RFC 4518 would make equal, so that such a value cannot escape it either.
+	// The leaf has a subject alternative name, so that its emailAddress attributes are not matched as rfc822Name.
 	[Test]
 	[MethodDataSource(nameof(CaseIgnoreCases))]
 	public async Task ComparesEmailAddressesAndUnstructuredNamesByACaseInsensitiveExactMatch(string @case, byte[]? permitted, byte[]? excluded, byte[] subject, CertificateValidationError? error, string? message)

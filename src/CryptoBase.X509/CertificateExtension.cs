@@ -57,7 +57,8 @@ public sealed class CertificateExtension
 	/// </summary>
 	public ReadOnlyMemory<byte> Value { get; }
 
-	// Extension ::= SEQUENCE { extnID OBJECT IDENTIFIER, critical BOOLEAN DEFAULT FALSE, extnValue OCTET STRING }; DER omits critical when it is FALSE. The value is a slice of the reader's memory.
+	// Extension ::= SEQUENCE { extnID OBJECT IDENTIFIER, critical BOOLEAN DEFAULT FALSE, extnValue OCTET STRING }; DER omits critical when it is FALSE.
+	// The value is a slice of the reader's memory.
 	internal static CertificateExtension Read(ref DerReader reader)
 	{
 		DerReader contents = reader.ReadSequence();
@@ -68,7 +69,8 @@ public sealed class CertificateExtension
 		return new CertificateExtension(oid, critical, value);
 	}
 
-	// Nearly all extensions are under id-ce (2.5.29), so their identifiers have one string each, kept as they are first read. Threads that race write equal strings.
+	// Nearly all extensions are under id-ce (2.5.29), so their identifiers have one string each, kept as they are first read.
+	// Threads that race write equal strings.
 	private static string ReadIdentifier(ref DerReader reader)
 	{
 		if (reader.GetRemaining().Span is [0x06, 0x03, 0x55, 0x1D, var last and < 0x80, ..])
@@ -80,7 +82,8 @@ public sealed class CertificateExtension
 		return reader.ReadObjectIdentifier();
 	}
 
-	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension under an explicit tag, each extnID at most once, as a CRL and an OCSP response hold them. The values are slices of the reader's memory.
+	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension under an explicit tag, each extnID at most once, as a CRL and an OCSP response hold them.
+	// The values are slices of the reader's memory.
 	internal static IReadOnlyList<CertificateExtension> ReadList(ref DerReader reader, Asn1Tag tag)
 	{
 		DerReader wrapper = reader.ReadSequence(tag);

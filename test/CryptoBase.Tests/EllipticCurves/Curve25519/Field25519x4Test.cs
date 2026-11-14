@@ -7,7 +7,11 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves.Curve25519;
 
-// Each four-lane field against BigInteger, lane by lane. The operands of every product of the point formulas and the ladder feed that product, from tight elements with every limb at its largest, zero and random; every result must extract to tight elements. The bound tests write raw limbs instead: products take operands at the largest limbs that Multiply takes, the steps start from the largest limbs of a reduced value, and every operand and product must keep its limbs within its bound. Field25519x8Avx512 runs the point formulas in each of its groups, with other lanes in the other group.
+// Each four-lane field against BigInteger, lane by lane.
+// The operands of every product of the point formulas and the ladder feed that product, from tight elements with every limb at its largest, zero and random;
+// every result must extract to tight elements.
+// The bound tests write raw limbs instead: products take operands at the largest limbs that Multiply takes, the steps start from the largest limbs of a reduced value, and every operand and product must keep its limbs within its bound.
+// Field25519x8Avx512 runs the point formulas in each of its groups, with other lanes in the other group.
 public class Field25519x4Test
 {
 	private const int RandomCount = 6;
@@ -318,7 +322,8 @@ public class Field25519x4Test
 		}
 	}
 
-	// Products of operands with the largest limbs that Multiply takes, then the point formulas from the largest limbs of a reduced value, in the lanes that offset places; otherOffset places otherLanes, if any, where they must not change the results.
+	// Products of operands with the largest limbs that Multiply takes, then the point formulas from the largest limbs of a reduced value, in the lanes that offset places;
+	// otherOffset places otherLanes, if any, where they must not change the results.
 	private static void RunBoundPointSteps<TField>(List<string> failures, Func<int, int, int> offset, ulong[][]? otherLanes = null, Func<int, int, int>? otherOffset = null) where TField : unmanaged, IEdwardsField25519x4<TField>
 	{
 		ulong[][] lefts = [LeftMaximum, LeftMaximum, ReducedMaximum, EvenLimbs(LeftMaximum)];

@@ -3,7 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.KeyAgreements.Xdh;
 
-// The private key is any 32 bytes, kept as imported and clamped where it is used. The public key is a u-coordinate: canonical where the key derives it, the bytes as given where it was imported alone. Keep a key in one writable location and do not copy it: a copy keeps the private key where Clear cannot reach it.
+// The private key is any 32 bytes, kept as imported and clamped where it is used.
+// The public key is a u-coordinate: canonical where the key derives it, the bytes as given where it was imported alone.
+// Keep a key in one writable location and do not copy it: a copy keeps the private key where Clear cannot reach it.
 internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 {
 	internal const int PrivateKeyLength = 32;
@@ -116,7 +118,8 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 		destination[PrivateKeyLength - 1] = (byte)(destination[PrivateKeyLength - 1] & 0x7F | 0x40);
 	}
 
-	// X25519(k, 9) by the fixed-base multiplication on the Edwards curve and the birational map, as B maps to u = 9. The product is never the identity, which would map to 0, as a clamped k is not a multiple of L.
+	// X25519(k, 9) by the fixed-base multiplication on the Edwards curve and the birational map, as B maps to u = 9.
+	// The product is never the identity, which would map to 0, as a clamped k is not a multiple of L.
 	[SkipLocalsInit]
 	internal static void DerivePublicKey(ReadOnlySpan<byte> privateKey, Span<byte> publicKey)
 	{
@@ -129,7 +132,9 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 		point.ZeroMemory();
 	}
 
-	// X25519(k, u) into sharedSecret, unless the result is all zeros: then false, with sharedSecret unchanged. A clamped k is a multiple of 8 but not of the order of a larger subgroup of the curve or its twist, so the result is zero just for a point whose order divides 8 and the return value depends on peerPublicKey alone. The peer key is read in full before sharedSecret is written, so the two may overlap.
+	// X25519(k, u) into sharedSecret, unless the result is all zeros: then false, with sharedSecret unchanged.
+	// A clamped k is a multiple of 8 but not of the order of a larger subgroup of the curve or its twist, so the result is zero just for a point whose order divides 8 and the return value depends on peerPublicKey alone.
+	// The peer key is read in full before sharedSecret is written, so the two may overlap.
 	[SkipLocalsInit]
 	internal static bool TryDeriveSharedSecret(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> sharedSecret)
 	{
@@ -160,7 +165,8 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 		return true;
 	}
 
-	// X25519(k, 9) into publicKey and X25519(k, u) into sharedSecret, for a peer key that is not of small order, as an encapsulation key is not, with one inversion for both: 1/((Z − Y)·z) gives 1/(Z − Y) for the map of the fixed-base product and 1/z for the ladder. Neither factor is 0, as a clamped k is not a multiple of L or of the order of the peer point, so neither result fails.
+	// X25519(k, 9) into publicKey and X25519(k, u) into sharedSecret, for a peer key that is not of small order, as an encapsulation key is not, with one inversion for both: 1/((Z − Y)·z) gives 1/(Z − Y) for the map of the fixed-base product and 1/z for the ladder.
+	// Neither factor is 0, as a clamped k is not a multiple of L or of the order of the peer point, so neither result fails.
 	[SkipLocalsInit]
 	internal static void DerivePublicKeyAndSharedSecret(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> publicKey, Span<byte> sharedSecret)
 	{
@@ -189,7 +195,8 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 		inverse.ZeroMemory();
 	}
 
-	// Whether every shared secret with publicKey is all zeros: [8]P is the point at infinity for the point P of u-coordinate u on the curve or its twist. Three doublings on the u-line give it without a square root, (x : z) taking 2P = ((x² − z²)² : 4xz(x² + Axz + z²)), and they take constant time.
+	// Whether every shared secret with publicKey is all zeros: [8]P is the point at infinity for the point P of u-coordinate u on the curve or its twist.
+	// Three doublings on the u-line give it without a square root, (x : z) taking 2P = ((x² − z²)² : 4xz(x² + Axz + z²)), and they take constant time.
 	internal static bool IsSmallOrder(ReadOnlySpan<byte> publicKey)
 	{
 		Debug.Assert(publicKey.Length is PublicKeyLength);
@@ -214,7 +221,9 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 		return Field25519.IsZero(in z) is not 0;
 	}
 
-	// The DHKEM view of the key. Every 32-byte string is a private key, exported as imported. A public key comes from TryImportPublicKey, which rejects the points of small order, or from a private key, so the shared secrets below are never all zeros.
+	// The DHKEM view of the key.
+	// Every 32-byte string is a private key, exported as imported.
+	// A public key comes from TryImportPublicKey, which rejects the points of small order, or from a private key, so the shared secrets below are never all zeros.
 	static int IDiffieHellmanKey<X25519Key>.PrivateKeyLength => PrivateKeyLength;
 
 	static int IDiffieHellmanKey<X25519Key>.PublicKeyLength => PublicKeyLength;

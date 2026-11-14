@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// f^((p¹² − 1)/N), exactly, for f ≠ 0, as GM/T 0044.1 B.6.2 step g) takes it. (p¹² − 1)/N = (p⁶ − 1)(p² + 1)·(p⁴ − p² + 1)/N: the easy part f^((p⁶ − 1)(p² + 1)) takes one inversion and Frobenius maps and leaves an element of the cyclotomic subgroup, where inverses are conjugates and squares take the cyclotomic formula. The hard part (p⁴ − p² + 1)/N is λ0 + λ1·p + λ2·p² + λ3·p³ with λ3 = 1, λ2 = 6t² + 1, λ1 = −36t³ − 18t² − 12t + 1 and λ0 = −36t³ − 30t² − 18t − 2 (Scott, Benger, Charlemagne, Dominguez Perez and Kachisa, "On the final exponentiation for calculating pairings on ordinary elliptic curves", 2009), the exponent itself rather than a multiple of it: with the powers f^t, f^(t²) and f^(t³), it is y0·y1²·y2⁶·y3¹²·y4¹⁸·y5³⁰·y6³⁶ for y0 = f^(p + p² + p³), y1 = f⁻¹, y2 = f^(t²p²), y3 = f^(−tp), y4 = f^(−t − t²p), y5 = f^(−t²) and y6 = f^(−t³ − t³p), whose exponents sum to the λ.
+// f^((p¹² − 1)/N), exactly, for f ≠ 0, as GM/T 0044.1 B.6.2 step g) takes it.
+// (p¹² − 1)/N = (p⁶ − 1)(p² + 1)·(p⁴ − p² + 1)/N: the easy part f^((p⁶ − 1)(p² + 1)) takes one inversion and Frobenius maps and leaves an element of the cyclotomic subgroup, where inverses are conjugates and squares take the cyclotomic formula.
+// The hard part (p⁴ − p² + 1)/N is λ0 + λ1·p + λ2·p² + λ3·p³ with λ3 = 1, λ2 = 6t² + 1, λ1 = −36t³ − 18t² − 12t + 1 and λ0 = −36t³ − 30t² − 18t − 2 (Scott, Benger, Charlemagne, Dominguez Perez and Kachisa, "On the final exponentiation for calculating pairings on ordinary elliptic curves", 2009), the exponent itself rather than a multiple of it: with the powers f^t, f^(t²) and f^(t³), it is y0·y1²·y2⁶·y3¹²·y4¹⁸·y5³⁰·y6³⁶ for y0 = f^(p + p² + p³), y1 = f⁻¹, y2 = f^(t²p²), y3 = f^(−tp), y4 = f^(−t − t²p), y5 = f^(−t²) and y6 = f^(−t³ − t³p), whose exponents sum to the λ.
 // Neither the time nor the addresses depend on f, and the intermediates are erased.
 internal static class SM9FinalExponentiation
 {

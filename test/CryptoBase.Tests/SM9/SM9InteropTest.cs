@@ -8,7 +8,10 @@ using static CryptoBase.Tests.SM9.SM9TestUtils;
 
 namespace CryptoBase.Tests.SM9;
 
-// Known-answer vectors for the master keys of GM/T 0044.5: signatures and encapsulations whose random numbers are unknown, so checked as a verifier and a decryptor sees them; an SM9Cipher whose C3 takes another MAC; a key exchange with hid = 0x02; and the keys, signatures, ciphertexts, encapsulations and a key exchange of hid = 0x05.
+// Known-answer vectors for the master keys of GM/T 0044.5: signatures and encapsulations whose random numbers are unknown, so checked as a verifier and a decryptor sees them;
+// an SM9Cipher whose C3 takes another MAC;
+// a key exchange with hid = 0x02;
+// and the keys, signatures, ciphertexts, encapsulations and a key exchange of hid = 0x05.
 public class SM9InteropTest
 {
 	private const byte OtherHid = 0x05;
@@ -53,7 +56,8 @@ public class SM9InteropTest
 		}
 	}
 
-	// The encryption master key of GM/T 0044.5, C.2 and D.2, with hid = 0x05 and the random numbers of D.2 and C.2: the private key of Bob, the ciphertext as C1 ‖ C3 ‖ C2 and in DER, and an encapsulation of 32 bytes; and an encapsulation whose random number is unknown.
+	// The encryption master key of GM/T 0044.5, C.2 and D.2, with hid = 0x05 and the random numbers of D.2 and C.2: the private key of Bob, the ciphertext as C1 ‖ C3 ‖ C2 and in DER, and an encapsulation of 32 bytes;
+	// and an encapsulation whose random number is unknown.
 	[Test]
 	public async Task EncryptionOfAnotherHidMatchesTheVectors()
 	{

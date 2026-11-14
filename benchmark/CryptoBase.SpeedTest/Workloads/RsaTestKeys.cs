@@ -4,8 +4,8 @@ namespace CryptoBase.SpeedTest.Workloads;
 /// Fixed RSA private keys, so that the signature workloads need not generate keys at start-up.
 /// </summary>
 /// <remarks>
-/// For measuring speed only: these keys are public and must never protect anything. They were generated with <c>RsaKey.GenerateKey</c>
-/// and exported with <c>ExportPkcs8PrivateKey</c>, as PKCS #8 in Base64.
+/// For measuring speed only: these keys are public and must never protect anything.
+/// They were generated with <c>RsaKey.GenerateKey</c> and exported with <c>ExportPkcs8PrivateKey</c>, as PKCS #8 in Base64.
 /// </remarks>
 internal static class RsaTestKeys
 {

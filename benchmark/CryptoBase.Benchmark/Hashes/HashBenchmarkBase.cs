@@ -12,7 +12,8 @@ public static class HashBenchmarkSizes
 
 	public static IReadOnlyList<int> Block128 { get; } = [0, 111, 112, 128, 256, 1024, 8192, 1024 * 1024];
 
-	// Inputs of 20, 32 and 64 bytes are the sizes of common keys and digests. A sponge pads in place: rate - 1 bytes still fit one block, while a full rate needs a second permutation.
+	// Inputs of 20, 32 and 64 bytes are the sizes of common keys and digests.
+	// A sponge pads in place: rate - 1 bytes still fit one block, while a full rate needs a second permutation.
 	public static IReadOnlyList<int> Rate72 { get; } = [0, 20, 32, 64, 71, 72, 256, 1024, 8192, 1024 * 1024];
 
 	public static IReadOnlyList<int> Rate104 { get; } = [0, 20, 32, 64, 103, 104, 256, 1024, 8192, 1024 * 1024];

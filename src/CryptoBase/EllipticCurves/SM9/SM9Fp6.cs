@@ -1,6 +1,10 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// Fp6 = Fp2[v]/(v³ − u), the element C0 + C1·v + C2·v². With v = w² it is the subfield of SM9Fp12 that the conjugation w ↦ −w fixes. Every member takes reduced coefficients and gives reduced ones, or sums of products for one reduction per coefficient, with the bounds of SM9Fp2Wide in multiples of B = (2.25p)². No member branches on or indexes by a value. Any result may be the same variable as an input.
+// Fp6 = Fp2[v]/(v³ − u), the element C0 + C1·v + C2·v².
+// With v = w² it is the subfield of SM9Fp12 that the conjugation w ↦ −w fixes.
+// Every member takes reduced coefficients and gives reduced ones, or sums of products for one reduction per coefficient, with the bounds of SM9Fp2Wide in multiples of B = (2.25p)².
+// No member branches on or indexes by a value.
+// Any result may be the same variable as an input.
 internal struct SM9Fp6
 {
 	internal SM9Fp2 C0;
@@ -16,7 +20,9 @@ internal struct SM9Fp6
 		SM9Fp6Wide.Reduce(in product, out result);
 	}
 
-	// Karatsuba before reduction: with v_i = a_i·b_i, c0 = v0 + u((a1 + a2)(b1 + b2) − v1 − v2), c1 = (a0 + a1)(b0 + b1) − v0 − v1 + u·v2 and c2 = (a0 + a2)(b0 + b2) − v0 − v2 + v1, which are c0 = a0b0 + u(a1b2 + a2b1), c1 = a0b1 + a1b0 + u·a2b2 and c2 = a0b2 + a2b0 + a1b1 as integer polynomials. For reduced inputs, c0 has coefficients in (−10B, B) and (−4B, 4B), c1 in (−8B, 2B) and (−2B, 5B) and c2 in (−6B, 3B) and [0, 6B). The products of the sums, of limbs below 2^53, leave every column below 2^60.6 in magnitude.
+	// Karatsuba before reduction: with v_i = a_i·b_i, c0 = v0 + u((a1 + a2)(b1 + b2) − v1 − v2), c1 = (a0 + a1)(b0 + b1) − v0 − v1 + u·v2 and c2 = (a0 + a2)(b0 + b2) − v0 − v2 + v1, which are c0 = a0b0 + u(a1b2 + a2b1), c1 = a0b1 + a1b0 + u·a2b2 and c2 = a0b2 + a2b0 + a1b1 as integer polynomials.
+	// For reduced inputs, c0 has coefficients in (−10B, B) and (−4B, 4B), c1 in (−8B, 2B) and (−2B, 5B) and c2 in (−6B, 3B) and [0, 6B).
+	// The products of the sums, of limbs below 2^53, leave every column below 2^60.6 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void MultiplyWide(in SM9Fp6 left, in SM9Fp6 right, out SM9Fp6Wide result)
@@ -69,7 +75,8 @@ internal struct SM9Fp6
 		SM9Fp2.Add(in s1, in t, out result.C1);
 	}
 
-	// value·(x0 + x1·v) before reduction, the shape of the first half of a line: a0x0 + u·a2x1, (a0 + a1)(x0 + x1) − a0x0 − a1x1 and a1x1 + a2x0, five products. For reduced inputs the first has coefficients in (−6B, B) and (−2B, 3B) and the others, sums of two products, in (−4B, 2B) and [0, 4B); every column is below 2^59.6 in magnitude.
+	// value·(x0 + x1·v) before reduction, the shape of the first half of a line: a0x0 + u·a2x1, (a0 + a1)(x0 + x1) − a0x0 − a1x1 and a1x1 + a2x0, five products.
+	// For reduced inputs the first has coefficients in (−6B, B) and (−2B, 3B) and the others, sums of two products, in (−4B, 2B) and [0, 4B); every column is below 2^59.6 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void MultiplyBy01Wide(in SM9Fp6 value, in SM9Fp2 x0, in SM9Fp2 x1, out SM9Fp6Wide result)
@@ -87,7 +94,8 @@ internal struct SM9Fp6
 		SM9Fp2Wide.AddTimesU(in t0, in t2, out result.C0);
 	}
 
-	// value·x·v before reduction = u·a2x + a0x·v + a1x·v², the shape of the second half of a line; for reduced inputs the first coefficient lies in (−4B, 0] and (−2B, B) and the others are single products.
+	// value·x·v before reduction = u·a2x + a0x·v + a1x·v², the shape of the second half of a line;
+	// for reduced inputs the first coefficient lies in (−4B, 0] and (−2B, B) and the others are single products.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void MultiplyBy1Wide(in SM9Fp6 value, in SM9Fp2 x, out SM9Fp6Wide result)
@@ -160,7 +168,8 @@ internal struct SM9Fp6
 		SM9Fp2.ConditionalSelect(mask, in whenSet.C2, in whenClear.C2, out result.C2);
 	}
 
-	// With t0 = a0² − u·a1a2, t1 = u·a2² − a0a1 and t2 = a1² − a0a2, value·(t0 + t1·v + t2·v²) is the norm a0t0 + u(a2t1 + a1t2) in Fp2. 0 gives 0; the inversion takes constant time.
+	// With t0 = a0² − u·a1a2, t1 = u·a2² − a0a1 and t2 = a1² − a0a2, value·(t0 + t1·v + t2·v²) is the norm a0t0 + u(a2t1 + a1t2) in Fp2.
+	// 0 gives 0; the inversion takes constant time.
 	[SkipLocalsInit]
 	internal static void Invert(in SM9Fp6 value, out SM9Fp6 result)
 	{

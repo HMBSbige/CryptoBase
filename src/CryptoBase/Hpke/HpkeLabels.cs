@@ -8,7 +8,8 @@ internal static class HpkeLabels
 {
 	private static ReadOnlySpan<byte> Version => "HPKE-v1"u8;
 
-	// Extract(salt, "HPKE-v1" ‖ suite_id ‖ label ‖ ikm). The empty salt that most labels take starts from the HMAC state of the empty key, which is the same every time.
+	// Extract(salt, "HPKE-v1" ‖ suite_id ‖ label ‖ ikm).
+	// The empty salt that most labels take starts from the HMAC state of the empty key, which is the same every time.
 	internal static void Extract<TKdf>(ReadOnlySpan<byte> suiteId, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> label, ReadOnlySpan<byte> inputKeyMaterial, Span<byte> pseudorandomKey) where TKdf : unmanaged, IHmacHashCore<TKdf>
 	{
 		Debug.Assert(pseudorandomKey.Length == TKdf.HashLength);
@@ -38,7 +39,8 @@ internal static class HpkeLabels
 		}
 	}
 
-	// Expand(prk, I2OSP(L, 2) ‖ "HPKE-v1" ‖ suite_id ‖ label ‖ info, L) for L = output.Length in [1, 255·Nh]. Only info may overlap output.
+	// Expand(prk, I2OSP(L, 2) ‖ "HPKE-v1" ‖ suite_id ‖ label ‖ info, L) for L = output.Length in [1, 255·Nh].
+	// Only info may overlap output.
 	[SkipLocalsInit]
 	internal static void Expand<TKdf>(ReadOnlySpan<byte> suiteId, ReadOnlySpan<byte> pseudorandomKey, ReadOnlySpan<byte> label, ReadOnlySpan<byte> info, Span<byte> output) where TKdf : unmanaged, IHmacHashCore<TKdf>
 	{
@@ -65,7 +67,8 @@ internal static class HpkeLabels
 		}
 	}
 
-	// As above for L of at most Nh, T(1) = HMAC(prk, labeled_info ‖ 0x01), from a state keyed with prk, which it leaves keyed for the next label of the same key. output is written after the last read of info.
+	// As above for L of at most Nh, T(1) = HMAC(prk, labeled_info ‖ 0x01), from a state keyed with prk, which it leaves keyed for the next label of the same key.
+	// output is written after the last read of info.
 	[SkipLocalsInit]
 	internal static void Expand<TKdf>(ref HmacState<TKdf> keyed, ReadOnlySpan<byte> suiteId, ReadOnlySpan<byte> label, ReadOnlySpan<byte> info, Span<byte> output) where TKdf : unmanaged, IHmacHashCore<TKdf>
 	{

@@ -10,7 +10,8 @@ namespace CryptoBase.Tests.IO;
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class ChunkedEncryptionStreamTest
 {
-	// Whether writes split chunks, end on their boundaries or span several, the one-shot decryption, which the vectors check, must recover the message. The writes go through the array overloads; the other tests write spans and memory.
+	// Whether writes split chunks, end on their boundaries or span several, the one-shot decryption, which the vectors check, must recover the message.
+	// The writes go through the array overloads; the other tests write spans and memory.
 	[Test]
 	[MatrixDataSource]
 	public async Task DecryptsForAnyWrites([Matrix(0, 1, ChunkSize - 1, ChunkSize, ChunkSize + 1, 3 * ChunkSize, 3 * ChunkSize + 5)] int length, [Matrix(1, 4099, ChunkSize, ChunkSize + 1, int.MaxValue)] int writeSize, [Matrix] bool useAsync)
@@ -132,7 +133,8 @@ public class ChunkedEncryptionStreamTest
 		}
 	}
 
-	// LimitedChunkCipher allows three chunks, so a message of at most 3 * ChunkSize - 1 bytes. A write that would pass that fails before it takes anything, and the stream stays usable.
+	// LimitedChunkCipher allows three chunks, so a message of at most 3 * ChunkSize - 1 bytes.
+	// A write that would pass that fails before it takes anything, and the stream stays usable.
 	[Test]
 	[MatrixDataSource]
 	public async Task MessagesCannotExceedTheChunkLimit([Matrix] bool useAsync)

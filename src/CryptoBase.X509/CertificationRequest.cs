@@ -6,7 +6,8 @@ namespace CryptoBase.X509;
 /// <remarks>
 /// <para>
 /// Decoding accepts only DER and checks the structure of RFC 2986, Sec. 4: the attributes field must be present, though it may be empty, the extensionRequest attribute (RFC 2985, Sec. 5.4.2) may appear only once, with one nonempty sequence of distinct extensions, and a key usage extension must decode as in <see cref="Certificate.KeyUsage" />.
-/// The values of the other attributes remain in <see cref="Encoded" />. Decoding does not check whether the algorithms are supported or whether the signature is valid; see <see cref="VerifySignature" />.
+/// The values of the other attributes remain in <see cref="Encoded" />.
+/// Decoding does not check whether the algorithms are supported or whether the signature is valid; see <see cref="VerifySignature" />.
 /// </para>
 /// <para>
 /// Instances are immutable, so they may be used concurrently.
@@ -105,7 +106,10 @@ public sealed class CertificationRequest
 	/// </summary>
 	/// <remarks>To tell an algorithm that the package does not support from a wrong signature, call <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" /> on <see cref="SignatureAlgorithm" />.</remarks>
 	/// <param name="key">The requester's public key, which <see cref="PublicKeyInfo" /> holds.</param>
-	/// <returns><see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="key" /> supports and the signature is valid with it; otherwise, <see langword="false" />.</returns>
+	/// <returns>
+	/// <see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="key" /> supports and the signature is valid with it;
+	/// otherwise, <see langword="false" />.
+	/// </returns>
 	/// <exception cref="ArgumentNullException"><paramref name="key" /> is <see langword="null" />.</exception>
 	/// <exception cref="ObjectDisposedException"><paramref name="key" /> has been disposed.</exception>
 	public bool VerifySignature(ISignatureKey key)

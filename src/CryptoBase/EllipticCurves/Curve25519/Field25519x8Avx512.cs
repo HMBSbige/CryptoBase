@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.Curve25519;
 
-// Two groups of four field elements: each 256-bit half of the vectors holds a group in the layout of Field25519x4Avx2, the low half group 0 and the high half group 1, so one instruction carries the four-lane formulas of two independent points. The members take and give the bounds of Field25519x4Avx2.
+// Two groups of four field elements: each 256-bit half of the vectors holds a group in the layout of Field25519x4Avx2, the low half group 0 and the high half group 1, so one instruction carries the four-lane formulas of two independent points.
+// The members take and give the bounds of Field25519x4Avx2.
 // Any result may be the same variable as an input: each member reads a limb of its inputs before it writes that limb of a result.
 internal struct Field25519x8Avx512 : IEdwardsField25519x4<Field25519x8Avx512>
 {
@@ -70,7 +71,9 @@ internal struct Field25519x8Avx512 : IEdwardsField25519x4<Field25519x8Avx512>
 		result.L9 = l4 >> 26;
 	}
 
-	// The cached forms (y − x, y + x, 2, 2dxy) of two entries that EdwardsBaseTable.SelectPacked gives, the first in group 0 and the second in group 1, with 2dxy negated where the sign of its digit, 0 or ulong.MaxValue, is set; as Field25519x4Avx2.SelectBase converts one. The halves of the entries pair up so that each 128-bit block takes the columns of one group, and a permutation of two vectors gathers each 64-bit limb of both groups.
+	// The cached forms (y − x, y + x, 2, 2dxy) of two entries that EdwardsBaseTable.SelectPacked gives, the first in group 0 and the second in group 1, with 2dxy negated where the sign of its digit, 0 or ulong.MaxValue, is set;
+	// as Field25519x4Avx2.SelectBase converts one.
+	// The halves of the entries pair up so that each 128-bit block takes the columns of one group, and a permutation of two vectors gathers each 64-bit limb of both groups.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void CreateCached(Vector512<ulong> firstSums, Vector256<ulong> firstProduct, ulong firstSign, Vector512<ulong> secondSums, Vector256<ulong> secondProduct, ulong secondSign, out Field25519x8Avx512 result)
 	{
@@ -498,7 +501,8 @@ internal struct Field25519x8Avx512 : IEdwardsField25519x4<Field25519x8Avx512>
 		joined.ZeroMemory();
 	}
 
-	// All ones in the lanes of each half that lanes sets. The eight scalars fold to a constant, where a vector of two halves may cost calls once the inlining budget runs out.
+	// All ones in the lanes of each half that lanes sets.
+	// The eight scalars fold to a constant, where a vector of two halves may cost calls once the inlining budget runs out.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector512<ulong> LaneMask(byte lanes)
 	{

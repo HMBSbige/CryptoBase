@@ -16,8 +16,7 @@ public class WycheproofRsaTest
 		"rsa_signature_3072_sha3_384_test.json", "rsa_signature_3072_sha3_512_test.json", "rsa_signature_3072_sha512_256_test.json", "rsa_signature_4096_sha512_256_test.json"
 	];
 
-	// Every RSASSA-PSS file: those of SHA-256, SHA-384 and SHA-512 with MGF1 of the same hash and a salt as long as it, with and without parameters, and those of other hashes, salt lengths and
-	// MGF1 hashes, whose keys must not import or must not verify them.
+	// Every RSASSA-PSS file: those of SHA-256, SHA-384 and SHA-512 with MGF1 of the same hash and a salt as long as it, with and without parameters, and those of other hashes, salt lengths and MGF1 hashes, whose keys must not import or must not verify them.
 	private static readonly string[] PssFiles =
 	[
 		"rsa_pss_2048_sha1_mgf1_20_params_test.json", "rsa_pss_2048_sha1_mgf1_20_test.json", "rsa_pss_2048_sha256_mgf1_0_params_test.json", "rsa_pss_2048_sha256_mgf1_0_test.json",
@@ -29,8 +28,8 @@ public class WycheproofRsaTest
 		"rsa_pss_misc_params_test.json", "rsa_pss_misc_test.json"
 	];
 
-	// The acceptable vectors that the tests accept carry these flags in each file: small moduli, small public exponents and SHA-1 in the signature generation files, and a DigestInfo without the NULL
-	// parameters in the verification files (RFC 5246, Sec. 4.7). A file with any other set fails, so that its vectors are decided anew.
+	// The acceptable vectors that the tests accept carry these flags in each file: small moduli, small public exponents and SHA-1 in the signature generation files, and a DigestInfo without the NULL parameters in the verification files (RFC 5246, Sec. 4.7).
+	// A file with any other set fails, so that its vectors are decided anew.
 	private static readonly Dictionary<string, string[]> AcceptableFlags = new()
 	{
 		["rsa_pkcs1_1024_sig_gen_test.json"] = ["SmallModulus", "WeakHash", "SmallPublicKey"],
@@ -76,8 +75,8 @@ public class WycheproofRsaTest
 		await Assert.That(vectors.Where(static vector => vector.Result is WycheproofResult.Acceptable).SelectMany(static vector => vector.Flags).Distinct()).IsEquivalentTo(AcceptableFlags[fileName]);
 	}
 
-	// Signing with the group's key gives the file's signature byte for byte, which verifies, and the key's encodings, the RSA PRIVATE KEY block included, give the same key. SHA-1 and SHA-224 have no
-	// SignatureAlgorithm, so their signatures verify with none.
+	// Signing with the group's key gives the file's signature byte for byte, which verifies, and the key's encodings, the RSA PRIVATE KEY block included, give the same key.
+	// SHA-1 and SHA-224 have no SignatureAlgorithm, so their signatures verify with none.
 	[Test]
 	[WycheproofVectors<RsaSignTestGroup, RsaSignatureTestVector>("rsa_pkcs1_1024_sig_gen_test.json")]
 	[WycheproofVectors<RsaSignTestGroup, RsaSignatureTestVector>("rsa_pkcs1_1536_sig_gen_test.json")]
@@ -115,8 +114,8 @@ public class WycheproofRsaTest
 		}
 	}
 
-	// The acceptable vectors, whose DigestInfo lacks the NULL parameters, verify. No vector verifies with another algorithm, but those that the file made with another hash or with RSASSA-PSS, which
-	// may be valid signatures of that algorithm.
+	// The acceptable vectors, whose DigestInfo lacks the NULL parameters, verify.
+	// No vector verifies with another algorithm, but those that the file made with another hash or with RSASSA-PSS, which may be valid signatures of that algorithm.
 	[Test]
 	[WycheproofVectors<RsaVerifyTestGroup, RsaSignatureTestVector>("rsa_signature_2048_sha256_test.json")]
 	[WycheproofVectors<RsaVerifyTestGroup, RsaSignatureTestVector>("rsa_signature_2048_sha384_test.json")]
@@ -173,9 +172,9 @@ public class WycheproofRsaTest
 		}
 	}
 
-	// A vector verifies only with the SignatureAlgorithm of its hash, if MGF1 has the same hash and the salt is as long as the hash; in a group with another salt length, only the invalid vector that the
-	// file made with a salt as long as the hash does. A key with RSASSA-PSS parameters supports the one algorithm that they allow (RFC 4055, Sec. 3.3), and one whose parameters allow none does not
-	// import; other keys support every algorithm.
+	// A vector verifies only with the SignatureAlgorithm of its hash, if MGF1 has the same hash and the salt is as long as the hash;
+	// in a group with another salt length, only the invalid vector that the file made with a salt as long as the hash does.
+	// A key with RSASSA-PSS parameters supports the one algorithm that they allow (RFC 4055, Sec. 3.3), and one whose parameters allow none does not import; other keys support every algorithm.
 	[Test]
 	[MethodDataSource(nameof(PssVectors))]
 	public async Task PssVerification(RsaSignatureTestVector vector)

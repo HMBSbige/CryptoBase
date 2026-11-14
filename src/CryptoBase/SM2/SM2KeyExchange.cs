@@ -10,14 +10,21 @@ namespace CryptoBase.SM2;
 /// </summary>
 /// <remarks>
 /// <para>
-/// An instance draws an ephemeral key when it is created. The initiator sends its ephemeral public key to the responder, and the responder sends its own back; each party then derives the shared key from the static public key, the ID and the ephemeral public key of its peer.
+/// An instance draws an ephemeral key when it is created.
+/// The initiator sends its ephemeral public key to the responder, and the responder sends its own back;
+/// each party then derives the shared key from the static public key, the ID and the ephemeral public key of its peer.
 /// Both parties derive the same key, of the length they choose.
 /// </para>
 /// <para>
-/// The key confirmation of the protocol is optional. A derivation gives the value that the party sends, S_B of the responder or S_A of the initiator, and the value it expects from its peer. The responder sends S_B with its ephemeral public key, and the initiator sends S_A once it has checked S_B; compare each received value with the expected one.
+/// The key confirmation of the protocol is optional.
+/// A derivation gives the value that the party sends, S_B of the responder or S_A of the initiator, and the value it expects from its peer.
+/// The responder sends S_B with its ephemeral public key, and the initiator sends S_A once it has checked S_B; compare each received value with the expected one.
 /// </para>
 /// <para>
-/// An instance derives once: after a successful derivation, a later one throws <see cref="InvalidOperationException" />; a derivation that fails on the inputs of the peer leaves the instance as it was. An instance is not thread-safe. Disposal erases the key material and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// An instance derives once: after a successful derivation, a later one throws <see cref="InvalidOperationException" />;
+/// a derivation that fails on the inputs of the peer leaves the instance as it was.
+/// An instance is not thread-safe.
+/// Disposal erases the key material and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class SM2KeyExchange : IDisposable
@@ -107,10 +114,13 @@ public sealed class SM2KeyExchange : IDisposable
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The method returns <see langword="false" /> if <paramref name="peerEphemeralPublicKey" /> is not a point on the curve in the uncompressed encoding, or the shared point is the point at infinity; the outputs then remain unchanged. They also remain unchanged if the method throws.
+	/// The method returns <see langword="false" /> if <paramref name="peerEphemeralPublicKey" /> is not a point on the curve in the uncompressed encoding, or the shared point is the point at infinity;
+	/// the outputs then remain unchanged.
+	/// They also remain unchanged if the method throws.
 	/// </para>
 	/// <para>
-	/// The responder sends <paramref name="confirmation" />, S_B, with its ephemeral public key and expects <paramref name="peerConfirmation" />, S_2, to equal S_A of the initiator. The initiator sends <paramref name="confirmation" />, S_A, and expects <paramref name="peerConfirmation" />, S_1, to equal S_B of the responder.
+	/// The responder sends <paramref name="confirmation" />, S_B, with its ephemeral public key and expects <paramref name="peerConfirmation" />, S_2, to equal S_A of the initiator.
+	/// The initiator sends <paramref name="confirmation" />, S_A, and expects <paramref name="peerConfirmation" />, S_1, to equal S_B of the responder.
 	/// </para>
 	/// <para>
 	/// The inputs may overlap the outputs, but the outputs must not overlap one another.
@@ -170,7 +180,8 @@ public sealed class SM2KeyExchange : IDisposable
 		return exchange;
 	}
 
-	// R = r·G and t = (d + x̄·r) mod n (A2, A4 and A5, or B2 to B4), which takes the place of d and r from here on. Neither the time nor the addresses depend on d or r.
+	// R = r·G and t = (d + x̄·r) mod n (A2, A4 and A5, or B2 to B4), which takes the place of d and r from here on.
+	// Neither the time nor the addresses depend on d or r.
 	[SkipLocalsInit]
 	private void Start(in FieldElement<SM2Order> privateKey, Action<Span<byte>> fill)
 	{
@@ -269,7 +280,10 @@ public sealed class SM2KeyExchange : IDisposable
 		return true;
 	}
 
-	// Writes the encoding of U = t·(P + x̄·R) for the static key P and the ephemeral key R of the peer, and x the x-coordinate of R; false if U is the point at infinity. With the windows of P, or with kernels for k·P + l·Q, U = t·P + (t·x̄)·R in fixed time. Without either, P + x̄·R comes from public inputs alone, in variable time, before t·(P + x̄·R) in fixed time. Not inlined, so that the frame of Derive keeps the size it has without the windows.
+	// Writes the encoding of U = t·(P + x̄·R) for the static key P and the ephemeral key R of the peer, and x the x-coordinate of R; false if U is the point at infinity.
+	// With the windows of P, or with kernels for k·P + l·Q, U = t·P + (t·x̄)·R in fixed time.
+	// Without either, P + x̄·R comes from public inputs alone, in variable time, before t·(P + x̄·R) in fixed time.
+	// Not inlined, so that the frame of Derive keeps the size it has without the windows.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	private bool TryMultiplyShared(ref SM2KeyState peer, ReadOnlySpan<byte> x, in AffinePoint<SM2CurveField> ephemeral, Span<byte> shared)
@@ -314,7 +328,8 @@ public sealed class SM2KeyExchange : IDisposable
 		limbs[3] = 0;
 	}
 
-	// sum = P + x̄·R for the static public key P and the ephemeral public key R of the peer, both on the curve, and x the x-coordinate of R; false if that is the point at infinity. Every input is public, so the time may depend on them.
+	// sum = P + x̄·R for the static public key P and the ephemeral public key R of the peer, both on the curve, and x the x-coordinate of R; false if that is the point at infinity.
+	// Every input is public, so the time may depend on them.
 	[SkipLocalsInit]
 	private static bool TryAddMultiple(in AffinePoint<SM2CurveField> point, ReadOnlySpan<byte> x, in AffinePoint<SM2CurveField> ephemeral, out AffinePoint<SM2CurveField> sum)
 	{

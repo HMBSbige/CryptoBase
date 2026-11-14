@@ -1,8 +1,7 @@
 namespace CryptoBase.SpeedTest.Reporting;
 
 /// <summary>
-/// Receives the results of a run as they are measured, in this order: <see cref="BeginRun" />, then for each group <see cref="BeginGroup" />,
-/// for each row <see cref="BeginRow" />, one <see cref="ReportCell" /> per column and <see cref="EndRow" />, then <see cref="EndGroup" />, and last <see cref="EndRun" />.
+/// Receives the results of a run as they are measured, in this order: <see cref="BeginRun" />, then for each group <see cref="BeginGroup" />, for each row <see cref="BeginRow" />, one <see cref="ReportCell" /> per column and <see cref="EndRow" />, then <see cref="EndGroup" />, and last <see cref="EndRun" />.
 /// </summary>
 internal interface IReporter
 {

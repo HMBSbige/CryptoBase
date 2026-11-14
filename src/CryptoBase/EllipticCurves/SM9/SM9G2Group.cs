@@ -1,7 +1,11 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// The scalar arithmetic of G2, the subgroup of order N of E'(Fp2), E': y² = x³ + 5u, with the generator P2 of GM/T 0044.5 §3.1. E'(Fp2) has order N·h with h = 2p − N, which is prime to N, so a point of the twist need not lie in G2. Scalars are plain values below N, and the products give projective points that a caller makes affine or erases.
-// ψ(x, y) = (x̄·cx, ȳ·cy), cx = w^(2(1 − p)) and cy = w^(3(1 − p)) in Fp, is the p-power Frobenius of E(Fp12) carried to the twist through ψ6(x, y) = (x·w⁻², y·w⁻³). It is an endomorphism of E'(Fp2) with ψ² − tr·ψ + p = 0, tr = 6t² + 1 the trace of E, and it acts on G2 as [p]. As cy² = −1, ψ²(x, y) = (x·cx², −y).
+// The scalar arithmetic of G2, the subgroup of order N of E'(Fp2), E': y² = x³ + 5u, with the generator P2 of GM/T 0044.5 §3.1.
+// E'(Fp2) has order N·h with h = 2p − N, which is prime to N, so a point of the twist need not lie in G2.
+// Scalars are plain values below N, and the products give projective points that a caller makes affine or erases.
+// ψ(x, y) = (x̄·cx, ȳ·cy), cx = w^(2(1 − p)) and cy = w^(3(1 − p)) in Fp, is the p-power Frobenius of E(Fp12) carried to the twist through ψ6(x, y) = (x·w⁻², y·w⁻³).
+// It is an endomorphism of E'(Fp2) with ψ² − tr·ψ + p = 0, tr = 6t² + 1 the trace of E, and it acts on G2 as [p].
+// As cy² = −1, ψ²(x, y) = (x·cx², −y).
 internal static class SM9G2Group
 {
 	// The plain coordinates of P2: x0, x1, y0 and y1 in 64-bit limbs.
@@ -42,7 +46,11 @@ internal static class SM9G2Group
 		BaseTable.MultiplyAddVariableTime(in scalar, in addend, out result);
 	}
 
-	// Whether a point of E'(Fp2) lies in G2: α(Q) = [a]Q + ψ(Q) − ψ²(Q) + ψ³(Q) for a = 6t + 2. On G2, α acts as a + p − p² + p³ ≡ 0 (mod N), so α(G2) = O. Conversely, ψ² = tr·ψ − p on E'(Fp2) reduces α to α0 + α1·ψ, whose product with its conjugate (α0 + α1·tr) − α1·ψ is the integer n = α0² + α0·α1·tr + α1²·p; α(Q) = O then gives n·Q = O, and as N divides n while n is prime to h = 2p − N, the order of Q divides N. So α(Q) = O just for Q in G2, and the test takes one product by a 66-bit scalar, that of the kernel, and three Frobenius maps rather than a product by N.
+	// Whether a point of E'(Fp2) lies in G2: α(Q) = [a]Q + ψ(Q) − ψ²(Q) + ψ³(Q) for a = 6t + 2.
+	// On G2, α acts as a + p − p² + p³ ≡ 0 (mod N), so α(G2) = O.
+	// Conversely, ψ² = tr·ψ − p on E'(Fp2) reduces α to α0 + α1·ψ, whose product with its conjugate (α0 + α1·tr) − α1·ψ is the integer n = α0² + α0·α1·tr + α1²·p;
+	// α(Q) = O then gives n·Q = O, and as N divides n while n is prime to h = 2p − N, the order of Q divides N.
+	// So α(Q) = O just for Q in G2, and the test takes one product by a 66-bit scalar, that of the kernel, and three Frobenius maps rather than a product by N.
 	// The time depends only on the public scalar a, so the point may be a private key; the multiples and images in its locals are erased.
 	[SkipLocalsInit]
 	internal static bool IsInSubgroupVariableTime(in SM9AffinePoint<SM9Fp2> point)

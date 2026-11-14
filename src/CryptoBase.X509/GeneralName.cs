@@ -2,7 +2,8 @@ using System.Text;
 
 namespace CryptoBase.X509;
 
-// A GeneralName of RFC 5280, Sec. 4.2.1.6. Value is a slice of the reader's memory: the characters of an IA5String, the octets of an iPAddress, the contents of the OBJECT IDENTIFIER of a registeredID, the DER of the Name of a directoryName, and the contents of the SEQUENCE of the others.
+// A GeneralName of RFC 5280, Sec. 4.2.1.6.
+// Value is a slice of the reader's memory: the characters of an IA5String, the octets of an iPAddress, the contents of the OBJECT IDENTIFIER of a registeredID, the DER of the Name of a directoryName, and the contents of the SEQUENCE of the others.
 internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory<byte> Value)
 {
 	private static readonly Asn1Tag ExplicitTag0 = new(TagClass.ContextSpecific, 0, true);
@@ -36,7 +37,8 @@ internal readonly record struct GeneralName(GeneralNameType Type, ReadOnlyMemory
 		return name;
 	}
 
-	// The implicit tags of RFC 5280 leave the IA5String, OCTET STRING and OBJECT IDENTIFIER alternatives primitive, and the SEQUENCE ones constructed; directoryName is explicit, as Name is a CHOICE. The values in an otherName and an ediPartyName need only be single DER elements, and the components of an x400Address DER elements.
+	// The implicit tags of RFC 5280 leave the IA5String, OCTET STRING and OBJECT IDENTIFIER alternatives primitive, and the SEQUENCE ones constructed; directoryName is explicit, as Name is a CHOICE.
+	// The values in an otherName and an ediPartyName need only be single DER elements, and the components of an x400Address DER elements.
 	public static GeneralName Read(ref DerReader reader)
 	{
 		ReadOnlyMemory<byte> element = reader.ReadEncodedValue();

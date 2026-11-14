@@ -13,7 +13,8 @@ internal static class PolicyGraph
 		return policy.Span.SequenceEqual(AnyPolicy.Span);
 	}
 
-	// Checks a path, from the peer's certificate to the trust anchor at its end, which does not take part. Returns the problem of a path that no policy is valid for when one is required, or null.
+	// Checks a path, from the peer's certificate to the trust anchor at its end, which does not take part.
+	// Returns the problem of a path that no policy is valid for when one is required, or null.
 	// The entries of the graph that the check handles, its policies, mappings and expected policies, count against budget; if they would exceed it, limitReached is set and the result is null.
 	public static PathProblem? Check(List<PathNode> path, TrustAnchorCertificateValidator validator, ref long budget, out bool limitReached)
 	{
@@ -162,7 +163,8 @@ internal static class PolicyGraph
 		return count;
 	}
 
-	// RFC 9618, Sec. 5.3, step (d): the nodes of the next depth, or null if there are none. anyPolicy says whether the policy processes as such.
+	// RFC 9618, Sec. 5.3, step (d): the nodes of the next depth, or null if there are none.
+	// anyPolicy says whether the policy processes as such.
 	private static Dictionary<ReadOnlyMemory<byte>, Node>? NextDepth(Dictionary<ReadOnlyMemory<byte>, Node> level, CertificatePolicies policies, bool anyPolicy)
 	{
 		// The nodes of this depth that expect each policy.
@@ -242,7 +244,8 @@ internal static class PolicyGraph
 		return level.Count > 0 ? level : null;
 	}
 
-	// RFC 9618, Sec. 5.5, step (g): whether the user-constrained policy set is not empty, the set being every policy if initial is null. Every node that leads to one of the last depth counts; the others are those that pruning removes.
+	// RFC 9618, Sec. 5.5, step (g): whether the user-constrained policy set is not empty, the set being every policy if initial is null.
+	// Every node that leads to one of the last depth counts; the others are those that pruning removes.
 	private static bool HasAcceptablePolicy(Dictionary<ReadOnlyMemory<byte>, Node> level, HashSet<ReadOnlyMemory<byte>>? initial)
 	{
 		if (initial is null || level.ContainsKey(AnyPolicy))
@@ -280,7 +283,8 @@ internal static class PolicyGraph
 		return false;
 	}
 
-	// A node of the valid_policy_graph, without the qualifier_set, which the validator does not return. Parents are the nodes of the previous depth; expected_policy_set is Expected, which step (b)(1) replaces.
+	// A node of the valid_policy_graph, without the qualifier_set, which the validator does not return.
+	// Parents are the nodes of the previous depth; expected_policy_set is Expected, which step (b)(1) replaces.
 	private sealed class Node(ReadOnlyMemory<byte> policy, ReadOnlyMemory<byte>[] expected, List<Node> parents)
 	{
 		public ReadOnlyMemory<byte> Policy { get; } = policy;

@@ -5,7 +5,8 @@ using Sha3Arm = System.Runtime.Intrinsics.Arm.Sha3;
 
 namespace CryptoBase.Hashes.Sha3;
 
-// Two states in the 64-bit elements of 128-bit vectors. Where CpuIdUtils.PreferArmSha3, Permute runs the round on KeccakP1600Times2Sha3 instead, which takes each step in one ARMv8.2 SHA3 instruction.
+// Two states in the 64-bit elements of 128-bit vectors.
+// Where CpuIdUtils.PreferArmSha3, Permute runs the round on KeccakP1600Times2Sha3 instead, which takes each step in one ARMv8.2 SHA3 instruction.
 internal readonly struct KeccakP1600Times2 : IKeccakP1600Kernel, IKeccakP1600Lanes<Vector128<ulong>>
 {
 	public static bool IsSupported => Sse2.IsSupported || AdvSimd.Arm64.IsSupported;

@@ -11,7 +11,8 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 
 	public static bool IsSupported => true;
 
-	// Each step takes the bit of k from 254 down to 0. The swap mask is the XOR of the bit with the one before, so only arithmetic on k decides which pair each step doubles.
+	// Each step takes the bit of k from 254 down to 0.
+	// The swap mask is the XOR of the bit with the one before, so only arithmetic on k decides which pair each step doubles.
 	[SkipLocalsInit]
 	public static void Ladder(ReadOnlySpan<byte> scalar, in Field25519 u, out Field25519 x, out Field25519 z)
 	{
@@ -76,7 +77,8 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 		sum.ZeroMemory();
 	}
 
-	// Interleaves the NAFs of a and b. A doubling that no addition follows goes to projective coordinates, which need one product fewer than extended ones.
+	// Interleaves the NAFs of a and b.
+	// A doubling that no addition follows goes to projective coordinates, which need one product fewer than extended ones.
 	[SkipLocalsInit]
 	public static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, in EdwardsPoint point, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
@@ -223,7 +225,8 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 		}
 	}
 
-	// One step of RFC 7748 §5: (x2 : z2) doubles and (x3 : z3) becomes the sum of the two, whose difference has u-coordinate x1. The sums and differences that go into the products are below 2^52.6 and the products tight.
+	// One step of RFC 7748 §5: (x2 : z2) doubles and (x3 : z3) becomes the sum of the two, whose difference has u-coordinate x1.
+	// The sums and differences that go into the products are below 2^52.6 and the products tight.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void LadderStep(in Field25519 x1, ref Field25519 x2, ref Field25519 z2, ref Field25519 x3, ref Field25519 z3)
 	{

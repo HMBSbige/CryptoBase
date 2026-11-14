@@ -1,8 +1,11 @@
 namespace CryptoBase.EllipticCurves.Curve448;
 
-// The Edwards curve edwards448, x² + y² = 1 + dx²y² over the field of p = 2^448 − 2^224 − 1, d = −39081, of order 4L (RFC 8032 §5.2). As 1 is a square and d is not, the addition formulas are complete: they hold for any two points, equal, opposite or of small order alike.
-// Nothing here branches on or indexes by a point or a scalar, except where a method says that its inputs must be public. The extended coordinates of a product depend on the scalar and not only on the point, so a caller with a secret scalar clears them once it has the encoding.
-// The formulas write a coordinate of the result only after their last read of the inputs, so the result may be an input. In the bounds below, a limb bound of m means m·2^56: a tight element has 1, a sum of two 2 and a difference 3.
+// The Edwards curve edwards448, x² + y² = 1 + dx²y² over the field of p = 2^448 − 2^224 − 1, d = −39081, of order 4L (RFC 8032 §5.2).
+// As 1 is a square and d is not, the addition formulas are complete: they hold for any two points, equal, opposite or of small order alike.
+// Nothing here branches on or indexes by a point or a scalar, except where a method says that its inputs must be public.
+// The extended coordinates of a product depend on the scalar and not only on the point, so a caller with a secret scalar clears them once it has the encoding.
+// The formulas write a coordinate of the result only after their last read of the inputs, so the result may be an input.
+// In the bounds below, a limb bound of m means m·2^56: a tight element has 1, a sum of two 2 and a difference 3.
 internal static class Edwards448
 {
 	internal const int EncodedLength = 57;
@@ -39,7 +42,8 @@ internal static class Edwards448
 		Curve448KernelDispatch.MultiplyBase(scalar, out result);
 	}
 
-	// [a]A + [b]B for any 56 little-endian bytes a and b and any point A, whatever its order. The time depends on all three, which must be public.
+	// [a]A + [b]B for any 56 little-endian bytes a and b and any point A, whatever its order.
+	// The time depends on all three, which must be public.
 	internal static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, in EdwardsPoint point, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		Debug.Assert(a.Length is ScalarLength && b.Length is ScalarLength);
@@ -73,7 +77,9 @@ internal static class Edwards448
 		Encode(in point, in inverse, destination);
 	}
 
-	// RFC 8032 §5.2.3, strictly: false, with result default, for the wrong length, a y of p or more, any of the low seven bits of the last byte set, a y for which x² = (y² − 1)/(dy² − 1) has no root, or x = 0 with the sign bit set. dy² − 1 is never 0, as d is not a square. The checks take constant time, although the input is public.
+	// RFC 8032 §5.2.3, strictly: false, with result default, for the wrong length, a y of p or more, any of the low seven bits of the last byte set, a y for which x² = (y² − 1)/(dy² − 1) has no root, or x = 0 with the sign bit set.
+	// dy² − 1 is never 0, as d is not a square.
+	// The checks take constant time, although the input is public.
 	internal static bool TryDecode(ReadOnlySpan<byte> source, out EdwardsPoint result)
 	{
 		if (source.Length is not EncodedLength)
@@ -110,7 +116,8 @@ internal static class Edwards448
 		return true;
 	}
 
-	// u = y²/x² = (Y/X)², the 4-isogeny of RFC 7748 §4.2 to Curve448, which takes B to u = 5, in 56 little-endian bytes. A point with x = 0, the identity or the point of order 2, gives 0, as the inversion takes 0 to 0, and so does the ladder for the point at infinity that the isogeny gives for them.
+	// u = y²/x² = (Y/X)², the 4-isogeny of RFC 7748 §4.2 to Curve448, which takes B to u = 5, in 56 little-endian bytes.
+	// A point with x = 0, the identity or the point of order 2, gives 0, as the inversion takes 0 to 0, and so does the ladder for the point at infinity that the isogeny gives for them.
 	internal static void ToMontgomeryU(in EdwardsPoint point, Span<byte> destination)
 	{
 		Field448.Invert(in point.X, out Field448 inverse);
@@ -145,7 +152,8 @@ internal static class Edwards448
 		Field448.Negate(in scaled, out result.DT);
 	}
 
-	// A = X1X2, B = Y1Y2, C = T1·dT2 and D = Z1Z2 give x = E/(D + C) and y = (B − A)/(D − C) with E = (X1 + Y1)(X2 + Y2) − A − B = X1Y2 + Y1X2. E takes 4p and a carry, which leaves it at 1; B − A and D − C are at 3 and D + C at 2, so each product of ToExtended is at most 6.
+	// A = X1X2, B = Y1Y2, C = T1·dT2 and D = Z1Z2 give x = E/(D + C) and y = (B − A)/(D − C) with E = (X1 + Y1)(X2 + Y2) − A − B = X1Y2 + Y1X2.
+	// E takes 4p and a carry, which leaves it at 1; B − A and D − C are at 3 and D + C at 2, so each product of ToExtended is at most 6.
 	internal static void Add(in EdwardsPoint left, in EdwardsCachedPoint right, out EdwardsCompletedPoint result)
 	{
 		Field448.Add(in left.X, in left.Y, out Field448 leftSum);
@@ -163,7 +171,8 @@ internal static class Edwards448
 		Field448.Subtract(in d, in c, out result.T);
 	}
 
-	// As Add with the right operand negated, (−X, Y, Z, −dT): with A = X1X2 and C = T1·dT2 as products of the unnegated operand, E = (X1 + Y1)(Y2 − X2) + A − B, at 4 before its carry, x = E/(D − C) and y = (B + A)/(D + C). (X1 + Y1)(Y2 − X2) is a product at 2 by 3, and the products of ToExtended stay at 6.
+	// As Add with the right operand negated, (−X, Y, Z, −dT): with A = X1X2 and C = T1·dT2 as products of the unnegated operand, E = (X1 + Y1)(Y2 − X2) + A − B, at 4 before its carry, x = E/(D − C) and y = (B + A)/(D + C).
+	// (X1 + Y1)(Y2 − X2) is a product at 2 by 3, and the products of ToExtended stay at 6.
 	internal static void Subtract(in EdwardsPoint left, in EdwardsCachedPoint right, out EdwardsCompletedPoint result)
 	{
 		Field448.Add(in left.X, in left.Y, out Field448 leftSum);
@@ -215,7 +224,8 @@ internal static class Edwards448
 		Field448.Add(in left.Z, in c, out result.T);
 	}
 
-	// x = 2XY/(X² + Y²) and y = (Y² − X²)/(2Z² − X² − Y²), with 2XY = (X + Y)² − X² − Y². The differences from X² + Y², at 2, take 4p: 2XY, at 5, is carried, and 2Z² − X² − Y² stays at 6, which ToExtended multiplies by 1 and by X² + Y² at 2.
+	// x = 2XY/(X² + Y²) and y = (Y² − X²)/(2Z² − X² − Y²), with 2XY = (X + Y)² − X² − Y².
+	// The differences from X² + Y², at 2, take 4p: 2XY, at 5, is carried, and 2Z² − X² − Y² stays at 6, which ToExtended multiplies by 1 and by X² + Y² at 2.
 	internal static void Double(in EdwardsProjectivePoint value, out EdwardsCompletedPoint result)
 	{
 		Field448.Add(in value.X, in value.Y, out Field448 sum);
@@ -260,7 +270,8 @@ internal static class Edwards448
 		return ref Unsafe.As<EdwardsPoint, EdwardsProjectivePoint>(ref Unsafe.AsRef(in value));
 	}
 
-	// Sets result[i] to (x, y, dxy) of points[i], with one inversion for all of them: result[i].X holds the product of the Z of points 0 to i until result[i] is written. The points must be public, as the inversion takes variable time.
+	// Sets result[i] to (x, y, dxy) of points[i], with one inversion for all of them: result[i].X holds the product of the Z of points 0 to i until result[i] is written.
+	// The points must be public, as the inversion takes variable time.
 	internal static void ToAffineVariableTime(ReadOnlySpan<EdwardsPoint> points, Span<EdwardsAffinePoint> result)
 	{
 		Debug.Assert(points.Length > 0 && result.Length == points.Length);

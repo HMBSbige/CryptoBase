@@ -78,7 +78,8 @@ public class ECKeyBclTest
 		}
 	}
 
-	// A platform without the curve throws PlatformNotSupportedException, and one with it may still refuse ECDH or ECDSA on it with a CryptographicException. OpenSSL generates keys on sm2p256v1 but refuses to import them.
+	// A platform without the curve throws PlatformNotSupportedException, and one with it may still refuse ECDH or ECDSA on it with a CryptographicException.
+	// OpenSSL generates keys on sm2p256v1 but refuses to import them.
 	private static void SkipUnlessSupported(CurveCase curve, bool importsKeys = false)
 	{
 		try

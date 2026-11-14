@@ -7,10 +7,16 @@ namespace CryptoBase.Hpke;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <c>TryCreate</c> sets up the base or PSK mode and <c>TryCreateAuthenticated</c> the auth or auth_psk mode. They return <see langword="false" /> only if the encapsulated key fails the public checks of the KEM, such as the wrong length or a point not on the curve; an encapsulated key or other inputs that do not match the sender's give a context that opens nothing. In the PSK modes, the PSK must be at least 32 bytes long and the PSK ID must not be empty.
+/// <c>TryCreate</c> sets up the base or PSK mode and <c>TryCreateAuthenticated</c> the auth or auth_psk mode.
+/// They return <see langword="false" /> only if the encapsulated key fails the public checks of the KEM, such as the wrong length or a point not on the curve;
+/// an encapsulated key or other inputs that do not match the sender's give a context that opens nothing.
+/// In the PSK modes, the PSK must be at least 32 bytes long and the PSK ID must not be empty.
 /// </para>
 /// <para>
-/// Each opened message takes the next sequence number. A recipient that sets up its context again, such as a stateless server, sets <see cref="SequenceNumber" /> to where the previous context stopped. An instance is not thread-safe. Disposal erases the keys and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// Each opened message takes the next sequence number.
+/// A recipient that sets up its context again, such as a stateless server, sets <see cref="SequenceNumber" /> to where the previous context stopped.
+/// An instance is not thread-safe.
+/// Disposal erases the keys and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class HpkeRecipientContext : IDisposable
@@ -50,7 +56,8 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// Gets or sets the sequence number of the next message.
 	/// </summary>
 	/// <remarks>
-	/// It starts at 0 and grows by one with each message opened. Every value opens only the message that the sender sealed with it; <see cref="ulong.MaxValue" /> is the message limit.
+	/// It starts at 0 and grows by one with each message opened.
+	/// Every value opens only the message that the sender sealed with it; <see cref="ulong.MaxValue" /> is the message limit.
 	/// </remarks>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public ulong SequenceNumber
@@ -183,7 +190,8 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// <paramref name="ciphertext" /> and <paramref name="plaintext" /> may start at the same byte, to open in place; otherwise they must not overlap.
 	/// </para>
 	/// <para>
-	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is shorter than the tag or fails authentication, as it does with the wrong sequence number, associated data or key. The sequence number then remains unchanged, and the part of <paramref name="plaintext" /> that would have received the message is cleared.
+	/// The method returns <see langword="false" /> if <paramref name="ciphertext" /> is shorter than the tag or fails authentication, as it does with the wrong sequence number, associated data or key.
+	/// The sequence number then remains unchanged, and the part of <paramref name="plaintext" /> that would have received the message is cleared.
 	/// </para>
 	/// </remarks>
 	/// <param name="ciphertext">The ciphertext, which ends with the tag.</param>
@@ -205,7 +213,10 @@ public sealed class HpkeRecipientContext : IDisposable
 	/// </summary>
 	/// <remarks><paramref name="exporterContext" /> may overlap <paramref name="destination" />.</remarks>
 	/// <param name="exporterContext">The exporter context.</param>
-	/// <param name="destination">The buffer that receives the secret. Its length, at most 255 times the hash length of the KDF, <c>Kdf.HashLength</c>, selects how many bytes are derived.</param>
+	/// <param name="destination">
+	/// The buffer that receives the secret.
+	/// Its length, at most 255 times the hash length of the KDF, <c>Kdf.HashLength</c>, selects how many bytes are derived.
+	/// </param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="destination" /> is too long.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public void Export(ReadOnlySpan<byte> exporterContext, Span<byte> destination)

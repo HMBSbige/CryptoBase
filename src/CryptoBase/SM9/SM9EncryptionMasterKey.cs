@@ -9,20 +9,26 @@ namespace CryptoBase.SM9;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The master private key ke is big-endian and must lie in [1, N − 1]. The master public key Ppub-e = [ke]P1 is a point of G1 in the uncompressed encoding, 0x04 ‖ x ‖ y, and must lie on the curve.
-/// An instance that holds only the master public key encrypts and encapsulates; extracting keys needs the master private key. Extraction, encryption and encapsulation may run concurrently on one instance.
+/// The master private key ke is big-endian and must lie in [1, N − 1].
+/// The master public key Ppub-e = [ke]P1 is a point of G1 in the uncompressed encoding, 0x04 ‖ x ‖ y, and must lie on the curve.
+/// An instance that holds only the master public key encrypts and encapsulates; extracting keys needs the master private key.
+/// Extraction, encryption and encapsulation may run concurrently on one instance.
 /// </para>
 /// <para>
-/// Encryption takes the stream cipher of the KDF and writes C1 ‖ C3 ‖ C2 of GM/T 0044.4 with C1 as x ‖ y, 96 bytes longer than the plaintext, or the SM9Cipher of GB/T 41389-2022 (GM/T 0080-2020) in DER, with C1 uncompressed and EnType 0. The plaintext must not be empty. The variant with a block cipher is not supported.
+/// Encryption takes the stream cipher of the KDF and writes C1 ‖ C3 ‖ C2 of GM/T 0044.4 with C1 as x ‖ y, 96 bytes longer than the plaintext, or the SM9Cipher of GB/T 41389-2022 (GM/T 0080-2020) in DER, with C1 uncompressed and EnType 0.
+/// The plaintext must not be empty.
+/// The variant with a block cipher is not supported.
 /// An encapsulation is the point C in the uncompressed encoding; the encapsulated key may have any length but 0.
 /// </para>
 /// <para>
-/// The keys that <see cref="ExtractKey" /> gives decrypt and decapsulate; those that <see cref="ExtractKeyExchangeKey" /> gives serve the key exchange. The key generation center chooses the identifier hid of the generating function of each and publishes it with the master public key.
+/// The keys that <see cref="ExtractKey" /> gives decrypt and decapsulate; those that <see cref="ExtractKeyExchangeKey" /> gives serve the key exchange.
+/// The key generation center chooses the identifier hid of the generating function of each and publishes it with the master public key.
 /// The instance holds the hid of decryption, 0x03 by default as GB/T 41389-2022 gives it, and takes it for extraction, encryption and encapsulation, so a sender imports the master public key with the hid of the master key that extracted the key of the recipient.
 /// <see cref="ExtractKeyExchangeKey" /> takes the hid of the key exchange for each key, 0x02 by default.
 /// </para>
 /// <para>
-/// To encrypt many messages, keep one instance rather than import the key for each. Disposal erases the master private key and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
+/// To encrypt many messages, keep one instance rather than import the key for each.
+/// Disposal erases the master private key and is idempotent; subsequent operations other than disposal throw <see cref="ObjectDisposedException" />.
 /// </para>
 /// </remarks>
 public sealed class SM9EncryptionMasterKey : IDisposable
@@ -208,7 +214,10 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 	/// </summary>
 	/// <param name="id">The ID of the user, which may have any length.</param>
 	/// <returns>The private key of the user, which holds the ID.</returns>
-	/// <exception cref="CryptographicException">No key exists for <paramref name="id" /> under the master key and its hid; GM/T 0044 has the key generation center generate a new master key in that case.</exception>
+	/// <exception cref="CryptographicException">
+	/// No key exists for <paramref name="id" /> under the master key and its hid;
+	/// GM/T 0044 has the key generation center generate a new master key in that case.
+	/// </exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the master private key.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public SM9EncryptionKey ExtractKey(ReadOnlySpan<byte> id)
@@ -225,7 +234,10 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 	/// <param name="id">The ID of the user, which may have any length.</param>
 	/// <param name="hid">The identifier hid of the generating function of the key exchange keys; 0x02 by default.</param>
 	/// <returns>The key exchange key of the user, which holds the ID, the master public key and the hid.</returns>
-	/// <exception cref="CryptographicException">No key exists for <paramref name="id" /> under the master key and <paramref name="hid" />; GM/T 0044 has the key generation center generate a new master key in that case.</exception>
+	/// <exception cref="CryptographicException">
+	/// No key exists for <paramref name="id" /> under the master key and <paramref name="hid" />;
+	/// GM/T 0044 has the key generation center generate a new master key in that case.
+	/// </exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the master private key.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
 	public SM9KeyExchangeKey ExtractKeyExchangeKey(ReadOnlySpan<byte> id, byte hid = SM9Kgc.KeyExchangeHid)
@@ -253,7 +265,10 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 	/// <summary>
 	/// Encrypts <paramref name="plaintext" /> to the user of <paramref name="id" /> into C1 ‖ C3 ‖ C2 (GB/T 38635.2-2020, GM/T 0044.4-2016, Sec. 7.1), with C1 as x ‖ y.
 	/// </summary>
-	/// <remarks><paramref name="plaintext" /> must not overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// <paramref name="plaintext" /> must not overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="plaintext">The plaintext, which must not be empty.</param>
 	/// <param name="destination">The buffer that receives the ciphertext, at least <see cref="GetCiphertextLength" /> bytes long.</param>
 	/// <param name="id">The ID of the user.</param>
@@ -269,7 +284,10 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 	/// <summary>
 	/// Encrypts <paramref name="plaintext" /> to the user of <paramref name="id" /> into the DER of an SM9Cipher (GB/T 41389-2022), which holds C1, C3 and C2 (GB/T 38635.2-2020, GM/T 0044.4-2016, Sec. 7.1).
 	/// </summary>
-	/// <remarks><paramref name="plaintext" /> must not overlap <paramref name="destination" />. On failure, <paramref name="destination" /> remains unchanged.</remarks>
+	/// <remarks>
+	/// <paramref name="plaintext" /> must not overlap <paramref name="destination" />.
+	/// On failure, <paramref name="destination" /> remains unchanged.
+	/// </remarks>
 	/// <param name="plaintext">The plaintext, which must not be empty.</param>
 	/// <param name="destination">The buffer that receives the ciphertext, at least <see cref="GetDerCiphertextLength" /> bytes long.</param>
 	/// <param name="id">The ID of the user.</param>

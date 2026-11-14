@@ -6,7 +6,8 @@ namespace CryptoBase.X509;
 /// <remarks>
 /// <para>
 /// Decoding accepts only DER and checks the structure of RFC 6960, Sec. 4.2.1: an error status has no responseBytes and a successful one does.
-/// Decoding does not check the signature, or whether the response is current; a response with an error status decodes as an <see cref="Error" />, which has the status alone, a successful one of the basic type as a <see cref="Basic" />, and a successful one of another type as an <see cref="Other" />, with <see cref="Other.ResponseType" /> to tell it apart and its response left unread.
+/// Decoding does not check the signature, or whether the response is current;
+/// a response with an error status decodes as an <see cref="Error" />, which has the status alone, a successful one of the basic type as a <see cref="Basic" />, and a successful one of another type as an <see cref="Other" />, with <see cref="Other.ResponseType" /> to tell it apart and its response left unread.
 /// </para>
 /// <para>
 /// Instances are immutable, so they may be used concurrently.
@@ -195,7 +196,8 @@ public closed class OcspResponse
 			Certificates = basic.PeekTagIs(CertificatesTag) ? ReadCertificates(ref basic) : [];
 			basic.ThrowIfNotEmpty();
 
-			// ResponseData ::= SEQUENCE { version [0] EXPLICIT Version DEFAULT v1, responderID ResponderID, producedAt GeneralizedTime, responses SEQUENCE OF SingleResponse, responseExtensions [1] EXPLICIT Extensions OPTIONAL }. The only version, v1, is the default, which DER omits, so a version is an error.
+			// ResponseData ::= SEQUENCE { version [0] EXPLICIT Version DEFAULT v1, responderID ResponderID, producedAt GeneralizedTime, responses SEQUENCE OF SingleResponse, responseExtensions [1] EXPLICIT Extensions OPTIONAL }.
+			// The only version, v1, is the default, which DER omits, so a version is an error.
 			if (data.PeekTagIs(VersionTag))
 			{
 				throw new AsnContentException();
@@ -244,7 +246,8 @@ public closed class OcspResponse
 		public IReadOnlyList<CertificateExtension> Extensions { get; }
 
 		/// <summary>
-		/// Gets the certificates of the certs field that decode, in the order of the encoding; empty if there are none. They are not checked.
+		/// Gets the certificates of the certs field that decode, in the order of the encoding; empty if there are none.
+		/// They are not checked.
 		/// </summary>
 		public IReadOnlyList<Certificate> Certificates { get; }
 
@@ -268,7 +271,10 @@ public closed class OcspResponse
 		/// </summary>
 		/// <remarks>To tell an algorithm that the package does not support from a wrong signature, call <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" /> on <see cref="SignatureAlgorithm" />.</remarks>
 		/// <param name="responderKey">The responder's public key.</param>
-		/// <returns><see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="responderKey" /> supports and the signature is valid with it; otherwise, <see langword="false" />.</returns>
+		/// <returns>
+		/// <see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="responderKey" /> supports and the signature is valid with it;
+		/// otherwise, <see langword="false" />.
+		/// </returns>
 		/// <exception cref="ArgumentNullException"><paramref name="responderKey" /> is <see langword="null" />.</exception>
 		/// <exception cref="ObjectDisposedException"><paramref name="responderKey" /> has been disposed.</exception>
 		public bool VerifySignature(ISignatureKey responderKey)

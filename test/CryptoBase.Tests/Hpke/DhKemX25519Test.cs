@@ -8,7 +8,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hpke;
 
-// What DHKEM(X25519) adds to DhKemTest: DeriveKeyPair without rejection sampling, decapsulation keys kept unclamped, and public keys taken in any encoding except those of small order. Expected values come from the platform's HKDF and the reference ladder.
+// What DHKEM(X25519) adds to DhKemTest: DeriveKeyPair without rejection sampling, decapsulation keys kept unclamped, and public keys taken in any encoding except those of small order.
+// Expected values come from the platform's HKDF and the reference ladder.
 public class DhKemX25519Test
 {
 	private static readonly byte[] SuiteId = [.. "KEM"u8, 0x00, 0x20];

@@ -97,7 +97,8 @@ internal static class SignatureTestUtils
 		return KeyTypes.FirstOrDefault(static type => type.Type == typeof(T)) ?? throw new NotSupportedException(typeof(T).Name);
 	}
 
-	// GenerateKey gives a key to test with, which is a fixed one where generation is slow, and GenerateNewKey, where set, generates one. A deterministic algorithm gives one signature for one key and message;
+	// GenerateKey gives a key to test with, which is a fixed one where generation is slow, and GenerateNewKey, where set, generates one.
+	// A deterministic algorithm gives one signature for one key and message;
 	// the others draw randomness for each.
 	public sealed record KeyType(Type Type, SignatureAlgorithm[] Algorithms, Func<ISignatureKey> GenerateKey, SignatureAlgorithm[]? DeterministicAlgorithms = null, Func<ISignatureKey>? GenerateNewKey = null);
 }

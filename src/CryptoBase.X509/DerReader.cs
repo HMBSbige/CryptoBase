@@ -4,7 +4,9 @@ namespace CryptoBase.X509;
 
 internal delegate T DerElementReader<out T>(ref DerReader reader);
 
-// Reads DER values in order from memory that the caller owns, and returns slices of it rather than copies. Unlike AsnReader, a class, it allocates nothing for the structures that it enters. Malformed input throws AsnContentException.
+// Reads DER values in order from memory that the caller owns, and returns slices of it rather than copies.
+// Unlike AsnReader, a class, it allocates nothing for the structures that it enters.
+// Malformed input throws AsnContentException.
 // The common forms are read here and everything else, valid or not, is left to AsnDecoder, which gives the same result and the error; a form that is read here is one that AsnDecoder accepts.
 internal struct DerReader(ReadOnlyMemory<byte> source)
 {
@@ -15,7 +17,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 	private const byte SequenceTag = 0x30;
 	private const byte SetTag = 0x31;
 
-	// The longest contents of an OBJECT IDENTIFIER read here. They hold at most 19 arcs and 126 bits in a subidentifier, within the limits of AsnDecoder, which reads the longer ones.
+	// The longest contents of an OBJECT IDENTIFIER read here.
+	// They hold at most 19 arcs and 126 bits in a subidentifier, within the limits of AsnDecoder, which reads the longer ones.
 	private const int MaxObjectIdentifierLength = 18;
 
 	private ReadOnlyMemory<byte> _remaining = source;
@@ -212,7 +215,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return TakeContents(consumed, value.Length);
 	}
 
-	// An INTEGER (0..MAX), or the value with tag, that limits the length of a certification path. A value too large for an int is as good as int.MaxValue, as no path is that long.
+	// An INTEGER (0..MAX), or the value with tag, that limits the length of a certification path.
+	// A value too large for an int is as good as int.MaxValue, as no path is that long.
 	public int ReadSaturatedInt32(string negativeMessage, Asn1Tag? tag = null)
 	{
 		ReadOnlySpan<byte> contents = ReadIntegerBytes(tag).Span;
@@ -304,7 +308,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 	}
 
 	// The bits of a BIT STRING that names bits 0 through 8, as flags: bits 0 through 7 are the first byte from its most significant bit, and bit 8 is the most significant bit of the second, as in X509KeyUsageFlags.
-	// Only those nine may be set. DER drops the trailing zero bits (X.690, Sec. 11.2.2), but they are accepted here, even in whole bytes; the callers that require DER check for them.
+	// Only those nine may be set.
+	// DER drops the trailing zero bits (X.690, Sec. 11.2.2), but they are accepted here, even in whole bytes; the callers that require DER check for them.
 	public static int ReadNineNamedBits(ReadOnlySpan<byte> bits)
 	{
 		if (bits.Length > 1 && ((bits[1] & 0x7F) is not 0 || bits.Slice(2).ContainsAnyExcept((byte)0)))
@@ -345,7 +350,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return TryReadLength(source, out offset, out length);
 	}
 
-	// A value of any type whose tag is one octet, which DER has for tag numbers up to 30. Number 0 is left to AsnDecoder, as for the universal class it marks the end of contents.
+	// A value of any type whose tag is one octet, which DER has for tag numbers up to 30.
+	// Number 0 is left to AsnDecoder, as for the universal class it marks the end of contents.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool TryReadHeader(ReadOnlySpan<byte> source, out int offset, out int length)
 	{
@@ -358,7 +364,9 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return TryReadLength(source, out offset, out length);
 	}
 
-	// X.690, Sec. 10.1: the long form must use the fewest octets, so these are the only forms that DER allows for that many contents. The contents are within source. Longer values, and indefinite lengths, which are invalid, are left to AsnDecoder.
+	// X.690, Sec. 10.1: the long form must use the fewest octets, so these are the only forms that DER allows for that many contents.
+	// The contents are within source.
+	// Longer values, and indefinite lengths, which are invalid, are left to AsnDecoder.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool TryReadLength(ReadOnlySpan<byte> source, out int offset, out int length)
 	{

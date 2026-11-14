@@ -75,7 +75,8 @@ public class ChunkedRandomAccessTest
 		yield return () => new DamageCase("header only", static ciphertext => ciphertext.AsSpan(0, HeaderSize).ToArray(), 0);
 	}
 
-	// Creation checks the header and authenticates the last chunk, so a truncated or extended message fails before any read. A failed creation leaves the storage open.
+	// Creation checks the header and authenticates the last chunk, so a truncated or extended message fails before any read.
+	// A failed creation leaves the storage open.
 	[Test]
 	[MethodDataSource(nameof(UnauthenticLengths))]
 	public async Task CreationAuthenticatesTheLength(DamageCase scenario)

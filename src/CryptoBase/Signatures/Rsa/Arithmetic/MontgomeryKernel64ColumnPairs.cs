@@ -3,7 +3,9 @@ using CryptoBase.EllipticCurves;
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
 // The representation and the sums of MontgomeryKernel64, with the columns taken in pairs (c, c + 1) from c = 0: a_i and m_i are read once for both columns, and the digit of b or n that column c + 1 takes at i is the one that column c took at i − 1, so that a product needs one read.
-// The sums of a pair start at zero and take the carry into column c after the products, so that the products of a pair need not wait for the reduction of the pair before; its two reduction digits come one after the other at its end. When digitCount is odd, the pair across it goes column by column.
+// The sums of a pair start at zero and take the carry into column c after the products, so that the products of a pair need not wait for the reduction of the pair before;
+// its two reduction digits come one after the other at its end.
+// When digitCount is odd, the pair across it goes column by column.
 // A square takes the cross products a_i·a_j for i < j once and doubles them, as MontgomeryKernel64 does.
 // The products pass the radix to their helpers as locals (see IRadix).
 internal readonly struct MontgomeryKernel64ColumnPairs<TRadix> : IMontgomeryKernel where TRadix : struct, IRadix
@@ -199,7 +201,8 @@ internal readonly struct MontgomeryKernel64ColumnPairs<TRadix> : IMontgomeryKern
 		ulong product;
 		nint c = 0;
 
-		// Pairs below digits: cross products for i below half = c/2 in both columns, with the products of m and n, which go on alone to c − 1; then a_half·a_(half+1) for column c + 1 and a_half² for column c.
+		// Pairs below digits: cross products for i below half = c/2 in both columns, with the products of m and n, which go on alone to c − 1;
+		// then a_half·a_(half+1) for column c + 1 and a_half² for column c.
 		for (; c + 1 < digits; c += 2)
 		{
 			nint half = c >> 1;
@@ -280,7 +283,8 @@ internal readonly struct MontgomeryKernel64ColumnPairs<TRadix> : IMontgomeryKern
 			c += 2;
 		}
 
-		// Pairs of the result: column c has cross products from first = c − digits + 1 to half − 1 and a_half², column c + 1 from first + 1 to half; the products of m and n run from first and first + 1 to digits − 1.
+		// Pairs of the result: column c has cross products from first = c − digits + 1 to half − 1 and a_half², column c + 1 from first + 1 to half;
+		// the products of m and n run from first and first + 1 to digits − 1.
 		for (; c < 2 * digits; c += 2)
 		{
 			nint half = c >> 1;
@@ -405,7 +409,8 @@ internal readonly struct MontgomeryKernel64ColumnPairs<TRadix> : IMontgomeryKern
 		return (low0, high0, low1, high1);
 	}
 
-	// Columns c and c + 1 of the reduction from their sums, the carry into column c included: m_c clears the low digit of column c, which passes the rest to column c + 1, and m_(c+1) that of column c + 1. Returns the carry into column c + 2, split as in MontgomeryKernel64.
+	// Columns c and c + 1 of the reduction from their sums, the carry into column c included: m_c clears the low digit of column c, which passes the rest to column c + 1, and m_(c+1) that of column c + 1.
+	// Returns the carry into column c + 2, split as in MontgomeryKernel64.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static (ulong Low, ulong High) ReducePair(ref ulong n, ref ulong m, nint c, ulong low0, ulong high0, ulong low1, ulong high1, ulong negativeInverse, int bits, int shift, ulong mask)
 	{

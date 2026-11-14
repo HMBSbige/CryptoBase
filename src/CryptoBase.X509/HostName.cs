@@ -5,7 +5,9 @@ using System.Text;
 
 namespace CryptoBase.X509;
 
-// A host name to match against a certificate, the reference identifier of RFC 9525, Sec. 6.1: a DNS name in A-labels without the dot of the root, or the octets of an IPv4 or IPv6 address. The string case is the DNS name, and the byte[] case is the 4 or 16 octets of the IP address. The static members give the syntax of host names, for reference identifiers and for the dNSName entries that certificates present.
+// A host name to match against a certificate, the reference identifier of RFC 9525, Sec. 6.1: a DNS name in A-labels without the dot of the root, or the octets of an IPv4 or IPv6 address.
+// The string case is the DNS name, and the byte[] case is the 4 or 16 octets of the IP address.
+// The static members give the syntax of host names, for reference identifiers and for the dNSName entries that certificates present.
 internal union HostName(string, byte[])
 {
 	private const int MaxNameLength = 253;
@@ -20,7 +22,8 @@ internal union HostName(string, byte[])
 	// Whether the platform's IDNA conversion maps and normalizes names, as ProbeIdnaMapping finds.
 	private static readonly bool MapsIdna = ProbeIdnaMapping();
 
-	// A host name is an IP address if it is one in a notation that RFC 9525 recognizes: dotted decimal for IPv4, as in RFC 3986, Sec. 3.2.2, and the text of RFC 4291, Sec. 2.2, for IPv6, optionally in the brackets of a URI. Otherwise it must be a DNS name: one trailing dot is removed, and labels that are not ASCII are converted to A-labels.
+	// A host name is an IP address if it is one in a notation that RFC 9525 recognizes: dotted decimal for IPv4, as in RFC 3986, Sec. 3.2.2, and the text of RFC 4291, Sec. 2.2, for IPv6, optionally in the brackets of a URI.
+	// Otherwise it must be a DNS name: one trailing dot is removed, and labels that are not ASCII are converted to A-labels.
 	public static HostName Parse(string hostName, string parameterName)
 	{
 		if (ParseIPAddress(hostName) is { } address)
@@ -73,14 +76,18 @@ internal union HostName(string, byte[])
 		}
 	}
 
-	// Labels that are not ASCII to A-labels, with the platform's IDNA conversion, or null if one is not a label that the conversion accepts and leaves as it is. The other rules of IDNA2008 for U-labels (RFC 5890, Sec. 2.3.2.1), such as its Bidi rule, its contextual rules and the code points that it disallows, are not checked.
-	// The conversion maps characters, such as upper-case letters, before it encodes them, and the mapping depends on the platform's Unicode version and its globalization mode. So the name must be what the conversion leaves as it is, apart from the case of ASCII letters: besides letters, digits, hyphens and dots, only letters that are not upper or title case, marks that do not start a label (RFC 5891, Sec. 5.4) and decimal digits, the LetterDigits of RFC 5892, Sec. 2.1, that the conversion accepts and keeps. Every platform that accepts a name then gives the same A-labels, the Punycode of its labels.
+	// Labels that are not ASCII to A-labels, with the platform's IDNA conversion, or null if one is not a label that the conversion accepts and leaves as it is.
+	// The other rules of IDNA2008 for U-labels (RFC 5890, Sec. 2.3.2.1), such as its Bidi rule, its contextual rules and the code points that it disallows, are not checked.
+	// The conversion maps characters, such as upper-case letters, before it encodes them, and the mapping depends on the platform's Unicode version and its globalization mode.
+	// So the name must be what the conversion leaves as it is, apart from the case of ASCII letters: besides letters, digits, hyphens and dots, only letters that are not upper or title case, marks that do not start a label (RFC 5891, Sec. 5.4) and decimal digits, the LetterDigits of RFC 5892, Sec. 2.1, that the conversion accepts and keeps.
+	// Every platform that accepts a name then gives the same A-labels, the Punycode of its labels.
 	public static string? ToAscii(string hostName)
 	{
 		return ToAscii(hostName, MapsIdna);
 	}
 
-	// As ToAscii, with mapsIdna telling whether the conversion maps and normalizes the name as IDNA requires (RFC 5895; UTS #46), which it does not in invariant globalization mode, where it only encodes Punycode; without the mapping, a name with a character that is not ASCII is not in U-labels.
+	// As ToAscii, with mapsIdna telling whether the conversion maps and normalizes the name as IDNA requires (RFC 5895; UTS #46), which it does not in invariant globalization mode, where it only encodes Punycode;
+	// without the mapping, a name with a character that is not ASCII is not in U-labels.
 	// Each label converts on its own, so that an ASCII label, such as an A-label, stays as it is, and a U-label must convert back to itself.
 	internal static string? ToAscii(string hostName, bool mapsIdna)
 	{
@@ -152,7 +159,8 @@ internal union HostName(string, byte[])
 		}
 	}
 
-	// The octets of an IP address in the notations of ReferenceIdentifier.Parse, or null. Zones, ports and shorthand notations, such as 127.1, are not IP addresses.
+	// The octets of an IP address in the notations of ReferenceIdentifier.Parse, or null.
+	// Zones, ports and shorthand notations, such as 127.1, are not IP addresses.
 	public static byte[]? ParseIPAddress(ReadOnlySpan<char> source)
 	{
 		Span<byte> address = stackalloc byte[IPv6Length];

@@ -196,7 +196,8 @@ public class SM9TowerTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The lazy reductions add products before reducing them, so their bounds are tightest at coefficients of extreme raw values: 0, the largest reduced value and the one with limbs 0 to 3 all ones. Zero real parts with extreme u-parts make every product of Fp2 as negative as it gets, and random patterns of the extremes mix the cases.
+	// The lazy reductions add products before reducing them, so their bounds are tightest at coefficients of extreme raw values: 0, the largest reduced value and the one with limbs 0 to 3 all ones.
+	// Zero real parts with extreme u-parts make every product of Fp2 as negative as it gets, and random patterns of the extremes mix the cases.
 	[Test]
 	public async Task LazyReductionsHoldAtTheExtremes()
 	{

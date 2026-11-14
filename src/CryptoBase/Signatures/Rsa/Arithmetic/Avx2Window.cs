@@ -1,11 +1,13 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// The vectors of the accumulator of MontgomeryKernelAvx2 that stay in registers, from vector 1 up, as fields that the JIT keeps in registers: Avx2Window is one vector of four lanes, and Avx2WindowPair joins two windows. Their operands lie in staging, a block per vector (see MontgomeryKernelAvx2).
+// The vectors of the accumulator of MontgomeryKernelAvx2 that stay in registers, from vector 1 up, as fields that the JIT keeps in registers: Avx2Window is one vector of four lanes, and Avx2WindowPair joins two windows.
+// Their operands lie in staging, a block per vector (see MontgomeryKernelAvx2).
 internal interface IAvx2Window<TSelf> where TSelf : struct, IAvx2Window<TSelf>
 {
 	static abstract int Count { get; }
 
-	// Every vector from the top down, with the block of the lowest one at index of blocks: its lanes gain lo(a·b) + lo(n·m), shift down by one digit, a lane or two in Avx2PairWindow, taking the first digit of above, the lanes of the vector above after the low parts, and gain hi(a·b) + hi(n·m). Returns the lanes of the lowest vector after the low parts.
+	// Every vector from the top down, with the block of the lowest one at index of blocks: its lanes gain lo(a·b) + lo(n·m), shift down by one digit, a lane or two in Avx2PairWindow, taking the first digit of above, the lanes of the vector above after the low parts, and gain hi(a·b) + hi(n·m).
+	// Returns the lanes of the lowest vector after the low parts.
 	static abstract Vector256<ulong> Step(ref TSelf acc, ref ulong blocks, nint index, Vector256<ulong> above, Vector256<double> b, Vector256<double> m, Vector256<double> high, Vector256<double> low);
 
 	// Stores the lanes less offset, those of the lowest vector at lanes.
@@ -74,7 +76,8 @@ internal struct Avx2Window : IAvx2Window<Avx2Window>
 		return (digits | bits).AsDouble() - bits.AsDouble();
 	}
 
-	// The blocks of vectors 1 and up of x and n, of words words each, from the first 64-byte boundary at or after start, which it returns, with the lanes zero. If the scratch moves meanwhile, only the speed changes.
+	// The blocks of vectors 1 and up of x and n, of words words each, from the first 64-byte boundary at or after start, which it returns, with the lanes zero.
+	// If the scratch moves meanwhile, only the speed changes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static unsafe ref ulong Stage(ref ulong x, ref ulong n, int words, int vectors, ref ulong start)
 	{

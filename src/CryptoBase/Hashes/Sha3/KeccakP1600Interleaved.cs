@@ -1,6 +1,7 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// The round of KeccakP1600.PermuteScalar, in the same plane order, applied lane-wise to vectors of interleaved states. The rounds are spelled out in this method rather than in an inlined helper because the inliner only budgets enough for the hundreds of small lane operations when the method they are inlined into is this large itself.
+// The round of KeccakP1600.PermuteScalar, in the same plane order, applied lane-wise to vectors of interleaved states.
+// The rounds are spelled out in this method rather than in an inlined helper because the inliner only budgets enough for the hundreds of small lane operations when the method they are inlined into is this large itself.
 internal static class KeccakP1600Interleaved
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -9,7 +10,8 @@ internal static class KeccakP1600Interleaved
 		Permute<TVector, TLanes, KeccakP1600NoBlocks>(ref state, ref state, 1);
 	}
 
-	// Unlike the scalar round, the column parities are recomputed from the state rather than accumulated across the planes, which keeps five fewer vectors live through χ. The rotation counts are the ρ offsets of KeccakP1600Constants.RhoOffsets, written out because the rotate instructions take them as immediates.
+	// Unlike the scalar round, the column parities are recomputed from the state rather than accumulated across the planes, which keeps five fewer vectors live through χ.
+	// The rotation counts are the ρ offsets of KeccakP1600Constants.RhoOffsets, written out because the rotate instructions take them as immediates.
 	// Blocks that absorb or squeeze are laid out as one state's lanes, so they only suit lane types that hold a single state.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]

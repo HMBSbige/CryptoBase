@@ -16,7 +16,8 @@ public enum Argon2Type
 	Argon2i = 1,
 
 	/// <summary>
-	/// Argon2id, which accesses memory like Argon2i for the first half of the first pass and like Argon2d afterwards. RFC 9106 makes it the primary variant.
+	/// Argon2id, which accesses memory like Argon2i for the first half of the first pass and like Argon2d afterwards.
+	/// RFC 9106 makes it the primary variant.
 	/// </summary>
 	Argon2id = 2,
 }

@@ -74,7 +74,8 @@ public sealed unsafe partial class GuardPageBuffer : IDisposable
 			throw new InvalidOperationException($"mprotect failed with errno {error}.");
 		}
 
-		// Without huge pages, touching a page does not bring in its neighbors. A kernel without them rejects the advice.
+		// Without huge pages, touching a page does not bring in its neighbors.
+		// A kernel without them rejects the advice.
 		if (OperatingSystem.IsLinux())
 		{
 			_ = AdviseMemory(_allocation, _allocationSize, MadvNoHugePage);

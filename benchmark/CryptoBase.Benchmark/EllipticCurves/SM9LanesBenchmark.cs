@@ -5,7 +5,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The operations of the lane tower of the SM9 vector kernels and the point formulas of SM9PointLanes, each taking the previous result as an input, so the time per operation is its latency, on values that start on a 64-byte line as the kernels keep them: the mixed additions on a point in each lane, which a fixed-base product takes per round, and the doubling and addition on one point. A vector type adds its own LaneKind.
+// The operations of the lane tower of the SM9 vector kernels and the point formulas of SM9PointLanes, each taking the previous result as an input, so the time per operation is its latency, on values that start on a 64-byte line as the kernels keep them: the mixed additions on a point in each lane, which a fixed-base product takes per round, and the doubling and addition on one point.
+// A vector type adds its own LaneKind.
 public unsafe class SM9LanesBenchmark
 {
 	private const int Operations = 64;
@@ -171,7 +172,8 @@ public unsafe class SM9LanesBenchmark
 		void AddSingleG2(int count);
 	}
 
-	// Four elements, then the scratch and a batch of lines; and the points of each group, the left one, the right one, the result and the workspace of the formulas, first on a point in each lane and then on one point.
+	// Four elements, then the scratch and a batch of lines;
+	// and the points of each group, the left one, the right one, the result and the workspace of the formulas, first on a point in each lane and then on one point.
 	private sealed class Lanes<TVector> : ILanes where TVector : unmanaged, ISM9Vector<TVector>
 	{
 		private readonly SM9Fp12Lanes* _values;

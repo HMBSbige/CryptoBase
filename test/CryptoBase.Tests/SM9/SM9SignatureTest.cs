@@ -76,7 +76,8 @@ public class SM9SignatureTest
 		}
 	}
 
-	// With empty additional data the random number r follows from dsA and the message alone; other inputs change it. The signatures before and after the key builds the tables of its products agree.
+	// With empty additional data the random number r follows from dsA and the message alone; other inputs change it.
+	// The signatures before and after the key builds the tables of its products agree.
 	[Test]
 	public async Task SigningIsDeterministicWithoutAdditionalData()
 	{
@@ -247,7 +248,8 @@ public class SM9SignatureTest
 		}
 	}
 
-	// For any hid, the keys are those of GM/T 0044.2, Sec. 5.3, and import with that hid, and the master key and its public key with that hid verify their signatures, h ‖ S and in DER; with another hid, verification fails and the import throws.
+	// For any hid, the keys are those of GM/T 0044.2, Sec. 5.3, and import with that hid, and the master key and its public key with that hid verify their signatures, h ‖ S and in DER;
+	// with another hid, verification fails and the import throws.
 	[Test]
 	public async Task OtherHidsSignAndVerify()
 	{

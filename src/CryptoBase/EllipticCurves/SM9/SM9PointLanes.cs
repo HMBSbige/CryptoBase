@@ -3,7 +3,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 namespace CryptoBase.EllipticCurves.SM9;
 
 // The products of G1 and G2 with fixed bases, on one point in each lane of vector 0 of TLanes: the formulas of SM9Curve in every lane at once, with the products of each round in a row and their sums reduced once, so that the fixed-base products of SM9BaseTable take their windows TVector.Count at a time.
-// A point in lanes is X, Y and Z, one element after the other, with components below 1.0001p in limbs 0 to 8 below 2^26, as Reduce leaves them; an entry, x and y of a point of a table, has x reduced, below 2.25p, and y reduced or negated as 3p − y, at most 3p in limbs below 2^27. The formulas keep these bounds, and the point at infinity is (0 : 1 : 0) in every lane, as in SM9Curve.
+// A point in lanes is X, Y and Z, one element after the other, with components below 1.0001p in limbs 0 to 8 below 2^26, as Reduce leaves them;
+// an entry, x and y of a point of a table, has x reduced, below 2.25p, and y reduced or negated as 3p − y, at most 3p in limbs below 2^27.
+// The formulas keep these bounds, and the point at infinity is (0 : 1 : 0) in every lane, as in SM9Curve.
 internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unmanaged, ISM9Vector<TVector> where TLanes : struct, ISM9FieldLanes<TField> where TField : unmanaged, ISM9Field<TField>
 {
 	// The temporaries of the formulas.
@@ -15,7 +17,10 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	// The ulongs of the formulas' part of the workspace, from the slots on.
 	private static int FormulaOffset => 9 * TLanes.ElementLength + 2 * SM9Lanes<TVector>.RowLength;
 
-	// k·G for the table of G, as SM9BaseTable.Multiply gives it: window w goes to lane w mod L in round ⌊w/L⌋, L = TVector.Count, and each lane sums its windows by the mixed addition, keeping its sum where the digit is 0, as there; Fold then adds up the lanes. The complete formulas take every sum, the point at infinity included. Neither the time nor the addresses depend on k or G, and the workspace is cleared.
+	// k·G for the table of G, as SM9BaseTable.Multiply gives it: window w goes to lane w mod L in round ⌊w/L⌋, L = TVector.Count, and each lane sums its windows by the mixed addition, keeping its sum where the digit is 0, as there;
+	// Fold then adds up the lanes.
+	// The complete formulas take every sum, the point at infinity included.
+	// Neither the time nor the addresses depend on k or G, and the workspace is cleared.
 	[SkipLocalsInit]
 	internal static void MultiplyBase(SM9BaseTable<TField> table, in FieldElement<SM9Order> scalar, out SM9Point<TField> result)
 	{
@@ -25,7 +30,8 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		digits.ZeroMemory();
 	}
 
-	// a·G + b·H for the tables of G and H, as the sum of what MultiplyBase gives for each: the windows of H follow those of G, so that both share the rounds and one fold. Neither the time nor the addresses depend on a, b, G or H.
+	// a·G + b·H for the tables of G and H, as the sum of what MultiplyBase gives for each: the windows of H follow those of G, so that both share the rounds and one fold.
+	// Neither the time nor the addresses depend on a, b, G or H.
 	[SkipLocalsInit]
 	internal static void MultiplyBase(SM9BaseTable<TField> first, in FieldElement<SM9Order> firstScalar, SM9BaseTable<TField> second, in FieldElement<SM9Order> secondScalar, out SM9Point<TField> result)
 	{
@@ -37,7 +43,8 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		digits.ZeroMemory();
 	}
 
-	// The windows of the digits, those of first and then those of second, if any. The tables are read before the rounds, and each lane negates its entry where its digit is negative.
+	// The windows of the digits, those of first and then those of second, if any.
+	// The tables are read before the rounds, and each lane negates its entry where its digit is negative.
 	[SkipLocalsInit]
 	private static void MultiplyBase(SM9BaseTable<TField> first, SM9BaseTable<TField>? second, ReadOnlySpan<sbyte> digits, out SM9Point<TField> result)
 	{
@@ -151,7 +158,8 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		Fold(ref acc, ref entry, ref sum, ref formula, out result);
 	}
 
-	// The entries of SM9BaseTable for G and the width, window after window: the bases B_w = 2^(width·w)·G of the windows by DoubleSingle, their multiples by BuildMultiples and their affine forms by ToAffine. G may be secret, as the entries then are: the inversion takes constant time, and the projective points are erased.
+	// The entries of SM9BaseTable for G and the width, window after window: the bases B_w = 2^(width·w)·G of the windows by DoubleSingle, their multiples by BuildMultiples and their affine forms by ToAffine.
+	// G may be secret, as the entries then are: the inversion takes constant time, and the projective points are erased.
 	internal static void BuildTable(in SM9AffinePoint<TField> generator, int width, bool secret, Span<SM9AffinePoint<TField>> entries)
 	{
 		int windowLength = 1 << width - 1;
@@ -184,7 +192,9 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		}
 	}
 
-	// SM9Curve.ToAffine on the lanes, a row of eight points at a time: lane l takes points l, l + 8, …, the products of their Z go down the rows, and Montgomery's trick in TField over the eight totals inverts them all with one inversion, in constant time unless variableTime is set, for public points. None of the points may be the point at infinity; the lanes past the last point take 1. The workspace is cleared.
+	// SM9Curve.ToAffine on the lanes, a row of eight points at a time: lane l takes points l, l + 8, …, the products of their Z go down the rows, and Montgomery's trick in TField over the eight totals inverts them all with one inversion, in constant time unless variableTime is set, for public points.
+	// None of the points may be the point at infinity; the lanes past the last point take 1.
+	// The workspace is cleared.
 	[SkipLocalsInit]
 	internal static void ToAffine(ReadOnlySpan<SM9Point<TField>> points, Span<SM9AffinePoint<TField>> result, bool variableTime)
 	{
@@ -321,7 +331,9 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		}
 	}
 
-	// The multiples of the windows of SM9BaseTable from their bases B_w = 2^(width·w)·G, window w in lane w mod L in round ⌊w/L⌋: each lane adds its base to its last multiple, B, 2B, … up to windowLength·B, by Add, whose complete formulas double where the two are equal. Lanes past the last window take the first base of the round. The bases may be secret, and the workspace is cleared.
+	// The multiples of the windows of SM9BaseTable from their bases B_w = 2^(width·w)·G, window w in lane w mod L in round ⌊w/L⌋: each lane adds its base to its last multiple, B, 2B, … up to windowLength·B, by Add, whose complete formulas double where the two are equal.
+	// Lanes past the last window take the first base of the round.
+	// The bases may be secret, and the workspace is cleared.
 	[SkipLocalsInit]
 	internal static void BuildMultiples(ReadOnlySpan<SM9Point<TField>> bases, int windowLength, Span<SM9Point<TField>> multiples)
 	{
@@ -363,7 +375,10 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		storage.ZeroMemory();
 	}
 
-	// The sum of the lanes. Vectors of a whole row add lanes 1 to 7 to lane 0 by AddSingle on one point, in place of the three additions of eight lanes of a fold; narrower ones fold in halves, lane i adding lane i + d for d = L/2 down to 1, so that lane 0 ends with the sum of every lane. other and sum are points of scratch.
+	// The sum of the lanes.
+	// Vectors of a whole row add lanes 1 to 7 to lane 0 by AddSingle on one point, in place of the three additions of eight lanes of a fold;
+	// narrower ones fold in halves, lane i adding lane i + d for d = L/2 down to 1, so that lane 0 ends with the sum of every lane.
+	// other and sum are points of scratch.
 	private static void Fold(ref ulong acc, ref ulong other, ref ulong sum, ref ulong formula, out SM9Point<TField> result)
 	{
 		if (TVector.Count == SM9Lanes<TVector>.RowLength)
@@ -398,7 +413,10 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		JoinPoint(ref acc, 0, out result);
 	}
 
-	// left + (x, y) by SM9Curve.Add with an affine right, Algorithm 8, in every lane. Round 1 takes X1·X2, Y1·Y2, (X1 + Y1)(X2 + Y2), Y2·Z1 + Y1 and X2·Z1 + X1, the last two with the addends folded into their reductions, and t3 = (X1 + Y1)(X2 + Y2) − X1·X2 − Y1·Y2 from the reduced three; round 2 is that of Add. The inputs bound every product of round 1 below 10.51p² in Fp, and the components of a product of Fp2 within (−21.01p², 10.51p²) and [0, 21.01p²).
+	// left + (x, y) by SM9Curve.Add with an affine right, Algorithm 8, in every lane.
+	// Round 1 takes X1·X2, Y1·Y2, (X1 + Y1)(X2 + Y2), Y2·Z1 + Y1 and X2·Z1 + X1, the last two with the addends folded into their reductions, and t3 = (X1 + Y1)(X2 + Y2) − X1·X2 − Y1·Y2 from the reduced three;
+	// round 2 is that of Add.
+	// The inputs bound every product of round 1 below 10.51p² in Fp, and the components of a product of Fp2 within (−21.01p², 10.51p²) and [0, 21.01p²).
 	// The result must be neither input.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	internal static void MixedAdd(ref ulong left, ref ulong right, ref ulong result, ref ulong formula)
@@ -438,7 +456,10 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		SecondRound(ref formula, ref result);
 	}
 
-	// left + right by SM9Curve.Add, Algorithm 7, in every lane. Round 1 takes the six products of the inputs and their sums, of reduced inputs, so each product of Fp lies below 4.0008p² and each component of one of Fp2 within (−8.0016p², 4.0008p²) or [0, 8.0016p²); t3, t4 and y3 come from the reduced products. Round 2 then takes the six products of SecondRound from t0 = 3·X1·X2, t1 = Y1·Y2 − 3b·Z1·Z2 and z3 = Y1·Y2 + 3b·Z1·Z2.
+	// left + right by SM9Curve.Add, Algorithm 7, in every lane.
+	// Round 1 takes the six products of the inputs and their sums, of reduced inputs, so each product of Fp lies below 4.0008p² and each component of one of Fp2 within (−8.0016p², 4.0008p²) or [0, 8.0016p²);
+	// t3, t4 and y3 come from the reduced products.
+	// Round 2 then takes the six products of SecondRound from t0 = 3·X1·X2, t1 = Y1·Y2 − 3b·Z1·Z2 and z3 = Y1·Y2 + 3b·Z1·Z2.
 	// The result must be neither input.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	internal static void Add(ref ulong left, ref ulong right, ref ulong result, ref ulong formula)
@@ -484,7 +505,10 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		SecondRound(ref formula, ref result);
 	}
 
-	// Round 2 of Algorithms 7 and 8, from t0, t1, t3, t4, 3b·Z (t2) in slot a and 3b·y3 in slot b, all reduced: t0 = 3·t0, z3 = t1 + t2 and t1 = t1 + 3p − t2, below 3.0003p, 2.0002p and 4.0001p in limbs below 2^27.6; then X3 = t3·t1 − t4·y3, Y3 = t1·z3 + y3·t0 and Z3 = z3·t4 + t0·t3, each sum of two products reduced once. In Fp, X3 lies in (−1.0002p², 4.0005p²), Y3 in [0, 11.002p²) and Z3 in [0, 5.001p²), X3 with the 64p² of SubtractColumns; in Fp2 the components of X3 lie within (−9.002p², 8.002p²), with 64p² from SubtractColumns, and those of Y3 and Z3 within (−22.004p², 22.004p²), the real parts with the 128p² of each product, so every reduction takes a value in [0, 268p²).
+	// Round 2 of Algorithms 7 and 8, from t0, t1, t3, t4, 3b·Z (t2) in slot a and 3b·y3 in slot b, all reduced: t0 = 3·t0, z3 = t1 + t2 and t1 = t1 + 3p − t2, below 3.0003p, 2.0002p and 4.0001p in limbs below 2^27.6;
+	// then X3 = t3·t1 − t4·y3, Y3 = t1·z3 + y3·t0 and Z3 = z3·t4 + t0·t3, each sum of two products reduced once.
+	// In Fp, X3 lies in (−1.0002p², 4.0005p²), Y3 in [0, 11.002p²) and Z3 in [0, 5.001p²), X3 with the 64p² of SubtractColumns;
+	// in Fp2 the components of X3 lie within (−9.002p², 8.002p²), with 64p² from SubtractColumns, and those of Y3 and Z3 within (−22.004p², 22.004p²), the real parts with the 128p² of each product, so every reduction takes a value in [0, 268p²).
 	private static void SecondRound(ref ulong formula, ref ulong result)
 	{
 		int e = TLanes.ElementLength;
@@ -524,7 +548,12 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		return (lanes + TVector.Count - 1) / TVector.Count;
 	}
 
-	// 2·P by SM9Curve.Double, Algorithm 9, on one point, X, Y and Z in lanes 0 to 2 of an element, round 1 takes (Y², YZ, t2, XY) in one row, t2 = 3b·Z², and round 2 (t2·8Y², YZ·8Y², t0·(Y² + t2), t0·XY) for t0 = Y² − 3t2, which give X3 = 2·t0·XY, Y3 = t2·8Y² + t0·(Y² + t2) and Z3 = YZ·8Y². For P below 2.25p in limbs below 2^27, as SplitSingle and DoubleSingle leave it, the products of round 1 are below 75.94p² in Fp, with the factor 15 in lane 2 and its limbs below 2^30.9, and within (−10.13p², 5.07p²) or [0, 10.13p²) in Fp2; those of round 2, of t0 below 10.0001p in limbs below 2^28.3 by Y² + t2 below 2.0002p and of reduced terms by 8Y² below 8.0008p in limbs below 2^29, below 20.01p² and within (−40.01p², 20.01p²) or [0, 40.01p²). The columns stay below 2^61.2 in magnitude. The result is below 2.0002p in limbs below 2^27, and the other lanes hold values of no meaning, bounded as these. The result may be the point.
+	// 2·P by SM9Curve.Double, Algorithm 9, on one point, X, Y and Z in lanes 0 to 2 of an element, round 1 takes (Y², YZ, t2, XY) in one row, t2 = 3b·Z², and round 2 (t2·8Y², YZ·8Y², t0·(Y² + t2), t0·XY) for t0 = Y² − 3t2, which give X3 = 2·t0·XY, Y3 = t2·8Y² + t0·(Y² + t2) and Z3 = YZ·8Y².
+	// For P below 2.25p in limbs below 2^27, as SplitSingle and DoubleSingle leave it, the products of round 1 are below 75.94p² in Fp, with the factor 15 in lane 2 and its limbs below 2^30.9, and within (−10.13p², 5.07p²) or [0, 10.13p²) in Fp2;
+	// those of round 2, of t0 below 10.0001p in limbs below 2^28.3 by Y² + t2 below 2.0002p and of reduced terms by 8Y² below 8.0008p in limbs below 2^29, below 20.01p² and within (−40.01p², 20.01p²) or [0, 40.01p²).
+	// The columns stay below 2^61.2 in magnitude.
+	// The result is below 2.0002p in limbs below 2^27, and the other lanes hold values of no meaning, bounded as these.
+	// The result may be the point.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	internal static void DoubleSingle(ref ulong point, ref ulong result, ref ulong work)
 	{
@@ -545,7 +574,10 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 		SM9Lanes<TVector>.DoublingResult(ref q, ref result, rows, ref permuted, vectors);
 	}
 
-	// left + right by SM9Curve.Add, Algorithm 7, on one point each: right holds (X2, Y2, 3b·Z2, X2 + Y2, Z2, Y2, 3b·Z2, 3b·X2) in lanes 0 to 7, from reduced coordinates, so round 1 takes the eight products (X1X2, Y1Y2, 3b·Z1Z2, (X1 + Y1)(X2 + Y2), Y1Z2, Z1Y2, 3b·X1Z2, 3b·Z1X2) in one row, which give t3, t4 = Y1Z2 + Z1Y2 and 3b·y3 = 3b·(X1Z2 + Z1X2) with no factor 3b in lanes, and round 2 the six of Add. For a left point below 2.25p in limbs below 2^27, as SplitSingle and DoubleSingle leave it, the products of round 1, with X1 + Y1 below 4.5p in limbs below 2^28, are below 10.13p² in Fp and within (−20.25p², 10.13p²) or [0, 20.25p²) in Fp2, and those of round 2, of operands below 10.0001p and 4.0001p in limbs below 2^28.3 and 2^27.6, below 40.01p² and within (−80.02p², 40.01p²) or [0, 80.02p²), the columns below 2^61.2 in magnitude. The result is weakly reduced, below 1.0001p. The result may be left.
+	// left + right by SM9Curve.Add, Algorithm 7, on one point each: right holds (X2, Y2, 3b·Z2, X2 + Y2, Z2, Y2, 3b·Z2, 3b·X2) in lanes 0 to 7, from reduced coordinates, so round 1 takes the eight products (X1X2, Y1Y2, 3b·Z1Z2, (X1 + Y1)(X2 + Y2), Y1Z2, Z1Y2, 3b·X1Z2, 3b·Z1X2) in one row, which give t3, t4 = Y1Z2 + Z1Y2 and 3b·y3 = 3b·(X1Z2 + Z1X2) with no factor 3b in lanes, and round 2 the six of Add.
+	// For a left point below 2.25p in limbs below 2^27, as SplitSingle and DoubleSingle leave it, the products of round 1, with X1 + Y1 below 4.5p in limbs below 2^28, are below 10.13p² in Fp and within (−20.25p², 10.13p²) or [0, 20.25p²) in Fp2, and those of round 2, of operands below 10.0001p and 4.0001p in limbs below 2^28.3 and 2^27.6, below 40.01p² and within (−80.02p², 40.01p²) or [0, 80.02p²), the columns below 2^61.2 in magnitude.
+	// The result is weakly reduced, below 1.0001p.
+	// The result may be left.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	internal static void AddSingle(ref ulong left, ref ulong right, ref ulong result, ref ulong work)
 	{

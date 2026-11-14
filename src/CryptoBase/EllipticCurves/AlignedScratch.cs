@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
-// Scratch for the operands and products of vector rounds on a 64-byte boundary: the stack keeps 16-byte alignment only, so at some offsets of the stack a vector of 32 or 64 bytes in the frame would cross a cache line, and each load and store of it would touch two. A buffer on the stack holds the values and the bytes that aligning them skips, at most 48 in a buffer of vectors and 63 in one of bytes, and stays where it is.
+// Scratch for the operands and products of vector rounds on a 64-byte boundary: the stack keeps 16-byte alignment only, so at some offsets of the stack a vector of 32 or 64 bytes in the frame would cross a cache line, and each load and store of it would touch two.
+// A buffer on the stack holds the values and the bytes that aligning them skips, at most 48 in a buffer of vectors and 63 in one of bytes, and stays where it is.
 internal static class AlignedScratch
 {
 	private const int Alignment = 64;
@@ -39,7 +40,8 @@ internal static class AlignedScratch
 		return GC.AllocateUninitializedArray<ulong>(length + Alignment / sizeof(ulong) - 1, true);
 	}
 
-	// The first limb of a pinned array on a 64-byte boundary. Array data is aligned to its 8-byte elements, so the boundary falls on a whole limb.
+	// The first limb of a pinned array on a 64-byte boundary.
+	// Array data is aligned to its 8-byte elements, so the boundary falls on a whole limb.
 	internal static int AlignedStart(ulong[] storage)
 	{
 		nint address = Marshal.UnsafeAddrOfPinnedArrayElement(storage, 0);

@@ -4,7 +4,8 @@ using System.Text.Json.Serialization;
 
 namespace CryptoBase.Tests.X509.Limbo;
 
-// The testcases of x509-limbo (https://github.com/C2SP/x509-limbo), from the limbo.json of the submodule, read once. Only the fields that the harness uses are read; limbo-schema.json describes them all.
+// The testcases of x509-limbo (https://github.com/C2SP/x509-limbo), from the limbo.json of the submodule, read once.
+// Only the fields that the harness uses are read; limbo-schema.json describes them all.
 internal static partial class LimboTestcases
 {
 	private static readonly Lazy<LimboFile> File = new(Load);

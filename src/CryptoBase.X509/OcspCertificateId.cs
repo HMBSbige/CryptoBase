@@ -44,7 +44,10 @@ public sealed class OcspCertificateId
 	/// <summary>
 	/// Determines whether the identifier identifies a certificate, with its own hash algorithm.
 	/// </summary>
-	/// <remarks>The hash is computed with <see cref="HashAlgorithm" />, which must be SHA-1, SHA-256, SHA-384 or SHA-512 with NULL or absent parameters; the identifier of any other hash identifies no certificate.</remarks>
+	/// <remarks>
+	/// The hash is computed with <see cref="HashAlgorithm" />, which must be SHA-1, SHA-256, SHA-384 or SHA-512 with NULL or absent parameters;
+	/// the identifier of any other hash identifies no certificate.
+	/// </remarks>
 	/// <param name="certificate">The certificate.</param>
 	/// <param name="issuer">The certificate of its issuer.</param>
 	/// <returns><see langword="true" /> if the serial number and both hashes are those of the certificate; otherwise, <see langword="false" />.</returns>
@@ -98,7 +101,8 @@ public sealed class OcspCertificateId
 		return new OcspCertificateId(AlgorithmIdentifier.Read(ref identifier), issuerNameHash, issuerKeyHash, certificate.SerialNumber);
 	}
 
-	// CertID ::= SEQUENCE { hashAlgorithm AlgorithmIdentifier, issuerNameHash OCTET STRING, issuerKeyHash OCTET STRING, serialNumber CertificateSerialNumber }; the results are slices of the reader's memory.
+	// CertID ::= SEQUENCE { hashAlgorithm AlgorithmIdentifier, issuerNameHash OCTET STRING, issuerKeyHash OCTET STRING, serialNumber CertificateSerialNumber };
+	// the results are slices of the reader's memory.
 	internal static OcspCertificateId Read(ref DerReader reader)
 	{
 		DerReader sequence = reader.ReadSequence();

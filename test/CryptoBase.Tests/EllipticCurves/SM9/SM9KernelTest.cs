@@ -469,7 +469,9 @@ public class SM9KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The points of GM/T 0044.5: Ppub-s = [ks]P2, dsA = [t2]P1, S = [l]dsA and P = [h1]P2 + Ppub-s of the signature; Ppub-e = [ke]P1, deA = [t2]P2, deB = [t4]P2, QB = [h1]P1 + Ppub-e, RA = [rA]QB and RB = [rB]QA of the key exchange; Ppub-e, deB, QB and C = [r]QB of the encapsulation, and C1 of the encryption.
+	// The points of GM/T 0044.5: Ppub-s = [ks]P2, dsA = [t2]P1, S = [l]dsA and P = [h1]P2 + Ppub-s of the signature;
+	// Ppub-e = [ke]P1, deA = [t2]P2, deB = [t4]P2, QB = [h1]P1 + Ppub-e, RA = [rA]QB and RB = [rB]QA of the key exchange;
+	// Ppub-e, deB, QB and C = [r]QB of the encapsulation, and C1 of the encryption.
 	[Test]
 	[MethodDataSource(typeof(SM9KernelCase), nameof(SM9KernelCase.All))]
 	public async Task ProductsGiveTheExamples(SM9KernelCase kernel)
@@ -542,7 +544,8 @@ public class SM9KernelTest
 		return new PowerCases(Element(point), pairing, [.. ((List<BigInteger>)[0, .. Scalars(random, RandomCount)]).Select(k => (k, pairing.Pow(k)))]);
 	}
 
-	// The tables of a point as a key has them, public and secret, the second of another width; for the sums that may be the point at infinity, 5·P1 − 5·P1 and a·P1 + b·Q for Q = λP1 and a = −bλ, the point −5·P1 and the table of Q.
+	// The tables of a point as a key has them, public and secret, the second of another width;
+	// for the sums that may be the point at infinity, 5·P1 − 5·P1 and a·P1 + b·Q for Q = λP1 and a = −bλ, the point −5·P1 and the table of Q.
 	private static G1Cases ComputeG1Cases()
 	{
 		Random random = new(3);

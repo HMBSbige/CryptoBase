@@ -1,9 +1,15 @@
 namespace CryptoBase.Signatures.Rsa.Arithmetic;
 
-// Digits of r ≤ 28 bits with umlal2, which adds 32 × 32 → 64-bit products to 64-bit lanes. Each operation narrows its operands to 32-bit words with Pad zeros on either side, so that a read past an end gives zeros and no column checks its bounds.
-// Product scanning in blocks of four columns: by element, lane c of a block gains a_i·b_(c−i) for each i at once. umlal2 takes the upper half of a quad, so lanes 2 and 3 of the block take the quad of b at k − i and lanes 0 and 1 the quad two words lower; no lower half is copied out of a register, and consecutive groups of four i share two of the quads they load. Sixteen sums, for each half of the block, operand pair and i mod 4, cover the latency of umlal.
+// Digits of r ≤ 28 bits with umlal2, which adds 32 × 32 → 64-bit products to 64-bit lanes.
+// Each operation narrows its operands to 32-bit words with Pad zeros on either side, so that a read past an end gives zeros and no column checks its bounds.
+// Product scanning in blocks of four columns: by element, lane c of a block gains a_i·b_(c−i) for each i at once.
+// umlal2 takes the upper half of a quad, so lanes 2 and 3 of the block take the quad of b at k − i and lanes 0 and 1 the quad two words lower;
+// no lower half is copied out of a register, and consecutive groups of four i share two of the quads they load.
+// Sixteen sums, for each half of the block, operand pair and i mod 4, cover the latency of umlal.
 // A column sums at most 2·digitCount products below 2^(2r) and a carry below 2^(64−r), which bounds digitCount by 2^(63−2r).
-// The reduction digits of a block come one after another at its end, a column per register in lane 0, each passing its carry to the next with usra. The sums of a block start at zero and take the carry out of the block before only in its tail, so that the products of a block need not wait for the reduction of the one before. Columns from digitCount on hold the result; the block across digitCount, when digitCount is not a multiple of 4, goes column by column.
+// The reduction digits of a block come one after another at its end, a column per register in lane 0, each passing its carry to the next with usra.
+// The sums of a block start at zero and take the carry out of the block before only in its tail, so that the products of a block need not wait for the reduction of the one before.
+// Columns from digitCount on hold the result; the block across digitCount, when digitCount is not a multiple of 4, goes column by column.
 // A square takes each cross product once, from a doubled copy of the operand, with the products around the diagonal in one group.
 // A load across a page boundary is far slower than one within a page, and the blocks load b and n at every word: each operand starts on 16 bytes, within a page where one holds it, wherever the scratch lies.
 // The tails take the mask of a digit from the products (see IRadix).
@@ -70,7 +76,8 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 		SquareCore(result, ref a, ref twice, ref n, ref m, (uint)negativeInverse);
 	}
 
-	// The digits of an operand of stride words, zeros included with pad of them before the digits, from the first 16-byte boundary at or after start, or from the page boundary after it where the operand would cross it and a page holds the operand. If the scratch moves meanwhile, only the speed changes.
+	// The digits of an operand of stride words, zeros included with pad of them before the digits, from the first 16-byte boundary at or after start, or from the page boundary after it where the operand would cross it and a page holds the operand.
+	// If the scratch moves meanwhile, only the speed changes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static unsafe ref uint Place(ref uint start, int stride, int pad)
 	{
@@ -110,7 +117,9 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 		Vector128<uint>.Zero.StoreUnsafe(ref start, 4);
 	}
 
-	// Block k has the columns k to k + 3 of a·b + m·n. Below digitCount it takes i from 0 to k − 1 for both products and k to k + 3 for a·b alone, whose digits m the tail finds; from digitCount on, i from k − digitCount + 1 to digitCount − 1, rounded down to a multiple of 4, which the zeros allow.
+	// Block k has the columns k to k + 3 of a·b + m·n.
+	// Below digitCount it takes i from 0 to k − 1 for both products and k to k + 3 for a·b alone, whose digits m the tail finds;
+	// from digitCount on, i from k − digitCount + 1 to digitCount − 1, rounded down to a multiple of 4, which the zeros allow.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void MultiplyCore(Span<ulong> result, ref uint a, ref uint b, ref uint n, ref uint m, uint negativeInverse)
 	{
@@ -194,7 +203,9 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 		}
 	}
 
-	// As MultiplyCore with b = a: the cross products a_i·a_(c−i) with i below half = k/2, which is below c − i in every lane, come from 2·a with the products of m and n; the group from diagonal = half rounded down to a multiple of 4 then has the products where i reaches half and half + 1, single on the diagonal; m and n go on alone up to the end.
+	// As MultiplyCore with b = a: the cross products a_i·a_(c−i) with i below half = k/2, which is below c − i in every lane, come from 2·a with the products of m and n;
+	// the group from diagonal = half rounded down to a multiple of 4 then has the products where i reaches half and half + 1, single on the diagonal;
+	// m and n go on alone up to the end.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void SquareCore(Span<ulong> result, ref uint a, ref uint twice, ref uint n, ref uint m, uint negativeInverse)
 	{
@@ -257,7 +268,9 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 				v = ref Unsafe.Subtract(ref v, 4);
 			}
 
-			// y points at the word k − diagonal of 2·a. Lane c of the block takes the word c − i, so at i = half, lane k takes a_half and the others 2·a; at i = half + 1, lane k + 2 takes a_(half+1), lane k + 3 the word of 2·a, and lanes k and k + 1 nothing, as their products came at smaller i.
+			// y points at the word k − diagonal of 2·a.
+			// Lane c of the block takes the word c − i, so at i = half, lane k takes a_half and the others 2·a;
+			// at i = half + 1, lane k + 2 takes a_(half+1), lane k + 3 the word of 2·a, and lanes k and k + 1 nothing, as their products came at smaller i.
 			{
 				Vector128<uint> ax = Vector128.LoadUnsafe(ref x);
 				Vector128<uint> middle = AdvSimd.BitwiseSelect(thirdLane, Vector128.LoadUnsafe(ref Unsafe.Add(ref a, half - 2)), Vector128.LoadUnsafe(ref Unsafe.Add(ref twice, half - 2)));
@@ -339,7 +352,9 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 		}
 	}
 
-	// Columns k to k + 3 from the sums in low and high and the carry into column k in lane 0. A column below count gains its reduction digit times n, which clears its low digit; a column from count on is a digit of the result. Each passes the rest to the next, and the carry out of the block comes back in lane 0; lane 1 here holds what is left over and is ignored.
+	// Columns k to k + 3 from the sums in low and high and the carry into column k in lane 0.
+	// A column below count gains its reduction digit times n, which clears its low digit; a column from count on is a digit of the result.
+	// Each passes the rest to the next, and the carry out of the block comes back in lane 0; lane 1 here holds what is left over and is ignored.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> Tail(Vector128<ulong> low, Vector128<ulong> high, Vector128<ulong> carry, ref uint n, ref uint m, ref ulong output, nint k, nint count, Vector128<uint> inverse, ulong digitMask)
 	{

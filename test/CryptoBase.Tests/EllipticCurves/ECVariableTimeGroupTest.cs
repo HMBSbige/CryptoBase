@@ -132,7 +132,9 @@ public class ECVariableTimeGroupTest
 		}
 	}
 
-	// The digits of u1 add multiples of G before those of u2 add multiples of Q at the same position. With Q = ±G, u1 = u2 = 1 adds G and ±G at the last digit, and u1 = u2 = 2^(N − 1) + 1 does so at the top digit too, where −G leaves the point at infinity for the doublings and the additions below. With Q = ±2⁻¹·G, u2 = 2 leaves ±G for G at the last digit.
+	// The digits of u1 add multiples of G before those of u2 add multiples of Q at the same position.
+	// With Q = ±G, u1 = u2 = 1 adds G and ±G at the last digit, and u1 = u2 = 2^(N − 1) + 1 does so at the top digit too, where −G leaves the point at infinity for the doublings and the additions below.
+	// With Q = ±2⁻¹·G, u2 = 2 leaves ±G for G at the last digit.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MultiplyAddMeetsEqualAndOppositePoints(CurveCase curve)
@@ -180,7 +182,8 @@ public class ECVariableTimeGroupTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// After the parts of u2, the table path adds the windows of u1 to u2·Q. With u1 = 2^(wk), whose one nonzero digit is 1 in window k, and Q = ±2^(wk)·u2⁻¹·G, that one addition meets u2·Q = ±2^(wk)·G, the same point or its opposite.
+	// After the parts of u2, the table path adds the windows of u1 to u2·Q.
+	// With u1 = 2^(wk), whose one nonzero digit is 1 in window k, and Q = ±2^(wk)·u2⁻¹·G, that one addition meets u2·Q = ±2^(wk)·G, the same point or its opposite.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MultiplyAddWithTheTableMeetsEqualAndOppositePoints(CurveCase curve)
@@ -202,7 +205,10 @@ public class ECVariableTimeGroupTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// With n < p < 2n, x mod n is x − n for x in [n, p): the least such x above n here, where r = x − n fails the comparison of x with r and passes that with r + n, and the least x from n, which may be n itself. A small x leaves r + n < p for r near x, so a wrong r there reaches the second comparison and fails it; an x near p − n leaves r + n ≥ p, as does r = x + p − n, whose r + n ≡ x would match without the bound. r may be 0, which SM2 verification passes for r − e: the least x from 0 is 0 itself on P-256 and SM2, which have a point there.
+	// With n < p < 2n, x mod n is x − n for x in [n, p): the least such x above n here, where r = x − n fails the comparison of x with r and passes that with r + n, and the least x from n, which may be n itself.
+	// A small x leaves r + n < p for r near x, so a wrong r there reaches the second comparison and fails it;
+	// an x near p − n leaves r + n ≥ p, as does r = x + p − n, whose r + n ≡ x would match without the bound.
+	// r may be 0, which SM2 verification passes for r − e: the least x from 0 is 0 itself on P-256 and SM2, which have a point there.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task XModOrderEqualsMatchesTheReference(CurveCase curve)

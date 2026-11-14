@@ -3,8 +3,10 @@ using CryptoBase.EllipticCurves.SM9;
 
 namespace CryptoBase.SM9;
 
-// A point Q of G1 that many products take, as the private key dsA of a signer and the encryption master public key Ppub-e do, with its table of SM9BaseTable from product TableThreshold on, so that a key that takes few products does not pay for the build. The count is atomic, so that products at once still reach the threshold, and it stops once the table is there; whether a product takes the table depends on the count alone.
-// A secret Q, as dsA is, has a table as secret as it is: threads that reach the threshold at once may each build one, but only the first to finish publishes it and the others erase theirs, and Dispose erases Q and the table. The products with and without the table agree.
+// A point Q of G1 that many products take, as the private key dsA of a signer and the encryption master public key Ppub-e do, with its table of SM9BaseTable from product TableThreshold on, so that a key that takes few products does not pay for the build.
+// The count is atomic, so that products at once still reach the threshold, and it stops once the table is there; whether a product takes the table depends on the count alone.
+// A secret Q, as dsA is, has a table as secret as it is: threads that reach the threshold at once may each build one, but only the first to finish publishes it and the others erase theirs, and Dispose erases Q and the table.
+// The products with and without the table agree.
 internal sealed class SM9G1FixedBase : IDisposable
 {
 	internal const int TableThreshold = 10;

@@ -8,7 +8,8 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 
 	private const int PointMultipleCount = 1 << PointWidth - 2;
 
-	// As Curve448Scalar.MultiplyBase, with each comb value after the first selected into the scratch by TField.SelectBase. The point stays in lanes until Untwist, which TwistedEdwards448 takes.
+	// As Curve448Scalar.MultiplyBase, with each comb value after the first selected into the scratch by TField.SelectBase.
+	// The point stays in lanes until Untwist, which TwistedEdwards448 takes.
 	[SkipLocalsInit]
 	internal static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{

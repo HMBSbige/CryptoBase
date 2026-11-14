@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
-// A sum of products for one Montgomery reduction, Σ T_k·2^(52k) in ten columns that wrap modulo 2^64 and read as signed: SM9Fp.Reduce takes columns below 2^62 in magnitude whose value is not negative. Columns are added and subtracted without carries.
+// A sum of products for one Montgomery reduction, Σ T_k·2^(52k) in ten columns that wrap modulo 2^64 and read as signed: SM9Fp.Reduce takes columns below 2^62 in magnitude whose value is not negative.
+// Columns are added and subtracted without carries.
 internal struct SM9FpWide
 {
 	internal ulong T0;

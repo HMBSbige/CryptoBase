@@ -52,8 +52,9 @@ internal sealed class BenchmarkSession(MeasurementSettings settings, ImmutableAr
 	}
 
 	/// <summary>
-	/// Lays out a table per group that has a selected algorithm. The columns of a throughput group are the input sizes; those of an operation group
-	/// are the operations that its selected algorithms have, in the order of <see cref="AlgorithmGroup.Operations" />.
+	/// Lays out a table per group that has a selected algorithm.
+	/// The columns of a throughput group are the input sizes;
+	/// those of an operation group are the operations that its selected algorithms have, in the order of <see cref="AlgorithmGroup.Operations" />.
 	/// </summary>
 	public static ImmutableArray<GroupLayout> Plan(ImmutableArray<AlgorithmEntry> algorithms, ImmutableArray<int> inputSizes)
 	{

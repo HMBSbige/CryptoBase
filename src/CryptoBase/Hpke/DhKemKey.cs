@@ -3,8 +3,10 @@ using CryptoBase.KeyAgreements;
 
 namespace CryptoBase.Hpke;
 
-// DHKEM of RFC 9180, Section 4.1, over the Diffie–Hellman key TDhKey and the KDF of the KEM, TKdf; TKem supplies kem_id. The private seed is the ikm of DeriveKeyPair.
-// As with ECKey, keep a key in one writable location and do not copy it. No method that reaches _key is readonly: a readonly one would call TDhKey on a copy.
+// DHKEM of RFC 9180, Section 4.1, over the Diffie–Hellman key TDhKey and the KDF of the KEM, TKdf; TKem supplies kem_id.
+// The private seed is the ikm of DeriveKeyPair.
+// As with ECKey, keep a key in one writable location and do not copy it.
+// No method that reaches _key is readonly: a readonly one would call TDhKey on a copy.
 internal struct DhKemKey<TKem, TDhKey, TKdf>
 	where TKem : class, IHpkeKem<TKem>
 	where TDhKey : struct, IDiffieHellmanKey<TDhKey>

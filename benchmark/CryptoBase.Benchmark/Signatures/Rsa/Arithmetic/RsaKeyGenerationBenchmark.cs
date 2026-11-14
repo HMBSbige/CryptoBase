@@ -9,7 +9,9 @@ using BouncyCastleInteger = Org.BouncyCastle.Math.BigInteger;
 
 namespace CryptoBase.Benchmark.Signatures.Rsa.Arithmetic;
 
-// Key generation with e = 65537. The time of one key varies with the candidates it tries, so a run needs many keys. Exporting the key forces the platform to generate it, which it defers to the first use.
+// Key generation with e = 65537.
+// The time of one key varies with the candidates it tries, so a run needs many keys.
+// Exporting the key forces the platform to generate it, which it defers to the first use.
 public class RsaKeyGenerationBenchmark
 {
 	private RsaKeyPairGenerator _bouncyCastle = null!;

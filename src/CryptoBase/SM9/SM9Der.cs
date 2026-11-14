@@ -2,7 +2,8 @@ using CryptoBase.EllipticCurves.SM9;
 
 namespace CryptoBase.SM9;
 
-// The DER of GB/T 41389-2022 (GM/T 0080-2020), Sec. 6.1.4 and 6.1.5: SM9Signature ::= SEQUENCE { H OCTET STRING, S BIT STRING } and SM9Cipher ::= SEQUENCE { EnType INTEGER, C1 BIT STRING, C3 OCTET STRING, C2 OCTET STRING }, with the points S and C1 uncompressed, 04 ‖ x ‖ y, in BIT STRINGs without unused bits, H and C3 of 32 bytes, and EnType 0, for C2 = M ⊕ K1. Signatures and ciphertexts are public, so the encoding and parsing may branch on them.
+// The DER of GB/T 41389-2022 (GM/T 0080-2020), Sec. 6.1.4 and 6.1.5: SM9Signature ::= SEQUENCE { H OCTET STRING, S BIT STRING } and SM9Cipher ::= SEQUENCE { EnType INTEGER, C1 BIT STRING, C3 OCTET STRING, C2 OCTET STRING }, with the points S and C1 uncompressed, 04 ‖ x ‖ y, in BIT STRINGs without unused bits, H and C3 of 32 bytes, and EnType 0, for C2 = M ⊕ K1.
+// Signatures and ciphertexts are public, so the encoding and parsing may branch on them.
 internal static class SM9Der
 {
 	private const byte SequenceTag = 0x30;
@@ -32,7 +33,8 @@ internal static class SM9Der
 		s.CopyTo(destination.Slice(SignatureLength - SM9G1.EncodedLength));
 	}
 
-	// h and S as slices of source, which must be the DER of an SM9Signature and nothing else. S is not yet checked against the curve.
+	// h and S as slices of source, which must be the DER of an SM9Signature and nothing else.
+	// S is not yet checked against the curve.
 	internal static bool TryReadSignature(ReadOnlySpan<byte> source, out ReadOnlySpan<byte> h, out ReadOnlySpan<byte> s)
 	{
 		if (source.Length is not SignatureLength || !source.StartsWith(SignaturePrefix) || !source.Slice(SignaturePrefix.Length + HashLength).StartsWith(PointPrefix))
@@ -56,7 +58,8 @@ internal static class SM9Der
 		return total <= int.MaxValue ? (int)total : -1;
 	}
 
-	// Writes the SM9Cipher of C1, an uncompressed point, and a C2 of plaintextLength bytes, but for the contents of C3 and C2, whose offsets it returns; returns the length. destination is at least GetCipherLength long.
+	// Writes the SM9Cipher of C1, an uncompressed point, and a C2 of plaintextLength bytes, but for the contents of C3 and C2, whose offsets it returns; returns the length.
+	// destination is at least GetCipherLength long.
 	internal static int WriteCipher(ReadOnlySpan<byte> c1, int plaintextLength, Span<byte> destination, out int hashOffset, out int cipherTextOffset)
 	{
 		Debug.Assert(c1.Length is SM9G1.EncodedLength && c1[0] is 0x04);
@@ -76,7 +79,9 @@ internal static class SM9Der
 		return written + plaintextLength;
 	}
 
-	// Reads the SM9Cipher that fills source, DER only: c1 is the content of the BIT STRING, of 65 bytes, whose point is not yet checked, and C3 must hold 32 bytes. EnType must be 0. C2 may be empty; the caller decides on that.
+	// Reads the SM9Cipher that fills source, DER only: c1 is the content of the BIT STRING, of 65 bytes, whose point is not yet checked, and C3 must hold 32 bytes.
+	// EnType must be 0.
+	// C2 may be empty; the caller decides on that.
 	internal static bool TryReadCipher(ReadOnlySpan<byte> source, out ReadOnlySpan<byte> c1, out ReadOnlySpan<byte> c3, out ReadOnlySpan<byte> c2)
 	{
 		c1 = default;
