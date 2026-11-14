@@ -2,7 +2,12 @@ namespace CryptoBase.Ciphers.Modes.Gcm;
 
 internal static partial class GHashX86
 {
-	private static readonly Vector128<byte> ReflectedPolynomial = Vector128.Create(1UL, 0xc200000000000000UL).AsByte();
+	// A property rather than a static readonly field, since Native AOT checks before each read of the field that the class is initialized.
+	private static Vector128<byte> ReflectedPolynomial
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Vector128.Create(1UL, 0xc200000000000000UL).AsByte();
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static Vector128<byte> GFMultiply(Vector128<byte> a, Vector128<byte> b)
