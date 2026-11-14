@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
@@ -303,13 +304,14 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 		}
 
 		ref byte schedule = ref MemoryMarshal.GetReference(MessageSchedule);
+		Unsafe.SkipInit(out Vector128<uint> scratch);
 
 		// A loop keeps the kernel small enough for the JIT to inline every step and rotation, whatever instructions the rotations take.
 		for (int round = 0; round < Blake3Constants.Rounds; ++round)
 		{
 			ref byte words = ref Unsafe.Add(ref schedule, round * 16);
-			Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, ref words);
-			Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, ref Unsafe.Add(ref words, 8));
+			Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref scratch, ref message, ref words);
+			Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref scratch, ref message, ref Unsafe.Add(ref words, 8));
 		}
 	}
 
@@ -399,7 +401,7 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 		ref Vector128<uint> b0, ref Vector128<uint> b1, ref Vector128<uint> b2, ref Vector128<uint> b3,
 		ref Vector128<uint> c0, ref Vector128<uint> c1, ref Vector128<uint> c2, ref Vector128<uint> c3,
 		ref Vector128<uint> d0, ref Vector128<uint> d1, ref Vector128<uint> d2, ref Vector128<uint> d3,
-		ref Vector128<uint> message, ref byte words
+		ref Vector128<uint> scratch, ref Vector128<uint> message, ref byte words
 	)
 	{
 		a0 = a0 + Word(ref message, ref words, 0) + b0;
@@ -414,10 +416,10 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 		c1 += d1;
 		c2 += d2;
 		c3 += d3;
-		b0 = (b0 ^ c0).RotateRightUInt32(12);
-		b1 = (b1 ^ c1).RotateRightUInt32(12);
-		b2 = (b2 ^ c2).RotateRightUInt32(12);
-		b3 = (b3 ^ c3).RotateRightUInt32(12);
+		b0 = XorRotateRight(b0, c0, ref scratch, 12);
+		b1 = XorRotateRight(b1, c1, ref scratch, 12);
+		b2 = XorRotateRight(b2, c2, ref scratch, 12);
+		b3 = XorRotateRight(b3, c3, ref scratch, 12);
 		a0 = a0 + Word(ref message, ref words, 4) + b0;
 		a1 = a1 + Word(ref message, ref words, 5) + b1;
 		a2 = a2 + Word(ref message, ref words, 6) + b2;
@@ -430,9 +432,23 @@ internal readonly partial struct Blake3Vector128 : IBlake3XofKernel, IBlake3Lane
 		c1 += d1;
 		c2 += d2;
 		c3 += d3;
-		b0 = (b0 ^ c0).RotateRightUInt32(7);
-		b1 = (b1 ^ c1).RotateRightUInt32(7);
-		b2 = (b2 ^ c2).RotateRightUInt32(7);
-		b3 = (b3 ^ c3).RotateRightUInt32(7);
+		b0 = XorRotateRight(b0, c0, ref scratch, 7);
+		b1 = XorRotateRight(b1, c1, ref scratch, 7);
+		b2 = XorRotateRight(b2, c2, ref scratch, 7);
+		b3 = XorRotateRight(b3, c3, ref scratch, 7);
+	}
+
+	// The state fills the 16 registers of x64, so a rotation by shifts goes through one shared scratch rather than spilling per rotation.
+	// ARM64 rotates without a copy.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector128<uint> XorRotateRight(Vector128<uint> b, Vector128<uint> c, ref Vector128<uint> scratch, [ConstantExpected(Min = 1, Max = 31)] byte count)
+	{
+		if (AdvSimd.IsSupported)
+		{
+			return (b ^ c).RotateRightUInt32(count);
+		}
+
+		scratch = b ^ c;
+		return scratch >>> count | scratch << 32 - count;
 	}
 }
