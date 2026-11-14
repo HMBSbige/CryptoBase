@@ -7,6 +7,7 @@
     <File Path="LICENSE" />
     <File Path="NuGet.Config" />
     <File Path="README.md" />
+    <File Path=".github\InstructionSets.cs" />
     <File Path=".github\renovate.json" />
     <File Path=".github\test.sh" />
     <File Path=".github\workflows\CI.yml" />
