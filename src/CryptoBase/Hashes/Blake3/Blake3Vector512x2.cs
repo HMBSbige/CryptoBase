@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
@@ -100,62 +101,62 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 			Vector512<uint> w14 = Vector512.Create((uint)BlockLength);
 			Vector512<uint> w15 = laneFlags;
 
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 0, 2, 4, 6);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 0, 2, 4, 6);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 1, 3, 5, 7);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 1, 3, 5, 7);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 8, 10, 12, 14);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 8, 10, 12, 14);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 9, 11, 13, 15);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 9, 11, 13, 15);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 2, 3, 7, 4);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 2, 3, 7, 4);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 6, 10, 0, 13);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 6, 10, 0, 13);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 1, 12, 9, 15);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 1, 12, 9, 15);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 11, 5, 14, 8);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 11, 5, 14, 8);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 3, 10, 13, 7);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 3, 10, 13, 7);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 4, 12, 2, 14);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 4, 12, 2, 14);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 6, 9, 11, 8);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 6, 9, 11, 8);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 5, 0, 15, 1);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 5, 0, 15, 1);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 10, 12, 14, 13);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 10, 12, 14, 13);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 7, 9, 3, 15);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 7, 9, 3, 15);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 4, 11, 5, 1);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 4, 11, 5, 1);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 0, 2, 8, 6);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 0, 2, 8, 6);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 12, 9, 15, 14);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 12, 9, 15, 14);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 13, 11, 10, 8);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 13, 11, 10, 8);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 7, 5, 0, 6);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 7, 5, 0, 6);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 2, 3, 1, 4);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 2, 3, 1, 4);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 9, 11, 8, 15);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 9, 11, 8, 15);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 14, 5, 12, 1);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 14, 5, 12, 1);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 13, 0, 2, 4);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 13, 0, 2, 4);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 3, 10, 6, 7);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 3, 10, 6, 7);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 11, 5, 1, 8);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 11, 5, 1, 8);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 15, 0, 9, 6);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 15, 0, 9, 6);
-			HalfX(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 14, 2, 3, 7);
-			HalfX(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 14, 2, 3, 7);
-			HalfY(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 10, 12, 4, 13);
-			HalfY(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 10, 12, 4, 13);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 0, 2, 4, 6, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 0, 2, 4, 6, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 1, 3, 5, 7, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 1, 3, 5, 7, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 8, 10, 12, 14, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 8, 10, 12, 14, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 9, 11, 13, 15, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 9, 11, 13, 15, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 2, 3, 7, 4, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 2, 3, 7, 4, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 6, 10, 0, 13, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 6, 10, 0, 13, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 1, 12, 9, 15, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 1, 12, 9, 15, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 11, 5, 14, 8, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 11, 5, 14, 8, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 3, 10, 13, 7, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 3, 10, 13, 7, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 4, 12, 2, 14, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 4, 12, 2, 14, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 6, 9, 11, 8, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 6, 9, 11, 8, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 5, 0, 15, 1, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 5, 0, 15, 1, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 10, 12, 14, 13, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 10, 12, 14, 13, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 7, 9, 3, 15, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 7, 9, 3, 15, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 4, 11, 5, 1, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 4, 11, 5, 1, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 0, 2, 8, 6, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 0, 2, 8, 6, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 12, 9, 15, 14, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 12, 9, 15, 14, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 13, 11, 10, 8, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 13, 11, 10, 8, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 7, 5, 0, 6, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 7, 5, 0, 6, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 2, 3, 1, 4, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 2, 3, 1, 4, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 9, 11, 8, 15, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 9, 11, 8, 15, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 14, 5, 12, 1, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 14, 5, 12, 1, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 13, 0, 2, 4, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 13, 0, 2, 4, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 3, 10, 6, 7, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 3, 10, 6, 7, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 11, 5, 1, 8, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 11, 5, 1, 8, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message0[0], 15, 0, 9, 6, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7, ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15, ref message1[0], 15, 0, 9, 6, 8, 7);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 14, 2, 3, 7, 16, 12);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 14, 2, 3, 7, 16, 12);
+			Half(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message0[0], 10, 12, 4, 13, 8, 7);
+			Half(ref w0, ref w1, ref w2, ref w3, ref w5, ref w6, ref w7, ref w4, ref w10, ref w11, ref w8, ref w9, ref w15, ref w12, ref w13, ref w14, ref message1[0], 10, 12, 4, 13, 8, 7);
 
 			h0 = v0 ^ v8;
 			h1 = v1 ^ v9;
@@ -182,62 +183,35 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 		Blake3Vector512.StoreChainingValues(g0, g1, g2, g3, g4, g5, g6, g7, ref Unsafe.Add(ref output, 16 * OutLength));
 	}
 
-	// Each half holds its rotation counts as literal constants; otherwise the JIT rotated by vectors of counts, which took registers that the two states need.
+	// Half of G on four columns or four diagonals of one state.
+	// The rotation counts are constants, so that each rotation is a single instruction with an immediate.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void HalfX
+	private static void Half
 	(
 		ref Vector512<uint> a0, ref Vector512<uint> a1, ref Vector512<uint> a2, ref Vector512<uint> a3,
 		ref Vector512<uint> b0, ref Vector512<uint> b1, ref Vector512<uint> b2, ref Vector512<uint> b3,
 		ref Vector512<uint> c0, ref Vector512<uint> c1, ref Vector512<uint> c2, ref Vector512<uint> c3,
 		ref Vector512<uint> d0, ref Vector512<uint> d1, ref Vector512<uint> d2, ref Vector512<uint> d3,
 		ref Vector512<uint> message,
-		int x0, int x1, int x2, int x3
+		int x0, int x1, int x2, int x3,
+		[ConstantExpected] byte rotationD, [ConstantExpected] byte rotationB
 	)
 	{
 		a0 = a0 + Unsafe.Add(ref message, x0) + b0;
 		a1 = a1 + Unsafe.Add(ref message, x1) + b1;
 		a2 = a2 + Unsafe.Add(ref message, x2) + b2;
 		a3 = a3 + Unsafe.Add(ref message, x3) + b3;
-		d0 = Avx512F.RotateRight(d0 ^ a0, 16);
-		d1 = Avx512F.RotateRight(d1 ^ a1, 16);
-		d2 = Avx512F.RotateRight(d2 ^ a2, 16);
-		d3 = Avx512F.RotateRight(d3 ^ a3, 16);
+		d0 = Avx512F.RotateRight(d0 ^ a0, rotationD);
+		d1 = Avx512F.RotateRight(d1 ^ a1, rotationD);
+		d2 = Avx512F.RotateRight(d2 ^ a2, rotationD);
+		d3 = Avx512F.RotateRight(d3 ^ a3, rotationD);
 		c0 += d0;
 		c1 += d1;
 		c2 += d2;
 		c3 += d3;
-		b0 = Avx512F.RotateRight(b0 ^ c0, 12);
-		b1 = Avx512F.RotateRight(b1 ^ c1, 12);
-		b2 = Avx512F.RotateRight(b2 ^ c2, 12);
-		b3 = Avx512F.RotateRight(b3 ^ c3, 12);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void HalfY
-	(
-		ref Vector512<uint> a0, ref Vector512<uint> a1, ref Vector512<uint> a2, ref Vector512<uint> a3,
-		ref Vector512<uint> b0, ref Vector512<uint> b1, ref Vector512<uint> b2, ref Vector512<uint> b3,
-		ref Vector512<uint> c0, ref Vector512<uint> c1, ref Vector512<uint> c2, ref Vector512<uint> c3,
-		ref Vector512<uint> d0, ref Vector512<uint> d1, ref Vector512<uint> d2, ref Vector512<uint> d3,
-		ref Vector512<uint> message,
-		int x0, int x1, int x2, int x3
-	)
-	{
-		a0 = a0 + Unsafe.Add(ref message, x0) + b0;
-		a1 = a1 + Unsafe.Add(ref message, x1) + b1;
-		a2 = a2 + Unsafe.Add(ref message, x2) + b2;
-		a3 = a3 + Unsafe.Add(ref message, x3) + b3;
-		d0 = Avx512F.RotateRight(d0 ^ a0, 8);
-		d1 = Avx512F.RotateRight(d1 ^ a1, 8);
-		d2 = Avx512F.RotateRight(d2 ^ a2, 8);
-		d3 = Avx512F.RotateRight(d3 ^ a3, 8);
-		c0 += d0;
-		c1 += d1;
-		c2 += d2;
-		c3 += d3;
-		b0 = Avx512F.RotateRight(b0 ^ c0, 7);
-		b1 = Avx512F.RotateRight(b1 ^ c1, 7);
-		b2 = Avx512F.RotateRight(b2 ^ c2, 7);
-		b3 = Avx512F.RotateRight(b3 ^ c3, 7);
+		b0 = Avx512F.RotateRight(b0 ^ c0, rotationB);
+		b1 = Avx512F.RotateRight(b1 ^ c1, rotationB);
+		b2 = Avx512F.RotateRight(b2 ^ c2, rotationB);
+		b3 = Avx512F.RotateRight(b3 ^ c3, rotationB);
 	}
 }
