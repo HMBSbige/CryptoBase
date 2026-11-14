@@ -13,7 +13,7 @@ dotnet tool install -g CryptoBase.SpeedTest
 ## Usage
 
 ```shell
-# Every algorithm but the slow ones.
+# Every algorithm.
 cryptobase-speedtest
 
 # Some algorithms: names, patterns with * and ?, or group names.
@@ -30,7 +30,7 @@ cryptobase-speedtest hash -f markdown
 cryptobase-speedtest hash -f json > hash.json
 ```
 
-Algorithms that process data report MiB/s at each input size, and the others, such as signatures and key exchanges, operations per second. Slow algorithms, such as RSA key generation, run only when named or matched by a wildcard.
+Algorithms that process data report MiB/s at each input size, and the others, such as signatures and key exchanges, operations per second.
 
 Each run starts with the runtime, the processor and the instruction sets in use, so include it when you share results.
 

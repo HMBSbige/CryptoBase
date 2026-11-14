@@ -40,7 +40,7 @@ jobs:
       - name: Build
         run: dotnet build -c Release
 
-      # Installs the speed test as the tool that a release publishes, and checks each of its workloads once, without timing; slow algorithms are left out.
+      # Installs the speed test as the tool that a release publishes, and checks each of its workloads once, without timing.
       - name: Check speed test tool
         run: |
           dotnet pack benchmark/CryptoBase.SpeedTest --no-build -o artifacts/tool/package

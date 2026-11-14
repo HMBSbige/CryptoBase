@@ -12,7 +12,7 @@ if (Debugger.IsAttached)
 Argument<string[]> algorithmsArgument = new("algorithm")
 {
 	HelpName = "algorithm",
-	Description = "Algorithms to run: names, patterns with * and ?, group names, or 'all' (the default). Groups and 'all' leave out slow algorithms.",
+	Description = "Algorithms to run: names, patterns with * and ?, group names, or 'all' (the default).",
 	Arity = ArgumentArity.ZeroOrMore
 };
 AddCompletions(algorithmsArgument);
@@ -75,7 +75,7 @@ Option<bool> testOption = new("--test")
 Argument<string[]> patternsArgument = new("pattern")
 {
 	HelpName = "pattern",
-	Description = "Algorithms to list, selected as for a run. Slow algorithms are listed too.",
+	Description = "Algorithms to list, selected as for a run.",
 	Arity = ArgumentArity.ZeroOrMore
 };
 AddCompletions(patternsArgument);
@@ -91,7 +91,7 @@ listCommand.SetAction
 	{
 		string[] patterns = parseResult.GetValue(patternsArgument) ?? [];
 
-		if (!TrySelect(patterns, includeSlow: true, out ImmutableArray<AlgorithmEntry> entries))
+		if (!TrySelect(patterns, out ImmutableArray<AlgorithmEntry> entries))
 		{
 			return 1;
 		}
@@ -131,7 +131,7 @@ rootCommand.SetAction
 		ImmutableArray<int> sizes = [.. parseResult.GetRequiredValue(bytesOption)];
 		string[] selectors = [.. parseResult.GetValue(algorithmsArgument) ?? [], .. selectorsAfterSizes];
 
-		if (!TrySelect(selectors, includeSlow: false, out ImmutableArray<AlgorithmEntry> entries))
+		if (!TrySelect(selectors, out ImmutableArray<AlgorithmEntry> entries))
 		{
 			return 1;
 		}
@@ -186,27 +186,16 @@ static void RejectOptionLikeTokens(ArgumentResult result)
 	}
 }
 
-static bool TrySelect(string[] selectors, bool includeSlow, out ImmutableArray<AlgorithmEntry> entries)
+static bool TrySelect(string[] selectors, out ImmutableArray<AlgorithmEntry> entries)
 {
-	entries = AlgorithmSelector.Select(selectors, includeSlow, out ImmutableArray<string> unmatched);
+	entries = AlgorithmSelector.Select(selectors, out ImmutableArray<string> unmatched);
 
 	foreach (string selector in unmatched)
 	{
 		Console.Error.WriteLine($"No algorithm or group matches '{selector}'. Run 'list' to see the names.");
 	}
 
-	if (!unmatched.IsEmpty)
-	{
-		return false;
-	}
-
-	if (entries.IsEmpty)
-	{
-		Console.Error.WriteLine("No algorithms are selected: slow algorithms only run when they are named or matched by a wildcard.");
-		return false;
-	}
-
-	return true;
+	return unmatched.IsEmpty;
 }
 
 static double ParseSeconds(ArgumentResult result, bool allowZero)

@@ -34,11 +34,6 @@ internal static class CatalogListing
 	{
 		List<string> notes = [];
 
-		if (entry.IsSlow)
-		{
-			notes.Add("slow: runs only when named or matched by a wildcard");
-		}
-
 		if (entry.Notes is { } text)
 		{
 			notes.Add(text);

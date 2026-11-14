@@ -11,7 +11,7 @@ public class SpeedTestHarnessTest
 	[Test]
 	public async Task OperationColumnsFollowTheGroupOrder()
 	{
-		ImmutableArray<AlgorithmEntry> selected = AlgorithmSelector.Select(["rsa-2048", "rsa-2048-keygen"], includeSlow: false, out _);
+		ImmutableArray<AlgorithmEntry> selected = AlgorithmSelector.Select(["rsa-2048", "rsa-2048-keygen"], out _);
 		ImmutableArray<GroupLayout> groups = BenchmarkSession.Plan(selected, [16]);
 
 		await Assert.That(groups.Single().Columns).IsEquivalentTo([OperationNames.KeyGen, OperationNames.Sign, OperationNames.Verify], CollectionOrdering.Matching);
@@ -20,7 +20,7 @@ public class SpeedTestHarnessTest
 	[Test]
 	public async Task OperationColumnsLeaveOutUnusedOperations()
 	{
-		ImmutableArray<AlgorithmEntry> selected = AlgorithmSelector.Select(["rsa-2048"], includeSlow: false, out _);
+		ImmutableArray<AlgorithmEntry> selected = AlgorithmSelector.Select(["rsa-2048"], out _);
 		ImmutableArray<GroupLayout> groups = BenchmarkSession.Plan(selected, [16]);
 
 		await Assert.That(groups.Single().Columns).IsEquivalentTo([OperationNames.Sign, OperationNames.Verify], CollectionOrdering.Matching);
@@ -61,7 +61,7 @@ public class SpeedTestHarnessTest
 	[Test]
 	public async Task SelfTestPassesTheSelectedWorkloads()
 	{
-		ImmutableArray<AlgorithmEntry> selected = AlgorithmSelector.Select(["sha256", "aes-128-gcm", "x25519"], includeSlow: false, out _);
+		ImmutableArray<AlgorithmEntry> selected = AlgorithmSelector.Select(["sha256", "aes-128-gcm", "x25519"], out _);
 		using StringWriter writer = new();
 
 		await Assert.That(SelfTest.Run(selected, [16, 1024], writer)).IsEqualTo(0);

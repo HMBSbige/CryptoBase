@@ -28,11 +28,6 @@ internal sealed class AlgorithmEntry
 	public required ImmutableArray<string> Operations { get; init; }
 
 	/// <summary>
-	/// Gets a value indicating whether the algorithm is too slow to run as part of <c>all</c> or of its group, so that it only runs when named or matched by a wildcard.
-	/// </summary>
-	public bool IsSlow { get; init; }
-
-	/// <summary>
 	/// Gets the fixed parameters of the workload that its name does not tell, for the <c>list</c> command, or <see langword="null" />.
 	/// </summary>
 	public string? Notes { get; init; }

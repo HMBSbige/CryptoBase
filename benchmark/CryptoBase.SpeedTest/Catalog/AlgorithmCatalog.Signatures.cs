@@ -65,10 +65,10 @@ internal static partial class AlgorithmCatalog
 
 	private static AlgorithmEntry RsaKeyGeneration(string name, int modulusBits)
 	{
-		return Signature(name, SignatureAlgorithm.RsaPkcs1Sha256, () => RsaKey.GenerateKey(modulusBits), [OperationNames.KeyGen], "public exponent 65537", isSlow: true);
+		return Signature(name, SignatureAlgorithm.RsaPkcs1Sha256, () => RsaKey.GenerateKey(modulusBits), [OperationNames.KeyGen], "public exponent 65537");
 	}
 
-	private static AlgorithmEntry Signature<T>(string name, SignatureAlgorithm algorithm, Func<T> createKey, ImmutableArray<string> operations, string notes, bool isSlow = false) where T : class, ISignatureKey<T>
+	private static AlgorithmEntry Signature<T>(string name, SignatureAlgorithm algorithm, Func<T> createKey, ImmutableArray<string> operations, string notes) where T : class, ISignatureKey<T>
 	{
 		return new AlgorithmEntry
 		{
@@ -77,7 +77,6 @@ internal static partial class AlgorithmCatalog
 			ImplementationType = typeof(T),
 			Operations = operations,
 			Notes = notes,
-			IsSlow = isSlow,
 			CreateWorkload = (operation, _) => new SignatureWorkload<T>
 			(
 				operation switch
