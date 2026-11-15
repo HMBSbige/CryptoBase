@@ -42,6 +42,8 @@ internal static class SystemEnvironmentUtils
 			}
 			case Architecture.Arm or Architecture.Arm64:
 			{
+				handler.AppendLiteral(Environment.NewLine);
+				Append(ref handler, "CPU name", CpuName.Get() ?? "unknown");
 				AppendArm(ref handler);
 				break;
 			}

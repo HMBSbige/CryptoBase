@@ -26,7 +26,7 @@ internal sealed record EnvironmentSummary(string CryptoBaseVersion, string Runti
 			CurrentCodeGeneration,
 			RuntimeInformation.OSDescription,
 			architecture,
-			x86 ? CpuIdUtils.GetBrand().Trim() : null,
+			CpuName.Get(),
 			Environment.ProcessorCount,
 			[.. x86 ? GetX86InstructionSets() : GetArmInstructionSets(), .. GetInstructionSetSwitches()]
 		);
