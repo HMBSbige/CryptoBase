@@ -35,7 +35,7 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	private uint _v7;
 #if NET11_0_OR_GREATER
 	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state.
-	// After the words, the count, which Append reads right away, takes an integer store of its own rather than part of a vector store.
+	// After the words, the count, which Append updates right away, shares none of those stores with them, which makes short messages faster.
 	private ulong _byteCount;
 #endif
 	private InlineArray64<byte> _buffer;
