@@ -494,7 +494,8 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel, IBlake3LaneKernel
 		h7 = v7 ^ v15;
 	}
 
-	// Unrolled, so that every message word has a constant index and stays in a register; each rotation is a single instruction, so all fourteen steps still inline.
+	// A loop rather than seven unrolled rounds keeps the hot code under 4 KB, where on Zen 5 a longer stretch without a taken branch can miss the op cache for the life of a process.
+	// The message stays in registers, permuted between rounds rather than read through a table of offsets.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Rounds
 	(
@@ -505,20 +506,36 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel, IBlake3LaneKernel
 		ref Vector512<uint> message
 	)
 	{
-		Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, 0, 2, 4, 6, 1, 3, 5, 7);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, 8, 10, 12, 14, 9, 11, 13, 15);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, 2, 3, 7, 4, 6, 10, 0, 13);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, 1, 12, 9, 15, 11, 5, 14, 8);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, 3, 10, 13, 7, 4, 12, 2, 14);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, 6, 9, 11, 8, 5, 0, 15, 1);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, 10, 12, 14, 13, 7, 9, 3, 15);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, 4, 11, 5, 1, 0, 2, 8, 6);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, 12, 9, 15, 14, 13, 11, 10, 8);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, 7, 5, 0, 6, 2, 3, 1, 4);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, 9, 11, 8, 15, 14, 5, 12, 1);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, 13, 0, 2, 4, 3, 10, 6, 7);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, ref message, 11, 5, 1, 8, 15, 0, 9, 6);
-		Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, ref message, 14, 2, 3, 7, 10, 12, 4, 13);
+		Vector512<uint> m0 = message;
+		Vector512<uint> m1 = Unsafe.Add(ref message, 1);
+		Vector512<uint> m2 = Unsafe.Add(ref message, 2);
+		Vector512<uint> m3 = Unsafe.Add(ref message, 3);
+		Vector512<uint> m4 = Unsafe.Add(ref message, 4);
+		Vector512<uint> m5 = Unsafe.Add(ref message, 5);
+		Vector512<uint> m6 = Unsafe.Add(ref message, 6);
+		Vector512<uint> m7 = Unsafe.Add(ref message, 7);
+		Vector512<uint> m8 = Unsafe.Add(ref message, 8);
+		Vector512<uint> m9 = Unsafe.Add(ref message, 9);
+		Vector512<uint> m10 = Unsafe.Add(ref message, 10);
+		Vector512<uint> m11 = Unsafe.Add(ref message, 11);
+		Vector512<uint> m12 = Unsafe.Add(ref message, 12);
+		Vector512<uint> m13 = Unsafe.Add(ref message, 13);
+		Vector512<uint> m14 = Unsafe.Add(ref message, 14);
+		Vector512<uint> m15 = Unsafe.Add(ref message, 15);
+
+		for (int round = 0; ;)
+		{
+			Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, m0, m2, m4, m6, m1, m3, m5, m7);
+			Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, m8, m10, m12, m14, m9, m11, m13, m15);
+
+			if (++round == Blake3Constants.Rounds)
+			{
+				break;
+			}
+
+			// The message permutation of BLAKE3, so that every round reads the words in the order of the first.
+			(m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15) = (m2, m6, m3, m10, m7, m0, m4, m13, m1, m11, m12, m5, m9, m14, m15, m8);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -528,15 +545,14 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel, IBlake3LaneKernel
 		ref Vector512<uint> b0, ref Vector512<uint> b1, ref Vector512<uint> b2, ref Vector512<uint> b3,
 		ref Vector512<uint> c0, ref Vector512<uint> c1, ref Vector512<uint> c2, ref Vector512<uint> c3,
 		ref Vector512<uint> d0, ref Vector512<uint> d1, ref Vector512<uint> d2, ref Vector512<uint> d3,
-		ref Vector512<uint> message,
-		int x0, int x1, int x2, int x3,
-		int y0, int y1, int y2, int y3
+		Vector512<uint> x0, Vector512<uint> x1, Vector512<uint> x2, Vector512<uint> x3,
+		Vector512<uint> y0, Vector512<uint> y1, Vector512<uint> y2, Vector512<uint> y3
 	)
 	{
-		a0 = a0 + Unsafe.Add(ref message, x0) + b0;
-		a1 = a1 + Unsafe.Add(ref message, x1) + b1;
-		a2 = a2 + Unsafe.Add(ref message, x2) + b2;
-		a3 = a3 + Unsafe.Add(ref message, x3) + b3;
+		a0 = a0 + x0 + b0;
+		a1 = a1 + x1 + b1;
+		a2 = a2 + x2 + b2;
+		a3 = a3 + x3 + b3;
 		d0 = Avx512F.RotateRight(d0 ^ a0, 16);
 		d1 = Avx512F.RotateRight(d1 ^ a1, 16);
 		d2 = Avx512F.RotateRight(d2 ^ a2, 16);
@@ -549,10 +565,10 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel, IBlake3LaneKernel
 		b1 = Avx512F.RotateRight(b1 ^ c1, 12);
 		b2 = Avx512F.RotateRight(b2 ^ c2, 12);
 		b3 = Avx512F.RotateRight(b3 ^ c3, 12);
-		a0 = a0 + Unsafe.Add(ref message, y0) + b0;
-		a1 = a1 + Unsafe.Add(ref message, y1) + b1;
-		a2 = a2 + Unsafe.Add(ref message, y2) + b2;
-		a3 = a3 + Unsafe.Add(ref message, y3) + b3;
+		a0 = a0 + y0 + b0;
+		a1 = a1 + y1 + b1;
+		a2 = a2 + y2 + b2;
+		a3 = a3 + y3 + b3;
 		d0 = Avx512F.RotateRight(d0 ^ a0, 8);
 		d1 = Avx512F.RotateRight(d1 ^ a1, 8);
 		d2 = Avx512F.RotateRight(d2 ^ a2, 8);
