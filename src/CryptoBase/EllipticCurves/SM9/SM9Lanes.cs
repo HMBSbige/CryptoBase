@@ -1347,6 +1347,7 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		return Unsafe.BitCast<TVector, Vector512<ulong>>(value);
 	}
 
+#if !NET11_0_OR_GREATER
 	// Carry, then WeakReduce into result, of the ten limbs t as the rounds of a reduction leave them, on AVX-512 itself: the same operations as Carry, Store and WeakReduce2, so the same limbs, without the round trip through result.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void CarryAndReduce(Vector512<ulong> t0, Vector512<ulong> t1, Vector512<ulong> t2, Vector512<ulong> t3, Vector512<ulong> t4, Vector512<ulong> t5, Vector512<ulong> t6, Vector512<ulong> t7, Vector512<ulong> t8, Vector512<ulong> t9, ref ulong result)
@@ -1354,6 +1355,7 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 		Carry(ref t0, ref t1, ref t2, ref t3, ref t4, ref t5, ref t6, ref t7, ref t8, ref t9);
 		WeakReduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, MultiplyLimb(t9, QuotientMultiplier) >>> 40, ref result);
 	}
+#endif
 
 	// The rest of the cyclotomic square on one component of S in the limbs s, written to the same component of result, on AVX-512 itself: S carried, then F = 3S + 2(3p − a) on the even lanes and 3S + 2a on the odd ones, whose limbs 0 to 8 lie in [0, 7·2^26) and whose value is below 26.7p < 2^260.3, then F weakly reduced as WeakReduce does, the chain of its subtraction carrying F as it goes and the quotient taken from E = F9 + ⌊F8/2^26⌋ in place of the top limb L9 of F carried.
 	// The limbs below F8 add below 2^211 to F8·2^208, so L9 is E or E + 1.
