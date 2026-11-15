@@ -63,31 +63,71 @@ internal static partial class KeccakP1600
 		return blocks * TBlocks.RateInBytes;
 	}
 
-	// Hashes an input shorter than the rate to an output of at most the rate: the padded block is loaded straight into the rows and the output stored straight from them, so the state never passes through memory.
+	// Hashes an input to an output of at most the rate with the state in registers throughout,
+	// so the narrow stores of the padded last block never stall the wide loads of a permutation.
 	// All input is loaded before any output is stored, so the two may overlap.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	internal static unsafe void HashBlockAvx512<TRate>(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator) where TRate : IKeccakRate
+	internal static unsafe void HashAvx512<TRate>(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator) where TRate : IKeccakRate
 	{
 		Debug.Assert(IsAvx512Supported && Avx512BW.IsSupported);
-		Debug.Assert(source.Length < TRate.RateInBytes);
 		Debug.Assert(destination.Length <= TRate.RateInBytes);
 
 		fixed (byte* input = source)
 		fixed (byte* output = destination)
 		{
-			Vector512<ulong> a0 = LoadPaddedRow<TRate>(input, source.Length, 0, domainSeparator);
-			Vector512<ulong> a1 = LoadPaddedRow<TRate>(input, source.Length, 1, domainSeparator);
-			Vector512<ulong> a2 = LoadPaddedRow<TRate>(input, source.Length, 2, domainSeparator);
-			Vector512<ulong> a3 = LoadPaddedRow<TRate>(input, source.Length, 3, domainSeparator);
-			Vector512<ulong> a4 = LoadPaddedRow<TRate>(input, source.Length, 4, domainSeparator);
-			PermuteRows(ref a0, ref a1, ref a2, ref a3, ref a4);
+			byte* block = input;
+			int remaining = source.Length;
+			bool last = remaining < TRate.RateInBytes;
+			LoadAbsorbedRows<TRate>(block, remaining, last, domainSeparator, out Vector512<ulong> a0, out Vector512<ulong> a1, out Vector512<ulong> a2, out Vector512<ulong> a3, out Vector512<ulong> a4);
+
+			while (true)
+			{
+				PermuteRows(ref a0, ref a1, ref a2, ref a3, ref a4);
+
+				if (last)
+				{
+					break;
+				}
+
+				block += TRate.RateInBytes;
+				remaining -= TRate.RateInBytes;
+				last = remaining < TRate.RateInBytes;
+				LoadAbsorbedRows<TRate>(block, remaining, last, domainSeparator, out Vector512<ulong> b0, out Vector512<ulong> b1, out Vector512<ulong> b2, out Vector512<ulong> b3, out Vector512<ulong> b4);
+				a0 ^= b0;
+				a1 ^= b1;
+				a2 ^= b2;
+				a3 ^= b3;
+				a4 ^= b4;
+			}
+
 			StoreOutputRow(output, destination.Length, 0, a0);
 			StoreOutputRow(output, destination.Length, 1, a1);
 			StoreOutputRow(output, destination.Length, 2, a2);
 			StoreOutputRow(output, destination.Length, 3, a3);
 			StoreOutputRow(output, destination.Length, 4, a4);
 		}
+	}
+
+	// The rows of the next block, padded if it is the last.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static unsafe void LoadAbsorbedRows<TRate>(byte* block, int remaining, bool last, byte domainSeparator, out Vector512<ulong> a0, out Vector512<ulong> a1, out Vector512<ulong> a2, out Vector512<ulong> a3, out Vector512<ulong> a4) where TRate : IKeccakRate
+	{
+		if (last)
+		{
+			a0 = LoadPaddedRow<TRate>(block, remaining, 0, domainSeparator);
+			a1 = LoadPaddedRow<TRate>(block, remaining, 1, domainSeparator);
+			a2 = LoadPaddedRow<TRate>(block, remaining, 2, domainSeparator);
+			a3 = LoadPaddedRow<TRate>(block, remaining, 3, domainSeparator);
+			a4 = LoadPaddedRow<TRate>(block, remaining, 4, domainSeparator);
+			return;
+		}
+
+		a0 = LoadBlockRow<TRate>((ulong*)block, 0);
+		a1 = LoadBlockRow<TRate>((ulong*)block, 1);
+		a2 = LoadBlockRow<TRate>((ulong*)block, 2);
+		a3 = LoadBlockRow<TRate>((ulong*)block, 3);
+		a4 = LoadBlockRow<TRate>((ulong*)block, 4);
 	}
 
 	// Bytes 40y to 40y + 39 of the padded block in the low bytes, which are lanes 5y to 5y + 4 as LoadBlockRow places them;

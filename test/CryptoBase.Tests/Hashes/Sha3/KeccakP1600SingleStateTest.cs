@@ -87,7 +87,7 @@ public class KeccakP1600SingleStateTest
 
 	[Test]
 	[MethodDataSource(nameof(Rates))]
-	public Task HashBlockAvx512MatchesReference(int rate)
+	public Task HashAvx512MatchesReference(int rate)
 	{
 		if (!KeccakP1600.IsAvx512Supported || !Avx512BW.IsSupported)
 		{
@@ -96,11 +96,11 @@ public class KeccakP1600SingleStateTest
 
 		return rate switch
 		{
-			72 => VerifyHashBlock<KeccakRate72>(),
-			104 => VerifyHashBlock<KeccakRate104>(),
-			136 => VerifyHashBlock<KeccakRate136>(),
-			144 => VerifyHashBlock<KeccakRate144>(),
-			168 => VerifyHashBlock<KeccakRate168>(),
+			72 => VerifyHash<KeccakRate72>(),
+			104 => VerifyHash<KeccakRate104>(),
+			136 => VerifyHash<KeccakRate136>(),
+			144 => VerifyHash<KeccakRate144>(),
+			168 => VerifyHash<KeccakRate168>(),
 			_ => throw new ArgumentOutOfRangeException(nameof(rate))
 		};
 	}
@@ -163,15 +163,15 @@ public class KeccakP1600SingleStateTest
 		}
 	}
 
-	// Inputs and outputs up to the rate, both domain separators, and output written over the input, which the kernel allows.
-	private static async Task VerifyHashBlock<TRate>() where TRate : IKeccakRate
+	// Inputs around the block boundaries up to three blocks and a partial one, outputs up to the rate, both domain separators, and output over input.
+	private static async Task VerifyHash<TRate>() where TRate : IKeccakRate
 	{
 		int rate = TRate.RateInBytes;
 		List<string> failures = [];
 
 		foreach (byte domainSeparator in (byte[])[KeccakReference.Sha3DomainSeparator, KeccakReference.ShakeDomainSeparator])
 		{
-			foreach (int sourceLength in (int[])[0, 1, 7, 8, 9, rate / 2, rate - 1])
+			foreach (int sourceLength in (int[])[0, 1, 7, 8, 9, rate / 2, rate - 1, rate, rate + 1, rate + rate / 2, 2 * rate - 1, 2 * rate, 3 * rate + 7])
 			{
 				byte[] source = CreateDeterministicSource(sourceLength);
 
@@ -179,11 +179,11 @@ public class KeccakP1600SingleStateTest
 				{
 					byte[] expected = KeccakReference.Sponge(source, rate, domainSeparator, outputLength);
 					byte[] separate = new byte[outputLength];
-					KeccakP1600.HashBlockAvx512<TRate>(source, separate, domainSeparator);
+					KeccakP1600.HashAvx512<TRate>(source, separate, domainSeparator);
 
 					byte[] shared = new byte[Math.Max(sourceLength, outputLength)];
 					source.CopyTo(shared, 0);
-					KeccakP1600.HashBlockAvx512<TRate>(shared.AsSpan(0, sourceLength), shared.AsSpan(0, outputLength), domainSeparator);
+					KeccakP1600.HashAvx512<TRate>(shared.AsSpan(0, sourceLength), shared.AsSpan(0, outputLength), domainSeparator);
 
 					if (!separate.AsSpan().SequenceEqual(expected) || !shared.AsSpan(0, outputLength).SequenceEqual(expected))
 					{

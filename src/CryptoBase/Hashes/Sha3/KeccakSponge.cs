@@ -127,16 +127,19 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator)
 	{
-		if (source.Length < TRate.RateInBytes && destination.Length <= TRate.RateInBytes)
+		if (destination.Length <= TRate.RateInBytes)
 		{
 			if (KeccakP1600.PreferAvx512 && Avx512BW.IsSupported)
 			{
-				KeccakP1600.HashBlockAvx512<TRate>(source, destination, domainSeparator);
+				KeccakP1600.HashAvx512<TRate>(source, destination, domainSeparator);
 				return;
 			}
 
-			HashBlock(source, destination, domainSeparator);
-			return;
+			if (source.Length < TRate.RateInBytes)
+			{
+				HashBlock(source, destination, domainSeparator);
+				return;
+			}
 		}
 
 		Unsafe.SkipInit(out KeccakSponge<TRate> sponge);
