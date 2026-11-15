@@ -42,7 +42,9 @@ internal static class BlockModeDispatch
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryTransformXts<TCipher, TDirection>(TCipher cipher, ref Vector128<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination) where TCipher : IBlockCipher<TCipher> where TDirection : struct, IBlockDirection
 	{
-		return TryTransformAes<TCipher, AesXtsPolicy, TDirection>(cipher, ref tweak, source, destination);
+		return AesXtsPacked8Policy.IsSupported
+			? TryTransformAes<TCipher, AesXtsPacked8Policy, TDirection>(cipher, ref tweak, source, destination)
+			: TryTransformAes<TCipher, AesXtsPolicy, TDirection>(cipher, ref tweak, source, destination);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
