@@ -129,7 +129,8 @@ internal static partial class ChaCha20Utils
 		Vector256<uint> initial0 = Vector256.Create(Vector128.LoadUnsafe(ref stateRef));
 		Vector256<uint> initial1 = Vector256.Create(Vector128.LoadUnsafe(ref stateRef, 4));
 		Vector256<uint> initial2 = Vector256.Create(Vector128.LoadUnsafe(ref stateRef, 8));
-		Vector256<uint> initial3 = Vector256.Create(Vector128.LoadUnsafe(ref stateRef, 12)).AddUInt32LE01();
+		// The counter row was just written by narrower stores, so loading it by words avoids a store-forwarding stall.
+		Vector256<uint> initial3 = Vector256.Create(SnuffleCipher.LoadStateRow(ref stateRef, 12)).AddUInt32LE01();
 		Vector256<uint> a = initial0;
 		Vector256<uint> b = initial1;
 		Vector256<uint> c = initial2;

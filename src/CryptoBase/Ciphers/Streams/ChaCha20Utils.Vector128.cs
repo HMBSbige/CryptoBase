@@ -102,7 +102,8 @@ internal static partial class ChaCha20Utils
 		Vector128<uint> b1 = a1;
 		Vector128<uint> a2 = Vector128.LoadUnsafe(ref stateRef, 8);
 		Vector128<uint> b2 = a2;
-		Vector128<uint> a3 = Vector128.LoadUnsafe(ref stateRef, 12);
+		// The counter row was just written by narrower stores, so on x86 loading it by words avoids a store-forwarding stall.
+		Vector128<uint> a3 = Sse2.IsSupported ? SnuffleCipher.LoadStateRow(ref stateRef, 12) : Vector128.LoadUnsafe(ref stateRef, 12);
 		Vector128<uint> b3 = a3.IncUInt32LE();
 
 		for (int round = 0; round < SnuffleCipher.Rounds; round += 2)
