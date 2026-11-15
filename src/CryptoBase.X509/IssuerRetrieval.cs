@@ -1,7 +1,8 @@
 namespace CryptoBase.X509;
 
 // The retrieval of the issuers that the certificates of one validation lack, from their id-ad-caIssuers URIs (RFC 5280, Sec. 4.2.2.1), and the caching of those that a path verified.
-// The search fills DeadEnds, tells RetrieveAsync which certificates have an issuer to find, as that check counts towards its own limits, adds what RetrieveAsync returns to its candidates, and gives Keep each path that its strict search returns.
+// The search fills DeadEnds and tells RetrieveAsync which certificates have an issuer to find, as that check counts towards the search's own limits.
+// It adds what RetrieveAsync returns to its candidates, and gives Keep each path that its strict search returns.
 internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator, RetrievalCaches caches, RetrievalBudget budget, HashSet<ReadOnlyMemory<byte>> encodings, DateTimeOffset time)
 {
 	// The first retrieval that gave each certificate, by its encoding, to cache it once a path has used it above the certificate whose URI gave it.
@@ -15,11 +16,11 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 	public List<PathNode> DeadEnds { get; } = [];
 
 	// The certificates that a round adds to the candidates, in order, each new to the validation and none a trust anchor; empty if the search is not worth repeating.
-	// A round goes through its sources until one adds a certificate:
-	// the certificates at which the strict search ended, as a retrieved issuer may be valid where one in the pool is not;
-	// what the URIs that the cache answered give now, as a kept certificate may be of another key of the same name;
-	// every known certificate, as a path can fail with no certificate left without an issuer;
-	// and again what the URIs that the cache answered in the previous source give now.
+	// A round goes through its sources until one adds a certificate.
+	// First the certificates at which the strict search ended, as a retrieved issuer may be valid where one in the pool is not.
+	// Then what the URIs that the cache answered give now, as a kept certificate may be of another key of the same name.
+	// Then every known certificate, as a path can fail with no certificate left without an issuer.
+	// Last, again what the URIs that the cache answered in the previous source give now.
 	public async ValueTask<List<Certificate>> RetrieveAsync(PathNode leaf, IReadOnlyList<PathNode> pool, Func<PathNode, bool> hasIssuerToFind)
 	{
 		List<Certificate> added = [];
@@ -67,8 +68,8 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 	{
 		foreach (IssuerRequest request in requests)
 		{
-			// A kept issuer counts towards the retrieved certificates like any other, as each costs the search a key and its checks;
-			// an entry holds only the certificates of a path that its key gave, at most those of one retrieval.
+			// A kept issuer counts towards the retrieved certificates like any other, as each costs the search a key and its checks.
+			// An entry holds only the certificates of a path that its key gave, at most those of one retrieval.
 			if (cache is not null && cache.TryGet(request.Key, time, out Certificate[]? cached))
 			{
 				Add(cached, source: null, added);
@@ -142,7 +143,8 @@ internal sealed class IssuerRetrieval(TrustAnchorCertificateValidator validator,
 	}
 
 	// The source is the retrieval that gave these certificates, null if they come from the cache.
-	// A certificate that the validation already has, from the peer or from the cache, still takes the source, so that the entry of a path holds every certificate of it that the URI gives: a validation that lacks one need not retrieve the URI again.
+	// A certificate that the validation already has, from the peer or from the cache, still takes the source, so that the entry of a path holds every certificate of it that the URI gives.
+	// A validation that lacks one then need not retrieve the URI again.
 	private void Add(Certificate[] certificates, IssuerSource? source, List<Certificate> added)
 	{
 		foreach (Certificate certificate in certificates)

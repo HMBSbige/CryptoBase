@@ -247,7 +247,8 @@ public sealed class SM9SignatureMasterKey : IDisposable
 		_disposed = true;
 	}
 
-	// GenerateKey with the randomness of fill. If fill throws, nothing is left behind.
+	// GenerateKey with the randomness of fill.
+	// If fill throws, nothing is left behind.
 	[SkipLocalsInit]
 	internal static SM9SignatureMasterKey GenerateKey(Action<Span<byte>> fill, byte hid)
 	{
@@ -310,7 +311,8 @@ public sealed class SM9SignatureMasterKey : IDisposable
 		return Interlocked.CompareExchange(ref _lines, lines, null) ?? lines;
 	}
 
-	// Ppub-s = [ks]P2. Neither the time nor the addresses depend on ks.
+	// Ppub-s = [ks]P2.
+	// Neither the time nor the addresses depend on ks.
 	private void SetPrivateKey(in FieldElement<SM9Order> privateKey)
 	{
 		_privateKey = privateKey;

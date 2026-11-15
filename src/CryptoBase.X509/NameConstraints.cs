@@ -44,8 +44,8 @@ internal sealed class NameConstraints
 		return subtrees + nameWork * (Permitted.DirectoryNameWork + Excluded.DirectoryNameWork);
 	}
 
-	// Whether the names are within the constraints (RFC 5280, Sec. 6.1.3 (b) and (c)): each name of a matched form must be within a permitted subtree of its form, if there is one, and within no excluded subtree;
-	// a name of another form that a subtree also names cannot be checked.
+	// Whether the names are within the constraints (RFC 5280, Sec. 6.1.3 (b) and (c)): each name of a matched form must be within a permitted subtree of its form, if there is one, and within no excluded subtree.
+	// A name of another form that a subtree also names cannot be checked.
 	// Returns the reason why not, or null; text is the description for the reason's message.
 	public CertificateValidationError? Check(ConstrainedNames names, out string? text)
 	{
@@ -110,7 +110,9 @@ internal sealed class NameConstraints
 				return CertificateValidationError.NotValidForUsage;
 			}
 
-			// RFC 5280, Sec. 7.1, compares by all of RFC 4518: a name that a complete comparison could find within an excluded subtree must not escape it, nor one whose domainComponent, emailAddress or unstructuredName differs only in what RFC 4518 removes, by which LDAP compares the first (RFC 4519) and a relying party with caseIgnoreMatch alone the others, while one that a permitted subtree misses is only left outside it.
+			// RFC 5280, Sec. 7.1, compares by all of RFC 4518, so a name that a complete comparison could find within an excluded subtree must not escape it.
+			// Nor may one whose domainComponent, emailAddress or unstructuredName differs only in what RFC 4518 removes, by which LDAP compares the first (RFC 4519) and a relying party with caseIgnoreMatch alone the others.
+			// A name that a permitted subtree misses, by contrast, is only left outside it.
 			if (NameSubtrees.MightContainDirectoryName(Excluded.DirectoryNames, name, out bool certain))
 			{
 				text = certain
@@ -120,7 +122,8 @@ internal sealed class NameConstraints
 			}
 		}
 
-		// The other forms are not matched: a certificate with a name of one that a subtree names fails, as RFC 5280 asks to process it or reject the certificate (Sec. 4.2.1.10).
+		// The other forms are not matched.
+		// A certificate with a name of one that a subtree names fails, as RFC 5280 asks to process it or reject the certificate (Sec. 4.2.1.10).
 		foreach (GeneralNameType form in (ReadOnlySpan<GeneralNameType>)[GeneralNameType.OtherName, GeneralNameType.X400Address, GeneralNameType.EdiPartyName, GeneralNameType.UniformResourceIdentifier, GeneralNameType.RegisteredId])
 		{
 			if (names.HasForm(form) && (Permitted.HasForm(form) || Excluded.HasForm(form)))
@@ -134,7 +137,8 @@ internal sealed class NameConstraints
 		return null;
 	}
 
-	// NameConstraints ::= SEQUENCE { permittedSubtrees [0] GeneralSubtrees OPTIONAL, excludedSubtrees [1] GeneralSubtrees OPTIONAL }, with implicit tags; RFC 5280 requires one of them.
+	// NameConstraints ::= SEQUENCE { permittedSubtrees [0] GeneralSubtrees OPTIONAL, excludedSubtrees [1] GeneralSubtrees OPTIONAL }, with implicit tags.
+	// RFC 5280 requires one of them.
 	public static NameConstraints Read(ReadOnlyMemory<byte> value)
 	{
 		DerReader sequence = DerReader.ReadSoleSequence(value);
@@ -189,7 +193,8 @@ internal sealed class NameSubtrees
 		return (_forms & 1 << (int)form) is not 0;
 	}
 
-	// RFC 5280, Sec. 4.2.1.10: a DNS name is within a subtree if it is the subtree's name with zero or more labels added on the left; every name is within the empty subtree.
+	// RFC 5280, Sec. 4.2.1.10: a DNS name is within a subtree if it is the subtree's name with zero or more labels added on the left.
+	// Every name is within the empty subtree.
 	// A wildcard stands for every name of one label more than its base, all of which must be within one subtree.
 	public bool Permits(DnsNamePattern name)
 	{
@@ -204,7 +209,8 @@ internal sealed class NameSubtrees
 		return false;
 	}
 
-	// A wildcard is excluded if a name that it stands for is: its base is within the subtree, or the subtree is its base with one label added.
+	// A wildcard is excluded if a name that it stands for is.
+	// That is if its base is within the subtree, or the subtree is its base with one label added.
 	public bool Excludes(DnsNamePattern name)
 	{
 		foreach (string subtree in DnsNames)
@@ -274,7 +280,8 @@ internal sealed class NameSubtrees
 		return false;
 	}
 
-	// Whether a subtree may hold the name, as DistinguishedName.MightBeWithin decides; certain tells whether one does, as IsWithin decides, which only a name that may be within one needs.
+	// Whether a subtree may hold the name, as DistinguishedName.MightBeWithin decides.
+	// certain tells whether one does, as IsWithin decides, which is only tried for a subtree that may hold the name.
 	public static bool MightContainDirectoryName(DistinguishedName[] subtrees, DistinguishedName name, out bool certain)
 	{
 		bool might = false;
@@ -325,7 +332,8 @@ internal sealed class NameSubtrees
 				{
 					string value = Encoding.ASCII.GetString(name.Value.Span);
 
-					// A DNS name, or empty for every name; a wildcard or a leading period, as URI subtrees allow, is not one (Sec. 4.2.1.10).
+					// A DNS name, or empty for every name.
+					// A wildcard or a leading period, as URI subtrees allow, is not one (Sec. 4.2.1.10).
 					if (value.Length > 0 && !HostName.IsDnsName(value))
 					{
 						throw new AsnContentException("A dNSName subtree is not a DNS name.");
@@ -360,7 +368,8 @@ internal sealed class NameSubtrees
 		return new NameSubtrees([.. dnsNames], [.. addresses], [.. mailboxes], [.. directoryNames], forms);
 	}
 
-	// Whether a DNS name is within a subtree, ignoring the case of ASCII letters. Both are valid, or the subtree empty.
+	// Whether a DNS name is within a subtree, ignoring the case of ASCII letters.
+	// Both are valid, or the subtree empty.
 	public static bool IsWithin(ReadOnlySpan<char> name, ReadOnlySpan<char> subtree)
 	{
 		if (subtree.IsEmpty)
@@ -398,8 +407,10 @@ internal sealed class NameSubtrees
 	}
 }
 
-// A dNSName of a certificate, in the form in which it may match a host name (RFC 9525, Sec. 6.3) and in which name constraints apply to it: a DNS name, or a wildcard, a first label of "*" alone, before a DNS name, Base.
-// Others are not valid, such as one with a trailing dot, an empty label, a space, a "*" in another place or "*" alone: they match nothing, and cannot be checked.
+// A dNSName of a certificate, in the form in which it may match a host name (RFC 9525, Sec. 6.3) and in which name constraints apply to it.
+// It is a DNS name, or a wildcard, a first label of "*" alone, before a DNS name, Base.
+// Others are not valid, such as one with a trailing dot, an empty label, a space, a "*" in another place or "*" alone.
+// They match nothing, and cannot be checked.
 internal readonly struct DnsNamePattern
 {
 	public DnsNamePattern(string value)
@@ -457,7 +468,8 @@ internal readonly record struct Mailbox(string LocalPart, string Domain)
 	}
 }
 
-// An rfc822Name subtree (RFC 5280, Sec. 4.2.1.10): a mailbox, every mailbox at a host, or with a leading period every mailbox in the domain below it; or empty for every mailbox.
+// An rfc822Name subtree (RFC 5280, Sec. 4.2.1.10): a mailbox, every mailbox at a host, or with a leading period every mailbox in the domain below it.
+// It is empty for every mailbox.
 internal readonly struct MailboxConstraint
 {
 	private readonly Kind _kind;

@@ -137,7 +137,7 @@ internal static class TestCrl
 		return new CertificateExtension(CrlDistributionPointsOid, false, Sequence(points));
 	}
 
-	// The key of a CA as a SignatureKey over the key that it issues with.
+	// Checks the certificate against the CRL, with the CA's certificate and key as the issuer's.
 	public static RevocationResult Check(CertificateRevocationList crl, Certificate certificate, TestPki.Authority authority, DateTimeOffset? time = null)
 	{
 		return RevocationChecker.CheckCrl(crl, certificate, authority.Certificate, authority.Key, time ?? Now);

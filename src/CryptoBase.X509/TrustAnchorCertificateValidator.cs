@@ -496,7 +496,8 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 		return await search.RunAsync().ConfigureAwait(false);
 	}
 
-	// The key of a SubjectPublicKeyInfo, with PlatformRsaKey for an RSA key that the importer does not support; or null, with the reason, if neither imports it.
+	// The key of a SubjectPublicKeyInfo, with PlatformRsaKey for an RSA key that the importer does not support.
+	// Null, with the reason, if neither imports it.
 	internal static ISignatureKey? ImportKey(Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, SubjectPublicKeyInfo info, out CertificateValidationError error, out string? message)
 	{
 		ReadOnlySpan<byte> encoded = info.Encoded.Span;

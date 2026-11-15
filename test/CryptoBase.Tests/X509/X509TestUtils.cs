@@ -128,7 +128,7 @@ internal static class X509TestUtils
 		return request.CreateSelfSigned(Now.AddDays(-1), Now.AddDays(30));
 	}
 
-	// A new platform key, the same for each size.
+	// A new platform RSA object holding the cached key of the size.
 	public static RSA CreateRsa(int bits = 2048)
 	{
 		RSA key = RSA.Create();
@@ -165,8 +165,8 @@ internal static class X509TestUtils
 		return new CertificateRequest(subject, key, hash, padding).CreateSelfSigned(Now.AddDays(-1), Now.AddDays(30));
 	}
 
-	// id-RSASSA-PSS (RFC 4055, Sec. 3.1) with RSASSA-PSS-params, whose fields are left out where null, and whose hash AlgorithmIdentifiers have NULL parameters where nullParameters is set;
-	// or without parameters.
+	// id-RSASSA-PSS (RFC 4055, Sec. 3.1), without parameters or with RSASSA-PSS-params.
+	// Null fields are left out, and the hash AlgorithmIdentifiers have NULL parameters where nullParameters and maskNullParameters are set.
 	public static byte[] RsassaPssIdentifier(bool withParameters = true, string? hash = Sha256Oid, string? maskHash = Sha256Oid, int? saltLength = 32, int? trailerField = null, bool nullParameters = true, bool maskNullParameters = true, string maskGenerationFunction = Mgf1Oid)
 	{
 		AsnWriter writer = new(AsnEncodingRules.DER);
@@ -251,7 +251,7 @@ internal static class X509TestUtils
 		return new X509EnhancedKeyUsageExtension([new Oid(oid)], false);
 	}
 
-	// Certificates valid until 2036: self-signed RSA certificates, whose RSASSA-PSS-params have hash AlgorithmIdentifiers with NULL parameters, and an Ed25519 root and leaf.
+	// Certificates valid until 2036: self-signed RSA certificates, whose RSASSA-PSS-params hash AlgorithmIdentifiers have NULL parameters, and an Ed25519 root and leaf.
 	public static class OpenSslCertificates
 	{
 		// RSASSA-PSS with SHA-256 by an rsaEncryption key.

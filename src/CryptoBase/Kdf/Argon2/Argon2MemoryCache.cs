@@ -49,7 +49,8 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 	}
 
 	// The memory must already be wiped.
-	// Every region ends up cached or freed even if an allocation throws: each region is listed for freeing before it leaves the cache, and the timer starts before the returned region joins it.
+	// Every region ends up cached or freed even if an allocation throws.
+	// Each region is listed for freeing before it leaves the cache, and the timer starts before the returned region joins it.
 	[SuppressMessage("ReSharper", "InconsistentlySynchronizedField", Justification = "_gate is entered through Uninterruptibly instead of a lock statement.")]
 	internal void Return(nint address, nuint length)
 	{
@@ -106,7 +107,8 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 		NativeMemory.AlignedFree((void*)address);
 	}
 
-	// Starting a timer links it into its queue before a wait an interrupt can cut short, so retrying the constructor of a running timer would leave the first one running unreferenced.
+	// Starting a timer links it into its queue before a wait an interrupt can cut short.
+	// So retrying the constructor of a running timer would leave the first one running unreferenced.
 	// The timer is created stopped, which takes no lock, and Change only reschedules it.
 	private Timer CreateTrimTimer(ref bool interrupted)
 	{

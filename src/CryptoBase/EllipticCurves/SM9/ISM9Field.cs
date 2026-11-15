@@ -35,6 +35,7 @@ internal interface ISM9Field<TSelf> where TSelf : unmanaged, ISM9Field<TSelf>
 	// 0 gives 0.
 	static abstract void Invert(in TSelf value, out TSelf result);
 
-	// The time depends on value, which must be public. 0 gives 0.
+	// The time depends on value, which must be public.
+	// 0 gives 0.
 	static abstract void InvertVariableTime(in TSelf value, out TSelf result);
 }

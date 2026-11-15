@@ -16,7 +16,8 @@ internal static class Pkcs1DigestInfo
 
 	internal static ReadOnlySpan<byte> Sha512WithoutParameters => [0x30, 0x4F, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x04, 0x40];
 
-	// Whether encoded is EMSA-PKCS1-v1_5-ENCODE of hash with digestInfo, compared byte for byte (RFC 8017, Sec. 8.2.2, step 4): the lengths of PS and T follow from k and the hash, so nothing is parsed.
+	// Whether encoded is EMSA-PKCS1-v1_5-ENCODE of hash with digestInfo, compared byte for byte (RFC 8017, Sec. 8.2.2, step 4).
+	// The lengths of PS and T follow from k and the hash, so nothing is parsed.
 	internal static bool IsEncoding(ReadOnlySpan<byte> encoded, ReadOnlySpan<byte> digestInfo, ReadOnlySpan<byte> hash)
 	{
 		int separator = encoded.Length - digestInfo.Length - hash.Length - 1;

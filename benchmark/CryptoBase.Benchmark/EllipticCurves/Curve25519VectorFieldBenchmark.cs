@@ -5,7 +5,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The products of each four-lane field, on operands that start on a 64-byte line as the kernels keep them: a chain of products gives the latency of one, and two chains side by side its throughput.
+// The products of each four-lane field, on operands that start on a 64-byte line as the kernels keep them.
+// A chain of products gives the latency of one, and two chains side by side its throughput.
 // A chain of doublings, each DoubleOperands and the product of its operands, gives the latency of a doubling.
 // A vector field adds its own FieldKind.
 public unsafe class Curve25519VectorFieldBenchmark

@@ -157,7 +157,7 @@ public class Ed448ScalarTest
 		return DecodeInteger(encoded);
 	}
 
-	// Limbs of 0, 1, 2^63 and 2^64 − 1 make long carry chains.
+	// Limbs of 0, 1, 2^63, 2^64 − 1 or a random value; the fixed ones make long carry chains.
 	private static BigInteger PatternedValue(Random random, int limbCount)
 	{
 		ulong[] patterns = [0, 1, 1UL << 63, ulong.MaxValue];

@@ -5,7 +5,11 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-// The lane fields of radix 2^29 against BigInteger, lane by lane, with inputs at the bounds that SM2Field29 states for each member: a product takes limbs up to 2^30 + 2^8 − 1 on both sides, or up to 7·2^29 − 1 against limbs up to those of a product, a subtrahend limbs up to those of the 4p that Subtract adds, Reduce limbs 0 to 7 up to 2^32 − 1 and limb 8 up to 2^36 − 1, and Halve limbs up to 2^62.
+// The lane fields of radix 2^29 against BigInteger, lane by lane, with inputs at the bounds that SM2Field29 states for each member:
+// a product takes limbs up to 2^30 + 2^8 − 1 on both sides, or up to 7·2^29 − 1 against limbs up to those of a product;
+// a subtrahend limbs up to those of the 4p that Subtract adds;
+// Reduce limbs 0 to 7 up to 2^32 − 1 and limb 8 up to 2^36 − 1;
+// and Halve limbs below 2^62.
 // The limbs are those of the lanes as they lie in memory, limb k of lane i at k·LaneCount + i.
 public class SM2Field29LanesTest
 {
@@ -17,7 +21,7 @@ public class SM2Field29LanesTest
 
 	private const ulong ProductInput = (1UL << 30) + (1UL << 8) - 1;
 
-	// The largest limb of a product, limbs 2 to 7 below 2^29 + 65, and the largest left limb against it.
+	// The largest limb of a product, limbs 2 to 7 below 2^29 + 65, and so the largest limb against a wide one.
 	private const ulong ProductLimb = Nominal + 64;
 
 	private const ulong WideInput = (7UL << 29) - 1;
@@ -104,7 +108,11 @@ public class SM2Field29LanesTest
 		await Assert.That(field.Accept(new Packs())).IsEmpty();
 	}
 
-	// Lane values, in limbs: 0, 1, limbs of 2^29 − 1 and of the largest, p − 1, p and 2p in their own limbs, 1 at limb 0 with the rest 0, whose products with full limbs have small columns and the largest q of each round, and random limbs below 2^29 to 2^32, none above the largest.
+	// Lane values, in limbs: 0;
+	// 1, whose products with full limbs have small columns and the largest q of each round;
+	// every limb at 2^29 − 1 or at the largest;
+	// p − 1, p, 2p and R mod p in their own limbs;
+	// and random residues and random limbs below 2^29 to 2^32, none above the largest.
 	private static List<ulong[]> Values(int seed, ulong largest)
 	{
 		Random random = new(seed);
@@ -240,7 +248,7 @@ public class SM2Field29LanesTest
 		}
 	}
 
-	// Products and squares of every pair of values, each a full value or the value of a lane at its largest limbs, by both carries.
+	// Multiply and Square, and their Ripple forms, for every pair of lane values with limbs up to 2^30 + 2^8 − 1.
 	private sealed class Products : ISM2Field29LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TField>() where TField : unmanaged, ISM2Field29Lanes<TField>
@@ -387,7 +395,8 @@ public class SM2Field29LanesTest
 		}
 	}
 
-	// ConditionalSelect and ConditionalNegate by masks that differ from lane to lane, and MoveDown by every distance below LaneCount, which the folds of SM2Vector read in the lanes below the distance.
+	// ConditionalSelect and ConditionalNegate by masks that differ from lane to lane.
+	// MoveDown by every power of two below LaneCount, checked in the lanes below the distance, which the folds of SM2Vector read.
 	private sealed class MasksAndMoves : ISM2Field29LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TField>() where TField : unmanaged, ISM2Field29Lanes<TField>
@@ -578,7 +587,8 @@ public class SM2Field29LanesTest
 		}
 	}
 
-	// SM2Vector.Pack takes values as Reduce leaves them, below 2p in limbs 0 to 7 below 2^29 and limb 8 below 2^24 + 2^5, to the value of each lane mod p in four 64-bit limbs, limb k of lane l at k·LaneCount + l: the values from p on lose p, around p, 2p and the largest limbs, and random ones below 2p.
+	// SM2Vector.Pack takes values as Reduce leaves them, below 2p in limbs 0 to 7 below 2^29 and limb 8 below 2^24 + 2^5, to the value of each lane mod p in four 64-bit limbs, limb k of lane l at k·LaneCount + l.
+	// The values sit around p, where the subtraction of p starts, and at 2p − 1 and the largest limbs, with random ones below 2p.
 	private sealed class Packs : ISM2Field29LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TField>() where TField : unmanaged, ISM2Field29Lanes<TField>

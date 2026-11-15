@@ -61,7 +61,8 @@ public static class RsaArithmeticTestUtils
 		return new BigInteger(buffer, true) & (BigInteger.One << bits) - 1;
 	}
 
-	// Odd moduli of limbs limbs with a nonzero top limb, in shapes that stress the reduction: random, a top limb of 1, all ones, the smallest with the top bit set, and just below a power of two that is not a multiple of 64.
+	// Odd moduli of limbs limbs with a nonzero top limb, in shapes that stress the reduction.
+	// Random with the top bit set, a top limb of 1, all ones, the smallest with the top bit set, and just below a power of two that is not a multiple of 64.
 	public static IEnumerable<BigInteger> Moduli(Random random, int limbs)
 	{
 		int bits = 64 * limbs;
@@ -187,7 +188,8 @@ public static class RsaArithmeticTestUtils
 		return new BigInteger(bytes, true, true);
 	}
 
-	// The fields of an instance of type that hold a ulong or ulong values that are not all zero: what Dispose must have erased from an instance that holds nothing else of the kind.
+	// The fields of type in instance that hold a nonzero ulong or a ulong array that is not all zero.
+	// For an instance that holds no other words, these are what Dispose failed to erase.
 	public static IEnumerable<string> NonZeroWords(object instance, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] Type type)
 	{
 		foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))

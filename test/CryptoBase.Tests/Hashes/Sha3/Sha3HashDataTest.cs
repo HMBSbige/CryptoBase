@@ -6,7 +6,8 @@ namespace CryptoBase.Tests.Hashes.Sha3;
 
 public class Sha3HashDataTest
 {
-	// Inputs below the rate take one block, which one-shot hashing computes without a sponge; from the rate on, the sponge takes over.
+	// Inputs below the rate take one block, which one-shot hashing computes without a sponge.
+	// From the rate on, the sponge takes over.
 	public static IEnumerable<(int, int)> OverlapCases()
 	{
 		foreach (int hashLength in (int[])[28, 32, 48, 64])

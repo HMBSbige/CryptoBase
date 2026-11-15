@@ -104,7 +104,7 @@ internal readonly struct SM2Avx512 : ISM2Kernel
 			ECVariableTimeGroup<SM2Curve, SM2Field52, SM2Order>.Subtract(ref product, in lifted);
 		}
 
-		// |v2|·R times a plain u1 is the plain |v2|·u1, negated for v2 < 0.
+		// |v2| in Montgomery form times a plain u1 gives the plain |v2|·u1, negated for v2 < 0.
 		Unsafe.SkipInit(out FieldElement<SM2Order> factor);
 		Span<ulong> limbs = MemoryMarshal.Cast<FieldElement<SM2Order>, ulong>(new Span<FieldElement<SM2Order>>(ref factor));
 		limbs[0] = (ulong)second;

@@ -31,7 +31,8 @@ public class HotpTest
 		await Assert.That(matched).IsEqualTo(counter);
 	}
 
-	// The truncated values of RFC 4226 Appendix D modulo 10^9; counters 1 and 7 need zero padding.
+	// The truncated values of RFC 4226 Appendix D modulo 10^9.
+	// Counters 1 and 7 need zero padding.
 	[Test]
 	[Arguments(0UL, "284755224")]
 	[Arguments(1UL, "094287082")]

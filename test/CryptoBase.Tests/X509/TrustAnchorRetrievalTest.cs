@@ -323,7 +323,7 @@ public class TrustAnchorRetrievalTest
 		}
 	}
 
-	// A validation less than the lifetime of a kept issuer before the last time that DateTimeOffset holds keeps it until that time, rather than failing a path that it found.
+	// A validation within a kept issuer's lifetime of DateTimeOffset.MaxValue keeps the issuer until MaxValue, rather than failing the path it found.
 	[Test]
 	public async Task KeepsAnIssuerAtTheEndOfTime()
 	{
@@ -1438,7 +1438,7 @@ public class TrustAnchorRetrievalTest
 
 		using (Assert.Multiple())
 		{
-			// The path through the first root is found first, and has no status; the other is good.
+			// The path without a status gives way to the good one, whichever is found first.
 			await AssertValid(await Validate(secondOnly, presented: [leaf, intermediate.Certificate, cross]), leaf, cross, second.Certificate);
 			await AssertValid(await Validate(secondOnlySwapped, presented: [leaf, cross, intermediate.Certificate]), leaf, cross, second.Certificate);
 			await AssertValid(await Validate(firstOnly, presented: [leaf, cross, intermediate.Certificate]), leaf, intermediate.Certificate, first.Certificate);
@@ -1451,7 +1451,7 @@ public class TrustAnchorRetrievalTest
 			await AssertInvalid(await Validate(revokedAndUnknown, presented: [leaf, cross, intermediate.Certificate]), [CertificateValidationError.Revoked], CertificatePathEnd.TrustAnchor, leaf, intermediate.Certificate, first.Certificate);
 			await AssertInvalid(await Validate(unknownAndRevoked, presented: [leaf, intermediate.Certificate, cross]), [CertificateValidationError.Revoked], CertificatePathEnd.TrustAnchor, leaf, cross, second.Certificate);
 
-			// Soft-fail accepts the first path, as it did.
+			// With IgnoreRevocationUnknown, the first path found is accepted without a status.
 			await AssertValid(await Validate(soft, presented: [leaf, intermediate.Certificate, cross]), leaf, intermediate.Certificate, first.Certificate);
 		}
 

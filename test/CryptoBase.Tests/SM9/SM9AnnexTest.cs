@@ -72,7 +72,9 @@ public class SM9AnnexTest
 	}
 
 	// B.2, for the key exchange keys of hid = 0x03 that the example extracts.
-	// Its steps A1 and B1 print ID ‖ hid as 426F6202 and 416C696365 02, but the H1 values they print are those of 03, as are the keys deA and deB of the example and so the RA, RB, g1, g2 and g3 that follow: GM/T 0044.3, Sec. 5.3, has one identifier hid of the encryption private key for the extraction and for QA and QB, and the protocol works only with that.
+	// Its steps A1 and B1 print ID ‖ hid as 426F6202 and 416C696365 02, but the H1 values they print are those of 03.
+	// So are the keys deA and deB of the example and so the RA, RB, g1, g2 and g3 that follow.
+	// GM/T 0044.3, Sec. 5.3, has one identifier hid of the encryption private key for the extraction and for QA and QB, and the protocol works only with that.
 	// The default hid of the key exchange keys is the 0x02 that steps A1 and B1 print, which gives other values for the same master key and random numbers, so the keys here are extracted and imported with 0x03.
 	[Test]
 	public async Task KeyExchangeOfAnnexB()
@@ -205,7 +207,8 @@ public class SM9AnnexTest
 		}
 	}
 
-	// The master keys, r and ID of C.2 and D.2 with keys and plaintexts of many KDF blocks, around the groups of vector lanes and the chunks that take the key stream: w does not depend on the message, so K comes from the reference KDF, and C2 = M ⊕ K1 and C3 = SM3(C2 ‖ K2).
+	// The master keys, r and ID of C.2 and D.2 with keys and plaintexts of many KDF blocks, around the groups of vector lanes and the chunks that take the key stream.
+	// w does not depend on the message, so K comes from the reference KDF, and C2 = M ⊕ K1 and C3 = SM3(C2 ‖ K2).
 	// The private key recovers K, as an encapsulation of C1 or of C, and the plaintext.
 	[Test]
 	public async Task LongKeysAndPlaintextsWithTheValuesOfAnnexesCAndD()
@@ -244,7 +247,8 @@ public class SM9AnnexTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// D.2 b), the variant with a block cipher, which this library leaves out as GM/T 0044.4, Sec. 7.1, fixes neither the mode nor the padding: the example takes SM4 in CBC with a zero IV and the padding of PKCS #7, K1 of 128 bits and K2 of 256, and its values follow from the same key stream.
+	// D.2 b), the variant with a block cipher, which this library leaves out as GM/T 0044.4, Sec. 7.1, fixes neither the mode nor the padding.
+	// The example takes SM4 in CBC with a zero IV and the padding of PKCS #7, K1 of 128 bits and K2 of 256, and its values follow from the same key stream.
 	[Test]
 	public async Task BlockCipherExampleOfAnnexDFollowsFromTheKeyStream()
 	{

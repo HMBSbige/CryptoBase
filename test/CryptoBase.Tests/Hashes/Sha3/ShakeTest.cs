@@ -248,7 +248,8 @@ public class ShakeTest
 		}
 	}
 
-	// Reading in pieces needs EVP_DigestSqueeze, which OpenSSL added in 3.3; with an older OpenSSL, Read throws PlatformNotSupportedException.
+	// Reading in pieces needs EVP_DigestSqueeze, which OpenSSL added in 3.3.
+	// With an older OpenSSL, Read throws PlatformNotSupportedException.
 	private static void SkipUnlessPlatformReads(int securityStrength)
 	{
 		SkipUnlessPlatformSupports(securityStrength);

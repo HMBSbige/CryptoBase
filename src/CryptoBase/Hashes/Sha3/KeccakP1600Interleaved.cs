@@ -1,7 +1,7 @@
 namespace CryptoBase.Hashes.Sha3;
 
 // The round of KeccakP1600.PermuteScalar, in the same plane order, applied lane-wise to vectors of interleaved states.
-// The rounds are spelled out in this method rather than in an inlined helper because the inliner only budgets enough for the hundreds of small lane operations when the method they are inlined into is this large itself.
+// The rounds are spelled out in Permute rather than in an inlined helper, because the inliner budgets for the hundreds of small lane operations only when the method they go into is this large itself.
 internal static class KeccakP1600Interleaved
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

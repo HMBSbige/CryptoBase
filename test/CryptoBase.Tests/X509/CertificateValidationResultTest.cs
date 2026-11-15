@@ -58,7 +58,7 @@ public class CertificateValidationResultTest
 			await Assert.That(invalid.Message).IsEqualTo("message");
 			await Assert.That(invalid.Path).IsEmpty();
 
-			// Invalid takes any value, as it did before Errors.
+			// Invalid accepts an undefined error value.
 			await Assert.That(undefined.Error).IsEqualTo((CertificateValidationError)99);
 			await Assert.That(undefined.IsValid).IsFalse();
 		}
@@ -162,7 +162,7 @@ public class CertificateValidationResultTest
 		}
 	}
 
-	// Results compare by value, as they did before they held collections.
+	// Results compare by value, including their errors and paths.
 	[Test]
 	public async Task ResultsWithTheSameContentsAreEqual()
 	{

@@ -24,7 +24,7 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 
 	public static int DigitBits => R;
 
-	// A lane gains less than 2^53 in magnitude per iteration, so the sums stay within 2^63.
+	// A lane gains less than 2^53 in magnitude per iteration, so 1023 iterations keep the sums within 2^63.
 	public static int MaxDigitCount
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

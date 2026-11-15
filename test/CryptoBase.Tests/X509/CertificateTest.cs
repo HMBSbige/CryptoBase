@@ -379,7 +379,7 @@ public class CertificateTest
 		}
 	}
 
-	// Decoding the certificate accepts what 7.0.0 accepted: an extension that decodes on first use reports its error there, and only for itself.
+	// An extension that decodes on first use reports its error there, and only for itself, so decoding the certificate still succeeds.
 	[Test]
 	[Arguments("2.5.29.35")]
 	[Arguments("2.5.29.14")]

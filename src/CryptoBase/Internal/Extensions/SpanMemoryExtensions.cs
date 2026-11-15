@@ -25,7 +25,8 @@ internal static class SpanMemoryExtensions
 
 	extension<T>(Span<T> span)
 	{
-		// Unlike the implicit conversion, which is not marked for aggressive inlining, this costs no inlining budget when reached through aggressive inlines alone, so it is less likely to stay a call in large methods, around which live vectors must be saved.
+		// Unlike the implicit conversion, this is marked for aggressive inlining, so it costs no inlining budget when reached through aggressive inlines alone.
+		// It is then less likely to stay a call in large methods, around which live vectors must be saved.
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public ReadOnlySpan<T> AsReadOnlySpan()
 		{

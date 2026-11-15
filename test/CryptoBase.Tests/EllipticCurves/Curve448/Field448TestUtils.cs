@@ -8,7 +8,7 @@ internal static class Field448TestUtils
 {
 	internal const ulong Tight = (1UL << 56) + (1UL << 9);
 
-	// Also the bound of Multiply on both sides.
+	// 3.5·2^56, the bound of Square and, as 3.5² = 12.25, of Multiply on both sides.
 	internal const ulong SquareBound = 7UL << 55;
 
 	internal static readonly Field448 LargestTight = Limbs(Tight - 1, Tight - 1, Tight - 1, Tight - 1, Tight - 1, Tight - 1, Tight - 1, Tight - 1);

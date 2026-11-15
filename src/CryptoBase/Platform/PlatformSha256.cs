@@ -20,7 +20,8 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	/// <inheritdoc />
 	public static int HashLength => SHA256.HashSizeInBytes;
 
-	// The shortest source whose padding takes it to four blocks; below it, the fixed cost of a call to the platform outweighs the SHA extensions.
+	// The shortest source whose padding takes it to four blocks.
+	// Below it, off Windows, the fixed cost of a call to the platform outweighs the SHA extensions.
 	private const int MinPreferredLength = 3 * 64 - 8;
 
 	internal static bool HasShaExtensions { get; } = CpuIdUtils.IsSupportX86ShaEx();

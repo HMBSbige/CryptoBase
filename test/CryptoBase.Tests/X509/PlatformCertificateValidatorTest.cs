@@ -387,7 +387,8 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
-	// Windows reports NoIssuanceChainPolicy. Linux and macOS do not check issuance policies.
+	// Windows reports NoIssuanceChainPolicy.
+	// Linux and macOS do not check issuance policies.
 	[Test]
 	public async Task ReportsAnIssuancePolicyThatTheChainDoesNotMeetAsNotValidForUsage()
 	{

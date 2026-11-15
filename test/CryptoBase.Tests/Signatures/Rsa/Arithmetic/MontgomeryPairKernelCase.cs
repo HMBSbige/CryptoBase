@@ -87,7 +87,8 @@ public abstract class MontgomeryPairKernelCase : IKernelCase
 		return [.. limbCounts.Concat(Enumerable.Range(1, 3).Where(Fits)).Distinct().Order()];
 	}
 
-	// Whether MontgomeryKernelDispatch.CreatePair takes the kernel for moduli of limbs limbs where it takes the family: the window of MontgomeryPairKernelAvx512 of the vectors of four digits that the moduli take, the window of MontgomeryPairKernelAvx2 that GetAvx2PairWindowVectors gives, or MontgomeryPairKernelAdvSimd from MinAdvSimdPairLimbs to MaxAdvSimdPairLimbs.
+	// Whether MontgomeryKernelDispatch.CreatePair takes the kernel for moduli of limbs limbs where it takes the family.
+	// That is the MontgomeryPairKernelAvx512 window with as many vectors of four digits as the moduli need, the MontgomeryPairKernelAvx2 window that GetAvx2PairWindowVectors gives, or MontgomeryPairKernelAdvSimd from MinAdvSimdPairLimbs to MaxAdvSimdPairLimbs.
 	private bool IsDispatched(int limbs)
 	{
 		if (!Fits(limbs))
@@ -129,7 +130,7 @@ public abstract class MontgomeryPairKernelCase : IKernelCase
 		}
 	}
 
-	// MontgomeryKernelDispatch.Create gives the digits of the pair kernel to every modulus without AVX-512, and the window of one vector gives them with it.
+	// Without AVX-512, MontgomeryKernelDispatch.Create gives every modulus the digits of the pair kernel; with it, a MontgomeryKernelAvx2 context of one vector does.
 	private sealed class Avx2Case<TWindow> : Case<MontgomeryPairKernelAvx2<TWindow>> where TWindow : struct, IAvx2Window<TWindow>
 	{
 		internal override int WindowVectors => TWindow.Count;

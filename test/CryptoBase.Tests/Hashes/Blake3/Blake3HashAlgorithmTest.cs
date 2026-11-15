@@ -211,7 +211,8 @@ public class Blake3HashAlgorithmTest
 		hasher.Append(source.AsSpan(21000));
 		hasher.GetCurrentHash(destination);
 
-		// Dispose returns both arrays to the shared pool, which caches them for this thread; nothing rents from it before the check, so reading them stays valid.
+		// Dispose returns both arrays to the shared pool, which caches them for this thread.
+		// Nothing rents from it before the check, so reading them stays valid.
 		byte[] buffer = BufferArray(hasher) ?? [];
 		byte[] stack = StackArray(hasher) ?? [];
 		int bufferLength = State(hasher).BufferLength;
@@ -486,7 +487,8 @@ public class Blake3HashAlgorithmTest
 		}
 	}
 
-	// The key always starts at an odd offset; 201 is past the key and the destination of every layout.
+	// The key always starts at an odd offset.
+	// 201 is past the key and the destination of every layout.
 	public static IEnumerable<(int KeyOffset, int SourceOffset, int DestinationOffset)> KeyLayouts()
 	{
 		return [(1, 201, 40), (163, 176, 0), (7, 201, 7), (7, 201, 26), (155, 201, 0), (7, 20, 26)];

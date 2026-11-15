@@ -36,8 +36,8 @@ internal readonly struct Blake3Vector256Rows : IBlake3Kernel
 		nuint tailLength = length % ChunkLength;
 
 		// A partial last chunk takes a lane of its own when a chain has one spare, or when its blocks would take longer on their own than the lane.
-		// Where the scalar compressor hashes single chunks faster than a chain, it joins one full chunk from twelve blocks, and two, which then take two chains, always, since the second chain runs in the cycles the first leaves idle;
-		// elsewhere it joins one always, and two from ten blocks.
+		// Where the scalar compressor hashes single chunks faster than a chain, it joins one full chunk from twelve blocks, and two, which then take two chains, always, since the second chain runs in the cycles the first leaves idle.
+		// Elsewhere it joins one always, and two from ten blocks.
 		bool rides = count switch
 		{
 			0 => false,

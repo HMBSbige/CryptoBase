@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Hashes.Blake3;
 
-// ReadDistance spans both sides of Blake3HashAlgorithm's chunk mode interval for every SIMD kernel, so both chunk mode and group mode are measured.
+// ReadDistance spans both sides of Blake3HashAlgorithm's chunk mode interval for every SIMD kernel, so both modes are measured.
 public class Blake3HashAlgorithmBenchmark
 {
 	private const int InputLength = 64 * 1024;

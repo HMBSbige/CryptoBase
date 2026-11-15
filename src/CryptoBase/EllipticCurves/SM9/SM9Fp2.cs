@@ -1,7 +1,7 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
 // Fp2 = Fp[u]/(u² + 2) of GM/T 0044.5 §3.2, the element A0 + A1·u, both reduced SM9Fp elements.
-// Every member takes and gives reduced coefficients.
+// Every member takes and gives reduced coefficients, except the Unreduced and Wide ones, which state their bounds.
 // The sums, differences and small multiples are not inlined: each takes a weak reduction per coefficient, and inlined into the formulas of the twist and the Miller loop they would leave those too long for the op cache.
 // No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
 // Any result may be the same variable as an input.
@@ -243,7 +243,8 @@ internal struct SM9Fp2 : ISM9Field<SM9Fp2>
 		SM9Fp.ConditionalSelect(mask, in whenSet.A1, in whenClear.A1, out result.A1);
 	}
 
-	// (a0 − a1·u)/(a0² + 2a1²), the norm below 15.2p². 0 gives 0.
+	// (a0 − a1·u)/(a0² + 2a1²), the norm below 15.2p².
+	// 0 gives 0.
 	[SkipLocalsInit]
 	public static void Invert(in SM9Fp2 value, out SM9Fp2 result)
 	{

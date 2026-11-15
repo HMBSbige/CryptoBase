@@ -41,7 +41,8 @@ public class SM2SignatureTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The reference signs with nonces of its own; the key verifies those signatures and nothing near them.
+	// The reference signs with nonces of its own.
+	// The key verifies those signatures and nothing near them.
 	[Test]
 	public async Task ReferenceSignaturesVerify()
 	{
@@ -129,7 +130,8 @@ public class SM2SignatureTest
 		}
 	}
 
-	// d lies in [1, n − 2]: 1 + d has no inverse for n − 1. The PKCS #8 keys hold no public key, which would not match.
+	// d lies in [1, n − 2]: 1 + d has no inverse for n − 1.
+	// The PKCS #8 keys hold no public key, which would not match.
 	[Test]
 	public async Task PrivateKeysOutsideTheRangeThrow()
 	{
@@ -172,7 +174,8 @@ public class SM2SignatureTest
 		await Assert.That(ModulusCase.Decode(d)).IsEqualTo(expected);
 	}
 
-	// A6 of GB/T 32918.2-2016, Sec. 6.1, takes another nonce if r = 0, r + k = n or s = 0; an e that the reference picks for each makes it so.
+	// A6 of GB/T 32918.2-2016, Sec. 6.1, takes another nonce if r = 0, r + k = n or s = 0.
+	// An e that the reference picks for each makes it so.
 	[Test]
 	public async Task TrySignRejectsTheNoncesThatTheStandardRejects()
 	{
@@ -199,7 +202,7 @@ public class SM2SignatureTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// With an empty additional input the nonce follows from d and e alone; other inputs change it.
+	// With an empty additional input the nonce follows from d and e alone, and other inputs change it.
 	[Test]
 	public async Task SigningIsDeterministicWithoutAdditionalData()
 	{
@@ -216,7 +219,8 @@ public class SM2SignatureTest
 		}
 	}
 
-	// Import, decryption and the key exchange leave (1 + d)⁻¹ alone; the first signature computes it, plain (1 + d)⁻¹·R mod n, and keeps it, and disposal erases it.
+	// Import, decryption and the key exchange leave (1 + d)⁻¹ alone.
+	// The first signature computes it, plain (1 + d)⁻¹·R mod n, and keeps it, and disposal erases it.
 	// A signature that comes while another computes it computes its own, which neither stays in the state nor changes the stage.
 	[Test]
 	public async Task TheFirstSignatureComputesTheInverse()
@@ -257,7 +261,8 @@ public class SM2SignatureTest
 		}
 	}
 
-	// Threads that sign at once on a key that has not signed yet race to compute (1 + d)⁻¹; every signature verifies, and the key keeps the whole value.
+	// Threads that sign at once on a key that has not signed yet race to compute (1 + d)⁻¹.
+	// Every signature verifies, and the key keeps the whole value.
 	[Test]
 	public async Task ConcurrentFirstSignaturesAgree()
 	{
@@ -311,8 +316,9 @@ public class SM2SignatureTest
 		}
 	}
 
-	// A key counts its verifications and builds the windows of its public key for verification at the threshold, and not those of encryption, which the encryption after them builds by its own count;
-	// before and after it, the key decides each signature, valid or with s off by one, as the reference does.
+	// A key counts its verifications and builds the windows of its public key for verification at the threshold.
+	// It does not build those of encryption, which the encryption after them builds by its own count.
+	// Before and after the threshold, the key decides each signature, valid or with s off by one, as the reference does.
 	[Test]
 	public async Task VerificationsBeforeAndAfterTheWindowsMatchTheReference()
 	{

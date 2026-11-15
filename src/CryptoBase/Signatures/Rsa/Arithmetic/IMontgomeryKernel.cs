@@ -28,6 +28,8 @@ internal interface IMontgomeryKernel
 	// Out: below 2n.
 	static abstract void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, ReadOnlySpan<ulong> modulus, ulong negativeInverse, Span<ulong> scratch);
 
-	// result = value²·R⁻¹ mod n. In: below 2n. Out: below 2n.
+	// result = value²·R⁻¹ mod n.
+	// In: below 2n.
+	// Out: below 2n.
 	static abstract void Square(Span<ulong> result, ReadOnlySpan<ulong> value, ReadOnlySpan<ulong> modulus, ulong negativeInverse, Span<ulong> scratch);
 }

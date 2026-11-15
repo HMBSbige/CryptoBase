@@ -1,7 +1,8 @@
 namespace CryptoBase.EllipticCurves;
 
 // For a public point Q.
-// The N = TOrder.BitLength bits of a scalar split into PartCount parts of L = PartLength bits, and part c holds the odd multiples B, 3B, …, (2^(w − 1) − 1)·B of B = 2^(cL)·Q for the NAF of width w = Width, so that a product with Q takes L doublings instead of N.
+// The N = TOrder.BitLength bits of a scalar split into PartCount parts of L = PartLength bits.
+// Part c holds the odd multiples B, 3B, …, (2^(w − 1) − 1)·B of B = 2^(cL)·Q for the NAF of width w = Width, so that a product with Q takes L doublings instead of N.
 internal static class ECVariableTimePointTable<TCurve, TField, TOrder>
 	where TCurve : struct, IECCurve
 	where TField : unmanaged, IECField<TField>

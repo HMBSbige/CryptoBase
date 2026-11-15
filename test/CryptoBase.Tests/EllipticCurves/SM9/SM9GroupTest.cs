@@ -210,7 +210,9 @@ public class SM9GroupTest
 		}
 	}
 
-	// The subgroup check of SM9G2.TryDecode, SM9G2Group.IsInSubgroupVariableTime: α = (6t + 2) + ψ − ψ² + ψ³ reduced by ψ² = tr·ψ − p to α0 + α1·ψ has the norm n = α0² + α0·α1·tr + α1²·p, which N divides and which is prime to the cofactor 2p − N, and α acts as 0 on G2.
+	// The subgroup check of SM9G2.TryDecode, SM9G2Group.IsInSubgroupVariableTime, is exact.
+	// α = (6t + 2) + ψ − ψ² + ψ³, reduced by ψ² = tr·ψ − p to α0 + α1·ψ, has the norm n = α0² + α0·α1·tr + α1²·p.
+	// N divides n, n is prime to the cofactor 2p − N, and α acts as 0 on G2.
 	[Test]
 	public async Task SubgroupCheckIsExact()
 	{
@@ -294,7 +296,7 @@ public class SM9GroupTest
 		BigInteger bound1 = ((BigInteger.One << 64) + 1) * (b + c);
 		BigInteger bound2 = ((BigInteger.One << 64) + 1) * (a + b);
 		List<string> failures = [];
-		// The fixed scalars that the tests of the products and powers take give both an odd and an even k0, so both sides of the correction run.
+		// The fixed scalars of the product and power tests must give both an odd and an even k0, so both sides of the correction run.
 		HashSet<bool> parities = [];
 
 		foreach (BigInteger k in SM9KernelTest.Scalars(random, 0))

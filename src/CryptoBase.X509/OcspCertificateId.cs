@@ -73,7 +73,7 @@ public sealed class OcspCertificateId
 		return IssuerKeyHash.Span.SequenceEqual(digest.Slice(0, written));
 	}
 
-	// RFC 9919, Sec. 3.1.1, requires SHA-256 of a client.
+	// RFC 9919, Sec. 3.1.1, requires SHA-256 of a client, so it is the default; SHA-1 is used only when asked for.
 	internal static OcspCertificateId Create(Certificate certificate, Certificate issuer, HashAlgorithmName hashAlgorithm)
 	{
 		string oid = hashAlgorithm.Name switch
@@ -101,8 +101,8 @@ public sealed class OcspCertificateId
 		return new OcspCertificateId(AlgorithmIdentifier.Read(ref identifier), issuerNameHash, issuerKeyHash, certificate.SerialNumber);
 	}
 
-	// CertID ::= SEQUENCE { hashAlgorithm AlgorithmIdentifier, issuerNameHash OCTET STRING, issuerKeyHash OCTET STRING, serialNumber CertificateSerialNumber };
-	// the results are slices of the reader's memory.
+	// CertID ::= SEQUENCE { hashAlgorithm AlgorithmIdentifier, issuerNameHash OCTET STRING, issuerKeyHash OCTET STRING, serialNumber CertificateSerialNumber }.
+	// The results are slices of the reader's memory.
 	internal static OcspCertificateId Read(ref DerReader reader)
 	{
 		DerReader sequence = reader.ReadSequence();
@@ -125,7 +125,7 @@ public sealed class OcspCertificateId
 		}
 	}
 
-	// No digest is empty, so nothing written tells a hash that is not one of the four.
+	// No digest is empty, so zero bytes written means a hash that is not one of the four.
 	private static bool TryHash(string oid, ReadOnlySpan<byte> source, Span<byte> destination, out int written)
 	{
 		written = oid switch

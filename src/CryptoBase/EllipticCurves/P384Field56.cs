@@ -6,22 +6,27 @@ namespace CryptoBase.EllipticCurves;
 // Every member takes and gives elements of the form E: limbs 0 to 5 below 2^57 and limb 6 below 2^50, so values below 2^386 + 2^338, just over 4p.
 // The formulas of ECFormulas skip reductions between steps within these limits:
 // Multiply takes a left in limbs below 2^63 with a value below 2^392 and a right in limbs below 2^60, and Square limbs below 2^58.
-// Both give limbs 0 to 5 below 2^56 and a value below x·y/2^392 + p; for inputs of E that is below p + 2^381, with limb 6 below 2^48 + 2^45, so a product needs no reduction after it.
-// AddUnreduced adds limbs;
-// SubtractUnreduced adds 5p, whose limbs cover those of E, for a subtrahend of E;
-// and WeakReduce takes limbs below 2^62 to limbs 0 to 5 below 2^56, limb 6 at most 2^48 + 2^6 and a value below 2^384 + 2^342, so below 2p and in E.
+// Both give limbs 0 to 5 below 2^56 and a value below x·y/2^392 + p.
+// For inputs of E that is below p + 2^381, with limb 6 below 2^48 + 2^45, so a product needs no reduction after it.
+// AddUnreduced adds limbs.
+// SubtractUnreduced adds 5p, whose limbs cover those of E, for a subtrahend of E.
+// WeakReduce takes limbs below 2^62 to limbs 0 to 5 below 2^56, limb 6 at most 2^48 + 2^6 and a value below 2^384 + 2^342, so below 2p and in E.
 // −p⁻¹ ≡ 2^32 + 1 (mod 2^56), as (2^32 − 1)(2^32 + 1) = 2^64 − 1, so Montgomery reduction needs no multiplication.
-// For inputs of E the steps of the formulas keep within these limits, and the outputs are of E: X3 and Y3 come from WeakReduce, and Z3 is twice an output of Multiply, which has limbs 0 to 5 below 2^56 and limb 6 below 2^49 for the inputs here.
-// Every input of Multiply has limbs below 5·2^56 and a value below 9p, every input of Square limbs below 3·2^56, every subtrahend of SubtractUnreduced is of E, as outputs of Multiply, Square and WeakReduce and their doubles below 2.2p are, and every input of WeakReduce has limbs below 2^60.
+// For inputs of E the steps of the formulas keep within these limits, and the outputs are of E.
+// X3 and Y3 come from WeakReduce, and Z3 is twice an output of Multiply, which has limbs 0 to 5 below 2^56 and limb 6 below 2^49 for the inputs here.
+// Every input of Multiply has limbs below 5·2^56 and a value below 9p, and every input of Square limbs below 3·2^56.
+// Every subtrahend of SubtractUnreduced is of E, as outputs of Multiply, Square and WeakReduce and their doubles below 2.2p are.
+// Every input of WeakReduce has limbs below 2^60.
 // In Double, γ, β and δ are below 1.1p in limbs below 2^56, and 2γ and 4β below 2.2p in limbs below 2^57.
 // X − δ is below 9p in limbs below 5·2^56 and X + δ below 5.1p in limbs below 3·2^56, so their product is below 1.2p and α below 3.6p in limbs below 3·2^56.
 // α² − 8β is below 11.1p in limbs below 2^59.
 // 4β − X3 is below 7.1p in limbs below 5·2^56, α(4β − X3) below 1.1p, and that less 8γ² below 6.1p in limbs below 2^58.
-// In AddDistinct, U1, U2, S1 and S2 are below 1.1p in limbs below 2^56, so H is below 6.1p in limbs below 2^58 and 2R below 12.1p in limbs below 2^59;
-// reduced, both are below 2^384 + 2^342 in limbs below 2^56.
+// In AddDistinct, U1, U2, S1 and S2 are below 1.1p in limbs below 2^56, so H is below 6.1p in limbs below 2^58 and 2R below 12.1p in limbs below 2^59.
+// Reduced, both are below 2^384 + 2^342 in limbs below 2^56.
 // Z1·Z2·H is below 1.1p, so Z3 is below 2.1p.
 // I = 4H² is below 4.1p in limbs below 2^58, and J, V and S1·J are below 1.1p.
-// With an affine right, whose coordinates are of E as well, H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above, Z1·H is below 1.1p, so Z3 is below 2.1p, and V = X1·I and Y1·J are below 1.1p.
+// With an affine right, whose coordinates are of E as well, H = X2·Z1² − X1 and 2R = 2(Y2·Z1³ − Y1) have the bounds above.
+// Z1·H is then below 1.1p, so Z3 is below 2.1p, and V = X1·I and Y1·J are below 1.1p.
 // X3 = R² − J − 2V and Y3 = R(V − X3) − 2·SJ then take R below 2^384 + 2^342 and J, V and SJ below 1.1p, all in limbs below 2^56.
 // R² is below 1.1p and R² − J − 2V below 16.1p in limbs below 10·2^56.
 // V − X3 is below 6.1p in limbs below 2^58, R(V − X3) below 1.1p, and that less 2·SJ below 11.1p in limbs below 2^59.
@@ -43,7 +48,8 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 	private const ulong P2 = Mask - (1UL << 16);
 	private const ulong P6 = (1UL << 48) - 1;
 
-	// 5p in limbs at least 2^57 − 1 for limbs 0 to 5 and 2^50 − 1 for limb 6, the most that limbs of E hold, so that SubtractUnreduced leaves no limb negative; each is below 2^57 + 2^56.
+	// 5p in limbs at least 2^57 − 1 for limbs 0 to 5 and 2^50 − 1 for limb 6, the most that limbs of E hold, so that SubtractUnreduced leaves no limb negative.
+	// Each is below 2^57 + 2^56.
 	private const ulong FiveP0 = 0x02000004FFFFFFFB;
 	private const ulong FiveP1 = 0x02FFFAFFFFFFFFFE;
 	private const ulong FiveP2 = 0x02FFFFFFFFFAFFFD;
@@ -85,8 +91,9 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 	}
 
 	// Carrying the left limbs first gives x_i below 2^56, x_6 too as the value is below 2^392.
-	// With a_i = x_i·2^8 and a right limb y_j below 2^60, a_i·y_j = x_i·y_j·2^8 < 2^124, so its high half is x_i·y_j >> 56, below 2^60, and its low half (x_i·y_j mod 2^56)·2^8.
-	// A column sums at most seven of each, below 2^63 with room for the Montgomery rounds, so all the columns come first without carries and the rounds after.
+	// With a_i = x_i·2^8 and a right limb y_j below 2^60, a_i·y_j = x_i·y_j·2^8 < 2^124.
+	// Its high half is then x_i·y_j >> 56, below 2^60, and its low half (x_i·y_j mod 2^56)·2^8.
+	// A column sums at most seven of each, below 2^63 with room for the Montgomery rounds, so the columns need no carries before Reduce.
 	// Each column adds one product at a time and each right limb is loaded where it is first used, so that few values are live at once.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(in P384Field56 left, in P384Field56 right, out P384Field56 result)
@@ -205,7 +212,8 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 		Reduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, High(a6, right.L6), out result);
 	}
 
-	// Multiply with value as both factors, for limbs below 2^58, which need no carrying first: a_i = x_i·2^4 gives a_i·a_i = x_i²·2^8, and d_i = x_i·2^5 gives the doubled cross product 2·x_i·x_j·2^8 in one product, which keeps each column within the bound of Multiply.
+	// Multiply with value as both factors, for limbs below 2^58, which need no carrying first.
+	// a_i = x_i·2^4 gives a_i·a_i = x_i²·2^8, and d_i = x_i·2^5 gives the doubled cross product 2·x_i·x_j·2^8 in one product, which keeps each column within the bound of Multiply.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Square(in P384Field56 value, out P384Field56 result)
 	{
@@ -250,7 +258,8 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 		Multiply(in value, in one, out result);
 	}
 
-	// The limbs add without carries; the caller keeps them within what the next operation takes.
+	// The limbs add without carries.
+	// The caller keeps them within what the next operation takes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void AddUnreduced(in P384Field56 left, in P384Field56 right, out P384Field56 result)
 	{
@@ -263,7 +272,8 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 		result.L6 = left.L6 + right.L6;
 	}
 
-	// left + 5p − right, limb by limb, for right of E: each limb grows by that of 5p, below 2^57 + 2^56, and none goes negative.
+	// left + 5p − right, limb by limb, for right of E.
+	// Each limb grows by at most that of 5p, below 2^57 + 2^56, and none goes negative.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void SubtractUnreduced(in P384Field56 left, in P384Field56 right, out P384Field56 result)
 	{
@@ -277,8 +287,10 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 	}
 
 	// For limbs below 2^62, subtracts h·p with h = L6 >> 48 below 2^14, then carries.
-	// h·p = h·2^384 − h·(2^128 + 2^96 − 2^32 + 1), so h·2^384 comes off limb 6, which leaves the value non-negative as it was at least h·2^384, and the rest goes in as h·2^16 at limb 2, h·2^40 at limb 1 and h − h·2^32 at limb 0.
-	// Only limb 0 may go negative, above −2^46, so only its carry shifts arithmetically, and it is at least −1: limb 1 gains h·2^40 ≥ 2^40 for h > 0, and h = 0 leaves limb 0 as it was.
+	// h·p = h·2^384 − h·(2^128 + 2^96 − 2^32 + 1), so h·2^384 comes off limb 6, which leaves the value non-negative as it was at least h·2^384.
+	// The rest goes in as h·2^16 at limb 2, h·2^40 at limb 1 and h − h·2^32 at limb 0.
+	// Only limb 0 may go negative, above −2^46, so only its carry shifts arithmetically.
+	// That carry is at least −1, and limb 1, which gains h·2^40 ≥ 2^40 when h > 0, stays non-negative.
 	// Limbs 0 to 5 come out below 2^56.
 	// Limb 6 keeps L6 mod 2^48, limbs 0 to 5 add below 2^342 + 2^287 and the rest of h·p below 2^143, so the value is below (2^48 − 1)·2^336 + 2^342 + 2^288, under 2^384 + 2^342.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -310,7 +322,7 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 	}
 
 	// The value mod p in six 64-bit limbs.
-	// WeakReduce leaves a value below 2p in limbs 0 to 5 below 2^56, so one conditional subtraction of p gives the canonical value, whose limbs pack without overlap.
+	// WeakReduce leaves a value below 2p with limbs 0 to 5 below 2^56, so one conditional subtraction of p gives the canonical value, whose limbs pack without overlap.
 	public static void ToSaturated(in P384Field56 value, out FieldElement<P384Field> result)
 	{
 		WeakReduce(in value, out P384Field56 t);
@@ -341,8 +353,10 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 		t.ZeroMemory();
 	}
 
-	// The Montgomery rounds on t = Σ t_k·2^(56k), one for each of limbs 0 to 6, and limbs 7 to 13 are the result, carried.
-	// Every limb but t_0 may go negative, so every carry shifts arithmetically; for columns within the bound of Multiply every limb stays below 2^63 in magnitude.
+	// The Montgomery rounds on t = Σ t_k·2^(56k), one for each of limbs 0 to 6.
+	// Limbs 7 to 13, carried, are the result.
+	// Every limb but t_0 may go negative, so every carry shifts arithmetically.
+	// For columns within the bound of Multiply every limb stays below 2^63 in magnitude.
 	// The result is (t + Q·p)/2^392 for some Q < 2^392, so below t/2^392 + p and not negative, with limbs 0 to 5 below 2^56.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Reduce(ulong t0, ulong t1, ulong t2, ulong t3, ulong t4, ulong t5, ulong t6, ulong t7, ulong t8, ulong t9, ulong t10, ulong t11, ulong t12, ulong t13, out P384Field56 result)
@@ -369,8 +383,11 @@ internal struct P384Field56 : IUnsaturatedField<P384Field56, P384Field>
 	}
 
 	// Adds q·p at limb 0 for q = t0·(2^32 + 1) mod 2^56, which clears limb 0, and moves its carry into limb 1.
-	// With s = t0 + (t0 mod 2^24)·2^32, s ≡ t0·(2^32 + 1) (mod 2^56), so q = s mod 2^56; q ≡ t0 (mod 2^32), so t0 + q·(2^32 − 1) = s − q + (q >> 24)·2^56, which is ⌊s/2^56⌋ + (q >> 24) at limb 1.
-	// The rest of q·p, q·(2^384 − 2^128 − 2^96), splits at the limb boundaries: −q·2^96 into −(q mod 2^16)·2^40 at limb 1 and −(q >> 16) at limb 2, −q·2^128 into −(q mod 2^40)·2^16 at limb 2 and −(q >> 40) at limb 3, and q·2^384 into (q mod 2^8)·2^48 at limb 6 and q >> 8 at limb 7.
+	// With s = t0 + (t0 mod 2^24)·2^32, s ≡ t0·(2^32 + 1) (mod 2^56), so q = s mod 2^56.
+	// As q ≡ t0 (mod 2^32), t0 + q·(2^32 − 1) = s − q + (q >> 24)·2^56, which is ⌊s/2^56⌋ + (q >> 24) at limb 1.
+	// The rest of q·p, q·(2^384 − 2^128 − 2^96), splits at the limb boundaries.
+	// −q·2^96 goes in as −(q mod 2^16)·2^40 at limb 1 and −(q >> 16) at limb 2, and −q·2^128 as −(q mod 2^40)·2^16 at limb 2 and −(q >> 40) at limb 3.
+	// q·2^384 goes in as (q mod 2^8)·2^48 at limb 6 and q >> 8 at limb 7.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void ReduceRound(ulong t0, ref ulong t1, ref ulong t2, ref ulong t3, ref ulong t6, ref ulong t7)
 	{

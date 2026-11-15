@@ -12,7 +12,7 @@ public class Ed25519ScalarTest
 
 	private static readonly BigInteger Two512 = BigInteger.One << 512;
 
-	// The edges include those of the folds at 2^252, whose remainders reach 2^386, 2^260 and 2L: values just around 2^252 and its multiples by L, high halves of all ones, and the most a remainder may hold before each fold.
+	// The edges include those of the folds at 2^252, whose remainders reach 2^386, 2^260 and 2L: values around 2^252 and its multiples by L, high halves of all ones, and the most each remainder may hold.
 	[Test]
 	public async Task ReduceWideMatchesBigInteger()
 	{

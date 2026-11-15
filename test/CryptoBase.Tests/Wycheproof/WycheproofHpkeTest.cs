@@ -30,8 +30,10 @@ public class WycheproofHpkeTest
 		}
 	}
 
-	// An enc of small order or of the wrong length sets up no context; every other invalid vector sets one up that does not open the message.
-	// The acceptable vectors open: the library sets no limit on info, and takes an enc with bit 255 set or on the twist, as RFC 7748 does.
+	// An enc of small order or of the wrong length sets up no context.
+	// Every other invalid vector sets one up that does not open the message.
+	// The acceptable vectors open.
+	// The library sets no limit on info, and takes an enc with bit 255 set or on the twist, as RFC 7748 does.
 	[Test]
 	[WycheproofVectors<HpkeTestGroup, HpkeTestVector>("hpke_x25519_decrypt_test.json")]
 	public async Task Decryption(HpkeTestVector vector)
@@ -58,7 +60,8 @@ public class WycheproofHpkeTest
 		}
 	}
 
-	// Each message is opened at the sequence number that the vector gives: a ciphertext that comes out of order or again fails, and the next one is then opened at the same number.
+	// Each message is opened at the sequence number that the vector gives.
+	// A ciphertext that comes out of order or again fails, and the next one is then opened at the same number.
 	[Test]
 	[WycheproofVectors<HpkeSequenceTestGroup, HpkeSequenceTestVector>("hpke_x25519_sequence_test.json")]
 	public async Task SequentialDecryption(HpkeSequenceTestVector vector)
@@ -102,7 +105,8 @@ public class WycheproofHpkeTest
 		}
 	}
 
-	// Opens ciphertext at sequenceNumber into expected, which advances the sequence number, or, with expected null, fails to: the sequence number then stays, and the part of the buffer that would have received the message is cleared.
+	// Opens ciphertext at sequenceNumber into expected, which advances the sequence number, or, with expected null, fails to.
+	// On failure the sequence number stays, and the part of the buffer that would have received the message is cleared.
 	// Nothing is written past that part.
 	private static async Task AssertOpens(HpkeRecipientContext context, ulong sequenceNumber, byte[] aad, byte[] ciphertext, byte[]? expected)
 	{

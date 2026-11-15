@@ -31,8 +31,8 @@ public sealed class CertificateRevocationList
 	private readonly ReadOnlyMemory<byte> _entries;
 
 	// The index of _entries, by serial number.
-	// Each slot holds the hash of the number in its upper half and one more than the offset of the entry in its lower half, zero being free;
-	// a slot's position is the scaled hash, and collisions take the next free slot.
+	// Each slot holds the hash of the number in its upper half and one more than the offset of the entry in its lower half, zero being free.
+	// A slot's position is the scaled hash, and collisions take the next free slot.
 	private readonly ulong[] _slots;
 
 	private SignatureCheck? _lastSignatureCheck;
@@ -50,13 +50,15 @@ public sealed class CertificateRevocationList
 
 		Version = 1;
 
-		// Sec. 5.1.2.1: DER has no default to omit here, as the field is OPTIONAL; if present, it must be v2.
+		// Sec. 5.1.2.1: DER has no default to omit here, as the field is OPTIONAL.
+		// If present, it must be v2.
 		if (tbs.PeekTagIs(Asn1Tag.Integer))
 		{
 			Version = tbs.ReadInt32() is 1 ? 2 : throw new AsnContentException();
 		}
 
-		// The outer signature algorithm is an AlgorithmIdentifier, so the same bytes are one.
+		// RFC 5280, Sec. 5.1.2.2, requires the same algorithm as the outer signatureAlgorithm.
+		// That one has been read as an AlgorithmIdentifier, so equal bytes need no parse of their own.
 		if (!tbs.ReadEncodedValue().Span.SequenceEqual(SignatureAlgorithm.Encoded.Span))
 		{
 			throw new AsnContentException();
@@ -220,8 +222,8 @@ public sealed class CertificateRevocationList
 		return SignatureAlgorithm.VerifySignature(issuerKey, TbsCertList.Span, Signature.Span);
 	}
 
-	// Kept for the last key asked about: a long CRL covers many certificates, and should not be hashed for each.
-	// Only a verification is kept: whether a key supports the algorithm depends on its implementation, which may differ for the same SubjectPublicKeyInfo.
+	// Kept for the last key asked about, as a long CRL covers many certificates and should not be hashed for each.
+	// Only a verification is kept, as whether a key supports the algorithm depends on its implementation, which may differ for the same SubjectPublicKeyInfo.
 	internal bool VerifySignature(ISignatureKey issuerKey, ReadOnlyMemory<byte> issuerPublicKeyInfo)
 	{
 		if (!SignatureAlgorithm.TryGetSignatureAlgorithm(out SignatureAlgorithm algorithm) || !issuerKey.Supports(algorithm))
@@ -397,7 +399,8 @@ public sealed class CertificateRevocationList
 	}
 
 	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension, each extnID at most once.
-	// No string is created for the two identifiers that most entries hold; others is kept between entries so that it is created once.
+	// No string is created for the two identifiers that most entries hold.
+	// others is kept between entries so that it is created once.
 	private void CheckEntryExtensions(ref DerReader entry, ref HashSet<string>? others)
 	{
 		const int reasonCodeBit = 1;
@@ -487,7 +490,8 @@ public sealed class CertificateRevocationList
 		}
 	}
 
-	// Inserts an entry whose offset in _entries is given; AsnContentException if its serial number is already in the table.
+	// Inserts an entry whose offset in _entries is given.
+	// Throws AsnContentException if its serial number is already in the table.
 	private void Add(ReadOnlySpan<byte> serialNumber, int offset)
 	{
 		uint hash = Hash(serialNumber);

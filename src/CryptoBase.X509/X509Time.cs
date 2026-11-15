@@ -44,7 +44,7 @@ internal static class X509Time
 
 		if (tag == Asn1Tag.UtcTime)
 		{
-			// The default two-digit year maximum is TwoDigitYearMax.
+			// The default two-digit year maximum of ReadUtcTime, 2049, is TwoDigitYearMax.
 			return new ValueAsnReader(encoded, AsnEncodingRules.DER).ReadUtcTime();
 		}
 
@@ -87,7 +87,8 @@ internal static class X509Time
 		return utc.AddTicks(-(utc.Ticks % TimeSpan.TicksPerSecond));
 	}
 
-	// A whole UTCTime in the form YYMMDDHHMMSSZ, the only one that DER allows, with the date and time that TryParseDateAndTime accepts; anything else, valid or not, is left to ValueAsnReader.
+	// A whole UTCTime in the form YYMMDDHHMMSSZ, the only one that DER allows, with the date and time that TryParseDateAndTime accepts.
+	// Anything else, valid or not, is left to ValueAsnReader.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool TryReadUtcTime(ReadOnlySpan<byte> encoded, out int year, out int month, out int day, out int hour, out int minute, out int second)
 	{
@@ -109,8 +110,8 @@ internal static class X509Time
 		return true;
 	}
 
-	// The contents of a GeneralizedTime in the form that RFC 5280, Sec. 4.1.2.5.2, requires, YYYYMMDDHHMMSSZ, with the date and time that TryParseDateAndTime accepts;
-	// anything else, valid or not, is left to ValueAsnReader.
+	// The contents of a GeneralizedTime in the form that RFC 5280, Sec. 4.1.2.5.2, requires, YYYYMMDDHHMMSSZ, with the date and time that TryParseDateAndTime accepts.
+	// Anything else, valid or not, is left to ValueAsnReader.
 	private static bool TryParseGeneralizedTime(ReadOnlySpan<byte> contents, out DateTimeOffset value)
 	{
 		value = default;
@@ -132,7 +133,8 @@ internal static class X509Time
 		return true;
 	}
 
-	// The ten digits MMDDHHMMSS of a date that every year has and a time of 00:00:00 to 23:59:59; the 29th of February and anything else, valid or not, are left to ValueAsnReader.
+	// The ten digits MMDDHHMMSS of a date that every year has and a time of 00:00:00 to 23:59:59.
+	// The 29th of February and anything else, valid or not, are left to ValueAsnReader.
 	private static bool TryParseDateAndTime(ReadOnlySpan<byte> digits, out int month, out int day, out int hour, out int minute, out int second)
 	{
 		month = ReadTwoDigits(digits[0], digits[1]);

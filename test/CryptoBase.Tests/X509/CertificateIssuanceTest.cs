@@ -135,7 +135,8 @@ internal class CertificateIssuanceTest
 		}
 	}
 
-	// The key identifier of an issuer with a subject key identifier extension is that value, which TestPki makes differ from the SHA-1 hash; the platform computes the expected extensions.
+	// An issuer's subject key identifier extension gives the authority key identifier; TestPki makes it differ from the SHA-1 hash.
+	// The platform computes the expected extensions.
 	[Test]
 	public async Task TheAuthorityKeyIdentifierIsTheIssuersSubjectKeyIdentifier()
 	{

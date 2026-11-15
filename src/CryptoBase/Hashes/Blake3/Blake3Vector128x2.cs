@@ -2,7 +2,8 @@ using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
 
-// Hashes eight inputs as two groups of four, each laid out as in Blake3Vector128, with the steps of the two groups interleaved half by half: one group alone leaves the vector pipelines of Apple cores waiting on the latency of each G, and the other group fills those cycles.
+// Hashes eight inputs as two groups of four, each laid out as in Blake3Vector128, with the steps of the two groups interleaved half by half.
+// One group alone leaves the vector pipelines of Apple cores waiting on the latency of each G, and the other group fills those cycles.
 internal readonly struct Blake3Vector128x2 : IBlake3LaneKernel
 {
 	public static bool IsSupported => AdvSimd.Arm64.IsSupported;
@@ -284,7 +285,7 @@ internal readonly struct Blake3Vector128x2 : IBlake3LaneKernel
 		}
 	}
 
-	// Every call shares the one temporary t: with a temporary of its own per call, the JIT spilled it between the two instructions of a rotation.
+	// Every call shares the one temporary t, since a temporary per call makes the JIT spill it between the two instructions of a rotation.
 	// Rotating by 8 shifts and inserts like the other rotations instead of looking up a table, whose indices would take one more vector register when the two groups already need more than ARM64 has.
 	// ReSharper disable once RedundantAssignment
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

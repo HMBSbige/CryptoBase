@@ -237,7 +237,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		G(d, new ReadOnlySpan<byte>(in rank), rhoSigma.Span);
 		rhoSigma.Span.Slice(0, SymmetricLength).CopyTo(_rho);
 
-		// H(ek) absorbs ek as each t̂[c] completes, so the PRF streams take the free lanes of the first two columns of Â^T, and H those of the rest.
+		// H(ek) absorbs ek as each t̂[c] completes,
+		// so the PRF streams take the free lanes of the first two columns of Â^T, and H those of the rest.
 		using CryptoBuffer<byte> prfOutputs = new(stackalloc byte[2 * k * prfLength]);
 		using CryptoBuffer<KeccakSponge<KeccakRate136>> prfSponges = new(stackalloc KeccakSponge<KeccakRate136>[2 * k]);
 		scoped PrfGuests prf = new(rhoSigma.Span.Slice(SymmetricLength), prfSponges.Span, prfOutputs.Span, prfLength);
@@ -377,7 +378,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		// m' ← K-PKE.Decrypt(dk_PKE, c) (line 5).
 		Decrypt<TKernel>(ciphertext, message);
 
-		// K̄ ← J(z ‖ c) (line 7) runs beside H(ek), G and the PRF. The schedule does not depend on the ciphertext.
+		// K̄ ← J(z ‖ c) (line 7) runs beside H(ek), G and the PRF.
+		// The schedule does not depend on the ciphertext.
 		OverlappedHash j = new(Z, ciphertext, ciphertext.Length, KeccakDomainSeparator.Shake);
 
 		if (!HasEncapsulationKeyHash)

@@ -8,8 +8,8 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.EllipticCurves.SM9;
 
 // The point formulas of SM9PointLanes for every vector type the CPU supports, against those of SM9Curve.
-// Both compute the same polynomials of the coordinates, so the coordinates agree as values, not only the points;
-// that holds for inputs that are no points too, which takes the lazy reductions to their bounds.
+// Both compute the same polynomials of the coordinates, so the coordinates agree as values, not only the points.
+// That holds for inputs that are no points too, which take the lazy reductions to their bounds.
 public class SM9PointLanesTest
 {
 	[Test]
@@ -109,7 +109,8 @@ public class SM9PointLanesTest
 		return $"({ValueOf(point.X)}, {ValueOf(point.Y)}, {ValueOf(point.Z)})";
 	}
 
-	// Each pair of points through AddSingle, and each point through DoubleSingle, then the chains 2P, 2P + Q, 2(2P + Q) and 4(2P + Q) + Q on the outputs as they are, as the products take them.
+	// Each pair of points through AddSingle, and each point through DoubleSingle.
+	// Then the chain 2P, 2P + Q, three doublings and a last + Q, to 8(2P + Q) + Q, each step on the unreduced output of the last, as the products take them.
 	private sealed class OnePoint(List<SM9Point<SM9Fp>> g1, List<SM9Point<SM9Fp2>> g2) : ISM9LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TVector>() where TVector : unmanaged, ISM9Vector<TVector>
@@ -186,7 +187,8 @@ public class SM9PointLanesTest
 		}
 	}
 
-	// MixedAdd and Add on a pair of points in each lane of vector 0, from the formulas' bounds: the left point weakly reduced, as the products keep it, and the right one as reduced as the tables have it.
+	// MixedAdd and Add on a pair of points in each lane of vector 0, from the formulas' bounds.
+	// The left point is weakly reduced, as the products keep it, and the right one as reduced as the tables have it.
 	private sealed class EveryLane(List<SM9Point<SM9Fp>> g1, List<SM9Point<SM9Fp2>> g2) : ISM9LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TVector>() where TVector : unmanaged, ISM9Vector<TVector>
@@ -255,7 +257,8 @@ public class SM9PointLanesTest
 		}
 	}
 
-	// ConditionalNegate on reduced components in the lanes of vector 0, in turn under the masks of the odd lanes, of every lane and of none: each masked lane holds 3p − x exactly in limbs below 2^27, and every other lane, those past vector 0 included, keeps its rows.
+	// ConditionalNegate on reduced components in the lanes of vector 0, in turn under the masks of the odd lanes, of every lane and of none.
+	// Each masked lane must hold 3p − x exactly in limbs below 2^27, and every other lane, those past vector 0 included, must keep its rows.
 	private sealed class Negation(List<SM9Fp> values) : ISM9LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TVector>() where TVector : unmanaged, ISM9Vector<TVector>
@@ -329,7 +332,8 @@ public class SM9PointLanesTest
 		}
 	}
 
-	// MixedAdd on a pair of points in each lane of vector 0, with the y of the right point negated in the lanes by ConditionalNegate, under the mask of the odd pairs: the sums match those of SM9Curve with the negated entry.
+	// MixedAdd on a pair of points in each lane of vector 0, with the y of the right point negated by ConditionalNegate under the mask of the odd pairs.
+	// The sums must match those of SM9Curve with the negated entry.
 	private sealed class NegatedEntries(List<SM9Point<SM9Fp>> g1, List<SM9Point<SM9Fp2>> g2) : ISM9LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TVector>() where TVector : unmanaged, ISM9Vector<TVector>
@@ -392,7 +396,8 @@ public class SM9PointLanesTest
 		}
 	}
 
-	// ToAffine on the lanes against SM9Curve.ToAffine, in variable and in constant time, for every count up to 17, which fills rows of eight or leaves some lanes of the last, from the points other than the point at infinity, repeated.
+	// ToAffine on the lanes against SM9Curve.ToAffine, in variable and in constant time, on the finite points, repeated.
+	// Every count from 1 to 17 either fills rows of eight or leaves some lanes of the last.
 	private sealed class Affine(List<SM9Point<SM9Fp>> g1, List<SM9Point<SM9Fp2>> g2) : ISM9LanesVisitor<List<string>>
 	{
 		public List<string> Visit<TVector>() where TVector : unmanaged, ISM9Vector<TVector>

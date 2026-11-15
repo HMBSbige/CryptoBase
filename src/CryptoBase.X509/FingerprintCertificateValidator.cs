@@ -23,7 +23,7 @@ public sealed class FingerprintCertificateValidator : ICertificateValidator
 {
 	private const int MaxDigestLength = 64;
 
-	// The hash functions from the most preferred: the strongest first.
+	// The hash functions, most preferred (the strongest) first.
 	private static readonly HashAlgorithmName[] Preference = [HashAlgorithmName.SHA512, HashAlgorithmName.SHA384, HashAlgorithmName.SHA256, HashAlgorithmName.SHA1];
 
 	private readonly HashAlgorithmName _hashAlgorithm;

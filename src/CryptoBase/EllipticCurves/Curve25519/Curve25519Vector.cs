@@ -231,7 +231,7 @@ internal static class Curve25519Vector<TField> where TField : unmanaged, IField2
 		TField.Create(in point.YMinusX, in point.YPlusX, in Field25519.FromConstant(TwoLimbs), in point.TwoDXY, out result);
 	}
 
-	// The point or, for a public negative digit, its negation (y − x, y + x, −2dxy).
+	// The cached point (y − x, y + x, 2, 2dxy) or, for a public negative digit, its negation (y + x, y − x, 2, −2dxy).
 	private static void CacheVariableTime(in EdwardsNielsPoint point, bool negative, out TField result)
 	{
 		if (!negative)

@@ -5,7 +5,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Kdf.Argon2;
 
-// Helpers, and a calling thread that gets interrupted, run on dedicated threads rather than on the pool: helpers are sure to take part, and no interrupt reaches other work.
+// Helpers, and a calling thread that gets interrupted, run on dedicated threads rather than on the pool.
+// Helpers are then sure to take part, and no interrupt reaches other work.
 public class Argon2LaneSchedulerTest
 {
 	private const int LaneCount = 4;
@@ -206,7 +207,8 @@ public class Argon2LaneSchedulerTest
 			}
 			else
 			{
-				// Busy rather than asleep, so that an interrupt pending on a helper can only surface in the waits of the scheduler, and longer than the scheduler spins, so that the threads waiting for the phase block.
+				// Busy rather than asleep, so that an interrupt pending on a helper can only surface in the waits of the scheduler.
+				// Longer than the scheduler spins, so that the threads waiting for the phase block.
 				long end = Stopwatch.GetTimestamp() + (lane + 1) * Stopwatch.Frequency / 1000;
 
 				while (Stopwatch.GetTimestamp() < end)
@@ -240,7 +242,8 @@ public class Argon2LaneSchedulerTest
 			}
 			finally
 			{
-				// The exception has already been thrown; no test synchronization may consume the interrupt before StopHelpers.
+				// The exception has already been thrown.
+				// No test synchronization may consume the interrupt before StopHelpers.
 				if (interrupt)
 				{
 					Thread.CurrentThread.Interrupt();

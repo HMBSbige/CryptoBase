@@ -59,8 +59,8 @@ public sealed class AuthorityKeyIdentifier
 		}
 	}
 
-	// AuthorityKeyIdentifier ::= SEQUENCE { keyIdentifier [0] KeyIdentifier OPTIONAL, authorityCertIssuer [1] GeneralNames OPTIONAL, authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL }, with implicit tags;
-	// the results are slices of value.
+	// AuthorityKeyIdentifier ::= SEQUENCE { keyIdentifier [0] KeyIdentifier OPTIONAL, authorityCertIssuer [1] GeneralNames OPTIONAL, authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL }, with implicit tags.
+	// The results are slices of value.
 	internal static AuthorityKeyIdentifier Read(ReadOnlyMemory<byte> value)
 	{
 		DerReader sequence = DerReader.ReadSoleSequence(value);

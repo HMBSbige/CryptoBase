@@ -76,7 +76,8 @@ public class DhKemX448Test
 		}
 	}
 
-	// SerializePublicKey is the identity, so the shared secret binds the encoding; 2 is on the curve and 6 on the twist.
+	// SerializePublicKey is the identity, so the shared secret binds the encoding.
+	// 2 is on the curve and 6 on the twist.
 	[Test]
 	public async Task PublicKeysInAnyEncodingAreAcceptedAndBoundAsGiven()
 	{

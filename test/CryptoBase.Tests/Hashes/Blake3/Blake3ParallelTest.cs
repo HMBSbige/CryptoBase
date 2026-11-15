@@ -20,18 +20,19 @@ public class Blake3ParallelTest
 		// Reads after 100 bytes and after 5000, after which chunk mode has stacked chunks and compressed the first blocks of the one it buffers.
 		PartlyCompressedChunk,
 
-		// 2048 bytes in the group buffer and a read; the failing append switches to chunk mode, stacking both chunks and emptying the buffer, unless ChunkModeInterval is shorter, as with AVX-512.
+		// 2048 bytes in the group buffer and a read.
+		// The failing append switches to chunk mode, stacking both chunks and emptying the buffer, unless ChunkModeInterval is shorter, as with AVX-512.
 		BufferedTwoChunks,
 
-		// Reads after 8191 bytes and after 8192, with nothing appended in between but the byte that separates them;
-		// the failing append switches to chunk mode, stacking the eight chunks of the group buffer and emptying it, unless a longer ChunkModeInterval, as without hardware intrinsics, switched already.
+		// Reads after 8191 bytes and after 8192, with nothing appended in between but the byte that separates them.
+		// The failing append switches to chunk mode, stacking the eight chunks of the group buffer and emptying it, unless a longer ChunkModeInterval, as without hardware intrinsics, switched already.
 		BufferedEightChunksAfterReads
 	}
 
 	private const int OutputLength = 131;
 	private const int TimeoutMilliseconds = 30_000;
 
-	// The calling thread spins for about 500 µs, ParallelJob.SpinTicks, before it blocks, so one that still waits this long after Finish started has blocked.
+	// The calling thread spins for 500 µs, ParallelJob.SpinTicks, before it blocks, so one that still waits this long after Finish started has blocked.
 	private const int BlockedAfterMilliseconds = 50;
 
 	private const int HoldMilliseconds = 100;
@@ -234,7 +235,8 @@ public class Blake3ParallelTest
 		}
 	}
 
-	// Queuing a helper may fail for lack of memory; the append then throws and the hasher keeps its input, so the append can be retried.
+	// Queuing a helper may fail for lack of memory.
+	// The append then throws and the hasher keeps its input, so the append can be retried.
 	[Test]
 	[Arguments(StateBeforeFailedAppend.BufferedGroup)]
 	[Arguments(StateBeforeFailedAppend.BufferedChunk)]
@@ -267,7 +269,8 @@ public class Blake3ParallelTest
 		}
 	}
 
-	// With no helper granted, the work takes the serial path, which beats the calling thread hashing every leaf alone; helpers run inline show that only the budget keeps it serial.
+	// With no helper granted, the work takes the serial path, which beats the calling thread hashing every leaf alone.
+	// Helpers run inline show that only the budget keeps it serial.
 	[Test]
 	[Arguments(2)]
 	[Arguments(16)]
@@ -356,7 +359,8 @@ public class Blake3ParallelTest
 		Thread caller = new
 			(() =>
 				{
-					// Interrupted before Finish, the calling thread takes the interrupt while it spins; otherwise the test interrupts it once it has blocked.
+					// Interrupted before Finish, the calling thread takes the interrupt while it spins.
+					// Otherwise the test interrupts it once it has blocked.
 					if (!whileBlocked)
 					{
 						Thread.CurrentThread.Interrupt();
@@ -409,7 +413,8 @@ public class Blake3ParallelTest
 		}
 	}
 
-	// The pool thread that finishes the last item may carry an interrupt meant for other work: waking a blocked calling thread must neither throw it, which would end the process, nor lose it.
+	// The pool thread that finishes the last item may carry an interrupt meant for other work.
+	// Waking a blocked calling thread must neither throw it, which would end the process, nor lose it.
 	[Test]
 	public async Task HelperWithPendingInterruptWakesBlockedCaller()
 	{
@@ -523,8 +528,8 @@ public class Blake3ParallelTest
 		}
 	}
 
-	// On Windows a helper preempted by a busier thread of higher priority can only move to the calling thread's processor, which a caller above the pool's priority would keep busy for as long as it spins;
-	// blocking frees it.
+	// On Windows a helper preempted by a busier thread of higher priority can only move to the calling thread's processor.
+	// A caller above the pool's priority keeps that processor busy for as long as it spins, and blocking frees it.
 	// The busy thread ranks below the caller, so it never preempts the caller itself.
 	// The test narrows the affinity of the whole process, so it runs alone and only on request.
 	[Test]

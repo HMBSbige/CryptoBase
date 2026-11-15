@@ -333,7 +333,8 @@ internal struct Field448
 		result.L7 = l7 & Mask;
 	}
 
-	// ulong.MaxValue if the value is 0 mod p and 0 otherwise. The canonical copy is erased, as the value may be secret.
+	// ulong.MaxValue if the value is 0 mod p and 0 otherwise.
+	// The canonical copy is erased, as the value may be secret.
 	internal static ulong IsZero(in Field448 value)
 	{
 		Reduce(in value, out Field448 r);
@@ -373,7 +374,8 @@ internal struct Field448
 		result.L7 = Select(mask, whenSet.L7, whenClear.L7);
 	}
 
-	// Swaps left and right where mask is set. They must be different variables.
+	// Swaps left and right where mask is set.
+	// They must be different variables.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void ConditionalSwap(ulong mask, ref Field448 left, ref Field448 right)
 	{
@@ -412,7 +414,8 @@ internal struct Field448
 		ConditionalSelect(mask, in negated, in value, out value);
 	}
 
-	// 1/value, and 0 for 0, by SafeGcd on the canonical value. Neither the time nor the addresses depend on value.
+	// 1/value, and 0 for 0, by SafeGcd on the canonical value.
+	// Neither the time nor the addresses depend on value.
 	[SkipLocalsInit]
 	internal static void Invert(in Field448 value, out Field448 result)
 	{

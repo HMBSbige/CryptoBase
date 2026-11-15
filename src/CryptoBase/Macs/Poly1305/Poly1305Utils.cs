@@ -51,7 +51,8 @@ internal static class Poly1305Utils
 		h4 += carry3;
 	}
 
-	// Word 1 of the accumulator is h1 + carry: the carry out of word 0 waits for the next product instead of rippling through h1 and h2, which keeps it off the chain from one block to the next.
+	// Word 1 of the accumulator is h1 + carry.
+	// The carry out of word 0 waits for the next product instead of rippling through h1 and h2, which keeps it off the chain from one block to the next.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Multiply64(ref ulong h0, ref ulong h1, ref ulong h2, ref ulong carry, ulong r0, ulong r1, ulong s1)
 	{

@@ -90,7 +90,7 @@ public class TotpTest
 		await Assert.That(beforeEpoch.GetTimeStep(DateTimeOffset.UnixEpoch.AddTicks(-TimeSpan.TicksPerSecond / 10))).IsEqualTo(1L);
 	}
 
-	// The custom parameters reduce to HOTP with T as the counter; HOTP is checked against RFC 4226.
+	// The custom parameters reduce to HOTP with T as the counter, which is checked against RFC 4226.
 	[Test]
 	[Arguments(1000L, 60, 1000L, 0UL)]
 	[Arguments(1000L, 60, 1059L, 0UL)]

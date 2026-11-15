@@ -133,7 +133,7 @@ public class ChunkedEncryptionStreamTest
 		}
 	}
 
-	// LimitedChunkCipher allows three chunks, so a message of at most 3 * ChunkSize - 1 bytes.
+	// LimitedChunkCipher allows three chunks, so messages of at most 3 * ChunkSize - 1 bytes.
 	// A write that would pass that fails before it takes anything, and the stream stays usable.
 	[Test]
 	[MatrixDataSource]

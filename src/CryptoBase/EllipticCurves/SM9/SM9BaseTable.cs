@@ -8,7 +8,8 @@ internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<T
 {
 	private readonly SM9AffinePoint<TField>[] _entries;
 
-	// The entries come from the kernel of SM9KernelDispatch. A secret G gives a table as secret as it is.
+	// The entries come from the kernel of SM9KernelDispatch.
+	// A secret G gives a table as secret as it is.
 	internal SM9BaseTable(in SM9AffinePoint<TField> generator, int width, bool secret = false)
 	{
 		Width = width;

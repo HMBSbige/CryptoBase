@@ -365,7 +365,8 @@ public sealed partial class Base32Encoding
 		return alphabetKind is Rfc4648HexAlphabetKind ? Vector256.Create("0123456789ABCDEFGHIJKLMNOPQRSTUV"u8) : Vector256.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"u8);
 	}
 
-	// EncodeCore inlines this, custom alphabets included, so its tables are literals rather than the static vectors: a process that only uses custom alphabets never initializes the class statics, and EncodeCore would then keep the initialization helper calls, with the vectors live across them in callee-saved registers that every call saves and restores.
+	// EncodeCore inlines this for every alphabet, so its tables are literals rather than the static vectors.
+	// A process that uses only custom alphabets never initializes the class statics, so EncodeCore would keep the initialization helper calls and save and restore the vectors held across them on every call.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> EncodeVbmiVl128Short(ref byte source, nuint offset, Vector256<byte> alphabet)
 	{

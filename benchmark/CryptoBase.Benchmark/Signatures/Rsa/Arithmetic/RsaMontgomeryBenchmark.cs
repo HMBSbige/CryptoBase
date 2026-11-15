@@ -5,7 +5,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Signatures.Rsa.Arithmetic;
 
-// The kernel that MontgomeryKernelDispatch picks for a modulus of each size: a chain of multiplications or squarings, each taking the previous result, and a constant-time exponentiation with an exponent as long as the modulus.
+// The kernel that MontgomeryKernelDispatch picks for a modulus of each size.
+// It runs a chain of multiplications or squarings, each taking the previous result, and a constant-time exponentiation with an exponent as long as the modulus.
 public class RsaMontgomeryBenchmark
 {
 	private const int Operations = 64;

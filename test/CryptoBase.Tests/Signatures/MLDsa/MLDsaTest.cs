@@ -344,7 +344,7 @@ internal class MLDsaTest<T> where T : class, IMLDsa<T>
 			await Assert.That(() => key.SignPreHash(hash, signature, Sha512Oid, longContext)).Throws<ArgumentOutOfRangeException>().WithParameterName("context");
 			await Assert.That(() => key.VerifyPreHash(hash, signature, Sha512Oid, longContext)).Throws<ArgumentOutOfRangeException>().WithParameterName("context");
 
-			// Unknown hashes, and the 224-bit ones, which no parameter set accepts.
+			// Unknown, malformed and empty OIDs, and SHA-224, which no parameter set accepts.
 			foreach (string oid in (string[])["1.2.3", "2.16.840.1.101.3.4.2.4", "2.16.840.1.101.3.4.2.13", "2.16.840.1.101.3.4.2.01", ""])
 			{
 				await Assert.That(() => key.SignPreHash(hash, signature, oid)).Throws<ArgumentException>().WithParameterName("hashAlgorithmOid");

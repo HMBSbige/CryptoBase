@@ -45,7 +45,8 @@ internal readonly unsafe struct Argon2ReferenceSet
 			int lane = _powerOfTwoLanes ? (int)(j2 & _lanes - 1) : (int)(j2 % _lanes);
 			referenceLane = _memory + lane * (nint)_laneLength;
 
-			// The JIT keeps selections inside loops as branches, and whether the lane is the own one is pseudo-random and would often mispredict, so a mask selects the area.
+			// The JIT keeps selections inside loops as branches, and whether the lane is the own one is pseudo-random and would often mispredict.
+			// So a mask selects the area.
 			uint otherLaneArea = index is 0 ? _otherLaneArea - 1 : _otherLaneArea;
 			uint otherLaneMask = 0u - Unsafe.BitCast<bool, byte>(lane != _lane);
 			areaSize ^= (areaSize ^ otherLaneArea) & otherLaneMask;

@@ -69,7 +69,7 @@ public class ECVariableTimeGroupTest
 		MultipleOfGenerator
 	}
 
-	// A test of its own for each, so that the larger curves run in parallel.
+	// A test of its own for each curve and kind of point, so that the larger curves run in parallel.
 	[Test]
 	[MatrixDataSource]
 	public async Task MultiplyAddMatchesTheReference([MatrixMethod<CurveCase>(nameof(CurveCase.All))] CurveCase curve, [Matrix] PointKind kind)

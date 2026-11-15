@@ -160,7 +160,8 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 		kemContext.Slice(0, length).CopyTo(ciphertext);
 	}
 
-	// Decap. Everything that ciphertext overlaps is read before sharedSecret is written.
+	// Decap.
+	// Everything that ciphertext overlaps is read before sharedSecret is written.
 	[SkipLocalsInit]
 	internal bool TryDecapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
 	{
@@ -270,7 +271,8 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 		HasPrivateSeed = true;
 	}
 
-	// Writes enc and DH(skE, pkR). A derived ephemeral key goes through a key of its own, which is cleared.
+	// Writes enc and DH(skE, pkR).
+	// A derived ephemeral key goes through a key of its own, which is cleared.
 	private void GenerateEphemeral(bool derive, ReadOnlySpan<byte> ephemeralInputKeyMaterial, Span<byte> encapsulatedKey, Span<byte> dh)
 	{
 		if (!derive)

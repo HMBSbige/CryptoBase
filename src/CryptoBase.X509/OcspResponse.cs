@@ -99,7 +99,8 @@ public closed class OcspResponse
 		return new OcspResponderId.ByKey(data.ReadExplicit(ByKeyTag).ReadOctetString());
 	}
 
-	// The certs field: SEQUENCE OF Certificate, of which each element must be DER, and those that are not certificates are skipped.
+	// The certs field: SEQUENCE OF Certificate.
+	// Each element must be a DER element, and those that do not decode as certificates are skipped.
 	private static IReadOnlyList<Certificate> ReadCertificates(ref DerReader basic)
 	{
 		DerReader sequence = basic.ReadExplicit(CertificatesTag).ReadSequence();
@@ -121,7 +122,7 @@ public closed class OcspResponse
 		return certificates.AsReadOnly();
 	}
 
-	// Nonce ::= OCTET STRING(SIZE(1..128)) (RFC 9654, Sec. 2.1), which is null if it has another form.
+	// Nonce ::= OCTET STRING(SIZE(1..128)) (RFC 9654, Sec. 2.1), or null if it has another form.
 	private static ReadOnlyMemory<byte>? ReadNonce(IReadOnlyList<CertificateExtension> extensions)
 	{
 		for (int i = 0; i < extensions.Count; ++i)

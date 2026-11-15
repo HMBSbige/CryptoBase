@@ -59,7 +59,8 @@ public class DistinguishedNameTest
 		yield return () => ("a musical format control removed", Dn(Rdn(Attribute(CommonName, Utf8String, "a\U0001D173b"))), Dn(Rdn(Attribute(CommonName, Utf8String, "ab"))), true);
 		yield return () => ("another supplementary character kept", Dn(Rdn(Attribute(CommonName, Utf8String, "a\U0001D100b"))), Dn(Rdn(Attribute(CommonName, Utf8String, "ab"))), false);
 
-		// RFC 4518, Sec. 2.6.1, keeps a space that a combining mark follows, and an unstable character could be or become one: values that differ by the spaces before one that the preparation removes are not found equal.
+		// RFC 4518, Sec. 2.6.1, keeps a space that a combining mark follows, and an unstable character could be or become one.
+		// So values that differ only by spaces the preparation removes before one are not found equal.
 		yield return () => ("a space at the start before a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, " \u0301a"))), Dn(Rdn(Attribute(CommonName, Utf8String, "\u0301a"))), false);
 		yield return () => ("a space at the start before a combining mark, in the subtree", Dn(Rdn(Attribute(CommonName, Utf8String, "\u0301a"))), Dn(Rdn(Attribute(CommonName, Utf8String, " \u0301a"))), false);
 		yield return () => ("a second space before a combining mark", Dn(Rdn(Attribute(CommonName, Utf8String, "x  \u0301"))), Dn(Rdn(Attribute(CommonName, Utf8String, "x \u0301"))), false);
@@ -95,7 +96,7 @@ public class DistinguishedNameTest
 		yield return () => ("a domain component with a space, among other attributes", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "), Attribute(CommonName, PrintableString, "x"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"), Attribute(CommonName, PrintableString, "x"))), false);
 		yield return () => ("a domain component and another attribute with a space", Dn(Rdn(Attribute(DomainComponent, Ia5String, "COM"), Attribute(CommonName, PrintableString, "x "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"), Attribute(CommonName, PrintableString, "x"))), true);
 
-		// RFC 2985, Secs. 5.2.1, 5.2.2 and 6.1: emailAddress and unstructuredName values match by pkcs9CaseIgnoreMatch, the same characters but for case, without the preparation of RFC 4518, in whatever string type they come.
+		// RFC 2985, Secs. 5.2.1, 5.2.2 and 6.1: emailAddress and unstructuredName match by pkcs9CaseIgnoreMatch, the same characters but for case, without RFC 4518 preparation, in any string type.
 		foreach ((string type, string label) in CaseIgnoreTypes)
 		{
 			yield return () => ($"{label} of another case", Dn(Rdn(Attribute(type, Ia5String, "A@Example.com"))), Dn(Rdn(Attribute(type, Ia5String, "a@eXAMPLE.COM"))), true);
@@ -222,8 +223,9 @@ public class DistinguishedNameTest
 		yield return () => ("another number of attributes", Dn(Rdn(Attribute(CommonName, Utf8String, "É"))), Dn(Rdn(Attribute(CommonName, Utf8String, "é"), Attribute(CommonName, PrintableString, "cd"))), false);
 		yield return () => ("many attributes", Dn(Rdn([.. Enumerable.Range(0, 80).Select(static i => Attribute(CommonName, Utf8String, $"É{i}"))])), Dn(Rdn([.. Enumerable.Range(0, 80).Select(static i => Attribute(CommonName, Utf8String, $"é{i}"))])), true);
 
-		// RFC 5280, Sec. 7.3, asks for a case-insensitive exact match of domainComponent values, but LDAP compares them by caseIgnoreIA5Match (RFC 4519), which ignores insignificant spaces (RFC 4517, Sec. 4.2.7): values equal by either rule could match, while different labels stay apart;
-		// a character beyond ASCII could still fold to another.
+		// RFC 5280, Sec. 7.3, asks for a case-insensitive exact match of domainComponent values, but LDAP uses caseIgnoreIA5Match (RFC 4519), which ignores insignificant spaces (RFC 4517, Sec. 4.2.7).
+		// Values equal by either rule could match, while different labels stay apart.
+		// A character beyond ASCII could still fold to another.
 		yield return () => ("a domain component of another case", Dn(Rdn(Attribute(DomainComponent, Ia5String, "COM"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
 		yield return () => ("a domain component with a space at the end", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
 		yield return () => ("a domain component with a control code", Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "com"))), true);
@@ -245,8 +247,9 @@ public class DistinguishedNameTest
 		yield return () => ("a domain component with a space, beside an unstable one", Dn(Rdn(Attribute(DomainComponent, Utf8String, "É"), Attribute(DomainComponent, Ia5String, "a "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "a"), Attribute(DomainComponent, Ia5String, "x"))), true);
 		yield return () => ("a domain component with a space, beside an unstable one, for others that differ", Dn(Rdn(Attribute(DomainComponent, Utf8String, "É"), Attribute(DomainComponent, Ia5String, "a "))), Dn(Rdn(Attribute(DomainComponent, Ia5String, "b"), Attribute(DomainComponent, Ia5String, "x"))), false);
 
-		// RFC 2985, Sec. 6.1, gives emailAddress and unstructuredName the same characters but for case, but RFC 5280, Sec. 7.1, only requires caseIgnoreMatch, by which a relying party would prepare them by RFC 4518: values equal by either rule could match, while different values stay apart;
-		// a character beyond ASCII could still fold to another.
+		// RFC 2985, Sec. 6.1, matches emailAddress and unstructuredName by the same characters but for case, but RFC 5280, Sec. 7.1, only requires caseIgnoreMatch, which prepares them by RFC 4518.
+		// Values equal by either rule could match, while different values stay apart.
+		// A character beyond ASCII could still fold to another.
 		foreach ((string type, string label) in CaseIgnoreTypes)
 		{
 			yield return () => ($"{label} of another case", Dn(Rdn(Attribute(type, Ia5String, "A@EXAMPLE.COM"))), Dn(Rdn(Attribute(type, Ia5String, "a@example.com"))), true);
@@ -319,7 +322,7 @@ public class DistinguishedNameTest
 		}
 	}
 
-	// The path search compares the issuer and the subject of every certificate, which mostly differ in the letters of a value: that takes no allocation.
+	// The path search compares the issuer and subject of every certificate, which mostly differ in the letters of a value, so that comparison must not allocate.
 	[Test]
 	public async Task TellsApartNamesOfOtherLettersWithoutAllocating()
 	{
@@ -338,7 +341,7 @@ public class DistinguishedNameTest
 		}
 	}
 
-	// A pair of Names whose comparison could take more than MaxEqualityWork counts as different, unless identical; the work is that of Work.
+	// A pair of Names whose product of Work exceeds MaxEqualityWork counts as different, unless identical.
 	[Test]
 	public async Task FindsNamesDifferentBeyondTheLimitOfWork()
 	{

@@ -2,7 +2,8 @@ using CryptoBase.Macs.Kmac;
 
 namespace CryptoBase.Tests.Wycheproof;
 
-// The tag size of each group is the output length L, 128, 256 or 512 bits; the invalid vectors modify the tag.
+// The tag size of each group is the output length L, 128, 256 or 512 bits.
+// The invalid vectors modify the tag.
 public class WycheproofKmacTest
 {
 	[Test]

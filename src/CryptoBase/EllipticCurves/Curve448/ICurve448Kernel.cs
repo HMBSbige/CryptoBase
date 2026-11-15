@@ -14,7 +14,8 @@ internal interface ICurve448Kernel
 	// x and z are tight.
 	static abstract void Ladder(ReadOnlySpan<byte> scalar, in Field448 u, out Field448 x, out Field448 z);
 
-	// [s]B on edwards448 for any s. The extended coordinates of the result depend on s, not only on [s]B.
+	// [s]B on edwards448 for any s.
+	// The extended coordinates of the result depend on s, not only on [s]B.
 	static abstract void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result);
 
 	// [a]A + [b]B for any a and b and any point A of edwards448, whatever its order.

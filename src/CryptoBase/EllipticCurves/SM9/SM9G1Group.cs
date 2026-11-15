@@ -168,7 +168,8 @@ internal static class SM9G1Group
 		result.Z = point.Z;
 	}
 
-	// Adds digit·(±P) from multiples, negated where the digit and the sign of the part differ. Every entry is read.
+	// Adds digit·(±P) from multiples, negated where the digit and the sign of the part differ.
+	// Every entry is read.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void AddDigit(ref SM9Point<SM9Fp> result, ReadOnlySpan<SM9Point<SM9Fp>> multiples, int digit, ulong partSign)
 	{

@@ -36,9 +36,11 @@ internal interface ISM2Field29Lanes<TSelf> where TSelf : unmanaged, ISM2Field29L
 	// Lane i takes lane i + distance for each i whose bit of distance is clear, distance a power of two below LaneCount; the other lanes take any values.
 	static abstract void MoveDown(in TSelf value, int distance, out TSelf result);
 
-	// The coordinates of LaneCount affine points as SM2Field52.Pack writes them, point i at Unsafe.Add(ref entries, 8i), in lane i: each value v below p as 2v, in limbs below 2^29, limb 8 below 2^25.
+	// The coordinates of LaneCount affine points as SM2Field52.Pack writes them, point i at Unsafe.Add(ref entries, 8i), in lane i.
+	// Each value v below p comes as 2v, in limbs below 2^29, limb 8 below 2^25.
 	static abstract void LoadEntries(ref readonly ulong entries, out TSelf x, out TSelf y);
 
-	// value/2 mod p, for limbs below 2^63, as SM2Field29 describes it, for Reduce: it takes an element of the lanes, a·2^261, to the a·2^260 of SM2Field52, whose limbs SM2Field29.ToField52 joins.
+	// value/2 mod p, for limbs below 2^63, as SM2Field29 describes it.
+	// Followed by Reduce, it takes an element of the lanes, a·2^261, to the a·2^260 of SM2Field52, whose limbs SM2Field29.ToField52 joins.
 	static abstract void Halve(in TSelf value, out TSelf result);
 }

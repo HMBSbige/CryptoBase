@@ -58,7 +58,8 @@ public class SM2EncryptionTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// A public key encrypts; only the private key decrypts, and other keys fail.
+	// A public key encrypts.
+	// Only the private key decrypts, and other keys fail.
 	[Test]
 	public async Task OnlyThePrivateKeyDecrypts()
 	{
@@ -114,7 +115,8 @@ public class SM2EncryptionTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// GB/T 32918.4-2016, Sec. 7.1, B1: C1 must be a point on the curve, here uncompressed; and a ciphertext needs a C2 of at least one byte.
+	// GB/T 32918.4-2016, Sec. 7.1, B1: C1 must be a point on the curve, here uncompressed.
+	// A ciphertext also needs a C2 of at least one byte.
 	[Test]
 	public async Task InvalidC1AndShortCiphertextsFail()
 	{
@@ -192,7 +194,8 @@ public class SM2EncryptionTest
 		}
 	}
 
-	// Coordinates of fewer than 32 significant bytes give shorter INTEGERs, and a top bit set the 0 byte of their sign; the first k of each kind of C1 = k·G, from k = 1 on, has one of each.
+	// Coordinates of fewer than 32 significant bytes give shorter INTEGERs, and a top bit set the 0 byte of their sign.
+	// The first k of each kind of C1 = k·G, from k = 1 on, has one of each.
 	[Test]
 	public async Task SM2CiphersTakeEveryLengthOfCoordinate()
 	{
@@ -349,7 +352,8 @@ public class SM2EncryptionTest
 		await Assert.That(valid).All(static value => value);
 	}
 
-	// A key counts its encryptions in both formats and builds the table of its public key at the threshold; from the same k, the ciphertexts before and after it are those of the reference.
+	// A key counts its encryptions in both formats and builds the table of its public key at the threshold.
+	// From the same k, the ciphertexts before and after it are those of the reference.
 	[Test]
 	public async Task EncryptionsBeforeAndAfterTheTableMatchTheReference()
 	{
@@ -385,7 +389,8 @@ public class SM2EncryptionTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// From the table, the smallest and the largest k and those whose last addition of k·P without the table meets equal points; SM2KernelTest takes the k around the windows of each kernel.
+	// From the table, the smallest and the largest k and those whose last addition of k·P without the table meets equal points.
+	// SM2KernelTest takes the k around the windows of each kernel.
 	[Test]
 	public async Task EdgeEphemeralKeysEncryptFromTheTable()
 	{
@@ -419,7 +424,8 @@ public class SM2EncryptionTest
 		}
 	}
 
-	// Threads that encrypt with a new key at once cross the threshold together and may each build the table; every ciphertext must still be that of the reference.
+	// Threads that encrypt with a new key at once cross the threshold together and may each build the table.
+	// Every ciphertext must still be that of the reference.
 	// Each thread meets the others once, at the barrier, before its share of the encryptions.
 	[Test]
 	public async Task ConcurrentEncryptionsAcrossTheThresholdMatchTheReference()

@@ -434,7 +434,8 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// The last arc of the OID of a hash that HashML-DSA may use, all under 2.16.840.1.101.3.4.2, checked against the hash length.
-	// The collision strength of the hash, half its output, must be at least λ, which leaves out the 224-bit hashes.
+	// The collision strength of the hash, half its output, must be at least λ.
+	// The table leaves out the 224-bit hashes, which fall short of every λ.
 	private static byte GetHashAlgorithmArc(string hashAlgorithmOid, int hashLength)
 	{
 		(byte arc, int length) = hashAlgorithmOid switch
@@ -869,7 +870,8 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		return SignatureLength;
 	}
 
-	// ML-DSA.Verify_internal (Algorithm 8) after μ. The signature is public, so it may steer branches.
+	// ML-DSA.Verify_internal (Algorithm 8) after μ.
+	// The signature is public, so it may steer branches.
 	[SkipLocalsInit]
 	private bool VerifyMu<TKernel>(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) where TKernel : IMLDsaKernel
 	{
@@ -976,7 +978,8 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		return !hints.Slice(index, omega - index).ContainsAnyExcept((byte)0);
 	}
 
-	// HintBitPack (Algorithm 20). The hints are part of the signature, so they may steer branches.
+	// HintBitPack (Algorithm 20).
+	// The hints are part of the signature, so they may steer branches.
 	private static void EncodeHints(ReadOnlySpan<int> hints, Span<byte> destination)
 	{
 		int omega = TParameters.Omega;

@@ -58,7 +58,8 @@ public sealed class Certificate
 
 		SerialNumber = tbs.ReadIntegerBytes();
 
-		// The outer signature algorithm is an AlgorithmIdentifier, so the same bytes are one.
+		// RFC 5280, Sec. 4.1.2.3, requires the same algorithm as the outer signatureAlgorithm.
+		// That one has been read as an AlgorithmIdentifier, so equal bytes need no parse of their own.
 		if (!tbs.ReadEncodedValue().Span.SequenceEqual(SignatureAlgorithm.Encoded.Span))
 		{
 			throw new AsnContentException();
@@ -349,19 +350,22 @@ public sealed class Certificate
 		return DecodedExtensions.CrlDistributionPoints.GetValueOrThrow("CRL distribution points");
 	}
 
-	// The value of the basic constraints extension (RFC 5280, Sec. 4.2.1.9), decoded on first use, or null without it; CryptographicException if it does not decode.
+	// The value of the basic constraints extension (RFC 5280, Sec. 4.2.1.9), decoded on first use, or null without it.
+	// Throws CryptographicException if it does not decode.
 	internal BasicConstraints? GetBasicConstraints()
 	{
 		return DecodedExtensions.BasicConstraints.GetValueOrThrow("basic constraints");
 	}
 
-	// The value of the extended key usage extension (RFC 5280, Sec. 4.2.1.12), decoded on first use, or null without it; CryptographicException if it does not decode.
+	// The value of the extended key usage extension (RFC 5280, Sec. 4.2.1.12), decoded on first use, or null without it.
+	// Throws CryptographicException if it does not decode.
 	internal ExtendedKeyUsage? GetExtendedKeyUsage()
 	{
 		return DecodedExtensions.ExtendedKeyUsage.GetValueOrThrow("extended key usage");
 	}
 
-	// A certificate that holds a slice of memory that outlives it, without a copy; AsnContentException if it is not DER-encoded.
+	// A certificate over memory that outlives it, without a copy.
+	// Throws AsnContentException if it is not DER-encoded.
 	internal static Certificate Read(ReadOnlyMemory<byte> encoded)
 	{
 		return new Certificate(encoded);
@@ -380,7 +384,8 @@ public sealed class Certificate
 		}
 	}
 
-	// Each extnID at most once, and a key usage extension that decodes, in DER alone with derKeyUsage; the result is its key usage, or null without it.
+	// Checks that each extnID appears at most once and that a key usage extension decodes, as strict DER only with derKeyUsage.
+	// Returns the key usage, or null without the extension.
 	// CertificateBuilder checks its extensions with this before signing, so that it writes DER.
 	internal static X509KeyUsageFlags? CheckExtensions(IReadOnlyList<CertificateExtension> extensions, bool derKeyUsage = false)
 	{
@@ -414,8 +419,8 @@ public sealed class Certificate
 
 	// KeyUsage ::= BIT STRING { digitalSignature (0), …, decipherOnly (8) }, of which RFC 5280 requires at least one.
 	// Bits 0 through 7 are the first byte from its most significant bit, and bit 8 is the most significant bit of the second, as in X509KeyUsageFlags.
-	// DER drops the trailing zero bits (X.690, Sec. 11.2.2), but some CA certificates in use keep them, so trailing zeros are accepted, even in whole bytes, unless der asks for DER;
-	// the unused bits must still be zero.
+	// DER drops the trailing zero bits (X.690, Sec. 11.2.2), but some CA certificates in use keep them, so trailing zeros are accepted, even in whole bytes, unless der is set.
+	// The unused bits must still be zero.
 	private static X509KeyUsageFlags ReadKeyUsage(ReadOnlySpan<byte> source, bool der)
 	{
 		ValueAsnReader reader = new(source, AsnEncodingRules.DER);
@@ -438,7 +443,7 @@ public sealed class Certificate
 		DerReader sequence = reader.ReadSequence();
 		sequence.ThrowIfEmpty();
 
-		// Enough for nearly every certificate, so that the list grows at most once.
+		// Enough for nearly every certificate, so the list rarely grows.
 		List<CertificateExtension> extensions = new(16);
 
 		while (sequence.HasData)

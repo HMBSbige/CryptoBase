@@ -83,7 +83,8 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		}
 	}
 
-	// The mirror of Ntt. The sums double in each layer, so they stay below 256q < 2^31 without reduction.
+	// The mirror of Ntt.
+	// The sums double in each layer, so they stay below 256q < 2^31 without reduction.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void InverseNtt(Span<int> f)
 	{

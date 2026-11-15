@@ -2,8 +2,8 @@ namespace CryptoBase.X509;
 
 // What one validation may still retrieve, so that the URIs of the certificates cannot make it work or wait without bound.
 // The limits are counted down here alone, and GetAsync and PostAsync are the only way that a validation retrieves, so that no retrieval goes uncounted.
-// The first limit that stops the retrieval of issuers becomes Limit, which the result of a validation without a valid path reports;
-// a revocation check that reaches one learns nothing more, so that the status is unknown instead.
+// The first limit that stops the retrieval of issuers becomes Limit, which the result of a validation without a valid path reports.
+// A revocation check that reaches one learns nothing more, so that the status is unknown instead.
 internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, CertificateValidationContext context, CancellationToken cancellationToken)
 {
 	public const int MaxIssuerRounds = 8;
@@ -11,7 +11,8 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 	public const long MaxRetrievedBytes = 64L << 20;
 	public const int MaxRetrievedIssuers = 32;
 
-	// The requests that a validation prepares from the URIs of its certificates, as a certificate may name any number: each URI of the issuers that is new to the validation, each OCSP responder asked and each CRL URI looked up, whether retrieved or answered from a cache.
+	// The requests that a validation prepares from the URIs of its certificates, as a certificate may name any number.
+	// Each URI of the issuers that is new to the validation, each OCSP responder asked and each CRL URI looked up counts, whether retrieved or answered from a cache.
 	// The URIs beyond the limit are left out; four times the retrievals leaves room for those that a cache answers.
 	public const int MaxRequests = 4 * MaxRetrievals;
 
@@ -21,7 +22,8 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 	public const int MaxOcspResponseLength = 1 << 16;
 	public const int MaxCrlLength = 32 << 20;
 
-	// A timer cannot be longer than about 49 days; a retrieval toward a deadline beyond this is canceled once it has waited this long, as what it would give is then worth nothing.
+	// A timer cannot be longer than about 49 days.
+	// A retrieval toward a deadline beyond this is canceled once it has waited this long, as what it would give is then worth nothing.
 	private static readonly TimeSpan MaxDeadlineTimer = TimeSpan.FromDays(30);
 
 	private int _issuerRoundsLeft = MaxIssuerRounds;
@@ -76,7 +78,7 @@ internal sealed class RetrievalBudget(ICertificateDataRetriever? retriever, Cert
 	}
 
 	// Empty if nothing may be retrieved any more, as by the limits or the deadline, or if the retrieval fails or returns more than limit.
-	// Only the cancellation of the validation throws.
+	// Of the cancellations, only that of the validation throws; any other exception of the retriever escapes.
 	private async ValueTask<ReadOnlyMemory<byte>> RetrieveAsync(Uri uri, ReadOnlyMemory<byte> content, string? contentType, int limit)
 	{
 		int maxLength = (int)Math.Min(limit, _retrievedBytesLeft);

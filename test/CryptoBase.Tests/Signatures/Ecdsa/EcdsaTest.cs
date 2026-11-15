@@ -241,7 +241,7 @@ internal class EcdsaTest<T> where T : class, IEcdsa<T>
 		}
 	}
 
-	// e ≡ 0 makes u1·G the point at infinity.
+	// Hashes from empty to longer than n, truncated to its bit length, and hashes with e ≡ 0, which make u1·G the point at infinity.
 	[Test]
 	public async Task HashesOfAnyLengthAreTruncated()
 	{

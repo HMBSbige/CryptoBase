@@ -1,6 +1,7 @@
 namespace CryptoBase.Internal;
 
-// Reads that ValueAsnReader lacks. Malformed input throws AsnContentException.
+// Reads that ValueAsnReader lacks.
+// Malformed input throws AsnContentException.
 internal static class ValueAsnReaderExtensions
 {
 	extension(scoped ref ValueAsnReader reader)

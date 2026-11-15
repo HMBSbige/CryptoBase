@@ -83,7 +83,8 @@ public class SM9KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The final exponentiation of each kernel against that of SM9FinalExponentiation, which SM9PairingTest checks against the plain power: on random elements, on elements of Fp6, whose conjugates are themselves, on elements with C0 = 0, on 1 and on coefficients of extreme raw values.
+	// The final exponentiation of each kernel against SM9FinalExponentiation, which SM9PairingTest checks against the plain power.
+	// Inputs: random elements, elements of Fp6, whose conjugates are themselves, elements with C0 = 0, 1, and coefficients of extreme raw values.
 	[Test]
 	[MethodDataSource(typeof(SM9KernelCase), nameof(SM9KernelCase.All))]
 	public async Task FinalExponentiationsMatchTheScalarOne(SM9KernelCase kernel)
@@ -120,7 +121,9 @@ public class SM9KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The product of two Miller loops with lines gives e(P, Q)·e(P', Q') after the final exponentiation: for random points, the product of the two pairings, and for the verification of GM/T 0044.5 A.2, e([h1]S, P2)·e(S + [h]P1, Ppub-s) = e(S, [h1]P2 + Ppub-s)·g^h = u·t, the w of the signature.
+	// The product of two Miller loops with lines gives e(P, Q)·e(P', Q') after the final exponentiation.
+	// For random points that is the product of the two pairings.
+	// For the verification of GM/T 0044.5 A.2 it is e([h1]S, P2)·e(S + [h]P1, Ppub-s) = e(S, [h1]P2 + Ppub-s)·g^h = u·t, the w of the signature.
 	[Test]
 	[MethodDataSource(typeof(SM9KernelCase), nameof(SM9KernelCase.All))]
 	public async Task PairingProductsMatchTheirFactors(SM9KernelCase kernel)
@@ -196,7 +199,7 @@ public class SM9KernelTest
 		}
 	}
 
-	// The powers of GM/T 0044.5: w = g^r and t = g^h of the signature, g1 = e(Ppub-e, P2)^rA, g2 = e(Ppub-e, P2)^rB and g3 = g1^rB of the key exchange, and w = g^r of the encapsulation and the encryption.
+	// The powers of GM/T 0044.5: w = g^r and t = g^h of the signature, g1 = e(Ppub-e, P2)^rA, g2 = e(Ppub-e, P2)^rB and g3 = g1^rB of the key exchange, and w = g^r of the encapsulation and encryption.
 	[Test]
 	[MethodDataSource(typeof(SM9KernelCase), nameof(SM9KernelCase.All))]
 	public async Task PowersGiveTheExamples(SM9KernelCase kernel)
@@ -384,7 +387,9 @@ public class SM9KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The tables of a point of G1 and of one of G2 for the widths 4, 5 and 6, whose 65, 52 and 43 windows fill the last round of lanes or leave some of it, public and secret, entry by entry against those of the scalar kernel, whose first and last windows hold j·2^(wi)·G as the reference has it.
+	// The public and secret tables of a point of G1 and of one of G2, entry by entry against those of the scalar kernel.
+	// The widths 4, 5 and 6 give 65, 52 and 43 windows, which fill the last round of lanes or leave some of it.
+	// The first and last windows of the scalar kernel must hold j·2^(wi)·G as the reference has it.
 	[Test]
 	[MethodDataSource(typeof(SM9KernelCase), nameof(SM9KernelCase.All))]
 	public async Task BaseTablesMatchTheReference(SM9KernelCase kernel)
@@ -469,9 +474,10 @@ public class SM9KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The points of GM/T 0044.5: Ppub-s = [ks]P2, dsA = [t2]P1, S = [l]dsA and P = [h1]P2 + Ppub-s of the signature;
-	// Ppub-e = [ke]P1, deA = [t2]P2, deB = [t4]P2, QB = [h1]P1 + Ppub-e, RA = [rA]QB and RB = [rB]QA of the key exchange;
-	// Ppub-e, deB, QB and C = [r]QB of the encapsulation, and C1 of the encryption.
+	// The points of GM/T 0044.5.
+	// Signature: Ppub-s = [ks]P2, dsA = [t2]P1, S = [l]dsA and P = [h1]P2 + Ppub-s.
+	// Key exchange: Ppub-e = [ke]P1, deA = [t2]P2, deB = [t4]P2, QA and QB, each [h1]P1 + Ppub-e for its user's h1, RA = [rA]QB and RB = [rB]QA.
+	// Encapsulation and encryption: Ppub-e, deB, QB, C = [r]QB and C1.
 	[Test]
 	[MethodDataSource(typeof(SM9KernelCase), nameof(SM9KernelCase.All))]
 	public async Task ProductsGiveTheExamples(SM9KernelCase kernel)
@@ -484,7 +490,8 @@ public class SM9KernelTest
 		G1Value exchangeQB = G1(ExchangeQBX, ExchangeQBY);
 		G1Value exchangeQA = G1(ExchangeQAX, ExchangeQAY);
 		G1Value encapsulateQB = G1(EncapsulateQBX, EncapsulateQBY);
-		// H1 of Bob for the key exchange, which the example prints with the identifier 02 but computes with 03, as does its key; that of the encapsulation and encryption; that of Alice.
+		// hB is H1 of Bob, for the key exchange and for the encapsulation and encryption, and hA that of Alice.
+		// The key-exchange example prints Bob's H1 with the identifier 02 but computes it, as it does his key, with 03.
 		BigInteger hB = Parse("9CB1F628 8CE0E510 43CE7234 4582FFC3 01E0A812 A7F5F200 4B85547A 24B82716");
 		BigInteger hA = Parse("32DEE8AA D2DF2DB7 2C087F89 AA5FDA45 1B94D31A BD03F8E3 6A057FE2 CD160014");
 		List<string> failures = [];
@@ -544,8 +551,8 @@ public class SM9KernelTest
 		return new PowerCases(Element(point), pairing, [.. ((List<BigInteger>)[0, .. Scalars(random, RandomCount)]).Select(k => (k, pairing.Pow(k)))]);
 	}
 
-	// The tables of a point as a key has them, public and secret, the second of another width;
-	// for the sums that may be the point at infinity, 5·P1 − 5·P1 and a·P1 + b·Q for Q = λP1 and a = −bλ, the point −5·P1 and the table of Q.
+	// The public and secret tables of a point, as a key has them, of widths 5 and 4.
+	// For the sums that may be the point at infinity, 5·P1 − 5·P1 and a·P1 + b·Q for Q = λP1 and a = −bλ: the point −5·P1 and the table of Q.
 	private static G1Cases ComputeG1Cases()
 	{
 		Random random = new(3);
@@ -667,7 +674,8 @@ public class SM9KernelTest
 		}
 	}
 
-	// [r]Q = [r·h1]P1 + [r]Ppub-e for the user public key Q = [h1]P1 + Ppub-e, from the tables of P1 and Ppub-e, as an encryption or key exchange takes it once its key has the table.
+	// [r]Q = [r·h1]P1 + [r]Ppub-e for the user public key Q = [h1]P1 + Ppub-e, from the tables of P1 and Ppub-e.
+	// An encryption or key exchange takes this path once its key has the table.
 	private static void CheckUserKeyG1(SM9KernelCase kernel, List<string> failures, BigInteger h1, G1Value masterPublicKey, string r, G1Value expected)
 	{
 		BigInteger k = Parse(r);

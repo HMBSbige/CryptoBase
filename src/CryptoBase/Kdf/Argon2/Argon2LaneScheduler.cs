@@ -2,11 +2,13 @@ using static CryptoBase.Internal.ThreadInterrupts;
 
 namespace CryptoBase.Kdf.Argon2;
 
-// With several lanes, pool threads queued once claim lanes alongside the calling thread and wait between phases, which costs far less than handing every slice to Parallel.For.
+// With several lanes, pool threads queued once claim lanes alongside the calling thread and wait between phases.
+// That costs far less than handing every slice to Parallel.For.
 // The calling thread processes every lane nobody has claimed, so progress never depends on a helper starting.
 internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelism) : ThreadPoolHelper
 {
-	// Threads waiting between phases spin for about 500 µs before blocking: long enough to cover the usual stagger between lanes of a phase, short enough not to hold a core while other derivations need it.
+	// Threads waiting between phases spin for 500 µs before blocking.
+	// That covers the usual stagger between lanes of a phase without holding a core while other derivations need it.
 	private static readonly long SpinTicks = Stopwatch.Frequency / 2000;
 
 	private readonly int _helpers = HelperCount(lanes, maxDegreeOfParallelism);
@@ -40,7 +42,8 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 		QueueHelpers(_helpers);
 	}
 
-	// Once this returns, no helper processes a lane, so the caller can release the memory; an interrupt therefore cannot cut it short.
+	// Once this returns, no helper processes a lane, so the caller can release the memory.
+	// An interrupt therefore cannot cut it short.
 	// A helper that has not started yet will see _finished before claiming anything.
 	// If a phase was cut short, helpers may still be processing its lanes, possibly whole segments, so this waits for them to leave, sleeping rather than holding a core.
 	protected void StopHelpers()
@@ -78,7 +81,8 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 		WaitWhile(static (scheduler, _) => Volatile.Read(ref scheduler._pendingLanes) is not 0, 0);
 	}
 
-	// A pool thread may carry an interrupt meant for other work, and an exception escaping a work item ends the process, so the waits of a helper retry after an interrupt, which is raised again afterwards.
+	// A pool thread may carry an interrupt meant for other work, and an exception escaping a work item ends the process.
+	// So the waits of a helper retry after an interrupt, which is raised again afterwards.
 	internal override void Help()
 	{
 		Interlocked.Increment(ref _runningHelpers);
@@ -113,7 +117,8 @@ internal abstract class Argon2LaneScheduler(int lanes, int maxDegreeOfParallelis
 		return Volatile.Read(ref _finished) is 0;
 	}
 
-	// Counting the thread as blocked is a full fence that pairs with the one publishing each awaited change before WakeBlockedThreads: either the publisher sees the thread blocked, or the thread sees the change.
+	// Counting the thread as blocked is a full fence that pairs with the one publishing each awaited change before WakeBlockedThreads.
+	// Either the publisher sees the thread blocked, or the thread sees the change.
 	private void WaitWhile(Func<Argon2LaneScheduler, uint, bool> keepWaiting, uint state)
 	{
 		long spinDeadline = Stopwatch.GetTimestamp() + SpinTicks;

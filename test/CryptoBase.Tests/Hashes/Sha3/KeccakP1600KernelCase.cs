@@ -19,7 +19,8 @@ public abstract class KeccakP1600KernelCase : IKernelCase
 		return All().Single(kernel => kernel.Lanes == lanes);
 	}
 
-	// The lanes between which KeccakP1600Times2.Permute picks by the CPU model, so that on any one runner the kernel leaves the other untested; these cases run each wherever it is supported.
+	// The two-lane kernels between which KeccakP1600Times2.Permute picks by the CPU model, so a runner reaches only one through it.
+	// These cases run each wherever it is supported.
 	public static IEnumerable<KeccakP1600KernelCase> Variants()
 	{
 		yield return new Variant<KeccakP1600Times2>(KeccakP1600Times2.IsSupported);

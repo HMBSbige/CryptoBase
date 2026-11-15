@@ -5,9 +5,9 @@ namespace CryptoBase.Tests.KeyAgreements.Xdh;
 
 internal static class X25519TestUtils
 {
-	// Every encoding of a u-coordinate whose point has an order dividing 8, so that X25519 gives 0 with every private key: those of the torsion points of the curve, 0, 1 and the two of order 8, and p − 1, of order 4 on the twist;
-	// 0 and 1 also as p and p + 1;
-	// and each of these with bit 255 set.
+	// Every encoding of a u-coordinate whose point has an order dividing 8, so that X25519 gives 0 with every private key.
+	// They are the torsion points of the curve, 0, 1 and the two of order 8, and p − 1, of order 4 on the twist.
+	// 0 and 1 also appear as p and p + 1, and each of these with bit 255 set.
 	public static byte[][] SmallOrderPublicKeys()
 	{
 		IEnumerable<BigInteger> values = TorsionPoints().Select(ToMontgomeryU).Append(P - 1).Distinct();

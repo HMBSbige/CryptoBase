@@ -385,7 +385,8 @@ public sealed class PlatformRsaKey : ISignatureKey
 		return Supported(Pkcs1Algorithms, publicKey);
 	}
 
-	// Whether the platform signs the probe message with algorithm, and the signature verifies; error is what the platform threw.
+	// Whether the platform signs the probe message with algorithm, and the signature verifies.
+	// error is what the platform threw.
 	private static bool TrySign(RSA key, RsaPublicKey publicKey, SignatureAlgorithm algorithm, Span<byte> signature, out Exception? error)
 	{
 		try
@@ -456,7 +457,8 @@ public sealed class PlatformRsaKey : ISignatureKey
 		return new InvalidOperationException(_key is null ? "The instance does not hold the private key." : "The private key is not exportable.");
 	}
 
-	// An RSA public key within the bounds, which verifies without the platform. Instances are immutable.
+	// An RSA public key within the bounds, which verifies without the platform.
+	// Instances are immutable.
 	private readonly struct RsaPublicKey
 	{
 		private RsaPublicKey(BigInteger modulus, BigInteger exponent, int modulusBits)
@@ -545,7 +547,8 @@ public sealed class PlatformRsaKey : ISignatureKey
 			return pss ? IsPssEncoding(encoded, hash, digest) : IsPkcs1Encoding(encoded, algorithm, digest);
 		}
 
-		// EM = 0x00 || 0x01 || PS || 0x00 || T (RFC 8017, Sec. 9.2), compared with the encoded message byte for byte for each DigestInfo: the lengths of PS and T follow from k and the hash, so nothing is parsed.
+		// EM = 0x00 || 0x01 || PS || 0x00 || T (RFC 8017, Sec. 9.2), compared with the encoded message byte for byte for each DigestInfo.
+		// The lengths of PS and T follow from k and the hash, so nothing is parsed.
 		private static bool IsPkcs1Encoding(ReadOnlySpan<byte> encoded, SignatureAlgorithm algorithm, ReadOnlySpan<byte> digest)
 		{
 			return algorithm switch
@@ -556,7 +559,8 @@ public sealed class PlatformRsaKey : ISignatureKey
 			};
 		}
 
-		// EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) with emBits = modBits − 1, MGF1 with the hash, and sLen = hLen; Fits passed step 3.
+		// EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) with emBits = modBits − 1, MGF1 with the hash, and sLen = hLen.
+		// Fits passed step 3.
 		// encoded is changed.
 		private bool IsPssEncoding(Span<byte> encoded, HashAlgorithmName hash, ReadOnlySpan<byte> digest)
 		{
@@ -633,7 +637,7 @@ public sealed class PlatformRsaKey : ISignatureKey
 			return start < 0 ? default : value.Slice(start);
 		}
 
-		// Of a value without leading zeros.
+		// The bit length of a nonempty value without leading zero bytes.
 		private static int GetBitLength(ReadOnlySpan<byte> value)
 		{
 			return 8 * value.Length - BitOperations.LeadingZeroCount(value[0]) + 24;

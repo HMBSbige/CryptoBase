@@ -9,7 +9,7 @@ public class Field448Test
 {
 	private const int RandomCount = 40;
 
-	// In multiples of 2^56: the largest that xy ≤ 12.25 allows with either side at most 8.
+	// Limb bounds x·2^56 and y·2^56 within xy ≤ 12.25 and x, y ≤ 8: 3.5 by 3.5, 8 by 49/32 either way, and 4 by 3 either way.
 	private static readonly (ulong Left, ulong Right)[] ProductBounds = [(SquareBound, SquareBound), (8UL << 56, (49UL << 56) / 32), (1UL << 58, 3UL << 56), (3UL << 56, 1UL << 58), ((49UL << 56) / 32, 8UL << 56)];
 
 	[Test]

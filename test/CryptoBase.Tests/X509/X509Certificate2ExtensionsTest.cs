@@ -16,7 +16,7 @@ namespace CryptoBase.Tests.X509;
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class X509Certificate2ExtensionsTest
 {
-	// The private key stays with the platform, which exports this one, and the key outlives the certificate.
+	// The private key stays with the platform even though the platform could export it, and the key outlives the certificate.
 	[Test]
 	[MatrixDataSource]
 	public async Task PrivateKeysSignThroughThePlatform([Matrix(256, 384, 521)] int curveBits)
@@ -46,7 +46,7 @@ public class X509Certificate2ExtensionsTest
 			return;
 		}
 
-		// CopyWithPrivateKey exports an ephemeral key, so the key is persisted, under a name of its own, until the test deletes it.
+		// CopyWithPrivateKey would export an ephemeral key, so the key is persisted under a unique name until the test deletes it.
 		CngKey cngKey = CngKey.Create(CngAlgorithm.ECDsaP256, $"CryptoBase.Tests.{Guid.NewGuid():N}", new CngKeyCreationParameters { ExportPolicy = CngExportPolicies.None });
 
 		try
@@ -65,7 +65,7 @@ public class X509Certificate2ExtensionsTest
 		}
 	}
 
-	// An RSA key, which the platform exports here, signs through the platform with both paddings, and outlives the certificate.
+	// An RSA key signs through the platform with both paddings, even though the platform could export it, and outlives the certificate.
 	[Test]
 	public async Task RsaPrivateKeysSignThroughThePlatform()
 	{

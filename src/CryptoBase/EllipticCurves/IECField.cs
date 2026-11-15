@@ -4,8 +4,10 @@ namespace CryptoBase.EllipticCurves;
 
 // The field of p for a curve with a = −3.
 // An implementation is the storage of one element, a sequence of ulong limbs, so that points hold it directly, and its static members are the arithmetic.
-// Multiply, Square and the inversions work in Montgomery form, Export takes and FromLimbs and TryImport give the plain value, and whether a value is in that form is otherwise up to the caller.
-// An element need not be below p: an implementation states the form that its members take and give, and every result but those of AddUnreduced and SubtractUnreduced is in that form.
+// Multiply, Square and the inversions work in Montgomery form.
+// Export takes, and FromLimbs and TryImport give, the plain value; otherwise whether a value is in Montgomery form is up to the caller.
+// An element need not be below p.
+// An implementation states the form that its members take and give, and every result but those of AddUnreduced and SubtractUnreduced is in that form.
 // No member but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
 // Any result may be the same variable as an input.
 // The point formulas are members too, so that a field can choose where to reduce between steps;
@@ -35,7 +37,8 @@ internal interface IECField<TSelf> : IPrimeModulus where TSelf : unmanaged, IECF
 	// 0 gives 0.
 	static abstract void Invert(in TSelf value, out TSelf result);
 
-	// The time depends on value, which must be public. 0 gives 0.
+	// The time depends on value, which must be public.
+	// 0 gives 0.
 	static abstract void InvertVariableTime(in TSelf value, out TSelf result);
 
 	// Limb by limb without carries; the caller keeps the result within what the next operation takes.
@@ -117,7 +120,8 @@ internal interface IECField<TSelf> : IPrimeModulus where TSelf : unmanaged, IECF
 		ECFormulas<TSelf>.Double(in value, out result);
 	}
 
-	// Sets result to left + right for points that are not the point at infinity, except that equal points give (0, 0, 0); opposite points give Z = 0, the point at infinity.
+	// Sets result to left + right for points that are not the point at infinity, except that equal points give (0, 0, 0).
+	// Opposite points give Z = 0, the point at infinity.
 	// Returns ulong.MaxValue if the points are equal, which is where H = 0 and R = 0, and 0 otherwise.
 	// The result may be either input.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

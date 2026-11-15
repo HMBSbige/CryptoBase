@@ -65,7 +65,8 @@ public class CShakeTest
 		}
 	}
 
-	// The prefix takes one block for short strings, and two for the pair of rate and rate - 8 bytes: 2 + (3 + rate) + (3 + rate - 8) bytes end on the boundary.
+	// The prefix takes one block for short strings, and two for the pair of rate and rate - 8 bytes.
+	// 2 + (3 + rate) + (3 + rate - 8) bytes end on the boundary.
 	// The lengths of the last pair, 65536 bits and more, take three bytes to encode.
 	[Test]
 	[GenerateGenericTest(typeof(CShake128Xof))]

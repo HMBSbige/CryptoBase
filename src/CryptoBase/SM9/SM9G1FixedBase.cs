@@ -27,7 +27,8 @@ internal sealed class SM9G1FixedBase : IDisposable
 
 	internal ref readonly SM9AffinePoint<SM9Fp> Point => ref _point;
 
-	// k·Q for k in [1, N − 1]. Neither the time nor the addresses depend on k or Q.
+	// k·Q for k in [1, N − 1].
+	// Neither the time nor the addresses depend on k or Q.
 	internal void Multiply(in FieldElement<SM9Order> scalar, out SM9AffinePoint<SM9Fp> result)
 	{
 		if (GetTable() is { } table)

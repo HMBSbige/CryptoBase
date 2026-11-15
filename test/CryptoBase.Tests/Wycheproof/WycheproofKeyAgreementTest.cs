@@ -44,7 +44,8 @@ public class WycheproofKeyAgreementTest
 		return VerifyXdh<X448>(vector);
 	}
 
-	// Every vector, valid or acceptable, gives its shared secret, twist points and non-canonical u-coordinates included, except the ZeroSharedSecret ones: their all-zero secret must give false.
+	// Every vector, valid or acceptable, gives its shared secret, twist points and non-canonical u-coordinates included.
+	// The ZeroSharedSecret ones are the exception: their all-zero secret must give false.
 	// The invalid ones, only in X448, have public keys of the wrong length.
 	private static async Task VerifyXdh<T>(XdhTestVector vector) where T : class, IKeyAgreement<T>
 	{

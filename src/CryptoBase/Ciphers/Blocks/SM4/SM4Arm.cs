@@ -10,8 +10,8 @@ internal readonly struct SM4Arm : ISM4Kernel
 		get => Sm4.IsSupported && AdvSimd.Arm64.IsSupported;
 	}
 
-	// The Neoverse N2, V1 and V2 run SM4E down one pipeline at one a cycle with a latency of four, so four blocks keep it busy;
-	// eight, as in OpenSSL and Linux, halve the round key loads for each block.
+	// The Neoverse N2, V1 and V2 issue SM4E down one pipeline, one a cycle with a latency of four, so four blocks keep it busy.
+	// Eight, as in OpenSSL and Linux, halve the round key loads for each block.
 	public static int MaxBlocks => 8;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -19,7 +19,8 @@ internal readonly struct SM4Arm : ISM4Kernel
 	{
 		Debug.Assert(IsSupported && width is 4 or 8 && count > 0 && count <= width);
 
-		// The driver passes a single block as (4, 1) and a full batch as (8, 8); constant arguments fold these to straight-line code at the call site.
+		// The driver passes a single block as (4, 1) and a full batch as (8, 8).
+		// Constant arguments fold these to straight-line code at the call site.
 		if (width is 4 && count is 1)
 		{
 			Transform(1, ref rk, ref source, ref destination);

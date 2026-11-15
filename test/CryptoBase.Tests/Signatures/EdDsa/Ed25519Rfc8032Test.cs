@@ -132,7 +132,7 @@ public class Ed25519Rfc8032Test
 	{
 		using Ed25519 verifier = Ed25519.ImportPublicKey(vector.PublicKey);
 		byte[] otherContext = [.. vector.Context, 0];
-		// Ed25519 has no context, and Ed25519ctx has a nonempty one.
+		// Ed25519ctx with an empty context is Ed25519, so the loop skips it along with the vector's own case.
 		(Ed25519Variant Variant, byte[] Context)[] cases =
 		[
 			(Ed25519Variant.Pure, []), (Ed25519Variant.Context, vector.Context), (Ed25519Variant.Context, otherContext),

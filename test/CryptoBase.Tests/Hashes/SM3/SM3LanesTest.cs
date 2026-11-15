@@ -7,7 +7,8 @@ namespace CryptoBase.Tests.Hashes.SM3;
 
 public class SM3LanesTest
 {
-	// Around the carries of the counter bytes; each test adds the counter whose key ends at the last counter.
+	// Around the carries of the counter bytes.
+	// Each test adds the counter at which its longest key ends at uint.MaxValue.
 	private static readonly uint[] Counters = [1, 0xF5, 0xFFF3, 0xFF_FFF1, 0x01FF_FFEF];
 
 	private static readonly uint[] ExtremeWords = [0, uint.MaxValue, 0x8000_0000, 0x7FFF_FFFF, 0xAAAA_AAAA, 0x5555_5555, 1];
@@ -82,7 +83,8 @@ public class SM3LanesTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// SM3(prefix ‖ ct) for each counter, for a prefix of every length mod 64, whole blocks before it or not, and keys of a block or part of one up to more than four groups of lanes: passes of two groups, or of one where Write takes them one at a time, then the rest.
+	// SM3(prefix ‖ ct) for each counter, for a prefix of every length mod 64, with whole blocks before it or not.
+	// Keys run from part of a block to more than four groups of lanes: passes of two groups, or of one where Write takes them one at a time, then the rest.
 	[Test]
 	[MethodDataSource(typeof(SM3LanesCase), nameof(SM3LanesCase.All))]
 	public async Task WriteMatchesSingleBlocks(SM3LanesCase kernel)

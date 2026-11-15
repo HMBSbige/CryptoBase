@@ -15,7 +15,8 @@ public class DhKemX25519Test
 	private static readonly byte[] SuiteId = [.. "KEM"u8, 0x00, 0x20];
 	private static readonly byte[] Nine = EncodeInteger(9);
 
-	// RFC 9180, Section 7.1.3: sk = LabeledExpand(LabeledExtract("", "dkp_prk", ikm), "sk", "", 32), for any length of ikm; the seed is written back as given.
+	// RFC 9180, Section 7.1.3: sk = LabeledExpand(LabeledExtract("", "dkp_prk", ikm), "sk", "", 32), for any length of ikm.
+	// The seed is written back as given.
 	[Test]
 	public async Task DeriveKeyPairExpandsAnyInputIntoTheKey()
 	{
@@ -41,7 +42,8 @@ public class DhKemX25519Test
 		}
 	}
 
-	// A key exports as imported, and its clamped form, which erratum 7121 to RFC 9180 gives for the vectors, is the same key: the same encapsulation key, and the vector's shared secret on both sides.
+	// A key exports as imported, and its clamped form, which erratum 7121 to RFC 9180 gives for the vectors, is the same key.
+	// It has the same encapsulation key, and the vector's shared secret on both sides.
 	[Test]
 	public async Task DecapsulationKeysExportAsImportedAndClampingKeepsThem()
 	{
@@ -108,7 +110,8 @@ public class DhKemX25519Test
 		}
 	}
 
-	// Every encoding of a point whose order divides 8, the bit 255 and u ≥ p forms included: no encapsulation key, and no ciphertext in any mode.
+	// Every encoding of a point whose order divides 8, the bit 255 and u ≥ p forms included.
+	// None is an encapsulation key or a ciphertext in any mode.
 	[Test]
 	public async Task PointsOfSmallOrderAreRejected()
 	{

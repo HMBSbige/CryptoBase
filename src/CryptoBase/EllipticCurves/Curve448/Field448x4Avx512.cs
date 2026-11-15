@@ -406,7 +406,7 @@ internal partial struct Field448x4Avx512 : IField448Lanes<Field448x4Avx512>
 	private static Vector512<ulong> NegateLanes(Vector512<ulong> value, Vector512<ulong> twoP, Vector512<ulong> mask)
 	{
 #if NET11_0_OR_GREATER
-		// From .NET 11 on, a constant minus a vector compiles to a subtraction from zero and an add, so the lanes take ~value + twoP + 1, an xor and an add of a constant that the mask folds into.
+		// From .NET 11 on, a constant minus a vector compiles to two instructions, so the lanes take ~value + twoP + 1: an xor and an add of a masked constant.
 		return (value ^ mask) + (twoP + Vector512<ulong>.One & mask);
 #else
 		// Before .NET 11 the difference is one subtraction.

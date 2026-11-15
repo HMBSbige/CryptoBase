@@ -27,7 +27,8 @@ internal static partial class ChaCha20Utils
 			: XorVector512Poly1305<Encryption>(ref stateRef, ref input, ref output, length, ref state, processed, ref hashedLength);
 	}
 
-	// Double rounds interleave 128-byte groups, one Poly1305 block per lane: encryption hashes the ciphertext written before this batch, decryption this batch before storing over it.
+	// Double rounds interleave 128-byte groups, one Poly1305 block per lane.
+	// Encryption hashes the ciphertext written before this batch, decryption this batch before storing over it.
 	[SkipLocalsInit]
 	private static int XorVector512Poly1305<TDirection>(ref uint stateRef, ref byte input, ref byte output, int length, ref Poly1305Avx512 mac, int processed, ref int hashedLength) where TDirection : struct, IBlockDirection
 	{

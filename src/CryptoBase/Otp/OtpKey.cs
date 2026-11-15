@@ -2,7 +2,8 @@ using CryptoBase.Macs.Hmac;
 
 namespace CryptoBase.Otp;
 
-// HOTP (RFC 4226) under one key. After Initialize nothing changes it until ZeroMemory, so concurrent calls are safe.
+// HOTP (RFC 4226) under one key.
+// After Initialize nothing changes it until ZeroMemory, so concurrent calls are safe.
 internal struct OtpKey<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 {
 	// Dynamic truncation reads 4 bytes at an offset of up to 15.

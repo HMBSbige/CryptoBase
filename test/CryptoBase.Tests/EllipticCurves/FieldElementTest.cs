@@ -54,8 +54,8 @@ public class FieldElementTest
 	}
 
 	// Before its final subtraction a product is a value u below 2m, which Reduce gives.
-	// Where 2m > R, random operands give u below m and u of R or more, which carries out of the top limb, about equally often.
-	// u in [m, R) is rare for them; the next test builds operands that give it.
+	// Where 2m > R, random operands must reach both u below m and u of R or more, which carries out of the top limb.
+	// u in [m, R) is rare for them, so the next test builds operands that give it.
 	[Test]
 	[MethodDataSource(typeof(ModulusCase), nameof(ModulusCase.All))]
 	public async Task MultiplyTakesBothSidesOfTheFinalSubtraction(ModulusCase modulus)

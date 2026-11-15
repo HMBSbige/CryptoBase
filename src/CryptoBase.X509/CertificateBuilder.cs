@@ -194,7 +194,7 @@ public sealed class CertificateBuilder
 		return name;
 	}
 
-	// Decoding the result checks the extensions, so they are checked before signing, the key usage in DER.
+	// Decoding the signed certificate checks the extensions, so they are checked here before signing, with the key usage held to DER.
 	internal static CertificateExtension[] CopyExtensions(IList<CertificateExtension> source)
 	{
 		CertificateExtension[] extensions = [.. source];
@@ -319,7 +319,8 @@ public sealed class CertificateBuilder
 		return new CertificateExtension(DecodedExtensions.AuthorityKeyIdentifierOid, false, writer.Encode());
 	}
 
-	// SubjectKeyIdentifier ::= OCTET STRING, non-critical as RFC 5280, Sec. 4.2.1.2, requires; the identifier is its method (1), the SHA-1 hash of the value of the BIT STRING subjectPublicKey.
+	// SubjectKeyIdentifier ::= OCTET STRING, non-critical as RFC 5280, Sec. 4.2.1.2, requires.
+	// The identifier is its method (1), the SHA-1 hash of the value of the BIT STRING subjectPublicKey.
 	private static CertificateExtension CreateSubjectKeyIdentifier(SubjectPublicKeyInfo subjectPublicKeyInfo)
 	{
 		AsnWriter writer = new(AsnEncodingRules.DER);

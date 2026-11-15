@@ -75,7 +75,8 @@ public class HostNameMatchingTest
 		await Assert.That(alternativeName.MatchesHostName(hostName)).IsEqualTo(matches).Because(@case);
 	}
 
-	// Each host name and an entry that identifies it; IPAddress.Parse gives the octets of the IP addresses independently.
+	// Each host name and an entry that identifies it.
+	// IPAddress.Parse gives the octets of the IP addresses independently of the implementation.
 	public static IEnumerable<Func<(string HostName, byte[] Entry)>> ValidHostNames()
 	{
 		foreach (string name in (string[])["example.com", "localhost", "a", "3com.example", "123.example", "a-b.example", "a_b.example", "_a.example", "a_.example", "xn--bcher-kva.example", $"{Label63}.example", LongestName])
@@ -148,7 +149,8 @@ public class HostNameMatchingTest
 		await Assert.That(() => alternativeName.MatchesHostName(hostName)).Throws<ArgumentException>().WithParameterName("hostName");
 	}
 
-	// Where IdnMapping neither maps nor normalizes, as in invariant globalization mode, no name with a character that is not ASCII is in U-labels: the conversion would accept a decomposed letter, which the mapping composes, and encode it as it is.
+	// Where IdnMapping neither maps nor normalizes, as in invariant globalization mode, no name with a non-ASCII character counts as U-labels.
+	// Otherwise the conversion would accept a decomposed letter, which the mapping composes, and encode it as it is.
 	[Test]
 	public async Task ConvertsUnicodeOnlyWhereIdnaMapsIt()
 	{
@@ -229,7 +231,8 @@ public class HostNameMatchingTest
 		}
 	}
 
-	// The results of MatchHostName and of X509Certificate2.MatchesHostname without the common name on the same certificate; each group that differs names the rule.
+	// The results of MatchHostName and of X509Certificate2.MatchesHostname, without the common name, on the same certificate.
+	// Each group that differs names the rule.
 	public static IEnumerable<Func<(string Case, byte[] Value, string HostName, string Expected, string Bcl)>> BclCases()
 	{
 		const string match = "Match";
@@ -313,7 +316,8 @@ public class HostNameMatchingTest
 				_ => "Malformed"
 			})).IsEqualTo(expected).Because(@case);
 
-			// Loaded without a private key, as importing one fails on macOS for an unknown GeneralName; a certificate that does not load counts as malformed.
+			// Loaded without a private key, as importing one fails on macOS for an unknown GeneralName.
+			// A certificate that does not load counts as malformed.
 			await Assert.That(Outcome(() =>
 			{
 				using X509Certificate2 platform = X509CertificateLoader.LoadCertificate(certificate.Encoded.Span);

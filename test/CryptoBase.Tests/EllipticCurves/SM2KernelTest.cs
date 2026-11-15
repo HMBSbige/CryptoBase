@@ -363,7 +363,8 @@ public class SM2KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// k·P + l·Q by SM2OctoFormulas.MultiplyAdd, which the key exchange takes on AVX-512 without the windows of the static key of the peer, for Q = c·P: the scalars of MultiplyMatchesTheReference and those at which window 0 of a chain over all the odd digits meets equal points, which must be n − 38 alone, the TwiceLowDigit of SM2OctoFormulas, with their neighbors, each with a random scalar in the other chain;
+	// k·P + l·Q by SM2OctoFormulas.MultiplyAdd, which the key exchange takes on AVX-512 without the windows of the static key of the peer, for Q = c·P.
+	// The scalars: those of MultiplyMatchesTheReference and those at which window 0 of a chain over all the odd digits meets equal points, which must be n − 38 alone, the TwiceLowDigit of SM2OctoFormulas, with their neighbors, each with a random scalar in the other chain;
 	// those in both chains;
 	// l·Q equal and opposite to k·P;
 	// and 0 for k, l or both.
@@ -431,7 +432,7 @@ public class SM2KernelTest
 		}
 	}
 
-	// SM2OddWindows.RecodeHalf writes odd digits in [−31, 31] that sum to an odd k below 2^128: 1, 3, 2^128 − 1 and its odd neighbors, runs of one window value, and random scalars.
+	// SM2OddWindows.RecodeHalf writes odd digits in [−31, 31] that sum to an odd k below 2^128, for the scalars of OddHalfScalars.
 	[Test]
 	public async Task HalfWindowsSumToTheScalar()
 	{
@@ -535,7 +536,8 @@ public class SM2KernelTest
 		await Assert.That(ModulusCase.FromLimbs(SM2Avx512.FieldGap)).IsEqualTo(Curve.Reference.P - Curve.Order);
 	}
 
-	// The comparison of the AVX-512 kernel that verification takes against the reference, for Q = u2⁻¹·(S − u1·G) with random u1 and u2 and a chosen sum S: S of x at r and at r + n for r below p − n, where the kernel goes to MultiplyAdd, and S of x at p − n and above;
+	// The comparison of the AVX-512 kernel that verification takes against the reference, for Q = u2⁻¹·(S − u1·G) with random u1 and u2 and a chosen sum S.
+	// S has x at r and at r + n for r below p − n, where the kernel goes to MultiplyAdd, and x at p − n and above;
 	// for each, r that is the x of S mod n, r + 1 and r − 1.
 	// Random Q with the x of the sum and with random r, which takes v1 and v2 of each parity, r with no point of x r, sums at the point at infinity, and u1 or u2 of 0 complete it.
 	[Test]
@@ -683,7 +685,8 @@ public class SM2KernelTest
 
 	// The AVX-512 kernel adds 2^130·T·P to B·P for the sums T and B of the odd digits from 26 up and below, 2^130·T + B = 2s − (2^260 − 1), and equal points need 2^130·T − B = jn for an odd j.
 	// Over every such j within the bounds of 2^130·T − B, s below n meets equal points at one k, which must be the exception of SM2OddWindows, and s in [n, 2n), which the exception takes, at one other k;
-	// the scalars of PointScalars hold both, and also the bits of n that the bounds of SM2OctoFormulas.Multiply take.
+	// the scalars of PointScalars hold both.
+	// The bits of n that the bounds of SM2OctoFormulas.Multiply take are checked as well.
 	[Test]
 	public async Task OddWindowsMeetEqualPointsJustAtTheException()
 	{
@@ -870,7 +873,7 @@ public class SM2KernelTest
 	}
 
 	// Odd scalars below 2^128 for RecodeHalf: 1, 3 and 5;
-	// 2^128 − 1, 2^127 ± 1 and 2^125 ± 1, at the windows of the top digit;
+	// 2^128 − 1, 2^128 − 3, 2^127 ± 1 and 2^125 ± 1, at the windows of the top digit;
 	// scalars of one window value v in every window below the top, for v = 0, 15, 16 and 31, the smallest, middle and largest digits;
 	// and random ones.
 	private static SortedSet<BigInteger> OddHalfScalars()
@@ -985,7 +988,7 @@ public class SM2KernelTest
 	}
 
 	// 0 and the largest scalars;
-	// around each split after b windows, 2^(wb) and n − 2^(wb) with their neighbors and k = n − 2·(n mod 2^(wb)), at which a fold of the low and the high windows meets equal points where bit wb − 1 of n is 0;
+	// around each split after b windows, 2^(wb), n − 2^(wb), 2·(n mod 2^(wb)) and k = n − 2·(n mod 2^(wb)) with their neighbors, the last where a fold of the low and the high windows meets equal points if bit wb − 1 of n is 0;
 	// windows of h = 2^(w − 1), h + 1 and 2h − 1, the largest digit and the most negative ones with carries;
 	// where w divides 256, the largest k whose digits are those of k, every window h − 1, with its neighbors, and the k whose digits, those of k − n, are −h and then 1 − h in every window above, or h − 1 below a top one of −h;
 	// and random scalars.

@@ -79,15 +79,16 @@ internal union HostName(string, byte[])
 	// Labels that are not ASCII to A-labels, with the platform's IDNA conversion, or null if one is not a label that the conversion accepts and leaves as it is.
 	// The other rules of IDNA2008 for U-labels (RFC 5890, Sec. 2.3.2.1), such as its Bidi rule, its contextual rules and the code points that it disallows, are not checked.
 	// The conversion maps characters, such as upper-case letters, before it encodes them, and the mapping depends on the platform's Unicode version and its globalization mode.
-	// So the name must be what the conversion leaves as it is, apart from the case of ASCII letters: besides letters, digits, hyphens and dots, only letters that are not upper or title case, marks that do not start a label (RFC 5891, Sec. 5.4) and decimal digits, the LetterDigits of RFC 5892, Sec. 2.1, that the conversion accepts and keeps.
+	// So the name must be what the conversion leaves as it is, apart from the case of ASCII letters.
+	// Besides letters, digits, hyphens and dots, it may hold only letters that are not upper or title case, marks that do not start a label (RFC 5891, Sec. 5.4) and decimal digits, the LetterDigits of RFC 5892, Sec. 2.1, that the conversion accepts and keeps.
 	// Every platform that accepts a name then gives the same A-labels, the Punycode of its labels.
 	public static string? ToAscii(string hostName)
 	{
 		return ToAscii(hostName, MapsIdna);
 	}
 
-	// As ToAscii, with mapsIdna telling whether the conversion maps and normalizes the name as IDNA requires (RFC 5895; UTS #46), which it does not in invariant globalization mode, where it only encodes Punycode;
-	// without the mapping, a name with a character that is not ASCII is not in U-labels.
+	// As ToAscii, with mapsIdna telling whether the conversion maps and normalizes the name as IDNA requires (RFC 5895; UTS #46), which it does not in invariant globalization mode, where it only encodes Punycode.
+	// Without the mapping, a name with a character that is not ASCII is rejected, as it cannot be checked to be in U-labels.
 	// Each label converts on its own, so that an ASCII label, such as an A-label, stays as it is, and a U-label must convert back to itself.
 	internal static string? ToAscii(string hostName, bool mapsIdna)
 	{
@@ -146,7 +147,8 @@ internal union HostName(string, byte[])
 		return string.Join('.', labels);
 	}
 
-	// Whether the conversion maps as IDNA requires: it composes u and a combining diaeresis to the ü of "bücher", which it leaves decomposed in invariant globalization mode.
+	// Whether the conversion maps as IDNA requires.
+	// It composes u and a combining diaeresis to the ü of "bücher", which it leaves decomposed in invariant globalization mode.
 	internal static bool ProbeIdnaMapping()
 	{
 		try
@@ -159,7 +161,7 @@ internal union HostName(string, byte[])
 		}
 	}
 
-	// The octets of an IP address in the notations of ReferenceIdentifier.Parse, or null.
+	// The octets of an IP address in the notations of Parse, or null.
 	// Zones, ports and shorthand notations, such as 127.1, are not IP addresses.
 	public static byte[]? ParseIPAddress(ReadOnlySpan<char> source)
 	{
@@ -251,7 +253,8 @@ internal union HostName(string, byte[])
 		return true;
 	}
 
-	// Groups separated by single colons, none if source is empty; with allowIPv4, the last may be an IPv4 address, which fills two groups.
+	// Groups separated by single colons, none if source is empty.
+	// With allowIPv4, the last may be an IPv4 address, which fills two groups.
 	private static bool TryParseGroups(ReadOnlySpan<char> source, Span<ushort> groups, bool allowIPv4, out int count)
 	{
 		count = 0;

@@ -212,7 +212,7 @@ public sealed class SM2KeyExchange : IDisposable
 	[SkipLocalsInit]
 	private bool Derive(SM2Key peerKey, ReadOnlySpan<byte> peerId, ReadOnlySpan<byte> peerEphemeralPublicKey, Span<byte> sharedKey, Span<byte> confirmation, Span<byte> peerConfirmation)
 	{
-		// The peer's ephemeral key is read again for the confirmation values, which may come after an output that overlaps it.
+		// A copy of the peer's ephemeral key for TryMultiplyShared and the confirmation hash, as the inputs may overlap the outputs.
 		Span<byte> peerEphemeral = stackalloc byte[EphemeralPublicKeyLength];
 
 		// A6 or B5: R of the peer lies on the curve; it is not the point at infinity, which has no uncompressed encoding.

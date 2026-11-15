@@ -16,7 +16,9 @@ public class WycheproofRsaTest
 		"rsa_signature_3072_sha3_384_test.json", "rsa_signature_3072_sha3_512_test.json", "rsa_signature_3072_sha512_256_test.json", "rsa_signature_4096_sha512_256_test.json"
 	];
 
-	// Every RSASSA-PSS file: those of SHA-256, SHA-384 and SHA-512 with MGF1 of the same hash and a salt as long as it, with and without parameters, and those of other hashes, salt lengths and MGF1 hashes, whose keys must not import or must not verify them.
+	// Every RSASSA-PSS file.
+	// Those of SHA-256, SHA-384 and SHA-512 have MGF1 of the same hash and a salt as long as it, with and without parameters.
+	// The others have other hashes, salt lengths or MGF1 hashes, whose keys must not import or must not verify them.
 	private static readonly string[] PssFiles =
 	[
 		"rsa_pss_2048_sha1_mgf1_20_params_test.json", "rsa_pss_2048_sha1_mgf1_20_test.json", "rsa_pss_2048_sha256_mgf1_0_params_test.json", "rsa_pss_2048_sha256_mgf1_0_test.json",
@@ -28,7 +30,8 @@ public class WycheproofRsaTest
 		"rsa_pss_misc_params_test.json", "rsa_pss_misc_test.json"
 	];
 
-	// The acceptable vectors that the tests accept carry these flags in each file: small moduli, small public exponents and SHA-1 in the signature generation files, and a DigestInfo without the NULL parameters in the verification files (RFC 5246, Sec. 4.7).
+	// The acceptable vectors that the tests accept carry these flags in each file.
+	// They are small moduli, small public exponents and SHA-1 in the signature generation files, and a DigestInfo without the NULL parameters in the verification files (RFC 5246, Sec. 4.7).
 	// A file with any other set fails, so that its vectors are decided anew.
 	private static readonly Dictionary<string, string[]> AcceptableFlags = new()
 	{

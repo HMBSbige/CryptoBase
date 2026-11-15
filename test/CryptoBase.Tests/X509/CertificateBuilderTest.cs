@@ -148,8 +148,8 @@ internal class CertificateBuilderTest
 		}
 	}
 
-	// A PKCS #8 key with id-RSASSA-PSS, without parameters or with those of one hash and a salt no longer than it, signs certificates only with the RSASSA-PSS algorithms that they allow (RFC 4055, Sec. 3.3), and the certificate keeps the AlgorithmIdentifier;
-	// RsaKey and PlatformRsaKey import its public key with the same algorithms, and verify it.
+	// A PKCS #8 key with id-RSASSA-PSS, without parameters or with one hash and a salt no longer than it, signs only with the RSASSA-PSS algorithms they allow (RFC 4055, Sec. 3.3).
+	// The certificate keeps the AlgorithmIdentifier, and RsaKey and PlatformRsaKey import its public key with the same algorithms and verify it.
 	[Test]
 	[Arguments(null, null, null)]
 	[Arguments(Sha256Oid, 32, SignatureAlgorithm.RsaPssSha256)]

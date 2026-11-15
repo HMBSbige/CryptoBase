@@ -68,7 +68,8 @@ public class CertificateRevocationListTest
 		}
 	}
 
-	// A key that does not support the algorithm learns nothing of the signature, and so leaves no check for another key of the same SubjectPublicKeyInfo; that of a key that does is kept.
+	// A key that does not support the algorithm leaves no cached signature check for another key of the same SubjectPublicKeyInfo.
+	// The check of a key that does support it is kept.
 	[Test]
 	public async Task KeepsNoSignatureCheckOfAKeyThatDoesNotSupportTheAlgorithm()
 	{
@@ -380,7 +381,8 @@ public class CertificateRevocationListTest
 		}
 	}
 
-	// A key whose support of the algorithms is set, as that of two implementations of the same key can differ; it counts its verifications, and leaves the inner key to its owner.
+	// A key with a fixed answer to Supports, as two implementations of the same key can differ.
+	// It counts its verifications and leaves the inner key to its owner.
 	private sealed class CapabilityKey(ISignatureKey inner, bool supports) : ISignatureKey
 	{
 		public int Verifications { get; private set; }

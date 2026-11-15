@@ -12,7 +12,9 @@ namespace CryptoBase.Tests.Signatures.Rsa;
 
 internal class RsaKeyTest
 {
-	// The shortest modulus, in bits, that each algorithm fits (RFC 8017): EMSA-PKCS1-v1_5 needs k ≥ tLen + 11 bytes, where the DigestInfo T has 19 bytes before the hash (Sec. 9.2, step 3), and EMSA-PSS with a salt as long as the hash needs emLen = ⌈(modBits − 1)/8⌉ ≥ 2·hLen + 2 bytes (Sec. 9.1.1, step 3).
+	// The shortest modulus, in bits, that each algorithm fits (RFC 8017).
+	// EMSA-PKCS1-v1_5 needs k ≥ tLen + 11 bytes, where the DigestInfo T has 19 bytes before the hash (Sec. 9.2, step 3).
+	// EMSA-PSS with a salt as long as the hash needs emLen = ⌈(modBits − 1)/8⌉ ≥ 2·hLen + 2 bytes (Sec. 9.1.1, step 3).
 	private static readonly Dictionary<SignatureAlgorithm, int> MinModulusBits = new()
 	{
 		[SignatureAlgorithm.RsaPkcs1Sha256] = 489,
@@ -322,7 +324,7 @@ internal class RsaKeyTest
 		}
 	}
 
-	// The internal entry for known-answer tests checks the salt as Sign checks the destination, before anything is written.
+	// The internal Sign with a given salt, for known-answer tests, rejects a salt of the wrong length before anything is written.
 	[Test]
 	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task GivenSaltsMustFit()

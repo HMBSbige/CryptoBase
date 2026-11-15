@@ -76,7 +76,7 @@ internal readonly struct Blake2bScalar : IBlake2bKernel
 		} while (--remainingBlocks is not 0);
 	}
 
-	// Runs G on four lanes in lockstep, which is faster than running the lanes one after another.
+	// Runs G on four lanes in lockstep, so that their independent dependency chains overlap.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Step
 	(

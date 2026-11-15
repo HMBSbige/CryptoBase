@@ -34,7 +34,9 @@ internal struct ECMLKemKey<TCurve, TField, TOrder, TParameters>
 
 	private static int ECSharedSecretLength => ECKey<TCurve, TField, TOrder>.SharedSecretLength;
 
-	// Here and in the two private imports, the ML-KEM part goes first: MLKemKey throws without keeping any of the new key, so only a failure of the elliptic curve part, which keeps no new d either, needs the ML-KEM part cleared.
+	// Here and in the two private imports, the ML-KEM part goes first.
+	// MLKemKey throws without keeping any of the new key,
+	// so only a failure of the elliptic curve part, which keeps no new d either, needs the ML-KEM part cleared.
 	internal void GenerateKey()
 	{
 		_mlKemKey.GenerateKey();

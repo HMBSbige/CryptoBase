@@ -244,7 +244,8 @@ internal static class SM9LaneKernel<TVector> where TVector : unmanaged, ISM9Vect
 		SM9Lanes<TVector>.EvaluateLinePairs(ref batch, ref otherBatch, ref pairs, ref scratch);
 	}
 
-	// f = f·l for line k, evaluating the batch that starts at k first. Which lines a batch holds depends on k alone.
+	// f = f·l for line k, evaluating the batch that starts at k first.
+	// Which lines a batch holds depends on k alone.
 	private static void MultiplyByLine(ref SM9Fp12Lanes f, ReadOnlySpan<SM9PrecomputedLine> lines, int k, ref ulong batch, ref SM9LaneScratch scratch)
 	{
 		int lane = k % SM9Lanes<TVector>.BatchLines;

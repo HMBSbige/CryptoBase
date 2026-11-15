@@ -131,7 +131,7 @@ public class RevocationCheckerCrlTest
 		await AssertStatusAsync(Check((Conforming(fixture.Authority) with { NextUpdate = null }).Decode(fixture.Authority), fixture.Leaf, fixture.Authority), RevocationStatus.Invalid);
 	}
 
-	// Sec. 6.3.3 (f).
+	// Sec. 6.3.3 (f): the CRL issuer's key usage must assert cRLSign.
 	[Test]
 	[Arguments(X509KeyUsageFlags.KeyCertSign, false)]
 	[Arguments(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true)]

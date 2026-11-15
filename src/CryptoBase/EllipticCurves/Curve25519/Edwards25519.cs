@@ -39,7 +39,8 @@ internal static class Edwards25519
 		result.Z.L0 = 1;
 	}
 
-	// [s]B for any 32 little-endian bytes s. Neither the time nor the addresses depend on s.
+	// [s]B for any 32 little-endian bytes s.
+	// Neither the time nor the addresses depend on s.
 	internal static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{
 		Debug.Assert(scalar.Length is ScalarLength);

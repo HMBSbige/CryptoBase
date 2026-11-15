@@ -93,7 +93,8 @@ internal class RsaKeyEncodingTest
 		}
 	}
 
-	// The bounds of the public key: moduli of 512 and 16384 bits, and exponents from 3 to 2^33 − 1; the modulus INTEGER has a zero byte before a top bit, which the export keeps.
+	// Public keys at the bounds: moduli of 512 and 16384 bits, and exponents from 3 to 2^33 − 1.
+	// A modulus whose top bit is set takes a leading zero byte in its INTEGER, which the export keeps.
 	[Test]
 	[Arguments(512, 3L)]
 	[Arguments(16384, 65537L)]
@@ -239,7 +240,8 @@ internal class RsaKeyEncodingTest
 		}
 	}
 
-	// Version 1 means otherPrimeInfos (RFC 8017, Appendix A.1.2), which the version alone rules out, so the values here need not be consistent.
+	// Version 1 means otherPrimeInfos (RFC 8017, Appendix A.1.2), which the version alone rules out.
+	// So the values here need not be consistent.
 	[Test]
 	public async Task MultiPrimeKeysAreNotSupported()
 	{

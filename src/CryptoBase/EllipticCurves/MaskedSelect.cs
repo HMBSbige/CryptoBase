@@ -50,7 +50,8 @@ internal static class MaskedSelect
 	}
 
 	// accumulator with value where mask is set.
-	// The accumulators start at zero and at most one entry of a window matches, so an OR merges as well as a select: ARM64 takes the select, one instruction there, and x64 the AND and the OR, where the select takes three.
+	// The callers start the accumulators at zero and match at most one entry, so an OR merges as well as a select.
+	// ARM64 takes the select, one instruction there, and x64 the AND and the OR, where the select takes three.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static Vector128<ulong> Merge(Vector128<ulong> accumulator, Vector128<ulong> value, Vector128<ulong> mask)
 	{

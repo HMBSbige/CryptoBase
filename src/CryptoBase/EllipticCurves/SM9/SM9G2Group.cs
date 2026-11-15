@@ -32,7 +32,8 @@ internal static class SM9G2Group
 	// Windows of width 5, 52 of 16 entries.
 	internal static readonly SM9BaseTable<SM9Fp2> BaseTable = new(in Generator, 5);
 
-	// k·P2 by BaseTable. Neither the time nor the addresses depend on k.
+	// k·P2 by BaseTable.
+	// Neither the time nor the addresses depend on k.
 	[SkipLocalsInit]
 	internal static void MultiplyBase(in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp2> result)
 	{

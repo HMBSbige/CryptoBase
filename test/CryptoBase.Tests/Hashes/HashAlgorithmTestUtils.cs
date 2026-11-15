@@ -38,7 +38,8 @@ internal static class HashAlgorithmTestUtils
 		};
 	}
 
-	// Sponge rates are not powers of two; rate - 1 leaves one byte, so the domain separator and the last padding bit share it.
+	// Sponge rates are not powers of two.
+	// rate - 1 leaves one byte, so the domain separator and the last padding bit share it.
 	public static IEnumerable<int> RateBlockAndPaddingLengths(int rate)
 	{
 		return

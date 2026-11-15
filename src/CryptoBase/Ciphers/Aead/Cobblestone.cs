@@ -20,7 +20,7 @@ internal static class Cobblestone
 	public const long MaxChunkCount = 1L << 38;
 	public const long MaxMessageLength = MaxChunkCount * ChunkSize - 1;
 
-	// From this many full chunks, a message repays the key setup of the platform AES-GCM on every measured configuration.
+	// From this many full chunks, a message repays the key setup of the platform AES-GCM.
 	private const int MinPlatformChunks = 4;
 
 	/// <summary>

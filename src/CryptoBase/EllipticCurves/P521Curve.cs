@@ -23,6 +23,7 @@ internal readonly struct P521Curve : IECCurve
 		0x0000000000000118UL,
 	];
 
-	// One less than for the other curves: with the widest points, a width of 7 would nearly double a table that is already the largest.
+	// One less than for P-256 and P-384.
+	// With the widest points, a width of 7 would nearly double a table that is already the largest.
 	public static int GeneratorWindowWidth => 6;
 }

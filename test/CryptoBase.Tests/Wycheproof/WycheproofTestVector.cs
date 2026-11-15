@@ -100,7 +100,8 @@ public sealed record HpkeTestGroup(int KemId, int KdfId, int AeadId) : Wycheproo
 	}
 }
 
-// What one recipient context opens, in order. A decryption that fails is followed by one with the same sequence number.
+// What one recipient context opens, in order.
+// A decryption that fails is followed by one with the same sequence number.
 public sealed record HpkeSequenceTestVector(byte[] SkRm, byte[] PkRm, byte[] Info, byte[] Enc, HpkeDecryption[] Decryptions, byte[]? IkmE = null) : WycheproofTestVector
 {
 	[JsonIgnore]
@@ -260,7 +261,8 @@ public sealed record MLDsaVerifyTestGroup(byte[] PublicKey, byte[] PublicKeyDer)
 	}
 }
 
-// The Internal vectors sign μ and have no message; the invalid ones have no μ and an empty signature.
+// The Internal vectors sign μ and have no message.
+// The invalid ones have no μ and an empty signature.
 // rnd is zero unless given.
 public sealed record MLDsaSignTestVector(byte[] Sig, byte[]? Msg = null, byte[]? Mu = null, byte[]? Ctx = null, byte[]? Rnd = null) : WycheproofTestVector
 {

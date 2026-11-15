@@ -44,7 +44,8 @@ public class SM3KdfStateTest
 		await Assert.That(key).IsEquivalentTo(Hex("44E60FDB F0BAE814 37665374 BEF26749 046C9E"), CollectionOrdering.Matching);
 	}
 
-	// Z absorbed in parts gives the key of Z whole; a block of any counter is SM3(Z ‖ ct), and Z may lie in the output.
+	// Z absorbed in parts gives the key of Z whole.
+	// A block of any counter is SM3(Z ‖ ct), and Z may lie in the output.
 	[Test]
 	public async Task PartsBlocksAndOverlapMatch()
 	{
@@ -73,9 +74,10 @@ public class SM3KdfStateTest
 		}
 	}
 
-	// Write, which takes lanes for several blocks, against WriteBlock one block at a time: Z of every length mod 64, a whole block before it or not, and of 703 bytes;
-	// keys of up to 72 blocks, whole or with the last cut, past two passes of the widest lanes;
-	// counters that carry into their second, third and fourth bytes within the key, and that end at the last counter.
+	// Write, which takes lanes for several blocks, against WriteBlock one block at a time.
+	// Z has every length mod 64, with a whole block before it or not, and 703 bytes.
+	// Keys run up to 72 blocks, whole or with the last cut, past two passes of the widest lanes.
+	// Counters carry into their second, third and fourth bytes within the key, and the last ends the key at uint.MaxValue.
 	[Test]
 	public async Task WriteMatchesSingleBlocks()
 	{
@@ -121,7 +123,8 @@ public class SM3KdfStateTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Xor takes the key in chunks of 4096 bytes: source ⊕ the key from any counter, in place or not, and a nonzero OR of the key.
+	// Xor takes the key in chunks of 4096 bytes.
+	// It gives source ⊕ the key from any counter, in place or not, and a nonzero OR of the key.
 	// IsZero finds a key of no bytes zero and those of the KDF not.
 	[Test]
 	public async Task XorAndIsZeroTakeTheKeyInChunks()
@@ -179,7 +182,8 @@ public class SM3KdfStateTest
 		}
 	}
 
-	// Accumulate gives 0 for zero bytes alone, and sees a single nonzero byte at every position: in a group of vectors, a single vector, a word or the last bytes, up to a chunk of Xor and IsZero.
+	// Accumulate gives 0 for zero bytes alone, and sees a single nonzero byte at every position.
+	// The positions fall in a group of vectors, a single vector, a word or the last bytes, up to a chunk of Xor and IsZero.
 	// The bytes around the span are nonzero and must not count, and the span starts at three alignments.
 	[Test]
 	public async Task AccumulateSeesEveryByte()

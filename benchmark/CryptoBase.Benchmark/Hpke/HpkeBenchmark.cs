@@ -65,7 +65,8 @@ public abstract class HpkeSetupBenchmark<TKem>(HpkeKdfId kdf, HpkeAeadId aead) w
 	}
 }
 
-// Seal and Open on contexts set up once. Open goes back to sequence number 0 each time, as a stateless recipient would.
+// Seal and Open on contexts set up once.
+// Open goes back to sequence number 0 each time, as a stateless recipient would.
 [MemoryDiagnoser]
 public class HpkeSealOpenBenchmark
 {

@@ -12,7 +12,7 @@ namespace CryptoBase.Signatures.Rsa.Arithmetic;
 // Columns from digitCount on hold the result; the block across digitCount, when digitCount is not a multiple of 4, goes column by column.
 // A square takes each cross product once, from a doubled copy of the operand, with the products around the diagonal in one group.
 // A load across a page boundary is far slower than one within a page, and the blocks load b and n at every word: each operand starts on 16 bytes, within a page where one holds it, wherever the scratch lies.
-// The tails take the mask of a digit from the products (see IRadix).
+// The tails take the mask of a digit from MultiplyCore and SquareCore rather than derive it (see IRadix).
 internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel where TRadix : struct, IRadix
 {
 	// Words of zeros on either side of each operand, more than the seven that a block reads past the ends.

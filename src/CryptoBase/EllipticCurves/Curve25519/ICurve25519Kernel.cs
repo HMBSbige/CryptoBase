@@ -14,7 +14,8 @@ internal interface ICurve25519Kernel
 	// x and z are tight.
 	static abstract void Ladder(ReadOnlySpan<byte> scalar, in Field25519 u, out Field25519 x, out Field25519 z);
 
-	// [s]B for any s. The extended coordinates of the result depend on s, not only on [s]B.
+	// [s]B for any s.
+	// The extended coordinates of the result depend on s, not only on [s]B.
 	static abstract void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result);
 
 	// [a]A + [b]B for any a and b.

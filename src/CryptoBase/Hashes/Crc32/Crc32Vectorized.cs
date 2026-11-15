@@ -105,7 +105,7 @@ internal static partial class Crc32Vectorized
 		return Vector128.LoadUnsafe(ref source, (nuint)offset).AsUInt64();
 	}
 
-	// The hybrid kernel ran no faster with EOR3 on the M2, so its folds keep the plain XORs.
+	// The hybrid kernel gains nothing from EOR3, so its folds keep the plain XORs.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> FoldArm(Vector128<ulong> target, Vector128<ulong> source, Vector128<ulong> constants, Vector64<ulong> lowerConstant)
 	{

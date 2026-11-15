@@ -271,7 +271,8 @@ internal unsafe struct SM2Field29x4Avx2 : ISM2Field29Lanes<SM2Field29x4Avx2>
 		result.L8 = c16 + d16;
 	}
 
-	// Multiply reading each left limb with vlddqu, which the JIT does not merge into one value; merged, the limbs spill with 16 registers.
+	// Multiply reading each left limb with vlddqu, which the JIT does not merge into one value held across the rounds.
+	// Held in registers, the limbs would spill, as AVX2 has only 16.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void MultiplyFromMemory<TCarry>(in SM2Field29x4Avx2 operand, in SM2Field29x4Avx2 right, out SM2Field29x4Avx2 result) where TCarry : struct, ISM2Carry
 	{

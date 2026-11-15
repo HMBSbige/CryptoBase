@@ -17,8 +17,11 @@ internal sealed class RetrievalCaches
 internal readonly record struct IssuerSource(RetrievalKey Key, PathNode Requester);
 
 // The issuers that paths verified, under the keys of the retrievals that gave them.
-// It takes paths rather than certificates: what a URI gives besides the issuer, which anyone on the path of a plain http URI can add to, never enters it, so that it cannot fill the room of a later validation for the certificates that it retrieves.
-// An entry holds the issuers that one path verified for its key, and the next path to verify one replaces it rather than adding to it, as a CRL that another key of the name signs replaces the one kept: what a URI gives may change, and every certificate of an entry is then one that the latest path used.
+// It takes paths rather than certificates, so what a URI gives besides the issuer, which anyone on the path of a plain http URI can add to, never enters it.
+// That keeps it from filling the room that a later validation needs for the certificates that it retrieves.
+// An entry holds the issuers that one path verified for its key.
+// The next path to verify one replaces it rather than adding to it, as a CRL that another key of the name signs replaces the one kept.
+// What a URI gives may change, and every certificate of an entry is then one that the latest path used.
 // A key whose certificates alternate between two issuers of the name costs one retrieval at each change, as it would without the cache.
 internal sealed class IssuerCache
 {
@@ -32,9 +35,11 @@ internal sealed class IssuerCache
 		return _entries.TryGet(key, time, out issuers);
 	}
 
-	// Keeps each certificate of the path that a retrieval for a certificate below it on the path gave: as the strict search returned the path, every check accepted the certificate above the very certificate that named its URI.
+	// Keeps each certificate of the path that a retrieval for a certificate below it on the path gave.
+	// As the strict search returned the path, every check accepted the certificate above the very certificate that named its URI.
 	// What a certificate off the path retrieved says nothing, as the peer chooses its URIs and its name, and neither does what a URI gave below the certificate that named it, as no issuer of the key's name is there.
-	// The certificates above the issuer count too, as a URI may give the whole chain, or a certificate of a new key of the name, which the old key issues, with the old key's own: a path that left them out would retrieve the URI at every validation.
+	// The certificates above the issuer count too, as a URI may give the whole chain, or a certificate of a new key of the name, which the old key issues, with the old key's own.
+	// A path that left them out would retrieve the URI at every validation.
 	// They make one entry, of at most the certificates of one retrieval, whose size is that of the certificates in it.
 	public void Keep(PathNode[] path, IReadOnlyDictionary<ReadOnlyMemory<byte>, IssuerSource> sources, DateTimeOffset time)
 	{
@@ -80,7 +85,7 @@ internal sealed class IssuerCache
 }
 
 // A cache bounded in entries and bytes, whose entries are valid until a time of the validation that adds them.
-// When it is full, the entries that expire first leave first, so an expired entry never displaces one that is still valid.
+// When it is full, the entries that expire first leave first, so no entry that is still valid leaves while an expired one stays.
 // Safe for concurrent use.
 internal sealed class RetrievalCache<TKey, TValue>(int maxEntries, long maxBytes, IEqualityComparer<TKey> comparer) where TKey : notnull
 {
@@ -108,7 +113,8 @@ internal sealed class RetrievalCache<TKey, TValue>(int maxEntries, long maxBytes
 		return false;
 	}
 
-	// As the other Add, for an entry that lasts for lifetime from the time of the validation, or until the last time that DateTimeOffset holds if that comes first: the time comes from the caller's TimeProvider, and an expiry beyond that range would throw once a path had been found.
+	// As the other Add, for an entry that lasts for lifetime from the time of the validation, or until the last time that DateTimeOffset holds if that comes first.
+	// The time comes from the caller's TimeProvider, and an expiry beyond that range would throw once a path had been found.
 	public void Add(TKey key, TValue value, int size, TimeSpan lifetime, DateTimeOffset time)
 	{
 		Debug.Assert(lifetime > TimeSpan.Zero);

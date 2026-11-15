@@ -34,8 +34,8 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	private uint _v6;
 	private uint _v7;
 #if NET11_0_OR_GREATER
-	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state;
-	// after the words, the count, which Append reads right away, takes an integer store of its own rather than part of a vector store.
+	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state.
+	// After the words, the count, which Append reads right away, takes an integer store of its own rather than part of a vector store.
 	private ulong _byteCount;
 #endif
 	private InlineArray64<byte> _buffer;
@@ -331,9 +331,9 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		return (ss1 ^ a12) + tt1Partial;
 	}
 
-	// ARM64 folds a rotate by a constant into eor with a rotated operand, which takes 2 cycles on some cores and 1 on others.
-	// Folding only the first rotate lets that eor run alongside the second, so P0 takes 3 cycles instead of 4 on the former and still 2 on the latter.
-	// The second amount must therefore come from an argument of a method that is never inlined, and its rotate must be xored last.
+	// ARM64 folds a rotate by a constant into an eor with a rotated operand, which takes 2 cycles on some cores.
+	// Folding only the first rotate lets that eor overlap the second rotate, shortening P0 on those cores.
+	// So the second amount comes from an argument of a method that is never inlined, and its rotate is xored last.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint P0Software(uint x, int rotate15)
 	{

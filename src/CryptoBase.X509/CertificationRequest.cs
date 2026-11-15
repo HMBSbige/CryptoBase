@@ -132,7 +132,8 @@ public sealed class CertificationRequest
 		}
 	}
 
-	// attributes [0] IMPLICIT SET OF Attribute, where Attribute ::= SEQUENCE { type OBJECT IDENTIFIER, values SET SIZE (1..MAX) OF ANY } (RFC 2986, Sec. 4.1), and the result is the value of extensionRequest, or empty without it.
+	// attributes [0] IMPLICIT SET OF Attribute, where Attribute ::= SEQUENCE { type OBJECT IDENTIFIER, values SET SIZE (1..MAX) OF ANY } (RFC 2986, Sec. 4.1).
+	// The result is the value of extensionRequest, or empty without it.
 	private static IReadOnlyList<CertificateExtension> ReadAttributes(ref DerReader info)
 	{
 		DerReader attributes = info.ReadSetOf(AttributesTag);

@@ -163,7 +163,8 @@ internal struct SM9Fp12
 		ConjugateScale(in value.C1.C2, Frobenius3Limbs5, out result.C1.C2);
 	}
 
-	// (C0 − C1·w)/(C0² − v·C1²). 0 gives 0; the inversion takes constant time, and the intermediates are erased.
+	// (C0 − C1·w)/(C0² − v·C1²).
+	// 0 gives 0; the inversion takes constant time, and the intermediates are erased.
 	[SkipLocalsInit]
 	internal static void Invert(in SM9Fp12 value, out SM9Fp12 result)
 	{

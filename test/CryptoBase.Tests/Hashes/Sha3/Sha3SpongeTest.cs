@@ -3,7 +3,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-// SHA-3 squeezes at most one block, so these tests drive the sponge directly to cover what SHAKE needs: any domain separator and output of any length, squeezed incrementally.
+// SHA-3 squeezes at most one block, so these tests drive the sponge directly to cover what SHAKE needs.
+// That is any domain separator, and output of any length squeezed incrementally.
 public class Sha3SpongeTest
 {
 	private const int ShakeRate = 136;
@@ -45,7 +46,8 @@ public class Sha3SpongeTest
 		await Assert.That(output).IsEquivalentTo(Sha3TestUtils.Shake256Output(message, outputLength), CollectionOrdering.Matching);
 	}
 
-	// The AVX-512 absorb reads the rows that a full vector would run past a block with masked loads, so input that ends at an inaccessible page must absorb without faulting, whether whole blocks or a partial one end it.
+	// The AVX-512 absorb reads the rows that a full vector would run past a block with masked loads.
+	// So input that ends at an inaccessible page must absorb without faulting, whether whole blocks or a partial one end it.
 	[Test]
 	[MethodDataSource(nameof(Rates))]
 	public Task AbsorbReadsNothingPastTheInput(int rate)
@@ -63,7 +65,8 @@ public class Sha3SpongeTest
 		};
 	}
 
-	// The AVX-512 squeeze writes the rows that a full vector would run past a block with masked stores, so output that ends at an inaccessible page must squeeze without faulting, from any position and whether a whole block or a partial one ends it.
+	// The AVX-512 squeeze writes the rows that a full vector would run past a block with masked stores.
+	// So output that ends at an inaccessible page must squeeze without faulting, from any position and whether a whole block or a partial one ends it.
 	[Test]
 	[MethodDataSource(nameof(Rates))]
 	public Task SqueezeWritesNothingPastTheOutput(int rate)
@@ -81,7 +84,8 @@ public class Sha3SpongeTest
 		};
 	}
 
-	// One-shot hashing of an input shorter than the rate loads the padded block with masked loads and stores the output with masked stores, so input that ends at an inaccessible page, and output that does, must hash without faulting.
+	// One-shot hashing of an input shorter than the rate loads the padded block and stores the output with masked operations.
+	// So input and output that end at an inaccessible page must hash without faulting.
 	[Test]
 	[MethodDataSource(nameof(Rates))]
 	public Task HashDataTouchesNothingPastTheInputOrTheOutput(int rate)
@@ -203,7 +207,8 @@ public class Sha3SpongeTest
 		return buffer.Span.ToArray();
 	}
 
-	// Input lengths around the 40-byte rows and the 64-byte vectors of the AVX-512 path, up to one byte short of the rate; output lengths up to the rate, which one block holds.
+	// Input lengths around the 40-byte rows and the 64-byte vectors of the AVX-512 path, up to one byte short of the rate.
+	// Output lengths up to the rate, which one block holds.
 	private static async Task VerifyHashDataBeforeGuardPages<TRate>(int rate) where TRate : IKeccakRate
 	{
 		await Assert.That(TRate.RateInBytes).IsEqualTo(rate);

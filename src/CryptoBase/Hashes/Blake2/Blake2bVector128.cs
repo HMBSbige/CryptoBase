@@ -123,7 +123,7 @@ internal readonly partial struct Blake2bVector128 : IBlake2bKernel
 		Vector128<ulong> x0, Vector128<ulong> x1, Vector128<ulong> y0, Vector128<ulong> y1
 	)
 	{
-		// XOR both halves before rotating either: with only eight XMM registers, 32-bit x86 spills more and runs markedly slower when they interleave.
+		// XOR both halves before rotating either: with only eight XMM registers, 32-bit x86 spills more when they interleave.
 		a0 = a0 + x0 + b0;
 		a1 = a1 + x1 + b1;
 		d0 ^= a0;

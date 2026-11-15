@@ -6,11 +6,11 @@ namespace CryptoBase.Hashes.Blake3;
 internal static class Blake3Tree
 {
 	// Chosen once, so that every dispatch and every length derived from Degree follows the same kernel.
-	// The dispatches test this constant in if chains, which the JIT folds before inlining; a switch, folded after, left ReduceToChildren worse register-allocated.
+	// The dispatches test it in if chains, which the JIT folds before inlining; a switch is folded only after, which worsens register allocation in ReduceToChildren.
 	internal static readonly Blake3TreeKernel Kernel = ChooseKernel();
 
-	// The number of chunks that the kernel hashes side by side;
-	// Blake3Vector512x2 counts as the Blake3Vector512 it runs twice, since the leaf length and chunk mode interval derived from this perform worse sized to its 32 chunks.
+	// The number of chunks that the kernel hashes side by side.
+	// Blake3Vector512x2 counts as the Blake3Vector512 it runs twice, since the leaf length and chunk mode interval derived from this do worse sized to its 32 chunks.
 	internal static int Degree => Kernel switch
 	{
 		Blake3TreeKernel.Vector512x2 or Blake3TreeKernel.Vector512 => Blake3Vector512.Degree,

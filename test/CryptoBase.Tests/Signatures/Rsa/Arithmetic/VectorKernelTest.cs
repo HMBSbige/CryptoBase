@@ -5,7 +5,9 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// The vector kernels against the scalar kernel of the platform and BigInteger, in plain form after a round trip through Montgomery form: random products, and chains of products and squares in which each output feeds the next operation, as in an exponentiation, at the limb counts of MontgomeryKernelCase.LimbCountsToTest with the moduli of ModuliToTest.
+// The vector kernels against the platform's scalar kernel and BigInteger, compared in plain form after a round trip through Montgomery form.
+// Random products, and chains of products and squares in which each output feeds the next operation, as in an exponentiation.
+// At the limb counts of MontgomeryKernelCase.LimbCountsToTest with the moduli of ModuliToTest.
 public class VectorKernelTest
 {
 	private const int ChainLength = 64;

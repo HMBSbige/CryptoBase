@@ -164,7 +164,8 @@ public class RsaOperationTest
 		}
 	}
 
-	// A blinding factor that is a multiple of p or q has no inverse: with p = 3, a third of the factors are, and every signature must still come out right, as BigInteger computes it and as e takes it back.
+	// A blinding factor that is a multiple of p or q has no inverse, and with p = 3 a third of the factors are.
+	// Every signature must still match BigInteger and verify under e.
 	[Test]
 	public async Task ApplyBlindsWithFactorsCoprimeToTheModulus()
 	{
@@ -294,7 +295,8 @@ public class RsaOperationTest
 		}
 	}
 
-	// A component far shorter than the limbs that hold it has the length of its value: q ≡ 3⁻¹ (mod p) gives qInv = 3, in the limbs of p, all but the lowest of them zero.
+	// A component far shorter than the limbs that hold it has the length of its value.
+	// q ≡ 3⁻¹ (mod p) gives qInv = 3, held in the limbs of p with all but the lowest zero.
 	[Test]
 	public async Task LengthsAreThoseOfTheValues()
 	{
@@ -330,7 +332,8 @@ public class RsaOperationTest
 		}
 	}
 
-	// d need not be the least: d + λ(n) below n holds every congruence. Leading zeros do not matter.
+	// d need not be the least: d + λ(n) below n holds every congruence.
+	// Leading zeros do not matter either.
 	[Test]
 	public async Task CreateAcceptsEquivalentEncodings()
 	{
@@ -374,7 +377,7 @@ public class RsaOperationTest
 	}
 
 	// The vector kernels load and store through pointers into the buffers of each operation, which the heap may move.
-	// Private keys whose moduli and primes take each family of kernels, and a public key past every window of AVX-512, sign and verify on several threads against BigInteger while another compacts the heap again and again, with garbage left between what lives.
+	// Private keys of 512 to 4096 bits and a 16384-bit public key, past every AVX-512 window, run on several threads against BigInteger while another thread compacts the heap with garbage left between live objects.
 	// Whether a move lands mid-operation is up to the collector, so the test runs for seconds, alone and only on request.
 	[Test]
 	[Explicit]
@@ -533,8 +536,8 @@ public class RsaOperationTest
 		}
 	}
 
-	// FIPS 186-5, Appendix A.1.1: nlen-bit n of primes of nlen/2 bits, |p − q| > 2^(nlen/2 − 100), 2^(nlen/2) < d < λ(n) with e·d ≡ 1 (mod λ(n)), GCD(p − 1, e) = GCD(q − 1, e) = 1;
-	// and the CRT values of RFC 8017, Sec. 3.2.
+	// FIPS 186-5, Appendix A.1.1: nlen-bit n of primes of nlen/2 bits, |p − q| > 2^(nlen/2 − 100), 2^(nlen/2) < d < λ(n) with e·d ≡ 1 (mod λ(n)), GCD(p − 1, e) = GCD(q − 1, e) = 1.
+	// The CRT values follow RFC 8017, Sec. 3.2.
 	// 2056 bits leave the primes a partial limb, a composite e takes the general GCD and inverse, and 2^33 − 1 is the largest e.
 	[Test]
 	[Arguments(2048, 65537UL)]

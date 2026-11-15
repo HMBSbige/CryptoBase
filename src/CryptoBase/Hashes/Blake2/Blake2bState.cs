@@ -30,7 +30,7 @@ internal struct Blake2bState
 	{
 		Debug.Assert(hashLength is > 0 and <= MaxHashSizeInBytes);
 
-		// Reusing InitializeState here made GetHashAndReset slower.
+		// Written out rather than through InitializeState, which slows GetHashAndReset.
 		_state[0] = IV0 ^ ParameterBlock ^ (uint)hashLength;
 		_state[1] = IV1;
 		_state[2] = IV2;
@@ -176,7 +176,7 @@ internal struct Blake2bState
 	}
 
 	// Single-stream BLAKE2b is bound by the serial dependency chain of G, so vector kernels only win where vector integer additions and rotations take one cycle.
-	// Zen 5 and ARM64 cores take two, so x64 Zen 5 and ARM64 use the scalar kernel.
+	// Zen 5 and ARM64 cores take two, so x64 Zen 5 uses the scalar kernel, as ARM64 does, having no vector kernel here.
 	// 32-bit x86 keeps the vector kernels because it has no 64-bit general-purpose registers.
 	private static readonly bool PreferScalar = X86Base.X64.IsSupported && CpuIdUtils.IsAmdZen5();
 

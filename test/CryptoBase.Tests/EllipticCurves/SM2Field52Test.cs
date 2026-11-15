@@ -74,7 +74,8 @@ internal class SM2Field52Test() : ECFieldTest<SM2Curve, SM2Field52, SM2Order>(52
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// TrySquareRoot accepts a value just if it is a square, as BigInteger.ModPow decides it, and gives a root in the form whose Montgomery square is the value: for each residue v, v² and −v², which is not a square unless 0, as −1 is not a square for p ≡ 3 (mod 4), in every representation of the form.
+	// TrySquareRoot must accept a value just if it is a square, as BigInteger.ModPow decides it, and give a root in the form whose Montgomery square is the value.
+	// The values are v² and −v² for each residue v, in every representation of the form; −v² is not a square unless 0, as −1 is not a square for p ≡ 3 (mod 4).
 	[Test]
 	public async Task TrySquareRootFindsTheRootsOfSquares()
 	{

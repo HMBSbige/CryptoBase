@@ -13,20 +13,23 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 	internal static int EncodedLength => 1 + 2 * TField.ByteLength;
 
-	// Whether MultiplyAdd takes kernels of TCurve, which callers then prefer to a sum of public points in variable time before one product.
+	// Whether MultiplyAdd has kernels of TCurve.
+	// Without them, a caller whose points are public may sum them in variable time and take one product instead.
 	internal static bool HasMultiplyAdd => TCurve.HasMultiplyAdd;
 
 	// b in Montgomery form.
 	private static readonly TField B = FromPlain(TCurve.B);
 
-	// Holds for every point. The result may be the input.
+	// Holds for every point.
+	// The result may be the input.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Double(in JacobianPoint<TField> value, out JacobianPoint<TField> result)
 	{
 		TField.Double(in value, out result);
 	}
 
-	// Any left, equal, opposite or at infinity, and an affine right, which cannot be the point at infinity: masks take the right where the left is at infinity and the double where the points are equal.
+	// Any left, equal, opposite or at infinity, and an affine right, which cannot be the point at infinity.
+	// Masks take the right where the left is at infinity and the double where the points are equal.
 	// The result may be the left: it is written only after the last read of the inputs.
 	[SkipLocalsInit]
 	internal static void Add(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
@@ -37,7 +40,8 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		JacobianPoint<TField>.ConditionalSelect(TField.IsZero(in left.Z), in right, in sum, out result);
 	}
 
-	// Any points, equal, opposite or at infinity: masks take the double where they are equal and the other point where one is at infinity.
+	// Any points, equal, opposite or at infinity.
+	// Masks take the double where they are equal and the other point where one is at infinity.
 	// The result may be either input: it is written only after the last read of them.
 	// The sums on the stack are cleared.
 	[SkipLocalsInit]
@@ -52,7 +56,8 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		twice.ZeroMemory();
 	}
 
-	// The contract of IECField.AddDistinct: for points that are not the point at infinity; equal points give (0, 0, 0) and the mask ulong.MaxValue.
+	// The contract of IECField.AddDistinct: for points that are not the point at infinity.
+	// Equal points give (0, 0, 0) and the mask ulong.MaxValue.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static ulong AddDistinct(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
 	{
@@ -75,7 +80,8 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 	// Sets result to k·G for k below n, by the kernels of TCurve where it has them and MultiplyBaseWindows otherwise.
 	// Neither the time nor the addresses depend on k.
-	// The Jacobian form of the result depends on k and not only on k·G, so for a secret k use MultiplyBaseToAffine, MultiplyBaseReduceX or MultiplyEncodeExportX, which clear it.
+	// The Jacobian form of the result depends on k, not only on k·G.
+	// For a secret k use MultiplyBaseToAffine, MultiplyBaseReduceX or MultiplyEncodeExportX, which clear it.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void MultiplyBase(in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
@@ -131,7 +137,8 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 		RecodeWindows(in scalar, TCurve.GeneratorWindowWidth, digits);
 		SelectWindow(windows, 0, digits[0], out AffinePoint<TField> entry);
-		// A digit of 0 selects (0, 0), which is not a point: the first window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
+		// A digit of 0 selects (0, 0), which is not a point.
+		// The first window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
 		result = default;
 		JacobianPoint<TField>.ConditionalSelect(~ZeroMask((ulong)digits[0]), in entry, in result, out result);
 		Unsafe.SkipInit(out JacobianPoint<TField> sum);
@@ -139,10 +146,14 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		// Window i adds d·2^(wi)·P, d ≠ 0, to L·P with L = Σ_{j<i} d_j·2^(wj).
 		// Opposite points give Z = 0, which is right.
 		// Equal ones need L − d·2^(wi) to be a multiple of n.
-		// Where w divides N = TOrder.BitLength, as for SM2VerificationCurve alone, L − d·2^(wi) has digits in [−2^(w − 1), 2^(w − 1)], the lowest other than 0 no multiple of 2^w, so it is not 0, and it is at most 2^(w − 1)·(2^N − 1)/(2^w − 1) < n for SM2 in absolute value.
-		// Otherwise 1 ≤ |d| ≤ 2^(w − 1) and −2^(wi)/2 < L < 2^(wi), so L − d·2^(wi) is not 0; let t = ⌊N/w⌋.
+		// Where w divides N = TOrder.BitLength, as for SM2VerificationCurve alone, L − d·2^(wi) has digits in [−2^(w − 1), 2^(w − 1)], the lowest nonzero one no multiple of 2^w, so it is not 0.
+		// Its magnitude is at most 2^(w − 1)·(2^N − 1)/(2^w − 1) < n for SM2.
+		// Otherwise 1 ≤ |d| ≤ 2^(w − 1) and −2^(wi)/2 < L < 2^(wi), so L − d·2^(wi) is not 0.
+		// Let t = ⌊N/w⌋.
 		// Below window t, |L − d·2^(wi)| < 2^(w(i + 1)) ≤ 2^(wt) < n.
-		// In window t, 0 < d ≤ 2^(N − wt) puts L − d·2^(wt) in (−2n, 0), so it would be −n: then k = 2d·2^(wt) − n < n and L = d·2^(wt) − n > −2^(wt)/2 put d·2^(wt) in (n − 2^(wt)/2, n), which holds no multiple of 2^(wt), as 2^N − n < 2^(wt)/2 for each curve here.
+		// In window t, 0 < d ≤ 2^(N − wt) puts L − d·2^(wt) in (−2n, 0), so it would be −n.
+		// Then k = 2d·2^(wt) − n < n and L = d·2^(wt) − n > −2^(wt)/2 put d·2^(wt) in (n − 2^(wt)/2, n).
+		// That holds no multiple of 2^(wt), as 2^N − n < 2^(wt)/2 for each curve here.
 		for (int i = 1; i < digits.Length; ++i)
 		{
 			SelectWindow(windows, i, digits[i], out entry);
@@ -177,7 +188,8 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		Recode(in scalar, WindowWidth, digits);
 		BuildMultiples(in point, table);
 		Select(table, digits[^1], out AffinePoint<TField> entry);
-		// A digit of 0 selects (0, 0), which is not a point: the top window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
+		// A digit of 0 selects (0, 0), which is not a point.
+		// The top window then leaves the point at infinity, Z = 0, and the later ones discard the sum.
 		result = default;
 		JacobianPoint<TField>.ConditionalSelect(~ZeroMask((ulong)digits[^1]), in entry, in result, out result);
 		Unsafe.SkipInit(out JacobianPoint<TField> sum);
@@ -194,9 +206,11 @@ internal static class ECGroup<TCurve, TField, TOrder>
 			// The doublings leave 32a·P for the value a ≥ 0 of the digits above i, and the entry is d·P, |d| ≤ 16, or (0, 0) for d = 0.
 			// The digits from i down make more than −32^(i + 1)/2, so 32a < n/32^i + 16.
 			// Opposite points give Z = 0, which is right; equal ones need 32a ≡ d (mod n).
-			// For i ≥ 1, |32a − d| < n leaves 32a = d, so a = 0 and d = 0: the point at infinity and a digit of 0, which the masks cover. In window 0, k = 32a + d, so equal points need k ≡ 2d (mod n) with d the low digit of k. For d > 0 that is k = 2d, whose low digit is not d;
-			// for d < 0 it is k = n + 2d, whose low digit is d just if d ≡ −n (mod 32).
-			// No d in [−15, −1] does that for P-256, n ≡ 17, or P-384, n ≡ 19, but d = −9 does for P-521, n ≡ 9, at k = n − 18, and d = −3 for SM2, n ≡ 3, at k = n − 6, so that window doubles where the points are equal.
+			// For i ≥ 1, |32a − d| < n leaves 32a = d, so a = 0 and d = 0: the point at infinity and a digit of 0, which the masks cover.
+			// In window 0, k = 32a + d, so equal points need k ≡ 2d (mod n) with d the low digit of k.
+			// For d > 0 that is k = 2d, whose low digit is not d; for d < 0 it is k = n + 2d, whose low digit is d just if d ≡ −n (mod 32).
+			// No d in [−15, −1] does that for P-256, n ≡ 17, or P-384, n ≡ 19, but d = −9 does for P-521, n ≡ 9, at k = n − 18, and d = −3 for SM2, n ≡ 3, at k = n − 6.
+			// So window 0 takes Add, which doubles where the points are equal.
 			if (i is not 0)
 			{
 				_ = AddDistinct(in result, in entry, out sum);
@@ -236,7 +250,7 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 	// Sets multiples[j − 1] to j·P for a point P on the curve.
 	// No j·P is the point at infinity, as j ≤ multiples.Length < n, so each has an affine form.
-	// Every caller of Multiply passes a public P, but the inversion takes constant time all the same and the intermediates are cleared, so that neither the time nor the addresses depend on P.
+	// Every caller of Multiply passes a public P, but the inversion takes constant time and the intermediates are cleared all the same, so neither the time nor the addresses depend on P.
 	[SkipLocalsInit]
 	internal static void BuildMultiples(in AffinePoint<TField> point, Span<AffinePoint<TField>> multiples)
 	{
@@ -426,7 +440,7 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		TField.Multiply(in point.X, in square, out result.X);
 		TField.Multiply(in square, in inverse, out inverse);
 		TField.Multiply(in point.Y, in inverse, out result.Y);
-		// With the affine form, Z⁻² or Z⁻³ would give back the Jacobian one.
+		// Cleared, as with the affine form Z⁻² or Z⁻³ would give back the Jacobian one.
 		square.ZeroMemory();
 		inverse.ZeroMemory();
 	}
@@ -557,7 +571,8 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		return TField.AreEqual(in left, in right) is not 0;
 	}
 
-	// x³ − 3x + b, which y² equals for a point (x, y) of the curve. The result must not be x.
+	// x³ − 3x + b, which y² equals for a point (x, y) of the curve.
+	// The result must not be x.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void RightSide(in TField x, out TField result)
 	{
@@ -569,7 +584,8 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		TField.Add(in result, in B, out result);
 	}
 
-	// ⌈N/w⌉ digits for N = TOrder.BitLength: where w does not divide N, the top one holds the top N mod w bits and the carry into them, as Recode writes them, and where it does, RecodeSpanning keeps every carry within them.
+	// ⌈N/w⌉ digits for N = TOrder.BitLength.
+	// Where w does not divide N, the top one holds the top N mod w bits and the carry into them, as Recode writes them; where it does, RecodeSpanning keeps every carry within them.
 	internal static int DigitCount(int width)
 	{
 		return (TOrder.BitLength + width - 1) / width;
@@ -589,7 +605,7 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	}
 
 	// The digits of LimbArithmetic.RecodeSignedWindows, for w that does not divide N, so that the top window holds at most w − 1 bits of k.
-	// The loop is repeated here, where the JIT knows the limb count of TOrder: a call to the shared one passes a span, which its loop rereads for every digit.
+	// The loop is repeated here, where the JIT knows the limb count of TOrder; the shared one takes a span, which its loop rereads for every digit.
 	internal static void Recode(in FieldElement<TOrder> scalar, int width, Span<sbyte> digits)
 	{
 		// Digits up to 2^(w − 1) must fit in an sbyte.
@@ -609,7 +625,10 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		}
 	}
 
-	// As Recode for w that divides 64 and N = 64·TOrder.LimbCount, the N/w digits d_i = x_i − 2^(w − 1) for the windows x_i of k + H, H holding 2^(w − 1) in every window: they lie in [−2^(w − 1), 2^(w − 1) − 1] and sum to k − c·2^N for the carry c out of k + H, which is 1 just if k + H ≥ 2^N, so just if k exceeds the largest such sum, (2^(w − 1) − 1)·(2^N − 1)/(2^w − 1).
+	// As Recode, for w that divides 64 and N = 64·TOrder.LimbCount.
+	// With H holding 2^(w − 1) in every window, the N/w digits are d_i = x_i − 2^(w − 1) for the windows x_i of k + H.
+	// They lie in [−2^(w − 1), 2^(w − 1) − 1] and sum to k − c·2^N for the carry c out of k + H.
+	// c is 1 just if k + H ≥ 2^N, so just if k exceeds the largest such sum, (2^(w − 1) − 1)·(2^N − 1)/(2^w − 1).
 	// Then the windows of k + H − n, below 2^N, give the digits of k − n, so that k ≡ Σ d_i·2^(wi) (mod n) either way.
 	// n is subtracted under a mask of the carry, and only i decides which limbs are read, so neither the time nor the addresses depend on k.
 	[SkipLocalsInit]
@@ -645,7 +664,8 @@ internal static class ECGroup<TCurve, TField, TOrder>
 		values.ZeroMemory();
 	}
 
-	// multiples holds 1·P to multiples.Length·P. A digit of 0 gives (0, 0), which is not a point.
+	// multiples holds 1·P to multiples.Length·P.
+	// A digit of 0 gives (0, 0), which is not a point.
 	internal static void Select(ReadOnlySpan<AffinePoint<TField>> multiples, int digit, out AffinePoint<TField> result)
 	{
 		int sign = digit >> 31;

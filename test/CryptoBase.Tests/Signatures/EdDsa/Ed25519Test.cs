@@ -43,7 +43,7 @@ public class Ed25519Test
 		}
 	}
 
-	// Seeds and messages around the SHA-512 block, which the prefix, R ‖ A and dom2 shift, in every variant and with contexts of 1 to 255 bytes.
+	// Random seeds with message lengths around the 128-byte SHA-512 block, which the prefix, R ‖ A and dom2 shift, in every variant and with contexts of 1 to 255 bytes.
 	[Test]
 	public async Task SignaturesMatchTheReference()
 	{
@@ -101,7 +101,7 @@ public class Ed25519Test
 		}
 	}
 
-	// Encodings with y of p or more, x = 0 with the sign bit set, or a y with no x.
+	// Encodings with y of p or more, x = 0 with the sign bit set, or a y with no x, and keys of the wrong length.
 	[Test]
 	public async Task PublicKeysThatDoNotDecodeThrow()
 	{
@@ -604,7 +604,7 @@ public class Ed25519Test
 		byte[] curvePrivateKey = CurvePrivateKey(seed);
 		byte[][] invalid =
 		[
-			// A public key that does not match, of the wrong length, with unused bits, or not in a primitive [1].
+			// A public key that does not match, of the wrong length, with unused bits, not in a primitive [1], or in a version 1 key.
 			Pkcs8(1, curvePrivateKey, PublicKeyField(ExportPublicKey(other))), Pkcs8(1, curvePrivateKey, PublicKeyField(publicKey.AsSpan(1).ToArray())), Pkcs8(1, curvePrivateKey, PublicKeyField([.. publicKey, 0])),
 			Pkcs8(1, curvePrivateKey, Tlv(0x81, [1, .. publicKey])), Pkcs8(1, curvePrivateKey, Tlv(0xA1, Tlv(0x03, [0, .. publicKey]))), Pkcs8(0, curvePrivateKey, PublicKeyField(publicKey)),
 			// A seed of the wrong length, not in a CurvePrivateKey, or not in DER.

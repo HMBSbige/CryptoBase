@@ -162,7 +162,8 @@ public class SM9KeyExchangeTest
 		}
 	}
 
-	// The input is read before any output is written, so it may share a buffer with the outputs: here the ephemeral key of the peer lies under the key and the confirmation.
+	// The input is read before any output is written, so it may share a buffer with the outputs.
+	// Here the ephemeral key of the peer lies under the key and the confirmation.
 	[Test]
 	public async Task InputsMayOverlapTheOutputs()
 	{
@@ -211,8 +212,8 @@ public class SM9KeyExchangeTest
 		}
 	}
 
-	// The KGC may choose any hid for the key exchange: keys of one hid agree, with and without confirmation, and import only with it;
-	// with keys of two hids, each party takes the user public key of its peer under its own hid, so the keys and the confirmations differ.
+	// The KGC may choose any hid for the key exchange: keys of one hid agree, with and without confirmation, and import only with it.
+	// With keys of two hids, each party takes the user public key of its peer under its own hid, so the keys and the confirmations differ.
 	[Test]
 	public async Task OtherHidsAgree()
 	{
@@ -268,7 +269,8 @@ public class SM9KeyExchangeTest
 		}
 	}
 
-	// One key exchange key serves many exchanges at once; the first builds the lines of de and the table of g.
+	// One key exchange key serves many exchanges at once.
+	// The first builds the lines of de and the table of g.
 	[Test]
 	public async Task OneKeyServesConcurrentExchanges()
 	{

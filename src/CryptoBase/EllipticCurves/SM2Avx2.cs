@@ -49,7 +49,7 @@ internal readonly struct SM2Avx2 : ISM2Kernel
 	{
 		SM2QuadFormulas.MultiplyVariableTime(in point, in u2, out result);
 
-		// x̄·R of the key exchange takes u1 = 0.
+		// x̄·R of the key exchange takes u1 = 0, which needs no u1·G.
 		if (FieldElement<SM2Order>.IsZero(in u1) is not 0)
 		{
 			return;

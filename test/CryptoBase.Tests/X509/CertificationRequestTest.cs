@@ -29,8 +29,8 @@ internal class CertificationRequestTest
 
 	private static readonly Asn1Tag AttributesTag = new(TagClass.ContextSpecific, 0, true);
 
-	// A request whose subject, public key and extensions the builder writes and decoding returns, for every signature algorithm;
-	// the platform reads its fields and the signature covers the CertificationRequestInfo alone.
+	// For every signature algorithm, decoding returns the subject, public key and extensions that the builder writes.
+	// The platform reads the fields, and the signature covers the CertificationRequestInfo alone.
 	[Test]
 	[MethodDataSource(typeof(CertificateBuilderTest), nameof(CertificateBuilderTest.SigningCases))]
 	public async Task CreatesRequestsThatTheBclReads(KeyType type, SignatureAlgorithm algorithm)

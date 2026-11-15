@@ -75,7 +75,7 @@ internal abstract class ECFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Every multiple of p in the form is 0, and its neighbours are not.
+	// IsZero and AreEqual compare values mod p across every representation in the form: each multiple of p is 0, and value never equals value + 1.
 	[Test]
 	public async Task ZeroTestsReduceFirst()
 	{
@@ -223,7 +223,8 @@ internal abstract class ECFieldTest<TCurve, TField, TOrder>(int limbBits, ulong 
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Results feed the next step unreduced, for thousands of steps: doublings, complete additions of G, and additions of 2kG to kG, which differ while kG is not the point at infinity, checked against the reference along the way.
+	// Results feed the next step unreduced for 4000 steps: doublings, complete additions of G, and AddDistinct of 2kG to kG, which never meets equal points.
+	// Every step must stay in the form, and every 250th must match the reference.
 	[Test]
 	public async Task LongChainsOfFormulasStayInForm()
 	{

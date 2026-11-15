@@ -26,7 +26,7 @@ internal partial struct Field448x4Sse41 : IEdwardsField448x4<Field448x4Sse41>
 		WriteEntryPairs(ref second, 4, Vector128<ulong>.Zero, product1, Vector128<ulong>.Zero, product3, negate);
 	}
 
-	// Limbs i to i + 3 and i + 8 to i + 11 of the left operand of a pair from lanes a and b of two 56-bit limbs of the low half and the two 8 above them, the second lane negated where negate is set.
+	// Limbs i to i + 3 and i + 8 to i + 11 of the left operand of a pair from lanes a and b of two 56-bit limbs of the low half and the two 4 above them, the second lane negated where negate is set.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void WriteEntryPairs(ref Vector128<ulong> operands, nint i, Vector128<ulong> aLow, Vector128<ulong> bLow, Vector128<ulong> aHigh, Vector128<ulong> bHigh, Vector128<ulong> negate)
 	{

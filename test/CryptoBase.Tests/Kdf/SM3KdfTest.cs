@@ -6,8 +6,9 @@ namespace CryptoBase.Tests.Kdf;
 
 public class SM3KdfTest
 {
-	// The keys that the examples of the standards print, from the inputs that they print: GB/T 32918.5-2017, C.2, t = KDF(x2 ‖ y2, klen) of the encryption, and B.2, K = KDF(xU ‖ yU ‖ ZA ‖ ZB, 128) of the key exchange;
-	// GM/T 0044.5-2016, C.2, K = KDF(C ‖ w ‖ IDB, 256) of the key encapsulation, D.2, K = KDF(C1 ‖ w ‖ IDB, 416) of the encryption, and B.2, SK = KDF(IDA ‖ IDB ‖ RA ‖ RB ‖ g1 ‖ g2 ‖ g3, 128) of the key exchange.
+	// The keys that the examples of the standards print, from the inputs that they print.
+	// GB/T 32918.5-2017: C.2, t = KDF(x2 ‖ y2, klen) of the encryption, and B.2, K = KDF(xU ‖ yU ‖ ZA ‖ ZB, 128) of the key exchange.
+	// GM/T 0044.5-2016: C.2, K = KDF(C ‖ w ‖ IDB, 256) of the key encapsulation, D.2, K = KDF(C1 ‖ w ‖ IDB, 416) of the encryption, and B.2, SK = KDF(IDA ‖ IDB ‖ RA ‖ RB ‖ g1 ‖ g2 ‖ g3, 128) of the key exchange.
 	[Test]
 	public async Task KeysOfTheStandardExamples()
 	{
@@ -37,7 +38,8 @@ public class SM3KdfTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Keys of 1 byte to 41 blocks, around the groups of vector lanes, against the blocks SM3(Z ‖ ct) one at a time, for an empty Z, Z around the padding of one and two blocks and the counter across them, and a Z of many blocks.
+	// Keys of 1 byte to 41 blocks, around the groups of vector lanes, against the blocks SM3(Z ‖ ct) one at a time.
+	// Z is empty, around the padding of one and two blocks with the counter across them, or of many blocks.
 	[Test]
 	public async Task KeysMatchSingleBlocks()
 	{

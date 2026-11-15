@@ -73,8 +73,10 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		return unknown;
 	}
 
-	// RFC 6960, Appendix A.1: {url}/{url-encoding of base-64 encoding of the request}, if short enough for RFC 9919, Sec. 6; a URI with a query or a fragment has no place to append it.
-	// The URI is kept whole, with a slash added only if it does not end with one, as the OCSP client of the .NET runtime on OpenSSL appends it: removing slashes would ask another resource of a responder whose path ends with several.
+	// RFC 6960, Appendix A.1: {url}/{url-encoding of base-64 encoding of the request}, if short enough for RFC 9919, Sec. 6.
+	// A URI with a query or a fragment has no place to append it.
+	// The URI is kept whole, with a slash added only if it does not end with one, as the OCSP client of the .NET runtime on OpenSSL appends it.
+	// Removing slashes would ask another resource of a responder whose path ends with several.
 	private static Uri? GetOcspGetUri(Uri responder, OcspRequest request)
 	{
 		if (responder.Query.Length > 0 || responder.Fragment.Length > 0)
@@ -232,7 +234,8 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 		return new RevocationResult(RevocationStatus.Unknown, detail);
 	}
 
-	// Asks a responder once. Null if nothing came back; a Response of null if what came back does not decode.
+	// Asks a responder once.
+	// Null if nothing came back; a Response of null if what came back does not decode.
 	private async ValueTask<(RevocationResult Result, OcspResponse? Response)?> AskOcspAsync(Uri responder, OcspRequest request, Certificate certificate, Certificate issuer)
 	{
 		ReadOnlyMemory<byte> data = GetOcspGetUri(responder, request) is { } get

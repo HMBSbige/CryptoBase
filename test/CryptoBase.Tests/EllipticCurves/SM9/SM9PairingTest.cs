@@ -30,7 +30,7 @@ public class SM9PairingTest
 
 	internal static readonly G1Value EncryptC1 = G1(EncryptC1X, EncryptC1Y);
 
-	// The pairing values of the examples: e(P1, Ppub-s), e(S, P) of the verification, e(RA, deB) and e(RB, deA) of the key exchange, e(Ppub-e, P2) of the encapsulation and e(C, deB) of the decapsulation and decryption.
+	// The pairing values of the examples: e(P1, Ppub-s), e(S, P) of the verification, e(RA, deB) and e(RB, deA) of the key exchange, e(Ppub-e, P2) of the encapsulation, and e(C, deB) and e(C1, deB) of the decapsulation and decryption.
 	public static IEnumerable<Func<(G1Value P, G2Value Q, string Expected)>> Examples()
 	{
 		yield return () => (P1, SignPublic, SignG);
@@ -42,7 +42,7 @@ public class SM9PairingTest
 		yield return () => (EncryptC1, EncryptKey, EncryptW);
 	}
 
-	// The reference follows GM/T 0044.1 B.6.2 literally, so it checks the reading of the standard behind both it and the implementation.
+	// The reference follows GM/T 0044.1 B.6.2 literally, so this checks the reading of the standard behind both it and the implementation.
 	[Test]
 	public async Task ReferenceGivesTheSignatureExample()
 	{

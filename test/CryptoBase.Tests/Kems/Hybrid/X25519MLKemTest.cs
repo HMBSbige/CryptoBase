@@ -163,7 +163,8 @@ public class X25519MLKemTest
 		}
 	}
 
-	// RFC 7748 accepts every encoding of a u-coordinate; the encapsulation key keeps the one it was given.
+	// RFC 7748 accepts every encoding of a u-coordinate.
+	// The encapsulation key keeps the one it was given.
 	[Test]
 	public async Task NonCanonicalX25519KeysAreKeptAndUsed()
 	{
@@ -180,7 +181,8 @@ public class X25519MLKemTest
 		}
 	}
 
-	// TLS requires the all-zero check of the X25519 secret; the ciphertext alone decides it, so an unrelated key gives false too.
+	// TLS requires the all-zero check of the X25519 secret.
+	// The ciphertext alone decides it, so an unrelated key gives false too.
 	[Test]
 	public async Task SmallOrderEphemeralKeysReturnFalse()
 	{

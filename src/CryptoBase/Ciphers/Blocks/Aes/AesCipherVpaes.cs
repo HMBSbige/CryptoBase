@@ -4,7 +4,8 @@ namespace CryptoBase.Ciphers.Blocks.Aes;
 
 internal struct AesCipherVpaes : IDisposable, IAesSubWord
 {
-	// ShuffleNative indices are nibbles or have bit 7 set. TBL and PSHUFB agree on this domain.
+	// ShuffleNative indices are nibbles or have bit 7 set.
+	// TBL and PSHUFB agree on this domain.
 	public static bool IsSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported;
 
 	private readonly int _rounds;

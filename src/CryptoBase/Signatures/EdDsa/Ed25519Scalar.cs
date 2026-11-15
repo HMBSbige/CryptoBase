@@ -122,7 +122,8 @@ internal static class Ed25519Scalar
 		BinaryPrimitives.WriteUInt64LittleEndian(destination.Slice(24), limbs[3]);
 	}
 
-	// Whether 32 little-endian bytes are below L, as the S of a signature must be. The time depends on the value.
+	// Whether 32 little-endian bytes are below L, as the S of a signature must be.
+	// The time depends on the value.
 	internal static bool IsCanonical(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(source.Length is Length);

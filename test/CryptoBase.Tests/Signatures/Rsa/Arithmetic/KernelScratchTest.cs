@@ -6,7 +6,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// Kernels may lay out their scratch by its address, as MontgomeryKernelAdvSimd and MontgomeryPairKernelAdvSimd do to keep their operands within a page: wherever the scratch lies across a page boundary, and whatever it holds, the products and squares are right and nothing outside the scratch changes.
+// Kernels may lay out their scratch by its address, as MontgomeryKernelAdvSimd and MontgomeryPairKernelAdvSimd do to keep their operands within a page.
+// Wherever the scratch lies across a page boundary, and whatever it holds, the products and squares are right and nothing outside the scratch changes.
 public class KernelScratchTest
 {
 	private const ulong Canary = 0xA5A5_5A5A_C3C3_3C3CUL;
@@ -65,8 +66,8 @@ public class KernelScratchTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Moduli of as few digits as a kernel takes, down to one, which no context makes: the last blocks of a kernel may hold columns past the result, which it must not write.
-	// The words around the result stay as they were.
+	// Moduli of one to eight digits, down to the single digit that no context makes.
+	// The last blocks of a kernel may hold columns past the result, yet the words around the result stay as they were.
 	[Test]
 	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
 	public async Task FewDigitsStayWithinTheResult(MontgomeryKernelCase kernel)

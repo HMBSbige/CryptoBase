@@ -93,7 +93,8 @@ public class Blake3XofTest
 		await Assert.That(restarted).IsEquivalentTo(expected, CollectionOrdering.Matching);
 	}
 
-	// Reading only seals the input; random access through a position still works and leaves the read position alone.
+	// Reading only seals the input.
+	// Random access through a position still works and leaves the read position alone.
 	[Test]
 	public async Task ReadingKeepsPositionalOutputAndRejectsOtherInput()
 	{

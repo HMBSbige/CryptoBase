@@ -1,6 +1,7 @@
 namespace CryptoBase.Internal;
 
-// Scratch for vector rounds on a 64-byte boundary, or with Start on any power of two, since the stack keeps only 16-byte alignment and a wider vector could cross a cache line.
+// Scratch for vector rounds on a 64-byte boundary, or with Start on any power of two.
+// The stack keeps only 16-byte alignment, so a wider vector could cross a cache line.
 // The buffer holds the values and the bytes skipped to align them, fewer than the alignment.
 internal static class AlignedScratch
 {

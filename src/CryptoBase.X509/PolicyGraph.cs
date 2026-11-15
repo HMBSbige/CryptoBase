@@ -2,8 +2,10 @@ using System.Runtime.InteropServices;
 
 namespace CryptoBase.X509;
 
-// The certificate policy processing of RFC 5280, Sec. 6.1, for one certification path, with the valid_policy_graph of RFC 9618, Sec. 5, in place of the valid_policy_tree: the two accept the same paths, and the graph has at most one node per policy at each depth, so its size is linear in the policies and mappings of the path.
-// Nodes are kept by depth, and nodes without children are found at the end rather than pruned at each step (RFC 9618, Sec. 5.3, step (d)(3)), which changes nothing: every step reads only the nodes of the previous depth and the depth being built.
+// The certificate policy processing of RFC 5280, Sec. 6.1, for one certification path, with the valid_policy_graph of RFC 9618, Sec. 5, in place of the valid_policy_tree.
+// The two accept the same paths, and the graph has at most one node per policy at each depth, so its size is linear in the policies and mappings of the path.
+// Nodes are kept by depth, and nodes without children are found at the end rather than pruned at each step (RFC 9618, Sec. 5.3, step (d)(3)).
+// That changes nothing, as every step reads only the nodes of the previous depth and the depth being built.
 internal static class PolicyGraph
 {
 	public static readonly ReadOnlyMemory<byte> AnyPolicy = new byte[] { 0x55, 0x1D, 0x20, 0x00 };
@@ -15,7 +17,8 @@ internal static class PolicyGraph
 
 	// Checks a path, from the peer's certificate to the trust anchor at its end, which does not take part.
 	// Returns the problem of a path that no policy is valid for when one is required, or null.
-	// The entries of the graph that the check handles, its policies, mappings and expected policies, count against budget; if they would exceed it, limitReached is set and the result is null.
+	// The entries of the graph that the check handles, its policies, mappings and expected policies, count against budget.
+	// If they would exceed it, limitReached is set and the result is null.
 	public static PathProblem? Check(List<PathNode> path, TrustAnchorCertificateValidator validator, ref long budget, out bool limitReached)
 	{
 		limitReached = false;
@@ -210,7 +213,8 @@ internal static class PolicyGraph
 		return next.Count > 0 ? next : null;
 	}
 
-	// RFC 9618, Sec. 5.4, step (b), for the nodes of the depth of a certificate with policy mappings: returns the depth, or null if no node is left.
+	// RFC 9618, Sec. 5.4, step (b), for the nodes of the depth of a certificate with policy mappings.
+	// Returns the depth, or null if no node is left.
 	private static Dictionary<ReadOnlyMemory<byte>, Node>? ApplyMappings(Dictionary<ReadOnlyMemory<byte>, Node> level, PolicyMappings mappings, bool mappingAllowed)
 	{
 		Dictionary<ReadOnlyMemory<byte>, List<ReadOnlyMemory<byte>>> byIssuerPolicy = new(ByteMemoryComparer.Instance);
@@ -236,7 +240,8 @@ internal static class PolicyGraph
 			}
 			else if (anyNode is not null)
 			{
-				// (b)(2); anyPolicy at a depth above zero has the anyPolicy of the previous depth for its one parent.
+				// (b)(2).
+				// anyPolicy at a depth above zero has the anyPolicy of the previous depth for its one parent.
 				level.Add(issuerDomainPolicy, new Node(issuerDomainPolicy, [.. subjects], [anyNode.Parents[0]]));
 			}
 		}
@@ -245,7 +250,8 @@ internal static class PolicyGraph
 	}
 
 	// RFC 9618, Sec. 5.5, step (g): whether the user-constrained policy set is not empty, the set being every policy if initial is null.
-	// Every node that leads to one of the last depth counts; the others are those that pruning removes.
+	// Every node that leads to one of the last depth counts.
+	// The others are those that pruning removes.
 	private static bool HasAcceptablePolicy(Dictionary<ReadOnlyMemory<byte>, Node> level, HashSet<ReadOnlyMemory<byte>>? initial)
 	{
 		if (initial is null || level.ContainsKey(AnyPolicy))
@@ -284,7 +290,8 @@ internal static class PolicyGraph
 	}
 
 	// A node of the valid_policy_graph, without the qualifier_set, which the validator does not return.
-	// Parents are the nodes of the previous depth; expected_policy_set is Expected, which step (b)(1) replaces.
+	// Parents are the nodes of the previous depth.
+	// expected_policy_set is Expected, which step (b)(1) replaces.
 	private sealed class Node(ReadOnlyMemory<byte> policy, ReadOnlyMemory<byte>[] expected, List<Node> parents)
 	{
 		public ReadOnlyMemory<byte> Policy { get; } = policy;

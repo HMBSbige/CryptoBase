@@ -29,7 +29,7 @@ public class TrialDivisionTest
 
 		foreach (int prime in Primes)
 		{
-			// prime·k of limbs limbs, odd, with every half nonzero but those past the value.
+			// An odd multiple of prime with a nonzero top half: k of 64·limbs − 14 bits leaves room for a prime below 2^13.
 			BigInteger k = RandomBits(random, 64 * limbs - 14) | BigInteger.One;
 
 			if (!trial.HasSmallFactor(ToLimbs(prime * k, limbs)))
@@ -64,7 +64,8 @@ public class TrialDivisionTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Instances of lengths in turn, whose weights serve shorter candidates once taken for longer ones and are taken afresh for longer ones, match BigInteger.
+	// Instances of several lengths in turn match BigInteger.
+	// The cached weights of a longer length serve shorter ones, and a length longer than the cached one computes them afresh.
 	[Test]
 	public async Task LengthsInTurnMatchReference()
 	{

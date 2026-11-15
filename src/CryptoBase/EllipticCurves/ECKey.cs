@@ -67,7 +67,8 @@ internal struct ECKey<TCurve, TField, TOrder>
 		}
 	}
 
-	// Sets result to a d in [1, n − 1] drawn from fill. Only the retry after a candidate outside that range branches.
+	// Sets result to a d in [1, n − 1] drawn from fill.
+	// Only the retry after a candidate outside that range branches.
 	[SkipLocalsInit]
 	internal static void GeneratePrivateScalar(Action<Span<byte>> fill, out FieldElement<TOrder> result)
 	{

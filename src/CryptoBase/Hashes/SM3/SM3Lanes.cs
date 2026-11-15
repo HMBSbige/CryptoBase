@@ -4,7 +4,8 @@ namespace CryptoBase.Hashes.SM3;
 
 // The compression function of SM3 over the lanes of TLanes, and the blocks SM3(prefix ‖ ct) of the KDF of GB/T 32918.4-2016, Sec. 5.4.3, for consecutive counters ct, one counter to a lane.
 // The rounds follow those of SM3Core: the eight state vectors take new roles each round rather than moving, so that four rounds bring them back to their places.
-// A round waits on six dependent vector steps, so one group of lanes leaves most of the vector pipelines idle: where there are 32 vector registers, which two states and the temporaries fill, Write takes two groups at a time, their rounds in turn, and one group only for the rest of the key that fits in it.
+// A round waits on six dependent vector steps, so one group of lanes leaves most of the vector pipelines idle.
+// Where there are 32 vector registers, enough for two states and the temporaries, Write takes two groups at a time, their rounds in turn, and one group only for a rest of the key that fits in it.
 internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector> where TVector : unmanaged
 {
 	internal const int BlockLength = 32;
@@ -66,14 +67,14 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 	}
 
 	// Compresses the block of each lane, its 16 words at schedule, into the state of the lane, its 8 words at state, and leaves the working state and then W[8..67] of the expanded block at schedule, which the caller erases.
-	// The JIT tracks a limited number of locals, which the inlined steps of all 64 rounds would come near, and over it would leave the state on the stack;
-	// so the rounds run in three methods, which pass the working state through W[0..7], which no round reads past round 15, as for two groups.
+	// The inlined steps of all 64 rounds would come near the number of locals the JIT tracks, past which it leaves the state on the stack.
+	// So the rounds run in three methods that pass the working state through W[0..7], which no round reads past round 15, as for two groups.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void Compress(ref TVector state, ref TVector schedule)
 	{
 #if !NET11_0_OR_GREATER
-		// On x64, the 16-byte lanes run all the rounds in one method without spilling, which on Windows saves the callee-saved vector registers once rather than in each of three methods.
-		// From .NET 11 on, that method spills in the middle rounds and runs no faster, so the rounds stay in three methods there.
+		// On x64 the 16-byte lanes run all the rounds in one method without spilling, so Windows saves the callee-saved vector registers once rather than in each of three methods.
+		// From .NET 11 on that method spills in the middle rounds, so the rounds stay in three methods there.
 		if (X86Base.X64.IsSupported && Unsafe.SizeOf<TVector>() is 16)
 		{
 			CompressInOne(ref state, ref schedule);

@@ -71,7 +71,8 @@ public sealed class OcspRequest
 		OcspCertificateId certificateId = OcspCertificateId.Create(certificate, issuer, hashAlgorithm);
 		AsnWriter writer = new(AsnEncodingRules.DER);
 
-		// OCSPRequest ::= SEQUENCE { tbsRequest TBSRequest }, and TBSRequest ::= SEQUENCE { requestList SEQUENCE OF Request, requestExtensions [2] EXPLICIT Extensions OPTIONAL }, whose version takes its default, which DER omits.
+		// OCSPRequest ::= SEQUENCE { tbsRequest TBSRequest }, and TBSRequest ::= SEQUENCE { requestList SEQUENCE OF Request, requestExtensions [2] EXPLICIT Extensions OPTIONAL }.
+		// The version takes its default, which DER omits.
 		using (writer.PushSequence())
 		using (writer.PushSequence())
 		{

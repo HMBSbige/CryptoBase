@@ -40,7 +40,8 @@ internal static class TestPki
 		public CertificateExtension[] Extensions { get; init; } = [];
 	}
 
-	// A CA: its name, key and certificate, and the signature algorithm with which it issues. The instance owns the key.
+	// A CA: its name, key and certificate, and the signature algorithm with which it issues.
+	// The instance owns the key.
 	public sealed class Authority(byte[] name, ISignatureKey key, Certificate certificate, SignatureAlgorithm algorithm = SignatureAlgorithm.EcdsaSha256) : IDisposable
 	{
 		public byte[] Name { get; } = name;
@@ -130,7 +131,7 @@ internal static class TestPki
 		return Sign(template, issuer, AlgorithmIdentifier.FromSignatureAlgorithm(algorithm).Encoded.ToArray(), tbs => Signatures.SignatureTestUtils.Sign(key, algorithm, tbs));
 	}
 
-	// The certificate whose TBSCertificate, with the signature algorithm given, sign signs.
+	// Signs the TBSCertificate, with the given signature algorithm, with sign.
 	public static Certificate Sign(Template template, byte[] issuer, byte[] signatureAlgorithm, Func<byte[], byte[]> sign)
 	{
 		byte[] tbs = TbsCertificate(template, issuer, signatureAlgorithm);

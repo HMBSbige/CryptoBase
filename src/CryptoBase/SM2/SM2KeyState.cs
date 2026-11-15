@@ -401,8 +401,8 @@ internal struct SM2KeyState
 
 		try
 		{
-			// B3: d·C1, which d in [1, n − 2] keeps from the point at infinity;
-			// the check never fails, but it keeps the bytes of shared, which SkipLocalsInit leaves as they were, out of the KDF if it did.
+			// B3: d·C1, which d in [1, n − 2] keeps from the point at infinity.
+			// The check never fails; if it did, it would keep the uninitialized bytes of shared out of the KDF.
 			if (!ECGroup<SM2Curve, SM2CurveField, SM2Order>.TryMultiplyEncode(in point, in _key.Key.PrivateScalar, shared.Span))
 			{
 				return false;

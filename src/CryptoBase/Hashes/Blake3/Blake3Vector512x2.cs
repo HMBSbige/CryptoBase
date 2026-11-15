@@ -3,7 +3,8 @@ using static CryptoBase.Hashes.Blake3.Blake3Constants;
 
 namespace CryptoBase.Hashes.Blake3;
 
-// Hashes 32 consecutive full chunks as two groups of 16, each laid out as in Blake3Vector512, with the steps of the two groups interleaved half by half: where vector additions and rotations take two cycles, as on Zen 5, one group alone leaves the vector pipelines waiting on the latency of each G, and the other group fills those cycles.
+// Hashes 32 consecutive full chunks as two groups of 16, each laid out as in Blake3Vector512, with the steps of the two groups interleaved half by half.
+// Where vector additions and rotations take two cycles, as on Zen 5, one group alone leaves the vector pipelines waiting on the latency of each G, and the other group fills those cycles.
 // Fewer chunks, and all parents, take Blake3Vector512.
 internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 {

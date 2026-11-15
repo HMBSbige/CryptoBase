@@ -5,7 +5,9 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// Each pair kernel against the single kernel of each modulus, bit for bit: the halves of a pair must come out as the contexts of the moduli compute them, for random values and the ends of [0, 2n), and so must exponentiations, which take moduli of up to MaxExponentiationLimbs.
+// Each pair kernel against the single kernel of each modulus, bit for bit.
+// The halves of a pair must come out as the contexts of the moduli compute them, for random values and the ends of [0, 2n).
+// So must exponentiations, which take moduli of up to MaxExponentiationLimbs.
 public class MontgomeryPairTest
 {
 	[Test]

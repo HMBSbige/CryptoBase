@@ -2,7 +2,8 @@ using CryptoBase.Signatures.Rsa.Arithmetic;
 
 namespace CryptoBase.Signatures.Rsa;
 
-// An RSA public key and RSAVP1 (RFC 8017, Sec. 5.2.2). Immutable; calls may be concurrent.
+// An RSA public key and RSAVP1 (RFC 8017, Sec. 5.2.2).
+// Immutable; calls may be concurrent.
 internal sealed class RsaPublicOperation
 {
 	internal const int MinModulusBits = 512;

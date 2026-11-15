@@ -68,7 +68,8 @@ internal partial struct AesCipherSoftware : IDisposable, IAesSubWord
 		_roundKeys.ZeroMemory();
 	}
 
-	// Four blocks share eight scalar bit planes. Round layouts cycle every four rounds.
+	// Four blocks share eight scalar bit planes.
+	// Round layouts cycle every four rounds.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public readonly void EncryptBlocks(ReadOnlySpan<byte> source, Span<byte> destination)
 	{

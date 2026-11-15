@@ -17,7 +17,8 @@ public class MontgomeryContextTest
 		await Assert.That(MontgomeryKernelCase.All().Select(static kernel => kernel.KernelType.GetGenericTypeDefinition()).Distinct()).IsEquivalentTo(ImplementationsOf(typeof(IMontgomeryKernel)));
 	}
 
-	// The dispatch takes a vector kernel where the platform has one whose windows hold the digits, with the smallest window that does, and otherwise the largest digits that fit in the family of kernels for the platform, so that a modulus of any size up to 16384 bits gets a kernel.
+	// The dispatch takes a vector kernel where the platform has one whose windows hold the digits, with the smallest window that does.
+	// Otherwise it takes the largest digits that fit in the platform's family of kernels, so that a modulus of any size up to 16384 bits gets a kernel.
 	// With AVX-512, the windows of eight vectors or more keep the operands in staging.
 	// With AVX2, MontgomeryKernelAvx2 takes every modulus that AVX-512 does not, with every vector of four digits past vector 0 in its window as far as MaxAvx2WindowVectors.
 	// On ARM64 the family is MontgomeryKernel64ColumnPairs for the shorter moduli and MontgomeryKernelAdvSimd for the longer ones.
@@ -189,7 +190,8 @@ public class MontgomeryContextTest
 		return [1, 2, 3, 5, 8, 9, 16, 17, 32, 33, 64];
 	}
 
-	// Chains of products and squares of random values, through the kernel and through the scalar kernel of the platform, give the same values as BigInteger: the representations differ, so the chains meet in plain form.
+	// Chains of products and squares of random values, through the kernel and through the platform's scalar kernel, give the same values as BigInteger.
+	// The representations differ, so the chains are compared in plain form.
 	private static List<string> Chains(MontgomeryKernelCase kernel, bool full)
 	{
 		List<string> failures = [];
@@ -446,7 +448,7 @@ public class MontgomeryContextTest
 		return failures;
 	}
 
-	// Exponents of one limb up to the length of the modulus cover every window size and a first window of every width.
+	// Exponents of one limb up to the length of the modulus, or of one and four limbs past 32 limbs, to cover every window size and a first window of every width.
 	private static void ExponentiateEveryWay(List<string> failures, MontgomeryKernelCase kernel, MontgomeryContext context, BigInteger n, Random random)
 	{
 		int limbs = context.LimbCount;

@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
-// SM2Curve with windows of 8 bits, for the products of public scalars, which read the entry of a digit in place rather than scan its window: wider windows take fewer rounds at no cost in scans, so the windows of G and the ECPointTable of a key that verification takes are of this curve, and those that the products of secret scalars scan are of SM2Curve.
+// SM2Curve with 8-bit windows, for products of public scalars, which read a digit's entry directly rather than scan its window.
+// Wider windows then take fewer rounds at no cost in scans, so verification's windows of G and key ECPointTable use this curve; tables scanned for secret scalars use SM2Curve.
 internal readonly struct SM2VerificationCurve : IECCurve
 {
 	public static ReadOnlySpan<ulong> B => SM2Curve.B;
@@ -12,7 +13,7 @@ internal readonly struct SM2VerificationCurve : IECCurve
 	// 8 bits divide the 256 of n, so that ECGroup.RecodeSpanning gives 32 digits, from k or k − n: four rounds on eight lanes, eight with two tables.
 	public static int GeneratorWindowWidth => 8;
 
-	// The products of SM2KernelDispatch for the windows of this curve, with the field and the order of SM2, which are the only ones that ECGroup takes with it.
+	// SM2KernelDispatch for this curve's windows; ECGroup uses this curve only with SM2's field and order.
 	public static bool TryFillBases<TField, TOrder>(in AffinePoint<TField> point, Span<JacobianPoint<TField>> bases) where TField : unmanaged, IECField<TField> where TOrder : unmanaged, IMontgomeryModulus
 	{
 		if (typeof(TField) != typeof(SM2CurveField) || typeof(TOrder) != typeof(SM2Order))

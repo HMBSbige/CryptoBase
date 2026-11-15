@@ -12,6 +12,7 @@ public enum Ed448Variant
 	PreHash
 }
 
+// Ed448 and Ed448ph from RFC 8032 §5.2, with BigInteger, to check the library against.
 // Verification follows the policy of the library: S below L, A decoded strictly, and R compared as bytes.
 internal static class Ed448Reference
 {
@@ -73,7 +74,7 @@ internal static class Ed448Reference
 		return s < L && Encode(Add(Multiply(Base, s), Negate(Multiply(a, k)))).AsSpan().SequenceEqual(signature.AsSpan(0, 57));
 	}
 
-	// r with the prefix of the key, k with R ‖ A.
+	// SHAKE256(dom4 ‖ prefix ‖ input, 114) mod L, which is r for the prefix of the key and k for R ‖ A.
 	internal static BigInteger HashToScalar(byte[] domain, byte[] prefix, byte[] input)
 	{
 		return DecodeInteger(Shake256([.. domain, .. prefix, .. input], 114)) % L;

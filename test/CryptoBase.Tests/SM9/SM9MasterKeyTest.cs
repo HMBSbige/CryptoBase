@@ -112,7 +112,8 @@ public class SM9MasterKeyTest
 		}
 	}
 
-	// The master keys take every hid, which they report, and 0x01 for signatures and 0x03 for encryption by default; the hid changes neither master public key.
+	// The master keys take every hid, which they report, and 0x01 for signatures and 0x03 for encryption by default.
+	// The hid changes neither master public key.
 	[Test]
 	public async Task MasterKeysKeepTheirHid()
 	{
@@ -155,7 +156,8 @@ public class SM9MasterKeyTest
 		}
 	}
 
-	// Extraction, encryption, encapsulation and verification take H1(ID ‖ hid, N) with the hid of the master key, and the key exchange that of its keys: a master key for which t1 is 0 under one hid has keys under another.
+	// Extraction, encryption, encapsulation and verification take H1(ID ‖ hid, N) with the hid of the master key, and the key exchange that of its keys.
+	// So a master key for which t1 is 0 under one hid has keys under another.
 	[Test]
 	public async Task IdsWithoutKeysDependOnTheHid()
 	{
@@ -187,7 +189,9 @@ public class SM9MasterKeyTest
 		}
 	}
 
-	// GM/T 0044.2 to 0044.4, Sec. 5.3: if t1 = H1(ID ‖ hid, N) + k is 0, the KGC must generate a new master key, so the extraction throws, and the user public key of the ID, [H1(ID ‖ hid, N)]P1 + Ppub-e or [H1(ID ‖ hid, N)]P2 + Ppub-s, is the point at infinity: encryption, encapsulation and the key exchange to it throw, and no signature of it verifies.
+	// GM/T 0044.2 to 0044.4, Sec. 5.3: if t1 = H1(ID ‖ hid, N) + k is 0, the KGC must generate a new master key, so the extraction throws.
+	// The user public key of the ID, [H1(ID ‖ hid, N)]P1 + Ppub-e or [H1(ID ‖ hid, N)]P2 + Ppub-s, is then the point at infinity.
+	// Encryption, encapsulation and the key exchange to it throw, and no signature of it verifies.
 	[Test]
 	public async Task IdsWithoutKeysAreRejected()
 	{

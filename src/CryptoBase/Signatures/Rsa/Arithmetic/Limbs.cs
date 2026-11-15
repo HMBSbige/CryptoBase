@@ -222,7 +222,7 @@ internal static class Limbs
 		}
 	}
 
-	// product = left·right, of left.Length + right.Length limbs.
+	// product = left·right, of left.Length + right.Length limbs; product overlaps neither input.
 	internal static void Multiply(ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, Span<ulong> product)
 	{
 		Debug.Assert(product.Length == left.Length + right.Length);

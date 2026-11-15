@@ -7,7 +7,8 @@ internal delegate T DerElementReader<out T>(ref DerReader reader);
 // Reads DER values in order from memory that the caller owns, and returns slices of it rather than copies.
 // Unlike AsnReader, a class, it allocates nothing for the structures that it enters.
 // Malformed input throws AsnContentException.
-// The common forms are read here and everything else, valid or not, is left to AsnDecoder, which gives the same result and the error; a form that is read here is one that AsnDecoder accepts.
+// The common forms are read here and everything else, valid or not, is left to AsnDecoder, which gives the same result and the error.
+// A form that is read here is one that AsnDecoder accepts.
 internal struct DerReader(ReadOnlyMemory<byte> source)
 {
 	private const byte IntegerTag = 0x02;
@@ -39,7 +40,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 			return false;
 		}
 
-		// A tag number below 31 is all in the first octet; AsnDecoder reads the longer forms.
+		// A tag number below 31 is all in the first octet.
+		// AsnDecoder reads the longer forms.
 		if ((source[0] & 0x1F) is 0x1F || tag.TagValue >= 31)
 		{
 			return Asn1Tag.Decode(source, out _) == tag;
@@ -64,7 +66,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		}
 	}
 
-	// A SEQUENCE, or the constructed value with tag; returns a reader of its contents and, in element, the whole value.
+	// A SEQUENCE, or the constructed value with tag.
+	// Returns a reader of its contents and, in element, the whole value.
 	public DerReader ReadSequence(out ReadOnlyMemory<byte> element, Asn1Tag? tag = null)
 	{
 		ReadOnlySpan<byte> source = _remaining.Span;
@@ -83,7 +86,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return ReadSequence(out _, tag);
 	}
 
-	// The constructed value with tag if it is next, as a field that is OPTIONAL or has a default is when present; contents is then a reader of its contents.
+	// The constructed value with tag if it is next, as a field that is OPTIONAL or has a default is when present.
+	// contents is then a reader of its contents.
 	public bool TryReadSequence(Asn1Tag tag, out DerReader contents)
 	{
 		bool present = PeekTagIs(tag);
@@ -120,7 +124,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 	{
 		ReadOnlySpan<byte> source = _remaining.Span;
 
-		// A single element is in order; AsnDecoder compares the elements of a longer SET OF.
+		// A single element is in order.
+		// AsnDecoder compares the elements of a longer SET OF.
 		if (tag is not null || !TryReadHeader(source, SetTag, out int offset, out int length) || !IsSingleValue(source.Slice(offset, length)))
 		{
 			AsnDecoder.ReadSetOf(source, AsnEncodingRules.DER, out offset, out length, out _, expectedTag: tag);
@@ -142,7 +147,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return Take(offset + length);
 	}
 
-	// The value under an explicit tag, which must be the only one there, as a reader that holds it alone: the caller's read of it leaves nothing behind.
+	// The value under an explicit tag, which must be the only one there, as a reader that holds it alone.
+	// The caller's read of it then leaves nothing behind.
 	public DerReader ReadExplicit(Asn1Tag tag)
 	{
 		DerReader wrapper = ReadSequence(tag);
@@ -186,7 +192,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		}
 	}
 
-	// The contents of an OBJECT IDENTIFIER, without the string that ReadObjectIdentifier builds; DER has one encoding of each, so equal identifiers have equal contents.
+	// The contents of an OBJECT IDENTIFIER, without the string that ReadObjectIdentifier builds.
+	// DER has one encoding of each, so equal identifiers have equal contents.
 	public ReadOnlyMemory<byte> ReadObjectIdentifierContents()
 	{
 		ReadOnlySpan<byte> source = _remaining.Span;
@@ -260,7 +267,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return value;
 	}
 
-	// A BOOLEAN DEFAULT FALSE, or the value with tag; DER omits it when it is FALSE, so one that is present must be TRUE.
+	// A BOOLEAN DEFAULT FALSE, or the value with tag.
+	// DER omits it when it is FALSE, so one that is present must be TRUE.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool ReadTrueOrAbsent(Asn1Tag? tag = null)
 	{
@@ -293,7 +301,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 	{
 		ReadOnlySpan<byte> source = _remaining.Span;
 
-		// The first octet of the contents is the number of unused bits; with none, whatever follows is valid.
+		// The first octet of the contents is the number of unused bits.
+		// With none, whatever follows is valid.
 		if (tag is null && TryReadHeader(source, BitStringTag, out int offset, out int length) && length > 0 && source[offset] is 0)
 		{
 			return TakeContents(offset + length, length - 1);
@@ -307,9 +316,11 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return TakeContents(consumed, value.Length);
 	}
 
-	// The bits of a BIT STRING that names bits 0 through 8, as flags: bits 0 through 7 are the first byte from its most significant bit, and bit 8 is the most significant bit of the second, as in X509KeyUsageFlags.
+	// The bits of a BIT STRING that names bits 0 through 8, as flags.
+	// Bits 0 through 7 are the first byte from its most significant bit, and bit 8 is the most significant bit of the second, as in X509KeyUsageFlags.
 	// Only those nine may be set.
-	// DER drops the trailing zero bits (X.690, Sec. 11.2.2), but they are accepted here, even in whole bytes; the callers that require DER check for them.
+	// DER drops the trailing zero bits (X.690, Sec. 11.2.2), but they are accepted here, even in whole bytes.
+	// The callers that require DER check for them.
 	public static int ReadNineNamedBits(ReadOnlySpan<byte> bits)
 	{
 		if (bits.Length > 1 && ((bits[1] & 0x7F) is not 0 || bits.Slice(2).ContainsAnyExcept((byte)0)))
@@ -337,7 +348,7 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return TakeContents(consumed, value.Length);
 	}
 
-	// A value with exactly this tag, as TryReadHeader below reads its length.
+	// A value with exactly this tag, whose length TryReadLength reads.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool TryReadHeader(ReadOnlySpan<byte> source, byte tag, out int offset, out int length)
 	{
@@ -364,7 +375,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return TryReadLength(source, out offset, out length);
 	}
 
-	// X.690, Sec. 10.1: the long form must use the fewest octets, so these are the only forms that DER allows for that many contents.
+	// X.690, Sec. 10.1: the long form must use the fewest octets.
+	// These are therefore the only forms that DER allows for up to 65535 octets of contents.
 	// The contents are within source.
 	// Longer values, and indefinite lengths, which are invalid, are left to AsnDecoder.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -410,7 +422,8 @@ internal struct DerReader(ReadOnlyMemory<byte> source)
 		return contents.Length is 1 || (contents[0] << 8 | contents[1] & 0x80) is not (0 or 0xFF80);
 	}
 
-	// X.690, Sec. 8.19: at least one subidentifier, each in base 128 with no leading zero, and the last one complete; and no longer than the contents read here.
+	// X.690, Sec. 8.19: at least one subidentifier, each in base 128 with no leading zero, and the last one complete.
+	// The contents must also be no longer than those read here.
 	private static bool IsShortObjectIdentifier(ReadOnlySpan<byte> contents)
 	{
 		if (contents.IsEmpty || contents.Length > MaxObjectIdentifierLength || contents[^1] >= 0x80)

@@ -4,10 +4,12 @@ namespace CryptoBase.EllipticCurves;
 
 // Inversion modulo m by divsteps, which take (δ, f, g) with f odd to (1 − δ, g, (g − f)/2) if δ > 0 and g is odd, to (1 + δ, f, (g + f)/2) if only g is odd and to (1 + δ, f, g/2) if g is even.
 // They keep gcd(f, g), and from f = m and g = x they bring g to 0 and f to ±gcd(x, m) = ±1.
-// d and e start at 0 and R² and go through the same linear maps modulo m, so d ≡ f·R²/x and e ≡ g·R²/x throughout and d·f ends at R²/x, which for x = aR is a⁻¹R; x = 0 leaves d at 0.
+// d and e start at 0 and R² and go through the same linear maps modulo m, so d ≡ f·R²/x and e ≡ g·R²/x throughout.
+// So d·f ends at R²/x, which for x = aR is a⁻¹R; x = 0 leaves d at 0.
 // e may start at any N below m in place of R², which ends d·f at N/x.
 // f, g, d and e are signed values in Length limbs of 62 bits, least significant first, the last limb a signed long that takes the rest.
-// The steps read only δ and the low bits of f and g, so a batch of up to 62 runs on the bottom limbs alone and yields a matrix, scaled by 2^62, that then maps the full values at once.
+// The steps read only δ and the low bits of f and g, so a batch of up to 62 runs on the bottom limbs alone.
+// It yields a matrix, scaled by 2^62, that then maps the full values at once.
 // The division by 2^62 is exact for f and g; d and e first gain the multiple of m that clears their low 62 bits, which keeps them in (−2m, m).
 internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModulus
 {
@@ -24,7 +26,8 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 		get => TModulus.BitLength / 62 + 1;
 	}
 
-	// From δ = 1/2, the divsteps bring g to 0 within ⌊(45907·log₂M + 26313)/19929⌋ steps for 0 ≤ g ≤ f ≤ M; f = m and M = 2^BitLength give 591, 885 and 1201 steps for 256, 384 and 521 bits.
+	// From δ = 1/2, the divsteps bring g to 0 within ⌊(45907·log₂M + 26313)/19929⌋ steps for 0 ≤ g ≤ f ≤ M.
+	// f = m and M = 2^BitLength give 591, 885 and 1201 steps for 256, 384 and 521 bits.
 	// No test reaches the inputs that need the most steps, so the batches below must cover this bound by construction.
 	internal static int StepBound
 	{
@@ -46,14 +49,15 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 		get => (StepBound + BatchCount - 1) / BatchCount;
 	}
 
-	// Neither the time nor the addresses depend on value: BatchCount batches of BatchSteps steps cover the bound for any value, and every step and update works with masks.
+	// Neither the time nor the addresses depend on value.
+	// BatchCount batches of BatchSteps steps cover the bound for any value, and every step and update works with masks.
 	internal static void Invert(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
 	{
 		Invert(in value, TModulus.RSquared, out result);
 	}
 
 	// As above, but giving numerator/value mod m in place of R²/value, for a numerator below m.
-	// Not inlined, nor is Load: with the loop inlined into a caller, or Load into the loop, the inlining budget runs out before the helpers of the matrix updates, which then become calls in every batch.
+	// Not inlined, nor is Load: inlining either spends the inlining budget before the helpers of the matrix updates, which then become calls in every batch.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	[SkipLocalsInit]
 	internal static void Invert(in FieldElement<TModulus> value, ReadOnlySpan<ulong> numerator, out FieldElement<TModulus> result)
@@ -141,7 +145,8 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 	}
 
 	// Runs BatchSteps steps on the low limbs f and g and returns ζ after them, with the matrix scaled by 2^62.
-	// Each step at most doubles |u| + |v| and |q| + |r|, so the matrix of k ≤ 30 steps fits u·2^32 + v and q·2^32 + r in a word each, and the word arithmetic acts on both entries at once.
+	// Each step at most doubles |u| + |v| and |q| + |r|, so the matrix of k ≤ 30 steps fits u·2^32 + v and q·2^32 + r in a word each.
+	// The word arithmetic then acts on both entries at once.
 	// The batch runs in two or three such parts, whose matrices multiply into that of the whole.
 	private static long Divsteps(long zeta, ulong f, ulong g, out Transition t)
 	{
@@ -188,7 +193,7 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 			// ζ < 0 is δ > 0: then an odd g takes g − f and swaps.
 			ulong negate = (ulong)(zeta >> 63);
 			ulong swap = negate & odd;
-			// On a swap, f takes the old g and u and v the old q and r, which adding the new g = g − f and q and r to them would give, without waiting for those.
+			// On a swap, f takes the old g and u and v the old q and r directly, without waiting for the new g = g − f and q and r.
 			ulong fNext = f ^ (f ^ g) & swap;
 			ulong uvNext = uv ^ (uv ^ qr) & swap;
 			g += (f ^ negate) - negate & odd;
@@ -218,7 +223,8 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 	}
 
 	// Runs 62 steps on the low limbs f and g and returns η after them.
-	// A run of even g is one shift, and while δ ≤ 0 an odd g only gains f, so a multiple of f clears several of its low bits at once, up to the step at which δ turns positive.
+	// A run of even g is one shift.
+	// While δ ≤ 0 an odd g only gains f, so a multiple of f clears several of its low bits at once, up to the step at which δ turns positive.
 	private static long DivstepsVariableTime(long eta, ulong f, ulong g, out Transition t)
 	{
 		ulong u = 1;
@@ -484,7 +490,8 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 		Unsafe.Add(ref e, i - 1) = (long)ShiftRight62(ref eSum);
 	}
 
-	// d is in (−2m, m) and fTop, the top limb of f = ±1, has its sign. Sets result to d·f modulo m.
+	// d is in (−2m, m) and fTop, the top limb of f = ±1, has its sign.
+	// Sets result to d·f modulo m.
 	private static void Store(ref State state, long fTop, out FieldElement<TModulus> result)
 	{
 		ref long d = ref state.D[0];

@@ -5,8 +5,8 @@ namespace CryptoBase.Hashes.Blake3;
 
 // Hashes up to eight inputs with the state of each held as four rows, as Blake3Vector128.Compress does: four inputs to a group of 512-bit rows, input i of a group in 128-bit block i.
 // A group of fewer inputs keeps its last one in block 3 and rehashes input 0 in the blocks between.
-// The column layout issues four rotations per step at once, which two rotation pipes take two cycles to start;
-// where vector operations take two cycles and the dependency chain sets the pace, as on Zen 5, every queued rotation stretches the chain.
+// The column layout issues four rotations per step at once, which two rotation pipes take two cycles to start.
+// Where vector operations take two cycles and the dependency chain sets the pace, as on Zen 5, every queued rotation stretches the chain.
 // A row step issues one rotation per group instead.
 internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 {
@@ -30,8 +30,8 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 		nuint count = length / ChunkLength;
 		nuint tailLength = length % ChunkLength;
 
-		// A partial last chunk takes a lane of its own when a group has one spare, or when its blocks would take longer on their own than the lane: next to one full chunk, which the scalar compressor hashes faster alone, from twelve blocks;
-		// next to four, which then take two groups, from two.
+		// A partial last chunk takes a lane of its own when a group has one spare, or when its blocks would take longer on their own than the lane.
+		// Next to one full chunk, which the scalar compressor hashes faster alone, that is from twelve blocks; next to four, which then take two groups, from two.
 		bool rides = count switch
 		{
 			0 => false,

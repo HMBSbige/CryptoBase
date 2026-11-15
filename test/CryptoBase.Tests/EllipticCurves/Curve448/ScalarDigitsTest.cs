@@ -6,7 +6,8 @@ using static CryptoBase.Tests.EllipticCurves.Curve448.Curve448TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves.Curve448;
 
-// The signed comb digits sum to an odd value ≡ k (mod L), k itself when k is odd; the NAF digits sum to k.
+// The signed comb digits sum to an odd value ≡ k (mod L): k when k is odd, k + L when it is even.
+// The NAF digits sum to k.
 public class ScalarDigitsTest
 {
 	[Test]

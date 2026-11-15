@@ -2,7 +2,9 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 
 namespace CryptoBase.EllipticCurves;
 
-// Splits a scalar u below an order n of 256 bits into v1 ≡ v2·u (mod n) with v1 and v2 below 2^128 in magnitude, v2 not 0: the extended Euclidean algorithm on (n, u) keeps each remainder r_i ≡ t_i·u (mod n), r_0 = n with t_0 = 0 and r_1 = u with t_1 = 1, the signs of t_i alternating, and stops at the first r_i below 2^128, where |t_i| ≤ n/r_(i − 1) < 2^128.
+// Splits a scalar u below an order n of 256 bits into v1 ≡ v2·u (mod n) with v1 and v2 below 2^128 in magnitude, v2 not 0.
+// The extended Euclidean algorithm on (n, u) keeps each remainder r_i ≡ t_i·u (mod n), r_0 = n with t_0 = 0 and r_1 = u with t_1 = 1, the signs of t_i alternating.
+// It stops at the first r_i below 2^128, where |t_i| ≤ n/r_(i − 1) < 2^128.
 // Lehmer's algorithm (Knuth, TAOCP 4.5.2, Algorithm L) takes the steps on the leading 63 bits of the remainders where those fix the quotient and keep the next remainder at least 2^128, and a step on the whole remainders otherwise.
 // The time depends on u, which must be public.
 internal static class HalfScalars<TOrder> where TOrder : unmanaged, IMontgomeryModulus
@@ -144,7 +146,8 @@ internal static class HalfScalars<TOrder> where TOrder : unmanaged, IMontgomeryM
 		_ = SubtractLimbs(ref result[0], ref product[0], ref result[0], Length + 1);
 	}
 
-	// Replaces a ≥ b ≥ 2^128 with a mod b and returns ⌊a/b⌋, below 2^128: one subtraction of b·2^i for each i from the difference of their lengths down, which is a few for the quotients that the steps of Lehmer leave.
+	// Replaces a ≥ b ≥ 2^128 with a mod b and returns ⌊a/b⌋, below 2^128.
+	// It takes one subtraction of b·2^i for each i from the difference of their lengths down, a few for the quotients that Lehmer's steps leave.
 	private static UInt128 DivideRemainder(Span<ulong> a, ReadOnlySpan<ulong> b)
 	{
 		Span<ulong> shifted = stackalloc ulong[Length + 1];

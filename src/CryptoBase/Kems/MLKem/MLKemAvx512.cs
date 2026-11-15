@@ -732,7 +732,8 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 		return Avx512F.PermuteVar16x32(Vector512.LoadUnsafe(ref source, (nuint)offset).AsInt32(), groups);
 	}
 
-	// Spelled out for all four lanes, as a 512-bit vector made from a 128-bit constant is rebuilt with two inserts on every iteration of a loop instead of being loaded whole.
+	// Spelled out for all four lanes,
+	// as a 512-bit vector made from a 128-bit constant is rebuilt with two inserts in every loop iteration instead of being loaded whole.
 	private static Vector512<byte> Encode12Bytes
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

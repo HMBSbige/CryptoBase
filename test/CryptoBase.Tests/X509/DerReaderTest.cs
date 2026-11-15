@@ -36,8 +36,8 @@ public class DerReaderTest
 		}
 	}
 
-	// Random contents that reach the limits of AsnDecoder: many subidentifiers of one octet, or a run of continuation octets as long as one of 126 to 133 bits, or what is often wrong in an identifier;
-	// then another value after it, or truncated, or with another tag.
+	// Random contents at the limits of AsnDecoder: many one-octet subidentifiers, a subidentifier of 120 to 140 bits, or common identifier errors.
+	// Each is followed by another value, and sometimes truncated or given another tag.
 	[Test]
 	public async Task ObjectIdentifierReadersAgreeWithTheBcl()
 	{
@@ -81,7 +81,7 @@ public class DerReaderTest
 		return contents;
 	}
 
-	// An arc before a subidentifier of 18 to 19 octets, the first of which decides how many of the bits it uses.
+	// An arc before a subidentifier of 18 to 20 octets, whose first octet decides how many of its bits are used.
 	private static byte[] LongSubidentifier(Random random)
 	{
 		byte[] contents = new byte[random.Next(19, 22)];
@@ -130,7 +130,7 @@ public class DerReaderTest
 		return encoded.AsSpan(offset, length).ToArray();
 	}
 
-	// The bytes that AsnDecoder reads, or null if it refuses the value.
+	// How many bytes AsnDecoder consumes, or null if it refuses the value.
 	private static int? ReadWithTheBcl(byte[] encoded)
 	{
 		try

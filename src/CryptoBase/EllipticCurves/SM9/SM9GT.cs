@@ -19,7 +19,8 @@ internal static class SM9GT
 		return SM9Fp12.AreEqual(in left, in right);
 	}
 
-	// value^k for value in GT. Neither the time nor the addresses depend on value or k.
+	// value^k for value in GT.
+	// Neither the time nor the addresses depend on value or k.
 	internal static void Power(in SM9Fp12 value, in FieldElement<SM9Order> exponent, out SM9Fp12 result)
 	{
 		SM9KernelDispatch.Power(in value, in exponent, out result);
@@ -40,7 +41,8 @@ internal sealed class SM9GTTable : IDisposable
 		SM9KernelDispatch.BuildPowerTable(in value, _table, out _inverse);
 	}
 
-	// value^k. Neither the time nor the addresses depend on the base or k.
+	// value^k.
+	// Neither the time nor the addresses depend on the base or k.
 	internal void Power(in FieldElement<SM9Order> exponent, out SM9Fp12 result)
 	{
 		SM9KernelDispatch.Power(_table, in _inverse, in exponent, out result);

@@ -12,7 +12,8 @@ internal enum RevocationStatus
 	// An OCSP response that says that the responder does not know the certificate.
 	Unknown,
 
-	// The CRL does not cover the certificate, or not for every reason: its issuer differs, it is out of scope, it is a delta or indirect CRL, or it covers only some reasons, which CoveredReasons gives.
+	// The CRL does not cover the certificate, or not for every reason.
+	// Its issuer differs, it is out of scope, it is a delta or indirect CRL, or it covers only some reasons, which CoveredReasons gives.
 	NotApplicable,
 
 	// The source cannot be used, for the reason that Detail gives: bad signature, out of date, malformed or with an extension that the checker does not process.
@@ -20,8 +21,8 @@ internal enum RevocationStatus
 }
 
 // The result of RevocationChecker.
-// Reason and RevocationTime are set for Revoked, Reason being Unspecified if the source gives none;
-// CoveredReasons is the interim_reasons_mask of RFC 5280, Sec. 6.3.3, for a CRL, which is set only once the signature has been verified, as it is empty for a CRL that goes no further;
+// Reason and RevocationTime are set for Revoked, Reason being Unspecified if the source gives none.
+// CoveredReasons is the interim_reasons_mask of RFC 5280, Sec. 6.3.3, for a CRL; it is set only once the signature has been verified, so it is empty for a CRL that goes no further.
 // NextUpdate is the nextUpdate of a response that the checker accepted.
 internal readonly record struct RevocationResult(RevocationStatus Status, string? Detail = null)
 {
@@ -66,7 +67,8 @@ internal static class RevocationChecker
 	public static RevocationResult CheckCrl(CertificateRevocationList crl, Certificate certificate, Certificate issuer, ISignatureKey issuerKey, DateTimeOffset time)
 	{
 		// Sec. 6.3.3 (b)(1).
-		// The names are compared byte for byte, as Sec. 5.2.5 and the path search compare them; a name in another encoding is out of scope, which never reports a certificate as good.
+		// The names are compared byte for byte, as Sec. 5.2.5 and the path search compare them.
+		// A name in another encoding is out of scope, which never reports a certificate as good.
 		if (!crl.Issuer.Span.SequenceEqual(certificate.Issuer.Span))
 		{
 			return NotApplicable("The CRL's issuer is not the certificate's.");
@@ -136,7 +138,8 @@ internal static class RevocationChecker
 			return Invalid("The CRL is not yet valid.");
 		}
 
-		// Sec. 5.1.2.5 leaves a CRL without nextUpdate to the application: without it, nothing bounds how old the CRL may be, so it is not used.
+		// Sec. 5.1.2.5 leaves a CRL without nextUpdate to the application.
+		// Without it, nothing bounds how old the CRL may be, so it is not used.
 		if (crl.NextUpdate is not { } nextUpdate)
 		{
 			return Invalid("The CRL has no nextUpdate.");
@@ -204,13 +207,15 @@ internal static class RevocationChecker
 
 	private static RevocationResult CheckBasicOcsp(OcspResponse.Basic response, Certificate certificate, Certificate issuer, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
 	{
-		// RFC 6960, Sec. 4.1.2: an extension may be critical if it is one that the checker understands, whose meaning is to inform; the others are refused.
+		// RFC 6960, Sec. 4.1.2: an extension may be critical if it is one that the checker understands, whose meaning is to inform.
+		// The others are refused.
 		if (CheckCriticalExtensions(response.Extensions, [OcspRequest.NonceOid, OcspExtendedRevokeOid], "The response") is { } criticalProblem)
 		{
 			return Invalid(criticalProblem);
 		}
 
-		// Sec. 3.2, requirement 1. Of several responses for the certificate, the most severe that is current stands.
+		// Sec. 3.2, requirement 1.
+		// Of several responses for the certificate, the most severe that is current stands.
 		if (FindSingleResponse(response, certificate, issuer, time, out string? singleProblem) is not { NextUpdate: { } nextUpdate } selected)
 		{
 			return Invalid(singleProblem ?? "The response has no status for the certificate.");
@@ -256,7 +261,8 @@ internal static class RevocationChecker
 		return new RevocationResult(RevocationStatus.Invalid, detail);
 	}
 
-	// The problem with the algorithm that signs the source that subject names, a CRL or a response, if its signature cannot be verified: the policy refuses the algorithm, or the package does not support it.
+	// The problem with the algorithm that signs the source that subject names, a CRL or a response, if its signature cannot be verified.
+	// Either the policy refuses the algorithm, or the package does not support it.
 	private static string? CheckSignatureAlgorithm(AlgorithmIdentifier algorithm, string subject)
 	{
 		return CertificatePolicy.CheckSignatureAlgorithm(algorithm) switch
@@ -267,7 +273,8 @@ internal static class RevocationChecker
 		};
 	}
 
-	// The problem with the first critical extension that the checker cannot process, for the source that subject names: one that it does not understand, or one whose value it cannot take as meant.
+	// The problem with the first critical extension that the checker cannot process, for the source that subject names.
+	// That is one that it does not understand, or one whose value it cannot take as meant.
 	// A noncritical one is ignored, as it could be if it were not understood.
 	private static string? CheckCriticalExtensions(IReadOnlyList<CertificateExtension> extensions, ReadOnlySpan<string> understood, string subject)
 	{
@@ -294,7 +301,8 @@ internal static class RevocationChecker
 		return null;
 	}
 
-	// What keeps the checker from taking the value of an extension as meant, for those that it understands without reading them elsewhere: that the value, read whole, does not decode as its type, or that it has a part that the checker does not process.
+	// What keeps the checker from taking the value of an extension as meant, for those that it understands without reading them elsewhere.
+	// That is a value that, read whole, does not decode as its type, or that has a part that the checker does not process.
 	// The checker reads the others where it processes them, and checks that they decode there.
 	private static string? CheckValue(CertificateExtension extension)
 	{
@@ -384,7 +392,8 @@ internal static class RevocationChecker
 	}
 
 	// RFC 5280, Sec. 6.3.3 (b)(2) (ii) to (iv), and the indirect CRLs that the checker does not support.
-	// A certificate without basic constraints, as one of version 1 or 2, counts as an end entity certificate, which it is: the path search rejects an intermediate certificate that does not assert cA.
+	// A certificate without basic constraints, as one of version 1 or 2, counts as an end entity certificate, which it is.
+	// The path search rejects an intermediate certificate that does not assert cA.
 	private static string? GetScopeProblem(IssuingDistributionPoint? point, Certificate certificate)
 	{
 		if (point is null)
@@ -492,8 +501,8 @@ internal static class RevocationChecker
 	}
 
 	// The response for the certificate that stands, or null with the problem that makes the response invalid.
-	// A response that is not current tells nothing, so the most severe of those that are current stands, and of those as severe, the one with the earliest nextUpdate;
-	// one of them with a critical extension that the checker cannot process makes the response invalid, so that the result does not depend on their order.
+	// A response that is not current tells nothing, so the most severe of those that are current stands, and of those as severe, the one with the earliest nextUpdate.
+	// One of them with a critical extension that the checker cannot process makes the response invalid, so that the result does not depend on their order.
 	// Without a current one, the problem of the most severe stands, that of its extensions before that of its times.
 	private static OcspSingleResponse? FindSingleResponse(OcspResponse.Basic response, Certificate certificate, Certificate issuer, DateTimeOffset time, out string? problem)
 	{
@@ -587,7 +596,8 @@ internal static class RevocationChecker
 		return time - nextUpdate > OcspClockSkew ? "The response has expired." : null;
 	}
 
-	// A byName ResponderID matches the subject by RFC 5280, Sec. 7.1, as RFC 6960 asks no encoding of it: the match only picks the candidates whose key must verify the signature, of which MaxResponderCandidates bounds the certificates.
+	// A byName ResponderID matches the subject by RFC 5280, Sec. 7.1, as RFC 6960 asks no encoding of it.
+	// The match only picks the candidates whose key must verify the signature, of which MaxResponderCandidates bounds the certificates.
 	private static bool IsResponder(OcspResponderId responder, Certificate certificate)
 	{
 		return responder switch
@@ -649,7 +659,7 @@ internal static class RevocationChecker
 	}
 
 	// The responder's certificate is checked against its issuer alone, as Sec. 4.2.2.2 asks, not on a path of its own, so no name constraints or policies, the issuer's or those above it, apply to it.
-	// Its names give it no authority: it answers only for the certificates of that issuer, which could sign the response itself.
+	// Its names give it no authority, as it answers only for the certificates of that issuer, which could sign the response itself.
 	private static string? CheckDelegatedResponder(OcspResponse.Basic response, Certificate candidate, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
 	{
 		if (!candidate.Issuer.Span.SequenceEqual(issuer.Subject.Span))
@@ -684,7 +694,8 @@ internal static class RevocationChecker
 			return "The key usage extension of the responder's certificate does not assert digitalSignature.";
 		}
 
-		// As on a path, a critical subject alternative name that decodes is processed whatever the forms of its names: RFC 5280, Sec. 4.2.1.6, requires it critical when the subject is empty, and the names give the responder no authority.
+		// As on a path, a critical subject alternative name that decodes is processed whatever the forms of its names.
+		// RFC 5280, Sec. 4.2.1.6, requires it critical when the subject is empty, and the names give the responder no authority.
 		if (CheckCriticalExtensions(candidate.Extensions, [DecodedExtensions.BasicConstraintsOid, Certificate.KeyUsageOid, DecodedExtensions.ExtendedKeyUsageOid, DecodedExtensions.SubjectAlternativeNameOid, DecodedExtensions.OcspNoCheckOid], "The responder's certificate") is { } criticalProblem)
 		{
 			return criticalProblem;

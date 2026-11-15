@@ -1,6 +1,6 @@
 namespace CryptoBase.EllipticCurves;
 
-// The windows of ECGeneratorTable for a public point P in place of G, so that ECGroup.MultiplyBaseAndFixed gives k·P from them as ECGroup.MultiplyBase gives k·G.
+// The windows of ECGeneratorTable for a public point P in place of G, so that ECGroup.MultiplyFixed and MultiplyBaseAndFixed and ECVariableTimeGroup.MultiplyAdd take k·P from them as ECGroup.MultiplyBase takes k·G from those of G.
 // The table does not change once built, so threads may share it.
 internal sealed class ECPointTable<TCurve, TField, TOrder>
 	where TCurve : struct, IECCurve

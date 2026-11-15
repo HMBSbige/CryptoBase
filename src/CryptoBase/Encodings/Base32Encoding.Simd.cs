@@ -70,7 +70,7 @@ public sealed partial class Base32Encoding
 	}
 
 	// Char input is narrowed with saturation, which turns every char above U+00FF into a byte the decoders reject, so no ASCII check is needed.
-	// These loads only feed fixed alphabets, so x86 uses the cheaper signed pack: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
+	// These loads only feed fixed alphabets, so x86 uses the cheaper PACKUSWB, which reads chars as signed: U+0100..U+7FFF -> 0xFF, U+8000..U+FFFF -> 0x00.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<byte> LoadSymbols128<T>(ref T source) where T : unmanaged
 	{

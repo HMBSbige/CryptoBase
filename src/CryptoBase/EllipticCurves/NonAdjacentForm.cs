@@ -6,7 +6,8 @@ namespace CryptoBase.EllipticCurves;
 internal static class NonAdjacentForm
 {
 	// Writes the NAF of width w of the bits of k from start to start + length − 1, in length + 1 digits, and returns the index of its top nonzero digit, or −1 if there is none.
-	// A nonzero digit at i carries out only if the w bits from i plus the carry in exceed 2^(w − 1), which needs a bit at or above i + w − 1, so i + w ≤ length: digit length takes the last carry.
+	// A nonzero digit at i carries out only if the w bits from i plus the carry in exceed 2^(w − 1), which needs a bit at or above i + w − 1, so i + w ≤ length.
+	// Digit length takes the last carry.
 	// The time depends on k, which must be public.
 	internal static int Recode(ReadOnlySpan<ulong> limbs, int start, int length, int width, Span<sbyte> digits)
 	{

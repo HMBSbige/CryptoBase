@@ -5,16 +5,19 @@ namespace CryptoBase.Hashes.Blake3;
 
 internal static unsafe class Blake3Parallel
 {
-	// A leaf fills every lane of the widest kernel at least twice, and is at least 16 KiB long: the parents at its top fill fewer and fewer lanes, which costs the 16-lane kernel most next to the chunks of the leaf.
+	// A leaf fills every lane of the widest kernel at least twice, and is at least 16 KiB long.
+	// The parents at its top fill fewer and fewer lanes, which costs the 16-lane kernel most next to the chunks of the leaf.
 	private static readonly int MinLeafLength = Math.Max(16 * 1024, 2 * Blake3Tree.Degree * ChunkLength);
 
-	// Starting a pool thread, and merging the chaining values of its leaves, takes a warm pool about as long as hashing this many bytes: p threads then hash n bytes in time in proportion to n / p + p * ThreadCost, which is least for p = sqrt(n / ThreadCost).
+	// Starting a pool thread, and merging the chaining values of its leaves, takes a warm pool about as long as hashing this many bytes.
+	// p threads then hash n bytes in time in proportion to n / p + p * ThreadCost, which is least for p = sqrt(n / ThreadCost).
 	private const int ThreadCost = 4 * 1024;
 
 	// About eight leaves per thread let threads that start late or run slow, such as those on efficiency cores, take fewer.
 	private const int LeavesPerThread = 8;
 
-	// The least input, or output, that threads share, a compromise: a warm pool gains from here on, but a pool whose threads sleep wakes them one after another, each in about the time the calling thread takes to hash this much, so it may only gain from a few times this length.
+	// The least input, or output, that threads share, a compromise.
+	// A warm pool gains from here on, but a pool whose threads sleep wakes them one after another, each in about the time the calling thread takes to hash this much, so it may gain only from a few times this length.
 	internal const int MinParallelLength = 128 * 1024;
 
 	internal static bool TryCompressSubtreeToParentNode(ReadOnlySpan<byte> input, ref readonly InlineArray8<uint> key, uint flags, Span<byte> output, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
@@ -265,11 +268,13 @@ internal static unsafe class Blake3Parallel
 	}
 
 	// Items must not throw on a pool thread, which would take the process down.
-	// Jobs point at the memory that the caller keeps, keys and root blocks included, rather than copying it: a job stays queued after Finish until every pool thread has taken it, and nothing erases a copy on the heap, which the garbage collector may also have moved.
+	// Jobs point at the memory that the caller keeps, keys and root blocks included, rather than copying it.
+	// A job stays queued after Finish until every pool thread has taken it, and nothing erases a copy on the heap, which the garbage collector may also have moved.
 	// Once no item is pending, threads only touch the job itself, and may still be waking the calling thread after Finish has returned, so a job serves once.
 	internal abstract class ParallelJob(int itemCount, ThreadPoolHelperBudget budget) : ThreadPoolHelper(budget)
 	{
-		// The calling thread spins and yields, never sleeping for the timer tick that Thread.Sleep(1) may take, for about 500 µs before it blocks: long enough to cover the last leaves of all but the longest input, whose hashing takes far longer than waking up, and short enough to bound how long it holds a processor that a helper it waits for may need.
+		// The calling thread spins and yields for 500 µs before it blocks, never sleeping for the timer tick that Thread.Sleep(1) may take.
+		// That covers the last leaves of all but the longest input, whose hashing takes far longer than waking up, and bounds how long it holds a processor that a helper it waits for may need.
 		private static readonly long SpinTicks = Stopwatch.Frequency / 2000;
 
 		private readonly int _itemCount = itemCount;
@@ -344,8 +349,8 @@ internal static unsafe class Blake3Parallel
 			ProcessItems();
 		}
 
-		// Spinning and yielding keep the processor of the calling thread busy, so a helper that a thread of higher priority preempted elsewhere cannot move to it;
-		// once the spin runs out, blocking frees the processor.
+		// Spinning and yielding keep the processor of the calling thread busy, so a helper that a thread of higher priority preempted elsewhere cannot move to it.
+		// Once the spin runs out, blocking frees the processor.
 		// On an STA thread, blocking pumps COM and SendMessage messages, as the waits of Argon2LaneScheduler do.
 		private void WaitForHelpers(ref bool interrupted)
 		{

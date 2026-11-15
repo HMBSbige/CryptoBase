@@ -20,7 +20,8 @@ internal static class SM9Hash
 	// μ = ⌊2^320/M⌋ = 2^64 + MuLow, as M lies in (2^255, 2^256).
 	private const ulong MuLow = 0x67980E0BEB5759A6;
 
-	// H1(ID ‖ hid, N), plain. The ID is public.
+	// H1(ID ‖ hid, N), plain.
+	// The ID is public.
 	[SkipLocalsInit]
 	internal static void H1(ReadOnlySpan<byte> id, byte hid, out FieldElement<SM9Order> result)
 	{

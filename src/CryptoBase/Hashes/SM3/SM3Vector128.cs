@@ -10,7 +10,7 @@ internal readonly struct SM3Vector128 : ISM3Lanes<Vector128<uint>>
 
 	public static int Lanes => 4;
 
-	// One instruction rotates by any amount, or none rotates by 8 in one.
+	// One instruction rotates by any amount (AVX-512VL), or no byte shuffle makes a rotation by 8 cheaper than the others.
 	public static bool RotatesDirectly
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

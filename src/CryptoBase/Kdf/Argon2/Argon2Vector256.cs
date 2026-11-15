@@ -120,8 +120,8 @@ internal readonly struct Argon2Vector256 : IArgon2Kernel
 		}
 	}
 
-	// With AVX-512VL, the 32 YMM registers hold four rows or columns, so each iteration runs four independent chains through G instead of the two of Compress, hiding more of the multiply and rotate latency;
-	// the 16 registers of AVX2 alone cannot hold the 16 vectors of four rows.
+	// With AVX-512VL, the 32 YMM registers hold four rows or columns, so each iteration runs four independent chains through G instead of the two of Compress, hiding more latency.
+	// The 16 registers of AVX2 alone cannot hold the 16 vectors of four rows.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void CompressFourRows(ref Argon2Block previous, ref Argon2Block reference, ref Argon2Block destination, ref Argon2Block scratch, bool xorDestination)
 	{

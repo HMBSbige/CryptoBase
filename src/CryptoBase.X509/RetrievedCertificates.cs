@@ -9,8 +9,8 @@ internal static class RetrievedCertificates
 	private static readonly Asn1Tag ContentTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag CertificatesTag = new(TagClass.ContextSpecific, 0, true);
 
-	// The certificates, or null if the input is neither of the two, holds none or has more than maxElements elements in its certificates field;
-	// the certificates of a message that do not decode are left out, as they could not be issuers.
+	// The certificates, or null if the input is neither of the two, holds none or has more than maxElements elements in its certificates field.
+	// The certificates of a message that do not decode are left out, as they could not be issuers.
 	public static Certificate[]? Read(ReadOnlyMemory<byte> data, int maxElements)
 	{
 		try

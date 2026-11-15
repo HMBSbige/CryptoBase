@@ -97,7 +97,8 @@ public class SM9EncryptionTest
 		}
 	}
 
-	// GM/T 0044.4-2016, Sec. 7.2: C1 must be a point on the curve and C3 must match; any changed byte fails, as do other lengths, and the destination keeps every byte.
+	// GM/T 0044.4-2016, Sec. 7.2: C1 must be a point on the curve and C3 must match.
+	// Any changed byte fails, as do other lengths, and the destination keeps every byte.
 	[Test]
 	public async Task TamperedCiphertextsFail()
 	{
@@ -133,7 +134,8 @@ public class SM9EncryptionTest
 		}
 	}
 
-	// The SM9Cipher of GB/T 41389-2022 in DER with EnType 0 alone: other types, encodings of C1 and lengths of C3, trailing bytes, an empty C2 and other forms of DER fail.
+	// The SM9Cipher of GB/T 41389-2022 in DER with EnType 0 alone.
+	// Other types, encodings of C1 and lengths of C3, trailing bytes, an empty C2 and other forms of DER fail.
 	[Test]
 	public async Task InvalidDerCiphertextsFail()
 	{
@@ -233,7 +235,8 @@ public class SM9EncryptionTest
 		}
 	}
 
-	// An exported key imports with its master public key and ID, and the import checks that it is that of the ID under the master key; a key exchange key of the same ID is another key.
+	// An exported key imports with its master public key and ID, and the import checks that it is that of the ID under the master key.
+	// A key exchange key of the same ID is another key.
 	[Test]
 	public async Task PrivateKeysImportForTheirIdAlone()
 	{
@@ -262,8 +265,8 @@ public class SM9EncryptionTest
 		}
 	}
 
-	// For any hid, the keys are those of GM/T 0044.4, Sec. 5.3, and import with that hid, and a sender of that hid encrypts, as C1 ‖ C3 ‖ C2 and in DER, and encapsulates to them;
-	// a sender of another hid gives ciphertexts that do not decrypt and encapsulations of other keys, and the import with another hid throws.
+	// For any hid, the keys are those of GM/T 0044.4, Sec. 5.3, and import with that hid, and a sender of that hid encrypts, as C1 ‖ C3 ‖ C2 and in DER, and encapsulates to them.
+	// A sender of another hid gives ciphertexts that do not decrypt and encapsulations of other keys, and the import with another hid throws.
 	[Test]
 	public async Task OtherHidsEncryptAndDecrypt()
 	{
@@ -305,7 +308,8 @@ public class SM9EncryptionTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The default hid is 0x03 and leaves the master public key unchanged: a key of another hid neither decrypts what a default sender encrypts nor imports by default, and the key exchange key of hid 0x03 is the decryption key.
+	// The default hid is 0x03 and leaves the master public key unchanged.
+	// A key of another hid neither decrypts what a default sender encrypts nor imports by default, and the key exchange key of hid 0x03 is the decryption key.
 	[Test]
 	public async Task HidIsThreeByDefault()
 	{

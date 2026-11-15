@@ -26,7 +26,7 @@ public sealed class PlatformAesGcm : IAeadCipher<PlatformAesGcm>
 	/// <inheritdoc />
 	public static int TagSize => 16;
 
-	// Below it, the fixed cost of a call to the platform outweighs its VAES kernels; with 128-bit keys the two break even about here.
+	// Below it, the fixed cost of a call to the platform outweighs its VAES kernels.
 	private const int MinPreferredLength = 8 * 1024;
 
 	/// <summary>

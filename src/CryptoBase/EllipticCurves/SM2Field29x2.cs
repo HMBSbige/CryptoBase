@@ -919,7 +919,7 @@ internal struct SM2Field29x2 : ISM2Field29Lanes<SM2Field29x2>
 		result.L7 = t7 & mask;
 	}
 
-	// limb + (from >> Bits), in one USRA on ARM64, which saves an instruction over a shift and an add but takes longer through its shifted operand.
+	// limb + (from >> Bits), in one USRA on ARM64: one instruction instead of two, but with a longer latency through its shifted operand.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static Vector128<ulong> CarryInto(Vector128<ulong> limb, Vector128<ulong> from)
 	{

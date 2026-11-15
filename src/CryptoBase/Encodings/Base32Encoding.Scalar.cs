@@ -22,7 +22,7 @@ public sealed partial class Base32Encoding
 	}
 
 	// T is char or byte, and the type test folds at JIT time.
-	// Generic CreateChecked goes through the INumberBase conversion methods and is only free when they all inline; once a large caller runs out of inline budget, every symbol pays for those calls.
+	// Generic CreateChecked goes through the INumberBase conversion methods, which a large caller can run out of inline budget for, and then every symbol pays for those calls.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static T ToSymbol<T>(byte value) where T : unmanaged
 	{
@@ -121,7 +121,8 @@ public sealed partial class Base32Encoding
 		return value;
 	}
 
-	// Spreads the eight 5-bit values of a block into the bytes of a ulong, first symbol in the lowest byte: each step moves the upper half of every field up, so 40 bits become two 20-bit, four 10-bit and finally eight 5-bit fields.
+	// Spreads the eight 5-bit values of a block into the bytes of a ulong, first symbol in the lowest byte.
+	// Each step moves the upper half of every field up, so 40 bits become two 20-bit, four 10-bit and finally eight 5-bit fields.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ulong SplitBlockValues(ulong block)
 	{

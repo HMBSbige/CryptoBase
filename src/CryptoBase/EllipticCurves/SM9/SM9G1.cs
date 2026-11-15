@@ -98,7 +98,8 @@ internal static class SM9G1
 		return infinity;
 	}
 
-	// k·P1 + Q for a public k and Q of G1. Returns false, with result 0, if the sum is the point at infinity.
+	// k·P1 + Q for a public k and Q of G1.
+	// Returns false, with result 0, if the sum is the point at infinity.
 	internal static bool MultiplyBaseAddVariableTime(in FieldElement<SM9Order> scalar, in SM9AffinePoint<SM9Fp> point, out SM9AffinePoint<SM9Fp> result)
 	{
 		SM9Curve<SM9Fp>.FromAffine(in point, out SM9Point<SM9Fp> addend);

@@ -8,7 +8,8 @@ internal readonly struct Argon2AdvSimd : IArgon2Kernel
 	public static bool IsSupported => AdvSimd.Arm64.IsSupported;
 
 	// XAR takes each rotation of G together with the XOR before it wherever the ARMv8.2 SHA3 instructions are present, not only where CpuIdUtils.PreferArmSha3.
-	// By LLVM's scheduling models, the 16 XARs of a G shorten its dependency chains on the Neoverse V1 and V2, and on the Neoverse N2 they leave V0 with 48 instructions where the two pipelines had 50 each.
+	// By LLVM's scheduling models, the XARs shorten the dependency chains of G on the Neoverse V1 and V2.
+	// The Neoverse N2 issues them to V0 alone, which still leaves V0 less loaded than either pipeline is without them.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Compress(ref Argon2Block previous, ref Argon2Block reference, ref Argon2Block destination, ref Argon2Block scratch, bool xorDestination)
 	{

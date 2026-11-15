@@ -22,7 +22,7 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	/// <inheritdoc />
 	public static int MacLength => HMACSHA256.HashSizeInBytes;
 
-	// Below it, the fixed cost of a call to the platform outweighs the SHA extensions.
+	// Below it, off Windows, the fixed cost of a call to the platform outweighs the SHA extensions.
 	private const int MinPreferredLength = 256;
 
 	/// <summary>

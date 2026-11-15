@@ -19,7 +19,8 @@ public class Sp800_185EncodingTest
 
 	public static IEnumerable<ulong> EncodedValues => Values.Select(static entry => entry.Value);
 
-	// SP 800-185, Sec. 2.3.1 gives left_encode(0) and right_encode(0); the rates are the first bytes of the bytepad data in the cSHAKE examples.
+	// SP 800-185, Sec. 2.3.1 gives left_encode(0) and right_encode(0).
+	// The rates are the first bytes of the bytepad data in the cSHAKE examples.
 	[Test]
 	[Arguments(0UL, "0100", "0001")]
 	[Arguments(168UL, "01A8", "A801")]

@@ -5,7 +5,10 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The operations of the lane tower of the SM9 vector kernels and the point formulas of SM9PointLanes, each taking the previous result as an input, so the time per operation is its latency, on values that start on a 64-byte line as the kernels keep them: the mixed additions on a point in each lane, which a fixed-base product takes per round, and the doubling and addition on one point.
+// The operations of the lane tower of the SM9 vector kernels and the point formulas of SM9PointLanes.
+// Each takes the previous result as an input, so the time per operation is its latency.
+// The values start on a 64-byte line, as the kernels keep them.
+// The point formulas are the mixed addition on a point in each lane, which a fixed-base product takes per round, and the doubling and addition on one point.
 // A vector type adds its own LaneKind.
 public unsafe class SM9LanesBenchmark
 {
@@ -172,8 +175,8 @@ public unsafe class SM9LanesBenchmark
 		void AddSingleG2(int count);
 	}
 
-	// Four elements, then the scratch and a batch of lines;
-	// and the points of each group, the left one, the right one, the result and the workspace of the formulas, first on a point in each lane and then on one point.
+	// Four elements, then the scratch and a batch of lines.
+	// Each group has its points: the left, the right, the result and the formula workspace, first on a point in each lane and then on one point.
 	private sealed class Lanes<TVector> : ILanes where TVector : unmanaged, ISM9Vector<TVector>
 	{
 		private readonly SM9Fp12Lanes* _values;
@@ -322,7 +325,8 @@ public unsafe class SM9LanesBenchmark
 			NativeMemory.AlignedFree(_g2);
 		}
 
-		// The points of a group in lanes: the left, the right and the result point in each lane with the workspace of the formulas, and from single on the point, the entry and the workspace of the formulas on one point.
+		// The points of a group: the left, the right and the result point in each lane with the formula workspace.
+		// From single on: the point, the entry and the formula workspace on one point.
 		private static ulong* Points<TLanes, TField>(out int single) where TLanes : struct, ISM9FieldLanes<TField> where TField : unmanaged, ISM9Field<TField>
 		{
 			int e = TLanes.ElementLength;

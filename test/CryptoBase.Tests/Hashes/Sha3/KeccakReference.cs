@@ -3,7 +3,8 @@ using System.Numerics;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-// A direct transcription of FIPS 202 (https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf) that shares no code with the library: it derives the round constants with Algorithm 5 and the ρ offsets with Algorithm 2 instead of copying tables.
+// A direct transcription of FIPS 202 (https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf) that shares no code with the library.
+// It derives the round constants with Algorithm 5 and the ρ offsets with Algorithm 2 instead of copying tables.
 internal static class KeccakReference
 {
 	// The suffix bits of Sec. 6.1 and 6.2 followed by the first pad10*1 bit, as in Appendix B.2, Table 6.
@@ -92,7 +93,8 @@ internal static class KeccakReference
 		return Sponge(TestUtils.Concat(prefix, source), rateInBytes, CShakeDomainSeparator, outputLength);
 	}
 
-	// KMAC from Sec. 4.3 and KMACXOF from Sec. 4.3.1, which encodes the output length as 0; the rate selects KMAC128 (168) or KMAC256 (136).
+	// KMAC from Sec. 4.3 and KMACXOF from Sec. 4.3.1, which encodes the output length as 0.
+	// The rate selects KMAC128 (168) or KMAC256 (136).
 	public static byte[] Kmac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, int rateInBytes, ReadOnlySpan<byte> customization, int outputLength, bool xof)
 	{
 		byte[] newX = TestUtils.Concat(BytePad(EncodeString(key), rateInBytes), source);
@@ -161,7 +163,8 @@ internal static class KeccakReference
 		}
 	}
 
-	// KECCAK-p[1600, 24] from Algorithm 7; lane A[x, y] is state[x + 5y], and bit z of a lane is its bit z (Sec. 3.1.2, B.1).
+	// KECCAK-p[1600, 24] from Algorithm 7.
+	// Lane A[x, y] is state[x + 5y], and bit z of a lane is its bit z (Sec. 3.1.2, B.1).
 	public static void Permute(ulong[] state)
 	{
 		for (int round = 0; round < Rounds; ++round)

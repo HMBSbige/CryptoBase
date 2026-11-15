@@ -72,7 +72,7 @@ public static class CpuIdUtils
 
 #if NET11_0_OR_GREATER
 	// Whether Keccak-p[1600] and the CRC-32 folds take the ARMv8.2 SHA3 instructions.
-	// Apple's cores run them four a cycle, but the Neoverse N2, V1 and V2 only one, which makes these kernels slower.
+	// Apple's cores issue them four a cycle, but the Neoverse N2, V1 and V2 only one, where these kernels are slower.
 	// A kernel tests this once where it starts, after Sha3.IsSupported, and runs a separate generic instantiation for each answer.
 	internal static readonly bool PreferArmSha3 = Sha3.IsSupported && (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS());
 #endif
@@ -122,13 +122,15 @@ public static class CpuIdUtils
 		return family is 0x1A && model is <= 0x2F or >= 0x40 and <= 0x4F or >= 0x60 and <= 0x7F or >= 0xD0 and <= 0xD7;
 	}
 
-	// Strix Point and Krackan (20h-2Fh, 60h-6Fh) split 512-bit operations into two 256-bit halves; D0h-D7h is excluded because its datapath is unknown.
+	// Strix Point and Krackan (20h-2Fh, 60h-6Fh) split 512-bit operations into two 256-bit halves.
+	// D0h-D7h is excluded because its datapath is unknown.
 	internal static bool IsZen5With512BitDatapath(int family, int model)
 	{
 		return family is 0x1A && model is <= 0x1F or >= 0x40 and <= 0x4F or >= 0x70 and <= 0x7F;
 	}
 
-	// Zen 3 and Zen 4 (family 19h, where only Zen 4 has AVX-512), and the Zen 5 models that split 512-bit operations; D0h-D7h is again excluded because its datapath is unknown.
+	// Zen 3 and Zen 4 (family 19h, where only Zen 4 has AVX-512), and the Zen 5 models that split 512-bit operations.
+	// D0h-D7h is again excluded because its datapath is unknown.
 	internal static bool IsZenWith256BitDatapath(int family, int model)
 	{
 		return family is 0x19 || family is 0x1A && model is >= 0x20 and <= 0x2F or >= 0x60 and <= 0x6F;

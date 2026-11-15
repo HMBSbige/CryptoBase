@@ -5,7 +5,8 @@ using System.Security.Cryptography;
 namespace CryptoBase.Benchmark.Signatures;
 
 // SM9: the operations of the key generation center, signatures, encryption, the key encapsulation, the key exchange and the imports of keys, with IDs of 17 bytes, messages and plaintexts of 32 bytes and keys of 16 bytes.
-// The keys and verifiers are made in the setup and used there until they hold their pairings, lines and tables; a key exchange party is its creation and its derivation with confirmation.
+// The keys and verifiers are made in the setup and used there until they hold their pairings, lines and tables.
+// A key exchange party is its creation and its derivation with confirmation.
 [MemoryDiagnoser]
 public class SM9SchemeBenchmark
 {

@@ -128,7 +128,7 @@ public class LimboTest
 		}
 	}
 
-	// The testcases with an RSA key have the same outcomes with RsaKey, which SignatureKey imports, as with PlatformRsaKey, to which an importer without RSA leaves the keys.
+	// Testcases with an RSA key have the same outcomes with RsaKey, which SignatureKey imports, as with PlatformRsaKey, which takes the keys when the importer has no RSA.
 	[Test]
 	public async Task RsaTestcasesHaveTheSameOutcomesWithPlatformRsaKey()
 	{
@@ -208,7 +208,7 @@ public class LimboTest
 			_ => (default, "")
 		};
 
-		// The validator checks the usage that the kind of validation gives, so the testcase may ask for that one alone.
+		// The validator checks only the usage that the validation kind implies, so the testcase may ask for that one alone.
 		if (purpose.Length is 0 || testcase.ExtendedKeyUsage is not ([] or [_]) || testcase.ExtendedKeyUsage is [var only] && only != purpose)
 		{
 			return new Outcome(Skipped, $"The validation kind {testcase.ValidationKind} with the extended key usages [{string.Join(", ", testcase.ExtendedKeyUsage)}] is not supported.");
@@ -250,7 +250,7 @@ public class LimboTest
 			return new Outcome(Failure, $"[{string.Join(", ", result.Errors)}] {result.PathEnd} after {result.Path.Count}: {result.Message}");
 		}
 
-		// The caller checks the key usage of the peer's certificate.
+		// The validator leaves the peer's key usage to the caller, so the harness checks it here.
 		X509KeyUsageFlags required = testcase.KeyUsage.Aggregate(X509KeyUsageFlags.None, static (flags, name) => flags | KeyUsageOf(name));
 
 		if (peer.KeyUsage is { } keyUsage && (keyUsage & required) != required)

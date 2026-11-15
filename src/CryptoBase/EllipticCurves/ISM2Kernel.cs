@@ -1,6 +1,8 @@
 namespace CryptoBase.EllipticCurves;
 
-// The products of the SM2 curve that kernels may speed up, which take and give SM2Field52 values whatever a kernel uses inside; SM2Curve hands them to ECGroup and ECVariableTimeGroup.
+// The products of the SM2 curve that kernels may speed up.
+// They take and give SM2Field52 values whatever a kernel uses inside.
+// SM2KernelDispatch picks a kernel, and SM2Curve hands its products to ECGroup and ECVariableTimeGroup.
 // MultiplyBase takes a secret: neither its time nor the addresses it reads may depend on the scalar, and it erases the buffers it owns.
 // MultiplyAdd takes public inputs and may branch on them.
 internal interface ISM2Kernel
@@ -35,6 +37,7 @@ internal interface ISM2Kernel
 	// k·P for a point P on the curve and k below n, as ECGroup.Multiply gives it: limbs of the form E, Z = 0 for k = 0, and neither the time nor the addresses depending on k or P.
 	static abstract void Multiply(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result);
 
-	// u1·G + u2·Q without a table, as ECVariableTimeGroup.MultiplyAdd gives it. Every input is public.
+	// u1·G + u2·Q without a table, as ECVariableTimeGroup.MultiplyAdd gives it.
+	// Every input is public.
 	static abstract void MultiplyAdd(in FieldElement<SM2Order> u1, in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> u2, out JacobianPoint<SM2Field52> result);
 }

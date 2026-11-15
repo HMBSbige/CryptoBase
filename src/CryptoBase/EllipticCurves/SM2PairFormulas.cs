@@ -432,7 +432,8 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 		Unsafe.SkipInit(out TField xs);
 		ref Vector128<ulong> xx = ref Limbs(in point.XX);
 		ref Vector128<ulong> yz = ref Limbs(in point.YZ);
-		// Z2² goes through entry instead of a reference of its own, which leaves four references live across the products with result: an odd number of saved registers would leave the locals at offsets that the vector loads and stores of Arm64 cannot encode.
+		// Z2² goes through entry instead of a reference of its own, which leaves four references live across the products with result.
+		// An odd number of saved registers would leave the locals at offsets that the vector loads and stores of Arm64 cannot encode.
 		// S1 and Z1·Z2 need only the inputs, so the rounds before can overlap them.
 		TField.Multiply(in point.YZ, in entry.CubeZ, out TField first);
 		Vector128<ulong> yz0 = Unsafe.Add(ref yz, 0);

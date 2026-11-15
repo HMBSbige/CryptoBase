@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
-// Window i holds j·2^(wi)·P for j from 1 to 2^(w − 1), w = GeneratorWindowWidth, each entry as TField.Pack writes it: P is G for the table here and the public point of each ECPointTable.
+// Window i holds j·2^(wi)·P for j from 1 to 2^(w − 1), w = GeneratorWindowWidth, each entry as TField.Pack writes it.
+// P is G for the table here and the public point of each ECPointTable.
 // The entries start on a 64-byte boundary, so that a 64-byte entry fills one cache line.
 internal static class ECGeneratorTable<TCurve, TField, TOrder>
 	where TCurve : struct, IECCurve
@@ -32,7 +33,8 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 
 	// The windows of a point P on the curve, from AlignedScratch.AlignedStart on in the pinned array returned.
 	// P is public, so the time may depend on it.
-	// A chain of doublings gives the bases B = 2^(wi)·P, by the kernels of TCurve where it has them or FillBases otherwise, made affine at once, and the kernels of TCurve where it has them or FillWindows otherwise fill the windows from them.
+	// A chain of doublings gives the bases B = 2^(wi)·P, which are made affine at once, and the windows are filled from them.
+	// Both steps take the kernels of TCurve where it has them, and FillBases and FillWindows otherwise.
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	internal static ulong[] Build(in AffinePoint<TField> point)
 	{
@@ -66,7 +68,8 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 		return storage;
 	}
 
-	// Sets bases[i] to 2^(wi)·P, one doubling after another. P is public, so the time may depend on it.
+	// Sets bases[i] to 2^(wi)·P, one doubling after another.
+	// P is public, so the time may depend on it.
 	internal static void FillBases(in AffinePoint<TField> point, Span<JacobianPoint<TField>> bases)
 	{
 		JacobianPoint<TField>.FromAffine(in point, out bases[0]);
@@ -82,7 +85,8 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 		}
 	}
 
-	// Fills entries 2 to WindowLength of each window from entry 1, its base: each round r from 1 to w − 1 gives entries 2^(r − 1) + 1 to 2^r of every window, one inversion for the round, as AddRound describes.
+	// Fills entries 2 to WindowLength of each window from entry 1, its base.
+	// Each round r from 1 to w − 1 gives entries 2^(r − 1) + 1 to 2^r of every window with one inversion, as AddRound describes.
 	// The windows are public, so the time may depend on them.
 	internal static void FillWindows(Span<ulong> windows)
 	{
@@ -111,11 +115,14 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 		return Build(in generator);
 	}
 
-	// Entries half + 1 to 2·half of every window, from the entries up to half: entry half + m is entry half plus entry m for m < half, and twice entry half for m = half.
+	// Entries half + 1 to 2·half of every window, from the entries up to half.
+	// Entry half + m is entry half plus entry m for m < half, and twice entry half for m = half.
 	// For P1 = (x1, y1), entry half, the affine sum with P2 = (x2, y2) takes λ = (y2 − y1)/(x2 − x1) and the double λ = 3(x1² − 1)/(2·y1), as a = −3;
 	// both give x3 = λ² − x1 − x2, x2 = x1 for the double, and y3 = λ(x1 − x3) − y1.
-	// In window i the two entries of a sum are equal or opposite only if n divides (half ∓ m)·2^(wi), so half ∓ m, which lies in [1, 2^w); and the double has y1 ≠ 0, as the group has odd order.
-	// products[s] is the product of the denominators of the sums 0 to s, so that one inversion of the last gives the inverse of each denominator, from the last sum back: with I the inverse of the product up to s, I·products[s − 1] is the inverse of denominator s and I·denominator s that of the product up to s − 1.
+	// In window i the two entries of a sum are equal or opposite only if n divides (half ∓ m)·2^(wi), and so half ∓ m, which lies in [1, 2^w).
+	// The double has y1 ≠ 0, as the group has odd order.
+	// products[s] is the product of the denominators of sums 0 to s, so one inversion of the last gives the inverse of each denominator, from the last sum back.
+	// With I the inverse of the product up to s, I·products[s − 1] is the inverse of denominator s, and I·denominator s that of the product up to s − 1.
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void AddRound(Span<ulong> windows, int half, Span<TField> products)

@@ -66,8 +66,8 @@ public abstract class MontgomeryKernelCase : IKernelCase
 	// The vectors that the window of a kernel of MontgomeryKernelAvx2 keeps in registers.
 	internal virtual int WindowVectors => throw new InvalidOperationException($"{KernelType.Name} has no window.");
 
-	// The limb counts that the tests take for the kernel: those of one to three limbs that it holds, the ends of the range of limb counts up to 256 for which MontgomeryKernelDispatch takes it, and the RSA sizes of CommonLimbCounts within the range.
-	// MontgomeryKernelAdvSimd<Radix28> also takes the limb counts of MontgomeryKernelDispatch.CreatePair, from MinAdvSimdPairLimbs, below those that Create gives it, to MaxAdvSimdPairLimbs.
+	// The limb counts that the tests take for the kernel: those of one to three limbs that it holds, the ends of the range up to 256 limbs for which MontgomeryKernelDispatch takes it, and the RSA sizes of CommonLimbCounts within that range.
+	// MontgomeryKernelAdvSimd<Radix28> also takes MinAdvSimdPairLimbs and MaxAdvSimdPairLimbs, the ends of the range for which CreatePair gives it, which starts below where Create does.
 	internal int[] LimbCountsToTest => field ??= GetLimbCountsToTest();
 
 	public abstract bool IsSupported { get; }
@@ -121,7 +121,8 @@ public abstract class MontgomeryKernelCase : IKernelCase
 		return [.. limbCounts.Concat(Enumerable.Range(1, 3).Where(Fits)).Distinct().Order()];
 	}
 
-	// Whether MontgomeryKernelDispatch takes the kernel for a modulus of limbs limbs where it takes the family: the first kernel of the family in Cases that holds the modulus, with the windows of MontgomeryKernelAvx512 and MontgomeryKernelAvx512Staged as one family, or the window of MontgomeryKernelAvx2 that GetAvx2WindowVectors gives.
+	// Whether MontgomeryKernelDispatch takes the kernel for a modulus of limbs limbs where it takes the family.
+	// That is the first kernel of the family in Cases that holds the modulus, with MontgomeryKernelAvx512 and MontgomeryKernelAvx512Staged as one family, or for MontgomeryKernelAvx2 the window that GetAvx2WindowVectors gives.
 	// Of MontgomeryKernel64ColumnPairs, it takes only the 57-bit digits.
 	private bool IsDispatched(int limbs)
 	{

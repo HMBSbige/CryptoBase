@@ -10,7 +10,8 @@ public class KeccakSharedPermutationTest
 
 	public static IEnumerable<byte> DomainSeparators => [KeccakReference.Sha3DomainSeparator, KeccakReference.ShakeDomainSeparator];
 
-	// Zero lets ResetWithGuests choose; the others force one kernel, whose lanes past the streams are free.
+	// Zero lets ResetWithGuests choose.
+	// The others force one kernel, whose lanes past the streams are free.
 	public static IEnumerable<int> Lanes => [0, 1, 2, 4, 8];
 
 	private interface IRatePairCase
@@ -18,7 +19,8 @@ public class KeccakSharedPermutationTest
 		Task Run<TFirst, TSecond>() where TFirst : IKeccakRate where TSecond : IKeccakRate;
 	}
 
-	// A prefix first, as J takes z, so that the first block starts mid-block; the input ends before, at and after a block boundary.
+	// A prefix first, as J takes z, so that the message starts mid-block.
+	// The input ends before, at and after a block boundary.
 	[Test]
 	[CombinedDataSources]
 	public Task BlockwiseAbsorptionMatchesAbsorb([MethodDataSource(nameof(Rates))] int rate, [MethodDataSource(nameof(DomainSeparators))] byte domainSeparator)

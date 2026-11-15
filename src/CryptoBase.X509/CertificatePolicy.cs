@@ -23,7 +23,8 @@ internal static class CertificatePolicy
 	private static ReadOnlySpan<byte> SM2 => [0x06, 0x08, 0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x82, 0x2D];
 
 	// Whether a certificate's signature can be verified: null for an algorithm that AlgorithmIdentifier names, WeakAlgorithm for one that the policy refuses whatever the key, and UnsupportedAlgorithm for any other.
-	// MD2, MD4 and MD5 are forbidden, and SHA-1, SHA-224 and DSA refused, as SignatureAlgorithm has none of them: RSASSA-PKCS1-v1_5 and ECDSA with those hashes, the OIW identifiers, RSASSA-PSS whose hash or MGF1 hash is one of them, the default SHA-1 included, and DSA with any hash.
+	// WeakAlgorithm covers MD2, MD4, MD5, SHA-1, SHA-224 and DSA, none of which SignatureAlgorithm has.
+	// That is RSASSA-PKCS1-v1_5 and ECDSA with those hashes, the OIW identifiers, RSASSA-PSS whose hash or MGF1 hash is one of them (the default SHA-1 included), and DSA with any hash.
 	public static CertificateValidationError? CheckSignatureAlgorithm(AlgorithmIdentifier identifier)
 	{
 		if (identifier.TryGetSignatureAlgorithm(out _))
@@ -35,11 +36,11 @@ internal static class CertificatePolicy
 		{
 			// md2WithRSAEncryption, md4WithRSAEncryption, md5WithRSAEncryption, sha1WithRSAEncryption and sha224WithRSAEncryption.
 			"1.2.840.113549.1.1.2" or "1.2.840.113549.1.1.3" or "1.2.840.113549.1.1.4" or "1.2.840.113549.1.1.5" or "1.2.840.113549.1.1.14" => true,
-			// The OIW's md4WithRSA, md5WithRSA, md4WithRSAEncryption, shaWithRSAEncryption, md2WithRSASignature, md5WithRSASignature and sha1WithRSASignature.
+			// The OIW's md4WithRSA, md5WithRSA, md4WithRSAEncryption, shaWithRSASignature, md2WithRSASignature, md5WithRSASignature and sha-1WithRSAEncryption.
 			"1.3.14.3.2.2" or "1.3.14.3.2.3" or "1.3.14.3.2.4" or "1.3.14.3.2.15" or "1.3.14.3.2.24" or "1.3.14.3.2.25" or "1.3.14.3.2.29" => true,
 			// ecdsa-with-SHA1 and ecdsa-with-SHA224.
 			"1.2.840.10045.4.1" or "1.2.840.10045.4.3.1" => true,
-			// dsa-with-sha1, the OIW's dsaWithSHA, dsaCommonWithSHA, dsaWithSHA1 and dsaCommonWithSHA1, and NIST's DSA with SHA-2 (RFC 5758, Sec. 3.1) and SHA-3.
+			// dsa-with-sha1, the OIW's dsaWithSHA, dsaCommonWithSHA, dsaWithSHA1 and dsaWithCommonSHA1, and NIST's DSA with SHA-2 (RFC 5758, Sec. 3.1) and SHA-3.
 			"1.2.840.10040.4.3" or "1.3.14.3.2.13" or "1.3.14.3.2.21" or "1.3.14.3.2.27" or "1.3.14.3.2.28" => true,
 			"2.16.840.1.101.3.4.3.1" or "2.16.840.1.101.3.4.3.2" or "2.16.840.1.101.3.4.3.3" or "2.16.840.1.101.3.4.3.4" => true,
 			"2.16.840.1.101.3.4.3.5" or "2.16.840.1.101.3.4.3.6" or "2.16.840.1.101.3.4.3.7" or "2.16.840.1.101.3.4.3.8" => true,
@@ -50,9 +51,10 @@ internal static class CertificatePolicy
 		return weak ? CertificateValidationError.WeakAlgorithm : CertificateValidationError.UnsupportedAlgorithm;
 	}
 
-	// Whether the policy accepts a public key, before it is imported: null if so or if the importer decides, and otherwise the reason, with its description in reason.
-	// RSA keys need a modulus of minRsaKeySize to 16384 bits that is a multiple of 8, as CA/Browser Forum Baseline Requirements, Sec. 6.1.5, require, and a public exponent of at most 33 bits, which bound the work of a verification;
-	// EC keys a named curve, P-256, P-384, P-521 or that of SM2, with explicit parameters not supported (RFC 5480, Sec. 2.1.1); and DSA keys are refused.
+	// Whether the policy accepts a public key, before it is imported: null if so or if the importer decides, and otherwise the error, with its description in reason.
+	// RSA keys need a modulus of minRsaKeySize to 16384 bits that is a multiple of 8, as the CA/Browser Forum Baseline Requirements, Sec. 6.1.5, require, and a public exponent of at most 33 bits; the upper bounds limit the work of a verification.
+	// EC keys need a named curve, P-256, P-384, P-521 or that of SM2; explicit parameters are not supported (RFC 5480, Sec. 2.1.1).
+	// DSA keys are refused.
 	public static CertificateValidationError? CheckPublicKey(SubjectPublicKeyInfo info, int minRsaKeySize, out string? reason)
 	{
 		switch (info.Algorithm.Oid)
@@ -97,8 +99,8 @@ internal static class CertificatePolicy
 		return identifier.Oid is AlgorithmIdentifier.RsaEncryptionOid or AlgorithmIdentifier.RsassaPssOid;
 	}
 
-	// RSAPublicKey ::= SEQUENCE { modulus INTEGER, publicExponent INTEGER } (RFC 8017, Appendix A.1.1), whose integers are positive;
-	// an odd modulus and an odd exponent of at least 3 (RFC 8017, Sec. 3.1) make a valid key.
+	// RSAPublicKey ::= SEQUENCE { modulus INTEGER, publicExponent INTEGER } (RFC 8017, Appendix A.1.1), whose integers are positive.
+	// An odd modulus and an odd exponent of at least 3 (RFC 8017, Sec. 3.1) make a valid key.
 	private static CertificateValidationError? CheckRsaPublicKey(ReadOnlyMemory<byte> publicKey, int minRsaKeySize, out string? reason)
 	{
 		ReadOnlySpan<byte> modulus;
@@ -146,7 +148,8 @@ internal static class CertificatePolicy
 		return null;
 	}
 
-	// RSASSA-PSS-params (RFC 4055, Sec. 3.1), whose hash and MGF1 hash default to SHA-1, name a hash that the policy refuses; parameters that do not decode name none.
+	// Whether RSASSA-PSS-params (RFC 4055, Sec. 3.1), whose hash and MGF1 hash default to SHA-1, name a hash that the policy refuses.
+	// Parameters that do not decode name none.
 	private static bool HasWeakPssHash(ReadOnlyMemory<byte> parameters)
 	{
 		if (parameters.IsEmpty)
@@ -191,7 +194,7 @@ internal static class CertificatePolicy
 		return value is [0x00, >= 0x80, ..] ? value.Slice(1) : value;
 	}
 
-	// Of a nonempty value without leading zeros.
+	// The bit length of a nonempty value without leading zero bytes.
 	private static int GetBitLength(ReadOnlySpan<byte> value)
 	{
 		return 8 * value.Length - System.Numerics.BitOperations.LeadingZeroCount(value[0]) + 24;

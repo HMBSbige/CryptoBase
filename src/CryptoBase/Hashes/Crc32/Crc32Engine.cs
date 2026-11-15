@@ -12,7 +12,7 @@ internal static class Crc32Engine
 
 	private const int X86Avx512Threshold = 256;
 
-	// One 128-byte batch is marginally faster through the four-stream XMM path.
+	// A single 128-byte batch is faster through the four-stream XMM path.
 	private const int X86Avx2Threshold = 129;
 	private const int CastagnoliX86Avx2Threshold = 512;
 	private const int CastagnoliX86Vector128Threshold = 1024;

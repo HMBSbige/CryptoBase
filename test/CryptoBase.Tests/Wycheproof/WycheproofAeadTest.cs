@@ -73,7 +73,7 @@ public class WycheproofAeadTest
 		byte[] tag = new byte[vector.Tag.Length];
 		byte[] plaintext = new byte[vector.Ct.Length];
 
-		// The files also cover nonce and tag sizes that a cipher does not offer; valid or not, it must reject them.
+		// The files also cover nonce and tag sizes that a cipher does not offer, which it must reject, valid or not.
 		if (vector.Iv.Length != T.NonceSize || vector.Tag.Length != T.TagSize)
 		{
 			await Assert.That(() => cipher.Encrypt(vector.Iv, vector.Msg, ciphertext, tag, vector.Aad)).Throws<ArgumentException>();

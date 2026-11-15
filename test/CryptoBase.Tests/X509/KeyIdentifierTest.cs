@@ -123,8 +123,8 @@ public class KeyIdentifierTest
 		}
 	}
 
-	// A CA's subject key identifier is the authority key identifier of what it issues;
-	// a self-signed certificate names its own key, and a key rollover certificate, which a CA issues to itself with another key, does not (RFC 5280, Sec. 4.2.1.1 and 4.2.1.2).
+	// A CA's subject key identifier is the authority key identifier of what it issues (RFC 5280, Sec. 4.2.1.1 and 4.2.1.2).
+	// A self-signed certificate names its own key; a key rollover certificate, which a CA issues to itself with another key, does not.
 	[Test]
 	public async Task KeyIdentifiersLinkACertificateToItsIssuer()
 	{

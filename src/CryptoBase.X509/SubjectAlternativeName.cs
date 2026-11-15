@@ -128,7 +128,8 @@ public sealed class SubjectAlternativeName
 
 	private bool MatchesDnsName(ReadOnlySpan<char> dnsName)
 	{
-		// A wildcard stands for the first label, which must not be all of the host name: the rest of a name of one label is empty, which no valid entry equals.
+		// A wildcard stands for the first label, which must not be all of the host name.
+		// The rest of a name of one label is empty, which no valid entry equals.
 		int dot = dnsName.IndexOf('.');
 		ReadOnlySpan<char> parent = dot > 0 ? dnsName.Slice(dot + 1) : [];
 
@@ -156,7 +157,7 @@ public sealed class SubjectAlternativeName
 		return false;
 	}
 
-	// GeneralNames, the results slices of value.
+	// GeneralNames; the results are slices of value.
 	internal static SubjectAlternativeName Read(ReadOnlyMemory<byte> value)
 	{
 		DerReader reader = new(value);

@@ -7,7 +7,9 @@ internal interface IMLDsaKernel
 {
 	static abstract bool IsSupported { get; }
 
-	// NTT (Algorithm 41) in place. In: |f| < q. Out: |f| < 9q.
+	// NTT (Algorithm 41) in place.
+	// In: |f| < q.
+	// Out: |f| < 9q.
 	static abstract void Ntt(Span<int> f);
 
 	// NTT⁻¹ (Algorithm 42) in place, times R = 2^32, which undoes the R⁻¹ of MultiplyAccumulate.
@@ -29,7 +31,8 @@ internal interface IMLDsaKernel
 	// destination may be left or right.
 	static abstract void Add(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination);
 
-	// Whether some |f_i| ≥ bound, checking every coefficient. In: f from Reduce, or the exact values; bound ≤ 2097409.
+	// Whether some |f_i| ≥ bound, checking every coefficient.
+	// In: f from Reduce, or the exact values; bound ≤ 2097409.
 	static abstract bool ExceedsBound(ReadOnlySpan<int> f, int bound);
 
 	// destination = Reduce(left + right), and ExceedsBound of it, in one pass.
@@ -38,7 +41,8 @@ internal interface IMLDsaKernel
 	static abstract bool AddReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound);
 
 	// destination = Reduce(left − right), and ExceedsBound of it, in one pass.
-	// In: the differences within the input of Reduce. destination may be left or right.
+	// In: the differences within the input of Reduce.
+	// destination may be left or right.
 	static abstract bool SubtractReduceExceedsBound(ReadOnlySpan<int> left, ReadOnlySpan<int> right, Span<int> destination, int bound);
 
 	// Reduce in place, and ExceedsBound of the result, in one pass.
@@ -75,13 +79,16 @@ internal interface IMLDsaKernel
 	// Out: the exact values, in [−η, η]; past the returned count, at most eight slots of destination may be written, with values that are not samples.
 	static abstract int RejectEta(ReadOnlySpan<byte> source, Span<int> destination, int eta);
 
-	// SimpleBitPack(t1, 2^10 − 1) (Algorithm 16) into 320 bytes. In: [0, 2^10).
+	// SimpleBitPack(t1, 2^10 − 1) (Algorithm 16) into 320 bytes.
+	// In: [0, 2^10).
 	static abstract void EncodeT1(ReadOnlySpan<int> t1, Span<byte> destination);
 
-	// SimpleBitUnpack(·, 2^10 − 1) (Algorithm 18) of 320 bytes, times 2^d. Out: the exact values, in [0, q).
+	// SimpleBitUnpack(·, 2^10 − 1) (Algorithm 18) of 320 bytes, times 2^d.
+	// Out: the exact values, in [0, q).
 	static abstract void DecodeT1(ReadOnlySpan<byte> source, Span<int> f);
 
-	// BitPack(t0, 2^12 − 1, 2^12) (Algorithm 17) into 416 bytes. In: (−2^12, 2^12].
+	// BitPack(t0, 2^12 − 1, 2^12) (Algorithm 17) into 416 bytes.
+	// In: (−2^12, 2^12].
 	static abstract void EncodeT0(ReadOnlySpan<int> t0, Span<byte> destination);
 
 	// BitPack(s, η, η) into 32 · bitlen(2η) bytes for η = eta in {2, 4}. In: [−η, η].
@@ -91,10 +98,12 @@ internal interface IMLDsaKernel
 	// Out: η − v for each packed v, whether valid or not.
 	static abstract bool DecodeEta(ReadOnlySpan<byte> source, Span<int> s, int eta);
 
-	// BitPack(z, γ1 − 1, γ1) into 32 · (1 + log2 γ1) bytes for γ1 = 2^gamma1Bits. In: (−γ1, γ1].
+	// BitPack(z, γ1 − 1, γ1) into 32 · (1 + log2 γ1) bytes for γ1 = 2^gamma1Bits.
+	// In: (−γ1, γ1].
 	static abstract void EncodeZ(ReadOnlySpan<int> z, Span<byte> destination, int gamma1Bits);
 
-	// BitUnpack(·, γ1 − 1, γ1) of 32 · (1 + log2 γ1) bytes for γ1 = 2^gamma1Bits. Out: the exact values, in (−γ1, γ1].
+	// BitUnpack(·, γ1 − 1, γ1) of 32 · (1 + log2 γ1) bytes for γ1 = 2^gamma1Bits.
+	// Out: the exact values, in (−γ1, γ1].
 	static abstract void DecodeZ(ReadOnlySpan<byte> source, Span<int> z, int gamma1Bits);
 
 	// SimpleBitPack(w1, (q − 1) / (2γ2) − 1), the part of w1Encode (Algorithm 28) for one polynomial, into 32 · bitlen((q − 1) / (2γ2) − 1) bytes.

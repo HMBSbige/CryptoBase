@@ -3,8 +3,10 @@ using System.Text;
 
 namespace CryptoBase.X509;
 
-// The value of a certificate policies extension (RFC 5280, Sec. 4.2.1.4): certificatePolicies ::= SEQUENCE SIZE (1..MAX) OF PolicyInformation, without the qualifiers, which path validation does not use.
-// Policies are the contents of the OBJECT IDENTIFIERs other than anyPolicy, slices of the extension's memory; each appears once, as the section requires.
+// The value of a certificate policies extension (RFC 5280, Sec. 4.2.1.4): certificatePolicies ::= SEQUENCE SIZE (1..MAX) OF PolicyInformation.
+// The qualifiers are not kept, as path validation does not use them.
+// Policies are the contents of the OBJECT IDENTIFIERs other than anyPolicy, slices of the extension's memory.
+// Each appears once, as the section requires.
 // The instance is immutable.
 internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool hasAnyPolicy, bool hasUnrecognizedQualifier)
 {
@@ -25,7 +27,7 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 
 	public bool HasAnyPolicy { get; } = hasAnyPolicy;
 
-	// Whether a qualifier is neither of the above or has a value that does not decode as the type that the section gives it;
+	// Whether a qualifier is neither of the above or has a value that does not decode as the type that the section gives it.
 	// Sec. 4.2.1.4 requires a validator to interpret those of a critical extension or to reject the certificate.
 	public bool HasUnrecognizedQualifier { get; } = hasUnrecognizedQualifier;
 
@@ -61,7 +63,8 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 				}
 			}
 
-			// anyPolicy is not in the list; each is compared with the policies before it.
+			// anyPolicy is not in the list.
+			// Each policy is compared with those before it.
 			bool isAnyPolicy = PolicyGraph.IsAnyPolicy(policy);
 
 			if (isAnyPolicy ? hasAnyPolicy : IsRepeated(policies, ref seen, policy))
@@ -82,8 +85,8 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 		return new CertificatePolicies([.. policies], hasAnyPolicy, hasUnrecognizedQualifier);
 	}
 
-	// Whether value, read whole, decodes as the type that Sec. 4.2.1.4 gives the qualifier, CPSuri ::= IA5String or UserNotice, which the validator then interprets;
-	// neither changes the outcome, so the text is not kept.
+	// Whether value, read whole, decodes as the type that Sec. 4.2.1.4 gives the qualifier, CPSuri ::= IA5String or UserNotice, which the validator then interprets.
+	// Neither changes the outcome, so the text is not kept.
 	private static bool IsInterpreted(ReadOnlySpan<byte> identifier, ReadOnlyMemory<byte> value)
 	{
 		if (identifier.SequenceEqual(CpsQualifier))
@@ -158,7 +161,8 @@ internal sealed class CertificatePolicies(ReadOnlyMemory<byte>[] policies, bool 
 		new ValueAsnReader(element, AsnEncodingRules.DER).ReadCharacterString(type);
 	}
 
-	// Comparing directly costs less than a set for the few policies that an extension has; the set keeps the work linear for a long list.
+	// Comparing directly costs less than a set for the few policies that an extension has.
+	// The set keeps the work linear for a long list.
 	private static bool IsRepeated(List<ReadOnlyMemory<byte>> policies, ref HashSet<ReadOnlyMemory<byte>>? seen, ReadOnlyMemory<byte> policy)
 	{
 		if (seen is null && policies.Count < MaxDirectlyCompared)

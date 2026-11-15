@@ -11,7 +11,8 @@ namespace CryptoBase.Tests.SM9;
 // H1 and H2 of GM/T 0044.2-2016, Sec. 5.4.2, against the BigInteger reference.
 public class SM9HashTest
 {
-	// (Ha mod (N − 1)) + 1 for Ha of 320 bits: the multiples of N − 1 and their neighbours, where the Barrett quotient falls short by most, the largest Ha, and random ones.
+	// (Ha mod (N − 1)) + 1 for Ha of 320 bits.
+	// Ha takes the multiples of N − 1 and their neighbours, where the Barrett quotient falls short by most, the largest value, and random ones.
 	[Test]
 	public async Task ReductionMatchesTheReference()
 	{

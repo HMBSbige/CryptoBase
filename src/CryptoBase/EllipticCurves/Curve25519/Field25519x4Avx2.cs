@@ -1048,7 +1048,7 @@ internal unsafe struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 	private static Vector256<ulong> NegateLanes(Vector256<ulong> value, Vector256<ulong> twoP, [ConstantExpected] byte lanes)
 	{
 #if NET11_0_OR_GREATER
-		// From .NET 11 on, a constant minus a vector compiles to a subtraction from zero and an add, so the lanes take ~value + twoP + 1, an xor and an add of a constant that the mask folds into.
+		// From .NET 11 on, a constant minus a vector compiles to two instructions, so the lanes take ~value + twoP + 1: an xor and an add of a masked constant.
 		Vector256<ulong> mask = Vector256.Create(0 - (ulong)(lanes & 1), 0 - (ulong)(lanes >> 2 & 1), 0 - (ulong)(lanes >> 4 & 1), 0 - (ulong)(lanes >> 6 & 1));
 		return (value ^ mask) + (twoP + Vector256<ulong>.One & mask);
 #else

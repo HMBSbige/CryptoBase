@@ -5,8 +5,10 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.EllipticCurves;
 
-// The products of each SM2 kernel: k·G, k·G and k·P with the table of P, as encryption takes them, k·P without it, and u1·G + u2·Q with the windows of Q of SM2VerificationCurve, with the table of Q and without, as verification takes them;
-// and the windows of the table of P filled from their bases.
+// The products of each SM2 kernel.
+// Encryption takes k·G alone and with k·P from the windows of P, and k·P without them.
+// Verification takes u1·G + u2·Q with the windows of Q of SM2VerificationCurve, with the variable-time table of Q, and with neither.
+// FillWindows fills the windows of P from their bases.
 // A vector kernel adds its own KernelKind.
 public class SM2KernelBenchmark
 {

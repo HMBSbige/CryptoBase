@@ -86,7 +86,8 @@ public class MLDsaKernelBenchmark
 		_kernel.EncodeZ(_z, _encodedZ19, 19);
 	}
 
-	// Ntt takes |f| < q but leaves up to 9q, so each run transforms a fresh copy; InverseNtt and Reduce keep their input valid.
+	// Ntt takes |f| < q but leaves up to 9q, so each run transforms a fresh copy.
+	// InverseNtt and Reduce keep their input valid.
 	[Benchmark]
 	public void Ntt()
 	{

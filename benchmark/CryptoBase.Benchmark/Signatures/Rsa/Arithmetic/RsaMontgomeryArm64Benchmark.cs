@@ -4,7 +4,8 @@ using System.Security.Cryptography;
 
 namespace CryptoBase.Benchmark.Signatures.Rsa.Arithmetic;
 
-// The kernels that the dispatch chooses from on ARM64, each with the largest digits that fit the modulus, and MontgomeryKernel64, which it takes on other platforms: a chain of multiplications or squarings, each taking the previous result, and a constant-time exponentiation with an exponent as long as the modulus.
+// The kernels that the dispatch chooses from on ARM64, each with the largest digits that fit the modulus, and MontgomeryKernel64, which it takes on other platforms.
+// Each runs a chain of multiplications or squarings, each taking the previous result, and a constant-time exponentiation with an exponent as long as the modulus.
 public class RsaMontgomeryArm64Benchmark
 {
 	private const int Operations = 64;

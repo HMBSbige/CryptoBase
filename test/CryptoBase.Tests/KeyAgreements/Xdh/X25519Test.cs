@@ -9,7 +9,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.KeyAgreements.Xdh;
 
-// X25519 against the ladder of Curve25519Reference; the RFC 7748 and Wycheproof vectors are in their own tests.
+// X25519 against the ladder of Curve25519Reference.
+// The RFC 7748 and Wycheproof vectors are in their own tests.
 public class X25519Test
 {
 	private const int Iterations = 8;
@@ -22,7 +23,8 @@ public class X25519Test
 		await Assert.That((X25519.PrivateKeyLength, X25519.PublicKeyLength, X25519.SharedSecretLength)).IsEqualTo((32, 32, 32));
 	}
 
-	// Every 32 bytes are a private key, exported as they were imported; the bits that clamping overwrites do not change the public key.
+	// Every 32 bytes are a private key, exported as they were imported.
+	// The bits that clamping overwrites do not change the public key.
 	[Test]
 	public async Task AnyPrivateKeyRoundTripsAndClampsWhenUsed()
 	{
@@ -86,7 +88,8 @@ public class X25519Test
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The reference gives 0 for these with any key, and nothing else does: the check depends on the peer key alone.
+	// The reference gives 0 for these with any key, and nothing else does.
+	// So the check depends on the peer key alone.
 	[Test]
 	public async Task SmallOrderPublicKeysReturnFalse()
 	{

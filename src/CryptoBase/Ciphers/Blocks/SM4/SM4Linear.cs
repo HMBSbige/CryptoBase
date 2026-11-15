@@ -52,12 +52,13 @@ internal static class SM4Linear
 		}
 
 #if NET11_0_OR_GREATER
-		// .NET 11 keeps the shuffle masks in registers through the rounds, where a third mask spills the 16-block rounds when only 16 vector registers exist, so the 24-bit rotation reuses the 8-bit one on x16.
+		// .NET 11 keeps the shuffle masks in registers through the rounds.
+		// With only 16 vector registers a third mask spills the 16-block rounds, so the 24-bit rotation applies the 8-bit one to x16.
 		Vector256<uint> x16 = x.RotateLeftUInt32(16);
 		Vector256<uint> t = x ^ x.RotateLeftUInt32(8) ^ x16;
 		return r ^ x ^ x16.RotateLeftUInt32(8) ^ t.RotateLeftUInt32(2);
 #else
-		// Before .NET 11 the masks stay in memory, and the direct rotation, which does not wait for x16, is the faster one.
+		// Before .NET 11 the masks stay in memory, so the direct rotation, which does not wait for x16, is faster.
 		Vector256<uint> t = x ^ x.RotateLeftUInt32(8) ^ x.RotateLeftUInt32(16);
 		return r ^ x ^ x.RotateLeftUInt32(24) ^ t.RotateLeftUInt32(2);
 #endif

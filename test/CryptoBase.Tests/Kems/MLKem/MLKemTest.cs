@@ -107,7 +107,8 @@ public class MLKemTest<T> where T : class, IKem<T>
 		await Assert.That(fullContents.Values).All(static count => count > 0);
 	}
 
-	// Whichever use of H(ek) comes first finishes it; all must agree with later calls, an import of dk and the reference.
+	// Whichever use of H(ek) comes first finishes it.
+	// All must agree with later calls, an import of dk and the reference.
 	[Test]
 	public async Task FirstUseOfAGeneratedKeyFinishesTheHashOfTheEncapsulationKey()
 	{

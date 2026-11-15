@@ -3,7 +3,7 @@ using CryptoBase.Signatures;
 
 namespace CryptoBase.Tests.X509;
 
-// An importer of public keys for TrustAnchorCertificateValidator that counts the keys that it imports, their verifications and their disposals, over CryptoBase's SignatureKey.
+// A public key importer for TrustAnchorCertificateValidator, over CryptoBase's SignatureKey, that counts imports, verifications and disposals.
 internal sealed class KeyLog
 {
 	private int _imports;

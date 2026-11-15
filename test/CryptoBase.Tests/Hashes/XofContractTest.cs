@@ -7,7 +7,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes;
 
-// Checks every IXof against its own one-shot HashData; ShakeTest, ShakeCavpTest, CShakeTest and Blake3XofTest compare that with independent oracles.
+// Checks every IXof against its own one-shot HashData.
+// ShakeTest, ShakeCavpTest, CShakeTest and Blake3XofTest compare that with independent oracles.
 [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 [GenerateGenericTest(typeof(Xof<Shake128Core>))]
 [GenerateGenericTest(typeof(Xof<Shake256Core>))]

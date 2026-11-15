@@ -296,7 +296,8 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 		Multiply(in value, in FromConstant(RSquaredLimbs), out result);
 	}
 
-	// 0 gives 0. SafeGcd works on the canonical value in 64-bit limbs.
+	// 0 gives 0.
+	// SafeGcd works on the canonical value in 64-bit limbs.
 	public static void Invert(in SM9Fp value, out SM9Fp result)
 	{
 		ToSaturated(in value, out FieldElement<SM9Modulus> saturated);
@@ -305,7 +306,8 @@ internal struct SM9Fp : ISM9Field<SM9Fp>
 		saturated.ZeroMemory();
 	}
 
-	// The time depends on value, which must be public. 0 gives 0.
+	// The time depends on value, which must be public.
+	// 0 gives 0.
 	public static void InvertVariableTime(in SM9Fp value, out SM9Fp result)
 	{
 		ToSaturated(in value, out FieldElement<SM9Modulus> saturated);

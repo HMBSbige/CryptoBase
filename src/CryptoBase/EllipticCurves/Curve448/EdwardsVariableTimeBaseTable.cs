@@ -2,7 +2,7 @@ namespace CryptoBase.EllipticCurves.Curve448;
 
 // Multiples of B on edwards448 for the variable-time double-base products.
 // Entries holds the odd multiples B, 3B, …, (2^(w − 1) − 1)·B for the NAF of width w = Width of a whole scalar.
-// Parts is the EdwardsVariableTimePointTable of B for the wider NAF of width PartWidth, so that the parts of a scalar share the doublings of a point table and take fewer additions.
+// Parts is the EdwardsVariableTimePointTable of B for the NAF of width PartWidth, wider than that of a point table, so that the parts of a scalar share the doublings of a point table and take fewer additions.
 internal static class EdwardsVariableTimeBaseTable
 {
 	internal const int Width = 8;

@@ -118,8 +118,7 @@ internal struct Field25519
 	internal static void MultiplyCore(in Field25519 left, in Field25519 right, out Field25519 result, bool outOfLine = false)
 	{
 		// The product inlines only where its high word is one instruction, mulx or umulh.
-		// Elsewhere the inlined products use up the inlining budget of the formula, which then spills and calls its other helpers, even from .NET 11 on, where the high word is a mul on x64;
-		// so the formulas call Multiply there, whose copy alone sets outOfLine.
+		// Elsewhere the inlined products use up the inlining budget of the formula, which then spills and calls its other helpers, so the formulas call Multiply there, whose copy alone sets outOfLine.
 		// The test names the instruction sets rather than a property so that the JIT folds it before it reads the call, and the address of result never reaches a call where the product is inlined.
 		if (!outOfLine && !(Bmi2.X64.IsSupported || ArmBase.Arm64.IsSupported))
 		{
@@ -346,7 +345,8 @@ internal struct Field25519
 		result.L4 = Select(mask, whenSet.L4, whenClear.L4);
 	}
 
-	// Swaps left and right where mask is set. They must be different variables.
+	// Swaps left and right where mask is set.
+	// They must be different variables.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void ConditionalSwap(ulong mask, ref Field25519 left, ref Field25519 right)
 	{
@@ -376,7 +376,8 @@ internal struct Field25519
 		ConditionalSelect(mask, in negated, in value, out value);
 	}
 
-	// 1/value, and 0 for 0, by SafeGcd on the canonical value. Neither the time nor the addresses depend on value.
+	// 1/value, and 0 for 0, by SafeGcd on the canonical value.
+	// Neither the time nor the addresses depend on value.
 	[SkipLocalsInit]
 	internal static void Invert(in Field25519 value, out Field25519 result)
 	{

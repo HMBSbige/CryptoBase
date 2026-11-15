@@ -27,7 +27,9 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 
 	private static int MLKemCiphertextLength => MLKemKey<TParameters>.CiphertextLength;
 
-	// Here and in the two private imports, the ML-KEM part goes first: MLKemKey throws without keeping any of the new key, and every 32 bytes are an X25519 private key, so only a failure to draw them needs the ML-KEM part cleared.
+	// Here and in the two private imports, the ML-KEM part goes first.
+	// MLKemKey throws without keeping any of the new key, and every 32 bytes are an X25519 private key,
+	// so only a failure to draw them needs the ML-KEM part cleared.
 	internal void GenerateKey()
 	{
 		_mlKemKey.GenerateKey();
@@ -61,7 +63,8 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 		_x25519Key.ImportPrivateKey(source.Slice(mlKemLength));
 	}
 
-	// A small-order X25519 key would give the all-zero secret, which TryDecapsulate rejects, whatever the ephemeral key: it is rejected here, so that Encapsulate cannot fail.
+	// A small-order X25519 key would give the all-zero secret, which TryDecapsulate rejects, whatever the ephemeral key.
+	// It is rejected here, so that Encapsulate cannot fail.
 	internal void ImportEncapsulationKey(ReadOnlySpan<byte> source)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, EncapsulationKeyLength, nameof(source));

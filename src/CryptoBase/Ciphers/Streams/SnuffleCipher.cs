@@ -83,7 +83,7 @@ public abstract class SnuffleCipher : IStreamCipher
 	private protected ulong GetBlocksRemaining(ulong counter)
 	{
 		ulong distance = MaxCounter - counter;
-		// 2^64 blocks do not fit in a ulong; the dropped final block lies beyond 2^70 bytes.
+		// 2^64 blocks do not fit in a ulong; the dropped final block starts 2^70 − 64 bytes in, which no input reaches.
 		return distance is ulong.MaxValue ? distance : distance + 1;
 	}
 

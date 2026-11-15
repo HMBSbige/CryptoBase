@@ -315,7 +315,8 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 		_disposed = true;
 	}
 
-	// GenerateKey with the randomness of fill. If fill throws, nothing is left behind.
+	// GenerateKey with the randomness of fill.
+	// If fill throws, nothing is left behind.
 	[SkipLocalsInit]
 	internal static SM9EncryptionMasterKey GenerateKey(Action<Span<byte>> fill, byte hid)
 	{
@@ -332,7 +333,8 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 		}
 	}
 
-	// Encapsulate with the randomness of fill. If fill throws, both buffers remain unchanged.
+	// Encapsulate with the randomness of fill.
+	// If fill throws, both buffers remain unchanged.
 	[SkipLocalsInit]
 	internal void Encapsulate(Span<byte> encapsulation, Span<byte> key, ReadOnlySpan<byte> id, Action<Span<byte>> fill)
 	{
@@ -368,13 +370,15 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 		}
 	}
 
-	// Encrypt with the randomness of fill. If fill throws, destination remains unchanged.
+	// Encrypt with the randomness of fill.
+	// If fill throws, destination remains unchanged.
 	internal int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> destination, ReadOnlySpan<byte> id, Action<Span<byte>> fill)
 	{
 		return Encrypt(plaintext, destination, id, fill, false);
 	}
 
-	// EncryptDer with the randomness of fill. If fill throws, destination remains unchanged.
+	// EncryptDer with the randomness of fill.
+	// If fill throws, destination remains unchanged.
 	internal int EncryptDer(ReadOnlySpan<byte> plaintext, Span<byte> destination, ReadOnlySpan<byte> id, Action<Span<byte>> fill)
 	{
 		return Encrypt(plaintext, destination, id, fill, true);
@@ -441,7 +445,8 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 		return _base ?? SM9GTBase.Publish(ref _base, in _publicKey.Point, in SM9G2.Generator);
 	}
 
-	// The master key of ke, with Ppub-e = [ke]P1. Neither the time nor the addresses depend on ke.
+	// The master key of ke, with Ppub-e = [ke]P1.
+	// Neither the time nor the addresses depend on ke.
 	[SkipLocalsInit]
 	private static SM9EncryptionMasterKey FromPrivateKey(in FieldElement<SM9Order> privateKey, byte hid)
 	{

@@ -3,7 +3,8 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 namespace CryptoBase.EllipticCurves;
 
 // For a = −3.
-// The time, the branches and the table indices depend on the scalars and the points, so every input must be public: nothing that holds a secret may call it.
+// The time, the branches and the table indices depend on the scalars and the points.
+// Every input must be public: nothing that holds a secret may call it.
 internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	where TCurve : struct, IECCurve
 	where TField : unmanaged, IECField<TField>
@@ -19,13 +20,15 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	{
 		if (!TCurve.TryMultiplyAdd(in u1, in point, in u2, out result))
 		{
-			// MultiplyAddWindows loops and allocates on the stack, so it compiles once, with full optimization; building Entries first keeps the check of its class initialization out of it.
+			// MultiplyAddWindows loops and allocates on the stack, so it compiles once, with full optimization.
+			// Building Entries first keeps the check of its class initialization out of it.
 			_ = ECVariableTimeGeneratorTable<TCurve, TField, TOrder>.Entries;
 			MultiplyAddWindows(in u1, in point, in u2, out result);
 		}
 	}
 
-	// Whether u1·G + u2·Q for u1 and u2 below n and a point Q on the curve is not the point at infinity and its x is r mod n, by the kernels of TCurve where it has them and MultiplyAdd and XModOrderEquals otherwise.
+	// Whether u1·G + u2·Q for u1 and u2 below n and a point Q on the curve is not the point at infinity and its x is r mod n.
+	// By the kernels of TCurve where it has them and MultiplyAdd and XModOrderEquals otherwise.
 	internal static bool MultiplyAddXModOrderEquals(in FieldElement<TOrder> u1, in AffinePoint<TField> point, in FieldElement<TOrder> u2, in FieldElement<TOrder> r)
 	{
 		if (TCurve.TryMultiplyAddXModOrderEquals(in u1, in point, in u2, in r, out bool equals))
@@ -213,7 +216,8 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 		Add(in result, in entry, out result);
 	}
 
-	// Sets multiples[j] to (2j + 1)·Q for a point Q on the curve: 3Q = 2Q + Q and then (j + 2)·Q = j·Q + 2Q, additions of two points that are neither equal, opposite nor at infinity, as j + 2 < n.
+	// Sets multiples[j] to (2j + 1)·Q for a point Q on the curve.
+	// 3Q = 2Q + Q and then (j + 2)·Q = j·Q + 2Q are additions of two points that are neither equal, opposite nor at infinity, as j + 2 < n.
 	[SkipLocalsInit]
 	internal static void BuildOddMultiples(in AffinePoint<TField> point, Span<AffinePoint<TField>> multiples)
 	{
@@ -234,7 +238,8 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	}
 
 	// For r below n, 0 included.
-	// As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p, and x = t means X = t·Z².
+	// As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p.
+	// x = t means X = t·Z².
 	[SkipLocalsInit]
 	internal static bool XModOrderEquals(in JacobianPoint<TField> point, in FieldElement<TOrder> r)
 	{
@@ -340,7 +345,7 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	}
 
 	// As above for the value of the bits of k from start to start + length − 1, with length + 1 digits.
-	// Inlined into MultiplyAdd, the NAF slows its main loop.
+	// Not inlined: inlined into MultiplyAddWindows, the NAF slows its main loop.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static int Recode(in FieldElement<TOrder> scalar, int start, int length, int width, Span<sbyte> digits)
 	{

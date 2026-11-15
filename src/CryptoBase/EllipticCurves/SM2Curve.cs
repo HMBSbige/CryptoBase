@@ -18,12 +18,13 @@ internal readonly struct SM2Curve : IECCurve
 		0x02DF32E52139F0A0UL, 0xD0A9877CC62A4740UL, 0x59BDCEE36B692153UL, 0xBC3736A2F4F6779CUL,
 	];
 
-	// For the products of secret scalars, which scan every entry of a window, so narrower than those of SM2VerificationCurve for public scalars; the top window starts at bit 252.
+	// Secret scalars scan every entry of a window, so the windows are narrower than SM2VerificationCurve's for public scalars.
+	// The top window starts at bit 252.
 	public static int GeneratorWindowWidth => 6;
 
 	public static bool HasMultiplyAdd => SM2KernelDispatch.HasMultiplyAdd;
 
-	// The products of SM2KernelDispatch, for the field and the order of SM2, which are the only ones that ECGroup takes with this curve.
+	// These hooks run SM2KernelDispatch only for SM2CurveField and SM2Order, the only field and order ECGroup pairs with this curve.
 	public static bool TryMultiplyBase<TField, TOrder>(in FieldElement<TOrder> scalar, out JacobianPoint<TField> result) where TField : unmanaged, IECField<TField> where TOrder : unmanaged, IMontgomeryModulus
 	{
 		Unsafe.SkipInit(out result);

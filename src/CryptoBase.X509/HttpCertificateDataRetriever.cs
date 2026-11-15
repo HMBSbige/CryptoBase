@@ -74,7 +74,7 @@ public sealed class HttpCertificateDataRetriever : ICertificateDataRetriever
 	{
 		using (request)
 		{
-			// HttpClient.Timeout ends at the headers of a response read as a stream, and the body could otherwise never come.
+			// HttpClient.Timeout stops at the headers of a response read as a stream, so without this the body could wait forever.
 			using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
 			if (_httpClient.Timeout != Timeout.InfiniteTimeSpan)
@@ -136,7 +136,8 @@ public sealed class HttpCertificateDataRetriever : ICertificateDataRetriever
 
 			if (filled == buffer.Length)
 			{
-				// Full at the longest array, with the limit beyond it: no room is left for the byte past the limit, and an empty read would pass for the end, so probe for one apart.
+				// Full at capacityLimit, below maxLength + 1, so no room is left for the byte past the limit.
+				// A read into no room would pass for the end, so a separate one-byte read probes for more.
 				if (filled == ceiling)
 				{
 					return await body.ReadAsync(new byte[1], cancellationToken).ConfigureAwait(false) is 0 ? buffer.AsMemory() : default;

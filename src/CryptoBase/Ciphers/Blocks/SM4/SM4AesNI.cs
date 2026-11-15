@@ -4,7 +4,7 @@ namespace CryptoBase.Ciphers.Blocks.SM4;
 
 internal readonly partial struct SM4AesNI : ISM4Kernel
 {
-	// Vector-valued properties prevented the JIT from hoisting these constants out of the round loop.
+	// Scalar constants rather than vector-valued properties, so that the JIT hoists the vectors built from them out of the round loop.
 	private const ulong PreAffineLow0 = 0x9197E2E474720701;
 	private const ulong PreAffineLow1 = 0xC7C1B4B222245157;
 	private const ulong PreAffineHigh0 = 0xE240AB09EB49A200;

@@ -48,7 +48,7 @@ public class FingerprintCertificateValidatorTest
 		}
 	}
 
-	// RFC 8122, Sec. 5 forbids verifying with MD5 and MD2; SHA-224 is not available.
+	// RFC 8122, Sec. 5 forbids verifying with MD5 and MD2, and the validator does not use SHA-224 or unregistered functions such as SHA3-256.
 	[Test]
 	public async Task IgnoresTheHashFunctionsThatItDoesNotUse()
 	{
@@ -198,8 +198,8 @@ public class FingerprintCertificateValidatorTest
 		}
 	}
 
-	// A fingerprint names its hash function in any of the forms of the constructor, and with SHA-256 the validator uses it as the attribute value "sha-256" would be;
-	// an unregistered token whose letters spell another name is not that hash function.
+	// A fingerprint may name its hash function in any form the constructor takes, and with SHA-256 the validator uses it as it would "sha-256".
+	// An unregistered token whose letters spell another name is not that hash function.
 	[Test]
 	public async Task NamesOfTheSameHashFunctionValidateAlike()
 	{
@@ -221,7 +221,8 @@ public class FingerprintCertificateValidatorTest
 		}
 	}
 
-	// For random names and digests: the constructor accepts what the rules allow, Parse what they allow in an attribute value, and the result of either round-trips through ToString, Parse and the constructor.
+	// For random names and digests, the constructor accepts what the rules allow and Parse what they allow in an attribute value.
+	// The result of either round-trips through ToString, Parse and the constructor.
 	[Test]
 	public async Task ConstructionParsingAndFormattingAgree()
 	{
@@ -316,7 +317,7 @@ public class FingerprintCertificateValidatorTest
 		return new CertificateFingerprint(hashAlgorithm, CryptographicOperations.HashData(hashAlgorithm, certificate.Encoded.Span));
 	}
 
-	// RFC 8122, Sec. 5, as an oracle independent of the implementation: the registered names, the HashAlgorithmName of each registered hash function, which the constructor alone takes for it, and the digest length of each.
+	// RFC 8122, Sec. 5, as an oracle independent of the implementation: each registered name, its HashAlgorithmName, which only the constructor takes for it, and its digest length.
 	private static readonly (string Name, string Algorithm, int Length)[] RegisteredHashFunctions = [("sha-1", "SHA1", 20), ("sha-224", "SHA224", 28), ("sha-256", "SHA256", 32), ("sha-384", "SHA384", 48), ("sha-512", "SHA512", 64), ("md5", "MD5", 16), ("md2", "MD2", 16)];
 
 	private static ValueTask<CertificateValidationResult> Validate(CertificateFingerprint[] fingerprints, Certificate certificate)

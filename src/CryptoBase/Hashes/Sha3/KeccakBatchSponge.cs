@@ -1,6 +1,7 @@
 namespace CryptoBase.Hashes.Sha3;
 
-// Up to eight sponges with one rate that absorb a shared prefix, each with a short suffix of its own, and squeeze in lockstep, permuted together by an interleaved kernel, for the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from.
+// Up to eight sponges with one rate that absorb a shared prefix, each with a short suffix of its own, and squeeze in lockstep, permuted together by an interleaved kernel.
+// They serve the many short SHAKE streams that ML-KEM and ML-DSA expand their matrices and vectors from.
 // The Count outputs of a Squeeze lie back to back in one buffer, each a Count-th of its length.
 internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 {

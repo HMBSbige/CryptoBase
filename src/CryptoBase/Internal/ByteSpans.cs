@@ -14,7 +14,8 @@ internal static class ByteSpans
 		}
 
 		// Spans overlap when other starts from other.Length - 1 bytes before span to span.Length - 1 bytes after it.
-		// Shifting that range to start at zero checks both ends with one unsigned comparison, which matches (nuint)byteOffset < (nuint)span.Length || (nuint)byteOffset > (nuint)(-(nint)other.Length).
+		// Shifting that range to start at zero checks both ends with one unsigned comparison.
+		// It matches (nuint)byteOffset < (nuint)span.Length || (nuint)byteOffset > (nuint)(-(nint)other.Length).
 		nint byteOffset = Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other));
 		return (nuint)(byteOffset + other.Length - 1) < (nuint)span.Length + (nuint)other.Length - 1;
 	}

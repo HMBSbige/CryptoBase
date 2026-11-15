@@ -45,7 +45,8 @@ public class SM9SignatureTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The steps of GM/T 0044.2-2016, Sec. 5.3 and 7.1, from the BigInteger reference for H1, H2 and the groups and from the pairing and powers of the mathematics, which their own tests check against the reference: dsA = [ks/(H1(ID ‖ 01, N) + ks)]P1, P = [H1(ID ‖ 01, N)]P2 + Ppub-s and H2(M ‖ e(S, P)·g^h, N) = h for g = e(P1, Ppub-s).
+	// The steps of GM/T 0044.2-2016, Sec. 5.3 and 7.1, from the BigInteger reference for H1, H2 and the groups and from the pairing and powers of the mathematics, which their own tests check against the reference.
+	// dsA = [ks/(H1(ID ‖ 01, N) + ks)]P1, P = [H1(ID ‖ 01, N)]P2 + Ppub-s and H2(M ‖ e(S, P)·g^h, N) = h for g = e(P1, Ppub-s).
 	[Test]
 	public async Task SignaturesFollowTheSteps()
 	{
@@ -142,7 +143,8 @@ public class SM9SignatureTest
 		}
 	}
 
-	// GM/T 0044.2-2016, Sec. 7.1, B1 and B2: h in [1, N − 1] and S a point on the curve, uncompressed; any changed byte fails, as does any other length.
+	// GM/T 0044.2-2016, Sec. 7.1, B1 and B2: h in [1, N − 1] and S a point on the curve, uncompressed.
+	// Any changed byte fails, as does any other length.
 	[Test]
 	public async Task InvalidSignaturesFail()
 	{
@@ -184,7 +186,8 @@ public class SM9SignatureTest
 		}
 	}
 
-	// The SM9Signature of GB/T 41389-2022 in DER, its only encoding: any other length form, tag, unused bit count, H length or trailing byte fails.
+	// The SM9Signature of GB/T 41389-2022 in DER, its only encoding.
+	// Any other length form, tag, unused bit count, H length or trailing byte fails.
 	[Test]
 	public async Task NonDerSignaturesFail()
 	{
@@ -248,8 +251,8 @@ public class SM9SignatureTest
 		}
 	}
 
-	// For any hid, the keys are those of GM/T 0044.2, Sec. 5.3, and import with that hid, and the master key and its public key with that hid verify their signatures, h ‖ S and in DER;
-	// with another hid, verification fails and the import throws.
+	// For any hid, the keys are those of GM/T 0044.2, Sec. 5.3, and import with that hid, and the master key and its public key with that hid verify their signatures, h ‖ S and in DER.
+	// With another hid, verification fails and the import throws.
 	[Test]
 	public async Task OtherHidsSignAndVerify()
 	{
@@ -285,7 +288,8 @@ public class SM9SignatureTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The default hid is 0x01 and leaves the master public key unchanged: the signatures of a key of another hid do not verify with a default verifier, and the key does not import by default.
+	// The default hid is 0x01 and leaves the master public key unchanged.
+	// The signatures of a key of another hid do not verify with a default verifier, and the key does not import by default.
 	[Test]
 	public async Task HidIsOneByDefault()
 	{

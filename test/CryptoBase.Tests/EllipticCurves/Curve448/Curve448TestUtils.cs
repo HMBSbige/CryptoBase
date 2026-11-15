@@ -45,7 +45,7 @@ internal static class Curve448TestUtils
 		return EncodeInteger(value);
 	}
 
-	// Even and odd edge scalars, which the comb recoding tells apart.
+	// Even and odd edge scalars, which the comb recoding tells apart, then random ones below L, clamped and of all 448 bits.
 	internal static List<BigInteger> Scalars(Random random, int count)
 	{
 		BigInteger top = (BigInteger.One << 448) - 1;

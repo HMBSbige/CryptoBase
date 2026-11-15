@@ -37,10 +37,12 @@ internal abstract class MontgomeryContext : IDisposable
 	// The value of an element below 2n reduced below n, in LimbCount limbs, without leaving Montgomery form.
 	internal abstract void FromDigits(ReadOnlySpan<ulong> element, Span<ulong> result);
 
-	// result = left·right·R⁻¹ mod n. result may be left or right.
+	// result = left·right·R⁻¹ mod n.
+	// result may be left or right.
 	internal abstract void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right);
 
-	// result = value²·R⁻¹ mod n. result may be value.
+	// result = value²·R⁻¹ mod n.
+	// result may be value.
 	internal abstract void Square(Span<ulong> result, ReadOnlySpan<ulong> value);
 
 	// The words of scratch that Square takes.
@@ -49,7 +51,8 @@ internal abstract class MontgomeryContext : IDisposable
 	// As Square, with scratch of ScratchLength words, which the caller erases, for a chain of squares that takes no buffer for each.
 	internal abstract void Square(Span<ulong> result, ReadOnlySpan<ulong> value, Span<ulong> scratch);
 
-	// result = left − right mod n, below 2n. result may be left or right.
+	// result = left − right mod n, below 2n.
+	// result may be left or right.
 	internal abstract void Subtract(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right);
 
 	// Reduces an element below 2n to below n in place.
@@ -59,7 +62,8 @@ internal abstract class MontgomeryContext : IDisposable
 	// result may be element.
 	internal abstract void Exponentiate(ReadOnlySpan<ulong> element, ReadOnlySpan<ulong> exponent, Span<ulong> result);
 
-	// result = element^exponent for a public exponent, on which the time depends. result may be element.
+	// result = element^exponent for a public exponent, on which the time depends.
+	// result may be element.
 	internal abstract void ExponentiateVariableTime(ReadOnlySpan<ulong> element, ulong exponent, Span<ulong> result);
 
 	// 1 in Montgomery form, R mod n, below n.

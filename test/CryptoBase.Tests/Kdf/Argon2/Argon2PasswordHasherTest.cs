@@ -10,7 +10,8 @@ public class Argon2PasswordHasherTest
 	// A hashtest vector of test.c, cited below.
 	private const string SmallReferenceString = "$argon2i$v=19$m=256,t=2,p=2$c29tZXNhbHQ$T/XOJ2mh1/TIpJHfCdQan76Q5esCFVoT5MAeIM1Oq2E";
 
-	// The version 0x13 hashtest vectors of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/src/test.c, except those using 256 MiB or more, and the example of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/README.md, with four lanes and a 24-byte hash.
+	// The version 0x13 hashtest vectors of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/src/test.c, except those using 256 MiB or more.
+	// Also the example of https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/README.md, with four lanes and a 24-byte hash.
 	[Test]
 	[Argon2LargeMemory]
 	[Arguments("password", "somesalt", Argon2Type.Argon2i, 65536, 2, 1, "$argon2i$v=19$m=65536,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
@@ -236,7 +237,8 @@ public class Argon2PasswordHasherTest
 	[Arguments("$Argon2i$v=19$m=65536,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
 	[Arguments("$argon2I$v=19$m=65536,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
 	[Arguments("$scrypt$v=19$m=65536,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
-	// A missing or unsupported version; the reference implementation reads a missing one as 16.
+	// A missing or unsupported version.
+	// The reference implementation reads a missing one as 16.
 	[Arguments("$argon2i$m=65536,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
 	[Arguments("$argon2i$v=16$m=65536,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
 	[Arguments("$argon2i$v=20$m=65536,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
@@ -265,7 +267,8 @@ public class Argon2PasswordHasherTest
 	[Arguments("$argon2i$v=19$m=2147483648,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
 	[Arguments("$argon2i$v=19$m=65536,t=4294967295,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
 	[Arguments("$argon2i$v=19$m=99999999999999999999,t=2,p=1$c29tZXNhbHQ$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
-	// A salt shorter than 8 bytes or a hash shorter than 4 bytes; test.c checks the empty salt.
+	// A salt shorter than 8 bytes or a hash shorter than 4 bytes.
+	// test.c checks the empty salt.
 	[Arguments("$argon2i$v=19$m=65536,t=2,p=1$$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
 	[Arguments("$argon2i$v=19$m=65536,t=2,p=1$c29tZXNhbA$wWKIMhR9lyDFvRz9YTZweHKfbftvj+qf+YFY4NeBbtA")]
 	[Arguments("$argon2i$v=19$m=65536,t=2,p=1$c29tZXNhbHQ$")]

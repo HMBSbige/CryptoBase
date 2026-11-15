@@ -1,6 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
-// An IECField whose elements hold the value in limbs of fewer than 64 bits: TryImport, Export and the inversions go through the FieldElement of TModulus, as SafeGcd works on the canonical value in 64-bit limbs.
+// An IECField whose elements hold the value in limbs of fewer than 64 bits.
+// TryImport, Export and the inversions go through the FieldElement of TModulus, as SafeGcd works on the canonical value in 64-bit limbs.
 internal interface IUnsaturatedField<TSelf, TModulus> : IECField<TSelf> where TSelf : unmanaged, IUnsaturatedField<TSelf, TModulus> where TModulus : unmanaged, IMontgomeryModulus
 {
 	// The numerator for SafeGcd that takes aR to a⁻¹R.

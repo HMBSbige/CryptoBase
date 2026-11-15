@@ -66,7 +66,7 @@ public class SM2CertificateTest
 		}
 	}
 
-	// A signature with the empty ID fails SM2SM3; it is valid with that ID.
+	// A signature with the empty ID fails SM2SM3, which uses the default ID, though it is valid with the empty ID.
 	[Test]
 	public async Task RejectsASignatureWithAnotherId()
 	{
@@ -116,7 +116,7 @@ public class SM2CertificateTest
 		}
 	}
 
-	// A root that CertificateBuilder signs issues with SM2 and SM3, its identifier with or without NULL parameters, and with the default ID only.
+	// A root that CertificateBuilder signs issues with SM2 and SM3, with or without NULL parameters, and only with the default ID.
 	[Test]
 	public async Task ValidatesChainsOfCertificateBuilder()
 	{
@@ -181,7 +181,8 @@ public class SM2CertificateTest
 		return new Authority(name, key, builder.CreateSelfSigned(key, SignatureAlgorithm.SM2SM3, Now.AddDays(-1), Now.AddDays(30)), SignatureAlgorithm.SM2SM3);
 	}
 
-	// An intermediate CA with the subject public key info given, which root signs, issues a leaf with key; the path fails with error, or is valid without one.
+	// The root issues an intermediate with the given SubjectPublicKeyInfo, which issues a leaf with key.
+	// The path fails with error, or is valid when error is null.
 	private static async Task AssertIntermediateKey(Authority root, SM2Key key, byte[] subjectPublicKeyInfo, CertificateValidationError? error)
 	{
 		byte[] name = Name("CN=SM2 Intermediate");

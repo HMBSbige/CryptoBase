@@ -5,10 +5,11 @@ namespace CryptoBase.EllipticCurves;
 // The field of p = 2^521 − 1 in nine unsaturated limbs, the value Σ L_i·2^(58i).
 // Montgomery form takes R = 1, so it is the plain value, and as 2^521 ≡ 1 (mod p) the reduction needs no multiplication.
 // Every member takes and gives the form E: limbs 0 to 7 below 2^58 and limb 8 below 2^57 + 2^6, so values below 2^521 + 2^470 < 2p.
-// An element is of size s if its limbs 0 to 7 are below s·2^58 and limb 8 below s·(2^57 + 2^6); E is size 1.
-// The formulas in P521Field58.Formulas.cs skip reductions between steps and keep the sizes within these limits: Multiply takes sizes a and b up to 6 with ab ≤ 6, so Square takes sizes up to √6, and both give E;
-// AddUnreduced adds sizes;
-// SubtractUnreduced adds 2p, so 2 to the size, for a subtrahend of E;
+// An element is of size s if its limbs 0 to 7 are below s·2^58 and limb 8 below s·(2^57 + 2^6), so E is size 1.
+// The formulas in P521Field58.Formulas.cs skip reductions between steps and keep the sizes within these limits.
+// Multiply takes sizes a and b up to 6 with ab ≤ 6, so Square takes sizes up to √6, and both give E.
+// AddUnreduced adds sizes.
+// SubtractUnreduced adds 2p, so 2 to the size, for a subtrahend of E.
 // WeakReduce takes limbs below 2^64 − 2^7, so sizes up to 63, to E.
 internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 {
@@ -27,7 +28,8 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 	// The limbs of p are Mask for limbs 0 to 7 and TopMask for limb 8.
 	private const ulong TopMask = (1UL << 57) - 1;
 
-	// The limbs of 2p, 2^59 − 2 for limbs 0 to 7 and 2^58 − 2 for limb 8: each at least the matching limb of E, so that SubtractUnreduced leaves no limb negative.
+	// The limbs of 2p, 2^59 − 2 for limbs 0 to 7 and 2^58 − 2 for limb 8.
+	// Each is at least the matching limb of E, so that SubtractUnreduced leaves no limb negative.
 	private const ulong TwoP = 2 * Mask;
 	private const ulong TwoPTop = 2 * TopMask;
 
@@ -65,14 +67,16 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 		result.L8 = w7 >> 16 | w8 << 48;
 	}
 
-	// Both operands are shifted left by 3: for limbs x_i and y_j below 2^61, x_i·2^3 · y_j·2^3 < 2^128, so High gives x_i·y_j >> 58 and Low gives x_i·y_j mod 2^58.
+	// Both operands are shifted left by 3.
+	// For limbs x_i and y_j below 2^61, x_i·2^3 · y_j·2^3 < 2^128, so High gives x_i·y_j >> 58 and Low gives x_i·y_j mod 2^58.
 	// Column k sums the Low of the pairs with i + j = k and the High of those with i + j = k − 1, at most nine of each.
-	// For sizes a and b, a High is below ab·2^58, or ab·2^58·(1/2 + 2^−52) with limb 8, which enters one column at most twice, so the Highs sum to below 8ab·2^58·(1 + 2^−50) and the column to below 58·2^58 for ab ≤ 6, within 64 bits.
+	// For sizes a and b, a High is below ab·2^58, or ab·2^58·(1/2 + 2^−52) with limb 8, which enters one column at most twice.
+	// So the Highs sum to below 8ab·2^58·(1 + 2^−50) and the column to below 58·2^58 for ab ≤ 6, within 64 bits.
 	// Columns 0 to 7 hold at most eight Lows and seven Highs, so below 50·2^58, and column 17 is below 2^60.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Multiply(in P521Field58 left, in P521Field58 right, out P521Field58 result)
 	{
-		// MultiplyThroughMemory needs each full product in one or two instructions, which x64 has with BMI2, and from .NET 11 on without it, where Math.BigMul compiles to mul.
+		// MultiplyThroughMemory needs each full product in one or two instructions: x64 has them with BMI2, and from .NET 11 on also without it, as Math.BigMul compiles to mul.
 		if (X86Base.X64.IsSupported && IsMultiplyAccelerated)
 		{
 			MultiplyThroughMemory(in left, in right, out result);
@@ -84,7 +88,7 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 	}
 
 	// The columns go to Reduce.
-	// This is the form for Arm64, which has registers for all eighteen shifted limbs, and for x64 without BMI2 before .NET 11, where each High is a call.
+	// This is the form for Arm64, which has registers for all eighteen shifted limbs, and for other targets without a fast full product, such as x64 without BMI2 before .NET 11, where each High is a call.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private static void MultiplyInRegisters(in P521Field58 left, in P521Field58 right, out P521Field58 result)
 	{
@@ -126,7 +130,7 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 		Reduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, High(a8, b8), out result);
 	}
 
-	// The x64 registers do not hold all eighteen shifted limbs, so those of left stay in memory, in s_9 to s_17, where they are operands of the products.
+	// The x64 registers do not hold all eighteen shifted limbs, so those of left stay in memory, in s_9 to s_17, as memory operands of the products.
 	// The columns go to s_0 to s_8 as they finish, and columns 9 to 17 fold in there by the steps of Reduce, so that only two columns are open at a time.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	[SkipLocalsInit]
@@ -154,7 +158,7 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 		ulong b8 = right.L8 << 3;
 #if NET11_0_OR_GREATER
 		// Each product is one mul with the limb of left as its memory operand, which gives both halves.
-		// The first product keeps Low and High: Math.BigMul there too, like mulx and a multiplication for every product, leaves the open column in memory.
+		// The first product takes Low and High: Math.BigMul there would leave the open column in memory, as would mulx and a separate multiplication for every product.
 		ulong column = Low(Unsafe.Add(ref s, 9), b0);
 		ulong high = High(Unsafe.Add(ref s, 9), b0);
 		s = column;
@@ -734,7 +738,8 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 	}
 
 	// Multiply with right = value, so its bounds hold.
-	// Each cross product 2·x_i·x_j takes d_i = x_i·2^4, for limbs below 2^60, and gives one Low in place of two and a High, 2·x_i·x_j >> 58, within the bound of the two it replaces.
+	// Each cross product 2·x_i·x_j takes d_i = x_i·2^4, for limbs below 2^60.
+	// It gives one Low in place of two, and a High, 2·x_i·x_j >> 58, within the bound of the two it replaces.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Square(in P521Field58 value, out P521Field58 result)
 	{
@@ -786,7 +791,8 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 		result = value;
 	}
 
-	// The limbs add without carries; the caller keeps them within what the next operation takes.
+	// The limbs add without carries.
+	// The caller keeps them within what the next operation takes.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void AddUnreduced(in P521Field58 left, in P521Field58 right, out P521Field58 result)
 	{
@@ -832,7 +838,8 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 	}
 
 	// The value mod p in nine 64-bit limbs.
-	// WeakReduce leaves a value below 2p, so one conditional subtraction of p makes it canonical; limbs 0 to 7 are then below 2^58 and limb 8 below 2^57, so they pack without overlap.
+	// WeakReduce leaves a value below 2p, so one conditional subtraction of p makes it canonical.
+	// Limbs 0 to 7 are then below 2^58 and limb 8 below 2^57, so they pack without overlap.
 	public static void ToSaturated(in P521Field58 value, out FieldElement<P521Field> result)
 	{
 		WeakReduce(in value, out P521Field58 t);
@@ -871,7 +878,8 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 	}
 
 	// Takes the product columns t_k, at 2^(58k), to E, for columns below 2^64, columns 0 to 7 below 50·2^58 and column 17 below 2^60.
-	// Column k + 9 stands at 2^522 ≡ 2 times the place of column k, so columns 9 to 17 fold in doubled, after one carry step that brings columns 9 to 16 below 2^58 + 2^6 and column 8 below 2^58: the folded columns are then below 2^64 − 2^7, as Carry requires.
+	// Column k + 9 stands at 2^522 ≡ 2 times the place of column k, so columns 9 to 17 fold in doubled.
+	// One carry step first brings columns 9 to 16 below 2^58 + 2^6 and column 8 below 2^58, so the folded columns are below 2^64 − 2^7, as Carry requires.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Reduce(ulong t0, ulong t1, ulong t2, ulong t3, ulong t4, ulong t5, ulong t6, ulong t7, ulong t8, ulong t9, ulong t10, ulong t11, ulong t12, ulong t13, ulong t14, ulong t15, ulong t16, ulong t17, out P521Field58 result)
 	{
@@ -887,7 +895,8 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 		Carry(t0 + 2 * u9, t1 + 2 * u10, t2 + 2 * u11, t3 + 2 * u12, t4 + 2 * u13, t5 + 2 * u14, t6 + 2 * u15, t7 + 2 * u16, (t8 & Mask) + 2 * u17, out result);
 	}
 
-	// For limbs below 2^64 − 2^7: t8 >> 57, below 2^7, moves from limb 8 to limb 0, as 2^521 ≡ 1, and then the carries, each below 2^6, run from limb 0 up to limb 8 without overflow.
+	// Takes limbs below 2^64 − 2^7.
+	// t8 >> 57, below 2^7, moves from limb 8 to limb 0, as 2^521 ≡ 1, and then the carries, each below 2^6, run from limb 0 up to limb 8 without overflow.
 	// Limbs 0 to 7 come out below 2^58 and limb 8 below 2^57 + 2^6, so in E.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Carry(ulong t0, ulong t1, ulong t2, ulong t3, ulong t4, ulong t5, ulong t6, ulong t7, ulong t8, out P521Field58 result)

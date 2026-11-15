@@ -233,7 +233,8 @@ public sealed record G1Value(BigInteger X, BigInteger Y);
 
 public sealed record G2Value(Fp2Value X, Fp2Value Y);
 
-// The parameters of GM/T 0044.5 §3 and the arithmetic of its curves, tower and pairing from their definitions, to check the implementation against: affine points, where null is the point at infinity, and the R-ate pairing of GM/T 0044.1 B.6.2 step by step.
+// The parameters of GM/T 0044.5 §3 and the arithmetic of its curves, tower and pairing from their definitions, to check the implementation against.
+// Points are affine, with null for the point at infinity, and the R-ate pairing follows GM/T 0044.1 B.6.2 step by step.
 internal static class SM9Reference
 {
 	internal static readonly BigInteger T = BigInteger.Parse("600000000058F98A", NumberStyles.HexNumber);
@@ -272,7 +273,7 @@ internal static class SM9Reference
 		return ECReference.Inverse(Mod(value), P);
 	}
 
-	// A value written in hex, spaces allowed.
+	// A value written in hex, whitespace allowed.
 	internal static BigInteger Parse(string hex)
 	{
 		return BigInteger.Parse("0" + string.Concat(hex.Where(static c => !char.IsWhiteSpace(c))), NumberStyles.HexNumber);
@@ -465,7 +466,8 @@ internal static class SM9Reference
 		return root is { } y ? new G2Value(x, y) : null;
 	}
 
-	// A root a + b·u of v0 + v1·u, or null if there is none: a² − 2b² = v0 and a² + 2b² = ±√(v0² + 2v1²), the norm, so a² = (v0 ± √norm)/2, and then b = v1/(2a), or b² = −v0/2 where a = 0.
+	// A root a + b·u of v0 + v1·u, or null if there is none.
+	// a² − 2b² = v0 and a² + 2b² = ±√(v0² + 2v1²), the norm, so a² = (v0 ± √norm)/2, and then b = v1/(2a), or b² = −v0/2 where a = 0.
 	private static Fp2Value? SquareRoot(Fp2Value value)
 	{
 		if (value.IsZero)
@@ -566,7 +568,8 @@ internal static class SM9Reference
 		return r;
 	}
 
-	// e(P, Q) by GM/T 0044.1 B.6.2: the Miller loop over the bits of a = 6t + 2 with lines through points of E(Fp12), ψ6(x, y) = (x·w⁻², y·w⁻³), evaluated at P, then the lines to π(Q) and −π²(Q), and the power (p¹² − 1)/N.
+	// e(P, Q) by GM/T 0044.1 B.6.2.
+	// The Miller loop runs over the bits of a = 6t + 2 with lines through points of E(Fp12), ψ6(x, y) = (x·w⁻², y·w⁻³), evaluated at P, then the lines to π(Q) and −π²(Q), and the power (p¹² − 1)/N.
 	internal static Fp12Value Pairing(G1Value p, G2Value q)
 	{
 		Fp12Value wInverse = new Fp12Value([Fp2Value.Zero, Fp2Value.One, Fp2Value.Zero, Fp2Value.Zero, Fp2Value.Zero, Fp2Value.Zero]).Inverse();

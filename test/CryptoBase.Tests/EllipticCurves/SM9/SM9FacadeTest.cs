@@ -7,7 +7,8 @@ using static CryptoBase.Tests.EllipticCurves.SM9.SM9Vectors;
 
 namespace CryptoBase.Tests.EllipticCurves.SM9;
 
-// The entry points that the protocols take, against the reference and against each other: the constant-time products and the variable-time sums with the products by the generators, the pairing and its precomputed lines, and the powers with and without a table.
+// The entry points that the protocols take, against the reference and against each other.
+// They are the constant-time products, the variable-time sums with the products by the generators, the pairing and its precomputed lines, and the powers with and without a table.
 public class SM9FacadeTest
 {
 	[Test]
@@ -114,7 +115,9 @@ public class SM9FacadeTest
 		}
 	}
 
-	// The pairings of public points in projective form with random Z against the products of the constant-time pairings of their affine forms, with the point at infinity as P′, whose pairing is 1, and the verification of GM/T 0044.5 A.2 from the projective products of SM9G1, w′ = e([h1]S, P2)·e(S + [h]P1, Ppub-s) = w.
+	// The pairings of public points in projective form with random Z against the products of the constant-time pairings of their affine forms.
+	// One case takes the point at infinity as P′, whose pairing is 1.
+	// The verification of GM/T 0044.5 A.2 runs from the projective products of SM9G1: w′ = e([h1]S, P2)·e(S + [h]P1, Ppub-s) = w.
 	[Test]
 	public async Task ProjectivePairingsMatchTheAffineOnes()
 	{

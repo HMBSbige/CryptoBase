@@ -208,7 +208,7 @@ public class Field448x4Test
 			return (sizeof(uint), static (limb, lane) => limb * 4 + lane);
 		}
 
-		// Lanes A and B in one pair of sixteen vectors and C and D in the next.
+		// Lanes A and B in sixteen two-lane vectors, and C and D in the next sixteen.
 		if (typeof(TField) == typeof(Field448x4Sse41))
 		{
 			return (sizeof(ulong), static (limb, lane) => (lane >> 1) * 32 + limb * 2 + (lane & 1));

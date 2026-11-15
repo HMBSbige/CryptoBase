@@ -213,7 +213,9 @@ public class ScalarMultiplicationTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// MultiplyEncode with the table of a public point P takes k in [1, n − 1]: k·G and k·P must match the reference, from the kernels of a curve that has them and the windows of ECGroup otherwise, for the scalars of ExceptionalScalars, whose windows of G the table of P shares, and for random scalars.
+	// MultiplyEncode with the table of a public point P takes k in [1, n − 1].
+	// k·G and k·P must match the reference, by the kernels of a curve that has them and by the windows of ECGroup otherwise.
+	// The scalars are those of ExceptionalScalars, whose windows of G the table of P shares, and random ones.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MultiplyEncodeWithTheTableMatchesTheReference(CurveCase curve)
@@ -239,7 +241,8 @@ public class ScalarMultiplicationTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// k·P + l·Q from the table of P and from P itself, with Q = c·P for a known c, so that l = ∓k/c makes the sum the point at infinity or a double: k from ExceptionalScalars and 0 with l random, 0 and ∓k/c, the same scalars for Q with a random one for P, and both 0.
+	// k·P + l·Q from the table of P and from P itself, with Q = c·P for a known c, so that l = ∓k/c makes the sum the point at infinity or a double.
+	// k from ExceptionalScalars and 0 takes l random, 0 and ±k/c, and l takes the same scalars with a random k, and both 0.
 	[Test]
 	[MethodDataSource(typeof(CurveCase), nameof(CurveCase.All))]
 	public async Task MultiplyAddEncodeMatchesTheReference(CurveCase curve)

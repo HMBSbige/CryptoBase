@@ -8,7 +8,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves.Curve25519;
 
-// Checks every kernel against Curve25519Reference, with points of every order and u-coordinates of the curve, of its twist and of p or more, and with the largest limbs that a tight input may have.
+// Every kernel against Curve25519Reference.
+// Inputs cover points of every order, u-coordinates on the curve, on its twist and of p or more, and the largest limbs a tight input may have.
 public class Curve25519KernelTest
 {
 	private const int RandomCount = 10;
@@ -154,7 +155,7 @@ public class Curve25519KernelTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The fixed-base product mapped to Curve25519 is the ladder from u = 9, the image of B, as X25519 public keys need.
+	// X25519 public keys need the fixed-base product, mapped to Curve25519, to equal the ladder from u = 9, the image of B.
 	[Test]
 	[MethodDataSource(typeof(Curve25519KernelCase), nameof(Curve25519KernelCase.All))]
 	public async Task MultiplyBaseAgreesWithTheLadderFromNine(Curve25519KernelCase kernel)
@@ -187,12 +188,13 @@ public class Curve25519KernelTest
 		return element;
 	}
 
-	// Each point with a random Z, then with the largest tight limbs in Z.
+	// [a]value + [b]B, computed once for all kernels and representations.
 	private static EdwardsValue DoubleProduct(EdwardsValue value, BigInteger a, BigInteger b)
 	{
 		return DoubleProducts.GetOrAdd((value, a, b), static key => new Lazy<EdwardsValue>(() => Add(Multiply(key.Value, key.A), Multiply(Base, key.B)))).Value;
 	}
 
+	// Each point with a random Z, then with the largest tight limbs in Z.
 	private static IEnumerable<(EdwardsValue Value, EdwardsPoint Point)> Representations(EdwardsValue[] points, Random random)
 	{
 		foreach (EdwardsValue value in points)

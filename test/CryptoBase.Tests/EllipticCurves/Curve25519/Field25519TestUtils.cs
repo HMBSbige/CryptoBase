@@ -55,7 +55,7 @@ internal static class Field25519TestUtils
 		return (ulong)random.NextInt64(long.MinValue, long.MaxValue) % bound;
 	}
 
-	// Limbs below bound, each at its most in turn and all at once, then random ones.
+	// Limbs below bound: all at their most, all zero and alternating the two, then random ones.
 	internal static List<Field25519> Elements(Random random, ulong bound, int count)
 	{
 		ulong most = bound - 1;
@@ -69,7 +69,7 @@ internal static class Field25519TestUtils
 		return values;
 	}
 
-	// Tight elements of values that matter: 0, 1, p − 1, p, p + 1 and 2^255 − 1, and random ones, including their largest tight limbs.
+	// Tight elements: 0, 1, p − 1, the largest tight limbs, p, p + 1 and 2^255 − 1 unreduced, then random ones.
 	internal static List<Field25519> TightElements(Random random, int count)
 	{
 		List<Field25519> values = [Element(0), Element(1), Element(P - 1), Limbs(TightLimb0 - 1, TightLow - 1, TightLow - 1, TightLow - 1, TightLow - 1)];

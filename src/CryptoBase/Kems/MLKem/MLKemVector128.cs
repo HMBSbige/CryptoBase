@@ -3,7 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace CryptoBase.Kems.MLKem;
 
 // Eight coefficients per 128-bit vector, one implementation for SSE4.1 and AdvSimd.
-// Products with a constant ζ use Barrett multiplication, which needs only the rounding high multiplication both have, so the constants are plain residues.
+// Products with a constant ζ use Barrett multiplication, which needs only the rounding high multiplication both have,
+// so the constants are plain residues.
 internal readonly partial struct MLKemVector128 : IMLKemKernel
 {
 	private const int N = MLKemConstants.N;
@@ -17,7 +18,8 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 
 	public static bool IsSupported => Sse41.IsSupported || AdvSimd.Arm64.IsSupported;
 
-	// Layers 1 to 3 run on vectors 32 coefficients apart, layers 4 to 7 on four consecutive ones, which Interleave pairs for layers 6 and 7 and, applied a third time, restores.
+	// Layers 1 to 3 run on vectors 32 coefficients apart, layers 4 to 7 on four consecutive ones.
+	// Interleave pairs those for layers 6 and 7 and, applied a third time, restores their order.
 	// Coefficients stay below 8q < 2^15 until the final reduction.
 	public static void Ntt(Span<short> f)
 	{
@@ -92,7 +94,8 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 		}
 	}
 
-	// The layers of Ntt in reverse. The sums are reduced in layers 3 and 6 before they reach 8q.
+	// The layers of Ntt in reverse.
+	// The sums are reduced in layers 3 and 6 before they reach 8q.
 	public static void InverseNtt(Span<short> f)
 	{
 		Debug.Assert(f.Length is N);
@@ -407,7 +410,8 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 		}
 	}
 
-	// Nothing is written past the returned count. The bytes are public, so the shuffle may depend on them.
+	// Nothing is written past the returned count.
+	// The bytes are public, so the shuffle may depend on them.
 	[SkipLocalsInit]
 	public static int RejectSample(ReadOnlySpan<byte> source, Span<short> destination)
 	{

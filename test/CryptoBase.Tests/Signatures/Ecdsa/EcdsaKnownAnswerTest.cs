@@ -260,7 +260,7 @@ internal class EcdsaKnownAnswerTest
 		return CheckSignature<EcdsaP521>(P521Key, vector);
 	}
 
-	// The 163-bit order drops the 5 rightmost bits of the hash and the candidates, and the first two candidates exceed it.
+	// The example of RFC 6979, A.1.2: the 163-bit order keeps the leftmost 163 bits of the hash and of each candidate, and the first two candidates exceed it.
 	[Test]
 	public async Task RejectedCandidatesGiveWayToTheNext()
 	{
@@ -291,7 +291,7 @@ internal class EcdsaKnownAnswerTest
 		}
 	}
 
-	// The nonce of call index of Next, counting from 0.
+	// The nonce that call number index of Next gives, counting from 0.
 	// privateKey and hash are as long as n, the hash already truncated.
 	internal static byte[] DeriveNonce<TOrder>(SignatureAlgorithm algorithm, byte[] privateKey, byte[] hash, byte[] additionalData, int index) where TOrder : unmanaged, IMontgomeryModulus
 	{

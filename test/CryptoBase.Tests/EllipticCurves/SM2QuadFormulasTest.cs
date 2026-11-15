@@ -5,7 +5,8 @@ using static CryptoBase.Tests.EllipticCurves.ECTestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves;
 
-// The rounds of SM2QuadFormulas and SM2OctoFormulas against the reference, and the additions of SM2PairFormulas at the largest differences that they carry, on states and entries at the bounds that SM2QuadFormulas states: a coordinate keeps its value mod p, takes the largest value below its bound by adding multiples of p, and the largest limbs below theirs by borrowing 2^29 from the limb above as often as both limbs allow.
+// The rounds of SM2QuadFormulas and SM2OctoFormulas against the reference, and the additions of SM2PairFormulas at the largest differences that they carry.
+// States and entries sit at the bounds that SM2QuadFormulas states: a coordinate keeps its value mod p, takes the largest value below its bound by adding multiples of p, and the largest limbs below theirs by borrowing 2^29 from the limb above as often as both limbs allow.
 // Each result must be the reference point, in a state within the same bounds whose δ and α agree with its X and Z.
 public class SM2QuadFormulasTest
 {
@@ -240,7 +241,9 @@ public class SM2QuadFormulasTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The rounds cannot steer their products to the limbs at which a fold matters most, so this test checks the arithmetic of the bound: FourPFold2 and FourPFold3 keep the value of 4p, and limb 2 of a + 4p − b for products a and b, at least FourPFold2 minus the largest limb of a product, stays non-negative once a fold takes h·2^6 from it for the h = L8 >> 24 of a value below 7.2p, the largest that the rounds fold.
+	// The rounds cannot steer their products to the limbs at which a fold matters most, so this test checks the arithmetic of the bound.
+	// FourPFold2 and FourPFold3 must keep the value of 4p.
+	// Limb 2 of a + 4p − b for products a and b, at least FourPFold2 minus the largest limb of a product, must stay non-negative once a fold takes h·2^6 from it, for the h = L8 >> 24 of a value below 7.2p, the largest that the rounds fold.
 	[Test]
 	public async Task FoldsKeepLimb2NonNegative()
 	{

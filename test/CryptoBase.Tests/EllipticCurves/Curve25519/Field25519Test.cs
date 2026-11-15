@@ -5,7 +5,7 @@ using static CryptoBase.Tests.EllipticCurves.Curve25519.Field25519TestUtils;
 
 namespace CryptoBase.Tests.EllipticCurves.Curve25519;
 
-// Field25519 against BigInteger, with inputs anywhere in the ranges that its members take: limbs up to 2^54 for the products and up to 2^64 for the carries, as well as tight and canonical ones.
+// Field25519 against BigInteger, with inputs across the ranges its members take: limbs below 2^54 for the products, any 64-bit limbs for the carries, and tight and canonical ones.
 // Every result must also be in the form that its member gives.
 public class Field25519Test
 {
@@ -57,8 +57,8 @@ public class Field25519Test
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Subtract takes a right operand with limbs at most those of 2p, SubtractFromFourP one with limbs at most those of 4p and Negate one like Subtract;
-	// the left operands here stay below 2^54 after the differences.
+	// Right operands go up to the limbs of 2p for Subtract and Negate, and of 4p for SubtractFromFourP.
+	// The left operands, below 2^53, keep the differences below 2^54.
 	[Test]
 	public async Task SumsAndDifferencesMatchBigInteger()
 	{
@@ -164,7 +164,8 @@ public class Field25519Test
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Bit 255 is ignored, and values from p to 2^255 − 1 are kept until a reduction; only those fail IsBelowModulus.
+	// Bit 255 is ignored, and values from p to 2^255 − 1 are kept until a reduction.
+	// Only those fail IsBelowModulus.
 	[Test]
 	[Arguments("0")]
 	[Arguments("1")]
@@ -221,7 +222,8 @@ public class Field25519Test
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// A root is returned for squares, including where v·r² = −u first, and none for non-squares; u = 0 gives the root 0, and v = 0 has a root only for u = 0.
+	// A root for squares, including where v·r² = −u first, and none for non-squares.
+	// u = 0 gives the root 0, and v = 0 has a root only for u = 0.
 	[Test]
 	public async Task SquareRootsOfRatiosMatchBigInteger()
 	{

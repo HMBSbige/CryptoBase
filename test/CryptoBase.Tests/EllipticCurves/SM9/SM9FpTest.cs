@@ -103,7 +103,8 @@ public class SM9FpTest
 		}
 	}
 
-	// Sums of products up to the 28p² that Reduce takes, with columns of either sign: a0b0 − 2a1b1 + 11p², the shape of Fp2, and sums of products of sums.
+	// Sums of products up to the 28p² that Reduce takes, with columns of either sign.
+	// They are a0b0 − 2a1b1 + 11p², the shape of Fp2, and sums of products of sums.
 	[Test]
 	public async Task WideSumsReduce()
 	{

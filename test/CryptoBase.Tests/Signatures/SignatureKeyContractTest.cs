@@ -316,6 +316,7 @@ public class SignatureKeyContractTest<T> where T : class, ISignatureKey<T>
 		}
 	}
 
+	// Imports, signing, verification and exports with every buffer ending at an inaccessible page.
 	// A signature may be shorter than the maximum, so it is verified from a buffer of its own length.
 	[Test]
 	public async Task StaysWithinBuffers()

@@ -67,7 +67,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 	private static readonly Oid ServerAuthenticationUsage = new(CertificateUsage.ServerAuthentication.KeyPurposeId, null);
 	private static readonly Oid ClientAuthenticationUsage = new(CertificateUsage.ClientAuthentication.KeyPurposeId, null);
 
-	// Any other status is Unspecified. Windows alone reports NoIssuanceChainPolicy.
+	// Any other status is Unspecified.
+	// Windows alone reports NoIssuanceChainPolicy.
 	private static readonly (X509ChainStatusFlags Statuses, CertificateValidationError Error)[] ChainErrors =
 	[
 		(X509ChainStatusFlags.NotSignatureValid, CertificateValidationError.InvalidSignature),
@@ -129,7 +130,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 		}
 	}
 
-	// The time left until the deadline in the whole milliseconds that the platforms take, for no zero to mean their default: null without a deadline, and zero once less than a millisecond is left.
+	// The time left until the deadline in the whole milliseconds that the platforms take: null without a deadline, and zero once less than a millisecond is left.
+	// A timeout of zero would mean the platform's default, so ApplyRetrievalLimit stops retrieving at zero instead.
 	internal static TimeSpan? RetrievalLimit(DateTimeOffset? deadline, DateTimeOffset now)
 	{
 		if (deadline is not { } end)
@@ -141,7 +143,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 		return milliseconds > 0 ? TimeSpan.FromMilliseconds(milliseconds) : TimeSpan.Zero;
 	}
 
-	// Shortens each retrieval to the limit, or stops all of them once it is zero; returns whether the policy checked revocation, which then goes unchecked.
+	// Shortens each retrieval to the limit, or stops all of them once it is zero.
+	// Returns whether the policy checked revocation, which then goes unchecked.
 	// Offline checks retrieve on macOS, so revocation is not checked at all.
 	internal static bool ApplyRetrievalLimit(X509ChainPolicy policy, TimeSpan? limit)
 	{
@@ -152,7 +155,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 
 		if (left > TimeSpan.Zero)
 		{
-			// Zero means the platform's default, and a negative timeout its longest; Windows takes whole milliseconds, so a timeout below one would mean the default there too, and becomes one.
+			// Zero means the platform's default, and a negative timeout its longest.
+			// Windows takes whole milliseconds, so a timeout below one would mean the default there too, and becomes one.
 			TimeSpan timeout = policy.UrlRetrievalTimeout == TimeSpan.Zero ? PlatformUrlRetrievalTimeout
 				: policy.UrlRetrievalTimeout < TimeSpan.Zero ? PlatformMaxUrlRetrievalTimeout
 				: policy.UrlRetrievalTimeout < OneMillisecond ? OneMillisecond
@@ -175,7 +179,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 		return checksRevocation;
 	}
 
-	// Whether a revocation check that the deadline skipped leaves unknown a status that the flags do not ignore, by the policy alone: the flags must ignore an unknown status of every kind of certificate that revocationFlag covers, whatever the path.
+	// Whether a revocation check that the deadline skipped leaves unknown a status that the flags do not ignore, judged by the policy alone.
+	// The flags must ignore an unknown status of every kind of certificate that revocationFlag covers, whatever the path.
 	internal static bool SkippedRevocationMatters(X509RevocationFlag revocationFlag, X509VerificationFlags flags)
 	{
 		X509VerificationFlags required = revocationFlag switch
@@ -407,8 +412,8 @@ public sealed class PlatformCertificateValidator : ICertificateValidator
 		return path;
 	}
 
-	// The host name of the context, matched by the package rather than the platform, so that every platform matches names alike;
-	// without one, the names are not read, and the platform alone judges the extension.
+	// The host name of the context is matched by the package rather than the platform, so that every platform matches names alike.
+	// Without one, the names are not read, and the platform alone judges the extension.
 	private static void CheckNames(Certificate leaf, string? hostName, List<CertificateValidationError> errors, List<string> messages)
 	{
 		if (hostName is null)

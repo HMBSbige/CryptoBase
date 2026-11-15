@@ -71,7 +71,8 @@ internal static class ChaCha20Poly1305Utils
 		return length > ChaCha20Utils.BatchLength - KeyStreamBlockSize;
 	}
 
-	// Block 0 and the start of the message share the first keystream batch; a block-aligned message too long to fit puts only length % BatchLength there, so whole batches follow.
+	// Block 0 and the start of the message share the first keystream batch.
+	// A block-aligned message too long to fit puts only length % BatchLength there, so whole batches follow.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static int GetPrefixLength(int length)
 	{

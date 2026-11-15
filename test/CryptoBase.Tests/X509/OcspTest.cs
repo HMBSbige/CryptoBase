@@ -43,7 +43,7 @@ public class OcspTest
 		await Assert.That(result.Status).IsEqualTo(expected).Because(result.Detail ?? "");
 	}
 
-	// The fields of a request, and its exact encoding.
+	// The fields of a request, and its encoding byte for byte against OpenSSL's.
 	[Test]
 	public async Task RequestsMatchOpenSsl()
 	{

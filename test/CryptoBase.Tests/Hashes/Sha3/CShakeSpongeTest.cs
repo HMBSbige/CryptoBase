@@ -5,7 +5,8 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Sha3;
 
-// Drives the internal cSHAKE sponge directly, against the SP 800-185 transcription in KeccakReference, with the prefixes that end around block boundaries: a prefix that fills its last block must not cost another permutation.
+// Drives the internal cSHAKE sponge directly, against the SP 800-185 transcription in KeccakReference, with prefixes that end around block boundaries.
+// A prefix that fills its last block must not cost another permutation.
 public class CShakeSpongeTest
 {
 	public static IEnumerable<int> Rates => [168, 136];

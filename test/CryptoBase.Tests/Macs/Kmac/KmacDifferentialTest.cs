@@ -49,7 +49,8 @@ public class KmacDifferentialTest
 		return VerifyGrid(variant, keyLength, static (variant, key, source, customization, outputLength) => variant.Reference(key, source, outputLength, customization));
 	}
 
-	// bytepad(encode_string(K), rate) takes left_encode(rate), 2 bytes, then left_encode(8 |K|), 2 bytes below 32-byte keys and 3 from there to 8191 bytes, then K: rate - 5 bytes fill one block exactly.
+	// bytepad(encode_string(K), rate) takes left_encode(rate), 2 bytes, then left_encode(8 |K|), 2 bytes below 32-byte keys and 3 from there to 8191 bytes, then K.
+	// So rate - 5 bytes fill one block exactly.
 	// 31 and 32 cross the change in the length of left_encode(8 |K|).
 	private static IEnumerable<int> KeyLengths(int rate)
 	{

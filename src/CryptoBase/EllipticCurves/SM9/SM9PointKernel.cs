@@ -1,7 +1,7 @@
 namespace CryptoBase.EllipticCurves.SM9;
 
 // The product of G1 with a variable point on the formulas of SM9PointLanes for one point: the algorithm of SM9G1Group.Multiply, with the same digits, tables and sums, each doubling and addition taking its products in two rows.
-// The tables stay in SM9Point form, so that a masked scan reads as many bytes as there, and each entry goes into lanes after its selection.
+// The tables stay in SM9Point form, so that a masked scan reads as many bytes as in SM9G1Group.Multiply, and each entry goes into lanes after its selection.
 // Neither the time nor the addresses depend on the scalar or the point, and the intermediates are cleared.
 internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vector<TVector>
 {

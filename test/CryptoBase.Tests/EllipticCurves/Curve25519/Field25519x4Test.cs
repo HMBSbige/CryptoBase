@@ -8,9 +8,10 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.EllipticCurves.Curve25519;
 
 // Each four-lane field against BigInteger, lane by lane.
-// The operands of every product of the point formulas and the ladder feed that product, from tight elements with every limb at its largest, zero and random;
+// The operand steps of the point formulas and the ladder feed their products, from 2^255 − 1, zero and tight elements;
 // every result must extract to tight elements.
-// The bound tests write raw limbs instead: products take operands at the largest limbs that Multiply takes, the steps start from the largest limbs of a reduced value, and every operand and product must keep its limbs within its bound.
+// The bound tests write raw limbs instead: products take operands at the largest limbs that Multiply takes, and the steps start from the largest limbs of a reduced value.
+// Every operand and product must keep its limbs within its bound.
 // Field25519x8Avx512 runs the point formulas in each of its groups, with other lanes in the other group.
 public class Field25519x4Test
 {
@@ -113,7 +114,7 @@ public class Field25519x4Test
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Lanes with every limb at its largest, 2^255 − 1, and zero in the orders that drive each step to its bounds, then tight elements of every kind.
+	// Lanes of 2^255 − 1 (every limb 2^51 − 1) and zero, in the orders that drive each step to its bounds, then tight elements of every kind.
 	private static List<Field25519[]> Lanes()
 	{
 		Random random = new(7);
@@ -182,7 +183,8 @@ public class Field25519x4Test
 		}
 	}
 
-	// A doubling of lanes all[k] and its readdition of the cached point of other lanes and, where negateCached is given, of that negated, each from its operands to the product that takes them.
+	// DoubleOperands on lanes all[k], and AddOperands with the cached point of other lanes and, where negateCached is given, its negation.
+	// Each is checked from its operands to the product that takes them.
 	private static void RunPointSteps<TField>(List<string> failures, List<Field25519[]> all, int k, Func<Field25519[], TField> create, Func<TField, Field25519[]> extract, Func<TField, TField>? negateCached = null) where TField : unmanaged, IEdwardsField25519x4<TField>
 	{
 		Field25519[] lanes = all[k];
@@ -232,7 +234,8 @@ public class Field25519x4Test
 	// Limb i weighs 2^⌈25.5i⌉; its nominal size is 2^26 if i is even and 2^25 if it is odd.
 	private static readonly int[] LimbShifts = [0, 26, 51, 77, 102, 128, 153, 179, 204, 230];
 
-	// The largest limbs of a reduced value, which a product may leave: limbs 0 and 1 below their nominal size plus 2^17.3, and every other below its nominal size plus 2^13 + 1.
+	// The largest limbs of a reduced value, which a product may leave.
+	// Limbs 0 and 1 are below their nominal size plus 2^17.3, the others at most their nominal size plus 2^13.
 	private static readonly ulong[] ReducedMaximum = [.. Enumerable.Range(0, 10).Select(static i => i < 2 ? (ulong)Math.Ceiling(Nominal(i) + Math.Pow(2, 17.3)) - 1 : Nominal(i) + (1UL << 13))];
 
 	// The largest limbs of the left and the right operand of Multiply: m_x = 5.02 and m_y = 3.02 times the nominal sizes.
@@ -274,7 +277,7 @@ public class Field25519x4Test
 		return value;
 	}
 
-	// The ulong offset of limb i of lane j: in a vector of four lanes per limb, or, for Field25519x4Sse41, in a pair of ten two-lane vectors for lanes A and B followed by one for C and D.
+	// The ulong offset of a limb of a lane: one four-lane vector per limb, or, for Field25519x4Sse41, ten two-lane vectors for lanes A and B followed by ten for C and D.
 	private static int Offset<TField>(int limb, int lane)
 	{
 		return typeof(TField) == typeof(Field25519x4Sse41) ? (lane >> 1) * 20 + limb * 2 + (lane & 1) : limb * 4 + lane;
@@ -322,7 +325,7 @@ public class Field25519x4Test
 		}
 	}
 
-	// Products of operands with the largest limbs that Multiply takes, then the point formulas from the largest limbs of a reduced value, in the lanes that offset places;
+	// Products of operands with the largest limbs that Multiply takes, then the point formulas from the largest limbs of a reduced value, in the lanes that offset places.
 	// otherOffset places otherLanes, if any, where they must not change the results.
 	private static void RunBoundPointSteps<TField>(List<string> failures, Func<int, int, int> offset, ulong[][]? otherLanes = null, Func<int, int, int>? otherOffset = null) where TField : unmanaged, IEdwardsField25519x4<TField>
 	{

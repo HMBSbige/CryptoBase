@@ -26,7 +26,8 @@ public class SM9InteropTest
 		yield return () => "306604208E439DCFBC99D5570AFB5BCB1571FD771469D3A8D4A6336E821D9F17329063F20342000447DF1649FE61FF826B850F3C4EABBFF4D4810540D3DE45F0BF08B7D719F2720E348292BB9A08820D972D4754D93119AF7451390FEE95B5AA01816ABCBA193F35";
 	}
 
-	// The signature master key of GM/T 0044.5, A.2, with hid = 0x05: the signing key of Alice, and DER signatures of the message of the example, whose random numbers are unknown, which verify with that hid alone, as do their h ‖ S.
+	// The signature master key of GM/T 0044.5, A.2, with hid = 0x05: the signing key of Alice, and DER signatures of the message of the example, whose random numbers are unknown.
+	// They verify with that hid alone, as do their h ‖ S.
 	[Test]
 	[MethodDataSource(nameof(OtherHidSignatures))]
 	public async Task SignaturesOfAnotherHidVerify(string signature)
@@ -56,8 +57,8 @@ public class SM9InteropTest
 		}
 	}
 
-	// The encryption master key of GM/T 0044.5, C.2 and D.2, with hid = 0x05 and the random numbers of D.2 and C.2: the private key of Bob, the ciphertext as C1 ‖ C3 ‖ C2 and in DER, and an encapsulation of 32 bytes;
-	// and an encapsulation whose random number is unknown.
+	// The encryption master key of GM/T 0044.5, C.2 and D.2, with hid = 0x05 and the random numbers of D.2 and C.2.
+	// It gives the private key of Bob, the ciphertext as C1 ‖ C3 ‖ C2 and in DER, an encapsulation of 32 bytes, and an encapsulation whose random number is unknown.
 	[Test]
 	public async Task EncryptionOfAnotherHidMatchesTheVectors()
 	{

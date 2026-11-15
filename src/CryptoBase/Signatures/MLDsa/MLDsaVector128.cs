@@ -106,7 +106,8 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 		}
 	}
 
-	// The layers of Ntt in reverse. The sums double in each layer, so they stay below 256q < 2^31 without reduction.
+	// The layers of Ntt in reverse.
+	// The sums double in each layer, so they stay below 256q < 2^31 without reduction.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void InverseNtt(Span<int> f)
 	{
@@ -500,7 +501,8 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 		}
 	}
 
-	// 13 bits make the joints of the values fall at every bit position, and only key generation packs t0; the scalar kernel does it.
+	// 13 bits make the joints of the values fall at every bit position, and t0 is packed only when a private key is generated or imported.
+	// The scalar kernel does it.
 	public static void EncodeT0(ReadOnlySpan<int> t0, Span<byte> destination)
 	{
 		MLDsaScalar.EncodeT0(t0, destination);

@@ -56,7 +56,8 @@ public abstract class HkdfBenchmarkBase<TCore>(HashAlgorithmName hashAlgorithm) 
 	[ParamsSource(nameof(ByteLengths))]
 	public int ByteLength { get; set; }
 
-	// Around one and two HMAC blocks, then long inputs; for 128-byte blocks two blocks are the 256 bytes listed anyway.
+	// Around one and two HMAC blocks, then long inputs.
+	// For 128-byte blocks, two blocks are the 256 bytes listed anyway.
 	public IEnumerable<int> ByteLengths => new[] { 0, 1, TCore.HmacBlockSize - 1, TCore.HmacBlockSize, TCore.HmacBlockSize + 1, 2 * TCore.HmacBlockSize, 256, 1024, 8192, 1024 * 1024 }.Distinct();
 
 	private byte[] _ikm = [];

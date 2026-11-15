@@ -251,6 +251,7 @@ public class Edwards448Test
 	{
 		List<byte[]> invalid = [];
 
+		// y of p or more, with either sign.
 		// p and p + 1 would be y = 0 and 1 of torsion points.
 		foreach (BigInteger y in (BigInteger[])[P, P + 1, P + 2, P + (BigInteger.One << 223), (BigInteger.One << 448) - 2, (BigInteger.One << 448) - 1])
 		{

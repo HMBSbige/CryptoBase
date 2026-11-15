@@ -37,7 +37,8 @@ internal readonly struct SM4Neon : ISM4Kernel
 			return;
 		}
 
-		// EOR3 takes the three-way XORs of a round wherever the ARMv8.2 SHA3 instructions are present, not only where CpuIdUtils.PreferArmSha3: a round has three for each four blocks, too few to hold up the one pipeline that the Neoverse N2, V1 and V2 issue them down.
+		// EOR3 takes the three-way XORs of a round wherever the ARMv8.2 SHA3 instructions are present, not only where CpuIdUtils.PreferArmSha3.
+		// A round has three for each four blocks, too few to hold up the one pipeline that the Neoverse N2, V1 and V2 issue them down.
 #if NET11_0_OR_GREATER
 		if (Sha3.IsSupported)
 		{

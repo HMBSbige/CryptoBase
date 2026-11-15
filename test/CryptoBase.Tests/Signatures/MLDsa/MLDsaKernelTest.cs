@@ -319,7 +319,8 @@ public class MLDsaKernelTest
 		{
 			for (int round = 0; round < 64 && mismatches.Count < MaxMismatches; ++round)
 			{
-				// Sums and differences within the input of Reduce: small ones that stay below the bound, with the bound itself at one position in every other round, or large ones that mostly reach it.
+				// Sums and differences within the input of Reduce.
+				// Even rounds keep them below the bound, but for one position set to it in every second such round; odd rounds take large ones, which mostly reach it.
 				int limit = round % 2 is 0 ? bound / 2 + 1 : 1 << 29;
 				int[] left = RandomInts(random, N, limit);
 				int[] right = RandomInts(random, N, limit);
@@ -539,7 +540,7 @@ public class MLDsaKernelTest
 		await Assert.That(mismatches).IsEmpty();
 	}
 
-	// Each r in (−q, q) with either hint, the hints of a polynomial random, then their complement.
+	// Each r in (−q, q) with either hint: a random hint pattern, then its complement.
 	[Test]
 	[MethodDataSource(typeof(MLDsaKernelCase), nameof(MLDsaKernelCase.All))]
 	public async Task UseHintMatchesReferenceForEveryInput(MLDsaKernelCase kernel)
@@ -587,7 +588,8 @@ public class MLDsaKernelTest
 		await Assert.That(mismatches).IsEmpty();
 	}
 
-	// Signing checks w0 − ⟨⟨cs2⟩⟩ in place of LowBits(w − ⟨⟨cs2⟩⟩) and takes the hints from w0 − ⟨⟨cs2⟩⟩ + ⟨⟨ct0⟩⟩ and HighBits(w): the rejection must agree with Algorithm 7, line 23, each hint of a coefficient that passes with line 26, and UseHint must give back HighBits(w) from it (Algorithm 8, line 10).
+	// Signing checks w0 − ⟨⟨cs2⟩⟩ in place of LowBits(w − ⟨⟨cs2⟩⟩) and takes the hints from w0 − ⟨⟨cs2⟩⟩ + ⟨⟨ct0⟩⟩ and HighBits(w).
+	// The rejection must agree with Algorithm 7, line 23, each hint of a coefficient that passes with line 26, and UseHint must give back HighBits(w) from it (Algorithm 8, line 10).
 	[Test]
 	[MethodDataSource(typeof(MLDsaKernelCase), nameof(MLDsaKernelCase.All))]
 	public async Task HintsOfSigningMatchAlgorithm7(MLDsaKernelCase kernel)
@@ -675,7 +677,7 @@ public class MLDsaKernelTest
 		byte[] blocks = new byte[5 * 168];
 		random.NextBytes(blocks);
 
-		// 0, q − 1, q and 2^23 − 1, with the top bit of the third byte clear and set, in every lane.
+		// 0, 1, q − 2, q − 1, q and 2^23 − 1, with the top bit of the third byte clear and set, in every lane.
 		int[] edgeValues = [0, Q - 1, Q, (1 << 23) - 1, 1, Q - 2];
 		byte[] edges = Enumerable.Range(0, 96).SelectMany(i => Candidate(edgeValues[i % edgeValues.Length], i / edgeValues.Length % 2 is 1)).ToArray();
 
@@ -772,7 +774,8 @@ public class MLDsaKernelTest
 		Random random = new(15);
 		const int Bound = 1 << D - 1;
 
-		// The extremes alone and alternating, and packed values from the position: its 8 bits in the low ones and its low 5 bits in the high ones, and their complement, so that the bits of each joint differ between neighbours and over every byte.
+		// The extremes alone and alternating, and values made from the position, its 8 bits low and its low 5 bits high, and their complement.
+		// The latter make the bits at each joint differ between neighbours and over every byte.
 		int[] lowest = Enumerable.Repeat(1 - Bound, N).ToArray();
 		int[] highest = Enumerable.Repeat(Bound, N).ToArray();
 		int[] alternating = Enumerable.Range(0, N).Select(static i => i % 2 is 0 ? 1 - Bound : Bound).ToArray();
@@ -1095,7 +1098,7 @@ public class MLDsaKernelTest
 		}
 	}
 
-	// Coefficients at the edges of every case of Decompose and MakeHint: w1 of 0, 1 and m − 1 with w0 at its ends, cs2 at ±β, and ct0 at ±(γ2 − 1), so that w0 − cs2 + ct0 reaches ±γ2.
+	// Coefficients at the edges of every case of Decompose and MakeHint: w1 of 0, 1 and m − 1 with w0 at its ends and around 0, cs2 at ±β, and ct0 at ±(γ2 − 1), so that w0 − cs2 + ct0 reaches ±γ2.
 	private static void FillEdges(int[] w, int[] cs2, int[] ct0, int gamma2, int beta, int m)
 	{
 		int i = 0;
@@ -1155,7 +1158,7 @@ public class MLDsaKernelTest
 		}
 	}
 
-	// The three bytes of a RejNTTPoly candidate, the top bit of the last set as CoeffFromThreeBytes ignores it.
+	// The three bytes of a RejNTTPoly candidate, optionally with the top bit of the last set, which CoeffFromThreeBytes ignores.
 	private static byte[] Candidate(int value, bool topBit)
 	{
 		return [(byte)value, (byte)(value >> 8), (byte)(value >> 16 | (topBit ? 0x80 : 0))];

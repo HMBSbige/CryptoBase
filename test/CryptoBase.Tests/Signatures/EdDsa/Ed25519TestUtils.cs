@@ -19,7 +19,8 @@ internal static class Ed25519TestUtils
 		return publicKey;
 	}
 
-	// Signs the message, or for Ed25519ph its SHA-512 hash. Ed25519ctx needs a context that is not empty.
+	// Signs the message, or for Ed25519ph its SHA-512 hash.
+	// Ed25519ctx with an empty context signs as Ed25519.
 	public static byte[] Sign(Ed25519 key, Ed25519Variant variant, byte[] message, byte[] context)
 	{
 		byte[] signature = new byte[Ed25519.SignatureLength];

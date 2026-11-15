@@ -9,15 +9,17 @@ using static CryptoBase.Tests.Signatures.Rsa.Arithmetic.RsaArithmeticTestUtils;
 
 namespace CryptoBase.Tests.Signatures.Rsa.Arithmetic;
 
-// ProbablePrime.Search on scripted candidates, which pass or fail the tests before Miller-Rabin, or are drawn again, as the script says: whether the platform tests two at once or not, the prime it keeps and the failures that make it give up are those of testing one candidate after the other.
-// Two lengths, of which every platform takes pairs at one at least and some take none at one.
+// ProbablePrime.Search on scripted candidates, which pass or fail the tests before Miller-Rabin, or are drawn again, as the script says.
+// Whether or not the platform tests two at once, the prime it keeps and the failures that make it give up are those of testing one candidate after the other.
+// Of the two lengths, every platform with a pair kernel pairs candidates at one at least, and AVX-512 and ARM64 pair them at only one.
 internal class ProbablePrimeTest
 {
 	// ProbablePrime.Candidate, which the tests cannot name.
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 	private static readonly Type CandidateType = Type.GetType("CryptoBase.Signatures.Rsa.Arithmetic.ProbablePrime+Candidate, CryptoBase", true) ?? throw new TypeLoadException();
 
-	// Primes and composites of each length of Lengths, whose top two bits are set as those of the candidates are: the first that Miller-Rabin on BigInteger kept, after 40 rounds, or rejected, from the seeds 91 to 93 and 95 to 102.
+	// Primes and composites of each length of Lengths, with the top two bits set as in the candidates.
+	// Each is the first that 40 rounds of Miller-Rabin on BigInteger kept or rejected, from the seeds 91 to 93 and 95 to 102.
 	private static readonly BigInteger[] Primes1024 =
 	[
 		Hex("CC87A0126CADC5507115BF1C99BFDA434D6E93519CBAA434C1CFDD41FC87951F1E58FD58E9F3C56187B8BAB722006B37393A7F41A3D51249DF8A06310F4D092CCCE21D05F6137ECDAF3726AF0384BEC801EC8F05B361013B5DF46C67C17598AE67BE3BE1C86C23C94033A3A511703D4BF2C7A6A8FB70EB08C3E5721ADCBE0053"),
@@ -176,7 +178,8 @@ internal class ProbablePrimeTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// Dispose erases what the search keeps of its candidates, the last of which is the prime that it found: the values of each slot, the number of trailing zeros of w − 1, and the contexts, whose −n⁻¹ mod 2^DigitBits gives the low bits of w.
+	// Dispose erases what the search keeps of its candidates, the last of which is the prime that it found.
+	// That is the values of each slot, the number of trailing zeros of w − 1, and the contexts, whose −n⁻¹ mod 2^DigitBits gives the low bits of w.
 	[Test]
 	[MethodDataSource(nameof(Lengths))]
 	public async Task DisposeErasesTheCandidates(int bits)
@@ -213,7 +216,8 @@ internal class ProbablePrimeTest
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// A run of Appendix A.1.3 that reaches a limit returns FAILURE, here at q, and Generate runs it again from the start with a new source, up to four runs: the next run searches p anew, and the search of q takes the p of its own run.
+	// A run of Appendix A.1.3 that reaches a limit returns FAILURE, here at q, and Generate runs it again from the start with a new source, up to four runs.
+	// The next run searches p anew, and the search of q takes the p of its own run.
 	// After the fourth, Generate throws, with p and q zero.
 	[Test]
 	[Arguments(0)]
@@ -282,7 +286,8 @@ internal class ProbablePrimeTest
 		}
 	}
 
-	// Bases are uniform in [2, w − 2] for the least w whose top two bits are set, where draws fall above w − 2 most often, at a length of a partial limb: neither a draw out of range nor the bits above the length reach a base.
+	// Bases are uniform in [2, w − 2] for the least w whose top two bits are set, where draws fall above w − 2 most often, at a length of a partial limb.
+	// Neither a draw out of range nor the bits above the length reach a base.
 	[Test]
 	public async Task BasesAreUniformInRange()
 	{
@@ -305,7 +310,8 @@ internal class ProbablePrimeTest
 			++lows[(int)(value & 15)];
 		}
 
-		// Below 3·2^(Bits − 2), the top two bits take three values alike; χ² bounds of 2 and 15 degrees of freedom that a uniform base exceeds with probability below 10^-6.
+		// Below 3·2^(Bits − 2), the top two bits take three values alike.
+		// The χ² bounds, of 2 and 15 degrees of freedom, are exceeded by a uniform base with probability below 10^-6.
 		double topChiSquare = tops.Take(3).Sum(static count => Math.Pow(count - Samples / 3.0, 2) / (Samples / 3.0));
 		double lowChiSquare = lows.Sum(static count => Math.Pow(count - Samples / 16.0, 2) / (Samples / 16.0));
 

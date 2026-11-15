@@ -4,7 +4,8 @@ namespace CryptoBase.Kems.MLKem;
 
 // Sixteen coefficients per 256-bit vector.
 // Encoders and decoders never access past the end of a buffer.
-// The operations that loop or hold many vectors are not inlined, as merged into a large caller their vectors end up on the stack.
+// The operations that loop or hold many vectors are not inlined,
+// as merged into a large caller their vectors end up on the stack.
 internal readonly partial struct MLKemAvx2 : IMLKemKernel
 {
 	private const int N = MLKemConstants.N;
@@ -170,7 +171,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 		Unsafe.WriteUnaligned(ref Unsafe.Add(ref target, 376), last.GetUpper().AsUInt64().ToScalar());
 	}
 
-	// Each 128-bit lane reads the 16 bytes that end where its 12 do.
+	// Each 24 bytes are read as 16 from their start and 16 ending at their end.
 	// Only the largest value decides the check, so the time does not depend on where an invalid value lies.
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static bool Decode12(ReadOnlySpan<byte> source, Span<short> f)

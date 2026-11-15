@@ -45,7 +45,7 @@ public class Ed448Test
 		}
 	}
 
-	// Message lengths around the 136-byte SHAKE256 block, which the prefix, R ‖ A and dom4 shift.
+	// Message lengths around the 136-byte SHAKE256 block, which the prefix, R ‖ A and dom4 shift, in both variants and with contexts of 0 to 255 bytes.
 	[Test]
 	public async Task SignaturesMatchTheReference()
 	{
@@ -138,7 +138,8 @@ public class Ed448Test
 		}
 	}
 
-	// [k]A takes at most 4 values, so a signature also verifies for other messages.
+	// Each point of small order is a public key, and a signature that meets the equation for it verifies.
+	// [k]A takes at most 4 values, so a signature also verifies for other messages, as the reference decides.
 	[Test]
 	public async Task SmallOrderPublicKeysVerify()
 	{
@@ -203,6 +204,7 @@ public class Ed448Test
 		}
 	}
 
+	// The identity as R in its other encodings: y = p + 1, y = 1 with the sign bit, and y = 1 with a low bit of the 57th byte set.
 	// Each S meets the group equation for its own R bytes, so only the comparison of the encodings rejects them.
 	[Test]
 	public async Task NonCanonicalNoncesFail()
@@ -437,7 +439,7 @@ public class Ed448Test
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// The first verification goes without the table of the public key, later ones use it.
+	// The first verification with an instance goes without the table of its public key and later ones use it, so both must decide alike for keys of every order.
 	[Test]
 	public async Task FirstAndLaterVerificationsAgree()
 	{
@@ -509,7 +511,7 @@ public class Ed448Test
 		}
 	}
 
-	// Each thread may build the table of the public key.
+	// Threads that verify with a new instance at once may each build the table of its public key.
 	[Test]
 	public async Task ConcurrentVerificationsWithANewInstanceAgree()
 	{
@@ -662,7 +664,7 @@ public class Ed448Test
 		byte[] der = Pkcs8(0, curvePrivateKey);
 		byte[][] invalid =
 		[
-			// A public key that does not match, of the wrong length, with unused bits, or not in a primitive [1].
+			// A public key that does not match, of the wrong length, with unused bits, not in a primitive [1], or in a version 1 key.
 			Pkcs8(1, curvePrivateKey, PublicKeyField(ExportPublicKey(other))), Pkcs8(1, curvePrivateKey, PublicKeyField(publicKey.AsSpan(1).ToArray())), Pkcs8(1, curvePrivateKey, PublicKeyField([.. publicKey, 0])),
 			Pkcs8(1, curvePrivateKey, Tlv(0x81, [1, .. publicKey])), Pkcs8(1, curvePrivateKey, Tlv(0xA1, Tlv(0x03, [0, .. publicKey]))), Pkcs8(0, curvePrivateKey, PublicKeyField(publicKey)),
 			// A seed of the wrong length, not in a CurvePrivateKey, or not in DER.
@@ -726,7 +728,7 @@ public class Ed448Test
 		}
 	}
 
-	// Otherwise the new key would verify with the table of the old one.
+	// Whatever replaces the key must drop the table of its public key, or the new key would verify as the old one.
 	[Test]
 	public async Task ReplacingTheKeyDropsTheTable()
 	{

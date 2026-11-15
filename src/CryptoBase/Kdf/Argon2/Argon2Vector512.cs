@@ -31,7 +31,8 @@ internal readonly unsafe struct Argon2Vector512 : IArgon2Kernel
 		CompressNext(ref reference[0], ref destination[0], xorDestination, ref n0, ref n1, ref n2, ref n3, ref n4, ref n5, ref n6, ref n7, ref n8, ref n9, ref n10, ref n11, ref n12, ref n13, ref n14, ref n15);
 	}
 
-	// Only segments that reference their own lane are chained: selecting among several lanes needs more general-purpose registers than x64 has, and the JIT then spills J1, which puts a store and a reload on the critical path.
+	// Only segments that reference their own lane are chained.
+	// Selecting among several lanes needs more general-purpose registers than x64 has, and spilling J1 would put a store and a reload on the critical path.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static bool TryCompressChain(ref Argon2Block previous, ref Argon2Block segment, int startIndex, int segmentLength, Argon2ReferenceSet references, bool xorDestination)
 	{
@@ -224,7 +225,8 @@ internal readonly unsafe struct Argon2Vector512 : IArgon2Kernel
 		n13 = Avx512F.Shuffle4x128(c3, d3, 0b01_00_01_00);
 		n15 = Avx512F.Shuffle4x128(c3, d3, 0b11_10_11_10);
 
-		// In the column phase each 128-bit lane holds one column: n[2r] covers columns 0..3 and n[2r + 1] columns 4..7 of row r, so (v0, ..., v15) of a column is (n0, n2, n4, ..., n14) or (n1, n3, n5, ..., n15) and diagonalizing stays within lanes.
+		// In the column phase each 128-bit lane holds one column: n[2r] covers columns 0..3 and n[2r + 1] columns 4..7 of row r.
+		// So (v0, ..., v15) of a column is (n0, n2, n4, ..., n14) or (n1, n3, n5, ..., n15), and diagonalizing stays within lanes.
 		G(ref n0, ref n4, ref n8, ref n12, ref n2, ref n6, ref n10, ref n14, ref n1, ref n5, ref n9, ref n13, ref n3, ref n7, ref n11, ref n15);
 
 		Vector512<ulong> rotatedA0 = Concat(n2, n0);

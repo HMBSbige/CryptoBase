@@ -219,7 +219,8 @@ public class DhKemTest<TKem, TEcdh> where TKem : class, IHpkeAuthKem<TKem> where
 			}
 		}
 
-		// Decapsulation may write over the ciphertext; the public key of the sender may be the recipient's own.
+		// Decapsulation may write over the ciphertext.
+		// The public key of the sender may be the recipient's own.
 		byte[] inPlace = [.. enc, .. new byte[TKem.SharedSecretLength]];
 		bool decapsulated = recipient.TryAuthDecapsulate(inPlace.AsSpan(0, TKem.CiphertextLength), sender, inPlace.AsSpan(1, TKem.SharedSecretLength));
 		(byte[] selfEnc, byte[] selfSecret) = AuthEncapsulate(recipient, recipient);

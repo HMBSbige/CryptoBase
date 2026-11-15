@@ -7,7 +7,7 @@ using static CryptoBase.Tests.EllipticCurves.Curve25519.Curve25519TestUtils;
 namespace CryptoBase.Tests.EllipticCurves.Curve25519;
 
 // Edwards25519 against Curve25519Reference.
-// Points of every order go in, with Z other than 1, since the formulas are complete and the torsion points are where incomplete ones fail.
+// Points of every order go in, with Z other than 1: the formulas are complete, and torsion points are where incomplete ones fail.
 public class Edwards25519Test
 {
 	private const int RandomCount = 12;
@@ -115,13 +115,14 @@ public class Edwards25519Test
 		await Assert.That(failures).IsEmpty();
 	}
 
-	// RFC 8032 §5.1.3 strictly: y of p or more, x = 0 with the sign bit set and y without an x all fail, including where they encode the torsion points.
+	// RFC 8032 §5.1.3 strictly: y of p or more, x = 0 with the sign bit set and y without an x all fail, torsion-point encodings included.
 	[Test]
 	public async Task DecodingRejectsWhatRfc8032Rejects()
 	{
 		List<byte[]> invalid = [];
 
-		// y from p to 2^255 − 1, with either sign; p and p + 1 would be y = 0 and y = 1 of torsion points.
+		// y from p to 2^255 − 1, with either sign.
+		// p and p + 1 would be y = 0 and y = 1 of torsion points.
 		for (BigInteger y = P; y < BigInteger.One << 255; ++y)
 		{
 			byte[] encoded = EncodeInteger(y);
@@ -133,7 +134,7 @@ public class Edwards25519Test
 		invalid.Add(WithSign(EncodeInteger(1)));
 		invalid.Add(WithSign(EncodeInteger(P - 1)));
 
-		// The first y without an x, and some more.
+		// The first eight y from 2 without an x.
 		int nonSquares = 0;
 
 		for (BigInteger y = 2; nonSquares < 8; ++y)
@@ -216,7 +217,8 @@ public class Edwards25519Test
 		}
 	}
 
-	// The table takes the doublings of 16-bit parts and the fixed-base windows; it must agree with the plain multiplication and the reference.
+	// The point table of 16-bit parts takes another path than the plain product.
+	// Both must agree with the reference.
 	[Test]
 	public async Task PointTableGivesTheSameDoubleProducts()
 	{

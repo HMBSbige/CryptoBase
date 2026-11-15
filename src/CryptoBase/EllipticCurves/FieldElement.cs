@@ -3,7 +3,8 @@ using static CryptoBase.EllipticCurves.LimbArithmetic;
 namespace CryptoBase.EllipticCurves;
 
 // Always below m.
-// Whether it is in Montgomery form is up to the caller: Multiply and the inversions work in that form, the encodings take and give the plain value, and the other operations work in either.
+// Whether it is in Montgomery form is up to the caller.
+// Multiply and the inversions work in that form, the encodings take and give the plain value, and the other operations work in either.
 // No operation but InvertVariableTime branches on or indexes by a value; masks are 0 or ulong.MaxValue.
 // The operations erase the sums and products they keep on the stack.
 // Any result may be the same variable as an input.
@@ -56,7 +57,8 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		SafeGcd<TModulus>.Invert(in value, out result);
 	}
 
-	// The time depends on value, which must be public. 0 gives 0.
+	// The time depends on value, which must be public.
+	// 0 gives 0.
 	internal static void InvertVariableTime(in FieldElement<TModulus> value, out FieldElement<TModulus> result)
 	{
 		SafeGcd<TModulus>.InvertVariableTime(in value, out result);
@@ -101,7 +103,8 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		return valid is not 0;
 	}
 
-	// Returns whether the value lies in [1, m − 1]; if it does not, result is 0. Only the length decides a branch.
+	// Returns whether the value lies in [1, m − 1]; if it does not, result is 0.
+	// Only the length decides a branch.
 	internal static bool TryImportNonzero(ReadOnlySpan<byte> source, out FieldElement<TModulus> result)
 	{
 		if (source.Length != TModulus.ByteLength)
@@ -115,7 +118,8 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		return IsZero(in result) is 0;
 	}
 
-	// Sets result to the plain value of any ByteLength big-endian bytes mod m: the value is below R, so multiplying it by R mod m reduces it, as MontgomeryMultiply takes an x that is not reduced.
+	// Sets result to the plain value of any ByteLength big-endian bytes mod m.
+	// The value is below R, so a Montgomery product with R mod m reduces it, as MontgomeryMultiply takes an x that is not reduced.
 	internal static void ImportReduced(ReadOnlySpan<byte> source, out FieldElement<TModulus> result)
 	{
 		Unsafe.SkipInit(out FieldElement<TModulus> value);
@@ -313,7 +317,8 @@ internal struct FieldElement<TModulus> where TModulus : struct, IMontgomeryModul
 		next = AddWithCarry(next, high, ref carry);
 	}
 
-	// value = low + high·R must be below 2m. result may be low.
+	// value = low + high·R must be below 2m.
+	// result may be low.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	[SkipLocalsInit]
 	private static void ReduceOnce(ref ulong low, ulong high, ref ulong result)

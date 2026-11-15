@@ -6,16 +6,14 @@ namespace CryptoBase.X509;
 
 // One validation of TrustAnchorCertificateValidator.
 // It builds certification paths from the peer's certificate towards the trust anchors depth first, and checks each issuer as it adds it (RFC 5280, Sec. 6.1), so that a failed check moves on to the next candidate.
-// The first search follows only the issuers that pass every check and returns the first path that reaches a trust anchor;
-// if there is none, a second search, with limits of its own, also follows those that fail, to report the best of the paths that it ends, as RunAsync describes.
+// The first search follows only the issuers that pass every check and returns the first path that reaches a trust anchor.
+// If there is none, a second search, with limits of its own, also follows those that fail, to report the best of the paths that it ends, as RunAsync describes.
 // An instance serves one call, which a retrieval may move to another thread, and owns the keys that it imports for the certificates other than the trust anchors.
-// IssuerRetrieval finds certificates for its pool and PathRevocation checks its paths;
-// each sees only what the search passes to it, and only the search changes its own state, which the check that it passes to IssuerRetrieval may do.
+// IssuerRetrieval finds certificates for its pool and PathRevocation checks its paths.
+// Each sees only what the search passes to it, and only the search changes its own state, which the check that it passes to IssuerRetrieval may do.
 internal sealed class CertificatePathSearch : IDisposable
 {
-	// The limits of each search: the candidate issuers, each a signature check whether or not its signature is verified;
-	// the name and subtree comparisons, a directoryName counting by its attributes and length;
-	// and the entries of the policy graphs.
+	// The limits of each search, in order: the candidate issuers, each a signature check whether or not its signature is verified; the name and subtree comparisons, a directoryName counting by its attributes and length; and the entries of the policy graphs.
 	public const int MaxCandidates = 100;
 	public const long MaxNameComparisons = 1 << 20;
 	public const long MaxPolicyGraphEntries = 1 << 16;
@@ -31,13 +29,13 @@ internal sealed class CertificatePathSearch : IDisposable
 	private readonly List<PathNode> _pool = [];
 	private readonly Dictionary<TrustAnchorEntry, PathNode> _anchorNodes = [];
 
-	// Null for a validation that neither retrieves nor checks revocation, so that it allocates nothing for them;
-	// the retrieval of issuers is also null if the validator does not retrieve them, and the revocation checks if it does not check revocation.
+	// Null for a validation that neither retrieves nor checks revocation, so that it allocates nothing for them.
+	// The retrieval of issuers is also null if the validator does not retrieve them, and the revocation checks if it does not check revocation.
 	private readonly RetrievalBudget? _budget;
 	private readonly IssuerRetrieval? _issuers;
 	private readonly PathRevocation? _revocation;
 
-	// The candidates that GetCandidates finds, before it orders them; reused by each call.
+	// The candidates that GetCandidates finds, before it orders them, reused by each call.
 	private readonly List<PathNode> _found = [];
 
 	// The path from the peer's certificate, the problems of the edge to each certificate from the one before it, and the intermediate certificates up to each that are not self-issued.
@@ -45,7 +43,8 @@ internal sealed class CertificatePathSearch : IDisposable
 	private readonly List<List<PathProblem>> _edges = [];
 	private readonly List<int> _intermediates = [];
 
-	// The results of the signature checks and of the name constraint checks, by pair of certificates; the latter is created by the first check of name constraints, which most paths lack.
+	// The results of the signature checks and of the name constraint checks, by pair of certificates.
+	// The latter is created by the first check of name constraints, which most paths lack.
 	private readonly Dictionary<long, bool> _signatures = [];
 	private Dictionary<long, PathProblem?>? _nameChecks;
 
@@ -102,7 +101,7 @@ internal sealed class CertificatePathSearch : IDisposable
 	{
 		PathProblem[] leafProblems = GetLeafProblems(out PathProblem? identity);
 
-		// A trust anchor presented as the peer's certificate is a path of its own: its key is trusted, so nothing signs it.
+		// A trust anchor presented as the peer's certificate is a path of its own, as its key is trusted and nothing need sign it.
 		if (_leaf.Anchor is not null)
 		{
 			return CreateResult([_leaf], CertificatePathEnd.TrustAnchor, leafProblems);
@@ -215,8 +214,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		return !IsSelfSigned(node) && !IsStopped;
 	}
 
-	// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search;
-	// it accepts none, as only the strict search decides.
+	// No path is valid, so the relaxed search, with limits of its own, records the paths that it ends, to report the best, whether or not a limit stopped the strict search.
+	// It accepts none, as only the strict search decides.
 	// A path that only revocation fails is already the best.
 	private CertificateValidationResult ReportBestPath(PathProblem? identity)
 	{
@@ -319,7 +318,8 @@ internal sealed class CertificatePathSearch : IDisposable
 			}
 			else
 			{
-				// RFC 5280, Sec. 6.1, needs the whole path, so its policies are checked when the path reaches a trust anchor; a path that fails gives way to the next candidate.
+				// RFC 5280, Sec. 6.1, needs the whole path, so its policies are checked when the path reaches a trust anchor.
+				// A path that fails gives way to the next candidate.
 				PathProblem? policyProblem = CheckPolicies();
 
 				if (relaxed)
@@ -433,7 +433,7 @@ internal sealed class CertificatePathSearch : IDisposable
 		return false;
 	}
 
-	// The checks of the edge from the last certificate of the path to a candidate for its issuer, other than the candidate's own;
+	// The checks of the edge from the last certificate of the path to a candidate for its issuer, other than the candidate's own.
 	// complete makes every check, and otherwise the first problem ends them.
 	private List<PathProblem> CheckEdge(PathNode child, PathNode issuer, int below, bool tooLong, bool complete)
 	{
@@ -514,7 +514,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		return valid;
 	}
 
-	// The names of a certificate against the name constraints of a CA, once for each pair; stops the search, and returns null, if the comparisons would exceed the limit.
+	// The names of a certificate against the name constraints of a CA, once for each pair.
+	// Stops the search, and returns null, if the comparisons would exceed the limit.
 	private PathProblem? CheckNames(PathNode issuer, NameConstraints constraints, PathNode node)
 	{
 		long pair = issuer.PairWith(node);
@@ -867,7 +868,8 @@ internal sealed class CertificatePathSearch : IDisposable
 		_intermediates.RemoveAt(_intermediates.Count - 1);
 	}
 
-	// Back to the peer's certificate, with new limits: a search that follows a retrieval or a revocation repeats the checks from their caches.
+	// Back to the peer's certificate, with new limits.
+	// A search that follows a retrieval or a revocation repeats the checks from their caches.
 	private void RestartSearch()
 	{
 		while (_path.Count > 1)
@@ -880,7 +882,8 @@ internal sealed class CertificatePathSearch : IDisposable
 
 	private bool IsStopped => _limit is not null;
 
-	// A limit stops the search, which the result reports: one that stops the strict search fails the validation, as a valid path may be among those left, and one that stops the relaxed search leaves out the paths that it did not end.
+	// A limit stops the search, which the result reports.
+	// One that stops the strict search fails the validation, as a valid path may be among those left, and one that stops the relaxed search leaves out the paths that it did not end.
 	private void Stop(string limit)
 	{
 		_limit ??= $"The search for {(_relaxed ? "the path to report" : "a valid path")} stopped at the limit of {limit}.";
@@ -914,7 +917,8 @@ internal sealed class CertificatePathSearch : IDisposable
 
 	// Whether a certificate is self-signed: self-issued, with a signature that its own key verifies.
 	// One whose signature cannot be verified, as its algorithm or key is not supported, is not.
-	// The check counts as a candidate, once for each certificate; without a candidate left, it stops the search, and the certificate counts as not self-signed.
+	// The check counts as a candidate, once for each certificate.
+	// Without a candidate left, it stops the search, and the certificate counts as not self-signed.
 	private bool IsSelfSigned(PathNode node)
 	{
 		if (!node.SelfIssued || node.SignatureProblem is not null || node.Key is not { } key)
@@ -1032,8 +1036,8 @@ internal sealed class PathNode
 	// The trust anchor that the certificate is, as the peer's certificate may be too, byte for byte.
 	public TrustAnchorEntry? Anchor { get; }
 
-	// RFC 5280, Sec. 6.1: the issuer and the subject are the same name, by the rules of Sec. 7.1 rather than byte for byte, as a CA that rolls over its key may encode its name anew;
-	// names that the exact comparison of DistinguishedName cannot find the same are not.
+	// RFC 5280, Sec. 6.1: the issuer and the subject are the same name, by the rules of Sec. 7.1 rather than byte for byte, as a CA that rolls over its key may encode its name anew.
+	// Names that the exact comparison of DistinguishedName cannot find the same are not.
 	public bool SelfIssued { get; }
 
 	public ReadOnlyMemory<byte>? AuthorityKeyIdentifier { get; }
@@ -1075,7 +1079,7 @@ internal sealed class PathNode
 // Text is a composite format string whose argument {0} describes Subject and {1} Other, and whose other braces are doubled.
 internal readonly record struct PathProblem(CertificateValidationError Error, string Text, PathNode? Subject = null, PathNode? Other = null)
 {
-	// Text to put in Text, the composite format string: as EscapeText makes it, with its braces doubled.
+	// Text to put in Text, the composite format string: escaped as EscapeText does, with its braces doubled.
 	public static string Escape(string value)
 	{
 		return EscapeText(value).Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal);

@@ -31,7 +31,8 @@ public partial struct SM3Core
 		Vector128<byte> endianMask = Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
 		// P1(x) = x ^ ROL15(x ^ ROL8(x)), with ROL8 as a byte shuffle.
 		Vector128<byte> rol8Mask = Vector128.Create((byte)3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14);
-		// The rounds share these, but each declares its own tt2 and fg: with them shared, the JIT on Linux x64 copies tt2 before rotating it by 17 in P0 rather than rotating it in place, and with a12 or ss1 per round, it spills there.
+		// The rounds share these but declare their own tt2 and fg.
+		// A shared tt2 or fg makes the JIT on Linux x64 copy tt2 before the P0 rotation by 17, and a per-round a12 or ss1 makes it spill.
 		uint a12, ss1, a12K;
 		Vector128<uint> partial, window13, p1Temp;
 		do
@@ -926,7 +927,7 @@ public partial struct SM3Core
 			// Produced W[64..66]; only still-needed scalar operands are stored.
 			(Ssse3.AlignRight(v3, Sse2.Shuffle(v2, 0xBF), 12) ^ v4).StoreUnsafe(ref words, 20);
 
-			// Rounds 57..59 also compute W[67..69] from v5,v0,v1,v2,v3,v4, the words before them three at a time, oldest first.
+			// Rounds 57..59 also compute W[67] (the lanes after it are unused) from v5,v0,v1,v2,v3,v4, the words before them three at a time, oldest first.
 			partial = Ssse3.AlignRight(v0, Sse2.Shuffle(v5, 0xBF), 12);
 			// Round 57; A..D = d,a,b,c, E..H = h,e,f,g.
 			a12 = BitOperations.RotateLeft(d, 12);
@@ -969,7 +970,7 @@ public partial struct SM3Core
 			c = BitOperations.RotateLeft(c, 9);
 			g = BitOperations.RotateLeft(g, 19);
 			v5 ^= (Avx512F.VL.IsSupported ? Avx512F.VL.RotateLeft(window13, 7) : window13 << 7 | window13 >>> 25) ^ v3;
-			// Produced W[67..69]; only still-needed scalar operands are stored.
+			// Produced W[67]; only the mixed word W[63] ^ W[67] is still needed.
 			Unsafe.Add(ref words, 16) = Unsafe.Add(ref words, 14) ^ v5.ToScalar();
 
 			// Round 60; A..D = a,b,c,d, E..H = e,f,g,h.
