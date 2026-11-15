@@ -83,10 +83,8 @@ internal struct Blake2bState
 		else
 		{
 			Unsafe.SkipInit(out InlineArray128<byte> finalBuffer);
-			Span<byte> finalBlock = finalBuffer;
-			source.CopyTo(finalBlock);
-			finalBlock.Slice(source.Length).Clear();
-			Compress(ref state[0], finalBlock.AsReadOnlySpan(), (uint)sourceLength, ulong.MaxValue);
+			Blake2bPaddedBlock.Store(ref finalBuffer[0], in MemoryMarshal.GetReference(source), source.Length);
+			Compress(ref state[0], finalBuffer, (uint)sourceLength, ulong.MaxValue);
 		}
 
 		MemoryMarshal.AsBytes(state).Slice(0, hashLength).CopyTo(destination);
