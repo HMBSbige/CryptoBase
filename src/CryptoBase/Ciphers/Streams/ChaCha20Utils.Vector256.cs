@@ -15,11 +15,34 @@ internal static partial class ChaCha20Utils
 		b = (b ^ c).RotateLeftUInt32(7);
 	}
 
+	// Without AVX-512VL a rotation by shifts needs a register beyond the 16 of the state; one shared scratch keeps it from spilling per rotation.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void QuarterRound(ref Vector256<uint> a, ref Vector256<uint> b, ref Vector256<uint> c, ref Vector256<uint> d, ref Vector256<uint> scratch)
+	{
+		if (Avx512F.VL.IsSupported)
+		{
+			QuarterRound(ref a, ref b, ref c, ref d);
+			return;
+		}
+
+		a += b;
+		d = (d ^ a).RotateLeftUInt32(16);
+		c += d;
+		scratch = b ^ c;
+		b = scratch << 12 | scratch >>> 20;
+		a += b;
+		d = (d ^ a).RotateLeftUInt32(8);
+		c += d;
+		scratch = b ^ c;
+		b = scratch << 7 | scratch >>> 25;
+	}
+
 	// Runs whole 8-block batches; a shorter final batch stores only its leading blocks.
 	private static void XorVector256(ref uint stateRef, ref byte input, ref byte output, int blocks)
 	{
 		Debug.Assert(blocks % 8 is 0 or > 4);
 		ref ulong counter = ref GetCounterOriginal(ref stateRef);
+		Unsafe.SkipInit(out Vector256<uint> scratch);
 
 		for (nuint processed = 0; blocks > 0; processed += 512, blocks -= 8)
 		{
@@ -44,14 +67,14 @@ internal static partial class ChaCha20Utils
 
 			for (int round = 0; round < SnuffleCipher.Rounds; round += 2)
 			{
-				QuarterRound(ref a00, ref a04, ref a08, ref a12);
-				QuarterRound(ref a01, ref a05, ref a09, ref a13);
-				QuarterRound(ref a02, ref a06, ref a10, ref a14);
-				QuarterRound(ref a03, ref a07, ref a11, ref a15);
-				QuarterRound(ref a00, ref a05, ref a10, ref a15);
-				QuarterRound(ref a01, ref a06, ref a11, ref a12);
-				QuarterRound(ref a02, ref a07, ref a08, ref a13);
-				QuarterRound(ref a03, ref a04, ref a09, ref a14);
+				QuarterRound(ref a00, ref a04, ref a08, ref a12, ref scratch);
+				QuarterRound(ref a01, ref a05, ref a09, ref a13, ref scratch);
+				QuarterRound(ref a02, ref a06, ref a10, ref a14, ref scratch);
+				QuarterRound(ref a03, ref a07, ref a11, ref a15, ref scratch);
+				QuarterRound(ref a00, ref a05, ref a10, ref a15, ref scratch);
+				QuarterRound(ref a01, ref a06, ref a11, ref a12, ref scratch);
+				QuarterRound(ref a02, ref a07, ref a08, ref a13, ref scratch);
+				QuarterRound(ref a03, ref a04, ref a09, ref a14, ref scratch);
 			}
 
 			a00 += Vector256.Create(Unsafe.Add(ref stateRef, 0));
