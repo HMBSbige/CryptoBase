@@ -1,7 +1,7 @@
 namespace CryptoBase.EllipticCurves;
 
 // The lanes of SM2Field29 in the four lanes of Vector256.
-internal struct SM2Field29x4Avx2 : ISM2Field29Lanes<SM2Field29x4Avx2>
+internal unsafe struct SM2Field29x4Avx2 : ISM2Field29Lanes<SM2Field29x4Avx2>
 {
 	internal Vector256<ulong> L0;
 	internal Vector256<ulong> L1;
@@ -35,13 +35,27 @@ internal struct SM2Field29x4Avx2 : ISM2Field29Lanes<SM2Field29x4Avx2>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Multiply(in SM2Field29x4Avx2 left, in SM2Field29x4Avx2 right, out SM2Field29x4Avx2 result)
 	{
-		Multiply<TwoStepCarry>(in left, in right, out result);
+		if (Avx512F.VL.IsSupported)
+		{
+			Multiply<TwoStepCarry>(in left, in right, out result);
+		}
+		else
+		{
+			MultiplyFromMemory<TwoStepCarry>(in left, in right, out result);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void MultiplyRipple(in SM2Field29x4Avx2 left, in SM2Field29x4Avx2 right, out SM2Field29x4Avx2 result)
 	{
-		Multiply<RippleCarry>(in left, in right, out result);
+		if (Avx512F.VL.IsSupported)
+		{
+			Multiply<RippleCarry>(in left, in right, out result);
+		}
+		else
+		{
+			MultiplyFromMemory<RippleCarry>(in left, in right, out result);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
@@ -255,6 +269,223 @@ internal struct SM2Field29x4Avx2 : ISM2Field29Lanes<SM2Field29x4Avx2>
 		result.L6 = (z15 & mask) + d14;
 		result.L7 = (z16 & mask) + d15;
 		result.L8 = c16 + d16;
+	}
+
+	// Multiply reading each left limb with vlddqu, which the JIT does not merge into one value; merged, the limbs spill with 16 registers.
+	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+	private static void MultiplyFromMemory<TCarry>(in SM2Field29x4Avx2 operand, in SM2Field29x4Avx2 right, out SM2Field29x4Avx2 result) where TCarry : struct, ISM2Carry
+	{
+		fixed (Vector256<ulong>* left = &operand.L0)
+		{
+			Vector256<ulong> mask = Vector256.Create(SM2Field29.Mask);
+
+			Vector256<ulong> y = right.L0;
+			Vector256<ulong> z0 = M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			Vector256<ulong> z1 = M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			Vector256<ulong> z2 = M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			Vector256<ulong> z3 = M(Avx.LoadDquVector256((ulong*)(left + 3)), y) + Vector256.Create(SM2Field29.Bias3);
+			Vector256<ulong> z4 = M(Avx.LoadDquVector256((ulong*)(left + 4)), y) + Vector256.Create(SM2Field29.BiasMiddle);
+			Vector256<ulong> z5 = M(Avx.LoadDquVector256((ulong*)(left + 5)), y) + Vector256.Create(SM2Field29.BiasMiddle);
+			Vector256<ulong> z6 = M(Avx.LoadDquVector256((ulong*)(left + 6)), y) + Vector256.Create(SM2Field29.BiasMiddle);
+			Vector256<ulong> z7 = M(Avx.LoadDquVector256((ulong*)(left + 7)), y) + Vector256.Create(SM2Field29.Bias7);
+			Vector256<ulong> z8 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y) + Vector256.Create(SM2Field29.BiasMiddle);
+			Vector256<ulong> q = z0 & mask;
+			z1 += z0 >> SM2Field29.Bits;
+			z2 += q << 6;
+			z3 -= q << 9;
+			z7 -= q << 21;
+			z8 += q << 24;
+
+			y = right.L1;
+			z1 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			z2 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			z3 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			z4 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+			z5 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+			z6 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+			z7 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+			z8 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+			Vector256<ulong> z9 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y) + Vector256.Create(SM2Field29.BiasMiddle);
+			q = z1 & mask;
+			z2 += z1 >> SM2Field29.Bits;
+			z3 += q << 6;
+			z4 -= q << 9;
+			z8 -= q << 21;
+			z9 += q << 24;
+
+			y = right.L2;
+			z2 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			z3 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			z4 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			z5 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+			z6 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+			z7 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+			z8 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+			z9 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+			Vector256<ulong> z10 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y) + Vector256.Create(SM2Field29.Bias10);
+			q = z2 & mask;
+			z3 += z2 >> SM2Field29.Bits;
+			z4 += q << 6;
+			z5 -= q << 9;
+			z9 -= q << 21;
+			z10 += q << 24;
+
+			y = right.L3;
+			z3 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			z4 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			z5 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			z6 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+			z7 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+			z8 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+			z9 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+			z10 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+			Vector256<ulong> z11 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y) + Vector256.Create(SM2Field29.Bias11);
+			q = z3 & mask;
+			z4 += z3 >> SM2Field29.Bits;
+			z5 += q << 6;
+			z6 -= q << 9;
+			z10 -= q << 21;
+			z11 += q << 24;
+
+			y = right.L4;
+			z4 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			z5 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			z6 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			z7 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+			z8 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+			z9 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+			z10 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+			z11 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+			Vector256<ulong> z12 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y) + Vector256.Create(SM2Field29.BiasMiddle);
+			q = z4 & mask;
+			z5 += z4 >> SM2Field29.Bits;
+			z6 += q << 6;
+			z7 -= q << 9;
+			z11 -= q << 21;
+			z12 += q << 24;
+
+			y = right.L5;
+			z5 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			z6 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			z7 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			z8 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+			z9 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+			z10 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+			z11 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+			z12 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+			Vector256<ulong> z13 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y) + Vector256.Create(SM2Field29.BiasMiddle);
+			q = z5 & mask;
+			z6 += z5 >> SM2Field29.Bits;
+			z7 += q << 6;
+			z8 -= q << 9;
+			z12 -= q << 21;
+			z13 += q << 24;
+
+			y = right.L6;
+			z6 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			z7 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			z8 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			z9 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+			z10 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+			z11 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+			z12 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+			z13 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+			Vector256<ulong> z14 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y) + Vector256.Create(SM2Field29.BiasMiddle);
+			q = z6 & mask;
+			z7 += z6 >> SM2Field29.Bits;
+			z8 += q << 6;
+			z9 -= q << 9;
+			z13 -= q << 21;
+			z14 += q << 24;
+
+			y = right.L7;
+			z7 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			z8 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			z9 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			z10 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+			z11 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+			z12 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+			z13 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+			z14 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+			Vector256<ulong> z15 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y) + Vector256.Create(SM2Field29.Bias15);
+			q = z7 & mask;
+			z8 += z7 >> SM2Field29.Bits;
+			z9 += q << 6;
+			z10 -= q << 9;
+			z14 -= q << 21;
+			z15 += q << 24;
+
+			y = right.L8;
+			z8 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+			z9 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+			z10 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+			z11 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+			z12 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+			z13 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+			z14 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+			z15 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+			Vector256<ulong> z16 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y);
+			q = z8 & mask;
+			z9 += z8 >> SM2Field29.Bits;
+			z10 += q << 6;
+			z11 -= q << 9;
+			z15 -= q << 21;
+			z16 += q << 24;
+
+			if (TCarry.Ripples)
+			{
+				z10 += z9 >> SM2Field29.Bits;
+				result.L0 = z9 & mask;
+				z11 += z10 >> SM2Field29.Bits;
+				result.L1 = z10 & mask;
+				z12 += z11 >> SM2Field29.Bits;
+				result.L2 = z11 & mask;
+				z13 += z12 >> SM2Field29.Bits;
+				result.L3 = z12 & mask;
+				z14 += z13 >> SM2Field29.Bits;
+				result.L4 = z13 & mask;
+				z15 += z14 >> SM2Field29.Bits;
+				result.L5 = z14 & mask;
+				z16 += z15 >> SM2Field29.Bits;
+				result.L6 = z15 & mask;
+				result.L7 = z16 & mask;
+				result.L8 = z16 >> SM2Field29.Bits;
+				return;
+			}
+
+			Vector256<ulong> c9 = z9 >> SM2Field29.Bits;
+			Vector256<ulong> c10 = z10 >> SM2Field29.Bits;
+			Vector256<ulong> c11 = z11 >> SM2Field29.Bits;
+			Vector256<ulong> c12 = z12 >> SM2Field29.Bits;
+			Vector256<ulong> c13 = z13 >> SM2Field29.Bits;
+			Vector256<ulong> c14 = z14 >> SM2Field29.Bits;
+			Vector256<ulong> c15 = z15 >> SM2Field29.Bits;
+			Vector256<ulong> c16 = z16 >> SM2Field29.Bits;
+			z9 &= mask;
+			z10 = (z10 & mask) + c9;
+			z11 = (z11 & mask) + c10;
+			z12 = (z12 & mask) + c11;
+			z13 = (z13 & mask) + c12;
+			z14 = (z14 & mask) + c13;
+			z15 = (z15 & mask) + c14;
+			z16 = (z16 & mask) + c15;
+			Vector256<ulong> d10 = z10 >> SM2Field29.Bits;
+			Vector256<ulong> d11 = z11 >> SM2Field29.Bits;
+			Vector256<ulong> d12 = z12 >> SM2Field29.Bits;
+			Vector256<ulong> d13 = z13 >> SM2Field29.Bits;
+			Vector256<ulong> d14 = z14 >> SM2Field29.Bits;
+			Vector256<ulong> d15 = z15 >> SM2Field29.Bits;
+			Vector256<ulong> d16 = z16 >> SM2Field29.Bits;
+			result.L0 = z9;
+			result.L1 = z10 & mask;
+			result.L2 = (z11 & mask) + d10;
+			result.L3 = (z12 & mask) + d11;
+			result.L4 = (z13 & mask) + d12;
+			result.L5 = (z14 & mask) + d13;
+			result.L6 = (z15 & mask) + d14;
+			result.L7 = (z16 & mask) + d15;
+			result.L8 = c16 + d16;
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
