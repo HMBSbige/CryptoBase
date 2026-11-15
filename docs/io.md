@@ -109,6 +109,8 @@ using SafeFileHandle handle = File.OpenHandle(path, FileMode.OpenOrCreate, FileA
 // so Create throws ArgumentException if its length is not a multiple of dataUnitSize; the unit at offset n * dataUnitSize
 // uses the tweak that XtsMode.GetTweak gives for firstDataUnitNumber + n.
 // The instance owns the cipher; the handle stays open. Instances are not thread-safe: use one per thread over a shared handle.
+// Parallel writes must not share a data unit, and only one instance at a time may write past the end; to write in parallel,
+// call SetLength with the final length first and give each instance a range aligned to dataUnitSize.
 using DataUnitRandomAccess<XtsMode<AesCipher>> xts = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(dataKey, tweakKey), dataUnitSize: 4096, leaveOpen: true);
 
 // Write at any offset; the data reaches the file before Write returns. Writing part of a data unit reads that unit first,

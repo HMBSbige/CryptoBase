@@ -386,6 +386,58 @@ public class DataUnitRandomAccessTest
 
 	[Test]
 	[MatrixDataSource]
+	public async Task InstancesSharingHandleWriteDisjointDataUnitsInParallelAfterSetLength([Matrix] bool useAsync)
+	{
+		const int unit = DefaultDataUnitSize;
+		const int writers = 4;
+		const int rangeLength = 16 * unit;
+		// Partial writes inside each range rewrite data units that only that range's writer touches.
+		const int writeLength = 100;
+		byte[] plaintext = CreateDeterministicSource(writers * rangeLength);
+		using TempFile file = new();
+		using SafeFileHandle handle = file.OpenHandle(useAsync);
+
+		using (DataUnitRandomAccess<XtsMode<AesCipher>> owner = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true))
+		{
+			owner.SetLength(plaintext.Length);
+		}
+
+		Task[] tasks = new Task[writers];
+
+		for (int i = 0; i < tasks.Length; ++i)
+		{
+			int start = i * rangeLength;
+			tasks[i] = Task.Run(async () =>
+			{
+				using DataUnitRandomAccess<XtsMode<AesCipher>> writer = DataUnitRandomAccess.Create(handle, XtsMode<AesCipher>.Create(Key), unit, leaveOpen: true);
+
+				for (int offset = start; offset < start + rangeLength; offset += writeLength)
+				{
+					ReadOnlyMemory<byte> part = plaintext.AsMemory(offset, Math.Min(writeLength, start + rangeLength - offset));
+
+					if (useAsync)
+					{
+						await writer.WriteAsync(part, offset);
+					}
+					else
+					{
+						writer.Write(part.Span, offset);
+					}
+				}
+			});
+		}
+
+		await Task.WhenAll(tasks);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(RandomAccess.GetLength(handle)).IsEqualTo(plaintext.Length);
+			await AssertBytesEqual(ReadAll(handle), Encrypt<XtsMode<AesCipher>>(plaintext, unit));
+		}
+	}
+
+	[Test]
+	[MatrixDataSource]
 	public async Task DisposeReleasesCipherAndHonorsLeaveOpen([Matrix] bool leaveOpen)
 	{
 		using TempFile file = new();

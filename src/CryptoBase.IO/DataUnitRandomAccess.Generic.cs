@@ -26,6 +26,9 @@ namespace CryptoBase.IO;
 /// The instance owns the cipher and disposes it; <c>leaveOpen</c> controls only the handle.
 /// Instances are not thread-safe.
 /// For parallel access, create one instance per thread over the same handle with <c>leaveOpen: true</c>, each with its own cipher.
+/// Parallel operations must not touch a data unit that another one writes; writing part of a data unit rewrites all of it.
+/// A write past the end also writes every data unit from the old end, so while it runs, no other instance may touch data units past the old end.
+/// Call <see cref="SetLength" /> only while no other instance uses the handle; to write past the end in parallel, grow the file with it first.
 /// </para>
 /// </remarks>
 public sealed class DataUnitRandomAccess<TCipher> : IDisposable where TCipher : class, IDataUnitCipher<TCipher>
