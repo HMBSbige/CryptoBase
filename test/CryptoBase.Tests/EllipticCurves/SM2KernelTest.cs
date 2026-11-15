@@ -633,14 +633,13 @@ public class SM2KernelTest
 
 	// The lanes of the vector kernels fold sums of blocks of windows of w bits, and the last fold would add equal points at k = n − 2·(n mod 2^(wb)) for a split after b windows if bit wb − 1 of n were 0.
 	// The scalars of MultiplyBaseMatchesTheReference hold that k for every b;
-	// this test checks, for both widths, that the reference does meet equal points there for the splits that would be wrong, and that the last folds of eight, four and two blocks split elsewhere, so that those scalars keep their point.
+	// this test checks, for the windows of SM2Curve, that the reference does meet equal points there for the splits that would be wrong, and that the last folds of eight, four and two blocks split elsewhere, so that those scalars keep their point.
 	[Test]
-	[Arguments(6)]
-	[Arguments(7)]
-	public async Task SplitScalarsMeetEqualPointsWhereBitsOfNAreClear(int width)
+	public async Task SplitScalarsMeetEqualPointsWhereBitsOfNAreClear()
 	{
 		BigInteger n = Curve.Order;
-		int windowCount = 256 / width + 1;
+		int width = WindowWidth;
+		int windowCount = ECGeneratorTable<SM2Curve, SM2Field52, SM2Order>.WindowCount;
 		List<int> clear = [];
 
 		for (int b = 1; b < windowCount; ++b)
@@ -659,6 +658,45 @@ public class SM2KernelTest
 		// The last fold of a blocks adds the first a/2 of them, the first W mod a blocks one window longer.
 		int[] splits = [.. ((int[])[8, 4, 2]).Select(blocks => blocks / 2 * (windowCount / blocks) + Math.Min(blocks / 2, windowCount % blocks))];
 		await Assert.That(clear).IsNotEmpty().And.DoesNotContain(splits[0]).And.DoesNotContain(splits[1]).And.DoesNotContain(splits[2]);
+	}
+
+	// The windows of SM2VerificationCurve meet no equal points at any split.
+	// The digits of RecodeSpanning, in [−128, 127], sum to less than n in magnitude at any split, so the low and the high sums are equal mod n only if they are equal;
+	// the high sum is a multiple of 2^(wb) and the low one is smaller in magnitude, so both are 0.
+	// The scalars of VerificationScalars are checked at every split as well.
+	[Test]
+	public async Task VerificationSplitsMeetNoEqualPoints()
+	{
+		BigInteger n = Curve.Order;
+		int width = SM2VerificationCurve.GeneratorWindowWidth;
+		int count = ECGeneratorTable<SM2VerificationCurve, SM2Field52, SM2Order>.WindowCount;
+		BigInteger bound = Repeat(1 << width - 1, width, count);
+		List<string> failures = [];
+		sbyte[] digits = new sbyte[count];
+
+		foreach (BigInteger scalar in VerificationScalars.Value)
+		{
+			ECGroup<SM2VerificationCurve, SM2Field52, SM2Order>.RecodeSpanning(ToScalar(scalar), width, digits);
+			int[] windows = [.. digits.Select(static digit => (int)digit)];
+			BigInteger sum = SumOfWindows(windows, width, 0, count);
+
+			for (int b = 1; b < count; ++b)
+			{
+				BigInteger lowSum = SumOfWindows(windows, width, 0, b);
+				BigInteger highSum = sum - lowSum;
+
+				if ((lowSum - highSum) % n == 0 && lowSum % n != 0)
+				{
+					failures.Add($"{scalar:X} after {b} windows");
+				}
+			}
+		}
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(bound < n).IsTrue();
+			await Assert.That(failures).IsEmpty();
+		}
 	}
 
 	// SM2OddWindows writes digits d_i, odd and in [−31, 31], with Σ d_i·32^i = 2s − (2^260 − 1) for s = (k + 2^260 − 1)/2 mod n, plus n at its exception alone.

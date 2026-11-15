@@ -149,7 +149,7 @@ internal class RsaKeyTest
 		yield return static () => ("512 bits", PrivateParameters(512));
 		yield return static () => ("1025 bits, emLen = k − 1", PssExamples[1].Key);
 		yield return static () => ("1026 bits, 7 unused bits in EM", PssExamples[2].Key);
-		yield return static () => ("1031 bits, 1 unused bit in EM", PssExamples[7].Key);
+		yield return static () => ("1031 bits, 2 unused bits in EM", PssExamples[7].Key);
 		yield return static () => ("2048 bits", PrivateParameters());
 	}
 
