@@ -9,7 +9,7 @@ namespace CryptoBase.EllipticCurves.Curve25519;
 // Every limb of a reduced value or of one with m ≤ 2 is at most that of 2p, so a difference adds 2p to stay positive and grows m by 2.
 // Multiply takes a left operand with m_x ≤ 5.02 and a right one with m_y ≤ 3.02; the steps of the formulas give no more.
 // Any result may be the same variable as an input: each member reads a limb of its inputs before it writes that limb of a result.
-internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
+internal unsafe struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 {
 	internal Vector256<ulong> L0;
 	internal Vector256<ulong> L1;
@@ -119,7 +119,16 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void Multiply(in Field25519x4Avx2 left, in Field25519x4Avx2 right, out Field25519x4Avx2 result)
 	{
-		Product(in left, in right, false, out result);
+		if (Avx512F.VL.IsSupported)
+		{
+			Product(in left, in right, false, out result);
+			return;
+		}
+
+		fixed (Vector256<ulong>* limbs = &left.L0)
+		{
+			ProductFromMemory(limbs, in right, false, out result);
+		}
 	}
 
 	// The first product of a step and the steps around it in one method, so that the values between them stay in registers.
@@ -127,11 +136,26 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void LadderOperands(in Field25519x4Avx2 state, ulong swap, out Field25519x4Avx2 left, out Field25519x4Avx2 right)
 	{
-		PrepareLadder(in state, swap, out Field25519x4Avx2 sums);
-		Product(in sums, in state, true, out Field25519x4Avx2 products);
-		FinishLadder(in products, out Field25519x4Avx2 first, out Field25519x4Avx2 second);
-		left = first;
-		right = second;
+		if (Avx512F.VL.IsSupported)
+		{
+			PrepareLadder(in state, swap, out Field25519x4Avx2 sums);
+			Product(in sums, in state, true, out Field25519x4Avx2 products);
+			FinishLadder(in products, out Field25519x4Avx2 first, out Field25519x4Avx2 second);
+			left = first;
+			right = second;
+			return;
+		}
+
+		// With 16 registers the sums go through left, which the end overwrites, and the product reads them from there.
+		PrepareLadder(in state, swap, out left);
+		Unsafe.SkipInit(out Field25519x4Avx2 columns);
+
+		fixed (Vector256<ulong>* limbs = &left.L0)
+		{
+			ProductFromMemory(limbs, in state, true, out columns);
+		}
+
+		FinishLadder(in columns, out left, out right);
 	}
 
 	// Three values, for the columns of lane D four at a time: lane l of limb i of value g holds the factor u_j·f_ij by which column k = 4g + l takes limb i of the other operand, with j = k − i mod 10, f_ij = 2 where i and j are odd, times 19 where i + j ≥ 10;
@@ -168,7 +192,20 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void LadderProducts(in Field25519x4Avx2 left, in Field25519x4Avx2 right, in Field25519x4Avx2 multiplier, out Field25519x4Avx2 result)
 	{
-		Product(in left, in right, false, out Field25519x4Avx2 products);
+		Unsafe.SkipInit(out Field25519x4Avx2 products);
+
+		if (Avx512F.VL.IsSupported)
+		{
+			Product(in left, in right, false, out products);
+		}
+		else
+		{
+			fixed (Vector256<ulong>* limbs = &left.L0)
+			{
+				ProductFromMemory(limbs, in right, false, out products);
+			}
+		}
+
 		ref Field25519x4Avx2 low = ref Unsafe.AsRef(in multiplier);
 		ref Field25519x4Avx2 middle = ref Unsafe.Add(ref low, 1);
 		ref Field25519x4Avx2 high = ref Unsafe.Add(ref low, 2);
@@ -365,15 +402,170 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 		Reduce(z0, z1, z2, z3, z4, z5, z6, z7, z8, z9, out result);
 	}
 
+	// Product reading each left limb with vlddqu, which the JIT does not merge into one value; merged, the limbs spill with 16 registers.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void ProductFromMemory(Vector256<ulong>* left, in Field25519x4Avx2 right, bool firstLanes, out Field25519x4Avx2 result)
+	{
+		Vector256<ulong> y = Row(left[0], right.L0, firstLanes);
+		Vector256<ulong> z0 = M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		Vector256<ulong> z1 = M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+		Vector256<ulong> z2 = M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+		Vector256<ulong> z3 = M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+		Vector256<ulong> z4 = M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+		Vector256<ulong> z5 = M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+		Vector256<ulong> z6 = M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+		Vector256<ulong> z7 = M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+		Vector256<ulong> z8 = M(Avx.LoadDquVector256((ulong*)(left + 8)), y);
+		Vector256<ulong> z9 = M(Avx.LoadDquVector256((ulong*)(left + 9)), y);
+
+		y = Row(left[1], right.L1, firstLanes);
+		Vector256<ulong> twice = y + y;
+		Vector256<ulong> wrapped = Times19(twice);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 1)), twice);
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 3)), twice);
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 5)), twice);
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 7)), twice);
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 8)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 9)), wrapped);
+
+		y = Row(left[2], right.L2, firstLanes);
+		wrapped = Times19(y);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 7)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 8)), wrapped);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 9)), wrapped);
+
+		y = Row(left[3], right.L3, firstLanes);
+		twice = y + y;
+		wrapped = Times19(y);
+		Vector256<ulong> twiceWrapped = wrapped + wrapped;
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 1)), twice);
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 3)), twice);
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 5)), twice);
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 6)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 7)), twiceWrapped);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 8)), wrapped);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 9)), twiceWrapped);
+
+		y = Row(left[4], right.L4, firstLanes);
+		wrapped = Times19(y);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 5)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 6)), wrapped);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 7)), wrapped);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 8)), wrapped);
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 9)), wrapped);
+
+		y = Row(left[5], right.L5, firstLanes);
+		twice = y + y;
+		wrapped = Times19(y);
+		twiceWrapped = wrapped + wrapped;
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 1)), twice);
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 3)), twice);
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 4)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 5)), twiceWrapped);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 6)), wrapped);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 7)), twiceWrapped);
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 8)), wrapped);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 9)), twiceWrapped);
+
+		y = Row(left[6], right.L6, firstLanes);
+		wrapped = Times19(y);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 3)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 4)), wrapped);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 5)), wrapped);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 6)), wrapped);
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 7)), wrapped);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 8)), wrapped);
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 9)), wrapped);
+
+		y = Row(left[7], right.L7, firstLanes);
+		twice = y + y;
+		wrapped = Times19(y);
+		twiceWrapped = wrapped + wrapped;
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 1)), twice);
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 2)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 3)), twiceWrapped);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 4)), wrapped);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 5)), twiceWrapped);
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 6)), wrapped);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 7)), twiceWrapped);
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 8)), wrapped);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 9)), twiceWrapped);
+
+		y = Row(left[8], right.L8, firstLanes);
+		wrapped = Times19(y);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 1)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 2)), wrapped);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 3)), wrapped);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 4)), wrapped);
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 5)), wrapped);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 6)), wrapped);
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 7)), wrapped);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 8)), wrapped);
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 9)), wrapped);
+
+		y = Row(left[9], right.L9, firstLanes);
+		wrapped = Times19(y);
+		twiceWrapped = wrapped + wrapped;
+		z9 += M(Avx.LoadDquVector256((ulong*)(left + 0)), y);
+		z0 += M(Avx.LoadDquVector256((ulong*)(left + 1)), twiceWrapped);
+		z1 += M(Avx.LoadDquVector256((ulong*)(left + 2)), wrapped);
+		z2 += M(Avx.LoadDquVector256((ulong*)(left + 3)), twiceWrapped);
+		z3 += M(Avx.LoadDquVector256((ulong*)(left + 4)), wrapped);
+		z4 += M(Avx.LoadDquVector256((ulong*)(left + 5)), twiceWrapped);
+		z5 += M(Avx.LoadDquVector256((ulong*)(left + 6)), wrapped);
+		z6 += M(Avx.LoadDquVector256((ulong*)(left + 7)), twiceWrapped);
+		z7 += M(Avx.LoadDquVector256((ulong*)(left + 8)), wrapped);
+		z8 += M(Avx.LoadDquVector256((ulong*)(left + 9)), twiceWrapped);
+
+		Reduce(z0, z1, z2, z3, z4, z5, z6, z7, z8, z9, out result);
+	}
+
 	// The product of a readdition and the steps around it in one method, so that the values between them stay in registers.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void AddOperands(in Field25519x4Avx2 point, in Field25519x4Avx2 cached, out Field25519x4Avx2 left, out Field25519x4Avx2 right)
 	{
-		DiffSum(in point, out Field25519x4Avx2 differences);
-		Product(in differences, in cached, false, out Field25519x4Avx2 products);
-		FinishAdd(in products, out Field25519x4Avx2 first, out Field25519x4Avx2 second);
-		left = first;
-		right = second;
+		if (Avx512F.VL.IsSupported)
+		{
+			DiffSum(in point, out Field25519x4Avx2 differences);
+			Product(in differences, in cached, false, out Field25519x4Avx2 products);
+			FinishAdd(in products, out Field25519x4Avx2 first, out Field25519x4Avx2 second);
+			left = first;
+			right = second;
+			return;
+		}
+
+		// With 16 registers the differences go through storage of their own, as left may be cached, and the product reads them from there.
+		Unsafe.SkipInit(out OperandStorage storage);
+		ref Field25519x4Avx2 operand = ref AlignedScratch.Start<OperandStorage, Field25519x4Avx2>(ref storage, (nuint)sizeof(Vector256<ulong>));
+		DiffSum(in point, out operand);
+		ProductFromMemory((Vector256<ulong>*)Unsafe.AsPointer(ref operand), in cached, false, out Field25519x4Avx2 columns);
+		FinishAdd(in columns, out left, out right);
 	}
 
 	// The squares of a doubling and the steps around them in one method.
@@ -889,5 +1081,12 @@ internal struct Field25519x4Avx2 : IField25519x4<Field25519x4Avx2>
 	private static Vector256<ulong> Times19(Vector256<ulong> y)
 	{
 		return Avx2.Multiply(y.AsUInt32(), Vector256.Create(19UL).AsUInt32());
+	}
+
+	// An operand on the stack with room to start it on a 32-byte boundary, where no vector of it straddles a cache line.
+	[InlineArray(11)]
+	private struct OperandStorage
+	{
+		private Vector256<ulong> _element;
 	}
 }
