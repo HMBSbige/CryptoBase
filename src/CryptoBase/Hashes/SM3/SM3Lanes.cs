@@ -427,9 +427,24 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 		// e arrives last, so SS1 adds it to the rest of its sum, and TT2 adds SS1 last.
 		TVector a12 = TLanes.RotateLeft(a, 12);
 		TVector ss1 = TLanes.RotateLeft(TLanes.Add(e, TLanes.Add(a12, TLanes.Create(constant))), 7);
-		TVector gg = late ? TLanes.Choose(e, f, g) : TLanes.Xor(e, f, g);
-		TVector ff = late ? TLanes.Majority(a, b, c) : TLanes.Xor(a, b, c);
-		nextH = P(TLanes.Add(TLanes.Add(gg, TLanes.Add(h, word)), ss1), 9, 17);
+		TVector tt2;
+		TVector ff;
+
+		if (late && Avx.IsSupported)
+		{
+			// With 16 registers, GG held across MAJ spills; adding it into TT2 first frees its register.
+			// Legacy SSE encodings would need extra copies for this order.
+			tt2 = TLanes.Add(TLanes.Choose(e, f, g), TLanes.Add(h, word));
+			ff = TLanes.Majority(a, b, c);
+		}
+		else
+		{
+			TVector gg = late ? TLanes.Choose(e, f, g) : TLanes.Xor(e, f, g);
+			ff = late ? TLanes.Majority(a, b, c) : TLanes.Xor(a, b, c);
+			tt2 = TLanes.Add(gg, TLanes.Add(h, word));
+		}
+
+		nextH = P(TLanes.Add(tt2, ss1), 9, 17);
 		return TLanes.Add(TLanes.Xor(ss1, a12), TLanes.Add(ff, TLanes.Add(d, mixed)));
 	}
 
