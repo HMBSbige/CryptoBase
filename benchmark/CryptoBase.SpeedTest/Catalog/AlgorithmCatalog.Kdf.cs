@@ -28,6 +28,7 @@ internal static partial class AlgorithmCatalog
 			Kdf("tls12-prf-sha256", typeof(Tls12Prf), 48, 48, (secret, output) => Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, output), PrfNotes),
 			Kdf("tls12-prf-sha384", typeof(Tls12Prf), 48, 48, (secret, output) => Tls12Prf.DeriveKey<Sha384Core>(secret, label, seed, output), PrfNotes),
 			Kdf("sm3-kdf", typeof(SM3Kdf), 64, 32, SM3Kdf.DeriveKey, "64-byte secret; 32-byte output"),
+			Kdf("sm3-kdf-4k", typeof(SM3Kdf), 64, 4096, SM3Kdf.DeriveKey, "64-byte secret; 4096-byte output"),
 			Argon2("argon2id", typeof(Argon2id), (password, output) => Argon2id.DeriveKey(password, passwordSalt, output, second), SecondNotes),
 			Argon2("argon2i", typeof(Argon2i), (password, output) => Argon2i.DeriveKey(password, passwordSalt, output, second), SecondNotes),
 			Argon2("argon2d", typeof(Argon2d), (password, output) => Argon2d.DeriveKey(password, passwordSalt, output, second), SecondNotes),
