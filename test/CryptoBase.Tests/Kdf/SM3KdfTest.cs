@@ -43,18 +43,18 @@ public class SM3KdfTest
 	[Test]
 	public async Task KeysMatchSingleBlocks()
 	{
-		const int MaxBlocks = 41;
+		const int maxBlocks = 41;
 		List<string> failures = [];
 
 		foreach (int zLength in (int[])[0, 1, 51, 52, 59, 60, 61, 63, 64, 703])
 		{
 			byte[] z = [.. Enumerable.Range(0, zLength).Select(static i => (byte)(i * 73 + 9))];
-			byte[] expected = new byte[32 * MaxBlocks];
+			byte[] expected = new byte[32 * maxBlocks];
 			SM3KdfState kdf = default;
 			kdf.Initialize();
 			kdf.Append(z);
 
-			for (int i = 0; i < MaxBlocks; ++i)
+			for (int i = 0; i < maxBlocks; ++i)
 			{
 				kdf.WriteBlock((uint)i + 1, expected.AsSpan(32 * i));
 			}

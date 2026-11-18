@@ -15,24 +15,24 @@ internal static partial class AlgorithmCatalog
 		Argon2Parameters second = Argon2Parameters.Rfc9106SecondRecommended;
 		Argon2Parameters first = Argon2Parameters.Rfc9106FirstRecommended;
 
-		const string HkdfNotes = "32-byte IKM, salt and info; 32-byte output";
-		const string PrfNotes = "48-byte secret, label 'master secret', 64-byte seed; 48-byte output";
-		const string SecondNotes = "RFC 9106 second recommended: 64 MiB, t=3, p=4, threads unlimited; 32-byte password, 16-byte salt, 32-byte output";
-		const string FirstNotes = "RFC 9106 first recommended: 2 GiB, t=1, p=4, threads unlimited; 32-byte password, 16-byte salt, 32-byte output";
+		const string hkdfNotes = "32-byte IKM, salt and info; 32-byte output";
+		const string prfNotes = "48-byte secret, label 'master secret', 64-byte seed; 48-byte output";
+		const string secondNotes = "RFC 9106 second recommended: 64 MiB, t=3, p=4, threads unlimited; 32-byte password, 16-byte salt, 32-byte output";
+		const string firstNotes = "RFC 9106 first recommended: 2 GiB, t=1, p=4, threads unlimited; 32-byte password, 16-byte salt, 32-byte output";
 
 		return
 		[
-			Kdf("hkdf-sha256", typeof(Hkdf), 32, 32, (ikm, output) => Hkdf.DeriveKey<Sha256Core>(ikm, output, salt, info), HkdfNotes),
-			Kdf("hkdf-sha384", typeof(Hkdf), 32, 32, (ikm, output) => Hkdf.DeriveKey<Sha384Core>(ikm, output, salt, info), HkdfNotes),
-			Kdf("hkdf-sha512", typeof(Hkdf), 32, 32, (ikm, output) => Hkdf.DeriveKey<Sha512Core>(ikm, output, salt, info), HkdfNotes),
-			Kdf("tls12-prf-sha256", typeof(Tls12Prf), 48, 48, (secret, output) => Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, output), PrfNotes),
-			Kdf("tls12-prf-sha384", typeof(Tls12Prf), 48, 48, (secret, output) => Tls12Prf.DeriveKey<Sha384Core>(secret, label, seed, output), PrfNotes),
+			Kdf("hkdf-sha256", typeof(Hkdf), 32, 32, (ikm, output) => Hkdf.DeriveKey<Sha256Core>(ikm, output, salt, info), hkdfNotes),
+			Kdf("hkdf-sha384", typeof(Hkdf), 32, 32, (ikm, output) => Hkdf.DeriveKey<Sha384Core>(ikm, output, salt, info), hkdfNotes),
+			Kdf("hkdf-sha512", typeof(Hkdf), 32, 32, (ikm, output) => Hkdf.DeriveKey<Sha512Core>(ikm, output, salt, info), hkdfNotes),
+			Kdf("tls12-prf-sha256", typeof(Tls12Prf), 48, 48, (secret, output) => Tls12Prf.DeriveKey<Sha256Core>(secret, label, seed, output), prfNotes),
+			Kdf("tls12-prf-sha384", typeof(Tls12Prf), 48, 48, (secret, output) => Tls12Prf.DeriveKey<Sha384Core>(secret, label, seed, output), prfNotes),
 			Kdf("sm3-kdf", typeof(SM3Kdf), 64, 32, SM3Kdf.DeriveKey, "64-byte secret; 32-byte output"),
 			Kdf("sm3-kdf-4k", typeof(SM3Kdf), 64, 4096, SM3Kdf.DeriveKey, "64-byte secret; 4096-byte output"),
-			Argon2("argon2id", typeof(Argon2id), (password, output) => Argon2id.DeriveKey(password, passwordSalt, output, second), SecondNotes),
-			Argon2("argon2i", typeof(Argon2i), (password, output) => Argon2i.DeriveKey(password, passwordSalt, output, second), SecondNotes),
-			Argon2("argon2d", typeof(Argon2d), (password, output) => Argon2d.DeriveKey(password, passwordSalt, output, second), SecondNotes),
-			Argon2("argon2id-2g", typeof(Argon2id), (password, output) => Argon2id.DeriveKey(password, passwordSalt, output, first), FirstNotes)
+			Argon2("argon2id", typeof(Argon2id), (password, output) => Argon2id.DeriveKey(password, passwordSalt, output, second), secondNotes),
+			Argon2("argon2i", typeof(Argon2i), (password, output) => Argon2i.DeriveKey(password, passwordSalt, output, second), secondNotes),
+			Argon2("argon2d", typeof(Argon2d), (password, output) => Argon2d.DeriveKey(password, passwordSalt, output, second), secondNotes),
+			Argon2("argon2id-2g", typeof(Argon2id), (password, output) => Argon2id.DeriveKey(password, passwordSalt, output, first), firstNotes)
 		];
 	}
 

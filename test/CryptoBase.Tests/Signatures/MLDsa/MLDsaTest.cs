@@ -571,9 +571,9 @@ internal class MLDsaTest<T> where T : class, IMLDsa<T>
 	[Test]
 	public async Task ConcurrentOperationsAgree()
 	{
-		const int Threads = 8;
-		const int Keys = 8;
-		const int Calls = 4;
+		const int threads = 8;
+		const int keys = 8;
+		const int calls = 4;
 		byte[] seed = CreateDeterministicSource(T.PrivateSeedLength);
 		byte[] message = CreateDeterministicSource(64);
 		byte[] randomness = new byte[32];
@@ -586,13 +586,13 @@ internal class MLDsaTest<T> where T : class, IMLDsa<T>
 
 		int mismatches = 0;
 
-		for (int i = 0; i < Keys; ++i)
+		for (int i = 0; i < keys; ++i)
 		{
 			using T key = T.ImportPrivateSeed(seed);
-			using Barrier barrier = new(Threads);
-			Task<int>[] tasks = new Task<int>[Threads];
+			using Barrier barrier = new(threads);
+			Task<int>[] tasks = new Task<int>[threads];
 
-			for (int thread = 0; thread < Threads; ++thread)
+			for (int thread = 0; thread < threads; ++thread)
 			{
 				// Half the threads verify first, so that the first signature and the first verification race.
 				bool verifiesFirst = thread % 2 is 1;
@@ -603,7 +603,7 @@ internal class MLDsaTest<T> where T : class, IMLDsa<T>
 					start.SignalAndWait();
 					int threadMismatches = 0;
 
-					for (int call = 0; call < Calls; ++call)
+					for (int call = 0; call < calls; ++call)
 					{
 						if (verifies && !instance.Verify(input, reference))
 						{
@@ -890,21 +890,21 @@ internal class MLDsaTest
 	[Arguments("3a33d0cef9aa04d56310f61dc4dff174d7d7138c04e8686c23433d44d272d65b", 10)]
 	public async Task ExpandSContinuesAStreamThatFallsShort(string seedHex, int shortStream)
 	{
-		const int Rate = 136;
-		const int N = MLDsaReference.N;
+		const int rate = 136;
+		const int n = MLDsaReference.N;
 		(int k, int l, int eta, _) = Parameters<MLDsa65>();
 		int etaLength = 32 * MLDsaReference.BitLength(2 * eta);
 		byte[] seed = Convert.FromHexString(seedHex);
-		byte[] rhoPrime = KeccakReference.Sponge([.. seed, (byte)k, (byte)l], Rate, 0x1F, 128).AsSpan(32, 64).ToArray();
+		byte[] rhoPrime = KeccakReference.Sponge([.. seed, (byte)k, (byte)l], rate, 0x1F, 128).AsSpan(32, 64).ToArray();
 
 		using MLDsa65 key = MLDsa65.ImportPrivateSeed(seed);
 		byte[] privateKey = ExportPrivateKey(key);
 
 		for (int r = 0; r < l + k; ++r)
 		{
-			byte[] stream = KeccakReference.Sponge([.. rhoPrime, (byte)r, (byte)(r >> 8)], Rate, 0x1F, 4 * Rate);
-			bool fallsShort = MLDsaReference.RejectEta(stream.AsSpan(0, 2 * Rate), N, eta).Count < N;
-			byte[] expected = MLDsaReference.BitPack([.. MLDsaReference.RejectEta(stream, N, eta)], eta, eta);
+			byte[] stream = KeccakReference.Sponge([.. rhoPrime, (byte)r, (byte)(r >> 8)], rate, 0x1F, 4 * rate);
+			bool fallsShort = MLDsaReference.RejectEta(stream.AsSpan(0, 2 * rate), n, eta).Count < n;
+			byte[] expected = MLDsaReference.BitPack([.. MLDsaReference.RejectEta(stream, n, eta)], eta, eta);
 
 			using (Assert.Multiple())
 			{
@@ -926,8 +926,8 @@ internal class MLDsaTest
 
 	private static async Task VerifyExpandMask<TParameters>() where TParameters : struct, IMLDsaParameters
 	{
-		const int Rate = 136;
-		const int N = MLDsaReference.N;
+		const int rate = 136;
+		const int n = MLDsaReference.N;
 		int l = TParameters.L;
 		int gamma1 = 1 << TParameters.Gamma1Bits;
 		int zLength = 32 * (TParameters.Gamma1Bits + 1);
@@ -939,31 +939,31 @@ internal class MLDsaTest
 
 		foreach (int kappa in (int[])[0, 7 * l, ushort.MaxValue + 1 - l])
 		{
-			int[] expected = new int[l * N];
+			int[] expected = new int[l * n];
 
 			for (int r = 0; r < l; ++r)
 			{
 				int nonce = kappa + r;
-				byte[] stream = KeccakReference.Sponge([.. seed, (byte)nonce, (byte)(nonce >> 8)], Rate, 0x1F, zLength);
-				MLDsaReference.BitUnpack(stream, gamma1 - 1, gamma1).CopyTo(expected, r * N);
+				byte[] stream = KeccakReference.Sponge([.. seed, (byte)nonce, (byte)(nonce >> 8)], rate, 0x1F, zLength);
+				MLDsaReference.BitUnpack(stream, gamma1 - 1, gamma1).CopyTo(expected, r * n);
 			}
 
-			int[] plain = new int[l * N];
+			int[] plain = new int[l * n];
 			MLDsaKey<TParameters>.ExpandMask<MLDsaKernelDispatch>(seed, kappa, plain, [], []);
 			await Assert.That(plain).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"y without a message at κ = {kappa} with l = {l}");
 
-			foreach (int length in (int[])[1, Rate - 1, Rate, Rate + 1, 5 * Rate - 1, 5 * Rate, 5 * Rate + 1, commitmentLength, 2 * commitmentLength])
+			foreach (int length in (int[])[1, rate - 1, rate, rate + 1, 5 * rate - 1, 5 * rate, 5 * rate + 1, commitmentLength, 2 * commitmentLength])
 			{
 				byte[] message = new byte[length];
 				random.NextBytes(message);
-				int[] y = new int[l * N];
+				int[] y = new int[l * n];
 				byte[] hash = new byte[hashLength];
 				MLDsaKey<TParameters>.ExpandMask<MLDsaKernelDispatch>(seed, kappa, y, message, hash);
 
 				using (Assert.Multiple())
 				{
 					await Assert.That(y).IsEquivalentTo(expected, CollectionOrdering.Matching).Because($"y beside a message of {length} bytes at κ = {kappa} with l = {l}");
-					await Assert.That(hash).IsEquivalentTo(KeccakReference.Sponge(message, Rate, 0x1F, hashLength), CollectionOrdering.Matching).Because($"the hash of {length} bytes at κ = {kappa} with l = {l}");
+					await Assert.That(hash).IsEquivalentTo(KeccakReference.Sponge(message, rate, 0x1F, hashLength), CollectionOrdering.Matching).Because($"the hash of {length} bytes at κ = {kappa} with l = {l}");
 				}
 			}
 		}

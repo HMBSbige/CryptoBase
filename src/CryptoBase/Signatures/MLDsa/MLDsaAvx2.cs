@@ -378,7 +378,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 	{
 		Debug.Assert(source.Length % 3 is 0);
 
-		const int GroupLength = 24;
+		const int groupLength = 24;
 		Span<int> buffer = stackalloc int[N + 8];
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		ref int output = ref MemoryMarshal.GetReference(buffer);
@@ -388,7 +388,7 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 		int count = 0;
 		int offset = 0;
 
-		for (; offset <= source.Length - GroupLength && count < limit; offset += GroupLength)
+		for (; offset <= source.Length - groupLength && count < limit; offset += groupLength)
 		{
 			Vector256<byte> window = Vector256.Create(Vector128.LoadUnsafe(ref input, (nuint)offset), Vector128.LoadUnsafe(ref input, (nuint)offset + 8));
 			Vector256<int> candidates = Avx2.Shuffle(window, fields).AsInt32() & Vector256.Create(0x7FFFFF);

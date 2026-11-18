@@ -4,17 +4,17 @@ internal static class CatalogListing
 {
 	public static void Write(TextWriter writer, ImmutableArray<AlgorithmEntry> entries)
 	{
-		const string NameTitle = "algorithm";
-		const string GroupTitle = "group";
-		const string UnitTitle = "unit";
-		const string OperationsTitle = "operations";
+		const string nameTitle = "algorithm";
+		const string groupTitle = "group";
+		const string unitTitle = "unit";
+		const string operationsTitle = "operations";
 
-		int nameWidth = Math.Max(NameTitle.Length, entries.Max(static entry => entry.Name.Length));
-		int groupWidth = Math.Max(GroupTitle.Length, entries.Max(static entry => entry.Group.Name.Length));
+		int nameWidth = Math.Max(nameTitle.Length, entries.Max(static entry => entry.Name.Length));
+		int groupWidth = Math.Max(groupTitle.Length, entries.Max(static entry => entry.Group.Name.Length));
 		string[] operations = [.. entries.Select(static entry => string.Join(' ', entry.Operations))];
-		int operationsWidth = Math.Max(OperationsTitle.Length, operations.Max(static text => text.Length));
+		int operationsWidth = Math.Max(operationsTitle.Length, operations.Max(static text => text.Length));
 
-		writer.WriteLine($"{NameTitle.PadRight(nameWidth)}  {GroupTitle.PadRight(groupWidth)}  {UnitTitle,-5}  {OperationsTitle.PadRight(operationsWidth)}  notes".TrimEnd());
+		writer.WriteLine($"{nameTitle.PadRight(nameWidth)}  {groupTitle.PadRight(groupWidth)}  {unitTitle,-5}  {operationsTitle.PadRight(operationsWidth)}  notes".TrimEnd());
 
 		for (int i = 0; i < entries.Length; ++i)
 		{

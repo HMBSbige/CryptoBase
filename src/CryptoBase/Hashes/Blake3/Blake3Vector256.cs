@@ -486,6 +486,6 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 	[InlineArray(17)]
 	private struct MessageBuffer
 	{
-		private Vector256<uint> element;
+		private Vector256<uint> _element;
 	}
 }

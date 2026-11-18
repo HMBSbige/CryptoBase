@@ -522,7 +522,7 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	[SkipLocalsInit]
 	private readonly int SampleMatrixGroup<TKernel>(scoped ref KeccakBatchSponge<KeccakRate168> sponge, int first, int end, scoped ref OverlappedHash hash, scoped ref PrfGuests prf) where TKernel : IMLKemKernel
 	{
-		const int MaxStreams = 8;
+		const int maxStreams = 8;
 		int k = K;
 		int streams = end - first;
 		int guests = 0;
@@ -538,8 +538,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		}
 
 		// The i ‖ j after ρ.
-		Span<ushort> suffixes = stackalloc ushort[MaxStreams];
-		suffixes = suffixes.Slice(0, Math.Min(streams, MaxStreams));
+		Span<ushort> suffixes = stackalloc ushort[maxStreams];
+		suffixes = suffixes.Slice(0, Math.Min(streams, maxStreams));
 
 		for (int j = 0; j < suffixes.Length; ++j)
 		{
@@ -549,8 +549,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 
 		sponge.ResetWithGuests(streams, guests, Rho, suffixes, sizeof(ushort), KeccakDomainSeparator.Shake);
 		int count = sponge.Count;
-		Debug.Assert(count <= MaxStreams);
-		Span<byte> outputs = stackalloc byte[MaxStreams * MatrixSqueezeLength];
+		Debug.Assert(count <= maxStreams);
+		Span<byte> outputs = stackalloc byte[maxStreams * MatrixSqueezeLength];
 		outputs = outputs.Slice(0, count * MatrixSqueezeLength);
 
 		for (int block = 0; block < MatrixBlocks; ++block)
@@ -606,8 +606,8 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	[SkipLocalsInit]
 	private static void Prf(ReadOnlySpan<byte> seed, int first, int streams, int length, Span<byte> outputs, scoped ref OverlappedHash hash)
 	{
-		const int MaxStreams = 8;
-		Span<ushort> nonceBuffer = stackalloc ushort[MaxStreams];
+		const int maxStreams = 8;
+		Span<ushort> nonceBuffer = stackalloc ushort[maxStreams];
 		Unsafe.SkipInit(out KeccakBatchSponge<KeccakRate136> sponge);
 		int blocks = (length + KeccakRate136.RateInBytes - 1) / KeccakRate136.RateInBytes;
 
@@ -622,7 +622,7 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 				guests = 1;
 			}
 
-			Span<ushort> nonces = nonceBuffer.Slice(0, Math.Min(group, MaxStreams));
+			Span<ushort> nonces = nonceBuffer.Slice(0, Math.Min(group, maxStreams));
 
 			for (int j = 0; j < nonces.Length; ++j)
 			{
@@ -631,7 +631,7 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 
 			sponge.ResetWithGuests(group, guests, seed, nonces, sizeof(byte), KeccakDomainSeparator.Shake);
 			int count = sponge.Count;
-			Debug.Assert(count <= MaxStreams);
+			Debug.Assert(count <= maxStreams);
 			Span<byte> groupOutputs = outputs.Slice(done * length, count * length);
 
 			for (int offset = 0; offset < length; offset += KeccakRate136.RateInBytes)

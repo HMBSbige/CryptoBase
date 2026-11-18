@@ -227,7 +227,7 @@ static int ParseThreads(ArgumentResult result, int maximum)
 // ArgumentResult.OnlyTake would give the rest back to the parser, but it does not support the argument of an option.
 static int[] ParseSizes(ArgumentResult result, out string[] selectors)
 {
-	const int MaximumSize = 256 << 20;
+	const int maximumSize = 256 << 20;
 	List<int> sizes = [];
 	selectors = [];
 
@@ -235,7 +235,7 @@ static int[] ParseSizes(ArgumentResult result, out string[] selectors)
 	{
 		string token = result.Tokens[i].Value;
 
-		if (TryParseSize(token, out int size) && size <= MaximumSize)
+		if (TryParseSize(token, out int size) && size <= maximumSize)
 		{
 			if (!sizes.Contains(size))
 			{
@@ -247,7 +247,7 @@ static int[] ParseSizes(ArgumentResult result, out string[] selectors)
 
 		if (i is 0 || char.IsAsciiDigit(token[0]) || token[0] is '-' or '+' or '.')
 		{
-			result.AddError($"Option '--bytes' takes sizes from 1 to {MaximumSize} bytes, such as 16, 1k or 1m; '{token}' is not one.");
+			result.AddError($"Option '--bytes' takes sizes from 1 to {maximumSize} bytes, such as 16, 1k or 1m; '{token}' is not one.");
 			return [];
 		}
 

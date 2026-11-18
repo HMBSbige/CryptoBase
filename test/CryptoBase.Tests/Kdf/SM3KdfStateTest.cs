@@ -81,8 +81,8 @@ public class SM3KdfStateTest
 	[Test]
 	public async Task WriteMatchesSingleBlocks()
 	{
-		const int MaxBlocks = 72;
-		uint[] counters = [1, 0xFA, 0xFFF0, 0xFF_FFE0, uint.MaxValue - MaxBlocks + 1];
+		const int maxBlocks = 72;
+		uint[] counters = [1, 0xFA, 0xFFF0, 0xFF_FFE0, uint.MaxValue - maxBlocks + 1];
 		List<string> failures = [];
 
 		foreach (int zLength in Enumerable.Range(0, 128).Append(703))
@@ -94,14 +94,14 @@ public class SM3KdfStateTest
 
 			foreach (uint counter in counters)
 			{
-				byte[] expected = new byte[32 * MaxBlocks];
+				byte[] expected = new byte[32 * maxBlocks];
 
-				for (int i = 0; i < MaxBlocks; ++i)
+				for (int i = 0; i < maxBlocks; ++i)
 				{
 					kdf.WriteBlock(counter + (uint)i, expected.AsSpan(32 * i));
 				}
 
-				for (int blocks = 1; blocks <= MaxBlocks; ++blocks)
+				for (int blocks = 1; blocks <= maxBlocks; ++blocks)
 				{
 					foreach (int length in (int[])[32 * blocks - 1, 32 * blocks])
 					{

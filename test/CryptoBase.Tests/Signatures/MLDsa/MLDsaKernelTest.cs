@@ -202,7 +202,7 @@ public class MLDsaKernelTest
 	[Test]
 	public async Task MontgomeryReduceStaysBelowQ()
 	{
-		const long Bound = (1L << 31) * Q;
+		const long bound = (1L << 31) * Q;
 		Random random = new(20);
 		List<string> mismatches = [];
 
@@ -210,9 +210,9 @@ public class MLDsaKernelTest
 		{
 			long a = i switch
 			{
-				0 => Bound - 1,
-				1 => 1 - Bound,
-				_ => random.NextInt64(1 - Bound, Bound)
+				0 => bound - 1,
+				1 => 1 - bound,
+				_ => random.NextInt64(1 - bound, bound)
 			};
 
 			int reduced = MLDsaScalar.MontgomeryReduce(a);
@@ -749,11 +749,11 @@ public class MLDsaKernelTest
 		SkipUnlessSupported(kernel);
 
 		Random random = new(14);
-		const int Largest = (1 << 10) - 1;
+		const int largest = (1 << 10) - 1;
 
-		foreach (int[] t1 in Chunks(Enumerable.Range(0, Largest + 1).ToArray()).Concat(RandomPolynomials(random, 0, Largest)))
+		foreach (int[] t1 in Chunks(Enumerable.Range(0, largest + 1).ToArray()).Concat(RandomPolynomials(random, 0, largest)))
 		{
-			byte[] expected = SimpleBitPack(t1, Largest);
+			byte[] expected = SimpleBitPack(t1, largest);
 			byte[] encoded = new byte[320 + 9];
 			PrepareDestination(encoded);
 			kernel.EncodeT1(t1, encoded);
@@ -772,24 +772,24 @@ public class MLDsaKernelTest
 		SkipUnlessSupported(kernel);
 
 		Random random = new(15);
-		const int Bound = 1 << D - 1;
+		const int bound = 1 << D - 1;
 
 		// The extremes alone and alternating, and values made from the position, its 8 bits low and its low 5 bits high, and their complement.
 		// The latter make the bits at each joint differ between neighbours and over every byte.
-		int[] lowest = Enumerable.Repeat(1 - Bound, N).ToArray();
-		int[] highest = Enumerable.Repeat(Bound, N).ToArray();
-		int[] alternating = Enumerable.Range(0, N).Select(static i => i % 2 is 0 ? 1 - Bound : Bound).ToArray();
-		int[] alternatingOther = Enumerable.Range(0, N).Select(static i => i % 2 is 0 ? Bound : 1 - Bound).ToArray();
-		int[] positional = Enumerable.Range(0, N).Select(static i => Bound - (i * 0x101 & 0x1FFF)).ToArray();
-		int[] positionalComplement = Enumerable.Range(0, N).Select(static i => Bound - (~(i * 0x101) & 0x1FFF)).ToArray();
+		int[] lowest = Enumerable.Repeat(1 - bound, N).ToArray();
+		int[] highest = Enumerable.Repeat(bound, N).ToArray();
+		int[] alternating = Enumerable.Range(0, N).Select(static i => i % 2 is 0 ? 1 - bound : bound).ToArray();
+		int[] alternatingOther = Enumerable.Range(0, N).Select(static i => i % 2 is 0 ? bound : 1 - bound).ToArray();
+		int[] positional = Enumerable.Range(0, N).Select(static i => bound - (i * 0x101 & 0x1FFF)).ToArray();
+		int[] positionalComplement = Enumerable.Range(0, N).Select(static i => bound - (~(i * 0x101) & 0x1FFF)).ToArray();
 		int[][] edges = [lowest, highest, alternating, alternatingOther, positional, positionalComplement];
 
-		foreach (int[] t0 in Chunks(Enumerable.Range(1 - Bound, 2 * Bound).ToArray()).Concat(RandomPolynomials(random, 1 - Bound, Bound)).Concat(edges))
+		foreach (int[] t0 in Chunks(Enumerable.Range(1 - bound, 2 * bound).ToArray()).Concat(RandomPolynomials(random, 1 - bound, bound)).Concat(edges))
 		{
 			byte[] encoded = new byte[416 + 9];
 			PrepareDestination(encoded);
 			kernel.EncodeT0(t0, encoded);
-			await AssertOutput(encoded, BitPack(t0, Bound - 1, Bound));
+			await AssertOutput(encoded, BitPack(t0, bound - 1, bound));
 
 			byte[] scalar = new byte[416];
 			MLDsaScalar.EncodeT0(t0, scalar);

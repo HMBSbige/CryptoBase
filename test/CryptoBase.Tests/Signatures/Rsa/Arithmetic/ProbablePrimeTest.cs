@@ -74,27 +74,27 @@ internal class ProbablePrimeTest
 	// A candidate drawn again is a prime, which would be kept if it were tested.
 	public static IEnumerable<Func<(int Bits, string Name, (int Candidate, CandidateOutcome Outcome)[] Script, int Limit, int Expected)>> Scripts()
 	{
-		const CandidateOutcome Pass = CandidateOutcome.Pass;
-		const CandidateOutcome Fail = CandidateOutcome.Fail;
-		const CandidateOutcome Redraw = CandidateOutcome.Redraw;
+		const CandidateOutcome pass = CandidateOutcome.Pass;
+		const CandidateOutcome fail = CandidateOutcome.Fail;
+		const CandidateOutcome redraw = CandidateOutcome.Redraw;
 
 		foreach (int bits in Lengths())
 		{
-			yield return () => (bits, "the first candidate", [(0, Pass), (1, Pass)], 10, 0);
-			yield return () => (bits, "the first of the second pair", [(-1, Pass), (-2, Pass), (0, Pass), (1, Pass)], 10, 0);
-			yield return () => (bits, "the second of a pair", [(-1, Pass), (0, Pass), (1, Pass)], 10, 0);
-			yield return () => (bits, "a prime that fails the tests before Miller-Rabin", [(0, Fail), (-1, Pass), (1, Pass), (2, Pass)], 10, 1);
-			yield return () => (bits, "a prime after failures before Miller-Rabin", [(-1, Fail), (-2, Fail), (2, Pass), (0, Pass)], 10, 2);
-			yield return () => (bits, "the first with the limit after it", [(0, Pass), (-1, Fail), (-2, Fail), (-3, Fail)], 2, 0);
-			yield return () => (bits, "the second at the limit", [(-1, Pass), (0, Pass)], 2, 0);
-			yield return () => (bits, "the limit before the second", [(-1, Pass), (0, Pass)], 1, -1);
-			yield return () => (bits, "the limit in failures before Miller-Rabin", [(-1, Pass), (-2, Fail), (-3, Fail), (0, Pass)], 3, -1);
-			yield return () => (bits, "the limit in composites", [(-1, Pass), (-2, Pass), (-3, Pass), (-4, Pass), (0, Pass)], 4, -1);
-			yield return () => (bits, "the limit just after a prime", [(-1, Pass), (-2, Pass), (-3, Pass), (0, Pass), (-4, Pass)], 4, 0);
-			yield return () => (bits, "a prime after ten times the limit drawn again", [.. Enumerable.Repeat((1, Redraw), 30), (0, Pass), (2, Pass)], 3, 0);
-			yield return () => (bits, "a prime with failures short of the limit and draws again around them", [(1, Redraw), (-1, Fail), (1, Redraw), (1, Redraw), (-2, Fail), (1, Redraw), (0, Pass), (2, Pass)], 3, 0);
-			yield return () => (bits, "draws again while the first of a pair is pending", [(-1, Pass), (1, Redraw), (1, Redraw), (0, Pass)], 2, 0);
-			yield return () => (bits, "the limit in failures with draws again between them", [(-1, Fail), (1, Redraw), (-2, Fail), (1, Redraw), (-3, Pass), (0, Pass)], 3, -1);
+			yield return () => (bits, "the first candidate", [(0, pass), (1, pass)], 10, 0);
+			yield return () => (bits, "the first of the second pair", [(-1, pass), (-2, pass), (0, pass), (1, pass)], 10, 0);
+			yield return () => (bits, "the second of a pair", [(-1, pass), (0, pass), (1, pass)], 10, 0);
+			yield return () => (bits, "a prime that fails the tests before Miller-Rabin", [(0, fail), (-1, pass), (1, pass), (2, pass)], 10, 1);
+			yield return () => (bits, "a prime after failures before Miller-Rabin", [(-1, fail), (-2, fail), (2, pass), (0, pass)], 10, 2);
+			yield return () => (bits, "the first with the limit after it", [(0, pass), (-1, fail), (-2, fail), (-3, fail)], 2, 0);
+			yield return () => (bits, "the second at the limit", [(-1, pass), (0, pass)], 2, 0);
+			yield return () => (bits, "the limit before the second", [(-1, pass), (0, pass)], 1, -1);
+			yield return () => (bits, "the limit in failures before Miller-Rabin", [(-1, pass), (-2, fail), (-3, fail), (0, pass)], 3, -1);
+			yield return () => (bits, "the limit in composites", [(-1, pass), (-2, pass), (-3, pass), (-4, pass), (0, pass)], 4, -1);
+			yield return () => (bits, "the limit just after a prime", [(-1, pass), (-2, pass), (-3, pass), (0, pass), (-4, pass)], 4, 0);
+			yield return () => (bits, "a prime after ten times the limit drawn again", [.. Enumerable.Repeat((1, redraw), 30), (0, pass), (2, pass)], 3, 0);
+			yield return () => (bits, "a prime with failures short of the limit and draws again around them", [(1, redraw), (-1, fail), (1, redraw), (1, redraw), (-2, fail), (1, redraw), (0, pass), (2, pass)], 3, 0);
+			yield return () => (bits, "draws again while the first of a pair is pending", [(-1, pass), (1, redraw), (1, redraw), (0, pass)], 2, 0);
+			yield return () => (bits, "the limit in failures with draws again between them", [(-1, fail), (1, redraw), (-2, fail), (1, redraw), (-3, pass), (0, pass)], 3, -1);
 		}
 	}
 
@@ -226,9 +226,9 @@ internal class ProbablePrimeTest
 	[Arguments(4)]
 	public async Task GenerateRunsAgainFromTheStart(int failingRuns)
 	{
-		const int Nlen = 2048;
-		(BigInteger[] primes, _) = Values[Nlen / 2];
-		int limbs = Nlen / 128;
+		const int nlen = 2048;
+		(BigInteger[] primes, _) = Values[nlen / 2];
+		int limbs = nlen / 128;
 		int runs = 0;
 		// The p that each search of q is given, without repeats.
 		List<BigInteger> others = [];
@@ -264,7 +264,7 @@ internal class ProbablePrimeTest
 
 		if (failingRuns < 4)
 		{
-			Generate(Nlen, p, q, CreateSource);
+			Generate(nlen, p, q, CreateSource);
 			BigInteger[] expectedOthers = failingRuns is 0 ? [primes[0]] : [primes[2], primes[0]];
 
 			using (Assert.Multiple())
@@ -276,7 +276,7 @@ internal class ProbablePrimeTest
 		}
 		else
 		{
-			await Assert.That(() => Generate(Nlen, p, q, CreateSource)).Throws<CryptographicException>();
+			await Assert.That(() => Generate(nlen, p, q, CreateSource)).Throws<CryptographicException>();
 
 			using (Assert.Multiple())
 			{
@@ -291,29 +291,29 @@ internal class ProbablePrimeTest
 	[Test]
 	public async Task BasesAreUniformInRange()
 	{
-		const int Bits = 1028;
-		const int Samples = 3000;
-		int limbs = (Bits + 63) / 64;
-		BigInteger w = BigInteger.One << Bits - 1 | BigInteger.One << Bits - 2 | 1;
+		const int bits = 1028;
+		const int samples = 3000;
+		int limbs = (bits + 63) / 64;
+		BigInteger w = BigInteger.One << bits - 1 | BigInteger.One << bits - 2 | 1;
 		ulong[] wMinusOne = ToLimbs(w - 1, limbs);
 		ulong[] b = new ulong[limbs];
 		int[] tops = new int[4];
 		int[] lows = new int[16];
 		int outOfRange = 0;
 
-		for (int i = 0; i < Samples; ++i)
+		for (int i = 0; i < samples; ++i)
 		{
-			SampleBase(b, wMinusOne, Bits);
+			SampleBase(b, wMinusOne, bits);
 			BigInteger value = ToBigInteger(b);
 			outOfRange += value < 2 || value > w - 2 ? 1 : 0;
-			++tops[(int)(value >> Bits - 2)];
+			++tops[(int)(value >> bits - 2)];
 			++lows[(int)(value & 15)];
 		}
 
-		// Below 3·2^(Bits − 2), the top two bits take three values alike.
+		// Below 3·2^(bits − 2), the top two bits take three values alike.
 		// The χ² bounds, of 2 and 15 degrees of freedom, are exceeded by a uniform base with probability below 10^-6.
-		double topChiSquare = tops.Take(3).Sum(static count => Math.Pow(count - Samples / 3.0, 2) / (Samples / 3.0));
-		double lowChiSquare = lows.Sum(static count => Math.Pow(count - Samples / 16.0, 2) / (Samples / 16.0));
+		double topChiSquare = tops.Take(3).Sum(static count => Math.Pow(count - samples / 3.0, 2) / (samples / 3.0));
+		double lowChiSquare = lows.Sum(static count => Math.Pow(count - samples / 16.0, 2) / (samples / 16.0));
 
 		using (Assert.Multiple())
 		{

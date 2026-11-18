@@ -5,5 +5,5 @@ namespace CryptoBase.Hashes.SM3;
 [InlineArray(136)]
 internal struct SM3LaneSchedule<TVector> where TVector : unmanaged
 {
-	private TVector t;
+	private TVector _element;
 }

@@ -277,7 +277,7 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 	{
 		Debug.Assert(source.Length % 3 is 0);
 
-		const int GroupLength = 48;
+		const int groupLength = 48;
 		Vector512<int> groups = Vector512.Create(0, 1, 2, 0, 3, 4, 5, 0, 6, 7, 8, 0, 9, 10, 11, 0);
 		Vector512<byte> fields = Vector512.Create(Vector128.Create(0, 1, 2, 0x80, 3, 4, 5, 0x80, 6, 7, 8, 0x80, 9, 10, 11, 0x80));
 		int count = 0;
@@ -286,11 +286,11 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 		fixed (byte* input = source)
 		fixed (int* output = destination)
 		{
-			for (; offset <= source.Length - GroupLength && count < destination.Length; offset += GroupLength)
+			for (; offset <= source.Length - groupLength && count < destination.Length; offset += groupLength)
 			{
 				Vector512<byte> bytes = offset <= source.Length - Vector512<byte>.Count
 					? Vector512.Load(input + offset)
-					: Avx512BW.MaskLoad(input + offset, Vector512.LessThan(Vector512<byte>.Indices, Vector512.Create((byte)GroupLength)), Vector512<byte>.Zero);
+					: Avx512BW.MaskLoad(input + offset, Vector512.LessThan(Vector512<byte>.Indices, Vector512.Create((byte)groupLength)), Vector512<byte>.Zero);
 				Vector512<byte> lanes = Avx512F.PermuteVar16x32(bytes.AsInt32(), groups).AsByte();
 				Vector512<int> candidates = Avx512BW.Shuffle(lanes, fields).AsInt32() & Vector512.Create(0x7FFFFF);
 				Vector512<int> accepted = Vector512.LessThan(candidates, Vector512.Create(Q));

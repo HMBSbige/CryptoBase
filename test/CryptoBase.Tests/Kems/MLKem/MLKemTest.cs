@@ -166,9 +166,9 @@ public class MLKemTest<T> where T : class, IKem<T>
 	[Test]
 	public async Task ConcurrentFirstUsesOfAGeneratedKeyAgree()
 	{
-		const int Threads = 8;
-		const int Keys = 16;
-		const int Calls = 4;
+		const int threads = 8;
+		const int keys = 16;
+		const int calls = 4;
 		byte[] seed = CreateDeterministicSource(T.PrivateSeedLength);
 		byte[] ciphertext;
 		byte[] sharedSecret;
@@ -182,13 +182,13 @@ public class MLKemTest<T> where T : class, IKem<T>
 
 		int mismatches = 0;
 
-		for (int i = 0; i < Keys; ++i)
+		for (int i = 0; i < keys; ++i)
 		{
 			using T kem = T.ImportPrivateSeed(seed);
-			using Barrier barrier = new(Threads);
-			Task<int>[] tasks = new Task<int>[Threads];
+			using Barrier barrier = new(threads);
+			Task<int>[] tasks = new Task<int>[threads];
 
-			for (int thread = 0; thread < Threads; ++thread)
+			for (int thread = 0; thread < threads; ++thread)
 			{
 				// One thread in four exports dk rather than decapsulates, so that both first uses race.
 				bool exports = thread % 4 is 3;
@@ -199,7 +199,7 @@ public class MLKemTest<T> where T : class, IKem<T>
 					start.SignalAndWait();
 					int threadMismatches = 0;
 
-					for (int call = 0; call < Calls; ++call)
+					for (int call = 0; call < calls; ++call)
 					{
 						bool matches = exports ? ExportDecapsulationKey(instance).AsSpan().SequenceEqual(decapsulationKey) : Decapsulate(instance, ciphertext).AsSpan().SequenceEqual(sharedSecret);
 

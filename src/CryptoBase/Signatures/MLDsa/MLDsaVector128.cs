@@ -410,7 +410,7 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 	{
 		Debug.Assert(source.Length % 3 is 0);
 
-		const int GroupLength = 12;
+		const int groupLength = 12;
 		Span<int> buffer = stackalloc int[N + 4];
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		ref int output = ref MemoryMarshal.GetReference(buffer);
@@ -420,7 +420,7 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 		int count = 0;
 		int offset = 0;
 
-		for (; offset <= source.Length - Vector128<byte>.Count && count < limit; offset += GroupLength)
+		for (; offset <= source.Length - Vector128<byte>.Count && count < limit; offset += groupLength)
 		{
 			Vector128<int> candidates = Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)offset), fields).AsInt32() & Vector128.Create(0x7FFFFF);
 			uint accepted = ExtractMask(Vector128.LessThan(candidates, Vector128.Create(Q)));

@@ -109,14 +109,14 @@ public class PathValidationExtensionTest
 	[MethodDataSource(nameof(NegativePathLimits))]
 	public async Task NegativePathLimitsThrow(string @case, byte[] contents)
 	{
-		const string NegativeSkipCerts = "A SkipCerts value is negative.";
+		const string negativeSkipCerts = "A SkipCerts value is negative.";
 
 		using (Assert.Multiple())
 		{
 			await Assert.That(() => BasicConstraints.Read(Sequence(Tlv(0x02, contents)))).ThrowsExactly<AsnContentException>().WithMessage("The pathLenConstraint is negative.").Because(@case);
-			await Assert.That(() => PolicyConstraints.Read(Sequence(Tlv(0x80, contents)))).ThrowsExactly<AsnContentException>().WithMessage(NegativeSkipCerts).Because(@case);
-			await Assert.That(() => PolicyConstraints.Read(Sequence(Tlv(0x81, contents)))).ThrowsExactly<AsnContentException>().WithMessage(NegativeSkipCerts).Because(@case);
-			await Assert.That(() => PolicyConstraints.ReadInhibitAnyPolicy(Tlv(0x02, contents))).ThrowsExactly<AsnContentException>().WithMessage(NegativeSkipCerts).Because(@case);
+			await Assert.That(() => PolicyConstraints.Read(Sequence(Tlv(0x80, contents)))).ThrowsExactly<AsnContentException>().WithMessage(negativeSkipCerts).Because(@case);
+			await Assert.That(() => PolicyConstraints.Read(Sequence(Tlv(0x81, contents)))).ThrowsExactly<AsnContentException>().WithMessage(negativeSkipCerts).Because(@case);
+			await Assert.That(() => PolicyConstraints.ReadInhibitAnyPolicy(Tlv(0x02, contents))).ThrowsExactly<AsnContentException>().WithMessage(negativeSkipCerts).Because(@case);
 		}
 	}
 

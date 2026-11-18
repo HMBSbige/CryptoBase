@@ -293,7 +293,7 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 
 		Debug.Assert(source.Length % 3 is 0);
 
-		const int GroupLength = 48;
+		const int groupLength = 48;
 		Vector512<int> groups = Vector512.Create(0, 1, 2, 0, 3, 4, 5, 0, 6, 7, 8, 0, 9, 10, 11, 0);
 		Vector512<short> lanes = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
 		int count = 0;
@@ -302,11 +302,11 @@ internal readonly partial struct MLKemAvx512 : IMLKemKernel
 		fixed (byte* input = source)
 		fixed (short* output = destination)
 		{
-			for (; offset <= source.Length - GroupLength && count < destination.Length; offset += GroupLength)
+			for (; offset <= source.Length - groupLength && count < destination.Length; offset += groupLength)
 			{
 				Vector512<byte> bytes = offset <= source.Length - Vector512<byte>.Count
 					? Vector512.Load(input + offset)
-					: Avx512BW.MaskLoad(input + offset, Vector512.LessThan(Vector512<byte>.Indices, Vector512.Create((byte)GroupLength)), Vector512<byte>.Zero);
+					: Avx512BW.MaskLoad(input + offset, Vector512.LessThan(Vector512<byte>.Indices, Vector512.Create((byte)groupLength)), Vector512<byte>.Zero);
 				Vector512<short> candidates = Decode12(Avx512F.PermuteVar16x32(bytes.AsInt32(), groups)).AsInt16();
 				Vector512<short> accepted = Vector512.LessThan(candidates, Vector512.Create(Q));
 				Vector512<short> packed = Avx512Vbmi2.Compress(Vector512<short>.Zero, accepted, candidates);

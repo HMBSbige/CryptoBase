@@ -278,9 +278,9 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 	{
 		Debug.Assert(source.Length % 3 is 0);
 
-		const int GroupLength = 24;
-		const int BufferLength = N + 16;
-		Span<short> buffer = stackalloc short[BufferLength];
+		const int groupLength = 24;
+		const int bufferLength = N + 16;
+		Span<short> buffer = stackalloc short[bufferLength];
 		ref byte input = ref MemoryMarshal.GetReference(source);
 		ref short output = ref MemoryMarshal.GetReference(buffer);
 		ref byte shuffles = ref MemoryMarshal.GetReference(MLKemVector128.RejectShuffles);
@@ -289,7 +289,7 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 		int count = 0;
 		int offset = 0;
 
-		for (; offset <= source.Length - GroupLength && count < limit; offset += GroupLength)
+		for (; offset <= source.Length - groupLength && count < limit; offset += groupLength)
 		{
 			Vector256<byte> window = Vector256.Create(Vector128.LoadUnsafe(ref input, (nuint)offset), Vector128.LoadUnsafe(ref input, (nuint)offset + 8));
 			Vector256<short> candidates = (Avx2.Shuffle(window, fields).AsUInt16() * Vector256.Create(16 | 1 << 16).AsUInt16() >>> 4).AsInt16();
