@@ -570,7 +570,7 @@ internal struct SM2KeyState
 	// The count is atomic, so that operations at once still reach the threshold, and it stops once the windows are there, which another count may have built.
 	// Threads that reach it at once may each build the windows, but only the first to finish publishes them, the others discard theirs, and the products with and without them agree.
 	// Whether an operation takes the windows depends on the counts alone.
-	private ECPointTable<TCurve, SM2CurveField, SM2Order>? GetTable<TCurve>(ref ECPointTable<TCurve, SM2CurveField, SM2Order>? slot, ref int count, int threshold) where TCurve : struct, IECCurve
+	private readonly ECPointTable<TCurve, SM2CurveField, SM2Order>? GetTable<TCurve>(ref ECPointTable<TCurve, SM2CurveField, SM2Order>? slot, ref int count, int threshold) where TCurve : struct, IECCurve
 	{
 		if (slot is { } table)
 		{
@@ -580,7 +580,7 @@ internal struct SM2KeyState
 		return Interlocked.Increment(ref count) < threshold ? null : PublishTable(ref slot);
 	}
 
-	private ECPointTable<TCurve, SM2CurveField, SM2Order> PublishTable<TCurve>(ref ECPointTable<TCurve, SM2CurveField, SM2Order>? slot) where TCurve : struct, IECCurve
+	private readonly ECPointTable<TCurve, SM2CurveField, SM2Order> PublishTable<TCurve>(ref ECPointTable<TCurve, SM2CurveField, SM2Order>? slot) where TCurve : struct, IECCurve
 	{
 		ECPointTable<TCurve, SM2CurveField, SM2Order> table = new(in _key.Key.PublicPoint);
 		return Interlocked.CompareExchange(ref slot, table, null) ?? table;

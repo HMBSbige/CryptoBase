@@ -32,7 +32,7 @@ internal struct AesXtsPacked8Policy : IAesModePolicy
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Prepare8(ref byte source, nuint offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3, out Vector128<byte> v4, out Vector128<byte> v5, out Vector128<byte> v6, out Vector128<byte> v7)
+	public readonly void Prepare8(ref byte source, nuint offset, out Vector128<byte> v0, out Vector128<byte> v1, out Vector128<byte> v2, out Vector128<byte> v3, out Vector128<byte> v4, out Vector128<byte> v5, out Vector128<byte> v6, out Vector128<byte> v7)
 	{
 		v0 = Vector128.LoadUnsafe(ref source, offset) ^ _t01.GetLower();
 		v1 = Vector128.LoadUnsafe(ref source, offset + 16) ^ _t01.GetUpper();
@@ -81,7 +81,7 @@ internal struct AesXtsPacked8Policy : IAesModePolicy
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vector128<byte> Prepare1(ref byte source, nuint offset)
+	public readonly Vector128<byte> Prepare1(ref byte source, nuint offset)
 	{
 		return _blocks.Prepare1(ref source, offset);
 	}

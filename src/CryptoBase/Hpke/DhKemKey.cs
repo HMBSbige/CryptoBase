@@ -79,7 +79,7 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 		}
 	}
 
-	internal int ExportPrivateSeed(Span<byte> destination)
+	internal readonly int ExportPrivateSeed(Span<byte> destination)
 	{
 		if (!HasPrivateSeed)
 		{
@@ -273,7 +273,7 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 
 	// Writes enc and DH(skE, pkR).
 	// A derived ephemeral key goes through a key of its own, which is cleared.
-	private void GenerateEphemeral(bool derive, ReadOnlySpan<byte> ephemeralInputKeyMaterial, Span<byte> encapsulatedKey, Span<byte> dh)
+	private readonly void GenerateEphemeral(bool derive, ReadOnlySpan<byte> ephemeralInputKeyMaterial, Span<byte> encapsulatedKey, Span<byte> dh)
 	{
 		if (!derive)
 		{

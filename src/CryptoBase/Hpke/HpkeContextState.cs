@@ -278,5 +278,5 @@ internal struct HpkeContextState
 		throw new CryptographicException("The context has reached its message limit.");
 	}
 
-	private union AeadCipher(GcmMode<AesCipher>, ChaCha20Poly1305Cipher);
+	private readonly union AeadCipher(GcmMode<AesCipher>, ChaCha20Poly1305Cipher);
 }

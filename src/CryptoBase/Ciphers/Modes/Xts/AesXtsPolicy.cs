@@ -104,7 +104,7 @@ internal struct AesXtsPolicy : IAesModePolicy
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vector128<byte> Prepare1(ref byte source, nuint offset)
+	public readonly Vector128<byte> Prepare1(ref byte source, nuint offset)
 	{
 		return Vector128.LoadUnsafe(ref source, offset) ^ _tweak;
 	}
