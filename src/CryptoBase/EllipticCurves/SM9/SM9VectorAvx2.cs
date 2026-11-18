@@ -195,5 +195,4 @@ internal readonly struct SM9VectorAvx2 : ISM9Vector<SM9VectorAvx2>
 	{
 		throw new UnreachableException();
 	}
-
 }

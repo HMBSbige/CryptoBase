@@ -161,7 +161,6 @@ internal sealed class BenchmarkSession(MeasurementSettings settings, ImmutableAr
 				outcome ??= new CellOutcome.Failed("The cell has no runner.");
 				Report(algorithm, operation, inputSizes[i], outcome, outcome is CellOutcome.NotApplicable ? null : warmup?.Summary);
 			}
-
 		}
 		finally
 		{

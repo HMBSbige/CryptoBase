@@ -38,5 +38,5 @@ public readonly struct RevokedCertificate
 	/// <summary>
 	/// Gets the entry's extensions, in the order of the encoding; empty if there are none.
 	/// </summary>
-	public IReadOnlyList<CertificateExtension> Extensions { get => field ?? []; }
+	public IReadOnlyList<CertificateExtension> Extensions => field ?? [];
 }

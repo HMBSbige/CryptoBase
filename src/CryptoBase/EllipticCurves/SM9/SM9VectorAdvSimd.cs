@@ -171,5 +171,4 @@ internal readonly struct SM9VectorAdvSimd : ISM9Vector<SM9VectorAdvSimd>
 	{
 		throw new UnreachableException();
 	}
-
 }

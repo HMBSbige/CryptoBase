@@ -148,7 +148,6 @@ internal readonly unsafe struct MontgomeryKernelAvx2<TWindow> : IMontgomeryKerne
 		}
 	}
 
-
 	// The row of each digit b_i of the right operand: b_i as a double, then the parts of its products with the first four digits of the left one that lanes 0 to 4 gain at iteration i, lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a3·b_i).
 	// Four digits at a time, transposed from vectors of a part each.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

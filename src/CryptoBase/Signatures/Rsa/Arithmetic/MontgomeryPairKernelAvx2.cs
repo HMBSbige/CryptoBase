@@ -146,7 +146,6 @@ internal readonly unsafe struct MontgomeryPairKernelAvx2<TWindow> : IMontgomeryP
 		}
 	}
 
-
 	// The row of each digit: b of each modulus as a double, then the parts of lanes 0 to 3 of each that come from it, as MontgomeryPairKernelAvx512.Products takes them, interleaved likewise: lo(a0·b_i), then hi(a_{j−1}·b_i) + lo(a_j·b_i), then hi(a2·b_i).
 	// Two digits of each modulus at a time.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

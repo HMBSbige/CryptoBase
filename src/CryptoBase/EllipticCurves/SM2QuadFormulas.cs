@@ -375,7 +375,6 @@ internal static class SM2QuadFormulas
 		state.Q.L8 = Blend3(entry.EB.L8, Broadcast0(alpha.L8));
 	}
 
-
 	// 4·point, as DoubleTwice with a count of 1.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void DoubleTwice(ref SM2QuadState state)
@@ -725,7 +724,6 @@ internal static class SM2QuadFormulas
 		right.L8 = g8 + (g7 >> SM2Field29.Bits);
 		SM2Field29x4Avx2.Multiply(in left, in right, out second);
 	}
-
 
 	// 2·point + entry in six rounds, by the doubling of DoubleTwice and the formulas of ECFormulas.AddDistinct without the factors 2 and 4 of R, I and Z3.
 	// The entry must be neither equal nor opposite to the double, and neither may be the point at infinity; other lanes give some point, which the masks discard.
@@ -1121,7 +1119,6 @@ internal static class SM2QuadFormulas
 		state.P.L8 = Blend2(Avx2.Permute4x64(Blend0(u8 + (u7 >> SM2Field29.Bits), f8), 0xE8), Broadcast0(k8));
 		state.Q.L8 = Blend3(k8, Broadcast0(f8));
 	}
-
 
 	// The entry of digit, read by a masked scan of the table, with Y negated as 4p − Y for a digit below 0.
 	// A digit of 0 gives zeros, which the masks discard.
@@ -1666,7 +1663,6 @@ internal static class SM2QuadFormulas
 		state.Q.L8 = Blend3(k8, Broadcast0(f8));
 	}
 
-
 	// 2·point in three rounds: E0 and E1 of DoubleTwice and [α′, ·, ·, ·] of O0 alone, with their bounds; X′ and Y′ go to the state carried.
 	[SkipLocalsInit]
 	internal static void DoubleOnce(ref SM2QuadState state)
@@ -1783,7 +1779,6 @@ internal static class SM2QuadFormulas
 		state.P.L8 = MaskedBlend3(MaskedBlend0(Avx2.Permute4x64(u8, 0xC8), n8), first.L8 << 1);
 		state.Q.L8 = MaskedBlend3(MaskedBlend1(u8, second.L8), n8);
 	}
-
 
 	// The entry (x, y, 1) of an affine point of the form E of SM2Field52, reduced.
 	// Each coordinate a·2^260 becomes a·2^261: its radix-2^52 limbs are doubled and cut into radix-2^29 limbs, limbs 2m + 1 taking as a sum, below 2^30, the bits that cross from one radix-2^52 limb into the next, for Reduce.

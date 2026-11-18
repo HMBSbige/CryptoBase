@@ -171,5 +171,4 @@ internal readonly struct SM9VectorSse41 : ISM9Vector<SM9VectorSse41>
 	{
 		throw new UnreachableException();
 	}
-
 }
