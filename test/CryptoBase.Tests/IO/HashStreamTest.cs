@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes.Blake3;
 using CryptoBase.IO;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -9,7 +8,6 @@ using Sha256Hasher = CryptoBase.Hashes.HashAlgorithm<CryptoBase.Hashes.Sha2.Sha2
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class HashStreamTest
 {
 	[Test]

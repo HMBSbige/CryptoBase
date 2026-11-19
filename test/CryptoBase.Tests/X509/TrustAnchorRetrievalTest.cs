@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.X509;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.TestUtils;
@@ -12,7 +11,6 @@ using static CryptoBase.Tests.X509.X509TestUtils;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class TrustAnchorRetrievalTest
 {
 	private const string IssuerUri = "http://ca.test/issuer.cer";

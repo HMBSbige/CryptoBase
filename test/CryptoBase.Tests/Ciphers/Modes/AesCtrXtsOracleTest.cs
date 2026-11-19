@@ -1,6 +1,5 @@
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 using BclAes = System.Security.Cryptography.Aes;
@@ -94,7 +93,6 @@ public class AesCtrXtsOracleTest
 	[Arguments(1)]
 	[Arguments(15)]
 	[Arguments(129)]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task CtrRejectsBeforeWritingOrAdvancingState(int consumed)
 	{
 		byte[] key = CreateDeterministicSource(16);

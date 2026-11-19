@@ -3,7 +3,6 @@ using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.Ciphers.Streams;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Streams;
@@ -23,7 +22,6 @@ public class StreamCipherContractTest
 
 	[Test]
 	[MethodDataSource(nameof(CipherCases))]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 	public async Task RejectedDestinationDoesNotAdvanceStateOrWrite(StreamCipherCase cipher)
 	{
 		using IStreamCipher subject = cipher.Create();
@@ -44,7 +42,6 @@ public class StreamCipherContractTest
 
 	[Test]
 	[MethodDataSource(nameof(CipherCases))]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The cipher is used after disposal on purpose.")]
 	public async Task DisposalIsIdempotentAndEndsXor(StreamCipherCase cipher)
 	{
 		IStreamCipher subject = cipher.Create();
@@ -59,7 +56,6 @@ public class StreamCipherContractTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The ciphers are used after disposal on purpose.")]
 	public async Task DisposalEndsCounterChanges()
 	{
 		ChaCha20Cipher chaCha20 = new(CreateDeterministicSource(ChaCha20Cipher.KeySize), CreateDeterministicSource(ChaCha20Cipher.IVSize));

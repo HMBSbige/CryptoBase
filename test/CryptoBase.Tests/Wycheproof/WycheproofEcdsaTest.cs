@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.EllipticCurves;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
 using static CryptoBase.Tests.Signatures.Ecdsa.EcdsaKnownAnswerTest;
@@ -143,7 +142,6 @@ public class WycheproofEcdsaTest
 
 	// Every group key is valid, and the files have no acceptable vectors.
 	// The first verification with an instance goes without the table of its public key, and the later ones use it.
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifyVerification<T>(EcdsaVerifyTestVector vector) where T : class, IEcdsa<T>
 	{
 		SignatureAlgorithm algorithm = AlgorithmOf(vector);

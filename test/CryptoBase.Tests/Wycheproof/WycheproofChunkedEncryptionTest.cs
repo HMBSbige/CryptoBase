@@ -2,13 +2,11 @@ using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Aead;
 using CryptoBase.IO;
 using CryptoBase.Tests.IO;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 
 namespace CryptoBase.Tests.Wycheproof;
 
 // Applies the vectors as doc/c2sp_chunked_encryption.md describes, to the one-shot API, streaming encryption and decryption, and random access.
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class WycheproofChunkedEncryptionTest
 {
 	private const string Cobblestone128File = "c2sp_chunked_encryption_aes_128_gcm_test.json";

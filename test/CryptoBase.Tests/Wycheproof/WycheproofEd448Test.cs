@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Tests.Signatures.EdDsa;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Signatures.EdDsa.Ed448TestUtils;
 
 namespace CryptoBase.Tests.Wycheproof;
@@ -13,7 +12,6 @@ public class WycheproofEd448Test
 	// The reference follows the verification policy of the library, so it decides each vector as Wycheproof does.
 	[Test]
 	[WycheproofVectors<EddsaVerifyTestGroup, EddsaVerifyTestVector>("ed448_test.json")]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	public async Task Verification(EddsaVerifyTestVector vector)
 	{
 		using Ed448 key = Ed448.ImportSubjectPublicKeyInfo(vector.PublicKeyDer);

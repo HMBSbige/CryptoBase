@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Kems;
 using CryptoBase.Hpke;
 using CryptoBase.Kems.Hybrid;
 using CryptoBase.Kems.MLKem;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Kems.KemTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
@@ -10,7 +9,6 @@ namespace CryptoBase.Tests.Kems;
 
 // Checks every IKem against the behavior its documentation promises.
 // The known-answer and differential tests check the values.
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 [GenerateGenericTest(typeof(MLKem512))]
 [GenerateGenericTest(typeof(MLKem768))]
 [GenerateGenericTest(typeof(MLKem1024))]

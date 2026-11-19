@@ -2,7 +2,6 @@ using CryptoBase.EllipticCurves.SM9;
 using CryptoBase.SM9;
 using CryptoBase.Tests.EllipticCurves;
 using CryptoBase.Tests.EllipticCurves.SM9;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 using static CryptoBase.Tests.EllipticCurves.SM9.SM9Reference;
@@ -12,7 +11,6 @@ using SM9EllipticCurveTestUtils = CryptoBase.Tests.EllipticCurves.SM9.SM9TestUti
 
 namespace CryptoBase.Tests.SM9;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class SM9EncryptionTest
 {
 	private static readonly byte[] Bob = "Bob"u8.ToArray();

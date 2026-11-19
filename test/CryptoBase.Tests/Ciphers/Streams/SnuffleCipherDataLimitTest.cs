@@ -1,5 +1,4 @@
 using CryptoBase.Ciphers.Streams;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Ciphers.Streams.SnuffleCipherTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
@@ -9,7 +8,6 @@ public class SnuffleCipherDataLimitTest
 {
 	[Test]
 	[MethodDataSource(typeof(SnuffleCipherTestUtils), nameof(CipherCases))]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 	public async Task CounterLimitRejectsWholeOperationWithoutAdvancingState(SnuffleCase cipher)
 	{
 		using SnuffleCipher crypto = cipher.Create();

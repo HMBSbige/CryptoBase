@@ -3,13 +3,11 @@ using CryptoBase.Hashes;
 using CryptoBase.Hashes.Blake3;
 using CryptoBase.Hashes.Sha2;
 using CryptoBase.IO;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class StreamHashExtensionsTest
 {
 	[Test]

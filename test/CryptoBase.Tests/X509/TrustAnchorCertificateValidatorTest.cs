@@ -7,7 +7,6 @@ using CryptoBase.Signatures.Rsa;
 using CryptoBase.SM2;
 using CryptoBase.Tests.Signatures.Rsa;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -19,7 +18,6 @@ using static CryptoBase.Tests.X509.X509TestUtils;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class TrustAnchorCertificateValidatorTest
 {
 	private const string CodeSigningOid = "1.3.6.1.5.5.7.3.3";

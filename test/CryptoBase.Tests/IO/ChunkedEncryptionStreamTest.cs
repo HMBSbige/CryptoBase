@@ -1,13 +1,11 @@
 using CryptoBase.Ciphers.Aead;
 using CryptoBase.IO;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.IO.ChunkedTestUtils;
 using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class ChunkedEncryptionStreamTest
 {
 	// Whether writes split chunks, end on their boundaries or span several, the one-shot decryption, which the vectors check, must recover the message.

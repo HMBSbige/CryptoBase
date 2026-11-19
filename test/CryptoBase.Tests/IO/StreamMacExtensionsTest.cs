@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Macs;
 using CryptoBase.IO;
 using CryptoBase.Tests.Wycheproof;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 using HmacSha256 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha2.Sha256Core>;
@@ -9,7 +8,6 @@ using HmacSha512 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha2.Sha
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class StreamMacExtensionsTest
 {
 	private static readonly byte[] Key = CreateDeterministicSource(32);

@@ -100,7 +100,6 @@ internal class ProbablePrimeTest
 
 	[Test]
 	[MethodDataSource(nameof(Scripts))]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task KeepsWhatOneAfterTheOtherKeeps(int bits, string name, (int Candidate, CandidateOutcome Outcome)[] script, int limit, int expected)
 	{
 		(BigInteger[] primes, BigInteger[] composites) = Values[bits];

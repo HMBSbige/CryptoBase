@@ -1,13 +1,11 @@
 using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Aead;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Aead;
 
 // Checks every IChunkedCipher against the behavior its documentation promises; the Wycheproof tests check the values.
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 [GenerateGenericTest(typeof(Cobblestone128Cipher))]
 [GenerateGenericTest(typeof(Cobblestone256Cipher))]
 public class ChunkedCipherContractTest<T> where T : class, IChunkedCipher<T>

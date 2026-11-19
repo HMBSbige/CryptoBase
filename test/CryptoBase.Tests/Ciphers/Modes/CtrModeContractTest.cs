@@ -4,7 +4,6 @@ using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.Ciphers.Modes.Ctr;
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Intrinsics;
 using static CryptoBase.Tests.TestUtils;
 
@@ -15,7 +14,6 @@ public class CtrModeContractTest
 	[Test]
 	[Arguments(15)]
 	[Arguments(17)]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task CounterMustBeExactlyOneBlock(int length)
 	{
 		byte[] key = CreateDeterministicSource(16);

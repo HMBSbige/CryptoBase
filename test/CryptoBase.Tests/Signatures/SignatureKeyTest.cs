@@ -7,7 +7,6 @@ using CryptoBase.Signatures.Rsa;
 using CryptoBase.SM2;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.Tests.Signatures.Rsa;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -16,7 +15,6 @@ using BclMLDsa = System.Security.Cryptography.MLDsa;
 
 namespace CryptoBase.Tests.Signatures;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 internal class SignatureKeyTest
 {
 	private const string P256Oid = "1.2.840.10045.3.1.7";

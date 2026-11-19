@@ -1,5 +1,4 @@
 using CryptoBase.Signatures.MLDsa;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Signatures.MLDsa.MLDsaTestUtils;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 
@@ -71,7 +70,6 @@ public class WycheproofMLDsaTest
 	}
 
 	// The invalid vectors have a public key of the wrong length, a context over 255 bytes, or a signature that must not verify.
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifyVerification<T>(MLDsaVerifyTestVector vector) where T : class, IMLDsa<T>
 	{
 		if (vector.PublicKey.Length != T.PublicKeyLength)
@@ -121,7 +119,6 @@ public class WycheproofMLDsaTest
 	}
 
 	// The invalid vectors have a seed of the wrong length or a context over 255 bytes.
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifySigningFromSeed<T>(MLDsaSignTestVector vector) where T : class, IMLDsa<T>
 	{
 		byte[] seed = vector.PrivateSeed ?? throw new InvalidOperationException("A seed vector has a seed.");
@@ -165,7 +162,6 @@ public class WycheproofMLDsaTest
 	}
 
 	// The invalid vectors have a private key of the wrong length or with s1 or s2 out of range, or a context over 255 bytes.
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifySigningFromPrivateKey<T>(MLDsaSignTestVector vector) where T : class, IMLDsa<T>
 	{
 		byte[] privateKey = vector.PrivateKey ?? throw new InvalidOperationException("A private key vector has a private key.");
@@ -197,7 +193,6 @@ public class WycheproofMLDsaTest
 	}
 
 	// Signing reproduces the signature from the message and from μ alike, with rnd zero for the deterministic variant.
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	private static async Task VerifySigning<T>(T key, MLDsaSignTestVector vector) where T : class, IMLDsa<T>
 	{
 		byte[] randomness = vector.Rnd ?? new byte[32];

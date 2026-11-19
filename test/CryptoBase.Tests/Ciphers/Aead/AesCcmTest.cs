@@ -2,14 +2,12 @@ using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.Ciphers.Modes.Ccm;
 using CryptoBase.Tests.Ciphers.Modes;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 using BclAes = System.Security.Cryptography.Aes;
 
 namespace CryptoBase.Tests.Ciphers.Aead;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class AesCcmTest
 {
 	private const int MaxMessageLength = (1 << 24) - 1;

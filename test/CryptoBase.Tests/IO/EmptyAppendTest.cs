@@ -10,7 +10,6 @@ using CryptoBase.Hashes.Sha3;
 using CryptoBase.Hashes.SM3;
 using CryptoBase.Macs.Hmac;
 using CryptoBase.Tests.Hashes.Blake3;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using static CryptoBase.Tests.TestUtils;
 
@@ -165,7 +164,6 @@ public class EmptyAppendTest
 		return Run(mac.Append, mac.GetCurrentMac, mac.GetMacAndReset, HmacAlgorithm<TCore>.MacLength, operations, appendEmpty, null);
 	}
 
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Run calls observe only before it returns, while the hasher is alive.")]
 	private static List<byte[]> RunBlake3(Blake3Mode mode, int[] operations, bool appendEmpty, ref bool sawChunkMode, ref bool sawGroupModeAfterRead)
 	{
 		using Blake3HashAlgorithm hasher = Blake3TestUtils.CreateHasher(mode);

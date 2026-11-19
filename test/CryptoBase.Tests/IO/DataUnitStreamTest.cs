@@ -3,7 +3,6 @@ using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.IO;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.IO.XtsTestUtils;
@@ -11,7 +10,6 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class DataUnitStreamTest
 {
 	private const int DefaultDataUnitSize = 512;

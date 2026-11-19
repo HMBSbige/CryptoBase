@@ -1,5 +1,4 @@
 using CryptoBase.Signatures.Rsa;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -147,7 +146,6 @@ public class RsaOperationTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task ApplyRejectsInputsNotBelowTheModulus()
 	{
 		TestKey key = TestKey.Generate(new Random(42), 512, 512, F4);
@@ -203,7 +201,6 @@ public class RsaOperationTest
 
 	// Composite p satisfies every congruence of the key but not RSA: the check after signing fails, and nothing is written.
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task ApplyThrowsWhenTheCheckFails()
 	{
 		Random random = new(43);
@@ -350,7 +347,6 @@ public class RsaOperationTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Parallel.For returns before disposal.")]
 	public async Task ApplyRunsConcurrently()
 	{
 		using RSA rsa = RSA.Create(2048);
@@ -382,7 +378,6 @@ public class RsaOperationTest
 	[Test]
 	[Explicit]
 	[NotInParallel]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The threads are joined before disposal.")]
 	public async Task ApplyStaysRightWhileTheHeapCompacts()
 	{
 		List<(RsaPrivateOperation Key, BigInteger N)> keys = [];

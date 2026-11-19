@@ -2,11 +2,9 @@ using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Hashes.Sha2;
 using CryptoBase.Otp;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Tests.Otp;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class TotpTest
 {
 	// RFC 6238 Appendix B with the per-hash seeds of verified erratum 2866, which match the reference code of Appendix A.

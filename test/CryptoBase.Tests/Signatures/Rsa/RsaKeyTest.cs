@@ -1,6 +1,5 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Rsa;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -116,7 +115,6 @@ internal class RsaKeyTest
 	[Arguments(1034)]
 	[Arguments(2048)]
 	[Arguments(16384)]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task SupportsTheAlgorithmsThatFitTheModulus(int bits)
 	{
 		using RsaKey key = RsaKey.ImportRsaPublicKey(RsaPublicKey(Modulus(bits), 65537));
@@ -326,7 +324,6 @@ internal class RsaKeyTest
 
 	// The internal Sign with a given salt, for known-answer tests, rejects a salt of the wrong length before anything is written.
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task GivenSaltsMustFit()
 	{
 		using RsaKey key = ImportKey();
@@ -343,7 +340,6 @@ internal class RsaKeyTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Parallel.For returns before disposal.")]
 	public async Task SignsAndVerifiesConcurrently()
 	{
 		using RsaKey key = ImportKey();

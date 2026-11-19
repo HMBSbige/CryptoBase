@@ -4,7 +4,6 @@ using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -439,7 +438,6 @@ public class CertificateTest
 
 	// Threads that ask at once all get the instance decoded first, and each its own exception.
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 	public async Task ExtensionsDecodeOnceForConcurrentCallers()
 	{
 		const int threads = 16;

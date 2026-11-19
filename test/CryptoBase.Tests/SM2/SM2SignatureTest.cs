@@ -7,8 +7,6 @@ using static CryptoBase.Tests.SM2.SM2TestUtils;
 
 namespace CryptoBase.Tests.SM2;
 
-// Assert.That runs its delegates at the await, and Parallel.For before it returns, so the delegates read the keys before they are disposed.
-// ReSharper disable AccessToDisposedClosure
 public class SM2SignatureTest
 {
 	private const string CurveOid = "1.2.156.10197.1.301";

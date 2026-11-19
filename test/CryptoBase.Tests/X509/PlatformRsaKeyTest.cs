@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Tests.Wycheproof;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
 using System.Reflection;
@@ -15,7 +14,6 @@ using RsaKey = CryptoBase.Signatures.Rsa.RsaKey;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class PlatformRsaKeyTest
 {
 	private static readonly byte[] RsaEncryption = Sequence(Oid("1.2.840.113549.1.1.1"), [0x05, 0x00]);

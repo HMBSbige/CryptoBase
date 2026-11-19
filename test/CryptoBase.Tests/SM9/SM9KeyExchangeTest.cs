@@ -1,6 +1,5 @@
 using CryptoBase.SM9;
 using CryptoBase.Tests.EllipticCurves.SM9;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using static CryptoBase.Tests.EllipticCurves.SM9.SM9Reference;
 using static CryptoBase.Tests.SM9.SM9TestUtils;
@@ -8,7 +7,6 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.SM9;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class SM9KeyExchangeTest
 {
 	private static readonly byte[] Alice = "Alice"u8.ToArray();

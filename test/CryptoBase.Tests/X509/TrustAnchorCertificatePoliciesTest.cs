@@ -3,7 +3,6 @@ using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -13,7 +12,6 @@ using static CryptoBase.Tests.X509.X509TestUtils;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class TrustAnchorCertificatePoliciesTest
 {
 	private const string P1 = "1.3.6.1.4.1.55738.77.1";

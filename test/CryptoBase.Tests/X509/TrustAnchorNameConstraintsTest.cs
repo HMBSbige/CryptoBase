@@ -1,6 +1,5 @@
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using static CryptoBase.Tests.X509.TestPki;
@@ -279,7 +278,6 @@ public class TrustAnchorNameConstraintsTest
 
 	// An identifier beyond what AsnDecoder reads does not decode, so that nothing further in a validation meets one: a CA of the peer's own, with name constraints, needs no trust anchor to reach the check of the names.
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the authority and the key are disposed.")]
 	public async Task ANameWithAnObjectIdentifierBeyondTheLimitsOfTheBclDoesNotDecode()
 	{
 		using Authority attacker = Authority.CreateRoot("CN=Attacker", more: [NameConstraints([DnsName("example.com")])]);

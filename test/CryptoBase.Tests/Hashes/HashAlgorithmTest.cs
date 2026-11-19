@@ -1,13 +1,11 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha2;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class HashAlgorithmTest
 {
 	[Test]

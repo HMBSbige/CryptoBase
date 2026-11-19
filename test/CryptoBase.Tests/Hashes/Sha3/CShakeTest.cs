@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha3;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using static CryptoBase.Tests.TestUtils;
 
@@ -200,7 +199,6 @@ public class CShakeTest
 	[Test]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the instance is disposed.")]
 	public async Task ReadingRejectsInputUntilReset<T>() where T : class, IXof<T>
 	{
 		int rate = XofContractTest.BlockLength<T>();
@@ -237,7 +235,6 @@ public class CShakeTest
 	[Test]
 	[GenerateGenericTest(typeof(CShake128Xof))]
 	[GenerateGenericTest(typeof(CShake256Xof))]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before reading is disposed.")]
 	public async Task CloneIsIndependent<T>() where T : class, IXof<T>
 	{
 		int rate = XofContractTest.BlockLength<T>();

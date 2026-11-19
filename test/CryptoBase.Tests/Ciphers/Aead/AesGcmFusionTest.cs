@@ -3,7 +3,6 @@ using CryptoBase.Ciphers.Modes;
 using CryptoBase.Ciphers.Modes.Gcm;
 using CryptoBase.Tests.Ciphers.Modes;
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -170,7 +169,6 @@ public class AesGcmFusionTest
 		return decrypt ? VerifyKernel<Decryption>(keyLength, scenario) : VerifyKernel<Encryption>(keyLength, scenario);
 	}
 
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 	private static async Task VerifyKernel<TDirection>(int keyLength, (int BlocksPerBatch, int Length, string CounterHex) scenario) where TDirection : struct, IBlockDirection
 	{
 		if (!AesCipherArm.IsSupported && (!AesCipherX86.IsSupported || !GHashX86.IsSupported))

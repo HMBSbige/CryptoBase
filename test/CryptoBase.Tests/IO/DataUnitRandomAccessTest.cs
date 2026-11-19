@@ -5,13 +5,11 @@ using CryptoBase.Ciphers.Modes;
 using CryptoBase.IO;
 using CryptoBase.IO.DataUnits;
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.IO.XtsTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class DataUnitRandomAccessTest
 {
 	private const int DefaultDataUnitSize = 512;

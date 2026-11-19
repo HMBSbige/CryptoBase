@@ -8,8 +8,6 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.SM2;
 
-// Assert.That runs its delegates at the await, and Parallel.For before it returns, so the delegates read the keys before they are disposed.
-// ReSharper disable AccessToDisposedClosure
 public class SM2EncryptionTest
 {
 	// Around the 32-byte blocks of the key stream and the 64-byte blocks of SM3, and the groups of vector lanes and the 4096-byte chunks that take the key stream, from block 1 in decryption and from block 2 in encryption.

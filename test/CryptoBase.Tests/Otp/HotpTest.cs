@@ -1,11 +1,9 @@
 using CryptoBase.Hashes.MD5;
 using CryptoBase.Hashes.Sha1;
 using CryptoBase.Otp;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Tests.Otp;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class HotpTest
 {
 	// RFC 4226 Appendix D.

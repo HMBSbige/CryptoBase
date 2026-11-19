@@ -1,5 +1,4 @@
 using CryptoBase.IO;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.IO.StreamTestUtils;
 using static CryptoBase.Tests.TestUtils;
@@ -8,7 +7,6 @@ using HmacSha512 = CryptoBase.Macs.Hmac.HmacAlgorithm<CryptoBase.Hashes.Sha2.Sha
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class MacStreamTest
 {
 	// Longer than the SHA-256 block size, so HMAC hashes the key first.

@@ -4,7 +4,6 @@ using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Tests.Signatures;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -12,7 +11,6 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class PlatformEcdsaKeyTest
 {
 	[Test]

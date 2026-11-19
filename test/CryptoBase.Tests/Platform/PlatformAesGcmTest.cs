@@ -1,7 +1,6 @@
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
 using CryptoBase.Platform;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
@@ -9,7 +8,6 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Platform;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class PlatformAesGcmTest
 {
 	[Test]

@@ -4,7 +4,6 @@ using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha3;
 using CryptoBase.Signatures.MLDsa;
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Signatures.MLDsa.MLDsaTestUtils;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -14,7 +13,6 @@ namespace CryptoBase.Tests.Signatures.MLDsa;
 
 // Differential tests against the platform implementation, where there is one.
 // Not every platform signs or verifies μ itself, so μ is checked through its message methods.
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 [GenerateGenericTest(typeof(MLDsa44))]
 [GenerateGenericTest(typeof(MLDsa65))]
 [GenerateGenericTest(typeof(MLDsa87))]

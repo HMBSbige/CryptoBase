@@ -1,6 +1,5 @@
 using CryptoBase.Hashes;
 using CryptoBase.Hashes.Sha3;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.TestUtils;
 
@@ -159,7 +158,6 @@ public class ShakeTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before reading is disposed.")]
 	public async Task CloneCopiesInputAndReadPosition()
 	{
 		byte[] source = CreateDeterministicSource(200);

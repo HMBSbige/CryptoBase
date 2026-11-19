@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Tests.EllipticCurves.Curve25519;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,7 +14,6 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.EdDsa;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class Ed25519Test
 {
 	private const string Ed25519Oid = "1.3.101.112";

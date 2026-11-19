@@ -1,7 +1,6 @@
 using CryptoBase.IO;
 using CryptoBase.Platform;
 using CryptoBase.Tests.Hashes;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
@@ -10,7 +9,6 @@ using ManagedSha256 = CryptoBase.Hashes.HashAlgorithm<CryptoBase.Hashes.Sha2.Sha
 
 namespace CryptoBase.Tests.Platform;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class PlatformSha256Test
 {
 	// FIPS 180-2, appendix B

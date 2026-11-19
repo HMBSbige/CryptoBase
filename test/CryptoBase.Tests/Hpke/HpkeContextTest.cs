@@ -1,6 +1,5 @@
 using CryptoBase.Hpke;
 using CryptoBase.Tests.Kems;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Hpke.HpkeTestUtils;
 using static CryptoBase.Tests.Kems.KemTestUtils;
@@ -15,7 +14,6 @@ namespace CryptoBase.Tests.Hpke;
 [GenerateGenericTest(typeof(DhKemP521))]
 [GenerateGenericTest(typeof(DhKemX25519))]
 [GenerateGenericTest(typeof(DhKemX448))]
-[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the keys and contexts are disposed.")]
 public class HpkeContextTest<TKem> where TKem : class, IHpkeAuthKem<TKem>
 {
 	// ReSharper disable once StaticMemberInGenericType

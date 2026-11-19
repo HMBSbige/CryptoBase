@@ -1,12 +1,10 @@
 using CryptoBase.Hashes.Blake3;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Blake3;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class Blake3HashAlgorithmTest
 {
 	private const int OutputLength = 2 * 64 + 33;

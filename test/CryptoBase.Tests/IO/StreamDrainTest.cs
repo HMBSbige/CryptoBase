@@ -1,10 +1,8 @@
 using CryptoBase.IO;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class StreamDrainTest
 {
 	[Test]

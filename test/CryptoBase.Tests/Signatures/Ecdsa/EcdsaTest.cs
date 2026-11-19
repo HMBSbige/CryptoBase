@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.EllipticCurves;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.EllipticCurves;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -14,7 +13,6 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures.Ecdsa;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 [GenerateGenericTest(typeof(EcdsaP256))]
 [GenerateGenericTest(typeof(EcdsaP384))]
 [GenerateGenericTest(typeof(EcdsaP521))]

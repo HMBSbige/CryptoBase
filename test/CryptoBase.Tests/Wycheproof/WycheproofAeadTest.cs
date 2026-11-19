@@ -3,7 +3,6 @@ using CryptoBase.Ciphers.Aead;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CryptoBase.Tests.Wycheproof;
 
@@ -65,7 +64,6 @@ public class WycheproofAeadTest
 		return Verify<XChaCha20Poly1305Cipher>(vector);
 	}
 
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]
 	private static async Task Verify<T>(AeadTestVector vector) where T : IAeadCipher<T>
 	{
 		using T cipher = T.Create(vector.Key);

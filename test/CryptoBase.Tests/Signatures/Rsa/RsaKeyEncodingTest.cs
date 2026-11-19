@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.Rsa;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.Signatures.Rsa.RsaTestUtils;
@@ -65,7 +64,6 @@ internal class RsaKeyEncodingTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task Pkcs1ExportsStayWithinTheirLength()
 	{
 		using RsaKey key = ImportKey();
@@ -358,7 +356,6 @@ internal class RsaKeyEncodingTest
 	// RFC 4055, Sec. 3.3: the parameters restrict the key to the algorithms that they allow, and the encodings keep them.
 	[Test]
 	[MethodDataSource(nameof(SupportedPssParameters))]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions finish before disposal.")]
 	public async Task PssParametersRestrictTheAlgorithms(string @case, byte[] algorithmIdentifier, SignatureAlgorithm[] allowed)
 	{
 		using RsaKey unrestricted = ImportKey();

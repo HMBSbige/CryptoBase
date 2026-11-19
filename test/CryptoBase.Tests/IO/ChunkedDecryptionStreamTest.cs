@@ -1,6 +1,5 @@
 using CryptoBase.Ciphers.Aead;
 using CryptoBase.IO;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.IO.ChunkedTestUtils;
 using static CryptoBase.Tests.IO.StreamTestUtils;
@@ -8,7 +7,6 @@ using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.IO;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class ChunkedDecryptionStreamTest
 {
 	// Two full chunks and a short one.

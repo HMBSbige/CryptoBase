@@ -1,6 +1,5 @@
 using CryptoBase.Ciphers.Streams;
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Wycheproof;
@@ -12,7 +11,6 @@ public class WycheproofStreamCipherTest
 	// A message that needs a block past the last counter is rejected whole.
 	[Test]
 	[WycheproofVectors<StreamCipherTestGroup, StreamCipherTestVector>("chacha20_counter_test.json")]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]
 	public async Task ChaCha20Counter(StreamCipherTestVector vector)
 	{
 		using SnuffleCipher cipher = Create(vector);

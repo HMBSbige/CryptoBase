@@ -1,6 +1,5 @@
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.TestUtils;
 using static CryptoBase.Tests.X509.TestCrl;
@@ -324,7 +323,6 @@ public class RevocationCheckerCrlTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The delegate runs before the key is disposed.")]
 	public async Task SignaturesAreVerifiedUnderThePolicy()
 	{
 		using Fixture fixture = new();

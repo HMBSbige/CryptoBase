@@ -6,7 +6,6 @@ using CryptoBase.Tests.EllipticCurves;
 using CryptoBase.Tests.EllipticCurves.Curve448;
 using CryptoBase.Tests.Kems;
 using CryptoBase.Tests.KeyAgreements;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.EllipticCurves.Curve25519.Curve25519Reference;
@@ -25,7 +24,6 @@ namespace CryptoBase.Tests.Hpke;
 [GenerateGenericTest(typeof(DhKemP521), typeof(EcdhP521))]
 [GenerateGenericTest(typeof(DhKemX25519), typeof(X25519))]
 [GenerateGenericTest(typeof(DhKemX448), typeof(X448))]
-[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the keys are disposed.")]
 public class DhKemTest<TKem, TEcdh> where TKem : class, IHpkeAuthKem<TKem> where TEcdh : class, IKeyAgreement<TEcdh>
 {
 	private const int Iterations = 4;

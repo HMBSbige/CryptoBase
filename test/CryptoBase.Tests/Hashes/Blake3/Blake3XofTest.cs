@@ -1,11 +1,9 @@
 using CryptoBase.Abstractions.Hashes;
 using CryptoBase.Hashes.Blake3;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Hashes.Blake3;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class Blake3XofTest
 {
 	private const int OutputLength = 4 * 1024 + 37;

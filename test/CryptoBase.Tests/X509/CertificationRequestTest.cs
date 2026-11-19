@@ -7,7 +7,6 @@ using CryptoBase.Signatures.EdDsa;
 using CryptoBase.SM2;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -18,7 +17,6 @@ using BclMLDsa = System.Security.Cryptography.MLDsa;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 internal class CertificationRequestTest
 {
 	private const string ExtensionRequestOid = "1.2.840.113549.1.9.14";

@@ -3,7 +3,6 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -13,7 +12,6 @@ using BclMLDsa = System.Security.Cryptography.MLDsa;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class X509Certificate2ExtensionsTest
 {
 	// The private key stays with the platform even though the platform could export it, and the key outlives the certificate.

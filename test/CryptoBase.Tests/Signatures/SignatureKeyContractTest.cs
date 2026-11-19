@@ -4,14 +4,12 @@ using CryptoBase.Signatures.EdDsa;
 using CryptoBase.Signatures.MLDsa;
 using CryptoBase.Signatures.Rsa;
 using CryptoBase.SM2;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Signatures;
 
 // Checks every ISignatureKey against the behavior its documentation promises; the known-answer and differential tests check the values.
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 [GenerateGenericTest(typeof(MLDsa44))]
 [GenerateGenericTest(typeof(MLDsa65))]
 [GenerateGenericTest(typeof(MLDsa87))]

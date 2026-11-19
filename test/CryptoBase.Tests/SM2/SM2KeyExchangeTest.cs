@@ -1,13 +1,11 @@
 using CryptoBase.SM2;
 using CryptoBase.Tests.EllipticCurves;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using static CryptoBase.Tests.SM2.SM2TestUtils;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.SM2;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class SM2KeyExchangeTest
 {
 	// Known-answer vectors: the static and ephemeral keys of the initiator, with the ID "Alice", and of the responder, with "Bob", and a key of 48 bytes.

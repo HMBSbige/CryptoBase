@@ -10,8 +10,6 @@ using static CryptoBase.Tests.SM9.SM9TestUtils;
 
 namespace CryptoBase.Tests.SM9;
 
-// Assert.That runs its delegates at the await, so they read the keys before they are disposed.
-// ReSharper disable AccessToDisposedClosure
 public class SM9MasterKeyTest
 {
 	// The master private keys lie in [1, N − 1], the public keys follow from them, and the exports import again.

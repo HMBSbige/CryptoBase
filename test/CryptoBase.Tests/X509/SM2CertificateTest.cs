@@ -3,7 +3,6 @@ using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.SM2;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -19,7 +18,6 @@ namespace CryptoBase.Tests.X509;
 // The files of X509/SM2 that start with sm2- are a chain valid from 2026-01-01 to 2036-01-01: sm2-root.pem, sm2-intermediate.pem and sm2-leaf.pem, signed with the default ID, and sm2-leaf-empty-id.pem, a leaf of the same key that the intermediate signed with the empty ID.
 //
 // nrcac-root.pem is the self-signed root C=CN, O=NRCAC, CN=ROOTCA of 2012 (SHA-256 fingerprint 9C28D3847414BFFF1A5749E7E2381146F82842083E8C592E16A612D04A5BA8CD), whose SM2-with-SM3 identifiers have NULL parameters.
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class SM2CertificateTest
 {
 	private const string SM2SM3Oid = "1.2.156.10197.1.501";

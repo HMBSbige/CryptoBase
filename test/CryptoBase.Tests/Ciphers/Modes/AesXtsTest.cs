@@ -1,6 +1,5 @@
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Modes;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Modes;
@@ -10,7 +9,6 @@ public class AesXtsTest
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 	public async Task InvalidInputsAreRejectedBeforeWriting(bool decrypt)
 	{
 		byte[] tweak = new byte[16];
@@ -89,7 +87,6 @@ public class AesXtsTest
 	[Arguments(false, 1, 0)]
 	[Arguments(true, 0, 1)]
 	[Arguments(true, 1, 0)]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]
 	public async Task PartialOverlapIsRejectedBeforeWriting(bool decrypt, int sourceOffset, int destinationOffset)
 	{
 		using XtsMode<AesCipher> cipher = XtsMode<AesCipher>.Create(CreateDeterministicSource(32));

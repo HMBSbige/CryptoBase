@@ -4,7 +4,6 @@ using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.Tests.Signatures.Ecdsa;
 using CryptoBase.Tests.Signatures.Rsa;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
@@ -14,7 +13,6 @@ using RsaKey = CryptoBase.Signatures.Rsa.RsaKey;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 internal class CertificateBuilderTest
 {
 	public static IEnumerable<Func<(KeyType Type, SignatureAlgorithm Algorithm)>> SigningCases()

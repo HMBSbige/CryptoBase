@@ -1,7 +1,6 @@
 using CryptoBase.Hashes.Blake3;
 using CryptoBase.Internal;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using static CryptoBase.Tests.TestUtils;
 
@@ -243,7 +242,6 @@ public class Blake3ParallelTest
 	[Arguments(StateBeforeFailedAppend.PartlyCompressedChunk)]
 	[Arguments(StateBeforeFailedAppend.BufferedTwoChunks)]
 	[Arguments(StateBeforeFailedAppend.BufferedEightChunksAfterReads)]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Catch runs the closure synchronously before the hasher is disposed.")]
 	public async Task FailedParallelAppendKeepsTheInput(StateBeforeFailedAppend state)
 	{
 		byte[] source = CreateDeterministicSource(8192 + 1048576);

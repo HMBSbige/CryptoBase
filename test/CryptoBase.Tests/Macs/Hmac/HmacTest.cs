@@ -4,12 +4,10 @@ using CryptoBase.Hashes.Blake2;
 using CryptoBase.Hashes.Sha2;
 using CryptoBase.Macs.Hmac;
 using CryptoBase.Platform;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Macs.Hmac;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class HmacTest
 {
 	[Test]

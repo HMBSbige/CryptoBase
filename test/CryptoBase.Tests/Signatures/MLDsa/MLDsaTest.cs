@@ -12,7 +12,6 @@ using static CryptoBase.Tests.TestUtils;
 namespace CryptoBase.Tests.Signatures.MLDsa;
 
 // The behavior of ML-DSA beyond ISignatureKey; SignatureKeyContractTest checks the rest, and the Wycheproof and differential tests the values.
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 [GenerateGenericTest(typeof(MLDsa44))]
 [GenerateGenericTest(typeof(MLDsa65))]
 [GenerateGenericTest(typeof(MLDsa87))]

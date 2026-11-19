@@ -1,5 +1,4 @@
 using CryptoBase.Hpke;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.Hpke.HpkeTestUtils;
 using static CryptoBase.Tests.Kems.KemTestUtils;
 
@@ -8,7 +7,6 @@ namespace CryptoBase.Tests.Hpke;
 // Known-answer tests.
 // The KEM and the key schedule are checked apart, through the internal hooks, so that vectors with a KEM or a key schedule alone count.
 // The recipient is also checked end to end through the public API.
-[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the contexts are disposed.")]
 public class HpkeVectorTest
 {
 	[Test]

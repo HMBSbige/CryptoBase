@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
 using CryptoBase.Ciphers.Modes;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Modes;
@@ -33,7 +32,6 @@ public class XtsModeTest
 	[Test]
 	[GenerateGenericTest(typeof(AesCipher))]
 	[GenerateGenericTest(typeof(SM4Cipher))]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The cipher is used after disposal on purpose.")]
 	public async Task DisposalIsIdempotentAndEndsOperations<TCipher>() where TCipher : IBlockCipher<TCipher>
 	{
 		XtsMode<TCipher> cipher = XtsMode<TCipher>.Create(CreateDeterministicSource(32));

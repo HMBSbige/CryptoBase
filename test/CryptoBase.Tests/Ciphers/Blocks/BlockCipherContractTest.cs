@@ -1,7 +1,6 @@
 using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Blocks.Aes;
 using CryptoBase.Ciphers.Blocks.SM4;
-using System.Diagnostics.CodeAnalysis;
 using static CryptoBase.Tests.TestUtils;
 
 namespace CryptoBase.Tests.Ciphers.Blocks;
@@ -11,7 +10,6 @@ namespace CryptoBase.Tests.Ciphers.Blocks;
 public class BlockCipherContractTest<T> where T : IBlockCipher<T>
 {
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "The cipher is used after disposal on purpose.")]
 	public async Task DisposalIsIdempotentAndEndsBlockOperations()
 	{
 		T cipher = T.Create(CreateDeterministicSource(16));
@@ -34,7 +32,6 @@ public class BlockCipherContractTest<T> where T : IBlockCipher<T>
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the cipher is disposed.")]
 	public async Task InvalidBuffersDoNotWrite(bool decrypt)
 	{
 		using T cipher = T.Create(CreateDeterministicSource(16));

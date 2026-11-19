@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.TestUtils;
@@ -279,7 +278,6 @@ public class OcspTest
 
 	// A CertStatus or a reason with a value that is not defined.
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the key is disposed.")]
 	public async Task SingleResponsesMustBeWellFormed()
 	{
 		using EcdsaP256 key = EcdsaP256.GenerateKey();
@@ -632,7 +630,6 @@ public class OcspTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the authority is disposed.")]
 	public async Task TheCertsFieldToleratesWhatIsNotACertificate()
 	{
 		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");
@@ -862,7 +859,6 @@ public class OcspTest
 	}
 
 	[Test]
-	[SuppressMessage("ReSharper", "AccessToDisposedClosure", Justification = "Assertions are awaited before the authority is disposed.")]
 	public async Task CertificateIdentifiersCheckTheirFields()
 	{
 		using TestPki.Authority authority = TestPki.Authority.CreateRoot("CN=OCSP CA");

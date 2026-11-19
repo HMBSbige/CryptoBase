@@ -2,14 +2,12 @@ using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.X509.X509TestUtils;
 
 namespace CryptoBase.Tests.X509;
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class PlatformCertificateValidatorTest
 {
 	private const X509VerificationFlags IgnoreEnd = X509VerificationFlags.IgnoreEndRevocationUnknown;

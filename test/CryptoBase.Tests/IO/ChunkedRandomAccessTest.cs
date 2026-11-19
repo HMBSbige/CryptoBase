@@ -2,7 +2,6 @@ using CryptoBase.Abstractions.Ciphers;
 using CryptoBase.Ciphers.Aead;
 using CryptoBase.IO;
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using static CryptoBase.Tests.IO.ChunkedTestUtils;
@@ -16,7 +15,6 @@ public enum ChunkedStorageKind
 	FileHandle
 }
 
-[SuppressMessage("ReSharper", "AccessToDisposedClosure")]
 public class ChunkedRandomAccessTest
 {
 	// Three full chunks and a short one.
