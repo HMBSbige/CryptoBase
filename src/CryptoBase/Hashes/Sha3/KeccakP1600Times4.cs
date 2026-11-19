@@ -71,7 +71,6 @@ internal readonly struct KeccakP1600Times4 : IKeccakP1600Kernel, IKeccakP1600Lan
 	public static Vector256<ulong> RotateLeft(Vector256<ulong> value, [ConstantExpected(Min = 1, Max = 63)] byte offset)
 	{
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		return value.RotateRightUInt64((byte)(64 - offset));
 #pragma warning restore CA1857
 	}

@@ -16,7 +16,6 @@ public class VectorBitOperationsExtensionsTest
 		Vector256<uint> expected = Vector256.Create(lanes.Select(lane => BitOperations.RotateRight(lane, offset)).ToArray());
 
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		Vector256<uint> actual = source.RotateRightUInt32(offset);
 #pragma warning restore CA1857
 
@@ -38,7 +37,6 @@ public class VectorBitOperationsExtensionsTest
 		Vector128<uint> expected = Vector128.Create(lanes.Select(lane => BitOperations.RotateRight(lane, offset)).ToArray());
 
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		Vector128<uint> actual = source.RotateRightUInt32(offset);
 #pragma warning restore CA1857
 
@@ -61,7 +59,6 @@ public class VectorBitOperationsExtensionsTest
 		Vector256<ulong> expected = Vector256.Create(lanes.Select(lane => BitOperations.RotateRight(lane, offset)).ToArray());
 
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		Vector256<ulong> actual = source.RotateRightUInt64(offset);
 #pragma warning restore CA1857
 

@@ -155,7 +155,6 @@ internal readonly struct SM9VectorSse41 : ISM9Vector<SM9VectorSse41>
 		Vector128<double> left = Vector128.LoadUnsafe(in Source(in first, in second, x & 14)).AsDouble();
 		Vector128<double> right = Vector128.LoadUnsafe(in Source(in first, in second, y & 14)).AsDouble();
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		return Sse2.Shuffle(left, right, (byte)(x & 1 | (y & 1) << 1));
 #pragma warning restore CA1857
 	}

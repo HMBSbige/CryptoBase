@@ -185,7 +185,6 @@ internal readonly struct SM9VectorAvx2 : ISM9Vector<SM9VectorAvx2>
 		}
 
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		return Avx2.Blend(result, Avx2.PermuteVar8x32(source, indices), lanes);
 #pragma warning restore CA1857
 	}

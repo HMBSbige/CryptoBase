@@ -43,7 +43,6 @@ internal readonly struct KeccakP1600Times2Sha3 : IKeccakP1600Lanes<Vector128<ulo
 	public static Vector128<ulong> XorRotateLeft(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected(Min = 1, Max = 63)] byte offset)
 	{
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		return Sha3Arm.XorRotateRight(left, right, (byte)(64 - offset));
 #pragma warning restore CA1857
 	}

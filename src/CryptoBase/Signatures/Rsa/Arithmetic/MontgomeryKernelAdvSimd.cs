@@ -434,7 +434,6 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 	internal static Vector128<ulong> ShiftRightAdd(Vector128<ulong> addend, Vector128<ulong> value)
 	{
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		return AdvSimd.ShiftRightLogicalAdd(addend, value, (byte)TRadix.Bits);
 #pragma warning restore CA1857
 	}
@@ -443,7 +442,6 @@ internal readonly struct MontgomeryKernelAdvSimd<TRadix> : IMontgomeryKernel whe
 	internal static Vector128<ulong> ShiftRight(Vector128<ulong> value)
 	{
 #pragma warning disable CA1857
-		// ReSharper disable once ConstantExpected
 		return AdvSimd.ShiftRightLogical(value, (byte)TRadix.Bits);
 #pragma warning restore CA1857
 	}

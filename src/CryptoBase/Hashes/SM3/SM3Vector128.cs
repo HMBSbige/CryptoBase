@@ -78,7 +78,6 @@ internal readonly struct SM3Vector128 : ISM3Lanes<Vector128<uint>>
 		if (AdvSimd.IsSupported)
 		{
 #pragma warning disable CA1857
-			// ReSharper disable once ConstantExpected
 			return AdvSimd.ShiftRightAndInsert(AdvSimd.ShiftLeftLogical(value, count), value, (byte)(32 - count));
 #pragma warning restore CA1857
 		}

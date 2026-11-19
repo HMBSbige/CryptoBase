@@ -86,11 +86,9 @@ internal readonly struct KeccakP1600Times2 : IKeccakP1600Kernel, IKeccakP1600Lan
 #pragma warning disable CA1857
 		if (AdvSimd.IsSupported)
 		{
-			// ReSharper disable once ConstantExpected
 			return AdvSimd.ShiftLeftAndInsert(AdvSimd.ShiftRightLogical(value, (byte)(64 - offset)), value, offset);
 		}
 
-		// ReSharper disable once ConstantExpected
 		return value.RotateRightUInt64((byte)(64 - offset));
 #pragma warning restore CA1857
 	}

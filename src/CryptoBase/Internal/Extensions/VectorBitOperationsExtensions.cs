@@ -27,7 +27,6 @@ internal static class VectorBitOperationsExtensions
 		public Vector256<T> RotateRightUInt32([ConstantExpected(Min = 1, Max = 31)] byte offset)
 		{
 #pragma warning disable CA1857
-			// ReSharper disable once ConstantExpected
 			return value.RotateLeftUInt32((byte)(32 - offset));
 #pragma warning restore CA1857
 		}
@@ -91,7 +90,6 @@ internal static class VectorBitOperationsExtensions
 			if (AdvSimd.IsSupported)
 			{
 #pragma warning disable CA1857
-				// ReSharper disable once ConstantExpected
 				return AdvSimd.ShiftRightAndInsert(value.AsUInt32() << offset, value.AsUInt32(), (byte)(32 - offset)).As<uint, T>();
 #pragma warning restore CA1857
 			}
@@ -103,7 +101,6 @@ internal static class VectorBitOperationsExtensions
 		public Vector128<T> RotateRightUInt32([ConstantExpected(Min = 1, Max = 31)] byte offset)
 		{
 #pragma warning disable CA1857
-			// ReSharper disable once ConstantExpected
 			return value.RotateLeftUInt32((byte)(32 - offset));
 #pragma warning restore CA1857
 		}
