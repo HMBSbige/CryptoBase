@@ -55,7 +55,6 @@ internal static class RevocationChecker
 	private const string OcspExtendedRevokeOid = "1.3.6.1.5.5.7.48.1.9";
 	private const string OcspCrlReferenceOid = "1.3.6.1.5.5.7.48.1.3";
 	private const string OcspArchiveCutoffOid = "1.3.6.1.5.5.7.48.1.6";
-	private const string OcspSigningOid = "1.3.6.1.5.5.7.3.9";
 
 	private static readonly Asn1Tag CrlUrlTag = new(TagClass.ContextSpecific, 0, true);
 	private static readonly Asn1Tag CrlNumberTag = new(TagClass.ContextSpecific, 1, true);
@@ -684,7 +683,7 @@ internal static class RevocationChecker
 			return $"The responder's certificate {problem}.";
 		}
 
-		if (decoded.ExtendedKeyUsage.Value?.Contains(OcspSigningOid) is not true)
+		if (decoded.ExtendedKeyUsage.Value?.Contains(ExtendedKeyUsage.OcspSigning) is not true)
 		{
 			return "The responder's certificate does not assert id-kp-OCSPSigning.";
 		}

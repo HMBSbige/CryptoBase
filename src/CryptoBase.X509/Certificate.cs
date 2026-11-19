@@ -350,16 +350,30 @@ public sealed class Certificate
 		return DecodedExtensions.CrlDistributionPoints.GetValueOrThrow("CRL distribution points");
 	}
 
-	// The value of the basic constraints extension (RFC 5280, Sec. 4.2.1.9), decoded on first use, or null without it.
-	// Throws CryptographicException if it does not decode.
-	internal BasicConstraints? GetBasicConstraints()
+	/// <summary>
+	/// Gets the value of the basic constraints extension (RFC 5280, Sec. 4.2.1.9), which tells whether the subject is a CA.
+	/// </summary>
+	/// <remarks>
+	/// The first call decodes the extension, as <see cref="BasicConstraints.Decode" /> does, and later calls return the same instance.
+	/// Calls may be concurrent.
+	/// </remarks>
+	/// <returns>The value, or <see langword="null" /> if the certificate has no such extension, as that of a subject that is not a CA may.</returns>
+	/// <exception cref="CryptographicException">The extension is not a DER-encoded BasicConstraints.</exception>
+	public BasicConstraints? GetBasicConstraints()
 	{
 		return DecodedExtensions.BasicConstraints.GetValueOrThrow("basic constraints");
 	}
 
-	// The value of the extended key usage extension (RFC 5280, Sec. 4.2.1.12), decoded on first use, or null without it.
-	// Throws CryptographicException if it does not decode.
-	internal ExtendedKeyUsage? GetExtendedKeyUsage()
+	/// <summary>
+	/// Gets the value of the extended key usage extension (RFC 5280, Sec. 4.2.1.12), the purposes for which the subject's key may be used.
+	/// </summary>
+	/// <remarks>
+	/// The first call decodes the extension, as <see cref="ExtendedKeyUsage.Decode" /> does, and later calls return the same instance.
+	/// Calls may be concurrent.
+	/// </remarks>
+	/// <returns>The value, or <see langword="null" /> if the certificate has no such extension, which allows any purpose.</returns>
+	/// <exception cref="CryptographicException">The extension is not a DER-encoded ExtKeyUsageSyntax.</exception>
+	public ExtendedKeyUsage? GetExtendedKeyUsage()
 	{
 		return DecodedExtensions.ExtendedKeyUsage.GetValueOrThrow("extended key usage");
 	}

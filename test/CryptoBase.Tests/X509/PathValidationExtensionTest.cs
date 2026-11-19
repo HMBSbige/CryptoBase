@@ -172,4 +172,53 @@ public class PathValidationExtensionTest
 
 		await Assert.That(decoded?.Purposes).IsEquivalentTo([ServerAuthenticationOid, ServerAuthenticationOid], CollectionOrdering.Matching);
 	}
+
+	// Decode reads a value on its own, such as one that a certification request asks for, by the rules of the certificate's getters.
+	[Test]
+	[MethodDataSource(nameof(BasicConstraintsCases))]
+	public async Task BasicConstraintsDecodeAloneAsInACertificate(string @case, byte[] value, bool? certificateAuthority, int? pathLengthConstraint)
+	{
+		if (certificateAuthority is null)
+		{
+			await Assert.That(() => BasicConstraints.Decode(value)).ThrowsExactly<ArgumentException>().WithParameterName("source").Because(@case);
+			return;
+		}
+
+		BasicConstraints decoded = BasicConstraints.Decode(value);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(decoded.CertificateAuthority).IsEqualTo(certificateAuthority.Value).Because(@case);
+			await Assert.That(decoded.PathLengthConstraint).IsEqualTo(pathLengthConstraint).Because(@case);
+		}
+	}
+
+	[Test]
+	public async Task ExtendedKeyUsageDecodesAlone()
+	{
+		ExtendedKeyUsage decoded = ExtendedKeyUsage.Decode(Sequence(Oid(ServerAuthenticationOid), Oid(ClientAuthenticationOid)));
+
+		await Assert.That(decoded.Purposes).IsEquivalentTo([ServerAuthenticationOid, ClientAuthenticationOid], CollectionOrdering.Matching);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(MalformedExtendedKeyUsages))]
+	public async Task MalformedExtendedKeyUsagesDoNotDecodeAlone(string @case, byte[] value)
+	{
+		await Assert.That(() => ExtendedKeyUsage.Decode(value)).ThrowsExactly<ArgumentException>().WithParameterName("source").Because(@case);
+	}
+
+	// The certificate caches the instance and gives it to every caller, so none may change the purposes that the others and Contains read.
+	[Test]
+	public async Task ExtendedKeyUsagePurposesAreReadOnly()
+	{
+		ExtendedKeyUsage decoded = ExtendedKeyUsage.Read(Sequence(Oid(ServerAuthenticationOid)));
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(decoded.Purposes is string[]).IsFalse();
+			await Assert.That(decoded.Purposes is IList<string> { IsReadOnly: false }).IsFalse();
+			await Assert.That(() => decoded.Contains(null!)).ThrowsExactly<ArgumentNullException>();
+		}
+	}
 }
