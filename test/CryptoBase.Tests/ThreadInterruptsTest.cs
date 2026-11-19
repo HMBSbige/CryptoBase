@@ -96,6 +96,7 @@ public class ThreadInterruptsTest
 					{
 						lock (gate)
 						{
+							// ReSharper disable once AccessToModifiedClosure
 							while (!Volatile.Read(ref done))
 							{
 								Interlocked.Increment(ref waits);

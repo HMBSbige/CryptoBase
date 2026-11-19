@@ -346,6 +346,7 @@ internal readonly struct Blake3Vector256 : IBlake3XofKernel, IBlake3LaneKernel
 		{
 			ref ushort words = ref Unsafe.Add(ref schedule, round * 16);
 			// Reusing scratch reduces AVX2 rotation spills.
+			// ReSharper disable once NotAccessedVariable
 			Step(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7, ref v8, ref v9, ref v10, ref v11, ref v12, ref v13, ref v14, ref v15, out Vector256<uint> scratch, ref message, ref words);
 			Step(ref v0, ref v1, ref v2, ref v3, ref v5, ref v6, ref v7, ref v4, ref v10, ref v11, ref v8, ref v9, ref v15, ref v12, ref v13, ref v14, out scratch, ref message, ref Unsafe.Add(ref words, 8));
 		}
