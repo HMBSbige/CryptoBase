@@ -155,7 +155,7 @@ public closed class OcspResponse
 	}
 
 	/// <summary>
-	/// Represents a response with an error status: <see cref="Status" /> is not <see cref="OcspResponseStatus.Successful" />, and the response has nothing else.
+	/// Represents a response with an error status: <see cref="OcspResponse.Status" /> is not <see cref="OcspResponseStatus.Successful" />, and the response has nothing else.
 	/// </summary>
 	public sealed class Error : OcspResponse
 	{
