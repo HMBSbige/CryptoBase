@@ -194,7 +194,7 @@ internal static class RevocationChecker
 	// Checks a certificate against an OCSP response (RFC 6960, Sec. 3.2 and 4.2.2.2).
 	// issuer is the certificate's issuer; importPublicKey is the importer of TrustAnchorCertificateValidator.
 	// The response's certificates are not trusted by themselves: a delegated responder must be issued directly by issuer, as Sec. 4.2.2.2 requires.
-	public static RevocationResult CheckOcsp(OcspResponse response, Certificate certificate, Certificate issuer, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize = 2048)
+	public static RevocationResult CheckOcsp(OcspResponse response, Certificate certificate, Certificate issuer, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize = CertificateAlgorithmPolicy.DefaultMinRsaKeySize)
 	{
 		return response switch
 		{
@@ -264,7 +264,7 @@ internal static class RevocationChecker
 	// Either the policy refuses the algorithm, or the package does not support it.
 	private static string? CheckSignatureAlgorithm(AlgorithmIdentifier algorithm, string subject)
 	{
-		return CertificatePolicy.CheckSignatureAlgorithm(algorithm) switch
+		return CertificateAlgorithmPolicy.CheckSignatureAlgorithm(algorithm) switch
 		{
 			null => null,
 			CertificateValidationError.WeakAlgorithm => $"{subject} is signed with {algorithm.Oid}, which the policy refuses.",
@@ -700,12 +700,12 @@ internal static class RevocationChecker
 			return criticalProblem;
 		}
 
-		if (CertificatePolicy.CheckSignatureAlgorithm(candidate.SignatureAlgorithm) is not null)
+		if (CertificateAlgorithmPolicy.CheckSignatureAlgorithm(candidate.SignatureAlgorithm) is not null)
 		{
 			return $"The responder's certificate is signed with {candidate.SignatureAlgorithm.Oid}, which the policy refuses or does not support.";
 		}
 
-		if (CertificatePolicy.CheckPublicKey(candidate.PublicKeyInfo, minRsaKeySize, out string? reason) is not null)
+		if (CertificateAlgorithmPolicy.CheckPublicKey(candidate.PublicKeyInfo, minRsaKeySize, out string? reason) is not null)
 		{
 			return $"The responder's certificate {reason}.";
 		}

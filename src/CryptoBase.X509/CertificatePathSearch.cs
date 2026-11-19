@@ -780,7 +780,7 @@ internal sealed class CertificatePathSearch : IDisposable
 	// The signature algorithm of a certificate other than a trust anchor, which an issuer must verify.
 	private static void CheckSignatureAlgorithm(PathNode node, List<PathProblem> problems)
 	{
-		if (CertificatePolicy.CheckSignatureAlgorithm(node.Certificate.SignatureAlgorithm) is not { } error)
+		if (CertificateAlgorithmPolicy.CheckSignatureAlgorithm(node.Certificate.SignatureAlgorithm) is not { } error)
 		{
 			return;
 		}
@@ -795,7 +795,7 @@ internal sealed class CertificatePathSearch : IDisposable
 	{
 		SubjectPublicKeyInfo info = node.Certificate.PublicKeyInfo;
 
-		if (CertificatePolicy.CheckPublicKey(info, _validator.MinRsaKeySize, out string? reason) is { } policyError)
+		if (CertificateAlgorithmPolicy.CheckPublicKey(info, _validator.MinRsaKeySize, out string? reason) is { } policyError)
 		{
 			problems.Add(new PathProblem(policyError, "{0} " + reason + ".", node));
 			return;

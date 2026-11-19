@@ -64,8 +64,8 @@ namespace CryptoBase.X509;
 /// an RSA key that it does not support is imported with <see cref="PlatformRsaKey.ImportSubjectPublicKeyInfo" />.
 /// The algorithms are those of <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" />, Ed25519, Ed448, ML-DSA and SM2 with SM3 among them;
 /// an SM2 signature is verified with the default ID "1234567812345678" of GB/T 35276-2017, as <see cref="SignatureAlgorithm.SM2SM3" /> specifies, so a certificate that its issuer signed with another ID gives <see cref="CertificateValidationError.InvalidSignature" />.
-/// Signatures with MD2, MD4, MD5, SHA-1 or SHA-224, and DSA signatures, fail with <see cref="CertificateValidationError.WeakAlgorithm" />, and any other algorithm with <see cref="CertificateValidationError.UnsupportedAlgorithm" />.
-/// The key of every certificate, the peer's and the trust anchor's included, must also pass the policy: an RSA modulus of <see cref="MinRsaKeySize" /> to 16384 bits that is a multiple of 8, as the CA/Browser Forum Baseline Requirements, Sec. 6.1.5, require, with a public exponent of at most 33 bits;
+/// Signatures with MD2, MD4, MD5, SHA-0, SHA-1 or SHA-224, whether the algorithm names the hash or, as for id-RSASSA-PSS and ecdsa-with-Specified, its parameters do, DSA signatures, id-RSASSA-PSS and ecdsa-with-Specified signatures whose parameters do not decode, and ecdsa-with-Specified signatures without parameters fail with <see cref="CertificateValidationError.WeakAlgorithm" />, and any other algorithm with <see cref="CertificateValidationError.UnsupportedAlgorithm" />, as <see cref="CertificateAlgorithmPolicy.GetSignatureStrength" /> classifies them.
+/// The key of every certificate, the peer's and the trust anchor's included, must also pass the policy of <see cref="CertificateAlgorithmPolicy.IsAcceptableInPath" />: an RSA modulus of <see cref="MinRsaKeySize" /> to 16384 bits that is a multiple of 8, as the CA/Browser Forum Baseline Requirements, Sec. 6.1.5, require, with a public exponent of at most 33 bits;
 /// and an EC key on the named curve P-256, P-384, P-521 or that of SM2, 1.2.156.10197.1.301.
 /// A key that fails gives <see cref="CertificateValidationError.WeakAlgorithm" />, as does a DSA key;
 /// an EC key with explicit parameters, or a key that the importer does not support, gives <see cref="CertificateValidationError.UnsupportedAlgorithm" />.
@@ -138,7 +138,6 @@ namespace CryptoBase.X509;
 /// </remarks>
 public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDisposable
 {
-	private const int MinRsaKeySizeAllowed = 1024;
 	private const string AnyPolicyOid = "2.5.29.32.0";
 
 	private readonly TrustAnchorEntry[] _anchors;
@@ -240,11 +239,10 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 		get;
 		init
 		{
-			ArgumentOutOfRangeException.ThrowIfLessThan(value, MinRsaKeySizeAllowed);
-			ArgumentOutOfRangeException.ThrowIfGreaterThan(value, CertificatePolicy.MaxRsaKeySize);
+			CertificateAlgorithmPolicy.ThrowIfMinRsaKeySizeOutOfRange(value);
 			field = value;
 		}
-	} = 2048;
+	} = CertificateAlgorithmPolicy.DefaultMinRsaKeySize;
 
 	/// <summary>
 	/// Gets the certificate policies that are acceptable to the caller, the user-initial-policy-set of RFC 5280, Sec. 6.1.1 (c), as object identifiers in dotted decimal;
@@ -510,7 +508,7 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 			{
 				key = importPublicKey(encoded);
 			}
-			catch (NotSupportedException) when (CertificatePolicy.IsRsa(info.Algorithm))
+			catch (NotSupportedException) when (CertificateAlgorithmPolicy.IsRsa(info.Algorithm))
 			{
 				key = PlatformRsaKey.ImportSubjectPublicKeyInfo(encoded);
 			}

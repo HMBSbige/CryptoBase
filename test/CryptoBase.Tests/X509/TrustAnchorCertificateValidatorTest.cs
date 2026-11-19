@@ -772,12 +772,14 @@ public class TrustAnchorCertificateValidatorTest
 		}
 	}
 
-	// MD2, MD4 and MD5 are forbidden, and SHA-1, SHA-224 and DSA refused, as WeakAlgorithm;
+	// MD2, MD4 and MD5 are forbidden, and SHA-1, SHA-224 and DSA refused, as WeakAlgorithm, as is id-RSASSA-PSS whose parameters, here NULL, do not decode;
 	// algorithms that are not known are unsupported, as are id-Ed25519 and id-Ed448 with parameters, which RFC 8410, Sec. 6, forbids.
 	// A trust anchor's own signature does not count.
 	[Test]
+	[Arguments("1.2.840.113549.1.1.10", true, CertificateValidationError.WeakAlgorithm)]
 	[Arguments("1.2.840.113549.1.1.4", true, CertificateValidationError.WeakAlgorithm)]
 	[Arguments("1.2.840.113549.1.1.2", true, CertificateValidationError.WeakAlgorithm)]
+	[Arguments("1.3.14.7.2.3.1", true, CertificateValidationError.WeakAlgorithm)]
 	[Arguments("1.2.840.113549.1.1.5", true, CertificateValidationError.WeakAlgorithm)]
 	[Arguments("1.2.840.113549.1.1.14", true, CertificateValidationError.WeakAlgorithm)]
 	[Arguments("1.3.14.3.2.29", true, CertificateValidationError.WeakAlgorithm)]
@@ -807,11 +809,13 @@ public class TrustAnchorCertificateValidatorTest
 	}
 
 	// RSASSA-PSS whose hash or MGF1 hash is SHA-1 or SHA-224 is weak; with SHA-256 but another salt length, unsupported.
+	// One whose hash is SHA-0, the OIW's sha, is forbidden, and so WeakAlgorithm too.
 	[Test]
 	[Arguments(Sha256Oid, Sha256Oid, 32, null)]
 	[Arguments("1.3.14.3.2.26", "1.3.14.3.2.26", 20, CertificateValidationError.WeakAlgorithm)]
 	[Arguments(Sha256Oid, "2.16.840.1.101.3.4.2.4", 32, CertificateValidationError.WeakAlgorithm)]
 	[Arguments(null, null, null, CertificateValidationError.WeakAlgorithm)]
+	[Arguments("1.3.14.3.2.18", Sha256Oid, 32, CertificateValidationError.WeakAlgorithm)]
 	[Arguments(Sha256Oid, Sha256Oid, 20, CertificateValidationError.UnsupportedAlgorithm)]
 	public async Task ClassifiesRsassaPssParameters(string? hash, string? maskHash, int? saltLength, CertificateValidationError? error)
 	{
@@ -829,6 +833,36 @@ public class TrustAnchorCertificateValidatorTest
 		else
 		{
 			await AssertValid(result, leaf, root.Certificate);
+		}
+	}
+
+	// ecdsa-with-Specified (ANSI X9.62) by the hash that its parameters name, which another validator might verify with MD5 or SHA-1:
+	// MD5 and SHA-1 are refused as WeakAlgorithm, as are parameters that do not decode; with SHA-256, which the package does not verify in this form, it is unsupported.
+	[Test]
+	public async Task ClassifiesEcdsaWithSpecifiedByItsHash()
+	{
+		const string ecdsaWithSpecifiedOid = "1.2.840.10045.4.3";
+		using Authority root = Authority.CreateRoot();
+
+		// MD5, SHA-1, no parameters, NULL parameters, and SHA-256.
+		(byte[] Identifier, CertificateValidationError Error)[] cases =
+		[
+			(Sequence(Oid(ecdsaWithSpecifiedOid), Sequence(Oid("1.2.840.113549.2.5"), [0x05, 0x00])), CertificateValidationError.WeakAlgorithm),
+			(Sequence(Oid(ecdsaWithSpecifiedOid), Sequence(Oid("1.3.14.3.2.26"))), CertificateValidationError.WeakAlgorithm),
+			(Sequence(Oid(ecdsaWithSpecifiedOid)), CertificateValidationError.WeakAlgorithm),
+			(Sequence(Oid(ecdsaWithSpecifiedOid), [0x05, 0x00]), CertificateValidationError.WeakAlgorithm),
+			(Sequence(Oid(ecdsaWithSpecifiedOid), Sequence(Oid(Sha256Oid), [0x05, 0x00])), CertificateValidationError.UnsupportedAlgorithm)
+		];
+
+		using (Assert.Multiple())
+		{
+			foreach ((byte[] identifier, CertificateValidationError error) in cases)
+			{
+				using EcdsaP256 leafKey = EcdsaP256.GenerateKey();
+				Certificate leaf = Sign(new Template { Subject = Name("CN=Leaf"), SubjectPublicKeyInfo = ExportSubjectPublicKeyInfo(leafKey), Extensions = [SubjectAlternativeNames("example.com")] }, root.Name, identifier, static _ => new byte[64]);
+
+				await AssertInvalid(await Validate([root.Certificate], [leaf]), [error], CertificatePathEnd.TrustAnchor, leaf, root.Certificate);
+			}
 		}
 	}
 
