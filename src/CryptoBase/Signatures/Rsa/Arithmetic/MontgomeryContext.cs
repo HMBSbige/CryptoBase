@@ -37,9 +37,15 @@ internal abstract class MontgomeryContext : IDisposable
 	// The value of an element below 2n reduced below n, in LimbCount limbs, without leaving Montgomery form.
 	internal abstract void FromDigits(ReadOnlySpan<ulong> element, Span<ulong> result);
 
+	// As FromDigits, with scratch of DigitCount words, which the caller erases.
+	internal abstract void FromDigits(ReadOnlySpan<ulong> element, Span<ulong> result, Span<ulong> scratch);
+
 	// result = left·right·R⁻¹ mod n.
 	// result may be left or right.
 	internal abstract void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right);
+
+	// As Multiply, with scratch of ScratchLength words, which the caller erases.
+	internal abstract void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, Span<ulong> scratch);
 
 	// result = value²·R⁻¹ mod n.
 	// result may be value.
@@ -65,6 +71,12 @@ internal abstract class MontgomeryContext : IDisposable
 	// result = element^exponent for a public exponent, on which the time depends.
 	// result may be element.
 	internal abstract void ExponentiateVariableTime(ReadOnlySpan<ulong> element, ulong exponent, Span<ulong> result);
+
+	// The words of scratch that ExponentiateVariableTime takes: a copy of the element and the scratch of the kernel.
+	internal int VariableTimeScratchLength => DigitCount + ScratchLength;
+
+	// As ExponentiateVariableTime, with scratch of VariableTimeScratchLength words, which the caller erases.
+	internal abstract void ExponentiateVariableTime(ReadOnlySpan<ulong> element, ulong exponent, Span<ulong> result, Span<ulong> scratch);
 
 	// 1 in Montgomery form, R mod n, below n.
 	internal abstract void WriteOne(Span<ulong> element);
@@ -227,7 +239,14 @@ internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKern
 
 		int bufferLength = DigitCount;
 		using CryptoBuffer<ulong> buffer = CryptoBuffer<ulong>.ShouldUsePool(bufferLength) ? new CryptoBuffer<ulong>(bufferLength) : new CryptoBuffer<ulong>(stackalloc ulong[bufferLength]);
-		Span<ulong> reduced = buffer.Span;
+		FromDigits(element, result, buffer.Span);
+	}
+
+	internal override void FromDigits(ReadOnlySpan<ulong> element, Span<ulong> result, Span<ulong> scratch)
+	{
+		Debug.Assert(element.Length == DigitCount && result.Length == LimbCount && scratch.Length >= DigitCount);
+
+		Span<ulong> reduced = scratch.Slice(0, DigitCount);
 		element.CopyTo(reduced);
 		Reduce(reduced);
 		result.Clear();
@@ -264,6 +283,13 @@ internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKern
 		int scratchLength = ScratchLength;
 		using CryptoBuffer<ulong> scratch = CryptoBuffer<ulong>.ShouldUsePool(scratchLength) ? new CryptoBuffer<ulong>(scratchLength) : new CryptoBuffer<ulong>(stackalloc ulong[scratchLength]);
 		TKernel.Multiply(result, left, right, Prepared, _negativeInverse, scratch.Span);
+	}
+
+	internal override void Multiply(Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, Span<ulong> scratch)
+	{
+		Debug.Assert(scratch.Length >= ScratchLength);
+
+		TKernel.Multiply(result, left, right, Prepared, _negativeInverse, scratch);
 	}
 
 	internal override void Square(Span<ulong> result, ReadOnlySpan<ulong> value)
@@ -360,13 +386,18 @@ internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKern
 
 	internal override void ExponentiateVariableTime(ReadOnlySpan<ulong> element, ulong exponent, Span<ulong> result)
 	{
-		Debug.Assert(element.Length == DigitCount && result.Length == DigitCount);
+		int bufferLength = VariableTimeScratchLength;
+		using CryptoBuffer<ulong> buffer = CryptoBuffer<ulong>.ShouldUsePool(bufferLength) ? new CryptoBuffer<ulong>(bufferLength) : new CryptoBuffer<ulong>(stackalloc ulong[bufferLength]);
+		ExponentiateVariableTime(element, exponent, result, buffer.Span);
+	}
+
+	internal override void ExponentiateVariableTime(ReadOnlySpan<ulong> element, ulong exponent, Span<ulong> result, Span<ulong> scratch)
+	{
+		Debug.Assert(element.Length == DigitCount && result.Length == DigitCount && scratch.Length >= VariableTimeScratchLength);
 
 		int digits = DigitCount;
-		int bufferLength = digits + ScratchLength;
-		using CryptoBuffer<ulong> buffer = CryptoBuffer<ulong>.ShouldUsePool(bufferLength) ? new CryptoBuffer<ulong>(bufferLength) : new CryptoBuffer<ulong>(stackalloc ulong[bufferLength]);
-		Span<ulong> power = buffer.Span.Slice(0, digits);
-		Span<ulong> scratch = buffer.Span.Slice(digits);
+		Span<ulong> power = scratch.Slice(0, digits);
+		Span<ulong> kernelScratch = scratch.Slice(digits);
 		element.CopyTo(power);
 
 		if (exponent is 0)
@@ -379,11 +410,11 @@ internal sealed class MontgomeryContext<TKernel> : MontgomeryContext where TKern
 
 		for (int bit = 62 - BitOperations.LeadingZeroCount(exponent); bit >= 0; --bit)
 		{
-			TKernel.Square(result, result, Prepared, _negativeInverse, scratch);
+			TKernel.Square(result, result, Prepared, _negativeInverse, kernelScratch);
 
 			if ((exponent >> bit & 1) is not 0)
 			{
-				TKernel.Multiply(result, result, power, Prepared, _negativeInverse, scratch);
+				TKernel.Multiply(result, result, power, Prepared, _negativeInverse, kernelScratch);
 			}
 		}
 	}

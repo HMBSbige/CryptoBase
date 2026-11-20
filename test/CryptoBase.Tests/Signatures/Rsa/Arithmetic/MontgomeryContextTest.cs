@@ -144,6 +144,61 @@ public class MontgomeryContextTest
 		await Assert.That(ExponentiateVariableTime(kernel, false)).IsEmpty();
 	}
 
+	// The overloads that take the caller's scratch match BigInteger whatever the scratch holds, and write nothing past the length they take.
+	// One scratch serves the three in turn and in place, as RsaPublicOperation.TryApply has it serve them.
+	[Test]
+	[MethodDataSource(typeof(MontgomeryKernelCase), nameof(MontgomeryKernelCase.All))]
+	public async Task OverloadsWithScratchMatchReference(MontgomeryKernelCase kernel)
+	{
+		SkipUnlessSupported(kernel);
+
+		const ulong canary = 0xA5A5_5A5A_C3C3_3C3CUL;
+		List<string> failures = [];
+		Random random = new(10);
+
+		foreach ((MontgomeryContext context, BigInteger n) in Contexts(kernel, random, false, MaxExponentiationLimbs))
+		{
+			using (context)
+			{
+				BigInteger r = BigInteger.One << kernel.DigitBits * context.DigitCount;
+				BigInteger rInverse = ModInverse(r % n, n);
+				int length = context.VariableTimeScratchLength;
+				ulong[] arena = new ulong[length + 8];
+				Span<ulong> scratch = arena.AsSpan(0, length);
+				arena.AsSpan(length).Fill(canary);
+				BigInteger a = RandomBelow(random, 2 * n);
+				BigInteger b = RandomBelow(random, 2 * n);
+				ulong[] element = ToLimbs(a, context.DigitCount, kernel.DigitBits);
+				ulong[] limbs = new ulong[context.LimbCount];
+
+				scratch.Fill(ulong.MaxValue);
+				context.ExponentiateVariableTime(element, 65537, element, scratch);
+				BigInteger power = BigInteger.ModPow(a * rInverse % n, 65537, n) * r % n;
+				Check(failures, kernel, element, power, n, $"{n:X}: {a:X}^65537");
+
+				scratch.Fill(ulong.MaxValue);
+				context.Multiply(element, element, ToLimbs(b, context.DigitCount, kernel.DigitBits), scratch);
+				BigInteger product = power * b * rInverse % n;
+				Check(failures, kernel, element, product, n, $"{n:X}: {a:X}^65537·{b:X}");
+
+				scratch.Fill(ulong.MaxValue);
+				context.FromDigits(element, limbs, scratch);
+
+				if (ToBigInteger(limbs) != product)
+				{
+					failures.Add($"{n:X}: the digits of {a:X}^65537·{b:X} come out as {ToBigInteger(limbs):X}");
+				}
+
+				if (arena.AsSpan(length).ContainsAnyExcept(canary))
+				{
+					failures.Add($"{n:X}: a write past the scratch");
+				}
+			}
+		}
+
+		await Assert.That(failures).IsEmpty();
+	}
+
 	// A context that takes another modulus works as a new one of it would, bit for bit, through moduli of every shape and back to the first.
 	// Reset exponentiates to find R², so moduli stay within MaxExponentiationLimbs.
 	[Test]

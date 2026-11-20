@@ -21,7 +21,8 @@ internal sealed class RsaPublicOperation
 		ExponentLength = exponentLength;
 
 		// The element of R² mod n stands for R, and its power e − 1 for R^(e−1), whose digits are R^e.
-		ulong[] rSquared = new ulong[modulus.LimbCount];
+		// Public, as n is, so that the stack may hold it unerased.
+		Span<ulong> rSquared = stackalloc ulong[modulus.LimbCount];
 		modulus.WriteRSquared(rSquared);
 		_correction = new ulong[modulus.DigitCount];
 		modulus.ToDigits(rSquared, _correction);
@@ -116,10 +117,12 @@ internal sealed class RsaPublicOperation
 		MontgomeryContext modulus = Context;
 		int limbs = modulus.LimbCount;
 		int digits = modulus.DigitCount;
-		int bufferLength = limbs + digits;
+		// One buffer for the value, the element and, after them, the scratch that each step takes in turn: the most is that of ExponentiateVariableTime, which takes more than Multiply or FromDigits.
+		int bufferLength = limbs + digits + modulus.VariableTimeScratchLength;
 		using CryptoBuffer<ulong> buffer = CryptoBuffer<ulong>.ShouldUsePool(bufferLength) ? new CryptoBuffer<ulong>(bufferLength) : new CryptoBuffer<ulong>(stackalloc ulong[bufferLength]);
 		Span<ulong> value = buffer.Span.Slice(0, limbs);
 		Span<ulong> element = buffer.Span.Slice(limbs, digits);
+		Span<ulong> scratch = buffer.Span.Slice(limbs + digits);
 		Limbs.FromBigEndian(input, value);
 
 		if (Limbs.LessThan(value, modulus.Modulus) is 0)
@@ -128,9 +131,9 @@ internal sealed class RsaPublicOperation
 		}
 
 		modulus.ToDigits(value, element);
-		modulus.ExponentiateVariableTime(element, Exponent, element);
-		modulus.Multiply(element, element, _correction);
-		modulus.FromDigits(element, value);
+		modulus.ExponentiateVariableTime(element, Exponent, element, scratch);
+		modulus.Multiply(element, element, _correction, scratch);
+		modulus.FromDigits(element, value, scratch);
 		Limbs.ToBigEndian(value, output);
 		return true;
 	}
