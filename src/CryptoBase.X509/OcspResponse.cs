@@ -270,7 +270,10 @@ public closed class OcspResponse
 		/// <summary>
 		/// Verifies the responder's signature on the ResponseData.
 		/// </summary>
-		/// <remarks>To tell an algorithm that the package does not support from a wrong signature, call <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" /> on <see cref="SignatureAlgorithm" />.</remarks>
+		/// <remarks>
+		/// To tell an algorithm that the package does not support from a wrong signature, call <see cref="AlgorithmIdentifier.TryGetSignatureAlgorithm" /> on <see cref="SignatureAlgorithm" />.
+		/// This method verifies the signature alone; whether the key belongs to a responder authorized to sign the response is what <see cref="FindResponder" /> tells.
+		/// </remarks>
 		/// <param name="responderKey">The responder's public key.</param>
 		/// <returns>
 		/// <see langword="true" /> if <see cref="SignatureAlgorithm" /> names a signature algorithm that <paramref name="responderKey" /> supports and the signature is valid with it;
@@ -283,6 +286,54 @@ public closed class OcspResponse
 			ArgumentNullException.ThrowIfNull(responderKey);
 
 			return SignatureAlgorithm.VerifySignature(responderKey, TbsResponseData.Span, Signature.Span);
+		}
+
+		/// <summary>
+		/// Finds the certificate of the authorized responder that signed the response for the certificates that <paramref name="issuer" /> issued (RFC 6960, Sec. 4.2.2.2): <paramref name="issuer" /> itself, or a delegated responder's certificate among <see cref="Certificates" />.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// The signature algorithm of the response must pass the policy of <see cref="TrustAnchorCertificateValidator" />.
+		/// <paramref name="issuer" /> signed the response if <see cref="Responder" /> names it and its key verifies the signature.
+		/// A delegated responder's certificate must be named by <see cref="Responder" /> and issued by <paramref name="issuer" />: its issuer must be the subject of <paramref name="issuer" />, byte for byte, and the key of <paramref name="issuer" /> must verify its signature;
+		/// its basic constraints, extended key usage, subject alternative name, name constraints, authority key identifier, subject key identifier, ocsp-nocheck and noRevAvail extensions, those that it has, must decode;
+		/// its extensions must follow the rules of noRevAvail and ocsp-nocheck (RFC 9608, Sec. 3), and include an extended key usage with id-kp-OCSPSigning and no critical extension other than basic constraints, key usage, extended key usage, subject alternative name and ocsp-nocheck;
+		/// a key usage extension, if it has one, must assert digitalSignature;
+		/// its signature algorithm and key must pass the policy of <see cref="TrustAnchorCertificateValidator" />, with an RSA modulus of at least 2048 bits;
+		/// and its key must verify the signature of the response.
+		/// It is checked against <paramref name="issuer" /> alone, not on a path, so no name constraints or certificate policies apply to it.
+		/// A byName <see cref="Responder" /> matches a subject by the rules of RFC 5280, Sec. 7.1, but names that the package cannot find to be the same, such as values that differ only in the case of a letter beyond ASCII, count as different, and the signer is then not found;
+		/// a byKey one matches by the SHA-1 hash of the subject's public key.
+		/// At most 8 certificates of <see cref="Certificates" /> that <see cref="Responder" /> names are tried.
+		/// The work grows with the number of certificates in <see cref="Certificates" />, so a caller bounds the length of a response from an untrusted source, as <see cref="TrustAnchorCertificateValidator" /> does at 64 KiB.
+		/// </para>
+		/// <para>
+		/// <paramref name="issuer" /> is taken as a certificate that the caller trusts: neither the policy on its key nor its validity period is checked, which the validation of its own path does.
+		/// </para>
+		/// <para>
+		/// The method checks no time: not the validity period of the certificate that it returns, not the thisUpdate and nextUpdate of the responses, and not <see cref="ProducedAt" />.
+		/// Nor does it check which certificates the response covers, which <see cref="OcspCertificateId.Matches" /> tells, or whether a delegated responder's certificate is revoked.
+		/// The response may be relied on only within the validity period of the certificate that the method returns, as for <paramref name="issuer" /> itself.
+		/// <see cref="TrustAnchorCertificateValidator" /> checks the signer, the times and the responder's certificate at the time of the validation.
+		/// </para>
+		/// <para>
+		/// Keys are imported with <paramref name="importPublicKey" /> as <see cref="TrustAnchorCertificateValidator" /> imports them: an RSA key that it does not support is imported with <see cref="PlatformRsaKey.ImportSubjectPublicKeyInfo" />, and a key for which it throws <see cref="NotSupportedException" />, <see cref="ArgumentException" /> or <see cref="CryptographicException" /> gives a problem, while other exceptions escape.
+		/// The method disposes the keys that it imports.
+		/// </para>
+		/// </remarks>
+		/// <param name="issuer">The certificate of the CA that issued the certificates that the response is about, which the caller trusts.</param>
+		/// <param name="importPublicKey">The importer of public keys, which turns a DER-encoded SubjectPublicKeyInfo into a key that verifies signatures, as for <see cref="TrustAnchorCertificateValidator" />.</param>
+		/// <param name="problem">When the method returns <see langword="null" />, why no certificate is an authorized responder that signed the response; otherwise, <see langword="null" />.</param>
+		/// <returns><paramref name="issuer" />, the same instance, if it signed the response; otherwise, the delegated responder's certificate that signed it, or <see langword="null" /> if there is none.</returns>
+		/// <exception cref="ArgumentNullException"><paramref name="issuer" /> or <paramref name="importPublicKey" /> is <see langword="null" />.</exception>
+		/// <exception cref="InvalidOperationException"><paramref name="importPublicKey" /> returned <see langword="null" />.</exception>
+		public Certificate? FindResponder(Certificate issuer, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, out string? problem)
+		{
+			ArgumentNullException.ThrowIfNull(issuer);
+			ArgumentNullException.ThrowIfNull(importPublicKey);
+
+			problem = RevocationChecker.CheckResponder(this, issuer, importPublicKey, CertificateAlgorithmPolicy.DefaultMinRsaKeySize, null, out Certificate? responder);
+			return responder;
 		}
 	}
 }

@@ -220,19 +220,8 @@ internal static class RevocationChecker
 			return Invalid(singleProblem ?? "The response has no status for the certificate.");
 		}
 
-		if (CheckSignatureAlgorithm(response.SignatureAlgorithm, "The response") is { } algorithmProblem)
-		{
-			return Invalid(algorithmProblem);
-		}
-
-		using ISignatureKey? issuerKey = TrustAnchorCertificateValidator.ImportKey(importPublicKey, issuer.PublicKeyInfo, out _, out string? importMessage);
-
-		if (issuerKey is null)
-		{
-			return Invalid($"The issuer's key cannot be imported: {importMessage}");
-		}
-
-		if (CheckSigner(response, issuer, issuerKey, importPublicKey, time, minRsaKeySize) is { } signerProblem)
+		// A delegated responder's certificate must also be valid at the time.
+		if (CheckResponder(response, issuer, importPublicKey, minRsaKeySize, time, out _) is { } signerProblem)
 		{
 			return Invalid(signerProblem);
 		}
@@ -613,15 +602,40 @@ internal static class RevocationChecker
 		return keyHash.SequenceEqual(digest);
 	}
 
+	// The authorized responder that signed the response (RFC 6960, Sec. 4.2.2.2), which OcspResponse.Basic.FindResponder describes: issuer itself, or a delegated responder's certificate of the response; null, with the problem, if there is none.
+	// Neither the response's times nor whether it covers a certificate are checked.
+	// With a time, a delegated responder's certificate must be valid then, which no clock skew widens: CheckOcsp gives the time of the validation, and FindResponder none, leaving the time to its caller.
+	// A candidate that is not valid then fails as one that fails any other check, so the next candidate is tried and the first problem stands.
+	internal static string? CheckResponder(OcspResponse.Basic response, Certificate issuer, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, int minRsaKeySize, DateTimeOffset? time, out Certificate? responder)
+	{
+		responder = null;
+
+		if (CheckSignatureAlgorithm(response.SignatureAlgorithm, "The response") is { } algorithmProblem)
+		{
+			return algorithmProblem;
+		}
+
+		using ISignatureKey? issuerKey = TrustAnchorCertificateValidator.ImportKey(importPublicKey, issuer.PublicKeyInfo, out _, out string? importMessage);
+
+		if (issuerKey is null)
+		{
+			return $"The issuer's key cannot be imported: {importMessage}";
+		}
+
+		return CheckSigner(response, issuer, issuerKey, importPublicKey, minRsaKeySize, time, out responder);
+	}
+
 	// RFC 6960, Sec. 4.2.2.2: the signer must be the CA that issued the certificate, or a certificate in the response that it issued directly, which holds id-kp-OCSPSigning.
-	private static string? CheckSigner(OcspResponse.Basic response, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
+	private static string? CheckSigner(OcspResponse.Basic response, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, int minRsaKeySize, DateTimeOffset? time, out Certificate? responder)
 	{
 		string? problem = null;
+		responder = null;
 
 		if (IsResponder(response.Responder, issuer))
 		{
 			if (response.VerifySignature(issuerKey))
 			{
+				responder = issuer;
 				return null;
 			}
 
@@ -646,8 +660,9 @@ internal static class RevocationChecker
 				return $"The response names more than {MaxResponderCandidates} certificates as its responder.";
 			}
 
-			if (CheckDelegatedResponder(response, candidate, issuer, issuerKey, importPublicKey, time, minRsaKeySize) is not { } candidateProblem)
+			if (CheckDelegatedResponder(response, candidate, issuer, issuerKey, importPublicKey, minRsaKeySize, time) is not { } candidateProblem)
 			{
+				responder = candidate;
 				return null;
 			}
 
@@ -659,14 +674,14 @@ internal static class RevocationChecker
 
 	// The responder's certificate is checked against its issuer alone, as Sec. 4.2.2.2 asks, not on a path of its own, so no name constraints or policies, the issuer's or those above it, apply to it.
 	// Its names give it no authority, as it answers only for the certificates of that issuer, which could sign the response itself.
-	private static string? CheckDelegatedResponder(OcspResponse.Basic response, Certificate candidate, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, DateTimeOffset time, int minRsaKeySize)
+	private static string? CheckDelegatedResponder(OcspResponse.Basic response, Certificate candidate, Certificate issuer, ISignatureKey issuerKey, Func<ReadOnlySpan<byte>, ISignatureKey> importPublicKey, int minRsaKeySize, DateTimeOffset? time)
 	{
 		if (!candidate.Issuer.Span.SequenceEqual(issuer.Subject.Span))
 		{
 			return "The responder's certificate is not issued by the CA that issued the certificate.";
 		}
 
-		if (time < candidate.NotBefore || time > candidate.NotAfter)
+		if (time is { } at && (at < candidate.NotBefore || at > candidate.NotAfter))
 		{
 			return "The responder's certificate is not valid at the time.";
 		}
