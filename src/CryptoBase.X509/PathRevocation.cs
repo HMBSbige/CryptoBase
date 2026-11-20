@@ -3,14 +3,16 @@ using System.Globalization;
 namespace CryptoBase.X509;
 
 // The revocation checks of the paths of one validation (RFC 5280, Sec. 6.3): the CRLs that the caller gave and, online, the OCSP responders and CRL distribution points of each certificate, retrieved within the budget.
+// The response that the peer stapled for its own certificate, if any, is instead the source for the edges from that certificate, after only the CRLs that the caller gave, which may revoke it.
 // The search gives CheckAsync each path that passes every other check, and follows no edge again that it rejects.
-internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, RetrievalBudget budget, DateTimeOffset time)
+internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, RetrievalBudget budget, DateTimeOffset time, ReadOnlyMemory<byte> stapledResponse)
 {
 	// RFC 9919, Sec. 6: a request of at most this many bytes after encoding, with the scheme and server name, must use GET.
 	private const int MaxOcspGetLength = 255;
 	private const string OcspRequestMediaType = "application/ocsp-request";
 
 	private static readonly string RequestLimitDetail = $"The validation reached its limit of {RetrievalBudget.MaxRequests} requests from the URIs of the certificates.";
+	private static readonly string StapledLengthDetail = $"The response is longer than {RetrievalBudget.MaxOcspResponseLength >> 10} KiB, the limit of an OCSP response.";
 
 	private Dictionary<long, RevocationResult>? _results;
 
@@ -18,6 +20,10 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 
 	// Null for a retrieval that failed.
 	private Dictionary<RetrievalKey, CertificateRevocationList?>? _retrievedCrls;
+
+	// The stapled response, decoded by the first check of an edge from the peer's certificate; null if it does not decode.
+	private OcspResponse? _stapled;
+	private bool _stapledDecoded;
 
 	public int RejectedEdgeCount => _rejectedEdges?.Count ?? 0;
 
@@ -27,7 +33,7 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 	}
 
 	// The trust anchor is trusted as it is.
-	// Returns null if nothing keeps the path from being valid, the problem of the first revoked certificate, or that of the first whose status is unknown if that is an error.
+	// Returns null if nothing keeps the path from being valid, the problem of the first revoked certificate or of a stapled response that is not accepted, or that of the first whose status is unknown if that is an error.
 	// The edge of a certificate with a problem is rejected, so that the search does not follow it again.
 	public async ValueTask<PathProblem?> CheckAsync(PathNode[] path)
 	{
@@ -54,6 +60,13 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 				}
 				default:
 				{
+					// RFC 6066, Sec. 8: a client that asked for the response aborts the handshake on one that is not satisfactory, so it fails the path at once, whatever the certificates above say.
+					if (IsStapled(certificate))
+					{
+						(_rejectedEdges ??= []).Add(certificate.PairWith(issuer));
+						return new PathProblem(CertificateValidationError.InvalidOcspResponse, $"The OCSP response stapled for {{0}} is not acceptable: {PathProblem.Escape(result.Detail ?? "The response says neither good nor revoked.")}", certificate);
+					}
+
 					if (!validator.IgnoreRevocationUnknown && unknown is null)
 					{
 						unknown = new PathProblem(CertificateValidationError.RevocationUnknown, $"The revocation status of {{0}} could not be determined: {PathProblem.Escape(result.Detail ?? "no source covers it.")}", certificate);
@@ -99,9 +112,71 @@ internal sealed class PathRevocation(TrustAnchorCertificateValidator validator, 
 			return known;
 		}
 
-		RevocationResult result = await FindRevocationAsync(certificate.Certificate, issuer).ConfigureAwait(false);
+		RevocationResult result = IsStapled(certificate) ? FindStapledRevocation(certificate.Certificate, issuer) : await FindRevocationAsync(certificate.Certificate, issuer).ConfigureAwait(false);
 		(_results ??= []).Add(edge, result);
 		return result;
+	}
+
+	// Whether the stapled response is the source for the edges from the certificate: those from the peer's, if the peer stapled one.
+	private bool IsStapled(PathNode certificate)
+	{
+		return certificate.Role is PathRole.Leaf && !stapledResponse.IsEmpty;
+	}
+
+	// The edge from the peer's certificate when it stapled a response.
+	// A CRL that the caller gave and that revokes the certificate decides first, so that the peer cannot hide the revocation behind a good response that it obtained before.
+	// The CRLs are not looked at for a certificate with the noRevAvail or ocsp-nocheck extension, for which no source is asked (RFC 9608, Sec. 4), as in FindRevocationAsync, or without the issuer's key, which verifies them.
+	// Otherwise the stapled response decides: a CRL that says good does not stand in for it, as a client that asked for it must check it, and the peer's own responders and CRL distribution points are not asked.
+	private RevocationResult FindStapledRevocation(Certificate certificate, PathNode issuer)
+	{
+		if (!certificate.DecodedExtensions.IsExemptFromRevocationCheck && issuer.Key is { } key)
+		{
+			foreach (CertificateRevocationList crl in validator.FindRevocationLists(certificate.Issuer))
+			{
+				RevocationResult result = RevocationChecker.CheckCrl(crl, certificate, issuer.Certificate, key, time);
+
+				if (result.Status is RevocationStatus.Revoked)
+				{
+					return result;
+				}
+			}
+		}
+
+		return CheckStapled(certificate, issuer.Certificate);
+	}
+
+	// RFC 6066, Sec. 8, and RFC 9846, Sec. 4.5.1.1: the response that the peer stapled for its certificate, checked as one from a responder.
+	// It is checked even for a certificate with the noRevAvail or ocsp-nocheck extension, as a client that asked for it must check it.
+	// Its CertID names the issuer, so the response says nothing about the certificate under another candidate, which then fails as one for which it has no status.
+	// A response longer than RetrievalBudget.MaxOcspResponseLength, the limit of a retrieved one, is not decoded, as the certificates of its certs field could make finding its signer cost much.
+	// Good or revoked decides; anything else is Invalid, for CheckAsync to reject.
+	private RevocationResult CheckStapled(Certificate certificate, Certificate issuer)
+	{
+		if (stapledResponse.Length > RetrievalBudget.MaxOcspResponseLength)
+		{
+			return new RevocationResult(RevocationStatus.Invalid, StapledLengthDetail);
+		}
+
+		if (!_stapledDecoded)
+		{
+			try
+			{
+				_stapled = OcspResponse.Decode(stapledResponse.Span);
+			}
+			catch (ArgumentException)
+			{
+			}
+
+			_stapledDecoded = true;
+		}
+
+		if (_stapled is not { } response)
+		{
+			return new RevocationResult(RevocationStatus.Invalid, "The response does not decode.");
+		}
+
+		RevocationResult result = CheckOcsp(response, certificate, issuer);
+		return result.Status is RevocationStatus.Unknown ? new RevocationResult(RevocationStatus.Invalid, "The response says that the responder does not know the certificate.") : result;
 	}
 
 	// A source that says Good or Revoked decides; otherwise the next is asked.

@@ -18,6 +18,11 @@ namespace CryptoBase.X509;
 /// The validator does not check <see cref="Certificate.KeyUsage" />.
 /// </para>
 /// <para>
+/// The validator ignores <see cref="CertificateValidationContext.StapledOcspResponse" />, as <see cref="X509ChainPolicy" /> has no public member that takes an OCSP response, so its <see cref="ICertificateValidator.UsesStapledOcspResponse" /> is <see langword="false" />;
+/// a policy that checks revocation has the platform find the status itself.
+/// It names no trust anchors in <see cref="ICertificateValidator.TrustAnchorSubjects" />.
+/// </para>
+/// <para>
 /// The result accepts the certificates when the platform accepts the chain and nothing below rejects them, and otherwise holds every error that applies:
 /// <see cref="CertificateValidationError.UnsupportedAlgorithm" /> for a certificate that the platform does not load, which ends validation, or for a chain that the platform fails to build, such as one with a DSA signature on Windows;
 /// for each status that the platform reports for a chain that it does not accept, <see cref="CertificateValidationError.InvalidSignature" />, <see cref="CertificateValidationError.Expired" />, <see cref="CertificateValidationError.Revoked" />, <see cref="CertificateValidationError.UntrustedRoot" /> (including a partial chain), <see cref="CertificateValidationError.NotValidForUsage" /> (including an issuance policy that the chain does not meet), <see cref="CertificateValidationError.RevocationUnknown" /> (including offline revocation) or, for any other status or when the platform reports none, <see cref="CertificateValidationError.Unspecified" />;

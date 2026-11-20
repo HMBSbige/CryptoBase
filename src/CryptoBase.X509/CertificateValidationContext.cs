@@ -51,6 +51,20 @@ public sealed class CertificateValidationContext
 	public string? HostName { get; init; }
 
 	/// <summary>
+	/// Gets the DER-encoded OCSP response (RFC 6960, Sec. 4.2.1) that the peer presented with its certificates for its own certificate, the first of <see cref="PresentedCertificates" />, or empty, the default, for none.
+	/// </summary>
+	/// <remarks>
+	/// The context holds a copy.
+	/// Only a validator whose <see cref="ICertificateValidator.UsesStapledOcspResponse" /> is <see langword="true" /> checks it, and reports one that it does not accept as <see cref="CertificateValidationError.InvalidOcspResponse" />;
+	/// the others ignore it.
+	/// </remarks>
+	public ReadOnlyMemory<byte> StapledOcspResponse
+	{
+		get;
+		init => field = value.ToArray();
+	}
+
+	/// <summary>
 	/// Gets the time, on the clock of <see cref="TimeProvider" />, after which the validator must not wait for the network, or <see langword="null" /> for no deadline.
 	/// </summary>
 	/// <remarks>

@@ -312,6 +312,24 @@ public class FingerprintCertificateValidatorTest
 		}
 	}
 
+	// The validator checks no revocation, so it asks for no stapled OCSP response and ignores one.
+	[Test]
+	public async Task IgnoresAStapledOcspResponseAndNamesNoTrustAnchors()
+	{
+		Certificate certificate = SelfSignedP256();
+		FingerprintCertificateValidator validator = new([Fingerprint(certificate, HashAlgorithmName.SHA256)]);
+		ICertificateValidator contract = validator;
+
+		CertificateValidationResult result = await validator.ValidateAsync(new CertificateValidationContext([certificate], CertificateUsage.ServerAuthentication) { StapledOcspResponse = (byte[])[0x01, 0x02, 0x03] });
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(contract.UsesStapledOcspResponse).IsFalse();
+			await Assert.That(contract.TrustAnchorSubjects).IsEmpty();
+			await Assert.That(result.IsValid).IsTrue().Because($"{result.Error} {result.Message}");
+		}
+	}
+
 	private static CertificateFingerprint Fingerprint(Certificate certificate, HashAlgorithmName hashAlgorithm)
 	{
 		return new CertificateFingerprint(hashAlgorithm, CryptographicOperations.HashData(hashAlgorithm, certificate.Encoded.Span));

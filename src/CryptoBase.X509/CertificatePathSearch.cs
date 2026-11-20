@@ -91,7 +91,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 			if (validator.RevocationMode is not X509RevocationMode.NoCheck)
 			{
-				_revocation = new PathRevocation(validator, _budget, _time);
+				_revocation = new PathRevocation(validator, _budget, _time, context.StapledOcspResponse);
 			}
 		}
 	}
@@ -140,21 +140,22 @@ internal sealed class CertificatePathSearch : IDisposable
 					return CreateResult(path, CertificatePathEnd.TrustAnchor, leafProblems);
 				}
 
-				// A certificate that is revoked, or whose status no source determines, gives way to another path, such as through a cross-certificate.
-				// If none is valid, the first revoked path is reported, or else the first whose status is not known.
+				// A certificate that is revoked, whose stapled OCSP response is not accepted, or whose status no source determines, gives way to another path, such as through a cross-certificate or another issuer that the stapled response names.
+				// If none is valid, the first revoked path is reported, or else the first whose status is not known, or else the first whose stapled response is not accepted:
+				// a path that got past the stapled response, which then is not why the validation fails, comes before one that did not.
 				if (await revocation.CheckAsync(path).ConfigureAwait(false) is not { } problem)
 				{
 					return CreateResult(path, CertificatePathEnd.TrustAnchor, []);
 				}
 
-				if (_best is null || problem.Error is CertificateValidationError.Revoked && _best.Problems[0].Error is not CertificateValidationError.Revoked)
+				if (_best is null || RankRevocation(problem.Error) < RankRevocation(_best.Problems[0].Error))
 				{
 					_best = new Attempt(path, CertificatePathEnd.TrustAnchor, [problem], 0, 1);
 				}
 
 				if (revocation.RejectedEdgeCount > MaxRejectedEdges)
 				{
-					Stop($"{MaxRejectedEdges} revoked certificates or certificates of unknown status");
+					Stop($"{MaxRejectedEdges} revoked certificates, stapled OCSP responses that are not accepted or certificates of unknown status");
 					break;
 				}
 			}
@@ -167,6 +168,17 @@ internal sealed class CertificatePathSearch : IDisposable
 		}
 
 		return ReportBestPath(identity);
+
+		// The order in which RunAsync reports the problems that PathRevocation finds, the first first.
+		static int RankRevocation(CertificateValidationError error)
+		{
+			return error switch
+			{
+				CertificateValidationError.Revoked => 0,
+				CertificateValidationError.RevocationUnknown => 1,
+				_ => 2
+			};
+		}
 	}
 
 	// The problems of the peer's certificate whatever the path: its own, then that of its identity, which ReportBestPath adds after those of the path that it reports.

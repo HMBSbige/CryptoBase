@@ -87,12 +87,25 @@ namespace CryptoBase.X509;
 /// Only http and https URIs are used.
 /// The first source that says that the certificate is good or revoked decides; CRLs for some reasons alone combine as RFC 5280, Sec. 6.3.3, describes.
 /// Delta and indirect CRLs are not used, and neither is a CRL whose issuer has a version 3 certificate without a key usage extension that asserts cRLSign (RFC 5280, Sec. 6.3.3 (f), as RFC 10007, Sec. 4, amends it).
-/// The status of a certificate with a noRevAvail or ocsp-nocheck extension is not checked (RFC 9608, Sec. 4): no source is asked, so even a CRL of <see cref="RevocationLists" /> that lists it has no effect.
+/// The status of a certificate with a noRevAvail or ocsp-nocheck extension is not checked (RFC 9608, Sec. 4): no source is asked, so even a CRL of <see cref="RevocationLists" /> that lists it has no effect, and only a stapled response, as described below, is still checked.
 /// Whatever the <see cref="RevocationMode" />, every certificate but the trust anchor must have a NULL value in either extension, and one with noRevAvail must not assert cA, have a CRL distribution points or freshest CRL extension, or have an id-ad-ocsp access description (RFC 9608, Sec. 3), or the result is <see cref="CertificateValidationError.Malformed" />;
 /// an authority information access extension that does not decode counts as one that has such a description.
 /// A delegated OCSP responder's certificate that breaks these rules makes its response unusable.
-/// A revoked certificate, and a certificate whose status no source determines unless <see cref="IgnoreRevocationUnknown" /> accepts it, fail that path, and the validator tries the others;
-/// if none is valid, the result reports the first path that was revoked, with <see cref="CertificateValidationError.Revoked" />, or otherwise the first whose status was not determined, with <see cref="CertificateValidationError.RevocationUnknown" />.
+/// A revoked certificate, a stapled OCSP response that the validator does not accept, as described below, and a certificate whose status no source determines unless <see cref="IgnoreRevocationUnknown" /> accepts it, fail that path, and the validator tries the others;
+/// if none is valid, the result reports the first path that was revoked, with <see cref="CertificateValidationError.Revoked" />, or otherwise the first whose status was not determined, with <see cref="CertificateValidationError.RevocationUnknown" />, or otherwise the first whose stapled response was not accepted, with <see cref="CertificateValidationError.InvalidOcspResponse" />.
+/// </para>
+/// <para>
+/// With such a <see cref="RevocationMode" />, <see cref="X509RevocationMode.Offline" /> included, the validator checks the OCSP response that the peer stapled, <see cref="CertificateValidationContext.StapledOcspResponse" />, and <see cref="UsesStapledOcspResponse" /> is <see langword="true" />.
+/// The response takes the place of the sources of the peer's certificate, its OCSP responders and CRL distribution points, which are not asked; only a CRL of <see cref="RevocationLists" /> that revokes the certificate decides before it.
+/// It is checked as a responder's response is, at the time of the validation (RFC 6960, Sec. 3.2): it must be signed by the issuer or by a delegated responder whose certificate the issuer issued for id-kp-OCSPSigning and that is valid at the time, with no clock skew (RFC 6960, Sec. 4.2.2.2);
+/// a response for the certificate must have a thisUpdate and a nextUpdate that include the time, within 5 minutes at each end (RFC 9919, Sec. 5);
+/// and of several such responses, the most severe of those that are current stands.
+/// One that says that the certificate is good or revoked decides.
+/// Any other, such as one that is longer than 64 KiB, does not decode, has no current response for the certificate, says unknown or has a signer that is not authorized, fails that path with <see cref="CertificateValidationError.InvalidOcspResponse" />, whatever <see cref="IgnoreRevocationUnknown" /> says, and the certificates above the peer's are not checked.
+/// The response is checked even for a peer's certificate with a noRevAvail or ocsp-nocheck extension, on which <see cref="RevocationLists" /> has no effect.
+/// Its CertID names the issuer by the hashes of its name and key, so a candidate issuer that it does not name fails that path, and the validator tries the others.
+/// A peer's certificate that is a trust anchor is a path of its own, without a revocation check, and the response is not used.
+/// Without a stapled response, the peer's certificate is checked as the others are.
 /// </para>
 /// <para>
 /// The validator caches what it retrieves once verified, in memory bounded in entries and bytes: for an hour, the certificates that a path used above the certificate whose URI gave them, without the others that the URI gave, and CRLs and OCSP responses until their nextUpdate.
@@ -112,7 +125,7 @@ namespace CryptoBase.X509;
 /// <see cref="CertificateValidationError.WeakAlgorithm" /> and <see cref="CertificateValidationError.UnsupportedAlgorithm" /> as above;
 /// <see cref="CertificateValidationError.InvalidSignature" />;
 /// <see cref="CertificateValidationError.Expired" />;
-/// <see cref="CertificateValidationError.Revoked" /> and <see cref="CertificateValidationError.RevocationUnknown" /> as above;
+/// <see cref="CertificateValidationError.Revoked" />, <see cref="CertificateValidationError.InvalidOcspResponse" /> and <see cref="CertificateValidationError.RevocationUnknown" /> as above;
 /// <see cref="CertificateValidationError.UntrustedRoot" /> for a path that does not reach a trust anchor;
 /// <see cref="CertificateValidationError.NotValidForUsage" /> for an extended key usage, basic constraints, key usage, path length, name or certificate policy that the rules above refuse, or an extension that the validator does not process;
 /// <see cref="CertificateValidationError.Unspecified" /> for a search or a retrieval of issuers that a limit stopped;
@@ -123,9 +136,10 @@ namespace CryptoBase.X509;
 /// <para>
 /// Each search considers at most 100 candidate issuers, makes at most 2^20 comparisons of a name with a subtree, and handles at most 2^16 entries of the policy graphs of the paths that reach a trust anchor, so a validation considers at most 200 candidates, makes at most 2^21 comparisons and handles at most 2^17 entries.
 /// A limit that stops the first search fails the validation, and one that stops either search adds <see cref="CertificateValidationError.Unspecified" /> to the errors.
-/// A validation that retrieves repeats the first search at most once for each of 8 rounds of retrieving issuers and of 8 certificates revoked or of unknown status.
+/// A validation that retrieves or checks revocation repeats the first search at most once for each of 8 rounds of retrieving issuers and of 8 certificates revoked, with a stapled response that the validator does not accept, or of unknown status.
 /// It prepares at most 128 requests from the URIs of the certificates, whether retrieved or answered from the cache, and leaves out the URIs beyond them;
 /// it makes at most 32 retrievals, whether they fail or not, takes at most 64 MiB of what they return in all, adds at most 32 retrieved certificates to the candidates, and takes at most 64 KiB of a certificate, a certs-only message of at most 16 certificates or an OCSP response, and 32 MiB of a CRL.
+/// A stapled OCSP response, which is not retrieved, is held to the same 64 KiB.
 /// A retrieval of issuers that reaches a limit adds <see cref="CertificateValidationError.Unspecified" />;
 /// a certificate whose status it then cannot learn is <see cref="CertificateValidationError.RevocationUnknown" /> instead.
 /// Cancellation is observed between candidates and during a retrieval.
@@ -326,8 +340,9 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 	/// Gets how the revocation status of the certificates of a path is determined; <see cref="X509RevocationMode.NoCheck" /> by default, which does not check it.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="X509RevocationMode.Offline" /> uses only <see cref="RevocationLists" />.
+	/// <see cref="X509RevocationMode.Offline" /> uses only <see cref="RevocationLists" /> and <see cref="CertificateValidationContext.StapledOcspResponse" />.
 	/// <see cref="X509RevocationMode.Online" /> also asks the OCSP responders of each certificate, then retrieves its CRLs, so it needs <see cref="Retriever" />.
+	/// <see cref="X509RevocationMode.NoCheck" /> ignores a stapled response, as <see cref="UsesStapledOcspResponse" /> says.
 	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException">The value set is not defined.</exception>
 	public X509RevocationMode RevocationMode
@@ -406,6 +421,51 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 	/// Gets whether issuers are not retrieved with <see cref="Retriever" />; <see langword="false" /> by default.
 	/// </summary>
 	public bool DisableCertificateDownloads { get; init; }
+
+	/// <summary>
+	/// Gets whether the validator checks <see cref="CertificateValidationContext.StapledOcspResponse" />: <see langword="true" /> unless <see cref="RevocationMode" /> is <see cref="X509RevocationMode.NoCheck" />.
+	/// </summary>
+	/// <remarks><see cref="X509RevocationMode.Offline" /> checks it too; the remarks of the class describe the check.</remarks>
+	public bool UsesStapledOcspResponse => RevocationMode is not X509RevocationMode.NoCheck;
+
+	/// <summary>
+	/// Gets the DER-encoded subject names of the trust anchors that the validator can use, those whose keys it imported and the policy accepts, in the order that the constructor was given them, each name once, byte for byte.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// A trust anchor whose key the importer did not import, or whose key the policy refuses, as <see cref="CertificateAlgorithmPolicy.IsAcceptableInPath" /> does with <see cref="MinRsaKeySize" />, ends no valid path, so it is left out.
+	/// A trust anchor that is named may still end no valid path for another reason, such as a critical extension that the validator does not process.
+	/// The list does not depend on the time.
+	/// </para>
+	/// <para>
+	/// The first call makes the list, which is immutable, and later calls return the same instance; calls may be concurrent.
+	/// </para>
+	/// </remarks>
+	public IReadOnlyList<ReadOnlyMemory<byte>> TrustAnchorSubjects
+	{
+		get
+		{
+			if (Volatile.Read(ref field) is { } subjects)
+			{
+				return subjects;
+			}
+
+			// In the order of the trust anchors, each name once.
+			HashSet<ReadOnlyMemory<byte>> seen = new(ByteMemoryComparer.Instance);
+			List<ReadOnlyMemory<byte>> names = [];
+
+			foreach (TrustAnchorEntry anchor in _anchors)
+			{
+				if (anchor.Key is not null && CertificateAlgorithmPolicy.CheckPublicKey(anchor.Certificate.PublicKeyInfo, MinRsaKeySize, out _) is null && seen.Add(anchor.Certificate.Subject))
+				{
+					names.Add(anchor.Certificate.Subject);
+				}
+			}
+
+			IReadOnlyList<ReadOnlyMemory<byte>> created = Array.AsReadOnly(names.ToArray());
+			return Interlocked.CompareExchange(ref field, created, null) ?? created;
+		}
+	}
 
 	// The contents of the object identifiers of InitialPolicies, or null for anyPolicy.
 	internal HashSet<ReadOnlyMemory<byte>>? InitialPolicySet { get; private init; }

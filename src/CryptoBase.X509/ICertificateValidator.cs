@@ -13,6 +13,22 @@ namespace CryptoBase.X509;
 public interface ICertificateValidator
 {
 	/// <summary>
+	/// Gets whether the validator checks <see cref="CertificateValidationContext.StapledOcspResponse" />; <see langword="false" /> by default, for a validator that ignores it.
+	/// </summary>
+	/// <remarks>
+	/// A validator for which it is <see langword="true" /> reports a stapled response that it does not accept as <see cref="CertificateValidationError.InvalidOcspResponse" />.
+	/// An implementation returns the same value for the life of the instance.
+	/// </remarks>
+	bool UsesStapledOcspResponse => false;
+
+	/// <summary>
+	/// Gets the DER-encoded subject names (RFC 5280, Sec. 4.1.2.6) of the validator's trust anchors, for a caller that tells its peer which certification authorities it accepts;
+	/// empty by default, for a validator that names none.
+	/// </summary>
+	/// <remarks>The list is immutable, and an implementation returns the same names for the life of the instance.</remarks>
+	IReadOnlyList<ReadOnlyMemory<byte>> TrustAnchorSubjects => [];
+
+	/// <summary>
 	/// Validates the certificates that a peer presented.
 	/// </summary>
 	/// <remarks>An implementation may observe <paramref name="cancellationToken" /> only at some stages of its work; a caller with a deadline enforces it itself.</remarks>

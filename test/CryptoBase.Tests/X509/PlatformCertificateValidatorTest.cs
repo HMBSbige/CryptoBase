@@ -92,6 +92,27 @@ public class PlatformCertificateValidatorTest
 		}
 	}
 
+	// X509ChainPolicy takes no OCSP response, so the validator asks for none and ignores one that the peer stapled.
+	[Test]
+	public async Task IgnoresAStapledOcspResponseAndNamesNoTrustAnchors()
+	{
+		using TestPki pki = new();
+		using X509Certificate2 leaf = pki.IssueLeaf();
+		PlatformCertificateValidator validator = pki.Validator();
+		ICertificateValidator contract = validator;
+		CertificateValidationContext presented = pki.Context(leaf, CertificateUsage.ServerAuthentication);
+		CertificateValidationContext stapled = new(presented.PresentedCertificates, CertificateUsage.ServerAuthentication) { StapledOcspResponse = (byte[])[0x01, 0x02, 0x03] };
+
+		CertificateValidationResult result = await validator.ValidateAsync(stapled);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(contract.UsesStapledOcspResponse).IsFalse();
+			await Assert.That(contract.TrustAnchorSubjects).IsEmpty();
+			await Assert.That(result.IsValid).IsTrue().Because($"{result.Error} {result.Message}");
+		}
+	}
+
 	[Test]
 	public async Task TrustsSelfSignedCryptoBaseCertificates()
 	{

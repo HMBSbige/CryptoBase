@@ -14,6 +14,7 @@ public class CertificateValidationResultTest
 		CertificateValidationError.InvalidSignature,
 		CertificateValidationError.Expired,
 		CertificateValidationError.Revoked,
+		CertificateValidationError.InvalidOcspResponse,
 		CertificateValidationError.UntrustedRoot,
 		CertificateValidationError.NotValidForUsage,
 		CertificateValidationError.RevocationUnknown,

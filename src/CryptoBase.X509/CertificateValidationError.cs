@@ -59,5 +59,14 @@ public enum CertificateValidationError
 	/// A certificate uses a signature algorithm or a public key that the validator's policy refuses, such as a signature with MD5 or SHA-1, or an RSA key shorter than the policy's minimum.
 	/// </summary>
 	/// <remarks>Unlike <see cref="UnsupportedAlgorithm" />, the validator knows the algorithm and refuses it by its policy.</remarks>
-	WeakAlgorithm = 10
+	WeakAlgorithm = 10,
+
+	/// <summary>
+	/// The OCSP response that the peer stapled for its certificate, <see cref="CertificateValidationContext.StapledOcspResponse" />, is not one that the validator accepts.
+	/// </summary>
+	/// <remarks>
+	/// A validator reports it only for a context with a stapled response, and only if its <see cref="ICertificateValidator.UsesStapledOcspResponse" /> is <see langword="true" />, so a caller that passes no stapled response never sees it.
+	/// A stapled response that says that the certificate is revoked gives <see cref="Revoked" /> instead.
+	/// </remarks>
+	InvalidOcspResponse = 11
 }

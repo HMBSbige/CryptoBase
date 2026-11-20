@@ -14,9 +14,9 @@ namespace CryptoBase.Tests.X509;
 public class TrustAnchorRetrievalTest
 {
 	private const string IssuerUri = "http://ca.test/issuer.cer";
-	private const string OcspUri = "http://ocsp.test/";
-	private const string CrlUri = "http://crl.test/ca.crl";
-	private const string NoRevAvailOid = "2.5.29.56";
+	internal const string OcspUri = "http://ocsp.test/";
+	internal const string CrlUri = "http://crl.test/ca.crl";
+	internal const string NoRevAvailOid = "2.5.29.56";
 	private const string OcspNoCheckOid = "1.3.6.1.5.5.7.48.1.5";
 	private const string CrlDistributionPointsOid = "2.5.29.31";
 	private const string FreshestCrlOid = "2.5.29.46";
@@ -27,18 +27,18 @@ public class TrustAnchorRetrievalTest
 	private static readonly byte[] OnlyKeyCompromise = Tlv(0x83, [0x06, 0x40]);
 	private static readonly byte[] EveryOtherReason = Tlv(0x83, [0x07, 0x3F, 0x80]);
 
-	private static CertificateExtension Aia(string[]? caIssuers = null, string[]? ocsp = null, bool critical = false)
+	internal static CertificateExtension Aia(string[]? caIssuers = null, string[]? ocsp = null, bool critical = false)
 	{
 		byte[][] descriptions = [.. (ocsp ?? []).Select(static uri => Sequence(Oid("1.3.6.1.5.5.7.48.1"), UniformResourceIdentifier(uri))), .. (caIssuers ?? []).Select(static uri => Sequence(Oid("1.3.6.1.5.5.7.48.2"), UniformResourceIdentifier(uri)))];
 		return new CertificateExtension("1.3.6.1.5.5.7.1.1", critical, Sequence(descriptions));
 	}
 
-	private static CertificateExtension Cdp(params string[] uris)
+	internal static CertificateExtension Cdp(params string[] uris)
 	{
 		return TestCrl.DistributionPoints([.. uris.Select(static uri => Sequence(TestCrl.FullName(0xA0, UniformResourceIdentifier(uri))))]);
 	}
 
-	private static CertificateExtension NullExtension(string oid, bool critical = false)
+	internal static CertificateExtension NullExtension(string oid, bool critical = false)
 	{
 		return new CertificateExtension(oid, critical, TestCrl.NullValue);
 	}
@@ -52,7 +52,7 @@ public class TrustAnchorRetrievalTest
 		};
 	}
 
-	private static byte[] Ocsp(Certificate certificate, Authority issuer, byte[] status, DateTimeOffset? nextUpdate = null, byte[]? certificateId = null)
+	internal static byte[] Ocsp(Certificate certificate, Authority issuer, byte[] status, DateTimeOffset? nextUpdate = null, byte[]? certificateId = null)
 	{
 		return new TestOcsp.Basic
 		{
@@ -82,12 +82,12 @@ public class TrustAnchorRetrievalTest
 		return certificateId.ReadSequence().ReadObjectIdentifier();
 	}
 
-	private static byte[] EncodeCrl(Authority authority, params Certificate[] revoked)
+	internal static byte[] EncodeCrl(Authority authority, params Certificate[] revoked)
 	{
 		return TestCrl.Conforming(authority, revoked.Length is 0 ? null : [.. revoked.Select(static certificate => TestCrl.Entry(TestCrl.SerialNumberOf(certificate)))]).Encode(authority);
 	}
 
-	private static CertificateRevocationList DecodeCrl(Authority authority, params Certificate[] revoked)
+	internal static CertificateRevocationList DecodeCrl(Authority authority, params Certificate[] revoked)
 	{
 		return CertificateRevocationList.Decode(EncodeCrl(authority, revoked));
 	}
@@ -2862,7 +2862,7 @@ public class TrustAnchorRetrievalTest
 	}
 
 	// Answers from memory and records every call.
-	private sealed class FakeRetriever : ICertificateDataRetriever
+	internal sealed class FakeRetriever : ICertificateDataRetriever
 	{
 		private readonly ConcurrentDictionary<string, byte[]> _bodies = new(StringComparer.Ordinal);
 

@@ -16,6 +16,10 @@ namespace CryptoBase.X509;
 /// one that matches gives a path of the certificate alone, which ends at a trust anchor, as the fingerprint vouches for its public key and not its signature.
 /// </para>
 /// <para>
+/// The validator checks no revocation, so it ignores <see cref="CertificateValidationContext.StapledOcspResponse" />, and its <see cref="ICertificateValidator.UsesStapledOcspResponse" /> is <see langword="false" />.
+/// It names no trust anchors in <see cref="ICertificateValidator.TrustAnchorSubjects" />, as a fingerprint names no issuer.
+/// </para>
+/// <para>
 /// Validation completes synchronously and uses no network. Instances are immutable, so they may be used concurrently.
 /// </para>
 /// </remarks>

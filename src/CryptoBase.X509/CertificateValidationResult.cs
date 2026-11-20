@@ -31,6 +31,7 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 		CertificateValidationError.InvalidSignature,
 		CertificateValidationError.Expired,
 		CertificateValidationError.Revoked,
+		CertificateValidationError.InvalidOcspResponse,
 		CertificateValidationError.UntrustedRoot,
 		CertificateValidationError.NotValidForUsage,
 		CertificateValidationError.RevocationUnknown,
@@ -66,7 +67,7 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 	/// Gets the most important reason why the certificates are not acceptable, the first of <see cref="Errors" />, or <see cref="CertificateValidationError.Unspecified" /> if they are acceptable.
 	/// </summary>
 	/// <remarks>
-	/// From the most important: <see cref="CertificateValidationError.Malformed" />, <see cref="CertificateValidationError.WeakAlgorithm" />, <see cref="CertificateValidationError.UnsupportedAlgorithm" />, <see cref="CertificateValidationError.InvalidSignature" />, <see cref="CertificateValidationError.Expired" />, <see cref="CertificateValidationError.Revoked" />, <see cref="CertificateValidationError.UntrustedRoot" />, <see cref="CertificateValidationError.NotValidForUsage" />, <see cref="CertificateValidationError.RevocationUnknown" />, <see cref="CertificateValidationError.Unspecified" /> and <see cref="CertificateValidationError.NameMismatch" />: what makes the path unacceptable comes before whom the certificate identifies.
+	/// From the most important: <see cref="CertificateValidationError.Malformed" />, <see cref="CertificateValidationError.WeakAlgorithm" />, <see cref="CertificateValidationError.UnsupportedAlgorithm" />, <see cref="CertificateValidationError.InvalidSignature" />, <see cref="CertificateValidationError.Expired" />, <see cref="CertificateValidationError.Revoked" />, <see cref="CertificateValidationError.InvalidOcspResponse" />, <see cref="CertificateValidationError.UntrustedRoot" />, <see cref="CertificateValidationError.NotValidForUsage" />, <see cref="CertificateValidationError.RevocationUnknown" />, <see cref="CertificateValidationError.Unspecified" /> and <see cref="CertificateValidationError.NameMismatch" />: what makes the path unacceptable comes before whom the certificate identifies.
 	/// A result from <see cref="Invalid" /> has the error given there.
 	/// </remarks>
 	public CertificateValidationError Error => _errors is [var first, ..] ? first : CertificateValidationError.Unspecified;

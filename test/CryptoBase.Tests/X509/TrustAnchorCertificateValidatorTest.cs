@@ -1271,6 +1271,28 @@ public class TrustAnchorCertificateValidatorTest
 		return Tamper(certificate);
 	}
 
+	// A trust anchor that ends no valid path is not named for certificate_authorities: one whose key the importer does not import, and one whose key the policy refuses.
+	[Test]
+	public async Task TrustAnchorSubjectsLeaveOutTrustAnchorsThatEndNoPath()
+	{
+		using Authority usable = Authority.CreateRoot("CN=Usable");
+		using Authority unimported = Authority.CreateRoot("CN=Unimported");
+		using RSA rsa = CreateRsa();
+		Certificate rsaRoot = RsaSelfSigned(rsa);
+		byte[] unimportedKey = unimported.Certificate.PublicKeyInfo.Encoded.ToArray();
+		using TrustAnchorCertificateValidator strict = new([unimported.Certificate, rsaRoot, usable.Certificate], subjectPublicKeyInfo => subjectPublicKeyInfo.SequenceEqual(unimportedKey) ? throw new NotSupportedException("Not this key.") : SignatureKey.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo))
+		{
+			MinRsaKeySize = 3072
+		};
+		using TrustAnchorCertificateValidator lenient = new([unimported.Certificate, rsaRoot, usable.Certificate], SignatureKey.ImportSubjectPublicKeyInfo);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(string.Join(',', strict.TrustAnchorSubjects.Select(static subject => Convert.ToHexString(subject.Span)))).IsEqualTo(Convert.ToHexString(usable.Name));
+			await Assert.That(string.Join(',', lenient.TrustAnchorSubjects.Select(static subject => Convert.ToHexString(subject.Span)))).IsEqualTo(string.Join(',', Convert.ToHexString(unimported.Name), Convert.ToHexString(rsaRoot.Subject.Span), Convert.ToHexString(usable.Name)));
+		}
+	}
+
 	private static Authority RsaRoot(int bits, SignatureAlgorithm algorithm)
 	{
 		RSA key = CreateRsa(bits);
