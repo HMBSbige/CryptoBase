@@ -290,8 +290,8 @@ public sealed class CertificateBuilder
 
 		foreach (CertificateExtension extension in extensions)
 		{
-			hasAuthorityKeyIdentifier |= extension.Oid is DecodedExtensions.AuthorityKeyIdentifierOid;
-			hasSubjectKeyIdentifier |= extension.Oid is DecodedExtensions.SubjectKeyIdentifierOid;
+			hasAuthorityKeyIdentifier |= extension.Oid is CertificateExtension.AuthorityKeyIdentifier;
+			hasSubjectKeyIdentifier |= extension.Oid is CertificateExtension.SubjectKeyIdentifier;
 		}
 
 		CertificateExtension[] authorityKeyIdentifier = hasAuthorityKeyIdentifier ? [] : [CreateAuthorityKeyIdentifier(issuer)];
@@ -316,7 +316,7 @@ public sealed class CertificateBuilder
 			writer.WriteOctetString(issuerKeyIdentifier.Value is { } keyIdentifier ? keyIdentifier.Span : SHA1.HashData(issuer.PublicKeyInfo.PublicKey.Span), AuthorityKeyIdentifier.KeyIdentifierTag);
 		}
 
-		return new CertificateExtension(DecodedExtensions.AuthorityKeyIdentifierOid, false, writer.Encode());
+		return new CertificateExtension(CertificateExtension.AuthorityKeyIdentifier, false, writer.Encode());
 	}
 
 	// SubjectKeyIdentifier ::= OCTET STRING, non-critical as RFC 5280, Sec. 4.2.1.2, requires.
@@ -325,7 +325,7 @@ public sealed class CertificateBuilder
 	{
 		AsnWriter writer = new(AsnEncodingRules.DER);
 		writer.WriteOctetString(SHA1.HashData(subjectPublicKeyInfo.PublicKey.Span));
-		return new CertificateExtension(DecodedExtensions.SubjectKeyIdentifierOid, false, writer.Encode());
+		return new CertificateExtension(CertificateExtension.SubjectKeyIdentifier, false, writer.Encode());
 	}
 
 	// 126 random bits in 16 bytes whose first is in [0x40, 0x7F], so the INTEGER takes 16 bytes with no zero byte for the sign.

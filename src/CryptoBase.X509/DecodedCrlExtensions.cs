@@ -18,7 +18,7 @@ internal sealed class DecodedCrlExtensions
 
 			switch (extension.Oid)
 			{
-				case DecodedExtensions.AuthorityKeyIdentifierOid:
+				case CertificateExtension.AuthorityKeyIdentifier:
 				{
 					AuthorityKeyIdentifier = DecodedExtension<AuthorityKeyIdentifier>.Decode(extension.Value, X509.AuthorityKeyIdentifier.Read);
 					break;

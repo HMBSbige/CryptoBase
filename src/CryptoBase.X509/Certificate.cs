@@ -22,7 +22,6 @@ namespace CryptoBase.X509;
 /// </remarks>
 public sealed class Certificate
 {
-	internal const string KeyUsageOid = "2.5.29.15";
 	private const string PemLabel = "CERTIFICATE";
 
 	internal static readonly Asn1Tag VersionTag = new(TagClass.ContextSpecific, 0, true);
@@ -415,7 +414,7 @@ public sealed class Certificate
 				throw new AsnContentException($"The extensions include {oid} more than once.");
 			}
 
-			if (oid == KeyUsageOid)
+			if (oid == CertificateExtension.KeyUsage)
 			{
 				try
 				{

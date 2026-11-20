@@ -83,7 +83,7 @@ internal static class RevocationChecker
 		// Sec. 5.2 and 5.3: a critical extension that is not understood forbids using the CRL for any certificate.
 		// The critical CRL extensions that the checker processes; nothing else may be critical (RFC 5280, Sec. 5.2).
 		// The CRL number, the freshest CRL and the authority information access extensions must not be critical (Secs. 5.2.3, 5.2.6 and 5.2.7), so a critical one is refused.
-		if (CheckCriticalExtensions(crl.Extensions, [DecodedExtensions.AuthorityKeyIdentifierOid, IssuerAlternativeNameOid, DecodedCrlExtensions.DeltaCrlIndicatorOid, DecodedCrlExtensions.IssuingDistributionPointOid], "The CRL") is { } criticalProblem)
+		if (CheckCriticalExtensions(crl.Extensions, [CertificateExtension.AuthorityKeyIdentifier, IssuerAlternativeNameOid, DecodedCrlExtensions.DeltaCrlIndicatorOid, DecodedCrlExtensions.IssuingDistributionPointOid], "The CRL") is { } criticalProblem)
 		{
 			return Invalid(criticalProblem);
 		}
@@ -710,7 +710,7 @@ internal static class RevocationChecker
 
 		// As on a path, a critical subject alternative name that decodes is processed whatever the forms of its names.
 		// RFC 5280, Sec. 4.2.1.6, requires it critical when the subject is empty, and the names give the responder no authority.
-		if (CheckCriticalExtensions(candidate.Extensions, [DecodedExtensions.BasicConstraintsOid, Certificate.KeyUsageOid, DecodedExtensions.ExtendedKeyUsageOid, DecodedExtensions.SubjectAlternativeNameOid, DecodedExtensions.OcspNoCheckOid], "The responder's certificate") is { } criticalProblem)
+		if (CheckCriticalExtensions(candidate.Extensions, [CertificateExtension.BasicConstraints, CertificateExtension.KeyUsage, CertificateExtension.ExtendedKeyUsage, CertificateExtension.SubjectAlternativeName, DecodedExtensions.OcspNoCheckOid], "The responder's certificate") is { } criticalProblem)
 		{
 			return criticalProblem;
 		}

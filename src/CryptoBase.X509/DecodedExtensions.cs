@@ -8,18 +8,11 @@ namespace CryptoBase.X509;
 // Every validation reads the others.
 internal sealed class DecodedExtensions
 {
-	internal const string SubjectKeyIdentifierOid = "2.5.29.14";
-	internal const string SubjectAlternativeNameOid = "2.5.29.17";
-	internal const string BasicConstraintsOid = "2.5.29.19";
 	internal const string NameConstraintsOid = "2.5.29.30";
 	internal const string CertificatePoliciesOid = "2.5.29.32";
 	internal const string PolicyMappingsOid = "2.5.29.33";
-	internal const string AuthorityKeyIdentifierOid = "2.5.29.35";
 	internal const string PolicyConstraintsOid = "2.5.29.36";
-	internal const string ExtendedKeyUsageOid = "2.5.29.37";
 	internal const string InhibitAnyPolicyOid = "2.5.29.54";
-	private const string AuthorityInformationAccessOid = "1.3.6.1.5.5.7.1.1";
-	internal const string CrlDistributionPointsOid = "2.5.29.31";
 	private const string FreshestCrlOid = "2.5.29.46";
 	private const string NoRevocationAvailableOid = "2.5.29.56";
 	internal const string OcspNoCheckOid = "1.3.6.1.5.5.7.48.1.5";
@@ -41,27 +34,27 @@ internal sealed class DecodedExtensions
 
 			switch (extension.Oid)
 			{
-				case AuthorityKeyIdentifierOid:
+				case CertificateExtension.AuthorityKeyIdentifier:
 				{
 					AuthorityKeyIdentifier = DecodedExtension<AuthorityKeyIdentifier>.Decode(extension.Value, X509.AuthorityKeyIdentifier.Read);
 					break;
 				}
-				case SubjectKeyIdentifierOid:
+				case CertificateExtension.SubjectKeyIdentifier:
 				{
 					SubjectKeyIdentifier = DecodedExtension<ReadOnlyMemory<byte>?>.Decode(extension.Value, static value => ReadSubjectKeyIdentifier(value));
 					break;
 				}
-				case SubjectAlternativeNameOid:
+				case CertificateExtension.SubjectAlternativeName:
 				{
 					SubjectAlternativeName = DecodedExtension<SubjectAlternativeName>.Decode(extension.Value, X509.SubjectAlternativeName.Read);
 					break;
 				}
-				case BasicConstraintsOid:
+				case CertificateExtension.BasicConstraints:
 				{
 					BasicConstraints = DecodedExtension<BasicConstraints>.Decode(extension.Value, X509.BasicConstraints.Read);
 					break;
 				}
-				case ExtendedKeyUsageOid:
+				case CertificateExtension.ExtendedKeyUsage:
 				{
 					ExtendedKeyUsage = DecodedExtension<ExtendedKeyUsage>.Decode(extension.Value, X509.ExtendedKeyUsage.Read);
 					break;
@@ -91,12 +84,12 @@ internal sealed class DecodedExtensions
 					InhibitAnyPolicy = DecodedExtension<int?>.Decode(extension.Value, static value => X509.PolicyConstraints.ReadInhibitAnyPolicy(value));
 					break;
 				}
-				case AuthorityInformationAccessOid:
+				case CertificateExtension.AuthorityInformationAccess:
 				{
 					_authorityInformationAccess = extension;
 					break;
 				}
-				case CrlDistributionPointsOid:
+				case CertificateExtension.CrlDistributionPoints:
 				{
 					_crlDistributionPoints = extension;
 					break;

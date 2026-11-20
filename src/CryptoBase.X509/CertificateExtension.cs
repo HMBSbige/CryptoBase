@@ -7,6 +7,46 @@ namespace CryptoBase.X509;
 /// </summary>
 public sealed class CertificateExtension
 {
+	/// <summary>
+	/// The identifier of the authority key identifier extension (RFC 5280, Sec. 4.2.1.1).
+	/// </summary>
+	public const string AuthorityKeyIdentifier = "2.5.29.35";
+
+	/// <summary>
+	/// The identifier of the subject key identifier extension (RFC 5280, Sec. 4.2.1.2).
+	/// </summary>
+	public const string SubjectKeyIdentifier = "2.5.29.14";
+
+	/// <summary>
+	/// The identifier of the key usage extension (RFC 5280, Sec. 4.2.1.3).
+	/// </summary>
+	public const string KeyUsage = "2.5.29.15";
+
+	/// <summary>
+	/// The identifier of the subject alternative name extension (RFC 5280, Sec. 4.2.1.6).
+	/// </summary>
+	public const string SubjectAlternativeName = "2.5.29.17";
+
+	/// <summary>
+	/// The identifier of the basic constraints extension (RFC 5280, Sec. 4.2.1.9).
+	/// </summary>
+	public const string BasicConstraints = "2.5.29.19";
+
+	/// <summary>
+	/// The identifier of the extended key usage extension (RFC 5280, Sec. 4.2.1.12).
+	/// </summary>
+	public const string ExtendedKeyUsage = "2.5.29.37";
+
+	/// <summary>
+	/// The identifier of the CRL distribution points extension (RFC 5280, Sec. 4.2.1.13).
+	/// </summary>
+	public const string CrlDistributionPoints = "2.5.29.31";
+
+	/// <summary>
+	/// The identifier of the authority information access extension (RFC 5280, Sec. 4.2.2.1).
+	/// </summary>
+	public const string AuthorityInformationAccess = "1.3.6.1.5.5.7.1.1";
+
 	private static readonly string?[] IdCeIdentifiers = new string?[128];
 
 	/// <summary>

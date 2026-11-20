@@ -686,7 +686,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 			switch (extension.Oid)
 			{
-				case DecodedExtensions.BasicConstraintsOid or Certificate.KeyUsageOid or DecodedExtensions.ExtendedKeyUsageOid or DecodedExtensions.SubjectAlternativeNameOid or DecodedExtensions.NameConstraintsOid or DecodedExtensions.PolicyMappingsOid or DecodedExtensions.PolicyConstraintsOid or DecodedExtensions.InhibitAnyPolicyOid:
+				case CertificateExtension.BasicConstraints or CertificateExtension.KeyUsage or CertificateExtension.ExtendedKeyUsage or CertificateExtension.SubjectAlternativeName or DecodedExtensions.NameConstraintsOid or DecodedExtensions.PolicyMappingsOid or DecodedExtensions.PolicyConstraintsOid or DecodedExtensions.InhibitAnyPolicyOid:
 				{
 					break;
 				}
@@ -700,7 +700,7 @@ internal sealed class CertificatePathSearch : IDisposable
 
 					break;
 				}
-				case DecodedExtensions.CrlDistributionPointsOid:
+				case CertificateExtension.CrlDistributionPoints:
 				{
 					// RFC 5280, Sec. 4.2.1.13: the extension should not be critical, but is understood; revocation checks use it.
 					if (decoded.CrlDistributionPoints.Error is not null)
@@ -710,9 +710,9 @@ internal sealed class CertificatePathSearch : IDisposable
 
 					break;
 				}
-				case DecodedExtensions.AuthorityKeyIdentifierOid or DecodedExtensions.SubjectKeyIdentifierOid:
+				case CertificateExtension.AuthorityKeyIdentifier or CertificateExtension.SubjectKeyIdentifier:
 				{
-					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} marks its {(extension.Oid is DecodedExtensions.AuthorityKeyIdentifierOid ? "authority" : "subject")} key identifier extension critical, which RFC 5280 forbids.", node));
+					problems.Add(new PathProblem(CertificateValidationError.Malformed, $"{{0}} marks its {(extension.Oid is CertificateExtension.AuthorityKeyIdentifier ? "authority" : "subject")} key identifier extension critical, which RFC 5280 forbids.", node));
 					break;
 				}
 				default:
