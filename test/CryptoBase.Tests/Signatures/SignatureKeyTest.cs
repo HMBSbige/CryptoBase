@@ -291,13 +291,14 @@ internal class SignatureKeyTest
 		byte[] d = EcdsaTestUtils.ExportPrivateKey(key);
 		byte[] q = EcdsaTestUtils.ExportPublicKey(key);
 		byte[] valid = EcdsaTestUtils.ECPrivateKey(1, d, P256Oid, q);
-		// Malformed DER, a PrivateKeyInfo, parameters that are absent, empty or two values, and keys that the importer rejects.
+		// Malformed DER, a PrivateKeyInfo, parameters that are absent, empty or two values, and keys that the importer rejects, the last in a PrivateKeyInfo of more than 256 bytes.
 		byte[][] encodings =
 		[
 			[], [.. valid, 0], valid.AsSpan(0, valid.Length - 1).ToArray(), ExportPkcs8PrivateKey(key),
 			EcdsaTestUtils.ECPrivateKey(1, d, null, q), EcdsaTestUtils.ECPrivateKey(1, d, null, null), EcdsaTestUtils.ECPrivateKey(1, d, null, null, [0xA0, 0x00]),
 			EcdsaTestUtils.ECPrivateKey(1, d, null, null, EcdsaTestUtils.Element(0xA0, [.. Oid(P256Oid), 0x05, 0x00])),
-			EcdsaTestUtils.ECPrivateKey(0, d, P256Oid, q), EcdsaTestUtils.ECPrivateKey(1, d, P256Oid, EcdsaTestUtils.ExportPublicKey(other))
+			EcdsaTestUtils.ECPrivateKey(0, d, P256Oid, q), EcdsaTestUtils.ECPrivateKey(1, d, P256Oid, EcdsaTestUtils.ExportPublicKey(other)),
+			EcdsaTestUtils.ECPrivateKey(1, d, P256Oid, [.. q, .. new byte[200]])
 		];
 		// The headers of RFC 1421 make the block not one of RFC 7468, whatever follows them.
 		string encrypted = $"-----BEGIN EC PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-256-CBC,F3C51F304AD3B1D4A1E3777FC27F3EC7\n\n{Convert.ToBase64String(valid)}\n-----END EC PRIVATE KEY-----\n";

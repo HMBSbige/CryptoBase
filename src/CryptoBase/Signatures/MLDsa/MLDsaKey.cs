@@ -232,7 +232,7 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, Pkcs8PrivateKeyLength, nameof(destination));
 
 		int choiceLength = PrivateKeyChoiceLength;
-		using CryptoBuffer<byte> choice = new(choiceLength);
+		using CryptoBuffer<byte> choice = CryptoBuffer<byte>.ShouldUsePool(choiceLength) ? new CryptoBuffer<byte>(choiceLength) : new CryptoBuffer<byte>(stackalloc byte[choiceLength]);
 		AsnWriter writer = new(AsnEncodingRules.DER, choiceLength);
 
 		try

@@ -258,7 +258,7 @@ public abstract class AeadContractTest<T>(int keyLength) where T : IAeadCipher<T
 
 	[Test]
 	[MatrixDataSource]
-	public async Task AssociatedDataOverlappingDestinationIsConsumedBeforeWriting([Matrix(29, 255)] int associatedDataSizeInBytes, [Matrix(257, 4097)] int plaintextLength)
+	public async Task AssociatedDataOverlappingDestinationIsConsumedBeforeWriting([Matrix(29, 256, 257)] int associatedDataSizeInBytes, [Matrix(257, 4097)] int plaintextLength)
 	{
 		const int destinationOffset = 7;
 		byte[] key = CreateDeterministicSource(keyLength);
@@ -281,6 +281,35 @@ public abstract class AeadContractTest<T>(int keyLength) where T : IAeadCipher<T
 		byte[] decryptionBuffer = new byte[destinationOffset + plaintext.Length];
 		associatedData.CopyTo(decryptionBuffer);
 		await Assert.That(crypto.TryDecrypt(nonce, expectedCiphertext, expectedTag, decryptionBuffer.AsSpan().Slice(destinationOffset, plaintext.Length), decryptionBuffer.AsSpan().Slice(0, associatedData.Length))).IsTrue();
+
+		await Assert.That(decryptionBuffer.AsMemory(destinationOffset)).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
+	}
+
+	[Test]
+	[MatrixDataSource]
+	public async Task NonceOverlappingDestinationIsConsumedBeforeWriting([Matrix(17, 257)] int plaintextLength)
+	{
+		const int destinationOffset = 7;
+		byte[] key = CreateDeterministicSource(keyLength);
+		using T crypto = T.Create(key);
+		byte[] nonce = CreateDeterministicSource(T.NonceSize);
+		byte[] associatedData = CreateDeterministicSource(29);
+		byte[] plaintext = CreateDeterministicSource(plaintextLength);
+		byte[] expectedCiphertext = new byte[plaintext.Length];
+		byte[] expectedTag = new byte[T.TagSize];
+		crypto.Encrypt(nonce, plaintext, expectedCiphertext, expectedTag, associatedData);
+
+		byte[] encryptionBuffer = new byte[destinationOffset + plaintext.Length];
+		nonce.CopyTo(encryptionBuffer);
+		byte[] actualTag = new byte[T.TagSize];
+		crypto.Encrypt(encryptionBuffer.AsSpan().Slice(0, nonce.Length), plaintext, encryptionBuffer.AsSpan().Slice(destinationOffset, plaintext.Length), actualTag, associatedData);
+
+		await Assert.That(encryptionBuffer.AsMemory(destinationOffset)).IsEquivalentTo(expectedCiphertext, CollectionOrdering.Matching);
+		await Assert.That(actualTag).IsEquivalentTo(expectedTag, CollectionOrdering.Matching);
+
+		byte[] decryptionBuffer = new byte[destinationOffset + plaintext.Length];
+		nonce.CopyTo(decryptionBuffer);
+		await Assert.That(crypto.TryDecrypt(decryptionBuffer.AsSpan().Slice(0, nonce.Length), expectedCiphertext, expectedTag, decryptionBuffer.AsSpan().Slice(destinationOffset, plaintext.Length), associatedData)).IsTrue();
 
 		await Assert.That(decryptionBuffer.AsMemory(destinationOffset)).IsEquivalentTo(plaintext, CollectionOrdering.Matching);
 	}

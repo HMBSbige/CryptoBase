@@ -108,7 +108,7 @@ public static class SignatureKey
 			throw new ArgumentException("The text holds no PUBLIC KEY, PRIVATE KEY, RSA PUBLIC KEY, RSA PRIVATE KEY, EC PRIVATE KEY or SM2 PRIVATE KEY block. Encrypted keys are not supported.", nameof(source));
 		}
 
-		using CryptoBuffer<byte> der = new(keyLength);
+		using CryptoBuffer<byte> der = CryptoBuffer<byte>.ShouldUsePool(keyLength) ? new CryptoBuffer<byte>(keyLength) : new CryptoBuffer<byte>(stackalloc byte[keyLength]);
 		PemReader.Decode(keyData, der.Span);
 
 		return keyLabel switch
@@ -222,7 +222,8 @@ public static class SignatureKey
 			throw new ArgumentException("The SM2 PRIVATE KEY block names another curve.", nameof(source));
 		}
 
-		using CryptoBuffer<byte> privateKeyInfo = new(KeyInfoDer.GetPrivateKeyInfoLength(algorithmIdentifier, source.Length));
+		int privateKeyInfoLength = KeyInfoDer.GetPrivateKeyInfoLength(algorithmIdentifier, source.Length);
+		using CryptoBuffer<byte> privateKeyInfo = CryptoBuffer<byte>.ShouldUsePool(privateKeyInfoLength) ? new CryptoBuffer<byte>(privateKeyInfoLength) : new CryptoBuffer<byte>(stackalloc byte[privateKeyInfoLength]);
 		KeyInfoDer.WritePrivateKeyInfo(algorithmIdentifier, source, privateKeyInfo.Span);
 		return Import(privateKeyInfo.Span, privateKey: true);
 	}

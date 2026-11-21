@@ -64,12 +64,15 @@ public sealed class PlatformAesGcm : IAeadCipher<PlatformAesGcm>
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
-		using CryptoBuffer<byte> nonceCopy = CopyIfOverlapping(nonce, destination);
-		using CryptoBuffer<byte> associatedDataCopy = CopyIfOverlapping(associatedData, destination);
+		// A callee cannot return stack memory, so the copies are made here.
+		using CryptoBuffer<byte> nonceCopy = !ByteSpans.Overlaps(nonce, destination) ? default : CryptoBuffer<byte>.ShouldUsePool(nonce.Length) ? new CryptoBuffer<byte>(nonce.Length) : new CryptoBuffer<byte>(stackalloc byte[nonce.Length]);
+		using CryptoBuffer<byte> associatedDataCopy = !ByteSpans.Overlaps(associatedData, destination) ? default : CryptoBuffer<byte>.ShouldUsePool(associatedData.Length) ? new CryptoBuffer<byte>(associatedData.Length) : new CryptoBuffer<byte>(stackalloc byte[associatedData.Length]);
+		nonce = CopyInto(nonce, nonceCopy.Span);
+		associatedData = CopyInto(associatedData, associatedDataCopy.Span);
 
 		try
 		{
-			_aesGcm.Encrypt(nonceCopy.Span.IsEmpty ? nonce : nonceCopy.Span, source, destination, tag, associatedDataCopy.Span.IsEmpty ? associatedData : associatedDataCopy.Span);
+			_aesGcm.Encrypt(nonce, source, destination, tag, associatedData);
 		}
 		catch
 		{
@@ -87,12 +90,15 @@ public sealed class PlatformAesGcm : IAeadCipher<PlatformAesGcm>
 		AeadBufferGuard.ValidateInput(nonce, source, destination, tag, NonceSize, TagSize);
 		destination = destination.Slice(0, source.Length);
 
-		using CryptoBuffer<byte> nonceCopy = CopyIfOverlapping(nonce, destination);
-		using CryptoBuffer<byte> associatedDataCopy = CopyIfOverlapping(associatedData, destination);
+		// A callee cannot return stack memory, so the copies are made here.
+		using CryptoBuffer<byte> nonceCopy = !ByteSpans.Overlaps(nonce, destination) ? default : CryptoBuffer<byte>.ShouldUsePool(nonce.Length) ? new CryptoBuffer<byte>(nonce.Length) : new CryptoBuffer<byte>(stackalloc byte[nonce.Length]);
+		using CryptoBuffer<byte> associatedDataCopy = !ByteSpans.Overlaps(associatedData, destination) ? default : CryptoBuffer<byte>.ShouldUsePool(associatedData.Length) ? new CryptoBuffer<byte>(associatedData.Length) : new CryptoBuffer<byte>(stackalloc byte[associatedData.Length]);
+		nonce = CopyInto(nonce, nonceCopy.Span);
+		associatedData = CopyInto(associatedData, associatedDataCopy.Span);
 
 		try
 		{
-			_aesGcm.Decrypt(nonceCopy.Span.IsEmpty ? nonce : nonceCopy.Span, source, tag, destination, associatedDataCopy.Span.IsEmpty ? associatedData : associatedDataCopy.Span);
+			_aesGcm.Decrypt(nonce, source, tag, destination, associatedData);
 			return true;
 		}
 		catch (AuthenticationTagMismatchException)
@@ -109,15 +115,14 @@ public sealed class PlatformAesGcm : IAeadCipher<PlatformAesGcm>
 	}
 
 	// The platform does not promise to read its inputs before writing the output, so an input that overlaps the output is copied first.
-	private static CryptoBuffer<byte> CopyIfOverlapping(ReadOnlySpan<byte> input, ReadOnlySpan<byte> output)
+	private static ReadOnlySpan<byte> CopyInto(ReadOnlySpan<byte> input, Span<byte> copy)
 	{
-		if (!ByteSpans.Overlaps(input, output))
+		if (copy.IsEmpty)
 		{
-			return default;
+			return input;
 		}
 
-		CryptoBuffer<byte> copy = new(input.Length);
-		input.CopyTo(copy.Span);
+		input.CopyTo(copy);
 		return copy;
 	}
 
