@@ -6,12 +6,17 @@ namespace CryptoBase.Kdf.Argon2;
 
 // Keeps recently released working memory for reuse: touching fresh memory costs a page fault per page.
 // Freeing a large region is slow, so it happens outside the lock.
+// The regions leaving the cache to be freed are chained through their first word, so evicting and trimming allocate nothing managed.
 internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPeriodMilliseconds)
 {
 	internal const nuint Alignment = 64;
 
 	private readonly Lock _gate = new();
-	private readonly List<Region> _regions = [];
+
+	// The cached regions are _count entries from _oldest, from the least to the most recently returned, so the return times rise along them.
+	private Region[] _regions = [];
+	private int _oldest;
+	private int _count;
 	private nuint _cachedBytes;
 	private Timer? _trimTimer;
 
@@ -32,15 +37,17 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 	{
 		lock (_gate)
 		{
-			for (int i = _regions.Count - 1; i >= 0; --i)
-			{
-				Region region = _regions[i];
+			Span<Region> regions = _regions.AsSpan(_oldest, _count);
 
-				if (region.Length == length)
+			for (int i = regions.Length - 1; i >= 0; --i)
+			{
+				if (regions[i].Length == length)
 				{
-					_regions.RemoveAt(i);
+					nint address = regions[i].Address;
+					regions.Slice(i + 1).CopyTo(regions.Slice(i));
+					--_count;
 					_cachedBytes -= length;
-					return region.Address;
+					return address;
 				}
 			}
 		}
@@ -50,7 +57,7 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 
 	// The memory must already be wiped.
 	// Every region ends up cached or freed even if an allocation throws.
-	// Each region is listed for freeing before it leaves the cache, and the timer starts before the returned region joins it.
+	// Chaining an evicted region cannot fail, and the timer starts and the array makes room before the returned region joins it.
 	[SuppressMessage("ReSharper", "InconsistentlySynchronizedField", Justification = "_gate is entered through Uninterruptibly instead of a lock statement.")]
 	internal void Return(nint address, nuint length)
 	{
@@ -60,7 +67,9 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 			return;
 		}
 
-		List<Region>? evicted = null;
+		Debug.Assert(length >= (nuint)sizeof(nint));
+
+		nint evicted = 0;
 		bool interrupted = false;
 		bool entered = false;
 		bool cached = false;
@@ -73,14 +82,18 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 
 			while (_cachedBytes + length > maxCachedBytes)
 			{
-				Region oldest = _regions[0];
-				(evicted ??= []).Add(oldest);
-				_regions.RemoveAt(0);
-				_cachedBytes -= oldest.Length;
+				Chain(ref evicted, RemoveOldest());
 			}
 
 			_trimTimer ??= CreateTrimTimer(ref interrupted);
-			_regions.Add((address, length, Environment.TickCount64));
+
+			if (_oldest + _count == _regions.Length)
+			{
+				MakeRoom();
+			}
+
+			_regions[_oldest + _count] = (address, length, Environment.TickCount64);
+			++_count;
 			_cachedBytes += length;
 			cached = true;
 		}
@@ -127,7 +140,7 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 	[SuppressMessage("ReSharper", "InconsistentlySynchronizedField", Justification = "_gate is entered through Uninterruptibly instead of a lock statement.")]
 	internal void Trim(bool all)
 	{
-		List<Region>? idle = null;
+		nint idle = 0;
 		bool interrupted = false;
 		Uninterruptibly(static gate => gate.Enter(), _gate, ref interrupted);
 
@@ -135,19 +148,12 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 		{
 			long now = Environment.TickCount64;
 
-			for (int i = _regions.Count - 1; i >= 0; --i)
+			while (_count is not 0 && (all || now - _regions[_oldest].ReturnedAt >= trimPeriodMilliseconds))
 			{
-				Region region = _regions[i];
-
-				if (all || now - region.ReturnedAt >= trimPeriodMilliseconds)
-				{
-					(idle ??= []).Add(region);
-					_regions.RemoveAt(i);
-					_cachedBytes -= region.Length;
-				}
+				Chain(ref idle, RemoveOldest());
 			}
 
-			if (_regions.Count is 0 && _trimTimer is not null)
+			if (_count is 0 && _trimTimer is not null)
 			{
 				Uninterruptibly(static timer => timer.Dispose(), _trimTimer, ref interrupted);
 				_trimTimer = null;
@@ -161,16 +167,37 @@ internal sealed unsafe class Argon2MemoryCache(nuint maxCachedBytes, int trimPer
 		}
 	}
 
-	private static void Free(List<Region>? regions)
+	private nint RemoveOldest()
 	{
-		if (regions is null)
-		{
-			return;
-		}
+		Region oldest = _regions[_oldest];
+		++_oldest;
+		--_count;
+		_cachedBytes -= oldest.Length;
+		return oldest.Address;
+	}
 
-		foreach (Region region in regions)
+	// The regions move to the front only when that frees at least half the array, so appending takes constant time on average.
+	private void MakeRoom()
+	{
+		Region[] regions = _count < _regions.Length / 2 ? _regions : new Region[Math.Max(4, 2 * _regions.Length)];
+		_regions.AsSpan(_oldest, _count).CopyTo(regions);
+		_regions = regions;
+		_oldest = 0;
+	}
+
+	private static void Chain(ref nint chain, nint address)
+	{
+		*(nint*)address = chain;
+		chain = address;
+	}
+
+	private static void Free(nint chain)
+	{
+		while (chain is not 0)
 		{
-			NativeMemory.AlignedFree((void*)region.Address);
+			nint next = *(nint*)chain;
+			NativeMemory.AlignedFree((void*)chain);
+			chain = next;
 		}
 	}
 }
